@@ -4,6 +4,7 @@ using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Extensions.Options;
+using Scolia.Api;
 using Scolia.Api.Endpoints;
 using Scolia.Api.Security;
 using Scolia.Application.Abstractions;
@@ -31,6 +32,15 @@ builder.Host.UseSerilog((context, configuration) =>
 
 var port = builder.Configuration.GetValue("Scolia:Reseau:Port", 5080);
 var lan = builder.Configuration.GetValue("Scolia:Reseau:AccesReseauLocal", false);
+var desktop = OperatingSystem.IsWindows() && Environment.UserInteractive && !Microsoft.Extensions.Hosting.WindowsServices.WindowsServiceHelpers.IsWindowsService();
+
+// Deuxième lancement sur le même poste : on rouvre la fenêtre au lieu de démarrer un second serveur.
+if (desktop && builder.Configuration.GetValue("Scolia:OuvrirNavigateur", true) && DesktopLauncher.AlreadyRunning(port))
+{
+    DesktopLauncher.Open($"http://localhost:{port}");
+    return;
+}
+builder.Host.UseWindowsService(o => o.ServiceName = "SCOLIA");
 if (string.IsNullOrEmpty(builder.Configuration["urls"]) && string.IsNullOrEmpty(Environment.GetEnvironmentVariable("ASPNETCORE_URLS")))
     builder.WebHost.UseUrls(lan ? $"http://0.0.0.0:{port}" : $"http://localhost:{port}");
 builder.WebHost.ConfigureKestrel(k => k.Limits.MaxRequestBodySize = 60 * 1024 * 1024);
@@ -122,35 +132,13 @@ app.Lifetime.ApplicationStarted.Register(() =>
     var listening = app.Urls.FirstOrDefault() ?? $"http://localhost:{port}";
     var url = listening.Replace("0.0.0.0", "localhost", StringComparison.Ordinal).Replace("[::]", "localhost", StringComparison.Ordinal);
     Log.Information("SCOLIA est prêt : {Url} · données : {Data} · accès réseau local : {Lan}", url, storage.DataDirectory, lan);
-    if (app.Configuration.GetValue("Scolia:OuvrirNavigateur", true) && OperatingSystem.IsWindows() && Environment.UserInteractive)
-        DesktopLauncher.Open(url);
+    if (!desktop || !app.Configuration.GetValue("Scolia:OuvrirNavigateur", true)) return;
+#if SCOLIA_DESKTOP
+    TrayHost.Start(app, url, storage.DataDirectory, lan, port);
+#endif
+    DesktopLauncher.Open(url);
 });
 
 await app.RunAsync();
-
-/// <summary>Ouvre SCOLIA dans une fenêtre d'application (Edge ou Chrome en mode application), sinon dans le navigateur par défaut.</summary>
-internal static class DesktopLauncher
-{
-    public static void Open(string url)
-    {
-        var candidates = new[]
-        {
-            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), "Microsoft", "Edge", "Application", "msedge.exe"),
-            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "Microsoft", "Edge", "Application", "msedge.exe"),
-            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "Google", "Chrome", "Application", "chrome.exe"),
-            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Google", "Chrome", "Application", "chrome.exe"),
-        };
-        try
-        {
-            var browser = candidates.FirstOrDefault(File.Exists);
-            if (browser is not null) Process.Start(new ProcessStartInfo(browser, $"--app={url} --window-size=1366,860") { UseShellExecute = false });
-            else Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
-        }
-        catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or InvalidOperationException)
-        {
-            Log.Warning(ex, "Ouverture automatique impossible : ouvrez {Url} dans votre navigateur.", url);
-        }
-    }
-}
 
 public partial class Program;

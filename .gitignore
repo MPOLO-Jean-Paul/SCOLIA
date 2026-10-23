@@ -31,3 +31,4 @@ scolia-pro/e2e/node_modules/
 scolia-pro/e2e/test-results/
 scolia-pro/e2e/playwright-report/
 scolia-pro/artifacts/
+scolia-pro/web/tsconfig.tsbuildinfo

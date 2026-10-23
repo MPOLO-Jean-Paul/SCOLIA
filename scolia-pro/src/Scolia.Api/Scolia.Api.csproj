@@ -7,16 +7,32 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- L'interface compilée (web/) est servie depuis le dossier de l'exécutable, en développement comme en production. -->
+    <Content Update="wwwroot\**" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
     <PackageReference Include="Serilog.AspNetCore" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" />
   </ItemGroup>
 
   <PropertyGroup>
+    <!-- net10.0 : serveur multiplateforme (tests, Linux). net10.0-windows : application de bureau avec icône de notification. -->
+    <TargetFramework></TargetFramework>
+    <TargetFrameworks>net10.0;net10.0-windows</TargetFrameworks>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
     <AssemblyName>SCOLIA</AssemblyName>
     <RootNamespace>Scolia.Api</RootNamespace>
     <ApplicationIcon Condition="Exists('scolia.ico')">scolia.ico</ApplicationIcon>
     <InvariantGlobalization>false</InvariantGlobalization>
     <ServerGarbageCollection>false</ServerGarbageCollection>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetFramework)' == 'net10.0-windows'">
+    <UseWindowsForms>true</UseWindowsForms>
+    <OutputType>WinExe</OutputType>
+    <DefineConstants>$(DefineConstants);SCOLIA_DESKTOP</DefineConstants>
   </PropertyGroup>
 
 </Project>
