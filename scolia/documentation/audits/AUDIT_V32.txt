@@ -1,0 +1,9 @@
+SCOLIA V32 — contrôle de persistance et de lancement
+
+- Le retour « succès » d'une inscription n'est désormais accepté qu'après relecture de l'instantané source et vérification de l'unicité du matricule, en mode classeur autonome comme en mode dossier data.
+- En mode dossier data, le commit transactionnel reste postérieur à la vérification ; une erreur est propagée au formulaire au lieu d'afficher une réussite non confirmée.
+- Le message de retour Excel a été clarifié.
+- INSTALLER_CORRECTIONS.vbs est enregistré en ASCII pur, sans BOM UTF-8, pour éviter l'erreur Windows Script Host « caractère incorrect » au premier caractère.
+- Ajout de programme/VERIFICATION_PRELANCEMENT_V32.ps1 pour analyser les scripts avec le parseur natif de Windows PowerShell 5.1 avant installation.
+
+Limite de validation : ce paquet a été inspecté et modifié dans un environnement sans Windows/Excel COM. Le contrôle PowerShell 5.1 et le test réel d'enregistrement, fermeture et reconnexion doivent être exécutés sur le PC Windows avec Excel ; ne pas considérer ces tests comme déjà exécutés ici.

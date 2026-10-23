@@ -1,0 +1,101 @@
+﻿Tests Linux PowerShell 7.4.6 ; références .NET Framework adaptées à Core pour cinq tests C#. Excel et interface WinForms réelle non exécutés.
+
+TestsPerformancesV78
+PASS index: all/single/month/order/invalid dates/absence, invalidation, bounds; completed and failed network tasks.
+PASS indexed discipline matches full traversal, end-date boundary, permanent previous year, missing learner, case-sensitive keys.
+BENCH synthetic 10000 payments / 20 selections: previous=14843.57 ms; indexed=29.17 ms (initial index excluded).
+
+TestsReceptionAsynchroneV78
+PASS: asynchronous receive completes after durable save; detached snapshot; lock/corruption errors propagate without data overwrite.
+
+TestsMoniteurV78
+PASS production monitor: stale school/year response discarded, hidden page untouched, no UI disk save, nested ticks blocked, finally releases guard.
+PASS monitor retains unchanged journal identity and applies changed receipt revisions.
+
+TestsPublicationV78
+PASS publications: private revision reuse; explicit invalidation; new data; borrowed workbook fresh; in-flight older revision followed by latest; failure retried.
+
+TestsFinanceIndexV78
+PASS finance index: equivalence to original search, accents/multiple terms, order, totals, reused index, correction and year invalidation.
+
+TestsDisciplineV60
+PASS : 46 contrôles discipline, deuxième renvoi, doublons, durée/retour, parents, annulation, statut, archives, droits, admission, verrou et sauvegarde/restauration.
+
+TestsScoliaOptimisations
+PASS cache incrémental, isolation mémoire, intégrité, brouillons non comptabilisés, reprise après commit sans doublon, rejet des modifications et rapprochement.
+
+TestsBrouillonsRecus
+PASS: automatic drafts, mixed-role cash resume, account ownership, offline retention, independent restart, unchanged snapshots, pending filters, learner changes, isolation and integrity
+
+TestsFinanceSynchronisee
+PASS common reference across accounts, conflicting receipt, category budgets, tariff protection, immutable originals, optimistic concurrency, reconciliation, correction/cancellation balances, incremental revision detection, offline cache and history integrity
+
+TestsImportsReseau
+PASS: secretary export, unique receipt owner, durable incoming mapping, full learner details, grouped monthly receipts, both payment directions, no duplicate on retry, no double balance, modified source conflict, locked/offline/foreign share, safe learner cache
+
+TestsScoliaReception
+PASS isolation des années, archives consultables, réception ciblée, reçus distincts paiement/dépense, ambiguïtés bloquées, états erreur/importé préservés (orchestration Excel simulée)
+
+TestsPaiementsMultiplesV72
+PASS V72 : paiements multiples, retards, montants individuels, références séparées, sécurité réseau et mise en page adaptative.
+
+TestsEnregistrementRapideV76
+PASS sauvegarde conditionnelle, repli COM, fichier absent, écriture en échec, journal de récupération et validation
+PASS tranche réutilisée, lecture ciblée unique, repli, séparation données/affichage et lots
+PASS index ciblé, changement de nom, ajout et discipline
+
+TestsReactivitePages
+PASS navigation en cache, invalidation après modification, liste cachée évitée, changement de date des retards
+
+TestsSoldesEtRechercheV52
+PASS : soldes, isolation des apprenants, recherche, contrôles de session et refus de restauration d'un autre dossier.
+
+TestsFluiditeV77
+PASS: unchanged table emits zero events; one changed cell emits one event; row identity and sorting preserved; insert/delete; duplicate keys rejected before mutation; unkeyed safety; composite keys; clicks use memory only.
+PASS: actual Set-Grid retains DataSource, updates values, resumes layout and clears binding guard.
+
+TestsMiseAJourPerformance
+PASS : sauvegarde avant deux modules, migration unique, preverification globale, protection du code personnalise.
+PASS migration V75 vers V76 : sauvegarde préalable, un module, vérification et absence de répétition
+
+TestsTransactionApprenant
+PASS: recuperation de verrou, annulation transactionnelle, conservation du verrou jusqu au rollback et chemin d inscription controles statiquement.
+
+TestsRetardsCalendrier
+PASS seuil du 6, année civile, paiement complet/partiel, libellés des seuls mois impayés, filtre du mois courant
+PASS dix mois des prises en charge et exclusion des mensualités couvertes
+
+TestsPerformancesV75
+PASS normalisation Unicode, clés ordinales, limite mémoire
+BENCH texte, 3000 appels: ancien=2,289.7 ms; nouveau=268.1 ms
+PASS cache ruban, droits, activité, clôture, thème, rôle, reconstruction forcée
+BENCH rubans simulés: 100 changements=218.3 ms; 0 groupe reconstruit
+PASS montants, mois de retard, filtre mensuel, date du tableau de bord
+
+TestsRaccourcisFrequents
+PASS : trois raccourcis, classement évolutif, droits, valeurs initiales et lecture de l'historique.
+
+TestsSyntaxePowerShellV722
+OK - 229 scripts PowerShell analyses sans erreur de syntaxe.
+
+Echecs : []
+Controle final TestsPublicationV78
+PASS publications: private revision reuse; explicit invalidation; new data; borrowed workbook fresh; in-flight older revision followed by latest; failure retried.
+PASS missing permission rejects immediately without publication.
+
+Controle final TestsMoniteurV78
+PASS production monitor: stale school/year response discarded, hidden page untouched, no UI disk save, nested ticks blocked, finally releases guard.
+PASS monitor retains unchanged journal identity and applies changed receipt revisions.
+PASS UI failure during pending task remains an uncertain I/O failure; pending receipt must be retained.
+
+Controle final TestsSyntaxePowerShellV722
+OK - 229 scripts PowerShell analyses sans erreur de syntaxe.
+
+Verification du paquet TestsPublicationV78
+PASS publications: private revision reuse; explicit invalidation; new data; borrowed workbook fresh; in-flight older revision followed by latest; failure retried.
+PASS missing permission rejects immediately without publication.
+
+Verification du paquet TestsSyntaxePowerShellV722
+OK - 229 scripts PowerShell analyses sans erreur de syntaxe.
+
+PASS : données, ressources, configuration et modules VBA identiques à V77 ; empreintes des manifestes vérifiées.

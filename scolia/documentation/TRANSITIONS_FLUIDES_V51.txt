@@ -1,0 +1,16 @@
+SCOLIA V51 - TRANSITIONS VISUELLES CONTINUES
+
+Objectif
+Eviter toute cassure visuelle donnant l'impression que SCOLIA est bloqué entre deux fenêtres.
+
+Parcours traité
+1. Installation terminée -> indicateur visible -> configuration réellement affichée.
+2. Configuration terminée -> indicateur visible -> connexion réellement affichée.
+3. Connexion réussie -> indicateur visible et animé -> accueil réellement affiché.
+
+Principe technique
+- L'indicateur réutilise le composant moderne ITMActivity sur un thread WinForms séparé.
+- Son animation continue pendant que PowerShell construit l'écran suivant.
+- Il n'est fermé que sur l'événement Shown de la fenêtre cible.
+- En cas d'annulation ou d'erreur, la transition est toujours libérée.
+- Aucun délai artificiel n'est ajouté.

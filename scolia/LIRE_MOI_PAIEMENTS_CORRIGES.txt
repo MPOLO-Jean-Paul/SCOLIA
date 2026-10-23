@@ -1,0 +1,68 @@
+﻿SCOLIA COMPLET — PAIEMENTS ET ENREGISTREMENTS CORRIGÉS — 13 OCTOBRE 2026
+
+CONTENU COMPLET
+Cette archive contient le programme complet, les lanceurs, les composants,
+les ressources et les classeurs présents dans le dossier fourni.
+Toutes les améliorations précédentes sont incluses : interfaces, PDF,
+cartes, sauvegardes, nettoyage, connexion, enseignants, cours,
+attributions et discipline. Elle ne récupère pas les nouvelles données
+saisies sur votre ordinateur après l’envoi du dossier initial.
+
+INSTALLATION SUR VOTRE POSTE ACTUEL
+1. Fermer SCOLIA et Excel pour installer cette mise à jour.
+2. Extraire TOUT le ZIP dans un nouveau dossier.
+3. Lancer 00_Demarrage/METTRE_A_JOUR_V57.cmd depuis ce nouveau dossier.
+4. Choisir APPLICATION.vbs de votre installation habituelle.
+5. Relancer ce lanceur habituel : vos données actuelles sont conservées.
+Ne remplacer pas manuellement votre dossier data par celui du ZIP.
+Pour une installation distincte, utiliser 00_Demarrage/APPLICATION.vbs
+après extraction complète.
+
+ERREUR DE LA PHOTO
+La source d’autocomplétion ListItems est maintenant définie AVANT
+le mode SuggestAppend pour la liste des apprenants de la caisse.
+Cela supprime la configuration interdite signalée sur la photo.
+
+SAISIE DU MONTANT
+Le bouton est réévalué immédiatement pendant la saisie, sans attendre
+un clic sur une flèche ni la sortie du champ.
+Le texte saisi est contrôlé, plutôt que l’ancienne valeur numérique.
+Les séparateurs de milliers suivent la langue de Windows ; pour le français,
+les espaces ordinaires, insécables et fines insécables sont reconnus.
+Le montant doit être positif, entier en FC et dans les limites du contrôle.
+Pour les mensualités du secrétariat, il doit aussi respecter le reste annuel.
+Les fractions non nulles, valeurs trop grandes et groupements incorrects sont refusés.
+Le montant confirmé est conservé pour l’écriture : il ne change pas pendant le traitement.
+Le formulaire de caisse vérifie également le montant avant de créer l’opération.
+
+ENREGISTREMENT DES APPRENANTS ET CLASSEURS OUVERTS
+Les copies transactionnelles et les sauvegardes des classeurs ouverts passent
+par le transport COM explicite, plutôt que l’adaptateur instable PowerShell.
+SCOLIA recherche un classeur déjà ouvert dans la session Excel active,
+en comparant le chemin complet : deux fichiers de même nom ne sont pas confondus.
+Un classeur modifiable trouvé est réutilisé, plutôt qu’ouvert une deuxième fois.
+Les autres segments nécessaires sont ouverts dans cette même session.
+Lors de l’import initial d’un classeur source déjà ouvert, celui-ci reste ouvert ;
+la copie data gérée par SCOLIA est créée à partir de son contenu actuel.
+Lors de la fermeture ou déconnexion de SCOLIA, cette session Excel empruntée
+et ses classeurs restent ouverts. Ses réglages sont rétablis après les traitements.
+Les contrôles d’identité des apprenants sont actualisés avant une nouvelle
+écriture dans une session empruntée.
+Un fichier en lecture seule ne peut pas être enregistré : ouvrir une copie modifiable.
+Si une récupération après incident est nécessaire, fermer le classeur concerné
+pour permettre la restauration de la sauvegarde transactionnelle.
+La détection utilise la session Excel active exposée par Windows ; si plusieurs
+instances Excel sont ouvertes, utiliser celle contenant le classeur concerné.
+Terminer toute saisie de cellule ou boîte de dialogue Excel avant d’enregistrer dans SCOLIA.
+Le verrou du dossier data continue à empêcher deux sessions SCOLIA concurrentes.
+
+VÉRIFICATIONS
+45 suites métier passées et 32 contrôles ciblés supplémentaires.
+Contrôles : saisie française et anglaise, limites, bouton pendant la frappe,
+ancien montant, verrou de traitement, chemin exact du classeur, restauration des
+réglages Excel, sauvegarde transactionnelle et journal de récupération.
+Test natif .NET : configuration ComboBox et événement de saisie NumericUpDown.
+Ces tests métier utilisent des classeurs simulés et des données temporaires.
+Le parcours complet avec Windows et un véritable Excel reste à vérifier sur votre poste.
+Test fourni : 00_Demarrage/VERIFIER_PAIEMENTS.cmd.
+Le manifeste de mise à jour, les empreintes et l’intégrité des archives ont été vérifiés.

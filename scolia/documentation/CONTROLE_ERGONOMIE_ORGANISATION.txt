@@ -1,0 +1,19 @@
+﻿CONTRÔLES ERGONOMIE / ORGANISATION — 7 OCTOBRE 2026
+- 6 classeurs existants conservés octet pour octet après rangement.
+- Tous les fichiers précédents retrouvés dans leurs dossiers de destination.
+- Racine limitée aux deux lanceurs et au guide de démarrage.
+- Références aux scripts, images et correctifs résolues après déplacement.
+- Lanceurs VBS directs, journaux, stockage data et destinations d'export adaptés.
+- Syntaxe des scripts modifiés vérifiée par analyse statique ; les limites
+  connues du parseur tiers sont normalisées uniquement dans ce contrôle.
+- Sources C# et mécanismes de sécurité conservés.
+- Branchements de date masquée, validation par étape, navigation, clavier,
+  confirmation de fermeture et aide vérifiés statiquement.
+- Géométrie des boutons calculée pour les fenêtres étroites et plusieurs DPI.
+- Compatibilité du formulaire Excel d'inscription avec l'édition précédente.
+- Test natif de date ajouté à l'installateur : saisie et collage de huit chiffres,
+  date avec /, date impossible et date incomplète.
+
+Non exécutés ici : Windows PowerShell natif, Excel COM, compilation VBA,
+essais réels de clics/clavier et lecture visuelle de la fenêtre Windows.
+Ces contrôles statiques ne remplacent pas les essais natifs sur votre PC.

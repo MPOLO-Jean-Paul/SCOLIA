@@ -1,0 +1,54 @@
+SCOLIA - RAPPORT DE RENTREE ET RESPONSABLES DE L'INSTITUTION
+
+CONFIGURATION DES NOMS
+Connecter d'abord les données de l'institut concerné.
+Ouvrir Administration > Personnalisation > Responsables et signatures
+(ou Identité, logo et responsables).
+Renseigner les noms complets du préfet des études, du proviseur et du
+secrétaire, puis cliquer sur Enregistrer et appliquer.
+Les noms sont conservés séparément selon l'institut configuré. Le passage
+à un autre institut ne réutilise pas les noms de l'institut précédent.
+Les profils existants sans ces champs restent compatibles.
+
+RAPPORT DE RENTREE
+Dans Exports, choisir Rapport de la rentrée.
+Le canevas et les textes du modèle joint sont conservés, avec adaptation
+du nom, de l'adresse, de l'année scolaire, des informations renseignées
+et des effectifs issus de SCOLIA. Les personnes, dates, inventaires et
+montants propres à Belle Vie ne sont pas recopiés dans un autre institut.
+La présentation comprend la page de garde, le plan, les titres hiérarchisés,
+les paragraphes justifiés en Times New Roman, les marges A4, les tableaux
+avec en-têtes répétés, les annexes et la pagination « Page x sur y ».
+Le tableau d'organisation administrative récupère les trois responsables.
+La signature du rapport récupère par défaut le préfet des études.
+Le choix Fonction du signataire permet de retenir le proviseur ou le
+secrétaire. Le nom provient d'Administration au moment de la génération.
+Une zone est réservée à la signature manuscrite et au cachet.
+Les préparations de rapport enregistrées avant cette mise à jour sont
+reprises avec le nouveau système de signataire.
+
+AUTRES DOCUMENTS
+Les convocations des parents récupèrent automatiquement le nom du préfet.
+Dans les textes et tableaux du rapport, les champs {NOM_PREFET},
+{NOM_PROVISEUR} et {NOM_SECRETAIRE} sont remplacés automatiquement.
+Les formes courtes {PREFET}, {PROVISEUR}, {SECRETAIRE} sont aussi acceptées.
+Dans un modèle de grille Excel, placer ces mêmes champs dans les cellules
+textuelles réservées aux noms des responsables. Ils seront remplis sur
+la copie produite par SCOLIA. Les cellules de formule et les autres cellules
+sont conservées ; le modèle original n'est pas modifié.
+Si un nom manque, le document l'indique ; aucun nom n'est inventé.
+
+INSTALLATION
+Extraire le ZIP complet dans un dossier distinct, puis lancer
+00_Demarrage/APPLICATION.vbs. Pour mettre à jour le dossier actuel,
+METTRE_A_JOUR_V57.cmd comprend aussi ces fichiers et leurs empreintes.
+Les données scolaires, paiements, configurations déjà présentes et archives
+ne sont pas supprimés par l'ajout des fonctions de rapport et de signatures.
+
+VERIFICATION
+VERIFIER_SIGNATURES.cmd contrôle les noms, leur conservation, les fonctions,
+la séparation des instituts et la génération du rapport.
+Calculs, récupération des signataires, fichiers Word, rendu des pages et
+syntaxe des scripts ont été vérifiés. L'interface Windows et la conversion
+PDF par Microsoft Word restent à valider sur le poste de l'établissement.
+Microsoft Word doit être installé pour l'export PDF de ce rapport.

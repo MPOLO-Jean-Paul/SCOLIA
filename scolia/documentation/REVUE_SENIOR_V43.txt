@@ -1,0 +1,64 @@
+SCOLIA V43 — REVUE SENIOR INGÉNIERIE + PARCOURS UTILISATEUR
+
+Objectif
+Cette révision ne cherche pas à ajouter beaucoup de fonctions. Elle corrige les points qui créent le plus de friction, de lenteur perçue ou de risque d’erreur dans les parcours réels : première configuration, connexion, ouverture de l’espace, inscription, paiement et utilisation sur un écran plus petit.
+
+AMÉLIORATIONS MISES EN PRATIQUE
+
+1. Configuration initiale plus sûre et plus simple
+- Ajout rapide d’une classe avec deux champs : code et mensualité.
+- Conservation de la liste éditable CODE;montant pour les utilisateurs avancés.
+- Validation immédiate des codes de classe : exactement 4 caractères alphanumériques.
+- Détection des doublons de classe avant l’enregistrement.
+- Validation immédiate des montants FC.
+- Messages de validation affichés directement dans l’assistant.
+- Vérification que l’année scolaire couvre bien deux années consécutives.
+- Vérification du chemin de données et test réel d’écriture avant la création de la configuration.
+
+2. Transition connexion -> application
+- Après une connexion réussie, une fenêtre SCOLIA de préparation reste affichée pendant la construction de l’espace principal.
+- Les étapes sont indiquées : interface, tableau de bord, autorisations, ouverture.
+- La transition disparaît seulement lorsque la fenêtre principale est réellement affichée.
+- Cela évite l’impression de cassure ou d’application figée après la connexion.
+
+3. Taille de fenêtre principale corrigée
+- Une incohérence permettait auparavant à la fenêtre de descendre jusqu’à environ 360 x 360 sur un écran normal, malgré les exigences du logiciel.
+- Le minimum est maintenant calculé de manière responsive avec une cible de 900 x 620, tout en restant compatible avec les petits écrans.
+
+4. Démarrage visuel allégé
+- À l’événement d’ouverture, SCOLIA ne recalcule plus la disposition de toutes les pages cachées en une seule fois.
+- Seule la page réellement affichée est finalisée ; les autres pages disposent déjà de leurs événements VisibleChanged/SizeChanged pour s’adapter lorsqu’elles sont ouvertes.
+
+5. Paiements successifs plus rapides
+- Après un paiement réussi, la confirmation moderne reste non bloquante.
+- Le champ de recherche reprend automatiquement le focus et sélectionne son contenu : il suffit de taper le prochain nom/matricule.
+- La sécurité financière (confirmation avant écriture et contrôle de doublon possible) est conservée.
+
+6. Inscriptions successives
+- Le formulaire reste ouvert après un enregistrement réussi.
+- Les champs propres à l’apprenant sont remis à zéro, la promotion est conservée et le curseur revient au nom.
+- Le verrou UI est libéré dans finally ; le verrou Excel terminé est nettoyé par la passerelle de fiabilité.
+- Une confirmation non bloquante indique le matricule sauvegardé.
+
+7. Espace métier réellement appliqué dès la première connexion
+- Une anomalie importante a été trouvée : la connexion était réalisée avant la création de la fenêtre principale ; la fonction qui filtre les onglets selon le rôle ne pouvait donc pas s’appliquer à ce moment-là.
+- SCOLIA réapplique maintenant explicitement l’espace métier après la construction de la fenêtre.
+- Un compte Comptabilité ouvre directement Comptabilité et ne récupère pas visuellement l’espace Secrétariat.
+- Le titre et l’identité de la session sont rétablis après l’application du branding de l’établissement.
+
+DÉFIS RELEVÉS COMME UTILISATEUR
+- Première installation : le format brut CODE;FC était trop technique. Un ajout rapide a été ajouté.
+- Après connexion : l’utilisateur pouvait croire que SCOLIA s’était arrêté pendant la construction de la fenêtre principale. Une transition continue a été ajoutée.
+- Petits écrans : le minimum précédent pouvait rendre certaines commandes illisibles. Le calcul a été corrigé.
+- Série de reçus : après chaque paiement, il fallait reprendre manuellement la recherche. Le focus revient maintenant automatiquement.
+- Performance perçue : recalculer toutes les pages cachées au premier affichage était inutile. Ce travail est désormais différé.
+
+POINTS DE VIGILANCE QUI RESTENT À TESTER SUR WINDOWS
+- Compilation et exécution réelles sous Windows PowerShell 5.1 / .NET Framework.
+- Excel COM et macros VBA sur un classeur réel.
+- Dossier data sur partage réseau lent ou momentanément indisponible.
+- Test de 20 inscriptions successives et 20 paiements successifs.
+- Test sur écrans 1366x768, 1920x1080 et mise à l’échelle Windows 125/150 %.
+- Coupure électrique ou fermeture forcée pendant une transaction multi-classeurs.
+
+Le fichier programme/TestsAuditSeniorV43.ps1 permet de contrôler statiquement les garanties principales de cette révision sur Windows PowerShell 5.1.

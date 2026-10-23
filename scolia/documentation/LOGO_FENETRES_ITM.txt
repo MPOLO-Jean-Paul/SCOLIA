@@ -1,0 +1,22 @@
+﻿LOGO ITM SUR LES FENÊTRES — 6 octobre 2026
+
+Le logo ITM remplace l'icône par défaut dans les fenêtres de l'application :
+inscription et modification du dossier, fiche complète, correction et
+vérification de paiement, promotions, aperçu de rapport, détails de diagnostic,
+connexion sécurisée, changement de mot de passe, récupération, aperçu avant
+impression et installateur. La fenêtre de traitement utilise aussi cette icône.
+L'accueil et les raccourcis utilisaient déjà le logo ITM.
+
+Chaque fenêtre reçoit l'icône multirésolution ITM_CD.ico issue du logo
+transparent de l'établissement. L'icône est libérée à la fermeture de la fenêtre.
+Les symboles d'erreur, de confirmation et d'avertissement dans les messages
+conservent leur rôle : ils sont distincts de l'icône de l'application.
+
+Fermer ITM CD, extraire tout le nouveau ZIP dans un nouveau dossier,
+puis lancer APPLICATION.vbs et recréer les raccourcis si nécessaire.
+Aucune nouvelle préparation du classeur n'est nécessaire.
+Cette modification concerne les fenêtres du lanceur Windows fourni.
+Les UserForms de l'ancien classeur ouverts directement depuis Excel
+ne sont pas modifiés par ce changement d'interface du lanceur.
+
+Contrôles statiques effectués ; l'affichage natif reste à vérifier sous Windows.

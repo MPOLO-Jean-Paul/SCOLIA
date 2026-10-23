@@ -1,0 +1,9 @@
+Correction du blocage au lancement
+
+TestsInscriptionPageUnique.ps1 et TestsRaccourcisFrequents.ps1 contenaient des apostrophes typographiques dans des chaînes délimitées par des apostrophes. Windows PowerShell les interprétait comme des délimiteurs, d’où les erreurs de syntaxe affichées au lancement. Elles sont remplacées par des apostrophes ASCII doublées.
+
+Les 46 scripts ont été contrôlés avec prise en compte de cette particularité et de leur encodage UTF-8 avec BOM. TestsCompilation.ps1 vérifie désormais la syntaxe de tous les scripts avec le véritable analyseur Windows PowerShell avant la compilation C#. Le contrôle du lanceur est conservé.
+
+Fermez l’ancienne application, remplacez le dossier programme par celui du ZIP, puis lancez APPLICATION.vbs. Il n’est pas nécessaire de réinstaller les corrections du classeur pour cette correction de syntaxe. Les six classeurs inclus restent identiques.
+
+Le contrôle natif PowerShell 5.1 et l’exécution Excel ne peuvent pas être exécutés dans cet environnement Linux.

@@ -1,0 +1,21 @@
+SCOLIA V45 - CORRECTION ACTIVE DE LA SYNTAXE APPLICATION.PS1
+
+Base utilisee : V44 avec restauration de la structure stable de Application.ps1 depuis la V42, puis reintegration de corrections compatibles Windows PowerShell 5.1.
+
+Corrections ciblees :
+- bloc de generation des icones de navigation reecrit sans concatenation de cle complexe ;
+- creation de la police Segoe UI reecrite avec New-Object -ArgumentList ;
+- fonctions de motif et de fusion de doublons reecrites en instructions simples ;
+- suppression des chaines multilignes sensibles dans les confirmations de fusion/suppression ;
+- journalisation de fusion et suppression reecrite avec String.Format ;
+- encodage Application.ps1 force en UTF-8 avec BOM et fins de lignes CRLF ;
+- ajout de TestsSyntaxeV45.ps1, qui utilise le parseur natif de Windows PowerShell avant validation.
+
+La correction traite directement les zones signalees sur les diagnostics V43/V44 :
+- expressions/pipeline autour du bloc des icones ;
+- jeton Segoe ;
+- jeton caracteres ;
+- parenthese/jetons en cascade dans la fusion ;
+- operateur < et jetons Dossiers signales ensuite par effet de cascade.
+
+Aucune donnee apprenant ou paiement n'a ete modifiee par cette correction.

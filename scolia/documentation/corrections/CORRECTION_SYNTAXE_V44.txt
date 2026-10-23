@@ -1,0 +1,20 @@
+SCOLIA V44 - CORRECTION DE SYNTAXE POWERSHELL 5.1
+Date : 2026-10-11
+
+Incident reproduit d'après le diagnostic utilisateur :
+- Application.ps1 échouait autour de l'ancienne ligne 745.
+- Le premier défaut était une concaténation de chaîne directement dans l'index du cache d'icônes :
+  $script:navIcons[$name+'|'+$active]
+- Sous Windows PowerShell 5.1, cette écriture a été interprétée de façon ambiguë dans ce contexte.
+- Les messages suivants sur "Segoe UI", "caractères", "<-", "Fusion", les parenthèses et accolades étaient des erreurs en cascade du parseur après ce premier point de rupture.
+
+Corrections V44 :
+1. Suppression des concaténations à risque directement dans les index de dictionnaires.
+2. Création de clés intermédiaires explicites pour les icônes, soldes et prises en charge.
+3. Réécriture du bloc de fusion de doublons en instructions simples et compatibles PowerShell 5.1.
+4. Réécriture du détail d'audit de suppression/fusion sans expressions compactes ambiguës.
+5. Même correction préventive dans PerformanceInterface.ps1, PrisesEnCharge.ps1, ScoliaIntegration.ps1, Personnalisation.ps1 et TestsImagesTheme.ps1.
+6. Lancer.ps1 reparcourt systématiquement les scripts critiques modifiés avant l'ouverture de l'application.
+7. Ajout de TestsCorrectionSyntaxeV44.ps1 pour contrôler les scripts critiques avec le parseur natif PowerShell sur le PC Windows.
+
+Aucune donnée Excel, aucun classeur utilisateur et aucun module VBA de données n'a été modifié par cette correction.

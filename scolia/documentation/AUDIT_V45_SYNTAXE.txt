@@ -1,0 +1,8 @@
+SCOLIA V45 - AUDIT STATIQUE
+
+JSON valides : 3/3
+Manifeste VBA Code-Hash : 16/16
+Fichiers isoles a la racine SCOLIA : 0
+Application.ps1 - accolades/parentheses/crochets restants : 0
+Application.ps1 - incoherences structurelles detectees : 0
+Validation finale native : programme/TestsSyntaxeV45.ps1 sous Windows PowerShell 5.1.

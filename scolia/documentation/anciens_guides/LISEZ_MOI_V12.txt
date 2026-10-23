@@ -1,0 +1,10 @@
+SCOLIA - paquet complet V12
+
+Ce paquet contient l'application complète et les fichiers de configuration.
+Pour éviter de relancer une ancienne installation, extrayez le dossier SCOLIA dans un nouveau répertoire puis lancez le fichier APPLICATION.vbs de ce nouveau dossier.
+Ne copiez pas uniquement le script de configuration. Gardez votre ancien dossier et vos données comme sauvegarde jusqu'à validation.
+
+La validation finale doit être effectuée sur Windows PowerShell 5.1 avec Excel installé.
+
+
+Consultez AUDIT_V35.txt pour les corrections de fiabilité et la liste des essais à exécuter sur Windows/Excel.

@@ -1,0 +1,27 @@
+﻿LISIBILITÉ ET LOGO TRANSPARENT — ITM CD
+
+Le logo détouré possède un vrai canal alpha : aucun fond carré opaque.
+Les espaces noirs du fond ont été retirés ; le texte noir sur le bandeau blanc
+est conservé. Le logo fourni original reste disponible dans Assets.
+Le logo transparent est utilisé dans l'en-tête et dans l'icône Windows.
+Recréer les raccourcis via Administration > Raccourcis pour leur nouvelle icône.
+
+Les tableaux ont des en-têtes à hauteur automatique et des largeurs minimales
+plus lisibles. Si toutes les colonnes ne tiennent pas dans la fenêtre, utiliser
+leur barre de défilement horizontale. Les lignes visibles s'ajustent au texte.
+Les en-têtes, boutons de navigation et onglets principaux sont mesurés pour
+les tailles de texte Windows. Les actions passent sous le nom de l'école
+lorsque la largeur disponible ne permet plus de les mettre à côté.
+Les boutons des pages et listes ajustent leur hauteur selon le texte.
+Le dessin des boutons réduit légèrement la police en dernier recours dans
+les anciens dialogues et ne remplace plus les textes par des points de suspension.
+Les notes du tableau de bord ne conservent plus une hauteur fixe trop petite.
+
+Fermer l'application, extraire le ZIP dans un dossier neuf, lancer APPLICATION.
+Aucune nouvelle préparation du classeur n'est nécessaire pour cette correction.
+Le contenu métier et les classeurs ne sont pas modifiés.
+
+Contrôles : alpha du PNG, encodage Unicode, structure des scripts,
+compatibilité et intégrité du ZIP, conservation binaire des classeurs.
+Windows Forms, mesures GDI réelles et compilation C# indisponibles ici :
+le rendu réel à vos réglages d'écran reste à vérifier sous Windows.

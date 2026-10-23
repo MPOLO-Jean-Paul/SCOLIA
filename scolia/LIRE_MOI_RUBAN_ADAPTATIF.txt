@@ -1,0 +1,22 @@
+SCOLIA - RUBAN ADAPTATIF
+
+Le ruban ne se masque plus automatiquement lorsqu'il contient beaucoup de
+commandes ou que la fenêtre devient plus petite.
+La taille des commandes et le nombre de lignes sont calculés selon la
+largeur, la hauteur disponible, le nombre de commandes et l'échelle Windows.
+Quand l'espace manque, les commandes prennent la forme d'icônes compactes.
+Leurs noms restent accessibles par les infobulles et l'accessibilité.
+En agrandissant la fenêtre, les libellés et des boutons plus larges reviennent.
+Les groupes et les commandes conservent leur ordre et leurs permissions.
+L'option manuelle permettant de masquer/afficher le ruban reste disponible.
+
+Pour installer : extraire entièrement le ZIP dans un dossier distinct puis
+lancer 00_Demarrage/APPLICATION.vbs. Le correctif METTRE_A_JOUR_V57.cmd inclut
+également cette modification si vous mettez à jour un dossier existant.
+
+Vérification : VERIFIER_RUBAN_ADAPTATIF.cmd.
+Les tests de géométrie contrôlent la conservation de toutes les commandes,
+les débordements, les recouvrements, les tailles réduites et le retour des
+libellés. L'affichage réel Windows reste à confirmer sur votre poste.
+Les données scolaires, les paiements et les fonctions du rapport de rentrée
+ne sont pas modifiés par ce changement du ruban.

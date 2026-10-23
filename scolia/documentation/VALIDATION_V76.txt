@@ -1,0 +1,24 @@
+﻿Validation PowerShell 7.4.6 / Linux. Excel et interface simulés. VBA : contrôles statiques, pas de compilation/exécution Excel.
+
+TestsEnregistrementRapideV76
+PASS sauvegarde conditionnelle, repli COM, fichier absent, écriture en échec, journal de récupération et validation
+PASS tranche réutilisée, lecture ciblée unique, repli, séparation données/affichage et lots
+PASS index ciblé, changement de nom, ajout et discipline
+
+TestsMiseAJourPerformance
+PASS : sauvegarde avant deux modules, migration unique, preverification globale, protection du code personnalise.
+PASS migration V75 vers V76 : sauvegarde préalable, un module, vérification et absence de répétition
+
+TestsSoldesEtRechercheV52
+PASS : soldes, isolation des apprenants, recherche, contrôles de session et refus de restauration d'un autre dossier.
+
+TestsTransactionApprenant
+PASS: recuperation de verrou, annulation transactionnelle, conservation du verrou jusqu au rollback et chemin d inscription controles statiquement.
+
+TestsReactivitePages
+PASS navigation en cache, invalidation après modification, liste cachée évitée, changement de date des retards
+
+TestsSyntaxePowerShellV722
+OK - 222 scripts PowerShell analyses sans erreur de syntaxe.
+
+PASS: seules quatre fonctions VBA changées ; blocs et boucles équilibrés ; module de fiabilité inchangé ; données fournies inchangées ; empreintes vérifiées.

@@ -1,0 +1,2 @@
+Formulaire de connexion : logo, nom ITM Cœur de Dieu et titre Connexion centrés. Texte d’accueil, lien de récupération et pied de formulaire centrés. Libellé du mot de passe, option d’affichage et messages alignés sur le même bord gauche que le champ. Colonne centrale limitée en largeur sur les fenêtres agrandies, marges symétriques. Authentification inchangée.
+Fermer l’application, remplacer programme en conservant data, puis relancer APPLICATION.vbs.

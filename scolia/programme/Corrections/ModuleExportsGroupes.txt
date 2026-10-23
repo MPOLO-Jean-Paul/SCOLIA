@@ -1,0 +1,38 @@
+﻿Option Explicit
+Public Function PromotionCanonique(ByVal valeur As String) As String
+    PromotionCanonique = ITMPromotion(valeur)
+End Function
+Private Function TexteCle(ByVal valeur As Variant) As String
+    If IsError(valeur) Or IsNull(valeur) Then Exit Function
+    TexteCle = UCase$(Trim$(CStr(valeur)))
+End Function
+Private Function MoisRapport(ByVal demande As String) As String
+    Dim i As Long, choix As Variant, ws As Worksheet
+    Set ws = ThisWorkbook.Worksheets("PARAMETRES")
+    If demande = "" Or TexteCle(demande) = "TOUS LES MOIS" Then
+        choix = Application.InputBox("Mois : 1 Septembre, 2 Octobre, 3 Novembre, 4 Decembre, 5 Janvier, 6 Fevrier, 7 Mars, 8 Avril, 9 Mai", "Rapport PDF", Type:=1)
+        If VarType(choix) = vbBoolean Then Exit Function
+        If choix < 1 Or choix > 9 Or choix <> Fix(choix) Then
+            MsgBox "Choisissez un numero de 1 a 9.", vbExclamation: Exit Function
+        End If
+        demande = CStr(ws.Cells(CLng(choix) + 4, 1).Value)
+    End If
+    For i = 5 To 13
+        If TexteCle(ws.Cells(i, 1).Value) = TexteCle(demande) Then
+            MoisRapport = CStr(ws.Cells(i, 1).Value): Exit Function
+        End If
+    Next i
+    MsgBox "Mois scolaire invalide.", vbExclamation
+End Function
+Public Sub ExporterRapportPromotionsPDF(ByVal retards As Boolean, Optional ByVal mois As String = "", Optional ByVal filtrePromotion As String = "")
+    ITMExporterRapport mois, filtrePromotion, True, IIf(retards, 4, 2)
+End Sub
+Private Sub AjouterLigneRapport(ByVal groupes As Object, ByVal promotion As String, ByVal ligne As Variant)
+    Dim lignes As Collection
+    If Not groupes.Exists(promotion) Then
+        Set lignes = New Collection
+        groupes.Add promotion, lignes
+    End If
+    Set lignes = groupes(promotion)
+    lignes.Add ligne
+End Sub

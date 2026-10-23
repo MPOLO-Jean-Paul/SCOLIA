@@ -1,0 +1,15 @@
+SCOLIA V49 - AUDIT DU PARCOURS UNIFIE
+
+- Un seul lanceur visible : 00_Demarrage\APPLICATION.vbs
+- Aucun fichier isolé à la racine SCOLIA
+- Démarrage : classeur préparé absent -> installation ; classeur préparé présent -> application
+- Après installation en première utilisation : fermeture automatique de l installateur puis configuration / connexion
+- Nouvelle source : copie interne -> suppression apprenants/paiements -> contrôles -> corrections -> publication
+- Le modèle ressources\FICHIER_SOURCE.xlsm n est jamais utilisé silencieusement comme source de données
+- Titre installateur : SCOLIA
+- ActivityIndicator.cs : System.Windows.Forms.Timer qualifié explicitement
+- 16/16 empreintes VBA du manifeste conformes
+- 45 scripts PowerShell non-tests contrôlés pour chaînes et délimiteurs équilibrés
+- Les JSON présents sont lisibles
+
+Limite du contrôle : Windows PowerShell 5.1, Excel COM et l interface WinForms doivent exécuter le parcours final sur Windows pour valider l environnement réel.

@@ -1,0 +1,16 @@
+﻿ONGLETS RESPONSIVES SANS DÉBORDEMENT — 6 octobre 2026
+
+Les sept onglets principaux restent tous visibles. Leur largeur dépend du
+libellé et de l'icône ; si une rangée manque de place, les onglets suivants
+passent automatiquement sur une nouvelle rangée. Aucun défilement horizontal
+n'est nécessaire. La hauteur de la barre est recalculée avant de positionner
+le ruban et le contenu, pour empêcher un chevauchement.
+La police s'adapte légèrement à la largeur et reste lisible. Les libellés
+peuvent revenir à la ligne dans un espace exceptionnellement réduit.
+Les onglets secondaires de l'inscription, la fiche et l'administration
+conservent également leur mode multiligne natif.
+
+Extraire tout le ZIP dans un nouveau dossier, puis lancer APPLICATION.vbs.
+Aucune nouvelle préparation du classeur n'est nécessaire.
+Contrôles statiques et géométrie de référence vérifiés ; le comportement
+réel sous Windows reste à confirmer.

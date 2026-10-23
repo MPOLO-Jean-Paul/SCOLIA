@@ -1,0 +1,35 @@
+SCOLIA V65 - AUDIT ET QUALITE DES FENETRES
+
+Cette mise à jour conserve le rapport de rentrée, les responsables configurés,
+les paiements, la discipline et le ruban adaptatif de la version précédente.
+
+CORRECTIONS ET AMELIORATIONS
+- Le chargement et la copie des données du personnel et de scolarité gardent
+  les horodatages sous forme de chaînes, avec leur décalage horaire exact.
+  Cela corrige une incompatibilité de certaines versions de PowerShell.
+- Les fenêtres utilisent une politique commune de placement : les dimensions
+  et les minimums sont ajustés à la zone visible de l'écran concerné.
+- Les formulaires standard à deux colonnes passent en une colonne lorsque
+  la largeur disponible est réduite. Les formulaires spécialisés conservent
+  leur organisation propre.
+- Les listes déroulantes adaptent la largeur de leurs options aux textes.
+- Les libellés automatiques en colonne unique peuvent revenir à la ligne.
+- Les boutons sans aide explicite reçoivent une infobulle si leur nom est long.
+- Les noms accessibles des boutons et les raccourcis des fenêtres sont mieux
+  harmonisés. Les zones de texte multilignes permettent les retours à la ligne.
+- Les fenêtres auxiliaires reçoivent les couleurs et les réglages communs à
+  leur ouverture. Les contextes des formulaires et les valeurs saisies ne sont
+  pas remplacés par ces réglages de présentation.
+
+INSTALLATION
+Extraire ce ZIP dans un dossier distinct puis lancer
+00_Demarrage/APPLICATION.vbs. Garder une copie du dossier actuel.
+METTRE_A_JOUR_V57.cmd comprend également cette mise à jour si vous choisissez
+le mécanisme de correctif pour un dossier existant.
+
+VERIFICATIONS
+Le compte rendu se trouve dans documentation/AUDIT_V65.md.
+Le contrôle Windows complet se lance avec VERIFIER_AUDIT_V65.cmd.
+Les calculs, les règles et les fichiers ont été vérifiés avec des jeux de
+ données isolés. La vérification visuelle des fenêtres Windows et la conversion
+ PDF par Microsoft Word doivent encore être réalisées sur le poste réel.

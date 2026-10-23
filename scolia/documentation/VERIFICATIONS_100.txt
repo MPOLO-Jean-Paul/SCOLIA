@@ -1,0 +1,47 @@
+﻿SCOLIA 100 — vérifications réalisées
+
+PASS analyse syntaxique des 98 scripts PowerShell.
+PASS compilation des modules caisse et réseau en C#5 avec références .NET4 (Mono).
+PASS journal produit par l'édition 99, relu avec vérification de checksum par
+     l'édition 100, puis repris sans duplication (.NET4/C#5).
+PASS configuration : comptes libres/protégés, noms et identités persistants,
+     identité dupliquée et nom vide refusés, droits séparés / mixte.
+PASS nettoyage : les deux expressions de production produisent exactement le
+     chemin de requête et le chemin de résultat attendu ; bornes du délai refusées.
+PASS références System.Xml / sérialisation du worker et écriture JSON UTF8 sans
+     BOM : accents conservés et désérialisation .NET4 réussie.
+PASS protocole réseau, dialogue UDP local réel, vérification de fichiers,
+     remplacement atomique, absence de profil et autres institutions refusées.
+PASS cache incrémental : première lecture complète, aucune désérialisation à la
+     deuxième lecture inchangée, un seul fichier relu pour une nouvelle écriture ;
+     copies mémoire isolées, checksum modifié et disparition d'écriture refusés.
+PASS brouillons : conservation sans encaissement, contrôle d'intégrité,
+     première validation puis reprise du même identifiant sans double écriture,
+     même identifiant avec montant modifié refusé.
+PASS rapprochement : 60 FC encaissés, 20 FC reçus et 40 FC à recevoir sur le cas test.
+PASS caisse : soldes, tarif, calendrier, surpaiement, références, concurrence,
+     intégrité et session périmée ; imports idempotents et années isolées.
+PASS lecture d'une grille INF3 sur une feuille et des colonnes personnalisées,
+     détection des cours / barèmes et exclusion des formules de totaux ; Excel simulé.
+PASS lecture XML des quatre grilles originales, correspondance des noms,
+     homonymes, doublons, notes invalides, zéros et apprenants inconnus.
+PASS décisions P/A/AA/D, frontière à 50 %, notes absentes distinctes du zéro,
+     classement alphabétique, formules relatives et numérotation.
+PASS retards : seuil du 6, mois payés/partiels, année civile, prises en charge.
+PASS catalogue : rubans, aides, raccourcis et permissions ; démarrage sans création
+     inutile des commandes cachées.
+PASS ZIP : aucun fichier précédent supprimé, six XLSM, VBA, manifeste et lanceurs
+     conservés sans modification ; empreintes du manifeste et BOM PowerShell vérifiés.
+
+Méthodes : tests PowerShell 7 sous Linux ; compilation/exécution C#5 sous Mono
+avec références .NET4 ; fichiers temporaires réels ; Excel simulé pour les tests
+qui appellent ses interfaces. Ces tests ne valident pas l'environnement Windows.
+
+RESTE À VALIDER SUR LES POSTES
+- Démarrage et affichage complet sous Windows PowerShell 5.1 / WinForms.
+- Worker de vérification bornée : lancement Windows et interruption après 15 s.
+- Excel COM/VBA réel, imports, sorties Word/PDF et grilles paramétrées.
+- Deux postes Windows : partage SMB, droits NTFS, identifiants, UAC, pare-feu,
+  découverte réseau, coupure et reprise lors d'une validation de brouillon.
+- Rendu des nouveaux formulaires en clair/sombre et à différentes résolutions.
+Aucun test sous Linux n'est présenté comme une validation de ces opérations.

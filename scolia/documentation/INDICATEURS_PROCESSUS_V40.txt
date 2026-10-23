@@ -1,0 +1,43 @@
+SCOLIA V40 - INDICATEURS DE PROCESSUS HARMONISES
+=================================================
+
+Objectif
+--------
+Uniformiser les indications de traitement de SCOLIA avec un rendu plus sobre,
+professionnel et cohérent avec les interfaces Windows 11 déjà utilisées.
+
+Modifications
+-------------
+1. Indicateur global des opérations
+   - Ancienne petite roue seule remplacée par une carte compacte et arrondie.
+   - Anneau animé fluide avec piste discrète et couleur d'accent SCOLIA.
+   - Titre fixe « Traitement en cours » et message contextuel réel.
+   - Les changements de message via Set-ITMActivityMessage sont maintenant visibles.
+   - La carte se place près de l'action quand c'est possible, sans effacer le texte du bouton.
+   - Thèmes clair et sombre pris en charge.
+   - La fenêtre ne prend pas le focus et laisse les événements souris traverser l'indicateur.
+
+2. Connexion et configuration
+   - ScoliaBusySpinner utilise désormais le même anneau fluide que l'application.
+   - Animation à environ 31 images/s pour rester fluide sans surcharge inutile.
+   - États d'accessibilité conservés (« Traitement en cours »).
+
+3. Installateur
+   - ProgressBar Windows standard remplacée par ScoliaProgressBar.
+   - Barre arrondie, couleur d'accent cohérente, progression réelle 0-100.
+   - Animation légère uniquement pendant une installation en cours.
+   - Aucune fausse progression n'est inventée : les valeurs restent celles du moteur d'installation.
+
+4. Performance et stabilité
+   - Les animations ne lancent aucun travail Excel et ne traversent aucun objet COM.
+   - Les timers sont arrêtés dès la fin de l'opération.
+   - Un défaut d'affichage de l'indicateur ne doit jamais interrompre une transaction métier.
+
+Contrôle Windows recommandé
+---------------------------
+Exécuter programme\TestsIndicateursV40.ps1 ou lancer normalement SCOLIA :
+- connexion ;
+- enregistrement d'un apprenant ;
+- paiement ;
+- sauvegarde/configuration ;
+- installation des corrections.

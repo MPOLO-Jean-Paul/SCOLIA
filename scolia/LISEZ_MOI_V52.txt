@@ -1,0 +1,24 @@
+﻿SCOLIA V52.2 — Transitions et correctif de lancement
+
+Démarrage : 00_Demarrage\APPLICATION.vbs
+Vérification de syntaxe : 00_Demarrage\VERIFIER_SYNTAXE_V52.cmd
+Vérification technique Windows : 00_Demarrage\VERIFIER_V52.cmd
+Rapport détaillé : documentation\AUDIT_ET_NOUVEAUTES_V52.md
+Inventaire : documentation\INVENTAIRE_FONCTIONS_V52.csv
+
+V52.2 : apostrophes corrigées dans EtatEspace et StockageClasseurs,
+dossier du programme et empreinte EtatEspace visibles dans le diagnostic.
+Pour mettre à jour une installation existante, utilisez le réparateur
+SCOLIA_REPARATION_AUTOMATIQUE_V52_2.zip et sélectionnez son APPLICATION.vbs.
+
+Ajouts : recherche du journal comptable ; Diagnostic > État de mon espace ;
+copie et export texte des rapports.
+Corrections : attente visible entre écrans, messages de chargement, soldes
+après actualisation ciblée, sélection du journal et restauration du bon dossier.
+
+Les vérifications Windows/Excel réelles restent à effectuer : cette livraison
+a été préparée sur Linux. Le rapport précise les contrôles exécutés et les
+scénarios à vérifier sur une copie de test.
+
+Extraire dans un dossier distinct. Les données, sources, archives et macros
+VBA de l’archive fournie ont été conservées à l’identique.

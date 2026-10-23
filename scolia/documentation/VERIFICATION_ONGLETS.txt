@@ -1,0 +1,7 @@
+﻿INTERFACE AVEC ONGLETS SUPERIEURS
+
+Contrôles statiques : menu latéral retiré, cinq onglets reliés aux mêmes pages, icônes locales dessinées en .NET, état actif distingué, colonnes égales, initialisation des tailles avant ancrage, tableaux et cartes adaptés à la largeur.
+Les images des icônes sont libérées à la fermeture.
+Modules VBA, classeurs et sauvegardes strictement identiques à l'édition précédente.
+Adresse, résultats de recherche agrandis et protections de paiement conservés.
+Exécution graphique Windows non réalisée dans cet environnement.

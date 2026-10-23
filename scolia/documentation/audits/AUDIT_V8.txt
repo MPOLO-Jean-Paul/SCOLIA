@@ -1,0 +1,5 @@
+SCOLIA V8 — AUDIT STATIQUE
+
+Correctif : recuperation prudente du verrou residuel dans ModuleFiabilite. Le verrou est libere uniquement lorsque ThisWorkbook.Saved vaut True ; les modifications non sauvegardees restent protegees.
+Manifest : empreinte du module recalculee avec la normalisation de l'installateur.
+Tests : aucune execution Excel/VBA sur Windows n'a ete effectuee ici. Sauvegarder les donnees et valider sur une copie avant mise en production.

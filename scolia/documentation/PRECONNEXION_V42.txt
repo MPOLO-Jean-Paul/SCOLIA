@@ -1,0 +1,26 @@
+SCOLIA V42 - CONFIGURATION ET PRE-CONNEXION
+
+Objectif
+- Supprimer la cassure entre la fin de la configuration initiale et l'affichage de la connexion.
+- Rendre l'assistant initial plus sobre, lisible et cohérent avec la page de connexion.
+
+Modifications principales
+1. L'assistant initial est présenté comme un parcours en deux étapes :
+   - Etablissement et année scolaire
+   - Comptes et sécurité
+2. En-tête SCOLIA, badge Première connexion, panneaux structurés et barre d'actions uniforme.
+3. Boutons Précédent, Continuer et Terminer avec état d'étape visible.
+4. Compteur de classes et information dynamique sur le dossier local/réseau.
+5. Validation de l'étape 1 avant l'accès aux comptes.
+6. Indicateur moderne pendant l'enregistrement final.
+7. Une fois la configuration enregistrée, la fenêtre de connexion est ouverte immédiatement.
+8. L'espace principal n'est plus construit avant la connexion : cela supprimait la pause visible après la configuration.
+9. Aucun délai artificiel n'est ajouté entre Configuration terminée et Connexion.
+
+Ordre V42
+Configuration -> Connexion -> construction de l'espace de travail -> Accueil SCOLIA.
+
+Sécurité
+- Les mêmes règles de validation et de protection des mots de passe sont conservées.
+- L'écriture de profil reste atomique et verrouillée.
+- Les données existantes ne sont pas modifiées par cette amélioration visuelle.

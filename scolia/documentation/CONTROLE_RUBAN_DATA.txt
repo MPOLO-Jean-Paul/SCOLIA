@@ -1,0 +1,25 @@
+﻿Vérification de préparation — ruban et data — 7 octobre 2026
+PASS : 6 classeurs .xlsm existants conservés octet pour octet.
+PASS : installateur et lanceur VBS directs conservés ; aucun nouveau passage par cmd.
+PASS : manifestes de correctifs et codes de compatibilité vérifiés.
+PASS : syntaxe C# de tous les fichiers, contrôles statiques des scripts PowerShell
+modifiés et nouveaux ; deux limitations connues du parseur tiers normalisées
+uniquement dans la vérification (nom Do-Work et liste Add-Type).
+PASS : structures lexicales des quatre modules VBA métier modifiés/ajoutés.
+PASS : branchements des sept onglets, commandes CSV, raccordement des entrées
+apprenants/paiements, registre, sauvegardes et récupération.
+PASS : mécanismes cryptographiques et authentification conservés.
+
+Tests Windows/Excel inclus, à exécuter automatiquement par INSTALLER.vbs :
+- deux classeurs temporaires, cumul des soldes, matricule global et export ;
+- refus d'un segment manquant ;
+- seuil de 100 dossiers, création du 101e dans le segment suivant ;
+- paiement et correction d'un reçu réparti entre segments ;
+- création du segment de paiement suivant ;
+- aperçu d'export global de 101 dossiers dans trois segments ;
+- annulation d'une transaction, sauvegarde complète, restauration et réouverture.
+Toutes ces données de test sont dans des copies temporaires supprimées ensuite.
+
+NON EXÉCUTÉ ICI : Windows PowerShell natif, compilation VBA par Excel,
+Excel COM, clics des formulaires, PDF natif et essais de charge sur un PC.
+Les contrôles statiques ne remplacent pas ces essais natifs.

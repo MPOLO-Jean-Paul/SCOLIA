@@ -1,0 +1,25 @@
+SCOLIA V72 — PAIEMENTS MULTIPLES ET REGULARISATION DES RETARDS
+
+1. Page Paiements
+- Nouvelle commande « Paiements multiples ».
+- Sélection par cases à cocher.
+- Recherche instantanée dans le lot.
+- Montant propre à chaque apprenant.
+- Préremplissage possible par reste exigible ou prochaine échéance.
+- Une date de reçu commune au lot, mais une écriture et une référence propres à chaque apprenant.
+
+2. Tableau de bord > Retards et contacts
+- Nouvelle commande « Régler une sélection ».
+- Le lot reprend uniquement les dossiers du filtre actuellement affiché.
+- Le reste exigible de chaque dossier est proposé automatiquement et reste modifiable.
+
+3. Sécurité métier
+- Chaque paiement est contrôlé et enregistré séparément.
+- Un échec sur un apprenant n’annule pas les paiements déjà réussis.
+- Les lignes réussies sont décochées et marquées OK ; les erreurs restent disponibles pour correction.
+- En mode classeur, les ressemblances de doublons sont signalées avant le lot.
+- En mode SCOLIA réseau, chaque apprenant reçoit une référence commune unique et une répartition mensuelle propre.
+- En cas d’incertitude réseau, le lot s’arrête et conserve l’opération en attente pour éviter une double saisie.
+
+4. Vérification
+Lancer 00_Demarrage\VERIFIER_PAIEMENTS_MULTIPLES_V72.cmd.

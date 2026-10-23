@@ -1,0 +1,3 @@
+Traitement : roue seule, transparente et sans message flottant, centrée sur la commande déclenchée. Pour une opération automatique sans commande, centrée dans le formulaire actif. Animation sur un fil indépendant afin de continuer pendant les appels Excel. Les commandes restent bloquées pendant le traitement et la roue disparaît en fin de traitement ou sur erreur.
+Connexion et protection : roue sur le bouton de validation. Aucun changement aux calculs, transactions ou données.
+Remplacer programme, conserver data, relancer APPLICATION.vbs. Validation syntaxique locale ; animation réelle Windows à vérifier sur le poste.

@@ -1,0 +1,35 @@
+﻿SCOLIA — LISTES PDF ET CARTES AMÉLIORÉES — 13 OCTOBRE 2026
+
+- Titre des listes d’apprenants : LISTE D’ENREGISTREMENT.
+- Listes de paiements : tableaux sobres, montants alignés à droite et lignes alternées.
+- Logo et nom de l’établissement configuré, informations de promotion, en-têtes répétés et pagination.
+- Noms longs répartis sur plusieurs lignes, contacts conservés avec leurs zéros initiaux.
+- Aucune colonne vide ajoutée aux listes d’enregistrement.
+- Les filtres, calculs, totaux et observations proviennent du moteur existant.
+- Cartes : séparation entre session, CARTE D’ACCÈS, identités et QR ; dimensions et couleurs de promotion conservées.
+- Les améliorations de fenêtres et d’indicateurs du paquet précédent sont incluses.
+
+METTRE À JOUR UNE INSTALLATION EXISTANTE
+1. Fermer SCOLIA et Excel.
+2. Extraire tout le ZIP dans un nouveau dossier.
+3. Ouvrir 00_Demarrage/METTRE_A_JOUR_V57.cmd dans le nouveau dossier.
+4. Sélectionner APPLICATION.vbs de votre installation habituelle.
+5. Relancer ce lanceur habituel. Utiliser désormais ce nouveau paquet.
+Le programme sauvegarde les fichiers remplacés et conserve les données.
+Les listes PDF de la page Exports utilisent la nouvelle présentation après cette mise à jour.
+Si vous utilisez les exports directement dans les formulaires Excel, appliquer aussi les corrections du classeur depuis la fenêtre d’installation de SCOLIA.
+
+VÉRIFICATIONS
+- Compilation C# 5 du moteur de cartes et rapports.
+- Analyse de 171 scripts PowerShell sans erreur.
+- PDFs générés avec le véritable moteur : 48 apprenants sur plusieurs pages, listes de paiements et d’enregistrement, feuilles de diagnostic.
+- Tous les 48 matricules présents exactement une fois ; accents, contacts, pagination et marges contrôlés.
+- Import testé avec textes OOXML inline et partagés.
+- PDF existant conservé lorsqu’un export échoue.
+- Cartes PDF : 9 cartes sur 2 pages A4 ; rendus contrôlés.
+- Cartes Word : génération et schéma OpenXML contrôlés. Le rendu Word dépend du logiciel d’ouverture.
+- Données, configuration et classeur source conservés à l’identique.
+
+LIMITES
+Les rendus PDF ont été vérifiés ici. Le parcours complet sur votre poste Windows avec Excel/COM et l’impression physique restent à vérifier sur place.
+Test PDF isolé : 00_Demarrage/VERIFIER_LISTES_PDF.cmd.

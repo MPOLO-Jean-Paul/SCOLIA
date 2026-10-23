@@ -1,0 +1,17 @@
+﻿SECURITE — CONTROLES EFFECTUES
+
+Contrôles statiques du point d’entrée : écran de connexion avant ShowDialog
+de la fenêtre principale ; connexion au classeur dans l’événement Shown.
+Onglet Sécurité accessible sans classeur ; tableau de navigation à sept cases.
+Présence de DPAPI CurrentUser, écritures par remplacement, échec sur configuration
+illisible, validation des paramètres, délai persistant après cinq erreurs.
+Réauthentification avant désactivation et modification des préférences.
+Écran principal masqué au verrouillage ; reprise après authentification.
+Scénarios de géométrie pour neuf largeurs et deux rangées de navigation.
+Modèle Python indépendant : quatre vecteurs PBKDF2-HMAC-SHA256 concordent avec
+hashlib, dont un mot de passe Unicode. Ce modèle n’exécute pas le composant C#.
+
+Ces résultats ne constituent pas une validation de sécurité complète ni un test
+de compilation C#, de Windows Forms, de DPAPI ou d’Excel. Essais Windows requis
+selon SECURITE_ACCES.txt. La protection locale n’empêche pas l’accès direct au
+classeur ou la modification/suppression des paramètres par le compte Windows.

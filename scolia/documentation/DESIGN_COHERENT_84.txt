@@ -1,0 +1,13 @@
+﻿ITM CŒUR DE DIEU — ÉDITION 84
+
+Installation : fermer ITM et Excel, extraire tous les fichiers du ZIP, puis lancer APPLICATION.vbs. Conserver le dossier data existant. INSTALLER.vbs conserve son lancement graphique.
+
+Cette édition poursuit le style iOS adapté à une application Windows : ruban plat, icônes vectorielles aux traits arrondis, boutons et champs aux contours réguliers, accents sémantiques et surfaces distinctes en thème sombre. Les composants partagés s’appliquent aux pages qui les utilisent ; les boîtes de sélection de fichiers et autres fenêtres système restent celles de Windows.
+
+Les commandes Word, PDF, CSV, comptes, paiements, prises en charge, classeurs, cartes, historique, sécurité et raccourcis ont des symboles distincts. Les actions déjà représentées (imprimer, modifier, supprimer, rechercher, actualiser…) conservent leurs symboles familiers.
+
+Les principales erreurs de connexion, d’installation et de sécurité s’affichent dans une fenêtre native lisible selon le thème du propriétaire, avec texte sélectionnable, copie du diagnostic, fermeture par Entrée ou Échap et un son original court, plus discret. Le son utilise le volume Windows courant ; aucun réglage système n’est modifié. La notification audio n’interrompt pas le traitement si le fichier audio est absent ou le périphérique indisponible. Les confirmations de paiement/suppression conservent leurs actions de sécurité.
+
+Cartes : SESSION et CARTE D’ACCÈS utilisent désormais la même taille Roboto, avec réduction commune si la session est trop longue. Le titre CARTE D’ACCÈS reste souligné. Huit cartes par A4, QR, identité, sceau transparent et bandes colorées sans libellé sont conservés. La mise en page Word est ajustée à cette typographie.
+
+Validation : compilation C# 5 ; syntaxe et encodage de tous les scripts ; contrôles WinForms avec Mono/Xvfb en clair/sombre et plusieurs largeurs ; exports PDF/Word, pagination 1 à 1 001 cartes ; intégrité du ZIP et des six classeurs originaux. La session Excel COM et le son doivent encore être vérifiés sous Windows PowerShell 5.1. Aucun appel métier d’écriture dans Excel n’a été changé.

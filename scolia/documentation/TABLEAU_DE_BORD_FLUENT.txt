@@ -1,0 +1,21 @@
+﻿TABLEAU DE BORD — INSPIRATION FLUENT 2 — 6 octobre 2026
+
+Référence récente : Microsoft Power BI, thème de base Fluent 2.
+https://learn.microsoft.com/en-us/power-bi/create-reports/power-bi-reports-visual-defaults
+
+Le tableau de bord utilise quatre indicateurs avec nombres exacts, icônes,
+accents de couleur, titres sobres et dimensions adaptées. Les filtres de
+promotion et de période restent en haut. Deux vues sont disponibles :
+- Analyse : observations, date d'actualisation et deux graphiques financiers.
+- Retards et contacts : filtre de retard, liste et export.
+Les valeurs de FC ne sont pas remplacées par des abréviations.
+Les graphiques gardent leurs données et leurs règles actuelles : les recettes
+par mois couvrent l'année complète ; les restes suivent la période choisie.
+Les nouveaux styles ne modifient aucun calcul, paiement ou dossier.
+
+Les autres pages conservent le style de l'installateur précédemment choisi.
+L'interface reste native Windows, sans dépendance à Power BI ni service web.
+
+Fermer ITM CD, extraire tout le ZIP dans un nouveau dossier, lancer APPLICATION.vbs.
+Aucune nouvelle préparation du classeur n'est nécessaire.
+Contrôles statiques effectués ; rendu réel à confirmer sur Windows.

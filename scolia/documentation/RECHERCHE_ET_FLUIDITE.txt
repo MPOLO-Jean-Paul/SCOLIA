@@ -1,0 +1,54 @@
+RECHERCHE, PRESENTATION ET FLUIDITE — ITM CD
+
+MISE A JOUR
+Extraire le ZIP dans un nouveau dossier et lancer APPLICATION.vbs. Conserver
+votre classeur corrigé ACTUEL. Cette mise à jour ne modifie aucun module VBA ;
+aucune réinstallation du classeur n’est nécessaire s’il utilise déjà l’édition
+précédente. Connexion mémorisée et paramètres de sécurité restent conservés
+pour votre compte Windows.
+
+DISPOSITION APPRENANTS
+Filtres et commandes regroupés dans une zone blanche à bordure discrète.
+Recherche et promotion sur une ou deux colonnes, selon l’espace réellement
+disponible. Le compteur et Effacer la recherche disposent de leur propre ligne.
+Les cinq actions passent sur plusieurs rangées quand la fenêtre rétrécit.
+Le tableau commence après la dernière rangée de boutons et reste accessible
+par défilement. Les dimensions intègrent l’échelle d’affichage Windows.
+Le bouton Effacer ne partage plus le bord supérieur de la rangée d’actions.
+
+RECHERCHE
+Pause de 250 ms après la dernière frappe ou modification du filtre avant
+de lancer le filtrage. L’index des matricules, noms et promotions est préparé
+une fois au chargement/actualisation des données. Les accents, la casse et
+les recherches composées gardent le comportement précédent.
+La recherche Apprenants ne reconstruit plus la liste Paiements à chaque frappe.
+Les mêmes filtres sur les mêmes données ne rebâtissent pas inutilement la liste.
+Pendant une recherche dans Paiements, l’ancienne sélection est effacée et
+la liste temporairement désactivée pour éviter de choisir un ancien résultat.
+Les hauteurs de lignes sont calculées pour les cellules affichées plutôt
+que pour toutes les lignes. Le dessin des tableaux est mis en mémoire tampon
+et les anciennes tables d’affichage sont libérées après remplacement.
+
+INDICATEUR
+Une petite fenêtre affiche une roue animée, le traitement en cours et sa durée.
+Son affichage tourne sur un fil .NET dédié, avec sa propre boucle graphique,
+pendant les traitements du classeur et les vérifications des mots de passe.
+Il ne reçoit aucun objet Excel/COM, aucune donnée du classeur ni aucun secret.
+Les étapes de lecture et de préparation changent le texte de l’indicateur.
+L’indicateur se ferme à la fin ou après un échec. Les boutons de données restent
+désactivés pendant une opération pour empêcher une double exécution.
+
+LIMITES
+La roue exprime une attente ; ce n’est pas un pourcentage d’avancement.
+Le temps affiché comprend les confirmations et autres attentes de l’opération.
+L’animation ne garantit pas qu’Excel n’est pas bloqué. Les appels Excel restent
+sur le fil principal ; ils ne sont pas interrompus automatiquement, afin de
+ne pas abandonner une écriture en cours. Aucun gain chiffré de performance
+n’a été mesuré sur votre ordinateur. Aucun délai maximal n’est imposé.
+
+CONTROLES
+Structure des sept scripts PowerShell, conservation des classeurs et scénarios
+indépendants de géométrie et de recherche. Aucun composant C# ni fenêtre native
+n’a été exécuté dans cet environnement. Essayer sous Windows les fenêtres
+réduites/agrandies, les échelles 100/125/150 %, les frappes rapides, les recherches
+sans résultat, un export long, l’authentification et un échec de connexion.

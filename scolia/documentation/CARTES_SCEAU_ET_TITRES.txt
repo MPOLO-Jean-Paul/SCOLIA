@@ -1,0 +1,25 @@
+﻿CARTES D'ACCES — SCEAU TRANSPARENT ET TITRES
+
+Les cartes utilisent le sceau officiel Logo_ITM_CD_Transparent.png, inchangé.
+La transparence est conservée dans l'aperçu, l'impression et l'export Word.
+L'export PDF conserve maintenant aussi le canal alpha, sans aplat blanc ni JPEG.
+
+SESSION MOIS ANNEE passe de 9,3 à 14 points en Roboto gras, avec adaptation
+pour les intitulés exceptionnellement longs. CARTE D'ACCES passe de 7,5 à
+9,3 points, la taille précédente de SESSION, et reste souligné. Les deux
+titres sont centrés et les positions ajustées pour préserver les identités.
+
+Huit cartes par page A4, espaces de découpe, couleurs des promotions, QR,
+identités et absence de matricule imprimé sont conservés. Les exemples PDF
+et Word sont actualisés avec des noms fictifs.
+
+Vérifications effectuées : compilation C# 5, exports PDF/Word, transparence
+PDF/PNG Word, tailles PDF, lecture des neuf QR, rendu des deux pages Word,
+pagination pour 1, 7, 8, 9, 16 et 1001 cartes, protection des fichiers lors
+d'un échec d'export. L'impression native Windows reste à vérifier sur place.
+
+Mise à jour : fermer l'application et Excel, remplacer uniquement le dossier
+programme, conserver data et sources, puis ouvrir APPLICATION.vbs.
+Les six classeurs sources et les corrections VBA sont inchangés. La correction
+de reconnexion et le renouvellement automatique du contrôle après 24 heures
+sont conservés. Une base déjà préparée ne nécessite pas une nouvelle installation.

@@ -1,0 +1,23 @@
+﻿ITM CŒUR DE DIEU — ÉDITION 88
+
+Correction de SaveCopyAs / DISP_E_TYPEMISMATCH (0x80020005).
+La passerelle C# retire les enveloppes PSObject des arguments avant
+leur transmission à Excel, sans transformer les booléens, entiers,
+objets COM ou valeurs facultatives Missing. La copie initiale data
+utilise une entrée dédiée qui impose un chemin textuel absolu.
+Aucun nouvel essai automatique des écritures n’est ajouté.
+
+La case de reconnexion utilise un mode de dessin compatible WinForms.
+Son fond suit celui du parent, et son libellé conserve un contraste
+lisible en clair/sombre et lorsque la commande est désactivée.
+Le texte reste : Reconnecter le classeur mémorisé au démarrage.
+
+Fermez Excel et l’application avant de remplacer le dossier programme.
+Conservez data, les paramètres et les journaux ; ne recréez pas la base.
+Extrayez tout le ZIP puis lancez APPLICATION.vbs.
+INSTALLER.vbs conserve l’installateur graphique.
+
+Un scénario Windows sans Excel ni modification des données est fourni :
+programme/TestsCopieAffichage.ps1 (Windows PowerShell 5.1 -STA).
+La connexion réelle à Excel doit encore être vérifiée sur Windows.
+Les six XLSM d’origine et tous les modules VBA restent inchangés.

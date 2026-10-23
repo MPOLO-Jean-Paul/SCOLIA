@@ -1,0 +1,14 @@
+﻿ÉDITION 90 — DÉLIBÉRATION AUTOMATIQUE
+Règles intégrées : sans vide, A si échec, sinon P ; avec vide, AA si >=50 %, D sinon.
+Seuil d’échec retenu : strictement sous 50 % du maximum de chaque cours.
+À exactement 50 % global avec un vide : AA. Zéro est un échec, jamais un vide.
+Le pourcentage pondéré conserve les maxima des notes manquantes. Pas d’arrondi avant
+le choix de la décision. Les formules de décision sont enregistrées dans la copie.
+L’import, la préparation et l’enregistrement délibéré utilisent la même règle et
+contrôlent la décision recalculée par Excel avant de publier la copie.
+Tests : P/A/AA/D, seuils, zéro/vide, barèmes pondérés, vide+échec, entrées invalides,
+conservation du vide dans la lecture des lignes et coordonnées des formules Excel.
+La compilation C#5 et la syntaxe PowerShell sont vérifiées. Le recalcul natif Excel
+sous Windows doit encore être vérifié sur le poste utilisateur.
+Installation : conserver vos données et la configuration, remplacer programme et
+ documentation, puis ouvrir APPLICATION.vbs. Les six XLSM originaux restent inchangés.

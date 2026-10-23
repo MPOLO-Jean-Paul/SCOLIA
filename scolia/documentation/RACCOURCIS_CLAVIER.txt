@@ -1,0 +1,20 @@
+Aides de commandes et raccourcis clavier
+
+Au survol des commandes, une aide décrit l’action et indique son raccourci. Les aides peuvent être activées ou désactivées dans Préférences. Les raccourcis restent disponibles quand les aides sont désactivées.
+
+Commun à tous les onglets : Ctrl+O ouvrir un classeur, Ctrl+Shift+I préparer, F5 actualiser, Ctrl+Shift+W déconnecter, F1 guide. Alt+1 à Alt+9 ouvrent les onglets dans leur ordre d’affichage.
+
+Apprenants : Ctrl+N inscrire, Ctrl+E modifier, Ctrl+D fiche complète, Ctrl+L dernier dossier, Ctrl+F rechercher, Ctrl+Shift+F effacer les filtres, Ctrl+Shift+E export CSV, Ctrl+P paiement.
+Paiements : Ctrl+D sélectionner, Ctrl+S enregistrer, Ctrl+E corriger, Ctrl+L tous les paiements, Ctrl+Shift+E historique CSV, Ctrl+Shift+F effacer la recherche.
+Exports : Ctrl+P PDF, Ctrl+E Excel, Ctrl+L dernier rapport, Ctrl+D vérifier, Ctrl+T toutes promotions.
+Administration : Ctrl+G classeurs, Ctrl+Shift+N segment suivant, Ctrl+B sauvegarder, Ctrl+R restaurer, Ctrl+P promotions, Ctrl+J journal, Ctrl+Shift+Y clôture annuelle, Ctrl+Shift+D raccourci Bureau. Sur la page Promotions : Ctrl+N créer, Ctrl+E modifier.
+Préférences : Ctrl+S appliquer, Ctrl+Shift+R valeurs par défaut.
+Données : Ctrl+O classeur existant, Ctrl+M mémoriser, Ctrl+L ouvrir mémorisé, Ctrl+N nouveau classeur, Ctrl+Shift+F5 actualiser les feuilles, Ctrl+D dossier sources.
+Sécurité : Ctrl+M mot de passe, Ctrl+L verrouiller, Ctrl+Shift+D désactiver, Ctrl+S enregistrer, Ctrl+Shift+E événements CSV.
+
+Formulaires : Ctrl+S enregistrer, Escape annuler/fermer si ce bouton est présent, Alt+Left précédent et Alt+Right suivant pour l’inscription. La fiche utilise Ctrl+P pour l’aperçu et Ctrl+Shift+P pour un paiement. Ctrl+Enter valide les confirmations de correction ou d’export.
+Installateur : Ctrl+O choisir, Ctrl+Enter installer, Ctrl+L fichier corrigé ou journal, Ctrl+D dossier source, Alt+V vérification approfondie, Escape demander l’arrêt pendant l’installation.
+
+Les raccourcis suivent les contrôles et validations de la commande cliquée. Une commande désactivée n’est pas exécutée. Ctrl+C, Ctrl+V, Ctrl+X et Ctrl+A restent disponibles dans les champs. Les commandes de confirmation/cancel restent utilisables dans une boîte ouverte par un traitement.
+
+Vérifications locales : syntaxe PowerShell, couverture des 49 commandes du ruban et des boutons, absence de conflits au sein d’un onglet, conservation des classeurs. Exécution clavier et survol Windows non disponibles ici.

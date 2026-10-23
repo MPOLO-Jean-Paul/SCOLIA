@@ -1,0 +1,84 @@
+﻿SCOLARITÉ — CARTES D’ACCÈS AUX EXAMENS
+
+
+Connectez votre classeur habituel dans Données, puis ouvrez Scolarité (Alt+0).
+Choisissez une promotion ou Toutes les promotions. La recherche porte sur
+le nom, le post-nom, le prénom et le matricule. La case Carte choisit les
+apprenants à imprimer. Cocher/Décocher les cartes concerne seulement les
+lignes visibles ; les choix des autres promotions sont conservés pendant
+la session. Un export contient uniquement les lignes visibles cochées.
+Les sortis et suspendus sont exclus par défaut ; une case permet de les inclure.
+Les identités incomplètes et les matricules répétés sont écartés : consultez
+Diagnostic pour les corriger, puis utilisez Actualiser. Aucun critère de
+paiement n’est supposé : le secrétariat décide des cartes à délivrer.
+
+SESSION ET EN-TÊTE
+Le mois et l’année actuels sont proposés au démarrage. Pour la deuxième
+session, choisissez le mois et l’année souhaités. Session actuelle rétablit
+la date du jour. Le titre imprimé est SESSION MOIS ANNÉE. L’année scolaire
+est distincte : elle reprend les promotions si elles ont une année commune
+et reste modifiable. Les exemplaires vont de 1 à 5 par apprenant.
+En-tête des cartes permet de vérifier puis mémoriser sept mentions : pays,
+ministère, direction, division provinciale, ville et zone de santé,
+institut, adresse. Vérifiez en particulier le libellé du ministère et
+l’adresse, peu lisibles sur la photographie fournie. Le logo livré avec
+le logiciel est utilisé. Le drapeau de la RDC n’est jamais ajouté.
+
+APERÇU, IMPRESSION ET EXPORTS
+Aperçu des cartes montre les pages préparées ; Imprimer les cartes ouvre
+le choix d’imprimante. Utilisez A4 portrait, taille réelle/100 %.
+Chaque carte mesure 92 × 63 mm. Une page contient 2 colonnes × 4 rangées,
+avec 6 mm entre les colonnes et 7 mm entre les rangées ; marges 10 mm.
+Une dernière page peut contenir moins de huit cartes. Les repères de découpe
+s’appliquent au PDF et à l’impression. Le Word conserve les espaces de découpe.
+Les exports PDF et Word (.docx) ne nécessitent ni Word ni Adobe pour leur
+création. Le Word reste modifiable. Ses changements manuels peuvent modifier
+sa mise en page : le PDF constitue la version prête à imprimer.
+Nom, post-nom, prénom, classe et session figurent sur la carte. Le matricule
+et le nom de promotion dans la bande ne sont plus imprimés. La bande mesure
+7 mm. Roboto est fourni et intégré aux PDF/Word. Un QR à droite contient
+l’identité, la classe, l’établissement, la session et l’année scolaire.
+Après modification manuelle du Word, régénérez les cartes depuis le logiciel
+pour mettre aussi à jour le QR. Les noms longs passent sur deux lignes ou sont réduits ; un
+texte qui ne tient pas provoque un message, sans écrasement du fichier existant.
+
+COULEURS
+TLM1 (et TML1) : bleu ; ACC1 : jaune ; ACC2 : violet ; ACC3 : vert clair ;
+INF1 : bleu ciel ; INF2 : rose ; INF3 : vert. Une autre promotion utilise
+une bande neutre. La couleur ne constitue pas une preuve de paiement.
+
+GESTION DES LOTS
+Les sorties sont proposées dans exports/cartes. Chaque export réussi est
+référencé par date, session, promotion, nombre de cartes/pages et format.
+Historique des cartes permet d’ouvrir le fichier par double-clic. Dossier
+des cartes ouvre le dossier de sortie. Conservez aussi ce dossier lorsque
+vous déplacez l’application. Un fichier supprimé ou déplacé est signalé.
+En cas de problème d’écriture de l’historique après un export réussi, le
+logiciel précise que l’export est créé : ne relancez pas inutilement.
+Les fichiers d’historique ne contiennent pas la liste nominative.
+
+RACCOURCIS DANS SCOLARITÉ
+Ctrl+Maj+P : aperçu ; Ctrl+Maj+E : PDF ; Ctrl+Maj+W : Word ;
+Ctrl+Maj+I : imprimer ; Ctrl+Maj+A : cocher ; Ctrl+Maj+U : décocher ;
+Ctrl+Maj+H : en-tête ; Ctrl+Maj+M : session actuelle ;
+Ctrl+Maj+J : historique ; Ctrl+Maj+K : dossier des cartes.
+Les descriptions et raccourcis apparaissent au-dessus des commandes.
+L’export, l’aperçu imprimable et l’impression sont réservés aux comptes
+autorisés à exporter (Secrétariat et Administrateur).
+
+MISE À JOUR
+Ce nouvel onglet appartient à l’application Windows. Les six classeurs sources
+sont conservés sans modification. Si le classeur était déjà préparé avec la
+version précédente, il n’est pas nécessaire de réinstaller ses corrections
+pour utiliser les cartes. Fermez l’application, conservez votre dossier data,
+et ouvrez APPLICATION.vbs dans la nouvelle version.
+
+CONTRÔLES EFFECTUÉS
+Compilation C# 5, génération réelle PDF/Word, contrôle visuel des deux pages
+(9 cartes), pagination et valeurs de couleurs. Génération et contrôle de 1, 7, 8, 9,
+16 et 1001 cartes (126 pages pour 1001), contrôle XML et intégrité du DOCX.
+Le refus d’un texte trop long préserve le PDF existant et supprime le temporaire.
+Les exemples livrés dans documentation/Exemples contiennent des identités de démonstration. Tests de sélection et de
+mise en page Windows livrés dans programme/TestsScolarite.ps1.
+L’impression native et l’interface Windows ne peuvent pas être exécutées dans
+cet environnement Linux ; elles restent à vérifier sur votre poste Windows.

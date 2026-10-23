@@ -1,0 +1,25 @@
+﻿SCOLIA V39 — AUDIT ORGANISATION
+
+Objectif : aucun fichier isolé à la racine de SCOLIA.
+
+Fichiers isolés à la racine : 0 (OK)
+Empreintes VBA normalisées conformes au manifeste : 16/16
+Entrées manifeste en erreur : 0
+Fichiers/chemins essentiels manquants : 0
+
+VBScript dans 00_Demarrage :
+- INSTALLER.vbs : sans BOM=True, ASCII=True
+- APPLICATION.vbs : sans BOM=True, ASCII=True
+- INSTALLER_CORRECTIONS.vbs : sans BOM=True, ASCII=True
+
+JSON :
+- programme/interface.json : OK
+- programme/boutons.json : OK
+- programme/manifest.json : OK
+
+Chemins adaptés :
+- Les trois lanceurs VBS calculent maintenant la racine SCOLIA depuis 00_Demarrage.
+- Nouvelle fenêtre pointe vers 00_Demarrage\APPLICATION.vbs.
+- Le contrôle de prélancement vérifie 00_Demarrage\INSTALLER_CORRECTIONS.vbs.
+
+Limite : la compilation/exécution réelle sous Windows PowerShell 5.1 et Excel COM doit être confirmée sur Windows.

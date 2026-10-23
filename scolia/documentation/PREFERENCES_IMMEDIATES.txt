@@ -1,0 +1,12 @@
+﻿PRÉFÉRENCES APPLIQUÉES IMMÉDIATEMENT
+
+Chaque choix dans Préférences s’applique et s’enregistre automatiquement : thème, taille du texte des listes, espacement des lignes, alternance, ruban, descriptions au survol et maximisation de la fenêtre. Le bouton Appliquer est supprimé. Valeurs par défaut rétablit et enregistre immédiatement les réglages initiaux.
+
+Les changements de taille et d’espacement recalculent les lignes déjà affichées, sans recharger les données ni parcourir toutes les lignes des grandes listes. La taille préférée est conservée après redimensionnement, filtrage et actualisation ; la mise en page automatique ne doit plus la remplacer. Les couleurs alternées restent adaptées au thème sombre.
+
+La maximisation agit dès la sélection et reste mémorisée au prochain démarrage. Décocher rétablit une fenêtre normale si elle est maximisée.
+
+La synchronisation des champs, l’initialisation et la restauration après erreur n’entraînent pas de nouvelles écritures. Un refus d’enregistrement restaure le choix précédent et les champs affichés. Les changements sont bloqués pendant un traitement. Si l’enregistrement a réussi mais le rafraîchissement de l’interface échoue, un message indique que le réglage reste mémorisé et peut être repris au prochain lancement.
+
+Contrôles : syntaxe PowerShell/C#, branchements des événements, priorité des préférences sur la mise en page, intégrité du ZIP et conservation des six classeurs. TestsPreferencesImmediates.ps1 couvre les tailles et hauteurs des lignes réelles, la sélection, le redimensionnement, la reprise après refus et les événements de synchronisation.
+Les tests de fenêtres Windows et Excel COM n’ont pas pu être exécutés dans l’environnement de préparation.

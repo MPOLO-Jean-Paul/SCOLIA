@@ -1,0 +1,17 @@
+﻿CONTROLES DE DISPOSITION ET FLUIDITE
+
+36 scénarios de géométrie : neuf largeurs × quatre échelles, 100/125/150/200 %.
+Modèle indépendant : aucun rectangle des filtres, du compteur, de l’effacement,
+des cinq actions ou du tableau ne se chevauche. Les contrôles restent dans la largeur.
+18 comparaisons de filtres avant/après : casse, accents, mots multiples,
+matricule, absence de résultat, promotions et alias TML1/TLM1.
+Modèle de temporisation : six frappes espacées de 50 ms produisent une seule
+recherche à 500 ms. Présence des garde-fous de chargement et de traitement.
+Contrôles statiques : animation sur un fil STA distinct, aucune référence
+Excel/COM dans ce composant, nettoyage en sortie et confinement des erreurs
+de démarrage de l’animation. Tableaux limités aux hauteurs des cellules affichées.
+
+Ces modèles ne testent pas le rendu réel, la compilation des composants C#,
+les appels COM ni les performances du poste Windows. Aucune accélération
+mesurée ni garantie d’absence de plantage n’est annoncée. Essais Windows requis
+selon RECHERCHE_ET_FLUIDITE.txt. Les données Excel fournies restent inchangées.

@@ -1,0 +1,7 @@
+﻿AIDE ET PRÉFÉRENCES
+
+F1 / Aide : sommaire à gauche, instructions à droite. Rechercher filtre les rubriques sur leurs titres et contenus, sans tenir compte des accents. Ctrl+F place le curseur dans la recherche. Effacer le texte rétablit toutes les rubriques. Le séparateur permet d’ajuster le sommaire.
+
+Préférences : Apparence, Lecture des listes, Commandes et aides, Fenêtre de travail. Les réglages sont alignés sur deux colonnes ; les choix s’appliquent immédiatement et Valeurs par défaut reste en bas de la page pendant le défilement. Les modes et la mémorisation précédents sont conservés.
+
+Les fenêtres suivent le thème actif. Remplacer programme et documentation, application fermée ; conserver data et sources.

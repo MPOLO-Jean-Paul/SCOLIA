@@ -1,0 +1,49 @@
+SCOLIA - RAPPORT AUTOMATIQUE DE LA RENTREE
+
+1. Extraire entièrement ce ZIP dans un dossier distinct. Garder le dossier
+   actuel et les données existantes. Démarrer 00_Demarrage/APPLICATION.vbs.
+   Pour mettre à jour un dossier existant, le correctif METTRE_A_JOUR_V57.cmd
+   comprend également les nouveaux fichiers du rapport.
+2. Dans Exports, choisir « Rapport de la rentrée ».
+3. Choisir Exporter en Word ou Exporter en PDF. La fenêtre de préparation
+   permet de renseigner les dates, le lieu et le signataire puis de modifier
+   chaque rubrique du modèle (textes, personnel, inventaires, budget, projets,
+   procès-verbal d'admission et suivi des actions).
+4. Pour les tableaux modifiables : une ligne par enregistrement, une tabulation
+   entre chaque colonne. Le copier-coller de cellules Excel est accepté.
+   Les colonnes sont indiquées au-dessus de la zone de saisie.
+5. « Conserver la préparation » garde ces informations pour la même base,
+   l'année scolaire et le compte Windows. Le rapport exporté reste un fichier
+   indépendant et ne modifie pas les inscriptions ou les paiements.
+6. Les effectifs, la ventilation F/M/non renseigné et les listes nominatives
+   par classe sont recalculés depuis le classeur à chaque export. Toutes les
+   promotions de l'année scolaire active sont prises en compte, même vides.
+   Les filtres de promotion et de mois de la page Exports sont désactivés.
+   Les sortis et renvois définitifs sont exclus ; les suspendus temporaires
+   restent dans les inscrits. Un matricule en double bloque l'export.
+7. Il s'agit de la situation du registre au moment de l'export, pas d'un
+   instantané historique de la date de rentrée. Aucune date passée n'est
+   reconstituée automatiquement.
+8. L'institut, l'adresse et l'en-tête utilisent la personnalisation SCOLIA.
+   Le logo, les titres, les marges A4, tableaux et numéros de page sont inclus.
+   Le Word DOCX est éditable sans installer Word pour sa génération.
+   Le PDF nécessite Microsoft Word installé : le même document est converti
+   pour garder la même mise en page. La conversion Windows doit être vérifiée
+   sur le poste de l'établissement. Les tests effectués ici portent sur les
+   calculs, les fichiers DOCX, la syntaxe et leur rendu avec LibreOffice.
+9. Les enseignants et les cours sont repris du module pédagogique accessible.
+   Les qualifications et les catégories temps plein / partiel sont à compléter
+   lorsqu'elles ne sont pas disponibles. Aucune nationalité, note d'admission,
+   quantité d'équipement ou dépense n'est inventée à partir du modèle Belle Vie.
+10. Les frais mensuels prévisionnels utilisent le tarif des promotions et
+    les effectifs ; le nombre de mois facturables est paramétrable (1 à 12).
+    Cette estimation conserve la devise des tarifs SCOLIA ; elle est établie
+    avant exonérations et prises en charge et ne représente pas un encaissement.
+    Les autres recettes et les dépenses doivent être renseignées et validées.
+11. Une vérification est disponible : VERIFIER_RAPPORT_RENTREE.cmd.
+
+Le canevas reprend les parties du modèle joint : plan, introduction,
+structure administrative, infrastructures et équipements, population scolaire,
+activités pédagogiques, prévisions budgétaires, projets, conclusion et annexes.
+Les documents Word et PDF sont enregistrés dans le dossier choisi lors
+ de l'export. Le bouton « Ouvrir le dernier rapport » permet de les retrouver.

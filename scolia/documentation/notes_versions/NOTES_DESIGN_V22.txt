@@ -1,0 +1,10 @@
+﻿SCOLIA V22 — DESIGN DE CONNEXION, ERREURS ET ICONES
+
+Modifications :
+- Page de connexion : ajustement de la zone interne des champs pour mieux préserver la hauteur des caractères sur les écrans DPI élevés.
+- Fenêtre d’erreur : le titre de la fenêtre est repris dans l’en-tête, le texte reste sélectionnable/copier et le diagnostic demeure disponible.
+- Ruban : attribution d’icônes sémantiques distinctes aux fonctions diagnostic, fusion de doublons, apprenants, inscriptions, présences, cotes, paiements, sauvegarde, restauration, impression, export et paramètres.
+- Ajout de glyphes dédiés « fusion », « ajouter une personne » et « notes/cotes » au rendu du ruban.
+
+Validation effectuée : contrôle statique des fichiers modifiés et intégrité ZIP.
+Validation non effectuée : exécution Windows PowerShell/WinForms et contrôle visuel sur un poste Windows. Avant déploiement, tester la connexion sur un écran standard et un écran avec mise à l’échelle, ouvrir la fenêtre d’erreur, puis parcourir chaque onglet du ruban.

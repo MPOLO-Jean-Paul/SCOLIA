@@ -1,0 +1,7 @@
+SCOLIA V8 — CORRECTION DU VERROU DE SAISIE
+
+Symptome vise : apres une inscription d'apprenant, le message « Une operation de saisie est encore active » bloque l'inscription suivante.
+
+Correction : avant de refuser une nouvelle saisie, ModuleFiabilite verifie l'etat Saved du classeur. Si Excel confirme que le classeur est enregistre, le verrou residuel et les reglages Excel sont restaures. Si le classeur contient des modifications non sauvegardees, la saisie est toujours bloquee afin de ne pas risquer une perte de donnees.
+
+Limite : verification statique du code uniquement. Le fonctionnement Excel/VBA ne peut pas etre execute dans cet environnement. Faire une sauvegarde et tester d'abord sur une copie du classeur.

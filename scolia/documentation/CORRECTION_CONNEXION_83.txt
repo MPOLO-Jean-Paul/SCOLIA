@@ -1,0 +1,19 @@
+﻿ÉDITION 83 — CONNEXION ET COINS DES FORMULAIRES
+
+La précédente correction ne couvrait pas l’ouverture des segments du dossier data : cette étape utilisait encore un appel Run direct. Les vérifications de version, les lectures de capacité, de journal et de structure ainsi que les sondes de performance utilisent maintenant le transport COM explicite partagé. Le nom du classeur est obtenu explicitement avant de construire le nom complet de la macro. Les trente arguments optionnels sont renseignés avec Missing.Value.
+
+La validation des versions et des identités reste obligatoire. Les appels de lecture sont exécutés une seule fois ; aucune écriture n’est relancée automatiquement. La gestion des transactions, la protection des identités, les sauvegardes et les classeurs sources restent inchangés.
+
+Le diagnostic distingue désormais la vérification principale, l’ouverture des segments data et l’initialisation du dossier data. Il enregistre l’édition 83, le dernier appel Excel, le script, la ligne et les exceptions d’origine. En cas d’erreur persistante, transmettez le dernier fichier TXT du dossier journaux/connexions : une photo du message ne fournit pas la pile détaillée nécessaire pour confirmer la cause sur votre machine.
+
+Les fonds des champs arrondis des formulaires Connexion, Compte et Inscription au compte sont peints dans leur forme. Les coins extérieurs reprennent la couleur du formulaire ; ils ne restent plus blancs en thème sombre. Les zones de saisie internes utilisent le même fond que leur cadre. La ligne de focus est contenue dans la forme.
+
+UTILISATION
+Fermez l’application et Excel. Extrayez le ZIP dans un nouveau dossier, puis lancez APPLICATION.vbs de cette édition. Conservez votre dossier data existant ; ne recréez pas le classeur et ne supprimez pas le registre ni les sauvegardes. INSTALLER.vbs reste le lanceur graphique des corrections de classeur.
+
+CONTRÔLES
+Syntaxe et encodage de tous les scripts ; compilation C# 5 ; tests de rendu des composants ; formulaires de compte à 360, 440 et 560 pixels ; contrôle des quatre coins et du remplissage intérieur en clair et sombre, aux largeurs 300, 180 et 28 pixels ; conservation des six classeurs sources et des modules VBA ; intégrité du ZIP.
+
+Scénarios fournis pour Windows : TestsPasserelleCOM.ps1 (nom avec apostrophe, transport réel par réflexion, trente arguments manquants, absence de répétition après exception), TestsPasserelleData.ps1 (vérification de tous les segments et rejet d’une version inconnue), TestsConnexionObjet.ps1 (connexion et erreurs d’affichage) et TestsCoinsConnexion.ps1 (coins des trois formulaires et changement de thème).
+
+Les tests graphiques ont été exécutés sous Mono/WinForms. La connexion Excel COM et les scénarios Windows PowerShell nécessitent Windows ; ils ne peuvent pas être exécutés dans l’environnement de livraison. La cause exacte sur le poste utilisateur ne peut pas être confirmée sans le journal de connexion.

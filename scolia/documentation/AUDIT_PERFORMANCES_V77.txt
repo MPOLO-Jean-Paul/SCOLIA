@@ -1,0 +1,52 @@
+AUDIT DU CODE — V77
+Constats de code, pas un profilage sur le poste de l'utilisateur.
+
+Corrigé :
+Application.ps1 / Show-Page : Do-Work à chaque vue périmée provoquait deux passages
+Update-WorkspaceState, désactivation globale et indicateur. Présentation locale
+directe désormais, sans cycle d'attente. Les vues inchangées ne sont pas recalculées.
+Application.ps1 / Set-Grid : déliaison/reconstruction complète de la DataSource,
+perte du tri et remesure. Réconciliation par identité unique avant ce chemin.
+PerformanceInterface.ps1 : comparaison typée, rejet des clés dupliquées avant
+mutation, clés composites sans collision de séparateurs. Aucun événement pour
+une valeur inchangée ; aucune déliaison pour une mise à jour compatible.
+RaccourcisFrequents.ps1 : mutex pouvant attendre 250 ms, lecture et écriture JSON
+au registre par clic. Compteurs en mémoire ; fusion à la fermeture avec WaitOne(0).
+ScoliaIntegration.ps1 : redessin du journal masqué toutes les fois où le partage
+changeait. Invalidation différée jusqu'à son ouverture. Moniteur suspendu pendant
+les dialogues pour éviter import/publication Excel au milieu d'une saisie.
+
+Examiné, conservé :
+InscriptionBrouillonsV55.ps1 : timer 1,2 s, empreinte et délai après dernière frappe
+évitent déjà l'écriture d'un brouillon inchangé. Protection utile conservée.
+ExploitationProfessionnelle.ps1 : timer 60 s, sauvegarde uniquement si échéance
+atteinte, pas de dialogue ouvert ni de travail en cours. Sauvegarde conservée.
+Securite.ps1 : contrôles périodiques de session conservés.
+ThemesAffichage.ps1 : surveillance du thème, application seulement si changement.
+InterfaceResponsive/DispositionUnifiee/Lisibilite : recalcul des dispositions,
+hauteurs visibles et retours à la ligne restent nécessaires lors du redimensionnement.
+
+Causes restantes demandant une évolution plus profonde et une mesure Windows :
+- Excel COM/VBA sur le fil de la fenêtre ; recalcul Application.Calculate et
+  ThisWorkbook.Save dans le module de fiabilité. La taille du classeur, ses formules
+  et le stockage influencent la durée. Ne pas annoncer la réussite avant sauvegarde.
+- Start-ITMStoreTransaction : copies de récupération et empreintes avant écriture.
+  Ce coût protège contre les écritures partielles et ne doit pas être supprimé.
+- Publish-ScoliaRoster : préparation de tous les élèves et mois, lecture Excel des
+  références, avant l'envoi asynchrone. L'envoi seul est actuellement asynchrone.
+- Première présentation et grands filtres : parcours PowerShell des données,
+  construction d'une table temporaire et calcul du tableau de bord encore linéaires.
+  La réconciliation évite le redessin global mais ne supprime pas ces calculs.
+- Certaines listes sans clé métier ou avec doublons restent reconstruites par
+  sécurité. Les tableaux ne sont pas encore virtualisés.
+
+Pour une fluidité comparable à un logiciel natif avec de gros volumes, prochaine
+étape d'architecture : accès Excel sur un worker STA dédié avec file d'opérations,
+retour au fil UI uniquement pour les changements, puis pagination/virtualisation
+et index persistants. Nécessite tests réels des verrous, interruptions, reprise,
+concurrence et fermeture : ce refactoring n'est pas réalisé dans V77.
+
+Validation réelle à effectuer : ouvrir un dossier représentatif, naviguer entre
+onglets, filtrer, inscrire, encaisser, contrôler les soldes, fermer et rouvrir.
+Comparer les durées Onglet/Transaction/Actualisation du CSV aux versions précédentes.
+Aucun temps observé sous simulation ne constitue une garantie de latence Windows.

@@ -1,0 +1,48 @@
+﻿INTERFACES ET DATES DES REÇUS — 6 octobre 2026
+
+INSCRIPTION
+Trois onglets : Identité, Contacts, Scolarité. Les champs se répartissent
+sur deux colonnes, ou une sur petite largeur. Les libellés sont mesurés pour
+adapter la hauteur : aucun champ ne recouvre un autre champ.
+À taille normale, chaque section tient dans son onglet. Sur une petite fenêtre
+ou avec un fort agrandissement Windows, le défilement conserve tous les champs.
+Le bouton Enregistrer reste dans le pied du formulaire. Les champs obligatoires
+sont marqués. Une validation ouvre l'onglet du premier champ manquant.
+L'adresse et les coordonnées existantes sont conservées.
+
+PAIEMENTS
+À la sélection : date du dernier paiement connu et premier mois restant à
+régler. Le mois est informatif : le reçu est affecté aux premiers mois impayés,
+de septembre à mai. Il peut être réparti sur plusieurs mois.
+La date du reçu est sélectionnable par calendrier, avec aujourd'hui par défaut.
+Une date passée est autorisée. Une date future ou invalide est refusée avant
+la transaction. Le contrôle des reçus similaires utilise la date choisie.
+Toutes les lignes d'affectation d'un même reçu portent cette date.
+Le journal conserve l'heure réelle de saisie et précise la date du reçu.
+L'ordre d'insertion physique et la détection de dernière ligne sont conservés.
+Ce choix ne reconstitue pas une situation historique ni les années archivées.
+
+DESIGN
+Boutons arrondis : bordure, survol, clic, état désactivé et focus clavier visible.
+Exports, Diagnostic, Sécurité et sous-onglets d'Administration : cartes blanches,
+espacements, libellés ajustés au texte, actions regroupées ou empilées,
+largeur adaptée et défilement. La page Paiements suit l'ordre recherche,
+sélection, situation, montant/date, validation, puis historique.
+
+MISE À JOUR
+1. Fermer l'application et Excel. Extraire le ZIP dans un nouveau dossier.
+2. Ouvrir APPLICATION.vbs et cliquer sur Préparer le classeur.
+3. Choisir votre classeur ACTUEL contenant les dernières saisies.
+4. Après Installation réussie, connecter la nouvelle copie corrigée.
+Ne pas remplacer votre classeur actuel par le FICHIER_SOURCE inclus s'il
+contient des saisies plus récentes. Ne pas supprimer vos paramètres de sécurité.
+Une ancienne passerelle ITM-DESKTOP-2 reste consultable dans cette application,
+mais la date modifiable est désactivée. La nouvelle passerelle est ITM-DESKTOP-3.
+
+VÉRIFICATIONS
+Contrôles statiques des scripts, manifestes et blocs VBA ; conservation binaire
+des six classeurs du paquet ; tests indépendants de dates et regroupement.
+L'installateur vérifie les rejets de date impossible/future et l'acceptation
+d'une date passée dans un appel volontairement sans apprenant, sans écritures.
+Le rendu Windows, la compilation C# et un paiement réel n'ont pas été exécutés
+ici. Vérifier l'interface et essayer les parcours sur une copie sous Windows.

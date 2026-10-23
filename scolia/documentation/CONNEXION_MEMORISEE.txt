@@ -1,0 +1,34 @@
+﻿CONNEXION MEMORISEE — ITM CD
+
+Connecter : choisir une fois la copie corrigée du classeur. Après connexion
+et lecture réussies, ce choix est mémorisé pour votre utilisateur Windows.
+La zone de connexion affiche un état ; le chemin complet reste masqué.
+
+Fermer l’application : Excel est fermé proprement ; le choix reste conservé.
+Au prochain lancement de APPLICATION.vbs, la même copie est reconnectée
+automatiquement. Les données restent enregistrées dans le classeur habituel.
+Cette préférence survit à une extraction de la nouvelle application dans
+un autre dossier, tant que le fichier choisi reste au même emplacement.
+
+Changer : choisir un autre classeur. Une connexion réussie remplace le choix
+mémorisé. Un échec ne remplace pas le dernier choix valide.
+
+Déconnecter : libérer le classeur et effacer la préférence. Après fermeture
+et réouverture, aucun classeur ne sera connecté automatiquement.
+
+Si le fichier est déplacé/supprimé ou son support absent, le choix est conservé
+et un message propose de choisir son nouvel emplacement. Si Excel ou une
+autre application utilise le classeur, fermer cette application puis relancer.
+Les contrôles d’accès et de préparation restent obligatoires à la reconnexion.
+Un argument explicite -Classeur reste prioritaire sur le choix mémorisé.
+
+Installation de cette mise à jour : extraire dans un nouveau dossier et lancer
+APPLICATION.vbs. Choisir votre classeur corrigé ACTUEL une fois. Ce changement
+de connexion ne demande aucune réinstallation des modules Excel si votre
+classeur dispose déjà des corrections de la précédente édition.
+
+Contrôles statiques effectués : mémorisation après lecture réussie, conservation
+du choix lors de la fermeture et d’un échec, effacement uniquement sur l’action
+Déconnecter, absence du chemin dans la zone de connexion, géométrie des quatre
+boutons. L’exécution Windows/Excel et la persistance après redémarrage restent
+à vérifier sur Windows ; cet environnement ne dispose pas de ces composants.

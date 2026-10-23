@@ -1,0 +1,28 @@
+SCOLIA — CORRECTION DE PERSISTANCE DES INSCRIPTIONS (V29)
+
+Cause identifiée dans le flux de gestion : Invoke-ITMDossier appelait la macro VBA
+ITMAppDossier directement sans encadrer l’écriture dans une transaction du dossier data
+multi-classeur. La fenêtre pouvait donc afficher un succès sans que l’inscription soit
+confirmée dans le registre transactionnel utilisé à la reconnexion.
+
+Correction appliquée :
+1. Début explicite de transaction avant l’écriture lorsque le mode dossier data est actif.
+2. Vérification de la réponse de la macro.
+3. Relecture de l’instantané faisant autorité et contrôle qu’un seul dossier portant le
+   matricule retourné est effectivement visible.
+4. Validation/commit de la transaction uniquement après le contrôle.
+5. En cas d’échec, annulation/restauration transactionnelle et propagation d’une erreur
+   explicite au lieu d’annoncer un succès trompeur.
+6. Conservation du comportement existant pour un classeur autonome non géré comme dossier data.
+
+À TESTER SUR WINDOWS + EXCEL :
+- Installer dans un nouveau dossier extrait du ZIP.
+- Connecter le classeur préparé par cette installation (ne pas utiliser un ancien dossier
+  Installation_ITM historique).
+- Créer un apprenant de test, noter son matricule, fermer proprement SCOLIA puis se reconnecter.
+- Vérifier que le matricule et les champs apparaissent toujours dans Apprenants et dans le
+  classeur source du dossier data.
+- Faire un second test de modification puis reconnexion.
+
+Important : la validation complète nécessite un essai sur la machine Windows avec Excel,
+car Excel COM/VBA n’est pas disponible dans cet environnement de préparation du ZIP.

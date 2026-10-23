@@ -1,0 +1,10 @@
+﻿SCOLIA V41 - AUDIT INTERACTIONS FLUIDES
+
+Scripts PowerShell contrôlés (délimiteurs statiques) : 107 ; anomalies : 0
+Sources C# contrôlées (délimiteurs statiques) : 14 ; anomalies : 0
+JSON contrôlés : 3 ; anomalies : 0
+Modules VBA conformes au manifeste après normalisation : 16/16
+Fichiers isolés à la racine SCOLIA : 0
+
+
+Remarque : le contrôle syntaxique définitif reste celui de Windows PowerShell 5.1/.NET Framework sur le PC cible.

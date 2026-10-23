@@ -1,0 +1,21 @@
+# Donnees de l'etablissement : ne jamais publier (depot public)
+scolia/data/*
+scolia/journaux/*
+scolia/configuration/*
+scolia/archives/*
+scolia/exports/*
+scolia/sources/*
+!scolia/*/LIRE_MOI.txt
+*.xlsm
+*.xlsx
+*.bak
+*.lock
+# Outils de construction
+build/
+dist/
+**/bin/
+**/obj/
+# Documents pouvant contenir des donnees reelles (noms, paiements, captures)
+scolia/documentation/RAPPROCHEMENT_PAIEMENTS_A_CONFIRMER.csv
+scolia/documentation/*.png
+scolia/documentation/Exemples/

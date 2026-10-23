@@ -1,0 +1,10 @@
+﻿VÉRIFICATION DU CORRECTIF — ADRESSE RÉTABLIE
+
+Adresse visible et modifiable dans l'inscription et la gestion du dossier :
+- Application Windows : anciennes adresses chargées, adresse saisie transmise à Excel.
+- Formulaires Excel : contrôle créé et placé, lecture/écriture de la colonne O.
+- Champ facultatif, longueur maximale 250 caractères, stockage en texte.
+Les corrections du verrou de saisie sont conservées à l'identique.
+Tous les classeurs et sauvegardes du ZIP précédent restent inchangés.
+Empreintes VBA et compatibilité avec les versions précédentes contrôlées.
+Contrôles structurels des scripts réalisés ; exécution Windows/Excel non réalisée ici.

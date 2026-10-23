@@ -1,0 +1,34 @@
+SCOLIA V40 - AUDIT DES INDICATEURS DE TRAITEMENT
+=================================================
+
+Base utilisée
+-------------
+SCOLIA_ORGANISEE_V39.zip
+
+Contrôles réalisés
+------------------
+- 106 scripts PowerShell inspectés par contrôle structurel des blocs, parenthèses,
+  crochets, chaînes et here-strings : aucune anomalie structurelle détectée.
+- 14 sources C# inspectées par contrôle structurel des blocs, parenthèses,
+  crochets, chaînes et commentaires : aucune anomalie structurelle détectée.
+- 3 fichiers JSON relus et analysés : valides.
+- 16 modules VBA du manifeste : empreinte normalisée « after » conforme au correctif.
+- Aucun fichier à la racine de SCOLIA ; organisation V39 conservée.
+
+Modifications V40
+-----------------
+- ActivityIndicator.cs : nouvelle carte de traitement compacte avec anneau animé,
+  message contextuel, thèmes clair/sombre et mise à jour du message en direct.
+- PerformanceInterface.ps1 : placement adaptatif de la carte ; le texte des boutons
+  n'est plus effacé pendant l'opération.
+- ChromeModerne.cs : ScoliaBusySpinner harmonisé avec le nouvel anneau ; ajout de
+  ScoliaProgressBar pour l'installateur.
+- Installer.ps1 / InstallationSession.ps1 : barre de progression moderne, animée
+  uniquement pendant le traitement, tout en conservant la vraie progression 0-100.
+- TestsIndicateursV40.ps1 : test Windows de compilation et d'instanciation ajouté.
+
+Limite de l'audit
+-----------------
+La compilation WinForms/C# et l'exécution Windows PowerShell 5.1 ne sont pas
+possibles dans cet environnement Linux. Le lanceur SCOLIA conserve son contrôle
+PowerShell côté Windows et TestsIndicateursV40.ps1 permet une validation locale.

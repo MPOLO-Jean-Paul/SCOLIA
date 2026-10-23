@@ -1,0 +1,4 @@
+﻿Titres des groupes du ruban : placés sous toutes les commandes, sans chevauchement. Hauteur du libellé mesurée selon la police et la largeur disponible. Hauteur des groupes et du ruban adaptée.
+Onglet Préférences disponible même sans connexion de classeur : taille du texte des listes (9, 10, 11, 12 ou 14 points), espacement compact/confortable/aéré, alternance des lignes, aides au survol du ruban, maximisation immédiate, mémorisée au prochain démarrage. Chaque choix s’applique et s’enregistre automatiquement pour le compte Windows ; Valeurs par défaut rétablit les réglages initiaux. Les réglages des listes s’appliquent aussi aux nouvelles fenêtres contenant des historiques.
+Remplacer programme, conserver data, relancer APPLICATION.vbs. Aucune réinstallation des corrections du classeur nécessaire.
+Vérifications locales : syntaxe, intégrité du paquet, conservation des classeurs et modules VBA. Affichage et persistance dans le registre Windows non exécutés ici.

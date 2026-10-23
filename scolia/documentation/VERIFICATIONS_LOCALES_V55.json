@@ -1,0 +1,46 @@
+{
+  "Version": "V55",
+  "StaticChecks": "passed; lexical checks are not the PowerShell parser",
+  "SourceFilesChecked": 156,
+  "WindowsTestsProvided": 32,
+  "WindowsTestsExecuted": false,
+  "ExcelTestsExecuted": false,
+  "WinFormsRendered": false,
+  "UpdateFilesVerified": 47,
+  "ChangedRuntimeSources": [
+    "programme/ExploitationProfessionnelle.ps1",
+    "programme/ScoliaIntegration.ps1",
+    "programme/Lancer.ps1",
+    "programme/MettreAJourV55.ps1",
+    "programme/TestsCentreRechercheV55.ps1",
+    "programme/TestsFonctionnalitesV55.ps1",
+    "programme/FonctionnalitesV55.ps1",
+    "programme/TestsBrouillonsV55.ps1",
+    "programme/TestsReinscriptionV55.ps1",
+    "programme/PresencesV55.ps1",
+    "programme/InscriptionBrouillonsV55.ps1",
+    "programme/TestsSauvegardesV55.ps1",
+    "programme/TestsInterfaceFonctionnalitesV55.ps1",
+    "programme/CentreRechercheV55.ps1",
+    "programme/TestsPresencesV55.ps1",
+    "programme/StockageClasseurs.ps1",
+    "programme/Application.ps1",
+    "programme/ReinscriptionV55.ps1",
+    "programme/VerifierV55.ps1",
+    "programme/MettreAJourV53.ps1",
+    "programme/MettreAJourV54.ps1"
+  ],
+  "BusinessDossierArguments": "unchanged",
+  "ProtectedOriginalFiles": "verified byte-for-byte",
+  "FeaturesImplemented": [
+    "recoverable registration drafts",
+    "action center",
+    "global search",
+    "attendance and summary",
+    "reenrollment assistant"
+  ],
+  "ExcludedFeatures": [
+    "learner document attachments",
+    "parent reminders"
+  ]
+}

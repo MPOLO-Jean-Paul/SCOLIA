@@ -1,0 +1,25 @@
+﻿{
+  "TableauDeBord": [
+    "CommandActualiserDashboard",
+    "CommandFemerDashboard"
+  ],
+  "GestionApprenant": [
+    "CommandFemerDashboard",
+    "CommandActualiser",
+    "CommandModifier",
+    "CommandChangerPromotion",
+    "CommandChangeStatut",
+    "CommandFicheApprenant",
+    "CommandImrpimerListe"
+  ],
+  "Paiement": [
+    "CommandEnregistrerPaiement",
+    "CommandNouveauPaiement",
+    "CommandFermerPaiement"
+  ],
+  "Apprenant": [
+    "CommandEnregistrer",
+    "CommandButton1",
+    "CommandButton2"
+  ]
+}

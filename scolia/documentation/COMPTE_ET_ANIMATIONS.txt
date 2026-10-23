@@ -1,0 +1,57 @@
+﻿COMPTE ET ANIMATIONS — VERSION 79
+
+La page Compte, la création et la récupération utilisent maintenant les mêmes
+champs et repères que la connexion principale. L'identité et le rôle de la
+session sont affichés au centre. Les mots de passe sont masqués ; le bouton
+œil de chaque champ permet de les afficher ou de les masquer.
+
+La confirmation est vérifiée pendant la saisie. Le bouton de validation reste
+inactif tant que les champs indispensables sont incomplets. Les messages
+apparaissent près des champs, sans espace réservé quand il n'y a pas d'erreur.
+La touche Verr. Maj est signalée lors de la saisie du mot de passe.
+
+Connexion Windows : utilise la session déjà ouverte sur ce PC. Il ne s'agit
+pas d'une connexion en ligne à un autre compte Microsoft. Les règles de rôle
+et d'authentification existantes restent appliquées.
+
+Création : identifiant de 3 à 32 caractères, mot de passe de 8 à 128 caractères,
+confirmation identique. Le premier compte est administrateur ; les suivants
+sont en consultation. Conservez le code de récupération affiché une seule fois.
+Récupération : identifiant, code personnel, nouveau mot de passe et confirmation.
+Le nouveau code remplace le précédent. Les rôles se gèrent via Gérer les rôles.
+Déconnecter ferme la session et l'application ; Fermer conserve la session.
+
+Pendant une connexion ou une création, les actions sont temporairement
+bloquées. La roue s'affiche au centre de la commande, sans carte ajoutée.
+Son cycle de douze traits adoucis utilise le temps réellement écoulé pour
+rester régulier. Les boutons de connexion ont une transition discrète de
+140 ms au passage du pointeur. Les champs et fonds conservent la lisibilité
+dans les thèmes clair et sombre. L'animation ne touche pas aux transactions.
+
+Les formulaires ont été contrôlés aux largeurs 360, 440 et 560 pixels, avec
+une hauteur utile de 540 pixels (création) et 600 pixels (compte).
+En hauteur très réduite (480 pixels), le défilement vertical permet de rejoindre
+les commandes ; aucun défilement horizontal n'est nécessaire.
+
+Installation : fermer l'application et Excel, remplacer programme, conserver
+data, puis démarrer APPLICATION.vbs. Aucune recréation des classeurs.
+
+Vérifications : syntaxe PowerShell compatible 5.1, compilation C# 5, essais
+WinForms sous Mono (dimensions, confirmation, verrou et dessin de la roue).
+Le scénario TestsCompteInterface.ps1 est fourni pour contrôle natif Windows.
+Les essais d'authentification Windows/PowerShell/Excel restent à exécuter sur PC.
+
+CORRECTIONS DE FIABILITÉ — VERSION 79
+Chaque démarrage de l'indicateur correspond à un seul arrêt. Une erreur de
+création ou de mise à jour de l'animation ne bloque plus l'opération réelle.
+Le bouton retrouve son libellé même si le dessin de la roue échoue.
+Après un changement de rôle, l'identité affichée et l'accès à Gérer les rôles
+sont actualisés immédiatement. Les champs suivent un ordre de tabulation clair.
+Un identifiant invalide ou un nom affiché de moins de deux caractères empêche
+la validation, en cohérence avec les règles d'enregistrement. Pendant le
+traitement, la fermeture par la croix est suspendue jusqu'à la fin.
+Si le compte est déjà enregistré mais que la fenêtre du code échoue, le code
+est présenté dans le champ Code personnel en lecture seule. Copiez-le avec
+Ctrl+A puis Ctrl+C et conservez-le. Continuer revient au compte connecté.
+La commande de création reste désactivée afin d'éviter une seconde écriture.
+TestsActiviteFiabilite.ps1 complète les essais natifs fournis.

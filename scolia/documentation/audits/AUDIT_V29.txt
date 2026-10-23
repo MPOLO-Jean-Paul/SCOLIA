@@ -1,0 +1,5 @@
+Audit V29 — persistance des apprenants
+Le chemin d’inscription dans StockageClasseurs.ps1 est maintenant transactionnel en mode
+base data : la réussite n’est renvoyée qu’après relecture du dossier dans l’instantané, puis
+commit. En cas d’absence après relecture, la transaction est annulée. Le test final de fermeture
+et reconnexion doit être réalisé sous Windows avec Excel sur le dossier nouvellement installé.

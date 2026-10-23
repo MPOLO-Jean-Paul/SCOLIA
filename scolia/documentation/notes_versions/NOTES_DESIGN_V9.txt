@@ -1,0 +1,16 @@
+﻿SCOLIA — V9 : amélioration de l’interface
+
+Modifications de présentation
+- Tableau de bord : bandeau d’accueil bleu nuit avec titre hiérarchisé, sous-titre et repère visuel « Vue d’ensemble ».
+- Tableau de bord : espacement augmenté autour de l’en-tête et des cartes d’indicateurs pour améliorer la lisibilité.
+- Paramètres : fenêtre agrandie et divisée en deux onglets (« Établissement et tarifs » et « Comptes et sécurité »).
+- Paramètres : bandeau SCOLIA homogène, zone d’aide dédiée aux formats de tarifs et message de statut visuellement distinct.
+- Configuration initiale : fenêtre plus spacieuse, bandeau d’introduction et onglets mieux espacés.
+- Les champs, règles de validation, permissions et stockage existants sont conservés.
+
+Contrôle
+Les fichiers sources ont été relus statiquement. L’application Windows/Excel n’est pas disponible dans cet environnement : une validation visuelle et fonctionnelle sur un poste Windows reste nécessaire avant déploiement en production. Effectuer d’abord une copie de sauvegarde.
+
+
+CORRECTION V10 — 10/10/2026
+Correction du script ScoliaConfiguration.ps1 : simplification de la création du champ Classes et réécriture des deux boucles de lecture des tarifs pour éviter les erreurs de parsing PowerShell signalées au lancement.
