@@ -1,4 +1,4 @@
-// SCOLIA V80 - noyau d'accélération compilé.
+﻿// SCOLIA V80 - noyau d'accélération compilé.
 // Les boucles exécutées à chaque frappe, à chaque actualisation de tableau ou à
 // chaque période d'inactivité Windows passent ici en C# au lieu d'être interprétées
 // par PowerShell. Chaque méthode reproduit exactement la sémantique du code

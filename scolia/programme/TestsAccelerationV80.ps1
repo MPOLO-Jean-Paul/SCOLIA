@@ -1,4 +1,4 @@
-$ErrorActionPreference='Stop'
+﻿$ErrorActionPreference='Stop'
 # V80 : le noyau C# doit produire exactement les mêmes résultats que les boucles
 # PowerShell qu'il remplace (clés de recherche, tables de grilles, rapprochement,
 # filtre des apprenants). Fonctionne sous Windows PowerShell 5.1 et PowerShell 7.

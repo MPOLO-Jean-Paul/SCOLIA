@@ -1,4 +1,4 @@
-﻿@echo off
+@echo off
 setlocal
 set "SCOLIA_PS=%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe"
 for %%T in (TestsSyntaxePowerShellV722 TestsAccelerationV80 TestsGrillesCoursV59 TestsFluiditeV77 TestsPerformancesV79 TestsPerformancesV78 TestsMiseAJourPerformance TestsEnregistrementRapideV76 TestsPaiementsMultiplesV72 TestsReactivitePages TestsScolarite TestsInterfaceEnseignementsV59 TestsInterfacesV71 TestsInterfaceDisciplineV60) do (
