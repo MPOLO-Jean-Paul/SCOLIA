@@ -68,6 +68,11 @@ public static class DependencyInjection
             pragma.CommandText = "PRAGMA journal_mode=WAL; PRAGMA synchronous=NORMAL;";
             await pragma.ExecuteNonQueryAsync(ct);
         }
+        // Mise à jour du logiciel sur une base existante : sauvegarde vérifiée avant de modifier le schéma.
+        var hasData = (await db.Database.GetAppliedMigrationsAsync(ct)).Any();
+        var hasPending = (await db.Database.GetPendingMigrationsAsync(ct)).Any();
+        if (hasData && hasPending)
+            await scope.ServiceProvider.GetRequiredService<BackupService>().CreateAsync("avantmiseajour", ct);
         await db.Database.MigrateAsync(ct);
     }
 }

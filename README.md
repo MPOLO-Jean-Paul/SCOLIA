@@ -3,6 +3,12 @@
 Plateforme de gestion des activités du secrétariat scolaire (inscriptions,
 paiements, comptabilité synchronisée, scolarité, personnel, exports PDF).
 
+## SCOLIA Pro (nouvelle génération)
+
+Le dossier `scolia-pro/` contient la version professionnelle : un seul exécutable
+Windows, sans Excel, avec base SQLite, reçus numérotés, journal d'audit chaîné et
+accès multiposte. Voir [`scolia-pro/README.md`](scolia-pro/README.md).
+
 ## Contenu du dépôt
 
 - `scolia/` : code source de l'application (édition V80), sans aucune donnée

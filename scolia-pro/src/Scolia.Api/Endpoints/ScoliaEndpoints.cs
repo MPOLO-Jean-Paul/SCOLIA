@@ -266,7 +266,14 @@ public static class ScoliaEndpoints
             return info;
         });
         backups.MapGet("/{name}", (string name, BackupService b) => Results.File(b.PathOf(name), "application/vnd.sqlite3", name));
-        backups.MapPost("/{name}/restauration", async (string name, BackupService b, CancellationToken ct) => { await b.RestoreAsync(name, ct); return Results.NoContent(); })
+        backups.MapPost("/{name}/restauration", async (string name, BackupService b, IAuditLog log, ScoliaDbContext db, CancellationToken ct) =>
+        {
+            await b.RestoreAsync(name, ct);
+            // La trace est écrite dans la base restaurée : la chaîne d'audit reprend à partir de son dernier maillon.
+            log.Record("sauvegarde.restauree", "Sauvegarde", name, $"Base restaurée depuis {name}.");
+            await db.SaveChangesAsync(ct);
+            return Results.NoContent();
+        })
             .RequireAuthorization(Permissions.SettingsWrite);
         backups.MapGet("/integrite", async (BackupService b, CancellationToken ct) => Results.Ok(new { intacte = await b.CheckLiveDatabaseAsync(ct) }));
 

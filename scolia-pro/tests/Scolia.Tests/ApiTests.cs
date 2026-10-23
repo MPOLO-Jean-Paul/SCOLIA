@@ -383,4 +383,30 @@ public sealed class BusinessApiTests : IDisposable
         Assert.StartsWith("SQLite format 3", System.Text.Encoding.ASCII.GetString((await download.Content.ReadAsByteArrayAsync())[..15]), StringComparison.Ordinal);
         Assert.Equal(HttpStatusCode.NotFound, (await admin.GetAsync("/api/sauvegardes/..%2F..%2Fscolia.db")).StatusCode);
     }
+
+    [Fact]
+    public async Task Restore_brings_back_the_saved_state_from_a_standalone_file()
+    {
+        var admin = await app.InstalledAdmin();
+        var name = (await admin.Post("/api/sauvegardes", new { }).Ok()).GetProperty("name").GetString()!;
+        var folder = Path.Combine(app.DataDirectory, "sauvegardes");
+        // Une sauvegarde est un fichier unique : rien d'autre à copier sur la clé USB.
+        Assert.False(File.Exists(Path.Combine(folder, name + "-wal")));
+        Assert.False(File.Exists(Path.Combine(folder, name + "-shm")));
+
+        await admin.Post("/api/utilisateurs", new { userName = "compta", displayName = "Comptable", role = "Comptabilite", password = "Provisoire1" }).Ok();
+        Assert.Contains("compta", (await admin.GetAsync("/api/utilisateurs").Ok()).GetRawText(), StringComparison.Ordinal);
+
+        await admin.Post($"/api/sauvegardes/{name}/restauration", new { }).Ok();
+        Assert.DoesNotContain("compta", (await admin.GetAsync("/api/utilisateurs").Ok()).GetRawText(), StringComparison.Ordinal);
+        Assert.Contains((await admin.GetAsync("/api/sauvegardes").Ok()).EnumerateArray(), b => b.GetProperty("name").GetString()!.Contains("avantrestauration", StringComparison.Ordinal));
+        Assert.True((await admin.GetAsync("/api/audit/verification").Ok()).GetProperty("isIntact").GetBoolean());
+        Assert.Contains("sauvegarde.restauree", (await admin.GetAsync("/api/audit").Ok()).GetRawText(), StringComparison.Ordinal);
+
+        await using var connection = new SqliteConnection($"Data Source={Path.Combine(app.DataDirectory, "scolia.db")}");
+        await connection.OpenAsync();
+        await using var command = connection.CreateCommand();
+        command.CommandText = "PRAGMA journal_mode;";
+        Assert.Equal("wal", await command.ExecuteScalarAsync() as string);
+    }
 }

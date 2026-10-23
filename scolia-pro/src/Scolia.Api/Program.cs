@@ -35,7 +35,7 @@ var lan = builder.Configuration.GetValue("Scolia:Reseau:AccesReseauLocal", false
 var desktop = OperatingSystem.IsWindows() && Environment.UserInteractive && !Microsoft.Extensions.Hosting.WindowsServices.WindowsServiceHelpers.IsWindowsService();
 
 // Deuxième lancement sur le même poste : on rouvre la fenêtre au lieu de démarrer un second serveur.
-if (desktop && builder.Configuration.GetValue("Scolia:OuvrirNavigateur", true) && DesktopLauncher.AlreadyRunning(port))
+if (desktop && DesktopLauncher.AlreadyRunning(port))
 {
     DesktopLauncher.Open($"http://localhost:{port}");
     return;
@@ -132,11 +132,12 @@ app.Lifetime.ApplicationStarted.Register(() =>
     var listening = app.Urls.FirstOrDefault() ?? $"http://localhost:{port}";
     var url = listening.Replace("0.0.0.0", "localhost", StringComparison.Ordinal).Replace("[::]", "localhost", StringComparison.Ordinal);
     Log.Information("SCOLIA est prêt : {Url} · données : {Data} · accès réseau local : {Lan}", url, storage.DataDirectory, lan);
-    if (!desktop || !app.Configuration.GetValue("Scolia:OuvrirNavigateur", true)) return;
+    if (!desktop) return;
 #if SCOLIA_DESKTOP
+    // L'icône est toujours présente sur un poste de bureau : c'est elle qui permet de quitter SCOLIA.
     TrayHost.Start(app, url, storage.DataDirectory, lan, port);
 #endif
-    DesktopLauncher.Open(url);
+    if (app.Configuration.GetValue("Scolia:OuvrirNavigateur", true)) DesktopLauncher.Open(url);
 });
 
 await app.RunAsync();

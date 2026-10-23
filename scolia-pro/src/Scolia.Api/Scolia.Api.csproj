@@ -9,6 +9,8 @@
   <ItemGroup>
     <!-- L'interface compilée (web/) est servie depuis le dossier de l'exécutable, en développement comme en production. -->
     <Content Update="wwwroot\**" CopyToOutputDirectory="PreserveNewest" />
+    <!-- Les réglages de développement ne sont jamais livrés. -->
+    <Content Update="appsettings.Development.json" CopyToPublishDirectory="Never" />
   </ItemGroup>
 
   <ItemGroup>

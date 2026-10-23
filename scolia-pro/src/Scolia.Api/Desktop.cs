@@ -65,34 +65,41 @@ internal static class TrayHost
     {
         var thread = new Thread(() =>
         {
-            System.Windows.Forms.Application.SetHighDpiMode(System.Windows.Forms.HighDpiMode.PerMonitorV2);
-            System.Windows.Forms.Application.EnableVisualStyles();
-            using var context = new System.Windows.Forms.ApplicationContext();
-            var sync = new System.Windows.Forms.WindowsFormsSynchronizationContext();
-            SynchronizationContext.SetSynchronizationContext(sync);
-            using var icon = new System.Windows.Forms.NotifyIcon
-            {
-                Icon = System.Drawing.Icon.ExtractAssociatedIcon(Environment.ProcessPath!) ?? System.Drawing.SystemIcons.Application,
-                Text = "SCOLIA — gestion scolaire",
-                Visible = true,
-            };
-            var menu = new System.Windows.Forms.ContextMenuStrip();
-            menu.Items.Add("Ouvrir SCOLIA", null, (_, _) => DesktopLauncher.Open(url)).Font = new System.Drawing.Font(menu.Font, System.Drawing.FontStyle.Bold);
-            menu.Items.Add("Ouvrir dans le navigateur", null, (_, _) => Process.Start(new ProcessStartInfo(url) { UseShellExecute = true }));
-            if (lan && DesktopLauncher.LocalAddress() is { } ip)
-                menu.Items.Add($"Adresse pour les autres postes : http://{ip}:{port}", null, (_, _) => System.Windows.Forms.Clipboard.SetText($"http://{ip}:{port}"));
-            menu.Items.Add("Ouvrir le dossier des données", null, (_, _) => Process.Start(new ProcessStartInfo("explorer.exe", $"\"{dataDirectory}\"") { UseShellExecute = true }));
-            menu.Items.Add(new System.Windows.Forms.ToolStripSeparator());
-            menu.Items.Add("Quitter SCOLIA", null, (_, _) => app.Lifetime.StopApplication());
-            icon.ContextMenuStrip = menu;
-            icon.DoubleClick += (_, _) => DesktopLauncher.Open(url);
-            app.Lifetime.ApplicationStopping.Register(() => sync.Post(_ => { icon.Visible = false; context.ExitThread(); }, null));
-            icon.ShowBalloonTip(4000, "SCOLIA est prêt", lan ? $"Accessible depuis les autres postes du réseau (port {port})." : "Double-cliquez sur cette icône pour ouvrir SCOLIA.", System.Windows.Forms.ToolTipIcon.Info);
-            System.Windows.Forms.Application.Run(context);
+            // Une défaillance de l'icône ne doit jamais arrêter le serveur ni les autres postes.
+            try { Run(app, url, dataDirectory, lan, port); }
+            catch (Exception ex) { Serilog.Log.Warning(ex, "Icône de notification indisponible : SCOLIA reste accessible à {Url}", url); }
         })
         { IsBackground = true, Name = "SCOLIA.Notification" };
         thread.SetApartmentState(ApartmentState.STA);
         thread.Start();
+    }
+
+    private static void Run(WebApplication app, string url, string dataDirectory, bool lan, int port)
+    {
+        System.Windows.Forms.Application.SetHighDpiMode(System.Windows.Forms.HighDpiMode.PerMonitorV2);
+        System.Windows.Forms.Application.EnableVisualStyles();
+        using var context = new System.Windows.Forms.ApplicationContext();
+        var sync = new System.Windows.Forms.WindowsFormsSynchronizationContext();
+        SynchronizationContext.SetSynchronizationContext(sync);
+        using var icon = new System.Windows.Forms.NotifyIcon
+        {
+            Icon = System.Drawing.Icon.ExtractAssociatedIcon(Environment.ProcessPath!) ?? System.Drawing.SystemIcons.Application,
+            Text = "SCOLIA — gestion scolaire",
+            Visible = true,
+        };
+        var menu = new System.Windows.Forms.ContextMenuStrip();
+        menu.Items.Add("Ouvrir SCOLIA", null, (_, _) => DesktopLauncher.Open(url)).Font = new System.Drawing.Font(menu.Font, System.Drawing.FontStyle.Bold);
+        menu.Items.Add("Ouvrir dans le navigateur", null, (_, _) => Process.Start(new ProcessStartInfo(url) { UseShellExecute = true }));
+        if (lan && DesktopLauncher.LocalAddress() is { } ip)
+            menu.Items.Add($"Adresse pour les autres postes : http://{ip}:{port}", null, (_, _) => System.Windows.Forms.Clipboard.SetText($"http://{ip}:{port}"));
+        menu.Items.Add("Ouvrir le dossier des données", null, (_, _) => Process.Start(new ProcessStartInfo("explorer.exe", $"\"{dataDirectory}\"") { UseShellExecute = true }));
+        menu.Items.Add(new System.Windows.Forms.ToolStripSeparator());
+        menu.Items.Add("Quitter SCOLIA", null, (_, _) => app.Lifetime.StopApplication());
+        icon.ContextMenuStrip = menu;
+        icon.DoubleClick += (_, _) => DesktopLauncher.Open(url);
+        app.Lifetime.ApplicationStopping.Register(() => sync.Post(_ => { icon.Visible = false; context.ExitThread(); }, null));
+        icon.ShowBalloonTip(4000, "SCOLIA est prêt", lan ? $"Accessible depuis les autres postes du réseau (port {port})." : "Double-cliquez sur cette icône pour ouvrir SCOLIA.", System.Windows.Forms.ToolTipIcon.Info);
+        System.Windows.Forms.Application.Run(context);
     }
 }
 #endif

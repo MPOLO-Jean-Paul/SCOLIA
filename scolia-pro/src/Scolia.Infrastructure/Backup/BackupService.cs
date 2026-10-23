@@ -41,6 +41,10 @@ public sealed class BackupService(IOptions<ScoliaStorageOptions> options, ILogge
                 await source.OpenAsync(ct);
                 await destination.OpenAsync(ct);
                 source.BackupDatabase(destination);
+                // La copie hérite du mode WAL : on la ramène à un fichier unique, autonome et transportable.
+                await using var mode = destination.CreateCommand();
+                mode.CommandText = "PRAGMA journal_mode=DELETE;";
+                await mode.ExecuteNonQueryAsync(ct);
             }
             if (!await IsIntactAsync(target, ct)) throw new IOException("La sauvegarde créée n'a pas passé le contrôle d'intégrité.");
             Prune();

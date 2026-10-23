@@ -1,0 +1,43 @@
+﻿SCOLIA PRO 1.0 — GESTION SCOLAIRE
+
+DÉMARRER
+1. Copier le dossier SCOLIA à un endroit stable, par exemple C:\SCOLIA.
+   Éviter « Program Files » : les données sont enregistrées à côté du programme.
+2. Double-cliquer sur SCOLIA.exe. Aucun logiciel n'est à installer :
+   ni Excel, ni .NET, ni base de données.
+3. À la première ouverture, l'assistant d'installation crée l'établissement,
+   l'année scolaire et le compte administrateur. Des données de démonstration
+   fictives peuvent être chargées pour découvrir le logiciel.
+
+SCOLIA reste disponible dans la zone de notification, près de l'horloge.
+Clic droit sur l'icône : ouvrir, adresse réseau, dossier des données, quitter.
+
+PLUSIEURS POSTES EN RÉSEAU LOCAL
+Sur le poste qui garde les données (le « serveur ») :
+1. INSTALLER_SERVICE.cmd : SCOLIA démarre avec Windows, même sans session ouverte.
+2. ACTIVER_RESEAU_LOCAL.cmd : ouvre le port dans le pare-feu et affiche l'adresse.
+Sur les autres postes, ouvrir l'adresse affichée dans Edge ou Chrome, par exemple
+http://192.168.1.10:5080. Rien n'est à installer sur ces postes.
+Le réseau doit être déclaré « privé » dans Windows.
+
+DONNÉES ET SAUVEGARDES
+- La base est le fichier donnees\scolia.db (SQLite, transactionnelle).
+- Une sauvegarde vérifiée est faite automatiquement chaque jour dans
+  donnees\sauvegardes, conservée 30 jours. Menu Administration > Sauvegardes
+  pour une sauvegarde immédiate, un téléchargement ou une restauration.
+- Copier régulièrement le dossier donnees\sauvegardes sur une clé USB ou un
+  disque externe.
+
+REPRENDRE LES DONNÉES DE SCOLIA V79/V80 (EXCEL)
+Administration > Import SCOLIA : choisir le classeur .xlsm de la base.
+Un essai à blanc montre ce qui sera repris avant toute écriture. L'import peut
+être relancé sans créer de doublons.
+
+MISE À JOUR
+Quitter SCOLIA, remplacer tous les fichiers sauf le dossier donnees, relancer.
+La base est mise à jour automatiquement après une sauvegarde de sécurité.
+
+RÉGLAGES (appsettings.json)
+- Scolia:Reseau:Port : port d'écoute (5080 par défaut).
+- Scolia:Stockage:DataDirectory : autre dossier de données (vide = donnees).
+- Scolia:OuvrirNavigateur : ouvrir la fenêtre au lancement (true par défaut).
