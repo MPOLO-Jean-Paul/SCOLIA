@@ -19,3 +19,15 @@ dist/
 scolia/documentation/RAPPROCHEMENT_PAIEMENTS_A_CONFIRMER.csv
 scolia/documentation/*.png
 scolia/documentation/Exemples/
+# SCOLIA Pro
+scolia-pro/src/Scolia.Api/wwwroot/
+scolia-pro/**/*.db
+scolia-pro/**/*.db-shm
+scolia-pro/**/*.db-wal
+scolia-pro/**/donnees/
+scolia-pro/web/node_modules/
+scolia-pro/web/dist/
+scolia-pro/e2e/node_modules/
+scolia-pro/e2e/test-results/
+scolia-pro/e2e/playwright-report/
+scolia-pro/artifacts/

@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <ItemGroup>
+    <ProjectReference Include="..\Scolia.Infrastructure\Scolia.Infrastructure.csproj" />
+    <ProjectReference Include="..\Scolia.Application\Scolia.Application.csproj" />
+    <ProjectReference Include="..\Scolia.Domain\Scolia.Domain.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+    <PackageReference Include="Serilog.AspNetCore" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <AssemblyName>SCOLIA</AssemblyName>
+    <RootNamespace>Scolia.Api</RootNamespace>
+    <ApplicationIcon Condition="Exists('scolia.ico')">scolia.ico</ApplicationIcon>
+    <InvariantGlobalization>false</InvariantGlobalization>
+    <ServerGarbageCollection>false</ServerGarbageCollection>
+  </PropertyGroup>
+
+</Project>
