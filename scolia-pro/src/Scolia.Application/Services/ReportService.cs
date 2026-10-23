@@ -34,7 +34,7 @@ public sealed class ReportService(IAppDbContext db, IClock clock, AccountService
             var end = start.AddMonths(1).AddDays(-1);
             var collected = receipts.Where(r => r.Date >= start && r.Date <= end).Sum(r => r.Amount);
             var expected = all.Sum(x => x.Account.Lines.Where(l => l.PeriodId == p.Id).Sum(l => l.Net));
-            return new SeriesPoint($"{p.Name[..3]}.", collected, expected);
+            return new SeriesPoint(ShortMonth(p.Name), collected, expected);
         }).ToList();
 
         var promotions = all.GroupBy(x => x.Promotion).OrderBy(g => g.Key.Code).Select(g =>
@@ -66,6 +66,14 @@ public sealed class ReportService(IAppDbContext db, IClock clock, AccountService
             active.Count(x => x.Account.Overdue == 0), active.Count(x => x.Account.Overdue > 0), expensesMonth, monthly, promotions, aging, latest,
             active.Count(x => x.Enrollment.Student!.Gender == Gender.M), active.Count(x => x.Enrollment.Student!.Gender == Gender.F));
     }
+
+    /// <summary>Abréviations françaises usuelles des mois.</summary>
+    public static string ShortMonth(string name) => name switch
+    {
+        "Janvier" => "Janv.", "Février" => "Févr.", "Mars" => "Mars", "Avril" => "Avr.", "Mai" => "Mai", "Juin" => "Juin",
+        "Juillet" => "Juil.", "Août" => "Août", "Septembre" => "Sept.", "Octobre" => "Oct.", "Novembre" => "Nov.", "Décembre" => "Déc.",
+        _ => name.Length <= 4 ? name : name[..3] + ".",
+    };
 
     public async Task<IReadOnlyList<DebtorDto>> DebtorsAsync(DebtorQuery q, CancellationToken ct = default)
     {

@@ -16,7 +16,7 @@ public sealed class SetupService(IAppDbContext db, IWriteGate gate, IAuditLog au
 {
     public async Task<SetupStatusDto> StatusAsync(CancellationToken ct = default)
     {
-        var school = await db.Schools.AsNoTracking().FirstOrDefaultAsync(ct);
+        var school = await db.Schools.AsNoTracking().OrderBy(s => s.CreatedAtUtc).FirstOrDefaultAsync(ct);
         var hasUser = await db.Users.AnyAsync(ct);
         return new SetupStatusDto(school is not null && hasUser, school?.Name);
     }
@@ -200,7 +200,7 @@ public static class DemoData
     private static void AddReceipt(IAppDbContext db, AcademicYear year, Enrollment enrollment, Student student, (FeeItem Fee, decimal Amount)[] parts, DateOnly date,
         DateOnly today, ref long number, string cashier, Random random)
     {
-        if (date > today) date = today;
+        if (date > today) date = today.AddDays(-random.Next(1, 12));
         if (date < year.StartDate) date = year.StartDate;
         var receipt = new Receipt
         {

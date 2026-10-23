@@ -16,15 +16,18 @@ var builder = WebApplication.CreateBuilder(new WebApplicationOptions { Args = ar
 
 // Données à côté de l'exécutable (copie portable), sauf configuration contraire.
 var defaultData = Path.Combine(AppContext.BaseDirectory, "donnees");
-var dataDirectory = builder.Configuration["Scolia:Stockage:DataDirectory"] is { Length: > 0 } configured ? Environment.ExpandEnvironmentVariables(configured) : defaultData;
-Directory.CreateDirectory(Path.Combine(dataDirectory, "journaux"));
 
-builder.Host.UseSerilog((context, configuration) => configuration
-    .ReadFrom.Configuration(context.Configuration)
-    .Enrich.FromLogContext()
-    .WriteTo.Console()
-    .WriteTo.File(Path.Combine(dataDirectory, "journaux", "scolia-.log"), rollingInterval: RollingInterval.Day, retainedFileCountLimit: 60,
-        outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff} [{Level:u3}] {Message:lj}{NewLine}{Exception}"));
+builder.Host.UseSerilog((context, configuration) =>
+{
+    var dataDirectory = context.Configuration["Scolia:Stockage:DataDirectory"] is { Length: > 0 } configured ? Environment.ExpandEnvironmentVariables(configured) : defaultData;
+    Directory.CreateDirectory(Path.Combine(dataDirectory, "journaux"));
+    configuration
+        .ReadFrom.Configuration(context.Configuration)
+        .Enrich.FromLogContext()
+        .WriteTo.Console()
+        .WriteTo.File(Path.Combine(dataDirectory, "journaux", "scolia-.log"), rollingInterval: RollingInterval.Day, retainedFileCountLimit: 60,
+            outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff} [{Level:u3}] {Message:lj}{NewLine}{Exception}");
+});
 
 var port = builder.Configuration.GetValue("Scolia:Reseau:Port", 5080);
 var lan = builder.Configuration.GetValue("Scolia:Reseau:AccesReseauLocal", false);
@@ -116,7 +119,8 @@ app.MapFallbackToFile("index.html");
 var storage = app.Services.GetRequiredService<IOptions<ScoliaStorageOptions>>().Value;
 app.Lifetime.ApplicationStarted.Register(() =>
 {
-    var url = $"http://localhost:{port}";
+    var listening = app.Urls.FirstOrDefault() ?? $"http://localhost:{port}";
+    var url = listening.Replace("0.0.0.0", "localhost", StringComparison.Ordinal).Replace("[::]", "localhost", StringComparison.Ordinal);
     Log.Information("SCOLIA est prêt : {Url} · données : {Data} · accès réseau local : {Lan}", url, storage.DataDirectory, lan);
     if (app.Configuration.GetValue("Scolia:OuvrirNavigateur", true) && OperatingSystem.IsWindows() && Environment.UserInteractive)
         DesktopLauncher.Open(url);

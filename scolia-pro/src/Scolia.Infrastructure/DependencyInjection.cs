@@ -30,6 +30,7 @@ public static class DependencyInjection
             options.UseSqlite(sp.GetRequiredService<IOptions<ScoliaStorageOptions>>().Value.ConnectionString));
         services.AddScoped<IAppDbContext>(sp => sp.GetRequiredService<ScoliaDbContext>());
         services.AddScoped<IWriteGate, WriteGate>();
+        services.AddScoped<AuditBuffer>();
         services.AddScoped<IAuditLog, AuditLog>();
         services.AddSingleton<IPasswordService, PasswordService>();
         services.AddSingleton<IClock, SystemClock>();

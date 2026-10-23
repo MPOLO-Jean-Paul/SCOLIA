@@ -8,7 +8,7 @@ using Scolia.Domain.Security;
 namespace Scolia.Infrastructure.Persistence;
 
 /// <summary>Une écriture à la fois, dans une transaction : cohérence garantie pour les soldes et numérotations.</summary>
-public sealed class WriteGate(ScoliaDbContext db) : IWriteGate
+public sealed class WriteGate(ScoliaDbContext db, AuditBuffer buffer) : IWriteGate
 {
     private static readonly SemaphoreSlim Gate = new(1, 1);
     private static readonly AsyncLocal<bool> Inside = new();
@@ -31,6 +31,7 @@ public sealed class WriteGate(ScoliaDbContext db) : IWriteGate
             {
                 await transaction.RollbackAsync(CancellationToken.None);
                 db.ChangeTracker.Clear();
+                buffer.Pending.Clear();
                 throw;
             }
         }
@@ -46,13 +47,19 @@ public sealed class WriteGate(ScoliaDbContext db) : IWriteGate
     }
 }
 
-public sealed class AuditLog(ScoliaDbContext db, ICurrentUser user, IClock clock) : IAuditLog
+/// <summary>Entrées d'audit de la requête, numérotées et chaînées au moment de l'enregistrement.</summary>
+public sealed class AuditBuffer
+{
+    public List<AuditEntry> Pending { get; } = [];
+}
+
+public sealed class AuditLog(AuditBuffer buffer, ICurrentUser user, IClock clock) : IAuditLog
 {
     private static readonly JsonSerializerOptions Json = new() { WriteIndented = false };
 
     public void Record(string action, string entityType, string? entityId, string summary, object? data = null)
     {
-        db.AuditEntries.Add(new AuditEntry
+        buffer.Pending.Add(new AuditEntry
         {
             AtUtc = clock.UtcNow,
             UserName = user.Name,

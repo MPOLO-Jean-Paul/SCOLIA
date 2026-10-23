@@ -34,6 +34,8 @@ public static class ScoliaEndpoints
 
         // ---------- Installation et session ----------
         api.MapGet("/installation", (SetupService setup, CancellationToken ct) => setup.StatusAsync(ct));
+        // Le logo figure sur l'écran de connexion et les pages publiques de vérification.
+        api.MapGet("/etablissement/logo", async (SchoolService s, CancellationToken ct) => await s.GetLogoAsync(ct) is { } logo ? Results.File(logo.Content, logo.Type) : Results.Redirect("/scolia.png"));
         api.MapGet("/installation/annee-proposee", (IClock clock) => Results.Ok(new { label = SetupService.DefaultYearLabel(clock.Today) }));
         api.MapPost("/installation", async (SetupRequest input, SetupService setup, ScoliaDbContext db, HttpContext http, CancellationToken ct) =>
         {
@@ -85,7 +87,6 @@ public static class ScoliaEndpoints
         var g = api.MapGroup("/etablissement");
         g.MapGet("", (SchoolService s, CancellationToken ct) => s.GetSchoolAsync(ct));
         g.MapPut("", (SchoolUpdate input, SchoolService s, CancellationToken ct) => s.UpdateSchoolAsync(input, ct)).RequireAuthorization(Permissions.SettingsWrite);
-        g.MapGet("/logo", async (SchoolService s, CancellationToken ct) => await s.GetLogoAsync(ct) is { } logo ? Results.File(logo.Content, logo.Type) : Results.NotFound());
         g.MapPut("/logo", async (IFormFile? fichier, SchoolService s, CancellationToken ct) =>
         {
             if (fichier is null) { await s.SetLogoAsync(null, null, ct); return Results.NoContent(); }

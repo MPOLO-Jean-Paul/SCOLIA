@@ -17,40 +17,47 @@ public sealed class UserService(IAppDbContext db, IWriteGate gate, IAuditLog aud
     public static UserDto ToDto(AppUser u, DateTime now) => new(u.Id, u.UserName, u.DisplayName, u.Role.ToString(), Permissions.Label(u.Role), u.IsActive,
         u.MustChangePassword, u.LastLoginUtc, u.LockoutEndUtc is not null && u.LockoutEndUtc > now);
 
-    /// <summary>Authentifie un utilisateur. Message identique pour un identifiant inconnu ou un mot de passe faux.</summary>
-    public Task<AppUser> LoginAsync(string userName, string password, CancellationToken ct = default) => gate.RunAsync(async () =>
+    /// <summary>Authentifie un utilisateur. Message identique pour un identifiant inconnu ou un mot de passe faux.
+    /// Les échecs sont enregistrés (transaction validée) avant le refus : le verrouillage est donc effectif.</summary>
+    public async Task<AppUser> LoginAsync(string userName, string password, CancellationToken ct = default)
     {
         const string invalid = "Identifiant ou mot de passe incorrect.";
-        var normalized = TextKey.Normalize(userName);
-        var user = await db.Users.FirstOrDefaultAsync(u => u.NormalizedUserName == normalized, ct);
-        if (user is null || !user.IsActive)
+        var (user, error) = await gate.RunAsync<(AppUser?, string?)>(async () =>
         {
-            _ = passwords.Hash(password ?? string.Empty); // Même durée qu'une vérification : pas d'énumération des comptes.
-            throw new DomainException("connexion", invalid);
-        }
-        var now = clock.UtcNow;
-        if (user.LockoutEndUtc is not null && user.LockoutEndUtc > now)
-            throw new DomainException("verrouille", $"Compte temporairement verrouillé après plusieurs erreurs. Réessayez après {user.LockoutEndUtc.Value.ToLocalTime():HH:mm}.");
-        if (!passwords.Verify(user.PasswordHash, password ?? string.Empty, out var rehash))
-        {
-            user.FailedLoginCount++;
-            if (user.FailedLoginCount >= MaxFailedAttempts)
+            var normalized = TextKey.Normalize(userName);
+            var found = await db.Users.FirstOrDefaultAsync(u => u.NormalizedUserName == normalized, ct);
+            if (found is null || !found.IsActive)
             {
-                user.LockoutEndUtc = now + LockoutDuration;
-                user.FailedLoginCount = 0;
-                audit.Record("connexion.verrouillage", "Utilisateur", user.Id.ToString(), $"Compte {user.UserName} verrouillé 15 minutes après {MaxFailedAttempts} échecs.");
+                _ = passwords.Hash(password ?? string.Empty); // Même durée qu'une vérification : pas d'énumération des comptes.
+                return (null, invalid);
             }
+            var now = clock.UtcNow;
+            if (found.LockoutEndUtc is not null && found.LockoutEndUtc > now)
+                return (null, $"Compte temporairement verrouillé après plusieurs erreurs. Réessayez après {found.LockoutEndUtc.Value.ToLocalTime():HH:mm}.");
+            if (!passwords.Verify(found.PasswordHash, password ?? string.Empty, out var rehash))
+            {
+                found.FailedLoginCount++;
+                audit.Record("connexion.echec", "Utilisateur", found.Id.ToString(), $"Échec de connexion pour {found.UserName} ({found.FailedLoginCount}/{MaxFailedAttempts}).");
+                if (found.FailedLoginCount >= MaxFailedAttempts)
+                {
+                    found.LockoutEndUtc = now + LockoutDuration;
+                    found.FailedLoginCount = 0;
+                    audit.Record("connexion.verrouillage", "Utilisateur", found.Id.ToString(), $"Compte {found.UserName} verrouillé 15 minutes après {MaxFailedAttempts} échecs.");
+                }
+                await db.SaveChangesAsync(ct);
+                return (null, invalid);
+            }
+            if (rehash) found.PasswordHash = passwords.Hash(password!);
+            found.FailedLoginCount = 0;
+            found.LockoutEndUtc = null;
+            found.LastLoginUtc = now;
+            audit.Record("connexion.reussie", "Utilisateur", found.Id.ToString(), $"Connexion de {found.UserName}.");
             await db.SaveChangesAsync(ct);
-            throw new DomainException("connexion", invalid);
-        }
-        if (rehash) user.PasswordHash = passwords.Hash(password!);
-        user.FailedLoginCount = 0;
-        user.LockoutEndUtc = null;
-        user.LastLoginUtc = now;
-        audit.Record("connexion.reussie", "Utilisateur", user.Id.ToString(), $"Connexion de {user.UserName}.");
-        await db.SaveChangesAsync(ct);
+            return (found, null);
+        }, ct);
+        if (user is null) throw new DomainException(error!.StartsWith("Compte", StringComparison.Ordinal) ? "verrouille" : "connexion", error);
         return user;
-    }, ct);
+    }
 
     public async Task<IReadOnlyList<UserDto>> ListAsync(CancellationToken ct = default) =>
         (await db.Users.AsNoTracking().OrderBy(u => u.DisplayName).ToListAsync(ct)).Select(u => ToDto(u, clock.UtcNow)).ToList();

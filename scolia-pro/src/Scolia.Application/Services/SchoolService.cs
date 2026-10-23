@@ -30,7 +30,7 @@ public sealed class SchoolService(IAppDbContext db, IWriteGate gate, IAuditLog a
             .Require(!string.IsNullOrWhiteSpace(input.CurrencySymbol) && input.CurrencySymbol.Length <= 6, "currencySymbol", "Symbole monétaire obligatoire.")
             .Require(input.PhoneCountryCode is { Length: >= 1 and <= 4 } && input.PhoneCountryCode.All(char.IsDigit), "phoneCountryCode", "Indicatif téléphonique invalide.");
         v.ThrowIfInvalid();
-        var s = await db.Schools.FirstAsync(ct);
+        var s = await db.Schools.OrderBy(x => x.CreatedAtUtc).FirstAsync(ct);
         s.Name = input.Name.Trim(); s.ShortName = input.ShortName.Trim(); s.Motto = Clean(input.Motto); s.Address = Clean(input.Address);
         s.City = Clean(input.City); s.Country = Clean(input.Country); s.Phone = Clean(input.Phone); s.Email = Clean(input.Email); s.Website = Clean(input.Website);
         s.CurrencyCode = input.CurrencyCode; s.CurrencySymbol = input.CurrencySymbol.Trim(); s.WholeAmountsOnly = input.WholeAmountsOnly;
@@ -44,7 +44,7 @@ public sealed class SchoolService(IAppDbContext db, IWriteGate gate, IAuditLog a
     {
         if (content is { Length: > 2_000_000 }) throw new DomainException("logo", "Le logo ne doit pas dépasser 2 Mo.");
         if (content is not null && contentType is not ("image/png" or "image/jpeg")) throw new DomainException("logo", "Le logo doit être une image PNG ou JPEG.");
-        var s = await db.Schools.FirstAsync(ct);
+        var s = await db.Schools.OrderBy(x => x.CreatedAtUtc).FirstAsync(ct);
         s.Logo = content; s.LogoContentType = contentType;
         audit.Record("etablissement.logo", "Etablissement", s.Id.ToString(), content is null ? "Logo retiré." : "Logo remplacé.");
         await db.SaveChangesAsync(ct);
@@ -53,7 +53,7 @@ public sealed class SchoolService(IAppDbContext db, IWriteGate gate, IAuditLog a
 
     public async Task<(byte[] Content, string Type)?> GetLogoAsync(CancellationToken ct = default)
     {
-        var s = await db.Schools.AsNoTracking().Select(x => new { x.Logo, x.LogoContentType }).FirstOrDefaultAsync(ct);
+        var s = await db.Schools.AsNoTracking().OrderBy(x => x.CreatedAtUtc).Select(x => new { x.Logo, x.LogoContentType }).FirstOrDefaultAsync(ct);
         return s?.Logo is { Length: > 0 } ? (s.Logo, s.LogoContentType ?? "image/png") : null;
     }
 

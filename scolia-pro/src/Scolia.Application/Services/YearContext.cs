@@ -25,5 +25,5 @@ public static class YearContext
     }
 
     public static async Task<SchoolProfile> SchoolAsync(IAppDbContext db, CancellationToken ct = default) =>
-        await db.Schools.AsNoTracking().FirstOrDefaultAsync(ct) ?? throw new DomainException("configuration", "L'établissement n'est pas encore configuré.");
+        await db.Schools.AsNoTracking().OrderBy(s => s.CreatedAtUtc).FirstOrDefaultAsync(ct) ?? throw new DomainException("configuration", "L'établissement n'est pas encore configuré.");
 }

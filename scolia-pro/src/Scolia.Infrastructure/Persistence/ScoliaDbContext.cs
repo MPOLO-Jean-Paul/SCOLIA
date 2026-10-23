@@ -11,7 +11,7 @@ using Scolia.Domain.Students;
 
 namespace Scolia.Infrastructure.Persistence;
 
-public sealed class ScoliaDbContext(DbContextOptions<ScoliaDbContext> options, ICurrentUser? currentUser = null, IClock? clock = null)
+public sealed class ScoliaDbContext(DbContextOptions<ScoliaDbContext> options, ICurrentUser? currentUser = null, IClock? clock = null, AuditBuffer? auditBuffer = null)
     : DbContext(options), IAppDbContext
 {
     /// <summary>Protège la chaîne d'empreintes du journal d'audit entre requêtes concurrentes.</summary>
@@ -197,7 +197,7 @@ public sealed class ScoliaDbContext(DbContextOptions<ScoliaDbContext> options, I
             }
         }
 
-        var audits = ChangeTracker.Entries<AuditEntry>().Where(e => e.State == EntityState.Added).Select(e => e.Entity).ToList();
+        var audits = auditBuffer?.Pending.ToList() ?? [];
         if (audits.Count == 0) return await base.SaveChangesAsync(cancellationToken);
 
         await AuditChainLock.WaitAsync(cancellationToken);
@@ -214,7 +214,10 @@ public sealed class ScoliaDbContext(DbContextOptions<ScoliaDbContext> options, I
                 audit.Hash = audit.ComputeHash();
                 previous = audit.Hash;
             }
-            return await base.SaveChangesAsync(cancellationToken);
+            AuditEntries.AddRange(audits);
+            var result = await base.SaveChangesAsync(cancellationToken);
+            auditBuffer!.Pending.Clear();
+            return result;
         }
         finally
         {
