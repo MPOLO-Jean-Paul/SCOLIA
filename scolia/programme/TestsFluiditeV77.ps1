@@ -36,6 +36,7 @@ function New-ItemProperty {throw 'Registry write during click'}
 if($frequentCounts.A -ne 100 -or $frequentPending.A -ne 100 -or $frequentPending.Count -ne 1){throw 'Usage counts lost'}
 'PASS: unchanged table emits zero events; one changed cell emits one event; row identity and sorting preserved; insert/delete; duplicate keys rejected before mutation; unkeyed safety; composite keys; clicks use memory only.'
 Import-TestFunction 'Application.ps1' 'Set-Grid'
+function Set-ITMGridReadability($grid,[bool]$ResizeRows=$true){} # Mesure visuelle hors périmètre de ce test (ajoutée en V79).
 $bound=New-TestTable;[void]$bound.Rows.Add('A',10)
 $grid=[pscustomobject]@{SelectedRows=@();FirstDisplayedScrollingRowIndex=-1;DataSource=$bound;Columns=@([pscustomobject]@{Name='Id'},[pscustomobject]@{Name='Montant'});AutoSizeColumnsMode='None';AutoGenerateColumns=$false;Resumed=$false}
 $grid|Add-Member ScriptMethod SuspendLayout {}

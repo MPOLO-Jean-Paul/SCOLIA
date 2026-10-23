@@ -25,7 +25,7 @@ $vba=Get-Content (Join-Path $PSScriptRoot 'Corrections/ModuleApplicationITM.txt'
 $reliability=Get-Content (Join-Path $PSScriptRoot 'Corrections/ModuleFiabilite.txt') -Raw -Encoding UTF8
 Check ($app -notmatch 'if\(\$mat -and @\(\$script:data\.payments .*Promotion\.Enabled=\$false') 'La promotion est encore verrouillée après paiement.'
 Check ($vba -notmatch 'Des paiements existent : promotion et annee conservees') 'Le moteur VBA bloque encore la promotion après paiement.'
-Check ($vba -match 'SCOLIA-PERF-6') 'Version applicative V79 absente.'
+Check ($vba -match 'SCOLIA-PERF-7') 'Version applicative V80 absente.'
 Check ($reliability -match 'ITM-PERF-2') 'Version fiabilité V79 absente.'
 Check ($reliability -match 'ITMTransactionExterneActive') 'La suppression de la double sauvegarde transactionnelle est absente.'
 Check ($reliability -match 'ThisWorkbook\.Calculate') 'Le recalcul ciblé du classeur est absent.'

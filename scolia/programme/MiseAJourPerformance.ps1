@@ -43,7 +43,7 @@ function Test-ITMPerformanceBook($book) {
     try{
         $firstMacro=Get-ITMExcelMacroName $book 'ModuleFiabilite' 'ITMPerformanceVersion'
         $secondMacro=Get-ITMExcelMacroName $book 'ModuleApplicationITM' 'ITMAppPerformanceVersion'
-        return ((Invoke-ITMExcelRunNoArguments $script:excel $firstMacro) -eq 'ITM-PERF-2' -and (Invoke-ITMExcelRunNoArguments $script:excel $secondMacro) -eq 'SCOLIA-PERF-6')
+        return ((Invoke-ITMExcelRunNoArguments $script:excel $firstMacro) -eq 'ITM-PERF-2' -and (Invoke-ITMExcelRunNoArguments $script:excel $secondMacro) -eq 'SCOLIA-PERF-7')
     }catch{return $false}
 }
 function Update-ITMManagedRuntime {

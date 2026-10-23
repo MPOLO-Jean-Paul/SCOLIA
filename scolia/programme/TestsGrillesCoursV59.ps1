@@ -3,7 +3,7 @@ $ErrorActionPreference='Stop'
 $tokens=$null;$errors=$null;$ast=[Management.Automation.Language.Parser]::ParseFile((Join-Path $PSScriptRoot 'Application.ps1'),[ref]$tokens,[ref]$errors)
 $node=$ast.Find({param($n)$n -is [Management.Automation.Language.FunctionDefinitionAst] -and $n.Name -eq 'Set-Grid'},$true)
 $source=$node.Extent.Text;$prefix=$source.Substring(0,$source.IndexOf('    # Keep identity'))
-$prefix=$prefix.Replace('function Set-Grid','function New-TestCourseTable')+"    return ,`$table`n}"
+$prefix=$prefix.Replace('function Set-Grid','function New-TestCourseTable')+"    return ,`$table`n    } finally {}`n}"
 . ([scriptblock]::Create($prefix))
 $rows=@([pscustomobject]@{Course='Cours 10';Number=10;Hours=[decimal]10.5},[pscustomobject]@{Course='Cours 2';Number=2;Hours=[decimal]2.5},[pscustomobject]@{Course='Sans valeur';Number=$null;Hours=$null})
 $table=New-TestCourseTable $null $rows @(@('Course','Cours'),@('Number','Numéro',[int]),@('Hours','Heures',[decimal]))

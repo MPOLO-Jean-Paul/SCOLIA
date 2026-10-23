@@ -2,7 +2,7 @@
 Private mDerniereErreur As String
 ' Passerelle de l'application Windows vers le classeur actif ITM CD.
 Public Function ITMAppPerformanceVersion() As String
-    ITMAppPerformanceVersion = "SCOLIA-PERF-6"
+    ITMAppPerformanceVersion = "SCOLIA-PERF-7"
 End Function
 
 Public Function ITMAppVersion() As String
@@ -21,18 +21,29 @@ Private Function AJ(ByVal valeur As Variant) As String
         If Left$(AJ, 2) = "-." Then AJ = "-0" & Mid$(AJ, 2)
         Exit Function
     End If
+    ' V80 : echappement par remplacements natifs au lieu d'une concatenation
+    ' caractere par caractere. Resultat identique : \ puis " puis U+0000-U+001F.
     s = CStr(valeur)
-    AJ = Chr$(34)
-    For i = 1 To Len(s)
-        c = Mid$(s, i, 1): code = AscW(c)
-        Select Case code
-            Case 34: AJ = AJ & "\" & Chr$(34)
-            Case 92: AJ = AJ & "\\"
-            Case 0 To 31: AJ = AJ & "\u" & Right$("0000" & Hex$(code), 4)
-            Case Else: AJ = AJ & c
-        End Select
-    Next i
-    AJ = AJ & Chr$(34)
+    If InStr(1, s, "\", vbBinaryCompare) > 0 Then s = Replace(s, "\", "\\", 1, -1, vbBinaryCompare)
+    If InStr(1, s, Chr$(34), vbBinaryCompare) > 0 Then s = Replace(s, Chr$(34), "\" & Chr$(34), 1, -1, vbBinaryCompare)
+    For code = 0 To 31
+        If InStr(1, s, ChrW$(code), vbBinaryCompare) > 0 Then s = Replace(s, ChrW$(code), "\u" & Right$("0000" & Hex$(code), 4), 1, -1, vbBinaryCompare)
+    Next code
+    AJ = Chr$(34) & s & Chr$(34)
+End Function
+
+' V80 : tampon de texte lineaire. "s = s & x" recopiait tout le texte deja
+' produit a chaque ajout : le cout croissait avec le carre du volume de donnees.
+Private Sub JPlus(ByRef parts() As String, ByRef n As Long, ByVal texte As String)
+    If n > UBound(parts) Then ReDim Preserve parts(0 To 2 * UBound(parts) + 1)
+    parts(n) = texte
+    n = n + 1
+End Sub
+
+Private Function JTexte(ByRef parts() As String, ByVal n As Long) As String
+    If n = 0 Then Exit Function
+    ReDim Preserve parts(0 To n - 1)
+    JTexte = Join(parts, "")
 End Function
 
 Private Function ADate(ByVal valeur As Variant) As String
@@ -45,8 +56,10 @@ Public Function ITMAppSnapshot() As String
     Dim s As String, first As Boolean, mat As String, eligible As Boolean, noms As Variant
     Dim k As Variant, part As Variant, v As Variant, vus As Object
     Dim dates As Variant, last As Long, hasValues As Boolean
+    Dim parts() As String, n As Long
+    ReDim parts(0 To 8191)
     Set d = ITMChargerDonnees()
-    s = "{""learners"":[": first = True
+    JPlus parts, n, "{""learners"":[": first = True
     Set livres = ITMClasseurs()
     For Each livre In livres
     Set w = livre.Worksheets("APPRENANTS")
@@ -61,21 +74,21 @@ Public Function ITMAppSnapshot() As String
             If Not IsEmpty(data(r, i)) Then hasValues = True: Exit For
         Next i
         If hasValues Then
-            If Not first Then s = s & ","
+            If Not first Then JPlus parts, n, ","
             first = False: mat = ITMCleTexte(data(r, 1))
             eligible = d("personnes").Exists(mat)
-            s = s & "{""Source"":" & AJ(livre.Name) & ",""Row"":" & (r + 4) & ",""Eligible"":" & AJ(eligible)
+            JPlus parts, n, "{""Source"":" & AJ(livre.Name) & ",""Row"":" & (r + 4) & ",""Eligible"":" & AJ(eligible)
             For i = 1 To 15
                 v = data(r, i)
                 If i = 6 Or i = 12 Then v = ADate(dates(r, i))
-                s = s & "," & AJ(noms(i - 1)) & ":" & AJ(v)
+                JPlus parts, n, "," & AJ(noms(i - 1)) & ":" & AJ(v)
             Next i
-            s = s & "}"
+            JPlus parts, n, "}"
         End If
     Next r
     End If
     Next livre
-    s = s & "],""payments"":[": first = True
+    JPlus parts, n, "],""payments"":[": first = True
     For Each livre In livres
     Set w = livre.Worksheets("PAIEMENTS")
     noms = Split("ID|Date|Numero|Matricule|NomComplet|Promotion|Mois|Du|Verse|Reste|Statut|TotalPaye|TotalAnnuel|ResteAnnuel", "|")
@@ -89,48 +102,49 @@ Public Function ITMAppSnapshot() As String
             If Not IsEmpty(data(r, i)) Then hasValues = True: Exit For
         Next i
         If hasValues Then
-            If Not first Then s = s & ","
-            first = False: s = s & "{""Source"":" & AJ(livre.Name) & ",""Row"":" & (r + 4)
+            If Not first Then JPlus parts, n, ","
+            first = False: JPlus parts, n, "{""Source"":" & AJ(livre.Name) & ",""Row"":" & (r + 4)
             For i = 1 To 14
                 v = data(r, i)
                 If i = 2 Then v = ADate(dates(r, i))
-                s = s & "," & AJ(noms(i - 1)) & ":" & AJ(v)
+                JPlus parts, n, "," & AJ(noms(i - 1)) & ":" & AJ(v)
             Next i
-            s = s & "}"
+            JPlus parts, n, "}"
         End If
     Next r
     End If
     Next livre
-    s = s & "],""promotions"":[": first = True
+    JPlus parts, n, "],""promotions"":[": first = True
     Set vus = CreateObject("Scripting.Dictionary")
     Set w = ThisWorkbook.Worksheets("PROMOTIONS")
     For r = 5 To w.Cells(w.Rows.Count, 1).End(xlUp).Row
         mat = ITMPromotion(w.Cells(r, 1).Value2)
         If d("promotions").Exists(mat) And Not vus.Exists(mat) Then
             vus(mat) = True
-            If Not first Then s = s & ","
+            If Not first Then JPlus parts, n, ","
             first = False
-            s = s & "{""Code"":" & AJ(mat) & ",""Designation"":" & AJ(w.Cells(r, 2).Value2) & ",""Annee"":" & AJ(w.Cells(r, 5).Value2) & ",""Mensuel"":" & AJ(w.Cells(r, 6).Value2) & ",""Annuel"":" & AJ(w.Cells(r, 7).Value2) & ",""Active"":" & AJ(ITMCleTexte(w.Cells(r, 8).Value2) = "ACTIVE") & "}"
+            JPlus parts, n, "{""Code"":" & AJ(mat) & ",""Designation"":" & AJ(w.Cells(r, 2).Value2) & ",""Annee"":" & AJ(w.Cells(r, 5).Value2) & ",""Mensuel"":" & AJ(w.Cells(r, 6).Value2) & ",""Annuel"":" & AJ(w.Cells(r, 7).Value2) & ",""Active"":" & AJ(ITMCleTexte(w.Cells(r, 8).Value2) = "ACTIVE") & "}"
         End If
     Next r
-    s = s & "],""months"":[": first = True
+    JPlus parts, n, "],""months"":[": first = True
     For Each k In d("mois").Keys
-        If Not first Then s = s & ","
-        first = False: s = s & AJ(d("mois")(k))
+        If Not first Then JPlus parts, n, ","
+        first = False: JPlus parts, n, AJ(d("mois")(k))
     Next k
-    s = s & "],""balances"":[": first = True
+    JPlus parts, n, "],""balances"":[": first = True
     For Each k In d("sommes").Keys
-        If Not first Then s = s & ","
+        If Not first Then JPlus parts, n, ","
         first = False: part = Split(CStr(k), "|")
-        s = s & "{""Matricule"":" & AJ(part(0)) & ",""Mois"":" & AJ(part(1)) & ",""Verse"":" & AJ(d("sommes")(k)) & "}"
+        JPlus parts, n, "{""Matricule"":" & AJ(part(0)) & ",""Mois"":" & AJ(part(1)) & ",""Verse"":" & AJ(d("sommes")(k)) & "}"
     Next k
-    s = s & "],""issues"":[": first = True
+    JPlus parts, n, "],""issues"":[": first = True
     For Each v In d("issues")
-        If Not first Then s = s & ","
+        If Not first Then JPlus parts, n, ","
         first = False
-        s = s & "{""Feuille"":" & AJ(v(0)) & ",""Ligne"":" & AJ(v(1)) & ",""Matricule"":" & AJ(v(2)) & ",""Numero"":" & AJ(v(3)) & ",""Observation"":" & AJ(v(4)) & "}"
+        JPlus parts, n, "{""Feuille"":" & AJ(v(0)) & ",""Ligne"":" & AJ(v(1)) & ",""Matricule"":" & AJ(v(2)) & ",""Numero"":" & AJ(v(3)) & ",""Observation"":" & AJ(v(4)) & "}"
     Next v
-    ITMAppSnapshot = s & "],""closed"":" & AJ(ITMAnneeFermee()) & "}"
+    JPlus parts, n, "],""closed"":" & AJ(ITMAnneeFermee()) & "}"
+    ITMAppSnapshot = JTexte(parts, n)
 End Function
 
 Public Function ITMAppEtatApprenant(ByVal matricule As String) As String

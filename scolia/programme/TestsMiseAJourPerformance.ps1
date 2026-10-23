@@ -26,7 +26,7 @@ function New-MigrationBook {
 # Feature probe is simulated from the module text; comparison and migration are real functions.
 function Test-ITMPerformanceBook($book){
     $m=$book.VBProject.VBComponents.Map
-    return ($m.ModuleFiabilite.CodeModule.Code.Contains('ITM-PERF-2') -and $m.ModuleApplicationITM.CodeModule.Code.Contains('SCOLIA-PERF-6'))
+    return ($m.ModuleFiabilite.CodeModule.Code.Contains('ITM-PERF-2') -and $m.ModuleApplicationITM.CodeModule.Code.Contains('SCOLIA-PERF-7'))
 }
 $book=New-MigrationBook;$script:storeBooks=@($book)
 Update-ITMManagedRuntime
@@ -68,3 +68,18 @@ Update-ITMManagedRuntime
 Assert-Migration ($script:backups -eq 1 -and $script:commits -eq 1 -and $script:edits -eq 2) 'Migration V78 vers V79 non ciblée.'
 Assert-Migration (Test-ITMPerformanceBook $book) 'Version V79 non confirmée après migration V78.'
 'PASS migration V78 vers V79 : sauvegarde préalable, deux modules ciblés et vérification finale'
+
+# Migration directe de la V79 réellement livrée vers V80 : seul le module applicatif change.
+$book=New-MigrationBook
+$cm=$book.VBProject.VBComponents.Map.ModuleFiabilite.CodeModule
+$cm.Code=Get-Content (Join-Path $PSScriptRoot 'Corrections/ModuleFiabilite.txt') -Raw -Encoding UTF8;$cm.CountOfLines=@($cm.Code -split '\r?\n').Count
+$cm=$book.VBProject.VBComponents.Map.ModuleApplicationITM.CodeModule
+$cm.Code=Get-Content (Join-Path $PSScriptRoot 'Compatibilite/ModuleApplicationITM_AvantPerformanceV80.txt') -Raw -Encoding UTF8;$cm.CountOfLines=@($cm.Code -split '\r?\n').Count
+$script:storeBooks=@($book);$script:backups=0;$script:edits=0;$script:commits=0
+Update-ITMManagedRuntime
+Assert-Migration ($script:backups -eq 1 -and $script:commits -eq 1 -and $script:edits -eq 1) 'Migration V79 vers V80 non ciblée.'
+Assert-Migration (Test-ITMPerformanceBook $book) 'Version V80 non confirmée après migration V79.'
+Assert-Migration ($book.VBProject.VBComponents.Map.ModuleApplicationITM.CodeModule.Code.Contains('JTexte(parts, n)')) 'Construction linéaire du JSON absente après migration.'
+Update-ITMManagedRuntime
+Assert-Migration ($script:backups -eq 1 -and $script:edits -eq 1) 'Migration V80 répétée.'
+'PASS migration V79 vers V80 : sauvegarde préalable, module applicatif seul, vérification et absence de répétition'

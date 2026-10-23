@@ -455,7 +455,7 @@ function Save-ScoliaPerformanceSamples {
         if($null -eq $script:scoliaPerfSamples -or -not $script:scoliaPerfSamples.Count){return}
         $directory=Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'ITMCD/diagnostics'
         [void][IO.Directory]::CreateDirectory($directory)
-        $script:scoliaPerfSamples.ToArray() | Export-Csv -LiteralPath (Join-Path $directory 'performance-v79.csv') -NoTypeInformation -Encoding UTF8 -Delimiter ';'
+        $script:scoliaPerfSamples.ToArray() | Export-Csv -LiteralPath (Join-Path $directory 'performance-v80.csv') -NoTypeInformation -Encoding UTF8 -Delimiter ';'
     }catch{}
 }
 

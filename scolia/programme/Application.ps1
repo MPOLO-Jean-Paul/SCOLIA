@@ -133,7 +133,7 @@ function Set-Grid($grid,$rows,$columns) {
         Set-ITMGridReadability $grid
         $grid.ClearSelection()
         $fastIndex=-2
-        if($identity.Count -gt 0 -and ('ITMFastGrid' -as [type])){
+        if($identity.Count -gt 0 -and $grid -is [Windows.Forms.DataGridView] -and ('ITMFastGrid' -as [type])){
             $identityNames=[string[]]@($identity.Keys);$identityValues=[string[]]@(foreach($name in $identityNames){[string]$identity[$name]})
             $fastIndex=[ITMFastGrid]::FindUniqueRow($grid,$identityNames,$identityValues)
             if($fastIndex -ge 0){$match=$grid.Rows[$fastIndex];$cell=@($match.Cells|Where-Object {$_.Visible})|Select-Object -First 1;if($cell){$grid.CurrentCell=$cell};$match.Selected=$true}

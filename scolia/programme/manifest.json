@@ -177,7 +177,7 @@
     "name": "ModuleApplicationITM",
     "before": null,
     "file": "ModuleApplicationITM.txt",
-    "after": "7b950e44213e26e0507ebd47889cacb768d28676962e77d1915dd21f42f6f578",
+    "after": "5ded72e22bc8286db2b5dc99edef86af902bdc15790ed463bb3102aca9464642",
     "compatible": [
       "9686b89623e536ec381ef918f1731da68a62d166af54cc7ce0baed81d7e39133",
       "79130fa418ca0250e39e1039f3e6a36febfc2c888152cfd1184e4ded746da378",
@@ -193,7 +193,8 @@
       "eb534beebbbf924e4b9ccc98ab37557422684bf24ac729dab5197534b0a6450b",
       "22ea253543f80f6cefefac5abb55eb1efc021fcb9af5f2c8e58c3e09d51463ea",
       "3cecb39b0fb85132d544b36892a3a135440267da6e187fb74dd0ea1e9b5e3c57",
-      "dbbc9b13827f9dde606124fa2708a0f6c24b718cc3b4956a9c95c69441957272"
+      "dbbc9b13827f9dde606124fa2708a0f6c24b718cc3b4956a9c95c69441957272",
+      "7b950e44213e26e0507ebd47889cacb768d28676962e77d1915dd21f42f6f578"
     ],
     "compatibilityFile": "Compatibilite/ModuleApplicationITM_AvantCorrectif.txt",
     "compatibilityFiles": [
@@ -207,7 +208,8 @@
       "Compatibilite/ModuleApplicationITM_AvantPerformance.txt",
       "Compatibilite/ModuleApplicationITM_AvantFinance2.txt",
       "Compatibilite/ModuleApplicationITM_AvantPerformanceV76.txt",
-      "Compatibilite/ModuleApplicationITM_AvantPerformanceV78.txt"
+      "Compatibilite/ModuleApplicationITM_AvantPerformanceV78.txt",
+      "Compatibilite/ModuleApplicationITM_AvantPerformanceV80.txt"
     ]
   },
   {

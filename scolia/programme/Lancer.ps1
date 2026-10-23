@@ -3,7 +3,7 @@
     [Parameter(Mandatory=$true)][string]$Journal
 )
 $ErrorActionPreference='Stop'
-$launcherVersion='V79 - ultra performances et dossier modifiable'
+$launcherVersion='V80 - noyau accéléré et chargement linéaire'
 . (Join-Path $PSScriptRoot 'CompilationCache.ps1')
 try {
     $target=Join-Path $PSScriptRoot ($Mode+'.ps1')
