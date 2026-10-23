@@ -8,7 +8,7 @@ function Set-ITMGridReadability($grid,[bool]$ResizeRows=$true) {
     if($grid -isnot [Windows.Forms.DataGridView] -or $grid.IsDisposed -or $grid.Disposing){return}
     if(-not $script:gridReadabilityBusy.Add($grid)){return}
     try {
-        if(Get-Command Set-ITMGridAppearance -ErrorAction SilentlyContinue){Set-ITMGridAppearance $grid $false}
+        if(Test-Path function:Set-ITMGridAppearance){Set-ITMGridAppearance $grid $false}
         # Fit all visible columns to the viewport. Wrapped rows retain all values.
         $grid.AutoSizeColumnsMode='None';$grid.ColumnHeadersHeightSizeMode='AutoSize'
         $grid.ColumnHeadersDefaultCellStyle.WrapMode='True';$grid.DefaultCellStyle.WrapMode='True'
@@ -18,7 +18,7 @@ function Set-ITMGridReadability($grid,[bool]$ResizeRows=$true) {
         $available=[Math]::Max(2*$visible.Count,$grid.ClientSize.Width-[Windows.Forms.SystemInformation]::VerticalScrollBarWidth-$grid.RowHeadersWidth-4)
         if(-not $grid.RowHeadersVisible){$available+=$grid.RowHeadersWidth}
         $total=0;$weights=@();$minimums=@();$minimumTotal=0
-        $q=1;if(Get-Command Get-ITMDpiScale -ErrorAction SilentlyContinue){$q=Get-ITMDpiScale $grid}
+        $q=1;if(Test-Path function:Get-ITMDpiScale){$q=Get-ITMDpiScale $grid}
         foreach($col in $visible){
             $weight=1.0
             if($col.HeaderText -match 'Nom complet|Observation|Motif|Adresse'){$weight=2.0}

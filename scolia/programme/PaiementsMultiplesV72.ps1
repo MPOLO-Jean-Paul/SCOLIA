@@ -3,7 +3,7 @@
 # validation, sa propre référence et sa propre répartition mensuelle.
 
 function Get-ITMBatchLearner([string]$mat) {
-    $matches=$(if(Get-Command Get-ITMLearnerMatches -ErrorAction SilentlyContinue){@(Get-ITMLearnerMatches $mat)}else{@($script:data.learners | Where-Object {(Key $_.Matricule) -eq (Key $mat)})})
+    $matches=$(if(Test-Path function:Get-ITMLearnerMatches){@(Get-ITMLearnerMatches $mat)}else{@($script:data.learners | Where-Object {(Key $_.Matricule) -eq (Key $mat)})})
     if($matches.Count -ne 1 -or -not $matches[0].Eligible){throw 'Dossier invalide, absent ou en double : '+$mat}
     return $matches[0]
 }

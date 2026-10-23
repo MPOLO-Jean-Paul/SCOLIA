@@ -1,4 +1,4 @@
-﻿if(-not (Get-Command Invoke-ITMExcelRunNoArguments -ErrorAction SilentlyContinue)){. (Join-Path $PSScriptRoot 'PasserelleExcel.ps1')}
+﻿if(-not (Test-Path function:Invoke-ITMExcelRunNoArguments)){. (Join-Path $PSScriptRoot 'PasserelleExcel.ps1')}
 # Windows PowerShell 5.1. Registered segments form ONE logical school-year database.
 $script:storeRoot=[IO.Path]::GetDirectoryName($PSScriptRoot)
 $script:store=$null;$script:storeLock=$null;$script:storeBooks=@();$script:storeFolder=''
@@ -179,7 +179,7 @@ function Open-ITMStoreBooks {
         if(-not [IO.File]::Exists($path)){throw ('Classeur data manquant : '+$path)}
         $script:storeConnectionStep='Ouverture du segment : '+[IO.Path]::GetFileName($path)
         $b=$null
-        if(Get-Command Find-ScoliaOpenWorkbook -ErrorAction SilentlyContinue){$b=Find-ScoliaOpenWorkbook $script:excel $path}
+        if(Test-Path function:Find-ScoliaOpenWorkbook){$b=Find-ScoliaOpenWorkbook $script:excel $path}
         if(-not $b){
             $security=$script:excel.AutomationSecurity;$script:excel.AutomationSecurity=1
             try{$b=$script:excel.Workbooks.Open($path,0,$false)}finally{$script:excel.AutomationSecurity=$security}
@@ -274,7 +274,7 @@ function Start-ITMStoreTransaction([object[]]$books=@()) {
     Write-ITMAtomicJson $pending ([pscustomobject]@{Backup=$name;Index=$script:store;Hashes=$hashes;Files=@($targets | ForEach-Object {$_.Name});Date=(Get-Date -Format o)})
     } finally {
         $saveWatch.Stop()
-        if(Get-Command Add-ScoliaPerformanceSample -ErrorAction SilentlyContinue){Add-ScoliaPerformanceSample 'Copie de recuperation' $saveWatch.Elapsed.TotalMilliseconds}
+        if(Test-Path function:Add-ScoliaPerformanceSample){Add-ScoliaPerformanceSample 'Copie de recuperation' $saveWatch.Elapsed.TotalMilliseconds}
     }
 }
 function Save-ITMStoreBookIfDirty($book) {
@@ -292,7 +292,7 @@ function Save-ITMStoreBookIfDirty($book) {
     if(-not $skip){[void](Invoke-ITMExcelMethod $book 'Save')}
     } finally {
         $saveWatch.Stop()
-        if(Get-Command Add-ScoliaPerformanceSample -ErrorAction SilentlyContinue){Add-ScoliaPerformanceSample $(if($skip){'Classeur deja sauvegarde'}else{'Sauvegarde classeur'}) $saveWatch.Elapsed.TotalMilliseconds}
+        if(Test-Path function:Add-ScoliaPerformanceSample){Add-ScoliaPerformanceSample $(if($skip){'Classeur deja sauvegarde'}else{'Sauvegarde classeur'}) $saveWatch.Elapsed.TotalMilliseconds}
     }
 }
 function Complete-ITMStoreTransaction([object[]]$books=@()) {
@@ -306,7 +306,7 @@ function Complete-ITMStoreTransaction([object[]]$books=@()) {
     [IO.File]::Delete((Join-Path $script:storeFolder 'transaction.json'))
     } finally {
         $saveWatch.Stop()
-        if(Get-Command Add-ScoliaPerformanceSample -ErrorAction SilentlyContinue){Add-ScoliaPerformanceSample 'Validation transaction' $saveWatch.Elapsed.TotalMilliseconds}
+        if(Test-Path function:Add-ScoliaPerformanceSample){Add-ScoliaPerformanceSample 'Validation transaction' $saveWatch.Elapsed.TotalMilliseconds}
     }
 }
 function Undo-ITMStoreTransaction {
@@ -345,7 +345,7 @@ function New-ITMSegment([bool]$automatic=$false) {
     }catch{Undo-ITMStoreTransaction;throw}
 }
 function Get-ITMLearnerBook([string]$mat) {
-    $learners=$(if(Get-Command Get-ITMLearnerMatches -ErrorAction SilentlyContinue){@(Get-ITMLearnerMatches $mat)}else{@($script:data.learners | Where-Object {(Key $_.Matricule) -eq (Key $mat)})})
+    $learners=$(if(Test-Path function:Get-ITMLearnerMatches){@(Get-ITMLearnerMatches $mat)}else{@($script:data.learners | Where-Object {(Key $_.Matricule) -eq (Key $mat)})})
     if($learners.Count -ne 1){throw 'Dossier absent ou matricule en double.'}
     if(-not $script:store){return (Resolve-ITMLiveWorkbook $script:book)}
     $source=[string]$learners[0].Source
@@ -363,7 +363,7 @@ function Assert-ITMLearnerIdentity($learners,[string]$mat,[string]$nom,[string]$
     $n=Get-ITMIdentityPart $nom;$p=Get-ITMIdentityPart $post;$first=Get-ITMIdentityPart $prenom;$promo=Promo $promotion
     if(-not $n -or -not $p -or -not $first -or -not $promo){throw 'Identité ou promotion incomplète : enregistrement bloqué.'}
     $useIndex=$false
-    try{$useIndex=[bool]((Get-Command Get-ITMLearnersByIdentity -ErrorAction SilentlyContinue) -and $script:learnerIndexSource -and [object]::ReferenceEquals($script:learnerIndexSource,$learners))}catch{$useIndex=$false}
+    try{$useIndex=[bool]((Test-Path function:Get-ITMLearnersByIdentity) -and $script:learnerIndexSource -and [object]::ReferenceEquals($script:learnerIndexSource,$learners))}catch{$useIndex=$false}
     $candidates=$(if($useIndex){@(Get-ITMLearnersByIdentity $nom $post $prenom $promotion)}else{@($learners)})
     foreach($learner in $candidates){
         if($mat -and (Key $learner.Matricule) -eq (Key $mat)){continue}
@@ -382,14 +382,14 @@ function Invoke-ITMDossier([object[]]$a) {
     $snapshot=$script:data
     if(-not $script:snapshotValid -or -not $snapshot -or -not $snapshot.PSObject.Properties['learners']){$snapshot=Invoke-ITMJsonDirect 'ITMAppSnapshot'}
     if(-not $snapshot -or -not $snapshot.PSObject.Properties['learners']){throw 'Contrôle des apprenants impossible : enregistrement bloqué.'}
-    if([string]$a[0] -and (Get-Command Assert-ScoliaDisciplineAdmission -ErrorAction SilentlyContinue)){
-        $old=$(if((Get-Command Get-ITMLearnerMatches -ErrorAction SilentlyContinue) -and $script:learnerIndexSource -and [object]::ReferenceEquals($script:learnerIndexSource,$snapshot.learners)){@(Get-ITMLearnerMatches ([string]$a[0]))}else{@($snapshot.learners|Where-Object {(Key $_.Matricule) -eq (Key $a[0])})})
+    if([string]$a[0] -and (Test-Path function:Assert-ScoliaDisciplineAdmission)){
+        $old=$(if((Test-Path function:Get-ITMLearnerMatches) -and $script:learnerIndexSource -and [object]::ReferenceEquals($script:learnerIndexSource,$snapshot.learners)){@(Get-ITMLearnerMatches ([string]$a[0]))}else{@($snapshot.learners|Where-Object {(Key $_.Matricule) -eq (Key $a[0])})})
         if($old.Count -eq 1){
             if((Key $a[12]) -eq 'ACTIF' -and ([string]$a[11] -cne [string]$old[0].Annee -or (Promo $a[10]) -cne (Promo $old[0].Promotion))){Assert-ScoliaDisciplineAdmission ([string]$a[0])}
         }
     }
     Assert-ITMLearnerIdentity $snapshot.learners ([string]$a[0]) ([string]$a[1]) ([string]$a[2]) ([string]$a[3]) ([string]$a[10])
-    $previousPromotion='';if([string]$a[0]){$previous=$(if((Get-Command Get-ITMLearnerMatches -ErrorAction SilentlyContinue) -and $script:learnerIndexSource -and [object]::ReferenceEquals($script:learnerIndexSource,$snapshot.learners)){@(Get-ITMLearnerMatches ([string]$a[0]))}else{@($snapshot.learners|Where-Object {(Key $_.Matricule) -eq (Key $a[0])})});if($previous.Count -eq 1){$previousPromotion=[string]$previous[0].Promotion}}
+    $previousPromotion='';if([string]$a[0]){$previous=$(if((Test-Path function:Get-ITMLearnerMatches) -and $script:learnerIndexSource -and [object]::ReferenceEquals($script:learnerIndexSource,$snapshot.learners)){@(Get-ITMLearnerMatches ([string]$a[0]))}else{@($snapshot.learners|Where-Object {(Key $_.Matricule) -eq (Key $a[0])})});if($previous.Count -eq 1){$previousPromotion=[string]$previous[0].Promotion}}
     Reset-ITMCompletedSaveLock
     $active=$script:book
     $transactionStarted=$false
@@ -417,7 +417,7 @@ function Invoke-ITMDossier([object[]]$a) {
             Complete-ITMStoreTransaction @($script:book)
             $transactionStarted=$false
         }
-        if($previousPromotion -and (Promo $previousPromotion) -ne (Promo $verify.learner.Promotion) -and (Get-Command Record-ScoliaPupilPromotionTransition -ErrorAction SilentlyContinue)){
+        if($previousPromotion -and (Promo $previousPromotion) -ne (Promo $verify.learner.Promotion) -and (Test-Path function:Record-ScoliaPupilPromotionTransition)){
             try{Record-ScoliaPupilPromotionTransition -Matricule ([string]$reply.matricule) -OldPromotion $previousPromotion -NewPromotion ([string]$verify.learner.Promotion) -EffectiveDate (Get-Date).Date}catch{if($script:status){$script:status.Text='Dossier enregistré ; confirmez le début du suivi dans la nouvelle promotion.'};try{Write-ITMUserAudit 'Suivi de promotion à confirmer' ([string]$reply.matricule)}catch{}}
         }
         return $raw
@@ -482,7 +482,7 @@ function Invoke-ITMPayment([string]$mat,[double]$amount,[string]$date) {
     if($script:scolia){throw 'Les paiements SCOLIA sʼenregistrent dans Comptabilité > Encaisser et sont reçus automatiquement au secrétariat.'}
     Assert-ITMPermission 'Saisie'
     if($script:peError){throw $script:peError}
-    $persons=$(if(Get-Command Get-ITMLearnerMatches -ErrorAction SilentlyContinue){@(Get-ITMLearnerMatches $mat)}else{@($script:data.learners | Where-Object {(Key $_.Matricule) -eq (Key $mat)})});if($persons.Count -ne 1){throw 'Dossier absent ou matricule en double.'};$person=$persons[0]
+    $persons=$(if(Test-Path function:Get-ITMLearnerMatches){@(Get-ITMLearnerMatches $mat)}else{@($script:data.learners | Where-Object {(Key $_.Matricule) -eq (Key $mat)})});if($persons.Count -ne 1){throw 'Dossier absent ou matricule en double.'};$person=$persons[0]
     if((Get-ITMPECRecord $person) -and -not $script:peVersion){throw 'Mettez à jour les corrections avant d''enregistrer un paiement pour un bénéficiaire.'}
     Reset-ITMCompletedSaveLock
     Ensure-ITMCapacity 'payments' 10

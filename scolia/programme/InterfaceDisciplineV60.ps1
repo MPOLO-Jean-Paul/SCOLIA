@@ -36,10 +36,10 @@ function Show-ScoliaDiscipline([switch]$LayoutOnly){
  $state|Add-Member NoteProperty SearchFields $fields;$state|Add-Member NoteProperty Search $search;$state|Add-Member NoteProperty Kind $kind
  $year=New-Object Windows.Forms.ComboBox;$year.DropDownStyle='DropDownList';$year.Width=135;$year.AccessibleName='Année du registre disciplinaire';[void]$year.Items.Add($model.Context.Year);$year.SelectedIndex=0;$state.Actions.Controls.Add($year);$state|Add-Member NoteProperty Year $year
  $cancelled=New-Object ITMReadableCheckBox;$cancelled.Text='Afficher les annulations';$cancelled.AutoSize=$true;$state.Actions.Controls.Add($cancelled);$state|Add-Member NoteProperty Cancelled $cancelled
- $new=Add-ScoliaTeachingAction $state.Actions 'Nouvelle décision' {param($sender,$e)$s=$sender.FindForm().Tag;try{Show-ScoliaDisciplineEditor $s;Update-ScoliaDisciplineView $s -Reload;if(Get-Command Refresh-ITMCurrentPage -ErrorAction SilentlyContinue){Refresh-ITMCurrentPage}}catch{Set-ScoliaDisciplineError $s $_}};$new.Primary=$true;$state|Add-Member NoteProperty NewButton $new
+ $new=Add-ScoliaTeachingAction $state.Actions 'Nouvelle décision' {param($sender,$e)$s=$sender.FindForm().Tag;try{Show-ScoliaDisciplineEditor $s;Update-ScoliaDisciplineView $s -Reload;if(Test-Path function:Refresh-ITMCurrentPage){Refresh-ITMCurrentPage}}catch{Set-ScoliaDisciplineError $s $_}};$new.Primary=$true;$state|Add-Member NoteProperty NewButton $new
  $received=Add-ScoliaTeachingAction $state.Actions 'Parent reçu' {param($sender,$e)$s=$sender.FindForm().Tag;try{Show-ScoliaDisciplineFollowup $s Received;Update-ScoliaDisciplineView $s -Reload}catch{Set-ScoliaDisciplineError $s $_}};$state|Add-Member NoteProperty ReceivedButton $received
  $absent=Add-ScoliaTeachingAction $state.Actions 'Parent absent' {param($sender,$e)$s=$sender.FindForm().Tag;try{Show-ScoliaDisciplineFollowup $s Absent;Update-ScoliaDisciplineView $s -Reload}catch{Set-ScoliaDisciplineError $s $_}};$state|Add-Member NoteProperty AbsentButton $absent
- $cancel=Add-ScoliaTeachingAction $state.Actions 'Annuler la décision' {param($sender,$e)$s=$sender.FindForm().Tag;try{Show-ScoliaDisciplineFollowup $s Cancel;Update-ScoliaDisciplineView $s -Reload;if(Get-Command Refresh-ITMCurrentPage -ErrorAction SilentlyContinue){Refresh-ITMCurrentPage}}catch{Set-ScoliaDisciplineError $s $_}};$state|Add-Member NoteProperty CancelButton $cancel
+ $cancel=Add-ScoliaTeachingAction $state.Actions 'Annuler la décision' {param($sender,$e)$s=$sender.FindForm().Tag;try{Show-ScoliaDisciplineFollowup $s Cancel;Update-ScoliaDisciplineView $s -Reload;if(Test-Path function:Refresh-ITMCurrentPage){Refresh-ITMCurrentPage}}catch{Set-ScoliaDisciplineError $s $_}};$state|Add-Member NoteProperty CancelButton $cancel
  [void](Add-ScoliaTeachingAction $state.Actions 'Historique' {param($sender,$e)$s=$sender.FindForm().Tag;try{Show-ScoliaDisciplineHistory $s}catch{Set-ScoliaDisciplineError $s $_}})
  [void](Add-ScoliaTeachingAction $state.Actions 'Convocation à imprimer' {param($sender,$e)$s=$sender.FindForm().Tag;try{Export-ScoliaParentConvocation $s}catch{Set-ScoliaDisciplineError $s $_}})
  [void](Add-ScoliaTeachingAction $state.Actions 'Exporter CSV' {param($sender,$e)$s=$sender.FindForm().Tag;try{Export-ScoliaDisciplineCsv $s}catch{Set-ScoliaDisciplineError $s $_}})
@@ -52,7 +52,7 @@ function Show-ScoliaDiscipline([switch]$LayoutOnly){
   if($button.Text -in @('Nouvelle décision','Actualiser','Fermer')){$button.AutoSize=$false;$button.Width=$(if($button -eq $new){165}else{104});$button.Height=38}
   else{$item=New-Object Windows.Forms.ToolStripMenuItem;$item.Text=$button.Text;$item.Tag=[pscustomobject]@{Button=$button;Action=$button.TeachingAction};$item.Add_Click({param($sender,$e)$c=$sender.Tag;if($c.Button.Enabled){& $c.Action $c.Button $e}});[void]$menu.Items.Add($item);$button.Visible=$false}
  }
- $menu.Add_Opening({param($sender,$e)foreach($item in $sender.Items){$item.Enabled=$item.Tag.Button.Enabled};if(Get-Command Apply-ITMThemeForm -ErrorAction SilentlyContinue){Apply-ITMThemeForm $sender}})
+ $menu.Add_Opening({param($sender,$e)foreach($item in $sender.Items){$item.Enabled=$item.Tag.Button.Enabled};if(Test-Path function:Apply-ITMThemeForm){Apply-ITMThemeForm $sender}})
  $filterTimer=New-Object Windows.Forms.Timer;$filterTimer.Interval=45;$state|Add-Member NoteProperty FilterTimer $filterTimer
  $filterTimer.Add_Tick({param($sender,$e)$sender.Stop();$s=$state;if(-not $s.Form.IsDisposed -and -not $s.Loading){try{Update-ScoliaDisciplineView $s}catch{Set-ScoliaDisciplineError $s $_}}}.GetNewClosure())
  foreach($control in @($search,$kind,$year,$cancelled)){
@@ -63,7 +63,7 @@ function Show-ScoliaDiscipline([switch]$LayoutOnly){
  $state.Form.Add_FormClosing({param($sender,$e)if($script:busy){$e.Cancel=$true}})
  $state.Loading=$false;Update-ScoliaFeatureDialogLayout $state;Update-ScoliaDisciplineView $state -Reload
  if($LayoutOnly){return $state}
- if((Get-Command Mount-ScoliaWorkspaceForm -ErrorAction SilentlyContinue) -and (Mount-ScoliaWorkspaceForm $state.Form)){$state.Form.Add_Disposed({$menu.Dispose()}.GetNewClosure());return}
+ if((Test-Path function:Mount-ScoliaWorkspaceForm) -and (Mount-ScoliaWorkspaceForm $state.Form)){$state.Form.Add_Disposed({$menu.Dispose()}.GetNewClosure());return}
  try{[void]$state.Form.ShowDialog($script:main)}finally{$menu.Dispose();$state.Form.Dispose()}
 }
 function Select-ScoliaDisciplineLearner($Owner){
@@ -106,7 +106,7 @@ function Update-ScoliaDisciplineEditor($Form){
  if($temporary -and -not $severe){$valid=$valid -and $s.Start.Value.Date -ge $s.Decision.Value.Date -and $s.End.Value.Date -ge $s.Start.Value.Date}
  if($parents){$valid=$valid -and $s.Meeting.Value.Date -ge $s.Decision.Value.Date}
  $s.Save.Enabled=$valid -and (-not $severe -or $s.Confirm.Checked)
- if(Get-Command Update-ITMFluidTable -ErrorAction SilentlyContinue){Update-ITMFluidTable $s.Table}
+ if(Test-Path function:Update-ITMFluidTable){Update-ITMFluidTable $s.Table}
 }
 function Show-ScoliaDisciplineEditor($Manager,$Learner=$null,[switch]$LayoutOnly){
  Assert-ScoliaDisciplineDialog $Manager -Write
@@ -186,7 +186,7 @@ function New-ScoliaParentConvocationHtml($Record,[string]$Institution,[string]$L
  $meeting=([datetimeoffset]::Parse($Record.MeetingAt)).ToLocalTime().ToString('dd/MM/yyyy à HH:mm');$date=(Get-ScoliaDisciplineDate $Record.DecisionDate).ToString('dd/MM/yyyy')
  $logo=$(if($LogoData -match '^data:image/(png|jpeg|gif);base64,[a-zA-Z0-9+/=]+$'){'<img alt="Logo de l institution" src="'+$LogoData+'">'}else{''})
  $signatureLabel='La direction / scolarité';$signatureName=''
- if(Get-Command Get-ScoliaDocumentSignatory -ErrorAction SilentlyContinue){$person=Get-ScoliaDocumentSignatory 'ConvocationParents';$signatureLabel=[Net.WebUtility]::HtmlEncode($person.Label);$signatureName=[Net.WebUtility]::HtmlEncode($(if($person.Configured){$person.Name}else{'Nom à renseigner dans Administration'}))}
+ if(Test-Path function:Get-ScoliaDocumentSignatory){$person=Get-ScoliaDocumentSignatory 'ConvocationParents';$signatureLabel=[Net.WebUtility]::HtmlEncode($person.Label);$signatureName=[Net.WebUtility]::HtmlEncode($(if($person.Configured){$person.Name}else{'Nom à renseigner dans Administration'}))}
  return @"
 <!doctype html><html lang="fr"><meta charset="utf-8"><title>Convocation des parents — $mat</title>
 <style>@page{size:A4;margin:20mm}*{box-sizing:border-box}body{max-width:170mm;margin:20px auto;color:#23344b;font:15px/1.65 'Segoe UI',Arial,sans-serif}header{display:flex;gap:20px;align-items:center;border-bottom:3px solid #2458a0;padding-bottom:18px}header img{width:70px;height:70px;object-fit:contain}h1{font-size:24px;text-align:center;margin:32px 0 24px;color:#2458a0}.meta{background:#f1f5fa;border:1px solid #d9e1ec;padding:16px;margin:22px 0}.reason{border-left:3px solid #2458a0;padding:12px 18px;margin:22px 0;white-space:normal;overflow-wrap:anywhere}.signature{margin-top:60px;display:flex;justify-content:space-between}.print{background:#2458a0;color:white;border:0;border-radius:7px;padding:12px 20px;cursor:pointer}@media print{body{margin:0}.print{display:none}}</style>

@@ -1,4 +1,4 @@
-﻿if(-not (Get-Command Invoke-ITMExcelRunNoArguments -ErrorAction SilentlyContinue)){. (Join-Path $PSScriptRoot 'PasserelleExcel.ps1')}
+﻿if(-not (Test-Path function:Invoke-ITMExcelRunNoArguments)){. (Join-Path $PSScriptRoot 'PasserelleExcel.ps1')}
 # Mise a jour limitee aux deux modules de performance, sur les segments data seulement.
 function Normalize-Code([string]$text) {
     $lines = $text -split '\r?\n' | Where-Object { $_ -notmatch '^Attribute ' } | ForEach-Object { $_.Trim() }
@@ -128,7 +128,7 @@ function Invoke-ITMWriteMacro([string]$name,[object[]]$arguments=@()) {
     return [string]$reply
     } finally {
         $saveWatch.Stop()
-        if(Get-Command Add-ScoliaPerformanceSample -ErrorAction SilentlyContinue){Add-ScoliaPerformanceSample ('Ecriture Excel: '+$name) $saveWatch.Elapsed.TotalMilliseconds}
+        if(Test-Path function:Add-ScoliaPerformanceSample){Add-ScoliaPerformanceSample ('Ecriture Excel: '+$name) $saveWatch.Elapsed.TotalMilliseconds}
     }
 }
 

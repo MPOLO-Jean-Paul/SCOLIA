@@ -35,7 +35,7 @@ function Apply-ITMInstitution {
     [ITMErrorDialog]::InstitutionName=Get-ITMInstitutionName
     if($script:scolia -and $script:main){$script:main.Text='SCOLIA | '+$script:scolia.School;$script:brandTitle.Text='SCOLIA';$script:brandNote.Text=$script:scolia.School}
     foreach($window in @([Windows.Forms.Application]::OpenForms)){if(-not $window.InvokeRequired){Set-ITMWindowIcon $window}}
-    if(Get-Command Update-ITMInstitutionShortcutIcons -ErrorAction SilentlyContinue){Update-ITMInstitutionShortcutIcons}
+    if(Test-Path function:Update-ITMInstitutionShortcutIcons){Update-ITMInstitutionShortcutIcons}
     if($script:main){$script:main.PerformLayout();$script:main.Invalidate($true)}
 }
 function Save-ITMInstitution($profile,[string]$logoSource='') {

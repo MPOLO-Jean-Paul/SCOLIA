@@ -1,7 +1,7 @@
 ﻿. (Join-Path $PSScriptRoot 'RubanAdaptatifV64.ps1')
 . (Join-Path $PSScriptRoot 'EspaceFonctionnelV67.ps1')
 . (Join-Path $PSScriptRoot 'ReactiviteV68.ps1')
-if(-not (Get-Command Import-ITMCompiledSource -ErrorAction SilentlyContinue)){. (Join-Path $PSScriptRoot 'CompilationCache.ps1')}
+if(-not (Test-Path function:Import-ITMCompiledSource)){. (Join-Path $PSScriptRoot 'CompilationCache.ps1')}
 if(-not ('ITMLoginButton' -as [type])){Import-ITMCompiledSource -Path (Join-Path $PSScriptRoot 'ChromeModerne.cs') -ReferencedAssemblies System.Windows.Forms,System.Drawing}
 $script:navigationLayoutBusy=$false
 $script:ribbonPeek=$false
@@ -53,7 +53,7 @@ function Add-ITMRibbonGroup([string]$title,$commands) {
     $label.Height=[Math]::Max([int](24*$q),$captionSize.Height+[int](8*$q))
     $panel.Height=$label.Bottom+$gap
     $script:ribbonFlow.Controls.Add($panel)
-    if(Get-Command Apply-ITMThemeForm -ErrorAction SilentlyContinue){Apply-ITMThemeForm $panel}
+    if(Test-Path function:Apply-ITMThemeForm){Apply-ITMThemeForm $panel}
 }
 function Get-ITMCommandPermission([string]$label) {
     if($label -in @('Encaisser','Nouvelle dépense','Vérifier opération en attente','Brouillons de caisse')){return 'Encaisser'}
@@ -163,8 +163,8 @@ function New-ITMCommand([string]$label,$target=$null,[scriptblock]$action=$null,
         $info=[pscustomobject]@{Description=('Commande SCOLIA : '+$label+'.');Shortcut='';Keys=0}
         try{Write-Verbose ('Aide de commande absente : '+$label)}catch{}
     }
-    if(Get-Command Register-ScoliaRibbonSource -ErrorAction SilentlyContinue){Register-ScoliaRibbonSource $target}
-    if((Get-Command Get-ScoliaWorkspaceViewNames -ErrorAction SilentlyContinue) -and $label -in (Get-ScoliaWorkspaceViewNames)){$target=$null;$action=New-ScoliaWorkspaceViewAction $label}
+    if(Test-Path function:Register-ScoliaRibbonSource){Register-ScoliaRibbonSource $target}
+    if((Test-Path function:Get-ScoliaWorkspaceViewNames) -and $label -in (Get-ScoliaWorkspaceViewNames)){$target=$null;$action=New-ScoliaWorkspaceViewAction $label}
     $command=[pscustomobject]@{Permission=(Get-ITMCommandPermission $label);Label=$label;Symbol=$symbol;Target=$target;Action=$action;Book=$book;Write=$write;Primary=$primary;Description=$info.Description;Shortcut=$info.Shortcut;Keys=$info.Keys}
     Register-ITMFrequentCommand $command
     return $command
@@ -184,7 +184,7 @@ function Clear-ScoliaRibbonViews {
     foreach($groups in @($script:scoliaRibbonViews.Values)){
         foreach($group in @($groups)){
             if(-not $group.IsDisposed){
-                if(Get-Command Remove-ITMThemeRecords -ErrorAction SilentlyContinue){Remove-ITMThemeRecords $group}
+                if(Test-Path function:Remove-ITMThemeRecords){Remove-ITMThemeRecords $group}
                 foreach($child in $group.Controls){$script:buttonCommands.Remove($child)}
                 $group.Dispose()
             }
@@ -231,7 +231,7 @@ function Update-ITMRibbonState {
             if($c.Target){$button.Enabled=$button.Enabled -and $c.Target.Enabled}
         }}}
         Update-ITMFrequentCommands;Update-ITMNavigation
-        if(Get-Command Update-ScoliaActiveWorkspaceCommand -ErrorAction SilentlyContinue){Update-ScoliaActiveWorkspaceCommand}
+        if(Test-Path function:Update-ScoliaActiveWorkspaceCommand){Update-ScoliaActiveWorkspaceCommand}
         return
     }
     $script:ribbonFlow.SuspendLayout()
@@ -240,7 +240,7 @@ function Update-ITMRibbonState {
     $script:ribbonGeometryRevision++
     $script:ribbonPage=$script:currentPage
     if($script:displayPreferences){$script:ribbonTips.Active=[bool]$script:displayPreferences.Tips}
-    while($script:ribbonFlow.Controls.Count){$c=$script:ribbonFlow.Controls[0];$script:ribbonFlow.Controls.Remove($c);if(Get-Command Remove-ITMThemeRecords -ErrorAction SilentlyContinue){Remove-ITMThemeRecords $c};foreach($child in $c.Controls){$script:buttonCommands.Remove($child)};$c.Dispose()}
+    while($script:ribbonFlow.Controls.Count){$c=$script:ribbonFlow.Controls[0];$script:ribbonFlow.Controls.Remove($c);if(Test-Path function:Remove-ITMThemeRecords){Remove-ITMThemeRecords $c};foreach($child in $c.Controls){$script:buttonCommands.Remove($child)};$c.Dispose()}
     }
     if($script:scoliaSession.Role -eq 'Comptabilité'){Add-ITMRibbonGroup 'OUTILS' @((New-ITMCommand 'Actualiser' $null {Request-ScoliaRefresh} $false),(New-ITMCommand 'Aide / guide' $null {Show-ITMUsageGuide} $false))}else{Add-ITMRibbonGroup 'OUTILS' @((New-ITMCommand 'Actualiser' $script:refresh),(New-ITMCommand 'Aide / guide' $null {Show-ITMUsageGuide} $false))}
     switch($script:currentPage){
@@ -315,7 +315,7 @@ function Update-ITMRibbonState {
         }
     }
     } finally {$script:ribbonFlow.ResumeLayout($true)}
-    if(-not $script:frequentBuilding){Update-ITMFrequentCommands;Update-ITMNavigation;if(Get-Command Update-ScoliaActiveWorkspaceCommand -ErrorAction SilentlyContinue){Update-ScoliaActiveWorkspaceCommand}}
+    if(-not $script:frequentBuilding){Update-ITMFrequentCommands;Update-ITMNavigation;if(Test-Path function:Update-ScoliaActiveWorkspaceCommand){Update-ScoliaActiveWorkspaceCommand}}
 }
 function Invoke-ITMRibbonControl($control) {
     if(-not $control.Enabled){return}
@@ -569,7 +569,7 @@ function Update-ITMFluidRibbon([int]$available,[double]$q,[int]$maxHeight=400) {
         $counts+=,$buttons.Count;$textWidths+=,$natural;$textHeights+=,$height
         $sources+=,[pscustomobject]@{Group=$group;Buttons=$buttons;Caption=$caption}
     }
-    $planner=$(if(Get-Command Get-ScoliaCachedRibbonLayout -ErrorAction SilentlyContinue){'Get-ScoliaCachedRibbonLayout'}else{'Get-ScoliaRibbonLayout'})
+    $planner=$(if(Test-Path function:Get-ScoliaCachedRibbonLayout){'Get-ScoliaCachedRibbonLayout'}else{'Get-ScoliaRibbonLayout'})
     $plan=& $planner ([int[]]$counts) $available $maxHeight $q ([int[]]$textWidths) ([int[]]$textHeights)
     $script:ribbonLayoutHeight=$plan.Height
     if($plan.Width -gt $available){$script:ribbonLayoutHeight+=[Windows.Forms.SystemInformation]::HorizontalScrollBarHeight}

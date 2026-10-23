@@ -1,4 +1,4 @@
-﻿if(-not (Get-Command Import-ITMCompiledSource -ErrorAction SilentlyContinue)){. (Join-Path $PSScriptRoot 'CompilationCache.ps1')}
+﻿if(-not (Test-Path function:Import-ITMCompiledSource)){. (Join-Path $PSScriptRoot 'CompilationCache.ps1')}
 if(-not ('ITMActivity' -as [type])){Import-ITMCompiledSource -Path (Join-Path $PSScriptRoot 'ActivityIndicator.cs') -ReferencedAssemblies System.Windows.Forms,System.Drawing}
 $script:activity=$null;$script:activityDepth=0;$script:activitySource=$null
 $script:learnerIndex=@();$script:learnerByMat=$null;$script:learnerIdentityLookup=$null;$script:learnerIndexSource=$null;$script:dataRevision=0;$script:learnerStamp='';$script:payLearnerStamp=''
@@ -39,7 +39,7 @@ function Start-ITMActivity([string]$message,$anchor=$null) {
     $top=[Math]::Max($ownerBounds.Top+[int](10*$q),[Math]::Min($top,$ownerBounds.Bottom-$cardHeight-[int](10*$q)))
     $rect=New-Object Drawing.Rectangle($left,$top,$cardWidth,$cardHeight)
     $handle=$(if($owner -and $owner.Visible){$owner.Handle}else{[IntPtr]::Zero})
-    $dark=$(if(Get-Command Get-ITMEffectiveDarkTheme -ErrorAction SilentlyContinue){Get-ITMEffectiveDarkTheme}else{$false})
+    $dark=$(if(Test-Path function:Get-ITMEffectiveDarkTheme){Get-ITMEffectiveDarkTheme}else{$false})
     $script:activity=New-Object ITMActivity($message,$rect,$handle,$script:windowIconPath,$dark)
     }catch{
         # Visual setup is auxiliary. Keep this call's depth until its matching Stop.
@@ -99,7 +99,7 @@ function Get-ITMLearnersByIdentity([string]$nom,[string]$post,[string]$prenom,[s
     return @($current | Where-Object {(Get-ITMLearnerIdentityLookupKey ([string]$_.Nom) ([string]$_.PostNom) ([string]$_.Prenom) ([string]$_.Promotion)) -eq $n})
 }
 function Rebuild-ITMLearnerIndex {
-    if(Get-Command Sync-ScoliaDisciplineSnapshot -ErrorAction SilentlyContinue){[void](Sync-ScoliaDisciplineSnapshot)}
+    if(Test-Path function:Sync-ScoliaDisciplineSnapshot){[void](Sync-ScoliaDisciplineSnapshot)}
     $index=New-Object 'System.Collections.Generic.List[object]'
     $byMat=New-Object 'System.Collections.Generic.Dictionary[string,object]' ([StringComparer]::Ordinal)
     $byIdentity=New-Object 'System.Collections.Generic.Dictionary[string,object]' ([StringComparer]::Ordinal)
@@ -143,7 +143,7 @@ function Update-ITMLearnerIndexForSlice([string]$mat) {
         for($i=0;$i -lt $identityList.Count;$i++){if([object]::ReferenceEquals($identityList[$i],$oldEntry) -or (Key $identityList[$i].Matricule) -eq $mat){$identitySlot=$i;break}}
         if($identitySlot -lt 0){Rebuild-ITMLearnerIndex;return}
     }
-    if(Get-Command Sync-ScoliaDisciplineSnapshot -ErrorAction SilentlyContinue){[void](Sync-ScoliaDisciplineSnapshot)}
+    if(Test-Path function:Sync-ScoliaDisciplineSnapshot){[void](Sync-ScoliaDisciplineSnapshot)}
     $item.Entry=$learner
     if($fastIndexesPresent){$matList[0]=$learner;$identityList[$identitySlot]=$learner}
     $script:learnerIndexSource=$script:data.learners
@@ -175,7 +175,7 @@ function Update-ITMLearnerSliceFast([string]$mat,$incoming) {
         if([string]$existing.$field -cne [string]$incoming.$field){return $false}
     }
     if(-not (Copy-ITMObjectProperties $existing $incoming)){return $false}
-    if(Get-Command Sync-ScoliaDisciplineSnapshot -ErrorAction SilentlyContinue){[void](Sync-ScoliaDisciplineSnapshot)}
+    if(Test-Path function:Sync-ScoliaDisciplineSnapshot){[void](Sync-ScoliaDisciplineSnapshot)}
     $script:dataRevision++
     return $true
 }
@@ -314,7 +314,7 @@ function Apply-ITMLearnerSlice($slice) {
         foreach($row in @($script:data.learners)){if((Key $row.Matricule) -ne $mat){$learners.Add($row)}}
         if($slice.PSObject.Properties['learner'] -and $slice.learner){$learners.Add($slice.learner)}
         $script:data.learners=$learners.ToArray()
-        if(Get-Command Update-ITMLearnerIndexForSlice -ErrorAction SilentlyContinue){Update-ITMLearnerIndexForSlice $mat}else{Rebuild-ITMLearnerIndex}
+        if(Test-Path function:Update-ITMLearnerIndexForSlice){Update-ITMLearnerIndexForSlice $mat}else{Rebuild-ITMLearnerIndex}
     }
 
     # Existing receipts are updated in place and only genuinely new receipts are appended.
@@ -360,7 +360,7 @@ function Update-ITMAfterWrite([string]$mat,[bool]$deferView=$false) {
     return $true
     } finally {
         $saveWatch.Stop()
-        if(Get-Command Add-ScoliaPerformanceSample -ErrorAction SilentlyContinue){Add-ScoliaPerformanceSample 'Actualisation apres ecriture' $saveWatch.Elapsed.TotalMilliseconds}
+        if(Test-Path function:Add-ScoliaPerformanceSample){Add-ScoliaPerformanceSample 'Actualisation apres ecriture' $saveWatch.Elapsed.TotalMilliseconds}
     }
 }
 
@@ -466,6 +466,8 @@ function Get-ScoliaGridRowKey($row,$keys) {
     return $builder.ToString()
 }
 function Sync-ScoliaGridTable([Data.DataTable]$target,[Data.DataTable]$source,$keys) {
+    # V80 : rapprochement identique, exécuté en C# (aucun appel PowerShell par ligne).
+    if('ITMFast' -as [type]){return [ITMFast]::SyncTable($target,$source,[string[]]@($keys))}
     if($target.Columns.Count -ne $source.Columns.Count){return $false}
     for($i=0;$i -lt $target.Columns.Count;$i++){
         if($target.Columns[$i].ColumnName -cne $source.Columns[$i].ColumnName -or $target.Columns[$i].DataType -ne $source.Columns[$i].DataType){return $false}

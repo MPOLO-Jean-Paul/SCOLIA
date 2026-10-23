@@ -46,7 +46,7 @@ function Set-ITMGridAppearance($grid,[bool]$ResizeRows=$true) {
     $grid.DefaultCellStyle.WrapMode='True';$grid.RowsDefaultCellStyle.WrapMode='True';$grid.AlternatingRowsDefaultCellStyle.WrapMode='True'
     foreach($column in $grid.Columns){$column.DefaultCellStyle.Font=$font;$column.DefaultCellStyle.WrapMode='True';$column.HeaderCell.Style.Font=$script:displayGridFonts[$boldKey]}
     $grid.AutoSizeRowsMode='None';$grid.ColumnHeadersHeightSizeMode='AutoSize'
-    $dark=$false;if(Get-Command Get-ITMEffectiveDarkTheme -ErrorAction SilentlyContinue){$dark=Get-ITMEffectiveDarkTheme}
+    $dark=$false;if(Test-Path function:Get-ITMEffectiveDarkTheme){$dark=Get-ITMEffectiveDarkTheme}
     $base=$(if($dark){[Drawing.Color]::FromArgb(36,42,51)}else{[Drawing.Color]::White})
     $alternate=$(if($dark){[Drawing.Color]::FromArgb(40,47,57)}else{[Drawing.Color]::FromArgb(249,250,252)})
     $grid.AlternatingRowsDefaultCellStyle.BackColor=$(if($p.Alternating){$alternate}else{$base})
@@ -65,10 +65,10 @@ function Apply-ITMDisplayPreferences {
     if($script:commandHelp){$script:commandHelp.Active=[bool]$script:displayPreferences.Tips}
     if($script:ribbonTips){$script:ribbonTips.Active=[bool]$script:displayPreferences.Tips}
     $script:ribbonPeek=$false;Update-ITMNavigation
-    if(Get-Command Apply-ITMFluidTypography -ErrorAction SilentlyContinue){Apply-ITMFluidTypography $script:main}
+    if(Test-Path function:Apply-ITMFluidTypography){Apply-ITMFluidTypography $script:main}
     foreach($table in @($script:fluidTables.Keys)){Update-ITMFluidTable $table}
     foreach($panel in @($script:pages.Values)+@($script:adminPages.Values)){Update-ITMResponsivePanel $panel}
-    if(Get-Command Update-ITMWorkspaceLayout -ErrorAction SilentlyContinue){Update-ITMWorkspaceLayout}
+    if(Test-Path function:Update-ITMWorkspaceLayout){Update-ITMWorkspaceLayout}
     Apply-ITMDisplayTree $script:main
     foreach($form in @([Windows.Forms.Application]::OpenForms)){if($form -ne $script:main){Apply-ITMDisplayTree $form}}
 }

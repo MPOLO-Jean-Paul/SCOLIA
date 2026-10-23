@@ -55,7 +55,7 @@ function New-ScoliaDialog([string]$title,[int]$width=680,[int]$height=530){
  $d=New-Object Windows.Forms.Form;$d.Text='SCOLIA | '+$title;$d.StartPosition='CenterScreen';$d.Size=New-Object Drawing.Size($width,$height);$d.MinimumSize=New-Object Drawing.Size(380,330);$d.Font=New-Object Drawing.Font('Segoe UI',10);$d.AutoScaleMode='Dpi';Set-ITMWindowIcon $d;return $d
 }
 function New-ScoliaTable($parent){$t=New-Object Windows.Forms.TableLayoutPanel;$t.Dock='Fill';$t.AutoScroll=$true;$t.Padding=New-Object Windows.Forms.Padding(18);$t.ColumnCount=2;$t.AutoSize=$false;[void]$t.ColumnStyles.Add((New-Object Windows.Forms.ColumnStyle([Windows.Forms.SizeType]::Percent,35)));[void]$t.ColumnStyles.Add((New-Object Windows.Forms.ColumnStyle([Windows.Forms.SizeType]::Percent,65)));$parent.Controls.Add($t)
- if($parent -is [Windows.Forms.Form]){$parent.Add_Shown({param($sender,$e)foreach($child in @($sender.Controls)){if($child -is [Windows.Forms.TableLayoutPanel] -and $child.Dock -eq 'Fill' -and $child.Tag -ne 'scolia:cash-layout' -and (Get-Command Enable-ITMFluidTable -ErrorAction SilentlyContinue)){Enable-ITMFluidTable $child}}})}
+ if($parent -is [Windows.Forms.Form]){$parent.Add_Shown({param($sender,$e)foreach($child in @($sender.Controls)){if($child -is [Windows.Forms.TableLayoutPanel] -and $child.Dock -eq 'Fill' -and $child.Tag -ne 'scolia:cash-layout' -and (Test-Path function:Enable-ITMFluidTable)){Enable-ITMFluidTable $child}}})}
  return $t}
 function Add-ScoliaField($table,[string]$caption,$control){$control.AccessibleName=$caption;$row=$table.RowCount;$table.RowCount++;[void]$table.RowStyles.Add((New-Object Windows.Forms.RowStyle([Windows.Forms.SizeType]::AutoSize)));$label=New-Label $table $caption 0 0 100 32;$label.AutoSize=$true;$label.Dock='Top';$label.Margin=New-Object Windows.Forms.Padding(0,8,10,10);$control.Dock='Top';$control.Margin=New-Object Windows.Forms.Padding(0,5,0,8);$table.Controls.Add($control,1,$row);$table.SetCellPosition($label,(New-Object Windows.Forms.TableLayoutPanelCellPosition(0,$row)));return $control}
 function Add-ScoliaText($table,[string]$caption,[string]$value=''){ $c=New-Object Windows.Forms.TextBox;$c.Text=$value;[void](Add-ScoliaField $table $caption $c);return $c}
@@ -574,7 +574,7 @@ function Connect-ScoliaAccount([string]$role,[string]$password){
  Write-ScoliaJson $attemptFile ([pscustomobject]@{Count=0;Until=''})
  $script:scoliaSession=[pscustomobject]@{Role=$a[0].Role;Name=(Get-ScoliaAccountName $a[0]);AccountId=(Get-ScoliaAccountId $a[0]);Revision=$script:scolia.Revision;SchoolId=$script:scolia.Id};$script:accountSession=[pscustomobject]@{Kind='SCOLIA';Name=(Get-ScoliaAccountName $a[0]);Id=(Get-ScoliaAccountId $a[0]);Role=$a[0].Role}
  if($script:security){$script:security.Enabled=[bool]$a[0].Locked};if($script:main){Set-ScoliaWorkspace};Write-ITMUserAudit 'Connexion SCOLIA' $role
- if(Get-Command Set-ITMLocationPreference -ErrorAction SilentlyContinue){[void](Set-ITMLocationPreference 'DerniereConnexionUtc' ([DateTime]::UtcNow.ToString('o',[Globalization.CultureInfo]::InvariantCulture)))}
+ if(Test-Path function:Set-ITMLocationPreference){[void](Set-ITMLocationPreference 'DerniereConnexionUtc' ([DateTime]::UtcNow.ToString('o',[Globalization.CultureInfo]::InvariantCulture)))}
 }
 function Show-ScoliaLogin {
  if(-not (Read-ScoliaConfiguration)){throw 'Configuration absente.'}

@@ -87,10 +87,10 @@ function Show-ScoliaTeachingManager([ValidateSet('Courses','Assignments','Dashbo
   }
  }
  $more.AutoSize=$false;$more.Width=96;$more.Height=38
- $menu.Add_Opening({param($sender,$e)foreach($item in $sender.Items){$item.Enabled=$item.Tag.Button.Enabled};if(Get-Command Apply-ITMThemeForm -ErrorAction SilentlyContinue){Apply-ITMThemeForm $sender}})
+ $menu.Add_Opening({param($sender,$e)foreach($item in $sender.Items){$item.Enabled=$item.Tag.Button.Enabled};if(Test-Path function:Apply-ITMThemeForm){Apply-ITMThemeForm $sender}})
  Update-ScoliaFeatureDialogLayout $state;Update-ScoliaTeachingDialog $state
  if($LayoutOnly){return $state}
- if((Get-Command Mount-ScoliaWorkspaceForm -ErrorAction SilentlyContinue) -and (Mount-ScoliaWorkspaceForm $state.Form)){$state.Form.Add_Disposed({$menu.Dispose()}.GetNewClosure());return}
+ if((Test-Path function:Mount-ScoliaWorkspaceForm) -and (Mount-ScoliaWorkspaceForm $state.Form)){$state.Form.Add_Disposed({$menu.Dispose()}.GetNewClosure());return}
  try{[void]$state.Form.ShowDialog($Owner)}finally{$menu.Dispose();$state.Form.Dispose()}
 }
 function Set-ScoliaTeachingError($State,$ErrorRecord){$State.Message.Tag='scolia:feedback:error';$State.Message.Text=$ErrorRecord.Exception.Message}

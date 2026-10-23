@@ -13,7 +13,7 @@ function Set-ScoliaUniformTypography($Root){
  if(-not $script:scoliaUniformFonts.ContainsKey($key)){$script:scoliaUniformFonts[$key]=New-Object Drawing.Font('Segoe UI',[single]$size,$style)}
  if($Root.Font.FontFamily.Name -ne 'Segoe UI' -or [Math]::Abs($Root.Font.SizeInPoints-$size) -gt .01){$Root.Font=$script:scoliaUniformFonts[$key]}
  if($Root -is [Windows.Forms.DateTimePicker]){$Root.CalendarFont=$Root.Font}
- if($Root -is [Windows.Forms.DataGridView] -and (Get-Command Set-ITMGridAppearance -ErrorAction SilentlyContinue)){Set-ITMGridAppearance $Root}
+ if($Root -is [Windows.Forms.DataGridView] -and (Test-Path function:Set-ITMGridAppearance)){Set-ITMGridAppearance $Root}
  if($Root -is [Windows.Forms.ToolStrip]){foreach($item in @($Root.Items)){Set-ScoliaUniformTypography $item}}
  if($Root -is [Windows.Forms.ToolStripDropDownItem]){foreach($item in @($Root.DropDownItems)){Set-ScoliaUniformTypography $item}}
  foreach($child in @($Root.Controls)){Set-ScoliaUniformTypography $child}

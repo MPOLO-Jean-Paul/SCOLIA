@@ -1,4 +1,4 @@
-﻿if(-not (Get-Command Import-ITMCompiledSource -ErrorAction SilentlyContinue)){. (Join-Path $PSScriptRoot 'CompilationCache.ps1')}
+﻿if(-not (Test-Path function:Import-ITMCompiledSource)){. (Join-Path $PSScriptRoot 'CompilationCache.ps1')}
 # Examination access cards. No Excel writes and no payment eligibility inference.
 if(-not ('ITMExamCards' -as [type])){Import-ITMCompiledSource -Path (Join-Path $PSScriptRoot 'CartesExamens.cs') -ReferencedAssemblies @('System.Drawing','System.Xml')}
 $script:schoolHeader=@('RÉPUBLIQUE DÉMOCRATIQUE DU CONGO','MINISTÈRE DE L''ENSEIGNEMENT PUBLIC, HYGIÈNE ET PRÉVOYANCE SOCIALE','DIRECTION DE L''ENSEIGNEMENT DES SCIENCES DE SANTÉ','DIVISION PROVINCIALE DU HAUT-KATANGA','VILLE DE LUBUMBASHI / ZONE DE SANTÉ DE LUBUMBASHI','INSTITUT TECHNIQUE MÉDICAL CŒUR DE DIEU','N° 1, Av. EDGE | Q. Kamatete | C. Annexe')
@@ -28,7 +28,7 @@ function Update-ITMCardSelection {
     if($script:ribbonFlow -and $script:ribbonPage -eq $script:currentPage -and $script:currentPage -eq 'Exports'){Update-ITMRibbonState}
 }
 function Refresh-ITMSchoolCards([switch]$SkipDisciplineSync) {
-    if(-not $SkipDisciplineSync -and (Get-Command Sync-ScoliaDisciplineSnapshot -ErrorAction SilentlyContinue)){[void](Sync-ScoliaDisciplineSnapshot)}
+    if(-not $SkipDisciplineSync -and (Test-Path function:Sync-ScoliaDisciplineSnapshot)){[void](Sync-ScoliaDisciplineSnapshot)}
     if(-not $script:schoolGrid){return};$script:schoolUpdating=$true
     try{
         $current=[string]$script:schoolPromo.SelectedItem
@@ -52,7 +52,7 @@ function Refresh-ITMSchoolCards([switch]$SkipDisciplineSync) {
 }
 function Get-ITMExamBatch {
     [void]$script:schoolGrid.EndEdit();$list=New-Object 'System.Collections.Generic.List[ITMExamLearner]'
-    foreach($r in $script:schoolGrid.Rows){if([bool]$r.Cells['Choix'].Value){$a=$r.Tag;if(Get-Command Assert-ScoliaDisciplineAdmission -ErrorAction SilentlyContinue){Assert-ScoliaDisciplineAdmission ([string]$a.Matricule)};$x=New-Object ITMExamLearner;foreach($field in @('Nom','PostNom','Prenom','Promotion','Matricule')){$x.$field=[string]$a.$field};$list.Add($x)}}
+    foreach($r in $script:schoolGrid.Rows){if([bool]$r.Cells['Choix'].Value){$a=$r.Tag;if(Test-Path function:Assert-ScoliaDisciplineAdmission){Assert-ScoliaDisciplineAdmission ([string]$a.Matricule)};$x=New-Object ITMExamLearner;foreach($field in @('Nom','PostNom','Prenom','Promotion','Matricule')){$x.$field=[string]$a.$field};$list.Add($x)}}
     $b=New-Object ITMExamBatch;$b.ResourceFolder=Join-Path $PSScriptRoot 'Assets';$b.Institution=Get-ITMInstitutionName;$b.Learners=$list.ToArray();$b.Header=[string[]]$script:schoolHeader.Clone()
     $b.Session='SESSION '+([Globalization.CultureInfo]::GetCultureInfo('fr-FR').DateTimeFormat.GetMonthName($script:schoolMonth.SelectedIndex+1)).ToUpperInvariant()+' '+[int]$script:schoolYear.Value
     $b.AcademicYear=$script:schoolAcademic.Text.Trim();$b.Copies=[int]$script:schoolCopies.Value;$b.CutMarks=$script:schoolCut.Checked
@@ -122,7 +122,7 @@ function Update-ITMSchoolLayout($page){
     for($i=0;$i -lt 6;$i+=$cols){$height=0;for($j=$i;$j -lt [Math]::Min(6,$i+$cols);$j++){$label=$script:schoolLabels[$j];$h=[Windows.Forms.TextRenderer]::MeasureText($label.Text,$label.Font,(New-Object Drawing.Size($cell,2000)),[Windows.Forms.TextFormatFlags]::WordBreak).Height+4;$height=[Math]::Max($height,$h)}
         $fieldHeight=0;for($j=$i;$j -lt [Math]::Min(6,$i+$cols);$j++){$x=$pad+($j-$i)*($cell+$gap);$script:schoolLabels[$j].SetBounds($x,$y,$cell,$height);$f=$script:schoolFields[$j];$h=[Math]::Max([int](28*$q),$f.PreferredSize.Height);$f.SetBounds($x,$y+$height,$cell,$h);$fieldHeight=[Math]::Max($fieldHeight,$h)};$y+=$height+$fieldHeight+$gap}
     foreach($c in @($script:schoolInactive,$script:schoolCut,$script:schoolCount)){$h=[Windows.Forms.TextRenderer]::MeasureText($c.Text,$c.Font,(New-Object Drawing.Size($width,2000)),[Windows.Forms.TextFormatFlags]::WordBreak).Height+8;$c.SetBounds($pad,$y,$width,$h);$y+=$h+$gap}
-    $buttons=@($script:schoolButtons | Where-Object {-not ((Get-Command Test-ScoliaRibbonSource -ErrorAction SilentlyContinue) -and (Test-ScoliaRibbonSource $_))})
+    $buttons=@($script:schoolButtons | Where-Object {-not ((Test-Path function:Test-ScoliaRibbonSource) -and (Test-ScoliaRibbonSource $_))})
     $buttonCols=[Math]::Min(5,[Math]::Max(1,[int][Math]::Floor($width/(185*$q))));$bw=[int](($width-($buttonCols-1)*$gap)/$buttonCols)
     for($i=0;$i -lt $buttons.Count;$i+=$buttonCols){$bh=[int](36*$q);for($j=$i;$j -lt [Math]::Min($buttons.Count,$i+$buttonCols);$j++){$b=$buttons[$j];$bh=[Math]::Max($bh,([Windows.Forms.TextRenderer]::MeasureText($b.Text,$b.Font,(New-Object Drawing.Size(($bw-12),2000)),[Windows.Forms.TextFormatFlags]::WordBreak).Height+14))};for($j=$i;$j -lt [Math]::Min($buttons.Count,$i+$buttonCols);$j++){$buttons[$j].SetBounds(($pad+($j-$i)*($bw+$gap)),$y,$bw,$bh)};$y+=$bh+$gap}
     $gh=[Math]::Max([int](200*$q),$page.ClientSize.Height-$y-$pad);$script:schoolGrid.SetBounds($pad,$y,$width,$gh);$page.AutoScrollMinSize=New-Object Drawing.Size(0,($y+$gh+$pad))

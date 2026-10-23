@@ -1,4 +1,4 @@
-﻿if(-not (Get-Command Import-ITMCompiledSource -ErrorAction SilentlyContinue)){. (Join-Path $PSScriptRoot 'CompilationCache.ps1')}
+﻿if(-not (Test-Path function:Import-ITMCompiledSource)){. (Join-Path $PSScriptRoot 'CompilationCache.ps1')}
 # Shared Excel COM transport. Loaded by the app and data-store entry points.
 if(-not ('ITMExcelDispatch' -as [type])){Import-ITMCompiledSource -Path (Join-Path $PSScriptRoot 'ExcelDispatch.cs')}
 

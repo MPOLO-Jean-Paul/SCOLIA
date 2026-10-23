@@ -45,7 +45,7 @@ function Invoke-ScoliaFeatureUpdate([ValidateSet('inscriptions','presences','rei
  try{
   try{$gate=[IO.File]::Open($path+'.lock',[IO.FileMode]::OpenOrCreate,[IO.FileAccess]::ReadWrite,[IO.FileShare]::None)}catch{throw 'Un autre utilisateur enregistre ces informations. Réessayez après actualisation.'}
   $document=Read-ScoliaFeatureStore -Name $Name -Local:$Local;$featureInitialRevisionV56=[int]$document.Revision
-  $beforePresence=$null;if($Name -eq 'presences' -and (Get-Command Assert-ScoliaPupilSignaturesImmutable -ErrorAction SilentlyContinue)){$beforePresence=$document|ConvertTo-Json -Depth 20|ConvertFrom-ScoliaJson}
+  $beforePresence=$null;if($Name -eq 'presences' -and (Test-Path function:Assert-ScoliaPupilSignaturesImmutable)){$beforePresence=$document|ConvertTo-Json -Depth 20|ConvertFrom-ScoliaJson}
   [void](& $Change $document)
   Assert-ScoliaFeatureDocument $document $context -Local:$Local
   if($beforePresence){Assert-ScoliaPupilSignaturesImmutable $beforePresence $document}
@@ -106,7 +106,7 @@ function Invoke-ScoliaFeatureCommand([string]$Name){
  if($script:busy){return}
  try{
   $view=$(if($Name -eq 'Présences et absences'){'Présences'}else{$Name})
-  if((Get-Command Get-ScoliaWorkspaceViewNames -ErrorAction SilentlyContinue) -and $view -in (Get-ScoliaWorkspaceViewNames)){Invoke-ScoliaWorkspaceView $view;return}
+  if((Test-Path function:Get-ScoliaWorkspaceViewNames) -and $view -in (Get-ScoliaWorkspaceViewNames)){Invoke-ScoliaWorkspaceView $view;return}
   switch($Name){
    'Recherche globale'{Show-ScoliaGlobalSearch}
    'À traiter'{Show-ScoliaActionCenter}
@@ -160,7 +160,7 @@ function Update-ScoliaFeatureCommandLayout([int]$X,[int]$Y,[int]$Width,[double]$
   if(-not $button -or $button.IsDisposed){continue}
   $button.Text=$(if($dense){$shortLabels[$name]}elseif($name -eq 'Outils scolaires'){'Outils scolaires ▾'}else{$name});$button.Compact=$false;$button.TabIndex=$index;$index++
   $button.AccessibleName=$name
-  if(Get-Command Set-ITMAdaptiveFont -ErrorAction SilentlyContinue){Set-ITMAdaptiveFont $button $(if($dense){8.5}else{9.25}) ([Drawing.FontStyle]::Regular)}
+  if(Test-Path function:Set-ITMAdaptiveFont){Set-ITMAdaptiveFont $button $(if($dense){8.5}else{9.25}) ([Drawing.FontStyle]::Regular)}
   $measure=[Windows.Forms.TextRenderer]::MeasureText($button.Text,$button.Font)
   $reserve=[int]($(if($dense){18}else{28})*$q);$minimum=[int]($(if($dense){54}else{74})*$q)
   if($names.Count -eq 1){$minimum=[Math]::Max($minimum,[int](170*$q));$reserve=[Math]::Max($reserve,[int](34*$q))}
@@ -234,7 +234,7 @@ function Initialize-ScoliaFeatureCommands {
   $command.Add_Click({param($sender,$e)if($sender.Enabled){Invoke-ScoliaFeatureCommand ([string]$sender.Tag)}})
   [void]$script:featureToolsMenu.Items.Add($command);$script:featureToolItems[$name]=$command
  }
- $script:featureToolsMenu.Add_Opening({param($sender,$e)Update-ScoliaFeatureCommands;if(Get-Command Apply-ITMThemeForm -ErrorAction SilentlyContinue){Apply-ITMThemeForm $sender}})
+ $script:featureToolsMenu.Add_Opening({param($sender,$e)Update-ScoliaFeatureCommands;if(Test-Path function:Apply-ITMThemeForm){Apply-ITMThemeForm $sender}})
  $tabIndex=0
  foreach($name in @('Recherche globale')){
   $item=New-Object ITMWorkspaceTab;$item.Text=$name;$item.Tag=$name;$item.AccessibleName=$name;$item.TabStop=$true;$item.TabIndex=$tabIndex;$tabIndex++;$item.Cursor='Hand';$item.UseMnemonic=$false
@@ -266,5 +266,5 @@ function Initialize-ScoliaFeatureCommands {
   $script:featureMenuItems=@{};$script:featureToolItems=@{};$script:featureMenu=$null;$script:featureCommandKeyHandler=$null
  })
  Update-ScoliaFeatureCommands
- if(Get-Command Update-ITMNavigation -ErrorAction SilentlyContinue){Update-ITMNavigation}
+ if(Test-Path function:Update-ITMNavigation){Update-ITMNavigation}
 }

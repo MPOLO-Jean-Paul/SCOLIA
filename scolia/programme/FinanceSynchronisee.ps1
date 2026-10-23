@@ -134,6 +134,6 @@ function Show-ScoliaAccounts {
 
  # Réagencement fluide du formulaire : en fenêtre étroite, le libellé passe au-dessus
  # du champ au lieu de réduire ou décaler le champ de confirmation.
- if(Get-Command Enable-ITMFluidTable -ErrorAction SilentlyContinue){Enable-ITMFluidTable $t}
+ if(Test-Path function:Enable-ITMFluidTable){Enable-ITMFluidTable $t}
  Apply-ITMThemeForm $d;try{[void]$d.ShowDialog($script:main)}finally{$pass.Clear();$confirm.Clear();$d.Dispose()}
 }

@@ -64,7 +64,7 @@ function Get-ScoliaSearchIndexStamp {
 function Get-ScoliaCachedSearchRows([switch]$Force){
  $stamp=Get-ScoliaSearchIndexStamp
  if($Force -or -not $script:scoliaSearchIndex -or $script:scoliaSearchIndex.Stamp -cne $stamp){
-  $activity=[bool]($script:main -and (Get-Command Start-ITMActivity -ErrorAction SilentlyContinue))
+  $activity=[bool]($script:main -and (Test-Path function:Start-ITMActivity))
   if($activity){Start-ITMActivity 'Préparation de la recherche...' $script:main}
   try{$script:scoliaSearchIndex=[pscustomobject]@{Stamp=$stamp;Rows=@(Get-ScoliaGlobalSearchRows)}}finally{if($activity){Stop-ITMActivity}}
  }
@@ -126,13 +126,13 @@ function Get-ScoliaActionRows {
    $rows.Add([pscustomobject]@{Key=('diagnostic:'+$index);Type='Diagnostic';Reference=[string]$issue.Matricule;Identity=[string]$issue.Feuille;Date='';State='À vérifier';Description=[string]$issue.Observation;Action='Diagnostic'})
   }
  }
- if((Test-ITMPermission 'Recevoir') -and (Get-Command Get-ScoliaInboxRows -ErrorAction SilentlyContinue)){
+ if((Test-ITMPermission 'Recevoir') -and (Test-Path function:Get-ScoliaInboxRows)){
   try{foreach($entry in @(Get-ScoliaInboxRows)){
    $index++;$rows.Add([pscustomobject]@{Key=('reception:'+$index);Type='Transfert';Reference=[string]$entry.Reference;Identity=[string]$entry.Nom;Date=[string]$entry.Date;State=[string]$entry.Etat;Description=[string]$entry.Observation;Action='Reception'})
   }}catch{$index++;$rows.Add([pscustomobject]@{Key=('error:'+$index);Type='Réception';Reference='';Identity='';Date='';State='Lecture impossible';Description=$_.Exception.Message;Action='Detail'})}
  }
  if(Test-ITMPermission 'Encaisser'){
-  if(Get-Command Get-ScoliaDraftRows -ErrorAction SilentlyContinue){
+  if(Test-Path function:Get-ScoliaDraftRows){
    try{foreach($draft in @(Get-ScoliaDraftRows)){
     $index++;$rows.Add([pscustomobject]@{Key=('cash-draft:'+$index);Type='Brouillon de caisse';Reference=[string]$draft.Reference;Identity=[string]$draft.Apprenant;Date=[string]$draft.Date;State=[string]$draft.Etat;Description='Aucune recette comptabilisée avant validation du brouillon.';Action='CashDrafts'})
    }}catch{$index++;$rows.Add([pscustomobject]@{Key=('error:'+$index);Type='Brouillons de caisse';Reference='';Identity='';Date='';State='Lecture impossible';Description=$_.Exception.Message;Action='Detail'})}
@@ -148,12 +148,12 @@ function Get-ScoliaActionRows {
    }
   }
  }
- if((Test-ITMPermission 'Saisie') -and (Test-ScoliaFeaturePageAllowed 'Apprenants') -and $script:data -and $script:book -and (Get-Command Read-ScoliaFeatureStore -ErrorAction SilentlyContinue)){
+ if((Test-ITMPermission 'Saisie') -and (Test-ScoliaFeaturePageAllowed 'Apprenants') -and $script:data -and $script:book -and (Test-Path function:Read-ScoliaFeatureStore)){
   try{
    $context=Get-ScoliaFeatureContext;$document=Read-ScoliaFeatureStore -Name inscriptions -Local
    $drafts=@($document.Items|Where-Object {
     if(-not $_ -or $_.Kind -ne 'Inscription' -or $_.State -eq 'Saved' -or $_.Context.Id -cne $context.Id -or $_.Context.Year -cne $context.Year -or $_.Context.LocalKey -cne $context.LocalKey){return $false}
-    if((Get-Command Test-ScoliaRegistrationDraftAlreadyRegistered -ErrorAction SilentlyContinue) -and (Test-ScoliaRegistrationDraftAlreadyRegistered $_)){return $false}
+    if((Test-Path function:Test-ScoliaRegistrationDraftAlreadyRegistered) -and (Test-ScoliaRegistrationDraftAlreadyRegistered $_)){return $false}
     return $true
    })
    if($drafts.Count){
@@ -162,7 +162,7 @@ function Get-ScoliaActionRows {
    }
   }catch{$index++;$rows.Add([pscustomobject]@{Key=('error:'+$index);Type='Brouillons inscription';Reference='';Identity='';Date='';State='Lecture impossible';Description=$_.Exception.Message;Action='Detail'})}
  }
- if((Test-ITMPermission 'Administrer') -and (Test-ITMPermission 'Saisie') -and (Test-ScoliaFeaturePageAllowed 'Scolarité') -and $script:data -and $script:book -and (Get-Command Read-ScoliaFeatureStore -ErrorAction SilentlyContinue)){
+ if((Test-ITMPermission 'Administrer') -and (Test-ITMPermission 'Saisie') -and (Test-ScoliaFeaturePageAllowed 'Scolarité') -and $script:data -and $script:book -and (Test-Path function:Read-ScoliaFeatureStore)){
   try{
    $context=Get-ScoliaFeatureContext;$document=Read-ScoliaFeatureStore -Name reinscriptions
    foreach($plan in @($document.Items|Where-Object {$_ -and $_.ContextId -ceq $context.Id -and $_.Year -ceq $context.Year -and $_.State -in @('Préparé','Partiel')})){
@@ -171,7 +171,7 @@ function Get-ScoliaActionRows {
    }
   }catch{$index++;$rows.Add([pscustomobject]@{Key=('error:'+$index);Type='Réinscription';Reference='';Identity='';Date='';State='Lecture impossible';Description=$_.Exception.Message;Action='Detail'})}
  }
- if((Test-ITMPermission 'Lire') -and (Test-ScoliaFeaturePageAllowed 'Apprenants') -and $script:data -and $script:book -and (Get-Command Get-ScoliaPupilAbsenceAlerts -ErrorAction SilentlyContinue)){
+ if((Test-ITMPermission 'Lire') -and (Test-ScoliaFeaturePageAllowed 'Apprenants') -and $script:data -and $script:book -and (Test-Path function:Get-ScoliaPupilAbsenceAlerts)){
   try{
    $context=Get-ScoliaFeatureContext;$tracking=Read-ScoliaFeatureStore -Name suiviapprenants;$presence=Read-ScoliaFeatureStore -Name presences
    Assert-ScoliaPupilCalendars $tracking;Assert-ScoliaAttendanceDocument $presence
@@ -292,7 +292,7 @@ function Show-ScoliaActionCenter {
  $close=Add-ScoliaButton $state.Actions 'Fermer' {param($sender,$e)$sender.FindForm().Close()};$state.Form.CancelButton=$close
  $state.Grid.Add_CellDoubleClick({param($sender,$e)if($e.RowIndex -ge 0){$s=$sender.FindForm().Tag;try{$s.OpenRequested=Get-ScoliaFeatureSelectedRow $s;$s.Form.Close()}catch{$s.Message.Tag='scolia:feedback:error';$s.Message.Text=$_.Exception.Message}}})
  Update-ScoliaActionFeature $state
- if((Get-Command Mount-ScoliaWorkspaceForm -ErrorAction SilentlyContinue) -and (Mount-ScoliaWorkspaceForm $state.Form)){$openResult=(Get-Command Open-ScoliaActionResult).ScriptBlock;$state.Form.Add_FormClosed({if($state.OpenRequested){& $openResult $state.OpenRequested}}.GetNewClosure());return}
+ if((Test-Path function:Mount-ScoliaWorkspaceForm) -and (Mount-ScoliaWorkspaceForm $state.Form)){$openResult=(Get-Command Open-ScoliaActionResult).ScriptBlock;$state.Form.Add_FormClosed({if($state.OpenRequested){& $openResult $state.OpenRequested}}.GetNewClosure());return}
  try{[void]$state.Form.ShowDialog($script:main)}finally{$state.Form.Dispose()}
  if($state.OpenRequested){Open-ScoliaActionResult $state.OpenRequested}
 }

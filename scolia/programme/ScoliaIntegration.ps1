@@ -294,7 +294,7 @@ function Build-ScoliaWorkspace {
  }
 }
 function Publish-ScoliaRoster {
- if(Get-Command Sync-ScoliaDisciplineSnapshot -ErrorAction SilentlyContinue){[void](Sync-ScoliaDisciplineSnapshot)}
+ if(Test-Path function:Sync-ScoliaDisciplineSnapshot){[void](Sync-ScoliaDisciplineSnapshot)}
  if(-not $script:scoliaSession -or -not (Test-ScoliaPermission 'Recevoir') -or -not $script:data -or -not $script:book){return}
  if((Get-ScoliaConnectedYear) -ne ([ScoliaSharing]::YearKey($script:scolia.Year))){$script:scoliaRosterPending=$false;return}
  $publicationKey=([string]$script:connectedWorkbookPath+'|'+[string]$script:storeFolder+'|'+[string]$script:scoliaRoot+'|'+[string]$script:scolia.Id+'|'+[string]$script:scolia.Year+'|'+[string]$script:scolia.Revision+'|'+[string]$script:scoliaSession.AccountId+'|'+[string]$script:dataRevision+'|'+[string]$script:peLedger.Revision)

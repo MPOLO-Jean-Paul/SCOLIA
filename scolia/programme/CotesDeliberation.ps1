@@ -1,4 +1,4 @@
-﻿if(-not (Get-Command Import-ITMCompiledSource -ErrorAction SilentlyContinue)){. (Join-Path $PSScriptRoot 'CompilationCache.ps1')}
+﻿if(-not (Test-Path function:Import-ITMCompiledSource)){. (Join-Path $PSScriptRoot 'CompilationCache.ps1')}
 . (Join-Path $PSScriptRoot 'GrillesParametrables.ps1')
 # Grade import works on a new XLSX copy. Original templates and school data stay intact.
 if(-not ('ITMGradeMatcher' -as [type])){Import-ITMCompiledSource -Path (Join-Path $PSScriptRoot 'CotesMatching.cs')}
@@ -116,7 +116,7 @@ function New-ITMPromotionGrid([string]$path,[string]$promotion){
         }
         # Only the selected promotion is published: historical grades from other sheets are excluded.
         for($i=$book.Worksheets.Count;$i -ge 1;$i--){if($book.Worksheets.Item($i).Name -ne $sheet.Name){[void]$book.Worksheets.Item($i).Delete()}}
-        Sort-ITMGridLearners $sheet $layout;$decisions=@(Set-ITMGridDecisions $sheet $layout);[void]$excel.CalculateFull();Test-ITMGridDecisions $sheet $layout $decisions;if(Get-Command Set-ScoliaWorkbookPersonnel -ErrorAction SilentlyContinue){Set-ScoliaWorkbookPersonnel $book};[void]$book.Save();$book.Close($false);$book=$null;[IO.File]::Move($temp,$final);return $final
+        Sort-ITMGridLearners $sheet $layout;$decisions=@(Set-ITMGridDecisions $sheet $layout);[void]$excel.CalculateFull();Test-ITMGridDecisions $sheet $layout $decisions;if(Test-Path function:Set-ScoliaWorkbookPersonnel){Set-ScoliaWorkbookPersonnel $book};[void]$book.Save();$book.Close($false);$book=$null;[IO.File]::Move($temp,$final);return $final
     }finally{if($book){try{$book.Close($false)}catch{}};if($excel){try{$excel.Quit()}catch{};$excel.Dispose()};if([IO.File]::Exists($temp)){[IO.File]::Delete($temp)}}
 }
 
@@ -228,7 +228,7 @@ function Save-ITMGradePlan($plan){
         foreach($row in $plan.Rows){if(-not (Test-ITMSavedGrade $sheet.Cells.Item($row.LigneGrille,$plan.Column).Value2 ([decimal]$row.Cote))){throw 'La cote enregistrée ne correspond pas au fichier importé.'}}
         Sort-ITMGridLearners $sheet $plan.Layout
         $decisions=@(Set-ITMGridDecisions $sheet $plan.Layout)
-        [void]$excel.CalculateFull();Test-ITMGridDecisions $sheet $plan.Layout $decisions;if(Get-Command Set-ScoliaWorkbookPersonnel -ErrorAction SilentlyContinue){Set-ScoliaWorkbookPersonnel $book};[void]$book.Save()
+        [void]$excel.CalculateFull();Test-ITMGridDecisions $sheet $plan.Layout $decisions;if(Test-Path function:Set-ScoliaWorkbookPersonnel){Set-ScoliaWorkbookPersonnel $book};[void]$book.Save()
         $positions=@{};for($r=$plan.Layout.FirstRow;$r -le $plan.Layout.LastRow;$r++){$key=[ITMGradeMatcher]::Key([string]$sheet.Cells.Item($r,$plan.Layout.NameColumn).Text);if($key){$positions[$key]=$r}}
         $writtenRows=@(foreach($entry in $plan.Rows){
             $name=[string]$entry.Nom;$learner=@($plan.Learners | Where-Object {$_.Id -eq $entry.Matricule});if($learner.Count -eq 1){$name=[string]$learner[0].Name}
@@ -296,7 +296,7 @@ function Show-ITMGrades {
         try{Start-ITMActivity 'Traitement de la grille...' $sender;$c.Output=Save-ITMGradePlan $c.Plan;$c.Open.Enabled=$true;$c.Fields.Grid.Text=$c.Output;$script:status.Text='Grille remplie : '+$c.Output}finally{try{Stop-ITMActivity}finally{Set-ITMGradeBusy $c $false}}
     }catch{App-Error $_}})
     $open.Tag=$context;$open.Add_Click({param($sender,$e)try{if(-not $sender.Tag.Running -and $sender.Tag.Output){Start-Process -FilePath $sender.Tag.Output}}catch{App-Error $_}})
-    Apply-ITMThemeForm $d;if((Get-Command Mount-ScoliaWorkspaceForm -ErrorAction SilentlyContinue) -and (Mount-ScoliaWorkspaceForm $d)){return}
+    Apply-ITMThemeForm $d;if((Test-Path function:Mount-ScoliaWorkspaceForm) -and (Mount-ScoliaWorkspaceForm $d)){return}
     try{[void]$d.ShowDialog($script:main)}finally{$d.Dispose()}
 }
 
@@ -328,7 +328,7 @@ function Show-ITMDeliberation([string]$path,[string]$promotion){
             $excel=Open-ITMGradeExcel;$book=$excel.Workbooks.Open($temp,0,$false);if($book.ReadOnly){throw 'Copie en lecture seule.'};$sheet=$book.Worksheets.Item($c.Layout.Sheet)
             Sort-ITMGridLearners $sheet $c.Layout
             $decisions=@(Set-ITMGridDecisions $sheet $c.Layout);[void]$excel.CalculateFull();Test-ITMGridDecisions $sheet $c.Layout $decisions
-            if(Get-Command Set-ScoliaWorkbookPersonnel -ErrorAction SilentlyContinue){Set-ScoliaWorkbookPersonnel $book};[void]$book.Save();$book.Close($false);$book=$null
+            if(Test-Path function:Set-ScoliaWorkbookPersonnel){Set-ScoliaWorkbookPersonnel $book};[void]$book.Save();$book.Close($false);$book=$null
             [IO.File]::WriteAllText((Join-Path $dir ($id+'.json')),([pscustomobject]@{Date=(Get-Date -Format o);Utilisateur=[Environment]::UserName;Promotion=$c.Promotion;Source=$c.Path;SourceSHA256=$c.Hash;Sortie=$final;ReglesDecision='Vide : AA si >=50 %, sinon D ; sans vide : A si échec <50 % du cours, sinon P';Decisions=$decisions} | ConvertTo-Json -Depth 8),[Text.UTF8Encoding]::new($true))
             [IO.File]::Move($temp,$final);Start-Process -FilePath $final
         }catch{App-Error $_}finally{if($book){try{$book.Close($false)}catch{}};if($excel){try{$excel.Quit()}catch{};$excel.Dispose()};if($temp -and [IO.File]::Exists($temp)){[IO.File]::Delete($temp)};$sender.Enabled=$true}

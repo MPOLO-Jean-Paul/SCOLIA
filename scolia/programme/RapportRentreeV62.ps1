@@ -207,7 +207,7 @@ function Save-ScoliaRentreeExport($State,[ValidateSet('docx','pdf')][string]$For
   Do-Work {
    $w=$script:rentreeWork;Assert-ScoliaRentreeContext $w.State
    Refresh-Data $true
-   if(Get-Command Sync-ScoliaDisciplineSnapshot -ErrorAction SilentlyContinue){[void](Sync-ScoliaDisciplineSnapshot)}
+   if(Test-Path function:Sync-ScoliaDisciplineSnapshot){[void](Sync-ScoliaDisciplineSnapshot)}
    $pop=Get-ScoliaRentreePopulation $script:data $w.State.Context.Year
    $teaching=$null
    if($script:store -and (-not $script:scolia -or (Test-ScoliaPermission 'Scolarite'))){$teaching=Read-ScoliaTeachingState}

@@ -49,7 +49,7 @@ function Assert-ScoliaReenrollmentEntry($entry,$snapshot,[string]$year,[bool]$al
     $changesClass=((Promo $expected.Promotion) -ne (Promo $current.Promotion) -or [string]$expected.Annee -cne [string]$current.Annee)
     if($changesClass){
         if(@($snapshot.payments | Where-Object {(Key $_.Matricule) -eq (Key $entry.Matricule)}).Count -gt 0 -or @($snapshot.balances | Where-Object {(Key $_.Matricule) -eq (Key $entry.Matricule)}).Count -gt 0){throw ('Des paiements existent pour '+$entry.Matricule+' : promotion et année conservées. Réinscrivez avant de saisir les paiements de la nouvelle année.')}
-        if((Get-Command Get-ITMPECRecord -ErrorAction SilentlyContinue) -and (Get-ITMPECRecord $current)){throw ('Une prise en charge existe pour '+$entry.Matricule+' : promotion et année conservées.')}
+        if((Test-Path function:Get-ITMPECRecord) -and (Get-ITMPECRecord $current)){throw ('Une prise en charge existe pour '+$entry.Matricule+' : promotion et année conservées.')}
     }
     Assert-ITMLearnerIdentity $snapshot.learners ([string]$expected.Matricule) ([string]$expected.Nom) ([string]$expected.PostNom) ([string]$expected.Prenom) ([string]$expected.Promotion)
     return [pscustomobject]@{Current=$current;Expected=$expected;AlreadyApplied=$false}
@@ -119,7 +119,7 @@ function Invoke-ScoliaReenrollment([string]$planId) {
         Set-ScoliaReenrollmentEntryState $planId $entry.Matricule 'Écriture en cours'
         try{
             $r=$check.Expected
-            if(Get-Command Set-ITMActivityMessage -ErrorAction SilentlyContinue){Set-ITMActivityMessage ('Réinscription '+($written+$confirmed+1)+' / '+@($plan.Entries).Count+' : '+$r.Matricule+'...')}
+            if(Test-Path function:Set-ITMActivityMessage){Set-ITMActivityMessage ('Réinscription '+($written+$confirmed+1)+' / '+@($plan.Entries).Count+' : '+$r.Matricule+'...')}
             $result=Invoke-ITMDossier @([string]$r.Matricule,[string]$r.Nom,[string]$r.PostNom,[string]$r.Prenom,[string]$r.Sexe,[string]$r.Naissance,[string]$r.Lieu,[string]$r.Tuteur,[string]$r.Contact1,[string]$r.Contact2,[string]$r.Promotion,[string]$r.Annee,[string]$r.Statut,[string]$r.Adresse)
             $reply=$(if($result -is [string]){$result | ConvertFrom-ScoliaJson -ErrorAction Stop}else{$result})
             if(-not $reply.ok){throw 'Le moteur n''a pas confirmé l''enregistrement.'}
@@ -231,6 +231,6 @@ function Show-ScoliaReenrollment([string]$PlanId='') {
     })
     Update-ScoliaReenrollmentGrid $state
     if($PlanId){foreach($label in @($state.PlanMap.Keys)){if([string]$state.PlanMap[$label].Id -ceq $PlanId){$plans.SelectedItem=$label;break}}}
-    if((Get-Command Mount-ScoliaWorkspaceForm -ErrorAction SilentlyContinue) -and (Mount-ScoliaWorkspaceForm $state.Form)){return}
+    if((Test-Path function:Mount-ScoliaWorkspaceForm) -and (Mount-ScoliaWorkspaceForm $state.Form)){return}
     try{Apply-ITMThemeForm $state.Form;[void]$state.Form.ShowDialog($script:main)}finally{$state.Form.Dispose()}
 }

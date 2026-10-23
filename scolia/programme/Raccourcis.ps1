@@ -1,4 +1,4 @@
-﻿if(-not (Get-Command Import-ITMCompiledSource -ErrorAction SilentlyContinue)){. (Join-Path $PSScriptRoot 'CompilationCache.ps1')}
+﻿if(-not (Test-Path function:Import-ITMCompiledSource)){. (Join-Path $PSScriptRoot 'CompilationCache.ps1')}
 Import-ITMCompiledSource -Path (Join-Path $PSScriptRoot 'WindowsShortcuts.cs')
 try{[ITMWindowsShortcuts]::IdentifyProcess()}catch{$script:shortcutIdentityWarning=$_.Exception.Message}
 function New-ITMWindowsShortcut([string]$path) {

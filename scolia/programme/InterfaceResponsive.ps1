@@ -1,5 +1,5 @@
 ﻿. (Join-Path $PSScriptRoot 'TypographieV71.ps1')
-if(-not (Get-Command Get-ITMTextHeight -ErrorAction SilentlyContinue)){. (Join-Path $PSScriptRoot 'Lisibilite.ps1')}
+if(-not (Test-Path function:Get-ITMTextHeight)){. (Join-Path $PSScriptRoot 'Lisibilite.ps1')}
 if(-not $script:pages){$script:pages=@{}}
 $script:adaptivePanels=@{}
 $script:adaptiveFonts=@{}
@@ -26,7 +26,7 @@ function Get-ITMDpiScale($control) {
     return 1
 }
 function Get-ITMFluidTextSize($control,[double]$base,[double]$reference=1050) {
-    if(Get-Command Get-ScoliaInterfaceTextSize -ErrorAction SilentlyContinue){return (Get-ScoliaInterfaceTextSize)}
+    if(Test-Path function:Get-ScoliaInterfaceTextSize){return (Get-ScoliaInterfaceTextSize)}
     return [double]10
 }
 function Get-ITMBaseTextSize($control) {
@@ -43,7 +43,7 @@ function Apply-ITMFluidTypography($root) {
             $base=Get-ITMBaseTextSize $root;Set-ITMAdaptiveFont $root $base $script:fluidBases[$root].Style
         }
         foreach($child in $root.Controls){Apply-ITMFluidTypography $child}
-    }elseif(Get-Command Set-ITMGridAppearance -ErrorAction SilentlyContinue){Set-ITMGridAppearance $root}
+    }elseif(Test-Path function:Set-ITMGridAppearance){Set-ITMGridAppearance $root}
 }
 function Enable-ITMFluidTypography($root) {
     if($script:fluidRoots.ContainsKey($root)){return};$script:fluidRoots[$root]=$false
@@ -190,7 +190,7 @@ function Get-ITMDossierLabelHeight($control,[int]$width,[int]$minimum) {
     return [Math]::Max($minimum,(Get-ITMTextHeight $control $width 0)-8)
 }
 function Enable-ITMDossierLayout($dialog,$body,$header,$footer,$labels,$fields,$addressLabel,$address,$save,$cancel) {
-    if(Get-Command Enable-ITMDialogShortcuts -ErrorAction SilentlyContinue){Enable-ITMDialogShortcuts $dialog}
+    if(Test-Path function:Enable-ITMDialogShortcuts){Enable-ITMDialogShortcuts $dialog}
     [ITMVisualTheme]::Apply($dialog)
     $area=[Windows.Forms.Screen]::FromControl($dialog).WorkingArea
     $q=Get-ITMDpiScale $dialog
@@ -330,7 +330,7 @@ function Update-ITMDossierLayout($dialog) {
     }finally{
         $s.Body.ResumeLayout();$s.Body.AutoScrollPosition=New-Object Drawing.Point([Math]::Abs($saved.X),[Math]::Abs($saved.Y));$s.Busy=$false
     }
-    if(Get-Command Apply-ITMThemeForm -ErrorAction SilentlyContinue){Apply-ITMThemeForm $dialog}
+    if(Test-Path function:Apply-ITMThemeForm){Apply-ITMThemeForm $dialog}
 }
 function Set-ITMDossierFieldError($control,[string]$message) {
     if($script:editErrors){$script:editErrors.SetError($control,$message)}
@@ -367,10 +367,10 @@ function Test-ITMDossierFields([string[]]$fields=@('Nom','PostNom','Prenom','Sex
 }
 function Enable-ITMDialogResponsive($dialog) {
     $dialog.AutoScaleMode='Dpi'
-    if(Get-Command Enable-ITMDialogShortcuts -ErrorAction SilentlyContinue){Enable-ITMDialogShortcuts $dialog}
+    if(Test-Path function:Enable-ITMDialogShortcuts){Enable-ITMDialogShortcuts $dialog}
     if("ITMVisualTheme" -as [type]){[ITMVisualTheme]::Apply($dialog)}
-    if(Get-Command Apply-ITMDisplayTree -ErrorAction SilentlyContinue){Apply-ITMDisplayTree $dialog}
-    if(Get-Command Apply-ITMThemeForm -ErrorAction SilentlyContinue){Apply-ITMThemeForm $dialog}
+    if(Test-Path function:Apply-ITMDisplayTree){Apply-ITMDisplayTree $dialog}
+    if(Test-Path function:Apply-ITMThemeForm){Apply-ITMThemeForm $dialog}
     $screenOwner=$(if($script:main -and -not $script:main.IsDisposed){$script:main}else{$dialog})
     $area=[Windows.Forms.Screen]::FromControl($screenOwner).WorkingArea
     $dialog.MinimumSize=New-Object Drawing.Size([Math]::Min(320,$area.Width-32),[Math]::Min(300,$area.Height-32))
@@ -417,7 +417,7 @@ function Set-ITMFluidRow($items,$pad,$y,$width,$gap,$q) {
 function Update-ScoliaFlowSpacing($Panel){
  if(-not $Panel.WrapContents -or $Panel.FlowDirection -notin @('LeftToRight','RightToLeft')){return}
  $width=[Math]::Max(24,$Panel.ClientSize.Width-$Panel.Padding.Horizontal)
- $q=1;if(Get-Command Get-ITMDpiScale -ErrorAction SilentlyContinue){$q=Get-ITMDpiScale $Panel}
+ $q=1;if(Test-Path function:Get-ITMDpiScale){$q=Get-ITMDpiScale $Panel}
  $Panel.SuspendLayout()
  try{
   foreach($control in @($Panel.Controls)){

@@ -45,8 +45,8 @@ function Update-ScoliaProfessionalControls($Root,$State,[bool]$Reflow){
  if($Root -is [Windows.Forms.ButtonBase] -and $Root.Text -and [string]::IsNullOrWhiteSpace($Root.AccessibleDescription)){
   if([Windows.Forms.TextRenderer]::MeasureText($Root.Text,$Root.Font).Width -gt $Root.Width-20){$State.Tips.SetToolTip($Root,$Root.Text)}
  }
- if($Root -is [Windows.Forms.DataGridView] -and (Get-Command Set-ITMGridReadability -ErrorAction SilentlyContinue)){Set-ITMGridReadability $Root}
- if($Reflow -and (Test-ScoliaPairedFieldTable $Root) -and (Get-Command Enable-ITMFluidTable -ErrorAction SilentlyContinue)){
+ if($Root -is [Windows.Forms.DataGridView] -and (Test-Path function:Set-ITMGridReadability)){Set-ITMGridReadability $Root}
+ if($Reflow -and (Test-ScoliaPairedFieldTable $Root) -and (Test-Path function:Enable-ITMFluidTable)){
   if($null -ne $script:fluidTables -and -not $script:fluidTables.ContainsKey($Root)){Enable-ITMFluidTable $Root}
  }
  foreach($child in @($Root.Controls)){Update-ScoliaProfessionalControls $child $State $Reflow}
@@ -64,9 +64,9 @@ function Update-ScoliaProfessionalWindow($Form){
   }
   $reflow=$secondary -and $Form.GetType().Name -notin @('ITMLoginForm','ITMPasswordForm')
   Update-ScoliaProfessionalControls $Form $state $reflow
-  if($Form.Tag -and $Form.Tag.PSObject.Properties['Viewport'] -and (Get-Command Update-ScoliaFeatureDialogLayout -ErrorAction SilentlyContinue)){Update-ScoliaFeatureDialogLayout $Form.Tag}
+  if($Form.Tag -and $Form.Tag.PSObject.Properties['Viewport'] -and (Test-Path function:Update-ScoliaFeatureDialogLayout)){Update-ScoliaFeatureDialogLayout $Form.Tag}
   if($script:adaptivePanels -and $script:adaptivePanels.ContainsKey($Form) -and $script:adaptivePanels[$Form].PSObject.Properties['Wrappers']){Update-ITMDossierLayout $Form}
-  if($Form.Tag -and $Form.Tag.PSObject.Properties['BatchViewport'] -and (Get-Command Update-ScoliaBatchPaymentLayout -ErrorAction SilentlyContinue)){Update-ScoliaBatchPaymentLayout $Form}
+  if($Form.Tag -and $Form.Tag.PSObject.Properties['BatchViewport'] -and (Test-Path function:Update-ScoliaBatchPaymentLayout)){Update-ScoliaBatchPaymentLayout $Form}
   $state.Error=''
  }catch{$state.Error=$_.Exception.Message;Write-Verbose ('Ajustement de fenêtre : '+$state.Error)}
  finally{$Form.ResumeLayout();$state.Busy=$false}
@@ -76,7 +76,7 @@ function Enable-ScoliaProfessionalWindow($Form){
  if($script:scoliaWindowQuality.ContainsKey($Form)){if($Form.Visible){Update-ScoliaProfessionalWindow $Form};return}
  $tips=New-Object Windows.Forms.ToolTip;$tips.InitialDelay=400;$tips.ReshowDelay=120;$tips.AutoPopDelay=10000
  $script:scoliaWindowQuality[$Form]=[pscustomobject]@{Busy=$false;Tips=$tips;Area=[Windows.Forms.Screen]::FromControl($Form).WorkingArea;Error=''}
- if(Get-Command Enable-ITMDialogShortcuts -ErrorAction SilentlyContinue){Enable-ITMDialogShortcuts $Form}
+ if(Test-Path function:Enable-ITMDialogShortcuts){Enable-ITMDialogShortcuts $Form}
  $timer=New-Object Windows.Forms.Timer;$timer.Interval=100
  $script:scoliaWindowQuality[$Form]|Add-Member NoteProperty Timer $timer
  $timer.Tag=$Form

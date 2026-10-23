@@ -79,9 +79,9 @@ function Print-FichePreview([string]$text) {
     }finally{$preview.Dispose();$document.Dispose();$font.Dispose()}
 }
 function Show-Fiche([string]$mat) {
-    $people=$(if(Get-Command Get-ITMLearnerMatches -ErrorAction SilentlyContinue){@(Get-ITMLearnerMatches $mat)}else{@($script:data.learners | Where-Object {(Key $_.Matricule) -eq (Key $mat)})})
+    $people=$(if(Test-Path function:Get-ITMLearnerMatches){@(Get-ITMLearnerMatches $mat)}else{@($script:data.learners | Where-Object {(Key $_.Matricule) -eq (Key $mat)})})
     if($people.Count -ne 1){throw 'Dossier absent ou matricule en double.'}
-    $a=$people[0];$history=$(if(Get-Command Get-ScoliaPaymentRows -ErrorAction SilentlyContinue){@(Get-ScoliaPaymentRows $mat)}else{Sort-ITMPaymentHistory @($script:data.payments | Where-Object {(Key $_.Matricule) -eq (Key $mat)})})
+    $a=$people[0];$history=$(if(Test-Path function:Get-ScoliaPaymentRows){@(Get-ScoliaPaymentRows $mat)}else{Sort-ITMPaymentHistory @($script:data.payments | Where-Object {(Key $_.Matricule) -eq (Key $mat)})})
     $fee=$script:fees[(Promo $a.Promotion)];$paid=Paid $mat
     $details=@(((Get-ITMInstitutionName)+' — FICHE APPRENANT'),('Matricule : '+$mat),('Nom : '+$a.Nom+' '+$a.PostNom+' '+$a.Prenom),('Sexe : '+$a.Sexe),('Naissance : '+$a.Naissance+' à '+$a.Lieu),('Promotion : '+$a.Promotion+' · Année : '+$a.Annee),('Statut : '+$a.Statut),('Adresse : '+$a.Adresse),('Contact parent 1 : '+$a.Contact1),('Contact parent 2 : '+$a.Contact2),('Total annuel versé : '+(Money $paid)))
     if($fee){$details+=('Reste annuel : '+(Money (Get-ITMPECPayingBalance $a)))}

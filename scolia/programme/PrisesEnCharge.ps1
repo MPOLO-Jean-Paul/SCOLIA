@@ -1,4 +1,4 @@
-﻿if(-not (Get-Command Import-ITMCompiledSource -ErrorAction SilentlyContinue)){. (Join-Path $PSScriptRoot 'CompilationCache.ps1')}
+﻿if(-not (Test-Path function:Import-ITMCompiledSource)){. (Join-Path $PSScriptRoot 'CompilationCache.ps1')}
 # Benefits are an independent funding regime, never fictitious receipts.
 if(-not ('ITMPE' -as [type])){Import-ITMCompiledSource -Path (Join-Path $PSScriptRoot 'PrisesEnCharge.cs') -ReferencedAssemblies @('System.Xml')}
 $script:peLedger=$null;$script:peIndex=@{};$script:peVersion=$false;$script:peError=''
@@ -67,7 +67,7 @@ function Save-ITMPECRecord($record,[string]$action,[string]$motif){
     $script:status.Text='Prise en charge enregistrée : '+$record.Matricule
 }
 function Show-ITMPECEditor([string]$mat,[bool]$paying=$false){
-    $script:committedThisAction=$false;Assert-ITMPECWrite;$matches=$(if(Get-Command Get-ITMLearnerMatches -ErrorAction SilentlyContinue){@(Get-ITMLearnerMatches $mat | Where-Object {$_.Eligible})}else{@($script:data.learners | Where-Object {(Key $_.Matricule) -eq (Key $mat) -and $_.Eligible})});if($matches.Count -ne 1){throw 'Sélectionnez un dossier valide et unique.'};$a=$matches[0];$old=Get-ITMPECRecord $a
+    $script:committedThisAction=$false;Assert-ITMPECWrite;$matches=$(if(Test-Path function:Get-ITMLearnerMatches){@(Get-ITMLearnerMatches $mat | Where-Object {$_.Eligible})}else{@($script:data.learners | Where-Object {(Key $_.Matricule) -eq (Key $mat) -and $_.Eligible})});if($matches.Count -ne 1){throw 'Sélectionnez un dossier valide et unique.'};$a=$matches[0];$old=Get-ITMPECRecord $a
     if($paying -and -not $old){throw 'Cet apprenant ne possède pas de prise en charge.'}
     $d=New-Object Windows.Forms.Form;Set-ITMWindowIcon $d;$d.Text=$(if($paying){'Déclarer payant'}elseif($old){'Modifier la prise en charge'}else{'Enregistrer une prise en charge'});$d.StartPosition='CenterParent';$d.Size=New-Object Drawing.Size(760,650);$d.MinimumSize=New-Object Drawing.Size(360,380);$d.Font=$script:main.Font
     $table=New-ScoliaTable $d;$table.RowCount=2
@@ -140,7 +140,7 @@ function Show-ITMPECList {
     $search.Add_TextChanged({$timer.Stop();$timer.Start()})
     $promo.Add_SelectedIndexChanged({try{& $state.Reload $promo $null}catch{App-Error $_}});$all.Add_CheckedChanged({try{& $state.Reload $all $null}catch{App-Error $_}})
     $add.Add_Click({param($sender,$e)try{Show-ITMPECEditor (Selected-Mat $sender.Tag.Grid);& $sender.Tag.Reload $sender $null}catch{App-Error $_}})
-    $edit.Add_Click({param($sender,$e)try{$mat=Selected-Mat $sender.Tag.Grid;$a=@($(if(Get-Command Get-ITMLearnerMatches -ErrorAction SilentlyContinue){Get-ITMLearnerMatches $mat}else{$script:data.learners|Where-Object {(Key $_.Matricule) -eq (Key $mat)}}))[0];if(-not (Get-ITMPECRecord $a)){throw 'Utilisez Nouvelle prise en charge pour ce dossier.'};Show-ITMPECEditor $mat;& $sender.Tag.Reload $sender $null}catch{App-Error $_}})
+    $edit.Add_Click({param($sender,$e)try{$mat=Selected-Mat $sender.Tag.Grid;$a=@($(if(Test-Path function:Get-ITMLearnerMatches){Get-ITMLearnerMatches $mat}else{$script:data.learners|Where-Object {(Key $_.Matricule) -eq (Key $mat)}}))[0];if(-not (Get-ITMPECRecord $a)){throw 'Utilisez Nouvelle prise en charge pour ce dossier.'};Show-ITMPECEditor $mat;& $sender.Tag.Reload $sender $null}catch{App-Error $_}})
     $pay.Add_Click({param($sender,$e)try{Show-ITMPECEditor (Selected-Mat $sender.Tag.Grid) $true;& $sender.Tag.Reload $sender $null}catch{App-Error $_}})
     $detail.Add_Click({param($sender,$e)try{$s=$sender.Tag;$mat=Selected-Mat $s.Grid;$row=@($s.Rows | Where-Object {$_.Matricule -eq $mat})[0];$lines=@($row.Nom+' / '+$row.Promotion,$row.Regime,'Mensualité : '+(Money $row.Mensualite));foreach($m in [ITMPE]::Months){$lines+=($m+' : couvert '+(Money $row.$m))};$lines+=('Total couvert : '+(Money $row.TotalCouvert),'Reste payant : '+(Money $row.RestePayant));foreach($h in $script:peLedger.History){if($h.Matricule -eq $mat -and $h.Annee -eq [ITMPE]::Year($row.Annee)){$lines+=($h.Date+' / '+$h.User+' / '+$h.Action+' / '+$h.Motif)}};Show-TextDetail 'Prise en charge — mois et historique' ($lines -join "`r`n")}catch{App-Error $_}})
     $csv.Add_Click({param($sender,$e)try{Save-ITMCsv $sender.Tag.Rows 'Prises_en_charge.csv'}catch{App-Error $_}})

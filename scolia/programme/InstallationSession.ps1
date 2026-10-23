@@ -234,7 +234,7 @@ function Complete-ITMInstallSession($result) {
         $status.Text='Installation réussie. Passage à l étape suivante...'
         if($Onboarding){
             # Afficher l'étape suivante avant de fermer l'installateur : aucun écran vide.
-            if(Get-Command Show-ScoliaTransition -ErrorAction SilentlyContinue){Show-ScoliaTransition 'Installation terminée. Préparation de l étape suivante...'}
+            if(Test-Path function:Show-ScoliaTransition){Show-ScoliaTransition 'Installation terminée. Préparation de l étape suivante...'}
             # Nous sommes déjà sur le thread UI du minuteur de suivi : fermer ici est sûr
             # et évite un second Timer capturé dans une fermeture PowerShell. Dans V49,
             # ce Timer local devenait $null au moment du Tick et déclenchait :

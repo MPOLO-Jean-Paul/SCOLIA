@@ -5,6 +5,13 @@ Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 . (Join-Path $PSScriptRoot 'PasserelleExcel.ps1')
 . (Join-Path $PSScriptRoot 'PaiementsFiabiliteV61.ps1')
+# V80 : noyau d'accélération compilé. En cas d'échec de compilation, les fonctions
+# gardent automatiquement leur implémentation PowerShell d'origine.
+$script:scoliaFast=$false
+try{
+    if(-not ('ITMFast' -as [type])){Import-ITMCompiledSource -Path (Join-Path $PSScriptRoot 'AccelerationScolia.cs') -ReferencedAssemblies System.Windows.Forms,System.Drawing,System.Data,System.Xml}
+    $script:scoliaFast=[bool]('ITMFast' -as [type])
+}catch{$script:scoliaFast=$false}
 [Windows.Forms.Application]::EnableVisualStyles()
 $script:excel=$null; $script:book=$null; $script:data=$null; $script:busy=$false; $script:loading=$false
 $script:payNeedsRefresh=$false;$script:payReste=[decimal]0
@@ -13,6 +20,7 @@ $script:fr=[Globalization.CultureInfo]::GetCultureInfo('fr-FR')
 # Pure text cache: bounded, ordinal keys, no business state cached here.
 $script:scoliaTextKeys=New-Object 'System.Collections.Generic.Dictionary[string,string]' ([StringComparer]::Ordinal)
 function Key([object]$value) {
+    if($script:scoliaFast){return [ITMFast]::Key([string]$value)}
     if($null -eq $script:scoliaTextKeys){$script:scoliaTextKeys=New-Object 'System.Collections.Generic.Dictionary[string,string]' ([StringComparer]::Ordinal)}
     $raw=[string]$value
     if($script:scoliaTextKeys.ContainsKey($raw)){return $script:scoliaTextKeys[$raw]}
@@ -38,7 +46,7 @@ function New-Button($parent,[string]$text,[int]$x,[int]$y,[int]$w=160,[bool]$pri
     $b.BackColor=$(if($primary){[Drawing.Color]::FromArgb(0,102,204)}else{[Drawing.Color]::FromArgb(247,249,252)})
     $b.FlatAppearance.MouseOverBackColor=$(if($primary){[Drawing.Color]::FromArgb(36,80,143)}else{[Drawing.Color]::FromArgb(229,235,246)});$b.FlatAppearance.MouseDownBackColor=[Drawing.Color]::FromArgb(18,48,92)
     $b.ForeColor=$(if($primary){[Drawing.Color]::White}else{[Drawing.Color]::FromArgb(0,102,204)})
-    $b.Font=New-Object Drawing.Font('Segoe UI',10,[Drawing.FontStyle]::Bold); $b.Cursor='Hand'; $parent.Controls.Add($b);if(Get-Command Set-ITMCommandHelp -ErrorAction SilentlyContinue){Set-ITMCommandHelp $b $null};return $b
+    $b.Font=New-Object Drawing.Font('Segoe UI',10,[Drawing.FontStyle]::Bold); $b.Cursor='Hand'; $parent.Controls.Add($b);if(Test-Path function:Set-ITMCommandHelp){Set-ITMCommandHelp $b $null};return $b
 }
 function New-Combo($parent,[int]$x,[int]$y,[int]$w=190) {
     $c=New-Object ITMThemeComboBox; $c.DropDownStyle='DropDownList'; $c.SetBounds($x,$y,$w,30); $parent.Controls.Add($c); return $c
@@ -56,12 +64,18 @@ function New-Grid($parent,[int]$x,[int]$y,[int]$w,[int]$h) {
     $g.AlternatingRowsDefaultCellStyle.BackColor=[Drawing.Color]::FromArgb(247,249,253);[ITMActivity]::BufferGrid($g); $parent.Controls.Add($g)
     $g.Add_DataBindingComplete({param($sender,$e) if(-not $script:scoliaBindingGrids -or -not $script:scoliaBindingGrids.Contains($sender)){Set-ITMGridReadability $sender}})
     $g.Add_SizeChanged({param($sender,$e) if(-not $script:scoliaBindingGrids -or -not $script:scoliaBindingGrids.Contains($sender)){Set-ITMGridReadability $sender $false}})
-    if(Get-Command Set-ITMGridAppearance -ErrorAction SilentlyContinue){Set-ITMGridAppearance $g}
+    if(Test-Path function:Set-ITMGridAppearance){Set-ITMGridAppearance $g}
     return $g
 }
 function Set-Grid($grid,$rows,$columns) {
     $performanceWatch=[Diagnostics.Stopwatch]::StartNew()
     try {
+    if($script:scoliaFast){
+        # V80 : même table, construite en C# (aucune boucle interprétée par cellule).
+        $columnProperties=New-Object 'System.Collections.Generic.List[string]';$columnNames=New-Object 'System.Collections.Generic.List[string]';$columnTypes=New-Object 'System.Collections.Generic.List[type]'
+        foreach($column in $columns){$columnProperties.Add([string]$column[0]);$columnNames.Add([string]$column[1]);$columnTypes.Add($(if($column.Count -gt 2 -and $column[2] -is [type]){$column[2]}else{[string]}))}
+        $table=[ITMFast]::BuildTable([object[]]@($rows),$columnProperties.ToArray(),$columnNames.ToArray(),$columnTypes.ToArray())
+    } else {
     $table=New-Object Data.DataTable
     foreach($column in $columns){$columnType=$(if($column.Count -gt 2 -and $column[2] -is [type]){$column[2]}else{[string]});[void]$table.Columns.Add([string]$column[1],$columnType)}
     $table.BeginLoadData()
@@ -72,6 +86,7 @@ function Set-Grid($grid,$rows,$columns) {
         $table.Rows.Add($r)
     }
     } finally {$table.EndLoadData()}
+    }
     # Keep identity rather than an index: filters and new rows can move a dossier.
     $identity=@{};$identityColumns=@()
     $names=@($columns | ForEach-Object {[string]$_[1]})
@@ -117,7 +132,13 @@ function Set-Grid($grid,$rows,$columns) {
         # de reconstruire toute la grille à chaque frappe.
         Set-ITMGridReadability $grid
         $grid.ClearSelection()
-        if($identity.Count -gt 0){
+        $fastIndex=-2
+        if($identity.Count -gt 0 -and ('ITMFastGrid' -as [type])){
+            $identityNames=[string[]]@($identity.Keys);$identityValues=[string[]]@(foreach($name in $identityNames){[string]$identity[$name]})
+            $fastIndex=[ITMFastGrid]::FindUniqueRow($grid,$identityNames,$identityValues)
+            if($fastIndex -ge 0){$match=$grid.Rows[$fastIndex];$cell=@($match.Cells|Where-Object {$_.Visible})|Select-Object -First 1;if($cell){$grid.CurrentCell=$cell};$match.Selected=$true}
+        }
+        if($identity.Count -gt 0 -and $fastIndex -eq -2){
             $match=$null;$matches=0
             foreach($row in $grid.Rows){
                 $equal=$true
@@ -136,7 +157,7 @@ function Set-Grid($grid,$rows,$columns) {
     }
     } finally {
         $performanceWatch.Stop()
-        if(Get-Command Add-ScoliaPerformanceSample -ErrorAction SilentlyContinue){Add-ScoliaPerformanceSample 'Tableau' $performanceWatch.Elapsed.TotalMilliseconds}
+        if(Test-Path function:Add-ScoliaPerformanceSample){Add-ScoliaPerformanceSample 'Tableau' $performanceWatch.Elapsed.TotalMilliseconds}
     }
 }
 function Api-Name([string]$name) {return Get-ITMExcelMacroName $script:book 'ModuleApplicationITM' $name}
@@ -201,7 +222,7 @@ function Update-WorkspaceState {
     if($script:schoolGrid -and $script:currentPage -eq 'Exports'){Update-ITMCardSelection}
     Update-ITMRibbonState
     Update-ScoliaFeatureCommands
-    if(Get-Command Ensure-ScoliaDefaultWorkspaceView -ErrorAction SilentlyContinue){Ensure-ScoliaDefaultWorkspaceView}
+    if(Test-Path function:Ensure-ScoliaDefaultWorkspaceView){Ensure-ScoliaDefaultWorkspaceView}
 }
 function Do-Work([scriptblock]$action,[string]$message='Traitement en cours...') {
     $performanceWatch=[Diagnostics.Stopwatch]::StartNew()
@@ -226,7 +247,7 @@ function Do-Work([scriptblock]$action,[string]$message='Traitement en cours...')
     }
     } finally {
         $performanceWatch.Stop()
-        if(Get-Command Add-ScoliaPerformanceSample -ErrorAction SilentlyContinue){Add-ScoliaPerformanceSample 'Operation' $performanceWatch.Elapsed.TotalMilliseconds}
+        if(Test-Path function:Add-ScoliaPerformanceSample){Add-ScoliaPerformanceSample 'Operation' $performanceWatch.Elapsed.TotalMilliseconds}
     }
 }
 # Preference belongs to this Windows user and survives application updates.
@@ -375,7 +396,7 @@ function Refresh-Data([bool]$deferView=$false) {
         }
         Set-ITMActivityMessage 'Préparation des données et de la recherche...'
         Load-ITMPEC
-        if(Get-Command Add-ScoliaDiagnostic -ErrorAction SilentlyContinue){Add-ScoliaDiagnostic}
+        if(Test-Path function:Add-ScoliaDiagnostic){Add-ScoliaDiagnostic}
         Rebuild-ITMLearnerIndex
         # Build the balance lookup during the snapshot pass already required here.
         # Subsequent payments can then update one matricule without rescanning all balances.
@@ -389,7 +410,7 @@ function Refresh-Data([bool]$deferView=$false) {
             $script:balanceKeysByMat[$balanceMat].Add($balanceKey)
         }
         foreach($p in @($script:data.promotions)){$script:fees[(Promo $p.Code)]=$p}
-        if(Get-Command Publish-ScoliaRoster -ErrorAction SilentlyContinue){try{Publish-ScoliaRoster}catch{$script:status.Text='Répertoire SCOLIA non publié : '+$_.Exception.Message}}
+        if(Test-Path function:Publish-ScoliaRoster){try{Publish-ScoliaRoster}catch{$script:status.Text='Répertoire SCOLIA non publié : '+$_.Exception.Message}}
     } finally {$script:loading=$false}
     # Business data is current before any optional page or journal redraw.
     $script:snapshotValid=$true;$script:payNeedsRefresh=$false
@@ -397,7 +418,7 @@ function Refresh-Data([bool]$deferView=$false) {
     if(-not $deferView){Refresh-ITMSnapshotChoices;Refresh-ITMCurrentPage;Update-WorkspaceState}
     } finally {
         $performanceWatch.Stop()
-        if(Get-Command Add-ScoliaPerformanceSample -ErrorAction SilentlyContinue){Add-ScoliaPerformanceSample 'Lecture donnees' $performanceWatch.Elapsed.TotalMilliseconds}
+        if(Test-Path function:Add-ScoliaPerformanceSample){Add-ScoliaPerformanceSample 'Lecture donnees' $performanceWatch.Elapsed.TotalMilliseconds}
     }
 }
 
@@ -417,6 +438,7 @@ function Refresh-ITMSnapshotChoices {
 function Learner-Rows([string]$search='', [string]$promotion='Toutes les promotions') {
     if($null -eq $script:data){return @()}
     $terms=@((Key $search) -split '\s+' | Where-Object {$_});$promoKey=Promo $promotion
+    if($script:scoliaFast){return [ITMFast]::FilterLearners([object[]]@($script:learnerIndex),[string[]]$terms,($promotion -eq 'Toutes les promotions'),[string]$promoKey)}
     $result=New-Object 'System.Collections.Generic.List[object]'
     foreach($item in $script:learnerIndex){
         if($promotion -ne 'Toutes les promotions' -and $item.Promotion -ne $promoKey){continue}
@@ -427,7 +449,7 @@ function Learner-Rows([string]$search='', [string]$promotion='Toutes les promoti
     return $result.ToArray()
 }
 function Refresh-Learners([string]$target='All') {
-    if(Get-Command Sync-ScoliaDisciplineSnapshot -ErrorAction SilentlyContinue){[void](Sync-ScoliaDisciplineSnapshot)}
+    if(Test-Path function:Sync-ScoliaDisciplineSnapshot){[void](Sync-ScoliaDisciplineSnapshot)}
     if($script:loading){return}
     if($target -in @('All','Learners')){
         $stamp = [string]::Format('{0}::{1}::{2}', [string]$script:dataRevision, (Key $script:search.Text), (Promo $script:filterPromo.Text))
@@ -509,7 +531,7 @@ function Refresh-Dashboard {
     $script:dashboardDate=(Get-Date).ToString('yyyyMMdd')
     } finally {
         $performanceWatch.Stop()
-        if(Get-Command Add-ScoliaPerformanceSample -ErrorAction SilentlyContinue){Add-ScoliaPerformanceSample 'Tableau de bord' $performanceWatch.Elapsed.TotalMilliseconds}
+        if(Test-Path function:Add-ScoliaPerformanceSample){Add-ScoliaPerformanceSample 'Tableau de bord' $performanceWatch.Elapsed.TotalMilliseconds}
     }
 }
 function Selected-Mat($grid) {
@@ -631,10 +653,10 @@ function Show-Page([string]$name) {
     }
     Update-ITMRibbonState
     Update-ITMNavigation
-    if(Get-Command Ensure-ScoliaDefaultWorkspaceView -ErrorAction SilentlyContinue){Ensure-ScoliaDefaultWorkspaceView}
+    if(Test-Path function:Ensure-ScoliaDefaultWorkspaceView){Ensure-ScoliaDefaultWorkspaceView}
     } finally {
         $performanceWatch.Stop()
-        if(Get-Command Add-ScoliaPerformanceSample -ErrorAction SilentlyContinue){Add-ScoliaPerformanceSample ('Onglet: '+$name) $performanceWatch.Elapsed.TotalMilliseconds}
+        if(Test-Path function:Add-ScoliaPerformanceSample){Add-ScoliaPerformanceSample ('Onglet: '+$name) $performanceWatch.Elapsed.TotalMilliseconds}
     }
 }
 function Show-Dossier([string]$mat='') {
@@ -642,7 +664,7 @@ function Show-Dossier([string]$mat='') {
     if($null -eq $script:data){throw 'Connectez un classeur avant de saisir.'}
     if($script:payNeedsRefresh){throw 'Actualisez les données avant de modifier un dossier.'}
     if($script:data.closed){throw 'Cette année est clôturée. Connectez le nouveau classeur.'}
-    $a=$null;if($mat){$foundRows=$(if(Get-Command Get-ITMLearnerMatches -ErrorAction SilentlyContinue){@(Get-ITMLearnerMatches $mat)}else{@($script:data.learners | Where-Object {(Key $_.Matricule) -eq (Key $mat)})});if($foundRows.Count -ne 1){throw 'Le matricule est absent ou en double.'};$a=$foundRows[0]}
+    $a=$null;if($mat){$foundRows=$(if(Test-Path function:Get-ITMLearnerMatches){@(Get-ITMLearnerMatches $mat)}else{@($script:data.learners | Where-Object {(Key $_.Matricule) -eq (Key $mat)})});if($foundRows.Count -ne 1){throw 'Le matricule est absent ou en double.'};$a=$foundRows[0]}
     $script:lastMat=$mat
     $script:editMat=$mat;$script:editControls=@{};$fieldLabels=@();$fieldBoxes=@()
     $dialog=New-Object Windows.Forms.Form;Set-ITMWindowIcon $dialog; $script:editDialog=$dialog;$dialog.AutoScaleMode='Dpi'
@@ -787,7 +809,7 @@ function Reset-PaymentSelection([bool]$refresh=$true) {
     if($refresh){Refresh-Payments}
 }
 function Choose-Payment([string]$mat) {
-    $a=$(if(Get-Command Get-ITMLearnerMatches -ErrorAction SilentlyContinue){@(Get-ITMLearnerMatches $mat)}else{@($script:data.learners | Where-Object {(Key $_.Matricule) -eq (Key $mat)})})
+    $a=$(if(Test-Path function:Get-ITMLearnerMatches){@(Get-ITMLearnerMatches $mat)}else{@($script:data.learners | Where-Object {(Key $_.Matricule) -eq (Key $mat)})})
     if($a.Count -ne 1 -or -not $a[0].Eligible){throw 'Dossier invalide ou en double. Consultez Diagnostic.'}
     if((Key $script:payMat) -ne (Key $mat)){$script:payAmount.Value=0}
     $a=$a[0];$script:payMat=$mat;$fee=$script:fees[(Promo $a.Promotion)];$paidTotal=Paid $mat

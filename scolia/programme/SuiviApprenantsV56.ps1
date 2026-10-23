@@ -167,7 +167,7 @@ function Get-ScoliaPupilMonthlySummary {
     foreach($record in @($records.Values)){
         if(-not $roster.ContainsKey($record.Matricule) -and -not $duplicateKeys.ContainsKey($record.Matricule)){$roster[$record.Matricule]=[pscustomobject]@{Matricule=$record.Matricule;Nom=$record.Nom;PostNom='';Prenom='';Promotion=$record.Promotion;Annee=$Year;Statut='Historique';Eligible=$false;Inscription=''}}
     }
-    $disciplineDocuments=@();if($script:store -and $script:storeFolder -and (Get-Command Get-ScoliaDisciplineDocuments -ErrorAction SilentlyContinue)){$disciplineDocuments=@(Get-ScoliaDisciplineDocuments)}
+    $disciplineDocuments=@();if($script:store -and $script:storeFolder -and (Test-Path function:Get-ScoliaDisciplineDocuments)){$disciplineDocuments=@(Get-ScoliaDisciplineDocuments)}
     $rows=New-Object 'System.Collections.Generic.List[object]'
     foreach($matricule in @($roster.Keys)){
         $learner=$roster[$matricule];$promoKey=Get-ScoliaAttendanceKey $learner.Promotion
@@ -248,8 +248,8 @@ function Get-ScoliaPupilAbsenceAlerts {
 function Set-ScoliaPupilSignature {
     param([object]$Document,[object]$Learner,[datetime]$Date,[string]$Promotion,[int]$ExpectedRevision,[string]$Actor,[datetimeoffset]$Now=[datetimeoffset]::Now)
     if([int]$Document.Revision -ne $ExpectedRevision){throw 'Les présences ont changé. Actualisez avant de signer.'}
-    if(Get-Command Sync-ScoliaDisciplineSnapshot -ErrorAction SilentlyContinue){[void](Sync-ScoliaDisciplineSnapshot)}
-    if(Get-Command Assert-ScoliaDisciplineAdmission -ErrorAction SilentlyContinue){Assert-ScoliaDisciplineAdmission ([string]$Learner.Matricule) $Date}
+    if(Test-Path function:Sync-ScoliaDisciplineSnapshot){[void](Sync-ScoliaDisciplineSnapshot)}
+    if(Test-Path function:Assert-ScoliaDisciplineAdmission){Assert-ScoliaDisciplineAdmission ([string]$Learner.Matricule) $Date}
     if($Date.Date -ne $Now.Date){throw 'La présence est renseignée uniquement le jour même ; l''heure sert seulement à l''historique.'}
     if(-not $Actor.Trim() -or $Actor.Length -gt 200){throw 'Une session identifiable est requise pour enregistrer la présence.'}
     $range=Get-ScoliaPupilMonthBounds $Date ([string]$Document.Context.Year)
@@ -584,6 +584,6 @@ function Show-ScoliaPupilMonthlyAttendance {
     [void](Update-ScoliaPupilMonthlyDialog $state)
     if((Get-Date).Date -ge $first -and (Get-Date).Date -le $first.AddMonths(1).AddDays(-1)){$state.DayPicker.Value=(Get-Date).Date}
     if($Matricule){foreach($row in $state.Grid.Rows){if([string]$row.Cells['Matricule'].Value -ceq $Matricule){$state.Grid.CurrentCell=$row.Cells['Nom'];break}}}
-    if((Get-Command Mount-ScoliaWorkspaceForm -ErrorAction SilentlyContinue) -and (Mount-ScoliaWorkspaceForm $state.Form)){return}
+    if((Test-Path function:Mount-ScoliaWorkspaceForm) -and (Mount-ScoliaWorkspaceForm $state.Form)){return}
     try{if($Owner){[void]$state.Form.ShowDialog($Owner)}elseif($script:main -and -not $script:main.IsDisposed){[void]$state.Form.ShowDialog($script:main)}else{[void]$state.Form.ShowDialog()}}finally{$state.Form.Dispose()}
 }

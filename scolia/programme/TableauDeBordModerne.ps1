@@ -1,4 +1,4 @@
-﻿if(-not (Get-Command Import-ITMCompiledSource -ErrorAction SilentlyContinue)){. (Join-Path $PSScriptRoot 'CompilationCache.ps1')}
+﻿if(-not (Test-Path function:Import-ITMCompiledSource)){. (Join-Path $PSScriptRoot 'CompilationCache.ps1')}
 Import-ITMCompiledSource -Path (Join-Path $PSScriptRoot 'DashboardChart.cs') -ReferencedAssemblies System.Windows.Forms,System.Drawing
 function Build-ITMDashboard($p) {
     $script:dashHeading=New-Label $p 'Pilotage du secrétariat' 0 0 400 32 14 $true

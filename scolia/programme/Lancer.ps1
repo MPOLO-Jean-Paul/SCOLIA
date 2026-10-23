@@ -107,6 +107,6 @@ try {
     try { [IO.File]::WriteAllText($Journal,$report,[Text.Encoding]::Unicode) } catch {}
     exit 2
 } finally {
-    if(Get-Command Close-ScoliaTransition -ErrorAction SilentlyContinue){Close-ScoliaTransition}
+    if(Test-Path function:Close-ScoliaTransition){Close-ScoliaTransition}
     if('ITMApplicationInstances' -as [type]){[ITMApplicationInstances]::Leave()}
 }

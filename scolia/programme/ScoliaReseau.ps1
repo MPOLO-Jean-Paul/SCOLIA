@@ -91,7 +91,7 @@ function Show-ScoliaNetwork([switch]$Setup,[string]$InitialPath='',[string]$Expe
 function Open-ScoliaNetwork { [void](Show-ScoliaNetwork) }
 function Read-ScoliaConfigurationWithRecovery {
  try{return (Read-ScoliaConfiguration)}catch{
-  if(Get-Command Close-ScoliaTransition -ErrorAction SilentlyContinue){Close-ScoliaTransition}
+  if(Test-Path function:Close-ScoliaTransition){Close-ScoliaTransition}
   $errorText=$_.Exception.Message;$pointer=[IO.File]::ReadAllText($script:scoliaPointer)|ConvertFrom-Json
   $d=New-ScoliaDialog 'Connexion mémorisée indisponible' 640 390;$t=New-ScoliaTable $d;$text=New-Label $t ($errorText+"`r`n"+$pointer.Root+"`r`nAllumez le poste hôte. La base existante reste conservée.") 0 0 560 150;$text.Dock='Top';$t.SetColumnSpan($text,2);$t.RowCount=1
   $bar=New-Object Windows.Forms.FlowLayoutPanel;$bar.Dock='Bottom';$bar.Height=115;$d.Controls.Add($bar);$result=[pscustomobject]@{Connected=$false}

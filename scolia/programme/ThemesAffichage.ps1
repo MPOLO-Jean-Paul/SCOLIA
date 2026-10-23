@@ -209,8 +209,8 @@ function Apply-ITMThemeForm($form) {
     if(-not $form -or $form.IsDisposed){return}
     $dark=Get-ITMEffectiveDarkTheme
     Set-ITMThemeTree $form $dark
-    if(Get-Command Set-ScoliaUniformTypography -ErrorAction SilentlyContinue){Set-ScoliaUniformTypography $form}
-    if($form -is [Windows.Forms.Form] -and (Get-Command Enable-ScoliaProfessionalWindow -ErrorAction SilentlyContinue)){Enable-ScoliaProfessionalWindow $form}
+    if(Test-Path function:Set-ScoliaUniformTypography){Set-ScoliaUniformTypography $form}
+    if($form -is [Windows.Forms.Form] -and (Test-Path function:Enable-ScoliaProfessionalWindow)){Enable-ScoliaProfessionalWindow $form}
     if($form -is [Windows.Forms.Form] -and ("ITMVisualTheme" -as [type])){[ITMVisualTheme]::PrepareWindow($form)}
     if($form -is [Windows.Forms.Form] -and -not $script:themeForms.ContainsKey($form)){
         $script:themeForms[$form]=$true
@@ -221,7 +221,7 @@ function Apply-ITMThemeForm($form) {
     }
 }
 function Apply-ITMThemeToOpenForms {
-    if(Get-Command Clear-ScoliaRibbonViews -ErrorAction SilentlyContinue){Clear-ScoliaRibbonViews}
+    if(Test-Path function:Clear-ScoliaRibbonViews){Clear-ScoliaRibbonViews}
     $dark=Get-ITMEffectiveDarkTheme
     if($script:main){Apply-ITMThemeForm $script:main}
     foreach($form in @([Windows.Forms.Application]::OpenForms)){if($form -ne $script:main){Apply-ITMThemeForm $form}}
@@ -239,7 +239,7 @@ function Apply-ITMThemeToOpenForms {
             if($oldActive -and -not [object]::ReferenceEquals($oldActive,$oldInactive)){$oldActive.Dispose()}
         }
     }
-    if(Get-Command Update-ITMDashboardIcons -ErrorAction SilentlyContinue){Update-ITMDashboardIcons $dark}
+    if(Test-Path function:Update-ITMDashboardIcons){Update-ITMDashboardIcons $dark}
     $script:themeLastDark=$dark
 }
 function Start-ITMThemeMonitor {
@@ -264,4 +264,22 @@ $script:scoliaThemeIdleHandler=[System.EventHandler]{
   }
  }finally{$script:scoliaThemeIdleBusy=$false}
 }
-[Windows.Forms.Application]::add_Idle($script:scoliaThemeIdleHandler)
+# V80 : le contrôle « fenêtre déjà thématisée ? » est fait en C# à chaque période
+# d'inactivité ; PowerShell n'est appelé que pour une nouvelle fenêtre. L'ancien
+# gestionnaire reste le repli si le noyau d'accélération n'est pas disponible.
+if($script:scoliaThemeWatcher){try{$script:scoliaThemeWatcher.Detach()}catch{};$script:scoliaThemeWatcher=$null}
+if('ITMFormWatcher' -as [type]){
+ $script:scoliaThemeWatcher=[ITMFormWatcher]::new($script:themeForms)
+ $script:scoliaThemeWatcher.add_FormNeedsTheme([EventHandler]{
+  param($sender,$e)
+  if($script:scoliaThemeIdleBusy){return};$script:scoliaThemeIdleBusy=$true
+  try{
+   if(-not $sender.IsDisposed -and -not $sender.InvokeRequired -and -not $script:themeForms.ContainsKey($sender)){
+    try{Apply-ITMThemeForm $sender}catch{Write-Verbose ('Thème de fenêtre : '+$_.Exception.Message)}
+   }
+  }finally{$script:scoliaThemeIdleBusy=$false}
+ })
+ $script:scoliaThemeWatcher.Attach()
+}else{
+ [Windows.Forms.Application]::add_Idle($script:scoliaThemeIdleHandler)
+}

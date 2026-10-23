@@ -7,7 +7,7 @@ function Assert-ScoliaPersonnelInterfaceContext([object]$State,[string]$Permissi
 }
 function Set-ScoliaPersonnelInterfaceMessage([object]$State,[string]$Text,[bool]$Error=$false) {
     $State.Message.Text=$Text;$State.Message.Tag=$(if($Error){'scolia:feedback:error'}else{'scolia:feedback:success'})
-    if(Get-Command Apply-ITMThemeForm -ErrorAction SilentlyContinue){Apply-ITMThemeForm $State.Form}
+    if(Test-Path function:Apply-ITMThemeForm){Apply-ITMThemeForm $State.Form}
 }
 function Add-ScoliaPersonnelColumn([object]$Grid,[string]$Name,[string]$Caption,[int]$Width,[switch]$Check) {
     $column=$(if($Check){New-Object Windows.Forms.DataGridViewCheckBoxColumn}else{New-Object Windows.Forms.DataGridViewTextBoxColumn})
@@ -163,7 +163,7 @@ function Invoke-ScoliaTeacherPunchClick([object]$State,[int]$RowIndex,[ValidateS
 function Show-ScoliaTeacherAttendance {
     Assert-ITMPermission 'Lire';$state=New-ScoliaTeacherAttendanceDialog -Context (Get-ScoliaFeatureContext)
     [void](Update-ScoliaTeacherAttendanceDialog $state)
-    if((Get-Command Mount-ScoliaWorkspaceForm -ErrorAction SilentlyContinue) -and (Mount-ScoliaWorkspaceForm $state.Form)){return}
+    if((Test-Path function:Mount-ScoliaWorkspaceForm) -and (Mount-ScoliaWorkspaceForm $state.Form)){return}
     try{[void]$state.Form.ShowDialog($script:main)}finally{$state.Form.Dispose()}
 }
 function Show-ScoliaTeacherJustification([object]$AttendanceState) {
@@ -404,7 +404,7 @@ function Export-ScoliaPayrollMonth([object]$State) {
 function Show-ScoliaMonthlyPayroll([Windows.Forms.Form]$Owner,[datetime]$Month=(Get-Date)) {
     Assert-ITMPermission 'Administrer';$state=New-ScoliaMonthlyPayrollDialog -Context (Get-ScoliaFeatureContext) -Month $Month
     [void](Update-ScoliaMonthlyPayrollDialog $state)
-    if((Get-Command Mount-ScoliaWorkspaceForm -ErrorAction SilentlyContinue) -and (Mount-ScoliaWorkspaceForm $state.Form)){return}
+    if((Test-Path function:Mount-ScoliaWorkspaceForm) -and (Mount-ScoliaWorkspaceForm $state.Form)){return}
     try{if($Owner){[void]$state.Form.ShowDialog($Owner)}else{[void]$state.Form.ShowDialog($script:main)}}finally{$state.Form.Dispose()}
 }
 function Show-ScoliaPayrollDayDetail([object]$PayrollState) {

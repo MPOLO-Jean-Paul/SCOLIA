@@ -125,7 +125,7 @@ function Assert-ScoliaAttendanceContext([object]$state,[bool]$Write=$false) {
 function Set-ScoliaAttendanceMessage([object]$state,[string]$Text,[bool]$Error=$false) {
     $state.Message.Text=$Text
     $state.Message.Tag=$(if($Error){'scolia:feedback:error'}else{'scolia:feedback:success'})
-    if(Get-Command Apply-ITMThemeForm -ErrorAction SilentlyContinue){Apply-ITMThemeForm $state.Form}
+    if(Test-Path function:Apply-ITMThemeForm){Apply-ITMThemeForm $state.Form}
 }
 function Get-ScoliaAttendanceGridEntries([object]$state) {
     [void]$state.Grid.EndEdit()

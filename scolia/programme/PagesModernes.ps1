@@ -65,7 +65,7 @@ function Update-ITMPageDesign($page) {
         foreach($row in $s.Rows){
             $current=@();$needed=0
             foreach($c in $row){
-                if($c.IsDisposed -or ((Get-Command Test-ScoliaRibbonSource -ErrorAction SilentlyContinue) -and (Test-ScoliaRibbonSource $c)) -or ($page.Visible -and -not $c.Visible)){continue}
+                if($c.IsDisposed -or ((Test-Path function:Test-ScoliaRibbonSource) -and (Test-ScoliaRibbonSource $c)) -or ($page.Visible -and -not $c.Visible)){continue}
                 $min=$(if($c -is [Windows.Forms.CheckBox]){[int](400*$q)}elseif($c -is [Windows.Forms.Button]){[int](170*$q)}else{[int](200*$q)})
                 $min=[Math]::Min($width,$min)
                 if($current.Count -and $needed+$gap+$min -gt $width){$y=Set-ITMPageRow $current $width $pad $y $gap $q;$current=@();$needed=0}
@@ -90,7 +90,7 @@ function Set-ITMPageRow($controls,$width,$pad,$y,$gap,$q) {
             $usable=$(if($c -is [Windows.Forms.CheckBox]){[Math]::Max(1,$cw-[int](24*$q))}else{$cw})
             $h=Get-ITMTextHeight $c $usable ([int](28*$q))
         }elseif($c -is [Windows.Forms.Button]){Set-ITMAdaptiveFont $c 10 ([Drawing.FontStyle]::Bold);$h=Get-ITMTextHeight $c $cw ([int](38*$q))}
-        elseif($c -is [Windows.Forms.DataGridView]){$h=[int][Math]::Max(150*$q,[Math]::Min(340*$q,$page.ClientSize.Height-180*$q));Set-ITMGridReadability $c $false;if(-not (Get-Command Set-ITMGridAppearance -ErrorAction SilentlyContinue)){$c.RowTemplate.Height=[int](30*$q)}}
+        elseif($c -is [Windows.Forms.DataGridView]){$h=[int][Math]::Max(150*$q,[Math]::Min(340*$q,$page.ClientSize.Height-180*$q));Set-ITMGridReadability $c $false;if(-not (Test-Path function:Set-ITMGridAppearance)){$c.RowTemplate.Height=[int](30*$q)}}
         if($c -is [Windows.Forms.ComboBox] -or $c -is [Windows.Forms.TextBoxBase] -or $c -is [Windows.Forms.NumericUpDown] -or $c -is [Windows.Forms.DateTimePicker]){Set-ITMAdaptiveFont $c (Get-ITMBaseTextSize $c) $c.Font.Style;$h=[Math]::Max($h,$c.PreferredSize.Height)}
         $c.AutoSize=$false;$c.SetBounds(($pad+$i*($cw+$gap)),$y,$cw,$h);$height=[Math]::Max($height,$h);$i++
     }
@@ -158,7 +158,7 @@ function Update-ITMPaymentWorkspace($page,$s,$outer,$width,$pad,$margin,$gap,$q)
     $page.AutoScrollMinSize=New-Object Drawing.Size(0,($s.Surface.Bottom+$margin))
 }
 function Update-ITMExportWorkspace($page,$s,$outer,$width,$pad,$margin,$gap,$q) {
-    $controls=@($s.Surface.Controls | Where-Object {-not ((Get-Command Test-ScoliaRibbonSource -ErrorAction SilentlyContinue) -and (Test-ScoliaRibbonSource $_))});$y=$pad
+    $controls=@($s.Surface.Controls | Where-Object {-not ((Test-Path function:Test-ScoliaRibbonSource) -and (Test-ScoliaRibbonSource $_))});$y=$pad
     foreach($pattern in @('Documents et rapports','1*Choisir*')){
         $label=@($controls | Where-Object {$_ -is [Windows.Forms.Label] -and $_.Text -like $pattern})[0]
         $y+=(Set-ITMWorkspaceControl $label $pad $y $width 28 $q)+$gap

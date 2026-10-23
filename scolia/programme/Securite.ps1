@@ -1,4 +1,4 @@
-﻿if(-not (Get-Command Import-ITMCompiledSource -ErrorAction SilentlyContinue)){. (Join-Path $PSScriptRoot 'CompilationCache.ps1')}
+﻿if(-not (Test-Path function:Import-ITMCompiledSource)){. (Join-Path $PSScriptRoot 'CompilationCache.ps1')}
 Add-Type -AssemblyName System.Security
 Import-ITMCompiledSource -Path (Join-Path $PSScriptRoot 'SecurityCrypto.cs')
 $script:securityFile=Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'ITM_CD\securite.dat'

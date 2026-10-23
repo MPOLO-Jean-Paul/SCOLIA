@@ -687,7 +687,7 @@ $installTimer.Add_Tick({
 $installerHelp.SetToolTip($sourceFolder,"Ouvre le dossier du classeur source détecté.`r`nRaccourci : Ctrl+D")
 $installerHelp.SetToolTip($openButton,"Ouvre le fichier corrigé après une installation réussie.`r`nRaccourci : Ctrl+L")
 $form.Add_Disposed({$installerHelp.Dispose()})
-$form.Add_Shown({if(Get-Command Close-ScoliaTransition -ErrorAction SilentlyContinue){Close-ScoliaTransition}})
+$form.Add_Shown({if(Test-Path function:Close-ScoliaTransition){Close-ScoliaTransition}})
 [void]$form.ShowDialog()
 $installTimer.Stop();$installTimer.Dispose()
 $form.Dispose()
