@@ -133,6 +133,17 @@ public sealed class SecurityApiTests : IDisposable
         }).Fail();
         Assert.Equal(HttpStatusCode.BadRequest, refused);
 
+        // Inscription et examen ne se règlent pas par mois.
+        var fee = account.GetProperty("lines").EnumerateArray().FirstOrDefault(l => l.GetProperty("kind").GetString() != "Mensualite" && l.GetProperty("remaining").GetDecimal() > 0);
+        if (fee.ValueKind != System.Text.Json.JsonValueKind.Undefined)
+        {
+            var (notMonthly, _) = await admin.Post("/api/paiements", new
+            {
+                enrollmentId, amount = fee.GetProperty("remaining").GetDecimal(), feeItemIds = new[] { fee.GetProperty("feeItemId").GetString() }, method = "Especes", idempotencyKey = Guid.NewGuid().ToString("N"),
+            }).Fail();
+            Assert.Equal(HttpStatusCode.BadRequest, notMonthly);
+        }
+
         // Le mois choisi est encaissé à son montant dû, sans saisie du montant.
         var receipt = await admin.Post("/api/paiements", new
         {

@@ -1,17 +1,18 @@
 using Scolia.Domain.Common;
+using Scolia.Domain.School;
 
 namespace Scolia.Domain.Finance;
 
 public enum LineStatus { Impaye = 0, Partiel = 1, Paye = 2, Couvert = 3 }
 
 /// <summary>Donnée d'entrée : une rubrique de frais de la promotion.</summary>
-public sealed record FeeLineInput(Guid FeeItemId, string Label, decimal Amount, DateOnly DueDate, int Order, Guid? PeriodId = null);
+public sealed record FeeLineInput(Guid FeeItemId, string Label, decimal Amount, DateOnly DueDate, int Order, Guid? PeriodId = null, FeeKind Kind = FeeKind.Mensualite);
 
 /// <summary>État d'une rubrique pour un apprenant.</summary>
 public sealed record AccountLine(
     Guid FeeItemId, string Label, DateOnly DueDate, int Order, Guid? PeriodId,
     decimal Amount, decimal Covered, decimal Net, decimal Paid, decimal Remaining,
-    LineStatus Status, bool IsOverdue);
+    LineStatus Status, bool IsOverdue, FeeKind Kind = FeeKind.Mensualite);
 
 /// <summary>Compte d'un apprenant pour une année : calcul pur, sans base de données.</summary>
 public sealed class StudentAccount
@@ -58,7 +59,7 @@ public sealed class StudentAccount
             var paid = payments.TryGetValue(fee.FeeItemId, out var paidAmount) ? paidAmount : 0m;
             var remaining = Math.Max(0m, net - paid);
             var status = net == 0 ? LineStatus.Couvert : remaining == 0 ? LineStatus.Paye : paid > 0 ? LineStatus.Partiel : LineStatus.Impaye;
-            lines.Add(new AccountLine(fee.FeeItemId, fee.Label, fee.DueDate, fee.Order, fee.PeriodId, fee.Amount, covered, net, paid, remaining, status, remaining > 0 && fee.DueDate <= asOf));
+            lines.Add(new AccountLine(fee.FeeItemId, fee.Label, fee.DueDate, fee.Order, fee.PeriodId, fee.Amount, covered, net, paid, remaining, status, remaining > 0 && fee.DueDate <= asOf, fee.Kind));
         }
         return new StudentAccount(lines);
     }
@@ -73,6 +74,8 @@ public static class PaymentAllocator
     public static IReadOnlyList<(Guid FeeItemId, decimal Amount)> Months(StudentAccount account, IReadOnlyCollection<Guid> selected)
     {
         if (selected.Count == 0) throw new DomainException("rubriques", "Choisissez au moins un mois à payer.");
+        var notTuition = account.Lines.Where(l => selected.Contains(l.FeeItemId) && l.Kind != FeeKind.Mensualite).ToList();
+        if (notTuition.Count > 0) throw new DomainException("rubriques", "Seuls les mois de scolarité se règlent par mois.");
         var unknown = selected.Where(id => account.Lines.All(l => l.FeeItemId != id)).ToList();
         if (unknown.Count > 0) throw new DomainException("rubriques", "Une rubrique choisie n'appartient pas à cette inscription.");
         var plan = new List<(Guid, decimal)>();

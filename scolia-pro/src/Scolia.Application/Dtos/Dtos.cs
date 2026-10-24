@@ -86,7 +86,7 @@ public sealed record SponsorshipLineInput(Guid FeeItemId, decimal Percent);
 
 // ---------- Compte et paiements ----------
 public sealed record AccountLineDto(Guid FeeItemId, string Label, DateOnly DueDate, decimal Amount, decimal Covered, decimal Net, decimal Paid,
-    decimal Remaining, string Status, bool IsOverdue);
+    decimal Remaining, string Status, bool IsOverdue, string Kind);
 
 public sealed record AccountDto(Guid StudentId, Guid EnrollmentId, string Matricule, string FullName, string PromotionCode, string AcademicYear,
     string EnrollmentStatus, IReadOnlyList<AccountLineDto> Lines, decimal TotalFees, decimal TotalCovered, decimal TotalNet, decimal TotalPaid,

@@ -164,7 +164,8 @@ public sealed class CashierPage : PageViewModel
         var account = await Shell.Api.GetAsync<AccountDto>($"api/inscriptions/{eid}/compte");
         enrollment = new EnrollmentChoice(eid, account.Balance);
         Months.Clear();
-        foreach (var line in account.Lines.Where(l => l.Remaining > 0))
+        // Seule la scolarité se règle par mois : inscription et examen ne figurent pas dans cette liste.
+        foreach (var line in account.Lines.Where(l => l.Remaining > 0 && l.Kind == "Mensualite"))
             Months.Add(new MonthRowVm(line.FeeItemId, line.Label, line.Remaining, Money(line.Remaining), line.IsOverdue, MonthsChanged));
         Raise(nameof(HasMonths));
         Raise(nameof(Total));

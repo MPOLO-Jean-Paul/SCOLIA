@@ -47,7 +47,7 @@ public sealed class AccountService(IAppDbContext db, IClock clock)
         foreach (var e in enrollments)
         {
             var promotion = promotions[e.PromotionId];
-            var fees = promotion.Fees.Select(f => new FeeLineInput(f.Id, f.Label, f.Amount, f.DueDate, f.Order, f.PeriodId));
+            var fees = promotion.Fees.Select(f => new FeeLineInput(f.Id, f.Label, f.Amount, f.DueDate, f.Order, f.PeriodId, f.Kind));
             var account = StudentAccount.Compute(fees, coverageMap.GetValueOrDefault(e.Id, empty), paidMap.GetValueOrDefault(e.Id, empty), day, school.WholeAmountsOnly);
             result[e.Id] = new EnrollmentAccount(e, promotion, account);
         }
@@ -78,7 +78,7 @@ public sealed class AccountService(IAppDbContext db, IClock clock)
     }
 
     public static AccountLineDto ToDto(AccountLine l) =>
-        new(l.FeeItemId, l.Label, l.DueDate, l.Amount, l.Covered, l.Net, l.Paid, l.Remaining, Labels.Of(l.Status), l.IsOverdue);
+        new(l.FeeItemId, l.Label, l.DueDate, l.Amount, l.Covered, l.Net, l.Paid, l.Remaining, Labels.Of(l.Status), l.IsOverdue, l.Kind.ToString());
 
     public async Task<IReadOnlyList<ReceiptSummaryDto>> ReceiptsForAsync(Guid enrollmentId, CancellationToken ct = default)
     {

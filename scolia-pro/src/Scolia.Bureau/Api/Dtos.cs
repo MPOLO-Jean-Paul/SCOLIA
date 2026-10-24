@@ -58,7 +58,7 @@ public sealed record DuplicateCandidateDto(Guid Id, string Matricule, string Ful
 
 public sealed record AccountLineDto(
     Guid FeeItemId, string Label, DateOnly DueDate, decimal Amount, decimal Covered, decimal Net, decimal Paid, decimal Remaining,
-    string Status, bool IsOverdue);
+    string Status, bool IsOverdue, string Kind);
 
 public sealed record ReceiptSummaryDto(Guid Id, string Number, DateOnly Date, decimal Amount, string Method, string Status, string Cashier, string? Allocations);
 
