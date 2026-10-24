@@ -28,6 +28,7 @@ public sealed class StaffPage : PageViewModel
         Action("Nouveau membre", MaterialIconKind.AccountPlusOutline, () => NewMemberAsync(Shell), primary: true);
         Action("Modifier le membre", MaterialIconKind.AccountEditOutline, EditMemberAsync);
         Action("Préparer la paie", MaterialIconKind.CalendarPlusOutline, PreparePayrollAsync);
+        Action("Pointage et bilan", MaterialIconKind.ClockCheckOutline, () => Shell.Open(() => new StaffAttendancePage(Shell)));
         Action("Modifier le bulletin", MaterialIconKind.PencilOutline, EditPayslipAsync);
         Action("Payer le salaire", MaterialIconKind.CashCheck, PayAsync);
         ActionRefresh();

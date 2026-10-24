@@ -182,3 +182,12 @@ public static class Json
         Converters = { new JsonStringEnumConverter() },
     };
 }
+
+/// <summary>Signature d'entrée ou de sortie, telle que le serveur la confirme.</summary>
+public sealed record StaffMarkDto(Guid Id, string Kind, string Time, bool IsLate);
+
+/// <summary>Une journée du pointage d'un membre du personnel.</summary>
+public sealed record StaffDayDto(DateOnly Date, string Status, string? Entry, string? Exit, bool Late, bool Justified, bool Conversion, bool ConversionJustified);
+
+/// <summary>Bilan d'un membre sur une période, pour la préparation de la paie.</summary>
+public sealed record StaffBilanDto(Guid StaffMemberId, string Name, int Present, int Late, int Absent, int Justified, int Conversions, int Deductible);
