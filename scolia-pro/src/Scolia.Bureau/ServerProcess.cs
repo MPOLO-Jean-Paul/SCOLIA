@@ -9,7 +9,7 @@ public sealed class ServerProcess(int port)
 
     public void Start()
     {
-        var exe = Path.Combine(AppContext.BaseDirectory, "SCOLIA.exe");
+        var exe = Path.Combine(AppContext.BaseDirectory, "SCOLIA-Serveur.exe");
         if (!File.Exists(exe) || process is { HasExited: false }) return;
         var info = new ProcessStartInfo(exe)
         {

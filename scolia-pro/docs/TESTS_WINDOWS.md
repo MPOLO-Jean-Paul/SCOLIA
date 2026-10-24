@@ -18,7 +18,7 @@ depuis l'onglet Fichier, rubrique « Poste et réseau ». Le test n'a donc besoi
 
 1. Décompresser `SCOLIA_Pro_<version>_Windows_x64.zip` dans `C:\SCOLIA`.
 2. Vérifier l'empreinte du zip avec l'outil de votre choix (par exemple l'explorateur de fichiers ou `certutil -hashfile`), à comparer au fichier `.sha256` livré.
-3. Double-cliquer sur `SCOLIA-Bureau.exe`. Le serveur `SCOLIA.exe` est lancé automatiquement, à côté.
+3. Double-cliquer sur `SCOLIA.exe`. Le serveur `SCOLIA-Serveur.exe` est lancé automatiquement, à côté.
 
 ## 2. Vérification manuelle
 
@@ -68,7 +68,7 @@ Noter le résultat : `OK`, `ECHEC`, ou `N/A` avec la raison. Consigner dans la d
 
 | # | Contrôle | Attendu | Résultat |
 |---|---|---|---|
-| 26 | Client sans serveur | Ouvrir `SCOLIA-Bureau.exe` seul démarre le serveur automatiquement | |
+| 26 | Client sans serveur | Ouvrir `SCOLIA.exe` seul démarre le serveur automatiquement | |
 | 27 | Fermeture du client | Le serveur lancé par le client s'arrête avec lui | |
 | 28 | Dossier des données | `donnees\scolia.db`, `donnees\journaux` et `donnees\sauvegardes` créés | |
 | 29 | Sauvegarde | Sauvegarde immédiate visible dans la liste (installation de test) | |

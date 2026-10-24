@@ -5,7 +5,7 @@
 ```
  Postes du réseau local (Edge, Chrome)          Poste serveur
  ┌─────────────────────────┐   HTTP    ┌──────────────────────────────────────┐
- │ Interface React (PWA)   │ ───────▶ │ SCOLIA.exe  (ASP.NET Core, Kestrel)  │
+ │ Interface React (PWA)   │ ───────▶ │ SCOLIA-Serveur.exe (ASP.NET Core)    │
  │ même rendu sur chaque   │  cookie   │  ├─ Api : sécurité, points d'API      │
  │ poste, rien à installer │  + X-Scolia│  ├─ Application : cas d'usage        │
  └─────────────────────────┘           │  ├─ Domain : règles métier            │

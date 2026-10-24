@@ -27,7 +27,7 @@ Les commandes du ruban ouvrent directement la page ou la boîte de saisie corres
 
 ## 1. Premier lancement
 
-1. Ouvrir `SCOLIA.exe`. Une fenêtre s'ouvre, et une icône apparaît près de l'horloge.
+1. Ouvrir `SCOLIA.exe`. La fenêtre de SCOLIA s'ouvre et démarre seule le serveur.
 2. L'assistant demande :
    - le nom, la ville, le téléphone et le logo de l'établissement ;
    - l'année scolaire, le mois de début et le nombre de mois de scolarité ;
@@ -128,4 +128,4 @@ Le classeur Excel reste intact. Il peut être archivé.
 | La page affiche « Connexion expirée » | Se reconnecter. La session dure 10 heures sans activité. |
 | Un poste ne trouve pas SCOLIA | Vérifier que le serveur est allumé, que le réseau est « privé », puis activer l'accès réseau local dans l'onglet Fichier, rubrique « Poste et réseau ». |
 | « Compte verrouillé » | Attendre quinze minutes, ou demander à l'administrateur de déverrouiller le compte. |
-| L'icône a disparu | Relancer `SCOLIA.exe`. Une seule instance tourne : le second lancement rouvre la fenêtre. |
+| La fenêtre ne s'ouvre pas | Relancer `SCOLIA.exe`. Si le service est installé, le serveur tourne déjà et la fenêtre s'y connecte. |

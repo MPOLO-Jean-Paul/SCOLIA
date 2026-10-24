@@ -29,7 +29,7 @@
     <TargetFramework></TargetFramework>
     <TargetFrameworks>net10.0;net10.0-windows</TargetFrameworks>
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
-    <AssemblyName>SCOLIA</AssemblyName>
+    <AssemblyName>SCOLIA-Serveur</AssemblyName>
     <RootNamespace>Scolia.Api</RootNamespace>
     <ApplicationIcon Condition="Exists('scolia.ico')">scolia.ico</ApplicationIcon>
     <InvariantGlobalization>false</InvariantGlobalization>

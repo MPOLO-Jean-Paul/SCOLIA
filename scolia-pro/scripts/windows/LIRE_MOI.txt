@@ -7,7 +7,7 @@ Le dossier SCOLIA contient tout ce qui est nécessaire. Il n'y a rien à install
 OUVRIR SCOLIA
 1. Copier le dossier SCOLIA à un endroit stable, par exemple C:\SCOLIA.
    Éviter « Program Files » : les données sont enregistrées dans le dossier donnees.
-2. Double-cliquer sur SCOLIA-Bureau.exe. Il démarre seul le serveur SCOLIA.exe,
+2. Double-cliquer sur SCOLIA.exe. Il démarre seul le serveur SCOLIA-Serveur.exe,
    qui doit rester dans le même dossier.
 3. À la première ouverture, l'assistant crée l'établissement, l'année scolaire et
    le compte administrateur. Des données de démonstration fictives peuvent être
@@ -39,8 +39,8 @@ Un essai à blanc montre ce qui sera repris avant toute écriture. L'import peut
 être relancé sans créer de doublons.
 
 MISE À JOUR
-Fermer la fenêtre SCOLIA-Bureau, remplacer tous les
-fichiers sauf le dossier donnees, puis relancer SCOLIA-Bureau.exe.
+Fermer la fenêtre SCOLIA, remplacer tous les
+fichiers sauf le dossier donnees, puis relancer SCOLIA.exe.
 La base est mise à jour automatiquement après une sauvegarde de sécurité.
 
 DÉSINSTALLATION
@@ -48,7 +48,7 @@ Retirer le service dans Fichier > Poste et réseau s'il a été installé, puis
 supprimer le dossier SCOLIA. Le dossier donnees contient toutes les données :
 le conserver avant toute suppression.
 
-RÉGLAGES (appsettings.json, à côté de SCOLIA.exe)
+RÉGLAGES (appsettings.json, à côté de SCOLIA-Serveur.exe)
 - Scolia:Reseau:Port : port d'écoute (5080 par défaut).
 - Scolia:Reseau:AccesReseauLocal : géré par la rubrique « Poste et réseau ».
 - Scolia:Stockage:DataDirectory : autre dossier de données (vide = donnees).

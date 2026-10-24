@@ -27,7 +27,7 @@ public static class PosteAdmin
     private const int DefaultPort = 5080;
 
     /// <summary>Serveur de SCOLIA, livré à côté de l'interface.</summary>
-    public static string ServerExecutable => Path.Combine(AppContext.BaseDirectory, "SCOLIA.exe");
+    public static string ServerExecutable => Path.Combine(AppContext.BaseDirectory, "SCOLIA-Serveur.exe");
 
     private static string ConfigFile => Path.Combine(AppContext.BaseDirectory, "appsettings.json");
 
@@ -310,7 +310,7 @@ public static class PosteAdmin
 
     private static bool IsServerRunningFromHere()
     {
-        foreach (var process in Process.GetProcessesByName("SCOLIA"))
+        foreach (var process in Process.GetProcessesByName("SCOLIA-Serveur"))
         {
             try
             {

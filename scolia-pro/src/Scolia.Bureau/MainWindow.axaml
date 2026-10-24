@@ -17,7 +17,7 @@
       <Border Grid.Row="0" Classes="titlebar">
         <Grid ColumnDefinitions="Auto,*,Auto">
           <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
-            <Image Source="avares://SCOLIA-Bureau/Assets/scolia.png" Width="22" Height="22" />
+            <Image Source="avares://SCOLIA/Assets/scolia.png" Width="22" Height="22" />
             <TextBlock Text="SCOLIA" FontWeight="SemiBold" VerticalAlignment="Center" />
             <TextBlock Text="{Binding SchoolLine}" Classes="muted" VerticalAlignment="Center" />
           </StackPanel>

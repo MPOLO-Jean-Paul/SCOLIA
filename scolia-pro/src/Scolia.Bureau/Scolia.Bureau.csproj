@@ -5,7 +5,7 @@
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net10.0</TargetFramework>
-    <AssemblyName>SCOLIA-Bureau</AssemblyName>
+    <AssemblyName>SCOLIA</AssemblyName>
     <RootNamespace>Scolia.Bureau</RootNamespace>
     <Nullable>enable</Nullable>
     <AvaloniaUseCompiledBindingsByDefault>false</AvaloniaUseCompiledBindingsByDefault>

@@ -103,7 +103,7 @@ public sealed class ShellViewModel : Observable
 
     public IReadOnlyList<(string Label, Func<PageViewModel> Open)> Recents => recents;
 
-    /// <summary>Vérifie que le serveur répond. S'il est arrêté, lance SCOLIA.exe du même dossier.</summary>
+    /// <summary>Vérifie que le serveur répond. S'il est arrêté, lance SCOLIA-Serveur.exe du même dossier.</summary>
     public async Task StartAsync(ServerProcess server)
     {
         if (!await api.IsRunningAsync())

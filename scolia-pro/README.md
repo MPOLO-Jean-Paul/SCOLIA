@@ -12,7 +12,7 @@ sans aucune dépendance à Excel.
 ## Démarrage rapide (utilisateur)
 
 1. Télécharger `SCOLIA_Pro_<version>_Windows_x64.zip` et l'extraire dans `C:\SCOLIA`.
-2. Lancer `SCOLIA-Bureau.exe`. Il démarre seul le serveur `SCOLIA.exe` du même dossier. L'assistant crée l'établissement, l'année et le compte administrateur.
+2. Lancer `SCOLIA.exe`. Il démarre seul le serveur `SCOLIA-Serveur.exe` du même dossier. L'assistant crée l'établissement, l'année et le compte administrateur.
 3. Pour plusieurs postes : dans l'onglet Fichier, rubrique « Poste et réseau », installer le
    service (démarrage avec Windows) puis activer l'accès réseau local. Les autres postes ouvrent l'adresse affichée.
 
@@ -21,7 +21,7 @@ Le détail est dans [`docs/GUIDE_UTILISATEUR.md`](docs/GUIDE_UTILISATEUR.md) et 
 ## Client natif
 
 `src/Scolia.Bureau` est le client de bureau en Avalonia : une fenêtre native, sans navigateur ni moteur web.
-Il parle au serveur SCOLIA par la même API que l'interface web. Au lancement, il démarre le serveur `SCOLIA.exe`
+Il parle au serveur SCOLIA par la même API que l'interface web. Au lancement, il démarre le serveur `SCOLIA-Serveur.exe`
 du même dossier s'il n'est pas déjà actif. Le paquet Windows contient les deux exécutables.
 
 Le client reprend le design de l'interface web : ruban à onglets façon Office 2024, en-tête de page, cartes et
