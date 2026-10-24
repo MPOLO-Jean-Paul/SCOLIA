@@ -304,6 +304,7 @@ public sealed class BackstageViewModel : Observable
     private readonly ShellViewModel shell;
     private BackstageItemVm? section;
     private FormViewModel? passwordForm;
+    private PosteViewModel? poste;
 
     public BackstageViewModel(ShellViewModel shell)
     {
@@ -312,6 +313,7 @@ public sealed class BackstageViewModel : Observable
         [
             new BackstageItemVm("infos", "Informations", MaterialIconKind.InformationOutline),
             new BackstageItemVm("mot-de-passe", "Mot de passe", MaterialIconKind.KeyOutline),
+            new BackstageItemVm("poste", "Poste et réseau", MaterialIconKind.LanConnect),
             new BackstageItemVm("preferences", "Préférences", MaterialIconKind.TuneVariant),
             new BackstageItemVm("aide", "Aide et raccourcis", MaterialIconKind.KeyboardOutline),
         ];
@@ -343,13 +345,18 @@ public sealed class BackstageViewModel : Observable
             {
                 Raise(nameof(IsInfos));
                 Raise(nameof(IsPassword));
+                Raise(nameof(IsPoste));
             }
         }
     }
 
     public bool IsInfos => section?.Value == "infos";
     public bool IsPassword => section?.Value == "mot-de-passe";
+    public bool IsPoste => section?.Value == "poste";
     public FormViewModel PasswordForm { get => passwordForm!; private set => Set(ref passwordForm, value); }
+
+    /// <summary>Rubrique poste et réseau, créée à la première ouverture.</summary>
+    public PosteViewModel PosteSection => poste ??= new PosteViewModel(shell);
     public string UserName => shell.Session?.DisplayName ?? string.Empty;
     public string Role => shell.Session?.RoleLabel ?? string.Empty;
     public string School => shell.Session?.SchoolName ?? string.Empty;

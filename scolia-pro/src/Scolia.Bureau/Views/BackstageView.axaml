@@ -53,6 +53,7 @@
         </StackPanel>
 
         <ContentControl IsVisible="{Binding IsPassword}" Content="{Binding PasswordForm}" HorizontalAlignment="Left" />
+        <ContentControl IsVisible="{Binding IsPoste}" Content="{Binding PosteSection}" HorizontalAlignment="Stretch" />
       </StackPanel>
     </ScrollViewer>
   </Grid>

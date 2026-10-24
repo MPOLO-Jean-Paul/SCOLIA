@@ -70,7 +70,9 @@ var api = new ScoliaClient(server);
 var prefs = Preferences.Load();
 prefs.Theme = dark ? "dark" : "light";
 var shell = new ShellViewModel(api, prefs);
-var window = new MainWindow { DataContext = shell, Width = 1280, Height = 820 };
+// Taille de fenêtre optionnelle (SCOLIA_TAILLE=1024x700) pour vérifier l'adaptation du texte à chaque format d'écran.
+var taille = (Environment.GetEnvironmentVariable("SCOLIA_TAILLE") ?? "1280x820").Split('x');
+var window = new MainWindow { DataContext = shell, Width = int.Parse(taille[0]), Height = int.Parse(taille[1]) };
 window.Show();
 Save(window, "01-connexion.png");
 
@@ -412,6 +414,8 @@ Wait(Task.Delay(100));
 
 shell.OpenBackstage();
 Save(window, "26-fichier.png");
+shell.Backstage.Section = shell.Backstage.Items.First(i => i.Value == "poste");
+Save(window, "26b-poste.png");
 shell.CloseBackstage();
 
 // Chaque onglet du ruban : le contenu doit être le même que dans le catalogue web.

@@ -126,6 +126,6 @@ Le classeur Excel reste intact. Il peut être archivé.
 | Symptôme | Action |
 |---|---|
 | La page affiche « Connexion expirée » | Se reconnecter. La session dure 10 heures sans activité. |
-| Un poste ne trouve pas SCOLIA | Vérifier que le serveur est allumé, que le réseau est « privé », puis lancer `ACTIVER_RESEAU_LOCAL.cmd`. |
+| Un poste ne trouve pas SCOLIA | Vérifier que le serveur est allumé, que le réseau est « privé », puis activer l'accès réseau local dans l'onglet Fichier, rubrique « Poste et réseau ». |
 | « Compte verrouillé » | Attendre quinze minutes, ou demander à l'administrateur de déverrouiller le compte. |
 | L'icône a disparu | Relancer `SCOLIA.exe`. Une seule instance tourne : le second lancement rouvre la fenêtre. |

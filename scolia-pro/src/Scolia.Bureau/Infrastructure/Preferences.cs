@@ -16,6 +16,12 @@ public sealed class Preferences : Observable
         new("0.9", "Petit"), new("1", "Normal"), new("1.15", "Grand"), new("1.3", "Très grand"),
     ];
 
+    /// <summary>Fenêtre de référence et bornes de l'adaptation automatique du texte.</summary>
+    private const double ReferenceWidth = 1280;
+    private const double ReferenceHeight = 800;
+    private const double MinFit = 0.85;
+    private const double MaxFit = 1.25;
+
     public static readonly IReadOnlyList<ChoiceItem> Themes =
     [
         new("system", "Système"), new("light", "Clair"), new("dark", "Sombre"),
@@ -23,6 +29,7 @@ public sealed class Preferences : Observable
 
     private string theme = "light";
     private double scale = 1.0;
+    private double fit = 1.0;
     private bool compact;
     private bool statusBar = true;
     private bool tips = true;
@@ -34,6 +41,8 @@ public sealed class Preferences : Observable
     public bool IsDark { get => theme == "dark"; set => Theme = value ? "dark" : "light"; }
     public double Scale { get => scale; set { if (Set(ref scale, Math.Clamp(Math.Round(value, 2), 0.8, 1.6))) Raise(nameof(ZoomLabel)); } }
     public string ZoomLabel => $"{Math.Round(scale * 100):0} %";
+    /// <summary>Taille de texte réellement appliquée : le choix de l'utilisateur, adapté à la taille de la fenêtre.</summary>
+    public double Factor => scale * fit;
     public bool Compact { get => compact; set => Set(ref compact, value); }
     public bool StatusBar { get => statusBar; set => Set(ref statusBar, value); }
     public bool Tips { get => tips; set => Set(ref tips, value); }
@@ -66,6 +75,18 @@ public sealed class Preferences : Observable
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { }
     }
 
+    /// <summary>
+    /// Adapte le texte et les contrôles à la taille de la fenêtre : 1 à 1280 × 800, plus grand sur un grand écran,
+    /// plus petit sur un écran réduit. Les valeurs sont arrondies au vingtième pour éviter les recalculs continus pendant un redimensionnement.
+    /// </summary>
+    public void Fit(double width, double height)
+    {
+        var next = Math.Round(Math.Clamp(Math.Min(width / ReferenceWidth, height / ReferenceHeight), MinFit, MaxFit) * 20) / 20;
+        if (next == fit) return;
+        fit = next;
+        Apply();
+    }
+
     /// <summary>Applique les préférences à toute l'interface : thème, taille, densité.</summary>
     public void Apply()
     {
@@ -78,13 +99,14 @@ public sealed class Preferences : Observable
             _ => ThemeVariant.Default,
         };
         var r = app.Resources;
-        r["FsBase"] = 14.0 * scale;
-        r["FsSmall"] = 12.5 * scale;
-        r["FsCaption"] = 11.5 * scale;
-        r["FsHeading"] = 17.0 * scale;
-        r["FsTitle"] = 24.0 * scale;
-        r["RowHeight"] = (compact ? 27.0 : 34.0) * scale;
-        r["CtlHeight"] = (compact ? 30.0 : 38.0) * scale;
+        var k = Factor;
+        r["FsBase"] = 14.0 * k;
+        r["FsSmall"] = 12.5 * k;
+        r["FsCaption"] = 11.5 * k;
+        r["FsHeading"] = 17.0 * k;
+        r["FsTitle"] = 24.0 * k;
+        r["RowHeight"] = (compact ? 27.0 : 34.0) * k;
+        r["CtlHeight"] = (compact ? 30.0 : 38.0) * k;
         r["GridLines"] = grid ? Avalonia.Controls.DataGridGridLinesVisibility.Horizontal : Avalonia.Controls.DataGridGridLinesVisibility.None;
     }
 

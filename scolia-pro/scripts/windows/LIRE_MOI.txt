@@ -1,24 +1,29 @@
-﻿SCOLIA PRO 1.0 — GESTION SCOLAIRE
+SCOLIA PRO 1.0 - GESTION SCOLAIRE
 
-DÉMARRER
+AUCUNE INSTALLATION
+Le dossier SCOLIA contient tout ce qui est nécessaire. Il n'y a rien à installer
+(ni .NET, ni PowerShell, ni Excel, ni base de données) et aucun script à lancer.
+
+OUVRIR SCOLIA
 1. Copier le dossier SCOLIA à un endroit stable, par exemple C:\SCOLIA.
-   Éviter « Program Files » : les données sont enregistrées à côté du programme.
-2. Double-cliquer sur SCOLIA.exe. Aucun logiciel n'est à installer :
-   ni Excel, ni .NET, ni base de données.
-3. À la première ouverture, l'assistant d'installation crée l'établissement,
-   l'année scolaire et le compte administrateur. Des données de démonstration
-   fictives peuvent être chargées pour découvrir le logiciel.
+   Éviter « Program Files » : les données sont enregistrées dans le dossier donnees.
+2. Double-cliquer sur SCOLIA-Bureau.exe. Il démarre seul le serveur SCOLIA.exe,
+   qui doit rester dans le même dossier.
+3. À la première ouverture, l'assistant crée l'établissement, l'année scolaire et
+   le compte administrateur. Des données de démonstration fictives peuvent être
+   chargées pour découvrir le logiciel.
 
-SCOLIA reste disponible dans la zone de notification, près de l'horloge.
-Clic droit sur l'icône : ouvrir, adresse réseau, dossier des données, quitter.
-
-PLUSIEURS POSTES EN RÉSEAU LOCAL
-Sur le poste qui garde les données (le « serveur ») :
-1. INSTALLER_SERVICE.cmd : SCOLIA démarre avec Windows, même sans session ouverte.
-2. ACTIVER_RESEAU_LOCAL.cmd : ouvre le port dans le pare-feu et affiche l'adresse.
-Sur les autres postes, ouvrir l'adresse affichée dans Edge ou Chrome, par exemple
-http://192.168.1.10:5080. Rien n'est à installer sur ces postes.
-Le réseau doit être déclaré « privé » dans Windows.
+POSTE ET RÉSEAU (onglet Fichier, rubrique « Poste et réseau »)
+- Démarrage automatique : « Installer le service » fait démarrer SCOLIA avec
+  Windows, même sans session ouverte. Windows demande l'autorisation
+  d'administrateur (invite de contrôle de compte). « Retirer le service » annule
+  ce démarrage ; les données sont conservées.
+- Accès depuis le réseau local : « Activer » ouvre le port de SCOLIA dans le
+  pare-feu Windows, pour les réseaux privés et de domaine uniquement, et affiche
+  les adresses. Sur les autres postes, ouvrir l'adresse affichée dans un
+  navigateur, par exemple http://192.168.1.10:5080. Rien n'est à installer sur
+  ces postes. Le réseau doit être déclaré « privé » dans Windows.
+- Le réglage « Activer » prend effet au prochain démarrage de SCOLIA.
 
 DONNÉES ET SAUVEGARDES
 - La base est le fichier donnees\scolia.db (SQLite, transactionnelle).
@@ -34,10 +39,16 @@ Un essai à blanc montre ce qui sera repris avant toute écriture. L'import peut
 être relancé sans créer de doublons.
 
 MISE À JOUR
-Quitter SCOLIA, remplacer tous les fichiers sauf le dossier donnees, relancer.
+Fermer la fenêtre SCOLIA-Bureau, remplacer tous les
+fichiers sauf le dossier donnees, puis relancer SCOLIA-Bureau.exe.
 La base est mise à jour automatiquement après une sauvegarde de sécurité.
 
-RÉGLAGES (appsettings.json)
+DÉSINSTALLATION
+Retirer le service dans Fichier > Poste et réseau s'il a été installé, puis
+supprimer le dossier SCOLIA. Le dossier donnees contient toutes les données :
+le conserver avant toute suppression.
+
+RÉGLAGES (appsettings.json, à côté de SCOLIA.exe)
 - Scolia:Reseau:Port : port d'écoute (5080 par défaut).
+- Scolia:Reseau:AccesReseauLocal : géré par la rubrique « Poste et réseau ».
 - Scolia:Stockage:DataDirectory : autre dossier de données (vide = donnees).
-- Scolia:OuvrirNavigateur : ouvrir la fenêtre au lancement (true par défaut).

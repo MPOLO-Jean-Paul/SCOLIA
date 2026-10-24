@@ -4,7 +4,7 @@ Logiciel de gestion scolaire professionnel : secrétariat, caisse, recouvrement,
 scolarité, personnel et paie. Successeur de SCOLIA V80 (PowerShell + Excel),
 sans aucune dépendance à Excel.
 
-- **Un seul exécutable Windows** : aucun prérequis sur le poste (ni .NET, ni Excel, ni base à installer).
+- **Autonome** : aucun prérequis ni script sur le poste (ni .NET, ni PowerShell, ni Excel, ni base à installer). Le paquet est un dossier, sans installeur.
 - **Multiposte** : un poste garde les données, les autres ouvrent SCOLIA dans leur navigateur.
 - **Données sûres** : base SQLite transactionnelle, sauvegarde quotidienne vérifiée, restauration en un clic.
 - **Traçabilité** : reçus numérotés sans trou, annulation motivée, journal d'audit chaîné par SHA-256.
@@ -12,9 +12,9 @@ sans aucune dépendance à Excel.
 ## Démarrage rapide (utilisateur)
 
 1. Télécharger `SCOLIA_Pro_<version>_Windows_x64.zip` et l'extraire dans `C:\SCOLIA`.
-2. Lancer `SCOLIA.exe`. L'assistant crée l'établissement, l'année et le compte administrateur.
-3. Pour plusieurs postes : sur le poste serveur, lancer `INSTALLER_SERVICE.cmd` puis
-   `ACTIVER_RESEAU_LOCAL.cmd`. Les autres postes ouvrent l'adresse affichée.
+2. Lancer `SCOLIA-Bureau.exe`. Il démarre seul le serveur `SCOLIA.exe` du même dossier. L'assistant crée l'établissement, l'année et le compte administrateur.
+3. Pour plusieurs postes : dans l'onglet Fichier, rubrique « Poste et réseau », installer le
+   service (démarrage avec Windows) puis activer l'accès réseau local. Les autres postes ouvrent l'adresse affichée.
 
 Le détail est dans [`docs/GUIDE_UTILISATEUR.md`](docs/GUIDE_UTILISATEUR.md) et dans `LIRE_MOI.txt` du paquet.
 

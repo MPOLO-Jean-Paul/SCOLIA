@@ -13,6 +13,11 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        // Le texte et les contrôles suivent la taille de la fenêtre, sans chevauchement ni taille figée.
+        SizeChanged += (_, e) =>
+        {
+            if (Shell is { } shell) shell.Prefs.Fit(e.NewSize.Width, e.NewSize.Height);
+        };
         DataContextChanged += (_, _) =>
         {
             if (DataContext is not ShellViewModel shell) return;

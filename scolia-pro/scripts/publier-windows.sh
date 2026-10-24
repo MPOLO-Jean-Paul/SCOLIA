@@ -24,8 +24,8 @@ dotnet publish "$racine/src/Scolia.Bureau" -c Release -r win-x64 --self-containe
   -p:EnableCompressionInSingleFile=true -p:DebugType=None -p:DebugSymbols=false \
   -o "$paquet"
 
-echo "==> Outils d'exploitation"
-cp "$racine"/scripts/windows/* "$paquet/"
+echo "==> Documentation du paquet"
+cp "$racine/scripts/windows/LIRE_MOI.txt" "$paquet/"
 rm -f "$paquet"/*.pdb
 
 archive="$sortie/SCOLIA_Pro_${version}_Windows_x64.zip"

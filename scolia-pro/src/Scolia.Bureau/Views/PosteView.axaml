@@ -1,0 +1,34 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Scolia.Bureau.Views.PosteView">
+  <StackPanel Spacing="12">
+    <TextBlock Text="Poste et réseau" Classes="title" />
+    <TextBlock Classes="muted" TextWrapping="Wrap"
+               Text="Réglages de ce poste. Les actions système demandent les droits d'administrateur Windows, puis reviennent ici avec leur résultat." />
+
+    <Border Classes="card">
+      <StackPanel Spacing="10">
+        <TextBlock Text="Démarrage automatique" Classes="heading" />
+        <TextBlock Text="{Binding ServiceLine}" TextWrapping="Wrap" />
+        <WrapPanel>
+          <Button Classes="primary" Content="Installer le service" Command="{Binding InstallService}" IsEnabled="{Binding CanInstallService}" Margin="0,0,10,8" />
+          <Button Content="Retirer le service" Command="{Binding RemoveService}" IsEnabled="{Binding CanRemoveService}" Margin="0,0,10,8" />
+        </WrapPanel>
+      </StackPanel>
+    </Border>
+
+    <Border Classes="card">
+      <StackPanel Spacing="10">
+        <TextBlock Text="Accès depuis le réseau local" Classes="heading" />
+        <TextBlock Text="{Binding LanLine}" TextWrapping="Wrap" />
+        <TextBlock Text="{Binding AddressLine}" TextWrapping="Wrap" Classes="muted" />
+        <WrapPanel>
+          <Button Classes="primary" Content="Activer" Command="{Binding EnableLan}" IsEnabled="{Binding CanEnableLan}" Margin="0,0,10,8" />
+          <Button Content="Désactiver" Command="{Binding DisableLan}" IsEnabled="{Binding CanDisableLan}" Margin="0,0,10,8" />
+        </WrapPanel>
+        <TextBlock Classes="muted" TextWrapping="Wrap" FontSize="{DynamicResource FsSmall}"
+                   Text="Le réseau doit être déclaré « privé » dans Windows. Les réseaux publics ne sont jamais ouverts." />
+      </StackPanel>
+    </Border>
+  </StackPanel>
+</UserControl>

@@ -16,7 +16,7 @@
         </ItemsControl.ItemsPanel>
         <ItemsControl.ItemTemplate>
           <DataTemplate>
-            <Border Classes="tile" Width="236" Margin="0,0,12,12">
+            <Border Classes="tile" MinWidth="200" MaxWidth="280" Margin="0,0,12,12">
               <StackPanel Spacing="4">
                 <TextBlock Text="{Binding Label}" Classes="caption" />
                 <TextBlock Text="{Binding Value}" Classes="kpi" Foreground="{Binding Accent}" />

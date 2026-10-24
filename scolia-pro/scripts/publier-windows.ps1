@@ -26,8 +26,8 @@ dotnet publish (Join-Path $racine 'src\Scolia.Bureau') -c Release -r win-x64 --s
   -o $paquet
 if ($LASTEXITCODE) { throw 'dotnet publish client natif' }
 
-Write-Host "==> Outils d'exploitation"
-Copy-Item (Join-Path $racine 'scripts\windows\*') $paquet
+Write-Host "==> Documentation du paquet"
+Copy-Item (Join-Path $racine 'scripts\windows\LIRE_MOI.txt') $paquet
 Get-ChildItem $paquet -Filter *.pdb | Remove-Item
 
 $archive = Join-Path $Sortie "SCOLIA_Pro_${version}_Windows_x64.zip"

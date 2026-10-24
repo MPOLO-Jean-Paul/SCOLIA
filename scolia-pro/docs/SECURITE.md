@@ -103,7 +103,7 @@ la cause sans révéler de détail technique interne : la pile d'appel reste dan
 ## Réseau local
 
 - Par défaut, SCOLIA n'écoute que sur ce poste (`localhost`).
-- L'accès réseau est une action explicite (`ACTIVER_RESEAU_LOCAL.cmd`).
+- L'accès réseau est une action explicite (onglet Fichier, rubrique « Poste et réseau », avec l'autorisation administrateur Windows).
   Il ouvre le port uniquement sur les profils réseau privé et de domaine.
 - Le trafic est en HTTP sur le réseau local de l'établissement. Pour un accès depuis l'extérieur,
   placez SCOLIA derrière un reverse proxy HTTPS ou un tunnel VPN : ne l'exposez jamais directement sur Internet.
