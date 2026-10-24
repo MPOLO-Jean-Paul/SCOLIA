@@ -153,6 +153,8 @@ public static class RibbonCatalog
                     Large(shell, "Journal d'audit", FileDocumentOutline, "Qui a fait quoi, et vérification de la chaîne d'empreintes.", () => shell.Open(() => new AuditPage(shell)), Neutral, perm: Perm.AuditRead),
                     Small(shell, "Sauvegarder", ContentSaveOutline, "Crée tout de suite une sauvegarde vérifiée.", () => DataPage.BackupNowAsync(shell), Neutral, perm: Perm.BackupManage),
                     Small(shell, "Importer SCOLIA V79", Upload, "Reprend les données d'un classeur Excel de l'ancienne version.", () => DataPage.ImportAsync(shell), Neutral, perm: Perm.BackupManage),
+                    Small(shell, "Effacer données", DeleteSweepOutline, "Efface les paiements des apprenants cochés ou de tous, après votre mot de passe.", () => shell.Open(() => new EraseDataPage(shell, payments: true)), Red, perm: Perm.BackupManage),
+                    Small(shell, "Effacer tous les apprenants", AccountRemoveOutline, "Efface les dossiers des apprenants cochés ou de tous, après votre mot de passe.", () => shell.Open(() => new EraseDataPage(shell, payments: false)), Red, perm: Perm.BackupManage),
                     Small(shell, "Journal (CSV)", FileDownloadOutline, "Exporte le journal d'audit au format CSV.", () => shell.Download("api/audit/export?format=csv", "journal-audit.csv"), Neutral, perm: Perm.AuditRead)),
             ]),
             new("affichage", "Affichage",

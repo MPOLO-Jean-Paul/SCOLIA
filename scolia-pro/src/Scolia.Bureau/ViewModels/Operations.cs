@@ -26,6 +26,11 @@ public sealed class DataPage : PageViewModel
         Action("Restaurer", MaterialIconKind.BackupRestore, RestoreAsync);
         Action("Importer SCOLIA V79", MaterialIconKind.Upload, () => ImportAsync(Shell));
         Action("Vérifier la base", MaterialIconKind.DatabaseCheckOutline, () => CheckDatabaseAsync(Shell));
+        if (Shell.Can(Perm.BackupManage))
+        {
+            Action("Effacer données", MaterialIconKind.DeleteSweepOutline, () => Shell.Open(() => new EraseDataPage(Shell, payments: true)));
+            Action("Effacer tous les apprenants", MaterialIconKind.AccountRemoveOutline, () => Shell.Open(() => new EraseDataPage(Shell, payments: false)));
+        }
         ActionRefresh();
     }
 

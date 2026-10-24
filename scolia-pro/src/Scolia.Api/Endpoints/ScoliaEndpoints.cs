@@ -367,6 +367,22 @@ public static class ScoliaEndpoints
             return Results.Ok(new { supprimees = removed });
         });
 
+        // Effacement volontaire : le mot de passe du compte connecté confirme, une sauvegarde précède, le journal garde la trace.
+        const string motDePasseRefuse = "Mot de passe incorrect : aucune donnée n'a été effacée.";
+        var erase = api.MapGroup("/effacement").RequireAuthorization(Permissions.BackupManage);
+        erase.MapPost("/paiements", async (ErasureRequest input, DataErasureService s, BackupService backups, CancellationToken ct) =>
+        {
+            if (!await s.ConfirmAsync(input.Password, "paiements", ct)) throw new DomainException("motDePasse", motDePasseRefuse);
+            await backups.CreateAsync("avant-effacement-paiements", ct);
+            return await s.ErasePaymentsAsync(input, ct);
+        });
+        erase.MapPost("/apprenants", async (ErasureRequest input, DataErasureService s, BackupService backups, CancellationToken ct) =>
+        {
+            if (!await s.ConfirmAsync(input.Password, "apprenants", ct)) throw new DomainException("motDePasse", motDePasseRefuse);
+            await backups.CreateAsync("avant-effacement-apprenants", ct);
+            return await s.EraseStudentsAsync(input, ct);
+        });
+
         api.MapPost("/import/scolia", async (HttpRequest request, bool? appliquer, LegacyImportService importer, CancellationToken ct) =>
         {
             if (!request.HasFormContentType) throw new DomainException("fichiers", "Envoyez les classeurs Excel à importer.");

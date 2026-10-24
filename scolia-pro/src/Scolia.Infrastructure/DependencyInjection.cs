@@ -48,6 +48,7 @@ public static class DependencyInjection
         services.AddScoped<SponsorshipService>();
         services.AddScoped<PaymentService>();
         services.AddScoped<PaymentBatchService>();
+        services.AddScoped<DataErasureService>();
         services.AddScoped<CashService>();
         services.AddScoped<ReportService>();
         services.AddScoped<UserService>();
