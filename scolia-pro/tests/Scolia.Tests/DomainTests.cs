@@ -98,6 +98,9 @@ public sealed class AccountingTests
     private static StudentAccount Account(Dictionary<Guid, decimal>? paid = null, Dictionary<Guid, decimal>? coverage = null) =>
         StudentAccount.Compute(Fees(), coverage ?? [], paid ?? [], new DateOnly(2026, 10, 23));
 
+    private static StudentAccount AccountOn(DateOnly asOf) =>
+        StudentAccount.Compute(Fees(), new Dictionary<Guid, decimal>(), new Dictionary<Guid, decimal>(), asOf);
+
     [Fact]
     public void Account_totals_and_overdue_are_computed()
     {
@@ -107,6 +110,18 @@ public sealed class AccountingTests
         Assert.Equal(145000, a.Balance);
         Assert.Equal(35000, a.Overdue); // Septembre partiellement payé, échu le 06/10.
         Assert.Equal(LineStatus.Partiel, a.Lines.Single(l => l.FeeItemId == Sept).Status);
+    }
+
+    [Fact]
+    public void Month_becomes_overdue_on_the_sixth_of_the_following_month()
+    {
+        var before = AccountOn(new DateOnly(2026, 11, 5));
+        Assert.False(before.Lines.Single(l => l.FeeItemId == Oct).IsOverdue);
+        Assert.True(before.Lines.Single(l => l.FeeItemId == Sept).IsOverdue);
+
+        var onTheSixth = AccountOn(new DateOnly(2026, 11, 6));
+        Assert.True(onTheSixth.Lines.Single(l => l.FeeItemId == Oct).IsOverdue);
+        Assert.False(onTheSixth.Lines.Single(l => l.FeeItemId == Nov).IsOverdue);
     }
 
     [Fact]

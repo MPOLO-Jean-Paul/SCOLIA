@@ -228,7 +228,7 @@ public sealed class BusinessApiTests : IDisposable
         var admin = await app.InstalledAdmin();
         var (_, enrollmentId, _) = await NewStudent(admin);
         var account = await admin.GetAsync($"/api/inscriptions/{enrollmentId}/compte").Ok();
-        Assert.Equal(570000m, account.GetProperty("totalNet").GetDecimal());
+        Assert.Equal(550000m, account.GetProperty("totalNet").GetDecimal());
 
         var receipt = await admin.PayMonths(enrollmentId, 1, key: "cle-unique-1");
         Assert.Matches(@"^RC-\d{4}-000001$", receipt.GetProperty("number").GetString());
@@ -279,7 +279,7 @@ public sealed class BusinessApiTests : IDisposable
         Assert.Equal(10, responses.Count(r => r.IsSuccessStatusCode));
         var account = await admin.GetAsync($"/api/inscriptions/{enrollmentId}/compte").Ok();
         Assert.Equal(100000m, account.GetProperty("totalPaid").GetDecimal());
-        Assert.Equal(20000m, account.GetProperty("balance").GetDecimal()); // L'inscription ne se paie pas par mois.
+        Assert.Equal(0m, account.GetProperty("balance").GetDecimal()); // Les frais d'inscription ne font pas partie du suivi de scolarité.
     }
 
     [Fact]
@@ -321,7 +321,7 @@ public sealed class BusinessApiTests : IDisposable
         var account = await admin.GetAsync($"/api/inscriptions/{enrollmentId}/compte").Ok();
         Assert.Equal("ACC1", account.GetProperty("promotionCode").GetString());
         Assert.Equal(55000m, account.GetProperty("totalPaid").GetDecimal());
-        Assert.Equal(20000m + 600000m - 55000m, account.GetProperty("balance").GetDecimal());
+        Assert.Equal(600000m - 55000m, account.GetProperty("balance").GetDecimal());
     }
 
     [Fact]

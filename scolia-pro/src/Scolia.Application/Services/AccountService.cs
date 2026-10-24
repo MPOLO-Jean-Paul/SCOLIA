@@ -47,7 +47,8 @@ public sealed class AccountService(IAppDbContext db, IClock clock)
         foreach (var e in enrollments)
         {
             var promotion = promotions[e.PromotionId];
-            var fees = promotion.Fees.Select(f => new FeeLineInput(f.Id, f.Label, f.Amount, f.DueDate, f.Order, f.PeriodId, f.Kind));
+            // Le suivi de l'apprenant ne porte que sur la scolarité : inscription et examen sont des frais de l'institution.
+            var fees = promotion.Fees.Where(f => f.Kind == FeeKind.Mensualite).Select(f => new FeeLineInput(f.Id, f.Label, f.Amount, f.DueDate, f.Order, f.PeriodId, f.Kind));
             var account = StudentAccount.Compute(fees, coverageMap.GetValueOrDefault(e.Id, empty), paidMap.GetValueOrDefault(e.Id, empty), day, school.WholeAmountsOnly);
             result[e.Id] = new EnrollmentAccount(e, promotion, account);
         }
