@@ -172,9 +172,11 @@ void Smoke(ShellViewModel shell, ScoliaClient api, Window window, string passwor
     Wait(cashier.SearchAsync());
     Check("recherche d'apprenant à l'encaissement", cashier.Results.Count > 0, $"{cashier.Results.Count} résultat(s)");
     Wait(cashier.ChooseAsync(cashier.Results[0]));
-    cashier.Amount = "1000";
+    // Encaissement par mois : on coche le premier mois dû, le montant vient de l'échéance.
+    var firstMonth = cashier.Months.First();
+    firstMonth.IsSelected = true;
     Wait(cashier.PreviewAsync());
-    Check("aperçu de répartition", cashier.Allocations.Count > 0 || cashier.Balance.Length > 0, $"{cashier.Allocations.Count} imputation(s)");
+    Check("aperçu de répartition", cashier.Allocations.Count > 0 && cashier.Total == cashier.Months.First(m => m.IsSelected).AmountText, $"{cashier.Allocations.Count} imputation(s), {cashier.Total}");
     var before = Result(api.GetAsync<PagedResult<ReceiptRowDto>>("api/paiements?taille=1")).Total;
     Wait(shell.Run(() => cashier.PayAsync()));
     Wait(Task.Delay(200));

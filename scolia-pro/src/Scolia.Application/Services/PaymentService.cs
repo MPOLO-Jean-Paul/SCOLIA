@@ -21,7 +21,7 @@ public sealed class PaymentService(IAppDbContext db, IWriteGate gate, IAuditLog 
     {
         var school = await YearContext.SchoolAsync(db, ct);
         var data = await accounts.ForEnrollmentAsync(enrollmentId, null, ct);
-        var plan = PaymentAllocator.Allocate(data.Account, amount, items, school.CurrencySymbol);
+        var plan = items is { Count: > 0 } ? PaymentAllocator.Months(data.Account, items) : PaymentAllocator.Allocate(data.Account, amount, null, school.CurrencySymbol);
         return BuildPreview(data.Account, plan);
     }
 
@@ -59,7 +59,6 @@ public sealed class PaymentService(IAppDbContext db, IWriteGate gate, IAuditLog 
             if (existing is not null) return await GetAsync(existing.Value, ct);
         }
         var school = await YearContext.SchoolAsync(db, ct);
-        Money.EnsureValid(input.Amount, school.WholeAmountsOnly, "amount");
         var method = ParseMethod(input.Method);
         var date = input.Date ?? clock.Today;
         var v = new ValidationBuilder()
@@ -75,7 +74,12 @@ public sealed class PaymentService(IAppDbContext db, IWriteGate gate, IAuditLog 
         var data = await accounts.ForEnrollmentAsync(input.EnrollmentId, null, ct);
         var year = await db.AcademicYears.AsNoTracking().FirstAsync(y => y.Id == data.Enrollment.AcademicYearId, ct);
         if (year.Status == AcademicYearStatus.Closed) throw new DomainException("annee", $"L'année {year.Label} est clôturée.");
-        var plan = PaymentAllocator.Allocate(data.Account, input.Amount, input.FeeItemIds, school.CurrencySymbol);
+        var byMonth = input.FeeItemIds is { Count: > 0 };
+        var plan = byMonth ? PaymentAllocator.Months(data.Account, input.FeeItemIds!) : PaymentAllocator.Allocate(data.Account, input.Amount, null, school.CurrencySymbol);
+        var total = plan.Sum(p => p.Amount);
+        if (byMonth && input.Amount != total)
+            throw new DomainException("montant", $"Les mois choisis valent {Money.Display(total, school.CurrencySymbol)}. La liste a changé : actualisez-la avant d'encaisser.");
+        Money.EnsureValid(total, school.WholeAmountsOnly, "amount");
 
         var receipt = new Receipt
         {
@@ -85,7 +89,7 @@ public sealed class PaymentService(IAppDbContext db, IWriteGate gate, IAuditLog 
             StudentId = data.Enrollment.StudentId,
             EnrollmentId = data.Enrollment.Id,
             AcademicYearId = year.Id,
-            Amount = input.Amount,
+            Amount = total,
             Method = method,
             Reference = Clean(input.Reference),
             PayerName = Clean(input.PayerName),

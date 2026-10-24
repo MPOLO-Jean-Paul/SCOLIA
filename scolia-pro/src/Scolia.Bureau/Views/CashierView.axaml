@@ -42,10 +42,31 @@
       <Border Classes="card" IsVisible="{Binding !HasReceipt}">
         <StackPanel Spacing="10">
           <TextBlock Text="2. Versement" Classes="heading" />
+          <!-- Les mois se cochent : le montant de chaque mois est celui de l'échéance, sans saisie -->
+          <StackPanel Spacing="6">
+            <TextBlock Text="Mois payés" Classes="caption" />
+            <TextBlock Text="Chaque mois se règle en entier, à son montant. Les paiements partiels ne sont pas enregistrés." Classes="muted" TextWrapping="Wrap" FontSize="{DynamicResource FsSmall}" />
+            <TextBlock Text="Aucun mois à payer pour cet apprenant." Classes="muted" IsVisible="{Binding !HasMonths}" />
+            <ItemsControl ItemsSource="{Binding Months}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <Grid ColumnDefinitions="Auto,*,Auto" Margin="0,3">
+                    <CheckBox IsChecked="{Binding IsSelected}" />
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                      <TextBlock Text="{Binding Label}" VerticalAlignment="Center" />
+                      <TextBlock Text="en retard" IsVisible="{Binding Overdue}" Foreground="{DynamicResource ToneRed}" FontSize="{DynamicResource FsSmall}" VerticalAlignment="Center" />
+                    </StackPanel>
+                    <TextBlock Grid.Column="2" Text="{Binding AmountText}" FontWeight="SemiBold" VerticalAlignment="Center" />
+                  </Grid>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <TextBlock Text="{Binding TotalCaption}" Classes="muted" />
+          </StackPanel>
           <Grid ColumnDefinitions="*,*,*" RowDefinitions="Auto,Auto">
             <StackPanel Grid.Column="0" Margin="0,0,10,0">
-              <TextBlock Text="Montant" Classes="caption" />
-              <TextBox Text="{Binding Amount}" PlaceholderText="0" />
+              <TextBlock Text="Total à encaisser" Classes="caption" />
+              <TextBlock Text="{Binding Total}" Classes="kpi" />
             </StackPanel>
             <StackPanel Grid.Column="1" Margin="0,0,10,0">
               <TextBlock Text="Date du reçu" Classes="caption" />

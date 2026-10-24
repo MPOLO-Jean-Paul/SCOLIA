@@ -27,7 +27,6 @@ public sealed class CashierPage : PageViewModel
     private string search = string.Empty;
     private PayerRow? selected;
     private EnrollmentChoice? enrollment;
-    private string amount = string.Empty;
     private DateTime? day = DateTime.Now;
     private ChoiceItem? method;
     private string reference = string.Empty;
@@ -55,7 +54,7 @@ public sealed class CashierPage : PageViewModel
     }
 
     public override string Title => "Encaisser";
-    public override string Subtitle => "Versement réparti sur les échéances, puis reçu numéroté";
+    public override string Subtitle => "Choisissez les mois payés : chaque mois se règle à son montant, puis reçu numéroté";
     public override MaterialIconKind Glyph => MaterialIconKind.HandCoin;
 
     public AsyncCommand Pay { get; }
@@ -99,18 +98,28 @@ public sealed class CashierPage : PageViewModel
     public bool HasReceipt => receipt is not null;
     public string ReceiptText => receipt is null ? string.Empty : $"Reçu N° {receipt.Number} enregistré pour {Money(receipt.Amount)}.";
 
-    public string Amount
+    /// <summary>Mois à payer : chaque mois se règle en entier, à son montant dû. Aucun montant n'est saisi.</summary>
+    public ObservableCollection<MonthRowVm> Months { get; } = [];
+    public bool HasMonths => Months.Count > 0;
+    public bool HasSelection => SelectedCount > 0;
+    public int SelectedCount => Months.Count(m => m.IsSelected);
+    public decimal SelectedTotal => Months.Where(m => m.IsSelected).Sum(m => m.Amount);
+    public string Total => Money(SelectedTotal);
+    public string TotalCaption => SelectedCount == 0 ? "Aucun mois choisi" : $"{SelectedCount} mois · total {Money(SelectedTotal)}";
+
+    /// <summary>Un mois coché ou décoché met à jour le total et l'aperçu de répartition.</summary>
+    private void MonthsChanged()
     {
-        get => amount;
-        set
-        {
-            if (!Set(ref amount, value)) return;
-            previewTimer?.Stop();
-            previewTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(250) };
-            previewTimer.Tick += async (_, _) => { previewTimer?.Stop(); await Shell.Run(PreviewAsync); };
-            previewTimer.Start();
-        }
+        Raise(nameof(Total));
+        Raise(nameof(TotalCaption));
+        Raise(nameof(HasSelection));
+        previewTimer?.Stop();
+        previewTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(150) };
+        previewTimer.Tick += async (_, _) => { previewTimer?.Stop(); await Shell.Run(PreviewAsync); };
+        previewTimer.Start();
     }
+
+    private List<Guid> SelectedIds() => Months.Where(m => m.IsSelected).Select(m => m.Id).ToList();
 
     public DateTime? Day { get => day; set => Set(ref day, value); }
     public ChoiceItem? Method { get => method; set => Set(ref method, value); }
@@ -154,6 +163,13 @@ public sealed class CashierPage : PageViewModel
         }
         var account = await Shell.Api.GetAsync<AccountDto>($"api/inscriptions/{eid}/compte");
         enrollment = new EnrollmentChoice(eid, account.Balance);
+        Months.Clear();
+        foreach (var line in account.Lines.Where(l => l.Remaining > 0))
+            Months.Add(new MonthRowVm(line.FeeItemId, line.Label, line.Remaining, Money(line.Remaining), line.IsOverdue, MonthsChanged));
+        Raise(nameof(HasMonths));
+        Raise(nameof(Total));
+        Raise(nameof(TotalCaption));
+        Raise(nameof(HasSelection));
         StudentName = account.FullName;
         StudentInfo = $"Matricule {account.Matricule} · {account.PromotionCode} · {account.AcademicYear}";
         Balance = Money(account.Balance);
@@ -168,9 +184,9 @@ public sealed class CashierPage : PageViewModel
     {
         Allocations.Clear();
         BalanceAfter = string.Empty;
-        if (enrollment is not { } e || !Format.TryAmount(Amount, out var value) || value <= 0) return;
+        if (enrollment is not { } e || !HasSelection) return;
         var preview = await Shell.Api.SendAsync<PaymentPreviewDto>(HttpMethod.Post, "api/paiements/apercu",
-            new { enrollmentId = e.Id, amount = value, method = Method?.Value });
+            new { enrollmentId = e.Id, amount = SelectedTotal, feeItemIds = SelectedIds(), method = Method?.Value });
         foreach (var a in preview.Allocations)
             Allocations.Add(new AllocationRowVm(a.Label, Money(a.Amount), Money(a.RemainingAfter)));
         BalanceAfter = Money(preview.BalanceAfter);
@@ -184,26 +200,26 @@ public sealed class CashierPage : PageViewModel
             Hint = "Choisissez d'abord un apprenant.";
             return;
         }
-        if (!Format.TryAmount(Amount, out var value) || value <= 0)
+        var ids = SelectedIds();
+        if (ids.Count == 0)
         {
-            Hint = "Saisissez un montant supérieur à zéro.";
+            Hint = "Cochez au moins un mois à payer.";
             return;
         }
         Hint = null;
         var created = await Shell.Api.SendAsync<ReceiptDto>(HttpMethod.Post, "api/paiements", new
         {
             enrollmentId = e.Id,
-            amount = value,
+            amount = SelectedTotal,
             date = ToDay(Day),
             method = Method?.Value ?? "Especes",
             reference = string.IsNullOrWhiteSpace(Reference) ? null : Reference.Trim(),
             payerName = string.IsNullOrWhiteSpace(PayerName) ? null : PayerName.Trim(),
             payerPhone = string.IsNullOrWhiteSpace(PayerPhone) ? null : PayerPhone.Trim(),
             note = string.IsNullOrWhiteSpace(Note) ? null : Note.Trim(),
-            feeItemIds = (IReadOnlyList<Guid>?)null,
+            feeItemIds = ids,
             idempotencyKey = Guid.NewGuid().ToString("N"),
         });
-        Amount = string.Empty;
         Reference = string.Empty;
         await ChooseAsync(new PayerRow(e.Id, created.StudentId, StudentName, string.Empty));
         Receipt = created;
@@ -214,7 +230,7 @@ public sealed class CashierPage : PageViewModel
     private void Reset()
     {
         Receipt = null;
-        Amount = string.Empty;
+        foreach (var month in Months) month.IsSelected = false;
         Reference = string.Empty;
         PayerName = string.Empty;
         PayerPhone = string.Empty;
@@ -223,6 +239,24 @@ public sealed class CashierPage : PageViewModel
     }
 
     private sealed record EnrollmentChoice(Guid Id, decimal Balance);
+}
+
+/// <summary>Un mois à payer : coché pour l'encaissement, réglé en entier à son montant dû.</summary>
+public sealed class MonthRowVm(Guid id, string label, decimal amount, string amountText, bool overdue, Action changed) : Observable
+{
+    private bool selected;
+
+    public Guid Id { get; } = id;
+    public string Label { get; } = label;
+    public decimal Amount { get; } = amount;
+    public string AmountText { get; } = amountText;
+    public bool Overdue { get; } = overdue;
+
+    public bool IsSelected
+    {
+        get => selected;
+        set { if (Set(ref selected, value)) changed(); }
+    }
 }
 
 /// <summary>Journal des reçus : filtres, totaux et exports.</summary>

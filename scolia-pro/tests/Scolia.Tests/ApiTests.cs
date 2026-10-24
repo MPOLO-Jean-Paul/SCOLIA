@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -112,6 +113,35 @@ public sealed class SecurityApiTests : IDisposable
         if (before.GetProperty("payerName").ValueKind == JsonValueKind.Null)
             Assert.Equal("Tuteur de test", after.GetProperty("payerName").GetString());
         Assert.Equal(before.GetProperty("amount").GetDecimal(), after.GetProperty("amount").GetDecimal());
+    }
+
+    [Fact]
+    public async Task Payment_by_month_takes_the_monthly_fee_and_refuses_any_other_amount()
+    {
+        var admin = await app.InstalledAdmin(demo: true);
+        var student = (await admin.GetAsync("/api/apprenants?taille=1").Ok()).GetProperty("items")[0];
+        var enrollmentId = student.GetProperty("enrollmentId").GetString();
+        var account = await admin.GetAsync($"/api/inscriptions/{enrollmentId}/compte").Ok();
+        var month = account.GetProperty("lines").EnumerateArray().First(l => l.GetProperty("remaining").GetDecimal() > 0);
+        var feeItemId = month.GetProperty("feeItemId").GetString();
+        var monthly = month.GetProperty("remaining").GetDecimal();
+
+        // Un montant qui ne correspond pas au mois choisi est refusé : aucun règlement partiel.
+        var (refused, _) = await admin.Post("/api/paiements", new
+        {
+            enrollmentId, amount = monthly + 1, feeItemIds = new[] { feeItemId }, method = "Especes", idempotencyKey = Guid.NewGuid().ToString("N"),
+        }).Fail();
+        Assert.Equal(HttpStatusCode.BadRequest, refused);
+
+        // Le mois choisi est encaissé à son montant dû, sans saisie du montant.
+        var receipt = await admin.Post("/api/paiements", new
+        {
+            enrollmentId, amount = monthly, feeItemIds = new[] { feeItemId }, method = "Especes", idempotencyKey = Guid.NewGuid().ToString("N"),
+        }).Ok();
+        Assert.Equal(monthly, receipt.GetProperty("amount").GetDecimal());
+        var after = await admin.GetAsync($"/api/inscriptions/{enrollmentId}/compte").Ok();
+        var settled = after.GetProperty("lines").EnumerateArray().First(l => l.GetProperty("feeItemId").GetString() == feeItemId);
+        Assert.Equal(0m, settled.GetProperty("remaining").GetDecimal());
     }
 
     [Fact]
@@ -242,7 +272,8 @@ public sealed class BusinessApiTests : IDisposable
         var (_, enrollmentId, _) = await NewStudent(admin);
         var account = await admin.GetAsync($"/api/inscriptions/{enrollmentId}/compte").Ok();
         var monthly = account.GetProperty("lines").EnumerateArray().Where(l => l.GetProperty("label").GetString() != "Frais d'inscription").Select(l => l.GetProperty("feeItemId").GetString()).ToList();
-        await admin.Post("/api/paiements", new { enrollmentId, amount = 45000m, method = "Especes", feeItemIds = new[] { monthly[0] } }).Ok();
+        // Un mois se paie en entier : aucun règlement partiel n'est enregistré.
+        await admin.Post("/api/paiements", new { enrollmentId, amount = 50000m, method = "Especes", feeItemIds = new[] { monthly[0] } }).Ok();
 
         var refused = await admin.Post($"/api/inscriptions/{enrollmentId}/prises-en-charge", new
         {

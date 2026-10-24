@@ -68,6 +68,22 @@ public sealed class StudentAccount
 /// (règle SCOLIA V79), ou sur les rubriques choisies par le caissier.</summary>
 public static class PaymentAllocator
 {
+    /// <summary>Règlement par mois : chaque rubrique choisie est soldée en entier, à son montant dû.
+    /// Aucun règlement partiel n'est enregistré : le montant du versement est la somme des mois choisis.</summary>
+    public static IReadOnlyList<(Guid FeeItemId, decimal Amount)> Months(StudentAccount account, IReadOnlyCollection<Guid> selected)
+    {
+        if (selected.Count == 0) throw new DomainException("rubriques", "Choisissez au moins un mois à payer.");
+        var unknown = selected.Where(id => account.Lines.All(l => l.FeeItemId != id)).ToList();
+        if (unknown.Count > 0) throw new DomainException("rubriques", "Une rubrique choisie n'appartient pas à cette inscription.");
+        var plan = new List<(Guid, decimal)>();
+        foreach (var line in account.Lines.Where(l => selected.Contains(l.FeeItemId)))
+        {
+            if (line.Remaining <= 0) throw new DomainException("rubriques", $"« {line.Label} » est déjà réglé : actualisez la liste des mois.");
+            plan.Add((line.FeeItemId, line.Remaining));
+        }
+        return plan;
+    }
+
     public static IReadOnlyList<(Guid FeeItemId, decimal Amount)> Allocate(
         StudentAccount account, decimal amount, IReadOnlyCollection<Guid>? selected = null, string currency = "FC")
     {
