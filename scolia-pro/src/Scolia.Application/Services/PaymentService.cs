@@ -134,8 +134,12 @@ public sealed class PaymentService(IAppDbContext db, IWriteGate gate, IAuditLog 
         var labels = await db.FeeItems.AsNoTracking().Where(f => itemIds.Contains(f.Id)).ToDictionaryAsync(f => f.Id, f => (f.Label, f.DueDate), ct);
         var allocations = r.Allocations.OrderBy(a => labels.GetValueOrDefault(a.FeeItemId).DueDate)
             .Select(a => new AllocationPreview(a.FeeItemId, labels.GetValueOrDefault(a.FeeItemId).Label ?? "?", a.Amount, 0)).ToList();
+        // Le versement garde le payeur saisi à l'époque. À défaut, le reçu montre le tuteur actuel de l'apprenant :
+        // une correction du dossier se répercute donc aussi sur les reçus déjà enregistrés.
+        var payerName = r.PayerName ?? student.GuardianName;
+        var payerPhone = r.PayerPhone ?? student.GuardianPhone;
         return new ReceiptDto(r.Id, r.Number, r.VerificationCode, r.Date, r.StudentId, student.Matricule, student.FullName, info.Code, info.Label, r.Amount,
-            Labels.Of(r.Method), r.Reference, r.PayerName, r.PayerPhone, r.Note, r.CashierName, r.Status == OperationStatus.Valide ? "Valide" : "Annulé",
+            Labels.Of(r.Method), r.Reference, payerName, payerPhone, r.Note, r.CashierName, r.Status == OperationStatus.Valide ? "Valide" : "Annulé",
             r.CancelledAtUtc, r.CancelledBy, r.CancellationReason, allocations, r.CreatedAtUtc);
     }
 

@@ -94,6 +94,27 @@ public sealed class SecurityApiTests : IDisposable
     }
 
     [Fact]
+    public async Task Editing_a_student_updates_receipts_already_issued()
+    {
+        var admin = await app.InstalledAdmin(demo: true);
+        var receiptId = (await admin.GetAsync("/api/paiements?pageSize=1").Ok()).GetProperty("items")[0].GetProperty("id").GetString();
+        var before = await admin.GetAsync($"/api/paiements/{receiptId}").Ok();
+        var studentId = before.GetProperty("studentId").GetString();
+        var student = await admin.GetAsync($"/api/apprenants/{studentId}").Ok();
+        await admin.Put($"/api/apprenants/{studentId}", new
+        {
+            lastName = "CHANGEMENT", middleName = "NOUVEAU", firstName = "Test", gender = "M", version = student.GetProperty("version").GetInt64(),
+            guardianName = "Tuteur de test",
+        }).Ok();
+        var after = await admin.GetAsync($"/api/paiements/{receiptId}").Ok();
+        Assert.Equal("CHANGEMENT NOUVEAU Test", after.GetProperty("studentName").GetString());
+        // Sans payeur saisi au paiement, le reçu affiche le tuteur actuel.
+        if (before.GetProperty("payerName").ValueKind == JsonValueKind.Null)
+            Assert.Equal("Tuteur de test", after.GetProperty("payerName").GetString());
+        Assert.Equal(before.GetProperty("amount").GetDecimal(), after.GetProperty("amount").GetDecimal());
+    }
+
+    [Fact]
     public async Task Disabling_a_user_closes_open_sessions()
     {
         var admin = await app.InstalledAdmin();

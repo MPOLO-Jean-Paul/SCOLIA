@@ -8,7 +8,7 @@
       <DataGridTextColumn Header="Promotion" Binding="{Binding Promotion}" Width="Auto" MinWidth="100" />
       <DataGridTextColumn Header="Garant ou organisme" Binding="{Binding Sponsor}" Width="Auto" MinWidth="180" />
       <DataGridTextColumn Header="Motif" Binding="{Binding Reason}" Width="Auto" MinWidth="170" />
-      <DataGridTextColumn Header="Effet" Binding="{Binding Since}" Width="Auto" MinWidth="105" />
+      <DataGridTextColumn Header="Effet" Binding="{Binding Since}" Width="Auto" MinWidth="120" />
       <DataGridTextColumn Header="Couvert" Binding="{Binding Covered}" Width="Auto" MinWidth="130" />
       <DataGridTemplateColumn Header="État" Width="Auto" MinWidth="110">
         <DataGridTemplateColumn.CellTemplate>

@@ -10,9 +10,9 @@
     </Border>
     <DataGrid Grid.Row="1" ItemsSource="{Binding Items}" AutoGenerateColumns="False" IsReadOnly="True">
       <DataGrid.Columns>
-        <DataGridTextColumn Header="Date" Binding="{Binding Date}" Width="Auto" MinWidth="105" />
+        <DataGridTextColumn Header="Date" Binding="{Binding Date}" Width="Auto" MinWidth="120" />
         <DataGridTextColumn Header="Matricule" Binding="{Binding Matricule}" Width="Auto" MinWidth="105" />
-        <DataGridTextColumn Header="Apprenant" Binding="{Binding Name}" Width="Auto" MinWidth="170" />
+        <DataGridTextColumn Header="Apprenant" Binding="{Binding Name}" Width="Auto" MinWidth="210" />
         <DataGridTextColumn Header="Catégorie" Binding="{Binding Category}" Width="Auto" MinWidth="150" />
         <DataGridTextColumn Header="Description" Binding="{Binding Description}" Width="*" />
         <DataGridTextColumn Header="Sanction" Binding="{Binding Sanction}" Width="Auto" MinWidth="170" />

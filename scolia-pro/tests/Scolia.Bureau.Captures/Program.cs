@@ -287,9 +287,20 @@ void Smoke(ShellViewModel shell, ScoliaClient api, Window window, string passwor
 
     var detailForModif = new StudentDetailPage(shell, first.Id);
     Wait(shell.Open(() => detailForModif));
+    var receiptBeforeEdit = detailForModif.Receipts.Count > 0 ? detailForModif.Receipts[0].Id : (Guid?)null;
     var editing = detailForModif.EditAsync();
-    ok = Submit(shell, editing, f => f.Find("telephone").Text = "+243 800 111 222");
+    ok = Submit(shell, editing, f =>
+    {
+        f.Find("telephone").Text = "+243 800 111 222";
+        f.Find("nom").Text = "CONTROLE";
+    });
     Check("modification de l'apprenant", ok);
+    // Un reçu déjà enregistré affiche l'identité corrigée : il n'est pas figé à la date du paiement.
+    if (receiptBeforeEdit is { } existing)
+    {
+        var updated = Result(api.GetAsync<System.Text.Json.JsonElement>($"api/paiements/{existing}"));
+        Check("reçu déjà enregistré mis à jour", updated.GetProperty("studentName").GetString()!.StartsWith("CONTROLE", StringComparison.Ordinal), updated.GetProperty("studentName").GetString());
+    }
 
     var courses = Result(api.GetAsync<List<CourseDto>>("api/scolarite/cours?promotionId=" + grades.Promotion!.Value));
     var courseBefore = courses.Count;
