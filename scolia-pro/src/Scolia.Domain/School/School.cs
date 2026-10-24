@@ -14,6 +14,11 @@ public sealed class SchoolProfile : Entity
     public string? Phone { get; set; }
     public string? Email { get; set; }
     public string? Website { get; set; }
+    /// <summary>Mentions de l'en-tête des cartes d'accès : ministère, direction, division provinciale, zone de santé.</summary>
+    public string? CardMinistry { get; set; }
+    public string? CardDirection { get; set; }
+    public string? CardDivision { get; set; }
+    public string? CardZone { get; set; }
     /// <summary>Code ISO 4217 de la monnaie (CDF par défaut).</summary>
     public string CurrencyCode { get; set; } = "CDF";
     public string CurrencySymbol { get; set; } = "FC";

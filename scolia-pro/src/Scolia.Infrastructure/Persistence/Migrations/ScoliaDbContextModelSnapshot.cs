@@ -935,6 +935,18 @@ namespace Scolia.Infrastructure.Persistence.Migrations
                     b.Property<string>("Address")
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("CardDirection")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CardDivision")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CardMinistry")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CardZone")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("City")
                         .HasColumnType("TEXT");
 
@@ -1388,6 +1400,61 @@ namespace Scolia.Infrastructure.Persistence.Migrations
                         .IsUnique();
 
                     b.ToTable("Personnel", (string)null);
+                });
+
+            modelBuilder.Entity("Scolia.Domain.Students.CardBatch", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("CardCount")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CreatedByName")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Format")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("PageCount")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("PromotionLabel")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Session")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("StudentCount")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("LotsCartes", (string)null);
                 });
 
             modelBuilder.Entity("Scolia.Domain.Students.Enrollment", b =>

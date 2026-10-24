@@ -6,10 +6,12 @@ namespace Scolia.Application.Dtos;
 
 // ---------- Établissement et configuration ----------
 public sealed record SchoolDto(string Name, string ShortName, string? Motto, string? Address, string? City, string? Country, string? Phone,
-    string? Email, string? Website, string CurrencyCode, string CurrencySymbol, bool WholeAmountsOnly, string? ReceiptFooter, bool HasLogo, string PhoneCountryCode);
+    string? Email, string? Website, string CurrencyCode, string CurrencySymbol, bool WholeAmountsOnly, string? ReceiptFooter, bool HasLogo, string PhoneCountryCode,
+    string? CardMinistry = null, string? CardDirection = null, string? CardDivision = null, string? CardZone = null);
 
 public sealed record SchoolUpdate(string Name, string ShortName, string? Motto, string? Address, string? City, string? Country, string? Phone,
-    string? Email, string? Website, string CurrencyCode, string CurrencySymbol, bool WholeAmountsOnly, string? ReceiptFooter, string PhoneCountryCode);
+    string? Email, string? Website, string CurrencyCode, string CurrencySymbol, bool WholeAmountsOnly, string? ReceiptFooter, string PhoneCountryCode,
+    string? CardMinistry = null, string? CardDirection = null, string? CardDivision = null, string? CardZone = null);
 
 public sealed record SetupRequest(string SchoolName, string ShortName, string? Motto, string? City, string? Phone, string CurrencyCode, string CurrencySymbol,
     string YearLabel, int StartMonth, int MonthCount, string AdminUserName, string AdminDisplayName, string AdminPassword, bool LoadDemoData,
@@ -218,6 +220,15 @@ public sealed record ResultRow(Guid EnrollmentId, string Matricule, string FullN
 public sealed record ResultsDto(string Promotion, int? Term, IReadOnlyList<string> Courses, IReadOnlyList<decimal> Coefficients, IReadOnlyList<ResultRow> Rows, decimal? ClassAverage, int Passed);
 
 public sealed record AttendanceSheetDto(Guid PromotionId, DateOnly Date, IReadOnlyList<AttendanceRow> Rows, bool CourseDay);
+
+/// <summary>Apprenant proposé pour les cartes. Les identités incomplètes et les matricules répétés sont signalés et écartés.</summary>
+public sealed record CardCandidateDto(Guid EnrollmentId, string Matricule, string FullName, string PromotionCode, string Status, bool Eligible,
+    bool IdentityComplete, bool DuplicateMatricule);
+
+public sealed record CardExportRequest(IReadOnlyList<Guid> EnrollmentIds, int Month, int Year, int Copies, bool IncludeLeft);
+
+public sealed record CardBatchDto(Guid Id, DateTime CreatedAtUtc, string Session, string PromotionLabel, int StudentCount, int CardCount, int PageCount,
+    string Format, string FileName, string CreatedBy);
 
 /// <summary>Apprenant à traiter : absences non justifiées ou jours consécutifs absents, au-delà des seuils.</summary>
 public sealed record AttendanceAlertDto(Guid EnrollmentId, string Matricule, string FullName, int UnjustifiedAbsences, int LongestRun);

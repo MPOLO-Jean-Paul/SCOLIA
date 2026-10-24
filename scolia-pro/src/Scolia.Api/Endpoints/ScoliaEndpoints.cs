@@ -76,6 +76,7 @@ public static class ScoliaEndpoints
         // Révision des données : les postes la comparent pour recharger l'écran après une écriture faite ailleurs.
         secured.MapGet("/revision", (DataRevision revision) => Results.Ok(new { revision = revision.Value }));
 
+        MapCards(secured);
         MapSchool(secured);
         MapStudents(secured);
         MapFinance(secured);
@@ -208,6 +209,21 @@ public static class ScoliaEndpoints
             Table(await r.DebtorsTableAsync(q, ct), format, "retards-de-paiement", r));
         g.MapGet("/liste-classe/{promotionId:guid}", async (Guid promotionId, string? format, ReportService r, CancellationToken ct) =>
             Table(await r.ClassListAsync(promotionId, ct), format, "liste-nominative", r));
+    }
+
+    private static void MapCards(RouteGroupBuilder api)
+    {
+        // Cartes d'accès aux examens (V79 : Scolarité > Cartes). Export réservé aux comptes qui peuvent écrire les apprenants.
+        var g = api.MapGroup("/cartes").RequireAuthorization(Permissions.StudentsRead);
+        g.MapGet("/candidats", (Guid? promotionId, string? recherche, bool? sortis, CardService s, CancellationToken ct) =>
+            s.CandidatesAsync(promotionId, recherche, sortis ?? false, ct));
+        g.MapPost("/export", async (CardExportRequest input, CardService s, HttpContext http, CancellationToken ct) =>
+        {
+            var result = await s.ExportAsync(input, ct);
+            http.Response.Headers["X-Cartes-Ecartees"] = result.Skipped.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            return Results.File(result.Bytes, "application/pdf", result.FileName);
+        }).RequireAuthorization(Permissions.StudentsWrite);
+        g.MapGet("/lots", (CardService s, CancellationToken ct) => s.BatchesAsync(ct));
     }
 
     private static void MapAcademics(RouteGroupBuilder api)

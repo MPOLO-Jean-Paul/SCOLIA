@@ -31,6 +31,7 @@ public interface IAppDbContext
     DbSet<Course> Courses { get; }
     DbSet<CourseAssignment> CourseAssignments { get; }
     DbSet<CourseDay> CourseDays { get; }
+    DbSet<CardBatch> CardBatches { get; }
     DbSet<Assessment> Assessments { get; }
     DbSet<Grade> Grades { get; }
     DbSet<AttendanceRecord> Attendance { get; }
@@ -77,6 +78,7 @@ public interface IDocumentService
     byte[] Statement(StatementDocument document);
     byte[] Table(TableDocument document);
     byte[] ReportCard(ReportCardDocument document);
+    byte[] StudentCards(CardDocument document);
 }
 
 public interface ISpreadsheetService
@@ -95,6 +97,14 @@ public sealed record StatementDocument(
     SchoolHeader School, string StudentName, string Matricule, string Promotion, string AcademicYear, DateOnly AsOf,
     IReadOnlyList<Dtos.AccountLineDto> Lines, IReadOnlyList<Dtos.ReceiptSummaryDto> Receipts,
     decimal TotalNet, decimal TotalPaid, decimal Balance, decimal Overdue);
+
+/// <summary>En-tête des cartes d'accès : les mentions officielles de l'établissement.</summary>
+public sealed record SchoolCardHeader(string Country, string? Ministry, string? Direction, string? Division, string? CityZone, string Institute, string? Address);
+
+/// <summary>Une carte à imprimer. La couleur est celle de la promotion ; le QR contient l'identité, la classe, l'établissement, la session et l'année.</summary>
+public sealed record CardItem(string LastName, string MiddleName, string FirstName, string Classe, string Color, string QrText);
+
+public sealed record CardDocument(SchoolCardHeader Header, string Session, string AcademicYear, IReadOnlyList<CardItem> Cards);
 
 public sealed record TableDocument(SchoolHeader School, string Title, string? Subtitle, IReadOnlyList<string> Columns, IReadOnlyList<IReadOnlyList<string>> Rows, IReadOnlyList<string>? Totals = null, bool Landscape = false);
 

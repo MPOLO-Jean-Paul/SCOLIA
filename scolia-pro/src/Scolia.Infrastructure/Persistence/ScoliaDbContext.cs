@@ -38,6 +38,7 @@ public sealed class ScoliaDbContext(DbContextOptions<ScoliaDbContext> options, I
     public DbSet<Course> Courses => Set<Course>();
     public DbSet<CourseAssignment> CourseAssignments => Set<CourseAssignment>();
     public DbSet<CourseDay> CourseDays => Set<CourseDay>();
+    public DbSet<CardBatch> CardBatches => Set<CardBatch>();
     public DbSet<Assessment> Assessments => Set<Assessment>();
     public DbSet<Grade> Grades => Set<Grade>();
     public DbSet<AttendanceRecord> Attendance => Set<AttendanceRecord>();
@@ -156,6 +157,7 @@ public sealed class ScoliaDbContext(DbContextOptions<ScoliaDbContext> options, I
             e.HasIndex(x => new { x.PromotionId, x.Date }).IsUnique();
             e.HasOne<Promotion>().WithMany().HasForeignKey(x => x.PromotionId).OnDelete(DeleteBehavior.Restrict);
         });
+        b.Entity<CardBatch>(e => e.ToTable("LotsCartes"));
         b.Entity<CourseAssignment>(e =>
         {
             e.ToTable("AffectationsCours");
