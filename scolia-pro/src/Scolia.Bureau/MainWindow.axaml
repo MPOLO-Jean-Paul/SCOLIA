@@ -13,25 +13,26 @@
 
     <Grid RowDefinitions="Auto,Auto,Auto,*,Auto" IsVisible="{Binding IsLoggedIn}">
 
-      <!-- Barre de titre : accès rapide, titre de l'écran, utilisateur -->
+      <!-- Barre de titre couleur d'accent : identité, recherche au centre, utilisateur -->
       <Border Grid.Row="0" Classes="titlebar">
-        <Grid ColumnDefinitions="Auto,*,Auto">
+        <Grid ColumnDefinitions="*,Auto,*">
           <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
             <Image Source="avares://SCOLIA/Assets/scolia.png" Width="22" Height="22" />
-            <TextBlock Text="SCOLIA" FontWeight="SemiBold" VerticalAlignment="Center" />
-            <TextBlock Text="{Binding SchoolLine}" Classes="muted" VerticalAlignment="Center" />
+            <TextBlock Text="SCOLIA" FontWeight="SemiBold" VerticalAlignment="Center" Foreground="{DynamicResource OnAccentBrush}" />
+            <TextBlock Text="{Binding SchoolLine}" VerticalAlignment="Center" Foreground="{DynamicResource OnAccentBrush}" Opacity="0.85" />
           </StackPanel>
-          <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" HorizontalAlignment="Center" VerticalAlignment="Center">
-            <Button Classes="ghost" Command="{Binding ReloadCommand}" ToolTip.Tip="Actualiser (F5)" Padding="8,4">
+          <Button Grid.Column="1" Classes="titlesearch" Command="{Binding SearchCommand}" ToolTip.Tip="Rechercher (Ctrl+K)">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <mi:MaterialIcon Kind="Magnify" Width="18" Height="18" />
+              <TextBlock Text="Rechercher" />
+            </StackPanel>
+          </Button>
+          <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center" HorizontalAlignment="Right">
+            <Button Classes="ghost" Command="{Binding ReloadCommand}" ToolTip.Tip="Actualiser (F5)" Padding="8,4" Foreground="{DynamicResource OnAccentBrush}">
               <mi:MaterialIcon Kind="Refresh" Width="18" Height="18" />
             </Button>
-            <Button Classes="ghost" Command="{Binding SearchCommand}" ToolTip.Tip="Rechercher (Ctrl+K)" Padding="8,4">
-              <mi:MaterialIcon Kind="Magnify" Width="18" Height="18" />
-            </Button>
-          </StackPanel>
-          <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
-            <TextBlock Text="{Binding UserLine}" Classes="muted" VerticalAlignment="Center" />
-            <Border Width="30" Height="30" CornerRadius="15" Background="{DynamicResource AccentSoftBrush}">
+            <TextBlock Text="{Binding UserLine}" VerticalAlignment="Center" Foreground="{DynamicResource OnAccentBrush}" />
+            <Border Width="30" Height="30" CornerRadius="15" Background="{DynamicResource OnAccentBrush}">
               <TextBlock Text="{Binding UserInitials}" FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{DynamicResource AccentBrush}" />
             </Border>
           </StackPanel>

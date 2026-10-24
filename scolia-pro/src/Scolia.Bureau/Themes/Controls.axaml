@@ -213,16 +213,16 @@
     <Setter Property="Foreground" Value="{DynamicResource Text2Brush}" />
     <Setter Property="CornerRadius" Value="0" />
     <Setter Property="Padding" Value="14,6" />
-    <Setter Property="MinHeight" Value="30" />
+    <Setter Property="BorderThickness" Value="0,0,0,3" />
+    <Setter Property="BorderBrush" Value="Transparent" />
   </Style>
+  <!-- Onglet choisi : texte et trait de soulignement dans la couleur d'accent, comme Office. -->
   <Style Selector="Button.ribbontab.selected">
-    <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
     <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
     <Setter Property="FontWeight" Value="SemiBold" />
   </Style>
   <Style Selector="Button.ribbontab.file">
-    <Setter Property="Background" Value="{DynamicResource FileTabBrush}" />
-    <Setter Property="Foreground" Value="{DynamicResource OnAccentBrush}" />
     <Setter Property="FontWeight" Value="SemiBold" />
   </Style>
   <Style Selector="Button.ribbon">
@@ -235,15 +235,16 @@
   <Style Selector="Button.ribbon:pointerover">
     <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
   </Style>
+  <!-- Commande active : gris de pression, comme les outils sélectionnés d'Office. -->
   <Style Selector="Button.ribbon.on">
-    <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
+    <Setter Property="Background" Value="{DynamicResource LineBrush}" />
   </Style>
   <Style Selector="Button.ribbon.large">
     <Setter Property="Width" Value="96" />
     <Setter Property="Padding" Value="4,6" />
   </Style>
   <Style Selector="Border.ribbonbody">
-    <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+    <Setter Property="Background" Value="{DynamicResource Surface2Brush}" />
     <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
     <Setter Property="BorderThickness" Value="0,1" />
   </Style>
@@ -258,8 +259,17 @@
   </Style>
 
   <!-- Barre de titre, barre d'état, notifications -->
+  <Style Selector="Button.titlesearch">
+    <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource Text2Brush}" />
+    <Setter Property="CornerRadius" Value="{StaticResource RadiusPill}" />
+    <Setter Property="Padding" Value="14,6" />
+    <Setter Property="MinWidth" Value="260" />
+    <Setter Property="MaxWidth" Value="420" />
+    <Setter Property="HorizontalContentAlignment" Value="Left" />
+  </Style>
   <Style Selector="Border.titlebar">
-    <Setter Property="Background" Value="{DynamicResource Surface2Brush}" />
+    <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
     <Setter Property="Padding" Value="12,6" />
   </Style>
   <Style Selector="Border.statusbar">
