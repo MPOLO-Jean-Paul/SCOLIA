@@ -420,6 +420,9 @@ Page(() => new UsersPage(shell), "21-utilisateurs.png");
 Page(() => new DataPage(shell), "22-donnees.png");
 Page(() => new ReportsPage(shell), "22d-rapports-exports.png");
 Page(() => new DashboardPage(shell), "22e-tableau-de-bord.png");
+Page(() => new CardsPage(shell), "16b-cartes-acces.png");
+Page(() => new TeachingPage(shell), "16c-enseignants-cours.png");
+Page(() => new StaffAttendancePage(shell), "18b-pointage.png");
 Page(() => new EraseDataPage(shell, payments: true), "22b-effacer-donnees.png");
 Page(() => new EraseDataPage(shell, payments: false), "22c-effacer-apprenants.png");
 Page(() => new AuditPage(shell), "23-audit.png");
@@ -453,13 +456,13 @@ shell.Backstage.Section = shell.Backstage.Items.First(i => i.Value == "poste");
 Save(window, "26b-poste.png");
 shell.CloseBackstage();
 
-// Chaque onglet du ruban : le contenu doit être le même que dans le catalogue web.
-Wait(shell.Open(() => new DashboardPage(shell)));
-foreach (var tab in shell.Tabs.Where(t => t.Id is "secretariat" or "finances" or "donnees" or "scolarite" or "administration" or "affichage" or "aide"))
-{
-    shell.SelectTab(tab);
-    Save(window, $"ruban-{tab.Id}.png");
-}
+// Préférences et mot de passe du menu Compte.
+shell.OpenBackstage();
+shell.Backstage.Section = shell.Backstage.Items.First(i => i.Value == "preferences");
+Save(window, "26c-preferences.png");
+shell.Backstage.Section = shell.Backstage.Items.First(i => i.Value == "mot-de-passe");
+Save(window, "26d-mot-de-passe.png");
+shell.CloseBackstage();
 
 // Thème sombre : même écran, palette inversée.
 prefs.Theme = "dark";

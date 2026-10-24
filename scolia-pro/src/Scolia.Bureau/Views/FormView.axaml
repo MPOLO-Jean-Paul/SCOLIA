@@ -1,14 +1,20 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mi="using:Material.Icons.Avalonia"
              x:Class="Scolia.Bureau.Views.FormView">
   <!-- Feuille de dialogue macOS : titre gras, champs, boutons en capsule alignés à droite -->
   <Border Classes="card" MinWidth="460" MaxWidth="620" Padding="0" CornerRadius="14" Background="{DynamicResource SurfaceBrush}" ClipToBounds="True"
           BoxShadow="0 8 32 0 #3D000000">
     <StackPanel>
-      <StackPanel Spacing="3" Margin="24,22,24,0">
-        <TextBlock Text="{Binding Title}" FontSize="17" FontWeight="Bold" TextWrapping="Wrap" />
-        <TextBlock Text="{Binding Subtitle}" Classes="muted" TextWrapping="Wrap" IsVisible="{Binding HasSubtitle}" />
-      </StackPanel>
+      <Grid ColumnDefinitions="Auto,*" Margin="24,22,24,0">
+        <Border Classes="appicon large" Background="{Binding HeaderBrush}" VerticalAlignment="Top" Margin="0,0,14,0">
+          <mi:MaterialIcon Kind="{Binding HeaderIcon}" />
+        </Border>
+        <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
+          <TextBlock Text="{Binding Title}" FontSize="17" FontWeight="Bold" TextWrapping="Wrap" />
+          <TextBlock Text="{Binding Subtitle}" Classes="muted" TextWrapping="Wrap" IsVisible="{Binding HasSubtitle}" />
+        </StackPanel>
+      </Grid>
 
       <TextBlock Text="{Binding Message}" TextWrapping="Wrap" IsVisible="{Binding HasMessage}" Margin="24,16,24,0" />
 

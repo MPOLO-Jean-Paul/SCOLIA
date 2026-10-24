@@ -56,8 +56,8 @@ public sealed class CardsPage : PageViewModel
         {
             Action("Exporter les cartes", MaterialIconKind.FilePdfBox, ExportAsync, primary: true);
         }
-        Action("Tout cocher", MaterialIconKind.CheckboxMarkedOutline, () => { SetAll(true); return Task.CompletedTask; });
-        Action("Tout décocher", MaterialIconKind.CheckboxBlankOutline, () => { SetAll(false); return Task.CompletedTask; });
+        Action("Tout cocher", MaterialIconKind.CheckboxMultipleMarkedOutline, () => { SetAll(true); return Task.CompletedTask; });
+        Action("Tout décocher", MaterialIconKind.CheckboxMultipleBlankOutline, () => { SetAll(false); return Task.CompletedTask; });
         Action("Session actuelle", MaterialIconKind.CalendarTodayOutline, () => { Month = MonthChoices[DateTime.Today.Month - 1]; Year = YearChoices()[1]; return Task.CompletedTask; });
         Action("Historique des lots", MaterialIconKind.History, ShowBatchesAsync);
         ActionRefresh();

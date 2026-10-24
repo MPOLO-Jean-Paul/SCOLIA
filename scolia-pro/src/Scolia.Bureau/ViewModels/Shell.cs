@@ -530,10 +530,30 @@ public sealed class ShellViewModel : Observable
     /// <summary>Surligne l'entrée de la barre latérale qui correspond à l'écran affiché.</summary>
     private void MarkNavigation()
     {
-        var type = Current?.GetType();
+        // Une fiche de détail appartient à sa liste : la fiche apprenant éclaire « Apprenants », le reçu « Journal des reçus ».
+        var type = Current switch
+        {
+            StudentDetailPage => typeof(StudentsPage),
+            ReceiptDetailPage => typeof(ReceiptsPage),
+            _ => Current?.GetType(),
+        };
+        NavItemVm? match = null;
         foreach (var group in Navigation)
-            foreach (var item in group.Items) item.IsSelected = item.PageType == type;
+            foreach (var item in group.Items)
+            {
+                item.IsSelected = item.PageType == type;
+                if (item.IsSelected) match = item;
+            }
+        // L'icône de la page reprend celle de son outil dans le volet latéral, avec la même couleur.
+        CurrentIcon = match?.Icon ?? Current?.Glyph ?? Material.Icons.MaterialIconKind.FileDocument;
+        CurrentIconBrush = match?.Brush ?? ThemeBrush.Get("ToneNeutral");
+        Raise(nameof(CurrentIcon));
+        Raise(nameof(CurrentIconBrush));
     }
+
+    /// <summary>Icône de couleur affichée devant le titre de la page, comme dans les Réglages de macOS.</summary>
+    public Material.Icons.MaterialIconKind CurrentIcon { get; private set; } = Material.Icons.MaterialIconKind.Home;
+    public Avalonia.Media.IBrush CurrentIconBrush { get; private set; } = Avalonia.Media.Brushes.Gray;
 
     public void ToggleSidebar() => Prefs.Sidebar = !Prefs.Sidebar;
 

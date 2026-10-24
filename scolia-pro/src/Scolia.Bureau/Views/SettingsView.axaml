@@ -1,13 +1,17 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mi="using:Material.Icons.Avalonia"
              x:Class="Scolia.Bureau.Views.SettingsView">
   <Grid ColumnDefinitions="220,*">
     <!-- Rubriques des paramètres -->
-    <Border Classes="card" Grid.Column="0" Margin="0,0,16,0" Padding="8">
-      <ListBox ItemsSource="{Binding Sections}" SelectedItem="{Binding Section}" Background="Transparent" BorderThickness="0">
+    <Border Classes="card" Grid.Column="0" Margin="0,0,16,0" Padding="6" VerticalAlignment="Top">
+      <ListBox Classes="side" ItemsSource="{Binding Sections}" SelectedItem="{Binding Section}" Background="Transparent" BorderThickness="0">
         <ListBox.ItemTemplate>
           <DataTemplate>
-            <TextBlock Text="{Binding Label}" Padding="8,6" />
+            <StackPanel Orientation="Horizontal" Spacing="10">
+              <Border Classes="appicon" Background="{Binding Brush}"><mi:MaterialIcon Kind="{Binding Icon}" /></Border>
+              <TextBlock Text="{Binding Label}" VerticalAlignment="Center" />
+            </StackPanel>
           </DataTemplate>
         </ListBox.ItemTemplate>
       </ListBox>

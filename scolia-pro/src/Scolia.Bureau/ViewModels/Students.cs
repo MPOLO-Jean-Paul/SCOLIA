@@ -166,7 +166,7 @@ public sealed class StudentDetailPage : PageViewModel
         this.studentId = studentId;
         EndSponsorship = new AsyncCommand(() => Shell.Run(EndSelectedSponsorshipAsync));
         if (Shell.Can(Perm.PaymentsCreate)) Action("Encaisser", MaterialIconKind.HandCoin, () => Shell.Open(() => new CashierPage(Shell, studentId)), primary: true);
-        if (Shell.Can(Perm.StudentsWrite)) Action("Modifier", MaterialIconKind.Pencil, EditAsync);
+        if (Shell.Can(Perm.StudentsWrite)) Action("Modifier", MaterialIconKind.PencilOutline, EditAsync);
         if (Shell.Can(Perm.PaymentsRead)) Action("Relevé de compte", MaterialIconKind.FileDocumentOutline, StatementAsync);
         if (Shell.Can(Perm.StudentsWrite)) Action("Changer le statut", MaterialIconKind.AccountSwitchOutline, ChangeStatusAsync);
         if (Shell.Can(Perm.StudentsWrite)) Action("Changer de promotion", MaterialIconKind.SwapHorizontal, ChangePromotionAsync);

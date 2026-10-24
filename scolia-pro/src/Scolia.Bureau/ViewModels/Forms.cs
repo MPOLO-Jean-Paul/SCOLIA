@@ -1,3 +1,5 @@
+using Avalonia.Media;
+using Material.Icons;
 using System.Collections.ObjectModel;
 using Scolia.Bureau.Api;
 using Scolia.Bureau.Infrastructure;
@@ -76,6 +78,58 @@ public sealed class FormViewModel : Observable
 
     public string Title { get; }
     public string Subtitle { get; }
+
+    /// <summary>Icône de la feuille, choisie d'après sa fonction : la même famille d'icônes que le volet latéral.</summary>
+    public MaterialIconKind HeaderIcon => Header.Icon;
+    public IBrush HeaderBrush => ThemeBrush.Get(Danger ? "ToneRed" : Header.Tone);
+
+    private (MaterialIconKind Icon, string Tone) Header => header ??= IconFor(Title, Danger);
+    private (MaterialIconKind Icon, string Tone)? header;
+
+    /// <summary>Correspondance entre le sujet d'un formulaire et son icône ; le premier mot-clé trouvé l'emporte.</summary>
+    private static readonly (string Key, MaterialIconKind Icon, string Tone)[] Topics =
+    [
+        ("mot de passe", MaterialIconKind.Key, "ToneOrange"),
+        ("reçu", MaterialIconKind.ReceiptText, "ToneOrange"),
+        ("dépense", MaterialIconKind.CashMinus, "ToneRed"),
+        ("caisse", MaterialIconKind.CashRegister, "ToneGreen"),
+        ("salaire", MaterialIconKind.Cash, "ToneGreen"),
+        ("prise en charge", MaterialIconKind.ShieldCheck, "TonePink"),
+        ("inscription", MaterialIconKind.AccountPlus, "ToneBlue"),
+        ("apprenant", MaterialIconKind.AccountEdit, "ToneBlue"),
+        ("statut", MaterialIconKind.AccountSwitch, "ToneIndigo"),
+        ("promotion", MaterialIconKind.School, "ToneIndigo"),
+        ("section", MaterialIconKind.ViewGrid, "ToneIndigo"),
+        ("année", MaterialIconKind.Calendar, "ToneRed"),
+        ("évaluation", MaterialIconKind.ClipboardEdit, "TonePurple"),
+        ("bulletin", MaterialIconKind.Certificate, "TonePurple"),
+        ("cours", MaterialIconKind.BookOpenVariant, "TonePurple"),
+        ("attribution", MaterialIconKind.AccountSchool, "ToneOrange"),
+        ("décision", MaterialIconKind.Gavel, "ToneRed"),
+        ("parent", MaterialIconKind.AccountCheck, "ToneTeal"),
+        ("absence", MaterialIconKind.ClipboardCheck, "ToneTeal"),
+        ("membre", MaterialIconKind.Briefcase, "ToneOrange"),
+        ("utilisateur", MaterialIconKind.AccountCog, "ToneBlue"),
+        ("compte", MaterialIconKind.AccountCog, "ToneBlue"),
+        ("carte", MaterialIconKind.CardAccountDetails, "ToneBlue"),
+        ("établissement", MaterialIconKind.OfficeBuilding, "ToneNeutral"),
+        ("préférences", MaterialIconKind.TuneVariant, "TonePurple"),
+        ("raccourcis", MaterialIconKind.Keyboard, "ToneNeutral"),
+        ("sauvegarde", MaterialIconKind.DatabaseExport, "ToneGreen"),
+        ("restaur", MaterialIconKind.BackupRestore, "ToneGreen"),
+        ("effacer", MaterialIconKind.DeleteSweep, "ToneRed"),
+        ("import", MaterialIconKind.Upload, "ToneGreen"),
+        ("réseau", MaterialIconKind.LanConnect, "ToneGreen"),
+        ("scolia", MaterialIconKind.Information, "ToneBlue"),
+    ];
+
+    private static (MaterialIconKind, string) IconFor(string title, bool danger)
+    {
+        var text = title.ToLowerInvariant();
+        foreach (var (key, icon, tone) in Topics)
+            if (text.Contains(key, StringComparison.Ordinal)) return (icon, tone);
+        return danger ? (MaterialIconKind.AlertCircle, "ToneRed") : (MaterialIconKind.Information, "ToneNeutral");
+    }
     public bool HasSubtitle => !string.IsNullOrEmpty(Subtitle);
     /// <summary>Texte libre affiché sous le titre, par exemple le détail d'une confirmation.</summary>
     public string Message { get; init; } = string.Empty;

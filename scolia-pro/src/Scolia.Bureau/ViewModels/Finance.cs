@@ -267,7 +267,7 @@ public sealed class ExpensesPage : PageViewModel
 
     public ExpensesPage(ShellViewModel shell) : base(shell)
     {
-        if (Shell.Can(Perm.ExpensesWrite)) Action("Nouvelle dépense", MaterialIconKind.Plus, () => NewExpenseAsync(Shell), primary: true);
+        if (Shell.Can(Perm.ExpensesWrite)) Action("Nouvelle dépense", MaterialIconKind.CashMinus, () => NewExpenseAsync(Shell), primary: true);
         if (Shell.Can(Perm.ExpensesWrite)) Action("Annuler la dépense", MaterialIconKind.Cancel, CancelSelectedAsync);
         ActionRefresh();
     }

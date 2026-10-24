@@ -288,7 +288,7 @@ public sealed record PromotionRowVm(Guid Id, string Code, string Name, string Se
 /// <summary>Paramètres de l'établissement : identité, années scolaires, sections et promotions.</summary>
 public sealed class SettingsPage : PageViewModel
 {
-    private ChoiceItem? section;
+    private BackstageItemVm? section;
     private YearRowVm? selectedYear;
     private SectionRowVm? selectedSection;
     private PromotionRowVm? selectedPromotion;
@@ -297,7 +297,14 @@ public sealed class SettingsPage : PageViewModel
 
     public SettingsPage(ShellViewModel shell) : base(shell)
     {
-        Sections = [new ChoiceItem("etablissement", "Établissement"), new ChoiceItem("annees", "Années scolaires"), new ChoiceItem("sections", "Sections"), new ChoiceItem("promotions", "Promotions et frais")];
+        // Rubriques avec leur icône, comme la liste des Réglages de macOS.
+        Sections =
+        [
+            new BackstageItemVm("etablissement", "Établissement", MaterialIconKind.OfficeBuilding, "ToneNeutral"),
+            new BackstageItemVm("annees", "Années scolaires", MaterialIconKind.Calendar, "ToneRed"),
+            new BackstageItemVm("sections", "Sections", MaterialIconKind.ViewGrid, "ToneIndigo"),
+            new BackstageItemVm("promotions", "Promotions et frais", MaterialIconKind.School, "ToneBlue"),
+        ];
         section = Sections[0];
         RebuildActions();
     }
@@ -314,11 +321,11 @@ public sealed class SettingsPage : PageViewModel
                 Action("Clôturer l'année", MaterialIconKind.CalendarLockOutline, CloseYearAsync);
                 break;
             case "sections":
-                Action("Nouvelle section", MaterialIconKind.Plus, NewSectionAsync, primary: true);
+                Action("Nouvelle section", MaterialIconKind.ViewGridPlusOutline, NewSectionAsync, primary: true);
                 Action("Modifier", MaterialIconKind.PencilOutline, EditSelectedAsync);
                 break;
             case "promotions":
-                Action("Nouvelle promotion", MaterialIconKind.Plus, () => NewPromotionAsync(Shell), primary: true);
+                Action("Nouvelle promotion", MaterialIconKind.FolderPlusOutline, () => NewPromotionAsync(Shell), primary: true);
                 Action("Modifier", MaterialIconKind.PencilOutline, EditSelectedAsync);
                 Action("Supprimer", MaterialIconKind.DeleteOutline, DeletePromotionAsync);
                 break;
@@ -333,8 +340,8 @@ public sealed class SettingsPage : PageViewModel
     public override string Subtitle => subtitle;
     public override MaterialIconKind Glyph => MaterialIconKind.CogOutline;
 
-    public IReadOnlyList<ChoiceItem> Sections { get; }
-    public ChoiceItem? Section
+    public IReadOnlyList<BackstageItemVm> Sections { get; }
+    public BackstageItemVm? Section
     {
         get => section;
         set

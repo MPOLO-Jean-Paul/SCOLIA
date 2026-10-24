@@ -145,7 +145,7 @@ public sealed class AuditPage : PageViewModel
     public AuditPage(ShellViewModel shell) : base(shell)
     {
         Action("Vérifier le journal", MaterialIconKind.ShieldCheckOutline, () => VerifyAsync(Shell));
-        Action("Exporter en CSV", MaterialIconKind.FileDownloadOutline, ExportAsync);
+        Action("Exporter en CSV", MaterialIconKind.FileExportOutline, ExportAsync);
         ActionRefresh();
     }
 
@@ -299,6 +299,10 @@ public sealed class SearchHitRow
     public string Type => Hit.Type;
     public string Title => Hit.Title;
     public string Subtitle => Hit.Subtitle;
+
+    /// <summary>Icône du résultat, la même que celle de son outil dans le volet latéral.</summary>
+    public MaterialIconKind Icon => Hit.Type == "Reçu" ? MaterialIconKind.ReceiptText : MaterialIconKind.AccountGroup;
+    public IBrush Brush => ThemeBrush.Get(Hit.Type == "Reçu" ? "ToneOrange" : "ToneBlue");
 }
 
 /// <summary>Élément de la colonne de gauche du menu Fichier.</summary>

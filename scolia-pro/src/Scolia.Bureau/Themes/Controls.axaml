@@ -399,8 +399,8 @@
 
   <!-- Listes de choix : la sélection prend le bleu tonal de la charte -->
   <Style Selector="ListBoxItem">
-    <Setter Property="CornerRadius" Value="{StaticResource RadiusSmall}" />
-    <Setter Property="Padding" Value="10,6" />
+    <Setter Property="CornerRadius" Value="8" />
+    <Setter Property="Padding" Value="8,5" />
   </Style>
   <Style Selector="ListBoxItem:selected">
     <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />

@@ -489,7 +489,7 @@ public sealed class DisciplinePage : PageViewModel
         measure = MeasureChoices[0];
         if (Shell.Can(Perm.AcademicsWrite))
         {
-            Action("Nouvelle décision", MaterialIconKind.Plus, () => NewDecisionAsync(Shell), primary: true);
+            Action("Nouvelle décision", MaterialIconKind.Gavel, () => NewDecisionAsync(Shell), primary: true);
             Action("Parent reçu ou absent", MaterialIconKind.AccountCheckOutline, ReceptionAsync);
         }
         Action("Convocation à imprimer", MaterialIconKind.Printer, PrintConvocationAsync);

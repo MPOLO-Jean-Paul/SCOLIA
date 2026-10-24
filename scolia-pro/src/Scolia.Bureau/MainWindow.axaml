@@ -83,10 +83,15 @@
                 </Button>
               </StackPanel>
             </Border>
-            <StackPanel Grid.Column="2" VerticalAlignment="Center" MinWidth="200">
-              <TextBlock Text="{Binding Current.Heading}" FontSize="17" FontWeight="Bold" TextTrimming="CharacterEllipsis" />
-              <TextBlock Text="{Binding Current.Subtitle}" Classes="muted" TextTrimming="CharacterEllipsis" />
-            </StackPanel>
+            <Grid Grid.Column="2" ColumnDefinitions="Auto,*" VerticalAlignment="Center" MinWidth="200">
+              <Border Classes="appicon medium" Background="{Binding CurrentIconBrush}" Margin="0,0,10,0">
+                <mi:MaterialIcon Kind="{Binding CurrentIcon}" />
+              </Border>
+              <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                <TextBlock Text="{Binding Current.Heading}" FontSize="17" FontWeight="Bold" TextTrimming="CharacterEllipsis" />
+                <TextBlock Text="{Binding Current.Subtitle}" Classes="muted" TextTrimming="CharacterEllipsis" />
+              </StackPanel>
+            </Grid>
             <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center" Margin="16,0,0,0" Spacing="6">
               <ItemsControl ItemsSource="{Binding Current.VisibleActions}">
                 <ItemsControl.ItemsPanel>
