@@ -50,7 +50,7 @@ function SchoolPanel() {
         <div className="grid cols-2">
           <TextField className="span-2" label="Nom" value={f.name} onChange={set('name')} />
           <TextField label="Sigle" value={f.shortName} onChange={set('shortName')} />
-          <TextField label="Devise" value={f.motto ?? ''} onChange={set('motto')} />
+          <TextField label="Slogan" value={f.motto ?? ''} onChange={set('motto')} />
           <TextField label="Adresse" value={f.address ?? ''} onChange={set('address')} />
           <TextField label="Ville" value={f.city ?? ''} onChange={set('city')} />
           <TextField label="Pays" value={f.country ?? ''} onChange={set('country')} />

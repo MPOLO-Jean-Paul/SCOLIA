@@ -18,7 +18,7 @@ export function DashboardPage() {
   const d = q.data;
   return (
     <>
-      <PageHead title="Tableau de bord" subtitle={d ? `Année scolaire ${d.academicYear} · situation en temps réel` : 'Chargement…'}
+      <PageHead title="Tableau de bord" eyebrow={todayLabel()} subtitle={d ? `Année scolaire ${d.academicYear} · situation en temps réel` : 'Chargement…'}
         actions={<>
           {can(P.paymentsCreate) && <Button variant="primary" icon={<HandCoins />} onClick={() => navigate('/encaisser')}>Encaisser (F2)</Button>}
           <Button icon={<AlertTriangle />} onClick={() => navigate('/recouvrement')}>Retards de paiement</Button>
@@ -96,4 +96,10 @@ export function DashboardPage() {
       )}
     </>
   );
+}
+
+/** Date du jour en français, initiale en majuscule : « Samedi 24 octobre 2026 ». */
+function todayLabel(): string {
+  const text = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  return text.charAt(0).toUpperCase() + text.slice(1);
 }

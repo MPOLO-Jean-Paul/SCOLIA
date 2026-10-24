@@ -50,7 +50,7 @@ export function ReceiptsPage() {
             <thead><tr><th>N° reçu</th><th>Date</th><th>Matricule</th><th>Apprenant</th><th>Promotion</th><th>Mode</th><th>Caissier</th><th>Statut</th><th className="num">Montant</th></tr></thead>
             <tbody>{list.data.items.map((r) => (
               <tr key={r.id} className="clickable" onClick={() => navigate(`/paiements/recus/${r.id}`)}>
-                <td className="tag-code">{r.number}</td><td>{date(r.date)}</td><td>{r.matricule}</td><td>{r.studentName}</td><td>{r.promotionCode}</td>
+                <td className="tag-code">{r.number}</td><td>{date(r.date)}</td><td className="tag-code">{r.matricule}</td><td>{r.studentName}</td><td>{r.promotionCode}</td>
                 <td>{r.method}{r.reference && <div className="small muted">{r.reference}</div>}</td><td className="muted">{r.cashier}</td>
                 <td><Badge tone={statusTone(r.status)}>{r.status}</Badge></td>
                 <td className="num" style={{ fontWeight: 700, textDecoration: r.status === 'Annulé' ? 'line-through' : undefined }}>{money(r.amount)}</td>

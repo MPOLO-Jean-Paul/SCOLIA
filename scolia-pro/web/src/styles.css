@@ -281,3 +281,65 @@ table.data tfoot td { font-weight: 800; background: var(--surface); border-top: 
   body, .card { background: #fff; box-shadow: none; }
 }
 @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+
+/* ---------- Finitions professionnelles ---------- */
+::selection { background: color-mix(in srgb, var(--blue) 24%, transparent); }
+html { scrollbar-color: var(--border-strong) transparent; }
+.content { scrollbar-width: thin; scrollbar-color: var(--border-strong) transparent; }
+
+/* En-tête de page : module en surtitre, titre, sous-titre, séparateur fin. */
+.page-head { align-items: flex-end; margin-bottom: 22px; padding-bottom: 16px; border-bottom: 1px solid var(--border); }
+.page-title { min-width: 0; }
+.page-head h1 { font-size: 24px; font-weight: 750; letter-spacing: -0.02em; line-height: 1.2; }
+.page-head p { font-size: 13.5px; margin-top: 6px; }
+.page-eyebrow { font-size: 11.5px; font-weight: 750; letter-spacing: 0.08em; text-transform: uppercase; color: var(--blue-text); margin-bottom: 6px; }
+.page-head .actions { gap: 8px; }
+
+/* Cartes */
+.card { border-radius: 12px; }
+.card-head { min-height: 54px; padding: 14px 20px; }
+.card-head h2, .card-head h3 { font-size: 14.5px; font-weight: 700; }
+.card-pad { padding: 20px; }
+
+/* Indicateurs */
+.kpi { border-radius: 12px; padding: 16px 18px; }
+.kpi .label { font-size: 12px; font-weight: 650; }
+.kpi .value { font-size: 25px; font-weight: 750; }
+
+/* Boutons et champs */
+.btn { height: 36px; border-radius: 8px; font-weight: 650; letter-spacing: 0.01em; }
+.btn.primary { box-shadow: 0 1px 2px rgba(15, 23, 42, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.14); }
+.btn.ghost:hover { border-color: var(--border-strong); }
+.field > label, .label { font-size: 12.5px; font-weight: 650; }
+.input, .select, .textarea { border-color: var(--border-strong); border-radius: 8px; }
+.input:hover, .select:hover, .textarea:hover { border-color: var(--muted); }
+.input::placeholder, .textarea::placeholder { color: color-mix(in srgb, var(--muted) 80%, transparent); }
+
+/* Tableaux : en-têtes en capitales, lignes séparées, survol discret. */
+.table-wrap { border-radius: 12px; }
+table.data th { font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.04em; padding: 10px 14px; }
+table.data td { padding: 11px 14px; }
+table.data tbody tr:nth-child(even) td { background: transparent; }
+table.data tbody tr:hover td { background: var(--surface-2); }
+table.data tbody tr.clickable:hover td { background: var(--blue-soft); }
+table.data tfoot td { background: var(--surface-2); }
+
+/* Pastilles de statut avec repère coloré. */
+.badge { font-size: 11.5px; font-weight: 700; padding: 3px 9px 3px 8px; gap: 6px; }
+.badge::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex: none; opacity: 0.85; }
+.badge.gray::before { opacity: 0.45; }
+
+/* États vides : pictogramme dans un disque, titre et explication. */
+.empty { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 56px 20px; }
+.empty-icon { width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center; background: var(--blue-soft); color: var(--blue-text); margin-bottom: 8px; }
+.empty-icon svg { width: 24px; height: 24px; color: var(--blue-text); }
+.empty svg { margin-bottom: 0; }
+.empty-title { font-size: 15px; color: var(--text); }
+.empty-text { color: var(--muted); max-width: 420px; }
+
+/* Connexion : logo net sur fond sombre. */
+.auth-hero .logo { background: #fff; border-radius: 16px; padding: 8px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25); }
+
+/* Barre de filtres : une carte à part entière au-dessus des tableaux. */
+.toolbar { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; box-shadow: var(--shadow); margin-bottom: 16px; align-items: flex-end; }
+.toolbar .field > label { white-space: nowrap; }

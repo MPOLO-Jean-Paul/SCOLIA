@@ -242,3 +242,15 @@ export function buildTabs({ pathname, recents, can }: RibbonContext): RibbonTab[
 export function allCommands(): RibbonCommand[] {
   return buildTabs({ pathname: '', recents: [], can: () => true }).flatMap((tab) => tab.groups.flatMap((g) => g.commands));
 }
+
+/** Nom du module (onglet du ruban) auquel appartient une page : « Secrétariat » pour /apprenants/:id. */
+export function moduleOf(pathname: string): string | undefined {
+  for (const tab of buildTabs({ pathname: '', recents: [], can: () => true })) {
+    const owns = tab.groups.some((g) => g.commands.some((c) => {
+      if (!c.to) return false;
+      return c.to === '/' ? pathname === '/' : pathname === c.to || pathname.startsWith(`${c.to}/`);
+    }));
+    if (owns) return tab.label;
+  }
+  return undefined;
+}

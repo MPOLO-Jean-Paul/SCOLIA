@@ -1,6 +1,8 @@
 import { createContext, useCallback, useContext, useEffect, useId, useRef, useState, type ReactNode, type InputHTMLAttributes, type SelectHTMLAttributes, type TextareaHTMLAttributes } from 'react';
 import { AlertTriangle, CheckCircle2, ChevronLeft, ChevronRight, Info, Inbox, X } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
 import { ApiError } from '../api/client';
+import { moduleOf } from '../lib/ribbon';
 
 // ---------- Notifications ----------
 type ToastKind = 'info' | 'success' | 'error';
@@ -102,8 +104,15 @@ export function Kpi({ label, value, hint, tone, icon }: { label: string; value: 
   );
 }
 
-export function Empty({ text, children }: { text: string; children?: ReactNode }) {
-  return <div className="empty"><Inbox /><div>{text}</div>{children}</div>;
+export function Empty({ text, title, children }: { text: string; title?: string; children?: ReactNode }) {
+  return (
+    <div className="empty">
+      <span className="empty-icon"><Inbox /></span>
+      {title && <strong className="empty-title">{title}</strong>}
+      <div className="empty-text">{text}</div>
+      {children}
+    </div>
+  );
 }
 
 export function Loading({ rows = 4 }: { rows?: number }) {
@@ -200,13 +209,19 @@ export function Card({ title, actions, children, pad = true }: { title?: ReactNo
   );
 }
 
-export function PageHead({ title, subtitle, actions }: { title: string; subtitle?: ReactNode; actions?: ReactNode }) {
-  useEffect(() => { document.title = `${title} · SCOLIA`; }, [title]);
+export function PageHead({ title, subtitle, actions, eyebrow }: { title: string; subtitle?: ReactNode; actions?: ReactNode; eyebrow?: string }) {
+  const { pathname } = useLocation();
+  const module = eyebrow ?? moduleOf(pathname);
+  useEffect(() => { document.title = `${title} · SCOLIA Pro`; }, [title]);
   return (
-    <div className="page-head">
-      <div><h1>{title}</h1>{subtitle && <p>{subtitle}</p>}</div>
+    <header className="page-head">
+      <div className="page-title">
+        {module && <div className="page-eyebrow">{module}</div>}
+        <h1>{title}</h1>
+        {subtitle && <p>{subtitle}</p>}
+      </div>
       {actions && <div className="actions">{actions}</div>}
-    </div>
+    </header>
   );
 }
 

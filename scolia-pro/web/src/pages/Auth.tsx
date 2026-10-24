@@ -9,7 +9,7 @@ import { Button, ErrorAlert, SectionTitle, SelectField, TextField } from '../com
 function Hero({ school }: { school?: string }) {
   return (
     <div className="auth-hero">
-      <img className="logo" src="/api/etablissement/logo" onError={(e) => { (e.target as HTMLImageElement).src = '/scolia.png'; }} alt="" />
+      <img className="logo" src="/scolia.png" alt="" />
       <div className="eyebrow">{school ?? 'SCOLIA'}</div>
       <h1>Le secrétariat,<br />unifié et organisé.</h1>
       <p>Un espace de travail pour suivre les apprenants, leurs paiements, la caisse et la scolarité.</p>
