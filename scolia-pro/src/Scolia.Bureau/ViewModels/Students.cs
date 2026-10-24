@@ -205,13 +205,10 @@ public sealed class StudentDetailPage : PageViewModel
         Details.Add(new InfoLine("Matricule", student.Matricule));
         Details.Add(new InfoLine("Sexe", Labels.Gender(student.Gender)));
         Details.Add(new InfoLine("Date de naissance", student.BirthDate is { } b ? $"{Format.Date(b)}{(student.BirthPlace is { } p ? $" à {p}" : string.Empty)}" : "—"));
-        Details.Add(new InfoLine("Nationalité", student.Nationality ?? "—"));
         Details.Add(new InfoLine("Adresse", student.Address ?? "—"));
-        Details.Add(new InfoLine("Téléphone", student.Phone ?? "—"));
         Details.Add(new InfoLine("E-mail", student.Email ?? "—"));
         Details.Add(new InfoLine("Parent ou tuteur", string.IsNullOrWhiteSpace(student.GuardianName) ? "—" : $"{student.GuardianName} ({student.GuardianRelation ?? "lien non précisé"})"));
         Details.Add(new InfoLine("Contacts parents", string.Join(" · ", new[] { student.GuardianPhone, student.GuardianPhone2 }.Where(x => !string.IsNullOrWhiteSpace(x))) is { Length: > 0 } c ? c : "—"));
-        Details.Add(new InfoLine("Observations", student.Notes ?? "—"));
 
         Enrollments.Clear();
         foreach (var e in student.Enrollments)
@@ -395,7 +392,7 @@ public static class StudentForms
     {
         var form = new FormViewModel("Modifier l'apprenant", $"Matricule {s.Matricule}", async f =>
         {
-            await shell.Api.SendAsync(HttpMethod.Put, $"api/apprenants/{s.Id}", Identity(f, s.Version));
+            await shell.Api.SendAsync(HttpMethod.Put, $"api/apprenants/{s.Id}", Identity(f, s));
             shell.Notify("Dossier enregistré.");
             return true;
         });
@@ -403,6 +400,10 @@ public static class StudentForms
         return await shell.Ask(form);
     }
 
+    /// <summary>
+    /// Champs de la fiche, dans l'ordre du formulaire de SCOLIA V79 : identité, naissance, parent et ses deux contacts, adresse.
+    /// Les seuls numéros saisis sont ceux du parent : ce sont eux que visent les relances.
+    /// </summary>
     private static void AddIdentityFields(FormViewModel form, StudentDto? s)
     {
         form.Add("nom", "Nom", value: s?.LastName, required: true);
@@ -411,21 +412,18 @@ public static class StudentForms
         form.AddChoice("sexe", "Sexe", Labels.Genders, s?.Gender ?? "M", required: true);
         form.AddDay("naissance", "Date de naissance", s?.BirthDate, required: true);
         form.Add("lieu", "Lieu de naissance", value: s?.BirthPlace, required: true);
-        form.Add("nationalite", "Nationalité", value: s?.Nationality);
-        form.Add("telephone", "Téléphone de l'apprenant", value: s?.Phone);
-        form.Add("email", "E-mail", value: s?.Email);
-        form.Add("adresse", "Adresse de résidence", value: s?.Address);
         form.Add("tuteur", "Parent ou tuteur", value: s?.GuardianName);
         form.Add("lien", "Lien", value: s?.GuardianRelation);
-        // Comme dans SCOLIA V79 : le contact 1 est obligatoire, c'est lui que visent les relances WhatsApp et SMS.
         form.Add("contact1", "Contact parent 1", value: s?.GuardianPhone, required: true,
             hint: "Ex. 0812345678 · reçoit les relances WhatsApp et SMS");
         form.Add("contact2", "Contact parent 2", value: s?.GuardianPhone2,
             hint: "Facultatif · utilisé si le contact 1 manque");
-        form.Add("notes", "Observations", FieldKind.Multiline, s?.Notes);
+        form.Add("adresse", "Adresse", value: s?.Address, hint: "Quartier, avenue et numéro");
+        form.Add("email", "E-mail", value: s?.Email);
     }
 
-    private static object Identity(FormViewModel f, long? version) => new
+    /// <summary>Les données d'un ancien dossier qui ne sont plus saisies, nationalité, téléphone de l'apprenant et observations, sont gardées telles quelles.</summary>
+    private static object Identity(FormViewModel f, StudentDto? s) => new
     {
         lastName = f.Text("nom"),
         middleName = f.Text("postNom"),
@@ -433,15 +431,15 @@ public static class StudentForms
         gender = f.ChoiceValue("sexe") ?? "M",
         birthDate = f.Day("naissance"),
         birthPlace = f.OptionalText("lieu"),
-        nationality = f.OptionalText("nationalite"),
+        nationality = s?.Nationality,
         address = f.OptionalText("adresse"),
-        phone = f.OptionalText("telephone"),
+        phone = s?.Phone,
         email = f.OptionalText("email"),
         guardianName = f.OptionalText("tuteur"),
         guardianRelation = f.OptionalText("lien"),
         guardianPhone = f.OptionalText("contact1"),
         guardianPhone2 = f.OptionalText("contact2"),
-        notes = f.OptionalText("notes"),
-        version,
+        notes = s?.Notes,
+        version = s?.Version,
     };
 }
