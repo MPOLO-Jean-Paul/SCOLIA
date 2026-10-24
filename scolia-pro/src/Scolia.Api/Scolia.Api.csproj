@@ -19,6 +19,11 @@
     <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" />
   </ItemGroup>
 
+  <!-- Fenêtre native de SCOLIA sous Windows : moteur WebView2 intégré à Windows, sans navigateur installé à côté. -->
+  <ItemGroup Condition="'$(TargetFramework)' == 'net10.0-windows'">
+    <PackageReference Include="Microsoft.Web.WebView2" />
+  </ItemGroup>
+
   <PropertyGroup>
     <!-- net10.0 : serveur multiplateforme (tests, Linux). net10.0-windows : application de bureau avec icône de notification. -->
     <TargetFramework></TargetFramework>

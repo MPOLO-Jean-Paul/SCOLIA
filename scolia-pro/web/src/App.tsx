@@ -1,16 +1,34 @@
+import { lazy, Suspense } from 'react';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { useSession } from './lib/session';
 import { Layout } from './components/Layout';
 import { Loading } from './components/ui';
 import { LoginPage, SetupPage } from './pages/Auth';
-import { DashboardPage } from './pages/Dashboard';
-import { StudentsPage } from './pages/Students';
-import { StudentDetailPage } from './pages/StudentDetail';
-import { CashierPage } from './pages/Cashier';
-import { CashPage, DebtorsPage, ExpensesPage, ReceiptDetailPage, ReceiptsPage, SponsorshipsPage } from './pages/Finance';
-import { AttendancePage, DisciplinePage, GradesPage } from './pages/Academics';
-import { AuditPage, DataPage, SettingsPage, StaffPage, UsersPage } from './pages/Admin';
-import { ProfilePage, ReEnrollmentPage, VerifyPage } from './pages/Misc';
+
+// Chaque écran est un fragment chargé à la demande : le premier affichage ne télécharge que ce qui est nécessaire.
+const page = <K extends string>(load: () => Promise<Record<K, React.ComponentType>>, name: K) =>
+  lazy(() => load().then((m) => ({ default: m[name] })));
+const DashboardPage = page(() => import('./pages/Dashboard'), 'DashboardPage');
+const StudentsPage = page(() => import('./pages/Students'), 'StudentsPage');
+const StudentDetailPage = page(() => import('./pages/StudentDetail'), 'StudentDetailPage');
+const CashierPage = page(() => import('./pages/Cashier'), 'CashierPage');
+const ReceiptsPage = page(() => import('./pages/Finance'), 'ReceiptsPage');
+const ReceiptDetailPage = page(() => import('./pages/Finance'), 'ReceiptDetailPage');
+const DebtorsPage = page(() => import('./pages/Finance'), 'DebtorsPage');
+const SponsorshipsPage = page(() => import('./pages/Finance'), 'SponsorshipsPage');
+const ExpensesPage = page(() => import('./pages/Finance'), 'ExpensesPage');
+const CashPage = page(() => import('./pages/Finance'), 'CashPage');
+const GradesPage = page(() => import('./pages/Academics'), 'GradesPage');
+const AttendancePage = page(() => import('./pages/Academics'), 'AttendancePage');
+const DisciplinePage = page(() => import('./pages/Academics'), 'DisciplinePage');
+const StaffPage = page(() => import('./pages/Admin'), 'StaffPage');
+const SettingsPage = page(() => import('./pages/Admin'), 'SettingsPage');
+const UsersPage = page(() => import('./pages/Admin'), 'UsersPage');
+const DataPage = page(() => import('./pages/Admin'), 'DataPage');
+const AuditPage = page(() => import('./pages/Admin'), 'AuditPage');
+const ProfilePage = page(() => import('./pages/Misc'), 'ProfilePage');
+const ReEnrollmentPage = page(() => import('./pages/Misc'), 'ReEnrollmentPage');
+const VerifyPage = page(() => import('./pages/Misc'), 'VerifyPage');
 
 function Protected() {
   const { session, loading, configured } = useSession();
@@ -26,7 +44,7 @@ export function App() {
   const { session, configured, loading } = useSession();
   return (
     <Routes>
-      <Route path="/verifier/:code" element={<VerifyPage />} />
+      <Route path="/verifier/:code" element={<Suspense fallback={<Loading rows={3} />}><VerifyPage /></Suspense>} />
       <Route path="/installation" element={loading ? null : configured ? <Navigate to="/" replace /> : <SetupPage />} />
       <Route path="/connexion" element={session ? <Navigate to="/" replace /> : configured === false ? <Navigate to="/installation" replace /> : <LoginPage />} />
       <Route element={<Protected />}>

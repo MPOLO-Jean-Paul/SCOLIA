@@ -1,4 +1,7 @@
 using System.Diagnostics;
+using System.IO.Compression;
+using System.Net;
+using Microsoft.AspNetCore.ResponseCompression;
 using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -37,13 +40,24 @@ var desktop = OperatingSystem.IsWindows() && Environment.UserInteractive && !Mic
 // Deuxième lancement sur le même poste : on rouvre la fenêtre au lieu de démarrer un second serveur.
 if (desktop && DesktopLauncher.AlreadyRunning(port))
 {
-    DesktopLauncher.Open($"http://localhost:{port}");
+    // La fenêtre existe déjà : on la fait apparaître au lieu d'en ouvrir une seconde.
+    if (!DesktopLauncher.ShowRunningInstance(port)) DesktopLauncher.OpenInBrowser($"http://localhost:{port}");
     return;
 }
 builder.Host.UseWindowsService(o => o.ServiceName = "SCOLIA");
 if (string.IsNullOrEmpty(builder.Configuration["urls"]) && string.IsNullOrEmpty(Environment.GetEnvironmentVariable("ASPNETCORE_URLS")))
     builder.WebHost.UseUrls(lan ? $"http://0.0.0.0:{port}" : $"http://localhost:{port}");
 builder.WebHost.ConfigureKestrel(k => k.Limits.MaxRequestBodySize = 60 * 1024 * 1024);
+// Compression des réponses texte (interface, JSON) : Brotli d'abord, gzip sinon.
+builder.Services.Configure<BrotliCompressionProviderOptions>(o => o.Level = CompressionLevel.Fastest);
+builder.Services.Configure<GzipCompressionProviderOptions>(o => o.Level = CompressionLevel.Fastest);
+builder.Services.AddResponseCompression(o =>
+{
+    o.EnableForHttps = true;
+    o.Providers.Add<BrotliCompressionProvider>();
+    o.Providers.Add<GzipCompressionProvider>();
+    o.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(["application/javascript", "image/svg+xml", "application/json"]);
+});
 
 builder.Services.AddScolia(builder.Configuration, defaultData);
 builder.Services.AddHttpContextAccessor();
@@ -85,6 +99,7 @@ var app = builder.Build();
 await app.Services.InitializeDatabaseAsync();
 
 app.UseExceptionHandler();
+app.UseResponseCompression();
 app.UseForwardedHeaders();
 app.Use(async (http, next) =>
 {
@@ -124,6 +139,14 @@ app.UseAuthorization();
 
 if (app.Environment.IsDevelopment()) app.MapOpenApi();
 app.MapScoliaEndpoints();
+// Demande d'un second lancement : seule une requête venant de ce poste est acceptée.
+if (desktop)
+    app.MapGet("/api/bureau/afficher", (HttpContext http) =>
+    {
+        if (!IPAddress.IsLoopback(http.Connection.RemoteIpAddress ?? IPAddress.None)) return Results.NotFound();
+        DesktopLauncher.Open($"http://localhost:{port}");
+        return Results.NoContent();
+    });
 app.MapFallbackToFile("index.html");
 
 var storage = app.Services.GetRequiredService<IOptions<ScoliaStorageOptions>>().Value;

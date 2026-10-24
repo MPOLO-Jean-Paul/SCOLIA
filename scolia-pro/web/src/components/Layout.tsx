@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { Command, HandCoins, KeyRound, LogOut, RefreshCw, Search } from 'lucide-react';
@@ -12,7 +12,7 @@ import { Backstage } from './Backstage';
 import { StatusBar, ZOOM_MAX, ZOOM_MIN, ZOOM_STEP } from './StatusBar';
 import { AboutDialog, PreferencesDialog, ShortcutsDialog } from './Dialogs';
 import { CommandPalette } from './CommandPalette';
-import { errorText, useToast } from './ui';
+import { errorText, Loading, useToast } from './ui';
 import '../ribbon.css';
 
 type Density = 'confortable' | 'compact';
@@ -272,7 +272,9 @@ export function Layout() {
       />
 
       <main className="content" id="contenu" style={{ zoom: zoom / 100 }}>
-        <Outlet />
+        <Suspense fallback={<Loading rows={5} />}>
+          <Outlet />
+        </Suspense>
       </main>
 
       {statusBar && <StatusBar pageTitle={pageTitle} zoom={zoom} onZoom={changeZoom} />}
