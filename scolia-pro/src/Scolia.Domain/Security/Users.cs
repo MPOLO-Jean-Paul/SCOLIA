@@ -38,11 +38,12 @@ public static class Permissions
     public const string AcademicsWrite = "scolarite.ecrire";
     public const string AcademicsRead = "scolarite.lire";
     public const string StaffManage = "personnel.gerer";
+    public const string DisciplineCancel = "discipline.annuler";
 
     public static readonly IReadOnlyList<string> All =
     [
         StudentsRead, StudentsWrite, PaymentsRead, PaymentsCreate, PaymentsCancel, ExpensesWrite, CashClose,
-        ReportsRead, SettingsWrite, UsersManage, AuditRead, BackupManage, AcademicsWrite, AcademicsRead, StaffManage,
+        ReportsRead, SettingsWrite, UsersManage, AuditRead, BackupManage, AcademicsWrite, AcademicsRead, StaffManage, DisciplineCancel,
     ];
 
     public static IReadOnlyCollection<string> For(Role role) => role switch

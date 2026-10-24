@@ -255,6 +255,99 @@ namespace Scolia.Infrastructure.Persistence.Migrations
                     b.ToTable("Notes", (string)null);
                 });
 
+            modelBuilder.Entity("Scolia.Domain.Discipline.DisciplineDecision", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("AcademicYearId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("AppointmentAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CancelReason")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("CancelledAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CancelledByName")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateOnly>("DecisionDate")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("EnrollmentId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateOnly?>("FirstDay")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsAutomatic")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateOnly?>("LastDay")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Measure")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ParentName")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ParentPhone")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Reception")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("ReceptionAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ReceptionNote")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("RecordedByName")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("RequestKey")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("State")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EnrollmentId");
+
+                    b.HasIndex("RequestKey")
+                        .IsUnique();
+
+                    b.ToTable("RegistreDiscipline", (string)null);
+                });
+
             modelBuilder.Entity("Scolia.Domain.Finance.CashClosing", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1388,6 +1481,15 @@ namespace Scolia.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("Scolia.Domain.Students.Enrollment", null)
+                        .WithMany()
+                        .HasForeignKey("EnrollmentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Scolia.Domain.Discipline.DisciplineDecision", b =>
+                {
                     b.HasOne("Scolia.Domain.Students.Enrollment", null)
                         .WithMany()
                         .HasForeignKey("EnrollmentId")

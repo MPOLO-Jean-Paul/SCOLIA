@@ -267,6 +267,98 @@ public sealed class BusinessApiTests : IDisposable
     }
 
     [Fact]
+    public async Task Second_temporary_renvoi_needs_confirmation_then_becomes_definitive()
+    {
+        var admin = await app.InstalledAdmin();
+        var (_, enrollmentId, _) = await NewStudent(admin);
+        const string Registre = "/api/scolarite/discipline/registre";
+        var today = DateOnly.FromDateTime(DateTime.Today);
+
+        var first = await admin.Post(Registre, new { enrollmentId, measure = "RenvoiTemporaire", reason = "Retards répétés", decisionDate = today, firstDay = today, lastDay = today.AddDays(2) }).Ok();
+        Assert.Equal("Renvoi temporaire", first.GetProperty("measure").GetString());
+        Assert.Equal(3, first.GetProperty("days").GetInt32());
+        Assert.Equal("Suspendu", first.GetProperty("effectiveStatus").GetString());
+
+        // Deuxième renvoi temporaire de l'année : avertissement tant que la confirmation n'est pas donnée.
+        var (blocked, warning) = await admin.Post(Registre, new { enrollmentId, measure = "RenvoiTemporaire", reason = "Nouvelle absence", decisionDate = today, firstDay = today.AddDays(5), lastDay = today.AddDays(6) }).Fail();
+        Assert.Equal(HttpStatusCode.Conflict, blocked);
+        Assert.Contains("Confirmez", warning.GetProperty("title").GetString(), StringComparison.Ordinal);
+
+        var definitive = await admin.Post(Registre, new { enrollmentId, measure = "RenvoiTemporaire", reason = "Nouvelle absence", decisionDate = today, firstDay = today.AddDays(5), lastDay = today.AddDays(6), confirmDefinitive = true }).Ok();
+        Assert.Equal("Renvoi définitif", definitive.GetProperty("measure").GetString());
+        Assert.True(definitive.GetProperty("isAutomatic").GetBoolean());
+        Assert.Equal("Sorti", definitive.GetProperty("effectiveStatus").GetString());
+
+        // Un apprenant renvoyé définitivement ne reçoit plus de sanction, seulement une convocation.
+        var (refused, _) = await admin.Post(Registre, new { enrollmentId, measure = "RenvoiTemporaire", reason = "Encore une fois", decisionDate = today, firstDay = today.AddDays(10), lastDay = today.AddDays(11) }).Fail();
+        Assert.Equal(HttpStatusCode.Conflict, refused);
+    }
+
+    [Fact]
+    public async Task Convocation_reception_rules_and_printable_document()
+    {
+        var admin = await app.InstalledAdmin();
+        var (_, enrollmentId, _) = await NewStudent(admin);
+        const string Registre = "/api/scolarite/discipline/registre";
+        var today = DateOnly.FromDateTime(DateTime.Today);
+        var appointment = DateTime.Now.AddDays(3).Date.AddHours(10);
+
+        var convocation = await admin.Post(Registre, new
+        {
+            enrollmentId, measure = "Convocation", reason = "<b>Comportement</b> en classe", decisionDate = today, appointmentAt = appointment, requestKey = "convocation-1",
+        }).Ok();
+        Assert.Equal("Convocation", convocation.GetProperty("measure").GetString());
+        Assert.Equal("Actif", convocation.GetProperty("effectiveStatus").GetString());
+        var id = convocation.GetProperty("id").GetString();
+
+        // Répétition du même enregistrement : une seule convocation.
+        var repeated = await admin.Post(Registre, new
+        {
+            enrollmentId, measure = "Convocation", reason = "<b>Comportement</b> en classe", decisionDate = today, appointmentAt = appointment, requestKey = "convocation-1",
+        }).Ok();
+        Assert.Equal(id, repeated.GetProperty("id").GetString());
+
+        // Absence du parent refusée avant le rendez-vous ; réception avec compte rendu obligatoire.
+        var (early, _) = await admin.Put($"{Registre}/{id}/reception", new { reception = "Absent", note = "Non présent" }).Fail();
+        Assert.Equal(HttpStatusCode.BadRequest, early);
+        var (noNote, _) = await admin.Put($"{Registre}/{id}/reception", new { reception = "Recu", note = " " }).Fail();
+        Assert.Equal(HttpStatusCode.BadRequest, noNote);
+        var received = await admin.Put($"{Registre}/{id}/reception", new { reception = "Recu", note = "Parent reçu et informé" }).Ok();
+        Assert.Equal("Parent reçu", received.GetProperty("reception").GetString());
+
+        // La convocation s'imprime avec les textes échappés.
+        var html = await admin.GetAsync($"{Registre}/{id}/convocation");
+        var page = await html.Content.ReadAsStringAsync();
+        Assert.Contains("CONVOCATION DU PARENT", page, StringComparison.Ordinal);
+        Assert.Contains("&lt;b&gt;Comportement&lt;/b&gt;", page, StringComparison.Ordinal);
+        Assert.DoesNotContain("<b>Comportement</b>", page, StringComparison.Ordinal);
+
+        var csv = await admin.GetAsync($"{Registre}/export.csv");
+        Assert.Contains("Matricule;Nom complet", await csv.Content.ReadAsStringAsync(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Cancelling_a_definitive_renvoi_keeps_the_record_and_restores_the_status()
+    {
+        var admin = await app.InstalledAdmin();
+        var (_, enrollmentId, _) = await NewStudent(admin);
+        const string Registre = "/api/scolarite/discipline/registre";
+        var today = DateOnly.FromDateTime(DateTime.Today);
+        var definitive = await admin.Post(Registre, new { enrollmentId, measure = "RenvoiDefinitif", reason = "Faute grave", decisionDate = today, confirmDefinitive = true }).Ok();
+        Assert.Equal("Sorti", definitive.GetProperty("effectiveStatus").GetString());
+        var id = definitive.GetProperty("id").GetString();
+
+        var (noReason, _) = await admin.Post($"{Registre}/{id}/annulation", new { reason = "  " }).Fail();
+        Assert.Equal(HttpStatusCode.BadRequest, noReason);
+        var cancelled = await admin.Post($"{Registre}/{id}/annulation", new { reason = "Décision prise par erreur" }).Ok();
+        Assert.Equal("Annulée", cancelled.GetProperty("state").GetString());
+        Assert.Equal("Actif", cancelled.GetProperty("effectiveStatus").GetString());
+
+        var history = await admin.GetAsync($"/api/scolarite/discipline/inscriptions/{enrollmentId}/historique").Ok();
+        Assert.Single(history.EnumerateArray());
+    }
+
+    [Fact]
     public async Task Revision_rises_after_each_committed_write()
     {
         var admin = await app.InstalledAdmin();

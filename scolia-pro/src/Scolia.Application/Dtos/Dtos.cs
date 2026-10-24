@@ -201,6 +201,20 @@ public sealed record IncidentDto(Guid Id, Guid EnrollmentId, string Matricule, s
 
 public sealed record IncidentCreate(Guid EnrollmentId, DateOnly? Date, string Category, string Description, string? Sanction, string Severity);
 
+/// <summary>Nouvelle décision : renvoi temporaire, renvoi définitif ou convocation. Les dates dépendent de la mesure.</summary>
+public sealed record DisciplineRequest(Guid EnrollmentId, string Measure, string Reason, DateOnly? DecisionDate, DateOnly? FirstDay, DateOnly? LastDay,
+    DateTime? AppointmentAt, bool ConfirmDefinitive, string? RequestKey);
+
+public sealed record DisciplineReceptionInput(string Reception, string Note);
+
+public sealed record DisciplineCancelInput(string Reason);
+
+/// <summary>Ligne du registre. Les champs calculés (durée, retour, statut effectif) viennent du serveur.</summary>
+public sealed record DisciplineRowDto(Guid Id, Guid EnrollmentId, string Matricule, string FullName, string PromotionCode, string Measure, string Reason,
+    DateOnly DecisionDate, DateOnly? FirstDay, DateOnly? LastDay, int? Days, DateOnly? ReturnFrom, DateTime? AppointmentAt, bool IsAutomatic,
+    string? ParentName, string? ParentPhone, string Reception, string? ReceptionNote, string State, string? CancelReason, string RecordedBy,
+    string EffectiveStatus, string AcademicYear, bool CanReceive, bool CanAbsent, bool CanCancel);
+
 // ---------- Personnel ----------
 public sealed record StaffDto(Guid Id, string Number, string LastName, string MiddleName, string FirstName, string Gender, string Function,
     string? Phone, string? Email, DateOnly HireDate, decimal BaseSalary, bool IsActive);

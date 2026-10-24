@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Scolia.Application.Abstractions;
 using Scolia.Domain.Academics;
 using Scolia.Domain.Common;
+using Scolia.Domain.Discipline;
 using Scolia.Domain.Finance;
 using Scolia.Domain.School;
 using Scolia.Domain.Security;
@@ -39,6 +40,7 @@ public sealed class ScoliaDbContext(DbContextOptions<ScoliaDbContext> options, I
     public DbSet<Grade> Grades => Set<Grade>();
     public DbSet<AttendanceRecord> Attendance => Set<AttendanceRecord>();
     public DbSet<DisciplineIncident> Incidents => Set<DisciplineIncident>();
+    public DbSet<DisciplineDecision> DisciplineDecisions => Set<DisciplineDecision>();
     public DbSet<StaffMember> Staff => Set<StaffMember>();
     public DbSet<PayrollEntry> Payroll => Set<PayrollEntry>();
 
@@ -165,6 +167,13 @@ public sealed class ScoliaDbContext(DbContextOptions<ScoliaDbContext> options, I
         b.Entity<DisciplineIncident>(e =>
         {
             e.ToTable("Discipline");
+            e.HasOne<Enrollment>().WithMany().HasForeignKey(x => x.EnrollmentId).OnDelete(DeleteBehavior.Restrict);
+        });
+        b.Entity<DisciplineDecision>(e =>
+        {
+            e.ToTable("RegistreDiscipline");
+            e.HasIndex(x => x.EnrollmentId);
+            e.HasIndex(x => x.RequestKey).IsUnique();
             e.HasOne<Enrollment>().WithMany().HasForeignKey(x => x.EnrollmentId).OnDelete(DeleteBehavior.Restrict);
         });
         b.Entity<StaffMember>(e => { e.ToTable("Personnel"); e.HasIndex(x => x.Number).IsUnique(); e.Ignore(x => x.FullName); });

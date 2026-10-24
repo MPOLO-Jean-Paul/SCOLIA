@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
+using System.Text;
 using Microsoft.EntityFrameworkCore;
 using Scolia.Api.Security;
 using Scolia.Application.Abstractions;
@@ -230,6 +231,23 @@ public static class ScoliaEndpoints
         g.MapGet("/presences/bilan", (Guid promotionId, DateOnly du, DateOnly au, AcademicService s, CancellationToken ct) => s.AttendanceSummaryAsync(promotionId, du, au, ct));
         g.MapGet("/discipline", (Guid? promotionId, AcademicService s, CancellationToken ct) => s.IncidentsAsync(promotionId, ct));
         g.MapPost("/discipline", (IncidentCreate input, AcademicService s, CancellationToken ct) => s.CreateIncidentAsync(input, ct)).RequireAuthorization(Permissions.AcademicsWrite);
+
+        // Registre disciplinaire : renvois, convocations, réception des parents, annulations et historique.
+        g.MapGet("/discipline/registre", (Guid? promotionId, string? mesure, DisciplineService s, CancellationToken ct) => s.RegistryAsync(promotionId, mesure, ct))
+            .RequireAuthorization(Permissions.AcademicsRead);
+        g.MapGet("/discipline/inscriptions/{id:guid}/historique", (Guid id, DisciplineService s, CancellationToken ct) => s.HistoryAsync(id, ct))
+            .RequireAuthorization(Permissions.AcademicsRead);
+        g.MapPost("/discipline/registre", (DisciplineRequest input, DisciplineService s, CancellationToken ct) => s.RegisterAsync(input, ct))
+            .RequireAuthorization(Permissions.AcademicsWrite);
+        g.MapPut("/discipline/registre/{id:guid}/reception", (Guid id, DisciplineReceptionInput input, DisciplineService s, CancellationToken ct) => s.ReceptionAsync(id, input, ct))
+            .RequireAuthorization(Permissions.AcademicsWrite);
+        g.MapPost("/discipline/registre/{id:guid}/annulation", (Guid id, DisciplineCancelInput input, DisciplineService s, CancellationToken ct) => s.CancelAsync(id, input, ct))
+            .RequireAuthorization(Permissions.DisciplineCancel);
+        g.MapGet("/discipline/registre/{id:guid}/convocation", async (Guid id, DisciplineService s, CancellationToken ct) =>
+            Results.Content(await s.ConvocationHtmlAsync(id, ct), "text/html", Encoding.UTF8));
+        g.MapGet("/discipline/registre/export.csv", async (Guid? promotionId, string? mesure, DisciplineService s, CancellationToken ct) =>
+            Results.File(new UTF8Encoding(true).GetBytes(await s.CsvAsync(promotionId, mesure, ct)), "text/csv; charset=utf-8", "discipline.csv"))
+            .RequireAuthorization(Permissions.AcademicsRead);
     }
 
     private static void MapStaff(RouteGroupBuilder api)
