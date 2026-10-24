@@ -1,3 +1,4 @@
+using Avalonia.Animation;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Platform.Storage;
@@ -10,6 +11,9 @@ namespace Scolia.Bureau;
 /// <summary>Fenêtre principale : relie les commandes clavier, le plein écran et le sélecteur de fichiers au shell.</summary>
 public partial class MainWindow : Window
 {
+    /// <summary>Durée du fondu entre deux pages : assez courte pour ne pas ralentir la saisie.</summary>
+    private static readonly TimeSpan PageFade = TimeSpan.FromMilliseconds(180);
+
     public MainWindow()
     {
         InitializeComponent();
@@ -23,8 +27,17 @@ public partial class MainWindow : Window
             if (DataContext is not ShellViewModel shell) return;
             shell.FullscreenHandler = full => WindowState = full ? WindowState.FullScreen : WindowState.Normal;
             shell.PickFileHandler = PickFileAsync;
+            ApplyPageTransition(shell.Prefs);
+            shell.Prefs.PropertyChanged += (_, args) =>
+            {
+                if (args.PropertyName == nameof(Preferences.Animations)) ApplyPageTransition(shell.Prefs);
+            };
         };
     }
+
+    /// <summary>Fondu entre les pages, désactivé par la préférence « Animations ».</summary>
+    private void ApplyPageTransition(Preferences prefs) =>
+        PageHost.PageTransition = prefs.Animations ? new CrossFade(PageFade) : null;
 
     private ShellViewModel? Shell => DataContext as ShellViewModel;
 

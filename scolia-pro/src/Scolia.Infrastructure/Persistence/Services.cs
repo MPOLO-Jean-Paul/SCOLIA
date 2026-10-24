@@ -8,7 +8,7 @@ using Scolia.Domain.Security;
 namespace Scolia.Infrastructure.Persistence;
 
 /// <summary>Une écriture à la fois, dans une transaction : cohérence garantie pour les soldes et numérotations.</summary>
-public sealed class WriteGate(ScoliaDbContext db, AuditBuffer buffer) : IWriteGate
+public sealed class WriteGate(ScoliaDbContext db, AuditBuffer buffer, DataRevision revision) : IWriteGate
 {
     private static readonly SemaphoreSlim Gate = new(1, 1);
     private static readonly AsyncLocal<bool> Inside = new();
@@ -25,6 +25,7 @@ public sealed class WriteGate(ScoliaDbContext db, AuditBuffer buffer) : IWriteGa
             {
                 var result = await operation();
                 await transaction.CommitAsync(cancellationToken);
+                revision.Bump();
                 return result;
             }
             catch

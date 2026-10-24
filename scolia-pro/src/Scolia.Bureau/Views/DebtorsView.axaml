@@ -1,5 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:infra="using:Scolia.Bureau.Infrastructure"
              x:Class="Scolia.Bureau.Views.DebtorsView">
   <Grid RowDefinitions="Auto,*">
     <Border Grid.Row="0" Classes="band" Margin="0,0,0,10">
@@ -12,15 +13,15 @@
     </Border>
     <DataGrid Grid.Row="1" ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}" AutoGenerateColumns="False" IsReadOnly="True">
       <DataGrid.Columns>
-        <DataGridTextColumn Header="Matricule" Binding="{Binding Matricule}" Width="Auto" MinWidth="105" />
+        <DataGridTextColumn infra:GridPriority.Level="2" Header="Matricule" Binding="{Binding Matricule}" Width="Auto" MinWidth="105" />
         <DataGridTextColumn Header="Nom complet" Binding="{Binding Name}" Width="2*" MinWidth="200" />
-        <DataGridTextColumn Header="Promotion" Binding="{Binding Promotion}" Width="Auto" MinWidth="100" />
-        <DataGridTextColumn Header="Solde" Binding="{Binding Balance}" Width="Auto" MinWidth="130" />
+        <DataGridTextColumn infra:GridPriority.Level="3" Header="Promotion" Binding="{Binding Promotion}" Width="Auto" MinWidth="100" />
+        <DataGridTextColumn infra:GridPriority.Level="2" Header="Solde" Binding="{Binding Balance}" Width="Auto" MinWidth="130" />
         <DataGridTextColumn Header="Reste exigible" Binding="{Binding Overdue}" Width="Auto" MinWidth="130" />
-        <DataGridTextColumn Header="Échéances" Binding="{Binding Count}" Width="Auto" MinWidth="95" />
-        <DataGridTextColumn Header="Ancienneté" Binding="{Binding Bucket}" Width="Auto" MinWidth="130" />
-        <DataGridTextColumn Header="Garant" Binding="{Binding Guardian}" Width="Auto" MinWidth="150" />
-        <DataGridTextColumn Header="Téléphone" Binding="{Binding Phone}" Width="Auto" MinWidth="130" />
+        <DataGridTextColumn infra:GridPriority.Level="3" Header="Échéances" Binding="{Binding Count}" Width="Auto" MinWidth="95" />
+        <DataGridTextColumn infra:GridPriority.Level="2" Header="Ancienneté" Binding="{Binding Bucket}" Width="Auto" MinWidth="130" />
+        <DataGridTextColumn infra:GridPriority.Level="3" Header="Garant" Binding="{Binding Guardian}" Width="Auto" MinWidth="150" />
+        <DataGridTextColumn infra:GridPriority.Level="3" Header="Téléphone" Binding="{Binding Phone}" Width="Auto" MinWidth="130" />
       </DataGrid.Columns>
     </DataGrid>
   </Grid>

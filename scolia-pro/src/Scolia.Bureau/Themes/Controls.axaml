@@ -1,5 +1,6 @@
 <Styles xmlns="https://github.com/avaloniaui"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:infra="using:Scolia.Bureau.Infrastructure">
 
   <!-- Base : police, couleurs et tailles du thème Material 3 de SCOLIA. -->
   <Style Selector="TemplatedControl">
@@ -148,6 +149,7 @@
 
   <!-- Tableaux : en-tête gris clair, lignes sélectionnées en bleu tonal -->
   <Style Selector="DataGrid">
+    <Setter Property="infra:GridPriority.Adaptive" Value="True" />
     <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
     <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
     <Setter Property="BorderThickness" Value="1" />

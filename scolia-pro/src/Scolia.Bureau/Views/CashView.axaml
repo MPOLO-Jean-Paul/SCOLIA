@@ -1,5 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:infra="using:Scolia.Bureau.Infrastructure"
              x:Class="Scolia.Bureau.Views.CashView">
   <ScrollViewer>
     <StackPanel Spacing="16">
@@ -32,11 +33,11 @@
           <TextBlock Text="Mouvements de la période" Classes="heading" />
           <DataGrid ItemsSource="{Binding Movements}" AutoGenerateColumns="False" IsReadOnly="True" MaxHeight="340">
             <DataGrid.Columns>
-              <DataGridTextColumn Header="Date" Binding="{Binding Date}" Width="Auto" MinWidth="130" />
-              <DataGridTextColumn Header="Type" Binding="{Binding Type}" Width="Auto" MinWidth="120" />
-              <DataGridTextColumn Header="Numéro" Binding="{Binding Number}" Width="Auto" MinWidth="130" />
+              <DataGridTextColumn infra:GridPriority.Level="2" Header="Date" Binding="{Binding Date}" Width="Auto" MinWidth="130" />
+              <DataGridTextColumn infra:GridPriority.Level="2" Header="Type" Binding="{Binding Type}" Width="Auto" MinWidth="120" />
+              <DataGridTextColumn infra:GridPriority.Level="3" Header="Numéro" Binding="{Binding Number}" Width="Auto" MinWidth="130" />
               <DataGridTextColumn Header="Libellé" Binding="{Binding Label}" Width="*" />
-              <DataGridTextColumn Header="Mode" Binding="{Binding Method}" Width="Auto" MinWidth="120" />
+              <DataGridTextColumn infra:GridPriority.Level="3" Header="Mode" Binding="{Binding Method}" Width="Auto" MinWidth="120" />
               <DataGridTextColumn Header="Entrée" Binding="{Binding In}" Width="Auto" MinWidth="130" />
               <DataGridTextColumn Header="Sortie" Binding="{Binding Out}" Width="Auto" MinWidth="130" />
             </DataGrid.Columns>

@@ -9,6 +9,9 @@ public sealed record SetupStatusDto(bool IsConfigured, string? SchoolName);
 /// <summary>Année scolaire proposée par le serveur pour l'assistant.</summary>
 public sealed record YearProposalDto(string Label);
 
+/// <summary>Révision des données du serveur : elle change à chaque écriture, d'un poste quelconque.</summary>
+public sealed record RevisionDto(long Revision);
+
 // Contrats de l'API SCOLIA, tels que servis en JSON (noms en camelCase, dates ISO, montants décimaux).
 
 public sealed record SessionDto(

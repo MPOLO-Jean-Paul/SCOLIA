@@ -1,5 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:infra="using:Scolia.Bureau.Infrastructure"
              x:Class="Scolia.Bureau.Views.StudentsView">
   <Grid RowDefinitions="Auto,*">
     <Border Grid.Row="0" Classes="band" Margin="0,0,0,10">
@@ -17,18 +18,18 @@
       <DataGrid.Columns>
         <DataGridTextColumn Header="Matricule" Binding="{Binding Matricule}" Width="Auto" MinWidth="130" />
         <DataGridTextColumn Header="Nom complet" Binding="{Binding Name}" Width="*" />
-        <DataGridTextColumn Header="Sexe" Binding="{Binding Gender}" Width="Auto" MinWidth="110" />
-        <DataGridTextColumn Header="Promotion" Binding="{Binding Promotion}" Width="Auto" MinWidth="130" />
-        <DataGridTemplateColumn Header="Statut" Width="Auto" MinWidth="120">
+        <DataGridTextColumn infra:GridPriority.Level="3" Header="Sexe" Binding="{Binding Gender}" Width="Auto" MinWidth="110" />
+        <DataGridTextColumn infra:GridPriority.Level="2" Header="Promotion" Binding="{Binding Promotion}" Width="Auto" MinWidth="130" />
+        <DataGridTemplateColumn infra:GridPriority.Level="1" Header="Statut" Width="Auto" MinWidth="120">
           <DataGridTemplateColumn.CellTemplate>
             <DataTemplate>
               <TextBlock Text="{Binding Status}" Foreground="{Binding StatusBrush}" FontWeight="SemiBold" VerticalAlignment="Center" />
             </DataTemplate>
           </DataGridTemplateColumn.CellTemplate>
         </DataGridTemplateColumn>
-        <DataGridTextColumn Header="Téléphone" Binding="{Binding Phone}" Width="Auto" MinWidth="160" />
-        <DataGridTextColumn Header="Solde" Binding="{Binding Balance}" Width="Auto" MinWidth="150" />
-        <DataGridTemplateColumn Header="Retard" Width="Auto" MinWidth="130">
+        <DataGridTextColumn infra:GridPriority.Level="3" Header="Téléphone" Binding="{Binding Phone}" Width="Auto" MinWidth="160" />
+        <DataGridTextColumn infra:GridPriority.Level="2" Header="Solde" Binding="{Binding Balance}" Width="Auto" MinWidth="150" />
+        <DataGridTemplateColumn infra:GridPriority.Level="2" Header="Retard" Width="Auto" MinWidth="130">
           <DataGridTemplateColumn.CellTemplate>
             <DataTemplate>
               <TextBlock Text="{Binding Overdue}" Foreground="{Binding OverdueBrush}" VerticalAlignment="Center" />

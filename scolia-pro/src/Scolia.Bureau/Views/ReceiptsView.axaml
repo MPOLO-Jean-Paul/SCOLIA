@@ -1,5 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:infra="using:Scolia.Bureau.Infrastructure"
              x:Class="Scolia.Bureau.Views.ReceiptsView">
   <Grid RowDefinitions="Auto,*">
     <Border Grid.Row="0" Classes="band" Margin="0,0,0,10">
@@ -16,12 +17,12 @@
               AutoGenerateColumns="False" IsReadOnly="True">
       <DataGrid.Columns>
         <DataGridTextColumn Header="N° de reçu" Binding="{Binding Number}" Width="Auto" MinWidth="130" />
-        <DataGridTextColumn Header="Date" Binding="{Binding Date}" Width="Auto" MinWidth="120" />
-        <DataGridTextColumn Header="Matricule" Binding="{Binding Matricule}" Width="Auto" MinWidth="105" />
+        <DataGridTextColumn infra:GridPriority.Level="2" Header="Date" Binding="{Binding Date}" Width="Auto" MinWidth="120" />
+        <DataGridTextColumn infra:GridPriority.Level="2" Header="Matricule" Binding="{Binding Matricule}" Width="Auto" MinWidth="105" />
         <DataGridTextColumn Header="Apprenant" Binding="{Binding Student}" Width="*" MinWidth="200" />
-        <DataGridTextColumn Header="Promotion" Binding="{Binding Promotion}" Width="Auto" MinWidth="100" />
+        <DataGridTextColumn infra:GridPriority.Level="3" Header="Promotion" Binding="{Binding Promotion}" Width="Auto" MinWidth="100" />
         <DataGridTextColumn Header="Montant" Binding="{Binding Amount}" Width="Auto" MinWidth="130" />
-        <DataGridTextColumn Header="Mode" Binding="{Binding Method}" Width="Auto" MinWidth="140" />
+        <DataGridTextColumn infra:GridPriority.Level="3" Header="Mode" Binding="{Binding Method}" Width="Auto" MinWidth="140" />
         <DataGridTemplateColumn Header="Statut" Width="Auto" MinWidth="100">
           <DataGridTemplateColumn.CellTemplate>
             <DataTemplate>
@@ -29,7 +30,7 @@
             </DataTemplate>
           </DataGridTemplateColumn.CellTemplate>
         </DataGridTemplateColumn>
-        <DataGridTextColumn Header="Caissier" Binding="{Binding Cashier}" Width="Auto" MinWidth="150" />
+        <DataGridTextColumn infra:GridPriority.Level="3" Header="Caissier" Binding="{Binding Cashier}" Width="Auto" MinWidth="150" />
       </DataGrid.Columns>
     </DataGrid>
   </Grid>

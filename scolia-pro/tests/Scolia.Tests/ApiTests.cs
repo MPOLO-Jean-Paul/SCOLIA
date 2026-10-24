@@ -267,6 +267,16 @@ public sealed class BusinessApiTests : IDisposable
     }
 
     [Fact]
+    public async Task Revision_rises_after_each_committed_write()
+    {
+        var admin = await app.InstalledAdmin();
+        var before = (await admin.GetAsync("/api/revision").Ok()).GetProperty("revision").GetInt64();
+        await NewStudent(admin);
+        var after = (await admin.GetAsync("/api/revision").Ok()).GetProperty("revision").GetInt64();
+        Assert.True(after > before);
+    }
+
+    [Fact]
     public async Task Concurrent_payments_never_pay_a_month_twice()
     {
         var admin = await app.InstalledAdmin();

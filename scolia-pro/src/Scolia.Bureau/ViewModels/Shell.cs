@@ -11,8 +11,13 @@ namespace Scolia.Bureau.ViewModels;
 /// <summary>Fenêtre principale : ruban, écran courant, boîtes de dialogue, notifications et barre d'état.</summary>
 public sealed class ShellViewModel : Observable
 {
+    /// <summary>Délai entre deux vérifications de la révision des données, pour voir les écritures des autres postes.</summary>
+    private static readonly TimeSpan RevisionInterval = TimeSpan.FromSeconds(5);
+
     private readonly ScoliaClient api;
+    private readonly DispatcherTimer revisionTimer;
     private readonly List<(string Label, Func<PageViewModel> Open)> recents = [];
+    private long knownRevision = -1;
     private SessionDto? session;
     private PageViewModel? current;
     private object? dialog;
@@ -31,6 +36,8 @@ public sealed class ShellViewModel : Observable
         Backstage = new BackstageViewModel(this);
         ReloadCommand = new AsyncCommand(() => Run(Reload));
         SearchCommand = new RelayCommand(ShowSearch);
+        revisionTimer = new DispatcherTimer(RevisionInterval, DispatcherPriority.Background, (_, _) => _ = CheckRevisionAsync());
+        revisionTimer.Start();
         prefs.PropertyChanged += (_, _) =>
         {
             prefs.Apply();
@@ -159,6 +166,7 @@ public sealed class ShellViewModel : Observable
     public async Task OpenSessionAsync(SessionDto s)
     {
         session = s;
+        knownRevision = -1;
         RaiseLogin();
         Raise(nameof(SchoolLine));
         Raise(nameof(UserLine));
@@ -190,6 +198,35 @@ public sealed class ShellViewModel : Observable
         catch (ApiException ex) { Notify(ex.Message); }
         catch (HttpRequestException) { Notify("Le serveur SCOLIA ne répond pas. Vérifiez qu'il est lancé sur ce poste."); }
         catch (Exception ex) when (ex is not OperationCanceledException) { Notify($"Erreur inattendue : {ex.Message}"); }
+        finally
+        {
+            // Nos propres écritures ne doivent pas déclencher un rechargement : on mémorise la révision après l'action.
+            if (IsLoggedIn && await ReadRevisionAsync() is { } latest) knownRevision = latest;
+        }
+    }
+
+    /// <summary>
+    /// Vérifie si une autre station a modifié les données. L'écran courant se recharge seul, sauf quand un
+    /// formulaire ou l'encaissement est ouvert : on prévient alors l'utilisateur, pour ne pas effacer sa saisie.
+    /// </summary>
+    private async Task CheckRevisionAsync()
+    {
+        if (!IsLoggedIn) return;
+        if (await ReadRevisionAsync() is not { } latest) return;
+        if (knownRevision < 0 || latest == knownRevision)
+        {
+            knownRevision = latest;
+            return;
+        }
+        knownRevision = latest;
+        if (HasDialog || BackstageOpen || Current is CashierPage) Notify("Des données ont changé sur un autre poste. Appuyez sur F5 pour actualiser.");
+        else await Run(Reload);
+    }
+
+    private async Task<long?> ReadRevisionAsync()
+    {
+        try { return (await api.GetAsync<RevisionDto>("api/revision")).Revision; }
+        catch (Exception ex) when (ex is ApiException or HttpRequestException or TaskCanceledException) { return null; }
     }
 
     /// <summary>Affiche un formulaire et attend la décision de l'utilisateur.</summary>

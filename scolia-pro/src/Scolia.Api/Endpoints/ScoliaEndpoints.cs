@@ -72,6 +72,8 @@ public static class ScoliaEndpoints
 
         var secured = api.MapGroup("").RequireAuthorization();
         secured.MapGet("/recherche", (string? q, SearchService search, CancellationToken ct) => search.SearchAsync(q, ct)).RequireAuthorization(Permissions.StudentsRead);
+        // Révision des données : les postes la comparent pour recharger l'écran après une écriture faite ailleurs.
+        secured.MapGet("/revision", (DataRevision revision) => Results.Ok(new { revision = revision.Value }));
 
         MapSchool(secured);
         MapStudents(secured);

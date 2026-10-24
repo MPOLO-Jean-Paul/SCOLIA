@@ -100,6 +100,7 @@ public sealed class Preferences : Observable
         };
         var r = app.Resources;
         var k = Factor;
+        GridPriority.SetTextFactor(k);
         r["FsBase"] = 14.0 * k;
         r["FsSmall"] = 12.5 * k;
         r["FsCaption"] = 11.5 * k;

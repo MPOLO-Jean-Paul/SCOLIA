@@ -37,6 +37,7 @@ public static class DependencyInjection
         services.AddSingleton<IDocumentService, DocumentService>();
         services.AddSingleton<ISpreadsheetService, SpreadsheetService>();
         services.AddSingleton<BackupService>();
+        services.AddSingleton<DataRevision>();
         services.AddHostedService<AutomaticBackupWorker>();
         services.AddScoped<LegacyImportService>();
 

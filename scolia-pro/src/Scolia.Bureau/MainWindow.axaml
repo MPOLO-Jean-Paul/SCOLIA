@@ -128,7 +128,7 @@
               </ItemsControl.ItemTemplate>
             </ItemsControl>
           </Grid>
-          <ContentControl Grid.Row="1" Content="{Binding Current}" Margin="24,0,24,16" />
+          <TransitioningContentControl x:Name="PageHost" Grid.Row="1" Content="{Binding Current}" Margin="24,0,24,16" />
         </Grid>
         <ProgressBar IsIndeterminate="True" IsVisible="{Binding Current.Busy}" VerticalAlignment="Top" Height="2" MinHeight="2" />
 
