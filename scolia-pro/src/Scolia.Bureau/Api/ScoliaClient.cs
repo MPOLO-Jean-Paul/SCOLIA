@@ -8,18 +8,35 @@ namespace Scolia.Bureau.Api;
 /// <summary>Client HTTP du serveur SCOLIA : session par cookie et en-tête anti-CSRF, comme l'interface web.</summary>
 public sealed class ScoliaClient : IDisposable
 {
-    private readonly CookieContainer cookies = new();
-    private readonly HttpClient http;
+    private CookieContainer cookies = new();
+    private HttpClient http;
 
     public ScoliaClient(Uri server)
     {
         Server = server;
-        var handler = new HttpClientHandler { CookieContainer = cookies, UseCookies = true };
-        http = new HttpClient(handler) { BaseAddress = server, Timeout = TimeSpan.FromSeconds(60) };
-        http.DefaultRequestHeaders.Add("X-Scolia", "1");
+        http = Create(server);
     }
 
-    public Uri Server { get; }
+    public Uri Server { get; private set; }
+
+    /// <summary>Change de serveur (ce poste ou celui de l'établissement) : nouvelle connexion, sans session ouverte.</summary>
+    public void Retarget(Uri server)
+    {
+        if (server == Server) return;
+        var previous = http;
+        cookies = new CookieContainer();
+        http = Create(server);
+        Server = server;
+        previous.Dispose();
+    }
+
+    private HttpClient Create(Uri server)
+    {
+        var handler = new HttpClientHandler { CookieContainer = cookies, UseCookies = true };
+        var client = new HttpClient(handler) { BaseAddress = server, Timeout = TimeSpan.FromSeconds(60) };
+        client.DefaultRequestHeaders.Add("X-Scolia", "1");
+        return client;
+    }
 
     public async Task<SessionDto> LoginAsync(string userName, string password, CancellationToken ct = default) =>
         await SendAsync<SessionDto>(HttpMethod.Post, "api/session", new { userName, password }, ct);

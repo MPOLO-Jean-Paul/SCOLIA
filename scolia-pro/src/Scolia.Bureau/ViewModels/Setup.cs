@@ -27,6 +27,7 @@ public sealed class SetupViewModel : Observable
         Next = new AsyncCommand(NextAsync);
         Back = new RelayCommand(() => { Step = 1; Error = string.Empty; });
         Finish = new AsyncCommand(FinishAsync);
+        JoinExisting = new AsyncCommand(() => shell.ChooseServerAsync());
     }
 
     public IReadOnlyList<ChoiceItem> StartMonths { get; }
@@ -141,6 +142,9 @@ public sealed class SetupViewModel : Observable
     public AsyncCommand Next { get; }
     public RelayCommand Back { get; }
     public AsyncCommand Finish { get; }
+
+    /// <summary>Ce poste ne doit pas créer un établissement : il rejoint le SCOLIA déjà installé sur le réseau.</summary>
+    public AsyncCommand JoinExisting { get; }
 
     /// <summary>Propose l'année scolaire en cours, calculée par le serveur.</summary>
     public async Task LoadAsync()

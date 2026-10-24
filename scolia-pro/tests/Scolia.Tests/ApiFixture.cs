@@ -18,7 +18,11 @@ public sealed class ScoliaApp : WebApplicationFactory<Program>
         builder.UseSetting("Scolia:Stockage:DataDirectory", DataDirectory);
         builder.UseSetting("Scolia:OuvrirNavigateur", "false");
         builder.UseSetting("Serilog:MinimumLevel:Default", "Warning");
+        foreach (var (key, value) in Settings) builder.UseSetting(key, value);
     }
+
+    /// <summary>Réglages supplémentaires du serveur de test, à renseigner avant la première requête.</summary>
+    public Dictionary<string, string> Settings { get; } = [];
 
     public HttpClient Client()
     {

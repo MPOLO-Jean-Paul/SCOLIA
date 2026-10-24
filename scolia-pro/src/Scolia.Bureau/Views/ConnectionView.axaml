@@ -1,0 +1,40 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mi="using:Material.Icons.Avalonia"
+             x:Class="Scolia.Bureau.Views.ConnectionView">
+  <Grid Background="{DynamicResource BgBrush}">
+    <StackPanel Width="540" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="14">
+      <Image Source="avares://SCOLIA/Assets/scolia.png" Width="56" Height="56" HorizontalAlignment="Center" Margin="0,0,0,4" />
+      <TextBlock Text="Rejoindre votre établissement" Classes="title" FontSize="{DynamicResource FsDisplay}" HorizontalAlignment="Center" TextAlignment="Center" />
+      <TextBlock Text="{Binding Message}" Classes="muted" TextWrapping="Wrap" TextAlignment="Center" />
+      <ProgressBar IsIndeterminate="True" IsVisible="{Binding Searching}" Width="220" Height="3" MinHeight="3" HorizontalAlignment="Center" />
+
+      <!-- Serveurs trouvés : une ligne par établissement, façon réglages macOS -->
+      <Border Classes="card" Padding="0" IsVisible="{Binding HasServers}">
+        <ItemsControl ItemsSource="{Binding Servers}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate>
+              <Grid ColumnDefinitions="Auto,*,Auto" Margin="18,14">
+                <Border Width="40" Height="40" CornerRadius="12" Background="{DynamicResource ToneBlue}" Margin="0,0,14,0">
+                  <mi:MaterialIcon Kind="DesktopTowerMonitor" Width="22" Height="22" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Border>
+                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                  <TextBlock Text="{Binding School}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                  <TextBlock Text="{Binding Detail}" Classes="muted" TextWrapping="Wrap" />
+                </StackPanel>
+                <Button Grid.Column="2" Classes="primary" Content="Rejoindre" Command="{Binding Join}" VerticalAlignment="Center" Margin="12,0,0,0" />
+              </Grid>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </Border>
+
+      <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="10" Margin="0,6,0,0">
+        <Button Content="Rechercher à nouveau" Command="{Binding Search}" IsEnabled="{Binding NotSearching}" />
+        <Button Classes="ghost" Content="Utiliser cet ordinateur comme serveur" Command="{Binding UseThisComputer}" />
+      </StackPanel>
+      <TextBlock Classes="muted" TextWrapping="Wrap" TextAlignment="Center" FontSize="{DynamicResource FsSmall}"
+                 Text="Sur l'ordinateur principal, SCOLIA doit être ouvert et partagé : il le propose à la première connexion, ou dans Fichier &gt; Poste et réseau." />
+    </StackPanel>
+  </Grid>
+</UserControl>

@@ -12,6 +12,7 @@
     <!-- Première installation : l'assistant remplace la connexion tant qu'aucune configuration n'existe -->
     <ContentControl Content="{Binding Setup}" IsVisible="{Binding IsSetupRequired}" />
     <ContentControl Content="{Binding Login}" IsVisible="{Binding ShowLogin}" />
+    <ContentControl Content="{Binding Connection}" IsVisible="{Binding ChoosingServer}" />
 
     <Grid RowDefinitions="Auto,Auto,Auto,*,Auto" IsVisible="{Binding IsLoggedIn}">
 

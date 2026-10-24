@@ -25,4 +25,9 @@
     <AvaloniaResource Include="Assets/**" />
   </ItemGroup>
 
+  <!-- Protocole de découverte réseau, partagé avec le serveur : un seul fichier, aucune divergence possible. -->
+  <ItemGroup>
+    <Compile Include="../Scolia.Infrastructure/Network/LanProtocol.cs" Link="Infrastructure/LanProtocol.cs" />
+  </ItemGroup>
+
 </Project>

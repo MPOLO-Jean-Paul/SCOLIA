@@ -23,6 +23,7 @@ public static class PosteAdmin
     public const string ServiceTitle = "SCOLIA Pro";
     public const string ServiceDescription = "Serveur de gestion scolaire SCOLIA Pro (secrétariat, caisse, scolarité).";
     public const string FirewallRule = "SCOLIA Pro (réseau local)";
+    public const string DiscoveryRule = "SCOLIA Pro (découverte des postes)";
     private const string ServiceAccount = @"NT SERVICE\SCOLIA";
     private const int DefaultPort = 5080;
 
@@ -203,21 +204,83 @@ public static class PosteAdmin
         reseau["AccesReseauLocal"] = enabled;
         File.WriteAllText(ConfigFile, root.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
 
-        // Règle de pare-feu limitée au port de SCOLIA et aux réseaux privés et de domaine (jamais aux réseaux publics).
+        // Règles de pare-feu limitées au port de SCOLIA et à la découverte, sur les réseaux privés et de domaine
+        // uniquement (jamais sur les réseaux publics).
         DeleteFirewallRule();
-        if (enabled) AddFirewallRule();
+        var note = string.Empty;
+        if (enabled)
+        {
+            AddFirewallRule();
+            // Comme la version 79 : avec l'accord donné à l'ouverture, le réseau de l'établissement est déclaré privé.
+            if (MakeConnectedNetworksPrivate()) note = " Le réseau de ce poste est maintenant déclaré privé.";
+        }
 
-        var restart = OperatingSystem.IsWindows() && ServiceInstalled() ? " Le service SCOLIA prend le réglage au prochain démarrage." : " Le réglage prendra effet au prochain démarrage de SCOLIA.";
+        // Le service applique le réglage tout de suite ; sans service, c'est l'application qui relance son serveur.
+        if (OperatingSystem.IsWindows() && ServiceInstalled()) RestartService();
         return enabled
-            ? $"Accès depuis le réseau local activé (réseaux privés et de domaine).{restart}"
-            : $"Accès depuis le réseau local désactivé : SCOLIA ne répond plus que sur ce poste.{restart}";
+            ? $"Réseau de l'établissement ouvert : les autres ordinateurs qui ont SCOLIA le trouvent et s'y connectent automatiquement.{note}"
+            : "Réseau de l'établissement fermé : SCOLIA ne répond plus que sur ce poste.";
     }
 
-    private static void AddFirewallRule() =>
+    private static void AddFirewallRule()
+    {
         RunNetsh($"advfirewall firewall add rule name=\"{FirewallRule}\" dir=in action=allow protocol=TCP localport={Port()} profile=private,domain");
+        RunNetsh($"advfirewall firewall add rule name=\"{DiscoveryRule}\" dir=in action=allow protocol=UDP localport={Scolia.Network.LanProtocol.DiscoveryPort} profile=private,domain");
+    }
 
-    private static void DeleteFirewallRule() =>
+    private static void DeleteFirewallRule()
+    {
         RunNetsh($"advfirewall firewall delete rule name=\"{FirewallRule}\"", ignoreFailure: true);
+        RunNetsh($"advfirewall firewall delete rule name=\"{DiscoveryRule}\"", ignoreFailure: true);
+    }
+
+    /// <summary>
+    /// Un réseau « public » bloque le partage. Les réseaux connectés encore publics passent en « privé ».
+    /// Windows n'offre cette opération qu'en PowerShell : c'est la seule commande de ce type utilisée par SCOLIA.
+    /// </summary>
+    private static bool MakeConnectedNetworksPrivate()
+    {
+        const string command = "$p = @(Get-NetConnectionProfile | Where-Object { $_.NetworkCategory -eq 'Public' }); "
+            + "$p | Set-NetConnectionProfile -NetworkCategory Private; $p.Count";
+        try
+        {
+            using var process = Process.Start(new ProcessStartInfo("powershell.exe")
+            {
+                ArgumentList = { "-NoProfile", "-NonInteractive", "-Command", command },
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+            });
+            if (process is null) return false;
+            var output = process.StandardOutput.ReadToEnd();
+            process.WaitForExit(30000);
+            return int.TryParse(output.Trim(), out var changed) && changed > 0;
+        }
+        catch (Win32Exception) { return false; }
+    }
+
+    /// <summary>Redémarre le service pour appliquer un réglage réseau sans attendre le prochain démarrage de Windows.</summary>
+    [SupportedOSPlatform("windows")]
+    private static void RestartService()
+    {
+        var manager = OpenScm(ScmConnect);
+        try
+        {
+            var service = OpenService(manager, ServiceName, ServiceStop | ServiceStart | ServiceQueryStatus);
+            if (service == IntPtr.Zero) return;
+            try
+            {
+                var status = Marshal.AllocHGlobal(ServiceStatusSize);
+                try { ControlService(service, ServiceControlStop, status); }
+                finally { Marshal.FreeHGlobal(status); }
+                // L'arrêt prend quelques secondes : le service est relancé dès que Windows l'accepte.
+                for (var i = 0; i < 40 && !StartService(service, 0, IntPtr.Zero); i++) Thread.Sleep(500);
+            }
+            finally { CloseServiceHandle(service); }
+        }
+        finally { CloseServiceHandle(manager); }
+    }
 
     private static void RunNetsh(string arguments, bool ignoreFailure = false)
     {
@@ -322,7 +385,7 @@ public static class PosteAdmin
         return false;
     }
 
-    private static string DataFolder()
+    public static string DataFolder()
     {
         var configured = ReadServerSetting("DataDirectory") as string;
         return string.IsNullOrWhiteSpace(configured)

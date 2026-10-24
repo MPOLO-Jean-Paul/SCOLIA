@@ -24,17 +24,23 @@ OUVRIR SCOLIA
    le compte administrateur. Des données de démonstration fictives peuvent être
    chargées pour découvrir le logiciel.
 
-POSTE ET RÉSEAU (onglet Fichier, rubrique « Poste et réseau »)
-- Démarrage automatique : « Installer le service » fait démarrer SCOLIA avec
-  Windows, même sans session ouverte. Windows demande l'autorisation
-  d'administrateur (invite de contrôle de compte). « Retirer le service » annule
-  ce démarrage ; les données sont conservées.
-- Accès depuis le réseau local : « Activer » ouvre le port de SCOLIA dans le
-  pare-feu Windows, pour les réseaux privés et de domaine uniquement, et affiche
-  les adresses. Sur les autres postes, ouvrir l'adresse affichée dans un
-  navigateur, par exemple http://192.168.1.10:5080. Rien n'est à installer sur
-  ces postes. Le réseau doit être déclaré « privé » dans Windows.
-- Le réglage « Activer » prend effet au prochain démarrage de SCOLIA.
+PLUSIEURS ORDINATEURS (RÉSEAU DE L'ÉTABLISSEMENT) - AUTOMATIQUE
+1. Sur l'ordinateur principal (celui qui garde la base), ouvrir SCOLIA et se
+   connecter. SCOLIA propose une seule fois « Partager SCOLIA avec les autres
+   ordinateurs » : cliquer sur Autoriser, puis accepter la demande de Windows.
+   SCOLIA ouvre alors son port et sa découverte dans le pare-feu (réseaux privés
+   uniquement), déclare le réseau de l'établissement comme privé et applique le
+   réglage tout de suite.
+2. Sur chaque autre ordinateur, copier le dossier SCOLIA et lancer SCOLIA.exe.
+   SCOLIA trouve seul l'ordinateur principal sur le réseau et s'y relie : il n'y a
+   aucune adresse à saisir. S'il trouve plusieurs établissements, il les propose.
+3. Si l'adresse de l'ordinateur principal change (box, routeur), les postes le
+   retrouvent automatiquement au démarrage suivant.
+Fichier > Poste et réseau : voir à quel serveur le poste est relié, rechercher
+et rejoindre un autre serveur, ou utiliser cet ordinateur comme serveur. Sur
+l'ordinateur principal : ouvrir ou fermer le partage, démarrer avec Windows
+(service). Depuis un navigateur, les postes peuvent aussi ouvrir l'adresse
+affichée, par exemple http://192.168.1.10:5080.
 
 DONNÉES ET SAUVEGARDES
 - La base est le fichier donnees\scolia.db (SQLite, transactionnelle).
@@ -62,4 +68,5 @@ le conserver avant toute suppression.
 RÉGLAGES (appsettings.json, à côté de SCOLIA-Serveur.exe)
 - Scolia:Reseau:Port : port d'écoute (5080 par défaut).
 - Scolia:Reseau:AccesReseauLocal : géré par la rubrique « Poste et réseau ».
+- Scolia:Reseau:PortDecouverte : port UDP de la découverte des postes (48630).
 - Scolia:Stockage:DataDirectory : autre dossier de données (vide = donnees).

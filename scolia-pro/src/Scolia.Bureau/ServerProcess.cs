@@ -23,6 +23,32 @@ public sealed class ServerProcess(int port)
         process = Process.Start(info);
     }
 
+    /// <summary>
+    /// Relance le serveur de ce dossier pour qu'il prenne un nouveau réglage réseau tout de suite.
+    /// Un serveur lancé par une autre session de SCOLIA sur ce poste est relancé aussi.
+    /// </summary>
+    public void Restart()
+    {
+        Stop();
+        var exe = Path.Combine(AppContext.BaseDirectory, "SCOLIA-Serveur.exe");
+        foreach (var other in Process.GetProcessesByName("SCOLIA-Serveur"))
+        {
+            try
+            {
+                if (string.Equals(other.MainModule?.FileName, exe, StringComparison.OrdinalIgnoreCase))
+                {
+                    other.Kill(entireProcessTree: true);
+                    other.WaitForExit(10000);
+                }
+            }
+            catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or InvalidOperationException) { }
+            finally { other.Dispose(); }
+        }
+        process?.WaitForExit(10000);
+        process = null;
+        Start();
+    }
+
     /// <summary>Arrête le serveur seulement s'il a été lancé par cette application.</summary>
     public void Stop()
     {

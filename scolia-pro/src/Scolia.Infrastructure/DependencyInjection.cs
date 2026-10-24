@@ -39,6 +39,7 @@ public static class DependencyInjection
         services.AddSingleton<BackupService>();
         services.AddSingleton<DataRevision>();
         services.AddHostedService<AutomaticBackupWorker>();
+        services.AddHostedService<Network.LanAnnouncer>();
         services.AddScoped<LegacyImportService>();
 
         services.AddScoped<SetupService>();

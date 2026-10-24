@@ -25,6 +25,8 @@ public sealed class ShellViewModel : Observable
     private string status = "Démarrage de SCOLIA…";
     private string? notice;
     private RibbonTabVm? selectedTab;
+    private ServerProcess? localServer;
+    private bool choosingServer;
 
     public ShellViewModel(ScoliaClient api, Preferences prefs)
     {
@@ -32,6 +34,7 @@ public sealed class ShellViewModel : Observable
         Prefs = prefs;
         Login = new LoginViewModel(api);
         Setup = new SetupViewModel(this);
+        Connection = new ConnectionViewModel(this);
         Login.LoggedIn += s => _ = OpenSessionAsync(s);
         Backstage = new BackstageViewModel(this);
         ReloadCommand = new AsyncCommand(() => Run(Reload));
@@ -66,7 +69,15 @@ public sealed class ShellViewModel : Observable
     public bool IsSetupRequired { get => setupRequired; set { if (Set(ref setupRequired, value)) RaiseLogin(); } }
 
     /// <summary>La connexion s'affiche seulement quand une configuration existe et qu'aucune session n'est ouverte.</summary>
-    public bool ShowLogin => !IsLoggedIn && !IsSetupRequired;
+    public bool ShowLogin => !IsLoggedIn && !IsSetupRequired && !ChoosingServer;
+
+    /// <summary>Choix du serveur de l'établissement, affiché quand le choix n'est pas évident.</summary>
+    public ConnectionViewModel Connection { get; }
+
+    public bool ChoosingServer { get => choosingServer; private set { if (Set(ref choosingServer, value)) RaiseLogin(); } }
+
+    /// <summary>Vrai quand cet ordinateur est le serveur de l'établissement, faux quand il est relié à un autre.</summary>
+    public bool IsServerComputer => api.Server.IsLoopback;
 
     public SetupViewModel Setup { get; }
 
@@ -85,7 +96,9 @@ public sealed class ShellViewModel : Observable
     public string SchoolLine => session is null ? string.Empty : $"{session.SchoolName}{(session.CurrentYear is null ? string.Empty : $" · année {session.CurrentYear}")}";
     public string UserLine => session is null ? string.Empty : $"{session.DisplayName} · {session.RoleLabel}";
     public string UserInitials => session is null ? string.Empty : Initials(session.DisplayName);
-    public string ServerLine => $"Serveur {api.Server.Host}:{api.Server.Port}";
+    public string ServerLine => IsServerComputer
+        ? $"Serveur de l'établissement · port {api.Server.Port}"
+        : ConnectionStore.Load() is { IsRemote: true } link ? $"Relié à {link.Machine} · {api.Server.Host}" : $"Serveur {api.Server.Host}:{api.Server.Port}";
 
     public PageViewModel? Current { get => current; private set { if (Set(ref current, value)) Raise(nameof(HasPage)); } }
     public bool HasPage => current is not null;
@@ -136,18 +149,164 @@ public sealed class ShellViewModel : Observable
 
     public IReadOnlyList<(string Label, Func<PageViewModel> Open)> Recents => recents;
 
-    /// <summary>Vérifie que le serveur répond. S'il est arrêté, lance SCOLIA-Serveur.exe du même dossier.</summary>
+    /// <summary>
+    /// Démarrage : trouve le serveur de l'établissement sans adresse à saisir, comme la version 79.
+    /// Un poste qui porte la base en est le serveur. Un poste sans base cherche SCOLIA sur le réseau et le rejoint.
+    /// Un serveur mémorisé dont l'adresse a changé est retrouvé par l'identifiant de son établissement.
+    /// </summary>
     public async Task StartAsync(ServerProcess server)
     {
-        if (!await api.IsRunningAsync())
+        localServer = server;
+        var forced = Environment.GetEnvironmentVariable("SCOLIA_SERVEUR");
+        if (!string.IsNullOrWhiteSpace(forced))
+        {
+            api.Retarget(new Uri(forced));
+            await ShowEntryAsync();
+            return;
+        }
+
+        var saved = ConnectionStore.Load();
+        if (saved is { IsRemote: true })
+        {
+            api.Retarget(new Uri(saved.Url!));
+            if (await api.IsRunningAsync())
+            {
+                await ShowEntryAsync();
+                return;
+            }
+            Status = $"Recherche du serveur de {saved.School}…";
+            var servers = await LanDiscovery.FindAsync();
+            if (servers.FirstOrDefault(s => s.SchoolId == saved.SchoolId) is { } moved)
+            {
+                await JoinAsync(moved);
+                return;
+            }
+            ShowChooser(servers, $"Le serveur de {saved.School} (ordinateur {saved.Machine}) ne répond pas. Allumez-le ou ouvrez SCOLIA dessus, puis recherchez à nouveau.");
+            return;
+        }
+
+        if (saved?.Mode == ConnectionSettings.Local || ConnectionStore.HasLocalData())
+        {
+            await ShowEntryAsync();
+            return;
+        }
+
+        // Premier lancement d'un poste sans base : SCOLIA cherche d'abord l'établissement sur le réseau.
+        Status = "Recherche de SCOLIA sur le réseau de l'établissement…";
+        var found = await LanDiscovery.FindAsync();
+        if (found.Count == 1)
+        {
+            await JoinAsync(found[0]);
+            return;
+        }
+        if (found.Count > 1)
+        {
+            ShowChooser(found, "Plusieurs SCOLIA répondent sur ce réseau : choisissez celui de votre établissement.");
+            return;
+        }
+        // Aucun serveur sur le réseau : cet ordinateur devient celui de l'établissement.
+        ConnectionStore.Save(new ConnectionSettings(ConnectionSettings.Local));
+        await ShowEntryAsync();
+    }
+
+    private void ShowChooser(IReadOnlyList<DiscoveredServer> servers, string message)
+    {
+        IsSetupRequired = false;
+        Connection.Show(servers, message);
+        ChoosingServer = true;
+        Status = "Choix du serveur de l'établissement.";
+    }
+
+    /// <summary>Affiche le choix du serveur et lance une recherche : depuis l'assistant ou depuis Poste et réseau.</summary>
+    public async Task ChooseServerAsync()
+    {
+        ShowChooser([], string.Empty);
+        await Connection.SearchAsync();
+    }
+
+    /// <summary>Relie ce poste au serveur choisi et le mémorise.</summary>
+    public async Task JoinAsync(DiscoveredServer server)
+    {
+        var previous = ConnectionStore.Load();
+        ConnectionStore.Save(new ConnectionSettings(ConnectionSettings.Remote, server.Address.ToString(), server.SchoolId, server.School, server.Machine,
+            previous?.LanPromptDone ?? false));
+        if (IsLoggedIn) await LogoutAsync();
+        api.Retarget(server.Address);
+        ChoosingServer = false;
+        await ShowEntryAsync();
+        Notify($"Ce poste est relié à SCOLIA · {server.School} (ordinateur {server.Machine}).");
+    }
+
+    /// <summary>Cet ordinateur devient (ou redevient) le serveur de l'établissement.</summary>
+    public async Task UseThisComputerAsync()
+    {
+        var previous = ConnectionStore.Load();
+        ConnectionStore.Save(new ConnectionSettings(ConnectionSettings.Local, LanPromptDone: previous?.LanPromptDone ?? false));
+        if (IsLoggedIn) await LogoutAsync();
+        api.Retarget(ConnectionStore.LocalAddress);
+        ChoosingServer = false;
+        await ShowEntryAsync();
+    }
+
+    /// <summary>
+    /// Ouvre ou ferme le réseau de l'établissement et l'applique tout de suite. Windows demande l'autorisation ;
+    /// SCOLIA fait le reste : pare-feu, réseau privé, découverte des postes et relance de son serveur.
+    /// </summary>
+    public async Task SetNetworkAsync(bool open)
+    {
+        var message = await PosteAdmin.RunAsync(open ? "reseau-on" : "reseau-off");
+        await RestartLocalServerAsync();
+        Notify(message.Replace(Environment.NewLine, " "));
+    }
+
+    /// <summary>Relance le serveur de ce poste pour appliquer un réglage. Le service Windows, lui, est relancé par l'opération élevée.</summary>
+    public async Task RestartLocalServerAsync()
+    {
+        if (localServer is not null && IsServerComputer && !(OperatingSystem.IsWindows() && PosteAdmin.ServiceInstalled()))
+        {
+            Status = "Application du réglage réseau…";
+            localServer.Restart();
+        }
+        for (var i = 0; i < 80 && !await api.IsRunningAsync(); i++) await Task.Delay(250);
+        Status = await api.IsRunningAsync() ? $"Serveur prêt : {api.Server}" : "Le serveur SCOLIA ne répond pas.";
+    }
+
+    /// <summary>
+    /// Sur l'ordinateur principal, une seule fois : propose d'ouvrir SCOLIA aux autres ordinateurs de l'établissement.
+    /// </summary>
+    private async Task OfferNetworkAsync()
+    {
+        if (!OperatingSystem.IsWindows() || !IsServerComputer || !Can(Perm.SettingsWrite) || PosteAdmin.LanEnabled()) return;
+        var saved = ConnectionStore.Load() ?? new ConnectionSettings(ConnectionSettings.Local);
+        if (saved.LanPromptDone) return;
+        ConnectionStore.Save(saved with { LanPromptDone = true });
+        var accepted = await Confirm("Partager SCOLIA avec les autres ordinateurs",
+            "Les autres ordinateurs de l'établissement qui ont SCOLIA s'y connecteront automatiquement, sans aucun réglage. "
+            + "Windows va vous demander l'autorisation : SCOLIA ouvre alors son port dans le pare-feu et déclare ce réseau comme privé. "
+            + "Vous pourrez changer d'avis dans Fichier > Poste et réseau.",
+            "Autoriser");
+        if (accepted) await Run(() => SetNetworkAsync(true));
+    }
+
+    /// <summary>Serveur choisi : le démarre s'il est sur ce poste, puis affiche la connexion ou l'installation.</summary>
+    private async Task ShowEntryAsync()
+    {
+        Raise(nameof(IsServerComputer));
+        Raise(nameof(ServerLine));
+        if (!await api.IsRunningAsync() && IsServerComputer && localServer is not null)
         {
             Status = "Démarrage du serveur SCOLIA…";
-            server.Start();
+            localServer.Start();
             for (var i = 0; i < 80 && !await api.IsRunningAsync(); i++) await Task.Delay(250);
         }
         var ready = await api.IsRunningAsync();
         Status = ready ? $"Serveur prêt : {api.Server}" : "Le serveur SCOLIA ne répond pas.";
-        if (!ready) return;
+        if (!ready)
+        {
+            if (!IsServerComputer)
+                ShowChooser([], "Le serveur de l'établissement ne répond pas. Vérifiez que l'ordinateur principal est allumé, puis recherchez à nouveau.");
+            return;
+        }
         // Configuration reconnue : la connexion s'affiche directement. Sinon, l'assistant de première installation.
         try
         {
@@ -175,6 +334,7 @@ public sealed class ShellViewModel : Observable
         Login.Reset();
         RebuildRibbon();
         await Open(() => new DashboardPage(this));
+        await OfferNetworkAsync();
     }
 
     /// <summary>Affiche un écran, le mémorise dans les récents et charge ses données.</summary>
