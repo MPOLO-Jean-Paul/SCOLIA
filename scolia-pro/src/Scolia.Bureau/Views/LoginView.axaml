@@ -5,8 +5,8 @@
     <!-- Formulaire seul, sans carte englobante : le titre est le nom de l'application -->
     <StackPanel Width="340" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="12">
       <Image Source="avares://SCOLIA/Assets/scolia.png" Width="56" Height="56" HorizontalAlignment="Center" Margin="0,0,0,4" />
-      <TextBlock Text="SCOLIA" Classes="title" FontSize="28" HorizontalAlignment="Center" />
-      <TextBlock Text="Connectez-vous pour continuer" Classes="muted" HorizontalAlignment="Center" Margin="0,0,0,12" />
+      <TextBlock Text="{Binding TitleText}" Classes="title" FontSize="{DynamicResource FsDisplay}" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" />
+      <TextBlock Text="SCOLIA · connectez-vous pour continuer" Classes="muted" HorizontalAlignment="Center" Margin="0,0,0,12" />
       <TextBox x:Name="UserNameBox" Text="{Binding UserName}" PlaceholderText="Identifiant" />
       <TextBox x:Name="PasswordBox" Text="{Binding Password}" PasswordChar="•" PlaceholderText="Mot de passe" />
       <Button Classes="primary" Content="Se connecter" Command="{Binding Submit}" HorizontalAlignment="Stretch" Height="44" Margin="0,8,0,0" />

@@ -87,6 +87,7 @@ if (Environment.GetEnvironmentVariable("SCOLIA_ASSISTANT") == "1")
     Save(window, "00-assistant-etape-2.png");
     return;
 }
+shell.Login.SchoolName = Result(api.GetAsync<SetupStatusDto>("api/installation")).SchoolName ?? string.Empty;
 Save(window, "01-connexion.png");
 
 if (args.Length > 3 && args[3] == "smoke")

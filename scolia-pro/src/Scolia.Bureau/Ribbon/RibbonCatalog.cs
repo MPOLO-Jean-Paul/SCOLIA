@@ -216,7 +216,7 @@ public static class RibbonCatalog
     {
         if (perm is not null && !shell.Can(perm)) return null;
         var command = new AsyncCommand(() => shell.Run(action));
-        var vm = new RibbonCommandVm(label, icon, tip, command, large, tone, toggle, shortcut ?? Shortcuts.GetValueOrDefault(label));
+        var vm = new RibbonCommandVm(label, icon, shell.Prefs.Tips ? tip : string.Empty, command, large, tone, toggle, shortcut ?? Shortcuts.GetValueOrDefault(label));
         if (isOn is not null) vm.IsOn = isOn();
         return vm;
     }

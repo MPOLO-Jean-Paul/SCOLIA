@@ -11,6 +11,7 @@ public sealed class LoginViewModel : Observable
     private string password = string.Empty;
     private string? error;
     private bool busy;
+    private string schoolName = string.Empty;
 
     public LoginViewModel(ScoliaClient api)
     {
@@ -24,6 +25,10 @@ public sealed class LoginViewModel : Observable
     public string Password { get => password; set { if (Set(ref password, value)) Submit.Refresh(); } }
     public string? Error { get => error; set { if (Set(ref error, value)) Raise(nameof(HasError)); } }
     public bool HasError => !string.IsNullOrEmpty(error);
+
+    /// <summary>Nom de l'établissement, connu dès le démarrage du serveur : il titre l'écran de connexion.</summary>
+    public string SchoolName { get => schoolName; set { if (Set(ref schoolName, value)) { Raise(nameof(TitleText)); } } }
+    public string TitleText => string.IsNullOrWhiteSpace(schoolName) ? "SCOLIA" : schoolName;
     public bool Busy { get => busy; set => Set(ref busy, value); }
     public AsyncCommand Submit { get; }
 

@@ -105,6 +105,7 @@ public sealed class Preferences : Observable
         r["FsCaption"] = 11.5 * k;
         r["FsHeading"] = 17.0 * k;
         r["FsTitle"] = 24.0 * k;
+        r["FsDisplay"] = 28.0 * k;
         r["RowHeight"] = (compact ? 27.0 : 34.0) * k;
         r["CtlHeight"] = (compact ? 30.0 : 38.0) * k;
         r["GridLines"] = grid ? Avalonia.Controls.DataGridGridLinesVisibility.Horizontal : Avalonia.Controls.DataGridGridLinesVisibility.None;

@@ -145,6 +145,7 @@ public sealed class ShellViewModel : Observable
         try
         {
             var status = await api.GetAsync<SetupStatusDto>("api/installation");
+            Login.SchoolName = status.SchoolName ?? string.Empty;
             IsSetupRequired = !status.IsConfigured;
             if (IsSetupRequired) await Setup.LoadAsync();
         }

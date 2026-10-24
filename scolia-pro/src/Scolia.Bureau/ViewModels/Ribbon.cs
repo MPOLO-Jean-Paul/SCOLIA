@@ -15,7 +15,8 @@ public sealed class RibbonCommandVm(string label, MaterialIconKind icon, string 
     public MaterialIconKind Icon { get; } = icon;
 
     /// <summary>Info-bulle : la description, puis le raccourci clavier (ou l'absence de raccourci).</summary>
-    public string Tip { get; } = shortcut is null
+    /// <summary>Vide quand les info-bulles sont désactivées dans les préférences : aucune bulle ne s'affiche.</summary>
+    public string? Tip { get; } = string.IsNullOrEmpty(tip) ? null : shortcut is null
         ? $"{tip}{Environment.NewLine}Aucun raccourci."
         : $"{tip}{Environment.NewLine}Raccourci : {ShortcutDisplay(shortcut)}";
 
