@@ -1,141 +1,258 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import {
-  BarChart3, Banknote, BookOpen, ClipboardCheck, Command, FileSpreadsheet, GraduationCap, HandCoins, KeyRound, LayoutDashboard, LogOut, Menu,
-  Moon, PanelLeftClose, PanelLeftOpen, Receipt, Search, Settings, ShieldCheck, Sun, UserCog, Users, Wallet, Briefcase, AlertOctagon, DatabaseBackup,
-} from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
+import { Command, HandCoins, KeyRound, LogOut, RefreshCw, Search } from 'lucide-react';
+import { api } from '../api/client';
 import { P, saveTheme, storedTheme, useSession, type Theme } from '../lib/session';
 import { initials } from '../lib/format';
+import { allCommands, buildTabs, type RibbonCommand } from '../lib/ribbon';
+import { runCommand } from '../lib/commands';
+import { Ribbon } from './Ribbon';
+import { Backstage } from './Backstage';
+import { StatusBar, ZOOM_MAX, ZOOM_MIN, ZOOM_STEP } from './StatusBar';
+import { AboutDialog, PreferencesDialog, ShortcutsDialog } from './Dialogs';
 import { CommandPalette } from './CommandPalette';
+import { errorText, useToast } from './ui';
+import '../ribbon.css';
 
-interface NavItem { to: string; label: string; icon: ReactNode; perm?: string; shortcut?: string }
-interface NavGroup { title: string; items: NavItem[] }
+type Density = 'confortable' | 'compact';
+type DialogId = 'raccourcis' | 'apropos' | 'preferences' | null;
+interface Recent { to: string; label: string }
 
-export const NAV: NavGroup[] = [
-  { title: 'Pilotage', items: [
-    { to: '/', label: 'Tableau de bord', icon: <LayoutDashboard />, perm: P.reportsRead, shortcut: 'Alt+1' },
-  ] },
-  { title: 'Secrétariat', items: [
-    { to: '/apprenants', label: 'Apprenants', icon: <Users />, perm: P.studentsRead, shortcut: 'Alt+2' },
-    { to: '/reinscriptions', label: 'Réinscriptions', icon: <GraduationCap />, perm: P.studentsWrite },
-  ] },
-  { title: 'Finances', items: [
-    { to: '/encaisser', label: 'Encaisser', icon: <HandCoins />, perm: P.paymentsCreate, shortcut: 'Alt+3' },
-    { to: '/paiements', label: 'Journal des reçus', icon: <Receipt />, perm: P.paymentsRead },
-    { to: '/recouvrement', label: 'Recouvrement', icon: <BarChart3 />, perm: P.reportsRead, shortcut: 'Alt+4' },
-    { to: '/prises-en-charge', label: 'Prises en charge', icon: <ShieldCheck />, perm: P.paymentsRead },
-    { to: '/depenses', label: 'Dépenses', icon: <Wallet />, perm: P.paymentsRead },
-    { to: '/caisse', label: 'Caisse', icon: <Banknote />, perm: P.paymentsRead },
-  ] },
-  { title: 'Scolarité', items: [
-    { to: '/notes', label: 'Cours et notes', icon: <BookOpen />, perm: P.academicsRead },
-    { to: '/presences', label: 'Présences', icon: <ClipboardCheck />, perm: P.academicsRead },
-    { to: '/discipline', label: 'Discipline', icon: <AlertOctagon />, perm: P.academicsRead },
-  ] },
-  { title: 'Administration', items: [
-    { to: '/personnel', label: 'Personnel et paie', icon: <Briefcase />, perm: P.staffManage },
-    { to: '/parametres', label: 'Paramètres', icon: <Settings />, perm: P.settingsWrite },
-    { to: '/utilisateurs', label: 'Utilisateurs', icon: <UserCog />, perm: P.usersManage },
-    { to: '/donnees', label: 'Données et sauvegardes', icon: <DatabaseBackup />, perm: P.backupManage },
-    { to: '/audit', label: 'Journal d’audit', icon: <FileSpreadsheet />, perm: P.auditRead },
-  ] },
-];
+const ALT_PAGES: Record<string, string> = { 'Alt+1': '/', 'Alt+2': '/apprenants', 'Alt+3': '/encaisser', 'Alt+4': '/recouvrement' };
+const RECENTS_KEY = 'scolia.recents';
+
+function readPref(key: string, fallback: string): string {
+  try { return localStorage.getItem(key) ?? fallback; } catch { return fallback; }
+}
+function writePref(key: string, value: string) {
+  try { localStorage.setItem(key, value); } catch { /* stockage indisponible : préférence non mémorisée */ }
+}
+function clampZoom(value: number): number {
+  if (Number.isNaN(value)) return 100;
+  return Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, Math.round(value / ZOOM_STEP) * ZOOM_STEP));
+}
+function readRecents(): Recent[] {
+  try { return JSON.parse(localStorage.getItem(RECENTS_KEY) ?? '[]') as Recent[]; } catch { return []; }
+}
+function isDark(theme: Theme): boolean {
+  return theme === 'sombre' || (theme === 'systeme' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+}
 
 export function Layout() {
   const { session, logout, can } = useSession();
   const navigate = useNavigate();
-  const [collapsed, setCollapsed] = useState(() => { try { return localStorage.getItem('scolia.sidebar') === '1'; } catch { return false; } });
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [palette, setPalette] = useState(false);
+  const location = useLocation();
+  const qc = useQueryClient();
+  const toast = useToast();
+
   const [theme, setTheme] = useState<Theme>(storedTheme());
-  const groups = useMemo(() => NAV.map((g) => ({ ...g, items: g.items.filter((i) => !i.perm || can(i.perm)) })).filter((g) => g.items.length > 0), [can]);
+  const [density, setDensity] = useState<Density>(() => (readPref('scolia.densite', '') === 'compact' ? 'compact' : 'confortable'));
+  const [statusBar, setStatusBar] = useState(() => readPref('scolia.barreetat', '1') === '1');
+  const [collapsed, setCollapsed] = useState(() => readPref('scolia.ruban', '0') === '1');
+  const [zoom, setZoom] = useState(() => clampZoom(Number(readPref('scolia.zoom', '100'))));
+  const [recents, setRecents] = useState<Recent[]>(readRecents);
+  const [activeId, setActiveId] = useState('accueil');
+  const [backstage, setBackstage] = useState(false);
+  const [palette, setPalette] = useState(false);
+  const [dialog, setDialog] = useState<DialogId>(null);
+
+  const tabs = useMemo(() => buildTabs({ pathname: location.pathname, recents, can }), [location.pathname, recents, can]);
+  const pageLabels = useMemo(() => {
+    const labels = new Map<string, string>();
+    for (const c of allCommands()) if (c.to && !labels.has(c.to)) labels.set(c.to, c.label);
+    return labels;
+  }, []);
+  const paletteGroups = useMemo(() => tabs.filter((t) => !t.context).map((t) => ({
+    title: t.label,
+    items: t.groups.flatMap((g) => g.commands).filter((c) => c.to).map((c) => ({ to: c.to!, label: c.label, icon: c.icon })),
+  })).filter((g) => g.items.length > 0), [tabs]);
+
+  // Une page contextuelle (reçu, apprenant) prend le focus dès qu'on y arrive.
+  const contextId = tabs.find((t) => t.context)?.id;
+  useEffect(() => { if (contextId) setActiveId(contextId); }, [contextId]);
+
+  // Mémorise les pages récemment ouvertes pour le groupe « Récents ».
+  useEffect(() => {
+    const label = pageLabels.get(location.pathname);
+    if (!label) return;
+    setRecents((current) => {
+      const next = [{ to: location.pathname, label }, ...current.filter((r) => r.to !== location.pathname)].slice(0, 6);
+      writePref(RECENTS_KEY, JSON.stringify(next));
+      return next;
+    });
+  }, [location.pathname, pageLabels]);
+
+  useEffect(() => {
+    document.documentElement.dataset.density = density;
+  }, [density]);
+
+  const changeTheme = useCallback((next: Theme) => {
+    setTheme(next);
+    saveTheme(next);
+  }, []);
+
+  const toggleCollapsed = useCallback(() => {
+    setCollapsed((c) => { writePref('scolia.ruban', c ? '0' : '1'); return !c; });
+  }, []);
+
+  const changeZoom = useCallback((value: number) => {
+    const next = clampZoom(value);
+    setZoom(next);
+    writePref('scolia.zoom', String(next));
+  }, []);
+
+  const changeDensity = useCallback((value: Density) => {
+    setDensity(value);
+    writePref('scolia.densite', value);
+  }, []);
+
+  const changeStatusBar = useCallback((value: boolean) => {
+    setStatusBar(value);
+    writePref('scolia.barreetat', value ? '1' : '0');
+  }, []);
+
+  const run = useCallback(async (id: string, to?: string) => {
+    if (to) { setBackstage(false); navigate(to); return; }
+    setBackstage(false);
+    switch (id) {
+      case 'rechercher': setPalette(true); return;
+      case 'actualiser': await qc.invalidateQueries(); return;
+      case 'theme': changeTheme(isDark(theme) ? 'clair' : 'sombre'); return;
+      case 'densite': changeDensity(density === 'compact' ? 'confortable' : 'compact'); return;
+      case 'barre-etat': changeStatusBar(!statusBar); return;
+      case 'ruban': toggleCollapsed(); return;
+      case 'zoom-moins': changeZoom(zoom - ZOOM_STEP); return;
+      case 'zoom-plus': changeZoom(zoom + ZOOM_STEP); return;
+      case 'zoom-reset': changeZoom(100); return;
+      case 'raccourcis': setDialog('raccourcis'); return;
+      case 'apropos': setDialog('apropos'); return;
+      case 'preferences': setDialog('preferences'); return;
+      case 'sauvegarder':
+        try {
+          await api.post('/api/sauvegardes');
+          toast('Sauvegarde créée et vérifiée.', 'success');
+          await qc.invalidateQueries({ queryKey: ['sauvegardes'] });
+        } catch (e) { toast(errorText(e), 'error'); }
+        return;
+      case 'diag-base':
+        try {
+          const r = await api.get<{ intacte: boolean }>('/api/sauvegardes/integrite');
+          toast(r.intacte ? 'Base de données intègre.' : 'Anomalie détectée : restaurez la dernière sauvegarde.', r.intacte ? 'success' : 'error');
+        } catch (e) { toast(errorText(e), 'error'); }
+        return;
+      case 'diag-audit':
+        try {
+          const r = await api.get<{ isIntact: boolean }>('/api/audit/verification');
+          toast(r.isIntact ? 'Journal d’audit intact : aucune modification détectée.' : 'Journal d’audit altéré : une entrée ne correspond plus à son empreinte.', r.isIntact ? 'success' : 'error');
+        } catch (e) { toast(errorText(e), 'error'); }
+        return;
+      case 'deconnexion':
+        await logout();
+        navigate('/connexion');
+        return;
+      default:
+        // Commande propre à la page affichée (imprimer un reçu, ouvrir une fiche…).
+        runCommand(id);
+    }
+  }, [changeDensity, changeStatusBar, changeTheme, changeZoom, density, logout, navigate, qc, statusBar, theme, toast, toggleCollapsed, zoom]);
+
+  const onExecute = useCallback((c: RibbonCommand) => { void run(c.id, c.to); }, [run]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); setPalette(true); }
-      if (e.altKey && /^[1-4]$/.test(e.key)) {
-        const item = groups.flatMap((g) => g.items).find((i) => i.shortcut === `Alt+${e.key}`);
-        if (item) { e.preventDefault(); navigate(item.to); }
-      }
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); setPalette(true); return; }
+      if (e.ctrlKey && e.key === 'F1') { e.preventDefault(); toggleCollapsed(); return; }
+      if (e.key === 'F5') { e.preventDefault(); void run('actualiser'); return; }
+      if (e.altKey && ALT_PAGES[`Alt+${e.key}`]) { e.preventDefault(); navigate(ALT_PAGES[`Alt+${e.key}`]); return; }
       if (e.key === 'F2' && can(P.paymentsCreate)) { e.preventDefault(); navigate('/encaisser'); }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [groups, navigate, can]);
+  }, [can, navigate, run, toggleCollapsed]);
 
-  const toggleCollapsed = () => {
-    setCollapsed((c) => { try { localStorage.setItem('scolia.sidebar', c ? '0' : '1'); } catch { /* ignoré */ } return !c; });
+  const pressed: Record<string, boolean> = {
+    theme: isDark(theme),
+    densite: density === 'compact',
+    'barre-etat': statusBar,
+    ruban: collapsed,
   };
-  const nextTheme = () => {
-    const t: Theme = theme === 'sombre' ? 'clair' : 'sombre';
-    setTheme(t);
-    saveTheme(t);
-  };
+  const pageTitle = pageLabels.get(location.pathname) ?? '';
+  const current = tabs.find((t) => t.id === activeId) ?? tabs[0];
 
   return (
-    <div className={`shell ${collapsed ? 'collapsed' : ''} ${menuOpen ? 'menu-open' : ''}`}>
-      <aside className="sidebar" aria-label="Navigation principale">
-        <div className="brand">
-          <img src="/api/etablissement/logo" onError={(e) => { (e.target as HTMLImageElement).src = '/scolia.png'; }} alt="" />
-          <div className="brand-text">
-            <div className="brand-name">{session?.schoolShortName || 'SCOLIA'}</div>
-            <div className="brand-school">{session?.schoolName}</div>
-          </div>
+    <div className="app">
+      <header className="titlebar">
+        <div className="qat" role="toolbar" aria-label="Barre d’accès rapide">
+          <img
+            className="qat-logo"
+            src="/api/etablissement/logo"
+            alt=""
+            onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/scolia.png'; }}
+          />
+          <button type="button" className="qat-btn" title="Actualiser (F5)" aria-label="Actualiser" onClick={() => void run('actualiser')}><RefreshCw /></button>
+          {can(P.paymentsCreate) && (
+            <button type="button" className="qat-btn" title="Nouvel encaissement (F2)" aria-label="Nouvel encaissement" onClick={() => navigate('/encaisser')}><HandCoins /></button>
+          )}
+          <button type="button" className="qat-btn" title="Ouvrir les commandes (Ctrl+K)" aria-label="Ouvrir les commandes (Ctrl+K)" onClick={() => setPalette(true)}><Command /></button>
         </div>
-        <nav className="nav" onClick={() => setMenuOpen(false)}>
-          {groups.map((g) => (
-            <div key={g.title}>
-              <div className="nav-group-title">{g.title}</div>
-              {g.items.map((i) => (
-                <NavLink key={i.to} to={i.to} end={i.to === '/'} title={i.shortcut ? `${i.label} (${i.shortcut})` : i.label}>
-                  {i.icon}<span className="nav-label">{i.label}</span>
-                </NavLink>
-              ))}
-            </div>
-          ))}
-        </nav>
-        <div className="sidebar-foot">
-          <button className="btn small ghost" style={{ color: '#fff', borderColor: 'rgba(255,255,255,.15)' }} onClick={toggleCollapsed} aria-label="Réduire le menu">
-            {collapsed ? <PanelLeftOpen /> : <PanelLeftClose />}
-          </button>
-          <span className="sidebar-foot-text">SCOLIA Pro · v1.0</span>
+        <div className="titlebar-doc" title={session?.schoolName}>
+          {session?.schoolName ?? 'SCOLIA'}{session?.currentYear && <span> · année {session.currentYear}</span>} <span>— SCOLIA Pro</span>
         </div>
-      </aside>
-      <div className="main">
-        <header className="topbar">
-          <button className="btn icon ghost menu-btn" onClick={() => setMenuOpen((o) => !o)} aria-label="Menu" style={{ display: 'none' }}><Menu /></button>
-          <button className="search-trigger" onClick={() => setPalette(true)}>
-            <Search size={16} /><span>Rechercher un apprenant, un reçu, une page…</span><kbd>Ctrl K</kbd>
-          </button>
-          <div className="spacer" />
-          {session?.currentYear && <span className="year-chip" title="Année scolaire courante">{session.currentYear}</span>}
-          <button className="btn icon ghost" onClick={nextTheme} title="Thème clair ou sombre" aria-label="Changer de thème">{theme === 'sombre' ? <Sun /> : <Moon />}</button>
-          <UserMenu name={session?.displayName ?? ''} role={session?.roleLabel ?? ''} onLogout={async () => { await logout(); navigate('/connexion'); }} />
-        </header>
-        <main className="content" id="contenu">
-          <Outlet />
-        </main>
-      </div>
-      {palette && <CommandPalette groups={groups} onClose={() => setPalette(false)} />}
-      <style>{`@media (max-width: 820px) { .menu-btn { display: inline-flex !important; } }`}</style>
+        <button type="button" className="titlebar-search" onClick={() => setPalette(true)}>
+          <Search /><span>Rechercher un apprenant, un reçu, une page…</span><kbd>Ctrl K</kbd>
+        </button>
+        <UserMenu name={session?.displayName ?? ''} role={session?.roleLabel ?? ''} onPalette={() => setPalette(true)} onLogout={async () => { await logout(); navigate('/connexion'); }} />
+      </header>
+
+      <Ribbon
+        tabs={tabs}
+        activeId={current?.id ?? 'accueil'}
+        onSelect={setActiveId}
+        onFile={() => setBackstage(true)}
+        pressed={pressed}
+        collapsed={collapsed}
+        onToggleCollapsed={toggleCollapsed}
+        onExecute={onExecute}
+        onLaunch={(id) => void run(id)}
+      />
+
+      <main className="content" id="contenu" style={{ zoom: zoom / 100 }}>
+        <Outlet />
+      </main>
+
+      {statusBar && <StatusBar pageTitle={pageTitle} zoom={zoom} onZoom={changeZoom} />}
+
+      {palette && <CommandPalette groups={paletteGroups} onClose={() => setPalette(false)} />}
+      {backstage && (
+        <Backstage onClose={() => setBackstage(false)} onNavigate={(to) => { setBackstage(false); navigate(to); }} onRun={(id) => void run(id)} />
+      )}
+      {dialog === 'raccourcis' && <ShortcutsDialog onClose={() => setDialog(null)} />}
+      {dialog === 'apropos' && <AboutDialog schoolName={session?.schoolName ?? 'SCOLIA'} onClose={() => setDialog(null)} />}
+      {dialog === 'preferences' && (
+        <PreferencesDialog
+          theme={theme} onTheme={changeTheme} density={density} onDensity={changeDensity}
+          statusBar={statusBar} onStatusBar={changeStatusBar} onClose={() => setDialog(null)}
+        />
+      )}
     </div>
   );
 }
 
-function UserMenu({ name, role, onLogout }: { name: string; role: string; onLogout: () => void }) {
+function UserMenu({ name, role, onLogout, onPalette }: { name: string; role: string; onLogout: () => void; onPalette: () => void }) {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
   return (
-    <div style={{ position: 'relative' }}>
-      <button className="user-chip" onClick={() => setOpen((o) => !o)} aria-haspopup="menu" aria-expanded={open}>
+    <div className="user-menu">
+      <button type="button" className="user-chip" onClick={() => setOpen((o) => !o)} aria-haspopup="menu" aria-expanded={open}>
         <span className="avatar">{initials(name)}</span>
-        <span className="who"><div style={{ fontWeight: 700, fontSize: 13 }}>{name}</div><small>{role}</small></span>
+        <span className="who"><span className="who-name">{name}</span><small>{role}</small></span>
       </button>
       {open && (
-        <div className="card" role="menu" style={{ position: 'absolute', right: 0, top: 46, width: 230, zIndex: 30, padding: 6 }} onMouseLeave={() => setOpen(false)}>
-          <button className="btn ghost" style={{ width: '100%', justifyContent: 'flex-start', border: 'none' }} onClick={() => { setOpen(false); navigate('/profil'); }}><KeyRound />Mon mot de passe</button>
-          <button className="btn ghost" style={{ width: '100%', justifyContent: 'flex-start', border: 'none' }} onClick={() => { setOpen(false); window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true })); }}><Command />Commandes (Ctrl K)</button>
-          <button className="btn ghost" style={{ width: '100%', justifyContent: 'flex-start', border: 'none', color: 'var(--red)' }} onClick={onLogout}><LogOut />Se déconnecter</button>
+        <div className="card user-dropdown" onMouseLeave={() => setOpen(false)}>
+          <button type="button" className="btn ghost" onClick={() => { setOpen(false); navigate('/profil'); }}><KeyRound />Mon mot de passe</button>
+          <button type="button" className="btn ghost" onClick={() => { setOpen(false); onPalette(); }}><Command />Commandes (Ctrl K)</button>
+          <button type="button" className="btn ghost danger-text" onClick={onLogout}><LogOut />Se déconnecter</button>
         </div>
       )}
     </div>

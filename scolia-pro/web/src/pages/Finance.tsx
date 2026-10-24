@@ -7,6 +7,7 @@ import type { CashClosing, CashSituation, Debtor, Expense, Paged, Promotion, Rec
 import { date, dateTime, money, today } from '../lib/format';
 import { Badge, Button, Card, Empty, ErrorAlert, Kpi, Loading, Modal, PageHead, Pager, ReasonDialog, SelectField, TextField, statusTone, useDebounced, useToast } from '../components/ui';
 import { P, useSession } from '../lib/session';
+import { useCommand } from '../lib/commands';
 
 function usePromotions() {
   return useQuery({ queryKey: ['promotions'], queryFn: () => api.get<Promotion[]>('/api/etablissement/promotions') });
@@ -73,6 +74,10 @@ export function ReceiptDetailPage() {
   const [cancelling, setCancelling] = useState(false);
   const q = useQuery({ queryKey: ['receipt', id], queryFn: () => api.get<Receipt>(`/api/paiements/${id}`) });
   const r = q.data;
+  // Commandes du ruban « Outils du reçu ».
+  useCommand('imprimer-recu', () => openDocument(`/api/paiements/${id}/recu.pdf`));
+  useCommand('annuler-recu', () => { if (r?.status === 'Valide' && can(P.paymentsCancel)) setCancelling(true); });
+  useCommand('verifier-recu', () => { if (r) window.open(`/verifier/${r.verificationCode}`, '_blank', 'noopener'); });
   if (q.error) return <ErrorAlert error={q.error} />;
   if (!r) return <Loading />;
   return (

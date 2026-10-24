@@ -1,5 +1,16 @@
 # Guide de l'utilisateur — SCOLIA Pro
 
+## 0. L'interface en un coup d'œil
+
+- **Barre de titre** : accès rapide (actualiser, nouvel encaissement, commandes) et recherche globale.
+- **Fichier** (bouton bleu à gauche) : informations sur l'établissement, sauvegarde immédiate, contrôle de la base et du journal, compte.
+- **Onglets et ruban** : chaque onglet regroupe des commandes par thème. Cliquer sur un onglet affiche ses commandes ; une info-bulle décrit chaque commande.
+- **Onglets contextuels** : sur une fiche d'apprenant ou un reçu, un onglet coloré apparaît avec les commandes de cette page.
+- **Barre d'état** : page affichée, année, date de la dernière sauvegarde et zoom de l'interface.
+
+Touches d'accès : appuyer sur Alt seul affiche une lettre sur chaque onglet. Taper la lettre ouvre l'onglet, puis taper la lettre d'une commande la lance. Échap annule.
+Réduire le ruban : Ctrl+F1, ou la flèche à droite des onglets. Préférences (thème, densité, barre d'état) : groupe Apparence de l'onglet Affichage.
+
 ## 1. Premier lancement
 
 1. Ouvrir `SCOLIA.exe`. Une fenêtre s'ouvre, et une icône apparaît près de l'horloge.
@@ -17,11 +28,11 @@ Chaque personne a son compte. Le mot de passe initial peut être imposé au prem
 usage. Après cinq erreurs, le compte est bloqué quinze minutes.
 
 Raccourcis : `Ctrl+K` ouvre la recherche globale et toutes les commandes.
-`Alt+1` tableau de bord, `Alt+2` apprenants, `Alt+3` encaisser, `Alt+4` recouvrement, `F2` nouvel apprenant.
+`Alt+1` tableau de bord, `Alt+2` apprenants, `Alt+3` encaisser, `Alt+4` recouvrement, `F2` encaisser, `F5` actualiser. La liste complète est dans l'onglet Aide.
 
 ## 3. Inscrire un apprenant
 
-1. Apprenants > Nouvel apprenant.
+1. Onglet Secrétariat, groupe Apprenants : Nouvelle inscription.
 2. Saisir le nom, les prénoms, la date de naissance et les contacts du parent.
 3. Le matricule se génère seul : code de la promotion sur 4 caractères, puis le rang.
 4. Si un homonyme existe, SCOLIA le signale et demande une confirmation avant de créer le doublon.
@@ -49,14 +60,14 @@ ce qui est déjà payé.
 
 ## 7. Caisse et arrêté
 
-1. Caisse > Arrêté de caisse.
+1. Onglet Finances, groupe Caisse, puis Caisse. L'arrêté se fait sur cette page.
 2. Compter les espèces présentes et saisir le montant.
 3. Après l'arrêté, les opérations de la période ne peuvent plus être modifiées.
    Une erreur se corrige dans la période suivante, avec une écriture explicite.
 
 ## 8. Dépenses
 
-Dépenses > Nouvelle dépense : catégorie, bénéficiaire, montant et mode de paiement.
+Onglet Finances, groupe Caisse, Dépenses : catégorie, bénéficiaire, montant et mode de paiement.
 Chaque dépense reçoit un numéro DP-AAAA-… Le paiement de salaires crée automatiquement une dépense.
 
 ## 9. Scolarité
@@ -89,7 +100,7 @@ Voir le paquet, fichier `LIRE_MOI.txt`, section « Plusieurs postes en réseau l
 
 ## 14. Reprendre les données de SCOLIA V79 (Excel)
 
-1. Administration > Importer depuis SCOLIA V79.
+1. Onglet Administration, groupe Données : Données et sauvegardes, puis la section Importer depuis SCOLIA V79.
 2. Choisir le classeur `.xlsm`. SCOLIA affiche d'abord un essai à blanc : rien n'est écrit.
 3. Vérifier le rapport, puis appliquer l'import.
 4. Relancer l'import ne crée aucun doublon.

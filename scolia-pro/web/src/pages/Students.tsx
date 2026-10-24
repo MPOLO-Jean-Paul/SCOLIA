@@ -16,6 +16,8 @@ export function StudentsPage() {
   const [status, setStatus] = useState(params.get('statut') ?? 'Actif');
   const [page, setPage] = useState(1);
   const [creating, setCreating] = useState(params.get('nouveau') === '1');
+  // Depuis le ruban (Secrétariat > Nouvelle inscription) : la page est déjà ouverte, il faut réagir au paramètre.
+  useEffect(() => { if (params.get('nouveau') === '1') setCreating(true); }, [params]);
   const debounced = useDebounced(search, 200);
   const navigate = useNavigate();
   const toast = useToast();

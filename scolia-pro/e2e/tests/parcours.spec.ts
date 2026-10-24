@@ -28,7 +28,8 @@ test('installation guidée avec données de démonstration', async () => {
 });
 
 test('recherche et fiche apprenant', async () => {
-  await page.getByRole('link', { name: 'Apprenants' }).click();
+  await page.getByRole('tab', { name: 'Secrétariat' }).click();
+  await page.getByRole('button', { name: 'Apprenants', exact: true }).click();
   await page.getByLabel('Recherche').fill('INF101');
   await expect(page.locator('table.data tbody tr')).toHaveCount(1);
   await page.locator('table.data tbody tr').first().click();
@@ -110,6 +111,40 @@ test('notes : saisie et résultats', async () => {
   await expect(page.getByText(/note\(s\) enregistrée\(s\)/)).toBeVisible();
   await page.getByText('Résultats et bulletins').click();
   await expect(page.locator('table.data tbody tr').first()).toBeVisible();
+});
+
+test('ruban : onglets, touches d’accès et commandes', async () => {
+  await page.goto('/');
+  await expect(page.getByRole('tab', { name: 'Accueil' })).toHaveAttribute('aria-selected', 'true');
+  await page.getByRole('tab', { name: 'Finances' }).click();
+  await expect(page.getByRole('button', { name: 'Encaisser', exact: true })).toBeVisible();
+  // Alt seul affiche les touches d’accès ; la lettre ouvre l’onglet, puis la commande.
+  await page.keyboard.press('Alt');
+  await page.keyboard.up('Alt');
+  await expect(page.locator('.rb-keytip').first()).toBeVisible();
+  await page.keyboard.press('S');
+  await expect(page.getByRole('tab', { name: 'Secrétariat' })).toHaveAttribute('aria-selected', 'true');
+  await page.keyboard.press('A');
+  await expect(page).toHaveURL(/\/apprenants$/);
+  await expect(page.locator('.rb-keytip')).toHaveCount(0);
+});
+
+test('ruban : réduction, préférences et vue Fichier', async () => {
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Réduire le ruban' }).click();
+  await expect(page.locator('.ribbon-body')).toHaveCount(0);
+  await page.getByRole('button', { name: 'Afficher le ruban' }).click();
+  await expect(page.locator('.ribbon-body')).toBeVisible();
+  await page.getByRole('tab', { name: 'Affichage' }).click();
+  await page.getByRole('button', { name: 'Mode sombre' }).click();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+  await page.getByRole('button', { name: 'Mode sombre' }).click();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+  await page.locator('.rb-file').click();
+  await expect(page.getByRole('dialog', { name: 'Fichier' })).toBeVisible();
+  await page.getByRole('button', { name: 'Données et sauvegardes' }).click();
+  await expect(page).toHaveURL(/\/donnees$/);
+  await expect(page.getByRole('dialog', { name: 'Fichier' })).toHaveCount(0);
 });
 
 test('déconnexion puis verrouillage après cinq erreurs', async () => {

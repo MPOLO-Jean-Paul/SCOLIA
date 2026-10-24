@@ -8,6 +8,7 @@ import { date, money, initials, pct } from '../lib/format';
 import { Badge, Button, Card, Empty, ErrorAlert, Kpi, Loading, Modal, ReasonDialog, SelectField, Tabs, TextArea, TextField, statusTone, useToast, errorText } from '../components/ui';
 import { IdentityFields, fromStudent, toPayload, type IdentityForm } from './StudentForm';
 import { P, useSession } from '../lib/session';
+import { useCommand } from '../lib/commands';
 
 type Tab = 'compte' | 'dossier' | 'pec' | 'scolarite';
 
@@ -24,6 +25,10 @@ export function StudentDetailPage() {
   const current = student.data?.enrollments[0];
   const account = useQuery({ queryKey: ['account', current?.id], queryFn: () => api.get<Account>(`/api/inscriptions/${current!.id}/compte`), enabled: !!current && can(P.paymentsRead) });
   const s = student.data;
+  // Commandes du ruban « Apprenant ».
+  useCommand('encaisser-eleve', () => { if (current) navigate(`/encaisser?inscription=${current.id}`); });
+  useCommand('releve-eleve', () => { if (current) openDocument(`/api/inscriptions/${current.id}/releve.pdf`); });
+  useCommand('modifier-eleve', () => setTab('dossier'));
 
   const uploadPhoto = async (file: File) => {
     const form = new FormData();
