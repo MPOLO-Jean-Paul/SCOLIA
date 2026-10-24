@@ -57,6 +57,16 @@ public sealed record DashboardDto(
 
 public sealed record SeriesPoint(string Label, decimal Value, decimal? Secondary);
 
+public sealed record PeriodChoiceDto(Guid Id, string Name, bool IsCurrent);
+
+public sealed record MonthlyRowDto(Guid StudentId, Guid EnrollmentId, string Matricule, string FullName, string PromotionCode,
+    decimal Amount, decimal Paid, decimal Remaining, string Status, string? ReceiptNumber, DateOnly? PaidOn, string? GuardianPhone,
+    string? WhatsAppLink, string? SmsLink);
+
+public sealed record MonthlyFollowUpDto(Guid PeriodId, string Period, IReadOnlyList<PeriodChoiceDto> Periods,
+    int PaidCount, int UnpaidCount, int LateCount, int CoveredCount, decimal Expected, decimal Collected, decimal Remaining,
+    IReadOnlyList<MonthlyRowDto> Rows);
+
 public sealed record TodayDto(DateOnly Date, int ReceiptsToday, decimal CollectedToday, decimal ExpensesToday, bool CashClosed,
     int AttendanceMarked, int SuspendedToday, IReadOnlyList<TodayPersonDto> Appointments, IReadOnlyList<TodayPersonDto> Birthdays);
 

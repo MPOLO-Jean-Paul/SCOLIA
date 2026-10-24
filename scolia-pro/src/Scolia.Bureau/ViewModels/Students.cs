@@ -32,6 +32,7 @@ public sealed class StudentsPage : PageViewModel
     {
         if (Shell.Can(Perm.StudentsWrite)) Action("Nouvelle inscription", MaterialIconKind.AccountPlusOutline, () => StudentForms.CreateAsync(Shell), primary: true);
         Action("Ouvrir la fiche", MaterialIconKind.AccountOutline, OpenSelectedAsync);
+        if (Shell.Can(Perm.ReportsRead)) Action("Suivi par mois", MaterialIconKind.CalendarCheck, () => Shell.Open(() => new MonthlyPage(Shell)));
         ActionRefresh();
         PreviousPage = new AsyncCommand(async () => { page--; await RefreshAsync(); });
         NextPage = new AsyncCommand(async () => { page++; await RefreshAsync(); });

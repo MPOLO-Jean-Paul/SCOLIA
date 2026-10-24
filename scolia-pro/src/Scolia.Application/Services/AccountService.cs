@@ -111,6 +111,25 @@ public static class Reminders
         return phone is null ? null : $"https://wa.me/{phone}?text={Uri.EscapeDataString(Message(school, student, account))}";
     }
 
+    /// <summary>Rappel d'une seule mensualité, pour le suivi par mois.</summary>
+    public static string MonthMessage(SchoolProfile school, Student student, string period, decimal remaining) =>
+        $"Bonjour, {school.ShortName} vous rappelle que la mensualité de {period} de {student.FullName} (matricule {student.Matricule}) "
+        + $"reste à régler : {Money.Display(remaining, school.CurrencySymbol)}. Merci de régulariser auprès de la caisse. Ce message est automatique.";
+
+    public static string? MonthWhatsApp(SchoolProfile school, Student student, string period, decimal remaining)
+    {
+        if (remaining <= 0) return null;
+        var phone = IdentityRules.ToInternational(student.GuardianPhone ?? student.Phone, school.PhoneCountryCode);
+        return phone is null ? null : $"https://wa.me/{phone}?text={Uri.EscapeDataString(MonthMessage(school, student, period, remaining))}";
+    }
+
+    public static string? MonthSms(SchoolProfile school, Student student, string period, decimal remaining)
+    {
+        if (remaining <= 0) return null;
+        var phone = student.GuardianPhone ?? student.Phone;
+        return string.IsNullOrWhiteSpace(phone) ? null : $"sms:{phone}?body={Uri.EscapeDataString(MonthMessage(school, student, period, remaining))}";
+    }
+
     public static string? Sms(SchoolProfile school, Student student, StudentAccount account)
     {
         if (account.Overdue <= 0) return null;

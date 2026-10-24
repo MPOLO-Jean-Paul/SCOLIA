@@ -222,6 +222,9 @@ public static class ScoliaEndpoints
         g.MapGet("/debiteurs", ([AsParameters] DebtorQuery q, ReportService r, CancellationToken ct) => r.DebtorsAsync(q, ct));
         g.MapGet("/debiteurs/export", async ([AsParameters] DebtorQuery q, string? format, ReportService r, CancellationToken ct) =>
             Table(await r.DebtorsTableAsync(q, ct), format, "retards-de-paiement", r));
+        g.MapGet("/suivi-mensuel", ([AsParameters] MonthlyQuery q, ReportService r, CancellationToken ct) => r.MonthlyAsync(q, ct));
+        g.MapGet("/suivi-mensuel/export", async ([AsParameters] MonthlyQuery q, string? format, ReportService r, CancellationToken ct) =>
+            Table(await r.MonthlyTableAsync(q, ct), format, "suivi-mensuel-paiements", r));
         g.MapGet("/promotions/export", async (string? format, ReportService r, CancellationToken ct) =>
             Table(await r.PromotionsTableAsync(ct), format, "situation-par-promotion", r));
         g.MapGet("/apprenants/export", async (string? format, ReportService r, CancellationToken ct) =>

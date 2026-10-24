@@ -4,6 +4,7 @@ using Scolia.Application.Dtos;
 using Scolia.Domain.Common;
 using Scolia.Domain.Discipline;
 using Scolia.Domain.Finance;
+using Scolia.Domain.School;
 using Scolia.Domain.Students;
 
 namespace Scolia.Application.Services;
@@ -234,6 +235,96 @@ public sealed class ReportService(IAppDbContext db, IClock clock, AccountService
             list.Select(e => (IReadOnlyList<string>)[e.Date.ToString("dd/MM/yyyy"), e.Number, e.Category, e.Beneficiary, e.Description, Labels.Of(e.Method),
                 e.Status == OperationStatus.Valide ? "Valide" : "Annulée", M(e.Amount)]).ToList(),
             ["", "", "", "", "", "", "Total valide", M(list.Where(e => e.Status == OperationStatus.Valide).Sum(e => e.Amount))], Landscape: true);
+    }
+
+    /// <summary>États proposés par le filtre du suivi mensuel, tels que l'écran les envoie.</summary>
+    private static string? StatusFilter(string? etat) => etat?.Trim().ToLowerInvariant() switch
+    {
+        "paye" or "payes" => "Payé",
+        "nonpaye" or "non-paye" or "impaye" => "Non payé",
+        "retard" => "En retard",
+        "partiel" => "Partiel",
+        "couvert" => "Pris en charge",
+        _ => null,
+    };
+
+    /// <summary>
+    /// Suivi des paiements d'un mois : chaque apprenant inscrit (sorti exclu) avec le montant du mois, ce qu'il a payé,
+    /// son état et le dernier reçu qui a réglé ce mois. Les totaux portent sur tous les apprenants de la promotion choisie,
+    /// le filtre d'état et la recherche ne réduisent que la liste.
+    /// </summary>
+    public async Task<MonthlyFollowUpDto> MonthlyAsync(MonthlyQuery q, CancellationToken ct = default)
+    {
+        var year = await YearContext.CurrentAsync(db, ct);
+        var school = await YearContext.SchoolAsync(db, ct);
+        var today = clock.Today;
+        var periods = year.Periods.OrderBy(p => p.Order).ToList();
+        if (periods.Count == 0) throw new NotFoundException("Aucun mois n'est défini pour l'année scolaire en cours.");
+        var current = periods.LastOrDefault(p => new DateOnly(p.CalendarYear, p.Month, 1) <= today) ?? periods[0];
+        var period = q.PeriodeId is { } id ? periods.FirstOrDefault(p => p.Id == id) ?? throw new NotFoundException("Mois introuvable.") : current;
+        string Name(AcademicPeriod p) => $"{p.Name} {p.CalendarYear}";
+
+        var map = await accounts.ComputeAsync(year.Id, null, today, ct);
+        var rows = map.Values
+            .Where(x => x.Enrollment.Status != EnrollmentStatus.Sorti && (q.PromotionId is null || x.Promotion.Id == q.PromotionId))
+            .Select(x => (Entry: x, Line: x.Account.Lines.FirstOrDefault(l => l.PeriodId == period.Id)))
+            .Where(x => x.Line is not null)
+            .ToList();
+
+        // Dernier reçu valide qui a réglé la mensualité de ce mois, pour chaque inscription.
+        var feeIds = rows.Select(x => x.Line!.FeeItemId).Distinct().ToList();
+        var enrollmentIds = rows.Select(x => x.Entry.Enrollment.Id).ToList();
+        var receipts = await (from a in db.ReceiptAllocations.AsNoTracking()
+                              join r in db.Receipts.AsNoTracking() on a.ReceiptId equals r.Id
+                              where r.Status == OperationStatus.Valide && feeIds.Contains(a.FeeItemId) && enrollmentIds.Contains(r.EnrollmentId)
+                              select new { r.EnrollmentId, r.Number, r.Date, r.CreatedAtUtc }).ToListAsync(ct);
+        var lastReceipt = receipts.GroupBy(r => r.EnrollmentId).ToDictionary(g => g.Key, g => g.OrderByDescending(r => r.Date).ThenByDescending(r => r.CreatedAtUtc).First());
+
+        static string Status(AccountLine line) => line.Status switch
+        {
+            LineStatus.Paye => "Payé",
+            LineStatus.Couvert => "Pris en charge",
+            LineStatus.Partiel => "Partiel",
+            _ => line.IsOverdue ? "En retard" : "Non payé",
+        };
+
+        var all = rows.Select(x =>
+        {
+            var s = x.Entry.Enrollment.Student!;
+            var line = x.Line!;
+            var receipt = lastReceipt.GetValueOrDefault(x.Entry.Enrollment.Id);
+            return new MonthlyRowDto(s.Id, x.Entry.Enrollment.Id, s.Matricule, s.FullName, x.Entry.Promotion.Code, line.Net, line.Paid, line.Remaining,
+                Status(line), receipt?.Number, receipt?.Date, s.GuardianPhone ?? s.Phone,
+                Reminders.MonthWhatsApp(school, s, Name(period), line.Remaining), Reminders.MonthSms(school, s, Name(period), line.Remaining));
+        }).OrderBy(r => r.PromotionCode).ThenBy(r => r.FullName).ToList();
+
+        var wanted = StatusFilter(q.Etat);
+        var search = TextKey.Normalize(q.Q ?? string.Empty);
+        var list = all
+            .Where(r => wanted is null || r.Status == wanted || (wanted == "Non payé" && r.Status is "En retard" or "Partiel"))
+            .Where(r => search.Length == 0 || TextKey.Normalize($"{r.Matricule} {r.FullName}").Contains(search, StringComparison.Ordinal))
+            .ToList();
+
+        return new MonthlyFollowUpDto(period.Id, Name(period), periods.Select(p => new PeriodChoiceDto(p.Id, Name(p), p.Id == current.Id)).ToList(),
+            all.Count(r => r.Status == "Payé"), all.Count(r => r.Status is "Non payé" or "En retard" or "Partiel"), all.Count(r => r.Status == "En retard"),
+            all.Count(r => r.Status == "Pris en charge"), all.Sum(r => r.Amount), all.Sum(r => r.Paid), all.Sum(r => r.Remaining), list);
+    }
+
+    /// <summary>Le suivi d'un mois en document : liste filtrée et totaux.</summary>
+    public async Task<TableDocument> MonthlyTableAsync(MonthlyQuery q, CancellationToken ct = default)
+    {
+        var school = await YearContext.SchoolAsync(db, ct);
+        var d = await MonthlyAsync(q, ct);
+        string M(decimal v) => Money.Display(v, school.CurrencySymbol);
+        var scope = q.PromotionId is { } promotionId
+            ? $"promotion {await db.Promotions.AsNoTracking().Where(p => p.Id == promotionId).Select(p => p.Code).FirstOrDefaultAsync(ct)}"
+            : "toutes les promotions";
+        return new TableDocument(PaymentService.Header(school), $"Suivi des paiements · {d.Period}",
+            $"{scope} · {d.PaidCount} payé(s), {d.UnpaidCount} non payé(s) dont {d.LateCount} en retard · situation au {clock.Today:dd/MM/yyyy}",
+            ["Matricule", "Nom complet", "Promotion", "Montant du mois", "Payé", "Reste", "État", "Reçu", "Payé le", "Contact"],
+            d.Rows.Select(r => (IReadOnlyList<string>)[r.Matricule, r.FullName, r.PromotionCode, M(r.Amount), M(r.Paid), M(r.Remaining), r.Status,
+                r.ReceiptNumber ?? "", r.PaidOn?.ToString("dd/MM/yyyy") ?? "", r.GuardianPhone ?? ""]).ToList(),
+            ["", "Total", "", M(d.Rows.Sum(r => r.Amount)), M(d.Rows.Sum(r => r.Paid)), M(d.Rows.Sum(r => r.Remaining)), "", "", "", ""], Landscape: true);
     }
 
     public byte[] Pdf(TableDocument table) => documents.Table(table);

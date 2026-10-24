@@ -63,6 +63,7 @@ public static class Sidebar
                 Item("Encaisser", MaterialIconKind.HandCoin, "ToneGreen", Perm.PaymentsCreate, typeof(CashierPage), () => new CashierPage(shell)),
                 Item("Encaissement par lot", MaterialIconKind.FormatListChecks, "ToneTeal", Perm.PaymentsCreate, typeof(BatchPaymentPage), () => new BatchPaymentPage(shell)),
                 Item("Journal des reçus", MaterialIconKind.ReceiptText, "ToneOrange", Perm.PaymentsRead, typeof(ReceiptsPage), () => new ReceiptsPage(shell)),
+                Item("Suivi mensuel", MaterialIconKind.CalendarCheck, "ToneIndigo", Perm.ReportsRead, typeof(MonthlyPage), () => new MonthlyPage(shell)),
                 Item("Recouvrement", MaterialIconKind.ChartBar, "ToneOrange", Perm.ReportsRead, typeof(DebtorsPage), () => new DebtorsPage(shell)),
                 Item("Caisse", MaterialIconKind.CashMultiple, "ToneGreen", Perm.PaymentsRead, typeof(CashPage), () => new CashPage(shell)),
                 Item("Dépenses", MaterialIconKind.Wallet, "ToneRed", Perm.PaymentsRead, typeof(ExpensesPage), () => new ExpensesPage(shell)),

@@ -1,0 +1,61 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Scolia.Bureau.Controls"
+             xmlns:infra="using:Scolia.Bureau.Infrastructure"
+             x:Class="Scolia.Bureau.Views.MonthlyView">
+  <Grid RowDefinitions="Auto,Auto,*">
+    <!-- Critères : le mois d'abord, puis la promotion, l'état et la recherche -->
+    <Border Grid.Row="0" Classes="band" Margin="0,0,0,10">
+      <WrapPanel>
+        <StackPanel Classes="field">
+          <TextBlock Text="Mois" Classes="fieldlabel" />
+          <ComboBox Width="200" ItemsSource="{Binding Months}" SelectedItem="{Binding Month}" />
+        </StackPanel>
+        <StackPanel Classes="field">
+          <TextBlock Text="Promotion" Classes="fieldlabel" />
+          <ComboBox Width="240" ItemsSource="{Binding Promotions}" SelectedItem="{Binding Promotion}" />
+        </StackPanel>
+        <StackPanel Classes="field">
+          <TextBlock Text="État" Classes="fieldlabel" />
+          <ComboBox Width="190" ItemsSource="{Binding StateChoices}" SelectedItem="{Binding State}" />
+        </StackPanel>
+        <StackPanel Classes="field">
+          <TextBlock Text="Rechercher" Classes="fieldlabel" />
+          <TextBox Width="240" Text="{Binding Search}" PlaceholderText="Nom ou matricule" />
+        </StackPanel>
+      </WrapPanel>
+    </Border>
+
+    <!-- Bilan du mois pour la promotion choisie -->
+    <ItemsControl Grid.Row="1" ItemsSource="{Binding Totals}" ItemTemplate="{StaticResource KpiTile}" Margin="0,0,-12,0">
+      <ItemsControl.ItemsPanel>
+        <ItemsPanelTemplate><UniformGrid Rows="1" /></ItemsPanelTemplate>
+      </ItemsControl.ItemsPanel>
+    </ItemsControl>
+
+    <DataGrid Grid.Row="2" ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}" AutoGenerateColumns="False" IsReadOnly="True" Margin="0,4,0,0">
+      <DataGrid.Columns>
+        <DataGridTextColumn infra:GridPriority.Level="2" Header="Matricule" Binding="{Binding Matricule}" Width="Auto" MinWidth="122" />
+        <DataGridTextColumn Header="Nom complet" Binding="{Binding Name}" Width="2*" MinWidth="240" />
+        <DataGridTextColumn infra:GridPriority.Level="2" Header="Promotion" Binding="{Binding Promotion}" Width="Auto" MinWidth="122" />
+        <DataGridTextColumn infra:GridPriority.Level="3" Header="Montant du mois" Binding="{Binding Amount}" Width="Auto" MinWidth="150" />
+        <DataGridTextColumn infra:GridPriority.Level="3" Header="Payé" Binding="{Binding Paid}" Width="Auto" MinWidth="110" />
+        <DataGridTextColumn Header="Reste" Binding="{Binding Remaining}" Width="Auto" MinWidth="110" />
+        <DataGridTemplateColumn Header="État" Width="Auto" MinWidth="150">
+          <DataGridTemplateColumn.CellTemplate>
+            <DataTemplate>
+              <StackPanel Classes="status">
+                <Ellipse Width="8" Height="8" Fill="{Binding StatusBrush}" VerticalAlignment="Center" />
+                <TextBlock Text="{Binding Status}" VerticalAlignment="Center" />
+              </StackPanel>
+            </DataTemplate>
+          </DataGridTemplateColumn.CellTemplate>
+        </DataGridTemplateColumn>
+        <DataGridTextColumn infra:GridPriority.Level="3" Header="Reçu" Binding="{Binding Receipt}" Width="Auto" MinWidth="160" />
+        <DataGridTextColumn infra:GridPriority.Level="3" Header="Payé le" Binding="{Binding PaidOn}" Width="Auto" MinWidth="110" />
+      </DataGrid.Columns>
+    </DataGrid>
+    <c:EmptyState Grid.Row="2" Icon="CalendarCheck" Title="Aucun apprenant pour ces critères"
+                  Hint="Changez de mois, de promotion ou d'état." IsVisible="{Binding Items.Count, Converter={StaticResource IsEmpty}}" />
+  </Grid>
+</UserControl>
