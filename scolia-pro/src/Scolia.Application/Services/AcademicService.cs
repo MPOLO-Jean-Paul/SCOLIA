@@ -16,39 +16,6 @@ public sealed class AcademicService(IAppDbContext db, IWriteGate gate, IAuditLog
         [(AttendanceStatus.Present, "Présent"), (AttendanceStatus.AbsenceJustifiee, "Justifié"), (AttendanceStatus.AbsenceJustifiee, "Absence justifiée")];
     private static readonly (IncidentSeverity, string)[] SeverityLabels = [(IncidentSeverity.Mineur, "Mineure"), (IncidentSeverity.Moyen, "Moyenne")];
 
-    // ---------- Cours ----------
-    public async Task<IReadOnlyList<CourseDto>> CoursesAsync(Guid promotionId, CancellationToken ct = default)
-    {
-        var courses = await db.Courses.AsNoTracking().Where(c => c.PromotionId == promotionId).OrderBy(c => c.Code).ToListAsync(ct);
-        var ids = courses.Select(c => c.Id).ToList();
-        var counts = await db.Assessments.AsNoTracking().Where(a => ids.Contains(a.CourseId)).GroupBy(a => a.CourseId)
-            .Select(g => new { g.Key, Count = g.Count() }).ToDictionaryAsync(x => x.Key, x => x.Count, ct);
-        var teacherIds = courses.Where(c => c.TeacherId != null).Select(c => c.TeacherId!.Value).Distinct().ToList();
-        var teachers = await db.Staff.AsNoTracking().Where(s => teacherIds.Contains(s.Id)).ToDictionaryAsync(s => s.Id, s => s.FullName, ct);
-        return courses.Select(c => new CourseDto(c.Id, c.PromotionId, c.Code, c.Name, c.Coefficient, c.Hours, c.TeacherId,
-            c.TeacherId is null ? null : teachers.GetValueOrDefault(c.TeacherId.Value), c.IsActive, counts.GetValueOrDefault(c.Id))).ToList();
-    }
-
-    public Task<CourseDto> UpsertCourseAsync(Guid? id, CourseUpsert input, CancellationToken ct = default) => gate.RunAsync(async () =>
-    {
-        new ValidationBuilder()
-            .Require(!string.IsNullOrWhiteSpace(input.Code) && input.Code.Length <= 20, "code", "Code du cours obligatoire.")
-            .Require(!string.IsNullOrWhiteSpace(input.Name) && input.Name.Length <= 160, "name", "Intitulé obligatoire.")
-            .Require(input.Coefficient is > 0 and <= 100, "coefficient", "Le coefficient doit être compris entre 0 et 100.")
-            .Require(input.Hours is >= 0 and <= 2000, "hours", "Volume horaire invalide.")
-            .ThrowIfInvalid();
-        if (!await db.Promotions.AnyAsync(p => p.Id == input.PromotionId, ct)) throw new NotFoundException("Promotion introuvable.");
-        var code = TextKey.Normalize(input.Code);
-        if (await db.Courses.AnyAsync(c => c.PromotionId == input.PromotionId && c.Code == code && c.Id != id, ct)) throw new ConflictException("Ce code de cours existe déjà dans la promotion.");
-        var course = id is null ? new Course() : await db.Courses.FirstOrDefaultAsync(c => c.Id == id, ct) ?? throw new NotFoundException("Cours introuvable.");
-        course.PromotionId = input.PromotionId; course.Code = code; course.Name = input.Name.Trim(); course.Coefficient = input.Coefficient;
-        course.Hours = input.Hours; course.TeacherId = input.TeacherId; course.IsActive = input.IsActive;
-        if (id is null) db.Courses.Add(course);
-        audit.Record(id is null ? "cours.cree" : "cours.modifie", "Cours", course.Id.ToString(), $"Cours {course.Code} {course.Name}.");
-        await db.SaveChangesAsync(ct);
-        return (await CoursesAsync(course.PromotionId, ct)).First(c => c.Id == course.Id);
-    }, ct);
-
     // ---------- Évaluations et notes ----------
     public async Task<IReadOnlyList<AssessmentDto>> AssessmentsAsync(Guid courseId, CancellationToken ct = default)
     {
@@ -119,7 +86,7 @@ public sealed class AcademicService(IAppDbContext db, IWriteGate gate, IAuditLog
             }
             changed++;
         }
-        audit.Record("notes.saisies", "Evaluation", assessmentId.ToString(), $"{changed} note(s) enregistrée(s) pour « {a.Title} » ({course.Code}).");
+        audit.Record("notes.saisies", "Evaluation", assessmentId.ToString(), $"{changed} note(s) enregistrée(s) pour « {a.Title} » ({course.Number}).");
         await db.SaveChangesAsync(ct);
         return changed;
     }, ct);
@@ -138,7 +105,7 @@ public sealed class AcademicService(IAppDbContext db, IWriteGate gate, IAuditLog
     public async Task<ResultsDto> ResultsAsync(Guid promotionId, int? term, CancellationToken ct = default)
     {
         var promotion = await db.Promotions.AsNoTracking().FirstOrDefaultAsync(p => p.Id == promotionId, ct) ?? throw new NotFoundException("Promotion introuvable.");
-        var courses = await db.Courses.AsNoTracking().Where(c => c.PromotionId == promotionId && c.IsActive).OrderBy(c => c.Code).ToListAsync(ct);
+        var courses = await db.Courses.AsNoTracking().Where(c => c.PromotionId == promotionId && c.IsActive).OrderBy(c => c.Number).ToListAsync(ct);
         var courseIds = courses.Select(c => c.Id).ToList();
         var assessments = await db.Assessments.AsNoTracking().Where(a => courseIds.Contains(a.CourseId) && (term == null || a.Term == term)).ToListAsync(ct);
         var assessmentIds = assessments.Select(a => a.Id).ToList();

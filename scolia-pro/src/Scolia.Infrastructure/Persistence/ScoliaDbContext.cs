@@ -36,6 +36,7 @@ public sealed class ScoliaDbContext(DbContextOptions<ScoliaDbContext> options, I
     public DbSet<AppUser> Users => Set<AppUser>();
     public DbSet<AuditEntry> AuditEntries => Set<AuditEntry>();
     public DbSet<Course> Courses => Set<Course>();
+    public DbSet<CourseAssignment> CourseAssignments => Set<CourseAssignment>();
     public DbSet<Assessment> Assessments => Set<Assessment>();
     public DbSet<Grade> Grades => Set<Grade>();
     public DbSet<AttendanceRecord> Attendance => Set<AttendanceRecord>();
@@ -143,8 +144,17 @@ public sealed class ScoliaDbContext(DbContextOptions<ScoliaDbContext> options, I
         b.Entity<Course>(e =>
         {
             e.ToTable("Cours");
-            e.HasIndex(x => new { x.PromotionId, x.Code }).IsUnique();
+            e.HasIndex(x => new { x.PromotionId, x.Number }).IsUnique();
             e.HasOne<Promotion>().WithMany().HasForeignKey(x => x.PromotionId).OnDelete(DeleteBehavior.Restrict);
+        });
+        b.Entity<CourseAssignment>(e =>
+        {
+            e.ToTable("AffectationsCours");
+            e.Ignore(x => x.IsCurrent);
+            e.HasIndex(x => x.CourseId);
+            e.HasIndex(x => x.TeacherId);
+            e.HasOne<Course>().WithMany().HasForeignKey(x => x.CourseId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne<StaffMember>().WithMany().HasForeignKey(x => x.TeacherId).OnDelete(DeleteBehavior.Restrict);
         });
         b.Entity<Assessment>(e =>
         {

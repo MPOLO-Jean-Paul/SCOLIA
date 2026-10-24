@@ -170,9 +170,21 @@ public sealed record AuditVerification(bool IsIntact, long Checked, long? Broken
 public sealed record SearchHit(string Type, string Title, string Subtitle, string Url);
 
 // ---------- Scolarité ----------
-public sealed record CourseDto(Guid Id, Guid PromotionId, string Code, string Name, decimal Coefficient, int Hours, Guid? TeacherId, string? TeacherName, bool IsActive, int AssessmentCount);
+public sealed record CourseDto(Guid Id, Guid PromotionId, string PromotionCode, int Number, string Name, decimal Coefficient, decimal Hours,
+    decimal MaxScore, Guid? TeacherId, string? TeacherName, bool IsActive, int AssessmentCount);
+public sealed record CourseUpsert(Guid PromotionId, int Number, string Name, decimal Coefficient, decimal Hours, decimal MaxScore);
 
-public sealed record CourseUpsert(Guid PromotionId, string Code, string Name, decimal Coefficient, int Hours, Guid? TeacherId, bool IsActive);
+/// <summary>Attribution d'un cours. La réattribution d'un cours déjà attribué demande une confirmation.</summary>
+public sealed record AssignmentRequest(Guid TeacherId, bool ConfirmReplace);
+
+public sealed record CourseArchiveRequest(string? Reason);
+
+public sealed record AssignmentHistoryDto(Guid Id, string TeacherName, DateOnly StartedOn, DateOnly? EndedOn, string? EndReason, string AssignedBy, bool IsCurrent);
+
+/// <summary>Charge pédagogique annuelle prévue d'un enseignant : cours actifs et attributions en cours uniquement.</summary>
+public sealed record TeacherChargeDto(Guid TeacherId, string Name, int Courses, int Promotions, decimal Hours);
+
+public sealed record TeacherCourseLineDto(Guid CourseId, string PromotionCode, int Number, string Name, decimal Hours, decimal MaxScore);
 
 public sealed record AssessmentDto(Guid Id, Guid CourseId, string Title, string Kind, int Term, DateOnly Date, decimal MaxScore, decimal Weight, int GradedCount);
 
@@ -217,10 +229,10 @@ public sealed record DisciplineRowDto(Guid Id, Guid EnrollmentId, string Matricu
 
 // ---------- Personnel ----------
 public sealed record StaffDto(Guid Id, string Number, string LastName, string MiddleName, string FirstName, string Gender, string Function,
-    string? Phone, string? Email, DateOnly HireDate, decimal BaseSalary, bool IsActive);
+    string? Phone, string? Email, DateOnly HireDate, DateOnly? ExitDate, decimal BaseSalary, bool IsActive);
 
 public sealed record StaffUpsert(string LastName, string MiddleName, string FirstName, string Gender, string Function, string? Phone, string? Email,
-    DateOnly HireDate, decimal BaseSalary, bool IsActive);
+    DateOnly HireDate, DateOnly? ExitDate, decimal BaseSalary, bool IsActive);
 
 public sealed record PayrollDto(Guid Id, Guid StaffMemberId, string Number, string FullName, string Function, string Period, decimal BaseSalary,
     decimal Allowances, decimal Deductions, decimal Advances, decimal Net, string Status, DateOnly? PaidOn, string? Note);

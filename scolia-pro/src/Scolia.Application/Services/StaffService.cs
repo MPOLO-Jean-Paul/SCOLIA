@@ -16,7 +16,7 @@ public sealed class StaffService(IAppDbContext db, IWriteGate gate, IAuditLog au
         (await db.Staff.AsNoTracking().OrderBy(s => s.LastName).ToListAsync(ct)).Select(ToDto).ToList();
 
     private static StaffDto ToDto(StaffMember s) => new(s.Id, s.Number, s.LastName, s.MiddleName, s.FirstName, s.Gender.ToString(), s.Function, s.Phone, s.Email,
-        s.HireDate, s.BaseSalary, s.IsActive);
+        s.HireDate, s.ExitDate, s.BaseSalary, s.IsActive);
 
     public Task<StaffDto> UpsertAsync(Guid? id, StaffUpsert input, CancellationToken ct = default) => gate.RunAsync(async () =>
     {
@@ -40,7 +40,9 @@ public sealed class StaffService(IAppDbContext db, IWriteGate gate, IAuditLog au
         member.LastName = input.LastName.Trim().ToUpperInvariant(); member.MiddleName = (input.MiddleName ?? "").Trim().ToUpperInvariant();
         member.FirstName = TextKey.ProperName(input.FirstName); member.Gender = EnumText.Parse<Gender>(input.Gender, "gender");
         member.Function = input.Function.Trim(); member.Phone = phone; member.Email = string.IsNullOrWhiteSpace(input.Email) ? null : input.Email.Trim();
-        member.HireDate = input.HireDate; member.BaseSalary = input.BaseSalary; member.IsActive = input.IsActive;
+        if (input.ExitDate is { } exit && exit < input.HireDate)
+            throw new DomainException("personnel", "La fin d'activité ne peut pas précéder l'entrée en fonction.");
+        member.HireDate = input.HireDate; member.ExitDate = input.ExitDate; member.BaseSalary = input.BaseSalary; member.IsActive = input.IsActive;
         audit.Record(id is null ? "personnel.cree" : "personnel.modifie", "Personnel", member.Id.ToString(), $"{member.Number} {member.FullName} ({member.Function}).");
         await db.SaveChangesAsync(ct);
         return ToDto(member);

@@ -126,7 +126,7 @@ public static class DemoData
             var course = 0;
             foreach (var (name, coefficient) in new[] { ("Anatomie et physiologie", 4m), ("Soins infirmiers", 5m), ("Pharmacologie", 3m), ("Hygiène et santé publique", 2m), ("Français", 2m), ("Éthique professionnelle", 1m) })
             {
-                var c = new Course { PromotionId = promotion.Id, Code = $"{spec.Code}-{++course:00}", Name = name, Coefficient = coefficient, Hours = (int)coefficient * 15 };
+                var c = new Course { AcademicYearId = year.Id, PromotionId = promotion.Id, Number = ++course, Name = name, Coefficient = coefficient, Hours = coefficient * 15, MaxScore = 20 };
                 db.Courses.Add(c);
                 if (today > year.StartDate.AddDays(30))
                 {

@@ -29,6 +29,7 @@ public interface IAppDbContext
     DbSet<AppUser> Users { get; }
     DbSet<AuditEntry> AuditEntries { get; }
     DbSet<Course> Courses { get; }
+    DbSet<CourseAssignment> CourseAssignments { get; }
     DbSet<Assessment> Assessments { get; }
     DbSet<Grade> Grades { get; }
     DbSet<AttendanceRecord> Attendance { get; }

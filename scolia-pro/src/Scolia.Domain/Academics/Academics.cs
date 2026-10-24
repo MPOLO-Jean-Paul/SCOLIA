@@ -2,17 +2,35 @@ using Scolia.Domain.Common;
 
 namespace Scolia.Domain.Academics;
 
-/// <summary>Cours dispensé dans une promotion.</summary>
+/// <summary>Cours dispensé dans une promotion, pour une année scolaire. Un cours archivé garde son historique.</summary>
 public sealed class Course : Entity
 {
+    public Guid AcademicYearId { get; set; }
     public Guid PromotionId { get; set; }
-    public string Code { get; set; } = string.Empty;
+    /// <summary>Numéro du cours dans la promotion, de 1 à 9999. Il reste réservé même après archivage.</summary>
+    public int Number { get; set; }
     public string Name { get; set; } = string.Empty;
     /// <summary>Pondération dans la moyenne générale (crédits ou coefficient).</summary>
     public decimal Coefficient { get; set; } = 1;
-    public int Hours { get; set; }
-    public Guid? TeacherId { get; set; }
+    /// <summary>Volume horaire annuel prévu, avec deux décimales au maximum.</summary>
+    public decimal Hours { get; set; }
+    /// <summary>Cotation maximale du cours, en points.</summary>
+    public decimal MaxScore { get; set; } = 20;
+    /// <summary>Faux quand le cours est archivé.</summary>
     public bool IsActive { get; set; } = true;
+}
+
+/// <summary>Attribution d'un cours à un enseignant. Un cours n'a qu'une attribution active ; les précédentes restent dans l'historique.</summary>
+public sealed class CourseAssignment : Entity
+{
+    public Guid CourseId { get; set; }
+    public Guid TeacherId { get; set; }
+    public DateOnly StartedOn { get; set; }
+    public DateOnly? EndedOn { get; set; }
+    public string? EndReason { get; set; }
+    public string AssignedByName { get; set; } = string.Empty;
+
+    public bool IsCurrent => EndedOn is null;
 }
 
 public enum AssessmentKind { Interrogation = 0, Devoir = 1, TravauxPratiques = 2, Examen = 3 }

@@ -13,6 +13,8 @@ public sealed class StaffMember : Entity
     public string? Phone { get; set; }
     public string? Email { get; set; }
     public DateOnly HireDate { get; set; }
+    /// <summary>Fin de la période d'activité, vide si l'agent est toujours en fonction.</summary>
+    public DateOnly? ExitDate { get; set; }
     public decimal BaseSalary { get; set; }
     public bool IsActive { get; set; } = true;
 

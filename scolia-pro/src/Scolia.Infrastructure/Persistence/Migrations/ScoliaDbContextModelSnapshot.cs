@@ -113,8 +113,7 @@ namespace Scolia.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("Id")
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("Code")
-                        .IsRequired()
+                    b.Property<Guid>("AcademicYearId")
                         .HasColumnType("TEXT");
 
                     b.Property<long>("Coefficient")
@@ -126,20 +125,23 @@ namespace Scolia.Infrastructure.Persistence.Migrations
                     b.Property<string>("CreatedBy")
                         .HasColumnType("TEXT");
 
-                    b.Property<int>("Hours")
+                    b.Property<long>("Hours")
                         .HasColumnType("INTEGER");
 
                     b.Property<bool>("IsActive")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("MaxScore")
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.Property<Guid>("PromotionId")
-                        .HasColumnType("TEXT");
+                    b.Property<int>("Number")
+                        .HasColumnType("INTEGER");
 
-                    b.Property<Guid?>("TeacherId")
+                    b.Property<Guid>("PromotionId")
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime?>("UpdatedAtUtc")
@@ -154,10 +156,59 @@ namespace Scolia.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("PromotionId", "Code")
+                    b.HasIndex("PromotionId", "Number")
                         .IsUnique();
 
                     b.ToTable("Cours", (string)null);
+                });
+
+            modelBuilder.Entity("Scolia.Domain.Academics.CourseAssignment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("AssignedByName")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("CourseId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("EndReason")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateOnly?>("EndedOn")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateOnly>("StartedOn")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("TeacherId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CourseId");
+
+                    b.HasIndex("TeacherId");
+
+                    b.ToTable("AffectationsCours", (string)null);
                 });
 
             modelBuilder.Entity("Scolia.Domain.Academics.DisciplineIncident", b =>
@@ -1152,6 +1203,9 @@ namespace Scolia.Infrastructure.Persistence.Migrations
                     b.Property<string>("Email")
                         .HasColumnType("TEXT");
 
+                    b.Property<DateOnly?>("ExitDate")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("FirstName")
                         .IsRequired()
                         .HasColumnType("TEXT");
@@ -1460,6 +1514,21 @@ namespace Scolia.Infrastructure.Persistence.Migrations
                     b.HasOne("Scolia.Domain.School.Promotion", null)
                         .WithMany()
                         .HasForeignKey("PromotionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Scolia.Domain.Academics.CourseAssignment", b =>
+                {
+                    b.HasOne("Scolia.Domain.Academics.Course", null)
+                        .WithMany()
+                        .HasForeignKey("CourseId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Scolia.Domain.Staff.StaffMember", null)
+                        .WithMany()
+                        .HasForeignKey("TeacherId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });

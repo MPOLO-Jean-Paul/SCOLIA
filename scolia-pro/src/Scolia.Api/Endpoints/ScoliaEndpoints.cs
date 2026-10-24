@@ -213,9 +213,18 @@ public static class ScoliaEndpoints
     private static void MapAcademics(RouteGroupBuilder api)
     {
         var g = api.MapGroup("/scolarite").RequireAuthorization(Permissions.AcademicsRead);
-        g.MapGet("/cours", (Guid promotionId, AcademicService s, CancellationToken ct) => s.CoursesAsync(promotionId, ct));
-        g.MapPost("/cours", (CourseUpsert input, AcademicService s, CancellationToken ct) => s.UpsertCourseAsync(null, input, ct)).RequireAuthorization(Permissions.AcademicsWrite);
-        g.MapPut("/cours/{id:guid}", (Guid id, CourseUpsert input, AcademicService s, CancellationToken ct) => s.UpsertCourseAsync(id, input, ct)).RequireAuthorization(Permissions.AcademicsWrite);
+        // Cours, attributions et charges des enseignants (V79 : Gestion des cours, Attribution des cours, Charges).
+        g.MapGet("/cours", (Guid promotionId, bool? archives, TeachingService s, CancellationToken ct) => s.CoursesAsync(promotionId, archives ?? false, ct));
+        g.MapGet("/cours/numero-suivant", async (Guid promotionId, TeachingService s, CancellationToken ct) => new { numero = await s.NextNumberAsync(promotionId, ct) });
+        g.MapPost("/cours", (CourseUpsert input, TeachingService s, CancellationToken ct) => s.UpsertCourseAsync(null, input, ct)).RequireAuthorization(Permissions.AcademicsWrite);
+        g.MapPut("/cours/{id:guid}", (Guid id, CourseUpsert input, TeachingService s, CancellationToken ct) => s.UpsertCourseAsync(id, input, ct)).RequireAuthorization(Permissions.AcademicsWrite);
+        g.MapPost("/cours/{id:guid}/archivage", (Guid id, TeachingService s, CancellationToken ct) => s.SetArchivedAsync(id, true, ct)).RequireAuthorization(Permissions.AcademicsWrite);
+        g.MapPost("/cours/{id:guid}/reactivation", (Guid id, TeachingService s, CancellationToken ct) => s.SetArchivedAsync(id, false, ct)).RequireAuthorization(Permissions.AcademicsWrite);
+        g.MapPut("/cours/{id:guid}/attribution", (Guid id, AssignmentRequest input, TeachingService s, CancellationToken ct) => s.AssignAsync(id, input, ct)).RequireAuthorization(Permissions.AcademicsWrite);
+        g.MapPost("/cours/{id:guid}/retrait-attribution", (Guid id, CourseArchiveRequest input, TeachingService s, CancellationToken ct) => s.UnassignAsync(id, input, ct)).RequireAuthorization(Permissions.AcademicsWrite);
+        g.MapGet("/cours/{id:guid}/attributions", (Guid id, TeachingService s, CancellationToken ct) => s.HistoryAsync(id, ct));
+        g.MapGet("/enseignants/charges", (TeachingService s, CancellationToken ct) => s.ChargesAsync(ct));
+        g.MapGet("/enseignants/{id:guid}/cours", (Guid id, TeachingService s, CancellationToken ct) => s.TeacherCoursesAsync(id, ct));
         g.MapGet("/cours/{id:guid}/evaluations", (Guid id, AcademicService s, CancellationToken ct) => s.AssessmentsAsync(id, ct));
         g.MapPost("/evaluations", (AssessmentUpsert input, AcademicService s, CancellationToken ct) => s.UpsertAssessmentAsync(null, input, ct)).RequireAuthorization(Permissions.AcademicsWrite);
         g.MapPut("/evaluations/{id:guid}", (Guid id, AssessmentUpsert input, AcademicService s, CancellationToken ct) => s.UpsertAssessmentAsync(id, input, ct)).RequireAuthorization(Permissions.AcademicsWrite);
