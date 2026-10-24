@@ -1,14 +1,15 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="Scolia.Bureau.Views.FormView">
-  <!-- Boîte de dialogue de Windows 11 : titre, champs défilants, bande grise du bas avec les boutons à droite -->
+  <!-- Boîte de dialogue Spectrum, comme dans Acrobat : titre gras souligné d'un trait, champs, boutons à droite -->
   <Border Classes="card" MinWidth="460" MaxWidth="620" Padding="0" Background="{DynamicResource SurfaceBrush}" ClipToBounds="True"
           BoxShadow="0 8 32 0 #3D000000">
     <StackPanel>
-      <StackPanel Spacing="3" Margin="24,20,24,14">
-        <TextBlock Text="{Binding Title}" FontSize="20" FontWeight="SemiBold" TextWrapping="Wrap" />
+      <StackPanel Spacing="3" Margin="24,22,24,0">
+        <TextBlock Text="{Binding Title}" FontSize="20" FontWeight="Bold" TextWrapping="Wrap" />
         <TextBlock Text="{Binding Subtitle}" Classes="muted" TextWrapping="Wrap" IsVisible="{Binding HasSubtitle}" />
       </StackPanel>
+      <Border Height="2" Background="{DynamicResource LineBrush}" Margin="24,14,24,0" />
 
       <TextBlock Text="{Binding Message}" TextWrapping="Wrap" IsVisible="{Binding HasMessage}" Margin="24,16,24,0" />
 
@@ -38,19 +39,17 @@
         <TextBlock Text="{Binding Error}" Classes="error" TextWrapping="Wrap" />
       </Border>
 
-      <!-- Actions : bande grise du bas, bouton principal puis Annuler, comme les boîtes de dialogue de Windows -->
-      <Border Background="{DynamicResource Surface2Brush}" BorderBrush="{DynamicResource LineBrush}" BorderThickness="0,1,0,0" Margin="0,8,0,0" Padding="24,16">
-      <Panel>
-      <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8" IsVisible="{Binding CanSubmit}">
-        <Button Content="{Binding SubmitText}" Command="{Binding Submit}" IsEnabled="{Binding !Busy}" MinWidth="120"
-                Classes.primary="{Binding !Danger}" Classes.danger="{Binding Danger}" />
-        <Button Content="{Binding CancelText}" Command="{Binding Cancel}" IsVisible="{Binding ShowCancel}" MinWidth="120" />
-      </StackPanel>
-      <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" IsVisible="{Binding !CanSubmit}">
-        <Button Content="{Binding CancelText}" Command="{Binding Cancel}" Classes="primary" MinWidth="120" />
-      </StackPanel>
+      <!-- Actions : Annuler puis le bouton principal, alignés à droite -->
+      <Panel Margin="24,12,24,20">
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="12" IsVisible="{Binding CanSubmit}">
+          <Button Content="{Binding CancelText}" Command="{Binding Cancel}" IsVisible="{Binding ShowCancel}" MinWidth="96" />
+          <Button Content="{Binding SubmitText}" Command="{Binding Submit}" IsEnabled="{Binding !Busy}" MinWidth="96"
+                  Classes.primary="{Binding !Danger}" Classes.danger="{Binding Danger}" />
+        </StackPanel>
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" IsVisible="{Binding !CanSubmit}">
+          <Button Content="{Binding CancelText}" Command="{Binding Cancel}" Classes="primary" MinWidth="96" />
+        </StackPanel>
       </Panel>
-      </Border>
     </StackPanel>
   </Border>
 </UserControl>

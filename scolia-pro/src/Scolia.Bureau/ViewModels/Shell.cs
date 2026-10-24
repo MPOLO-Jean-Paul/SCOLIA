@@ -344,19 +344,65 @@ public sealed class ShellViewModel : Observable
         Status = $"Connecté : {s.DisplayName} · {s.SchoolName}";
         Login.Reset();
         RebuildRibbon();
-        await Open(() => new DashboardPage(this));
+        OpenTabs.Clear();
+        await Open(() => new HomePage(this));
         await OfferNetworkAsync();
     }
 
-    /// <summary>Affiche un écran, le mémorise dans les récents et charge ses données.</summary>
+    /// <summary>Onglets des écrans ouverts : Accueil d'abord, puis les écrans dans l'ordre d'ouverture.</summary>
+    public ObservableCollection<PageTabVm> OpenTabs { get; } = [];
+
+    /// <summary>Au-delà, l'onglet le plus ancien se ferme pour garder une barre lisible.</summary>
+    private const int MaxTabs = 5;
+
+    /// <summary>
+    /// Affiche un écran dans son onglet : un écran déjà ouvert est rechargé dans le même onglet,
+    /// un nouvel écran prend un nouvel onglet. Puis l'écran est mémorisé dans les récents et chargé.
+    /// </summary>
     public async Task Open(Func<PageViewModel> create)
     {
         var page = create();
         Remember(page.Title, create);
         BackstageOpen = false;
-        Current = page;
-        RebuildRibbon();
+        var tab = OpenTabs.FirstOrDefault(t => t.Title == page.Title);
+        if (tab is null)
+        {
+            tab = new PageTabVm(page, canClose: page is not HomePage, ActivateTab, CloseTab);
+            OpenTabs.Add(tab);
+            if (OpenTabs.Count > MaxTabs && OpenTabs.FirstOrDefault(t => t.CanClose && t != tab) is { } oldest) OpenTabs.Remove(oldest);
+        }
+        else tab.Page = page;
+        Show(tab);
         await page.RefreshAsync();
+    }
+
+    /// <summary>Revient sur un onglet déjà ouvert, sans recharger : la saisie en cours reste intacte.</summary>
+    private void ActivateTab(PageTabVm tab)
+    {
+        BackstageOpen = false;
+        Show(tab);
+    }
+
+    private void CloseTab(PageTabVm tab)
+    {
+        if (!tab.CanClose) return;
+        var index = OpenTabs.IndexOf(tab);
+        OpenTabs.Remove(tab);
+        if (!tab.IsActive || OpenTabs.Count == 0) return;
+        Show(OpenTabs[Math.Clamp(index - 1, 0, OpenTabs.Count - 1)]);
+    }
+
+    private void Show(PageTabVm tab)
+    {
+        foreach (var other in OpenTabs) other.IsActive = other == tab;
+        Current = tab.Page;
+        RebuildRibbon();
+    }
+
+    /// <summary>Ferme l'onglet de l'écran courant (Ctrl+W), sauf l'Accueil.</summary>
+    public void CloseCurrentTab()
+    {
+        if (OpenTabs.FirstOrDefault(t => t.IsActive) is { CanClose: true } tab) CloseTab(tab);
     }
 
     /// <summary>Recharge l'écran courant.</summary>
@@ -507,6 +553,7 @@ public sealed class ShellViewModel : Observable
         catch (HttpRequestException) { }
         session = null;
         Tabs.Clear();
+        OpenTabs.Clear();
         Navigation = [];
         Raise(nameof(Navigation));
         SelectedTab = null;

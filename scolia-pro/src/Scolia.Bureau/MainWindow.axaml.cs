@@ -1,4 +1,7 @@
 using Avalonia.Animation;
+using Avalonia.Controls.Primitives.PopupPositioning;
+using Material.Icons;
+using Material.Icons.Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Platform.Storage;
@@ -27,6 +30,8 @@ public partial class MainWindow : Window
             if (DataContext is not ShellViewModel shell) return;
             shell.FullscreenHandler = full => WindowState = full ? WindowState.FullScreen : WindowState.Normal;
             shell.PickFileHandler = PickFileAsync;
+            // Le dernier onglet ouvert reste visible, même quand la barre est pleine.
+            shell.OpenTabs.CollectionChanged += (_, _) => Avalonia.Threading.Dispatcher.UIThread.Post(() => TabScroller.ScrollToEnd());
             ApplyPageTransition(shell.Prefs);
             shell.Prefs.PropertyChanged += (_, args) =>
             {
@@ -61,10 +66,68 @@ public partial class MainWindow : Window
         if (Shell is { } shell) shell.Prefs.Scale -= 0.1;
     }
 
-    /// <summary>Raccourcis : F5 actualiser, Ctrl+K recherche, F2 encaisser, Ctrl+P imprimer, Ctrl+F1 ruban, Échap fermer.</summary>
+    /// <summary>
+    /// Menu de SCOLIA, comme le menu d'Acrobat : chaque métier en sous-menu avec ses commandes et leurs raccourcis,
+    /// puis le compte et la déconnexion. Il est construit à l'ouverture, d'après les droits et l'écran affiché.
+    /// </summary>
+    private void OnMenuClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (Shell is not { } shell || sender is not Control anchor) return;
+        var menu = new MenuFlyout { Placement = PlacementMode.BottomEdgeAlignedLeft };
+        foreach (var tab in shell.Tabs.Where(t => t.Id != "fichier"))
+        {
+            var sub = new MenuItem { Header = tab.Title, Icon = Glyph(TabIcon(tab.Id)) };
+            var first = true;
+            foreach (var group in tab.Groups.Where(g => g.Title != "Récents"))
+            {
+                if (!first) sub.Items.Add(new Separator());
+                first = false;
+                foreach (var command in group.Commands)
+                    sub.Items.Add(new MenuItem { Header = command.Label, Icon = Glyph(command.Icon), Command = command.Command, InputGesture = command.Gesture });
+            }
+            menu.Items.Add(sub);
+        }
+        menu.Items.Add(new Separator());
+        menu.Items.Add(new MenuItem { Header = "Rechercher…", Icon = Glyph(MaterialIconKind.Magnify), Command = shell.SearchCommand, InputGesture = new KeyGesture(Key.K, KeyModifiers.Control) });
+        menu.Items.Add(new MenuItem { Header = "Fermer l'onglet", Icon = Glyph(MaterialIconKind.Close), Command = new RelayCommand(shell.CloseCurrentTab), InputGesture = new KeyGesture(Key.W, KeyModifiers.Control) });
+        menu.Items.Add(new Separator());
+        menu.Items.Add(new MenuItem { Header = "Compte et poste…", Icon = Glyph(MaterialIconKind.AccountCircleOutline), Command = new RelayCommand(shell.OpenBackstage) });
+        menu.Items.Add(new MenuItem { Header = "Se déconnecter", Icon = Glyph(MaterialIconKind.Logout), Command = new AsyncCommand(shell.LogoutAsync) });
+        menu.ShowAt(anchor);
+    }
+
+    private static MaterialIcon Glyph(MaterialIconKind kind) => new() { Kind = kind, Width = 16, Height = 16 };
+
+    private static MaterialIconKind TabIcon(string id) => id switch
+    {
+        "accueil" => MaterialIconKind.HomeOutline,
+        "secretariat" => MaterialIconKind.AccountGroupOutline,
+        "finances" => MaterialIconKind.CashMultiple,
+        "scolarite" => MaterialIconKind.SchoolOutline,
+        "administration" => MaterialIconKind.OfficeBuildingOutline,
+        "donnees" => MaterialIconKind.DatabaseOutline,
+        "affichage" => MaterialIconKind.MonitorEye,
+        "aide" => MaterialIconKind.HelpCircleOutline,
+        _ => MaterialIconKind.FileDocumentOutline,
+    };
+
+    private void OnHelpClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (Shell is { } shell) _ = shell.Run(() => ShortcutsDialog.ShowAsync(shell));
+    }
+
+    private void OnAccountClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e) => Shell?.OpenBackstage();
+
+    /// <summary>Raccourcis : F5 actualiser, Ctrl+K recherche, F2 encaisser, Ctrl+P imprimer, Ctrl+W fermer l'onglet, Échap fermer.</summary>
     private void OnKeyDown(object? sender, KeyEventArgs e)
     {
         if (Shell is not { IsLoggedIn: true } shell) return;
+        if (e.Key == Key.W && e.KeyModifiers == KeyModifiers.Control && !shell.HasDialog)
+        {
+            shell.CloseCurrentTab();
+            e.Handled = true;
+            return;
+        }
         // Les raccourcis des commandes du ruban passent d'abord.
         if (shell.RunShortcut(e.Key, e.KeyModifiers))
         {

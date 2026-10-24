@@ -24,13 +24,15 @@ Le détail est dans [`docs/GUIDE_UTILISATEUR.md`](docs/GUIDE_UTILISATEUR.md) et 
 Il parle au serveur SCOLIA par la même API que l'interface web. Au lancement, il démarre le serveur `SCOLIA-Serveur.exe`
 du même dossier s'il n'est pas déjà actif. Le paquet Windows contient les deux exécutables.
 
-Le client suit l'apparence native de Windows 11 et d'Office : police du système (Segoe UI Variable, Inter embarquée
-hors Windows), couleurs et bleu d'accent de Windows, coins de 4 px pour les contrôles et de 8 px pour les panneaux,
-panneaux à trait fin sans ombre, icônes monochromes, volet de navigation à gauche avec le trait d'accent de l'élément
-choisi, ruban à onglets pour les commandes. Les boîtes de dialogue reprennent celles de Windows : titre, champs, bande
-grise du bas avec le bouton principal puis Annuler. Les statuts sont un point de couleur devant le libellé ; aucune
-couleur n'est décorative. Clair, sombre, taille du texte, densité, zoom et volet de navigation se règlent dans
-Affichage ou Fichier.
+Le client reprend l'organisation d'Adobe Acrobat. En haut, le bouton « Menu » donne toutes les commandes, rangées par
+métier avec leurs raccourcis ; à côté, un onglet par écran ouvert (Accueil, puis jusqu'à quatre écrans, Ctrl+W pour
+fermer) ; à droite, la recherche (Ctrl+K), l'aide et le compte. À gauche, le panneau « Tous les outils » liste chaque
+écran avec son icône de couleur, par métier. Chaque page a sa barre d'outils blanche : titre, bouton principal bleu,
+actions discrètes et menu « … ». L'accueil présente les outils recommandés et les reçus récents. Boutons arrondis,
+couleurs et proportions suivent le système de design d'Adobe (Spectrum). Clair, sombre, taille du texte, densité, zoom
+et panneau d'outils se règlent dans Menu, Affichage.
+
+Le menu reprend le catalogue de commandes ci-dessous :
 
 | Rubrique du ruban | Écrans natifs |
 |---|---|

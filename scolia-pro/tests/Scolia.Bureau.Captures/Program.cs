@@ -99,7 +99,7 @@ if (args.Length > 3 && args[3] == "smoke")
 
 var session = Result(api.LoginAsync("admin", password));
 Wait(shell.OpenSessionAsync(session));
-Save(window, "02-tableau-de-bord.png");
+Save(window, "02-accueil.png");
 // Itération rapide sur l'accueil (SCOLIA_ACCUEIL=1) : la page entière, puis le thème sombre, sans parcourir les autres écrans.
 if (Environment.GetEnvironmentVariable("SCOLIA_ACCUEIL") == "1")
 {
@@ -419,6 +419,7 @@ Page(() => new SettingsPage(shell), "20-parametres-annees.png", p => ((SettingsP
 Page(() => new UsersPage(shell), "21-utilisateurs.png");
 Page(() => new DataPage(shell), "22-donnees.png");
 Page(() => new ReportsPage(shell), "22d-rapports-exports.png");
+Page(() => new DashboardPage(shell), "22e-tableau-de-bord.png");
 Page(() => new EraseDataPage(shell, payments: true), "22b-effacer-donnees.png");
 Page(() => new EraseDataPage(shell, payments: false), "22c-effacer-apprenants.png");
 Page(() => new AuditPage(shell), "23-audit.png");

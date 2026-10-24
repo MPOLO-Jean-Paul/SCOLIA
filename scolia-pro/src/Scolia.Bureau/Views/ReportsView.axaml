@@ -36,7 +36,7 @@
                     <DataTemplate>
                       <Border BorderBrush="{DynamicResource LineBrush}" BorderThickness="0,0,0,1" Padding="16,10">
                         <Grid ColumnDefinitions="Auto,*,Auto">
-                          <mi:MaterialIcon Kind="{Binding Icon}" Width="20" Height="20" Foreground="{DynamicResource Text2Brush}" VerticalAlignment="Center" Margin="0,0,14,0" />
+                          <mi:MaterialIcon Kind="{Binding Icon}" Width="22" Height="22" Foreground="{Binding Brush}" VerticalAlignment="Center" Margin="0,0,14,0" />
                           <StackPanel Grid.Column="1" Spacing="1" VerticalAlignment="Center">
                             <TextBlock Text="{Binding Title}" />
                             <TextBlock Text="{Binding Description}" Classes="muted" TextWrapping="Wrap" />
