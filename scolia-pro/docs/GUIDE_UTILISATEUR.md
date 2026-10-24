@@ -42,7 +42,7 @@ Chaque personne a son compte. Le mot de passe initial peut être imposé au prem
 usage. Après cinq erreurs, le compte est bloqué quinze minutes.
 
 Raccourcis : `Ctrl+K` ouvre la recherche globale et toutes les commandes.
-`Alt+1` tableau de bord, `Alt+2` apprenants, `Alt+3` encaisser, `Alt+4` recouvrement, `F2` encaisser, `F5` actualiser. La liste complète est dans l'onglet Aide.
+`Ctrl+D` tableau de bord, `F2` encaisser, `Ctrl+K` recherche, `F5` actualiser, `Ctrl+P` imprimer. Chaque commande du ruban a son raccourci : posez le curseur sur une commande pour voir sa description et son raccourci. La liste complète est dans l'onglet Aide, touche `F1`.
 
 ## 3. Inscrire un apprenant
 

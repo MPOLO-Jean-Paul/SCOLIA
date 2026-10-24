@@ -52,32 +52,16 @@ public partial class MainWindow : Window
     private void OnKeyDown(object? sender, KeyEventArgs e)
     {
         if (Shell is not { IsLoggedIn: true } shell) return;
-        var ctrl = e.KeyModifiers.HasFlag(KeyModifiers.Control);
-        switch (e.Key)
+        // Les raccourcis des commandes du ruban passent d'abord.
+        if (shell.RunShortcut(e.Key, e.KeyModifiers))
         {
-            case Key.F5:
-                shell.ReloadCommand.Execute(null);
-                break;
-            case Key.K when ctrl:
-                shell.ShowSearch();
-                break;
-            case Key.P when ctrl:
-                _ = shell.Run(() => shell.Current?.PrintAsync() ?? Task.CompletedTask);
-                break;
-            case Key.F2 when shell.Can(Perm.PaymentsCreate):
-                _ = shell.Run(() => shell.Open(() => new CashierPage(shell)));
-                break;
-            case Key.F1 when ctrl:
-                shell.Prefs.RibbonCollapsed = !shell.Prefs.RibbonCollapsed;
-                break;
-            case Key.Escape:
-                if (shell.Dialog is FormViewModel { Busy: false } form) form.Cancel.Execute(null);
-                else if (shell.HasDialog) shell.CloseDialog();
-                else if (shell.BackstageOpen) shell.CloseBackstage();
-                break;
-            default:
-                return;
+            e.Handled = true;
+            return;
         }
+        if (e.Key != Key.Escape) return;
+        if (shell.Dialog is FormViewModel { Busy: false } form) form.Cancel.Execute(null);
+        else if (shell.HasDialog) shell.CloseDialog();
+        else if (shell.BackstageOpen) shell.CloseBackstage();
         e.Handled = true;
     }
 

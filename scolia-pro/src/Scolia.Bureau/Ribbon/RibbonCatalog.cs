@@ -15,6 +15,74 @@ public static class RibbonCatalog
     private const string Red = "ToneRed";
     private const string Neutral = "ToneNeutral";
 
+    /// <summary>
+    /// Raccourci de chaque commande, par libellé. Les combinaisons Ctrl+Alt ne sont pas utilisées :
+    /// sur un clavier AZERTY, AltGr envoie Ctrl+Alt, ce qui déclencherait une commande en tapant un caractère.
+    /// </summary>
+    public static IReadOnlyDictionary<string, string> Shortcuts { get; } = new Dictionary<string, string>
+    {
+        ["Tableau de bord"] = "Ctrl+D",
+        ["Actualiser"] = "F5",
+        ["Rechercher"] = "Ctrl+K",
+        ["Imprimer"] = "Ctrl+P",
+        ["Plein écran"] = "F11",
+        ["Apprenants"] = "Ctrl+Shift+A",
+        ["Nouvelle inscription"] = "Ctrl+N",
+        ["Réinscriptions"] = "Ctrl+Shift+R",
+        ["Encaisser"] = "F2",
+        ["Journal des reçus"] = "Ctrl+J",
+        ["Reçus (Excel)"] = "Alt+E",
+        ["Reçus (PDF)"] = "Alt+P",
+        ["Recouvrement"] = "Ctrl+R",
+        ["Prises en charge"] = "Ctrl+Shift+S",
+        ["Débiteurs (Excel)"] = "Alt+D",
+        ["Débiteurs (PDF)"] = "Alt+B",
+        ["Caisse"] = "Ctrl+Shift+C",
+        ["Dépenses"] = "Ctrl+E",
+        ["Nouvelle dépense"] = "Ctrl+Shift+N",
+        ["Arrêter la caisse"] = "Ctrl+Shift+Q",
+        ["Cours et notes"] = "Ctrl+G",
+        ["Résultats"] = "Ctrl+T",
+        ["Nouveau cours"] = "Alt+C",
+        ["Nouvelle évaluation"] = "Alt+V",
+        ["Présences"] = "Ctrl+Shift+P",
+        ["Discipline"] = "Ctrl+Shift+I",
+        ["Nouvel incident"] = "Alt+I",
+        ["Personnel et paie"] = "Ctrl+Shift+M",
+        ["Nouveau membre"] = "Alt+M",
+        ["Paramètres"] = "Ctrl+OemComma",
+        ["Utilisateurs"] = "Ctrl+Shift+U",
+        ["Nouvelle promotion"] = "Alt+N",
+        ["Nouvelle année"] = "Alt+A",
+        ["Nouvel utilisateur"] = "Alt+U",
+        ["Données et sauvegardes"] = "Ctrl+Shift+B",
+        ["Journal d'audit"] = "Ctrl+Shift+J",
+        ["Sauvegarder"] = "Alt+S",
+        ["Importer SCOLIA V79"] = "Alt+L",
+        ["Journal (CSV)"] = "Alt+J",
+        ["Mode sombre"] = "Ctrl+Shift+L",
+        ["Taille du texte"] = "Alt+T",
+        ["Densité compacte"] = "Alt+K",
+        ["Barre d'état"] = "Alt+O",
+        ["Préférences"] = "Ctrl+Shift+E",
+        ["Quadrillage"] = "Alt+G",
+        ["Info-bulles"] = "Alt+Q",
+        ["Animations"] = "Alt+X",
+        ["Réduire le ruban"] = "Ctrl+F1",
+        ["Zoom arrière"] = "Ctrl+OemMinus",
+        ["Zoom avant"] = "Ctrl+OemPlus",
+        ["Zoom 100 %"] = "Ctrl+D0",
+        ["Raccourcis clavier"] = "F1",
+        ["À propos"] = "Shift+F1",
+        ["Vérifier la base"] = "F8",
+        ["Vérifier le journal"] = "F7",
+        ["Annuler le reçu"] = "Ctrl+Shift+Delete",
+        ["Vérifier en ligne"] = "Ctrl+Shift+V",
+        ["Modifier"] = "F4",
+        ["Relevé de compte"] = "Alt+R",
+        ["Liste des apprenants"] = "Ctrl+Shift+F",
+    };
+
     public static List<RibbonTabVm> Build(ShellViewModel shell)
     {
         var tabs = new List<RibbonTabVm>
@@ -23,11 +91,11 @@ public static class RibbonCatalog
             [
                 Group("Tableau de bord",
                     Large(shell, "Tableau de bord", ViewDashboardOutline, "Indicateurs du jour, recettes et retards de paiement.", () => shell.Open(() => new DashboardPage(shell)), Blue),
-                    Large(shell, "Actualiser", Refresh, "Recharge les données affichées depuis le serveur.", () => shell.Reload(), Blue, shortcut: "F5")),
+                    Large(shell, "Actualiser", Refresh, "Recharge les données affichées depuis le serveur.", () => shell.Reload(), Blue)),
                 Group("Rechercher",
-                    Large(shell, "Rechercher", Magnify, "Recherche globale : apprenants, reçus, pages et commandes.", () => { shell.ShowSearch(); return Task.CompletedTask; }, Blue, shortcut: "Ctrl+K")),
+                    Large(shell, "Rechercher", Magnify, "Recherche globale : apprenants, reçus, pages et commandes.", () => { shell.ShowSearch(); return Task.CompletedTask; }, Blue)),
                 Group("Page",
-                    Large(shell, "Imprimer", Printer, "Imprime le document de la page affichée.", () => shell.Current?.PrintAsync() ?? Task.CompletedTask, Blue, shortcut: "Ctrl+P"),
+                    Large(shell, "Imprimer", Printer, "Imprime le document de la page affichée.", () => shell.Current?.PrintAsync() ?? Task.CompletedTask, Blue),
                     Small(shell, "Plein écran", Fullscreen, "Affiche SCOLIA sans bordures de fenêtre.", () => { shell.ToggleFullscreen(); return Task.CompletedTask; }, Neutral, toggle: true, isOn: () => shell.IsFullscreen)),
                 ..RecentsGroups(shell),
             ]),
@@ -41,12 +109,12 @@ public static class RibbonCatalog
             new("finances", "Finances",
             [
                 Group("Encaissement",
-                    Large(shell, "Encaisser", HandCoin, "Encaisse un versement : il est réparti sur les échéances et numéroté.", () => shell.Open(() => new CashierPage(shell)), Green, perm: Perm.PaymentsCreate, shortcut: "F2"),
+                    Large(shell, "Encaisser", HandCoin, "Encaisse un versement : il est réparti sur les échéances et numéroté.", () => shell.Open(() => new CashierPage(shell)), Green, perm: Perm.PaymentsCreate),
                     Large(shell, "Journal des reçus", ReceiptTextOutline, "Tous les reçus, leur statut et les annulations motivées.", () => shell.Open(() => new ReceiptsPage(shell)), Neutral, perm: Perm.PaymentsRead),
                     Small(shell, "Reçus (Excel)", FileExcelOutline, "Exporte tous les reçus dans un classeur Excel.", () => shell.Download("api/paiements/export?format=xlsx", "recus.xlsx"), Neutral, perm: Perm.PaymentsRead),
                     Small(shell, "Reçus (PDF)", FilePdfBox, "Exporte la liste des reçus au format PDF.", () => shell.Download("api/paiements/export?format=pdf", "recus.pdf"), Neutral, perm: Perm.PaymentsRead)),
                 Group("Suivi",
-                    Large(shell, "Recouvrement", ChartBar, "Retards classés par ancienneté, avec rappels WhatsApp et SMS.", () => shell.Open(() => new DebtorsPage(shell)), Orange, perm: Perm.ReportsRead, shortcut: "Alt+4"),
+                    Large(shell, "Recouvrement", ChartBar, "Retards classés par ancienneté, avec rappels WhatsApp et SMS.", () => shell.Open(() => new DebtorsPage(shell)), Orange, perm: Perm.ReportsRead),
                     Small(shell, "Prises en charge", ShieldCheckOutline, "Bourses, sponsors et exonérations de l'année.", () => shell.Open(() => new SponsorshipsPage(shell)), Neutral, perm: Perm.PaymentsRead),
                     Small(shell, "Débiteurs (Excel)", FileExcelOutline, "Exporte la liste des retards de paiement dans Excel.", () => shell.Download("api/rapports/debiteurs/export?format=xlsx", "debiteurs.xlsx"), Neutral, perm: Perm.ReportsRead),
                     Small(shell, "Débiteurs (PDF)", FilePdfBox, "Exporte la liste des retards de paiement en PDF.", () => shell.Download("api/rapports/debiteurs/export?format=pdf", "debiteurs.pdf"), Neutral, perm: Perm.ReportsRead)),
@@ -98,7 +166,7 @@ public static class RibbonCatalog
                     Small(shell, "Quadrillage", Grid, "Affiche les lignes entre les colonnes des tableaux.", () => { shell.Prefs.Grid = !shell.Prefs.Grid; return Task.CompletedTask; }, Neutral, toggle: true, isOn: () => shell.Prefs.Grid),
                     Small(shell, "Info-bulles", InformationOutline, "Affiche la description des commandes au survol.", () => { shell.Prefs.Tips = !shell.Prefs.Tips; return Task.CompletedTask; }, Neutral, toggle: true, isOn: () => shell.Prefs.Tips),
                     Small(shell, "Animations", AutoFix, "Désactive les transitions de l'interface.", () => { shell.Prefs.Animations = !shell.Prefs.Animations; return Task.CompletedTask; }, Neutral, toggle: true, isOn: () => shell.Prefs.Animations),
-                    Small(shell, "Réduire le ruban", ChevronUp, "Masque les commandes et ne garde que les onglets.", () => { shell.Prefs.RibbonCollapsed = !shell.Prefs.RibbonCollapsed; return Task.CompletedTask; }, Neutral, toggle: true, isOn: () => shell.Prefs.RibbonCollapsed, shortcut: "Ctrl+F1")),
+                    Small(shell, "Réduire le ruban", ChevronUp, "Masque les commandes et ne garde que les onglets.", () => { shell.Prefs.RibbonCollapsed = !shell.Prefs.RibbonCollapsed; return Task.CompletedTask; }, Neutral, toggle: true, isOn: () => shell.Prefs.RibbonCollapsed)),
                 Group("Zoom",
                     Small(shell, "Zoom arrière", MagnifyMinus, "Réduit la taille de l'interface.", () => { shell.Prefs.Scale -= 0.1; return Task.CompletedTask; }, Neutral),
                     Small(shell, "Zoom avant", MagnifyPlus, "Agrandit la taille de l'interface.", () => { shell.Prefs.Scale += 0.1; return Task.CompletedTask; }, Neutral),
@@ -148,7 +216,7 @@ public static class RibbonCatalog
     {
         if (perm is not null && !shell.Can(perm)) return null;
         var command = new AsyncCommand(() => shell.Run(action));
-        var vm = new RibbonCommandVm(label, icon, tip, command, large, tone, toggle, shortcut);
+        var vm = new RibbonCommandVm(label, icon, tip, command, large, tone, toggle, shortcut ?? Shortcuts.GetValueOrDefault(label));
         if (isOn is not null) vm.IsOn = isOn();
         return vm;
     }

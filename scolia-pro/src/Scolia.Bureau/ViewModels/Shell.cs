@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using Avalonia.Input;
 using Avalonia.Threading;
 using Scolia.Bureau.Api;
 using Scolia.Bureau.Ribbon;
@@ -210,6 +211,30 @@ public sealed class ShellViewModel : Observable
         foreach (var tab in RibbonCatalog.Build(this)) Tabs.Add(tab);
         SelectedTab = Tabs.FirstOrDefault(t => t.Id == keep) ?? Tabs.FirstOrDefault(t => t.Id == "accueil");
         Raise(nameof(SelectedGroups));
+        RebuildShortcuts();
+    }
+
+    /// <summary>Commandes ayant un raccourci, dans l'ordre affiché par la boîte des raccourcis.</summary>
+    public IReadOnlyList<RibbonCommandVm> ShortcutCommands { get; private set; } = [];
+
+    private readonly Dictionary<KeyGesture, RibbonCommandVm> shortcuts = [];
+
+    /// <summary>Un raccourci suit les commandes visibles : l'onglet contextuel, plus récent, passe avant le ruban général.</summary>
+    private void RebuildShortcuts()
+    {
+        shortcuts.Clear();
+        foreach (var command in Tabs.SelectMany(t => t.Groups).SelectMany(g => g.Commands))
+            if (command.Gesture is { } gesture) shortcuts[gesture] = command;
+        ShortcutCommands = shortcuts.Values.OrderBy(c => c.ShortcutText, StringComparer.Ordinal).ToList();
+    }
+
+    /// <summary>Lance la commande liée à ce raccourci, si elle est disponible. Une boîte de dialogue ouverte bloque les raccourcis.</summary>
+    public bool RunShortcut(Key key, KeyModifiers modifiers)
+    {
+        if (!IsLoggedIn || HasDialog || BackstageOpen) return false;
+        if (!shortcuts.TryGetValue(new KeyGesture(key, modifiers), out var command) || !command.Command.CanExecute(null)) return false;
+        command.Command.Execute(null);
+        return true;
     }
 
     public async Task LogoutAsync()

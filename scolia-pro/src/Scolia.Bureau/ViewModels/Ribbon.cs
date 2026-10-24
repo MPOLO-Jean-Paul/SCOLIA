@@ -1,4 +1,5 @@
 using System.Windows.Input;
+using Avalonia.Input;
 using Avalonia.Media;
 using Material.Icons;
 using Scolia.Bureau.Infrastructure;
@@ -12,7 +13,18 @@ public sealed class RibbonCommandVm(string label, MaterialIconKind icon, string 
 
     public string Label { get; } = label;
     public MaterialIconKind Icon { get; } = icon;
-    public string Tip { get; } = shortcut is null ? tip : $"{tip} ({shortcut})";
+
+    /// <summary>Info-bulle : la description, puis le raccourci clavier (ou l'absence de raccourci).</summary>
+    public string Tip { get; } = shortcut is null
+        ? $"{tip}{Environment.NewLine}Aucun raccourci."
+        : $"{tip}{Environment.NewLine}Raccourci : {ShortcutDisplay(shortcut)}";
+
+    /// <summary>Raccourci tel qu'il s'affiche : Ctrl+Shift+A, Suppr, Plus.</summary>
+    public string? ShortcutText { get; } = shortcut is null ? null : ShortcutDisplay(shortcut);
+
+    /// <summary>Raccourci clavier qui lance la commande, s'il en a un.</summary>
+    public KeyGesture? Gesture { get; } = shortcut is null ? null : KeyGesture.Parse(shortcut);
+
     public ICommand Command { get; } = command;
     public bool Large { get; } = large;
     public bool IsToggle { get; } = toggle;
@@ -20,6 +32,9 @@ public sealed class RibbonCommandVm(string label, MaterialIconKind icon, string 
 
     /// <summary>Bouton à deux états : enfoncé quand l'option est active.</summary>
     public bool IsOn { get => isOn; set => Set(ref isOn, value); }
+
+    private static string ShortcutDisplay(string shortcut) =>
+        shortcut.Replace("OemComma", ",").Replace("OemMinus", "-").Replace("OemPlus", "Plus").Replace("Delete", "Suppr").Replace("D0", "0");
 }
 
 /// <summary>Groupe de commandes, titré en bas comme dans Office.</summary>

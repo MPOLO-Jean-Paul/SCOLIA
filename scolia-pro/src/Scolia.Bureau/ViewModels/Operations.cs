@@ -424,17 +424,16 @@ public static class PreferencesDialog
 /// <summary>Raccourcis clavier de SCOLIA.</summary>
 public static class ShortcutsDialog
 {
-    private const string Text = """
-        F5 : actualiser l'écran affiché
-        Ctrl+K : recherche globale (apprenants, reçus, pages)
-        F2 : encaisser un versement
-        Ctrl+P : imprimer le document affiché
-        Ctrl+F1 : réduire ou développer le ruban
-        Échap : fermer la boîte de dialogue ouverte
-        """;
-
-    public static Task<bool> ShowAsync(ShellViewModel shell) =>
-        shell.Ask(new FormViewModel("Raccourcis clavier", "Les raccourcis fonctionnent dans toutes les pages.") { Message = Text, CancelText = "Fermer" });
+    /// <summary>La liste est construite à partir des commandes du ruban : elle suit toujours les raccourcis réels.</summary>
+    public static Task<bool> ShowAsync(ShellViewModel shell)
+    {
+        var lines = shell.ShortcutCommands.Select(c => $"{c.ShortcutText} : {c.Label}").Append("Échap : fermer la boîte de dialogue ouverte");
+        return shell.Ask(new FormViewModel("Raccourcis clavier", "Les raccourcis fonctionnent dans toutes les pages.")
+        {
+            Message = string.Join(Environment.NewLine, lines),
+            CancelText = "Fermer",
+        });
+    }
 }
 
 /// <summary>À propos de SCOLIA Pro.</summary>
