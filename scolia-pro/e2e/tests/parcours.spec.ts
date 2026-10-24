@@ -244,9 +244,9 @@ test('déconnexion puis verrouillage après cinq erreurs', async () => {
     await page.getByLabel('Identifiant').fill(admin.user);
     await page.getByLabel('Mot de passe').fill('mauvais-mot');
     await page.getByRole('button', { name: 'Se connecter' }).click();
-    await expect(page.locator('.alert.error')).toBeVisible();
+    await expect(page.locator('.signin-error')).toBeVisible();
   }
   await page.getByLabel('Mot de passe').fill(admin.password);
   await page.getByRole('button', { name: 'Se connecter' }).click();
-  await expect(page.locator('.alert.error')).toContainText('verrouillé');
+  await expect(page.locator('.signin-error')).toContainText('verrouillé');
 });

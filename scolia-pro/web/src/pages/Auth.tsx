@@ -1,27 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, LogIn, Rocket } from 'lucide-react';
+import { ArrowRight, Eye, EyeOff, LoaderCircle, Rocket } from 'lucide-react';
 import { api } from '../api/client';
 import type { Session } from '../api/types';
 import { useSession } from '../lib/session';
-import { Button, ErrorAlert, SectionTitle, SelectField, TextField } from '../components/ui';
-
-function Hero({ school }: { school?: string }) {
-  return (
-    <div className="auth-hero">
-      <img className="logo" src="/scolia.png" alt="" />
-      <div className="eyebrow">{school ?? 'SCOLIA'}</div>
-      <h1>Le secrétariat,<br />unifié et organisé.</h1>
-      <p>Un espace de travail pour suivre les apprenants, leurs paiements, la caisse et la scolarité.</p>
-      <ol>
-        <li><span>01</span>Dossiers des apprenants</li>
-        <li><span>02</span>Encaissements et caisse</li>
-        <li><span>03</span>Notes, présences et rapports</li>
-      </ol>
-      <div className="motto">Intégrité · Honnêteté · Excellence</div>
-    </div>
-  );
-}
+import { Button, ErrorAlert, SectionTitle, SelectField, TextField, errorText } from '../components/ui';
 
 export function LoginPage() {
   const { setSession } = useSession();
@@ -46,28 +29,29 @@ export function LoginPage() {
     } catch (err) { setError(err); } finally { setBusy(false); }
   };
   return (
-    <div className="auth">
-      <Hero school={school} />
-      <div className="auth-panel">
-        <form className="auth-card" onSubmit={submit}>
-          <div className="row"><img src="/scolia.png" alt="" width={40} height={40} /><strong style={{ color: 'var(--table-head-text)', fontSize: 12, letterSpacing: '.06em' }}>ESPACE SÉCURISÉ</strong></div>
-          <h2>Bienvenue</h2>
-          <p className="muted" style={{ marginTop: 0 }}>Identifiez-vous pour accéder à votre espace de travail.</p>
-          <div className="stack">
-            <TextField label="Identifiant" autoComplete="username" autoFocus value={userName} onChange={(e) => setUserName(e.target.value)} required />
-            <div className="field">
-              <label htmlFor="pwd">Mot de passe</label>
-              <div className="input-group">
-                <input id="pwd" className="input" style={{ paddingLeft: 12, paddingRight: 44 }} type={show ? 'text' : 'password'} autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required />
-                <button type="button" className="btn small icon ghost" style={{ position: 'absolute', right: 4, border: 'none' }} onClick={() => setShow((s) => !s)} aria-label={show ? 'Masquer' : 'Afficher'}>{show ? <EyeOff /> : <Eye />}</button>
-              </div>
-            </div>
-            <ErrorAlert error={error} />
-            <Button type="submit" variant="primary" icon={<LogIn />} loading={busy} style={{ height: 46 }}>Se connecter</Button>
-            <p className="small muted" style={{ textAlign: 'center', margin: 0 }}>Après 5 erreurs, le compte est verrouillé 15 minutes. Mot de passe oublié : contactez l’administrateur.</p>
+    <div className="signin-screen">
+      <main className="signin">
+        <img className="signin-avatar" src="/scolia.png" alt="" />
+        <h1 className="signin-title">{school ?? 'SCOLIA Pro'}</h1>
+        <p className="signin-sub">Connectez-vous pour continuer</p>
+        <form className="signin-form" onSubmit={submit}>
+          <label className="sr-only" htmlFor="login-user">Identifiant</label>
+          <input id="login-user" className="signin-input" placeholder="Identifiant" autoComplete="username" autoFocus value={userName} onChange={(e) => setUserName(e.target.value)} required />
+          <label className="sr-only" htmlFor="login-pwd">Mot de passe</label>
+          <div className="signin-pass">
+            <input id="login-pwd" className="signin-input" type={show ? 'text' : 'password'} placeholder="Mot de passe" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+            <button type="button" className="signin-icon" onClick={() => setShow((v) => !v)} aria-label={show ? 'Masquer la saisie' : 'Afficher la saisie'} title={show ? 'Masquer la saisie' : 'Afficher la saisie'}>
+              {show ? <EyeOff /> : <Eye />}
+            </button>
+            <button type="submit" className="signin-go" aria-label="Se connecter" title="Se connecter" disabled={busy}>
+              {busy ? <LoaderCircle className="spin" /> : <ArrowRight />}
+            </button>
           </div>
+          {error ? <p className="signin-error" role="alert">{errorText(error)}</p> : null}
         </form>
-      </div>
+        <p className="signin-help">Après 5 erreurs, le compte est verrouillé 15 minutes. Mot de passe oublié : contactez l’administrateur.</p>
+      </main>
+      <footer className="signin-foot">SCOLIA Pro 1.0.0</footer>
     </div>
   );
 }
@@ -102,10 +86,9 @@ export function SetupPage() {
   };
   const months = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
   return (
-    <div className="auth">
-      <Hero />
-      <div className="auth-panel" style={{ alignItems: 'start' }}>
-        <form className="auth-card" style={{ width: 'min(680px, 100%)' }} onSubmit={submit}>
+    <div className="signin-screen signin-setup">
+      <div className="signin-wide">
+        <form className="auth-card" onSubmit={submit}>
           <div className="row"><Rocket color="var(--blue)" /><strong>Première installation</strong></div>
           <h2 style={{ fontSize: 26 }}>Configurer SCOLIA</h2>
           <p className="muted" style={{ marginTop: 0 }}>Ces informations figurent sur les reçus et les documents. Elles restent modifiables dans Paramètres.</p>
@@ -144,6 +127,7 @@ export function SetupPage() {
           <Button type="submit" variant="primary" loading={busy} style={{ marginTop: 16, width: '100%', height: 46 }}>Installer SCOLIA</Button>
         </form>
       </div>
+      <footer className="signin-foot">SCOLIA Pro 1.0.0</footer>
     </div>
   );
 }
