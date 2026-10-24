@@ -14,10 +14,8 @@ export function LoginPage() {
   const [show, setShow] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<unknown>();
-  const [school, setSchool] = useState<string>();
   useEffect(() => {
     document.title = 'Connexion · SCOLIA';
-    api.get<{ schoolName?: string }>('/api/installation').then((s) => setSchool(s.schoolName)).catch(() => undefined);
   }, []);
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,7 +30,7 @@ export function LoginPage() {
     <div className="signin-screen">
       <main className="signin">
         <img className="signin-avatar" src="/scolia.png" alt="" />
-        <h1 className="signin-title">{school ?? 'SCOLIA Pro'}</h1>
+        <h1 className="signin-title">SCOLIA</h1>
         <p className="signin-sub">Connectez-vous pour continuer</p>
         <form className="signin-form" onSubmit={submit}>
           <label className="sr-only" htmlFor="login-user">Identifiant</label>
