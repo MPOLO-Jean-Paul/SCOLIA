@@ -349,6 +349,10 @@ public sealed class SettingsPage : PageViewModel
                 wholeAmountsOnly = f.Flag("entiers"),
                 receiptFooter = f.OptionalText("pied"),
                 phoneCountryCode = f.Text("indicatif"),
+                cardMinistry = f.OptionalText("ministere"),
+                cardDirection = f.OptionalText("direction"),
+                cardDivision = f.OptionalText("division"),
+                cardZone = f.OptionalText("zone"),
             });
             Shell.Notify("Établissement enregistré. Les reçus suivants utilisent ces informations.");
             return true;
@@ -362,6 +366,10 @@ public sealed class SettingsPage : PageViewModel
         form.Add("pays", "Pays", value: s.Country);
         form.Add("telephone", "Téléphone", value: s.Phone);
         form.Add("email", "E-mail", value: s.Email);
+        form.Add("ministere", "Ministère (cartes d'accès)", value: s.CardMinistry);
+        form.Add("direction", "Direction (cartes d'accès)", value: s.CardDirection);
+        form.Add("division", "Division provinciale (cartes d'accès)", value: s.CardDivision);
+        form.Add("zone", "Zone de santé (cartes d'accès)", value: s.CardZone);
         form.Add("site", "Site web", value: s.Website);
         form.Add("devise", "Monnaie (ISO)", value: s.CurrencyCode, required: true);
         form.Add("symbole", "Symbole", value: s.CurrencySymbol, required: true);

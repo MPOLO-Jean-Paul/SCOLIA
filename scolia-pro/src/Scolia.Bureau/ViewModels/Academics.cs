@@ -47,6 +47,7 @@ public sealed class GradesPage : PageViewModel
             Action("Enregistrer les notes", MaterialIconKind.ContentSave, SaveGradesAsync, primary: true);
         }
         Action("Résultats", MaterialIconKind.CertificateOutline, () => Shell.Open(() => new ResultsPage(Shell)));
+        Action("Cartes d'accès", MaterialIconKind.CardAccountDetailsOutline, () => Shell.Open(() => new CardsPage(Shell)));
         ActionRefresh();
     }
 

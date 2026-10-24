@@ -26,7 +26,15 @@ public sealed record SessionDto(
 
 public sealed record SchoolDto(
     string Name, string ShortName, string? Motto, string? Address, string? City, string? Country, string? Phone, string? Email,
-    string? Website, string CurrencyCode, string CurrencySymbol, bool WholeAmountsOnly, string? ReceiptFooter, bool HasLogo, string PhoneCountryCode);
+    string? Website, string CurrencyCode, string CurrencySymbol, bool WholeAmountsOnly, string? ReceiptFooter, bool HasLogo, string PhoneCountryCode,
+    string? CardMinistry = null, string? CardDirection = null, string? CardDivision = null, string? CardZone = null);
+
+/// <summary>Apprenant proposé pour les cartes d'accès, avec son diagnostic.</summary>
+public sealed record CardCandidateDto(Guid EnrollmentId, string Matricule, string FullName, string PromotionCode, string Status, bool Eligible,
+    bool IdentityComplete, bool DuplicateMatricule);
+
+public sealed record CardBatchDto(Guid Id, DateTime CreatedAtUtc, string Session, string PromotionLabel, int StudentCount, int CardCount, int PageCount,
+    string Format, string FileName, string CreatedBy);
 
 public sealed record PeriodDto(Guid Id, int Order, string Name, int Month, int CalendarYear, DateOnly DueDate);
 

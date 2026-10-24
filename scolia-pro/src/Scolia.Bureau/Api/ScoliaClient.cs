@@ -75,6 +75,15 @@ public sealed class ScoliaClient : IDisposable
         return await response.Content.ReadAsByteArrayAsync(ct);
     }
 
+    /// <summary>Demande un document (PDF) et lit l'en-tête X-Cartes-Ecartees : le nombre d'éléments écartés.</summary>
+    public async Task<(byte[] Bytes, int Skipped)> PostDocumentAsync(string path, object body, CancellationToken ct = default)
+    {
+        using var response = await SendRawAsync(HttpMethod.Post, path, body, ct);
+        var skipped = response.Headers.TryGetValues("X-Cartes-Ecartees", out var values)
+            ? int.Parse(values.Single(), System.Globalization.CultureInfo.InvariantCulture) : 0;
+        return (await response.Content.ReadAsByteArrayAsync(ct), skipped);
+    }
+
     /// <summary>Envoie des fichiers en multipart (import Excel, logo).</summary>
     public async Task<T> UploadAsync<T>(HttpMethod method, string path, IEnumerable<UploadedFile> files, CancellationToken ct = default)
     {
