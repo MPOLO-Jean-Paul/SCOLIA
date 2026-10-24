@@ -76,7 +76,7 @@ public sealed class StudentCardsApiTests : IDisposable
     {
         var student = await admin.Post("/api/apprenants", new
         {
-            identity = new { lastName, middleName = "Kabeya", firstName = "Grace", gender = "F", guardianPhone = "0812345678", guardianName = "Parent" },
+            identity = new { lastName, middleName = "Kabeya", firstName = "Grace", birthPlace = "Lubumbashi", birthDate = new DateOnly(2007, 3, 14), gender = "F", guardianPhone = "0812345678", guardianName = "Parent" },
             promotionId, confirmDuplicate = false,
         }).Ok();
         return student.GetProperty("enrollments")[0].GetProperty("id").GetString()!;

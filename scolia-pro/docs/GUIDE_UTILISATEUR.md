@@ -51,6 +51,9 @@ Raccourcis : `Ctrl+K` ouvre la recherche globale et toutes les commandes.
 3. Le matricule se génère seul : code de la promotion sur 4 caractères, puis le rang.
 4. Si un homonyme existe, SCOLIA le signale et demande une confirmation avant de créer le doublon.
 
+Champs obligatoires, comme dans SCOLIA V79 : nom, post-nom, prénom, sexe, date et lieu de naissance, contact parent 1 et promotion.
+Le contact parent 2 est facultatif. Les relances WhatsApp et SMS partent vers le contact 1, ou vers le contact 2 si le contact 1 manque.
+
 ## 4. Encaisser
 
 1. Encaisser, puis rechercher l'apprenant par nom ou matricule.
@@ -133,7 +136,7 @@ Données prises en charge :
 | Feuille | Contenu | Obligatoire |
 |---|---|---|
 | PROMOTIONS | code sur 4 caractères, désignation, section, niveau, mensualité, activation | code et mensualité |
-| APPRENANTS | matricule, nom, post-nom, prénom, sexe, naissance, lieu, promotion, parent, deux contacts, date d'inscription, statut, adresse | matricule et promotion |
+| APPRENANTS | matricule, nom, post-nom, prénom, sexe, naissance, lieu, promotion, parent, deux contacts, date d'inscription, statut, adresse | matricule, promotion, naissance, lieu et contact parent 1 |
 | PAIEMENTS | date, ancien numéro de reçu, matricule, mois payé, montant | matricule, mois et montant |
 
 Formats acceptés : `.xlsx` et `.xlsm`. Dates en jj/mm/aaaa ou en date Excel. Montants avec ou sans « FC ». Mois en toutes lettres, avec ou sans l'année.

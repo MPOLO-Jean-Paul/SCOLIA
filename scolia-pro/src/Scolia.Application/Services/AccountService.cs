@@ -70,7 +70,7 @@ public sealed class AccountService(IAppDbContext db, IClock clock)
         var year = await db.AcademicYears.AsNoTracking().FirstAsync(y => y.Id == data.Enrollment.AcademicYearId, ct);
         var receipts = await ReceiptsForAsync(enrollmentId, ct);
         var s = data.Enrollment.Student!;
-        var phone = s.GuardianPhone ?? s.Phone;
+        var phone = s.ParentPhone;
         return new AccountDto(s.Id, enrollmentId, s.Matricule, s.FullName, data.Promotion.Code, year.Label, Labels.Of(data.Enrollment.Status),
             data.Account.Lines.Select(ToDto).ToList(), data.Account.TotalFees, data.Account.TotalCovered, data.Account.TotalNet,
             data.Account.TotalPaid, data.Account.Balance, data.Account.Overdue, data.Account.OverdueCount,
@@ -107,7 +107,7 @@ public static class Reminders
     public static string? WhatsApp(SchoolProfile school, Student student, StudentAccount account)
     {
         if (account.Overdue <= 0) return null;
-        var phone = IdentityRules.ToInternational(student.GuardianPhone ?? student.Phone, school.PhoneCountryCode);
+        var phone = IdentityRules.ToInternational(student.ParentPhone, school.PhoneCountryCode);
         return phone is null ? null : $"https://wa.me/{phone}?text={Uri.EscapeDataString(Message(school, student, account))}";
     }
 
@@ -119,21 +119,21 @@ public static class Reminders
     public static string? MonthWhatsApp(SchoolProfile school, Student student, string period, decimal remaining)
     {
         if (remaining <= 0) return null;
-        var phone = IdentityRules.ToInternational(student.GuardianPhone ?? student.Phone, school.PhoneCountryCode);
+        var phone = IdentityRules.ToInternational(student.ParentPhone, school.PhoneCountryCode);
         return phone is null ? null : $"https://wa.me/{phone}?text={Uri.EscapeDataString(MonthMessage(school, student, period, remaining))}";
     }
 
     public static string? MonthSms(SchoolProfile school, Student student, string period, decimal remaining)
     {
         if (remaining <= 0) return null;
-        var phone = student.GuardianPhone ?? student.Phone;
+        var phone = student.ParentPhone;
         return string.IsNullOrWhiteSpace(phone) ? null : $"sms:{phone}?body={Uri.EscapeDataString(MonthMessage(school, student, period, remaining))}";
     }
 
     public static string? Sms(SchoolProfile school, Student student, StudentAccount account)
     {
         if (account.Overdue <= 0) return null;
-        var phone = student.GuardianPhone ?? student.Phone;
+        var phone = student.ParentPhone;
         return string.IsNullOrWhiteSpace(phone) ? null : $"sms:{phone}?body={Uri.EscapeDataString(Message(school, student, account))}";
     }
 }

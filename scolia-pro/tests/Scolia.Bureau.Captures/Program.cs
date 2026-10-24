@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using Scolia.Bureau;
 using Scolia.Bureau.Api;
 using Scolia.Bureau.Infrastructure;
@@ -440,16 +441,24 @@ if (shell.Dialog is SearchViewModel search)
 Save(window, "24-recherche.png");
 shell.CloseDialog();
 
-var form = new FormViewModel("Nouvelle inscription", "Le matricule est attribué automatiquement à l'enregistrement.", _ => Task.FromResult(false)) { SubmitText = "Inscrire" };
-form.Add("nom", "Nom", required: true);
-form.Add("prenom", "Prénom", required: true);
-form.AddChoice("sexe", "Sexe", Labels.Genders, "M", required: true);
-form.AddDay("naissance", "Date de naissance", null);
-form.AddChoice("promotion", "Promotion", Result(api.GetAsync<List<PromotionDto>>("api/etablissement/promotions")).Select(Choices.Promotion).ToList(), null, required: true);
-form.Add("notes", "Observations", FieldKind.Multiline);
-_ = shell.Ask(form);
+// Le vrai formulaire d'inscription, avec les champs obligatoires de SCOLIA V79.
+_ = StudentForms.CreateAsync(shell);
+Wait(Task.Delay(600));
 Save(window, "25-formulaire.png");
-form.Close(false);
+if (shell.Dialog is FormViewModel form)
+{
+    // Bas du formulaire : les contacts du parent, puis les erreurs affichées quand on inscrit sans les remplir.
+    var scroller = window.GetVisualDescendants().OfType<ScrollViewer>().LastOrDefault(sv => sv.DataContext is FormViewModel);
+    if (scroller is not null) scroller.Offset = new Vector(0, scroller.Extent.Height);
+    Save(window, "25b-formulaire-contacts.png");
+    form.Fields.First(f => f.Key == "nom").Text = "Mukendi";
+    form.Fields.First(f => f.Key == "postNom").Text = "Kabeya";
+    form.Fields.First(f => f.Key == "prenom").Text = "Grâce";
+    form.Submit.Execute(null);
+    Wait(Task.Delay(300));
+    Save(window, "25c-formulaire-erreurs.png");
+    form.Close(false);
+}
 Wait(Task.Delay(100));
 
 shell.OpenBackstage();

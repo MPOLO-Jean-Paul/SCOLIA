@@ -45,6 +45,8 @@ test('inscription d’un nouvel apprenant avec matricule automatique', async () 
   await dialog.getByLabel('Post-nom').fill('Tshimanga');
   await dialog.getByLabel('Prénom').fill('esther');
   await dialog.getByLabel('Sexe').selectOption('F');
+  await dialog.getByLabel('Date de naissance').fill('2008-03-14');
+  await dialog.getByLabel('Lieu de naissance').fill('Lubumbashi');
   await dialog.getByLabel('Contact parent 1').fill('0812345678');
   await dialog.getByLabel('Promotion').selectOption({ label: 'TLM1 — Première année' });
   await dialog.getByRole('button', { name: 'Enregistrer l’inscription' }).click();

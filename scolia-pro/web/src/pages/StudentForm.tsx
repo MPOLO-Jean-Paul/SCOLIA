@@ -46,8 +46,8 @@ export function IdentityFields({ form, setForm, error }: { form: IdentityForm; s
         <SelectField label="Sexe" value={form.gender} onChange={set('gender')} error={e?.fieldError('gender')} required>
           <option value="">Choisir…</option><option value="F">Féminin</option><option value="M">Masculin</option>
         </SelectField>
-        <TextField label="Date de naissance" type="date" value={form.birthDate} onChange={set('birthDate')} max={today()} error={e?.fieldError('birthDate')} />
-        <TextField label="Lieu de naissance" value={form.birthPlace} onChange={set('birthPlace')} />
+        <TextField label="Date de naissance" type="date" value={form.birthDate} onChange={set('birthDate')} max={today()} error={e?.fieldError('birthDate')} required />
+        <TextField label="Lieu de naissance" value={form.birthPlace} onChange={set('birthPlace')} error={e?.fieldError('birthPlace')} required />
         <TextField label="Nationalité" value={form.nationality} onChange={set('nationality')} />
         <TextField label="Téléphone de l'apprenant" value={form.phone} onChange={set('phone')} error={e?.fieldError('phone')} inputMode="tel" />
         <TextField label="E-mail" type="email" value={form.email} onChange={set('email')} error={e?.fieldError('email')} />
@@ -59,8 +59,8 @@ export function IdentityFields({ form, setForm, error }: { form: IdentityForm; s
         <SelectField label="Lien" value={form.guardianRelation} onChange={set('guardianRelation')}>
           <option value="">—</option>{['Père', 'Mère', 'Tuteur', 'Tutrice', 'Oncle', 'Tante', 'Frère', 'Sœur', 'Autre'].map((r) => <option key={r}>{r}</option>)}
         </SelectField>
-        <TextField label="Contact parent 1" value={form.guardianPhone} onChange={set('guardianPhone')} error={e?.fieldError('guardianPhone')} inputMode="tel" help="10 chiffres, ex. 0812345678" />
-        <TextField label="Contact parent 2" value={form.guardianPhone2} onChange={set('guardianPhone2')} error={e?.fieldError('guardianPhone2')} inputMode="tel" />
+        <TextField label="Contact parent 1" value={form.guardianPhone} onChange={set('guardianPhone')} error={e?.fieldError('guardianPhone')} inputMode="tel" required help="10 chiffres, ex. 0812345678. Les relances WhatsApp et SMS partent vers ce numéro." />
+        <TextField label="Contact parent 2" value={form.guardianPhone2} onChange={set('guardianPhone2')} error={e?.fieldError('guardianPhone2')} inputMode="tel" help="Facultatif. Sert aux relances si le contact 1 est vide." />
         <TextField className="span-2" label="Adresse de résidence" value={form.address} onChange={set('address')} />
         <TextArea className="span-3" label="Observations" value={form.notes} onChange={set('notes')} rows={2} />
       </div>

@@ -26,12 +26,12 @@ public sealed class TodayTests : IDisposable
         var promotionId = promotion.GetProperty("id").GetString()!;
         var birthday = await admin.Post("/api/apprenants", new
         {
-            identity = new { lastName = "Mukendi", middleName = "Kabeya", firstName = "Grâce", gender = "F", birthDate = today.AddYears(-19), guardianPhone = "0812345678", guardianName = "Parent" },
+            identity = new { lastName = "Mukendi", middleName = "Kabeya", firstName = "Grâce", birthPlace = "Lubumbashi", gender = "F", birthDate = today.AddYears(-19), guardianPhone = "0812345678", guardianName = "Parent" },
             promotionId, confirmDuplicate = false,
         }).Ok();
         await admin.Post("/api/apprenants", new
         {
-            identity = new { lastName = "Ilunga", middleName = "Kasongo", firstName = "Paul", gender = "M", birthDate = today.AddDays(-1).AddYears(-18), guardianPhone = "0812345679", guardianName = "Parent" },
+            identity = new { lastName = "Ilunga", middleName = "Kasongo", firstName = "Paul", birthPlace = "Lubumbashi", gender = "M", birthDate = today.AddDays(-1).AddYears(-18), guardianPhone = "0812345679", guardianName = "Parent" },
             promotionId, confirmDuplicate = false,
         }).Ok();
         var enrollmentId = birthday.GetProperty("enrollments")[0].GetProperty("id").GetString()!;
@@ -101,7 +101,7 @@ public sealed class MonthlyFollowUpTests : IDisposable
     private static async Task<string> Student(HttpClient admin, string promotionId, string last, string phone) =>
         (await admin.Post("/api/apprenants", new
         {
-            identity = new { lastName = last, middleName = "Kabeya", firstName = "Grâce", gender = "F", guardianPhone = phone, guardianName = "Parent" },
+            identity = new { lastName = last, middleName = "Kabeya", firstName = "Grâce", birthPlace = "Lubumbashi", birthDate = new DateOnly(2007, 3, 14), gender = "F", guardianPhone = phone, guardianName = "Parent" },
             promotionId, confirmDuplicate = false,
         }).Ok()).GetProperty("enrollments")[0].GetProperty("id").GetString()!;
 

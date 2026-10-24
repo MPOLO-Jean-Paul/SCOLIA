@@ -409,16 +409,19 @@ public static class StudentForms
         form.Add("postNom", "Post-nom", value: s?.MiddleName, required: true);
         form.Add("prenom", "Prénom", value: s?.FirstName, required: true);
         form.AddChoice("sexe", "Sexe", Labels.Genders, s?.Gender ?? "M", required: true);
-        form.AddDay("naissance", "Date de naissance", s?.BirthDate);
-        form.Add("lieu", "Lieu de naissance", value: s?.BirthPlace);
+        form.AddDay("naissance", "Date de naissance", s?.BirthDate, required: true);
+        form.Add("lieu", "Lieu de naissance", value: s?.BirthPlace, required: true);
         form.Add("nationalite", "Nationalité", value: s?.Nationality);
         form.Add("telephone", "Téléphone de l'apprenant", value: s?.Phone);
         form.Add("email", "E-mail", value: s?.Email);
         form.Add("adresse", "Adresse de résidence", value: s?.Address);
         form.Add("tuteur", "Parent ou tuteur", value: s?.GuardianName);
         form.Add("lien", "Lien", value: s?.GuardianRelation);
-        form.Add("contact1", "Contact parent 1", value: s?.GuardianPhone);
-        form.Add("contact2", "Contact parent 2", value: s?.GuardianPhone2);
+        // Comme dans SCOLIA V79 : le contact 1 est obligatoire, c'est lui que visent les relances WhatsApp et SMS.
+        form.Add("contact1", "Contact parent 1", value: s?.GuardianPhone, required: true,
+            hint: "Ex. 0812345678 · reçoit les relances WhatsApp et SMS");
+        form.Add("contact2", "Contact parent 2", value: s?.GuardianPhone2,
+            hint: "Facultatif · utilisé si le contact 1 manque");
         form.Add("notes", "Observations", FieldKind.Multiline, s?.Notes);
     }
 

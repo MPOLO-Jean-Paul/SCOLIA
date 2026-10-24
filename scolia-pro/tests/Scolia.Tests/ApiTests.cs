@@ -105,7 +105,7 @@ public sealed class SecurityApiTests : IDisposable
         await admin.Put($"/api/apprenants/{studentId}", new
         {
             lastName = "CHANGEMENT", middleName = "NOUVEAU", firstName = "Test", gender = "M", version = student.GetProperty("version").GetInt64(),
-            guardianName = "Tuteur de test",
+            birthDate = new DateOnly(2007, 3, 14), birthPlace = "Lubumbashi", guardianPhone = "0812345678", guardianName = "Tuteur de test",
         }).Ok();
         var after = await admin.GetAsync($"/api/paiements/{receiptId}").Ok();
         Assert.Equal("CHANGEMENT NOUVEAU Test", after.GetProperty("studentName").GetString());
@@ -200,7 +200,7 @@ public sealed class BusinessApiTests : IDisposable
         var promotionId = promotion.GetProperty("id").GetString()!;
         var student = await admin.Post("/api/apprenants", new
         {
-            identity = new { lastName = "Mukendi", middleName = "Kabeya", firstName = "grâce", gender = "F", guardianPhone = "0812345678", guardianName = "Parent" },
+            identity = new { lastName = "Mukendi", middleName = "Kabeya", firstName = "grâce", birthPlace = "Lubumbashi", birthDate = new DateOnly(2007, 3, 14), gender = "F", guardianPhone = "0812345678", guardianName = "Parent" },
             promotionId, confirmDuplicate = false,
         }).Ok();
         Assert.Equal("INF101", student.GetProperty("matricule").GetString());
@@ -210,11 +210,56 @@ public sealed class BusinessApiTests : IDisposable
     }
 
     [Fact]
+    public async Task Registration_requires_the_V79_fields_and_a_parent_contact()
+    {
+        var admin = await app.InstalledAdmin();
+        var promotionId = (await admin.Post("/api/etablissement/promotions", new { code = "INF1", name = "Première année", level = 1, isActive = true, monthlyFee = 55000m }).Ok())
+            .GetProperty("id").GetString()!;
+        // Comme dans SCOLIA V79 : sans date, lieu de naissance ni contact parent 1, le dossier est refusé.
+        var (status, body) = await admin.Post("/api/apprenants", new
+        {
+            identity = new { lastName = "Mukendi", middleName = "Kabeya", firstName = "Grace", gender = "F" }, promotionId, confirmDuplicate = false,
+        }).Fail();
+        Assert.Equal(HttpStatusCode.BadRequest, status);
+        var text = body.GetRawText();
+        foreach (var field in new[] { "birthDate", "birthPlace", "guardianPhone" }) Assert.Contains(field, text, StringComparison.Ordinal);
+
+        // Le contact 2 est facultatif, mais ne peut pas répéter le contact 1.
+        var (same, sameBody) = await admin.Post("/api/apprenants", new
+        {
+            identity = new { lastName = "Mukendi", middleName = "Kabeya", firstName = "Grace", gender = "F", birthDate = new DateOnly(2007, 3, 14), birthPlace = "Likasi",
+                guardianPhone = "0812345678", guardianPhone2 = "081 234 5678" },
+            promotionId, confirmDuplicate = false,
+        }).Fail();
+        Assert.Equal(HttpStatusCode.BadRequest, same);
+        Assert.Contains("guardianPhone2", sameBody.GetRawText(), StringComparison.Ordinal);
+
+        var created = await admin.Post("/api/apprenants", new
+        {
+            identity = new { lastName = "Mukendi", middleName = "Kabeya", firstName = "Grace", gender = "F", birthDate = new DateOnly(2007, 3, 14), birthPlace = "Likasi",
+                guardianPhone = "0812345678", guardianPhone2 = "0991234567" },
+            promotionId, confirmDuplicate = false,
+        }).Ok();
+        Assert.Equal("0991234567", created.GetProperty("guardianPhone2").GetString());
+    }
+
+    [Fact]
+    public void Reminders_use_the_parent_contact_given_at_registration()
+    {
+        var student = new Scolia.Domain.Students.Student { GuardianPhone = "0812345678", GuardianPhone2 = "0991234567", Phone = "0850000000" };
+        Assert.Equal("0812345678", student.ParentPhone);
+        student.GuardianPhone = null; // Dossier repris d'un ancien classeur sans contact 1.
+        Assert.Equal("0991234567", student.ParentPhone);
+        student.GuardianPhone2 = " ";
+        Assert.Equal("0850000000", student.ParentPhone);
+    }
+
+    [Fact]
     public async Task Duplicate_identity_requires_confirmation()
     {
         var admin = await app.InstalledAdmin();
         var (promotionId, _, _) = await NewStudent(admin);
-        var payload = new { identity = new { lastName = "MUKENDI", middleName = "kabeya", firstName = "Grace", gender = "F" }, promotionId, confirmDuplicate = false };
+        var payload = new { identity = new { lastName = "MUKENDI", middleName = "kabeya", firstName = "Grace", birthPlace = "Lubumbashi", birthDate = new DateOnly(2007, 3, 14), gender = "F", guardianPhone = "0812345670" }, promotionId, confirmDuplicate = false };
         var (status, body) = await admin.Post("/api/apprenants", payload).Fail();
         Assert.Equal(HttpStatusCode.Conflict, status);
         Assert.Equal("INF101", body.GetProperty("candidates")[0].GetProperty("matricule").GetString());

@@ -31,12 +31,18 @@ public sealed class Student : Entity
     public string SearchText { get; set; } = string.Empty;
     public List<Enrollment> Enrollments { get; set; } = [];
 
+    /// <summary>
+    /// Numéro pour joindre la famille, saisi à l'inscription : le contact parent 1, sinon le contact parent 2,
+    /// sinon le téléphone de l'apprenant. Les relances WhatsApp et SMS partent toutes de ce numéro.
+    /// </summary>
+    public string? ParentPhone => new[] { GuardianPhone, GuardianPhone2, Phone }.FirstOrDefault(p => !string.IsNullOrWhiteSpace(p));
+
     public string FullName => string.Join(' ', new[] { LastName, MiddleName, FirstName }.Where(s => !string.IsNullOrWhiteSpace(s)));
 
     public void RefreshKeys()
     {
         IdentityKey = BuildIdentityKey(LastName, MiddleName, FirstName);
-        SearchText = TextKey.Normalize($"{Matricule} {LastName} {MiddleName} {FirstName} {GuardianName} {GuardianPhone} {Phone}");
+        SearchText = TextKey.Normalize($"{Matricule} {LastName} {MiddleName} {FirstName} {GuardianName} {GuardianPhone} {GuardianPhone2} {Phone}");
     }
 
     public static string BuildIdentityKey(string? last, string? middle, string? first) =>

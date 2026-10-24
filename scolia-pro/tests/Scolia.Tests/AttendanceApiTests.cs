@@ -22,7 +22,7 @@ public sealed class AttendanceApiTests : IDisposable
         var promotionId = promotion.GetProperty("id").GetString()!;
         var student = await admin.Post("/api/apprenants", new
         {
-            identity = new { lastName, middleName = "Kabeya", firstName = "Grace", gender = "F", guardianPhone = "0812345678", guardianName = "Parent" },
+            identity = new { lastName, middleName = "Kabeya", firstName = "Grace", birthPlace = "Lubumbashi", birthDate = new DateOnly(2007, 3, 14), gender = "F", guardianPhone = "0812345678", guardianName = "Parent" },
             promotionId, enrolledOn, confirmDuplicate = false,
         }).Ok();
         return (promotionId, student.GetProperty("enrollments")[0].GetProperty("id").GetString()!);

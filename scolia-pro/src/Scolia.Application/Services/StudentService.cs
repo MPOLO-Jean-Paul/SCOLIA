@@ -76,7 +76,11 @@ public sealed class StudentService(IAppDbContext db, IWriteGate gate, IAuditLog 
             .Require(IdentityRules.IsValidName(input.LastName), "lastName", "Nom obligatoire : lettres, espaces, apostrophes ou tirets.")
             .Require(IdentityRules.IsValidName(input.MiddleName), "middleName", "Post-nom obligatoire : lettres, espaces, apostrophes ou tirets.")
             .Require(IdentityRules.IsValidName(input.FirstName), "firstName", "Prénom obligatoire : lettres, espaces, apostrophes ou tirets.")
+            // Comme dans SCOLIA V79 : date et lieu de naissance, et le contact parent 1 qui sert aux relances.
+            .Require(input.BirthDate is not null, "birthDate", "Date de naissance obligatoire.")
             .Require(input.BirthDate is null || (input.BirthDate <= clock.Today && input.BirthDate > clock.Today.AddYears(-100)), "birthDate", "Date de naissance invalide.")
+            .Require(!string.IsNullOrWhiteSpace(input.BirthPlace), "birthPlace", "Lieu de naissance obligatoire.")
+            .Require(!string.IsNullOrWhiteSpace(input.GuardianPhone), "guardianPhone", "Contact parent 1 obligatoire : 10 chiffres, par exemple 0812345678.")
             .Require(input.Email is null || input.Email.Length == 0 || (input.Email.Contains('@') && input.Email.Length <= 160), "email", "Adresse e-mail invalide.");
         Gender gender = Gender.M;
         try { gender = EnumText.Parse<Gender>(input.Gender, "gender", [(Gender.M, "Masculin"), (Gender.F, "Féminin")]); }
@@ -85,6 +89,7 @@ public sealed class StudentService(IAppDbContext db, IWriteGate gate, IAuditLog 
         try { phone = IdentityRules.NormalizePhone(input.Phone); } catch (DomainException e) { v.Add("phone", e.Message); }
         try { guardianPhone = IdentityRules.NormalizePhone(input.GuardianPhone); } catch (DomainException e) { v.Add("guardianPhone", e.Message); }
         try { guardianPhone2 = IdentityRules.NormalizePhone(input.GuardianPhone2); } catch (DomainException e) { v.Add("guardianPhone2", e.Message); }
+        if (guardianPhone is not null && guardianPhone == guardianPhone2) v.Add("guardianPhone2", "Le contact parent 2 reprend le contact 1 : laissez-le vide ou saisissez un autre numéro.");
         v.ThrowIfInvalid();
 
         s.LastName = input.LastName.Trim().ToUpperInvariant();

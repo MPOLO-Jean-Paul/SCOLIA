@@ -106,6 +106,9 @@ public sealed class LegacyImportService(IAppDbContext db, IWriteGate gate, IAudi
                 Notes = $"Importé de {ls.Source}",
             };
             student.RefreshKeys();
+            // Le contact parent sert aux relances : un dossier repris sans numéro est signalé pour être complété.
+            if (student.GuardianPhone is null && student.GuardianPhone2 is null)
+                warnings.Add($"{ls.Matricule} : aucun contact parent, à compléter sur la fiche pour pouvoir relancer.");
             var status = TextKey.Normalize(ls.Status) switch { "SUSPENDU" => EnrollmentStatus.Suspendu, "SORTI" => EnrollmentStatus.Sorti, _ => EnrollmentStatus.Actif };
             var enrollment = new Enrollment { StudentId = student.Id, AcademicYearId = year.Id, PromotionId = promotion.Id, EnrolledOn = ls.Enrolled ?? year.StartDate, Status = status };
             enrollments[ls.Matricule] = (student, enrollment, promotion);
@@ -176,8 +179,8 @@ public sealed class LegacyImportService(IAppDbContext db, IWriteGate gate, IAudi
         ("PROMOTIONS", [("Code", "INF1 · 4 caractères"), ("Désignation", "Première année"), ("Section", "Infirmière"), ("Niveau", "1"), ("Année", "Non lue"),
             ("Mensualité", "55000"), ("Total annuel", "Non lue"), ("Activation", "Active ou Inactive")]),
         ("APPRENANTS", [("Matricule", "INF101 · obligatoire"), ("Nom", "KALONJI"), ("Post-nom", "MBOMBO"), ("Prénom", "Ruth"), ("Sexe", "F ou M"),
-            ("Naissance", "12/06/2008"), ("Lieu", "Lubumbashi"), ("Promotion", "INF1 · code de PROMOTIONS"), ("Parent / tuteur", "KALONJI Pierre"),
-            ("Contact 1", "0812345678"), ("Contact 2", "Facultatif"), ("Inscription", "01/09/2026"), ("Année", "Non lue"),
+            ("Naissance", "12/06/2008 · obligatoire"), ("Lieu", "Lubumbashi · obligatoire"), ("Promotion", "INF1 · code de PROMOTIONS"), ("Parent / tuteur", "KALONJI Pierre"),
+            ("Contact 1", "0812345678 · obligatoire"), ("Contact 2", "Facultatif, autre numéro"), ("Inscription", "01/09/2026"), ("Année", "Non lue"),
             ("Statut", "Actif, Suspendu ou Sorti"), ("Adresse", "Av. Kasaï 12")]),
         ("PAIEMENTS", [("N°", "1"), ("Date", "05/09/2026"), ("N° reçu", "ancien numéro"), ("Matricule", "INF101 · de APPRENANTS"), ("Apprenant", "Non lue"),
             ("Promotion", "INF1"), ("Mois", "Septembre"), ("Montant dû", "Non lue"), ("Montant payé", "55000 · obligatoire")]),
@@ -197,6 +200,7 @@ public sealed class LegacyImportService(IAppDbContext db, IWriteGate gate, IAudi
             "Recopiez vos données à partir de la ligne 5 de chaque feuille. La ligne 3 montre un exemple : elle n'est pas importée.",
             "1. PROMOTIONS : une ligne par promotion. Le code compte 4 caractères. La mensualité est en francs congolais.",
             "2. APPRENANTS : une ligne par apprenant. Le matricule est conservé. La promotion reprend un code de la feuille PROMOTIONS.",
+            "   Comme dans SCOLIA V79, la naissance, le lieu et le contact parent 1 sont obligatoires. Le contact 1 reçoit les relances WhatsApp et SMS.",
             "3. PAIEMENTS : une ligne par mois payé. Plusieurs lignes avec le même N° reçu forment un seul reçu.",
             "Le mois s'écrit en toutes lettres, comme dans l'année scolaire : Septembre, Octobre...",
             "Les colonnes marquées « Non lue » peuvent rester vides.",

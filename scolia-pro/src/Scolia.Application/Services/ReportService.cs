@@ -145,7 +145,7 @@ public sealed class ReportService(IAppDbContext db, IClock clock, AccountService
                 var s = x.Enrollment.Student!;
                 return new DebtorDto(s.Id, x.Enrollment.Id, s.Matricule, s.FullName, x.Promotion.Code, x.Account.Balance, x.Account.Overdue, x.Account.OverdueCount,
                     string.Join(", ", x.Account.Lines.Where(l => l.IsOverdue).Select(l => l.Label)), Aging.Bucket(x.Account.OldestOverdueDate, today),
-                    s.GuardianName, s.GuardianPhone ?? s.Phone, Reminders.WhatsApp(school, s, x.Account), Reminders.Sms(school, s, x.Account));
+                    s.GuardianName, s.ParentPhone, Reminders.WhatsApp(school, s, x.Account), Reminders.Sms(school, s, x.Account));
             }).ToList();
     }
 
@@ -164,7 +164,7 @@ public sealed class ReportService(IAppDbContext db, IClock clock, AccountService
         return new TableDocument(PaymentService.Header(school), $"LISTE D'ENREGISTREMENT — {promotion.Code} {promotion.Name}", $"Année scolaire {year.Label} · {rows.Count} apprenant(s)",
             ["N°", "Matricule", "Nom", "Post-nom", "Prénom", "Sexe", "Naissance", "Contact parent"],
             rows.Select(s => (IReadOnlyList<string>)[(++n).ToString(), s.Matricule, s.LastName, s.MiddleName, s.FirstName, s.Gender.ToString(),
-                s.BirthDate?.ToString("dd/MM/yyyy") ?? "", s.GuardianPhone ?? ""]).ToList());
+                s.BirthDate?.ToString("dd/MM/yyyy") ?? "", s.ParentPhone ?? ""]).ToList());
     }
 
     public async Task<TableDocument> DebtorsTableAsync(DebtorQuery q, CancellationToken ct = default)
@@ -216,7 +216,7 @@ public sealed class ReportService(IAppDbContext db, IClock clock, AccountService
         return new TableDocument(PaymentService.Header(school), "Liste générale des apprenants", $"Année scolaire {year.Label} · {rows.Count} apprenant(s)",
             ["Matricule", "Nom complet", "Sexe", "Promotion", "Statut", "Contact parent", "Payé", "Solde", "Reste exigible"],
             rows.Select(x => (IReadOnlyList<string>)[x.Enrollment.Student!.Matricule, x.Enrollment.Student!.FullName, x.Enrollment.Student!.Gender.ToString(),
-                x.Promotion.Code, x.Enrollment.Status.ToString(), x.Enrollment.Student!.GuardianPhone ?? "", M(x.Account.TotalPaid), M(x.Account.Balance), M(x.Account.Overdue)]).ToList(),
+                x.Promotion.Code, x.Enrollment.Status.ToString(), x.Enrollment.Student!.ParentPhone ?? "", M(x.Account.TotalPaid), M(x.Account.Balance), M(x.Account.Overdue)]).ToList(),
             ["", "Total", "", "", "", "", M(rows.Sum(x => x.Account.TotalPaid)), M(rows.Sum(x => x.Account.Balance)), M(rows.Sum(x => x.Account.Overdue))], Landscape: true);
     }
 
@@ -294,7 +294,7 @@ public sealed class ReportService(IAppDbContext db, IClock clock, AccountService
             var line = x.Line!;
             var receipt = lastReceipt.GetValueOrDefault(x.Entry.Enrollment.Id);
             return new MonthlyRowDto(s.Id, x.Entry.Enrollment.Id, s.Matricule, s.FullName, x.Entry.Promotion.Code, line.Net, line.Paid, line.Remaining,
-                Status(line), receipt?.Number, receipt?.Date, s.GuardianPhone ?? s.Phone,
+                Status(line), receipt?.Number, receipt?.Date, s.ParentPhone,
                 Reminders.MonthWhatsApp(school, s, Name(period), line.Remaining), Reminders.MonthSms(school, s, Name(period), line.Remaining));
         }).OrderBy(r => r.PromotionCode).ThenBy(r => r.FullName).ToList();
 
