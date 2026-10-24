@@ -1,29 +1,30 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:infra="using:Scolia.Bureau.Infrastructure"
              x:Class="Scolia.Bureau.Views.DisciplineView">
   <Grid RowDefinitions="Auto,*">
     <Border Grid.Row="0" Classes="band" Margin="0,0,0,10">
       <StackPanel Orientation="Horizontal" Spacing="10">
         <TextBlock Text="Promotion" VerticalAlignment="Center" Classes="muted" />
-        <ComboBox Width="260" ItemsSource="{Binding Promotions}" SelectedItem="{Binding Promotion}" />
+        <ComboBox Width="240" ItemsSource="{Binding Promotions}" SelectedItem="{Binding Promotion}" />
+        <TextBlock Text="Mesure" VerticalAlignment="Center" Classes="muted" />
+        <ComboBox Width="200" ItemsSource="{Binding Measures}" SelectedItem="{Binding Measure}" />
       </StackPanel>
     </Border>
-    <DataGrid Grid.Row="1" ItemsSource="{Binding Items}" AutoGenerateColumns="False" IsReadOnly="True">
+    <DataGrid Grid.Row="1" ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}" AutoGenerateColumns="False" IsReadOnly="True">
       <DataGrid.Columns>
-        <DataGridTextColumn Header="Date" Binding="{Binding Date}" Width="Auto" MinWidth="120" />
-        <DataGridTextColumn Header="Matricule" Binding="{Binding Matricule}" Width="Auto" MinWidth="105" />
-        <DataGridTextColumn Header="Apprenant" Binding="{Binding Name}" Width="Auto" MinWidth="210" />
-        <DataGridTextColumn Header="Catégorie" Binding="{Binding Category}" Width="Auto" MinWidth="150" />
-        <DataGridTextColumn Header="Description" Binding="{Binding Description}" Width="*" />
-        <DataGridTextColumn Header="Sanction" Binding="{Binding Sanction}" Width="Auto" MinWidth="170" />
-        <DataGridTemplateColumn Header="Gravité" Width="Auto" MinWidth="110">
-          <DataGridTemplateColumn.CellTemplate>
-            <DataTemplate>
-              <TextBlock Text="{Binding Severity}" Foreground="{Binding SeverityBrush}" FontWeight="SemiBold" VerticalAlignment="Center" />
-            </DataTemplate>
-          </DataGridTemplateColumn.CellTemplate>
-        </DataGridTemplateColumn>
-        <DataGridTextColumn Header="Par" Binding="{Binding RecordedBy}" Width="Auto" MinWidth="120" />
+        <DataGridTextColumn Header="Décidé le" Binding="{Binding Date}" Width="Auto" MinWidth="110" infra:GridPriority.Level="1" />
+        <DataGridTextColumn Header="Matricule" Binding="{Binding Matricule}" Width="Auto" MinWidth="105" infra:GridPriority.Level="1" />
+        <DataGridTextColumn Header="Apprenant" Binding="{Binding Name}" Width="Auto" MinWidth="200" infra:GridPriority.Level="1" />
+        <DataGridTextColumn Header="Mesure" Binding="{Binding Measure}" Width="Auto" MinWidth="140" infra:GridPriority.Level="1" />
+        <DataGridTextColumn Header="Motif" Binding="{Binding Reason}" Width="*" MinWidth="160" infra:GridPriority.Level="1" />
+        <DataGridTextColumn Header="Période ou rendez-vous" Binding="{Binding Period}" Width="Auto" MinWidth="190" infra:GridPriority.Level="2" />
+        <DataGridTextColumn Header="Durée" Binding="{Binding Duration}" Width="Auto" MinWidth="70" infra:GridPriority.Level="3" />
+        <DataGridTextColumn Header="Retour" Binding="{Binding ReturnFrom}" Width="Auto" MinWidth="105" infra:GridPriority.Level="3" />
+        <DataGridTextColumn Header="Réception" Binding="{Binding Reception}" Width="Auto" MinWidth="120" infra:GridPriority.Level="2" />
+        <DataGridTextColumn Header="Statut" Binding="{Binding State}" Width="Auto" MinWidth="90" infra:GridPriority.Level="2" />
+        <DataGridTextColumn Header="Statut effectif" Binding="{Binding Status}" Width="Auto" MinWidth="120" infra:GridPriority.Level="2" />
+        <DataGridTextColumn Header="Origine" Binding="{Binding Origin}" Width="Auto" MinWidth="120" infra:GridPriority.Level="3" />
       </DataGrid.Columns>
     </DataGrid>
   </Grid>

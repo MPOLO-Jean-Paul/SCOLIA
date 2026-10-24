@@ -12,6 +12,12 @@ public sealed record YearProposalDto(string Label);
 /// <summary>Révision des données du serveur : elle change à chaque écriture, d'un poste quelconque.</summary>
 public sealed record RevisionDto(long Revision);
 
+/// <summary>Ligne du registre disciplinaire, telle que le serveur la renvoie.</summary>
+public sealed record DisciplineRowDto(Guid Id, Guid EnrollmentId, string Matricule, string FullName, string PromotionCode, string Measure, string Reason,
+    DateOnly DecisionDate, DateOnly? FirstDay, DateOnly? LastDay, int? Days, DateOnly? ReturnFrom, DateTime? AppointmentAt, bool IsAutomatic,
+    string? ParentName, string? ParentPhone, string Reception, string? ReceptionNote, string State, string? CancelReason, string RecordedBy,
+    string EffectiveStatus, string AcademicYear, bool CanReceive, bool CanAbsent, bool CanCancel);
+
 // Contrats de l'API SCOLIA, tels que servis en JSON (noms en camelCase, dates ISO, montants décimaux).
 
 public sealed record SessionDto(

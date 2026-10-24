@@ -409,18 +409,42 @@ public sealed class AttendancePage : PageViewModel
 }
 
 /// <summary>Ligne d'incident de discipline.</summary>
-public sealed record IncidentRowVm(string Date, string Matricule, string Name, string Category, string Description, string Sanction, string Severity, IBrush SeverityBrush, string RecordedBy);
+/// <summary>Ligne du registre disciplinaire, prête à afficher.</summary>
+public sealed record DisciplineRowVm(Guid Id, Guid EnrollmentId, string Date, string Matricule, string Name, string Measure, string Reason,
+    string Period, string Duration, string ReturnFrom, string Reception, string State, string Status, string Origin,
+    bool IsConvocation, bool CanReceive, bool CanCancel);
 
-/// <summary>Discipline : incidents par promotion, avec sanction et gravité.</summary>
+/// <summary>Registre disciplinaire : renvois temporaires et définitifs, convocations et réception des parents (V79 : Scolarité > Discipline).</summary>
 public sealed class DisciplinePage : PageViewModel
 {
+    private static readonly IReadOnlyList<ChoiceItem> MeasureChoices =
+    [
+        new("", "Toutes les mesures"), new("RenvoiTemporaire", "Renvoi temporaire"), new("RenvoiDefinitif", "Renvoi définitif"), new("Convocation", "Convocation"),
+    ];
+
+    private static readonly IReadOnlyList<ChoiceItem> ReceptionChoices =
+    [
+        new("Recu", "Parent reçu"), new("Absent", "Parent absent"),
+    ];
+
     private ChoiceItem? promotion;
+    private ChoiceItem? measure;
+    private DisciplineRowVm? selected;
     private bool ready;
     private string subtitle = string.Empty;
 
     public DisciplinePage(ShellViewModel shell) : base(shell)
     {
-        if (Shell.Can(Perm.AcademicsWrite)) Action("Nouvel incident", MaterialIconKind.Plus, () => NewIncidentAsync(Shell), primary: true);
+        measure = MeasureChoices[0];
+        if (Shell.Can(Perm.AcademicsWrite))
+        {
+            Action("Nouvelle décision", MaterialIconKind.Plus, () => NewDecisionAsync(Shell), primary: true);
+            Action("Parent reçu ou absent", MaterialIconKind.AccountCheckOutline, ReceptionAsync);
+        }
+        Action("Convocation à imprimer", MaterialIconKind.Printer, PrintConvocationAsync);
+        Action("Historique de l'apprenant", MaterialIconKind.History, ShowHistoryAsync);
+        if (Shell.Can(Perm.DisciplineCancel)) Action("Annuler la décision", MaterialIconKind.Cancel, CancelAsync);
+        Action("Exporter en CSV", MaterialIconKind.FileExportOutline, ExportAsync);
         ActionRefresh();
     }
 
@@ -428,10 +452,13 @@ public sealed class DisciplinePage : PageViewModel
     public override string Subtitle => subtitle;
     public override MaterialIconKind Glyph => MaterialIconKind.AlertOctagonOutline;
 
-    public ObservableCollection<IncidentRowVm> Items { get; } = [];
+    public ObservableCollection<DisciplineRowVm> Items { get; } = [];
     public IReadOnlyList<ChoiceItem> Promotions { get; private set; } = [];
+    public IReadOnlyList<ChoiceItem> Measures => MeasureChoices;
 
     public ChoiceItem? Promotion { get => promotion; set { if (Set(ref promotion, value) && ready) _ = Shell.Run(RefreshAsync); } }
+    public ChoiceItem? Measure { get => measure; set { if (Set(ref measure, value) && ready) _ = Shell.Run(RefreshAsync); } }
+    public DisciplineRowVm? Selected { get => selected; set => Set(ref selected, value); }
 
     public override async Task LoadAsync()
     {
@@ -444,40 +471,136 @@ public sealed class DisciplinePage : PageViewModel
             ready = true;
         }
 
-        var rows = await Shell.Api.GetAsync<List<IncidentDto>>("api/scolarite/discipline" + ScoliaClient.Query(("promotionId", Promotion?.Value is { Length: > 0 } v ? Guid.Parse(v) : (Guid?)null)));
+        var rows = await Shell.Api.GetAsync<List<DisciplineRowDto>>("api/scolarite/discipline/registre" + ScoliaClient.Query(
+            ("promotionId", Promotion?.Value is { Length: > 0 } v ? Guid.Parse(v) : (Guid?)null),
+            ("mesure", Measure?.Value is { Length: > 0 } m ? m : null)));
         Items.Clear();
-        foreach (var i in rows)
-            Items.Add(new IncidentRowVm(Format.Date(i.Date), i.Matricule, i.FullName, i.Category, i.Description, i.Sanction ?? "—",
-                Labels.Severity(i.Severity), ThemeBrush.Get(Labels.Tone(i.Severity) switch { "red" => "ToneRed", "orange" => "ToneOrange", _ => "ToneNeutral" }), i.RecordedBy));
-        subtitle = $"{Format.Count(rows.Count, "incident", "incidents")} · {rows.Count(r => r.Severity == "Grave")} grave(s)";
+        foreach (var r in rows)
+            Items.Add(new DisciplineRowVm(r.Id, r.EnrollmentId, Day(r.DecisionDate), r.Matricule, r.FullName, r.Measure, r.Reason,
+                r.FirstDay is { } first && r.LastDay is { } last ? $"{Day(first)} au {Day(last)}" : r.AppointmentAt is { } at ? $"RDV {at:dd/MM/yyyy HH:mm}" : "—",
+                r.Days is { } days ? $"{days} j" : "—", Day(r.ReturnFrom), r.Reception, r.State, r.EffectiveStatus,
+                r.IsAutomatic ? "Automatique" : "Décidé", r.Measure == "Convocation", r.CanReceive, r.CanCancel));
+        var definitive = rows.Count(r => r.Measure == "Renvoi définitif" && r.State == "Validée");
+        subtitle = $"{Format.Count(rows.Count, "décision", "décisions")} · {definitive} renvoi(s) définitif(s)";
         Raise(nameof(Subtitle));
     }
 
-    /// <summary>Signale un incident pour un apprenant actif.</summary>
-    public static async Task NewIncidentAsync(ShellViewModel shell)
+    private static string Day(DateOnly? day) => day is { } d ? Format.Date(d) : "—";
+
+    /// <summary>Nouvelle décision : renvoi temporaire, renvoi définitif ou convocation. Le serveur applique les règles.</summary>
+    public static async Task NewDecisionAsync(ShellViewModel shell)
     {
         var students = await shell.Api.GetAsync<PagedResult<StudentListItem>>("api/apprenants" + ScoliaClient.Query(("statut", "Actif"), ("taille", 500)));
         var choices = students.Items.Where(s => s.EnrollmentId is not null).Select(Choices.Student).ToList();
-        var form = new FormViewModel("Nouvel incident", "L'incident est consigné avec son auteur et ne peut pas être effacé.", async f =>
+        // Clé de répétition : un double clic sur Enregistrer ne crée pas une seconde sanction.
+        var requestKey = Guid.NewGuid().ToString();
+        var form = new FormViewModel("Nouvelle décision", "Le registre garde chaque décision. Pour corriger, annulez-la puis enregistrez-la à nouveau.", async f =>
         {
-            await shell.Api.SendAsync(HttpMethod.Post, "api/scolarite/discipline", new
+            var measureValue = f.ChoiceValue("mesure")!;
+            var isConvocation = measureValue == "Convocation";
+            var isRenvoi = !isConvocation;
+            DateOnly? OptionalDay(string key) => f.Day(key);
+            DateTime? appointment = null;
+            if (isConvocation)
+            {
+                var time = TimeSpan.TryParse(f.Text("heure"), System.Globalization.CultureInfo.InvariantCulture, out var parsed) ? parsed : TimeSpan.FromHours(9);
+                appointment = (f.Day("rdv") ?? DateOnly.FromDateTime(DateTime.Today)).ToDateTime(TimeOnly.MinValue) + time;
+            }
+            await shell.Api.SendAsync(HttpMethod.Post, "api/scolarite/discipline/registre", new
             {
                 enrollmentId = Guid.Parse(f.ChoiceValue("apprenant")!),
-                date = f.Day("date"),
-                category = f.Text("categorie"),
-                description = f.Text("description"),
-                sanction = f.OptionalText("sanction"),
-                severity = f.ChoiceValue("gravite"),
+                measure = measureValue,
+                reason = f.Text("motif"),
+                decisionDate = OptionalDay("date") ?? DateOnly.FromDateTime(DateTime.Today),
+                firstDay = isRenvoi && measureValue == "RenvoiTemporaire" ? OptionalDay("premier") : null,
+                lastDay = isRenvoi && measureValue == "RenvoiTemporaire" ? OptionalDay("dernier") : null,
+                appointmentAt = appointment,
+                confirmDefinitive = f.Flag("confirme"),
+                requestKey,
             });
-            shell.Notify("Incident enregistré.");
+            shell.Notify("Décision enregistrée dans le registre.");
             return true;
         });
         form.AddChoice("apprenant", "Apprenant", choices, null, required: true);
-        form.AddDay("date", "Date", DateOnly.FromDateTime(DateTime.Today), required: true);
-        form.Add("categorie", "Catégorie", required: true);
-        form.Add("description", "Description", FieldKind.Multiline, required: true);
-        form.Add("sanction", "Sanction");
-        form.AddChoice("gravite", "Gravité", Labels.Severities, "Mineur", required: true);
+        form.AddChoice("mesure", "Mesure", MeasureChoices.Skip(1).ToList(), "RenvoiTemporaire", required: true);
+        form.Add("motif", "Motif", FieldKind.Multiline, required: true, hint: "Entre 5 et 2000 caractères.");
+        form.AddDay("date", "Date de la décision", DateOnly.FromDateTime(DateTime.Today), required: true);
+        form.AddDay("premier", "Premier jour du renvoi", DateOnly.FromDateTime(DateTime.Today));
+        form.AddDay("dernier", "Dernier jour du renvoi", DateOnly.FromDateTime(DateTime.Today));
+        form.AddDay("rdv", "Date du rendez-vous", DateOnly.FromDateTime(DateTime.Today.AddDays(3)));
+        form.Add("heure", "Heure du rendez-vous", value: "09:00");
+        form.AddFlag("confirme", "Je confirme le renvoi définitif ou le renvoi automatique", false);
         if (await shell.Ask(form) && shell.Current is DisciplinePage page) await page.RefreshAsync();
+    }
+
+    private async Task ReceptionAsync()
+    {
+        if (Selected is not { IsConvocation: true, CanReceive: true } row)
+        {
+            Shell.Notify("Sélectionnez une convocation en attente de réponse.");
+            return;
+        }
+        var form = new FormViewModel("Parent reçu ou absent", $"Convocation de {row.Name} · {row.Period}", async f =>
+        {
+            await Shell.Api.SendAsync(HttpMethod.Put, $"api/scolarite/discipline/registre/{row.Id}/reception", new { reception = f.ChoiceValue("issue"), note = f.Text("note") });
+            Shell.Notify("Suite de la convocation enregistrée.");
+            return true;
+        });
+        form.AddChoice("issue", "Issue", ReceptionChoices, "Recu", required: true);
+        form.Add("note", "Compte rendu", FieldKind.Multiline, required: true, hint: "Obligatoire pour toute réception ou absence.");
+        if (await Shell.Ask(form)) await RefreshAsync();
+    }
+
+    private async Task PrintConvocationAsync()
+    {
+        if (Selected is not { IsConvocation: true } row)
+        {
+            Shell.Notify("Sélectionnez une convocation.");
+            return;
+        }
+        var bytes = await Shell.Api.DownloadAsync($"api/scolarite/discipline/registre/{row.Id}/convocation");
+        Files.Open(Files.Save(bytes, $"convocation-{row.Matricule}.html"));
+    }
+
+    private async Task ShowHistoryAsync()
+    {
+        if (Selected is not { } row)
+        {
+            Shell.Notify("Sélectionnez une ligne pour voir l'historique de l'apprenant.");
+            return;
+        }
+        var history = await Shell.Api.GetAsync<List<DisciplineRowDto>>($"api/scolarite/discipline/inscriptions/{row.EnrollmentId}/historique");
+        var lines = history.Select(h => $"{Day(h.DecisionDate)} · {h.Measure} · {h.State}" + (h.CancelReason is null ? string.Empty : $" (motif d'annulation : {h.CancelReason})"));
+        var form = new FormViewModel($"Historique : {row.Name}", $"{history.Count} décision(s), toutes années confondues.", _ => Task.FromResult(true))
+        {
+            Message = string.Join(Environment.NewLine, lines), SubmitText = "Fermer", ShowCancel = false,
+        };
+        await Shell.Ask(form);
+    }
+
+    private async Task CancelAsync()
+    {
+        if (Selected is not { CanCancel: true } row)
+        {
+            Shell.Notify("Sélectionnez une décision validée à annuler.");
+            return;
+        }
+        var form = new FormViewModel("Annuler la décision", "Réservé à l'administrateur. La décision reste dans l'historique avec son motif.", async f =>
+        {
+            await Shell.Api.SendAsync(HttpMethod.Post, $"api/scolarite/discipline/registre/{row.Id}/annulation", new { reason = f.Text("motif") });
+            Shell.Notify("Décision annulée. Elle reste consultable dans l'historique.");
+            return true;
+        }) { Danger = true, SubmitText = "Annuler la décision" };
+        form.Add("motif", "Motif de l'annulation", FieldKind.Multiline, required: true);
+        if (await Shell.Ask(form)) await RefreshAsync();
+    }
+
+    private async Task ExportAsync()
+    {
+        var bytes = await Shell.Api.DownloadAsync("api/scolarite/discipline/registre/export.csv" + ScoliaClient.Query(
+            ("promotionId", Promotion?.Value is { Length: > 0 } v ? Guid.Parse(v) : (Guid?)null),
+            ("mesure", Measure?.Value is { Length: > 0 } m ? m : null)));
+        Files.Save(bytes, "discipline.csv");
+        Shell.Notify("Export enregistré dans Téléchargements.");
     }
 }

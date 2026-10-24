@@ -134,7 +134,7 @@ public static class RibbonCatalog
                 Group("Vie de classe",
                     Large(shell, "Présences", ClipboardCheckOutline, "Appel quotidien par promotion et taux d'assiduité.", () => shell.Open(() => new AttendancePage(shell)), Blue, perm: Perm.AcademicsRead),
                     Large(shell, "Discipline", AlertOctagonOutline, "Incidents, sanctions et suivi du comportement.", () => shell.Open(() => new DisciplinePage(shell)), Red, perm: Perm.AcademicsRead),
-                    Small(shell, "Nouvel incident", Plus, "Signale un incident de discipline.", () => DisciplinePage.NewIncidentAsync(shell), Neutral, perm: Perm.AcademicsWrite)),
+                    Small(shell, "Nouvel incident", Plus, "Signale un incident de discipline.", () => DisciplinePage.NewDecisionAsync(shell), Neutral, perm: Perm.AcademicsWrite)),
             ]),
             new("administration", "Administration",
             [
@@ -272,6 +272,7 @@ public static class Perm
     public const string AuditRead = "audit.lire";
     public const string BackupManage = "sauvegardes.gerer";
     public const string AcademicsWrite = "scolarite.ecrire";
+    public const string DisciplineCancel = "discipline.annuler";
     public const string AcademicsRead = "scolarite.lire";
     public const string StaffManage = "personnel.gerer";
 }
