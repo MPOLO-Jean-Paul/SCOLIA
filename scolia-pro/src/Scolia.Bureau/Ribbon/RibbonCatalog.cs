@@ -22,6 +22,7 @@ public static class RibbonCatalog
     public static IReadOnlyDictionary<string, string> Shortcuts { get; } = new Dictionary<string, string>
     {
         ["Tableau de bord"] = "Ctrl+D",
+        ["Barre latérale"] = "Ctrl+B",
         ["Actualiser"] = "F5",
         ["Rechercher"] = "Ctrl+K",
         ["Imprimer"] = "Ctrl+P",
@@ -167,6 +168,7 @@ public static class RibbonCatalog
                     Small(shell, "Quadrillage", Grid, "Affiche les lignes entre les colonnes des tableaux.", () => { shell.Prefs.Grid = !shell.Prefs.Grid; return Task.CompletedTask; }, Neutral, toggle: true, isOn: () => shell.Prefs.Grid),
                     Small(shell, "Info-bulles", InformationOutline, "Affiche la description des commandes au survol.", () => { shell.Prefs.Tips = !shell.Prefs.Tips; return Task.CompletedTask; }, Neutral, toggle: true, isOn: () => shell.Prefs.Tips),
                     Small(shell, "Animations", AutoFix, "Désactive les transitions de l'interface.", () => { shell.Prefs.Animations = !shell.Prefs.Animations; return Task.CompletedTask; }, Neutral, toggle: true, isOn: () => shell.Prefs.Animations),
+                    Small(shell, "Barre latérale", DockLeft, "Affiche ou masque la navigation à gauche.", () => { shell.Prefs.Sidebar = !shell.Prefs.Sidebar; return Task.CompletedTask; }, Neutral, toggle: true, isOn: () => shell.Prefs.Sidebar),
                     Small(shell, "Réduire le ruban", ChevronUp, "Masque les commandes et ne garde que les onglets.", () => { shell.Prefs.RibbonCollapsed = !shell.Prefs.RibbonCollapsed; return Task.CompletedTask; }, Neutral, toggle: true, isOn: () => shell.Prefs.RibbonCollapsed)),
                 Group("Zoom",
                     Small(shell, "Zoom arrière", MagnifyMinus, "Réduit la taille de l'interface.", () => { shell.Prefs.Scale -= 0.1; return Task.CompletedTask; }, Neutral),
