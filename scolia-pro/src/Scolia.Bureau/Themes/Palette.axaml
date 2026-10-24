@@ -68,7 +68,7 @@
 
   <!-- Échelle typographique et géométrie : réglées par les préférences (taille du texte, densité). -->
   <FontFamily x:Key="UiFont">avares://SCOLIA/Assets/Fonts#Google Sans Flex</FontFamily>
-  <CornerRadius x:Key="RadiusCard">20</CornerRadius>
+  <CornerRadius x:Key="RadiusCard">28</CornerRadius>
   <CornerRadius x:Key="RadiusField">12</CornerRadius>
   <CornerRadius x:Key="RadiusPill">20</CornerRadius>
   <CornerRadius x:Key="RadiusSmall">10</CornerRadius>

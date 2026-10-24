@@ -19,9 +19,11 @@
         <ListBox Grid.Row="1" ItemsSource="{Binding Items}" SelectedItem="{Binding Section}" Background="Transparent" BorderThickness="0" Margin="0,12,0,0">
           <ListBox.ItemTemplate>
             <DataTemplate>
-              <StackPanel Orientation="Horizontal" Spacing="10" Margin="6,8">
-                <mi:MaterialIcon Kind="{Binding Icon}" Width="20" Height="20" />
-                <TextBlock Text="{Binding Label}" />
+              <StackPanel Orientation="Horizontal" Spacing="12" Margin="4,6">
+                <Border Width="34" Height="34" CornerRadius="10" Background="{Binding Brush}">
+                  <mi:MaterialIcon Kind="{Binding Icon}" Width="19" Height="19" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Border>
+                <TextBlock Text="{Binding Label}" VerticalAlignment="Center" />
               </StackPanel>
             </DataTemplate>
           </ListBox.ItemTemplate>

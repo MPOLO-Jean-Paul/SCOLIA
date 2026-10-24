@@ -1,34 +1,45 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mi="using:Material.Icons.Avalonia"
              x:Class="Scolia.Bureau.Views.PosteView">
-  <StackPanel Spacing="12">
+  <StackPanel Spacing="16">
     <TextBlock Text="Poste et réseau" Classes="title" />
     <TextBlock Classes="muted" TextWrapping="Wrap"
-               Text="Réglages de ce poste. Les actions système demandent les droits d'administrateur Windows, puis reviennent ici avec leur résultat." />
+               Text="Réglages de ce poste. Les changements demandent les droits d'administrateur Windows, puis reviennent ici avec leur résultat." />
 
-    <Border Classes="card">
-      <StackPanel Spacing="10">
-        <TextBlock Text="Démarrage automatique" Classes="heading" />
-        <TextBlock Text="{Binding ServiceLine}" TextWrapping="Wrap" />
-        <WrapPanel>
-          <Button Classes="primary" Content="Installer le service" Command="{Binding InstallService}" IsEnabled="{Binding CanInstallService}" Margin="0,0,10,8" />
-          <Button Content="Retirer le service" Command="{Binding RemoveService}" IsEnabled="{Binding CanRemoveService}" Margin="0,0,10,8" />
-        </WrapPanel>
+    <!-- Groupe de réglages façon paramètres Android : tuiles colorées, séparateurs décalés, interrupteurs -->
+    <Border Classes="card" Padding="0">
+      <StackPanel>
+        <Grid ColumnDefinitions="Auto,*,Auto" Margin="18,16">
+          <Border Width="40" Height="40" CornerRadius="12" Background="{DynamicResource ToneGreen}" Margin="0,0,16,0">
+            <mi:MaterialIcon Kind="Power" Width="22" Height="22" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
+          </Border>
+          <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+            <TextBlock Text="Démarrer avec Windows" />
+            <TextBlock Text="{Binding ServiceLine}" Classes="muted" TextWrapping="Wrap" FontSize="{DynamicResource FsSmall}" />
+          </StackPanel>
+          <ToggleSwitch Grid.Column="2" VerticalAlignment="Center" OnContent="" OffContent="" IsChecked="{Binding ServiceInstalled, Mode=OneWay}"
+                        Command="{Binding ToggleService}" IsEnabled="{Binding IsWindows}" />
+        </Grid>
+
+        <Border Height="1" Background="{DynamicResource LineBrush}" Margin="74,0,0,0" />
+
+        <Grid ColumnDefinitions="Auto,*,Auto" Margin="18,16">
+          <Border Width="40" Height="40" CornerRadius="12" Background="{DynamicResource ToneBlue}" Margin="0,0,16,0">
+            <mi:MaterialIcon Kind="LanConnect" Width="22" Height="22" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
+          </Border>
+          <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+            <TextBlock Text="Accès depuis le réseau local" />
+            <TextBlock Text="{Binding LanLine}" Classes="muted" TextWrapping="Wrap" FontSize="{DynamicResource FsSmall}" />
+          </StackPanel>
+          <ToggleSwitch Grid.Column="2" VerticalAlignment="Center" OnContent="" OffContent="" IsChecked="{Binding LanEnabled, Mode=OneWay}"
+                        Command="{Binding ToggleLan}" IsEnabled="{Binding IsWindows}" />
+        </Grid>
       </StackPanel>
     </Border>
 
-    <Border Classes="card">
-      <StackPanel Spacing="10">
-        <TextBlock Text="Accès depuis le réseau local" Classes="heading" />
-        <TextBlock Text="{Binding LanLine}" TextWrapping="Wrap" />
-        <TextBlock Text="{Binding AddressLine}" TextWrapping="Wrap" Classes="muted" />
-        <WrapPanel>
-          <Button Classes="primary" Content="Activer" Command="{Binding EnableLan}" IsEnabled="{Binding CanEnableLan}" Margin="0,0,10,8" />
-          <Button Content="Désactiver" Command="{Binding DisableLan}" IsEnabled="{Binding CanDisableLan}" Margin="0,0,10,8" />
-        </WrapPanel>
-        <TextBlock Classes="muted" TextWrapping="Wrap" FontSize="{DynamicResource FsSmall}"
-                   Text="Le réseau doit être déclaré « privé » dans Windows. Les réseaux publics ne sont jamais ouverts." />
-      </StackPanel>
-    </Border>
+    <TextBlock Text="{Binding AddressLine}" TextWrapping="Wrap" Classes="muted" />
+    <TextBlock Classes="muted" TextWrapping="Wrap" FontSize="{DynamicResource FsSmall}"
+               Text="Le réseau doit être déclaré « privé » dans Windows. Les réseaux publics ne sont jamais ouverts. Un changement du réseau local prend effet au prochain démarrage de SCOLIA." />
   </StackPanel>
 </UserControl>

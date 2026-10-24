@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Net.Http;
+using Avalonia.Media;
 using Avalonia.Threading;
 using Material.Icons;
 using Scolia.Bureau.Api;
@@ -296,7 +297,11 @@ public sealed class SearchHitRow
 }
 
 /// <summary>Élément de la colonne de gauche du menu Fichier.</summary>
-public sealed record BackstageItemVm(string Value, string Label, MaterialIconKind Icon);
+/// <summary>Rubrique du menu Fichier. La tuile d'icône prend la couleur de sa tonalité, comme dans les paramètres Android.</summary>
+public sealed record BackstageItemVm(string Value, string Label, MaterialIconKind Icon, string Tone)
+{
+    public IBrush Brush => ThemeBrush.Get(Tone);
+}
 
 /// <summary>Menu Fichier : informations, mot de passe, préférences, aide et déconnexion.</summary>
 public sealed class BackstageViewModel : Observable
@@ -311,11 +316,11 @@ public sealed class BackstageViewModel : Observable
         this.shell = shell;
         Items =
         [
-            new BackstageItemVm("infos", "Informations", MaterialIconKind.InformationOutline),
-            new BackstageItemVm("mot-de-passe", "Mot de passe", MaterialIconKind.KeyOutline),
-            new BackstageItemVm("poste", "Poste et réseau", MaterialIconKind.LanConnect),
-            new BackstageItemVm("preferences", "Préférences", MaterialIconKind.TuneVariant),
-            new BackstageItemVm("aide", "Aide et raccourcis", MaterialIconKind.KeyboardOutline),
+            new BackstageItemVm("infos", "Informations", MaterialIconKind.InformationOutline, "ToneBlue"),
+            new BackstageItemVm("mot-de-passe", "Mot de passe", MaterialIconKind.KeyOutline, "ToneOrange"),
+            new BackstageItemVm("poste", "Poste et réseau", MaterialIconKind.LanConnect, "ToneGreen"),
+            new BackstageItemVm("preferences", "Préférences", MaterialIconKind.TuneVariant, "TonePurple"),
+            new BackstageItemVm("aide", "Aide et raccourcis", MaterialIconKind.KeyboardOutline, "ToneNeutral"),
         ];
         section = Items[0];
         Close = new RelayCommand(shell.CloseBackstage);
