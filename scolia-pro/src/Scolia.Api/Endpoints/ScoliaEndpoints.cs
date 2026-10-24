@@ -186,6 +186,12 @@ public static class ScoliaEndpoints
         g.MapPost("/apercu", (PaymentRequest input, PaymentService p, CancellationToken ct) => p.PreviewAsync(input.EnrollmentId, input.FeeItemIds, ct))
             .RequireAuthorization(Permissions.PaymentsCreate);
         g.MapPost("", (PaymentRequest input, PaymentService p, CancellationToken ct) => p.CreateAsync(input, ct)).RequireAuthorization(Permissions.PaymentsCreate);
+        // Encaissement par lot : un reçu par apprenant, contrôle avant écriture, résultat ligne par ligne.
+        g.MapGet("/lot/candidats", (Guid? promotionId, string? q, PaymentBatchService b, CancellationToken ct) => b.CandidatesAsync(promotionId, q, ct));
+        g.MapPost("/lot/apercu", (BatchPaymentRequest input, PaymentBatchService b, CancellationToken ct) => b.PreviewAsync(input, ct))
+            .RequireAuthorization(Permissions.PaymentsCreate);
+        g.MapPost("/lot", (BatchPaymentRequest input, PaymentBatchService b, CancellationToken ct) => b.RecordAsync(input, ct))
+            .RequireAuthorization(Permissions.PaymentsCreate);
         g.MapGet("/{id:guid}", (Guid id, PaymentService p, CancellationToken ct) => p.GetAsync(id, ct));
         g.MapPost("/{id:guid}/annulation", (Guid id, CancelRequest input, PaymentService p, CancellationToken ct) => p.CancelAsync(id, input.Reason, ct))
             .RequireAuthorization(Permissions.PaymentsCancel);

@@ -1,0 +1,36 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:infra="using:Scolia.Bureau.Infrastructure"
+             x:Class="Scolia.Bureau.Views.BatchPaymentView">
+  <Grid RowDefinitions="Auto,*,Auto">
+    <Border Grid.Row="0" Classes="band" Margin="0,0,0,10">
+      <WrapPanel>
+        <TextBox Width="260" Margin="0,0,10,6" Text="{Binding Search}" PlaceholderText="Nom ou matricule" />
+        <ComboBox Width="200" Margin="0,0,10,6" ItemsSource="{Binding Promotions}" SelectedItem="{Binding Promotion}" />
+        <ComboBox Width="220" Margin="0,0,10,6" ItemsSource="{Binding Modes}" SelectedItem="{Binding Mode}" />
+        <ComboBox Width="190" Margin="0,0,10,6" ItemsSource="{Binding Methods}" SelectedItem="{Binding Method}" />
+        <CalendarDatePicker Width="170" Margin="0,0,10,6" PlaceholderText="jj/mm/aaaa" SelectedDateFormat="Short" SelectedDate="{Binding Day}" />
+      </WrapPanel>
+    </Border>
+    <DataGrid Grid.Row="1" ItemsSource="{Binding Items}" AutoGenerateColumns="False" CanUserSortColumns="False">
+      <DataGrid.Columns>
+        <DataGridCheckBoxColumn Header="Payer" Binding="{Binding Selected}" Width="Auto" MinWidth="80" />
+        <DataGridTextColumn infra:GridPriority.Level="2" Header="Matricule" Binding="{Binding Matricule}" IsReadOnly="True" Width="Auto" MinWidth="105" />
+        <DataGridTextColumn Header="Nom complet" Binding="{Binding Name}" IsReadOnly="True" Width="2*" MinWidth="200" />
+        <DataGridTextColumn infra:GridPriority.Level="3" Header="Classe" Binding="{Binding Promotion}" IsReadOnly="True" Width="Auto" MinWidth="90" />
+        <DataGridTextColumn Header="Mois à payer" Binding="{Binding Plan}" IsReadOnly="True" Width="2*" MinWidth="200" />
+        <DataGridTextColumn infra:GridPriority.Level="2" Header="Reste exigible" Binding="{Binding Overdue}" IsReadOnly="True" Width="Auto" MinWidth="130" />
+        <DataGridTextColumn Header="Montant" Binding="{Binding Amount}" IsReadOnly="True" Width="Auto" MinWidth="120" />
+        <DataGridTemplateColumn Header="Référence" Width="Auto" MinWidth="180">
+          <DataGridTemplateColumn.CellTemplate>
+            <DataTemplate>
+              <TextBox Text="{Binding Reference}" PlaceholderText="Mobile Money, chèque" />
+            </DataTemplate>
+          </DataGridTemplateColumn.CellTemplate>
+        </DataGridTemplateColumn>
+        <DataGridTextColumn Header="Résultat" Binding="{Binding Result}" IsReadOnly="True" Width="Auto" MinWidth="240" />
+      </DataGrid.Columns>
+    </DataGrid>
+    <TextBlock Grid.Row="2" Text="{Binding SelectionSummary}" Classes="muted" Margin="0,8,0,0" />
+  </Grid>
+</UserControl>

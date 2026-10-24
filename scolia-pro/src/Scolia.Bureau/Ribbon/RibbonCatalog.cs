@@ -110,6 +110,7 @@ public static class RibbonCatalog
             [
                 Group("Encaissement",
                     Large(shell, "Encaisser", HandCoin, "Encaisse un versement : il est réparti sur les échéances et numéroté.", () => shell.Open(() => new CashierPage(shell)), Green, perm: Perm.PaymentsCreate),
+                    Large(shell, "Encaissement par lot", FormatListChecks, "Plusieurs apprenants et plusieurs mois en une opération : un reçu numéroté par apprenant.", () => shell.Open(() => new BatchPaymentPage(shell)), Green, perm: Perm.PaymentsCreate),
                     Large(shell, "Journal des reçus", ReceiptTextOutline, "Tous les reçus, leur statut et les annulations motivées.", () => shell.Open(() => new ReceiptsPage(shell)), Neutral, perm: Perm.PaymentsRead),
                     Small(shell, "Reçus (Excel)", FileExcelOutline, "Exporte tous les reçus dans un classeur Excel.", () => shell.Download("api/paiements/export?format=xlsx", "recus.xlsx"), Neutral, perm: Perm.PaymentsRead),
                     Small(shell, "Reçus (PDF)", FilePdfBox, "Exporte la liste des reçus au format PDF.", () => shell.Download("api/paiements/export?format=pdf", "recus.pdf"), Neutral, perm: Perm.PaymentsRead)),
