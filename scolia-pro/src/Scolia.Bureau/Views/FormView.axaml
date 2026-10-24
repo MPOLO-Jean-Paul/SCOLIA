@@ -1,15 +1,14 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="Scolia.Bureau.Views.FormView">
-  <!-- Boîte de dialogue Spectrum, comme dans Acrobat : titre gras souligné d'un trait, champs, boutons à droite -->
-  <Border Classes="card" MinWidth="460" MaxWidth="620" Padding="0" Background="{DynamicResource SurfaceBrush}" ClipToBounds="True"
+  <!-- Feuille de dialogue macOS : titre gras, champs, boutons en capsule alignés à droite -->
+  <Border Classes="card" MinWidth="460" MaxWidth="620" Padding="0" CornerRadius="14" Background="{DynamicResource SurfaceBrush}" ClipToBounds="True"
           BoxShadow="0 8 32 0 #3D000000">
     <StackPanel>
       <StackPanel Spacing="3" Margin="24,22,24,0">
-        <TextBlock Text="{Binding Title}" FontSize="20" FontWeight="Bold" TextWrapping="Wrap" />
+        <TextBlock Text="{Binding Title}" FontSize="17" FontWeight="Bold" TextWrapping="Wrap" />
         <TextBlock Text="{Binding Subtitle}" Classes="muted" TextWrapping="Wrap" IsVisible="{Binding HasSubtitle}" />
       </StackPanel>
-      <Border Height="2" Background="{DynamicResource LineBrush}" Margin="24,14,24,0" />
 
       <TextBlock Text="{Binding Message}" TextWrapping="Wrap" IsVisible="{Binding HasMessage}" Margin="24,16,24,0" />
 

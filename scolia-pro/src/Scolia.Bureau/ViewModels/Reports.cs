@@ -68,28 +68,28 @@ public sealed class ReportsPage : PageViewModel
 
         Section("Finances",
             Card(Perm.ReportsRead, "Situation par promotion", "Effectif, attendu à ce jour, encaissé, reste et taux de recouvrement de chaque promotion.",
-                MaterialIconKind.ChartBoxOutline, "ToneBlue", "", Pdf(() => "api/rapports/promotions/export", "situation-par-promotion"), Excel(() => "api/rapports/promotions/export", "situation-par-promotion")),
+                MaterialIconKind.ChartBox, "ToneBlue", "", Pdf(() => "api/rapports/promotions/export", "situation-par-promotion"), Excel(() => "api/rapports/promotions/export", "situation-par-promotion")),
             Card(Perm.PaymentsRead, "Journal des encaissements", "Tous les reçus de la période, annulés compris, avec le total valide.",
-                MaterialIconKind.ReceiptTextOutline, "ToneGreen", "la période", Pdf(() => "api/paiements/export" + Period("from", "to"), "journal-des-encaissements"), Excel(() => "api/paiements/export" + Period("from", "to"), "journal-des-encaissements")),
+                MaterialIconKind.ReceiptText, "ToneGreen", "la période", Pdf(() => "api/paiements/export" + Period("from", "to"), "journal-des-encaissements"), Excel(() => "api/paiements/export" + Period("from", "to"), "journal-des-encaissements")),
             Card(Perm.ReportsRead, "Retards de paiement", "Apprenants en retard, périodes dues, ancienneté et contact du parent.",
-                MaterialIconKind.AlertCircleOutline, "ToneOrange", "", Pdf(() => "api/rapports/debiteurs/export", "retards-de-paiement"), Excel(() => "api/rapports/debiteurs/export", "retards-de-paiement")),
+                MaterialIconKind.AlertCircle, "ToneOrange", "", Pdf(() => "api/rapports/debiteurs/export", "retards-de-paiement"), Excel(() => "api/rapports/debiteurs/export", "retards-de-paiement")),
             Card(Perm.PaymentsRead, "Registre des dépenses", "Sorties de caisse et de banque de la période, numérotées, avec leur motif.",
-                MaterialIconKind.WalletOutline, "ToneRed", "la période", Pdf(() => "api/depenses/export" + Period("du", "au"), "registre-des-depenses"), Excel(() => "api/depenses/export" + Period("du", "au"), "registre-des-depenses")));
+                MaterialIconKind.Wallet, "ToneRed", "la période", Pdf(() => "api/depenses/export" + Period("du", "au"), "registre-des-depenses"), Excel(() => "api/depenses/export" + Period("du", "au"), "registre-des-depenses")));
 
         Section("Secrétariat",
             Card(Perm.ReportsRead, "Liste générale des apprenants", "Toutes les promotions de l'année, avec statut, contact du parent et solde.",
-                MaterialIconKind.AccountGroupOutline, "ToneIndigo", "", Pdf(() => "api/rapports/apprenants/export", "liste-generale-apprenants"), Excel(() => "api/rapports/apprenants/export", "liste-generale-apprenants")),
+                MaterialIconKind.AccountGroup, "ToneIndigo", "", Pdf(() => "api/rapports/apprenants/export", "liste-generale-apprenants"), Excel(() => "api/rapports/apprenants/export", "liste-generale-apprenants")),
             Card(Perm.ReportsRead, "Liste de classe", "Liste nominative d'enregistrement de la promotion choisie.",
                 MaterialIconKind.FormatListNumbered, "TonePurple", "la promotion", Pdf(ClassList, "liste-de-classe"), Excel(ClassList, "liste-de-classe")));
 
         Section("Scolarité",
             Card(Perm.AcademicsRead, "Registre de discipline", "Renvois, convocations et suites données, pour la promotion choisie.",
-                MaterialIconKind.AlertOctagonOutline, "ToneRed", "la promotion",
+                MaterialIconKind.AlertOctagon, "ToneRed", "la promotion",
                 new ReportFormatVm("CSV", Command(() => "api/scolarite/discipline/registre/export.csv" + ScoliaClient.Query(("promotionId", PromotionId())), "registre-discipline.csv"))));
 
         Section("Contrôle",
             Card(Perm.AuditRead, "Journal d'audit", "Chaque opération enregistrée : qui, quand, quoi. Chaîne d'empreintes vérifiable.",
-                MaterialIconKind.ShieldCheckOutline, "ToneNeutral", "",
+                MaterialIconKind.ShieldCheck, "ToneNeutral", "",
                 new ReportFormatVm("CSV", Command(() => "api/audit/export?format=csv", "journal-audit.csv"))));
         return sections;
     }

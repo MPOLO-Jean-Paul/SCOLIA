@@ -105,14 +105,14 @@ public sealed class Preferences : Observable
         var r = app.Resources;
         var k = Factor;
         GridPriority.SetTextFactor(k);
-        r["FsBase"] = 14.0 * k;
+        r["FsBase"] = 13.5 * k;
         r["FsSmall"] = 12.0 * k;
-        r["FsCaption"] = 12.0 * k;
-        r["FsHeading"] = 16.0 * k;
+        r["FsCaption"] = 11.0 * k;
+        r["FsHeading"] = 15.0 * k;
         r["FsTitle"] = 22.0 * k;
         r["FsDisplay"] = 28.0 * k;
-        r["RowHeight"] = (compact ? 30.0 : 40.0) * k;
-        r["CtlHeight"] = (compact ? 28.0 : 32.0) * k;
+        r["RowHeight"] = (compact ? 28.0 : 36.0) * k;
+        r["CtlHeight"] = (compact ? 26.0 : 30.0) * k;
         r["GridLines"] = grid ? Avalonia.Controls.DataGridGridLinesVisibility.Horizontal : Avalonia.Controls.DataGridGridLinesVisibility.None;
     }
 

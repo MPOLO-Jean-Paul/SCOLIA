@@ -40,6 +40,8 @@ public sealed class ShellViewModel : Observable
         ReloadCommand = new AsyncCommand(() => Run(Reload));
         SearchCommand = new RelayCommand(ShowSearch);
         ToggleSidebarCommand = new RelayCommand(ToggleSidebar);
+        BackCommand = new RelayCommand(GoBack);
+        ForwardCommand = new RelayCommand(GoForward);
         revisionTimer = new DispatcherTimer(RevisionInterval, DispatcherPriority.Background, (_, _) => _ = CheckRevisionAsync());
         revisionTimer.Start();
         prefs.PropertyChanged += (_, _) =>
@@ -98,6 +100,8 @@ public sealed class ShellViewModel : Observable
     public string SchoolLine => session is null ? string.Empty : $"{session.SchoolName}{(session.CurrentYear is null ? string.Empty : $" · année {session.CurrentYear}")}";
     public string UserLine => session is null ? string.Empty : $"{session.DisplayName} · {session.RoleLabel}";
     public string UserInitials => session is null ? string.Empty : Initials(session.DisplayName);
+    /// <summary>Nom affiché en tête du volet latéral, au-dessus de « Compte et poste ».</summary>
+    public string AccountName => session?.DisplayName ?? string.Empty;
     public string ServerLine => IsServerComputer
         ? $"Serveur de l'établissement · port {api.Server.Port}"
         : ConnectionStore.Load() is { IsRemote: true } link ? $"Relié à {link.Machine} · {api.Server.Host}" : $"Serveur {api.Server.Host}:{api.Server.Port}";
@@ -341,68 +345,77 @@ public sealed class ShellViewModel : Observable
         Raise(nameof(SchoolLine));
         Raise(nameof(UserLine));
         Raise(nameof(UserInitials));
+        Raise(nameof(AccountName));
         Status = $"Connecté : {s.DisplayName} · {s.SchoolName}";
         Login.Reset();
         RebuildRibbon();
-        OpenTabs.Clear();
+        current = null;
+        ClearHistory();
         await Open(() => new HomePage(this));
         await OfferNetworkAsync();
     }
 
-    /// <summary>Onglets des écrans ouverts : Accueil d'abord, puis les écrans dans l'ordre d'ouverture.</summary>
-    public ObservableCollection<PageTabVm> OpenTabs { get; } = [];
+    /// <summary>Écrans précédents et suivants, comme les flèches des Réglages de macOS. Chaque écran garde sa saisie.</summary>
+    private readonly List<PageViewModel> backStack = [];
+    private readonly Stack<PageViewModel> forwardStack = new();
 
-    /// <summary>Au-delà, l'onglet le plus ancien se ferme pour garder une barre lisible.</summary>
-    private const int MaxTabs = 5;
+    /// <summary>Au-delà, les écrans les plus anciens sortent de l'historique.</summary>
+    private const int MaxHistory = 30;
 
-    /// <summary>
-    /// Affiche un écran dans son onglet : un écran déjà ouvert est rechargé dans le même onglet,
-    /// un nouvel écran prend un nouvel onglet. Puis l'écran est mémorisé dans les récents et chargé.
-    /// </summary>
+    public bool CanGoBack => backStack.Count > 0;
+    public bool CanGoForward => forwardStack.Count > 0;
+    public RelayCommand BackCommand { get; private set; } = null!;
+    public RelayCommand ForwardCommand { get; private set; } = null!;
+
+    /// <summary>Affiche un écran, le mémorise dans les récents et l'historique, puis charge ses données.</summary>
     public async Task Open(Func<PageViewModel> create)
     {
         var page = create();
         Remember(page.Title, create);
         BackstageOpen = false;
-        var tab = OpenTabs.FirstOrDefault(t => t.Title == page.Title);
-        if (tab is null)
+        if (current is not null)
         {
-            tab = new PageTabVm(page, canClose: page is not HomePage, ActivateTab, CloseTab);
-            OpenTabs.Add(tab);
-            if (OpenTabs.Count > MaxTabs && OpenTabs.FirstOrDefault(t => t.CanClose && t != tab) is { } oldest) OpenTabs.Remove(oldest);
+            backStack.Add(current);
+            if (backStack.Count > MaxHistory) backStack.RemoveAt(0);
         }
-        else tab.Page = page;
-        Show(tab);
+        forwardStack.Clear();
+        Show(page);
         await page.RefreshAsync();
     }
 
-    /// <summary>Revient sur un onglet déjà ouvert, sans recharger : la saisie en cours reste intacte.</summary>
-    private void ActivateTab(PageTabVm tab)
+    /// <summary>Revient à l'écran précédent, tel qu'il était laissé.</summary>
+    public void GoBack()
     {
+        if (backStack.Count == 0 || current is null) return;
+        forwardStack.Push(current);
+        var page = backStack[^1];
+        backStack.RemoveAt(backStack.Count - 1);
         BackstageOpen = false;
-        Show(tab);
+        Show(page);
     }
 
-    private void CloseTab(PageTabVm tab)
+    public void GoForward()
     {
-        if (!tab.CanClose) return;
-        var index = OpenTabs.IndexOf(tab);
-        OpenTabs.Remove(tab);
-        if (!tab.IsActive || OpenTabs.Count == 0) return;
-        Show(OpenTabs[Math.Clamp(index - 1, 0, OpenTabs.Count - 1)]);
+        if (forwardStack.Count == 0 || current is null) return;
+        backStack.Add(current);
+        BackstageOpen = false;
+        Show(forwardStack.Pop());
     }
 
-    private void Show(PageTabVm tab)
+    private void Show(PageViewModel page)
     {
-        foreach (var other in OpenTabs) other.IsActive = other == tab;
-        Current = tab.Page;
+        Current = page;
         RebuildRibbon();
+        Raise(nameof(CanGoBack));
+        Raise(nameof(CanGoForward));
     }
 
-    /// <summary>Ferme l'onglet de l'écran courant (Ctrl+W), sauf l'Accueil.</summary>
-    public void CloseCurrentTab()
+    private void ClearHistory()
     {
-        if (OpenTabs.FirstOrDefault(t => t.IsActive) is { CanClose: true } tab) CloseTab(tab);
+        backStack.Clear();
+        forwardStack.Clear();
+        Raise(nameof(CanGoBack));
+        Raise(nameof(CanGoForward));
     }
 
     /// <summary>Recharge l'écran courant.</summary>
@@ -553,7 +566,7 @@ public sealed class ShellViewModel : Observable
         catch (HttpRequestException) { }
         session = null;
         Tabs.Clear();
-        OpenTabs.Clear();
+        ClearHistory();
         Navigation = [];
         Raise(nameof(Navigation));
         SelectedTab = null;

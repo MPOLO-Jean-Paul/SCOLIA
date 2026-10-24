@@ -15,7 +15,7 @@
           <ItemsControl.ItemTemplate>
             <DataTemplate>
               <Grid ColumnDefinitions="Auto,*,Auto" Margin="18,14">
-                <mi:MaterialIcon Kind="DesktopTowerMonitor" Width="20" Height="20" Foreground="{DynamicResource Text2Brush}" VerticalAlignment="Center" Margin="0,0,14,0" />
+                <Border Classes="appicon medium" Background="{DynamicResource ToneBlue}" Margin="0,0,14,0"><mi:MaterialIcon Kind="DesktopTowerMonitor" /></Border>
                 <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
                   <TextBlock Text="{Binding School}" FontWeight="SemiBold" TextWrapping="Wrap" />
                   <TextBlock Text="{Binding Detail}" Classes="muted" TextWrapping="Wrap" />

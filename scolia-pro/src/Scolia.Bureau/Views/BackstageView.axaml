@@ -4,7 +4,7 @@
              x:Class="Scolia.Bureau.Views.BackstageView">
   <Grid ColumnDefinitions="280,*" Background="{DynamicResource BgBrush}">
     <!-- Colonne de gauche : retour, rubriques, déconnexion -->
-    <Border Grid.Column="0" Classes="sidebar" Padding="16,20">
+    <Border Grid.Column="0" Classes="sidebar" Padding="12,16" Margin="8">
       <Grid RowDefinitions="Auto,*,Auto">
         <StackPanel Spacing="8">
           <Button Classes="ghost" HorizontalAlignment="Left" Command="{Binding Close}">
@@ -20,7 +20,7 @@
           <ListBox.ItemTemplate>
             <DataTemplate>
               <StackPanel Orientation="Horizontal" Spacing="12" Margin="4,6">
-                <mi:MaterialIcon Kind="{Binding Icon}" Width="20" Height="20" Foreground="{DynamicResource Text2Brush}" VerticalAlignment="Center" />
+                <Border Classes="appicon medium" Background="{Binding Brush}"><mi:MaterialIcon Kind="{Binding Icon}" /></Border>
                 <TextBlock Text="{Binding Label}" VerticalAlignment="Center" />
               </StackPanel>
             </DataTemplate>

@@ -74,21 +74,21 @@ public sealed class HomePage : PageViewModel
                 Tools.Add(new ToolCardVm(title, description, icon, ThemeBrush.Get(tone), new AsyncCommand(() => Shell.Run(run))));
         }
 
-        Add(Perm.PaymentsCreate, "Encaisser", "Choisir les mois payés et imprimer le reçu numéroté.", MaterialIconKind.HandCoinOutline, "ToneGreen",
+        Add(Perm.PaymentsCreate, "Encaisser", "Choisir les mois payés et imprimer le reçu numéroté.", MaterialIconKind.HandCoin, "ToneGreen",
             () => Shell.Open(() => new CashierPage(Shell)));
-        Add(Perm.StudentsWrite, "Inscrire un apprenant", "Créer le dossier. Le matricule est attribué seul.", MaterialIconKind.AccountPlusOutline, "ToneBlue",
+        Add(Perm.StudentsWrite, "Inscrire un apprenant", "Créer le dossier. Le matricule est attribué seul.", MaterialIconKind.AccountPlus, "ToneBlue",
             () => StudentForms.CreateAsync(Shell));
         Add(Perm.ReportsRead, "Recouvrement", "Voir les retards et relancer les parents.", MaterialIconKind.ChartBar, "ToneOrange",
             () => Shell.Open(() => new DebtorsPage(Shell)));
-        Add(null, "Rapports et exports", "Tous les documents en PDF ou en Excel.", MaterialIconKind.FileChartOutline, "ToneRed",
+        Add(null, "Rapports et exports", "Tous les documents en PDF ou en Excel.", MaterialIconKind.FileChart, "ToneRed",
             () => Shell.Open(() => new ReportsPage(Shell)));
-        Add(Perm.PaymentsRead, "Journal des reçus", "Retrouver, imprimer ou annuler un reçu.", MaterialIconKind.ReceiptTextOutline, "TonePurple",
+        Add(Perm.PaymentsRead, "Journal des reçus", "Retrouver, imprimer ou annuler un reçu.", MaterialIconKind.ReceiptText, "TonePurple",
             () => Shell.Open(() => new ReceiptsPage(Shell)));
-        Add(Perm.AcademicsRead, "Présences", "Faire l'appel du jour par promotion.", MaterialIconKind.ClipboardCheckOutline, "ToneTeal",
+        Add(Perm.AcademicsRead, "Présences", "Faire l'appel du jour par promotion.", MaterialIconKind.ClipboardCheck, "ToneTeal",
             () => Shell.Open(() => new AttendancePage(Shell)));
-        Add(null, "Tableau de bord", "Recettes, retards et indicateurs de l'année.", MaterialIconKind.ViewDashboardOutline, "ToneIndigo",
+        Add(null, "Tableau de bord", "Recettes, retards et indicateurs de l'année.", MaterialIconKind.ViewDashboard, "ToneIndigo",
             () => Shell.Open(() => new DashboardPage(Shell)));
-        Add(Perm.StudentsRead, "Apprenants", "Rechercher un dossier et ouvrir sa fiche.", MaterialIconKind.AccountGroupOutline, "ToneBlue",
+        Add(Perm.StudentsRead, "Apprenants", "Rechercher un dossier et ouvrir sa fiche.", MaterialIconKind.AccountGroup, "ToneBlue",
             () => Shell.Open(() => new StudentsPage(Shell)));
         while (Tools.Count > 4) Tools.RemoveAt(Tools.Count - 1);
     }

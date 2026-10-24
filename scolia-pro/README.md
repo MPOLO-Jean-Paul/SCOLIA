@@ -24,13 +24,12 @@ Le détail est dans [`docs/GUIDE_UTILISATEUR.md`](docs/GUIDE_UTILISATEUR.md) et 
 Il parle au serveur SCOLIA par la même API que l'interface web. Au lancement, il démarre le serveur `SCOLIA-Serveur.exe`
 du même dossier s'il n'est pas déjà actif. Le paquet Windows contient les deux exécutables.
 
-Le client reprend l'organisation d'Adobe Acrobat. En haut, le bouton « Menu » donne toutes les commandes, rangées par
-métier avec leurs raccourcis ; à côté, un onglet par écran ouvert (Accueil, puis jusqu'à quatre écrans, Ctrl+W pour
-fermer) ; à droite, la recherche (Ctrl+K), l'aide et le compte. À gauche, le panneau « Tous les outils » liste chaque
-écran avec son icône de couleur, par métier. Chaque page a sa barre d'outils blanche : titre, bouton principal bleu,
-actions discrètes et menu « … ». L'accueil présente les outils recommandés et les reçus récents. Boutons arrondis,
-couleurs et proportions suivent le système de design d'Adobe (Spectrum). Clair, sombre, taille du texte, densité, zoom
-et panneau d'outils se règlent dans Menu, Affichage.
+Le client reprend le design des Réglages de macOS, sans les trois boutons de fenêtre colorés. À gauche, un volet
+flottant aux coins arrondis : la recherche (Ctrl+K), le compte, puis chaque outil avec son icône blanche sur un carré
+de couleur, rangés par métier. En haut de la page, les flèches précédent et suivant (Alt+Gauche, Alt+Droite) dans une
+capsule, le titre en gras, les boutons en capsule (le principal en bleu) et le menu de toutes les commandes. Les réglages
+et les listes sont rangés dans des blocs gris arrondis. L'accueil présente les outils recommandés et les reçus récents.
+Clair, sombre, taille du texte, densité, zoom et volet latéral se règlent dans le menu, Affichage.
 
 Le menu reprend le catalogue de commandes ci-dessous :
 

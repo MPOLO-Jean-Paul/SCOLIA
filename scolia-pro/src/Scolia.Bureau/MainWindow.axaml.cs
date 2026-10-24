@@ -30,8 +30,6 @@ public partial class MainWindow : Window
             if (DataContext is not ShellViewModel shell) return;
             shell.FullscreenHandler = full => WindowState = full ? WindowState.FullScreen : WindowState.Normal;
             shell.PickFileHandler = PickFileAsync;
-            // Le dernier onglet ouvert reste visible, même quand la barre est pleine.
-            shell.OpenTabs.CollectionChanged += (_, _) => Avalonia.Threading.Dispatcher.UIThread.Post(() => TabScroller.ScrollToEnd());
             ApplyPageTransition(shell.Prefs);
             shell.Prefs.PropertyChanged += (_, args) =>
             {
@@ -67,13 +65,13 @@ public partial class MainWindow : Window
     }
 
     /// <summary>
-    /// Menu de SCOLIA, comme le menu d'Acrobat : chaque métier en sous-menu avec ses commandes et leurs raccourcis,
+    /// Menu de toutes les commandes : chaque métier en sous-menu avec ses commandes et leurs raccourcis,
     /// puis le compte et la déconnexion. Il est construit à l'ouverture, d'après les droits et l'écran affiché.
     /// </summary>
     private void OnMenuClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
         if (Shell is not { } shell || sender is not Control anchor) return;
-        var menu = new MenuFlyout { Placement = PlacementMode.BottomEdgeAlignedLeft };
+        var menu = new MenuFlyout { Placement = PlacementMode.BottomEdgeAlignedRight };
         foreach (var tab in shell.Tabs.Where(t => t.Id != "fichier"))
         {
             var sub = new MenuItem { Header = tab.Title, Icon = Glyph(TabIcon(tab.Id)) };
@@ -89,7 +87,8 @@ public partial class MainWindow : Window
         }
         menu.Items.Add(new Separator());
         menu.Items.Add(new MenuItem { Header = "Rechercher…", Icon = Glyph(MaterialIconKind.Magnify), Command = shell.SearchCommand, InputGesture = new KeyGesture(Key.K, KeyModifiers.Control) });
-        menu.Items.Add(new MenuItem { Header = "Fermer l'onglet", Icon = Glyph(MaterialIconKind.Close), Command = new RelayCommand(shell.CloseCurrentTab), InputGesture = new KeyGesture(Key.W, KeyModifiers.Control) });
+        menu.Items.Add(new MenuItem { Header = "Précédent", Icon = Glyph(MaterialIconKind.ChevronLeft), Command = shell.BackCommand, InputGesture = new KeyGesture(Key.Left, KeyModifiers.Alt) });
+        menu.Items.Add(new MenuItem { Header = "Suivant", Icon = Glyph(MaterialIconKind.ChevronRight), Command = shell.ForwardCommand, InputGesture = new KeyGesture(Key.Right, KeyModifiers.Alt) });
         menu.Items.Add(new Separator());
         menu.Items.Add(new MenuItem { Header = "Compte et poste…", Icon = Glyph(MaterialIconKind.AccountCircleOutline), Command = new RelayCommand(shell.OpenBackstage) });
         menu.Items.Add(new MenuItem { Header = "Se déconnecter", Icon = Glyph(MaterialIconKind.Logout), Command = new AsyncCommand(shell.LogoutAsync) });
@@ -118,13 +117,14 @@ public partial class MainWindow : Window
 
     private void OnAccountClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e) => Shell?.OpenBackstage();
 
-    /// <summary>Raccourcis : F5 actualiser, Ctrl+K recherche, F2 encaisser, Ctrl+P imprimer, Ctrl+W fermer l'onglet, Échap fermer.</summary>
+    /// <summary>Raccourcis : F5 actualiser, Ctrl+K recherche, F2 encaisser, Ctrl+P imprimer, Alt+Gauche et Alt+Droite pour naviguer, Échap fermer.</summary>
     private void OnKeyDown(object? sender, KeyEventArgs e)
     {
         if (Shell is not { IsLoggedIn: true } shell) return;
-        if (e.Key == Key.W && e.KeyModifiers == KeyModifiers.Control && !shell.HasDialog)
+        if (e.KeyModifiers == KeyModifiers.Alt && e.Key is Key.Left or Key.Right && !shell.HasDialog)
         {
-            shell.CloseCurrentTab();
+            if (e.Key == Key.Left) shell.GoBack();
+            else shell.GoForward();
             e.Handled = true;
             return;
         }

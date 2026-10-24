@@ -321,11 +321,11 @@ public sealed class BackstageViewModel : Observable
         this.shell = shell;
         Items =
         [
-            new BackstageItemVm("infos", "Informations", MaterialIconKind.InformationOutline, "ToneBlue"),
-            new BackstageItemVm("mot-de-passe", "Mot de passe", MaterialIconKind.KeyOutline, "ToneOrange"),
+            new BackstageItemVm("infos", "Informations", MaterialIconKind.Information, "ToneBlue"),
+            new BackstageItemVm("mot-de-passe", "Mot de passe", MaterialIconKind.Key, "ToneOrange"),
             new BackstageItemVm("poste", "Poste et réseau", MaterialIconKind.LanConnect, "ToneGreen"),
             new BackstageItemVm("preferences", "Préférences", MaterialIconKind.TuneVariant, "TonePurple"),
-            new BackstageItemVm("aide", "Aide et raccourcis", MaterialIconKind.KeyboardOutline, "ToneNeutral"),
+            new BackstageItemVm("aide", "Aide et raccourcis", MaterialIconKind.Keyboard, "ToneNeutral"),
         ];
         section = Items[0];
         Close = new RelayCommand(shell.CloseBackstage);

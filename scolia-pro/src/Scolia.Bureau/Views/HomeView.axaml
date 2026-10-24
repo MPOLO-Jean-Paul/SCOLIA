@@ -19,7 +19,7 @@
           <DataTemplate>
             <Border Classes="toolcard" Margin="0,0,12,0">
               <Grid RowDefinitions="Auto,Auto,*,Auto">
-                <mi:MaterialIcon Kind="{Binding Icon}" Width="32" Height="32" Foreground="{Binding Brush}" HorizontalAlignment="Left" />
+                <Border Classes="appicon large" Background="{Binding Brush}" HorizontalAlignment="Left"><mi:MaterialIcon Kind="{Binding Icon}" /></Border>
                 <TextBlock Grid.Row="1" Text="{Binding Title}" FontWeight="Bold" Margin="0,12,0,4" />
                 <TextBlock Grid.Row="2" Text="{Binding Description}" Classes="muted" TextWrapping="Wrap" />
                 <Button Grid.Row="3" Classes="outline" Content="Ouvrir" Command="{Binding Open}" HorizontalAlignment="Left" Margin="0,14,0,0" />
