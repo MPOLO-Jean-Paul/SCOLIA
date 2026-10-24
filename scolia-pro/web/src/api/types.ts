@@ -85,7 +85,7 @@ export interface CashClosing {
 export interface User { id: string; userName: string; displayName: string; role: string; roleLabel: string; isActive: boolean; mustChangePassword: boolean; lastLoginUtc?: string; isLocked: boolean }
 export interface AuditItem { id: number; atUtc: string; userName: string; action: string; entityType: string; entityId?: string; summary: string; ipAddress?: string }
 export interface SearchHit { type: string; title: string; subtitle: string; url: string }
-export interface Course { id: string; promotionId: string; code: string; name: string; coefficient: number; hours: number; teacherId?: string; teacherName?: string; isActive: boolean; assessmentCount: number }
+export interface Course { id: string; promotionId: string; promotionCode: string; number: number; name: string; coefficient: number; hours: number; maxScore: number; teacherId?: string; teacherName?: string; isActive: boolean; assessmentCount: number }
 export interface Assessment { id: string; courseId: string; title: string; kind: string; term: number; date: string; maxScore: number; weight: number; gradedCount: number }
 export interface GradeRow { enrollmentId: string; matricule: string; fullName: string; score?: number | null; comment?: string | null }
 export interface Results {

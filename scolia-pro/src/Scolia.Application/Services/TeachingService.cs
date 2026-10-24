@@ -25,6 +25,15 @@ public sealed class TeachingService(IAppDbContext db, IWriteGate gate, IAuditLog
         return await DescribeAsync(courses, ct);
     }
 
+    /// <summary>Enseignants proposés pour une attribution : leur période d'activité recoupe l'année courante.</summary>
+    public async Task<IReadOnlyList<TeacherChoiceDto>> AvailableTeachersAsync(CancellationToken ct = default)
+    {
+        var year = await YearContext.CurrentAsync(db, ct);
+        return (await db.Staff.AsNoTracking().Where(s => s.IsActive).OrderBy(s => s.LastName).ToListAsync(ct))
+            .Where(t => TeachingRules.IsAvailableDuring(t, year))
+            .Select(t => new TeacherChoiceDto(t.Id, t.FullName, t.Function)).ToList();
+    }
+
     /// <summary>Premier numéro libre proposé pour un nouveau cours de la promotion.</summary>
     public async Task<int> NextNumberAsync(Guid promotionId, CancellationToken ct = default)
     {

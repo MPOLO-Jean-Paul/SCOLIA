@@ -120,7 +120,16 @@ public sealed record CashClosingDto(
 public sealed record ReEnrollmentItemDto(Guid StudentId, string Matricule, string FullName, string FromPromotion, string? ToPromotion, decimal PreviousBalance, bool Selected);
 
 public sealed record CourseDto(
-    Guid Id, Guid PromotionId, string Code, string Name, decimal Coefficient, int Hours, Guid? TeacherId, string? TeacherName, bool IsActive, int AssessmentCount);
+    Guid Id, Guid PromotionId, string PromotionCode, int Number, string Name, decimal Coefficient, decimal Hours, decimal MaxScore,
+    Guid? TeacherId, string? TeacherName, bool IsActive, int AssessmentCount);
+
+public sealed record AssignmentHistoryDto(Guid Id, string TeacherName, DateOnly StartedOn, DateOnly? EndedOn, string? EndReason, string AssignedBy, bool IsCurrent);
+
+public sealed record NextNumberDto(int Numero);
+
+public sealed record TeacherChargeDto(Guid TeacherId, string Name, int Courses, int Promotions, decimal Hours);
+
+public sealed record TeacherCourseLineDto(Guid CourseId, string PromotionCode, int Number, string Name, decimal Hours, decimal MaxScore);
 
 public sealed record AssessmentDto(Guid Id, Guid CourseId, string Title, string Kind, int Term, DateOnly Date, decimal MaxScore, decimal Weight, int GradedCount);
 
@@ -146,7 +155,7 @@ public sealed record TeacherDto(Guid Id, string Nom, string Function);
 
 public sealed record StaffDto(
     Guid Id, string Number, string LastName, string MiddleName, string FirstName, string Gender, string Function, string? Phone, string? Email,
-    DateOnly HireDate, decimal BaseSalary, bool IsActive);
+    DateOnly HireDate, DateOnly? ExitDate, decimal BaseSalary, bool IsActive);
 
 public sealed record PayrollDto(
     Guid Id, Guid StaffMemberId, string Number, string FullName, string Function, string Period, decimal BaseSalary, decimal Allowances,

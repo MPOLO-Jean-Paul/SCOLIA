@@ -64,7 +64,7 @@ function CoursesPanel({ promotionId, request, onHandled }: { promotionId: string
         {!courses.data ? <Loading /> : courses.data.length === 0 ? <Empty text="Aucun cours dans cette promotion." /> : (
           <table className="data"><tbody>{courses.data.map((c) => (
             <tr key={c.id} className="clickable" onClick={() => setCourseId(c.id)} style={{ outline: c.id === courseId ? '2px solid var(--blue)' : undefined, outlineOffset: -2 }}>
-              <td><div style={{ fontWeight: 700 }}>{c.name}</div><div className="small muted">{c.code} · coef. {num(c.coefficient)} · {c.hours} h{c.teacherName ? ` · ${c.teacherName}` : ''}</div></td>
+              <td><div style={{ fontWeight: 700 }}>{c.name}</div><div className="small muted">N° {c.number} · coef. {num(c.coefficient)} · {num(c.hours)} h · cotation {num(c.maxScore)}{c.teacherName ? ` · ${c.teacherName}` : ' · non attribué'}</div></td>
               <td className="right">{can(P.academicsWrite) && <Button size="small" variant="ghost" onClick={(e) => { e.stopPropagation(); setEditingCourse(c); }}>Modifier</Button>}</td>
             </tr>))}</tbody></table>
         )}
@@ -125,22 +125,36 @@ function GradeSheet({ assessmentId }: { assessmentId: string }) {
 
 function CourseDialog({ promotionId, course, onClose, onSaved }: { promotionId: string; course?: Course; onClose: () => void; onSaved: () => void }) {
   const teachers = useQuery({ queryKey: ['teachers'], queryFn: () => api.get<{ id: string; nom: string; function: string }[]>('/api/enseignants') });
-  const [f, setF] = useState({ code: course?.code ?? '', name: course?.name ?? '', coefficient: String(course?.coefficient ?? 1), hours: String(course?.hours ?? 30), teacherId: course?.teacherId ?? '', isActive: course?.isActive ?? true });
+  const next = useQuery({ queryKey: ['next-course-number', promotionId], queryFn: () => api.get<{ numero: number }>('/api/scolarite/cours/numero-suivant', { promotionId }), enabled: !course });
+  const [f, setF] = useState({
+    number: course ? String(course.number) : '', name: course?.name ?? '', coefficient: String(course?.coefficient ?? 1), hours: String(course?.hours ?? 30),
+    maxScore: String(course?.maxScore ?? 20), teacherId: course?.teacherId ?? '',
+  });
   const [error, setError] = useState<unknown>();
   return (
     <Modal title={course ? 'Modifier le cours' : 'Nouveau cours'} onClose={onClose} footer={<><Button variant="ghost" onClick={onClose}>Annuler</Button><Button variant="primary" onClick={async () => {
       try {
-        const body = { promotionId, code: f.code, name: f.name, coefficient: Number(f.coefficient), hours: Number(f.hours), teacherId: f.teacherId || null, isActive: f.isActive };
-        if (course) await api.put(`/api/scolarite/cours/${course.id}`, body); else await api.post('/api/scolarite/cours', body);
+        const body = {
+          promotionId, number: Number(f.number || next.data?.numero || 1), name: f.name, coefficient: Number(f.coefficient), hours: Number(f.hours), maxScore: Number(f.maxScore),
+        };
+        const saved = course ? await api.put<Course>(`/api/scolarite/cours/${course.id}`, body) : await api.post<Course>('/api/scolarite/cours', body);
+        // L'attribution passe par son propre parcours : une réattribution demande une confirmation explicite.
+        if (f.teacherId && f.teacherId !== (course?.teacherId ?? '')) {
+          const replacing = Boolean(course?.teacherId);
+          if (!replacing || window.confirm('Ce cours est déjà attribué. Réattribuer remplace l\'enseignant ; l\'ancienne attribution reste dans l\'historique. Continuer ?')) {
+            await api.put(`/api/scolarite/cours/${saved.id}/attribution`, { teacherId: f.teacherId, confirmReplace: replacing });
+          }
+        }
         onSaved(); onClose();
       } catch (e) { setError(e); }
     }}>Enregistrer</Button></>}>
       <div className="grid cols-2">
-        <TextField label="Code" value={f.code} onChange={(e) => setF({ ...f, code: e.target.value })} />
+        <TextField label="Numéro" inputMode="numeric" value={f.number} placeholder={next.data ? String(next.data.numero) : ''} onChange={(e) => setF({ ...f, number: e.target.value })} />
         <TextField label="Intitulé" value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} />
         <TextField label="Coefficient" inputMode="decimal" value={f.coefficient} onChange={(e) => setF({ ...f, coefficient: e.target.value })} />
-        <TextField label="Volume horaire" inputMode="numeric" value={f.hours} onChange={(e) => setF({ ...f, hours: e.target.value })} />
-        <SelectField className="span-2" label="Enseignant" value={f.teacherId} onChange={(e) => setF({ ...f, teacherId: e.target.value })}>
+        <TextField label="Volume horaire annuel" inputMode="decimal" value={f.hours} onChange={(e) => setF({ ...f, hours: e.target.value })} />
+        <TextField label="Cotation maximale (points)" inputMode="decimal" value={f.maxScore} onChange={(e) => setF({ ...f, maxScore: e.target.value })} />
+        <SelectField label="Enseignant" value={f.teacherId} onChange={(e) => setF({ ...f, teacherId: e.target.value })}>
           <option value="">Non attribué</option>{teachers.data?.map((t) => <option key={t.id} value={t.id}>{t.nom} — {t.function}</option>)}
         </SelectField>
       </div>

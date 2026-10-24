@@ -201,6 +201,7 @@ public sealed class StaffPage : PageViewModel
         form.Add("telephone", "Téléphone", value: s?.Phone);
         form.Add("email", "E-mail", value: s?.Email);
         form.AddDay("embauche", "Date d'embauche", s?.HireDate ?? DateOnly.FromDateTime(DateTime.Today), required: true);
+        form.AddDay("sortie", "Fin d'activité (facultatif)", s?.ExitDate);
         form.Add("salaire", "Salaire de base", FieldKind.Amount, s is null ? string.Empty : s.BaseSalary.ToString("0"), required: true);
         form.AddFlag("actif", "Membre actif", s?.IsActive ?? true);
     }
@@ -215,6 +216,7 @@ public sealed class StaffPage : PageViewModel
         phone = f.OptionalText("telephone"),
         email = f.OptionalText("email"),
         hireDate = f.Day("embauche"),
+        exitDate = f.Day("sortie"),
         baseSalary = f.Amount("salaire"),
         isActive = f.Flag("actif"),
     };

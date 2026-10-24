@@ -269,8 +269,7 @@ public static class ScoliaEndpoints
         g.MapPost("/paie/{periode}/preparation", async (string periode, StaffService s, CancellationToken ct) => Results.Ok(new { crees = await s.GenerateAsync(periode, ct) }));
         g.MapPut("/paie/bulletins/{id:guid}", (Guid id, PayrollUpdate input, StaffService s, CancellationToken ct) => s.UpdateEntryAsync(id, input, ct));
         g.MapPost("/paie/bulletins/{id:guid}/paiement", (Guid id, string? mode, StaffService s, CancellationToken ct) => s.PayAsync(id, mode ?? "Especes", ct));
-        api.MapGet("/enseignants", async (ScoliaDbContext db, CancellationToken ct) =>
-            await db.Staff.AsNoTracking().Where(s => s.IsActive).OrderBy(s => s.LastName).Select(s => new { s.Id, Nom = s.LastName + " " + s.FirstName, s.Function }).ToListAsync(ct))
+        api.MapGet("/enseignants", (TeachingService s, CancellationToken ct) => s.AvailableTeachersAsync(ct))
             .RequireAuthorization(Permissions.AcademicsRead);
     }
 

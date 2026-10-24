@@ -184,6 +184,8 @@ public sealed record AssignmentHistoryDto(Guid Id, string TeacherName, DateOnly 
 /// <summary>Charge pédagogique annuelle prévue d'un enseignant : cours actifs et attributions en cours uniquement.</summary>
 public sealed record TeacherChargeDto(Guid TeacherId, string Name, int Courses, int Promotions, decimal Hours);
 
+public sealed record TeacherChoiceDto(Guid Id, string Nom, string Function);
+
 public sealed record TeacherCourseLineDto(Guid CourseId, string PromotionCode, int Number, string Name, decimal Hours, decimal MaxScore);
 
 public sealed record AssessmentDto(Guid Id, Guid CourseId, string Title, string Kind, int Term, DateOnly Date, decimal MaxScore, decimal Weight, int GradedCount);

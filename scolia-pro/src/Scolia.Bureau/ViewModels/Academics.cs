@@ -8,8 +8,8 @@ using Scolia.Bureau.Ribbon;
 
 namespace Scolia.Bureau.ViewModels;
 
-/// <summary>Cours d'une promotion, avec son coefficient et son enseignant.</summary>
-public sealed record CourseRowVm(Guid Id, string Code, string Name, string Coefficient, string Hours, string Teacher, int Assessments, CourseDto Source);
+/// <summary>Cours d'une promotion, avec son numéro, son coefficient, son volume et son enseignant.</summary>
+public sealed record CourseRowVm(Guid Id, string Number, string Name, string Coefficient, string Hours, string MaxScore, string Teacher, int Assessments, CourseDto Source);
 
 /// <summary>Évaluation d'un cours : devoir, interrogation, examen.</summary>
 public sealed record AssessmentRowVm(Guid Id, string Title, string Kind, string Term, string Date, string MaxScore, string Weight, string Graded, AssessmentDto Source);
@@ -42,6 +42,7 @@ public sealed class GradesPage : PageViewModel
         if (Shell.Can(Perm.AcademicsWrite))
         {
             Action("Nouveau cours", MaterialIconKind.FileDocumentPlusOutline, () => NewCourseAsync(Shell, Promotion is { } p ? Guid.Parse(p.Value) : (Guid?)null));
+            Action("Attributions et charges", MaterialIconKind.AccountSchoolOutline, () => Shell.Open(() => new TeachingPage(Shell)));
             Action("Nouvelle évaluation", MaterialIconKind.ClipboardPlusOutline, () => NewAssessmentAsync(Shell, Course?.Id));
             Action("Enregistrer les notes", MaterialIconKind.ContentSave, SaveGradesAsync, primary: true);
         }
@@ -98,7 +99,8 @@ public sealed class GradesPage : PageViewModel
         var courses = await Shell.Api.GetAsync<List<CourseDto>>("api/scolarite/cours" + ScoliaClient.Query(("promotionId", Guid.Parse(Promotion.Value))));
         Courses.Clear();
         foreach (var c in courses)
-            Courses.Add(new CourseRowVm(c.Id, c.Code, c.Name, c.Coefficient.ToString("0.##"), $"{c.Hours} h", c.TeacherName ?? "—", c.AssessmentCount, c));
+            Courses.Add(new CourseRowVm(c.Id, c.Number.ToString(System.Globalization.CultureInfo.InvariantCulture), c.Name, c.Coefficient.ToString("0.##"), $"{c.Hours:0.##} h",
+                c.MaxScore.ToString("0.##"), c.TeacherName ?? "—", c.AssessmentCount, c));
         subtitle = $"{Format.Count(courses.Count, "cours", "cours")} · {Promotion.Label}";
         Raise(nameof(Subtitle));
         course = null;
@@ -156,32 +158,33 @@ public sealed class GradesPage : PageViewModel
         await LoadSheetAsync();
     }
 
-    /// <summary>Crée un cours dans la promotion choisie.</summary>
+    /// <summary>Crée un cours dans la promotion choisie. Le numéro proposé est le premier libre de la promotion.</summary>
     public static async Task NewCourseAsync(ShellViewModel shell, Guid? promotionId = null)
     {
         var promotions = (await shell.Api.GetAsync<List<PromotionDto>>("api/etablissement/promotions")).Select(Choices.Promotion).ToList();
-        var teachers = await shell.Api.GetAsync<List<TeacherDto>>("api/enseignants");
-        var form = new FormViewModel("Nouveau cours", "Le cours apparaît dans la promotion et sert au calcul des moyennes.", async f =>
+        var next = promotionId is { } pid
+            ? (await shell.Api.GetAsync<NextNumberDto>($"api/scolarite/cours/numero-suivant?promotionId={pid}")).Numero
+            : 1;
+        var form = new FormViewModel("Nouveau cours", "Le cours est rattaché à une promotion. Son numéro reste réservé même après archivage.", async f =>
         {
             await shell.Api.SendAsync(HttpMethod.Post, "api/scolarite/cours", new
             {
                 promotionId = Guid.Parse(f.ChoiceValue("promotion")!),
-                code = f.Text("code"),
+                number = (int)f.Amount("numero"),
                 name = f.Text("intitule"),
                 coefficient = f.Amount("coefficient"),
-                hours = (int)f.Amount("heures"),
-                teacherId = f.ChoiceValue("enseignant") is { } t ? Guid.Parse(t) : (Guid?)null,
-                isActive = true,
+                hours = f.Amount("heures"),
+                maxScore = f.Amount("cotation"),
             });
-            shell.Notify("Cours créé.");
+            shell.Notify("Cours créé. Attribuez-le à un enseignant depuis Attributions et charges.");
             return true;
         });
         form.AddChoice("promotion", "Promotion", promotions, promotionId?.ToString(), required: true);
-        form.Add("code", "Code", required: true, hint: "Quatre caractères au plus, par exemple MATH");
+        form.Add("numero", "Numéro du cours", FieldKind.Amount, next.ToString(System.Globalization.CultureInfo.InvariantCulture), required: true, hint: "De 1 à 9999, unique dans la promotion.");
         form.Add("intitule", "Intitulé", required: true);
         form.Add("coefficient", "Coefficient", FieldKind.Amount, "1", required: true);
-        form.Add("heures", "Volume horaire", FieldKind.Amount, "30", required: true);
-        form.AddChoice("enseignant", "Enseignant", teachers.Select(t => new ChoiceItem(t.Id.ToString(), $"{t.Nom} · {t.Function}")).ToList());
+        form.Add("heures", "Volume horaire annuel", FieldKind.Amount, "30", required: true, hint: "Peut comporter une décimale, par exemple 30,5.");
+        form.Add("cotation", "Cotation maximale (points)", FieldKind.Amount, "20", required: true);
         if (await shell.Ask(form) && shell.Current is GradesPage page) await page.RefreshAsync();
     }
 
@@ -193,7 +196,7 @@ public sealed class GradesPage : PageViewModel
         foreach (var p in promotions)
         {
             var list = await shell.Api.GetAsync<List<CourseDto>>("api/scolarite/cours" + ScoliaClient.Query(("promotionId", p.Id)));
-            courses.AddRange(list.Select(c => new ChoiceItem(c.Id.ToString(), $"{p.Code} · {c.Code} · {c.Name}")));
+            courses.AddRange(list.Select(c => new ChoiceItem(c.Id.ToString(), $"{p.Code} · {c.Number} · {c.Name}")));
         }
         var form = new FormViewModel("Nouvelle évaluation", "Une évaluation reçoit ensuite les notes de chaque apprenant.", async f =>
         {
