@@ -43,6 +43,8 @@ public sealed class ScoliaDbContext(DbContextOptions<ScoliaDbContext> options, I
     public DbSet<DisciplineIncident> Incidents => Set<DisciplineIncident>();
     public DbSet<DisciplineDecision> DisciplineDecisions => Set<DisciplineDecision>();
     public DbSet<StaffMember> Staff => Set<StaffMember>();
+    public DbSet<StaffAttendanceMark> StaffMarks => Set<StaffAttendanceMark>();
+    public DbSet<StaffDayJustification> StaffJustifications => Set<StaffDayJustification>();
     public DbSet<PayrollEntry> Payroll => Set<PayrollEntry>();
 
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
@@ -185,6 +187,19 @@ public sealed class ScoliaDbContext(DbContextOptions<ScoliaDbContext> options, I
             e.HasIndex(x => x.EnrollmentId);
             e.HasIndex(x => x.RequestKey).IsUnique();
             e.HasOne<Enrollment>().WithMany().HasForeignKey(x => x.EnrollmentId).OnDelete(DeleteBehavior.Restrict);
+        });
+        b.Entity<StaffAttendanceMark>(e =>
+        {
+            e.ToTable("PointageEnseignants");
+            e.HasIndex(x => new { x.StaffMemberId, x.Date, x.Kind }).IsUnique();
+            e.HasOne<StaffMember>().WithMany().HasForeignKey(x => x.StaffMemberId).OnDelete(DeleteBehavior.Restrict);
+        });
+        b.Entity<StaffDayJustification>(e =>
+        {
+            e.ToTable("JustificationsEnseignants");
+            e.Ignore(x => x.IsActive);
+            e.HasIndex(x => new { x.StaffMemberId, x.Date });
+            e.HasOne<StaffMember>().WithMany().HasForeignKey(x => x.StaffMemberId).OnDelete(DeleteBehavior.Restrict);
         });
         b.Entity<StaffMember>(e => { e.ToTable("Personnel"); e.HasIndex(x => x.Number).IsUnique(); e.Ignore(x => x.FullName); });
         b.Entity<PayrollEntry>(e =>

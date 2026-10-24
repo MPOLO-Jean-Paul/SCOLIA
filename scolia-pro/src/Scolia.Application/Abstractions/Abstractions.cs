@@ -37,6 +37,8 @@ public interface IAppDbContext
     DbSet<DisciplineDecision> DisciplineDecisions { get; }
     DbSet<StaffMember> Staff { get; }
     DbSet<PayrollEntry> Payroll { get; }
+    DbSet<StaffAttendanceMark> StaffMarks { get; }
+    DbSet<StaffDayJustification> StaffJustifications { get; }
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }
 

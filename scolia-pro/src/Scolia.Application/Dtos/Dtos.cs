@@ -186,6 +186,21 @@ public sealed record TeacherChargeDto(Guid TeacherId, string Name, int Courses, 
 
 public sealed record TeacherChoiceDto(Guid Id, string Nom, string Function);
 
+/// <summary>Signature d'entrée ou de sortie : l'heure est celle du poste, et une entrée à 08:00:00 ou après est en retard.</summary>
+public sealed record StaffMarkDto(Guid Id, string Kind, string Time, bool IsLate);
+
+public sealed record StaffJustifyRequest(DateOnly Date, string Reason);
+
+public sealed record StaffCancelRequest(string Reason);
+
+public sealed record StaffJustificationDto(Guid Id, DateOnly Date, string Reason, string RecordedBy, string? CancelReason);
+
+/// <summary>Une journée du pointage : statut, heures signées, et si elle sert de conversion de retards.</summary>
+public sealed record StaffDayDto(DateOnly Date, string Status, string? Entry, string? Exit, bool Late, bool Justified, bool Conversion, bool ConversionJustified);
+
+/// <summary>Bilan d'un membre sur une période. Les jours déductibles comptent une fois par date.</summary>
+public sealed record StaffBilanDto(Guid StaffMemberId, string Name, int Present, int Late, int Absent, int Justified, int Conversions, int Deductible);
+
 public sealed record TeacherCourseLineDto(Guid CourseId, string PromotionCode, int Number, string Name, decimal Hours, decimal MaxScore);
 
 public sealed record AssessmentDto(Guid Id, Guid CourseId, string Title, string Kind, int Term, DateOnly Date, decimal MaxScore, decimal Weight, int GradedCount);
