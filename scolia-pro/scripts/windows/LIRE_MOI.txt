@@ -1,4 +1,15 @@
-SCOLIA PRO 1.0 - GESTION SCOLAIRE
+SCOLIA PRO 1.1 - GESTION SCOLAIRE
+
+NOUVEAUTÉS DE LA VERSION 1.1
+- Encaissement par lot (Finances > Encaissement) : plusieurs apprenants et plusieurs
+  mois en une opération. Chaque apprenant reçoit son propre reçu numéroté. « Vérifier
+  le lot » contrôle sans rien écrire : montants, erreurs et reçus semblables.
+- Effacement volontaire (Données) : « Effacer données » retire les paiements des
+  apprenants cochés ou de tous ; « Effacer tous les apprenants » retire les dossiers.
+  Les deux exigent le mot de passe de votre compte et font une sauvegarde avant.
+- Personnel et paie : le mois se choisit dans une liste, avec un message quand
+  aucun bulletin n'a encore été préparé.
+- Tableaux : colonnes lisibles, titres entiers, sous-titres qui reviennent à la ligne.
 
 AUCUNE INSTALLATION
 Le dossier SCOLIA contient tout ce qui est nécessaire. Il n'y a rien à installer
