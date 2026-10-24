@@ -27,7 +27,8 @@ public sealed record SessionDto(
 public sealed record SchoolDto(
     string Name, string ShortName, string? Motto, string? Address, string? City, string? Country, string? Phone, string? Email,
     string? Website, string CurrencyCode, string CurrencySymbol, bool WholeAmountsOnly, string? ReceiptFooter, bool HasLogo, string PhoneCountryCode,
-    string? CardMinistry = null, string? CardDirection = null, string? CardDivision = null, string? CardZone = null);
+    string? CardMinistry = null, string? CardDirection = null, string? CardDivision = null, string? CardZone = null,
+    string? CardInstitute = null, string? CardAddress = null);
 
 /// <summary>Apprenant proposé pour les cartes d'accès, avec son diagnostic.</summary>
 public sealed record CardCandidateDto(Guid EnrollmentId, string Matricule, string FullName, string PromotionCode, string Status, bool Eligible,

@@ -353,6 +353,8 @@ public sealed class SettingsPage : PageViewModel
                 cardDirection = f.OptionalText("direction"),
                 cardDivision = f.OptionalText("division"),
                 cardZone = f.OptionalText("zone"),
+                cardInstitute = f.OptionalText("institut"),
+                cardAddress = f.OptionalText("adresse-institut"),
             });
             Shell.Notify("Établissement enregistré. Les reçus suivants utilisent ces informations.");
             return true;
@@ -370,6 +372,8 @@ public sealed class SettingsPage : PageViewModel
         form.Add("direction", "Direction (cartes d'accès)", value: s.CardDirection);
         form.Add("division", "Division provinciale (cartes d'accès)", value: s.CardDivision);
         form.Add("zone", "Zone de santé (cartes d'accès)", value: s.CardZone);
+        form.Add("institut", "Institut (cartes d'accès)", value: s.CardInstitute);
+        form.Add("adresse-institut", "Adresse de l'institut (cartes d'accès)", value: s.CardAddress);
         form.Add("site", "Site web", value: s.Website);
         form.Add("devise", "Monnaie (ISO)", value: s.CurrencyCode, required: true);
         form.Add("symbole", "Symbole", value: s.CurrencySymbol, required: true);

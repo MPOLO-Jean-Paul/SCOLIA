@@ -145,8 +145,8 @@ public sealed class StudentCardsApiTests : IDisposable
         using (var stream = document.Open())
         {
             var xml = System.Xml.Linq.XDocument.Load(stream);
-            // Trois exemplaires : trois QR, un par carte.
-            Assert.Equal(3, xml.Descendants().Count(e => e.Name.LocalName == "drawing"));
+            // Trois exemplaires : un sceau et un QR par carte.
+            Assert.Equal(6, xml.Descendants().Count(e => e.Name.LocalName == "drawing"));
         }
         Assert.NotNull(zip.GetEntry("word/_rels/document.xml.rels"));
         Assert.Contains(zip.Entries, e => e.FullName.StartsWith("word/media/", StringComparison.Ordinal));

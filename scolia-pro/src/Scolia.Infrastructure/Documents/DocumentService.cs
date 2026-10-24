@@ -240,80 +240,11 @@ public sealed class DocumentService : IDocumentService
         page.Footer().Element(c => Footer(c, null));
     })).GeneratePdf();
 
-    /// <summary>
-    /// Cartes d'accès aux examens : A4 portrait, huit cartes de 92 × 63 mm par page, deux colonnes et quatre rangées,
-    /// espacements de 6 mm et 7 mm, marges de 10 mm. Chaque carte porte une bande de promotion et un QR à droite.
-    /// </summary>
+    /// <summary>Cartes d'accès en PDF : mise en page dans <see cref="StudentCardPdf"/>.</summary>
+    public byte[] StudentCards(CardDocument d) => StudentCardPdf.Build(d);
+
+    /// <summary>Cartes d'accès en Word : même grille que le PDF, dans <see cref="CardWordWriter"/>.</summary>
     public byte[] StudentCardsWord(CardDocument d) => CardWordWriter.Write(d);
-
-    public byte[] StudentCards(CardDocument d)
-    {
-        var pages = new List<IReadOnlyList<CardItem>>();
-        for (var start = 0; start < d.Cards.Count; start += Scolia.Domain.Students.StudentCardRules.CardsPerPage)
-            pages.Add(d.Cards.Skip(start).Take(Scolia.Domain.Students.StudentCardRules.CardsPerPage).ToList());
-        return Document.Create(doc =>
-        {
-            foreach (var pageCards in pages)
-            {
-                doc.Page(page =>
-                {
-                    page.Size(PageSizes.A4);
-                    page.Margin(Scolia.Domain.Students.StudentCardRules.MarginMm, Unit.Millimetre);
-                    page.DefaultTextStyle(s => s.FontFamily(Font).FontSize(7).FontColor("#1E293B"));
-                    page.Content().Column(column =>
-                    {
-                        for (var row = 0; row < 4; row++)
-                        {
-                            if (row > 0) column.Item().Height(Scolia.Domain.Students.StudentCardRules.RowGapMm, Unit.Millimetre);
-                            column.Item().Row(line =>
-                            {
-                                for (var col = 0; col < 2; col++)
-                                {
-                                    if (col > 0) line.ConstantItem(Scolia.Domain.Students.StudentCardRules.ColumnGapMm, Unit.Millimetre);
-                                    var index = row * 2 + col;
-                                    // La seconde colonne prend le reste de la ligne : l'arrondi des points PDF ne fait jamais déborder la page.
-                                    var width = col == 0
-                                        ? line.ConstantItem(Scolia.Domain.Students.StudentCardRules.CardWidthMm, Unit.Millimetre)
-                                        : line.RelativeItem();
-                                    var cell = width.Height(Scolia.Domain.Students.StudentCardRules.CardHeightMm, Unit.Millimetre);
-                                    if (index < pageCards.Count) cell.Element(c => StudentCard(c, d, pageCards[index]));
-                                }
-                            });
-                        }
-                    });
-                });
-            }
-        }).GeneratePdf();
-    }
-
-    private static void StudentCard(IContainer container, CardDocument d, CardItem card)
-    {
-        container.Border(0.4f).BorderColor("#94A3B8").Column(column =>
-        {
-            column.Item().Height(7, Unit.Millimetre).Background(card.Color);
-            column.Item().Padding(4, Unit.Millimetre).Column(body =>
-            {
-                var header = new[] { d.Header.Country, d.Header.Ministry, d.Header.Direction }.Where(x => !string.IsNullOrWhiteSpace(x));
-                body.Item().Text(string.Join(" · ", header)).FontSize(5.5f).AlignCenter();
-                var place = new[] { d.Header.Division, d.Header.CityZone, d.Header.Institute }.Where(x => !string.IsNullOrWhiteSpace(x));
-                body.Item().Text(string.Join(" · ", place)).FontSize(5.5f).AlignCenter();
-                body.Item().PaddingTop(1.5f).Text("CARTE D'ACCÈS").FontSize(9.3f).Bold().Underline().AlignCenter();
-                body.Item().Text($"SESSION {d.Session}").FontSize(14).Bold().AlignCenter();
-                body.Item().PaddingTop(5).Row(line =>
-                {
-                    line.RelativeItem().DefaultTextStyle(x => x.FontSize(8.5f)).Column(identity =>
-                    {
-                        identity.Spacing(2.5f);
-                        identity.Item().Text(t => { t.Span("NOM : ").Bold(); t.Span(card.LastName); });
-                        identity.Item().Text(t => { t.Span("POST-NOM : ").Bold(); t.Span(card.MiddleName); });
-                        identity.Item().Text(t => { t.Span("PRÉNOM : ").Bold(); t.Span(card.FirstName); });
-                        identity.Item().Text(t => { t.Span("CLASSE : ").Bold(); t.Span(card.Classe); });
-                    });
-                    line.ConstantItem(25, Unit.Millimetre).Image(Qr(card.QrText));
-                });
-            });
-        });
-    }
 
     public byte[] Table(TableDocument d) => Document.Create(doc => doc.Page(page =>
     {

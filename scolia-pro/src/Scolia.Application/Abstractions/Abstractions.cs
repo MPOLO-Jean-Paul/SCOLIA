@@ -100,7 +100,7 @@ public sealed record StatementDocument(
     decimal TotalNet, decimal TotalPaid, decimal Balance, decimal Overdue);
 
 /// <summary>En-tête des cartes d'accès : les mentions officielles de l'établissement.</summary>
-public sealed record SchoolCardHeader(string Country, string? Ministry, string? Direction, string? Division, string? CityZone, string Institute, string? Address);
+public sealed record SchoolCardHeader(string Country, string? Ministry, string? Direction, string? Division, string? CityZone, string Institute, string? Address, byte[]? Logo);
 
 /// <summary>Une carte à imprimer. La couleur est celle de la promotion ; le QR contient l'identité, la classe, l'établissement, la session et l'année.</summary>
 public sealed record CardItem(string LastName, string MiddleName, string FirstName, string Classe, string Color, string QrText);

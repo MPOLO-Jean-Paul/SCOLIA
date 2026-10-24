@@ -19,6 +19,9 @@ public sealed class SchoolProfile : Entity
     public string? CardDirection { get; set; }
     public string? CardDivision { get; set; }
     public string? CardZone { get; set; }
+    /// <summary>Nom de l'institut et adresse tels qu'ils figurent sur les cartes ; à défaut, les mentions officielles.</summary>
+    public string? CardInstitute { get; set; }
+    public string? CardAddress { get; set; }
     /// <summary>Code ISO 4217 de la monnaie (CDF par défaut).</summary>
     public string CurrencyCode { get; set; } = "CDF";
     public string CurrencySymbol { get; set; } = "FC";

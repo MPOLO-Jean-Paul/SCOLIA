@@ -63,8 +63,16 @@ public sealed class CardService(IAppDbContext db, IWriteGate gate, IAuditLog aud
         }
 
         var school = await db.Schools.AsNoTracking().OrderBy(x => x.CreatedAtUtc).FirstAsync(ct);
-        var header = new SchoolCardHeader(school.Country ?? string.Empty, school.CardMinistry, school.CardDirection, school.CardDivision,
-            JoinNonEmpty(school.City, school.CardZone), school.Name, school.Address);
+        // Mentions officielles de la version 79, sauf si l'établissement a saisi les siennes ; le logo est celui du profil.
+        var header = new SchoolCardHeader(
+            CardHeaderDefaults.Or(school.Country, CardHeaderDefaults.Country),
+            CardHeaderDefaults.Or(school.CardMinistry, CardHeaderDefaults.Ministry),
+            CardHeaderDefaults.Or(school.CardDirection, CardHeaderDefaults.Direction),
+            CardHeaderDefaults.Or(school.CardDivision, CardHeaderDefaults.Division),
+            CardHeaderDefaults.Or(school.CardZone, CardHeaderDefaults.CityZone),
+            CardHeaderDefaults.Or(school.CardInstitute, CardHeaderDefaults.Institute),
+            CardHeaderDefaults.Or(school.CardAddress, CardHeaderDefaults.Address),
+            school.Logo is { Length: > 0 } logo ? logo : null);
         var cards = new List<CardItem>();
         foreach (var r in selected)
         {

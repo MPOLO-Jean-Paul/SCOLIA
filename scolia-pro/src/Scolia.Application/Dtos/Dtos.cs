@@ -7,11 +7,11 @@ namespace Scolia.Application.Dtos;
 // ---------- Établissement et configuration ----------
 public sealed record SchoolDto(string Name, string ShortName, string? Motto, string? Address, string? City, string? Country, string? Phone,
     string? Email, string? Website, string CurrencyCode, string CurrencySymbol, bool WholeAmountsOnly, string? ReceiptFooter, bool HasLogo, string PhoneCountryCode,
-    string? CardMinistry = null, string? CardDirection = null, string? CardDivision = null, string? CardZone = null);
+    string? CardMinistry = null, string? CardDirection = null, string? CardDivision = null, string? CardZone = null, string? CardInstitute = null, string? CardAddress = null);
 
 public sealed record SchoolUpdate(string Name, string ShortName, string? Motto, string? Address, string? City, string? Country, string? Phone,
     string? Email, string? Website, string CurrencyCode, string CurrencySymbol, bool WholeAmountsOnly, string? ReceiptFooter, string PhoneCountryCode,
-    string? CardMinistry = null, string? CardDirection = null, string? CardDivision = null, string? CardZone = null);
+    string? CardMinistry = null, string? CardDirection = null, string? CardDivision = null, string? CardZone = null, string? CardInstitute = null, string? CardAddress = null);
 
 public sealed record SetupRequest(string SchoolName, string ShortName, string? Motto, string? City, string? Phone, string CurrencyCode, string CurrencySymbol,
     string YearLabel, int StartMonth, int MonthCount, string AdminUserName, string AdminDisplayName, string AdminPassword, bool LoadDemoData,

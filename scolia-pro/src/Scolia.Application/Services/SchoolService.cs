@@ -20,7 +20,9 @@ public sealed class SchoolService(IAppDbContext db, IWriteGate gate, IAuditLog a
 
     public static SchoolDto ToDto(SchoolProfile s) => new(s.Name, s.ShortName, s.Motto, s.Address, s.City, s.Country, s.Phone, s.Email, s.Website,
         s.CurrencyCode, s.CurrencySymbol, s.WholeAmountsOnly, s.ReceiptFooter, s.Logo is { Length: > 0 }, s.PhoneCountryCode,
-        s.CardMinistry, s.CardDirection, s.CardDivision, s.CardZone);
+        CardHeaderDefaults.Or(s.CardMinistry, CardHeaderDefaults.Ministry), CardHeaderDefaults.Or(s.CardDirection, CardHeaderDefaults.Direction),
+        CardHeaderDefaults.Or(s.CardDivision, CardHeaderDefaults.Division), CardHeaderDefaults.Or(s.CardZone, CardHeaderDefaults.CityZone),
+        CardHeaderDefaults.Or(s.CardInstitute, CardHeaderDefaults.Institute), CardHeaderDefaults.Or(s.CardAddress, CardHeaderDefaults.Address));
 
     public Task<SchoolDto> UpdateSchoolAsync(SchoolUpdate input, CancellationToken ct = default) => gate.RunAsync(async () =>
     {
@@ -37,6 +39,7 @@ public sealed class SchoolService(IAppDbContext db, IWriteGate gate, IAuditLog a
         s.CurrencyCode = input.CurrencyCode; s.CurrencySymbol = input.CurrencySymbol.Trim(); s.WholeAmountsOnly = input.WholeAmountsOnly;
         s.ReceiptFooter = Clean(input.ReceiptFooter); s.PhoneCountryCode = input.PhoneCountryCode;
         s.CardMinistry = Clean(input.CardMinistry); s.CardDirection = Clean(input.CardDirection); s.CardDivision = Clean(input.CardDivision); s.CardZone = Clean(input.CardZone);
+        s.CardInstitute = Clean(input.CardInstitute); s.CardAddress = Clean(input.CardAddress);
         audit.Record("etablissement.modifie", "Etablissement", s.Id.ToString(), "Paramètres de l'établissement modifiés.");
         await db.SaveChangesAsync(ct);
         return ToDto(s);

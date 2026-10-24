@@ -935,10 +935,16 @@ namespace Scolia.Infrastructure.Persistence.Migrations
                     b.Property<string>("Address")
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("CardAddress")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("CardDirection")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("CardDivision")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CardInstitute")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("CardMinistry")
