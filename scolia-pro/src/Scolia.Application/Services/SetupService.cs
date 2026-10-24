@@ -104,8 +104,8 @@ public static class DemoData
         var specs = new (string Code, string Name, Section Section, int Level, string? Next, decimal Fee, int Students)[]
         {
             ("INF1", "Première année", nursing, 1, "INF2", 55000, 28), ("INF2", "Deuxième année", nursing, 2, "INF3", 55000, 24),
-            ("INF3", "Troisième année", nursing, 3, null, 60000, 20), ("ACC1", "Première année", midwifery, 1, "ACC2", 55000, 22),
-            ("ACC2", "Deuxième année", midwifery, 2, null, 55000, 18), ("TLM1", "Première année", lab, 1, null, 50000, 16),
+            ("INF3", "Troisième année", nursing, 3, null, 55000, 20), ("ACC1", "Première année", midwifery, 1, "ACC2", 55000, 22),
+            ("ACC2", "Deuxième année", midwifery, 2, null, 55000, 18), ("TLM1", "Première année", lab, 1, null, 55000, 16),
         };
         var counters = new Dictionary<string, long>();
         var receiptNo = 0L;

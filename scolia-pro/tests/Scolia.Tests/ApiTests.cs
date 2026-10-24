@@ -190,7 +190,7 @@ public sealed class BusinessApiTests : IDisposable
 
     public void Dispose() => app.Dispose();
 
-    private static async Task<(string PromotionId, string EnrollmentId, string StudentId)> NewStudent(HttpClient admin, decimal monthly = 50000)
+    private static async Task<(string PromotionId, string EnrollmentId, string StudentId)> NewStudent(HttpClient admin, decimal monthly = 55000)
     {
         var promotion = await admin.Post("/api/etablissement/promotions", new
         {
@@ -228,7 +228,7 @@ public sealed class BusinessApiTests : IDisposable
         var admin = await app.InstalledAdmin();
         var (_, enrollmentId, _) = await NewStudent(admin);
         var account = await admin.GetAsync($"/api/inscriptions/{enrollmentId}/compte").Ok();
-        Assert.Equal(520000m, account.GetProperty("totalNet").GetDecimal());
+        Assert.Equal(570000m, account.GetProperty("totalNet").GetDecimal());
 
         var request = new { enrollmentId, amount = 70000m, method = "Especes", idempotencyKey = "cle-unique-1" };
         var receipt = await admin.Post("/api/paiements", request).Ok();
@@ -284,7 +284,7 @@ public sealed class BusinessApiTests : IDisposable
         var account = await admin.GetAsync($"/api/inscriptions/{enrollmentId}/compte").Ok();
         var monthly = account.GetProperty("lines").EnumerateArray().Where(l => l.GetProperty("label").GetString() != "Frais d'inscription").Select(l => l.GetProperty("feeItemId").GetString()).ToList();
         // Un mois se paie en entier : aucun règlement partiel n'est enregistré.
-        await admin.Post("/api/paiements", new { enrollmentId, amount = 50000m, method = "Especes", feeItemIds = new[] { monthly[0] } }).Ok();
+        await admin.Post("/api/paiements", new { enrollmentId, amount = 55000m, method = "Especes", feeItemIds = new[] { monthly[0] } }).Ok();
 
         var refused = await admin.Post($"/api/inscriptions/{enrollmentId}/prises-en-charge", new
         {
@@ -297,7 +297,7 @@ public sealed class BusinessApiTests : IDisposable
             sponsorName = "Bourse", reason = "Excellence", effectiveFrom = DateOnly.FromDateTime(DateTime.Today), lines = monthly.Skip(1).Select(id => new { feeItemId = id, percent = 50m }),
         }).Ok();
         var after = await admin.GetAsync($"/api/inscriptions/{enrollmentId}/compte").Ok();
-        Assert.Equal(9 * 25000m, after.GetProperty("totalCovered").GetDecimal());
+        Assert.Equal(9 * 27500m, after.GetProperty("totalCovered").GetDecimal());
     }
 
     [Fact]
