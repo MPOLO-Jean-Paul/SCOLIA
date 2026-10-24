@@ -4,7 +4,7 @@
   <DataGrid ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}" AutoGenerateColumns="False" IsReadOnly="True">
     <DataGrid.Columns>
       <DataGridTextColumn Header="Matricule" Binding="{Binding Matricule}" Width="Auto" MinWidth="122" />
-      <DataGridTextColumn Header="Apprenant" Binding="{Binding Name}" Width="*" />
+      <DataGridTextColumn Header="Apprenant" Binding="{Binding Name}" Width="*" MinWidth="140" />
       <DataGridTextColumn Header="Promotion" Binding="{Binding Promotion}" Width="Auto" MinWidth="122" />
       <DataGridTextColumn Header="Garant ou organisme" Binding="{Binding Sponsor}" Width="Auto" MinWidth="198" />
       <DataGridTextColumn Header="Motif" Binding="{Binding Reason}" Width="Auto" MinWidth="170" />

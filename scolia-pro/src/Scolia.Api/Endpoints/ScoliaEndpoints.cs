@@ -216,6 +216,7 @@ public static class ScoliaEndpoints
     {
         var g = api.MapGroup("/rapports").RequireAuthorization(Permissions.ReportsRead);
         g.MapGet("/tableau-de-bord", (Guid? promotionId, ReportService r, CancellationToken ct) => r.DashboardAsync(promotionId, ct));
+        g.MapGet("/aujourdhui", (ReportService r, CancellationToken ct) => r.TodayAsync(ct));
         g.MapGet("/debiteurs", ([AsParameters] DebtorQuery q, ReportService r, CancellationToken ct) => r.DebtorsAsync(q, ct));
         g.MapGet("/debiteurs/export", async ([AsParameters] DebtorQuery q, string? format, ReportService r, CancellationToken ct) =>
             Table(await r.DebtorsTableAsync(q, ct), format, "retards-de-paiement", r));

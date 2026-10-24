@@ -63,7 +63,8 @@ public sealed class PosteViewModel : Observable
     public bool HasAddress => AddressLine.Length > 0;
 
     public ObservableCollection<ServerRowVm> Servers { get; } = [];
-    public string SearchLine { get => searchLine; private set => Set(ref searchLine, value); }
+    public string SearchLine { get => searchLine; private set { if (Set(ref searchLine, value)) Raise(nameof(HasSearchLine)); } }
+    public bool HasSearchLine => searchLine.Length > 0;
     public bool Searching { get => searching; private set { if (Set(ref searching, value)) Raise(nameof(NotSearching)); } }
     public bool NotSearching => !searching;
 

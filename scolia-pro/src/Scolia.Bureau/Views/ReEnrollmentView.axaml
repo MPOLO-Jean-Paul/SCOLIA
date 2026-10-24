@@ -13,7 +13,7 @@
       <DataGrid.Columns>
         <DataGridCheckBoxColumn Header="Reconduire" Binding="{Binding Selected}" Width="Auto" MinWidth="110" />
         <DataGridTextColumn Header="Matricule" Binding="{Binding Matricule}" IsReadOnly="True" Width="Auto" MinWidth="122" />
-        <DataGridTextColumn Header="Nom complet" Binding="{Binding Name}" IsReadOnly="True" Width="*" />
+        <DataGridTextColumn Header="Nom complet" Binding="{Binding Name}" IsReadOnly="True" Width="*" MinWidth="140" />
         <DataGridTextColumn Header="Promotion actuelle" Binding="{Binding FromPromotion}" IsReadOnly="True" Width="Auto" MinWidth="190" />
         <DataGridTextColumn Header="Solde reporté" Binding="{Binding PreviousBalance}" IsReadOnly="True" Width="Auto" MinWidth="152" />
         <DataGridTemplateColumn Header="Promotion cible" Width="Auto" MinWidth="260">

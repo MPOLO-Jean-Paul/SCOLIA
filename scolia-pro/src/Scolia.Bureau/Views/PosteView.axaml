@@ -26,8 +26,8 @@
           <Button Classes="ghost" Content="Utiliser cet ordinateur comme serveur" Command="{Binding UseThisComputer}" IsVisible="{Binding IsLinked}" />
         </WrapPanel>
         <ProgressBar IsIndeterminate="True" IsVisible="{Binding Searching}" Height="2" MinHeight="2" Margin="74,0,18,10" />
-        <TextBlock Text="{Binding SearchLine}" Classes="muted" TextWrapping="Wrap" Margin="74,0,18,12" FontSize="{DynamicResource FsSmall}" />
-        <ItemsControl ItemsSource="{Binding Servers}" Margin="58,0,10,10">
+        <TextBlock Text="{Binding SearchLine}" IsVisible="{Binding HasSearchLine}" Classes="muted" TextWrapping="Wrap" Margin="74,0,18,12" FontSize="{DynamicResource FsSmall}" />
+        <ItemsControl ItemsSource="{Binding Servers}" Margin="58,0,10,4">
           <ItemsControl.ItemTemplate>
             <DataTemplate>
               <Grid ColumnDefinitions="*,Auto" Margin="16,8">

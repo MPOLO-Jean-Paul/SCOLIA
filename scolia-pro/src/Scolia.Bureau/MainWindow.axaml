@@ -16,13 +16,16 @@
 
     <Grid RowDefinitions="Auto,Auto,Auto,*,Auto" IsVisible="{Binding IsLoggedIn}">
 
-      <!-- Barre de titre couleur d'accent : identité, recherche au centre, utilisateur -->
+      <!-- Barre d'outils claire : barre latérale, identité, recherche au centre, utilisateur -->
       <Border Grid.Row="0" Classes="titlebar">
         <Grid ColumnDefinitions="*,Auto,*">
           <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+            <Button Classes="toolicon" Command="{Binding ToggleSidebarCommand}" ToolTip.Tip="Afficher ou masquer la barre latérale">
+              <mi:MaterialIcon Kind="DockLeft" Width="18" Height="18" />
+            </Button>
             <Image Source="avares://SCOLIA/Assets/scolia.png" Width="22" Height="22" />
-            <TextBlock Text="SCOLIA" FontWeight="SemiBold" VerticalAlignment="Center" Foreground="{DynamicResource OnAccentBrush}" />
-            <TextBlock Text="{Binding SchoolLine}" VerticalAlignment="Center" Foreground="{DynamicResource OnAccentBrush}" Opacity="0.85" />
+            <TextBlock Text="SCOLIA" FontWeight="SemiBold" VerticalAlignment="Center" />
+            <TextBlock Text="{Binding SchoolLine}" VerticalAlignment="Center" Classes="muted" FontSize="{DynamicResource FsBase}" />
           </StackPanel>
           <Button Grid.Column="1" Classes="titlesearch" Command="{Binding SearchCommand}" ToolTip.Tip="Rechercher (Ctrl+K)">
             <StackPanel Orientation="Horizontal" Spacing="8">
@@ -31,12 +34,12 @@
             </StackPanel>
           </Button>
           <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center" HorizontalAlignment="Right">
-            <Button Classes="ghost" Command="{Binding ReloadCommand}" ToolTip.Tip="Actualiser (F5)" Padding="8,4" Foreground="{DynamicResource OnAccentBrush}">
+            <Button Classes="toolicon" Command="{Binding ReloadCommand}" ToolTip.Tip="Actualiser (F5)">
               <mi:MaterialIcon Kind="Refresh" Width="18" Height="18" />
             </Button>
-            <TextBlock Text="{Binding UserLine}" VerticalAlignment="Center" Foreground="{DynamicResource OnAccentBrush}" />
-            <Border Width="30" Height="30" CornerRadius="15" Background="{DynamicResource OnAccentBrush}">
-              <TextBlock Text="{Binding UserInitials}" FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{DynamicResource AccentBrush}" />
+            <TextBlock Text="{Binding UserLine}" VerticalAlignment="Center" Classes="muted" FontSize="{DynamicResource FsBase}" />
+            <Border Width="30" Height="30" CornerRadius="15" Background="{DynamicResource AccentBrush}">
+              <TextBlock Text="{Binding UserInitials}" FontWeight="SemiBold" FontSize="{DynamicResource FsSmall}" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{DynamicResource OnAccentBrush}" />
             </Border>
           </StackPanel>
         </Grid>
@@ -110,12 +113,38 @@
         </ScrollViewer>
       </Border>
 
-      <!-- Écran courant : en-tête de page, puis contenu. Dialogues et notifications se superposent. -->
-      <Grid Grid.Row="3">
-        <Grid RowDefinitions="Auto,*" IsVisible="{Binding HasPage}">
-          <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="24,16,24,8">
+      <!-- Barre latérale à gauche, écran courant à droite. Dialogues et menu Fichier couvrent les deux. -->
+      <Grid Grid.Row="3" ColumnDefinitions="Auto,*">
+        <Border Grid.Column="0" Classes="sidebar" Width="236" IsVisible="{Binding Prefs.Sidebar}">
+          <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+            <ItemsControl ItemsSource="{Binding Navigation}" Margin="10,4,10,14">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <StackPanel>
+                    <TextBlock Text="{Binding Title}" Classes="navgroup" IsVisible="{Binding HasTitle}" />
+                    <ItemsControl ItemsSource="{Binding Items}">
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                          <Button Classes="navitem" Classes.selected="{Binding IsSelected}" Command="{Binding Open}" Margin="0,1">
+                            <StackPanel Orientation="Horizontal" Spacing="10">
+                              <mi:MaterialIcon Kind="{Binding Icon}" Width="17" Height="17" Foreground="{Binding Brush}" />
+                              <TextBlock Text="{Binding Label}" VerticalAlignment="Center" />
+                            </StackPanel>
+                          </Button>
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                  </StackPanel>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </ScrollViewer>
+        </Border>
+
+        <Grid Grid.Column="1" RowDefinitions="Auto,*" IsVisible="{Binding HasPage}">
+          <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="28,20,28,10">
             <StackPanel Spacing="2" VerticalAlignment="Center">
-              <TextBlock Text="{Binding Current.Title}" Classes="title" />
+              <TextBlock Text="{Binding Current.Heading}" Classes="title" />
               <TextBlock Text="{Binding Current.Subtitle}" Classes="muted" TextWrapping="Wrap" />
             </StackPanel>
             <ItemsControl Grid.Column="1" ItemsSource="{Binding Current.Actions}" VerticalAlignment="Center" MaxWidth="640" Margin="16,0,0,0">
@@ -129,20 +158,20 @@
               </ItemsControl.ItemTemplate>
             </ItemsControl>
           </Grid>
-          <TransitioningContentControl x:Name="PageHost" Grid.Row="1" Content="{Binding Current}" Margin="24,0,24,16" />
+          <TransitioningContentControl x:Name="PageHost" Grid.Row="1" Content="{Binding Current}" Margin="28,0,28,18" />
         </Grid>
-        <ProgressBar IsIndeterminate="True" IsVisible="{Binding Current.Busy}" VerticalAlignment="Top" Height="2" MinHeight="2" />
+        <ProgressBar Grid.Column="1" IsIndeterminate="True" IsVisible="{Binding Current.Busy}" VerticalAlignment="Top" Height="2" MinHeight="2" />
 
         <!-- Menu Fichier : couvre l'écran -->
-        <ContentControl Content="{Binding Backstage}" IsVisible="{Binding BackstageOpen}" Background="{DynamicResource BgBrush}" />
+        <ContentControl Grid.ColumnSpan="2" Content="{Binding Backstage}" IsVisible="{Binding BackstageOpen}" Background="{DynamicResource BgBrush}" />
 
         <!-- Boîte de dialogue modale : formulaire, recherche, confirmation -->
-        <Border Classes="scrim" IsVisible="{Binding HasDialog}">
+        <Border Grid.ColumnSpan="2" Classes="scrim" IsVisible="{Binding HasDialog}">
           <ContentControl Content="{Binding Dialog}" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="24" />
         </Border>
 
         <!-- Notification discrète, en bas à gauche -->
-        <Border Classes="snackbar" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="24" IsVisible="{Binding HasNotice}">
+        <Border Grid.Column="1" Classes="snackbar" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="24" IsVisible="{Binding HasNotice}">
           <TextBlock Text="{Binding Notice}" Foreground="{DynamicResource BgBrush}" TextWrapping="Wrap" />
         </Border>
       </Grid>

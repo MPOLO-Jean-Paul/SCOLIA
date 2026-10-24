@@ -205,10 +205,10 @@ public sealed class CashPage : PageViewModel
         situation = await Shell.Api.GetAsync<CashSituationDto>("api/caisse/situation" + ScoliaClient.Query(("date", date)));
 
         Figures.Clear();
-        Figures.Add(new KpiVm("Solde d'ouverture", Money(situation.OpeningBalance), $"Période depuis le {Format.Date(situation.PeriodStart)}", ThemeBrush.Get("ToneNeutral")));
-        Figures.Add(new KpiVm("Recettes en espèces", Money(situation.CashReceipts), $"Autres recettes : {Money(situation.OtherReceipts)}", ThemeBrush.Get("ToneGreen")));
-        Figures.Add(new KpiVm("Dépenses en espèces", Money(situation.CashExpenses), "Sorties de caisse de la période", ThemeBrush.Get("ToneRed")));
-        Figures.Add(new KpiVm("Espèces attendues", Money(situation.ExpectedCash), $"Au {Format.Date(date)}", ThemeBrush.Get("ToneBlue")));
+        Figures.Add(new KpiVm("Solde d'ouverture", Money(situation.OpeningBalance), $"Période depuis le {Format.Date(situation.PeriodStart)}", ThemeBrush.Get("ToneNeutral"), MaterialIconKind.Safe));
+        Figures.Add(new KpiVm("Recettes en espèces", Money(situation.CashReceipts), $"Autres recettes : {Money(situation.OtherReceipts)}", ThemeBrush.Get("ToneGreen"), MaterialIconKind.CashPlus));
+        Figures.Add(new KpiVm("Dépenses en espèces", Money(situation.CashExpenses), "Sorties de caisse de la période", ThemeBrush.Get("ToneRed"), MaterialIconKind.CashMinus));
+        Figures.Add(new KpiVm("Espèces attendues", Money(situation.ExpectedCash), $"Au {Format.Date(date)}", ThemeBrush.Get("ToneBlue"), MaterialIconKind.CashCheck));
 
         Movements.Clear();
         foreach (var m in situation.Movements)

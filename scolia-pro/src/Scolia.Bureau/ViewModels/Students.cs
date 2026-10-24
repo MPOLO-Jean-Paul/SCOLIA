@@ -223,15 +223,15 @@ public sealed class StudentDetailPage : PageViewModel
         Totals.Clear();
         if (enrollment is null)
         {
-            Totals.Add(new KpiVm("Compte", "Sans inscription", "Inscrivez l'apprenant pour ouvrir son compte.", ThemeBrush.Get("ToneNeutral")));
+            Totals.Add(new KpiVm("Compte", "Sans inscription", "Inscrivez l'apprenant pour ouvrir son compte.", ThemeBrush.Get("ToneNeutral"), MaterialIconKind.AccountOffOutline));
             return;
         }
 
         var account = await Shell.Api.GetAsync<AccountDto>($"api/inscriptions/{enrollment.Id}/compte");
-        Totals.Add(new KpiVm("Solde à payer", Money(account.Balance), $"Total net de l'année {Money(account.TotalNet)}", ThemeBrush.Get(account.Balance > 0 ? "ToneOrange" : "ToneGreen")));
-        Totals.Add(new KpiVm("Reste exigible", Money(account.Overdue), $"{account.OverdueCount} échéance(s) en retard", ThemeBrush.Get(account.Overdue > 0 ? "ToneRed" : "ToneGreen")));
-        Totals.Add(new KpiVm("Déjà payé", Money(account.TotalPaid), $"Pris en charge : {Money(account.TotalCovered)}", ThemeBrush.Get("ToneGreen")));
-        Totals.Add(new KpiVm("Ancienneté", account.AgingBucket, $"Année {account.AcademicYear}", ThemeBrush.Get("ToneBlue")));
+        Totals.Add(new KpiVm("Solde à payer", Money(account.Balance), $"Total net de l'année {Money(account.TotalNet)}", ThemeBrush.Get(account.Balance > 0 ? "ToneOrange" : "ToneGreen"), MaterialIconKind.WalletOutline));
+        Totals.Add(new KpiVm("Reste exigible", Money(account.Overdue), $"{account.OverdueCount} échéance(s) en retard", ThemeBrush.Get(account.Overdue > 0 ? "ToneRed" : "ToneGreen"), MaterialIconKind.AlertCircleOutline));
+        Totals.Add(new KpiVm("Déjà payé", Money(account.TotalPaid), $"Pris en charge : {Money(account.TotalCovered)}", ThemeBrush.Get("ToneGreen"), MaterialIconKind.CheckCircleOutline));
+        Totals.Add(new KpiVm("Ancienneté", account.AgingBucket, $"Année {account.AcademicYear}", ThemeBrush.Get("ToneBlue"), MaterialIconKind.ProgressClock));
 
         foreach (var l in account.Lines)
             Lines.Add(new AccountRow(l.Label, Format.Date(l.DueDate), Money(l.Amount), Money(l.Covered), Money(l.Paid), Money(l.Remaining),

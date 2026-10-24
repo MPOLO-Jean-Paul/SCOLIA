@@ -28,7 +28,7 @@
               </StackPanel>
               <StackPanel Grid.Column="1">
                 <TextBlock Text="Reste exigible" Classes="caption" />
-                <TextBlock Text="{Binding Overdue}" Classes="kpi" Foreground="{DynamicResource ToneRed}" />
+                <TextBlock Text="{Binding Overdue}" Classes="kpi" Foreground="{Binding OverdueBrush}" />
               </StackPanel>
             </Grid>
           </StackPanel>
@@ -105,7 +105,7 @@
           </Grid>
           <DataGrid ItemsSource="{Binding Allocations}" AutoGenerateColumns="False" IsReadOnly="True" MaxHeight="260">
             <DataGrid.Columns>
-              <DataGridTextColumn Header="Échéance" Binding="{Binding Label}" Width="*" />
+              <DataGridTextColumn Header="Échéance" Binding="{Binding Label}" Width="*" MinWidth="140" />
               <DataGridTextColumn Header="Imputé" Binding="{Binding Amount}" Width="Auto" MinWidth="140" />
               <DataGridTextColumn Header="Reste après" Binding="{Binding Remaining}" Width="Auto" MinWidth="140" />
             </DataGrid.Columns>

@@ -90,6 +90,8 @@ public sealed class CashierPage : PageViewModel
     public string StudentInfo { get => studentInfo; private set => Set(ref studentInfo, value); }
     public string Balance { get => balance; private set => Set(ref balance, value); }
     public string Overdue { get => overdue; private set => Set(ref overdue, value); }
+    /// <summary>Rouge quand un retard existe, vert quand l'apprenant est à jour.</summary>
+    public IBrush OverdueBrush { get; private set; } = ThemeBrush.Get("ToneRed");
     public string BalanceAfter { get => balanceAfter; private set => Set(ref balanceAfter, value); }
     public string? Hint { get => hint; private set { if (Set(ref hint, value)) Raise(nameof(HasHint)); } }
     public bool HasHint => !string.IsNullOrEmpty(hint);
@@ -175,6 +177,8 @@ public sealed class CashierPage : PageViewModel
         StudentInfo = $"Matricule {account.Matricule} · {account.PromotionCode} · {account.AcademicYear}";
         Balance = Money(account.Balance);
         Overdue = Money(account.Overdue);
+        OverdueBrush = ThemeBrush.Get(account.Overdue > 0 ? "ToneRed" : "ToneGreen");
+        Raise(nameof(OverdueBrush));
         Hint = null;
         Raise(nameof(HasStudent));
         Receipt = null;

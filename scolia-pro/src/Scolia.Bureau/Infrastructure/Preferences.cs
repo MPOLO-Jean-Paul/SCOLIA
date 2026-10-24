@@ -36,6 +36,7 @@ public sealed class Preferences : Observable
     private bool grid = true;
     private bool animations = true;
     private bool ribbonCollapsed;
+    private bool sidebar = true;
 
     public string Theme { get => theme; set { if (Set(ref theme, value)) Raise(nameof(IsDark)); } }
     public bool IsDark { get => theme == "dark"; set => Theme = value ? "dark" : "light"; }
@@ -49,6 +50,9 @@ public sealed class Preferences : Observable
     public bool Grid { get => grid; set => Set(ref grid, value); }
     public bool Animations { get => animations; set => Set(ref animations, value); }
     public bool RibbonCollapsed { get => ribbonCollapsed; set => Set(ref ribbonCollapsed, value); }
+
+    /// <summary>Barre latérale de navigation affichée à gauche.</summary>
+    public bool Sidebar { get => sidebar; set => Set(ref sidebar, value); }
 
     public static Preferences Load()
     {
@@ -101,14 +105,14 @@ public sealed class Preferences : Observable
         var r = app.Resources;
         var k = Factor;
         GridPriority.SetTextFactor(k);
-        r["FsBase"] = 14.0 * k;
-        r["FsSmall"] = 12.5 * k;
-        r["FsCaption"] = 11.5 * k;
-        r["FsHeading"] = 17.0 * k;
-        r["FsTitle"] = 24.0 * k;
-        r["FsDisplay"] = 28.0 * k;
-        r["RowHeight"] = (compact ? 27.0 : 34.0) * k;
-        r["CtlHeight"] = (compact ? 30.0 : 38.0) * k;
+        r["FsBase"] = 13.5 * k;
+        r["FsSmall"] = 12.0 * k;
+        r["FsCaption"] = 11.0 * k;
+        r["FsHeading"] = 16.5 * k;
+        r["FsTitle"] = 26.0 * k;
+        r["FsDisplay"] = 30.0 * k;
+        r["RowHeight"] = (compact ? 28.0 : 36.0) * k;
+        r["CtlHeight"] = (compact ? 28.0 : 34.0) * k;
         r["GridLines"] = grid ? Avalonia.Controls.DataGridGridLinesVisibility.Horizontal : Avalonia.Controls.DataGridGridLinesVisibility.None;
     }
 
@@ -123,11 +127,12 @@ public sealed class Preferences : Observable
         public bool Grid { get; set; } = true;
         public bool Animations { get; set; } = true;
         public bool RibbonCollapsed { get; set; }
+        public bool Sidebar { get; set; } = true;
 
         public static Stored From(Preferences p) => new()
         {
             Theme = p.theme, Scale = p.scale, Compact = p.compact, StatusBar = p.statusBar, Tips = p.tips,
-            Grid = p.grid, Animations = p.animations, RibbonCollapsed = p.ribbonCollapsed,
+            Grid = p.grid, Animations = p.animations, RibbonCollapsed = p.ribbonCollapsed, Sidebar = p.sidebar,
         };
 
         public void ApplyTo(Preferences p)
@@ -140,6 +145,7 @@ public sealed class Preferences : Observable
             p.Grid = Grid;
             p.Animations = Animations;
             p.RibbonCollapsed = RibbonCollapsed;
+            p.Sidebar = Sidebar;
         }
     }
 }

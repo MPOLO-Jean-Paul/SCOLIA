@@ -17,7 +17,7 @@
     <DataGrid Grid.Row="1" ItemsSource="{Binding Rows}" AutoGenerateColumns="False" IsReadOnly="False" IsVisible="{Binding !ShowSummary}">
       <DataGrid.Columns>
         <DataGridTextColumn Header="Matricule" Binding="{Binding Matricule}" IsReadOnly="True" Width="Auto" MinWidth="122" />
-        <DataGridTextColumn Header="Nom complet" Binding="{Binding FullName}" IsReadOnly="True" Width="*" />
+        <DataGridTextColumn Header="Nom complet" Binding="{Binding FullName}" IsReadOnly="True" Width="*" MinWidth="140" />
         <DataGridTemplateColumn Header="Statut" Width="Auto" MinWidth="220">
           <DataGridTemplateColumn.CellTemplate>
             <DataTemplate>
@@ -33,7 +33,7 @@
     <DataGrid Grid.Row="1" ItemsSource="{Binding Summary}" AutoGenerateColumns="False" IsReadOnly="True" IsVisible="{Binding ShowSummary}">
       <DataGrid.Columns>
         <DataGridTextColumn Header="Matricule" Binding="{Binding Matricule}" Width="Auto" MinWidth="122" />
-        <DataGridTextColumn Header="Nom complet" Binding="{Binding Name}" Width="*" />
+        <DataGridTextColumn Header="Nom complet" Binding="{Binding Name}" Width="*" MinWidth="140" />
         <DataGridTextColumn Header="Présent" Binding="{Binding Present}" Width="Auto" MinWidth="107" />
         <DataGridTextColumn Header="Retard" Binding="{Binding Late}" Width="Auto" MinWidth="99" />
         <DataGridTextColumn Header="Absent" Binding="{Binding Absent}" Width="Auto" MinWidth="99" />

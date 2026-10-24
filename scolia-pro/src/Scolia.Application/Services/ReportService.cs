@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Scolia.Application.Abstractions;
 using Scolia.Application.Dtos;
 using Scolia.Domain.Common;
+using Scolia.Domain.Discipline;
 using Scolia.Domain.Finance;
 using Scolia.Domain.Students;
 
@@ -65,6 +66,54 @@ public sealed class ReportService(IAppDbContext db, IClock clock, AccountService
             expectedToDate == 0 ? 100 : decimal.Round(paidOnDue * 100 / expectedToDate, 1),
             active.Count(x => x.Account.Overdue == 0), active.Count(x => x.Account.Overdue > 0), expensesMonth, monthly, promotions, aging, latest,
             active.Count(x => x.Enrollment.Student!.Gender == Gender.M), active.Count(x => x.Enrollment.Student!.Gender == Gender.F));
+    }
+
+    /// <summary>
+    /// La journée en un coup d'œil : reçus et dépenses du jour, arrêté de caisse, appel, renvois en cours,
+    /// convocations de parents prévues et anniversaires des apprenants actifs.
+    /// </summary>
+    public async Task<TodayDto> TodayAsync(CancellationToken ct = default)
+    {
+        var year = await YearContext.CurrentAsync(db, ct);
+        var today = clock.Today;
+
+        var receipts = await db.Receipts.AsNoTracking().Where(r => r.Date == today && r.Status == OperationStatus.Valide)
+            .Select(r => r.Amount).ToListAsync(ct);
+        var expenses = (await db.Expenses.AsNoTracking().Where(e => e.Date == today && e.Status == OperationStatus.Valide)
+            .Select(e => e.Amount).ToListAsync(ct)).Sum();
+        var closed = await db.CashClosings.AsNoTracking().AnyAsync(c => c.Date == today, ct);
+        var marked = await db.Attendance.AsNoTracking().CountAsync(a => a.Date == today, ct);
+
+        var active = await (from e in db.Enrollments.AsNoTracking()
+                            join s in db.Students.AsNoTracking() on e.StudentId equals s.Id
+                            join p in db.Promotions.AsNoTracking() on e.PromotionId equals p.Id
+                            where e.AcademicYearId == year.Id && e.Status == EnrollmentStatus.Actif
+                            select new { EnrollmentId = e.Id, StudentId = s.Id, s.LastName, s.MiddleName, s.FirstName, s.BirthDate, p.Code }).ToListAsync(ct);
+        var byEnrollment = active.ToDictionary(a => a.EnrollmentId);
+        static string Name(string last, string middle, string first) => string.Join(' ', new[] { last, middle, first }.Where(x => x.Length > 0));
+
+        var decisions = await db.DisciplineDecisions.AsNoTracking()
+            .Where(d => d.AcademicYearId == year.Id && d.State == DecisionState.Validee && d.Measure != DisciplineMeasure.RenvoiDefinitif)
+            .ToListAsync(ct);
+        var suspended = decisions.Where(d => d.Measure == DisciplineMeasure.RenvoiTemporaire && d.FirstDay <= today && d.LastDay >= today)
+            .Select(d => d.EnrollmentId).Distinct().Count();
+        var appointments = decisions
+            .Where(d => d.Measure == DisciplineMeasure.Convocation && d.AppointmentAt is { } at && DateOnly.FromDateTime(at) == today
+                && byEnrollment.ContainsKey(d.EnrollmentId))
+            .OrderBy(d => d.AppointmentAt)
+            .Select(d =>
+            {
+                var a = byEnrollment[d.EnrollmentId];
+                var state = d.Reception switch { ParentReception.Recu => "parent reçu", ParentReception.Absent => "parent absent", _ => "en attente" };
+                return new TodayPersonDto(a.StudentId, Name(a.LastName, a.MiddleName, a.FirstName), a.Code, $"{d.AppointmentAt:HH:mm} · {state}");
+            }).ToList();
+
+        var birthdays = active.Where(a => a.BirthDate is { } b && b.Month == today.Month && b.Day == today.Day)
+            .OrderBy(a => a.LastName).ThenBy(a => a.FirstName)
+            .Select(a => new TodayPersonDto(a.StudentId, Name(a.LastName, a.MiddleName, a.FirstName), a.Code, $"{today.Year - a.BirthDate!.Value.Year} ans"))
+            .ToList();
+
+        return new TodayDto(today, receipts.Count, receipts.Sum(), expenses, closed, marked, suspended, appointments, birthdays);
     }
 
     /// <summary>Abréviations françaises usuelles des mois.</summary>

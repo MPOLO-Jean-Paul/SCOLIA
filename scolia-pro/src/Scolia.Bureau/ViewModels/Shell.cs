@@ -39,6 +39,7 @@ public sealed class ShellViewModel : Observable
         Backstage = new BackstageViewModel(this);
         ReloadCommand = new AsyncCommand(() => Run(Reload));
         SearchCommand = new RelayCommand(ShowSearch);
+        ToggleSidebarCommand = new RelayCommand(ToggleSidebar);
         revisionTimer = new DispatcherTimer(RevisionInterval, DispatcherPriority.Background, (_, _) => _ = CheckRevisionAsync());
         revisionTimer.Start();
         prefs.PropertyChanged += (_, _) =>
@@ -60,6 +61,7 @@ public sealed class ShellViewModel : Observable
     /// <summary>Commandes de la barre d'accès rapide.</summary>
     public AsyncCommand ReloadCommand { get; private set; } = null!;
     public RelayCommand SearchCommand { get; private set; } = null!;
+    public RelayCommand ToggleSidebarCommand { get; private set; } = null!;
     public SessionDto? Session => session;
     public bool IsLoggedIn => session is not null;
 
@@ -100,7 +102,16 @@ public sealed class ShellViewModel : Observable
         ? $"Serveur de l'établissement · port {api.Server.Port}"
         : ConnectionStore.Load() is { IsRemote: true } link ? $"Relié à {link.Machine} · {api.Server.Host}" : $"Serveur {api.Server.Host}:{api.Server.Port}";
 
-    public PageViewModel? Current { get => current; private set { if (Set(ref current, value)) Raise(nameof(HasPage)); } }
+    public PageViewModel? Current
+    {
+        get => current;
+        private set
+        {
+            if (!Set(ref current, value)) return;
+            Raise(nameof(HasPage));
+            MarkNavigation();
+        }
+    }
     public bool HasPage => current is not null;
 
     /// <summary>Boîte de dialogue ouverte : formulaire, recherche. Null quand aucune n'est affichée.</summary>
@@ -448,7 +459,24 @@ public sealed class ShellViewModel : Observable
         SelectedTab = Tabs.FirstOrDefault(t => t.Id == keep) ?? Tabs.FirstOrDefault(t => t.Id == "accueil");
         Raise(nameof(SelectedGroups));
         RebuildShortcuts();
+        // La barre latérale suit le rôle et le thème (ses couleurs sont lues au moment de la construction).
+        Navigation = IsLoggedIn ? Sidebar.Build(this) : [];
+        Raise(nameof(Navigation));
+        MarkNavigation();
     }
+
+    /// <summary>Navigation principale, à gauche : un écran par ligne, rangés par métier.</summary>
+    public IReadOnlyList<NavGroupVm> Navigation { get; private set; } = [];
+
+    /// <summary>Surligne l'entrée de la barre latérale qui correspond à l'écran affiché.</summary>
+    private void MarkNavigation()
+    {
+        var type = Current?.GetType();
+        foreach (var group in Navigation)
+            foreach (var item in group.Items) item.IsSelected = item.PageType == type;
+    }
+
+    public void ToggleSidebar() => Prefs.Sidebar = !Prefs.Sidebar;
 
     /// <summary>Commandes ayant un raccourci, dans l'ordre affiché par la boîte des raccourcis.</summary>
     public IReadOnlyList<RibbonCommandVm> ShortcutCommands { get; private set; } = [];
@@ -479,6 +507,8 @@ public sealed class ShellViewModel : Observable
         catch (HttpRequestException) { }
         session = null;
         Tabs.Clear();
+        Navigation = [];
+        Raise(nameof(Navigation));
         SelectedTab = null;
         Current = null;
         BackstageOpen = false;

@@ -16,7 +16,7 @@
         <DataGridTextColumn Header="Utilisateur" Binding="{Binding User}" Width="Auto" MinWidth="137" />
         <DataGridTextColumn Header="Action" Binding="{Binding Action}" Width="Auto" MinWidth="160" />
         <DataGridTextColumn Header="Objet" Binding="{Binding Entity}" Width="Auto" MinWidth="130" />
-        <DataGridTextColumn Header="Résumé" Binding="{Binding Summary}" Width="*" />
+        <DataGridTextColumn Header="Résumé" Binding="{Binding Summary}" Width="*" MinWidth="140" />
         <DataGridTextColumn Header="Adresse" Binding="{Binding Ip}" Width="Auto" MinWidth="130" />
       </DataGrid.Columns>
     </DataGrid>

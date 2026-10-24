@@ -17,6 +17,8 @@ public abstract class PageViewModel(ShellViewModel shell) : Observable
     protected ShellViewModel Shell { get; } = shell;
 
     public abstract string Title { get; }
+    /// <summary>Titre affiché en tête de page : le titre de l'écran, sauf l'accueil qui salue l'utilisateur.</summary>
+    public virtual string Heading => Title;
     public virtual string Subtitle => string.Empty;
     public virtual MaterialIconKind Glyph => MaterialIconKind.FileDocumentOutline;
     public ObservableCollection<ActionVm> Actions { get; } = [];

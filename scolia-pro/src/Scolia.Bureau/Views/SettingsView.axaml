@@ -47,7 +47,7 @@
             <DataGrid ItemsSource="{Binding SectionRows}" SelectedItem="{Binding SelectedSection}" AutoGenerateColumns="False" IsReadOnly="True" MaxHeight="420">
               <DataGrid.Columns>
                 <DataGridTextColumn Header="Code" Binding="{Binding Code}" Width="Auto" MinWidth="120" />
-                <DataGridTextColumn Header="Nom" Binding="{Binding Name}" Width="*" />
+                <DataGridTextColumn Header="Nom" Binding="{Binding Name}" Width="*" MinWidth="140" />
                 <DataGridTextColumn Header="Active" Binding="{Binding Active}" Width="Auto" MinWidth="100" />
               </DataGrid.Columns>
             </DataGrid>
@@ -61,7 +61,7 @@
             <DataGrid ItemsSource="{Binding Promotions}" SelectedItem="{Binding SelectedPromotion}" AutoGenerateColumns="False" IsReadOnly="True" MaxHeight="520">
               <DataGrid.Columns>
                 <DataGridTextColumn Header="Code" Binding="{Binding Code}" Width="Auto" MinWidth="84" />
-                <DataGridTextColumn Header="Désignation" Binding="{Binding Name}" Width="*" />
+                <DataGridTextColumn Header="Désignation" Binding="{Binding Name}" Width="*" MinWidth="140" />
                 <DataGridTextColumn Header="Section" Binding="{Binding Section}" Width="Auto" MinWidth="150" />
                 <DataGridTextColumn Header="Niveau" Binding="{Binding Level}" Width="Auto" MinWidth="99" />
                 <DataGridTextColumn Header="Apprenants" Binding="{Binding Students}" Width="Auto" MinWidth="130" />

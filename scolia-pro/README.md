@@ -24,9 +24,11 @@ Le détail est dans [`docs/GUIDE_UTILISATEUR.md`](docs/GUIDE_UTILISATEUR.md) et 
 Il parle au serveur SCOLIA par la même API que l'interface web. Au lancement, il démarre le serveur `SCOLIA-Serveur.exe`
 du même dossier s'il n'est pas déjà actif. Le paquet Windows contient les deux exécutables.
 
-Le client reprend le design de l'interface web : ruban à onglets façon Office 2024, en-tête de page, cartes et
-boutons en pilule façon Material 3 (Android 16), palette et polices identiques (Google Sans Flex, licence OFL,
-embarquée dans l'exécutable). Clair, sombre, taille du texte, densité et zoom se règlent dans Affichage ou Fichier.
+Le client suit les codes visuels de macOS : barre latérale de navigation rangée par métier, ruban à onglets
+façon Office 2024 pour les commandes, cartes blanches à ombre douce, bleu système, police Inter (licence OFL,
+embarquée dans l'exécutable). L'accueil salue l'utilisateur et réunit les raccourcis du quotidien, la journée en cours
+(encaissé, dépenses, arrêté de caisse, appel, parents convoqués, anniversaires), un rappel de sauvegarde et les
+indicateurs de l'année. Clair, sombre, taille du texte, densité, zoom et barre latérale se règlent dans Affichage ou Fichier.
 
 | Rubrique du ruban | Écrans natifs |
 |---|---|

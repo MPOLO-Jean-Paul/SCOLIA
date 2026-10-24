@@ -15,7 +15,7 @@
               AutoGenerateColumns="False" IsReadOnly="True" IsVisible="{Binding !ShowPayroll}">
       <DataGrid.Columns>
         <DataGridTextColumn Header="N° de dossier" Binding="{Binding Number}" Width="Auto" MinWidth="152" />
-        <DataGridTextColumn Header="Nom complet" Binding="{Binding Name}" Width="*" />
+        <DataGridTextColumn Header="Nom complet" Binding="{Binding Name}" Width="*" MinWidth="140" />
         <DataGridTextColumn Header="Fonction" Binding="{Binding Function}" Width="Auto" MinWidth="170" />
         <DataGridTextColumn Header="Téléphone" Binding="{Binding Phone}" Width="Auto" MinWidth="130" />
         <DataGridTextColumn Header="Embauche" Binding="{Binding Hired}" Width="Auto" MinWidth="114" />
@@ -34,7 +34,7 @@
               AutoGenerateColumns="False" IsReadOnly="True" IsVisible="{Binding ShowPayroll}">
       <DataGrid.Columns>
         <DataGridTextColumn Header="N°" Binding="{Binding Number}" Width="Auto" MinWidth="110" />
-        <DataGridTextColumn Header="Nom complet" Binding="{Binding Name}" Width="*" />
+        <DataGridTextColumn Header="Nom complet" Binding="{Binding Name}" Width="*" MinWidth="140" />
         <DataGridTextColumn Header="Fonction" Binding="{Binding Function}" Width="Auto" MinWidth="150" />
         <DataGridTextColumn Header="Base" Binding="{Binding Base}" Width="Auto" MinWidth="120" />
         <DataGridTextColumn Header="Primes" Binding="{Binding Allowances}" Width="Auto" MinWidth="110" />

@@ -11,21 +11,10 @@
         </StackPanel>
       </Grid>
 
-      <ItemsControl ItemsSource="{Binding Figures}">
+      <ItemsControl ItemsSource="{Binding Figures}" ItemTemplate="{StaticResource KpiTile}" Margin="0,0,-12,0">
         <ItemsControl.ItemsPanel>
-          <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+          <ItemsPanelTemplate><UniformGrid Rows="1" /></ItemsPanelTemplate>
         </ItemsControl.ItemsPanel>
-        <ItemsControl.ItemTemplate>
-          <DataTemplate>
-            <Border Classes="tile" MinWidth="200" MaxWidth="280" Margin="0,0,12,12">
-              <StackPanel Spacing="4">
-                <TextBlock Text="{Binding Label}" Classes="caption" />
-                <TextBlock Text="{Binding Value}" Classes="kpi" Foreground="{Binding Accent}" />
-                <TextBlock Text="{Binding Hint}" Classes="muted" TextWrapping="Wrap" />
-              </StackPanel>
-            </Border>
-          </DataTemplate>
-        </ItemsControl.ItemTemplate>
       </ItemsControl>
 
       <Border Classes="card">
@@ -36,7 +25,7 @@
               <DataGridTextColumn infra:GridPriority.Level="2" Header="Date" Binding="{Binding Date}" Width="Auto" MinWidth="130" />
               <DataGridTextColumn infra:GridPriority.Level="2" Header="Type" Binding="{Binding Type}" Width="Auto" MinWidth="120" />
               <DataGridTextColumn infra:GridPriority.Level="3" Header="Numéro" Binding="{Binding Number}" Width="Auto" MinWidth="130" />
-              <DataGridTextColumn Header="Libellé" Binding="{Binding Label}" Width="*" />
+              <DataGridTextColumn Header="Libellé" Binding="{Binding Label}" Width="*" MinWidth="140" />
               <DataGridTextColumn infra:GridPriority.Level="3" Header="Mode" Binding="{Binding Method}" Width="Auto" MinWidth="120" />
               <DataGridTextColumn Header="Entrée" Binding="{Binding In}" Width="Auto" MinWidth="130" />
               <DataGridTextColumn Header="Sortie" Binding="{Binding Out}" Width="Auto" MinWidth="130" />
@@ -61,7 +50,7 @@
                 </DataGridTemplateColumn.CellTemplate>
               </DataGridTemplateColumn>
               <DataGridTextColumn Header="Par" Binding="{Binding ClosedBy}" Width="Auto" MinWidth="140" />
-              <DataGridTextColumn Header="Observation" Binding="{Binding Note}" Width="*" />
+              <DataGridTextColumn Header="Observation" Binding="{Binding Note}" Width="*" MinWidth="140" />
             </DataGrid.Columns>
           </DataGrid>
         </StackPanel>

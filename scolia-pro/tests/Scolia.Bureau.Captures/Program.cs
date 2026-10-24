@@ -100,6 +100,17 @@ if (args.Length > 3 && args[3] == "smoke")
 var session = Result(api.LoginAsync("admin", password));
 Wait(shell.OpenSessionAsync(session));
 Save(window, "02-tableau-de-bord.png");
+// Itération rapide sur l'accueil (SCOLIA_ACCUEIL=1) : la page entière, puis le thème sombre, sans parcourir les autres écrans.
+if (Environment.GetEnvironmentVariable("SCOLIA_ACCUEIL") == "1")
+{
+    window.Height = 1500;
+    Save(window, "02b-accueil-complet.png");
+    prefs.Theme = "dark";
+    prefs.Apply();
+    Wait(shell.Current!.LoadAsync());
+    Save(window, "02c-accueil-sombre.png");
+    return;
+}
 
 
 // Ouvre un formulaire (boîte de dialogue) lancé par une action, attend qu'il s'affiche.

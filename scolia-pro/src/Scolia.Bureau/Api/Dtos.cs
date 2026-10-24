@@ -57,6 +57,11 @@ public sealed record DashboardDto(
 
 public sealed record SeriesPoint(string Label, decimal Value, decimal? Secondary);
 
+public sealed record TodayDto(DateOnly Date, int ReceiptsToday, decimal CollectedToday, decimal ExpensesToday, bool CashClosed,
+    int AttendanceMarked, int SuspendedToday, IReadOnlyList<TodayPersonDto> Appointments, IReadOnlyList<TodayPersonDto> Birthdays);
+
+public sealed record TodayPersonDto(Guid StudentId, string Name, string Promotion, string Detail);
+
 public sealed record PromotionStat(Guid Id, string Code, string Name, int Students, decimal Expected, decimal Collected, decimal Outstanding, decimal Overdue, decimal RecoveryRate);
 
 public sealed record StudentListItem(

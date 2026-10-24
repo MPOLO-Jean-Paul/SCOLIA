@@ -8,7 +8,7 @@
     </Border>
     <DataGrid Grid.Row="1" ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}" AutoGenerateColumns="False" IsReadOnly="True">
       <DataGrid.Columns>
-        <DataGridTextColumn Header="Fichier" Binding="{Binding Name}" Width="*" />
+        <DataGridTextColumn Header="Fichier" Binding="{Binding Name}" Width="*" MinWidth="140" />
         <DataGridTextColumn Header="Créée le" Binding="{Binding Created}" Width="Auto" MinWidth="190" />
         <DataGridTextColumn Header="Taille" Binding="{Binding Size}" Width="Auto" MinWidth="110" />
       </DataGrid.Columns>

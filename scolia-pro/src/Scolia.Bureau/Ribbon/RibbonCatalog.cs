@@ -196,7 +196,8 @@ public static class RibbonCatalog
 
     private static RibbonGroupVm RecentsGroup(ShellViewModel shell)
     {
-        var items = shell.Recents
+        // Quatre écrans au plus : le groupe reste sur une ligne, sans défilement du ruban.
+        var items = shell.Recents.Take(4)
             .Select(r => new RibbonCommandVm(r.Label, Clock, $"Ouvrir {r.Label}.", new AsyncCommand(() => shell.Open(r.Open)), false, Neutral))
             .ToList();
         return new RibbonGroupVm("Récents", items);

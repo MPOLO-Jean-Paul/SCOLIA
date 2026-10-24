@@ -27,7 +27,7 @@
             <TextBlock Text="Répartition sur les échéances" Classes="heading" />
             <DataGrid ItemsSource="{Binding Allocations}" AutoGenerateColumns="False" IsReadOnly="True">
               <DataGrid.Columns>
-                <DataGridTextColumn Header="Échéance" Binding="{Binding Label}" Width="*" />
+                <DataGridTextColumn Header="Échéance" Binding="{Binding Label}" Width="*" MinWidth="140" />
                 <DataGridTextColumn Header="Imputé" Binding="{Binding Amount}" Width="Auto" MinWidth="120" />
                 <DataGridTextColumn Header="Reste après" Binding="{Binding Remaining}" Width="Auto" MinWidth="137" />
               </DataGrid.Columns>
