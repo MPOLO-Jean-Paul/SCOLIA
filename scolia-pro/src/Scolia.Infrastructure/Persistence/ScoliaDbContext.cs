@@ -37,6 +37,7 @@ public sealed class ScoliaDbContext(DbContextOptions<ScoliaDbContext> options, I
     public DbSet<AuditEntry> AuditEntries => Set<AuditEntry>();
     public DbSet<Course> Courses => Set<Course>();
     public DbSet<CourseAssignment> CourseAssignments => Set<CourseAssignment>();
+    public DbSet<CourseDay> CourseDays => Set<CourseDay>();
     public DbSet<Assessment> Assessments => Set<Assessment>();
     public DbSet<Grade> Grades => Set<Grade>();
     public DbSet<AttendanceRecord> Attendance => Set<AttendanceRecord>();
@@ -147,6 +148,12 @@ public sealed class ScoliaDbContext(DbContextOptions<ScoliaDbContext> options, I
         {
             e.ToTable("Cours");
             e.HasIndex(x => new { x.PromotionId, x.Number }).IsUnique();
+            e.HasOne<Promotion>().WithMany().HasForeignKey(x => x.PromotionId).OnDelete(DeleteBehavior.Restrict);
+        });
+        b.Entity<CourseDay>(e =>
+        {
+            e.ToTable("JoursDeCours");
+            e.HasIndex(x => new { x.PromotionId, x.Date }).IsUnique();
             e.HasOne<Promotion>().WithMany().HasForeignKey(x => x.PromotionId).OnDelete(DeleteBehavior.Restrict);
         });
         b.Entity<CourseAssignment>(e =>

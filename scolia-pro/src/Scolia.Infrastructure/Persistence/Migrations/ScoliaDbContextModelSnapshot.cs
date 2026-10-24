@@ -211,6 +211,44 @@ namespace Scolia.Infrastructure.Persistence.Migrations
                     b.ToTable("AffectationsCours", (string)null);
                 });
 
+            modelBuilder.Entity("Scolia.Domain.Academics.CourseDay", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("AcademicYearId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateOnly>("Date")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("PromotionId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PromotionId", "Date")
+                        .IsUnique();
+
+                    b.ToTable("JoursDeCours", (string)null);
+                });
+
             modelBuilder.Entity("Scolia.Domain.Academics.DisciplineIncident", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1625,6 +1663,15 @@ namespace Scolia.Infrastructure.Persistence.Migrations
                     b.HasOne("Scolia.Domain.Staff.StaffMember", null)
                         .WithMany()
                         .HasForeignKey("TeacherId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Scolia.Domain.Academics.CourseDay", b =>
+                {
+                    b.HasOne("Scolia.Domain.School.Promotion", null)
+                        .WithMany()
+                        .HasForeignKey("PromotionId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });

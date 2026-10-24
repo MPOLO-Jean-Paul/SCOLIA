@@ -332,7 +332,10 @@ public sealed class AttendancePage : PageViewModel
         {
             Action("Tous présents", MaterialIconKind.AccountCheckOutline, MarkAllPresentAsync);
             Action("Enregistrer l'appel", MaterialIconKind.ContentSave, SaveAsync, primary: true);
+            Action("Confirmer le jour de cours", MaterialIconKind.CalendarCheckOutline, () => ConfirmDayAsync(true));
+            Action("Retirer la confirmation", MaterialIconKind.CalendarRemoveOutline, () => ConfirmDayAsync(false));
         }
+        Action("Apprenants à traiter", MaterialIconKind.AlertCircleOutline, ShowAlertsAsync);
         ActionRefresh();
     }
 
@@ -385,11 +388,18 @@ public sealed class AttendancePage : PageViewModel
             Rows.Clear();
             foreach (var r in sheet.Rows)
             {
-                var status = Statuses.FirstOrDefault(s => s.Value == r.Status) ?? Statuses[0];
-                Rows.Add(new AttendanceEditRowVm(r.EnrollmentId, r.Matricule, r.FullName, status, r.Note));
+                // Une absence non signée ou une exclusion se saisit comme absence : l'enregistrement fixe le statut.
+                var status = r.Status switch
+                {
+                    "Absence non signée" or "Exclu (discipline)" => Statuses.First(s => s.Value == "Absent"),
+                    _ => Statuses.FirstOrDefault(s => s.Value == r.Status) ?? Statuses[0],
+                };
+                var note = r.Status == "Exclu (discipline)" ? "Exclu par une décision disciplinaire" : r.Note;
+                Rows.Add(new AttendanceEditRowVm(r.EnrollmentId, r.Matricule, r.FullName, status, note));
             }
             var absent = Rows.Count(r => r.Status.Value == "Absent");
-            subtitle = $"Appel du {Format.Date(date)} · {Promotion.Label} · {absent} absent(s)";
+            var dayState = sheet.CourseDay ? "jour de cours confirmé" : "jour non confirmé";
+            subtitle = $"Appel du {Format.Date(date)} · {Promotion.Label} · {absent} absent(s) · {dayState}";
         }
         Raise(nameof(Subtitle));
     }
@@ -399,6 +409,34 @@ public sealed class AttendancePage : PageViewModel
         foreach (var r in Rows) r.Status = Statuses[0];
         Shell.Notify("Tous les apprenants sont marqués présents. Enregistrez l'appel pour le conserver.");
         return Task.CompletedTask;
+    }
+
+    /// <summary>Confirme ou retire le jour de cours : seul un jour confirmé et passé sans appel produit une absence non signée.</summary>
+    private async Task ConfirmDayAsync(bool confirm)
+    {
+        if (Promotion is null) return;
+        var date = ToDay(Day);
+        await Shell.Api.SendAsync(HttpMethod.Post, "api/scolarite/jours-de-cours" + (confirm ? string.Empty : "/retrait") + ScoliaClient.Query(("promotionId", Guid.Parse(Promotion.Value))), new[] { date });
+        Shell.Notify(confirm ? "Jour de cours confirmé." : "Confirmation retirée.");
+        await RefreshAsync();
+    }
+
+    /// <summary>Apprenants dont les absences non justifiées atteignent le seuil, sur les 30 derniers jours.</summary>
+    private async Task ShowAlertsAsync()
+    {
+        if (Promotion is null) return;
+        var date = ToDay(Day);
+        var alerts = await Shell.Api.GetAsync<List<AttendanceAlertDto>>("api/scolarite/presences/alertes" + ScoliaClient.Query(
+            ("promotionId", Guid.Parse(Promotion.Value)), ("du", date.AddDays(-30)), ("au", date)));
+        var form = new FormViewModel("Apprenants à traiter", "Seuils : 3 absences non justifiées, ou 3 jours de cours consécutifs absents. Période : 30 jours.", _ => Task.FromResult(true))
+        {
+            Message = alerts.Count == 0
+                ? "Aucun apprenant ne dépasse les seuils."
+                : string.Join(Environment.NewLine, alerts.Select(a => $"{a.Matricule} · {a.FullName} : {a.UnjustifiedAbsences} absence(s) non justifiée(s), {a.LongestRun} jour(s) consécutif(s)")),
+            SubmitText = "Fermer",
+            ShowCancel = false,
+        };
+        await Shell.Ask(form);
     }
 
     public async Task SaveAsync()

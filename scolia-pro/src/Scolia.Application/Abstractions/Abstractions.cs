@@ -30,6 +30,7 @@ public interface IAppDbContext
     DbSet<AuditEntry> AuditEntries { get; }
     DbSet<Course> Courses { get; }
     DbSet<CourseAssignment> CourseAssignments { get; }
+    DbSet<CourseDay> CourseDays { get; }
     DbSet<Assessment> Assessments { get; }
     DbSet<Grade> Grades { get; }
     DbSet<AttendanceRecord> Attendance { get; }

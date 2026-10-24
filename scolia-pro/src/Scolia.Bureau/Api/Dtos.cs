@@ -143,7 +143,10 @@ public sealed record ResultsDto(string Promotion, int? Term, IReadOnlyList<strin
 
 public sealed record AttendanceRowDto(Guid EnrollmentId, string Matricule, string FullName, string? Status, string? Note);
 
-public sealed record AttendanceSheetDto(IReadOnlyList<AttendanceRowDto> Rows);
+public sealed record AttendanceSheetDto(IReadOnlyList<AttendanceRowDto> Rows, bool CourseDay);
+
+/// <summary>Apprenant à traiter : absences non justifiées ou jours consécutifs absents, au-delà des seuils.</summary>
+public sealed record AttendanceAlertDto(Guid EnrollmentId, string Matricule, string FullName, int UnjustifiedAbsences, int LongestRun);
 
 public sealed record AttendanceSummaryDto(Guid EnrollmentId, string Matricule, string FullName, int Present, int Absent, int Late, int Justified, decimal Rate);
 

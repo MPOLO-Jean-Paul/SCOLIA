@@ -3,6 +3,7 @@ using Scolia.Application.Abstractions;
 using Scolia.Application.Common;
 using Scolia.Application.Dtos;
 using Scolia.Domain.Academics;
+using Scolia.Domain.Discipline;
 using Scolia.Domain.Common;
 using Scolia.Domain.Students;
 
@@ -91,15 +92,15 @@ public sealed class AcademicService(IAppDbContext db, IWriteGate gate, IAuditLog
         return changed;
     }, ct);
 
-    private sealed record EnrolledStudent(Guid EnrollmentId, string Matricule, string FullName);
+    private sealed record EnrolledStudent(Guid EnrollmentId, string Matricule, string FullName, DateOnly EnrolledOn);
 
     private async Task<List<EnrolledStudent>> StudentsOfAsync(Guid promotionId, CancellationToken ct) =>
         (await (from e in db.Enrollments.AsNoTracking()
                 join s in db.Students.AsNoTracking() on e.StudentId equals s.Id
                 where e.PromotionId == promotionId && (e.Status == EnrollmentStatus.Actif || e.Status == EnrollmentStatus.Suspendu)
                 orderby s.LastName, s.MiddleName, s.FirstName
-                select new { e.Id, s.Matricule, s.LastName, s.MiddleName, s.FirstName }).ToListAsync(ct))
-        .Select(x => new EnrolledStudent(x.Id, x.Matricule, $"{x.LastName} {x.MiddleName} {x.FirstName}")).ToList();
+                select new { e.Id, s.Matricule, s.LastName, s.MiddleName, s.FirstName, e.EnrolledOn }).ToListAsync(ct))
+        .Select(x => new EnrolledStudent(x.Id, x.Matricule, $"{x.LastName} {x.MiddleName} {x.FirstName}", x.EnrolledOn)).ToList();
 
     /// <summary>Grille de résultats : moyenne par cours, moyenne générale, rang et décision.</summary>
     public async Task<ResultsDto> ResultsAsync(Guid promotionId, int? term, CancellationToken ct = default)
@@ -148,45 +149,162 @@ public sealed class AcademicService(IAppDbContext db, IWriteGate gate, IAuditLog
         var students = await StudentsOfAsync(promotionId, ct);
         var ids = students.Select(s => s.EnrollmentId).ToList();
         var records = await db.Attendance.AsNoTracking().Where(a => a.Date == date && ids.Contains(a.EnrollmentId)).ToDictionaryAsync(a => a.EnrollmentId, ct);
-        return new AttendanceSheetDto(promotionId, date, students.Select(s =>
+        var confirmed = await db.CourseDays.AsNoTracking().AnyAsync(c => c.PromotionId == promotionId && c.Date == date, ct);
+        var decisions = await DecisionsByEnrollmentAsync(ids, ct);
+        var today = clock.Today;
+        var rows = students.Select(s =>
         {
-            var r = records.GetValueOrDefault(s.EnrollmentId);
-            return new AttendanceRow(s.EnrollmentId, s.Matricule, s.FullName, r is null ? null : Labels.Of(r.Status), r?.Note);
-        }).ToList());
+            var record = records.GetValueOrDefault(s.EnrollmentId);
+            var excluded = AttendanceRules.IsExcluded(DecisionsOf(decisions, s.EnrollmentId), date);
+            var unsigned = AttendanceRules.IsUnsignedAbsence(date, today, confirmed, s.EnrolledOn, excluded, record is not null);
+            var status = record is not null ? Labels.Of(record.Status) : excluded ? "Exclu (discipline)" : unsigned ? "Absence non signée" : null;
+            return new AttendanceRow(s.EnrollmentId, s.Matricule, s.FullName, status, record?.Note);
+        }).ToList();
+        return new AttendanceSheetDto(promotionId, date, rows, confirmed);
     }
 
+    /// <summary>Enregistre l'appel d'un jour. Le jour devient un jour de cours confirmé ; une exclusion disciplinaire bloque la présence.</summary>
     public Task<int> SaveAttendanceAsync(Guid promotionId, DateOnly date, IReadOnlyList<AttendanceInput> input, CancellationToken ct = default) => gate.RunAsync(async () =>
     {
         if (date > clock.Today) throw new DomainException("date", "Impossible de saisir l'appel d'une date future.");
-        var allowed = (await StudentsOfAsync(promotionId, ct)).Select(s => s.EnrollmentId).ToHashSet();
+        var students = (await StudentsOfAsync(promotionId, ct)).ToDictionary(s => s.EnrollmentId);
         var ids = input.Select(i => i.EnrollmentId).ToList();
         var existing = await db.Attendance.Where(a => a.Date == date && ids.Contains(a.EnrollmentId)).ToDictionaryAsync(a => a.EnrollmentId, ct);
+        var decisions = await DecisionsByEnrollmentAsync(ids, ct);
+        if (!await db.CourseDays.AnyAsync(c => c.PromotionId == promotionId && c.Date == date, ct))
+            db.CourseDays.Add(new CourseDay { PromotionId = promotionId, AcademicYearId = (await YearContext.CurrentAsync(db, ct)).Id, Date = date });
         foreach (var i in input)
         {
-            if (!allowed.Contains(i.EnrollmentId)) throw new DomainException("attendance", "Un apprenant n'appartient pas à cette promotion.");
+            if (!students.ContainsKey(i.EnrollmentId)) throw new DomainException("attendance", "Un apprenant n'appartient pas à cette promotion.");
             var status = EnumText.Parse(i.Status, "attendance", AttendanceLabels);
-            if (existing.TryGetValue(i.EnrollmentId, out var record)) { record.Status = status; record.Note = i.Note; }
-            else db.Attendance.Add(new AttendanceRecord { EnrollmentId = i.EnrollmentId, Date = date, Status = status, Note = i.Note });
+            var excluded = AttendanceRules.IsExcluded(DecisionsOf(decisions, i.EnrollmentId), date);
+            if (status is AttendanceStatus.Present or AttendanceStatus.Retard) AttendanceRules.EnsureCanBePresent(excluded, date);
+            var note = status == AttendanceStatus.AbsenceJustifiee ? AttendanceRules.Justification(i.Note) : i.Note;
+            if (existing.TryGetValue(i.EnrollmentId, out var record)) { record.Status = status; record.Note = note; }
+            else db.Attendance.Add(new AttendanceRecord { EnrollmentId = i.EnrollmentId, Date = date, Status = status, Note = note });
         }
         audit.Record("presences.saisies", "Presence", promotionId.ToString(), $"Appel du {date:dd/MM/yyyy} : {input.Count} apprenant(s).");
         await db.SaveChangesAsync(ct);
         return input.Count;
     }, ct);
 
+    /// <summary>Jours de cours confirmés d'une promotion sur une période.</summary>
+    public async Task<IReadOnlyList<DateOnly>> CourseDaysAsync(Guid promotionId, DateOnly from, DateOnly to, CancellationToken ct = default) =>
+        await db.CourseDays.AsNoTracking().Where(c => c.PromotionId == promotionId && c.Date >= from && c.Date <= to).OrderBy(c => c.Date).Select(c => c.Date).ToListAsync(ct);
+
+    /// <summary>Confirme des jours de cours. Seul un jour confirmé et passé, sans appel, produit une absence non signée.</summary>
+    public Task<int> ConfirmCourseDaysAsync(Guid promotionId, IReadOnlyList<DateOnly> dates, CancellationToken ct = default) => gate.RunAsync(async () =>
+    {
+        var year = await YearContext.CurrentAsync(db, ct);
+        if (!await db.Promotions.AnyAsync(p => p.Id == promotionId, ct)) throw new NotFoundException("Promotion introuvable.");
+        var wanted = dates.Distinct().ToList();
+        var already = await db.CourseDays.Where(c => c.PromotionId == promotionId && wanted.Contains(c.Date)).Select(c => c.Date).ToListAsync(ct);
+        var added = 0;
+        foreach (var date in wanted.Where(d => !already.Contains(d)))
+        {
+            db.CourseDays.Add(new CourseDay { PromotionId = promotionId, AcademicYearId = year.Id, Date = date });
+            added++;
+        }
+        audit.Record("presences.jours", "Presence", promotionId.ToString(), $"{added} jour(s) de cours confirmé(s).");
+        await db.SaveChangesAsync(ct);
+        return added;
+    }, ct);
+
+    /// <summary>Retire la confirmation d'un jour de cours. Un jour qui contient déjà un appel reste confirmé.</summary>
+    public Task<int> ReleaseCourseDaysAsync(Guid promotionId, IReadOnlyList<DateOnly> dates, CancellationToken ct = default) => gate.RunAsync(async () =>
+    {
+        var wanted = dates.Distinct().ToList();
+        var days = await db.CourseDays.Where(c => c.PromotionId == promotionId && wanted.Contains(c.Date)).ToListAsync(ct);
+        var dayDates = days.Select(d => d.Date).ToList();
+        var enrollmentIds = db.Enrollments.AsNoTracking().Where(e => e.PromotionId == promotionId).Select(e => e.Id);
+        if (await db.Attendance.AnyAsync(a => dayDates.Contains(a.Date) && enrollmentIds.Contains(a.EnrollmentId), ct))
+            throw new ConflictException("Un des jours contient déjà un appel : il reste confirmé.");
+        db.CourseDays.RemoveRange(days);
+        audit.Record("presences.jours.retrait", "Presence", promotionId.ToString(), $"{days.Count} jour(s) de cours retiré(s).");
+        await db.SaveChangesAsync(ct);
+        return days.Count;
+    }, ct);
+
     public async Task<IReadOnlyList<AttendanceSummary>> AttendanceSummaryAsync(Guid promotionId, DateOnly from, DateOnly to, CancellationToken ct = default)
     {
         var students = await StudentsOfAsync(promotionId, ct);
-        var ids = students.Select(s => s.EnrollmentId).ToList();
-        var records = await db.Attendance.AsNoTracking().Where(a => ids.Contains(a.EnrollmentId) && a.Date >= from && a.Date <= to).ToListAsync(ct);
+        var timeline = await TimelineAsync(promotionId, students, from, to, ct);
         return students.Select(s =>
         {
-            var mine = records.Where(r => r.EnrollmentId == s.EnrollmentId).ToList();
-            var present = mine.Count(r => r.Status == AttendanceStatus.Present);
-            var late = mine.Count(r => r.Status == AttendanceStatus.Retard);
-            return new AttendanceSummary(s.EnrollmentId, s.Matricule, s.FullName, present, mine.Count(r => r.Status == AttendanceStatus.Absent), late,
-                mine.Count(r => r.Status == AttendanceStatus.AbsenceJustifiee), mine.Count == 0 ? 100 : decimal.Round((present + late) * 100m / mine.Count, 1));
+            var days = timeline[s.EnrollmentId];
+            var present = days.Count(d => d.Kind == "Present");
+            var late = days.Count(d => d.Kind == "Retard");
+            var absent = days.Count(d => d.Kind is "Absent" or "NonSigne");
+            var justified = days.Count(d => d.Kind == "Justifiee");
+            var counted = present + late + absent + justified;
+            var rate = counted == 0 ? 100m : decimal.Round((present + late) * 100m / counted, 1);
+            return new AttendanceSummary(s.EnrollmentId, s.Matricule, s.FullName, present, absent, late, justified, rate);
         }).OrderBy(s => s.Rate).ThenBy(s => s.FullName).ToList();
     }
+
+    /// <summary>Apprenants à traiter : absences non justifiées atteignant le seuil, ou jours consécutifs absents.</summary>
+    public async Task<IReadOnlyList<AttendanceAlertDto>> AttendanceAlertsAsync(Guid promotionId, DateOnly from, DateOnly to, CancellationToken ct = default)
+    {
+        var students = await StudentsOfAsync(promotionId, ct);
+        var timeline = await TimelineAsync(promotionId, students, from, to, ct);
+        var today = clock.Today;
+        var alerts = new List<AttendanceAlertDto>();
+        foreach (var s in students)
+        {
+            var closed = timeline[s.EnrollmentId].Where(d => d.Day < today).Select(d => (d.Day, d.Kind is "Absent" or "NonSigne")).ToList();
+            var unjustified = closed.Count(d => d.Item2);
+            var longest = AttendanceRules.LongestUnjustifiedRun(closed);
+            if (AttendanceRules.NeedsAlert(unjustified, longest))
+                alerts.Add(new AttendanceAlertDto(s.EnrollmentId, s.Matricule, s.FullName, unjustified, longest));
+        }
+        return alerts;
+    }
+
+    private sealed record DayKind(DateOnly Day, string Kind);
+
+    /// <summary>
+    /// Statut de chaque jour d'un apprenant : appel saisi, absence non signée sur un jour de cours confirmé,
+    /// ou exclusion disciplinaire. Un jour sans appel ni jour de cours confirmé ne produit rien.
+    /// </summary>
+    private async Task<Dictionary<Guid, List<DayKind>>> TimelineAsync(Guid promotionId, List<EnrolledStudent> students, DateOnly from, DateOnly to, CancellationToken ct)
+    {
+        var ids = students.Select(s => s.EnrollmentId).ToList();
+        var records = await db.Attendance.AsNoTracking().Where(a => ids.Contains(a.EnrollmentId) && a.Date >= from && a.Date <= to).ToListAsync(ct);
+        var courseDays = await db.CourseDays.AsNoTracking().Where(c => c.PromotionId == promotionId && c.Date >= from && c.Date <= to).Select(c => c.Date).ToListAsync(ct);
+        var decisions = await DecisionsByEnrollmentAsync(ids, ct);
+        var today = clock.Today;
+        var result = new Dictionary<Guid, List<DayKind>>();
+        foreach (var s in students)
+        {
+            var mine = records.Where(r => r.EnrollmentId == s.EnrollmentId).ToDictionary(r => r.Date);
+            var rules = DecisionsOf(decisions, s.EnrollmentId);
+            var list = new List<DayKind>();
+            foreach (var day in courseDays.Concat(mine.Keys).Distinct())
+            {
+                if (mine.TryGetValue(day, out var record))
+                {
+                    list.Add(new DayKind(day, record.Status switch
+                    {
+                        AttendanceStatus.Present => "Present",
+                        AttendanceStatus.Retard => "Retard",
+                        AttendanceStatus.Absent => "Absent",
+                        _ => "Justifiee",
+                    }));
+                }
+                else if (AttendanceRules.IsExcluded(rules, day)) list.Add(new DayKind(day, "Exclu"));
+                else if (AttendanceRules.IsUnsignedAbsence(day, today, true, s.EnrolledOn, false, false)) list.Add(new DayKind(day, "NonSigne"));
+            }
+            result[s.EnrollmentId] = list;
+        }
+        return result;
+    }
+
+    private async Task<Dictionary<Guid, List<DisciplineDecision>>> DecisionsByEnrollmentAsync(IReadOnlyCollection<Guid> ids, CancellationToken ct) =>
+        (await db.DisciplineDecisions.AsNoTracking().Where(d => ids.Contains(d.EnrollmentId) && d.State == DecisionState.Validee).ToListAsync(ct))
+        .GroupBy(d => d.EnrollmentId).ToDictionary(g => g.Key, g => g.ToList());
+
+    private static List<DisciplineDecision> DecisionsOf(Dictionary<Guid, List<DisciplineDecision>> decisions, Guid enrollmentId) =>
+        decisions.TryGetValue(enrollmentId, out var list) ? list : new List<DisciplineDecision>();
 
     // ---------- Discipline ----------
     public async Task<IReadOnlyList<IncidentDto>> IncidentsAsync(Guid? promotionId, CancellationToken ct = default)

@@ -238,6 +238,13 @@ public static class ScoliaEndpoints
         g.MapPut("/presences", async (Guid promotionId, DateOnly date, List<AttendanceInput> input, AcademicService s, CancellationToken ct) =>
             Results.Ok(new { enregistrees = await s.SaveAttendanceAsync(promotionId, date, input, ct) })).RequireAuthorization(Permissions.AcademicsWrite);
         g.MapGet("/presences/bilan", (Guid promotionId, DateOnly du, DateOnly au, AcademicService s, CancellationToken ct) => s.AttendanceSummaryAsync(promotionId, du, au, ct));
+        // Jours de cours confirmés : seul un jour confirmé et passé, sans appel, devient une absence non signée.
+        g.MapGet("/jours-de-cours", (Guid promotionId, DateOnly du, DateOnly au, AcademicService s, CancellationToken ct) => s.CourseDaysAsync(promotionId, du, au, ct));
+        g.MapPost("/jours-de-cours", (Guid promotionId, List<DateOnly> dates, AcademicService s, CancellationToken ct) => s.ConfirmCourseDaysAsync(promotionId, dates, ct))
+            .RequireAuthorization(Permissions.AcademicsWrite);
+        g.MapPost("/jours-de-cours/retrait", (Guid promotionId, List<DateOnly> dates, AcademicService s, CancellationToken ct) => s.ReleaseCourseDaysAsync(promotionId, dates, ct))
+            .RequireAuthorization(Permissions.AcademicsWrite);
+        g.MapGet("/presences/alertes", (Guid promotionId, DateOnly du, DateOnly au, AcademicService s, CancellationToken ct) => s.AttendanceAlertsAsync(promotionId, du, au, ct));
         g.MapGet("/discipline", (Guid? promotionId, AcademicService s, CancellationToken ct) => s.IncidentsAsync(promotionId, ct));
         g.MapPost("/discipline", (IncidentCreate input, AcademicService s, CancellationToken ct) => s.CreateIncidentAsync(input, ct)).RequireAuthorization(Permissions.AcademicsWrite);
 

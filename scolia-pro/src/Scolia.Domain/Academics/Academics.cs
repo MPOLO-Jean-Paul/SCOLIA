@@ -57,6 +57,14 @@ public sealed class Grade : Entity
     public string? Comment { get; set; }
 }
 
+/// <summary>Jour de cours confirmé pour une promotion. Seul un jour confirmé et passé produit une absence non signée.</summary>
+public sealed class CourseDay : Entity
+{
+    public Guid PromotionId { get; set; }
+    public Guid AcademicYearId { get; set; }
+    public DateOnly Date { get; set; }
+}
+
 public enum AttendanceStatus { Present = 0, Absent = 1, Retard = 2, AbsenceJustifiee = 3 }
 
 public sealed class AttendanceRecord : Entity
