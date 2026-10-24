@@ -33,7 +33,7 @@
               </ItemsControl.ItemsPanel>
               <ItemsControl.ItemTemplate>
                 <DataTemplate>
-                  <StackPanel Width="54" VerticalAlignment="Bottom" Spacing="4">
+                  <StackPanel Width="80" VerticalAlignment="Bottom" Spacing="4">
                     <TextBlock Text="{Binding Value}" Classes="caption" TextAlignment="Center" TextWrapping="Wrap" FontSize="10" />
                     <Border Background="{DynamicResource AccentBrush}" CornerRadius="8,8,3,3" Height="{Binding Height}" MinHeight="2" />
                     <TextBlock Text="{Binding Label}" Classes="muted" TextAlignment="Center" />

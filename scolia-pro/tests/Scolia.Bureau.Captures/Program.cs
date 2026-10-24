@@ -232,6 +232,7 @@ void Smoke(ShellViewModel shell, ScoliaClient api, Window window, string passwor
     var users = new UsersPage(shell);
     Wait(shell.Open(() => users));
     Check("utilisateurs", users.Items.Count > 0, $"{users.Items.Count} compte(s)");
+    Wait(DataPage.BackupNowAsync(shell));
     var data = new DataPage(shell);
     Wait(shell.Open(() => data));
     Check("sauvegardes", data.Items.Count > 0, $"{data.Items.Count} fichier(s)");

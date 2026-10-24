@@ -54,8 +54,8 @@ public class FormatTests
     public void Montant_est_affiche_avec_espaces_de_milliers()
     {
         // fr-FR sépare les milliers par une espace fine insécable : on la normalise pour comparer.
-        var affiche = Format.Money(440000, "$").Replace('\u202F', ' ').Replace('\u00A0', ' ');
-        Assert.Equal("440 000 $", affiche);
+        var affiche = Format.Money(440000, "FC").Replace('\u202F', ' ').Replace('\u00A0', ' ');
+        Assert.Equal("440 000 FC", affiche);
     }
 }
 
