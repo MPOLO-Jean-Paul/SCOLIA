@@ -25,7 +25,7 @@
             <DataGrid ItemsSource="{Binding Years}" SelectedItem="{Binding SelectedYear}" AutoGenerateColumns="False" IsReadOnly="True" MaxHeight="420">
               <DataGrid.Columns>
                 <DataGridTextColumn Header="Année" Binding="{Binding Label}" Width="Auto" MinWidth="130" />
-                <DataGridTextColumn Header="Période" Binding="{Binding Period}" Width="*" MinWidth="200" />
+                <DataGridTextColumn Header="Période" Binding="{Binding Period}" Width="*" MinWidth="250" />
                 <DataGridTemplateColumn Header="Statut" Width="Auto" MinWidth="130">
                   <DataGridTemplateColumn.CellTemplate>
                     <DataTemplate>
