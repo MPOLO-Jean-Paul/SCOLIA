@@ -11,6 +11,20 @@
 Touches d'accès : appuyer sur Alt seul affiche une lettre sur chaque onglet. Taper la lettre ouvre l'onglet, puis taper la lettre d'une commande la lance. Échap annule.
 Réduire le ruban : Ctrl+F1, ou la flèche à droite des onglets. Préférences (thème, densité, barre d'état) : groupe Apparence de l'onglet Affichage.
 
+## Préférences d'affichage
+
+Onglet Affichage, groupe Apparence, bouton de lanceur (la petite flèche du groupe) : ouvre les préférences.
+
+- **Thème** : clair, sombre ou selon le système.
+- **Taille du texte** : petit, normal, grand ou très grand. Elle s'applique à tous les écrans et au ruban.
+- **Densité** : confortable ou compacte.
+- **Barre d'état**, **info-bulles**, **quadrillage des tableaux**, **animations** : chacun s'active ou se désactive séparément.
+- **Rétablir les valeurs par défaut** : remet tous ces réglages à leur valeur d'origine.
+
+Les réglages sont mémorisés sur ce poste. Ils ne sont pas partagés avec les autres utilisateurs.
+
+Les commandes du ruban ouvrent directement la page ou la boîte de saisie correspondante : nouvelle dépense, arrêt de caisse, nouveau cours, nouvelle évaluation, incident, promotion, année scolaire, utilisateur, membre du personnel, import du classeur V79. Les exports (Excel, PDF, CSV) sont dans les groupes Finances et Administration.
+
 ## 1. Premier lancement
 
 1. Ouvrir `SCOLIA.exe`. Une fenêtre s'ouvre, et une icône apparaît près de l'horloge.

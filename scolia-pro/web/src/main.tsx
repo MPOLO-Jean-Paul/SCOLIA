@@ -6,7 +6,10 @@ import { App } from './App';
 import { SessionProvider, applyTheme, storedTheme } from './lib/session';
 import { ToastProvider } from './components/ui';
 import { ApiError } from './api/client';
+import '@fontsource-variable/google-sans-flex';
+import '@fontsource-variable/google-sans-code';
 import './styles.css';
+import './theme.css';
 
 applyTheme(storedTheme());
 

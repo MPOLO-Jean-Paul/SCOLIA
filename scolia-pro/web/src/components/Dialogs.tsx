@@ -37,22 +37,37 @@ export function AboutDialog({ schoolName, onClose }: { schoolName: string; onClo
   );
 }
 
-export function PreferencesDialog({ theme, onTheme, density, onDensity, statusBar, onStatusBar, onClose }: {
-  theme: Theme; onTheme: (t: Theme) => void; density: Density; onDensity: (d: Density) => void;
-  statusBar: boolean; onStatusBar: (v: boolean) => void; onClose: () => void;
+export function PreferencesDialog({ theme, onTheme, textSize, onTextSize, density, onDensity, motion, onMotion, tips, onTips, grid, onGrid, statusBar, onStatusBar, onReset, onClose }: {
+  theme: Theme; onTheme: (t: Theme) => void;
+  textSize: 'petit' | 'normal' | 'grand' | 'tres-grand'; onTextSize: (t: 'petit' | 'normal' | 'grand' | 'tres-grand') => void;
+  density: Density; onDensity: (d: Density) => void;
+  motion: boolean; onMotion: (v: boolean) => void;
+  tips: boolean; onTips: (v: boolean) => void;
+  grid: boolean; onGrid: (v: boolean) => void;
+  statusBar: boolean; onStatusBar: (v: boolean) => void;
+  onReset: () => void; onClose: () => void;
 }) {
   return (
-    <Modal title="Préférences d’affichage" eyebrow="Affichage" onClose={onClose} footer={<button type="button" className="btn primary" onClick={onClose}>Terminé</button>}>
+    <Modal title="Préférences d’affichage" eyebrow="Affichage" onClose={onClose}
+      footer={<><button type="button" className="btn ghost" onClick={onReset}>Rétablir les valeurs par défaut</button><button type="button" className="btn primary" onClick={onClose}>Terminé</button></>}>
       <div className="stack">
         <div className="field">
-          <span className="label">Thème</span>
+          <span className="label" id="pref-theme">Thème</span>
           <Segmented value={theme} onChange={onTheme} items={[{ value: 'clair', label: 'Clair' }, { value: 'sombre', label: 'Sombre' }, { value: 'systeme', label: 'Système' }]} />
+        </div>
+        <div className="field">
+          <span className="label">Taille du texte</span>
+          <Segmented value={textSize} onChange={onTextSize} items={[{ value: 'petit', label: 'Petit' }, { value: 'normal', label: 'Normal' }, { value: 'grand', label: 'Grand' }, { value: 'tres-grand', label: 'Très grand' }]} />
+          <span className="help">S’applique à tous les écrans, y compris les tableaux et le ruban.</span>
         </div>
         <div className="field">
           <span className="label">Densité</span>
           <Segmented value={density} onChange={onDensity} items={[{ value: 'confortable', label: 'Confortable' }, { value: 'compact', label: 'Compacte' }]} />
         </div>
         <label className="check"><input type="checkbox" checked={statusBar} onChange={(e) => onStatusBar(e.target.checked)} />Afficher la barre d’état</label>
+        <label className="check"><input type="checkbox" checked={tips} onChange={(e) => onTips(e.target.checked)} />Afficher les info-bulles du ruban</label>
+        <label className="check"><input type="checkbox" checked={grid} onChange={(e) => onGrid(e.target.checked)} />Quadrillage des tableaux</label>
+        <label className="check"><input type="checkbox" checked={motion} onChange={(e) => onMotion(e.target.checked)} />Animations de l’interface</label>
       </div>
     </Modal>
   );

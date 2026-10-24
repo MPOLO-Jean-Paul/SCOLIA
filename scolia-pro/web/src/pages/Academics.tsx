@@ -1,6 +1,8 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { CheckCheck, FileText, Plus, Save } from 'lucide-react';
+import { useActionParam } from '../lib/commands';
 import { api, openDocument } from '../api/client';
 import type { Assessment, AttendanceRow, AttendanceSummary, Course, GradeRow, Incident, Paged, Promotion, Results, StudentListItem } from '../api/types';
 import { date, num, today } from '../lib/format';
@@ -21,23 +23,36 @@ function PromotionPicker({ value, onChange }: { value: string; onChange: (v: str
 export function GradesPage() {
   const [promotionId, setPromotionId] = useState('');
   const [tab, setTab] = useState<'notes' | 'resultats'>('notes');
+  const [params, setParams] = useSearchParams();
+  const request = params.get('action');
+  const handled = () => setParams((current) => { const next = new URLSearchParams(current); next.delete('action'); return next; }, { replace: true });
   return (
     <>
       <PageHead title="Cours et notes" subtitle="Cours par promotion, évaluations, saisie des notes, moyennes pondérées, classement et bulletins." />
       <div className="toolbar"><PromotionPicker value={promotionId} onChange={setPromotionId} /></div>
       <Tabs value={tab} onChange={setTab} items={[{ value: 'notes', label: 'Cours et évaluations' }, { value: 'resultats', label: 'Résultats et bulletins' }]} />
-      {promotionId && (tab === 'notes' ? <CoursesPanel promotionId={promotionId} /> : <ResultsPanel promotionId={promotionId} />)}
+      {promotionId && (tab === 'notes' ? <CoursesPanel promotionId={promotionId} request={request} onHandled={handled} /> : <ResultsPanel promotionId={promotionId} />)}
     </>
   );
 }
 
-function CoursesPanel({ promotionId }: { promotionId: string }) {
+function CoursesPanel({ promotionId, request, onHandled }: { promotionId: string; request?: string | null; onHandled: () => void }) {
   const { can } = useSession();
   const qc = useQueryClient();
   const courses = useQuery({ queryKey: ['courses', promotionId], queryFn: () => api.get<Course[]>('/api/scolarite/cours', { promotionId }) });
   const [courseId, setCourseId] = useState('');
   const [editingCourse, setEditingCourse] = useState<Course | 'new' | null>(null);
   const [newAssessment, setNewAssessment] = useState(false);
+  const toastNotice = useToast();
+  // Demandes venues du ruban : nouveau cours, nouvelle évaluation.
+  useEffect(() => {
+    if (request === 'cours') { setEditingCourse('new'); onHandled(); }
+    else if (request === 'evaluation') {
+      if (courseId) setNewAssessment(true); else toastNotice('Choisissez d’abord un cours pour y ajouter l’évaluation.', 'error');
+      onHandled();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [request]);
   const [assessmentId, setAssessmentId] = useState('');
   useEffect(() => { setCourseId(''); setAssessmentId(''); }, [promotionId]);
   useEffect(() => { if (!courseId && courses.data?.[0]) setCourseId(courses.data[0].id); }, [courses.data, courseId]);
@@ -249,6 +264,7 @@ export function AttendancePage() {
 export function DisciplinePage() {
   const [promotionId, setPromotionId] = useState('');
   const [creating, setCreating] = useState(false);
+  useActionParam('incident', () => setCreating(true));
   const { can } = useSession();
   const qc = useQueryClient();
   const list = useQuery({ queryKey: ['incidents', promotionId], queryFn: () => api.get<Incident[]>('/api/scolarite/discipline', { promotionId }), enabled: !!promotionId });

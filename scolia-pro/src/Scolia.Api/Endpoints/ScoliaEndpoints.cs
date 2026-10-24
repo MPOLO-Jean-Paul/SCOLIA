@@ -255,6 +255,16 @@ public static class ScoliaEndpoints
         var audit = api.MapGroup("/audit").RequireAuthorization(Permissions.AuditRead);
         audit.MapGet("", (string? q, string? type, DateOnly? du, DateOnly? au, int? page, int? taille, AuditService a, CancellationToken ct) => a.ListAsync(q, type, du, au, page ?? 1, taille ?? 100, ct));
         audit.MapGet("/verification", (AuditService a, CancellationToken ct) => a.VerifyAsync(ct));
+        // Export CSV du journal : l'export lui-même est tracé (consulter le journal est une action sensible).
+        audit.MapGet("/export", async (string? q, string? type, DateOnly? du, DateOnly? au, AuditService a, IAuditLog log, ScoliaDbContext db, CancellationToken ct) =>
+        {
+            var csv = await a.ExportCsvAsync(q, type, du, au, ct);
+            log.Record("audit.exporte", "Audit", null, "Export du journal d’audit au format CSV.");
+            await db.SaveChangesAsync(ct);
+            // BOM UTF-8 explicite : sans lui, Excel affiche mal les accents.
+            var bytes = System.Text.Encoding.UTF8.GetPreamble().Concat(System.Text.Encoding.UTF8.GetBytes(csv)).ToArray();
+            return Results.File(bytes, "text/csv; charset=utf-8", $"journal-audit-{DateTime.Today:yyyyMMdd}.csv");
+        });
 
         var backups = api.MapGroup("/sauvegardes").RequireAuthorization(Permissions.BackupManage);
         backups.MapGet("", (BackupService b) => b.List());

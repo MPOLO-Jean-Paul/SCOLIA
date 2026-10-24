@@ -1,0 +1,296 @@
+/* ==========================================================================
+   Thème SCOLIA Pro : palette et formes du système Material 3 (Android 16),
+   tableaux et ruban inspirés d'Excel 2024. Chargé en dernier : il remplace
+   les valeurs de styles.css et de ribbon.css sans les réécrire.
+   ========================================================================== */
+
+:root {
+  --font-ui: "Google Sans Flex", "Google Sans", "Segoe UI Variable Text", "Segoe UI", Roboto, system-ui, sans-serif;
+  --font-code: "Google Sans Code", "Cascadia Mono", Consolas, ui-monospace, monospace;
+
+  /* Palette tonale (rôles Material 3) */
+  --navy: #1f1f1f;
+  --navy-2: #444746;
+  --navy-text: #5f6368;
+  --blue: #0b57d0;
+  --blue-hover: #0842a0;
+  --blue-soft: #d3e3fd;
+  --blue-text: #0842a0;
+  --bg: #f8fafd;
+  --surface: #ffffff;
+  --surface-2: #f0f4f9;
+  --border: #e3e3e3;
+  --border-strong: #c4c7c5;
+  --text: #1f1f1f;
+  --text-2: #444746;
+  --muted: #5f6368;
+  --table-head: #f0f4f9;
+  --table-head-text: #444746;
+  --orange: #8f4c00;
+  --orange-soft: #ffdcbe;
+  --green: #146c2e;
+  --green-soft: #c4eed0;
+  --red: #b3261e;
+  --red-soft: #f9dedc;
+  --purple: #6750a4;
+  --focus: 0 0 0 3px rgba(11, 87, 208, 0.28);
+
+  /* Formes */
+  --radius: 16px;
+  --radius-sm: 12px;
+  --shadow: none;
+  --shadow-lg: 0 6px 20px rgba(31, 31, 31, 0.16), 0 1px 3px rgba(31, 31, 31, 0.12);
+
+  /* Icônes des commandes : monochromes, la couleur n'indique que l'action */
+  --tone-blue: #0b57d0;
+  --tone-green: #146c2e;
+  --tone-orange: #8f4c00;
+  --tone-purple: #6750a4;
+  --tone-red: #b3261e;
+
+  font-family: var(--font-ui);
+  letter-spacing: 0.005em;
+}
+
+:root[data-theme="dark"] {
+  --navy: #e3e3e3;
+  --navy-2: #c4c7c5;
+  --navy-text: #8e918f;
+  --blue: #a8c7fa;
+  --blue-hover: #d3e3fd;
+  --blue-soft: #0842a0;
+  --blue-text: #d3e3fd;
+  --bg: #131314;
+  --surface: #1e1f20;
+  --surface-2: #282a2c;
+  --border: #444746;
+  --border-strong: #5f6368;
+  --text: #e3e3e3;
+  --text-2: #c4c7c5;
+  --muted: #8e918f;
+  --table-head: #282a2c;
+  --table-head-text: #c4c7c5;
+  --orange: #ffb77c;
+  --orange-soft: #5c3500;
+  --green: #6dd58c;
+  --green-soft: #0f3d1f;
+  --red: #f2b8b5;
+  --red-soft: #601410;
+  --purple: #d0bcff;
+  --focus: 0 0 0 3px rgba(168, 199, 250, 0.35);
+  --shadow-lg: 0 6px 20px rgba(0, 0, 0, 0.5);
+  --tone-blue: #a8c7fa;
+  --tone-green: #6dd58c;
+  --tone-orange: #ffb77c;
+  --tone-purple: #d0bcff;
+  --tone-red: #f2b8b5;
+}
+
+/* ---------- Typographie ---------- */
+body, button, input, select, textarea { font-family: var(--font-ui); }
+h1, h2, h3, h4 { font-weight: 500; letter-spacing: 0; }
+.tag-code, kbd { font-family: var(--font-code); }
+.mono { font-family: var(--font-ui); font-variant-numeric: tabular-nums; }
+::selection { background: color-mix(in srgb, var(--blue) 26%, transparent); }
+
+/* ---------- Barre de titre : claire, comme les applications Google ---------- */
+.titlebar { background: var(--surface); color: var(--text); border-bottom: 1px solid var(--border); height: 52px; }
+.titlebar-doc { color: var(--text); font-weight: 500; }
+.titlebar-doc span { color: var(--muted); }
+.qat-btn { color: var(--text-2); border-radius: 999px; }
+.qat-btn:hover { background: var(--surface-2); }
+.qat-logo { background: transparent; padding: 0; border-radius: 8px; margin-right: 6px; }
+.titlebar-search { background: var(--surface-2); border: none; border-radius: 999px; color: var(--muted); height: 40px; padding: 0 16px; }
+.titlebar-search:hover { background: var(--border); }
+.titlebar-search kbd { background: var(--surface); border-color: var(--border-strong); color: var(--muted); }
+.user-menu .user-chip { background: transparent; border: none; color: var(--text); padding: 2px 8px 2px 2px; }
+.user-menu .user-chip:hover { background: var(--surface-2); }
+.user-menu .who-name { color: var(--text); }
+.user-menu .who small { color: var(--muted); }
+.user-menu .avatar { background: var(--blue); color: #fff; }
+.user-dropdown { border-radius: 16px; box-shadow: var(--shadow-lg); border: none; background: var(--surface); }
+.user-dropdown .btn { border-radius: 999px; }
+
+/* ---------- Ruban : onglets soulignés, commandes sobres ---------- */
+.ribbon { background: var(--surface); border-bottom: 1px solid var(--border); }
+.ribbon-tabs { background: var(--surface); border-bottom: 1px solid var(--border); min-height: 40px; gap: 4px; padding: 0 12px; }
+.rb-file { height: 32px; margin: 4px 8px 4px 0; padding: 0 16px; border-radius: 999px; background: var(--blue); color: #fff; font-weight: 500; }
+.rb-file:hover { background: var(--blue-hover); }
+.rb-tab { height: 40px; margin: 0; padding: 0 14px; border: none; border-radius: 0; background: none; color: var(--muted); font-weight: 500; position: relative; }
+.rb-tab:hover { background: var(--surface-2); color: var(--text); }
+.rb-tab.on { background: none; color: var(--blue); font-weight: 600; border: none; }
+.rb-tab.on::after { content: ""; position: absolute; left: 10px; right: 10px; bottom: 0; height: 3px; border-radius: 3px 3px 0 0; background: var(--blue); }
+.rb-tab-wrap.has-ctx { background: color-mix(in srgb, var(--ctx) 10%, transparent); border-radius: 8px 8px 0 0; }
+.rb-ctx-head { font-weight: 600; letter-spacing: 0.02em; text-transform: none; font-size: 12px; }
+.rb-collapse { border-radius: 999px; height: 30px; width: 34px; }
+.ribbon-body { background: var(--surface); padding: 6px 10px 0; min-height: 104px; }
+.rb-group { border-right: 1px solid var(--border); padding: 4px 12px 24px; }
+.rb-group-name { color: var(--muted); font-size: calc(12px * var(--fs, 1)); font-weight: 500; }
+.rb-cmd { border-radius: 10px; }
+.rb-cmd:hover { background: var(--surface-2); border-color: transparent; }
+.rb-cmd:active { background: var(--border); }
+.rb-cmd.is-on { background: var(--blue-soft); border-color: transparent; }
+.rb-large { width: 84px; min-height: 72px; }
+.rb-large .rb-icon svg { width: 26px; height: 26px; stroke-width: 1.7; }
+.rb-small .rb-icon svg { width: 17px; height: 17px; }
+.rb-cmd .rb-icon { color: var(--text-2); }
+.rb-cmd.is-on .rb-icon, .rb-cmd:hover .rb-icon { color: var(--blue); }
+.rb-cmd.tone-red .rb-icon { color: var(--red); }
+.rb-cmd .rb-label { color: var(--text); }
+.rb-tip { background: #303030; color: #f5f5f5; border-radius: 8px; box-shadow: var(--shadow-lg); }
+.rb-tip b { color: #fff; }
+.rb-tip kbd { background: rgba(255, 255, 255, 0.12); border-color: rgba(255, 255, 255, 0.28); }
+.rb-tip > span { color: #d6d6d6; }
+.rb-keytip { background: var(--blue); }
+:root[data-tips="off"] .rb-tip { display: none; }
+
+/* ---------- Espace de travail ---------- */
+.app { background: var(--bg); }
+.content { background: var(--bg); }
+.page-head { border-bottom: none; padding-bottom: 8px; margin-bottom: 18px; align-items: flex-start; }
+.page-head h1 { font-size: calc(28px * var(--fs, 1)); font-weight: 500; letter-spacing: -0.01em; color: var(--text); }
+.page-head p { color: var(--muted); }
+.page-eyebrow { color: var(--muted); font-weight: 500; letter-spacing: 0; text-transform: none; font-size: calc(13px * var(--fs, 1)); margin-bottom: 2px; }
+
+/* Cartes : sobres, bordure fine, sans ombre ; moins de blocs empilés */
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: none; }
+.card-head { min-height: 48px; padding: 12px 18px; border-bottom: 1px solid var(--border); }
+.card-head h2, .card-head h3 { font-size: calc(15px * var(--fs, 1)); font-weight: 500; color: var(--text); }
+.card-pad { padding: 18px; }
+.section-title { color: var(--muted); font-weight: 500; text-transform: none; letter-spacing: 0; font-size: calc(13px * var(--fs, 1)); }
+.section-title .num { color: var(--blue); }
+
+/* Indicateurs : une bande de synthèse à séparateurs, plutôt que des cartes colorées */
+.grid.cols-4 > .kpi, .grid.cols-3 > .kpi, .grid.cols-2 > .kpi { background: var(--surface); }
+.kpi, .kpi.orange, .kpi.green, .kpi.red, .kpi.purple {
+  background: var(--surface); border: 1px solid var(--border); border-left-width: 1px; border-left-color: var(--border);
+  border-radius: var(--radius-sm); box-shadow: none; padding: 14px 16px;
+}
+.kpi .label { color: var(--muted); font-weight: 500; }
+.kpi .value { font-size: calc(26px * var(--fs, 1)); font-weight: 500; color: var(--text); }
+.kpi.red .value { color: var(--red); }
+.kpi.orange .value { color: var(--orange); }
+.kpi .hint { color: var(--muted); }
+.progress { background: var(--surface-2); height: 6px; }
+.progress > span { background: var(--blue); }
+
+/* ---------- Boutons : formes Material 3 (pilule, tonal, filled) ---------- */
+.btn { height: 40px; padding: 0 20px; border-radius: 999px; font-weight: 500; letter-spacing: 0.01em; background: var(--surface-2); color: var(--blue-text); border: none; }
+.btn:hover { filter: none; background: var(--border); }
+.btn svg { width: 18px; height: 18px; }
+.btn.primary { background: var(--blue); color: #fff; box-shadow: none; }
+.btn.primary:hover { background: var(--blue-hover); }
+.btn.ghost { background: transparent; color: var(--blue); border: none; }
+.btn.ghost:hover { background: var(--surface-2); }
+.btn.danger { background: var(--red-soft); color: var(--red); }
+.btn.small { height: 32px; padding: 0 14px; font-size: calc(13px * var(--fs, 1)); }
+.btn.icon { width: 40px; padding: 0; }
+.btn.small.icon { width: 32px; }
+.link-btn { color: var(--blue); font-weight: 500; }
+
+/* Champs : contour fin, coins arrondis, anneau de focus Material */
+.field > label, .label { color: var(--text-2); font-weight: 500; }
+.input, .select, .textarea { height: 40px; border-radius: 8px; border: 1px solid var(--border-strong); background: var(--surface); }
+.textarea { height: auto; }
+.input:hover, .select:hover, .textarea:hover { border-color: var(--text-2); }
+.input:focus, .select:focus, .textarea:focus { border-color: var(--blue); box-shadow: inset 0 0 0 1px var(--blue); }
+.input::placeholder, .textarea::placeholder { color: var(--muted); opacity: 0.9; }
+.field .help { color: var(--muted); }
+.check input { accent-color: var(--blue); }
+.segmented { background: var(--surface-2); border-radius: 999px; padding: 3px; }
+.segmented button { border-radius: 999px; padding: 6px 14px; color: var(--text-2); }
+.segmented button.on { background: var(--blue-soft); color: var(--blue-text); box-shadow: none; }
+
+/* Tableaux : grille fine, en-têtes discrets, lignes denses, comme dans un tableur */
+.table-wrap { border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); }
+table.data th { background: var(--table-head); color: var(--table-head-text); font-size: calc(12.5px * var(--fs, 1)); font-weight: 500; text-transform: none; letter-spacing: 0; padding: 9px 12px; border-bottom: 1px solid var(--border-strong); }
+table.data td { padding: 9px 12px; border-bottom: 1px solid var(--border); font-size: calc(13.5px * var(--fs, 1)); }
+table.data tbody tr:hover td { background: var(--surface-2); }
+table.data tbody tr.clickable:hover td { background: var(--blue-soft); }
+table.data tfoot td { background: var(--surface-2); border-top: 1px solid var(--border-strong); }
+[data-grid="on"] table.data th, [data-grid="on"] table.data td { border-right: 1px solid var(--border); }
+[data-grid="on"] table.data th:last-child, [data-grid="on"] table.data td:last-child { border-right: none; }
+
+/* Pastilles : tonalité Material, sans bordure */
+.badge { border-radius: 999px; font-weight: 500; }
+.badge.gray { background: var(--surface-2); color: var(--muted); border: none; }
+
+/* États vides */
+.empty-icon { background: var(--surface-2); color: var(--muted); }
+.empty-icon svg { color: var(--muted); }
+
+/* ---------- Fenêtres : coins généreux, sans bandeau coloré ---------- */
+.overlay { background: rgba(31, 31, 31, 0.32); }
+.modal { border-radius: 28px; background: var(--surface); box-shadow: var(--shadow-lg); border: none; }
+.modal-head { background: var(--surface); color: var(--text); border-bottom: none; padding: 24px 24px 6px; }
+.modal-head .eyebrow { color: var(--muted); letter-spacing: 0; text-transform: none; font-weight: 500; }
+.modal-head h2 { color: var(--text); font-size: calc(22px * var(--fs, 1)); font-weight: 500; }
+.modal-head p { color: var(--muted); }
+.modal-head .close { background: transparent; color: var(--text-2); }
+.modal-head .close:hover { background: var(--surface-2); }
+.modal-body { padding: 16px 24px 8px; }
+.modal-foot { background: var(--surface); border-top: none; padding: 12px 24px 20px; }
+.palette { border-radius: 28px; border: none; }
+
+/* Notifications : bandeau sombre en bas à gauche, comme les snackbars Material */
+.toasts { left: 20px; right: auto; bottom: 36px; }
+.toast { background: #303030; color: #f5f5f5; border: none; border-left: none; border-radius: 8px; box-shadow: var(--shadow-lg); min-width: 300px; }
+.toast.success, .toast.error, .toast { border-left: none; }
+.toast.error { color: #ffb4ab; }
+.toast.success { color: #a8f5b8; }
+.toast svg { color: currentColor; }
+
+/* Alertes */
+.alert { border-radius: 12px; }
+
+/* ---------- Barre d'état et vue Fichier ---------- */
+.statusbar { background: var(--surface); color: var(--muted); border-top: 1px solid var(--border); height: 30px; }
+.sb-page { color: var(--text); }
+.sb-zoom button:hover:not(:disabled) { background: var(--surface-2); }
+.sb-zoom input[type="range"] { accent-color: var(--blue); }
+.backstage { background: var(--surface); }
+.bs-side { background: var(--surface-2); border-right: none; }
+.bs-item { border-radius: 999px; border-left: none; }
+.bs-item.on { background: var(--blue-soft); color: var(--blue-text); }
+.bs-item:hover { background: var(--border); }
+.bs-item.on svg, .bs-item svg { color: var(--blue); }
+.bs-item.danger, .bs-item.danger svg { color: var(--red); }
+.bs-card { border-radius: var(--radius); box-shadow: none; }
+.bs-back { background: var(--blue); }
+
+/* ---------- Connexion ---------- */
+.auth { background: var(--bg); }
+.auth-card { border-radius: 28px; border: none; box-shadow: var(--shadow-lg); }
+.auth-card h2 { font-weight: 500; }
+
+/* ---------- Préférences : densité, animations, info-bulles, quadrillage ---------- */
+[data-density="compact"] .btn { height: 32px; }
+[data-density="compact"] .input, [data-density="compact"] .select { height: 34px; }
+[data-density="compact"] table.data td { padding: 5px 10px; }
+[data-density="compact"] table.data th { padding: 6px 10px; }
+[data-density="compact"] .card-pad { padding: 12px; }
+[data-density="compact"] .rb-large { min-height: 62px; }
+[data-motion="reduced"] *, [data-motion="reduced"] *::before, [data-motion="reduced"] *::after {
+  animation: none !important; transition: none !important;
+}
+
+/* Barres de défilement fines */
+.content, .rb-tablist, .ribbon-body, .bs-main { scrollbar-width: thin; scrollbar-color: var(--border-strong) transparent; }
+
+@media print {
+  .app { background: #fff; }
+  .content { background: #fff; padding: 0; }
+  table.data th { background: #fff; }
+}
+
+/* Le ruban suit la taille du texte : boutons et libellés grandissent avec elle. */
+.rb-large { width: auto; min-width: calc(84px * var(--fs, 1)); min-height: calc(72px * var(--fs, 1)); }
+.rb-large .rb-label { max-width: calc(120px * var(--fs, 1)); }
+.ribbon-body { min-height: calc(104px * var(--fs, 1)); }
+.rb-group-name { white-space: nowrap; }
+
+/* Contraste en thème sombre : texte foncé sur les surfaces de couleur claire. */
+:root[data-theme="dark"] .btn.primary,
+:root[data-theme="dark"] .rb-file,
+:root[data-theme="dark"] .user-menu .avatar,
+:root[data-theme="dark"] .bs-back { color: #003062; }

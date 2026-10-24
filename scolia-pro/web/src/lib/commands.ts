@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 
 const EVENT = 'scolia:commande';
 
@@ -20,4 +21,24 @@ export function useCommand(id: string, handler: () => void) {
     window.addEventListener(EVENT, listener);
     return () => window.removeEventListener(EVENT, listener);
   }, [id]);
+}
+
+/**
+ * Ouvre une action demandée par le ruban (paramètre d'URL « action »), une seule fois.
+ * Le paramètre est retiré de l'adresse pour qu'un rafraîchissement ne rouvre pas la boîte.
+ */
+export function useActionParam(action: string, run: () => void) {
+  const [params, setParams] = useSearchParams();
+  const requested = params.get('action') === action;
+  useEffect(() => {
+    if (!requested) return;
+    run();
+    setParams((current) => {
+      const next = new URLSearchParams(current);
+      next.delete('action');
+      return next;
+    }, { replace: true });
+    // Une seule exécution par demande : run est volontairement exclu des dépendances.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [requested]);
 }

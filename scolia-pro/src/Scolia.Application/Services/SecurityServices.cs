@@ -137,6 +137,27 @@ public sealed class UserService(IAppDbContext db, IWriteGate gate, IAuditLog aud
 
 public sealed class AuditService(IAppDbContext db)
 {
+    /// <summary>Export CSV (séparateur point-virgule, comme Excel en français) de toutes les entrées filtrées, dans l'ordre chronologique.</summary>
+    public async Task<string> ExportCsvAsync(string? search, string? entityType, DateOnly? from, DateOnly? to, CancellationToken ct = default)
+    {
+        var q = db.AuditEntries.AsNoTracking().AsQueryable();
+        if (!string.IsNullOrWhiteSpace(entityType)) q = q.Where(a => a.EntityType == entityType);
+        if (from is not null) { var f = from.Value.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc); q = q.Where(a => a.AtUtc >= f); }
+        if (to is not null) { var t = to.Value.AddDays(1).ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc); q = q.Where(a => a.AtUtc < t); }
+        if (!string.IsNullOrWhiteSpace(search)) q = q.Where(a => a.Summary.Contains(search) || a.UserName.Contains(search) || a.Action.Contains(search));
+        var rows = await q.OrderBy(a => a.Id)
+            .Select(a => new { a.Id, a.AtUtc, a.UserName, a.Action, a.EntityType, a.EntityId, a.Summary, a.IpAddress })
+            .ToListAsync(ct);
+        static string Cell(string? value) => "\"" + (value ?? string.Empty).Replace("\"", "\"\"") + "\"";
+        var sb = new System.Text.StringBuilder();
+        sb.Append("Numéro;Date UTC;Utilisateur;Action;Type;Identifiant;Résumé;Adresse IP\r\n");
+        foreach (var r in rows)
+            sb.Append(r.Id).Append(';').Append(Cell(r.AtUtc.ToString("yyyy-MM-dd HH:mm:ss", System.Globalization.CultureInfo.InvariantCulture))).Append(';')
+              .Append(Cell(r.UserName)).Append(';').Append(Cell(r.Action)).Append(';').Append(Cell(r.EntityType)).Append(';')
+              .Append(Cell(r.EntityId)).Append(';').Append(Cell(r.Summary)).Append(';').Append(Cell(r.IpAddress)).Append("\r\n");
+        return sb.ToString();
+    }
+
     public async Task<PagedResult<AuditDto>> ListAsync(string? search, string? entityType, DateOnly? from, DateOnly? to, int page, int pageSize, CancellationToken ct = default)
     {
         var q = db.AuditEntries.AsNoTracking().AsQueryable();

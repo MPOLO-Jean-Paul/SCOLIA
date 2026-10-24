@@ -7,7 +7,7 @@ import type { CashClosing, CashSituation, Debtor, Expense, Paged, Promotion, Rec
 import { date, dateTime, money, today } from '../lib/format';
 import { Badge, Button, Card, Empty, ErrorAlert, Kpi, Loading, Modal, PageHead, Pager, ReasonDialog, SelectField, TextField, statusTone, useDebounced, useToast } from '../components/ui';
 import { P, useSession } from '../lib/session';
-import { useCommand } from '../lib/commands';
+import { useActionParam, useCommand } from '../lib/commands';
 
 function usePromotions() {
   return useQuery({ queryKey: ['promotions'], queryFn: () => api.get<Promotion[]>('/api/etablissement/promotions') });
@@ -205,6 +205,7 @@ export function ExpensesPage() {
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [creating, setCreating] = useState(false);
+  useActionParam('nouvelle', () => setCreating(true));
   const [cancelling, setCancelling] = useState<Expense | null>(null);
   const debounced = useDebounced(search);
   const qc = useQueryClient();
@@ -273,6 +274,7 @@ function ExpenseDialog({ categories, onClose, onSaved }: { categories: string[];
 export function CashPage() {
   const [day, setDay] = useState(today());
   const [closing, setClosing] = useState(false);
+  useActionParam('arreter', () => setClosing(true));
   const { can } = useSession();
   const situation = useQuery({ queryKey: ['cash', day], queryFn: () => api.get<CashSituation>('/api/caisse/situation', { date: day }) });
   const closings = useQuery({ queryKey: ['cash-closings'], queryFn: () => api.get<CashClosing[]>('/api/caisse/arretes') });

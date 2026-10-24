@@ -337,6 +337,22 @@ public sealed class BusinessApiTests : IDisposable
     }
 
     [Fact]
+    public async Task Audit_journal_exports_as_csv_and_the_export_is_traced()
+    {
+        var admin = await app.InstalledAdmin();
+        await admin.Post("/api/sauvegardes", new { }).Ok();
+        var response = await admin.GetAsync("/api/audit/export?format=csv");
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.StartsWith("text/csv", response.Content.Headers.ContentType!.ToString(), StringComparison.Ordinal);
+        var bytes = await response.Content.ReadAsByteArrayAsync();
+        Assert.Equal(0xEF, bytes[0]); // BOM UTF-8 : Excel affiche correctement les accents
+        var text = System.Text.Encoding.UTF8.GetString(bytes);
+        Assert.Contains("Numéro;Date UTC;Utilisateur;Action", text, StringComparison.Ordinal);
+        Assert.Contains("sauvegarde.creee", text, StringComparison.Ordinal);
+        Assert.Contains("audit.exporte", (await admin.GetAsync("/api/audit?q=audit.exporte").Ok()).GetRawText(), StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task Untraced_write_is_refused_by_the_database_context()
     {
         await app.InstalledAdmin();

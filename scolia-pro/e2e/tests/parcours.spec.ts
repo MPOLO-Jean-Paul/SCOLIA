@@ -147,6 +147,95 @@ test('ruban : réduction, préférences et vue Fichier', async () => {
   await expect(page.getByRole('dialog', { name: 'Fichier' })).toHaveCount(0);
 });
 
+test('chaque commande du ruban répond sans erreur', async () => {
+  test.setTimeout(240_000);
+  await page.goto('/');
+  const tabs = ['Accueil', 'Secrétariat', 'Finances', 'Scolarité', 'Administration', 'Affichage', 'Aide'];
+  for (const tab of tabs) {
+    await page.getByRole('tab', { name: tab, exact: true }).click();
+    expect(await page.locator('.rb-cmd').count(), `commandes de l’onglet ${tab}`).toBeGreaterThan(0);
+    // Le nombre de commandes peut changer (liste des récents) : on le relit à chaque tour.
+    for (let i = 0; i < await page.locator('.rb-cmd').count(); i++) {
+      // Le ruban peut avoir été réduit par la commande précédente : on le redéploie.
+      if (!(await page.locator('.ribbon-body').count())) await page.getByRole('button', { name: 'Afficher le ruban' }).click();
+      await page.getByRole('tab', { name: tab, exact: true }).click();
+      const cmd = page.locator('.rb-cmd').nth(i);
+      const label = (await cmd.getAttribute('aria-label')) ?? '';
+      // Le repliement du ruban est testé à part : il masquerait les commandes suivantes.
+      if (label === 'Réduire le ruban') continue;
+      await cmd.click();
+      await page.waitForTimeout(150);
+      // Une boîte ouverte par la commande se ferme avant la suivante.
+      if (await page.locator('.overlay').count()) {
+        await page.keyboard.press('Escape');
+        if (await page.locator('.overlay').count()) {
+          await page.locator('.overlay').getByRole('button').filter({ hasText: /Fermer|Terminé|Annuler|Retour/ }).first().click().catch(() => {});
+        }
+        await expect(page.locator('.overlay'), `fermeture après « ${label} »`).toHaveCount(0);
+      }
+      await expect(page.locator('.statusbar, .titlebar').first(), `écran après « ${label} »`).toBeVisible();
+    }
+  }
+  await page.goto('/');
+});
+
+test('actions du ruban : chaque page ouvre sa boîte de saisie', async () => {
+  const cases: [string, RegExp][] = [
+    ['/depenses?action=nouvelle', /depenses/],
+    ['/caisse?action=arreter', /caisse/],
+    ['/discipline?action=incident', /discipline/],
+    ['/parametres?onglet=promotions&action=promotion', /parametres/],
+    ['/parametres?onglet=annees&action=annee', /parametres/],
+    ['/utilisateurs?action=nouveau', /utilisateurs/],
+    ['/personnel?action=nouveau', /personnel/],
+  ];
+  for (const [url, expected] of cases) {
+    await page.goto(url);
+    await expect(page.getByRole('dialog'), url).toBeVisible();
+    await expect(page, `paramètre d’action retiré pour ${url}`).not.toHaveURL(/action=/);
+    await expect(page).toHaveURL(expected);
+    await page.keyboard.press('Escape');
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+  }
+  await page.goto('/donnees?action=importer');
+  await expect(page.locator('#import-v79')).toBeVisible();
+  await expect(page).not.toHaveURL(/action=/);
+});
+
+test('préférences : taille du texte, densité, animations, quadrillage et persistance', async () => {
+  await page.goto('/');
+  await page.getByRole('tab', { name: 'Affichage' }).click();
+  await page.locator('button.rb-launcher').first().click();
+  const dialog = page.getByRole('dialog', { name: 'Préférences d’affichage' });
+  await expect(dialog).toBeVisible();
+  await dialog.getByRole('button', { name: 'Très grand' }).click();
+  await expect.poll(() => page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--fs').trim())).toBe('1.3');
+  await dialog.getByRole('button', { name: 'Compacte' }).click();
+  await expect(page.locator('html')).toHaveAttribute('data-density', 'compact');
+  await dialog.getByRole('checkbox', { name: 'Animations de l’interface' }).uncheck();
+  await expect(page.locator('html')).toHaveAttribute('data-motion', 'reduced');
+  await dialog.getByRole('checkbox', { name: 'Quadrillage des tableaux' }).check();
+  await expect(page.locator('html')).toHaveAttribute('data-grid', 'on');
+  await dialog.getByRole('checkbox', { name: 'Afficher les info-bulles du ruban' }).uncheck();
+  await expect(page.locator('html')).toHaveAttribute('data-tips', 'off');
+  await dialog.getByRole('button', { name: 'Terminé' }).click();
+
+  // Les réglages survivent au rechargement.
+  await page.reload();
+  await expect(page.locator('html')).toHaveAttribute('data-density', 'compact');
+  await expect(page.locator('html')).toHaveAttribute('data-motion', 'reduced');
+  await expect.poll(() => page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--fs').trim())).toBe('1.3');
+
+  // Retour aux valeurs par défaut.
+  await page.getByRole('tab', { name: 'Affichage' }).click();
+  await page.locator('button.rb-launcher').first().click();
+  await page.getByRole('dialog').getByRole('button', { name: 'Rétablir les valeurs par défaut' }).click();
+  await expect(page.locator('html')).toHaveAttribute('data-density', 'confortable');
+  await expect(page.locator('html')).toHaveAttribute('data-motion', 'normal');
+  await expect(page.locator('html')).toHaveAttribute('data-grid', 'off');
+  await page.getByRole('dialog').getByRole('button', { name: 'Terminé' }).click();
+});
+
 test('déconnexion puis verrouillage après cinq erreurs', async () => {
   await page.getByRole('button', { name: /Administrateur Démo/ }).click();
   await page.getByRole('button', { name: 'Se déconnecter' }).click();

@@ -1,6 +1,8 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { CalendarPlus, CheckCircle2, Database, Download, FileUp, KeyRound, Pencil, Plus, Save, ShieldAlert, ShieldCheck, Trash2, Upload, Wallet } from 'lucide-react';
+import { useActionParam } from '../lib/commands';
 import { api } from '../api/client';
 import type { AcademicYear, AuditItem, BackupInfo, ImportReport, Paged, Payroll, Promotion, School, Section, StaffMember, User } from '../api/types';
 import { date, dateTime, money, today } from '../lib/format';
@@ -9,7 +11,9 @@ import { useSession } from '../lib/session';
 
 // ---------- Paramètres ----------
 export function SettingsPage() {
-  const [tab, setTab] = useState<'etablissement' | 'promotions' | 'annees' | 'sections'>('etablissement');
+  const [params] = useSearchParams();
+  const [tab, setTab] = useState<'etablissement' | 'promotions' | 'annees' | 'sections'>(() => (params.get('onglet') as 'promotions' | 'annees' | 'sections') || 'etablissement');
+  useEffect(() => { const t = params.get('onglet'); if (t) setTab(t as 'etablissement' | 'promotions' | 'annees' | 'sections'); }, [params]);
   return (
     <>
       <PageHead title="Paramètres" subtitle="Établissement, promotions et grilles de frais, années scolaires et sections." />
@@ -84,6 +88,7 @@ function PromotionsPanel() {
   const qc = useQueryClient();
   const q = useQuery({ queryKey: ['promotions'], queryFn: () => api.get<Promotion[]>('/api/etablissement/promotions') });
   const [editing, setEditing] = useState<Promotion | 'new' | null>(null);
+  useActionParam('promotion', () => setEditing('new'));
   return (
     <Card title="Promotions de l'année courante" pad={false} actions={<Button variant="primary" icon={<Plus />} onClick={() => setEditing('new')}>Nouvelle promotion</Button>}>
       {!q.data ? <Loading /> : q.data.length === 0 ? <Empty text="Aucune promotion : créez-en une pour commencer les inscriptions." /> : (
@@ -154,6 +159,7 @@ function YearsPanel() {
   const toast = useToast();
   const q = useQuery({ queryKey: ['years'], queryFn: () => api.get<AcademicYear[]>('/api/etablissement/annees') });
   const [creating, setCreating] = useState(false);
+  useActionParam('annee', () => setCreating(true));
   const act = async (url: string, message: string) => {
     try { await api.post(url); await qc.invalidateQueries(); toast(message, 'success'); } catch (e) { toast(errorText(e), 'error'); }
   };
@@ -220,6 +226,7 @@ export function UsersPage() {
   const toast = useToast();
   const q = useQuery({ queryKey: ['users'], queryFn: () => api.get<User[]>('/api/utilisateurs') });
   const [editing, setEditing] = useState<User | 'new' | null>(null);
+  useActionParam('nouveau', () => setEditing('new'));
   const [resetting, setResetting] = useState<User | null>(null);
   return (
     <>
@@ -293,6 +300,7 @@ export function DataPage() {
   const [integrity, setIntegrity] = useState<boolean | null>(null);
   const [restoring, setRestoring] = useState<BackupInfo | null>(null);
   const [files, setFiles] = useState<File[]>([]);
+  useActionParam('importer', () => document.getElementById('import-v79')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
   const [report, setReport] = useState<ImportReport | null>(null);
   const [busy, setBusy] = useState(false);
   const runImport = async (apply: boolean) => {
@@ -320,6 +328,7 @@ export function DataPage() {
             </table>
           )}
         </Card>
+        <div id="import-v79">
         <Card title="Importer depuis SCOLIA V79 (Excel)">
           <p className="small muted" style={{ marginTop: 0 }}>Choisissez le classeur principal et, le cas échéant, les segments de data. Les matricules sont conservés ; chaque ancien reçu devient un reçu numéroté, réparti par mois. Lancez d’abord une simulation : rien n’est enregistré.</p>
           <label className="btn"><FileUp />Choisir les classeurs<input type="file" multiple accept=".xlsm,.xlsx" hidden onChange={(e) => { setFiles(Array.from(e.target.files ?? [])); setReport(null); }} /></label>
@@ -336,6 +345,7 @@ export function DataPage() {
             </div>
           )}
         </Card>
+        </div>
       </div>
       {restoring && <Modal title="Restaurer cette sauvegarde ?" subtitle={restoring.name} onClose={() => setRestoring(null)}
         footer={<><Button variant="ghost" onClick={() => setRestoring(null)}>Annuler</Button><Button variant="danger" onClick={async () => {
@@ -390,6 +400,7 @@ function StaffList() {
   const qc = useQueryClient();
   const q = useQuery({ queryKey: ['staff'], queryFn: () => api.get<StaffMember[]>('/api/personnel') });
   const [editing, setEditing] = useState<StaffMember | 'new' | null>(null);
+  useActionParam('nouveau', () => setEditing('new'));
   return (
     <Card title="Membres du personnel" pad={false} actions={<Button variant="primary" icon={<Plus />} onClick={() => setEditing('new')}>Ajouter</Button>}>
       {!q.data ? <Loading /> : q.data.length === 0 ? <Empty text="Aucun membre du personnel." /> : (

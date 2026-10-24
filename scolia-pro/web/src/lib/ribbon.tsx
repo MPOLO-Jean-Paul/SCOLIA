@@ -1,8 +1,9 @@
 import type { ReactNode } from 'react';
 import {
-  AlertOctagon, Banknote, Ban, BarChart3, BookOpen, Briefcase, ChevronUp, ClipboardCheck, Clock, Database, DatabaseBackup, FileSpreadsheet,
-  FileText, GraduationCap, HandCoins, Info, Keyboard, LayoutDashboard, Monitor, Moon, Pencil, Printer, Receipt, RefreshCw, Rows2, RotateCw,
-  Save, Search, Settings, ShieldCheck, UserCog, UserPlus, Users, Wallet, ZoomIn, ZoomOut,
+  AlertOctagon, Banknote, Ban, BarChart3, BookOpen, Briefcase, CalendarPlus, ChevronUp, ClipboardCheck, Clock, Database, DatabaseBackup,
+  FileDown, FileSpreadsheet, FileText, FilePlus, Grid3x3, GraduationCap, HandCoins, Info, Keyboard, LayoutDashboard, Maximize, Monitor, Moon,
+  Pencil, Printer, Receipt, RefreshCw, Rows2, RotateCw, Save, Search, Settings, ShieldCheck, Sparkles, Type, Upload, UserCog, UserPlus, Users,
+  Wallet, ZoomIn, ZoomOut, Plus, Lock,
 } from 'lucide-react';
 import { P } from './session';
 
@@ -76,6 +77,12 @@ export function buildTabs({ pathname, recents, can }: RibbonContext): RibbonTab[
           ],
         },
         {
+          title: 'Page', commands: [
+            large({ id: 'imprimer', label: 'Imprimer', tip: 'Imprime la page affichée.', icon: <Printer />, key: 'I', shortcut: 'Ctrl+P', tone: 'blue' }),
+            small({ id: 'plein-ecran', label: 'Plein écran', tip: 'Affiche SCOLIA sans bordures de fenêtre. Échap pour revenir.', icon: <Maximize />, key: 'P', toggle: true }),
+          ],
+        },
+        {
           title: 'Récents', commands: recents.slice(0, 6).map((r, i) => small({
             id: `recent-${r.to}`, label: r.label, tip: `Ouvrir ${r.label}.`, icon: <Clock />, key: String(i + 1), to: r.to,
           })),
@@ -99,18 +106,24 @@ export function buildTabs({ pathname, recents, can }: RibbonContext): RibbonTab[
           title: 'Encaissement', commands: [
             large({ id: 'encaisser', label: 'Encaisser', tip: 'Encaisse un versement : il est réparti sur les échéances et numéroté.', icon: <HandCoins />, key: 'E', to: '/encaisser', perm: P.paymentsCreate, shortcut: 'F2', tone: 'green' }),
             large({ id: 'journal-recus', label: 'Journal des reçus', tip: 'Tous les reçus, leur statut et les annulations motivées.', icon: <Receipt />, key: 'J', to: '/paiements', perm: P.paymentsRead }),
+            small({ id: 'export-recus-xlsx', label: 'Reçus (Excel)', tip: 'Exporte tous les reçus dans un classeur Excel.', icon: <FileSpreadsheet />, key: 'X', perm: P.paymentsRead }),
+            small({ id: 'export-recus-pdf', label: 'Reçus (PDF)', tip: 'Exporte la liste des reçus au format PDF.', icon: <FileDown />, key: 'F', perm: P.paymentsRead }),
           ],
         },
         {
           title: 'Suivi', commands: [
             large({ id: 'recouvrement', label: 'Recouvrement', tip: 'Retards classés par ancienneté, avec rappels WhatsApp et SMS.', icon: <BarChart3 />, key: 'R', to: '/recouvrement', perm: P.reportsRead, shortcut: 'Alt+4', tone: 'orange' }),
             small({ id: 'prises-en-charge', label: 'Prises en charge', tip: 'Bourses, sponsors et exonérations de l’année.', icon: <ShieldCheck />, key: 'P', to: '/prises-en-charge', perm: P.paymentsRead }),
+            small({ id: 'export-debiteurs-xlsx', label: 'Débiteurs (Excel)', tip: 'Exporte la liste des retards de paiement dans Excel.', icon: <FileSpreadsheet />, key: 'B', perm: P.reportsRead }),
+            small({ id: 'export-debiteurs-pdf', label: 'Débiteurs (PDF)', tip: 'Exporte la liste des retards de paiement en PDF.', icon: <FileDown />, key: 'D', perm: P.reportsRead }),
           ],
         },
         {
           title: 'Caisse', commands: [
-            large({ id: 'caisse', label: 'Caisse', tip: 'Mouvements de la période et arrêté de caisse.', icon: <Banknote />, key: 'C', to: '/caisse', perm: P.paymentsRead, tone: 'green' }),
-            large({ id: 'depenses', label: 'Dépenses', tip: 'Sorties de caisse et de banque, numérotées et justifiées.', icon: <Wallet />, key: 'D', to: '/depenses', perm: P.paymentsRead, tone: 'red' }),
+            large({ id: 'caisse', label: 'Caisse', tip: 'Mouvements de la période et situation de la caisse.', icon: <Banknote />, key: 'C', to: '/caisse', perm: P.paymentsRead, tone: 'green' }),
+            large({ id: 'depenses', label: 'Dépenses', tip: 'Sorties de caisse et de banque, numérotées et justifiées.', icon: <Wallet />, key: 'Z', to: '/depenses', perm: P.paymentsRead, tone: 'red' }),
+            small({ id: 'nouvelle-depense', label: 'Nouvelle dépense', tip: 'Ouvre le formulaire d’une nouvelle dépense.', icon: <Plus />, key: 'N', to: '/depenses?action=nouvelle', perm: P.expensesWrite }),
+            small({ id: 'arreter-caisse', label: 'Arrêter la caisse', tip: 'Compte les espèces et verrouille la période.', icon: <Lock />, key: 'A', to: '/caisse?action=arreter', perm: P.cashClose }),
           ],
         },
       ],
@@ -120,12 +133,15 @@ export function buildTabs({ pathname, recents, can }: RibbonContext): RibbonTab[
         {
           title: 'Cours', commands: [
             large({ id: 'notes', label: 'Cours et notes', tip: 'Cours, évaluations, saisie des notes, moyennes et bulletins.', icon: <BookOpen />, key: 'N', to: '/notes', perm: P.academicsRead, tone: 'purple' }),
+            large({ id: 'nouveau-cours', label: 'Nouveau cours', tip: 'Crée un cours dans la promotion choisie.', icon: <FilePlus />, key: 'U', to: '/notes?action=cours', perm: P.academicsWrite, tone: 'purple' }),
+            small({ id: 'nouvelle-evaluation', label: 'Nouvelle évaluation', tip: 'Crée une évaluation pour un cours.', icon: <ClipboardCheck />, key: 'E', to: '/notes?action=evaluation', perm: P.academicsWrite }),
           ],
         },
         {
           title: 'Vie de classe', commands: [
             large({ id: 'presences', label: 'Présences', tip: 'Appel quotidien par promotion et taux d’assiduité.', icon: <ClipboardCheck />, key: 'P', to: '/presences', perm: P.academicsRead, tone: 'blue' }),
             large({ id: 'discipline', label: 'Discipline', tip: 'Incidents, sanctions et suivi du comportement.', icon: <AlertOctagon />, key: 'D', to: '/discipline', perm: P.academicsRead, tone: 'red' }),
+            small({ id: 'nouvel-incident', label: 'Nouvel incident', tip: 'Signale un incident de discipline.', icon: <Plus />, key: 'I', to: '/discipline?action=incident', perm: P.academicsWrite }),
           ],
         },
       ],
@@ -135,12 +151,16 @@ export function buildTabs({ pathname, recents, can }: RibbonContext): RibbonTab[
         {
           title: 'Personnel', commands: [
             large({ id: 'personnel', label: 'Personnel et paie', tip: 'Dossiers du personnel, bulletins mensuels et paiement des salaires.', icon: <Briefcase />, key: 'P', to: '/personnel', perm: P.staffManage }),
+            small({ id: 'nouveau-membre', label: 'Nouveau membre', tip: 'Ajoute un membre du personnel.', icon: <UserPlus />, key: 'M', to: '/personnel?action=nouveau', perm: P.staffManage }),
           ],
         },
         {
           title: 'Établissement', commands: [
             large({ id: 'parametres', label: 'Paramètres', tip: 'Identité, années scolaires, promotions et grilles de frais.', icon: <Settings />, key: 'A', to: '/parametres', perm: P.settingsWrite }),
             large({ id: 'utilisateurs', label: 'Utilisateurs', tip: 'Comptes nominatifs, rôles et mots de passe provisoires.', icon: <UserCog />, key: 'U', to: '/utilisateurs', perm: P.usersManage }),
+            small({ id: 'nouvelle-promotion', label: 'Nouvelle promotion', tip: 'Crée une promotion avec ses frais.', icon: <Plus />, key: 'R', to: '/parametres?onglet=promotions&action=promotion', perm: P.settingsWrite }),
+            small({ id: 'nouvelle-annee', label: 'Nouvelle année', tip: 'Prépare une nouvelle année scolaire.', icon: <CalendarPlus />, key: 'Y', to: '/parametres?onglet=annees&action=annee', perm: P.settingsWrite }),
+            small({ id: 'nouvel-utilisateur', label: 'Nouvel utilisateur', tip: 'Crée un compte nominatif.', icon: <UserPlus />, key: 'N', to: '/utilisateurs?action=nouveau', perm: P.usersManage }),
           ],
         },
         {
@@ -148,6 +168,8 @@ export function buildTabs({ pathname, recents, can }: RibbonContext): RibbonTab[
             large({ id: 'donnees', label: 'Données et sauvegardes', tip: 'Sauvegardes, restauration et import du classeur V79.', icon: <DatabaseBackup />, key: 'D', to: '/donnees', perm: P.backupManage, tone: 'green' }),
             large({ id: 'audit', label: 'Journal d’audit', tip: 'Qui a fait quoi, et vérification de la chaîne d’empreintes.', icon: <FileSpreadsheet />, key: 'J', to: '/audit', perm: P.auditRead }),
             small({ id: 'sauvegarder', label: 'Sauvegarder', tip: 'Crée tout de suite une sauvegarde vérifiée.', icon: <Save />, key: 'S', perm: P.backupManage }),
+            small({ id: 'importer-v79', label: 'Importer SCOLIA V79', tip: 'Reprend les données d’un classeur Excel de l’ancienne version.', icon: <Upload />, key: 'V', to: '/donnees?action=importer', perm: P.backupManage }),
+            small({ id: 'audit-csv', label: 'Journal (CSV)', tip: 'Exporte le journal d’audit au format CSV.', icon: <FileDown />, key: 'C', perm: P.auditRead }),
           ],
         },
       ],
@@ -157,13 +179,17 @@ export function buildTabs({ pathname, recents, can }: RibbonContext): RibbonTab[
         {
           title: 'Apparence', commands: [
             large({ id: 'theme', label: 'Mode sombre', tip: 'Bascule entre le thème clair et le thème sombre.', icon: <Moon />, key: 'M', toggle: true, tone: 'blue' }),
+            small({ id: 'taille-texte', label: 'Taille du texte', tip: 'Fait défiler les tailles : petite, normale, grande, très grande.', icon: <Type />, key: 'T' }),
             small({ id: 'densite', label: 'Densité compacte', tip: 'Lignes et boutons plus serrés, pour afficher davantage de données.', icon: <Rows2 />, key: 'D', toggle: true }),
             small({ id: 'barre-etat', label: 'Barre d’état', tip: 'Affiche la barre du bas : sauvegarde, année et zoom.', icon: <Monitor />, key: 'B', toggle: true }),
           ],
           launcher: { id: 'preferences', tip: 'Ouvre toutes les préférences d’affichage.' },
         },
         {
-          title: 'Ruban', commands: [
+          title: 'Affichage', commands: [
+            small({ id: 'quadrillage', label: 'Quadrillage', tip: 'Affiche les lignes entre les colonnes des tableaux.', icon: <Grid3x3 />, key: 'Q', toggle: true }),
+            small({ id: 'info-bulles', label: 'Info-bulles', tip: 'Affiche la description des commandes au survol.', icon: <Info />, key: 'I', toggle: true }),
+            small({ id: 'animations', label: 'Animations', tip: 'Désactive les transitions et les animations de l’interface.', icon: <Sparkles />, key: 'A', toggle: true }),
             small({ id: 'ruban', label: 'Réduire le ruban', tip: 'Masque les commandes et ne garde que les onglets.', icon: <ChevronUp />, key: 'R', toggle: true, shortcut: 'Ctrl+F1' }),
           ],
         },
