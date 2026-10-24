@@ -1,4 +1,5 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+<UserControl xmlns:infra="using:Scolia.Bureau.Infrastructure"
+             xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mi="using:Material.Icons.Avalonia"
              x:Class="Scolia.Bureau.Views.SettingsView">
@@ -41,7 +42,7 @@
                   </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
                 <DataGridCheckBoxColumn Header="Courante" Binding="{Binding IsCurrent}" IsReadOnly="True" Width="Auto" MinWidth="95" />
-                <DataGridTextColumn Header="Périodes" Binding="{Binding Months}" Width="2*" MinWidth="260" />
+                <DataGridTextColumn infra:GridPriority.Level="2" Header="Périodes" Binding="{Binding Months}" Width="2*" MinWidth="260" />
               </DataGrid.Columns>
             </DataGrid>
           </StackPanel>
@@ -69,11 +70,11 @@
               <DataGrid.Columns>
                 <DataGridTextColumn Header="Code" Binding="{Binding Code}" Width="Auto" MinWidth="84" />
                 <DataGridTextColumn Header="Désignation" Binding="{Binding Name}" Width="*" MinWidth="140" />
-                <DataGridTextColumn Header="Section" Binding="{Binding Section}" Width="Auto" MinWidth="150" />
-                <DataGridTextColumn Header="Niveau" Binding="{Binding Level}" Width="Auto" MinWidth="99" />
-                <DataGridTextColumn Header="Apprenants" Binding="{Binding Students}" Width="Auto" MinWidth="130" />
+                <DataGridTextColumn infra:GridPriority.Level="2" Header="Section" Binding="{Binding Section}" Width="Auto" MinWidth="150" />
+                <DataGridTextColumn infra:GridPriority.Level="3" Header="Niveau" Binding="{Binding Level}" Width="Auto" MinWidth="99" />
+                <DataGridTextColumn infra:GridPriority.Level="2" Header="Apprenants" Binding="{Binding Students}" Width="Auto" MinWidth="130" />
                 <DataGridTextColumn Header="Mensualité" Binding="{Binding Monthly}" Width="Auto" MinWidth="130" />
-                <DataGridTextColumn Header="Total annuel" Binding="{Binding Annual}" Width="Auto" MinWidth="145" />
+                <DataGridTextColumn infra:GridPriority.Level="3" Header="Total annuel" Binding="{Binding Annual}" Width="Auto" MinWidth="145" />
                 <DataGridTextColumn Header="Active" Binding="{Binding Active}" Width="Auto" MinWidth="99" />
               </DataGrid.Columns>
             </DataGrid>

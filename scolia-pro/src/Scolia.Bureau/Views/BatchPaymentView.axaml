@@ -37,14 +37,14 @@
         <DataGridTextColumn Header="Mois à payer" Binding="{Binding Plan}" IsReadOnly="True" Width="2*" MinWidth="200" />
         <DataGridTextColumn infra:GridPriority.Level="2" Header="Reste exigible" Binding="{Binding Overdue}" IsReadOnly="True" Width="Auto" MinWidth="160" />
         <DataGridTextColumn Header="Montant" Binding="{Binding Amount}" IsReadOnly="True" Width="Auto" MinWidth="120" />
-        <DataGridTemplateColumn Header="Référence" Width="Auto" MinWidth="180">
+        <DataGridTemplateColumn infra:GridPriority.Level="3" Header="Référence" Width="Auto" MinWidth="180">
           <DataGridTemplateColumn.CellTemplate>
             <DataTemplate>
               <TextBox Text="{Binding Reference}" PlaceholderText="Mobile Money, chèque" />
             </DataTemplate>
           </DataGridTemplateColumn.CellTemplate>
         </DataGridTemplateColumn>
-        <DataGridTextColumn Header="Résultat" Binding="{Binding Result}" IsReadOnly="True" Width="Auto" MinWidth="240" />
+        <DataGridTextColumn infra:GridPriority.Level="2" Header="Résultat" Binding="{Binding Result}" IsReadOnly="True" Width="Auto" MinWidth="240" />
       </DataGrid.Columns>
     </DataGrid>
     <TextBlock Grid.Row="2" Text="{Binding SelectionSummary}" Classes="muted" Margin="0,8,0,0" />

@@ -114,12 +114,37 @@ Voir le paquet, fichier `LIRE_MOI.txt`, section « Plusieurs postes en réseau l
 
 ## 14. Reprendre les données de SCOLIA V79 (Excel)
 
-1. Onglet Administration, groupe Données : Données et sauvegardes, puis la section Importer depuis SCOLIA V79.
-2. Choisir le classeur `.xlsm`. SCOLIA affiche d'abord un essai à blanc : rien n'est écrit.
+1. Données, Sauvegardes, bouton « Importer SCOLIA V79 ».
+2. Choisir le classeur `.xlsm` ou `.xlsx`. SCOLIA affiche d'abord un essai à blanc : rien n'est écrit.
 3. Vérifier le rapport, puis appliquer l'import.
 4. Relancer l'import ne crée aucun doublon.
 
 Le classeur Excel reste intact. Il peut être archivé.
+
+### Données tenues dans un autre fichier Excel
+
+1. Données, Sauvegardes, bouton « Modèle d'import ». SCOLIA enregistre un classeur vide.
+2. Le classeur compte trois feuilles : PROMOTIONS, APPRENANTS et PAIEMENTS. La feuille NOTICE explique chaque colonne.
+3. Recopier les données à partir de la ligne 5. La ligne 3 montre un exemple et n'est pas importée.
+4. Importer ce classeur avec « Importer SCOLIA V79 », comme ci-dessus.
+
+Données prises en charge :
+
+| Feuille | Contenu | Obligatoire |
+|---|---|---|
+| PROMOTIONS | code sur 4 caractères, désignation, section, niveau, mensualité, activation | code et mensualité |
+| APPRENANTS | matricule, nom, post-nom, prénom, sexe, naissance, lieu, promotion, parent, deux contacts, date d'inscription, statut, adresse | matricule et promotion |
+| PAIEMENTS | date, ancien numéro de reçu, matricule, mois payé, montant | matricule, mois et montant |
+
+Formats acceptés : `.xlsx` et `.xlsm`. Dates en jj/mm/aaaa ou en date Excel. Montants avec ou sans « FC ». Mois en toutes lettres, avec ou sans l'année.
+
+Non repris par l'import : notes, présences, discipline, personnel et dépenses. Ils se saisissent dans SCOLIA.
+
+### Sortir les données de SCOLIA
+
+- Données, Rapports et exports : chaque liste en PDF ou en Excel.
+- Données, Sauvegardes : la base complète en un seul fichier, à copier sur une clé USB.
+- Journal d'audit et registre de discipline : en CSV, lisible dans Excel.
 
 ## 15. Problèmes courants
 

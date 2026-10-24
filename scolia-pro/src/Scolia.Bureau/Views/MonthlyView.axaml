@@ -35,13 +35,14 @@
 
     <DataGrid Grid.Row="2" ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}" AutoGenerateColumns="False" IsReadOnly="True" Margin="0,4,0,0">
       <DataGrid.Columns>
-        <DataGridTextColumn infra:GridPriority.Level="2" Header="Matricule" Binding="{Binding Matricule}" Width="Auto" MinWidth="122" />
-        <DataGridTextColumn Header="Nom complet" Binding="{Binding Name}" Width="2*" MinWidth="240" />
-        <DataGridTextColumn infra:GridPriority.Level="2" Header="Promotion" Binding="{Binding Promotion}" Width="Auto" MinWidth="122" />
-        <DataGridTextColumn infra:GridPriority.Level="3" Header="Montant du mois" Binding="{Binding Amount}" Width="Auto" MinWidth="150" />
-        <DataGridTextColumn infra:GridPriority.Level="3" Header="Payé" Binding="{Binding Paid}" Width="Auto" MinWidth="110" />
-        <DataGridTextColumn Header="Reste" Binding="{Binding Remaining}" Width="Auto" MinWidth="110" />
-        <DataGridTemplateColumn Header="État" Width="Auto" MinWidth="150">
+        <!-- Toujours visibles : qui, quelle promotion, ce qui reste, l'état et le reçu. Le détail des montants vient quand la place le permet. -->
+        <DataGridTextColumn Header="Matricule" Binding="{Binding Matricule}" Width="Auto" MinWidth="96" />
+        <DataGridTextColumn Header="Nom complet" Binding="{Binding Name}" Width="*" MinWidth="220" />
+        <DataGridTextColumn Header="Promotion" Binding="{Binding Promotion}" Width="Auto" MinWidth="96" />
+        <DataGridTextColumn infra:GridPriority.Level="3" Header="Montant du mois" Binding="{Binding Amount}" Width="Auto" MinWidth="140" />
+        <DataGridTextColumn infra:GridPriority.Level="2" Header="Payé" Binding="{Binding Paid}" Width="Auto" MinWidth="124" />
+        <DataGridTextColumn Header="Reste" Binding="{Binding Remaining}" Width="Auto" MinWidth="124" />
+        <DataGridTemplateColumn Header="État" Width="Auto" MinWidth="130">
           <DataGridTemplateColumn.CellTemplate>
             <DataTemplate>
               <StackPanel Classes="status">
@@ -51,8 +52,8 @@
             </DataTemplate>
           </DataGridTemplateColumn.CellTemplate>
         </DataGridTemplateColumn>
-        <DataGridTextColumn infra:GridPriority.Level="3" Header="Reçu" Binding="{Binding Receipt}" Width="Auto" MinWidth="160" />
-        <DataGridTextColumn infra:GridPriority.Level="3" Header="Payé le" Binding="{Binding PaidOn}" Width="Auto" MinWidth="110" />
+        <DataGridTextColumn Header="Reçu" Binding="{Binding Receipt}" Width="Auto" MinWidth="164" />
+        <DataGridTextColumn infra:GridPriority.Level="3" Header="Payé le" Binding="{Binding PaidOn}" Width="Auto" MinWidth="112" />
       </DataGrid.Columns>
     </DataGrid>
     <c:EmptyState Grid.Row="2" Icon="CalendarCheck" Title="Aucun apprenant pour ces critères"

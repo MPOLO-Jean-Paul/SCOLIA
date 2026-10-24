@@ -252,24 +252,44 @@ public sealed class DocumentService : IDocumentService
         page.Margin(28);
         page.DefaultTextStyle(s => s.FontFamily(Font).FontSize(8.5f).FontColor("#1E293B"));
         page.Header().Element(c => Header(c, d.School, d.Title, d.Subtitle));
+        var widths = ColumnWidths(d);
+        var amounts = AmountColumns(d);
         page.Content().PaddingTop(10).Table(t =>
         {
-            t.ColumnsDefinition(c => { foreach (var _ in d.Columns) c.RelativeColumn(); });
+            t.ColumnsDefinition(c => { foreach (var w in widths) c.RelativeColumn(w); });
             t.Header(h =>
             {
-                foreach (var title in d.Columns) h.Cell().Background(Navy).Padding(4).Text(title).FontColor(Colors.White).Bold().FontSize(8);
+                for (var c = 0; c < d.Columns.Count; c++)
+                    Align(h.Cell().Background(Navy).Padding(4), amounts[c]).Text(d.Columns[c]).FontColor(Colors.White).Bold().FontSize(8);
             });
             var i = 0;
             foreach (var row in d.Rows)
             {
                 var bg = i++ % 2 == 0 ? "#FFFFFF" : "#F7F9FD";
-                foreach (var cell in row) t.Cell().Background(bg).Padding(4).Text(cell);
+                for (var c = 0; c < row.Count; c++) Align(t.Cell().Background(bg).Padding(4), c < amounts.Length && amounts[c]).Text(row[c]);
             }
             if (d.Totals is not null)
-                foreach (var cell in d.Totals) t.Cell().BorderTop(1).BorderColor(Navy).Padding(4).Text(cell).Bold();
+                for (var c = 0; c < d.Totals.Count; c++)
+                    Align(t.Cell().BorderTop(1).BorderColor(Navy).Padding(4), c < amounts.Length && amounts[c]).Text(d.Totals[c]).Bold();
         });
         page.Footer().Element(c => Footer(c, null));
     })).GeneratePdf();
+
+    /// <summary>Largeur de chaque colonne selon son contenu : un nom complet a plus de place qu'un code de promotion.</summary>
+    private static float[] ColumnWidths(TableDocument d) => d.Columns.Select((title, c) =>
+    {
+        var longest = d.Rows.Take(300).Select(r => c < r.Count ? r[c].Length : 0).DefaultIfEmpty(0).Max();
+        return Math.Clamp(Math.Max(title.Length * 0.8f, longest), 3f, 30f);
+    }).ToArray();
+
+    /// <summary>Colonnes de montants, alignées à droite pour que les chiffres se lisent en colonne.</summary>
+    private static bool[] AmountColumns(TableDocument d) => d.Columns.Select((_, c) =>
+    {
+        var values = d.Rows.Select(r => c < r.Count ? r[c] : string.Empty).Where(v => v.Length > 0).ToList();
+        return values.Count > 0 && values.All(v => v.EndsWith(" FC", StringComparison.Ordinal) || v.EndsWith(" $", StringComparison.Ordinal));
+    }).ToArray();
+
+    private static IContainer Align(IContainer cell, bool right) => right ? cell.PaddingRight(8).AlignRight() : cell;
 
     public byte[] ReportCard(ReportCardDocument d) => Document.Create(doc => doc.Page(page =>
     {

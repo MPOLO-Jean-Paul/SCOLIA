@@ -1,4 +1,5 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+<UserControl xmlns:infra="using:Scolia.Bureau.Infrastructure"
+             xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="Scolia.Bureau.Views.UsersView">
   <DataGrid ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}" AutoGenerateColumns="False" IsReadOnly="True">
@@ -17,7 +18,7 @@
         </DataGridTemplateColumn.CellTemplate>
       </DataGridTemplateColumn>
       <DataGridTextColumn Header="Dernière connexion" Binding="{Binding LastLogin}" Width="Auto" MinWidth="190" />
-      <DataGridTextColumn Header="Verrouillage" Binding="{Binding Locked}" Width="Auto" MinWidth="145" />
+      <DataGridTextColumn infra:GridPriority.Level="2" Header="Verrouillage" Binding="{Binding Locked}" Width="Auto" MinWidth="145" />
     </DataGrid.Columns>
   </DataGrid>
 </UserControl>

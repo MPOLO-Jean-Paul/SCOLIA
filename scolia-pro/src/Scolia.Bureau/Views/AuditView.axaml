@@ -1,4 +1,5 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+<UserControl xmlns:infra="using:Scolia.Bureau.Infrastructure"
+             xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:c="using:Scolia.Bureau.Controls"
              x:Class="Scolia.Bureau.Views.AuditView">
@@ -30,7 +31,7 @@
         <DataGridTextColumn Header="Action" Binding="{Binding Action}" Width="Auto" MinWidth="160" />
         <DataGridTextColumn Header="Objet" Binding="{Binding Entity}" Width="Auto" MinWidth="130" />
         <DataGridTextColumn Header="Résumé" Binding="{Binding Summary}" Width="*" MinWidth="140" />
-        <DataGridTextColumn Header="Adresse" Binding="{Binding Ip}" Width="Auto" MinWidth="130" />
+        <DataGridTextColumn infra:GridPriority.Level="2" Header="Adresse" Binding="{Binding Ip}" Width="Auto" MinWidth="130" />
       </DataGrid.Columns>
     </DataGrid>
     <c:EmptyState Grid.Row="1" Icon="History" Title="Aucune opération trouvée" Hint="Élargissez la période ou effacez la recherche." IsVisible="{Binding Items.Count, Converter={StaticResource IsEmpty}}" />

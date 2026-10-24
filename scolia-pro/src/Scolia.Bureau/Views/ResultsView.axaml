@@ -1,4 +1,5 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+<UserControl xmlns:infra="using:Scolia.Bureau.Infrastructure"
+             xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:c="using:Scolia.Bureau.Controls"
              x:Class="Scolia.Bureau.Views.ResultsView">
@@ -31,7 +32,7 @@
             </DataTemplate>
           </DataGridTemplateColumn.CellTemplate>
         </DataGridTemplateColumn>
-        <DataGridTextColumn Header="Moyennes par cours" Binding="{Binding Courses}" Width="3*" MinWidth="480" />
+        <DataGridTextColumn infra:GridPriority.Level="2" Header="Moyennes par cours" Binding="{Binding Courses}" Width="3*" MinWidth="480" />
       </DataGrid.Columns>
     </DataGrid>
     <c:EmptyState Grid.Row="1" Icon="CertificateOutline" Title="Aucun résultat à afficher" Hint="Aucun résultat pour cette promotion : vérifiez que les notes sont saisies." IsVisible="{Binding Items.Count, Converter={StaticResource IsEmpty}}" />

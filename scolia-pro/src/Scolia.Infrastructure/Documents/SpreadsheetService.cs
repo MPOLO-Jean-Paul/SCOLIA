@@ -9,8 +9,7 @@ public sealed class SpreadsheetService : ISpreadsheetService
     public byte[] Export(TableDocument document)
     {
         using var workbook = new XLWorkbook();
-        var name = new string(document.Title.Where(c => char.IsLetterOrDigit(c) || c == ' ').ToArray()).Trim();
-        var sheet = workbook.Worksheets.Add(name.Length == 0 ? "Export" : name[..Math.Min(31, name.Length)]);
+        var sheet = workbook.Worksheets.Add(SheetName(document.Title));
         sheet.Cell(1, 1).Value = document.School.Name;
         sheet.Cell(1, 1).Style.Font.SetBold().Font.SetFontSize(14).Font.SetFontColor(XLColor.FromHtml("#13294B"));
         sheet.Cell(2, 1).Value = document.Title;
@@ -48,6 +47,23 @@ public sealed class SpreadsheetService : ISpreadsheetService
         using var stream = new MemoryStream();
         workbook.SaveAs(stream);
         return stream.ToArray();
+    }
+
+    /// <summary>
+    /// Nom d'onglet lisible dans la limite Excel de 31 caractères : « Suivi des paiements · Octobre 2026 » donne
+    /// « Octobre 2026 », « Liste d'enregistrement — ACC1 » donne « ACC1 ». La coupe se fait entre deux mots.
+    /// </summary>
+    internal static string SheetName(string title)
+    {
+        var parts = title.Split([" · ", " — ", " : "], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        var name = parts.Length > 1 && title.Length > 31 ? parts[^1] : title;
+        name = new string(name.Where(c => c is not ('[' or ']' or ':' or '*' or '?' or '/' or '\\')).ToArray()).Trim().Trim('\'');
+        if (name.Length > 31)
+        {
+            var cut = name.LastIndexOf(' ', 31);
+            name = name[..(cut > 10 ? cut : 31)].TrimEnd();
+        }
+        return name.Length == 0 ? "Export" : name;
     }
 
     /// <summary>Les montants « 55 000 FC » restent numériques dans Excel pour permettre les calculs.</summary>

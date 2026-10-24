@@ -4,17 +4,14 @@ using Avalonia.Controls;
 namespace Scolia.Bureau.Infrastructure;
 
 /// <summary>
-/// Colonnes adaptatives des tableaux. Le niveau 1 reste toujours affiché. Le niveau 2 disparaît
-/// quand la grille devient étroite, le niveau 3 disparaît plus tôt. Les seuils suivent la taille
-/// du texte, car des colonnes plus grandes demandent plus de place.
+/// Colonnes adaptatives des tableaux. Le niveau 1 reste toujours affiché. Quand les colonnes ne tiennent plus
+/// dans la largeur du tableau, le niveau 3 se masque d'abord, puis le niveau 2, en partant de la droite.
+/// Le calcul porte sur la largeur réelle du tableau : un tableau en demi-page s'adapte comme un tableau en pleine page.
 /// </summary>
 public static class GridPriority
 {
-    /// <summary>Largeur de grille, en pixels de référence, en dessous de laquelle le niveau 2 se masque.</summary>
-    private const double NarrowBelow = 1000;
-
-    /// <summary>Largeur de grille, en pixels de référence, en dessous de laquelle le niveau 3 se masque.</summary>
-    private const double VeryNarrowBelow = 1200;
+    /// <summary>Place réservée à la barre de défilement verticale et aux bordures.</summary>
+    private const double Chrome = 18;
 
     private static double factor = 1;
 
@@ -23,6 +20,14 @@ public static class GridPriority
 
     public static readonly AttachedProperty<bool> AdaptiveProperty =
         AvaloniaProperty.RegisterAttached<DataGrid, bool>("Adaptive", typeof(GridPriority));
+
+    /// <summary>Largeur minimale prévue dans la vue, avant agrandissement du texte.</summary>
+    private static readonly AttachedProperty<double> BaseMinWidthProperty =
+        AvaloniaProperty.RegisterAttached<DataGridColumn, double>("BaseMinWidth", typeof(GridPriority), double.NaN);
+
+    /// <summary>Dernière largeur affichée d'une colonne automatique : son contenu peut dépasser le minimum prévu.</summary>
+    private static readonly AttachedProperty<double> SeenWidthProperty =
+        AvaloniaProperty.RegisterAttached<DataGridColumn, double>("SeenWidth", typeof(GridPriority));
 
     static GridPriority()
     {
@@ -54,17 +59,39 @@ public static class GridPriority
     /// <summary>Affiche ou masque chaque colonne selon la largeur courante de la grille.</summary>
     public static void Apply(DataGrid grid)
     {
-        var width = grid.Bounds.Width;
+        var width = grid.Bounds.Width - Chrome;
         if (width <= 0) return;
-        foreach (var column in grid.Columns)
+        var columns = grid.Columns.ToList();
+        var needs = new double[columns.Count];
+        for (var i = 0; i < columns.Count; i++)
         {
-            var level = GetLevel(column);
-            column.IsVisible = level switch
+            var column = columns[i];
+            // Un texte plus grand demande des colonnes plus larges : sans cela, un numéro de reçu serait coupé.
+            var baseMin = column.GetValue(BaseMinWidthProperty);
+            if (double.IsNaN(baseMin))
             {
-                <= 1 => true,
-                2 => width >= NarrowBelow * factor,
-                _ => width >= VeryNarrowBelow * factor,
-            };
+                baseMin = column.MinWidth;
+                column.SetValue(BaseMinWidthProperty, baseMin);
+            }
+            if (baseMin > 0 && Math.Abs(column.MinWidth - baseMin * factor) > 0.5) column.MinWidth = baseMin * factor;
+            var star = column.Width.IsStar;
+            if (!star && column.IsVisible && column.ActualWidth > 0) column.SetValue(SeenWidthProperty, column.ActualWidth);
+            needs[i] = star ? column.MinWidth : Math.Max(column.MinWidth, column.GetValue(SeenWidthProperty));
         }
+
+        // Tout afficher, puis retirer les colonnes secondaires une à une tant que le tableau déborde.
+        var visible = columns.Select(_ => true).ToArray();
+        var total = needs.Sum();
+        while (total > width)
+        {
+            var drop = -1;
+            for (var i = columns.Count - 1; i >= 0; i--)
+                if (visible[i] && GetLevel(columns[i]) > 1 && (drop < 0 || GetLevel(columns[i]) > GetLevel(columns[drop]))) drop = i;
+            if (drop < 0) break;
+            visible[drop] = false;
+            total -= needs[drop];
+        }
+        for (var i = 0; i < columns.Count; i++)
+            if (columns[i].IsVisible != visible[i]) columns[i].IsVisible = visible[i];
     }
 }

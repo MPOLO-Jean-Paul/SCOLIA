@@ -1,4 +1,5 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+<UserControl xmlns:infra="using:Scolia.Bureau.Infrastructure"
+             xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="Scolia.Bureau.Views.StudentDetailView">
   <ScrollViewer>
@@ -36,8 +37,8 @@
             <DataGrid ItemsSource="{Binding Enrollments}" AutoGenerateColumns="False" IsReadOnly="True" MaxHeight="220">
               <DataGrid.Columns>
                 <DataGridTextColumn Header="Année" Binding="{Binding Year}" Width="Auto" MinWidth="110" />
-                <DataGridTextColumn Header="Promotion" Binding="{Binding Promotion}" Width="Auto" MinWidth="190" />
-                <DataGridTextColumn Header="Inscrit le" Binding="{Binding EnrolledOn}" Width="Auto" MinWidth="130" />
+                <DataGridTextColumn Header="Promotion" Binding="{Binding Promotion}" Width="Auto" MinWidth="170" />
+                <DataGridTextColumn infra:GridPriority.Level="2" Header="Inscrit le" Binding="{Binding EnrolledOn}" Width="Auto" MinWidth="130" />
                 <DataGridTemplateColumn Header="Statut" Width="Auto" MinWidth="110">
                   <DataGridTemplateColumn.CellTemplate>
                     <DataTemplate>
@@ -48,7 +49,7 @@
                     </DataTemplate>
                   </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
-                <DataGridTextColumn Header="Sortie" Binding="{Binding Exit}" Width="Auto" MinWidth="170" />
+                <DataGridTextColumn infra:GridPriority.Level="3" Header="Sortie" Binding="{Binding Exit}" Width="Auto" MinWidth="170" />
               </DataGrid.Columns>
             </DataGrid>
           </StackPanel>
@@ -63,9 +64,9 @@
             <DataGrid ItemsSource="{Binding Lines}" AutoGenerateColumns="False" IsReadOnly="True" MaxHeight="360">
               <DataGrid.Columns>
                 <DataGridTextColumn Header="Échéance" Binding="{Binding Label}" Width="*" MinWidth="140" />
-                <DataGridTextColumn Header="Date" Binding="{Binding DueDate}" Width="Auto" MinWidth="105" />
-                <DataGridTextColumn Header="Montant" Binding="{Binding Amount}" Width="Auto" MinWidth="120" />
-                <DataGridTextColumn Header="Pris en charge" Binding="{Binding Covered}" Width="Auto" MinWidth="160" />
+                <DataGridTextColumn infra:GridPriority.Level="3" Header="Date" Binding="{Binding DueDate}" Width="Auto" MinWidth="105" />
+                <DataGridTextColumn infra:GridPriority.Level="2" Header="Montant" Binding="{Binding Amount}" Width="Auto" MinWidth="120" />
+                <DataGridTextColumn infra:GridPriority.Level="3" Header="Pris en charge" Binding="{Binding Covered}" Width="Auto" MinWidth="160" />
                 <DataGridTextColumn Header="Payé" Binding="{Binding Paid}" Width="Auto" MinWidth="120" />
                 <DataGridTextColumn Header="Reste" Binding="{Binding Remaining}" Width="Auto" MinWidth="120" />
                 <DataGridTemplateColumn Header="Statut" Width="Auto" MinWidth="110">

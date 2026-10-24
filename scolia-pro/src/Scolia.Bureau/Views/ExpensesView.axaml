@@ -1,4 +1,5 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+<UserControl xmlns:infra="using:Scolia.Bureau.Infrastructure"
+             xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:c="using:Scolia.Bureau.Controls"
              x:Class="Scolia.Bureau.Views.ExpensesView">
@@ -25,13 +26,13 @@
     </Border>
     <DataGrid Grid.Row="1" ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}" AutoGenerateColumns="False" IsReadOnly="True">
       <DataGrid.Columns>
-        <DataGridTextColumn Header="N°" Binding="{Binding Number}" Width="Auto" MinWidth="170" />
+        <DataGridTextColumn infra:GridPriority.Level="2" Header="N°" Binding="{Binding Number}" Width="Auto" MinWidth="170" />
         <DataGridTextColumn Header="Date" Binding="{Binding Date}" Width="Auto" MinWidth="120" />
-        <DataGridTextColumn Header="Catégorie" Binding="{Binding Category}" Width="Auto" MinWidth="190" />
+        <DataGridTextColumn infra:GridPriority.Level="2" Header="Catégorie" Binding="{Binding Category}" Width="Auto" MinWidth="190" />
         <DataGridTextColumn Header="Bénéficiaire" Binding="{Binding Beneficiary}" Width="Auto" MinWidth="220" />
-        <DataGridTextColumn Header="Description" Binding="{Binding Description}" Width="2*" MinWidth="280" />
+        <DataGridTextColumn infra:GridPriority.Level="3" Header="Description" Binding="{Binding Description}" Width="2*" MinWidth="280" />
         <DataGridTextColumn Header="Montant" Binding="{Binding Amount}" Width="Auto" MinWidth="130" />
-        <DataGridTextColumn Header="Mode" Binding="{Binding Method}" Width="Auto" MinWidth="120" />
+        <DataGridTextColumn infra:GridPriority.Level="3" Header="Mode" Binding="{Binding Method}" Width="Auto" MinWidth="120" />
         <DataGridTemplateColumn Header="Statut" Width="Auto" MinWidth="100">
           <DataGridTemplateColumn.CellTemplate>
             <DataTemplate>
@@ -42,7 +43,7 @@
             </DataTemplate>
           </DataGridTemplateColumn.CellTemplate>
         </DataGridTemplateColumn>
-        <DataGridTextColumn Header="Enregistré par" Binding="{Binding RecordedBy}" Width="Auto" MinWidth="160" />
+        <DataGridTextColumn infra:GridPriority.Level="3" Header="Enregistré par" Binding="{Binding RecordedBy}" Width="Auto" MinWidth="160" />
       </DataGrid.Columns>
     </DataGrid>
     <c:EmptyState Grid.Row="1" Icon="WalletOutline" Title="Aucune dépense sur ces critères" Hint="Changez la période ou la catégorie, ou ajoutez une nouvelle dépense." IsVisible="{Binding Items.Count, Converter={StaticResource IsEmpty}}" />

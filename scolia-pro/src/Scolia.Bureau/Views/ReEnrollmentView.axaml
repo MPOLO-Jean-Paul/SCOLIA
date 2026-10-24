@@ -1,4 +1,5 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+<UserControl xmlns:infra="using:Scolia.Bureau.Infrastructure"
+             xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:c="using:Scolia.Bureau.Controls"
              x:Class="Scolia.Bureau.Views.ReEnrollmentView">
@@ -18,7 +19,7 @@
         <DataGridTextColumn Header="Matricule" Binding="{Binding Matricule}" IsReadOnly="True" Width="Auto" MinWidth="122" />
         <DataGridTextColumn Header="Nom complet" Binding="{Binding Name}" IsReadOnly="True" Width="*" MinWidth="140" />
         <DataGridTextColumn Header="Promotion actuelle" Binding="{Binding FromPromotion}" IsReadOnly="True" Width="Auto" MinWidth="190" />
-        <DataGridTextColumn Header="Solde reporté" Binding="{Binding PreviousBalance}" IsReadOnly="True" Width="Auto" MinWidth="152" />
+        <DataGridTextColumn infra:GridPriority.Level="2" Header="Solde reporté" Binding="{Binding PreviousBalance}" IsReadOnly="True" Width="Auto" MinWidth="152" />
         <DataGridTemplateColumn Header="Promotion cible" Width="Auto" MinWidth="260">
           <DataGridTemplateColumn.CellTemplate>
             <DataTemplate>

@@ -133,7 +133,8 @@ public sealed class LegacyImportService(IAppDbContext db, IWriteGate gate, IAudi
             var allocations = new List<ReceiptAllocation>();
             foreach (var p in group)
             {
-                if (!periodsByName.TryGetValue(TextKey.Normalize(p.Month), out var period))
+                if (!periodsByName.TryGetValue(TextKey.Normalize(p.Month), out var period)
+                    && !periodsByName.TryGetValue(TextKey.Normalize(MonthOnly(p.Month)), out period))
                 {
                     errors.Add($"Paiement {p.Number} ({p.Source}, ligne {p.Row}) : mois « {p.Month} » absent de l'année {year.Label}.");
                     continue;
@@ -168,6 +169,73 @@ public sealed class LegacyImportService(IAppDbContext db, IWriteGate gate, IAudi
         }
         return new ImportReport(apply, newPromotions, newStudents, newReceipts, newAllocations, warnings.Take(500).ToList(), errors.Take(500).ToList());
     }, ct);
+
+    /// <summary>Colonnes lues par l'import, dans l'ordre du classeur V79 : titre et exemple affiché au-dessus.</summary>
+    private static readonly (string Sheet, (string Title, string Hint)[] Columns)[] TemplateSheets =
+    [
+        ("PROMOTIONS", [("Code", "INF1 · 4 caractères"), ("Désignation", "Première année"), ("Section", "Infirmière"), ("Niveau", "1"), ("Année", "Non lue"),
+            ("Mensualité", "55000"), ("Total annuel", "Non lue"), ("Activation", "Active ou Inactive")]),
+        ("APPRENANTS", [("Matricule", "INF101 · obligatoire"), ("Nom", "KALONJI"), ("Post-nom", "MBOMBO"), ("Prénom", "Ruth"), ("Sexe", "F ou M"),
+            ("Naissance", "12/06/2008"), ("Lieu", "Lubumbashi"), ("Promotion", "INF1 · code de PROMOTIONS"), ("Parent / tuteur", "KALONJI Pierre"),
+            ("Contact 1", "0812345678"), ("Contact 2", "Facultatif"), ("Inscription", "01/09/2026"), ("Année", "Non lue"),
+            ("Statut", "Actif, Suspendu ou Sorti"), ("Adresse", "Av. Kasaï 12")]),
+        ("PAIEMENTS", [("N°", "1"), ("Date", "05/09/2026"), ("N° reçu", "ancien numéro"), ("Matricule", "INF101 · de APPRENANTS"), ("Apprenant", "Non lue"),
+            ("Promotion", "INF1"), ("Mois", "Septembre"), ("Montant dû", "Non lue"), ("Montant payé", "55000 · obligatoire")]),
+    ];
+
+    /// <summary>
+    /// Classeur vide au format attendu par l'import : une feuille par type de données, les titres en ligne 4 et un exemple
+    /// en ligne 3, pour reprendre des données tenues dans un autre fichier Excel. Les lignes de saisie commencent en ligne 5.
+    /// </summary>
+    public static byte[] Template()
+    {
+        using var book = new XLWorkbook();
+        var notice = book.AddWorksheet("NOTICE");
+        string[] lines =
+        [
+            "Modèle d'import SCOLIA",
+            "Recopiez vos données à partir de la ligne 5 de chaque feuille. La ligne 3 montre un exemple : elle n'est pas importée.",
+            "1. PROMOTIONS : une ligne par promotion. Le code compte 4 caractères. La mensualité est en francs congolais.",
+            "2. APPRENANTS : une ligne par apprenant. Le matricule est conservé. La promotion reprend un code de la feuille PROMOTIONS.",
+            "3. PAIEMENTS : une ligne par mois payé. Plusieurs lignes avec le même N° reçu forment un seul reçu.",
+            "Le mois s'écrit en toutes lettres, comme dans l'année scolaire : Septembre, Octobre...",
+            "Les colonnes marquées « Non lue » peuvent rester vides.",
+            "Dans SCOLIA : Sauvegardes, Importer SCOLIA V79. Un essai à blanc montre ce qui sera créé avant toute écriture.",
+            "Relancer l'import ne crée aucun doublon : les matricules et les reçus déjà importés sont ignorés.",
+        ];
+        for (var i = 0; i < lines.Length; i++) notice.Cell(i + 1, 1).Value = lines[i];
+        notice.Cell(1, 1).Style.Font.SetBold().Font.SetFontSize(14).Font.SetFontColor(XLColor.FromHtml("#13294B"));
+        notice.Column(1).Width = 120;
+
+        foreach (var (name, columns) in TemplateSheets)
+        {
+            var sheet = book.AddWorksheet(name);
+            sheet.Cell(1, 1).Value = name;
+            sheet.Cell(1, 1).Style.Font.SetBold().Font.SetFontSize(13).Font.SetFontColor(XLColor.FromHtml("#13294B"));
+            sheet.Cell(2, 1).Value = "Saisie à partir de la ligne 5. La ligne 3 est un exemple.";
+            sheet.Cell(2, 1).Style.Font.SetFontColor(XLColor.FromHtml("#64748B"));
+            for (var c = 0; c < columns.Length; c++)
+            {
+                var hint = sheet.Cell(3, c + 1);
+                hint.Value = columns[c].Hint;
+                hint.Style.Font.SetItalic().Font.SetFontColor(XLColor.FromHtml("#64748B"));
+                var title = sheet.Cell(4, c + 1);
+                title.Value = columns[c].Title;
+                title.Style.Font.SetBold().Font.SetFontColor(XLColor.White).Fill.SetBackgroundColor(XLColor.FromHtml("#13294B"));
+                sheet.Column(c + 1).Width = Math.Max(14, columns[c].Hint.Length + 2);
+            }
+            // Matricules, codes et téléphones restent du texte : Excel garderait sinon le zéro initial perdu.
+            foreach (var title in new[] { "Code", "Matricule", "Promotion", "Contact 1", "Contact 2", "N° reçu" })
+            {
+                var index = Array.FindIndex(columns, c => c.Title == title);
+                if (index >= 0) sheet.Range(5, index + 1, 2000, index + 1).Style.NumberFormat.Format = "@";
+            }
+            sheet.SheetView.FreezeRows(4);
+        }
+        using var stream = new MemoryStream();
+        book.SaveAs(stream);
+        return stream.ToArray();
+    }
 
     private static string? Phone(string? raw, string matricule, List<string> warnings)
     {
@@ -252,6 +320,9 @@ public sealed class LegacyImportService(IAppDbContext db, IWriteGate gate, IAudi
                 Text(row.Cell(7)), decimal.Round(amount.Value, 2), source, row.RowNumber()));
         }
     }
+
+    /// <summary>« Septembre 2026 » : seul le nom du mois compte, l'année est celle de l'année scolaire.</summary>
+    private static string MonthOnly(string month) => month.Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? month;
 
     private static string? NullIfEmpty(string value) => string.IsNullOrWhiteSpace(value) ? null : value;
 }

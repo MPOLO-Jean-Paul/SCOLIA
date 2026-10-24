@@ -393,6 +393,8 @@ public static class ScoliaEndpoints
             return await s.EraseStudentsAsync(input, ct);
         });
 
+        api.MapGet("/import/modele", () => Results.File(LegacyImportService.Template(), Xlsx, "modele-import-scolia.xlsx"))
+            .RequireAuthorization(Permissions.SettingsWrite);
         api.MapPost("/import/scolia", async (HttpRequest request, bool? appliquer, LegacyImportService importer, CancellationToken ct) =>
         {
             if (!request.HasFormContentType) throw new DomainException("fichiers", "Envoyez les classeurs Excel à importer.");

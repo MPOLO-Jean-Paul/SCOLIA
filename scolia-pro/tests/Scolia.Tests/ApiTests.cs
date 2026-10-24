@@ -614,6 +614,37 @@ public sealed class BusinessApiTests : IDisposable
     }
 
     [Fact]
+    public async Task Import_template_filled_in_is_accepted_by_the_import()
+    {
+        var admin = await app.InstalledAdmin();
+        var response = await admin.GetAsync("/api/import/modele");
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        using var stream = new MemoryStream();
+        using (var book = new XLWorkbook(await response.Content.ReadAsStreamAsync()))
+        {
+            Assert.Equal(["NOTICE", "PROMOTIONS", "APPRENANTS", "PAIEMENTS"], book.Worksheets.Select(w => w.Name));
+            Assert.Equal("Matricule", book.Worksheet("APPRENANTS").Cell(4, 1).GetString());
+            // La ligne d'exemple n'est pas importée : seule la ligne 5 compte.
+            var p = book.Worksheet("PROMOTIONS");
+            p.Cell(5, 1).Value = "INF1"; p.Cell(5, 2).Value = "Première année"; p.Cell(5, 6).Value = 55000; p.Cell(5, 8).Value = "Active";
+            var a = book.Worksheet("APPRENANTS");
+            a.Cell(5, 1).Value = "INF101"; a.Cell(5, 2).Value = "KALONJI"; a.Cell(5, 4).Value = "Ruth"; a.Cell(5, 5).Value = "F"; a.Cell(5, 8).Value = "INF1";
+            a.Cell(5, 10).Value = "0812345678"; a.Cell(5, 14).Value = "Actif";
+            var pay = book.Worksheet("PAIEMENTS");
+            pay.Cell(5, 1).Value = 1; pay.Cell(5, 2).Value = DateTime.Today.AddDays(-3); pay.Cell(5, 3).Value = "A001"; pay.Cell(5, 4).Value = "INF101";
+            pay.Cell(5, 6).Value = "INF1"; pay.Cell(5, 7).Value = "Septembre 2026"; pay.Cell(5, 9).Value = 55000;
+            book.SaveAs(stream);
+        }
+        using var form = new MultipartFormDataContent();
+        form.Add(new ByteArrayContent(stream.ToArray()), "fichiers", "modele-import-scolia.xlsx");
+        var preview = await admin.PostAsync("/api/import/scolia?appliquer=false", form).Ok();
+        Assert.Empty(preview.GetProperty("errors").EnumerateArray());
+        Assert.Equal(1, preview.GetProperty("students").GetInt32());
+        Assert.Equal(1, preview.GetProperty("receipts").GetInt32());
+        Assert.Equal(1, preview.GetProperty("allocations").GetInt32());
+    }
+
+    [Fact]
     public async Task Backup_is_created_verified_and_downloadable()
     {
         var admin = await app.InstalledAdmin();

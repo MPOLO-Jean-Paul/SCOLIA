@@ -25,6 +25,7 @@ public sealed class DataPage : PageViewModel
         Action("Télécharger", MaterialIconKind.Download, DownloadAsync);
         Action("Restaurer", MaterialIconKind.BackupRestore, RestoreAsync);
         Action("Importer SCOLIA V79", MaterialIconKind.Upload, () => ImportAsync(Shell));
+        Action("Modèle d'import", MaterialIconKind.FileExcelOutline, () => TemplateAsync(Shell));
         Action("Vérifier la base", MaterialIconKind.DatabaseCheckOutline, () => CheckDatabaseAsync(Shell));
         if (Shell.Can(Perm.BackupManage))
         {
@@ -103,6 +104,9 @@ public sealed class DataPage : PageViewModel
     }
 
     /// <summary>Lit un classeur SCOLIA V79, montre le contenu détecté, puis l'importe après confirmation.</summary>
+    /// <summary>Classeur vide au format de l'import, pour reprendre des données tenues dans un autre fichier Excel.</summary>
+    public static Task TemplateAsync(ShellViewModel shell) => shell.Download("api/import/modele", "modele-import-scolia.xlsx");
+
     public static async Task ImportAsync(ShellViewModel shell)
     {
         if (shell.PickFileHandler is null) return;
