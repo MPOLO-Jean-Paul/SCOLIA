@@ -49,8 +49,8 @@ public static class Permissions
     {
         Role.Administrateur => All,
         Role.Direction => [StudentsRead, StudentsWrite, PaymentsRead, PaymentsCancel, ReportsRead, AuditRead, AcademicsRead, AcademicsWrite, StaffManage, BackupManage],
-        Role.Secretariat => [StudentsRead, StudentsWrite, PaymentsRead, PaymentsCreate, ReportsRead, AcademicsRead, AcademicsWrite],
-        Role.Comptabilite => [StudentsRead, PaymentsRead, PaymentsCreate, PaymentsCancel, ExpensesWrite, CashClose, ReportsRead],
+        Role.Secretariat => [StudentsRead, StudentsWrite, PaymentsRead, PaymentsCreate, ExpensesWrite, ReportsRead, AcademicsRead, AcademicsWrite, BackupManage],
+        Role.Comptabilite => [StudentsRead, PaymentsRead, PaymentsCreate, PaymentsCancel, ExpensesWrite, CashClose, ReportsRead, AuditRead, BackupManage],
         Role.Enseignant => [StudentsRead, AcademicsRead, AcademicsWrite],
         _ => [],
     };

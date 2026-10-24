@@ -1,0 +1,121 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mi="using:Material.Icons.Avalonia"
+             x:Class="Scolia.Bureau.Views.SetupView">
+  <!-- Première installation : assistant en deux étapes, centré, adapté à toute taille de fenêtre -->
+  <Grid Background="{DynamicResource BgBrush}">
+    <ScrollViewer>
+      <Border Classes="card" Padding="28" Margin="24" MaxWidth="760" HorizontalAlignment="Center" VerticalAlignment="Center">
+        <StackPanel Spacing="18">
+          <StackPanel Orientation="Horizontal" Spacing="14">
+            <Image Source="avares://SCOLIA/Assets/scolia.png" Width="44" Height="44" VerticalAlignment="Center" />
+            <StackPanel VerticalAlignment="Center" Spacing="2">
+              <TextBlock Text="Configurer SCOLIA" Classes="title" />
+              <TextBlock Classes="muted" TextWrapping="Wrap"
+                         Text="Première connexion sur ce poste. Ces réglages se modifient ensuite dans Administration." />
+            </StackPanel>
+          </StackPanel>
+
+          <ProgressBar Value="{Binding Progress}" Maximum="100" Height="4" />
+          <StackPanel Spacing="2">
+            <TextBlock Text="{Binding StepLabel}" Classes="muted" FontSize="{DynamicResource FsSmall}" />
+            <TextBlock Text="{Binding StepTitle}" Classes="heading" />
+          </StackPanel>
+
+          <!-- Étape 1 : établissement et année -->
+          <StackPanel IsVisible="{Binding IsStepOne}" Spacing="14">
+            <WrapPanel ItemWidth="320">
+              <StackPanel Margin="0,0,16,12" Spacing="4">
+                <TextBlock Text="Nom de l'établissement" Classes="muted" />
+                <TextBox Text="{Binding SchoolName}" PlaceholderText="Institut technique médical" />
+              </StackPanel>
+              <StackPanel Margin="0,0,16,12" Spacing="4">
+                <TextBlock Text="Sigle" Classes="muted" />
+                <TextBox Text="{Binding ShortName}" PlaceholderText="ITM" />
+              </StackPanel>
+              <StackPanel Margin="0,0,16,12" Spacing="4">
+                <TextBlock Text="Ville" Classes="muted" />
+                <TextBox Text="{Binding City}" />
+              </StackPanel>
+              <StackPanel Margin="0,0,16,12" Spacing="4">
+                <TextBlock Text="Téléphone" Classes="muted" />
+                <TextBox Text="{Binding Phone}" />
+              </StackPanel>
+              <StackPanel Margin="0,0,16,12" Spacing="4">
+                <TextBlock Text="Année scolaire" Classes="muted" />
+                <TextBox Text="{Binding YearLabel}" PlaceholderText="2026 - 2027" />
+              </StackPanel>
+              <StackPanel Margin="0,0,16,12" Spacing="4">
+                <TextBlock Text="Premier mois de paiement" Classes="muted" />
+                <ComboBox ItemsSource="{Binding StartMonths}" SelectedItem="{Binding StartMonth}" HorizontalAlignment="Stretch" />
+              </StackPanel>
+              <StackPanel Margin="0,0,16,12" Spacing="4">
+                <TextBlock Text="Durée de l'année" Classes="muted" />
+                <ComboBox ItemsSource="{Binding MonthCounts}" SelectedItem="{Binding MonthCount}" HorizontalAlignment="Stretch" />
+              </StackPanel>
+            </WrapPanel>
+            <StackPanel Spacing="4">
+              <StackPanel Spacing="4" Margin="0,0,0,8">
+                <TextBlock Text="Devise de l'établissement (facultatif)" Classes="muted" />
+                <TextBox Text="{Binding Motto}" PlaceholderText="Savoir, discipline, service" />
+              </StackPanel>
+              <TextBlock Text="{Binding CurrencyLine}" Classes="muted" />
+              <CheckBox IsChecked="{Binding LoadDemo}" Content="Charger des données de démonstration fictives, pour découvrir SCOLIA" Margin="0,8,0,0" />
+            </StackPanel>
+          </StackPanel>
+
+          <!-- Étape 2 : comptes et sécurité -->
+          <StackPanel IsVisible="{Binding IsStepTwo}" Spacing="18">
+            <StackPanel Spacing="10">
+              <TextBlock Text="Administrateur" Classes="heading" />
+              <TextBlock Text="Il gère les comptes, les réglages et les sauvegardes. Gardez son mot de passe en lieu sûr." Classes="muted" TextWrapping="Wrap" />
+              <WrapPanel ItemWidth="320">
+                <StackPanel Margin="0,0,16,12" Spacing="4"><TextBlock Text="Identifiant" Classes="muted" /><TextBox Text="{Binding AdminUserName}" /></StackPanel>
+                <StackPanel Margin="0,0,16,12" Spacing="4"><TextBlock Text="Nom de la personne" Classes="muted" /><TextBox Text="{Binding AdminDisplayName}" /></StackPanel>
+                <StackPanel Margin="0,0,16,12" Spacing="4"><TextBlock Text="Mot de passe" Classes="muted" /><TextBox Text="{Binding AdminPassword}" PasswordChar="•" /></StackPanel>
+                <StackPanel Margin="0,0,16,12" Spacing="4"><TextBlock Text="Confirmer le mot de passe" Classes="muted" /><TextBox Text="{Binding AdminConfirm}" PasswordChar="•" /></StackPanel>
+              </WrapPanel>
+            </StackPanel>
+
+            <StackPanel Spacing="10">
+              <TextBlock Text="Secrétariat" Classes="heading" />
+              <TextBlock Text="Saisit les apprenants, encaisse, enregistre les dépenses et sauvegarde les données." Classes="muted" TextWrapping="Wrap" />
+              <CheckBox IsChecked="{Binding UseSecretariat}" Content="Créer le compte secrétariat" />
+              <WrapPanel ItemWidth="320" IsEnabled="{Binding UseSecretariat}">
+                <StackPanel Margin="0,0,16,12" Spacing="4"><TextBlock Text="Identifiant" Classes="muted" /><TextBox Text="{Binding SecretariatUserName}" /></StackPanel>
+                <StackPanel Margin="0,0,16,12" Spacing="4"><TextBlock Text="Nom de la personne" Classes="muted" /><TextBox Text="{Binding SecretariatDisplayName}" /></StackPanel>
+                <StackPanel Margin="0,0,16,12" Spacing="4"><TextBlock Text="Mot de passe" Classes="muted" /><TextBox Text="{Binding SecretariatPassword}" PasswordChar="•" /></StackPanel>
+                <StackPanel Margin="0,0,16,12" Spacing="4"><TextBlock Text="Confirmer le mot de passe" Classes="muted" /><TextBox Text="{Binding SecretariatConfirm}" PasswordChar="•" /></StackPanel>
+              </WrapPanel>
+            </StackPanel>
+
+            <StackPanel Spacing="10">
+              <TextBlock Text="Comptabilité" Classes="heading" />
+              <TextBlock Text="Encaisse, tient la caisse, enregistre les dépenses, consulte le journal et les rapports." Classes="muted" TextWrapping="Wrap" />
+              <CheckBox IsChecked="{Binding UseComptabilite}" Content="Créer le compte comptabilité" />
+              <WrapPanel ItemWidth="320" IsEnabled="{Binding UseComptabilite}">
+                <StackPanel Margin="0,0,16,12" Spacing="4"><TextBlock Text="Identifiant" Classes="muted" /><TextBox Text="{Binding ComptabiliteUserName}" /></StackPanel>
+                <StackPanel Margin="0,0,16,12" Spacing="4"><TextBlock Text="Nom de la personne" Classes="muted" /><TextBox Text="{Binding ComptabiliteDisplayName}" /></StackPanel>
+                <StackPanel Margin="0,0,16,12" Spacing="4"><TextBlock Text="Mot de passe" Classes="muted" /><TextBox Text="{Binding ComptabilitePassword}" PasswordChar="•" /></StackPanel>
+                <StackPanel Margin="0,0,16,12" Spacing="4"><TextBlock Text="Confirmer le mot de passe" Classes="muted" /><TextBox Text="{Binding ComptabiliteConfirm}" PasswordChar="•" /></StackPanel>
+              </WrapPanel>
+            </StackPanel>
+          </StackPanel>
+
+          <TextBlock Text="{Binding Error}" IsVisible="{Binding HasError}" Foreground="{DynamicResource ToneRed}" TextWrapping="Wrap" />
+
+          <Grid ColumnDefinitions="Auto,*,Auto">
+            <Button Grid.Column="0" Classes="ghost" Content="Retour" Command="{Binding Back}" IsVisible="{Binding IsStepTwo}" IsEnabled="{Binding !Busy}" />
+            <Button Grid.Column="2" Classes="primary" Command="{Binding Next}" IsVisible="{Binding IsStepOne}">
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <TextBlock Text="Suivant" />
+                <mi:MaterialIcon Kind="ArrowRight" Width="18" Height="18" Foreground="{DynamicResource OnAccentBrush}" />
+              </StackPanel>
+            </Button>
+            <Button Grid.Column="2" Classes="primary" Command="{Binding Finish}" IsVisible="{Binding IsStepTwo}" IsEnabled="{Binding !Busy}" Content="Terminer la configuration" />
+          </Grid>
+        </StackPanel>
+      </Border>
+    </ScrollViewer>
+  </Grid>
+</UserControl>

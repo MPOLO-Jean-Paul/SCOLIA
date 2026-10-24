@@ -9,7 +9,9 @@
         KeyDown="OnKeyDown">
   <Grid>
     <!-- Connexion : tant qu'aucune session n'est ouverte -->
-    <ContentControl Content="{Binding Login}" IsVisible="{Binding !IsLoggedIn}" />
+    <!-- Première installation : l'assistant remplace la connexion tant qu'aucune configuration n'existe -->
+    <ContentControl Content="{Binding Setup}" IsVisible="{Binding IsSetupRequired}" />
+    <ContentControl Content="{Binding Login}" IsVisible="{Binding ShowLogin}" />
 
     <Grid RowDefinitions="Auto,Auto,Auto,*,Auto" IsVisible="{Binding IsLoggedIn}">
 

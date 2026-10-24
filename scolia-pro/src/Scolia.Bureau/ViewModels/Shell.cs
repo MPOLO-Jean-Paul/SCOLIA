@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Net.Http;
 using Avalonia.Input;
 using Avalonia.Threading;
 using Scolia.Bureau.Api;
@@ -25,6 +26,7 @@ public sealed class ShellViewModel : Observable
         this.api = api;
         Prefs = prefs;
         Login = new LoginViewModel(api);
+        Setup = new SetupViewModel(this);
         Login.LoggedIn += s => _ = OpenSessionAsync(s);
         Backstage = new BackstageViewModel(this);
         ReloadCommand = new AsyncCommand(() => Run(Reload));
@@ -50,6 +52,29 @@ public sealed class ShellViewModel : Observable
     public RelayCommand SearchCommand { get; private set; } = null!;
     public SessionDto? Session => session;
     public bool IsLoggedIn => session is not null;
+
+    private bool setupRequired;
+
+    /// <summary>Premier lancement : aucune configuration sur ce serveur, l'assistant remplace la connexion.</summary>
+    public bool IsSetupRequired { get => setupRequired; set { if (Set(ref setupRequired, value)) RaiseLogin(); } }
+
+    /// <summary>La connexion s'affiche seulement quand une configuration existe et qu'aucune session n'est ouverte.</summary>
+    public bool ShowLogin => !IsLoggedIn && !IsSetupRequired;
+
+    public SetupViewModel Setup { get; }
+
+    private void RaiseLogin()
+    {
+        Raise(nameof(IsLoggedIn));
+        Raise(nameof(ShowLogin));
+    }
+
+    /// <summary>L'assistant a créé la configuration et ouvert la première session.</summary>
+    public Task CompleteSetupAsync(SessionDto session)
+    {
+        IsSetupRequired = false;
+        return OpenSessionAsync(session);
+    }
     public string SchoolLine => session is null ? string.Empty : $"{session.SchoolName}{(session.CurrentYear is null ? string.Empty : $" · année {session.CurrentYear}")}";
     public string UserLine => session is null ? string.Empty : $"{session.DisplayName} · {session.RoleLabel}";
     public string UserInitials => session is null ? string.Empty : Initials(session.DisplayName);
@@ -113,14 +138,27 @@ public sealed class ShellViewModel : Observable
             server.Start();
             for (var i = 0; i < 80 && !await api.IsRunningAsync(); i++) await Task.Delay(250);
         }
-        Status = await api.IsRunningAsync() ? $"Serveur prêt : {api.Server}" : "Le serveur SCOLIA ne répond pas.";
+        var ready = await api.IsRunningAsync();
+        Status = ready ? $"Serveur prêt : {api.Server}" : "Le serveur SCOLIA ne répond pas.";
+        if (!ready) return;
+        // Configuration reconnue : la connexion s'affiche directement. Sinon, l'assistant de première installation.
+        try
+        {
+            var status = await api.GetAsync<SetupStatusDto>("api/installation");
+            IsSetupRequired = !status.IsConfigured;
+            if (IsSetupRequired) await Setup.LoadAsync();
+        }
+        catch (Exception ex) when (ex is ApiException or HttpRequestException or TaskCanceledException)
+        {
+            Status = "Impossible de vérifier la configuration de SCOLIA.";
+        }
     }
 
     /// <summary>Ouvre la session : construit le ruban et affiche le tableau de bord.</summary>
     public async Task OpenSessionAsync(SessionDto s)
     {
         session = s;
-        Raise(nameof(IsLoggedIn));
+        RaiseLogin();
         Raise(nameof(SchoolLine));
         Raise(nameof(UserLine));
         Raise(nameof(UserInitials));
@@ -246,7 +284,7 @@ public sealed class ShellViewModel : Observable
         SelectedTab = null;
         Current = null;
         BackstageOpen = false;
-        Raise(nameof(IsLoggedIn));
+        RaiseLogin();
         Raise(nameof(SchoolLine));
         Raise(nameof(UserLine));
         Raise(nameof(UserInitials));

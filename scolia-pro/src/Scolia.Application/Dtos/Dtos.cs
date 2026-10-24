@@ -12,7 +12,11 @@ public sealed record SchoolUpdate(string Name, string ShortName, string? Motto, 
     string? Email, string? Website, string CurrencyCode, string CurrencySymbol, bool WholeAmountsOnly, string? ReceiptFooter, string PhoneCountryCode);
 
 public sealed record SetupRequest(string SchoolName, string ShortName, string? Motto, string? City, string? Phone, string CurrencyCode, string CurrencySymbol,
-    string YearLabel, int StartMonth, int MonthCount, string AdminUserName, string AdminDisplayName, string AdminPassword, bool LoadDemoData);
+    string YearLabel, int StartMonth, int MonthCount, string AdminUserName, string AdminDisplayName, string AdminPassword, bool LoadDemoData,
+    IReadOnlyList<SetupAccount>? Accounts = null);
+
+/// <summary>Compte métier créé pendant l'installation. Rôle : Secretariat ou Comptabilite.</summary>
+public sealed record SetupAccount(string Role, string UserName, string DisplayName, string Password);
 
 public sealed record SetupStatusDto(bool IsConfigured, string? SchoolName);
 

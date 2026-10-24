@@ -74,6 +74,19 @@ var shell = new ShellViewModel(api, prefs);
 var taille = (Environment.GetEnvironmentVariable("SCOLIA_TAILLE") ?? "1280x820").Split('x');
 var window = new MainWindow { DataContext = shell, Width = int.Parse(taille[0]), Height = int.Parse(taille[1]) };
 window.Show();
+// Premier lancement sans configuration : l'assistant remplace la connexion (SCOLIA_ASSISTANT=1).
+if (Environment.GetEnvironmentVariable("SCOLIA_ASSISTANT") == "1")
+{
+    shell.IsSetupRequired = true;
+    Wait(shell.Setup.LoadAsync());
+    Save(window, "00-assistant-etape-1.png");
+    shell.Setup.SchoolName = "Institut de test";
+    shell.Setup.ShortName = "IT";
+    Wait(Task.Delay(50));
+    shell.Setup.Step = 2;
+    Save(window, "00-assistant-etape-2.png");
+    return;
+}
 Save(window, "01-connexion.png");
 
 if (args.Length > 3 && args[3] == "smoke")

@@ -3,6 +3,12 @@ using System.Text.Json.Serialization;
 
 namespace Scolia.Bureau.Api;
 
+/// <summary>État de l'installation : une configuration existe-t-elle sur ce serveur ?</summary>
+public sealed record SetupStatusDto(bool IsConfigured, string? SchoolName);
+
+/// <summary>Année scolaire proposée par le serveur pour l'assistant.</summary>
+public sealed record YearProposalDto(string Label);
+
 // Contrats de l'API SCOLIA, tels que servis en JSON (noms en camelCase, dates ISO, montants décimaux).
 
 public sealed record SessionDto(

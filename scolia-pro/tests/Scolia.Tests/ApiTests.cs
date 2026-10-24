@@ -25,6 +25,33 @@ public sealed class SecurityApiTests : IDisposable
     }
 
     [Fact]
+    public async Task Wizard_creates_secretariat_and_accounting_accounts_with_their_own_rights()
+    {
+        var client = app.Client();
+        var before = await client.GetAsync("/api/installation").Ok();
+        Assert.False(before.GetProperty("isConfigured").GetBoolean());
+        await client.Post("/api/installation", new
+        {
+            schoolName = "Institut de test", shortName = "IT", city = "Kinshasa", currencyCode = "CDF", currencySymbol = "FC",
+            yearLabel = "2026-2027", startMonth = 9, monthCount = 10, adminUserName = "admin", adminDisplayName = "Administrateur",
+            adminPassword = "Scolia2026!", loadDemoData = false,
+            accounts = new[]
+            {
+                new { role = "Secretariat", userName = "secretariat", displayName = "Secrétariat", password = "Secretariat1" },
+                new { role = "Comptabilite", userName = "comptabilite", displayName = "Comptabilité", password = "Comptable1" },
+            },
+        }).Ok();
+        var after = await client.GetAsync("/api/installation").Ok();
+        Assert.True(after.GetProperty("isConfigured").GetBoolean());
+
+        var secretary = await app.Login("secretariat", "Secretariat1");
+        Assert.Equal("Secretariat", (await secretary.GetAsync("/api/session").Ok()).GetProperty("role").GetString());
+        var accountant = await app.Login("comptabilite", "Comptable1");
+        Assert.Equal("Comptabilite", (await accountant.GetAsync("/api/session").Ok()).GetProperty("role").GetString());
+        Assert.Equal(HttpStatusCode.Forbidden, (await accountant.GetAsync("/api/utilisateurs")).StatusCode);
+    }
+
+    [Fact]
     public async Task Api_requires_authentication_and_anti_csrf_header()
     {
         await app.InstalledAdmin();

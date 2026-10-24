@@ -55,6 +55,27 @@ public sealed class SetupService(IAppDbContext db, IWriteGate gate, IAuditLog au
             Role = Role.Administrateur, PasswordHash = passwords.Hash(input.AdminPassword),
         };
         db.Users.Add(admin);
+        var others = new List<AppUser>();
+        foreach (var account in input.Accounts ?? [])
+        {
+            // Seuls les comptes métier de l'assistant sont créés ici ; l'administrateur reste le seul compte à tous les droits.
+            var name = (account.UserName ?? string.Empty).Trim().ToLowerInvariant();
+            new ValidationBuilder()
+                .Require(account.Role is "Secretariat" or "Comptabilite", "accounts", "Rôle de compte : secrétariat ou comptabilité uniquement.")
+                .Require(name.Length is >= 3 and <= 40 && name.All(c => char.IsAsciiLetterOrDigit(c) || c is '.' or '-' or '_'), "accounts", "Identifiant de 3 à 40 caractères.")
+                .Require(!string.IsNullOrWhiteSpace(account.DisplayName), "accounts", "Nom du compte obligatoire.")
+                .Require(others.All(o => o.NormalizedUserName != TextKey.Normalize(name)) && name != userName, "accounts", "Deux comptes ne peuvent pas porter le même identifiant.")
+                .ThrowIfInvalid();
+            var role = account.Role == "Secretariat" ? Role.Secretariat : Role.Comptabilite;
+            PasswordPolicy.Validate(account.Password);
+            var user = new AppUser
+            {
+                UserName = name, NormalizedUserName = TextKey.Normalize(name), DisplayName = account.DisplayName.Trim(),
+                Role = role, PasswordHash = passwords.Hash(account.Password),
+            };
+            others.Add(user);
+            db.Users.Add(user);
+        }
         audit.Record("installation", "Etablissement", school.Id.ToString(), $"Installation de SCOLIA pour {school.Name} ({year.Label}).");
         if (input.LoadDemoData) DemoData.Populate(db, year, clock.Today);
         await db.SaveChangesAsync(ct);
