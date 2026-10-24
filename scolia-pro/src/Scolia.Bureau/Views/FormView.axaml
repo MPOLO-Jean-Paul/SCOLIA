@@ -1,15 +1,14 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="Scolia.Bureau.Views.FormView">
-  <!-- Feuille de dialogue, façon macOS : en-tête, champs défilants, pied avec les boutons alignés à droite -->
-  <Border Classes="card" MinWidth="460" MaxWidth="620" Padding="0" CornerRadius="16" Background="{DynamicResource SurfaceBrush}"
-          BoxShadow="0 18 50 0 #38000000, 0 2 6 0 #14000000">
+  <!-- Boîte de dialogue de Windows 11 : titre, champs défilants, bande grise du bas avec les boutons à droite -->
+  <Border Classes="card" MinWidth="460" MaxWidth="620" Padding="0" Background="{DynamicResource SurfaceBrush}" ClipToBounds="True"
+          BoxShadow="0 8 32 0 #3D000000">
     <StackPanel>
       <StackPanel Spacing="3" Margin="24,20,24,14">
-        <TextBlock Text="{Binding Title}" FontSize="{DynamicResource FsHeading}" FontWeight="SemiBold" TextWrapping="Wrap" />
+        <TextBlock Text="{Binding Title}" FontSize="20" FontWeight="SemiBold" TextWrapping="Wrap" />
         <TextBlock Text="{Binding Subtitle}" Classes="muted" TextWrapping="Wrap" IsVisible="{Binding HasSubtitle}" />
       </StackPanel>
-      <Border Height="0.5" Background="{DynamicResource LineBrush}" />
 
       <TextBlock Text="{Binding Message}" TextWrapping="Wrap" IsVisible="{Binding HasMessage}" Margin="24,16,24,0" />
 
@@ -35,20 +34,23 @@
       </ItemsControl>
       </ScrollViewer>
 
-      <Border Background="{DynamicResource RedSoftBrush}" CornerRadius="10" Padding="12,8" Margin="24,4,24,8" IsVisible="{Binding HasError}">
+      <Border Background="{DynamicResource RedSoftBrush}" CornerRadius="{StaticResource RadiusSmall}" Padding="12,8" Margin="24,4,24,8" IsVisible="{Binding HasError}">
         <TextBlock Text="{Binding Error}" Classes="error" TextWrapping="Wrap" />
       </Border>
 
-      <Border Height="0.5" Background="{DynamicResource LineBrush}" Margin="0,8,0,0" />
-      <!-- Actions : Annuler puis Valider, à droite, comme toutes les feuilles de macOS -->
-      <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="10" Margin="24,14,24,16" IsVisible="{Binding CanSubmit}">
-        <Button Content="{Binding CancelText}" Command="{Binding Cancel}" IsVisible="{Binding ShowCancel}" MinWidth="96" />
-        <Button Content="{Binding SubmitText}" Command="{Binding Submit}" IsEnabled="{Binding !Busy}" MinWidth="110"
+      <!-- Actions : bande grise du bas, bouton principal puis Annuler, comme les boîtes de dialogue de Windows -->
+      <Border Background="{DynamicResource Surface2Brush}" BorderBrush="{DynamicResource LineBrush}" BorderThickness="0,1,0,0" Margin="0,8,0,0" Padding="24,16">
+      <Panel>
+      <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8" IsVisible="{Binding CanSubmit}">
+        <Button Content="{Binding SubmitText}" Command="{Binding Submit}" IsEnabled="{Binding !Busy}" MinWidth="120"
                 Classes.primary="{Binding !Danger}" Classes.danger="{Binding Danger}" />
+        <Button Content="{Binding CancelText}" Command="{Binding Cancel}" IsVisible="{Binding ShowCancel}" MinWidth="120" />
       </StackPanel>
-      <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="24,14,24,16" IsVisible="{Binding !CanSubmit}">
-        <Button Content="{Binding CancelText}" Command="{Binding Cancel}" Classes="primary" MinWidth="110" />
+      <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" IsVisible="{Binding !CanSubmit}">
+        <Button Content="{Binding CancelText}" Command="{Binding Cancel}" Classes="primary" MinWidth="120" />
       </StackPanel>
+      </Panel>
+      </Border>
     </StackPanel>
   </Border>
 </UserControl>

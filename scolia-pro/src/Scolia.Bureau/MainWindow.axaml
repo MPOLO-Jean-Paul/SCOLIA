@@ -46,7 +46,7 @@
       </Border>
 
       <!-- Onglets du ruban : Fichier, puis les onglets de l'écran. Les onglets contextuels ont leur couleur. -->
-      <Grid Grid.Row="1" ColumnDefinitions="*,Auto" Background="{DynamicResource Surface2Brush}">
+      <Grid Grid.Row="1" ColumnDefinitions="*,Auto" Background="{DynamicResource ToolbarBrush}">
         <ItemsControl ItemsSource="{Binding Tabs}" Margin="6,4,0,0">
           <ItemsControl.ItemsPanel>
             <ItemsPanelTemplate><StackPanel Orientation="Horizontal" /></ItemsPanelTemplate>
@@ -95,11 +95,11 @@
                                     ToolTip.Tip="{Binding Tip}" ToolTip.ShowDelay="400" VerticalAlignment="Top">
                               <Grid>
                                 <StackPanel Spacing="4" IsVisible="{Binding Large}" HorizontalAlignment="Center">
-                                  <mi:MaterialIcon Kind="{Binding Icon}" Width="26" Height="26" HorizontalAlignment="Center" Foreground="{Binding Brush}" />
+                                  <mi:MaterialIcon Kind="{Binding Icon}" Width="24" Height="24" HorizontalAlignment="Center" Foreground="{DynamicResource Text2Brush}" />
                                   <TextBlock Text="{Binding Label}" FontSize="{DynamicResource FsSmall}" TextAlignment="Center" TextWrapping="Wrap" MaxWidth="92" />
                                 </StackPanel>
                                 <StackPanel Orientation="Horizontal" Spacing="6" IsVisible="{Binding !Large}" VerticalAlignment="Center">
-                                  <mi:MaterialIcon Kind="{Binding Icon}" Width="16" Height="16" Foreground="{Binding Brush}" />
+                                  <mi:MaterialIcon Kind="{Binding Icon}" Width="16" Height="16" Foreground="{DynamicResource Text2Brush}" />
                                   <TextBlock Text="{Binding Label}" FontSize="{DynamicResource FsSmall}" VerticalAlignment="Center" />
                                 </StackPanel>
                               </Grid>
@@ -132,8 +132,9 @@
                       <ItemsControl.ItemTemplate>
                         <DataTemplate>
                           <Button Classes="navitem" Classes.selected="{Binding IsSelected}" Command="{Binding Open}" Margin="0,1">
-                            <StackPanel Orientation="Horizontal" Spacing="10">
-                              <mi:MaterialIcon Kind="{Binding Icon}" Width="17" Height="17" Foreground="{Binding Brush}" />
+                            <StackPanel Orientation="Horizontal" Spacing="0">
+                              <Border Classes="navmark" />
+                              <mi:MaterialIcon Kind="{Binding Icon}" Width="16" Height="16" Margin="10,0,12,0" Foreground="{DynamicResource Text2Brush}" />
                               <TextBlock Text="{Binding Label}" VerticalAlignment="Center" />
                             </StackPanel>
                           </Button>

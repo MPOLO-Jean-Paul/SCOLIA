@@ -24,13 +24,10 @@
         <DataGridTemplateColumn Header="Décision" Width="Auto" MinWidth="140">
           <DataGridTemplateColumn.CellTemplate>
             <DataTemplate>
-              <Panel Classes="pill">
-                <Border CornerRadius="10" Background="{Binding DecisionBrush}" Opacity="0.13" />
-                <StackPanel Orientation="Horizontal" Spacing="6" Margin="9,3,11,3">
-                  <Ellipse Width="6" Height="6" Fill="{Binding DecisionBrush}" VerticalAlignment="Center" />
-                  <TextBlock Text="{Binding Decision}" Foreground="{Binding DecisionBrush}" FontSize="{DynamicResource FsSmall}" FontWeight="SemiBold" />
-                </StackPanel>
-              </Panel>
+              <StackPanel Classes="status">
+                <Ellipse Width="8" Height="8" Fill="{Binding DecisionBrush}" VerticalAlignment="Center" />
+                <TextBlock Text="{Binding Decision}" VerticalAlignment="Center" />
+              </StackPanel>
             </DataTemplate>
           </DataGridTemplateColumn.CellTemplate>
         </DataGridTemplateColumn>

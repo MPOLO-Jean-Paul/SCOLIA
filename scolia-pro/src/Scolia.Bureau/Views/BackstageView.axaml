@@ -20,9 +20,7 @@
           <ListBox.ItemTemplate>
             <DataTemplate>
               <StackPanel Orientation="Horizontal" Spacing="12" Margin="4,6">
-                <Border Width="30" Height="30" CornerRadius="8" Background="{Binding Brush}">
-                  <mi:MaterialIcon Kind="{Binding Icon}" Width="17" Height="17" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                </Border>
+                <mi:MaterialIcon Kind="{Binding Icon}" Width="20" Height="20" Foreground="{DynamicResource Text2Brush}" VerticalAlignment="Center" />
                 <TextBlock Text="{Binding Label}" VerticalAlignment="Center" />
               </StackPanel>
             </DataTemplate>

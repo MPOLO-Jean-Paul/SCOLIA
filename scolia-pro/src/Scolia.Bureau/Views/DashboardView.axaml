@@ -3,110 +3,71 @@
              xmlns:mi="using:Material.Icons.Avalonia"
              x:Class="Scolia.Bureau.Views.DashboardView">
   <ScrollViewer>
-    <StackPanel Spacing="18" Margin="0,4,6,8">
+    <StackPanel Spacing="16" Margin="0,0,6,8">
 
-      <!-- Rappel de sauvegarde, discret, seulement s'il y a lieu -->
-      <Border Background="{DynamicResource OrangeSoftBrush}" CornerRadius="12" Padding="16,10" IsVisible="{Binding HasBackupLine}">
+      <!-- Rappel de sauvegarde : barre d'information de Windows, seulement s'il y a lieu -->
+      <Border Background="{DynamicResource OrangeSoftBrush}" BorderBrush="{DynamicResource LineBrush}" BorderThickness="1"
+              CornerRadius="{StaticResource RadiusSmall}" Padding="14,8" IsVisible="{Binding HasBackupLine}">
         <Grid ColumnDefinitions="Auto,*,Auto">
-          <mi:MaterialIcon Kind="DatabaseAlertOutline" Width="20" Height="20" Foreground="{DynamicResource ToneOrange}" VerticalAlignment="Center" Margin="0,0,12,0" />
+          <mi:MaterialIcon Kind="AlertCircleOutline" Width="18" Height="18" Foreground="{DynamicResource ToneOrange}" VerticalAlignment="Center" Margin="0,0,10,0" />
           <TextBlock Grid.Column="1" Text="{Binding BackupLine}" TextWrapping="Wrap" VerticalAlignment="Center" />
           <Button Grid.Column="2" Content="Sauvegarder maintenant" Command="{Binding BackupNow}" Margin="12,0,0,0" VerticalAlignment="Center" />
         </Grid>
       </Border>
 
-      <!-- Raccourcis : les gestes du quotidien, à un clic -->
-      <ItemsControl ItemsSource="{Binding Shortcuts}" IsVisible="{Binding HasShortcuts}" Margin="0,0,-10,0">
-        <ItemsControl.ItemsPanel>
-          <ItemsPanelTemplate><UniformGrid Rows="1" /></ItemsPanelTemplate>
-        </ItemsControl.ItemsPanel>
-        <ItemsControl.ItemTemplate>
-          <DataTemplate>
-            <Button Classes="shortcut" Command="{Binding Open}" Margin="0,0,10,0" ToolTip.Tip="{Binding Label}">
-              <StackPanel Spacing="8" HorizontalAlignment="Center">
-                <Border Width="38" Height="38" CornerRadius="11" Background="{Binding Brush}" HorizontalAlignment="Center">
-                  <mi:MaterialIcon Kind="{Binding Icon}" Width="20" Height="20" Foreground="White" />
-                </Border>
-                <TextBlock Text="{Binding Label}" FontSize="{DynamicResource FsSmall}" FontWeight="Medium" HorizontalAlignment="Center" TextTrimming="CharacterEllipsis" />
-              </StackPanel>
-            </Button>
-          </DataTemplate>
-        </ItemsControl.ItemTemplate>
-      </ItemsControl>
-
-      <!-- Aujourd'hui : caisse, dépenses, appel, puis convocations et anniversaires -->
+      <!-- Journée en cours : quatre chiffres, puis les convocations et les anniversaires -->
       <Border Classes="card" Padding="0" IsVisible="{Binding HasToday}">
         <StackPanel>
-          <Grid ColumnDefinitions="*,Auto" Margin="20,16,20,4">
-            <TextBlock Text="{Binding TodayTitle}" Classes="heading" />
-            <TextBlock Grid.Column="1" Text="Mis à jour à l'ouverture et à chaque actualisation" Classes="muted" FontSize="{DynamicResource FsCaption}" VerticalAlignment="Center" />
-          </Grid>
-          <ItemsControl ItemsSource="{Binding TodayStats}" Margin="12,6,12,14">
+          <TextBlock Text="{Binding TodayTitle}" Classes="heading" Margin="16,12,16,8" />
+          <ItemsControl ItemsSource="{Binding TodayStats}" Margin="16,0,16,14">
             <ItemsControl.ItemsPanel>
               <ItemsPanelTemplate><UniformGrid Rows="1" /></ItemsPanelTemplate>
             </ItemsControl.ItemsPanel>
             <ItemsControl.ItemTemplate>
               <DataTemplate>
-                <Grid ColumnDefinitions="Auto,*" Margin="8,6">
-                  <Panel Width="34" Height="34" VerticalAlignment="Top" Margin="0,2,12,0">
-                    <Border CornerRadius="17" Background="{Binding Brush}" Opacity="0.14" />
-                    <mi:MaterialIcon Kind="{Binding Icon}" Width="18" Height="18" Foreground="{Binding Brush}" />
-                  </Panel>
-                  <StackPanel Grid.Column="1" Spacing="1">
-                    <TextBlock Text="{Binding Label}" Classes="muted" FontSize="{DynamicResource FsSmall}" />
-                    <TextBlock Text="{Binding Value}" FontSize="{DynamicResource FsHeading}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
-                    <TextBlock Text="{Binding Hint}" Classes="muted" FontSize="{DynamicResource FsCaption}" TextWrapping="Wrap" />
-                  </StackPanel>
-                </Grid>
+                <StackPanel Spacing="1" Margin="0,0,16,0">
+                  <TextBlock Text="{Binding Label}" Foreground="{DynamicResource Text2Brush}" />
+                  <TextBlock Text="{Binding Value}" FontSize="{DynamicResource FsHeading}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                  <TextBlock Text="{Binding Hint}" Classes="muted" TextWrapping="Wrap" />
+                </StackPanel>
               </DataTemplate>
             </ItemsControl.ItemTemplate>
           </ItemsControl>
 
-          <Border Height="0.5" Background="{DynamicResource LineBrush}" Margin="20,0" IsVisible="{Binding HasPeople}" />
-          <Grid ColumnDefinitions="*,*" Margin="20,12,20,14" IsVisible="{Binding HasPeople}">
-            <StackPanel Spacing="6" Margin="0,0,16,0">
-              <StackPanel Orientation="Horizontal" Spacing="6">
-                <mi:MaterialIcon Kind="AccountClockOutline" Width="16" Height="16" Foreground="{DynamicResource ToneOrange}" />
-                <TextBlock Text="Parents convoqués aujourd'hui" FontWeight="SemiBold" />
-              </StackPanel>
+          <Border Height="1" Background="{DynamicResource LineBrush}" IsVisible="{Binding HasPeople}" />
+          <Grid ColumnDefinitions="*,*" Margin="16,10,16,12" IsVisible="{Binding HasPeople}">
+            <StackPanel Spacing="4" Margin="0,0,16,0">
+              <TextBlock Text="Parents convoqués aujourd'hui" FontWeight="SemiBold" />
               <TextBlock Text="Aucun rendez-vous prévu." Classes="muted" IsVisible="{Binding !HasAppointments}" />
               <ItemsControl ItemsSource="{Binding Appointments}">
                 <ItemsControl.ItemTemplate>
                   <DataTemplate>
                     <Button Classes="listrow" Command="{Binding Open}">
-                      <Grid ColumnDefinitions="Auto,*,Auto">
-                        <Border Width="28" Height="28" CornerRadius="14" Background="{DynamicResource Surface2Brush}" Margin="0,0,10,0">
-                          <TextBlock Text="{Binding Initials}" FontSize="{DynamicResource FsCaption}" FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                        </Border>
-                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                          <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
-                          <TextBlock Text="{Binding Promotion}" Classes="muted" FontSize="{DynamicResource FsCaption}" />
-                        </StackPanel>
-                        <TextBlock Grid.Column="2" Text="{Binding Detail}" Classes="muted" FontSize="{DynamicResource FsSmall}" VerticalAlignment="Center" Margin="10,0,0,0" />
+                      <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock TextTrimming="CharacterEllipsis">
+                          <Run Text="{Binding Name}" />
+                          <Run Text="{Binding Promotion, StringFormat=' · {0}'}" Foreground="{DynamicResource MutedBrush}" />
+                        </TextBlock>
+                        <TextBlock Grid.Column="1" Text="{Binding Detail}" Classes="muted" Margin="10,0,0,0" />
                       </Grid>
                     </Button>
                   </DataTemplate>
                 </ItemsControl.ItemTemplate>
               </ItemsControl>
             </StackPanel>
-            <StackPanel Grid.Column="1" Spacing="6">
-              <StackPanel Orientation="Horizontal" Spacing="6">
-                <mi:MaterialIcon Kind="CakeVariantOutline" Width="16" Height="16" Foreground="{DynamicResource TonePurple}" />
-                <TextBlock Text="Anniversaires" FontWeight="SemiBold" />
-              </StackPanel>
+            <StackPanel Grid.Column="1" Spacing="4">
+              <TextBlock Text="Anniversaires" FontWeight="SemiBold" />
               <TextBlock Text="Aucun anniversaire aujourd'hui." Classes="muted" IsVisible="{Binding !HasBirthdays}" />
               <ItemsControl ItemsSource="{Binding Birthdays}">
                 <ItemsControl.ItemTemplate>
                   <DataTemplate>
                     <Button Classes="listrow" Command="{Binding Open}">
-                      <Grid ColumnDefinitions="Auto,*,Auto">
-                        <Border Width="28" Height="28" CornerRadius="14" Background="{DynamicResource Surface2Brush}" Margin="0,0,10,0">
-                          <TextBlock Text="{Binding Initials}" FontSize="{DynamicResource FsCaption}" FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                        </Border>
-                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                          <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
-                          <TextBlock Text="{Binding Promotion}" Classes="muted" FontSize="{DynamicResource FsCaption}" />
-                        </StackPanel>
-                        <TextBlock Grid.Column="2" Text="{Binding Detail}" Classes="muted" FontSize="{DynamicResource FsSmall}" VerticalAlignment="Center" Margin="10,0,0,0" />
+                      <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock TextTrimming="CharacterEllipsis">
+                          <Run Text="{Binding Name}" />
+                          <Run Text="{Binding Promotion, StringFormat=' · {0}'}" Foreground="{DynamicResource MutedBrush}" />
+                        </TextBlock>
+                        <TextBlock Grid.Column="1" Text="{Binding Detail}" Classes="muted" Margin="10,0,0,0" />
                       </Grid>
                     </Button>
                   </DataTemplate>
@@ -117,27 +78,27 @@
         </StackPanel>
       </Border>
 
-      <!-- Indicateurs -->
-      <ItemsControl ItemsSource="{Binding Kpis}" ItemTemplate="{StaticResource KpiTile}" Margin="0,0,-12,0">
+      <!-- Indicateurs de l'année -->
+      <ItemsControl ItemsSource="{Binding Kpis}" ItemTemplate="{StaticResource KpiTile}" Margin="0,0,-12,-12">
         <ItemsControl.ItemsPanel>
           <ItemsPanelTemplate><UniformGrid Columns="3" /></ItemsPanelTemplate>
         </ItemsControl.ItemsPanel>
       </ItemsControl>
 
-      <Grid ColumnDefinitions="3*,2*" Margin="0,-12,0,0">
-        <!-- Encaissements par mois : l'attendu en piste claire, l'encaissé en couleur -->
+      <Grid ColumnDefinitions="3*,2*">
+        <!-- Encaissements par mois : l'attendu en gris, l'encaissé dans l'accent -->
         <Border Classes="card" Grid.Column="0" Margin="0,0,12,0">
-          <StackPanel Spacing="14">
+          <StackPanel Spacing="12">
             <Grid ColumnDefinitions="*,Auto">
               <TextBlock Text="Encaissements par mois" Classes="heading" />
               <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="14" VerticalAlignment="Center">
-                <StackPanel Orientation="Horizontal" Spacing="5">
-                  <Border Width="9" Height="9" CornerRadius="3" Background="{DynamicResource AccentBrush}" VerticalAlignment="Center" />
-                  <TextBlock Text="Encaissé" Classes="muted" FontSize="{DynamicResource FsCaption}" />
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                  <Rectangle Width="10" Height="10" Fill="{DynamicResource AccentBrush}" VerticalAlignment="Center" />
+                  <TextBlock Text="Encaissé" Classes="muted" />
                 </StackPanel>
-                <StackPanel Orientation="Horizontal" Spacing="5">
-                  <Border Width="9" Height="9" CornerRadius="3" Background="{DynamicResource Surface2Brush}" VerticalAlignment="Center" />
-                  <TextBlock Text="Attendu" Classes="muted" FontSize="{DynamicResource FsCaption}" />
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                  <Rectangle Width="10" Height="10" Fill="{DynamicResource LineStrongBrush}" VerticalAlignment="Center" />
+                  <TextBlock Text="Attendu" Classes="muted" />
                 </StackPanel>
               </StackPanel>
             </Grid>
@@ -147,13 +108,13 @@
               </ItemsControl.ItemsPanel>
               <ItemsControl.ItemTemplate>
                 <DataTemplate>
-                  <DockPanel Margin="3,0" ToolTip.Tip="{Binding Value}">
-                    <TextBlock DockPanel.Dock="Bottom" Text="{Binding Label}" Classes="muted" FontSize="{DynamicResource FsCaption}" HorizontalAlignment="Center" Margin="0,6,0,0" />
-                    <Panel VerticalAlignment="Bottom" MaxWidth="34">
-                      <Border Background="{DynamicResource Surface2Brush}" CornerRadius="6" Height="{Binding Track}" VerticalAlignment="Bottom" />
+                  <DockPanel Margin="4,0" ToolTip.Tip="{Binding Value}">
+                    <TextBlock DockPanel.Dock="Bottom" Text="{Binding Label}" Classes="muted" HorizontalAlignment="Center" Margin="0,6,0,0" />
+                    <Panel VerticalAlignment="Bottom" MaxWidth="30">
+                      <Border Background="{DynamicResource LineBrush}" CornerRadius="2,2,0,0" Height="{Binding Track}" VerticalAlignment="Bottom" />
                       <StackPanel VerticalAlignment="Bottom" Spacing="3">
-                        <TextBlock Text="{Binding Value}" FontSize="10" Classes="muted" HorizontalAlignment="Center" />
-                        <Border Background="{DynamicResource AccentBrush}" CornerRadius="6" Height="{Binding Height}" />
+                        <TextBlock Text="{Binding Value}" FontSize="11" Foreground="{DynamicResource Text2Brush}" HorizontalAlignment="Center" />
+                        <Border Background="{DynamicResource AccentBrush}" CornerRadius="2,2,0,0" Height="{Binding Height}" />
                       </StackPanel>
                     </Panel>
                   </DockPanel>
@@ -163,33 +124,33 @@
           </StackPanel>
         </Border>
 
-        <!-- Retards par ancienneté -->
+        <!-- Retards par ancienneté et répartition -->
         <Border Classes="card" Grid.Column="1">
-          <StackPanel Spacing="12">
+          <StackPanel Spacing="10">
             <TextBlock Text="Retards par ancienneté" Classes="heading" />
             <ItemsControl ItemsSource="{Binding Aging}">
               <ItemsControl.ItemTemplate>
                 <DataTemplate>
-                  <StackPanel Spacing="5" Margin="0,5">
+                  <StackPanel Spacing="4" Margin="0,4">
                     <Grid ColumnDefinitions="*,Auto">
-                      <TextBlock Text="{Binding Label}" FontSize="{DynamicResource FsSmall}" />
-                      <TextBlock Grid.Column="1" Text="{Binding Value}" FontSize="{DynamicResource FsSmall}" FontWeight="SemiBold" />
+                      <TextBlock Text="{Binding Label}" />
+                      <TextBlock Grid.Column="1" Text="{Binding Value}" FontWeight="SemiBold" />
                     </Grid>
                     <ProgressBar Classes="slim warn" Value="{Binding Height}" Maximum="100" />
                   </StackPanel>
                 </DataTemplate>
               </ItemsControl.ItemTemplate>
             </ItemsControl>
-            <Border Height="0.5" Background="{DynamicResource LineBrush}" Margin="0,4" />
+            <Border Height="1" Background="{DynamicResource LineBrush}" Margin="0,6" />
             <TextBlock Text="Répartition des apprenants" FontWeight="SemiBold" />
             <ProgressBar Classes="slim" Value="{Binding MaleShare}" Maximum="100" />
-            <TextBlock Text="{Binding GenderText}" Classes="muted" FontSize="{DynamicResource FsSmall}" />
+            <TextBlock Text="{Binding GenderText}" Classes="muted" />
           </StackPanel>
         </Border>
       </Grid>
 
       <Grid ColumnDefinitions="3*,2*">
-        <!-- Promotions : recouvrement par classe -->
+        <!-- Recouvrement par promotion -->
         <Border Classes="card" Grid.Column="0" Margin="0,0,12,0">
           <StackPanel Spacing="10">
             <TextBlock Text="Recouvrement par promotion" Classes="heading" />
@@ -201,9 +162,9 @@
                 <DataGridTemplateColumn Header="Recouvrement" Width="1.4*" MinWidth="170">
                   <DataGridTemplateColumn.CellTemplate>
                     <DataTemplate>
-                      <Grid ColumnDefinitions="*,Auto" Margin="0,0,10,0">
+                      <Grid ColumnDefinitions="*,Auto" Margin="10,0">
                         <ProgressBar Classes="slim" Value="{Binding RecoveryValue}" Maximum="100" VerticalAlignment="Center" Margin="0,0,12,0" />
-                        <TextBlock Grid.Column="1" Text="{Binding Recovery}" VerticalAlignment="Center" HorizontalAlignment="Right" MinWidth="64" TextAlignment="Right" />
+                        <TextBlock Grid.Column="1" Text="{Binding Recovery}" VerticalAlignment="Center" MinWidth="56" TextAlignment="Right" />
                       </Grid>
                     </DataTemplate>
                   </DataGridTemplateColumn.CellTemplate>
@@ -215,24 +176,20 @@
 
         <!-- Derniers reçus -->
         <Border Classes="card" Grid.Column="1">
-          <StackPanel Spacing="8">
+          <StackPanel Spacing="6">
             <TextBlock Text="Derniers reçus" Classes="heading" Margin="0,0,0,4" />
             <ItemsControl ItemsSource="{Binding Latest}">
               <ItemsControl.ItemTemplate>
                 <DataTemplate>
-                  <Border BorderBrush="{DynamicResource LineBrush}" BorderThickness="0,0,0,0.5" Padding="0,7">
-                    <Grid ColumnDefinitions="Auto,*,Auto">
-                      <Panel Width="30" Height="30" Margin="0,0,10,0">
-                        <Border CornerRadius="15" Background="{DynamicResource ToneGreen}" Opacity="0.14" />
-                        <mi:MaterialIcon Kind="ReceiptTextOutline" Width="16" Height="16" Foreground="{DynamicResource ToneGreen}" />
-                      </Panel>
-                      <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                        <TextBlock Text="{Binding Number}" FontWeight="Medium" />
-                        <TextBlock Text="{Binding Date}" Classes="muted" FontSize="{DynamicResource FsCaption}" />
+                  <Border BorderBrush="{DynamicResource LineBrush}" BorderThickness="0,0,0,1" Padding="0,6">
+                    <Grid ColumnDefinitions="*,Auto">
+                      <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="{Binding Number}" />
+                        <TextBlock Text="{Binding Date}" Classes="muted" />
                       </StackPanel>
-                      <StackPanel Grid.Column="2" HorizontalAlignment="Right" VerticalAlignment="Center">
+                      <StackPanel Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center">
                         <TextBlock Text="{Binding Amount}" FontWeight="SemiBold" HorizontalAlignment="Right" />
-                        <TextBlock Text="{Binding Method}" Classes="muted" FontSize="{DynamicResource FsCaption}" HorizontalAlignment="Right" />
+                        <TextBlock Text="{Binding Method}" Classes="muted" HorizontalAlignment="Right" />
                       </StackPanel>
                     </Grid>
                   </Border>

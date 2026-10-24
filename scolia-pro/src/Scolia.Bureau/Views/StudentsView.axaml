@@ -33,13 +33,10 @@
         <DataGridTemplateColumn infra:GridPriority.Level="1" Header="Statut" Width="Auto" MinWidth="120">
           <DataGridTemplateColumn.CellTemplate>
             <DataTemplate>
-              <Panel Classes="pill">
-                <Border CornerRadius="10" Background="{Binding StatusBrush}" Opacity="0.13" />
-                <StackPanel Orientation="Horizontal" Spacing="6" Margin="9,3,11,3">
-                  <Ellipse Width="6" Height="6" Fill="{Binding StatusBrush}" VerticalAlignment="Center" />
-                  <TextBlock Text="{Binding Status}" Foreground="{Binding StatusBrush}" FontSize="{DynamicResource FsSmall}" FontWeight="SemiBold" />
-                </StackPanel>
-              </Panel>
+              <StackPanel Classes="status">
+                <Ellipse Width="8" Height="8" Fill="{Binding StatusBrush}" VerticalAlignment="Center" />
+                <TextBlock Text="{Binding Status}" VerticalAlignment="Center" />
+              </StackPanel>
             </DataTemplate>
           </DataGridTemplateColumn.CellTemplate>
         </DataGridTemplateColumn>

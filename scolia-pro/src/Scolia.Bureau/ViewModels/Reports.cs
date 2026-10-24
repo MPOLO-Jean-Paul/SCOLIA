@@ -40,7 +40,7 @@ public sealed class ReportsPage : PageViewModel
     }
 
     public override string Title => "Rapports et exports";
-    public override string Subtitle => "Chaque document s'ouvre aussitôt, en PDF prêt à imprimer ou en classeur Excel";
+    public override string Subtitle => "Sans période choisie, les reçus et les dépenses sont pris depuis le début";
     public override MaterialIconKind Glyph => MaterialIconKind.FileChartOutline;
 
     public IReadOnlyList<ReportSectionVm> Sections { get; }
@@ -66,28 +66,28 @@ public sealed class ReportsPage : PageViewModel
             if (list.Count > 0) sections.Add(new ReportSectionVm(title, list));
         }
 
-        Section("FINANCES",
+        Section("Finances",
             Card(Perm.ReportsRead, "Situation par promotion", "Effectif, attendu à ce jour, encaissé, reste et taux de recouvrement de chaque promotion.",
                 MaterialIconKind.ChartBoxOutline, "ToneBlue", "", Pdf(() => "api/rapports/promotions/export", "situation-par-promotion"), Excel(() => "api/rapports/promotions/export", "situation-par-promotion")),
             Card(Perm.PaymentsRead, "Journal des encaissements", "Tous les reçus de la période, annulés compris, avec le total valide.",
-                MaterialIconKind.ReceiptTextOutline, "ToneGreen", "Période", Pdf(() => "api/paiements/export" + Period("from", "to"), "journal-des-encaissements"), Excel(() => "api/paiements/export" + Period("from", "to"), "journal-des-encaissements")),
+                MaterialIconKind.ReceiptTextOutline, "ToneGreen", "la période", Pdf(() => "api/paiements/export" + Period("from", "to"), "journal-des-encaissements"), Excel(() => "api/paiements/export" + Period("from", "to"), "journal-des-encaissements")),
             Card(Perm.ReportsRead, "Retards de paiement", "Apprenants en retard, périodes dues, ancienneté et contact du parent.",
                 MaterialIconKind.AlertCircleOutline, "ToneOrange", "", Pdf(() => "api/rapports/debiteurs/export", "retards-de-paiement"), Excel(() => "api/rapports/debiteurs/export", "retards-de-paiement")),
             Card(Perm.PaymentsRead, "Registre des dépenses", "Sorties de caisse et de banque de la période, numérotées, avec leur motif.",
-                MaterialIconKind.WalletOutline, "ToneRed", "Période", Pdf(() => "api/depenses/export" + Period("du", "au"), "registre-des-depenses"), Excel(() => "api/depenses/export" + Period("du", "au"), "registre-des-depenses")));
+                MaterialIconKind.WalletOutline, "ToneRed", "la période", Pdf(() => "api/depenses/export" + Period("du", "au"), "registre-des-depenses"), Excel(() => "api/depenses/export" + Period("du", "au"), "registre-des-depenses")));
 
-        Section("SECRÉTARIAT",
+        Section("Secrétariat",
             Card(Perm.ReportsRead, "Liste générale des apprenants", "Toutes les promotions de l'année, avec statut, contact du parent et solde.",
                 MaterialIconKind.AccountGroupOutline, "ToneIndigo", "", Pdf(() => "api/rapports/apprenants/export", "liste-generale-apprenants"), Excel(() => "api/rapports/apprenants/export", "liste-generale-apprenants")),
             Card(Perm.ReportsRead, "Liste de classe", "Liste nominative d'enregistrement de la promotion choisie.",
-                MaterialIconKind.FormatListNumbered, "TonePurple", "Promotion", Pdf(ClassList, "liste-de-classe"), Excel(ClassList, "liste-de-classe")));
+                MaterialIconKind.FormatListNumbered, "TonePurple", "la promotion", Pdf(ClassList, "liste-de-classe"), Excel(ClassList, "liste-de-classe")));
 
-        Section("SCOLARITÉ",
+        Section("Scolarité",
             Card(Perm.AcademicsRead, "Registre de discipline", "Renvois, convocations et suites données, pour la promotion choisie.",
-                MaterialIconKind.AlertOctagonOutline, "ToneRed", "Promotion",
+                MaterialIconKind.AlertOctagonOutline, "ToneRed", "la promotion",
                 new ReportFormatVm("CSV", Command(() => "api/scolarite/discipline/registre/export.csv" + ScoliaClient.Query(("promotionId", PromotionId())), "registre-discipline.csv"))));
 
-        Section("CONTRÔLE",
+        Section("Contrôle",
             Card(Perm.AuditRead, "Journal d'audit", "Chaque opération enregistrée : qui, quand, quoi. Chaîne d'empreintes vérifiable.",
                 MaterialIconKind.ShieldCheckOutline, "ToneNeutral", "",
                 new ReportFormatVm("CSV", Command(() => "api/audit/export?format=csv", "journal-audit.csv"))));

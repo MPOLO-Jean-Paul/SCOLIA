@@ -9,13 +9,10 @@
       <DataGridTemplateColumn Header="Compte" Width="Auto" MinWidth="120">
         <DataGridTemplateColumn.CellTemplate>
           <DataTemplate>
-            <Panel Classes="pill">
-                <Border CornerRadius="10" Background="{Binding ActiveBrush}" Opacity="0.13" />
-                <StackPanel Orientation="Horizontal" Spacing="6" Margin="9,3,11,3">
-                  <Ellipse Width="6" Height="6" Fill="{Binding ActiveBrush}" VerticalAlignment="Center" />
-                  <TextBlock Text="{Binding Active}" Foreground="{Binding ActiveBrush}" FontSize="{DynamicResource FsSmall}" FontWeight="SemiBold" />
-                </StackPanel>
-              </Panel>
+            <StackPanel Classes="status">
+                <Ellipse Width="8" Height="8" Fill="{Binding ActiveBrush}" VerticalAlignment="Center" />
+                <TextBlock Text="{Binding Active}" VerticalAlignment="Center" />
+              </StackPanel>
           </DataTemplate>
         </DataGridTemplateColumn.CellTemplate>
       </DataGridTemplateColumn>

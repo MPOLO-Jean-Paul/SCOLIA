@@ -3,38 +3,34 @@
              xmlns:mi="using:Material.Icons.Avalonia"
              x:Class="Scolia.Bureau.Views.LoginView">
   <Grid Background="{DynamicResource BgBrush}" RowDefinitions="*,Auto">
-    <!-- Carte centrée, sobre : logo, nom de l'établissement, deux champs et un bouton -->
-    <Border Classes="card" Width="400" Padding="36,34,36,28" CornerRadius="20" HorizontalAlignment="Center" VerticalAlignment="Center">
+    <!-- Connexion : logo, nom de l'établissement, deux champs et un bouton -->
+    <Border Classes="card" Width="380" Padding="32,28,32,24" HorizontalAlignment="Center" VerticalAlignment="Center">
       <StackPanel Spacing="12">
-        <Border Width="68" Height="68" CornerRadius="16" HorizontalAlignment="Center" ClipToBounds="True" Margin="0,0,0,6"
-                BoxShadow="0 4 14 0 #22000000">
-          <Image Source="avares://SCOLIA/Assets/scolia.png" Width="68" Height="68" />
-        </Border>
+        <Image Source="avares://SCOLIA/Assets/scolia.png" Width="56" Height="56" HorizontalAlignment="Center" Margin="0,0,0,6" />
         <TextBlock Text="{Binding TitleText}" Classes="title" FontSize="{DynamicResource FsTitle}" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" />
         <TextBlock Text="Connectez-vous pour continuer" Classes="muted" HorizontalAlignment="Center" Margin="0,-6,0,14" />
 
         <StackPanel Spacing="4">
-          <TextBlock Text="Identifiant" Classes="caption" Margin="2,0,0,0" />
-          <TextBox x:Name="UserNameBox" Text="{Binding UserName}" PlaceholderText="Votre identifiant" MinHeight="40" />
+          <TextBlock Text="Identifiant" Classes="fieldlabel" />
+          <TextBox x:Name="UserNameBox" Text="{Binding UserName}" />
         </StackPanel>
         <StackPanel Spacing="4">
-          <TextBlock Text="Mot de passe" Classes="caption" Margin="2,0,0,0" />
-          <TextBox x:Name="PasswordBox" Text="{Binding Password}" PasswordChar="•" PlaceholderText="Votre mot de passe" MinHeight="40" />
+          <TextBlock Text="Mot de passe" Classes="fieldlabel" />
+          <TextBox x:Name="PasswordBox" Text="{Binding Password}" PasswordChar="•" />
         </StackPanel>
 
-        <Border Background="{DynamicResource RedSoftBrush}" CornerRadius="10" Padding="12,8" IsVisible="{Binding HasError}">
+        <Border Background="{DynamicResource RedSoftBrush}" CornerRadius="{StaticResource RadiusSmall}" Padding="12,8" IsVisible="{Binding HasError}">
           <Grid ColumnDefinitions="Auto,*">
             <mi:MaterialIcon Kind="AlertCircleOutline" Width="16" Height="16" Foreground="{DynamicResource ToneRed}" VerticalAlignment="Top" Margin="0,1,8,0" />
             <TextBlock Grid.Column="1" Text="{Binding Error}" Classes="error" TextWrapping="Wrap" />
           </Grid>
         </Border>
 
-        <Button Classes="primary" Content="Se connecter" Command="{Binding Submit}" HorizontalAlignment="Stretch" Height="44" Margin="0,8,0,0" CornerRadius="10" />
+        <Button Classes="primary" Content="Se connecter" Command="{Binding Submit}" HorizontalAlignment="Stretch" Height="36" Margin="0,8,0,0" />
         <TextBlock Text="Mot de passe oublié ? L'administrateur peut le réinitialiser depuis Utilisateurs."
                    Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" TextAlignment="Center" Margin="0,6,0,0" />
       </StackPanel>
     </Border>
 
-    <TextBlock Grid.Row="1" Text="SCOLIA · gestion scolaire" Classes="muted" FontSize="{DynamicResource FsCaption}" HorizontalAlignment="Center" Margin="0,0,0,18" />
   </Grid>
 </UserControl>

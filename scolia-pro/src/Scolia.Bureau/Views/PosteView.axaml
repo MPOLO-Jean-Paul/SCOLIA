@@ -8,26 +8,24 @@
                Text="SCOLIA relie les ordinateurs de l'établissement tout seul : aucune adresse à saisir, et les réglages s'appliquent tout de suite." />
 
     <!-- Connexion de ce poste -->
-    <TextBlock Text="CE POSTE" Classes="caption" Margin="4,8,0,-8" />
+    <TextBlock Text="Ce poste" Classes="section" Margin="0,8,0,-8" />
     <Border Classes="card" Padding="0">
       <StackPanel>
         <Grid ColumnDefinitions="Auto,*" Margin="18,16">
-          <Border Width="40" Height="40" CornerRadius="12" Background="{DynamicResource ToneBlue}" Margin="0,0,16,0">
-            <mi:MaterialIcon Kind="DesktopTowerMonitor" Width="22" Height="22" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
-          </Border>
+          <mi:MaterialIcon Kind="DesktopTowerMonitor" Width="20" Height="20" Foreground="{DynamicResource Text2Brush}" VerticalAlignment="Center" Margin="0,0,16,0" />
           <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
             <TextBlock Text="{Binding ConnectionTitle}" FontWeight="SemiBold" TextWrapping="Wrap" />
             <TextBlock Text="{Binding ConnectionLine}" Classes="muted" TextWrapping="Wrap" FontSize="{DynamicResource FsSmall}" />
           </StackPanel>
         </Grid>
-        <Border Height="1" Background="{DynamicResource LineBrush}" Margin="74,0,0,0" />
-        <WrapPanel Margin="74,12,18,14">
+        <Border Height="1" Background="{DynamicResource LineBrush}" Margin="54,0,0,0" />
+        <WrapPanel Margin="54,12,18,14">
           <Button Content="Rechercher SCOLIA sur le réseau" Command="{Binding Search}" IsEnabled="{Binding NotSearching}" Margin="0,0,10,0" />
           <Button Classes="ghost" Content="Utiliser cet ordinateur comme serveur" Command="{Binding UseThisComputer}" IsVisible="{Binding IsLinked}" />
         </WrapPanel>
-        <ProgressBar IsIndeterminate="True" IsVisible="{Binding Searching}" Height="2" MinHeight="2" Margin="74,0,18,10" />
-        <TextBlock Text="{Binding SearchLine}" IsVisible="{Binding HasSearchLine}" Classes="muted" TextWrapping="Wrap" Margin="74,0,18,12" FontSize="{DynamicResource FsSmall}" />
-        <ItemsControl ItemsSource="{Binding Servers}" Margin="58,0,10,4">
+        <ProgressBar IsIndeterminate="True" IsVisible="{Binding Searching}" Height="2" MinHeight="2" Margin="54,0,18,10" />
+        <TextBlock Text="{Binding SearchLine}" IsVisible="{Binding HasSearchLine}" Classes="muted" TextWrapping="Wrap" Margin="54,0,18,12" FontSize="{DynamicResource FsSmall}" />
+        <ItemsControl ItemsSource="{Binding Servers}" Margin="38,0,10,4">
           <ItemsControl.ItemTemplate>
             <DataTemplate>
               <Grid ColumnDefinitions="*,Auto" Margin="16,8">
@@ -44,13 +42,11 @@
     </Border>
 
     <!-- Ordinateur principal : partage et démarrage automatique -->
-    <TextBlock Text="ORDINATEUR PRINCIPAL" Classes="caption" Margin="4,8,0,-8" IsVisible="{Binding IsServerComputer}" />
+    <TextBlock Text="Ordinateur principal" Classes="section" Margin="0,8,0,-8" IsVisible="{Binding IsServerComputer}" />
     <Border Classes="card" Padding="0" IsVisible="{Binding IsServerComputer}">
       <StackPanel>
         <Grid ColumnDefinitions="Auto,*,Auto" Margin="18,16">
-          <Border Width="40" Height="40" CornerRadius="12" Background="{DynamicResource ToneGreen}" Margin="0,0,16,0">
-            <mi:MaterialIcon Kind="LanConnect" Width="22" Height="22" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
-          </Border>
+          <mi:MaterialIcon Kind="LanConnect" Width="20" Height="20" Foreground="{DynamicResource Text2Brush}" VerticalAlignment="Center" Margin="0,0,16,0" />
           <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
             <TextBlock Text="Partager avec les autres ordinateurs" />
             <TextBlock Text="{Binding LanLine}" Classes="muted" TextWrapping="Wrap" FontSize="{DynamicResource FsSmall}" />
@@ -59,12 +55,10 @@
                         Command="{Binding ToggleLan}" IsEnabled="{Binding IsWindows}" />
         </Grid>
 
-        <Border Height="1" Background="{DynamicResource LineBrush}" Margin="74,0,0,0" />
+        <Border Height="1" Background="{DynamicResource LineBrush}" Margin="54,0,0,0" />
 
         <Grid ColumnDefinitions="Auto,*,Auto" Margin="18,16">
-          <Border Width="40" Height="40" CornerRadius="12" Background="{DynamicResource TonePurple}" Margin="0,0,16,0">
-            <mi:MaterialIcon Kind="Power" Width="22" Height="22" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
-          </Border>
+          <mi:MaterialIcon Kind="Power" Width="20" Height="20" Foreground="{DynamicResource Text2Brush}" VerticalAlignment="Center" Margin="0,0,16,0" />
           <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
             <TextBlock Text="Démarrer avec Windows" />
             <TextBlock Text="{Binding ServiceLine}" Classes="muted" TextWrapping="Wrap" FontSize="{DynamicResource FsSmall}" />

@@ -24,13 +24,13 @@ Le détail est dans [`docs/GUIDE_UTILISATEUR.md`](docs/GUIDE_UTILISATEUR.md) et 
 Il parle au serveur SCOLIA par la même API que l'interface web. Au lancement, il démarre le serveur `SCOLIA-Serveur.exe`
 du même dossier s'il n'est pas déjà actif. Le paquet Windows contient les deux exécutables.
 
-Le client suit les codes visuels de macOS : barre latérale de navigation rangée par métier, ruban à onglets
-façon Office 2024 pour les commandes, cartes blanches à ombre douce, bleu système, police Inter (licence OFL,
-embarquée dans l'exécutable). L'accueil salue l'utilisateur et réunit les raccourcis du quotidien, la journée en cours
-(encaissé, dépenses, arrêté de caisse, appel, parents convoqués, anniversaires), un rappel de sauvegarde et les
-indicateurs de l'année. Les écrans partagent les mêmes repères : barre de filtres aux champs étiquetés, pastilles de
-statut colorées, états vides explicites, feuilles de dialogue aux boutons alignés à droite, trois actions visibles au plus
-dans l'en-tête et les autres dans « Plus », actions destructrices en rouge. Clair, sombre, taille du texte, densité, zoom et barre latérale se règlent dans Affichage ou Fichier.
+Le client suit l'apparence native de Windows 11 et d'Office : police du système (Segoe UI Variable, Inter embarquée
+hors Windows), couleurs et bleu d'accent de Windows, coins de 4 px pour les contrôles et de 8 px pour les panneaux,
+panneaux à trait fin sans ombre, icônes monochromes, volet de navigation à gauche avec le trait d'accent de l'élément
+choisi, ruban à onglets pour les commandes. Les boîtes de dialogue reprennent celles de Windows : titre, champs, bande
+grise du bas avec le bouton principal puis Annuler. Les statuts sont un point de couleur devant le libellé ; aucune
+couleur n'est décorative. Clair, sombre, taille du texte, densité, zoom et volet de navigation se règlent dans
+Affichage ou Fichier.
 
 | Rubrique du ruban | Écrans natifs |
 |---|---|

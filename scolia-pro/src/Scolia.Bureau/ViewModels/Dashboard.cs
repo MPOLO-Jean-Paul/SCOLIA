@@ -22,9 +22,6 @@ public sealed record PromotionStatVm(string Code, string Name, string Students, 
 /// <summary>Reçu récent affiché sur le tableau de bord.</summary>
 public sealed record ReceiptLineVm(Guid Id, string Number, string Date, string Amount, string Method);
 
-/// <summary>Raccourci de l'accueil : une action fréquente, à un clic.</summary>
-public sealed record ShortcutVm(string Label, MaterialIconKind Icon, IBrush Brush, AsyncCommand Open);
-
 /// <summary>Repère de la journée : caisse, dépenses, appel, renvois.</summary>
 public sealed record TodayStatVm(string Label, string Value, string Hint, MaterialIconKind Icon, IBrush Brush);
 
@@ -32,7 +29,7 @@ public sealed record TodayStatVm(string Label, string Value, string Hint, Materi
 public sealed record TodayPersonVm(string Name, string Promotion, string Detail, string Initials, AsyncCommand Open);
 
 /// <summary>
-/// Accueil : salutation, raccourcis, journée en cours, indicateurs, encaissements par mois, retards par ancienneté,
+/// Tableau de bord : journée en cours, indicateurs, encaissements par mois, retards par ancienneté,
 /// promotions et derniers reçus.
 /// </summary>
 public sealed class DashboardPage : PageViewModel
@@ -50,15 +47,12 @@ public sealed class DashboardPage : PageViewModel
     {
         Action("Encaisser", MaterialIconKind.HandCoin, () => Shell.Open(() => new CashierPage(Shell)), primary: true);
         ActionRefresh();
-        BuildShortcuts();
     }
 
     public override string Title => "Tableau de bord";
-    public override string Heading => Greeting();
     public override string Subtitle => subtitle;
     public override MaterialIconKind Glyph => MaterialIconKind.ViewDashboardOutline;
 
-    public ObservableCollection<ShortcutVm> Shortcuts { get; } = [];
     public ObservableCollection<TodayStatVm> TodayStats { get; } = [];
     public ObservableCollection<TodayPersonVm> Appointments { get; } = [];
     public ObservableCollection<TodayPersonVm> Birthdays { get; } = [];
@@ -75,7 +69,6 @@ public sealed class DashboardPage : PageViewModel
     public bool HasAppointments => Appointments.Count > 0;
     public bool HasBirthdays => Birthdays.Count > 0;
     public bool HasPeople => HasAppointments || HasBirthdays;
-    public bool HasShortcuts => Shortcuts.Count > 0;
 
     /// <summary>Rappel affiché quand la dernière sauvegarde date de plus d'un jour, pour les comptes qui gèrent les sauvegardes.</summary>
     public string BackupLine { get => backupLine; private set { if (Set(ref backupLine, value)) Raise(nameof(HasBackupLine)); } }
@@ -90,9 +83,7 @@ public sealed class DashboardPage : PageViewModel
     public override async Task LoadAsync()
     {
         var d = await Shell.Api.GetAsync<DashboardDto>("api/rapports/tableau-de-bord");
-        subtitle = $"{Capitalize(DateTime.Today.ToString("dddd d MMMM yyyy", Fr))} · année scolaire {d.AcademicYear} · "
-            + Format.Count(d.ActiveStudents, "apprenant actif", "apprenants actifs");
-        Raise(nameof(Heading));
+        subtitle = $"{Capitalize(DateTime.Today.ToString("dddd d MMMM yyyy", Fr))} · année scolaire {d.AcademicYear}";
         Raise(nameof(Subtitle));
 
         Kpis.Clear();
@@ -188,30 +179,6 @@ public sealed class DashboardPage : PageViewModel
         Raise(nameof(HasAppointments));
         Raise(nameof(HasBirthdays));
         Raise(nameof(HasPeople));
-    }
-
-    /// <summary>Raccourcis de l'accueil, selon les droits du compte.</summary>
-    private void BuildShortcuts()
-    {
-        void Add(string label, MaterialIconKind icon, string tone, string? perm, Func<Task> run)
-        {
-            if (perm is null || Shell.Can(perm)) Shortcuts.Add(new ShortcutVm(label, icon, ThemeBrush.Get(tone), new AsyncCommand(() => Shell.Run(run))));
-        }
-
-        Add("Encaisser", MaterialIconKind.HandCoin, "ToneGreen", Perm.PaymentsCreate, () => Shell.Open(() => new CashierPage(Shell)));
-        Add("Inscrire", MaterialIconKind.AccountPlusOutline, "ToneBlue", Perm.StudentsWrite, () => StudentForms.CreateAsync(Shell));
-        Add("Rechercher", MaterialIconKind.Magnify, "ToneIndigo", null, () => { Shell.ShowSearch(); return Task.CompletedTask; });
-        Add("Caisse", MaterialIconKind.CashRegister, "ToneTeal", Perm.PaymentsRead, () => Shell.Open(() => new CashPage(Shell)));
-        Add("Présences", MaterialIconKind.ClipboardCheckOutline, "ToneOrange", Perm.AcademicsRead, () => Shell.Open(() => new AttendancePage(Shell)));
-        Add("Recouvrement", MaterialIconKind.ChartBar, "TonePurple", Perm.ReportsRead, () => Shell.Open(() => new DebtorsPage(Shell)));
-    }
-
-    /// <summary>Bonjour jusqu'en fin d'après-midi, Bonsoir ensuite, avec le prénom d'usage du compte.</summary>
-    private string Greeting()
-    {
-        var hello = DateTime.Now.Hour >= 18 ? "Bonsoir" : "Bonjour";
-        var name = Shell.Session?.DisplayName?.Trim();
-        return string.IsNullOrEmpty(name) ? hello : $"{hello}, {name}";
     }
 
     private static string Initials(string name)
