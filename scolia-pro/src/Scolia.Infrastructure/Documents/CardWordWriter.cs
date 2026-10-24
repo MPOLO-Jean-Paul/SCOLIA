@@ -177,9 +177,18 @@ public static class CardWordWriter
         body.Append(Paragraph(value.Trim().ToUpperInvariant(), halfPoints, bold, false, "center", "1B2430"));
     }
 
-    private static void Field(StringBuilder body, string label, string value) =>
-        body.Append(Paragraph(label, 9, true, false, "left", "5B6878", 0, 16))
-            .Append(Paragraph(value, value.Length > 26 ? 13 : 15, true, false, "left", "1B2430", 0, 16));
+    /// <summary>Une ligne par champ : libellé et valeur côte à côte, « NOM : MUKENDI ».</summary>
+    private static void Field(StringBuilder body, string label, string value)
+    {
+        var size = value.Length > 26 ? 13 : 15;
+        body.Append($"<w:p><w:pPr><w:spacing w:before=\"0\" w:after=\"120\" w:line=\"{size * 13}\" w:lineRule=\"exact\"/><w:jc w:val=\"left\"/></w:pPr>")
+            .Append(Run($"{label} : ", 9, "5B6878"))
+            .Append(Run(value, size, "1B2430"))
+            .Append("</w:p>");
+    }
+
+    private static string Run(string text, int halfPoints, string color) =>
+        $"<w:r><w:rPr><w:b/><w:color w:val=\"{color}\"/><w:sz w:val=\"{halfPoints}\"/></w:rPr><w:t xml:space=\"preserve\">{Esc(text)}</w:t></w:r>";
 
     private static string Paragraph(string text, int halfPoints, bool bold, bool underline, string align, string? color, int beforeTwip = 0, int afterTwip = 0)
     {

@@ -131,12 +131,13 @@ internal static class StudentCardPdf
         if (bold) line.Bold();
     }
 
+    /// <summary>Une ligne par champ : libellé et valeur côte à côte, « NOM : MUKENDI ».</summary>
     private static void Field(ColumnDescriptor identity, string label, string value)
     {
-        identity.Item().Column(field =>
+        identity.Item().Text(text =>
         {
-            field.Item().Text(label).FontSize(4.4f).Bold().FontColor(Muted).LetterSpacing(0.06f);
-            field.Item().Text(value).FontSize(value.Length > 26 ? 6.6f : 7.4f).Bold().FontColor(Ink);
+            text.Span($"{label} : ").FontSize(5.2f).Bold().FontColor(Muted);
+            text.Span(value).FontSize(value.Length > 26 ? 6.6f : 7.4f).Bold().FontColor(Ink);
         });
     }
 
