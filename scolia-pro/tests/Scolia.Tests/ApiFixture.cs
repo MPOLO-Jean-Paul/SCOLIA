@@ -85,3 +85,26 @@ public static class Http
         return client;
     }
 }
+
+/// <summary>Règlement comme l'écran Encaisser : on coche les premiers mois dus, le montant est celui des mois.</summary>
+public static class MonthPayments
+{
+    public static async Task<(List<string> Ids, decimal Total)> OpenMonths(this HttpClient client, string enrollmentId, int count)
+    {
+        var account = await client.GetAsync($"/api/inscriptions/{enrollmentId}/compte").Ok();
+        var months = account.GetProperty("lines").EnumerateArray()
+            .Where(l => l.GetProperty("kind").GetString() == "Mensualite" && l.GetProperty("remaining").GetDecimal() > 0)
+            .Take(count).ToList();
+        return (months.Select(m => m.GetProperty("feeItemId").GetString()!).ToList(), months.Sum(m => m.GetProperty("remaining").GetDecimal()));
+    }
+
+    public static async Task<JsonElement> PayMonths(this HttpClient client, string enrollmentId, int count = 1, string method = "Especes",
+        string? reference = null, DateOnly? date = null, string? key = null)
+    {
+        var (ids, total) = await client.OpenMonths(enrollmentId, count);
+        return await client.Post("/api/paiements", new
+        {
+            enrollmentId, amount = total, feeItemIds = ids, method, reference, date, idempotencyKey = key,
+        }).Ok();
+    }
+}

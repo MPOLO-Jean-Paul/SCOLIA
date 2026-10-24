@@ -92,7 +92,7 @@ public sealed class AccountingTests
         new(Sept, "Septembre", 55000, new DateOnly(2026, 10, 6), 1),
         new(Oct, "Octobre", 55000, new DateOnly(2026, 11, 6), 2),
         new(Nov, "Novembre", 55000, new DateOnly(2026, 12, 6), 3),
-        new(Insc, "Inscription", 25000, new DateOnly(2026, 9, 15), 0),
+        new(Insc, "Inscription", 25000, new DateOnly(2026, 9, 15), 0, null, FeeKind.Inscription),
     ];
 
     private static StudentAccount Account(Dictionary<Guid, decimal>? paid = null, Dictionary<Guid, decimal>? coverage = null) =>
@@ -110,24 +110,31 @@ public sealed class AccountingTests
     }
 
     [Fact]
-    public void Allocation_settles_oldest_due_first()
+    public void Paying_months_settles_each_selected_month_in_full()
     {
-        var plan = PaymentAllocator.Allocate(Account(), 100000);
-        Assert.Equal([(Insc, 25000m), (Sept, 55000m), (Oct, 20000m)], plan);
+        var plan = PaymentAllocator.Months(Account(), [Sept, Oct]);
+        Assert.Equal([(Sept, 55000m), (Oct, 55000m)], plan);
     }
 
     [Fact]
-    public void Allocation_can_target_selected_items()
+    public void Paying_a_month_already_partly_paid_settles_only_its_remainder()
     {
-        var plan = PaymentAllocator.Allocate(Account(), 55000, [Nov]);
-        Assert.Equal([(Nov, 55000m)], plan);
+        var plan = PaymentAllocator.Months(Account(new() { [Sept] = 20000 }), [Sept]);
+        Assert.Equal([(Sept, 35000m)], plan);
     }
 
     [Fact]
-    public void Overpayment_is_rejected_with_remaining_amount()
+    public void Inscription_and_exam_fees_cannot_be_paid_by_month()
     {
-        var error = Assert.Throws<DomainException>(() => PaymentAllocator.Allocate(Account(), 200000));
-        Assert.Contains("190", error.Message, StringComparison.Ordinal);
+        var error = Assert.Throws<DomainException>(() => PaymentAllocator.Months(Account(), [Insc]));
+        Assert.Contains("scolarité", error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void A_month_already_paid_cannot_be_paid_again()
+    {
+        var error = Assert.Throws<DomainException>(() => PaymentAllocator.Months(Account(new() { [Sept] = 55000 }), [Sept]));
+        Assert.Contains("déjà réglé", error.Message, StringComparison.Ordinal);
     }
 
     [Fact]

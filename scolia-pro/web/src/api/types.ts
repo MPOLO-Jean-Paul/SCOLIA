@@ -31,6 +31,7 @@ export interface Student {
 export interface DuplicateCandidate { id: string; matricule: string; fullName: string; promotionCode?: string }
 export interface AccountLine {
   feeItemId: string; label: string; dueDate: string; amount: number; covered: number; net: number; paid: number; remaining: number; status: string; isOverdue: boolean;
+  kind: string;
 }
 export interface ReceiptSummary { id: string; number: string; date: string; amount: number; method: string; status: string; cashier: string; allocations?: string }
 export interface Account {

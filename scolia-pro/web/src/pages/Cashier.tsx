@@ -1,10 +1,10 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { CheckCircle2, HandCoins, MessageCircle, Printer, RotateCcw, Search } from 'lucide-react';
 import { api, ApiError, openDocument } from '../api/client';
 import type { Account, Paged, PaymentPreview, Receipt, StudentListItem } from '../api/types';
-import { date, getCurrency, money, newKey, today } from '../lib/format';
+import { date, money, newKey, today } from '../lib/format';
 import { useSession } from '../lib/session';
 import { Badge, Button, Card, Empty, ErrorAlert, Kpi, Loading, PageHead, Segmented, SectionTitle, TextField, statusTone, useDebounced, useToast } from '../components/ui';
 
@@ -60,14 +60,12 @@ export function CashierPage() {
 }
 
 function PaymentForm({ account, onDone }: { account: Account; onDone: (r: Receipt) => void }) {
-  const [amount, setAmount] = useState('');
   const [method, setMethod] = useState('Especes');
   const [reference, setReference] = useState('');
   const [payerName, setPayerName] = useState('');
   const [payerPhone, setPayerPhone] = useState('');
   const [paidOn, setPaidOn] = useState(today());
   const [note, setNote] = useState('');
-  const [manual, setManual] = useState(false);
   const [selected, setSelected] = useState<string[]>([]);
   const [preview, setPreview] = useState<PaymentPreview | null>(null);
   const [previewError, setPreviewError] = useState<unknown>();
@@ -76,28 +74,29 @@ function PaymentForm({ account, onDone }: { account: Account; onDone: (r: Receip
   const [idempotencyKey, setIdempotencyKey] = useState(newKey);
   const qc = useQueryClient();
   const toast = useToast();
-  const value = Number(amount.replace(/\s/g, '').replace(',', '.')) || 0;
-  const debouncedValue = useDebounced(value, 220);
-  const open = account.lines.filter((l) => l.remaining > 0);
-  const nextDue = open[0];
-  const items = useMemo(() => (manual && selected.length ? selected : undefined), [manual, selected]);
+  // Un paiement se fait par mois complet : seules les mensualités de scolarité se cochent, à leur montant dû.
+  const months = account.lines.filter((l) => l.remaining > 0 && l.kind === 'Mensualite');
+  const chosen = months.filter((l) => selected.includes(l.feeItemId));
+  const total = chosen.reduce((sum, l) => sum + l.remaining, 0);
+  const hasSelection = chosen.length > 0;
+  const toggle = (id: string, on: boolean) => setSelected(on ? [...selected, id] : selected.filter((x) => x !== id));
 
   useEffect(() => {
     setIdempotencyKey(newKey());
-    if (debouncedValue <= 0) { setPreview(null); setPreviewError(undefined); return; }
+    if (!hasSelection) { setPreview(null); setPreviewError(undefined); return; }
     let cancelled = false;
-    api.post<PaymentPreview>('/api/paiements/apercu', { enrollmentId: account.enrollmentId, amount: debouncedValue, method, feeItemIds: items })
+    api.post<PaymentPreview>('/api/paiements/apercu', { enrollmentId: account.enrollmentId, amount: total, method, feeItemIds: selected })
       .then((p) => { if (!cancelled) { setPreview(p); setPreviewError(undefined); } })
       .catch((e) => { if (!cancelled) { setPreview(null); setPreviewError(e); } });
     return () => { cancelled = true; };
-  }, [debouncedValue, account.enrollmentId, items, method]);
+  }, [total, account.enrollmentId, selected, method, hasSelection]);
 
   const submit = async () => {
     setBusy(true); setError(undefined);
     try {
       const receipt = await api.post<Receipt>('/api/paiements', {
-        enrollmentId: account.enrollmentId, amount: value, date: paidOn, method, reference: reference || null, payerName: payerName || null,
-        payerPhone: payerPhone || null, note: note || null, feeItemIds: items, idempotencyKey,
+        enrollmentId: account.enrollmentId, amount: total, date: paidOn, method, reference: reference || null, payerName: payerName || null,
+        payerPhone: payerPhone || null, note: note || null, feeItemIds: selected, idempotencyKey,
       });
       await Promise.all([qc.invalidateQueries({ queryKey: ['account'] }), qc.invalidateQueries({ queryKey: ['dashboard'] }), qc.invalidateQueries({ queryKey: ['students'] })]);
       toast(`Reçu ${receipt.number} enregistré.`, 'success');
@@ -114,22 +113,28 @@ function PaymentForm({ account, onDone }: { account: Account; onDone: (r: Receip
         </div>
         <div className="grid cols-3" style={{ marginTop: 14 }}>
           <Kpi label="Reste exigible" value={money(account.overdue)} tone={account.overdue > 0 ? 'red' : 'green'} hint={account.overdueCount ? `${account.overdueCount} échéance(s)` : 'À jour'} />
-          <Kpi label="Prochaine échéance" value={nextDue ? money(nextDue.remaining) : '—'} hint={nextDue ? `${nextDue.label} · ${date(nextDue.dueDate)}` : 'Année soldée'} />
+          <Kpi label="Prochain mois dû" value={months[0] ? money(months[0].remaining) : '—'} hint={months[0] ? `${months[0].label} · ${date(months[0].dueDate)}` : 'Année soldée'} />
           <Kpi label="Reste de l'année" value={money(account.balance)} tone="orange" hint={`Déjà payé : ${money(account.totalPaid)}`} />
         </div>
       </div>
       <div className="card card-pad">
-        <SectionTitle num="02">Reçu et versement</SectionTitle>
-        <div className="grid cols-2">
-          <div className="field span-2">
-            <label htmlFor="amount">Montant versé ({getCurrency()})</label>
-            <input id="amount" className="input amount-input" inputMode="numeric" autoFocus value={amount} onChange={(e) => setAmount(e.target.value.replace(/[^\d\s,.]/g, ''))} onKeyDown={(e) => { if (e.key === 'Enter' && preview && !busy) void submit(); }} placeholder="0" />
-            <div className="row" style={{ marginTop: 6 }}>
-              {account.overdue > 0 && <Button size="small" onClick={() => setAmount(String(account.overdue))}>Exigible · {money(account.overdue)}</Button>}
-              {nextDue && <Button size="small" onClick={() => setAmount(String(nextDue.remaining))}>{nextDue.label} · {money(nextDue.remaining)}</Button>}
-              {account.balance > 0 && <Button size="small" variant="ghost" onClick={() => setAmount(String(account.balance))}>Solder l’année · {money(account.balance)}</Button>}
+        <SectionTitle num="02">Mois payés et versement</SectionTitle>
+        <div className="field span-2">
+          <span className="label">Mois payés</span>
+          <p className="small muted" style={{ margin: '2px 0 8px' }}>Chaque mois se règle en entier, à son montant. Les paiements partiels ne sont pas enregistrés.</p>
+          {months.length === 0 ? <Empty text="Aucun mois à payer pour cet apprenant." /> : (
+            <div className="row" style={{ flexWrap: 'wrap', gap: 8 }}>
+              {months.map((l) => (
+                <label key={l.feeItemId} className="check badge" style={{ padding: '6px 10px', background: selected.includes(l.feeItemId) ? 'var(--blue-soft)' : undefined }}>
+                  <input type="checkbox" checked={selected.includes(l.feeItemId)} onChange={(e) => toggle(l.feeItemId, e.target.checked)} />
+                  {l.label} · <strong>{money(l.remaining)}</strong>{l.isOverdue && <span style={{ color: 'var(--red)', marginLeft: 6 }}>en retard</span>}
+                </label>
+              ))}
             </div>
-          </div>
+          )}
+          <div className="small" style={{ marginTop: 8 }}>{hasSelection ? `${chosen.length} mois · total ${money(total)}` : 'Aucun mois choisi'}</div>
+        </div>
+        <div className="grid cols-2" style={{ marginTop: 14 }}>
           <div className="field span-2"><span className="label">Mode de paiement</span><Segmented value={method} onChange={setMethod} items={METHODS} /></div>
           {method !== 'Especes' && <TextField className="span-2" label="Référence de la transaction" value={reference} onChange={(e) => setReference(e.target.value)} help="N° de transaction Mobile Money, bordereau bancaire ou n° de chèque" />}
           <TextField label="Date du reçu" type="date" value={paidOn} max={today()} onChange={(e) => setPaidOn(e.target.value)} />
@@ -137,34 +142,23 @@ function PaymentForm({ account, onDone }: { account: Account; onDone: (r: Receip
           <TextField label="Téléphone du payeur" value={payerPhone} onChange={(e) => setPayerPhone(e.target.value)} inputMode="tel" />
           <TextField label="Observation" value={note} onChange={(e) => setNote(e.target.value)} />
         </div>
-        <label className="check" style={{ marginTop: 14 }}><input type="checkbox" checked={manual} onChange={(e) => setManual(e.target.checked)} />Choisir les rubriques à régler (sinon : de la plus ancienne à la plus récente)</label>
-        {manual && (
-          <div className="row" style={{ marginTop: 10 }}>
-            {open.map((l) => (
-              <label key={l.feeItemId} className="check badge" style={{ padding: '6px 10px', background: selected.includes(l.feeItemId) ? 'var(--blue-soft)' : undefined }}>
-                <input type="checkbox" checked={selected.includes(l.feeItemId)} onChange={(e) => setSelected(e.target.checked ? [...selected, l.feeItemId] : selected.filter((x) => x !== l.feeItemId))} />
-                {l.label} · {money(l.remaining)}
-              </label>
-            ))}
-          </div>
-        )}
       </div>
       <div className="card card-pad">
         <SectionTitle num="03">Répartition du paiement</SectionTitle>
-        {value <= 0 ? <p className="muted small">Saisissez un montant : la répartition sur les échéances s’affiche avant validation.</p>
+        {!hasSelection ? <p className="muted small">Cochez les mois payés : la répartition s’affiche avant validation.</p>
           : previewError ? <ErrorAlert error={previewError} />
           : !preview ? <Loading rows={2} /> : (
             <>
               <table className="data">
                 <thead><tr><th>Rubrique</th><th className="num">Affecté</th><th className="num">Reste après</th></tr></thead>
                 <tbody>{preview.allocations.map((a) => <tr key={a.feeItemId}><td>{a.label}</td><td className="num" style={{ fontWeight: 700 }}>{money(a.amount)}</td><td className="num">{a.remainingAfter === 0 ? <Badge tone="green">Soldé</Badge> : money(a.remainingAfter)}</td></tr>)}</tbody>
-                <tfoot><tr><td>Reste de l’année après ce reçu</td><td className="num">{money(value)}</td><td className="num">{money(preview.balanceAfter)}</td></tr></tfoot>
+                <tfoot><tr><td>Reste de l’année après ce reçu</td><td className="num">{money(total)}</td><td className="num">{money(preview.balanceAfter)}</td></tr></tfoot>
               </table>
             </>
           )}
         <div style={{ marginTop: 14 }}><ErrorAlert error={error instanceof ApiError && error.status === 409 ? new Error(error.message) : error} /></div>
         <div className="row" style={{ justifyContent: 'flex-end', marginTop: 14 }}>
-          <Button variant="primary" icon={<HandCoins />} loading={busy} disabled={!preview || value <= 0} onClick={submit} style={{ height: 46, minWidth: 240 }}>Valider le paiement · {money(value)}</Button>
+          <Button variant="primary" icon={<HandCoins />} loading={busy} disabled={!preview || !hasSelection} onClick={submit} style={{ height: 46, minWidth: 240 }}>Valider le paiement · {money(total)}</Button>
         </div>
       </div>
     </div>

@@ -173,7 +173,7 @@ public static class ScoliaEndpoints
         g.MapGet("", ([AsParameters] ReceiptQuery q, PaymentService p, CancellationToken ct) => p.ListAsync(q, ct));
         g.MapGet("/export", async ([AsParameters] ReceiptQuery q, string? format, PaymentService p, ReportService r, CancellationToken ct) =>
             Table(await r.ReceiptsTableAsync(p, q, ct), format, "journal-encaissements", r));
-        g.MapPost("/apercu", (PaymentRequest input, PaymentService p, CancellationToken ct) => p.PreviewAsync(input.EnrollmentId, input.Amount, input.FeeItemIds, ct))
+        g.MapPost("/apercu", (PaymentRequest input, PaymentService p, CancellationToken ct) => p.PreviewAsync(input.EnrollmentId, input.FeeItemIds, ct))
             .RequireAuthorization(Permissions.PaymentsCreate);
         g.MapPost("", (PaymentRequest input, PaymentService p, CancellationToken ct) => p.CreateAsync(input, ct)).RequireAuthorization(Permissions.PaymentsCreate);
         g.MapGet("/{id:guid}", (Guid id, PaymentService p, CancellationToken ct) => p.GetAsync(id, ct));

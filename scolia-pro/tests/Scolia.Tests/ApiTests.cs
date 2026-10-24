@@ -230,30 +230,34 @@ public sealed class BusinessApiTests : IDisposable
         var account = await admin.GetAsync($"/api/inscriptions/{enrollmentId}/compte").Ok();
         Assert.Equal(570000m, account.GetProperty("totalNet").GetDecimal());
 
-        var request = new { enrollmentId, amount = 70000m, method = "Especes", idempotencyKey = "cle-unique-1" };
-        var receipt = await admin.Post("/api/paiements", request).Ok();
+        var receipt = await admin.PayMonths(enrollmentId, 1, key: "cle-unique-1");
         Assert.Matches(@"^RC-\d{4}-000001$", receipt.GetProperty("number").GetString());
-        var allocations = receipt.GetProperty("allocations").EnumerateArray().Select(a => (a.GetProperty("label").GetString(), a.GetProperty("amount").GetDecimal())).ToList();
-        Assert.Equal("Frais d'inscription", allocations[0].Item1);
-        Assert.Equal(20000m, allocations[0].Item2);
-        Assert.Equal(50000m, allocations[1].Item2);
+        var allocation = receipt.GetProperty("allocations").EnumerateArray().Single();
+        Assert.Equal(55000m, allocation.GetProperty("amount").GetDecimal());
+        var monthId = allocation.GetProperty("feeItemId").GetString();
 
-        var again = await admin.Post("/api/paiements", request).Ok();
+        // Même clé : le même reçu revient, sans second encaissement.
+        var again = await admin.PayMonths(enrollmentId, 1, key: "cle-unique-1");
         Assert.Equal(receipt.GetProperty("id").GetString(), again.GetProperty("id").GetString());
 
-        var second = await admin.Post("/api/paiements", new { enrollmentId, amount = 1000m, method = "MobileMoney", reference = "MP123" }).Ok();
+        var second = await admin.PayMonths(enrollmentId, 1, method: "MobileMoney", reference: "MP123");
         Assert.EndsWith("000002", second.GetProperty("number").GetString(), StringComparison.Ordinal);
 
-        var (status, body) = await admin.Post("/api/paiements", new { enrollmentId, amount = 10_000_000m, method = "Especes" }).Fail();
-        Assert.Equal(HttpStatusCode.BadRequest, status);
-        Assert.Contains("dépasse le reste", body.GetProperty("title").GetString(), StringComparison.Ordinal);
+        // Un mois déjà réglé ne se paie pas une seconde fois.
+        var (paidAgain, body) = await admin.Post("/api/paiements", new { enrollmentId, amount = 55000m, feeItemIds = new[] { monthId }, method = "Especes" }).Fail();
+        Assert.Equal(HttpStatusCode.BadRequest, paidAgain);
+        Assert.Contains("déjà réglé", body.GetProperty("title").GetString(), StringComparison.Ordinal);
 
-        var missingReference = await admin.Post("/api/paiements", new { enrollmentId, amount = 1000m, method = "MobileMoney" }).Fail();
+        // Mobile Money sans référence refusé ; un montant différent du mois choisi refusé.
+        var (ids, total) = await admin.OpenMonths(enrollmentId, 1);
+        var missingReference = await admin.Post("/api/paiements", new { enrollmentId, amount = total, feeItemIds = ids, method = "MobileMoney" }).Fail();
         Assert.Equal(HttpStatusCode.BadRequest, missingReference.Status);
+        var mismatch = await admin.Post("/api/paiements", new { enrollmentId, amount = total + 1000m, feeItemIds = ids, method = "Especes" }).Fail();
+        Assert.Equal(HttpStatusCode.BadRequest, mismatch.Status);
 
         await admin.Post($"/api/paiements/{receipt.GetProperty("id").GetString()}/annulation", new { reason = "Erreur de saisie" }).Ok();
         var after = await admin.GetAsync($"/api/inscriptions/{enrollmentId}/compte").Ok();
-        Assert.Equal(1000m, after.GetProperty("totalPaid").GetDecimal());
+        Assert.Equal(55000m, after.GetProperty("totalPaid").GetDecimal());
         var verify = await app.Client().GetAsync($"/api/verifier/{receipt.GetProperty("verificationCode").GetString()}").Ok();
         Assert.Equal("Annulé", verify.GetProperty("status").GetString());
 
@@ -263,17 +267,19 @@ public sealed class BusinessApiTests : IDisposable
     }
 
     [Fact]
-    public async Task Concurrent_payments_never_exceed_the_balance()
+    public async Task Concurrent_payments_never_pay_a_month_twice()
     {
         var admin = await app.InstalledAdmin();
         var (_, enrollmentId, _) = await NewStudent(admin, monthly: 10000);
-        // Total net : 20 000 + 10 × 10 000 = 120 000. Douze versements simultanés de 15 000 : huit au plus passent.
-        var tasks = Enumerable.Range(0, 12).Select(_ => admin.Post("/api/paiements", new { enrollmentId, amount = 15000m, method = "Especes" })).ToList();
+        var (ids, _) = await admin.OpenMonths(enrollmentId, 10);
+        // Douze versements simultanés sur les dix mois : chaque mois ne passe qu'une fois.
+        var tasks = Enumerable.Range(0, 12)
+            .Select(i => admin.Post("/api/paiements", new { enrollmentId, amount = 10000m, method = "Especes", feeItemIds = new[] { ids[i % 10] } })).ToList();
         var responses = await Task.WhenAll(tasks);
-        Assert.Equal(8, responses.Count(r => r.IsSuccessStatusCode));
+        Assert.Equal(10, responses.Count(r => r.IsSuccessStatusCode));
         var account = await admin.GetAsync($"/api/inscriptions/{enrollmentId}/compte").Ok();
-        Assert.Equal(120000m, account.GetProperty("totalPaid").GetDecimal());
-        Assert.Equal(0m, account.GetProperty("balance").GetDecimal());
+        Assert.Equal(100000m, account.GetProperty("totalPaid").GetDecimal());
+        Assert.Equal(20000m, account.GetProperty("balance").GetDecimal()); // L'inscription ne se paie pas par mois.
     }
 
     [Fact]
@@ -305,7 +311,7 @@ public sealed class BusinessApiTests : IDisposable
     {
         var admin = await app.InstalledAdmin();
         var (_, enrollmentId, _) = await NewStudent(admin);
-        await admin.Post("/api/paiements", new { enrollmentId, amount = 70000m, method = "Especes" }).Ok();
+        await admin.PayMonths(enrollmentId, 1);
         var target = await admin.Post("/api/etablissement/promotions", new
         {
             code = "ACC1", name = "Accoucheuse", level = 1, isActive = true, monthlyFee = 60000m,
@@ -314,8 +320,8 @@ public sealed class BusinessApiTests : IDisposable
         await admin.Put($"/api/inscriptions/{enrollmentId}/promotion", new { promotionId = target.GetProperty("id").GetString() }).Ok();
         var account = await admin.GetAsync($"/api/inscriptions/{enrollmentId}/compte").Ok();
         Assert.Equal("ACC1", account.GetProperty("promotionCode").GetString());
-        Assert.Equal(70000m, account.GetProperty("totalPaid").GetDecimal());
-        Assert.Equal(20000m + 600000m - 70000m, account.GetProperty("balance").GetDecimal());
+        Assert.Equal(55000m, account.GetProperty("totalPaid").GetDecimal());
+        Assert.Equal(20000m + 600000m - 55000m, account.GetProperty("balance").GetDecimal());
     }
 
     [Fact]
@@ -323,7 +329,7 @@ public sealed class BusinessApiTests : IDisposable
     {
         var admin = await app.InstalledAdmin();
         var (promotionId, enrollmentId, _) = await NewStudent(admin);
-        await admin.Post("/api/paiements", new { enrollmentId, amount = 70000m, method = "Especes" }).Ok();
+        await admin.PayMonths(enrollmentId, 1);
         var (status, _) = await admin.Put($"/api/etablissement/promotions/{promotionId}", new { code = "INF1", name = "Première année", level = 1, isActive = true, monthlyFee = 30000m, oneTimeFees = new[] { new { kind = "Inscription", label = "Frais d'inscription", amount = 20000m, dueDate = DateOnly.FromDateTime(DateTime.Today) } } }).Fail();
         Assert.Equal(HttpStatusCode.BadRequest, status);
         await admin.Put($"/api/etablissement/promotions/{promotionId}", new { code = "INF1", name = "Première année", level = 1, isActive = true, monthlyFee = 65000m, oneTimeFees = new[] { new { kind = "Inscription", label = "Frais d'inscription", amount = 20000m, dueDate = DateOnly.FromDateTime(DateTime.Today) } } }).Ok();
@@ -335,15 +341,16 @@ public sealed class BusinessApiTests : IDisposable
         var admin = await app.InstalledAdmin();
         var (_, enrollmentId, _) = await NewStudent(admin);
         var yesterday = DateOnly.FromDateTime(DateTime.Today.AddDays(-1));
-        await admin.Post("/api/paiements", new { enrollmentId, amount = 20000m, method = "Especes", date = yesterday }).Ok();
+        await admin.PayMonths(enrollmentId, 1, date: yesterday);
         await admin.Post("/api/depenses", new { category = "Fournitures", beneficiary = "Librairie", description = "Craies", amount = 5000m, method = "Especes", date = yesterday }).Ok();
         var situation = await admin.GetAsync($"/api/caisse/situation?date={yesterday:yyyy-MM-dd}").Ok();
-        Assert.Equal(15000m, situation.GetProperty("expectedCash").GetDecimal());
-        var (_, noNote) = await admin.Post("/api/caisse/arretes", new { date = yesterday, countedCash = 14000m }).Fail();
+        Assert.Equal(50000m, situation.GetProperty("expectedCash").GetDecimal());
+        var (_, noNote) = await admin.Post("/api/caisse/arretes", new { date = yesterday, countedCash = 49000m }).Fail();
         Assert.Equal("note", noNote.GetProperty("code").GetString());
-        var closing = await admin.Post("/api/caisse/arretes", new { date = yesterday, countedCash = 14000m, note = "Manque de 1 000 FC constaté" }).Ok();
+        var closing = await admin.Post("/api/caisse/arretes", new { date = yesterday, countedCash = 49000m, note = "Manque de 1 000 FC constaté" }).Ok();
         Assert.Equal(-1000m, closing.GetProperty("difference").GetDecimal());
-        var (_, locked) = await admin.Post("/api/paiements", new { enrollmentId, amount = 1000m, method = "Especes", date = yesterday }).Fail();
+        var (ids, total) = await admin.OpenMonths(enrollmentId, 1);
+        var (_, locked) = await admin.Post("/api/paiements", new { enrollmentId, amount = total, feeItemIds = ids, method = "Especes", date = yesterday }).Fail();
         Assert.Equal("date", locked.GetProperty("code").GetString());
         var overspend = await admin.Post("/api/depenses", new { category = "Divers", beneficiary = "X", description = "Trop", amount = 999999m, method = "Especes" }).Fail();
         Assert.Contains("insuffisantes", overspend.Body.GetProperty("title").GetString(), StringComparison.Ordinal);

@@ -55,18 +55,18 @@ test('inscription d’un nouvel apprenant avec matricule automatique', async () 
 test('encaissement réparti et reçu numéroté', async () => {
   await page.getByRole('button', { name: 'Encaisser' }).first().click();
   await expect(page).toHaveURL(/encaisser\?inscription=/);
-  await page.getByLabel(/Montant versé/).fill('75000');
-  await expect(page.getByText('Frais d\'inscription').last()).toBeVisible();
-  await expect(page.locator('table.data tfoot')).toContainText('75 000');
+  // Paiement par mois : on coche le premier mois dû, son montant est celui de l'échéance.
+  await page.locator('label.check input[type=checkbox]').first().check();
+  await expect(page.getByText(/Aucun mois choisi/)).toHaveCount(0);
+  await expect(page.locator('table.data tfoot')).toContainText('55 000');
   await page.getByRole('button', { name: /Valider le paiement/ }).click();
   await expect(page.getByText('Paiement enregistré')).toBeVisible();
   await expect(page.locator('.tag-code', { hasText: /RC-\d{4}-\d{6}/ })).toBeVisible();
 });
 
-test('trop-perçu refusé avec message clair', async () => {
+test('sans mois choisi, le paiement ne part pas', async () => {
   await page.getByRole('button', { name: 'Autre paiement pour cet apprenant' }).click();
-  await page.getByLabel(/Montant versé/).fill('99999999');
-  await expect(page.getByText(/dépasse le reste à payer/)).toBeVisible();
+  await expect(page.getByText(/Aucun mois choisi/)).toBeVisible();
   await expect(page.getByRole('button', { name: /Valider le paiement/ })).toBeDisabled();
 });
 

@@ -17,12 +17,12 @@ public sealed class PaymentService(IAppDbContext db, IWriteGate gate, IAuditLog 
 
     public static PaymentMethod ParseMethod(string? value) => EnumText.Parse(value, "method", MethodLabels);
 
-    public async Task<PaymentPreview> PreviewAsync(Guid enrollmentId, decimal amount, IReadOnlyList<Guid>? items, CancellationToken ct = default)
+    /// <summary>Aperçu d'un règlement : les mois choisis. Sans mois choisi, aucune répartition n'est proposée.</summary>
+    public async Task<PaymentPreview> PreviewAsync(Guid enrollmentId, IReadOnlyList<Guid>? items, CancellationToken ct = default)
     {
-        var school = await YearContext.SchoolAsync(db, ct);
         var data = await accounts.ForEnrollmentAsync(enrollmentId, null, ct);
-        var plan = items is { Count: > 0 } ? PaymentAllocator.Months(data.Account, items) : PaymentAllocator.Allocate(data.Account, amount, null, school.CurrencySymbol);
-        return BuildPreview(data.Account, plan);
+        if (items is not { Count: > 0 }) return new PaymentPreview([], data.Account.Balance);
+        return BuildPreview(data.Account, PaymentAllocator.Months(data.Account, items));
     }
 
     private static PaymentPreview BuildPreview(StudentAccount account, IReadOnlyList<(Guid FeeItemId, decimal Amount)> plan)
@@ -74,10 +74,12 @@ public sealed class PaymentService(IAppDbContext db, IWriteGate gate, IAuditLog 
         var data = await accounts.ForEnrollmentAsync(input.EnrollmentId, null, ct);
         var year = await db.AcademicYears.AsNoTracking().FirstAsync(y => y.Id == data.Enrollment.AcademicYearId, ct);
         if (year.Status == AcademicYearStatus.Closed) throw new DomainException("annee", $"L'année {year.Label} est clôturée.");
-        var byMonth = input.FeeItemIds is { Count: > 0 };
-        var plan = byMonth ? PaymentAllocator.Months(data.Account, input.FeeItemIds!) : PaymentAllocator.Allocate(data.Account, input.Amount, null, school.CurrencySymbol);
+        // Un paiement se fait par mois complet : sans mois choisi, il n'est pas enregistré.
+        if (input.FeeItemIds is not { Count: > 0 })
+            throw new DomainException("rubriques", "Sélectionnez les mois payés : un paiement se fait par mois complet.");
+        var plan = PaymentAllocator.Months(data.Account, input.FeeItemIds);
         var total = plan.Sum(p => p.Amount);
-        if (byMonth && input.Amount != total)
+        if (input.Amount != total)
             throw new DomainException("montant", $"Les mois choisis valent {Money.Display(total, school.CurrencySymbol)}. La liste a changé : actualisez-la avant d'encaisser.");
         Money.EnsureValid(total, school.WholeAmountsOnly, "amount");
 
