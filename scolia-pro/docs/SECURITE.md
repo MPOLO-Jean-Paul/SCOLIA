@@ -46,12 +46,15 @@ L'interface masque les menus, mais ce masquage n'est pas la protection réelle.
 ## Intégrité des données
 
 - Chaque opération sensible écrit une entrée d'audit dans la même transaction.
+- Une écriture qui ne laisse pas de trace est refusée par le contexte de base de données :
+  l'enregistrement échoue, il ne passe jamais en silence. Un test vérifie ce comportement.
 - Chaque entrée porte l'empreinte SHA-256 de son contenu et de l'entrée précédente.
   La vérification (menu Journal d'audit) signale la première entrée altérée.
 - Les reçus sont numérotés sans trou. Un reçu erroné est annulé avec un motif,
   jamais supprimé. Le PDF annulé porte la mention « ANNULÉ ».
 - Un reçu peut être vérifié publiquement grâce à son code (page `/verifier/{code}`),
-  sans connexion, avec les seules informations qui figurent sur le reçu.
+  sans connexion. La réponse ne contient que le numéro, la date, le montant, le nom de l’apprenant,
+  l’établissement et le statut du reçu. Le code de vérification est aléatoire et sans rapport avec le numéro.
 - L'arrêté de caisse verrouille la période : aucune opération antérieure ne peut être modifiée.
 - Les encaissements portent une clé d'idempotence : un double envoi ne crée pas de second reçu.
 
@@ -62,6 +65,20 @@ L'interface masque les menus, mais ce masquage n'est pas la protection réelle.
 - Une sauvegarde est un fichier unique, copiable tel quel sur une clé USB ou un disque externe.
 - Restauration : une sauvegarde de sécurité de l'état actuel est faite d'abord, et la restauration est tracée dans le journal.
 - Conservation : 30 jours et au moins 10 sauvegardes.
+
+## Responsabilités
+
+Ce que SCOLIA garantit :
+
+- Chaque action qui modifie des données porte le nom de la personne qui l'a faite, son adresse et l'heure.
+- La modification d'un dossier d'apprenant conserve l'état avant et après.
+- Un journal modifié en dehors de SCOLIA est détecté, et la vérification indique la première entrée altérée.
+
+Ce que SCOLIA ne garantit pas, et qui relève de l'établissement :
+
+- Quiconque a accès au fichier de la base sur le poste serveur peut le modifier. Le journal le révèle, mais ne l'empêche pas. Il faut donc restreindre les droits du dossier `donnees` au compte du service et conserver des sauvegardes hors du poste.
+- Le choix des mots de passe, la désactivation des comptes des personnes qui quittent l'établissement et la vérification régulière du journal restent des tâches d'administration.
+- Les données personnelles des élèves et des parents relèvent de la politique de protection de l'établissement. SCOLIA ne supprime aucun dossier automatiquement. Une durée de conservation reste à définir par l'établissement.
 
 ## En-têtes HTTP
 

@@ -198,6 +198,10 @@ public sealed class ScoliaDbContext(DbContextOptions<ScoliaDbContext> options, I
         }
 
         var audits = auditBuffer?.Pending.ToList() ?? [];
+        // Garde-fou : aucune donnée ne change sans trace. Une écriture non tracée est refusée
+        // au lieu d'être enregistrée silencieusement.
+        if (audits.Count == 0 && auditBuffer is not null && ChangeTracker.Entries<Entity>().Any(e => e.State is EntityState.Added or EntityState.Modified or EntityState.Deleted))
+            throw new InvalidOperationException("Écriture refusée : cette opération n'a pas de trace d'audit.");
         if (audits.Count == 0) return await base.SaveChangesAsync(cancellationToken);
 
         await AuditChainLock.WaitAsync(cancellationToken);

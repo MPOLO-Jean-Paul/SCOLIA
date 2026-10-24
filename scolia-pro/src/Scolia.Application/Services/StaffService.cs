@@ -91,8 +91,9 @@ public sealed class StaffService(IAppDbContext db, IWriteGate gate, IAuditLog au
         entry.Allowances = input.Allowances; entry.Deductions = input.Deductions; entry.Advances = input.Advances; entry.Note = input.Note;
         entry.Recompute();
         entry.Status = PayrollStatus.Valide;
-        await db.SaveChangesAsync(ct);
         var s = await db.Staff.AsNoTracking().FirstAsync(x => x.Id == entry.StaffMemberId, ct);
+        audit.Record("paie.modifiee", "Paie", entry.Id.ToString(), $"Bulletin de {s.FullName} modifié : net {entry.Net:N0} FC.");
+        await db.SaveChangesAsync(ct);
         return ToDto(entry, s);
     }, ct);
 

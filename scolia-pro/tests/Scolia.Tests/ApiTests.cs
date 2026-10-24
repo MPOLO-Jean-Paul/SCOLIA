@@ -3,6 +3,8 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using ClosedXML.Excel;
 using Microsoft.Data.Sqlite;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Scolia.Tests;
 
@@ -318,6 +320,31 @@ public sealed class BusinessApiTests : IDisposable
         Assert.Equal("Paye", paid.GetProperty("status").GetString());
         var expenses = await admin.GetAsync("/api/depenses?categorie=Salaires").Ok();
         Assert.Equal(1, expenses.GetProperty("total").GetInt32());
+    }
+
+    [Fact]
+    public async Task Payroll_change_is_traced_with_the_acting_user()
+    {
+        var admin = await app.InstalledAdmin(demo: true);
+        var period = DateTime.Today.ToString("yyyy-MM", System.Globalization.CultureInfo.InvariantCulture);
+        await admin.Post($"/api/personnel/paie/{period}/preparation", new { }).Ok();
+        var id = (await admin.GetAsync($"/api/personnel/paie/{period}").Ok())[0].GetProperty("id").GetString();
+        await admin.Put($"/api/personnel/paie/bulletins/{id}", new { allowances = 15000m, deductions = 0m, advances = 0m }).Ok();
+
+        var trail = (await admin.GetAsync("/api/audit?q=paie.modifiee").Ok()).GetRawText();
+        Assert.Contains("paie.modifiee", trail, StringComparison.Ordinal);
+        Assert.Contains("\"userName\":\"Administrateur\"", trail, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Untraced_write_is_refused_by_the_database_context()
+    {
+        await app.InstalledAdmin();
+        await using var scope = app.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<Scolia.Infrastructure.Persistence.ScoliaDbContext>();
+        var user = await db.Users.FirstAsync();
+        user.DisplayName = "Modifié sans trace";
+        await Assert.ThrowsAsync<InvalidOperationException>(() => db.SaveChangesAsync());
     }
 
     [Fact]
