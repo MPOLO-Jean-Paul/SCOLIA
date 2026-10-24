@@ -1,0 +1,110 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Scolia.Bureau.Views.CashierView">
+  <Grid ColumnDefinitions="2*,3*">
+    <!-- Gauche : recherche de l'apprenant, puis saisie du versement -->
+    <StackPanel Grid.Column="0" Spacing="12" Margin="0,0,16,0">
+      <Border Classes="card">
+        <StackPanel Spacing="8">
+          <TextBlock Text="1. Apprenant" Classes="heading" />
+          <TextBox Text="{Binding Search}" PlaceholderText="Nom ou matricule (au moins deux lettres)" />
+          <ListBox ItemsSource="{Binding Results}" SelectedItem="{Binding Selected}" MaxHeight="200" Background="Transparent" BorderThickness="0">
+            <ListBox.ItemTemplate>
+              <DataTemplate>
+                <StackPanel Margin="4,4">
+                  <TextBlock Text="{Binding Label}" FontWeight="SemiBold" />
+                  <TextBlock Text="{Binding Detail}" Classes="muted" />
+                </StackPanel>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+          <StackPanel IsVisible="{Binding HasStudent}" Spacing="2" Margin="0,8,0,0">
+            <TextBlock Text="{Binding StudentName}" FontWeight="SemiBold" FontSize="{DynamicResource FsHeading}" />
+            <TextBlock Text="{Binding StudentInfo}" Classes="muted" />
+            <Grid ColumnDefinitions="*,*" Margin="0,8,0,0">
+              <StackPanel>
+                <TextBlock Text="Solde à payer" Classes="caption" />
+                <TextBlock Text="{Binding Balance}" Classes="kpi" />
+              </StackPanel>
+              <StackPanel Grid.Column="1">
+                <TextBlock Text="Reste exigible" Classes="caption" />
+                <TextBlock Text="{Binding Overdue}" Classes="kpi" Foreground="{DynamicResource ToneRed}" />
+              </StackPanel>
+            </Grid>
+          </StackPanel>
+          <TextBlock Text="{Binding Hint}" Classes="error" IsVisible="{Binding HasHint}" TextWrapping="Wrap" />
+        </StackPanel>
+      </Border>
+    </StackPanel>
+
+    <!-- Droite : versement, répartition, reçu -->
+    <StackPanel Grid.Column="1" Spacing="12">
+      <Border Classes="card" IsVisible="{Binding !HasReceipt}">
+        <StackPanel Spacing="10">
+          <TextBlock Text="2. Versement" Classes="heading" />
+          <Grid ColumnDefinitions="*,*,*" RowDefinitions="Auto,Auto">
+            <StackPanel Grid.Column="0" Margin="0,0,10,0">
+              <TextBlock Text="Montant" Classes="caption" />
+              <TextBox Text="{Binding Amount}" PlaceholderText="0" />
+            </StackPanel>
+            <StackPanel Grid.Column="1" Margin="0,0,10,0">
+              <TextBlock Text="Date du reçu" Classes="caption" />
+              <CalendarDatePicker PlaceholderText="jj/mm/aaaa" SelectedDateFormat="Short" SelectedDate="{Binding Day}" HorizontalAlignment="Stretch" />
+            </StackPanel>
+            <StackPanel Grid.Column="2">
+              <TextBlock Text="Mode" Classes="caption" />
+              <ComboBox ItemsSource="{Binding Methods}" SelectedItem="{Binding Method}" HorizontalAlignment="Stretch" />
+            </StackPanel>
+            <StackPanel Grid.Row="1" Grid.Column="0" Margin="0,10,10,0">
+              <TextBlock Text="Référence de la transaction" Classes="caption" />
+              <TextBox Text="{Binding Reference}" />
+            </StackPanel>
+            <StackPanel Grid.Row="1" Grid.Column="1" Margin="0,10,10,0">
+              <TextBlock Text="Versé par" Classes="caption" />
+              <TextBox Text="{Binding PayerName}" />
+            </StackPanel>
+            <StackPanel Grid.Row="1" Grid.Column="2" Margin="0,10,0,0">
+              <TextBlock Text="Téléphone du payeur" Classes="caption" />
+              <TextBox Text="{Binding PayerPhone}" />
+            </StackPanel>
+          </Grid>
+          <StackPanel Margin="0,4,0,0">
+            <TextBlock Text="Observation" Classes="caption" />
+            <TextBox Text="{Binding Note}" AcceptsReturn="True" Height="60" TextWrapping="Wrap" />
+          </StackPanel>
+        </StackPanel>
+      </Border>
+
+      <!-- Répartition calculée en direct sur les échéances -->
+      <Border Classes="card" IsVisible="{Binding !HasReceipt}">
+        <StackPanel Spacing="8">
+          <Grid ColumnDefinitions="*,Auto">
+            <TextBlock Text="Répartition" Classes="heading" />
+            <TextBlock Grid.Column="1" Text="{Binding BalanceAfter}" Classes="muted" />
+          </Grid>
+          <DataGrid ItemsSource="{Binding Allocations}" AutoGenerateColumns="False" IsReadOnly="True" MaxHeight="260">
+            <DataGrid.Columns>
+              <DataGridTextColumn Header="Échéance" Binding="{Binding Label}" Width="*" />
+              <DataGridTextColumn Header="Imputé" Binding="{Binding Amount}" Width="Auto" MinWidth="140" />
+              <DataGridTextColumn Header="Reste après" Binding="{Binding Remaining}" Width="Auto" MinWidth="140" />
+            </DataGrid.Columns>
+          </DataGrid>
+          <Button Classes="primary" Content="Encaisser et imprimer le reçu" Command="{Binding Pay}" HorizontalAlignment="Right" Height="42" />
+        </StackPanel>
+      </Border>
+
+      <!-- Reçu enregistré -->
+      <Border Classes="card" IsVisible="{Binding HasReceipt}">
+        <StackPanel Spacing="10">
+          <TextBlock Text="Versement enregistré" Classes="heading" Foreground="{DynamicResource ToneGreen}" />
+          <TextBlock Text="{Binding ReceiptText}" TextWrapping="Wrap" />
+          <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,8,0,0">
+            <Button Classes="primary" Content="Imprimer le reçu" Command="{Binding PrintReceipt}" />
+            <Button Content="Voir le reçu" Command="{Binding OpenReceipt}" />
+            <Button Classes="ghost" Content="Nouveau versement" Command="{Binding NewPayment}" />
+          </StackPanel>
+        </StackPanel>
+      </Border>
+    </StackPanel>
+  </Grid>
+</UserControl>

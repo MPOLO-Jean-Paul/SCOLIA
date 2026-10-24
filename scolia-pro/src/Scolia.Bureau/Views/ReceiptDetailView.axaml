@@ -1,0 +1,40 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Scolia.Bureau.Views.ReceiptDetailView">
+  <ScrollViewer>
+    <StackPanel Spacing="16">
+      <Border Classes="card" IsVisible="{Binding IsCancelled}" Background="{DynamicResource RedSoftBrush}" BorderThickness="0">
+        <TextBlock Text="{Binding CancellationText}" TextWrapping="Wrap" />
+      </Border>
+      <Grid ColumnDefinitions="3*,2*">
+        <Border Classes="card" Grid.Column="0" Margin="0,0,12,0">
+          <StackPanel Spacing="8">
+            <TextBlock Text="Détail du versement" Classes="heading" />
+            <ItemsControl ItemsSource="{Binding Details}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <Grid ColumnDefinitions="200,*" Margin="0,3">
+                    <TextBlock Text="{Binding Label}" Classes="muted" />
+                    <TextBlock Grid.Column="1" Text="{Binding Value}" TextWrapping="Wrap" />
+                  </Grid>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </Border>
+        <Border Classes="card" Grid.Column="1">
+          <StackPanel Spacing="8">
+            <TextBlock Text="Répartition sur les échéances" Classes="heading" />
+            <DataGrid ItemsSource="{Binding Allocations}" AutoGenerateColumns="False" IsReadOnly="True">
+              <DataGrid.Columns>
+                <DataGridTextColumn Header="Échéance" Binding="{Binding Label}" Width="*" />
+                <DataGridTextColumn Header="Imputé" Binding="{Binding Amount}" Width="Auto" MinWidth="120" />
+                <DataGridTextColumn Header="Reste après" Binding="{Binding Remaining}" Width="Auto" MinWidth="120" />
+              </DataGrid.Columns>
+            </DataGrid>
+          </StackPanel>
+        </Border>
+      </Grid>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

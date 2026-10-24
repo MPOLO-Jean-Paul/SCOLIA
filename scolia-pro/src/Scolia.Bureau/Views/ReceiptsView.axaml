@@ -1,46 +1,36 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:vm="using:Scolia.Bureau.ViewModels"
-             x:Class="Scolia.Bureau.Views.ReceiptsView"
-             x:DataType="vm:ReceiptsViewModel">
-  <DockPanel>
-    <StackPanel DockPanel.Dock="Top" Spacing="2" Margin="0,0,0,16">
-      <TextBlock Text="Journal des reçus" FontSize="26" />
-      <TextBlock Text="{Binding Summary}" Opacity="0.65" />
-    </StackPanel>
-
-    <Border DockPanel.Dock="Top" Padding="12,10" Background="#F0F4F9" CornerRadius="8,8,0,0">
-      <Grid ColumnDefinitions="150,110,110,*,70,140,130,110">
-        <TextBlock Text="N° reçu" FontWeight="Medium" Opacity="0.75" />
-        <TextBlock Grid.Column="1" Text="Date" FontWeight="Medium" Opacity="0.75" />
-        <TextBlock Grid.Column="2" Text="Matricule" FontWeight="Medium" Opacity="0.75" />
-        <TextBlock Grid.Column="3" Text="Apprenant" FontWeight="Medium" Opacity="0.75" />
-        <TextBlock Grid.Column="4" Text="Promo" FontWeight="Medium" Opacity="0.75" />
-        <TextBlock Grid.Column="5" Text="Mode" FontWeight="Medium" Opacity="0.75" />
-        <TextBlock Grid.Column="6" Text="Statut" FontWeight="Medium" Opacity="0.75" />
-        <TextBlock Grid.Column="7" Text="Montant" FontWeight="Medium" Opacity="0.75" TextAlignment="Right" />
-      </Grid>
+             x:Class="Scolia.Bureau.Views.ReceiptsView">
+  <Grid RowDefinitions="Auto,*">
+    <Border Grid.Row="0" Classes="band" Margin="0,0,0,10">
+      <WrapPanel>
+        <TextBox Width="260" Margin="0,0,10,6" Text="{Binding Search}" PlaceholderText="N° de reçu, matricule, nom" />
+        <CalendarDatePicker PlaceholderText="jj/mm/aaaa" SelectedDateFormat="Short" Width="160" Margin="0,0,10,6" SelectedDate="{Binding From}" />
+        <CalendarDatePicker PlaceholderText="jj/mm/aaaa" SelectedDateFormat="Short" Width="160" Margin="0,0,10,6" SelectedDate="{Binding To}" />
+        <ComboBox Width="170" Margin="0,0,10,6" ItemsSource="{Binding Methods}" SelectedItem="{Binding Method}" />
+        <ComboBox Width="150" Margin="0,0,10,6" ItemsSource="{Binding Statuses}" SelectedItem="{Binding Status}" />
+        <ComboBox Width="220" Margin="0,0,10,6" ItemsSource="{Binding Promotions}" SelectedItem="{Binding Promotion}" />
+      </WrapPanel>
     </Border>
-
-    <ScrollViewer>
-      <ItemsControl ItemsSource="{Binding Items}">
-        <ItemsControl.ItemTemplate>
-          <DataTemplate x:DataType="vm:ReceiptLine">
-            <Border Padding="12,9" BorderBrush="#E3E3E3" BorderThickness="0,0,0,1">
-              <Grid ColumnDefinitions="150,110,110,*,70,140,130,110">
-                <TextBlock Text="{Binding Number}" FontFamily="Cascadia Mono, Consolas, monospace" Foreground="#0842A0" />
-                <TextBlock Grid.Column="1" Text="{Binding Date}" />
-                <TextBlock Grid.Column="2" Text="{Binding Matricule}" />
-                <TextBlock Grid.Column="3" Text="{Binding Student}" />
-                <TextBlock Grid.Column="4" Text="{Binding Promotion}" />
-                <TextBlock Grid.Column="5" Text="{Binding Method}" />
-                <TextBlock Grid.Column="6" Text="{Binding Status}" />
-                <TextBlock Grid.Column="7" Text="{Binding Amount}" TextAlignment="Right" />
-              </Grid>
-            </Border>
-          </DataTemplate>
-        </ItemsControl.ItemTemplate>
-      </ItemsControl>
-    </ScrollViewer>
-  </DockPanel>
+    <DataGrid x:Name="ReceiptGrid" Grid.Row="1" ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}"
+              AutoGenerateColumns="False" IsReadOnly="True">
+      <DataGrid.Columns>
+        <DataGridTextColumn Header="N° de reçu" Binding="{Binding Number}" Width="Auto" MinWidth="130" />
+        <DataGridTextColumn Header="Date" Binding="{Binding Date}" Width="Auto" MinWidth="105" />
+        <DataGridTextColumn Header="Matricule" Binding="{Binding Matricule}" Width="Auto" MinWidth="105" />
+        <DataGridTextColumn Header="Apprenant" Binding="{Binding Student}" Width="*" />
+        <DataGridTextColumn Header="Promotion" Binding="{Binding Promotion}" Width="Auto" MinWidth="100" />
+        <DataGridTextColumn Header="Montant" Binding="{Binding Amount}" Width="Auto" MinWidth="130" />
+        <DataGridTextColumn Header="Mode" Binding="{Binding Method}" Width="Auto" MinWidth="120" />
+        <DataGridTemplateColumn Header="Statut" Width="Auto" MinWidth="100">
+          <DataGridTemplateColumn.CellTemplate>
+            <DataTemplate>
+              <TextBlock Text="{Binding Status}" Foreground="{Binding StatusBrush}" FontWeight="SemiBold" VerticalAlignment="Center" />
+            </DataTemplate>
+          </DataGridTemplateColumn.CellTemplate>
+        </DataGridTemplateColumn>
+        <DataGridTextColumn Header="Caissier" Binding="{Binding Cashier}" Width="Auto" MinWidth="120" />
+      </DataGrid.Columns>
+    </DataGrid>
+  </Grid>
 </UserControl>

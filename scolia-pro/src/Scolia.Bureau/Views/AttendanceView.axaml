@@ -1,0 +1,51 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Scolia.Bureau.Views.AttendanceView">
+  <Grid RowDefinitions="Auto,*">
+    <Border Grid.Row="0" Classes="band" Margin="0,0,0,10">
+      <StackPanel Orientation="Horizontal" Spacing="10">
+        <TextBlock Text="Promotion" VerticalAlignment="Center" Classes="muted" />
+        <ComboBox Width="260" ItemsSource="{Binding Promotions}" SelectedItem="{Binding Promotion}" />
+        <TextBlock Text="Date" VerticalAlignment="Center" Classes="muted" Margin="8,0,0,0" />
+        <CalendarDatePicker PlaceholderText="jj/mm/aaaa" SelectedDateFormat="Short" Width="170" SelectedDate="{Binding Day}" />
+        <RadioButton GroupName="attendance" Content="Feuille d'appel" IsChecked="{Binding !ShowSummary}" Margin="12,0,0,0" />
+        <RadioButton GroupName="attendance" Content="Bilan 30 jours" IsChecked="{Binding ShowSummary}" />
+      </StackPanel>
+    </Border>
+
+    <!-- Feuille d'appel : un statut par apprenant -->
+    <DataGrid Grid.Row="1" ItemsSource="{Binding Rows}" AutoGenerateColumns="False" IsReadOnly="False" IsVisible="{Binding !ShowSummary}">
+      <DataGrid.Columns>
+        <DataGridTextColumn Header="Matricule" Binding="{Binding Matricule}" IsReadOnly="True" Width="Auto" MinWidth="110" />
+        <DataGridTextColumn Header="Nom complet" Binding="{Binding FullName}" IsReadOnly="True" Width="*" />
+        <DataGridTemplateColumn Header="Statut" Width="Auto" MinWidth="220">
+          <DataGridTemplateColumn.CellTemplate>
+            <DataTemplate>
+              <ComboBox ItemsSource="{Binding Choices}" SelectedItem="{Binding Status}" HorizontalAlignment="Stretch" />
+            </DataTemplate>
+          </DataGridTemplateColumn.CellTemplate>
+        </DataGridTemplateColumn>
+        <DataGridTextColumn Header="Remarque" Binding="{Binding Note}" Width="Auto" MinWidth="260" />
+      </DataGrid.Columns>
+    </DataGrid>
+
+    <!-- Bilan : présences, retards, absences et taux d'assiduité -->
+    <DataGrid Grid.Row="1" ItemsSource="{Binding Summary}" AutoGenerateColumns="False" IsReadOnly="True" IsVisible="{Binding ShowSummary}">
+      <DataGrid.Columns>
+        <DataGridTextColumn Header="Matricule" Binding="{Binding Matricule}" Width="Auto" MinWidth="110" />
+        <DataGridTextColumn Header="Nom complet" Binding="{Binding Name}" Width="*" />
+        <DataGridTextColumn Header="Présent" Binding="{Binding Present}" Width="Auto" MinWidth="90" />
+        <DataGridTextColumn Header="Retard" Binding="{Binding Late}" Width="Auto" MinWidth="90" />
+        <DataGridTextColumn Header="Absent" Binding="{Binding Absent}" Width="Auto" MinWidth="90" />
+        <DataGridTextColumn Header="Justifié" Binding="{Binding Justified}" Width="Auto" MinWidth="90" />
+        <DataGridTemplateColumn Header="Assiduité" Width="Auto" MinWidth="130">
+          <DataGridTemplateColumn.CellTemplate>
+            <DataTemplate>
+              <TextBlock Text="{Binding Rate}" Foreground="{Binding RateBrush}" FontWeight="SemiBold" VerticalAlignment="Center" />
+            </DataTemplate>
+          </DataGridTemplateColumn.CellTemplate>
+        </DataGridTemplateColumn>
+      </DataGrid.Columns>
+    </DataGrid>
+  </Grid>
+</UserControl>

@@ -1,0 +1,50 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Scolia.Bureau.Views.FormView">
+  <Border Classes="card" MinWidth="440" MaxWidth="600" Padding="26,22" Background="{DynamicResource SurfaceBrush}"
+          BoxShadow="0 8 28 0 #33000000">
+    <StackPanel Spacing="14">
+      <StackPanel Spacing="2">
+        <TextBlock Text="{Binding Title}" Classes="heading" FontSize="{DynamicResource FsTitle}" TextWrapping="Wrap" />
+        <TextBlock Text="{Binding Subtitle}" Classes="muted" TextWrapping="Wrap" IsVisible="{Binding HasSubtitle}" />
+      </StackPanel>
+
+      <TextBlock Text="{Binding Message}" TextWrapping="Wrap" IsVisible="{Binding HasMessage}" />
+
+      <!-- Champs : un contrôle par nature de champ, défilants si la fenêtre est basse -->
+      <ScrollViewer MaxHeight="430" VerticalScrollBarVisibility="Auto">
+      <ItemsControl ItemsSource="{Binding Fields}">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate>
+            <StackPanel Spacing="4" Margin="0,0,0,6">
+              <CheckBox IsVisible="{Binding IsFlag}" IsChecked="{Binding Flag}" Content="{Binding Label}" />
+              <StackPanel IsVisible="{Binding !IsFlag}" Spacing="4">
+                <TextBlock Text="{Binding Caption}" Classes="caption" />
+                <TextBox IsVisible="{Binding IsText}" Text="{Binding Text}" PlaceholderText="{Binding Hint}" />
+                <TextBox IsVisible="{Binding IsSecret}" Text="{Binding Text}" PasswordChar="•" PlaceholderText="{Binding Hint}" />
+                <TextBox IsVisible="{Binding IsMultiline}" Text="{Binding Text}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="84" />
+                <CalendarDatePicker PlaceholderText="jj/mm/aaaa" SelectedDateFormat="Short" IsVisible="{Binding IsDay}" SelectedDate="{Binding Day}" HorizontalAlignment="Stretch" />
+                <ComboBox IsVisible="{Binding IsChoice}" ItemsSource="{Binding Options}" SelectedItem="{Binding Choice}" HorizontalAlignment="Stretch" />
+                <TextBlock Text="{Binding Error}" Classes="error" IsVisible="{Binding HasError}" TextWrapping="Wrap" />
+              </StackPanel>
+            </StackPanel>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+      </ScrollViewer>
+
+      <TextBlock Text="{Binding Error}" Classes="error" IsVisible="{Binding HasError}" TextWrapping="Wrap" />
+
+      <!-- Actions : annuler à gauche, valider à droite -->
+      <Grid ColumnDefinitions="*,Auto" IsVisible="{Binding CanSubmit}">
+        <Button Content="{Binding CancelText}" Command="{Binding Cancel}" IsVisible="{Binding ShowCancel}" Classes="ghost" VerticalAlignment="Center" />
+        <Button Grid.Column="1" Content="{Binding SubmitText}" Command="{Binding Submit}" IsEnabled="{Binding !Busy}"
+                Classes.primary="{Binding !Danger}" Classes.danger="{Binding Danger}" Padding="22,8" />
+      </Grid>
+      <Grid ColumnDefinitions="*,Auto" IsVisible="{Binding !CanSubmit}">
+        <Border />
+        <Button Grid.Column="1" Content="{Binding CancelText}" Command="{Binding Cancel}" Classes="primary" Padding="22,8" />
+      </Grid>
+    </StackPanel>
+  </Border>
+</UserControl>

@@ -1,0 +1,70 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Scolia.Bureau.Views.CashView">
+  <ScrollViewer>
+    <StackPanel Spacing="16">
+      <Grid ColumnDefinitions="Auto,*" >
+        <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+          <TextBlock Text="Situation au" VerticalAlignment="Center" Classes="muted" />
+          <CalendarDatePicker PlaceholderText="jj/mm/aaaa" SelectedDateFormat="Short" Width="180" SelectedDate="{Binding Day}" />
+        </StackPanel>
+      </Grid>
+
+      <ItemsControl ItemsSource="{Binding Figures}">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate>
+            <Border Classes="tile" Width="236" Margin="0,0,12,12">
+              <StackPanel Spacing="4">
+                <TextBlock Text="{Binding Label}" Classes="caption" />
+                <TextBlock Text="{Binding Value}" Classes="kpi" Foreground="{Binding Accent}" />
+                <TextBlock Text="{Binding Hint}" Classes="muted" TextWrapping="Wrap" />
+              </StackPanel>
+            </Border>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+
+      <Border Classes="card">
+        <StackPanel Spacing="8">
+          <TextBlock Text="Mouvements de la période" Classes="heading" />
+          <DataGrid ItemsSource="{Binding Movements}" AutoGenerateColumns="False" IsReadOnly="True" MaxHeight="340">
+            <DataGrid.Columns>
+              <DataGridTextColumn Header="Date" Binding="{Binding Date}" Width="Auto" MinWidth="130" />
+              <DataGridTextColumn Header="Type" Binding="{Binding Type}" Width="Auto" MinWidth="120" />
+              <DataGridTextColumn Header="Numéro" Binding="{Binding Number}" Width="Auto" MinWidth="130" />
+              <DataGridTextColumn Header="Libellé" Binding="{Binding Label}" Width="*" />
+              <DataGridTextColumn Header="Mode" Binding="{Binding Method}" Width="Auto" MinWidth="120" />
+              <DataGridTextColumn Header="Entrée" Binding="{Binding In}" Width="Auto" MinWidth="130" />
+              <DataGridTextColumn Header="Sortie" Binding="{Binding Out}" Width="Auto" MinWidth="130" />
+            </DataGrid.Columns>
+          </DataGrid>
+        </StackPanel>
+      </Border>
+
+      <Border Classes="card">
+        <StackPanel Spacing="8">
+          <TextBlock Text="Arrêtés de caisse" Classes="heading" />
+          <DataGrid ItemsSource="{Binding Closings}" AutoGenerateColumns="False" IsReadOnly="True" MaxHeight="260">
+            <DataGrid.Columns>
+              <DataGridTextColumn Header="Date" Binding="{Binding Date}" Width="Auto" MinWidth="130" />
+              <DataGridTextColumn Header="Attendu" Binding="{Binding Expected}" Width="Auto" MinWidth="140" />
+              <DataGridTextColumn Header="Compté" Binding="{Binding Counted}" Width="Auto" MinWidth="140" />
+              <DataGridTemplateColumn Header="Écart" Width="Auto" MinWidth="140">
+                <DataGridTemplateColumn.CellTemplate>
+                  <DataTemplate>
+                    <TextBlock Text="{Binding Difference}" Foreground="{Binding DifferenceBrush}" FontWeight="SemiBold" VerticalAlignment="Center" />
+                  </DataTemplate>
+                </DataGridTemplateColumn.CellTemplate>
+              </DataGridTemplateColumn>
+              <DataGridTextColumn Header="Par" Binding="{Binding ClosedBy}" Width="Auto" MinWidth="140" />
+              <DataGridTextColumn Header="Observation" Binding="{Binding Note}" Width="*" />
+            </DataGrid.Columns>
+          </DataGrid>
+        </StackPanel>
+      </Border>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

@@ -1,5 +1,7 @@
+using System.Globalization;
 using System.Net;
 using System.Net.Http.Json;
+using System.Text.Json;
 
 namespace Scolia.Bureau.Api;
 
@@ -13,23 +15,19 @@ public sealed class ScoliaClient : IDisposable
     {
         Server = server;
         var handler = new HttpClientHandler { CookieContainer = cookies, UseCookies = true };
-        http = new HttpClient(handler) { BaseAddress = server, Timeout = TimeSpan.FromSeconds(30) };
+        http = new HttpClient(handler) { BaseAddress = server, Timeout = TimeSpan.FromSeconds(60) };
         http.DefaultRequestHeaders.Add("X-Scolia", "1");
     }
 
     public Uri Server { get; }
 
-    public async Task<SessionDto> LoginAsync(string userName, string password, CancellationToken ct = default)
-    {
-        using var response = await http.PostAsJsonAsync("api/session", new { userName, password }, Json.Options, ct);
-        if (!response.IsSuccessStatusCode) throw await ToException(response);
-        return (await response.Content.ReadFromJsonAsync<SessionDto>(Json.Options, ct))!;
-    }
+    public async Task<SessionDto> LoginAsync(string userName, string password, CancellationToken ct = default) =>
+        await SendAsync<SessionDto>(HttpMethod.Post, "api/session", new { userName, password }, ct);
 
     public async Task LogoutAsync(CancellationToken ct = default)
     {
-        using var response = await http.DeleteAsync("api/session", ct);
-        cookies.GetAllCookies().Cast<Cookie>().ToList().ForEach(c => c.Expired = true);
+        try { await SendAsync(HttpMethod.Delete, "api/session", null, ct); }
+        finally { cookies.GetAllCookies().Cast<Cookie>().ToList().ForEach(c => c.Expired = true); }
     }
 
     public async Task<bool> IsRunningAsync(CancellationToken ct = default)
@@ -51,32 +49,108 @@ public sealed class ScoliaClient : IDisposable
         return await response.Content.ReadFromJsonAsync<SessionDto>(Json.Options, ct);
     }
 
-    public Task<DashboardDto> DashboardAsync(CancellationToken ct = default) =>
-        GetAsync<DashboardDto>("api/rapports/tableau-de-bord", ct);
+    /// <summary>Lit une ressource JSON.</summary>
+    public Task<T> GetAsync<T>(string path, CancellationToken ct = default) =>
+        SendAsync<T>(HttpMethod.Get, path, null, ct);
 
-    public Task<PagedResult<StudentListItem>> StudentsAsync(string? search, int size, CancellationToken ct = default) =>
-        GetAsync<PagedResult<StudentListItem>>($"api/apprenants?q={Uri.EscapeDataString(search ?? string.Empty)}&taille={size}", ct);
+    /// <summary>Envoie une requête avec un corps JSON et lit la réponse.</summary>
+    public async Task<T> SendAsync<T>(HttpMethod method, string path, object? body = null, CancellationToken ct = default)
+    {
+        using var response = await SendRawAsync(method, path, body, ct);
+        if (response.StatusCode == HttpStatusCode.NoContent) return default!;
+        return (await response.Content.ReadFromJsonAsync<T>(Json.Options, ct))!;
+    }
 
-    public Task<PagedResult<ReceiptRow>> ReceiptsAsync(int size, CancellationToken ct = default) =>
-        GetAsync<PagedResult<ReceiptRow>>($"api/paiements?taille={size}", ct);
+    /// <summary>Envoie une requête sans lire de réponse.</summary>
+    public async Task SendAsync(HttpMethod method, string path, object? body = null, CancellationToken ct = default)
+    {
+        using var response = await SendRawAsync(method, path, body, ct);
+    }
 
-    private async Task<T> GetAsync<T>(string path, CancellationToken ct)
+    /// <summary>Télécharge un document (PDF, Excel, CSV, sauvegarde) servi par l'API.</summary>
+    public async Task<byte[]> DownloadAsync(string path, CancellationToken ct = default)
     {
         using var response = await http.GetAsync(path, ct);
         if (!response.IsSuccessStatusCode) throw await ToException(response);
+        return await response.Content.ReadAsByteArrayAsync(ct);
+    }
+
+    /// <summary>Envoie des fichiers en multipart (import Excel, logo).</summary>
+    public async Task<T> UploadAsync<T>(HttpMethod method, string path, IEnumerable<UploadedFile> files, CancellationToken ct = default)
+    {
+        using var content = new MultipartFormDataContent();
+        foreach (var file in files) content.Add(new ByteArrayContent(file.Data), file.Field, file.FileName);
+        using var request = new HttpRequestMessage(method, path) { Content = content };
+        using var response = await http.SendAsync(request, ct);
+        if (!response.IsSuccessStatusCode) throw await ToException(response);
+        if (response.StatusCode == HttpStatusCode.NoContent) return default!;
         return (await response.Content.ReadFromJsonAsync<T>(Json.Options, ct))!;
+    }
+
+    /// <summary>Construit une chaîne de requête. Les valeurs vides sont omises.</summary>
+    public static string Query(params (string Key, object? Value)[] parameters)
+    {
+        var parts = new List<string>();
+        foreach (var (key, value) in parameters)
+        {
+            var text = value switch
+            {
+                null => null,
+                DateOnly d => d.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+                bool b => b ? "true" : "false",
+                IFormattable f => f.ToString(null, CultureInfo.InvariantCulture),
+                _ => value.ToString(),
+            };
+            if (!string.IsNullOrWhiteSpace(text)) parts.Add($"{Uri.EscapeDataString(key)}={Uri.EscapeDataString(text)}");
+        }
+        return parts.Count == 0 ? string.Empty : "?" + string.Join('&', parts);
+    }
+
+    private async Task<HttpResponseMessage> SendRawAsync(HttpMethod method, string path, object? body, CancellationToken ct)
+    {
+        using var request = new HttpRequestMessage(method, path);
+        if (method != HttpMethod.Get) request.Content = JsonContent.Create(body ?? new { }, options: Json.Options);
+        var response = await http.SendAsync(request, ct);
+        if (response.IsSuccessStatusCode) return response;
+        var error = await ToException(response);
+        response.Dispose();
+        throw error;
     }
 
     private static async Task<ApiException> ToException(HttpResponseMessage response)
     {
+        var status = (int)response.StatusCode;
         try
         {
-            using var doc = System.Text.Json.JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-            if (doc.RootElement.TryGetProperty("title", out var title)) return new ApiException(title.GetString() ?? "Erreur");
+            using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+            if (doc.RootElement.TryGetProperty("title", out var title) && title.GetString() is { Length: > 0 } text)
+            {
+                // Validation : le premier message de champ précise ce qui est incorrect.
+                if (doc.RootElement.TryGetProperty("errors", out var errors) && errors.ValueKind == JsonValueKind.Object)
+                    foreach (var field in errors.EnumerateObject())
+                        if (field.Value.ValueKind == JsonValueKind.Array && field.Value.GetArrayLength() > 0)
+                            return new ApiException($"{text} {field.Value[0].GetString()}", status);
+                return new ApiException(text, status);
+            }
         }
-        catch (System.Text.Json.JsonException) { }
-        return new ApiException($"Erreur {(int)response.StatusCode}");
+        catch (JsonException) { }
+        return new ApiException(response.StatusCode switch
+        {
+            HttpStatusCode.Forbidden => "Vous n'avez pas les droits nécessaires pour cette action.",
+            HttpStatusCode.Unauthorized => "Votre session a expiré. Reconnectez-vous.",
+            (HttpStatusCode)429 => "Trop de tentatives. Patientez une minute.",
+            _ => $"Erreur {status}",
+        }, status);
     }
 
     public void Dispose() => http.Dispose();
+}
+
+/// <summary>Fichier joint à un envoi multipart.</summary>
+public sealed record UploadedFile(string Field, string FileName, byte[] Data);
+
+/// <summary>Erreur renvoyée par le serveur (format RFC 9457), message lisible en français.</summary>
+public sealed class ApiException(string message, int status = 0) : Exception(message)
+{
+    public int Status { get; } = status;
 }

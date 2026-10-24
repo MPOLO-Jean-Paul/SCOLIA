@@ -1,0 +1,27 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Scolia.Bureau.Views.DebtorsView">
+  <Grid RowDefinitions="Auto,*">
+    <Border Grid.Row="0" Classes="band" Margin="0,0,0,10">
+      <WrapPanel>
+        <TextBox Width="260" Margin="0,0,10,6" Text="{Binding Search}" PlaceholderText="Nom ou matricule" />
+        <ComboBox Width="220" Margin="0,0,10,6" ItemsSource="{Binding Promotions}" SelectedItem="{Binding Promotion}" />
+        <ComboBox Width="210" Margin="0,0,10,6" ItemsSource="{Binding Buckets}" SelectedItem="{Binding Bucket}" />
+        <TextBox Width="190" Margin="0,0,10,6" Text="{Binding MinMonths}" PlaceholderText="Retard minimum (mois)" />
+      </WrapPanel>
+    </Border>
+    <DataGrid Grid.Row="1" ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}" AutoGenerateColumns="False" IsReadOnly="True">
+      <DataGrid.Columns>
+        <DataGridTextColumn Header="Matricule" Binding="{Binding Matricule}" Width="Auto" MinWidth="105" />
+        <DataGridTextColumn Header="Nom complet" Binding="{Binding Name}" Width="*" />
+        <DataGridTextColumn Header="Promotion" Binding="{Binding Promotion}" Width="Auto" MinWidth="100" />
+        <DataGridTextColumn Header="Solde" Binding="{Binding Balance}" Width="Auto" MinWidth="130" />
+        <DataGridTextColumn Header="Reste exigible" Binding="{Binding Overdue}" Width="Auto" MinWidth="130" />
+        <DataGridTextColumn Header="Échéances" Binding="{Binding Count}" Width="Auto" MinWidth="95" />
+        <DataGridTextColumn Header="Ancienneté" Binding="{Binding Bucket}" Width="Auto" MinWidth="140" />
+        <DataGridTextColumn Header="Garant" Binding="{Binding Guardian}" Width="Auto" MinWidth="160" />
+        <DataGridTextColumn Header="Téléphone" Binding="{Binding Phone}" Width="Auto" MinWidth="130" />
+      </DataGrid.Columns>
+    </DataGrid>
+  </Grid>
+</UserControl>

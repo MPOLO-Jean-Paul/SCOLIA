@@ -1,0 +1,82 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <!-- Jetons de couleur : mêmes valeurs que theme.css du client web. -->
+  <ResourceDictionary.ThemeDictionaries>
+    <ResourceDictionary x:Key="Light">
+      <SolidColorBrush x:Key="AccentBrush" Color="#0B57D0" />
+      <SolidColorBrush x:Key="AccentHoverBrush" Color="#0842A0" />
+      <SolidColorBrush x:Key="AccentSoftBrush" Color="#D3E3FD" />
+      <SolidColorBrush x:Key="OnAccentBrush" Color="#FFFFFF" />
+      <SolidColorBrush x:Key="BgBrush" Color="#F8FAFD" />
+      <SolidColorBrush x:Key="SurfaceBrush" Color="#FFFFFF" />
+      <SolidColorBrush x:Key="Surface2Brush" Color="#F0F4F9" />
+      <SolidColorBrush x:Key="LineBrush" Color="#E3E3E3" />
+      <SolidColorBrush x:Key="LineStrongBrush" Color="#C4C7C5" />
+      <SolidColorBrush x:Key="TextBrush" Color="#1F1F1F" />
+      <SolidColorBrush x:Key="Text2Brush" Color="#444746" />
+      <SolidColorBrush x:Key="MutedBrush" Color="#5F6368" />
+      <SolidColorBrush x:Key="TableHeadBrush" Color="#F0F4F9" />
+      <SolidColorBrush x:Key="SnackbarBrush" Color="#313033" />
+      <SolidColorBrush x:Key="ScrimBrush" Color="#66000000" />
+      <SolidColorBrush x:Key="ToneBlue" Color="#0B57D0" />
+      <SolidColorBrush x:Key="ToneGreen" Color="#146C2E" />
+      <SolidColorBrush x:Key="ToneOrange" Color="#8F4C00" />
+      <SolidColorBrush x:Key="TonePurple" Color="#6750A4" />
+      <SolidColorBrush x:Key="ToneRed" Color="#B3261E" />
+      <SolidColorBrush x:Key="ToneNeutral" Color="#444746" />
+      <SolidColorBrush x:Key="GreenSoftBrush" Color="#C4EED0" />
+      <SolidColorBrush x:Key="OrangeSoftBrush" Color="#FFDCBE" />
+      <SolidColorBrush x:Key="RedSoftBrush" Color="#F9DEDC" />
+      <SolidColorBrush x:Key="PurpleSoftBrush" Color="#EADDFF" />
+      <SolidColorBrush x:Key="NeutralSoftBrush" Color="#E9EEF6" />
+      <SolidColorBrush x:Key="FileTabBrush" Color="#185ABD" />
+      <Color x:Key="AccentColor">#0B57D0</Color>
+    </ResourceDictionary>
+
+    <ResourceDictionary x:Key="Dark">
+      <SolidColorBrush x:Key="AccentBrush" Color="#A8C7FA" />
+      <SolidColorBrush x:Key="AccentHoverBrush" Color="#D3E3FD" />
+      <SolidColorBrush x:Key="AccentSoftBrush" Color="#0842A0" />
+      <SolidColorBrush x:Key="OnAccentBrush" Color="#062E6F" />
+      <SolidColorBrush x:Key="BgBrush" Color="#131314" />
+      <SolidColorBrush x:Key="SurfaceBrush" Color="#1E1F20" />
+      <SolidColorBrush x:Key="Surface2Brush" Color="#282A2C" />
+      <SolidColorBrush x:Key="LineBrush" Color="#444746" />
+      <SolidColorBrush x:Key="LineStrongBrush" Color="#5F6368" />
+      <SolidColorBrush x:Key="TextBrush" Color="#E3E3E3" />
+      <SolidColorBrush x:Key="Text2Brush" Color="#C4C7C5" />
+      <SolidColorBrush x:Key="MutedBrush" Color="#8E918F" />
+      <SolidColorBrush x:Key="TableHeadBrush" Color="#282A2C" />
+      <SolidColorBrush x:Key="SnackbarBrush" Color="#E6E1E5" />
+      <SolidColorBrush x:Key="ScrimBrush" Color="#99000000" />
+      <SolidColorBrush x:Key="ToneBlue" Color="#A8C7FA" />
+      <SolidColorBrush x:Key="ToneGreen" Color="#6DD58C" />
+      <SolidColorBrush x:Key="ToneOrange" Color="#FFB77C" />
+      <SolidColorBrush x:Key="TonePurple" Color="#D0BCFF" />
+      <SolidColorBrush x:Key="ToneRed" Color="#F2B8B5" />
+      <SolidColorBrush x:Key="ToneNeutral" Color="#C4C7C5" />
+      <SolidColorBrush x:Key="GreenSoftBrush" Color="#0F3D1F" />
+      <SolidColorBrush x:Key="OrangeSoftBrush" Color="#5C3500" />
+      <SolidColorBrush x:Key="RedSoftBrush" Color="#601410" />
+      <SolidColorBrush x:Key="PurpleSoftBrush" Color="#4F378B" />
+      <SolidColorBrush x:Key="NeutralSoftBrush" Color="#2B3A4F" />
+      <SolidColorBrush x:Key="FileTabBrush" Color="#A8C7FA" />
+      <Color x:Key="AccentColor">#A8C7FA</Color>
+    </ResourceDictionary>
+  </ResourceDictionary.ThemeDictionaries>
+
+  <!-- Échelle typographique et géométrie : réglées par les préférences (taille du texte, densité). -->
+  <FontFamily x:Key="UiFont">avares://SCOLIA-Bureau/Assets/Fonts#Google Sans Flex</FontFamily>
+  <CornerRadius x:Key="RadiusCard">20</CornerRadius>
+  <CornerRadius x:Key="RadiusField">12</CornerRadius>
+  <CornerRadius x:Key="RadiusPill">20</CornerRadius>
+  <CornerRadius x:Key="RadiusSmall">10</CornerRadius>
+  <x:Double x:Key="FsBase">14</x:Double>
+  <x:Double x:Key="FsSmall">12.5</x:Double>
+  <x:Double x:Key="FsCaption">11.5</x:Double>
+  <x:Double x:Key="FsHeading">17</x:Double>
+  <x:Double x:Key="FsTitle">24</x:Double>
+  <x:Double x:Key="RowHeight">34</x:Double>
+  <x:Double x:Key="CtlHeight">38</x:Double>
+</ResourceDictionary>

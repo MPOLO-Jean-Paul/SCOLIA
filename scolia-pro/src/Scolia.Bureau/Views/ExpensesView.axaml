@@ -1,0 +1,33 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Scolia.Bureau.Views.ExpensesView">
+  <Grid RowDefinitions="Auto,*">
+    <Border Grid.Row="0" Classes="band" Margin="0,0,0,10">
+      <WrapPanel>
+        <TextBox Width="240" Margin="0,0,10,6" Text="{Binding Search}" PlaceholderText="Bénéficiaire, description, numéro" />
+        <CalendarDatePicker PlaceholderText="jj/mm/aaaa" SelectedDateFormat="Short" Width="160" Margin="0,0,10,6" SelectedDate="{Binding From}" />
+        <CalendarDatePicker PlaceholderText="jj/mm/aaaa" SelectedDateFormat="Short" Width="160" Margin="0,0,10,6" SelectedDate="{Binding To}" />
+        <ComboBox Width="260" Margin="0,0,10,6" ItemsSource="{Binding Categories}" SelectedItem="{Binding Category}" />
+      </WrapPanel>
+    </Border>
+    <DataGrid Grid.Row="1" ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}" AutoGenerateColumns="False" IsReadOnly="True">
+      <DataGrid.Columns>
+        <DataGridTextColumn Header="N°" Binding="{Binding Number}" Width="Auto" MinWidth="120" />
+        <DataGridTextColumn Header="Date" Binding="{Binding Date}" Width="Auto" MinWidth="105" />
+        <DataGridTextColumn Header="Catégorie" Binding="{Binding Category}" Width="Auto" MinWidth="160" />
+        <DataGridTextColumn Header="Bénéficiaire" Binding="{Binding Beneficiary}" Width="Auto" MinWidth="170" />
+        <DataGridTextColumn Header="Description" Binding="{Binding Description}" Width="*" />
+        <DataGridTextColumn Header="Montant" Binding="{Binding Amount}" Width="Auto" MinWidth="130" />
+        <DataGridTextColumn Header="Mode" Binding="{Binding Method}" Width="Auto" MinWidth="120" />
+        <DataGridTemplateColumn Header="Statut" Width="Auto" MinWidth="100">
+          <DataGridTemplateColumn.CellTemplate>
+            <DataTemplate>
+              <TextBlock Text="{Binding Status}" Foreground="{Binding StatusBrush}" FontWeight="SemiBold" VerticalAlignment="Center" />
+            </DataTemplate>
+          </DataGridTemplateColumn.CellTemplate>
+        </DataGridTemplateColumn>
+        <DataGridTextColumn Header="Enregistré par" Binding="{Binding RecordedBy}" Width="Auto" MinWidth="130" />
+      </DataGrid.Columns>
+    </DataGrid>
+  </Grid>
+</UserControl>

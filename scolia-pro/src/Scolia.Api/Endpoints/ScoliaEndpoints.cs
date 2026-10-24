@@ -120,7 +120,8 @@ public static class ScoliaEndpoints
         g.MapGet("", (string? q, Guid? promotionId, string? statut, Guid? anneeId, int? page, int? taille, StudentService s, CancellationToken ct) =>
             s.SearchAsync(q, promotionId, statut, anneeId, page ?? 1, taille ?? 50, ct));
         g.MapGet("/{id:guid}", (Guid id, StudentService s, CancellationToken ct) => s.GetAsync(id, ct));
-        g.MapGet("/doublons", (string nom, string postNom, string prenom, Guid? exclure, StudentService s, CancellationToken ct) => s.FindDuplicatesAsync(nom, postNom, prenom, exclure, ct));
+        g.MapGet("/doublons", (string? nom, string? postNom, string? prenom, Guid? exclure, StudentService s, CancellationToken ct) =>
+            s.FindDuplicatesAsync(nom ?? string.Empty, postNom ?? string.Empty, prenom ?? string.Empty, exclure, ct));
         g.MapGet("/doublons/groupes", (StudentService s, CancellationToken ct) => s.DuplicateGroupsAsync(ct));
         g.MapPost("", (StudentCreate input, StudentService s, CancellationToken ct) => s.CreateAsync(input, ct)).RequireAuthorization(Permissions.StudentsWrite);
         g.MapPut("/{id:guid}", (Guid id, StudentUpsert input, StudentService s, CancellationToken ct) => s.UpdateAsync(id, input, ct)).RequireAuthorization(Permissions.StudentsWrite);

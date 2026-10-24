@@ -1,19 +1,18 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:vm="using:Scolia.Bureau.ViewModels"
-             x:Class="Scolia.Bureau.Views.LoginView"
-             x:DataType="vm:LoginViewModel">
-  <!-- Pas de carte englobante : le formulaire forme la fenêtre de connexion. -->
-  <StackPanel Width="340" Spacing="10" HorizontalAlignment="Center" VerticalAlignment="Center">
-    <Image Source="avares://SCOLIA-Bureau/Assets/scolia.png" Width="64" Height="64" HorizontalAlignment="Center" Margin="0,0,0,8" />
-    <TextBlock Text="SCOLIA" FontSize="24" HorizontalAlignment="Center" />
-    <TextBlock Text="Connectez-vous pour continuer" Opacity="0.7" HorizontalAlignment="Center" Margin="0,0,0,12" />
-    <TextBox PlaceholderText="Identifiant" Text="{Binding UserName, Mode=TwoWay}" Height="44" />
-    <TextBox PlaceholderText="Mot de passe" PasswordChar="•" Text="{Binding Password, Mode=TwoWay}" Height="44" />
-    <Button Content="Se connecter" Command="{Binding Submit}" Height="44" HorizontalAlignment="Stretch"
-            HorizontalContentAlignment="Center" Classes="accent" IsDefault="True" />
-    <TextBlock Text="{Binding Error}" IsVisible="{Binding HasError}" Foreground="#B3261E" TextWrapping="Wrap" />
-    <TextBlock Text="Après 5 erreurs, le compte est verrouillé 15 minutes. Mot de passe oublié : contactez l’administrateur."
-               FontSize="12" Opacity="0.6" TextWrapping="Wrap" TextAlignment="Center" Margin="0,12,0,0" />
-  </StackPanel>
+             x:Class="Scolia.Bureau.Views.LoginView">
+  <Grid Background="{DynamicResource BgBrush}">
+    <!-- Formulaire seul, sans carte englobante : le titre est le nom de l'application -->
+    <StackPanel Width="340" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="12">
+      <Image Source="avares://SCOLIA-Bureau/Assets/scolia.png" Width="56" Height="56" HorizontalAlignment="Center" Margin="0,0,0,4" />
+      <TextBlock Text="SCOLIA" Classes="title" FontSize="28" HorizontalAlignment="Center" />
+      <TextBlock Text="Connectez-vous pour continuer" Classes="muted" HorizontalAlignment="Center" Margin="0,0,0,12" />
+      <TextBox x:Name="UserNameBox" Text="{Binding UserName}" PlaceholderText="Identifiant" />
+      <TextBox x:Name="PasswordBox" Text="{Binding Password}" PasswordChar="•" PlaceholderText="Mot de passe" />
+      <Button Classes="primary" Content="Se connecter" Command="{Binding Submit}" HorizontalAlignment="Stretch" Height="44" Margin="0,8,0,0" />
+      <TextBlock Text="{Binding Error}" Classes="error" IsVisible="{Binding HasError}" TextWrapping="Wrap" TextAlignment="Center" />
+      <TextBlock Text="Mot de passe oublié ? Demandez à l'administrateur de réinitialiser votre compte."
+                 Classes="muted" TextWrapping="Wrap" TextAlignment="Center" Margin="0,8,0,0" />
+    </StackPanel>
+  </Grid>
 </UserControl>

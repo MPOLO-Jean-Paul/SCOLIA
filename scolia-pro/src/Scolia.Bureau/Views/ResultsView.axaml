@@ -1,0 +1,30 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Scolia.Bureau.Views.ResultsView">
+  <Grid RowDefinitions="Auto,*">
+    <Border Grid.Row="0" Classes="band" Margin="0,0,0,10">
+      <StackPanel Orientation="Horizontal" Spacing="10">
+        <TextBlock Text="Promotion" VerticalAlignment="Center" Classes="muted" />
+        <ComboBox Width="260" ItemsSource="{Binding Promotions}" SelectedItem="{Binding Promotion}" />
+        <TextBlock Text="Période" VerticalAlignment="Center" Classes="muted" Margin="8,0,0,0" />
+        <ComboBox Width="170" ItemsSource="{Binding Terms}" SelectedItem="{Binding Term}" />
+      </StackPanel>
+    </Border>
+    <DataGrid Grid.Row="1" ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}" AutoGenerateColumns="False" IsReadOnly="True">
+      <DataGrid.Columns>
+        <DataGridTextColumn Header="Rang" Binding="{Binding Rank}" Width="Auto" MinWidth="70" />
+        <DataGridTextColumn Header="Matricule" Binding="{Binding Matricule}" Width="Auto" MinWidth="105" />
+        <DataGridTextColumn Header="Nom complet" Binding="{Binding Name}" Width="Auto" MinWidth="200" />
+        <DataGridTextColumn Header="Moyenne" Binding="{Binding Average}" Width="Auto" MinWidth="100" />
+        <DataGridTemplateColumn Header="Décision" Width="Auto" MinWidth="140">
+          <DataGridTemplateColumn.CellTemplate>
+            <DataTemplate>
+              <TextBlock Text="{Binding Decision}" Foreground="{Binding DecisionBrush}" FontWeight="SemiBold" VerticalAlignment="Center" />
+            </DataTemplate>
+          </DataGridTemplateColumn.CellTemplate>
+        </DataGridTemplateColumn>
+        <DataGridTextColumn Header="Moyennes par cours" Binding="{Binding Courses}" Width="*" />
+      </DataGrid.Columns>
+    </DataGrid>
+  </Grid>
+</UserControl>

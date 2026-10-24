@@ -1,0 +1,30 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Scolia.Bureau.Views.DisciplineView">
+  <Grid RowDefinitions="Auto,*">
+    <Border Grid.Row="0" Classes="band" Margin="0,0,0,10">
+      <StackPanel Orientation="Horizontal" Spacing="10">
+        <TextBlock Text="Promotion" VerticalAlignment="Center" Classes="muted" />
+        <ComboBox Width="260" ItemsSource="{Binding Promotions}" SelectedItem="{Binding Promotion}" />
+      </StackPanel>
+    </Border>
+    <DataGrid Grid.Row="1" ItemsSource="{Binding Items}" AutoGenerateColumns="False" IsReadOnly="True">
+      <DataGrid.Columns>
+        <DataGridTextColumn Header="Date" Binding="{Binding Date}" Width="Auto" MinWidth="105" />
+        <DataGridTextColumn Header="Matricule" Binding="{Binding Matricule}" Width="Auto" MinWidth="105" />
+        <DataGridTextColumn Header="Apprenant" Binding="{Binding Name}" Width="Auto" MinWidth="170" />
+        <DataGridTextColumn Header="Catégorie" Binding="{Binding Category}" Width="Auto" MinWidth="150" />
+        <DataGridTextColumn Header="Description" Binding="{Binding Description}" Width="*" />
+        <DataGridTextColumn Header="Sanction" Binding="{Binding Sanction}" Width="Auto" MinWidth="170" />
+        <DataGridTemplateColumn Header="Gravité" Width="Auto" MinWidth="110">
+          <DataGridTemplateColumn.CellTemplate>
+            <DataTemplate>
+              <TextBlock Text="{Binding Severity}" Foreground="{Binding SeverityBrush}" FontWeight="SemiBold" VerticalAlignment="Center" />
+            </DataTemplate>
+          </DataGridTemplateColumn.CellTemplate>
+        </DataGridTemplateColumn>
+        <DataGridTextColumn Header="Par" Binding="{Binding RecordedBy}" Width="Auto" MinWidth="120" />
+      </DataGrid.Columns>
+    </DataGrid>
+  </Grid>
+</UserControl>

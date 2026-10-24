@@ -24,11 +24,33 @@ Le détail est dans [`docs/GUIDE_UTILISATEUR.md`](docs/GUIDE_UTILISATEUR.md) et 
 Il parle au serveur SCOLIA par la même API que l'interface web. Au lancement, il démarre le serveur `SCOLIA.exe`
 du même dossier s'il n'est pas déjà actif. Le paquet Windows contient les deux exécutables.
 
-Captures sans affichage (rendu Avalonia Headless, sur les données d'un serveur lancé) :
+Le client reprend le design de l'interface web : ruban à onglets façon Office 2024, en-tête de page, cartes et
+boutons en pilule façon Material 3 (Android 16), palette et polices identiques (Google Sans Flex, licence OFL,
+embarquée dans l'exécutable). Clair, sombre, taille du texte, densité et zoom se règlent dans Affichage ou Fichier.
+
+| Rubrique du ruban | Écrans natifs |
+|---|---|
+| Accueil | Tableau de bord, recherche globale (Ctrl+K), impression, récents |
+| Secrétariat | Apprenants (liste, fiche, inscription, modification, statut, promotion, prise en charge), réinscriptions |
+| Finances | Encaissement avec aperçu de répartition, journal des reçus, détail et annulation, recouvrement, prises en charge, caisse et arrêté, dépenses |
+| Scolarité | Cours et évaluations, saisie des notes, résultats et bulletins, présences et bilan, discipline |
+| Administration | Personnel et paie, paramètres (établissement, années, sections, promotions), utilisateurs, données et sauvegardes, journal d'audit |
+| Fichier | Informations, changement de mot de passe, préférences, déconnexion |
+
+Les exports (PDF, Excel, CSV), les reçus et les bulletins sont enregistrés dans le dossier Téléchargements
+puis ouverts avec l'application du poste.
+
+Contrôles sans affichage (rendu Avalonia Headless, sur les données d'un serveur lancé) :
 
 ```bash
+# Parcourt chaque écran et enregistre une image par écran
 dotnet run --project tests/Scolia.Bureau.Captures -c Release -- <dossier_de_sortie> http://localhost:5080/ <mot_de_passe>
+# Parcours métier complet : lectures, encaissement, inscription, notes, présences, etc., avec vérification serveur
+dotnet run --project tests/Scolia.Bureau.Captures -c Release -- <dossier_de_sortie> http://localhost:5080/ <mot_de_passe> smoke
 ```
+
+Les tests de la logique du client (montants, dates, requêtes, validation des formulaires) sont dans
+`tests/Scolia.Bureau.Tests` et tournent sans affichage.
 
 ## Technologies
 

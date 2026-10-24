@@ -1,0 +1,20 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Scolia.Bureau.Views.UsersView">
+  <DataGrid ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}" AutoGenerateColumns="False" IsReadOnly="True">
+    <DataGrid.Columns>
+      <DataGridTextColumn Header="Identifiant" Binding="{Binding UserName}" Width="Auto" MinWidth="150" />
+      <DataGridTextColumn Header="Nom complet" Binding="{Binding DisplayName}" Width="*" />
+      <DataGridTextColumn Header="Rôle" Binding="{Binding Role}" Width="Auto" MinWidth="170" />
+      <DataGridTemplateColumn Header="Compte" Width="Auto" MinWidth="120">
+        <DataGridTemplateColumn.CellTemplate>
+          <DataTemplate>
+            <TextBlock Text="{Binding Active}" Foreground="{Binding ActiveBrush}" FontWeight="SemiBold" VerticalAlignment="Center" />
+          </DataTemplate>
+        </DataGridTemplateColumn.CellTemplate>
+      </DataGridTemplateColumn>
+      <DataGridTextColumn Header="Dernière connexion" Binding="{Binding LastLogin}" Width="Auto" MinWidth="180" />
+      <DataGridTextColumn Header="Verrouillage" Binding="{Binding Locked}" Width="Auto" MinWidth="120" />
+    </DataGrid.Columns>
+  </DataGrid>
+</UserControl>

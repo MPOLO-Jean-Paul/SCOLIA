@@ -1,0 +1,24 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Scolia.Bureau.Views.AuditView">
+  <Grid RowDefinitions="Auto,*">
+    <Border Grid.Row="0" Classes="band" Margin="0,0,0,10">
+      <WrapPanel>
+        <TextBox Width="260" Margin="0,0,10,6" Text="{Binding Search}" PlaceholderText="Utilisateur, action, résumé" />
+        <TextBox Width="200" Margin="0,0,10,6" Text="{Binding Entity}" PlaceholderText="Type d'objet" />
+        <CalendarDatePicker PlaceholderText="jj/mm/aaaa" SelectedDateFormat="Short" Width="160" Margin="0,0,10,6" SelectedDate="{Binding From}" />
+        <CalendarDatePicker PlaceholderText="jj/mm/aaaa" SelectedDateFormat="Short" Width="160" Margin="0,0,10,6" SelectedDate="{Binding To}" />
+      </WrapPanel>
+    </Border>
+    <DataGrid Grid.Row="1" ItemsSource="{Binding Items}" AutoGenerateColumns="False" IsReadOnly="True">
+      <DataGrid.Columns>
+        <DataGridTextColumn Header="Date (locale)" Binding="{Binding At}" Width="Auto" MinWidth="165" />
+        <DataGridTextColumn Header="Utilisateur" Binding="{Binding User}" Width="Auto" MinWidth="130" />
+        <DataGridTextColumn Header="Action" Binding="{Binding Action}" Width="Auto" MinWidth="160" />
+        <DataGridTextColumn Header="Objet" Binding="{Binding Entity}" Width="Auto" MinWidth="130" />
+        <DataGridTextColumn Header="Résumé" Binding="{Binding Summary}" Width="*" />
+        <DataGridTextColumn Header="Adresse" Binding="{Binding Ip}" Width="Auto" MinWidth="130" />
+      </DataGrid.Columns>
+    </DataGrid>
+  </Grid>
+</UserControl>

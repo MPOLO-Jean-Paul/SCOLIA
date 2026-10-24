@@ -1,18 +1,19 @@
 <Application xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:vm="using:Scolia.Bureau.ViewModels"
-             xmlns:views="using:Scolia.Bureau.Views"
              xmlns:mi="using:Material.Icons.Avalonia"
              x:Class="Scolia.Bureau.App"
              RequestedThemeVariant="Light">
+  <Application.Resources>
+    <ResourceDictionary>
+      <ResourceDictionary.MergedDictionaries>
+        <ResourceInclude Source="avares://SCOLIA-Bureau/Themes/Palette.axaml" />
+      </ResourceDictionary.MergedDictionaries>
+    </ResourceDictionary>
+  </Application.Resources>
   <Application.Styles>
     <FluentTheme />
     <mi:MaterialIconStyles />
+    <StyleInclude Source="avares://Avalonia.Controls.DataGrid/Themes/Fluent.xaml" />
+    <StyleInclude Source="avares://SCOLIA-Bureau/Themes/Controls.axaml" />
   </Application.Styles>
-  <Application.DataTemplates>
-    <DataTemplate DataType="vm:LoginViewModel"><views:LoginView /></DataTemplate>
-    <DataTemplate DataType="vm:DashboardViewModel"><views:DashboardView /></DataTemplate>
-    <DataTemplate DataType="vm:StudentsViewModel"><views:StudentsView /></DataTemplate>
-    <DataTemplate DataType="vm:ReceiptsViewModel"><views:ReceiptsView /></DataTemplate>
-  </Application.DataTemplates>
 </Application>

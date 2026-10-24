@@ -1,0 +1,78 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Scolia.Bureau.Views.SettingsView">
+  <Grid ColumnDefinitions="220,*">
+    <!-- Rubriques des paramètres -->
+    <Border Classes="card" Grid.Column="0" Margin="0,0,16,0" Padding="8">
+      <ListBox ItemsSource="{Binding Sections}" SelectedItem="{Binding Section}" Background="Transparent" BorderThickness="0">
+        <ListBox.ItemTemplate>
+          <DataTemplate>
+            <TextBlock Text="{Binding Label}" Padding="8,6" />
+          </DataTemplate>
+        </ListBox.ItemTemplate>
+      </ListBox>
+    </Border>
+
+    <ScrollViewer Grid.Column="1">
+      <StackPanel Spacing="12">
+        <!-- Établissement : formulaire intégré -->
+        <ContentControl Content="{Binding SchoolForm}" IsVisible="{Binding IsSchool}" HorizontalAlignment="Left" />
+
+        <!-- Années scolaires -->
+        <Border Classes="card" IsVisible="{Binding IsYears}">
+          <StackPanel Spacing="8">
+            <TextBlock Text="Années scolaires" Classes="heading" />
+            <DataGrid ItemsSource="{Binding Years}" SelectedItem="{Binding SelectedYear}" AutoGenerateColumns="False" IsReadOnly="True" MaxHeight="420">
+              <DataGrid.Columns>
+                <DataGridTextColumn Header="Année" Binding="{Binding Label}" Width="Auto" MinWidth="130" />
+                <DataGridTextColumn Header="Période" Binding="{Binding Period}" Width="*" />
+                <DataGridTemplateColumn Header="Statut" Width="Auto" MinWidth="130">
+                  <DataGridTemplateColumn.CellTemplate>
+                    <DataTemplate>
+                      <TextBlock Text="{Binding Status}" Foreground="{Binding StatusBrush}" FontWeight="SemiBold" VerticalAlignment="Center" />
+                    </DataTemplate>
+                  </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridCheckBoxColumn Header="Courante" Binding="{Binding IsCurrent}" IsReadOnly="True" Width="Auto" MinWidth="95" />
+                <DataGridTextColumn Header="Périodes" Binding="{Binding Months}" Width="*" />
+              </DataGrid.Columns>
+            </DataGrid>
+          </StackPanel>
+        </Border>
+
+        <!-- Sections -->
+        <Border Classes="card" IsVisible="{Binding IsSections}">
+          <StackPanel Spacing="8">
+            <TextBlock Text="Sections" Classes="heading" />
+            <DataGrid ItemsSource="{Binding SectionRows}" SelectedItem="{Binding SelectedSection}" AutoGenerateColumns="False" IsReadOnly="True" MaxHeight="420">
+              <DataGrid.Columns>
+                <DataGridTextColumn Header="Code" Binding="{Binding Code}" Width="Auto" MinWidth="120" />
+                <DataGridTextColumn Header="Nom" Binding="{Binding Name}" Width="*" />
+                <DataGridTextColumn Header="Active" Binding="{Binding Active}" Width="Auto" MinWidth="100" />
+              </DataGrid.Columns>
+            </DataGrid>
+          </StackPanel>
+        </Border>
+
+        <!-- Promotions et frais -->
+        <Border Classes="card" IsVisible="{Binding IsPromotions}">
+          <StackPanel Spacing="8">
+            <TextBlock Text="Promotions et frais" Classes="heading" />
+            <DataGrid ItemsSource="{Binding Promotions}" SelectedItem="{Binding SelectedPromotion}" AutoGenerateColumns="False" IsReadOnly="True" MaxHeight="520">
+              <DataGrid.Columns>
+                <DataGridTextColumn Header="Code" Binding="{Binding Code}" Width="Auto" MinWidth="80" />
+                <DataGridTextColumn Header="Désignation" Binding="{Binding Name}" Width="*" />
+                <DataGridTextColumn Header="Section" Binding="{Binding Section}" Width="Auto" MinWidth="150" />
+                <DataGridTextColumn Header="Niveau" Binding="{Binding Level}" Width="Auto" MinWidth="80" />
+                <DataGridTextColumn Header="Apprenants" Binding="{Binding Students}" Width="Auto" MinWidth="110" />
+                <DataGridTextColumn Header="Mensualité" Binding="{Binding Monthly}" Width="Auto" MinWidth="120" />
+                <DataGridTextColumn Header="Total annuel" Binding="{Binding Annual}" Width="Auto" MinWidth="130" />
+                <DataGridTextColumn Header="Active" Binding="{Binding Active}" Width="Auto" MinWidth="70" />
+              </DataGrid.Columns>
+            </DataGrid>
+          </StackPanel>
+        </Border>
+      </StackPanel>
+    </ScrollViewer>
+  </Grid>
+</UserControl>

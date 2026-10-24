@@ -1,0 +1,57 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Scolia.Bureau.Views.GradesView">
+  <Grid ColumnDefinitions="2.9*,3.1*" RowDefinitions="Auto,*,*">
+    <Border Grid.ColumnSpan="2" Classes="band" Margin="0,0,0,10">
+      <StackPanel Orientation="Horizontal" Spacing="10">
+        <TextBlock Text="Promotion" VerticalAlignment="Center" Classes="muted" />
+        <ComboBox Width="280" ItemsSource="{Binding Promotions}" SelectedItem="{Binding Promotion}" />
+      </StackPanel>
+    </Border>
+
+    <!-- Cours de la promotion -->
+    <Border Grid.Row="1" Grid.Column="0" Classes="card" Margin="0,0,10,10" Padding="0">
+      <Grid RowDefinitions="Auto,*">
+        <TextBlock Text="Cours" Classes="heading" Margin="16,12,16,4" />
+        <DataGrid Grid.Row="1" ItemsSource="{Binding Courses}" SelectedItem="{Binding Course}" AutoGenerateColumns="False" IsReadOnly="True" BorderThickness="0" CornerRadius="0">
+          <DataGrid.Columns>
+            <DataGridTextColumn Header="Cours" Binding="{Binding Name}" Width="*" />
+            <DataGridTextColumn Header="Coef." Binding="{Binding Coefficient}" Width="Auto" MinWidth="72" />
+            <DataGridTextColumn Header="Évals" Binding="{Binding Assessments}" Width="Auto" MinWidth="72" />
+          </DataGrid.Columns>
+        </DataGrid>
+      </Grid>
+    </Border>
+
+    <!-- Évaluations du cours choisi -->
+    <Border Grid.Row="2" Grid.Column="0" Classes="card" Margin="0,0,10,0" Padding="0">
+      <Grid RowDefinitions="Auto,*">
+        <TextBlock Text="Évaluations" Classes="heading" Margin="16,12,16,4" />
+        <DataGrid Grid.Row="1" ItemsSource="{Binding Assessments}" SelectedItem="{Binding Assessment}" AutoGenerateColumns="False" IsReadOnly="True" BorderThickness="0" CornerRadius="0">
+          <DataGrid.Columns>
+            <DataGridTextColumn Header="Évaluation" Binding="{Binding Title}" Width="*" />
+            <DataGridTextColumn Header="Type" Binding="{Binding Kind}" Width="Auto" MinWidth="120" />
+            <DataGridTextColumn Header="Période" Binding="{Binding Term}" Width="Auto" MinWidth="96" />
+            <DataGridTextColumn Header="Date" Binding="{Binding Date}" Width="Auto" MinWidth="104" />
+            <DataGridTextColumn Header="Sur" Binding="{Binding MaxScore}" Width="Auto" MinWidth="64" />
+          </DataGrid.Columns>
+        </DataGrid>
+      </Grid>
+    </Border>
+
+    <!-- Saisie des notes de l'évaluation choisie, sur toute la hauteur -->
+    <Border Grid.Row="1" Grid.RowSpan="2" Grid.Column="1" Classes="card" Padding="0">
+      <Grid RowDefinitions="Auto,*">
+        <TextBlock Text="{Binding SheetTitle}" Classes="heading" Margin="16,12,16,4" />
+        <DataGrid Grid.Row="1" ItemsSource="{Binding Grades}" AutoGenerateColumns="False" IsReadOnly="False" BorderThickness="0" CornerRadius="0">
+          <DataGrid.Columns>
+            <DataGridTextColumn Header="Matricule" Binding="{Binding Matricule}" IsReadOnly="True" Width="Auto" MinWidth="120" />
+            <DataGridTextColumn Header="Nom complet" Binding="{Binding FullName}" IsReadOnly="True" Width="*" />
+            <DataGridTextColumn Header="Note" Binding="{Binding Score}" Width="Auto" MinWidth="90" />
+            <DataGridTextColumn Header="Observation" Binding="{Binding Comment}" Width="2*" />
+          </DataGrid.Columns>
+        </DataGrid>
+      </Grid>
+    </Border>
+  </Grid>
+</UserControl>
