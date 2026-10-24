@@ -47,12 +47,13 @@ Raccourcis : `Ctrl+K` ouvre la recherche globale et toutes les commandes.
 ## 3. Inscrire un apprenant
 
 1. Onglet Secrétariat, groupe Apprenants : Nouvelle inscription.
-2. Saisir le nom, les prénoms, la date de naissance et les contacts du parent.
+2. Saisir le nom, les prénoms, la date et le lieu de naissance, l'adresse et le contact du parent.
 3. Le matricule se génère seul : code de la promotion sur 4 caractères, puis le rang.
 4. Si un homonyme existe, SCOLIA le signale et demande une confirmation avant de créer le doublon.
 
-Champs obligatoires, comme dans SCOLIA V79 : nom, post-nom, prénom, sexe, date et lieu de naissance, contact parent 1 et promotion.
-Le contact parent 2 est facultatif. Les relances WhatsApp et SMS partent vers le contact 1, ou vers le contact 2 si le contact 1 manque.
+Champs du formulaire : nom, post-nom, prénom, sexe, date et lieu de naissance, parent ou tuteur, adresse, contact parent, promotion et date d'inscription.
+Obligatoires, comme dans SCOLIA V79 : nom, post-nom, prénom, sexe, date et lieu de naissance, contact parent et promotion.
+Un seul numéro est saisi, celui du parent. Les relances WhatsApp et SMS partent vers ce numéro.
 
 ## 4. Encaisser
 

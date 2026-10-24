@@ -48,18 +48,13 @@ export function IdentityFields({ form, setForm, error }: { form: IdentityForm; s
         </SelectField>
         <TextField label="Date de naissance" type="date" value={form.birthDate} onChange={set('birthDate')} max={today()} error={e?.fieldError('birthDate')} required />
         <TextField label="Lieu de naissance" value={form.birthPlace} onChange={set('birthPlace')} error={e?.fieldError('birthPlace')} required />
-        <TextField label="E-mail" type="email" value={form.email} onChange={set('email')} error={e?.fieldError('email')} />
       </div>
       <div className="divider" />
       <SectionTitle num="02">Parent et adresse</SectionTitle>
       <div className="grid cols-3">
         <TextField label="Parent ou tuteur" value={form.guardianName} onChange={set('guardianName')} />
-        <SelectField label="Lien" value={form.guardianRelation} onChange={set('guardianRelation')}>
-          <option value="">—</option>{['Père', 'Mère', 'Tuteur', 'Tutrice', 'Oncle', 'Tante', 'Frère', 'Sœur', 'Autre'].map((r) => <option key={r}>{r}</option>)}
-        </SelectField>
-        <TextField label="Contact parent 1" value={form.guardianPhone} onChange={set('guardianPhone')} error={e?.fieldError('guardianPhone')} inputMode="tel" required help="10 chiffres, ex. 0812345678. Les relances WhatsApp et SMS partent vers ce numéro." />
-        <TextField label="Contact parent 2" value={form.guardianPhone2} onChange={set('guardianPhone2')} error={e?.fieldError('guardianPhone2')} inputMode="tel" help="Facultatif. Sert aux relances si le contact 1 est vide." />
         <TextField className="span-2" label="Adresse" value={form.address} onChange={set('address')} help="Quartier, avenue et numéro" />
+        <TextField label="Contact parent" value={form.guardianPhone} onChange={set('guardianPhone')} error={e?.fieldError('guardianPhone')} inputMode="tel" required help="10 chiffres, ex. 0812345678. Les relances WhatsApp et SMS partent vers ce numéro." />
       </div>
     </>
   );

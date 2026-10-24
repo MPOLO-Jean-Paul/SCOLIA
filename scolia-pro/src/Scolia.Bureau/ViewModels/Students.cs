@@ -206,9 +206,8 @@ public sealed class StudentDetailPage : PageViewModel
         Details.Add(new InfoLine("Sexe", Labels.Gender(student.Gender)));
         Details.Add(new InfoLine("Date de naissance", student.BirthDate is { } b ? $"{Format.Date(b)}{(student.BirthPlace is { } p ? $" à {p}" : string.Empty)}" : "—"));
         Details.Add(new InfoLine("Adresse", student.Address ?? "—"));
-        Details.Add(new InfoLine("E-mail", student.Email ?? "—"));
-        Details.Add(new InfoLine("Parent ou tuteur", string.IsNullOrWhiteSpace(student.GuardianName) ? "—" : $"{student.GuardianName} ({student.GuardianRelation ?? "lien non précisé"})"));
-        Details.Add(new InfoLine("Contacts parents", string.Join(" · ", new[] { student.GuardianPhone, student.GuardianPhone2 }.Where(x => !string.IsNullOrWhiteSpace(x))) is { Length: > 0 } c ? c : "—"));
+        Details.Add(new InfoLine("Parent ou tuteur", string.IsNullOrWhiteSpace(student.GuardianName) ? "—" : student.GuardianName));
+        Details.Add(new InfoLine("Contact parent", student.GuardianPhone ?? student.GuardianPhone2 ?? "—"));
 
         Enrollments.Clear();
         foreach (var e in student.Enrollments)
@@ -401,8 +400,8 @@ public static class StudentForms
     }
 
     /// <summary>
-    /// Champs de la fiche, dans l'ordre du formulaire de SCOLIA V79 : identité, naissance, parent et ses deux contacts, adresse.
-    /// Les seuls numéros saisis sont ceux du parent : ce sont eux que visent les relances.
+    /// Champs de la fiche : identité, naissance, parent, son contact et l'adresse. Un seul numéro est saisi,
+    /// celui du parent : c'est lui que visent les relances WhatsApp et SMS.
     /// </summary>
     private static void AddIdentityFields(FormViewModel form, StudentDto? s)
     {
@@ -413,16 +412,12 @@ public static class StudentForms
         form.AddDay("naissance", "Date de naissance", s?.BirthDate, required: true);
         form.Add("lieu", "Lieu de naissance", value: s?.BirthPlace, required: true);
         form.Add("tuteur", "Parent ou tuteur", value: s?.GuardianName);
-        form.Add("lien", "Lien", value: s?.GuardianRelation);
-        form.Add("contact1", "Contact parent 1", value: s?.GuardianPhone, required: true,
-            hint: "Ex. 0812345678 · reçoit les relances WhatsApp et SMS");
-        form.Add("contact2", "Contact parent 2", value: s?.GuardianPhone2,
-            hint: "Facultatif · utilisé si le contact 1 manque");
         form.Add("adresse", "Adresse", value: s?.Address, hint: "Quartier, avenue et numéro");
-        form.Add("email", "E-mail", value: s?.Email);
+        form.Add("contact1", "Contact parent", value: s?.GuardianPhone, required: true,
+            hint: "Ex. 0812345678 · reçoit les relances WhatsApp et SMS");
     }
 
-    /// <summary>Les données d'un ancien dossier qui ne sont plus saisies, nationalité, téléphone de l'apprenant et observations, sont gardées telles quelles.</summary>
+    /// <summary>Les données d'un ancien dossier qui ne sont plus saisies, nationalité, téléphones, e-mail, lien et observations, sont gardées telles quelles.</summary>
     private static object Identity(FormViewModel f, StudentDto? s) => new
     {
         lastName = f.Text("nom"),
@@ -434,11 +429,11 @@ public static class StudentForms
         nationality = s?.Nationality,
         address = f.OptionalText("adresse"),
         phone = s?.Phone,
-        email = f.OptionalText("email"),
+        email = s?.Email,
         guardianName = f.OptionalText("tuteur"),
-        guardianRelation = f.OptionalText("lien"),
+        guardianRelation = s?.GuardianRelation,
         guardianPhone = f.OptionalText("contact1"),
-        guardianPhone2 = f.OptionalText("contact2"),
+        guardianPhone2 = s?.GuardianPhone2,
         notes = s?.Notes,
         version = s?.Version,
     };
