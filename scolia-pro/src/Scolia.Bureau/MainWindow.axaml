@@ -5,8 +5,10 @@
         x:Class="Scolia.Bureau.MainWindow"
         x:DataType="vm:ShellViewModel"
         Title="SCOLIA"
-        Width="1280" Height="820" MinWidth="980" MinHeight="620"
+        Width="1280" Height="820" MinWidth="760" MinHeight="520"
         KeyDown="OnKeyDown">
+  <!-- Toute l'interface suit la taille de la fenêtre : la mise en page de 1280 × 720, agrandie ou réduite d'un bloc -->
+  <LayoutTransformControl x:Name="Scaler">
   <Grid>
     <!-- Connexion : tant qu'aucune session n'est ouverte -->
     <!-- Première installation : l'assistant remplace la connexion tant qu'aucune configuration n'existe -->
@@ -17,7 +19,7 @@
     <Grid ColumnDefinitions="Auto,*" RowDefinitions="*,Auto" IsVisible="{Binding IsLoggedIn}">
 
       <!-- Volet latéral flottant, comme les Réglages de macOS : recherche, compte, puis chaque outil avec son icône -->
-      <Border Grid.Column="0" Classes="sidebar" Width="250" Margin="8,8,0,8" IsVisible="{Binding Prefs.Sidebar}">
+      <Border Grid.Column="0" Classes="sidebar" Width="250" Margin="8,8,0,8" IsVisible="{Binding SidebarShown}">
         <DockPanel>
           <StackPanel DockPanel.Dock="Top" Spacing="8" Margin="10,12,10,6">
             <Button Classes="titlesearch" Command="{Binding SearchCommand}" ToolTip.Tip="Rechercher (Ctrl+K)">
@@ -66,7 +68,7 @@
 
       <!-- Page : flèches retour et suivant, titre, actions ; puis le contenu -->
       <Grid Grid.Column="1" RowDefinitions="Auto,*" IsVisible="{Binding HasPage}">
-        <Border Grid.Row="0" Classes="pagebar">
+        <Border Grid.Row="0" Classes="pagebar" x:Name="PageBar">
           <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto">
             <Button Classes="toolicon" Command="{Binding ToggleSidebarCommand}" Margin="0,0,8,0" VerticalAlignment="Center"
                     ToolTip.Tip="Afficher ou masquer le volet (Ctrl+B)">
@@ -158,4 +160,5 @@
       </Border>
     </Grid>
   </Grid>
+  </LayoutTransformControl>
 </Window>

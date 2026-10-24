@@ -16,8 +16,10 @@ public sealed record ActionVm(string Label, MaterialIconKind Icon, ICommand Comm
 /// <summary>Écran de l'application. Chaque écran charge ses données et publie ses actions dans l'en-tête.</summary>
 public abstract class PageViewModel : Observable
 {
-    /// <summary>Boutons visibles dans l'en-tête : au-delà, les actions passent dans le menu « Plus ».</summary>
-    private const int VisibleCount = 3;
+    /// <summary>Boutons visibles au plus dans l'en-tête : au-delà, les actions passent dans le menu « Plus ».</summary>
+    private const int MaxVisible = 3;
+    /// <summary>Nombre de boutons fixé par la largeur de la fenêtre ; -1 tant qu'elle ne l'a pas mesuré.</summary>
+    private int visibleCount = -1;
     private bool busy;
 
     protected PageViewModel(ShellViewModel shell)
@@ -40,10 +42,28 @@ public abstract class PageViewModel : Observable
     public virtual MaterialIconKind Glyph => MaterialIconKind.FileDocumentOutline;
     public ObservableCollection<ActionVm> Actions { get; } = [];
     /// <summary>L'action principale et les plus courantes, affichées en boutons.</summary>
-    public IReadOnlyList<ActionVm> VisibleActions => Actions.Count <= VisibleCount + 1 ? Actions : Actions.Take(VisibleCount).ToList();
+    public IReadOnlyList<ActionVm> VisibleActions => Actions.Take(Shown).ToList();
     /// <summary>Les autres actions, rangées dans le menu « Plus » pour garder un en-tête net.</summary>
-    public IReadOnlyList<ActionVm> MoreActions => Actions.Count <= VisibleCount + 1 ? [] : Actions.Skip(VisibleCount).ToList();
-    public bool HasMoreActions => Actions.Count > VisibleCount + 1;
+    public IReadOnlyList<ActionVm> MoreActions => Actions.Skip(Shown).ToList();
+    public bool HasMoreActions => Shown < Actions.Count;
+
+    /// <summary>Nombre de boutons affichés : la place mesurée, ou par défaut trois boutons et le menu pour les autres.</summary>
+    private int Shown => visibleCount >= 0 ? Math.Min(visibleCount, Actions.Count)
+        : Actions.Count <= MaxVisible + 1 ? Actions.Count : MaxVisible;
+
+    /// <summary>
+    /// Fenêtre étroite : la fenêtre indique combien de boutons tiennent à côté du titre. Les autres passent dans
+    /// le menu « Plus », sans jamais recouvrir le titre de la page.
+    /// </summary>
+    public void FitActions(int count)
+    {
+        count = Math.Clamp(count, 0, MaxVisible + 1);
+        if (count == visibleCount) return;
+        visibleCount = count;
+        Raise(nameof(VisibleActions));
+        Raise(nameof(MoreActions));
+        Raise(nameof(HasMoreActions));
+    }
     public bool Busy { get => busy; protected set => Set(ref busy, value); }
 
     /// <summary>Charge les données depuis le serveur. Chaque écran le redéfinit.</summary>

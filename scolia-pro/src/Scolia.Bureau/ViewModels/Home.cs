@@ -24,7 +24,7 @@ public sealed class HomePage : PageViewModel
 
     public HomePage(ShellViewModel shell) : base(shell)
     {
-        ShowAllTools = new RelayCommand(() => Shell.Prefs.Sidebar = true);
+        ShowAllTools = new RelayCommand(Shell.ShowSidebar);
         BuildTools();
     }
 

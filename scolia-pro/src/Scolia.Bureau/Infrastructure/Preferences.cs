@@ -16,11 +16,11 @@ public sealed class Preferences : Observable
         new("0.9", "Petit"), new("1", "Normal"), new("1.15", "Grand"), new("1.3", "Très grand"),
     ];
 
-    /// <summary>Fenêtre de référence et bornes de l'adaptation automatique du texte.</summary>
+    /// <summary>Fenêtre de référence et bornes de l'adaptation automatique de l'interface.</summary>
     private const double ReferenceWidth = 1280;
-    private const double ReferenceHeight = 800;
-    private const double MinFit = 0.85;
-    private const double MaxFit = 1.25;
+    private const double ReferenceHeight = 720;
+    private const double MinFit = 0.8;
+    private const double MaxFit = 1.3;
 
     public static readonly IReadOnlyList<ChoiceItem> Themes =
     [
@@ -42,8 +42,17 @@ public sealed class Preferences : Observable
     public bool IsDark { get => theme == "dark"; set => Theme = value ? "dark" : "light"; }
     public double Scale { get => scale; set { if (Set(ref scale, Math.Clamp(Math.Round(value, 2), 0.8, 1.6))) Raise(nameof(ZoomLabel)); } }
     public string ZoomLabel => $"{Math.Round(scale * 100):0} %";
-    /// <summary>Taille de texte réellement appliquée : le choix de l'utilisateur, adapté à la taille de la fenêtre.</summary>
-    public double Factor => scale * fit;
+    /// <summary>Taille de texte choisie par l'utilisateur. L'adaptation à la fenêtre agit à part, sur toute l'interface.</summary>
+    public double Factor => scale;
+
+    /// <summary>
+    /// Échelle de toute l'interface selon la fenêtre : texte, marges, icônes, champs et volet grandissent ou rapetissent
+    /// ensemble, si bien qu'un petit écran affiche la même mise en page qu'un écran de 1280 × 720, en plus petit.
+    /// </summary>
+    public double LayoutScale => fit;
+
+    /// <summary>Signalé quand l'échelle de l'interface change, sans enregistrer les préférences.</summary>
+    public event Action<double>? LayoutScaleChanged;
     public bool Compact { get => compact; set => Set(ref compact, value); }
     public bool StatusBar { get => statusBar; set => Set(ref statusBar, value); }
     public bool Tips { get => tips; set => Set(ref tips, value); }
@@ -80,7 +89,7 @@ public sealed class Preferences : Observable
     }
 
     /// <summary>
-    /// Adapte le texte et les contrôles à la taille de la fenêtre : 1 à 1280 × 800, plus grand sur un grand écran,
+    /// Adapte toute l'interface à la taille de la fenêtre : 1 à 1280 × 720, plus grand sur un grand écran,
     /// plus petit sur un écran réduit. Les valeurs sont arrondies au vingtième pour éviter les recalculs continus pendant un redimensionnement.
     /// </summary>
     public void Fit(double width, double height)
@@ -88,7 +97,7 @@ public sealed class Preferences : Observable
         var next = Math.Round(Math.Clamp(Math.Min(width / ReferenceWidth, height / ReferenceHeight), MinFit, MaxFit) * 20) / 20;
         if (next == fit) return;
         fit = next;
-        Apply();
+        LayoutScaleChanged?.Invoke(fit);
     }
 
     /// <summary>Applique les préférences à toute l'interface : thème, taille, densité.</summary>

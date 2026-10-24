@@ -44,8 +44,9 @@ public sealed class ShellViewModel : Observable
         ForwardCommand = new RelayCommand(GoForward);
         revisionTimer = new DispatcherTimer(RevisionInterval, DispatcherPriority.Background, (_, _) => _ = CheckRevisionAsync());
         revisionTimer.Start();
-        prefs.PropertyChanged += (_, _) =>
+        prefs.PropertyChanged += (_, args) =>
         {
+            if (args.PropertyName == nameof(Preferences.Sidebar)) Raise(nameof(SidebarShown));
             prefs.Apply();
             prefs.Save();
             if (IsLoggedIn) RebuildRibbon();
@@ -373,6 +374,11 @@ public sealed class ShellViewModel : Observable
         var page = create();
         Remember(page.Title, create);
         BackstageOpen = false;
+        if (narrow && narrowSidebarOpen)
+        {
+            narrowSidebarOpen = false;
+            Raise(nameof(SidebarShown));
+        }
         if (current is not null)
         {
             backStack.Add(current);
@@ -555,7 +561,44 @@ public sealed class ShellViewModel : Observable
     public Material.Icons.MaterialIconKind CurrentIcon { get; private set; } = Material.Icons.MaterialIconKind.Home;
     public Avalonia.Media.IBrush CurrentIconBrush { get; private set; } = Avalonia.Media.Brushes.Gray;
 
-    public void ToggleSidebar() => Prefs.Sidebar = !Prefs.Sidebar;
+    private bool narrow;
+    private bool narrowSidebarOpen;
+
+    /// <summary>
+    /// Fenêtre étroite : le volet se replie seul pour laisser la place à la page, puis revient quand la fenêtre s'élargit.
+    /// Il s'ouvre au besoin avec le bouton du volet et se referme dès qu'on choisit une page.
+    /// </summary>
+    public bool Narrow
+    {
+        get => narrow;
+        set
+        {
+            if (narrow == value) return;
+            narrow = value;
+            narrowSidebarOpen = false;
+            Raise();
+            Raise(nameof(SidebarShown));
+        }
+    }
+
+    /// <summary>Volet affiché : le choix enregistré en fenêtre large, une ouverture passagère en fenêtre étroite.</summary>
+    public bool SidebarShown => narrow ? narrowSidebarOpen : Prefs.Sidebar;
+
+    public void ToggleSidebar()
+    {
+        if (narrow)
+        {
+            narrowSidebarOpen = !narrowSidebarOpen;
+            Raise(nameof(SidebarShown));
+        }
+        else Prefs.Sidebar = !Prefs.Sidebar;
+    }
+
+    /// <summary>Affiche le volet, par exemple depuis « Afficher tous les outils » de l'accueil.</summary>
+    public void ShowSidebar()
+    {
+        if (!SidebarShown) ToggleSidebar();
+    }
 
     /// <summary>Commandes ayant un raccourci, dans l'ordre affiché par la boîte des raccourcis.</summary>
     public IReadOnlyList<RibbonCommandVm> ShortcutCommands { get; private set; } = [];

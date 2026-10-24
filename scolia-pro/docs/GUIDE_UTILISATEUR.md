@@ -23,6 +23,15 @@ Onglet Affichage, groupe Apparence, bouton de lanceur (la petite flèche du grou
 
 Les réglages sont mémorisés sur ce poste. Ils ne sont pas partagés avec les autres utilisateurs.
 
+### Taille de l'écran
+
+L'interface suit la taille de la fenêtre. Texte, champs, icônes et marges grandissent ou rapetissent ensemble : un petit écran affiche la même page qu'un grand, en plus petit.
+
+- Quand la place manque dans l'en-tête, les boutons en trop passent dans le menu « … ». Le titre de la page reste lisible.
+- Dans une fenêtre étroite, le volet de gauche se replie seul. Le bouton du volet, en haut à gauche, l'ouvre ; il se referme dès qu'une page est choisie.
+- Les tableaux masquent leurs colonnes secondaires quand elles ne tiennent plus.
+- La taille du texte choisie dans les préférences s'ajoute à cette adaptation.
+
 Les commandes du ruban ouvrent directement la page ou la boîte de saisie correspondante : nouvelle dépense, arrêt de caisse, nouveau cours, nouvelle évaluation, incident, promotion, année scolaire, utilisateur, membre du personnel, import du classeur V79. Les exports (Excel, PDF, CSV) sont dans les groupes Finances et Administration.
 
 ## 1. Premier lancement

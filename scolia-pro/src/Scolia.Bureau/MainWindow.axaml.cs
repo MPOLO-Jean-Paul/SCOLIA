@@ -1,4 +1,6 @@
+using Avalonia;
 using Avalonia.Animation;
+using Avalonia.Media;
 using Avalonia.Controls.Primitives.PopupPositioning;
 using Material.Icons;
 using Material.Icons.Avalonia;
@@ -20,14 +22,24 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
-        // Le texte et les contrôles suivent la taille de la fenêtre, sans chevauchement ni taille figée.
-        SizeChanged += (_, e) =>
-        {
-            if (Shell is { } shell) shell.Prefs.Fit(e.NewSize.Width, e.NewSize.Height);
-        };
+        // Toute l'interface suit la taille de la fenêtre, sans chevauchement ni taille figée.
+        SizeChanged += (_, e) => FitWindow(e.NewSize);
+        PageBar.SizeChanged += (_, _) => FitPageActions();
         DataContextChanged += (_, _) =>
         {
             if (DataContext is not ShellViewModel shell) return;
+            shell.Prefs.LayoutScaleChanged += _ => FitWindow(ClientSize);
+            shell.PropertyChanged += (_, args) =>
+            {
+                if (args.PropertyName != nameof(ShellViewModel.Current)) return;
+                if (shell.Current is { } page)
+                {
+                    page.Actions.CollectionChanged -= OnActionsChanged;
+                    page.Actions.CollectionChanged += OnActionsChanged;
+                }
+                Avalonia.Threading.Dispatcher.UIThread.Post(FitPageActions, Avalonia.Threading.DispatcherPriority.Loaded);
+            };
+            FitWindow(ClientSize);
             shell.FullscreenHandler = full => WindowState = full ? WindowState.FullScreen : WindowState.Normal;
             shell.PickFileHandler = PickFileAsync;
             ApplyPageTransition(shell.Prefs);
@@ -37,6 +49,52 @@ public partial class MainWindow : Window
             };
         };
     }
+
+    /// <summary>Largeur, en points de la mise en page, sous laquelle le volet se replie pour laisser la place à la page.</summary>
+    private const double NarrowBelow = 1200;
+
+    /// <summary>Place occupée dans l'en-tête par le bouton du volet, les flèches, l'icône, le menu et les marges.</summary>
+    private const double PageBarFixed = 290;
+
+    /// <summary>Met toute l'interface à l'échelle de la fenêtre, puis replie le volet si la page manque de place.</summary>
+    private void FitWindow(Size size)
+    {
+        if (Shell is not { } shell || size.Width <= 0) return;
+        shell.Prefs.Fit(size.Width, size.Height);
+        var k = shell.Prefs.LayoutScale;
+        Scaler.LayoutTransform = Math.Abs(k - 1) < 0.001 ? null : new Avalonia.Media.ScaleTransform(k, k);
+        shell.Narrow = size.Width / k < NarrowBelow;
+    }
+
+    private void OnActionsChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e) =>
+        Avalonia.Threading.Dispatcher.UIThread.Post(FitPageActions, Avalonia.Threading.DispatcherPriority.Loaded);
+
+    /// <summary>
+    /// Garde dans l'en-tête autant de boutons que la largeur le permet, à côté d'un titre lisible.
+    /// Les autres passent dans le menu « … ».
+    /// </summary>
+    private void FitPageActions()
+    {
+        if (Shell?.Current is not { } page || PageBar.Bounds.Width <= 0) return;
+        var font = Shell.Prefs.Factor * 13.5;
+        var title = Math.Clamp(TextWidth(page.Heading, 17 * Shell.Prefs.Factor, FontWeight.Bold) + 8, 140, 260);
+        var room = PageBar.Bounds.Width - PageBarFixed - title;
+        var widths = page.Actions.Select(a => TextWidth(a.Label, font, FontWeight.Normal) + 58).ToList();
+        const double more = 46;
+        int count;
+        if (widths.Count <= 4 && widths.Sum() <= room) count = widths.Count;
+        else
+        {
+            count = 0;
+            for (var k = Math.Min(3, widths.Count - 1); k > 0; k--)
+                if (widths.Take(k).Sum() + more <= room) { count = k; break; }
+        }
+        page.FitActions(count);
+    }
+
+    private double TextWidth(string text, double size, FontWeight weight) =>
+        new FormattedText(text, System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight,
+            new Typeface(FontFamily, FontStyle.Normal, weight), size, null).Width;
 
     /// <summary>Fondu entre les pages, désactivé par la préférence « Animations ».</summary>
     private void ApplyPageTransition(Preferences prefs) =>
