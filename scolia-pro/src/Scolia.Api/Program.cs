@@ -158,7 +158,8 @@ app.Lifetime.ApplicationStarted.Register(() =>
     if (!desktop) return;
 #if SCOLIA_DESKTOP
     // L'icône est toujours présente sur un poste de bureau : c'est elle qui permet de quitter SCOLIA.
-    TrayHost.Start(app, url, storage.DataDirectory, lan, port);
+    // Désactivable : le client natif lance ce serveur sans icône (il en a déjà une).
+    if (app.Configuration.GetValue("Scolia:Icone", true)) TrayHost.Start(app, url, storage.DataDirectory, lan, port);
 #endif
     if (app.Configuration.GetValue("Scolia:OuvrirNavigateur", true)) DesktopLauncher.Open(url);
 });

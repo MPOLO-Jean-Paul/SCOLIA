@@ -40,6 +40,8 @@
     <UseWindowsForms>true</UseWindowsForms>
     <OutputType>WinExe</OutputType>
     <DefineConstants>$(DefineConstants);SCOLIA_DESKTOP</DefineConstants>
+    <!-- MSB3277 : le paquet WebView2 référence WPF et WinForms ensemble ; sans effet sur l'exécution. -->
+    <NoWarn>$(NoWarn);MSB3277</NoWarn>
   </PropertyGroup>
 
 </Project>

@@ -1,0 +1,77 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Scolia.Bureau.ViewModels"
+        xmlns:mi="using:Material.Icons.Avalonia"
+        x:Class="Scolia.Bureau.MainWindow"
+        x:DataType="vm:ShellViewModel"
+        Title="SCOLIA"
+        Width="1280" Height="800" MinWidth="960" MinHeight="600">
+  <Grid RowDefinitions="Auto,Auto,*,Auto">
+
+    <!-- Barre de titre de l'application -->
+    <Border Grid.Row="0" Padding="16,9" BorderBrush="#E3E3E3" BorderThickness="0,0,0,1">
+      <Grid ColumnDefinitions="Auto,*,Auto">
+        <StackPanel Orientation="Horizontal" Spacing="10">
+          <Image Source="avares://SCOLIA-Bureau/Assets/scolia.png" Width="22" Height="22" />
+          <TextBlock Text="SCOLIA" FontWeight="SemiBold" FontSize="14" VerticalAlignment="Center" />
+          <TextBlock Text="{Binding SchoolLine}" Opacity="0.6" VerticalAlignment="Center" />
+        </StackPanel>
+        <TextBlock Grid.Column="2" Text="{Binding UserLine}" Opacity="0.8" VerticalAlignment="Center" />
+      </Grid>
+    </Border>
+
+    <!-- Ruban : onglets, puis commandes de l'onglet choisi -->
+    <StackPanel Grid.Row="1" IsVisible="{Binding IsLoggedIn}">
+      <ListBox ItemsSource="{Binding Tabs}" SelectedItem="{Binding SelectedTab, Mode=TwoWay}"
+               Background="Transparent" BorderThickness="0" Padding="8,0,0,0">
+        <ListBox.ItemsPanel>
+          <ItemsPanelTemplate><StackPanel Orientation="Horizontal" /></ItemsPanelTemplate>
+        </ListBox.ItemsPanel>
+        <ListBox.ItemTemplate>
+          <DataTemplate x:DataType="vm:RibbonTabVm">
+            <TextBlock Text="{Binding Title}" Margin="12,8" />
+          </DataTemplate>
+        </ListBox.ItemTemplate>
+      </ListBox>
+      <Border Padding="10,8" BorderBrush="#E3E3E3" BorderThickness="0,1">
+        <ItemsControl ItemsSource="{Binding SelectedGroups}">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate><StackPanel Orientation="Horizontal" /></ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="vm:RibbonGroupVm">
+              <Border Padding="12,2" BorderBrush="#E3E3E3" BorderThickness="0,0,1,0">
+                <StackPanel Spacing="4">
+                  <ItemsControl ItemsSource="{Binding Commands}">
+                    <ItemsControl.ItemsPanel>
+                      <ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="4" /></ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="vm:RibbonCommandVm">
+                        <Button Command="{Binding Command}" Padding="8,6" Background="Transparent" BorderThickness="0" CornerRadius="8">
+                          <StackPanel Spacing="5" Width="88">
+                            <mi:MaterialIcon Kind="{Binding Icon}" Width="26" Height="26" HorizontalAlignment="Center" Foreground="#0B57D0" />
+                            <TextBlock Text="{Binding Label}" FontSize="12" TextAlignment="Center" TextWrapping="Wrap" />
+                          </StackPanel>
+                        </Button>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                  <TextBlock Text="{Binding Title}" FontSize="11" Opacity="0.6" HorizontalAlignment="Center" />
+                </StackPanel>
+              </Border>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </Border>
+    </StackPanel>
+
+    <!-- Écran courant -->
+    <ContentControl Grid.Row="2" Content="{Binding Current}" Padding="24,18" />
+
+    <!-- Barre d'état -->
+    <Border Grid.Row="3" Padding="14,5" BorderBrush="#E3E3E3" BorderThickness="0,1,0,0">
+      <TextBlock Text="{Binding Status}" FontSize="12" Opacity="0.7" />
+    </Border>
+  </Grid>
+</Window>

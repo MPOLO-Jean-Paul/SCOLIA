@@ -18,6 +18,18 @@ sans aucune dépendance à Excel.
 
 Le détail est dans [`docs/GUIDE_UTILISATEUR.md`](docs/GUIDE_UTILISATEUR.md) et dans `LIRE_MOI.txt` du paquet.
 
+## Client natif
+
+`src/Scolia.Bureau` est le client de bureau en Avalonia : une fenêtre native, sans navigateur ni moteur web.
+Il parle au serveur SCOLIA par la même API que l'interface web. Au lancement, il démarre le serveur `SCOLIA.exe`
+du même dossier s'il n'est pas déjà actif. Le paquet Windows contient les deux exécutables.
+
+Captures sans affichage (rendu Avalonia Headless, sur les données d'un serveur lancé) :
+
+```bash
+dotnet run --project tests/Scolia.Bureau.Captures -c Release -- <dossier_de_sortie> http://localhost:5080/ <mot_de_passe>
+```
+
 ## Technologies
 
 | Couche | Choix | Pourquoi |

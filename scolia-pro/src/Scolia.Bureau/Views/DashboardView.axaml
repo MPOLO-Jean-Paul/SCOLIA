@@ -1,0 +1,52 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Scolia.Bureau.ViewModels"
+             x:Class="Scolia.Bureau.Views.DashboardView"
+             x:DataType="vm:DashboardViewModel">
+  <ScrollViewer>
+    <StackPanel Spacing="20">
+      <StackPanel Spacing="2">
+        <TextBlock Text="Tableau de bord" FontSize="26" />
+        <TextBlock Text="{Binding Title}" Opacity="0.65" />
+      </StackPanel>
+
+      <!-- Indicateurs : une bande à séparateurs -->
+      <ItemsControl ItemsSource="{Binding Kpis}">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate><WrapPanel Orientation="Horizontal" /></ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="vm:Kpi">
+            <Border Width="230" Padding="18,12" BorderBrush="#E3E3E3" BorderThickness="0,0,1,0">
+              <StackPanel Spacing="4">
+                <TextBlock Text="{Binding Label}" FontSize="12" Opacity="0.7" />
+                <TextBlock Text="{Binding Value}" FontSize="24" FontWeight="Medium" />
+                <TextBlock Text="{Binding Hint}" FontSize="12" Opacity="0.6" TextWrapping="Wrap" />
+              </StackPanel>
+            </Border>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+
+      <!-- Encaissements par mois -->
+      <Border Padding="18,14" CornerRadius="12" BorderBrush="#E3E3E3" BorderThickness="1">
+        <StackPanel Spacing="12">
+          <TextBlock Text="Encaissements par mois" FontSize="15" FontWeight="Medium" />
+          <ItemsControl ItemsSource="{Binding Months}">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Bottom" /></ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:MonthBar">
+                <StackPanel Spacing="6" Width="58" VerticalAlignment="Bottom">
+                  <Border Width="34" Height="{Binding Height}" CornerRadius="4" Background="#0B57D0" HorizontalAlignment="Center" VerticalAlignment="Bottom" />
+                  <TextBlock Text="{Binding Label}" FontSize="12" Opacity="0.7" TextAlignment="Center" />
+                </StackPanel>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
+      </Border>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

@@ -18,6 +18,12 @@ dotnet publish "$racine/src/Scolia.Api" -c Release -f net10.0-windows -r win-x64
   -p:DebugType=None -p:DebugSymbols=false -p:IsTransformWebConfigDisabled=true \
   -o "$paquet"
 
+echo "==> Client natif (fenêtre Avalonia, sans navigateur)"
+dotnet publish "$racine/src/Scolia.Bureau" -c Release -r win-x64 --self-contained \
+  -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true \
+  -p:EnableCompressionInSingleFile=true -p:DebugType=None -p:DebugSymbols=false \
+  -o "$paquet"
+
 echo "==> Outils d'exploitation"
 cp "$racine"/scripts/windows/* "$paquet/"
 rm -f "$paquet"/*.pdb

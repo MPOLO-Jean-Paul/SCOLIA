@@ -19,6 +19,13 @@ dotnet publish (Join-Path $racine 'src\Scolia.Api') -c Release -f net10.0-window
   -o $paquet
 if ($LASTEXITCODE) { throw 'dotnet publish' }
 
+Write-Host '==> Client natif (fenêtre Avalonia, sans navigateur)'
+dotnet publish (Join-Path $racine 'src\Scolia.Bureau') -c Release -r win-x64 --self-contained `
+  -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true `
+  -p:EnableCompressionInSingleFile=true -p:DebugType=None -p:DebugSymbols=false `
+  -o $paquet
+if ($LASTEXITCODE) { throw 'dotnet publish client natif' }
+
 Write-Host "==> Outils d'exploitation"
 Copy-Item (Join-Path $racine 'scripts\windows\*') $paquet
 Get-ChildItem $paquet -Filter *.pdb | Remove-Item
