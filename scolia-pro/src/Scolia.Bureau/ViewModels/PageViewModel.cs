@@ -7,14 +7,31 @@ using Scolia.Bureau.Infrastructure;
 namespace Scolia.Bureau.ViewModels;
 
 /// <summary>Bouton d'en-tête de page : Nouveau, Actualiser, Exporter.</summary>
-public sealed record ActionVm(string Label, MaterialIconKind Icon, ICommand Command, bool Primary = false);
+public sealed record ActionVm(string Label, MaterialIconKind Icon, ICommand Command, bool Primary = false, bool Danger = false)
+{
+    /// <summary>Bouton bleu : action principale qui n'est pas destructrice.</summary>
+    public bool IsPrimary => Primary && !Danger;
+}
 
 /// <summary>Écran de l'application. Chaque écran charge ses données et publie ses actions dans l'en-tête.</summary>
-public abstract class PageViewModel(ShellViewModel shell) : Observable
+public abstract class PageViewModel : Observable
 {
+    /// <summary>Boutons visibles dans l'en-tête : au-delà, les actions passent dans le menu « Plus ».</summary>
+    private const int VisibleCount = 3;
     private bool busy;
 
-    protected ShellViewModel Shell { get; } = shell;
+    protected PageViewModel(ShellViewModel shell)
+    {
+        Shell = shell;
+        Actions.CollectionChanged += (_, _) =>
+        {
+            Raise(nameof(VisibleActions));
+            Raise(nameof(MoreActions));
+            Raise(nameof(HasMoreActions));
+        };
+    }
+
+    protected ShellViewModel Shell { get; }
 
     public abstract string Title { get; }
     /// <summary>Titre affiché en tête de page : le titre de l'écran, sauf l'accueil qui salue l'utilisateur.</summary>
@@ -22,6 +39,11 @@ public abstract class PageViewModel(ShellViewModel shell) : Observable
     public virtual string Subtitle => string.Empty;
     public virtual MaterialIconKind Glyph => MaterialIconKind.FileDocumentOutline;
     public ObservableCollection<ActionVm> Actions { get; } = [];
+    /// <summary>L'action principale et les plus courantes, affichées en boutons.</summary>
+    public IReadOnlyList<ActionVm> VisibleActions => Actions.Count <= VisibleCount + 1 ? Actions : Actions.Take(VisibleCount).ToList();
+    /// <summary>Les autres actions, rangées dans le menu « Plus » pour garder un en-tête net.</summary>
+    public IReadOnlyList<ActionVm> MoreActions => Actions.Count <= VisibleCount + 1 ? [] : Actions.Skip(VisibleCount).ToList();
+    public bool HasMoreActions => Actions.Count > VisibleCount + 1;
     public bool Busy { get => busy; protected set => Set(ref busy, value); }
 
     /// <summary>Charge les données depuis le serveur. Chaque écran le redéfinit.</summary>
@@ -49,8 +71,8 @@ public abstract class PageViewModel(ShellViewModel shell) : Observable
 
     protected string Money(decimal value) => Format.Money(value, Currency);
 
-    protected void Action(string label, MaterialIconKind icon, Func<Task> work, bool primary = false) =>
-        Actions.Add(new ActionVm(label, icon, new AsyncCommand(() => Shell.Run(work)), primary));
+    protected void Action(string label, MaterialIconKind icon, Func<Task> work, bool primary = false, bool danger = false) =>
+        Actions.Add(new ActionVm(label, icon, new AsyncCommand(() => Shell.Run(work)), primary, danger));
 
     protected void ActionRefresh() =>
         Actions.Add(new ActionVm("Actualiser", MaterialIconKind.Refresh, new AsyncCommand(RefreshAsync)));

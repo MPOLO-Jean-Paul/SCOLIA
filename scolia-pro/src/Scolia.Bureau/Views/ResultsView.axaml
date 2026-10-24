@@ -1,14 +1,19 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Scolia.Bureau.Controls"
              x:Class="Scolia.Bureau.Views.ResultsView">
   <Grid RowDefinitions="Auto,*">
     <Border Grid.Row="0" Classes="band" Margin="0,0,0,10">
-      <StackPanel Orientation="Horizontal" Spacing="10">
-        <TextBlock Text="Promotion" VerticalAlignment="Center" Classes="muted" />
-        <ComboBox Width="260" ItemsSource="{Binding Promotions}" SelectedItem="{Binding Promotion}" />
-        <TextBlock Text="Période" VerticalAlignment="Center" Classes="muted" Margin="8,0,0,0" />
-        <ComboBox Width="170" ItemsSource="{Binding Terms}" SelectedItem="{Binding Term}" />
-      </StackPanel>
+      <WrapPanel>
+        <StackPanel Classes="field">
+          <TextBlock Text="Promotion" Classes="fieldlabel" />
+          <ComboBox Width="260" ItemsSource="{Binding Promotions}" SelectedItem="{Binding Promotion}" />
+        </StackPanel>
+        <StackPanel Classes="field">
+          <TextBlock Text="Période" Classes="fieldlabel" />
+          <ComboBox Width="170" ItemsSource="{Binding Terms}" SelectedItem="{Binding Term}" />
+        </StackPanel>
+      </WrapPanel>
     </Border>
     <DataGrid Grid.Row="1" ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}" AutoGenerateColumns="False" IsReadOnly="True">
       <DataGrid.Columns>
@@ -19,15 +24,19 @@
         <DataGridTemplateColumn Header="Décision" Width="Auto" MinWidth="140">
           <DataGridTemplateColumn.CellTemplate>
             <DataTemplate>
-              <TextBlock Text="{Binding Decision}" Foreground="{Binding DecisionBrush}" FontWeight="SemiBold" VerticalAlignment="Center" />
+              <Panel Classes="pill">
+                <Border CornerRadius="10" Background="{Binding DecisionBrush}" Opacity="0.13" />
+                <StackPanel Orientation="Horizontal" Spacing="6" Margin="9,3,11,3">
+                  <Ellipse Width="6" Height="6" Fill="{Binding DecisionBrush}" VerticalAlignment="Center" />
+                  <TextBlock Text="{Binding Decision}" Foreground="{Binding DecisionBrush}" FontSize="{DynamicResource FsSmall}" FontWeight="SemiBold" />
+                </StackPanel>
+              </Panel>
             </DataTemplate>
           </DataGridTemplateColumn.CellTemplate>
         </DataGridTemplateColumn>
         <DataGridTextColumn Header="Moyennes par cours" Binding="{Binding Courses}" Width="3*" MinWidth="480" />
       </DataGrid.Columns>
     </DataGrid>
-    <TextBlock Grid.Row="1" Classes="muted" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,64,0,0"
-               Text="Aucun résultat pour cette promotion : vérifiez que les notes sont saisies."
-               IsVisible="{Binding Items.Count, Converter={StaticResource IsEmpty}}" />
+    <c:EmptyState Grid.Row="1" Icon="CertificateOutline" Title="Aucun résultat à afficher" Hint="Aucun résultat pour cette promotion : vérifiez que les notes sont saisies." IsVisible="{Binding Items.Count, Converter={StaticResource IsEmpty}}" />
   </Grid>
 </UserControl>

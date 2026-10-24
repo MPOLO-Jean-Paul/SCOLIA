@@ -4,11 +4,13 @@
              x:Class="Scolia.Bureau.Views.TeachingView">
   <Grid RowDefinitions="Auto,2*,Auto,*">
     <Border Grid.Row="0" Classes="band" Margin="0,0,0,10">
-      <StackPanel Orientation="Horizontal" Spacing="10">
-        <TextBlock Text="Promotion" VerticalAlignment="Center" Classes="muted" />
-        <ComboBox Width="240" ItemsSource="{Binding Promotions}" SelectedItem="{Binding Promotion}" />
-        <CheckBox Content="Afficher les cours archivés" IsChecked="{Binding ShowArchived}" VerticalAlignment="Center" />
-      </StackPanel>
+      <WrapPanel>
+        <StackPanel Classes="field">
+          <TextBlock Text="Promotion" Classes="fieldlabel" />
+          <ComboBox Width="240" ItemsSource="{Binding Promotions}" SelectedItem="{Binding Promotion}" />
+        </StackPanel>
+        <CheckBox Content="Afficher les cours archivés" IsChecked="{Binding ShowArchived}" VerticalAlignment="Bottom" Margin="0,0,12,12" />
+      </WrapPanel>
     </Border>
 
     <DataGrid Grid.Row="1" ItemsSource="{Binding Courses}" SelectedItem="{Binding Selected}" AutoGenerateColumns="False" IsReadOnly="True">

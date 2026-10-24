@@ -28,7 +28,7 @@ describe('ruban', () => {
 
   it('n’affiche aucun onglet vide sans permission', () => {
     const labels = buildTabs({ ...base, can: nothing }).map((t) => t.label);
-    expect(labels).toEqual(['Accueil', 'Affichage', 'Aide']);
+    expect(labels).toEqual(['Accueil', 'Données', 'Affichage', 'Aide']);
   });
 
   it('ajoute l’onglet contextuel du reçu et de la fiche apprenant seulement sur leur page', () => {
@@ -44,6 +44,12 @@ describe('ruban', () => {
     const accueil = buildTabs({ pathname: '/', recents, can: everything })[0];
     const recentGroup = accueil.groups.find((g) => g.title === 'Récents');
     expect(recentGroup?.commands).toHaveLength(6);
+  });
+
+  it('réunit le tableau de bord, les exports, les sauvegardes et le contrôle dans Données', () => {
+    const donnees = buildTabs({ ...base, can: everything }).find((t) => t.id === 'donnees');
+    expect(donnees?.groups.map((g) => g.title)).toEqual(['Pilotage', 'Exports rapides', 'Sauvegardes', 'Contrôle']);
+    expect(donnees?.groups[0].commands[0].id).toBe('tableau-de-bord');
   });
 
   it('ne propose que des navigations vers des chemins absolus', () => {

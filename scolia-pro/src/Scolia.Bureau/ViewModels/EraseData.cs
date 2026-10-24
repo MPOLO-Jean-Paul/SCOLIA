@@ -62,7 +62,7 @@ public sealed class EraseDataPage : PageViewModel
         this.payments = payments;
         scope = Scopes[0];
         if (Shell.Can(Perm.BackupManage))
-            Action(payments ? "Effacer définitivement les paiements" : "Effacer définitivement les apprenants", MaterialIconKind.DeleteForeverOutline, EraseAsync, primary: true);
+            Action(payments ? "Effacer définitivement les paiements" : "Effacer définitivement les apprenants", MaterialIconKind.DeleteForeverOutline, EraseAsync, primary: true, danger: true);
         Action("Tout cocher", MaterialIconKind.CheckboxMultipleMarkedOutline, () => { SetAll(true); return Task.CompletedTask; });
         Action("Tout décocher", MaterialIconKind.CheckboxMultipleBlankOutline, () => { SetAll(false); return Task.CompletedTask; });
         ActionRefresh();

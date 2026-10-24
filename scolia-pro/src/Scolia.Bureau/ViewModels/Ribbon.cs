@@ -39,7 +39,46 @@ public sealed class RibbonCommandVm(string label, MaterialIconKind icon, string 
 }
 
 /// <summary>Groupe de commandes, titré en bas comme dans Office.</summary>
-public sealed record RibbonGroupVm(string Title, IReadOnlyList<RibbonCommandVm> Commands);
+public sealed record RibbonGroupVm(string Title, IReadOnlyList<RibbonCommandVm> Commands)
+{
+    /// <summary>Petites commandes empilées par trois au plus, comme dans Office.</summary>
+    private const int SmallPerColumn = 3;
+
+    /// <summary>
+    /// Colonnes du groupe : chaque grande commande occupe sa colonne, les petites qui se suivent
+    /// s'empilent par trois. Le ruban reste compact, sans défilement horizontal.
+    /// </summary>
+    public IReadOnlyList<RibbonColumnVm> Columns
+    {
+        get
+        {
+            var columns = new List<RibbonColumnVm>();
+            var smalls = new List<RibbonCommandVm>();
+            void Flush()
+            {
+                if (smalls.Count == 0) return;
+                columns.Add(new RibbonColumnVm(smalls.ToList()));
+                smalls.Clear();
+            }
+            foreach (var command in Commands)
+            {
+                if (command.Large)
+                {
+                    Flush();
+                    columns.Add(new RibbonColumnVm([command]));
+                    continue;
+                }
+                smalls.Add(command);
+                if (smalls.Count == SmallPerColumn) Flush();
+            }
+            Flush();
+            return columns;
+        }
+    }
+}
+
+/// <summary>Colonne d'un groupe du ruban : une grande commande, ou jusqu'à trois petites l'une sous l'autre.</summary>
+public sealed record RibbonColumnVm(IReadOnlyList<RibbonCommandVm> Commands);
 
 /// <summary>Onglet du ruban. Un onglet contextuel n'apparaît que sur certains écrans, avec une couleur d'accent.</summary>
 public sealed class RibbonTabVm(string id, string title, IReadOnlyList<RibbonGroupVm> groups, string? contextLabel = null, string? contextTone = null) : Observable

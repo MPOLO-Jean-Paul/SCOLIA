@@ -95,6 +95,13 @@
   <Style Selector="Button.primary:pointerover">
     <Setter Property="Background" Value="{DynamicResource AccentHoverBrush}" />
   </Style>
+  <!-- Bouton plein : le libellé et l'icône composés restent blancs sur la couleur -->
+  <Style Selector="Button.primary TextBlock, Button.danger TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource OnAccentBrush}" />
+  </Style>
+  <Style Selector="Button.destructive TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource ToneRed}" />
+  </Style>
   <Style Selector="Button.danger">
     <Setter Property="Background" Value="{DynamicResource ToneRed}" />
     <Setter Property="Foreground" Value="{DynamicResource OnAccentBrush}" />
@@ -167,11 +174,87 @@
     <Setter Property="Padding" Value="18,16" />
     <Setter Property="BoxShadow" Value="0 1 2 0 #0F000000, 0 6 18 0 #0A000000" />
   </Style>
-  <!-- Barre de filtres : posée sur le fond, sans encadré, les champs blancs suffisent -->
-  <Style Selector="Border.band">
+  <!-- Barre de filtres : un bandeau blanc arrondi, les critères en ligne, comme la barre de portée du Finder -->
+  <Style Selector="Border.band, Border.filterbar">
+    <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
+    <Setter Property="BorderThickness" Value="0.5" />
+    <Setter Property="CornerRadius" Value="12" />
+    <Setter Property="Padding" Value="12,10,12,4" />
+  </Style>
+  <!-- Champ étiqueté d'une barre de filtres : petit libellé au-dessus, la saisie en dessous -->
+  <Style Selector="StackPanel.field">
+    <Setter Property="Spacing" Value="4" />
+    <Setter Property="Margin" Value="0,0,12,6" />
+  </Style>
+  <Style Selector="TextBlock.fieldlabel">
+    <Setter Property="FontSize" Value="{DynamicResource FsCaption}" />
+    <Setter Property="FontWeight" Value="Medium" />
+    <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
+    <Setter Property="Margin" Value="2,0,0,0" />
+  </Style>
+  <!-- Titre de rubrique : petites capitales grises, comme les listes groupées de macOS -->
+  <Style Selector="TextBlock.section">
+    <Setter Property="FontSize" Value="{DynamicResource FsCaption}" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
+    <Setter Property="LetterSpacing" Value="0.4" />
+    <Setter Property="Margin" Value="4,0,0,0" />
+  </Style>
+  <!-- Étiquette neutre : critère requis, format, catégorie -->
+  <Style Selector="Border.chip">
+    <Setter Property="Background" Value="{DynamicResource NeutralSoftBrush}" />
+    <Setter Property="CornerRadius" Value="6" />
+    <Setter Property="Padding" Value="7,1" />
+  </Style>
+  <Style Selector="Border.chip > TextBlock">
+    <Setter Property="FontSize" Value="{DynamicResource FsCaption}" />
+    <Setter Property="FontWeight" Value="Medium" />
+    <Setter Property="Foreground" Value="{DynamicResource Text2Brush}" />
+  </Style>
+  <!-- Contrôle segmenté, comme dans les barres d'outils de macOS : un choix parmi deux ou trois vues -->
+  <Style Selector="Border.segmented">
+    <Setter Property="Background" Value="{DynamicResource NeutralSoftBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
+    <Setter Property="BorderThickness" Value="0.5" />
+    <Setter Property="CornerRadius" Value="9" />
+    <Setter Property="Padding" Value="2" />
+  </Style>
+  <Style Selector="RadioButton.segment">
     <Setter Property="Background" Value="Transparent" />
-    <Setter Property="CornerRadius" Value="{StaticResource RadiusSmall}" />
-    <Setter Property="Padding" Value="0,2" />
+    <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+    <Setter Property="FontWeight" Value="Medium" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Border Name="Segment" Background="{TemplateBinding Background}" CornerRadius="7" Padding="14,6" MinHeight="28">
+          <ContentPresenter Content="{TemplateBinding Content}" Foreground="{TemplateBinding Foreground}"
+                            HorizontalAlignment="Center" VerticalAlignment="Center" />
+        </Border>
+      </ControlTemplate>
+    </Setter>
+  </Style>
+  <Style Selector="RadioButton.segment:pointerover">
+    <Setter Property="Background" Value="{DynamicResource LineBrush}" />
+  </Style>
+  <Style Selector="RadioButton.segment:checked">
+    <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+  </Style>
+  <Style Selector="RadioButton.segment:checked /template/ Border#Segment">
+    <Setter Property="BoxShadow" Value="0 1 3 0 #22000000" />
+  </Style>
+
+  <!-- Bouton compact des cartes et des lignes -->
+  <Style Selector="Button.small">
+    <Setter Property="MinHeight" Value="28" />
+    <Setter Property="Padding" Value="10,3" />
+    <Setter Property="FontSize" Value="{DynamicResource FsSmall}" />
+  </Style>
+  <!-- Pastille de statut : point et libellé colorés sur un fond teinté -->
+  <Style Selector="Panel.pill">
+    <Setter Property="HorizontalAlignment" Value="Left" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+    <Setter Property="Margin" Value="8,0" />
   </Style>
   <Style Selector="Border.badge">
     <Setter Property="CornerRadius" Value="{StaticResource RadiusSmall}" />
@@ -347,6 +430,12 @@
     <Setter Property="CornerRadius" Value="{StaticResource RadiusSmall}" />
     <Setter Property="Padding" Value="6,4" />
     <Setter Property="MinHeight" Value="0" />
+  </Style>
+  <!-- Petite commande : pleine largeur de sa colonne, libellé aligné à gauche -->
+  <Style Selector="Button.ribbon:not(.large)">
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="HorizontalContentAlignment" Value="Left" />
+    <Setter Property="Padding" Value="6,3" />
   </Style>
   <Style Selector="Button.ribbon:pointerover">
     <Setter Property="Background" Value="{DynamicResource NeutralSoftBrush}" />

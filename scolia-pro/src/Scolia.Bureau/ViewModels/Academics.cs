@@ -226,11 +226,20 @@ public sealed class GradesPage : PageViewModel
 }
 
 /// <summary>Ligne des résultats : rang, moyenne générale, décision et moyennes par cours.</summary>
+/// <summary>Couleur d'une mention : vert pour toute réussite, rouge pour un ajournement, gris sans évaluation.</summary>
 public sealed record ResultRowVm(Guid EnrollmentId, string Rank, string Matricule, string Name, string Average, string Decision, IBrush DecisionBrush, string Courses);
 
 /// <summary>Résultats et bulletins : moyennes, rangs, décisions, bulletins PDF.</summary>
 public sealed class ResultsPage : PageViewModel
 {
+    /// <summary>Couleur d'une mention : vert pour toute réussite, rouge pour un ajournement, gris sans évaluation.</summary>
+    private static string DecisionTone(string decision) => decision switch
+    {
+        "Ajourné" => "ToneRed",
+        "Non évalué" => "ToneNeutral",
+        _ => "ToneGreen",
+    };
+
     private ChoiceItem? promotion;
     private ChoiceItem? term;
     private ResultRowVm? selected;
@@ -280,7 +289,7 @@ public sealed class ResultsPage : PageViewModel
         {
             var courses = string.Join(" · ", results.Courses.Select((name, i) => $"{name} {Fmt(r.CourseAverages.ElementAtOrDefault(i))}"));
             Items.Add(new ResultRowVm(r.EnrollmentId, r.Rank is int rank ? $"{rank}" : "—", r.Matricule, r.FullName, Fmt(r.Average),
-                r.Decision, ThemeBrush.Get(r.Decision.Contains("dmis", StringComparison.OrdinalIgnoreCase) ? "ToneGreen" : "ToneOrange"), courses));
+                r.Decision, ThemeBrush.Get(DecisionTone(r.Decision)), courses));
         }
         subtitle = $"{results.Promotion} · moyenne de classe {Fmt(results.ClassAverage)} · {results.Passed} admis";
         Raise(nameof(Subtitle));

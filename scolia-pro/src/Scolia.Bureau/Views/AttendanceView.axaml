@@ -3,14 +3,22 @@
              x:Class="Scolia.Bureau.Views.AttendanceView">
   <Grid RowDefinitions="Auto,*">
     <Border Grid.Row="0" Classes="band" Margin="0,0,0,10">
-      <StackPanel Orientation="Horizontal" Spacing="10">
-        <TextBlock Text="Promotion" VerticalAlignment="Center" Classes="muted" />
-        <ComboBox Width="260" ItemsSource="{Binding Promotions}" SelectedItem="{Binding Promotion}" />
-        <TextBlock Text="Date" VerticalAlignment="Center" Classes="muted" Margin="8,0,0,0" />
-        <CalendarDatePicker PlaceholderText="jj/mm/aaaa" SelectedDateFormat="Short" Width="170" SelectedDate="{Binding Day}" />
-        <RadioButton GroupName="attendance" Content="Feuille d'appel" IsChecked="{Binding !ShowSummary}" Margin="12,0,0,0" />
-        <RadioButton GroupName="attendance" Content="Bilan 30 jours" IsChecked="{Binding ShowSummary}" />
-      </StackPanel>
+      <WrapPanel>
+        <StackPanel Classes="field">
+          <TextBlock Text="Promotion" Classes="fieldlabel" />
+          <ComboBox Width="260" ItemsSource="{Binding Promotions}" SelectedItem="{Binding Promotion}" />
+        </StackPanel>
+        <StackPanel Classes="field">
+          <TextBlock Text="Date" Classes="fieldlabel" />
+          <CalendarDatePicker PlaceholderText="jj/mm/aaaa" SelectedDateFormat="Short" Width="170" SelectedDate="{Binding Day}" />
+        </StackPanel>
+        <Border Classes="segmented" VerticalAlignment="Bottom" Margin="0,0,16,6">
+          <StackPanel Orientation="Horizontal">
+            <RadioButton Classes="segment" GroupName="attendance" Content="Feuille d'appel" IsChecked="{Binding !ShowSummary}" />
+            <RadioButton Classes="segment" GroupName="attendance" Content="Bilan 30 jours" IsChecked="{Binding ShowSummary}" />
+          </StackPanel>
+        </Border>
+      </WrapPanel>
     </Border>
 
     <!-- Feuille d'appel : un statut par apprenant -->

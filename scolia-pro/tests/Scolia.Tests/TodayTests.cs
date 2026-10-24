@@ -54,3 +54,32 @@ public sealed class TodayTests : IDisposable
         Assert.Equal("INF1", appointments[0].GetProperty("promotion").GetString());
     }
 }
+
+/// <summary>Rapports du groupe Données : chaque export sort en PDF et en Excel, totaux compris.</summary>
+public sealed class DataReportsTests : IDisposable
+{
+    private readonly ScoliaApp app = new();
+
+    public void Dispose() => app.Dispose();
+
+    [Theory]
+    [InlineData("/api/rapports/promotions/export", "Situation financière par promotion")]
+    [InlineData("/api/rapports/apprenants/export", "Liste générale des apprenants")]
+    [InlineData("/api/depenses/export", "Registre des dépenses")]
+    public async Task Data_reports_export_to_pdf_and_excel(string url, string title)
+    {
+        var admin = await app.InstalledAdmin(demo: true);
+
+        var pdf = await admin.GetAsync(url);
+        Assert.True(pdf.IsSuccessStatusCode, await pdf.Content.ReadAsStringAsync());
+        Assert.Equal("application/pdf", pdf.Content.Headers.ContentType?.MediaType);
+        Assert.True((await pdf.Content.ReadAsByteArrayAsync()).Length > 1000);
+
+        var xlsx = await admin.GetAsync(url + "?format=xlsx");
+        Assert.True(xlsx.IsSuccessStatusCode);
+        using var book = new ClosedXML.Excel.XLWorkbook(await xlsx.Content.ReadAsStreamAsync());
+        var sheet = book.Worksheet(1);
+        Assert.Contains(sheet.CellsUsed(), c => c.GetString() == title);
+        Assert.True(sheet.LastRowUsed()!.RowNumber() > 6);
+    }
+}

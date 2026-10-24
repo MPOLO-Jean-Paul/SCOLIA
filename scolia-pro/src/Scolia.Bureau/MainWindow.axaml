@@ -82,25 +82,31 @@
             <DataTemplate>
               <Border Classes="groupsep" Padding="8,2,8,2" Margin="0,0,0,0">
                 <StackPanel Spacing="4">
-                  <ItemsControl ItemsSource="{Binding Commands}">
+                  <ItemsControl ItemsSource="{Binding Columns}" MinHeight="76">
                     <ItemsControl.ItemsPanel>
                       <ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Top" /></ItemsPanelTemplate>
                     </ItemsControl.ItemsPanel>
                     <ItemsControl.ItemTemplate>
                       <DataTemplate>
-                        <Button Command="{Binding Command}" Classes="ribbon" Classes.large="{Binding Large}" Classes.on="{Binding IsOn}"
-                                ToolTip.Tip="{Binding Tip}" ToolTip.ShowDelay="400" VerticalAlignment="Top">
-                          <Grid>
-                            <StackPanel Spacing="4" IsVisible="{Binding Large}" HorizontalAlignment="Center">
-                              <mi:MaterialIcon Kind="{Binding Icon}" Width="26" Height="26" HorizontalAlignment="Center" Foreground="{Binding Brush}" />
-                              <TextBlock Text="{Binding Label}" FontSize="{DynamicResource FsSmall}" TextAlignment="Center" TextWrapping="Wrap" MaxWidth="92" />
-                            </StackPanel>
-                            <StackPanel Orientation="Horizontal" Spacing="6" IsVisible="{Binding !Large}" VerticalAlignment="Center">
-                              <mi:MaterialIcon Kind="{Binding Icon}" Width="16" Height="16" Foreground="{Binding Brush}" />
-                              <TextBlock Text="{Binding Label}" FontSize="{DynamicResource FsSmall}" VerticalAlignment="Center" />
-                            </StackPanel>
-                          </Grid>
-                        </Button>
+                        <ItemsControl ItemsSource="{Binding Commands}" VerticalAlignment="Top">
+                        <ItemsControl.ItemTemplate>
+                          <DataTemplate>
+                            <Button Command="{Binding Command}" Classes="ribbon" Classes.large="{Binding Large}" Classes.on="{Binding IsOn}"
+                                    ToolTip.Tip="{Binding Tip}" ToolTip.ShowDelay="400" VerticalAlignment="Top">
+                              <Grid>
+                                <StackPanel Spacing="4" IsVisible="{Binding Large}" HorizontalAlignment="Center">
+                                  <mi:MaterialIcon Kind="{Binding Icon}" Width="26" Height="26" HorizontalAlignment="Center" Foreground="{Binding Brush}" />
+                                  <TextBlock Text="{Binding Label}" FontSize="{DynamicResource FsSmall}" TextAlignment="Center" TextWrapping="Wrap" MaxWidth="92" />
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" Spacing="6" IsVisible="{Binding !Large}" VerticalAlignment="Center">
+                                  <mi:MaterialIcon Kind="{Binding Icon}" Width="16" Height="16" Foreground="{Binding Brush}" />
+                                  <TextBlock Text="{Binding Label}" FontSize="{DynamicResource FsSmall}" VerticalAlignment="Center" />
+                                </StackPanel>
+                              </Grid>
+                            </Button>
+                          </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                        </ItemsControl>
                       </DataTemplate>
                     </ItemsControl.ItemTemplate>
                   </ItemsControl>
@@ -143,20 +149,43 @@
 
         <Grid Grid.Column="1" RowDefinitions="Auto,*" IsVisible="{Binding HasPage}">
           <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="28,20,28,10">
-            <StackPanel Spacing="2" VerticalAlignment="Center">
-              <TextBlock Text="{Binding Current.Heading}" Classes="title" />
+            <StackPanel Spacing="2" VerticalAlignment="Center" MinWidth="280">
+              <TextBlock Text="{Binding Current.Heading}" Classes="title" TextTrimming="CharacterEllipsis" />
               <TextBlock Text="{Binding Current.Subtitle}" Classes="muted" TextWrapping="Wrap" />
             </StackPanel>
-            <ItemsControl Grid.Column="1" ItemsSource="{Binding Current.Actions}" VerticalAlignment="Center" MaxWidth="640" Margin="16,0,0,0">
-              <ItemsControl.ItemsPanel>
-                <ItemsPanelTemplate><WrapPanel HorizontalAlignment="Right" /></ItemsPanelTemplate>
-              </ItemsControl.ItemsPanel>
-              <ItemsControl.ItemTemplate>
-                <DataTemplate>
-                  <Button Command="{Binding Command}" Content="{Binding Label}" Classes.primary="{Binding Primary}" Padding="14,6" Margin="0,0,8,6" />
-                </DataTemplate>
-              </ItemsControl.ItemTemplate>
-            </ItemsControl>
+            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="16,0,0,0">
+              <ItemsControl ItemsSource="{Binding Current.VisibleActions}">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="8" /></ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate>
+                    <Button Command="{Binding Command}" Classes.primary="{Binding IsPrimary}" Classes.danger="{Binding Danger}" Padding="12,6" ToolTip.Tip="{Binding Label}">
+                      <StackPanel Orientation="Horizontal" Spacing="7">
+                        <mi:MaterialIcon Kind="{Binding Icon}" Width="16" Height="16" />
+                        <TextBlock Text="{Binding Label}" VerticalAlignment="Center" />
+                      </StackPanel>
+                    </Button>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+              <Button IsVisible="{Binding Current.HasMoreActions}" Padding="10,6" Margin="8,0,0,0" ToolTip.Tip="Plus d'actions">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                  <mi:MaterialIcon Kind="DotsHorizontalCircleOutline" Width="16" Height="16" />
+                  <TextBlock Text="Plus" VerticalAlignment="Center" />
+                </StackPanel>
+                <Button.Flyout>
+                  <MenuFlyout Placement="BottomEdgeAlignedRight" ItemsSource="{Binding Current.MoreActions}">
+                    <MenuFlyout.ItemContainerTheme>
+                      <ControlTheme TargetType="MenuItem" BasedOn="{StaticResource {x:Type MenuItem}}">
+                        <Setter Property="Header" Value="{Binding Label}" />
+                        <Setter Property="Command" Value="{Binding Command}" />
+                      </ControlTheme>
+                    </MenuFlyout.ItemContainerTheme>
+                  </MenuFlyout>
+                </Button.Flyout>
+              </Button>
+            </StackPanel>
           </Grid>
           <TransitioningContentControl x:Name="PageHost" Grid.Row="1" Content="{Binding Current}" Margin="28,0,28,18" />
         </Grid>
@@ -164,11 +193,6 @@
 
         <!-- Menu Fichier : couvre l'écran -->
         <ContentControl Grid.ColumnSpan="2" Content="{Binding Backstage}" IsVisible="{Binding BackstageOpen}" Background="{DynamicResource BgBrush}" />
-
-        <!-- Boîte de dialogue modale : formulaire, recherche, confirmation -->
-        <Border Grid.ColumnSpan="2" Classes="scrim" IsVisible="{Binding HasDialog}">
-          <ContentControl Content="{Binding Dialog}" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="24" />
-        </Border>
 
         <!-- Notification discrète, en bas à gauche -->
         <Border Grid.Column="1" Classes="snackbar" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="24" IsVisible="{Binding HasNotice}">
@@ -187,6 +211,10 @@
             <Button Classes="ghost" Padding="4,0" Click="OnZoomIn" Content="+" />
           </StackPanel>
         </Grid>
+      </Border>
+      <!-- Boîte de dialogue modale : elle couvre toute la fenêtre pour disposer de toute la hauteur -->
+      <Border Grid.RowSpan="5" Classes="scrim" IsVisible="{Binding HasDialog}">
+        <ContentControl Content="{Binding Dialog}" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="24" />
       </Border>
     </Grid>
   </Grid>

@@ -188,6 +188,54 @@ public sealed class ReportService(IAppDbContext db, IClock clock, AccountService
             ["", "", "", "", "", "", "", "Total valide", Money.Display(page.Sum ?? 0, school.CurrencySymbol)], Landscape: true);
     }
 
+    /// <summary>Situation financière par promotion : effectif, attendu à ce jour, encaissé, reste et taux de recouvrement.</summary>
+    public async Task<TableDocument> PromotionsTableAsync(CancellationToken ct = default)
+    {
+        var school = await YearContext.SchoolAsync(db, ct);
+        var d = await DashboardAsync(null, ct);
+        string M(decimal v) => Money.Display(v, school.CurrencySymbol);
+        return new TableDocument(PaymentService.Header(school), "Situation financière par promotion", $"Année scolaire {d.AcademicYear} · situation au {clock.Today:dd/MM/yyyy}",
+            ["Promotion", "Nom", "Effectif", "Attendu à ce jour", "Encaissé", "Reste à percevoir", "Reste exigible", "Recouvrement"],
+            d.Promotions.Select(p => (IReadOnlyList<string>)[p.Code, p.Name, p.Students.ToString(), M(p.Expected), M(p.Collected), M(p.Outstanding), M(p.Overdue),
+                p.RecoveryRate.ToString("0.0") + " %"]).ToList(),
+            ["Total", "", d.Promotions.Sum(p => p.Students).ToString(), M(d.Promotions.Sum(p => p.Expected)), M(d.Promotions.Sum(p => p.Collected)),
+                M(d.Promotions.Sum(p => p.Outstanding)), M(d.Promotions.Sum(p => p.Overdue)), d.RecoveryRate.ToString("0.0") + " %"], Landscape: true);
+    }
+
+    /// <summary>Liste générale des apprenants de l'année, toutes promotions, avec leur solde.</summary>
+    public async Task<TableDocument> StudentsTableAsync(CancellationToken ct = default)
+    {
+        var school = await YearContext.SchoolAsync(db, ct);
+        var year = await YearContext.CurrentAsync(db, ct);
+        var map = await accounts.ComputeAsync(year.Id, null, clock.Today, ct);
+        var rows = map.Values
+            .OrderBy(x => x.Promotion.Code).ThenBy(x => x.Enrollment.Student!.LastName).ThenBy(x => x.Enrollment.Student!.FirstName)
+            .ToList();
+        string M(decimal v) => Money.Display(v, school.CurrencySymbol);
+        return new TableDocument(PaymentService.Header(school), "Liste générale des apprenants", $"Année scolaire {year.Label} · {rows.Count} apprenant(s)",
+            ["Matricule", "Nom complet", "Sexe", "Promotion", "Statut", "Contact parent", "Payé", "Solde", "Reste exigible"],
+            rows.Select(x => (IReadOnlyList<string>)[x.Enrollment.Student!.Matricule, x.Enrollment.Student!.FullName, x.Enrollment.Student!.Gender.ToString(),
+                x.Promotion.Code, x.Enrollment.Status.ToString(), x.Enrollment.Student!.GuardianPhone ?? "", M(x.Account.TotalPaid), M(x.Account.Balance), M(x.Account.Overdue)]).ToList(),
+            ["", "Total", "", "", "", "", M(rows.Sum(x => x.Account.TotalPaid)), M(rows.Sum(x => x.Account.Balance)), M(rows.Sum(x => x.Account.Overdue))], Landscape: true);
+    }
+
+    /// <summary>Registre des dépenses de la période, annulées comprises, avec le total des dépenses valides.</summary>
+    public async Task<TableDocument> ExpensesTableAsync(DateOnly? from, DateOnly? to, CancellationToken ct = default)
+    {
+        var school = await YearContext.SchoolAsync(db, ct);
+        var q = db.Expenses.AsNoTracking().AsQueryable();
+        if (from is not null) q = q.Where(e => e.Date >= from);
+        if (to is not null) q = q.Where(e => e.Date <= to);
+        var list = await q.OrderBy(e => e.Date).ThenBy(e => e.Number).ToListAsync(ct);
+        var period = from is null && to is null ? "Toutes dates" : $"Du {from:dd/MM/yyyy} au {to:dd/MM/yyyy}";
+        string M(decimal v) => Money.Display(v, school.CurrencySymbol);
+        return new TableDocument(PaymentService.Header(school), "Registre des dépenses", $"{period} · {list.Count} dépense(s)",
+            ["Date", "N°", "Catégorie", "Bénéficiaire", "Motif", "Mode", "Statut", "Montant"],
+            list.Select(e => (IReadOnlyList<string>)[e.Date.ToString("dd/MM/yyyy"), e.Number, e.Category, e.Beneficiary, e.Description, Labels.Of(e.Method),
+                e.Status == OperationStatus.Valide ? "Valide" : "Annulée", M(e.Amount)]).ToList(),
+            ["", "", "", "", "", "", "Total valide", M(list.Where(e => e.Status == OperationStatus.Valide).Sum(e => e.Amount))], Landscape: true);
+    }
+
     public byte[] Pdf(TableDocument table) => documents.Table(table);
 
     public byte[] Excel(TableDocument table) => spreadsheets.Export(table);

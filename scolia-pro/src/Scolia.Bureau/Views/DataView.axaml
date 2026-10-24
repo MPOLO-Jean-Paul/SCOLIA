@@ -1,5 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Scolia.Bureau.Controls"
              x:Class="Scolia.Bureau.Views.DataView">
   <Grid RowDefinitions="Auto,*">
     <Border Grid.Row="0" Classes="card" Margin="0,0,0,12">
@@ -13,8 +14,6 @@
         <DataGridTextColumn Header="Taille" Binding="{Binding Size}" Width="Auto" MinWidth="110" />
       </DataGrid.Columns>
     </DataGrid>
-    <TextBlock Grid.Row="1" Classes="muted" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,64,0,0"
-               Text="Aucune sauvegarde pour l'instant. Cliquez sur « Sauvegarder » pour créer la première."
-               IsVisible="{Binding Items.Count, Converter={StaticResource IsEmpty}}" />
+    <c:EmptyState Grid.Row="1" Icon="DatabaseOutline" Title="Aucune sauvegarde pour l'instant" Hint="Cliquez sur « Sauvegarder » pour créer la première." IsVisible="{Binding Items.Count, Converter={StaticResource IsEmpty}}" />
   </Grid>
 </UserControl>

@@ -418,6 +418,7 @@ Page(() => new SettingsPage(shell), "19-parametres-etablissement.png");
 Page(() => new SettingsPage(shell), "20-parametres-annees.png", p => ((SettingsPage)p).Section = ((SettingsPage)p).Sections[1]);
 Page(() => new UsersPage(shell), "21-utilisateurs.png");
 Page(() => new DataPage(shell), "22-donnees.png");
+Page(() => new ReportsPage(shell), "22d-rapports-exports.png");
 Page(() => new EraseDataPage(shell, payments: true), "22b-effacer-donnees.png");
 Page(() => new EraseDataPage(shell, payments: false), "22c-effacer-apprenants.png");
 Page(() => new AuditPage(shell), "23-audit.png");
@@ -453,7 +454,7 @@ shell.CloseBackstage();
 
 // Chaque onglet du ruban : le contenu doit être le même que dans le catalogue web.
 Wait(shell.Open(() => new DashboardPage(shell)));
-foreach (var tab in shell.Tabs.Where(t => t.Id is "secretariat" or "finances" or "scolarite" or "administration" or "affichage" or "aide"))
+foreach (var tab in shell.Tabs.Where(t => t.Id is "secretariat" or "finances" or "donnees" or "scolarite" or "administration" or "affichage" or "aide"))
 {
     shell.SelectTab(tab);
     Save(window, $"ruban-{tab.Id}.png");

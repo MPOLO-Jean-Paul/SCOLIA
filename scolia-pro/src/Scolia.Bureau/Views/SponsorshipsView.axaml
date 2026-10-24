@@ -13,7 +13,13 @@
       <DataGridTemplateColumn Header="État" Width="Auto" MinWidth="110">
         <DataGridTemplateColumn.CellTemplate>
           <DataTemplate>
-            <TextBlock Text="{Binding Status}" Foreground="{Binding StatusBrush}" FontWeight="SemiBold" VerticalAlignment="Center" />
+            <Panel Classes="pill">
+                <Border CornerRadius="10" Background="{Binding StatusBrush}" Opacity="0.13" />
+                <StackPanel Orientation="Horizontal" Spacing="6" Margin="9,3,11,3">
+                  <Ellipse Width="6" Height="6" Fill="{Binding StatusBrush}" VerticalAlignment="Center" />
+                  <TextBlock Text="{Binding Status}" Foreground="{Binding StatusBrush}" FontSize="{DynamicResource FsSmall}" FontWeight="SemiBold" />
+                </StackPanel>
+              </Panel>
           </DataTemplate>
         </DataGridTemplateColumn.CellTemplate>
       </DataGridTemplateColumn>

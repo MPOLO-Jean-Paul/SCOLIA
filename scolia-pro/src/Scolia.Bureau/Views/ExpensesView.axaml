@@ -1,13 +1,26 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Scolia.Bureau.Controls"
              x:Class="Scolia.Bureau.Views.ExpensesView">
   <Grid RowDefinitions="Auto,*">
     <Border Grid.Row="0" Classes="band" Margin="0,0,0,10">
       <WrapPanel>
-        <TextBox Width="240" Margin="0,0,10,6" Text="{Binding Search}" PlaceholderText="Bénéficiaire, description, numéro" />
-        <CalendarDatePicker PlaceholderText="jj/mm/aaaa" SelectedDateFormat="Short" Width="160" Margin="0,0,10,6" SelectedDate="{Binding From}" />
-        <CalendarDatePicker PlaceholderText="jj/mm/aaaa" SelectedDateFormat="Short" Width="160" Margin="0,0,10,6" SelectedDate="{Binding To}" />
-        <ComboBox Width="260" Margin="0,0,10,6" ItemsSource="{Binding Categories}" SelectedItem="{Binding Category}" />
+        <StackPanel Classes="field">
+          <TextBlock Text="Rechercher" Classes="fieldlabel" />
+          <TextBox Width="240" Text="{Binding Search}" PlaceholderText="Bénéficiaire, description, numéro" />
+        </StackPanel>
+        <StackPanel Classes="field">
+          <TextBlock Text="Du" Classes="fieldlabel" />
+          <CalendarDatePicker PlaceholderText="Début" SelectedDateFormat="Short" Width="160" SelectedDate="{Binding From}" />
+        </StackPanel>
+        <StackPanel Classes="field">
+          <TextBlock Text="Au" Classes="fieldlabel" />
+          <CalendarDatePicker PlaceholderText="Fin" SelectedDateFormat="Short" Width="160" SelectedDate="{Binding To}" />
+        </StackPanel>
+        <StackPanel Classes="field">
+          <TextBlock Text="Catégorie" Classes="fieldlabel" />
+          <ComboBox Width="260" ItemsSource="{Binding Categories}" SelectedItem="{Binding Category}" />
+        </StackPanel>
       </WrapPanel>
     </Border>
     <DataGrid Grid.Row="1" ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}" AutoGenerateColumns="False" IsReadOnly="True">
@@ -22,15 +35,19 @@
         <DataGridTemplateColumn Header="Statut" Width="Auto" MinWidth="100">
           <DataGridTemplateColumn.CellTemplate>
             <DataTemplate>
-              <TextBlock Text="{Binding Status}" Foreground="{Binding StatusBrush}" FontWeight="SemiBold" VerticalAlignment="Center" />
+              <Panel Classes="pill">
+                <Border CornerRadius="10" Background="{Binding StatusBrush}" Opacity="0.13" />
+                <StackPanel Orientation="Horizontal" Spacing="6" Margin="9,3,11,3">
+                  <Ellipse Width="6" Height="6" Fill="{Binding StatusBrush}" VerticalAlignment="Center" />
+                  <TextBlock Text="{Binding Status}" Foreground="{Binding StatusBrush}" FontSize="{DynamicResource FsSmall}" FontWeight="SemiBold" />
+                </StackPanel>
+              </Panel>
             </DataTemplate>
           </DataGridTemplateColumn.CellTemplate>
         </DataGridTemplateColumn>
         <DataGridTextColumn Header="Enregistré par" Binding="{Binding RecordedBy}" Width="Auto" MinWidth="160" />
       </DataGrid.Columns>
     </DataGrid>
-    <TextBlock Grid.Row="1" Classes="muted" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,64,0,0"
-               Text="Aucune dépense enregistrée pour ces critères."
-               IsVisible="{Binding Items.Count, Converter={StaticResource IsEmpty}}" />
+    <c:EmptyState Grid.Row="1" Icon="WalletOutline" Title="Aucune dépense sur ces critères" Hint="Changez la période ou la catégorie, ou ajoutez une nouvelle dépense." IsVisible="{Binding Items.Count, Converter={StaticResource IsEmpty}}" />
   </Grid>
 </UserControl>

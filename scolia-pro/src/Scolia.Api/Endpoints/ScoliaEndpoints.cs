@@ -202,6 +202,8 @@ public static class ScoliaEndpoints
         d.MapGet("", (DateOnly? du, DateOnly? au, string? categorie, string? q, int? page, int? taille, CashService c, CancellationToken ct) =>
             c.ExpensesAsync(du, au, categorie, q, page ?? 1, taille ?? 50, ct));
         d.MapGet("/categories", (CashService c, CancellationToken ct) => c.CategoriesAsync(ct));
+        d.MapGet("/export", async (DateOnly? du, DateOnly? au, string? format, ReportService r, CancellationToken ct) =>
+            Table(await r.ExpensesTableAsync(du, au, ct), format, "registre-des-depenses", r));
         d.MapPost("", (ExpenseCreate input, CashService c, CancellationToken ct) => c.CreateExpenseAsync(input, ct)).RequireAuthorization(Permissions.ExpensesWrite);
         d.MapPost("/{id:guid}/annulation", (Guid id, CancelRequest input, CashService c, CancellationToken ct) => c.CancelExpenseAsync(id, input.Reason, ct))
             .RequireAuthorization(Permissions.ExpensesWrite);
@@ -220,6 +222,10 @@ public static class ScoliaEndpoints
         g.MapGet("/debiteurs", ([AsParameters] DebtorQuery q, ReportService r, CancellationToken ct) => r.DebtorsAsync(q, ct));
         g.MapGet("/debiteurs/export", async ([AsParameters] DebtorQuery q, string? format, ReportService r, CancellationToken ct) =>
             Table(await r.DebtorsTableAsync(q, ct), format, "retards-de-paiement", r));
+        g.MapGet("/promotions/export", async (string? format, ReportService r, CancellationToken ct) =>
+            Table(await r.PromotionsTableAsync(ct), format, "situation-par-promotion", r));
+        g.MapGet("/apprenants/export", async (string? format, ReportService r, CancellationToken ct) =>
+            Table(await r.StudentsTableAsync(ct), format, "liste-generale-apprenants", r));
         g.MapGet("/liste-classe/{promotionId:guid}", async (Guid promotionId, string? format, ReportService r, CancellationToken ct) =>
             Table(await r.ClassListAsync(promotionId, ct), format, "liste-nominative", r));
     }

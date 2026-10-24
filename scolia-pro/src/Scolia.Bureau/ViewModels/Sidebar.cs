@@ -48,8 +48,12 @@ public static class Sidebar
 
         var groups = new[]
         {
-            Group(string.Empty,
-                Item("Tableau de bord", MaterialIconKind.ViewDashboardOutline, "ToneBlue", null, typeof(DashboardPage), () => new DashboardPage(shell))),
+            Group("DONNÉES",
+                Item("Tableau de bord", MaterialIconKind.ViewDashboardOutline, "ToneBlue", null, typeof(DashboardPage), () => new DashboardPage(shell)),
+                Item("Rapports et exports", MaterialIconKind.FileChartOutline, "ToneBlue", null, typeof(ReportsPage), () => new ReportsPage(shell)),
+                Item("Sauvegardes", MaterialIconKind.DatabaseExportOutline, "ToneGreen", Perm.BackupManage, typeof(DataPage), () => new DataPage(shell)),
+                Item("Journal d'audit", MaterialIconKind.ShieldCheckOutline, "ToneNeutral", Perm.AuditRead, typeof(AuditPage), () => new AuditPage(shell)),
+                Item("Effacement", MaterialIconKind.DeleteSweepOutline, "ToneRed", Perm.BackupManage, typeof(EraseDataPage), () => new EraseDataPage(shell, payments: true))),
             Group("SECRÉTARIAT",
                 Item("Apprenants", MaterialIconKind.AccountGroupOutline, "ToneBlue", Perm.StudentsRead, typeof(StudentsPage), () => new StudentsPage(shell)),
                 Item("Réinscriptions", MaterialIconKind.SchoolOutline, "ToneIndigo", Perm.StudentsWrite, typeof(ReEnrollmentPage), () => new ReEnrollmentPage(shell))),
@@ -72,9 +76,7 @@ public static class Sidebar
                 Item("Personnel et paie", MaterialIconKind.BriefcaseOutline, "ToneOrange", Perm.StaffManage, typeof(StaffPage), () => new StaffPage(shell)),
                 Item("Pointage", MaterialIconKind.ClockCheckOutline, "ToneOrange", Perm.StaffManage, typeof(StaffAttendancePage), () => new StaffAttendancePage(shell)),
                 Item("Paramètres", MaterialIconKind.CogOutline, "ToneNeutral", Perm.SettingsWrite, typeof(SettingsPage), () => new SettingsPage(shell)),
-                Item("Utilisateurs", MaterialIconKind.AccountCogOutline, "ToneNeutral", Perm.UsersManage, typeof(UsersPage), () => new UsersPage(shell)),
-                Item("Données et sauvegardes", MaterialIconKind.DatabaseExportOutline, "ToneGreen", Perm.BackupManage, typeof(DataPage), () => new DataPage(shell)),
-                Item("Journal d'audit", MaterialIconKind.FileDocumentOutline, "ToneNeutral", Perm.AuditRead, typeof(AuditPage), () => new AuditPage(shell))),
+                Item("Utilisateurs", MaterialIconKind.AccountCogOutline, "ToneNeutral", Perm.UsersManage, typeof(UsersPage), () => new UsersPage(shell))),
         };
         return groups.Where(g => g.Items.Count > 0).ToList();
     }

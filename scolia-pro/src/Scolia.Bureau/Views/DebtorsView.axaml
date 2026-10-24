@@ -1,14 +1,27 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Scolia.Bureau.Controls"
              xmlns:infra="using:Scolia.Bureau.Infrastructure"
              x:Class="Scolia.Bureau.Views.DebtorsView">
   <Grid RowDefinitions="Auto,*">
     <Border Grid.Row="0" Classes="band" Margin="0,0,0,10">
       <WrapPanel>
-        <TextBox Width="260" Margin="0,0,10,6" Text="{Binding Search}" PlaceholderText="Nom ou matricule" />
-        <ComboBox Width="220" Margin="0,0,10,6" ItemsSource="{Binding Promotions}" SelectedItem="{Binding Promotion}" />
-        <ComboBox Width="210" Margin="0,0,10,6" ItemsSource="{Binding Buckets}" SelectedItem="{Binding Bucket}" />
-        <TextBox Width="190" Margin="0,0,10,6" Text="{Binding MinMonths}" PlaceholderText="Retard minimum (mois)" />
+        <StackPanel Classes="field">
+          <TextBlock Text="Rechercher" Classes="fieldlabel" />
+          <TextBox Width="260" Text="{Binding Search}" PlaceholderText="Nom ou matricule" />
+        </StackPanel>
+        <StackPanel Classes="field">
+          <TextBlock Text="Promotion" Classes="fieldlabel" />
+          <ComboBox Width="220" ItemsSource="{Binding Promotions}" SelectedItem="{Binding Promotion}" />
+        </StackPanel>
+        <StackPanel Classes="field">
+          <TextBlock Text="Ancienneté" Classes="fieldlabel" />
+          <ComboBox Width="210" ItemsSource="{Binding Buckets}" SelectedItem="{Binding Bucket}" />
+        </StackPanel>
+        <StackPanel Classes="field">
+          <TextBlock Text="Retard minimum" Classes="fieldlabel" />
+          <TextBox Width="190" Text="{Binding MinMonths}" PlaceholderText="Retard minimum (mois)" />
+        </StackPanel>
       </WrapPanel>
     </Border>
     <DataGrid Grid.Row="1" ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}" AutoGenerateColumns="False" IsReadOnly="True">
@@ -24,8 +37,6 @@
         <DataGridTextColumn infra:GridPriority.Level="3" Header="Téléphone" Binding="{Binding Phone}" Width="Auto" MinWidth="130" />
       </DataGrid.Columns>
     </DataGrid>
-    <TextBlock Grid.Row="1" Classes="muted" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,64,0,0"
-               Text="Aucun retard de paiement pour ces critères. Rien à relancer."
-               IsVisible="{Binding Items.Count, Converter={StaticResource IsEmpty}}" />
+    <c:EmptyState Grid.Row="1" Icon="CheckDecagramOutline" Title="Aucun retard de paiement" Hint="Tous les apprenants de ces critères sont à jour : rien à relancer." IsVisible="{Binding Items.Count, Converter={StaticResource IsEmpty}}" />
   </Grid>
 </UserControl>

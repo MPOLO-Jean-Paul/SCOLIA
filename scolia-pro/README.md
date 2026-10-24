@@ -28,15 +28,18 @@ Le client suit les codes visuels de macOS : barre latérale de navigation rangé
 façon Office 2024 pour les commandes, cartes blanches à ombre douce, bleu système, police Inter (licence OFL,
 embarquée dans l'exécutable). L'accueil salue l'utilisateur et réunit les raccourcis du quotidien, la journée en cours
 (encaissé, dépenses, arrêté de caisse, appel, parents convoqués, anniversaires), un rappel de sauvegarde et les
-indicateurs de l'année. Clair, sombre, taille du texte, densité, zoom et barre latérale se règlent dans Affichage ou Fichier.
+indicateurs de l'année. Les écrans partagent les mêmes repères : barre de filtres aux champs étiquetés, pastilles de
+statut colorées, états vides explicites, feuilles de dialogue aux boutons alignés à droite, trois actions visibles au plus
+dans l'en-tête et les autres dans « Plus », actions destructrices en rouge. Clair, sombre, taille du texte, densité, zoom et barre latérale se règlent dans Affichage ou Fichier.
 
 | Rubrique du ruban | Écrans natifs |
 |---|---|
-| Accueil | Tableau de bord, recherche globale (Ctrl+K), impression, récents |
+| Accueil | Recherche globale (Ctrl+K), actualisation, impression, récents |
 | Secrétariat | Apprenants (liste, fiche, inscription, modification, statut, promotion, prise en charge), réinscriptions |
 | Finances | Encaissement avec aperçu de répartition, journal des reçus, détail et annulation, recouvrement, prises en charge, caisse et arrêté, dépenses |
 | Scolarité | Cours et évaluations, saisie des notes, résultats et bulletins, présences et bilan, discipline |
-| Administration | Personnel et paie, paramètres (établissement, années, sections, promotions), utilisateurs, données et sauvegardes, journal d'audit |
+| Administration | Personnel et paie, paramètres (établissement, années, sections, promotions), utilisateurs |
+| Données | Tableau de bord, rapports et exports (situation par promotion, liste générale, reçus, retards, dépenses, liste de classe, discipline, audit), sauvegardes et import V79, journal d'audit et vérifications, effacement protégé par mot de passe |
 | Fichier | Informations, changement de mot de passe, préférences, déconnexion |
 
 Les exports (PDF, Excel, CSV), les reçus et les bulletins sont enregistrés dans le dossier Téléchargements

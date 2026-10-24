@@ -66,18 +66,13 @@ export function buildTabs({ pathname, recents, can }: RibbonContext): RibbonTab[
     {
       id: 'accueil', label: 'Accueil', key: 'A', groups: [
         {
-          title: 'Tableau de bord', commands: [
-            large({ id: 'tableau-de-bord', label: 'Tableau de bord', tip: 'Indicateurs du jour, recettes et retards de paiement.', icon: <LayoutDashboard />, key: 'B', to: '/', shortcut: 'Alt+1', tone: 'blue' }),
-            large({ id: 'actualiser', label: 'Actualiser', tip: 'Recharge les données affichées depuis le serveur.', icon: <RefreshCw />, key: 'A', shortcut: 'F5', tone: 'blue' }),
-          ],
-        },
-        {
           title: 'Rechercher', commands: [
             large({ id: 'rechercher', label: 'Rechercher', tip: 'Recherche globale : apprenants, reçus, pages et commandes.', icon: <Search />, key: 'R', shortcut: 'Ctrl+K', tone: 'blue' }),
           ],
         },
         {
           title: 'Page', commands: [
+            large({ id: 'actualiser', label: 'Actualiser', tip: 'Recharge les données affichées depuis le serveur.', icon: <RefreshCw />, key: 'A', shortcut: 'F5', tone: 'blue' }),
             large({ id: 'imprimer', label: 'Imprimer', tip: 'Imprime la page affichée.', icon: <Printer />, key: 'I', shortcut: 'Ctrl+P', tone: 'blue' }),
             small({ id: 'plein-ecran', label: 'Plein écran', tip: 'Affiche SCOLIA sans bordures de fenêtre. Échap pour revenir.', icon: <Maximize />, key: 'P', toggle: true }),
           ],
@@ -106,16 +101,12 @@ export function buildTabs({ pathname, recents, can }: RibbonContext): RibbonTab[
           title: 'Encaissement', commands: [
             large({ id: 'encaisser', label: 'Encaisser', tip: 'Encaisse un versement : il est réparti sur les échéances et numéroté.', icon: <HandCoins />, key: 'E', to: '/encaisser', perm: P.paymentsCreate, shortcut: 'F2', tone: 'green' }),
             large({ id: 'journal-recus', label: 'Journal des reçus', tip: 'Tous les reçus, leur statut et les annulations motivées.', icon: <Receipt />, key: 'J', to: '/paiements', perm: P.paymentsRead }),
-            small({ id: 'export-recus-xlsx', label: 'Reçus (Excel)', tip: 'Exporte tous les reçus dans un classeur Excel.', icon: <FileSpreadsheet />, key: 'X', perm: P.paymentsRead }),
-            small({ id: 'export-recus-pdf', label: 'Reçus (PDF)', tip: 'Exporte la liste des reçus au format PDF.', icon: <FileDown />, key: 'F', perm: P.paymentsRead }),
           ],
         },
         {
           title: 'Suivi', commands: [
             large({ id: 'recouvrement', label: 'Recouvrement', tip: 'Retards classés par ancienneté, avec rappels WhatsApp et SMS.', icon: <BarChart3 />, key: 'R', to: '/recouvrement', perm: P.reportsRead, shortcut: 'Alt+4', tone: 'orange' }),
             small({ id: 'prises-en-charge', label: 'Prises en charge', tip: 'Bourses, sponsors et exonérations de l’année.', icon: <ShieldCheck />, key: 'P', to: '/prises-en-charge', perm: P.paymentsRead }),
-            small({ id: 'export-debiteurs-xlsx', label: 'Débiteurs (Excel)', tip: 'Exporte la liste des retards de paiement dans Excel.', icon: <FileSpreadsheet />, key: 'B', perm: P.reportsRead }),
-            small({ id: 'export-debiteurs-pdf', label: 'Débiteurs (PDF)', tip: 'Exporte la liste des retards de paiement en PDF.', icon: <FileDown />, key: 'D', perm: P.reportsRead }),
           ],
         },
         {
@@ -163,13 +154,38 @@ export function buildTabs({ pathname, recents, can }: RibbonContext): RibbonTab[
             small({ id: 'nouvel-utilisateur', label: 'Nouvel utilisateur', tip: 'Crée un compte nominatif.', icon: <UserPlus />, key: 'N', to: '/utilisateurs?action=nouveau', perm: P.usersManage }),
           ],
         },
+      ],
+    },
+    {
+      id: 'donnees', label: 'Données', key: 'O', groups: [
         {
-          title: 'Données', commands: [
-            large({ id: 'donnees', label: 'Données et sauvegardes', tip: 'Sauvegardes, restauration et import du classeur V79.', icon: <DatabaseBackup />, key: 'D', to: '/donnees', perm: P.backupManage, tone: 'green' }),
-            large({ id: 'audit', label: 'Journal d’audit', tip: 'Qui a fait quoi, et vérification de la chaîne d’empreintes.', icon: <FileSpreadsheet />, key: 'J', to: '/audit', perm: P.auditRead }),
-            small({ id: 'sauvegarder', label: 'Sauvegarder', tip: 'Crée tout de suite une sauvegarde vérifiée.', icon: <Save />, key: 'S', perm: P.backupManage }),
-            small({ id: 'importer-v79', label: 'Importer SCOLIA V79', tip: 'Reprend les données d’un classeur Excel de l’ancienne version.', icon: <Upload />, key: 'V', to: '/donnees?action=importer', perm: P.backupManage }),
-            small({ id: 'audit-csv', label: 'Journal (CSV)', tip: 'Exporte le journal d’audit au format CSV.', icon: <FileDown />, key: 'C', perm: P.auditRead }),
+          title: 'Pilotage', commands: [
+            large({ id: 'tableau-de-bord', label: 'Tableau de bord', tip: 'Journée en cours, indicateurs de l’année, recettes et retards de paiement.', icon: <LayoutDashboard />, key: 'B', to: '/', shortcut: 'Alt+1', tone: 'blue' }),
+          ],
+        },
+        {
+          title: 'Exports rapides', commands: [
+            small({ id: 'export-situation-pdf', label: 'Situation (PDF)', tip: 'Situation financière de chaque promotion, en PDF.', icon: <FileDown />, key: 'S', perm: P.reportsRead }),
+            small({ id: 'export-apprenants-xlsx', label: 'Apprenants (Excel)', tip: 'Liste générale des apprenants de l’année avec leur solde.', icon: <FileSpreadsheet />, key: 'L', perm: P.reportsRead }),
+            small({ id: 'export-recus-xlsx', label: 'Reçus (Excel)', tip: 'Exporte tous les reçus dans un classeur Excel.', icon: <FileSpreadsheet />, key: 'X', perm: P.paymentsRead }),
+            small({ id: 'export-recus-pdf', label: 'Reçus (PDF)', tip: 'Exporte la liste des reçus au format PDF.', icon: <FileDown />, key: 'F', perm: P.paymentsRead }),
+            small({ id: 'export-debiteurs-xlsx', label: 'Débiteurs (Excel)', tip: 'Exporte la liste des retards de paiement dans Excel.', icon: <FileSpreadsheet />, key: 'E', perm: P.reportsRead }),
+            small({ id: 'export-debiteurs-pdf', label: 'Débiteurs (PDF)', tip: 'Exporte la liste des retards de paiement en PDF.', icon: <FileDown />, key: 'P', perm: P.reportsRead }),
+            small({ id: 'export-depenses-xlsx', label: 'Dépenses (Excel)', tip: 'Registre des dépenses dans un classeur Excel.', icon: <FileSpreadsheet />, key: 'R', perm: P.paymentsRead }),
+          ],
+        },
+        {
+          title: 'Sauvegardes', commands: [
+            large({ id: 'donnees', label: 'Sauvegardes', tip: 'Sauvegardes vérifiées, téléchargement et restauration.', icon: <DatabaseBackup />, key: 'D', to: '/donnees', perm: P.backupManage, tone: 'green' }),
+            small({ id: 'sauvegarder', label: 'Sauvegarder', tip: 'Crée tout de suite une sauvegarde vérifiée.', icon: <Save />, key: 'G', perm: P.backupManage }),
+            small({ id: 'importer-v79', label: 'Importer SCOLIA V79', tip: 'Reprend les données d’un classeur Excel de l’ancienne version.', icon: <Upload />, key: 'I', to: '/donnees?action=importer', perm: P.backupManage }),
+          ],
+        },
+        {
+          title: 'Contrôle', commands: [
+            large({ id: 'audit', label: 'Journal d’audit', tip: 'Qui a fait quoi, et vérification de la chaîne d’empreintes.', icon: <ShieldCheck />, key: 'J', to: '/audit', perm: P.auditRead }),
+            small({ id: 'diag-base', label: 'Vérifier la base', tip: 'Contrôle d’intégrité de la base de données.', icon: <Database />, key: 'A', perm: P.backupManage }),
+            small({ id: 'diag-audit', label: 'Vérifier le journal', tip: 'Contrôle de la chaîne d’empreintes du journal d’audit.', icon: <ShieldCheck />, key: 'K', perm: P.auditRead }),
           ],
         },
       ],
@@ -208,12 +224,6 @@ export function buildTabs({ pathname, recents, can }: RibbonContext): RibbonTab[
           title: 'Aide', commands: [
             large({ id: 'raccourcis', label: 'Raccourcis clavier', tip: 'Liste des raccourcis et des touches d’accès du ruban.', icon: <Keyboard />, key: 'R', tone: 'blue' }),
             large({ id: 'apropos', label: 'À propos', tip: 'Version de SCOLIA Pro et conditions d’utilisation.', icon: <Info />, key: 'A' }),
-          ],
-        },
-        {
-          title: 'Diagnostic', commands: [
-            small({ id: 'diag-base', label: 'Vérifier la base', tip: 'Contrôle d’intégrité de la base de données.', icon: <Database />, key: 'B', perm: P.backupManage }),
-            small({ id: 'diag-audit', label: 'Vérifier le journal', tip: 'Contrôle de la chaîne d’empreintes du journal d’audit.', icon: <ShieldCheck />, key: 'J', perm: P.auditRead }),
           ],
         },
       ],

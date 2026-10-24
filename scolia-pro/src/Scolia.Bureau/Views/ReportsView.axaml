@@ -1,0 +1,79 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mi="using:Material.Icons.Avalonia"
+             x:Class="Scolia.Bureau.Views.ReportsView">
+  <ScrollViewer>
+    <StackPanel Spacing="18" Margin="0,0,6,8">
+
+      <!-- Critères communs : la période sert aux reçus et aux dépenses, la promotion aux listes -->
+      <Border Classes="filterbar">
+        <WrapPanel>
+          <StackPanel Classes="field">
+            <TextBlock Text="Du" Classes="fieldlabel" />
+            <CalendarDatePicker PlaceholderText="Début" SelectedDateFormat="Short" Width="170" SelectedDate="{Binding From}" />
+          </StackPanel>
+          <StackPanel Classes="field">
+            <TextBlock Text="Au" Classes="fieldlabel" />
+            <CalendarDatePicker PlaceholderText="Fin" SelectedDateFormat="Short" Width="170" SelectedDate="{Binding To}" />
+          </StackPanel>
+          <StackPanel Classes="field">
+            <TextBlock Text="Promotion" Classes="fieldlabel" />
+            <ComboBox Width="280" ItemsSource="{Binding Promotions}" SelectedItem="{Binding Promotion}" />
+          </StackPanel>
+          <TextBlock Classes="muted" FontSize="{DynamicResource FsSmall}" VerticalAlignment="Bottom" Margin="4,0,0,16" TextWrapping="Wrap" MaxWidth="260"
+                     Text="Sans période : depuis le début." />
+        </WrapPanel>
+      </Border>
+
+      <ItemsControl ItemsSource="{Binding Sections}">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate>
+            <StackPanel Spacing="8" Margin="0,0,0,14">
+              <TextBlock Text="{Binding Title}" Classes="section" />
+              <ItemsControl ItemsSource="{Binding Reports}" Margin="0,0,-12,0">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate><UniformGrid Columns="2" /></ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate>
+                    <Border Classes="card" Padding="18,16" Margin="0,0,12,12">
+                      <Grid ColumnDefinitions="Auto,*" RowDefinitions="*,Auto">
+                        <Border Width="40" Height="40" CornerRadius="11" Background="{Binding Brush}" VerticalAlignment="Top" Margin="0,0,14,0">
+                          <mi:MaterialIcon Kind="{Binding Icon}" Width="21" Height="21" Foreground="White" />
+                        </Border>
+                        <StackPanel Grid.Column="1" Spacing="3">
+                          <StackPanel Orientation="Horizontal" Spacing="8">
+                            <TextBlock Text="{Binding Title}" FontWeight="SemiBold" FontSize="{DynamicResource FsHeading}" />
+                            <Border Classes="chip" IsVisible="{Binding HasScope}" VerticalAlignment="Center">
+                              <TextBlock Text="{Binding Scope}" />
+                            </Border>
+                          </StackPanel>
+                          <TextBlock Text="{Binding Description}" Classes="muted" TextWrapping="Wrap" />
+                        </StackPanel>
+                        <ItemsControl Grid.Row="1" Grid.Column="1" ItemsSource="{Binding Formats}" Margin="0,12,0,0">
+                          <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="8" /></ItemsPanelTemplate>
+                          </ItemsControl.ItemsPanel>
+                          <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                              <Button Classes="small" Command="{Binding Run}">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                  <mi:MaterialIcon Kind="TrayArrowDown" Width="15" Height="15" />
+                                  <TextBlock Text="{Binding Label}" />
+                                </StackPanel>
+                              </Button>
+                            </DataTemplate>
+                          </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                      </Grid>
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </StackPanel>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

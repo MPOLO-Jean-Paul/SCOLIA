@@ -1,25 +1,27 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="Scolia.Bureau.Views.FormView">
-  <Border Classes="card" MinWidth="440" MaxWidth="600" Padding="26,22" Background="{DynamicResource SurfaceBrush}"
-          BoxShadow="0 8 28 0 #33000000">
-    <StackPanel Spacing="14">
-      <StackPanel Spacing="2">
-        <TextBlock Text="{Binding Title}" Classes="heading" FontSize="{DynamicResource FsTitle}" TextWrapping="Wrap" />
+  <!-- Feuille de dialogue, façon macOS : en-tête, champs défilants, pied avec les boutons alignés à droite -->
+  <Border Classes="card" MinWidth="460" MaxWidth="620" Padding="0" CornerRadius="16" Background="{DynamicResource SurfaceBrush}"
+          BoxShadow="0 18 50 0 #38000000, 0 2 6 0 #14000000">
+    <StackPanel>
+      <StackPanel Spacing="3" Margin="24,20,24,14">
+        <TextBlock Text="{Binding Title}" FontSize="{DynamicResource FsHeading}" FontWeight="SemiBold" TextWrapping="Wrap" />
         <TextBlock Text="{Binding Subtitle}" Classes="muted" TextWrapping="Wrap" IsVisible="{Binding HasSubtitle}" />
       </StackPanel>
+      <Border Height="0.5" Background="{DynamicResource LineBrush}" />
 
-      <TextBlock Text="{Binding Message}" TextWrapping="Wrap" IsVisible="{Binding HasMessage}" />
+      <TextBlock Text="{Binding Message}" TextWrapping="Wrap" IsVisible="{Binding HasMessage}" Margin="24,16,24,0" />
 
       <!-- Champs : un contrôle par nature de champ, défilants si la fenêtre est basse -->
-      <ScrollViewer MaxHeight="430" VerticalScrollBarVisibility="Auto">
+      <ScrollViewer MaxHeight="460" VerticalScrollBarVisibility="Auto" Padding="24,16,10,8">
       <ItemsControl ItemsSource="{Binding Fields}" Margin="0,0,14,0">
         <ItemsControl.ItemTemplate>
           <DataTemplate>
-            <StackPanel Spacing="4" Margin="0,0,0,6">
+            <StackPanel Spacing="4" Margin="0,0,0,8">
               <CheckBox IsVisible="{Binding IsFlag}" IsChecked="{Binding Flag}" Content="{Binding Label}" />
               <StackPanel IsVisible="{Binding !IsFlag}" Spacing="4">
-                <TextBlock Text="{Binding Caption}" Classes="caption" />
+                <TextBlock Text="{Binding Caption}" Classes="fieldlabel" />
                 <TextBox IsVisible="{Binding IsText}" Text="{Binding Text}" PlaceholderText="{Binding Hint}" />
                 <TextBox IsVisible="{Binding IsSecret}" Text="{Binding Text}" PasswordChar="•" PlaceholderText="{Binding Hint}" />
                 <TextBox IsVisible="{Binding IsMultiline}" Text="{Binding Text}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="84" />
@@ -33,18 +35,20 @@
       </ItemsControl>
       </ScrollViewer>
 
-      <TextBlock Text="{Binding Error}" Classes="error" IsVisible="{Binding HasError}" TextWrapping="Wrap" />
+      <Border Background="{DynamicResource RedSoftBrush}" CornerRadius="10" Padding="12,8" Margin="24,4,24,8" IsVisible="{Binding HasError}">
+        <TextBlock Text="{Binding Error}" Classes="error" TextWrapping="Wrap" />
+      </Border>
 
-      <!-- Actions : annuler à gauche, valider à droite -->
-      <Grid ColumnDefinitions="*,Auto" IsVisible="{Binding CanSubmit}">
-        <Button Content="{Binding CancelText}" Command="{Binding Cancel}" IsVisible="{Binding ShowCancel}" Classes="ghost" VerticalAlignment="Center" />
-        <Button Grid.Column="1" Content="{Binding SubmitText}" Command="{Binding Submit}" IsEnabled="{Binding !Busy}"
-                Classes.primary="{Binding !Danger}" Classes.danger="{Binding Danger}" Padding="22,8" />
-      </Grid>
-      <Grid ColumnDefinitions="*,Auto" IsVisible="{Binding !CanSubmit}">
-        <Border />
-        <Button Grid.Column="1" Content="{Binding CancelText}" Command="{Binding Cancel}" Classes="primary" Padding="22,8" />
-      </Grid>
+      <Border Height="0.5" Background="{DynamicResource LineBrush}" Margin="0,8,0,0" />
+      <!-- Actions : Annuler puis Valider, à droite, comme toutes les feuilles de macOS -->
+      <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="10" Margin="24,14,24,16" IsVisible="{Binding CanSubmit}">
+        <Button Content="{Binding CancelText}" Command="{Binding Cancel}" IsVisible="{Binding ShowCancel}" MinWidth="96" />
+        <Button Content="{Binding SubmitText}" Command="{Binding Submit}" IsEnabled="{Binding !Busy}" MinWidth="110"
+                Classes.primary="{Binding !Danger}" Classes.danger="{Binding Danger}" />
+      </StackPanel>
+      <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="24,14,24,16" IsVisible="{Binding !CanSubmit}">
+        <Button Content="{Binding CancelText}" Command="{Binding Cancel}" Classes="primary" MinWidth="110" />
+      </StackPanel>
     </StackPanel>
   </Border>
 </UserControl>

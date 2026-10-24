@@ -3,10 +3,12 @@
              x:Class="Scolia.Bureau.Views.GradesView">
   <Grid ColumnDefinitions="2.9*,3.1*" RowDefinitions="Auto,*,*">
     <Border Grid.ColumnSpan="2" Classes="band" Margin="0,0,0,10">
-      <StackPanel Orientation="Horizontal" Spacing="10">
-        <TextBlock Text="Promotion" VerticalAlignment="Center" Classes="muted" />
-        <ComboBox Width="280" ItemsSource="{Binding Promotions}" SelectedItem="{Binding Promotion}" />
-      </StackPanel>
+      <WrapPanel>
+        <StackPanel Classes="field">
+          <TextBlock Text="Promotion" Classes="fieldlabel" />
+          <ComboBox Width="280" ItemsSource="{Binding Promotions}" SelectedItem="{Binding Promotion}" />
+        </StackPanel>
+      </WrapPanel>
     </Border>
 
     <!-- Cours de la promotion -->

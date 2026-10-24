@@ -1,13 +1,23 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Scolia.Bureau.Controls"
              xmlns:infra="using:Scolia.Bureau.Infrastructure"
              x:Class="Scolia.Bureau.Views.EraseDataView">
   <Grid RowDefinitions="Auto,*,Auto">
     <Border Grid.Row="0" Classes="band" Margin="0,0,0,10">
       <WrapPanel>
-        <TextBox Width="260" Margin="0,0,10,6" Text="{Binding Search}" PlaceholderText="Nom ou matricule" />
-        <ComboBox Width="220" Margin="0,0,10,6" ItemsSource="{Binding Scopes}" SelectedItem="{Binding Scope}" />
-        <TextBox Width="260" Margin="0,0,10,6" PasswordChar="•" Text="{Binding Password}" PlaceholderText="Mot de passe de votre compte" />
+        <StackPanel Classes="field">
+          <TextBlock Text="Rechercher" Classes="fieldlabel" />
+          <TextBox Width="260" Text="{Binding Search}" PlaceholderText="Nom ou matricule" />
+        </StackPanel>
+        <StackPanel Classes="field">
+          <TextBlock Text="Apprenants concernés" Classes="fieldlabel" />
+          <ComboBox Width="220" ItemsSource="{Binding Scopes}" SelectedItem="{Binding Scope}" />
+        </StackPanel>
+        <StackPanel Classes="field">
+          <TextBlock Text="Mot de passe" Classes="fieldlabel" />
+          <TextBox Width="260" PasswordChar="•" Text="{Binding Password}" PlaceholderText="Mot de passe de votre compte" />
+        </StackPanel>
       </WrapPanel>
     </Border>
     <DataGrid Grid.Row="1" ItemsSource="{Binding Items}" AutoGenerateColumns="False" CanUserSortColumns="False" IsEnabled="{Binding IsSelectionScope}">
@@ -21,8 +31,6 @@
       </DataGrid.Columns>
     </DataGrid>
     <TextBlock Grid.Row="2" Text="{Binding SelectionSummary}" Classes="muted" Margin="0,8,0,0" />
-    <TextBlock Grid.Row="1" Classes="muted" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,64,0,0"
-               Text="Aucun apprenant ne correspond à cette recherche."
-               IsVisible="{Binding Items.Count, Converter={StaticResource IsEmpty}}" />
+    <c:EmptyState Grid.Row="1" Icon="AccountOffOutline" Title="Aucun apprenant" Hint="Vérifiez l'orthographe ou effacez la recherche." IsVisible="{Binding Items.Count, Converter={StaticResource IsEmpty}}" />
   </Grid>
 </UserControl>

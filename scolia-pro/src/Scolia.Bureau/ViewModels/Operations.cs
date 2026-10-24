@@ -34,7 +34,7 @@ public sealed class DataPage : PageViewModel
         ActionRefresh();
     }
 
-    public override string Title => "Données et sauvegardes";
+    public override string Title => "Sauvegardes";
     public override string Subtitle => subtitle;
     public override MaterialIconKind Glyph => MaterialIconKind.DatabaseExportOutline;
 

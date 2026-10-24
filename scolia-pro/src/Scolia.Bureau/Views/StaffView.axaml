@@ -1,14 +1,21 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Scolia.Bureau.Controls"
              x:Class="Scolia.Bureau.Views.StaffView">
   <Grid RowDefinitions="Auto,*">
     <Border Grid.Row="0" Classes="band" Margin="0,0,0,10">
-      <StackPanel Orientation="Horizontal" Spacing="12">
-        <RadioButton GroupName="staff" Content="Dossiers du personnel" IsChecked="{Binding !ShowPayroll}" />
-        <RadioButton GroupName="staff" Content="Paie mensuelle" IsChecked="{Binding ShowPayroll}" />
-        <TextBlock Text="Mois" VerticalAlignment="Center" Classes="muted" Margin="16,0,0,0" IsVisible="{Binding ShowPayroll}" />
-        <ComboBox Width="200" ItemsSource="{Binding Periods}" SelectedItem="{Binding PeriodChoice}" IsVisible="{Binding ShowPayroll}" />
-      </StackPanel>
+      <WrapPanel>
+        <Border Classes="segmented" VerticalAlignment="Bottom" Margin="0,0,16,6">
+          <StackPanel Orientation="Horizontal">
+            <RadioButton Classes="segment" GroupName="staff" Content="Dossiers du personnel" IsChecked="{Binding !ShowPayroll}" />
+            <RadioButton Classes="segment" GroupName="staff" Content="Paie mensuelle" IsChecked="{Binding ShowPayroll}" />
+          </StackPanel>
+        </Border>
+        <StackPanel Classes="field" IsVisible="{Binding ShowPayroll}">
+          <TextBlock Text="Mois" Classes="fieldlabel" />
+          <ComboBox Width="200" ItemsSource="{Binding Periods}" SelectedItem="{Binding PeriodChoice}" />
+        </StackPanel>
+      </WrapPanel>
     </Border>
 
     <DataGrid Grid.Row="1" ItemsSource="{Binding Staff}" SelectedItem="{Binding SelectedStaff}"
@@ -23,7 +30,13 @@
         <DataGridTemplateColumn Header="Statut" Width="Auto" MinWidth="100">
           <DataGridTemplateColumn.CellTemplate>
             <DataTemplate>
-              <TextBlock Text="{Binding Status}" Foreground="{Binding StatusBrush}" FontWeight="SemiBold" VerticalAlignment="Center" />
+              <Panel Classes="pill">
+                <Border CornerRadius="10" Background="{Binding StatusBrush}" Opacity="0.13" />
+                <StackPanel Orientation="Horizontal" Spacing="6" Margin="9,3,11,3">
+                  <Ellipse Width="6" Height="6" Fill="{Binding StatusBrush}" VerticalAlignment="Center" />
+                  <TextBlock Text="{Binding Status}" Foreground="{Binding StatusBrush}" FontSize="{DynamicResource FsSmall}" FontWeight="SemiBold" />
+                </StackPanel>
+              </Panel>
             </DataTemplate>
           </DataGridTemplateColumn.CellTemplate>
         </DataGridTemplateColumn>
@@ -44,18 +57,20 @@
         <DataGridTemplateColumn Header="Statut" Width="Auto" MinWidth="110">
           <DataGridTemplateColumn.CellTemplate>
             <DataTemplate>
-              <TextBlock Text="{Binding Status}" Foreground="{Binding StatusBrush}" FontWeight="SemiBold" VerticalAlignment="Center" />
+              <Panel Classes="pill">
+                <Border CornerRadius="10" Background="{Binding StatusBrush}" Opacity="0.13" />
+                <StackPanel Orientation="Horizontal" Spacing="6" Margin="9,3,11,3">
+                  <Ellipse Width="6" Height="6" Fill="{Binding StatusBrush}" VerticalAlignment="Center" />
+                  <TextBlock Text="{Binding Status}" Foreground="{Binding StatusBrush}" FontSize="{DynamicResource FsSmall}" FontWeight="SemiBold" />
+                </StackPanel>
+              </Panel>
             </DataTemplate>
           </DataGridTemplateColumn.CellTemplate>
         </DataGridTemplateColumn>
         <DataGridTextColumn Header="Payé le" Binding="{Binding PaidOn}" Width="Auto" MinWidth="107" />
       </DataGrid.Columns>
     </DataGrid>
-    <TextBlock Grid.Row="1" Classes="muted" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,64,0,0"
-               Text="Aucun membre du personnel. Ajoutez le premier avec « Nouveau membre »."
-               IsVisible="{Binding StaffEmpty}" />
-    <TextBlock Grid.Row="1" Classes="muted" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,64,0,0"
-               Text="Aucun bulletin pour ce mois. Cliquez sur « Préparer la paie » pour générer les bulletins des membres actifs."
-               IsVisible="{Binding PayrollEmpty}" />
+    <c:EmptyState Grid.Row="1" Icon="BriefcaseOutline" Title="Aucun membre du personnel" Hint="Ajoutez le premier avec « Nouveau membre »." IsVisible="{Binding StaffEmpty}" />
+    <c:EmptyState Grid.Row="1" Icon="CashMultiple" Title="Aucun bulletin pour ce mois" Hint="Cliquez sur « Préparer la paie » pour générer les bulletins des membres actifs." IsVisible="{Binding PayrollEmpty}" />
   </Grid>
 </UserControl>

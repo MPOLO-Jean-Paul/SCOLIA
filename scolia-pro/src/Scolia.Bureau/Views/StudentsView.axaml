@@ -1,16 +1,26 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Scolia.Bureau.Controls"
              xmlns:infra="using:Scolia.Bureau.Infrastructure"
              x:Class="Scolia.Bureau.Views.StudentsView">
   <Grid RowDefinitions="Auto,*">
     <Border Grid.Row="0" Classes="band" Margin="0,0,0,10">
       <WrapPanel>
-        <TextBox Width="300" Margin="0,0,10,6" Text="{Binding Search}" PlaceholderText="Rechercher un nom ou un matricule" />
-        <ComboBox Width="230" Margin="0,0,10,6" ItemsSource="{Binding Promotions}" SelectedItem="{Binding Promotion}" />
-        <ComboBox Width="190" Margin="0,0,10,6" ItemsSource="{Binding StatusChoices}" SelectedItem="{Binding Status}" />
-        <Button Margin="0,0,6,6" Command="{Binding PreviousPage}" IsEnabled="{Binding CanPrevious}" Content="Précédent" />
-        <Button Margin="0,0,10,6" Command="{Binding NextPage}" IsEnabled="{Binding CanNext}" Content="Suivant" />
-        <TextBlock Text="{Binding PageText}" Classes="muted" VerticalAlignment="Center" Margin="4,0,0,6" />
+        <StackPanel Classes="field">
+          <TextBlock Text="Rechercher" Classes="fieldlabel" />
+          <TextBox Width="300" Text="{Binding Search}" PlaceholderText="Rechercher un nom ou un matricule" />
+        </StackPanel>
+        <StackPanel Classes="field">
+          <TextBlock Text="Promotion" Classes="fieldlabel" />
+          <ComboBox Width="230" ItemsSource="{Binding Promotions}" SelectedItem="{Binding Promotion}" />
+        </StackPanel>
+        <StackPanel Classes="field">
+          <TextBlock Text="Statut" Classes="fieldlabel" />
+          <ComboBox Width="190" ItemsSource="{Binding StatusChoices}" SelectedItem="{Binding Status}" />
+        </StackPanel>
+        <Button Command="{Binding PreviousPage}" IsEnabled="{Binding CanPrevious}" Content="Précédent" VerticalAlignment="Bottom" Margin="0,0,12,12" />
+        <Button Command="{Binding NextPage}" IsEnabled="{Binding CanNext}" Content="Suivant" VerticalAlignment="Bottom" Margin="0,0,12,12" />
+        <TextBlock Text="{Binding PageText}" Classes="muted" VerticalAlignment="Bottom" Margin="0,0,12,20" />
       </WrapPanel>
     </Border>
     <DataGrid Grid.Row="1" x:Name="StudentGrid" ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}"
@@ -23,7 +33,13 @@
         <DataGridTemplateColumn infra:GridPriority.Level="1" Header="Statut" Width="Auto" MinWidth="120">
           <DataGridTemplateColumn.CellTemplate>
             <DataTemplate>
-              <TextBlock Text="{Binding Status}" Foreground="{Binding StatusBrush}" FontWeight="SemiBold" VerticalAlignment="Center" />
+              <Panel Classes="pill">
+                <Border CornerRadius="10" Background="{Binding StatusBrush}" Opacity="0.13" />
+                <StackPanel Orientation="Horizontal" Spacing="6" Margin="9,3,11,3">
+                  <Ellipse Width="6" Height="6" Fill="{Binding StatusBrush}" VerticalAlignment="Center" />
+                  <TextBlock Text="{Binding Status}" Foreground="{Binding StatusBrush}" FontSize="{DynamicResource FsSmall}" FontWeight="SemiBold" />
+                </StackPanel>
+              </Panel>
             </DataTemplate>
           </DataGridTemplateColumn.CellTemplate>
         </DataGridTemplateColumn>
@@ -38,8 +54,6 @@
         </DataGridTemplateColumn>
       </DataGrid.Columns>
     </DataGrid>
-    <TextBlock Grid.Row="1" Classes="muted" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,64,0,0"
-               Text="Aucun apprenant ne correspond à ces critères. Modifiez la recherche ou la promotion."
-               IsVisible="{Binding Items.Count, Converter={StaticResource IsEmpty}}" />
+    <c:EmptyState Grid.Row="1" Icon="AccountSearchOutline" Title="Aucun apprenant trouvé" Hint="Modifiez la recherche ou la promotion." IsVisible="{Binding Items.Count, Converter={StaticResource IsEmpty}}" />
   </Grid>
 </UserControl>

@@ -173,7 +173,9 @@ export function Layout() {
       case 'export-recus-pdf': openDocument('/api/paiements/export'); return;
       case 'export-debiteurs-xlsx': openDocument('/api/rapports/debiteurs/export', { format: 'xlsx' }); return;
       case 'export-debiteurs-pdf': openDocument('/api/rapports/debiteurs/export'); return;
-      case 'audit-csv': openDocument('/api/audit/export', { format: 'csv' }); return;
+      case 'export-situation-pdf': openDocument('/api/rapports/promotions/export'); return;
+      case 'export-apprenants-xlsx': openDocument('/api/rapports/apprenants/export', { format: 'xlsx' }); return;
+      case 'export-depenses-xlsx': openDocument('/api/depenses/export', { format: 'xlsx' }); return;
       case 'raccourcis': setDialog('raccourcis'); return;
       case 'apropos': setDialog('apropos'); return;
       case 'preferences': setDialog('preferences'); return;

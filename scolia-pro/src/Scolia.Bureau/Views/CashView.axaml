@@ -4,12 +4,14 @@
              x:Class="Scolia.Bureau.Views.CashView">
   <ScrollViewer>
     <StackPanel Spacing="16">
-      <Grid ColumnDefinitions="Auto,*" >
-        <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
-          <TextBlock Text="Situation au" VerticalAlignment="Center" Classes="muted" />
-          <CalendarDatePicker PlaceholderText="jj/mm/aaaa" SelectedDateFormat="Short" Width="180" SelectedDate="{Binding Day}" />
-        </StackPanel>
-      </Grid>
+      <Border Classes="filterbar">
+        <WrapPanel>
+          <StackPanel Classes="field">
+            <TextBlock Text="Situation au" Classes="fieldlabel" />
+            <CalendarDatePicker PlaceholderText="jj/mm/aaaa" SelectedDateFormat="Short" Width="180" SelectedDate="{Binding Day}" />
+          </StackPanel>
+        </WrapPanel>
+      </Border>
 
       <ItemsControl ItemsSource="{Binding Figures}" ItemTemplate="{StaticResource KpiTile}" Margin="0,0,-12,0">
         <ItemsControl.ItemsPanel>
