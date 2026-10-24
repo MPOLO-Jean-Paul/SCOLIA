@@ -1,8 +1,10 @@
 using System.Globalization;
+using System.Security.Cryptography;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Scolia.Domain.Common;
 
 namespace Scolia.Infrastructure.Backup;
 
@@ -18,7 +20,11 @@ public sealed class ScoliaStorageOptions
     public string ConnectionString => new SqliteConnectionStringBuilder { DataSource = DatabasePath, Cache = SqliteCacheMode.Shared, DefaultTimeout = 30, Pooling = true, ForeignKeys = true }.ToString();
 }
 
-public sealed record BackupInfo(string Name, DateTime CreatedUtc, long SizeBytes);
+/// <summary>Une copie de la base. L'empreinte SHA-256 est écrite à côté de la copie, dans un fichier .sha256.</summary>
+public sealed record BackupInfo(string Name, DateTime CreatedUtc, long SizeBytes, string? Sha256);
+
+/// <summary>Résultat de la vérification d'une copie : intégrité SQLite et concordance avec son empreinte.</summary>
+public sealed record BackupCheck(string Name, bool Intact, bool HasFingerprint, bool FingerprintMatches);
 
 /// <summary>Sauvegarde à chaud cohérente (API de sauvegarde SQLite), vérification d'intégrité et restauration.</summary>
 public sealed class BackupService(IOptions<ScoliaStorageOptions> options, ILogger<BackupService> logger)
@@ -47,10 +53,11 @@ public sealed class BackupService(IOptions<ScoliaStorageOptions> options, ILogge
                 await mode.ExecuteNonQueryAsync(ct);
             }
             if (!await IsIntactAsync(target, ct)) throw new IOException("La sauvegarde créée n'a pas passé le contrôle d'intégrité.");
-            Prune();
+            var hash = await Sha256Async(target, ct);
+            await File.WriteAllTextAsync(target + FingerprintExtension, $"{hash}  {name}\n", ct);
             var info = new FileInfo(target);
             logger.LogInformation("Sauvegarde créée : {Name} ({Size} octets)", name, info.Length);
-            return new BackupInfo(name, info.CreationTimeUtc, info.Length);
+            return new BackupInfo(name, info.CreationTimeUtc, info.Length, hash);
         }
         finally
         {
@@ -62,7 +69,7 @@ public sealed class BackupService(IOptions<ScoliaStorageOptions> options, ILogge
     {
         if (!Directory.Exists(settings.BackupDirectory)) return [];
         return new DirectoryInfo(settings.BackupDirectory).GetFiles("scolia-*.db").OrderByDescending(f => f.Name, StringComparer.Ordinal)
-            .Select(f => new BackupInfo(f.Name, f.LastWriteTimeUtc, f.Length)).ToList();
+            .Select(f => new BackupInfo(f.Name, f.LastWriteTimeUtc, f.Length, ReadFingerprint(f.FullName))).ToList();
     }
 
     public string PathOf(string name)
@@ -72,6 +79,57 @@ public sealed class BackupService(IOptions<ScoliaStorageOptions> options, ILogge
         var path = Path.Combine(settings.BackupDirectory, name);
         if (!File.Exists(path)) throw new FileNotFoundException("Sauvegarde introuvable.");
         return path;
+    }
+
+    /// <summary>Vérifie une copie : contrôle SQLite et concordance avec l'empreinte enregistrée à sa création.</summary>
+    public async Task<BackupCheck> VerifyAsync(string name, CancellationToken ct = default)
+    {
+        var path = PathOf(name);
+        var intact = await IsIntactAsync(path, ct);
+        var expected = ReadFingerprint(path);
+        var matches = expected is not null && string.Equals(expected, await Sha256Async(path, ct), StringComparison.OrdinalIgnoreCase);
+        return new BackupCheck(name, intact, expected is not null, matches);
+    }
+
+    /// <summary>
+    /// Nettoyage à la demande : supprime les copies au-delà des <paramref name="keep"/> plus récentes,
+    /// et seulement si elles ont plus de <paramref name="olderThanDays"/> jours. Rien n'est supprimé automatiquement.
+    /// </summary>
+    public int Cleanup(int keep, int olderThanDays)
+    {
+        if (keep < 1) throw new DomainException("sauvegardes", "Gardez au moins une sauvegarde.");
+        if (!Directory.Exists(settings.BackupDirectory)) return 0;
+        var limit = DateTime.UtcNow.AddDays(-Math.Max(0, olderThanDays));
+        var files = new DirectoryInfo(settings.BackupDirectory).GetFiles("scolia-*.db").OrderByDescending(f => f.Name, StringComparer.Ordinal).ToList();
+        var removed = 0;
+        foreach (var file in files.Skip(keep).Where(f => f.LastWriteTimeUtc < limit))
+        {
+            try
+            {
+                file.Delete();
+                var fingerprint = file.FullName + FingerprintExtension;
+                if (File.Exists(fingerprint)) File.Delete(fingerprint);
+                removed++;
+            }
+            catch (IOException ex) { logger.LogWarning(ex, "Ancienne sauvegarde non supprimée : {Name}", file.Name); }
+        }
+        return removed;
+    }
+
+    private const string FingerprintExtension = ".sha256";
+
+    private static string? ReadFingerprint(string path)
+    {
+        var fingerprint = path + FingerprintExtension;
+        if (!File.Exists(fingerprint)) return null;
+        var first = File.ReadAllText(fingerprint).Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
+        return string.IsNullOrWhiteSpace(first) ? null : first;
+    }
+
+    private static async Task<string> Sha256Async(string path, CancellationToken ct)
+    {
+        await using var stream = File.OpenRead(path);
+        return Convert.ToHexString(await SHA256.HashDataAsync(stream, ct));
     }
 
     public static async Task<bool> IsIntactAsync(string path, CancellationToken ct = default)
@@ -95,8 +153,10 @@ public sealed class BackupService(IOptions<ScoliaStorageOptions> options, ILogge
     /// <summary>Restaure une sauvegarde dans la base en service. Une sauvegarde de sécurité de l'état actuel est faite avant.</summary>
     public async Task RestoreAsync(string name, CancellationToken ct = default)
     {
+        var check = await VerifyAsync(name, ct);
+        if (!check.Intact) throw new DomainException("sauvegardes", "Cette sauvegarde est endommagée : restauration refusée.");
+        if (check.HasFingerprint && !check.FingerprintMatches) throw new DomainException("sauvegardes", "L'empreinte de cette sauvegarde ne correspond plus : restauration refusée.");
         var path = PathOf(name);
-        if (!await IsIntactAsync(path, ct)) throw new InvalidDataException("Cette sauvegarde est endommagée : restauration refusée.");
         await CreateAsync("avantrestauration", ct);
         await Lock.WaitAsync(ct);
         try
@@ -111,16 +171,6 @@ public sealed class BackupService(IOptions<ScoliaStorageOptions> options, ILogge
         finally
         {
             Lock.Release();
-        }
-    }
-
-    private void Prune()
-    {
-        var limit = DateTime.UtcNow.AddDays(-Math.Max(1, settings.BackupRetentionDays));
-        var files = new DirectoryInfo(settings.BackupDirectory).GetFiles("scolia-*.db").OrderByDescending(f => f.LastWriteTimeUtc).ToList();
-        foreach (var file in files.Skip(10).Where(f => f.LastWriteTimeUtc < limit))
-        {
-            try { file.Delete(); } catch (IOException ex) { logger.LogWarning(ex, "Ancienne sauvegarde non supprimée : {Name}", file.Name); }
         }
     }
 }

@@ -225,6 +225,9 @@ public sealed record AttendanceSheetDto(Guid PromotionId, DateOnly Date, IReadOn
 public sealed record CardCandidateDto(Guid EnrollmentId, string Matricule, string FullName, string PromotionCode, string Status, bool Eligible,
     bool IdentityComplete, bool DuplicateMatricule);
 
+/// <summary>Nettoyage manuel des sauvegardes : garder les plus récentes, et ne supprimer que celles qui ont plus de N jours.</summary>
+public sealed record BackupCleanup(int Garder, int PlusAnciennesQue);
+
 public sealed record CardExportRequest(IReadOnlyList<Guid> EnrollmentIds, int Month, int Year, int Copies, bool IncludeLeft);
 
 public sealed record CardBatchDto(Guid Id, DateTime CreatedAtUtc, string Session, string PromotionLabel, int StudentCount, int CardCount, int PageCount,

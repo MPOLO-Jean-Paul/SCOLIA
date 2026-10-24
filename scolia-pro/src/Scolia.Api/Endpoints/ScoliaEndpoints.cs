@@ -104,7 +104,13 @@ public static class ScoliaEndpoints
         g.MapPost("/annees", (AcademicYearCreate input, SchoolService s, CancellationToken ct) => s.CreateYearAsync(input, ct)).RequireAuthorization(Permissions.SettingsWrite);
         g.MapPost("/annees/{id:guid}/courante", async (Guid id, SchoolService s, CancellationToken ct) => { await s.SetCurrentYearAsync(id, ct); return Results.NoContent(); })
             .RequireAuthorization(Permissions.SettingsWrite);
-        g.MapPost("/annees/{id:guid}/cloture", async (Guid id, SchoolService s, CancellationToken ct) => { await s.CloseYearAsync(id, ct); return Results.NoContent(); })
+        g.MapPost("/annees/{id:guid}/cloture", async (Guid id, SchoolService s, BackupService backups, CancellationToken ct) =>
+        {
+            // La clôture est volontaire : une sauvegarde complète est faite avant que l'année ne soit figée.
+            await backups.CreateAsync("avantcloture", ct);
+            await s.CloseYearAsync(id, ct);
+            return Results.NoContent();
+        })
             .RequireAuthorization(Permissions.SettingsWrite);
 
         g.MapGet("/sections", (SchoolService s, CancellationToken ct) => s.SectionsAsync(ct));
@@ -344,6 +350,15 @@ public static class ScoliaEndpoints
         })
             .RequireAuthorization(Permissions.SettingsWrite);
         backups.MapGet("/integrite", async (BackupService b, CancellationToken ct) => Results.Ok(new { intacte = await b.CheckLiveDatabaseAsync(ct) }));
+        // Vérification d'une copie : contrôle SQLite et empreinte SHA-256. Le nettoyage n'a lieu qu'à la demande.
+        backups.MapGet("/{name}/verification", (string name, BackupService b, CancellationToken ct) => b.VerifyAsync(name, ct));
+        backups.MapPost("/nettoyage", async (BackupCleanup input, BackupService b, IAuditLog log, ScoliaDbContext db, CancellationToken ct) =>
+        {
+            var removed = b.Cleanup(input.Garder, input.PlusAnciennesQue);
+            log.Record("sauvegarde.nettoyage", "Sauvegarde", null, $"{removed} sauvegarde(s) ancienne(s) supprimée(s) ; {input.Garder} plus récente(s) gardée(s).");
+            await db.SaveChangesAsync(ct);
+            return Results.Ok(new { supprimees = removed });
+        });
 
         api.MapPost("/import/scolia", async (HttpRequest request, bool? appliquer, LegacyImportService importer, CancellationToken ct) =>
         {
