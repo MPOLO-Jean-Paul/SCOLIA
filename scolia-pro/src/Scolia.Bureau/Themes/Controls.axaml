@@ -167,7 +167,12 @@
     <Setter Property="Foreground" Value="{DynamicResource Text2Brush}" />
     <Setter Property="FontSize" Value="{DynamicResource FsSmall}" />
     <Setter Property="FontWeight" Value="SemiBold" />
-    <Setter Property="Padding" Value="10,4" />
+    <Setter Property="Padding" Value="8,4" />
+    <Setter Property="MinWidth" Value="0" />
+  </Style>
+  <Style Selector="DataGridColumnHeader TextBlock">
+    <Setter Property="TextWrapping" Value="NoWrap" />
+    <Setter Property="TextTrimming" Value="None" />
   </Style>
   <Style Selector="DataGridRow:selected /template/ Rectangle#BackgroundRectangle">
     <Setter Property="Fill" Value="{DynamicResource AccentSoftBrush}" />

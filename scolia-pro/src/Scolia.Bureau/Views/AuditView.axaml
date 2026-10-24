@@ -13,12 +13,15 @@
     <DataGrid Grid.Row="1" ItemsSource="{Binding Items}" AutoGenerateColumns="False" IsReadOnly="True">
       <DataGrid.Columns>
         <DataGridTextColumn Header="Date (locale)" Binding="{Binding At}" Width="Auto" MinWidth="165" />
-        <DataGridTextColumn Header="Utilisateur" Binding="{Binding User}" Width="Auto" MinWidth="130" />
+        <DataGridTextColumn Header="Utilisateur" Binding="{Binding User}" Width="Auto" MinWidth="137" />
         <DataGridTextColumn Header="Action" Binding="{Binding Action}" Width="Auto" MinWidth="160" />
         <DataGridTextColumn Header="Objet" Binding="{Binding Entity}" Width="Auto" MinWidth="130" />
         <DataGridTextColumn Header="Résumé" Binding="{Binding Summary}" Width="*" />
         <DataGridTextColumn Header="Adresse" Binding="{Binding Ip}" Width="Auto" MinWidth="130" />
       </DataGrid.Columns>
     </DataGrid>
+    <TextBlock Grid.Row="1" Classes="muted" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,64,0,0"
+               Text="Aucun événement pour ces filtres."
+               IsVisible="{Binding Items.Count, Converter={StaticResource IsEmpty}}" />
   </Grid>
 </UserControl>

@@ -16,11 +16,11 @@
     <DataGrid x:Name="ReceiptGrid" Grid.Row="1" ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}"
               AutoGenerateColumns="False" IsReadOnly="True">
       <DataGrid.Columns>
-        <DataGridTextColumn Header="N° de reçu" Binding="{Binding Number}" Width="Auto" MinWidth="130" />
+        <DataGridTextColumn Header="N° de reçu" Binding="{Binding Number}" Width="Auto" MinWidth="150" />
         <DataGridTextColumn infra:GridPriority.Level="2" Header="Date" Binding="{Binding Date}" Width="Auto" MinWidth="120" />
-        <DataGridTextColumn infra:GridPriority.Level="2" Header="Matricule" Binding="{Binding Matricule}" Width="Auto" MinWidth="105" />
-        <DataGridTextColumn Header="Apprenant" Binding="{Binding Student}" Width="*" MinWidth="200" />
-        <DataGridTextColumn infra:GridPriority.Level="3" Header="Promotion" Binding="{Binding Promotion}" Width="Auto" MinWidth="100" />
+        <DataGridTextColumn infra:GridPriority.Level="2" Header="Matricule" Binding="{Binding Matricule}" Width="Auto" MinWidth="122" />
+        <DataGridTextColumn Header="Apprenant" Binding="{Binding Student}" Width="2*" MinWidth="260" />
+        <DataGridTextColumn infra:GridPriority.Level="3" Header="Promotion" Binding="{Binding Promotion}" Width="Auto" MinWidth="122" />
         <DataGridTextColumn Header="Montant" Binding="{Binding Amount}" Width="Auto" MinWidth="130" />
         <DataGridTextColumn infra:GridPriority.Level="3" Header="Mode" Binding="{Binding Method}" Width="Auto" MinWidth="140" />
         <DataGridTemplateColumn Header="Statut" Width="Auto" MinWidth="100">
@@ -33,5 +33,8 @@
         <DataGridTextColumn infra:GridPriority.Level="3" Header="Caissier" Binding="{Binding Cashier}" Width="Auto" MinWidth="150" />
       </DataGrid.Columns>
     </DataGrid>
+    <TextBlock Grid.Row="1" Classes="muted" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,64,0,0"
+               Text="Aucun reçu pour ces filtres."
+               IsVisible="{Binding Items.Count, Converter={StaticResource IsEmpty}}" />
   </Grid>
 </UserControl>

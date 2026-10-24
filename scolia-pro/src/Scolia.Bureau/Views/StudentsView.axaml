@@ -38,5 +38,8 @@
         </DataGridTemplateColumn>
       </DataGrid.Columns>
     </DataGrid>
+    <TextBlock Grid.Row="1" Classes="muted" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,64,0,0"
+               Text="Aucun apprenant ne correspond à ces critères. Modifiez la recherche ou la promotion."
+               IsVisible="{Binding Items.Count, Converter={StaticResource IsEmpty}}" />
   </Grid>
 </UserControl>

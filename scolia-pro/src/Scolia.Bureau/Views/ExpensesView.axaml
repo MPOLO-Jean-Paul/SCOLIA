@@ -12,11 +12,11 @@
     </Border>
     <DataGrid Grid.Row="1" ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}" AutoGenerateColumns="False" IsReadOnly="True">
       <DataGrid.Columns>
-        <DataGridTextColumn Header="N°" Binding="{Binding Number}" Width="*" MinWidth="150" />
+        <DataGridTextColumn Header="N°" Binding="{Binding Number}" Width="Auto" MinWidth="170" />
         <DataGridTextColumn Header="Date" Binding="{Binding Date}" Width="Auto" MinWidth="120" />
-        <DataGridTextColumn Header="Catégorie" Binding="{Binding Category}" Width="Auto" MinWidth="160" />
-        <DataGridTextColumn Header="Bénéficiaire" Binding="{Binding Beneficiary}" Width="Auto" MinWidth="170" />
-        <DataGridTextColumn Header="Description" Binding="{Binding Description}" Width="2*" MinWidth="200" />
+        <DataGridTextColumn Header="Catégorie" Binding="{Binding Category}" Width="Auto" MinWidth="190" />
+        <DataGridTextColumn Header="Bénéficiaire" Binding="{Binding Beneficiary}" Width="Auto" MinWidth="220" />
+        <DataGridTextColumn Header="Description" Binding="{Binding Description}" Width="2*" MinWidth="280" />
         <DataGridTextColumn Header="Montant" Binding="{Binding Amount}" Width="Auto" MinWidth="130" />
         <DataGridTextColumn Header="Mode" Binding="{Binding Method}" Width="Auto" MinWidth="120" />
         <DataGridTemplateColumn Header="Statut" Width="Auto" MinWidth="100">
@@ -26,8 +26,11 @@
             </DataTemplate>
           </DataGridTemplateColumn.CellTemplate>
         </DataGridTemplateColumn>
-        <DataGridTextColumn Header="Enregistré par" Binding="{Binding RecordedBy}" Width="Auto" MinWidth="130" />
+        <DataGridTextColumn Header="Enregistré par" Binding="{Binding RecordedBy}" Width="Auto" MinWidth="160" />
       </DataGrid.Columns>
     </DataGrid>
+    <TextBlock Grid.Row="1" Classes="muted" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,64,0,0"
+               Text="Aucune dépense enregistrée pour ces critères."
+               IsVisible="{Binding Items.Count, Converter={StaticResource IsEmpty}}" />
   </Grid>
 </UserControl>

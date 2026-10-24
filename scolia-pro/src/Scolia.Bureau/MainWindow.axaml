@@ -115,7 +115,7 @@
           <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="24,16,24,8">
             <StackPanel Spacing="2" VerticalAlignment="Center">
               <TextBlock Text="{Binding Current.Title}" Classes="title" />
-              <TextBlock Text="{Binding Current.Subtitle}" Classes="muted" />
+              <TextBlock Text="{Binding Current.Subtitle}" Classes="muted" TextWrapping="Wrap" />
             </StackPanel>
             <ItemsControl Grid.Column="1" ItemsSource="{Binding Current.Actions}" VerticalAlignment="Center" MaxWidth="640" Margin="16,0,0,0">
               <ItemsControl.ItemsPanel>

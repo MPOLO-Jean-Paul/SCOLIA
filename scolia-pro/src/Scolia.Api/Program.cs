@@ -108,7 +108,7 @@ app.Use(async (http, next) =>
     h["X-Frame-Options"] = "DENY";
     h["Referrer-Policy"] = "no-referrer";
     h["Permissions-Policy"] = "camera=(self), microphone=(), geolocation=()";
-    h["Content-Security-Policy"] = "default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; frame-src 'self' blob:; object-src 'self' blob:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'";
+    h["Content-Security-Policy"] = "default-src 'self'; img-src 'self' data: blob:; font-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; frame-src 'self' blob:; object-src 'self' blob:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'";
     if (http.Request.Path.StartsWithSegments("/api")) h["Cache-Control"] = "no-store";
     await next();
 });

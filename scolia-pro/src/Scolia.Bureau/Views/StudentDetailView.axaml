@@ -48,7 +48,7 @@
               <DataGrid.Columns>
                 <DataGridTextColumn Header="Année" Binding="{Binding Year}" Width="Auto" MinWidth="110" />
                 <DataGridTextColumn Header="Promotion" Binding="{Binding Promotion}" Width="Auto" MinWidth="190" />
-                <DataGridTextColumn Header="Inscrit le" Binding="{Binding EnrolledOn}" Width="Auto" MinWidth="110" />
+                <DataGridTextColumn Header="Inscrit le" Binding="{Binding EnrolledOn}" Width="Auto" MinWidth="130" />
                 <DataGridTemplateColumn Header="Statut" Width="Auto" MinWidth="110">
                   <DataGridTemplateColumn.CellTemplate>
                     <DataTemplate>
@@ -73,7 +73,7 @@
                 <DataGridTextColumn Header="Échéance" Binding="{Binding Label}" Width="*" />
                 <DataGridTextColumn Header="Date" Binding="{Binding DueDate}" Width="Auto" MinWidth="105" />
                 <DataGridTextColumn Header="Montant" Binding="{Binding Amount}" Width="Auto" MinWidth="120" />
-                <DataGridTextColumn Header="Pris en charge" Binding="{Binding Covered}" Width="Auto" MinWidth="130" />
+                <DataGridTextColumn Header="Pris en charge" Binding="{Binding Covered}" Width="Auto" MinWidth="160" />
                 <DataGridTextColumn Header="Payé" Binding="{Binding Paid}" Width="Auto" MinWidth="120" />
                 <DataGridTextColumn Header="Reste" Binding="{Binding Remaining}" Width="Auto" MinWidth="120" />
                 <DataGridTemplateColumn Header="Statut" Width="Auto" MinWidth="110">

@@ -29,7 +29,7 @@
               <DataGrid.Columns>
                 <DataGridTextColumn Header="Échéance" Binding="{Binding Label}" Width="*" />
                 <DataGridTextColumn Header="Imputé" Binding="{Binding Amount}" Width="Auto" MinWidth="120" />
-                <DataGridTextColumn Header="Reste après" Binding="{Binding Remaining}" Width="Auto" MinWidth="120" />
+                <DataGridTextColumn Header="Reste après" Binding="{Binding Remaining}" Width="Auto" MinWidth="137" />
               </DataGrid.Columns>
             </DataGrid>
           </StackPanel>

@@ -3,10 +3,10 @@
              x:Class="Scolia.Bureau.Views.SponsorshipsView">
   <DataGrid ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}" AutoGenerateColumns="False" IsReadOnly="True">
     <DataGrid.Columns>
-      <DataGridTextColumn Header="Matricule" Binding="{Binding Matricule}" Width="Auto" MinWidth="105" />
+      <DataGridTextColumn Header="Matricule" Binding="{Binding Matricule}" Width="Auto" MinWidth="122" />
       <DataGridTextColumn Header="Apprenant" Binding="{Binding Name}" Width="*" />
-      <DataGridTextColumn Header="Promotion" Binding="{Binding Promotion}" Width="Auto" MinWidth="100" />
-      <DataGridTextColumn Header="Garant ou organisme" Binding="{Binding Sponsor}" Width="Auto" MinWidth="180" />
+      <DataGridTextColumn Header="Promotion" Binding="{Binding Promotion}" Width="Auto" MinWidth="122" />
+      <DataGridTextColumn Header="Garant ou organisme" Binding="{Binding Sponsor}" Width="Auto" MinWidth="198" />
       <DataGridTextColumn Header="Motif" Binding="{Binding Reason}" Width="Auto" MinWidth="170" />
       <DataGridTextColumn Header="Effet" Binding="{Binding Since}" Width="Auto" MinWidth="120" />
       <DataGridTextColumn Header="Couvert" Binding="{Binding Covered}" Width="Auto" MinWidth="130" />

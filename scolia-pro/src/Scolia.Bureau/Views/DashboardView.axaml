@@ -72,7 +72,7 @@
             <TextBlock Text="Recouvrement par promotion" Classes="heading" />
             <DataGrid ItemsSource="{Binding Promotions}" AutoGenerateColumns="False" IsReadOnly="True" MaxHeight="320">
               <DataGrid.Columns>
-                <DataGridTextColumn Header="Promotion" Binding="{Binding Code}" Width="Auto" MinWidth="90" />
+                <DataGridTextColumn Header="Promotion" Binding="{Binding Code}" Width="Auto" MinWidth="122" />
                 <DataGridTextColumn Header="Nom" Binding="{Binding Name}" Width="2*" MinWidth="140" />
                 <DataGridTextColumn Header="Apprenants" Binding="{Binding Students}" Width="*" MinWidth="95" />
                 <DataGridTextColumn Header="Attendu" Binding="{Binding Expected}" Width="*" MinWidth="130" />

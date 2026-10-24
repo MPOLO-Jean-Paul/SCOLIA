@@ -13,8 +13,8 @@
           </DataTemplate>
         </DataGridTemplateColumn.CellTemplate>
       </DataGridTemplateColumn>
-      <DataGridTextColumn Header="Dernière connexion" Binding="{Binding LastLogin}" Width="Auto" MinWidth="180" />
-      <DataGridTextColumn Header="Verrouillage" Binding="{Binding Locked}" Width="Auto" MinWidth="120" />
+      <DataGridTextColumn Header="Dernière connexion" Binding="{Binding LastLogin}" Width="Auto" MinWidth="190" />
+      <DataGridTextColumn Header="Verrouillage" Binding="{Binding Locked}" Width="Auto" MinWidth="145" />
     </DataGrid.Columns>
   </DataGrid>
 </UserControl>

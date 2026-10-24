@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Globalization;
 using System.Net.Http;
 using Avalonia.Media;
 using Material.Icons;
@@ -18,6 +19,7 @@ public sealed record PayrollRowVm(Guid Id, string Number, string Name, string Fu
 public sealed class StaffPage : PageViewModel
 {
     private string period = DateTime.Today.ToString("yyyy-MM");
+    private ChoiceItem? periodChoice;
     private bool showPayroll;
     private StaffRowVm? selectedStaff;
     private PayrollRowVm? selectedPayroll;
@@ -31,6 +33,7 @@ public sealed class StaffPage : PageViewModel
         Action("Pointage et bilan", MaterialIconKind.ClockCheckOutline, () => Shell.Open(() => new StaffAttendancePage(Shell)));
         Action("Modifier le bulletin", MaterialIconKind.PencilOutline, EditPayslipAsync);
         Action("Payer le salaire", MaterialIconKind.CashCheck, PayAsync);
+        periodChoice = Periods.FirstOrDefault(p => p.Value == period);
         ActionRefresh();
     }
 
@@ -45,14 +48,63 @@ public sealed class StaffPage : PageViewModel
     public bool ShowPayroll
     {
         get => showPayroll;
-        set { if (Set(ref showPayroll, value)) _ = Shell.Run(RefreshAsync); }
+        set
+        {
+            if (!Set(ref showPayroll, value)) return;
+            RaiseEmptyStates();
+            _ = Shell.Run(RefreshAsync);
+        }
     }
 
     /// <summary>Mois de paie au format aaaa-mm.</summary>
     public string Period
     {
         get => period;
-        set { if (Set(ref period, value.Trim()) && ShowPayroll) _ = Shell.Run(RefreshAsync); }
+        set
+        {
+            if (!Set(ref period, value.Trim())) return;
+            periodChoice = Periods.FirstOrDefault(p => p.Value == period);
+            Raise(nameof(PeriodChoice));
+            if (ShowPayroll) _ = Shell.Run(RefreshAsync);
+        }
+    }
+
+    /// <summary>Mois de paie choisi dans la liste : les douze derniers mois et le mois suivant.</summary>
+    public IReadOnlyList<ChoiceItem> Periods { get; } = PayrollMonths();
+
+    public ChoiceItem? PeriodChoice
+    {
+        get => periodChoice;
+        set { if (value is not null) Period = value.Value; }
+    }
+
+    public bool StaffEmpty => !ShowPayroll && Staff.Count == 0;
+    public bool PayrollEmpty => ShowPayroll && Payroll.Count == 0;
+
+    private void RaiseEmptyStates()
+    {
+        Raise(nameof(StaffEmpty));
+        Raise(nameof(PayrollEmpty));
+    }
+
+    private static IReadOnlyList<ChoiceItem> PayrollMonths()
+    {
+        var first = DateOnly.FromDateTime(DateTime.Today).AddMonths(-11);
+        var list = new List<ChoiceItem>();
+        for (var i = 0; i < 13; i++)
+        {
+            var month = first.AddMonths(i);
+            list.Add(new ChoiceItem(month.ToString("yyyy-MM", CultureInfo.InvariantCulture), MonthLabel(month.ToString("yyyy-MM", CultureInfo.InvariantCulture))));
+        }
+        return list;
+    }
+
+    /// <summary>« 2026-10 » devient « octobre 2026 ».</summary>
+    public static string MonthLabel(string key)
+    {
+        var date = DateOnly.ParseExact(key + "-01", "yyyy-MM-dd", CultureInfo.InvariantCulture);
+        var name = CultureInfo.GetCultureInfo("fr-FR").DateTimeFormat.GetMonthName(date.Month);
+        return $"{char.ToUpperInvariant(name[0])}{name[1..]} {date.Year}";
     }
 
     public StaffRowVm? SelectedStaff { get => selectedStaff; set => Set(ref selectedStaff, value); }
@@ -73,7 +125,7 @@ public sealed class StaffPage : PageViewModel
                 Payroll.Add(new PayrollRowVm(p.Id, p.Number, p.FullName, p.Function, Money(p.BaseSalary), Money(p.Allowances), Money(p.Deductions),
                     Money(p.Advances), Money(p.Net), Labels.Status(p.Status), ThemeBrush.Get(p.Status == "Paye" ? "ToneGreen" : "ToneOrange"),
                     p.PaidOn is { } d ? Format.Date(d) : "—", p));
-            subtitle = $"Paie de {key} · {Format.Count(rows.Count, "bulletin", "bulletins")} · net {Money(rows.Sum(r => r.Net))}";
+            subtitle = $"Paie d'{MonthLabel(key).ToLowerInvariant()} · {Format.Count(rows.Count, "bulletin", "bulletins")} · net {Money(rows.Sum(r => r.Net))}";
         }
         else
         {
@@ -84,6 +136,7 @@ public sealed class StaffPage : PageViewModel
                     Format.Date(s.HireDate), Money(s.BaseSalary), s.IsActive ? "Actif" : "Inactif", ThemeBrush.Get(s.IsActive ? "ToneGreen" : "ToneNeutral"), s));
             subtitle = $"{Format.Count(rows.Count(r => r.IsActive), "membre actif", "membres actifs")} sur {rows.Count}";
         }
+        RaiseEmptyStates();
         Raise(nameof(Subtitle));
     }
 

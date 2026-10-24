@@ -60,14 +60,14 @@
             <TextBlock Text="Promotions et frais" Classes="heading" />
             <DataGrid ItemsSource="{Binding Promotions}" SelectedItem="{Binding SelectedPromotion}" AutoGenerateColumns="False" IsReadOnly="True" MaxHeight="520">
               <DataGrid.Columns>
-                <DataGridTextColumn Header="Code" Binding="{Binding Code}" Width="Auto" MinWidth="80" />
+                <DataGridTextColumn Header="Code" Binding="{Binding Code}" Width="Auto" MinWidth="84" />
                 <DataGridTextColumn Header="Désignation" Binding="{Binding Name}" Width="*" />
                 <DataGridTextColumn Header="Section" Binding="{Binding Section}" Width="Auto" MinWidth="150" />
-                <DataGridTextColumn Header="Niveau" Binding="{Binding Level}" Width="Auto" MinWidth="80" />
-                <DataGridTextColumn Header="Apprenants" Binding="{Binding Students}" Width="Auto" MinWidth="110" />
-                <DataGridTextColumn Header="Mensualité" Binding="{Binding Monthly}" Width="Auto" MinWidth="120" />
-                <DataGridTextColumn Header="Total annuel" Binding="{Binding Annual}" Width="Auto" MinWidth="130" />
-                <DataGridTextColumn Header="Active" Binding="{Binding Active}" Width="Auto" MinWidth="70" />
+                <DataGridTextColumn Header="Niveau" Binding="{Binding Level}" Width="Auto" MinWidth="99" />
+                <DataGridTextColumn Header="Apprenants" Binding="{Binding Students}" Width="Auto" MinWidth="130" />
+                <DataGridTextColumn Header="Mensualité" Binding="{Binding Monthly}" Width="Auto" MinWidth="130" />
+                <DataGridTextColumn Header="Total annuel" Binding="{Binding Annual}" Width="Auto" MinWidth="145" />
+                <DataGridTextColumn Header="Active" Binding="{Binding Active}" Width="Auto" MinWidth="99" />
               </DataGrid.Columns>
             </DataGrid>
           </StackPanel>

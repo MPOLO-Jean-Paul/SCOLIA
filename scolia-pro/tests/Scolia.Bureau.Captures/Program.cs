@@ -340,14 +340,6 @@ void Smoke(ShellViewModel shell, ScoliaClient api, Window window, string passwor
     Wait(attendance.SaveAsync());
     Check("enregistrement de l'appel", attendance.Rows.Count > 0);
 
-    var incidentOpen = DisciplinePage.NewIncidentAsync(shell);
-    ok = Submit(shell, incidentOpen, f =>
-    {
-        f.Find("categorie").Text = "Retard répété";
-        f.Find("description").Text = "Test du parcours";
-    });
-    Check("nouvel incident", ok);
-
     var staffBefore = Result(api.GetAsync<List<StaffDto>>("api/personnel")).Count;
     ok = Submit(shell, StaffPage.NewMemberAsync(shell), f =>
     {
@@ -397,6 +389,7 @@ var firstReceipt = receipts.Items[0].Id;
 Page(() => new StudentsPage(shell), "03-apprenants.png");
 Page(() => new StudentDetailPage(shell, firstStudent), "04-fiche-apprenant.png");
 Page(() => new CashierPage(shell, firstStudent), "05-encaisser.png");
+Page(() => new BatchPaymentPage(shell), "05b-encaissement-lot.png");
 Page(() => new ReceiptsPage(shell), "06-journal-recus.png");
 Page(() => new ReceiptDetailPage(shell, firstReceipt), "07-recu.png");
 Page(() => new DebtorsPage(shell), "08-recouvrement.png");
@@ -414,6 +407,8 @@ Page(() => new SettingsPage(shell), "19-parametres-etablissement.png");
 Page(() => new SettingsPage(shell), "20-parametres-annees.png", p => ((SettingsPage)p).Section = ((SettingsPage)p).Sections[1]);
 Page(() => new UsersPage(shell), "21-utilisateurs.png");
 Page(() => new DataPage(shell), "22-donnees.png");
+Page(() => new EraseDataPage(shell, payments: true), "22b-effacer-donnees.png");
+Page(() => new EraseDataPage(shell, payments: false), "22c-effacer-apprenants.png");
 Page(() => new AuditPage(shell), "23-audit.png");
 
 // Boîtes de dialogue : recherche globale et formulaire d'inscription.

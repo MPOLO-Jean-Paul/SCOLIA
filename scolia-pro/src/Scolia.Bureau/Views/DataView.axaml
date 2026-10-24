@@ -13,5 +13,8 @@
         <DataGridTextColumn Header="Taille" Binding="{Binding Size}" Width="Auto" MinWidth="110" />
       </DataGrid.Columns>
     </DataGrid>
+    <TextBlock Grid.Row="1" Classes="muted" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,64,0,0"
+               Text="Aucune sauvegarde pour l'instant. Cliquez sur « Sauvegarder » pour créer la première."
+               IsVisible="{Binding Items.Count, Converter={StaticResource IsEmpty}}" />
   </Grid>
 </UserControl>

@@ -16,7 +16,7 @@
     <!-- Feuille d'appel : un statut par apprenant -->
     <DataGrid Grid.Row="1" ItemsSource="{Binding Rows}" AutoGenerateColumns="False" IsReadOnly="False" IsVisible="{Binding !ShowSummary}">
       <DataGrid.Columns>
-        <DataGridTextColumn Header="Matricule" Binding="{Binding Matricule}" IsReadOnly="True" Width="Auto" MinWidth="110" />
+        <DataGridTextColumn Header="Matricule" Binding="{Binding Matricule}" IsReadOnly="True" Width="Auto" MinWidth="122" />
         <DataGridTextColumn Header="Nom complet" Binding="{Binding FullName}" IsReadOnly="True" Width="*" />
         <DataGridTemplateColumn Header="Statut" Width="Auto" MinWidth="220">
           <DataGridTemplateColumn.CellTemplate>
@@ -32,12 +32,12 @@
     <!-- Bilan : présences, retards, absences et taux d'assiduité -->
     <DataGrid Grid.Row="1" ItemsSource="{Binding Summary}" AutoGenerateColumns="False" IsReadOnly="True" IsVisible="{Binding ShowSummary}">
       <DataGrid.Columns>
-        <DataGridTextColumn Header="Matricule" Binding="{Binding Matricule}" Width="Auto" MinWidth="110" />
+        <DataGridTextColumn Header="Matricule" Binding="{Binding Matricule}" Width="Auto" MinWidth="122" />
         <DataGridTextColumn Header="Nom complet" Binding="{Binding Name}" Width="*" />
-        <DataGridTextColumn Header="Présent" Binding="{Binding Present}" Width="Auto" MinWidth="90" />
-        <DataGridTextColumn Header="Retard" Binding="{Binding Late}" Width="Auto" MinWidth="90" />
-        <DataGridTextColumn Header="Absent" Binding="{Binding Absent}" Width="Auto" MinWidth="90" />
-        <DataGridTextColumn Header="Justifié" Binding="{Binding Justified}" Width="Auto" MinWidth="90" />
+        <DataGridTextColumn Header="Présent" Binding="{Binding Present}" Width="Auto" MinWidth="107" />
+        <DataGridTextColumn Header="Retard" Binding="{Binding Late}" Width="Auto" MinWidth="99" />
+        <DataGridTextColumn Header="Absent" Binding="{Binding Absent}" Width="Auto" MinWidth="99" />
+        <DataGridTextColumn Header="Justifié" Binding="{Binding Justified}" Width="Auto" MinWidth="114" />
         <DataGridTemplateColumn Header="Assiduité" Width="Auto" MinWidth="130">
           <DataGridTemplateColumn.CellTemplate>
             <DataTemplate>

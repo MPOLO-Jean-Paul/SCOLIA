@@ -7,19 +7,19 @@
         <RadioButton GroupName="staff" Content="Dossiers du personnel" IsChecked="{Binding !ShowPayroll}" />
         <RadioButton GroupName="staff" Content="Paie mensuelle" IsChecked="{Binding ShowPayroll}" />
         <TextBlock Text="Mois" VerticalAlignment="Center" Classes="muted" Margin="16,0,0,0" IsVisible="{Binding ShowPayroll}" />
-        <TextBox Width="130" Text="{Binding Period}" PlaceholderText="aaaa-mm" IsVisible="{Binding ShowPayroll}" />
+        <ComboBox Width="200" ItemsSource="{Binding Periods}" SelectedItem="{Binding PeriodChoice}" IsVisible="{Binding ShowPayroll}" />
       </StackPanel>
     </Border>
 
     <DataGrid Grid.Row="1" ItemsSource="{Binding Staff}" SelectedItem="{Binding SelectedStaff}"
               AutoGenerateColumns="False" IsReadOnly="True" IsVisible="{Binding !ShowPayroll}">
       <DataGrid.Columns>
-        <DataGridTextColumn Header="N° de dossier" Binding="{Binding Number}" Width="Auto" MinWidth="120" />
+        <DataGridTextColumn Header="N° de dossier" Binding="{Binding Number}" Width="Auto" MinWidth="152" />
         <DataGridTextColumn Header="Nom complet" Binding="{Binding Name}" Width="*" />
         <DataGridTextColumn Header="Fonction" Binding="{Binding Function}" Width="Auto" MinWidth="170" />
         <DataGridTextColumn Header="Téléphone" Binding="{Binding Phone}" Width="Auto" MinWidth="130" />
-        <DataGridTextColumn Header="Embauche" Binding="{Binding Hired}" Width="Auto" MinWidth="105" />
-        <DataGridTextColumn Header="Salaire de base" Binding="{Binding Salary}" Width="Auto" MinWidth="140" />
+        <DataGridTextColumn Header="Embauche" Binding="{Binding Hired}" Width="Auto" MinWidth="114" />
+        <DataGridTextColumn Header="Salaire de base" Binding="{Binding Salary}" Width="Auto" MinWidth="168" />
         <DataGridTemplateColumn Header="Statut" Width="Auto" MinWidth="100">
           <DataGridTemplateColumn.CellTemplate>
             <DataTemplate>
@@ -38,9 +38,9 @@
         <DataGridTextColumn Header="Fonction" Binding="{Binding Function}" Width="Auto" MinWidth="150" />
         <DataGridTextColumn Header="Base" Binding="{Binding Base}" Width="Auto" MinWidth="120" />
         <DataGridTextColumn Header="Primes" Binding="{Binding Allowances}" Width="Auto" MinWidth="110" />
-        <DataGridTextColumn Header="Retenues" Binding="{Binding Deductions}" Width="Auto" MinWidth="110" />
+        <DataGridTextColumn Header="Retenues" Binding="{Binding Deductions}" Width="Auto" MinWidth="114" />
         <DataGridTextColumn Header="Avances" Binding="{Binding Advances}" Width="Auto" MinWidth="110" />
-        <DataGridTextColumn Header="Net à payer" Binding="{Binding Net}" Width="Auto" MinWidth="130" />
+        <DataGridTextColumn Header="Net à payer" Binding="{Binding Net}" Width="Auto" MinWidth="137" />
         <DataGridTemplateColumn Header="Statut" Width="Auto" MinWidth="110">
           <DataGridTemplateColumn.CellTemplate>
             <DataTemplate>
@@ -48,8 +48,14 @@
             </DataTemplate>
           </DataGridTemplateColumn.CellTemplate>
         </DataGridTemplateColumn>
-        <DataGridTextColumn Header="Payé le" Binding="{Binding PaidOn}" Width="Auto" MinWidth="105" />
+        <DataGridTextColumn Header="Payé le" Binding="{Binding PaidOn}" Width="Auto" MinWidth="107" />
       </DataGrid.Columns>
     </DataGrid>
+    <TextBlock Grid.Row="1" Classes="muted" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,64,0,0"
+               Text="Aucun membre du personnel. Ajoutez le premier avec « Nouveau membre »."
+               IsVisible="{Binding StaffEmpty}" />
+    <TextBlock Grid.Row="1" Classes="muted" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,64,0,0"
+               Text="Aucun bulletin pour ce mois. Cliquez sur « Préparer la paie » pour générer les bulletins des membres actifs."
+               IsVisible="{Binding PayrollEmpty}" />
   </Grid>
 </UserControl>

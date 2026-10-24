@@ -13,19 +13,22 @@
     </Border>
     <DataGrid Grid.Row="1" ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}" AutoGenerateColumns="False" IsReadOnly="True">
       <DataGrid.Columns>
-        <DataGridTextColumn Header="Décidé le" Binding="{Binding Date}" Width="Auto" MinWidth="110" infra:GridPriority.Level="1" />
-        <DataGridTextColumn Header="Matricule" Binding="{Binding Matricule}" Width="Auto" MinWidth="105" infra:GridPriority.Level="1" />
-        <DataGridTextColumn Header="Apprenant" Binding="{Binding Name}" Width="Auto" MinWidth="200" infra:GridPriority.Level="1" />
+        <DataGridTextColumn Header="Décidé le" Binding="{Binding Date}" Width="Auto" MinWidth="122" infra:GridPriority.Level="1" />
+        <DataGridTextColumn Header="Matricule" Binding="{Binding Matricule}" Width="Auto" MinWidth="122" infra:GridPriority.Level="1" />
+        <DataGridTextColumn Header="Apprenant" Binding="{Binding Name}" Width="2*" MinWidth="240" infra:GridPriority.Level="1" />
         <DataGridTextColumn Header="Mesure" Binding="{Binding Measure}" Width="Auto" MinWidth="140" infra:GridPriority.Level="1" />
-        <DataGridTextColumn Header="Motif" Binding="{Binding Reason}" Width="*" MinWidth="160" infra:GridPriority.Level="1" />
-        <DataGridTextColumn Header="Période ou rendez-vous" Binding="{Binding Period}" Width="Auto" MinWidth="190" infra:GridPriority.Level="2" />
-        <DataGridTextColumn Header="Durée" Binding="{Binding Duration}" Width="Auto" MinWidth="70" infra:GridPriority.Level="3" />
+        <DataGridTextColumn Header="Motif" Binding="{Binding Reason}" Width="3*" MinWidth="220" infra:GridPriority.Level="1" />
+        <DataGridTextColumn Header="Période ou rendez-vous" Binding="{Binding Period}" Width="Auto" MinWidth="240" infra:GridPriority.Level="2" />
+        <DataGridTextColumn Header="Durée" Binding="{Binding Duration}" Width="Auto" MinWidth="92" infra:GridPriority.Level="3" />
         <DataGridTextColumn Header="Retour" Binding="{Binding ReturnFrom}" Width="Auto" MinWidth="105" infra:GridPriority.Level="3" />
-        <DataGridTextColumn Header="Réception" Binding="{Binding Reception}" Width="Auto" MinWidth="120" infra:GridPriority.Level="2" />
-        <DataGridTextColumn Header="Statut" Binding="{Binding State}" Width="Auto" MinWidth="90" infra:GridPriority.Level="2" />
-        <DataGridTextColumn Header="Statut effectif" Binding="{Binding Status}" Width="Auto" MinWidth="120" infra:GridPriority.Level="2" />
+        <DataGridTextColumn Header="Réception" Binding="{Binding Reception}" Width="Auto" MinWidth="122" infra:GridPriority.Level="2" />
+        <DataGridTextColumn Header="Statut" Binding="{Binding State}" Width="Auto" MinWidth="99" infra:GridPriority.Level="2" />
+        <DataGridTextColumn Header="Statut effectif" Binding="{Binding Status}" Width="Auto" MinWidth="168" infra:GridPriority.Level="2" />
         <DataGridTextColumn Header="Origine" Binding="{Binding Origin}" Width="Auto" MinWidth="120" infra:GridPriority.Level="3" />
       </DataGrid.Columns>
     </DataGrid>
+    <TextBlock Grid.Row="1" Classes="muted" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,64,0,0"
+               Text="Aucune décision enregistrée pour ce filtre."
+               IsVisible="{Binding Items.Count, Converter={StaticResource IsEmpty}}" />
   </Grid>
 </UserControl>
