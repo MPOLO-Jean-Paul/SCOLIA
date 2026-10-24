@@ -79,6 +79,7 @@ public interface IDocumentService
     byte[] Table(TableDocument document);
     byte[] ReportCard(ReportCardDocument document);
     byte[] StudentCards(CardDocument document);
+    byte[] StudentCardsWord(CardDocument document);
 }
 
 public interface ISpreadsheetService

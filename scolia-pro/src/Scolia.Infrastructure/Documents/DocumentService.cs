@@ -79,6 +79,9 @@ public sealed class DocumentService : IDocumentService
         });
     }
 
+    /// <summary>QR de vérification, en PNG : réutilisé par les cartes au format Word.</summary>
+    public static byte[] QrPng(string text) => Qr(text);
+
     private static byte[] Qr(string text)
     {
         using var generator = new QRCodeGenerator();
@@ -241,6 +244,8 @@ public sealed class DocumentService : IDocumentService
     /// Cartes d'accès aux examens : A4 portrait, huit cartes de 92 × 63 mm par page, deux colonnes et quatre rangées,
     /// espacements de 6 mm et 7 mm, marges de 10 mm. Chaque carte porte une bande de promotion et un QR à droite.
     /// </summary>
+    public byte[] StudentCardsWord(CardDocument d) => CardWordWriter.Write(d);
+
     public byte[] StudentCards(CardDocument d)
     {
         var pages = new List<IReadOnlyList<CardItem>>();

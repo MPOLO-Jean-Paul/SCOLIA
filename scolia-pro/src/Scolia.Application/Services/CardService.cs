@@ -73,15 +73,18 @@ public sealed class CardService(IAppDbContext db, IWriteGate gate, IAuditLog aud
                 cards.Add(new CardItem(r.LastName, r.MiddleName, r.FirstName, r.Promotion, StudentCardRules.ColorOf(r.Promotion), qr));
         }
 
-        var bytes = documents.StudentCards(new CardDocument(header, session, year.Label, cards));
+        var word = string.Equals(input.Format, "docx", StringComparison.OrdinalIgnoreCase);
+        var document = new CardDocument(header, session, year.Label, cards);
+        var bytes = word ? documents.StudentCardsWord(document) : documents.StudentCards(document);
         var promotions = selected.Select(r => r.Promotion).Distinct().ToList();
         var label = promotions.Count == 1 ? promotions[0] : "Plusieurs promotions";
         var pages = StudentCardRules.PagesFor(cards.Count);
-        var fileName = $"cartes-{input.Year}-{input.Month:00}-{label.Replace(' ', '-')}.pdf";
+        var extension = word ? "docx" : "pdf";
+        var fileName = $"cartes-{input.Year}-{input.Month:00}-{label.Replace(' ', '-')}.{extension}";
         var batch = new CardBatch
         {
             Session = session, PromotionLabel = label, StudentCount = selected.Count, CardCount = cards.Count, PageCount = pages,
-            Format = "PDF", FileName = fileName, CreatedByName = user.Name,
+            Format = word ? "Word" : "PDF", FileName = fileName, CreatedByName = user.Name,
         };
         db.CardBatches.Add(batch);
         audit.Record("cartes.export", "CarteAcces", batch.Id.ToString(), $"{cards.Count} carte(s) sur {pages} page(s), session {session}, {label}.");

@@ -227,7 +227,8 @@ public static class ScoliaEndpoints
         {
             var result = await s.ExportAsync(input, ct);
             http.Response.Headers["X-Cartes-Ecartees"] = result.Skipped.ToString(System.Globalization.CultureInfo.InvariantCulture);
-            return Results.File(result.Bytes, "application/pdf", result.FileName);
+            var word = result.FileName.EndsWith(".docx", StringComparison.Ordinal);
+            return Results.File(result.Bytes, word ? "application/vnd.openxmlformats-officedocument.wordprocessingml.document" : "application/pdf", result.FileName);
         }).RequireAuthorization(Permissions.StudentsWrite);
         g.MapGet("/lots", (CardService s, CancellationToken ct) => s.BatchesAsync(ct));
     }

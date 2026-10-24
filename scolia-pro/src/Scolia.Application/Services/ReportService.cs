@@ -111,7 +111,7 @@ public sealed class ReportService(IAppDbContext db, IClock clock, AccountService
                           orderby s.LastName, s.MiddleName, s.FirstName
                           select s).ToListAsync(ct);
         var n = 0;
-        return new TableDocument(PaymentService.Header(school), $"Liste nominative — {promotion.Code} {promotion.Name}", $"Année scolaire {year.Label} · {rows.Count} apprenant(s)",
+        return new TableDocument(PaymentService.Header(school), $"LISTE D'ENREGISTREMENT — {promotion.Code} {promotion.Name}", $"Année scolaire {year.Label} · {rows.Count} apprenant(s)",
             ["N°", "Matricule", "Nom", "Post-nom", "Prénom", "Sexe", "Naissance", "Contact parent"],
             rows.Select(s => (IReadOnlyList<string>)[(++n).ToString(), s.Matricule, s.LastName, s.MiddleName, s.FirstName, s.Gender.ToString(),
                 s.BirthDate?.ToString("dd/MM/yyyy") ?? "", s.GuardianPhone ?? ""]).ToList());

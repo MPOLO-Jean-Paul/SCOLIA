@@ -33,7 +33,10 @@ public sealed class CardsPage : PageViewModel
 
     private static readonly IReadOnlyList<ChoiceItem> CopyChoices = Enumerable.Range(1, 5).Select(n => new ChoiceItem(n.ToString(System.Globalization.CultureInfo.InvariantCulture), $"{n} exemplaire{(n > 1 ? "s" : string.Empty)}")).ToList();
 
+    private static readonly IReadOnlyList<ChoiceItem> FormatChoices = [new("pdf", "PDF, prêt à imprimer"), new("docx", "Word, modifiable")];
+
     private ChoiceItem? promotion;
+    private ChoiceItem? format;
     private ChoiceItem? month;
     private ChoiceItem? year;
     private ChoiceItem? copies;
@@ -48,9 +51,10 @@ public sealed class CardsPage : PageViewModel
         month = MonthChoices[today.Month - 1];
         year = YearChoices()[1];
         copies = CopyChoices[0];
+        format = FormatChoices[0];
         if (Shell.Can(Perm.StudentsWrite))
         {
-            Action("Exporter en PDF", MaterialIconKind.FilePdfBox, ExportAsync, primary: true);
+            Action("Exporter les cartes", MaterialIconKind.FilePdfBox, ExportAsync, primary: true);
         }
         Action("Tout cocher", MaterialIconKind.CheckboxMarkedOutline, () => { SetAll(true); return Task.CompletedTask; });
         Action("Tout décocher", MaterialIconKind.CheckboxBlankOutline, () => { SetAll(false); return Task.CompletedTask; });
@@ -68,6 +72,7 @@ public sealed class CardsPage : PageViewModel
     public IReadOnlyList<ChoiceItem> Months => MonthChoices;
     public IReadOnlyList<ChoiceItem> Years => YearChoices();
     public IReadOnlyList<ChoiceItem> Copies => CopyChoices;
+    public IReadOnlyList<ChoiceItem> Formats => FormatChoices;
 
     public ChoiceItem? Promotion { get => promotion; set { if (Set(ref promotion, value) && ready) _ = Shell.Run(RefreshAsync); } }
     public string Search { get => search; set { if (Set(ref search, value) && ready) _ = Shell.Run(RefreshAsync); } }
@@ -75,6 +80,7 @@ public sealed class CardsPage : PageViewModel
     public ChoiceItem? Month { get => month; set => Set(ref month, value); }
     public ChoiceItem? Year { get => year; set => Set(ref year, value); }
     public ChoiceItem? Copy { get => copies; set => Set(ref copies, value); }
+    public ChoiceItem? ExportFormat { get => format; set => Set(ref format, value); }
 
     public override async Task LoadAsync()
     {
@@ -125,8 +131,9 @@ public sealed class CardsPage : PageViewModel
         var month = int.Parse(Month?.Value ?? DateTime.Today.Month.ToString(System.Globalization.CultureInfo.InvariantCulture), System.Globalization.CultureInfo.InvariantCulture);
         var year = int.Parse(Year?.Value ?? DateTime.Today.Year.ToString(System.Globalization.CultureInfo.InvariantCulture), System.Globalization.CultureInfo.InvariantCulture);
         var copies = int.Parse(Copy?.Value ?? "1", System.Globalization.CultureInfo.InvariantCulture);
-        var (bytes, skipped) = await Shell.Api.PostDocumentAsync("api/cartes/export", new { enrollmentIds = ids, month, year, copies, includeLeft = IncludeLeft });
-        Files.Open(Files.Save(bytes, $"cartes-{year}-{month:00}.pdf"));
+        var format = ExportFormat?.Value ?? "pdf";
+        var (bytes, skipped) = await Shell.Api.PostDocumentAsync("api/cartes/export", new { enrollmentIds = ids, month, year, copies, includeLeft = IncludeLeft, format });
+        Files.Open(Files.Save(bytes, $"cartes-{year}-{month:00}.{format}"));
         Shell.Notify(skipped == 0
             ? "Cartes générées et enregistrées dans Téléchargements."
             : $"Cartes générées. {skipped} apprenant(s) écarté(s) : sortis, suspendus, identité incomplète ou matricule répété.");

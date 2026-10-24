@@ -10,6 +10,7 @@
         <ComboBox Width="150" Margin="0,0,10,6" ItemsSource="{Binding Months}" SelectedItem="{Binding Month}" />
         <ComboBox Width="110" Margin="0,0,10,6" ItemsSource="{Binding Years}" SelectedItem="{Binding Year}" />
         <ComboBox Width="150" Margin="0,0,10,6" ItemsSource="{Binding Copies}" SelectedItem="{Binding Copy}" />
+        <ComboBox Width="200" Margin="0,0,10,6" ItemsSource="{Binding Formats}" SelectedItem="{Binding ExportFormat}" />
         <CheckBox Content="Sortis et suspendus" IsChecked="{Binding IncludeLeft}" Margin="0,0,10,6" VerticalAlignment="Center" />
       </WrapPanel>
     </Border>

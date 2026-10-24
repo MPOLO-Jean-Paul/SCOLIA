@@ -130,6 +130,33 @@ public sealed class StudentCardsApiTests : IDisposable
     }
 
     [Fact]
+    public async Task Word_export_is_a_well_formed_package_recorded_as_word()
+    {
+        var admin = await app.InstalledAdmin();
+        var promotion = await PromotionAsync(admin);
+        var student = await StudentAsync(admin, promotion, "MUKENDI");
+
+        var response = await admin.Post("/api/cartes/export", new { enrollmentIds = new[] { student }, month = 9, year = 2026, copies = 3, includeLeft = false, format = "docx" });
+        Assert.True(response.IsSuccessStatusCode, await response.Content.ReadAsStringAsync());
+        Assert.Equal("application/vnd.openxmlformats-officedocument.wordprocessingml.document", response.Content.Headers.ContentType?.MediaType);
+
+        using var zip = new System.IO.Compression.ZipArchive(new MemoryStream(await response.Content.ReadAsByteArrayAsync()), System.IO.Compression.ZipArchiveMode.Read);
+        var document = zip.GetEntry("word/document.xml") ?? throw new Xunit.Sdk.XunitException("word/document.xml absent");
+        using (var stream = document.Open())
+        {
+            var xml = System.Xml.Linq.XDocument.Load(stream);
+            // Trois exemplaires : trois QR, un par carte.
+            Assert.Equal(3, xml.Descendants().Count(e => e.Name.LocalName == "drawing"));
+        }
+        Assert.NotNull(zip.GetEntry("word/_rels/document.xml.rels"));
+        Assert.Contains(zip.Entries, e => e.FullName.StartsWith("word/media/", StringComparison.Ordinal));
+
+        var batch = (await admin.GetAsync("/api/cartes/lots").Ok()).EnumerateArray().Single();
+        Assert.Equal("Word", batch.GetProperty("format").GetString());
+        Assert.Equal(3, batch.GetProperty("cardCount").GetInt32());
+    }
+
+    [Fact]
     public async Task Left_students_are_counted_as_skipped_and_ten_cards_make_two_pages()
     {
         var admin = await app.InstalledAdmin();

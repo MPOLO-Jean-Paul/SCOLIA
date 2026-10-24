@@ -228,7 +228,8 @@ public sealed record CardCandidateDto(Guid EnrollmentId, string Matricule, strin
 /// <summary>Nettoyage manuel des sauvegardes : garder les plus récentes, et ne supprimer que celles qui ont plus de N jours.</summary>
 public sealed record BackupCleanup(int Garder, int PlusAnciennesQue);
 
-public sealed record CardExportRequest(IReadOnlyList<Guid> EnrollmentIds, int Month, int Year, int Copies, bool IncludeLeft);
+/// <summary>Export des cartes : format « pdf » (par défaut) ou « docx ».</summary>
+public sealed record CardExportRequest(IReadOnlyList<Guid> EnrollmentIds, int Month, int Year, int Copies, bool IncludeLeft, string? Format = null);
 
 public sealed record CardBatchDto(Guid Id, DateTime CreatedAtUtc, string Session, string PromotionLabel, int StudentCount, int CardCount, int PageCount,
     string Format, string FileName, string CreatedBy);
