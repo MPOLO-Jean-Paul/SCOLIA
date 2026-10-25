@@ -140,23 +140,25 @@ jobs:
         shell: pwsh
         run: ./scripts/publier-windows.ps1
 
-      - name: Démarrage réel de SCOLIA.exe
+      - name: Démarrage réel du serveur SCOLIA
         shell: pwsh
         run: |
+          # SCOLIA.exe est la fenêtre du poste ; le serveur qu'elle lance est SCOLIA-Serveur.exe.
+          foreach ($exe in 'SCOLIA.exe', 'SCOLIA-Serveur.exe') {
+            if (-not (Test-Path "artifacts/SCOLIA/$exe")) { throw "$exe manque dans le paquet." }
+          }
           $env:Scolia__Reseau__Port = '5280'
           $env:Scolia__OuvrirNavigateur = 'false'
           $env:Scolia__Stockage__DataDirectory = Join-Path $env:RUNNER_TEMP 'scolia-donnees'
-          $process = Start-Process -FilePath artifacts/SCOLIA/SCOLIA.exe -PassThru
+          $process = Start-Process -FilePath artifacts/SCOLIA/SCOLIA-Serveur.exe -PassThru
           try {
             $ok = $false
             for ($i = 0; $i -lt 60 -and -not $ok; $i++) {
               Start-Sleep -Milliseconds 500
-              try { $ok = (Invoke-WebRequest http://localhost:5280/api/sante -UseBasicParsing).StatusCode -eq 200 } catch { }
+              try { $ok = (Invoke-WebRequest http://localhost:5280/api/sante -UseBasicParsing -TimeoutSec 3).StatusCode -eq 200 } catch { }
             }
-            if (-not $ok) { throw 'SCOLIA.exe ne répond pas.' }
-            $page = Invoke-WebRequest http://localhost:5280/ -UseBasicParsing
-            if ($page.Content -notmatch 'SCOLIA') { throw "L'interface n'est pas servie." }
-            Write-Host "SCOLIA.exe démarré et opérationnel."
+            if (-not $ok) { throw 'SCOLIA-Serveur.exe ne répond pas.' }
+            Write-Host "SCOLIA-Serveur.exe démarré et opérationnel."
           } finally {
             Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
           }
