@@ -30,8 +30,13 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-dotnet@v5
+        id: dotnet
+        continue-on-error: true
         with:
           global-json-file: scolia-pro/global.json
+      - name: .NET de secours
+        if: steps.dotnet.outcome == 'failure'
+        run: bash scripts/installer-dotnet.sh
       - uses: actions/setup-node@v5
         with:
           node-version: 22
@@ -82,8 +87,13 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-dotnet@v5
+        id: dotnet
+        continue-on-error: true
         with:
           global-json-file: scolia-pro/global.json
+      - name: .NET de secours
+        if: steps.dotnet.outcome == 'failure'
+        run: bash scripts/installer-dotnet.sh
       - uses: actions/setup-java@v5
         with:
           distribution: temurin
@@ -122,8 +132,19 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-dotnet@v5
+        id: dotnet
+        continue-on-error: true
         with:
           global-json-file: scolia-pro/global.json
+      - name: .NET de secours
+        if: steps.dotnet.outcome == 'failure'
+        shell: bash
+        run: |
+          if dotnet --list-sdks | grep -q '^10\.'; then dotnet --list-sdks; exit 0; fi
+          curl -fsSL https://dot.net/v1/dotnet-install.ps1 -o "$RUNNER_TEMP/dotnet-install.ps1"
+          v="$(curl -fsSL https://builds.dotnet.microsoft.com/dotnet/release-metadata/10.0/releases.json | jq -r '."latest-sdk"')"
+          pwsh -File "$RUNNER_TEMP/dotnet-install.ps1" -Version "$v" -InstallDir "$USERPROFILE/.dotnet" -AzureFeed https://builds.dotnet.microsoft.com/dotnet
+          echo "$USERPROFILE/.dotnet" >> "$GITHUB_PATH"
       - uses: actions/setup-node@v5
         with:
           node-version: 22
