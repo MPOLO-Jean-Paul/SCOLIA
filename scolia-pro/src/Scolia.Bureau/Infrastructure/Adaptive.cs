@@ -167,9 +167,9 @@ public static class Adaptive
         state.Host = dialog.GetVisualAncestors().OfType<Border>().FirstOrDefault(b => b.Classes.Contains("scrim")) as Control
             ?? TopLevel.GetTopLevel(dialog);
         if (state.Host is null) return;
-        state.OnHostSize = (_, args) => Fit(dialog, state, args.NewSize.Width);
+        state.OnHostSize = (_, args) => Fit(dialog, state, args.NewSize);
         state.Host.SizeChanged += state.OnHostSize;
-        Fit(dialog, state, state.Host.Bounds.Width);
+        Fit(dialog, state, state.Host.Bounds.Size);
         dialog.DetachedFromVisualTree += (_, _) => Release(state);
     }
 
@@ -180,12 +180,14 @@ public static class Adaptive
         state.OnHostSize = null;
     }
 
-    private static void Fit(Control dialog, DialogState state, double hostWidth)
+    private static void Fit(Control dialog, DialogState state, Size host)
     {
-        if (hostWidth <= 0) return;
-        var room = Math.Max(240, hostWidth - 24);
+        if (host.Width <= 0) return;
+        var room = Math.Max(240, host.Width - 24);
         if (!double.IsNaN(state.Width)) dialog.Width = Math.Min(state.Width, room);
         dialog.MinWidth = Math.Min(state.MinWidth, room);
         dialog.MaxWidth = Math.Min(state.MaxWidth, room);
+        // En hauteur aussi : une fiche plus haute que la fenêtre défile au lieu d'être coupée.
+        if (host.Height > 0) dialog.MaxHeight = Math.Max(240, host.Height - 48);
     }
 }

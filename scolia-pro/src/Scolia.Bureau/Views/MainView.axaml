@@ -161,7 +161,7 @@
           </Grid>
           <!-- Recherche au centre du bandeau : apprenants, reçus, pages et commandes -->
           <Button x:Name="HeaderSearch" Grid.Column="3" Classes="hdrsearch" Command="{Binding SearchCommand}" ToolTip.Tip="Rechercher (Ctrl+K)"
-                  HorizontalAlignment="Stretch" MaxWidth="440" MinWidth="0" Margin="18,0" VerticalAlignment="Center">
+                  HorizontalAlignment="Stretch" MaxWidth="440" MinWidth="180" Margin="18,0" VerticalAlignment="Center">
             <Grid ColumnDefinitions="Auto,*,Auto">
               <mi:MaterialIcon Kind="Magnify" Width="17" Height="17" Margin="0,0,8,0" />
               <TextBlock Grid.Column="1" Text="Rechercher un apprenant, un reçu, une page" Classes="muted" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />

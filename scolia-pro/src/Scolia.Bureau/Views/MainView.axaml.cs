@@ -54,6 +54,9 @@ public partial class MainView : UserControl
                 {
                     page.Actions.CollectionChanged -= OnActionsChanged;
                     page.Actions.CollectionChanged += OnActionsChanged;
+                    // Le sous-titre arrive avec les données : il change la place laissée aux actions.
+                    page.PropertyChanged -= OnPageTextChanged;
+                    page.PropertyChanged += OnPageTextChanged;
                 }
                 Avalonia.Threading.Dispatcher.UIThread.Post(FitPageActions, Avalonia.Threading.DispatcherPriority.Loaded);
                 // Téléphone : une nouvelle page s'ouvre en haut, pas à la hauteur où la précédente était lue.
@@ -78,8 +81,8 @@ public partial class MainView : UserControl
     /// <summary>Largeur, en points de la mise en page, sous laquelle le volet se replie pour laisser la place à la page.</summary>
     private const double NarrowBelow = 1200;
 
-    /// <summary>Place occupée dans l'en-tête par le bouton du volet, les flèches, l'icône, le menu et les marges.</summary>
-    private const double PageBarFixed = 290;
+    /// <summary>Place occupée dans l'en-tête par le bouton du volet, les flèches, le menu et les marges.</summary>
+    private const double PageBarFixed = 250;
 
     /// <summary>Largeur, en points de la mise en page, sous laquelle l'écran est traité comme un téléphone.</summary>
     private const double PhoneBelow = 720;
@@ -155,6 +158,12 @@ public partial class MainView : UserControl
         e.Handled = true;
     }
 
+    private void OnPageTextChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName is nameof(PageViewModel.Subtitle) or nameof(PageViewModel.Heading) && sender == Shell?.Current)
+            Avalonia.Threading.Dispatcher.UIThread.Post(FitPageActions, Avalonia.Threading.DispatcherPriority.Loaded);
+    }
+
     private void OnActionsChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e) =>
         Avalonia.Threading.Dispatcher.UIThread.Post(FitPageActions, Avalonia.Threading.DispatcherPriority.Loaded);
 
@@ -166,7 +175,10 @@ public partial class MainView : UserControl
     {
         if (Shell?.Current is not { } page || PageBar.Bounds.Width <= 0) return;
         var font = Shell.Prefs.Factor * 13.5;
-        var title = Math.Clamp(TextWidth(page.Heading, 17 * Shell.Prefs.Factor, FontWeight.Bold) + 8, 140, 260);
+        // Le bloc du titre prend la largeur du titre ou du sous-titre, le plus long des deux, dans sa limite.
+        var heading = TextWidth(page.Heading, 17 * Shell.Prefs.Factor, FontWeight.Bold);
+        var sub = TextWidth(page.Subtitle, 12 * Shell.Prefs.Factor, FontWeight.Normal);
+        var title = Math.Clamp(Math.Max(heading, sub) + 8 + 42, 140, TitleMax);
         // Le bandeau garde aussi la recherche, au moins sur une largeur lisible, l'état du réseau et le compte.
         var extras = HeaderExtras.Bounds.Width > 0 ? HeaderExtras.Bounds.Width + 12 : 200;
         var room = PageBar.Bounds.Width - PageBarFixed - title - extras - SearchMin;
@@ -195,6 +207,9 @@ public partial class MainView : UserControl
 
     /// <summary>Largeur gardée au champ de recherche du bandeau avant de replier les actions de la page.</summary>
     private const double SearchMin = 220;
+
+    /// <summary>Largeur maximale du bloc titre du bandeau (icône, titre et sous-titre), la même que dans la vue.</summary>
+    private const double TitleMax = 300;
 
     /// <summary>
     /// Barre de titre dessinée par SCOLIA, quand la fenêtre s'étend sous celle de Windows : elle prend la hauteur

@@ -5,10 +5,12 @@
              x:Class="Scolia.Bureau.Views.AboutView">
   <!-- À propos : présentation de SCOLIA, puis l'éditeur et le développeur, comme dans la version 79 -->
   <Border Classes="card" infra:Adaptive.FitDialog="True" Width="560" Padding="0" CornerRadius="14" Background="{DynamicResource SurfaceBrush}" ClipToBounds="True" BoxShadow="0 12 40 0 #33000000">
+    <!-- Sur un écran bas, la fiche défile au lieu d'être coupée -->
+    <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
     <StackPanel>
       <Grid>
-        <StackPanel HorizontalAlignment="Center" Spacing="6" Margin="28,28,28,8">
-          <Image Source="{DynamicResource ScoliaMark}" Width="76" Height="76" HorizontalAlignment="Center" />
+        <StackPanel HorizontalAlignment="Center" Spacing="6" Margin="28,20,28,6">
+          <Image Source="{DynamicResource ScoliaMark}" Width="64" Height="64" HorizontalAlignment="Center" />
           <TextBlock Text="{Binding Title}" FontSize="24" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,6,0,0" />
           <TextBlock Text="{Binding Tagline}" Foreground="{DynamicResource Text2Brush}" HorizontalAlignment="Center" />
           <Border Classes="chip" HorizontalAlignment="Center" Padding="10,3" Margin="0,4,0,0"><TextBlock Text="{Binding VersionLine}" /></Border>
@@ -67,11 +69,12 @@
       </Border>
 
       <!-- Sur le téléphone, le copyright passe au-dessus des boutons -->
-      <Grid ColumnDefinitions="*,Auto,Auto" Margin="24,16,24,22" infra:Adaptive.StackBelow="520">
+      <Grid ColumnDefinitions="*,Auto,Auto" Margin="24,16,24,22" infra:Adaptive.StackBelow="440">
         <TextBlock Text="{Binding Copyright}" Classes="muted" VerticalAlignment="Center" TextWrapping="Wrap" />
         <Button Grid.Column="1" Content="Copier les coordonnées" Command="{Binding CopyContacts}" Margin="0,0,8,0" />
         <Button Grid.Column="2" Classes="primary" Content="Fermer" Command="{Binding Close}" />
       </Grid>
     </StackPanel>
+    </ScrollViewer>
   </Border>
 </UserControl>
