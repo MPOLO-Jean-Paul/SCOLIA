@@ -71,11 +71,19 @@ while s < 46.5:
     s += beat
 
 # Souffles discrets aux changements de scène
-for at in (4.1, 11.7, 18.5, 24.7, 31.7, 38.7, 44.7):
+# Balayages aux couleurs de SCOLIA (souffle plus large) et autres transitions (souffle court)
+for at, g in ((4.25, .1), (11.9, .06), (18.65, .1), (24.9, .07), (31.85, .07), (38.85, .1), (44.85, .1)):
     n = int(1.2 * SR); tt = np.arange(n) / SR
-    x = lowpass(rng.standard_normal(n), 2500); x -= lowpass(x, 300)
+    x = lowpass(rng.standard_normal(n), 3200); x -= lowpass(x, 250)
     env = np.sin(np.pi * np.clip(tt / 1.2, 0, 1)) ** 2
-    add(x * env, at - .8, rng.uniform(-.4, .4), .05)
+    add(x * env, at - .6, rng.uniform(-.4, .4), g)
+
+# Petit clic doux quand une loupe se pose
+for at in (5.2, 8.6, 12.8, 15.9, 25.9, 28.9, 32.9, 35.9):
+    n = int(.25 * SR); tt = np.arange(n) / SR
+    f = 1500 * np.exp(-tt / .05) + 700
+    pop = np.sin(2 * np.pi * np.cumsum(f) / SR) * np.exp(-tt / .045)
+    add(pop, at + .95, 0, .1)
 
 # Réverbération : réponse impulsionnelle synthétique de 2,2 s
 def reverb(x, seed):

@@ -44,6 +44,13 @@ body { font-family: Inter, sans-serif; color: #1d1d1f; -webkit-font-smoothing: a
 .tile .d { font-size: 19px; color: #6e6e73; margin-top: 6px; line-height: 1.35; }
 .cta { display: inline-flex; align-items: center; gap: 12px; background: #007aff; color: #fff; font-weight: 700; border-radius: 999px; box-shadow: 0 16px 36px rgba(0,122,255,.35); }
 .center { text-align: center; }
+.w { display: inline-block; overflow: hidden; vertical-align: bottom; padding: 0 .04em .1em; margin: 0 -.04em -.1em; }
+.w > span { display: inline-block; will-change: transform; }
+.wipe { position: absolute; left: 0; top: 0; pointer-events: none; will-change: transform; }
+.shine { position: absolute; top: -10%; height: 120%; pointer-events: none;
+  background: linear-gradient(100deg, rgba(255,255,255,0) 0%, rgba(255,255,255,.42) 50%, rgba(255,255,255,0) 100%); }
+.ring { position: absolute; border-radius: 50%; border: 3px solid #34c759; pointer-events: none; }
+.warm { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse at 70% 40%, rgba(255,149,0,.18), rgba(255,149,0,0) 60%); }
 </style>
 </head>
 <body>
@@ -75,19 +82,29 @@ function apply(e, st) {
   const o = st.o === undefined ? 1 : st.o;
   e.style.opacity = o.toFixed(4);
   e.style.visibility = o <= 0.001 ? 'hidden' : 'visible';
-  e.style.transform = `translate(${(st.x || 0).toFixed(2)}px, ${(st.y || 0).toFixed(2)}px) scale(${(st.s || 1).toFixed(5)})`;
+  const rot = (st.rx || st.ry) ? ` perspective(1600px) rotateX(${(st.rx || 0).toFixed(2)}deg) rotateY(${(st.ry || 0).toFixed(2)}deg)` : '';
+  e.style.transform = `translate(${(st.x || 0).toFixed(2)}px, ${(st.y || 0).toFixed(2)}px)${rot} scale(${(st.s || 1).toFixed(5)})`;
+  e.style.filter = st.b > .05 ? `blur(${st.b.toFixed(2)}px)` : 'none';
 }
+const easeOutBack = x => { x = clamp(x); const c = 1.5; return 1 + (c + 1) * Math.pow(x - 1, 3) + c * Math.pow(x - 1, 2); };
 // Entrée puis sortie d'un élément dans une scène [a, b].
 function life(t, a, b, opt = {}) {
   const din = opt.din || .9, dout = opt.dout || .55, dy = opt.dy === undefined ? 70 : opt.dy;
   const i = easeOut((t - a) / din), q = easeIn((t - (b - dout)) / dout);
   const s0 = opt.s0 === undefined ? .955 : opt.s0;
-  return {
+  const st = {
     o: t < a || t > b ? 0 : Math.min(clamp((t - a) / (din * .7)), 1 - q),
-    x: 0,
+    x: (1 - i) * (opt.dx || 0),
     y: (1 - i) * dy - q * (opt.oy === undefined ? 34 : opt.oy) + (opt.float ? Math.sin((t - a) * 1.1) * opt.float : 0),
     s: lerp(s0, 1, i) * (1 + q * (opt.os || 0)),
+    b: (1 - i) * (opt.blurIn || 0),
   };
+  // Sorties particulières : retournement, plongée vers la caméra, poussée sur le côté.
+  if (opt.exit === 'flip') { const f = easeIn((t - (b - .35)) / .35); st.ry = f * 90; st.o = t < a || t > b ? 0 : clamp((t - a) / (din * .7)) * (f < .98 ? 1 : 0); st.y = (1 - i) * dy; st.s = lerp(s0, 1, i); }
+  if (opt.enter === 'flip') { const f = easeOut((t - a) / .4); st.ry = (1 - f) * -90; st.o = t < a || t > b ? 0 : (f > .02 ? 1 - q : 0); st.y = -q * 34; st.s = 1; }
+  if (opt.exit === 'zoom') { const z = easeIn((t - (b - .55)) / .55); st.s *= 1 + z * .7; st.b = Math.max(st.b, z * 16); st.y = (1 - i) * dy; }
+  if (opt.exit === 'push') { const z = easeInOut((t - (b - .5)) / .5); st.x -= z * (V ? 1100 : 1500); st.o = t < a || t > b ? 0 : clamp((t - a) / (din * .7)); st.y = (1 - i) * dy; st.b = Math.max(st.b, Math.sin(Math.PI * z) * 6); }
+  return st;
 }
 
 // ---------- Fond ----------
@@ -157,12 +174,44 @@ function laptopFrame(width, image) {
   Object.assign(cam.style, { position: 'absolute', width: '7px', height: '7px', borderRadius: '50%', background: '#3a3a3c', left: (width / 2 - 3.5) + 'px', top: '9px' });
   const base = el('div', 'base', box, '<i></i>');
   Object.assign(base.style, { position: 'absolute', left: '0', top: lidH + 'px', width: baseW + 'px', height: baseH + 'px' });
-  return { e: box, w: baseW, h: lidH + baseH };
+  return { e: box, sc, sw, w: baseW, h: lidH + baseH };
 }
 
 // Changement d'écran dans un téléphone : l'écran suivant apparaît en fondu à l'instant donné.
 function screens(dev, times) {
   dev.imgs.forEach((img, k) => { if (k > 0) tracks.push({ e: img, fn: t => ({ o: clamp((t - times[k - 1]) / .5) }) }); });
+}
+
+// Reflet de lumière qui passe sur un écran quand l'appareil se pose.
+function shine(parent, width, at) {
+  const e = el('div', 'shine', parent); e.style.width = (width * .45) + 'px';
+  tracks.push({ e, fn: t => { const p = clamp((t - at) / 1.1); return { o: p > 0 && p < 1 ? 1 : 0, x: lerp(-width * .5, width * 1.1, easeInOut(p)) }; } });
+}
+// Ondes autour d'un point de l'écran : un autre poste est connecté.
+function rings(view, cx, cy, a, b, scale) {
+  for (let k = 0; k < 3; k++) {
+    const r = el('div', 'ring', view);
+    tracks.push({ e: r, fn: t => {
+      if (t < a || t > b) return { o: 0 };
+      const p = ((t - a) / 1.5 + k / 3) % 1, rad = lerp(8, 60, easeOut(p)) * scale;
+      Object.assign(r.style, { width: 2 * rad + 'px', height: 2 * rad + 'px', left: (cx * scale - rad) + 'px', top: (cy * scale - rad) + 'px' });
+      return { o: (1 - p) * .8 * Math.min(clamp((t - a) / .3), clamp((b - t) / .3)) };
+    } });
+  }
+}
+// Balayage aux couleurs de SCOLIA entre deux grandes parties : la bande couvre l'écran à l'instant T.
+function wipe(T) {
+  const band = Math.hypot(W, H) * 1.5;
+  const e = el('div', 'wipe');
+  Object.assign(e.style, { width: band + 'px', height: (band * 1.4) + 'px', left: (W / 2 - band / 2) + 'px', top: (H / 2 - band * .7) + 'px',
+    background: 'linear-gradient(90deg, rgba(29,78,216,0) 0%, #1D4ED8 14%, #0a84ff 50%, #16A34A 86%, rgba(22,163,74,0) 100%)', zIndex: 50 });
+  tracks.push({ e, fn: t => {
+    const p = (t - (T - .45)) / .9;
+    if (p <= 0 || p >= 1) return { o: 0 };
+    return { o: 1, x: lerp(-band * 1.05, band * 1.05, easeInOut(p)), y: 0, r: 0 };
+  } });
+  e.style.transformOrigin = 'center';
+  e.style.rotate = '-18deg';
 }
 
 // ---------- Loupe ----------
@@ -181,7 +230,11 @@ function zoom(dev, devX, devY, shot, r, a, b) {
   // Repère sur l'écran
   const m = el('div', 'mark', dev.view);
   Object.assign(m.style, { left: (rx * dev.scale - 4) + 'px', top: (ry * dev.scale - 4) + 'px', width: (rw * dev.scale + 8) + 'px', height: (rh * dev.scale + 8) + 'px', borderRadius: (14 * dev.scale) + 'px' });
-  tracks.push({ e: m, fn: t => ({ o: t < a || t > b ? 0 : Math.min(clamp((t - a) / .3), clamp((b - t) / .3)) }) });
+  tracks.push({ e: m, fn: t => {
+    const k = clamp((t - a) / .6);
+    m.style.boxShadow = `0 0 0 ${6 + 18 * easeOut(k)}px rgba(10,132,255,${(.18 * (1 - k) + .12).toFixed(3)})`;
+    return { o: t < a || t > b ? 0 : Math.min(clamp((t - a) / .3), clamp((b - t) / .3)) };
+  } });
   // Carte
   const c = el('div', 'abs zoom');
   c.style.width = cw + 'px'; c.style.height = ch + 'px';
@@ -189,11 +242,12 @@ function zoom(dev, devX, devY, shot, r, a, b) {
   Object.assign(img.style, { width: (PH.w * mag) + 'px', left: (-rx * mag) + 'px', top: (-ry * mag) + 'px' });
   track(c, tx, ty, t => {
     if (t < a + .15 || t > b) return { o: 0 };
-    const p = easeInOut((t - a - .15) / .85), q = easeIn((t - (b - .4)) / .4);
+    const u = (t - a - .15) / .85, p = easeInOut(u), g = easeOutBack(u), q = easeIn((t - (b - .4)) / .4);
     return {
       o: Math.min(clamp((t - a - .15) / .2), 1 - q),
-      x: lerp(sx - tx, 0, p), y: lerp(sy - ty, 0, p) + q * 24 + (p >= 1 ? Math.sin((t - a) * 1.3) * 3 : 0),
-      s: lerp(ss, 1, p) * (1 - q * .04),
+      x: lerp(sx - tx, 0, p), y: lerp(sy - ty, 0, p) + q * 24 + (u >= 1 ? Math.sin((t - a) * 1.3) * 3 : 0),
+      s: lerp(ss, 1, g) * (1 - q * .04),
+      b: Math.sin(Math.PI * clamp(u)) * 3,
     };
   });
 }
@@ -219,11 +273,17 @@ function caption(k, color, title, sub, a, b, top = false) {
   if (V) Object.assign(c.style, { left: '70px', width: (W - 140) + 'px', top: '170px', textAlign: 'center' });
   else if (top) Object.assign(c.style, { left: '0', width: W + 'px', top: '70px', textAlign: 'center' });
   else Object.assign(c.style, { left: '130px', width: '580px', top: '0px', height: H + 'px', display: 'flex', flexDirection: 'column', justifyContent: 'center' });
-  const parts = [el('div', 'k', c, k), el('div', 't', c, title), el('div', 's', c, sub)];
+  const words = title.split(' ').map(w => `<span class="w"><span>${w}</span></span>`).join(' ');
+  const parts = [el('div', 'k', c, k), el('div', 't', c, words), el('div', 's', c, sub)];
   parts[0].style.fontSize = fs.k + 'px'; parts[0].style.color = color;
   parts[1].style.fontSize = fs.t + 'px';
   parts[2].style.fontSize = fs.s + 'px';
-  parts.forEach((p, i) => tracks.push({ e: p, fn: t => life(t, a + .15 + i * .13, b - (2 - i) * .04, { dy: 36, s0: 1, din: .8 }) }));
+  tracks.push({ e: parts[0], fn: t => life(t, a + .1, b, { dy: 0, dx: -40, s0: 1, din: .7, oy: 0 }) });
+  [...parts[1].querySelectorAll('.w > span')].forEach((w, j) => tracks.push({ e: w, fn: t => {
+    const i = easeOut((t - a - .2 - j * .07) / .7), q = easeIn((t - (b - .45 + j * .03)) / .4);
+    return { o: t > b ? 0 : 1, y: (1 - i) * fs.t * 1.15 - q * fs.t * 1.15 };
+  } }));
+  tracks.push({ e: parts[2], fn: t => life(t, a + .55, b, { dy: 24, s0: 1, din: .9, blurIn: 10 }) });
 }
 
 // ---------- Scène d'un téléphone avec ses loupes ----------
@@ -232,9 +292,12 @@ function phoneScene(o) {
   const scale = V ? 1.08 : 1;
   const dev = phoneFrame(scale, o.shots.map(s => s.n));
   const x = V ? (W - dev.w) / 2 : 770, y = V ? 610 : (H - dev.h) / 2;
-  track(dev.e, x, y, t => life(t, o.a, o.b, { dy: 110, din: 1.1 }));
+  const enter = o.enter === 'flip' ? { enter: 'flip', din: .4 } : o.enter === 'push' ? { dx: V ? 1100 : 1500, dy: 0, din: 1, s0: 1 } : o.enter === 'zoom' ? { dy: 0, s0: .7, din: .9, blurIn: 14 } : { dy: 110, din: 1.1 };
+  track(dev.e, x, y, t => life(t, o.a, o.b, { ...enter, exit: o.exit }));
   screens(dev, o.shots.slice(1).map(s => s.at));
   o.shots.forEach(s => zoom(dev, x, y, s.n, s.r, s.za, s.zb));
+  shine(dev.view, dev.w, o.a + .8);
+  if (o.rings) rings(dev.view, ...o.rings);
 }
 
 // ---------- Ouverture ----------
@@ -279,15 +342,15 @@ function centeredText(html, y, size, weight, color, a, b, opt = {}) {
 }
 
 // ---------- Scène 1 : encaisser ----------
-phoneScene({ a: 4.1, b: 12.0, k: 'Caisse', color: '#34c759', title: 'Encaissez en quelques secondes.',
+phoneScene({ a: 4.1, b: 11.9, exit: 'flip', k: 'Caisse', color: '#34c759', title: 'Encaissez en quelques secondes.',
   sub: 'Cochez les mois payés, encaissez : le reçu numéroté sort avec son code de vérification.',
   shots: [
     { n: '05-encaisser', r: [21, 390, 369, 296], za: 5.2, zb: 8.3 },
-    { n: '07-recu', at: 8.3, r: [13, 69, 375, 266], za: 8.6, zb: 12.0 },
+    { n: '07-recu', at: 8.3, r: [13, 69, 375, 266], za: 8.6, zb: 11.5 },
   ] });
 
 // ---------- Scène 2 : pilotage ----------
-phoneScene({ a: 11.7, b: 18.8, k: 'Pilotage', color: '#007aff', title: 'Tout l’établissement d’un coup d’œil.',
+phoneScene({ a: 11.9, b: 18.8, enter: 'flip', k: 'Pilotage', color: '#007aff', title: 'Tout l’établissement d’un coup d’œil.',
   sub: 'Recettes, reste à percevoir, taux de recouvrement et suivi de chaque mois.',
   shots: [
     { n: '22e-tableau-de-bord', r: [11, 404, 385, 308], za: 12.8, zb: 15.6 },
@@ -300,30 +363,36 @@ phoneScene({ a: 11.7, b: 18.8, k: 'Pilotage', color: '#007aff', title: 'Tout l�
   caption('Partout', '#af52de', 'Ordinateur, tablette et téléphone.', 'La même application sur Windows et Android, pensée pour chaque écran.', a, b, true);
   const lap = laptopFrame(V ? 900 : 1020, 'd-accueil.png');
   const lx = (W - lap.w) / 2, ly = V ? 640 : 300;
-  track(lap.e, lx, ly, t => life(t, a, b, { dy: 90, din: 1.1 }));
+  track(lap.e, lx, ly, t => life(t, a, b, { dy: 90, din: 1.1, exit: 'zoom' }));
+  shine(lap.sc, lap.sw, a + 1);
   const tab = tabletFrame(V ? 560 : 480, 't-accueil.png');
   const tx = V ? 50 : 90, ty = V ? 1330 : ly + lap.h - tab.h + 24;
-  track(tab.e, tx, ty, t => life(t, a + .3, b, { dy: 110, din: 1.1, float: 4 }));
+  track(tab.e, tx, ty, t => life(t, a + .3, b, { dy: 110, din: 1.1, float: 4, exit: 'zoom' }));
   const ph = phoneFrame(V ? .62 : .58, ['02-accueil']);
   const px = V ? W - ph.w - 60 : 1560, py = V ? 1215 : ly + lap.h - ph.h + 36;
-  track(ph.e, px, py, t => life(t, a + .55, b, { dy: 120, din: 1.1, float: 5 }));
+  track(ph.e, px, py, t => life(t, a + .55, b, { dy: 120, din: 1.1, float: 5, exit: 'zoom' }));
 }
 
 // ---------- Scène 4 : en direct ----------
-phoneScene({ a: 24.7, b: 32.0, k: 'Travail à plusieurs', color: '#30b0c7', title: 'Plusieurs postes, en direct.',
+phoneScene({ a: 24.8, b: 32.0, enter: 'zoom', exit: 'push', rings: [330, 30, 25.2, 28.4, V ? 1.08 : 1], k: 'Travail à plusieurs', color: '#30b0c7', title: 'Plusieurs postes, en direct.',
   sub: 'Chaque écran se met à jour seul. Une action en cours sur un poste est bloquée sur les autres.',
   shots: [
     { n: '32-mobile-direct', r: [0, 0, 412, 84], za: 25.9, zb: 28.6 },
-    { n: '36-mobile-encaissement-bloque', at: 28.6, r: [12, 98, 388, 262], za: 28.9, zb: 32.0 },
+    { n: '36-mobile-encaissement-bloque', at: 28.6, r: [12, 98, 388, 262], za: 28.9, zb: 31.4 },
   ] });
 
 // ---------- Scène 5 : hors ligne ----------
-phoneScene({ a: 31.7, b: 39.0, k: 'Hors ligne', color: '#ff9500', title: 'Même sans réseau.',
+phoneScene({ a: 31.6, b: 39.0, enter: 'push', k: 'Hors ligne', color: '#ff9500', title: 'Même sans réseau.',
   sub: 'Le travail continue sur l’appareil. Tout part au retour de l’ordinateur principal, sans doublon.',
   shots: [
     { n: '34-mobile-hors-ligne', r: [0, 0, 412, 95], za: 32.9, zb: 35.6 },
     { n: '35-mobile-reseau-hors-ligne', at: 35.6, r: [23, 245, 365, 108], za: 35.9, zb: 39.0 },
   ] });
+
+{
+  const warm = el('div', 'warm');
+  tracks.push({ e: warm, fn: t => ({ o: Math.min(clamp((t - 31.8) / .8), clamp((39.0 - t) / .6)) }) });
+}
 
 // ---------- Scène 6 : fonctions ----------
 {
@@ -348,7 +417,11 @@ phoneScene({ a: 31.7, b: 39.0, k: 'Hors ligne', color: '#ff9500', title: 'Même 
     e.style.width = tw + 'px'; e.style.height = th + 'px';
     if (V) { e.querySelector('.n').style.fontSize = '32px'; e.querySelector('.d').style.fontSize = '23px'; e.style.padding = '38px 34px'; }
     const col = i % cols, row = Math.floor(i / cols);
-    track(e, ox + col * (tw + gx), oy + row * (th + gy), t => life(t, a + .35 + i * .09, b, { dy: 60, s0: .9, din: .8 }));
+    track(e, ox + col * (tw + gx), oy + row * (th + gy), t => {
+      const st = life(t, a + .35 + i * .09, b, { dy: 60, s0: .9, din: .8, blurIn: 8 });
+      st.rx = (1 - easeOut((t - a - .35 - i * .09) / .8)) * 65;
+      return st;
+    });
   });
 }
 
@@ -360,13 +433,18 @@ phoneScene({ a: 31.7, b: 39.0, k: 'Hors ligne', color: '#ff9500', title: 'Même 
   centeredText('SCOLIA <span style="color:#1D4ED8">Pro</span>', y0 + size + (V ? 60 : 40), V ? 110 : 92, 800, '#1d1d1f', a + .3, b, { ls: '-.035em' });
   centeredText('La gestion scolaire, simple et sûre.', y0 + size + (V ? 210 : 165), V ? 42 : 36, 500, '#515154', a + .5, b);
   const cta = centeredText(`<span class="cta">${icon('chat', V ? 34 : 28)}Demandez une démonstration</span>`, y0 + size + (V ? 330 : 255), 1, 700, '#fff', a + .8, b);
-  Object.assign(cta.querySelector('.cta').style, { fontSize: (V ? 40 : 32) + 'px', padding: V ? '26px 50px' : '20px 40px' });
+  const pill = cta.querySelector('.cta');
+  Object.assign(pill.style, { fontSize: (V ? 40 : 32) + 'px', padding: V ? '26px 50px' : '20px 40px', position: 'relative', overflow: 'hidden' });
+  shine(pill, V ? 700 : 560, a + 1.9);
+  tracks.push({ e: pill, fn: t => ({ s: 1 + .025 * Math.sin(Math.max(0, t - a - 1.6) * 3) }) });
   const contact = V
     ? '<b style="color:#1d1d1f">Jp-Services</b><br>Jean Paul MPOLO LONO<br>+243 977 152 825<br>jeanpaulmpolo242@gmail.com'
     : '<b style="color:#1d1d1f">Jp-Services</b> · Jean Paul MPOLO LONO<br>+243 977 152 825 · jeanpaulmpolo242@gmail.com';
   centeredText(contact, y0 + size + (V ? 510 : 400), V ? 38 : 30, 500, '#515154', a + 1.1, b, { ls: '-.01em' }).style.lineHeight = 1.55;
   centeredText('Windows · Android', V ? H - 170 : H - 90, V ? 30 : 24, 600, '#8e8e93', a + 1.4, b, { ls: '.02em' });
 }
+
+[4.25, 18.65, 38.85, 44.85].forEach(wipe);
 
 // ---------- Rendu d'une image ----------
 window.render = function (t) {
