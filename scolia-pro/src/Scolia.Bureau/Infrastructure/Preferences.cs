@@ -223,7 +223,7 @@ public sealed class Preferences : Observable
     /// <summary>Applique les préférences à toute l'interface : thème, taille, densité.</summary>
     public void Apply()
     {
-        var app = Application.Current;
+        var app = Avalonia.Application.Current;
         if (app is null) return;
         app.RequestedThemeVariant = theme switch
         {

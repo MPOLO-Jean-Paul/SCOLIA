@@ -8,7 +8,7 @@ public static class ThemeBrush
 {
     public static IBrush Get(string key)
     {
-        var app = Application.Current;
+        var app = Avalonia.Application.Current;
         return app is not null && app.TryGetResource(key, app.ActualThemeVariant, out var value) && value is IBrush brush
             ? brush
             : Avalonia.Media.Brushes.Gray;
