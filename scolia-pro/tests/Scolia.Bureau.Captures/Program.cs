@@ -86,6 +86,16 @@ if (Environment.GetEnvironmentVariable("SCOLIA_ASSISTANT") == "1")
     Save(window, "00-assistant-etape-1.png");
     shell.Setup.SchoolName = "Institut de test";
     shell.Setup.ShortName = "IT";
+    // Logo et promotions sur la même page, comme le paramétrage de la version 79.
+    shell.Setup.SetLogo(Result(api.DownloadAsync("api/etablissement/logo")), "logo-ecole.png");
+    shell.Setup.Promotions[0].Code = "INF1";
+    shell.Setup.Promotions[0].Name = "Première année infirmière";
+    shell.Setup.Promotions[0].Fee = "55000";
+    shell.Setup.AddPromotion.Execute(null);
+    shell.Setup.Promotions[1].Code = "ACC1";
+    shell.Setup.Promotions[1].Name = "Première année accoucheuse";
+    shell.Setup.Promotions[1].Fee = "50000";
+    Save(window, "00b-assistant-logo-promotions.png");
     Wait(Task.Delay(50));
     shell.Setup.Step = 2;
     Save(window, "00-assistant-etape-2.png");

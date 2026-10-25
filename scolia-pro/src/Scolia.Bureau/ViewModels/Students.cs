@@ -382,7 +382,21 @@ public static class StudentForms
 {
     public static async Task CreateAsync(ShellViewModel shell)
     {
-        var promotions = await shell.Api.GetAsync<List<PromotionDto>>("api/etablissement/promotions");
+        var promotions = (await shell.Api.GetAsync<List<PromotionDto>>("api/etablissement/promotions")).Where(p => p.IsActive).ToList();
+        // Pas encore de promotion : on la crée d'abord, l'apprenant doit en recevoir une à l'inscription.
+        if (promotions.Count == 0)
+        {
+            if (!shell.Can(Perm.SettingsWrite))
+            {
+                await shell.Confirm("Aucune promotion", "Aucune promotion n'est ouverte. Demandez à l'administrateur d'en créer une dans Paramètres, Promotions et frais.", "Fermer");
+                return;
+            }
+            if (!await shell.Confirm("Aucune promotion", "L'apprenant doit être inscrit dans une promotion, et aucune n'existe encore. Créer une promotion maintenant ?", "Créer une promotion"))
+                return;
+            await SettingsPage.NewPromotionAsync(shell);
+            promotions = (await shell.Api.GetAsync<List<PromotionDto>>("api/etablissement/promotions")).Where(p => p.IsActive).ToList();
+            if (promotions.Count == 0) return;
+        }
         var needsConfirmation = false;
         var form = new FormViewModel("Nouvelle inscription", "Le matricule est attribué automatiquement à l'enregistrement.", async f =>
         {
@@ -406,8 +420,9 @@ public static class StudentForms
         })
         { SubmitText = "Inscrire" };
 
-        AddIdentityFields(form, null);
+        // La promotion d'abord, comme dans la version 79 : elle donne le début du matricule.
         form.AddChoice("promotion", "Promotion", promotions.Select(Choices.Promotion).ToList(), null, required: true);
+        AddIdentityFields(form, null);
         form.AddDay("inscription", "Date d'inscription", DateOnly.FromDateTime(DateTime.Today));
 
         if (await shell.Ask(form) && shell.Current is StudentsPage page) await page.RefreshAsync();

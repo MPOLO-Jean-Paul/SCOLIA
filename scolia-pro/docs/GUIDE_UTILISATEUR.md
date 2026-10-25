@@ -64,6 +64,11 @@ Les commandes du ruban ouvrent directement la page ou la boîte de saisie corres
    le logiciel. Elles se suppriment ensuite depuis Administration.
 4. Une fois l'installation terminée, créer les promotions et leurs frais dans Paramètres.
 
+À la première installation, la première étape de l'assistant réunit l'établissement, son logo et ses promotions, comme le paramétrage de la version 79 :
+
+- **Logo** : bouton « Choisir le logo », image PNG ou JPEG. Sans logo, le sceau par défaut est utilisé.
+- **Promotions** : une ligne par promotion, avec un code de 4 caractères (par exemple INF1), la désignation et la mensualité en francs. « Ajouter une promotion » ajoute une ligne ; une ligne vide est ignorée. Les autres promotions et frais s'ajoutent ensuite dans Paramètres, Promotions et frais.
+
 ## 2. Se connecter
 
 Chaque personne a son compte. Le mot de passe initial peut être imposé au premier
@@ -74,8 +79,8 @@ Raccourcis : `Ctrl+K` ouvre la recherche globale et toutes les commandes.
 
 ## 3. Inscrire un apprenant
 
-1. Onglet Secrétariat, groupe Apprenants : Nouvelle inscription.
-2. Saisir le nom, les prénoms, la date et le lieu de naissance, l'adresse et le contact du parent.
+1. Apprenants, Nouvelle inscription. Choisir d'abord la promotion dans le menu en haut du formulaire : elle donne le début du matricule. S'il n'existe encore aucune promotion, SCOLIA propose d'en créer une avant d'ouvrir le formulaire.
+2. Saisir le nom, les prénoms, la date et le lieu de naissance, le parent, l'adresse et son contact.
 3. Le matricule se génère seul : code de la promotion sur 4 caractères, puis le rang.
 4. Si un homonyme existe, SCOLIA le signale et demande une confirmation avant de créer le doublon.
 

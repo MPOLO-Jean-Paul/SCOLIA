@@ -81,3 +81,47 @@ public class SetupTests
         Assert.Null(wizard.ValidateStepTwo());
     }
 }
+
+/// <summary>Promotions saisies dans l'assistant : mêmes règles que la version 79.</summary>
+public class SetupPromotionTests
+{
+    private static SetupViewModel NewWizard() =>
+        new(new ShellViewModel(new ScoliaClient(new Uri("http://localhost:5080/")), new Preferences()));
+
+    [Fact]
+    public void Une_ligne_vide_est_ignoree()
+    {
+        var wizard = NewWizard();
+        Assert.Single(wizard.Promotions);
+        Assert.Null(wizard.ValidatePromotions());
+    }
+
+    [Fact]
+    public void Le_code_compte_quatre_caracteres_uniques()
+    {
+        var wizard = NewWizard();
+        var first = wizard.Promotions[0];
+        first.Code = "inf1";
+        first.Name = "Première année";
+        first.Fee = "55000";
+        Assert.Equal("INF1", first.Code);
+        Assert.Null(wizard.ValidatePromotions());
+
+        first.Code = "INFI1";
+        Assert.Contains("4 caractères", wizard.ValidatePromotions(), StringComparison.Ordinal);
+        first.Code = "INF1";
+
+        wizard.AddPromotion.Execute(null);
+        var second = wizard.Promotions[1];
+        second.Code = "INF1";
+        second.Name = "Autre";
+        second.Fee = "50000";
+        Assert.Contains("déjà utilisé", wizard.ValidatePromotions(), StringComparison.Ordinal);
+        second.Code = "ACC1";
+        second.Fee = "abc";
+        Assert.Contains("mensualité", wizard.ValidatePromotions(), StringComparison.Ordinal);
+        second.Remove.Execute(null);
+        Assert.Single(wizard.Promotions);
+        Assert.Null(wizard.ValidatePromotions());
+    }
+}

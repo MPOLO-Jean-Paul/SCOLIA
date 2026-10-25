@@ -4,9 +4,27 @@ using Scolia.Bureau.Infrastructure;
 
 namespace Scolia.Bureau.ViewModels;
 
+/// <summary>Promotion saisie dans l'assistant, comme dans le paramétrage de la version 79 : code de 4 caractères, désignation, mensualité.</summary>
+public sealed class PromotionDraftVm : Observable
+{
+    private string code = string.Empty;
+    private string name = string.Empty;
+    private string fee = string.Empty;
+
+    public PromotionDraftVm(Action<PromotionDraftVm> remove) => Remove = new RelayCommand(() => remove(this));
+
+    public string Code { get => code; set => Set(ref code, value.ToUpperInvariant()); }
+    public string Name { get => name; set => Set(ref name, value); }
+    public string Fee { get => fee; set => Set(ref fee, value); }
+    public RelayCommand Remove { get; }
+
+    /// <summary>Ligne laissée vide : elle est ignorée.</summary>
+    public bool IsBlank => string.IsNullOrWhiteSpace(code) && string.IsNullOrWhiteSpace(name) && string.IsNullOrWhiteSpace(fee);
+}
+
 /// <summary>
 /// Assistant de première installation, en deux étapes comme dans la version précédente :
-/// 1) établissement et année scolaire, 2) comptes et sécurité (administrateur, secrétariat, comptabilité).
+/// 1) établissement, logo, année scolaire et promotions, 2) comptes et sécurité (administrateur, secrétariat, comptabilité).
 /// </summary>
 public sealed class SetupViewModel : Observable
 {
@@ -28,6 +46,49 @@ public sealed class SetupViewModel : Observable
         Back = new RelayCommand(() => { Step = 1; Error = string.Empty; });
         Finish = new AsyncCommand(FinishAsync);
         JoinExisting = new AsyncCommand(() => shell.ChooseServerAsync());
+        AddPromotion = new RelayCommand(() => Promotions.Add(new PromotionDraftVm(d => Promotions.Remove(d))));
+        PickLogo = new AsyncCommand(PickLogoAsync);
+        ClearLogo = new RelayCommand(() => SetLogo(null, null));
+        AddPromotion.Execute(null);
+    }
+
+    // ---- Étape 1 : logo et promotions ----
+    private byte[]? logoData;
+    private string? logoName;
+    private Avalonia.Media.Imaging.Bitmap? logo;
+
+    /// <summary>Logo choisi : il figure ensuite sur la connexion, les reçus, les listes et les cartes d'accès.</summary>
+    public Avalonia.Media.Imaging.Bitmap? Logo { get => logo; private set { if (Set(ref logo, value)) Raise(nameof(HasLogo)); } }
+    public bool HasLogo => logo is not null;
+    public string LogoLine => logoName ?? "Aucun logo choisi : le sceau par défaut sera utilisé.";
+
+    public System.Collections.ObjectModel.ObservableCollection<PromotionDraftVm> Promotions { get; } = [];
+    public RelayCommand AddPromotion { get; }
+    public AsyncCommand PickLogo { get; }
+    public RelayCommand ClearLogo { get; }
+
+    private async Task PickLogoAsync()
+    {
+        if (shell.PickFileHandler is null) return;
+        var picked = await shell.PickFileHandler([".png", ".jpg", ".jpeg"]);
+        if (picked is null) return;
+        SetLogo(picked.Data, picked.Name);
+    }
+
+    public void SetLogo(byte[]? data, string? name)
+    {
+        try
+        {
+            Logo = data is null ? null : new Avalonia.Media.Imaging.Bitmap(new MemoryStream(data));
+            logoData = data;
+            logoName = name;
+            Error = string.Empty;
+        }
+        catch (Exception ex) when (ex is ArgumentException or InvalidOperationException or NotSupportedException)
+        {
+            Error = "Cette image ne peut pas être lue. Choisissez un fichier PNG ou JPEG.";
+        }
+        Raise(nameof(LogoLine));
     }
 
     public IReadOnlyList<ChoiceItem> StartMonths { get; }
@@ -62,7 +123,7 @@ public sealed class SetupViewModel : Observable
     public bool IsStepOne => step == 1;
     public bool IsStepTwo => step == 2;
     public string StepLabel => $"Étape {step} sur 2";
-    public string StepTitle => step == 1 ? "Établissement et année scolaire" : "Comptes et sécurité";
+    public string StepTitle => step == 1 ? "Établissement, logo, année et promotions" : "Comptes et sécurité";
 
     public bool Busy { get => busy; private set => Set(ref busy, value); }
     public string Error { get => error; private set { if (Set(ref error, value)) Raise(nameof(HasError)); } }
@@ -173,7 +234,9 @@ public sealed class SetupViewModel : Observable
         try
         {
             var session = await shell.Api.SendAsync<SessionDto>(HttpMethod.Post, "api/installation", BuildRequest());
+            var problems = await SaveLogoAndPromotionsAsync();
             await shell.CompleteSetupAsync(session);
+            if (problems.Count > 0) shell.Notify(string.Join(" ", problems));
         }
         catch (ApiException ex) { Error = ex.Message; }
         catch (HttpRequestException) { Error = "Le serveur SCOLIA ne répond pas. Vérifiez qu'il est démarré."; }
@@ -189,6 +252,27 @@ public sealed class SetupViewModel : Observable
         if (!years.Success || int.Parse(years.Groups[2].Value) != int.Parse(years.Groups[1].Value) + 1)
             return "L'année scolaire doit couvrir deux années consécutives, par exemple 2026 - 2027.";
         if (StartMonth is null || MonthCount is null) return "Choisissez le mois de début et la durée de l'année.";
+        return ValidatePromotions();
+    }
+
+    /// <summary>Promotions de l'assistant : code de 4 lettres ou chiffres, unique, désignation et mensualité en francs entiers.</summary>
+    public string? ValidatePromotions()
+    {
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        var rank = 0;
+        foreach (var p in Promotions)
+        {
+            rank++;
+            if (p.IsBlank) continue;
+            var code = p.Code.Trim();
+            if (code.Length != 4 || !code.All(char.IsAsciiLetterOrDigit))
+                return $"Promotion {rank} : le code compte 4 caractères, lettres ou chiffres, par exemple INF1.";
+            if (!seen.Add(code)) return $"Promotion {rank} : le code {code} est déjà utilisé.";
+            if (string.IsNullOrWhiteSpace(p.Name)) return $"Promotion {rank} : indiquez la désignation, par exemple « Première année ».";
+            if (!decimal.TryParse(p.Fee.Replace(" ", string.Empty, StringComparison.Ordinal), System.Globalization.NumberStyles.Number, System.Globalization.CultureInfo.InvariantCulture, out var fee)
+                || fee <= 0 || fee != decimal.Truncate(fee))
+                return $"Promotion {rank} : la mensualité est un montant entier en francs, par exemple 55000.";
+        }
         return null;
     }
 
@@ -221,6 +305,37 @@ public sealed class SetupViewModel : Observable
             return $"{who} : le mot de passe compte au moins 8 caractères, avec des lettres et des chiffres.";
         if (password != confirm) return $"{who} : les deux mots de passe ne correspondent pas.";
         return null;
+    }
+
+    /// <summary>
+    /// Une fois l'établissement créé, le logo et les promotions passent par les mêmes règles que les Paramètres.
+    /// Un échec n'annule pas l'installation : il est signalé, et se corrige ensuite dans Paramètres.
+    /// </summary>
+    private async Task<List<string>> SaveLogoAndPromotionsAsync()
+    {
+        var problems = new List<string>();
+        if (logoData is not null)
+        {
+            try { await shell.Api.UploadAsync<object>(HttpMethod.Put, "api/etablissement/logo", [new UploadedFile("fichier", logoName ?? "logo.png", logoData)]); }
+            catch (ApiException ex) { problems.Add($"Logo non enregistré : {ex.Message}"); }
+        }
+        foreach (var p in Promotions.Where(p => !p.IsBlank))
+        {
+            var code = p.Code.Trim();
+            var level = code.FirstOrDefault(char.IsDigit) is var digit and not '\0' ? digit - '0' : 1;
+            try
+            {
+                await shell.Api.SendAsync(HttpMethod.Post, "api/etablissement/promotions", new
+                {
+                    code, name = p.Name.Trim(), sectionId = (Guid?)null, level = Math.Max(level, 1), capacity = (int?)null, isActive = true,
+                    nextPromotionCode = (string?)null,
+                    monthlyFee = decimal.Parse(p.Fee.Replace(" ", string.Empty, StringComparison.Ordinal), System.Globalization.CultureInfo.InvariantCulture),
+                    oneTimeFees = Array.Empty<object>(),
+                });
+            }
+            catch (ApiException ex) { problems.Add($"Promotion {code} non créée : {ex.Message}"); }
+        }
+        return problems;
     }
 
     private object BuildRequest()

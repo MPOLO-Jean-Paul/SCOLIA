@@ -33,12 +33,14 @@ export function toPayload(f: IdentityForm, version?: number) {
   };
 }
 
-export function IdentityFields({ form, setForm, error }: { form: IdentityForm; setForm: (f: IdentityForm) => void; error?: unknown }) {
+/** Identité puis parent ; à l'inscription, ces sections suivent la promotion et sont numérotées à partir de 02. */
+export function IdentityFields({ form, setForm, error, numbered }: { form: IdentityForm; setForm: (f: IdentityForm) => void; error?: unknown; numbered?: boolean }) {
+  const first = numbered ? 2 : 1;
   const e = error instanceof ApiError ? error : undefined;
   const set = (k: keyof IdentityForm) => (ev: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => setForm({ ...form, [k]: ev.target.value });
   return (
     <>
-      <SectionTitle num="01">Identité</SectionTitle>
+      <SectionTitle num={`0${first}`}>Identité</SectionTitle>
       <div className="grid cols-3">
         <TextField label="Nom" value={form.lastName} onChange={set('lastName')} error={e?.fieldError('lastName')} required autoComplete="off" />
         <TextField label="Post-nom" value={form.middleName} onChange={set('middleName')} error={e?.fieldError('middleName')} required autoComplete="off" />
@@ -50,7 +52,7 @@ export function IdentityFields({ form, setForm, error }: { form: IdentityForm; s
         <TextField label="Lieu de naissance" value={form.birthPlace} onChange={set('birthPlace')} error={e?.fieldError('birthPlace')} required />
       </div>
       <div className="divider" />
-      <SectionTitle num="02">Parent et adresse</SectionTitle>
+      <SectionTitle num={`0${first + 1}`}>Parent et adresse</SectionTitle>
       <div className="grid cols-3">
         <TextField label="Parent ou tuteur" value={form.guardianName} onChange={set('guardianName')} />
         <TextField className="span-2" label="Adresse" value={form.address} onChange={set('address')} help="Quartier, avenue et numéro" />
@@ -89,9 +91,8 @@ export function NewStudentDialog({ onClose, onCreated, defaultPromotionId }: { o
         <Button variant="primary" icon={<UserPlus />} loading={busy} disabled={!promotionId} onClick={() => submit(false)}>Enregistrer l’inscription</Button>
       </>}>
       <form onSubmit={(e) => { e.preventDefault(); void submit(false); }} className="stack">
-        <IdentityFields form={form} setForm={setForm} error={error} />
-        <div className="divider" />
-        <SectionTitle num="03">Inscription</SectionTitle>
+        {/* La promotion d'abord, comme dans la version 79 : elle donne le début du matricule. */}
+        <SectionTitle num="01">Promotion</SectionTitle>
         <div className="grid cols-3">
           <SelectField label="Promotion" value={promotionId} onChange={(e) => setPromotionId(e.target.value)} required>
             <option value="">Choisir…</option>
@@ -100,6 +101,11 @@ export function NewStudentDialog({ onClose, onCreated, defaultPromotionId }: { o
           <TextField label="Date d'inscription" type="date" value={enrolledOn} onChange={(e) => setEnrolledOn(e.target.value)} max={today()} />
           <div className="field"><span className="label">Frais de l'année</span><div style={{ paddingTop: 8, fontWeight: 700 }}>{selected ? `${money(selected.annualTotal)} · ${money(selected.monthlyFee)} / mois` : '—'}</div></div>
         </div>
+        {promotions.data && promotions.data.filter((p) => p.isActive).length === 0 && (
+          <div className="alert warning"><AlertTriangle /><div>Aucune promotion ouverte. Créez-en une dans Paramètres, Promotions et frais, avant d'inscrire un apprenant.</div></div>
+        )}
+        <div className="divider" />
+        <IdentityFields form={form} setForm={setForm} error={error} numbered />
         {duplicates && (
           <div className="alert warning">
             <AlertTriangle />
