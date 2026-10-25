@@ -642,7 +642,7 @@ if (Preferences.MobileLayout)
     Wait(other.PostAsJsonAsync("api/session", new { userName = "admin", password }));
     Wait(other.PostAsJsonAsync("api/direct/presence", new { page = "Encaisser", activity = "Encaissement de KASONGO Patrick" }));
     Wait(Task.Delay(1500));
-    Wait(other.PostAsJsonAsync("api/etablissement/sections", new { code = $"S{DateTime.Now:HHmmss}", name = "Section de démonstration", isActive = true }));
+    Wait(other.PostAsJsonAsync("api/etablissement/sections", new { code = $"S{DateTime.Now:HHmmss}", name = "Maternelle", isActive = true }));
     for (var i = 0; i < 40 && !shell.Sync.HasTicker; i++) Wait(Task.Delay(100));
     Save(window, "32-mobile-direct.png");
     shell.ShowNetwork();
