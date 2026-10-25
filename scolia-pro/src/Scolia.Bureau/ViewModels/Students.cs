@@ -184,7 +184,20 @@ public sealed class StudentDetailPage : PageViewModel
         if (Shell.Can(Perm.StudentsWrite)) Action("Changer le statut", MaterialIconKind.AccountSwitchOutline, ChangeStatusAsync);
         if (Shell.Can(Perm.StudentsWrite)) Action("Changer de promotion", MaterialIconKind.SwapHorizontal, ChangePromotionAsync);
         if (Shell.Can(Perm.PaymentsCreate)) Action("Prise en charge", MaterialIconKind.ShieldAccountOutline, NewSponsorshipAsync);
+        if (Shell.Can(Perm.PaymentsRead)) Action("Relancer par WhatsApp", MaterialIconKind.Whatsapp, RemindAsync);
         ActionRefresh();
+    }
+
+    private string? whatsAppLink;
+
+    /// <summary>Relance du parent depuis la fiche : le message cite le reste exigible et les mois en retard.</summary>
+    private Task RemindAsync()
+    {
+        if (whatsAppLink is { Length: > 0 } link) Files.Open(link);
+        else Shell.Notify(student?.GuardianPhone is null && student?.GuardianPhone2 is null
+            ? "Aucun contact parent sur la fiche : ajoutez-le avec « Modifier »."
+            : "Rien à relancer : aucun mois en retard.");
+        return Task.CompletedTask;
     }
 
     public Guid StudentId => studentId;
@@ -237,6 +250,7 @@ public sealed class StudentDetailPage : PageViewModel
         }
 
         var account = await Shell.Api.GetAsync<AccountDto>($"api/inscriptions/{enrollment.Id}/compte");
+        whatsAppLink = account.WhatsAppLink;
         Totals.Add(new KpiVm("Solde à payer", Money(account.Balance), $"Total net de l'année {Money(account.TotalNet)}", ThemeBrush.Get(account.Balance > 0 ? "ToneOrange" : "ToneGreen"), MaterialIconKind.WalletOutline));
         Totals.Add(new KpiVm("Reste exigible", Money(account.Overdue), $"{account.OverdueCount} échéance(s) en retard", ThemeBrush.Get(account.Overdue > 0 ? "ToneRed" : "ToneGreen"), MaterialIconKind.AlertCircleOutline));
         Totals.Add(new KpiVm("Déjà payé", Money(account.TotalPaid), $"Pris en charge : {Money(account.TotalCovered)}", ThemeBrush.Get("ToneGreen"), MaterialIconKind.CheckCircleOutline));

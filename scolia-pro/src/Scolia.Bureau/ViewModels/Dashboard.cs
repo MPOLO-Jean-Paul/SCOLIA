@@ -161,7 +161,7 @@ public sealed class DashboardPage : PageViewModel
             ? new TodayStatVm("Caisse", "Arrêtée", "L'arrêté du jour est enregistré", MaterialIconKind.LockCheckOutline, ThemeBrush.Get("ToneTeal"))
             : new TodayStatVm("Caisse", t.ReceiptsToday == 0 ? "Ouverte" : "À arrêter", t.ReceiptsToday == 0 ? "Aucune opération pour l'instant" : "Pensez à l'arrêté de fin de journée",
                 MaterialIconKind.CashRegister, ThemeBrush.Get("ToneOrange")));
-        TodayStats.Add(new TodayStatVm("Appel", t.AttendanceMarked == 0 ? "Non saisi" : Format.Count(t.AttendanceMarked, "mention", "mentions"),
+        TodayStats.Add(new TodayStatVm("Appel", t.AttendanceMarked == 0 ? "Non saisi" : Format.Count(t.AttendanceMarked, "apprenant pointé", "apprenants pointés"),
             t.SuspendedToday == 0 ? "Aucun renvoi en cours" : Format.Count(t.SuspendedToday, "apprenant renvoyé ce jour", "apprenants renvoyés ce jour"),
             MaterialIconKind.ClipboardCheckOutline, ThemeBrush.Get("ToneBlue")));
 

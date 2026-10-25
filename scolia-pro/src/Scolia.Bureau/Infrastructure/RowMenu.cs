@@ -30,6 +30,7 @@ public static class RowMenu
             grid.AddHandler(InputElement.PointerPressedEvent, OnPressed, RoutingStrategies.Tunnel, handledEventsToo: true);
             grid.AddHandler(InputElement.PointerReleasedEvent, OnReleased, RoutingStrategies.Tunnel, handledEventsToo: true);
             grid.DoubleTapped += OnDoubleTapped;
+            grid.AddHandler(InputElement.KeyDownEvent, OnKeyDown, RoutingStrategies.Tunnel);
         });
     }
 
@@ -85,6 +86,29 @@ public static class RowMenu
         if (sender is not DataGrid grid || Find<DataGridRow>(e.Source) is null) return;
         if (Find<CheckBox>(e.Source) is not null || Find<ComboBox>(e.Source) is not null || Find<TextBox>(e.Source) is not null) return;
         if (PageOf(grid)?.DefaultRowAction is { } action && action.Command.CanExecute(null)) action.Command.Execute(null);
+    }
+
+    /// <summary>
+    /// Clavier : Entrée lance l'action principale de la ligne choisie, la touche Menu ou Maj+F10 ouvre son menu.
+    /// Une case à cocher ou une liste de choix en cours d'édition garde ses propres touches.
+    /// </summary>
+    private static void OnKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (sender is not DataGrid grid || grid.SelectedItem is null) return;
+        if (Find<CheckBox>(e.Source) is not null || Find<ComboBox>(e.Source) is not null || Find<TextBox>(e.Source) is not null) return;
+        if (e.Key == Key.Enter && e.KeyModifiers == KeyModifiers.None)
+        {
+            if (PageOf(grid)?.DefaultRowAction is not { } action || !action.Command.CanExecute(null)) return;
+            action.Command.Execute(null);
+            e.Handled = true;
+        }
+        else if (e.Key == Key.Apps || (e.Key == Key.F10 && e.KeyModifiers == KeyModifiers.Shift))
+        {
+            var row = grid.GetVisualDescendants().OfType<DataGridRow>().FirstOrDefault(r => ReferenceEquals(r.DataContext, grid.SelectedItem));
+            if (row is null) return;
+            Show(grid, row, null, atPointer: false);
+            e.Handled = true;
+        }
     }
 
     /// <summary>Menu de la page, au clic droit hors des lignes : ses actions générales.</summary>

@@ -39,6 +39,7 @@ Paramètres, Établissement, « Changer le logo ». Le logo figure sur l'écran 
 - **Clic droit sur une ligne** d'un tableau : la ligne est choisie et ses actions s'affichent, par exemple Encaisser, Ouvrir la fiche, Relancer par WhatsApp. Le menu propose aussi de copier la cellule ou la ligne, puis les actions de la page.
 - **Clic droit ailleurs sur la page** : les actions générales de la page, comme les exports Excel et PDF ou Actualiser.
 - **Double-clic sur une ligne** : son action principale, en général l'ouverture du détail.
+- **Au clavier** : Entrée lance l'action principale de la ligne choisie ; la touche Menu ou Maj+F10 ouvre son menu.
 - **Aperçu rapide** : au clic droit sur un apprenant, une petite fenêtre résume son dossier, son parent et ce qui reste à payer, sans quitter la liste.
 
 ### Taille de l'écran

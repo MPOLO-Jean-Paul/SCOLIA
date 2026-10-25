@@ -3,6 +3,7 @@ import { expect, test, type Page } from '@playwright/test';
 test.describe.configure({ mode: 'serial' });
 
 const admin = { user: 'admin', password: 'Scolia2026!' };
+// Les champs obligatoires portent un astérisque : « Nom * ». Les recherches exactes l'acceptent.
 let page: Page;
 
 const baseURL = `http://localhost:${process.env.SCOLIA_E2E_PORT ?? 5199}`;
@@ -18,7 +19,7 @@ test('installation guidée avec données de démonstration', async () => {
   await page.getByLabel("Nom de l'établissement").fill('Institut Technique Médical Démo');
   await page.getByLabel('Sigle').fill('ITM Démo');
   await page.getByLabel('Nom complet').fill('Administrateur Démo');
-  await page.getByLabel('Mot de passe', { exact: true }).fill(admin.password);
+  await page.getByLabel(/^Mot de passe( \*)?$/).fill(admin.password);
   await page.getByLabel('Confirmer le mot de passe').fill(admin.password);
   await page.getByText('Ajouter des données de démonstration').click();
   await page.getByRole('button', { name: 'Installer SCOLIA' }).click();
@@ -42,7 +43,7 @@ test('inscription d’un nouvel apprenant avec matricule automatique', async () 
   await page.goto('/apprenants');
   await page.getByRole('button', { name: 'Nouvelle inscription' }).click();
   const dialog = page.getByRole('dialog');
-  await dialog.getByLabel('Nom', { exact: true }).fill('Tshiamala');
+  await dialog.getByLabel(/^Nom( \*)?$/).fill('Tshiamala');
   await dialog.getByLabel('Post-nom').fill('Kanyinda');
   await dialog.getByLabel('Prénom').fill('esther');
   await dialog.getByLabel('Sexe').selectOption('F');
