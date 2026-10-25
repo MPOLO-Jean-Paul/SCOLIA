@@ -26,4 +26,15 @@ public sealed class PhoneInputTests
         field.Text = "0812345678";
         Assert.True(form.Validate());
     }
+
+    [Fact]
+    public void The_form_sheet_filters_only_phone_fields()
+    {
+        // Le champ masqué d'une ligne de formulaire ne doit pas filtrer les textes : seul un vrai téléphone garde ses chiffres.
+        var dir = new DirectoryInfo(AppContext.BaseDirectory);
+        while (dir is not null && !File.Exists(Path.Combine(dir.FullName, "Scolia.sln"))) dir = dir.Parent;
+        var form = File.ReadAllText(Path.Combine(dir!.FullName, "src", "Scolia.Bureau", "Views", "FormView.axaml"));
+        Assert.DoesNotContain("PhoneInput.Digits=\"True\"", form);
+        Assert.Contains("PhoneInput.Digits=\"{Binding IsPhone}\"", form);
+    }
 }

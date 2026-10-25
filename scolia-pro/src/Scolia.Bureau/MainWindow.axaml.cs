@@ -54,7 +54,7 @@ public partial class MainWindow : Window
             ApplyPageTransition(shell.Prefs);
             shell.Prefs.PropertyChanged += (_, args) =>
             {
-                if (args.PropertyName == nameof(Preferences.Animations)) ApplyPageTransition(shell.Prefs);
+                if (args.PropertyName is nameof(Preferences.Animations) or nameof(Preferences.PageTransitions) or nameof(Preferences.Speed)) ApplyPageTransition(shell.Prefs);
             };
         };
     }
@@ -103,6 +103,9 @@ public partial class MainWindow : Window
             Width = area is { } a ? Math.Min(target.Width, a.Width) : target.Width;
             Height = area is { } b ? Math.Min(target.Height, b.Height) : target.Height;
             if (fullMaximized || (area is { } c && (target.Width > c.Width || target.Height > c.Height))) WindowState = WindowState.Maximized;
+            // Taille choisie dans Paramètres, Fenêtres : agrandie ou plein écran dès la connexion.
+            if (shell.Prefs.Startup == "agrandie") WindowState = WindowState.Maximized;
+            else if (shell.Prefs.Startup == "pleinecran") WindowState = WindowState.FullScreen;
         }
         compact = wanted;
         CenterOnScreen();
@@ -207,7 +210,7 @@ public partial class MainWindow : Window
 
     /// <summary>Fondu entre les pages, désactivé par la préférence « Animations ».</summary>
     private void ApplyPageTransition(Preferences prefs) =>
-        PageHost.PageTransition = prefs.Animations ? new CrossFade(PageFade) : null;
+        PageHost.PageTransition = prefs.Animations && prefs.PageTransitions ? new CrossFade(PageFade * prefs.SpeedFactor) : null;
 
     private ShellViewModel? Shell => DataContext as ShellViewModel;
 

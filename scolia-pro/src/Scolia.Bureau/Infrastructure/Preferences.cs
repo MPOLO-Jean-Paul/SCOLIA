@@ -37,6 +37,44 @@ public sealed class Preferences : Observable
 
     public static readonly IReadOnlyList<ChoiceItem> Accents = AccentTable.Select(a => new ChoiceItem(a.Key, a.Label)).ToList();
 
+    /// <summary>Pastille de chaque couleur d'accent, pour la choisir d'un clic.</summary>
+    public static IReadOnlyList<(string Key, string Label, Color Color)> AccentSwatches =>
+        AccentTable.Select(a => (a.Key, a.Label, Color.Parse(a.Light))).ToList();
+
+    /// <summary>Polices de l'interface. Inter est fournie avec SCOLIA ; les autres viennent de Windows, Inter les remplace si elles manquent.</summary>
+    private static readonly (string Key, string Label, string Family)[] FontTable =
+    [
+        ("systeme", "Système (Segoe UI)", "Segoe UI Variable Text, Segoe UI, avares://SCOLIA/Assets/Fonts#Inter"),
+        ("inter", "Inter", "avares://SCOLIA/Assets/Fonts#Inter"),
+        ("calibri", "Calibri", "Calibri, avares://SCOLIA/Assets/Fonts#Inter"),
+        ("arial", "Arial", "Arial, avares://SCOLIA/Assets/Fonts#Inter"),
+        ("verdana", "Verdana (très lisible)", "Verdana, avares://SCOLIA/Assets/Fonts#Inter"),
+        ("tahoma", "Tahoma", "Tahoma, avares://SCOLIA/Assets/Fonts#Inter"),
+    ];
+
+    public static readonly IReadOnlyList<ChoiceItem> Fonts = FontTable.Select(f => new ChoiceItem(f.Key, f.Label)).ToList();
+
+    public static readonly IReadOnlyList<ChoiceItem> StartupModes =
+    [
+        new("normale", "Fenêtre normale"), new("agrandie", "Agrandie"), new("pleinecran", "Plein écran"),
+    ];
+
+    /// <summary>Vitesse des transitions : facteur appliqué à leur durée.</summary>
+    public static readonly IReadOnlyList<ChoiceItem> Speeds =
+    [
+        new("rapide", "Rapide"), new("normale", "Normale"), new("douce", "Douce"),
+    ];
+
+    public static readonly IReadOnlyList<ChoiceItem> OpeningDurations =
+    [
+        new("1", "1 seconde"), new("2", "2 secondes"), new("3", "3 secondes"),
+    ];
+
+    public static readonly IReadOnlyList<ChoiceItem> SoundStyles =
+    [
+        new("doux", "Doux"), new("clair", "Clochette"), new("systeme", "Sons de Windows"),
+    ];
+
     private string theme = "light";
     private string accent = "bleu";
     private double scale = 1.0;
@@ -48,6 +86,18 @@ public sealed class Preferences : Observable
     private bool animations = true;
     private bool ribbonCollapsed;
     private bool sidebar = true;
+    private string font = "systeme";
+    private string startup = "normale";
+    private string speed = "normale";
+    private int openingSeconds = 2;
+    private bool pageTransitions = true;
+    private bool sounds = true;
+    private int soundVolume = 60;
+    private string soundStyle = "doux";
+    private bool soundSuccess = true;
+    private bool soundError = true;
+    private bool soundNotify;
+    private bool soundOpening = true;
 
     public string Theme { get => theme; set { if (Set(ref theme, value)) Raise(nameof(IsDark)); } }
     public bool IsDark { get => theme == "dark"; set => Theme = value ? "dark" : "light"; }
@@ -74,6 +124,35 @@ public sealed class Preferences : Observable
 
     /// <summary>Barre latérale de navigation affichée à gauche.</summary>
     public bool Sidebar { get => sidebar; set => Set(ref sidebar, value); }
+
+    public string Font { get => font; set => Set(ref font, FontTable.Any(f => f.Key == value) ? value : "systeme"); }
+    /// <summary>Taille de la fenêtre au lancement, une fois connecté.</summary>
+    public string Startup { get => startup; set => Set(ref startup, value is "agrandie" or "pleinecran" ? value : "normale"); }
+    public string Speed { get => speed; set { if (Set(ref speed, value is "rapide" or "douce" ? value : "normale")) Raise(nameof(SpeedFactor)); } }
+    public double SpeedFactor => speed switch { "rapide" => 0.6, "douce" => 1.5, _ => 1.0 };
+    /// <summary>Durée de l'écran d'ouverture, entre la connexion et l'accueil.</summary>
+    public int OpeningSeconds { get => openingSeconds; set => Set(ref openingSeconds, Math.Clamp(value, 1, 3)); }
+    /// <summary>Fondu entre deux pages.</summary>
+    public bool PageTransitions { get => pageTransitions; set => Set(ref pageTransitions, value); }
+    public bool Sounds { get => sounds; set => Set(ref sounds, value); }
+    public int SoundVolume { get => soundVolume; set { if (Set(ref soundVolume, Math.Clamp(value, 0, 100))) Raise(nameof(VolumeLabel)); } }
+    public string VolumeLabel => $"{soundVolume} %";
+    public string SoundStyle { get => soundStyle; set => Set(ref soundStyle, value is "clair" or "systeme" ? value : "doux"); }
+    public bool SoundSuccess { get => soundSuccess; set => Set(ref soundSuccess, value); }
+    public bool SoundError { get => soundError; set => Set(ref soundError, value); }
+    public bool SoundNotify { get => soundNotify; set => Set(ref soundNotify, value); }
+    public bool SoundOpening { get => soundOpening; set => Set(ref soundOpening, value); }
+
+    public bool SoundFor(SoundKind kind) => kind switch
+    {
+        SoundKind.Success => soundSuccess,
+        SoundKind.Error => soundError,
+        SoundKind.Opening => soundOpening,
+        _ => soundNotify,
+    };
+
+    /// <summary>Remet tous les réglages de ce poste à leur valeur d'origine.</summary>
+    public void Reset() => new Stored().ApplyTo(this);
 
     public static Preferences Load()
     {
@@ -125,6 +204,7 @@ public sealed class Preferences : Observable
         };
         var r = app.Resources;
         ApplyAccent(r);
+        r["UiFont"] = new FontFamily(FontTable.First(f => f.Key == font).Family);
         var k = Factor;
         GridPriority.SetTextFactor(k);
         r["FsBase"] = 13.5 * k;
@@ -180,11 +260,26 @@ public sealed class Preferences : Observable
         public bool Animations { get; set; } = true;
         public bool RibbonCollapsed { get; set; }
         public bool Sidebar { get; set; } = true;
+        public string? Font { get; set; }
+        public string? Startup { get; set; }
+        public string? Speed { get; set; }
+        public int OpeningSeconds { get; set; } = 2;
+        public bool PageTransitions { get; set; } = true;
+        public bool Sounds { get; set; } = true;
+        public int SoundVolume { get; set; } = 60;
+        public string? SoundStyle { get; set; }
+        public bool SoundSuccess { get; set; } = true;
+        public bool SoundError { get; set; } = true;
+        public bool SoundNotify { get; set; }
+        public bool SoundOpening { get; set; } = true;
 
         public static Stored From(Preferences p) => new()
         {
             Theme = p.theme, Accent = p.accent, Scale = p.scale, Compact = p.compact, StatusBar = p.statusBar, Tips = p.tips,
             Grid = p.grid, Animations = p.animations, RibbonCollapsed = p.ribbonCollapsed, Sidebar = p.sidebar,
+            Font = p.font, Startup = p.startup, Speed = p.speed, OpeningSeconds = p.openingSeconds, PageTransitions = p.pageTransitions,
+            Sounds = p.sounds, SoundVolume = p.soundVolume, SoundStyle = p.soundStyle, SoundSuccess = p.soundSuccess,
+            SoundError = p.soundError, SoundNotify = p.soundNotify, SoundOpening = p.soundOpening,
         };
 
         public void ApplyTo(Preferences p)
@@ -199,6 +294,18 @@ public sealed class Preferences : Observable
             p.Animations = Animations;
             p.RibbonCollapsed = RibbonCollapsed;
             p.Sidebar = Sidebar;
+            p.Font = Font ?? "systeme";
+            p.Startup = Startup ?? "normale";
+            p.Speed = Speed ?? "normale";
+            p.OpeningSeconds = OpeningSeconds;
+            p.PageTransitions = PageTransitions;
+            p.Sounds = Sounds;
+            p.SoundVolume = SoundVolume;
+            p.SoundStyle = SoundStyle ?? "doux";
+            p.SoundSuccess = SoundSuccess;
+            p.SoundError = SoundError;
+            p.SoundNotify = SoundNotify;
+            p.SoundOpening = SoundOpening;
         }
     }
 }

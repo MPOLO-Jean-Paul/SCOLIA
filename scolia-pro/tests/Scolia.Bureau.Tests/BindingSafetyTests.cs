@@ -26,7 +26,9 @@ public partial class BindingSafetyTests
         var offenders = new List<string>();
         foreach (var file in Directory.EnumerateFiles(BureauSources(), "*.axaml", SearchOption.AllDirectories).Where(f => !f.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}")))
             foreach (Match m in RiskyBinding().Matches(File.ReadAllText(file)))
-                if (!m.Groups["inner"].Value.Contains("Mode=OneWay", StringComparison.Ordinal))
+                // Un curseur que l'on règle à la main peut être à double sens, à condition de le dire et de ne pas formater la valeur.
+                if (!m.Groups["inner"].Value.Contains("Mode=OneWay", StringComparison.Ordinal)
+                    && !(m.Groups["inner"].Value.Contains("Mode=TwoWay", StringComparison.Ordinal) && !m.Groups["inner"].Value.Contains("StringFormat", StringComparison.Ordinal)))
                     offenders.Add($"{Path.GetFileName(file)} : {m.Value}");
         Assert.Empty(offenders);
     }

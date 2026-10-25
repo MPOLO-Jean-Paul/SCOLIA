@@ -3,30 +3,77 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mi="using:Material.Icons.Avalonia"
              x:Class="Scolia.Bureau.Views.SettingsView">
-  <Grid ColumnDefinitions="220,*">
-    <!-- Rubriques des paramètres -->
-    <Border Classes="card" Grid.Column="0" Margin="0,0,16,0" Padding="6" VerticalAlignment="Top">
-      <ListBox Classes="side" ItemsSource="{Binding Sections}" SelectedItem="{Binding Section}" Background="Transparent" BorderThickness="0">
-        <ListBox.ItemTemplate>
-          <DataTemplate>
-            <StackPanel Orientation="Horizontal" Spacing="10">
-              <Border Classes="appicon" Background="{Binding Brush}"><mi:MaterialIcon Kind="{Binding Icon}" /></Border>
-              <TextBlock Text="{Binding Label}" VerticalAlignment="Center" />
-            </StackPanel>
-          </DataTemplate>
-        </ListBox.ItemTemplate>
-      </ListBox>
+  <UserControl.Styles>
+    <Style Selector="Grid.prefrow"><Setter Property="Margin" Value="0,10" /><Setter Property="MinHeight" Value="38" /></Style>
+    <Style Selector="Border.prefsep"><Setter Property="Height" Value="1" /><Setter Property="Background" Value="{DynamicResource LineBrush}" /></Style>
+    <Style Selector="RadioButton.themecard">
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+      <Setter Property="Padding" Value="8" />
+      <Setter Property="CornerRadius" Value="12" />
+      <Setter Property="BorderThickness" Value="2" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+      <Setter Property="Template">
+        <ControlTemplate>
+          <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}"
+                  CornerRadius="{TemplateBinding CornerRadius}" Padding="{TemplateBinding Padding}">
+            <ContentPresenter Content="{TemplateBinding Content}" />
+          </Border>
+        </ControlTemplate>
+      </Setter>
+    </Style>
+    <Style Selector="RadioButton.themecard:checked"><Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" /></Style>
+    <Style Selector="RadioButton.themecard:pointerover"><Setter Property="Background" Value="{DynamicResource HoverBrush}" /></Style>
+    <Style Selector="Border.themepreview"><Setter Property="CornerRadius" Value="8" /><Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" /><Setter Property="BorderThickness" Value="1" /></Style>
+    <Style Selector="Button.swatch"><Setter Property="Background" Value="Transparent" /><Setter Property="BorderThickness" Value="0" /><Setter Property="Padding" Value="4" /></Style>
+    <Style Selector="Button.swatch:pointerover /template/ ContentPresenter#PART_ContentPresenter"><Setter Property="Background" Value="Transparent" /></Style>
+  </UserControl.Styles>
+  <Grid ColumnDefinitions="240,*">
+    <!-- Rubriques : l'établissement, puis les réglages de ce poste -->
+    <Border Classes="card" Grid.Column="0" Margin="0,0,16,0" Padding="6,10" VerticalAlignment="Top">
+      <StackPanel Spacing="4">
+        <TextBlock Text="ÉTABLISSEMENT" Classes="caption" Margin="10,0,0,2" IsVisible="{Binding HasSchoolSections}" />
+        <ListBox Classes="side" ItemsSource="{Binding SchoolSections}" SelectedItem="{Binding SchoolSection}" Background="Transparent" BorderThickness="0" IsVisible="{Binding HasSchoolSections}">
+          <ListBox.ItemTemplate>
+            <DataTemplate>
+              <StackPanel Orientation="Horizontal" Spacing="10">
+                <Border Classes="appicon" Background="{Binding Brush}"><mi:MaterialIcon Kind="{Binding Icon}" /></Border>
+                <TextBlock Text="{Binding Label}" VerticalAlignment="Center" />
+              </StackPanel>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+        <TextBlock Text="CE POSTE" Classes="caption" Margin="10,10,0,2" />
+        <ListBox Classes="side" ItemsSource="{Binding PosteSections}" SelectedItem="{Binding PosteSection}" Background="Transparent" BorderThickness="0">
+          <ListBox.ItemTemplate>
+            <DataTemplate>
+              <StackPanel Orientation="Horizontal" Spacing="10">
+                <Border Classes="appicon" Background="{Binding Brush}"><mi:MaterialIcon Kind="{Binding Icon}" /></Border>
+                <TextBlock Text="{Binding Label}" VerticalAlignment="Center" />
+              </StackPanel>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+      </StackPanel>
     </Border>
 
     <ScrollViewer Grid.Column="1">
-      <StackPanel Spacing="12">
-        <!-- Établissement : formulaire intégré -->
+      <StackPanel Spacing="14" Margin="0,0,6,12">
+        <!-- En-tête de la rubrique : grande icône, titre et explication, comme les Réglages de macOS -->
+        <Grid ColumnDefinitions="Auto,*" Margin="0,0,0,4">
+          <Border Classes="appicon large" Background="{Binding Section.Brush}" VerticalAlignment="Center"><mi:MaterialIcon Kind="{Binding Section.Icon}" /></Border>
+          <StackPanel Grid.Column="1" Margin="14,0,0,0" VerticalAlignment="Center">
+            <TextBlock Text="{Binding SectionTitle}" FontSize="{DynamicResource FsTitle}" FontWeight="SemiBold" />
+            <TextBlock Text="{Binding SectionHint}" Classes="muted" TextWrapping="Wrap" />
+          </StackPanel>
+        </Grid>
+
+        <!-- Établissement : formulaire intégré, rangé en groupes -->
         <ContentControl Content="{Binding SchoolForm}" IsVisible="{Binding IsSchool}" HorizontalAlignment="Left" />
 
         <!-- Années scolaires -->
         <Border Classes="card" IsVisible="{Binding IsYears}">
           <StackPanel Spacing="8">
-            <TextBlock Text="Années scolaires" Classes="heading" />
             <DataGrid ItemsSource="{Binding Years}" SelectedItem="{Binding SelectedYear}" AutoGenerateColumns="False" IsReadOnly="True" MaxHeight="420">
               <DataGrid.Columns>
                 <DataGridTextColumn Header="Année" Binding="{Binding Label}" Width="Auto" MinWidth="130" />
@@ -51,7 +98,6 @@
         <!-- Sections -->
         <Border Classes="card" IsVisible="{Binding IsSections}">
           <StackPanel Spacing="8">
-            <TextBlock Text="Sections" Classes="heading" />
             <DataGrid ItemsSource="{Binding SectionRows}" SelectedItem="{Binding SelectedSection}" AutoGenerateColumns="False" IsReadOnly="True" MaxHeight="420">
               <DataGrid.Columns>
                 <DataGridTextColumn Header="Code" Binding="{Binding Code}" Width="Auto" MinWidth="120" />
@@ -65,7 +111,6 @@
         <!-- Promotions et frais -->
         <Border Classes="card" IsVisible="{Binding IsPromotions}">
           <StackPanel Spacing="8">
-            <TextBlock Text="Promotions et frais" Classes="heading" />
             <DataGrid ItemsSource="{Binding Promotions}" SelectedItem="{Binding SelectedPromotion}" AutoGenerateColumns="False" IsReadOnly="True" MaxHeight="520">
               <DataGrid.Columns>
                 <DataGridTextColumn Header="Code" Binding="{Binding Code}" Width="Auto" MinWidth="84" />
@@ -80,6 +125,295 @@
             </DataGrid>
           </StackPanel>
         </Border>
+          <StackPanel Spacing="14" IsVisible="{Binding IsAppearance}">
+            <Border Classes="card">
+              <StackPanel Spacing="12">
+                <TextBlock Text="Thème" FontWeight="SemiBold" />
+                <UniformGrid Columns="3">
+                  <RadioButton Classes="themecard" GroupName="theme" IsChecked="{Binding ThemeSystem}" Margin="0,0,10,0">
+                    <StackPanel Spacing="8">
+                      <Border Classes="themepreview" Height="70">
+                        <Grid ColumnDefinitions="*,*">
+                          <Border Background="#F5F5F7" CornerRadius="8,0,0,8"><Border Background="#FFFFFF" Margin="10,12,0,12" CornerRadius="4" /></Border>
+                          <Border Grid.Column="1" Background="#1C1C1E" CornerRadius="0,8,8,0"><Border Background="#2C2C2E" Margin="0,12,10,12" CornerRadius="4" /></Border>
+                        </Grid>
+                      </Border>
+                      <TextBlock Text="Selon Windows" HorizontalAlignment="Center" />
+                    </StackPanel>
+                  </RadioButton>
+                  <RadioButton Classes="themecard" GroupName="theme" IsChecked="{Binding ThemeLight}" Margin="0,0,10,0">
+                    <StackPanel Spacing="8">
+                      <Border Classes="themepreview" Height="70" Background="#F5F5F7">
+                        <StackPanel Margin="10,12" Spacing="6">
+                          <Border Background="#FFFFFF" Height="14" CornerRadius="4" />
+                          <Border Background="{DynamicResource AccentBrush}" Height="10" Width="50" CornerRadius="4" HorizontalAlignment="Left" />
+                        </StackPanel>
+                      </Border>
+                      <TextBlock Text="Clair" HorizontalAlignment="Center" />
+                    </StackPanel>
+                  </RadioButton>
+                  <RadioButton Classes="themecard" GroupName="theme" IsChecked="{Binding ThemeDark}">
+                    <StackPanel Spacing="8">
+                      <Border Classes="themepreview" Height="70" Background="#1C1C1E">
+                        <StackPanel Margin="10,12" Spacing="6">
+                          <Border Background="#2C2C2E" Height="14" CornerRadius="4" />
+                          <Border Background="{DynamicResource AccentBrush}" Height="10" Width="50" CornerRadius="4" HorizontalAlignment="Left" />
+                        </StackPanel>
+                      </Border>
+                      <TextBlock Text="Sombre" HorizontalAlignment="Center" />
+                    </StackPanel>
+                  </RadioButton>
+                </UniformGrid>
+              </StackPanel>
+            </Border>
+            <Border Classes="card">
+              <StackPanel Spacing="12">
+                <StackPanel>
+                  <TextBlock Text="Couleur d'accent" FontWeight="SemiBold" />
+                  <TextBlock Text="Boutons principaux, sélection dans les listes, liens et barres de progression." Classes="muted" TextWrapping="Wrap" />
+                </StackPanel>
+                <ItemsControl ItemsSource="{Binding Swatches}">
+                  <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                      <Button Classes="swatch" Command="{Binding Choose}" ToolTip.Tip="{Binding Label}" Margin="0,0,14,0">
+                        <StackPanel Spacing="6">
+                          <Panel Width="34" Height="34" HorizontalAlignment="Center">
+                            <Ellipse Fill="{Binding Brush}" />
+                            <Ellipse Stroke="{DynamicResource TextBrush}" StrokeThickness="2" Margin="-4" IsVisible="{Binding IsSelected}" />
+                            <mi:MaterialIcon Kind="Check" Width="18" Height="18" Foreground="White" IsVisible="{Binding IsSelected}" />
+                          </Panel>
+                          <TextBlock Text="{Binding Label}" Classes="muted" HorizontalAlignment="Center" />
+                        </StackPanel>
+                      </Button>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </StackPanel>
+            </Border>
+            <Border Classes="card" Padding="16,4">
+              <StackPanel>
+              <Grid ColumnDefinitions="*,Auto" Classes="prefrow">
+                <StackPanel VerticalAlignment="Center" Margin="0,0,16,0">
+                  <TextBlock Text="Quadrillage des tableaux" />
+                  <TextBlock Text="Une ligne fine entre les lignes des listes." Classes="muted" TextWrapping="Wrap" />
+                </StackPanel>
+                <ToggleSwitch Grid.Column="1" IsChecked="{Binding Prefs.Grid}" OnContent="" OffContent="" VerticalAlignment="Center" />
+              </Grid>
+              </StackPanel>
+            </Border>
+          </StackPanel>
+
+          <StackPanel Spacing="14" IsVisible="{Binding IsText}">
+            <Border Classes="card" Padding="16,4">
+              <StackPanel>
+              <Grid ColumnDefinitions="*,Auto" Classes="prefrow">
+                <StackPanel VerticalAlignment="Center" Margin="0,0,16,0">
+                  <TextBlock Text="Police" />
+                  <TextBlock Text="Inter est fournie avec SCOLIA. Les autres polices viennent de Windows." Classes="muted" TextWrapping="Wrap" />
+                </StackPanel>
+                <ComboBox Grid.Column="1" ItemsSource="{Binding Fonts}" SelectedItem="{Binding Font}" MinWidth="200" VerticalAlignment="Center" />
+              </Grid>
+              <Border Classes="prefsep" />
+              <Grid ColumnDefinitions="*,Auto" Classes="prefrow">
+                <StackPanel VerticalAlignment="Center" Margin="0,0,16,0">
+                  <TextBlock Text="Taille du texte" />
+                  <TextBlock Text="De 80 à 160 %. Les listes et les boutons suivent." Classes="muted" TextWrapping="Wrap" />
+                </StackPanel>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                  <TextBlock Text="A" FontSize="12" VerticalAlignment="Center" />
+                  <Slider Minimum="0.8" Maximum="1.6" TickFrequency="0.05" IsSnapToTickEnabled="True" Value="{Binding TextScale, Mode=TwoWay}" Width="200" VerticalAlignment="Center" />
+                  <TextBlock Text="A" FontSize="20" VerticalAlignment="Center" />
+                  <TextBlock Text="{Binding TextScaleLabel}" MinWidth="48" TextAlignment="Right" VerticalAlignment="Center" FontWeight="SemiBold" />
+                </StackPanel>
+              </Grid>
+              <Border Classes="prefsep" />
+              <Grid ColumnDefinitions="*,Auto" Classes="prefrow">
+                <StackPanel VerticalAlignment="Center" Margin="0,0,16,0">
+                  <TextBlock Text="Densité compacte" />
+                  <TextBlock Text="Lignes et boutons plus serrés, pour voir plus de données à la fois." Classes="muted" TextWrapping="Wrap" />
+                </StackPanel>
+                <ToggleSwitch Grid.Column="1" IsChecked="{Binding Prefs.Compact}" OnContent="" OffContent="" VerticalAlignment="Center" />
+              </Grid>
+              </StackPanel>
+            </Border>
+            <Border Classes="card">
+              <StackPanel Spacing="6">
+                <TextBlock Text="Aperçu" Classes="muted" />
+                <TextBlock Text="Institut Technique Médical" FontSize="{DynamicResource FsTitle}" FontWeight="SemiBold" />
+                <TextBlock Text="Reçu RC-2026-000124 · 55 000 FC · mensualité d'octobre" />
+                <TextBlock Text="Le texte de toute l'interface s'affiche ainsi." Classes="muted" />
+              </StackPanel>
+            </Border>
+          </StackPanel>
+
+          <StackPanel Spacing="14" IsVisible="{Binding IsWindows}">
+            <Border Classes="card" Padding="16,4">
+              <StackPanel>
+              <Grid ColumnDefinitions="*,Auto" Classes="prefrow">
+                <StackPanel VerticalAlignment="Center" Margin="0,0,16,0">
+                  <TextBlock Text="Au lancement" />
+                  <TextBlock Text="Taille de la fenêtre une fois connecté." Classes="muted" TextWrapping="Wrap" />
+                </StackPanel>
+                <ComboBox Grid.Column="1" ItemsSource="{Binding StartupModes}" SelectedItem="{Binding Startup}" MinWidth="200" VerticalAlignment="Center" />
+              </Grid>
+              <Border Classes="prefsep" />
+              <Grid ColumnDefinitions="*,Auto" Classes="prefrow">
+                <StackPanel VerticalAlignment="Center" Margin="0,0,16,0">
+                  <TextBlock Text="Volet latéral" />
+                  <TextBlock Text="La liste des pages à gauche." Classes="muted" TextWrapping="Wrap" />
+                </StackPanel>
+                <ToggleSwitch Grid.Column="1" IsChecked="{Binding Prefs.Sidebar}" OnContent="" OffContent="" VerticalAlignment="Center" />
+              </Grid>
+              <Border Classes="prefsep" />
+              <Grid ColumnDefinitions="*,Auto" Classes="prefrow">
+                <StackPanel VerticalAlignment="Center" Margin="0,0,16,0">
+                  <TextBlock Text="Ruban réduit" />
+                  <TextBlock Text="Le ruban ne montre que ses onglets ; un clic l'ouvre." Classes="muted" TextWrapping="Wrap" />
+                </StackPanel>
+                <ToggleSwitch Grid.Column="1" IsChecked="{Binding Prefs.RibbonCollapsed}" OnContent="" OffContent="" VerticalAlignment="Center" />
+              </Grid>
+              <Border Classes="prefsep" />
+              <Grid ColumnDefinitions="*,Auto" Classes="prefrow">
+                <StackPanel VerticalAlignment="Center" Margin="0,0,16,0">
+                  <TextBlock Text="Barre d'état" />
+                  <TextBlock Text="En bas : compte connecté, serveur et zoom." Classes="muted" TextWrapping="Wrap" />
+                </StackPanel>
+                <ToggleSwitch Grid.Column="1" IsChecked="{Binding Prefs.StatusBar}" OnContent="" OffContent="" VerticalAlignment="Center" />
+              </Grid>
+              <Border Classes="prefsep" />
+              <Grid ColumnDefinitions="*,Auto" Classes="prefrow">
+                <StackPanel VerticalAlignment="Center" Margin="0,0,16,0">
+                  <TextBlock Text="Info-bulles" />
+                  <TextBlock Text="La description d'une commande au survol." Classes="muted" TextWrapping="Wrap" />
+                </StackPanel>
+                <ToggleSwitch Grid.Column="1" IsChecked="{Binding Prefs.Tips}" OnContent="" OffContent="" VerticalAlignment="Center" />
+              </Grid>
+              </StackPanel>
+            </Border>
+          </StackPanel>
+
+          <StackPanel Spacing="14" IsVisible="{Binding IsAnimations}">
+            <Border Classes="card" Padding="16,4">
+              <StackPanel>
+              <Grid ColumnDefinitions="*,Auto" Classes="prefrow">
+                <StackPanel VerticalAlignment="Center" Margin="0,0,16,0">
+                  <TextBlock Text="Animations" />
+                  <TextBlock Text="Fondus et glissements à l'ouverture des fenêtres et des boîtes. Coupées, l'interface change d'un coup." Classes="muted" TextWrapping="Wrap" />
+                </StackPanel>
+                <ToggleSwitch Grid.Column="1" IsChecked="{Binding Prefs.Animations}" OnContent="" OffContent="" VerticalAlignment="Center" />
+              </Grid>
+              <Border Classes="prefsep" />
+              <Grid ColumnDefinitions="*,Auto" Classes="prefrow">
+                <StackPanel VerticalAlignment="Center" Margin="0,0,16,0">
+                  <TextBlock Text="Transition entre les pages" />
+                  <TextBlock Text="Un fondu court quand on passe d'une page à l'autre." Classes="muted" TextWrapping="Wrap" />
+                </StackPanel>
+                <ToggleSwitch Grid.Column="1" IsChecked="{Binding Prefs.PageTransitions}" OnContent="" OffContent="" VerticalAlignment="Center" />
+              </Grid>
+              <Border Classes="prefsep" />
+              <Grid ColumnDefinitions="*,Auto" Classes="prefrow">
+                <StackPanel VerticalAlignment="Center" Margin="0,0,16,0">
+                  <TextBlock Text="Vitesse des transitions" />
+                  <TextBlock Text="Rapide pour un poste lent, douce pour plus de confort." Classes="muted" TextWrapping="Wrap" />
+                </StackPanel>
+                <ComboBox Grid.Column="1" ItemsSource="{Binding Speeds}" SelectedItem="{Binding Speed}" MinWidth="200" VerticalAlignment="Center" />
+              </Grid>
+              <Border Classes="prefsep" />
+              <Grid ColumnDefinitions="*,Auto" Classes="prefrow">
+                <StackPanel VerticalAlignment="Center" Margin="0,0,16,0">
+                  <TextBlock Text="Écran d'ouverture" />
+                  <TextBlock Text="Durée de la roue entre la connexion et l'accueil." Classes="muted" TextWrapping="Wrap" />
+                </StackPanel>
+                <ComboBox Grid.Column="1" ItemsSource="{Binding OpeningDurations}" SelectedItem="{Binding OpeningDuration}" MinWidth="200" VerticalAlignment="Center" />
+              </Grid>
+              </StackPanel>
+            </Border>
+          </StackPanel>
+
+          <StackPanel Spacing="14" IsVisible="{Binding IsSounds}">
+            <Border Classes="card" Padding="16,4">
+              <StackPanel>
+              <Grid ColumnDefinitions="*,Auto" Classes="prefrow">
+                <StackPanel VerticalAlignment="Center" Margin="0,0,16,0">
+                  <TextBlock Text="Sons" />
+                  <TextBlock Text="Coupés, SCOLIA reste silencieux." Classes="muted" TextWrapping="Wrap" />
+                </StackPanel>
+                <ToggleSwitch Grid.Column="1" IsChecked="{Binding Prefs.Sounds}" OnContent="" OffContent="" VerticalAlignment="Center" />
+              </Grid>
+              <Border Classes="prefsep" />
+              <Grid ColumnDefinitions="*,Auto" Classes="prefrow" IsEnabled="{Binding Prefs.Sounds}">
+                <StackPanel VerticalAlignment="Center" Margin="0,0,16,0">
+                  <TextBlock Text="Volume" />
+                  <TextBlock Text="Sans effet sur le volume de Windows." Classes="muted" TextWrapping="Wrap" />
+                </StackPanel>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                  <mi:MaterialIcon Kind="VolumeLow" Width="18" Height="18" />
+                  <Slider Minimum="0" Maximum="100" TickFrequency="5" IsSnapToTickEnabled="True" Value="{Binding Volume, Mode=TwoWay}" Width="200" VerticalAlignment="Center" />
+                  <mi:MaterialIcon Kind="VolumeHigh" Width="18" Height="18" />
+                  <TextBlock Text="{Binding VolumeLabel}" MinWidth="44" TextAlignment="Right" VerticalAlignment="Center" FontWeight="SemiBold" />
+                </StackPanel>
+              </Grid>
+              <Border Classes="prefsep" />
+              <Grid ColumnDefinitions="*,Auto" Classes="prefrow">
+                <StackPanel VerticalAlignment="Center" Margin="0,0,16,0">
+                  <TextBlock Text="Style des sons" />
+                  <TextBlock Text="Doux et clochette sont des sons de SCOLIA ; ou les sons habituels de Windows." Classes="muted" TextWrapping="Wrap" />
+                </StackPanel>
+                <ComboBox Grid.Column="1" ItemsSource="{Binding SoundStyles}" SelectedItem="{Binding SoundStyle}" MinWidth="200" VerticalAlignment="Center" />
+              </Grid>
+              </StackPanel>
+            </Border>
+            <Border Classes="card" Padding="16,4" IsEnabled="{Binding Prefs.Sounds}">
+              <StackPanel>
+              <Grid ColumnDefinitions="*,Auto,Auto" Classes="prefrow">
+                <StackPanel VerticalAlignment="Center" Margin="0,0,16,0">
+                  <TextBlock Text="Action réussie" />
+                  <TextBlock Text="Un enregistrement, un encaissement, une validation." Classes="muted" TextWrapping="Wrap" />
+                </StackPanel>
+                <Button Grid.Column="1" Classes="small" Command="{Binding TestSound}" CommandParameter="Success" ToolTip.Tip="Écouter ce son" Margin="0,0,12,0" VerticalAlignment="Center">
+                  <StackPanel Orientation="Horizontal" Spacing="6"><mi:MaterialIcon Kind="Play" Width="14" Height="14" /><TextBlock Text="Écouter" /></StackPanel>
+                </Button>
+                <ToggleSwitch Grid.Column="2" IsChecked="{Binding Prefs.SoundSuccess}" OnContent="" OffContent="" VerticalAlignment="Center" />
+              </Grid>
+              <Border Classes="prefsep" />
+              <Grid ColumnDefinitions="*,Auto,Auto" Classes="prefrow">
+                <StackPanel VerticalAlignment="Center" Margin="0,0,16,0">
+                  <TextBlock Text="Erreur" />
+                  <TextBlock Text="Un champ à corriger, un refus du serveur." Classes="muted" TextWrapping="Wrap" />
+                </StackPanel>
+                <Button Grid.Column="1" Classes="small" Command="{Binding TestSound}" CommandParameter="Error" ToolTip.Tip="Écouter ce son" Margin="0,0,12,0" VerticalAlignment="Center">
+                  <StackPanel Orientation="Horizontal" Spacing="6"><mi:MaterialIcon Kind="Play" Width="14" Height="14" /><TextBlock Text="Écouter" /></StackPanel>
+                </Button>
+                <ToggleSwitch Grid.Column="2" IsChecked="{Binding Prefs.SoundError}" OnContent="" OffContent="" VerticalAlignment="Center" />
+              </Grid>
+              <Border Classes="prefsep" />
+              <Grid ColumnDefinitions="*,Auto,Auto" Classes="prefrow">
+                <StackPanel VerticalAlignment="Center" Margin="0,0,16,0">
+                  <TextBlock Text="Message" />
+                  <TextBlock Text="Les messages discrets en bas de la fenêtre." Classes="muted" TextWrapping="Wrap" />
+                </StackPanel>
+                <Button Grid.Column="1" Classes="small" Command="{Binding TestSound}" CommandParameter="Notification" ToolTip.Tip="Écouter ce son" Margin="0,0,12,0" VerticalAlignment="Center">
+                  <StackPanel Orientation="Horizontal" Spacing="6"><mi:MaterialIcon Kind="Play" Width="14" Height="14" /><TextBlock Text="Écouter" /></StackPanel>
+                </Button>
+                <ToggleSwitch Grid.Column="2" IsChecked="{Binding Prefs.SoundNotify}" OnContent="" OffContent="" VerticalAlignment="Center" />
+              </Grid>
+              <Border Classes="prefsep" />
+              <Grid ColumnDefinitions="*,Auto,Auto" Classes="prefrow">
+                <StackPanel VerticalAlignment="Center" Margin="0,0,16,0">
+                  <TextBlock Text="Ouverture" />
+                  <TextBlock Text="La fin de l'écran d'ouverture, à la connexion." Classes="muted" TextWrapping="Wrap" />
+                </StackPanel>
+                <Button Grid.Column="1" Classes="small" Command="{Binding TestSound}" CommandParameter="Opening" ToolTip.Tip="Écouter ce son" Margin="0,0,12,0" VerticalAlignment="Center">
+                  <StackPanel Orientation="Horizontal" Spacing="6"><mi:MaterialIcon Kind="Play" Width="14" Height="14" /><TextBlock Text="Écouter" /></StackPanel>
+                </Button>
+                <ToggleSwitch Grid.Column="2" IsChecked="{Binding Prefs.SoundOpening}" OnContent="" OffContent="" VerticalAlignment="Center" />
+              </Grid>
+              </StackPanel>
+            </Border>
+          </StackPanel>
+
+        <Button Classes="link" Content="Rétablir les réglages d'origine de ce poste" Command="{Binding ResetPrefs}" IsVisible="{Binding IsPoste}" HorizontalAlignment="Left" />
       </StackPanel>
     </ScrollViewer>
   </Grid>

@@ -12,6 +12,8 @@ public static class Format
     public static string Amount(decimal value) => value.ToString("N0", Fr);
 
     public static string Date(DateOnly date) => date.ToString("dd/MM/yyyy", Fr);
+    /// <summary>Date en toutes lettres, avec la majuscule du jour : « Samedi 25 octobre 2026 ».</summary>
+    public static string LongDate(DateOnly date) { var t = date.ToString("dddd d MMMM yyyy", Fr); return char.ToUpper(t[0], Fr) + t[1..]; }
 
     public static string DateTime(DateTime utc) => utc.ToLocalTime().ToString("dd/MM/yyyy HH:mm", Fr);
 

@@ -3,11 +3,19 @@
              xmlns:mi="using:Material.Icons.Avalonia"
              xmlns:infra="using:Scolia.Bureau.Infrastructure"
              x:Class="Scolia.Bureau.Views.FormView">
+  <UserControl.Styles>
+    <!-- Formulaire intégré à une page : ni ombre ni en-tête, les champs défilent avec la page -->
+    <Style Selector="Border.sheet.embedded">
+      <Setter Property="BoxShadow" Value="0 0 0 0 Transparent" />
+      <Setter Property="Background" Value="{DynamicResource GroupBrush}" />
+      <Setter Property="MaxWidth" Value="720" />
+    </Style>
+  </UserControl.Styles>
   <!-- Feuille de dialogue macOS : titre gras, champs, boutons en capsule alignés à droite -->
-  <Border Classes="card" MinWidth="460" MaxWidth="620" Padding="0" CornerRadius="14" Background="{DynamicResource SurfaceBrush}" ClipToBounds="True"
+  <Border Classes="card sheet" Classes.embedded="{Binding Embedded}" MinWidth="460" MaxWidth="620" Padding="0" CornerRadius="14" Background="{DynamicResource SurfaceBrush}" ClipToBounds="True"
           BoxShadow="0 8 32 0 #3D000000">
     <StackPanel>
-      <Grid ColumnDefinitions="Auto,*" Margin="24,22,24,0">
+      <Grid ColumnDefinitions="Auto,*" Margin="24,22,24,0" IsVisible="{Binding !Embedded}">
         <Border Classes="appicon large" Background="{Binding HeaderBrush}" VerticalAlignment="Top" Margin="0,0,14,0">
           <mi:MaterialIcon Kind="{Binding HeaderIcon}" />
         </Border>
@@ -20,16 +28,20 @@
       <TextBlock Text="{Binding Message}" TextWrapping="Wrap" IsVisible="{Binding HasMessage}" Margin="24,16,24,0" />
 
       <!-- Champs : un contrôle par nature de champ, défilants si la fenêtre est basse -->
-      <ScrollViewer MaxHeight="460" VerticalScrollBarVisibility="Auto" Padding="24,16,10,8">
+      <ScrollViewer MaxHeight="{Binding FieldsMaxHeight}" VerticalScrollBarVisibility="Auto" Padding="24,16,10,8">
       <ItemsControl ItemsSource="{Binding Fields}" Margin="0,0,14,0">
         <ItemsControl.ItemTemplate>
           <DataTemplate>
             <StackPanel Spacing="4" Margin="0,0,0,8">
+              <StackPanel IsVisible="{Binding IsHeader}" Spacing="2" Margin="0,10,0,2">
+                <TextBlock Text="{Binding Label}" Classes="heading" />
+                <TextBlock Text="{Binding Hint}" Classes="muted" TextWrapping="Wrap" IsVisible="{Binding Hint, Converter={x:Static ObjectConverters.IsNotNull}}" />
+              </StackPanel>
               <CheckBox IsVisible="{Binding IsFlag}" IsChecked="{Binding Flag}" Content="{Binding Label}" />
-              <StackPanel IsVisible="{Binding !IsFlag}" Spacing="4">
+              <StackPanel IsVisible="{Binding IsInput}" Spacing="4">
                 <TextBlock Text="{Binding Caption}" Classes="fieldlabel" />
                 <TextBox IsVisible="{Binding IsText}" Text="{Binding Text}" PlaceholderText="{Binding Hint}" />
-                <TextBox IsVisible="{Binding IsPhone}" Text="{Binding Text}" PlaceholderText="{Binding Hint}" infra:PhoneInput.Digits="True" />
+                <TextBox IsVisible="{Binding IsPhone}" Text="{Binding Text}" PlaceholderText="{Binding Hint}" infra:PhoneInput.Digits="{Binding IsPhone}" />
                 <TextBox IsVisible="{Binding IsSecret}" Text="{Binding Text}" PasswordChar="•" PlaceholderText="{Binding Hint}" />
                 <TextBox IsVisible="{Binding IsMultiline}" Text="{Binding Text}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="84" />
                 <CalendarDatePicker PlaceholderText="jj/mm/aaaa" SelectedDateFormat="Short" IsVisible="{Binding IsDay}" SelectedDate="{Binding Day}" HorizontalAlignment="Stretch" />

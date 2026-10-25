@@ -283,7 +283,7 @@ void Smoke(ShellViewModel shell, ScoliaClient api, Window window, string passwor
     Check("établissement", settings.SchoolForm is not null);
     var years = new SettingsPage(shell);
     Wait(shell.Open(() => years));
-    years.Section = years.Sections[1];
+    years.Section = years.SchoolSections[1];
     Wait(Task.Delay(400));
     Check("années scolaires", years.Years.Count > 0, $"{years.Years.Count} année(s)");
 
@@ -451,7 +451,9 @@ Page(() => new DisciplinePage(shell), "16-discipline.png");
 Page(() => new StaffPage(shell), "17-personnel.png");
 Page(() => new StaffPage(shell) { ShowPayroll = true }, "18-paie.png");
 Page(() => new SettingsPage(shell), "19-parametres-etablissement.png");
-Page(() => new SettingsPage(shell), "20-parametres-annees.png", p => ((SettingsPage)p).Section = ((SettingsPage)p).Sections[1]);
+Page(() => new SettingsPage(shell), "20-parametres-annees.png", p => ((SettingsPage)p).Section = ((SettingsPage)p).SchoolSections[1]);
+foreach (var (key, file) in new[] { ("apparence", "20b-parametres-theme.png"), ("texte", "20c-parametres-texte.png"), ("fenetres", "20d-parametres-fenetres.png"), ("animations", "20e-parametres-animations.png"), ("sons", "20f-parametres-sons.png") })
+    Page(() => new SettingsPage(shell, key), file);
 Page(() => new UsersPage(shell), "21-utilisateurs.png");
 Page(() => new DataPage(shell), "22-donnees.png");
 Page(() => new ReportsPage(shell), "22d-rapports-exports.png");
@@ -537,8 +539,6 @@ shell.CloseBackstage();
 
 // Préférences et mot de passe du menu Compte.
 shell.OpenBackstage();
-shell.Backstage.Section = shell.Backstage.Items.First(i => i.Value == "preferences");
-Save(window, "26c-preferences.png");
 shell.Backstage.Section = shell.Backstage.Items.First(i => i.Value == "mot-de-passe");
 Save(window, "26d-mot-de-passe.png");
 shell.CloseBackstage();

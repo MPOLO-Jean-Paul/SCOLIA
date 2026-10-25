@@ -13,9 +13,15 @@ public sealed record ToolCardVm(string Title, string Description, MaterialIconKi
 /// <summary>Reçu récent de l'accueil : une ligne de la liste « Récents », qui ouvre le reçu.</summary>
 public sealed record RecentReceiptVm(string Number, string Student, string Date, string Method, string Amount, string Status, AsyncCommand Open);
 
+/// <summary>Indicateur de l'accueil : une icône, un chiffre, une précision ; un clic ouvre la page détaillée.</summary>
+public sealed record HomeKpiVm(string Label, string Value, string Hint, MaterialIconKind Icon, IBrush Brush, AsyncCommand Open);
+
+/// <summary>Point de la liste « Aujourd'hui » : ce qui demande une action dans la journée.</summary>
+public sealed record HomeTaskVm(string Text, string Detail, MaterialIconKind Icon, IBrush Brush, AsyncCommand Open);
+
 /// <summary>
-/// Accueil, sur le modèle d'Acrobat : les outils recommandés en tête, puis les derniers reçus.
-/// Les indicateurs détaillés restent dans Données, Tableau de bord.
+/// Accueil : un bandeau de bienvenue avec la date et l'état de la caisse, quatre indicateurs, les outils
+/// recommandés, puis les derniers reçus et ce qui reste à faire aujourd'hui. Le détail reste dans le Tableau de bord.
 /// </summary>
 public sealed class HomePage : PageViewModel
 {
@@ -34,6 +40,20 @@ public sealed class HomePage : PageViewModel
 
     public ObservableCollection<ToolCardVm> Tools { get; } = [];
     public ObservableCollection<RecentReceiptVm> Receipts { get; } = [];
+    public ObservableCollection<HomeKpiVm> Kpis { get; } = [];
+    public ObservableCollection<HomeTaskVm> Tasks { get; } = [];
+
+    /// <summary>Bonjour le jour, bonsoir à partir de 18 heures.</summary>
+    public string Greeting => $"{(DateTime.Now.Hour >= 18 ? "Bonsoir" : "Bonjour")}, {Shell.AccountName}";
+    public string DateLine => Format.LongDate(DateOnly.FromDateTime(DateTime.Today));
+    public string SchoolLine => Shell.SchoolLine;
+    private string cashLine = string.Empty;
+    private IBrush cashBrush = Brushes.Transparent;
+    public string CashLine { get => cashLine; private set { if (Set(ref cashLine, value)) Raise(nameof(HasCashLine)); } }
+    public bool HasCashLine => cashLine.Length > 0;
+    public IBrush CashBrush { get => cashBrush; private set => Set(ref cashBrush, value); }
+    public bool HasKpis => Kpis.Count > 0;
+    public bool HasTasks => Tasks.Count > 0;
     public RelayCommand ShowAllTools { get; }
     public string TodayLine { get => todayLine; private set { if (Set(ref todayLine, value)) Raise(nameof(HasTodayLine)); } }
     public bool HasTodayLine => todayLine.Length > 0;
@@ -42,23 +62,60 @@ public sealed class HomePage : PageViewModel
     {
         subtitle = Shell.SchoolLine;
         Raise(nameof(Subtitle));
+        Raise(nameof(Greeting));
+        Raise(nameof(SchoolLine));
         Receipts.Clear();
-        if (!Shell.Can(Perm.ReportsRead)) return;
+        Kpis.Clear();
+        Tasks.Clear();
+        if (!Shell.Can(Perm.ReportsRead)) { RaiseLists(); return; }
 
         var d = await Shell.Api.GetAsync<DashboardDto>("api/rapports/tableau-de-bord");
-        foreach (var r in d.LatestReceipts)
+        foreach (var r in d.LatestReceipts.Take(6))
             Receipts.Add(new RecentReceiptVm(r.Number, Student(r.Allocations), Format.Date(r.Date), Labels.Method(r.Method), Money(r.Amount), r.Status,
                 new AsyncCommand(() => Shell.Run(() => Shell.Open(() => new ReceiptDetailPage(Shell, r.Id))))));
 
-        try
+        AsyncCommand Go(Func<PageViewModel> page) => new(() => Shell.Run(() => Shell.Open(page)));
+        TodayDto? t = null;
+        try { t = await Shell.Api.GetAsync<TodayDto>("api/rapports/aujourdhui"); }
+        catch (ApiException) { }
+
+        Kpis.Add(new HomeKpiVm("Encaissé aujourd'hui", Money(t?.CollectedToday ?? d.CollectedToday),
+            t is null ? "Journée en cours" : Format.Count(t.ReceiptsToday, "reçu émis", "reçus émis"), MaterialIconKind.HandCoin, ThemeBrush.Get("ToneGreen"),
+            Go(() => new ReceiptsPage(Shell))));
+        Kpis.Add(new HomeKpiVm("Encaissé ce mois", Money(d.CollectedThisMonth), $"{Money(d.CollectedTotal)} depuis la rentrée", MaterialIconKind.CalendarMonth, ThemeBrush.Get("ToneBlue"),
+            Go(() => new DashboardPage(Shell))));
+        Kpis.Add(new HomeKpiVm("Apprenants actifs", Format.Count(d.ActiveStudents, "apprenant", "apprenants"),
+            d.NewThisMonth > 0 ? $"{Format.Count(d.NewThisMonth, "inscrit", "inscrits")} ce mois" : "Aucune inscription ce mois", MaterialIconKind.AccountGroup, ThemeBrush.Get("ToneIndigo"),
+            Go(() => new StudentsPage(Shell))));
+        Kpis.Add(new HomeKpiVm("Recouvrement", $"{d.RecoveryRate:0} %", d.StudentsLate > 0 ? $"{Format.Count(d.StudentsLate, "apprenant en retard", "apprenants en retard")}" : "Tout le monde est à jour",
+            MaterialIconKind.ChartBar, ThemeBrush.Get(d.StudentsLate > 0 ? "ToneOrange" : "ToneGreen"), Go(() => new DebtorsPage(Shell))));
+
+        if (t is not null)
         {
-            var t = await Shell.Api.GetAsync<TodayDto>("api/rapports/aujourdhui");
-            TodayLine = $"Aujourd'hui : {Format.Count(t.ReceiptsToday, "reçu", "reçus")} pour {Money(t.CollectedToday)}"
-                + (t.CashClosed ? " · caisse arrêtée" : t.ReceiptsToday > 0 ? " · caisse à arrêter" : string.Empty)
-                + (t.Appointments.Count > 0 ? $" · {Format.Count(t.Appointments.Count, "parent convoqué", "parents convoqués")}" : string.Empty)
-                + (t.Birthdays.Count > 0 ? $" · {Format.Count(t.Birthdays.Count, "anniversaire", "anniversaires")}" : string.Empty);
+            CashLine = t.CashClosed ? "Caisse arrêtée" : t.ReceiptsToday > 0 ? "Caisse à arrêter" : "Caisse ouverte";
+            CashBrush = ThemeBrush.Get(t.CashClosed ? "ToneGreen" : t.ReceiptsToday > 0 ? "ToneOrange" : "ToneBlue");
+            if (!t.CashClosed && t.ReceiptsToday > 0 && Shell.Can(Perm.CashClose))
+                Tasks.Add(new HomeTaskVm("Arrêter la caisse", $"{Format.Count(t.ReceiptsToday, "reçu", "reçus")} pour {Money(t.CollectedToday)}", MaterialIconKind.CashRegister,
+                    ThemeBrush.Get("ToneOrange"), Go(() => new CashPage(Shell))));
+            if (t.AttendanceMarked == 0 && Shell.Can(Perm.AcademicsWrite))
+                Tasks.Add(new HomeTaskVm("Faire l'appel", "Aucun apprenant pointé aujourd'hui", MaterialIconKind.ClipboardCheck, ThemeBrush.Get("ToneTeal"),
+                    Go(() => new AttendancePage(Shell))));
+            foreach (var a in t.Appointments.Take(3))
+                Tasks.Add(new HomeTaskVm($"Parent convoqué : {a.Name}", $"{a.Promotion} · {a.Detail}", MaterialIconKind.AccountClock, ThemeBrush.Get("ToneRed"),
+                    Go(() => new StudentDetailPage(Shell, a.StudentId))));
+            foreach (var b in t.Birthdays.Take(3))
+                Tasks.Add(new HomeTaskVm($"Anniversaire : {b.Name}", b.Promotion, MaterialIconKind.CakeVariant, ThemeBrush.Get("TonePink"),
+                    Go(() => new StudentDetailPage(Shell, b.StudentId))));
+            TodayLine = Format.Count(t.ReceiptsToday, "reçu aujourd'hui", "reçus aujourd'hui");
         }
-        catch (ApiException) { TodayLine = string.Empty; }
+        else TodayLine = string.Empty;
+        RaiseLists();
+    }
+
+    private void RaiseLists()
+    {
+        Raise(nameof(HasKpis));
+        Raise(nameof(HasTasks));
     }
 
     /// <summary>Le libellé du serveur est « matricule · nom » : seul le nom est affiché, le matricule en tête de ligne serait du bruit.</summary>

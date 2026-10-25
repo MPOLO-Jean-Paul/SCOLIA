@@ -78,7 +78,7 @@ public static class Sidebar
             Group("Administration",
                 Item("Personnel et paie", MaterialIconKind.Briefcase, "ToneOrange", Perm.StaffManage, typeof(StaffPage), () => new StaffPage(shell)),
                 Item("Pointage", MaterialIconKind.ClockCheck, "ToneTeal", Perm.StaffManage, typeof(StaffAttendancePage), () => new StaffAttendancePage(shell)),
-                Item("Paramètres", MaterialIconKind.Cog, "ToneNeutral", Perm.SettingsWrite, typeof(SettingsPage), () => new SettingsPage(shell)),
+                Item("Paramètres", MaterialIconKind.Cog, "ToneNeutral", null, typeof(SettingsPage), () => new SettingsPage(shell)),
                 Item("Utilisateurs", MaterialIconKind.AccountCog, "ToneBlue", Perm.UsersManage, typeof(UsersPage), () => new UsersPage(shell))),
         };
         return groups.Where(g => g.Items.Count > 0).ToList();

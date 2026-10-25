@@ -4,67 +4,134 @@
              xmlns:c="using:Scolia.Bureau.Controls"
              x:Class="Scolia.Bureau.Views.HomeView">
   <ScrollViewer>
-    <StackPanel Spacing="12" Margin="0,0,6,8">
+    <StackPanel Spacing="18" Margin="0,0,6,12">
 
-      <!-- Outils recommandés, comme l'accueil d'Acrobat : icône de couleur, nom, description, bouton Ouvrir -->
-      <Grid ColumnDefinitions="*,Auto">
-        <TextBlock Text="Outils recommandés" Classes="heading" VerticalAlignment="Center" />
-        <Button Grid.Column="1" Classes="link" Content="Afficher tous les outils" Command="{Binding ShowAllTools}" />
-      </Grid>
-      <ItemsControl ItemsSource="{Binding Tools}" Margin="0,0,-12,0">
+      <!-- Bienvenue : la date, l'établissement et l'état de la caisse -->
+      <Border Classes="card" Padding="22,18">
+        <Grid ColumnDefinitions="*,Auto">
+          <StackPanel Spacing="2" VerticalAlignment="Center">
+            <TextBlock Text="{Binding DateLine}" Classes="muted" />
+            <TextBlock Text="{Binding Greeting}" FontSize="{DynamicResource FsDisplay}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+            <TextBlock Text="{Binding SchoolLine}" Foreground="{DynamicResource Text2Brush}" TextTrimming="CharacterEllipsis" />
+          </StackPanel>
+          <Border Grid.Column="1" Classes="chip" VerticalAlignment="Center" IsVisible="{Binding HasCashLine}" Padding="12,6" Margin="16,0,0,0">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <Ellipse Width="8" Height="8" Fill="{Binding CashBrush}" VerticalAlignment="Center" />
+              <TextBlock Text="{Binding CashLine}" FontWeight="SemiBold" VerticalAlignment="Center" />
+            </StackPanel>
+          </Border>
+        </Grid>
+      </Border>
+
+      <!-- Quatre indicateurs : un clic ouvre la page qui détaille le chiffre -->
+      <ItemsControl ItemsSource="{Binding Kpis}" IsVisible="{Binding HasKpis}" Margin="0,0,-12,0">
         <ItemsControl.ItemsPanel>
           <ItemsPanelTemplate><UniformGrid Columns="4" /></ItemsPanelTemplate>
         </ItemsControl.ItemsPanel>
         <ItemsControl.ItemTemplate>
           <DataTemplate>
-            <Border Classes="toolcard" Margin="0,0,12,0">
-              <Grid RowDefinitions="Auto,Auto,*,Auto">
-                <Border Classes="appicon large" Background="{Binding Brush}" HorizontalAlignment="Left"><mi:MaterialIcon Kind="{Binding Icon}" /></Border>
-                <TextBlock Grid.Row="1" Text="{Binding Title}" FontWeight="Bold" Margin="0,12,0,4" />
-                <TextBlock Grid.Row="2" Text="{Binding Description}" Classes="muted" TextWrapping="Wrap" />
-                <Button Grid.Row="3" Classes="outline" Content="Ouvrir" Command="{Binding Open}" HorizontalAlignment="Left" Margin="0,14,0,0" />
-              </Grid>
-            </Border>
+            <Button Classes="cardbutton" Command="{Binding Open}" Margin="0,0,12,0" ToolTip.Tip="Ouvrir le détail">
+              <Border Classes="toolcard" MinHeight="0" Padding="16,14">
+                <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto">
+                  <Border Classes="appicon medium" Background="{Binding Brush}" Grid.RowSpan="3" VerticalAlignment="Top" Margin="0,2,12,0"><mi:MaterialIcon Kind="{Binding Icon}" /></Border>
+                  <TextBlock Grid.Column="1" Text="{Binding Label}" Foreground="{DynamicResource Text2Brush}" TextTrimming="CharacterEllipsis" />
+                  <TextBlock Grid.Column="1" Grid.Row="1" Text="{Binding Value}" FontSize="{DynamicResource FsTitle}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" Margin="0,2,0,0" />
+                  <TextBlock Grid.Column="1" Grid.Row="2" Text="{Binding Hint}" Classes="muted" TextTrimming="CharacterEllipsis" />
+                </Grid>
+              </Border>
+            </Button>
           </DataTemplate>
         </ItemsControl.ItemTemplate>
       </ItemsControl>
 
-      <!-- Récents : la liste des derniers reçus, comme la liste des fichiers récents d'Acrobat -->
-      <Grid ColumnDefinitions="*,Auto" Margin="0,20,0,0">
-        <TextBlock Text="Récents" Classes="heading" VerticalAlignment="Center" />
-        <TextBlock Grid.Column="1" Text="{Binding TodayLine}" Classes="muted" VerticalAlignment="Center" IsVisible="{Binding HasTodayLine}" />
-      </Grid>
-      <Border Classes="card" Padding="0">
-        <StackPanel>
-          <Grid ColumnDefinitions="2*,3*,1.3*,1.3*,1.3*" Margin="16,10,16,8">
-            <TextBlock Text="Reçu" Classes="colhead" />
-            <TextBlock Grid.Column="1" Text="Apprenant" Classes="colhead" />
-            <TextBlock Grid.Column="2" Text="Date" Classes="colhead" />
-            <TextBlock Grid.Column="3" Text="Mode" Classes="colhead" />
-            <TextBlock Grid.Column="4" Text="Montant" Classes="colhead" TextAlignment="Right" />
+      <!-- Outils recommandés : icône de couleur, nom, description, bouton Ouvrir -->
+      <StackPanel Spacing="10">
+        <Grid ColumnDefinitions="*,Auto">
+          <TextBlock Text="Outils recommandés" Classes="heading" VerticalAlignment="Center" />
+          <Button Grid.Column="1" Classes="link" Content="Afficher tous les outils" Command="{Binding ShowAllTools}" />
+        </Grid>
+        <ItemsControl ItemsSource="{Binding Tools}" Margin="0,0,-12,0">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate><UniformGrid Columns="4" /></ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate>
+              <Border Classes="toolcard" Margin="0,0,12,0" MinHeight="150">
+                <Grid RowDefinitions="Auto,Auto,*,Auto">
+                  <Border Classes="appicon large" Background="{Binding Brush}" HorizontalAlignment="Left"><mi:MaterialIcon Kind="{Binding Icon}" /></Border>
+                  <TextBlock Grid.Row="1" Text="{Binding Title}" FontWeight="Bold" Margin="0,12,0,4" />
+                  <TextBlock Grid.Row="2" Text="{Binding Description}" Classes="muted" TextWrapping="Wrap" />
+                  <Button Grid.Row="3" Classes="outline" Content="Ouvrir" Command="{Binding Open}" HorizontalAlignment="Left" Margin="0,12,0,0" />
+                </Grid>
+              </Border>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </StackPanel>
+
+      <!-- Derniers reçus, et à côté ce qui reste à faire aujourd'hui -->
+      <Grid ColumnDefinitions="2*,12,*">
+        <StackPanel Spacing="10">
+          <Grid ColumnDefinitions="*,Auto">
+            <TextBlock Text="Derniers reçus" Classes="heading" VerticalAlignment="Center" />
+            <TextBlock Grid.Column="1" Text="{Binding TodayLine}" Classes="muted" VerticalAlignment="Center" IsVisible="{Binding HasTodayLine}" />
           </Grid>
-          <Border Height="1" Background="{DynamicResource LineBrush}" />
-          <ItemsControl ItemsSource="{Binding Receipts}">
-            <ItemsControl.ItemTemplate>
-              <DataTemplate>
-                <Button Classes="row" Command="{Binding Open}">
-                  <Grid ColumnDefinitions="2*,3*,1.3*,1.3*,1.3*">
-                    <StackPanel Orientation="Horizontal" Spacing="10">
-                      <mi:MaterialIcon Kind="ReceiptTextOutline" Width="18" Height="18" Foreground="{DynamicResource TonePurple}" />
-                      <TextBlock Text="{Binding Number}" VerticalAlignment="Center" />
-                    </StackPanel>
-                    <TextBlock Grid.Column="1" Text="{Binding Student}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
-                    <TextBlock Grid.Column="2" Text="{Binding Date}" Classes="muted" VerticalAlignment="Center" />
-                    <TextBlock Grid.Column="3" Text="{Binding Method}" Classes="muted" VerticalAlignment="Center" />
-                    <TextBlock Grid.Column="4" Text="{Binding Amount}" VerticalAlignment="Center" TextAlignment="Right" />
-                  </Grid>
-                </Button>
-              </DataTemplate>
-            </ItemsControl.ItemTemplate>
-          </ItemsControl>
-          <c:EmptyState Icon="ReceiptTextOutline" Title="Aucun reçu récent" Hint="Les derniers encaissements apparaîtront ici." IsVisible="{Binding !Receipts.Count}" Margin="24" />
+          <Border Classes="card" Padding="0">
+            <StackPanel>
+              <Grid ColumnDefinitions="2*,3*,1.3*,1.4*" Margin="16,10,16,8">
+                <TextBlock Text="Reçu" Classes="colhead" />
+                <TextBlock Grid.Column="1" Text="Apprenant" Classes="colhead" />
+                <TextBlock Grid.Column="2" Text="Date" Classes="colhead" />
+                <TextBlock Grid.Column="3" Text="Montant" Classes="colhead" TextAlignment="Right" />
+              </Grid>
+              <Border Height="1" Background="{DynamicResource LineBrush}" />
+              <ItemsControl ItemsSource="{Binding Receipts}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate>
+                    <Button Classes="row" Command="{Binding Open}" ToolTip.Tip="Ouvrir le reçu">
+                      <Grid ColumnDefinitions="2*,3*,1.3*,1.4*">
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                          <mi:MaterialIcon Kind="ReceiptTextOutline" Width="18" Height="18" Foreground="{DynamicResource TonePurple}" />
+                          <TextBlock Text="{Binding Number}" VerticalAlignment="Center" />
+                        </StackPanel>
+                        <TextBlock Grid.Column="1" Text="{Binding Student}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                        <TextBlock Grid.Column="2" Text="{Binding Date}" Classes="muted" VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="3" Text="{Binding Amount}" FontWeight="SemiBold" VerticalAlignment="Center" TextAlignment="Right" />
+                      </Grid>
+                    </Button>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+              <c:EmptyState Icon="ReceiptTextOutline" Title="Aucun reçu récent" Hint="Les derniers encaissements apparaîtront ici." IsVisible="{Binding !Receipts.Count}" Margin="24" />
+            </StackPanel>
+          </Border>
         </StackPanel>
-      </Border>
+
+        <StackPanel Grid.Column="2" Spacing="10">
+          <TextBlock Text="Aujourd'hui" Classes="heading" />
+          <Border Classes="card" Padding="6">
+            <StackPanel>
+              <ItemsControl ItemsSource="{Binding Tasks}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate>
+                    <Button Classes="listrow" Command="{Binding Open}" Padding="10,8">
+                      <Grid ColumnDefinitions="Auto,*,Auto">
+                        <Border Classes="appicon" Background="{Binding Brush}" VerticalAlignment="Center" Margin="0,0,10,0"><mi:MaterialIcon Kind="{Binding Icon}" /></Border>
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                          <TextBlock Text="{Binding Text}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                          <TextBlock Text="{Binding Detail}" Classes="muted" TextTrimming="CharacterEllipsis" />
+                        </StackPanel>
+                        <mi:MaterialIcon Grid.Column="2" Kind="ChevronRight" Width="16" Height="16" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" />
+                      </Grid>
+                    </Button>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+              <c:EmptyState Icon="CheckCircleOutline" Title="Rien en attente" Hint="La caisse, l'appel et les rendez-vous du jour sont à jour." IsVisible="{Binding !HasTasks}" Margin="16" />
+            </StackPanel>
+          </Border>
+        </StackPanel>
+      </Grid>
     </StackPanel>
   </ScrollViewer>
 </UserControl>

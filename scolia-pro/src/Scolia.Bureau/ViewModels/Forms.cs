@@ -7,7 +7,7 @@ using Scolia.Bureau.Infrastructure;
 namespace Scolia.Bureau.ViewModels;
 
 /// <summary>Nature d'un champ de formulaire. Chaque nature a son contrôle dans la boîte de dialogue.</summary>
-public enum FieldKind { Text, Secret, Multiline, Amount, Day, Choice, Flag, Phone }
+public enum FieldKind { Text, Secret, Multiline, Amount, Day, Choice, Flag, Phone, Header }
 
 /// <summary>Champ d'un formulaire : sa valeur, son libellé et son erreur éventuelle.</summary>
 public sealed class FormField : Observable
@@ -50,13 +50,16 @@ public sealed class FormField : Observable
     public bool IsDay => Kind == FieldKind.Day;
     public bool IsChoice => Kind == FieldKind.Choice;
     public bool IsFlag => Kind == FieldKind.Flag;
+    /// <summary>Titre de groupe : il range les champs d'un long formulaire, sans valeur à saisir.</summary>
+    public bool IsHeader => Kind == FieldKind.Header;
+    public bool IsInput => Kind is not (FieldKind.Flag or FieldKind.Header);
     public string Caption => Required ? $"{Label} *" : Label;
 
     public bool IsEmpty => Kind switch
     {
         FieldKind.Day => Day is null,
         FieldKind.Choice => Choice is null,
-        FieldKind.Flag => false,
+        FieldKind.Flag or FieldKind.Header => false,
         _ => string.IsNullOrWhiteSpace(Text),
     };
 }
@@ -137,6 +140,9 @@ public sealed class FormViewModel : Observable
     public string Message { get; init; } = string.Empty;
     public string SubmitText { get; init; } = "Enregistrer";
     public string CancelText { get; init; } = "Annuler";
+    /// <summary>Formulaire posé dans une page : pas d'en-tête ni d'ombre, et les champs défilent avec la page.</summary>
+    public bool Embedded { get; init; }
+    public double FieldsMaxHeight => Embedded ? double.PositiveInfinity : 460;
     /// <summary>Faux pour un formulaire intégré à une page, qui n'a pas de bouton d'annulation.</summary>
     public bool ShowCancel { get; init; } = true;
     /// <summary>Action destructive : le bouton de validation prend la couleur d'alerte.</summary>
@@ -180,6 +186,9 @@ public sealed class FormViewModel : Observable
         Fields.Add(field);
         return field;
     }
+
+    /// <summary>Titre de groupe, avec une phrase d'explication facultative.</summary>
+    public FormField AddHeader(string label, string? hint = null) => Add($"titre-{Fields.Count}", label, FieldKind.Header, hint: hint);
 
     public FormField AddFlag(string key, string label, bool value) =>
         Track(new FormField(key, label, FieldKind.Flag, false, null) { Flag = value });
@@ -236,18 +245,30 @@ public sealed class FormViewModel : Observable
         return valid;
     }
 
+    /// <summary>Signale chaque validation, réussie ou refusée : la fenêtre principale joue le son choisi dans Paramètres, Sons.</summary>
+    public static event Action<bool>? Finished;
+
+    /// <summary>Faux pour une simple confirmation : le son vient de l'action qui suit, pas du clic.</summary>
+    public bool PlaysSound { get; init; } = true;
+
     private async Task SubmitAsync()
     {
-        if (onSubmit is null || !Validate()) return;
+        if (onSubmit is null) return;
+        if (!Validate()) { Finished?.Invoke(false); return; }
         Error = null;
         Busy = true;
         try
         {
-            if (await onSubmit(this)) Close(true);
+            if (await onSubmit(this))
+            {
+                Close(true);
+                if (PlaysSound) Finished?.Invoke(true);
+            }
         }
         catch (ApiException ex) { Error = ex.Message; }
         catch (HttpRequestException) { Error = "Le serveur SCOLIA ne répond pas. Vérifiez qu'il est lancé sur ce poste."; }
         catch (Exception ex) when (ex is not OperationCanceledException) { Error = $"Erreur inattendue : {ex.Message}"; }
         finally { Busy = false; }
+        if (Error is not null) Finished?.Invoke(false);
     }
 }

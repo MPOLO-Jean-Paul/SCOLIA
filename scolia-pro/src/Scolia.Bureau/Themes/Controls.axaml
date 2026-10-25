@@ -18,11 +18,11 @@
 
   <!-- Base : police du système, couleurs et tailles des Réglages de macOS. -->
   <Style Selector="TemplatedControl">
-    <Setter Property="FontFamily" Value="{StaticResource UiFont}" />
+    <Setter Property="FontFamily" Value="{DynamicResource UiFont}" />
     <Setter Property="FontSize" Value="{DynamicResource FsBase}" />
   </Style>
   <Style Selector="TextBlock">
-    <Setter Property="FontFamily" Value="{StaticResource UiFont}" />
+    <Setter Property="FontFamily" Value="{DynamicResource UiFont}" />
     <Setter Property="FontSize" Value="{DynamicResource FsBase}" />
   </Style>
 
@@ -694,6 +694,22 @@
   </Style>
   <Style Selector="Border.toolcard:pointerover">
     <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
+  </Style>
+  <!-- Carte cliquable : le bouton s'efface, la carte porte le survol -->
+  <Style Selector="Button.cardbutton">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="CornerRadius" Value="{StaticResource RadiusCard}" />
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    <Setter Property="Cursor" Value="Hand" />
+  </Style>
+  <Style Selector="Button.cardbutton:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="Transparent" />
+  </Style>
+  <Style Selector="Button.cardbutton:pointerover Border.toolcard">
+    <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
   </Style>
   <!-- Ligne cliquable d'une liste, comme la liste des fichiers récents d'Acrobat -->
   <Style Selector="Button.row">

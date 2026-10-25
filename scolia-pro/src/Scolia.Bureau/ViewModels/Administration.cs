@@ -286,6 +286,17 @@ public sealed record SectionRowVm(Guid Id, string Code, string Name, string Acti
 public sealed record PromotionRowVm(Guid Id, string Code, string Name, string Section, string Level, string Students, string Monthly, string Annual, string Active, PromotionDto Source);
 
 /// <summary>Paramètres de l'établissement : identité, années scolaires, sections et promotions.</summary>
+/// <summary>Pastille d'une couleur d'accent : un clic l'applique, une coche marque la couleur choisie.</summary>
+public sealed class AccentSwatchVm(string key, string label, IBrush brush, RelayCommand choose, Func<bool> isSelected) : Observable
+{
+    public string Key { get; } = key;
+    public string Label { get; } = label;
+    public IBrush Brush { get; } = brush;
+    public RelayCommand Choose { get; } = choose;
+    public bool IsSelected => isSelected();
+    public void Refresh() => Raise(nameof(IsSelected));
+}
+
 public sealed class SettingsPage : PageViewModel
 {
     private BackstageItemVm? section;
@@ -295,18 +306,86 @@ public sealed class SettingsPage : PageViewModel
     private string subtitle = string.Empty;
     private FormViewModel? schoolForm;
 
-    public SettingsPage(ShellViewModel shell) : base(shell)
+    public SettingsPage(ShellViewModel shell, string? open = null) : base(shell)
     {
-        // Rubriques avec leur icône, comme la liste des Réglages de macOS.
-        Sections =
+        // Rubriques avec leur icône, comme la liste des Réglages de macOS : l'établissement pour le secrétariat,
+        // puis les réglages de ce poste, ouverts à tous les comptes.
+        SchoolSections = Shell.Can(Perm.SettingsWrite)
+            ?
+            [
+                new BackstageItemVm("etablissement", "Établissement", MaterialIconKind.OfficeBuilding, "ToneNeutral"),
+                new BackstageItemVm("annees", "Années scolaires", MaterialIconKind.Calendar, "ToneRed"),
+                new BackstageItemVm("sections", "Sections", MaterialIconKind.ViewGrid, "ToneIndigo"),
+                new BackstageItemVm("promotions", "Promotions et frais", MaterialIconKind.School, "ToneBlue"),
+            ]
+            : [];
+        PosteSections =
         [
-            new BackstageItemVm("etablissement", "Établissement", MaterialIconKind.OfficeBuilding, "ToneNeutral"),
-            new BackstageItemVm("annees", "Années scolaires", MaterialIconKind.Calendar, "ToneRed"),
-            new BackstageItemVm("sections", "Sections", MaterialIconKind.ViewGrid, "ToneIndigo"),
-            new BackstageItemVm("promotions", "Promotions et frais", MaterialIconKind.School, "ToneBlue"),
+            new BackstageItemVm("apparence", "Thème et couleurs", MaterialIconKind.Palette, "TonePurple"),
+            new BackstageItemVm("texte", "Texte et polices", MaterialIconKind.FormatFont, "ToneBlue"),
+            new BackstageItemVm("fenetres", "Fenêtres et affichage", MaterialIconKind.WindowMaximize, "ToneTeal"),
+            new BackstageItemVm("animations", "Animations et fluidité", MaterialIconKind.AnimationPlay, "ToneOrange"),
+            new BackstageItemVm("sons", "Sons", MaterialIconKind.VolumeHigh, "TonePink"),
         ];
-        section = Sections[0];
+        var all = SchoolSections.Concat(PosteSections).ToList();
+        section = all.FirstOrDefault(s => s.Value == open) ?? all[0];
+        Swatches = Preferences.AccentSwatches.Select(a => new AccentSwatchVm(a.Key, a.Label, new SolidColorBrush(a.Color),
+            new RelayCommand(() => { Prefs.Accent = a.Key; RaiseSwatches(); }), () => Prefs.Accent == a.Key)).ToList();
+        ResetPrefs = new RelayCommand(() => { Prefs.Reset(); RaisePrefs(); Shell.Notify("Réglages de ce poste rétablis."); });
+        TestSound = new RelayCommand<string>(kind => Sounds.Play(Prefs, Enum.TryParse<SoundKind>(kind, out var k) ? k : SoundKind.Notification, force: true));
         RebuildActions();
+    }
+
+    // ---------- Réglages de ce poste : chaque changement s'applique tout de suite et reste enregistré ----------
+    public Preferences Prefs => Shell.Prefs;
+    public IReadOnlyList<AccentSwatchVm> Swatches { get; }
+    public RelayCommand ResetPrefs { get; }
+    public RelayCommand<string> TestSound { get; }
+    public IReadOnlyList<ChoiceItem> Themes => Preferences.Themes;
+    public IReadOnlyList<ChoiceItem> Fonts => Preferences.Fonts;
+    public IReadOnlyList<ChoiceItem> TextSizes => Preferences.TextSizes;
+    public IReadOnlyList<ChoiceItem> StartupModes => Preferences.StartupModes;
+    public IReadOnlyList<ChoiceItem> Speeds => Preferences.Speeds;
+    public IReadOnlyList<ChoiceItem> OpeningDurations => Preferences.OpeningDurations;
+    public IReadOnlyList<ChoiceItem> SoundStyles => Preferences.SoundStyles;
+
+    private static ChoiceItem? Pick(IReadOnlyList<ChoiceItem> list, string value) => list.FirstOrDefault(c => c.Value == value);
+
+    public ChoiceItem? Theme { get => Pick(Themes, Prefs.Theme); set { if (value is not null) { Prefs.Theme = value.Value; RaiseThemes(); } } }
+    public bool ThemeSystem { get => Prefs.Theme == "system"; set { if (value) { Prefs.Theme = "system"; RaiseThemes(); } } }
+    public bool ThemeLight { get => Prefs.Theme == "light"; set { if (value) { Prefs.Theme = "light"; RaiseThemes(); } } }
+    public bool ThemeDark { get => Prefs.Theme == "dark"; set { if (value) { Prefs.Theme = "dark"; RaiseThemes(); } } }
+    public ChoiceItem? Font { get => Pick(Fonts, Prefs.Font); set { if (value is not null) Prefs.Font = value.Value; } }
+    public ChoiceItem? Startup { get => Pick(StartupModes, Prefs.Startup); set { if (value is not null) Prefs.Startup = value.Value; } }
+    public ChoiceItem? Speed { get => Pick(Speeds, Prefs.Speed); set { if (value is not null) Prefs.Speed = value.Value; } }
+    public ChoiceItem? OpeningDuration
+    {
+        get => Pick(OpeningDurations, Prefs.OpeningSeconds.ToString(CultureInfo.InvariantCulture));
+        set { if (value is not null) Prefs.OpeningSeconds = int.Parse(value.Value, CultureInfo.InvariantCulture); }
+    }
+    public ChoiceItem? SoundStyle { get => Pick(SoundStyles, Prefs.SoundStyle); set { if (value is not null) Prefs.SoundStyle = value.Value; } }
+    /// <summary>Taille du texte de 80 à 160 %, réglée au curseur.</summary>
+    public double TextScale { get => Prefs.Scale; set { Prefs.Scale = value; Raise(nameof(TextScaleLabel)); } }
+    public string TextScaleLabel => Prefs.ZoomLabel;
+    public double Volume { get => Prefs.SoundVolume; set { Prefs.SoundVolume = (int)Math.Round(value); Raise(nameof(VolumeLabel)); } }
+    public string VolumeLabel => Prefs.VolumeLabel;
+
+    private void RaiseThemes()
+    {
+        Raise(nameof(Theme)); Raise(nameof(ThemeSystem)); Raise(nameof(ThemeLight)); Raise(nameof(ThemeDark));
+    }
+
+    private void RaiseSwatches()
+    {
+        foreach (var s in Swatches) s.Refresh();
+    }
+
+    private void RaisePrefs()
+    {
+        RaiseThemes();
+        RaiseSwatches();
+        foreach (var name in new[] { nameof(Font), nameof(Startup), nameof(Speed), nameof(OpeningDuration), nameof(SoundStyle), nameof(TextScale), nameof(TextScaleLabel), nameof(Volume), nameof(VolumeLabel), nameof(Prefs) })
+            Raise(name);
     }
 
     /// <summary>Affiche dans l'en-tête les seules actions de la rubrique ouverte.</summary>
@@ -329,9 +408,12 @@ public sealed class SettingsPage : PageViewModel
                 Action("Modifier", MaterialIconKind.PencilOutline, EditSelectedAsync, open: true);
                 Action("Supprimer", MaterialIconKind.DeleteOutline, DeletePromotionAsync, row: true);
                 break;
-            default:
+            case "etablissement":
                 Action("Changer le logo", MaterialIconKind.ImageOutline, ChangeLogoAsync);
                 break;
+            default:
+                Action("Rétablir les réglages", MaterialIconKind.Restore, () => { ResetPrefs.Execute(null); return Task.CompletedTask; });
+                return;
         }
         ActionRefresh();
     }
@@ -340,17 +422,23 @@ public sealed class SettingsPage : PageViewModel
     public override string Subtitle => subtitle;
     public override MaterialIconKind Glyph => MaterialIconKind.CogOutline;
 
-    public IReadOnlyList<BackstageItemVm> Sections { get; }
+    public IReadOnlyList<BackstageItemVm> SchoolSections { get; }
+    public IReadOnlyList<BackstageItemVm> PosteSections { get; }
+    public bool HasSchoolSections => SchoolSections.Count > 0;
+
+    /// <summary>Deux listes à gauche : choisir dans l'une efface la sélection de l'autre.</summary>
+    public BackstageItemVm? SchoolSection { get => SchoolSections.Contains(section!) ? section : null; set { if (value is not null) Section = value; } }
+    public BackstageItemVm? PosteSection { get => PosteSections.Contains(section!) ? section : null; set { if (value is not null) Section = value; } }
+
     public BackstageItemVm? Section
     {
         get => section;
         set
         {
             if (!Set(ref section, value)) return;
-            Raise(nameof(IsSchool));
-            Raise(nameof(IsYears));
-            Raise(nameof(IsSections));
-            Raise(nameof(IsPromotions));
+            foreach (var name in new[] { nameof(IsSchool), nameof(IsYears), nameof(IsSections), nameof(IsPromotions), nameof(IsAppearance), nameof(IsText),
+                         nameof(IsWindows), nameof(IsAnimations), nameof(IsSounds), nameof(IsPoste), nameof(SchoolSection), nameof(PosteSection), nameof(SectionTitle), nameof(SectionHint) })
+                Raise(name);
             RebuildActions();
             if (value is not null) _ = Shell.Run(RefreshAsync);
         }
@@ -360,6 +448,28 @@ public sealed class SettingsPage : PageViewModel
     public bool IsYears => section?.Value == "annees";
     public bool IsSections => section?.Value == "sections";
     public bool IsPromotions => section?.Value == "promotions";
+    public bool IsAppearance => section?.Value == "apparence";
+    public bool IsText => section?.Value == "texte";
+    public bool IsWindows => section?.Value == "fenetres";
+    public bool IsAnimations => section?.Value == "animations";
+    public bool IsSounds => section?.Value == "sons";
+    public bool IsPoste => PosteSections.Contains(section!);
+    public string SectionTitle => section?.Label ?? string.Empty;
+
+    /// <summary>Phrase d'explication sous le titre de chaque rubrique.</summary>
+    public string SectionHint => section?.Value switch
+    {
+        "etablissement" => "Identité, coordonnées, monnaie et en-tête des cartes d'accès. Ces informations figurent sur les reçus et les documents.",
+        "annees" => "Les années scolaires, leurs mois de paiement et l'année courante.",
+        "sections" => "Les filières de l'établissement, qui regroupent les promotions.",
+        "promotions" => "Les classes, leur code de 4 caractères, leur mensualité et leurs frais.",
+        "apparence" => "Clair, sombre ou selon Windows, et la couleur des boutons et des sélections.",
+        "texte" => "La police et la taille du texte de toute l'interface.",
+        "fenetres" => "La taille de la fenêtre au lancement et les éléments affichés autour des pages.",
+        "animations" => "Les mouvements de l'interface : fondus, transitions entre pages et écran d'ouverture.",
+        "sons" => "Un son discret quand une action réussit, échoue ou quand un message s'affiche.",
+        _ => string.Empty,
+    };
 
     public FormViewModel? SchoolForm { get => schoolForm; private set => Set(ref schoolForm, value); }
     public ObservableCollection<YearRowVm> Years { get; } = [];
@@ -371,6 +481,13 @@ public sealed class SettingsPage : PageViewModel
 
     public override async Task LoadAsync()
     {
+        if (IsPoste)
+        {
+            subtitle = "Réglages de ce poste, enregistrés automatiquement";
+            Raise(nameof(Subtitle));
+            RaisePrefs();
+            return;
+        }
         switch (section?.Value)
         {
             case "annees":
@@ -419,27 +536,31 @@ public sealed class SettingsPage : PageViewModel
             Shell.Notify("Établissement enregistré. Les reçus suivants utilisent ces informations.");
             return true;
         })
-        { SubmitText = "Enregistrer", ShowCancel = false };
-        form.Add("nom", "Nom", value: s.Name, required: true);
+        { SubmitText = "Enregistrer", ShowCancel = false, Embedded = true };
+        form.AddHeader("Identité", "Nom et sigle figurent en tête des reçus, des listes et des cartes d'accès.");
+        form.Add("nom", "Nom de l'établissement", value: s.Name, required: true);
         form.Add("sigle", "Sigle", value: s.ShortName, required: true);
-        form.Add("slogan", "Slogan", value: s.Motto);
+        form.Add("slogan", "Devise ou slogan", value: s.Motto);
+        form.AddHeader("Coordonnées");
         form.Add("adresse", "Adresse", value: s.Address);
         form.Add("ville", "Ville", value: s.City);
         form.Add("pays", "Pays", value: s.Country);
         form.Add("telephone", "Téléphone", FieldKind.Phone, value: s.Phone, hint: "10 chiffres, ex. 0812345678");
         form.Add("email", "E-mail", value: s.Email);
-        form.Add("ministere", "Ministère (cartes d'accès)", value: s.CardMinistry);
-        form.Add("direction", "Direction (cartes d'accès)", value: s.CardDirection);
-        form.Add("division", "Division provinciale (cartes d'accès)", value: s.CardDivision);
-        form.Add("zone", "Zone de santé (cartes d'accès)", value: s.CardZone);
-        form.Add("institut", "Institut (cartes d'accès)", value: s.CardInstitute);
-        form.Add("adresse-institut", "Adresse de l'institut (cartes d'accès)", value: s.CardAddress);
         form.Add("site", "Site web", value: s.Website);
-        form.Add("devise", "Monnaie (ISO)", value: s.CurrencyCode, required: true);
-        form.Add("symbole", "Symbole", value: s.CurrencySymbol, required: true);
-        form.Add("indicatif", "Indicatif téléphonique", value: s.PhoneCountryCode, required: true);
+        form.AddHeader("Monnaie et reçus");
+        form.Add("devise", "Monnaie (code ISO)", value: s.CurrencyCode, required: true, hint: "CDF");
+        form.Add("symbole", "Symbole affiché", value: s.CurrencySymbol, required: true, hint: "FC");
+        form.Add("indicatif", "Indicatif téléphonique", value: s.PhoneCountryCode, required: true, hint: "243 pour la RDC, utilisé par les relances WhatsApp");
         form.AddFlag("entiers", "Montants en unités entières", s.WholeAmountsOnly);
         form.Add("pied", "Mention en bas des reçus", FieldKind.Multiline, s.ReceiptFooter);
+        form.AddHeader("Cartes d'accès", "En-tête officiel imprimé sur les cartes des apprenants.");
+        form.Add("ministere", "Ministère", value: s.CardMinistry);
+        form.Add("direction", "Direction", value: s.CardDirection);
+        form.Add("division", "Division provinciale", value: s.CardDivision);
+        form.Add("zone", "Zone de santé", value: s.CardZone);
+        form.Add("institut", "Institut", value: s.CardInstitute);
+        form.Add("adresse-institut", "Adresse de l'institut", value: s.CardAddress);
         SchoolForm = form;
         subtitle = $"{s.Name} · {s.CurrencyCode}";
         Raise(nameof(Subtitle));

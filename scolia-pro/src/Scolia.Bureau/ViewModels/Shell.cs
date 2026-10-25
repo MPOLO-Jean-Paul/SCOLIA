@@ -52,6 +52,7 @@ public sealed class ShellViewModel : Observable
             if (IsLoggedIn) RebuildRibbon();
         };
         prefs.Apply();
+        FormViewModel.Finished += ok => Sounds.Play(Prefs, ok ? SoundKind.Success : SoundKind.Error);
     }
 
     public ScoliaClient Api => api;
@@ -412,7 +413,9 @@ public sealed class ShellViewModel : Observable
     public async Task OpenSessionAsync(SessionDto s, bool compact = true)
     {
         var watch = System.Diagnostics.Stopwatch.StartNew();
-        var pace = MinimumOpening / 4;
+        // Durée choisie dans Paramètres, Animations et fluidité ; l'outil de captures peut la fixer à part.
+        var minimum = MinimumOpening == TimeSpan.FromSeconds(2) ? TimeSpan.FromSeconds(Prefs.OpeningSeconds) : MinimumOpening;
+        var pace = minimum / 4;
         openingCompact = compact;
         session = s;
         knownRevision = -1;
@@ -441,12 +444,13 @@ public sealed class ShellViewModel : Observable
             OpeningStep = "Ouverture de l'accueil";
             OpeningProgress = 90;
             await Open(() => new HomePage(this));
-            var rest = MinimumOpening - watch.Elapsed;
+            var rest = minimum - watch.Elapsed;
             if (rest > TimeSpan.Zero) await Task.Delay(rest);
             OpeningProgress = 100;
-            await Task.Delay(TimeSpan.FromMilliseconds(MinimumOpening > TimeSpan.Zero ? 150 : 0));
+            await Task.Delay(TimeSpan.FromMilliseconds(minimum > TimeSpan.Zero ? 150 : 0));
         }
         finally { Opening = false; }
+        Sounds.Play(Prefs, SoundKind.Opening);
         await OfferNetworkAsync();
     }
 
@@ -547,9 +551,9 @@ public sealed class ShellViewModel : Observable
         running++;
         _ = ShowWorkingLaterAsync();
         try { await work(); }
-        catch (ApiException ex) { Notify(ex.Message); }
-        catch (HttpRequestException) { Notify("Le serveur SCOLIA ne répond pas. Vérifiez qu'il est lancé sur ce poste."); }
-        catch (Exception ex) when (ex is not OperationCanceledException) { Notify($"Erreur inattendue : {ex.Message}"); }
+        catch (ApiException ex) { Notify(ex.Message, SoundKind.Error); }
+        catch (HttpRequestException) { Notify("Le serveur SCOLIA ne répond pas. Vérifiez qu'il est lancé sur ce poste.", SoundKind.Error); }
+        catch (Exception ex) when (ex is not OperationCanceledException) { Notify($"Erreur inattendue : {ex.Message}", SoundKind.Error); }
         finally
         {
             running--;
@@ -605,7 +609,7 @@ public sealed class ShellViewModel : Observable
 
     /// <summary>Demande une confirmation avant une action irréversible ou sensible.</summary>
     public Task<bool> Confirm(string title, string message, string okText = "Confirmer", bool danger = false) =>
-        Ask(new FormViewModel(title, string.Empty, _ => Task.FromResult(true)) { Message = message, SubmitText = okText, Danger = danger });
+        Ask(new FormViewModel(title, string.Empty, _ => Task.FromResult(true)) { Message = message, SubmitText = okText, Danger = danger, PlaysSound = false });
 
     public void CloseDialog() => Dialog = null;
 
@@ -617,8 +621,9 @@ public sealed class ShellViewModel : Observable
     public void CloseBackstage() => BackstageOpen = false;
 
     /// <summary>Message discret, effacé après quelques secondes.</summary>
-    public void Notify(string text)
+    public void Notify(string text, SoundKind sound = SoundKind.Notification)
     {
+        Sounds.Play(Prefs, sound);
         Notice = text;
         DispatcherTimer.RunOnce(() => { if (Notice == text) Notice = null; }, TimeSpan.FromSeconds(4));
     }

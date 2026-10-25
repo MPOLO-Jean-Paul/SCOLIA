@@ -408,7 +408,16 @@ public sealed class BackstageViewModel : Observable
 /// <summary>Préférences d'affichage : thème, taille du texte, densité, barre d'état, info-bulles, quadrillage, animations.</summary>
 public static class PreferencesDialog
 {
-    public static Task<bool> ShowAsync(ShellViewModel shell)
+    /// <summary>Les préférences vivent dans Paramètres, rubriques de ce poste : la commande y mène directement.</summary>
+    public static async Task<bool> ShowAsync(ShellViewModel shell)
+    {
+        shell.CloseBackstage();
+        await shell.Open(() => new SettingsPage(shell, "apparence"));
+        return true;
+    }
+
+    /// <summary>Ancienne boîte de préférences, gardée pour l'outil de captures.</summary>
+    public static Task<bool> ShowDialogAsync(ShellViewModel shell)
     {
         var p = shell.Prefs;
         var form = new FormViewModel("Préférences", "Ces réglages s'appliquent à ce poste et sont conservés.", f =>
