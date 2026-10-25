@@ -47,6 +47,16 @@
       <SolidColorBrush x:Key="RedSoftBrush" Color="#FFE5E3" />
       <SolidColorBrush x:Key="PurpleSoftBrush" Color="#F5E8FB" />
       <SolidColorBrush x:Key="NeutralSoftBrush" Color="#F2F2F7" />
+      <!-- Bandeau du haut : bleu ciel, du titre de la fenêtre jusqu'à la barre de la page -->
+      <LinearGradientBrush x:Key="HeaderBrush" StartPoint="0%,0%" EndPoint="100%,0%">
+        <GradientStop Offset="0" Color="#BFE4FF" />
+        <GradientStop Offset="1" Color="#93CDF8" />
+      </LinearGradientBrush>
+      <SolidColorBrush x:Key="HeaderTextBrush" Color="#0B2545" />
+      <SolidColorBrush x:Key="HeaderMutedBrush" Color="#2E5376" />
+      <SolidColorBrush x:Key="HeaderControlBrush" Color="#8CFFFFFF" />
+      <SolidColorBrush x:Key="HeaderHoverBrush" Color="#D9FFFFFF" />
+      <SolidColorBrush x:Key="HeaderLineBrush" Color="#7FB6DD" />
       <SolidColorBrush x:Key="FileTabBrush" Color="#007AFF" />
       <Color x:Key="AccentColor">#007AFF</Color>
       <Color x:Key="ShadowColor">#1F000000</Color>
@@ -95,6 +105,15 @@
       <SolidColorBrush x:Key="RedSoftBrush" Color="#3E1A18" />
       <SolidColorBrush x:Key="PurpleSoftBrush" Color="#2E1A3D" />
       <SolidColorBrush x:Key="NeutralSoftBrush" Color="#2C2C2E" />
+      <LinearGradientBrush x:Key="HeaderBrush" StartPoint="0%,0%" EndPoint="100%,0%">
+        <GradientStop Offset="0" Color="#0F2E4C" />
+        <GradientStop Offset="1" Color="#164272" />
+      </LinearGradientBrush>
+      <SolidColorBrush x:Key="HeaderTextBrush" Color="#F2F8FF" />
+      <SolidColorBrush x:Key="HeaderMutedBrush" Color="#A8C4E0" />
+      <SolidColorBrush x:Key="HeaderControlBrush" Color="#1FFFFFFF" />
+      <SolidColorBrush x:Key="HeaderHoverBrush" Color="#38FFFFFF" />
+      <SolidColorBrush x:Key="HeaderLineBrush" Color="#2A5885" />
       <SolidColorBrush x:Key="FileTabBrush" Color="#0A84FF" />
       <Color x:Key="AccentColor">#0A84FF</Color>
       <Color x:Key="ShadowColor">#66000000</Color>

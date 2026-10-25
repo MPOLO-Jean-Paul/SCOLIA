@@ -96,7 +96,7 @@ public partial class MainView : UserControl
         }
         var scaling = TopLevel.GetTopLevel(this)?.RenderScaling ?? 1;
         var snapshot = new Avalonia.Media.Imaging.RenderTargetBitmap(
-            new PixelSize((int)(Bounds.Width * scaling), (int)(Bounds.Height * scaling)), new Vector(96 * scaling, 96 * scaling));
+            new PixelSize((int)(Scaler.Bounds.Width * scaling), (int)(Scaler.Bounds.Height * scaling)), new Vector(96 * scaling, 96 * scaling));
         snapshot.Render(Scaler);
         ThemeFade.Source = snapshot;
         ThemeFade.Opacity = 1;
@@ -129,6 +129,8 @@ public partial class MainView : UserControl
     private void FitWindow(Size size)
     {
         if (Shell is not { } shell || size.Width <= 0) return;
+        // La barre de titre dessinée par SCOLIA garde la taille du système : seule la place en dessous compte.
+        if (TitleRow.IsVisible) size = size.WithHeight(Math.Max(0, size.Height - TitleRow.Height));
         // La petite fenêtre de connexion garde la taille normale : son formulaire y tient tout entier.
         if (shell.CompactWindow && !Preferences.MobileLayout) shell.Prefs.Fit(1280, 720);
         else shell.Prefs.Fit(size.Width, size.Height);
@@ -165,7 +167,9 @@ public partial class MainView : UserControl
         if (Shell?.Current is not { } page || PageBar.Bounds.Width <= 0) return;
         var font = Shell.Prefs.Factor * 13.5;
         var title = Math.Clamp(TextWidth(page.Heading, 17 * Shell.Prefs.Factor, FontWeight.Bold) + 8, 140, 260);
-        var room = PageBar.Bounds.Width - PageBarFixed - title;
+        // Le bandeau garde aussi la recherche, au moins sur une largeur lisible, l'état du réseau et le compte.
+        var extras = HeaderExtras.Bounds.Width > 0 ? HeaderExtras.Bounds.Width + 12 : 200;
+        var room = PageBar.Bounds.Width - PageBarFixed - title - extras - SearchMin;
         var widths = page.HeaderActions.Select(a => TextWidth(a.Label, font, FontWeight.Normal) + 58).ToList();
         const double more = 46;
         int count;
@@ -188,6 +192,20 @@ public partial class MainView : UserControl
         PageHost.PageTransition = prefs.Animations && prefs.PageTransitions ? new CrossFade(PageFade * prefs.SpeedFactor) : null;
 
     private ShellViewModel? Shell => DataContext as ShellViewModel;
+
+    /// <summary>Largeur gardée au champ de recherche du bandeau avant de replier les actions de la page.</summary>
+    private const double SearchMin = 220;
+
+    /// <summary>
+    /// Barre de titre dessinée par SCOLIA, quand la fenêtre s'étend sous celle de Windows : elle prend la hauteur
+    /// de la barre du système, et 0 la masque, en plein écran par exemple.
+    /// </summary>
+    public void ShowTitleBar(double height)
+    {
+        TitleRow.Height = Math.Max(0, height);
+        TitleRow.IsVisible = height > 0;
+        FitWindow(Bounds.Size);
+    }
 
     private void OnBackRequested(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {

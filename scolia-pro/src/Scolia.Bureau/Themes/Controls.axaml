@@ -808,4 +808,121 @@
     <Setter Property="FontWeight" Value="SemiBold" />
     <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
   </Style>
+  <!-- Bandeau du haut, bleu ciel : barre de titre de la fenêtre puis barre de la page, d'un seul tenant -->
+  <Style Selector="Border.titlerow">
+    <Setter Property="Background" Value="{DynamicResource HeaderBrush}" />
+  </Style>
+  <Style Selector="Border.titlerow TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource HeaderTextBrush}" />
+    <Setter Property="FontSize" Value="12" />
+  </Style>
+  <Style Selector="Border.titlerow TextBlock.muted">
+    <Setter Property="Foreground" Value="{DynamicResource HeaderMutedBrush}" />
+  </Style>
+  <!-- Connexion : la barre de titre prend le bleu du bandeau de l'établissement, juste en dessous -->
+  <Style Selector="Border.titlerow.onbrand">
+    <Setter Property="Background">
+      <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,0%">
+        <GradientStop Offset="0" Color="#1565E0" />
+        <GradientStop Offset="1" Color="#0C47B0" />
+      </LinearGradientBrush>
+    </Setter>
+  </Style>
+  <Style Selector="Border.titlerow.onbrand TextBlock">
+    <Setter Property="Foreground" Value="White" />
+  </Style>
+  <Style Selector="Border.appheader">
+    <Setter Property="Background" Value="{DynamicResource HeaderBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource HeaderLineBrush}" />
+    <Setter Property="BorderThickness" Value="0,0,0,1" />
+    <Setter Property="Padding" Value="12,9,14,9" />
+  </Style>
+  <Style Selector="Border.appheader TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource HeaderTextBrush}" />
+  </Style>
+  <Style Selector="Border.appheader TextBlock.muted">
+    <Setter Property="Foreground" Value="{DynamicResource HeaderMutedBrush}" />
+  </Style>
+  <Style Selector="Border.appheader Button.primary TextBlock, Border.appheader Button.danger TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource OnAccentBrush}" />
+  </Style>
+  <Style Selector="Border.appheader Button.toolicon">
+    <Setter Property="Foreground" Value="{DynamicResource HeaderTextBrush}" />
+  </Style>
+  <Style Selector="Border.appheader Button.toolicon:pointerover">
+    <Setter Property="Background" Value="{DynamicResource HeaderControlBrush}" />
+  </Style>
+  <Style Selector="Border.appheader Button.toolicon:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource HeaderControlBrush}" />
+  </Style>
+  <Style Selector="Border.appheader Border.navcapsule">
+    <Setter Property="Background" Value="{DynamicResource HeaderControlBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource HeaderLineBrush}" />
+    <Setter Property="BoxShadow" Value="none" />
+  </Style>
+  <Style Selector="Border.appheader Border.navcapsule Button">
+    <Setter Property="Foreground" Value="{DynamicResource HeaderTextBrush}" />
+  </Style>
+  <Style Selector="Border.appheader Border.navcapsule Button:pointerover">
+    <Setter Property="Background" Value="{DynamicResource HeaderHoverBrush}" />
+  </Style>
+  <Style Selector="Border.appheader Border.navcapsule Button:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource HeaderHoverBrush}" />
+  </Style>
+  <!-- Actions de la page dans le bandeau : blanc translucide ; l'action principale garde la couleur d'accent -->
+  <Style Selector="Button.hdr:not(.primary):not(.danger)">
+    <Setter Property="Background" Value="{DynamicResource HeaderControlBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource HeaderTextBrush}" />
+  </Style>
+  <Style Selector="Button.hdr:not(.primary):not(.danger):pointerover">
+    <Setter Property="Background" Value="{DynamicResource HeaderHoverBrush}" />
+  </Style>
+  <Style Selector="Button.hdr:not(.primary):not(.danger):pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource HeaderHoverBrush}" />
+  </Style>
+  <!-- Recherche du bandeau : un champ arrondi au centre, le raccourci à droite -->
+  <Style Selector="Button.hdrsearch">
+    <Setter Property="Background" Value="{DynamicResource HeaderHoverBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource HeaderMutedBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource HeaderLineBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="17" />
+    <Setter Property="Height" Value="34" />
+    <Setter Property="Padding" Value="12,0,6,0" />
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    <Setter Property="FontWeight" Value="Normal" />
+  </Style>
+  <Style Selector="Button.hdrsearch:pointerover">
+    <Setter Property="Background" Value="{DynamicResource HeaderHoverBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+  </Style>
+  <Style Selector="Button.hdrsearch:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource HeaderHoverBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+  </Style>
+  <Style Selector="Border.keycap">
+    <Setter Property="BorderBrush" Value="{DynamicResource HeaderLineBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="6" />
+    <Setter Property="Padding" Value="6,1" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Border.keycap TextBlock">
+    <Setter Property="FontSize" Value="{DynamicResource FsCaption}" />
+    <Setter Property="Foreground" Value="{DynamicResource HeaderMutedBrush}" />
+  </Style>
+  <!-- Compte connecté : ses initiales et son nom, dans une capsule -->
+  <Style Selector="Button.accountchip">
+    <Setter Property="Background" Value="{DynamicResource HeaderControlBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource HeaderTextBrush}" />
+    <Setter Property="CornerRadius" Value="17" />
+    <Setter Property="Padding" Value="4,3,12,3" />
+    <Setter Property="MinHeight" Value="0" />
+  </Style>
+  <Style Selector="Button.accountchip:pointerover">
+    <Setter Property="Background" Value="{DynamicResource HeaderHoverBrush}" />
+  </Style>
+  <Style Selector="Button.accountchip:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource HeaderHoverBrush}" />
+  </Style>
 </Styles>

@@ -14,6 +14,9 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        // Windows : la barre de titre blanche du système laisse place à celle de SCOLIA, bleu ciel comme le bandeau.
+        // Les trois boutons réduire, agrandir et fermer restent ceux de Windows.
+        if (OperatingSystem.IsWindows()) ExtendClientAreaToDecorationsHint = true;
         Opened += (_, _) => ApplyWindowMode();
         DataContextChanged += (_, _) =>
         {
@@ -81,4 +84,11 @@ public partial class MainWindow : Window
     }
 
     private ShellViewModel? Shell => DataContext as ShellViewModel;
+
+    protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
+    {
+        base.OnPropertyChanged(change);
+        if (change.Property == WindowDecorationMarginProperty || change.Property == IsExtendedIntoWindowDecorationsProperty)
+            View?.ShowTitleBar(IsExtendedIntoWindowDecorations ? WindowDecorationMargin.Top : 0);
+    }
 }

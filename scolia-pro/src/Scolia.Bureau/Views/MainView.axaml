@@ -3,6 +3,7 @@
              xmlns:vm="using:Scolia.Bureau.ViewModels"
              xmlns:mi="using:Material.Icons.Avalonia"
              xmlns:views="using:Scolia.Bureau.Views"
+             xmlns:chrome="using:Avalonia.Controls.Chrome"
              x:Class="Scolia.Bureau.Views.MainView"
              x:DataType="vm:ShellViewModel"
              KeyDown="OnKeyDown">
@@ -90,8 +91,17 @@
   </UserControl.Styles>
 
   <!-- Toute l'interface suit la taille de la fenêtre : la mise en page de 1280 × 720, agrandie ou réduite d'un bloc -->
-  <Panel>
-  <LayoutTransformControl x:Name="Scaler" Classes.anim="{Binding Prefs.Animations}">
+  <Grid RowDefinitions="Auto,*">
+  <!-- Barre de titre de Windows dessinée par SCOLIA : bleu ciel comme le bandeau de la page, les trois boutons de la fenêtre à droite -->
+  <Border x:Name="TitleRow" Classes="titlerow" Classes.onbrand="{Binding ShowLogin}" IsVisible="False" chrome:WindowDecorationProperties.ElementRole="TitleBar">
+    <StackPanel Orientation="Horizontal" Spacing="8" Margin="12,0,150,0" VerticalAlignment="Center" IsHitTestVisible="False">
+      <Image Source="{DynamicResource ScoliaMark}" Width="16" Height="16" VerticalAlignment="Center" />
+      <TextBlock Text="SCOLIA Pro" FontWeight="SemiBold" VerticalAlignment="Center" />
+      <TextBlock Text="·" Classes="muted" VerticalAlignment="Center" IsVisible="{Binding IsLoggedIn}" />
+      <TextBlock Text="{Binding SchoolTitle}" Classes="muted" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" IsVisible="{Binding IsLoggedIn}" />
+    </StackPanel>
+  </Border>
+  <LayoutTransformControl x:Name="Scaler" Grid.Row="1" Classes.anim="{Binding Prefs.Animations}">
   <Grid>
     <!-- Connexion : tant qu'aucune session n'est ouverte -->
     <!-- Première installation : l'assistant remplace la connexion tant qu'aucune configuration n'existe -->
@@ -119,11 +129,101 @@
     <Grid x:Name="AppArea" IsVisible="{Binding ShowApp}">
       <Grid.RenderTransform><TranslateTransform /></Grid.RenderTransform>
 
-      <!-- Ordinateur : volet, page et barre d'état -->
-      <Grid x:Name="DesktopArea" ColumnDefinitions="Auto,*" RowDefinitions="*,Auto" IsVisible="{Binding !Phone}">
+      <!-- Ordinateur : bandeau bleu, volet, page et barre d'état -->
+      <Grid x:Name="DesktopArea" ColumnDefinitions="Auto,*" RowDefinitions="Auto,*,Auto" IsVisible="{Binding !Phone}">
 
-      <!-- Volet latéral flottant, comme les Réglages de macOS : recherche, compte, puis chaque outil avec son icône -->
-      <Border Grid.Column="0" Classes="sidebar" Width="250" Margin="8,8,0,8" IsVisible="{Binding SidebarShown}">
+      <!-- Bandeau bleu ciel sur toute la largeur : volet, flèches, titre de la page, recherche, actions, réseau, compte, menu -->
+      <Border Grid.Row="0" Grid.ColumnSpan="2" Classes="pagebar appheader" x:Name="PageBar">
+        <Grid ColumnDefinitions="Auto,Auto,Auto,*,Auto,Auto,Auto" IsVisible="{Binding HasPage}">
+          <Button Classes="toolicon" Command="{Binding ToggleSidebarCommand}" Margin="0,0,8,0" VerticalAlignment="Center"
+                  ToolTip.Tip="Afficher ou masquer le volet (Ctrl+B)">
+            <mi:MaterialIcon Kind="DockLeft" Width="18" Height="18" />
+          </Button>
+          <Border Grid.Column="1" Classes="navcapsule" VerticalAlignment="Center" Margin="0,0,14,0">
+            <StackPanel Orientation="Horizontal">
+              <Button Command="{Binding BackCommand}" IsEnabled="{Binding CanGoBack}" ToolTip.Tip="Précédent (Alt+Gauche)">
+                <mi:MaterialIcon Kind="ChevronLeft" Width="20" Height="20" />
+              </Button>
+              <Rectangle Width="1" Height="16" Fill="{DynamicResource HeaderLineBrush}" VerticalAlignment="Center" />
+              <Button Command="{Binding ForwardCommand}" IsEnabled="{Binding CanGoForward}" ToolTip.Tip="Suivant (Alt+Droite)">
+                <mi:MaterialIcon Kind="ChevronRight" Width="20" Height="20" />
+              </Button>
+            </StackPanel>
+          </Border>
+          <Grid Grid.Column="2" ColumnDefinitions="Auto,*" VerticalAlignment="Center" MinWidth="140" MaxWidth="300">
+            <Border Classes="appicon medium" Background="{Binding CurrentIconBrush}" Margin="0,0,10,0">
+              <mi:MaterialIcon Kind="{Binding CurrentIcon}" />
+            </Border>
+            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+              <TextBlock Text="{Binding Current.Heading}" FontSize="17" FontWeight="Bold" TextTrimming="CharacterEllipsis" />
+              <TextBlock Text="{Binding Current.Subtitle}" Classes="muted" TextTrimming="CharacterEllipsis" />
+            </StackPanel>
+          </Grid>
+          <!-- Recherche au centre du bandeau : apprenants, reçus, pages et commandes -->
+          <Button x:Name="HeaderSearch" Grid.Column="3" Classes="hdrsearch" Command="{Binding SearchCommand}" ToolTip.Tip="Rechercher (Ctrl+K)"
+                  HorizontalAlignment="Stretch" MaxWidth="440" MinWidth="0" Margin="18,0" VerticalAlignment="Center">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+              <mi:MaterialIcon Kind="Magnify" Width="17" Height="17" Margin="0,0,8,0" />
+              <TextBlock Grid.Column="1" Text="Rechercher un apprenant, un reçu, une page" Classes="muted" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+              <Border Grid.Column="2" Classes="keycap" Margin="8,0,0,0"><TextBlock Text="Ctrl+K" /></Border>
+            </Grid>
+          </Button>
+          <StackPanel Grid.Column="4" Orientation="Horizontal" VerticalAlignment="Center" Spacing="6">
+            <ItemsControl ItemsSource="{Binding Current.VisibleActions}">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="6" /></ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <Button Classes="hdr" Command="{Binding Command}" Classes.primary="{Binding IsPrimary}" Classes.danger="{Binding Danger}" ToolTip.Tip="{Binding Hint}">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                      <mi:MaterialIcon Kind="{Binding Icon}" Width="16" Height="16" />
+                      <TextBlock Text="{Binding Label}" VerticalAlignment="Center" />
+                    </StackPanel>
+                  </Button>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <Button Classes="hdr" IsVisible="{Binding Current.HasMoreActions}" ToolTip.Tip="Plus d'actions" Padding="8,4">
+              <mi:MaterialIcon Kind="DotsHorizontal" Width="18" Height="18" />
+              <Button.Flyout>
+                <MenuFlyout Placement="BottomEdgeAlignedRight" ItemsSource="{Binding Current.MoreActions}">
+                  <MenuFlyout.ItemContainerTheme>
+                    <ControlTheme TargetType="MenuItem" BasedOn="{StaticResource {x:Type MenuItem}}">
+                      <Setter Property="Header" Value="{Binding Label}" />
+                      <Setter Property="Command" Value="{Binding Command}" />
+                      <Setter Property="ToolTip.Tip" Value="{Binding Hint}" />
+                    </ControlTheme>
+                  </MenuFlyout.ItemContainerTheme>
+                </MenuFlyout>
+              </Button.Flyout>
+            </Button>
+          </StackPanel>
+          <!-- État du réseau et compte connecté : toujours visibles, à droite -->
+          <StackPanel x:Name="HeaderExtras" Grid.Column="5" Orientation="Horizontal" VerticalAlignment="Center" Spacing="6" Margin="12,0,0,0">
+            <Button Classes="toolicon" Command="{Binding NetworkCommand}" ToolTip.Tip="{Binding Sync.StatusText}">
+              <Panel Width="18" Height="18">
+                <mi:MaterialIcon Kind="LanConnect" Width="18" Height="18" IsVisible="{Binding Sync.Online}" />
+                <mi:MaterialIcon Kind="CloudOffOutline" Width="18" Height="18" Foreground="{DynamicResource ToneOrange}" IsVisible="{Binding Sync.Offline}" />
+                <Border Classes="livedot" Classes.pulse="{Binding Sync.Pulse}" IsVisible="{Binding Sync.Online}" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,-3,-3" />
+              </Panel>
+            </Button>
+            <Button Classes="accountchip" Click="OnAccountClick" ToolTip.Tip="Compte et poste">
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <Border Width="26" Height="26" CornerRadius="13" Background="{DynamicResource AccentBrush}">
+                  <TextBlock Text="{Binding UserInitials}" FontSize="11" FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="White" />
+                </Border>
+                <TextBlock Text="{Binding AccountName}" FontWeight="SemiBold" VerticalAlignment="Center" MaxWidth="140" TextTrimming="CharacterEllipsis" />
+              </StackPanel>
+            </Button>
+          </StackPanel>
+          <Button Grid.Column="6" Classes="toolicon" Click="OnMenuClick" Margin="6,0,0,0" VerticalAlignment="Center" ToolTip.Tip="Toutes les commandes">
+            <mi:MaterialIcon Kind="Menu" Width="18" Height="18" />
+          </Button>
+        </Grid>
+      </Border>
+
+      <Border Grid.Row="1" Grid.Column="0" Classes="sidebar" Width="250" Margin="8,8,0,8" IsVisible="{Binding SidebarShown}">
         <DockPanel>
           <StackPanel DockPanel.Dock="Top" Spacing="8" Margin="10,12,10,6">
             <!-- L'établissement : son logo et son nom, en tête du volet -->
@@ -135,24 +235,6 @@
                 <TextBlock Text="{Binding SchoolYearLine}" Classes="muted" FontSize="{DynamicResource FsCaption}" TextTrimming="CharacterEllipsis" />
               </StackPanel>
             </Grid>
-            <Button Classes="titlesearch" Command="{Binding SearchCommand}" ToolTip.Tip="Rechercher (Ctrl+K)">
-              <Grid ColumnDefinitions="Auto,*,Auto">
-                <mi:MaterialIcon Kind="Magnify" Width="16" Height="16" Margin="0,0,6,0" />
-                <TextBlock Grid.Column="1" Text="Rechercher" VerticalAlignment="Center" />
-                <TextBlock Grid.Column="2" Text="Ctrl+K" Classes="muted" FontSize="{DynamicResource FsCaption}" VerticalAlignment="Center" />
-              </Grid>
-            </Button>
-            <Button Classes="navitem" Click="OnAccountClick" Padding="6,6" ToolTip.Tip="Compte et poste">
-              <Grid ColumnDefinitions="Auto,*">
-                <Border Width="34" Height="34" CornerRadius="17" Background="{DynamicResource ToneNeutral}" Margin="0,0,10,0">
-                  <TextBlock Text="{Binding UserInitials}" FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="White" />
-                </Border>
-                <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                  <TextBlock Text="{Binding AccountName}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
-                  <TextBlock Text="Compte et poste" Classes="muted" />
-                </StackPanel>
-              </Grid>
-            </Button>
           </StackPanel>
           <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
             <ItemsControl ItemsSource="{Binding Navigation}" Margin="10,4,10,12">
@@ -179,86 +261,24 @@
         </DockPanel>
       </Border>
 
-      <!-- Page : flèches retour et suivant, titre, actions ; puis le contenu -->
-      <Grid Grid.Column="1" RowDefinitions="Auto,*" IsVisible="{Binding HasPage}">
-        <Border Grid.Row="0" Classes="pagebar" x:Name="PageBar">
-          <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto">
-            <Button Classes="toolicon" Command="{Binding ToggleSidebarCommand}" Margin="0,0,8,0" VerticalAlignment="Center"
-                    ToolTip.Tip="Afficher ou masquer le volet (Ctrl+B)">
-              <mi:MaterialIcon Kind="DockLeft" Width="18" Height="18" />
-            </Button>
-            <Border Grid.Column="1" Classes="navcapsule" VerticalAlignment="Center" Margin="0,0,14,0">
-              <StackPanel Orientation="Horizontal">
-                <Button Command="{Binding BackCommand}" IsEnabled="{Binding CanGoBack}" ToolTip.Tip="Précédent (Alt+Gauche)">
-                  <mi:MaterialIcon Kind="ChevronLeft" Width="20" Height="20" />
-                </Button>
-                <Rectangle Width="1" Height="16" Fill="{DynamicResource LineBrush}" VerticalAlignment="Center" />
-                <Button Command="{Binding ForwardCommand}" IsEnabled="{Binding CanGoForward}" ToolTip.Tip="Suivant (Alt+Droite)">
-                  <mi:MaterialIcon Kind="ChevronRight" Width="20" Height="20" />
-                </Button>
-              </StackPanel>
-            </Border>
-            <Grid Grid.Column="2" ColumnDefinitions="Auto,*" VerticalAlignment="Center" MinWidth="200">
-              <Border Classes="appicon medium" Background="{Binding CurrentIconBrush}" Margin="0,0,10,0">
-                <mi:MaterialIcon Kind="{Binding CurrentIcon}" />
-              </Border>
-              <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                <TextBlock Text="{Binding Current.Heading}" FontSize="17" FontWeight="Bold" TextTrimming="CharacterEllipsis" />
-                <TextBlock Text="{Binding Current.Subtitle}" Classes="muted" TextTrimming="CharacterEllipsis" />
-              </StackPanel>
-            </Grid>
-            <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center" Margin="16,0,0,0" Spacing="6">
-              <ItemsControl ItemsSource="{Binding Current.VisibleActions}">
-                <ItemsControl.ItemsPanel>
-                  <ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="6" /></ItemsPanelTemplate>
-                </ItemsControl.ItemsPanel>
-                <ItemsControl.ItemTemplate>
-                  <DataTemplate>
-                    <Button Command="{Binding Command}" Classes.primary="{Binding IsPrimary}" Classes.danger="{Binding Danger}" ToolTip.Tip="{Binding Hint}">
-                      <StackPanel Orientation="Horizontal" Spacing="6">
-                        <mi:MaterialIcon Kind="{Binding Icon}" Width="16" Height="16" />
-                        <TextBlock Text="{Binding Label}" VerticalAlignment="Center" />
-                      </StackPanel>
-                    </Button>
-                  </DataTemplate>
-                </ItemsControl.ItemTemplate>
-              </ItemsControl>
-              <Button IsVisible="{Binding Current.HasMoreActions}" ToolTip.Tip="Plus d'actions" Padding="8,4">
-                <mi:MaterialIcon Kind="DotsHorizontal" Width="18" Height="18" />
-                <Button.Flyout>
-                  <MenuFlyout Placement="BottomEdgeAlignedRight" ItemsSource="{Binding Current.MoreActions}">
-                    <MenuFlyout.ItemContainerTheme>
-                      <ControlTheme TargetType="MenuItem" BasedOn="{StaticResource {x:Type MenuItem}}">
-                        <Setter Property="Header" Value="{Binding Label}" />
-                        <Setter Property="Command" Value="{Binding Command}" />
-                        <Setter Property="ToolTip.Tip" Value="{Binding Hint}" />
-                      </ControlTheme>
-                    </MenuFlyout.ItemContainerTheme>
-                  </MenuFlyout>
-                </Button.Flyout>
-              </Button>
-            </StackPanel>
-            <Button Grid.Column="4" Classes="toolicon" Click="OnMenuClick" Margin="8,0,0,0" VerticalAlignment="Center" ToolTip.Tip="Toutes les commandes">
-              <mi:MaterialIcon Kind="Menu" Width="18" Height="18" />
-            </Button>
-          </Grid>
-        </Border>
+      <!-- Contenu de la page -->
+      <Grid Grid.Row="1" Grid.Column="1" IsVisible="{Binding HasPage}">
         <!-- Sur téléphone, la page entière défile ; sur l'ordinateur, chaque page garde sa hauteur et ses tableaux défilent -->
-        <ScrollViewer x:Name="PageScroll" Grid.Row="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="{Binding PageScroll}">
+        <ScrollViewer x:Name="PageScroll" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="{Binding PageScroll}">
           <TransitioningContentControl x:Name="PageHost" Content="{Binding DesktopPage}" />
         </ScrollViewer>
         <!-- Des données ont changé sur un autre poste pendant une saisie : la page attend qu'on le demande -->
-        <Button Grid.Row="1" Classes="remotechip" Command="{Binding ApplyRemoteCommand}" IsVisible="{Binding RemoteWaiting}" VerticalAlignment="Top" HorizontalAlignment="Center" Margin="0,6,0,0">
+        <Button Classes="remotechip" Command="{Binding ApplyRemoteCommand}" IsVisible="{Binding RemoteWaiting}" VerticalAlignment="Top" HorizontalAlignment="Center" Margin="0,6,0,0">
           <StackPanel Orientation="Horizontal" Spacing="6">
             <mi:MaterialIcon Kind="ArrowDownBoldCircleOutline" Width="16" Height="16" />
             <TextBlock Text="Nouvelles données d'un autre poste · Afficher" />
           </StackPanel>
         </Button>
       </Grid>
-      <ProgressBar Grid.Column="1" IsIndeterminate="True" IsVisible="{Binding Current.Busy}" VerticalAlignment="Top" Height="2" MinHeight="2" />
+      <ProgressBar Grid.Row="1" Grid.Column="1" IsIndeterminate="True" IsVisible="{Binding Current.Busy}" VerticalAlignment="Top" Height="2" MinHeight="2" />
 
       <!-- Barre d'état : statut, serveur, zoom -->
-      <Border Grid.Row="1" Grid.ColumnSpan="2" Classes="statusbar" IsVisible="{Binding ShowStatusBar}">
+      <Border Grid.Row="2" Grid.ColumnSpan="2" Classes="statusbar" IsVisible="{Binding ShowStatusBar}">
         <Grid ColumnDefinitions="*,Auto,Auto,Auto">
           <TextBlock Text="{Binding Status}" Classes="muted" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
           <!-- Direct : autres postes, activité qui vient d'avoir lieu ailleurs, ou travail hors ligne -->
@@ -316,6 +336,6 @@
   </Grid>
   </LayoutTransformControl>
   <!-- Changement de thème : l'ancien rendu s'efface en fondu au-dessus du nouveau -->
-  <Image x:Name="ThemeFade" IsHitTestVisible="False" IsVisible="False" Stretch="Fill" />
-  </Panel>
+  <Image x:Name="ThemeFade" Grid.Row="1" IsHitTestVisible="False" IsVisible="False" Stretch="Fill" />
+  </Grid>
 </UserControl>

@@ -157,6 +157,8 @@ var taille = (Environment.GetEnvironmentVariable("SCOLIA_TAILLE") ?? "1280x820")
 var window = new MainWindow { DataContext = shell, Width = int.Parse(taille[0]), Height = int.Parse(taille[1]) };
 if (Preferences.MobileLayout) { window.MinWidth = 0; window.MinHeight = 0; window.Width = int.Parse(taille[0]); window.Height = int.Parse(taille[1]); }
 window.Show();
+// Barre de titre de Windows dessinée par SCOLIA : simulée ici, la fenêtre sans écran n'a pas celle du système.
+if (!Preferences.MobileLayout && Environment.GetEnvironmentVariable("SCOLIA_BARRE_TITRE") != "0" && window.Content is Scolia.Bureau.Views.MainView main) main.ShowTitleBar(32);
 // Premier lancement sans configuration : l'assistant remplace la connexion (SCOLIA_ASSISTANT=1).
 if (Environment.GetEnvironmentVariable("SCOLIA_ASSISTANT") == "1")
 {
