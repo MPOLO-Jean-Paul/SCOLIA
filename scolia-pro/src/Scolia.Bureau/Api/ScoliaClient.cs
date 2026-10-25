@@ -151,6 +151,10 @@ public sealed class ScoliaClient : IDisposable
             using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
             if (doc.RootElement.TryGetProperty("title", out var title) && title.GetString() is { Length: > 0 } text)
             {
+                var code = doc.RootElement.TryGetProperty("code", out var c) ? c.GetString() : null;
+                // Connexion verrouillée : le serveur donne le temps restant pour le compte à rebours.
+                if (doc.RootElement.TryGetProperty("retryAfterSeconds", out var retry) && retry.TryGetInt32(out var seconds))
+                    return new ApiException(text, status) { Code = code, RetryAfterSeconds = seconds };
                 // Validation : le premier message de champ précise ce qui est incorrect.
                 if (doc.RootElement.TryGetProperty("errors", out var errors) && errors.ValueKind == JsonValueKind.Object)
                     foreach (var field in errors.EnumerateObject())
@@ -179,4 +183,6 @@ public sealed record UploadedFile(string Field, string FileName, byte[] Data);
 public sealed class ApiException(string message, int status = 0) : Exception(message)
 {
     public int Status { get; } = status;
+    public string? Code { get; init; }
+    public int? RetryAfterSeconds { get; init; }
 }

@@ -64,20 +64,45 @@ public sealed class SecurityApiTests : IDisposable
     }
 
     [Fact]
-    public async Task Account_is_locked_after_five_failures_without_revealing_existence()
+    public async Task Account_is_locked_two_minutes_after_five_failures_without_revealing_existence()
     {
         await app.InstalledAdmin();
         var client = app.Client();
         var unknown = await client.Post("/api/session", new { userName = "inconnu", password = "x" }).Fail();
-        for (var i = 0; i < 5; i++)
+        for (var i = 1; i <= 4; i++)
         {
             var (code, failure) = await client.Post("/api/session", new { userName = "admin", password = "mauvais" }).Fail();
-            Assert.True(code == HttpStatusCode.BadRequest, $"Tentative {i + 1} : {(int)code} {failure}");
+            Assert.True(code == HttpStatusCode.BadRequest, $"Tentative {i} : {(int)code} {failure}");
+            Assert.Equal("connexion", failure.GetProperty("code").GetString());
         }
+        // La cinquième erreur verrouille tout de suite : le client lance le compte à rebours de deux minutes.
+        var fifth = await client.PostAsJsonAsync("/api/session", new { userName = "admin", password = "mauvais" });
+        var lockedBody = await fifth.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("verrouille", lockedBody.GetProperty("code").GetString());
+        Assert.Equal(120, lockedBody.GetProperty("retryAfterSeconds").GetInt32());
+        Assert.Equal("120", fifth.Headers.RetryAfter?.Delta?.TotalSeconds.ToString("0"));
         var (status, body) = await client.Post("/api/session", new { userName = "admin", password = "Scolia2026!" }).Fail();
         Assert.Equal(HttpStatusCode.BadRequest, status);
         Assert.Contains("verrouillé", body.GetProperty("title").GetString(), StringComparison.Ordinal);
-        Assert.Equal("Identifiant ou mot de passe incorrect.", unknown.Body.GetProperty("title").GetString());
+        Assert.InRange(body.GetProperty("retryAfterSeconds").GetInt32(), 1, 120);
+        // Un identifiant inconnu reçoit le même message qu'un mot de passe faux.
+        Assert.Equal("Identifiant ou mot de passe incorrect. Encore 4 tentatives avant le verrouillage.", unknown.Body.GetProperty("title").GetString());
+    }
+
+    [Fact]
+    public async Task Access_comes_back_once_the_lockout_has_elapsed()
+    {
+        await app.InstalledAdmin();
+        var client = app.Client();
+        for (var i = 0; i < 5; i++) await client.Post("/api/session", new { userName = "admin", password = "mauvais" }).Fail();
+        using (var scope = app.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<Scolia.Infrastructure.Persistence.ScoliaDbContext>();
+            Assert.NotNull((await db.Users.SingleAsync(u => u.UserName == "admin")).LockoutEndUtc);
+            // Les deux minutes sont écoulées.
+            await db.Users.Where(u => u.UserName == "admin").ExecuteUpdateAsync(x => x.SetProperty(u => u.LockoutEndUtc, DateTime.UtcNow.AddSeconds(-1)));
+        }
+        await client.Post("/api/session", new { userName = "admin", password = "Scolia2026!" }).Ok();
     }
 
     [Fact]

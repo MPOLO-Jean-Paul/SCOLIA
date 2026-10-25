@@ -14,11 +14,11 @@
 
         <StackPanel Spacing="4">
           <TextBlock Text="Identifiant" Classes="fieldlabel" />
-          <TextBox x:Name="UserNameBox" Text="{Binding UserName}" />
+          <TextBox x:Name="UserNameBox" Text="{Binding UserName}" IsEnabled="{Binding CanType}" />
         </StackPanel>
         <StackPanel Spacing="4">
           <TextBlock Text="Mot de passe" Classes="fieldlabel" />
-          <TextBox x:Name="PasswordBox" Text="{Binding Password}" PasswordChar="•" />
+          <TextBox x:Name="PasswordBox" Text="{Binding Password}" PasswordChar="•" IsEnabled="{Binding CanType}" />
         </StackPanel>
 
         <Border Background="{DynamicResource RedSoftBrush}" CornerRadius="{StaticResource RadiusSmall}" Padding="12,8" IsVisible="{Binding HasError}">
@@ -28,14 +28,33 @@
           </Grid>
         </Border>
 
-        <Button Classes="primary" Command="{Binding Submit}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Height="36" Margin="0,8,0,0">
+        <!-- Verrouillage : compte à rebours jusqu'à 0, puis l'accès revient seul -->
+        <Border Background="{DynamicResource RedSoftBrush}" CornerRadius="{StaticResource RadiusSmall}" Padding="12,10,12,12" IsVisible="{Binding Locked}">
+          <Grid ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto">
+            <mi:MaterialIcon Kind="LockOutline" Width="20" Height="20" Foreground="{DynamicResource ToneRed}" VerticalAlignment="Center" Margin="0,0,10,0" />
+            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+              <TextBlock Text="Accès verrouillé" FontWeight="SemiBold" Foreground="{DynamicResource ToneRed}" />
+              <TextBlock Text="5 tentatives incorrectes. Nouvel essai dans :" Classes="error" TextWrapping="Wrap" />
+            </StackPanel>
+            <TextBlock Grid.Column="2" Text="{Binding CountdownText, Mode=OneWay}" FontSize="22" FontWeight="SemiBold" Foreground="{DynamicResource ToneRed}" VerticalAlignment="Center" Margin="10,0,0,0" />
+            <ProgressBar Grid.Row="1" Grid.ColumnSpan="3" Minimum="0" Maximum="100" Value="{Binding LockProgress, Mode=OneWay}" Height="4" MinHeight="4" Margin="0,10,0,0" Foreground="{DynamicResource ToneRed}" />
+          </Grid>
+        </Border>
+        <Border Background="{DynamicResource GreenSoftBrush}" CornerRadius="{StaticResource RadiusSmall}" Padding="12,8" IsVisible="{Binding Restored}">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <mi:MaterialIcon Kind="CheckCircleOutline" Width="16" Height="16" Foreground="{DynamicResource ToneGreen}" />
+            <TextBlock Text="Accès rétabli. Vous pouvez réessayer." Foreground="{DynamicResource ToneGreen}" VerticalAlignment="Center" />
+          </StackPanel>
+        </Border>
+
+        <Button Classes="primary" Command="{Binding Submit}" IsEnabled="{Binding CanType}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Height="36" Margin="0,8,0,0">
           <StackPanel Orientation="Horizontal" Spacing="8">
             <mi:MaterialIcon Kind="Loading" Classes="spin" Width="16" Height="16" IsVisible="{Binding Busy}" />
             <TextBlock Text="Se connecter" IsVisible="{Binding !Busy}" VerticalAlignment="Center" />
             <TextBlock Text="Connexion…" IsVisible="{Binding Busy}" VerticalAlignment="Center" />
           </StackPanel>
         </Button>
-        <TextBlock Text="Mot de passe oublié ? L'administrateur peut le réinitialiser depuis Utilisateurs."
+        <TextBlock Text="Après 5 erreurs, l'accès est verrouillé 2 minutes. Mot de passe oublié ? L'administrateur peut le réinitialiser depuis Utilisateurs."
                    Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" TextAlignment="Center" Margin="0,6,0,0" />
       </StackPanel>
     </Border>

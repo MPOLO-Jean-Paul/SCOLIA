@@ -336,3 +336,21 @@ table.data tfoot td { background: var(--surface-2); border-top: 1px solid var(--
 .signin-setup .auth-card { background: transparent; border: none; box-shadow: none; padding: 0; border-radius: 0; }
 .spin { animation: spin 0.9s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+/* Verrouillage de la connexion : compte à rebours jusqu'à 0, puis l'accès revient. */
+.signin-input:disabled { opacity: 0.55; cursor: not-allowed; }
+.signin-go:disabled:not(:has(.spin)) { cursor: not-allowed; opacity: 0.45; }
+.signin-lock {
+  display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 4px 12px;
+  margin: 2px 0 0; padding: 12px 14px 14px; border-radius: 10px; text-align: left;
+  color: var(--red); background: var(--red-soft); animation: signin-lock-in 0.25s ease-out;
+}
+.signin-lock-icon { width: 20px; height: 20px; }
+.signin-lock-text { display: flex; flex-direction: column; font-size: calc(13px * var(--fs, 1)); line-height: 1.35; }
+.signin-lock-text strong { font-size: calc(14px * var(--fs, 1)); font-weight: 600; }
+.signin-count { font-size: calc(24px * var(--fs, 1)); font-weight: 600; font-variant-numeric: tabular-nums; letter-spacing: 0.02em; }
+.signin-bar { grid-column: 1 / -1; height: 4px; margin-top: 8px; border-radius: 2px; background: color-mix(in srgb, var(--red) 18%, transparent); overflow: hidden; }
+.signin-bar span { display: block; height: 100%; border-radius: inherit; background: var(--red); transition: width 0.25s linear; }
+.signin-ok { display: flex; align-items: center; gap: 8px; margin: 2px 0 0; padding: 9px 12px; border-radius: 8px; text-align: left; font-size: calc(13.5px * var(--fs, 1)); color: var(--green); background: var(--green-soft); }
+.signin-ok svg { width: 16px; height: 16px; flex: none; }
+@keyframes signin-lock-in { from { opacity: 0; transform: translateY(-4px); } }

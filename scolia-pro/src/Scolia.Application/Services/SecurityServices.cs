@@ -7,10 +7,49 @@ using Scolia.Domain.Security;
 
 namespace Scolia.Application.Services;
 
-public sealed class UserService(IAppDbContext db, IWriteGate gate, IAuditLog audit, IClock clock, IPasswordService passwords, ICurrentUser current)
+/// <summary>Accès refusé le temps du verrouillage ; le client affiche le compte à rebours à partir de <see cref="RetryAfterSeconds"/>.</summary>
+public sealed class AccountLockedException(string message, int retryAfterSeconds) : DomainException("verrouille", message)
+{
+    public int RetryAfterSeconds { get; } = retryAfterSeconds;
+}
+
+/// <summary>Échecs sur les identifiants inconnus, gardés en mémoire : ils se verrouillent comme les vrais comptes,
+/// ce qui empêche de deviner quels identifiants existent.</summary>
+public sealed class UnknownLoginTracker
+{
+    private readonly Dictionary<string, (int Count, DateTime? Until)> entries = new();
+
+    public DateTime? LockedUntil(string key, DateTime now)
+    {
+        lock (entries) return entries.TryGetValue(key, out var e) && e.Until > now ? e.Until : null;
+    }
+
+    /// <summary>Compte un échec et renvoie le nombre d'échecs consécutifs ; au maximum, l'identifiant est verrouillé.</summary>
+    public int Fail(string key, DateTime now, DateTime lockUntil, int max)
+    {
+        lock (entries)
+        {
+            if (entries.Count > 5000) foreach (var old in entries.Where(x => x.Value.Until is null || x.Value.Until <= now).Select(x => x.Key).ToList()) entries.Remove(old);
+            var count = entries.TryGetValue(key, out var e) && (e.Until is null || e.Until > now) ? e.Count + 1 : 1;
+            entries[key] = count >= max ? (0, lockUntil) : (count, null);
+            return count;
+        }
+    }
+}
+
+public sealed class UserService(IAppDbContext db, IWriteGate gate, IAuditLog audit, IClock clock, IPasswordService passwords, ICurrentUser current, UnknownLoginTracker unknownLogins)
 {
     public const int MaxFailedAttempts = 5;
-    public static readonly TimeSpan LockoutDuration = TimeSpan.FromMinutes(15);
+    public static readonly TimeSpan LockoutDuration = TimeSpan.FromMinutes(2);
+
+    private static string LockedMessage(int seconds) =>
+        $"Accès verrouillé après {MaxFailedAttempts} tentatives incorrectes. Réessayez dans {(seconds >= 60 ? $"{seconds / 60} min {seconds % 60:00} s" : $"{seconds} s")}.";
+
+    private static string Remaining(int failures) => (MaxFailedAttempts - failures) switch
+    {
+        1 => " Dernière tentative avant le verrouillage.",
+        var n => $" Encore {n} tentatives avant le verrouillage.",
+    };
 
     private static readonly (Role, string)[] RoleLabels = [(Role.Secretariat, "Secrétariat"), (Role.Comptabilite, "Comptabilité")];
 
@@ -18,34 +57,37 @@ public sealed class UserService(IAppDbContext db, IWriteGate gate, IAuditLog aud
         u.MustChangePassword, u.LastLoginUtc, u.LockoutEndUtc is not null && u.LockoutEndUtc > now);
 
     /// <summary>Authentifie un utilisateur. Message identique pour un identifiant inconnu ou un mot de passe faux.
-    /// Les échecs sont enregistrés (transaction validée) avant le refus : le verrouillage est donc effectif.</summary>
+    /// Les échecs sont enregistrés (transaction validée) avant le refus : le verrouillage est donc effectif.
+    /// À la cinquième erreur, l'accès est verrouillé deux minutes, puis rendu sans intervention.</summary>
     public async Task<AppUser> LoginAsync(string userName, string password, CancellationToken ct = default)
     {
         const string invalid = "Identifiant ou mot de passe incorrect.";
-        var (user, error) = await gate.RunAsync<(AppUser?, string?)>(async () =>
+        var now = clock.UtcNow;
+        var (user, error, lockedUntil) = await gate.RunAsync<(AppUser?, string?, DateTime?)>(async () =>
         {
             var normalized = TextKey.Normalize(userName);
             var found = await db.Users.FirstOrDefaultAsync(u => u.NormalizedUserName == normalized, ct);
             if (found is null || !found.IsActive)
             {
                 _ = passwords.Hash(password ?? string.Empty); // Même durée qu'une vérification : pas d'énumération des comptes.
-                return (null, invalid);
+                if (unknownLogins.LockedUntil(normalized, now) is { } blocked) return (null, null, blocked);
+                var count = unknownLogins.Fail(normalized, now, now + LockoutDuration, MaxFailedAttempts);
+                return count >= MaxFailedAttempts ? (null, null, now + LockoutDuration) : (null, invalid + Remaining(count), null);
             }
-            var now = clock.UtcNow;
-            if (found.LockoutEndUtc is not null && found.LockoutEndUtc > now)
-                return (null, $"Compte temporairement verrouillé après plusieurs erreurs. Réessayez après {found.LockoutEndUtc.Value.ToLocalTime():HH:mm}.");
+            if (found.LockoutEndUtc is not null && found.LockoutEndUtc > now) return (null, null, found.LockoutEndUtc);
             if (!passwords.Verify(found.PasswordHash, password ?? string.Empty, out var rehash))
             {
                 found.FailedLoginCount++;
-                audit.Record("connexion.echec", "Utilisateur", found.Id.ToString(), $"Échec de connexion pour {found.UserName} ({found.FailedLoginCount}/{MaxFailedAttempts}).");
-                if (found.FailedLoginCount >= MaxFailedAttempts)
+                var failures = found.FailedLoginCount;
+                audit.Record("connexion.echec", "Utilisateur", found.Id.ToString(), $"Échec de connexion pour {found.UserName} ({failures}/{MaxFailedAttempts}).");
+                if (failures >= MaxFailedAttempts)
                 {
                     found.LockoutEndUtc = now + LockoutDuration;
                     found.FailedLoginCount = 0;
-                    audit.Record("connexion.verrouillage", "Utilisateur", found.Id.ToString(), $"Compte {found.UserName} verrouillé 15 minutes après {MaxFailedAttempts} échecs.");
+                    audit.Record("connexion.verrouillage", "Utilisateur", found.Id.ToString(), $"Compte {found.UserName} verrouillé {LockoutDuration.TotalMinutes:0} minutes après {MaxFailedAttempts} échecs.");
                 }
                 await db.SaveChangesAsync(ct);
-                return (null, invalid);
+                return failures >= MaxFailedAttempts ? (null, null, found.LockoutEndUtc) : (null, invalid + Remaining(failures), null);
             }
             if (rehash) found.PasswordHash = passwords.Hash(password!);
             found.FailedLoginCount = 0;
@@ -53,9 +95,14 @@ public sealed class UserService(IAppDbContext db, IWriteGate gate, IAuditLog aud
             found.LastLoginUtc = now;
             audit.Record("connexion.reussie", "Utilisateur", found.Id.ToString(), $"Connexion de {found.UserName}.");
             await db.SaveChangesAsync(ct);
-            return (found, null);
+            return (found, null, null);
         }, ct);
-        if (user is null) throw new DomainException(error!.StartsWith("Compte", StringComparison.Ordinal) ? "verrouille" : "connexion", error);
+        if (lockedUntil is { } until)
+        {
+            var seconds = Math.Max(1, (int)Math.Ceiling((until - now).TotalSeconds));
+            throw new AccountLockedException(LockedMessage(seconds), seconds);
+        }
+        if (user is null) throw new DomainException("connexion", error!);
         return user;
     }
 

@@ -53,6 +53,7 @@ public static class DependencyInjection
         services.AddScoped<CashService>();
         services.AddScoped<ReportService>();
         services.AddScoped<UserService>();
+        services.AddSingleton<UnknownLoginTracker>();
         services.AddScoped<AuditService>();
         services.AddScoped<SearchService>();
         services.AddScoped<AcademicService>();

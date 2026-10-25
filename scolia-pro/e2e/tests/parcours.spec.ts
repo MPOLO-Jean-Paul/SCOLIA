@@ -244,13 +244,36 @@ test('déconnexion puis verrouillage après cinq erreurs', async () => {
   await page.getByRole('button', { name: /Administrateur Démo/ }).click();
   await page.getByRole('button', { name: 'Se déconnecter' }).click();
   await expect(page).toHaveURL(/connexion/);
-  for (let i = 0; i < 5; i++) {
+  for (let i = 1; i <= 4; i++) {
     await page.getByLabel('Identifiant').fill(admin.user);
     await page.getByLabel('Mot de passe').fill('mauvais-mot');
     await page.getByRole('button', { name: 'Se connecter' }).click();
-    await expect(page.locator('.signin-error')).toBeVisible();
+    await expect(page.locator('.signin-error')).toContainText(i === 4 ? 'Dernière tentative' : `Encore ${5 - i} tentatives`);
   }
+  await page.getByLabel('Mot de passe').fill('mauvais-mot');
+  await page.getByRole('button', { name: 'Se connecter' }).click();
+  // Cinquième erreur : formulaire bloqué et compte à rebours de 2 minutes.
+  await expect(page.locator('.signin-lock')).toContainText('Accès verrouillé');
+  await expect(page.locator('.signin-count')).toHaveText(/^(2:00|1:5\d)$/);
+  await expect(page.getByLabel('Mot de passe')).toBeDisabled();
+  const first = await page.locator('.signin-count').textContent();
+  await expect(page.locator('.signin-count')).not.toHaveText(first ?? '', { timeout: 3000 });
+  // Un rechargement ne remet pas le compteur à zéro.
+  await page.reload();
+  await expect(page.locator('.signin-lock')).toBeVisible();
+  // Fin du compte à rebours : l'accès revient sans intervention.
+  await page.evaluate(() => {
+    const key = 'scolia.connexion.verrou';
+    const lock = JSON.parse(localStorage.getItem(key) ?? '{}');
+    localStorage.setItem(key, JSON.stringify({ ...lock, until: Date.now() + 1500 }));
+  });
+  await page.reload();
+  await expect(page.locator('.signin-ok')).toContainText('Accès rétabli', { timeout: 5000 });
+  await expect(page.getByLabel('Mot de passe')).toBeEnabled();
+  await expect(page.getByLabel('Mot de passe')).toBeFocused();
+  // Le serveur garde son propre verrou : il renvoie le temps restant et le compteur reprend.
+  await page.getByLabel('Identifiant').fill(admin.user);
   await page.getByLabel('Mot de passe').fill(admin.password);
   await page.getByRole('button', { name: 'Se connecter' }).click();
-  await expect(page.locator('.signin-error')).toContainText('verrouillé');
+  await expect(page.locator('.signin-count')).toHaveText(/^1:[45]\d$/);
 });

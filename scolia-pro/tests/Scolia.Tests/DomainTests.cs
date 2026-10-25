@@ -227,3 +227,20 @@ public sealed class GradeAndAuditTests
         Assert.Throws<DomainException>(p.Recompute);
     }
 }
+
+public sealed class UnknownLoginTrackerTests
+{
+    [Fact]
+    public void Unknown_names_lock_after_five_failures_then_unlock()
+    {
+        var tracker = new Scolia.Application.Services.UnknownLoginTracker();
+        var now = new DateTime(2026, 10, 25, 8, 0, 0, DateTimeKind.Utc);
+        var until = now.AddMinutes(2);
+        for (var i = 1; i <= 4; i++) Assert.Equal(i, tracker.Fail("X", now, until, 5));
+        Assert.Null(tracker.LockedUntil("X", now));
+        Assert.Equal(5, tracker.Fail("X", now, until, 5));
+        Assert.Equal(until, tracker.LockedUntil("X", now.AddSeconds(119)));
+        Assert.Null(tracker.LockedUntil("X", until));
+        Assert.Equal(1, tracker.Fail("X", until.AddSeconds(1), until.AddMinutes(2), 5));
+    }
+}

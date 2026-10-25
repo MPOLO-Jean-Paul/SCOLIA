@@ -104,6 +104,15 @@ if (Environment.GetEnvironmentVariable("SCOLIA_ASSISTANT") == "1")
 shell.Login.SchoolName = Result(api.GetAsync<SetupStatusDto>("api/installation")).SchoolName ?? string.Empty;
 Wait(shell.RefreshLogoAsync());
 Save(window, "01-connexion.png");
+// Verrouillage après 5 erreurs : compte à rebours en cours, puis accès rétabli.
+shell.Login.UserName = "admin";
+shell.Login.StartLock(120, DateTime.UtcNow.AddSeconds(-23));
+shell.Login.Tick(DateTime.UtcNow);
+Save(window, "01b-connexion-verrouillee.png");
+shell.Login.Tick(DateTime.UtcNow.AddMinutes(3));
+Save(window, "01c-connexion-retablie.png");
+shell.Login.Reset();
+shell.Login.UserName = string.Empty;
 
 if (args.Length > 3 && args[3] == "smoke")
 {

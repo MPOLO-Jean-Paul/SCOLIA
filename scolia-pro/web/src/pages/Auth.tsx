@@ -1,10 +1,56 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, Eye, EyeOff, LoaderCircle, Rocket } from 'lucide-react';
-import { api } from '../api/client';
+import { ArrowRight, CheckCircle2, Eye, EyeOff, LoaderCircle, Lock, Rocket } from 'lucide-react';
+import { ApiError, api } from '../api/client';
 import type { Session } from '../api/types';
 import { useSession } from '../lib/session';
 import { Button, ErrorAlert, SectionTitle, SelectField, TextField, errorText } from '../components/ui';
+
+// Verrouillage après 5 erreurs : l'échéance est gardée pour qu'un rechargement de la page reprenne le compte à rebours.
+const LOCK_KEY = 'scolia.connexion.verrou';
+interface Lock { until: number; total: number }
+
+function readLock(): Lock | null {
+  try {
+    const lock = JSON.parse(localStorage.getItem(LOCK_KEY) ?? 'null') as Lock | null;
+    return lock && lock.until > Date.now() ? lock : null;
+  } catch { return null; }
+}
+
+function writeLock(lock: Lock | null) {
+  try { if (lock) localStorage.setItem(LOCK_KEY, JSON.stringify(lock)); else localStorage.removeItem(LOCK_KEY); } catch { /* stockage indisponible */ }
+}
+
+function countdown(seconds: number) {
+  return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
+}
+
+/** Compte à rebours jusqu'à 0 seconde, puis l'accès est rendu. */
+function useLockout(onUnlock: () => void) {
+  const [lock, setLock] = useState<Lock | null>(readLock);
+  const [now, setNow] = useState(Date.now());
+  const unlock = useRef(onUnlock);
+  unlock.current = onUnlock;
+  useEffect(() => {
+    if (!lock) return;
+    const tick = () => {
+      const t = Date.now();
+      setNow(t);
+      if (t >= lock.until) { writeLock(null); setLock(null); unlock.current(); }
+    };
+    tick();
+    const timer = setInterval(tick, 250);
+    return () => clearInterval(timer);
+  }, [lock]);
+  const start = (seconds: number) => {
+    const next = { until: Date.now() + seconds * 1000, total: Math.max(seconds, 1) };
+    writeLock(next);
+    setNow(Date.now());
+    setLock(next);
+  };
+  const left = lock ? Math.max(0, Math.ceil((lock.until - now) / 1000)) : 0;
+  return { locked: lock !== null, left, total: lock?.total ?? 1, start };
+}
 
 export function LoginPage() {
   const { setSession } = useSession();
@@ -14,17 +60,29 @@ export function LoginPage() {
   const [show, setShow] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<unknown>();
+  const [restored, setRestored] = useState(false);
+  const passwordRef = useRef<HTMLInputElement>(null);
+  const lockout = useLockout(() => {
+    setError(undefined);
+    setPassword('');
+    setRestored(true);
+    setTimeout(() => passwordRef.current?.focus(), 0);
+  });
   useEffect(() => {
-    document.title = 'Connexion · SCOLIA';
-  }, []);
+    document.title = lockout.locked ? `Verrouillé ${countdown(lockout.left)} · SCOLIA` : 'Connexion · SCOLIA';
+  }, [lockout.locked, lockout.left]);
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setBusy(true); setError(undefined);
+    if (lockout.locked) return;
+    setBusy(true); setError(undefined); setRestored(false);
     try {
       const s = await api.post<Session>('/api/session', { userName, password });
       setSession(s);
       navigate(s.mustChangePassword ? '/profil' : '/', { replace: true });
-    } catch (err) { setError(err); } finally { setBusy(false); }
+    } catch (err) {
+      const seconds = err instanceof ApiError && err.code === 'verrouille' ? Number(err.data?.retryAfterSeconds) : NaN;
+      if (seconds > 0) { setPassword(''); lockout.start(seconds); } else setError(err);
+    } finally { setBusy(false); }
   };
   return (
     <div className="signin-screen">
@@ -34,20 +92,31 @@ export function LoginPage() {
         <p className="signin-sub">Connectez-vous pour continuer</p>
         <form className="signin-form" onSubmit={submit}>
           <label className="sr-only" htmlFor="login-user">Identifiant</label>
-          <input id="login-user" className="signin-input" placeholder="Identifiant" autoComplete="username" autoFocus value={userName} onChange={(e) => setUserName(e.target.value)} required />
+          <input id="login-user" className="signin-input" placeholder="Identifiant" autoComplete="username" autoFocus disabled={lockout.locked} value={userName} onChange={(e) => setUserName(e.target.value)} required />
           <label className="sr-only" htmlFor="login-pwd">Mot de passe</label>
           <div className="signin-pass">
-            <input id="login-pwd" className="signin-input" type={show ? 'text' : 'password'} placeholder="Mot de passe" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+            <input id="login-pwd" ref={passwordRef} disabled={lockout.locked} className="signin-input" type={show ? 'text' : 'password'} placeholder="Mot de passe" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required />
             <button type="button" className="signin-icon" onClick={() => setShow((v) => !v)} aria-label={show ? 'Masquer la saisie' : 'Afficher la saisie'} title={show ? 'Masquer la saisie' : 'Afficher la saisie'}>
               {show ? <EyeOff /> : <Eye />}
             </button>
-            <button type="submit" className="signin-go" aria-label="Se connecter" title="Se connecter" disabled={busy}>
+            <button type="submit" className="signin-go" aria-label="Se connecter" title="Se connecter" disabled={busy || lockout.locked}>
               {busy ? <LoaderCircle className="spin" /> : <ArrowRight />}
             </button>
           </div>
-          {error ? <p className="signin-error" role="alert">{errorText(error)}</p> : null}
+          {lockout.locked ? (
+            <div className="signin-lock" role="alert">
+              <Lock className="signin-lock-icon" />
+              <div className="signin-lock-text">
+                <strong>Accès verrouillé</strong>
+                <span>5 tentatives incorrectes. Nouvel essai dans :</span>
+              </div>
+              <span className="signin-count" aria-label={`${lockout.left} secondes`}>{countdown(lockout.left)}</span>
+              <div className="signin-bar" aria-hidden="true"><span style={{ width: `${(lockout.left / lockout.total) * 100}%` }} /></div>
+            </div>
+          ) : error ? <p className="signin-error" role="alert">{errorText(error)}</p>
+            : restored ? <p className="signin-ok" role="status"><CheckCircle2 />Accès rétabli. Vous pouvez réessayer.</p> : null}
         </form>
-        <p className="signin-help">Après 5 erreurs, le compte est verrouillé 15 minutes. Mot de passe oublié : contactez l’administrateur.</p>
+        <p className="signin-help">Après 5 erreurs, l’accès est verrouillé 2 minutes. Mot de passe oublié : contactez l’administrateur.</p>
       </main>
       <footer className="signin-foot">SCOLIA Pro 1.1.0</footer>
     </div>

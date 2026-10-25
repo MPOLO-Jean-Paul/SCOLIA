@@ -14,5 +14,9 @@ public partial class LoginView : UserControl
             if (e.Key == Key.Enter && DataContext is LoginViewModel login && login.Submit.CanExecute(null)) login.Submit.Execute(null);
         };
         UserNameBox.Focus();
+        DataContextChanged += (_, _) =>
+        {
+            if (DataContext is LoginViewModel login) login.Unlocked += () => PasswordBox.Focus();
+        };
     }
 }

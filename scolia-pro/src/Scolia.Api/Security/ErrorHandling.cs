@@ -27,6 +27,11 @@ public sealed class ProblemHandler(IProblemDetailsService problems, ILogger<Prob
         var details = new ProblemDetails { Status = status, Title = title, Type = $"https://scolia.app/erreurs/{code}" };
         details.Extensions["code"] = code;
         if (exception is DomainException { Errors: not null } domain) details.Extensions["errors"] = domain.Errors;
+        if (exception is AccountLockedException locked)
+        {
+            details.Extensions["retryAfterSeconds"] = locked.RetryAfterSeconds;
+            http.Response.Headers.RetryAfter = locked.RetryAfterSeconds.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        }
         if (exception is DuplicateStudentException duplicate) details.Extensions["candidates"] = duplicate.Candidates;
         return await problems.TryWriteAsync(new ProblemDetailsContext { HttpContext = http, ProblemDetails = details, Exception = exception });
     }
