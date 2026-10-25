@@ -58,7 +58,13 @@ public sealed class CardsPage : PageViewModel
         }
         Action("Tout cocher", MaterialIconKind.CheckboxMultipleMarkedOutline, () => { SetAll(true); return Task.CompletedTask; });
         Action("Tout décocher", MaterialIconKind.CheckboxMultipleBlankOutline, () => { SetAll(false); return Task.CompletedTask; });
-        Action("Session actuelle", MaterialIconKind.CalendarTodayOutline, () => { Month = MonthChoices[DateTime.Today.Month - 1]; Year = YearChoices()[1]; return Task.CompletedTask; });
+        Action("Session actuelle", MaterialIconKind.CalendarTodayOutline, () =>
+        {
+            Month = MonthChoices[DateTime.Today.Month - 1];
+            Year = YearChoices()[1];
+            Shell.Notify($"Session choisie pour les cartes : {Month.Label.ToLowerInvariant()} {Year.Label}.");
+            return Task.CompletedTask;
+        });
         Action("Historique des lots", MaterialIconKind.History, ShowBatchesAsync);
         ActionRefresh();
     }
@@ -109,7 +115,9 @@ public sealed class CardsPage : PageViewModel
 
     private void SetAll(bool value)
     {
-        foreach (var row in Rows.Where(r => r.Selectable)) row.Selected = value;
+        var rows = Rows.Where(r => r.Selectable).ToList();
+        foreach (var row in rows) row.Selected = value;
+        Shell.Notify(value ? $"{Format.Count(rows.Count, "apprenant coché", "apprenants cochés")} pour les cartes." : "Aucun apprenant coché.");
     }
 
     private static IReadOnlyList<ChoiceItem> YearChoices()

@@ -534,7 +534,13 @@ public sealed class ShellViewModel : Observable
     }
 
     /// <summary>Recharge l'écran courant.</summary>
-    public Task Reload() => Current?.RefreshAsync() ?? Task.CompletedTask;
+    /// <summary>Recharge l'écran affiché et le confirme d'un message discret.</summary>
+    public async Task Reload()
+    {
+        if (Current is not { } page) return;
+        await page.RefreshAsync();
+        Notify($"{page.Title} : données à jour.");
+    }
 
     /// <summary>Exécute une action métier : les erreurs deviennent une notification, jamais un plantage.</summary>
     private int running;
@@ -622,6 +628,9 @@ public sealed class ShellViewModel : Observable
     /// <summary>Fenêtre « À propos » : version, éditeur et développeur.</summary>
     public void ShowAbout() => Dialog = new AboutViewModel(this);
 
+    /// <summary>Aide des raccourcis clavier, rangés par onglet.</summary>
+    public void ShowShortcuts() => Dialog = new ShortcutsViewModel(this);
+
     public void OpenBackstage() => BackstageOpen = true;
 
     public void CloseBackstage() => BackstageOpen = false;
@@ -630,9 +639,14 @@ public sealed class ShellViewModel : Observable
     public void Notify(string text, SoundKind sound = SoundKind.Notification)
     {
         Sounds.Play(Prefs, sound);
+        // Le même message relancé se réaffiche et repart pour quatre secondes : un second clic ne paraît pas ignoré.
+        var token = ++noticeToken;
+        if (Notice == text) Notice = null;
         Notice = text;
-        DispatcherTimer.RunOnce(() => { if (Notice == text) Notice = null; }, TimeSpan.FromSeconds(4));
+        DispatcherTimer.RunOnce(() => { if (noticeToken == token) Notice = null; }, TimeSpan.FromSeconds(4));
     }
+
+    private int noticeToken;
 
     public void SetStatus(string text) => Status = text;
 

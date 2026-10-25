@@ -194,6 +194,7 @@ public sealed class BatchPaymentPage : PageViewModel
     {
         foreach (var row in Items) row.Selected = value;
         SelectionChanged();
+        Shell.Notify(value ? $"{Format.Count(Items.Count, "apprenant coché", "apprenants cochés")}." : "Aucun apprenant coché.");
     }
 
     private void SelectionChanged()

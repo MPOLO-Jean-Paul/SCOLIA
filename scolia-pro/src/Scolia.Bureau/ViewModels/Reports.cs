@@ -34,6 +34,7 @@ public sealed class ReportsPage : PageViewModel
         {
             From = null;
             To = null;
+            Shell.Notify("Filtres effacés : les documents couvrent toute la période.");
             return Task.CompletedTask;
         });
         Sections = Build();

@@ -11,28 +11,36 @@
 Touches d'accès : appuyer sur Alt seul affiche une lettre sur chaque onglet. Taper la lettre ouvre l'onglet, puis taper la lettre d'une commande la lance. Échap annule.
 Réduire le ruban : Ctrl+F1, ou la flèche à droite des onglets. Préférences (thème, densité, barre d'état) : groupe Apparence de l'onglet Affichage.
 
-## Préférences d'affichage
+## Réglages de ce poste
 
-Onglet Affichage, groupe Apparence, bouton de lanceur (la petite flèche du groupe) : ouvre les préférences.
+Paramètres, partie « Ce poste ». Ces réglages sont ouverts à tous les comptes. Chacun s'applique tout de suite et reste enregistré sur ce poste.
 
-- **Thème** : clair, sombre ou selon le système. Le bouton lune ou soleil de la barre d'état bascule aussitôt du clair au sombre.
-- **Couleur d'accent** : bleu, indigo, violet, vert, orange ou graphite, pour les boutons principaux et les sélections.
-- **Taille du texte** : petit, normal, grand ou très grand. Elle s'applique à tous les écrans et au ruban.
-- **Densité** : confortable ou compacte.
-- **Barre d'état**, **info-bulles**, **quadrillage des tableaux**, **animations** : chacun s'active ou se désactive séparément.
-- **Rétablir les valeurs par défaut** : remet tous ces réglages à leur valeur d'origine.
+| Rubrique | Réglages |
+|---|---|
+| Thème et couleurs | Selon Windows, clair ou sombre ; couleur d'accent en pastilles ; quadrillage des tableaux |
+| Texte et polices | Police de l'interface ; taille du texte de 80 à 160 % ; densité compacte ; aperçu |
+| Fenêtres et affichage | Taille au lancement : normale, agrandie ou plein écran ; volet latéral ; ruban réduit ; barre d'état ; info-bulles |
+| Animations et fluidité | Animations ; transition entre les pages ; vitesse rapide, normale ou douce ; durée de l'écran d'ouverture, de 1 à 3 secondes |
+| Sons | Sons activés ; volume ; style doux, clochette ou sons de Windows ; un son par événement, avec un bouton Écouter |
 
-Les réglages sont mémorisés sur ce poste. Ils ne sont pas partagés avec les autres utilisateurs.
+Le bouton « Rétablir les réglages d'origine de ce poste » remet tout à zéro. La commande Préférences du menu Affichage ouvre directement cette partie.
 
 ### Connexion, animations et traitements
 
-- La connexion s'ouvre dans une petite fenêtre à la taille du formulaire, avec le logo de l'établissement. Une fois connecté, la fenêtre s'agrandit et l'application apparaît en fondu.
+- La connexion s'ouvre dans une petite fenêtre à la taille du formulaire, avec le logo de l'établissement. L'œil du champ affiche le mot de passe ; la flèche ronde, ou Entrée, connecte.
+- Après la connexion, ou à la fin de l'assistant, un écran d'ouverture montre une roue et les étapes pendant au moins 2 secondes. L'accueil apparaît ensuite.
 - Les boîtes de dialogue, les pages et le changement de thème s'animent brièvement. La préférence « Animations » les désactive.
 - Un traitement qui dure plus d'un instant, comme un export ou une sauvegarde, affiche « Traitement en cours… » au centre de la fenêtre.
 
 ### Logo de l'établissement
 
 Paramètres, Établissement, « Changer le logo ». Le logo figure sur l'écran de connexion, en tête du volet, sur les reçus, les listes PDF et Excel, et les cartes d'accès. Sans logo enregistré, le sceau de l'établissement le remplace.
+
+### Commandes et fenêtres
+
+- Chaque commande répond : une page, une fenêtre ou un message. Une action de ligne lancée sans ligne choisie demande de choisir d'abord une ligne.
+- Chaque fenêtre a un bouton Fermer en haut à droite. Échap ferme aussi la fenêtre ouverte.
+- Le survol d'un bouton explique ce qu'il fait et s'il agit sur la ligne choisie.
 
 ### Clic droit et double-clic
 

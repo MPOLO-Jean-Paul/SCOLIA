@@ -1,0 +1,45 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mi="using:Material.Icons.Avalonia"
+             x:Class="Scolia.Bureau.Views.ShortcutsView">
+  <!-- Raccourcis clavier : rangés par onglet, touches en pastilles, la liste défile -->
+  <Border Classes="card" Width="720" Padding="0" CornerRadius="14" Background="{DynamicResource SurfaceBrush}" ClipToBounds="True" BoxShadow="0 12 40 0 #33000000">
+    <StackPanel>
+      <Grid ColumnDefinitions="Auto,*,Auto" Margin="24,22,18,8">
+        <Border Classes="appicon large" Background="{DynamicResource ToneNeutral}" Margin="0,0,14,0"><mi:MaterialIcon Kind="Keyboard" /></Border>
+        <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3">
+          <TextBlock Text="Raccourcis clavier" FontSize="17" FontWeight="Bold" />
+          <TextBlock Text="Ils fonctionnent sur toutes les pages. Les mêmes commandes sont dans le menu, en haut à droite." Classes="muted" TextWrapping="Wrap" />
+        </StackPanel>
+        <Button Grid.Column="2" Classes="closex" Command="{Binding Close}"><mi:MaterialIcon Kind="Close" /></Button>
+      </Grid>
+      <ScrollViewer MaxHeight="520" Padding="24,4,14,8">
+        <ItemsControl ItemsSource="{Binding Groups}" Margin="0,0,10,0">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate>
+              <StackPanel Spacing="4" Margin="0,8,0,4">
+                <TextBlock Text="{Binding Title}" Classes="heading" />
+                <ItemsControl ItemsSource="{Binding Rows}">
+                  <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Columns="2" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                      <Grid ColumnDefinitions="110,*" Margin="0,4,16,4" ToolTip.Tip="{Binding Tip}">
+                        <Border Classes="chip" HorizontalAlignment="Left" VerticalAlignment="Center" Padding="8,2">
+                          <TextBlock Text="{Binding Keys}" FontWeight="SemiBold" FontSize="{DynamicResource FsSmall}" />
+                        </Border>
+                        <TextBlock Grid.Column="1" Text="{Binding Label}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                      </Grid>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </StackPanel>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </ScrollViewer>
+      <Grid Margin="24,8,24,20">
+        <Button Classes="primary" Content="Fermer" Command="{Binding Close}" HorizontalAlignment="Right" />
+      </Grid>
+    </StackPanel>
+  </Border>
+</UserControl>

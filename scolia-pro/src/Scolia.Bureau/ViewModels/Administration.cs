@@ -444,6 +444,16 @@ public sealed class SettingsPage : PageViewModel
         }
     }
 
+    public override object? SelectedRow => section?.Value switch
+    {
+        "annees" => SelectedYear,
+        "sections" => SelectedSection,
+        "promotions" => SelectedPromotion,
+        _ => null,
+    };
+
+    protected override bool HasRows => section?.Value is "annees" or "sections" or "promotions";
+
     public bool IsSchool => section?.Value == "etablissement";
     public bool IsYears => section?.Value == "annees";
     public bool IsSections => section?.Value == "sections";

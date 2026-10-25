@@ -15,6 +15,21 @@ public sealed record ActionVm(string Label, MaterialIconKind Icon, ICommand Comm
 {
     /// <summary>Bouton bleu : action principale qui n'est pas destructrice.</summary>
     public bool IsPrimary => Primary && !Danger;
+
+    /// <summary>Info-bulle : ce que fait l'action, sur quoi elle agit, et ce qui protège une action définitive.</summary>
+    public string Hint => Label switch
+    {
+        "Actualiser" => "Recharge les données de la page depuis le serveur.",
+        "Tout cocher" => "Coche toutes les lignes affichées.",
+        "Tout décocher" => "Décoche toutes les lignes.",
+        "Excel" => "Enregistre la liste affichée en Excel dans Téléchargements.",
+        "PDF" => "Enregistre la liste affichée en PDF dans Téléchargements.",
+        "Imprimer" => "Prépare le document de la page pour l'impression.",
+        _ => Row
+            ? $"{Label} : agit sur la ligne choisie du tableau. Même commande au clic droit sur la ligne{(Default ? ", ou double-clic" : string.Empty)}."
+            : Danger ? $"{Label} : action définitive. Un récapitulatif demande votre confirmation."
+            : $"{Label}.",
+    };
 }
 
 /// <summary>Écran de l'application. Chaque écran charge ses données et publie ses actions dans l'en-tête.</summary>
@@ -105,11 +120,34 @@ public abstract class PageViewModel : Observable
     protected string Money(decimal value) => Format.Money(value, Currency);
 
     protected void Action(string label, MaterialIconKind icon, Func<Task> work, bool primary = false, bool danger = false, bool row = false, bool open = false) =>
-        Actions.Add(new ActionVm(label, icon, new AsyncCommand(() => Shell.Run(work)), primary, danger, row || open, open));
+        Actions.Add(new ActionVm(label, icon, new AsyncCommand(() => Shell.Run(row || open ? NeedsRow(label, work) : work)), primary, danger, row || open, open));
 
     /// <summary>Action de ligne proposée seulement au clic droit : elle n'encombre pas l'en-tête.</summary>
     protected void MenuAction(string label, MaterialIconKind icon, Func<Task> work, bool open = false) =>
-        Actions.Add(new ActionVm(label, icon, new AsyncCommand(() => Shell.Run(work)), Row: true, Default: open, MenuOnly: true));
+        Actions.Add(new ActionVm(label, icon, new AsyncCommand(() => Shell.Run(NeedsRow(label, work))), Row: true, Default: open, MenuOnly: true));
+
+    /// <summary>
+    /// Ligne choisie dans le tableau de l'écran, ou null. Par défaut la propriété « Selected » de l'écran ;
+    /// un écran à plusieurs tableaux indique celui de sa rubrique ouverte.
+    /// </summary>
+    public virtual object? SelectedRow => GetType().GetProperty("Selected")?.GetValue(this);
+
+    /// <summary>Vrai quand l'écran a un tableau dont on choisit une ligne.</summary>
+    protected virtual bool HasRows => GetType().GetProperty("Selected") is not null;
+
+    /// <summary>
+    /// Une action de ligne lancée sans ligne choisie l'explique, au lieu de ne rien faire :
+    /// l'utilisateur sait qu'il doit d'abord cliquer sur une ligne.
+    /// </summary>
+    private Func<Task> NeedsRow(string label, Func<Task> work) => () =>
+    {
+        if (HasRows && SelectedRow is null)
+        {
+            Shell.Notify($"Choisissez d'abord une ligne du tableau, puis « {label} ». Astuce : clic droit sur la ligne.", SoundKind.Error);
+            return Task.CompletedTask;
+        }
+        return work();
+    };
 
     /// <summary>Actions proposées au clic droit sur une ligne du tableau.</summary>
     public IReadOnlyList<ActionVm> RowActions => Actions.Where(a => a.Row).ToList();
@@ -120,8 +158,13 @@ public abstract class PageViewModel : Observable
     /// <summary>Action lancée par un double-clic sur une ligne : celle marquée « ouvrir », sinon la première action de ligne.</summary>
     public ActionVm? DefaultRowAction => Actions.FirstOrDefault(a => a.Default) ?? Actions.FirstOrDefault(a => a.Row);
 
+    /// <summary>Recharge les données depuis le serveur, puis le confirme : la commande ne paraît jamais sans effet.</summary>
     protected void ActionRefresh() =>
-        Actions.Add(new ActionVm("Actualiser", MaterialIconKind.Refresh, new AsyncCommand(RefreshAsync)));
+        Actions.Add(new ActionVm("Actualiser", MaterialIconKind.Refresh, new AsyncCommand(async () =>
+        {
+            await RefreshAsync();
+            Shell.Notify($"{Title} : données à jour.");
+        })));
 
     /// <summary>Date d'un sélecteur de calendrier, ou aujourd'hui.</summary>
     protected static DateOnly ToDay(DateTime? value) =>

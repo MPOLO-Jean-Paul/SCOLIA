@@ -29,8 +29,8 @@ public sealed class DataPage : PageViewModel
         Action("Vérifier la base", MaterialIconKind.DatabaseCheckOutline, () => CheckDatabaseAsync(Shell));
         if (Shell.Can(Perm.BackupManage))
         {
-            Action("Effacer données", MaterialIconKind.DeleteSweepOutline, () => Shell.Open(() => new EraseDataPage(Shell, payments: true)));
-            Action("Effacer tous les apprenants", MaterialIconKind.AccountRemoveOutline, () => Shell.Open(() => new EraseDataPage(Shell, payments: false)));
+            Action("Effacer des paiements", MaterialIconKind.DeleteSweepOutline, () => Shell.Open(() => new EraseDataPage(Shell, payments: true)));
+            Action("Effacer des dossiers", MaterialIconKind.AccountRemoveOutline, () => Shell.Open(() => new EraseDataPage(Shell, payments: false)));
         }
         ActionRefresh();
     }
@@ -448,16 +448,51 @@ public static class PreferencesDialog
 /// <summary>Raccourcis clavier de SCOLIA.</summary>
 public static class ShortcutsDialog
 {
-    /// <summary>La liste est construite à partir des commandes du ruban : elle suit toujours les raccourcis réels.</summary>
     public static Task<bool> ShowAsync(ShellViewModel shell)
     {
-        var lines = shell.ShortcutCommands.Select(c => $"{c.ShortcutText} : {c.Label}").Append("Échap : fermer la boîte de dialogue ouverte");
-        return shell.Ask(new FormViewModel("Raccourcis clavier", "Les raccourcis fonctionnent dans toutes les pages.")
-        {
-            Message = string.Join(Environment.NewLine, lines),
-            CancelText = "Fermer",
-        });
+        shell.ShowShortcuts();
+        return Task.FromResult(true);
     }
+}
+
+/// <summary>Raccourci de la fenêtre d'aide : les touches, la commande et ce qu'elle fait.</summary>
+public sealed record ShortcutRowVm(string Keys, string Label, string? Tip);
+
+/// <summary>Rubrique de raccourcis : un onglet du ruban et ses commandes.</summary>
+public sealed record ShortcutGroupVm(string Title, IReadOnlyList<ShortcutRowVm> Rows);
+
+/// <summary>
+/// Aide des raccourcis clavier : rangés par onglet, avec les touches en pastilles. La liste est construite à partir
+/// des commandes du ruban : elle suit toujours les raccourcis réels.
+/// </summary>
+public sealed class ShortcutsViewModel
+{
+    public ShortcutsViewModel(ShellViewModel shell)
+    {
+        Close = new RelayCommand(shell.CloseDialog);
+        var seen = new HashSet<string>(["Ctrl+K", "Échap", "Entrée", "Maj+F10"], StringComparer.Ordinal);
+        var groups = new List<ShortcutGroupVm>
+        {
+            new("Partout", [
+                new("Ctrl+K", "Rechercher", "Un apprenant, un reçu ou une page."),
+                new("Échap", "Fermer", "La fenêtre ou le menu ouvert."),
+                new("Entrée", "Ouvrir la ligne choisie", "Dans tous les tableaux."),
+                new("Maj+F10", "Menu de la ligne", "Comme le clic droit."),
+            ]),
+        };
+        foreach (var tab in shell.Tabs.Where(t => !t.IsFile))
+        {
+            var rows = tab.Groups.SelectMany(g => g.Commands)
+                .Where(c => c.ShortcutText is not null && seen.Add(c.ShortcutText))
+                .Select(c => new ShortcutRowVm(c.ShortcutText!, c.Label, c.Tip?.Split(Environment.NewLine)[0]))
+                .ToList();
+            if (rows.Count > 0) groups.Add(new ShortcutGroupVm(tab.Title, rows));
+        }
+        Groups = groups;
+    }
+
+    public IReadOnlyList<ShortcutGroupVm> Groups { get; }
+    public RelayCommand Close { get; }
 }
 
 /// <summary>À propos de SCOLIA Pro : la fenêtre de présentation, avec l'éditeur et le développeur.</summary>

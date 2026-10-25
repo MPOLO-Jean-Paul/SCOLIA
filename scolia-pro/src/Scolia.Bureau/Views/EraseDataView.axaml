@@ -1,36 +1,79 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mi="using:Material.Icons.Avalonia"
              xmlns:c="using:Scolia.Bureau.Controls"
              xmlns:infra="using:Scolia.Bureau.Infrastructure"
              x:Class="Scolia.Bureau.Views.EraseDataView">
   <Grid RowDefinitions="Auto,*,Auto">
-    <Border Grid.Row="0" Classes="band" Margin="0,0,0,10">
-      <WrapPanel>
-        <StackPanel Classes="field">
-          <TextBlock Text="Rechercher" Classes="fieldlabel" />
-          <TextBox Width="260" Text="{Binding Search}" PlaceholderText="Nom ou matricule" />
+    <!-- Étapes 1 et 2 : quoi effacer, et pour quels apprenants -->
+    <Grid Grid.Row="0" ColumnDefinitions="*,12,*" Margin="0,0,0,10">
+      <Border Classes="card">
+        <StackPanel Spacing="8">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <Border Classes="badge" Background="{DynamicResource ToneRed}"><TextBlock Text="1" Foreground="White" /></Border>
+            <TextBlock Text="Que voulez-vous effacer ?" FontWeight="SemiBold" VerticalAlignment="Center" />
+          </StackPanel>
+          <Border Classes="segmented" HorizontalAlignment="Left">
+            <StackPanel Orientation="Horizontal">
+              <RadioButton Classes="segment" GroupName="erase-kind" Content="Les paiements" IsChecked="{Binding ErasePayments}" />
+              <RadioButton Classes="segment" GroupName="erase-kind" Content="Les dossiers des apprenants" IsChecked="{Binding EraseStudents}" />
+            </StackPanel>
+          </Border>
+          <TextBlock Text="{Binding KindHint}" Classes="muted" TextWrapping="Wrap" />
         </StackPanel>
-        <StackPanel Classes="field">
-          <TextBlock Text="Apprenants concernés" Classes="fieldlabel" />
-          <ComboBox Width="220" ItemsSource="{Binding Scopes}" SelectedItem="{Binding Scope}" />
+      </Border>
+      <Border Grid.Column="2" Classes="card">
+        <StackPanel Spacing="8">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <Border Classes="badge" Background="{DynamicResource ToneRed}"><TextBlock Text="2" Foreground="White" /></Border>
+            <TextBlock Text="Pour quels apprenants ?" FontWeight="SemiBold" VerticalAlignment="Center" />
+          </StackPanel>
+          <Border Classes="segmented" HorizontalAlignment="Left">
+            <StackPanel Orientation="Horizontal">
+              <RadioButton Classes="segment" GroupName="erase-scope" Content="Les apprenants cochés" IsChecked="{Binding ScopeSelection}" />
+              <RadioButton Classes="segment" GroupName="erase-scope" Content="Tous les apprenants" IsChecked="{Binding ScopeAll}" />
+            </StackPanel>
+          </Border>
+          <TextBox Text="{Binding Search}" PlaceholderText="Rechercher un nom ou un matricule" IsEnabled="{Binding IsSelectionScope}" />
         </StackPanel>
-        <StackPanel Classes="field">
-          <TextBlock Text="Mot de passe" Classes="fieldlabel" />
-          <TextBox Width="260" PasswordChar="•" Text="{Binding Password}" PlaceholderText="Mot de passe de votre compte" />
-        </StackPanel>
-      </WrapPanel>
-    </Border>
-    <DataGrid Grid.Row="1" ItemsSource="{Binding Items}" AutoGenerateColumns="False" CanUserSortColumns="False" IsEnabled="{Binding IsSelectionScope}">
+      </Border>
+    </Grid>
+
+    <!-- Liste : un clic sur la case coche l'apprenant -->
+    <DataGrid Grid.Row="1" ItemsSource="{Binding Items}" AutoGenerateColumns="False" CanUserSortColumns="False" IsReadOnly="True" IsEnabled="{Binding IsSelectionScope}">
       <DataGrid.Columns>
-        <DataGridCheckBoxColumn Header="Choisir" Binding="{Binding Selected}" Width="Auto" MinWidth="80" />
-        <DataGridTextColumn infra:GridPriority.Level="2" Header="Matricule" Binding="{Binding Matricule}" IsReadOnly="True" Width="Auto" MinWidth="122" />
-        <DataGridTextColumn Header="Nom complet" Binding="{Binding Name}" IsReadOnly="True" Width="2*" MinWidth="280" />
-        <DataGridTextColumn infra:GridPriority.Level="3" Header="Classe" Binding="{Binding Promotion}" IsReadOnly="True" Width="Auto" MinWidth="99" />
-        <DataGridTextColumn infra:GridPriority.Level="2" Header="Statut" Binding="{Binding Status}" IsReadOnly="True" Width="Auto" MinWidth="110" />
-        <DataGridTextColumn Header="Solde" Binding="{Binding Balance}" IsReadOnly="True" Width="Auto" MinWidth="130" />
+        <DataGridTemplateColumn Header="Choisir" Width="Auto" MinWidth="80">
+          <DataGridTemplateColumn.CellTemplate>
+            <DataTemplate>
+              <CheckBox IsChecked="{Binding Selected}" HorizontalAlignment="Center" />
+            </DataTemplate>
+          </DataGridTemplateColumn.CellTemplate>
+        </DataGridTemplateColumn>
+        <DataGridTextColumn infra:GridPriority.Level="2" Header="Matricule" Binding="{Binding Matricule}" Width="Auto" MinWidth="122" />
+        <DataGridTextColumn Header="Nom complet" Binding="{Binding Name}" Width="2*" MinWidth="280" />
+        <DataGridTextColumn infra:GridPriority.Level="3" Header="Classe" Binding="{Binding Promotion}" Width="Auto" MinWidth="99" />
+        <DataGridTextColumn infra:GridPriority.Level="2" Header="Statut" Binding="{Binding Status}" Width="Auto" MinWidth="110" />
+        <DataGridTextColumn Header="Solde" Binding="{Binding Balance}" Width="Auto" MinWidth="130" />
       </DataGrid.Columns>
     </DataGrid>
-    <TextBlock Grid.Row="2" Text="{Binding SelectionSummary}" Classes="muted" Margin="0,8,0,0" />
     <c:EmptyState Grid.Row="1" Icon="AccountOffOutline" Title="Aucun apprenant" Hint="Vérifiez l'orthographe ou effacez la recherche." IsVisible="{Binding Items.Count, Converter={StaticResource IsEmpty}}" />
+
+    <!-- Étape 3 : confirmer avec le mot de passe, puis effacer -->
+    <Border Grid.Row="2" Classes="card" Margin="0,10,0,0" IsVisible="{Binding CanErase}">
+      <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+        <Border Classes="badge" Background="{DynamicResource ToneRed}" VerticalAlignment="Center" Margin="0,0,10,0"><TextBlock Text="3" Foreground="White" /></Border>
+        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+          <TextBlock Text="Confirmer avec votre mot de passe" FontWeight="SemiBold" />
+          <TextBlock Text="{Binding SelectionSummary}" Classes="muted" TextWrapping="Wrap" />
+        </StackPanel>
+        <TextBox Grid.Column="2" Width="240" PasswordChar="•" Text="{Binding Password}" PlaceholderText="Mot de passe de votre compte" VerticalAlignment="Center" Margin="12,0" />
+        <Button Grid.Column="3" Classes="danger" Command="{Binding Erase}" VerticalAlignment="Center">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <mi:MaterialIcon Kind="DeleteForeverOutline" Width="16" Height="16" Foreground="White" />
+            <TextBlock Text="{Binding EraseText}" />
+          </StackPanel>
+        </Button>
+      </Grid>
+    </Border>
   </Grid>
 </UserControl>

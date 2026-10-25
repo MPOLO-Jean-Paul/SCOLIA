@@ -31,7 +31,12 @@ public sealed class StaffAttendancePage : PageViewModel
             Action("Sortie", MaterialIconKind.LogoutVariant, () => MarkAsync("Sortie"), row: true);
             Action("Justifier une absence", MaterialIconKind.FileCheckOutline, JustifyAsync, row: true);
         }
-        Action("Mois précédent ou en cours", MaterialIconKind.CalendarRangeOutline, () => { previousMonth = !previousMonth; return RefreshAsync(); });
+        Action("Mois précédent ou en cours", MaterialIconKind.CalendarRangeOutline, async () =>
+        {
+            previousMonth = !previousMonth;
+            await RefreshAsync();
+            Shell.Notify(previousMonth ? "Pointage du mois précédent affiché." : "Pointage du mois en cours affiché.");
+        });
         ActionRefresh();
     }
 

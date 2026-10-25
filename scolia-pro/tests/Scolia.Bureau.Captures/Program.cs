@@ -114,6 +114,16 @@ Save(window, "01c-connexion-retablie.png");
 shell.Login.Reset();
 shell.Login.UserName = string.Empty;
 
+// Passage de toutes les commandes (argument « commandes ») : chacune doit produire un effet visible.
+if (args.Length > 3 && args[3] == "commandes")
+{
+    var sweepSession = Result(api.LoginAsync("admin", password));
+    Wait(shell.OpenSessionAsync(sweepSession));
+    var failed = CommandSweep(shell);
+    window.Close();
+    Environment.Exit(failed);
+}
+
 if (args.Length > 3 && args[3] == "smoke")
 {
     Smoke(shell, api, window, password);
@@ -559,3 +569,114 @@ prefs.Theme = "light";
 
 window.Close();
 Console.WriteLine("terminé");
+
+// ---------- Passage des commandes ----------
+// Lance chaque commande du ruban et chaque action d'en-tête de chaque page, sans ligne choisie, puis attend un effet
+// visible : une fenêtre, une autre page, le menu Fichier, un message ou un réglage changé. Une commande sans effet
+// est signalée : c'est ce que l'utilisateur vit comme « la commande ne fonctionne pas ».
+int CommandSweep(ShellViewModel shell)
+{
+    var skipped = new HashSet<string>(StringComparer.Ordinal)
+    {
+        "Se déconnecter", "Quitter", "Plein écran", "Changer de serveur", "Installer le service", "Désinstaller le service",
+        "Ouvrir le pare-feu", "Démarrer avec Windows", "Autoriser le réseau",
+    };
+    var problems = new List<string>();
+    var total = 0;
+    var noticed = false;
+    string? lastNotice = null;
+    shell.PropertyChanged += (_, e) =>
+    {
+        if (e.PropertyName == nameof(ShellViewModel.Notice) && shell.Notice is { } n) { noticed = true; lastNotice = n; }
+    };
+    // Le sélecteur de fichiers de Windows ne s'ouvre pas sans écran : son appel compte comme l'effet attendu.
+    shell.PickFileHandler = _ => { noticed = true; lastNotice = "sélecteur de fichiers ouvert"; return Task.FromResult<PickedFile?>(null); };
+    string PrefsKey() => System.Text.Json.JsonSerializer.Serialize(shell.Prefs) + shell.SidebarShown + shell.Prefs.RibbonCollapsed;
+    static string DialogName(object? d) => d switch
+    {
+        FormViewModel f => f.Title,
+        SearchViewModel => "Recherche",
+        ShortcutsViewModel => "Raccourcis clavier",
+        AboutViewModel => "À propos",
+        null => string.Empty,
+        _ => d.GetType().Name,
+    };
+    void Pump(int ms)
+    {
+        var end = DateTime.UtcNow.AddMilliseconds(ms);
+        while (DateTime.UtcNow < end) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(15); }
+    }
+    void CloseAll()
+    {
+        for (var i = 0; i < 4 && shell.HasDialog; i++)
+        {
+            if (shell.Dialog is FormViewModel f) f.Cancel.Execute(null); else shell.CloseDialog();
+            Pump(120);
+        }
+        if (shell.BackstageOpen) shell.CloseBackstage();
+    }
+    string? Try(string where, string label, System.Windows.Input.ICommand command, bool toggle)
+    {
+        total++;
+        CloseAll();
+        Pump(150);
+        var page = shell.Current;
+        var prefs = PrefsKey();
+        noticed = false;
+        string? effect = null;
+        try
+        {
+            if (!command.CanExecute(null)) return "désactivée";
+            command.Execute(null);
+            var until = DateTime.UtcNow.AddSeconds(5);
+            while (DateTime.UtcNow < until && effect is null)
+            {
+                Dispatcher.UIThread.RunJobs();
+                Thread.Sleep(20);
+                effect = shell.HasDialog ? $"fenêtre « {DialogName(shell.Dialog)} »"
+                    : !ReferenceEquals(shell.Current, page) ? $"page « {shell.Current?.Title} »"
+                    : shell.BackstageOpen ? "menu Fichier"
+                    : noticed ? $"message « {lastNotice} »"
+                    : PrefsKey() != prefs ? "réglage modifié"
+                    : null;
+            }
+        }
+        catch (Exception ex) { effect = null; problems.Add($"{where} › {label} : ERREUR {ex.GetType().Name} {ex.Message}"); Console.WriteLine($"ERREUR {where} › {label} : {ex.Message}"); return "erreur"; }
+        if (toggle && effect is not null) { command.Execute(null); Pump(300); }
+        if (effect is null) problems.Add($"{where} › {label} : aucun effet visible");
+        Console.WriteLine($"{(effect is null ? "SANS EFFET" : "OK        ")} {where} › {label}{(effect is null ? string.Empty : $" : {effect}")}");
+        CloseAll();
+        return effect;
+    }
+
+    // 1. Ruban et menu : toutes les commandes de tous les onglets.
+    foreach (var tab in shell.Tabs.Where(t => !t.IsFile).ToList())
+        foreach (var group in tab.Groups)
+            foreach (var command in group.Commands)
+            {
+                if (skipped.Contains(command.Label)) { Console.WriteLine($"PASSÉE     {tab.Title} › {command.Label}"); continue; }
+                Try($"{tab.Title} / {group.Title}", command.Label, command.Command, command.IsToggle);
+            }
+
+    // 2. Chaque page du volet latéral, puis chaque action de son en-tête, sans ligne choisie.
+    foreach (var item in shell.Navigation.SelectMany(g => g.Items).ToList())
+    {
+        CloseAll();
+        Wait(Task.Run(() => { }));
+        item.Open.Execute(null);
+        Pump(1500);
+        if (shell.Current is not { } current) { problems.Add($"{item.Label} : la page ne s'ouvre pas"); continue; }
+        Console.WriteLine($"PAGE       {item.Label} : {current.Title}");
+        foreach (var action in current.HeaderActions.ToList())
+        {
+            if (skipped.Contains(action.Label)) continue;
+            if (!ReferenceEquals(shell.Current, current)) { item.Open.Execute(null); Pump(1200); current = shell.Current!; }
+            Try(item.Label, action.Label, action.Command, toggle: false);
+        }
+    }
+
+    Console.WriteLine();
+    Console.WriteLine($"{total} commandes essayées, {problems.Count} à revoir.");
+    foreach (var p in problems) Console.WriteLine($"  À REVOIR  {p}");
+    return problems.Count == 0 ? 0 : 1;
+}

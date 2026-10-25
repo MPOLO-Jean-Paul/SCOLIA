@@ -203,7 +203,7 @@
                 </ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
                   <DataTemplate>
-                    <Button Command="{Binding Command}" Classes.primary="{Binding IsPrimary}" Classes.danger="{Binding Danger}" ToolTip.Tip="{Binding Label}">
+                    <Button Command="{Binding Command}" Classes.primary="{Binding IsPrimary}" Classes.danger="{Binding Danger}" ToolTip.Tip="{Binding Hint}">
                       <StackPanel Orientation="Horizontal" Spacing="6">
                         <mi:MaterialIcon Kind="{Binding Icon}" Width="16" Height="16" />
                         <TextBlock Text="{Binding Label}" VerticalAlignment="Center" />
@@ -220,6 +220,7 @@
                       <ControlTheme TargetType="MenuItem" BasedOn="{StaticResource {x:Type MenuItem}}">
                         <Setter Property="Header" Value="{Binding Label}" />
                         <Setter Property="Command" Value="{Binding Command}" />
+                        <Setter Property="ToolTip.Tip" Value="{Binding Hint}" />
                       </ControlTheme>
                     </MenuFlyout.ItemContainerTheme>
                   </MenuFlyout>
