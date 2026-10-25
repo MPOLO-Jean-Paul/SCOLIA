@@ -8,8 +8,8 @@ using Scolia.Domain.Students;
 namespace Scolia.Infrastructure.Documents;
 
 /// <summary>
-/// Cartes d'accès en PDF, dans la mise en page de la version 79 : en-tête officiel avec le sceau, titre de session,
-/// identité à gauche, QR à droite et bande de promotion en bas. Huit cartes par A4, séparées par des interstices
+/// Cartes d'accès en PDF, sur la grille de la version 79 : en-tête officiel avec le sceau, bandeau de titre et de session,
+/// identité à gauche, QR à droite et bande de promotion avec la classe et le matricule. Huit cartes par A4, séparées par des interstices
 /// de 6 et 7 mm où passent les repères de découpe : on coupe au milieu de l'interstice, sans rien retirer à la carte.
 /// </summary>
 internal static class StudentCardPdf
@@ -71,56 +71,89 @@ internal static class StudentCardPdf
         }).GeneratePdf();
     }
 
-    private const float BandHeight = 5.6f;
+    private const float BandHeight = 6.2f;
+    private const float RibbonHeight = 6f;
 
+    /// <summary>
+    /// Carte de 92 × 63 mm, du haut vers le bas : en-tête officiel avec le sceau, bandeau « Carte d'accès » et session,
+    /// identité en libellés et valeurs, QR de contrôle légendé, puis la bande de la promotion avec la classe et le matricule.
+    /// Coins arrondis et filet fin : la carte se lit d'un coup d'œil au contrôle et reste nette à l'impression.
+    /// </summary>
     private static void Card(IContainer container, CardDocument d, CardItem card, byte[] seal)
     {
+        var bandText = InkOn(card.Color);
         // Hauteur fixe : la carte ne déborde jamais de sa case, la bande reste collée au bas.
-        container.Border(0.5f).BorderColor(Frame).Background(Paper).Column(column =>
+        container.CornerRadius(Mm(2.2f)).Border(0.6f).BorderColor(Frame).Background(Paper).Column(column =>
         {
             column.Item().Height(Mm(CardHeight - BandHeight)).Column(body =>
             {
-                // En-tête officiel : sceau à gauche, sept mentions et l'année scolaire centrées.
-                body.Item().PaddingTop(Mm(1.6f)).PaddingHorizontal(Mm(3)).Height(Mm(16.4f)).Row(row =>
+                // En-tête officiel : sceau à gauche, mentions et année scolaire centrées.
+                body.Item().PaddingTop(Mm(1.5f)).PaddingHorizontal(Mm(3)).Height(Mm(15.6f)).Row(row =>
                 {
-                    row.ConstantItem(Mm(13.5f)).AlignMiddle().Image(seal).FitArea();
+                    row.ConstantItem(Mm(12.5f)).AlignMiddle().Image(seal).FitArea();
                     row.RelativeItem().PaddingLeft(Mm(1.5f)).AlignMiddle().Column(text =>
                     {
-                        Mention(text, d.Header.Country, 5.1f, true, Ink);
-                        Mention(text, d.Header.Ministry, 4.4f, false, Ink);
-                        Mention(text, d.Header.Direction, 4.4f, false, Ink);
-                        Mention(text, d.Header.Division, 4.4f, false, Ink);
-                        Mention(text, d.Header.CityZone, 4.4f, false, Ink);
-                        Mention(text, d.Header.Institute, 4.9f, true, Ink);
-                        Mention(text, d.Header.Address, 4.4f, false, Ink);
-                        text.Item().AlignCenter().Text($"Année scolaire {d.AcademicYear}").FontSize(4.9f).Bold().FontColor(Navy);
+                        Mention(text, d.Header.Country, 5f, true, Ink);
+                        Mention(text, d.Header.Ministry, 4.3f, false, Muted);
+                        Mention(text, d.Header.Direction, 4.3f, false, Muted);
+                        Mention(text, d.Header.Division, 4.3f, false, Muted);
+                        Mention(text, d.Header.CityZone, 4.3f, false, Muted);
+                        Mention(text, d.Header.Institute, 5.2f, true, Navy);
+                        Mention(text, d.Header.Address, 4.3f, false, Muted);
                     });
                 });
 
-                body.Item().PaddingTop(Mm(1.2f)).PaddingHorizontal(Mm(3)).LineHorizontal(0.7f).LineColor(Navy);
+                // Bandeau : le titre de la carte et la session, lisibles de loin au contrôle.
+                body.Item().PaddingTop(Mm(1)).Height(Mm(RibbonHeight)).Background(Navy).PaddingHorizontal(Mm(3)).Row(row =>
+                {
+                    row.RelativeItem().AlignMiddle().Text("CARTE D'ACCÈS").FontSize(7.6f).Bold().FontColor(Colors.White).LetterSpacing(0.06f);
+                    var session = $"SESSION {d.Session}";
+                    row.AutoItem().AlignMiddle().Text(session).FontSize(FitSession(session)).Bold().FontColor(Colors.White);
+                });
 
-                // Titre : session en gras, puis « CARTE D'ACCÈS » souligné.
-                var title = $"SESSION {d.Session}";
-                body.Item().PaddingTop(Mm(1.2f)).AlignCenter().Text(title).FontSize(FitSession(title)).Bold().FontColor(Navy);
-                body.Item().PaddingTop(Mm(0.2f)).AlignCenter().Text("CARTE D'ACCÈS").FontSize(7.4f).Bold().Underline().FontColor(Ink);
-
-                // Identité à gauche, QR à droite.
-                body.Item().PaddingTop(Mm(2f)).PaddingHorizontal(Mm(4.2f)).Row(row =>
+                // Identité à gauche, QR de contrôle à droite.
+                body.Item().PaddingTop(Mm(2f)).PaddingHorizontal(Mm(4f)).Row(row =>
                 {
                     row.RelativeItem().Column(identity =>
                     {
-                        identity.Spacing(Mm(0.8f));
+                        identity.Spacing(Mm(1f));
                         Field(identity, "NOM", card.LastName);
                         Field(identity, "POST-NOM", card.MiddleName);
                         Field(identity, "PRÉNOM", card.FirstName);
-                        Field(identity, "CLASSE", card.Classe);
                     });
-                    row.ConstantItem(Mm(20)).AlignMiddle().Image(DocumentService.QrPng(card.QrText)).FitArea();
+                    row.ConstantItem(Mm(19)).Column(qr =>
+                    {
+                        qr.Item().Height(Mm(17)).AlignCenter().Image(DocumentService.QrPng(card.QrText)).FitArea();
+                        qr.Item().AlignCenter().Text("Contrôle d'accès").FontSize(4.2f).FontColor(Muted);
+                    });
+                });
+                // Bas de carte : l'année scolaire à gauche, la place du visa de la direction à droite.
+                body.Item().ExtendVertical().AlignBottom().PaddingHorizontal(Mm(4f)).PaddingBottom(Mm(1.4f)).Row(row =>
+                {
+                    row.RelativeItem().AlignBottom().Text($"Année scolaire {d.AcademicYear}").FontSize(5.2f).SemiBold().FontColor(Navy);
+                    row.ConstantItem(Mm(30)).AlignBottom().Column(visa =>
+                    {
+                        visa.Item().PaddingBottom(Mm(0.6f)).LineHorizontal(0.4f).LineColor(Frame);
+                        visa.Item().AlignCenter().Text("Visa de la direction").FontSize(4.2f).FontColor(Muted);
+                    });
                 });
             });
 
-            // Bande de promotion, collée au bas de la carte.
-            column.Item().Height(Mm(BandHeight)).Background(card.Color);
+            // Bande de promotion : la classe et le matricule, dans la couleur de la promotion.
+            column.Item().Height(Mm(BandHeight)).Background(card.Color).PaddingHorizontal(Mm(4f)).Row(row =>
+            {
+                row.RelativeItem().AlignMiddle().Text(t =>
+                {
+                    t.Span("CLASSE  ").FontSize(5f).FontColor(bandText);
+                    t.Span(card.Classe).FontSize(7.6f).Bold().FontColor(bandText);
+                });
+                if (card.Matricule.Length > 0)
+                    row.AutoItem().AlignMiddle().Text(t =>
+                    {
+                        t.Span("MATRICULE  ").FontSize(5f).FontColor(bandText);
+                        t.Span(card.Matricule).FontSize(7.6f).Bold().FontColor(bandText);
+                    });
+            });
         });
     }
 
@@ -131,18 +164,29 @@ internal static class StudentCardPdf
         if (bold) line.Bold();
     }
 
-    /// <summary>Une ligne par champ : libellé et valeur côte à côte, « NOM : MUKENDI ».</summary>
+    /// <summary>Un champ : petit libellé gris au-dessus, valeur en gras dessous, comme sur une pièce d'identité.</summary>
     private static void Field(ColumnDescriptor identity, string label, string value)
     {
-        identity.Item().Text(text =>
+        identity.Item().Column(field =>
         {
-            text.Span($"{label} : ").FontSize(5.2f).Bold().FontColor(Muted);
-            text.Span(value).FontSize(value.Length > 26 ? 6.6f : 7.4f).Bold().FontColor(Ink);
+            field.Item().Text(label).FontSize(4.4f).SemiBold().FontColor(Muted).LetterSpacing(0.05f);
+            field.Item().Text(value).FontSize(value.Length > 24 ? 6.8f : 8.2f).Bold().FontColor(Ink);
         });
     }
 
-    /// <summary>Taille du titre de session : réduite si l'intitulé est long, pour tenir sur une ligne.</summary>
-    private static float FitSession(string title) => title.Length > 24 ? 9.4f : title.Length > 20 ? 10.6f : 11.8f;
+    /// <summary>Taille de la session dans le bandeau : réduite si l'intitulé est long, pour tenir sur une ligne.</summary>
+    private static float FitSession(string title) => title.Length > 24 ? 6.4f : title.Length > 20 ? 7f : 7.6f;
+
+    /// <summary>Texte de la bande : blanc sur une couleur foncée, encre sur une couleur claire comme le jaune.</summary>
+    internal static string InkOn(string hex)
+    {
+        var h = hex.TrimStart('#');
+        if (h.Length < 6) return Ink;
+        var r = Convert.ToInt32(h[..2], 16) / 255.0;
+        var g = Convert.ToInt32(h[2..4], 16) / 255.0;
+        var b = Convert.ToInt32(h[4..6], 16) / 255.0;
+        return 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.55 ? Ink : "#FFFFFF";
+    }
 
     /// <summary>
     /// Repère de découpe vertical : pointillés au centre de l'interstice horizontal, sur toute la hauteur de la rangée.

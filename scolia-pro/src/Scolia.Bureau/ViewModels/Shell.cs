@@ -66,6 +66,38 @@ public sealed class ShellViewModel : Observable
     public RelayCommand SearchCommand { get; private set; } = null!;
     public RelayCommand ToggleSidebarCommand { get; private set; } = null!;
     public SessionDto? Session => session;
+
+    private Avalonia.Media.Imaging.Bitmap? schoolLogo;
+
+    /// <summary>Logo de l'établissement, servi par le serveur : il figure sur l'écran de connexion et en tête du volet.</summary>
+    public Avalonia.Media.Imaging.Bitmap? SchoolLogo
+    {
+        get => schoolLogo;
+        private set { if (Set(ref schoolLogo, value)) { Raise(nameof(HasSchoolLogo)); Login.Logo = value; } }
+    }
+
+    public bool HasSchoolLogo => schoolLogo is not null;
+
+    /// <summary>Année scolaire en cours, sous le nom de l'établissement dans le volet.</summary>
+    public string SchoolYearLine => session?.CurrentYear is { } year ? $"Année {year}" : string.Empty;
+
+    /// <summary>Nom court de l'établissement pour l'en-tête du volet.</summary>
+    public string SchoolTitle => session?.SchoolShortName is { Length: > 0 } shortName ? shortName : session?.SchoolName ?? Login.SchoolName;
+
+    /// <summary>Recharge le logo, au démarrage et après un changement dans les paramètres.</summary>
+    public async Task RefreshLogoAsync()
+    {
+        try
+        {
+            var bytes = await api.DownloadAsync("api/etablissement/logo");
+            using var stream = new MemoryStream(bytes);
+            SchoolLogo = new Avalonia.Media.Imaging.Bitmap(stream);
+        }
+        catch (Exception ex) when (ex is ApiException or HttpRequestException or TaskCanceledException or ArgumentException or InvalidOperationException or NotSupportedException)
+        {
+            SchoolLogo = null;
+        }
+    }
     public bool IsLoggedIn => session is not null;
 
     private bool setupRequired;
@@ -120,7 +152,7 @@ public sealed class ShellViewModel : Observable
     public bool HasPage => current is not null;
 
     /// <summary>Boîte de dialogue ouverte : formulaire, recherche. Null quand aucune n'est affichée.</summary>
-    public object? Dialog { get => dialog; private set { if (Set(ref dialog, value)) Raise(nameof(HasDialog)); } }
+    public object? Dialog { get => dialog; private set { if (Set(ref dialog, value)) { Raise(nameof(HasDialog)); Raise(nameof(Working)); } } }
     public bool HasDialog => dialog is not null;
 
     public bool BackstageOpen { get => backstage; private set => Set(ref backstage, value); }
@@ -328,6 +360,7 @@ public sealed class ShellViewModel : Observable
         {
             var status = await api.GetAsync<SetupStatusDto>("api/installation");
             Login.SchoolName = status.SchoolName ?? string.Empty;
+            await RefreshLogoAsync();
             IsSetupRequired = !status.IsConfigured;
             if (IsSetupRequired) await Setup.LoadAsync();
         }
@@ -342,6 +375,9 @@ public sealed class ShellViewModel : Observable
     {
         session = s;
         knownRevision = -1;
+        Raise(nameof(SchoolTitle));
+        Raise(nameof(SchoolYearLine));
+        if (SchoolLogo is null) await RefreshLogoAsync();
         RaiseLogin();
         Raise(nameof(SchoolLine));
         Raise(nameof(UserLine));
@@ -436,17 +472,45 @@ public sealed class ShellViewModel : Observable
     public Task Reload() => Current?.RefreshAsync() ?? Task.CompletedTask;
 
     /// <summary>Exécute une action métier : les erreurs deviennent une notification, jamais un plantage.</summary>
+    private int running;
+    private bool workingDue;
+
+    /// <summary>
+    /// Traitement en cours depuis plus d'un instant : un indicateur s'affiche au centre de la fenêtre, sauf pendant
+    /// qu'une boîte de dialogue attend une saisie. Les actions brèves n'affichent rien, pour ne pas faire clignoter l'écran.
+    /// </summary>
+    public bool Working => workingDue && running > 0 && !HasDialog;
+
+    /// <summary>Délai avant l'affichage de l'indicateur de traitement.</summary>
+    private static readonly TimeSpan WorkingDelay = TimeSpan.FromMilliseconds(350);
+
     public async Task Run(Func<Task> work)
     {
+        running++;
+        _ = ShowWorkingLaterAsync();
         try { await work(); }
         catch (ApiException ex) { Notify(ex.Message); }
         catch (HttpRequestException) { Notify("Le serveur SCOLIA ne répond pas. Vérifiez qu'il est lancé sur ce poste."); }
         catch (Exception ex) when (ex is not OperationCanceledException) { Notify($"Erreur inattendue : {ex.Message}"); }
         finally
         {
+            running--;
+            if (running == 0)
+            {
+                workingDue = false;
+                Raise(nameof(Working));
+            }
             // Nos propres écritures ne doivent pas déclencher un rechargement : on mémorise la révision après l'action.
             if (IsLoggedIn && await ReadRevisionAsync() is { } latest) knownRevision = latest;
         }
+    }
+
+    private async Task ShowWorkingLaterAsync()
+    {
+        await Task.Delay(WorkingDelay);
+        if (running == 0) return;
+        workingDue = true;
+        Raise(nameof(Working));
     }
 
     /// <summary>

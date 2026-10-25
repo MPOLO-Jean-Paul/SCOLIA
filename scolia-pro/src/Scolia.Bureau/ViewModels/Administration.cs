@@ -564,7 +564,8 @@ public sealed class SettingsPage : PageViewModel
         var picked = await Shell.PickFileHandler([".png", ".jpg", ".jpeg"]);
         if (picked is null) return;
         await Shell.Api.UploadAsync<object>(HttpMethod.Put, "api/etablissement/logo", [new UploadedFile("fichier", picked.Name, picked.Data)]);
-        Shell.Notify("Logo mis à jour. Il figure désormais sur les reçus et les bulletins.");
+        await Shell.RefreshLogoAsync();
+        Shell.Notify("Logo mis à jour. Il figure désormais sur l'écran de connexion, les reçus, les listes et les cartes.");
     }
 
     private async Task NewSectionAsync()

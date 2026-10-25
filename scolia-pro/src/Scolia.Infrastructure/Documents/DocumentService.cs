@@ -43,13 +43,14 @@ public sealed class DocumentService : IDocumentService
 
     private static void Header(IContainer container, SchoolHeader school, string title, string? subtitle)
     {
+        // Le logo de l'établissement figure sur chaque document ; à défaut, le sceau des cartes d'accès.
+        var logo = school.Logo is { Length: > 0 } own ? own : StudentCardPdf.DefaultSeal();
         container.Column(col =>
         {
             col.Item().Row(row =>
             {
-                if (school.Logo is { Length: > 0 })
-                    row.ConstantItem(54).Height(54).Image(school.Logo).FitArea();
-                row.RelativeItem().PaddingLeft(school.Logo is { Length: > 0 } ? 10 : 0).Column(c =>
+                row.ConstantItem(54).Height(54).Image(logo).FitArea();
+                row.RelativeItem().PaddingLeft(10).AlignMiddle().Column(c =>
                 {
                     c.Item().Text(school.Name.ToUpper(Fr)).FontSize(13).Bold().FontColor(Navy);
                     if (!string.IsNullOrWhiteSpace(school.Motto)) c.Item().Text(school.Motto).FontSize(8.5f).Italic().FontColor(Muted);
@@ -78,6 +79,9 @@ public sealed class DocumentService : IDocumentService
             });
         });
     }
+
+    /// <summary>Logo par défaut de l'établissement, tant que le profil n'en a pas : le sceau des cartes d'accès.</summary>
+    public static byte[] DefaultLogo() => StudentCardPdf.DefaultSeal();
 
     /// <summary>QR de vérification, en PNG : réutilisé par les cartes au format Word.</summary>
     public static byte[] QrPng(string text) => Qr(text);

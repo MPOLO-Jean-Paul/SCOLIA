@@ -103,7 +103,7 @@ public sealed record StatementDocument(
 public sealed record SchoolCardHeader(string Country, string? Ministry, string? Direction, string? Division, string? CityZone, string Institute, string? Address, byte[]? Logo);
 
 /// <summary>Une carte à imprimer. La couleur est celle de la promotion ; le QR contient l'identité, la classe, l'établissement, la session et l'année.</summary>
-public sealed record CardItem(string LastName, string MiddleName, string FirstName, string Classe, string Color, string QrText);
+public sealed record CardItem(string LastName, string MiddleName, string FirstName, string Classe, string Color, string QrText, string Matricule = "");
 
 public sealed record CardDocument(SchoolCardHeader Header, string Session, string AcademicYear, IReadOnlyList<CardItem> Cards);
 

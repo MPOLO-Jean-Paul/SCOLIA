@@ -10,14 +10,26 @@ public sealed class SpreadsheetService : ISpreadsheetService
     {
         using var workbook = new XLWorkbook();
         var sheet = workbook.Worksheets.Add(SheetName(document.Title));
-        sheet.Cell(1, 1).Value = document.School.Name;
-        sheet.Cell(1, 1).Style.Font.SetBold().Font.SetFontSize(14).Font.SetFontColor(XLColor.FromHtml("#13294B"));
-        sheet.Cell(2, 1).Value = document.Title;
-        sheet.Cell(2, 1).Style.Font.SetBold().Font.SetFontSize(12);
+        // En-tête : le logo de l'établissement à gauche, puis son nom, le titre et le sous-titre.
+        var logo = document.School.Logo is { Length: > 0 } own ? own : StudentCardPdf.DefaultSeal();
+        var text = 1;
+        try
+        {
+            using var image = new MemoryStream(logo);
+            sheet.AddPicture(image).MoveTo(sheet.Cell(1, 1), 4, 4).WithSize(52, 52);
+            text = 2;
+            sheet.Column(1).Width = Math.Max(sheet.Column(1).Width, 9);
+        }
+        catch (Exception ex) when (ex is ArgumentException or InvalidOperationException or NotSupportedException) { }
+        for (var row = 1; row <= 3; row++) sheet.Row(row).Height = 20;
+        sheet.Cell(1, text).Value = document.School.Name;
+        sheet.Cell(1, text).Style.Font.SetBold().Font.SetFontSize(14).Font.SetFontColor(XLColor.FromHtml("#13294B"));
+        sheet.Cell(2, text).Value = document.Title;
+        sheet.Cell(2, text).Style.Font.SetBold().Font.SetFontSize(12);
         if (!string.IsNullOrWhiteSpace(document.Subtitle))
         {
-            sheet.Cell(3, 1).Value = document.Subtitle;
-            sheet.Cell(3, 1).Style.Font.SetFontColor(XLColor.FromHtml("#64748B"));
+            sheet.Cell(3, text).Value = document.Subtitle;
+            sheet.Cell(3, text).Style.Font.SetFontColor(XLColor.FromHtml("#64748B"));
         }
         const int headerRow = 5;
         for (var c = 0; c < document.Columns.Count; c++) sheet.Cell(headerRow, c + 1).Value = document.Columns[c];

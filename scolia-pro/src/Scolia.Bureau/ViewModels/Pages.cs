@@ -32,6 +32,12 @@ public sealed class LoginViewModel : Observable
     public bool Busy { get => busy; set => Set(ref busy, value); }
     public AsyncCommand Submit { get; }
 
+    private Avalonia.Media.Imaging.Bitmap? logo;
+
+    /// <summary>Logo de l'établissement ; le logo de SCOLIA s'affiche tant qu'il n'est pas chargé.</summary>
+    public Avalonia.Media.Imaging.Bitmap? Logo { get => logo; set { if (Set(ref logo, value)) Raise(nameof(HasLogo)); } }
+    public bool HasLogo => logo is not null;
+
     public void Reset()
     {
         Password = string.Empty;

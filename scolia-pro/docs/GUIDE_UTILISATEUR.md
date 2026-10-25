@@ -15,13 +15,24 @@ Réduire le ruban : Ctrl+F1, ou la flèche à droite des onglets. Préférences 
 
 Onglet Affichage, groupe Apparence, bouton de lanceur (la petite flèche du groupe) : ouvre les préférences.
 
-- **Thème** : clair, sombre ou selon le système.
+- **Thème** : clair, sombre ou selon le système. Le bouton lune ou soleil de la barre d'état bascule aussitôt du clair au sombre.
+- **Couleur d'accent** : bleu, indigo, violet, vert, orange ou graphite, pour les boutons principaux et les sélections.
 - **Taille du texte** : petit, normal, grand ou très grand. Elle s'applique à tous les écrans et au ruban.
 - **Densité** : confortable ou compacte.
 - **Barre d'état**, **info-bulles**, **quadrillage des tableaux**, **animations** : chacun s'active ou se désactive séparément.
 - **Rétablir les valeurs par défaut** : remet tous ces réglages à leur valeur d'origine.
 
 Les réglages sont mémorisés sur ce poste. Ils ne sont pas partagés avec les autres utilisateurs.
+
+### Connexion, animations et traitements
+
+- La connexion s'ouvre dans une petite fenêtre à la taille du formulaire, avec le logo de l'établissement. Une fois connecté, la fenêtre s'agrandit et l'application apparaît en fondu.
+- Les boîtes de dialogue, les pages et le changement de thème s'animent brièvement. La préférence « Animations » les désactive.
+- Un traitement qui dure plus d'un instant, comme un export ou une sauvegarde, affiche « Traitement en cours… » au centre de la fenêtre.
+
+### Logo de l'établissement
+
+Paramètres, Établissement, « Changer le logo ». Le logo figure sur l'écran de connexion, en tête du volet, sur les reçus, les listes PDF et Excel, et les cartes d'accès. Sans logo enregistré, le sceau de l'établissement le remplace.
 
 ### Clic droit et double-clic
 

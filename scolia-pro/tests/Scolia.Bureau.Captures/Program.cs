@@ -70,6 +70,9 @@ Application.Current!.DataTemplates.Add(new ViewLocator());
 var api = new ScoliaClient(server);
 var prefs = Preferences.Load();
 prefs.Theme = dark ? "dark" : "light";
+// Captures figées : les animations se rejouent à l'écran, une image doit montrer l'état final.
+prefs.Animations = Environment.GetEnvironmentVariable("SCOLIA_ANIMATIONS") == "1";
+prefs.Accent = Environment.GetEnvironmentVariable("SCOLIA_ACCENT") ?? "bleu";
 var shell = new ShellViewModel(api, prefs);
 // Taille de fenêtre optionnelle (SCOLIA_TAILLE=1024x700) pour vérifier l'adaptation du texte à chaque format d'écran.
 var taille = (Environment.GetEnvironmentVariable("SCOLIA_TAILLE") ?? "1280x820").Split('x');
@@ -89,6 +92,7 @@ if (Environment.GetEnvironmentVariable("SCOLIA_ASSISTANT") == "1")
     return;
 }
 shell.Login.SchoolName = Result(api.GetAsync<SetupStatusDto>("api/installation")).SchoolName ?? string.Empty;
+Wait(shell.RefreshLogoAsync());
 Save(window, "01-connexion.png");
 
 if (args.Length > 3 && args[3] == "smoke")
@@ -429,6 +433,12 @@ Page(() => new StaffAttendancePage(shell), "18b-pointage.png");
 Page(() => new EraseDataPage(shell, payments: true), "22b-effacer-donnees.png");
 Page(() => new EraseDataPage(shell, payments: false), "22c-effacer-apprenants.png");
 Page(() => new AuditPage(shell), "23-audit.png");
+
+// Traitement qui dure : l'indicateur au centre de la fenêtre.
+var longTask = shell.Run(() => Task.Delay(1500));
+Wait(Task.Delay(600));
+Save(window, "29-traitement-en-cours.png");
+Wait(longTask);
 
 // Clic droit sur une ligne du suivi mensuel : actions de la ligne, copie, actions de la page.
 Wait(shell.Open(() => new MonthlyPage(shell, "nonpaye")));

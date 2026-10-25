@@ -414,6 +414,7 @@ public static class PreferencesDialog
         var form = new FormViewModel("Préférences", "Ces réglages s'appliquent à ce poste et sont conservés.", f =>
         {
             p.Theme = f.ChoiceValue("theme") ?? p.Theme;
+            p.Accent = f.ChoiceValue("accent") ?? p.Accent;
             p.Scale = f.ChoiceValue("taille") is { } size ? double.Parse(size, CultureInfo.InvariantCulture) : p.Scale;
             p.Compact = f.Flag("compact");
             p.StatusBar = f.Flag("barre");
@@ -424,6 +425,7 @@ public static class PreferencesDialog
         })
         { SubmitText = "Appliquer" };
         form.AddChoice("theme", "Thème", Preferences.Themes, p.Theme);
+        form.AddChoice("accent", "Couleur d'accent", Preferences.Accents, p.Accent);
         form.AddChoice("taille", "Taille du texte", Preferences.TextSizes, p.Scale.ToString("0.##", CultureInfo.InvariantCulture));
         form.AddFlag("compact", "Densité compacte", p.Compact);
         form.AddFlag("barre", "Barre d'état", p.StatusBar);

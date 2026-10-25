@@ -18,7 +18,7 @@ public static class CardWordWriter
     private const int GapTwip = 340;        // 6 mm
     private const int RowGapTwip = 397;     // 7 mm
     private const int CardHeightTwip = 3572; // 63 mm
-    private const int BandTwip = 318;       // 5,6 mm
+    private const int BandTwip = 352;       // 6,2 mm
     private const int SealTwip = 1500;      // colonne du sceau
     private const int QrTwip = 1500;        // colonne du QR
     private const int InnerTwip = 170;      // marge intérieure de la carte : 3 mm
@@ -105,13 +105,17 @@ public static class CardWordWriter
         Mention(content, d.Header.CityZone, 9, false);
         Mention(content, d.Header.Institute, 10, true);
         Mention(content, d.Header.Address, 9, false);
-        content.Append(Paragraph($"Année scolaire {d.AcademicYear}", 10, true, false, "center", "1F4E8C"));
         content.Append("</w:tc></w:tr></w:tbl>");
 
+        // Bandeau bleu marine : le titre de la carte et la session, comme sur le PDF.
         content.Append(Paragraph(string.Empty, 4, false, false, "left", null, 40));
-        content.Append(Paragraph($"SESSION {d.Session}", 24, true, false, "center", "0B3B6F"));
-        content.Append(Paragraph("CARTE D'ACCÈS", 15, true, true, "center", "1B2430"));
-        content.Append(Paragraph(string.Empty, 4, false, false, "left", null, 60));
+        content.Append(TableStart(new[] { CardTwip / 2, CardTwip - CardTwip / 2 }));
+        content.Append("<w:tr><w:trPr><w:trHeight w:val=\"340\" w:hRule=\"exact\"/></w:trPr>");
+        content.Append($"<w:tc><w:tcPr><w:tcW w:w=\"{CardTwip / 2}\" w:type=\"dxa\"/><w:shd w:val=\"clear\" w:color=\"auto\" w:fill=\"0B3B6F\"/><w:vAlign w:val=\"center\"/></w:tcPr>")
+            .Append(Paragraph("CARTE D'ACCÈS", 15, true, false, "left", "FFFFFF", indentTwip: InnerTwip)).Append("</w:tc>");
+        content.Append($"<w:tc><w:tcPr><w:tcW w:w=\"{CardTwip - CardTwip / 2}\" w:type=\"dxa\"/><w:shd w:val=\"clear\" w:color=\"auto\" w:fill=\"0B3B6F\"/><w:vAlign w:val=\"center\"/></w:tcPr>")
+            .Append(Paragraph($"SESSION {d.Session}", d.Session.Length > 14 ? 12 : 14, true, false, "right", "FFFFFF", indentTwip: InnerTwip)).Append("</w:tc></w:tr></w:tbl>");
+        content.Append(Paragraph(string.Empty, 4, false, false, "left", null, 80));
 
         // Identité à gauche, QR à droite.
         content.Append(TableStart(new[] { InnerWidthTwip - QrTwip, QrTwip }, InnerTwip));
@@ -119,9 +123,11 @@ public static class CardWordWriter
         Field(content, "NOM", card.LastName);
         Field(content, "POST-NOM", card.MiddleName);
         Field(content, "PRÉNOM", card.FirstName);
-        Field(content, "CLASSE", card.Classe);
         content.Append($"</w:tc><w:tc><w:tcPr><w:tcW w:w=\"{QrTwip}\" w:type=\"dxa\"/><w:vAlign w:val=\"center\"/></w:tcPr>")
-            .Append(Picture(qrRid, 21, 21, 2, "QR")).Append("</w:tc></w:tr></w:tbl>");
+            .Append(Picture(qrRid, 18, 18, 2, "QR"))
+            .Append(Paragraph("Contrôle d'accès", 8, false, false, "center", "5B6878"))
+            .Append("</w:tc></w:tr></w:tbl>");
+        content.Append(Paragraph($"Année scolaire {d.AcademicYear}", 10, true, false, "left", "0B3B6F", 80, indentTwip: InnerTwip + 60));
 
         // Le paragraphe final est obligatoire dans une cellule, après la dernière table.
         body.Append(content).Append(TinyParagraph);
@@ -135,10 +141,22 @@ public static class CardWordWriter
         body.Append("</w:tc>");
     }
 
+    /// <summary>Bande de la promotion : la classe à gauche, le matricule à droite, en blanc ou en encre selon la couleur.</summary>
     private static void BandCell(StringBuilder body, CardItem? card)
     {
         var fill = card is null ? string.Empty : $"<w:shd w:val=\"clear\" w:color=\"auto\" w:fill=\"{card.Color.TrimStart('#')}\"/>";
-        body.Append($"<w:tc><w:tcPr><w:tcW w:w=\"{CardTwip}\" w:type=\"dxa\"/>{Sides(card is not null, top: false, bottom: true)}{fill}</w:tcPr>{TinyParagraph}</w:tc>");
+        body.Append($"<w:tc><w:tcPr><w:tcW w:w=\"{CardTwip}\" w:type=\"dxa\"/>{Sides(card is not null, top: false, bottom: true)}{fill}<w:vAlign w:val=\"center\"/></w:tcPr>");
+        if (card is null) body.Append(TinyParagraph);
+        else
+        {
+            var ink = StudentCardPdf.InkOn(card.Color).TrimStart('#');
+            body.Append($"<w:p><w:pPr><w:tabs><w:tab w:val=\"right\" w:pos=\"{CardTwip - 2 * InnerTwip - 60}\"/></w:tabs><w:spacing w:before=\"0\" w:after=\"0\" w:line=\"220\" w:lineRule=\"exact\"/><w:ind w:left=\"{InnerTwip + 60}\"/></w:pPr>")
+                .Append(Run("CLASSE  ", 9, ink, bold: false)).Append(Run(card.Classe, 14, ink));
+            if (card.Matricule.Length > 0)
+                body.Append("<w:r><w:tab/></w:r>").Append(Run("MATRICULE  ", 9, ink, bold: false)).Append(Run(card.Matricule, 14, ink));
+            body.Append("</w:p>");
+        }
+        body.Append("</w:tc>");
     }
 
     private static string GapCell() => $"<w:tc><w:tcPr><w:tcW w:w=\"{GapTwip}\" w:type=\"dxa\"/></w:tcPr>{TinyParagraph}</w:tc>";
@@ -177,27 +195,28 @@ public static class CardWordWriter
         body.Append(Paragraph(value.Trim().ToUpperInvariant(), halfPoints, bold, false, "center", "1B2430"));
     }
 
-    /// <summary>Une ligne par champ : libellé et valeur côte à côte, « NOM : MUKENDI ».</summary>
+    /// <summary>Un champ : petit libellé gris au-dessus, valeur en gras dessous, comme sur le PDF.</summary>
     private static void Field(StringBuilder body, string label, string value)
     {
-        var size = value.Length > 26 ? 13 : 15;
-        body.Append($"<w:p><w:pPr><w:spacing w:before=\"0\" w:after=\"120\" w:line=\"{size * 13}\" w:lineRule=\"exact\"/><w:jc w:val=\"left\"/></w:pPr>")
-            .Append(Run($"{label} : ", 9, "5B6878"))
-            .Append(Run(value, size, "1B2430"))
-            .Append("</w:p>");
+        var size = value.Length > 24 ? 14 : 17;
+        body.Append("<w:p><w:pPr><w:spacing w:before=\"0\" w:after=\"0\" w:line=\"130\" w:lineRule=\"exact\"/><w:jc w:val=\"left\"/></w:pPr>")
+            .Append(Run(label, 9, "5B6878")).Append("</w:p>");
+        body.Append($"<w:p><w:pPr><w:spacing w:before=\"0\" w:after=\"60\" w:line=\"{size * 12}\" w:lineRule=\"exact\"/><w:jc w:val=\"left\"/></w:pPr>")
+            .Append(Run(value, size, "1B2430")).Append("</w:p>");
     }
 
-    private static string Run(string text, int halfPoints, string color) =>
-        $"<w:r><w:rPr><w:b/><w:color w:val=\"{color}\"/><w:sz w:val=\"{halfPoints}\"/></w:rPr><w:t xml:space=\"preserve\">{Esc(text)}</w:t></w:r>";
+    private static string Run(string text, int halfPoints, string color, bool bold = true) =>
+        $"<w:r><w:rPr>{(bold ? "<w:b/>" : string.Empty)}<w:color w:val=\"{color}\"/><w:sz w:val=\"{halfPoints}\"/></w:rPr><w:t xml:space=\"preserve\">{Esc(text)}</w:t></w:r>";
 
-    private static string Paragraph(string text, int halfPoints, bool bold, bool underline, string align, string? color, int beforeTwip = 0, int afterTwip = 0)
+    private static string Paragraph(string text, int halfPoints, bool bold, bool underline, string align, string? color, int beforeTwip = 0, int afterTwip = 0, int indentTwip = 0)
     {
         var props = $"<w:rPr>{(bold ? "<w:b/>" : string.Empty)}{(underline ? "<w:u w:val=\"single\"/>" : string.Empty)}" +
             $"{(color is null ? string.Empty : $"<w:color w:val=\"{color}\"/>")}<w:sz w:val=\"{halfPoints}\"/></w:rPr>";
         var line = Math.Max(halfPoints * 13, 120);
         var spacing = $"<w:spacing w:before=\"{beforeTwip}\" w:after=\"{afterTwip}\" w:line=\"{line}\" w:lineRule=\"exact\"/>";
         var run = text.Length == 0 ? string.Empty : $"<w:r>{props}<w:t xml:space=\"preserve\">{Esc(text)}</w:t></w:r>";
-        return $"<w:p><w:pPr>{spacing}<w:jc w:val=\"{align}\"/>{props}</w:pPr>{run}</w:p>";
+        var indent = indentTwip > 0 ? $"<w:ind w:left=\"{indentTwip}\" w:right=\"{indentTwip}\"/>" : string.Empty;
+        return $"<w:p><w:pPr>{spacing}{indent}<w:jc w:val=\"{align}\"/>{props}</w:pPr>{run}</w:p>";
     }
 
     /// <summary>Image en ligne de taille fixe, en millimètres, centrée dans sa cellule.</summary>

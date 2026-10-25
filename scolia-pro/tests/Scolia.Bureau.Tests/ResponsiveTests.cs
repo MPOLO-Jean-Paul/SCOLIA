@@ -58,3 +58,17 @@ public class ResponsiveTests
         Assert.Equal(1.0, prefs.Factor, 2);
     }
 }
+
+/// <summary>Couleur d'accent : choix enregistré, valeur inconnue ramenée au bleu.</summary>
+public class AccentTests
+{
+    [Fact]
+    public void La_couleur_d_accent_inconnue_revient_au_bleu()
+    {
+        var prefs = new Preferences { Accent = "vert" };
+        Assert.Equal("vert", prefs.Accent);
+        prefs.Accent = "fuchsia";
+        Assert.Equal("bleu", prefs.Accent);
+        Assert.Equal(6, Preferences.Accents.Count);
+    }
+}

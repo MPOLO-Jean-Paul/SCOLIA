@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Avalonia;
+using Avalonia.Media;
 using Avalonia.Styling;
 
 namespace Scolia.Bureau.Infrastructure;
@@ -27,7 +28,17 @@ public sealed class Preferences : Observable
         new("system", "Système"), new("light", "Clair"), new("dark", "Sombre"),
     ];
 
+    /// <summary>Couleurs d'accent : boutons principaux, sélection, liens. Une teinte pour le clair, une pour le sombre.</summary>
+    private static readonly (string Key, string Label, string Light, string Dark)[] AccentTable =
+    [
+        ("bleu", "Bleu", "#007AFF", "#0A84FF"), ("indigo", "Indigo", "#5856D6", "#5E5CE6"), ("violet", "Violet", "#8E44AD", "#BF5AF2"),
+        ("vert", "Vert", "#248A3D", "#30D158"), ("orange", "Orange", "#C25E00", "#FF9F0A"), ("graphite", "Graphite", "#55555A", "#98989D"),
+    ];
+
+    public static readonly IReadOnlyList<ChoiceItem> Accents = AccentTable.Select(a => new ChoiceItem(a.Key, a.Label)).ToList();
+
     private string theme = "light";
+    private string accent = "bleu";
     private double scale = 1.0;
     private double fit = 1.0;
     private bool compact;
@@ -40,6 +51,7 @@ public sealed class Preferences : Observable
 
     public string Theme { get => theme; set { if (Set(ref theme, value)) Raise(nameof(IsDark)); } }
     public bool IsDark { get => theme == "dark"; set => Theme = value ? "dark" : "light"; }
+    public string Accent { get => accent; set => Set(ref accent, AccentTable.Any(a => a.Key == value) ? value : "bleu"); }
     public double Scale { get => scale; set { if (Set(ref scale, Math.Clamp(Math.Round(value, 2), 0.8, 1.6))) Raise(nameof(ZoomLabel)); } }
     public string ZoomLabel => $"{Math.Round(scale * 100):0} %";
     /// <summary>Taille de texte choisie par l'utilisateur. L'adaptation à la fenêtre agit à part, sur toute l'interface.</summary>
@@ -112,6 +124,7 @@ public sealed class Preferences : Observable
             _ => ThemeVariant.Default,
         };
         var r = app.Resources;
+        ApplyAccent(r);
         var k = Factor;
         GridPriority.SetTextFactor(k);
         r["FsBase"] = 13.5 * k;
@@ -125,10 +138,40 @@ public sealed class Preferences : Observable
         r["GridLines"] = grid ? Avalonia.Controls.DataGridGridLinesVisibility.Horizontal : Avalonia.Controls.DataGridGridLinesVisibility.None;
     }
 
+    /// <summary>
+    /// Couleur d'accent : elle remplace celle de la palette dans le clair et le sombre, avec sa teinte de survol
+    /// et sa teinte douce pour les sélections. Les contrôles standard la reprennent aussi.
+    /// </summary>
+    private void ApplyAccent(Avalonia.Controls.IResourceDictionary resources)
+    {
+        var a = AccentTable.First(x => x.Key == accent);
+        resources.ThemeDictionaries[ThemeVariant.Light] = AccentDictionary(Color.Parse(a.Light), Colors.White, dark: false);
+        resources.ThemeDictionaries[ThemeVariant.Dark] = AccentDictionary(Color.Parse(a.Dark), Color.Parse("#1C1C1E"), dark: true);
+    }
+
+    private static Avalonia.Controls.ResourceDictionary AccentDictionary(Color color, Color background, bool dark)
+    {
+        static Color Mix(Color a, Color b, double t) => Color.FromRgb(
+            (byte)(a.R + (b.R - a.R) * t), (byte)(a.G + (b.G - a.G) * t), (byte)(a.B + (b.B - a.B) * t));
+        var hover = dark ? Mix(color, Colors.White, 0.2) : Mix(color, Colors.Black, 0.15);
+        var soft = Mix(background, color, dark ? 0.3 : 0.15);
+        return new Avalonia.Controls.ResourceDictionary
+        {
+            ["AccentBrush"] = new SolidColorBrush(color),
+            ["AccentHoverBrush"] = new SolidColorBrush(hover),
+            ["AccentSoftBrush"] = new SolidColorBrush(soft),
+            ["AccentColor"] = color,
+            ["SystemAccentColor"] = color,
+            ["SystemAccentColorDark1"] = hover,
+            ["SystemAccentColorLight1"] = hover,
+        };
+    }
+
     /// <summary>Forme enregistrée : seules les valeurs simples sont conservées.</summary>
     private sealed class Stored
     {
         public string? Theme { get; set; }
+        public string? Accent { get; set; }
         public double Scale { get; set; } = 1.0;
         public bool Compact { get; set; }
         public bool StatusBar { get; set; } = true;
@@ -140,13 +183,14 @@ public sealed class Preferences : Observable
 
         public static Stored From(Preferences p) => new()
         {
-            Theme = p.theme, Scale = p.scale, Compact = p.compact, StatusBar = p.statusBar, Tips = p.tips,
+            Theme = p.theme, Accent = p.accent, Scale = p.scale, Compact = p.compact, StatusBar = p.statusBar, Tips = p.tips,
             Grid = p.grid, Animations = p.animations, RibbonCollapsed = p.ribbonCollapsed, Sidebar = p.sidebar,
         };
 
         public void ApplyTo(Preferences p)
         {
             p.Theme = Theme is "light" or "dark" or "system" ? Theme : "light";
+            p.Accent = Accent ?? "bleu";
             p.Scale = Scale;
             p.Compact = Compact;
             p.StatusBar = StatusBar;

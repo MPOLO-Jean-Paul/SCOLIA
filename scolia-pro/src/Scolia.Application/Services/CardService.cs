@@ -76,9 +76,9 @@ public sealed class CardService(IAppDbContext db, IWriteGate gate, IAuditLog aud
         var cards = new List<CardItem>();
         foreach (var r in selected)
         {
-            var qr = $"{school.Name} | {session} | {year.Label} | {Name(r)} | {r.Promotion}";
+            var qr = $"{school.Name} | {session} | {year.Label} | {r.Matricule} | {Name(r)} | {r.Promotion}";
             for (var i = 0; i < copies; i++)
-                cards.Add(new CardItem(r.LastName, r.MiddleName, r.FirstName, r.Promotion, StudentCardRules.ColorOf(r.Promotion), qr));
+                cards.Add(new CardItem(r.LastName, r.MiddleName, r.FirstName, r.Promotion, StudentCardRules.ColorOf(r.Promotion), qr, r.Matricule));
         }
 
         var word = string.Equals(input.Format, "docx", StringComparison.OrdinalIgnoreCase);
