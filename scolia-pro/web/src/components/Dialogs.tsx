@@ -29,7 +29,7 @@ export function ShortcutsDialog({ onClose }: { onClose: () => void }) {
 
 export function AboutDialog({ schoolName, onClose }: { schoolName: string; onClose: () => void }) {
   return (
-    <Modal title="SCOLIA Pro" eyebrow="Version 1.0.0" onClose={onClose} footer={<button type="button" className="btn primary" onClick={onClose}>Fermer</button>}>
+    <Modal title="SCOLIA Pro" eyebrow="Version 1.1.0" onClose={onClose} footer={<button type="button" className="btn primary" onClick={onClose}>Fermer</button>}>
       <p><strong>{schoolName}</strong></p>
       <p className="muted">Gestion scolaire : inscriptions, caisse, reçus numérotés, scolarité, personnel et paie.</p>
       <p className="muted">SCOLIA n’envoie aucune donnée à un tiers. Les liens WhatsApp ne s’ouvrent qu’à votre demande. Le journal d’audit est chaîné et vérifiable.</p>

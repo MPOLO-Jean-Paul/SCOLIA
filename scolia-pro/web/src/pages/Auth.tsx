@@ -49,7 +49,7 @@ export function LoginPage() {
         </form>
         <p className="signin-help">Après 5 erreurs, le compte est verrouillé 15 minutes. Mot de passe oublié : contactez l’administrateur.</p>
       </main>
-      <footer className="signin-foot">SCOLIA Pro 1.0.0</footer>
+      <footer className="signin-foot">SCOLIA Pro 1.1.0</footer>
     </div>
   );
 }
@@ -125,7 +125,7 @@ export function SetupPage() {
           <Button type="submit" variant="primary" loading={busy} style={{ marginTop: 16, width: '100%', height: 46 }}>Installer SCOLIA</Button>
         </form>
       </div>
-      <footer className="signin-foot">SCOLIA Pro 1.0.0</footer>
+      <footer className="signin-foot">SCOLIA Pro 1.1.0</footer>
     </div>
   );
 }
