@@ -42,6 +42,30 @@ public static class PhoneFit
             }
         // Le libellé suit son texte : un espace le sépare de la valeur, que la largeur fixe ménageait.
         if (changed && grid.ColumnSpacing == 0) grid.ColumnSpacing = 12;
+        // Les classes de la grille ne sont pas encore posées quand elle rejoint son parent : la ligne de réglage
+        // est reconnue à son entrée dans l'écran, toujours avant sa première mesure.
+        void Attached(object? sender, VisualTreeAttachmentEventArgs args)
+        {
+            grid.AttachedToVisualTree -= Attached;
+            StackPreference(grid);
+        }
+        grid.AttachedToVisualTree += Attached;
+    }
+
+    /// <summary>
+    /// Ligne de réglage : à côté de son libellé sur l'ordinateur, le réglage passe dessous sur le téléphone quand il est large
+    /// (curseur, liste) ; l'interrupteur reste à droite. Le libellé garde ainsi toute la largeur et se lit d'un trait.
+    /// </summary>
+    private static void StackPreference(Grid grid)
+    {
+        if (!grid.Classes.Contains("prefrow") || grid.ColumnDefinitions.Count != 2 || grid.RowDefinitions.Count > 0) return;
+        if (grid.Children.FirstOrDefault(c => Grid.GetColumn(c) == 1) is not Control value || value is ToggleSwitch or CheckBox) return;
+        grid.ColumnDefinitions = new ColumnDefinitions("*");
+        grid.RowDefinitions = new RowDefinitions("Auto,Auto");
+        Grid.SetColumn(value, 0);
+        Grid.SetRow(value, 1);
+        value.Margin = new Thickness(0, 8, 0, 0);
+        value.HorizontalAlignment = value is ComboBox ? HorizontalAlignment.Stretch : HorizontalAlignment.Left;
     }
 
     private static void OnBorderLoaded(Border border, RoutedEventArgs e)

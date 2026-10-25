@@ -143,7 +143,7 @@ prefs.Accent = Environment.GetEnvironmentVariable("SCOLIA_ACCENT") ?? "bleu";
 // Sans les bulles d'astuce (SCOLIA_ASTUCES=0) : des écrans dégagés, pour une présentation.
 if (Environment.GetEnvironmentVariable("SCOLIA_ASTUCES") == "0") prefs.Tips = false;
 // Le mobile est connu avant le shell, comme sur Android : ses menus et ses réglages en dépendent.
-if (Environment.GetEnvironmentVariable("SCOLIA_MOBILE") == "1") Preferences.MobileLayout = true;
+if (Environment.GetEnvironmentVariable("SCOLIA_MOBILE") == "1") { Preferences.MobileLayout = true; Platform.IsMobile = true; }
 var shell = new ShellViewModel(api, prefs);
 // Taille de fenêtre optionnelle (SCOLIA_TAILLE=1024x700) pour vérifier l'adaptation du texte à chaque format d'écran.
 var taille = (Environment.GetEnvironmentVariable("SCOLIA_TAILLE") ?? "1280x820").Split('x');
@@ -650,6 +650,24 @@ if (Preferences.MobileLayout)
     menuScroll.Offset = new Vector(0, menuScroll.Extent.Height);
     Save(window, "30b-mobile-commandes.png");
     shell.PhoneMenuOpen = false;
+    // Réglages du téléphone : le thème se choisit dans une feuille, la police et la taille dans leur fenêtre.
+    shell.ShowThemeSheet();
+    Save(window, "37-mobile-theme.png");
+    shell.ShowAccentSheet();
+    Save(window, "37b-mobile-couleur.png");
+    shell.CloseSheet();
+    shell.ShowTextSettings();
+    Save(window, "38-mobile-police.png");
+    if (shell.Dialog is TextSettingsViewModel textSettings)
+    {
+        var (keepFont, keepScale) = (shell.Prefs.Font, shell.Prefs.Scale);
+        textSettings.Font = "serif";
+        textSettings.Scale = 1.2;
+        Save(window, "38b-mobile-police-serif.png");
+        textSettings.Font = keepFont;
+        textSettings.Scale = keepScale;
+    }
+    shell.CloseDialog();
     Wait(shell.Open(() => new ReceiptsPage(shell)));
     shell.ShowPageSheet();
     Save(window, "31-mobile-actions-page.png");
@@ -694,6 +712,60 @@ if (Preferences.MobileLayout)
 window.Close();
 Console.WriteLine("terminé");
 
+// Téléphone : chaque choix du thème, de la couleur, de la police et de la taille doit s'appliquer, puis être rétabli.
+void MobileChoices(ShellViewModel shell, List<string> problems)
+{
+    var prefs = shell.Prefs;
+    var (theme, accent, font, scale) = (prefs.Theme, prefs.Accent, prefs.Font, prefs.Scale);
+    void Check(string what, bool ok)
+    {
+        Console.WriteLine($"{(ok ? "OK        " : "ÉCHEC     ")} Choix › {what}");
+        if (!ok) problems.Add($"Choix › {what}");
+    }
+    foreach (var value in new[] { "dark", "light", "system" })
+    {
+        shell.ShowThemeSheet();
+        var item = shell.Sheet?.Items.FirstOrDefault(i => i.Label == Preferences.Themes.First(t => t.Value == value).Label);
+        item?.Command.Execute(null);
+        Dispatcher.UIThread.RunJobs();
+        Check($"Thème {value} : la feuille se referme et le thème change", item is not null && !shell.HasSheet && prefs.Theme == value);
+    }
+    shell.ShowThemeSheet();
+    Check("Thème : la valeur en cours est cochée", shell.Sheet?.Items.Count(i => i.IsChecked) == 1);
+    shell.CloseSheet();
+    foreach (var a in Preferences.AccentSwatches)
+    {
+        shell.ShowAccentSheet();
+        shell.Sheet?.Items.First(i => i.Label == a.Label).Command.Execute(null);
+        Check($"Couleur {a.Label}", prefs.Accent == a.Key);
+    }
+    shell.ShowTextSettings();
+    if (shell.Dialog is TextSettingsViewModel text)
+    {
+        foreach (var f in text.Fonts)
+        {
+            f.Choose.Execute(null);
+            Check($"Police {f.Label} : appliquée et seule cochée", prefs.Font == f.Key && text.Fonts.Count(x => x.IsSelected) == 1);
+        }
+        text.Scale = 1.23;
+        Check("Taille au curseur : arrondie à 1,25", Math.Abs(prefs.Scale - 1.25) < 0.001 && text.ScaleLabel == "125 %");
+        text.Larger.Execute(null); text.Larger.Execute(null); text.Larger.Execute(null);
+        Check("Taille A+ : bornée à 140 %", Math.Abs(prefs.Scale - TextSettingsViewModel.MaxScale) < 0.001);
+        for (var i = 0; i < 20; i++) text.Smaller.Execute(null);
+        Check("Taille A- : bornée à 85 %", Math.Abs(prefs.Scale - TextSettingsViewModel.MinScale) < 0.001);
+        foreach (var p in text.Presets)
+        {
+            p.Choose.Execute(null);
+            Check($"Taille prête {p.Label}", Math.Abs(prefs.Scale - p.Value) < 0.001 && text.Presets.Count(x => x.IsSelected) == 1);
+        }
+        text.Reset.Execute(null);
+        Check("Rétablir : Inter à 100 %", prefs.Font == "inter" && Math.Abs(prefs.Scale - 1) < 0.001);
+        shell.CloseDialog();
+    }
+    else Check("Police et taille : la fenêtre s'ouvre", false);
+    (prefs.Theme, prefs.Accent, prefs.Font, prefs.Scale) = (theme, accent, font, scale);
+}
+
 // ---------- Passage des commandes ----------
 // Lance chaque commande du ruban et chaque action d'en-tête de chaque page, sans ligne choisie, puis attend un effet
 // visible : une fenêtre, une autre page, le menu Fichier, un message ou un réglage changé. Une commande sans effet
@@ -722,6 +794,7 @@ int CommandSweep(ShellViewModel shell)
         SearchViewModel => "Recherche",
         ShortcutsViewModel => "Raccourcis clavier",
         AboutViewModel => "À propos",
+        TextSettingsViewModel => "Police et taille du texte",
         null => string.Empty,
         _ => d.GetType().Name,
     };
@@ -738,6 +811,8 @@ int CommandSweep(ShellViewModel shell)
             Pump(120);
         }
         if (shell.BackstageOpen) shell.CloseBackstage();
+        shell.CloseSheet();
+        shell.PhoneMenuOpen = false;
     }
     string? Try(string where, string label, System.Windows.Input.ICommand command, bool toggle)
     {
@@ -758,6 +833,7 @@ int CommandSweep(ShellViewModel shell)
                 Dispatcher.UIThread.RunJobs();
                 Thread.Sleep(20);
                 effect = shell.HasDialog ? $"fenêtre « {DialogName(shell.Dialog)} »"
+                    : shell.HasSheet ? $"choix « {shell.Sheet!.Title} » : {string.Join(", ", shell.Sheet.Items.Select(i => i.IsChecked ? i.Label + " (coché)" : i.Label))}"
                     : !ReferenceEquals(shell.Current, page) ? $"page « {shell.Current?.Title} »"
                     : shell.BackstageOpen ? "menu Fichier"
                     : noticed ? $"message « {lastNotice} »"
@@ -773,8 +849,16 @@ int CommandSweep(ShellViewModel shell)
         return effect;
     }
 
-    // 1. Ruban et menu : toutes les commandes de tous les onglets.
-    foreach (var tab in shell.Tabs.Where(t => !t.IsFile).ToList())
+    // 1. Ruban et menu : toutes les commandes de tous les onglets. Sur le téléphone, celles du menu plein écran.
+    if (Preferences.MobileLayout)
+        foreach (var group in shell.PhoneTools.ToList())
+            foreach (var command in group.Commands)
+            {
+                if (skipped.Contains(command.Label)) { Console.WriteLine($"PASSÉE     Menu {group.Title} › {command.Label}"); continue; }
+                Try($"Menu {group.Title}", command.Label, command.Command, command.IsToggle);
+            }
+    if (Preferences.MobileLayout) MobileChoices(shell, problems);
+    foreach (var tab in shell.Tabs.Where(t => !t.IsFile && !Preferences.MobileLayout).ToList())
         foreach (var group in tab.Groups)
             foreach (var command in group.Commands)
             {

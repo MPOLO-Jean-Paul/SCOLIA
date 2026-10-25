@@ -268,11 +268,15 @@
             <ItemsControl ItemsSource="{Binding Sheet.Items}">
               <ItemsControl.ItemTemplate>
                 <DataTemplate>
-                  <Button Classes="sheetitem" Classes.danger="{Binding Danger}" Classes.emphasis="{Binding Emphasis}" Command="{Binding Command}">
-                    <StackPanel Orientation="Horizontal" Spacing="14">
-                      <mi:MaterialIcon Kind="{Binding Icon}" Width="22" Height="22" Foreground="{Binding Brush}" />
-                      <TextBlock Text="{Binding Label}" VerticalAlignment="Center" TextWrapping="Wrap" />
-                    </StackPanel>
+                  <Button Classes="sheetitem" Classes.danger="{Binding Danger}" Classes.emphasis="{Binding Emphasis}" Command="{Binding Command}" HorizontalContentAlignment="Stretch">
+                    <Grid ColumnDefinitions="Auto,*,Auto">
+                      <mi:MaterialIcon Kind="{Binding Icon}" Width="22" Height="22" Foreground="{Binding Brush}" Margin="0,0,14,0" />
+                      <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="1" Margin="0,6">
+                        <TextBlock Text="{Binding Label}" TextWrapping="Wrap" />
+                        <TextBlock Text="{Binding Detail}" Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" IsVisible="{Binding HasDetail}" />
+                      </StackPanel>
+                      <mi:MaterialIcon Grid.Column="2" Kind="Check" Width="22" Height="22" Foreground="{DynamicResource AccentBrush}" Margin="10,0,0,0" IsVisible="{Binding IsChecked}" />
+                    </Grid>
                   </Button>
                 </DataTemplate>
               </ItemsControl.ItemTemplate>

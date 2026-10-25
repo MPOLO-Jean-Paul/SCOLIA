@@ -981,11 +981,63 @@ public sealed class ShellViewModel : Observable
         Sheet = new SheetVm(title, subtitle, list);
     }
 
+    /// <summary>
+    /// Feuille de choix : une ligne par valeur, la valeur en cours cochée. Toucher une ligne l'applique tout de suite
+    /// et referme la feuille.
+    /// </summary>
+    public void ShowChoiceSheet(string title, string subtitle, IEnumerable<SheetChoice> choices)
+    {
+        var list = choices.Select(c => new SheetItemVm(c.Label, c.Icon, new RelayCommand(() =>
+        {
+            Sheet = null;
+            c.Choose();
+        }), isChecked: c.IsChecked, detail: c.Detail, brush: c.Brush)).ToList();
+        if (list.Count > 0) Sheet = new SheetVm(title, subtitle, list);
+    }
+
+    /// <summary>Thème du téléphone : système, clair ou sombre.</summary>
+    public void ShowThemeSheet()
+    {
+        PhoneMenuOpen = false;
+        Material.Icons.MaterialIconKind IconOf(string key) => key switch
+        {
+            "light" => Material.Icons.MaterialIconKind.WeatherSunny,
+            "dark" => Material.Icons.MaterialIconKind.WeatherNight,
+            _ => Material.Icons.MaterialIconKind.ThemeLightDark,
+        };
+        string? DetailOf(string key) => key switch
+        {
+            "system" => "Suit le réglage clair ou sombre de l'appareil.",
+            "light" => "Fond blanc, idéal en journée.",
+            _ => "Fond sombre, reposant le soir et plus économe.",
+        };
+        ShowChoiceSheet("Thème", "Choisissez l'apparence de SCOLIA sur cet appareil.",
+            Preferences.Themes.Select(t => new SheetChoice(t.Label, IconOf(t.Value), Prefs.Theme == t.Value, () => Prefs.Theme = t.Value, DetailOf(t.Value))));
+    }
+
+    /// <summary>Couleur d'accent : boutons, sélection et liens.</summary>
+    public void ShowAccentSheet()
+    {
+        PhoneMenuOpen = false;
+        ShowChoiceSheet("Couleur d'accent", "Couleur des boutons, de la sélection et des liens.",
+            Preferences.AccentSwatches.Select(a => new SheetChoice(a.Label, Material.Icons.MaterialIconKind.Circle, Prefs.Accent == a.Key,
+                () => Prefs.Accent = a.Key, Brush: new Avalonia.Media.SolidColorBrush(a.Color))));
+    }
+
+    /// <summary>Police et taille du texte, avec un aperçu qui change en direct.</summary>
+    public void ShowTextSettings()
+    {
+        PhoneMenuOpen = false;
+        Sheet = null;
+        Dialog = new TextSettingsViewModel(this);
+    }
+
     /// <summary>Feuille des actions de la page affichée, depuis le bouton « … » de la barre du téléphone.</summary>
     public void ShowPageSheet()
     {
         if (current is not { } page) return;
-        ShowSheet(page.Heading, page.Subtitle, page.HeaderActions.Select(a => (a.Label, a.Icon, a.Command, a.Danger, a.IsPrimary)));
+        // Les actions d'un élément sont sur le « … » de sa carte : la feuille de la page ne garde que les siennes.
+        ShowSheet(page.Heading, page.Subtitle, page.HeaderActions.Where(a => !a.Row).Select(a => (a.Label, a.Icon, a.Command, a.Danger, a.IsPrimary)));
     }
 
     /// <summary>Défilement de la page entière : sur téléphone seulement.</summary>

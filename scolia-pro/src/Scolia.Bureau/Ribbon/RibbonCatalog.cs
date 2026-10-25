@@ -175,6 +175,12 @@ public static class RibbonCatalog
             ]),
             new("affichage", "Affichage",
             [
+                // Téléphone : chaque réglage ouvre ses choix (thème, couleur, police et taille), au lieu de basculer d'un coup.
+                Platform.IsMobile ? Group("Apparence",
+                    Large(shell, "Thème", ThemeLightDark, "Système, clair ou sombre.", () => { shell.ShowThemeSheet(); return Task.CompletedTask; }, Blue),
+                    Small(shell, "Couleur d'accent", Palette, "Couleur des boutons, de la sélection et des liens.", () => { shell.ShowAccentSheet(); return Task.CompletedTask; }, Purple),
+                    Small(shell, "Police et taille du texte", FormatFont, "Police de l'application et taille du texte, avec un aperçu.", () => { shell.ShowTextSettings(); return Task.CompletedTask; }, Orange),
+                    Small(shell, "Préférences", Tune, "Tous les réglages de cet appareil : thème, couleurs, police, animations et sons.", () => PreferencesDialog.ShowAsync(shell), Neutral)) :
                 Group("Apparence",
                     Large(shell, "Mode sombre", WeatherNight, "Bascule entre le thème clair et le thème sombre.", () => { shell.Prefs.IsDark = !shell.Prefs.IsDark; return Task.CompletedTask; }, Blue, toggle: true, isOn: () => shell.Prefs.IsDark),
                     Small(shell, "Taille du texte", FormatSize, "Fait défiler les tailles : petite, normale, grande, très grande.", () => { CycleTextSize(shell); return Task.CompletedTask; }, Neutral),

@@ -41,18 +41,34 @@ public sealed class Preferences : Observable
     public static IReadOnlyList<(string Key, string Label, Color Color)> AccentSwatches =>
         AccentTable.Select(a => (a.Key, a.Label, Color.Parse(a.Light))).ToList();
 
-    /// <summary>Polices de l'interface. Inter est fournie avec SCOLIA ; les autres viennent de Windows, Inter les remplace si elles manquent.</summary>
-    private static readonly (string Key, string Label, string Family)[] FontTable =
+    private const string Bundled = "avares://SCOLIA/Assets/Fonts#";
+
+    /// <summary>
+    /// Polices de l'interface. Inter, Carlito, Liberation et DejaVu sont fournies avec SCOLIA : elles existent partout,
+    /// sur Windows comme sur Android. Sur Windows, la police du système est préférée quand elle est installée ;
+    /// la police fournie de même dessin la remplace sinon. Sur un téléphone, seules les polices fournies sont proposées.
+    /// </summary>
+    private static readonly (string Key, string Desktop, string Mobile, string Family, bool OnPhone)[] FontTable =
     [
-        ("systeme", "Système (Segoe UI)", "Segoe UI Variable Text, Segoe UI, avares://SCOLIA/Assets/Fonts#Inter"),
-        ("inter", "Inter", "avares://SCOLIA/Assets/Fonts#Inter"),
-        ("calibri", "Calibri", "Calibri, avares://SCOLIA/Assets/Fonts#Inter"),
-        ("arial", "Arial", "Arial, avares://SCOLIA/Assets/Fonts#Inter"),
-        ("verdana", "Verdana (très lisible)", "Verdana, avares://SCOLIA/Assets/Fonts#Inter"),
-        ("tahoma", "Tahoma", "Tahoma, avares://SCOLIA/Assets/Fonts#Inter"),
+        ("systeme", "Système (Segoe UI)", "", $"Segoe UI Variable Text, Segoe UI, {Bundled}Inter", false),
+        ("inter", "Inter", "Inter (moderne)", $"{Bundled}Inter", true),
+        ("calibri", "Calibri", "Carlito (comme Calibri)", $"Calibri, {Bundled}Carlito", true),
+        ("arial", "Arial", "Liberation Sans (comme Arial)", $"Arial, {Bundled}Liberation Sans", true),
+        ("verdana", "Verdana (très lisible)", "DejaVu Sans (très lisible)", $"Verdana, {Bundled}DejaVu Sans", true),
+        ("tahoma", "Tahoma", "", $"Tahoma, {Bundled}DejaVu Sans", false),
+        ("serif", "Times New Roman (à empattements)", "Liberation Serif (à empattements)", $"Times New Roman, {Bundled}Liberation Serif", true),
     ];
 
-    public static readonly IReadOnlyList<ChoiceItem> Fonts = FontTable.Select(f => new ChoiceItem(f.Key, f.Label)).ToList();
+    /// <summary>Polices proposées sur cet appareil.</summary>
+    public static IReadOnlyList<ChoiceItem> Fonts => FontTable
+        .Where(f => !Platform.IsMobile || f.OnPhone)
+        .Select(f => new ChoiceItem(f.Key, Platform.IsMobile ? f.Mobile : f.Desktop)).ToList();
+
+    /// <summary>Famille de caractères d'une police, pour l'appliquer ou la montrer dans un aperçu.</summary>
+    public static FontFamily FamilyOf(string key) => new(FontTable.FirstOrDefault(f => f.Key == key).Family ?? $"{Bundled}Inter");
+
+    /// <summary>Police par défaut : celle du système sur Windows, Inter sur un téléphone.</summary>
+    private static string DefaultFont => Platform.IsMobile ? "inter" : "systeme";
 
     public static readonly IReadOnlyList<ChoiceItem> StartupModes =
     [
@@ -125,7 +141,7 @@ public sealed class Preferences : Observable
     /// <summary>Barre latérale de navigation affichée à gauche.</summary>
     public bool Sidebar { get => sidebar; set => Set(ref sidebar, value); }
 
-    public string Font { get => font; set => Set(ref font, FontTable.Any(f => f.Key == value) ? value : "systeme"); }
+    public string Font { get => font; set => Set(ref font, Fonts.Any(f => f.Value == value) ? value : DefaultFont); }
     /// <summary>Taille de la fenêtre au lancement, une fois connecté.</summary>
     public string Startup { get => startup; set => Set(ref startup, value is "agrandie" or "pleinecran" ? value : "normale"); }
     public string Speed { get => speed; set { if (Set(ref speed, value is "rapide" or "douce" ? value : "normale")) Raise(nameof(SpeedFactor)); } }
@@ -217,7 +233,7 @@ public sealed class Preferences : Observable
         };
         var r = app.Resources;
         ApplyAccent(r);
-        r["UiFont"] = new FontFamily(FontTable.First(f => f.Key == font).Family);
+        r["UiFont"] = FamilyOf(font);
         var k = Factor;
         GridPriority.SetTextFactor(k);
         r["FsBase"] = 13.5 * k;

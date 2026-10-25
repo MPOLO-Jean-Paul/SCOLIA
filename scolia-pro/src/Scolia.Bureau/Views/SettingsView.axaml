@@ -150,7 +150,7 @@
                           <Border Grid.Column="1" Background="#1C1C1E" CornerRadius="0,8,8,0"><Border Background="#2C2C2E" Margin="0,12,10,12" CornerRadius="4" /></Border>
                         </Grid>
                       </Border>
-                      <TextBlock Text="Selon Windows" HorizontalAlignment="Center" />
+                      <TextBlock Text="{Binding SystemThemeLabel}" HorizontalAlignment="Center" />
                     </StackPanel>
                   </RadioButton>
                   <RadioButton Classes="themecard" GroupName="theme" IsChecked="{Binding ThemeLight}" Margin="0,0,10,0">
@@ -222,7 +222,7 @@
               <Grid ColumnDefinitions="*,Auto" Classes="prefrow">
                 <StackPanel VerticalAlignment="Center" Margin="0,0,16,0">
                   <TextBlock Text="Police" />
-                  <TextBlock Text="Inter est fournie avec SCOLIA. Les autres polices viennent de Windows." Classes="muted" TextWrapping="Wrap" />
+                  <TextBlock Text="{Binding FontHint}" Classes="muted" TextWrapping="Wrap" />
                 </StackPanel>
                 <ComboBox Grid.Column="1" ItemsSource="{Binding Fonts}" SelectedItem="{Binding Font}" MinWidth="200" VerticalAlignment="Center" />
               </Grid>
@@ -252,7 +252,7 @@
             <Border Classes="card">
               <StackPanel Spacing="6">
                 <TextBlock Text="Aperçu" Classes="muted" />
-                <TextBlock Text="Institut Technique Médical" FontSize="{DynamicResource FsTitle}" FontWeight="SemiBold" />
+                <TextBlock Text="{Binding PreviewSchool}" FontSize="{DynamicResource FsTitle}" FontWeight="SemiBold" TextWrapping="Wrap" />
                 <TextBlock Text="Reçu RC-2026-000124 · 55 000 FC · mensualité d'octobre" />
                 <TextBlock Text="Le texte de toute l'interface s'affiche ainsi." Classes="muted" />
               </StackPanel>
@@ -357,7 +357,7 @@
               <Grid ColumnDefinitions="*,Auto" Classes="prefrow" IsEnabled="{Binding Prefs.Sounds}">
                 <StackPanel VerticalAlignment="Center" Margin="0,0,16,0">
                   <TextBlock Text="Volume" />
-                  <TextBlock Text="Sans effet sur le volume de Windows." Classes="muted" TextWrapping="Wrap" />
+                  <TextBlock Text="{Binding VolumeHint}" Classes="muted" TextWrapping="Wrap" />
                 </StackPanel>
                 <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
                   <mi:MaterialIcon Kind="VolumeLow" Width="18" Height="18" />
@@ -370,7 +370,7 @@
               <Grid ColumnDefinitions="*,Auto" Classes="prefrow">
                 <StackPanel VerticalAlignment="Center" Margin="0,0,16,0">
                   <TextBlock Text="Style des sons" />
-                  <TextBlock Text="Doux et clochette sont des sons de SCOLIA ; ou les sons habituels de Windows." Classes="muted" TextWrapping="Wrap" />
+                  <TextBlock Text="{Binding SoundStyleHint}" Classes="muted" TextWrapping="Wrap" />
                 </StackPanel>
                 <ComboBox Grid.Column="1" ItemsSource="{Binding SoundStyles}" SelectedItem="{Binding SoundStyle}" MinWidth="200" VerticalAlignment="Center" />
               </Grid>

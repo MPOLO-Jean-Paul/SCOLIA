@@ -5,16 +5,26 @@ using Scolia.Bureau.Infrastructure;
 
 namespace Scolia.Bureau.ViewModels;
 
-/// <summary>Ligne d'une feuille d'actions du téléphone : grande, pour le doigt, avec son icône.</summary>
-public sealed class SheetItemVm(string label, MaterialIconKind icon, ICommand command, bool danger = false, bool emphasis = false)
+/// <summary>
+/// Ligne d'une feuille d'actions du téléphone : grande, pour le doigt, avec son icône. Dans une feuille de choix
+/// (thème, couleur), la ligne de la valeur en cours porte une coche à droite.
+/// </summary>
+public sealed class SheetItemVm(string label, MaterialIconKind icon, ICommand command, bool danger = false, bool emphasis = false,
+    bool isChecked = false, string? detail = null, IBrush? brush = null)
 {
     public string Label { get; } = label;
     public MaterialIconKind Icon { get; } = icon;
     public ICommand Command { get; } = command;
     public bool Danger { get; } = danger;
-    public bool Emphasis { get; } = emphasis;
-    public IBrush Brush => ThemeBrush.Get(Danger ? "ToneRed" : "AccentBrush");
+    public bool Emphasis { get; } = emphasis || isChecked;
+    public bool IsChecked { get; } = isChecked;
+    public string? Detail { get; } = detail;
+    public bool HasDetail => !string.IsNullOrEmpty(Detail);
+    public IBrush Brush => brush ?? ThemeBrush.Get(Danger ? "ToneRed" : "AccentBrush");
 }
+
+/// <summary>Option d'une feuille de choix : son libellé, son icône, sa couleur éventuelle et ce qu'elle fait.</summary>
+public sealed record SheetChoice(string Label, MaterialIconKind Icon, bool IsChecked, Action Choose, string? Detail = null, IBrush? Brush = null);
 
 /// <summary>
 /// Feuille d'actions du téléphone, qui monte du bas de l'écran : les actions de la page ou d'une ligne,

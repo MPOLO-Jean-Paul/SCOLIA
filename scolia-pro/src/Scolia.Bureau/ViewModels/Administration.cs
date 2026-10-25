@@ -349,7 +349,19 @@ public sealed class SettingsPage : PageViewModel
     public IReadOnlyList<ChoiceItem> StartupModes => Preferences.StartupModes;
     public IReadOnlyList<ChoiceItem> Speeds => Preferences.Speeds;
     public IReadOnlyList<ChoiceItem> OpeningDurations => Preferences.OpeningDurations;
-    public IReadOnlyList<ChoiceItem> SoundStyles => Preferences.SoundStyles;
+    /// <summary>Sur un téléphone, il n'y a pas de sons de Windows : seuls ceux de SCOLIA sont proposés.</summary>
+    public IReadOnlyList<ChoiceItem> SoundStyles => Platform.IsMobile ? Preferences.SoundStyles.Where(s => s.Value != "systeme").ToList() : Preferences.SoundStyles;
+
+    // Textes qui nomment le système : Windows sur l'ordinateur, l'appareil sur un téléphone.
+    public string SystemThemeLabel => Platform.IsMobile ? "Selon l'appareil" : "Selon Windows";
+    public string FontHint => Platform.IsMobile
+        ? "Toutes les polices sont fournies avec SCOLIA."
+        : "Inter, Carlito, Liberation et DejaVu sont fournies avec SCOLIA. Les autres viennent de Windows quand elles y sont installées.";
+    public string VolumeHint => Platform.IsMobile ? "Sans effet sur le volume du téléphone." : "Sans effet sur le volume de Windows.";
+    public string SoundStyleHint => Platform.IsMobile ? "Doux ou clochette : deux jeux de sons de SCOLIA." : "Doux et clochette sont des sons de SCOLIA ; ou les sons habituels de Windows.";
+
+    /// <summary>Nom de l'établissement dans l'aperçu du texte.</summary>
+    public string PreviewSchool => Shell.SchoolLine.Split(" · ")[0] is { Length: > 0 } name ? name : "Votre établissement";
 
     private static ChoiceItem? Pick(IReadOnlyList<ChoiceItem> list, string value) => list.FirstOrDefault(c => c.Value == value);
 
@@ -478,7 +490,7 @@ public sealed class SettingsPage : PageViewModel
         "annees" => "Les années scolaires, leurs mois de paiement et l'année courante.",
         "sections" => "Les filières de l'établissement, qui regroupent les promotions.",
         "promotions" => "Les classes, leur code de 4 caractères, leur mensualité et leurs frais.",
-        "apparence" => "Clair, sombre ou selon Windows, et la couleur des boutons et des sélections.",
+        "apparence" => Platform.IsMobile ? "Clair, sombre ou selon l'appareil, et la couleur des boutons et des sélections." : "Clair, sombre ou selon Windows, et la couleur des boutons et des sélections.",
         "texte" => "La police et la taille du texte de toute l'interface.",
         "fenetres" => "La taille de la fenêtre au lancement et les éléments affichés autour des pages.",
         "animations" => "Les mouvements de l'interface : fondus, transitions entre pages et écran d'ouverture.",

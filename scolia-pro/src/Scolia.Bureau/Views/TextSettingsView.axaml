@@ -1,0 +1,126 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:infra="using:Scolia.Bureau.Infrastructure"
+             xmlns:mi="using:Material.Icons.Avalonia"
+             x:Class="Scolia.Bureau.Views.TextSettingsView">
+  <UserControl.Styles>
+    <!-- Taille prête : pastille, la taille en cours remplie de la couleur d'accent -->
+    <Style Selector="Button.preset">
+      <Setter Property="Background" Value="{DynamicResource Surface2Brush}" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="CornerRadius" Value="18" />
+      <Setter Property="MinHeight" Value="36" />
+      <Setter Property="Padding" Value="14,0" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button.preset.selected">
+      <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
+      <Setter Property="Foreground" Value="White" />
+    </Style>
+    <Style Selector="Button.preset.selected /template/ ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
+      <Setter Property="Foreground" Value="White" />
+    </Style>
+    <!-- Police : une ligne par police, son nom écrit dans sa police -->
+    <Style Selector="Button.fontrow">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+      <Setter Property="Padding" Value="14,0" />
+      <Setter Property="MinHeight" Value="52" />
+      <Setter Property="CornerRadius" Value="0" />
+    </Style>
+    <Style Selector="Button.fontrow.selected">
+      <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
+    </Style>
+    <Style Selector="Button.fontrow.selected /template/ ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
+    </Style>
+  </UserControl.Styles>
+
+  <!-- Police et taille du texte : aperçu en direct, taille au curseur, puis la police -->
+  <Border Classes="card" infra:Adaptive.FitDialog="True" Width="520" Padding="0" CornerRadius="16" Background="{DynamicResource SurfaceBrush}" ClipToBounds="True" BoxShadow="0 12 40 0 #33000000">
+    <Grid RowDefinitions="Auto,*,Auto">
+      <Grid ColumnDefinitions="Auto,*,Auto" Margin="18,18,12,8">
+        <Border Classes="appicon large" Background="{DynamicResource ToneBlue}" Margin="0,0,12,0"><mi:MaterialIcon Kind="FormatFont" /></Border>
+        <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+          <TextBlock Text="Police et taille du texte" FontSize="17" FontWeight="Bold" TextWrapping="Wrap" />
+          <TextBlock Classes="muted" TextWrapping="Wrap">
+            <Run Text="{Binding FontLabel, Mode=OneWay}" /><Run Text=" · " /><Run Text="{Binding ScaleLabel, Mode=OneWay}" />
+          </TextBlock>
+        </StackPanel>
+        <Button Grid.Column="2" Classes="closex" Command="{Binding Close}"><mi:MaterialIcon Kind="Close" /></Button>
+      </Grid>
+
+      <ScrollViewer Grid.Row="1" MaxHeight="600" HorizontalScrollBarVisibility="Disabled" Padding="18,0,18,8">
+        <StackPanel Spacing="12">
+          <!-- Aperçu : il suit la police et la taille choisies -->
+          <Border Background="{DynamicResource Surface2Brush}" CornerRadius="14" Padding="16,14">
+            <StackPanel Spacing="4">
+              <TextBlock Text="Aperçu" Classes="muted" FontSize="{DynamicResource FsCaption}" />
+              <TextBlock Text="Bonjour, Secrétariat" FontWeight="Bold" FontSize="{Binding PreviewTitleSize}" TextWrapping="Wrap" />
+              <TextBlock Text="Encaissé ce mois : 6 957 500 FC" FontWeight="SemiBold" FontSize="{Binding PreviewSize}" TextWrapping="Wrap" />
+              <TextBlock Text="Les reçus sont numérotés et portent un code de vérification." Classes="muted" FontSize="{Binding PreviewSize}" TextWrapping="Wrap" />
+            </StackPanel>
+          </Border>
+
+          <!-- Taille -->
+          <Grid ColumnDefinitions="*,Auto">
+            <TextBlock Text="Taille du texte" Classes="heading" />
+            <TextBlock Grid.Column="1" Text="{Binding ScaleLabel}" FontWeight="SemiBold" Foreground="{DynamicResource AccentBrush}" />
+          </Grid>
+          <Grid ColumnDefinitions="Auto,*,Auto">
+            <Button Classes="closex" Command="{Binding Smaller}" Width="40" Height="40" ToolTip.Tip="Plus petit">
+              <TextBlock Text="A" FontSize="13" FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Center" />
+            </Button>
+            <Slider Grid.Column="1" Minimum="{Binding Minimum}" Maximum="{Binding Maximum}" Value="{Binding Scale, Mode=TwoWay}"
+                    TickFrequency="0.05" IsSnapToTickEnabled="True" Margin="10,0" VerticalAlignment="Center" />
+            <Button Grid.Column="2" Classes="closex" Command="{Binding Larger}" Width="40" Height="40" ToolTip.Tip="Plus grand">
+              <TextBlock Text="A" FontSize="20" FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Center" />
+            </Button>
+          </Grid>
+          <ItemsControl ItemsSource="{Binding Presets}">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate><UniformGrid Rows="1" /></ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate>
+                <Button Classes="preset" Classes.selected="{Binding IsSelected}" Command="{Binding Choose}" Margin="3,0">
+                  <TextBlock Text="{Binding Label}" TextTrimming="CharacterEllipsis" FontSize="{DynamicResource FsSmall}" />
+                </Button>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+
+          <!-- Police -->
+          <TextBlock Text="Police" Classes="heading" Margin="0,6,0,0" />
+          <Border Background="{DynamicResource GroupBrush}" CornerRadius="14" ClipToBounds="True">
+            <ItemsControl ItemsSource="{Binding Fonts}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <Button Classes="fontrow" Classes.selected="{Binding IsSelected}" Command="{Binding Choose}">
+                    <Grid ColumnDefinitions="*,Auto,Auto">
+                      <TextBlock Text="{Binding Label}" FontFamily="{Binding Family}" FontSize="16" VerticalAlignment="Center" TextWrapping="Wrap" />
+                      <TextBlock Grid.Column="1" Text="Aa 123" FontFamily="{Binding Family}" FontSize="16" Classes="muted" VerticalAlignment="Center" Margin="10,0" />
+                      <mi:MaterialIcon Grid.Column="2" Kind="Check" Width="22" Height="22" Foreground="{DynamicResource AccentBrush}" IsVisible="{Binding IsSelected}" />
+                    </Grid>
+                  </Button>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </Border>
+          <TextBlock Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap"
+                     Text="Le réglage s'applique tout de suite à toute l'application et reste gardé sur cet appareil." />
+        </StackPanel>
+      </ScrollViewer>
+
+      <Grid Grid.Row="2" ColumnDefinitions="*,Auto" Margin="18,8,18,18">
+        <Button Content="Rétablir" Command="{Binding Reset}" HorizontalAlignment="Left" Height="40" />
+        <Button Grid.Column="1" Classes="primary" Content="Terminé" Command="{Binding Close}" Height="40" MinWidth="110" />
+      </Grid>
+    </Grid>
+  </Border>
+</UserControl>

@@ -191,7 +191,9 @@ public abstract class PageViewModel : Observable
     {
         if (HasRows && SelectedRow is null)
         {
-            Shell.Notify($"Choisissez d'abord une ligne du tableau, puis « {label} ». Astuce : clic droit sur la ligne.", SoundKind.Error);
+            Shell.Notify(PhoneLayout.Active
+                ? $"« {label} » agit sur un élément : touchez « … » sur sa carte, ou appuyez longuement dessus."
+                : $"Choisissez d'abord une ligne du tableau, puis « {label} ». Astuce : clic droit sur la ligne.", SoundKind.Error);
             return Task.CompletedTask;
         }
         return work();
