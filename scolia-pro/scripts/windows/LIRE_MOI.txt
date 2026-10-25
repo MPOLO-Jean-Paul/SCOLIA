@@ -50,6 +50,15 @@ TRAVAILLER DEPUIS UN TÉLÉPHONE ANDROID
   Fichier > Poste et réseau.
 - Détails dans Telephone\LIRE_MOI_TELEPHONE.txt.
 
+TRAVAILLER À PLUSIEURS ET HORS LIGNE
+- Les écrans des autres postes se mettent à jour seuls après chaque enregistrement.
+  La barre d'état indique les postes connectés et ce qui vient d'être fait.
+- Une action en cours sur un poste est bloquée sur les autres : encaissement d'un même
+  apprenant, modification d'un même dossier, arrêté de caisse.
+- Si l'ordinateur principal s'éteint, les autres postes et les téléphones continuent sur
+  les pages déjà consultées. Leurs opérations du quotidien sont gardées, puis envoyées
+  seules et une seule fois à son retour.
+
 DONNÉES ET SAUVEGARDES
 - La base est le fichier donnees\scolia.db (SQLite, transactionnelle).
 - Une sauvegarde vérifiée est faite automatiquement chaque jour dans

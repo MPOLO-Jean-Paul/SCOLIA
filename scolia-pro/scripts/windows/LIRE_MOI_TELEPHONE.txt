@@ -1,8 +1,9 @@
 SCOLIA SUR LE TÉLÉPHONE (ANDROID)
 
-L'application du téléphone a le même design que SCOLIA sur l'ordinateur. Elle travaille
-avec les mêmes données : le téléphone se connecte à l'ordinateur principal de
-l'établissement, sur le même Wi-Fi. Rien n'est gardé en double sur le téléphone.
+L'application du téléphone a le même design que SCOLIA sur l'ordinateur, avec une mise en
+page faite pour le téléphone et la tablette. Elle travaille avec les données de
+l'ordinateur principal de l'établissement, sur le même Wi-Fi. Elle garde aussi une copie
+des pages consultées, pour continuer à travailler quand l'ordinateur principal est éteint.
 
 INSTALLER L'APPLICATION
 1. Copier le fichier SCOLIA-Android.apk sur le téléphone : câble USB, WhatsApp à soi-même,
@@ -22,14 +23,34 @@ SE CONNECTER À L'ORDINATEUR PRINCIPAL
 4. Se connecter avec son identifiant et son mot de passe, comme sur l'ordinateur.
 
 UTILISER SCOLIA SUR LE TÉLÉPHONE
-- Le bouton en haut à gauche ouvre la liste des pages ; le bouton ≡ en haut à droite
-  donne toutes les commandes.
-- Appui long sur une ligne d'un tableau : ses actions, comme le clic droit sur l'ordinateur.
-  Double appui : l'ouvrir.
+- Les onglets du bas ouvrent les outils du quotidien. L'onglet Menu donne tous les
+  outils et toutes les commandes : nouvelle inscription, dépense, exports, sauvegardes.
+- Chaque ligne d'une liste est une carte. Le bouton « … » de la carte, ou un appui long,
+  ouvre ses actions. Double appui : l'ouvrir.
+- Le bouton « … » en haut à droite donne les actions de la page.
 - Le bouton Retour du téléphone ferme la fenêtre ouverte, puis revient à la page précédente.
 - Les PDF et les classeurs s'ouvrent dans le lecteur du téléphone et se partagent, par
   exemple par WhatsApp. Les relances WhatsApp et SMS ouvrent directement l'application.
 - Les réglages de ce poste, thème, taille du texte, sons, se règlent dans Paramètres.
+
+TRAVAILLER À PLUSIEURS
+- Chaque poste voit les autres : l'icône des personnes en haut indique combien d'autres
+  postes sont connectés, et son point vert bat quand l'un d'eux enregistre quelque chose.
+- Les écrans se mettent à jour seuls. Pendant une saisie, rien ne bouge : une pastille
+  « Nouvelles données » propose la mise à jour.
+- Un encaissement en cours sur un autre poste est bloqué ici, avec le nom de ce poste.
+  Même chose pour la modification d'un dossier et l'arrêté de caisse.
+
+TRAVAILLER SANS L'ORDINATEUR PRINCIPAL
+- Si l'ordinateur principal s'éteint, un bandeau orange « Hors ligne » s'affiche. Le
+  travail continue sur les pages déjà consultées sur le téléphone.
+- Les inscriptions, encaissements, dépenses, présences, notes et décisions de discipline
+  faits hors ligne sont gardés sur le téléphone, dans l'ordre.
+- Au retour de l'ordinateur principal, tout part seul, une seule fois. Le reçu est alors
+  numéroté par l'ordinateur principal.
+- Une opération refusée, par exemple un mois payé entre-temps sur un autre poste, attend
+  votre décision dans « Réseau et activité » : Réessayer ou Abandonner.
+- Sans réseau, seul le dernier compte connecté sur le téléphone peut s'ouvrir.
 
 MISE À JOUR
 Installer le nouveau fichier par-dessus l'ancien. Si Android refuse, désinstaller
