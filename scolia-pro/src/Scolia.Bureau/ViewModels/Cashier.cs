@@ -166,8 +166,10 @@ public sealed class CashierPage : PageViewModel
         var account = await Shell.Api.GetAsync<AccountDto>($"api/inscriptions/{eid}/compte");
         enrollment = new EnrollmentChoice(eid, account.Balance);
         Months.Clear();
+        // Les mois encaissés hors ligne sur cet appareil, pas encore envoyés, ne se proposent plus.
+        var pending = Shell.Api.Offline?.PendingFeeItems(eid) ?? new HashSet<Guid>();
         // Seule la scolarité se règle par mois : inscription et examen ne figurent pas dans cette liste.
-        foreach (var line in account.Lines.Where(l => l.Remaining > 0 && l.Kind == "Mensualite"))
+        foreach (var line in account.Lines.Where(l => l.Remaining > 0 && l.Kind == "Mensualite" && !pending.Contains(l.FeeItemId)))
             Months.Add(new MonthRowVm(line.FeeItemId, line.Label, line.Remaining, Money(line.Remaining), line.IsOverdue, MonthsChanged));
         Raise(nameof(HasMonths));
         Raise(nameof(Total));
@@ -179,9 +181,10 @@ public sealed class CashierPage : PageViewModel
         Overdue = Money(account.Overdue);
         OverdueBrush = ThemeBrush.Get(account.Overdue > 0 ? "ToneRed" : "ToneGreen");
         Raise(nameof(OverdueBrush));
-        Hint = null;
+        Hint = pending.Count > 0 ? $"{pending.Count} mois déjà encaissé(s) sur cet appareil, en attente d'envoi à l'ordinateur principal." : null;
         Raise(nameof(HasStudent));
         Receipt = null;
+        await ReserveAsync(eid, account.FullName);
         await PreviewAsync();
     }
 
@@ -190,8 +193,18 @@ public sealed class CashierPage : PageViewModel
         Allocations.Clear();
         BalanceAfter = string.Empty;
         if (enrollment is not { } e || !HasSelection) return;
-        var preview = await Shell.Api.SendAsync<PaymentPreviewDto>(HttpMethod.Post, "api/paiements/apercu",
-            new { enrollmentId = e.Id, amount = SelectedTotal, feeItemIds = SelectedIds(), method = Method?.Value });
+        PaymentPreviewDto preview;
+        try
+        {
+            preview = await Shell.Api.SendAsync<PaymentPreviewDto>(HttpMethod.Post, "api/paiements/apercu",
+                new { enrollmentId = e.Id, amount = SelectedTotal, feeItemIds = SelectedIds(), method = Method?.Value });
+        }
+        catch (OfflineException)
+        {
+            // Hors ligne, la répartition exacte est faite par le serveur à l'envoi : le total reste juste.
+            BalanceAfter = "calculé à l'envoi";
+            return;
+        }
         foreach (var a in preview.Allocations)
             Allocations.Add(new AllocationRowVm(a.Label, Money(a.Amount), Money(a.RemainingAfter)));
         BalanceAfter = Money(preview.BalanceAfter);
@@ -211,8 +224,17 @@ public sealed class CashierPage : PageViewModel
             Hint = "Cochez au moins un mois à payer.";
             return;
         }
+        if (IsLocked)
+        {
+            Hint = LockedBy;
+            return;
+        }
         Hint = null;
-        var created = await Shell.Api.SendAsync<ReceiptDto>(HttpMethod.Post, "api/paiements", new
+        ReceiptDto created;
+        using var underLock = lockKey is { } key ? ScoliaClient.UnderLock(key) : null;
+        try
+        {
+            created = await Shell.Api.SendAsync<ReceiptDto>(HttpMethod.Post, "api/paiements", new
         {
             enrollmentId = e.Id,
             amount = SelectedTotal,
@@ -225,6 +247,15 @@ public sealed class CashierPage : PageViewModel
             feeItemIds = ids,
             idempotencyKey = Guid.NewGuid().ToString("N"),
         });
+        }
+        catch (OfflineQueuedException)
+        {
+            // Encaissement gardé sur l'appareil : les mois quittent la liste, le reçu sera numéroté à l'envoi.
+            Reference = string.Empty;
+            await ChooseAsync(new PayerRow(e.Id, Guid.Empty, StudentName, string.Empty));
+            Hint = "Encaissement gardé sur cet appareil : le reçu sera numéroté par l'ordinateur principal à son retour.";
+            return;
+        }
         Reference = string.Empty;
         await ChooseAsync(new PayerRow(e.Id, created.StudentId, StudentName, string.Empty));
         Receipt = created;
@@ -244,6 +275,54 @@ public sealed class CashierPage : PageViewModel
     }
 
     private sealed record EnrollmentChoice(Guid Id, decimal Balance);
+
+    private string? lockKey;
+    private string? lockedBy;
+
+    /// <summary>Un autre poste encaisse déjà cet apprenant : l'encaissement est bloqué ici jusqu'à la fin du sien.</summary>
+    public string? LockedBy { get => lockedBy; private set { if (Set(ref lockedBy, value)) { Raise(nameof(IsLocked)); Raise(nameof(CanPay)); } } }
+    public bool IsLocked => lockedBy is not null;
+    public bool CanPay => !IsLocked;
+
+    /// <summary>Réserve l'encaissement de cet apprenant pour ce poste, et l'annonce aux autres.</summary>
+    private async Task ReserveAsync(Guid enrollmentId, string name)
+    {
+        var key = $"encaissement:{enrollmentId}";
+        if (lockKey is { } previous && previous != key) await Shell.Sync.ReleaseAsync(previous);
+        lockKey = key;
+        var (granted, holder) = await Shell.Sync.AcquireAsync(key, $"Encaissement de {name}");
+        LockedBy = granted ? null : holder;
+        Shell.Sync.Activity = granted ? $"Encaissement de {name}" : null;
+    }
+
+    private bool watching;
+
+    public override void Entered()
+    {
+        if (!watching)
+        {
+            watching = true;
+            // L'autre poste a fini : l'encaissement redevient possible ici, sans recharger la page.
+            Shell.Sync.LocksChanged += OnLocksChanged;
+        }
+        if (enrollment is { } e && StudentName.Length > 0) _ = ReserveAsync(e.Id, StudentName);
+    }
+
+    public override void Left()
+    {
+        if (lockKey is { } key) _ = Shell.Sync.ReleaseAsync(key);
+        Shell.Sync.Activity = null;
+        if (watching)
+        {
+            Shell.Sync.LocksChanged -= OnLocksChanged;
+            watching = false;
+        }
+    }
+
+    private void OnLocksChanged()
+    {
+        if (IsLocked && lockKey is { } key && Shell.Sync.HolderOf(key) is null && enrollment is { } e) _ = ReserveAsync(e.Id, StudentName);
+    }
 }
 
 /// <summary>Un mois à payer : coché pour l'encaissement, réglé en entier à son montant dû.</summary>

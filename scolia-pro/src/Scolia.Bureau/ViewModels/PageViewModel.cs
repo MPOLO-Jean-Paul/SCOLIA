@@ -106,6 +106,42 @@ public abstract class PageViewModel : Observable
         Raise(nameof(NotPhone));
     }
 
+    /// <summary>L'écran quitte l'affichage : il rend les actions qu'il avait réservées.</summary>
+    public virtual void Left() { }
+
+    /// <summary>L'écran revient à l'affichage, par exemple avec le bouton Retour.</summary>
+    public virtual void Entered() { }
+
+    /// <summary>
+    /// Recharge après une écriture d'un autre poste : sans notification, et la ligne choisie reste choisie
+    /// (retrouvée par son identifiant dans la nouvelle liste).
+    /// </summary>
+    public async Task RefreshQuietlyAsync()
+    {
+        var selected = GetType().GetProperty("Selected");
+        var before = selected?.GetValue(this);
+        var key = Identity(before);
+        await RefreshAsync();
+        if (selected is not { CanWrite: true } || before is null || key is null) return;
+        foreach (var property in GetType().GetProperties())
+        {
+            if (property.PropertyType == typeof(string) || !typeof(System.Collections.IEnumerable).IsAssignableFrom(property.PropertyType) || property.GetIndexParameters().Length > 0) continue;
+            if (property.GetValue(this) is not System.Collections.IEnumerable items) continue;
+            var match = items.Cast<object?>().FirstOrDefault(o => o is not null && o.GetType() == before.GetType() && Identity(o) == key);
+            if (match is null) continue;
+            selected.SetValue(this, match);
+            return;
+        }
+    }
+
+    private static string? Identity(object? row)
+    {
+        if (row is null) return null;
+        foreach (var name in new[] { "Id", "EnrollmentId", "StudentId", "Number", "Matricule", "Key" })
+            if (row.GetType().GetProperty(name)?.GetValue(row) is { } value) return value.ToString();
+        return null;
+    }
+
     /// <summary>Charge les données depuis le serveur. Chaque écran le redéfinit.</summary>
     public virtual Task LoadAsync() => Task.CompletedTask;
 

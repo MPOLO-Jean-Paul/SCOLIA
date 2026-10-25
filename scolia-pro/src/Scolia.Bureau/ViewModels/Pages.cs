@@ -22,10 +22,18 @@ public sealed class LoginViewModel : Observable
 
     public event Action<SessionDto>? LoggedIn;
 
+    /// <summary>Connexion vérifiée par le serveur : le compte peut être gardé pour une connexion hors ligne.</summary>
+    public event Action<string, string, SessionDto>? Authenticated;
+
     public string UserName { get => userName; set { if (Set(ref userName, value)) Submit.Refresh(); } }
     public string Password { get => password; set { if (Set(ref password, value)) Submit.Refresh(); } }
     public string? Error { get => error; set { if (Set(ref error, value)) Raise(nameof(HasError)); } }
     public bool HasError => !string.IsNullOrEmpty(error);
+
+    private string? notice;
+    /// <summary>Information au-dessus du formulaire : l'ordinateur principal est injoignable, travail hors ligne possible.</summary>
+    public string? Notice { get => notice; set { if (Set(ref notice, value)) Raise(nameof(HasNotice)); } }
+    public bool HasNotice => !string.IsNullOrEmpty(notice);
 
     /// <summary>Nom de l'établissement, connu dès le démarrage du serveur : il titre l'écran de connexion.</summary>
     public string SchoolName { get => schoolName; set { if (Set(ref schoolName, value)) { Raise(nameof(TitleText)); } } }
@@ -113,8 +121,24 @@ public sealed class LoginViewModel : Observable
         try
         {
             var session = await api.LoginAsync(UserName.Trim(), Password);
+            Authenticated?.Invoke(UserName.Trim(), Password, session);
             Password = string.Empty;
             LoggedIn?.Invoke(session);
+        }
+        catch (Exception ex) when (ex is OfflineException or HttpRequestException or TaskCanceledException)
+        {
+            // Ordinateur principal injoignable : le dernier compte connecté sur cet appareil peut travailler hors ligne.
+            var store = api.Offline ?? new Infrastructure.OfflineStore(api.Server);
+            if (store.OfflineLogin(UserName.Trim(), Password) is { } saved)
+            {
+                api.Offline = store;
+                Authenticated?.Invoke(UserName.Trim(), Password, saved);
+                Password = string.Empty;
+                LoggedIn?.Invoke(saved);
+            }
+            else Error = store.HasCredential
+                ? "Ordinateur principal injoignable. Hors ligne, seul le dernier compte connecté sur cet appareil peut s'ouvrir, avec son mot de passe."
+                : "Ordinateur principal injoignable. Une première connexion en ligne est nécessaire pour travailler ensuite hors ligne.";
         }
         catch (ApiException locked) when (locked.RetryAfterSeconds is > 0) { StartLock(locked.RetryAfterSeconds.Value, DateTime.UtcNow); }
         catch (ApiException ex) { Error = ex.Message; }

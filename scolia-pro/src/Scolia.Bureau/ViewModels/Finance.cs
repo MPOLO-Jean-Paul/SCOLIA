@@ -259,7 +259,8 @@ public sealed class CashPage : PageViewModel
         form.AddDay("date", "Date de l'arrêté", today, required: true);
         form.Add("compte", "Espèces comptées", FieldKind.Amount, required: true);
         form.Add("note", "Observation (obligatoire en cas d'écart)", FieldKind.Multiline);
-        if (await shell.Ask(form) && shell.Current is CashPage page) await page.RefreshAsync();
+        // L'arrêté de caisse se fait sur un seul poste à la fois.
+        if (await shell.Sync.WithLockAsync("caisse:arrete", "Arrêté de caisse", () => shell.Ask(form)) && shell.Current is CashPage page) await page.RefreshAsync();
     }
 }
 

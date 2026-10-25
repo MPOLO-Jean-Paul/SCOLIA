@@ -36,6 +36,16 @@ public sealed class ShellViewModel : Observable
         Setup = new SetupViewModel(this);
         Connection = new ConnectionViewModel(this);
         Login.LoggedIn += s => _ = OpenSessionAsync(s);
+        Sync = new SyncCenter(this, api);
+        // Connexion réussie : le compte est gardé sur l'appareil pour une connexion hors ligne, et en mémoire pour
+        // rouvrir seul la session quand l'ordinateur principal revient après une coupure.
+        Login.Authenticated += (user, secret, s) =>
+        {
+            api.Offline = new OfflineStore(api.Server) { User = s.UserName };
+            api.Offline.SaveCredential(user, secret, s);
+            Sync.Remember(user, secret);
+        };
+        Sync.RemoteChange += OnRemoteChange;
         Backstage = new BackstageViewModel(this);
         ReloadCommand = new AsyncCommand(() => Run(Reload));
         SearchCommand = new RelayCommand(ShowSearch);
@@ -72,6 +82,41 @@ public sealed class ShellViewModel : Observable
     private Avalonia.Media.Imaging.Bitmap? schoolLogo;
 
     /// <summary>Logo de l'établissement, servi par le serveur : il figure sur l'écran de connexion et en tête du volet.</summary>
+    /// <summary>Travail à plusieurs postes et hors ligne : direct, présence, verrous, envois en attente.</summary>
+    public SyncCenter Sync { get; }
+
+    /// <summary>La vue dit si l'utilisateur est en train d'écrire : une mise à jour venue d'ailleurs attend alors.</summary>
+    public Func<bool>? IsTyping { get; set; }
+
+    private bool remoteWaiting;
+
+    /// <summary>Des données ont changé ailleurs pendant une saisie : un bouton discret propose de les afficher.</summary>
+    public bool RemoteWaiting { get => remoteWaiting; private set => Set(ref remoteWaiting, value); }
+
+    public AsyncCommand ApplyRemoteCommand => applyRemote ??= new AsyncCommand(RefreshQuietlyAsync);
+    private AsyncCommand? applyRemote;
+
+    /// <summary>
+    /// Écriture d'un autre poste : l'écran se met à jour seul, en gardant la ligne choisie et la position.
+    /// Pendant une saisie, une fenêtre ouverte ou un encaissement, rien ne bouge : la mise à jour attend.
+    /// </summary>
+    private void OnRemoteChange(LiveEventDto change)
+    {
+        knownRevision = Math.Max(knownRevision, change.Revision);
+        if (MustWait) RemoteWaiting = true;
+        else _ = RefreshQuietlyAsync();
+    }
+
+    private bool MustWait => HasDialog || BackstageOpen || HasSheet || PhoneMenuOpen || IsTyping?.Invoke() == true
+        || Current is CashierPage { HasSelection: true } or BatchPaymentPage;
+
+    /// <summary>Recharge l'écran sans notification ni perte de la ligne choisie.</summary>
+    public async Task RefreshQuietlyAsync()
+    {
+        RemoteWaiting = false;
+        if (Current is { } page) await page.RefreshQuietlyAsync();
+    }
+
     public Avalonia.Media.Imaging.Bitmap? SchoolLogo
     {
         get => schoolLogo;
@@ -181,7 +226,11 @@ public sealed class ShellViewModel : Observable
         get => current;
         private set
         {
+            var previous = current;
             if (!Set(ref current, value)) return;
+            previous?.Left();
+            value?.Entered();
+            RemoteWaiting = false;
             Raise(nameof(HasPage));
             Raise(nameof(DesktopPage));
             Raise(nameof(PhonePage));
@@ -193,7 +242,18 @@ public sealed class ShellViewModel : Observable
     public bool HasPage => current is not null;
 
     /// <summary>Boîte de dialogue ouverte : formulaire, recherche. Null quand aucune n'est affichée.</summary>
-    public object? Dialog { get => dialog; private set { if (Set(ref dialog, value)) { Raise(nameof(HasDialog)); Raise(nameof(Working)); } } }
+    public object? Dialog
+    {
+        get => dialog;
+        private set
+        {
+            if (!Set(ref dialog, value)) return;
+            Raise(nameof(HasDialog));
+            Raise(nameof(Working));
+            // La fenêtre se ferme : les mises à jour venues d'un autre poste pendant la saisie s'affichent.
+            if (value is null && remoteWaiting) _ = RefreshQuietlyAsync();
+        }
+    }
     public bool HasDialog => dialog is not null;
 
     public bool BackstageOpen { get => backstage; private set => Set(ref backstage, value); }
@@ -273,6 +333,7 @@ public sealed class ShellViewModel : Observable
                 await JoinAsync(moved);
                 return;
             }
+            if (OfferOfflineEntry(saved.School ?? string.Empty)) return;
             ShowChooser(servers, $"Le serveur de {saved.School} (ordinateur {saved.Machine}) ne répond pas. Allumez-le ou ouvrez SCOLIA dessus, puis recherchez à nouveau.");
             return;
         }
@@ -311,6 +372,23 @@ public sealed class ShellViewModel : Observable
         // Aucun serveur sur le réseau : cet ordinateur devient celui de l'établissement.
         ConnectionStore.Save(new ConnectionSettings(ConnectionSettings.Local));
         await ShowEntryAsync();
+    }
+
+    /// <summary>
+    /// Ordinateur principal injoignable au lancement : si un compte s'est déjà connecté sur cet appareil, la connexion
+    /// hors ligne est proposée. Le travail continue sur les données gardées, et part au retour du serveur.
+    /// </summary>
+    private bool OfferOfflineEntry(string school)
+    {
+        var store = new OfflineStore(api.Server);
+        if (!store.HasCredential) return false;
+        api.Offline = store;
+        if (school.Length > 0) Login.SchoolName = school;
+        Login.Notice = "L'ordinateur principal ne répond pas. Connectez-vous avec le dernier compte utilisé sur cet appareil pour travailler hors ligne : tout sera envoyé à son retour.";
+        IsSetupRequired = false;
+        ChoosingServer = false;
+        Status = "Hors ligne : connexion avec les données de cet appareil.";
+        return true;
     }
 
     private void ShowChooser(IReadOnlyList<DiscoveredServer> servers, string message)
@@ -407,7 +485,7 @@ public sealed class ShellViewModel : Observable
         Status = ready ? $"Serveur prêt : {api.Server}" : "Le serveur SCOLIA ne répond pas.";
         if (!ready)
         {
-            if (!IsServerComputer)
+            if (!IsServerComputer && !OfferOfflineEntry(Login.SchoolName))
                 ShowChooser([], "Le serveur de l'établissement ne répond pas. Vérifiez que l'ordinateur principal est allumé, puis recherchez à nouveau.");
             return;
         }
@@ -439,6 +517,10 @@ public sealed class ShellViewModel : Observable
         openingCompact = compact;
         session = s;
         knownRevision = -1;
+        // Données gardées sur l'appareil, propres à ce compte ; puis le direct avec les autres postes.
+        api.Offline ??= new OfflineStore(api.Server);
+        api.Offline.User = s.UserName;
+        Sync.Start();
         OpeningTitle = IsSetupRequired ? "Configuration terminée" : $"Bienvenue, {s.DisplayName}";
         OpeningProgress = 0;
         Opening = true;
@@ -578,6 +660,8 @@ public sealed class ShellViewModel : Observable
         running++;
         _ = ShowWorkingLaterAsync();
         try { await work(); }
+        // Opération gardée hors ligne : ce n'est pas une erreur, la notification vient de la file d'envoi.
+        catch (OfflineQueuedException) { }
         catch (ApiException ex) { Notify(ex.Message, SoundKind.Error); }
         catch (HttpRequestException) { Notify("Le serveur SCOLIA ne répond pas. Vérifiez qu'il est lancé sur ce poste.", SoundKind.Error); }
         catch (Exception ex) when (ex is not OperationCanceledException) { Notify($"Erreur inattendue : {ex.Message}", SoundKind.Error); }
@@ -616,8 +700,8 @@ public sealed class ShellViewModel : Observable
             return;
         }
         knownRevision = latest;
-        if (HasDialog || BackstageOpen || Current is CashierPage) Notify("Des données ont changé sur un autre poste. Appuyez sur F5 pour actualiser.");
-        else await Run(Reload);
+        if (MustWait) RemoteWaiting = true;
+        else await RefreshQuietlyAsync();
     }
 
     private async Task<long?> ReadRevisionAsync()
@@ -951,6 +1035,8 @@ public sealed class ShellViewModel : Observable
     {
         try { await api.LogoutAsync(); }
         catch (HttpRequestException) { }
+        Sync.Stop();
+        Sync.Forget();
         session = null;
         Tabs.Clear();
         ClearHistory();

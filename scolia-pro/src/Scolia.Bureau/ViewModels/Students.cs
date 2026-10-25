@@ -437,7 +437,8 @@ public static class StudentForms
             return true;
         });
         AddIdentityFields(form, s);
-        return await shell.Ask(form);
+        // Un seul poste modifie un dossier à la fois : les autres voient qui le fait.
+        return await shell.Sync.WithLockAsync($"dossier:{s.Id}", $"Modification du dossier {s.Matricule}", () => shell.Ask(form));
     }
 
     /// <summary>

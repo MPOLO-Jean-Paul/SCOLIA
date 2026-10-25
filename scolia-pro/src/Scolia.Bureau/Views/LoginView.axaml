@@ -54,6 +54,9 @@
         </StackPanel>
       </Grid>
 
+      <Border Background="{DynamicResource OrangeSoftBrush}" CornerRadius="8" Padding="12,9" IsVisible="{Binding HasNotice}">
+        <TextBlock Text="{Binding Notice}" TextWrapping="Wrap" />
+      </Border>
       <Border Background="{DynamicResource RedSoftBrush}" CornerRadius="8" Padding="12,9" IsVisible="{Binding HasError}">
         <TextBlock Text="{Binding Error}" Foreground="{DynamicResource ToneRed}" TextWrapping="Wrap" />
       </Border>

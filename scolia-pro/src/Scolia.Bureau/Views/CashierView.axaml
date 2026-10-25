@@ -1,5 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mi="using:Material.Icons.Avalonia"
              xmlns:infra="using:Scolia.Bureau.Infrastructure"
              x:Class="Scolia.Bureau.Views.CashierView">
   <Grid ColumnDefinitions="2*,3*" infra:Adaptive.StackBelow="760">
@@ -33,6 +34,13 @@
               </StackPanel>
             </Grid>
           </StackPanel>
+          <!-- Un autre poste encaisse déjà cet apprenant : l'action est bloquée ici, sans risque de double reçu -->
+          <Border Background="{DynamicResource OrangeSoftBrush}" CornerRadius="10" Padding="12,10" IsVisible="{Binding IsLocked}">
+            <Grid ColumnDefinitions="Auto,*">
+              <mi:MaterialIcon Kind="LockOutline" Width="20" Height="20" Foreground="{DynamicResource ToneOrange}" Margin="0,0,10,0" VerticalAlignment="Top" />
+              <TextBlock Grid.Column="1" Text="{Binding LockedBy}" TextWrapping="Wrap" />
+            </Grid>
+          </Border>
           <TextBlock Text="{Binding Hint}" Classes="error" IsVisible="{Binding HasHint}" TextWrapping="Wrap" />
         </StackPanel>
       </Border>
@@ -111,7 +119,7 @@
               <DataGridTextColumn Header="Reste après" Binding="{Binding Remaining}" Width="Auto" MinWidth="140" />
             </DataGrid.Columns>
           </DataGrid>
-          <Button Classes="primary" Content="Encaisser et imprimer le reçu" Command="{Binding Pay}" HorizontalAlignment="Right" Height="42" />
+          <Button Classes="primary" Content="Encaisser et imprimer le reçu" Command="{Binding Pay}" IsEnabled="{Binding CanPay}" HorizontalAlignment="Right" Height="42" />
         </StackPanel>
       </Border>
 

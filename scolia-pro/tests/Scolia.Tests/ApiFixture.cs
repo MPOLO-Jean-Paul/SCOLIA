@@ -26,7 +26,7 @@ public sealed class ScoliaApp : WebApplicationFactory<Program>
 
     public HttpClient Client()
     {
-        var client = CreateClient(new WebApplicationFactoryClientOptions { HandleCookies = true, AllowAutoRedirect = false });
+        var client = CreateClient(new WebApplicationFactoryClientOptions { HandleCookies = true, AllowAutoRedirect = false, BaseAddress = ClientOptions.BaseAddress });
         client.DefaultRequestHeaders.Add("X-Scolia", "1");
         return client;
     }

@@ -16,5 +16,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\Scolia.Api\Scolia.Api.csproj" />
+    <!-- Le client du poste et du téléphone, pour éprouver la coupure du serveur et l'envoi au retour. -->
+    <ProjectReference Include="..\..\src\Scolia.Bureau\Scolia.Bureau.csproj" Aliases="bureau" />
   </ItemGroup>
 </Project>

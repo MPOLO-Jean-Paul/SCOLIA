@@ -265,6 +265,8 @@ public sealed class FormViewModel : Observable
                 if (PlaysSound) Finished?.Invoke(true);
             }
         }
+        // Hors ligne : l'opération est gardée sur l'appareil, la fenêtre se ferme ; la file d'envoi le signale.
+        catch (OfflineQueuedException) { Close(false); }
         catch (ApiException ex) { Error = ex.Message; }
         catch (HttpRequestException) { Error = "Le serveur SCOLIA ne répond pas. Vérifiez qu'il est lancé sur ce poste."; }
         catch (Exception ex) when (ex is not OperationCanceledException) { Error = $"Erreur inattendue : {ex.Message}"; }
