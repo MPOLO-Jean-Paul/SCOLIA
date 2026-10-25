@@ -247,6 +247,45 @@
     <Setter Property="Padding" Value="0" />
   </Style>
   <!-- Champ étiqueté d'une barre de filtres : petit libellé au-dessus, la saisie en dessous -->
+  <!-- Téléphone : les filtres d'un bandeau prennent toute la largeur de l'écran -->
+  <Style Selector="Border.band">
+    <Setter Property="infra:PhoneFields.Enabled" Value="True" />
+  </Style>
+
+  <!-- Téléphone : une carte par ligne de tableau -->
+  <Style Selector="Border.phonecard">
+    <Setter Property="Background" Value="{DynamicResource GroupBrush}" />
+    <Setter Property="CornerRadius" Value="{StaticResource RadiusCard}" />
+    <Setter Property="Padding" Value="14,12,8,12" />
+    <Setter Property="Margin" Value="0,0,0,8" />
+    <Setter Property="BorderThickness" Value="1.5" />
+    <Setter Property="BorderBrush" Value="Transparent" />
+  </Style>
+  <Style Selector="Border.phonecard.selected">
+    <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+  </Style>
+  <Style Selector="TextBlock.phonetitle">
+    <Setter Property="FontWeight" Value="SemiBold" />
+  </Style>
+  <Style Selector="TextBlock.phonesub">
+    <Setter Property="Foreground" Value="{DynamicResource Text2Brush}" />
+    <Setter Property="FontSize" Value="{DynamicResource FsSmall}" />
+  </Style>
+  <Style Selector="TextBlock.phonelabel">
+    <Setter Property="Foreground" Value="{DynamicResource Text2Brush}" />
+    <Setter Property="FontSize" Value="{DynamicResource FsSmall}" />
+    <Setter Property="Margin" Value="0,1,0,0" />
+  </Style>
+  <Style Selector="Button.phonemore">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Padding" Value="6" />
+    <Setter Property="MinWidth" Value="40" />
+    <Setter Property="MinHeight" Value="36" />
+    <Setter Property="Margin" Value="4,-6,0,0" />
+  </Style>
+
   <Style Selector="StackPanel.field">
     <Setter Property="Spacing" Value="4" />
     <Setter Property="Margin" Value="0,0,12,6" />
@@ -326,6 +365,7 @@
   <Style Selector="DataGrid">
     <Setter Property="infra:GridPriority.Adaptive" Value="True" />
     <Setter Property="infra:RowMenu.Enabled" Value="True" />
+    <Setter Property="infra:PhoneCards.Enabled" Value="True" />
     <Setter Property="Background" Value="{DynamicResource GroupBrush}" />
     <Setter Property="BorderThickness" Value="0" />
     <Setter Property="CornerRadius" Value="{StaticResource RadiusCard}" />

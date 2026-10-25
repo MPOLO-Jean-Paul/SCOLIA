@@ -2,12 +2,20 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:Scolia.Bureau.ViewModels"
              xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:views="using:Scolia.Bureau.Views"
              x:Class="Scolia.Bureau.Views.MainView"
              x:DataType="vm:ShellViewModel"
              KeyDown="OnKeyDown">
   <UserControl.Styles>
     <Style Selector="TransitioningContentControl#PageHost"><Setter Property="Margin" Value="20,8,20,16" /></Style>
-    <Style Selector="LayoutTransformControl.phone TransitioningContentControl#PageHost"><Setter Property="Margin" Value="10,4,10,14" /></Style>
+    <!-- Notification : en bas à gauche sur l'ordinateur, au-dessus des onglets sur le téléphone -->
+    <Style Selector="Border#Snackbar"><Setter Property="Margin" Value="24" /></Style>
+    <Style Selector="LayoutTransformControl.phone Border#Snackbar">
+      <Setter Property="Margin" Value="12,0,12,78" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+    </Style>
+    <!-- Fenêtre de dialogue sur le téléphone : presque tout l'écran, pour des champs lisibles -->
+    <Style Selector="LayoutTransformControl.phone Border.scrim > ContentControl"><Setter Property="Margin" Value="8,12" /></Style>
     <!-- Indicateur de traitement : l'icône tourne tant que le traitement dure -->
     <Style Selector="mi|MaterialIcon.spin">
       <Setter Property="RenderTransform"><RotateTransform /></Setter>
@@ -108,8 +116,11 @@
       </StackPanel>
     </Grid>
 
-    <Grid x:Name="AppArea" ColumnDefinitions="Auto,*" RowDefinitions="*,Auto" IsVisible="{Binding ShowApp}">
+    <Grid x:Name="AppArea" IsVisible="{Binding ShowApp}">
       <Grid.RenderTransform><TranslateTransform /></Grid.RenderTransform>
+
+      <!-- Ordinateur : volet, page et barre d'état -->
+      <Grid x:Name="DesktopArea" ColumnDefinitions="Auto,*" RowDefinitions="*,Auto" IsVisible="{Binding !Phone}">
 
       <!-- Volet latéral flottant, comme les Réglages de macOS : recherche, compte, puis chaque outil avec son icône -->
       <Border Grid.Column="0" Classes="sidebar" Width="250" Margin="8,8,0,8" IsVisible="{Binding SidebarShown}">
@@ -234,18 +245,10 @@
         </Border>
         <!-- Sur téléphone, la page entière défile ; sur l'ordinateur, chaque page garde sa hauteur et ses tableaux défilent -->
         <ScrollViewer x:Name="PageScroll" Grid.Row="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="{Binding PageScroll}">
-          <TransitioningContentControl x:Name="PageHost" Content="{Binding Current}" />
+          <TransitioningContentControl x:Name="PageHost" Content="{Binding DesktopPage}" />
         </ScrollViewer>
       </Grid>
       <ProgressBar Grid.Column="1" IsIndeterminate="True" IsVisible="{Binding Current.Busy}" VerticalAlignment="Top" Height="2" MinHeight="2" />
-
-      <!-- Compte et réglages du poste : couvre la fenêtre -->
-      <ContentControl Grid.ColumnSpan="2" Grid.RowSpan="2" Content="{Binding Backstage}" IsVisible="{Binding BackstageOpen}" Background="{DynamicResource BgBrush}" />
-
-      <!-- Notification discrète, en bas -->
-      <Border Grid.Column="1" Classes="snackbar" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="24" IsVisible="{Binding HasNotice}">
-        <TextBlock Text="{Binding Notice}" Foreground="{DynamicResource BgBrush}" TextWrapping="Wrap" />
-      </Border>
 
       <!-- Barre d'état : statut, serveur, zoom -->
       <Border Grid.Row="1" Grid.ColumnSpan="2" Classes="statusbar" IsVisible="{Binding ShowStatusBar}">
@@ -263,16 +266,28 @@
           </StackPanel>
         </Grid>
       </Border>
+      </Grid>
+
+      <!-- Téléphone : son propre cadre, avec ses onglets en bas et ses pages dessinées pour le petit écran -->
+      <views:PhoneFrame IsVisible="{Binding Phone}" />
+
+      <!-- Compte et réglages du poste : couvre la fenêtre -->
+      <ContentControl Content="{Binding Backstage}" IsVisible="{Binding BackstageOpen}" Background="{DynamicResource BgBrush}" />
+
+      <!-- Notification discrète, en bas -->
+      <Border x:Name="Snackbar" Classes="snackbar" HorizontalAlignment="Left" VerticalAlignment="Bottom" IsVisible="{Binding HasNotice}">
+        <TextBlock Text="{Binding Notice}" Foreground="{DynamicResource BgBrush}" TextWrapping="Wrap" />
+      </Border>
 
       <!-- Boîte de dialogue modale : elle couvre toute la fenêtre -->
-      <Border Grid.ColumnSpan="2" Grid.RowSpan="2" Classes="scrim" IsVisible="{Binding HasDialog}">
+      <Border Classes="scrim" IsVisible="{Binding HasDialog}">
         <ContentControl Content="{Binding Dialog}" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="24" RenderTransformOrigin="50%,50%">
           <ContentControl.RenderTransform><ScaleTransform /></ContentControl.RenderTransform>
         </ContentControl>
       </Border>
 
       <!-- Traitement qui dure : un indicateur au centre, la fenêtre reste visible mais n'accepte pas de second clic -->
-      <Border Grid.ColumnSpan="2" Grid.RowSpan="2" Classes="working" Background="#14000000" IsVisible="{Binding Working}">
+      <Border Classes="working" Background="#14000000" IsVisible="{Binding Working}">
         <Border Classes="card" HorizontalAlignment="Center" VerticalAlignment="Center" Padding="22,16" BoxShadow="0 8 28 0 #33000000">
           <StackPanel Orientation="Horizontal" Spacing="12">
             <mi:MaterialIcon Kind="Loading" Classes="spin" Width="22" Height="22" Foreground="{DynamicResource AccentBrush}" />

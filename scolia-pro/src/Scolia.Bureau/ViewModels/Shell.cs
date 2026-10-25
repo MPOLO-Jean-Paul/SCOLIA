@@ -183,6 +183,10 @@ public sealed class ShellViewModel : Observable
         {
             if (!Set(ref current, value)) return;
             Raise(nameof(HasPage));
+            Raise(nameof(DesktopPage));
+            Raise(nameof(PhonePage));
+            PhoneMenuOpen = false;
+            Sheet = null;
             MarkNavigation();
         }
     }
@@ -696,6 +700,7 @@ public sealed class ShellViewModel : Observable
         // La barre latérale suit le rôle et le thème (ses couleurs sont lues au moment de la construction).
         Navigation = IsLoggedIn ? Sidebar.Build(this) : [];
         Raise(nameof(Navigation));
+        RebuildPhoneTabs();
         MarkNavigation();
     }
 
@@ -724,6 +729,7 @@ public sealed class ShellViewModel : Observable
         CurrentIconBrush = match?.Brush ?? ThemeBrush.Get("ToneNeutral");
         Raise(nameof(CurrentIcon));
         Raise(nameof(CurrentIconBrush));
+        Raise(nameof(PhoneMenuSelected));
     }
 
     /// <summary>Icône de couleur affichée devant le titre de la page, comme dans les Réglages de macOS.</summary>
@@ -761,8 +767,78 @@ public sealed class ShellViewModel : Observable
             if (!Set(ref phone, value)) return;
             Raise(nameof(ShowStatusBar));
             Raise(nameof(PageScroll));
+            Raise(nameof(DesktopPage));
+            Raise(nameof(PhonePage));
             Current?.PhoneChanged();
         }
+    }
+
+    /// <summary>Page montrée dans la fenêtre de l'ordinateur : aucune sur le téléphone, qui a son propre cadre.</summary>
+    public PageViewModel? DesktopPage => phone ? null : current;
+
+    /// <summary>Page montrée dans le cadre du téléphone : chaque vue y est construite dans sa forme de téléphone.</summary>
+    public PageViewModel? PhonePage => phone ? current : null;
+
+    /// <summary>Onglets du bas de l'écran du téléphone : l'accueil et les outils du quotidien permis par le rôle.</summary>
+    public IReadOnlyList<NavItemVm> PhoneTabs { get; private set; } = [];
+
+    private static readonly Type[] PhoneTabOrder =
+        [typeof(HomePage), typeof(StudentsPage), typeof(CashierPage), typeof(ReceiptsPage), typeof(MonthlyPage), typeof(DebtorsPage), typeof(CashPage)];
+
+    private void RebuildPhoneTabs()
+    {
+        var items = Navigation.SelectMany(g => g.Items).ToList();
+        PhoneTabs = PhoneTabOrder.Select(t => items.FirstOrDefault(i => i.PageType == t)).OfType<NavItemVm>().Take(4).ToList();
+        Raise(nameof(PhoneTabs));
+    }
+
+    private bool phoneMenuOpen;
+
+    /// <summary>Menu du téléphone : tous les outils, rangés par métier, en plein écran.</summary>
+    public bool PhoneMenuOpen
+    {
+        get => phoneMenuOpen;
+        set
+        {
+            if (!Set(ref phoneMenuOpen, value)) return;
+            Raise(nameof(PhoneMenuSelected));
+        }
+    }
+
+    /// <summary>L'onglet « Menu » est éclairé quand le menu est ouvert, ou quand la page n'a pas d'onglet à elle.</summary>
+    public bool PhoneMenuSelected => phoneMenuOpen || (current is not null && !PhoneTabs.Any(t => t.IsSelected));
+
+    public void TogglePhoneMenu()
+    {
+        Sheet = null;
+        PhoneMenuOpen = !PhoneMenuOpen;
+    }
+
+    private SheetVm? sheet;
+
+    /// <summary>Feuille d'actions ouverte en bas de l'écran du téléphone, ou null.</summary>
+    public SheetVm? Sheet { get => sheet; private set { if (Set(ref sheet, value)) Raise(nameof(HasSheet)); } }
+    public bool HasSheet => sheet is not null;
+
+    public void CloseSheet() => Sheet = null;
+
+    /// <summary>Ouvre une feuille d'actions ; chaque action referme la feuille avant de s'exécuter.</summary>
+    public void ShowSheet(string title, string subtitle, IEnumerable<(string Label, Material.Icons.MaterialIconKind Icon, System.Windows.Input.ICommand Command, bool Danger, bool Emphasis)> items)
+    {
+        var list = items.Select(i => new SheetItemVm(i.Label, i.Icon, new RelayCommand(() =>
+        {
+            Sheet = null;
+            if (i.Command.CanExecute(null)) i.Command.Execute(null);
+        }), i.Danger, i.Emphasis)).ToList();
+        if (list.Count == 0) return;
+        Sheet = new SheetVm(title, subtitle, list);
+    }
+
+    /// <summary>Feuille des actions de la page affichée, depuis le bouton « … » de la barre du téléphone.</summary>
+    public void ShowPageSheet()
+    {
+        if (current is not { } page) return;
+        ShowSheet(page.Heading, page.Subtitle, page.HeaderActions.Select(a => (a.Label, a.Icon, a.Command, a.Danger, a.IsPrimary)));
     }
 
     /// <summary>Défilement de la page entière : sur téléphone seulement.</summary>
@@ -823,6 +899,9 @@ public sealed class ShellViewModel : Observable
         ClearHistory();
         Navigation = [];
         Raise(nameof(Navigation));
+        RebuildPhoneTabs();
+        PhoneMenuOpen = false;
+        Sheet = null;
         SelectedTab = null;
         Current = null;
         BackstageOpen = false;

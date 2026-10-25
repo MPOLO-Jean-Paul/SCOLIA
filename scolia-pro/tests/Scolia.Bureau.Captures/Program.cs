@@ -59,6 +59,47 @@ void Save(Window window, string name)
     if (frame is null) throw new InvalidOperationException($"Rendu indisponible pour {name}.");
     frame.Save(Path.Combine(output, name));
     Console.WriteLine($"capturé : {name} ({frame.PixelSize.Width}x{frame.PixelSize.Height})");
+    if (Preferences.MobileLayout) Overflow(window, name);
+}
+
+// Téléphone : relève ce qui sort de l'écran sur le côté et les textes coupés sans points de suspension.
+// Un tableau ou une zone qui défile en largeur compte aussi : sur un téléphone, rien ne doit défiler de côté.
+void Overflow(Window window, string name)
+{
+    var width = window.Bounds.Width;
+    var found = new List<string>();
+    foreach (var visual in window.GetVisualDescendants().OfType<Control>())
+    {
+        if (!visual.IsEffectivelyVisible || visual.Bounds.Width <= 0) continue;
+        if (visual is Avalonia.Controls.Primitives.Popup || visual.GetVisualAncestors().OfType<Avalonia.Controls.Primitives.Popup>().Any()) continue;
+        // L'intérieur d'un champ défile seul avec le texte saisi : ce n'est pas un débordement de la page.
+        if (visual.GetVisualAncestors().Any(a => a is TextBox)) continue;
+        if (visual.TransformToVisual(window) is not { } m) continue;
+        var rect = new Rect(visual.Bounds.Size).TransformToAABB(m);
+        var outside = rect.Right > width + 1 || rect.X < -1;
+        var parentOutside = visual.GetVisualParent() is Control parent && parent.TransformToVisual(window) is { } pm
+            && new Rect(parent.Bounds.Size).TransformToAABB(pm) is var pr && (pr.Right > width + 1 || pr.X < -1);
+        if (outside && !parentOutside) found.Add($"sort de l'écran : {Describe(visual)} de {rect.X:0} à {rect.Right:0}");
+        if (visual is ScrollViewer { HorizontalScrollBarVisibility: not Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled } sv
+            && sv.Extent.Width > sv.Viewport.Width + 1)
+            found.Add($"défile en largeur : {Describe(visual)} ({sv.Extent.Width:0} pour {sv.Viewport.Width:0})");
+        if (visual is TextBlock { TextTrimming: var trim, TextWrapping: Avalonia.Media.TextWrapping.NoWrap } tb
+            && trim == Avalonia.Media.TextTrimming.None && !string.IsNullOrEmpty(tb.Text)
+            && tb.TextLayout.WidthIncludingTrailingWhitespace > tb.Bounds.Width + 1.5)
+            found.Add($"texte coupé : « {tb.Text} » ({tb.TextLayout.WidthIncludingTrailingWhitespace:0} pour {tb.Bounds.Width:0})");
+    }
+    var report = Path.Combine(output, "debordements.txt");
+    File.AppendAllLines(report, found.Count == 0 ? [$"{name} : aucun débordement"] : [$"{name} : {found.Count} débordement(s)", .. found.Distinct().Select(f => "  " + f)]);
+    if (found.Count > 0) Console.WriteLine($"  {found.Count} débordement(s)");
+}
+
+static string Describe(Control c)
+{
+    var text = c as TextBlock is { Text: { Length: > 0 } t } ? $" « {(t.Length > 40 ? t[..40] + "…" : t)} »" : string.Empty;
+    var classes = c.Classes.Count > 0 ? "." + string.Join(".", c.Classes.Where(k => !k.StartsWith(':'))) : string.Empty;
+    var named = string.IsNullOrEmpty(c.Name) ? string.Empty : "#" + c.Name;
+    var owner = c.GetVisualAncestors().OfType<UserControl>().FirstOrDefault()?.GetType().Name ?? "";
+    return $"{owner} {c.GetType().Name}{named}{classes}{text}".Trim();
 }
 
 // Même culture que l'application : dates et montants en français.

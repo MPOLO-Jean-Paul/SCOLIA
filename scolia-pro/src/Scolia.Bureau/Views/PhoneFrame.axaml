@@ -1,0 +1,289 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mi="using:Material.Icons.Avalonia"
+             x:Class="Scolia.Bureau.Views.PhoneFrame">
+  <UserControl.Styles>
+    <!-- Barre du haut : retour, titre de la page, recherche et actions -->
+    <Style Selector="Border.phonebar">
+      <Setter Property="Background" Value="{DynamicResource BgBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
+      <Setter Property="BorderThickness" Value="0,0,0,1" />
+      <Setter Property="Padding" Value="4,6,4,6" />
+    </Style>
+    <Style Selector="Button.phoneicon">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
+      <Setter Property="Width" Value="44" />
+      <Setter Property="Height" Value="44" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="CornerRadius" Value="22" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button.phoneicon:pointerover">
+      <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
+    </Style>
+    <Style Selector="Button.phoneicon mi|MaterialIcon">
+      <Setter Property="Width" Value="24" />
+      <Setter Property="Height" Value="24" />
+    </Style>
+
+    <!-- Onglets du bas : icône et libellé, l'onglet actif en couleur -->
+    <Style Selector="Border.phonetabs">
+      <Setter Property="Background" Value="{DynamicResource BgBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
+      <Setter Property="BorderThickness" Value="0,1,0,0" />
+      <Setter Property="Padding" Value="0,4,0,4" />
+    </Style>
+    <Style Selector="Button.phonetab">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="Padding" Value="0,4" />
+      <Setter Property="MinHeight" Value="52" />
+      <Setter Property="CornerRadius" Value="10" />
+    </Style>
+    <Style Selector="Button.phonetab:pointerover">
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
+    <Style Selector="Button.phonetab.selected">
+      <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
+    </Style>
+    <Style Selector="Button.phonetab TextBlock">
+      <Setter Property="FontSize" Value="11" />
+      <Setter Property="HorizontalAlignment" Value="Center" />
+      <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+    </Style>
+    <Style Selector="Button.phonetab.selected TextBlock">
+      <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+
+    <!-- Menu plein écran : chaque outil sur une ligne haute, rangé par métier dans un bloc arrondi -->
+    <Style Selector="Button.phonerow">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+      <Setter Property="Padding" Value="12,0,10,0" />
+      <Setter Property="MinHeight" Value="50" />
+      <Setter Property="CornerRadius" Value="0" />
+      <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+    </Style>
+    <Style Selector="Button.phonerow:pointerover">
+      <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
+    </Style>
+    <Style Selector="Button.phonerow.selected">
+      <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
+    </Style>
+    <Style Selector="Border.phonegroup">
+      <Setter Property="Background" Value="{DynamicResource GroupBrush}" />
+      <Setter Property="CornerRadius" Value="{StaticResource RadiusCard}" />
+      <Setter Property="ClipToBounds" Value="True" />
+    </Style>
+    <Style Selector="TextBlock.phonegrouptitle">
+      <Setter Property="FontSize" Value="{DynamicResource FsSmall}" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
+      <Setter Property="Margin" Value="14,18,0,6" />
+    </Style>
+
+    <!-- Feuille d'actions : elle monte du bas, chaque action est une ligne haute -->
+    <Style Selector="Border.phonesheet">
+      <Setter Property="Background" Value="{DynamicResource BgBrush}" />
+      <Setter Property="CornerRadius" Value="18,18,0,0" />
+      <Setter Property="Padding" Value="10,8,10,14" />
+      <Setter Property="VerticalAlignment" Value="Bottom" />
+      <Setter Property="BoxShadow" Value="0 -4 24 0 #33000000" />
+    </Style>
+    <Style Selector="Button.sheetitem">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Left" />
+      <Setter Property="Padding" Value="12,0" />
+      <Setter Property="MinHeight" Value="50" />
+      <Setter Property="CornerRadius" Value="12" />
+      <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+    </Style>
+    <Style Selector="Button.sheetitem:pointerover">
+      <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
+    </Style>
+    <Style Selector="Button.sheetitem.danger">
+      <Setter Property="Foreground" Value="{DynamicResource ToneRed}" />
+    </Style>
+    <Style Selector="Button.sheetitem.emphasis TextBlock">
+      <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+  </UserControl.Styles>
+
+  <Grid RowDefinitions="Auto,*,Auto">
+    <!-- Barre du haut -->
+    <Border Grid.Row="0" Classes="phonebar">
+      <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+        <Button Classes="phoneicon" Command="{Binding BackCommand}" IsVisible="{Binding CanGoBack}" ToolTip.Tip="Retour">
+          <mi:MaterialIcon Kind="ChevronLeft" />
+        </Button>
+        <Panel Width="44" Height="44" IsVisible="{Binding !CanGoBack}">
+          <Image Source="{Binding SchoolLogo}" IsVisible="{Binding HasSchoolLogo}" Width="30" Height="30" />
+          <Image Source="{DynamicResource ScoliaMark}" IsVisible="{Binding !HasSchoolLogo}" Width="26" Height="26" />
+        </Panel>
+        <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="4,0,0,0">
+          <TextBlock Text="{Binding PhonePage.Heading}" FontSize="17" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+          <TextBlock Text="{Binding PhonePage.Subtitle}" Classes="muted" FontSize="{DynamicResource FsSmall}" TextTrimming="CharacterEllipsis"
+                     IsVisible="{Binding PhonePage.Subtitle, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+        </StackPanel>
+        <Button Grid.Column="2" Classes="phoneicon" Command="{Binding SearchCommand}" ToolTip.Tip="Rechercher">
+          <mi:MaterialIcon Kind="Magnify" />
+        </Button>
+        <Button Grid.Column="3" Classes="phoneicon" Click="OnActionsClick" IsVisible="{Binding PhonePage.HasHeaderActions}" ToolTip.Tip="Actions de la page">
+          <mi:MaterialIcon Kind="DotsHorizontalCircleOutline" />
+        </Button>
+      </Grid>
+    </Border>
+
+    <!-- Page : elle défile en entier, jamais sur le côté -->
+    <ScrollViewer x:Name="PhoneScroll" Grid.Row="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+      <TransitioningContentControl x:Name="PhoneHost" Content="{Binding PhonePage}" Margin="12,12,12,20" />
+    </ScrollViewer>
+    <ProgressBar Grid.Row="1" IsIndeterminate="True" IsVisible="{Binding PhonePage.Busy}" VerticalAlignment="Top" Height="2" MinHeight="2" />
+
+    <!-- Menu : tous les outils, le compte et la déconnexion -->
+    <Border Grid.Row="0" Grid.RowSpan="2" Background="{DynamicResource BgBrush}" IsVisible="{Binding PhoneMenuOpen}">
+      <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+        <StackPanel x:Name="MenuPanel" Margin="12,12,12,20">
+          <Grid ColumnDefinitions="Auto,*" Margin="2,4,0,4">
+            <Panel Width="44" Height="44" Margin="0,0,10,0">
+              <Image Source="{Binding SchoolLogo}" IsVisible="{Binding HasSchoolLogo}" />
+              <Image Source="{DynamicResource ScoliaMark}" IsVisible="{Binding !HasSchoolLogo}" Width="34" Height="34" />
+            </Panel>
+            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+              <TextBlock Text="{Binding SchoolTitle}" FontSize="17" FontWeight="SemiBold" TextWrapping="Wrap" />
+              <TextBlock Text="{Binding SchoolYearLine}" Classes="muted" />
+            </StackPanel>
+          </Grid>
+
+          <Border Classes="phonegroup" Margin="0,12,0,0">
+            <StackPanel>
+              <Button Classes="phonerow" Click="OnAccountClick">
+                <Grid ColumnDefinitions="Auto,*,Auto">
+                  <Border Width="36" Height="36" CornerRadius="18" Background="{DynamicResource ToneNeutral}" Margin="0,0,12,0">
+                    <TextBlock Text="{Binding UserInitials}" FontWeight="SemiBold" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                  </Border>
+                  <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding AccountName}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                    <TextBlock Text="Compte, poste et réglages" Classes="muted" FontSize="{DynamicResource FsSmall}" />
+                  </StackPanel>
+                  <mi:MaterialIcon Grid.Column="2" Kind="ChevronRight" Width="20" Height="20" Foreground="{DynamicResource MutedBrush}" />
+                </Grid>
+              </Button>
+            </StackPanel>
+          </Border>
+
+          <ItemsControl ItemsSource="{Binding Navigation}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate>
+                <StackPanel>
+                  <TextBlock Text="{Binding Title}" Classes="phonegrouptitle" IsVisible="{Binding HasTitle}" />
+                  <Border Classes="phonegroup" Margin="0,0,0,0">
+                    <ItemsControl ItemsSource="{Binding Items}">
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                          <Button Classes="phonerow" Classes.selected="{Binding IsSelected}" Command="{Binding Open}">
+                            <Grid ColumnDefinitions="Auto,*,Auto">
+                              <Border Classes="appicon medium" Background="{Binding Brush}" Margin="0,0,12,0">
+                                <mi:MaterialIcon Kind="{Binding Icon}" />
+                              </Border>
+                              <TextBlock Grid.Column="1" Text="{Binding Label}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                              <mi:MaterialIcon Grid.Column="2" Kind="ChevronRight" Width="20" Height="20" Foreground="{DynamicResource MutedBrush}" />
+                            </Grid>
+                          </Button>
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                  </Border>
+                </StackPanel>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+
+          <Border Classes="phonegroup" Margin="0,18,0,0">
+            <StackPanel>
+              <Button Classes="phonerow" Command="{Binding SearchCommand}">
+                <Grid ColumnDefinitions="Auto,*">
+                  <Border Classes="appicon medium" Background="{DynamicResource ToneNeutral}" Margin="0,0,12,0"><mi:MaterialIcon Kind="Magnify" /></Border>
+                  <TextBlock Grid.Column="1" Text="Rechercher" VerticalAlignment="Center" />
+                </Grid>
+              </Button>
+              <Button Classes="phonerow" Click="OnLogoutClick">
+                <Grid ColumnDefinitions="Auto,*">
+                  <Border Classes="appicon medium" Background="{DynamicResource ToneRed}" Margin="0,0,12,0"><mi:MaterialIcon Kind="Logout" /></Border>
+                  <TextBlock Grid.Column="1" Text="Se déconnecter" VerticalAlignment="Center" Foreground="{DynamicResource ToneRed}" />
+                </Grid>
+              </Button>
+            </StackPanel>
+          </Border>
+          <TextBlock Text="{Binding ServerLine}" Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" TextAlignment="Center" Margin="0,16,0,0" />
+        </StackPanel>
+      </ScrollViewer>
+    </Border>
+
+    <!-- Onglets du bas -->
+    <Border Grid.Row="2" Classes="phonetabs">
+      <Grid x:Name="TabGrid" ColumnDefinitions="*,Auto">
+        <ItemsControl x:Name="Tabs" ItemsSource="{Binding PhoneTabs}">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate><UniformGrid Rows="1" /></ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate>
+              <Button Classes="phonetab" Classes.selected="{Binding IsSelected}" Command="{Binding Open}">
+                <StackPanel Spacing="2">
+                  <mi:MaterialIcon Kind="{Binding Icon}" Width="24" Height="24" HorizontalAlignment="Center" />
+                  <TextBlock Text="{Binding Label}" />
+                </StackPanel>
+              </Button>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+        <Button Grid.Column="1" x:Name="MenuTab" Classes="phonetab" Classes.selected="{Binding PhoneMenuSelected}" Click="OnMenuClick" MinWidth="72">
+          <StackPanel Spacing="2">
+            <mi:MaterialIcon Kind="Menu" Width="24" Height="24" HorizontalAlignment="Center" />
+            <TextBlock Text="Menu" />
+          </StackPanel>
+        </Button>
+      </Grid>
+    </Border>
+
+    <!-- Feuille d'actions : le voile referme la feuille -->
+    <Grid Grid.RowSpan="3" IsVisible="{Binding HasSheet}">
+      <Border Background="{DynamicResource ScrimBrush}" PointerPressed="OnScrimPressed" />
+      <Border Classes="phonesheet">
+        <StackPanel x:Name="SheetPanel" Spacing="2">
+          <Border Width="40" Height="5" CornerRadius="3" Background="{DynamicResource LineStrongBrush}" HorizontalAlignment="Center" Margin="0,0,0,8" />
+          <TextBlock Text="{Binding Sheet.Title}" FontWeight="SemiBold" TextWrapping="Wrap" Margin="12,0,12,0" />
+          <TextBlock Text="{Binding Sheet.Subtitle}" Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" Margin="12,0,12,6" IsVisible="{Binding Sheet.HasSubtitle}" />
+          <ScrollViewer MaxHeight="440" HorizontalScrollBarVisibility="Disabled">
+            <ItemsControl ItemsSource="{Binding Sheet.Items}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <Button Classes="sheetitem" Classes.danger="{Binding Danger}" Classes.emphasis="{Binding Emphasis}" Command="{Binding Command}">
+                    <StackPanel Orientation="Horizontal" Spacing="14">
+                      <mi:MaterialIcon Kind="{Binding Icon}" Width="22" Height="22" Foreground="{Binding Brush}" />
+                      <TextBlock Text="{Binding Label}" VerticalAlignment="Center" TextWrapping="Wrap" />
+                    </StackPanel>
+                  </Button>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </ScrollViewer>
+          <Button Classes="sheetitem" Click="OnSheetCancel" HorizontalContentAlignment="Center" Margin="0,6,0,0" Background="{DynamicResource GroupBrush}">
+            <TextBlock Text="Annuler" FontWeight="SemiBold" />
+          </Button>
+        </StackPanel>
+      </Border>
+    </Grid>
+  </Grid>
+</UserControl>

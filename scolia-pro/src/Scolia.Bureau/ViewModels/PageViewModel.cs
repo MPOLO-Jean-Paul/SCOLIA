@@ -49,6 +49,7 @@ public abstract class PageViewModel : Observable
             Raise(nameof(VisibleActions));
             Raise(nameof(MoreActions));
             Raise(nameof(HasMoreActions));
+            Raise(nameof(HasHeaderActions));
         };
     }
 
@@ -68,6 +69,7 @@ public abstract class PageViewModel : Observable
 
     /// <summary>Actions de l'en-tête : toutes, sauf celles réservées au clic droit sur une ligne.</summary>
     public IReadOnlyList<ActionVm> HeaderActions => Actions.Where(a => !a.MenuOnly).ToList();
+    public bool HasHeaderActions => Actions.Any(a => !a.MenuOnly);
 
     /// <summary>Nombre de boutons affichés : la place mesurée, ou par défaut trois boutons et le menu pour les autres.</summary>
     private int Shown

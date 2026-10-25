@@ -3,18 +3,23 @@ using Avalonia.Controls.Templates;
 
 namespace Scolia.Bureau.Views;
 
-/// <summary>Associe chaque écran à sa vue par le nom : DashboardPage devient DashboardView, FormViewModel devient FormView.</summary>
+/// <summary>
+/// Associe chaque écran à sa vue par le nom : DashboardPage devient DashboardView, FormViewModel devient FormView.
+/// Sur le téléphone, une vue dessinée pour le petit écran passe d'abord : Views.Phone.DashboardView, si elle existe.
+/// </summary>
 public sealed class ViewLocator : IDataTemplate
 {
-    public Control? Build(object? param)
-    {
-        var name = ViewName(param);
-        if (name is null) return null;
-        var type = typeof(ViewLocator).Assembly.GetType($"Scolia.Bureau.Views.{name}");
-        return type is null ? null : (Control?)Activator.CreateInstance(type);
-    }
+    public Control? Build(object? param) => ViewType(param) is { } type ? (Control?)Activator.CreateInstance(type) : null;
 
-    public bool Match(object? data) => ViewName(data) is { } name && typeof(ViewLocator).Assembly.GetType($"Scolia.Bureau.Views.{name}") is not null;
+    public bool Match(object? data) => ViewType(data) is not null;
+
+    private static Type? ViewType(object? data)
+    {
+        if (ViewName(data) is not { } name) return null;
+        var assembly = typeof(ViewLocator).Assembly;
+        return (Infrastructure.PhoneLayout.Active ? assembly.GetType($"Scolia.Bureau.Views.Phone.{name}") : null)
+            ?? assembly.GetType($"Scolia.Bureau.Views.{name}");
+    }
 
     private static string? ViewName(object? data)
     {

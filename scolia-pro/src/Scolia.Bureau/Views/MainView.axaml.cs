@@ -15,8 +15,8 @@ namespace Scolia.Bureau.Views;
 
 /// <summary>
 /// Toute l'interface de SCOLIA : connexion, volet, pages, fenêtres et barre d'état. La même vue sert dans la fenêtre
-/// de l'ordinateur et en plein écran sur le téléphone. Elle relie le clavier, le sélecteur de fichiers et le
-/// presse-papiers au shell, et adapte la mise en page à la place disponible.
+/// de l'ordinateur et en plein écran sur le téléphone, où elle montre le cadre du téléphone à la place du volet.
+/// Elle relie le clavier, le sélecteur de fichiers et le presse-papiers au shell, et adapte la mise en page à la place disponible.
 /// </summary>
 public partial class MainView : UserControl
 {
@@ -134,6 +134,8 @@ public partial class MainView : UserControl
         Scaler.LayoutTransform = Math.Abs(k - 1) < 0.001 ? null : new Avalonia.Media.ScaleTransform(k, k);
         shell.Narrow = size.Width / k < NarrowBelow;
         var phone = size.Width / k < PhoneBelow;
+        // Connue avant le changement de page : les vues construites ensuite prennent leur forme de téléphone.
+        PhoneLayout.Set(phone);
         Scaler.Classes.Set("phone", phone);
         shell.Phone = phone;
     }
@@ -186,10 +188,12 @@ public partial class MainView : UserControl
     private void OnBackRequested(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
         if (Shell is not { } shell) return;
-        if (shell.Dialog is FormViewModel { Busy: false } form) form.Cancel.Execute(null);
+        if (shell.HasSheet) shell.CloseSheet();
+        else if (shell.Dialog is FormViewModel { Busy: false } form) form.Cancel.Execute(null);
         else if (shell.HasDialog) shell.CloseDialog();
         else if (shell.BackstageOpen) shell.CloseBackstage();
-        else if (shell.Narrow && shell.SidebarShown) shell.ToggleSidebar();
+        else if (shell.PhoneMenuOpen) shell.PhoneMenuOpen = false;
+        else if (!shell.Phone && shell.Narrow && shell.SidebarShown) shell.ToggleSidebar();
         else if (shell.IsLoggedIn && shell.CanGoBack) shell.GoBack();
         else return;
         e.Handled = true;
