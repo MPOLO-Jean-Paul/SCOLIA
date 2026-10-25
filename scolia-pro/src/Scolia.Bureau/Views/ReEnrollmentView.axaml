@@ -29,6 +29,6 @@
         </DataGridTemplateColumn>
       </DataGrid.Columns>
     </DataGrid>
-    <c:EmptyState Grid.Row="1" Icon="SchoolOutline" Title="Aucun apprenant à reconduire" Hint="Les dossiers à reconduire apparaissent ici une fois l'année précédente clôturée." IsVisible="{Binding Items.Count, Converter={StaticResource IsEmpty}}" />
+    <c:EmptyState Grid.Row="1" Icon="SchoolOutline" Title="Aucun apprenant à reconduire" Hint="{Binding EmptyHint}" IsVisible="{Binding Items.Count, Converter={StaticResource IsEmpty}}" />
   </Grid>
 </UserControl>

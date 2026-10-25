@@ -16,7 +16,7 @@
               </Border>
               <StackPanel Grid.Column="1">
                 <TextBlock Text="{Binding Title}" FontWeight="SemiBold" />
-                <TextBlock Classes="muted"><Run Text="{Binding Type}" /><Run Text=" · " /><Run Text="{Binding Subtitle}" /></TextBlock>
+                <TextBlock Classes="muted"><Run Text="{Binding Type, Mode=OneWay}" /><Run Text=" · " /><Run Text="{Binding Subtitle, Mode=OneWay}" /></TextBlock>
               </StackPanel>
             </Grid>
           </DataTemplate>

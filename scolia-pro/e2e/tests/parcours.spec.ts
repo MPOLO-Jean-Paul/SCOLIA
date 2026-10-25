@@ -37,12 +37,13 @@ test('recherche et fiche apprenant', async () => {
   await expect(page.locator('.tag-code').first()).toHaveText('INF101');
 });
 
+// Nom absent des données de démonstration, tirées au hasard : pas d'homonyme possible.
 test('inscription d’un nouvel apprenant avec matricule automatique', async () => {
   await page.goto('/apprenants');
   await page.getByRole('button', { name: 'Nouvelle inscription' }).click();
   const dialog = page.getByRole('dialog');
-  await dialog.getByLabel('Nom', { exact: true }).fill('Lukusa');
-  await dialog.getByLabel('Post-nom').fill('Tshimanga');
+  await dialog.getByLabel('Nom', { exact: true }).fill('Tshiamala');
+  await dialog.getByLabel('Post-nom').fill('Kanyinda');
   await dialog.getByLabel('Prénom').fill('esther');
   await dialog.getByLabel('Sexe').selectOption('F');
   await dialog.getByLabel('Date de naissance').fill('2008-03-14');
@@ -50,7 +51,7 @@ test('inscription d’un nouvel apprenant avec matricule automatique', async () 
   await dialog.getByLabel('Contact parent').fill('0812345678');
   await dialog.getByLabel('Promotion').selectOption({ label: 'TLM1 — Première année' });
   await dialog.getByRole('button', { name: 'Enregistrer l’inscription' }).click();
-  await expect(page.getByRole('heading', { name: 'LUKUSA TSHIMANGA Esther' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'TSHIAMALA KANYINDA Esther' })).toBeVisible();
   await expect(page.locator('.tag-code').first()).toHaveText(/^TLM1\d{2}$/);
 });
 

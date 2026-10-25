@@ -45,8 +45,8 @@
                     <Button Classes="listrow" Command="{Binding Open}">
                       <Grid ColumnDefinitions="*,Auto">
                         <TextBlock TextTrimming="CharacterEllipsis">
-                          <Run Text="{Binding Name}" />
-                          <Run Text="{Binding Promotion, StringFormat=' · {0}'}" Foreground="{DynamicResource MutedBrush}" />
+                          <Run Text="{Binding Name, Mode=OneWay}" />
+                          <Run Text="{Binding Promotion, StringFormat=' · {0}', Mode=OneWay}" Foreground="{DynamicResource MutedBrush}" />
                         </TextBlock>
                         <TextBlock Grid.Column="1" Text="{Binding Detail}" Classes="muted" Margin="10,0,0,0" />
                       </Grid>
@@ -64,8 +64,8 @@
                     <Button Classes="listrow" Command="{Binding Open}">
                       <Grid ColumnDefinitions="*,Auto">
                         <TextBlock TextTrimming="CharacterEllipsis">
-                          <Run Text="{Binding Name}" />
-                          <Run Text="{Binding Promotion, StringFormat=' · {0}'}" Foreground="{DynamicResource MutedBrush}" />
+                          <Run Text="{Binding Name, Mode=OneWay}" />
+                          <Run Text="{Binding Promotion, StringFormat=' · {0}', Mode=OneWay}" Foreground="{DynamicResource MutedBrush}" />
                         </TextBlock>
                         <TextBlock Grid.Column="1" Text="{Binding Detail}" Classes="muted" Margin="10,0,0,0" />
                       </Grid>
@@ -136,14 +136,14 @@
                       <TextBlock Text="{Binding Label}" />
                       <TextBlock Grid.Column="1" Text="{Binding Value}" FontWeight="SemiBold" />
                     </Grid>
-                    <ProgressBar Classes="slim warn" Value="{Binding Height}" Maximum="100" />
+                    <ProgressBar Classes="slim warn" Value="{Binding Height, Mode=OneWay}" Maximum="100" />
                   </StackPanel>
                 </DataTemplate>
               </ItemsControl.ItemTemplate>
             </ItemsControl>
             <Border Height="1" Background="{DynamicResource LineBrush}" Margin="0,6" />
             <TextBlock Text="Répartition des apprenants" FontWeight="SemiBold" />
-            <ProgressBar Classes="slim" Value="{Binding MaleShare}" Maximum="100" />
+            <ProgressBar Classes="slim" Value="{Binding MaleShare, Mode=OneWay}" Maximum="100" />
             <TextBlock Text="{Binding GenderText}" Classes="muted" />
           </StackPanel>
         </Border>
@@ -163,7 +163,7 @@
                   <DataGridTemplateColumn.CellTemplate>
                     <DataTemplate>
                       <Grid ColumnDefinitions="*,Auto" Margin="10,0">
-                        <ProgressBar Classes="slim" Value="{Binding RecoveryValue}" Maximum="100" VerticalAlignment="Center" Margin="0,0,12,0" />
+                        <ProgressBar Classes="slim" Value="{Binding RecoveryValue, Mode=OneWay}" Maximum="100" VerticalAlignment="Center" Margin="0,0,12,0" />
                         <TextBlock Grid.Column="1" Text="{Binding Recovery}" VerticalAlignment="Center" MinWidth="56" TextAlignment="Right" />
                       </Grid>
                     </DataTemplate>

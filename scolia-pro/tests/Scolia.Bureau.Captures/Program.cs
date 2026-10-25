@@ -291,6 +291,10 @@ void Smoke(ShellViewModel shell, ScoliaClient api, Window window, string passwor
     inscriptionForm.Find("nom").Text = "SMOKETEST";
     inscriptionForm.Find("prenom").Text = "Parcours";
     inscriptionForm.Find("postNom").Text = "Test";
+    // Champs obligatoires comme dans la version 79 : naissance, lieu et contact du parent.
+    inscriptionForm.Find("naissance").Day = new DateTime(2008, 3, 14);
+    inscriptionForm.Find("lieu").Text = "Lubumbashi";
+    inscriptionForm.Find("contact1").Text = "0812345678";
     inscriptionForm.Submit.Execute(null);
     WaitValidation(inscriptionForm, inscription);
     if (!inscription.IsCompleted)
@@ -310,7 +314,7 @@ void Smoke(ShellViewModel shell, ScoliaClient api, Window window, string passwor
     var editing = detailForModif.EditAsync();
     ok = Submit(shell, editing, f =>
     {
-        f.Find("telephone").Text = "+243 800 111 222";
+        f.Find("contact1").Text = "+243 800 111 222";
         f.Find("nom").Text = "CONTROLE";
     });
     Check("modification de l'apprenant", ok);
@@ -326,8 +330,8 @@ void Smoke(ShellViewModel shell, ScoliaClient api, Window window, string passwor
     var newCourse = GradesPage.NewCourseAsync(shell, Guid.Parse(grades.Promotion!.Value));
     ok = Submit(shell, newCourse, f =>
     {
-        f.Find("code").Text = "T" + DateTime.Now.ToString("ss");
-        f.Find("intitule").Text = "Cours de test";
+        // Le numéro du cours est proposé d'office ; seul l'intitulé est à saisir.
+        f.Find("intitule").Text = "Cours de test " + DateTime.Now.ToString("HHmmss");
         f.Find("heures").Text = "10";
     });
     Check("nouveau cours", ok && Result(api.GetAsync<List<CourseDto>>("api/scolarite/cours?promotionId=" + grades.Promotion!.Value)).Count == courseBefore + 1);
@@ -389,8 +393,11 @@ void Smoke(ShellViewModel shell, ScoliaClient api, Window window, string passwor
 }
 
 // Écran suivant : ouvre la page, attend ses données, enregistre l'image.
+// Filtre facultatif (SCOLIA_PAGES=22e,08b) : ne capture que les pages dont le nom commence ainsi, pour isoler un écran.
+var only = (Environment.GetEnvironmentVariable("SCOLIA_PAGES") ?? string.Empty).Split(',', StringSplitOptions.RemoveEmptyEntries);
 void Page(Func<PageViewModel> create, string name, Action<PageViewModel>? prepare = null)
 {
+    if (only.Length > 0 && !only.Any(o => name.StartsWith(o, StringComparison.Ordinal))) return;
     var page = create();
     prepare?.Invoke(page);
     Wait(shell.Open(() => page));

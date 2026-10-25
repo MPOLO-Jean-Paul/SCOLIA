@@ -16,7 +16,7 @@
             </StackPanel>
           </StackPanel>
 
-          <ProgressBar Value="{Binding Progress}" Maximum="100" Height="4" />
+          <ProgressBar Value="{Binding Progress, Mode=OneWay}" Maximum="100" Height="4" />
           <StackPanel Spacing="2">
             <TextBlock Text="{Binding StepLabel}" Classes="muted" FontSize="{DynamicResource FsSmall}" />
             <TextBlock Text="{Binding StepTitle}" Classes="heading" />

@@ -427,8 +427,19 @@ public sealed class ReEnrollmentPage : PageViewModel
     public ReEnrollmentPage(ShellViewModel shell) : base(shell)
     {
         if (Shell.Can(Perm.StudentsWrite)) Action("Lancer les réinscriptions", MaterialIconKind.SchoolOutline, ApplyAsync, primary: true);
+        if (Shell.Can(Perm.SettingsWrite)) Action("Nouvelle année", MaterialIconKind.CalendarPlusOutline, async () =>
+        {
+            await SettingsPage.NewYearAsync(Shell);
+            ready = false;
+            await RefreshAsync();
+        });
         ActionRefresh();
     }
+
+    private string emptyHint = "Les dossiers à reconduire apparaissent ici une fois l'année précédente clôturée.";
+
+    /// <summary>Explication de la liste vide : elle dit quoi faire, sans message d'erreur.</summary>
+    public string EmptyHint { get => emptyHint; private set => Set(ref emptyHint, value); }
 
     public override string Title => "Réinscriptions";
     public override string Subtitle => subtitle;
@@ -456,6 +467,17 @@ public sealed class ReEnrollmentPage : PageViewModel
             ready = true;
         }
         if (Year is null) return;
+
+        // Première année de l'établissement : rien à reconduire tant que l'année suivante n'existe pas.
+        if (Years.Count < 2)
+        {
+            Items.Clear();
+            EmptyHint = "Une seule année scolaire existe. Créez l'année suivante avec « Nouvelle année », puis revenez ici pour reconduire les apprenants.";
+            subtitle = "Aucune année suivante pour le moment";
+            Raise(nameof(Subtitle));
+            return;
+        }
+        EmptyHint = "Les dossiers à reconduire apparaissent ici une fois l'année précédente clôturée.";
 
         promotions = await PromotionChoicesFor(Guid.Parse(Year.Value));
         var plan = await Shell.Api.GetAsync<List<ReEnrollmentItemDto>>("api/reinscriptions/plan" + ScoliaClient.Query(("anneeId", Year.Value)));

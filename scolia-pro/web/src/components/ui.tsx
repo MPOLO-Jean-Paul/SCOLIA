@@ -53,11 +53,12 @@ export function Button({ variant, size, icon, children, loading, ...rest }: {
   );
 }
 
-export function Field({ label, error, help, children, className }: { label: string; error?: string; help?: string; children: (id: string) => ReactNode; className?: string }) {
+export function Field({ label, error, help, children, className, required }: { label: string; error?: string; help?: string; children: (id: string) => ReactNode; className?: string; required?: boolean }) {
   const id = useId();
   return (
     <div className={`field ${className ?? ''}`}>
-      <label htmlFor={id}>{label}</label>
+      {/* L'astérisque signale un champ obligatoire ; il reste hors du nom lu par les lecteurs d'écran. */}
+      <label htmlFor={id}>{label}{required && <span className="req" aria-hidden="true"> *</span>}</label>
       {children(id)}
       {error ? <span className="error">{error}</span> : help ? <span className="help">{help}</span> : null}
     </div>
@@ -65,11 +66,11 @@ export function Field({ label, error, help, children, className }: { label: stri
 }
 
 export function TextField({ label, error, help, className, ...rest }: { label: string; error?: string; help?: string } & InputHTMLAttributes<HTMLInputElement>) {
-  return <Field label={label} error={error} help={help} className={className}>{(id) => <input id={id} {...rest} className={`input ${error ? 'invalid' : ''}`} />}</Field>;
+  return <Field label={label} error={error} help={help} className={className} required={rest.required}>{(id) => <input id={id} {...rest} className={`input ${error ? 'invalid' : ''}`} />}</Field>;
 }
 
 export function SelectField({ label, error, help, className, children, ...rest }: { label: string; error?: string; help?: string } & SelectHTMLAttributes<HTMLSelectElement>) {
-  return <Field label={label} error={error} help={help} className={className}>{(id) => <select id={id} {...rest} className={`select ${error ? 'invalid' : ''}`}>{children}</select>}</Field>;
+  return <Field label={label} error={error} help={help} className={className} required={rest.required}>{(id) => <select id={id} {...rest} className={`select ${error ? 'invalid' : ''}`}>{children}</select>}</Field>;
 }
 
 export function TextArea({ label, error, className, ...rest }: { label: string; error?: string } & TextareaHTMLAttributes<HTMLTextAreaElement>) {
