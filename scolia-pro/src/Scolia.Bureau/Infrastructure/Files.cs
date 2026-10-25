@@ -12,6 +12,11 @@ public static class Files
     {
         get
         {
+            if (Platform.DocumentsFolder is { } documents)
+            {
+                Directory.CreateDirectory(documents);
+                return documents;
+            }
             var folder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
             if (!Directory.Exists(folder)) folder = Path.GetTempPath();
             return folder;
@@ -33,6 +38,10 @@ public static class Files
     /// <summary>Ouvre un fichier ou une adresse avec l'application associée du poste.</summary>
     public static void Open(string target)
     {
+        // Téléphone : une adresse part vers WhatsApp, les SMS ou le navigateur ; un document vers son lecteur.
+        var isAddress = Uri.TryCreate(target, UriKind.Absolute, out var uri) && !uri.IsFile;
+        if (isAddress && Platform.OpenUri is { } openUri) { openUri(target); return; }
+        if (!isAddress && Platform.OpenFile is { } openFile) { openFile(target); return; }
         try { Process.Start(new ProcessStartInfo(target) { UseShellExecute = true }); }
         catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or InvalidOperationException) { }
     }

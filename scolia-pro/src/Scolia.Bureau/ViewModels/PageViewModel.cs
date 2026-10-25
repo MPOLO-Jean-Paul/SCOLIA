@@ -94,6 +94,16 @@ public abstract class PageViewModel : Observable
     }
     public bool Busy { get => busy; protected set => Set(ref busy, value); }
 
+    /// <summary>Écran de téléphone : certaines pages montrent alors une présentation en lignes au lieu d'un tableau large.</summary>
+    public bool Phone => Shell.Phone;
+    public bool NotPhone => !Shell.Phone;
+
+    public void PhoneChanged()
+    {
+        Raise(nameof(Phone));
+        Raise(nameof(NotPhone));
+    }
+
     /// <summary>Charge les données depuis le serveur. Chaque écran le redéfinit.</summary>
     public virtual Task LoadAsync() => Task.CompletedTask;
 

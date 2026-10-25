@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <!-- Thème de lancement : fond clair et logo, puis SCOLIA prend tout l'écran. -->
+  <style name="ScoliaTheme" parent="@style/Theme.AppCompat.DayNight.NoActionBar">
+    <item name="android:windowBackground">@drawable/lancement</item>
+    <item name="android:windowActionBar">false</item>
+    <item name="android:windowNoTitle">true</item>
+  </style>
+</resources>

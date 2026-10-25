@@ -426,6 +426,9 @@ public sealed class SettingsPage : PageViewModel
     public IReadOnlyList<BackstageItemVm> PosteSections { get; }
     public bool HasSchoolSections => SchoolSections.Count > 0;
 
+    /// <summary>Toutes les rubriques, pour la liste déroulante du téléphone.</summary>
+    public IReadOnlyList<BackstageItemVm> AllSections => [.. SchoolSections, .. PosteSections];
+
     /// <summary>Deux listes à gauche : choisir dans l'une efface la sélection de l'autre.</summary>
     public BackstageItemVm? SchoolSection { get => SchoolSections.Contains(section!) ? section : null; set { if (value is not null) Section = value; } }
     public BackstageItemVm? PosteSection { get => PosteSections.Contains(section!) ? section : null; set { if (value is not null) Section = value; } }

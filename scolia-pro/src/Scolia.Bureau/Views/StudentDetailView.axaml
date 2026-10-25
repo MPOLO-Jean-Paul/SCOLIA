@@ -8,11 +8,11 @@
       <!-- Indicateurs du compte -->
       <ItemsControl ItemsSource="{Binding Totals}" ItemTemplate="{StaticResource KpiTile}" Margin="0,0,-12,0">
         <ItemsControl.ItemsPanel>
-          <ItemsPanelTemplate><UniformGrid Rows="1" /></ItemsPanelTemplate>
+          <ItemsPanelTemplate><UniformGrid Rows="1" infra:Adaptive.MinItemWidth="150" /></ItemsPanelTemplate>
         </ItemsControl.ItemsPanel>
       </ItemsControl>
 
-      <Grid ColumnDefinitions="*,*">
+      <Grid ColumnDefinitions="*,*" infra:Adaptive.StackBelow="760">
         <!-- Identité et contacts -->
         <Border Classes="card" Grid.Column="0" Margin="0,0,12,0">
           <StackPanel Spacing="8">
@@ -56,7 +56,7 @@
         </Border>
       </Grid>
 
-      <Grid ColumnDefinitions="3*,2*">
+      <Grid ColumnDefinitions="3*,2*" infra:Adaptive.StackBelow="760">
         <!-- Compte : échéances, montants, reste à payer -->
         <Border Classes="card" Grid.Column="0" Margin="0,0,12,0">
           <StackPanel Spacing="8">

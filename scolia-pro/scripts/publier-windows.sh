@@ -26,6 +26,15 @@ dotnet publish "$racine/src/Scolia.Bureau" -c Release -r win-x64 --self-containe
 
 echo "==> Documentation du paquet"
 cp "$racine/scripts/windows/LIRE_MOI.txt" "$paquet/"
+
+# Application du téléphone, si elle a été produite avant (scripts/publier-android.sh).
+apk="$(ls "$sortie"/android/SCOLIA_Pro_*_Android.apk 2>/dev/null | head -1 || true)"
+if [ -n "$apk" ]; then
+  echo "==> Application Android jointe au paquet"
+  mkdir -p "$paquet/Telephone"
+  cp "$apk" "$paquet/Telephone/SCOLIA-Android.apk"
+  cp "$racine/scripts/windows/LIRE_MOI_TELEPHONE.txt" "$paquet/Telephone/"
+fi
 rm -f "$paquet"/*.pdb
 
 archive="$sortie/SCOLIA_Pro_${version}_Windows_x64.zip"

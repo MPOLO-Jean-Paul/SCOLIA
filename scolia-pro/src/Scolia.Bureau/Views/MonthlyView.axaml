@@ -29,7 +29,7 @@
     <!-- Bilan du mois pour la promotion choisie -->
     <ItemsControl Grid.Row="1" ItemsSource="{Binding Totals}" ItemTemplate="{StaticResource KpiTile}" Margin="0,0,-12,0">
       <ItemsControl.ItemsPanel>
-        <ItemsPanelTemplate><UniformGrid Rows="1" /></ItemsPanelTemplate>
+        <ItemsPanelTemplate><UniformGrid Rows="1" infra:Adaptive.MinItemWidth="150" /></ItemsPanelTemplate>
       </ItemsControl.ItemsPanel>
     </ItemsControl>
 

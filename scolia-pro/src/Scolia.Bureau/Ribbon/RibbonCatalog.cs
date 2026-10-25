@@ -98,7 +98,7 @@ public static class RibbonCatalog
                 Group("Page",
                     Large(shell, "Actualiser", Refresh, "Recharge les données affichées depuis le serveur.", () => shell.Reload(), Blue),
                     Large(shell, "Imprimer", Printer, "Imprime le document de la page affichée.", () => shell.Current?.PrintAsync() ?? Task.CompletedTask, Blue),
-                    Small(shell, "Plein écran", Fullscreen, "Affiche SCOLIA sans bordures de fenêtre.", () => { shell.ToggleFullscreen(); return Task.CompletedTask; }, Neutral, toggle: true, isOn: () => shell.IsFullscreen)),
+                    Platform.IsMobile ? null : Small(shell, "Plein écran", Fullscreen, "Affiche SCOLIA sans bordures de fenêtre.", () => { shell.ToggleFullscreen(); return Task.CompletedTask; }, Neutral, toggle: true, isOn: () => shell.IsFullscreen)),
                 ..RecentsGroups(shell),
             ]),
             new("secretariat", "Secrétariat",

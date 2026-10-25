@@ -18,7 +18,17 @@ public static class Sounds
     public static void Play(Preferences prefs, SoundKind kind, bool force = false)
     {
         if (!force && (!prefs.Sounds || !prefs.SoundFor(kind))) return;
-        if (!OperatingSystem.IsWindows() || prefs.SoundVolume <= 0) return;
+        if (prefs.SoundVolume <= 0) return;
+        // Téléphone : les mêmes notes, jouées par le haut-parleur d'Android ; les sons de Windows n'y existent pas.
+        if (Platform.PlayWave is { } playWave)
+        {
+            var at = DateTime.UtcNow;
+            if (!force && at - last < TimeSpan.FromMilliseconds(500)) return;
+            last = at;
+            try { playWave(Wave(kind, prefs.SoundStyle == "systeme" ? "doux" : prefs.SoundStyle, prefs.SoundVolume / 100.0)); } catch (Exception) { }
+            return;
+        }
+        if (!OperatingSystem.IsWindows()) return;
         var now = DateTime.UtcNow;
         if (!force && now - last < TimeSpan.FromMilliseconds(500)) return;
         last = now;

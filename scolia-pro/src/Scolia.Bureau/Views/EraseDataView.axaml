@@ -6,7 +6,7 @@
              x:Class="Scolia.Bureau.Views.EraseDataView">
   <Grid RowDefinitions="Auto,*,Auto">
     <!-- Étapes 1 et 2 : quoi effacer, et pour quels apprenants -->
-    <Grid Grid.Row="0" ColumnDefinitions="*,12,*" Margin="0,0,0,10">
+    <Grid Grid.Row="0" ColumnDefinitions="*,12,*" Margin="0,0,0,10" infra:Adaptive.StackBelow="760">
       <Border Classes="card">
         <StackPanel Spacing="8">
           <StackPanel Orientation="Horizontal" Spacing="8">
@@ -60,7 +60,7 @@
 
     <!-- Étape 3 : confirmer avec le mot de passe, puis effacer -->
     <Border Grid.Row="2" Classes="card" Margin="0,10,0,0" IsVisible="{Binding CanErase}">
-      <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+      <Grid ColumnDefinitions="Auto,*,Auto,Auto" infra:Adaptive.StackBelow="640">
         <Border Classes="badge" Background="{DynamicResource ToneRed}" VerticalAlignment="Center" Margin="0,0,10,0"><TextBlock Text="3" Foreground="White" /></Border>
         <StackPanel Grid.Column="1" VerticalAlignment="Center">
           <TextBlock Text="Confirmer avec votre mot de passe" FontWeight="SemiBold" />

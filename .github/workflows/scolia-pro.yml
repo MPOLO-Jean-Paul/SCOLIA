@@ -74,9 +74,49 @@ jobs:
             scolia-pro/e2e/test-results
             scolia-pro/tests/**/TestResults
 
+  paquet-android:
+    name: Application Android
+    needs: qualite
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: scolia-pro/global.json
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Outils Android (.NET et SDK)
+        run: |
+          dotnet workload install android
+          dotnet build src/Scolia.Mobile -t:InstallAndroidDependencies -f net10.0-android \
+            -p:AndroidSdkDirectory="$ANDROID_HOME" -p:JavaSdkDirectory="$JAVA_HOME" -p:AcceptAndroidSDKLicenses=True
+
+      - name: Compilation et signature de l'APK
+        env:
+          SCOLIA_ANDROID_KEYSTORE: ${{ secrets.SCOLIA_ANDROID_KEYSTORE }}
+          SCOLIA_KEYSTORE_PASS: ${{ secrets.SCOLIA_ANDROID_KEYSTORE_PASS }}
+        run: |
+          # Clé de l'établissement si elle est fournie dans les secrets du dépôt, sinon clé de développement.
+          if [ -n "$SCOLIA_ANDROID_KEYSTORE" ]; then
+            echo "$SCOLIA_ANDROID_KEYSTORE" | base64 -d > "$RUNNER_TEMP/scolia.keystore"
+            export SCOLIA_KEYSTORE="$RUNNER_TEMP/scolia.keystore"
+          fi
+          export JavaSdkDirectory="$JAVA_HOME"
+          bash scripts/publier-android.sh
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SCOLIA_Pro_Android
+          path: scolia-pro/artifacts/android/
+          retention-days: 30
+
   paquet-windows:
     name: Paquet Windows
-    needs: qualite
+    needs: [qualite, paquet-android]
     runs-on: windows-latest
     timeout-minutes: 30
     steps:
@@ -89,6 +129,12 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: scolia-pro/web/package-lock.json
+
+      - name: Application Android à joindre au paquet
+        uses: actions/download-artifact@v5
+        with:
+          name: SCOLIA_Pro_Android
+          path: scolia-pro/artifacts/android
 
       - name: Publication autonome (un seul exécutable)
         shell: pwsh
@@ -121,4 +167,5 @@ jobs:
           path: |
             scolia-pro/artifacts/*.zip
             scolia-pro/artifacts/*.sha256
+            scolia-pro/artifacts/android/*.apk
           retention-days: 30

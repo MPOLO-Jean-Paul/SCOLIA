@@ -21,7 +21,7 @@
         <Border Height="1" Background="{DynamicResource LineBrush}" Margin="58,0,0,0" />
         <WrapPanel Margin="58,12,18,14">
           <Button Content="Rechercher SCOLIA sur le réseau" Command="{Binding Search}" IsEnabled="{Binding NotSearching}" Margin="0,0,10,0" />
-          <Button Classes="ghost" Content="Utiliser cet ordinateur comme serveur" Command="{Binding UseThisComputer}" IsVisible="{Binding IsLinked}" />
+          <Button Classes="ghost" Content="Utiliser cet ordinateur comme serveur" Command="{Binding UseThisComputer}" IsVisible="{Binding CanBecomeServer}" />
         </WrapPanel>
         <ProgressBar IsIndeterminate="True" IsVisible="{Binding Searching}" Height="2" MinHeight="2" Margin="58,0,18,10" />
         <TextBlock Text="{Binding SearchLine}" IsVisible="{Binding HasSearchLine}" Classes="muted" TextWrapping="Wrap" Margin="58,0,18,12" FontSize="{DynamicResource FsSmall}" />

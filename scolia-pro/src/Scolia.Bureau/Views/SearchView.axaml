@@ -1,8 +1,9 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:infra="using:Scolia.Bureau.Infrastructure"
              xmlns:mi="using:Material.Icons.Avalonia"
              x:Class="Scolia.Bureau.Views.SearchView">
-  <Border Classes="card" Width="640" Padding="0" CornerRadius="14" Background="{DynamicResource SurfaceBrush}" BoxShadow="0 12 40 0 #33000000">
+  <Border Classes="card" infra:Adaptive.FitDialog="True" Width="640" Padding="0" CornerRadius="14" Background="{DynamicResource SurfaceBrush}" BoxShadow="0 12 40 0 #33000000">
     <StackPanel>
       <Grid ColumnDefinitions="*,Auto" Margin="18,14,14,0">
         <StackPanel Orientation="Horizontal" Spacing="8">

@@ -47,6 +47,7 @@ public sealed class ShellViewModel : Observable
         prefs.PropertyChanged += (_, args) =>
         {
             if (args.PropertyName == nameof(Preferences.Sidebar)) Raise(nameof(SidebarShown));
+            if (args.PropertyName == nameof(Preferences.StatusBar)) Raise(nameof(ShowStatusBar));
             prefs.Apply();
             prefs.Save();
             if (IsLoggedIn) RebuildRibbon();
@@ -241,7 +242,7 @@ public sealed class ShellViewModel : Observable
     /// Un poste qui porte la base en est le serveur. Un poste sans base cherche SCOLIA sur le réseau et le rejoint.
     /// Un serveur mémorisé dont l'adresse a changé est retrouvé par l'identifiant de son établissement.
     /// </summary>
-    public async Task StartAsync(ServerProcess server)
+    public async Task StartAsync(ServerProcess? server)
     {
         localServer = server;
         var forced = Environment.GetEnvironmentVariable("SCOLIA_SERVEUR");
@@ -269,6 +270,18 @@ public sealed class ShellViewModel : Observable
                 return;
             }
             ShowChooser(servers, $"Le serveur de {saved.School} (ordinateur {saved.Machine}) ne répond pas. Allumez-le ou ouvrez SCOLIA dessus, puis recherchez à nouveau.");
+            return;
+        }
+
+        // Téléphone : il n'est jamais le serveur ; il rejoint l'ordinateur de l'établissement sur le même Wi-Fi.
+        if (Platform.IsMobile)
+        {
+            Status = "Recherche de SCOLIA sur le Wi-Fi de l'établissement…";
+            var nearby = await LanDiscovery.FindAsync(TimeSpan.FromSeconds(2.5));
+            if (nearby.Count == 1) await JoinAsync(nearby[0]);
+            else ShowChooser(nearby, nearby.Count == 0
+                ? "Aucun SCOLIA ne répond sur ce Wi-Fi. Le téléphone doit être sur le même réseau que l'ordinateur principal, où SCOLIA est ouvert et partagé. Vous pouvez aussi saisir son adresse."
+                : "Plusieurs SCOLIA répondent sur ce Wi-Fi : choisissez celui de votre établissement.");
             return;
         }
 
@@ -521,7 +534,8 @@ public sealed class ShellViewModel : Observable
         if (!rowTipShown && Prefs.Tips && page.RowActions.Count > 0)
         {
             rowTipShown = true;
-            Notify("Astuce : clic droit sur une ligne pour ses actions, double-clic pour l'ouvrir.");
+            Notify(phone ? "Astuce : appui long sur une ligne pour ses actions, double appui pour l'ouvrir."
+                : "Astuce : clic droit sur une ligne pour ses actions, double-clic pour l'ouvrir.");
         }
     }
 
@@ -735,6 +749,28 @@ public sealed class ShellViewModel : Observable
             Raise(nameof(SidebarShown));
         }
     }
+
+    private bool phone;
+
+    /// <summary>Écran de téléphone : barre d'état masquée, fenêtres à la largeur de l'écran, blocs rangés l'un sous l'autre.</summary>
+    public bool Phone
+    {
+        get => phone;
+        set
+        {
+            if (!Set(ref phone, value)) return;
+            Raise(nameof(ShowStatusBar));
+            Raise(nameof(PageScroll));
+            Current?.PhoneChanged();
+        }
+    }
+
+    /// <summary>Défilement de la page entière : sur téléphone seulement.</summary>
+    public Avalonia.Controls.Primitives.ScrollBarVisibility PageScroll =>
+        phone ? Avalonia.Controls.Primitives.ScrollBarVisibility.Auto : Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled;
+
+    /// <summary>La barre d'état suit la préférence, sauf sur un téléphone où la place manque.</summary>
+    public bool ShowStatusBar => Prefs.StatusBar && !phone;
 
     /// <summary>Volet affiché : le choix enregistré en fenêtre large, une ouverture passagère en fenêtre étroite.</summary>
     public bool SidebarShown => narrow ? narrowSidebarOpen : Prefs.Sidebar;

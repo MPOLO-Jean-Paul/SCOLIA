@@ -25,7 +25,7 @@ public static class PosteAdmin
     public const string FirewallRule = "SCOLIA Pro (réseau local)";
     public const string DiscoveryRule = "SCOLIA Pro (découverte des postes)";
     private const string ServiceAccount = @"NT SERVICE\SCOLIA";
-    private const int DefaultPort = 5080;
+    public const int DefaultPort = 5080;
 
     /// <summary>Serveur de SCOLIA, livré à côté de l'interface.</summary>
     public static string ServerExecutable => Path.Combine(AppContext.BaseDirectory, "SCOLIA-Serveur.exe");

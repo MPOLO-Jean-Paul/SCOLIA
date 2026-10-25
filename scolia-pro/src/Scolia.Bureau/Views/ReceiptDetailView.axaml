@@ -1,12 +1,13 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:infra="using:Scolia.Bureau.Infrastructure"
              x:Class="Scolia.Bureau.Views.ReceiptDetailView">
   <ScrollViewer>
     <StackPanel Spacing="16">
       <Border Classes="card" IsVisible="{Binding IsCancelled}" Background="{DynamicResource RedSoftBrush}" BorderThickness="0">
         <TextBlock Text="{Binding CancellationText}" TextWrapping="Wrap" />
       </Border>
-      <Grid ColumnDefinitions="3*,2*">
+      <Grid ColumnDefinitions="3*,2*" infra:Adaptive.StackBelow="760">
         <Border Classes="card" Grid.Column="0" Margin="0,0,12,0">
           <StackPanel Spacing="8">
             <TextBlock Text="Détail du versement" Classes="heading" />

@@ -1,9 +1,10 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:infra="using:Scolia.Bureau.Infrastructure"
              xmlns:mi="using:Material.Icons.Avalonia"
              x:Class="Scolia.Bureau.Views.ShortcutsView">
   <!-- Raccourcis clavier : rangés par onglet, touches en pastilles, la liste défile -->
-  <Border Classes="card" Width="720" Padding="0" CornerRadius="14" Background="{DynamicResource SurfaceBrush}" ClipToBounds="True" BoxShadow="0 12 40 0 #33000000">
+  <Border Classes="card" infra:Adaptive.FitDialog="True" Width="720" Padding="0" CornerRadius="14" Background="{DynamicResource SurfaceBrush}" ClipToBounds="True" BoxShadow="0 12 40 0 #33000000">
     <StackPanel>
       <Grid ColumnDefinitions="Auto,*,Auto" Margin="24,22,18,8">
         <Border Classes="appicon large" Background="{DynamicResource ToneNeutral}" Margin="0,0,14,0"><mi:MaterialIcon Kind="Keyboard" /></Border>
@@ -20,7 +21,7 @@
               <StackPanel Spacing="4" Margin="0,8,0,4">
                 <TextBlock Text="{Binding Title}" Classes="heading" />
                 <ItemsControl ItemsSource="{Binding Rows}">
-                  <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Columns="2" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                  <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Columns="2" infra:Adaptive.MinItemWidth="280" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
                   <ItemsControl.ItemTemplate>
                     <DataTemplate>
                       <Grid ColumnDefinitions="110,*" Margin="0,4,16,4" ToolTip.Tip="{Binding Tip}">

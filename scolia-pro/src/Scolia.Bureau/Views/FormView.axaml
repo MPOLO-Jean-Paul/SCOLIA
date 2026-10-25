@@ -12,7 +12,7 @@
     </Style>
   </UserControl.Styles>
   <!-- Feuille de dialogue macOS : titre gras, champs, boutons en capsule alignés à droite -->
-  <Border Classes="card sheet" Classes.embedded="{Binding Embedded}" MinWidth="460" MaxWidth="620" Padding="0" CornerRadius="14" Background="{DynamicResource SurfaceBrush}" ClipToBounds="True"
+  <Border Classes="card sheet" infra:Adaptive.FitDialog="True" Classes.embedded="{Binding Embedded}" MinWidth="460" MaxWidth="620" Padding="0" CornerRadius="14" Background="{DynamicResource SurfaceBrush}" ClipToBounds="True"
           BoxShadow="0 8 32 0 #3D000000">
     <StackPanel>
       <Grid ColumnDefinitions="Auto,*,Auto" Margin="24,22,18,0" IsVisible="{Binding !Embedded}">

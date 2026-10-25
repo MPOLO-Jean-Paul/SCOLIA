@@ -42,6 +42,14 @@ l'ordinateur principal : ouvrir ou fermer le partage, démarrer avec Windows
 (service). Depuis un navigateur, les postes peuvent aussi ouvrir l'adresse
 affichée, par exemple http://192.168.1.10:5080.
 
+TRAVAILLER DEPUIS UN TÉLÉPHONE ANDROID
+- Le dossier Telephone contient SCOLIA-Android.apk.
+- Le téléphone et l'ordinateur principal doivent être sur le même Wi-Fi.
+- SCOLIA doit être ouvert et partagé sur l'ordinateur principal.
+- Le téléphone trouve SCOLIA tout seul. Sinon, saisir l'adresse affichée dans
+  Fichier > Poste et réseau.
+- Détails dans Telephone\LIRE_MOI_TELEPHONE.txt.
+
 DONNÉES ET SAUVEGARDES
 - La base est le fichier donnees\scolia.db (SQLite, transactionnelle).
 - Une sauvegarde vérifiée est faite automatiquement chaque jour dans

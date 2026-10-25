@@ -30,6 +30,8 @@ public static class RowMenu
             grid.AddHandler(InputElement.PointerPressedEvent, OnPressed, RoutingStrategies.Tunnel, handledEventsToo: true);
             grid.AddHandler(InputElement.PointerReleasedEvent, OnReleased, RoutingStrategies.Tunnel, handledEventsToo: true);
             grid.DoubleTapped += OnDoubleTapped;
+            // Écran tactile : l'appui long sur une ligne ouvre le même menu que le clic droit.
+            grid.AddHandler(InputElement.HoldingEvent, OnHolding, RoutingStrategies.Bubble, handledEventsToo: true);
             grid.AddHandler(InputElement.KeyDownEvent, OnKeyDown, RoutingStrategies.Tunnel);
         });
     }
@@ -43,6 +45,15 @@ public static class RowMenu
     {
         if (sender is not DataGrid grid || !e.GetCurrentPoint(grid).Properties.IsRightButtonPressed) return;
         if (Find<DataGridRow>(e.Source) is { DataContext: { } item }) grid.SelectedItem = item;
+    }
+
+    private static void OnHolding(object? sender, HoldingRoutedEventArgs e)
+    {
+        if (sender is not DataGrid grid || e.HoldingState != HoldingState.Started) return;
+        if (Find<DataGridRow>(e.Source) is not { DataContext: { } item } row) return;
+        grid.SelectedItem = item;
+        Show(grid, row, Find<DataGridCell>(e.Source), atPointer: false);
+        e.Handled = true;
     }
 
     private static void OnReleased(object? sender, PointerReleasedEventArgs e)

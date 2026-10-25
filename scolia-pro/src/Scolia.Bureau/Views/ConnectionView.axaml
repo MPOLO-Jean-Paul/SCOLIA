@@ -3,7 +3,8 @@
              xmlns:mi="using:Material.Icons.Avalonia"
              x:Class="Scolia.Bureau.Views.ConnectionView">
   <Grid Background="{DynamicResource BgBrush}">
-    <StackPanel Width="540" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="14">
+    <ScrollViewer>
+    <StackPanel MaxWidth="540" Margin="20,24" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="14">
       <Image Source="{DynamicResource ScoliaMark}" Width="56" Height="56" HorizontalAlignment="Center" Margin="0,0,0,4" />
       <TextBlock Text="Rejoindre votre établissement" Classes="title" FontSize="{DynamicResource FsDisplay}" HorizontalAlignment="Center" TextAlignment="Center" />
       <TextBlock Text="{Binding Message}" Classes="muted" TextWrapping="Wrap" TextAlignment="Center" />
@@ -29,10 +30,23 @@
 
       <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="10" Margin="0,6,0,0">
         <Button Content="Rechercher à nouveau" Command="{Binding Search}" IsEnabled="{Binding NotSearching}" />
-        <Button Classes="ghost" Content="Utiliser cet ordinateur comme serveur" Command="{Binding UseThisComputer}" />
+        <Button Classes="ghost" Content="Utiliser cet ordinateur comme serveur" Command="{Binding UseThisComputer}" IsVisible="{Binding CanBeServer}" />
       </StackPanel>
+
+      <!-- Adresse saisie : quand le Wi-Fi empêche la recherche automatique -->
+      <Border Classes="card">
+        <StackPanel Spacing="8">
+          <TextBlock Text="Ou saisir l'adresse de l'ordinateur principal" FontWeight="SemiBold" />
+          <TextBlock Text="Elle figure sur l'ordinateur principal, dans Fichier, Poste et réseau." Classes="muted" TextWrapping="Wrap" />
+          <Grid ColumnDefinitions="*,Auto">
+            <TextBox Text="{Binding Address}" PlaceholderText="192.168.1.10" />
+            <Button Grid.Column="1" Classes="primary" Content="Se connecter" Command="{Binding ConnectAddress}" IsEnabled="{Binding NotSearching}" Margin="8,0,0,0" />
+          </Grid>
+        </StackPanel>
+      </Border>
       <TextBlock Classes="muted" TextWrapping="Wrap" TextAlignment="Center" FontSize="{DynamicResource FsSmall}"
                  Text="Sur l'ordinateur principal, SCOLIA doit être ouvert et partagé : il le propose à la première connexion, ou dans Fichier &gt; Poste et réseau." />
     </StackPanel>
+    </ScrollViewer>
   </Grid>
 </UserControl>

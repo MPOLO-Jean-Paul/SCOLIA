@@ -1,5 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:infra="using:Scolia.Bureau.Infrastructure"
              xmlns:mi="using:Material.Icons.Avalonia"
              x:Class="Scolia.Bureau.Views.DashboardView">
   <ScrollViewer>
@@ -21,7 +22,7 @@
           <TextBlock Text="{Binding TodayTitle}" Classes="heading" Margin="16,12,16,8" />
           <ItemsControl ItemsSource="{Binding TodayStats}" Margin="16,0,16,14">
             <ItemsControl.ItemsPanel>
-              <ItemsPanelTemplate><UniformGrid Rows="1" /></ItemsPanelTemplate>
+              <ItemsPanelTemplate><UniformGrid Rows="1" infra:Adaptive.MinItemWidth="150" /></ItemsPanelTemplate>
             </ItemsControl.ItemsPanel>
             <ItemsControl.ItemTemplate>
               <DataTemplate>
@@ -35,7 +36,7 @@
           </ItemsControl>
 
           <Border Height="1" Background="{DynamicResource LineBrush}" IsVisible="{Binding HasPeople}" />
-          <Grid ColumnDefinitions="*,*" Margin="16,10,16,12" IsVisible="{Binding HasPeople}">
+          <Grid ColumnDefinitions="*,*" Margin="16,10,16,12" IsVisible="{Binding HasPeople}" infra:Adaptive.StackBelow="560">
             <StackPanel Spacing="4" Margin="0,0,16,0">
               <TextBlock Text="Parents convoqués aujourd'hui" FontWeight="SemiBold" />
               <TextBlock Text="Aucun rendez-vous prévu." Classes="muted" IsVisible="{Binding !HasAppointments}" />
@@ -81,11 +82,11 @@
       <!-- Indicateurs de l'année -->
       <ItemsControl ItemsSource="{Binding Kpis}" ItemTemplate="{StaticResource KpiTile}" Margin="0,0,-12,-12">
         <ItemsControl.ItemsPanel>
-          <ItemsPanelTemplate><UniformGrid Columns="3" /></ItemsPanelTemplate>
+          <ItemsPanelTemplate><UniformGrid Columns="3" infra:Adaptive.MinItemWidth="175" /></ItemsPanelTemplate>
         </ItemsControl.ItemsPanel>
       </ItemsControl>
 
-      <Grid ColumnDefinitions="3*,2*">
+      <Grid ColumnDefinitions="3*,2*" infra:Adaptive.StackBelow="760">
         <!-- Encaissements par mois : l'attendu en gris, l'encaissé dans l'accent -->
         <Border Classes="card" Grid.Column="0" Margin="0,0,12,0">
           <StackPanel Spacing="12">
@@ -104,7 +105,7 @@
             </Grid>
             <ItemsControl ItemsSource="{Binding Months}" Height="200">
               <ItemsControl.ItemsPanel>
-                <ItemsPanelTemplate><UniformGrid Rows="1" /></ItemsPanelTemplate>
+                <ItemsPanelTemplate><UniformGrid Rows="1" infra:Adaptive.MinItemWidth="150" /></ItemsPanelTemplate>
               </ItemsControl.ItemsPanel>
               <ItemsControl.ItemTemplate>
                 <DataTemplate>
@@ -149,7 +150,7 @@
         </Border>
       </Grid>
 
-      <Grid ColumnDefinitions="3*,2*">
+      <Grid ColumnDefinitions="3*,2*" infra:Adaptive.StackBelow="760">
         <!-- Recouvrement par promotion -->
         <Border Classes="card" Grid.Column="0" Margin="0,0,12,0">
           <StackPanel Spacing="10">

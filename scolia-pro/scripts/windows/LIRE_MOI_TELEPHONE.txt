@@ -1,0 +1,36 @@
+SCOLIA SUR LE TÉLÉPHONE (ANDROID)
+
+L'application du téléphone a le même design que SCOLIA sur l'ordinateur. Elle travaille
+avec les mêmes données : le téléphone se connecte à l'ordinateur principal de
+l'établissement, sur le même Wi-Fi. Rien n'est gardé en double sur le téléphone.
+
+INSTALLER L'APPLICATION
+1. Copier le fichier SCOLIA-Android.apk sur le téléphone : câble USB, WhatsApp à soi-même,
+   clé USB ou Bluetooth.
+2. Ouvrir le fichier sur le téléphone. Android demande d'autoriser l'installation
+   depuis cette source : accepter, puis Installer. Android 7 ou plus récent.
+3. L'icône SCOLIA apparaît avec les autres applications.
+
+SE CONNECTER À L'ORDINATEUR PRINCIPAL
+1. Sur l'ordinateur principal, SCOLIA doit être ouvert et partagé : SCOLIA le propose à
+   la première connexion, ou dans Fichier > Poste et réseau.
+2. Le téléphone doit être sur le même Wi-Fi que l'ordinateur principal.
+3. Ouvrir SCOLIA sur le téléphone : il trouve seul l'ordinateur principal et s'y relie.
+   S'il ne le trouve pas, certains Wi-Fi bloquent la recherche : saisir l'adresse de
+   l'ordinateur principal, affichée dans Fichier > Poste et réseau, par exemple
+   192.168.1.10, puis Se connecter.
+4. Se connecter avec son identifiant et son mot de passe, comme sur l'ordinateur.
+
+UTILISER SCOLIA SUR LE TÉLÉPHONE
+- Le bouton en haut à gauche ouvre la liste des pages ; le bouton ≡ en haut à droite
+  donne toutes les commandes.
+- Appui long sur une ligne d'un tableau : ses actions, comme le clic droit sur l'ordinateur.
+  Double appui : l'ouvrir.
+- Le bouton Retour du téléphone ferme la fenêtre ouverte, puis revient à la page précédente.
+- Les PDF et les classeurs s'ouvrent dans le lecteur du téléphone et se partagent, par
+  exemple par WhatsApp. Les relances WhatsApp et SMS ouvrent directement l'application.
+- Les réglages de ce poste, thème, taille du texte, sons, se règlent dans Paramètres.
+
+MISE À JOUR
+Installer le nouveau fichier par-dessus l'ancien. Si Android refuse, désinstaller
+l'ancienne application d'abord : les données restent sur l'ordinateur principal.

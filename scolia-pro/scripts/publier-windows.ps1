@@ -28,6 +28,16 @@ if ($LASTEXITCODE) { throw 'dotnet publish client natif' }
 
 Write-Host "==> Documentation du paquet"
 Copy-Item (Join-Path $racine 'scripts\windows\LIRE_MOI.txt') $paquet
+
+# Application du téléphone, si elle a été produite avant (scripts/publier-android.sh).
+$apk = Get-ChildItem (Join-Path $Sortie 'android') -Filter 'SCOLIA_Pro_*_Android.apk' -ErrorAction SilentlyContinue | Select-Object -First 1
+if ($apk) {
+  Write-Host '==> Application Android jointe au paquet'
+  $telephone = Join-Path $paquet 'Telephone'
+  New-Item -ItemType Directory -Force $telephone | Out-Null
+  Copy-Item $apk.FullName (Join-Path $telephone 'SCOLIA-Android.apk')
+  Copy-Item (Join-Path $racine 'scripts\windows\LIRE_MOI_TELEPHONE.txt') $telephone
+}
 Get-ChildItem $paquet -Filter *.pdb | Remove-Item
 
 $archive = Join-Path $Sortie "SCOLIA_Pro_${version}_Windows_x64.zip"

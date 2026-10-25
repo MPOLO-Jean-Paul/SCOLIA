@@ -76,7 +76,10 @@ prefs.Accent = Environment.GetEnvironmentVariable("SCOLIA_ACCENT") ?? "bleu";
 var shell = new ShellViewModel(api, prefs);
 // Taille de fenêtre optionnelle (SCOLIA_TAILLE=1024x700) pour vérifier l'adaptation du texte à chaque format d'écran.
 var taille = (Environment.GetEnvironmentVariable("SCOLIA_TAILLE") ?? "1280x820").Split('x');
+// Aperçu du téléphone (SCOLIA_MOBILE=1, avec SCOLIA_TAILLE=412x892) : l'interface garde sa taille réelle et se range.
+if (Environment.GetEnvironmentVariable("SCOLIA_MOBILE") == "1") Preferences.MobileLayout = true;
 var window = new MainWindow { DataContext = shell, Width = int.Parse(taille[0]), Height = int.Parse(taille[1]) };
+if (Preferences.MobileLayout) { window.MinWidth = 0; window.MinHeight = 0; window.Width = int.Parse(taille[0]); window.Height = int.Parse(taille[1]); }
 window.Show();
 // Premier lancement sans configuration : l'assistant remplace la connexion (SCOLIA_ASSISTANT=1).
 if (Environment.GetEnvironmentVariable("SCOLIA_ASSISTANT") == "1")

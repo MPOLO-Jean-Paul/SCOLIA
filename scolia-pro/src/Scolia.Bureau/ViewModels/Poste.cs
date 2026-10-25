@@ -33,6 +33,8 @@ public sealed class PosteViewModel : Observable
     public bool IsWindows => OperatingSystem.IsWindows();
     public bool IsServerComputer => shell.IsServerComputer;
     public bool IsLinked => !shell.IsServerComputer;
+    /// <summary>Un ordinateur relié peut devenir le serveur ; un téléphone, jamais.</summary>
+    public bool CanBecomeServer => IsLinked && !Platform.IsMobile;
 
     public string ConnectionTitle => IsServerComputer
         ? "Cet ordinateur est le serveur de l'établissement"

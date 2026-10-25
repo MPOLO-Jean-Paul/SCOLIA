@@ -183,8 +183,21 @@ public sealed class Preferences : Observable
     /// Adapte toute l'interface à la taille de la fenêtre : 1 à 1280 × 720, plus grand sur un grand écran,
     /// plus petit sur un écran réduit. Les valeurs sont arrondies au vingtième pour éviter les recalculs continus pendant un redimensionnement.
     /// </summary>
+    /// <summary>
+    /// Téléphone : l'interface garde sa taille réelle au lieu d'être réduite à la mise en page de 1280 points ;
+    /// ce sont les blocs qui se rangent l'un sous l'autre. Fixé par l'application Android.
+    /// </summary>
+    public static bool MobileLayout { get; set; }
+
     public void Fit(double width, double height)
     {
+        if (MobileLayout)
+        {
+            if (fit == 1) return;
+            fit = 1;
+            LayoutScaleChanged?.Invoke(fit);
+            return;
+        }
         var next = Math.Round(Math.Clamp(Math.Min(width / ReferenceWidth, height / ReferenceHeight), MinFit, MaxFit) * 20) / 20;
         if (next == fit) return;
         fit = next;

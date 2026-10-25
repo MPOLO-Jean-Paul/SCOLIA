@@ -2,7 +2,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:infra="using:Scolia.Bureau.Infrastructure"
              x:Class="Scolia.Bureau.Views.CashierView">
-  <Grid ColumnDefinitions="2*,3*">
+  <Grid ColumnDefinitions="2*,3*" infra:Adaptive.StackBelow="760">
     <!-- Gauche : recherche de l'apprenant, puis saisie du versement -->
     <StackPanel Grid.Column="0" Spacing="12" Margin="0,0,16,0">
       <Border Classes="card">
@@ -64,7 +64,7 @@
             </ItemsControl>
             <TextBlock Text="{Binding TotalCaption}" Classes="muted" />
           </StackPanel>
-          <Grid ColumnDefinitions="*,*,*" RowDefinitions="Auto,Auto">
+          <Grid ColumnDefinitions="*,*,*" RowDefinitions="Auto,Auto" infra:Adaptive.StackBelow="420">
             <StackPanel Grid.Column="0" Margin="0,0,10,0">
               <TextBlock Text="Total à encaisser" Classes="caption" />
               <TextBlock Text="{Binding Total}" Classes="kpi" />
