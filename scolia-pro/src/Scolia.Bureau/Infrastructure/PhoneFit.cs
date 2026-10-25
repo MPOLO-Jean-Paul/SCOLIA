@@ -33,8 +33,15 @@ public static class PhoneFit
     {
         // Les modèles des contrôles (listes, champs) gardent leurs colonnes : elles sont faites pour leur contenu.
         if (!PhoneLayout.Active || grid.TemplatedParent is not null) return;
+        var changed = false;
         foreach (var column in grid.ColumnDefinitions)
-            if (column.Width.IsAbsolute && column.Width.Value >= LabelColumn) column.Width = GridLength.Auto;
+            if (column.Width.IsAbsolute && column.Width.Value >= LabelColumn)
+            {
+                column.Width = GridLength.Auto;
+                changed = true;
+            }
+        // Le libellé suit son texte : un espace le sépare de la valeur, que la largeur fixe ménageait.
+        if (changed && grid.ColumnSpacing == 0) grid.ColumnSpacing = 12;
     }
 
     private static void OnBorderLoaded(Border border, RoutedEventArgs e)
