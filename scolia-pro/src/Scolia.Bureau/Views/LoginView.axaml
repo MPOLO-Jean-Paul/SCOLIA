@@ -3,87 +3,128 @@
              xmlns:mi="using:Material.Icons.Avalonia"
              x:Class="Scolia.Bureau.Views.LoginView">
   <UserControl.Styles>
-    <!-- Champs de connexion : grands, arrondis, le libellé dans le champ, comme la page de connexion web -->
+    <!-- Champs de connexion : hauts, arrondis, une icône à gauche, le libellé dans le champ -->
     <Style Selector="TextBox.signin">
       <Setter Property="Height" Value="46" />
-      <Setter Property="Padding" Value="16,0" />
+      <Setter Property="Padding" Value="44,0,14,0" />
       <Setter Property="VerticalContentAlignment" Value="Center" />
-      <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="CornerRadius" Value="10" />
       <Setter Property="FontSize" Value="15" />
       <Setter Property="BorderThickness" Value="1" />
     </Style>
-    <Style Selector="TextBox.signin.pass"><Setter Property="Padding" Value="16,0,92,0" /></Style>
+    <Style Selector="TextBox.signin.pass"><Setter Property="Padding" Value="44,0,48,0" /></Style>
+    <Style Selector="mi|MaterialIcon.fieldicon">
+      <Setter Property="Width" Value="19" /><Setter Property="Height" Value="19" />
+      <Setter Property="Margin" Value="15,0,0,0" />
+      <Setter Property="HorizontalAlignment" Value="Left" /><Setter Property="VerticalAlignment" Value="Center" />
+      <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
+      <Setter Property="IsHitTestVisible" Value="False" />
+    </Style>
     <Style Selector="Button.eye">
       <Setter Property="Width" Value="34" /><Setter Property="Height" Value="34" /><Setter Property="CornerRadius" Value="17" />
       <Setter Property="Padding" Value="0" /><Setter Property="Background" Value="Transparent" /><Setter Property="BorderThickness" Value="0" />
       <Setter Property="HorizontalContentAlignment" Value="Center" /><Setter Property="VerticalContentAlignment" Value="Center" />
     </Style>
-    <Style Selector="Button.go">
-      <Setter Property="Width" Value="34" /><Setter Property="Height" Value="34" /><Setter Property="CornerRadius" Value="17" />
-      <Setter Property="Padding" Value="0" /><Setter Property="Background" Value="{DynamicResource AccentBrush}" /><Setter Property="BorderThickness" Value="0" />
-      <Setter Property="HorizontalContentAlignment" Value="Center" /><Setter Property="VerticalContentAlignment" Value="Center" />
+    <Style Selector="Button.signinbutton">
+      <Setter Property="Height" Value="46" />
+      <Setter Property="CornerRadius" Value="10" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+      <Setter Property="FontSize" Value="15" />
     </Style>
-    <Style Selector="Button.go:pointerover /template/ ContentPresenter#PART_ContentPresenter"><Setter Property="Background" Value="{DynamicResource AccentHoverBrush}" /></Style>
-    <Style Selector="Button.go:disabled /template/ ContentPresenter#PART_ContentPresenter"><Setter Property="Opacity" Value="0.45" /></Style>
   </UserControl.Styles>
 
-  <Grid Background="{DynamicResource BgBrush}" RowDefinitions="*,Auto">
-    <StackPanel Width="340" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="10">
-      <!-- Logo de l'établissement s'il est connu, sinon celui de SCOLIA -->
-      <Panel Width="64" Height="64" HorizontalAlignment="Center" Margin="0,0,0,6">
-        <Image Source="{Binding Logo}" IsVisible="{Binding HasLogo}" />
-        <Image Source="{DynamicResource ScoliaMark}" IsVisible="{Binding !HasLogo}" />
-      </Panel>
-      <TextBlock Text="{Binding TitleText}" FontSize="24" FontWeight="Medium" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" />
-      <TextBlock Text="Connectez-vous pour continuer" Classes="muted" FontSize="14" HorizontalAlignment="Center" Margin="0,-4,0,12" />
+  <!-- Connexion : un bandeau aux couleurs de SCOLIA avec le logo et le nom de l'établissement, puis la carte des identifiants -->
+  <Grid Background="{DynamicResource BgBrush}" RowDefinitions="Auto,*,Auto">
+    <Border Height="232" Grid.RowSpan="1">
+      <Border.Background>
+        <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+          <GradientStop Offset="0" Color="#1565E0" />
+          <GradientStop Offset="0.6" Color="#0B4FC4" />
+          <GradientStop Offset="1" Color="#0E2A5C" />
+        </LinearGradientBrush>
+      </Border.Background>
+      <StackPanel HorizontalAlignment="Center" VerticalAlignment="Top" Margin="24,30,24,0" Spacing="10">
+        <!-- Logo de l'établissement s'il est connu, sinon celui de SCOLIA, dans un médaillon blanc -->
+        <Border Width="76" Height="76" CornerRadius="38" Background="White" HorizontalAlignment="Center" BoxShadow="0 6 18 0 #33000000">
+          <Panel Width="58" Height="58">
+            <Image Source="{Binding Logo}" IsVisible="{Binding HasLogo}" />
+            <Image Source="{DynamicResource ScoliaMark}" IsVisible="{Binding !HasLogo}" Width="44" Height="44" />
+          </Panel>
+        </Border>
+        <TextBlock Text="{Binding TitleText}" Foreground="White" FontSize="21" FontWeight="Bold" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" MaxWidth="380" />
+      </StackPanel>
+    </Border>
 
-      <TextBox x:Name="UserNameBox" Classes="signin" Text="{Binding UserName}" PlaceholderText="Identifiant" IsEnabled="{Binding CanType}" />
-      <Grid>
-        <TextBox x:Name="PasswordBox" Classes="signin pass" Text="{Binding Password}" PlaceholderText="Mot de passe" PasswordChar="•"
-                 RevealPassword="{Binding ShowPassword}" IsEnabled="{Binding CanType}" />
-        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center" Spacing="6" Margin="0,0,6,0">
-          <Button Classes="eye" Command="{Binding ToggleEye}" ToolTip.Tip="Afficher ou masquer le mot de passe" IsEnabled="{Binding CanType}">
+    <!-- Carte des identifiants : elle chevauche le bandeau -->
+    <Border Grid.Row="0" Grid.RowSpan="2" VerticalAlignment="Top" Margin="0,190,0,0" Width="372" HorizontalAlignment="Center"
+            Background="{DynamicResource SurfaceBrush}" CornerRadius="18" Padding="22,22,22,20" BoxShadow="0 14 40 0 #26000000">
+      <StackPanel Spacing="12">
+        <StackPanel Spacing="2" Margin="0,0,0,4">
+          <TextBlock Text="Connexion" FontSize="18" FontWeight="SemiBold" />
+          <TextBlock Text="Saisissez votre identifiant et votre mot de passe." Classes="muted" TextWrapping="Wrap" />
+        </StackPanel>
+
+        <Panel>
+          <TextBox x:Name="UserNameBox" Classes="signin" Text="{Binding UserName}" PlaceholderText="Identifiant" IsEnabled="{Binding CanType}" />
+          <mi:MaterialIcon Classes="fieldicon" Kind="AccountOutline" />
+        </Panel>
+        <Panel>
+          <TextBox x:Name="PasswordBox" Classes="signin pass" Text="{Binding Password}" PlaceholderText="Mot de passe" PasswordChar="•"
+                   RevealPassword="{Binding ShowPassword}" IsEnabled="{Binding CanType}" />
+          <mi:MaterialIcon Classes="fieldicon" Kind="LockOutline" />
+          <Button Classes="eye" Command="{Binding ToggleEye}" ToolTip.Tip="Afficher ou masquer le mot de passe" IsEnabled="{Binding CanType}"
+                  HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,7,0">
             <mi:MaterialIcon Kind="{Binding EyeIcon}" Width="18" Height="18" Foreground="{DynamicResource MutedBrush}" />
           </Button>
-          <Button Classes="go" Command="{Binding Submit}" IsEnabled="{Binding CanType}" ToolTip.Tip="Se connecter (Entrée)">
-            <Panel>
-              <mi:MaterialIcon Kind="ArrowRight" Width="18" Height="18" Foreground="White" IsVisible="{Binding NotBusy}" />
-              <mi:MaterialIcon Kind="Loading" Classes="spin" Width="18" Height="18" Foreground="White" IsVisible="{Binding Busy}" />
-            </Panel>
-          </Button>
-        </StackPanel>
-      </Grid>
+        </Panel>
 
-      <Border Background="{DynamicResource OrangeSoftBrush}" CornerRadius="8" Padding="12,9" IsVisible="{Binding HasNotice}">
-        <TextBlock Text="{Binding Notice}" TextWrapping="Wrap" />
-      </Border>
-      <Border Background="{DynamicResource RedSoftBrush}" CornerRadius="8" Padding="12,9" IsVisible="{Binding HasError}">
-        <TextBlock Text="{Binding Error}" Foreground="{DynamicResource ToneRed}" TextWrapping="Wrap" />
-      </Border>
-
-      <!-- Verrouillage : compte à rebours jusqu'à 0, puis l'accès revient seul -->
-      <Border Background="{DynamicResource RedSoftBrush}" CornerRadius="10" Padding="14,12,14,14" IsVisible="{Binding Locked}">
-        <Grid ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto">
-          <mi:MaterialIcon Kind="LockOutline" Width="20" Height="20" Foreground="{DynamicResource ToneRed}" VerticalAlignment="Center" Margin="0,0,10,0" />
-          <StackPanel Grid.Column="1" VerticalAlignment="Center">
-            <TextBlock Text="Accès verrouillé" FontWeight="SemiBold" Foreground="{DynamicResource ToneRed}" />
-            <TextBlock Text="5 tentatives incorrectes. Nouvel essai dans :" Foreground="{DynamicResource ToneRed}" TextWrapping="Wrap" />
+        <Button Classes="primary signinbutton" Command="{Binding Submit}" IsEnabled="{Binding CanType}" ToolTip.Tip="Se connecter (Entrée)" Margin="0,4,0,0">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <mi:MaterialIcon Kind="Loading" Classes="spin" Width="18" Height="18" Foreground="{DynamicResource OnAccentBrush}" IsVisible="{Binding Busy}" />
+            <TextBlock Text="Se connecter" FontWeight="SemiBold" VerticalAlignment="Center" />
+            <mi:MaterialIcon Kind="ArrowRight" Width="18" Height="18" Foreground="{DynamicResource OnAccentBrush}" IsVisible="{Binding NotBusy}" />
           </StackPanel>
-          <TextBlock Grid.Column="2" Text="{Binding CountdownText, Mode=OneWay}" FontSize="24" FontWeight="SemiBold" Foreground="{DynamicResource ToneRed}" VerticalAlignment="Center" Margin="10,0,0,0" />
-          <ProgressBar Grid.Row="1" Grid.ColumnSpan="3" Minimum="0" Maximum="100" Value="{Binding LockProgress, Mode=OneWay}" Height="4" MinHeight="4" Margin="0,10,0,0" Foreground="{DynamicResource ToneRed}" />
+        </Button>
+
+        <Border Background="{DynamicResource OrangeSoftBrush}" CornerRadius="10" Padding="12,9" IsVisible="{Binding HasNotice}">
+          <TextBlock Text="{Binding Notice}" TextWrapping="Wrap" />
+        </Border>
+        <Border Background="{DynamicResource RedSoftBrush}" CornerRadius="10" Padding="12,9" IsVisible="{Binding HasError}">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <mi:MaterialIcon Kind="AlertCircleOutline" Width="16" Height="16" Foreground="{DynamicResource ToneRed}" VerticalAlignment="Top" Margin="0,1,0,0" />
+            <TextBlock Text="{Binding Error}" Foreground="{DynamicResource ToneRed}" TextWrapping="Wrap" MaxWidth="290" />
+          </StackPanel>
+        </Border>
+
+        <!-- Verrouillage : compte à rebours jusqu'à 0, puis l'accès revient seul -->
+        <Border Background="{DynamicResource RedSoftBrush}" CornerRadius="12" Padding="14,12,14,14" IsVisible="{Binding Locked}">
+          <Grid ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto">
+            <mi:MaterialIcon Kind="LockOutline" Width="20" Height="20" Foreground="{DynamicResource ToneRed}" VerticalAlignment="Center" Margin="0,0,10,0" />
+            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+              <TextBlock Text="Accès verrouillé" FontWeight="SemiBold" Foreground="{DynamicResource ToneRed}" />
+              <TextBlock Text="5 tentatives incorrectes. Nouvel essai dans :" Foreground="{DynamicResource ToneRed}" TextWrapping="Wrap" />
+            </StackPanel>
+            <TextBlock Grid.Column="2" Text="{Binding CountdownText, Mode=OneWay}" FontSize="24" FontWeight="SemiBold" Foreground="{DynamicResource ToneRed}" VerticalAlignment="Center" Margin="10,0,0,0" />
+            <ProgressBar Grid.Row="1" Grid.ColumnSpan="3" Minimum="0" Maximum="100" Value="{Binding LockProgress, Mode=OneWay}" Height="4" MinHeight="4" Margin="0,10,0,0" Foreground="{DynamicResource ToneRed}" />
+          </Grid>
+        </Border>
+        <Border Background="{DynamicResource GreenSoftBrush}" CornerRadius="10" Padding="12,9" IsVisible="{Binding Restored}">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <mi:MaterialIcon Kind="CheckCircleOutline" Width="16" Height="16" Foreground="{DynamicResource ToneGreen}" />
+            <TextBlock Text="Accès rétabli. Vous pouvez réessayer." Foreground="{DynamicResource ToneGreen}" VerticalAlignment="Center" />
+          </StackPanel>
+        </Border>
+
+        <Grid ColumnDefinitions="Auto,*" Margin="0,4,0,0">
+          <mi:MaterialIcon Kind="ShieldLockOutline" Width="15" Height="15" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Top" Margin="0,1,8,0" />
+          <TextBlock Grid.Column="1" Text="Après 5 erreurs, l'accès est verrouillé 2 minutes. Mot de passe oublié : contactez le secrétariat."
+                     Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
         </Grid>
-      </Border>
-      <Border Background="{DynamicResource GreenSoftBrush}" CornerRadius="8" Padding="12,9" IsVisible="{Binding Restored}">
-        <StackPanel Orientation="Horizontal" Spacing="8">
-          <mi:MaterialIcon Kind="CheckCircleOutline" Width="16" Height="16" Foreground="{DynamicResource ToneGreen}" />
-          <TextBlock Text="Accès rétabli. Vous pouvez réessayer." Foreground="{DynamicResource ToneGreen}" VerticalAlignment="Center" />
-        </StackPanel>
-      </Border>
+      </StackPanel>
+    </Border>
 
-      <TextBlock Text="Après 5 erreurs, l'accès est verrouillé 2 minutes. Mot de passe oublié : contactez le secrétariat."
-                 Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" TextAlignment="Center" Margin="0,10,0,0" />
-    </StackPanel>
-
-    <TextBlock Grid.Row="1" Text="{Binding Footer}" Classes="muted" FontSize="{DynamicResource FsSmall}" HorizontalAlignment="Center" Margin="0,0,0,18" />
+    <TextBlock Grid.Row="2" Text="{Binding Footer}" Classes="muted" FontSize="{DynamicResource FsSmall}" HorizontalAlignment="Center" Margin="0,0,0,16" />
   </Grid>
 </UserControl>

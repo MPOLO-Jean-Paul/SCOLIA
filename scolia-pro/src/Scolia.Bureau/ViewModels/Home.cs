@@ -61,6 +61,9 @@ public sealed class HomePage : PageViewModel
     public bool HasKpis => Kpis.Count > 0;
     public bool HasTasks => Tasks.Count > 0;
     public RelayCommand ShowAllTools { get; }
+
+    /// <summary>Les deux premiers outils, en boutons dans le bandeau de bienvenue : l'action du jour d'un clic.</summary>
+    public IReadOnlyList<ToolCardVm> QuickActions => Tools.Take(2).ToList();
     public string TodayLine { get => todayLine; private set { if (Set(ref todayLine, value)) Raise(nameof(HasTodayLine)); } }
     public bool HasTodayLine => todayLine.Length > 0;
 

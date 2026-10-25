@@ -7,47 +7,123 @@
   <UserControl.Styles>
     <Style Selector="TextBlock.greeting"><Setter Property="FontSize" Value="{DynamicResource FsDisplay}" /></Style>
     <Style Selector="TextBlock.kpivalue"><Setter Property="FontSize" Value="{DynamicResource FsTitle}" /></Style>
-    <Style Selector="Border.cashchip"><Setter Property="Margin" Value="16,0,0,0" /></Style>
-    <!-- Téléphone : la salutation passe à la ligne et les chiffres tiennent dans leur carte -->
-    <Style Selector="LayoutTransformControl.phone TextBlock.greeting"><Setter Property="FontSize" Value="22" /></Style>
-    <Style Selector="LayoutTransformControl.phone TextBlock.kpivalue"><Setter Property="FontSize" Value="17" /></Style>
-    <Style Selector="LayoutTransformControl.phone Border.cashchip"><Setter Property="Margin" Value="0,10,0,0" /></Style>
-    <Style Selector="LayoutTransformControl.phone Border.kpiicon"><Setter Property="IsVisible" Value="False" /></Style>
+    <!-- Pastille du bandeau : fond blanc translucide, texte blanc -->
+    <Style Selector="Border.herochip">
+      <Setter Property="Background" Value="#26FFFFFF" />
+      <Setter Property="CornerRadius" Value="14" />
+      <Setter Property="Padding" Value="11,5" />
+    </Style>
+    <Style Selector="Border.herochip TextBlock"><Setter Property="Foreground" Value="White" /></Style>
+    <!-- Action du bandeau : bouton blanc, texte de la couleur d'accent -->
+    <Style Selector="Button.heroaction">
+      <Setter Property="Background" Value="White" />
+      <Setter Property="Foreground" Value="#0B4FC4" />
+      <Setter Property="CornerRadius" Value="12" />
+      <Setter Property="Padding" Value="16,0" />
+      <Setter Property="Height" Value="40" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="BorderThickness" Value="0" />
+    </Style>
+    <Style Selector="Button.heroaction:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="#E8F0FF" />
+    </Style>
+    <!-- Pastille cliquable : le bouton ne dessine rien, la pastille s'éclaircit au survol -->
+    <Style Selector="Button.bare">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Padding" Value="0" />
+    </Style>
+    <Style Selector="Button.bare:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
+    <Style Selector="Button.bare:pointerover Border.herochip"><Setter Property="Background" Value="#40FFFFFF" /></Style>
+    <!-- Outil : tuile compacte, l'icône à gauche, le nom et une ligne de description -->
+    <Style Selector="Button.tooltile">
+      <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="14" />
+      <Setter Property="Padding" Value="14,12" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    </Style>
+    <Style Selector="Button.tooltile:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+    </Style>
   </UserControl.Styles>
   <ScrollViewer>
-    <StackPanel Spacing="18" Margin="0,0,6,12">
+    <StackPanel Spacing="16" Margin="0,0,6,12">
 
-      <!-- Bienvenue : la date, l'établissement et l'état de la caisse -->
-      <Border Classes="card" Padding="22,18">
-        <Grid ColumnDefinitions="*,Auto" infra:Adaptive.StackBelow="520">
-          <StackPanel Spacing="2" VerticalAlignment="Center">
-            <TextBlock Text="{Binding DateLine}" Classes="muted" />
-            <TextBlock Text="{Binding Greeting}" Classes="greeting" FontWeight="SemiBold" TextWrapping="Wrap" />
-            <TextBlock Classes="wrap2" Text="{Binding SchoolLine}" Foreground="{DynamicResource Text2Brush}" TextTrimming="CharacterEllipsis" />
+      <!-- Bienvenue : bandeau aux couleurs de SCOLIA, la date, la salutation, l'état du poste et deux actions -->
+      <Border CornerRadius="18" ClipToBounds="True">
+        <Border.Background>
+          <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+            <GradientStop Offset="0" Color="#1565E0" />
+            <GradientStop Offset="0.6" Color="#0B4FC4" />
+            <GradientStop Offset="1" Color="#0E2A5C" />
+          </LinearGradientBrush>
+        </Border.Background>
+        <Grid ColumnDefinitions="*,Auto" Margin="24,20" infra:Adaptive.StackBelow="640">
+          <StackPanel Spacing="3" VerticalAlignment="Center">
+            <TextBlock Text="{Binding DateLine}" Foreground="#CFE0FF" />
+            <TextBlock Text="{Binding Greeting}" Classes="greeting" Foreground="White" FontWeight="Bold" TextWrapping="Wrap" />
+            <TextBlock Text="{Binding SchoolLine}" Foreground="#DCE8FF" TextTrimming="CharacterEllipsis" />
+            <WrapPanel Margin="0,10,0,0">
+              <Border Classes="herochip" IsVisible="{Binding HasCashLine}" Margin="0,0,8,6">
+                <StackPanel Orientation="Horizontal" Spacing="7">
+                  <Ellipse Width="10" Height="10" Fill="{Binding CashBrush}" Stroke="White" StrokeThickness="1.5" VerticalAlignment="Center" />
+                  <TextBlock Text="{Binding CashLine}" FontWeight="SemiBold" />
+                </StackPanel>
+              </Border>
+              <Button Classes="bare" Command="{Binding Network}" Margin="0,0,8,6" ToolTip.Tip="Réseau et activité">
+                <Border Classes="herochip">
+                  <StackPanel Orientation="Horizontal" Spacing="7">
+                    <Ellipse Width="10" Height="10" Fill="{Binding Sync.StatusBrush}" Stroke="White" StrokeThickness="1.5" VerticalAlignment="Center" />
+                    <TextBlock Text="{Binding Sync.StatusText}" FontWeight="SemiBold" />
+                    <TextBlock Text="{Binding Sync.PeersText}" Opacity="0.85" />
+                  </StackPanel>
+                </Border>
+              </Button>
+            </WrapPanel>
           </StackPanel>
-          <Border Grid.Column="1" Classes="chip cashchip" VerticalAlignment="Center" HorizontalAlignment="Left" IsVisible="{Binding HasCashLine}" Padding="12,6">
-            <StackPanel Orientation="Horizontal" Spacing="8">
-              <Ellipse Width="8" Height="8" Fill="{Binding CashBrush}" VerticalAlignment="Center" />
-              <TextBlock Text="{Binding CashLine}" FontWeight="SemiBold" VerticalAlignment="Center" />
-            </StackPanel>
-          </Border>
+          <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="16" VerticalAlignment="Center" Margin="16,0,0,0">
+            <ItemsControl ItemsSource="{Binding QuickActions}" VerticalAlignment="Center">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="10" /></ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <Button Classes="heroaction" Command="{Binding Open}">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                      <mi:MaterialIcon Kind="{Binding Icon}" Width="18" Height="18" Foreground="#0B4FC4" />
+                      <TextBlock Text="{Binding Title}" VerticalAlignment="Center" />
+                    </StackPanel>
+                  </Button>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <Border Width="78" Height="78" CornerRadius="39" Background="White" IsVisible="{Binding HasSchoolLogo}" BoxShadow="0 6 18 0 #33000000">
+              <Image Source="{Binding SchoolLogo}" Width="62" Height="62" />
+            </Border>
+          </StackPanel>
         </Grid>
       </Border>
 
       <!-- Quatre indicateurs : un clic ouvre la page qui détaille le chiffre -->
       <ItemsControl ItemsSource="{Binding Kpis}" IsVisible="{Binding HasKpis}" Margin="0,0,-12,0">
         <ItemsControl.ItemsPanel>
-          <ItemsPanelTemplate><UniformGrid Columns="4" infra:Adaptive.MinItemWidth="175" /></ItemsPanelTemplate>
+          <ItemsPanelTemplate><UniformGrid Columns="4" infra:Adaptive.MinItemWidth="190" /></ItemsPanelTemplate>
         </ItemsControl.ItemsPanel>
         <ItemsControl.ItemTemplate>
           <DataTemplate>
             <Button Classes="cardbutton" Command="{Binding Open}" Margin="0,0,12,0" ToolTip.Tip="Ouvrir le détail">
               <Border Classes="toolcard" MinHeight="0" Padding="16,14">
-                <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto">
-                  <Border Classes="appicon medium kpiicon" Background="{Binding Brush}" Grid.RowSpan="3" VerticalAlignment="Top" Margin="0,2,12,0"><mi:MaterialIcon Kind="{Binding Icon}" /></Border>
-                  <TextBlock Grid.Column="1" Text="{Binding Label}" Foreground="{DynamicResource Text2Brush}" TextTrimming="CharacterEllipsis" />
-                  <TextBlock Grid.Column="1" Grid.Row="1" Text="{Binding Value}" Classes="kpivalue" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" Margin="0,2,0,0" />
-                  <TextBlock Grid.Column="1" Grid.Row="2" Text="{Binding Hint}" Classes="wrap2 muted" TextTrimming="CharacterEllipsis" />
+                <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto">
+                  <TextBlock Text="{Binding Label}" Foreground="{DynamicResource Text2Brush}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                  <Border Grid.Column="1" Grid.RowSpan="2" Classes="appicon medium" Background="{Binding Brush}" VerticalAlignment="Top" Margin="10,0,0,0"><mi:MaterialIcon Kind="{Binding Icon}" /></Border>
+                  <TextBlock Grid.Row="1" Text="{Binding Value}" Classes="kpivalue" FontWeight="Bold" TextTrimming="CharacterEllipsis" Margin="0,4,0,0" />
+                  <TextBlock Grid.Row="2" Grid.ColumnSpan="2" Text="{Binding Hint}" Classes="muted" FontSize="{DynamicResource FsSmall}" TextTrimming="CharacterEllipsis" Margin="0,4,0,0" />
                 </Grid>
               </Border>
             </Button>
@@ -55,58 +131,41 @@
         </ItemsControl.ItemTemplate>
       </ItemsControl>
 
-      <!-- Outils recommandés : icône de couleur, nom, description, bouton Ouvrir -->
-      <StackPanel Spacing="10">
+      <!-- Outils : tuiles compactes, un clic ouvre l'outil -->
+      <StackPanel Spacing="8">
         <Grid ColumnDefinitions="*,Auto">
-          <TextBlock Text="Outils recommandés" Classes="heading" VerticalAlignment="Center" />
+          <TextBlock Text="Outils" Classes="heading" VerticalAlignment="Center" />
           <Button Grid.Column="1" Classes="link" Content="Afficher tous les outils" Command="{Binding ShowAllTools}" />
         </Grid>
         <ItemsControl ItemsSource="{Binding Tools}" Margin="0,0,-12,0">
           <ItemsControl.ItemsPanel>
-            <ItemsPanelTemplate><UniformGrid Columns="4" infra:Adaptive.MinItemWidth="175" /></ItemsPanelTemplate>
+            <ItemsPanelTemplate><UniformGrid Columns="4" infra:Adaptive.MinItemWidth="190" /></ItemsPanelTemplate>
           </ItemsControl.ItemsPanel>
           <ItemsControl.ItemTemplate>
             <DataTemplate>
-              <Border Classes="toolcard" Margin="0,0,12,0" MinHeight="150">
-                <Grid RowDefinitions="Auto,Auto,*,Auto">
-                  <Border Classes="appicon large" Background="{Binding Brush}" HorizontalAlignment="Left"><mi:MaterialIcon Kind="{Binding Icon}" /></Border>
-                  <TextBlock Grid.Row="1" Text="{Binding Title}" FontWeight="Bold" Margin="0,12,0,4" />
-                  <TextBlock Grid.Row="2" Text="{Binding Description}" Classes="muted" TextWrapping="Wrap" />
-                  <Button Grid.Row="3" Classes="outline" Content="Ouvrir" Command="{Binding Open}" HorizontalAlignment="Left" Margin="0,12,0,0" />
+              <Button Classes="tooltile" Command="{Binding Open}" Margin="0,0,12,0" ToolTip.Tip="{Binding Description}">
+                <Grid ColumnDefinitions="Auto,*,Auto">
+                  <Border Classes="appicon medium" Background="{Binding Brush}" VerticalAlignment="Center" Margin="0,0,12,0"><mi:MaterialIcon Kind="{Binding Icon}" /></Border>
+                  <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="1">
+                    <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                    <TextBlock Text="{Binding Description}" Classes="muted" FontSize="{DynamicResource FsSmall}" TextTrimming="CharacterEllipsis" />
+                  </StackPanel>
+                  <mi:MaterialIcon Grid.Column="2" Kind="ChevronRight" Width="16" Height="16" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" Margin="6,0,0,0" />
                 </Grid>
-              </Border>
+              </Button>
             </DataTemplate>
           </ItemsControl.ItemTemplate>
         </ItemsControl>
       </StackPanel>
 
       <!-- Derniers reçus, et à côté ce qui reste à faire aujourd'hui -->
-      <Grid ColumnDefinitions="2*,12,*" infra:Adaptive.StackBelow="760">
-        <StackPanel Spacing="10">
+      <Grid ColumnDefinitions="2*,16,*" infra:Adaptive.StackBelow="760">
+        <StackPanel Spacing="8">
           <Grid ColumnDefinitions="*,Auto">
             <TextBlock Text="Derniers reçus" Classes="heading" VerticalAlignment="Center" />
             <TextBlock Grid.Column="1" Text="{Binding TodayLine}" Classes="muted" VerticalAlignment="Center" IsVisible="{Binding HasTodayLine}" />
           </Grid>
-          <!-- Téléphone : un reçu par ligne, sur deux niveaux -->
-          <Border Classes="card" Padding="0" IsVisible="{Binding Phone}">
-            <ItemsControl ItemsSource="{Binding Receipts}">
-              <ItemsControl.ItemTemplate>
-                <DataTemplate>
-                  <Button Classes="row" Command="{Binding Open}" Padding="14,10">
-                    <Grid ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto">
-                      <mi:MaterialIcon Grid.RowSpan="2" Kind="ReceiptTextOutline" Width="20" Height="20" Foreground="{DynamicResource TonePurple}" VerticalAlignment="Center" Margin="0,0,10,0" />
-                      <TextBlock Grid.Column="1" Text="{Binding Student}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
-                      <TextBlock Grid.Column="2" Text="{Binding Amount}" FontWeight="SemiBold" Margin="8,0,0,0" />
-                      <TextBlock Grid.Column="1" Grid.Row="1" Classes="muted" TextTrimming="CharacterEllipsis">
-                        <Run Text="{Binding Number, Mode=OneWay}" /><Run Text=" · " /><Run Text="{Binding Date, Mode=OneWay}" />
-                      </TextBlock>
-                    </Grid>
-                  </Button>
-                </DataTemplate>
-              </ItemsControl.ItemTemplate>
-            </ItemsControl>
-          </Border>
-          <Border Classes="card" Padding="0" IsVisible="{Binding NotPhone}">
+          <Border Classes="card" Padding="0">
             <StackPanel>
               <Grid ColumnDefinitions="2*,3*,1.3*,1.4*" Margin="16,10,16,8">
                 <TextBlock Text="Reçu" Classes="colhead" />
@@ -137,7 +196,7 @@
           </Border>
         </StackPanel>
 
-        <StackPanel Grid.Column="2" Spacing="10">
+        <StackPanel Grid.Column="2" Spacing="8">
           <TextBlock Text="Aujourd'hui" Classes="heading" />
           <Border Classes="card" Padding="6">
             <StackPanel>
