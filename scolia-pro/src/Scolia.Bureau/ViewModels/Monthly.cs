@@ -37,13 +37,19 @@ public sealed class MonthlyPage : PageViewModel
     public MonthlyPage(ShellViewModel shell, string? initialState = null) : base(shell)
     {
         state = States.FirstOrDefault(s => s.Value == (initialState ?? string.Empty)) ?? States[0];
-        if (Shell.Can(Perm.PaymentsCreate)) Action("Encaisser", MaterialIconKind.HandCoin, EncashAsync, primary: true);
-        Action("Ouvrir la fiche", MaterialIconKind.AccountOutline, OpenSelectedAsync);
-        Action("Relancer par WhatsApp", MaterialIconKind.Whatsapp, () => OpenLinkAsync(r => r.WhatsAppLink));
-        Action("Relancer par SMS", MaterialIconKind.MessageTextOutline, () => OpenLinkAsync(r => r.SmsLink));
+        if (Shell.Can(Perm.PaymentsCreate)) Action("Encaisser", MaterialIconKind.HandCoin, EncashAsync, primary: true, row: true);
+        Action("Ouvrir la fiche", MaterialIconKind.AccountOutline, OpenSelectedAsync, open: true);
+        Action("Relancer par WhatsApp", MaterialIconKind.Whatsapp, () => OpenLinkAsync(r => r.WhatsAppLink), row: true);
+        Action("Relancer par SMS", MaterialIconKind.MessageTextOutline, () => OpenLinkAsync(r => r.SmsLink), row: true);
         Action("Excel", MaterialIconKind.FileExcelOutline, () => ExportAsync("xlsx"));
         Action("PDF", MaterialIconKind.FilePdfBox, () => ExportAsync("pdf"));
         ActionRefresh();
+        MenuAction("Aperçu rapide", MaterialIconKind.EyeOutline, () =>
+        {
+            if (Selected is not null) return QuickView.StudentAsync(Shell, Selected.StudentId);
+            Shell.Notify("Sélectionnez un apprenant dans la liste.");
+            return Task.CompletedTask;
+        });
     }
 
     public override string Title => "Suivi mensuel";

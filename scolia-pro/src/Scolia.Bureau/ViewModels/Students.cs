@@ -31,9 +31,11 @@ public sealed class StudentsPage : PageViewModel
     public StudentsPage(ShellViewModel shell) : base(shell)
     {
         if (Shell.Can(Perm.StudentsWrite)) Action("Nouvelle inscription", MaterialIconKind.AccountPlusOutline, () => StudentForms.CreateAsync(Shell), primary: true);
-        Action("Ouvrir la fiche", MaterialIconKind.AccountOutline, OpenSelectedAsync);
+        Action("Ouvrir la fiche", MaterialIconKind.AccountOutline, OpenSelectedAsync, open: true);
         if (Shell.Can(Perm.ReportsRead)) Action("Suivi par mois", MaterialIconKind.CalendarCheck, () => Shell.Open(() => new MonthlyPage(Shell)));
         ActionRefresh();
+        MenuAction("Aperçu rapide", MaterialIconKind.EyeOutline, () => WithSelected(id => QuickView.StudentAsync(Shell, id)));
+        if (Shell.Can(Perm.PaymentsCreate)) MenuAction("Encaisser", MaterialIconKind.HandCoin, () => WithSelected(id => Shell.Open(() => new CashierPage(Shell, id))));
         PreviousPage = new AsyncCommand(async () => { page--; await RefreshAsync(); });
         NextPage = new AsyncCommand(async () => { page++; await RefreshAsync(); });
     }
@@ -128,6 +130,16 @@ public sealed class StudentsPage : PageViewModel
     {
         page = 1;
         _ = RefreshAsync();
+    }
+
+    private Task WithSelected(Func<Guid, Task> work)
+    {
+        if (Selected is null)
+        {
+            Shell.Notify("Sélectionnez un apprenant dans la liste.");
+            return Task.CompletedTask;
+        }
+        return work(Selected.Id);
     }
 
     /// <summary>Ouvre la fiche de l'apprenant sélectionné : double-clic ou bouton.</summary>

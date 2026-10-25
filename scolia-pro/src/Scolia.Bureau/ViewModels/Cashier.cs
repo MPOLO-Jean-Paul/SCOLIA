@@ -282,10 +282,16 @@ public sealed class ReceiptsPage : PageViewModel
     public ReceiptsPage(ShellViewModel shell) : base(shell)
     {
         if (Shell.Can(Perm.PaymentsCreate)) Action("Encaisser", MaterialIconKind.HandCoin, () => Shell.Open(() => new CashierPage(Shell)), primary: true);
-        Action("Ouvrir le reçu", MaterialIconKind.ReceiptTextOutline, OpenSelectedAsync);
+        Action("Ouvrir le reçu", MaterialIconKind.ReceiptTextOutline, OpenSelectedAsync, open: true);
         Action("Excel", MaterialIconKind.FileExcelOutline, () => ExportAsync("xlsx"));
         Action("PDF", MaterialIconKind.FilePdfBox, () => ExportAsync("pdf"));
         ActionRefresh();
+        MenuAction("Imprimer le reçu", MaterialIconKind.Printer, () =>
+        {
+            if (Selected is { } r) return Shell.Download($"api/paiements/{r.Id}/recu.pdf", $"recu-{r.Number}.pdf");
+            Shell.Notify("Sélectionnez un reçu dans la liste.");
+            return Task.CompletedTask;
+        });
     }
 
     public override string Title => "Journal des reçus";

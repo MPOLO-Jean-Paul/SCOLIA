@@ -325,6 +325,7 @@
   <!-- Tableaux : liste posée dans un bloc gris arrondi, traits fins entre les lignes, sélection bleu pâle -->
   <Style Selector="DataGrid">
     <Setter Property="infra:GridPriority.Adaptive" Value="True" />
+    <Setter Property="infra:RowMenu.Enabled" Value="True" />
     <Setter Property="Background" Value="{DynamicResource GroupBrush}" />
     <Setter Property="BorderThickness" Value="0" />
     <Setter Property="CornerRadius" Value="{StaticResource RadiusCard}" />

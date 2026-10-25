@@ -1,5 +1,4 @@
 using Avalonia.Controls;
-using Scolia.Bureau.ViewModels;
 
 namespace Scolia.Bureau.Views;
 
@@ -7,10 +6,7 @@ public partial class ReceiptsView : UserControl
 {
     public ReceiptsView()
     {
+        // Le double-clic sur une ligne ouvre son détail : il est géré pour tous les tableaux par RowMenu.
         InitializeComponent();
-        ReceiptGrid.DoubleTapped += async (_, _) =>
-        {
-            if (DataContext is ReceiptsPage page) await page.OpenSelectedAsync();
-        };
     }
 }

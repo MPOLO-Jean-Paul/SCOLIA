@@ -27,9 +27,9 @@ public sealed class StaffAttendancePage : PageViewModel
     {
         if (Shell.Can(Perm.StaffManage))
         {
-            Action("Entrée", MaterialIconKind.LoginVariant, () => MarkAsync("Entree"), primary: true);
-            Action("Sortie", MaterialIconKind.LogoutVariant, () => MarkAsync("Sortie"));
-            Action("Justifier une absence", MaterialIconKind.FileCheckOutline, JustifyAsync);
+            Action("Entrée", MaterialIconKind.LoginVariant, () => MarkAsync("Entree"), primary: true, row: true);
+            Action("Sortie", MaterialIconKind.LogoutVariant, () => MarkAsync("Sortie"), row: true);
+            Action("Justifier une absence", MaterialIconKind.FileCheckOutline, JustifyAsync, row: true);
         }
         Action("Mois précédent ou en cours", MaterialIconKind.CalendarRangeOutline, () => { previousMonth = !previousMonth; return RefreshAsync(); });
         ActionRefresh();

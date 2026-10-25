@@ -248,7 +248,7 @@ public sealed class ResultsPage : PageViewModel
 
     public ResultsPage(ShellViewModel shell) : base(shell)
     {
-        Action("Bulletin PDF", MaterialIconKind.FilePdfBox, BulletinAsync, primary: true);
+        Action("Bulletin PDF", MaterialIconKind.FilePdfBox, BulletinAsync, primary: true, open: true);
         ActionRefresh();
     }
 
@@ -490,11 +490,11 @@ public sealed class DisciplinePage : PageViewModel
         if (Shell.Can(Perm.AcademicsWrite))
         {
             Action("Nouvelle décision", MaterialIconKind.Gavel, () => NewDecisionAsync(Shell), primary: true);
-            Action("Parent reçu ou absent", MaterialIconKind.AccountCheckOutline, ReceptionAsync);
+            Action("Parent reçu ou absent", MaterialIconKind.AccountCheckOutline, ReceptionAsync, row: true);
         }
-        Action("Convocation à imprimer", MaterialIconKind.Printer, PrintConvocationAsync);
-        Action("Historique de l'apprenant", MaterialIconKind.History, ShowHistoryAsync);
-        if (Shell.Can(Perm.DisciplineCancel)) Action("Annuler la décision", MaterialIconKind.Cancel, CancelAsync);
+        Action("Convocation à imprimer", MaterialIconKind.Printer, PrintConvocationAsync, row: true);
+        Action("Historique de l'apprenant", MaterialIconKind.History, ShowHistoryAsync, row: true);
+        if (Shell.Can(Perm.DisciplineCancel)) Action("Annuler la décision", MaterialIconKind.Cancel, CancelAsync, row: true);
         Action("Exporter en CSV", MaterialIconKind.FileExportOutline, ExportAsync);
         ActionRefresh();
     }

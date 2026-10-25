@@ -23,6 +23,13 @@ Onglet Affichage, groupe Apparence, bouton de lanceur (la petite flèche du grou
 
 Les réglages sont mémorisés sur ce poste. Ils ne sont pas partagés avec les autres utilisateurs.
 
+### Clic droit et double-clic
+
+- **Clic droit sur une ligne** d'un tableau : la ligne est choisie et ses actions s'affichent, par exemple Encaisser, Ouvrir la fiche, Relancer par WhatsApp. Le menu propose aussi de copier la cellule ou la ligne, puis les actions de la page.
+- **Clic droit ailleurs sur la page** : les actions générales de la page, comme les exports Excel et PDF ou Actualiser.
+- **Double-clic sur une ligne** : son action principale, en général l'ouverture du détail.
+- **Aperçu rapide** : au clic droit sur un apprenant, une petite fenêtre résume son dossier, son parent et ce qui reste à payer, sans quitter la liste.
+
 ### Taille de l'écran
 
 L'interface suit la taille de la fenêtre. Texte, champs, icônes et marges grandissent ou rapetissent ensemble : un petit écran affiche la même page qu'un grand, en plus petit.

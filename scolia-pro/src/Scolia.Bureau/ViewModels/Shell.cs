@@ -408,12 +408,20 @@ public sealed class ShellViewModel : Observable
         Show(forwardStack.Pop());
     }
 
+    private bool rowTipShown;
+
     private void Show(PageViewModel page)
     {
         Current = page;
         RebuildRibbon();
         Raise(nameof(CanGoBack));
         Raise(nameof(CanGoForward));
+        // Une fois par session, sur la première liste qui en propose : où trouver les actions d'une ligne.
+        if (!rowTipShown && Prefs.Tips && page.RowActions.Count > 0)
+        {
+            rowTipShown = true;
+            Notify("Astuce : clic droit sur une ligne pour ses actions, double-clic pour l'ouvrir.");
+        }
     }
 
     private void ClearHistory()

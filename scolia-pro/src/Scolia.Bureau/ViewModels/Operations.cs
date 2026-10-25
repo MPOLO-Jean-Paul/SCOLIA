@@ -22,8 +22,8 @@ public sealed class DataPage : PageViewModel
     public DataPage(ShellViewModel shell) : base(shell)
     {
         Action("Sauvegarder", MaterialIconKind.ContentSaveOutline, () => BackupNowAsync(Shell), primary: true);
-        Action("Télécharger", MaterialIconKind.Download, DownloadAsync);
-        Action("Restaurer", MaterialIconKind.BackupRestore, RestoreAsync);
+        Action("Télécharger", MaterialIconKind.Download, DownloadAsync, row: true);
+        Action("Restaurer", MaterialIconKind.BackupRestore, RestoreAsync, row: true);
         Action("Importer SCOLIA V79", MaterialIconKind.Upload, () => ImportAsync(Shell));
         Action("Modèle d'import", MaterialIconKind.FileExcelOutline, () => TemplateAsync(Shell));
         Action("Vérifier la base", MaterialIconKind.DatabaseCheckOutline, () => CheckDatabaseAsync(Shell));

@@ -31,10 +31,10 @@ public sealed class TeachingPage : PageViewModel
         if (Shell.Can(Perm.AcademicsWrite))
         {
             Action("Nouveau cours", MaterialIconKind.FileDocumentPlusOutline, () => GradesPage.NewCourseAsync(Shell, PromotionId));
-            Action("Modifier le cours", MaterialIconKind.PencilOutline, EditCourseAsync);
-            Action("Attribuer", MaterialIconKind.AccountArrowRightOutline, AssignAsync, primary: true);
-            Action("Retirer l'attribution", MaterialIconKind.AccountMinusOutline, UnassignAsync);
-            Action("Archiver ou réactiver", MaterialIconKind.ArchiveOutline, ToggleArchiveAsync);
+            Action("Modifier le cours", MaterialIconKind.PencilOutline, EditCourseAsync, open: true);
+            Action("Attribuer", MaterialIconKind.AccountArrowRightOutline, AssignAsync, primary: true, row: true);
+            Action("Retirer l'attribution", MaterialIconKind.AccountMinusOutline, UnassignAsync, row: true);
+            Action("Archiver ou réactiver", MaterialIconKind.ArchiveOutline, ToggleArchiveAsync, row: true);
         }
         Action("Historique des attributions", MaterialIconKind.History, ShowHistoryAsync);
         ActionRefresh();

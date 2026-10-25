@@ -25,6 +25,8 @@ public partial class MainWindow : Window
         // Toute l'interface suit la taille de la fenêtre, sans chevauchement ni taille figée.
         SizeChanged += (_, e) => FitWindow(e.NewSize);
         PageBar.SizeChanged += (_, _) => FitPageActions();
+        // Clic droit sur la page, hors d'un tableau ou d'un champ : les actions de la page.
+        PageHost.AddHandler(PointerReleasedEvent, OnPagePointerReleased, Avalonia.Interactivity.RoutingStrategies.Bubble);
         DataContextChanged += (_, _) =>
         {
             if (DataContext is not ShellViewModel shell) return;
@@ -66,6 +68,15 @@ public partial class MainWindow : Window
         shell.Narrow = size.Width / k < NarrowBelow;
     }
 
+    private void OnPagePointerReleased(object? sender, PointerReleasedEventArgs e)
+    {
+        if (e.Handled || e.InitialPressMouseButton != MouseButton.Right || Shell?.Current is not { } page) return;
+        if (e.Source is Avalonia.Visual v && (v is TextBox || Avalonia.VisualTree.VisualExtensions.FindAncestorOfType<TextBox>(v) is not null)) return;
+        if (RowMenu.PageMenu(page) is not { } menu) return;
+        menu.ShowAt(PageHost, true);
+        e.Handled = true;
+    }
+
     private void OnActionsChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e) =>
         Avalonia.Threading.Dispatcher.UIThread.Post(FitPageActions, Avalonia.Threading.DispatcherPriority.Loaded);
 
@@ -79,7 +90,7 @@ public partial class MainWindow : Window
         var font = Shell.Prefs.Factor * 13.5;
         var title = Math.Clamp(TextWidth(page.Heading, 17 * Shell.Prefs.Factor, FontWeight.Bold) + 8, 140, 260);
         var room = PageBar.Bounds.Width - PageBarFixed - title;
-        var widths = page.Actions.Select(a => TextWidth(a.Label, font, FontWeight.Normal) + 58).ToList();
+        var widths = page.HeaderActions.Select(a => TextWidth(a.Label, font, FontWeight.Normal) + 58).ToList();
         const double more = 46;
         int count;
         if (widths.Count <= 4 && widths.Sum() <= room) count = widths.Count;

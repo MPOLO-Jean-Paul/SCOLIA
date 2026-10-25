@@ -430,6 +430,33 @@ Page(() => new EraseDataPage(shell, payments: true), "22b-effacer-donnees.png");
 Page(() => new EraseDataPage(shell, payments: false), "22c-effacer-apprenants.png");
 Page(() => new AuditPage(shell), "23-audit.png");
 
+// Clic droit sur une ligne du suivi mensuel : actions de la ligne, copie, actions de la page.
+Wait(shell.Open(() => new MonthlyPage(shell, "nonpaye")));
+if (window.GetVisualDescendants().OfType<DataGrid>().FirstOrDefault() is { } monthlyGrid
+    && monthlyGrid.GetVisualDescendants().OfType<DataGridRow>().Skip(2).FirstOrDefault() is { } monthlyRow)
+{
+    monthlyGrid.SelectedItem = monthlyRow.DataContext;
+    var rowMenu = RowMenu.Show(monthlyGrid, monthlyRow, monthlyRow.GetVisualDescendants().OfType<DataGridCell>().Skip(1).FirstOrDefault(), atPointer: false);
+    Save(window, "28-menu-ligne.png");
+    rowMenu.Hide();
+}
+if (shell.Current is { } monthlyCurrent && RowMenu.PageMenu(monthlyCurrent) is { } pageMenu)
+{
+    var host = window.GetVisualDescendants().OfType<TransitioningContentControl>().First();
+    pageMenu.Placement = Avalonia.Controls.PlacementMode.Center;
+    pageMenu.ShowAt(host, false);
+    Save(window, "28c-menu-page.png");
+    pageMenu.Hide();
+}
+// Aperçu rapide d'un apprenant, depuis ce même menu.
+if (shell.Current is MonthlyPage monthlyPage && monthlyPage.Selected is { } peek)
+{
+    _ = QuickView.StudentAsync(shell, peek.StudentId);
+    Wait(Task.Delay(700));
+    Save(window, "28b-apercu-rapide.png");
+    shell.CloseDialog();
+}
+
 // Boîtes de dialogue : recherche globale et formulaire d'inscription.
 Wait(shell.Open(() => new DashboardPage(shell)));
 shell.ShowSearch();
