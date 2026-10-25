@@ -51,6 +51,10 @@ public interface ICurrentUser
     string Name { get; }
     bool HasPermission(string permission);
     string? IpAddress { get; }
+    /// <summary>Identifiant stable du poste ou du téléphone qui envoie la requête, s'il se présente.</summary>
+    string? DeviceId => null;
+    /// <summary>Nom lisible de ce poste : « Téléphone Samsung A15 », « PC-SECRETARIAT ».</summary>
+    string? Device => null;
 }
 
 /// <summary>Sérialise les opérations d'écriture et les exécute dans une transaction unique.

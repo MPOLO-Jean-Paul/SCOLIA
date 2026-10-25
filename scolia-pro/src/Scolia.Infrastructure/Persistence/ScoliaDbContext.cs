@@ -263,7 +263,8 @@ public sealed class ScoliaDbContext(DbContextOptions<ScoliaDbContext> options, I
             }
             AuditEntries.AddRange(audits);
             var result = await base.SaveChangesAsync(cancellationToken);
-            auditBuffer!.Pending.Clear();
+            auditBuffer!.Saved.AddRange(audits);
+            auditBuffer.Pending.Clear();
             return result;
         }
         finally

@@ -8,7 +8,7 @@ using Scolia.Domain.Security;
 namespace Scolia.Infrastructure.Persistence;
 
 /// <summary>Une écriture à la fois, dans une transaction : cohérence garantie pour les soldes et numérotations.</summary>
-public sealed class WriteGate(ScoliaDbContext db, AuditBuffer buffer, DataRevision revision) : IWriteGate
+public sealed class WriteGate(ScoliaDbContext db, AuditBuffer buffer, DataRevision revision, Live.LiveHub live, ICurrentUser user) : IWriteGate
 {
     private static readonly SemaphoreSlim Gate = new(1, 1);
     private static readonly AsyncLocal<bool> Inside = new();
@@ -26,6 +26,7 @@ public sealed class WriteGate(ScoliaDbContext db, AuditBuffer buffer, DataRevisi
                 var result = await operation();
                 await transaction.CommitAsync(cancellationToken);
                 revision.Bump();
+                Announce();
                 return result;
             }
             catch
@@ -33,6 +34,7 @@ public sealed class WriteGate(ScoliaDbContext db, AuditBuffer buffer, DataRevisi
                 await transaction.RollbackAsync(CancellationToken.None);
                 db.ChangeTracker.Clear();
                 buffer.Pending.Clear();
+                buffer.Saved.Clear();
                 throw;
             }
         }
@@ -46,12 +48,33 @@ public sealed class WriteGate(ScoliaDbContext db, AuditBuffer buffer, DataRevisi
             Gate.Release();
         }
     }
+
+    /// <summary>
+    /// Prévient les autres postes de l'écriture validée : ce qui a changé, par qui et depuis quel poste.
+    /// Ils rafraîchissent leur écran, et voient bouger l'activité de l'établissement.
+    /// </summary>
+    private void Announce()
+    {
+        var saved = buffer.Saved.ToList();
+        buffer.Saved.Clear();
+        var topics = saved.Select(a => a.EntityType).Where(t => t.Length > 0).Distinct(StringComparer.Ordinal).ToList();
+        var summary = saved.Count switch
+        {
+            0 => "Données mises à jour",
+            1 => saved[0].Summary,
+            _ => $"{saved[0].Summary} (+{saved.Count - 1})",
+        };
+        live.Changed(revision.Value, user.DeviceId, user.Device, user.Name, summary, topics);
+    }
 }
 
 /// <summary>Entrées d'audit de la requête, numérotées et chaînées au moment de l'enregistrement.</summary>
 public sealed class AuditBuffer
 {
     public List<AuditEntry> Pending { get; } = [];
+
+    /// <summary>Entrées enregistrées dans la transaction en cours : elles décrivent l'écriture aux autres postes.</summary>
+    public List<AuditEntry> Saved { get; } = [];
 }
 
 public sealed class AuditLog(AuditBuffer buffer, ICurrentUser user, IClock clock) : IAuditLog

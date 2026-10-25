@@ -136,9 +136,13 @@ app.UseStaticFiles(new StaticFileOptions
 app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
+// Une écriture déjà faite rend sa réponse d'origine avant tout autre contrôle.
+app.UseIdempotency();
+app.UseLiveLocks();
 
 if (app.Environment.IsDevelopment()) app.MapOpenApi();
 app.MapScoliaEndpoints();
+app.MapLiveEndpoints();
 // Demande d'un second lancement : seule une requête venant de ce poste est acceptée.
 if (desktop)
     app.MapGet("/api/bureau/afficher", (HttpContext http) =>

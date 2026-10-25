@@ -39,6 +39,7 @@ public static class DependencyInjection
         services.AddSingleton<ISpreadsheetService, SpreadsheetService>();
         services.AddSingleton<BackupService>();
         services.AddSingleton<DataRevision>();
+        services.AddSingleton<Live.LiveHub>();
         services.AddHostedService<AutomaticBackupWorker>();
         services.AddHostedService<Network.LanAnnouncer>();
         services.AddScoped<LegacyImportService>();
