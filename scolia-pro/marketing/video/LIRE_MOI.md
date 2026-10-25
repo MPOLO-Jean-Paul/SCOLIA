@@ -1,10 +1,12 @@
 # Vidéo publicitaire SCOLIA Pro
 
-Sources de la vidéo de 48 secondes, en deux formats : 16:9 et 9:16.
+Sources de la vidéo de 51 secondes, à 60 images par seconde, en deux formats : 16:9 et 9:16.
 
 ## Contenu
 
 - `index.html` : l'animation. Une fonction `render(t)` dessine l'image de l'instant t.
+- Chaque écran est dans un appareil : téléphone, tablette ou ordinateur portable.
+- Une loupe agrandit la zone utile de l'écran, à partir de la capture à 3x.
 - `render.js` : rend chaque image avec Playwright et l'encode avec ffmpeg.
 - `preview.js` : rend quelques instants en PNG, pour vérifier un cadrage.
 - `music.py` : compose et synthétise la musique avec numpy.
@@ -35,4 +37,7 @@ ffmpeg -i silencieux-16x9.mp4 -i musique.wav -map 0:v -map 1:a -c:v copy -af hig
 ## Captures
 
 - Elles viennent de `tests/Scolia.Bureau.Captures`, lancé sur un serveur de démonstration.
-- Bureau en 1440 x 900, téléphone en 412 x 915, tablette en 1280 x 800.
+- Téléphone : `SCOLIA_MOBILE=1 SCOLIA_TAILLE=412x915 SCOLIA_ECHELLE=3 SCOLIA_ASTUCES=0`.
+- Tablette : `SCOLIA_MOBILE=1 SCOLIA_TAILLE=1280x800 SCOLIA_ECHELLE=2 SCOLIA_ASTUCES=0`.
+- Ordinateur : `SCOLIA_TAILLE=1440x900 SCOLIA_ECHELLE=2 SCOLIA_ASTUCES=0`.
+- `p3-` est la capture du téléphone à 3x, pour la loupe. `p2-` est la même réduite à 2x, pour l'écran de l'appareil.

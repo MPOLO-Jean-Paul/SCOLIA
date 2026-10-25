@@ -56,10 +56,31 @@ void Save(Window window, string name)
         AvaloniaHeadlessPlatform.ForceRenderTimerTick();
         Thread.Sleep(30);
     }
-    var frame = window.CaptureRenderedFrame();
+    // Échelle facultative (SCOLIA_ECHELLE=3) : la même mise en page, dessinée avec trois fois plus de points,
+    // comme sur un écran de téléphone à haute densité. Le texte reste net une fois agrandi dans une vidéo.
+    var scale = double.TryParse(Environment.GetEnvironmentVariable("SCOLIA_ECHELLE"), System.Globalization.CultureInfo.InvariantCulture, out var e) && e > 1 ? e : 1;
+    Avalonia.Media.Imaging.Bitmap? frame;
+    if (scale > 1)
+    {
+        var sharp = new Avalonia.Media.Imaging.RenderTargetBitmap(
+            new PixelSize((int)Math.Round(window.Bounds.Width * scale), (int)Math.Round(window.Bounds.Height * scale)), new Vector(96 * scale, 96 * scale));
+        // Le rendu à haute densité dessine trois fois trop grand le contenu d'un cadre à ombre portée (fenêtres, feuilles,
+        // bulles) : ombres et transformations sans effet sont retirées le temps du dessin, puis remises.
+        var neutral = window.GetVisualDescendants().OfType<Visual>()
+            .Where(v => v.RenderTransform is { } rt && rt.Value.IsIdentity).Select(v => (v, v.RenderTransform)).ToList();
+        foreach (var (v, _) in neutral) v.RenderTransform = null;
+        var shadowed = window.GetVisualDescendants().OfType<Border>().Where(b => b.BoxShadow.Count > 0).Select(b => (b, b.BoxShadow)).ToList();
+        foreach (var (b, _) in shadowed) b.BoxShadow = default;
+        sharp.Render(window);
+        foreach (var (v, rt) in neutral) v.RenderTransform = rt;
+        foreach (var (b, sh) in shadowed) b.BoxShadow = sh;
+        frame = sharp;
+    }
+    else frame = window.CaptureRenderedFrame();
     if (frame is null) throw new InvalidOperationException($"Rendu indisponible pour {name}.");
     frame.Save(Path.Combine(output, name));
     Console.WriteLine($"capturé : {name} ({frame.PixelSize.Width}x{frame.PixelSize.Height})");
+    frame.Dispose();
     if (Preferences.MobileLayout) Overflow(window, name);
 }
 
@@ -119,6 +140,8 @@ prefs.Theme = dark ? "dark" : "light";
 // Captures figées : les animations se rejouent à l'écran, une image doit montrer l'état final.
 prefs.Animations = Environment.GetEnvironmentVariable("SCOLIA_ANIMATIONS") == "1";
 prefs.Accent = Environment.GetEnvironmentVariable("SCOLIA_ACCENT") ?? "bleu";
+// Sans les bulles d'astuce (SCOLIA_ASTUCES=0) : des écrans dégagés, pour une présentation.
+if (Environment.GetEnvironmentVariable("SCOLIA_ASTUCES") == "0") prefs.Tips = false;
 // Le mobile est connu avant le shell, comme sur Android : ses menus et ses réglages en dépendent.
 if (Environment.GetEnvironmentVariable("SCOLIA_MOBILE") == "1") Preferences.MobileLayout = true;
 var shell = new ShellViewModel(api, prefs);

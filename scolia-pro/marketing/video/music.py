@@ -1,6 +1,6 @@
 # Musique d'ambiance originale, synthétisée : nappe, basse, arpège de cloches, rythme doux, réverbération.
 import numpy as np, wave, sys
-SR = 48000; DUR = 48.0; N = int(SR * DUR)
+SR = 48000; DUR = 51.0; N = int(SR * DUR)
 t = np.arange(N) / SR
 rng = np.random.default_rng(7)
 BPM = 100; beat = 60 / BPM; bar = beat * 4
@@ -43,7 +43,7 @@ for b in range(nbars):
 # Arpège de cloches en croches, de 4 s à 44 s
 pattern = [0, 2, 4, 3, 1, 3, 4, 2]
 step = beat / 2; s = 4.1; k = 0
-while s < 44:
+while s < 47:
     b = int(s // bar); c = chords[b % 4]
     m = c[1:][pattern[k % 8] % 4] + 24
     n = int(1.6 * SR); tt = np.arange(n) / SR
@@ -64,14 +64,14 @@ def hat():
     x = rng.standard_normal(n); x = x - lowpass(x, 7000)
     return x * np.exp(-tt / .018)
 s = 4.1 + 0.0
-while s < 43.5:
+while s < 46.5:
     pos = round((s - 4.1) / beat) % 4
     if pos in (0, 2): add(kick(), s, 0, .22)
     if s > 16.2: add(hat(), s + beat / 2, .2, .05)
     s += beat
 
 # Souffles discrets aux changements de scène
-for at in (4.1, 10.3, 16.3, 22.8, 29.3, 35.8, 41.8):
+for at in (4.1, 11.7, 18.5, 24.7, 31.7, 38.7, 44.7):
     n = int(1.2 * SR); tt = np.arange(n) / SR
     x = lowpass(rng.standard_normal(n), 2500); x -= lowpass(x, 300)
     env = np.sin(np.pi * np.clip(tt / 1.2, 0, 1)) ** 2

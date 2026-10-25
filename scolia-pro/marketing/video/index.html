@@ -17,39 +17,32 @@ body { font-family: Inter, sans-serif; color: #1d1d1f; -webkit-font-smoothing: a
 .blob { position: absolute; border-radius: 50%; }
 .cap { position: absolute; }
 .cap .k { font-weight: 600; letter-spacing: .01em; }
-.cap .t { font-weight: 800; letter-spacing: -.025em; line-height: 1.04; margin-top: .25em; }
-.cap .s { font-weight: 400; color: #515154; line-height: 1.38; margin-top: .7em; }
+.cap .t { font-weight: 800; letter-spacing: -.025em; line-height: 1.05; margin-top: .25em; }
+.cap .s { font-weight: 400; color: #48484a; line-height: 1.4; margin-top: .7em; }
 .cap > div { will-change: transform, opacity; }
 
-.win { border-radius: 14px; overflow: hidden; background: #fff;
-  box-shadow: 0 40px 90px rgba(17,24,39,.20), 0 10px 28px rgba(17,24,39,.10), 0 0 0 1px rgba(0,0,0,.06); }
-.win .bar { height: 36px; background: linear-gradient(#f6f6f6, #ececec); border-bottom: 1px solid #dcdcdc; position: relative; }
-.win .bar i { position: absolute; top: 12px; width: 12px; height: 12px; border-radius: 50%; }
-.win .bar b { position: absolute; left: 0; right: 0; top: 10px; text-align: center; font: 600 13px Inter; color: #6e6e73; }
-.win .view { position: relative; overflow: hidden; }
-.win .view img, .dev .view img { position: absolute; left: 0; top: 0; width: 100%; }
-
-.dev { background: #1d1d1f;
-  box-shadow: 0 40px 90px rgba(17,24,39,.25), 0 10px 26px rgba(17,24,39,.12), inset 0 0 0 2px #3a3a3c; }
+.dev { background: #1d1d1f; box-shadow: 0 40px 90px rgba(17,24,39,.25), 0 10px 26px rgba(17,24,39,.12), inset 0 0 0 2px #3a3a3c; }
 .dev .screen { position: absolute; overflow: hidden; background: #fff; }
 .dev .status { position: absolute; left: 0; right: 0; top: 0; background: #fff; display: flex; align-items: center; justify-content: space-between; font-weight: 600; color: #1d1d1f; }
 .dev .view { position: absolute; left: 0; right: 0; bottom: 0; overflow: hidden; }
+.dev .view img { position: absolute; left: 0; top: 0; width: 100%; }
 .dev .cam { position: absolute; border-radius: 50%; background: #0b0b0c; box-shadow: inset 0 0 0 2px #2a2a2c; }
+.mark { position: absolute; border: 3px solid #0a84ff; box-shadow: 0 0 0 6px rgba(10,132,255,.18); }
 
-.chip { display: flex; align-items: center; gap: 14px; background: rgba(255,255,255,.96); border-radius: 18px; padding: 14px 22px 14px 14px;
-  box-shadow: 0 18px 44px rgba(17,24,39,.16), 0 3px 10px rgba(17,24,39,.08), 0 0 0 1px rgba(0,0,0,.04); white-space: nowrap; }
-.chip .ic { width: 46px; height: 46px; border-radius: 13px; display: flex; align-items: center; justify-content: center; flex: none; }
-.chip .l1 { font-weight: 700; font-size: 20px; }
-.chip .l2 { font-weight: 400; font-size: 16px; color: #6e6e73; margin-top: 2px; }
+.lid { background: #1d1d1f; border-radius: 22px 22px 10px 10px; box-shadow: inset 0 0 0 2px #3a3a3c; }
+.base { background: linear-gradient(#e9e9ec, #c7c7cc 60%, #a9a9ae); border-radius: 2px 2px 16px 16px; box-shadow: 0 30px 60px rgba(17,24,39,.22); }
+.base i { position: absolute; left: 50%; top: 0; width: 140px; height: 7px; margin-left: -70px; background: #b4b4b9; border-radius: 0 0 8px 8px; }
+
+.zoom { background: #fff; border-radius: 26px; overflow: hidden; transform-origin: left top;
+  box-shadow: 0 50px 100px rgba(17,24,39,.28), 0 14px 30px rgba(17,24,39,.14), 0 0 0 1px rgba(0,0,0,.05); }
+.zoom img { position: absolute; }
 
 .tile { background: #fff; border-radius: 26px; padding: 30px 28px;
   box-shadow: 0 18px 40px rgba(17,24,39,.08), 0 2px 6px rgba(17,24,39,.05), 0 0 0 1px rgba(0,0,0,.04); }
 .tile .ic { width: 64px; height: 64px; border-radius: 17px; display: flex; align-items: center; justify-content: center; }
 .tile .n { font-weight: 700; font-size: 27px; margin-top: 22px; letter-spacing: -.01em; }
 .tile .d { font-size: 19px; color: #6e6e73; margin-top: 6px; line-height: 1.35; }
-
-.cta { display: inline-flex; align-items: center; gap: 12px; background: #007aff; color: #fff; font-weight: 700; border-radius: 999px;
-  box-shadow: 0 16px 36px rgba(0,122,255,.35); }
+.cta { display: inline-flex; align-items: center; gap: 12px; background: #007aff; color: #fff; font-weight: 700; border-radius: 999px; box-shadow: 0 16px 36px rgba(0,122,255,.35); }
 .center { text-align: center; }
 </style>
 </head>
@@ -59,7 +52,7 @@ body { font-family: Inter, sans-serif; color: #1d1d1f; -webkit-font-smoothing: a
 const F = new URLSearchParams(location.search).get('f') || 'h';
 const V = F === 'v';
 const W = V ? 1080 : 1920, H = V ? 1920 : 1080;
-const DURATION = 48;
+const DURATION = 51;
 const stage = document.getElementById('stage');
 stage.style.width = W + 'px'; stage.style.height = H + 'px';
 
@@ -77,26 +70,21 @@ function el(tag, cls, parent, html) {
   return e;
 }
 const tracks = [];
-// Un élément animé : fn(t) rend { o, x, y, s, r } ; x et y s'ajoutent à la position de base.
-function track(e, x, y, fn) {
-  e.style.left = x + 'px'; e.style.top = y + 'px';
-  tracks.push({ e, fn });
-  return e;
-}
+function track(e, x, y, fn) { e.style.left = x + 'px'; e.style.top = y + 'px'; tracks.push({ e, fn }); return e; }
 function apply(e, st) {
   const o = st.o === undefined ? 1 : st.o;
   e.style.opacity = o.toFixed(4);
   e.style.visibility = o <= 0.001 ? 'hidden' : 'visible';
-  e.style.transform = `translate(${(st.x || 0).toFixed(2)}px, ${(st.y || 0).toFixed(2)}px) scale(${(st.s || 1).toFixed(4)}) rotate(${(st.r || 0).toFixed(3)}deg)`;
+  e.style.transform = `translate(${(st.x || 0).toFixed(2)}px, ${(st.y || 0).toFixed(2)}px) scale(${(st.s || 1).toFixed(5)})`;
 }
 // Entrée puis sortie d'un élément dans une scène [a, b].
 function life(t, a, b, opt = {}) {
-  const din = opt.din || .9, dout = opt.dout || .55, dy = opt.dy === undefined ? 70 : opt.dy, dx = opt.dx || 0;
+  const din = opt.din || .9, dout = opt.dout || .55, dy = opt.dy === undefined ? 70 : opt.dy;
   const i = easeOut((t - a) / din), q = easeIn((t - (b - dout)) / dout);
   const s0 = opt.s0 === undefined ? .955 : opt.s0;
   return {
     o: t < a || t > b ? 0 : Math.min(clamp((t - a) / (din * .7)), 1 - q),
-    x: (1 - i) * dx - q * (opt.ox || 0),
+    x: 0,
     y: (1 - i) * dy - q * (opt.oy === undefined ? 34 : opt.oy) + (opt.float ? Math.sin((t - a) * 1.1) * opt.float : 0),
     s: lerp(s0, 1, i) * (1 + q * (opt.os || 0)),
   };
@@ -122,19 +110,10 @@ function background(t) {
 }
 
 // ---------- Appareils ----------
-const DESK_CROP = 840; // bas des captures retiré : barre d'état et bulles d'astuce
-function windowFrame(width, images) {
-  // En vertical, l'écran est agrandi sur la zone de travail : la barre latérale sort du cadre.
-  const s = V ? .86 : width / 1440, vh = Math.round(DESK_CROP * s), off = V ? -262 * s : 0;
-  const w = el('div', 'abs win');
-  w.style.width = width + 'px';
-  el('div', 'bar', w, '<i style="left:14px;background:#ff5f57"></i><i style="left:34px;background:#febc2e"></i><i style="left:54px;background:#28c840"></i><b>SCOLIA Pro</b>');
-  const view = el('div', 'view', w); view.style.height = vh + 'px';
-  const imgs = images.map(src => { const i = el('img', '', view); i.src = 'assets/' + src; i.style.width = (1440 * s) + 'px'; i.style.left = off + 'px'; return i; });
-  return { e: w, imgs, view, h: vh + 36 };
-}
-function phoneFrame(scale, images) {
-  const sw = 412 * scale, bar = 30 * scale, sh = 915 * scale + bar, bz = 13 * scale;
+// Téléphone : écran de 412 points de large, barre d'état de 30 points, captures à 2x (affichage) et 3x (loupe).
+const PH = { w: 412, h: 915, bar: 30, bz: 13 };
+function phoneFrame(scale, shots) {
+  const sw = PH.w * scale, bar = PH.bar * scale, sh = PH.h * scale + bar, bz = PH.bz * scale;
   const d = el('div', 'abs dev');
   d.style.width = (sw + 2 * bz) + 'px'; d.style.height = (sh + 2 * bz) + 'px'; d.style.borderRadius = (54 * scale) + 'px';
   const sc = el('div', 'screen', d);
@@ -145,8 +124,8 @@ function phoneFrame(scale, images) {
   const cam = el('div', 'cam', sc); const cr = 11 * scale;
   Object.assign(cam.style, { width: cr + 'px', height: cr + 'px', left: (sw / 2 - cr / 2) + 'px', top: (9 * scale) + 'px' });
   const view = el('div', 'view', sc); view.style.top = bar + 'px';
-  const imgs = images.map(src => { const i = el('img', '', view); i.src = 'assets/' + src; return i; });
-  return { e: d, imgs, w: sw + 2 * bz, h: sh + 2 * bz };
+  const imgs = shots.map(n => { const i = el('img', '', view); i.src = `assets/p2-${n}.png`; return i; });
+  return { e: d, imgs, view, scale, w: sw + 2 * bz, h: sh + 2 * bz, ox: bz, oy: bz + bar };
 }
 function signal() {
   return `<svg viewBox="0 0 54 12" height="100%"><g fill="#1d1d1f"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5" width="3" height="7" rx="1"/><rect x="10" y="2" width="3" height="10" rx="1"/>
@@ -154,21 +133,68 @@ function signal() {
   <rect x="38" y="1.5" width="14" height="9" rx="2.5" fill="none" stroke="#1d1d1f" stroke-width="1.3"/><rect x="40" y="3.4" width="9" height="5.2" rx="1.2"/></g></svg>`;
 }
 function tabletFrame(width, image) {
-  const s = width / 1280, sh = 800 * s, bz = 20;
+  const sh = width * 800 / 1280, bz = 16;
   const d = el('div', 'abs dev');
-  d.style.width = (width + 2 * bz) + 'px'; d.style.height = (sh + 2 * bz) + 'px'; d.style.borderRadius = '34px';
+  d.style.width = (width + 2 * bz) + 'px'; d.style.height = (sh + 2 * bz) + 'px'; d.style.borderRadius = '30px';
   const sc = el('div', 'screen', d);
-  Object.assign(sc.style, { left: bz + 'px', top: bz + 'px', width: width + 'px', height: sh + 'px', borderRadius: '16px' });
+  Object.assign(sc.style, { left: bz + 'px', top: bz + 'px', width: width + 'px', height: sh + 'px', borderRadius: '14px' });
   const view = el('div', 'view', sc); view.style.top = '0';
-  const i = el('img', '', view); i.src = 'assets/' + image;
-  const cam = el('div', 'cam', d); Object.assign(cam.style, { width: '8px', height: '8px', left: (width / 2 + bz - 4) + 'px', top: '6px' });
+  el('img', '', view).src = 'assets/' + image;
   return { e: d, w: width + 2 * bz, h: sh + 2 * bz };
 }
-function crossfade(imgs, t, times) {
-  // times : instants où l'image suivante apparaît
-  imgs.forEach((img, k) => {
-    if (k === 0) return;
-    img.style.opacity = clamp((t - times[k - 1]) / .6).toFixed(3);
+// Ordinateur portable : écran 16:10 dans son cadre, posé sur un socle plus large.
+function laptopFrame(width, image) {
+  const bz = 18, top = 24, sw = width - 2 * bz, sh = sw * 900 / 1440;
+  const box = el('div', 'abs');
+  const lidH = sh + bz + top, baseW = width * 1.14, baseH = Math.round(width * .022);
+  box.style.width = baseW + 'px'; box.style.height = (lidH + baseH) + 'px';
+  const lid = el('div', 'lid', box);
+  Object.assign(lid.style, { position: 'absolute', left: ((baseW - width) / 2) + 'px', top: '0', width: width + 'px', height: lidH + 'px' });
+  const sc = el('div', '', lid);
+  Object.assign(sc.style, { position: 'absolute', left: bz + 'px', top: top + 'px', width: sw + 'px', height: sh + 'px', overflow: 'hidden', borderRadius: '4px', background: '#fff' });
+  const img = el('img', '', sc); img.src = 'assets/' + image; img.style.width = '100%'; img.style.display = 'block';
+  const cam = el('div', '', lid);
+  Object.assign(cam.style, { position: 'absolute', width: '7px', height: '7px', borderRadius: '50%', background: '#3a3a3c', left: (width / 2 - 3.5) + 'px', top: '9px' });
+  const base = el('div', 'base', box, '<i></i>');
+  Object.assign(base.style, { position: 'absolute', left: '0', top: lidH + 'px', width: baseW + 'px', height: baseH + 'px' });
+  return { e: box, w: baseW, h: lidH + baseH };
+}
+
+// Changement d'écran dans un téléphone : l'écran suivant apparaît en fondu à l'instant donné.
+function screens(dev, times) {
+  dev.imgs.forEach((img, k) => { if (k > 0) tracks.push({ e: img, fn: t => ({ o: clamp((t - times[k - 1]) / .5) }) }); });
+}
+
+// ---------- Loupe ----------
+// Une zone de l'écran du téléphone se soulève et grandit jusqu'à une carte lisible, puis repart.
+// r : zone en points de l'écran (x, y, largeur, hauteur) ; la carte vient de la capture à 3x, donc reste nette.
+function zoom(dev, devX, devY, shot, r, a, b) {
+  const [rx, ry, rw, rh] = r;
+  const maxW = V ? 1000 : 600, maxH = V ? 640 : 780;
+  const mag = Math.min(maxW / rw, maxH / rh, V ? 2.9 : 2.2);
+  const cw = rw * mag, ch = rh * mag;
+  // Source sur la scène
+  const sx = devX + dev.ox + rx * dev.scale, sy = devY + dev.oy + ry * dev.scale, ss = dev.scale / mag;
+  let tx, ty;
+  if (V) { tx = (W - cw) / 2; ty = clamp(sy + rh * dev.scale / 2 - ch / 2, 610, H - 90 - ch); }
+  else { tx = 1250 + (600 - cw) / 2; ty = clamp(sy + rh * dev.scale / 2 - ch / 2, 70, H - 70 - ch); }
+  // Repère sur l'écran
+  const m = el('div', 'mark', dev.view);
+  Object.assign(m.style, { left: (rx * dev.scale - 4) + 'px', top: (ry * dev.scale - 4) + 'px', width: (rw * dev.scale + 8) + 'px', height: (rh * dev.scale + 8) + 'px', borderRadius: (14 * dev.scale) + 'px' });
+  tracks.push({ e: m, fn: t => ({ o: t < a || t > b ? 0 : Math.min(clamp((t - a) / .3), clamp((b - t) / .3)) }) });
+  // Carte
+  const c = el('div', 'abs zoom');
+  c.style.width = cw + 'px'; c.style.height = ch + 'px';
+  const img = el('img', '', c); img.src = `assets/p3-${shot}.png`;
+  Object.assign(img.style, { width: (PH.w * mag) + 'px', left: (-rx * mag) + 'px', top: (-ry * mag) + 'px' });
+  track(c, tx, ty, t => {
+    if (t < a + .15 || t > b) return { o: 0 };
+    const p = easeInOut((t - a - .15) / .85), q = easeIn((t - (b - .4)) / .4);
+    return {
+      o: Math.min(clamp((t - a - .15) / .2), 1 - q),
+      x: lerp(sx - tx, 0, p), y: lerp(sy - ty, 0, p) + q * 24 + (p >= 1 ? Math.sin((t - a) * 1.3) * 3 : 0),
+      s: lerp(ss, 1, p) * (1 - q * .04),
+    };
   });
 }
 
@@ -182,51 +208,47 @@ const I = {
   check: '<rect x="5" y="4" width="14" height="17" rx="2.5"/><path d="M9 4V2.8h6V4M8.6 13.2l2.4 2.4 4.4-4.8"/>',
   badge: '<rect x="4" y="3" width="16" height="18" rx="2.8"/><circle cx="12" cy="10" r="2.8"/><path d="M7.5 17.2c.9-2 2.5-3 4.5-3s3.6 1 4.5 3"/>',
   cloud: '<path d="M7 18.5a4.5 4.5 0 0 1-.6-9 6 6 0 0 1 11.5 1.6 3.8 3.8 0 0 1-.4 7.4z"/><path d="M12 16.5v-5M9.8 13.7 12 11.5l2.2 2.2"/>',
-  live: '<circle cx="12" cy="12" r="3"/><path d="M7.4 7.4a6.5 6.5 0 0 0 0 9.2M16.6 7.4a6.5 6.5 0 0 1 0 9.2M4.6 4.6a10.5 10.5 0 0 0 0 14.8M19.4 4.6a10.5 10.5 0 0 1 0 14.8"/>',
-  lock: '<rect x="5" y="10.5" width="14" height="10" rx="2.5"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5M12 14.5v2"/>',
-  offline: '<path d="M3 3l18 18M8.5 8.6a6 6 0 0 0-2.1.9 4.5 4.5 0 0 0 .6 9h10.5M19.6 17.4a3.8 3.8 0 0 0-2.1-6.3 6 6 0 0 0-7-5"/>',
-  sync: '<path d="M20 12a8 8 0 0 1-14.3 4.9M4 12a8 8 0 0 1 14.3-4.9"/><path d="M18.6 3.2v4h-4M5.4 20.8v-4h4"/>',
-  qr: '<rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><path d="M14 14h2.5v2.5H14zM17.5 17.5H20V20h-2.5zM14 19h1M19 14h1"/>',
-  chart: '<path d="M4 20h16"/><rect x="5.5" y="11" width="3" height="6.5" rx="1"/><rect x="10.5" y="7" width="3" height="10.5" rx="1"/><rect x="15.5" y="4" width="3" height="13.5" rx="1"/>',
 };
 const icon = (name, size, color = '#fff', sw = 2) =>
   `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round">${I[name]}</svg>`;
-function chip(x, y, iconName, color, l1, l2, a, b, opt = {}) {
-  const c = el('div', 'abs chip', stage,
-    `<div class="ic" style="background:${color}">${icon(iconName, 26)}</div><div><div class="l1">${l1}</div>${l2 ? `<div class="l2">${l2}</div>` : ''}</div>`);
-  const k = opt.scale || 1;
-  c.style.transformOrigin = 'left top';
-  track(c, x, y, t => { const st = life(t, a, b, { dy: 30, s0: .9, din: .7, float: 3, ...opt }); st.s *= k; return st; });
-  return c;
-}
 
 // ---------- Légendes ----------
-function caption(k, color, title, sub, a, b) {
+function caption(k, color, title, sub, a, b, top = false) {
   const c = el('div', 'cap');
-  const fs = V ? { k: 30, t: 84, s: 34 } : { k: 26, t: 74, s: 30 };
-  if (V) { Object.assign(c.style, { left: '80px', width: (W - 160) + 'px', top: '190px', textAlign: 'center' }); }
-  else { Object.assign(c.style, { left: '130px', width: '590px', top: '0px', height: H + 'px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }); }
-  const parts = [
-    el('div', 'k', c, k), el('div', 't', c, title), el('div', 's', c, sub),
-  ];
+  const fs = V ? { k: 30, t: 84, s: 34 } : top ? { k: 26, t: 66, s: 30 } : { k: 26, t: 74, s: 30 };
+  if (V) Object.assign(c.style, { left: '70px', width: (W - 140) + 'px', top: '170px', textAlign: 'center' });
+  else if (top) Object.assign(c.style, { left: '0', width: W + 'px', top: '70px', textAlign: 'center' });
+  else Object.assign(c.style, { left: '130px', width: '580px', top: '0px', height: H + 'px', display: 'flex', flexDirection: 'column', justifyContent: 'center' });
+  const parts = [el('div', 'k', c, k), el('div', 't', c, title), el('div', 's', c, sub)];
   parts[0].style.fontSize = fs.k + 'px'; parts[0].style.color = color;
   parts[1].style.fontSize = fs.t + 'px';
   parts[2].style.fontSize = fs.s + 'px';
   parts.forEach((p, i) => tracks.push({ e: p, fn: t => life(t, a + .15 + i * .13, b - (2 - i) * .04, { dy: 36, s0: 1, din: .8 }) }));
 }
 
-// ---------- Scène 0 : ouverture ----------
+// ---------- Scène d'un téléphone avec ses loupes ----------
+function phoneScene(o) {
+  caption(o.k, o.color, o.title, o.sub, o.a, o.b);
+  const scale = V ? 1.08 : 1;
+  const dev = phoneFrame(scale, o.shots.map(s => s.n));
+  const x = V ? (W - dev.w) / 2 : 770, y = V ? 610 : (H - dev.h) / 2;
+  track(dev.e, x, y, t => life(t, o.a, o.b, { dy: 110, din: 1.1 }));
+  screens(dev, o.shots.slice(1).map(s => s.at));
+  o.shots.forEach(s => zoom(dev, x, y, s.n, s.r, s.za, s.zb));
+}
+
+// ---------- Ouverture ----------
 const SCOLIA_SVG = `<svg viewBox="40 40 432 432" width="100%" height="100%"><g fill="none" stroke-width="62" stroke-linecap="round" stroke-linejoin="round">
-  <path id="lp1" d="M330 118 H206 Q148 118 148 176 Q148 234 206 234 H226" stroke="#1D4ED8"/>
-  <path id="lp2" d="M286 278 H306 Q364 278 364 336 Q364 394 306 394 H182" stroke="#16A34A"/></g>
-  <circle id="lc1" cx="418" cy="118" r="38" fill="#1D4ED8"/><circle id="lc2" cx="94" cy="394" r="38" fill="#16A34A"/></svg>`;
+  <path class="lp1" d="M330 118 H206 Q148 118 148 176 Q148 234 206 234 H226" stroke="#1D4ED8"/>
+  <path class="lp2" d="M286 278 H306 Q364 278 364 336 Q364 394 306 394 H182" stroke="#16A34A"/></g>
+  <circle class="lc1" cx="418" cy="118" r="38" fill="#1D4ED8"/><circle class="lc2" cx="94" cy="394" r="38" fill="#16A34A"/></svg>`;
 function logoBlock(size, y, a, b, intro) {
   const box = el('div', 'abs');
   box.style.width = box.style.height = size + 'px';
   const card = el('div', '', box);
   Object.assign(card.style, { position: 'absolute', inset: '0', background: '#fff', borderRadius: (size * .23) + 'px',
     boxShadow: '0 30px 70px rgba(29,78,216,.18), 0 8px 20px rgba(17,24,39,.08), 0 0 0 1px rgba(0,0,0,.04)' });
-  const inner = el('div', '', box, SCOLIA_SVG.replace(/id="(l\w+)"/g, `class="$1"`));
+  const inner = el('div', '', box, SCOLIA_SVG);
   Object.assign(inner.style, { position: 'absolute', left: (size * .17) + 'px', top: (size * .17) + 'px', width: (size * .66) + 'px', height: (size * .66) + 'px' });
   const p1 = inner.querySelector('.lp1'), p2 = inner.querySelector('.lp2'), c1 = inner.querySelector('.lc1'), c2 = inner.querySelector('.lc2');
   const L1 = p1.getTotalLength(), L2 = p2.getTotalLength();
@@ -249,8 +271,6 @@ function centeredText(html, y, size, weight, color, a, b, opt = {}) {
   track(e, 0, y, t => life(t, a, b, { dy: 30, s0: 1, din: .8, ...opt }));
   return e;
 }
-
-// Ouverture
 {
   const a = 0, b = 4.4, cy = V ? 640 : 250, size = V ? 300 : 250;
   logoBlock(size, cy, a, b, true);
@@ -259,90 +279,55 @@ function centeredText(html, y, size, weight, color, a, b, opt = {}) {
 }
 
 // ---------- Scène 1 : encaisser ----------
-{
-  const a = 4.1, b = 10.6;
-  caption('Caisse', '#34c759', 'Encaissez en quelques secondes.', 'Choisissez les mois, encaissez, imprimez le reçu numéroté avec son QR code.', a, b);
-  const ww = V ? 1000 : 1060;
-  const w = windowFrame(ww, ['d-encaisser.png', 'd-journal.png']);
-  const x = V ? (W - ww) / 2 : 770, y = V ? 760 : (H - w.h) / 2;
-  track(w.e, x, y, t => { crossfade(w.imgs, t, [7.4]); return life(t, a, b, { dy: 90, din: 1.1 }); });
-  w.imgs.forEach(i => i.style.transformOrigin = '30% 20%');
-  tracks.push({ e: w.imgs[1], fn: t => ({ o: clamp((t - 7.4) / .6), s: lerp(1.03, 1, easeOut((t - 7.4) / 2.5)) }) });
-  if (V) {
-    chip(110, 1470, 'receipt', '#34c759', 'Reçu RC-2026-000316', 'MASIALA KANKU Jonathan · 55 000 FC', a + 3.6, b, { scale: 1.3 });
-    chip(260, 1640, 'qr', '#007aff', 'Code de vérification', '51PV44XX6B', a + 4.1, b, { scale: 1.3 });
-  } else {
-    chip(700, y + w.h - 70, 'receipt', '#34c759', 'Reçu RC-2026-000316', 'MASIALA KANKU Jonathan · 55 000 FC', a + 3.6, b);
-    chip(1560, y - 34, 'qr', '#007aff', 'Code de vérification', '51PV44XX6B', a + 4.1, b);
-  }
-}
+phoneScene({ a: 4.1, b: 12.0, k: 'Caisse', color: '#34c759', title: 'Encaissez en quelques secondes.',
+  sub: 'Cochez les mois payés, encaissez : le reçu numéroté sort avec son code de vérification.',
+  shots: [
+    { n: '05-encaisser', r: [21, 390, 369, 296], za: 5.2, zb: 8.3 },
+    { n: '07-recu', at: 8.3, r: [13, 69, 375, 266], za: 8.6, zb: 12.0 },
+  ] });
 
-// ---------- Scène 2 : tableau de bord ----------
-{
-  const a = 10.3, b = 16.6;
-  caption('Pilotage', '#007aff', 'Tout l’établissement d’un coup d’œil.', 'Recettes, recouvrement, retards et suivi de chaque mois, à jour à chaque reçu.', a, b);
-  const ww = V ? 1000 : 1060;
-  const w = windowFrame(ww, ['d-tableau.png', 'd-suivi.png']);
-  const x = V ? (W - ww) / 2 : 770, y = V ? 760 : (H - w.h) / 2;
-  w.imgs[0].style.transformOrigin = '60% 70%';
-  tracks.push({ e: w.imgs[0], fn: t => ({ s: lerp(1, 1.05, easeInOut((t - a) / 3.4)) }) });
-  track(w.e, x, y, t => { crossfade(w.imgs, t, [13.6]); return life(t, a, b, { dy: 90, din: 1.1 }); });
-  if (V) chip(150, 1470, 'chat', '#34c759', 'Octobre : 89 payés sur 128', '39 parents à relancer par WhatsApp', a + 3.6, b, { scale: 1.3 });
-  else chip(700, y + w.h - 70, 'chat', '#34c759', 'Octobre : 89 payés sur 128', '39 parents à relancer par WhatsApp', a + 3.6, b);
-}
+// ---------- Scène 2 : pilotage ----------
+phoneScene({ a: 11.7, b: 18.8, k: 'Pilotage', color: '#007aff', title: 'Tout l’établissement d’un coup d’œil.',
+  sub: 'Recettes, reste à percevoir, taux de recouvrement et suivi de chaque mois.',
+  shots: [
+    { n: '22e-tableau-de-bord', r: [11, 404, 385, 308], za: 12.8, zb: 15.6 },
+    { n: '08b-suivi-mensuel', at: 15.6, r: [11, 306, 390, 174], za: 15.9, zb: 18.8 },
+  ] });
 
-// ---------- Scène 3 : ordinateur, téléphone, tablette ----------
+// ---------- Scène 3 : ordinateur, tablette, téléphone ----------
 {
-  const a = 16.3, b = 23.1;
-  caption('Partout', '#af52de', 'Ordinateur, tablette et téléphone.', 'La même application sur Windows et Android, pensée pour chaque écran.', a, b);
-  const tw = V ? 900 : 900;
-  const tab = tabletFrame(tw, 't-accueil.png');
-  const tx = V ? 40 : 760, ty = V ? 720 : 170;
-  track(tab.e, tx, ty, t => life(t, a, b, { dy: 90, din: 1.1 }));
-  const ph = phoneFrame(V ? .86 : .78, ['p-02-accueil.png', 'p-03-apprenants.png']);
-  const px = V ? W - ph.w - 50 : 1520, py = V ? 1060 : 300;
-  track(ph.e, px, py, t => { crossfade(ph.imgs, t, [19.9]); return life(t, a + .35, b, { dy: 120, din: 1.1, float: 5 }); });
+  const a = 18.5, b = 25.0;
+  caption('Partout', '#af52de', 'Ordinateur, tablette et téléphone.', 'La même application sur Windows et Android, pensée pour chaque écran.', a, b, true);
+  const lap = laptopFrame(V ? 900 : 1020, 'd-accueil.png');
+  const lx = (W - lap.w) / 2, ly = V ? 640 : 300;
+  track(lap.e, lx, ly, t => life(t, a, b, { dy: 90, din: 1.1 }));
+  const tab = tabletFrame(V ? 560 : 480, 't-accueil.png');
+  const tx = V ? 50 : 90, ty = V ? 1330 : ly + lap.h - tab.h + 24;
+  track(tab.e, tx, ty, t => life(t, a + .3, b, { dy: 110, din: 1.1, float: 4 }));
+  const ph = phoneFrame(V ? .62 : .58, ['02-accueil']);
+  const px = V ? W - ph.w - 60 : 1560, py = V ? 1215 : ly + lap.h - ph.h + 36;
+  track(ph.e, px, py, t => life(t, a + .55, b, { dy: 120, din: 1.1, float: 5 }));
 }
 
 // ---------- Scène 4 : en direct ----------
-{
-  const a = 22.8, b = 29.6;
-  caption('Travail à plusieurs', '#30b0c7', 'Plusieurs postes, en direct.', 'Chaque écran se met à jour seul. Une action en cours sur un poste est bloquée sur les autres.', a, b);
-  const sc = V ? .98 : .82;
-  const p1 = phoneFrame(sc, ['p-32-mobile-direct.png', 'p-33-mobile-reseau.png']);
-  const p2 = phoneFrame(sc, ['p-36-mobile-encaissement-bloque.png']);
-  const gap = V ? 40 : 56;
-  const x1 = V ? (W - 2 * p1.w - gap) / 2 : 800, y1 = V ? 720 : 150;
-  track(p1.e, x1, y1, t => { crossfade(p1.imgs, t, [26.2]); return life(t, a, b, { dy: 110, din: 1.1, float: 4 }); });
-  track(p2.e, x1 + p1.w + gap, y1 + (V ? 50 : 40), t => life(t, a + .3, b, { dy: 110, din: 1.1, float: 4 }));
-  if (V) {
-    chip(90, 1745, 'live', '#34c759', 'PC Secrétariat, en direct', 'Encaissement de KASONGO Patrick', a + 1.6, b, { scale: 1.25 });
-  } else {
-    chip(700, 80, 'live', '#34c759', 'PC Secrétariat, en direct', 'Encaissement de KASONGO Patrick', a + 1.6, b);
-    chip(1450, 910, 'lock', '#ff9500', 'Une action à la fois', 'Déjà en cours sur un autre poste', a + 2.8, b);
-  }
-}
+phoneScene({ a: 24.7, b: 32.0, k: 'Travail à plusieurs', color: '#30b0c7', title: 'Plusieurs postes, en direct.',
+  sub: 'Chaque écran se met à jour seul. Une action en cours sur un poste est bloquée sur les autres.',
+  shots: [
+    { n: '32-mobile-direct', r: [0, 0, 412, 84], za: 25.9, zb: 28.6 },
+    { n: '36-mobile-encaissement-bloque', at: 28.6, r: [12, 98, 388, 262], za: 28.9, zb: 32.0 },
+  ] });
 
 // ---------- Scène 5 : hors ligne ----------
-{
-  const a = 29.3, b = 36.1;
-  caption('Hors ligne', '#ff9500', 'Même sans réseau.', 'Le travail continue sur l’appareil. Tout part au retour de l’ordinateur principal, une seule fois.', a, b);
-  const sc = V ? .98 : .82;
-  const p1 = phoneFrame(sc, ['p-34-mobile-hors-ligne.png']);
-  const p2 = phoneFrame(sc, ['p-35-mobile-reseau-hors-ligne.png']);
-  const gap = V ? 40 : 56;
-  const x1 = V ? (W - 2 * p1.w - gap) / 2 : 800, y1 = V ? 720 : 150;
-  track(p1.e, x1, y1, t => life(t, a, b, { dy: 110, din: 1.1, float: 4 }));
-  track(p2.e, x1 + p1.w + gap, y1 + (V ? 50 : 40), t => life(t, a + .3, b, { dy: 110, din: 1.1, float: 4 }));
-  const s = V ? { scale: 1.25 } : {};
-  const cx = V ? 90 : 700, cy1 = V ? 1745 : 80, cx2 = V ? 90 : 1430, cy2 = V ? 1745 : 910;
-  chip(cx, cy1, 'offline', '#ff9500', 'Hors ligne', 'Les opérations sont gardées dans l’ordre', a + 1.4, V ? 33.2 : b, s);
-  chip(cx2, cy2, 'sync', '#34c759', 'Retour du réseau', 'Tout est envoyé, sans doublon', a + 3.9, b, s);
-}
+phoneScene({ a: 31.7, b: 39.0, k: 'Hors ligne', color: '#ff9500', title: 'Même sans réseau.',
+  sub: 'Le travail continue sur l’appareil. Tout part au retour de l’ordinateur principal, sans doublon.',
+  shots: [
+    { n: '34-mobile-hors-ligne', r: [0, 0, 412, 95], za: 32.9, zb: 35.6 },
+    { n: '35-mobile-reseau-hors-ligne', at: 35.6, r: [23, 245, 365, 108], za: 35.9, zb: 39.0 },
+  ] });
 
 // ---------- Scène 6 : fonctions ----------
 {
-  const a = 35.8, b = 42.1;
+  const a = 38.7, b = 45.0;
   const title = el('div', 'abs center', stage, 'Tout pour gérer votre école.');
   Object.assign(title.style, { width: W + 'px', fontSize: (V ? 80 : 70) + 'px', fontWeight: 800, letterSpacing: '-.03em', padding: V ? '0 70px' : '0' });
   track(title, 0, V ? 200 : 120, t => life(t, a, b, { dy: 30, s0: 1 }));
@@ -369,14 +354,13 @@ function centeredText(html, y, size, weight, color, a, b, opt = {}) {
 
 // ---------- Scène 7 : fin ----------
 {
-  const a = 41.8, b = DURATION + 1;
+  const a = 44.7, b = DURATION + 1;
   const size = V ? 230 : 170, y0 = V ? 470 : 130;
   logoBlock(size, y0, a, b, false);
   centeredText('SCOLIA <span style="color:#1D4ED8">Pro</span>', y0 + size + (V ? 60 : 40), V ? 110 : 92, 800, '#1d1d1f', a + .3, b, { ls: '-.035em' });
   centeredText('La gestion scolaire, simple et sûre.', y0 + size + (V ? 210 : 165), V ? 42 : 36, 500, '#515154', a + .5, b);
   const cta = centeredText(`<span class="cta">${icon('chat', V ? 34 : 28)}Demandez une démonstration</span>`, y0 + size + (V ? 330 : 255), 1, 700, '#fff', a + .8, b);
-  const pill = cta.querySelector('.cta');
-  Object.assign(pill.style, { fontSize: (V ? 40 : 32) + 'px', padding: V ? '26px 50px' : '20px 40px' });
+  Object.assign(cta.querySelector('.cta').style, { fontSize: (V ? 40 : 32) + 'px', padding: V ? '26px 50px' : '20px 40px' });
   const contact = V
     ? '<b style="color:#1d1d1f">Jp-Services</b><br>Jean Paul MPOLO LONO<br>+243 977 152 825<br>jeanpaulmpolo242@gmail.com'
     : '<b style="color:#1d1d1f">Jp-Services</b> · Jean Paul MPOLO LONO<br>+243 977 152 825 · jeanpaulmpolo242@gmail.com';
@@ -387,14 +371,11 @@ function centeredText(html, y, size, weight, color, a, b, opt = {}) {
 // ---------- Rendu d'une image ----------
 window.render = function (t) {
   background(t);
-  for (const k of tracks) {
-    const st = k.fn(t);
-    if (st) apply(k.e, st);
-  }
+  for (const k of tracks) { const st = k.fn(t); if (st) apply(k.e, st); }
 };
 window.ready = async function () {
   await document.fonts.ready;
-  await Promise.all([...document.images].map(i => i.complete ? 0 : new Promise(r => { i.onload = i.onerror = r; })));
+  await Promise.all([...document.images].map(i => i.complete ? i.decode().catch(() => 0) : new Promise(r => { i.onload = i.onerror = r; })));
   return { W, H, DURATION };
 };
 render(Number(new URLSearchParams(location.search).get('t') || 0));
