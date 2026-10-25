@@ -29,6 +29,21 @@
       </Style.Animations>
     </Style>
 
+    <!-- Ouverture : fondu court, la barre avance en douceur -->
+    <Style Selector="LayoutTransformControl.anim Grid#OpeningHost[IsVisible=True]">
+      <Style.Animations>
+        <Animation Duration="0:0:0.25" Easing="CubicEaseOut" FillMode="Both">
+          <KeyFrame Cue="0%"><Setter Property="Opacity" Value="0" /></KeyFrame>
+          <KeyFrame Cue="100%"><Setter Property="Opacity" Value="1" /></KeyFrame>
+        </Animation>
+      </Style.Animations>
+    </Style>
+    <Style Selector="LayoutTransformControl.anim Grid#OpeningHost ProgressBar">
+      <Setter Property="Transitions">
+        <Transitions><DoubleTransition Property="Value" Duration="0:0:0.35" Easing="CubicEaseOut" /></Transitions>
+      </Setter>
+    </Style>
+
     <!-- Écran de connexion : il apparaît en fondu, la carte monte doucement -->
     <Style Selector="LayoutTransformControl.anim ContentControl#LoginHost[IsVisible=True]">
       <Style.Animations>
@@ -72,13 +87,28 @@
   <Grid>
     <!-- Connexion : tant qu'aucune session n'est ouverte -->
     <!-- Première installation : l'assistant remplace la connexion tant qu'aucune configuration n'existe -->
-    <ContentControl Content="{Binding Setup}" IsVisible="{Binding IsSetupRequired}" />
+    <ContentControl Content="{Binding Setup}" IsVisible="{Binding ShowSetup}" />
     <ContentControl x:Name="LoginHost" Content="{Binding Login}" IsVisible="{Binding ShowLogin}">
       <ContentControl.RenderTransform><TranslateTransform /></ContentControl.RenderTransform>
     </ContentControl>
     <ContentControl Content="{Binding Connection}" IsVisible="{Binding ChoosingServer}" />
 
-    <Grid x:Name="AppArea" ColumnDefinitions="Auto,*" RowDefinitions="*,Auto" IsVisible="{Binding IsLoggedIn}">
+    <!-- Ouverture : entre la connexion et l'accueil, la roue tourne et les étapes défilent -->
+    <Grid x:Name="OpeningHost" IsVisible="{Binding Opening}" Background="{DynamicResource BgBrush}">
+      <Grid.RenderTransform><TranslateTransform /></Grid.RenderTransform>
+      <StackPanel Width="320" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="14">
+        <Panel Width="72" Height="72" HorizontalAlignment="Center">
+          <Image Source="{Binding SchoolLogo}" IsVisible="{Binding HasSchoolLogo}" />
+          <Image Source="{DynamicResource ScoliaMark}" IsVisible="{Binding !HasSchoolLogo}" Width="60" Height="60" />
+        </Panel>
+        <TextBlock Text="{Binding OpeningTitle}" Classes="title" FontSize="{DynamicResource FsTitle}" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" />
+        <mi:MaterialIcon Kind="Loading" Classes="spin" Width="34" Height="34" Foreground="{DynamicResource AccentBrush}" HorizontalAlignment="Center" Margin="0,6,0,0" />
+        <TextBlock Text="{Binding OpeningStep}" Classes="muted" HorizontalAlignment="Center" TextAlignment="Center" />
+        <ProgressBar Minimum="0" Maximum="100" Value="{Binding OpeningProgress, Mode=OneWay}" Height="4" MinHeight="4" Margin="24,2,24,0" />
+      </StackPanel>
+    </Grid>
+
+    <Grid x:Name="AppArea" ColumnDefinitions="Auto,*" RowDefinitions="*,Auto" IsVisible="{Binding ShowApp}">
       <Grid.RenderTransform><TranslateTransform /></Grid.RenderTransform>
 
       <!-- Volet latéral flottant, comme les Réglages de macOS : recherche, compte, puis chaque outil avec son icône -->

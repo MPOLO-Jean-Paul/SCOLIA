@@ -39,7 +39,7 @@ public partial class MainWindow : Window
             shell.Prefs.LayoutScaleChanged += _ => FitWindow(ClientSize);
             shell.PropertyChanged += (_, args) =>
             {
-                if (args.PropertyName is nameof(ShellViewModel.ShowLogin) or nameof(ShellViewModel.IsLoggedIn)) ApplyWindowMode();
+                if (args.PropertyName is nameof(ShellViewModel.CompactWindow) or nameof(ShellViewModel.ShowLogin) or nameof(ShellViewModel.IsLoggedIn)) ApplyWindowMode();
                 if (args.PropertyName != nameof(ShellViewModel.Current)) return;
                 if (shell.Current is { } page)
                 {
@@ -80,7 +80,7 @@ public partial class MainWindow : Window
     private void ApplyWindowMode()
     {
         if (Shell is not { } shell) return;
-        var wanted = shell.ShowLogin;
+        var wanted = shell.CompactWindow;
         if (wanted == compact) return;
         if (wanted)
         {

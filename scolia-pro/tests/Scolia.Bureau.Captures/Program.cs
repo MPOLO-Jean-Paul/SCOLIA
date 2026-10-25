@@ -121,8 +121,13 @@ if (args.Length > 3 && args[3] == "smoke")
     return;
 }
 
-var session = Result(api.LoginAsync("admin", password));
-Wait(shell.OpenSessionAsync(session));
+var session = Result(api.LoginAsync(Environment.GetEnvironmentVariable("SCOLIA_COMPTE") ?? "admin", password));
+// Ouverture : la roue et les étapes, capturées en cours de route, puis l'accueil.
+var openingTask = shell.OpenSessionAsync(session);
+var openingSeen = DateTime.UtcNow.AddMilliseconds(1100);
+while (DateTime.UtcNow < openingSeen) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(10); }
+Save(window, "01d-ouverture.png");
+Wait(openingTask);
 Save(window, "02-accueil.png");
 // Itération rapide sur l'accueil (SCOLIA_ACCUEIL=1) : la page entière, puis le thème sombre, sans parcourir les autres écrans.
 if (Environment.GetEnvironmentVariable("SCOLIA_ACCUEIL") == "1")

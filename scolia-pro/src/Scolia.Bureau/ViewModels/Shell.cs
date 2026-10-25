@@ -103,10 +103,47 @@ public sealed class ShellViewModel : Observable
     private bool setupRequired;
 
     /// <summary>Premier lancement : aucune configuration sur ce serveur, l'assistant remplace la connexion.</summary>
-    public bool IsSetupRequired { get => setupRequired; set { if (Set(ref setupRequired, value)) RaiseLogin(); } }
+    public bool IsSetupRequired { get => setupRequired; set { if (Set(ref setupRequired, value)) { RaiseLogin(); Raise(nameof(ShowSetup)); } } }
+    public bool ShowSetup => IsSetupRequired && !Opening;
 
     /// <summary>La connexion s'affiche seulement quand une configuration existe et qu'aucune session n'est ouverte.</summary>
-    public bool ShowLogin => !IsLoggedIn && !IsSetupRequired && !ChoosingServer;
+    public bool ShowLogin => !IsLoggedIn && !IsSetupRequired && !ChoosingServer && !Opening;
+
+    /// <summary>L'application s'affiche une fois l'ouverture terminée.</summary>
+    public bool ShowApp => IsLoggedIn && !Opening;
+
+    // ---------- Ouverture : entre la connexion et l'accueil, une roue et les étapes, au moins deux secondes ----------
+    /// <summary>Durée minimale de l'écran d'ouverture : le passage à l'accueil reste lisible, sans cassure.</summary>
+    public static TimeSpan MinimumOpening { get; set; } = TimeSpan.FromSeconds(2);
+
+    private bool opening;
+    private bool openingCompact;
+    private string openingStep = string.Empty;
+    private double openingProgress;
+
+    public bool Opening
+    {
+        get => opening;
+        private set
+        {
+            if (!Set(ref opening, value)) return;
+            Raise(nameof(ShowLogin)); Raise(nameof(ShowSetup)); Raise(nameof(ShowApp)); Raise(nameof(CompactWindow));
+        }
+    }
+
+    /// <summary>La petite fenêtre de connexion reste petite pendant l'ouverture qui suit la connexion.</summary>
+    public bool CompactWindow => ShowLogin || (Opening && openingCompact);
+    public string OpeningStep { get => openingStep; private set => Set(ref openingStep, value); }
+    public double OpeningProgress { get => openingProgress; private set => Set(ref openingProgress, value); }
+    private string openingTitle = string.Empty;
+    public string OpeningTitle { get => openingTitle; private set => Set(ref openingTitle, value); }
+
+    private async Task OpeningStepAsync(string step, double progress, TimeSpan shown)
+    {
+        OpeningStep = step;
+        OpeningProgress = progress;
+        await Task.Delay(shown);
+    }
 
     /// <summary>Choix du serveur de l'établissement, affiché quand le choix n'est pas évident.</summary>
     public ConnectionViewModel Connection { get; }
@@ -122,14 +159,12 @@ public sealed class ShellViewModel : Observable
     {
         Raise(nameof(IsLoggedIn));
         Raise(nameof(ShowLogin));
+        Raise(nameof(ShowApp));
+        Raise(nameof(CompactWindow));
     }
 
-    /// <summary>L'assistant a créé la configuration et ouvert la première session.</summary>
-    public Task CompleteSetupAsync(SessionDto session)
-    {
-        IsSetupRequired = false;
-        return OpenSessionAsync(session);
-    }
+    /// <summary>L'assistant a créé la configuration et ouvert la première session ; l'ouverture garde la grande fenêtre.</summary>
+    public Task CompleteSetupAsync(SessionDto session) => OpenSessionAsync(session, compact: false);
     public string SchoolLine => session is null ? string.Empty : $"{session.SchoolName}{(session.CurrentYear is null ? string.Empty : $" · année {session.CurrentYear}")}";
     public string UserLine => session is null ? string.Empty : $"{session.DisplayName} · {session.RoleLabel}";
     public string UserInitials => session is null ? string.Empty : Initials(session.DisplayName);
@@ -370,25 +405,48 @@ public sealed class ShellViewModel : Observable
         }
     }
 
-    /// <summary>Ouvre la session : construit le ruban et affiche le tableau de bord.</summary>
-    public async Task OpenSessionAsync(SessionDto s)
+    /// <summary>
+    /// Ouvre la session : l'écran d'ouverture montre une roue et les étapes, au moins deux secondes,
+    /// pendant que le ruban et l'accueil se préparent ; l'accueil apparaît ensuite d'un seul geste.
+    /// </summary>
+    public async Task OpenSessionAsync(SessionDto s, bool compact = true)
     {
+        var watch = System.Diagnostics.Stopwatch.StartNew();
+        var pace = MinimumOpening / 4;
+        openingCompact = compact;
         session = s;
         knownRevision = -1;
-        Raise(nameof(SchoolTitle));
-        Raise(nameof(SchoolYearLine));
-        if (SchoolLogo is null) await RefreshLogoAsync();
+        OpeningTitle = IsSetupRequired ? "Configuration terminée" : $"Bienvenue, {s.DisplayName}";
+        OpeningProgress = 0;
+        Opening = true;
+        IsSetupRequired = false;
         RaiseLogin();
-        Raise(nameof(SchoolLine));
-        Raise(nameof(UserLine));
-        Raise(nameof(UserInitials));
-        Raise(nameof(AccountName));
-        Status = $"Connecté : {s.DisplayName} · {s.SchoolName}";
-        Login.Reset();
-        RebuildRibbon();
-        current = null;
-        ClearHistory();
-        await Open(() => new HomePage(this));
+        try
+        {
+            await OpeningStepAsync("Vérification du compte", 20, pace);
+            Raise(nameof(SchoolTitle));
+            Raise(nameof(SchoolYearLine));
+            await OpeningStepAsync($"Chargement de {s.SchoolName}", 45, pace);
+            if (SchoolLogo is null) await RefreshLogoAsync();
+            Raise(nameof(SchoolLine));
+            Raise(nameof(UserLine));
+            Raise(nameof(UserInitials));
+            Raise(nameof(AccountName));
+            Status = $"Connecté : {s.DisplayName} · {s.SchoolName}";
+            Login.Reset();
+            await OpeningStepAsync("Préparation des menus", 70, pace);
+            RebuildRibbon();
+            current = null;
+            ClearHistory();
+            OpeningStep = "Ouverture de l'accueil";
+            OpeningProgress = 90;
+            await Open(() => new HomePage(this));
+            var rest = MinimumOpening - watch.Elapsed;
+            if (rest > TimeSpan.Zero) await Task.Delay(rest);
+            OpeningProgress = 100;
+            await Task.Delay(TimeSpan.FromMilliseconds(MinimumOpening > TimeSpan.Zero ? 150 : 0));
+        }
+        finally { Opening = false; }
         await OfferNetworkAsync();
     }
 
