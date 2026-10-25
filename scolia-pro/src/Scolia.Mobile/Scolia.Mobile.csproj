@@ -36,9 +36,11 @@
     <PublishTrimmed>false</PublishTrimmed>
   </PropertyGroup>
 
-  <!-- Le serveur de l'établissement, pour le téléphone qui en tient lieu. Le protocole de découverte vient avec lui. -->
+  <!-- Le serveur de l'établissement, pour le téléphone qui en tient lieu. Le protocole de découverte vient avec lui.
+       Il est en .NET pur : il se compile sans l'architecture du téléphone (android-arm64, android-arm). -->
   <ItemGroup>
-    <ProjectReference Include="../Scolia.Api/Scolia.Api.csproj" SetTargetFramework="TargetFramework=net10.0" />
+    <ProjectReference Include="../Scolia.Api/Scolia.Api.csproj" SetTargetFramework="TargetFramework=net10.0"
+                      GlobalPropertiesToRemove="RuntimeIdentifier;SelfContained" />
   </ItemGroup>
   <Import Project="AspNetCoreLocal.props" />
 
