@@ -30,7 +30,18 @@ public sealed class LoginViewModel : Observable
     /// <summary>Nom de l'établissement, connu dès le démarrage du serveur : il titre l'écran de connexion.</summary>
     public string SchoolName { get => schoolName; set { if (Set(ref schoolName, value)) { Raise(nameof(TitleText)); } } }
     public string TitleText => string.IsNullOrWhiteSpace(schoolName) ? "SCOLIA" : schoolName;
-    public bool Busy { get => busy; set => Set(ref busy, value); }
+    public bool Busy { get => busy; set { if (Set(ref busy, value)) Raise(nameof(NotBusy)); } }
+    public bool NotBusy => !busy;
+
+    private bool showPassword;
+    /// <summary>L'œil du champ affiche ou masque le mot de passe saisi.</summary>
+    public bool ShowPassword { get => showPassword; set { if (Set(ref showPassword, value)) Raise(nameof(EyeIcon)); } }
+    public Material.Icons.MaterialIconKind EyeIcon => showPassword ? Material.Icons.MaterialIconKind.EyeOffOutline : Material.Icons.MaterialIconKind.EyeOutline;
+    public RelayCommand ToggleEye => toggleEye ??= new RelayCommand(() => ShowPassword = !ShowPassword);
+    private RelayCommand? toggleEye;
+
+    /// <summary>Pied de la fenêtre de connexion : version et éditeur.</summary>
+    public string Footer => $"SCOLIA Pro {typeof(LoginViewModel).Assembly.GetName().Version?.ToString(3) ?? "1.1.0"} · {AboutInfo.Publisher}";
     public AsyncCommand Submit { get; }
 
     private Avalonia.Media.Imaging.Bitmap? logo;

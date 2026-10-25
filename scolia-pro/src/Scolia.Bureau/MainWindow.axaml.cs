@@ -51,6 +51,7 @@ public partial class MainWindow : Window
             FitWindow(ClientSize);
             shell.FullscreenHandler = full => WindowState = full ? WindowState.FullScreen : WindowState.Normal;
             shell.PickFileHandler = PickFileAsync;
+            shell.CopyHandler = async text => { if (Clipboard is { } clipboard) await Avalonia.Input.Platform.ClipboardExtensions.SetTextAsync(clipboard, text); };
             ApplyPageTransition(shell.Prefs);
             shell.Prefs.PropertyChanged += (_, args) =>
             {

@@ -511,6 +511,14 @@ if (shell.Dialog is SearchViewModel search)
 Save(window, "24-recherche.png");
 shell.CloseDialog();
 
+// À propos, et l'aide des raccourcis : chaque fenêtre a son bouton Fermer.
+shell.ShowAbout();
+Save(window, "24b-a-propos.png");
+shell.CloseDialog();
+var shortcuts = ShortcutsDialog.ShowAsync(shell);
+Save(window, "24c-raccourcis.png");
+shell.CloseDialog();
+
 // Le vrai formulaire d'inscription, avec les champs obligatoires de SCOLIA V79.
 _ = StudentForms.CreateAsync(shell);
 Wait(Task.Delay(600));

@@ -215,6 +215,9 @@ public sealed class ShellViewModel : Observable
     /// <summary>Lit un fichier choisi par l'utilisateur. Fourni par la fenêtre, qui détient le sélecteur de fichiers.</summary>
     public Func<IReadOnlyList<string>, Task<PickedFile?>>? PickFileHandler { get; set; }
 
+    /// <summary>Copie un texte dans le presse-papiers du poste ; fourni par la fenêtre.</summary>
+    public Func<string, Task>? CopyHandler { get; set; }
+
     public bool Can(string permission) => session?.Permissions.Contains(permission) == true;
 
     /// <summary>Plein écran : la fenêtre gère l'affichage réel, le shell garde l'état pour le ruban.</summary>
@@ -615,6 +618,9 @@ public sealed class ShellViewModel : Observable
 
     /// <summary>Affiche la recherche globale, Ctrl+K.</summary>
     public void ShowSearch() => Dialog = new SearchViewModel(this);
+
+    /// <summary>Fenêtre « À propos » : version, éditeur et développeur.</summary>
+    public void ShowAbout() => Dialog = new AboutViewModel(this);
 
     public void OpenBackstage() => BackstageOpen = true;
 

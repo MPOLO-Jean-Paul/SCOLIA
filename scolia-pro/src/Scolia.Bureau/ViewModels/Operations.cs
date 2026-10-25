@@ -460,15 +460,55 @@ public static class ShortcutsDialog
     }
 }
 
-/// <summary>À propos de SCOLIA Pro.</summary>
+/// <summary>À propos de SCOLIA Pro : la fenêtre de présentation, avec l'éditeur et le développeur.</summary>
 public static class AboutDialog
 {
-    private const string Text = """
-        SCOLIA Pro : gestion scolaire, encaissements, scolarité et paie.
-        Le client natif et le serveur fonctionnent sur ce poste ou sur le réseau local de l'établissement.
-        Les données restent chez l'établissement : SCOLIA n'envoie aucune donnée à un tiers.
-        """;
+    public static Task<bool> ShowAsync(ShellViewModel shell)
+    {
+        shell.ShowAbout();
+        return Task.FromResult(true);
+    }
+}
 
-    public static Task<bool> ShowAsync(ShellViewModel shell) =>
-        shell.Ask(new FormViewModel("SCOLIA Pro", $"Version {typeof(App).Assembly.GetName().Version?.ToString(3) ?? "1.0"}") { Message = Text, CancelText = "Fermer" });
+/// <summary>
+/// Fenêtre « À propos » : le logo, la version, ce que fait SCOLIA, puis l'éditeur Jp-Services et les coordonnées
+/// du développeur, comme dans la version 79, avec de quoi l'appeler, lui écrire ou copier ses coordonnées.
+/// </summary>
+public sealed class AboutViewModel : Observable
+{
+    private readonly ShellViewModel shell;
+
+    public AboutViewModel(ShellViewModel shell)
+    {
+        this.shell = shell;
+        Close = new RelayCommand(shell.CloseDialog);
+        WriteEmail = new RelayCommand(() => Files.Open($"mailto:{AboutInfo.Email}?subject=SCOLIA%20Pro%20{AboutInfo.Version}"));
+        OpenWhatsApp = new RelayCommand(() => Files.Open($"https://wa.me/{AboutInfo.PhoneDigits}"));
+        CopyContacts = new AsyncCommand(CopyAsync);
+    }
+
+    public string Title => "SCOLIA Pro";
+    public string Tagline => AboutInfo.Tagline;
+    public string VersionLine => $"Version {AboutInfo.Version}";
+    public string Description => AboutInfo.Description;
+    public IReadOnlyList<string> Modules => AboutInfo.Modules;
+    public string Publisher => AboutInfo.Publisher;
+    public string Developer => AboutInfo.Developer;
+    public string Role => AboutInfo.Role;
+    public string Phone => AboutInfo.Phone;
+    public string Email => AboutInfo.Email;
+    public string Copyright => AboutInfo.Copyright;
+    public string Accounts => "Deux comptes : Secrétariat, qui administre SCOLIA, et Comptabilité.";
+
+    public RelayCommand Close { get; }
+    public RelayCommand WriteEmail { get; }
+    public RelayCommand OpenWhatsApp { get; }
+    public AsyncCommand CopyContacts { get; }
+
+    private async Task CopyAsync()
+    {
+        var text = $"SCOLIA Pro {AboutInfo.Version} · {AboutInfo.Publisher}{Environment.NewLine}{AboutInfo.Developer}{Environment.NewLine}{AboutInfo.Phone}{Environment.NewLine}{AboutInfo.Email}";
+        if (shell.CopyHandler is { } copy) await copy(text);
+        shell.Notify("Coordonnées du développeur copiées.");
+    }
 }

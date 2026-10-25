@@ -695,6 +695,28 @@
   <Style Selector="Border.toolcard:pointerover">
     <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
   </Style>
+  <!-- Bouton Fermer des fenêtres : une croix ronde et discrète en haut à droite, comme sur macOS -->
+  <Style Selector="Button.closex">
+    <Setter Property="Width" Value="28" />
+    <Setter Property="Height" Value="28" />
+    <Setter Property="CornerRadius" Value="14" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="HorizontalContentAlignment" Value="Center" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+    <Setter Property="VerticalAlignment" Value="Top" />
+    <Setter Property="ToolTip.Tip" Value="Fermer (Échap)" />
+  </Style>
+  <Style Selector="Button.closex mi|MaterialIcon">
+    <Setter Property="Width" Value="16" />
+    <Setter Property="Height" Value="16" />
+    <Setter Property="Foreground" Value="{DynamicResource Text2Brush}" />
+  </Style>
+  <Style Selector="Button.closex:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource SidebarSelectedBrush}" />
+  </Style>
+
   <!-- Carte cliquable : le bouton s'efface, la carte porte le survol -->
   <Style Selector="Button.cardbutton">
     <Setter Property="Background" Value="Transparent" />

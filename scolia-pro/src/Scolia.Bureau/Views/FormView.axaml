@@ -15,7 +15,7 @@
   <Border Classes="card sheet" Classes.embedded="{Binding Embedded}" MinWidth="460" MaxWidth="620" Padding="0" CornerRadius="14" Background="{DynamicResource SurfaceBrush}" ClipToBounds="True"
           BoxShadow="0 8 32 0 #3D000000">
     <StackPanel>
-      <Grid ColumnDefinitions="Auto,*" Margin="24,22,24,0" IsVisible="{Binding !Embedded}">
+      <Grid ColumnDefinitions="Auto,*,Auto" Margin="24,22,18,0" IsVisible="{Binding !Embedded}">
         <Border Classes="appicon large" Background="{Binding HeaderBrush}" VerticalAlignment="Top" Margin="0,0,14,0">
           <mi:MaterialIcon Kind="{Binding HeaderIcon}" />
         </Border>
@@ -23,6 +23,7 @@
           <TextBlock Text="{Binding Title}" FontSize="17" FontWeight="Bold" TextWrapping="Wrap" />
           <TextBlock Text="{Binding Subtitle}" Classes="muted" TextWrapping="Wrap" IsVisible="{Binding HasSubtitle}" />
         </StackPanel>
+        <Button Grid.Column="2" Classes="closex" Command="{Binding Cancel}" Margin="12,0,0,0"><mi:MaterialIcon Kind="Close" /></Button>
       </Grid>
 
       <TextBlock Text="{Binding Message}" TextWrapping="Wrap" IsVisible="{Binding HasMessage}" Margin="24,16,24,0" />
