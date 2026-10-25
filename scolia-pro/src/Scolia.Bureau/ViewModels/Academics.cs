@@ -636,7 +636,7 @@ public sealed class DisciplinePage : PageViewModel
             Shell.Notify("Sélectionnez une décision validée à annuler.");
             return;
         }
-        var form = new FormViewModel("Annuler la décision", "Réservé à l'administrateur. La décision reste dans l'historique avec son motif.", async f =>
+        var form = new FormViewModel("Annuler la décision", "Réservé au secrétariat. La décision reste dans l'historique avec son motif.", async f =>
         {
             await Shell.Api.SendAsync(HttpMethod.Post, $"api/scolarite/discipline/registre/{row.Id}/annulation", new { reason = f.Text("motif") });
             Shell.Notify("Décision annulée. Elle reste consultable dans l'historique.");

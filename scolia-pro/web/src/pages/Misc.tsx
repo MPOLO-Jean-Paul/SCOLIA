@@ -7,6 +7,7 @@ import type { AcademicYear, Promotion, ReEnrollmentItem, Session } from '../api/
 import { longDate, money } from '../lib/format';
 import { Button, Card, Empty, ErrorAlert, Loading, PageHead, SelectField, TextField, useToast } from '../components/ui';
 import { useSession } from '../lib/session';
+import { ScoliaMark } from '../components/ScoliaMark';
 
 export function ProfilePage() {
   const { session, setSession } = useSession();
@@ -51,7 +52,7 @@ export function VerifyPage() {
   return (
     <div className="verify-page">
       <div className="auth-card" style={{ textAlign: 'center' }}>
-        <img src="/scolia.png" alt="" width={56} height={56} />
+        <ScoliaMark size={56} />
         <h2 style={{ fontSize: 22 }}>Vérification d’un reçu</h2>
         {error ? <ErrorAlert error={error} /> : !result ? <Loading rows={3} /> : !result.found ? (
           <><div className="status-pill ko"><ShieldX />Reçu introuvable</div><p className="muted">Ce code ne correspond à aucun reçu émis par l’établissement. Le document pourrait être falsifié.</p></>

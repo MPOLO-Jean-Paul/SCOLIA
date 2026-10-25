@@ -7,6 +7,7 @@ using Microsoft.Extensions.Options;
 using Scolia.Application.Abstractions;
 using Scolia.Application.Services;
 using Scolia.Domain.Common;
+using Scolia.Domain.Security;
 using Scolia.Infrastructure.Backup;
 using Scolia.Infrastructure.Documents;
 using Scolia.Infrastructure.Import;
@@ -83,6 +84,17 @@ public static class DependencyInjection
         if (hasData && hasPending)
             await scope.ServiceProvider.GetRequiredService<BackupService>().CreateAsync("avantmiseajour", ct);
         await db.Database.MigrateAsync(ct);
+        await ConvertLegacyRolesAsync(db, ct);
+    }
+
+    /// <summary>Deux comptes seulement : l'ancien administrateur et la direction deviennent le secrétariat, qui administre SCOLIA.
+    /// Un ancien compte enseignant est désactivé ; le secrétariat peut le réactiver en lui donnant l'un des deux rôles.</summary>
+    private static async Task ConvertLegacyRolesAsync(ScoliaDbContext db, CancellationToken ct)
+    {
+        await db.Users.Where(u => u.Role == Role.Administrateur || u.Role == Role.Direction)
+            .ExecuteUpdateAsync(x => x.SetProperty(u => u.Role, Role.Secretariat), ct);
+        await db.Users.Where(u => u.Role == Role.Enseignant && u.IsActive)
+            .ExecuteUpdateAsync(x => x.SetProperty(u => u.IsActive, false).SetProperty(u => u.SecurityStamp, Guid.NewGuid().ToString("N")), ct);
     }
 }
 

@@ -1,9 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <!-- Version des petites tailles (16 à 32 points) : l'écusson et l'étoile seuls, lisibles dans la barre des tâches -->
-  <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1A3F8F"/><stop offset="1" stop-color="#071634"/></linearGradient>
-  </defs>
-  <rect x="0" y="0" width="512" height="512" rx="104" fill="url(#bg)"/>
-  <path d="M256 60 L424 116 V246 C424 350 350 418 256 456 C162 418 88 350 88 246 V116 Z" fill="#FFFFFF"/>
-  <path d="M256 150 l26 54 60 8 -44 42 11 60 -53 -29 -53 29 11 -60 -44 -42 60 -8 Z" fill="#F2A900"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="88 64 336 384">
+  <g fill="none" stroke-width="84" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M360 110 H206 Q140 110 140 176 Q140 242 206 242 H222" stroke="#1D4ED8"/>
+    <path d="M290 270 H306 Q372 270 372 336 Q372 402 306 402 H152" stroke="#16A34A"/>
+  </g>
 </svg>

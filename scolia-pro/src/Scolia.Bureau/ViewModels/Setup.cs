@@ -24,7 +24,7 @@ public sealed class PromotionDraftVm : Observable
 
 /// <summary>
 /// Assistant de première installation, en deux étapes comme dans la version précédente :
-/// 1) établissement, logo, année scolaire et promotions, 2) comptes et sécurité (administrateur, secrétariat, comptabilité).
+/// 1) établissement, logo, année scolaire et promotions, 2) comptes : le secrétariat, qui administre SCOLIA, et la comptabilité.
 /// </summary>
 public sealed class SetupViewModel : Observable
 {
@@ -158,10 +158,11 @@ public sealed class SetupViewModel : Observable
     public bool LoadDemo { get; set; }
 
     // ---- Étape 2 : comptes ----
-    private string adminUserName = "admin";
+    // Le compte secrétariat est l'administrateur : ses fonctions, le paramétrage et les utilisateurs.
+    private string adminUserName = "secretariat";
     public string AdminUserName { get => adminUserName; set => Set(ref adminUserName, value); }
 
-    private string adminDisplayName = "Administrateur";
+    private string adminDisplayName = "Secrétariat";
     public string AdminDisplayName { get => adminDisplayName; set => Set(ref adminDisplayName, value); }
 
     private string adminPassword = string.Empty;
@@ -169,21 +170,6 @@ public sealed class SetupViewModel : Observable
 
     private string adminConfirm = string.Empty;
     public string AdminConfirm { get => adminConfirm; set => Set(ref adminConfirm, value); }
-
-    private bool useSecretariat = true;
-    public bool UseSecretariat { get => useSecretariat; set => Set(ref useSecretariat, value); }
-
-    private string secretariatUserName = "secretariat";
-    public string SecretariatUserName { get => secretariatUserName; set => Set(ref secretariatUserName, value); }
-
-    private string secretariatDisplayName = "Secrétariat";
-    public string SecretariatDisplayName { get => secretariatDisplayName; set => Set(ref secretariatDisplayName, value); }
-
-    private string secretariatPassword = string.Empty;
-    public string SecretariatPassword { get => secretariatPassword; set => Set(ref secretariatPassword, value); }
-
-    private string secretariatConfirm = string.Empty;
-    public string SecretariatConfirm { get => secretariatConfirm; set => Set(ref secretariatConfirm, value); }
 
     private bool useComptabilite = true;
     public bool UseComptabilite { get => useComptabilite; set => Set(ref useComptabilite, value); }
@@ -281,9 +267,8 @@ public sealed class SetupViewModel : Observable
     {
         var accounts = new List<(string Who, string UserName, string DisplayName, string Password, string Confirm)>
         {
-            ("L'administrateur", AdminUserName, AdminDisplayName, AdminPassword, AdminConfirm),
+            ("Le compte secrétariat", AdminUserName, AdminDisplayName, AdminPassword, AdminConfirm),
         };
-        if (UseSecretariat) accounts.Add(("Le compte secrétariat", SecretariatUserName, SecretariatDisplayName, SecretariatPassword, SecretariatConfirm));
         if (UseComptabilite) accounts.Add(("Le compte comptabilité", ComptabiliteUserName, ComptabiliteDisplayName, ComptabilitePassword, ComptabiliteConfirm));
 
         foreach (var (who, userName, displayName, password, confirm) in accounts)
@@ -342,7 +327,6 @@ public sealed class SetupViewModel : Observable
     {
         var match = YearPattern.Match(YearLabel);
         var accounts = new List<object>();
-        if (UseSecretariat) accounts.Add(new { role = "Secretariat", userName = SecretariatUserName.Trim(), displayName = SecretariatDisplayName.Trim(), password = SecretariatPassword });
         if (UseComptabilite) accounts.Add(new { role = "Comptabilite", userName = ComptabiliteUserName.Trim(), displayName = ComptabiliteDisplayName.Trim(), password = ComptabilitePassword });
         return new
         {

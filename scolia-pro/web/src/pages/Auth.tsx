@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, CheckCircle2, Eye, EyeOff, LoaderCircle, Lock, Rocket } from 'lucide-react';
+import { ArrowRight, CheckCircle2, Eye, EyeOff, LoaderCircle, Lock } from 'lucide-react';
 import { ApiError, api } from '../api/client';
 import type { Session } from '../api/types';
 import { useSession } from '../lib/session';
+import { ScoliaMark } from '../components/ScoliaMark';
 import { Button, ErrorAlert, SectionTitle, SelectField, TextField, errorText } from '../components/ui';
 
 // Verrouillage après 5 erreurs : l'échéance est gardée pour qu'un rechargement de la page reprenne le compte à rebours.
@@ -87,7 +88,7 @@ export function LoginPage() {
   return (
     <div className="signin-screen">
       <main className="signin">
-        <img className="signin-avatar" src="/scolia.png" alt="" />
+        <ScoliaMark className="signin-avatar" size={64} />
         <h1 className="signin-title">SCOLIA</h1>
         <p className="signin-sub">Connectez-vous pour continuer</p>
         <form className="signin-form" onSubmit={submit}>
@@ -116,7 +117,7 @@ export function LoginPage() {
           ) : error ? <p className="signin-error" role="alert">{errorText(error)}</p>
             : restored ? <p className="signin-ok" role="status"><CheckCircle2 />Accès rétabli. Vous pouvez réessayer.</p> : null}
         </form>
-        <p className="signin-help">Après 5 erreurs, l’accès est verrouillé 2 minutes. Mot de passe oublié : contactez l’administrateur.</p>
+        <p className="signin-help">Après 5 erreurs, l’accès est verrouillé 2 minutes. Mot de passe oublié : contactez le secrétariat.</p>
       </main>
       <footer className="signin-foot">SCOLIA Pro 1.1.0</footer>
     </div>
@@ -128,7 +129,7 @@ export function SetupPage() {
   const navigate = useNavigate();
   const [form, setForm] = useState({
     schoolName: '', shortName: '', motto: 'Intégrité · Honnêteté · Excellence', city: 'Kinshasa', phone: '', currencyCode: 'CDF', currencySymbol: 'FC',
-    yearLabel: '', startMonth: 9, monthCount: 10, adminUserName: 'admin', adminDisplayName: '', adminPassword: '', confirm: '', loadDemoData: false,
+    yearLabel: '', startMonth: 9, monthCount: 10, adminUserName: 'secretariat', adminDisplayName: '', adminPassword: '', confirm: '', loadDemoData: false,
   });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<unknown>();
@@ -156,7 +157,7 @@ export function SetupPage() {
     <div className="signin-screen signin-setup">
       <div className="signin-wide">
         <form className="auth-card" onSubmit={submit}>
-          <div className="row"><Rocket color="var(--blue)" /><strong>Première installation</strong></div>
+          <div className="row"><ScoliaMark size={32} /><strong>Première installation</strong></div>
           <h2 style={{ fontSize: 26 }}>Configurer SCOLIA</h2>
           <p className="muted" style={{ marginTop: 0 }}>Ces informations figurent sur les reçus et les documents. Elles restent modifiables dans Paramètres.</p>
           <SectionTitle num="01">Établissement</SectionTitle>
@@ -179,7 +180,8 @@ export function SetupPage() {
             <TextField label="Mois facturés" type="number" min={1} max={12} value={form.monthCount} onChange={set('monthCount')} />
           </div>
           <div className="divider" />
-          <SectionTitle num="03">Compte administrateur</SectionTitle>
+          <SectionTitle num="03">Compte secrétariat</SectionTitle>
+          <p className="muted" style={{ margin: '0 0 12px' }}>C’est le compte administrateur : apprenants, encaissements, scolarité, et aussi tout le paramétrage, les utilisateurs et les sauvegardes. Le compte comptabilité se crée ensuite dans Utilisateurs.</p>
           <div className="grid cols-2">
             <TextField label="Nom complet" value={form.adminDisplayName} onChange={set('adminDisplayName')} required />
             <TextField label="Identifiant" value={form.adminUserName} onChange={set('adminUserName')} required autoComplete="username" />

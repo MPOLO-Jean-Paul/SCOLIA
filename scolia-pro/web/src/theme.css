@@ -5,6 +5,8 @@
    ========================================================================== */
 
 :root {
+  --logo-a: #0B2A6F;
+  --logo-b: #16A34A;
   --font-ui: "Google Sans Flex", "Google Sans", "Segoe UI Variable Text", "Segoe UI", Roboto, system-ui, sans-serif;
   --font-code: "Google Sans Code", "Cascadia Mono", Consolas, ui-monospace, monospace;
 
@@ -53,6 +55,8 @@
 }
 
 :root[data-theme="dark"] {
+  --logo-a: #5B8DEF;
+  --logo-b: #22C55E;
   --navy: #e3e3e3;
   --navy-2: #c4c7c5;
   --navy-text: #8e918f;
@@ -304,7 +308,7 @@ table.data tfoot td { background: var(--surface-2); border-top: 1px solid var(--
 .signin {
   width: min(340px, 100%); display: flex; flex-direction: column; align-items: center; text-align: center;
 }
-.signin-avatar { width: 64px; height: 64px; border-radius: 16px; object-fit: contain; margin-bottom: 16px; }
+.signin-avatar { width: 64px; height: 64px; object-fit: contain; margin-bottom: 16px; }
 .signin-title { font-size: calc(24px * var(--fs, 1)); font-weight: 500; color: var(--text); margin: 0; letter-spacing: 0.02em; }
 .signin-sub { margin: 4px 0 22px; font-size: calc(14px * var(--fs, 1)); color: var(--muted); }
 .signin-form { width: 100%; display: flex; flex-direction: column; gap: 10px; }

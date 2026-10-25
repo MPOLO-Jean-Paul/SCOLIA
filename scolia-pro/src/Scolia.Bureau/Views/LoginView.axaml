@@ -8,7 +8,7 @@
       <StackPanel Spacing="12">
         <!-- Logo de l'établissement s'il est connu, sinon celui de SCOLIA -->
         <Image Source="{Binding Logo}" IsVisible="{Binding HasLogo}" Width="72" Height="72" HorizontalAlignment="Center" Margin="0,0,0,6" />
-        <Image Source="avares://SCOLIA/Assets/scolia.png" IsVisible="{Binding !HasLogo}" Width="56" Height="56" HorizontalAlignment="Center" Margin="0,0,0,6" />
+        <Image Source="{DynamicResource ScoliaMark}" IsVisible="{Binding !HasLogo}" Width="56" Height="56" HorizontalAlignment="Center" Margin="0,0,0,6" />
         <TextBlock Text="{Binding TitleText}" Classes="title" FontSize="{DynamicResource FsTitle}" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" />
         <TextBlock Text="Connectez-vous pour continuer" Classes="muted" HorizontalAlignment="Center" Margin="0,-6,0,14" />
 
@@ -54,7 +54,7 @@
             <TextBlock Text="Connexion…" IsVisible="{Binding Busy}" VerticalAlignment="Center" />
           </StackPanel>
         </Button>
-        <TextBlock Text="Après 5 erreurs, l'accès est verrouillé 2 minutes. Mot de passe oublié ? L'administrateur peut le réinitialiser depuis Utilisateurs."
+        <TextBlock Text="Après 5 erreurs, l'accès est verrouillé 2 minutes. Mot de passe oublié ? Le secrétariat peut le réinitialiser depuis Utilisateurs."
                    Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" TextAlignment="Center" Margin="0,6,0,0" />
       </StackPanel>
     </Border>

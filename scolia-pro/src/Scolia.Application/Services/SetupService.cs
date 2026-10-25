@@ -11,7 +11,7 @@ using Scolia.Domain.Students;
 
 namespace Scolia.Application.Services;
 
-/// <summary>Premier démarrage : établissement, année scolaire, compte administrateur et données de démonstration facultatives.</summary>
+/// <summary>Premier démarrage : établissement, année scolaire, compte secrétariat (l'administrateur) et données de démonstration facultatives.</summary>
 public sealed class SetupService(IAppDbContext db, IWriteGate gate, IAuditLog audit, IClock clock, IPasswordService passwords)
 {
     public async Task<SetupStatusDto> StatusAsync(CancellationToken ct = default)
@@ -36,7 +36,7 @@ public sealed class SetupService(IAppDbContext db, IWriteGate gate, IAuditLog au
             .Require(!string.IsNullOrWhiteSpace(input.ShortName), "shortName", "Sigle obligatoire.")
             .Require(input.CurrencyCode is { Length: 3 }, "currencyCode", "Code monnaie à 3 lettres.")
             .Require(userName.Length is >= 3 and <= 40 && userName.All(c => char.IsAsciiLetterOrDigit(c) || c is '.' or '-' or '_'), "adminUserName", "Identifiant de 3 à 40 caractères.")
-            .Require(!string.IsNullOrWhiteSpace(input.AdminDisplayName), "adminDisplayName", "Nom de l'administrateur obligatoire.")
+            .Require(!string.IsNullOrWhiteSpace(input.AdminDisplayName), "adminDisplayName", "Nom du compte secrétariat obligatoire.")
             .ThrowIfInvalid();
         PasswordPolicy.Validate(input.AdminPassword);
         var school = new SchoolProfile
@@ -52,13 +52,13 @@ public sealed class SetupService(IAppDbContext db, IWriteGate gate, IAuditLog au
         var admin = new AppUser
         {
             UserName = userName, NormalizedUserName = TextKey.Normalize(userName), DisplayName = input.AdminDisplayName.Trim(),
-            Role = Role.Administrateur, PasswordHash = passwords.Hash(input.AdminPassword),
+            Role = Role.Secretariat, PasswordHash = passwords.Hash(input.AdminPassword),
         };
         db.Users.Add(admin);
         var others = new List<AppUser>();
         foreach (var account in input.Accounts ?? [])
         {
-            // Seuls les comptes métier de l'assistant sont créés ici ; l'administrateur reste le seul compte à tous les droits.
+            // Comptes supplémentaires de l'assistant : un autre poste de secrétariat ou la comptabilité.
             var name = (account.UserName ?? string.Empty).Trim().ToLowerInvariant();
             new ValidationBuilder()
                 .Require(account.Role is "Secretariat" or "Comptabilite", "accounts", "Rôle de compte : secrétariat ou comptabilité uniquement.")

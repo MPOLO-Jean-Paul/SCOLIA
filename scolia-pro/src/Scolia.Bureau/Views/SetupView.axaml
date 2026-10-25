@@ -8,11 +8,11 @@
       <Border Classes="card" Padding="28" Margin="24" MaxWidth="760" HorizontalAlignment="Center" VerticalAlignment="Center">
         <StackPanel Spacing="18">
           <StackPanel Orientation="Horizontal" Spacing="14">
-            <Image Source="avares://SCOLIA/Assets/scolia.png" Width="44" Height="44" VerticalAlignment="Center" />
+            <Image Source="{DynamicResource ScoliaMark}" Width="44" Height="44" VerticalAlignment="Center" />
             <StackPanel VerticalAlignment="Center" Spacing="2">
               <TextBlock Text="Configurer SCOLIA" Classes="title" />
               <TextBlock Classes="muted" TextWrapping="Wrap"
-                         Text="Première connexion sur ce poste. Ces réglages se modifient ensuite dans Administration." />
+                         Text="Première connexion sur ce poste. Ces réglages se modifient ensuite dans Paramètres, depuis le compte secrétariat." />
             </StackPanel>
           </StackPanel>
 
@@ -135,8 +135,8 @@
           <!-- Étape 2 : comptes et sécurité -->
           <StackPanel IsVisible="{Binding IsStepTwo}" Spacing="18">
             <StackPanel Spacing="10">
-              <TextBlock Text="Administrateur" Classes="heading" />
-              <TextBlock Text="Il gère les comptes, les réglages et les sauvegardes. Gardez son mot de passe en lieu sûr." Classes="muted" TextWrapping="Wrap" />
+              <TextBlock Text="Secrétariat" Classes="heading" />
+              <TextBlock Text="C'est le compte administrateur : apprenants, encaissements, scolarité, et aussi tout le paramétrage, les utilisateurs et les sauvegardes. Gardez son mot de passe en lieu sûr." Classes="muted" TextWrapping="Wrap" />
               <WrapPanel ItemWidth="320">
                 <StackPanel Margin="0,0,16,12" Spacing="4"><TextBlock Text="Identifiant" Classes="muted" /><TextBox Text="{Binding AdminUserName}" /></StackPanel>
                 <StackPanel Margin="0,0,16,12" Spacing="4"><TextBlock Text="Nom de la personne" Classes="muted" /><TextBox Text="{Binding AdminDisplayName}" /></StackPanel>
@@ -146,20 +146,8 @@
             </StackPanel>
 
             <StackPanel Spacing="10">
-              <TextBlock Text="Secrétariat" Classes="heading" />
-              <TextBlock Text="Saisit les apprenants, encaisse, enregistre les dépenses et sauvegarde les données." Classes="muted" TextWrapping="Wrap" />
-              <CheckBox IsChecked="{Binding UseSecretariat}" Content="Créer le compte secrétariat" />
-              <WrapPanel ItemWidth="320" IsEnabled="{Binding UseSecretariat}">
-                <StackPanel Margin="0,0,16,12" Spacing="4"><TextBlock Text="Identifiant" Classes="muted" /><TextBox Text="{Binding SecretariatUserName}" /></StackPanel>
-                <StackPanel Margin="0,0,16,12" Spacing="4"><TextBlock Text="Nom de la personne" Classes="muted" /><TextBox Text="{Binding SecretariatDisplayName}" /></StackPanel>
-                <StackPanel Margin="0,0,16,12" Spacing="4"><TextBlock Text="Mot de passe" Classes="muted" /><TextBox Text="{Binding SecretariatPassword}" PasswordChar="•" /></StackPanel>
-                <StackPanel Margin="0,0,16,12" Spacing="4"><TextBlock Text="Confirmer le mot de passe" Classes="muted" /><TextBox Text="{Binding SecretariatConfirm}" PasswordChar="•" /></StackPanel>
-              </WrapPanel>
-            </StackPanel>
-
-            <StackPanel Spacing="10">
               <TextBlock Text="Comptabilité" Classes="heading" />
-              <TextBlock Text="Encaisse, tient la caisse, enregistre les dépenses, consulte le journal et les rapports." Classes="muted" TextWrapping="Wrap" />
+              <TextBlock Text="Facultatif. Encaisse, tient la caisse, enregistre les dépenses, consulte le journal et les rapports. Ne touche pas au paramétrage." Classes="muted" TextWrapping="Wrap" />
               <CheckBox IsChecked="{Binding UseComptabilite}" Content="Créer le compte comptabilité" />
               <WrapPanel ItemWidth="320" IsEnabled="{Binding UseComptabilite}">
                 <StackPanel Margin="0,0,16,12" Spacing="4"><TextBlock Text="Identifiant" Classes="muted" /><TextBox Text="{Binding ComptabiliteUserName}" /></StackPanel>

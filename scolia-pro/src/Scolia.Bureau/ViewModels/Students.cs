@@ -388,7 +388,7 @@ public static class StudentForms
         {
             if (!shell.Can(Perm.SettingsWrite))
             {
-                await shell.Confirm("Aucune promotion", "Aucune promotion n'est ouverte. Demandez à l'administrateur d'en créer une dans Paramètres, Promotions et frais.", "Fermer");
+                await shell.Confirm("Aucune promotion", "Aucune promotion n'est ouverte. Demandez au secrétariat d'en créer une dans Paramètres, Promotions et frais.", "Fermer");
                 return;
             }
             if (!await shell.Confirm("Aucune promotion", "L'apprenant doit être inscrit dans une promotion, et aucune n'existe encore. Créer une promotion maintenant ?", "Créer une promotion"))

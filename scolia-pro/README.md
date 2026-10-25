@@ -12,7 +12,7 @@ sans aucune dépendance à Excel.
 ## Démarrage rapide (utilisateur)
 
 1. Télécharger `SCOLIA_Pro_<version>_Windows_x64.zip` et l'extraire dans `C:\SCOLIA`.
-2. Lancer `SCOLIA.exe`. Il démarre seul le serveur `SCOLIA-Serveur.exe` du même dossier. L'assistant crée l'établissement, l'année et le compte administrateur.
+2. Lancer `SCOLIA.exe`. Il démarre seul le serveur `SCOLIA-Serveur.exe` du même dossier. L'assistant crée l'établissement, l'année et le compte secrétariat, qui administre SCOLIA.
 3. Pour plusieurs postes : dans l'onglet Fichier, rubrique « Poste et réseau », installer le
    service (démarrage avec Windows) puis activer l'accès réseau local. Les autres postes ouvrent l'adresse affichée.
 

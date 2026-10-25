@@ -48,7 +48,7 @@ public class SetupTests
     }
 
     [Fact]
-    public void Administrateur_exige_un_mot_de_passe_fort_et_confirme()
+    public void Le_compte_secretariat_exige_un_mot_de_passe_fort_et_confirme()
     {
         var wizard = NewWizard();
         wizard.AdminPassword = "motdepasse";
@@ -63,10 +63,9 @@ public class SetupTests
     public void Deux_comptes_ne_peuvent_pas_partager_un_identifiant()
     {
         var wizard = NewWizard();
-        wizard.UseComptabilite = false;
-        wizard.SecretariatUserName = "admin";
-        wizard.SecretariatPassword = "Secretariat1";
-        wizard.SecretariatConfirm = "Secretariat1";
+        wizard.ComptabiliteUserName = "admin";
+        wizard.ComptabilitePassword = "Comptable1";
+        wizard.ComptabiliteConfirm = "Comptable1";
         Assert.Equal("Deux comptes ne peuvent pas porter le même identifiant.", wizard.ValidateStepTwo());
     }
 
@@ -74,8 +73,6 @@ public class SetupTests
     public void Un_compte_decoche_n_est_pas_verifie()
     {
         var wizard = NewWizard();
-        wizard.UseSecretariat = false;
-        wizard.SecretariatUserName = "";
         wizard.UseComptabilite = false;
         wizard.ComptabiliteUserName = "";
         Assert.Null(wizard.ValidateStepTwo());

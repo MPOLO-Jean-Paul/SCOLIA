@@ -59,7 +59,8 @@ Les commandes du ruban ouvrent directement la page ou la boîte de saisie corres
 2. L'assistant demande :
    - le nom, la ville, le téléphone et le logo de l'établissement ;
    - l'année scolaire, le mois de début et le nombre de mois de scolarité ;
-   - le compte administrateur et son mot de passe.
+   - le compte secrétariat, qui est l'administrateur, et son mot de passe ;
+   - si besoin, le compte comptabilité.
 3. Option : charger les données de démonstration (128 apprenants fictifs) pour découvrir
    le logiciel. Elles se suppriment ensuite depuis Administration.
 4. Une fois l'installation terminée, créer les promotions et leurs frais dans Paramètres.
@@ -189,5 +190,5 @@ Non repris par l'import : notes, présences, discipline, personnel et dépenses.
 |---|---|
 | La page affiche « Connexion expirée » | Se reconnecter. La session dure 10 heures sans activité. |
 | Un poste ne trouve pas SCOLIA | Vérifier que le serveur est allumé, que le réseau est « privé », puis activer l'accès réseau local dans l'onglet Fichier, rubrique « Poste et réseau ». |
-| « Compte verrouillé » | Attendre quinze minutes, ou demander à l'administrateur de déverrouiller le compte. |
+| « Accès verrouillé » | Attendre la fin du compte à rebours de 2 minutes. Le secrétariat peut aussi réinitialiser le mot de passe. |
 | La fenêtre ne s'ouvre pas | Relancer `SCOLIA.exe`. Si le service est installé, le serveur tourne déjà et la fenêtre s'y connecte. |

@@ -20,7 +20,9 @@ public sealed class SecurityApiTests : IDisposable
     {
         var admin = await app.InstalledAdmin();
         var session = await admin.GetAsync("/api/session").Ok();
-        Assert.Equal("Administrateur", session.GetProperty("role").GetString());
+        // Le compte créé à l'installation est le secrétariat : il administre SCOLIA.
+        Assert.Equal("Secretariat", session.GetProperty("role").GetString());
+        Assert.Contains("utilisateurs.gerer", session.GetProperty("permissions").EnumerateArray().Select(p => p.GetString()));
         var (status, _) = await app.Client().Post("/api/installation", new { schoolName = "X" }).Fail();
         Assert.Equal(HttpStatusCode.Conflict, status);
     }
@@ -109,14 +111,50 @@ public sealed class SecurityApiTests : IDisposable
     public async Task Roles_restrict_sensitive_operations()
     {
         var admin = await app.InstalledAdmin(demo: true);
-        await admin.Post("/api/utilisateurs", new { userName = "secretaire", displayName = "Secrétaire", role = "Secretariat", password = "Provisoire1" }).Ok();
-        var secretary = await app.Login("secretaire", "Provisoire1");
-        Assert.True((await secretary.GetAsync("/api/session").Ok()).GetProperty("mustChangePassword").GetBoolean());
-        var receipts = await secretary.GetAsync("/api/paiements?pageSize=1").Ok();
-        var id = receipts.GetProperty("items")[0].GetProperty("id").GetString();
-        Assert.Equal(HttpStatusCode.Forbidden, (await secretary.Post($"/api/paiements/{id}/annulation", new { reason = "Tentative non autorisée" })).StatusCode);
-        Assert.Equal(HttpStatusCode.Forbidden, (await secretary.GetAsync("/api/utilisateurs")).StatusCode);
-        Assert.Equal(HttpStatusCode.Forbidden, (await secretary.GetAsync("/api/audit")).StatusCode);
+        await admin.Post("/api/utilisateurs", new { userName = "compta", displayName = "Comptable", role = "Comptabilite", password = "Provisoire1" }).Ok();
+        var accountant = await app.Login("compta", "Provisoire1");
+        Assert.True((await accountant.GetAsync("/api/session").Ok()).GetProperty("mustChangePassword").GetBoolean());
+        // La comptabilité tient les finances, sans toucher au paramétrage ni aux comptes.
+        await accountant.GetAsync("/api/paiements?pageSize=1").Ok();
+        Assert.Equal(HttpStatusCode.Forbidden, (await accountant.GetAsync("/api/utilisateurs")).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await accountant.PutAsJsonAsync("/api/etablissement", new { name = "X" })).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await accountant.Post("/api/utilisateurs", new { userName = "pirate", displayName = "X", role = "Secretariat", password = "Provisoire1" })).StatusCode);
+        // Le secrétariat a tous les droits.
+        await admin.GetAsync("/api/utilisateurs").Ok();
+        await admin.GetAsync("/api/audit").Ok();
+    }
+
+    [Fact]
+    public async Task Only_secretariat_and_accounting_roles_can_be_given()
+    {
+        var admin = await app.InstalledAdmin();
+        foreach (var legacy in new[] { "Administrateur", "Direction", "Enseignant" })
+        {
+            var (status, body) = await admin.Post("/api/utilisateurs", new { userName = $"x{legacy.ToLowerInvariant()}", displayName = "X", role = legacy, password = "Provisoire1" }).Fail();
+            Assert.Equal(HttpStatusCode.BadRequest, status);
+            Assert.Equal("role", body.GetProperty("code").GetString());
+        }
+    }
+
+    [Fact]
+    public async Task Old_roles_are_converted_at_startup()
+    {
+        var admin = await app.InstalledAdmin();
+        await admin.Post("/api/utilisateurs", new { userName = "direction", displayName = "Direction", role = "Secretariat", password = "Provisoire1" }).Ok();
+        await admin.Post("/api/utilisateurs", new { userName = "prof", displayName = "Enseignant", role = "Comptabilite", password = "Provisoire1" }).Ok();
+        using (var scope = app.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<Scolia.Infrastructure.Persistence.ScoliaDbContext>();
+            // Base d'une version précédente : administrateur, direction et enseignant.
+            await db.Users.Where(u => u.UserName == "admin").ExecuteUpdateAsync(x => x.SetProperty(u => u.Role, Scolia.Domain.Security.Role.Administrateur));
+            await db.Users.Where(u => u.UserName == "direction").ExecuteUpdateAsync(x => x.SetProperty(u => u.Role, Scolia.Domain.Security.Role.Direction));
+            await db.Users.Where(u => u.UserName == "prof").ExecuteUpdateAsync(x => x.SetProperty(u => u.Role, Scolia.Domain.Security.Role.Enseignant));
+        }
+        await Scolia.Infrastructure.DependencyInjection.InitializeDatabaseAsync(app.Services);
+        var users = (await admin.GetAsync("/api/utilisateurs").Ok()).EnumerateArray().ToDictionary(u => u.GetProperty("userName").GetString()!);
+        Assert.Equal("Secretariat", users["admin"].GetProperty("role").GetString());
+        Assert.Equal("Secretariat", users["direction"].GetProperty("role").GetString());
+        Assert.False(users["prof"].GetProperty("isActive").GetBoolean());
     }
 
     [Fact]
@@ -196,8 +234,9 @@ public sealed class SecurityApiTests : IDisposable
     {
         var admin = await app.InstalledAdmin();
         var me = await admin.GetAsync("/api/session").Ok();
-        var (status, _) = await admin.Put($"/api/utilisateurs/{me.GetProperty("id").GetString()}", new { displayName = "Admin", role = "Secretariat", isActive = true }).Fail();
+        var (status, body) = await admin.Put($"/api/utilisateurs/{me.GetProperty("id").GetString()}", new { displayName = "Admin", role = "Comptabilite", isActive = true }).Fail();
         Assert.Equal(HttpStatusCode.BadRequest, status);
+        Assert.Contains("secrétariat", body.GetProperty("title").GetString(), StringComparison.Ordinal);
     }
 
     [Fact]

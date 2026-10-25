@@ -2,6 +2,8 @@ using Scolia.Domain.Common;
 
 namespace Scolia.Domain.Security;
 
+/// <summary>Deux comptes, comme dans la V79 : le secrétariat administre SCOLIA, la comptabilité tient la caisse.
+/// Administrateur, Direction et Enseignant ne servent plus qu'à relire une ancienne base ; ils sont convertis au démarrage.</summary>
 public enum Role { Administrateur = 0, Direction = 1, Secretariat = 2, Comptabilite = 3, Enseignant = 4 }
 
 public sealed class AppUser : Entity
@@ -46,23 +48,23 @@ public static class Permissions
         ReportsRead, SettingsWrite, UsersManage, AuditRead, BackupManage, AcademicsWrite, AcademicsRead, StaffManage, DisciplineCancel,
     ];
 
+    /// <summary>Les seuls rôles qu'on attribue.</summary>
+    public static readonly IReadOnlyList<Role> Assignable = [Role.Secretariat, Role.Comptabilite];
+
+    /// <summary>Le secrétariat est l'administrateur : ses fonctions, le paramétrage, les utilisateurs, les sauvegardes et le journal.
+    /// La comptabilité garde les finances.</summary>
     public static IReadOnlyCollection<string> For(Role role) => role switch
     {
-        Role.Administrateur => All,
-        Role.Direction => [StudentsRead, StudentsWrite, PaymentsRead, PaymentsCancel, ReportsRead, AuditRead, AcademicsRead, AcademicsWrite, StaffManage, BackupManage],
-        Role.Secretariat => [StudentsRead, StudentsWrite, PaymentsRead, PaymentsCreate, ExpensesWrite, ReportsRead, AcademicsRead, AcademicsWrite, BackupManage],
+        Role.Secretariat or Role.Administrateur or Role.Direction => All,
         Role.Comptabilite => [StudentsRead, PaymentsRead, PaymentsCreate, PaymentsCancel, ExpensesWrite, CashClose, ReportsRead, AuditRead, BackupManage],
-        Role.Enseignant => [StudentsRead, AcademicsRead, AcademicsWrite],
         _ => [],
     };
 
     public static string Label(Role role) => role switch
     {
-        Role.Administrateur => "Administrateur",
-        Role.Direction => "Direction",
-        Role.Secretariat => "Secrétariat",
+        Role.Secretariat or Role.Administrateur or Role.Direction => "Secrétariat",
         Role.Comptabilite => "Comptabilité",
-        Role.Enseignant => "Enseignant",
+        Role.Enseignant => "Enseignant (ancien rôle)",
         _ => role.ToString(),
     };
 }

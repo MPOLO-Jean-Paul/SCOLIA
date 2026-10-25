@@ -106,6 +106,12 @@ public sealed class UserService(IAppDbContext db, IWriteGate gate, IAuditLog aud
         return user;
     }
 
+    private static Role AssignableRole(string? value)
+    {
+        var role = EnumText.Parse(value, "role", RoleLabels);
+        return Permissions.Assignable.Contains(role) ? role : throw new DomainException("role", "Rôle : secrétariat ou comptabilité uniquement.");
+    }
+
     public async Task<IReadOnlyList<UserDto>> ListAsync(CancellationToken ct = default) =>
         (await db.Users.AsNoTracking().OrderBy(u => u.DisplayName).ToListAsync(ct)).Select(u => ToDto(u, clock.UtcNow)).ToList();
 
@@ -118,7 +124,7 @@ public sealed class UserService(IAppDbContext db, IWriteGate gate, IAuditLog aud
             .Require(!string.IsNullOrWhiteSpace(input.DisplayName) && input.DisplayName.Length <= 120, "displayName", "Nom affiché obligatoire.")
             .ThrowIfInvalid();
         PasswordPolicy.Validate(input.Password);
-        var role = EnumText.Parse(input.Role, "role", RoleLabels);
+        var role = AssignableRole(input.Role);
         var normalized = TextKey.Normalize(name);
         if (await db.Users.AnyAsync(u => u.NormalizedUserName == normalized, ct)) throw new ConflictException("Cet identifiant existe déjà.");
         var user = new AppUser
@@ -135,12 +141,13 @@ public sealed class UserService(IAppDbContext db, IWriteGate gate, IAuditLog aud
     public Task<UserDto> UpdateAsync(Guid id, UserUpdate input, CancellationToken ct = default) => gate.RunAsync(async () =>
     {
         var user = await db.Users.FirstOrDefaultAsync(u => u.Id == id, ct) ?? throw new NotFoundException("Utilisateur introuvable.");
-        var role = EnumText.Parse(input.Role, "role", RoleLabels);
+        var role = AssignableRole(input.Role);
         if (string.IsNullOrWhiteSpace(input.DisplayName)) throw new DomainException("displayName", "Nom affiché obligatoire.");
-        if (user.Role == Role.Administrateur && (role != Role.Administrateur || !input.IsActive))
+        // Le secrétariat administre SCOLIA : il en reste toujours au moins un actif.
+        if (user.Role == Role.Secretariat && user.IsActive && (role != Role.Secretariat || !input.IsActive))
         {
-            var admins = await db.Users.CountAsync(u => u.Role == Role.Administrateur && u.IsActive && u.Id != id, ct);
-            if (admins == 0) throw new DomainException("role", "Au moins un administrateur actif doit être conservé.");
+            var others = await db.Users.CountAsync(u => u.Role == Role.Secretariat && u.IsActive && u.Id != id, ct);
+            if (others == 0) throw new DomainException("role", "Au moins un compte secrétariat actif doit être conservé : c'est lui qui administre SCOLIA.");
         }
         if (id == current.Id && !input.IsActive) throw new DomainException("isActive", "Vous ne pouvez pas désactiver votre propre compte.");
         var changedSecurity = user.Role != role || user.IsActive != input.IsActive;

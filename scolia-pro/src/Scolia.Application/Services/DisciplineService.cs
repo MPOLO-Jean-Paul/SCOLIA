@@ -147,7 +147,7 @@ public sealed class DisciplineService(IAppDbContext db, IWriteGate gate, IAuditL
         return await RowAsync(id, ct);
     }, ct);
 
-    /// <summary>Annule une décision en gardant sa trace. Réservé à l'administrateur ; le motif est obligatoire.</summary>
+    /// <summary>Annule une décision en gardant sa trace. Réservé au secrétariat ; le motif est obligatoire.</summary>
     public Task<DisciplineRowDto> CancelAsync(Guid id, DisciplineCancelInput input, CancellationToken ct = default) => gate.RunAsync(async () =>
     {
         var year = await OpenYearAsync(ct);

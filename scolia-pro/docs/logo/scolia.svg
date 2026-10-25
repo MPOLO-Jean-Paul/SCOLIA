@@ -1,16 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <!-- SCOLIA : écusson de l'école, livre ouvert et étoile de la réussite, sur un carré bleu nuit -->
-  <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1A3F8F"/><stop offset="1" stop-color="#071634"/></linearGradient>
-    <linearGradient id="shield" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#E4ECFA"/></linearGradient>
-    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFD77A"/><stop offset="1" stop-color="#E39B0E"/></linearGradient>
-  </defs>
-  <rect x="16" y="16" width="480" height="480" rx="112" fill="url(#bg)"/>
-  <path d="M256 84 L400 133 V248 C400 338 336 397 256 430 C176 397 112 338 112 248 V133 Z" fill="url(#shield)"/>
-  <path d="M256 108 L377 149 V248 C377 324 324 375 256 404 C188 375 135 324 135 248 V149 Z" fill="none" stroke="url(#gold)" stroke-width="5"/>
-  <path d="M256 150 l14 29 32 4.5 -23 22.5 5.5 32 -28.5 -15 -28.5 15 5.5 -32 -23 -22.5 32 -4.5 Z" fill="url(#gold)"/>
-  <path d="M166 270 C203 250 234 254 251 271 V350 C234 333 203 329 166 346 Z" fill="#14306E"/>
-  <path d="M346 270 C309 250 278 254 261 271 V350 C278 333 309 329 346 346 Z" fill="#2457CC"/>
-  <path d="M184 284 C206 274 226 276 238 284 M184 304 C206 294 226 296 238 304" fill="none" stroke="#FFFFFF" stroke-opacity=".35" stroke-width="4" stroke-linecap="round"/>
-  <path d="M328 284 C306 274 286 276 274 284 M328 304 C306 294 286 296 274 304" fill="none" stroke="#FFFFFF" stroke-opacity=".35" stroke-width="4" stroke-linecap="round"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="40 40 432 432">
+  <g fill="none" stroke-width="62" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M330 118 H206 Q148 118 148 176 Q148 234 206 234 H226" stroke="#0B2A6F"/>
+    <path d="M286 278 H306 Q364 278 364 336 Q364 394 306 394 H182" stroke="#16A34A"/>
+  </g>
+  <circle cx="418" cy="118" r="38" fill="#0B2A6F"/>
+  <circle cx="94" cy="394" r="38" fill="#16A34A"/>
 </svg>

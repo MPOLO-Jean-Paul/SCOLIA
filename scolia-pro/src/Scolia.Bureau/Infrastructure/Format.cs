@@ -127,8 +127,8 @@ public static class Labels
 
     public static readonly IReadOnlyList<ChoiceItem> Roles =
     [
-        new("Administrateur", "Administrateur"), new("Direction", "Direction"), new("Secretariat", "Secrétariat"),
-        new("Comptabilite", "Comptabilité"), new("Enseignant", "Enseignant"),
+        // Deux comptes, comme la V79 : le secrétariat administre SCOLIA, la comptabilité tient la caisse.
+        new("Secretariat", "Secrétariat"), new("Comptabilite", "Comptabilité"),
     ];
 
     public static readonly IReadOnlyList<ChoiceItem> PayrollModes =

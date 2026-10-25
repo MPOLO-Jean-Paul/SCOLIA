@@ -2,7 +2,7 @@ import { expect, test, type Page } from '@playwright/test';
 
 test.describe.configure({ mode: 'serial' });
 
-const admin = { user: 'admin', password: 'Scolia2026!' };
+const admin = { user: 'secretariat', password: 'Scolia2026!' };
 // Les champs obligatoires portent un astérisque : « Nom * ». Les recherches exactes l'acceptent.
 let page: Page;
 

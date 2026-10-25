@@ -19,7 +19,7 @@ des flux financiers. Les risques retenus sont :
   Le message ne révèle pas si le compte existe.
 - Limitation du nombre de tentatives de connexion : 10 par minute et par adresse.
 - Un compte désactivé ou dont le mot de passe change ferme immédiatement ses sessions.
-- Le dernier administrateur actif ne peut pas être supprimé ni désactivé.
+- Le dernier compte secrétariat actif ne peut pas être désactivé ni changer de rôle : c'est lui qui administre SCOLIA.
 
 ## Session
 
@@ -35,13 +35,14 @@ des flux financiers. Les risques retenus sont :
 Les droits sont attribués par rôle et vérifiés côté serveur sur chaque point d'API.
 L'interface masque les menus, mais ce masquage n'est pas la protection réelle.
 
+Deux comptes, comme dans la version 79. Le secrétariat est l'administrateur.
+
 | Rôle | Périmètre principal |
 |---|---|
-| Administrateur | Tout, dont utilisateurs, sauvegardes, paramètres |
-| Direction | Lecture et écriture des apprenants et de la scolarité, annulation de paiements, audit, personnel, sauvegardes |
-| Secrétariat | Apprenants, encaissements, scolarité, rapports |
-| Comptabilité | Encaissements, annulations, dépenses, arrêté de caisse, rapports |
-| Enseignant | Cours, notes, présences, lecture des apprenants |
+| Secrétariat | Tout : apprenants, encaissements, scolarité, personnel, et aussi le paramétrage, les utilisateurs, les sauvegardes et le journal d'audit |
+| Comptabilité | Encaissements, annulations, dépenses, arrêté de caisse, journal et rapports. Pas de paramétrage ni de gestion des comptes |
+
+Une base d'une version précédente est convertie au démarrage. Les comptes Administrateur et Direction deviennent Secrétariat. Un ancien compte Enseignant est désactivé ; le secrétariat peut le réactiver en lui donnant l'un des deux rôles.
 
 ## Intégrité des données
 

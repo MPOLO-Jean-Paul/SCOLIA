@@ -232,8 +232,8 @@ export function UsersPage() {
     <>
       <PageHead title="Utilisateurs" subtitle="Un compte nominatif par personne. Les droits dépendent du rôle ; chaque action est tracée dans le journal d’audit."
         actions={<Button variant="primary" icon={<Plus />} onClick={() => setEditing('new')}>Nouveau compte</Button>} />
-      <div className="grid cols-4" style={{ marginBottom: 16 }}>
-        {[['Administrateur', 'Tous les droits, paramètres et utilisateurs'], ['Direction', 'Consultation, rapports, annulations, scolarité, personnel'], ['Secrétariat', 'Dossiers, inscriptions, encaissement, scolarité'], ['Comptabilité', 'Encaissement, annulations, dépenses, caisse']].map(([r, d]) => (
+      <div className="grid cols-2" style={{ marginBottom: 16 }}>
+        {[['Secrétariat', 'Administrateur de SCOLIA : apprenants, encaissements, scolarité, personnel, et tout le paramétrage, les utilisateurs et les sauvegardes'], ['Comptabilité', 'Encaissements, annulations, dépenses, arrêt de caisse, journal et rapports. Pas de paramétrage']].map(([r, d]) => (
           <div key={r} className="kpi"><div className="label"><ShieldCheck size={15} />{r}</div><div className="small" style={{ marginTop: 6 }}>{d}</div></div>))}
       </div>
       <div className="table-wrap">
@@ -254,10 +254,11 @@ export function UsersPage() {
   );
 }
 
-const ROLES = [['Administrateur', 'Administrateur'], ['Direction', 'Direction'], ['Secretariat', 'Secrétariat'], ['Comptabilite', 'Comptabilité'], ['Enseignant', 'Enseignant']];
+// Deux comptes, comme la V79 : le secrétariat administre SCOLIA, la comptabilité tient la caisse.
+const ROLES = [['Secretariat', 'Secrétariat'], ['Comptabilite', 'Comptabilité']];
 
 function UserDialog({ user, onClose, onSaved }: { user?: User; onClose: () => void; onSaved: () => void }) {
-  const [f, setF] = useState({ userName: user?.userName ?? '', displayName: user?.displayName ?? '', role: user?.role ?? 'Secretariat', password: '', isActive: user?.isActive ?? true });
+  const [f, setF] = useState({ userName: user?.userName ?? '', displayName: user?.displayName ?? '', role: user && ROLES.some(([v]) => v === user.role) ? user.role : 'Secretariat', password: '', isActive: user?.isActive ?? true });
   const [error, setError] = useState<unknown>();
   return (
     <Modal title={user ? `Compte de ${user.displayName}` : 'Nouveau compte'} onClose={onClose} footer={<><Button variant="ghost" onClick={onClose}>Annuler</Button><Button variant="primary" onClick={async () => {
