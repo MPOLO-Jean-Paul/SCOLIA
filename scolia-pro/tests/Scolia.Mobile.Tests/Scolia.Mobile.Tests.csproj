@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Tests du téléphone serveur, sur n'importe quel système : les documents PDF dessinés avec SkiaSharp et le serveur
+       SCOLIA démarré dans l'application, comme sur Android. Le code du téléphone est lié, pas copié. -->
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <NoWarn>$(NoWarn);CA1001;CA2000;CA1063;CA1816;CA2234;CA1515;CA1707</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="SkiaSharp" />
+    <PackageReference Include="SkiaSharp.NativeAssets.Linux" />
+  </ItemGroup>
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Scolia.Infrastructure\Scolia.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Scolia.Api\Scolia.Api.csproj" SetTargetFramework="TargetFramework=net10.0" />
+    <Compile Include="..\..\src\Scolia.Mobile\Server\SkiaPdf.cs" Link="Server\SkiaPdf.cs" />
+    <Compile Include="..\..\src\Scolia.Mobile\Server\SkiaDocumentService.cs" Link="Server\SkiaDocumentService.cs" />
+  </ItemGroup>
+  <!-- Comme sur le téléphone : ASP.NET Core vient des fichiers de l'application, pas du framework installé. -->
+  <Import Project="..\..\src\Scolia.Mobile\AspNetCoreLocal.props" />
+</Project>

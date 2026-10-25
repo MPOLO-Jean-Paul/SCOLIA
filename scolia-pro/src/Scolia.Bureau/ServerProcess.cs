@@ -3,7 +3,7 @@ using System.Diagnostics;
 namespace Scolia.Bureau;
 
 /// <summary>Serveur SCOLIA livré dans le même dossier que l'application native. Démarré seulement s'il n'est pas déjà actif.</summary>
-public sealed class ServerProcess(int port)
+public sealed class ServerProcess(int port) : Infrastructure.ILocalServer
 {
     private Process? process;
 

@@ -9,6 +9,7 @@ public sealed class ServerRowVm(DiscoveredServer server, Func<DiscoveredServer, 
     public DiscoveredServer Server { get; } = server;
     public string School => Server.School;
     public string Detail => Server.Detail;
+    public Material.Icons.MaterialIconKind Icon => Server.IsPhone ? Material.Icons.MaterialIconKind.Cellphone : Material.Icons.MaterialIconKind.DesktopTowerMonitor;
     public AsyncCommand Join { get; } = new(() => join(server));
 }
 
@@ -30,8 +31,16 @@ public sealed class ConnectionViewModel : Observable
         ConnectAddress = new AsyncCommand(ConnectAddressAsync);
     }
 
-    /// <summary>Sur le téléphone, « utiliser cet appareil comme serveur » n'a pas de sens : seul l'ordinateur principal l'est.</summary>
-    public bool CanBeServer => !Platform.IsMobile;
+    /// <summary>Tout ordinateur peut être le serveur ; un téléphone aussi, quand l'établissement n'a pas d'ordinateur.</summary>
+    public bool CanBeServer => Platform.CanHostServer;
+    public bool IsPhone => Platform.IsMobile;
+    public bool PhoneCanBeServer => Platform.IsMobile && Platform.CanHostServer;
+    public bool DesktopCanBeServer => !Platform.IsMobile;
+
+    public string AddressTitle => Platform.IsMobile ? "Ou saisir l'adresse du serveur" : "Ou saisir l'adresse de l'ordinateur principal";
+    public string AddressHint => Platform.IsMobile
+        ? "Elle figure sur le serveur de l'établissement, ordinateur ou téléphone, dans Poste et réseau."
+        : "Elle figure sur l'ordinateur principal, dans Fichier, Poste et réseau.";
 
     private string address = string.Empty;
     /// <summary>Adresse saisie à la main, quand le Wi-Fi bloque la recherche automatique : 192.168.1.10, ou 192.168.1.10:5080.</summary>
@@ -98,7 +107,9 @@ public sealed class ConnectionViewModel : Observable
             var servers = await LanDiscovery.FindAsync(TimeSpan.FromSeconds(2.5));
             Show(servers, servers.Count switch
             {
-                0 => "Aucun SCOLIA ne répond sur ce réseau. Vérifiez que l'ordinateur principal est allumé et que SCOLIA y est ouvert.",
+                0 => PhoneCanBeServer
+                    ? "Aucun SCOLIA ne répond sur ce Wi-Fi. Vérifiez que le serveur de l'établissement est allumé et que SCOLIA y est ouvert, ou faites de ce téléphone le serveur."
+                    : "Aucun SCOLIA ne répond sur ce réseau. Vérifiez que l'ordinateur principal est allumé et que SCOLIA y est ouvert.",
                 1 => "SCOLIA a été trouvé sur le réseau.",
                 _ => "Plusieurs SCOLIA répondent sur ce réseau : choisissez celui de votre établissement.",
             });

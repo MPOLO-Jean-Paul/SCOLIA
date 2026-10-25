@@ -35,13 +35,13 @@ public partial class App : Application
         }
         else if (ApplicationLifetime is ISingleViewApplicationLifetime phone)
         {
-            // Téléphone : une seule vue, en plein écran ; il se connecte au serveur de l'établissement sur le Wi-Fi.
+            // Téléphone : une seule vue, en plein écran. Il rejoint le serveur de l'établissement sur le Wi-Fi, ou l'est lui-même.
             DataTemplates.Add(new ViewLocator());
             var saved = ConnectionStore.Load();
             var api = new ScoliaClient(saved?.Url is { } url ? new Uri(url) : ConnectionStore.LocalAddress);
             var shell = new ShellViewModel(api, Preferences.Load());
             phone.MainView = new MainView { DataContext = shell };
-            _ = shell.StartAsync(null);
+            _ = shell.StartAsync(Platform.LocalServer);
         }
         base.OnFrameworkInitializationCompleted();
     }

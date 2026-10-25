@@ -40,17 +40,22 @@ public sealed class PosteViewModel : Observable
     public bool IsWindows => OperatingSystem.IsWindows();
     public bool IsServerComputer => shell.IsServerComputer;
     public bool IsLinked => !shell.IsServerComputer;
-    /// <summary>Un ordinateur relié peut devenir le serveur ; un téléphone, jamais.</summary>
-    public bool CanBecomeServer => IsLinked && !Platform.IsMobile;
+    /// <summary>Un poste relié peut devenir le serveur : tout ordinateur, et le téléphone qui en a les moyens.</summary>
+    public bool CanBecomeServer => IsLinked && Platform.CanHostServer;
+
+    /// <summary>Téléphone serveur de l'établissement : il garde les données et les autres postes s'y connectent.</summary>
+    public bool IsPhoneServer => Platform.IsMobile && IsServerComputer;
+    public bool IsPhoneClient => Platform.IsMobile && !IsServerComputer;
 
     public string ConnectionTitle => IsServerComputer
-        ? "Cet ordinateur est le serveur de l'établissement"
+        ? (Platform.IsMobile ? "Ce téléphone est le serveur de l'établissement" : "Cet ordinateur est le serveur de l'établissement")
         : $"Relié à {ConnectionStore.Load()?.School ?? "l'établissement"}";
 
     public string ConnectionLine => IsServerComputer
-        ? (lanEnabled ? "Les autres ordinateurs qui ont SCOLIA le trouvent et s'y connectent automatiquement."
-                      : "Le partage n'est pas ouvert : les autres ordinateurs ne le voient pas encore.")
-        : $"Ordinateur {ConnectionStore.Load()?.Machine ?? "principal"} · {shell.Api.Server.Host}. Si son adresse change, SCOLIA le retrouve seul.";
+        ? (Platform.IsMobile ? "Les données de l'établissement sont sur ce téléphone. Les autres téléphones et ordinateurs du même Wi-Fi le trouvent et s'y connectent."
+            : lanEnabled ? "Les autres ordinateurs qui ont SCOLIA le trouvent et s'y connectent automatiquement."
+                         : "Le partage n'est pas ouvert : les autres ordinateurs ne le voient pas encore.")
+        : $"Serveur {ConnectionStore.Load()?.Machine ?? "principal"} · {shell.Api.Server.Host}. Si son adresse change, SCOLIA le retrouve seul.";
 
     /// <summary>Interrupteur du démarrage automatique : true quand le service est installé.</summary>
     public bool ServiceInstalled => serviceInstalled;
@@ -67,6 +72,7 @@ public sealed class PosteViewModel : Observable
         : "Fermé : SCOLIA ne répond que sur cet ordinateur.";
 
     public string AddressLine => !lanEnabled || addresses.Count == 0 ? string.Empty
+        : Platform.IsMobile ? "Adresse à saisir sur un autre poste, si la recherche ne trouve pas ce téléphone : " + string.Join(" · ", addresses.Select(a => a.Replace("http://", string.Empty, StringComparison.Ordinal)))
         : "Depuis un navigateur, les autres postes peuvent aussi ouvrir : " + string.Join(" · ", addresses);
 
     public bool HasAddress => AddressLine.Length > 0;
@@ -86,10 +92,12 @@ public sealed class PosteViewModel : Observable
     private void Refresh()
     {
         serviceInstalled = OperatingSystem.IsWindows() && PosteAdmin.ServiceInstalled();
-        lanEnabled = PosteAdmin.LanEnabled();
+        // Le téléphone serveur est toujours ouvert au Wi-Fi : c'est sa raison d'être.
+        lanEnabled = Platform.IsMobile ? shell.IsServerComputer : PosteAdmin.LanEnabled();
         addresses = lanEnabled ? PosteAdmin.Addresses() : [];
         foreach (var name in new[] { nameof(ServiceInstalled), nameof(LanEnabled), nameof(ServiceLine), nameof(LanLine), nameof(AddressLine),
-                     nameof(HasAddress), nameof(ConnectionTitle), nameof(ConnectionLine), nameof(IsServerComputer), nameof(IsLinked) })
+                     nameof(HasAddress), nameof(ConnectionTitle), nameof(ConnectionLine), nameof(IsServerComputer), nameof(IsLinked),
+                     nameof(IsPhoneServer), nameof(IsPhoneClient), nameof(CanBecomeServer) })
             Raise(name);
     }
 

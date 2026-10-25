@@ -143,7 +143,13 @@ prefs.Accent = Environment.GetEnvironmentVariable("SCOLIA_ACCENT") ?? "bleu";
 // Sans les bulles d'astuce (SCOLIA_ASTUCES=0) : des écrans dégagés, pour une présentation.
 if (Environment.GetEnvironmentVariable("SCOLIA_ASTUCES") == "0") prefs.Tips = false;
 // Le mobile est connu avant le shell, comme sur Android : ses menus et ses réglages en dépendent.
-if (Environment.GetEnvironmentVariable("SCOLIA_MOBILE") == "1") { Preferences.MobileLayout = true; Platform.IsMobile = true; }
+if (Environment.GetEnvironmentVariable("SCOLIA_MOBILE") == "1")
+{
+    Preferences.MobileLayout = true;
+    Platform.IsMobile = true;
+    // Comme sur Android : le téléphone peut être le serveur de l'établissement (sans le démarrer ici).
+    Platform.LocalServer = new CaptureServer();
+}
 var shell = new ShellViewModel(api, prefs);
 // Taille de fenêtre optionnelle (SCOLIA_TAILLE=1024x700) pour vérifier l'adaptation du texte à chaque format d'écran.
 var taille = (Environment.GetEnvironmentVariable("SCOLIA_TAILLE") ?? "1280x820").Split('x');
@@ -707,6 +713,12 @@ if (Preferences.MobileLayout)
     shell.ShowNetwork();
     Save(window, "35-mobile-reseau-hors-ligne.png");
     shell.CloseDialog();
+
+    // Premier lancement du téléphone : rejoindre l'établissement, ou en devenir le serveur.
+    api.Retarget(server);
+    Wait(shell.LogoutAsync());
+    Wait(shell.ChooseServerAsync());
+    Save(window, "39-mobile-premier-lancement.png");
 }
 
 window.Close();
@@ -887,4 +899,12 @@ int CommandSweep(ShellViewModel shell)
     Console.WriteLine($"{total} commandes essayées, {problems.Count} à revoir.");
     foreach (var p in problems) Console.WriteLine($"  À REVOIR  {p}");
     return problems.Count == 0 ? 0 : 1;
+}
+
+/// <summary>Serveur du téléphone, sans démarrage : l'outil de captures montre seulement les écrans qui le proposent.</summary>
+sealed class CaptureServer : ILocalServer
+{
+    public void Start() { }
+    public void Restart() { }
+    public void Stop() { }
 }

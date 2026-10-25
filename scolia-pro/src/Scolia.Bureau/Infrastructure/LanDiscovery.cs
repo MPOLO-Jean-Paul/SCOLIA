@@ -6,9 +6,9 @@ using Scolia.Network;
 namespace Scolia.Bureau.Infrastructure;
 
 /// <summary>Serveur SCOLIA trouvé sur le réseau de l'établissement.</summary>
-public sealed record DiscoveredServer(string SchoolId, string School, string Machine, string Version, Uri Address)
+public sealed record DiscoveredServer(string SchoolId, string School, string Machine, string Version, Uri Address, bool IsPhone = false)
 {
-    public string Detail => $"Ordinateur {Machine} · {Address.Host} · version {Version}";
+    public string Detail => $"{(IsPhone ? "Téléphone" : "Ordinateur")} {Machine} · {Address.Host} · version {Version}";
 }
 
 /// <summary>
@@ -41,7 +41,7 @@ public static class LanDiscovery
                 if (LanProtocol.ParseReply(received.Buffer, nonce) is not { } a) continue;
                 var address = new Uri($"http://{received.RemoteEndPoint.Address.MapToIPv4()}:{a.Port}/");
                 // Un serveur répond une fois par carte réseau qui l'atteint : on le garde une seule fois.
-                found.TryAdd($"{a.SchoolId}|{a.Machine}", new DiscoveredServer(a.SchoolId, a.School, a.Machine, a.Version, address));
+                found.TryAdd($"{a.SchoolId}|{a.Machine}", new DiscoveredServer(a.SchoolId, a.School, a.Machine, a.Version, address, a.Device == "telephone"));
             }
         }
         catch (OperationCanceledException) when (!ct.IsCancellationRequested) { }

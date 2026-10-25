@@ -27,6 +27,8 @@ public static class MobilePlatform
         Platform.OpenFile = OpenFile;
         Platform.OpenUri = OpenUri;
         Platform.PlayWave = PlayWave;
+        // Sans ordinateur dans l'établissement, ce téléphone peut en être le serveur.
+        Platform.LocalServer = new Server.PhoneServer(app);
     }
 
     public static void Attach(Context activity) => context ??= activity.ApplicationContext ?? activity;

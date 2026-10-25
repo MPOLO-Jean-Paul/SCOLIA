@@ -21,6 +21,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Scolia.Bureau", "src\Scolia
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Scolia.Bureau.Tests", "tests\Scolia.Bureau.Tests\Scolia.Bureau.Tests.csproj", "{0F58487F-33DE-4700-894C-1BCF80A077EC}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Scolia.Mobile.Tests", "tests\Scolia.Mobile.Tests\Scolia.Mobile.Tests.csproj", "{F4A7EBC5-AB6A-4383-835D-F78DCE74B749}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -115,6 +117,18 @@ Global
 		{0F58487F-33DE-4700-894C-1BCF80A077EC}.Release|x64.Build.0 = Release|Any CPU
 		{0F58487F-33DE-4700-894C-1BCF80A077EC}.Release|x86.ActiveCfg = Release|Any CPU
 		{0F58487F-33DE-4700-894C-1BCF80A077EC}.Release|x86.Build.0 = Release|Any CPU
+		{F4A7EBC5-AB6A-4383-835D-F78DCE74B749}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F4A7EBC5-AB6A-4383-835D-F78DCE74B749}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F4A7EBC5-AB6A-4383-835D-F78DCE74B749}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{F4A7EBC5-AB6A-4383-835D-F78DCE74B749}.Debug|x64.Build.0 = Debug|Any CPU
+		{F4A7EBC5-AB6A-4383-835D-F78DCE74B749}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{F4A7EBC5-AB6A-4383-835D-F78DCE74B749}.Debug|x86.Build.0 = Debug|Any CPU
+		{F4A7EBC5-AB6A-4383-835D-F78DCE74B749}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F4A7EBC5-AB6A-4383-835D-F78DCE74B749}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F4A7EBC5-AB6A-4383-835D-F78DCE74B749}.Release|x64.ActiveCfg = Release|Any CPU
+		{F4A7EBC5-AB6A-4383-835D-F78DCE74B749}.Release|x64.Build.0 = Release|Any CPU
+		{F4A7EBC5-AB6A-4383-835D-F78DCE74B749}.Release|x86.ActiveCfg = Release|Any CPU
+		{F4A7EBC5-AB6A-4383-835D-F78DCE74B749}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -127,5 +141,6 @@ Global
 		{577F81F0-6D7C-4E9B-93AF-4A2355793CEC} = {69CFDED4-126C-4338-9F26-0CEFE6378AAC}
 		{A9B6D315-D460-4F08-959F-DE96368F2B7E} = {A51ECCAE-DEEA-45A3-A0B0-D6724A217BEA}
 		{0F58487F-33DE-4700-894C-1BCF80A077EC} = {69CFDED4-126C-4338-9F26-0CEFE6378AAC}
+		{F4A7EBC5-AB6A-4383-835D-F78DCE74B749} = {69CFDED4-126C-4338-9F26-0CEFE6378AAC}
 	EndGlobalSection
 EndGlobal

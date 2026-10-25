@@ -25,7 +25,7 @@ public sealed class ShellViewModel : Observable
     private string status = "Démarrage de SCOLIA…";
     private string? notice;
     private RibbonTabVm? selectedTab;
-    private ServerProcess? localServer;
+    private ILocalServer? localServer;
     private bool choosingServer;
 
     public ShellViewModel(ScoliaClient api, Preferences prefs)
@@ -306,7 +306,7 @@ public sealed class ShellViewModel : Observable
     /// Un poste qui porte la base en est le serveur. Un poste sans base cherche SCOLIA sur le réseau et le rejoint.
     /// Un serveur mémorisé dont l'adresse a changé est retrouvé par l'identifiant de son établissement.
     /// </summary>
-    public async Task StartAsync(ServerProcess? server)
+    public async Task StartAsync(ILocalServer? server)
     {
         localServer = server;
         var forced = Environment.GetEnvironmentVariable("SCOLIA_SERVEUR");
@@ -338,15 +338,26 @@ public sealed class ShellViewModel : Observable
             return;
         }
 
-        // Téléphone : il n'est jamais le serveur ; il rejoint l'ordinateur de l'établissement sur le même Wi-Fi.
         if (Platform.IsMobile)
         {
+            // Téléphone serveur de l'établissement : son serveur démarre avec l'application.
+            if (saved?.Mode == ConnectionSettings.Local && localServer is not null)
+            {
+                api.Retarget(ConnectionStore.LocalAddress);
+                await ShowEntryAsync();
+                return;
+            }
+            // Premier lancement : rejoindre le SCOLIA de l'établissement sur le Wi-Fi, ou faire de ce téléphone le serveur.
             Status = "Recherche de SCOLIA sur le Wi-Fi de l'établissement…";
             var nearby = await LanDiscovery.FindAsync(TimeSpan.FromSeconds(2.5));
-            if (nearby.Count == 1) await JoinAsync(nearby[0]);
-            else ShowChooser(nearby, nearby.Count == 0
-                ? "Aucun SCOLIA ne répond sur ce Wi-Fi. Le téléphone doit être sur le même réseau que l'ordinateur principal, où SCOLIA est ouvert et partagé. Vous pouvez aussi saisir son adresse."
-                : "Plusieurs SCOLIA répondent sur ce Wi-Fi : choisissez celui de votre établissement.");
+            ShowChooser(nearby, nearby.Count switch
+            {
+                0 => Platform.CanHostServer
+                    ? "Aucun SCOLIA ne répond sur ce Wi-Fi. Configurez l'établissement sur ce téléphone : il en devient le serveur, et les autres téléphones et ordinateurs s'y connectent. Ou saisissez l'adresse du serveur."
+                    : "Aucun SCOLIA ne répond sur ce Wi-Fi. Le téléphone doit être sur le même réseau que le serveur de l'établissement. Vous pouvez aussi saisir son adresse.",
+                1 => "SCOLIA a été trouvé sur ce Wi-Fi : rejoignez votre établissement.",
+                _ => "Plusieurs SCOLIA répondent sur ce Wi-Fi : choisissez celui de votre établissement.",
+            });
             return;
         }
 
@@ -413,13 +424,15 @@ public sealed class ShellViewModel : Observable
         ConnectionStore.Save(new ConnectionSettings(ConnectionSettings.Remote, server.Address.ToString(), server.SchoolId, server.School, server.Machine,
             previous?.LanPromptDone ?? false));
         if (IsLoggedIn) await LogoutAsync();
+        // Un téléphone qui était le serveur et en rejoint un autre arrête le sien : il ne garde qu'un établissement.
+        if (Platform.IsMobile && localServer is not null && !server.Address.IsLoopback) localServer.Stop();
         api.Retarget(server.Address);
         ChoosingServer = false;
         await ShowEntryAsync();
         Notify($"Ce poste est relié à SCOLIA · {server.School} (ordinateur {server.Machine}).");
     }
 
-    /// <summary>Cet ordinateur devient (ou redevient) le serveur de l'établissement.</summary>
+    /// <summary>Cet ordinateur, ou ce téléphone, devient (ou redevient) le serveur de l'établissement.</summary>
     public async Task UseThisComputerAsync()
     {
         var previous = ConnectionStore.Load();
@@ -477,9 +490,11 @@ public sealed class ShellViewModel : Observable
         Raise(nameof(ServerLine));
         if (!await api.IsRunningAsync() && IsServerComputer && localServer is not null)
         {
-            Status = "Démarrage du serveur SCOLIA…";
+            Status = Platform.IsMobile ? "Démarrage du serveur SCOLIA sur ce téléphone…" : "Démarrage du serveur SCOLIA…";
             localServer.Start();
-            for (var i = 0; i < 80 && !await api.IsRunningAsync(); i++) await Task.Delay(250);
+            // Un téléphone met plus de temps qu'un ordinateur à préparer le serveur, surtout la première fois.
+            var tries = Platform.IsMobile ? 240 : 80;
+            for (var i = 0; i < tries && !await api.IsRunningAsync(); i++) await Task.Delay(250);
         }
         var ready = await api.IsRunningAsync();
         Status = ready ? $"Serveur prêt : {api.Server}" : "Le serveur SCOLIA ne répond pas.";

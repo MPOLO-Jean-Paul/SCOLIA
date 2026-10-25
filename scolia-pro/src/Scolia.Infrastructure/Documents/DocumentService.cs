@@ -103,7 +103,7 @@ public sealed class DocumentService : IDocumentService
             page.DefaultTextStyle(s => s.FontFamily(Font).FontSize(9.5f).FontColor("#1E293B"));
             page.Header().Element(c => Header(c, d.School, "REÇU DE PAIEMENT", null));
             if (d.Cancelled)
-                page.Foreground().AlignCenter().AlignMiddle().Rotate(-30).Text("ANNULÉ").FontSize(64).Bold().FontColor("#DC262655");
+                page.Foreground().AlignCenter().AlignMiddle().Rotate(-30).Text("ANNULÉ").FontSize(64).Bold().FontColor("#55DC2626");
             page.Content().PaddingTop(10).Column(col =>
             {
                 col.Spacing(8);

@@ -65,6 +65,7 @@ public sealed class LanAnnouncer(IConfiguration configuration, IServiceScopeFact
         var db = scope.ServiceProvider.GetRequiredService<ScoliaDbContext>();
         var school = await db.Schools.AsNoTracking().OrderBy(s => s.CreatedAtUtc).Select(s => new { s.Id, s.Name }).FirstOrDefaultAsync(ct);
         return new LanAnnouncement(nonce, school?.Id.ToString() ?? string.Empty, school?.Name ?? "SCOLIA (installation à terminer)",
-            Environment.MachineName, httpPort, Version);
+            configuration["Scolia:Reseau:NomPoste"] is { Length: > 0 } device ? device : Environment.MachineName, httpPort, Version,
+            configuration["Scolia:Reseau:TypePoste"]);
     }
 }

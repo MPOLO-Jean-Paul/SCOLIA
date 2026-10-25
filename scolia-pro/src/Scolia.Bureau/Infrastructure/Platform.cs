@@ -21,6 +21,15 @@ public static class Platform
     /// <summary>Joue un son au format WAV, 16 bits mono : les notes de SCOLIA sur le haut-parleur du téléphone.</summary>
     public static Action<byte[]>? PlayWave { get; set; }
 
+    /// <summary>
+    /// Serveur que ce téléphone peut porter lui-même, quand l'établissement n'a pas d'ordinateur : fourni par l'application
+    /// Android. Null sur un appareil qui ne peut que rejoindre un serveur.
+    /// </summary>
+    public static ILocalServer? LocalServer { get; set; }
+
+    /// <summary>Vrai quand ce poste peut être le serveur de l'établissement : tout ordinateur, et le téléphone qui en a les moyens.</summary>
+    public static bool CanHostServer => !IsMobile || LocalServer is not null;
+
     /// <summary>Nom de l'appareil, affiché au serveur lors de la demande d'accès.</summary>
     public static string? DeviceName { get; set; }
 }

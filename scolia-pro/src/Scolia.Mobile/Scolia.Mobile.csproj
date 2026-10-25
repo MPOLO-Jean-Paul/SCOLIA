@@ -1,7 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <!-- Application Android de SCOLIA : la même interface que Bureau, sur le téléphone. Elle se connecte au serveur
-       SCOLIA de l'ordinateur principal, sur le même Wi-Fi. Les vues et le code de Bureau sont liés, pas copiés :
+       SCOLIA de l'établissement sur le même Wi-Fi, ou l'est elle-même quand l'établissement n'a pas d'ordinateur :
+       le serveur tourne alors dans l'application. Les vues et le code de Bureau sont liés, pas copiés :
        une correction faite pour l'ordinateur vaut aussi pour le téléphone. -->
   <PropertyGroup>
     <TargetFramework>net10.0-android</TargetFramework>
@@ -35,6 +36,12 @@
     <PublishTrimmed>false</PublishTrimmed>
   </PropertyGroup>
 
+  <!-- Le serveur de l'établissement, pour le téléphone qui en tient lieu. Le protocole de découverte vient avec lui. -->
+  <ItemGroup>
+    <ProjectReference Include="../Scolia.Api/Scolia.Api.csproj" SetTargetFramework="TargetFramework=net10.0" />
+  </ItemGroup>
+  <Import Project="AspNetCoreLocal.props" />
+
   <ItemGroup>
     <PackageReference Include="Avalonia" />
     <PackageReference Include="Avalonia.Android" />
@@ -57,7 +64,6 @@
   <!-- Code et vues de Bureau, aux mêmes chemins que dans Bureau. -->
   <ItemGroup>
     <Compile Include="../Scolia.Bureau/**/*.cs" Exclude="../Scolia.Bureau/bin/**;../Scolia.Bureau/obj/**;../Scolia.Bureau/Program.cs" Link="Bureau/%(RecursiveDir)%(Filename)%(Extension)" />
-    <Compile Include="../Scolia.Infrastructure/Network/LanProtocol.cs" Link="Bureau/Infrastructure/LanProtocol.cs" />
     <AvaloniaXaml Include="../Scolia.Bureau/**/*.axaml" Exclude="../Scolia.Bureau/bin/**;../Scolia.Bureau/obj/**" Link="%(RecursiveDir)%(Filename)%(Extension)" />
     <AvaloniaResource Include="../Scolia.Bureau/Assets/**" Link="Assets/%(RecursiveDir)%(Filename)%(Extension)" />
   </ItemGroup>

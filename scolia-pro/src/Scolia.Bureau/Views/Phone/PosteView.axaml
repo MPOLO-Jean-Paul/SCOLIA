@@ -2,10 +2,12 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mi="using:Material.Icons.Avalonia"
              x:Class="Scolia.Bureau.Views.Phone.PosteView">
-  <!-- Réseau sur le mobile : l'ordinateur principal auquel l'appareil est relié, et comment en changer -->
+  <!-- Réseau sur le mobile : le serveur auquel l'appareil est relié, ou ce téléphone lui-même quand il est le serveur -->
   <StackPanel Spacing="14">
-    <TextBlock Classes="muted" TextWrapping="Wrap"
-               Text="Le téléphone travaille sur la base de l'ordinateur principal de l'établissement, par le Wi-Fi. Rien n'est gardé sur le téléphone." />
+    <TextBlock Classes="muted" TextWrapping="Wrap" IsVisible="{Binding IsPhoneClient}"
+               Text="Le téléphone travaille sur la base du serveur de l'établissement, par le Wi-Fi. Les dernières pages lues sont gardées pour travailler hors ligne." />
+    <TextBlock Classes="muted" TextWrapping="Wrap" IsVisible="{Binding IsPhoneServer}"
+               Text="Gardez ce téléphone allumé, branché et sur le Wi-Fi de l'établissement : les autres postes travaillent sur ses données. SCOLIA reste actif en arrière-plan, signalé par une notification." />
 
     <Border Classes="card">
       <Grid ColumnDefinitions="Auto,*">
@@ -14,6 +16,12 @@
           <TextBlock Text="{Binding ConnectionTitle}" FontWeight="SemiBold" TextWrapping="Wrap" />
           <TextBlock Text="{Binding ConnectionLine}" Classes="muted" TextWrapping="Wrap" FontSize="{DynamicResource FsSmall}" />
         </StackPanel>
+      </Grid>
+    </Border>
+    <Border Classes="card" IsVisible="{Binding HasAddress}">
+      <Grid ColumnDefinitions="Auto,*">
+        <Border Classes="appicon medium" Background="{DynamicResource ToneBlue}" Margin="0,0,12,0" VerticalAlignment="Top"><mi:MaterialIcon Kind="IpNetworkOutline" /></Border>
+        <TextBlock Grid.Column="1" Text="{Binding AddressLine}" TextWrapping="Wrap" VerticalAlignment="Center" />
       </Grid>
     </Border>
 
@@ -27,7 +35,7 @@
         <ItemsControl.ItemTemplate>
           <DataTemplate>
             <Grid ColumnDefinitions="Auto,*,Auto" Margin="14,10">
-              <Border Classes="appicon medium" Background="{DynamicResource ToneBlue}" Margin="0,0,12,0"><mi:MaterialIcon Kind="DesktopTowerMonitor" /></Border>
+              <Border Classes="appicon medium" Background="{DynamicResource ToneBlue}" Margin="0,0,12,0"><mi:MaterialIcon Kind="{Binding Icon}" /></Border>
               <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
                 <TextBlock Text="{Binding School}" FontWeight="SemiBold" TextWrapping="Wrap" />
                 <TextBlock Text="{Binding Detail}" Classes="muted" TextWrapping="Wrap" FontSize="{DynamicResource FsSmall}" />
@@ -39,13 +47,19 @@
       </ItemsControl>
     </Border>
 
-    <Button Classes="ghost" Command="{Binding ChangeServer}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Height="46">
+    <Button Classes="ghost" Command="{Binding ChangeServer}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Height="46" IsVisible="{Binding IsPhoneClient}">
       <StackPanel Orientation="Horizontal" Spacing="8">
         <mi:MaterialIcon Kind="SwapHorizontal" Width="18" Height="18" />
-        <TextBlock Text="Changer d'ordinateur principal" />
+        <TextBlock Text="Changer de serveur" />
       </StackPanel>
     </Button>
-    <TextBlock Classes="muted" TextWrapping="Wrap" FontSize="{DynamicResource FsSmall}"
-               Text="Pour changer, le téléphone se déconnecte puis propose les ordinateurs trouvés sur le Wi-Fi, ou la saisie de l'adresse affichée sur l'ordinateur principal." />
+    <Button Classes="ghost" Command="{Binding UseThisComputer}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Height="46" IsVisible="{Binding CanBecomeServer}">
+      <StackPanel Orientation="Horizontal" Spacing="8">
+        <mi:MaterialIcon Kind="CellphoneLink" Width="18" Height="18" />
+        <TextBlock Text="Faire de ce téléphone le serveur" />
+      </StackPanel>
+    </Button>
+    <TextBlock Classes="muted" TextWrapping="Wrap" FontSize="{DynamicResource FsSmall}" IsVisible="{Binding IsPhoneClient}"
+               Text="Pour changer, le téléphone se déconnecte puis propose les serveurs trouvés sur le Wi-Fi, ou la saisie de l'adresse affichée sur le serveur." />
   </StackPanel>
 </UserControl>

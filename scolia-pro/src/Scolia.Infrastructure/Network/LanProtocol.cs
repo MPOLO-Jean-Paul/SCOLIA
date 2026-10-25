@@ -91,5 +91,8 @@ public static class LanProtocol
     }
 }
 
-/// <summary>Réponse d'un serveur SCOLIA à une demande de découverte.</summary>
-public sealed record LanAnnouncement(string Nonce, string SchoolId, string School, string Machine, int Port, string Version);
+/// <summary>
+/// Réponse d'un serveur SCOLIA à une demande de découverte. <paramref name="Device"/> vaut « telephone » quand le serveur
+/// est un téléphone ; absent, c'est un ordinateur (les anciennes versions ne l'envoient pas).
+/// </summary>
+public sealed record LanAnnouncement(string Nonce, string SchoolId, string School, string Machine, int Port, string Version, string? Device = null);
