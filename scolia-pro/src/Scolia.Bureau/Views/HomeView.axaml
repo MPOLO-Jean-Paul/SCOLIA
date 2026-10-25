@@ -23,7 +23,7 @@
           <StackPanel Spacing="2" VerticalAlignment="Center">
             <TextBlock Text="{Binding DateLine}" Classes="muted" />
             <TextBlock Text="{Binding Greeting}" Classes="greeting" FontWeight="SemiBold" TextWrapping="Wrap" />
-            <TextBlock Text="{Binding SchoolLine}" Foreground="{DynamicResource Text2Brush}" TextTrimming="CharacterEllipsis" />
+            <TextBlock Classes="wrap2" Text="{Binding SchoolLine}" Foreground="{DynamicResource Text2Brush}" TextTrimming="CharacterEllipsis" />
           </StackPanel>
           <Border Grid.Column="1" Classes="chip cashchip" VerticalAlignment="Center" HorizontalAlignment="Left" IsVisible="{Binding HasCashLine}" Padding="12,6">
             <StackPanel Orientation="Horizontal" Spacing="8">
@@ -47,7 +47,7 @@
                   <Border Classes="appicon medium kpiicon" Background="{Binding Brush}" Grid.RowSpan="3" VerticalAlignment="Top" Margin="0,2,12,0"><mi:MaterialIcon Kind="{Binding Icon}" /></Border>
                   <TextBlock Grid.Column="1" Text="{Binding Label}" Foreground="{DynamicResource Text2Brush}" TextTrimming="CharacterEllipsis" />
                   <TextBlock Grid.Column="1" Grid.Row="1" Text="{Binding Value}" Classes="kpivalue" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" Margin="0,2,0,0" />
-                  <TextBlock Grid.Column="1" Grid.Row="2" Text="{Binding Hint}" Classes="muted" TextTrimming="CharacterEllipsis" />
+                  <TextBlock Grid.Column="1" Grid.Row="2" Text="{Binding Hint}" Classes="wrap2 muted" TextTrimming="CharacterEllipsis" />
                 </Grid>
               </Border>
             </Button>
@@ -148,8 +148,8 @@
                       <Grid ColumnDefinitions="Auto,*,Auto">
                         <Border Classes="appicon" Background="{Binding Brush}" VerticalAlignment="Center" Margin="0,0,10,0"><mi:MaterialIcon Kind="{Binding Icon}" /></Border>
                         <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                          <TextBlock Text="{Binding Text}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
-                          <TextBlock Text="{Binding Detail}" Classes="muted" TextTrimming="CharacterEllipsis" />
+                          <TextBlock Classes="wrap2" Text="{Binding Text}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                          <TextBlock Text="{Binding Detail}" Classes="wrap2 muted" TextTrimming="CharacterEllipsis" />
                         </StackPanel>
                         <mi:MaterialIcon Grid.Column="2" Kind="ChevronRight" Width="16" Height="16" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" />
                       </Grid>

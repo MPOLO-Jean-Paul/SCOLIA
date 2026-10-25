@@ -27,3 +27,6 @@ public sealed class SheetVm(string title, string subtitle, IReadOnlyList<SheetIt
     public bool HasSubtitle => Subtitle.Length > 0;
     public IReadOnlyList<SheetItemVm> Items { get; } = items;
 }
+
+/// <summary>Rubrique des commandes du menu du téléphone : un métier et ses commandes qui ne sont pas des pages.</summary>
+public sealed record PhoneToolGroupVm(string Title, IReadOnlyList<RibbonCommandVm> Commands);

@@ -27,6 +27,13 @@ public sealed class PosteViewModel : Observable
         }));
         Search = new AsyncCommand(SearchAsync);
         UseThisComputer = new AsyncCommand(() => shell.UseThisComputerAsync());
+        // Mobile : quitter l'ordinateur principal actuel pour en choisir un autre, ou saisir son adresse.
+        ChangeServer = new AsyncCommand(async () =>
+        {
+            shell.CloseBackstage();
+            await shell.LogoutAsync();
+            await shell.ChooseServerAsync();
+        });
         Refresh();
     }
 
@@ -74,6 +81,7 @@ public sealed class PosteViewModel : Observable
     public AsyncCommand ToggleLan { get; }
     public AsyncCommand Search { get; }
     public AsyncCommand UseThisComputer { get; }
+    public AsyncCommand ChangeServer { get; }
 
     private void Refresh()
     {

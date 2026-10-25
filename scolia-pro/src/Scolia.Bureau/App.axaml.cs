@@ -10,7 +10,11 @@ namespace Scolia.Bureau;
 
 public partial class App : Application
 {
-    public override void Initialize() => AvaloniaXamlLoader.Load(this);
+    public override void Initialize()
+    {
+        AvaloniaXamlLoader.Load(this);
+        PhoneFit.Install();
+    }
 
     public override void OnFrameworkInitializationCompleted()
     {

@@ -133,9 +133,11 @@ public partial class MainView : UserControl
         var k = shell.Prefs.LayoutScale;
         Scaler.LayoutTransform = Math.Abs(k - 1) < 0.001 ? null : new Avalonia.Media.ScaleTransform(k, k);
         shell.Narrow = size.Width / k < NarrowBelow;
-        var phone = size.Width / k < PhoneBelow;
+        // L'application mobile garde sa forme sur une tablette aussi ; sur l'ordinateur, une fenêtre très étroite la prend.
+        var phone = Preferences.MobileLayout || size.Width / k < PhoneBelow;
         // Connue avant le changement de page : les vues construites ensuite prennent leur forme de téléphone.
         PhoneLayout.Set(phone);
+        shell.PhoneWidth = size.Width / k;
         Scaler.Classes.Set("phone", phone);
         shell.Phone = phone;
     }

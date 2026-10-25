@@ -538,7 +538,7 @@ public sealed class ShellViewModel : Observable
         if (!rowTipShown && Prefs.Tips && page.RowActions.Count > 0)
         {
             rowTipShown = true;
-            Notify(phone ? "Astuce : appui long sur une ligne pour ses actions, double appui pour l'ouvrir."
+            Notify(phone ? "Astuce : touchez « … » sur une carte pour ses actions, ou appuyez longuement dessus."
                 : "Astuce : clic droit sur une ligne pour ses actions, double-clic pour l'ouvrir.");
         }
     }
@@ -788,8 +788,65 @@ public sealed class ShellViewModel : Observable
     private void RebuildPhoneTabs()
     {
         var items = Navigation.SelectMany(g => g.Items).ToList();
-        PhoneTabs = PhoneTabOrder.Select(t => items.FirstOrDefault(i => i.PageType == t)).OfType<NavItemVm>().Take(4).ToList();
+        PhoneTabs = PhoneTabOrder.Select(t => items.FirstOrDefault(i => i.PageType == t)).OfType<NavItemVm>().Take(phoneWidth >= 600 ? 6 : 4).ToList();
         Raise(nameof(PhoneTabs));
+        RebuildPhoneTools();
+    }
+
+    private double phoneWidth;
+
+    /// <summary>
+    /// Largeur de l'écran mobile, en points. Une tablette en largeur a un volet de navigation à gauche, comme l'iPad ;
+    /// un téléphone, ou une tablette en hauteur, garde les onglets du bas, plus nombreux sur une tablette.
+    /// </summary>
+    public double PhoneWidth
+    {
+        get => phoneWidth;
+        set
+        {
+            if (Math.Abs(phoneWidth - value) < 0.5) return;
+            var tabs = phoneWidth >= 600;
+            var rail = PhoneRail;
+            phoneWidth = value;
+            if (tabs != phoneWidth >= 600) RebuildPhoneTabs();
+            if (rail != PhoneRail)
+            {
+                Raise(nameof(PhoneRail));
+                Raise(nameof(PhoneBottomTabs));
+            }
+        }
+    }
+
+    /// <summary>Tablette en largeur : la navigation passe dans un volet à gauche, toujours visible.</summary>
+    public bool PhoneRail => phoneWidth >= 900;
+    public bool PhoneBottomTabs => !PhoneRail;
+
+    /// <summary>
+    /// Commandes du téléphone qui ne sont pas des pages : créations, exports, sauvegardes et contrôles, rangées par métier.
+    /// Ce qui ne sert qu'à l'ordinateur en est exclu : fenêtre, zoom, ruban, info-bulles et quadrillage.
+    /// </summary>
+    public IReadOnlyList<PhoneToolGroupVm> PhoneTools { get; private set; } = [];
+
+    private static readonly HashSet<string> DesktopOnly = new(StringComparer.Ordinal)
+    {
+        "Rechercher", "Actualiser", "Imprimer", "Plein écran", "Barre d'état", "Quadrillage", "Info-bulles", "Barre latérale",
+        "Réduire le ruban", "Zoom arrière", "Zoom avant", "Zoom 100 %", "Densité compacte", "Animations",
+    };
+
+    private void RebuildPhoneTools()
+    {
+        var pages = Navigation.SelectMany(g => g.Items).Select(i => i.Label).ToHashSet(StringComparer.Ordinal);
+        var groups = new List<PhoneToolGroupVm>();
+        foreach (var tab in Tabs.Where(t => t.Id is not ("fichier" or "accueil")))
+        {
+            var commands = tab.Groups.SelectMany(g => g.Commands)
+                .Where(c => !DesktopOnly.Contains(c.Label) && !pages.Contains(c.Label))
+                .Select(c => c.Label == "Raccourcis clavier" ? new RibbonCommandVm("Aide et gestes", Material.Icons.MaterialIconKind.GestureTap, string.Empty, c.Command, false, "ToneBlue") : c)
+                .ToList();
+            if (commands.Count > 0) groups.Add(new PhoneToolGroupVm(tab.Title, commands));
+        }
+        PhoneTools = groups;
+        Raise(nameof(PhoneTools));
     }
 
     private bool phoneMenuOpen;

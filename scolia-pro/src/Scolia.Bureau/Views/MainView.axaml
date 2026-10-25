@@ -15,7 +15,7 @@
       <Setter Property="HorizontalAlignment" Value="Stretch" />
     </Style>
     <!-- Fenêtre de dialogue sur le téléphone : presque tout l'écran, pour des champs lisibles -->
-    <Style Selector="LayoutTransformControl.phone Border.scrim > ContentControl"><Setter Property="Margin" Value="8,12" /></Style>
+    <Style Selector="LayoutTransformControl.phone Border.scrim > ContentControl"><Setter Property="Margin" Value="12" /></Style>
     <!-- Indicateur de traitement : l'icône tourne tant que le traitement dure -->
     <Style Selector="mi|MaterialIcon.spin">
       <Setter Property="RenderTransform"><RotateTransform /></Setter>

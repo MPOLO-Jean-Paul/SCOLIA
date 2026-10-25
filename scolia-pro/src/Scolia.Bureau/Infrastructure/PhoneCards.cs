@@ -46,22 +46,40 @@ public static class PhoneCards
         });
     }
 
+    /// <summary>Largeur sous laquelle les cartes restent sur une colonne : un téléphone, même en largeur.</summary>
+    private const double TwoColumnsFrom = 680;
+    private const double ThreeColumnsFrom = 1080;
+
     private static Control List(DataGrid grid)
     {
-        var list = new ItemsControl
+        var list = new ItemsControl { ItemTemplate = new FuncDataTemplate<object>((_, _) => Card(grid)) };
+        UseColumns(list, 1);
+        // Une tablette range les cartes sur deux ou trois colonnes ; un téléphone garde une liste qui ne charge
+        // que les cartes à l'écran, pour rester fluide sur un appareil modeste.
+        list.SizeChanged += (_, e) =>
         {
-            ItemsPanel = new FuncTemplate<Panel?>(() => new VirtualizingStackPanel()),
-            ItemTemplate = new FuncDataTemplate<object>((_, _) => Card(grid)),
+            var columns = e.NewSize.Width >= ThreeColumnsFrom ? 3 : e.NewSize.Width >= TwoColumnsFrom ? 2 : 1;
+            if (columns != (list.Tag as int? ?? 1)) Avalonia.Threading.Dispatcher.UIThread.Post(() => UseColumns(list, columns));
         };
         list.Bind(ItemsControl.ItemsSourceProperty, grid.GetObservable(DataGrid.ItemsSourceProperty));
         return list;
     }
 
+    private static void UseColumns(ItemsControl list, int columns)
+    {
+        list.Tag = columns;
+        list.ItemsPanel = columns == 1
+            ? new FuncTemplate<Panel?>(() => new VirtualizingStackPanel())
+            : new FuncTemplate<Panel?>(() => new CardColumns { Columns = columns });
+    }
+
     private static Control Card(DataGrid grid)
     {
         var columns = grid.Columns.ToList();
-        var checks = columns.OfType<DataGridCheckBoxColumn>().ToList();
-        var others = columns.Where(c => c is not DataGridCheckBoxColumn).ToList();
+        // Une colonne de cases à cocher, qu'elle soit une colonne de cases ou un modèle qui ne contient qu'une case,
+        // se place à gauche de la carte, comme dans les listes à cocher des Réglages.
+        var checks = columns.Where(IsCheck).ToList();
+        var others = columns.Where(c => !IsCheck(c)).ToList();
         var title = others.FirstOrDefault(c => c.Width.IsStar) ?? others.FirstOrDefault();
         var amount = others.FirstOrDefault(c => c != title && IsAmount(c));
         var subtitle = title is null ? null : others.Take(others.IndexOf(title)).OfType<DataGridTextColumn>().FirstOrDefault();
@@ -108,7 +126,8 @@ public static class PhoneCards
         if (checks.Count > 0)
         {
             var boxes = new StackPanel { Spacing = 2, Margin = new Thickness(0, 0, 10, 0), VerticalAlignment = VerticalAlignment.Top };
-            foreach (var column in checks) boxes.Children.Add(Check(grid, column));
+            foreach (var column in checks)
+                boxes.Children.Add(column is DataGridCheckBoxColumn box ? Check(grid, box) : ((DataGridTemplateColumn)column).CellTemplate!.Build(null)!);
             layout.Children.Add(boxes);
         }
         Grid.SetColumn(body, 1);
@@ -194,6 +213,13 @@ public static class PhoneCards
 
     private static bool Editable(DataGrid grid, DataGridColumn column) => !grid.IsReadOnly && !column.IsReadOnly;
 
+    /// <summary>Nature de chaque colonne, établie une fois : le modèle n'est pas reconstruit pour chaque carte.</summary>
+    private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<DataGridColumn, object> CheckColumns = [];
+
+    private static bool IsCheck(DataGridColumn column) =>
+        (bool)CheckColumns.GetValue(column, c =>
+            c is DataGridCheckBoxColumn || c is DataGridTemplateColumn { CellTemplate: { } template } && template.Build(null) is CheckBox);
+
     private static bool IsAmount(DataGridColumn column) =>
         HeaderText(column) is var header && AmountHeaders.Any(h => header.StartsWith(h, StringComparison.OrdinalIgnoreCase));
 
@@ -229,4 +255,45 @@ public static class PhoneCards
 
     private static ShellViewModel? ShellOf(Control grid) =>
         grid.GetVisualAncestors().OfType<Control>().Select(c => c.DataContext).OfType<ShellViewModel>().FirstOrDefault();
+}
+
+/// <summary>
+/// Cartes en colonnes, comme une mosaïque : chaque carte se place sous la colonne la moins haute,
+/// pour qu'aucun trou ne reste entre des cartes de hauteurs différentes.
+/// </summary>
+public sealed class CardColumns : Panel
+{
+    public int Columns { get; set; } = 2;
+
+    /// <summary>Espace entre deux colonnes ; l'espace vertical vient de la marge des cartes.</summary>
+    private const double Gap = 10;
+
+    protected override Size MeasureOverride(Size availableSize)
+    {
+        var width = ColumnWidth(availableSize.Width);
+        var heights = new double[Columns];
+        foreach (var child in Children)
+        {
+            child.Measure(new Size(width, double.PositiveInfinity));
+            var shortest = Array.IndexOf(heights, heights.Min());
+            heights[shortest] += child.DesiredSize.Height;
+        }
+        return new Size(double.IsInfinity(availableSize.Width) ? width * Columns : availableSize.Width, heights.Max());
+    }
+
+    protected override Size ArrangeOverride(Size finalSize)
+    {
+        var width = ColumnWidth(finalSize.Width);
+        var heights = new double[Columns];
+        foreach (var child in Children)
+        {
+            var shortest = Array.IndexOf(heights, heights.Min());
+            child.Arrange(new Rect(shortest * (width + Gap), heights[shortest], width, child.DesiredSize.Height));
+            heights[shortest] += child.DesiredSize.Height;
+        }
+        return finalSize;
+    }
+
+    private double ColumnWidth(double total) =>
+        double.IsInfinity(total) ? 340 : Math.Max(0, (total - Gap * (Columns - 1)) / Columns);
 }

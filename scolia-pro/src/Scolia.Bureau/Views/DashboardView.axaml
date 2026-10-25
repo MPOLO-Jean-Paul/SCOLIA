@@ -28,7 +28,7 @@
               <DataTemplate>
                 <StackPanel Spacing="1" Margin="0,0,16,0">
                   <TextBlock Text="{Binding Label}" Foreground="{DynamicResource Text2Brush}" />
-                  <TextBlock Text="{Binding Value}" FontSize="{DynamicResource FsHeading}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                  <TextBlock Classes="wrap2" Text="{Binding Value}" FontSize="{DynamicResource FsHeading}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
                   <TextBlock Text="{Binding Hint}" Classes="muted" TextWrapping="Wrap" />
                 </StackPanel>
               </DataTemplate>
@@ -45,7 +45,7 @@
                   <DataTemplate>
                     <Button Classes="listrow" Command="{Binding Open}">
                       <Grid ColumnDefinitions="*,Auto">
-                        <TextBlock TextTrimming="CharacterEllipsis">
+                        <TextBlock Classes="wrap2" TextTrimming="CharacterEllipsis">
                           <Run Text="{Binding Name, Mode=OneWay}" />
                           <Run Text="{Binding Promotion, StringFormat=' · {0}', Mode=OneWay}" Foreground="{DynamicResource MutedBrush}" />
                         </TextBlock>
@@ -64,7 +64,7 @@
                   <DataTemplate>
                     <Button Classes="listrow" Command="{Binding Open}">
                       <Grid ColumnDefinitions="*,Auto">
-                        <TextBlock TextTrimming="CharacterEllipsis">
+                        <TextBlock Classes="wrap2" TextTrimming="CharacterEllipsis">
                           <Run Text="{Binding Name, Mode=OneWay}" />
                           <Run Text="{Binding Promotion, StringFormat=' · {0}', Mode=OneWay}" Foreground="{DynamicResource MutedBrush}" />
                         </TextBlock>
@@ -103,7 +103,7 @@
                 </StackPanel>
               </StackPanel>
             </Grid>
-            <ItemsControl ItemsSource="{Binding Months}" Height="200">
+            <ItemsControl ItemsSource="{Binding Months}" Height="200" IsVisible="{Binding NotPhone}">
               <ItemsControl.ItemsPanel>
                 <ItemsPanelTemplate><UniformGrid Rows="1" infra:Adaptive.MinItemWidth="150" /></ItemsPanelTemplate>
               </ItemsControl.ItemsPanel>
@@ -119,6 +119,21 @@
                       </StackPanel>
                     </Panel>
                   </DockPanel>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <!-- Mobile : un mois par ligne, barre horizontale et montant lisible en entier -->
+            <ItemsControl ItemsSource="{Binding Months}" IsVisible="{Binding Phone}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <Grid ColumnDefinitions="52,*,Auto" Margin="0,5">
+                    <TextBlock Text="{Binding Label}" Classes="muted" VerticalAlignment="Center" />
+                    <Panel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,10,0">
+                      <ProgressBar Classes="slim" Value="{Binding Track, Mode=OneWay}" Maximum="150" Opacity="0.35" />
+                      <ProgressBar Classes="slim" Value="{Binding Height, Mode=OneWay}" Maximum="150" Background="Transparent" />
+                    </Panel>
+                    <TextBlock Grid.Column="2" Text="{Binding Value}" FontWeight="SemiBold" MinWidth="44" TextAlignment="Right" VerticalAlignment="Center" />
+                  </Grid>
                 </DataTemplate>
               </ItemsControl.ItemTemplate>
             </ItemsControl>

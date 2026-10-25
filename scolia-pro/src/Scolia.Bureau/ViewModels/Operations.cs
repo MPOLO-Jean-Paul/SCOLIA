@@ -333,7 +333,9 @@ public sealed class BackstageViewModel : Observable
             new BackstageItemVm("mot-de-passe", "Mot de passe", MaterialIconKind.Key, "ToneOrange"),
             new BackstageItemVm("poste", "Poste et réseau", MaterialIconKind.LanConnect, "ToneGreen"),
             new BackstageItemVm("preferences", "Préférences", MaterialIconKind.TuneVariant, "TonePurple"),
-            new BackstageItemVm("aide", "Aide et raccourcis", MaterialIconKind.Keyboard, "ToneNeutral"),
+            Preferences.MobileLayout
+                ? new BackstageItemVm("aide", "Aide et gestes", MaterialIconKind.GestureTap, "ToneNeutral")
+                : new BackstageItemVm("aide", "Aide et raccourcis", MaterialIconKind.Keyboard, "ToneNeutral"),
         ];
         section = Items[0];
         Close = new RelayCommand(shell.CloseBackstage);
@@ -364,11 +366,25 @@ public sealed class BackstageViewModel : Observable
                 Raise(nameof(IsInfos));
                 Raise(nameof(IsPassword));
                 Raise(nameof(IsPoste));
+                Raise(nameof(ShowList));
+                Raise(nameof(ShowDetail));
+                Raise(nameof(DetailTitle));
             }
         }
     }
 
     public bool IsInfos => section?.Value == "infos";
+    /// <summary>Mobile : la liste des rubriques s'affiche tant qu'aucune rubrique à page propre n'est ouverte.</summary>
+    public bool ShowList => !IsPassword && !IsPoste;
+    public bool ShowDetail => !ShowList;
+    public string DetailTitle => IsPassword ? "Mot de passe" : IsPoste ? "Poste et réseau" : string.Empty;
+    public string Initials => string.Concat(UserName.Split(' ', StringSplitOptions.RemoveEmptyEntries).Take(2).Select(w => char.ToUpperInvariant(w[0])));
+    /// <summary>Mobile : revient de la rubrique ouverte à la liste des rubriques.</summary>
+    public RelayCommand BackToList => backToList ??= new RelayCommand(() => Section = Items[0]);
+    private RelayCommand? backToList;
+    /// <summary>Mobile : ouvre une rubrique depuis sa ligne.</summary>
+    public RelayCommand<BackstageItemVm> OpenItem => openItem ??= new RelayCommand<BackstageItemVm>(item => Section = item);
+    private RelayCommand<BackstageItemVm>? openItem;
     public bool IsPassword => section?.Value == "mot-de-passe";
     public bool IsPoste => section?.Value == "poste";
     public FormViewModel PasswordForm { get => passwordForm!; private set => Set(ref passwordForm, value); }

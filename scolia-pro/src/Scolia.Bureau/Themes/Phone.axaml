@@ -1,0 +1,134 @@
+<!-- Styles de l'application mobile : cadre à onglets, menu, feuilles d'actions et écrans dédiés au toucher.
+     Mêmes couleurs, mêmes coins arrondis et même typographie que la version de bureau, avec des cibles assez
+     grandes pour le doigt. -->
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:mi="using:Material.Icons.Avalonia">
+    <!-- Barre du haut : retour, titre de la page, recherche et actions -->
+    <Style Selector="Border.phonebar">
+      <Setter Property="Background" Value="{DynamicResource BgBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
+      <Setter Property="BorderThickness" Value="0,0,0,1" />
+      <Setter Property="Padding" Value="4,6,4,6" />
+    </Style>
+    <Style Selector="Button.phoneicon">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
+      <Setter Property="Width" Value="44" />
+      <Setter Property="Height" Value="44" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="CornerRadius" Value="22" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button.phoneicon:pointerover">
+      <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
+    </Style>
+    <Style Selector="Button.phoneicon mi|MaterialIcon">
+      <Setter Property="Width" Value="24" />
+      <Setter Property="Height" Value="24" />
+    </Style>
+
+    <!-- Onglets du bas : icône et libellé, l'onglet actif en couleur -->
+    <Style Selector="Border.phonetabs">
+      <Setter Property="Background" Value="{DynamicResource BgBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
+      <Setter Property="BorderThickness" Value="0,1,0,0" />
+      <Setter Property="Padding" Value="0,4,0,4" />
+    </Style>
+    <Style Selector="Button.phonetab">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="Padding" Value="0,4" />
+      <Setter Property="MinHeight" Value="52" />
+      <Setter Property="CornerRadius" Value="10" />
+    </Style>
+    <Style Selector="Button.phonetab:pointerover">
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
+    <Style Selector="Button.phonetab.selected">
+      <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
+    </Style>
+    <Style Selector="Button.phonetab TextBlock">
+      <Setter Property="FontSize" Value="11" />
+      <Setter Property="HorizontalAlignment" Value="Center" />
+      <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+    </Style>
+    <Style Selector="Button.phonetab.selected TextBlock">
+      <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+
+    <!-- Menu plein écran : chaque outil sur une ligne haute, rangé par métier dans un bloc arrondi -->
+    <Style Selector="Button.phonerow">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+      <Setter Property="Padding" Value="12,0,10,0" />
+      <Setter Property="MinHeight" Value="50" />
+      <Setter Property="CornerRadius" Value="0" />
+      <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+    </Style>
+    <Style Selector="Button.phonerow:pointerover">
+      <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
+    </Style>
+    <Style Selector="Button.phonerow.selected">
+      <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
+    </Style>
+    <Style Selector="Border.phonegroup">
+      <Setter Property="Background" Value="{DynamicResource GroupBrush}" />
+      <Setter Property="CornerRadius" Value="{StaticResource RadiusCard}" />
+      <Setter Property="ClipToBounds" Value="True" />
+    </Style>
+    <Style Selector="TextBlock.phonegrouptitle">
+      <Setter Property="FontSize" Value="{DynamicResource FsSmall}" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
+      <Setter Property="Margin" Value="14,18,0,6" />
+    </Style>
+
+    <!-- Feuille d'actions : elle monte du bas, chaque action est une ligne haute -->
+    <Style Selector="Border.phonesheet">
+      <Setter Property="Background" Value="{DynamicResource BgBrush}" />
+      <Setter Property="CornerRadius" Value="18,18,0,0" />
+      <Setter Property="Padding" Value="10,8,10,14" />
+      <Setter Property="VerticalAlignment" Value="Bottom" />
+      <Setter Property="BoxShadow" Value="0 -4 24 0 #33000000" />
+    </Style>
+    <Style Selector="Button.sheetitem">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Left" />
+      <Setter Property="Padding" Value="12,0" />
+      <Setter Property="MinHeight" Value="50" />
+      <Setter Property="CornerRadius" Value="12" />
+      <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+    </Style>
+    <Style Selector="Button.sheetitem:pointerover">
+      <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
+    </Style>
+    <Style Selector="Button.sheetitem.danger">
+      <Setter Property="Foreground" Value="{DynamicResource ToneRed}" />
+    </Style>
+    <Style Selector="Button.sheetitem.emphasis TextBlock">
+      <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+    <!-- Tablette en largeur : volet de navigation à gauche, comme la barre latérale de l'iPad -->
+    <Style Selector="Border.phonerail">
+      <Setter Property="Background" Value="{DynamicResource SidebarBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
+      <Setter Property="BorderThickness" Value="0,0,1,0" />
+      <Setter Property="Width" Value="300" />
+    </Style>
+
+  <!-- Mobile : une précision qui ne tient pas sur une ligne passe sur deux, au lieu d'être coupée -->
+  <Style Selector="LayoutTransformControl.phone TextBlock.wrap2">
+    <Setter Property="TextWrapping" Value="Wrap" />
+    <Setter Property="MaxLines" Value="2" />
+  </Style>
+</Styles>

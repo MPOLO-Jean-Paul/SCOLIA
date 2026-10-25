@@ -251,6 +251,20 @@
   <Style Selector="Border.band">
     <Setter Property="infra:PhoneFields.Enabled" Value="True" />
   </Style>
+  <Style Selector="Border.filterbar">
+    <Setter Property="infra:PhoneFields.Enabled" Value="True" />
+  </Style>
+  <!-- Téléphone : un texte qui n'a pas de points de suspension passe à la ligne au lieu d'être coupé -->
+  <Style Selector="LayoutTransformControl.phone TextBlock[TextTrimming=None]">
+    <Setter Property="TextWrapping" Value="Wrap" />
+  </Style>
+  <!-- Téléphone : les chiffres des indicateurs tiennent dans leur carte, sur deux colonnes -->
+  <Style Selector="LayoutTransformControl.phone TextBlock.kpi">
+    <Setter Property="FontSize" Value="18" />
+  </Style>
+  <Style Selector="LayoutTransformControl.phone Border.tile">
+    <Setter Property="Padding" Value="12,10" />
+  </Style>
 
   <!-- Téléphone : une carte par ligne de tableau -->
   <Style Selector="Border.phonecard">

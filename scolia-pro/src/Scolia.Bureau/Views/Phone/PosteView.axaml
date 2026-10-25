@@ -1,0 +1,51 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mi="using:Material.Icons.Avalonia"
+             x:Class="Scolia.Bureau.Views.Phone.PosteView">
+  <!-- Réseau sur le mobile : l'ordinateur principal auquel l'appareil est relié, et comment en changer -->
+  <StackPanel Spacing="14">
+    <TextBlock Classes="muted" TextWrapping="Wrap"
+               Text="Le téléphone travaille sur la base de l'ordinateur principal de l'établissement, par le Wi-Fi. Rien n'est gardé sur le téléphone." />
+
+    <Border Classes="card">
+      <Grid ColumnDefinitions="Auto,*">
+        <Border Classes="appicon large" Background="{DynamicResource ToneGreen}" Margin="0,0,14,0" VerticalAlignment="Top"><mi:MaterialIcon Kind="LanConnect" /></Border>
+        <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+          <TextBlock Text="{Binding ConnectionTitle}" FontWeight="SemiBold" TextWrapping="Wrap" />
+          <TextBlock Text="{Binding ConnectionLine}" Classes="muted" TextWrapping="Wrap" FontSize="{DynamicResource FsSmall}" />
+        </StackPanel>
+      </Grid>
+    </Border>
+
+    <Button Content="Rechercher SCOLIA sur le réseau" Command="{Binding Search}" IsEnabled="{Binding NotSearching}"
+            HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Height="46" />
+    <ProgressBar IsIndeterminate="True" IsVisible="{Binding Searching}" Height="2" MinHeight="2" />
+    <TextBlock Text="{Binding SearchLine}" IsVisible="{Binding HasSearchLine}" Classes="muted" TextWrapping="Wrap" FontSize="{DynamicResource FsSmall}" />
+
+    <Border Classes="phonegroup">
+      <ItemsControl ItemsSource="{Binding Servers}">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate>
+            <Grid ColumnDefinitions="Auto,*,Auto" Margin="14,10">
+              <Border Classes="appicon medium" Background="{DynamicResource ToneBlue}" Margin="0,0,12,0"><mi:MaterialIcon Kind="DesktopTowerMonitor" /></Border>
+              <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                <TextBlock Text="{Binding School}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                <TextBlock Text="{Binding Detail}" Classes="muted" TextWrapping="Wrap" FontSize="{DynamicResource FsSmall}" />
+              </StackPanel>
+              <Button Grid.Column="2" Classes="primary" Content="Rejoindre" Command="{Binding Join}" VerticalAlignment="Center" Margin="8,0,0,0" />
+            </Grid>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </Border>
+
+    <Button Classes="ghost" Command="{Binding ChangeServer}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Height="46">
+      <StackPanel Orientation="Horizontal" Spacing="8">
+        <mi:MaterialIcon Kind="SwapHorizontal" Width="18" Height="18" />
+        <TextBlock Text="Changer d'ordinateur principal" />
+      </StackPanel>
+    </Button>
+    <TextBlock Classes="muted" TextWrapping="Wrap" FontSize="{DynamicResource FsSmall}"
+               Text="Pour changer, le téléphone se déconnecte puis propose les ordinateurs trouvés sur le Wi-Fi, ou la saisie de l'adresse affichée sur l'ordinateur principal." />
+  </StackPanel>
+</UserControl>

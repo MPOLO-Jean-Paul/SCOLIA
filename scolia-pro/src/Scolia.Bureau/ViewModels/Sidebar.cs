@@ -20,6 +20,15 @@ public sealed class NavItemVm : Observable
     }
 
     public string Label { get; }
+    /// <summary>Libellé court des onglets du téléphone, où la place manque : « Reçus » pour « Journal des reçus ».</summary>
+    public string TabLabel => Label switch
+    {
+        "Journal des reçus" => "Reçus",
+        "Suivi mensuel" => "Suivi",
+        "Recouvrement" => "Retards",
+        "Encaissement par lot" => "Par lot",
+        _ => Label,
+    };
     public MaterialIconKind Icon { get; }
     public IBrush Brush { get; }
     public Type PageType { get; }

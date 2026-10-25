@@ -327,6 +327,8 @@ public sealed class SettingsPage : PageViewModel
             new BackstageItemVm("animations", "Animations et fluidité", MaterialIconKind.AnimationPlay, "ToneOrange"),
             new BackstageItemVm("sons", "Sons", MaterialIconKind.VolumeHigh, "TonePink"),
         ];
+        // Sur le mobile, l'application occupe tout l'écran : la taille de fenêtre, le volet et le ruban n'existent pas.
+        if (Preferences.MobileLayout) PosteSections = [.. PosteSections.Where(s => s.Value != "fenetres")];
         var all = SchoolSections.Concat(PosteSections).ToList();
         section = all.FirstOrDefault(s => s.Value == open) ?? all[0];
         Swatches = Preferences.AccentSwatches.Select(a => new AccentSwatchVm(a.Key, a.Label, new SolidColorBrush(a.Color),

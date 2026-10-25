@@ -1,0 +1,80 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mi="using:Material.Icons.Avalonia"
+             x:Class="Scolia.Bureau.Views.Phone.BackstageView">
+  <!-- Compte sur le mobile, comme les Réglages : profil, rubriques en lignes, puis la déconnexion -->
+  <Grid RowDefinitions="Auto,*" Background="{DynamicResource BgBrush}">
+    <Border Classes="phonebar">
+      <Grid ColumnDefinitions="Auto,*">
+        <Button Classes="phoneicon" Command="{Binding Close}" IsVisible="{Binding ShowList}" ToolTip.Tip="Retour">
+          <mi:MaterialIcon Kind="ChevronLeft" />
+        </Button>
+        <Button Classes="phoneicon" Command="{Binding BackToList}" IsVisible="{Binding ShowDetail}" ToolTip.Tip="Retour">
+          <mi:MaterialIcon Kind="ChevronLeft" />
+        </Button>
+        <TextBlock Grid.Column="1" Text="Compte et réglages" IsVisible="{Binding ShowList}" FontSize="17" FontWeight="SemiBold" VerticalAlignment="Center" Margin="4,0,0,0" />
+        <TextBlock Grid.Column="1" Text="{Binding DetailTitle}" IsVisible="{Binding ShowDetail}" FontSize="17" FontWeight="SemiBold" VerticalAlignment="Center" Margin="4,0,0,0" />
+      </Grid>
+    </Border>
+
+    <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled">
+      <Panel Margin="12,14,12,24" MaxWidth="720">
+        <StackPanel Spacing="14" IsVisible="{Binding ShowList}">
+          <!-- Profil -->
+          <Border Classes="card">
+            <Grid ColumnDefinitions="Auto,*">
+              <Border Width="56" Height="56" CornerRadius="28" Background="{DynamicResource AccentBrush}" Margin="0,0,14,0">
+                <TextBlock Text="{Binding Initials}" FontSize="20" FontWeight="SemiBold" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
+              </Border>
+              <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="1">
+                <TextBlock Text="{Binding UserName}" FontSize="17" FontWeight="SemiBold" TextWrapping="Wrap" />
+                <TextBlock Text="{Binding Role}" Classes="muted" />
+                <TextBlock Text="{Binding School}" Classes="muted" TextWrapping="Wrap" />
+              </StackPanel>
+            </Grid>
+          </Border>
+
+          <!-- Rubriques -->
+          <Border Classes="phonegroup">
+            <ItemsControl ItemsSource="{Binding Items}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <Button Classes="phonerow" Command="{Binding $parent[ItemsControl].DataContext.OpenItem}" CommandParameter="{Binding}" IsVisible="{Binding Value, Converter={x:Static ObjectConverters.NotEqual}, ConverterParameter=infos}">
+                    <Grid ColumnDefinitions="Auto,*,Auto">
+                      <Border Classes="appicon medium" Background="{Binding Brush}" Margin="0,0,12,0"><mi:MaterialIcon Kind="{Binding Icon}" /></Border>
+                      <TextBlock Grid.Column="1" Text="{Binding Label}" VerticalAlignment="Center" />
+                      <mi:MaterialIcon Grid.Column="2" Kind="ChevronRight" Width="20" Height="20" Foreground="{DynamicResource MutedBrush}" />
+                    </Grid>
+                  </Button>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </Border>
+
+          <!-- Informations -->
+          <TextBlock Text="Informations" Classes="phonegrouptitle" Margin="14,4,0,-6" />
+          <Border Classes="card">
+            <StackPanel Spacing="10">
+              <StackPanel Spacing="1"><TextBlock Text="Établissement" Classes="phonelabel" /><TextBlock Text="{Binding School}" TextWrapping="Wrap" /></StackPanel>
+              <StackPanel Spacing="1"><TextBlock Text="Année courante" Classes="phonelabel" /><TextBlock Text="{Binding Year}" /></StackPanel>
+              <StackPanel Spacing="1"><TextBlock Text="Serveur" Classes="phonelabel" /><TextBlock Text="{Binding Server}" TextWrapping="Wrap" /></StackPanel>
+              <StackPanel Spacing="1"><TextBlock Text="Application" Classes="phonelabel" /><TextBlock Text="{Binding Version}" /></StackPanel>
+            </StackPanel>
+          </Border>
+
+          <Button Classes="destructive" Command="{Binding Logout}" HorizontalAlignment="Stretch" Height="48" Margin="0,6,0,0">
+            <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
+              <mi:MaterialIcon Kind="Logout" Width="18" Height="18" />
+              <TextBlock Text="Se déconnecter" />
+            </StackPanel>
+          </Button>
+        </StackPanel>
+
+        <StackPanel IsVisible="{Binding ShowDetail}">
+          <ContentControl IsVisible="{Binding IsPassword}" Content="{Binding PasswordForm}" />
+          <ContentControl IsVisible="{Binding IsPoste}" Content="{Binding PosteSection}" />
+        </StackPanel>
+      </Panel>
+    </ScrollViewer>
+  </Grid>
+</UserControl>

@@ -17,5 +17,6 @@
     <mi:MaterialIconStyles />
     <StyleInclude Source="avares://Avalonia.Controls.DataGrid/Themes/Fluent.xaml" />
     <StyleInclude Source="avares://SCOLIA/Themes/Controls.axaml" />
+    <StyleInclude Source="avares://SCOLIA/Themes/Phone.axaml" />
   </Application.Styles>
 </Application>

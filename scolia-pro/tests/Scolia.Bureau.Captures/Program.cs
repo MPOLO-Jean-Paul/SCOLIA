@@ -87,6 +87,9 @@ void Overflow(Window window, string name)
             && trim == Avalonia.Media.TextTrimming.None && !string.IsNullOrEmpty(tb.Text)
             && tb.TextLayout.WidthIncludingTrailingWhitespace > tb.Bounds.Width + 1.5)
             found.Add($"texte coupé : « {tb.Text} » ({tb.TextLayout.WidthIncludingTrailingWhitespace:0} pour {tb.Bounds.Width:0})");
+        if (visual is TextBlock { TextTrimming: var cut } trimmed && cut != Avalonia.Media.TextTrimming.None
+            && !string.IsNullOrEmpty(trimmed.Text) && trimmed.TextLayout.TextLines.Any(l => l.HasCollapsed))
+            found.Add($"texte tronqué : « {trimmed.Text} » ({trimmed.Bounds.Width:0} de large)");
     }
     var report = Path.Combine(output, "debordements.txt");
     File.AppendAllLines(report, found.Count == 0 ? [$"{name} : aucun débordement"] : [$"{name} : {found.Count} débordement(s)", .. found.Distinct().Select(f => "  " + f)]);
@@ -115,11 +118,12 @@ prefs.Theme = dark ? "dark" : "light";
 // Captures figées : les animations se rejouent à l'écran, une image doit montrer l'état final.
 prefs.Animations = Environment.GetEnvironmentVariable("SCOLIA_ANIMATIONS") == "1";
 prefs.Accent = Environment.GetEnvironmentVariable("SCOLIA_ACCENT") ?? "bleu";
+// Le mobile est connu avant le shell, comme sur Android : ses menus et ses réglages en dépendent.
+if (Environment.GetEnvironmentVariable("SCOLIA_MOBILE") == "1") Preferences.MobileLayout = true;
 var shell = new ShellViewModel(api, prefs);
 // Taille de fenêtre optionnelle (SCOLIA_TAILLE=1024x700) pour vérifier l'adaptation du texte à chaque format d'écran.
 var taille = (Environment.GetEnvironmentVariable("SCOLIA_TAILLE") ?? "1280x820").Split('x');
 // Aperçu du téléphone (SCOLIA_MOBILE=1, avec SCOLIA_TAILLE=412x892) : l'interface garde sa taille réelle et se range.
-if (Environment.GetEnvironmentVariable("SCOLIA_MOBILE") == "1") Preferences.MobileLayout = true;
 var window = new MainWindow { DataContext = shell, Width = int.Parse(taille[0]), Height = int.Parse(taille[1]) };
 if (Preferences.MobileLayout) { window.MinWidth = 0; window.MinHeight = 0; window.Width = int.Parse(taille[0]); window.Height = int.Parse(taille[1]); }
 window.Show();
@@ -611,6 +615,22 @@ prefs.Theme = "dark";
 Wait(shell.Open(() => new CashPage(shell)));
 Save(window, "27-sombre-caisse.png");
 prefs.Theme = "light";
+
+// Mobile : le menu de tous les outils, ses commandes, puis la feuille des actions d'une page.
+if (Preferences.MobileLayout)
+{
+    Wait(shell.Open(() => new HomePage(shell)));
+    shell.PhoneMenuOpen = true;
+    Save(window, "30-mobile-menu.png");
+    var menuScroll = window.GetVisualDescendants().OfType<StackPanel>().First(p => p.Name == "MenuPanel").GetVisualAncestors().OfType<ScrollViewer>().First();
+    menuScroll.Offset = new Vector(0, menuScroll.Extent.Height);
+    Save(window, "30b-mobile-commandes.png");
+    shell.PhoneMenuOpen = false;
+    Wait(shell.Open(() => new ReceiptsPage(shell)));
+    shell.ShowPageSheet();
+    Save(window, "31-mobile-actions-page.png");
+    shell.CloseSheet();
+}
 
 window.Close();
 Console.WriteLine("terminé");

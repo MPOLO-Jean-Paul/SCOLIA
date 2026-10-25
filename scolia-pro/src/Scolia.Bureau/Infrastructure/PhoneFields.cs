@@ -7,8 +7,8 @@ using Avalonia.VisualTree;
 namespace Scolia.Bureau.Infrastructure;
 
 /// <summary>
-/// Bandeaux de filtres du téléphone : chaque champ, prévu pour une ligne d'ordinateur avec sa largeur fixe,
-/// prend toute la largeur de l'écran, l'un sous l'autre. Les boutons gardent leur taille et passent à la ligne.
+/// Bandeaux de filtres du mobile : chaque champ, prévu pour une ligne d'ordinateur avec sa largeur fixe, prend
+/// toute la largeur d'un téléphone, ou une part égale d'une tablette. Les boutons gardent leur taille et passent à la ligne.
 /// </summary>
 public static class PhoneFields
 {
@@ -51,14 +51,18 @@ public static class PhoneFields
         if (sender is WrapPanel wrap && Math.Abs(e.NewSize.Width - e.PreviousSize.Width) > 0.5) Fit(wrap);
     }
 
+    /// <summary>
+    /// Un champ par ligne sur un téléphone ; sur une tablette, deux ou trois champs côte à côte, à largeur égale.
+    /// </summary>
     private static void Fit(WrapPanel wrap)
     {
         var width = wrap.Bounds.Width;
         if (width <= 0) return;
+        var columns = width >= 900 ? 3 : width >= 560 ? 2 : 1;
         foreach (var child in wrap.Children.OfType<Control>())
         {
             if (child is not Panel || !child.GetVisualDescendants().OfType<Control>().Any(IsInput)) continue;
-            var room = Math.Max(0, width - child.Margin.Left - child.Margin.Right);
+            var room = Math.Max(0, Math.Floor(width / columns) - child.Margin.Left - child.Margin.Right);
             child.SetValue(Layoutable.WidthProperty, room, BindingPriority.Animation);
         }
     }
