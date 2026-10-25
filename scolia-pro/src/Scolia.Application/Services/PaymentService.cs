@@ -6,6 +6,7 @@ using Scolia.Domain.Common;
 using Scolia.Domain.Finance;
 using Scolia.Domain.School;
 using Scolia.Domain.Security;
+using Scolia.Domain.Students;
 
 namespace Scolia.Application.Services;
 
@@ -95,7 +96,7 @@ public sealed class PaymentService(IAppDbContext db, IWriteGate gate, IAuditLog 
             Method = method,
             Reference = Clean(input.Reference),
             PayerName = Clean(input.PayerName),
-            PayerPhone = Clean(input.PayerPhone),
+            PayerPhone = IdentityRules.NormalizePhone(input.PayerPhone),
             Note = Clean(input.Note),
             CashierName = user.Name,
             IdempotencyKey = Clean(input.IdempotencyKey),

@@ -35,7 +35,7 @@ public sealed class SchoolService(IAppDbContext db, IWriteGate gate, IAuditLog a
         v.ThrowIfInvalid();
         var s = await db.Schools.OrderBy(x => x.CreatedAtUtc).FirstAsync(ct);
         s.Name = input.Name.Trim(); s.ShortName = input.ShortName.Trim(); s.Motto = Clean(input.Motto); s.Address = Clean(input.Address);
-        s.City = Clean(input.City); s.Country = Clean(input.Country); s.Phone = Clean(input.Phone); s.Email = Clean(input.Email); s.Website = Clean(input.Website);
+        s.City = Clean(input.City); s.Country = Clean(input.Country); s.Phone = IdentityRules.NormalizePhone(input.Phone); s.Email = Clean(input.Email); s.Website = Clean(input.Website);
         s.CurrencyCode = input.CurrencyCode; s.CurrencySymbol = input.CurrencySymbol.Trim(); s.WholeAmountsOnly = input.WholeAmountsOnly;
         s.ReceiptFooter = Clean(input.ReceiptFooter); s.PhoneCountryCode = input.PhoneCountryCode;
         s.CardMinistry = Clean(input.CardMinistry); s.CardDirection = Clean(input.CardDirection); s.CardDivision = Clean(input.CardDivision); s.CardZone = Clean(input.CardZone);

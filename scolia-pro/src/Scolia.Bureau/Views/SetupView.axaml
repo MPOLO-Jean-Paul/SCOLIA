@@ -1,5 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:infra="using:Scolia.Bureau.Infrastructure"
              xmlns:mi="using:Material.Icons.Avalonia"
              x:Class="Scolia.Bureau.Views.SetupView">
   <!-- Première installation : assistant en deux étapes, centré, adapté à toute taille de fenêtre -->
@@ -39,7 +40,7 @@
               </StackPanel>
               <StackPanel Margin="0,0,16,12" Spacing="4">
                 <TextBlock Text="Téléphone" Classes="muted" />
-                <TextBox Text="{Binding Phone}" />
+                <TextBox Text="{Binding Phone}" infra:PhoneInput.Digits="True" PlaceholderText="10 chiffres, ex. 0812345678" />
               </StackPanel>
               <StackPanel Margin="0,0,16,12" Spacing="4">
                 <TextBlock Text="Année scolaire" Classes="muted" />

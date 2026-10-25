@@ -7,7 +7,7 @@ using Scolia.Bureau.Infrastructure;
 namespace Scolia.Bureau.ViewModels;
 
 /// <summary>Nature d'un champ de formulaire. Chaque nature a son contrôle dans la boîte de dialogue.</summary>
-public enum FieldKind { Text, Secret, Multiline, Amount, Day, Choice, Flag }
+public enum FieldKind { Text, Secret, Multiline, Amount, Day, Choice, Flag, Phone }
 
 /// <summary>Champ d'un formulaire : sa valeur, son libellé et son erreur éventuelle.</summary>
 public sealed class FormField : Observable
@@ -34,7 +34,8 @@ public sealed class FormField : Observable
     public bool Required { get; }
     public string? Hint { get; }
 
-    public string Text { get => text; set { if (Set(ref text, value)) Error = null; } }
+    /// <summary>Un téléphone ne garde que ses 10 chiffres, même si la valeur vient d'un ancien dossier.</summary>
+    public string Text { get => text; set { if (Set(ref text, Kind == FieldKind.Phone ? PhoneInput.Clean(value) : value)) Error = null; } }
     public DateTime? Day { get => day; set { if (Set(ref day, value)) Error = null; } }
     public ChoiceItem? Choice { get => choice; set { if (Set(ref choice, value)) Error = null; } }
     public IReadOnlyList<ChoiceItem> Options { get => options; set => Set(ref options, value); }
@@ -43,6 +44,7 @@ public sealed class FormField : Observable
     public bool HasError => !string.IsNullOrEmpty(error);
 
     public bool IsText => Kind is FieldKind.Text or FieldKind.Amount;
+    public bool IsPhone => Kind == FieldKind.Phone;
     public bool IsSecret => Kind == FieldKind.Secret;
     public bool IsMultiline => Kind == FieldKind.Multiline;
     public bool IsDay => Kind == FieldKind.Day;
@@ -217,6 +219,11 @@ public sealed class FormViewModel : Observable
             else if (field.Kind == FieldKind.Amount && !string.IsNullOrWhiteSpace(field.Text) && !Format.TryAmount(field.Text, out _))
             {
                 field.Error = "Montant invalide.";
+                valid = false;
+            }
+            else if (field.Kind == FieldKind.Phone && field.Text.Length > 0 && !(field.Text.Length == PhoneInput.Length && field.Text[0] == '0'))
+            {
+                field.Error = "10 chiffres commençant par 0, par exemple 0812345678.";
                 valid = false;
             }
             else if (field.Kind == FieldKind.Day && field.Day is null && !string.IsNullOrWhiteSpace(field.Text))

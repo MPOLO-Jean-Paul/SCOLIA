@@ -454,8 +454,8 @@ public static class StudentForms
         form.Add("lieu", "Lieu de naissance", value: s?.BirthPlace, required: true);
         form.Add("tuteur", "Parent ou tuteur", value: s?.GuardianName);
         form.Add("adresse", "Adresse", value: s?.Address, hint: "Quartier, avenue et numéro");
-        form.Add("contact1", "Contact parent", value: s?.GuardianPhone, required: true,
-            hint: "Ex. 0812345678 · reçoit les relances WhatsApp et SMS");
+        form.Add("contact1", "Contact parent", FieldKind.Phone, value: s?.GuardianPhone, required: true,
+            hint: "10 chiffres, ex. 0812345678 · reçoit les relances WhatsApp et SMS");
     }
 
     /// <summary>Les données d'un ancien dossier qui ne sont plus saisies, nationalité, téléphones, e-mail, lien et observations, sont gardées telles quelles.</summary>

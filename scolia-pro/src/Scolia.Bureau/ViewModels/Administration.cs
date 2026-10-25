@@ -252,7 +252,7 @@ public sealed class StaffPage : PageViewModel
         form.Add("prenom", "Prénom", value: s?.FirstName, required: true);
         form.AddChoice("sexe", "Sexe", Labels.Genders, s?.Gender ?? "M", required: true);
         form.Add("fonction", "Fonction", value: s?.Function, required: true);
-        form.Add("telephone", "Téléphone", value: s?.Phone);
+        form.Add("telephone", "Téléphone", FieldKind.Phone, value: s?.Phone, hint: "10 chiffres, ex. 0812345678");
         form.Add("email", "E-mail", value: s?.Email);
         form.AddDay("embauche", "Date d'embauche", s?.HireDate ?? DateOnly.FromDateTime(DateTime.Today), required: true);
         form.AddDay("sortie", "Fin d'activité (facultatif)", s?.ExitDate);
@@ -426,7 +426,7 @@ public sealed class SettingsPage : PageViewModel
         form.Add("adresse", "Adresse", value: s.Address);
         form.Add("ville", "Ville", value: s.City);
         form.Add("pays", "Pays", value: s.Country);
-        form.Add("telephone", "Téléphone", value: s.Phone);
+        form.Add("telephone", "Téléphone", FieldKind.Phone, value: s.Phone, hint: "10 chiffres, ex. 0812345678");
         form.Add("email", "E-mail", value: s.Email);
         form.Add("ministere", "Ministère (cartes d'accès)", value: s.CardMinistry);
         form.Add("direction", "Direction (cartes d'accès)", value: s.CardDirection);

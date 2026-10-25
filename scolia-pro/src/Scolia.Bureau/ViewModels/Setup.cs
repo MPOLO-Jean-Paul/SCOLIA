@@ -234,6 +234,7 @@ public sealed class SetupViewModel : Observable
     {
         if (string.IsNullOrWhiteSpace(SchoolName)) return "Indiquez le nom de l'établissement.";
         if (string.IsNullOrWhiteSpace(ShortName)) return "Indiquez le sigle de l'établissement.";
+        if (Phone.Length > 0 && !(Phone.Length == PhoneInput.Length && Phone[0] == '0')) return "Le téléphone compte 10 chiffres commençant par 0, par exemple 0812345678.";
         var years = YearPattern.Match(YearLabel);
         if (!years.Success || int.Parse(years.Groups[2].Value) != int.Parse(years.Groups[1].Value) + 1)
             return "L'année scolaire doit couvrir deux années consécutives, par exemple 2026 - 2027.";

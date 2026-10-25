@@ -94,18 +94,23 @@ public static partial class IdentityRules
     [GeneratedRegex(@"^0\d{9}$")]
     private static partial Regex LocalPhone();
 
-    [GeneratedRegex(@"^\+?\d{11,15}$")]
-    private static partial Regex InternationalPhone();
+    [GeneratedRegex(@"^\+?243(\d{9})$")]
+    private static partial Regex CongoInternational();
+
+    /// <summary>Longueur d'un numéro de téléphone : 10 chiffres, comme 0812345678.</summary>
+    public const int PhoneLength = 10;
 
     public static bool IsValidName(string? value) => !string.IsNullOrWhiteSpace(value) && value.Trim().Length <= 80 && NamePattern().IsMatch(value.Trim());
 
-    /// <summary>Accepte un numéro local à 10 chiffres (0812345678) ou international (+243812345678).</summary>
+    /// <summary>Un numéro de téléphone compte 10 chiffres et rien d'autre (0812345678). Les espaces, points et tirets sont retirés ;
+    /// un ancien numéro saisi au format +243 est ramené à 10 chiffres.</summary>
     public static string? NormalizePhone(string? value)
     {
         if (string.IsNullOrWhiteSpace(value)) return null;
-        var digits = new string(value.Where(c => char.IsDigit(c) || c == '+').ToArray());
-        if (LocalPhone().IsMatch(digits) || InternationalPhone().IsMatch(digits)) return digits;
-        throw new DomainException("telephone", $"Numéro de téléphone invalide : {value}. Utilisez 10 chiffres (0812345678) ou le format international (+243…).");
+        var compact = new string(value.Where(c => !char.IsWhiteSpace(c) && c is not ('.' or '-' or '/' or '(' or ')')).ToArray());
+        if (CongoInternational().Match(compact) is { Success: true } international) compact = "0" + international.Groups[1].Value;
+        if (LocalPhone().IsMatch(compact)) return compact;
+        throw new DomainException("telephone", $"Numéro de téléphone invalide : {value}. Saisissez 10 chiffres, par exemple 0812345678.");
     }
 
     /// <summary>Numéro au format international sans « + » pour les liens WhatsApp.</summary>

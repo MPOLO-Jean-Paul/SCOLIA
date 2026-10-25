@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:infra="using:Scolia.Bureau.Infrastructure"
              x:Class="Scolia.Bureau.Views.FormView">
   <!-- Feuille de dialogue macOS : titre gras, champs, boutons en capsule alignés à droite -->
   <Border Classes="card" MinWidth="460" MaxWidth="620" Padding="0" CornerRadius="14" Background="{DynamicResource SurfaceBrush}" ClipToBounds="True"
@@ -28,6 +29,7 @@
               <StackPanel IsVisible="{Binding !IsFlag}" Spacing="4">
                 <TextBlock Text="{Binding Caption}" Classes="fieldlabel" />
                 <TextBox IsVisible="{Binding IsText}" Text="{Binding Text}" PlaceholderText="{Binding Hint}" />
+                <TextBox IsVisible="{Binding IsPhone}" Text="{Binding Text}" PlaceholderText="{Binding Hint}" infra:PhoneInput.Digits="True" />
                 <TextBox IsVisible="{Binding IsSecret}" Text="{Binding Text}" PasswordChar="•" PlaceholderText="{Binding Hint}" />
                 <TextBox IsVisible="{Binding IsMultiline}" Text="{Binding Text}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="84" />
                 <CalendarDatePicker PlaceholderText="jj/mm/aaaa" SelectedDateFormat="Short" IsVisible="{Binding IsDay}" SelectedDate="{Binding Day}" HorizontalAlignment="Stretch" />

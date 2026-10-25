@@ -35,11 +35,16 @@ public sealed class TextAndIdentityTests
     [Theory]
     [InlineData("0812345678", "0812345678")]
     [InlineData("081 234 56 78", "0812345678")]
-    [InlineData("+243 812 345 678", "+243812345678")]
+    [InlineData("+243 812 345 678", "0812345678")]
+    [InlineData("081.234.56-78", "0812345678")]
     public void Phone_numbers_are_normalized(string input, string expected) => Assert.Equal(expected, IdentityRules.NormalizePhone(input));
 
-    [Fact]
-    public void Invalid_phone_is_rejected() => Assert.Throws<DomainException>(() => IdentityRules.NormalizePhone("12345"));
+    [Theory]
+    [InlineData("12345")]
+    [InlineData("08123456789")]
+    [InlineData("081234567a")]
+    [InlineData("+33612345678")]
+    public void Invalid_phone_is_rejected(string input) => Assert.Throws<DomainException>(() => IdentityRules.NormalizePhone(input));
 
     [Fact]
     public void WhatsApp_number_uses_country_code() => Assert.Equal("243812345678", IdentityRules.ToInternational("0812345678", "243"));
