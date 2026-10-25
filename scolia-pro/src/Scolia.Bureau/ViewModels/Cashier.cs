@@ -30,7 +30,6 @@ public sealed class CashierPage : PageViewModel
     private DateTime? day = DateTime.Now;
     private ChoiceItem? method;
     private string reference = string.Empty;
-    private string payerName = string.Empty;
     private string payerPhone = string.Empty;
     private string note = string.Empty;
     private string studentName = string.Empty;
@@ -125,10 +124,26 @@ public sealed class CashierPage : PageViewModel
 
     public DateTime? Day { get => day; set => Set(ref day, value); }
     public ChoiceItem? Method { get => method; set => Set(ref method, value); }
-    public string Reference { get => reference; set => Set(ref reference, value); }
-    public string PayerName { get => payerName; set => Set(ref payerName, value); }
-    public string PayerPhone { get => payerPhone; set => Set(ref payerPhone, value); }
+    /// <summary>Référence de la transaction : donnée par SCOLIA dès que l'apprenant est choisi, elle ne se saisit pas.</summary>
+    public string Reference { get => reference; private set { if (Set(ref reference, value)) Raise(nameof(ReferenceText)); } }
+    public string ReferenceText => string.IsNullOrEmpty(reference) ? "Choisissez un apprenant" : reference;
+    /// <summary>Visé par : la personne connectée, qui reçoit l'argent. Le serveur l'inscrit aussi sur le reçu.</summary>
+    public string ReviewedBy => Shell.AccountName;
+    /// <summary>Téléphone du payeur : celui du tuteur, repris du dossier de l'apprenant choisi.</summary>
+    public string PayerPhone { get => payerPhone; private set { if (Set(ref payerPhone, value)) Raise(nameof(PayerPhoneText)); } }
+    public string PayerPhoneText => HasStudent ? (string.IsNullOrEmpty(payerPhone) ? "Aucun numéro au dossier" : payerPhone) : "Choisissez un apprenant";
+    /// <summary>Observation facultative : laissée vide, le reçu porte « OK ».</summary>
     public string Note { get => note; set => Set(ref note, value); }
+
+    /// <summary>Observation enregistrée quand rien n'est écrit.</summary>
+    public const string DefaultNote = "OK";
+
+    /// <summary>
+    /// Référence de la transaction : date, heure et quatre signes tirés au hasard. Deux postes qui encaissent
+    /// à la même seconde gardent ainsi des références différentes.
+    /// </summary>
+    public static string NewReference(DateTime now) =>
+        $"TR{now:yyMMdd-HHmm}-{Convert.ToHexString(System.Security.Cryptography.RandomNumberGenerator.GetBytes(2))}";
 
     public override async Task LoadAsync()
     {
@@ -183,6 +198,10 @@ public sealed class CashierPage : PageViewModel
         Raise(nameof(OverdueBrush));
         Hint = pending.Count > 0 ? $"{pending.Count} mois déjà encaissé(s) sur cet appareil, en attente d'envoi à l'ordinateur principal." : null;
         Raise(nameof(HasStudent));
+        // Seul le mode de paiement reste à choisir : la référence, le visa et le téléphone se remplissent ici.
+        Reference = NewReference(DateTime.Now);
+        PayerPhone = account.GuardianPhone?.Trim() ?? string.Empty;
+        Raise(nameof(PayerPhoneText));
         Receipt = null;
         await ReserveAsync(eid, account.FullName);
         await PreviewAsync();
@@ -240,10 +259,9 @@ public sealed class CashierPage : PageViewModel
             amount = SelectedTotal,
             date = ToDay(Day),
             method = Method?.Value ?? "Especes",
-            reference = string.IsNullOrWhiteSpace(Reference) ? null : Reference.Trim(),
-            payerName = string.IsNullOrWhiteSpace(PayerName) ? null : PayerName.Trim(),
-            payerPhone = string.IsNullOrWhiteSpace(PayerPhone) ? null : PayerPhone.Trim(),
-            note = string.IsNullOrWhiteSpace(Note) ? null : Note.Trim(),
+            reference = string.IsNullOrWhiteSpace(Reference) ? NewReference(DateTime.Now) : Reference,
+            payerPhone = string.IsNullOrWhiteSpace(PayerPhone) ? null : PayerPhone,
+            note = string.IsNullOrWhiteSpace(Note) ? DefaultNote : Note.Trim(),
             feeItemIds = ids,
             idempotencyKey = Guid.NewGuid().ToString("N"),
         });
@@ -267,9 +285,8 @@ public sealed class CashierPage : PageViewModel
     {
         Receipt = null;
         foreach (var month in Months) month.IsSelected = false;
-        Reference = string.Empty;
-        PayerName = string.Empty;
-        PayerPhone = string.Empty;
+        // Nouveau versement : nouvelle référence ; le téléphone reste celui de l'apprenant choisi.
+        Reference = enrollment is null ? string.Empty : NewReference(DateTime.Now);
         Note = string.Empty;
         Day = DateTime.Now;
     }
@@ -496,7 +513,7 @@ public sealed class ReceiptDetailPage : PageViewModel
         Details.Add(new InfoLine("Montant", Money(receipt.Amount)));
         Details.Add(new InfoLine("Mode", Labels.Method(receipt.Method) + (receipt.Reference is null ? string.Empty : $" · réf. {receipt.Reference}")));
         Details.Add(new InfoLine("Versé par", string.IsNullOrWhiteSpace(receipt.PayerName) ? "—" : $"{receipt.PayerName}{(receipt.PayerPhone is null ? string.Empty : $" · {receipt.PayerPhone}")}"));
-        Details.Add(new InfoLine("Caissier", receipt.Cashier));
+        Details.Add(new InfoLine("Visé par", receipt.Cashier));
         Details.Add(new InfoLine("Code de vérification", receipt.VerificationCode));
         Details.Add(new InfoLine("Observation", receipt.Note ?? "—"));
 

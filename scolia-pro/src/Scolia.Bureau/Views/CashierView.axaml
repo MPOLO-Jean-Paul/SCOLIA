@@ -3,6 +3,28 @@
              xmlns:mi="using:Material.Icons.Avalonia"
              xmlns:infra="using:Scolia.Bureau.Infrastructure"
              x:Class="Scolia.Bureau.Views.CashierView">
+  <UserControl.Styles>
+    <!-- Champ rempli par SCOLIA : même hauteur qu'un champ de saisie, fond gris, une icône qui dit d'où vient la valeur -->
+    <Style Selector="Border.autofield">
+      <Setter Property="Background" Value="{DynamicResource GroupBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="Padding" Value="10,0" />
+      <Setter Property="MinHeight" Value="{DynamicResource CtlHeight}" />
+    </Style>
+    <Style Selector="Border.autofield TextBlock">
+      <Setter Property="VerticalAlignment" Value="Center" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+    <Style Selector="Border.autofield mi|MaterialIcon">
+      <Setter Property="Width" Value="15" />
+      <Setter Property="Height" Value="15" />
+      <Setter Property="Margin" Value="6,0,0,0" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+      <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
+    </Style>
+  </UserControl.Styles>
   <Grid ColumnDefinitions="2*,3*" infra:Adaptive.StackBelow="760">
     <!-- Gauche : recherche de l'apprenant, puis saisie du versement -->
     <StackPanel Grid.Column="0" Spacing="12" Margin="0,0,16,0">
@@ -85,22 +107,38 @@
               <TextBlock Text="Mode" Classes="caption" />
               <ComboBox ItemsSource="{Binding Methods}" SelectedItem="{Binding Method}" HorizontalAlignment="Stretch" />
             </StackPanel>
+            <!-- Remplis par SCOLIA : la référence, la personne connectée, le téléphone du dossier. Seul le mode se choisit. -->
             <StackPanel Grid.Row="1" Grid.Column="0" Margin="0,10,10,0">
               <TextBlock Text="Référence de la transaction" Classes="caption" />
-              <TextBox Text="{Binding Reference}" />
+              <Border Classes="autofield" ToolTip.Tip="Donnée par SCOLIA pour chaque versement">
+                <Grid ColumnDefinitions="*,Auto">
+                  <TextBlock Text="{Binding ReferenceText}" TextTrimming="CharacterEllipsis" />
+                  <mi:MaterialIcon Grid.Column="1" Kind="Autorenew" />
+                </Grid>
+              </Border>
             </StackPanel>
             <StackPanel Grid.Row="1" Grid.Column="1" Margin="0,10,10,0">
-              <TextBlock Text="Versé par" Classes="caption" />
-              <TextBox Text="{Binding PayerName}" />
+              <TextBlock Text="Visé par" Classes="caption" />
+              <Border Classes="autofield" ToolTip.Tip="La personne connectée, qui reçoit l'argent">
+                <Grid ColumnDefinitions="*,Auto">
+                  <TextBlock Text="{Binding ReviewedBy}" TextTrimming="CharacterEllipsis" />
+                  <mi:MaterialIcon Grid.Column="1" Kind="AccountCheckOutline" />
+                </Grid>
+              </Border>
             </StackPanel>
             <StackPanel Grid.Row="1" Grid.Column="2" Margin="0,10,0,0">
               <TextBlock Text="Téléphone du payeur" Classes="caption" />
-              <TextBox Text="{Binding PayerPhone}" infra:PhoneInput.Digits="True" PlaceholderText="10 chiffres, ex. 0812345678" />
+              <Border Classes="autofield" ToolTip.Tip="Le téléphone du tuteur, repris du dossier de l'apprenant">
+                <Grid ColumnDefinitions="*,Auto">
+                  <TextBlock Text="{Binding PayerPhoneText}" TextTrimming="CharacterEllipsis" />
+                  <mi:MaterialIcon Grid.Column="1" Kind="PhoneOutline" />
+                </Grid>
+              </Border>
             </StackPanel>
           </Grid>
           <StackPanel Margin="0,4,0,0">
-            <TextBlock Text="Observation" Classes="caption" />
-            <TextBox Text="{Binding Note}" AcceptsReturn="True" Height="60" TextWrapping="Wrap" />
+            <TextBlock Text="Observation (facultative)" Classes="caption" />
+            <TextBox Text="{Binding Note}" AcceptsReturn="True" Height="60" TextWrapping="Wrap" PlaceholderText="Laissée vide, le reçu portera « OK »" />
           </StackPanel>
         </StackPanel>
       </Border>

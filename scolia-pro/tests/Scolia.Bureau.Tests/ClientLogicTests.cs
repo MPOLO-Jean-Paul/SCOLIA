@@ -199,3 +199,24 @@ public class FormViewModelTests
         Assert.True(await form.Completion.WaitAsync(TimeSpan.FromSeconds(5)));
     }
 }
+
+public class CashierReferenceTests
+{
+    [Fact]
+    public void La_reference_porte_la_date_l_heure_et_quatre_signes()
+    {
+        var reference = CashierPage.NewReference(new DateTime(2026, 10, 25, 19, 16, 42));
+        Assert.Matches("^TR261025-1916-[0-9A-F]{4}$", reference);
+    }
+
+    [Fact]
+    public void Deux_references_de_la_meme_minute_different()
+    {
+        var now = new DateTime(2026, 10, 25, 19, 16, 0);
+        var references = Enumerable.Range(0, 50).Select(_ => CashierPage.NewReference(now)).ToHashSet();
+        Assert.True(references.Count > 45);
+    }
+
+    [Fact]
+    public void L_observation_par_defaut_est_OK() => Assert.Equal("OK", CashierPage.DefaultNote);
+}

@@ -59,11 +59,19 @@ export function CashierPage() {
   );
 }
 
+/** Référence de la transaction : date, heure et quatre signes au hasard, comme sur l'application de bureau. */
+function newReference(now = new Date()) {
+  const p = (n: number) => String(n).padStart(2, '0');
+  const hex = Array.from(crypto.getRandomValues(new Uint8Array(2)), (b) => b.toString(16).padStart(2, '0')).join('').toUpperCase();
+  return `TR${p(now.getFullYear() % 100)}${p(now.getMonth() + 1)}${p(now.getDate())}-${p(now.getHours())}${p(now.getMinutes())}-${hex}`;
+}
+
 function PaymentForm({ account, onDone }: { account: Account; onDone: (r: Receipt) => void }) {
+  const { session } = useSession();
   const [method, setMethod] = useState('Especes');
-  const [reference, setReference] = useState('');
-  const [payerName, setPayerName] = useState('');
-  const [payerPhone, setPayerPhone] = useState('');
+  // Remplis par SCOLIA : la référence, la personne connectée (« Visé par ») et le téléphone du tuteur.
+  const [reference] = useState(() => newReference());
+  const payerPhone = account.guardianPhone ?? '';
   const [paidOn, setPaidOn] = useState(today());
   const [note, setNote] = useState('');
   const [selected, setSelected] = useState<string[]>([]);
@@ -95,8 +103,8 @@ function PaymentForm({ account, onDone }: { account: Account; onDone: (r: Receip
     setBusy(true); setError(undefined);
     try {
       const receipt = await api.post<Receipt>('/api/paiements', {
-        enrollmentId: account.enrollmentId, amount: total, date: paidOn, method, reference: reference || null, payerName: payerName || null,
-        payerPhone: payerPhone || null, note: note || null, feeItemIds: selected, idempotencyKey,
+        enrollmentId: account.enrollmentId, amount: total, date: paidOn, method, reference,
+        payerPhone: payerPhone || null, note: note.trim() || 'OK', feeItemIds: selected, idempotencyKey,
       });
       await Promise.all([qc.invalidateQueries({ queryKey: ['account'] }), qc.invalidateQueries({ queryKey: ['dashboard'] }), qc.invalidateQueries({ queryKey: ['students'] })]);
       toast(`Reçu ${receipt.number} enregistré.`, 'success');
@@ -136,11 +144,11 @@ function PaymentForm({ account, onDone }: { account: Account; onDone: (r: Receip
         </div>
         <div className="grid cols-2" style={{ marginTop: 14 }}>
           <div className="field span-2"><span className="label">Mode de paiement</span><Segmented value={method} onChange={setMethod} items={METHODS} /></div>
-          {method !== 'Especes' && <TextField className="span-2" label="Référence de la transaction" value={reference} onChange={(e) => setReference(e.target.value)} help="N° de transaction Mobile Money, bordereau bancaire ou n° de chèque" />}
           <TextField label="Date du reçu" type="date" value={paidOn} max={today()} onChange={(e) => setPaidOn(e.target.value)} />
-          <TextField label="Versé par" value={payerName} onChange={(e) => setPayerName(e.target.value)} placeholder="Parent, tuteur…" />
-          <TextField label="Téléphone du payeur" value={payerPhone} onChange={(e) => setPayerPhone(e.target.value)} inputMode="tel" />
-          <TextField label="Observation" value={note} onChange={(e) => setNote(e.target.value)} />
+          <TextField label="Référence de la transaction" value={reference} readOnly help="Donnée par SCOLIA" />
+          <TextField label="Visé par" value={session?.displayName ?? ''} readOnly help="La personne connectée" />
+          <TextField label="Téléphone du payeur" value={payerPhone || 'Aucun numéro au dossier'} readOnly help="Repris du dossier de l’apprenant" />
+          <TextField className="span-2" label="Observation (facultative)" value={note} onChange={(e) => setNote(e.target.value)} placeholder="Laissée vide, le reçu portera « OK »" />
         </div>
       </div>
       <div className="card card-pad">
