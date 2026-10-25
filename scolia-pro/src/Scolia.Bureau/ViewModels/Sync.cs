@@ -264,7 +264,15 @@ public sealed class SyncCenter : Observable, IDisposable
     {
         RaiseStatus();
         if (online) _ = SyncAsync(manual: false);
-        else shell.Notify("Ordinateur principal injoignable : vous continuez sur les données de cet appareil.", SoundKind.Error);
+        else
+        {
+            // Sans serveur, la présence des autres postes n'est plus connue : elle reviendra avec lui.
+            Peers.Clear();
+            locks = [];
+            Ticker = string.Empty;
+            RaisePeers();
+            shell.Notify("Ordinateur principal injoignable : vous continuez sur les données de cet appareil.", SoundKind.Error);
+        }
     }
 
     /// <summary>
@@ -449,4 +457,18 @@ public sealed class SyncCenter : Observable, IDisposable
         Raise(nameof(StatusDetail));
         Raise(nameof(StatusBrush));
     }
+}
+
+/// <summary>Fenêtre « Réseau et activité » : la connexion, les autres postes, les envois en attente et les conflits.</summary>
+public sealed class NetworkViewModel
+{
+    public NetworkViewModel(ShellViewModel shell)
+    {
+        Sync = shell.Sync;
+        Sync.LoadQueue();
+        Close = new RelayCommand(shell.CloseDialog);
+    }
+
+    public SyncCenter Sync { get; }
+    public RelayCommand Close { get; }
 }

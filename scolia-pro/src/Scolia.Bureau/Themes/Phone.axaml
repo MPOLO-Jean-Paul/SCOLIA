@@ -131,4 +131,110 @@
     <Setter Property="TextWrapping" Value="Wrap" />
     <Setter Property="MaxLines" Value="2" />
   </Style>
+
+  <!-- Direct : point vert de présence, qui bat à chaque activité d'un autre poste -->
+  <Style Selector="Border.livedot">
+    <Setter Property="Width" Value="9" />
+    <Setter Property="Height" Value="9" />
+    <Setter Property="CornerRadius" Value="5" />
+    <Setter Property="Background" Value="{DynamicResource ToneGreen}" />
+    <Setter Property="RenderTransform" Value="scale(1)" />
+  </Style>
+  <Style Selector="Border.livedot.pulse">
+    <Style.Animations>
+      <Animation Duration="0:0:1.2" IterationCount="3" Easing="CubicEaseOut">
+        <KeyFrame Cue="0%"><Setter Property="ScaleTransform.ScaleX" Value="1" /><Setter Property="ScaleTransform.ScaleY" Value="1" /><Setter Property="Opacity" Value="1" /></KeyFrame>
+        <KeyFrame Cue="50%"><Setter Property="ScaleTransform.ScaleX" Value="1.7" /><Setter Property="ScaleTransform.ScaleY" Value="1.7" /><Setter Property="Opacity" Value="0.55" /></KeyFrame>
+        <KeyFrame Cue="100%"><Setter Property="ScaleTransform.ScaleX" Value="1" /><Setter Property="ScaleTransform.ScaleY" Value="1" /><Setter Property="Opacity" Value="1" /></KeyFrame>
+      </Animation>
+    </Style.Animations>
+  </Style>
+  <Style Selector="Border.peercount">
+    <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
+    <Setter Property="CornerRadius" Value="8" />
+    <Setter Property="MinWidth" Value="16" />
+    <Setter Property="Height" Value="16" />
+    <Setter Property="Padding" Value="4,0" />
+  </Style>
+  <Style Selector="Border.peercount > TextBlock">
+    <Setter Property="FontSize" Value="10" />
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="Foreground" Value="White" />
+    <Setter Property="HorizontalAlignment" Value="Center" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <!-- Bandeaux du direct sous la barre du haut : hors ligne en orange, conflits en rouge -->
+  <Style Selector="Button.livestrip">
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="HorizontalContentAlignment" Value="Left" />
+    <Setter Property="CornerRadius" Value="10" />
+    <Setter Property="Padding" Value="12,7" />
+    <Setter Property="Margin" Value="8,4,8,2" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="FontSize" Value="{DynamicResource FsSmall}" />
+  </Style>
+  <Style Selector="Button.livestrip TextBlock">
+    <Setter Property="TextWrapping" Value="NoWrap" />
+    <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+  </Style>
+  <Style Selector="Button.livestrip.offline">
+    <Setter Property="Background" Value="{DynamicResource OrangeSoftBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource ToneOrange}" />
+  </Style>
+  <Style Selector="Button.livestrip.conflict">
+    <Setter Property="Background" Value="{DynamicResource RedSoftBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource ToneRed}" />
+  </Style>
+  <Style Selector="Border.liveticker">
+    <Setter Property="Margin" Value="14,2,14,4" />
+  </Style>
+  <Style Selector="Border.liveticker[IsVisible=True]">
+    <Style.Animations>
+      <Animation Duration="0:0:0.3" FillMode="Both">
+        <KeyFrame Cue="0%"><Setter Property="Opacity" Value="0" /></KeyFrame>
+        <KeyFrame Cue="100%"><Setter Property="Opacity" Value="1" /></KeyFrame>
+      </Animation>
+    </Style.Animations>
+  </Style>
+  <!-- Pastille « Nouvelles données » : elle flotte au-dessus de la page, sans la déplacer -->
+  <Style Selector="Button.remotechip">
+    <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
+    <Setter Property="Foreground" Value="White" />
+    <Setter Property="CornerRadius" Value="18" />
+    <Setter Property="Padding" Value="14,7" />
+    <Setter Property="BorderThickness" Value="0" />
+  </Style>
+  <Style Selector="Button.remotechip /template/ ContentPresenter">
+    <Setter Property="BoxShadow" Value="0 4 14 0 #33000000" />
+  </Style>
+
+  <!-- Fluidité : la feuille d'actions monte du bas, le menu apparaît en fondu (préférence « Animations ») -->
+  <Style Selector="LayoutTransformControl.anim Grid.sheethost[IsVisible=True] > Border.phonesheet">
+    <Style.Animations>
+      <Animation Duration="0:0:0.24" Easing="CubicEaseOut" FillMode="Both">
+        <KeyFrame Cue="0%"><Setter Property="TranslateTransform.Y" Value="90" /><Setter Property="Opacity" Value="0.4" /></KeyFrame>
+        <KeyFrame Cue="100%"><Setter Property="TranslateTransform.Y" Value="0" /><Setter Property="Opacity" Value="1" /></KeyFrame>
+      </Animation>
+    </Style.Animations>
+  </Style>
+  <Style Selector="LayoutTransformControl.anim Grid.sheethost[IsVisible=True] > Border:not(.phonesheet)">
+    <Style.Animations>
+      <Animation Duration="0:0:0.2" FillMode="Both">
+        <KeyFrame Cue="0%"><Setter Property="Opacity" Value="0" /></KeyFrame>
+        <KeyFrame Cue="100%"><Setter Property="Opacity" Value="1" /></KeyFrame>
+      </Animation>
+    </Style.Animations>
+  </Style>
+  <Style Selector="LayoutTransformControl.anim Border.phonemenu[IsVisible=True]">
+    <Style.Animations>
+      <Animation Duration="0:0:0.18" FillMode="Both">
+        <KeyFrame Cue="0%"><Setter Property="Opacity" Value="0" /></KeyFrame>
+        <KeyFrame Cue="100%"><Setter Property="Opacity" Value="1" /></KeyFrame>
+      </Animation>
+    </Style.Animations>
+  </Style>
+  <!-- Retour au toucher : les lignes et les boutons du mobile s'enfoncent légèrement -->
+  <Style Selector="Button.phonerow:pressed, Button.sheetitem:pressed, Button.phonetab:pressed">
+    <Setter Property="RenderTransform" Value="scale(0.98)" />
+  </Style>
 </Styles>

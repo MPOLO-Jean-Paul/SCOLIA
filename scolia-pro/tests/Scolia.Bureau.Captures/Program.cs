@@ -1,3 +1,4 @@
+using System.Net.Http.Json;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless;
@@ -630,6 +631,41 @@ if (Preferences.MobileLayout)
     shell.ShowPageSheet();
     Save(window, "31-mobile-actions-page.png");
     shell.CloseSheet();
+
+    // Un second poste travaille en même temps : il s'annonce, puis enregistre une modification.
+    Wait(shell.Open(() => new HomePage(shell)));
+    var cookies = new System.Net.CookieContainer();
+    using var other = new HttpClient(new HttpClientHandler { CookieContainer = cookies }) { BaseAddress = server };
+    other.DefaultRequestHeaders.Add("X-Scolia", "1");
+    other.DefaultRequestHeaders.Add("X-Scolia-Poste", "poste-capture-secretariat");
+    other.DefaultRequestHeaders.Add("X-Scolia-Appareil", Uri.EscapeDataString("PC Secrétariat"));
+    Wait(other.PostAsJsonAsync("api/session", new { userName = "admin", password }));
+    Wait(other.PostAsJsonAsync("api/direct/presence", new { page = "Encaisser", activity = "Encaissement de KASONGO Patrick" }));
+    Wait(Task.Delay(1500));
+    Wait(other.PostAsJsonAsync("api/etablissement/sections", new { code = $"S{DateTime.Now:HHmmss}", name = "Section de démonstration", isActive = true }));
+    for (var i = 0; i < 40 && !shell.Sync.HasTicker; i++) Wait(Task.Delay(100));
+    Save(window, "32-mobile-direct.png");
+    shell.ShowNetwork();
+    Wait(Task.Delay(500));
+    Save(window, "33-mobile-reseau.png");
+    shell.CloseDialog();
+
+    // L'autre poste encaisse déjà un apprenant : sur le téléphone, cet encaissement est bloqué et dit pourquoi.
+    var target = Result(api.GetAsync<PagedResult<StudentListItem>>("api/apprenants?taille=1")).Items[0];
+    Wait(other.PostAsJsonAsync("api/direct/verrous", new { key = $"encaissement:{target.EnrollmentId}", label = $"Encaissement de {target.LastName} {target.FirstName}" }));
+    Wait(shell.Open(() => new CashierPage(shell, target.Id)));
+    Save(window, "36-mobile-encaissement-bloque.png");
+    Wait(other.DeleteAsync($"api/direct/verrous?cle={Uri.EscapeDataString($"encaissement:{target.EnrollmentId}")}"));
+    Wait(shell.Open(() => new HomePage(shell)));
+
+    // L'ordinateur principal disparaît : l'application continue sur les données gardées.
+    api.Retarget(new Uri("http://localhost:1/"));
+    Wait(shell.RefreshQuietlyAsync());
+    Wait(Task.Delay(300));
+    Save(window, "34-mobile-hors-ligne.png");
+    shell.ShowNetwork();
+    Save(window, "35-mobile-reseau-hors-ligne.png");
+    shell.CloseDialog();
 }
 
 window.Close();

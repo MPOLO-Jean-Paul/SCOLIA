@@ -247,15 +247,32 @@
         <ScrollViewer x:Name="PageScroll" Grid.Row="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="{Binding PageScroll}">
           <TransitioningContentControl x:Name="PageHost" Content="{Binding DesktopPage}" />
         </ScrollViewer>
+        <!-- Des données ont changé sur un autre poste pendant une saisie : la page attend qu'on le demande -->
+        <Button Grid.Row="1" Classes="remotechip" Command="{Binding ApplyRemoteCommand}" IsVisible="{Binding RemoteWaiting}" VerticalAlignment="Top" HorizontalAlignment="Center" Margin="0,6,0,0">
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <mi:MaterialIcon Kind="ArrowDownBoldCircleOutline" Width="16" Height="16" />
+            <TextBlock Text="Nouvelles données d'un autre poste · Afficher" />
+          </StackPanel>
+        </Button>
       </Grid>
       <ProgressBar Grid.Column="1" IsIndeterminate="True" IsVisible="{Binding Current.Busy}" VerticalAlignment="Top" Height="2" MinHeight="2" />
 
       <!-- Barre d'état : statut, serveur, zoom -->
       <Border Grid.Row="1" Grid.ColumnSpan="2" Classes="statusbar" IsVisible="{Binding ShowStatusBar}">
-        <Grid ColumnDefinitions="*,Auto,Auto">
-          <TextBlock Text="{Binding Status}" Classes="muted" VerticalAlignment="Center" />
-          <TextBlock Text="{Binding ServerLine}" Classes="muted" Grid.Column="1" VerticalAlignment="Center" Margin="0,0,20,0" />
-          <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6">
+        <Grid ColumnDefinitions="*,Auto,Auto,Auto">
+          <TextBlock Text="{Binding Status}" Classes="muted" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+          <!-- Direct : autres postes, activité qui vient d'avoir lieu ailleurs, ou travail hors ligne -->
+          <Button Grid.Column="1" Classes="ghost" Padding="8,0" MinHeight="0" Command="{Binding NetworkCommand}" ToolTip.Tip="Réseau et activité" Margin="0,0,16,0">
+            <StackPanel Orientation="Horizontal" Spacing="7">
+              <Border Classes="livedot" Classes.pulse="{Binding Sync.Pulse}" VerticalAlignment="Center" IsVisible="{Binding Sync.Online}" />
+              <mi:MaterialIcon Kind="CloudOffOutline" Width="15" Height="15" Foreground="{DynamicResource ToneOrange}" IsVisible="{Binding Sync.Offline}" />
+              <TextBlock Text="{Binding Sync.Ticker}" IsVisible="{Binding Sync.HasTicker}" VerticalAlignment="Center" MaxWidth="420" TextTrimming="CharacterEllipsis" />
+              <TextBlock Text="{Binding Sync.StatusText}" Foreground="{Binding Sync.StatusBrush}" IsVisible="{Binding !Sync.HasTicker}" VerticalAlignment="Center" />
+              <TextBlock Text="{Binding Sync.PeersText}" Classes="muted" IsVisible="{Binding Sync.HasPeers}" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
+          <TextBlock Text="{Binding ServerLine}" Classes="muted" Grid.Column="2" VerticalAlignment="Center" Margin="0,0,20,0" />
+          <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="6">
             <!-- Bascule rapide du thème clair au thème sombre -->
             <Button Classes="ghost" Padding="6,0" MinHeight="0" Click="OnThemeToggle" ToolTip.Tip="Thème clair ou sombre" Margin="0,0,10,0">
               <mi:MaterialIcon x:Name="ThemeIcon" Kind="WeatherNight" Width="15" Height="15" />

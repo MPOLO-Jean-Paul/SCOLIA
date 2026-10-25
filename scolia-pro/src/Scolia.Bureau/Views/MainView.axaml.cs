@@ -61,6 +61,8 @@ public partial class MainView : UserControl
             };
             FitWindow(Bounds.Size);
             shell.PickFileHandler = PickFileAsync;
+            // Une mise à jour venue d'un autre poste attend tant que l'utilisateur écrit dans un champ.
+            shell.IsTyping = () => TopLevel.GetTopLevel(this)?.FocusManager?.GetFocusedElement() is TextBox;
             shell.CopyHandler = async text =>
             {
                 if (TopLevel.GetTopLevel(this)?.Clipboard is { } clipboard) await Avalonia.Input.Platform.ClipboardExtensions.SetTextAsync(clipboard, text);

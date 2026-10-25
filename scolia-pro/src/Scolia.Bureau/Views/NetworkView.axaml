@@ -1,0 +1,91 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:infra="using:Scolia.Bureau.Infrastructure"
+             xmlns:mi="using:Material.Icons.Avalonia"
+             x:Class="Scolia.Bureau.Views.NetworkView">
+  <!-- Réseau et activité : l'état de la connexion, les autres postes, puis ce qui attend d'être envoyé -->
+  <Border Classes="card" infra:Adaptive.FitDialog="True" Width="560" Padding="0" CornerRadius="16" Background="{DynamicResource SurfaceBrush}" ClipToBounds="True" BoxShadow="0 12 40 0 #33000000">
+    <Grid RowDefinitions="Auto,*,Auto">
+      <Grid ColumnDefinitions="Auto,*,Auto" Margin="18,18,12,8">
+        <Border Classes="appicon large" Background="{Binding Sync.StatusBrush}" Margin="0,0,12,0"><mi:MaterialIcon Kind="LanConnect" /></Border>
+        <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+          <TextBlock Text="Réseau et activité" FontSize="17" FontWeight="Bold" />
+          <TextBlock Text="{Binding Sync.StatusText}" Foreground="{Binding Sync.StatusBrush}" FontWeight="SemiBold" />
+        </StackPanel>
+        <Button Grid.Column="2" Classes="closex" Command="{Binding Close}"><mi:MaterialIcon Kind="Close" /></Button>
+      </Grid>
+
+      <ScrollViewer Grid.Row="1" MaxHeight="560" HorizontalScrollBarVisibility="Disabled" Padding="18,0,18,8">
+        <StackPanel Spacing="12">
+          <TextBlock Text="{Binding Sync.StatusDetail}" Classes="muted" TextWrapping="Wrap" />
+
+          <!-- Autres postes connectés -->
+          <TextBlock Text="Postes connectés" Classes="heading" Margin="0,4,0,0" />
+          <Border Classes="phonegroup">
+            <StackPanel>
+              <TextBlock Text="Aucun autre poste n'est connecté pour le moment." Classes="muted" Margin="14,12" IsVisible="{Binding !Sync.HasPeers}" TextWrapping="Wrap" />
+              <ItemsControl ItemsSource="{Binding Sync.Peers}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate>
+                    <Grid ColumnDefinitions="Auto,*" Margin="14,10">
+                      <Panel Margin="0,0,12,0" VerticalAlignment="Top">
+                        <Border Width="38" Height="38" CornerRadius="19" Background="{DynamicResource AccentBrush}">
+                          <TextBlock Text="{Binding Initials}" Foreground="White" FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <Border Width="11" Height="11" CornerRadius="6" Background="{DynamicResource ToneGreen}" BorderBrush="{DynamicResource GroupBrush}" BorderThickness="2"
+                                HorizontalAlignment="Right" VerticalAlignment="Bottom" />
+                      </Panel>
+                      <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="1">
+                        <TextBlock Text="{Binding Line}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                        <TextBlock Text="{Binding Doing}" Classes="muted" TextWrapping="Wrap" />
+                      </StackPanel>
+                    </Grid>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </StackPanel>
+          </Border>
+
+          <!-- Envois en attente et conflits -->
+          <TextBlock Text="Opérations de cet appareil" Classes="heading" Margin="0,4,0,0" />
+          <Border Classes="phonegroup">
+            <StackPanel>
+              <TextBlock Text="Tout est envoyé à l'ordinateur principal." Classes="muted" Margin="14,12" IsVisible="{Binding !Sync.HasQueue}" TextWrapping="Wrap" />
+              <ItemsControl ItemsSource="{Binding Sync.Queue}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate>
+                    <Grid ColumnDefinitions="Auto,*" Margin="14,10">
+                      <mi:MaterialIcon Kind="CloudUploadOutline" Width="22" Height="22" Foreground="{DynamicResource ToneOrange}" Margin="0,0,12,0" VerticalAlignment="Top" IsVisible="{Binding !IsConflict}" />
+                      <mi:MaterialIcon Kind="AlertCircleOutline" Width="22" Height="22" Foreground="{DynamicResource ToneRed}" Margin="0,0,12,0" VerticalAlignment="Top" IsVisible="{Binding IsConflict}" />
+                      <StackPanel Grid.Column="1" Spacing="2">
+                        <TextBlock Text="{Binding Label}" FontWeight="SemiBold" />
+                        <TextBlock Text="{Binding When}" Classes="muted" FontSize="{DynamicResource FsSmall}" />
+                        <TextBlock Text="{Binding Error}" Foreground="{DynamicResource ToneRed}" TextWrapping="Wrap" IsVisible="{Binding IsConflict}" />
+                        <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,6,0,0" IsVisible="{Binding IsConflict}">
+                          <Button Content="Réessayer" Command="{Binding Retry}" />
+                          <Button Classes="danger" Content="Abandonner" Command="{Binding Discard}" />
+                        </StackPanel>
+                      </StackPanel>
+                    </Grid>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </StackPanel>
+          </Border>
+          <TextBlock Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap"
+                     Text="Chaque opération porte une clé unique : renvoyée après une coupure, elle n'est jamais enregistrée deux fois. Une opération refusée, par exemple un mois payé entre-temps sur un autre poste, attend votre décision." />
+        </StackPanel>
+      </ScrollViewer>
+
+      <Grid Grid.Row="2" ColumnDefinitions="*,Auto" Margin="18,8,18,18">
+        <Button Classes="primary" Command="{Binding Sync.SyncNow}" HorizontalAlignment="Left" Height="40">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <mi:MaterialIcon Kind="Sync" Width="18" Height="18" />
+            <TextBlock Text="Synchroniser maintenant" />
+          </StackPanel>
+        </Button>
+        <Button Grid.Column="1" Content="Fermer" Command="{Binding Close}" Height="40" />
+      </Grid>
+    </Grid>
+  </Border>
+</UserControl>

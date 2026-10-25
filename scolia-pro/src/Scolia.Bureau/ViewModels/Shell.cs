@@ -733,6 +733,12 @@ public sealed class ShellViewModel : Observable
     /// <summary>Aide des raccourcis clavier, rangés par onglet.</summary>
     public void ShowShortcuts() => Dialog = new ShortcutsViewModel(this);
 
+    /// <summary>Réseau et activité : qui travaille ailleurs, et ce qui attend d'être envoyé.</summary>
+    public void ShowNetwork() => Dialog = new NetworkViewModel(this);
+
+    public RelayCommand NetworkCommand => networkCommand ??= new RelayCommand(ShowNetwork);
+    private RelayCommand? networkCommand;
+
     public void OpenBackstage() => BackstageOpen = true;
 
     public void CloseBackstage() => BackstageOpen = false;
@@ -1005,7 +1011,9 @@ public sealed class ShellViewModel : Observable
     /// <summary>Affiche le volet, par exemple depuis « Afficher tous les outils » de l'accueil.</summary>
     public void ShowSidebar()
     {
-        if (!SidebarShown) ToggleSidebar();
+        // Sur le mobile, tous les outils sont dans le menu plein écran.
+        if (phone) PhoneMenuOpen = true;
+        else if (!SidebarShown) ToggleSidebar();
     }
 
     /// <summary>Commandes ayant un raccourci, dans l'ordre affiché par la boîte des raccourcis.</summary>

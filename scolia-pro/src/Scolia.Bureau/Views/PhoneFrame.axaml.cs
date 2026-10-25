@@ -22,6 +22,14 @@ public partial class PhoneFrame : UserControl
         DataContextChanged += (_, _) =>
         {
             if (Shell is not { } shell) return;
+            // Passage d'une page à l'autre : un fondu court, fluide même sur un téléphone modeste.
+            void Transition() => PhoneHost.PageTransition = shell.Prefs.Animations && shell.Prefs.PageTransitions
+                ? new Avalonia.Animation.CrossFade(TimeSpan.FromMilliseconds(170) * shell.Prefs.SpeedFactor) : null;
+            Transition();
+            shell.Prefs.PropertyChanged += (_, args) =>
+            {
+                if (args.PropertyName is nameof(Infrastructure.Preferences.Animations) or nameof(Infrastructure.Preferences.PageTransitions) or nameof(Infrastructure.Preferences.Speed)) Transition();
+            };
             shell.PropertyChanged += (_, args) =>
             {
                 // Une nouvelle page s'ouvre en haut, pas à la hauteur où la précédente était lue.

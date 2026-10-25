@@ -47,6 +47,12 @@ public sealed class HomePage : PageViewModel
     public string Greeting => $"{(DateTime.Now.Hour >= 18 ? "Bonsoir" : "Bonjour")}, {Shell.AccountName}";
     public string DateLine => Format.LongDate(DateOnly.FromDateTime(DateTime.Today));
     public string SchoolLine => Shell.SchoolLine;
+    /// <summary>Mobile : l'accueil montre l'état de la connexion et l'activité des autres postes.</summary>
+    public SyncCenter Sync => Shell.Sync;
+    public RelayCommand Network => Shell.NetworkCommand;
+    public Avalonia.Media.Imaging.Bitmap? SchoolLogo => Shell.SchoolLogo;
+    public bool HasSchoolLogo => Shell.HasSchoolLogo;
+    public string Initials => Shell.UserInitials;
     private string cashLine = string.Empty;
     private IBrush cashBrush = Brushes.Transparent;
     public string CashLine { get => cashLine; private set { if (Set(ref cashLine, value)) Raise(nameof(HasCashLine)); } }
