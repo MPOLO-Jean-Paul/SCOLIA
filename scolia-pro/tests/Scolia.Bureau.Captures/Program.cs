@@ -47,8 +47,9 @@ static void Wait(Task task)
 
 void Save(Window window, string name)
 {
-    // Plusieurs cycles de rendu : la mise en page des listes se termine après le premier.
-    for (var i = 0; i < 6; i++)
+    // Plusieurs cycles de rendu : la mise en page des listes se termine après le premier, et celle du
+    // téléphone après le changement de taille.
+    for (var i = 0; i < 12; i++)
     {
         Dispatcher.UIThread.RunJobs();
         AvaloniaHeadlessPlatform.ForceRenderTimerTick();
