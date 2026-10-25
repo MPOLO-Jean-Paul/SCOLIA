@@ -93,7 +93,7 @@ Ces contrôles demandent un compte administrateur Windows pour l'élévation (UA
 | # | Contrôle | Attendu | Résultat |
 |---|---|---|---|
 | 38 | Première exécution | SmartScreen peut avertir (exécutable non signé) : noter le message exact | |
-| 39 | Verrouillage | Cinq mots de passe faux bloquent le compte 15 minutes | |
+| 39 | Verrouillage | Cinq mots de passe faux bloquent l'accès 2 minutes, avec un compte à rebours, puis l'accès revient seul | |
 | 40 | Mise à jour | Remplacer les fichiers sauf `donnees` : les données restent accessibles | |
 
 ## 3. Résultats

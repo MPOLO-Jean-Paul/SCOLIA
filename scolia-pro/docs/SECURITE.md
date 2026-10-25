@@ -15,7 +15,7 @@ des flux financiers. Les risques retenus sont :
 
 - Comptes nominatifs. Aucun compte partagé n'est proposé.
 - Mots de passe : au moins 8 caractères, lettres et chiffres exigés.
-- Verrouillage du compte après 5 échecs, pendant 15 minutes.
+- Verrouillage après 5 échecs, pendant 2 minutes. Le formulaire affiche un compte à rebours jusqu'à 0 seconde, puis l'accès revient seul. Les identifiants inconnus se verrouillent de la même façon, pour ne pas révéler quels comptes existent.
   Le message ne révèle pas si le compte existe.
 - Limitation du nombre de tentatives de connexion : 10 par minute et par adresse.
 - Un compte désactivé ou dont le mot de passe change ferme immédiatement ses sessions.
