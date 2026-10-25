@@ -123,6 +123,7 @@ public static class CardWordWriter
         Field(content, "NOM", card.LastName);
         Field(content, "POST-NOM", card.MiddleName);
         Field(content, "PRÉNOM", card.FirstName);
+        Field(content, "CLASSE", card.Classe);
         content.Append($"</w:tc><w:tc><w:tcPr><w:tcW w:w=\"{QrTwip}\" w:type=\"dxa\"/><w:vAlign w:val=\"center\"/></w:tcPr>")
             .Append(Picture(qrRid, 18, 18, 2, "QR"))
             .Append(Paragraph("Contrôle d'accès", 8, false, false, "center", "5B6878"))
@@ -141,22 +142,11 @@ public static class CardWordWriter
         body.Append("</w:tc>");
     }
 
-    /// <summary>Bande de la promotion : la classe à gauche, le matricule à droite, en blanc ou en encre selon la couleur.</summary>
+    /// <summary>Bande de la promotion : sa couleur seule, sans texte, collée au bas de la carte.</summary>
     private static void BandCell(StringBuilder body, CardItem? card)
     {
         var fill = card is null ? string.Empty : $"<w:shd w:val=\"clear\" w:color=\"auto\" w:fill=\"{card.Color.TrimStart('#')}\"/>";
-        body.Append($"<w:tc><w:tcPr><w:tcW w:w=\"{CardTwip}\" w:type=\"dxa\"/>{Sides(card is not null, top: false, bottom: true)}{fill}<w:vAlign w:val=\"center\"/></w:tcPr>");
-        if (card is null) body.Append(TinyParagraph);
-        else
-        {
-            var ink = StudentCardPdf.InkOn(card.Color).TrimStart('#');
-            body.Append($"<w:p><w:pPr><w:tabs><w:tab w:val=\"right\" w:pos=\"{CardTwip - 2 * InnerTwip - 60}\"/></w:tabs><w:spacing w:before=\"0\" w:after=\"0\" w:line=\"220\" w:lineRule=\"exact\"/><w:ind w:left=\"{InnerTwip + 60}\"/></w:pPr>")
-                .Append(Run("CLASSE  ", 9, ink, bold: false)).Append(Run(card.Classe, 14, ink));
-            if (card.Matricule.Length > 0)
-                body.Append("<w:r><w:tab/></w:r>").Append(Run("MATRICULE  ", 9, ink, bold: false)).Append(Run(card.Matricule, 14, ink));
-            body.Append("</w:p>");
-        }
-        body.Append("</w:tc>");
+        body.Append($"<w:tc><w:tcPr><w:tcW w:w=\"{CardTwip}\" w:type=\"dxa\"/>{Sides(card is not null, top: false, bottom: true)}{fill}</w:tcPr>{TinyParagraph}</w:tc>");
     }
 
     private static string GapCell() => $"<w:tc><w:tcPr><w:tcW w:w=\"{GapTwip}\" w:type=\"dxa\"/></w:tcPr>{TinyParagraph}</w:tc>";
@@ -195,14 +185,14 @@ public static class CardWordWriter
         body.Append(Paragraph(value.Trim().ToUpperInvariant(), halfPoints, bold, false, "center", "1B2430"));
     }
 
-    /// <summary>Un champ : petit libellé gris au-dessus, valeur en gras dessous, comme sur le PDF.</summary>
+    /// <summary>Une ligne par champ, comme sur le PDF : le libellé, deux points, puis la valeur, « NOM : MUKENDI ».</summary>
     private static void Field(StringBuilder body, string label, string value)
     {
-        var size = value.Length > 24 ? 14 : 17;
-        body.Append("<w:p><w:pPr><w:spacing w:before=\"0\" w:after=\"0\" w:line=\"130\" w:lineRule=\"exact\"/><w:jc w:val=\"left\"/></w:pPr>")
-            .Append(Run(label, 9, "5B6878")).Append("</w:p>");
-        body.Append($"<w:p><w:pPr><w:spacing w:before=\"0\" w:after=\"60\" w:line=\"{size * 12}\" w:lineRule=\"exact\"/><w:jc w:val=\"left\"/></w:pPr>")
-            .Append(Run(value, size, "1B2430")).Append("</w:p>");
+        var size = value.Length > 24 ? 14 : 16;
+        body.Append($"<w:p><w:pPr><w:spacing w:before=\"0\" w:after=\"100\" w:line=\"{size * 13}\" w:lineRule=\"exact\"/><w:jc w:val=\"left\"/></w:pPr>")
+            .Append(Run($"{label} : ", 11, "5B6878"))
+            .Append(Run(value, size, "1B2430"))
+            .Append("</w:p>");
     }
 
     private static string Run(string text, int halfPoints, string color, bool bold = true) =>

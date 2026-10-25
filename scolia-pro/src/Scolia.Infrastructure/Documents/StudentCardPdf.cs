@@ -9,7 +9,7 @@ namespace Scolia.Infrastructure.Documents;
 
 /// <summary>
 /// Cartes d'accès en PDF, sur la grille de la version 79 : en-tête officiel avec le sceau, bandeau de titre et de session,
-/// identité à gauche, QR à droite et bande de promotion avec la classe et le matricule. Huit cartes par A4, séparées par des interstices
+/// identité à gauche, QR à droite et bande de la couleur de la promotion, sans texte. Huit cartes par A4, séparées par des interstices
 /// de 6 et 7 mm où passent les repères de découpe : on coupe au milieu de l'interstice, sans rien retirer à la carte.
 /// </summary>
 internal static class StudentCardPdf
@@ -76,12 +76,11 @@ internal static class StudentCardPdf
 
     /// <summary>
     /// Carte de 92 × 63 mm, du haut vers le bas : en-tête officiel avec le sceau, bandeau « Carte d'accès » et session,
-    /// identité en libellés et valeurs, QR de contrôle légendé, puis la bande de la promotion avec la classe et le matricule.
+    /// identité ligne par ligne, QR de contrôle légendé, puis la bande de la couleur de la promotion.
     /// Coins arrondis et filet fin : la carte se lit d'un coup d'œil au contrôle et reste nette à l'impression.
     /// </summary>
     private static void Card(IContainer container, CardDocument d, CardItem card, byte[] seal)
     {
-        var bandText = InkOn(card.Color);
         // Hauteur fixe : la carte ne déborde jamais de sa case, la bande reste collée au bas.
         container.CornerRadius(Mm(2.2f)).Border(0.6f).BorderColor(Frame).Background(Paper).Column(column =>
         {
@@ -116,10 +115,11 @@ internal static class StudentCardPdf
                 {
                     row.RelativeItem().Column(identity =>
                     {
-                        identity.Spacing(Mm(1f));
+                        identity.Spacing(Mm(1.4f));
                         Field(identity, "NOM", card.LastName);
                         Field(identity, "POST-NOM", card.MiddleName);
                         Field(identity, "PRÉNOM", card.FirstName);
+                        Field(identity, "CLASSE", card.Classe);
                     });
                     row.ConstantItem(Mm(19)).Column(qr =>
                     {
@@ -139,21 +139,8 @@ internal static class StudentCardPdf
                 });
             });
 
-            // Bande de promotion : la classe et le matricule, dans la couleur de la promotion.
-            column.Item().Height(Mm(BandHeight)).Background(card.Color).PaddingHorizontal(Mm(4f)).Row(row =>
-            {
-                row.RelativeItem().AlignMiddle().Text(t =>
-                {
-                    t.Span("CLASSE  ").FontSize(5f).FontColor(bandText);
-                    t.Span(card.Classe).FontSize(7.6f).Bold().FontColor(bandText);
-                });
-                if (card.Matricule.Length > 0)
-                    row.AutoItem().AlignMiddle().Text(t =>
-                    {
-                        t.Span("MATRICULE  ").FontSize(5f).FontColor(bandText);
-                        t.Span(card.Matricule).FontSize(7.6f).Bold().FontColor(bandText);
-                    });
-            });
+            // Bande de promotion : la seule couleur de la promotion, sans texte.
+            column.Item().Height(Mm(BandHeight)).Background(card.Color);
         });
     }
 
@@ -164,29 +151,18 @@ internal static class StudentCardPdf
         if (bold) line.Bold();
     }
 
-    /// <summary>Un champ : petit libellé gris au-dessus, valeur en gras dessous, comme sur une pièce d'identité.</summary>
+    /// <summary>Une ligne par champ, comme dans la version 79 : le libellé, deux points, puis la valeur, « NOM : MUKENDI ».</summary>
     private static void Field(ColumnDescriptor identity, string label, string value)
     {
-        identity.Item().Column(field =>
+        identity.Item().Text(text =>
         {
-            field.Item().Text(label).FontSize(4.4f).SemiBold().FontColor(Muted).LetterSpacing(0.05f);
-            field.Item().Text(value).FontSize(value.Length > 24 ? 6.8f : 8.2f).Bold().FontColor(Ink);
+            text.Span($"{label} : ").FontSize(5.6f).Bold().FontColor(Muted);
+            text.Span(value).FontSize(value.Length > 24 ? 6.8f : 7.8f).Bold().FontColor(Ink);
         });
     }
 
     /// <summary>Taille de la session dans le bandeau : réduite si l'intitulé est long, pour tenir sur une ligne.</summary>
     private static float FitSession(string title) => title.Length > 24 ? 6.4f : title.Length > 20 ? 7f : 7.6f;
-
-    /// <summary>Texte de la bande : blanc sur une couleur foncée, encre sur une couleur claire comme le jaune.</summary>
-    internal static string InkOn(string hex)
-    {
-        var h = hex.TrimStart('#');
-        if (h.Length < 6) return Ink;
-        var r = Convert.ToInt32(h[..2], 16) / 255.0;
-        var g = Convert.ToInt32(h[2..4], 16) / 255.0;
-        var b = Convert.ToInt32(h[4..6], 16) / 255.0;
-        return 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.55 ? Ink : "#FFFFFF";
-    }
 
     /// <summary>
     /// Repère de découpe vertical : pointillés au centre de l'interstice horizontal, sur toute la hauteur de la rangée.

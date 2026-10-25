@@ -6,7 +6,7 @@ using Xunit;
 
 namespace Scolia.Tests;
 
-/// <summary>Cartes d'accès : matricule, classe et bandeau figurent sur la carte, au format Word comme en PDF.</summary>
+/// <summary>Cartes d'accès : bandeau, identité ligne par ligne avec la classe, bande de couleur sans texte, en Word comme en PDF.</summary>
 public class CardDesignTests
 {
     private static CardDocument Sample() => new(
@@ -15,14 +15,16 @@ public class CardDesignTests
         [new CardItem("MUKENDI", "KABEYA", "Grâce", "INF1", "#F5C518", "qr", "INF101"), new CardItem("NGOY", "KAZADI", "Paul", "TLM1", "#1D4ED8", "qr2", "TLM104")]);
 
     [Fact]
-    public void La_carte_Word_porte_le_bandeau_la_classe_et_le_matricule()
+    public void La_carte_Word_porte_le_bandeau_et_l_identite_en_ligne()
     {
         var bytes = CardWordWriter.Write(Sample());
         using var zip = new ZipArchive(new MemoryStream(bytes));
         using var reader = new StreamReader(zip.GetEntry("word/document.xml")!.Open(), Encoding.UTF8);
         var xml = reader.ReadToEnd();
-        foreach (var text in new[] { "CARTE D'ACCÈS", "SESSION NOVEMBRE 2026", "MATRICULE", "INF101", "TLM104", "CLASSE", "Contrôle d'accès" })
+        foreach (var text in new[] { "CARTE D'ACCÈS", "SESSION NOVEMBRE 2026", "NOM : ", "PRÉNOM : ", "CLASSE : ", "INF1", "Contrôle d'accès" })
             Assert.Contains(System.Security.SecurityElement.Escape(text), xml, StringComparison.Ordinal);
+        // La bande de couleur reste sans texte.
+        Assert.DoesNotContain("MATRICULE", xml, StringComparison.Ordinal);
     }
 
     [Fact]
