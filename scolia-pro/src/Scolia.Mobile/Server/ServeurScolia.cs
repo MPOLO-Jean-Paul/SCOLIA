@@ -81,7 +81,7 @@ public sealed class ServeurScolia : Service
                 if (wifi is null)
                 {
 #pragma warning disable CA1422 // FullHighPerf reste le mode qui garde le Wi-Fi éveillé sur les anciens Android.
-                    wifi = manager.CreateWifiLock(OperatingSystem.IsAndroidVersionAtLeast(29) ? WifiMode.FullLowLatency : WifiMode.FullHighPerf, "scolia:serveur");
+                    wifi = manager.CreateWifiLock(OperatingSystem.IsAndroidVersionAtLeast(29) ? Android.Net.WifiMode.FullLowLatency : Android.Net.WifiMode.FullHighPerf, "scolia:serveur");
 #pragma warning restore CA1422
                     wifi?.SetReferenceCounted(false);
                     wifi?.Acquire();
