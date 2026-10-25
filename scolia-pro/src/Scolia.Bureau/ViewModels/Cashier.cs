@@ -53,7 +53,7 @@ public sealed class CashierPage : PageViewModel
     }
 
     public override string Title => "Encaisser";
-    public override string Subtitle => "Choisissez les mois payés : chaque mois se règle à son montant, puis reçu numéroté";
+    public override string Subtitle => "Choisissez les mois payés, puis le mode de paiement";
     public override MaterialIconKind Glyph => MaterialIconKind.HandCoin;
 
     public AsyncCommand Pay { get; }

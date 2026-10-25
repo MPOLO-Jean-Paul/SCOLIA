@@ -171,8 +171,8 @@ public abstract class PageViewModel : Observable
         Actions.Add(new ActionVm(label, icon, new AsyncCommand(() => Shell.Run(row || open ? NeedsRow(label, work) : work)), primary, danger, row || open, open));
 
     /// <summary>Action de ligne proposée seulement au clic droit : elle n'encombre pas l'en-tête.</summary>
-    protected void MenuAction(string label, MaterialIconKind icon, Func<Task> work, bool open = false) =>
-        Actions.Add(new ActionVm(label, icon, new AsyncCommand(() => Shell.Run(NeedsRow(label, work))), Row: true, Default: open, MenuOnly: true));
+    protected void MenuAction(string label, MaterialIconKind icon, Func<Task> work, bool open = false, bool danger = false) =>
+        Actions.Add(new ActionVm(label, icon, new AsyncCommand(() => Shell.Run(NeedsRow(label, work))), Danger: danger, Row: true, Default: open, MenuOnly: true));
 
     /// <summary>
     /// Ligne choisie dans le tableau de l'écran, ou null. Par défaut la propriété « Selected » de l'écran ;

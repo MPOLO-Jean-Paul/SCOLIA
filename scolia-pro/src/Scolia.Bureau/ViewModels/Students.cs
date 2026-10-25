@@ -36,6 +36,14 @@ public sealed class StudentsPage : PageViewModel
         ActionRefresh();
         MenuAction("Aperçu rapide", MaterialIconKind.EyeOutline, () => WithSelected(id => QuickView.StudentAsync(Shell, id)));
         if (Shell.Can(Perm.PaymentsCreate)) MenuAction("Encaisser", MaterialIconKind.HandCoin, () => WithSelected(id => Shell.Open(() => new CashierPage(Shell, id))));
+        if (Shell.Can(Perm.StudentsWrite)) MenuAction("Renommer", MaterialIconKind.RenameOutline, () => WithSelected(async id =>
+        {
+            if (await StudentForms.RenameAsync(Shell, id)) await RefreshAsync();
+        }));
+        if (CanDelete(Shell)) MenuAction("Supprimer le dossier", MaterialIconKind.DeleteOutline, () => WithSelected(async id =>
+        {
+            if (await StudentForms.DeleteAsync(Shell, id)) await RefreshAsync();
+        }), danger: true);
         PreviousPage = new AsyncCommand(async () => { page--; await RefreshAsync(); });
         NextPage = new AsyncCommand(async () => { page++; await RefreshAsync(); });
     }
@@ -132,6 +140,9 @@ public sealed class StudentsPage : PageViewModel
         _ = RefreshAsync();
     }
 
+    /// <summary>Supprimer un dossier : le secrétariat, qui inscrit les apprenants et gère les sauvegardes.</summary>
+    public static bool CanDelete(ShellViewModel shell) => shell.Can(Perm.StudentsWrite) && shell.Can(Perm.BackupManage);
+
     private Task WithSelected(Func<Guid, Task> work)
     {
         if (Selected is null)
@@ -180,12 +191,26 @@ public sealed class StudentDetailPage : PageViewModel
         EndSponsorship = new AsyncCommand(() => Shell.Run(EndSelectedSponsorshipAsync));
         if (Shell.Can(Perm.PaymentsCreate)) Action("Encaisser", MaterialIconKind.HandCoin, () => Shell.Open(() => new CashierPage(Shell, studentId)), primary: true);
         if (Shell.Can(Perm.StudentsWrite)) Action("Modifier", MaterialIconKind.PencilOutline, EditAsync);
+        if (Shell.Can(Perm.StudentsWrite)) Action("Renommer", MaterialIconKind.RenameOutline, RenameAsync);
         if (Shell.Can(Perm.PaymentsRead)) Action("Relevé de compte", MaterialIconKind.FileDocumentOutline, StatementAsync);
         if (Shell.Can(Perm.StudentsWrite)) Action("Changer le statut", MaterialIconKind.AccountSwitchOutline, ChangeStatusAsync);
         if (Shell.Can(Perm.StudentsWrite)) Action("Changer de promotion", MaterialIconKind.SwapHorizontal, ChangePromotionAsync);
         if (Shell.Can(Perm.PaymentsCreate)) Action("Prise en charge", MaterialIconKind.ShieldAccountOutline, NewSponsorshipAsync);
         if (Shell.Can(Perm.PaymentsRead)) Action("Relancer par WhatsApp", MaterialIconKind.Whatsapp, RemindAsync);
+        if (StudentsPage.CanDelete(Shell)) Action("Supprimer le dossier", MaterialIconKind.DeleteOutline, DeleteAsync, danger: true);
         ActionRefresh();
+    }
+
+    private async Task RenameAsync()
+    {
+        if (await StudentForms.RenameAsync(Shell, studentId)) await RefreshAsync();
+    }
+
+    /// <summary>Dossier supprimé : la fiche n'existe plus, on revient à la liste des apprenants.</summary>
+    private async Task DeleteAsync()
+    {
+        if (!await StudentForms.DeleteAsync(Shell, studentId)) return;
+        await Shell.LeaveDeletedAsync(this, () => new StudentsPage(Shell));
     }
 
     private string? whatsAppLink;
@@ -442,6 +467,86 @@ public static class StudentForms
     }
 
     /// <summary>
+    /// Renomme le dossier : nom, post-nom et prénom seulement. Le matricule, les paiements, les notes et
+    /// l'historique restent attachés au dossier ; un homonyme demande une seconde confirmation.
+    /// </summary>
+    public static async Task<bool> RenameAsync(ShellViewModel shell, Guid id)
+    {
+        var s = await shell.Api.GetAsync<StudentDto>($"api/apprenants/{id}");
+        var before = Format.FullName(s.LastName, s.MiddleName, s.FirstName);
+        var needsConfirmation = false;
+        var form = new FormViewModel("Renommer l'apprenant", $"{before} · matricule {s.Matricule}", async f =>
+        {
+            var (last, middle, first) = (f.Text("nom"), f.Text("postNom"), f.Text("prenom"));
+            var after = Format.FullName(last, middle, first);
+            if (string.Equals(after, before, StringComparison.Ordinal))
+            {
+                shell.Notify("Le nom n'a pas changé.");
+                return true;
+            }
+            var doubles = await shell.Api.GetAsync<List<DuplicateCandidateDto>>("api/apprenants/doublons" + ScoliaClient.Query(
+                ("nom", last), ("postNom", middle), ("prenom", first), ("exclure", id)));
+            if (doubles.Count > 0 && !needsConfirmation)
+            {
+                needsConfirmation = true;
+                f.Fail($"Un autre apprenant porte déjà ce nom : {string.Join(", ", doubles.Select(d => $"{d.FullName} ({d.Matricule})"))}. Cliquez à nouveau sur Renommer pour confirmer.");
+                return false;
+            }
+            await shell.Api.SendAsync(HttpMethod.Put, $"api/apprenants/{id}", new
+            {
+                lastName = last, middleName = middle, firstName = first,
+                gender = s.Gender, birthDate = s.BirthDate, birthPlace = s.BirthPlace, nationality = s.Nationality, address = s.Address,
+                phone = s.Phone, email = s.Email, guardianName = s.GuardianName, guardianRelation = s.GuardianRelation,
+                guardianPhone = s.GuardianPhone, guardianPhone2 = s.GuardianPhone2, notes = s.Notes, version = s.Version,
+            });
+            shell.Notify($"Dossier renommé : {after}.", SoundKind.Success);
+            return true;
+        })
+        {
+            SubmitText = "Renommer",
+            Message = "Le matricule, les reçus, les notes et l'historique restent sur le dossier.",
+        };
+        form.Add("nom", "Nom", value: s.LastName, required: true);
+        form.Add("postNom", "Post-nom", value: s.MiddleName, required: true);
+        form.Add("prenom", "Prénom", value: s.FirstName, required: true);
+        return await shell.Sync.WithLockAsync($"dossier:{s.Id}", $"Modification du dossier {s.Matricule}", () => shell.Ask(form));
+    }
+
+    /// <summary>
+    /// Supprime le dossier, même s'il a déjà payé : inscriptions, reçus, notes, présences, discipline et prises
+    /// en charge partent avec lui. Le mot de passe du compte connecté confirme ; le serveur fait une sauvegarde
+    /// juste avant, d'où le dossier se récupère, et garde la trace au journal.
+    /// </summary>
+    public static async Task<bool> DeleteAsync(ShellViewModel shell, Guid id)
+    {
+        var s = await shell.Api.GetAsync<StudentDto>($"api/apprenants/{id}");
+        var name = Format.FullName(s.LastName, s.MiddleName, s.FirstName);
+        var current = s.Enrollments.FirstOrDefault(e => e.Status == "Actif") ?? (s.Enrollments.Count > 0 ? s.Enrollments[0] : null);
+        var paid = string.Empty;
+        if (current is not null && shell.Can(Perm.PaymentsRead))
+        {
+            var account = await shell.Api.GetAsync<AccountDto>($"api/inscriptions/{current.Id}/compte");
+            var valid = account.Receipts.Where(r => r.Status == "Valide").ToList();
+            if (valid.Count > 0)
+                paid = $" Il a déjà payé {Format.Money(valid.Sum(r => r.Amount), shell.Session?.CurrencySymbol ?? string.Empty)} en {Format.Count(valid.Count, "reçu", "reçus")} cette année : ces reçus seront effacés aussi, et la caisse ne les comptera plus.";
+        }
+        var form = new FormViewModel("Supprimer le dossier", $"{name} · matricule {s.Matricule}", async f =>
+        {
+            await shell.Api.SendAsync<ErasureSummaryDto>(HttpMethod.Post, "api/effacement/apprenants",
+                new { scope = ErasureScope.Selection, studentIds = new[] { id }, password = f.Text("motDePasse") });
+            shell.Notify($"Dossier de {name} supprimé. Une sauvegarde a été faite juste avant.", SoundKind.Success);
+            return true;
+        })
+        {
+            SubmitText = "Supprimer le dossier",
+            Danger = true,
+            Message = $"Le dossier, ses inscriptions, ses notes, ses présences et sa discipline seront effacés.{paid} Une sauvegarde est faite juste avant : le dossier se récupère depuis Sauvegardes.",
+        };
+        form.Add("motDePasse", "Votre mot de passe", FieldKind.Secret, required: true, hint: "Celui du compte connecté, pour confirmer");
+        return await shell.Sync.WithLockAsync($"dossier:{s.Id}", $"Suppression du dossier {s.Matricule}", () => shell.Ask(form));
+    }
+
+    /// <summary>
     /// Champs de la fiche : identité, naissance, parent, son contact et l'adresse. Un seul numéro est saisi,
     /// celui du parent : c'est lui que visent les relances WhatsApp et SMS.
     /// </summary>
@@ -455,8 +560,8 @@ public static class StudentForms
         form.Add("lieu", "Lieu de naissance", value: s?.BirthPlace, required: true);
         form.Add("tuteur", "Parent ou tuteur", value: s?.GuardianName);
         form.Add("adresse", "Adresse", value: s?.Address, hint: "Quartier, avenue et numéro");
-        form.Add("contact1", "Contact parent", FieldKind.Phone, value: s?.GuardianPhone, required: true,
-            hint: "10 chiffres, ex. 0812345678 · reçoit les relances WhatsApp et SMS");
+        form.Add("contact1", "Contact parent (relances WhatsApp)", FieldKind.Phone, value: s?.GuardianPhone, required: true,
+            hint: "10 chiffres, ex. 0812345678");
     }
 
     /// <summary>Les données d'un ancien dossier qui ne sont plus saisies, nationalité, téléphones, e-mail, lien et observations, sont gardées telles quelles.</summary>

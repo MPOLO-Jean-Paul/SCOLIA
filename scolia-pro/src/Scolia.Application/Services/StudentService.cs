@@ -170,8 +170,12 @@ public sealed class StudentService(IAppDbContext db, IWriteGate gate, IAuditLog 
         if (input.Version is not null && input.Version != student.Version)
             throw new ConflictException("Ce dossier a été modifié sur un autre poste. Rechargez-le avant d'enregistrer.");
         var before = $"{student.FullName} | {student.GuardianPhone}";
+        var oldName = student.FullName;
         Apply(student, input);
-        audit.Record("apprenant.modifie", "Apprenant", id.ToString(), $"Dossier {student.Matricule} modifié.", new { avant = before, apres = $"{student.FullName} | {student.GuardianPhone}" });
+        // Un changement de nom se lit tel quel au journal : ancien et nouveau nom.
+        var summary = oldName == student.FullName ? $"Dossier {student.Matricule} modifié." : $"Dossier {student.Matricule} renommé : {oldName} → {student.FullName}.";
+        audit.Record(oldName == student.FullName ? "apprenant.modifie" : "apprenant.renomme", "Apprenant", id.ToString(), summary,
+            new { avant = before, apres = $"{student.FullName} | {student.GuardianPhone}" });
         await db.SaveChangesAsync(ct);
         return await GetAsync(id, ct);
     }, ct);

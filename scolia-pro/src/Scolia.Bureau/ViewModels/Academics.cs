@@ -408,8 +408,10 @@ public sealed class AttendancePage : PageViewModel
                 Rows.Add(new AttendanceEditRowVm(r.EnrollmentId, r.Matricule, r.FullName, status, note));
             }
             var absent = Rows.Count(r => r.Status.Value == "Absent");
-            var dayState = sheet.CourseDay ? "jour de cours confirmé" : "jour non confirmé";
-            subtitle = $"Appel du {Format.Date(date)} · {Promotion.Label} · {absent} absent(s) · {dayState}";
+            var dayState = sheet.CourseDay ? "jour de cours" : "jour non confirmé";
+            // Le code de la promotion suffit : le sous-titre tient aussi sur l'écran du téléphone.
+            var code = Promotion.Label.Split(" · ")[0];
+            subtitle = $"Appel du {Format.Date(date)} · {code} · {Format.Count(absent, "absent", "absents")} · {dayState}";
         }
         Raise(nameof(Subtitle));
     }

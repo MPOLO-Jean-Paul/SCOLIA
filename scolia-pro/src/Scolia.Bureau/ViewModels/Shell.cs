@@ -615,6 +615,31 @@ public sealed class ShellViewModel : Observable
         Show(page);
     }
 
+    /// <summary>
+    /// Quitte un écran dont l'objet vient d'être supprimé : retour à l'écran précédent, ou à celui proposé,
+    /// sans le garder dans « Suivant » ni dans l'historique, puisqu'il ne s'ouvrirait plus.
+    /// </summary>
+    public async Task LeaveDeletedAsync(PageViewModel deleted, Func<PageViewModel> fallback)
+    {
+        backStack.RemoveAll(p => p == deleted);
+        forwardStack.Clear();
+        if (current != deleted) return;
+        if (backStack.Count > 0)
+        {
+            var page = backStack[^1];
+            backStack.RemoveAt(backStack.Count - 1);
+            BackstageOpen = false;
+            Show(page);
+            await page.RefreshAsync();
+        }
+        else
+        {
+            var page = fallback();
+            Show(page);
+            await page.RefreshAsync();
+        }
+    }
+
     public void GoForward()
     {
         if (forwardStack.Count == 0 || current is null) return;

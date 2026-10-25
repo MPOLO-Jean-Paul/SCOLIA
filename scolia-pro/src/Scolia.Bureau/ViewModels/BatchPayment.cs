@@ -54,13 +54,14 @@ public sealed class BatchRowVm : Observable
     public decimal Total => total;
 
     /// <summary>Retient les mois du mode choisi et le montant qui en résulte.</summary>
-    public void ApplyMonths(IReadOnlyList<BatchMonthDto> chosen, Func<decimal, string> money)
+    public void ApplyMonths(IReadOnlyList<BatchMonthDto> chosen, Func<decimal, string> money, bool lateOnly = false)
     {
         feeItemIds = chosen.Select(m => m.FeeItemId).ToList();
         total = chosen.Sum(m => m.Remaining);
         Plan = chosen.Count switch
         {
-            0 => "Aucun mois ouvert",
+            // En mode « Mois en retard », un apprenant à jour n'a rien à régler : on le dit tel quel.
+            0 => lateOnly ? "À jour : aucun mois en retard" : "Aucun mois à payer",
             1 => chosen[0].Label,
             _ => $"{chosen.Count} mois : {string.Join(", ", chosen.Select(m => m.Label))}",
         };
@@ -168,7 +169,7 @@ public sealed class BatchPaymentPage : PageViewModel
         foreach (var candidate in candidates)
         {
             var row = new BatchRowVm(candidate, Money(candidate.Balance), Money(candidate.Overdue), SelectionChanged);
-            row.ApplyMonths(PlanFor(candidate), Money);
+            row.ApplyMonths(PlanFor(candidate), Money, LateOnly);
             if (results.TryGetValue(candidate.EnrollmentId, out var previous)) row.ShowResult(previous);
             Items.Add(row);
         }
@@ -176,6 +177,8 @@ public sealed class BatchPaymentPage : PageViewModel
         Raise(nameof(Subtitle));
         SelectionChanged();
     }
+
+    private bool LateOnly => Mode?.Value == "late";
 
     private IReadOnlyList<BatchMonthDto> PlanFor(BatchCandidateDto candidate) => Mode?.Value switch
     {
@@ -186,15 +189,17 @@ public sealed class BatchPaymentPage : PageViewModel
 
     private void ApplyMode()
     {
-        foreach (var row in Items) row.ApplyMonths(PlanFor(row.Candidate), Money);
+        foreach (var row in Items) row.ApplyMonths(PlanFor(row.Candidate), Money, LateOnly);
         SelectionChanged();
     }
 
     private void SetAll(bool value)
     {
-        foreach (var row in Items) row.Selected = value;
+        // « Tout cocher » ne prend que les apprenants qui ont quelque chose à régler dans le mode choisi.
+        foreach (var row in Items) row.Selected = value && row.FeeItemIds.Count > 0;
         SelectionChanged();
-        Shell.Notify(value ? $"{Format.Count(Items.Count, "apprenant coché", "apprenants cochés")}." : "Aucun apprenant coché.");
+        var count = Items.Count(i => i.Selected);
+        Shell.Notify(value ? (count == 0 ? "Aucun apprenant n'a de mois à régler dans ce mode." : $"{Format.Count(count, "apprenant coché", "apprenants cochés")}.") : "Aucun apprenant coché.");
     }
 
     private void SelectionChanged()
@@ -215,7 +220,8 @@ public sealed class BatchPaymentPage : PageViewModel
             enrollmentId = r.EnrollmentId,
             feeItemIds = r.FeeItemIds,
             method = Method?.Value ?? "Especes",
-            reference = string.IsNullOrWhiteSpace(r.Reference) ? null : r.Reference.Trim(),
+            // Comme à l'encaissement simple : sans référence saisie, SCOLIA en donne une.
+            reference = string.IsNullOrWhiteSpace(r.Reference) ? CashierPage.NewReference(DateTime.Now) : r.Reference.Trim(),
         }).ToList(),
     };
 

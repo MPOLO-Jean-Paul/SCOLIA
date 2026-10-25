@@ -40,7 +40,7 @@
         <DataGridTemplateColumn infra:GridPriority.Level="3" Header="Référence" Width="Auto" MinWidth="180">
           <DataGridTemplateColumn.CellTemplate>
             <DataTemplate>
-              <TextBox Text="{Binding Reference}" PlaceholderText="Mobile Money, chèque" />
+              <TextBox Text="{Binding Reference}" PlaceholderText="Automatique si vide" />
             </DataTemplate>
           </DataGridTemplateColumn.CellTemplate>
         </DataGridTemplateColumn>

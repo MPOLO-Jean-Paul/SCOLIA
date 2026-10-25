@@ -591,6 +591,32 @@ if (shell.Current is MonthlyPage monthlyPage && monthlyPage.Selected is { } peek
     shell.CloseDialog();
 }
 
+// Clic droit sur un apprenant : renommer et supprimer le dossier, puis leurs deux fenêtres.
+Wait(shell.Open(() => new StudentsPage(shell)));
+Wait(Task.Delay(400));
+if (shell.Current is StudentsPage studentsPage && studentsPage.Items.Count > 2)
+{
+    studentsPage.Selected = studentsPage.Items[2];
+    if (window.GetVisualDescendants().OfType<DataGrid>().FirstOrDefault() is { } studentGrid
+        && studentGrid.GetVisualDescendants().OfType<DataGridRow>().FirstOrDefault(r => Equals(r.DataContext, studentsPage.Selected)) is { } studentRow)
+    {
+        var menu = RowMenu.Show(studentGrid, studentRow, null, atPointer: false);
+        Save(window, "28d-menu-apprenant.png");
+        menu.Hide();
+    }
+    var chosen = studentsPage.Selected.Id;
+    _ = StudentForms.RenameAsync(shell, chosen);
+    Wait(Task.Delay(700));
+    Save(window, "28e-renommer-apprenant.png");
+    shell.CloseDialog();
+    Wait(Task.Delay(300));
+    _ = StudentForms.DeleteAsync(shell, chosen);
+    Wait(Task.Delay(900));
+    Save(window, "28f-supprimer-apprenant.png");
+    shell.CloseDialog();
+    Wait(Task.Delay(300));
+}
+
 // Boîtes de dialogue : recherche globale et formulaire d'inscription.
 Wait(shell.Open(() => new DashboardPage(shell)));
 shell.ShowSearch();
