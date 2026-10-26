@@ -93,7 +93,7 @@ public sealed class HomePage : PageViewModel
             Go(() => new ReceiptsPage(Shell))));
         Kpis.Add(new HomeKpiVm("Encaissé ce mois", Money(d.CollectedThisMonth), $"{Money(d.CollectedTotal)} depuis la rentrée", MaterialIconKind.CalendarMonth, ThemeBrush.Get("ToneBlue"),
             Go(() => new DashboardPage(Shell))));
-        Kpis.Add(new HomeKpiVm("Apprenants actifs", Format.Count(d.ActiveStudents, "apprenant", "apprenants"),
+        Kpis.Add(new HomeKpiVm("Apprenants actifs", d.ActiveStudents.ToString("N0", System.Globalization.CultureInfo.GetCultureInfo("fr-FR")),
             d.NewThisMonth > 0 ? $"{Format.Count(d.NewThisMonth, "inscrit", "inscrits")} ce mois" : "Aucune inscription ce mois", MaterialIconKind.AccountGroup, ThemeBrush.Get("ToneIndigo"),
             Go(() => new StudentsPage(Shell))));
         Kpis.Add(new HomeKpiVm("Recouvrement", $"{d.RecoveryRate:0} %", d.StudentsLate > 0 ? $"{Format.Count(d.StudentsLate, "apprenant en retard", "apprenants en retard")}" : "Tout le monde est à jour",

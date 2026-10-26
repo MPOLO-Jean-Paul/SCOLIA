@@ -112,7 +112,7 @@
               <TextBlock Text="Référence de la transaction" Classes="caption" />
               <Border Classes="autofield" ToolTip.Tip="Donnée par SCOLIA pour chaque versement">
                 <Grid ColumnDefinitions="*,Auto">
-                  <TextBlock Text="{Binding ReferenceText}" TextTrimming="CharacterEllipsis" />
+                  <TextBlock Text="{Binding ReferenceText}" TextTrimming="CharacterEllipsis" FontWeight="Normal" FontSize="{DynamicResource FsSmall}" ToolTip.Tip="{Binding ReferenceText}" />
                   <mi:MaterialIcon Grid.Column="1" Kind="Autorenew" />
                 </Grid>
               </Border>

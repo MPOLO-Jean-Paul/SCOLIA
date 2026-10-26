@@ -61,7 +61,7 @@ public sealed class BatchRowVm : Observable
         Plan = chosen.Count switch
         {
             // En mode « Mois en retard », un apprenant à jour n'a rien à régler : on le dit tel quel.
-            0 => lateOnly ? "À jour : aucun mois en retard" : "Aucun mois à payer",
+            0 => lateOnly ? "À jour" : "Aucun mois à payer",
             1 => chosen[0].Label,
             _ => $"{chosen.Count} mois : {string.Join(", ", chosen.Select(m => m.Label))}",
         };
