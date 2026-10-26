@@ -110,12 +110,21 @@ public sealed class ShellViewModel : Observable
     private bool MustWait => HasDialog || BackstageOpen || HasSheet || PhoneMenuOpen || IsTyping?.Invoke() == true
         || Current is CashierPage { HasSelection: true } or BatchPaymentPage;
 
-    /// <summary>Recharge l'écran sans notification ni perte de la ligne choisie.</summary>
+    /// <summary>Recharge l'écran sans notification ni perte de la ligne choisie, ni de la hauteur où il était lu.</summary>
     public async Task RefreshQuietlyAsync()
     {
         RemoteWaiting = false;
-        if (Current is { } page) await page.RefreshQuietlyAsync();
+        if (Current is not { } page) return;
+        var restore = KeepScrollPosition?.Invoke();
+        await page.RefreshQuietlyAsync();
+        restore?.Invoke();
     }
+
+    /// <summary>
+    /// Fourni par la vue : relève la position de défilement de la page et rend l'action qui la remet,
+    /// une fois l'écran rechargé. Une mise à jour venue d'un autre poste ne ramène pas la page en haut.
+    /// </summary>
+    public Func<Action>? KeepScrollPosition { get; set; }
 
     public Avalonia.Media.Imaging.Bitmap? SchoolLogo
     {

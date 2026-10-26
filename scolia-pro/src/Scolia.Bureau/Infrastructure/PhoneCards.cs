@@ -54,22 +54,62 @@ public static class PhoneCards
     {
         var list = new ItemsControl { ItemTemplate = new FuncDataTemplate<object>((_, _) => Card(grid)) };
         UseColumns(list, 1);
-        // Une tablette range les cartes sur deux ou trois colonnes ; un téléphone garde une liste qui ne charge
-        // que les cartes à l'écran, pour rester fluide sur un appareil modeste.
+        // Une tablette range les cartes sur deux ou trois colonnes ; un téléphone les garde sur une seule.
         list.SizeChanged += (_, e) =>
         {
             var columns = e.NewSize.Width >= ThreeColumnsFrom ? 3 : e.NewSize.Width >= TwoColumnsFrom ? 2 : 1;
             if (columns != (list.Tag as int? ?? 1)) Avalonia.Threading.Dispatcher.UIThread.Post(() => UseColumns(list, columns));
         };
-        list.Bind(ItemsControl.ItemsSourceProperty, grid.GetObservable(DataGrid.ItemsSourceProperty));
-        return list;
+        // Les cartes s'affichent par paquets : les premières tout de suite, les suivantes à la demande, en bas de la liste.
+        // Une longue liste s'ouvre ainsi vite même sur un téléphone modeste, sans liste virtualisée qui ferait sauter la page.
+        var shown = new System.Collections.ObjectModel.ObservableCollection<object?>();
+        list.ItemsSource = shown;
+        var more = new Button { HorizontalAlignment = HorizontalAlignment.Stretch, HorizontalContentAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 4, 0, 8), IsVisible = false };
+        more.Classes.Add("phoneshowmore");
+        var limit = FirstCards;
+        System.Collections.IEnumerable? source = null;
+        var pending = false;
+        void Fill()
+        {
+            pending = false;
+            var all = source?.Cast<object?>().ToList() ?? [];
+            // La liste s'est vidée puis remplie (actualisation) : on garde au moins ce que l'utilisateur avait déjà affiché.
+            var count = Math.Min(all.Count, Math.Max(limit, FirstCards));
+            if (shown.Count > count || !all.Take(shown.Count).SequenceEqual(shown)) shown.Clear();
+            for (var i = shown.Count; i < count; i++) shown.Add(all[i]);
+            var left = all.Count - shown.Count;
+            more.IsVisible = left > 0;
+            more.Content = $"Afficher {Math.Min(left, MoreCards)} de plus · {Format.Count(left, "restant", "restants")}";
+        }
+        void Later() { if (pending) return; pending = true; Avalonia.Threading.Dispatcher.UIThread.Post(Fill, Avalonia.Threading.DispatcherPriority.Background); }
+        void OnChanged(object? s, System.Collections.Specialized.NotifyCollectionChangedEventArgs e) => Later();
+        void Attach(System.Collections.IEnumerable? items)
+        {
+            if (source is System.Collections.Specialized.INotifyCollectionChanged old) old.CollectionChanged -= OnChanged;
+            source = items;
+            if (source is System.Collections.Specialized.INotifyCollectionChanged now) now.CollectionChanged += OnChanged;
+            limit = FirstCards;
+            shown.Clear();
+            Fill();
+        }
+        more.Click += (_, _) => { limit = shown.Count + MoreCards; Fill(); };
+        grid.PropertyChanged += (_, e) => { if (e.Property == DataGrid.ItemsSourceProperty) Attach(grid.ItemsSource); };
+        Attach(grid.ItemsSource);
+        return new StackPanel { Children = { list, more } };
     }
+
+    /// <summary>Cartes affichées à l'ouverture d'une liste, puis à chaque « Afficher plus ».</summary>
+    private const int FirstCards = 40;
+    private const int MoreCards = 40;
 
     private static void UseColumns(ItemsControl list, int columns)
     {
         list.Tag = columns;
+        // Pas de liste virtualisée : dans la page qui défile en entier, elle estimait la hauteur des cartes encore
+        // cachées puis la corrigeait en cours de route, et la page sautait ou glissait seule sous le doigt.
+        // Toutes les cartes sont mesurées au chargement : la hauteur de la page ne change plus pendant le défilement.
         list.ItemsPanel = columns == 1
-            ? new FuncTemplate<Panel?>(() => new VirtualizingStackPanel())
+            ? new FuncTemplate<Panel?>(() => new StackPanel())
             : new FuncTemplate<Panel?>(() => new CardColumns { Columns = columns });
     }
 

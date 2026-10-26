@@ -205,6 +205,190 @@ if (args.Length > 3 && args[3] == "commandes")
     Environment.Exit(failed);
 }
 
+// Défilement du téléphone (argument « defilement ») : la page reste là où le doigt la laisse, en descendant
+// comme en remontant. Chaque pas compare la position demandée à celle obtenue après la mise en page.
+if (args.Length > 3 && args[3] == "defilement")
+{
+    var scrollSession = Result(api.LoginAsync("admin", password));
+    Wait(shell.OpenSessionAsync(scrollSession));
+    var drift = 0;
+    foreach (var make in new Func<PageViewModel>[] { () => new ReceiptsPage(shell), () => new StudentsPage(shell), () => new MonthlyPage(shell) })
+    {
+        var opening = System.Diagnostics.Stopwatch.StartNew();
+        Wait(shell.Open(make));
+        window.UpdateLayout();
+        var openMs = opening.ElapsedMilliseconds;
+        Wait(Task.Delay(500));
+        var scroll = window.GetVisualDescendants().OfType<ScrollViewer>().First(v => v.Name == "PhoneScroll");
+        Console.WriteLine($"OUVERTURE {shell.Current?.Title} : {openMs} ms, {scroll.GetVisualDescendants().Count()} éléments");
+        // « Afficher plus » jusqu'au bout : le défilement est éprouvé sur la liste entière.
+        while (scroll.GetVisualDescendants().OfType<Button>().FirstOrDefault(b => b.Classes.Contains("phoneshowmore") && b.IsVisible) is { } showMore)
+        {
+            showMore.Command?.Execute(null);
+            showMore.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+            Dispatcher.UIThread.RunJobs();
+            window.UpdateLayout();
+        }
+        void Settle() { for (var i = 0; i < 5; i++) { Dispatcher.UIThread.RunJobs(); window.UpdateLayout(); Thread.Sleep(20); } }
+        Settle();
+        var bottom = Math.Max(0, scroll.Extent.Height - scroll.Viewport.Height);
+        // Descente puis remontée, par pas d'un doigt (180 points), comme sur l'écran.
+        var steps = new List<double>();
+        for (var y = 0d; y <= bottom; y += 180) steps.Add(y);
+        for (var y = bottom; y >= 0; y -= 180) steps.Add(y);
+        var worst = 0d;
+        // Une carte visible sert de repère : quand la page défile de d points, elle doit bouger de d points, pas plus.
+        (object Item, double Y)? Anchor()
+        {
+            foreach (var card in scroll.GetVisualDescendants().OfType<Border>().Where(b => b.Classes.Contains("phonecard") && b.IsVisible))
+            {
+                if (card.DataContext is not { } item || card.TranslatePoint(new Point(0, 0), scroll) is not { } p) continue;
+                if (p.Y >= 0 && p.Y + card.Bounds.Height <= scroll.Viewport.Height) return (item, p.Y);
+            }
+            return null;
+        }
+        double? Find(object item) => scroll.GetVisualDescendants().OfType<Border>()
+            .Where(b => b.Classes.Contains("phonecard") && ReferenceEquals(b.DataContext, item))
+            .Select(b => b.TranslatePoint(new Point(0, 0), scroll)?.Y).FirstOrDefault();
+        var extents = new List<double>();
+        foreach (var target in steps)
+        {
+            extents.Add(scroll.Extent.Height);
+            var before = Anchor();
+            var from = scroll.Offset.Y;
+            scroll.Offset = new Vector(0, target);
+            Settle();
+            if (before is { } b && Find(b.Item) is { } y)
+                worst = Math.Max(worst, Math.Abs(y - (b.Y + (from - scroll.Offset.Y))));
+        }
+        var name = shell.Current?.Title ?? "?";
+        Console.WriteLine($"{name} : {steps.Count} pas, hauteur {extents.Min():0} à {extents.Max():0}, écart maximal {worst:0} points");
+        if (worst > 2) drift++;
+        // Le doigt se pose sur une carte au milieu de la liste puis se lève : la page ne doit pas bouger d'elle-même.
+        scroll.Offset = new Vector(0, Math.Min(bottom, 3000));
+        Settle();
+        if (Anchor() is { } touched && scroll.GetVisualDescendants().OfType<Border>().FirstOrDefault(c => ReferenceEquals(c.DataContext, touched.Item) && c.Classes.Contains("phonecard")) is { } touchedCard
+            && touchedCard.TranslatePoint(new Point(touchedCard.Bounds.Width / 3, touchedCard.Bounds.Height / 2), window) is { } at)
+        {
+            var was = scroll.Offset.Y;
+            window.MouseDown(at, Avalonia.Input.MouseButton.Left);
+            Settle();
+            window.MouseUp(at, Avalonia.Input.MouseButton.Left);
+            Settle();
+            var focused = TopLevel.GetTopLevel(window)?.FocusManager?.GetFocusedElement();
+            Console.WriteLine($"   appui sur une carte : page déplacée de {scroll.Offset.Y - was:0} points · focus sur {focused?.GetType().Name}");
+            if (Math.Abs(scroll.Offset.Y - was) > 2) drift++;
+        }
+    }
+    // Glissement du doigt, comme sur l'écran : poser, monter de 300 points en 300 ms, lâcher, puis l'inertie.
+    // La page doit aller dans le sens du doigt, et seulement dans ce sens.
+    foreach (var make in new Func<PageViewModel>[] { () => new StudentsPage(shell), () => new ReceiptsPage(shell), () => new DashboardPage(shell), () => new CashPage(shell) })
+    {
+        Wait(shell.Open(make));
+        Wait(Task.Delay(600));
+        var scroll = window.GetVisualDescendants().OfType<ScrollViewer>().First(v => v.Name == "PhoneScroll");
+        // Geste rapide vers le bas de la page, puis aussitôt le doigt redescend : l'inertie du premier geste
+        // doit s'arrêter dès que le doigt se repose, et la page suivre le second geste.
+        {
+            scroll.Offset = new Vector(0, 2000);
+            for (var i = 0; i < 5; i++) { Dispatcher.UIThread.RunJobs(); window.UpdateLayout(); }
+            var x = window.Bounds.Width / 2;
+            ulong t = 0;
+            Touch.Send(window, "TouchBegin", new Point(x, 700), t);
+            for (var k = 1; k <= 10; k++) { Thread.Sleep(10); t += 10; Touch.Send(window, "TouchUpdate", new Point(x, 700 - k * 40), t); Dispatcher.UIThread.RunJobs(); }
+            Touch.Send(window, "TouchEnd", new Point(x, 300), t + 2);
+            for (var k = 0; k < 10; k++) { Thread.Sleep(16); Dispatcher.UIThread.RunJobs(); }
+            var before = scroll.Offset.Y;
+            t += 300;
+            var trace = new List<double> { before };
+            Touch.Send(window, "TouchBegin", new Point(x, 300), t);
+            Dispatcher.UIThread.RunJobs();
+            for (var k = 1; k <= 20; k++) { Thread.Sleep(15); t += 15; Touch.Send(window, "TouchUpdate", new Point(x, 300 + k * 10), t); Dispatcher.UIThread.RunJobs(); trace.Add(scroll.Offset.Y); }
+            // Doigt immobile un instant avant de se lever : la page ne doit plus bouger.
+            for (var k = 0; k < 10; k++) { Thread.Sleep(16); Dispatcher.UIThread.RunJobs(); trace.Add(scroll.Offset.Y); }
+            var held = scroll.Offset.Y;
+            Touch.Send(window, "TouchEnd", new Point(x, 500), t + 160);
+            var against = trace.Zip(trace.Skip(1), (a, b) => b - a).Where(d => d > 0.5).Sum();
+            var creep = Math.Abs(held - trace[trace.Count - 11]);
+            Console.WriteLine($"INVERSE   {shell.Current?.Title} : après le premier geste {before:0}, doigt redescendu 200 pts → {held:0} · contre le doigt {against:0} · dérive doigt immobile {creep:0}");
+            if (against > 1 || creep > 1) drift++;
+            for (var k = 0; k < 200; k++) { Thread.Sleep(10); Dispatcher.UIThread.RunJobs(); }
+        }
+        // (sens, pas en points, pause en ms, abscisse) : vers le bas ou le haut, rapide ou lent, au milieu ou près du bord.
+        foreach (var (dir, step, pause, xr) in new[] { (1, 15, 15, 0.5), (-1, 15, 15, 0.5), (-1, 6, 30, 0.2), (1, 30, 10, 0.85), (-1, 30, 10, 0.85) })
+        {
+            scroll.Offset = new Vector(0, 2000);
+            for (var i = 0; i < 5; i++) { Dispatcher.UIThread.RunJobs(); window.UpdateLayout(); }
+            var start = scroll.Offset.Y;
+            var trace = new List<double> { start };
+            var x = window.Bounds.Width * xr;
+            var y0 = dir > 0 ? 700d : 250d;
+            ulong t = 0;
+            Touch.Send(window, "TouchBegin", new Point(x, y0), t);
+            for (var k = 1; k <= 20; k++)
+            {
+                Thread.Sleep(pause);
+                t += (ulong)pause;
+                Touch.Send(window, "TouchUpdate", new Point(x, y0 - dir * k * step), t);
+                Dispatcher.UIThread.RunJobs();
+                trace.Add(scroll.Offset.Y);
+            }
+            Touch.Send(window, "TouchEnd", new Point(x, y0 - dir * 20 * step), t + 5);
+            var released = scroll.Offset.Y;
+            for (var k = 0; k < 90; k++) { Thread.Sleep(16); Dispatcher.UIThread.RunJobs(); trace.Add(scroll.Offset.Y); }
+            // Le doigt monte (dir 1) : la page avance ; il descend (dir -1) : elle recule. Tout mouvement contraire est un défaut.
+            var against = trace.Zip(trace.Skip(1), (a, b) => (b - a) * dir).Where(d => d < -0.5).Sum(d => -d);
+            Console.WriteLine($"DOIGT     {shell.Current?.Title} : {(dir > 0 ? "monte" : "descend")} {20 * step} pts en {20 * pause} ms · page {start:0} → {released:0} au lâcher → {scroll.Offset.Y:0} · contraire {against:0}");
+            if (against > 1) drift++;
+        }
+    }
+
+    // Mise à jour venue d'un autre poste pendant la lecture : la page se recharge sans changer de hauteur.
+    foreach (var make in new Func<PageViewModel>[] { () => new StudentsPage(shell), () => new ReceiptsPage(shell), () => new MonthlyPage(shell) })
+    {
+        Wait(shell.Open(make));
+        Wait(Task.Delay(500));
+        var scroll = window.GetVisualDescendants().OfType<ScrollViewer>().First(v => v.Name == "PhoneScroll");
+        scroll.Offset = new Vector(0, 1500);
+        for (var i = 0; i < 5; i++) { Dispatcher.UIThread.RunJobs(); window.UpdateLayout(); }
+        var was = scroll.Offset.Y;
+        Wait(shell.RefreshQuietlyAsync());
+        for (var i = 0; i < 10; i++) { Dispatcher.UIThread.RunJobs(); window.UpdateLayout(); Thread.Sleep(10); }
+        Console.WriteLine($"DISTANT   {shell.Current?.Title} : avant {was:0}, après la mise à jour {scroll.Offset.Y:0}");
+        if (Math.Abs(scroll.Offset.Y - was) > 1) drift++;
+    }
+
+    // Rechargements spontanés : une page laissée ouverte sans y toucher ne doit pas se recharger seule.
+    foreach (var entry in shell.Navigation.SelectMany(g => g.Items).Take(30))
+    {
+        try { entry.Open.Execute(null); } catch { continue; }
+        Wait(Task.Delay(1500));
+        if (shell.Current is not { } still) continue;
+        var reloads = 0;
+        void Count(object? _, System.ComponentModel.PropertyChangedEventArgs e) { if (e.PropertyName == nameof(PageViewModel.Busy) && still.Busy) reloads++; }
+        still.PropertyChanged += Count;
+        Wait(Task.Delay(12000));
+        still.PropertyChanged -= Count;
+        if (reloads > 0) Console.WriteLine($"RECHARGE  {entry.Label} : {reloads} rechargement(s) en 12 s sans action");
+    }
+
+    // Défilements imbriqués : sur le téléphone, la page entière défile ; un second défilement vertical à l'intérieur
+    // se disputerait le doigt avec elle.
+    foreach (var entry in shell.Navigation.SelectMany(g => g.Items))
+    {
+        try { entry.Open.Execute(null); } catch { continue; }
+        Wait(Task.Delay(400));
+        var host = window.GetVisualDescendants().OfType<TransitioningContentControl>().FirstOrDefault(c => c.Name == "PhoneHost");
+        if (host is null) continue;
+        var inner = host.GetVisualDescendants().OfType<ScrollViewer>().Where(v => v.IsEffectivelyVisible).ToList();
+        var vertical = inner.Where(v => v.VerticalScrollBarVisibility != Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled).ToList();
+        if (vertical.Count > 0)
+            Console.WriteLine($"IMBRIQUÉ  {entry.Label} : {vertical.Count} défilement(s) vertical(aux) · " + string.Join(", ", vertical.Select(v => $"{v.Parent?.GetType().Name}/{v.TemplatedParent?.GetType().Name} vue {v.Viewport.Height:0} contenu {v.Extent.Height:0}")));
+    }
+    window.Close();
+    Environment.Exit(drift);
+}
+
 if (args.Length > 3 && args[3] == "smoke")
 {
     Smoke(shell, api, window, password);
@@ -935,4 +1119,34 @@ sealed class CaptureServer : ILocalServer
     public void Start() { }
     public void Restart() { }
     public void Stop() { }
+}
+
+/// <summary>Événements tactiles fabriqués comme ceux d'un écran de téléphone, pour éprouver le défilement au doigt.</summary>
+static class Touch
+{
+    private static readonly System.Reflection.Assembly Base = typeof(Avalonia.Input.Pointer).Assembly;
+    private static object? device;
+
+    public static void Send(Window window, string kind, Point at, ulong time)
+    {
+        var impl = typeof(TopLevel).GetProperty("PlatformImpl")!.GetValue(window)!;
+        var input = (Delegate)impl.GetType().GetInterfaces().Select(i => i.GetProperty("Input")).First(p => p is not null)!.GetValue(impl)!;
+        device ??= Activator.CreateInstance(Base.GetType("Avalonia.Input.TouchDevice")!, true)!;
+        var type = Base.GetType("Avalonia.Input.Raw.RawPointerEventType")!;
+        var args = Base.GetType("Avalonia.Input.Raw.RawTouchEventArgs")!;
+        var root = typeof(TopLevel).GetProperty("InputRoot", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic)?.GetValue(window) ?? window;
+        var ctor = args.GetConstructors().OrderByDescending(c => c.GetParameters().Length).First();
+        var values = ctor.GetParameters().Select(p => p.ParameterType.Name switch
+        {
+            "IInputDevice" or "TouchDevice" => device,
+            "UInt64" => (object)time,
+            "IInputRoot" => root,
+            "RawPointerEventType" => Enum.Parse(type, kind),
+            "Point" => at,
+            "RawInputModifiers" => Enum.ToObject(p.ParameterType, 0),
+            "Int64" => (object)1L,
+            _ => p.HasDefaultValue ? p.DefaultValue : null,
+        }).ToArray();
+        input.DynamicInvoke(ctor.Invoke(values));
+    }
 }

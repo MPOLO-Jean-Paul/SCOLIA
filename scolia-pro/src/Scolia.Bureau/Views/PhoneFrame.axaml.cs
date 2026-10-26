@@ -35,6 +35,19 @@ public partial class PhoneFrame : UserControl
                 // Une nouvelle page s'ouvre en haut, pas à la hauteur où la précédente était lue.
                 if (args.PropertyName == nameof(ShellViewModel.PhonePage)) PhoneScroll.Offset = default;
             };
+            // Mise à jour venue d'un autre poste : la page se recharge sous le doigt sans bouger.
+            shell.KeepScrollPosition = () =>
+            {
+                if (!shell.Phone) return () => { };
+                var page = shell.PhonePage;
+                var offset = PhoneScroll.Offset;
+                return () => Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+                {
+                    if (shell.PhonePage != page) return;
+                    PhoneScroll.UpdateLayout();
+                    PhoneScroll.Offset = offset;
+                }, Avalonia.Threading.DispatcherPriority.Background);
+            };
         };
     }
 
