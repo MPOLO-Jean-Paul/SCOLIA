@@ -61,18 +61,18 @@ void Save(Window window, string name)
     var scale = double.TryParse(Environment.GetEnvironmentVariable("SCOLIA_ECHELLE"), System.Globalization.CultureInfo.InvariantCulture, out var e) && e > 1 ? e : 1;
     // Le rendu direct utilise l'état final de l'arbre visuel, même après plusieurs ouvertures de session.
     // La capture du tampon de composition peut encore contenir une image de transition sur le moteur headless.
-        var sharp = new Avalonia.Media.Imaging.RenderTargetBitmap(
-            new PixelSize((int)Math.Round(window.Bounds.Width * scale), (int)Math.Round(window.Bounds.Height * scale)), new Vector(96 * scale, 96 * scale));
-        // Le rendu à haute densité dessine trois fois trop grand le contenu d'un cadre à ombre portée (fenêtres, feuilles,
-        // bulles) : ombres et transformations sans effet sont retirées le temps du dessin, puis remises.
-        var neutral = window.GetVisualDescendants().OfType<Visual>()
-            .Where(v => v.RenderTransform is { } rt && rt.Value.IsIdentity).Select(v => (v, v.RenderTransform)).ToList();
-        foreach (var (v, _) in neutral) v.RenderTransform = null;
-        var shadowed = window.GetVisualDescendants().OfType<Border>().Where(b => b.BoxShadow.Count > 0).Select(b => (b, b.BoxShadow)).ToList();
-        foreach (var (b, _) in shadowed) b.BoxShadow = default;
-        sharp.Render(window);
-        foreach (var (v, rt) in neutral) v.RenderTransform = rt;
-        foreach (var (b, sh) in shadowed) b.BoxShadow = sh;
+    var sharp = new Avalonia.Media.Imaging.RenderTargetBitmap(
+        new PixelSize((int)Math.Round(window.Bounds.Width * scale), (int)Math.Round(window.Bounds.Height * scale)), new Vector(96 * scale, 96 * scale));
+    // Le rendu à haute densité dessine trois fois trop grand le contenu d'un cadre à ombre portée (fenêtres, feuilles,
+    // bulles) : ombres et transformations sans effet sont retirées le temps du dessin, puis remises.
+    var neutral = window.GetVisualDescendants().OfType<Visual>()
+        .Where(v => v.RenderTransform is { } rt && rt.Value.IsIdentity).Select(v => (v, v.RenderTransform)).ToList();
+    foreach (var (v, _) in neutral) v.RenderTransform = null;
+    var shadowed = window.GetVisualDescendants().OfType<Border>().Where(b => b.BoxShadow.Count > 0).Select(b => (b, b.BoxShadow)).ToList();
+    foreach (var (b, _) in shadowed) b.BoxShadow = default;
+    sharp.Render(window);
+    foreach (var (v, rt) in neutral) v.RenderTransform = rt;
+    foreach (var (b, sh) in shadowed) b.BoxShadow = sh;
     using var frame = sharp;
     var stride = frame.PixelSize.Width * 4;
     var size = stride * frame.PixelSize.Height;
@@ -253,9 +253,17 @@ int VerifyPayments(LayoutServer fixture, bool mobile)
             Check("Caisse : cible tactile et validation disponible", pay.Bounds.Height >= 44 && pay.IsEnabled && page.CanPay);
             Save(window, $"paiement-{(mobile ? "mobile" : "bureau")}-{width}x{height}-{textScale:0.0}.png");
             var before = fixture.PaymentCount;
-            var payment = page.PayAsync();
-            var duplicate = page.PayAsync();
-            Wait(Task.WhenAll(payment, duplicate));
+            fixture.HoldPayment = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var tap = Bounds(pay).Center;
+            window.MouseDown(tap, Avalonia.Input.MouseButton.Left);
+            window.MouseUp(tap, Avalonia.Input.MouseButton.Left);
+            Check("Caisse : le bouton reçoit réellement l'appui", !page.Pay.CanExecute(null));
+            for (var i = 0; i < 200 && fixture.PaymentCount == before; i++) Wait(Task.Delay(10));
+            window.MouseDown(tap, Avalonia.Input.MouseButton.Left);
+            window.MouseUp(tap, Avalonia.Input.MouseButton.Left);
+            fixture.HoldPayment.SetResult();
+            for (var i = 0; i < 200 && !page.HasReceipt; i++) Wait(Task.Delay(10));
+            fixture.HoldPayment = null;
             Render();
             Check("Caisse : un seul reçu malgré un double appui", fixture.PaymentCount == before + 1 && page.HasReceipt);
             foreach (var name in new[] { "PrintReceiptButton", "OpenReceiptButton", "NewPaymentButton" })
@@ -264,6 +272,9 @@ int VerifyPayments(LayoutServer fixture, bool mobile)
                 Reveal(action);
                 Check($"Caisse : {name} accessible après paiement", Reachable(action));
             }
+            Check("Caisse : aucune confirmation redondante ne couvre les boutons du reçu", !shell.HasNotice);
+            if (width is 320 or 360 or 760)
+                Save(window, $"recu-{(mobile ? "mobile" : "bureau")}-{width}x{height}-{textScale:0.0}.png");
         }
     }
     if (mobile)
@@ -308,7 +319,7 @@ int VerifyPayments(LayoutServer fixture, bool mobile)
         var show = typeof(SyncCenter).GetMethod("Show", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!;
         show.Invoke(shell.Sync, ["Secrétariat · paiement enregistré sur un autre poste"]);
         Render();
-        Check("Activité : le bandeau ne déplace ni la page ni sa fenêtre de lecture", Bounds(scroll) == viewportBefore && Math.Abs(scroll.Offset.Y - readerOffset.Y) < 1);
+        Check("Activité : une écriture distante ne déplace ni la page ni sa fenêtre de lecture", Bounds(scroll) == viewportBefore && Math.Abs(scroll.Offset.Y - readerOffset.Y) < 1);
         Save(window, "actualisation-mobile-stable.png");
         var navigation = shell.Navigation;
         var tabs = shell.PhoneTabs;
@@ -1523,6 +1534,7 @@ sealed class LayoutServer : IDisposable
     public Uri Address { get; }
     public AccountDto? PaymentAccount { get; set; }
     public int PaymentCount { get; private set; }
+    public TaskCompletionSource? HoldPayment { get; set; }
     public TaskCompletionSource? HoldStudents { get; set; }
     public int StudentReads { get; private set; }
 
@@ -1588,6 +1600,7 @@ sealed class LayoutServer : IDisposable
                     else
                     {
                         PaymentCount++;
+                        if (HoldPayment is { } hold) await hold.Task;
                         result = new ReceiptDto(Guid.NewGuid(), $"TEST-{PaymentCount:000}", "verification-test", DateOnly.FromDateTime(DateTime.Today),
                             account.StudentId, account.Matricule, account.FullName, account.PromotionCode, account.AcademicYear, total,
                             "Especes", "TR-TEST", null, account.GuardianPhone, "OK", "Caisse de test", "Valide", null, null, null, allocations, DateTime.UtcNow);

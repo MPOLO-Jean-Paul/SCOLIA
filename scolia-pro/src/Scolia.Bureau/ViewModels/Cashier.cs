@@ -57,7 +57,7 @@ public sealed class CashierPage : PageViewModel
     }
 
     public override string Title => "Encaisser";
-    public override string Subtitle => "Choisissez les mois payés, puis le mode de paiement";
+    public override string Subtitle => Phone ? "Mois payés · reçu" : "Choisissez les mois payés, puis le mode de paiement";
     public override MaterialIconKind Glyph => MaterialIconKind.HandCoin;
 
     public AsyncCommand Pay { get; }
@@ -312,7 +312,6 @@ public sealed class CashierPage : PageViewModel
         await ChooseAsync(new PayerRow(e.Id, created.StudentId, StudentName, string.Empty));
         Receipt = created;
         Raise(nameof(ReceiptText));
-        Shell.Notify($"Reçu N° {created.Number} enregistré.");
     }
 
     private void Reset()

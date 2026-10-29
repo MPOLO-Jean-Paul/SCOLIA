@@ -353,7 +353,7 @@
       <ContentControl Content="{Binding Backstage}" IsVisible="{Binding BackstageOpen}" Background="{DynamicResource BgBrush}" />
 
       <!-- Notification discrète, en bas -->
-      <Border x:Name="Snackbar" Classes="snackbar" HorizontalAlignment="Left" VerticalAlignment="Bottom" IsVisible="{Binding HasNotice}">
+      <Border x:Name="Snackbar" Classes="snackbar" HorizontalAlignment="Left" VerticalAlignment="Bottom" IsVisible="{Binding HasNotice}" IsHitTestVisible="False">
         <TextBlock Text="{Binding Notice}" Foreground="{DynamicResource BgBrush}" TextWrapping="Wrap" />
       </Border>
 

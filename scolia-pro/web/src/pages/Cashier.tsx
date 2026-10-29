@@ -6,7 +6,7 @@ import { api, ApiError, openDocument } from '../api/client';
 import type { Account, Paged, PaymentPreview, Receipt, StudentListItem } from '../api/types';
 import { date, money, newKey, today } from '../lib/format';
 import { useSession } from '../lib/session';
-import { Badge, Button, Card, Empty, ErrorAlert, Kpi, Loading, PageHead, Segmented, SectionTitle, TextField, statusTone, useDebounced, useToast } from '../components/ui';
+import { Badge, Button, Card, Empty, ErrorAlert, Kpi, Loading, PageHead, Segmented, SectionTitle, TextField, statusTone, useDebounced } from '../components/ui';
 
 const METHODS = [
   { value: 'Especes', label: 'Espèces' }, { value: 'MobileMoney', label: 'Mobile Money' }, { value: 'Banque', label: 'Banque' }, { value: 'Cheque', label: 'Chèque' },
@@ -83,7 +83,6 @@ function PaymentForm({ account, onDone }: { account: Account; onDone: (r: Receip
   const [error, setError] = useState<unknown>();
   const [idempotencyKey, setIdempotencyKey] = useState(newKey);
   const qc = useQueryClient();
-  const toast = useToast();
   // Un paiement se fait par mois complet : seules les mensualités de scolarité se cochent, à leur montant dû.
   const months = account.lines.filter((l) => l.remaining > 0 && l.kind === 'Mensualite');
   const chosen = months.filter((l) => selected.includes(l.feeItemId));
@@ -113,7 +112,6 @@ function PaymentForm({ account, onDone }: { account: Account; onDone: (r: Receip
         payerPhone: payerPhone || null, note: note.trim() || 'OK', feeItemIds: selected, idempotencyKey,
       });
       await Promise.all([qc.invalidateQueries({ queryKey: ['account'] }), qc.invalidateQueries({ queryKey: ['dashboard'] }), qc.invalidateQueries({ queryKey: ['students'] })]);
-      toast(`Reçu ${receipt.number} enregistré.`, 'success');
       onDone(receipt);
     } catch (e) { setError(e); } finally { submitting.current = false; setBusy(false); }
   };

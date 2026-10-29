@@ -254,6 +254,7 @@ public sealed class ShellViewModel : Observable
             if (!Set(ref current, value)) return;
             previous?.Left();
             value?.Entered();
+            Notice = null;
             RemoteWaiting = false;
             Raise(nameof(HasPage));
             Raise(nameof(DesktopPage));

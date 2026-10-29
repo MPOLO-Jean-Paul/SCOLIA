@@ -129,15 +129,7 @@
       <TransitioningContentControl x:Name="PhoneHost" Content="{Binding PhonePage}" Margin="12,12,12,20" />
     </ScrollViewer>
     <ProgressBar Grid.Row="1" IsIndeterminate="True" IsVisible="{Binding PhonePage.Busy}" VerticalAlignment="Top" Height="2" MinHeight="2" />
-    <!-- L'activité flotte au-dessus du contenu : elle ne change jamais la hauteur de la page. -->
-    <Border Grid.Row="1" x:Name="ActivityTicker" Classes="liveticker" IsVisible="{Binding Sync.HasTicker}"
-            VerticalAlignment="Bottom" HorizontalAlignment="Stretch" IsHitTestVisible="False"
-            Background="{DynamicResource GroupBrush}" CornerRadius="10" Padding="10,8" Margin="12,4,12,8">
-      <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
-        <Border Classes="livedot" VerticalAlignment="Center" />
-        <TextBlock Grid.Column="1" Text="{Binding Sync.Ticker}" FontSize="{DynamicResource FsSmall}" TextTrimming="CharacterEllipsis" />
-      </Grid>
-    </Border>
+    <!-- L'activité en arrière-plan est signalée par le point de présence dans l'en-tête. -->
     <!-- Des données ont changé ailleurs pendant une saisie : rien ne bouge tant qu'on ne le demande pas -->
     <Button Grid.Row="1" Classes="remotechip" Command="{Binding ApplyRemoteCommand}" IsVisible="{Binding RemoteWaiting}" VerticalAlignment="Top" HorizontalAlignment="Center" Margin="0,10,0,0">
       <StackPanel Orientation="Horizontal" Spacing="6">
