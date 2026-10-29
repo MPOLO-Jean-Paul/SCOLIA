@@ -245,6 +245,7 @@ public sealed class Preferences : Observable
         r["RowHeight"] = (compact ? 28.0 : 36.0) * k;
         r["CtlHeight"] = (compact ? 26.0 : 30.0) * k;
         r["GridLines"] = grid ? Avalonia.Controls.DataGridGridLinesVisibility.Horizontal : Avalonia.Controls.DataGridGridLinesVisibility.None;
+        r["TextControlPlaceholderOpacity"] = 1d;
         ThemeBrush.Refresh();
     }
 

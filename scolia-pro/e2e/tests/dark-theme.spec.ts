@@ -65,7 +65,7 @@ for (const width of [360, 1280]) {
       await dialog.getByRole('button', { name: theme, exact: true }).click();
       await expect(page.locator('html')).toHaveAttribute('data-theme', theme === 'Sombre' ? 'dark' : 'light');
       for (const selector of ['h2', '.label', '.segmented button.on', '.btn.primary'])
-        expect(await contrast(dialog.locator(selector).first()), `${theme} ${selector}`).toBeGreaterThanOrEqual(4.5);
+        await expect.poll(() => contrast(dialog.locator(selector).first()), { message: `${theme} ${selector}` }).toBeGreaterThanOrEqual(4.5);
     }
   });
 }

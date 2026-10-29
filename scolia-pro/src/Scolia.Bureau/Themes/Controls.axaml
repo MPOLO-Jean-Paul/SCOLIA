@@ -175,6 +175,10 @@
     <Setter Property="CornerRadius" Value="{StaticResource RadiusField}" />
     <Setter Property="Background" Value="{DynamicResource FieldBrush}" />
     <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+    <Setter Property="PlaceholderForeground" Value="{DynamicResource MutedBrush}" />
+    <Setter Property="CaretBrush" Value="{DynamicResource TextBrush}" />
+    <Setter Property="SelectionBrush" Value="{DynamicResource AccentBrush}" />
+    <Setter Property="SelectionForegroundBrush" Value="{DynamicResource OnAccentBrush}" />
     <Setter Property="BorderBrush" Value="{DynamicResource LineStrongBrush}" />
     <Setter Property="BorderThickness" Value="1" />
     <Setter Property="Padding" Value="10,6" />
@@ -862,8 +866,11 @@
   <Style Selector="Border.appheader TextBlock.muted">
     <Setter Property="Foreground" Value="{DynamicResource HeaderMutedBrush}" />
   </Style>
-  <Style Selector="Border.appheader Button.primary TextBlock, Border.appheader Button.danger TextBlock">
+  <Style Selector="Border.appheader Button.primary TextBlock">
     <Setter Property="Foreground" Value="{DynamicResource OnAccentBrush}" />
+  </Style>
+  <Style Selector="Border.appheader Button.danger TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource OnDangerBrush}" />
   </Style>
   <Style Selector="Border.appheader Button.toolicon">
     <Setter Property="Foreground" Value="{DynamicResource HeaderTextBrush}" />
