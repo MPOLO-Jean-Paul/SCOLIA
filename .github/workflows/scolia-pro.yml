@@ -53,7 +53,9 @@ jobs:
           npm run build
 
       - name: Serveur (compilation stricte, avertissements bloquants)
-        run: dotnet build Scolia.sln -c Release
+        run: |
+          dotnet build Scolia.sln -c Release
+          dotnet build tests/Scolia.Bureau.Captures -c Release
 
       - name: Tests du domaine et de l'API
         run: dotnet test Scolia.sln -c Release --no-build --logger "trx;LogFileName=resultats.trx"
