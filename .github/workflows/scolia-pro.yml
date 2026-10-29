@@ -60,7 +60,7 @@ jobs:
       - name: Tests du domaine et de l'API
         run: dotnet test Scolia.sln -c Release --no-build --logger "trx;LogFileName=resultats.trx"
 
-      - name: Interfaces natives mobiles (petits écrans, clavier, bienvenue et actions)
+      - name: Interfaces natives mobiles (paiements, menus, actualisation, petits écrans et clavier)
         env:
           SCOLIA_MOBILE: '1'
           SCOLIA_ASTUCES: '0'
@@ -74,7 +74,7 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
-      - name: Interfaces natives bureau (tailles, texte agrandi, dialogues et transitions)
+      - name: Interfaces natives bureau (paiements, tailles, texte agrandi et dialogues)
         env:
           SCOLIA_MOBILE: '0'
           SCOLIA_ASTUCES: '0'

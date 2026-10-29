@@ -25,7 +25,8 @@
       <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
     </Style>
   </UserControl.Styles>
-  <Grid ColumnDefinitions="2*,3*" infra:Adaptive.StackBelow="760">
+  <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+  <Grid ColumnDefinitions="2*,3*" infra:Adaptive.StackBelow="1000">
     <!-- Gauche : recherche de l'apprenant, puis saisie du versement -->
     <StackPanel Grid.Column="0" Spacing="12" Margin="0,0,16,0">
       <Border Classes="card">
@@ -36,23 +37,23 @@
             <ListBox.ItemTemplate>
               <DataTemplate>
                 <StackPanel Margin="4,4">
-                  <TextBlock Text="{Binding Label}" FontWeight="SemiBold" />
-                  <TextBlock Text="{Binding Detail}" Classes="muted" />
+                  <TextBlock Text="{Binding Label}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                  <TextBlock Text="{Binding Detail}" Classes="muted" TextWrapping="Wrap" />
                 </StackPanel>
               </DataTemplate>
             </ListBox.ItemTemplate>
           </ListBox>
           <StackPanel IsVisible="{Binding HasStudent}" Spacing="2" Margin="0,8,0,0">
-            <TextBlock Text="{Binding StudentName}" FontWeight="SemiBold" FontSize="{DynamicResource FsHeading}" />
-            <TextBlock Text="{Binding StudentInfo}" Classes="muted" />
-            <Grid ColumnDefinitions="*,*" Margin="0,8,0,0">
+            <TextBlock Text="{Binding StudentName}" FontWeight="SemiBold" FontSize="{DynamicResource FsHeading}" TextWrapping="Wrap" />
+            <TextBlock Text="{Binding StudentInfo}" Classes="muted" TextWrapping="Wrap" />
+            <Grid ColumnDefinitions="*,*" Margin="0,8,0,0" infra:Adaptive.StackBelow="360">
               <StackPanel>
                 <TextBlock Text="Solde à payer" Classes="caption" />
-                <TextBlock Text="{Binding Balance}" Classes="kpi" />
+                <TextBlock Text="{Binding Balance}" Classes="kpi" TextWrapping="Wrap" />
               </StackPanel>
               <StackPanel Grid.Column="1">
                 <TextBlock Text="Reste exigible" Classes="caption" />
-                <TextBlock Text="{Binding Overdue}" Classes="kpi" Foreground="{Binding OverdueBrush}" />
+                <TextBlock Text="{Binding Overdue}" Classes="kpi" Foreground="{Binding OverdueBrush}" TextWrapping="Wrap" />
               </StackPanel>
             </Grid>
           </StackPanel>
@@ -81,20 +82,20 @@
             <ItemsControl ItemsSource="{Binding Months}">
               <ItemsControl.ItemTemplate>
                 <DataTemplate>
-                  <Grid ColumnDefinitions="Auto,*,Auto" Margin="0,3">
-                    <CheckBox IsChecked="{Binding IsSelected}" />
-                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
-                      <TextBlock Text="{Binding Label}" VerticalAlignment="Center" />
+                  <Grid ColumnDefinitions="Auto,2*,*" Margin="0,3" ColumnSpacing="6">
+                    <CheckBox IsChecked="{Binding IsSelected}" MinWidth="44" MinHeight="44" />
+                    <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                      <TextBlock Text="{Binding Label}" TextWrapping="Wrap" />
                       <TextBlock Text="en retard" IsVisible="{Binding Overdue}" Foreground="{DynamicResource ToneRed}" FontSize="{DynamicResource FsSmall}" VerticalAlignment="Center" />
                     </StackPanel>
-                    <TextBlock Grid.Column="2" Text="{Binding AmountText}" FontWeight="SemiBold" VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="2" Text="{Binding AmountText}" FontWeight="SemiBold" VerticalAlignment="Center" TextWrapping="Wrap" TextAlignment="Right" />
                   </Grid>
                 </DataTemplate>
               </ItemsControl.ItemTemplate>
             </ItemsControl>
             <TextBlock Text="{Binding TotalCaption}" Classes="muted" />
           </StackPanel>
-          <Grid ColumnDefinitions="*,*,*" RowDefinitions="Auto,Auto" infra:Adaptive.StackBelow="420">
+          <Grid ColumnDefinitions="*,*,*" RowDefinitions="Auto,Auto" infra:Adaptive.StackBelow="700">
             <StackPanel Grid.Column="0" Margin="0,0,10,0">
               <TextBlock Text="Total à encaisser" Classes="caption" />
               <TextBlock Text="{Binding Total}" Classes="kpi" />
@@ -148,7 +149,7 @@
         <StackPanel Spacing="8">
           <Grid ColumnDefinitions="*,Auto">
             <TextBlock Text="Répartition" Classes="heading" />
-            <TextBlock Grid.Column="1" Text="{Binding BalanceAfter}" Classes="muted" />
+            <TextBlock Grid.Column="1" Text="{Binding BalanceAfter}" Classes="muted" TextWrapping="Wrap" />
           </Grid>
           <DataGrid ItemsSource="{Binding Allocations}" AutoGenerateColumns="False" IsReadOnly="True" MaxHeight="260">
             <DataGrid.Columns>
@@ -157,7 +158,9 @@
               <DataGridTextColumn Header="Reste après" Binding="{Binding Remaining}" Width="Auto" MinWidth="140" />
             </DataGrid.Columns>
           </DataGrid>
-          <Button Classes="primary" Content="Encaisser et imprimer le reçu" Command="{Binding Pay}" IsEnabled="{Binding CanPay}" HorizontalAlignment="Right" Height="42" />
+          <Button x:Name="PayButton" Classes="primary" Command="{Binding Pay}" IsEnabled="{Binding CanPay}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" MinHeight="48" Padding="12,10">
+            <TextBlock Text="Encaisser et imprimer le reçu" TextWrapping="Wrap" TextAlignment="Center" />
+          </Button>
         </StackPanel>
       </Border>
 
@@ -166,13 +169,14 @@
         <StackPanel Spacing="10">
           <TextBlock Text="Versement enregistré" Classes="heading" Foreground="{DynamicResource ToneGreen}" />
           <TextBlock Text="{Binding ReceiptText}" TextWrapping="Wrap" />
-          <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,8,0,0">
-            <Button Classes="primary" Content="Imprimer le reçu" Command="{Binding PrintReceipt}" />
-            <Button Content="Voir le reçu" Command="{Binding OpenReceipt}" />
-            <Button Classes="ghost" Content="Nouveau versement" Command="{Binding NewPayment}" />
-          </StackPanel>
+          <Grid ColumnDefinitions="*,*,*" infra:Adaptive.StackBelow="700" Margin="0,8,0,0" ColumnSpacing="8">
+            <Button x:Name="PrintReceiptButton" Classes="primary" Command="{Binding PrintReceipt}" HorizontalAlignment="Stretch" MinHeight="48"><TextBlock Text="Imprimer le reçu" TextWrapping="Wrap" /></Button>
+            <Button x:Name="OpenReceiptButton" Grid.Column="1" Command="{Binding OpenReceipt}" HorizontalAlignment="Stretch" MinHeight="48"><TextBlock Text="Voir le reçu" TextWrapping="Wrap" /></Button>
+            <Button x:Name="NewPaymentButton" Grid.Column="2" Classes="ghost" Command="{Binding NewPayment}" HorizontalAlignment="Stretch" MinHeight="48"><TextBlock Text="Nouveau versement" TextWrapping="Wrap" /></Button>
+          </Grid>
         </StackPanel>
       </Border>
     </StackPanel>
   </Grid>
+  </ScrollViewer>
 </UserControl>

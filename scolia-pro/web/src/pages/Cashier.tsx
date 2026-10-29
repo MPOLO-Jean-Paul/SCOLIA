@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { CheckCircle2, HandCoins, MessageCircle, Printer, RotateCcw, Search } from 'lucide-react';
 import { api, ApiError, openDocument } from '../api/client';
@@ -31,7 +31,7 @@ export function CashierPage() {
       <PageHead title="Encaisser" subtitle="Rechercher un apprenant, saisir le versement et imprimer le reçu validé à la caisse." />
       <div className="grid mobile-split-grid cashier-grid">
         <Card title="01 · Rechercher un apprenant">
-          <div className="input-group"><Search /><input className="input" autoFocus placeholder="Matricule ou nom (2 caractères minimum)" value={search} onChange={(e) => setSearch(e.target.value)} /></div>
+          <div className="input-group"><Search /><input className="input" placeholder="Matricule ou nom (2 caractères minimum)" value={search} onChange={(e) => setSearch(e.target.value)} /></div>
           <div style={{ marginTop: 12 }}>
             {debounced.trim().length < 2 ? <p className="small muted">Saisissez au moins deux caractères. Astuce : F2 ouvre cet écran depuis n’importe où.</p>
               : !results.data ? <Loading rows={3} /> : results.data.items.length === 0 ? <Empty text="Aucun apprenant trouvé." /> : (
@@ -52,7 +52,7 @@ export function CashierPage() {
             : account.error ? <ErrorAlert error={account.error} />
             : !account.data ? <Card><Loading rows={5} /></Card>
             : receipt ? <ReceiptDone receipt={receipt} account={account.data} onNew={() => setReceipt(null)} onOther={() => { select(undefined); setSearch(''); }} />
-            : <PaymentForm account={account.data} onDone={setReceipt} />}
+            : <PaymentForm key={enrollmentId} account={account.data} onDone={setReceipt} />}
         </div>
       </div>
     </>
@@ -78,6 +78,8 @@ function PaymentForm({ account, onDone }: { account: Account; onDone: (r: Receip
   const [preview, setPreview] = useState<PaymentPreview | null>(null);
   const [previewError, setPreviewError] = useState<unknown>();
   const [busy, setBusy] = useState(false);
+  const submitting = useRef(false);
+  const [previewing, setPreviewing] = useState(false);
   const [error, setError] = useState<unknown>();
   const [idempotencyKey, setIdempotencyKey] = useState(newKey);
   const qc = useQueryClient();
@@ -91,15 +93,19 @@ function PaymentForm({ account, onDone }: { account: Account; onDone: (r: Receip
 
   useEffect(() => {
     setIdempotencyKey(newKey());
-    if (!hasSelection) { setPreview(null); setPreviewError(undefined); return; }
+    if (!hasSelection) { setPreview(null); setPreviewError(undefined); setPreviewing(false); return; }
+    setPreviewing(true);
     let cancelled = false;
     api.post<PaymentPreview>('/api/paiements/apercu', { enrollmentId: account.enrollmentId, amount: total, method, feeItemIds: selected })
       .then((p) => { if (!cancelled) { setPreview(p); setPreviewError(undefined); } })
-      .catch((e) => { if (!cancelled) { setPreview(null); setPreviewError(e); } });
+      .catch((e) => { if (!cancelled) { setPreview(null); setPreviewError(e); } })
+      .finally(() => { if (!cancelled) setPreviewing(false); });
     return () => { cancelled = true; };
   }, [total, account.enrollmentId, selected, method, hasSelection]);
 
   const submit = async () => {
+    if (submitting.current || previewing || !preview || !hasSelection) return;
+    submitting.current = true;
     setBusy(true); setError(undefined);
     try {
       const receipt = await api.post<Receipt>('/api/paiements', {
@@ -109,11 +115,11 @@ function PaymentForm({ account, onDone }: { account: Account; onDone: (r: Receip
       await Promise.all([qc.invalidateQueries({ queryKey: ['account'] }), qc.invalidateQueries({ queryKey: ['dashboard'] }), qc.invalidateQueries({ queryKey: ['students'] })]);
       toast(`Reçu ${receipt.number} enregistré.`, 'success');
       onDone(receipt);
-    } catch (e) { setError(e); } finally { setBusy(false); }
+    } catch (e) { setError(e); } finally { submitting.current = false; setBusy(false); }
   };
 
   return (
-    <div className="stack">
+    <div className="stack payment-form">
       <div className="card card-pad">
         <div className="row" style={{ justifyContent: 'space-between' }}>
           <div><div className="tag-code">{account.matricule}</div><h2 style={{ fontSize: 20 }}>{account.fullName}</h2><div className="small muted">{account.promotionCode} · {account.academicYear} · <Badge tone={statusTone(account.enrollmentStatus)}>{account.enrollmentStatus}</Badge></div></div>
@@ -133,8 +139,8 @@ function PaymentForm({ account, onDone }: { account: Account; onDone: (r: Receip
           {months.length === 0 ? <Empty text="Aucun mois à payer pour cet apprenant." /> : (
             <div className="row" style={{ flexWrap: 'wrap', gap: 8 }}>
               {months.map((l) => (
-                <label key={l.feeItemId} className="check badge" style={{ padding: '6px 10px', background: selected.includes(l.feeItemId) ? 'var(--blue-soft)' : undefined }}>
-                  <input type="checkbox" checked={selected.includes(l.feeItemId)} onChange={(e) => toggle(l.feeItemId, e.target.checked)} />
+                <label key={l.feeItemId} className="check badge payment-month" style={{ padding: '6px 10px', background: selected.includes(l.feeItemId) ? 'var(--blue-soft)' : undefined }}>
+                  <input type="checkbox" checked={selected.includes(l.feeItemId)} disabled={busy} onChange={(e) => toggle(l.feeItemId, e.target.checked)} />
                   {l.label} · <strong>{money(l.remaining)}</strong>{l.isOverdue && <span style={{ color: 'var(--red)', marginLeft: 6 }}>en retard</span>}
                 </label>
               ))}
@@ -143,7 +149,7 @@ function PaymentForm({ account, onDone }: { account: Account; onDone: (r: Receip
           <div className="small" style={{ marginTop: 8 }}>{hasSelection ? `${chosen.length} mois · total ${money(total)}` : 'Aucun mois choisi'}</div>
         </div>
         <div className="grid cols-2" style={{ marginTop: 14 }}>
-          <div className="field span-2"><span className="label">Mode de paiement</span><Segmented value={method} onChange={setMethod} items={METHODS} /></div>
+          <div className="field span-2"><span className="label">Mode de paiement</span><Segmented value={method} onChange={(value) => { if (!busy) setMethod(value); }} items={METHODS} /></div>
           <TextField label="Date du reçu" type="date" value={paidOn} max={today()} onChange={(e) => setPaidOn(e.target.value)} />
           <TextField label="Référence de la transaction" value={reference} readOnly help="Donnée par SCOLIA" />
           <TextField label="Visé par" value={session?.displayName ?? ''} readOnly help="La personne connectée" />
@@ -156,17 +162,17 @@ function PaymentForm({ account, onDone }: { account: Account; onDone: (r: Receip
         {!hasSelection ? <p className="muted small">Cochez les mois payés : la répartition s’affiche avant validation.</p>
           : previewError ? <ErrorAlert error={previewError} />
           : !preview ? <Loading rows={2} /> : (
-            <>
+            <div className="payment-allocation">
               <table className="data">
                 <thead><tr><th>Rubrique</th><th className="num">Affecté</th><th className="num">Reste après</th></tr></thead>
                 <tbody>{preview.allocations.map((a) => <tr key={a.feeItemId}><td>{a.label}</td><td className="num" style={{ fontWeight: 700 }}>{money(a.amount)}</td><td className="num">{a.remainingAfter === 0 ? <Badge tone="green">Soldé</Badge> : money(a.remainingAfter)}</td></tr>)}</tbody>
                 <tfoot><tr><td>Reste de l’année après ce reçu</td><td className="num">{money(total)}</td><td className="num">{money(preview.balanceAfter)}</td></tr></tfoot>
               </table>
-            </>
+            </div>
           )}
         <div style={{ marginTop: 14 }}><ErrorAlert error={error instanceof ApiError && error.status === 409 ? new Error(error.message) : error} /></div>
         <div className="row" style={{ justifyContent: 'flex-end', marginTop: 14 }}>
-          <Button variant="primary" className="payment-submit" icon={<HandCoins />} loading={busy} disabled={!preview || !hasSelection} onClick={submit}>Valider le paiement · {money(total)}</Button>
+          <Button variant="primary" className="payment-submit" icon={<HandCoins />} loading={busy} disabled={!preview || !hasSelection || previewing} onClick={submit}>Valider le paiement · {money(total)}</Button>
         </div>
       </div>
     </div>

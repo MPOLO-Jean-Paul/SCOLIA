@@ -108,16 +108,17 @@ public sealed class ShellViewModel : Observable
     }
 
     private bool MustWait => HasDialog || BackstageOpen || HasSheet || PhoneMenuOpen || IsTyping?.Invoke() == true
-        || Current is CashierPage { HasSelection: true } or BatchPaymentPage;
+        || Current?.Busy == true || running > 0
+        || Current is CashierPage { HasStudent: true } or BatchPaymentPage;
 
     /// <summary>Recharge l'écran sans notification ni perte de la ligne choisie, ni de la hauteur où il était lu.</summary>
     public async Task RefreshQuietlyAsync()
     {
         RemoteWaiting = false;
         if (Current is not { } page) return;
-        var restore = KeepScrollPosition?.Invoke();
         await page.RefreshQuietlyAsync();
-        restore?.Invoke();
+        // Le défilement reste sous le contrôle du doigt. Restaurer une ancienne position après
+        // un aller-retour réseau annulerait le défilement effectué pendant cette attente.
     }
 
     /// <summary>
@@ -668,8 +669,12 @@ public sealed class ShellViewModel : Observable
 
     private void Show(PageViewModel page)
     {
+        var previous = Current;
         Current = page;
-        RebuildRibbon();
+        // Le menu mobile est stable : changer de page ne reconstruit pas tous ses boutons.
+        // Seules les fiches ont des commandes contextuelles à remplacer.
+        if (!phone || previous is ReceiptDetailPage or StudentDetailPage || page is ReceiptDetailPage or StudentDetailPage)
+            RebuildRibbon(rebuildNavigation: false);
         Raise(nameof(CanGoBack));
         Raise(nameof(CanGoForward));
         // Une fois par session, sur la première liste qui en propose : où trouver les actions d'une ligne.
@@ -701,20 +706,20 @@ public sealed class ShellViewModel : Observable
     /// <summary>Exécute une action métier : les erreurs deviennent une notification, jamais un plantage.</summary>
     private int running;
     private bool workingDue;
+    private int workGeneration;
 
     /// <summary>
     /// Traitement en cours depuis plus d'un instant : un indicateur s'affiche au centre de la fenêtre, sauf pendant
     /// qu'une boîte de dialogue attend une saisie. Les actions brèves n'affichent rien, pour ne pas faire clignoter l'écran.
     /// </summary>
-    public bool Working => workingDue && running > 0 && !HasDialog;
+    public bool Working => workingDue && running > 0 && !HasDialog && Current?.Busy != true;
 
     /// <summary>Délai avant l'affichage de l'indicateur de traitement.</summary>
     private static readonly TimeSpan WorkingDelay = TimeSpan.FromMilliseconds(350);
 
     public async Task Run(Func<Task> work)
     {
-        running++;
-        _ = ShowWorkingLaterAsync();
+        if (running++ == 0) _ = ShowWorkingLaterAsync(++workGeneration);
         try { await work(); }
         // Opération gardée hors ligne : ce n'est pas une erreur, la notification vient de la file d'envoi.
         catch (OfflineQueuedException) { }
@@ -730,25 +735,35 @@ public sealed class ShellViewModel : Observable
                 Raise(nameof(Working));
             }
             // Nos propres écritures ne doivent pas déclencher un rechargement : on mémorise la révision après l'action.
-            if (IsLoggedIn && await ReadRevisionAsync() is { } latest) knownRevision = latest;
+            if (IsLoggedIn) _ = RememberRevisionAsync();
         }
     }
 
-    private async Task ShowWorkingLaterAsync()
+    private async Task ShowWorkingLaterAsync(int generation)
     {
         await Task.Delay(WorkingDelay);
-        if (running == 0) return;
+        if (running == 0 || generation != workGeneration) return;
         workingDue = true;
         Raise(nameof(Working));
+    }
+
+    private async Task RememberRevisionAsync()
+    {
+        if (await ReadRevisionAsync() is { } latest) knownRevision = Math.Max(knownRevision, latest);
     }
 
     /// <summary>
     /// Vérifie si une autre station a modifié les données. L'écran courant se recharge seul, sauf quand un
     /// formulaire ou l'encaissement est ouvert : on prévient alors l'utilisateur, pour ne pas effacer sa saisie.
     /// </summary>
+    private bool checkingRevision;
+
     private async Task CheckRevisionAsync()
     {
-        if (!IsLoggedIn) return;
+        if (!IsLoggedIn || checkingRevision) return;
+        checkingRevision = true;
+        try
+        {
         if (await ReadRevisionAsync() is not { } latest) return;
         if (knownRevision < 0 || latest == knownRevision)
         {
@@ -758,6 +773,8 @@ public sealed class ShellViewModel : Observable
         knownRevision = latest;
         if (MustWait) RemoteWaiting = true;
         else await RefreshQuietlyAsync();
+        }
+        finally { checkingRevision = false; }
     }
 
     private async Task<long?> ReadRevisionAsync()
@@ -835,7 +852,7 @@ public sealed class ShellViewModel : Observable
     }
 
     /// <summary>Reconstruit le ruban selon la session, la page et les préférences.</summary>
-    public void RebuildRibbon()
+    public void RebuildRibbon(bool rebuildNavigation = true)
     {
         var keep = SelectedTab?.Id ?? "accueil";
         Tabs.Clear();
@@ -844,9 +861,13 @@ public sealed class ShellViewModel : Observable
         Raise(nameof(SelectedGroups));
         RebuildShortcuts();
         // La barre latérale suit le rôle et le thème (ses couleurs sont lues au moment de la construction).
-        Navigation = IsLoggedIn ? Sidebar.Build(this) : [];
-        Raise(nameof(Navigation));
-        RebuildPhoneTabs();
+        if (rebuildNavigation)
+        {
+            Navigation = IsLoggedIn ? Sidebar.Build(this) : [];
+            Raise(nameof(Navigation));
+            RebuildPhoneTabs();
+        }
+        else RebuildPhoneTools();
         MarkNavigation();
     }
 

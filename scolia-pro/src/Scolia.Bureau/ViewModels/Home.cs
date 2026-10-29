@@ -73,30 +73,30 @@ public sealed class HomePage : PageViewModel
         Raise(nameof(Subtitle));
         Raise(nameof(Greeting));
         Raise(nameof(SchoolLine));
-        Receipts.Clear();
-        Kpis.Clear();
-        Tasks.Clear();
         if (!Shell.Can(Perm.ReportsRead)) { RaiseLists(); return; }
 
+        // Toutes les réponses sont prêtes avant de toucher aux cartes affichées.
         var d = await Shell.Api.GetAsync<DashboardDto>("api/rapports/tableau-de-bord");
-        foreach (var r in d.LatestReceipts.Take(6))
-            Receipts.Add(new RecentReceiptVm(r.Number, Student(r.Allocations), Format.Date(r.Date), Labels.Method(r.Method), Money(r.Amount), r.Status,
-                new AsyncCommand(() => Shell.Run(() => Shell.Open(() => new ReceiptDetailPage(Shell, r.Id))))));
-
-        AsyncCommand Go(Func<PageViewModel> page) => new(() => Shell.Run(() => Shell.Open(page)));
         TodayDto? t = null;
         try { t = await Shell.Api.GetAsync<TodayDto>("api/rapports/aujourdhui"); }
         catch (ApiException) { }
+        var nextReceipts = new List<RecentReceiptVm>();
+        var nextKpis = new List<HomeKpiVm>();
+        var nextTasks = new List<HomeTaskVm>();
+        foreach (var r in d.LatestReceipts.Take(6))
+            nextReceipts.Add(new RecentReceiptVm(r.Number, Student(r.Allocations), Format.Date(r.Date), Labels.Method(r.Method), Money(r.Amount), r.Status,
+                new AsyncCommand(() => Shell.Run(() => Shell.Open(() => new ReceiptDetailPage(Shell, r.Id))))));
 
-        Kpis.Add(new HomeKpiVm("Encaissé aujourd'hui", Money(t?.CollectedToday ?? d.CollectedToday),
+        AsyncCommand Go(Func<PageViewModel> page) => new(() => Shell.Run(() => Shell.Open(page)));
+        nextKpis.Add(new HomeKpiVm("Encaissé aujourd'hui", Money(t?.CollectedToday ?? d.CollectedToday),
             t is null ? "Journée en cours" : Format.Count(t.ReceiptsToday, "reçu émis", "reçus émis"), MaterialIconKind.HandCoin, ThemeBrush.Get("ToneGreen"),
             Go(() => new ReceiptsPage(Shell))));
-        Kpis.Add(new HomeKpiVm("Encaissé ce mois", Money(d.CollectedThisMonth), $"{Money(d.CollectedTotal)} depuis la rentrée", MaterialIconKind.CalendarMonth, ThemeBrush.Get("ToneBlue"),
+        nextKpis.Add(new HomeKpiVm("Encaissé ce mois", Money(d.CollectedThisMonth), $"{Money(d.CollectedTotal)} depuis la rentrée", MaterialIconKind.CalendarMonth, ThemeBrush.Get("ToneBlue"),
             Go(() => new DashboardPage(Shell))));
-        Kpis.Add(new HomeKpiVm("Apprenants actifs", d.ActiveStudents.ToString("N0", System.Globalization.CultureInfo.GetCultureInfo("fr-FR")),
+        nextKpis.Add(new HomeKpiVm("Apprenants actifs", d.ActiveStudents.ToString("N0", System.Globalization.CultureInfo.GetCultureInfo("fr-FR")),
             d.NewThisMonth > 0 ? $"{Format.Count(d.NewThisMonth, "inscrit", "inscrits")} ce mois" : "Aucune inscription ce mois", MaterialIconKind.AccountGroup, ThemeBrush.Get("ToneIndigo"),
             Go(() => new StudentsPage(Shell))));
-        Kpis.Add(new HomeKpiVm("Recouvrement", $"{d.RecoveryRate:0} %", d.StudentsLate > 0 ? $"{Format.Count(d.StudentsLate, "apprenant en retard", "apprenants en retard")}" : "Tout le monde est à jour",
+        nextKpis.Add(new HomeKpiVm("Recouvrement", $"{d.RecoveryRate:0} %", d.StudentsLate > 0 ? $"{Format.Count(d.StudentsLate, "apprenant en retard", "apprenants en retard")}" : "Tout le monde est à jour",
             MaterialIconKind.ChartBar, ThemeBrush.Get(d.StudentsLate > 0 ? "ToneOrange" : "ToneGreen"), Go(() => new DebtorsPage(Shell))));
 
         if (t is not null)
@@ -104,20 +104,23 @@ public sealed class HomePage : PageViewModel
             CashLine = t.CashClosed ? "Caisse arrêtée" : t.ReceiptsToday > 0 ? "Caisse à arrêter" : "Caisse ouverte";
             CashBrush = ThemeBrush.Get(t.CashClosed ? "ToneGreen" : t.ReceiptsToday > 0 ? "ToneOrange" : "ToneBlue");
             if (!t.CashClosed && t.ReceiptsToday > 0 && Shell.Can(Perm.CashClose))
-                Tasks.Add(new HomeTaskVm("Arrêter la caisse", $"{Format.Count(t.ReceiptsToday, "reçu", "reçus")} pour {Money(t.CollectedToday)}", MaterialIconKind.CashRegister,
+                nextTasks.Add(new HomeTaskVm("Arrêter la caisse", $"{Format.Count(t.ReceiptsToday, "reçu", "reçus")} pour {Money(t.CollectedToday)}", MaterialIconKind.CashRegister,
                     ThemeBrush.Get("ToneOrange"), Go(() => new CashPage(Shell))));
             if (t.AttendanceMarked == 0 && Shell.Can(Perm.AcademicsWrite))
-                Tasks.Add(new HomeTaskVm("Faire l'appel", "Aucun apprenant pointé aujourd'hui", MaterialIconKind.ClipboardCheck, ThemeBrush.Get("ToneTeal"),
+                nextTasks.Add(new HomeTaskVm("Faire l'appel", "Aucun apprenant pointé aujourd'hui", MaterialIconKind.ClipboardCheck, ThemeBrush.Get("ToneTeal"),
                     Go(() => new AttendancePage(Shell))));
             foreach (var a in t.Appointments.Take(3))
-                Tasks.Add(new HomeTaskVm($"Parent convoqué : {a.Name}", $"{a.Promotion} · {a.Detail}", MaterialIconKind.AccountClock, ThemeBrush.Get("ToneRed"),
+                nextTasks.Add(new HomeTaskVm($"Parent convoqué : {a.Name}", $"{a.Promotion} · {a.Detail}", MaterialIconKind.AccountClock, ThemeBrush.Get("ToneRed"),
                     Go(() => new StudentDetailPage(Shell, a.StudentId))));
             foreach (var b in t.Birthdays.Take(3))
-                Tasks.Add(new HomeTaskVm($"Anniversaire : {b.Name}", b.Promotion, MaterialIconKind.CakeVariant, ThemeBrush.Get("TonePink"),
+                nextTasks.Add(new HomeTaskVm($"Anniversaire : {b.Name}", b.Promotion, MaterialIconKind.CakeVariant, ThemeBrush.Get("TonePink"),
                     Go(() => new StudentDetailPage(Shell, b.StudentId))));
             TodayLine = Format.Count(t.ReceiptsToday, "reçu aujourd'hui", "reçus aujourd'hui");
         }
         else TodayLine = string.Empty;
+        CollectionSync.Apply(Receipts, nextReceipts, (a, b) => a with { Open = b.Open } == b);
+        CollectionSync.Apply(Kpis, nextKpis, (a, b) => a with { Open = b.Open } == b);
+        CollectionSync.Apply(Tasks, nextTasks);
         RaiseLists();
     }
 

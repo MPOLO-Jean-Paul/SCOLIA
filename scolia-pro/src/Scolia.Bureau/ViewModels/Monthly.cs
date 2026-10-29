@@ -101,16 +101,15 @@ public sealed class MonthlyPage : PageViewModel
             ready = true;
         }
 
-        Totals.Clear();
-        Totals.Add(new KpiVm("Payés", Format.Amount(d.PaidCount), $"sur {Format.Count(d.PaidCount + d.UnpaidCount + d.CoveredCount, "apprenant", "apprenants")}", ThemeBrush.Get("ToneGreen")));
-        Totals.Add(new KpiVm("Non payés", Format.Amount(d.UnpaidCount), Format.Count(d.LateCount, "en retard", "en retard"), ThemeBrush.Get("ToneOrange")));
-        Totals.Add(new KpiVm("Encaissé sur le mois", Money(d.Collected), $"Attendu : {Money(d.Expected)}", ThemeBrush.Get("ToneGreen")));
-        Totals.Add(new KpiVm("Reste à percevoir", Money(d.Remaining), d.CoveredCount > 0 ? Format.Count(d.CoveredCount, "pris en charge", "pris en charge") : "Aucun pris en charge", ThemeBrush.Get("ToneRed")));
+        CollectionSync.Apply(Totals, new[] {
+            new KpiVm("Payés", Format.Amount(d.PaidCount), $"sur {Format.Count(d.PaidCount + d.UnpaidCount + d.CoveredCount, "apprenant", "apprenants")}", ThemeBrush.Get("ToneGreen")),
+            new KpiVm("Non payés", Format.Amount(d.UnpaidCount), Format.Count(d.LateCount, "en retard", "en retard"), ThemeBrush.Get("ToneOrange")),
+            new KpiVm("Encaissé sur le mois", Money(d.Collected), $"Attendu : {Money(d.Expected)}", ThemeBrush.Get("ToneGreen")),
+            new KpiVm("Reste à percevoir", Money(d.Remaining), d.CoveredCount > 0 ? Format.Count(d.CoveredCount, "pris en charge", "pris en charge") : "Aucun pris en charge", ThemeBrush.Get("ToneRed")),
+        });
 
-        Items.Clear();
-        foreach (var r in d.Rows)
-            Items.Add(new MonthlyRowVm(r.StudentId, r.Matricule, r.FullName, r.PromotionCode, Money(r.Amount), Money(r.Paid), Money(r.Remaining),
-                r.Status, ThemeBrush.Get(Tone(r.Status)), r.ReceiptNumber ?? "—", r.PaidOn is { } on ? Format.Date(on) : "—", r.WhatsAppLink, r.SmsLink));
+        CollectionSync.Apply(Items, d.Rows.Select(r => new MonthlyRowVm(r.StudentId, r.Matricule, r.FullName, r.PromotionCode, Money(r.Amount), Money(r.Paid), Money(r.Remaining),
+                r.Status, ThemeBrush.Get(Tone(r.Status)), r.ReceiptNumber ?? "—", r.PaidOn is { } on ? Format.Date(on) : "—", r.WhatsAppLink, r.SmsLink)));
 
         var scope = Promotion is { Value.Length: > 0 } p ? p.Label : "toutes les promotions";
         subtitle = $"{d.Period} · {scope} · {Format.Count(d.Rows.Count, "apprenant affiché", "apprenants affichés")}";

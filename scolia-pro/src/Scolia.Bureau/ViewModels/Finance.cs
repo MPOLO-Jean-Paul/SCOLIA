@@ -89,10 +89,8 @@ public sealed class DebtorsPage : PageViewModel
         var rows = await Shell.Api.GetAsync<List<DebtorDto>>("api/rapports/debiteurs" + ScoliaClient.Query(
             ("promotionId", Promotion?.Value), ("minOverdueMonths", months), ("bucket", Bucket?.Value), ("search", Search.Trim())));
 
-        Items.Clear();
-        foreach (var d in rows)
-            Items.Add(new DebtorRowVm(d.StudentId, d.Matricule, d.FullName, d.PromotionCode, Money(d.Balance), Money(d.Overdue),
-                $"{d.OverdueCount}", d.Periods, d.AgingBucket, d.GuardianName ?? "—", d.GuardianPhone ?? "—", d.WhatsAppLink, d.SmsLink));
+        CollectionSync.Apply(Items, rows.Select(d => new DebtorRowVm(d.StudentId, d.Matricule, d.FullName, d.PromotionCode, Money(d.Balance), Money(d.Overdue),
+                $"{d.OverdueCount}", d.Periods, d.AgingBucket, d.GuardianName ?? "—", d.GuardianPhone ?? "—", d.WhatsAppLink, d.SmsLink)));
 
         subtitle = $"{Format.Count(rows.Count, "dossier en retard", "dossiers en retard")} · reste exigible {Money(rows.Sum(r => r.Overdue))}";
         Raise(nameof(Subtitle));

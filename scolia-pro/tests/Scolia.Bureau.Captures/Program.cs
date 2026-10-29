@@ -159,6 +159,169 @@ if (Preferences.MobileLayout) { window.MinWidth = 0; window.MinHeight = 0; windo
 window.Show();
 // Barre de titre de Windows dessinée par SCOLIA : simulée ici, la fenêtre sans écran n'a pas celle du système.
 if (!Preferences.MobileLayout && Environment.GetEnvironmentVariable("SCOLIA_BARRE_TITRE") != "0" && window.Content is Scolia.Bureau.Views.MainView main) main.ShowTitleBar(32);
+// Parcours de caisse autonome : aucune écriture sur les données d'un établissement.
+int VerifyPayments(LayoutServer fixture, bool mobile)
+{
+    var failures = 0;
+    void Check(string label, bool ok)
+    {
+        Console.WriteLine($"{(ok ? "OK  " : "ECHEC")} {label}");
+        if (!ok) failures++;
+    }
+    void Render()
+    {
+        for (var pass = 0; pass < 4; pass++)
+        {
+            Dispatcher.UIThread.RunJobs();
+            window.UpdateLayout();
+            AvaloniaHeadlessPlatform.ForceRenderTimerTick();
+        }
+    }
+    Rect Bounds(Control control) => control.TransformToVisual(window) is { } transform
+        ? new Rect(control.Bounds.Size).TransformToAABB(transform) : default;
+    Control Named(string name) => window.GetVisualDescendants().OfType<Control>().First(control => control.Name == name && control.IsEffectivelyVisible);
+    void Reveal(Control control)
+    {
+        foreach (var scroll in control.GetVisualAncestors().OfType<ScrollViewer>())
+        {
+            if (control.TransformToVisual(scroll) is not { } transform) continue;
+            var rect = new Rect(control.Bounds.Size).TransformToAABB(transform);
+            scroll.Offset += new Vector(0, rect.Top - Math.Max(0, (scroll.Viewport.Height - rect.Height) / 2));
+            Render();
+        }
+    }
+    bool Reachable(Control control)
+    {
+        var rect = Bounds(control);
+        if (!control.IsEffectivelyVisible || rect.Width <= 0 || rect.Left < -1 || rect.Right > window.Bounds.Width + 1
+            || rect.Top < -1 || rect.Bottom > window.Bounds.Height + 1) return false;
+        return control.GetVisualAncestors().OfType<ScrollViewer>().All(scroll =>
+        {
+            var viewport = Bounds(scroll);
+            return rect.Top >= viewport.Top - 1 && rect.Bottom <= viewport.Bottom + 1;
+        });
+    }
+    var originalAnimations = prefs.Animations;
+    prefs.Animations = false;
+    var minimum = ShellViewModel.MinimumOpening;
+    ShellViewModel.MinimumOpening = TimeSpan.Zero;
+    Wait(shell.OpenSessionAsync(new SessionDto(Guid.NewGuid(), "caisse-test", "Amina Kabeya", "Caissier", "Caisse",
+        [Scolia.Bureau.Ribbon.Perm.PaymentsCreate, Scolia.Bureau.Ribbon.Perm.StudentsRead, Scolia.Bureau.Ribbon.Perm.PaymentsRead], false,
+        "Institut de test", "Test", "2026-2027", "FC", "+243")));
+    ShellViewModel.MinimumOpening = minimum;
+    shell.Sync.Stop();
+    var studentId = Guid.NewGuid();
+    var enrollmentId = Guid.NewGuid();
+    var lines = Enumerable.Range(1, 12).Select(i => new AccountLineDto(Guid.NewGuid(),
+        $"Mensualité de septembre — période de rattrapage {i}", new DateOnly(2026, 1, 1), 125000, 0, 125000, 0, 125000,
+        "En retard", true, "Mensualite")).ToList();
+    var account = new AccountDto(studentId, enrollmentId, "SC-2026-00001", "Kabeya Mbuyi Amina du secrétariat des sciences de la santé",
+        "INF1", "2026-2027", "Actif", lines, 1500000, 0, 1500000, 0, 1500000, 1500000, 12, "90+", [], "0812345678", null);
+    foreach (var (width, height) in mobile ? new[] { (320, 300), (320, 568), (360, 640), (412, 892), (640, 360), (1024, 600) }
+        : new[] { (760, 520), (1024, 600), (1366, 768) })
+    {
+        window.Width = width;
+        window.Height = height;
+        foreach (var textScale in new[] { 1d, 1.3 })
+        {
+            prefs.Scale = textScale;
+            fixture.PaymentAccount = account;
+            Wait(shell.Open(() => new CashierPage(shell, studentId)));
+            Render();
+            var page = (CashierPage)shell.Current!;
+            Check($"Caisse {width}×{height} texte {textScale:P0} : apprenant en retard chargé", page.HasStudent && page.Months.Count == 12);
+            foreach (var month in page.Months.Take(6)) month.IsSelected = true;
+            Wait(page.PreviewAsync());
+            Render();
+            var cashier = window.GetVisualDescendants().OfType<CashierView>().First(view => view.IsEffectivelyVisible);
+            Check("Caisse : champs contenus en largeur", cashier.GetVisualDescendants().OfType<Control>()
+                .Where(control => control is TextBox or ComboBox or CalendarDatePicker or CheckBox).Where(control => control.IsEffectivelyVisible)
+                .All(control => Bounds(control).Left >= -1 && Bounds(control).Right <= window.Bounds.Width + 1));
+            var pay = Named("PayButton");
+            Reveal(pay);
+            Check("Caisse : bouton Encaisser entièrement accessible", Reachable(pay));
+            Check("Caisse : cible tactile et validation disponible", pay.Bounds.Height >= 44 && pay.IsEnabled && page.CanPay);
+            Save(window, $"paiement-{(mobile ? "mobile" : "bureau")}-{width}x{height}-{textScale:0.0}.png");
+            var before = fixture.PaymentCount;
+            var payment = page.PayAsync();
+            var duplicate = page.PayAsync();
+            Wait(Task.WhenAll(payment, duplicate));
+            Render();
+            Check("Caisse : un seul reçu malgré un double appui", fixture.PaymentCount == before + 1 && page.HasReceipt);
+            foreach (var name in new[] { "PrintReceiptButton", "OpenReceiptButton", "NewPaymentButton" })
+            {
+                var action = Named(name);
+                Reveal(action);
+                Check($"Caisse : {name} accessible après paiement", Reachable(action));
+            }
+        }
+    }
+    if (mobile)
+    {
+        window.Width = 360;
+        window.Height = 640;
+        prefs.Scale = 1;
+        fixture.PaymentAccount = account;
+        Wait(shell.Open(() => new StudentsPage(shell)));
+        Render();
+        var students = (StudentsPage)shell.Current!;
+        students.Selected = students.Items[5];
+        var scroll = (ScrollViewer)Named("PhoneScroll");
+        scroll.Offset = new Vector(0, 300);
+        Render();
+        var anchor = scroll.GetVisualDescendants().OfType<Border>().First(card => card.Classes.Contains("phonecard") && Bounds(card).Top >= Bounds(scroll).Top);
+        var anchorY = Bounds(anchor).Top;
+        var quietBusy = 0;
+        students.PropertyChanged += (_, e) => { if (e.PropertyName == nameof(PageViewModel.Busy)) quietBusy++; };
+        Wait(shell.RefreshQuietlyAsync());
+        Render();
+        Check("Actualisation : aucun indicateur bloquant", quietBusy == 0 && !shell.Working);
+        Check("Actualisation : la même carte et la sélection restent en place", anchor.GetVisualAncestors().Contains(window) && Math.Abs(Bounds(anchor).Top - anchorY) < 1
+            && students.Selected == students.Items[5]);
+        // Le lecteur continue de défiler pendant la réponse réseau.
+        fixture.HoldStudents = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var refresh = shell.RefreshQuietlyAsync();
+        scroll.Offset = new Vector(0, 500);
+        Render();
+        var readerOffset = scroll.Offset;
+        fixture.HoldStudents.SetResult();
+        Wait(refresh);
+        fixture.HoldStudents = null;
+        Render();
+        Check("Actualisation : le défilement pendant le réseau n'est jamais annulé", Math.Abs(scroll.Offset.Y - readerOffset.Y) < 1);
+        var viewportBefore = Bounds(scroll);
+        // Le même événement que celui reçu du serveur, avec un bandeau temporaire.
+        var show = typeof(SyncCenter).GetMethod("Show", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!;
+        show.Invoke(shell.Sync, ["Secrétariat · paiement enregistré sur un autre poste"]);
+        Render();
+        Check("Activité : le bandeau ne déplace ni la page ni sa fenêtre de lecture", Bounds(scroll) == viewportBefore && Math.Abs(scroll.Offset.Y - readerOffset.Y) < 1);
+        Save(window, "actualisation-mobile-stable.png");
+        var navigation = shell.Navigation;
+        var tabs = shell.PhoneTabs;
+        var tools = shell.PhoneTools;
+        shell.PhoneMenuOpen = true;
+        fixture.HoldStudents = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var target = navigation.SelectMany(group => group.Items).First(item => item.PageType == typeof(StudentsPage));
+        var response = System.Diagnostics.Stopwatch.StartNew();
+        target.Open.Execute(null);
+        Render();
+        Check("Menu : la page et le retour tactile précèdent la réponse réseau", !shell.PhoneMenuOpen && shell.Current is StudentsPage { Busy: true } && response.ElapsedMilliseconds < 500);
+        Wait(Task.Delay(450));
+        Check("Menu : un chargement de page ne bloque pas toute l'interface", !shell.Working);
+        shell.TogglePhoneMenu();
+        Check("Menu : reste utilisable pendant le chargement", shell.PhoneMenuOpen);
+        Check("Menu : les boutons existants sont réutilisés", ReferenceEquals(navigation, shell.Navigation) && ReferenceEquals(tabs, shell.PhoneTabs) && ReferenceEquals(tools, shell.PhoneTools));
+        fixture.HoldStudents.SetResult();
+        for (var i = 0; i < 100 && shell.Current?.Busy == true; i++) Wait(Task.Delay(10));
+        fixture.HoldStudents = null;
+        Check("Menu : le chargement se termine sans fermer le menu rouvert", shell.Current?.Busy == false && shell.PhoneMenuOpen);
+        shell.PhoneMenuOpen = false;
+    }
+    prefs.Scale = 1;
+    prefs.Animations = originalAnimations;
+    return failures;
+}
+
 // Vérification bureau autonome : redimensionnement, texte agrandi, dialogues et transitions.
 if (args.Length > 3 && args[3] == "bureau")
 {
@@ -274,6 +437,7 @@ if (args.Length > 3 && args[3] == "bureau")
     CheckDesktop("Dialogue : marges et hauteur respectées en petite fenêtre",
         dialogProbe.Width <= dialogWindow.Bounds.Width - 48 && dialogProbe.MaxHeight <= dialogWindow.Bounds.Height - 48);
     dialogWindow.Close();
+    desktopFailures += VerifyPayments(desktopServer, mobile: false);
     shell.Sync.Stop();
     var replacementPrefs = new Preferences { Animations = true, PageTransitions = true };
     var replacementShell = new ShellViewModel(new ScoliaClient(desktopServer.Address), replacementPrefs);
@@ -374,6 +538,7 @@ if (args.Length > 3 && args[3] == "fluidite")
     CheckLayout("Animations désactivées : aucune transition de page", phoneHost.PageTransition is null);
     prefs.Animations = true;
     CheckLayout("Animations activées : transition de page disponible", phoneHost.PageTransition is not null);
+    failures += VerifyPayments(layoutServer, mobile: true);
     shell.Sync.Stop();
     window.Close();
     Environment.ExitCode = failures == 0 ? 0 : 1;
@@ -1342,6 +1507,10 @@ sealed class LayoutServer : IDisposable
 {
     private readonly System.Net.HttpListener listener = new();
     public Uri Address { get; }
+    public AccountDto? PaymentAccount { get; set; }
+    public int PaymentCount { get; private set; }
+    public TaskCompletionSource? HoldStudents { get; set; }
+    public int StudentReads { get; private set; }
 
     public LayoutServer()
     {
@@ -1363,10 +1532,71 @@ sealed class LayoutServer : IDisposable
             System.Net.HttpListenerContext context;
             try { context = await listener.GetContextAsync(); }
             catch (Exception ex) when (ex is System.Net.HttpListenerException or ObjectDisposedException) { return; }
-            context.Response.StatusCode = 404;
-            context.Response.ContentLength64 = 0;
-            context.Response.Close();
+            _ = RespondAsync(context);
         }
+    }
+
+    private async Task RespondAsync(System.Net.HttpListenerContext context)
+    {
+        try
+        {
+            var path = context.Request.Url?.AbsolutePath;
+            object? result = null;
+            if (PaymentAccount is { } account)
+            {
+                if (path == $"/api/inscriptions/{account.EnrollmentId}/compte") result = account;
+                else if (path == $"/api/apprenants/{account.StudentId}")
+                    result = new StudentDto(account.StudentId, account.Matricule, "Kabeya", "Mbuyi", "Amina", "F", null, null,
+                        null, null, null, null, null, null, account.GuardianPhone, null, null, false,
+                        [new EnrollmentDto(account.EnrollmentId, Guid.NewGuid(), account.AcademicYear, Guid.NewGuid(), account.PromotionCode,
+                            "Première année", DateOnly.FromDateTime(DateTime.Today), "Actif", null, null, false)], 1);
+                else if (path == "/api/etablissement/promotions") result = Array.Empty<PromotionDto>();
+                else if (path == "/api/apprenants")
+                {
+                    StudentReads++;
+                    if (HoldStudents is { } hold) await hold.Task;
+                    result = new PagedResult<StudentListItem>(Enumerable.Range(1, 40).Select(i =>
+                        new StudentListItem(new Guid(i, 0, 0, new byte[8]), account.EnrollmentId, $"SC-{i:000}", "Kabeya", "Mbuyi", $"Amina {i}", "F",
+                            account.PromotionCode, "Actif", account.GuardianPhone, account.Balance, account.Overdue)).ToList(), 40, 1, 50, null);
+                }
+                else if (path == "/api/revision") result = new RevisionDto(1);
+                else if (path == "/api/direct/etat") result = new LiveSnapshotDto(1, [], []);
+                else if (path == "/api/direct/verrous") result = new LockDto("test", "Encaissement", "test", "Test", "Test", DateTime.UtcNow.AddMinutes(5));
+                else if (path is "/api/paiements/apercu" or "/api/paiements" && context.Request.HttpMethod == "POST")
+                {
+                    using var document = await System.Text.Json.JsonDocument.ParseAsync(context.Request.InputStream);
+                    var body = document.RootElement;
+                    var ids = body.GetProperty("feeItemIds").EnumerateArray().Select(id => id.GetGuid()).ToHashSet();
+                    var allocations = account.Lines.Where(line => ids.Contains(line.FeeItemId))
+                        .Select(line => new AllocationDto(line.FeeItemId, line.Label, line.Remaining, 0)).ToList();
+                    var total = allocations.Sum(line => line.Amount);
+                    if (path == "/api/paiements/apercu") result = new PaymentPreviewDto(allocations, account.Balance - total);
+                    else
+                    {
+                        PaymentCount++;
+                        result = new ReceiptDto(Guid.NewGuid(), $"TEST-{PaymentCount:000}", "verification-test", DateOnly.FromDateTime(DateTime.Today),
+                            account.StudentId, account.Matricule, account.FullName, account.PromotionCode, account.AcademicYear, total,
+                            "Especes", "TR-TEST", null, account.GuardianPhone, "OK", "Caisse de test", "Valide", null, null, null, allocations, DateTime.UtcNow);
+                        PaymentAccount = account with { Lines = account.Lines.Select(line => ids.Contains(line.FeeItemId)
+                            ? line with { Paid = line.Paid + line.Remaining, Remaining = 0 } : line).ToList(), Balance = account.Balance - total };
+                    }
+                }
+            }
+            if (result is null)
+            {
+                context.Response.StatusCode = 404;
+                context.Response.ContentLength64 = 0;
+            }
+            else
+            {
+                var bytes = System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(result, new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web));
+                context.Response.ContentType = "application/json";
+                context.Response.ContentLength64 = bytes.Length;
+                await context.Response.OutputStream.WriteAsync(bytes);
+            }
+        }
+        catch (Exception ex) when (ex is System.Net.HttpListenerException or ObjectDisposedException or IOException) { }
+        finally { context.Response.Close(); }
     }
 
     public void Dispose() => listener.Close();

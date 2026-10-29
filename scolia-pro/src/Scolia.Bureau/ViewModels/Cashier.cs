@@ -39,6 +39,10 @@ public sealed class CashierPage : PageViewModel
     private string balanceAfter = string.Empty;
     private string? hint;
     private ReceiptDto? receipt;
+    private int previewVersion;
+    private bool previewing;
+    private bool previewValid;
+    private bool paying;
 
     public CashierPage(ShellViewModel shell, Guid? studentId = null) : base(shell)
     {
@@ -114,6 +118,10 @@ public sealed class CashierPage : PageViewModel
         Raise(nameof(Total));
         Raise(nameof(TotalCaption));
         Raise(nameof(HasSelection));
+        previewing = true;
+        previewValid = false;
+        previewVersion++;
+        Raise(nameof(CanPay));
         previewTimer?.Stop();
         previewTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(150) };
         previewTimer.Tick += async (_, _) => { previewTimer?.Stop(); await Shell.Run(PreviewAsync); };
@@ -209,9 +217,20 @@ public sealed class CashierPage : PageViewModel
 
     public async Task PreviewAsync()
     {
-        Allocations.Clear();
-        BalanceAfter = string.Empty;
-        if (enrollment is not { } e || !HasSelection) return;
+        previewTimer?.Stop();
+        var version = ++previewVersion;
+        if (enrollment is not { } e || !HasSelection)
+        {
+            Allocations.Clear();
+            BalanceAfter = string.Empty;
+            previewing = false;
+            Raise(nameof(CanPay));
+            return;
+        }
+        previewing = true;
+        Raise(nameof(CanPay));
+        try
+        {
         PaymentPreviewDto preview;
         try
         {
@@ -221,16 +240,31 @@ public sealed class CashierPage : PageViewModel
         catch (OfflineException)
         {
             // Hors ligne, la répartition exacte est faite par le serveur à l'envoi : le total reste juste.
-            BalanceAfter = "calculé à l'envoi";
+            if (version == previewVersion) { BalanceAfter = "calculé à l'envoi"; previewValid = true; }
             return;
         }
-        foreach (var a in preview.Allocations)
-            Allocations.Add(new AllocationRowVm(a.Label, Money(a.Amount), Money(a.RemainingAfter)));
+        if (version != previewVersion) return;
+        CollectionSync.Apply(Allocations, preview.Allocations.Select(a => new AllocationRowVm(a.Label, Money(a.Amount), Money(a.RemainingAfter))));
         BalanceAfter = Money(preview.BalanceAfter);
+        previewValid = true;
+        }
+        finally
+        {
+            if (version == previewVersion) { previewing = false; Raise(nameof(CanPay)); }
+        }
     }
 
     /// <summary>Enregistre le versement : crée le reçu puis affiche sa confirmation.</summary>
     public async Task PayAsync()
+    {
+        if (paying || previewing) return;
+        paying = true;
+        Raise(nameof(CanPay));
+        try { await RecordPaymentAsync(); }
+        finally { paying = false; Raise(nameof(CanPay)); }
+    }
+
+    private async Task RecordPaymentAsync()
     {
         if (enrollment is not { } e)
         {
@@ -299,7 +333,7 @@ public sealed class CashierPage : PageViewModel
     /// <summary>Un autre poste encaisse déjà cet apprenant : l'encaissement est bloqué ici jusqu'à la fin du sien.</summary>
     public string? LockedBy { get => lockedBy; private set { if (Set(ref lockedBy, value)) { Raise(nameof(IsLocked)); Raise(nameof(CanPay)); } } }
     public bool IsLocked => lockedBy is not null;
-    public bool CanPay => !IsLocked;
+    public bool CanPay => HasStudent && HasSelection && !IsLocked && previewValid && !previewing && !paying;
 
     /// <summary>Réserve l'encaissement de cet apprenant pour ce poste, et l'annonce aux autres.</summary>
     private async Task ReserveAsync(Guid enrollmentId, string name)
@@ -435,10 +469,8 @@ public sealed class ReceiptsPage : PageViewModel
         }
 
         var page = await Shell.Api.GetAsync<PagedResult<ReceiptRowDto>>("api/paiements" + Filters(PageSize));
-        Items.Clear();
-        foreach (var r in page.Items)
-            Items.Add(new ReceiptRowVm(r.Id, r.Number, Format.Date(r.Date), r.Matricule, r.StudentName, r.PromotionCode, Money(r.Amount),
-                Labels.Method(r.Method), Labels.Status(r.Status), ThemeBrush.Get(r.Status == "Valide" ? "ToneGreen" : "ToneRed"), r.Cashier));
+        CollectionSync.Apply(Items, page.Items.Select(r => new ReceiptRowVm(r.Id, r.Number, Format.Date(r.Date), r.Matricule, r.StudentName, r.PromotionCode, Money(r.Amount),
+                Labels.Method(r.Method), Labels.Status(r.Status), ThemeBrush.Get(r.Status == "Valide" ? "ToneGreen" : "ToneRed"), r.Cashier)));
 
         var sum = page.Sum is { } s ? $" · total {Money(s)}" : string.Empty;
         subtitle = $"{Format.Count(page.Total, "reçu", "reçus")}{sum}" + (page.Total > PageSize ? $" · {PageSize} plus récents affichés" : string.Empty);

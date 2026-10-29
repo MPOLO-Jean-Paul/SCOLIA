@@ -103,15 +103,14 @@ public sealed class StudentsPage : PageViewModel
         pageCount = Math.Max(1, (int)Math.Ceiling(total / (double)PageSize));
         if (page > pageCount) page = pageCount;
 
-        Items.Clear();
-        foreach (var s in result.Items)
+        CollectionSync.Apply(Items, result.Items.Select(s =>
         {
             var late = s.Overdue > 0;
-            Items.Add(new StudentRow(
+            return new StudentRow(
                 s.Id, s.Matricule, Format.FullName(s.LastName, s.MiddleName, s.FirstName), Labels.Gender(s.Gender), s.PromotionCode ?? "—",
                 Labels.Status(s.Status ?? string.Empty), ThemeBrush.Get(Labels.Tone(s.Status ?? string.Empty) switch { "green" => "ToneGreen", "red" => "ToneRed", "orange" => "ToneOrange", _ => "ToneNeutral" }),
-                s.GuardianPhone ?? "—", Money(s.Balance), late ? Money(s.Overdue) : "À jour", ThemeBrush.Get(late ? "ToneRed" : "ToneGreen")));
-        }
+                s.GuardianPhone ?? "—", Money(s.Balance), late ? Money(s.Overdue) : "À jour", ThemeBrush.Get(late ? "ToneRed" : "ToneGreen"));
+        }));
 
         subtitle = Format.Count(total, "apprenant", "apprenants") + (Promotion is { Value.Length: > 0 } ? $" · {Promotion.Label}" : string.Empty);
         Raise(nameof(Subtitle));

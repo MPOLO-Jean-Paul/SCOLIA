@@ -40,6 +40,7 @@ public abstract class PageViewModel : Observable
     /// <summary>Nombre de boutons fixé par la largeur de la fenêtre ; -1 tant qu'elle ne l'a pas mesuré.</summary>
     private int visibleCount = -1;
     private bool busy;
+    private TaskCompletionSource? refreshCompletion;
 
     protected PageViewModel(ShellViewModel shell)
     {
@@ -121,7 +122,7 @@ public abstract class PageViewModel : Observable
         var selected = GetType().GetProperty("Selected");
         var before = selected?.GetValue(this);
         var key = Identity(before);
-        await RefreshAsync();
+        await RefreshCoreAsync(quiet: true);
         if (selected is not { CanWrite: true } || before is null || key is null) return;
         foreach (var property in GetType().GetProperties())
         {
@@ -146,14 +147,30 @@ public abstract class PageViewModel : Observable
     public virtual Task LoadAsync() => Task.CompletedTask;
 
     /// <summary>Recharge l'écran et signale les erreurs sans interrompre l'interface.</summary>
-    public async Task RefreshAsync()
+    public Task RefreshAsync() => RefreshCoreAsync(quiet: false);
+
+    private async Task RefreshCoreAsync(bool quiet)
     {
-        Busy = true;
+        // Les événements du direct et le contrôle périodique peuvent arriver ensemble.
+        // Un seul chargement à la fois ; une mise à jour silencieuse déjà couverte n'en relance pas un autre.
+        while (refreshCompletion is { } pending)
+        {
+            if (quiet) return;
+            await pending.Task;
+        }
+        var completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        refreshCompletion = completion;
+        if (!quiet) Busy = true;
         try { await LoadAsync(); }
-        catch (ApiException ex) { Shell.Notify(ex.Message); }
-        catch (HttpRequestException) { Shell.Notify("Le serveur SCOLIA ne répond pas."); }
-        catch (Exception ex) when (ex is not OperationCanceledException) { Shell.Notify($"Erreur inattendue : {ex.Message}"); }
-        finally { Busy = false; }
+        catch (ApiException ex) { if (!quiet) Shell.Notify(ex.Message); }
+        catch (HttpRequestException) { if (!quiet) Shell.Notify("Le serveur SCOLIA ne répond pas."); }
+        catch (Exception ex) when (ex is not OperationCanceledException) { if (!quiet) Shell.Notify($"Erreur inattendue : {ex.Message}"); }
+        finally
+        {
+            if (!quiet) Busy = false;
+            refreshCompletion = null;
+            completion.TrySetResult();
+        }
     }
 
     /// <summary>Imprime le document affiché, quand l'écran en a un.</summary>

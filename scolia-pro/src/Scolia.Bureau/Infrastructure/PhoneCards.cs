@@ -75,8 +75,7 @@ public static class PhoneCards
             var all = source?.Cast<object?>().ToList() ?? [];
             // La liste s'est vidée puis remplie (actualisation) : on garde au moins ce que l'utilisateur avait déjà affiché.
             var count = Math.Min(all.Count, Math.Max(limit, FirstCards));
-            if (shown.Count > count || !all.Take(shown.Count).SequenceEqual(shown)) shown.Clear();
-            for (var i = shown.Count; i < count; i++) shown.Add(all[i]);
+            CollectionSync.Apply(shown, all.Take(count));
             var left = all.Count - shown.Count;
             more.IsVisible = left > 0;
             more.Content = $"Afficher {Math.Min(left, MoreCards)} de plus · {Format.Count(left, "restant", "restants")}";
