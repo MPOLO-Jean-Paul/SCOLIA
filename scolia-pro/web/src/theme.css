@@ -18,6 +18,9 @@
   --blue-hover: #0842a0;
   --blue-soft: #d3e3fd;
   --blue-text: #0842a0;
+  --on-primary: #ffffff;
+  --on-success: #ffffff;
+  --purple-soft: #eaddff;
   --bg: #f8fafd;
   --surface: #ffffff;
   --surface-2: #f0f4f9;
@@ -52,9 +55,11 @@
 
   font-family: var(--font-ui);
   letter-spacing: 0.005em;
+  color-scheme: light;
 }
 
 :root[data-theme="dark"] {
+  color-scheme: dark;
   --logo-a: #5B8DEF;
   --logo-b: #22C55E;
   --navy: #e3e3e3;
@@ -64,6 +69,9 @@
   --blue-hover: #d3e3fd;
   --blue-soft: #0842a0;
   --blue-text: #d3e3fd;
+  --on-primary: #003062;
+  --on-success: #003916;
+  --purple-soft: #4a376e;
   --bg: #131314;
   --surface: #1e1f20;
   --surface-2: #282a2c;
@@ -71,7 +79,7 @@
   --border-strong: #5f6368;
   --text: #e3e3e3;
   --text-2: #c4c7c5;
-  --muted: #8e918f;
+  --muted: #adb2b0;
   --table-head: #282a2c;
   --table-head-text: #c4c7c5;
   --orange: #ffb77c;
@@ -111,14 +119,14 @@ h1, h2, h3, h4 { font-weight: 500; letter-spacing: 0; }
 .user-menu .user-chip:hover { background: var(--surface-2); }
 .user-menu .who-name { color: var(--text); }
 .user-menu .who small { color: var(--muted); }
-.user-menu .avatar { background: var(--blue); color: #fff; }
+.user-menu .avatar { background: var(--blue); color: var(--on-primary); }
 .user-dropdown { border-radius: 16px; box-shadow: var(--shadow-lg); border: none; background: var(--surface); }
 .user-dropdown .btn { border-radius: 999px; }
 
 /* ---------- Ruban : onglets soulignés, commandes sobres ---------- */
 .ribbon { background: var(--surface); border-bottom: 1px solid var(--border); }
 .ribbon-tabs { background: var(--surface); border-bottom: 1px solid var(--border); min-height: 40px; gap: 4px; padding: 0 12px; }
-.rb-file { height: 32px; margin: 4px 8px 4px 0; padding: 0 16px; border-radius: 999px; background: var(--blue); color: #fff; font-weight: 500; }
+.rb-file { height: 32px; margin: 4px 8px 4px 0; padding: 0 16px; border-radius: 999px; background: var(--blue); color: var(--on-primary); font-weight: 500; }
 .rb-file:hover { background: var(--blue-hover); }
 .rb-tab { height: 40px; margin: 0; padding: 0 14px; border: none; border-radius: 0; background: none; color: var(--muted); font-weight: 500; position: relative; }
 .rb-tab:hover { background: var(--surface-2); color: var(--text); }
@@ -183,7 +191,8 @@ h1, h2, h3, h4 { font-weight: 500; letter-spacing: 0; }
 .btn { height: 40px; padding: 0 20px; border-radius: 999px; font-weight: 500; letter-spacing: 0.01em; background: var(--surface-2); color: var(--blue-text); border: none; }
 .btn:hover { filter: none; background: var(--border); }
 .btn svg { width: 18px; height: 18px; }
-.btn.primary { background: var(--blue); color: #fff; box-shadow: none; }
+.btn.primary { background: var(--blue); color: var(--on-primary); box-shadow: none; }
+.btn.success { background: var(--green); color: var(--on-success); }
 .btn.primary:hover { background: var(--blue-hover); }
 .btn.ghost { background: transparent; color: var(--blue); border: none; }
 .btn.ghost:hover { background: var(--surface-2); }
@@ -219,6 +228,7 @@ table.data tfoot td { background: var(--surface-2); border-top: 1px solid var(--
 /* Pastilles : tonalité Material, sans bordure */
 .badge { border-radius: 999px; font-weight: 500; }
 .badge.gray { background: var(--surface-2); color: var(--muted); border: none; }
+.badge.purple { background: var(--purple-soft); color: var(--purple); }
 
 /* États vides */
 .empty-icon { background: var(--surface-2); color: var(--muted); }
@@ -261,7 +271,7 @@ table.data tfoot td { background: var(--surface-2); border-top: 1px solid var(--
 .bs-item.on svg, .bs-item svg { color: var(--blue); }
 .bs-item.danger, .bs-item.danger svg { color: var(--red); }
 .bs-card { border-radius: var(--radius); box-shadow: none; }
-.bs-back { background: var(--blue); }
+.bs-back { background: var(--blue); color: var(--on-primary); }
 
 /* ---------- Connexion ---------- */
 .auth { background: var(--bg); }
@@ -294,11 +304,7 @@ table.data tfoot td { background: var(--surface-2); border-top: 1px solid var(--
 .ribbon-body { min-height: calc(104px * var(--fs, 1)); }
 .rb-group-name { white-space: nowrap; }
 
-/* Contraste en thème sombre : texte foncé sur les surfaces de couleur claire. */
-:root[data-theme="dark"] .btn.primary,
-:root[data-theme="dark"] .rb-file,
-:root[data-theme="dark"] .user-menu .avatar,
-:root[data-theme="dark"] .bs-back { color: #003062; }
+/* Les textes des surfaces remplies utilisent le rôle --on-primary dans les deux thèmes. */
 
 /* ---------- Connexion : fond neutre, une zone centrée dimensionnée à son contenu ---------- */
 .signin-screen {
@@ -327,7 +333,7 @@ table.data tfoot td { background: var(--surface-2); border-top: 1px solid var(--
 .signin-icon { right: 50px; width: 34px; height: 34px; background: transparent; color: var(--muted); }
 .signin-icon:hover { background: var(--surface-2); color: var(--text); }
 .signin-icon svg { width: 18px; height: 18px; }
-.signin-go { right: 6px; width: 34px; height: 34px; background: var(--blue); color: #fff; }
+.signin-go { right: 6px; width: 34px; height: 34px; background: var(--blue); color: var(--on-primary); }
 .signin-go:hover { background: var(--blue-hover); }
 .signin-go:focus-visible { box-shadow: var(--focus); }
 .signin-go:disabled { cursor: progress; opacity: 0.8; }
@@ -487,3 +493,7 @@ table.data tfoot td { background: var(--surface-2); border-top: 1px solid var(--
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 }
+
+/* Champs natifs du navigateur : libellés secondaires, saisies et calendriers suivent le thème. */
+input::placeholder, textarea::placeholder { color: var(--muted); opacity: 1; }
+input[readonly], textarea[readonly] { color: var(--text-2); }

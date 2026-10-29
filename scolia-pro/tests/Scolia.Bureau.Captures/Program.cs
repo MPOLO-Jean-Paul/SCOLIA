@@ -352,6 +352,39 @@ int VerifyPayments(LayoutServer fixture, bool mobile)
     return failures;
 }
 
+// Contrastes autonomes : basculement de thème, six accents, contrôles réels et parcours de paiement.
+if (args.Length > 3 && args[3] == "contraste")
+{
+    using var contrastServer = new LayoutServer();
+    api.Retarget(contrastServer.Address);
+    var failures = ThemeChecks.Run(prefs, Preferences.MobileLayout, Save);
+    window.Width = Preferences.MobileLayout ? 360 : 1280;
+    window.Height = Preferences.MobileLayout ? 760 : 820;
+    Save(window, "contraste-connexion.png");
+    failures += VerifyPayments(contrastServer, Preferences.MobileLayout);
+    if (Preferences.MobileLayout)
+    {
+        shell.PhoneMenuOpen = true;
+        Save(window, "contraste-menu-mobile.png");
+        shell.PhoneMenuOpen = false;
+    }
+    Wait(shell.Open(() => new HomePage(shell)));
+    Save(window, "contraste-accueil.png");
+    shell.ShowTextSettings();
+    Save(window, "contraste-preferences.png");
+    shell.CloseDialog();
+    shell.ShowSearch();
+    Save(window, "contraste-recherche.png");
+    shell.CloseDialog();
+    shell.ShowAbout();
+    Save(window, "contraste-a-propos.png");
+    shell.CloseDialog();
+    shell.Sync.Stop();
+    window.Close();
+    Environment.ExitCode = failures == 0 ? 0 : 1;
+    return;
+}
+
 // Vérification bureau autonome : redimensionnement, texte agrandi, dialogues et transitions.
 if (args.Length > 3 && args[3] == "bureau")
 {

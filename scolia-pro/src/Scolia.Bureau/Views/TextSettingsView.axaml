@@ -18,11 +18,11 @@
     </Style>
     <Style Selector="Button.preset.selected">
       <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
-      <Setter Property="Foreground" Value="White" />
+      <Setter Property="Foreground" Value="{DynamicResource OnAccentBrush}" />
     </Style>
     <Style Selector="Button.preset.selected /template/ ContentPresenter">
       <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
-      <Setter Property="Foreground" Value="White" />
+      <Setter Property="Foreground" Value="{DynamicResource OnAccentBrush}" />
     </Style>
     <!-- Police : une ligne par police, son nom écrit dans sa police -->
     <Style Selector="Button.fontrow">

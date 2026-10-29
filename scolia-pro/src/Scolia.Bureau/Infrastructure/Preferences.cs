@@ -31,8 +31,8 @@ public sealed class Preferences : Observable
     /// <summary>Couleurs d'accent : boutons principaux, sélection, liens. Une teinte pour le clair, une pour le sombre.</summary>
     private static readonly (string Key, string Label, string Light, string Dark)[] AccentTable =
     [
-        ("bleu", "Bleu", "#007AFF", "#0A84FF"), ("indigo", "Indigo", "#5856D6", "#5E5CE6"), ("violet", "Violet", "#8E44AD", "#BF5AF2"),
-        ("vert", "Vert", "#248A3D", "#30D158"), ("orange", "Orange", "#C25E00", "#FF9F0A"), ("graphite", "Graphite", "#55555A", "#98989D"),
+        ("bleu", "Bleu", "#007AFF", "#78B9FF"), ("indigo", "Indigo", "#5856D6", "#B7B4FF"), ("violet", "Violet", "#8E44AD", "#D09BFF"),
+        ("vert", "Vert", "#248A3D", "#63E58A"), ("orange", "Orange", "#C25E00", "#FFB45E"), ("graphite", "Graphite", "#55555A", "#B8B8BE"),
     ];
 
     public static readonly IReadOnlyList<ChoiceItem> Accents = AccentTable.Select(a => new ChoiceItem(a.Key, a.Label)).ToList();
@@ -245,6 +245,7 @@ public sealed class Preferences : Observable
         r["RowHeight"] = (compact ? 28.0 : 36.0) * k;
         r["CtlHeight"] = (compact ? 26.0 : 30.0) * k;
         r["GridLines"] = grid ? Avalonia.Controls.DataGridGridLinesVisibility.Horizontal : Avalonia.Controls.DataGridGridLinesVisibility.None;
+        ThemeBrush.Refresh();
     }
 
     /// <summary>
@@ -263,11 +264,12 @@ public sealed class Preferences : Observable
         static Color Mix(Color a, Color b, double t) => Color.FromRgb(
             (byte)(a.R + (b.R - a.R) * t), (byte)(a.G + (b.G - a.G) * t), (byte)(a.B + (b.B - a.B) * t));
         var hover = dark ? Mix(color, Colors.White, 0.2) : Mix(color, Colors.Black, 0.15);
-        var soft = Mix(background, color, dark ? 0.3 : 0.15);
+        var soft = Mix(background, color, dark ? 0.16 : 0.15);
         return new Avalonia.Controls.ResourceDictionary
         {
             ["AccentBrush"] = new SolidColorBrush(color),
             ["AccentHoverBrush"] = new SolidColorBrush(hover),
+            ["OnAccentBrush"] = new SolidColorBrush(dark ? ThemeContrast.OnAccent(color, hover) : Colors.White),
             ["AccentSoftBrush"] = new SolidColorBrush(soft),
             ["AccentColor"] = color,
             ["SystemAccentColor"] = color,

@@ -30,7 +30,7 @@
                     <Grid ColumnDefinitions="Auto,*" Margin="14,10">
                       <Panel Margin="0,0,12,0" VerticalAlignment="Top">
                         <Border Width="38" Height="38" CornerRadius="19" Background="{DynamicResource AccentBrush}">
-                          <TextBlock Text="{Binding Initials}" Foreground="White" FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                          <TextBlock Text="{Binding Initials}" Foreground="{DynamicResource OnAccentBrush}" FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Center" />
                         </Border>
                         <Border Width="11" Height="11" CornerRadius="6" Background="{DynamicResource ToneGreen}" BorderBrush="{DynamicResource GroupBrush}" BorderThickness="2"
                                 HorizontalAlignment="Right" VerticalAlignment="Bottom" />

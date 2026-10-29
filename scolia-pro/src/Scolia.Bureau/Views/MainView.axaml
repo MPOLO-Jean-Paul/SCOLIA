@@ -250,7 +250,7 @@
             <Button Classes="accountchip" Click="OnAccountClick" ToolTip.Tip="Compte et poste">
               <StackPanel Orientation="Horizontal" Spacing="8">
                 <Border Width="26" Height="26" CornerRadius="13" Background="{DynamicResource AccentBrush}">
-                  <TextBlock Text="{Binding UserInitials}" FontSize="11" FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="White" />
+                  <TextBlock Text="{Binding UserInitials}" FontSize="11" FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{DynamicResource OnAccentBrush}" />
                 </Border>
                 <TextBlock Text="{Binding AccountName}" FontWeight="SemiBold" VerticalAlignment="Center" MaxWidth="140" TextTrimming="CharacterEllipsis" />
               </StackPanel>

@@ -88,6 +88,22 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
+      - name: Thème sombre natif (contrastes, six accents, changement de thème, mobile et bureau)
+        env:
+          SCOLIA_ASTUCES: '0'
+        run: |
+          for layout in 1 0; do
+            SCOLIA_MOBILE="$layout" dotnet run --no-build --project tests/Scolia.Bureau.Captures -c Release -- artifacts/contraste/$layout http://127.0.0.1:5293/ Scolia2026! contraste
+          done
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: SCOLIA_Pro_Theme_Sombre_Interfaces
+          path: scolia-pro/artifacts/contraste/
+          if-no-files-found: ignore
+          retention-days: 7
+
       - name: Migrations à jour avec le modèle
         run: |
           dotnet tool restore
