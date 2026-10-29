@@ -57,8 +57,8 @@ for (const viewport of [{ width: 320, height: 360 }, { width: 390, height: 640 }
     await pay.click();
     try {
       await expect.poll(() => posts).toBe(1);
-      await expect(pay).toBeDisabled();
-      await pay.evaluate((button: HTMLButtonElement) => button.click());
+      await expect(page.locator('.payment-submit')).toBeDisabled();
+      await page.locator('.payment-submit').evaluate((button: HTMLButtonElement) => button.click());
       expect(posts).toBe(1);
     } finally { release(); }
     await expect(page.getByRole('heading', { name: 'Paiement enregistré' })).toBeVisible();

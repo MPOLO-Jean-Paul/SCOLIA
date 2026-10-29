@@ -149,7 +149,8 @@ h1, h2, h3, h4 { font-weight: 500; letter-spacing: 0; }
 :root[data-tips="off"] .rb-tip { display: none; }
 
 /* ---------- Espace de travail ---------- */
-.app { background: var(--bg); }
+.app { background: var(--bg); grid-template-columns: minmax(0, 1fr); max-width: 100%; }
+.app > * { min-width: 0; }
 .content { background: var(--bg); }
 .page-head { border-bottom: none; padding-bottom: 8px; margin-bottom: 18px; align-items: flex-start; }
 .page-head h1 { font-size: calc(28px * var(--fs, 1)); font-weight: 500; letter-spacing: -0.01em; color: var(--text); }
@@ -368,7 +369,9 @@ table.data tfoot td { background: var(--surface-2); border-top: 1px solid var(--
 .settings-grid { grid-template-columns: minmax(0, 2fr) minmax(260px, 1fr); }
 .fee-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr) auto; align-items: end; }
 .payment-submit { height: auto; min-height: 46px; min-width: min(240px, 100%); max-width: 100%; padding-block: 10px; white-space: normal; }
-.payment-form { overflow-wrap: anywhere; }
+.payment-form, .payment-receipt { min-width: 0; max-width: 100%; overflow-wrap: anywhere; }
+.payment-form > *, .payment-form .row { min-width: 0; max-width: 100%; }
+.payment-receipt .btn { max-width: 100%; min-height: 44px; height: auto; padding-block: 10px; white-space: normal; }
 .payment-month { max-width: 100%; min-height: 44px; white-space: normal; flex-wrap: wrap; }
 .payment-month input { flex: none; }
 .payment-form .segmented { display: flex; flex-wrap: wrap; max-width: 100%; }

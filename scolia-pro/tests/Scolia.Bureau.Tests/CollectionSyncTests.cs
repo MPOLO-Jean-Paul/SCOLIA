@@ -50,14 +50,16 @@ public class CollectionSyncTests
     public async Task Une_commande_en_cours_ignore_un_second_appui()
     {
         var pending = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var finished = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var count = 0;
         var command = new AsyncCommand(async () => { count++; await pending.Task; });
+        command.CanExecuteChanged += (_, _) => { if (command.CanExecute(null)) finished.TrySetResult(); };
         command.Execute(null);
         command.Execute(null);
         Assert.Equal(1, count);
         Assert.False(command.CanExecute(null));
         pending.SetResult();
-        for (var i = 0; i < 100 && !command.CanExecute(null); i++) await Task.Delay(1);
+        await finished.Task.WaitAsync(TimeSpan.FromSeconds(5));
         Assert.True(command.CanExecute(null));
     }
 }

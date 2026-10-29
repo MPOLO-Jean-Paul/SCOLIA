@@ -231,22 +231,22 @@ public sealed class CashierPage : PageViewModel
         Raise(nameof(CanPay));
         try
         {
-        PaymentPreviewDto preview;
-        try
-        {
-            preview = await Shell.Api.SendAsync<PaymentPreviewDto>(HttpMethod.Post, "api/paiements/apercu",
-                new { enrollmentId = e.Id, amount = SelectedTotal, feeItemIds = SelectedIds(), method = Method?.Value });
-        }
-        catch (OfflineException)
-        {
-            // Hors ligne, la répartition exacte est faite par le serveur à l'envoi : le total reste juste.
-            if (version == previewVersion) { BalanceAfter = "calculé à l'envoi"; previewValid = true; }
-            return;
-        }
-        if (version != previewVersion) return;
-        CollectionSync.Apply(Allocations, preview.Allocations.Select(a => new AllocationRowVm(a.Label, Money(a.Amount), Money(a.RemainingAfter))));
-        BalanceAfter = Money(preview.BalanceAfter);
-        previewValid = true;
+            PaymentPreviewDto preview;
+            try
+            {
+                preview = await Shell.Api.SendAsync<PaymentPreviewDto>(HttpMethod.Post, "api/paiements/apercu",
+                    new { enrollmentId = e.Id, amount = SelectedTotal, feeItemIds = SelectedIds(), method = Method?.Value });
+            }
+            catch (OfflineException)
+            {
+                // Hors ligne, la répartition exacte est faite par le serveur à l'envoi : le total reste juste.
+                if (version == previewVersion) { BalanceAfter = "calculé à l'envoi"; previewValid = true; }
+                return;
+            }
+            if (version != previewVersion) return;
+            CollectionSync.Apply(Allocations, preview.Allocations.Select(a => new AllocationRowVm(a.Label, Money(a.Amount), Money(a.RemainingAfter))));
+            BalanceAfter = Money(preview.BalanceAfter);
+            previewValid = true;
         }
         finally
         {

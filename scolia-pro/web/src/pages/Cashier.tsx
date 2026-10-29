@@ -187,7 +187,7 @@ function ReceiptDone({ receipt, account, onNew, onOther }: { receipt: Receipt; a
   const country = session?.phoneCountryCode ?? '243';
   const wa = phone ? `https://wa.me/${phone.startsWith('0') ? country + phone.slice(1) : phone}?text=${text}` : undefined;
   return (
-    <div className="card card-pad" style={{ textAlign: 'center', padding: 36 }}>
+    <div className="card card-pad payment-receipt" style={{ textAlign: 'center' }}>
       <CheckCircle2 size={54} color="var(--green)" />
       <h2 style={{ marginTop: 10 }}>Paiement enregistré</h2>
       <p className="muted">Reçu <span className="tag-code">{receipt.number}</span> · {money(receipt.amount)} · {receipt.method}</p>

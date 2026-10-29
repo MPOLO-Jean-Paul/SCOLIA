@@ -124,6 +124,8 @@ public abstract class PageViewModel : Observable
         var key = Identity(before);
         await RefreshCoreAsync(quiet: true);
         if (selected is not { CanWrite: true } || before is null || key is null) return;
+        // Une autre ligne a été choisie pendant la requête : la décision du lecteur prime.
+        if (selected.GetValue(this) is { } now && !ReferenceEquals(now, before)) return;
         foreach (var property in GetType().GetProperties())
         {
             if (property.PropertyType == typeof(string) || !typeof(System.Collections.IEnumerable).IsAssignableFrom(property.PropertyType) || property.GetIndexParameters().Length > 0) continue;

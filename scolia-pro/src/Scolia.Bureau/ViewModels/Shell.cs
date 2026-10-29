@@ -112,13 +112,27 @@ public sealed class ShellViewModel : Observable
         || Current is CashierPage { HasStudent: true } or BatchPaymentPage;
 
     /// <summary>Recharge l'écran sans notification ni perte de la ligne choisie, ni de la hauteur où il était lu.</summary>
+    private bool refreshingQuietly;
+    private bool quietRefreshRequested;
+
     public async Task RefreshQuietlyAsync()
     {
-        RemoteWaiting = false;
-        if (Current is not { } page) return;
-        await page.RefreshQuietlyAsync();
-        // Le défilement reste sous le contrôle du doigt. Restaurer une ancienne position après
-        // un aller-retour réseau annulerait le défilement effectué pendant cette attente.
+        if (refreshingQuietly) { quietRefreshRequested = true; return; }
+        refreshingQuietly = true;
+        try
+        {
+            do
+            {
+                quietRefreshRequested = false;
+                RemoteWaiting = false;
+                if (Current is not { } page) return;
+                await page.RefreshQuietlyAsync();
+                // Une rafale d'événements du direct se regroupe en une seule lecture suivante.
+                if (quietRefreshRequested && MustWait) { RemoteWaiting = true; return; }
+            } while (quietRefreshRequested);
+            // Le défilement reste sous le contrôle du doigt : aucune ancienne position n'est réimposée.
+        }
+        finally { refreshingQuietly = false; }
     }
 
     /// <summary>
@@ -764,15 +778,16 @@ public sealed class ShellViewModel : Observable
         checkingRevision = true;
         try
         {
-        if (await ReadRevisionAsync() is not { } latest) return;
-        if (knownRevision < 0 || latest == knownRevision)
-        {
+            if (await ReadRevisionAsync() is not { } latest) return;
+            if (latest <= knownRevision) return;
+            if (knownRevision < 0)
+            {
+                knownRevision = latest;
+                return;
+            }
             knownRevision = latest;
-            return;
-        }
-        knownRevision = latest;
-        if (MustWait) RemoteWaiting = true;
-        else await RefreshQuietlyAsync();
+            if (MustWait) RemoteWaiting = true;
+            else await RefreshQuietlyAsync();
         }
         finally { checkingRevision = false; }
     }

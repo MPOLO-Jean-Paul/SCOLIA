@@ -59,9 +59,8 @@ void Save(Window window, string name)
     // Échelle facultative (SCOLIA_ECHELLE=3) : la même mise en page, dessinée avec trois fois plus de points,
     // comme sur un écran de téléphone à haute densité. Le texte reste net une fois agrandi dans une vidéo.
     var scale = double.TryParse(Environment.GetEnvironmentVariable("SCOLIA_ECHELLE"), System.Globalization.CultureInfo.InvariantCulture, out var e) && e > 1 ? e : 1;
-    Avalonia.Media.Imaging.Bitmap? frame;
-    if (scale > 1)
-    {
+    // Le rendu direct utilise l'état final de l'arbre visuel, même après plusieurs ouvertures de session.
+    // La capture du tampon de composition peut encore contenir une image de transition sur le moteur headless.
         var sharp = new Avalonia.Media.Imaging.RenderTargetBitmap(
             new PixelSize((int)Math.Round(window.Bounds.Width * scale), (int)Math.Round(window.Bounds.Height * scale)), new Vector(96 * scale, 96 * scale));
         // Le rendu à haute densité dessine trois fois trop grand le contenu d'un cadre à ombre portée (fenêtres, feuilles,
@@ -74,13 +73,23 @@ void Save(Window window, string name)
         sharp.Render(window);
         foreach (var (v, rt) in neutral) v.RenderTransform = rt;
         foreach (var (b, sh) in shadowed) b.BoxShadow = sh;
-        frame = sharp;
+    using var frame = sharp;
+    var stride = frame.PixelSize.Width * 4;
+    var size = stride * frame.PixelSize.Height;
+    var pixels = System.Runtime.InteropServices.Marshal.AllocHGlobal(size);
+    try
+    {
+        frame.CopyPixels(new PixelRect(frame.PixelSize), pixels, size, stride);
+        var first = System.Runtime.InteropServices.Marshal.ReadInt32(pixels);
+        var varied = false;
+        for (var y = 0; y < frame.PixelSize.Height && !varied; y += 8)
+            for (var x = 0; x < frame.PixelSize.Width && !varied; x += 8)
+                varied = System.Runtime.InteropServices.Marshal.ReadInt32(pixels, y * stride + x * 4) != first;
+        if (!varied) throw new InvalidOperationException($"Capture uniforme ou blanche : {name}.");
     }
-    else frame = window.CaptureRenderedFrame();
-    if (frame is null) throw new InvalidOperationException($"Rendu indisponible pour {name}.");
+    finally { System.Runtime.InteropServices.Marshal.FreeHGlobal(pixels); }
     frame.Save(Path.Combine(output, name));
     Console.WriteLine($"capturé : {name} ({frame.PixelSize.Width}x{frame.PixelSize.Height})");
-    frame.Dispose();
     if (Preferences.MobileLayout) Overflow(window, name);
 }
 
@@ -229,6 +238,7 @@ int VerifyPayments(LayoutServer fixture, bool mobile)
             Wait(shell.Open(() => new CashierPage(shell, studentId)));
             Render();
             var page = (CashierPage)shell.Current!;
+            Check("Caisse : la coque reste opaque après un changement de session", Named("AppArea").Opacity >= 0.99);
             Check($"Caisse {width}×{height} texte {textScale:P0} : apprenant en retard chargé", page.HasStudent && page.Months.Count == 12);
             foreach (var month in page.Months.Take(6)) month.IsSelected = true;
             Wait(page.PreviewAsync());
@@ -280,7 +290,10 @@ int VerifyPayments(LayoutServer fixture, bool mobile)
             && students.Selected == students.Items[5]);
         // Le lecteur continue de défiler pendant la réponse réseau.
         fixture.HoldStudents = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var readsBefore = fixture.StudentReads;
         var refresh = shell.RefreshQuietlyAsync();
+        Wait(shell.RefreshQuietlyAsync());
+        Wait(shell.RefreshQuietlyAsync());
         scroll.Offset = new Vector(0, 500);
         Render();
         var readerOffset = scroll.Offset;
@@ -289,6 +302,7 @@ int VerifyPayments(LayoutServer fixture, bool mobile)
         fixture.HoldStudents = null;
         Render();
         Check("Actualisation : le défilement pendant le réseau n'est jamais annulé", Math.Abs(scroll.Offset.Y - readerOffset.Y) < 1);
+        Check("Actualisation : les événements simultanés sont regroupés sans perdre la dernière mise à jour", fixture.StudentReads == readsBefore + 2);
         var viewportBefore = Bounds(scroll);
         // Le même événement que celui reçu du serveur, avec un bandeau temporaire.
         var show = typeof(SyncCenter).GetMethod("Show", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!;
