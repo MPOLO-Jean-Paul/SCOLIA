@@ -121,6 +121,10 @@
   <Style Selector="Button.primary:pointerover">
     <Setter Property="Background" Value="{DynamicResource AccentHoverBrush}" />
   </Style>
+  <Style Selector="Button.primary:pointerover /template/ ContentPresenter#PART_ContentPresenter, Button.primary:pressed /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource AccentHoverBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource AccentHoverBrush}" />
+  </Style>
   <!-- Bouton plein : le libellé et l'icône composés restent blancs sur la couleur -->
   <Style Selector="Button.primary TextBlock, Button.danger TextBlock">
     <Setter Property="Foreground" Value="{DynamicResource OnAccentBrush}" />

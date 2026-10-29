@@ -251,6 +251,11 @@ int VerifyPayments(LayoutServer fixture, bool mobile)
             Reveal(pay);
             Check("Caisse : bouton Encaisser entièrement accessible", Reachable(pay));
             Check("Caisse : cible tactile et validation disponible", pay.Bounds.Height >= 44 && pay.IsEnabled && page.CanPay);
+            window.MouseMove(Bounds(pay).Center);
+            Render();
+            var presenter = pay.GetVisualDescendants().OfType<Avalonia.Controls.Presenters.ContentPresenter>().First(control => control.Name == "PART_ContentPresenter");
+            Check("Caisse : le bouton actif garde sa couleur au survol",
+                presenter.Background is Avalonia.Media.ISolidColorBrush actual && ThemeBrush.Get("AccentHoverBrush") is Avalonia.Media.ISolidColorBrush expected && actual.Color == expected.Color);
             Save(window, $"paiement-{(mobile ? "mobile" : "bureau")}-{width}x{height}-{textScale:0.0}.png");
             var before = fixture.PaymentCount;
             fixture.HoldPayment = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
