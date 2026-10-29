@@ -108,14 +108,14 @@
       </Grid>
       <!-- Hors ligne : le travail continue, et l'utilisateur sait ce qui attend d'être envoyé -->
       <Button Classes="livestrip offline" Command="{Binding NetworkCommand}" IsVisible="{Binding Sync.Offline}">
-        <Grid ColumnDefinitions="Auto,Auto,*" ColumnSpacing="8">
+        <Grid ColumnDefinitions="Auto,2*,3*" ColumnSpacing="8">
           <mi:MaterialIcon Kind="CloudOffOutline" Width="16" Height="16" />
           <TextBlock Grid.Column="1" Text="{Binding Sync.StatusText}" FontWeight="SemiBold" />
           <TextBlock Grid.Column="2" Text="· envoi au retour de l'ordinateur principal" />
         </Grid>
       </Button>
       <Button Classes="livestrip conflict" Command="{Binding NetworkCommand}" IsVisible="{Binding Sync.HasConflicts}">
-        <Grid ColumnDefinitions="Auto,Auto,*" ColumnSpacing="8">
+        <Grid ColumnDefinitions="Auto,2*,3*" ColumnSpacing="8">
           <mi:MaterialIcon Kind="AlertCircleOutline" Width="16" Height="16" />
           <TextBlock Grid.Column="1" Text="{Binding Sync.Conflicts}" FontWeight="SemiBold" />
           <TextBlock Grid.Column="2" Text="opération(s) refusée(s) : touchez pour décider" />
@@ -259,13 +259,13 @@
     <!-- Feuille d'actions : le voile referme la feuille -->
     <Grid Grid.ColumnSpan="2" Classes="sheethost" IsVisible="{Binding HasSheet}">
       <Border Background="{DynamicResource ScrimBrush}" PointerPressed="OnScrimPressed" />
-      <Border Classes="phonesheet">
+      <Border x:Name="ActionSheet" Classes="phonesheet">
         <Border.RenderTransform><TranslateTransform /></Border.RenderTransform>
-        <StackPanel x:Name="SheetPanel" Spacing="2">
+        <Grid x:Name="SheetPanel" RowDefinitions="Auto,Auto,Auto,*,Auto" RowSpacing="2">
           <Border Width="40" Height="5" CornerRadius="3" Background="{DynamicResource LineStrongBrush}" HorizontalAlignment="Center" Margin="0,0,0,8" />
-          <TextBlock Text="{Binding Sheet.Title}" FontWeight="SemiBold" TextWrapping="Wrap" Margin="12,0,12,0" />
-          <TextBlock Text="{Binding Sheet.Subtitle}" Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" Margin="12,0,12,6" IsVisible="{Binding Sheet.HasSubtitle}" />
-          <ScrollViewer MaxHeight="440" HorizontalScrollBarVisibility="Disabled">
+          <TextBlock Grid.Row="1" Text="{Binding Sheet.Title}" FontWeight="SemiBold" TextWrapping="Wrap" Margin="12,0,12,0" />
+          <TextBlock Grid.Row="2" Text="{Binding Sheet.Subtitle}" Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" Margin="12,0,12,6" IsVisible="{Binding Sheet.HasSubtitle}" />
+          <ScrollViewer Grid.Row="3" MaxHeight="440" HorizontalScrollBarVisibility="Disabled">
             <ItemsControl ItemsSource="{Binding Sheet.Items}">
               <ItemsControl.ItemTemplate>
                 <DataTemplate>
@@ -283,10 +283,10 @@
               </ItemsControl.ItemTemplate>
             </ItemsControl>
           </ScrollViewer>
-          <Button Classes="sheetitem" Click="OnSheetCancel" HorizontalContentAlignment="Center" Margin="0,6,0,0" Background="{DynamicResource GroupBrush}">
+          <Button x:Name="CancelSheetButton" Grid.Row="4" Classes="sheetitem" Click="OnSheetCancel" HorizontalContentAlignment="Center" Margin="0,6,0,0" Background="{DynamicResource GroupBrush}">
             <TextBlock Text="Annuler" FontWeight="SemiBold" />
           </Button>
-        </StackPanel>
+        </Grid>
       </Border>
     </Grid>
   </Grid>

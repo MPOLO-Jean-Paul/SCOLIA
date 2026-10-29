@@ -58,6 +58,34 @@ jobs:
       - name: Tests du domaine et de l'API
         run: dotnet test Scolia.sln -c Release --no-build --logger "trx;LogFileName=resultats.trx"
 
+      - name: Interfaces natives mobiles (petits écrans, clavier, bienvenue et actions)
+        env:
+          SCOLIA_MOBILE: '1'
+          SCOLIA_ASTUCES: '0'
+        run: dotnet run --no-build --project tests/Scolia.Bureau.Captures -c Release -- artifacts/fluidite http://127.0.0.1:5293/ Scolia2026! fluidite
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: SCOLIA_Pro_Mobile_Interfaces
+          path: scolia-pro/artifacts/fluidite/
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Interfaces natives bureau (tailles, texte agrandi, dialogues et transitions)
+        env:
+          SCOLIA_MOBILE: '0'
+          SCOLIA_ASTUCES: '0'
+        run: dotnet run --no-build --project tests/Scolia.Bureau.Captures -c Release -- artifacts/bureau http://127.0.0.1:5293/ Scolia2026! bureau
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: SCOLIA_Pro_Desktop_Interfaces
+          path: scolia-pro/artifacts/bureau/
+          if-no-files-found: ignore
+          retention-days: 7
+
       - name: Migrations à jour avec le modèle
         run: |
           dotnet tool restore

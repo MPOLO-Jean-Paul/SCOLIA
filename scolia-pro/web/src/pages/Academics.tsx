@@ -59,14 +59,16 @@ function CoursesPanel({ promotionId, request, onHandled }: { promotionId: string
   const assessments = useQuery({ queryKey: ['assessments', courseId], queryFn: () => api.get<Assessment[]>(`/api/scolarite/cours/${courseId}/evaluations`), enabled: !!courseId });
   useEffect(() => { setAssessmentId(assessments.data?.[0]?.id ?? ''); }, [assessments.data]);
   return (
-    <div className="grid" style={{ gridTemplateColumns: 'minmax(260px, 1fr) minmax(0, 2.2fr)', alignItems: 'start' }}>
+    <div className="grid mobile-split-grid academics-grid">
       <Card title="Cours" pad={false} actions={can(P.academicsWrite) && <Button size="small" icon={<Plus />} onClick={() => setEditingCourse('new')}>Cours</Button>}>
         {!courses.data ? <Loading /> : courses.data.length === 0 ? <Empty text="Aucun cours dans cette promotion." /> : (
+          <div className="table-wrap" style={{ border: 'none', borderRadius: 0 }}>
           <table className="data"><tbody>{courses.data.map((c) => (
             <tr key={c.id} className="clickable" onClick={() => setCourseId(c.id)} style={{ outline: c.id === courseId ? '2px solid var(--blue)' : undefined, outlineOffset: -2 }}>
               <td><div style={{ fontWeight: 700 }}>{c.name}</div><div className="small muted">N° {c.number} · coef. {num(c.coefficient)} · {num(c.hours)} h · cotation {num(c.maxScore)}{c.teacherName ? ` · ${c.teacherName}` : ' · non attribué'}</div></td>
               <td className="right">{can(P.academicsWrite) && <Button size="small" variant="ghost" onClick={(e) => { e.stopPropagation(); setEditingCourse(c); }}>Modifier</Button>}</td>
             </tr>))}</tbody></table>
+          </div>
         )}
       </Card>
       <div className="stack">
@@ -106,6 +108,7 @@ function GradeSheet({ assessmentId }: { assessmentId: string }) {
       <span className="small muted">{graded.length}/{rows.length} notée(s) · moyenne {num(average)}</span>
       {can(P.academicsWrite) && <Button variant="primary" size="small" icon={<Save />} loading={busy} onClick={save}>Enregistrer</Button>}
     </>}>
+      <div className="table-wrap" style={{ border: 'none', borderRadius: 0 }}>
       <table className="data">
         <thead><tr><th>Matricule</th><th>Apprenant</th><th style={{ width: 120 }}>Note</th><th>Appréciation</th></tr></thead>
         <tbody>{rows.map((r, i) => (
@@ -119,6 +122,7 @@ function GradeSheet({ assessmentId }: { assessmentId: string }) {
           </tr>))}
         </tbody>
       </table>
+      </div>
     </Card>
   );
 }
@@ -324,4 +328,3 @@ function IncidentDialog({ promotionId, onClose, onSaved }: { promotionId: string
     </Modal>
   );
 }
-

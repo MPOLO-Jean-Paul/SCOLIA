@@ -38,7 +38,7 @@ export function DashboardPage() {
             <Kpi icon={<AlertTriangle size={15} />} label="Reste exigible" value={money(d.overdue)} hint={`${d.studentsLate} apprenant(s) en retard`} tone="orange" />
             <Kpi icon={<CalendarClock size={15} />} label="Reste à percevoir (année)" value={money(d.outstanding)} hint={`Dépenses du mois : ${money(d.expensesThisMonth)}`} tone="purple" />
           </div>
-          <div className="grid" style={{ gridTemplateColumns: 'minmax(0,2fr) minmax(280px,1fr)' }}>
+          <div className="grid mobile-split-grid">
             <Card title="Recettes par mois" actions={<div className="legend"><span><i style={{ background: 'var(--blue)' }} />Encaissé</span><span><i style={{ background: 'var(--table-head)' }} />Attendu</span></div>}>
               <BarChart data={d.monthlyCollections} />
             </Card>
@@ -51,7 +51,7 @@ export function DashboardPage() {
               </div>
             </Card>
           </div>
-          <div className="grid" style={{ gridTemplateColumns: 'minmax(0,2fr) minmax(280px,1fr)' }}>
+          <div className="grid mobile-split-grid">
             <Card title="Situation par promotion" pad={false}>
               {d.promotions.length === 0 ? <Empty text="Aucune promotion configurée." /> : (
                 <div className="table-wrap" style={{ border: 'none', borderRadius: 0 }}>

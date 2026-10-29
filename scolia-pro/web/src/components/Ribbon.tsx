@@ -38,6 +38,7 @@ export function Ribbon({ tabs, activeId, onSelect, onFile, pressed, collapsed, o
     const typing = (target: EventTarget | null) =>
       target instanceof HTMLElement && (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName));
     const onKeyDown = (e: KeyboardEvent) => {
+      if (document.querySelector('[aria-modal="true"]')) { armed = false; return; }
       if (e.key === 'Alt') { armed = !e.repeat; return; }
       armed = false;
       if (e.key === 'Escape') {
@@ -63,6 +64,7 @@ export function Ribbon({ tabs, activeId, onSelect, onFile, pressed, collapsed, o
       setPhase('off');
     };
     const onKeyUp = (e: KeyboardEvent) => {
+      if (document.querySelector('[aria-modal="true"]')) { armed = false; return; }
       if (e.key === 'Alt' && armed) {
         armed = false;
         setPhase((p) => (p === 'off' ? 'tabs' : 'off'));

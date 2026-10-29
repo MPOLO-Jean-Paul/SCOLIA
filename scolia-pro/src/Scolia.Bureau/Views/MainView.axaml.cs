@@ -23,59 +23,134 @@ public partial class MainView : UserControl
     /// <summary>Durée du fondu entre deux pages : assez courte pour ne pas ralentir la saisie.</summary>
     private static readonly TimeSpan PageFade = TimeSpan.FromMilliseconds(180);
 
+    private ShellViewModel? subscribedShell;
+    private PageViewModel? observedPage;
+    private TopLevel? backHost;
+    private bool fitActionsQueued;
+    private bool fittingWindow;
+    private bool themeChanging;
+    private CancellationTokenSource? themeFadeCancellation;
+    private readonly Func<IReadOnlyList<string>, Task<PickedFile?>> pickFileHandler;
+    private readonly Func<string, Task> copyHandler;
+    private readonly Func<bool> isTypingHandler;
+
     public MainView()
     {
+        pickFileHandler = PickFileAsync;
+        copyHandler = CopyAsync;
+        isTypingHandler = IsTypingInView;
         InitializeComponent();
-        // Toute l'interface suit la place disponible, sans chevauchement ni taille figée.
         SizeChanged += (_, e) => FitWindow(e.NewSize);
         AttachedToVisualTree += (_, _) =>
         {
             ShowThemeIcon();
-            // Bouton Retour du téléphone : il ferme d'abord la fenêtre ouverte, puis revient à la page précédente.
-            if (TopLevel.GetTopLevel(this) is { } top)
-            {
-                top.BackRequested -= OnBackRequested;
-                top.BackRequested += OnBackRequested;
-            }
+            ReleaseBackHost();
+            backHost = TopLevel.GetTopLevel(this);
+            if (backHost is not null) backHost.BackRequested += OnBackRequested;
+            AttachShell();
+        };
+        DetachedFromVisualTree += (_, _) =>
+        {
+            themeFadeCancellation?.Cancel();
+            ReleaseBackHost();
+            ReleaseShell();
         };
         ActualThemeVariantChanged += (_, _) => ShowThemeIcon();
-        PageBar.SizeChanged += (_, _) => FitPageActions();
-        // Clic droit sur la page, hors d'un tableau ou d'un champ : les actions de la page.
+        PageBar.SizeChanged += (_, _) => QueueFitPageActions();
         PageHost.AddHandler(PointerReleasedEvent, OnPagePointerReleased, Avalonia.Interactivity.RoutingStrategies.Bubble);
-        DataContextChanged += (_, _) =>
+        DataContextChanged += (_, _) => AttachShell();
+    }
+
+    private void ReleaseBackHost()
+    {
+        if (backHost is not null) backHost.BackRequested -= OnBackRequested;
+        backHost = null;
+    }
+
+    private void AttachShell()
+    {
+        themeFadeCancellation?.Cancel();
+        ReleaseShell();
+        if (Shell is not { } shell) return;
+        subscribedShell = shell;
+        shell.Prefs.LayoutScaleChanged += OnLayoutScaleChanged;
+        shell.Prefs.PropertyChanged += OnPreferencesChanged;
+        shell.PropertyChanged += OnShellChanged;
+        shell.PickFileHandler = pickFileHandler;
+        shell.IsTyping = isTypingHandler;
+        shell.CopyHandler = copyHandler;
+        WatchPage(shell.Current);
+        ApplyPageTransition(shell.Prefs);
+        FitWindow(Bounds.Size);
+        QueueFitPageActions();
+    }
+
+    private void ReleaseShell()
+    {
+        WatchPage(null);
+        if (subscribedShell is { } shell)
         {
-            if (DataContext is not ShellViewModel shell) return;
-            shell.Prefs.LayoutScaleChanged += _ => FitWindow(Bounds.Size);
-            shell.PropertyChanged += (_, args) =>
-            {
-                if (args.PropertyName is nameof(ShellViewModel.CompactWindow)) FitWindow(Bounds.Size);
-                if (args.PropertyName != nameof(ShellViewModel.Current)) return;
-                if (shell.Current is { } page)
-                {
-                    page.Actions.CollectionChanged -= OnActionsChanged;
-                    page.Actions.CollectionChanged += OnActionsChanged;
-                    // Le sous-titre arrive avec les données : il change la place laissée aux actions.
-                    page.PropertyChanged -= OnPageTextChanged;
-                    page.PropertyChanged += OnPageTextChanged;
-                }
-                Avalonia.Threading.Dispatcher.UIThread.Post(FitPageActions, Avalonia.Threading.DispatcherPriority.Loaded);
-                // Téléphone : une nouvelle page s'ouvre en haut, pas à la hauteur où la précédente était lue.
-                PageScroll.Offset = default;
-            };
-            FitWindow(Bounds.Size);
-            shell.PickFileHandler = PickFileAsync;
-            // Une mise à jour venue d'un autre poste attend tant que l'utilisateur écrit dans un champ.
-            shell.IsTyping = () => TopLevel.GetTopLevel(this)?.FocusManager?.GetFocusedElement() is TextBox;
-            shell.CopyHandler = async text =>
-            {
-                if (TopLevel.GetTopLevel(this)?.Clipboard is { } clipboard) await Avalonia.Input.Platform.ClipboardExtensions.SetTextAsync(clipboard, text);
-            };
+            shell.Prefs.LayoutScaleChanged -= OnLayoutScaleChanged;
+            shell.Prefs.PropertyChanged -= OnPreferencesChanged;
+            shell.PropertyChanged -= OnShellChanged;
+            if (shell.PickFileHandler == pickFileHandler) shell.PickFileHandler = null;
+            if (shell.IsTyping == isTypingHandler) shell.IsTyping = null;
+            if (shell.CopyHandler == copyHandler) shell.CopyHandler = null;
+        }
+        subscribedShell = null;
+    }
+
+    private void WatchPage(PageViewModel? page)
+    {
+        if (observedPage is not null)
+        {
+            observedPage.Actions.CollectionChanged -= OnActionsChanged;
+            observedPage.PropertyChanged -= OnPageTextChanged;
+        }
+        observedPage = page;
+        if (page is null) return;
+        page.Actions.CollectionChanged += OnActionsChanged;
+        page.PropertyChanged += OnPageTextChanged;
+    }
+
+    private void OnLayoutScaleChanged(double _) => FitWindow(Bounds.Size);
+
+    private void OnPreferencesChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs args)
+    {
+        if (subscribedShell is not { } shell) return;
+        if (args.PropertyName is nameof(Preferences.Animations) or nameof(Preferences.PageTransitions) or nameof(Preferences.Speed))
             ApplyPageTransition(shell.Prefs);
-            shell.Prefs.PropertyChanged += (_, args) =>
-            {
-                if (args.PropertyName is nameof(Preferences.Animations) or nameof(Preferences.PageTransitions) or nameof(Preferences.Speed)) ApplyPageTransition(shell.Prefs);
-            };
-        };
+        // Le zoom et la police peuvent élargir les boutons sans changer la taille de la fenêtre.
+        QueueFitPageActions();
+    }
+
+    private void OnShellChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs args)
+    {
+        if (subscribedShell is not { } shell) return;
+        if (args.PropertyName == nameof(ShellViewModel.CompactWindow)) FitWindow(Bounds.Size);
+        if (args.PropertyName != nameof(ShellViewModel.Current)) return;
+        WatchPage(shell.Current);
+        QueueFitPageActions();
+        PageScroll.Offset = default;
+    }
+
+    private bool IsTypingInView() => TopLevel.GetTopLevel(this)?.FocusManager?.GetFocusedElement() is TextBox;
+
+    private async Task CopyAsync(string text)
+    {
+        if (TopLevel.GetTopLevel(this)?.Clipboard is { } clipboard)
+            await Avalonia.Input.Platform.ClipboardExtensions.SetTextAsync(clipboard, text);
+    }
+
+    private void QueueFitPageActions()
+    {
+        if (fitActionsQueued) return;
+        fitActionsQueued = true;
+        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        {
+            fitActionsQueued = false;
+            if (subscribedShell is not null) FitPageActions();
+        }, Avalonia.Threading.DispatcherPriority.Loaded);
     }
 
     /// <summary>Largeur, en points de la mise en page, sous laquelle le volet se replie pour laisser la place à la page.</summary>
@@ -90,36 +165,58 @@ public partial class MainView : UserControl
     /// <summary>Bascule du thème clair au thème sombre : l'ancien rendu s'efface en fondu sur le nouveau.</summary>
     private async void OnThemeToggle(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
-        if (Shell is not { } shell) return;
+        if (Shell is not { } shell || themeChanging) return;
         var next = ActualThemeVariant == Avalonia.Styling.ThemeVariant.Dark ? "light" : "dark";
-        if (!shell.Prefs.Animations || Bounds.Width <= 0)
+        var size = Scaler.Bounds.Size;
+        if (!shell.Prefs.Animations || size.Width <= 0 || size.Height <= 0)
         {
             shell.Prefs.Theme = next;
             return;
         }
-        var scaling = TopLevel.GetTopLevel(this)?.RenderScaling ?? 1;
-        var snapshot = new Avalonia.Media.Imaging.RenderTargetBitmap(
-            new PixelSize((int)(Scaler.Bounds.Width * scaling), (int)(Scaler.Bounds.Height * scaling)), new Vector(96 * scaling, 96 * scaling));
-        snapshot.Render(Scaler);
-        ThemeFade.Source = snapshot;
-        ThemeFade.Opacity = 1;
-        ThemeFade.IsVisible = true;
-        shell.Prefs.Theme = next;
-        var fade = new Avalonia.Animation.Animation
+        themeChanging = true;
+        using var cancellation = new CancellationTokenSource();
+        themeFadeCancellation = cancellation;
+        Avalonia.Media.Imaging.RenderTargetBitmap? snapshot = null;
+        try
         {
-            Duration = TimeSpan.FromMilliseconds(320),
-            Easing = new Avalonia.Animation.Easings.QuadraticEaseOut(),
-            FillMode = Avalonia.Animation.FillMode.Forward,
-            Children =
+            // Le fondu reste léger sur les écrans à haute densité : au plus 32 Mo de pixels.
+            var scaling = Math.Min(TopLevel.GetTopLevel(this)?.RenderScaling ?? 1,
+                Math.Sqrt(8_000_000 / (size.Width * size.Height)));
+            snapshot = new Avalonia.Media.Imaging.RenderTargetBitmap(
+                new PixelSize(Math.Max(1, (int)Math.Ceiling(size.Width * scaling)), Math.Max(1, (int)Math.Ceiling(size.Height * scaling))),
+                new Vector(96 * scaling, 96 * scaling));
+            snapshot.Render(Scaler);
+            ThemeFade.Source = snapshot;
+            ThemeFade.Opacity = 1;
+            ThemeFade.IsVisible = true;
+            shell.Prefs.Theme = next;
+            var fade = new Animation
             {
-                new Avalonia.Animation.KeyFrame { Cue = new Avalonia.Animation.Cue(0), Setters = { new Avalonia.Styling.Setter(OpacityProperty, 1d) } },
-                new Avalonia.Animation.KeyFrame { Cue = new Avalonia.Animation.Cue(1), Setters = { new Avalonia.Styling.Setter(OpacityProperty, 0d) } },
-            },
-        };
-        await fade.RunAsync(ThemeFade);
-        ThemeFade.IsVisible = false;
-        ThemeFade.Source = null;
-        snapshot.Dispose();
+                Duration = TimeSpan.FromMilliseconds(220) * shell.Prefs.SpeedFactor,
+                Easing = new Avalonia.Animation.Easings.QuadraticEaseOut(),
+                FillMode = FillMode.Forward,
+                Children =
+                {
+                    new KeyFrame { Cue = new Cue(0), Setters = { new Avalonia.Styling.Setter(OpacityProperty, 1d) } },
+                    new KeyFrame { Cue = new Cue(1), Setters = { new Avalonia.Styling.Setter(OpacityProperty, 0d) } },
+                },
+            };
+            await fade.RunAsync(ThemeFade, cancellation.Token);
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception ex) when (ex is InvalidOperationException or NotSupportedException or ArgumentException)
+        {
+            // Une plateforme sans capture garde une bascule immédiate et opérationnelle.
+            shell.Prefs.Theme = next;
+        }
+        finally
+        {
+            ThemeFade.IsVisible = false;
+            ThemeFade.Source = null;
+            snapshot?.Dispose();
+            themeFadeCancellation = null;
+            themeChanging = false;
+        }
     }
 
     private void ShowThemeIcon() =>
@@ -131,22 +228,30 @@ public partial class MainView : UserControl
     /// </summary>
     private void FitWindow(Size size)
     {
-        if (Shell is not { } shell || size.Width <= 0) return;
-        // La barre de titre dessinée par SCOLIA garde la taille du système : seule la place en dessous compte.
-        if (TitleRow.IsVisible) size = size.WithHeight(Math.Max(0, size.Height - TitleRow.Height));
-        // La petite fenêtre de connexion garde la taille normale : son formulaire y tient tout entier.
-        if (shell.CompactWindow && !Preferences.MobileLayout) shell.Prefs.Fit(1280, 720);
-        else shell.Prefs.Fit(size.Width, size.Height);
-        var k = shell.Prefs.LayoutScale;
-        Scaler.LayoutTransform = Math.Abs(k - 1) < 0.001 ? null : new Avalonia.Media.ScaleTransform(k, k);
-        shell.Narrow = size.Width / k < NarrowBelow;
-        // L'application mobile garde sa forme sur une tablette aussi ; sur l'ordinateur, une fenêtre très étroite la prend.
-        var phone = Preferences.MobileLayout || size.Width / k < PhoneBelow;
-        // Connue avant le changement de page : les vues construites ensuite prennent leur forme de téléphone.
-        PhoneLayout.Set(phone);
-        shell.PhoneWidth = size.Width / k;
-        Scaler.Classes.Set("phone", phone);
-        shell.Phone = phone;
+        if (Shell is not { } shell || size.Width <= 0 || fittingWindow) return;
+        fittingWindow = true;
+        try
+        {
+            // La barre de titre dessinée par SCOLIA garde la taille du système : seule la place en dessous compte.
+            if (TitleRow.IsVisible) size = size.WithHeight(Math.Max(0, size.Height - TitleRow.Height));
+            // La petite fenêtre de connexion garde la taille normale : son formulaire y tient tout entier.
+            if (shell.CompactWindow && !Preferences.MobileLayout) shell.Prefs.Fit(1280, 720);
+            else shell.Prefs.Fit(size.Width, size.Height);
+            var k = shell.Prefs.LayoutScale;
+            if (Math.Abs(k - 1) < 0.001) Scaler.LayoutTransform = null;
+            else if (Scaler.LayoutTransform is not ScaleTransform currentScale || Math.Abs(currentScale.ScaleX - k) >= 0.001)
+                Scaler.LayoutTransform = new ScaleTransform(k, k);
+            shell.Narrow = size.Width / k < NarrowBelow;
+            // L'application mobile garde sa forme sur une tablette aussi ; sur l'ordinateur, une fenêtre très étroite la prend.
+            var phone = Preferences.MobileLayout || size.Width / k < PhoneBelow;
+            // Connue avant le changement de page : les vues construites ensuite prennent leur forme de téléphone.
+            PhoneLayout.Set(phone);
+            shell.PhoneWidth = size.Width / k;
+            Scaler.Classes.Set("phone", phone);
+            shell.Phone = phone;
+            QueueFitPageActions();
+        }
+        finally { fittingWindow = false; }
     }
 
     private void OnPagePointerReleased(object? sender, PointerReleasedEventArgs e)
@@ -161,11 +266,10 @@ public partial class MainView : UserControl
     private void OnPageTextChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
         if (e.PropertyName is nameof(PageViewModel.Subtitle) or nameof(PageViewModel.Heading) && sender == Shell?.Current)
-            Avalonia.Threading.Dispatcher.UIThread.Post(FitPageActions, Avalonia.Threading.DispatcherPriority.Loaded);
+            QueueFitPageActions();
     }
 
-    private void OnActionsChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e) =>
-        Avalonia.Threading.Dispatcher.UIThread.Post(FitPageActions, Avalonia.Threading.DispatcherPriority.Loaded);
+    private void OnActionsChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e) => QueueFitPageActions();
 
     /// <summary>
     /// Garde dans l'en-tête autant de boutons que la largeur le permet, à côté d'un titre lisible.
@@ -226,7 +330,7 @@ public partial class MainView : UserControl
     {
         if (Shell is not { } shell) return;
         if (shell.HasSheet) shell.CloseSheet();
-        else if (shell.Dialog is FormViewModel { Busy: false } form) form.Cancel.Execute(null);
+        else if (shell.Dialog is FormViewModel form) { if (!form.Busy) form.Cancel.Execute(null); }
         else if (shell.HasDialog) shell.CloseDialog();
         else if (shell.BackstageOpen) shell.CloseBackstage();
         else if (shell.PhoneMenuOpen) shell.PhoneMenuOpen = false;
@@ -313,6 +417,8 @@ public partial class MainView : UserControl
     private void OnKeyDown(object? sender, KeyEventArgs e)
     {
         if (Shell is not { IsLoggedIn: true } shell) return;
+        // Le voile de traitement et les fenêtres modales bloquent aussi la navigation au clavier.
+        if (shell.Working || (e.Key != Key.Escape && (shell.HasDialog || shell.HasSheet || shell.BackstageOpen))) return;
         if (e.KeyModifiers == KeyModifiers.Alt && e.Key is Key.Left or Key.Right && !shell.HasDialog)
         {
             if (e.Key == Key.Left) shell.GoBack();
@@ -327,9 +433,12 @@ public partial class MainView : UserControl
             return;
         }
         if (e.Key != Key.Escape) return;
-        if (shell.Dialog is FormViewModel { Busy: false } form) form.Cancel.Execute(null);
+        if (shell.HasSheet) shell.CloseSheet();
+        else if (shell.Dialog is FormViewModel form) { if (!form.Busy) form.Cancel.Execute(null); }
         else if (shell.HasDialog) shell.CloseDialog();
         else if (shell.BackstageOpen) shell.CloseBackstage();
+        else if (shell.PhoneMenuOpen) shell.PhoneMenuOpen = false;
+        else return;
         e.Handled = true;
     }
 

@@ -1,10 +1,11 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useRef, useState, type ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, Database, DatabaseBackup, FileSpreadsheet, Info, Keyboard, KeyRound, LogOut, Save, Settings, ShieldCheck } from 'lucide-react';
 import { api } from '../api/client';
 import type { BackupInfo } from '../api/types';
 import { dateTime } from '../lib/format';
 import { P, useSession } from '../lib/session';
+import { useDialogFocus } from '../lib/dialog-focus';
 
 interface BackstageProps {
   onClose: () => void;
@@ -14,6 +15,8 @@ interface BackstageProps {
 
 /** Vue « Fichier » : informations sur l'établissement, sauvegardes, contrôles et compte, comme le menu Fichier des suites bureautiques. */
 export function Backstage({ onClose, onNavigate, onRun }: BackstageProps) {
+  const ref = useRef<HTMLDivElement>(null);
+  useDialogFocus(ref, onClose);
   const { session, can } = useSession();
   const [section, setSection] = useState('info');
   const backups = useQuery({
@@ -22,12 +25,6 @@ export function Backstage({ onClose, onNavigate, onRun }: BackstageProps) {
     enabled: can(P.backupManage),
     staleTime: 60_000,
   });
-
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [onClose]);
 
   const last = backups.data?.[0];
   const menu: { id: string; label: string; icon: ReactNode; go?: string; run?: string; visible: boolean; danger?: boolean }[] = [
@@ -41,7 +38,7 @@ export function Backstage({ onClose, onNavigate, onRun }: BackstageProps) {
   ];
 
   return (
-    <div className="backstage" role="dialog" aria-modal="true" aria-label="Fichier">
+    <div ref={ref} className="backstage" role="dialog" aria-modal="true" aria-label="Fichier" tabIndex={-1}>
       <aside className="bs-side">
         <button type="button" className="bs-back" onClick={onClose} aria-label="Retour à SCOLIA">
           <ArrowLeft />

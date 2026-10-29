@@ -21,6 +21,7 @@
     <ProjectReference Include="..\..\src\Scolia.Api\Scolia.Api.csproj" SetTargetFramework="TargetFramework=net10.0" />
     <Compile Include="..\..\src\Scolia.Mobile\Server\SkiaPdf.cs" Link="Server\SkiaPdf.cs" />
     <Compile Include="..\..\src\Scolia.Mobile\Server\SkiaDocumentService.cs" Link="Server\SkiaDocumentService.cs" />
+    <Compile Include="..\..\src\Scolia.Mobile\StartupReadiness.cs" Link="StartupReadiness.cs" />
   </ItemGroup>
   <!-- Comme sur le téléphone : ASP.NET Core vient des fichiers de l'application, pas du framework installé. -->
   <Import Project="..\..\src\Scolia.Mobile\AspNetCoreLocal.props" />

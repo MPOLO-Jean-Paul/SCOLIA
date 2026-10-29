@@ -48,7 +48,7 @@ function SchoolPanel() {
     try { await api.put('/api/etablissement/logo', data); setLogoVersion((v) => v + 1); toast('Logo mis à jour.', 'success'); } catch (e) { toast(errorText(e), 'error'); }
   };
   return (
-    <div className="grid" style={{ gridTemplateColumns: 'minmax(0, 2fr) minmax(260px, 1fr)', alignItems: 'start' }}>
+    <div className="grid mobile-split-grid settings-grid">
       <Card title="Identité de l'établissement" actions={<Button variant="primary" icon={<Save />} onClick={save}>Enregistrer</Button>}>
         <SectionTitle num="01">Coordonnées</SectionTitle>
         <div className="grid cols-2">
@@ -139,7 +139,7 @@ function PromotionDialog({ promotion, onClose, onSaved }: { promotion?: Promotio
         <label className="check"><input type="checkbox" checked={f.isActive} onChange={(e) => setF({ ...f, isActive: e.target.checked })} />Promotion active (accepte de nouvelles inscriptions)</label>
         <SectionTitle num="02">Frais ponctuels</SectionTitle>
         {fees.map((x, i) => (
-          <div key={i} className="grid" style={{ gridTemplateColumns: '1fr 2fr 1fr 1fr auto', alignItems: 'end' }}>
+          <div key={i} className="grid fee-grid">
             <SelectField label="Nature" value={x.kind} onChange={(e) => setFees(fees.map((y, j) => (j === i ? { ...y, kind: e.target.value } : y)))}><option value="Inscription">Inscription</option><option value="Examen">Examen</option><option value="Autre">Autre</option></SelectField>
             <TextField label="Libellé" value={x.label} onChange={(e) => setFees(fees.map((y, j) => (j === i ? { ...y, label: e.target.value } : y)))} />
             <TextField label="Montant" inputMode="numeric" value={x.amount} onChange={(e) => setFees(fees.map((y, j) => (j === i ? { ...y, amount: e.target.value } : y)))} />

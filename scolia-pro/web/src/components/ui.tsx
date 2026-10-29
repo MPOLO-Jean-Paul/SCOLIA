@@ -1,8 +1,10 @@
 import { createContext, useCallback, useContext, useEffect, useId, useRef, useState, type ReactNode, type InputHTMLAttributes, type SelectHTMLAttributes, type TextareaHTMLAttributes } from 'react';
+import { createPortal } from 'react-dom';
 import { AlertTriangle, CheckCircle2, ChevronLeft, ChevronRight, Info, Inbox, X } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 import { ApiError } from '../api/client';
 import { moduleOf } from '../lib/ribbon';
+import { useDialogFocus } from '../lib/dialog-focus';
 
 // ---------- Notifications ----------
 type ToastKind = 'info' | 'success' | 'error';
@@ -148,17 +150,10 @@ export function Modal({ title, eyebrow, subtitle, onClose, children, footer, wid
   title: string; eyebrow?: string; subtitle?: string; onClose: () => void; children: ReactNode; footer?: ReactNode; wide?: boolean;
 }) {
   const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const previous = document.activeElement as HTMLElement | null;
-    const first = ref.current?.querySelector<HTMLElement>('input:not([readonly]),select,textarea,button:not(.close)');
-    first?.focus();
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
-    window.addEventListener('keydown', onKey);
-    return () => { window.removeEventListener('keydown', onKey); previous?.focus(); };
-  }, [onClose]);
-  return (
+  useDialogFocus(ref, onClose);
+  return createPortal(
     <div className="overlay" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div ref={ref} className={`modal ${wide ? 'wide' : ''}`} role="dialog" aria-modal="true" aria-label={title}>
+      <div ref={ref} className={`modal ${wide ? 'wide' : ''}`} role="dialog" aria-modal="true" aria-label={title} tabIndex={-1}>
         <div className="modal-head">
           {eyebrow && <div className="eyebrow">{eyebrow}</div>}
           <h2>{title}</h2>
@@ -168,7 +163,8 @@ export function Modal({ title, eyebrow, subtitle, onClose, children, footer, wid
         <div className="modal-body">{children}</div>
         {footer && <div className="modal-foot">{footer}</div>}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 

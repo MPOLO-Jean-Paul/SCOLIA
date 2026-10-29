@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <!-- Android 12+ dessine son propre lancement avant la création de l'activité : même logo, même fond. -->
+  <style name="ScoliaLaunchTheme" parent="@style/ScoliaTheme">
+    <item name="android:windowSplashScreenBackground">@color/fond_lancement</item>
+    <item name="android:windowSplashScreenAnimatedIcon">@mipmap/icon_foreground</item>
+    <item name="android:windowSplashScreenIconBackgroundColor">@color/fond_lancement</item>
+  </style>
+</resources>

@@ -28,6 +28,31 @@ test('installation guidée avec données de démonstration', async () => {
   await expect(page.locator('.kpi').first()).toContainText('128');
 });
 
+test('pages métier compactes sur téléphone, sans déborder la fenêtre', async () => {
+  try {
+    for (const width of [320, 390]) {
+      await page.setViewportSize({ width, height: 740 });
+      for (const path of ['/', '/encaisser', '/notes', '/parametres']) {
+        await page.goto(path);
+        await expect(page.locator('.content .page-head h1')).toBeVisible();
+        if (path === '/notes') await expect(page.locator('.grade-input').first()).toBeVisible();
+        if (path === '/parametres') {
+          await expect(page.locator('.settings-grid')).toBeVisible();
+          await expect(page.getByLabel('Nom', { exact: true })).toHaveValue('Institut Technique Médical Démo');
+        }
+        await expect(page.locator('.content .skeleton')).toHaveCount(0);
+        expect(await page.locator('.content').evaluate((el) => el.scrollWidth <= el.clientWidth + 1), `${path} à ${width}px`).toBe(true);
+        for (const grid of await page.locator('.mobile-split-grid, .fee-grid').all()) {
+          expect(await grid.evaluate((el) => getComputedStyle(el).gridTemplateColumns.split(' ').length)).toBe(1);
+        }
+      }
+    }
+  } finally {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/');
+  }
+});
+
 test('recherche et fiche apprenant', async () => {
   await page.getByRole('tab', { name: 'Secrétariat' }).click();
   await page.getByRole('button', { name: 'Apprenants', exact: true }).click();

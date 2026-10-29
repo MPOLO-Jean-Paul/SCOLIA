@@ -41,7 +41,10 @@ public partial class App : Avalonia.Application
             var api = new ScoliaClient(saved?.Url is { } url ? new Uri(url) : ConnectionStore.LocalAddress);
             var shell = new ShellViewModel(api, Preferences.Load());
             phone.MainView = new MainView { DataContext = shell };
-            _ = shell.StartAsync(Platform.LocalServer);
+            // Android observe cette tâche : aucun écran blanc entre le logo et la configuration ou la connexion.
+            // Une erreur reste visible et peut être réessayée, au lieu de perdre l'exception d'une tâche détachée.
+            Platform.RetryStartup = () => Platform.StartupTask = shell.StartAsync(Platform.LocalServer);
+            _ = Platform.RetryStartup();
         }
         base.OnFrameworkInitializationCompleted();
     }

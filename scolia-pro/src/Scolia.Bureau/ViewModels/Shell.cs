@@ -300,12 +300,19 @@ public sealed class ShellViewModel : Observable
     /// <summary>Fourni par la fenêtre, qui applique l'état d'affichage.</summary>
     public Action<bool>? FullscreenHandler { get; set; }
 
+    /// <summary>Synchronise le ruban avec l'état réel de la fenêtre, y compris au lancement en plein écran.</summary>
+    public void SyncFullscreenState(bool full)
+    {
+        if (IsFullscreen == full) return;
+        IsFullscreen = full;
+        Raise(nameof(IsFullscreen));
+        if (IsLoggedIn) RebuildRibbon();
+    }
+
     public void ToggleFullscreen()
     {
-        IsFullscreen = !IsFullscreen;
-        Raise(nameof(IsFullscreen));
+        SyncFullscreenState(!IsFullscreen);
         FullscreenHandler?.Invoke(IsFullscreen);
-        RebuildRibbon();
     }
 
     public IReadOnlyList<(string Label, Func<PageViewModel> Open)> Recents => recents;

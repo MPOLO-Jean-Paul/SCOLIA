@@ -159,6 +159,227 @@ if (Preferences.MobileLayout) { window.MinWidth = 0; window.MinHeight = 0; windo
 window.Show();
 // Barre de titre de Windows dessinée par SCOLIA : simulée ici, la fenêtre sans écran n'a pas celle du système.
 if (!Preferences.MobileLayout && Environment.GetEnvironmentVariable("SCOLIA_BARRE_TITRE") != "0" && window.Content is Scolia.Bureau.Views.MainView main) main.ShowTitleBar(32);
+// Vérification bureau autonome : redimensionnement, texte agrandi, dialogues et transitions.
+if (args.Length > 3 && args[3] == "bureau")
+{
+    if (Preferences.MobileLayout) throw new InvalidOperationException("Le parcours bureau nécessite SCOLIA_MOBILE=0.");
+    using var desktopServer = new LayoutServer();
+    api.Retarget(desktopServer.Address);
+    prefs.StatusBar = true;
+    prefs.Startup = "normale";
+    prefs.Scale = 1;
+    var desktopFailures = 0;
+    void CheckDesktop(string label, bool ok)
+    {
+        Console.WriteLine($"{(ok ? "OK  " : "ECHEC")} {label}");
+        if (!ok) desktopFailures++;
+    }
+    void RenderDesktop()
+    {
+        Dispatcher.UIThread.RunJobs();
+        window.UpdateLayout();
+        AvaloniaHeadlessPlatform.ForceRenderTimerTick();
+        Dispatcher.UIThread.RunJobs();
+        window.UpdateLayout();
+    }
+    Control DesktopNamed(string name) => window.GetVisualDescendants().OfType<Control>().First(c => c.Name == name);
+    bool InsideDesktop(Control control)
+    {
+        if (control.TransformToVisual(window) is not { } matrix) return false;
+        var bounds = new Rect(control.Bounds.Size).TransformToAABB(matrix);
+        return bounds.Width > 0 && bounds.Left >= -1 && bounds.Right <= window.Bounds.Width + 1;
+    }
+    prefs.Animations = false;
+    shell.Login.SchoolName = "Institut supérieur des sciences de la santé et des techniques médicales";
+    foreach (var (desktopWidth, desktopHeight) in new[] { (460, 640), (800, 600) })
+    {
+        window.Width = desktopWidth;
+        window.Height = desktopHeight;
+        RenderDesktop();
+        CheckDesktop($"Connexion {desktopWidth}×{desktopHeight} : carte et champs dans la fenêtre",
+            InsideDesktop(DesktopNamed("LoginCard")) && InsideDesktop(DesktopNamed("UserNameBox")));
+        Save(window, $"bureau-connexion-{desktopWidth}x{desktopHeight}.png");
+    }
+    var desktopSession = new SessionDto(Guid.NewGuid(), "desktop-test", "Amina Kabeya du secrétariat", "Lecteur", "Lecture", [], false,
+        shell.Login.SchoolName, "Institut de test", "2026-2027", "FC", "+243");
+    var previousOpening = ShellViewModel.MinimumOpening;
+    ShellViewModel.MinimumOpening = TimeSpan.Zero;
+    try { Wait(shell.OpenSessionAsync(desktopSession)); }
+    finally { ShellViewModel.MinimumOpening = previousOpening; }
+    window.WindowState = WindowState.Normal;
+    foreach (var (desktopWidth, desktopHeight) in new[] { (760, 520), (1024, 600), (1366, 768), (1920, 1080) })
+    {
+        window.Width = desktopWidth;
+        window.Height = desktopHeight;
+        foreach (var textScale in new[] { 1d, 1.3, 1.6 })
+        {
+            prefs.Scale = textScale;
+            RenderDesktop();
+            CheckDesktop($"Bureau {desktopWidth}×{desktopHeight}, texte {textScale:P0} : forme bureau conservée", !shell.Phone);
+            foreach (var name in new[] { "PageBar", "HeaderTitle", "HeaderSearch", "HeaderExtras", "DesktopStatusBar", "DesktopServerLine" })
+                CheckDesktop($"{name} dans la fenêtre", InsideDesktop(DesktopNamed(name)));
+            Save(window, $"bureau-{desktopWidth}x{desktopHeight}-texte-{textScale:0.0}.png");
+        }
+    }
+    var desktopHost = (TransitioningContentControl)DesktopNamed("PageHost");
+    CheckDesktop("Animations désactivées : transition absente", desktopHost.PageTransition is null);
+    prefs.Animations = true;
+    CheckDesktop("Animations activées : transition disponible", desktopHost.PageTransition is not null);
+    prefs.PageTransitions = false;
+    CheckDesktop("Transitions de pages désactivées indépendamment", desktopHost.PageTransition is null);
+    window.WindowState = WindowState.Maximized;
+    shell.ToggleFullscreen();
+    CheckDesktop("Plein écran : état du shell synchronisé à l'entrée", shell.IsFullscreen && window.WindowState == WindowState.FullScreen);
+    shell.ToggleFullscreen();
+    CheckDesktop("Plein écran : sortie vers la maximisation précédente", !shell.IsFullscreen && window.WindowState == WindowState.Maximized);
+    window.WindowState = WindowState.Normal;
+
+    // Deux tailles arrivent avant le passage différé : seule la dernière doit déterminer les colonnes.
+    var resizeGrid = new Grid { ColumnDefinitions = new ColumnDefinitions("*,*") };
+    resizeGrid.Children.Add(new Border());
+    resizeGrid.Children.Add(new Border());
+    Grid.SetColumn(resizeGrid.Children[1], 1);
+    Adaptive.SetStackBelow(resizeGrid, 900);
+    resizeGrid.Measure(new Size(800, 100));
+    resizeGrid.Arrange(new Rect(0, 0, 800, 100));
+    resizeGrid.Measure(new Size(1200, 100));
+    resizeGrid.Arrange(new Rect(0, 0, 1200, 100));
+    Dispatcher.UIThread.RunJobs();
+    CheckDesktop("Redimensionnement rapide : la grille garde les deux colonnes de la dernière taille", resizeGrid.ColumnDefinitions.Count == 2);
+    var resizeCards = new Avalonia.Controls.Primitives.UniformGrid { Columns = 3 };
+    for (var i = 0; i < 3; i++) resizeCards.Children.Add(new Border());
+    Adaptive.SetMinItemWidth(resizeCards, 100);
+    resizeCards.Measure(new Size(150, 100));
+    resizeCards.Arrange(new Rect(0, 0, 150, 100));
+    resizeCards.Measure(new Size(350, 100));
+    resizeCards.Arrange(new Rect(0, 0, 350, 100));
+    Dispatcher.UIThread.RunJobs();
+    CheckDesktop("Redimensionnement rapide : les cartes suivent la dernière largeur", resizeCards.Columns == 3);
+
+    var dialogProbe = new Border { Width = 700, MinWidth = 300, MaxWidth = 800, MinHeight = 100, MaxHeight = 320, Height = 500 };
+    Adaptive.SetFitDialog(dialogProbe, true);
+    var dialogContainer = new ContentControl { Margin = new Thickness(24), Content = dialogProbe };
+    var dialogScrim = new Border { Child = dialogContainer };
+    dialogScrim.Classes.Add("scrim");
+    var dialogWindow = new Window { Width = 1024, Height = 600, Content = dialogScrim };
+    dialogWindow.Show();
+    Dispatcher.UIThread.RunJobs();
+    dialogWindow.UpdateLayout();
+    CheckDesktop("Dialogue : le plafond de hauteur propre est conservé", dialogProbe.MaxHeight == 320);
+    dialogWindow.Width = 400;
+    dialogWindow.Height = 260;
+    dialogWindow.UpdateLayout();
+    Dispatcher.UIThread.RunJobs();
+    dialogWindow.UpdateLayout();
+    CheckDesktop("Dialogue : marges et hauteur respectées en petite fenêtre",
+        dialogProbe.Width <= dialogWindow.Bounds.Width - 48 && dialogProbe.MaxHeight <= dialogWindow.Bounds.Height - 48);
+    dialogWindow.Close();
+    shell.Sync.Stop();
+    var replacementPrefs = new Preferences { Animations = true, PageTransitions = true };
+    var replacementShell = new ShellViewModel(new ScoliaClient(desktopServer.Address), replacementPrefs);
+    window.DataContext = replacementShell;
+    RenderDesktop();
+    CheckDesktop("Changement de session : les services de l'ancienne vue sont libérés",
+        shell.PickFileHandler is null && shell.CopyHandler is null && shell.IsTyping is null && shell.FullscreenHandler is null);
+    prefs.Animations = false;
+    prefs.PageTransitions = true;
+    CheckDesktop("Anciennes préférences : aucune modification des transitions de la nouvelle session", desktopHost.PageTransition is not null);
+    window.Close();
+    CheckDesktop("Fermeture : les services de la vue sont libérés",
+        replacementShell.PickFileHandler is null && replacementShell.CopyHandler is null && replacementShell.IsTyping is null && replacementShell.FullscreenHandler is null);
+    Environment.ExitCode = desktopFailures == 0 ? 0 : 1;
+    return;
+}
+
+// Vérification du parcours mobile sur petit écran et quand le clavier réduit la hauteur.
+// SCOLIA_MOBILE=1 dotnet run -- <sortie> http://localhost:1/ inutilise fluidite
+// Les appels accessoires (logo, direct) vont au serveur HTTP fictif local, jamais à un établissement.
+if (args.Length > 3 && args[3] == "fluidite")
+{
+    if (!Preferences.MobileLayout) throw new InvalidOperationException("Le parcours fluidite nécessite SCOLIA_MOBILE=1.");
+    using var layoutServer = new LayoutServer();
+    api.Retarget(layoutServer.Address);
+    var failures = 0;
+    void CheckLayout(string label, bool ok)
+    {
+        Console.WriteLine($"{(ok ? "OK  " : "ECHEC")} {label}");
+        if (!ok) failures++;
+    }
+    void RenderLayout()
+    {
+        Dispatcher.UIThread.RunJobs();
+        window.UpdateLayout();
+        AvaloniaHeadlessPlatform.ForceRenderTimerTick();
+    }
+    Control Named(string name) => window.GetVisualDescendants().OfType<Control>().First(c => c.Name == name);
+    Rect InWindow(Control control) => control.TransformToVisual(window) is { } m
+        ? new Rect(control.Bounds.Size).TransformToAABB(m) : default;
+    bool FitsHorizontally(Control control)
+    {
+        var rect = InWindow(control);
+        return rect.Width > 0 && rect.Left >= -1 && rect.Right <= window.Bounds.Width + 1;
+    }
+
+    prefs.Animations = false;
+    shell.Login.SchoolName = "Institut supérieur des sciences de la santé et des techniques médicales de l'établissement";
+    shell.Login.Notice = "Le serveur de l'établissement est temporairement indisponible. Vous pouvez utiliser le dernier compte de cet appareil.";
+    foreach (var (width, height) in new[] { (320, 568), (320, 300), (360, 640), (412, 892) })
+    {
+        window.Width = width;
+        window.Height = height;
+        RenderLayout();
+        var loginScroll = (ScrollViewer)Named("LoginScroll");
+        loginScroll.Offset = default;
+        RenderLayout();
+        CheckLayout($"Connexion {width}×{height} : carte dans l'écran", FitsHorizontally(Named("LoginCard")));
+        CheckLayout($"Connexion {width}×{height} : nom d'établissement dans l'écran", FitsHorizontally(Named("SchoolHeading")));
+        CheckLayout($"Connexion {width}×{height} : le titre reste au-dessus du formulaire",
+            InWindow(Named("SchoolHeading")).Bottom <= InWindow(Named("LoginCard")).Top - 8);
+        if (height == 300)
+            CheckLayout("Clavier : le formulaire peut défiler", loginScroll.Extent.Height > loginScroll.Viewport.Height);
+        loginScroll.Offset = new Vector(0, loginScroll.Extent.Height);
+        RenderLayout();
+        var footer = InWindow(Named("LoginFooter"));
+        CheckLayout($"Connexion {width}×{height} : bas du formulaire atteignable",
+            footer.Top >= -1 && footer.Bottom <= window.Bounds.Height + 1);
+        Save(window, $"fluidite-connexion-{width}x{height}.png");
+    }
+
+    window.Width = 320;
+    window.Height = 568;
+    var mobileSession = new SessionDto(Guid.NewGuid(), "mobile-test", "Amina Kabeya", "Lecteur", "Lecture", [], false,
+        shell.Login.SchoolName, "Institut de test", "2026-2027", "FC", "+243");
+    var openingMinimum = ShellViewModel.MinimumOpening;
+    ShellViewModel.MinimumOpening = TimeSpan.FromMilliseconds(1400);
+    var mobileOpening = shell.OpenSessionAsync(mobileSession);
+    RenderLayout();
+    CheckLayout("Bienvenue : contenu compact dans l'écran", FitsHorizontally(Named("WelcomeContent")));
+    Save(window, "fluidite-bienvenue-320x568.png");
+    Wait(mobileOpening);
+    ShellViewModel.MinimumOpening = openingMinimum;
+
+    window.Height = 300;
+    shell.ShowAccentSheet();
+    RenderLayout();
+    var sheet = InWindow(Named("ActionSheet"));
+    var cancel = InWindow(Named("CancelSheetButton"));
+    CheckLayout("Feuille : reste entièrement dans la hauteur disponible",
+        sheet.Height > 0 && sheet.Top >= 0 && sheet.Bottom <= window.Bounds.Height + 1);
+    CheckLayout("Feuille : Annuler reste visible sur écran court",
+        cancel.Top >= 0 && cancel.Bottom <= window.Bounds.Height + 1);
+    CheckLayout("Feuille : aucun débordement horizontal", FitsHorizontally(Named("ActionSheet")));
+    Save(window, "fluidite-feuille-320x300.png");
+    shell.CloseSheet();
+    var phoneHost = (TransitioningContentControl)Named("PhoneHost");
+    CheckLayout("Animations désactivées : aucune transition de page", phoneHost.PageTransition is null);
+    prefs.Animations = true;
+    CheckLayout("Animations activées : transition de page disponible", phoneHost.PageTransition is not null);
+    shell.Sync.Stop();
+    window.Close();
+    Environment.ExitCode = failures == 0 ? 0 : 1;
+    return;
+}
+
 // Premier lancement sans configuration : l'assistant remplace la connexion (SCOLIA_ASSISTANT=1).
 if (Environment.GetEnvironmentVariable("SCOLIA_ASSISTANT") == "1")
 {
@@ -1111,6 +1332,44 @@ int CommandSweep(ShellViewModel shell)
     Console.WriteLine($"{total} commandes essayées, {problems.Count} à revoir.");
     foreach (var p in problems) Console.WriteLine($"  À REVOIR  {p}");
     return problems.Count == 0 ? 0 : 1;
+}
+
+/// <summary>
+/// Serveur borné au loopback pour les seuls tests de mise en page : les ressources accessoires sont absentes.
+/// Le parcours d'ouverture utilise une session fictive sans permissions et n'accède à aucune donnée métier.
+/// </summary>
+sealed class LayoutServer : IDisposable
+{
+    private readonly System.Net.HttpListener listener = new();
+    public Uri Address { get; }
+
+    public LayoutServer()
+    {
+        // Réserver un port libre ; l'écoute HTTP ne concerne que la machine de test.
+        using var portProbe = new System.Net.Sockets.TcpListener(System.Net.IPAddress.Loopback, 0);
+        portProbe.Start();
+        var port = ((System.Net.IPEndPoint)portProbe.LocalEndpoint).Port;
+        portProbe.Stop();
+        Address = new Uri($"http://127.0.0.1:{port}/");
+        listener.Prefixes.Add(Address.AbsoluteUri);
+        listener.Start();
+        _ = ServeAsync();
+    }
+
+    private async Task ServeAsync()
+    {
+        while (listener.IsListening)
+        {
+            System.Net.HttpListenerContext context;
+            try { context = await listener.GetContextAsync(); }
+            catch (Exception ex) when (ex is System.Net.HttpListenerException or ObjectDisposedException) { return; }
+            context.Response.StatusCode = 404;
+            context.Response.ContentLength64 = 0;
+            context.Response.Close();
+        }
+    }
+
+    public void Dispose() => listener.Close();
 }
 
 /// <summary>Serveur du téléphone, sans démarrage : l'outil de captures montre seulement les écrans qui le proposent.</summary>

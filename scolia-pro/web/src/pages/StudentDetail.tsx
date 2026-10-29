@@ -91,7 +91,7 @@ function AccountTab({ account, error }: { account?: Account; error: unknown }) {
         <Kpi label="Reste exigible" value={money(account.overdue)} hint={account.overdueCount ? `${account.overdueCount} échéance(s) · ${account.agingBucket}` : 'Aucune échéance en retard'} tone={account.overdue > 0 ? 'red' : 'green'} />
         <Kpi label="Reste de l'année" value={money(account.balance)} tone="orange" />
       </div>
-      <div className="grid" style={{ gridTemplateColumns: 'minmax(0,3fr) minmax(0,2fr)' }}>
+      <div className="grid mobile-split-grid student-detail-grid">
         <div className="table-wrap">
           <table className="data">
             <thead><tr><th>Rubrique</th><th>Échéance</th><th className="num">Net</th><th className="num">Payé</th><th className="num">Reste</th><th>Statut</th></tr></thead>

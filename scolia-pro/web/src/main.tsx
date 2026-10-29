@@ -12,6 +12,8 @@ import './styles.css';
 import './theme.css';
 
 applyTheme(storedTheme());
+// La préférence s'applique aussi à la connexion, avant que la coque authentifiée ne soit montée.
+try { document.documentElement.dataset.motion = localStorage.getItem('scolia.animations') === '0' ? 'reduced' : 'normal'; } catch { /* stockage indisponible */ }
 
 const queryClient = new QueryClient({
   defaultOptions: {

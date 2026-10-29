@@ -19,36 +19,65 @@ public partial class PhoneFrame : UserControl
         MenuPanel.AddHandler(Button.ClickEvent, (_, e) => { if (e.Source is Button { Command: not null }) CloseMenu(); }, RoutingStrategies.Bubble);
         Tabs.AddHandler(Button.ClickEvent, (_, _) => CloseMenu(), RoutingStrategies.Bubble);
         RailPanel.AddHandler(Button.ClickEvent, (_, e) => { if (e.Source is Button { Command: not null }) CloseMenu(); }, RoutingStrategies.Bubble);
-        DataContextChanged += (_, _) =>
+        DataContextChanged += (_, _) => AttachShell();
+        AttachedToVisualTree += (_, _) => AttachShell();
+        DetachedFromVisualTree += (_, _) => ReleaseShell();
+        SizeChanged += (_, e) => ActionSheet.MaxHeight = Math.Max(0, e.NewSize.Height - 24);
+    }
+
+    private ShellViewModel? subscribedShell;
+    private Func<Action>? captureScroll;
+
+    private void AttachShell()
+    {
+        ReleaseShell();
+        if (Shell is not { } shell) return;
+        subscribedShell = shell;
+        ApplyTransition();
+        shell.Prefs.PropertyChanged += OnPreferencesChanged;
+        shell.PropertyChanged += OnShellChanged;
+        // Restauration après la mesure naturelle : aucune mise en page forcée pendant le défilement.
+        captureScroll = () =>
         {
-            if (Shell is not { } shell) return;
-            // Passage d'une page à l'autre : un fondu court, fluide même sur un téléphone modeste.
-            void Transition() => PhoneHost.PageTransition = shell.Prefs.Animations && shell.Prefs.PageTransitions
-                ? new Avalonia.Animation.CrossFade(TimeSpan.FromMilliseconds(170) * shell.Prefs.SpeedFactor) : null;
-            Transition();
-            shell.Prefs.PropertyChanged += (_, args) =>
+            if (!shell.Phone) return () => { };
+            var page = shell.PhonePage;
+            var offset = PhoneScroll.Offset;
+            return () => Avalonia.Threading.Dispatcher.UIThread.Post(() =>
             {
-                if (args.PropertyName is nameof(Infrastructure.Preferences.Animations) or nameof(Infrastructure.Preferences.PageTransitions) or nameof(Infrastructure.Preferences.Speed)) Transition();
-            };
-            shell.PropertyChanged += (_, args) =>
-            {
-                // Une nouvelle page s'ouvre en haut, pas à la hauteur où la précédente était lue.
-                if (args.PropertyName == nameof(ShellViewModel.PhonePage)) PhoneScroll.Offset = default;
-            };
-            // Mise à jour venue d'un autre poste : la page se recharge sous le doigt sans bouger.
-            shell.KeepScrollPosition = () =>
-            {
-                if (!shell.Phone) return () => { };
-                var page = shell.PhonePage;
-                var offset = PhoneScroll.Offset;
-                return () => Avalonia.Threading.Dispatcher.UIThread.Post(() =>
-                {
-                    if (shell.PhonePage != page) return;
-                    PhoneScroll.UpdateLayout();
-                    PhoneScroll.Offset = offset;
-                }, Avalonia.Threading.DispatcherPriority.Background);
-            };
+                if (subscribedShell == shell && shell.PhonePage == page) PhoneScroll.Offset = offset;
+            }, Avalonia.Threading.DispatcherPriority.Loaded);
         };
+        shell.KeepScrollPosition = captureScroll;
+    }
+
+    private void ReleaseShell()
+    {
+        if (subscribedShell is { } shell)
+        {
+            shell.Prefs.PropertyChanged -= OnPreferencesChanged;
+            shell.PropertyChanged -= OnShellChanged;
+            if (shell.KeepScrollPosition == captureScroll) shell.KeepScrollPosition = null;
+        }
+        subscribedShell = null;
+        captureScroll = null;
+    }
+
+    private void ApplyTransition()
+    {
+        PhoneHost.PageTransition = subscribedShell is { } shell && shell.Prefs.Animations && shell.Prefs.PageTransitions
+            ? new Avalonia.Animation.CrossFade(TimeSpan.FromMilliseconds(150) * shell.Prefs.SpeedFactor) : null;
+    }
+
+    private void OnPreferencesChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs args)
+    {
+        if (args.PropertyName is nameof(Infrastructure.Preferences.Animations) or nameof(Infrastructure.Preferences.PageTransitions) or nameof(Infrastructure.Preferences.Speed))
+            ApplyTransition();
+    }
+
+    private void OnShellChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs args)
+    {
+        // Une nouvelle page s'ouvre en haut, sans toucher la position d'une page simplement actualisée.
+        if (args.PropertyName == nameof(ShellViewModel.PhonePage)) PhoneScroll.Offset = default;
     }
 
     private ShellViewModel? Shell => DataContext as ShellViewModel;

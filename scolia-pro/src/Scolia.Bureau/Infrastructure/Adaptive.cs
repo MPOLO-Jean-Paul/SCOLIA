@@ -41,6 +41,7 @@ public static class Adaptive
     private sealed class GridState
     {
         public bool Stacked;
+        public bool Pending;
         public ColumnDefinitions Columns = [];
         public RowDefinitions Rows = [];
         public double RowSpacing;
@@ -51,6 +52,7 @@ public static class Adaptive
     {
         public int Columns;
         public int Rows;
+        public bool Pending;
     }
 
     private sealed class DialogState
@@ -58,6 +60,8 @@ public static class Adaptive
         public double Width;
         public double MinWidth;
         public double MaxWidth;
+        public double MinHeight;
+        public double MaxHeight;
         public Control? Host;
         public EventHandler<SizeChangedEventArgs>? OnHostSize;
     }
@@ -81,7 +85,13 @@ public static class Adaptive
         FitDialogProperty.Changed.AddClassHandler<Control>((dialog, e) =>
         {
             dialog.AttachedToVisualTree -= OnDialogAttached;
-            if (e.NewValue is true) dialog.AttachedToVisualTree += OnDialogAttached;
+            dialog.DetachedFromVisualTree -= OnDialogDetached;
+            if (Dialogs.TryGetValue(dialog, out var state)) Release(state);
+            if (e.NewValue is true)
+            {
+                dialog.AttachedToVisualTree += OnDialogAttached;
+                dialog.DetachedFromVisualTree += OnDialogDetached;
+            }
         });
     }
 
@@ -89,10 +99,16 @@ public static class Adaptive
     {
         if (sender is not Grid grid || e.NewSize.Width <= 0) return;
         var state = Grids.GetValue(grid, _ => new GridState());
-        var stack = e.NewSize.Width < GetStackBelow(grid);
-        if (stack == state.Stacked) return;
+        if (state.Pending) return;
+        state.Pending = true;
         // Changer la grille pendant sa propre mise en page la relancerait : le rangement attend le passage suivant.
-        Avalonia.Threading.Dispatcher.UIThread.Post(() => Apply(grid, state, stack));
+        // Lire la dernière largeur évite qu'un ancien redimensionnement ne gagne sur le plus récent.
+        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        {
+            state.Pending = false;
+            if (grid.Bounds.Width > 0 && GetStackBelow(grid) > 0)
+                Apply(grid, state, grid.Bounds.Width < GetStackBelow(grid));
+        });
     }
 
     private static void Apply(Grid grid, GridState state, bool stack)
@@ -140,7 +156,19 @@ public static class Adaptive
     {
         if (sender is not UniformGrid grid || e.NewSize.Width <= 0) return;
         var state = Uniforms.GetValue(grid, g => new UniformState { Columns = g.Columns, Rows = g.Rows });
-        var fit = Math.Max(1, (int)(e.NewSize.Width / GetMinItemWidth(grid)));
+        if (state.Pending) return;
+        state.Pending = true;
+        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        {
+            state.Pending = false;
+            ApplyUniform(grid, state);
+        });
+    }
+
+    private static void ApplyUniform(UniformGrid grid, UniformState state)
+    {
+        if (grid.Bounds.Width <= 0 || GetMinItemWidth(grid) <= 0) return;
+        var fit = Math.Max(1, (int)(grid.Bounds.Width / GetMinItemWidth(grid)));
         var count = grid.Children.Count;
         int columns, rows;
         if (state.Rows == 1)
@@ -155,13 +183,18 @@ public static class Adaptive
             rows = state.Rows;
         }
         if (grid.Columns == columns && grid.Rows == rows) return;
-        Avalonia.Threading.Dispatcher.UIThread.Post(() => { grid.Columns = columns; grid.Rows = rows; });
+        grid.Columns = columns;
+        grid.Rows = rows;
     }
 
     private static void OnDialogAttached(object? sender, VisualTreeAttachmentEventArgs e)
     {
         if (sender is not Control dialog) return;
-        var state = Dialogs.GetValue(dialog, d => new DialogState { Width = d.Width, MinWidth = d.MinWidth, MaxWidth = d.MaxWidth });
+        var state = Dialogs.GetValue(dialog, d => new DialogState
+        {
+            Width = d.Width, MinWidth = d.MinWidth, MaxWidth = d.MaxWidth,
+            MinHeight = d.MinHeight, MaxHeight = d.MaxHeight,
+        });
         Release(state);
         // L'hôte est le voile qui couvre l'interface ; à défaut, la fenêtre ou l'écran du téléphone.
         state.Host = dialog.GetVisualAncestors().OfType<Border>().FirstOrDefault(b => b.Classes.Contains("scrim")) as Control
@@ -170,7 +203,11 @@ public static class Adaptive
         state.OnHostSize = (_, args) => Fit(dialog, state, args.NewSize);
         state.Host.SizeChanged += state.OnHostSize;
         Fit(dialog, state, state.Host.Bounds.Size);
-        dialog.DetachedFromVisualTree += (_, _) => Release(state);
+    }
+
+    private static void OnDialogDetached(object? sender, VisualTreeAttachmentEventArgs e)
+    {
+        if (sender is Control dialog && Dialogs.TryGetValue(dialog, out var state)) Release(state);
     }
 
     private static void Release(DialogState state)
@@ -183,11 +220,25 @@ public static class Adaptive
     private static void Fit(Control dialog, DialogState state, Size host)
     {
         if (host.Width <= 0) return;
-        var room = Math.Max(240, host.Width - 24);
+        // Les marges du contenu intermédiaire font partie de la place à réserver, même sur le bureau.
+        var horizontalMargin = dialog.Margin.Left + dialog.Margin.Right;
+        var verticalMargin = dialog.Margin.Top + dialog.Margin.Bottom;
+        foreach (var ancestor in dialog.GetVisualAncestors().OfType<Control>())
+        {
+            if (ReferenceEquals(ancestor, state.Host)) break;
+            horizontalMargin += ancestor.Margin.Left + ancestor.Margin.Right;
+            verticalMargin += ancestor.Margin.Top + ancestor.Margin.Bottom;
+        }
+        var room = Math.Max(0, host.Width - Math.Max(24, horizontalMargin));
         if (!double.IsNaN(state.Width)) dialog.Width = Math.Min(state.Width, room);
         dialog.MinWidth = Math.Min(state.MinWidth, room);
         dialog.MaxWidth = Math.Min(state.MaxWidth, room);
         // En hauteur aussi : une fiche plus haute que la fenêtre défile au lieu d'être coupée.
-        if (host.Height > 0) dialog.MaxHeight = Math.Max(240, host.Height - 48);
+        if (host.Height > 0)
+        {
+            var height = Math.Max(0, host.Height - Math.Max(48, verticalMargin));
+            dialog.MinHeight = Math.Min(state.MinHeight, height);
+            dialog.MaxHeight = Math.Min(state.MaxHeight, height);
+        }
     }
 }

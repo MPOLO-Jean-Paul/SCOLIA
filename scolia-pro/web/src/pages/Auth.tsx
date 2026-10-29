@@ -5,6 +5,7 @@ import { ApiError, api } from '../api/client';
 import type { Session } from '../api/types';
 import { useSession } from '../lib/session';
 import { ScoliaMark } from '../components/ScoliaMark';
+import { StartupScreen } from '../components/StartupScreen';
 import { Button, ErrorAlert, SectionTitle, SelectField, TextField, errorText } from '../components/ui';
 
 // Verrouillage après 5 erreurs : l'échéance est gardée pour qu'un rechargement de la page reprenne le compte à rebours.
@@ -62,6 +63,8 @@ export function LoginPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<unknown>();
   const [restored, setRestored] = useState(false);
+  const [welcome, setWelcome] = useState<Session | null>(null);
+  const submitting = useRef(false);
   const passwordRef = useRef<HTMLInputElement>(null);
   const lockout = useLockout(() => {
     setError(undefined);
@@ -72,31 +75,45 @@ export function LoginPage() {
   useEffect(() => {
     document.title = lockout.locked ? `Verrouillé ${countdown(lockout.left)} · SCOLIA` : 'Connexion · SCOLIA';
   }, [lockout.locked, lockout.left]);
+  useEffect(() => {
+    if (!welcome) return;
+    document.title = 'Bienvenue · SCOLIA';
+    // Une seule courte transition, jamais rejouée lors d'une actualisation des données.
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches || document.documentElement.dataset.motion === 'reduced';
+    const timer = window.setTimeout(() => {
+      setSession(welcome);
+      navigate(welcome.mustChangePassword ? '/profil' : '/', { replace: true });
+    }, reduced ? 0 : 420);
+    return () => window.clearTimeout(timer);
+  }, [welcome, setSession, navigate]);
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (lockout.locked) return;
+    if (lockout.locked || submitting.current) return;
+    submitting.current = true;
     setBusy(true); setError(undefined); setRestored(false);
     try {
       const s = await api.post<Session>('/api/session', { userName, password });
-      setSession(s);
-      navigate(s.mustChangePassword ? '/profil' : '/', { replace: true });
+      setPassword('');
+      setWelcome(s);
     } catch (err) {
       const seconds = err instanceof ApiError && err.code === 'verrouille' ? Number(err.data?.retryAfterSeconds) : NaN;
       if (seconds > 0) { setPassword(''); lockout.start(seconds); } else setError(err);
+      submitting.current = false;
     } finally { setBusy(false); }
   };
+  if (welcome) return <StartupScreen welcome={welcome.displayName || welcome.userName} />;
   return (
     <div className="signin-screen">
       <main className="signin">
         <ScoliaMark className="signin-avatar" size={64} />
         <h1 className="signin-title">SCOLIA</h1>
         <p className="signin-sub">Connectez-vous pour continuer</p>
-        <form className="signin-form" onSubmit={submit}>
+        <form className="signin-form" onSubmit={submit} aria-busy={busy}>
           <label className="sr-only" htmlFor="login-user">Identifiant</label>
-          <input id="login-user" className="signin-input" placeholder="Identifiant" autoComplete="username" autoFocus disabled={lockout.locked} value={userName} onChange={(e) => setUserName(e.target.value)} required />
+          <input id="login-user" className="signin-input" placeholder="Identifiant" autoComplete="username" autoCapitalize="none" spellCheck={false} disabled={busy || lockout.locked} value={userName} onChange={(e) => setUserName(e.target.value)} required />
           <label className="sr-only" htmlFor="login-pwd">Mot de passe</label>
           <div className="signin-pass">
-            <input id="login-pwd" ref={passwordRef} disabled={lockout.locked} className="signin-input" type={show ? 'text' : 'password'} placeholder="Mot de passe" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+            <input id="login-pwd" ref={passwordRef} disabled={busy || lockout.locked} className="signin-input" type={show ? 'text' : 'password'} placeholder="Mot de passe" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required />
             <button type="button" className="signin-icon" onClick={() => setShow((v) => !v)} aria-label={show ? 'Masquer la saisie' : 'Afficher la saisie'} title={show ? 'Masquer la saisie' : 'Afficher la saisie'}>
               {show ? <EyeOff /> : <Eye />}
             </button>

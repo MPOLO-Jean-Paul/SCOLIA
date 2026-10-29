@@ -212,6 +212,7 @@ export function Layout() {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if (e.defaultPrevented || document.querySelector('[aria-modal="true"]')) return;
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); setPalette(true); return; }
       if (e.ctrlKey && e.key === 'F1') { e.preventDefault(); toggleCollapsed(); return; }
       if (e.ctrlKey && e.key.toLowerCase() === 'p') { e.preventDefault(); void run('imprimer'); return; }

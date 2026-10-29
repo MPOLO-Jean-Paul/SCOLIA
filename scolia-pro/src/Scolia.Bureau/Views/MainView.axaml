@@ -31,8 +31,8 @@
     <!-- Entrée dans l'application après la connexion : fondu et léger glissement vers le haut -->
     <Style Selector="LayoutTransformControl.anim Grid#AppArea[IsVisible=True]">
       <Style.Animations>
-        <Animation Duration="0:0:0.42" Easing="CubicEaseOut" FillMode="Both">
-          <KeyFrame Cue="0%"><Setter Property="Opacity" Value="0" /><Setter Property="TranslateTransform.Y" Value="18" /></KeyFrame>
+        <Animation Duration="0:0:0.24" Easing="CubicEaseOut" FillMode="Both">
+          <KeyFrame Cue="0%"><Setter Property="Opacity" Value="0" /><Setter Property="TranslateTransform.Y" Value="8" /></KeyFrame>
           <KeyFrame Cue="100%"><Setter Property="Opacity" Value="1" /><Setter Property="TranslateTransform.Y" Value="0" /></KeyFrame>
         </Animation>
       </Style.Animations>
@@ -56,8 +56,8 @@
     <!-- Écran de connexion : il apparaît en fondu, la carte monte doucement -->
     <Style Selector="LayoutTransformControl.anim ContentControl#LoginHost[IsVisible=True]">
       <Style.Animations>
-        <Animation Duration="0:0:0.36" Easing="CubicEaseOut" FillMode="Both">
-          <KeyFrame Cue="0%"><Setter Property="Opacity" Value="0" /><Setter Property="TranslateTransform.Y" Value="12" /></KeyFrame>
+        <Animation Duration="0:0:0.24" Easing="CubicEaseOut" FillMode="Both">
+          <KeyFrame Cue="0%"><Setter Property="Opacity" Value="0" /><Setter Property="TranslateTransform.Y" Value="6" /></KeyFrame>
           <KeyFrame Cue="100%"><Setter Property="Opacity" Value="1" /><Setter Property="TranslateTransform.Y" Value="0" /></KeyFrame>
         </Animation>
       </Style.Animations>
@@ -88,6 +88,49 @@
         </Animation>
       </Style.Animations>
     </Style>
+
+    <!-- Trois points discrets : seule l'opacité varie, sans mesure ni déplacement du contenu. -->
+    <Style Selector="Border.welcomedot">
+      <Setter Property="Width" Value="6" /><Setter Property="Height" Value="6" />
+      <Setter Property="CornerRadius" Value="3" /><Setter Property="Opacity" Value="0.3" />
+      <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
+    </Style>
+    <Style Selector="LayoutTransformControl.anim Grid#OpeningHost[IsVisible=True] Border.welcomedot.first">
+      <Style.Animations>
+        <Animation Duration="0:0:1.2" Delay="0:0:0.00" IterationCount="Infinite">
+          <KeyFrame Cue="0%"><Setter Property="Opacity" Value="0.3" /></KeyFrame>
+          <KeyFrame Cue="35%"><Setter Property="Opacity" Value="1" /></KeyFrame>
+          <KeyFrame Cue="70%"><Setter Property="Opacity" Value="0.3" /></KeyFrame>
+          <KeyFrame Cue="100%"><Setter Property="Opacity" Value="0.3" /></KeyFrame>
+        </Animation>
+      </Style.Animations>
+    </Style>
+    <Style Selector="LayoutTransformControl.anim Grid#OpeningHost[IsVisible=True] Border.welcomedot.second">
+      <Style.Animations>
+        <Animation Duration="0:0:1.2" Delay="0:0:0.14" IterationCount="Infinite">
+          <KeyFrame Cue="0%"><Setter Property="Opacity" Value="0.3" /></KeyFrame>
+          <KeyFrame Cue="35%"><Setter Property="Opacity" Value="1" /></KeyFrame>
+          <KeyFrame Cue="70%"><Setter Property="Opacity" Value="0.3" /></KeyFrame>
+          <KeyFrame Cue="100%"><Setter Property="Opacity" Value="0.3" /></KeyFrame>
+        </Animation>
+      </Style.Animations>
+    </Style>
+    <Style Selector="LayoutTransformControl.anim Grid#OpeningHost[IsVisible=True] Border.welcomedot.third">
+      <Style.Animations>
+        <Animation Duration="0:0:1.2" Delay="0:0:0.28" IterationCount="Infinite">
+          <KeyFrame Cue="0%"><Setter Property="Opacity" Value="0.3" /></KeyFrame>
+          <KeyFrame Cue="35%"><Setter Property="Opacity" Value="1" /></KeyFrame>
+          <KeyFrame Cue="70%"><Setter Property="Opacity" Value="0.3" /></KeyFrame>
+          <KeyFrame Cue="100%"><Setter Property="Opacity" Value="0.3" /></KeyFrame>
+        </Animation>
+      </Style.Animations>
+    </Style>
+    <Style Selector="Grid#OpeningHost TextBlock.title">
+      <Setter Property="FontSize" Value="{DynamicResource FsTitle}" />
+    </Style>
+    <Style Selector="LayoutTransformControl.phone Grid#OpeningHost TextBlock.title">
+      <Setter Property="FontSize" Value="22" />
+    </Style>
   </UserControl.Styles>
 
   <!-- Toute l'interface suit la taille de la fenêtre : la mise en page de 1280 × 720, agrandie ou réduite d'un bloc -->
@@ -111,19 +154,23 @@
     </ContentControl>
     <ContentControl Content="{Binding Connection}" IsVisible="{Binding ChoosingServer}" />
 
-    <!-- Ouverture : entre la connexion et l'accueil, la roue tourne et les étapes défilent -->
+    <!-- Ouverture : logo, trois points discrets et progression avant l'accueil -->
     <Grid x:Name="OpeningHost" IsVisible="{Binding Opening}" Background="{DynamicResource BgBrush}">
       <Grid.RenderTransform><TranslateTransform /></Grid.RenderTransform>
-      <StackPanel Width="320" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="14">
-        <Panel Width="72" Height="72" HorizontalAlignment="Center">
+      <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" VerticalAlignment="Center">
+      <StackPanel x:Name="WelcomeContent" MaxWidth="320" Margin="24" HorizontalAlignment="Stretch" Spacing="12">
+        <Panel Width="64" Height="64" HorizontalAlignment="Center">
           <Image Source="{Binding SchoolLogo}" IsVisible="{Binding HasSchoolLogo}" />
           <Image Source="{DynamicResource ScoliaMark}" IsVisible="{Binding !HasSchoolLogo}" Width="60" Height="60" />
         </Panel>
-        <TextBlock Text="{Binding OpeningTitle}" Classes="title" FontSize="{DynamicResource FsTitle}" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" />
-        <mi:MaterialIcon Kind="Loading" Classes="spin" Width="34" Height="34" Foreground="{DynamicResource AccentBrush}" HorizontalAlignment="Center" Margin="0,6,0,0" />
-        <TextBlock Text="{Binding OpeningStep}" Classes="muted" HorizontalAlignment="Center" TextAlignment="Center" />
+        <TextBlock Text="{Binding OpeningTitle}" Classes="title" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" />
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="6" Margin="0,2,0,2">
+          <Border Classes="welcomedot first" /><Border Classes="welcomedot second" /><Border Classes="welcomedot third" />
+        </StackPanel>
+        <TextBlock Text="{Binding OpeningStep}" Classes="muted" HorizontalAlignment="Stretch" TextAlignment="Center" TextWrapping="Wrap" />
         <ProgressBar Minimum="0" Maximum="100" Value="{Binding OpeningProgress, Mode=OneWay}" Height="4" MinHeight="4" Margin="24,2,24,0" />
       </StackPanel>
+      </ScrollViewer>
     </Grid>
 
     <Grid x:Name="AppArea" IsVisible="{Binding ShowApp}">
@@ -134,7 +181,7 @@
 
       <!-- Bandeau bleu ciel sur toute la largeur : volet, flèches, titre de la page, recherche, actions, réseau, compte, menu -->
       <Border Grid.Row="0" Grid.ColumnSpan="2" Classes="pagebar appheader" x:Name="PageBar">
-        <Grid ColumnDefinitions="Auto,Auto,Auto,*,Auto,Auto,Auto" IsVisible="{Binding HasPage}">
+        <Grid ColumnDefinitions="Auto,Auto,2*,3*,Auto,Auto,Auto" IsVisible="{Binding HasPage}">
           <Button Classes="toolicon" Command="{Binding ToggleSidebarCommand}" Margin="0,0,8,0" VerticalAlignment="Center"
                   ToolTip.Tip="Afficher ou masquer le volet (Ctrl+B)">
             <mi:MaterialIcon Kind="DockLeft" Width="18" Height="18" />
@@ -150,7 +197,7 @@
               </Button>
             </StackPanel>
           </Border>
-          <Grid Grid.Column="2" ColumnDefinitions="Auto,*" VerticalAlignment="Center" MinWidth="140" MaxWidth="300">
+          <Grid x:Name="HeaderTitle" Grid.Column="2" ColumnDefinitions="Auto,*" VerticalAlignment="Center" MinWidth="140" MaxWidth="300">
             <Border Classes="appicon medium" Background="{Binding CurrentIconBrush}" Margin="0,0,10,0">
               <mi:MaterialIcon Kind="{Binding CurrentIcon}" />
             </Border>
@@ -243,13 +290,13 @@
                   <ItemsControl ItemsSource="{Binding Items}" Margin="0,0,0,14">
                     <ItemsControl.ItemTemplate>
                       <DataTemplate>
-                        <Button Classes="navitem" Classes.selected="{Binding IsSelected}" Command="{Binding Open}" Margin="0,1">
-                          <StackPanel Orientation="Horizontal" Spacing="10">
+                        <Button Classes="navitem" Classes.selected="{Binding IsSelected}" Command="{Binding Open}" Margin="0,1" HorizontalContentAlignment="Stretch">
+                          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
                             <Border Classes="appicon" Background="{Binding Brush}">
                               <mi:MaterialIcon Kind="{Binding Icon}" />
                             </Border>
-                            <TextBlock Text="{Binding Label}" VerticalAlignment="Center" />
-                          </StackPanel>
+                            <TextBlock Grid.Column="1" Text="{Binding Label}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Label}" />
+                          </Grid>
                         </Button>
                       </DataTemplate>
                     </ItemsControl.ItemTemplate>
@@ -278,20 +325,22 @@
       <ProgressBar Grid.Row="1" Grid.Column="1" IsIndeterminate="True" IsVisible="{Binding Current.Busy}" VerticalAlignment="Top" Height="2" MinHeight="2" />
 
       <!-- Barre d'état : statut, serveur, zoom -->
-      <Border Grid.Row="2" Grid.ColumnSpan="2" Classes="statusbar" IsVisible="{Binding ShowStatusBar}">
-        <Grid ColumnDefinitions="*,Auto,Auto,Auto">
+      <Border x:Name="DesktopStatusBar" Grid.Row="2" Grid.ColumnSpan="2" Classes="statusbar" IsVisible="{Binding ShowStatusBar}">
+        <Grid ColumnDefinitions="*,2*,*,Auto">
           <TextBlock Text="{Binding Status}" Classes="muted" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
           <!-- Direct : autres postes, activité qui vient d'avoir lieu ailleurs, ou travail hors ligne -->
-          <Button Grid.Column="1" Classes="ghost" Padding="8,0" MinHeight="0" Command="{Binding NetworkCommand}" ToolTip.Tip="Réseau et activité" Margin="0,0,16,0">
-            <StackPanel Orientation="Horizontal" Spacing="7">
+          <Button Grid.Column="1" Classes="ghost" Padding="8,0" MinHeight="0" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Command="{Binding NetworkCommand}" ToolTip.Tip="Réseau et activité" Margin="0,0,16,0">
+            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="7">
+              <Panel Width="15" Height="15">
               <Border Classes="livedot" Classes.pulse="{Binding Sync.Pulse}" VerticalAlignment="Center" IsVisible="{Binding Sync.Online}" />
               <mi:MaterialIcon Kind="CloudOffOutline" Width="15" Height="15" Foreground="{DynamicResource ToneOrange}" IsVisible="{Binding Sync.Offline}" />
-              <TextBlock Text="{Binding Sync.Ticker}" IsVisible="{Binding Sync.HasTicker}" VerticalAlignment="Center" MaxWidth="420" TextTrimming="CharacterEllipsis" />
-              <TextBlock Text="{Binding Sync.StatusText}" Foreground="{Binding Sync.StatusBrush}" IsVisible="{Binding !Sync.HasTicker}" VerticalAlignment="Center" />
-              <TextBlock Text="{Binding Sync.PeersText}" Classes="muted" IsVisible="{Binding Sync.HasPeers}" VerticalAlignment="Center" />
-            </StackPanel>
+              </Panel>
+              <TextBlock Grid.Column="1" Text="{Binding Sync.Ticker}" IsVisible="{Binding Sync.HasTicker}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+              <TextBlock Grid.Column="1" Text="{Binding Sync.StatusText}" Foreground="{Binding Sync.StatusBrush}" IsVisible="{Binding !Sync.HasTicker}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+              <TextBlock Grid.Column="2" Text="{Binding Sync.PeersText}" Classes="muted" IsVisible="{Binding Sync.HasPeers}" VerticalAlignment="Center" MaxWidth="100" TextTrimming="CharacterEllipsis" />
+            </Grid>
           </Button>
-          <TextBlock Text="{Binding ServerLine}" Classes="muted" Grid.Column="2" VerticalAlignment="Center" Margin="0,0,20,0" />
+          <TextBlock x:Name="DesktopServerLine" Text="{Binding ServerLine}" Classes="muted" Grid.Column="2" VerticalAlignment="Center" Margin="0,0,20,0" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding ServerLine}" />
           <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="6">
             <!-- Bascule rapide du thème clair au thème sombre -->
             <Button Classes="ghost" Padding="6,0" MinHeight="0" Click="OnThemeToggle" ToolTip.Tip="Thème clair ou sombre" Margin="0,0,10,0">

@@ -29,7 +29,7 @@ export function CashierPage() {
   return (
     <>
       <PageHead title="Encaisser" subtitle="Rechercher un apprenant, saisir le versement et imprimer le reçu validé à la caisse." />
-      <div className="grid" style={{ gridTemplateColumns: 'minmax(280px, 1fr) minmax(0, 2fr)', alignItems: 'start' }}>
+      <div className="grid mobile-split-grid cashier-grid">
         <Card title="01 · Rechercher un apprenant">
           <div className="input-group"><Search /><input className="input" autoFocus placeholder="Matricule ou nom (2 caractères minimum)" value={search} onChange={(e) => setSearch(e.target.value)} /></div>
           <div style={{ marginTop: 12 }}>
@@ -166,7 +166,7 @@ function PaymentForm({ account, onDone }: { account: Account; onDone: (r: Receip
           )}
         <div style={{ marginTop: 14 }}><ErrorAlert error={error instanceof ApiError && error.status === 409 ? new Error(error.message) : error} /></div>
         <div className="row" style={{ justifyContent: 'flex-end', marginTop: 14 }}>
-          <Button variant="primary" icon={<HandCoins />} loading={busy} disabled={!preview || !hasSelection} onClick={submit} style={{ height: 46, minWidth: 240 }}>Valider le paiement · {money(total)}</Button>
+          <Button variant="primary" className="payment-submit" icon={<HandCoins />} loading={busy} disabled={!preview || !hasSelection} onClick={submit}>Valider le paiement · {money(total)}</Button>
         </div>
       </div>
     </div>

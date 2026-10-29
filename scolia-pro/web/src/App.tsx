@@ -3,6 +3,7 @@ import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { useSession } from './lib/session';
 import { Layout } from './components/Layout';
 import { Loading } from './components/ui';
+import { StartupScreen } from './components/StartupScreen';
 import { LoginPage, SetupPage } from './pages/Auth';
 
 // Chaque écran est un fragment chargé à la demande : le premier affichage ne télécharge que ce qui est nécessaire.
@@ -33,7 +34,7 @@ const VerifyPage = page(() => import('./pages/Misc'), 'VerifyPage');
 function Protected() {
   const { session, loading, configured } = useSession();
   const location = useLocation();
-  if (loading) return <div style={{ padding: 40 }}><Loading rows={6} /></div>;
+  if (loading) return <StartupScreen />;
   if (configured === false) return <Navigate to="/installation" replace />;
   if (!session) return <Navigate to="/connexion" replace state={{ from: location.pathname }} />;
   if (session.mustChangePassword && location.pathname !== '/profil') return <Navigate to="/profil" replace />;
@@ -45,8 +46,8 @@ export function App() {
   return (
     <Routes>
       <Route path="/verifier/:code" element={<Suspense fallback={<Loading rows={3} />}><VerifyPage /></Suspense>} />
-      <Route path="/installation" element={loading ? null : configured ? <Navigate to="/" replace /> : <SetupPage />} />
-      <Route path="/connexion" element={session ? <Navigate to="/" replace /> : configured === false ? <Navigate to="/installation" replace /> : <LoginPage />} />
+      <Route path="/installation" element={loading ? <StartupScreen /> : configured ? <Navigate to="/" replace /> : <SetupPage />} />
+      <Route path="/connexion" element={loading ? <StartupScreen /> : session ? <Navigate to="/" replace /> : configured === false ? <Navigate to="/installation" replace /> : <LoginPage />} />
       <Route element={<Protected />}>
         <Route index element={<DashboardPage />} />
         <Route path="apprenants" element={<StudentsPage />} />

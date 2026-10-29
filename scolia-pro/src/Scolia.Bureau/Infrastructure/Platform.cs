@@ -9,6 +9,12 @@ public static class Platform
     /// <summary>Vrai dans l'application du téléphone : pas de serveur sur l'appareil, il se connecte à celui de l'établissement.</summary>
     public static bool IsMobile { get; set; }
 
+    /// <summary>Initialisation du téléphone : l'écran natif garde le logo jusqu'à ce que la première page soit prête.</summary>
+    public static Task? StartupTask { get; set; }
+
+    /// <summary>Relance une initialisation en échec depuis l'écran de démarrage Android.</summary>
+    public static Func<Task>? RetryStartup { get; set; }
+
     /// <summary>Ouvre un document enregistré, un PDF ou un classeur, avec l'application du téléphone.</summary>
     public static Action<string>? OpenFile { get; set; }
 
