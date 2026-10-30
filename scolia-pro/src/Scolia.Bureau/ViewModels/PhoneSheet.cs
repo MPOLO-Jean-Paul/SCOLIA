@@ -79,17 +79,18 @@ public sealed record PhoneMenuBlockVm(string Title, IReadOnlyList<NavGroupVm> Na
         var usedTools = new HashSet<PhoneToolGroupVm>();
         var result = new List<PhoneMenuBlockVm>();
 
-        // Réunir les réglages d'affichage et les autres outils des Paramètres
-        // dans le même accordéon de navigation, sans deuxième rubrique « Paramètres ».
-        foreach (var group in navigation) group.SetSupplementalCommands([]);
-        var settings = navigation.FirstOrDefault(g => g.Title == "Paramètres");
-        if (settings is not null)
+        // Fusionner les outils de chaque métier avec son accordéon de navigation.
+        // Évite deux lignes « Scolarité », « Finances », « Paramètres », etc.
+        foreach (var nav in navigation)
         {
-            var settingsTools = tools.Where(g => g.Title is "Paramètres" or "Affichage").ToArray();
-            var commands = settingsTools.SelectMany(g => g.Commands)
+            var aliases = nav.Title == "Paramètres"
+                ? new[] { "Paramètres", "Affichage" } // compatibilité anciens groupes
+                : new[] { nav.Title };
+            var matched = tools.Where(g => aliases.Contains(g.Title, StringComparer.Ordinal)).ToArray();
+            var commands = matched.SelectMany(g => g.Commands)
                 .DistinctBy(c => c.Label.Trim(), StringComparer.OrdinalIgnoreCase).ToArray();
-            settings.SetSupplementalCommands(commands);
-            foreach (var group in settingsTools) usedTools.Add(group);
+            nav.SetSupplementalCommands(commands);
+            foreach (var group in matched) usedTools.Add(group);
         }
 
         void Add(string title, string[] navigationTitles, string[] toolTitles)
@@ -103,9 +104,9 @@ public sealed record PhoneMenuBlockVm(string Title, IReadOnlyList<NavGroupVm> Na
         }
 
         Add("ACCUEIL", [""], []);
-        Add("DONNÉES ET SAUVEGARDES", ["Données"], ["Données", "Sauvegardes", "Export", "Exports"]);
+        Add("DONNÉES ET SAUVEGARDES", ["Données"], ["Données", "Sauvegardes", "Export", "Exports", "Rapports", "Contrôle", "Effacement"]);
         Add("GESTION SCOLAIRE", ["Secrétariat", "Scolarité"], ["Secrétariat", "Scolarité", "Apprenants"]);
-        Add("GESTION FINANCIÈRE", ["Finances"], ["Finances", "Paiements", "Rapports"]);
+        Add("GESTION FINANCIÈRE", ["Finances"], ["Finances", "Paiements"]);
         Add("ADMINISTRATION", ["Administration", "Paramètres"], ["Administration", "Paramètres", "Affichage", "Sécurité"]);
         Add("AIDE", [], ["Aide"]);
 
@@ -146,7 +147,8 @@ public sealed record PhoneToolBlockVm(string Title, IReadOnlyList<PhoneToolGroup
             blocks.Add(new PhoneToolBlockVm(title, entries));
         }
         Add("SCOLARITÉ ET APPRENANTS", "Scolarité", "Secrétariat", "Apprenants");
-        Add("FINANCES ET RAPPORTS", "Paiements", "Finances", "Rapports", "Export", "Exports", "Données");
+        Add("FINANCES", "Paiements", "Finances");
+        Add("DONNÉES ET SAUVEGARDES", "Données", "Sauvegardes", "Rapports", "Export", "Exports", "Contrôle", "Effacement");
         Add("ADMINISTRATION", "Administration", "Paramètres", "Affichage", "Sécurité");
         Add("AIDE", "Aide");
         var extra = groups.Where(g => !used.Contains(g)).ToArray();

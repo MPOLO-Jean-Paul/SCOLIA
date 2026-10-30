@@ -121,26 +121,28 @@ public static class MobilePlatform
         {
             if (context?.GetSystemService(Context.ConnectivityService) is ConnectivityManager manager)
             {
-                bool anyNetwork = false;
-                foreach (var network in manager.AllNetworks ?? [])
+                // ActiveNetwork est pris en charge par la version Android/.NET du projet.
+                // AllNetworks ne l'est pas : il provoquait une erreur CS1061 à la compilation.
+                if (manager.ActiveNetwork is { } network)
                 {
                     var capabilities = manager.GetNetworkCapabilities(network);
-                    if (capabilities is null) continue;
-                    anyNetwork = true;
-                    if (!capabilities.HasTransport(TransportType.Vpn)) continue;
-                    vpnFound = true;
-                    var links = manager.GetLinkProperties(network)?.LinkAddresses;
-                    if (links is null) continue;
-                    foreach (var link in links)
+                    if (capabilities is not null)
                     {
-                        var candidate = link?.Address?.HostAddress;
-                        if (!TailnetSnapshot.IsCandidateTailscaleIp(candidate)) continue;
-                        address = candidate;
-                        break;
+                        vpnFound = capabilities.HasTransport(TransportType.Vpn);
+                        if (vpnFound == true)
+                        {
+                            var links = manager.GetLinkProperties(network)?.LinkAddresses;
+                            if (links is not null)
+                                foreach (var link in links)
+                                {
+                                    var candidate = link?.Address?.HostAddress;
+                                    if (!TailnetSnapshot.IsCandidateTailscaleIp(candidate)) continue;
+                                    address = candidate;
+                                    break;
+                                }
+                        }
                     }
-                    if (address is not null) break;
                 }
-                vpnFound ??= anyNetwork ? false : null;
             }
         }
         catch (Java.Lang.SecurityException) { vpnFound = null; }

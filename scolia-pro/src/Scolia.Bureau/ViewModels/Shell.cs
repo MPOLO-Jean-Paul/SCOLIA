@@ -1168,21 +1168,48 @@ public sealed class ShellViewModel : Observable
         "Rapports et exports",
     };
 
-    // Les préférences d'affichage appartiennent à Paramètres sur téléphone.
-    // Aucun groupe « Affichage » ne doit être créé séparément.
-    public static string CanonicalPhoneGroup(string label, string originalGroup)
+    // Un menu mobile est classé par finalité, non par l'onglet du ruban Windows.
+    // Une même action est conservée une seule fois par RebuildPhoneTools.
+    public static string CanonicalPhoneGroup(string label, string originalTab, string ribbonGroup = "")
     {
         var name = label.Trim();
         if (name is "Thème" or "Couleurs" or "Couleur d'accent" or "Thème et couleurs"
-            or "Texte et polices" or "Police" or "Taille de police"
-            or "Animations et fluidité" or "Sons" or "Apparence")
+            or "Police et taille du texte" or "Texte et polices" or "Police"
+            or "Taille de police" or "Animations et fluidité" or "Sons"
+            or "Apparence" or "Préférences" or "Nouvelle promotion" or "Nouvelle année")
             return "Paramètres";
+
         if (name is "À propos" or "Aide" or "Aide et gestes" or "Documentation"
-            or "Guide utilisateur")
+            or "Guide utilisateur" or "Raccourcis clavier")
             return "Aide";
-        if (name is "Gestion des utilisateurs" or "Gestion des comptes" or "Permissions")
+
+        if (name is "Gestion des utilisateurs" or "Gestion des comptes"
+            or "Permissions" or "Nouvel utilisateur" or "Nouveau membre")
             return "Administration";
-        return originalGroup == "Affichage" ? "Paramètres" : originalGroup;
+
+        if (name is "Nouvelle inscription" or "Modifier" or "Liste des apprenants")
+            return "Secrétariat";
+        if (name is "Nouveau cours" or "Nouvelle évaluation" or "Nouvel incident")
+            return "Scolarité";
+        if (name is "Nouvelle dépense" or "Arrêter la caisse" or "Annuler le reçu"
+            or "Vérifier en ligne" or "Relevé de compte")
+            return "Finances";
+
+        if (originalTab == "Données")
+        {
+            if (ribbonGroup is "Exports rapides" or "Pilotage") return "Exports";
+            if (ribbonGroup is "Sauvegardes" or "Contrôle" or "Effacement")
+                return ribbonGroup;
+            return "Données";
+        }
+
+        return originalTab switch
+        {
+            "Apprenant" => "Secrétariat",
+            "Reçu" => "Finances",
+            "Affichage" => "Paramètres",
+            _ => originalTab
+        };
     }
 
     private void RebuildPhoneTools()
@@ -1194,13 +1221,14 @@ public sealed class ShellViewModel : Observable
         // même si les rubans de bureau la proposent dans plusieurs onglets.
         var usedCommands = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var entries = Tabs.Where(t => t.Id is not ("fichier" or "accueil"))
-            .SelectMany(tab => tab.Groups.SelectMany(g => g.Commands)
-                .Select(command => (Tab: tab, Command: command)))
+            .SelectMany(tab => tab.Groups.SelectMany(g => g.Commands
+                .Select(command => (Tab: tab, Group: g, Command: command))))
             .Where(x => !DesktopOnly.Contains(x.Command.Label) && !pages.Contains(x.Command.Label))
-            .Select(x => (x.Tab, Command: x.Command.Label == "Raccourcis clavier"
+            .Select(x => (x.Tab, x.Group, Command: x.Command.Label == "Raccourcis clavier"
                 ? new RibbonCommandVm("Aide et gestes", Material.Icons.MaterialIconKind.GestureTap, string.Empty, x.Command.Command, false, "ToneBlue")
                 : x.Command))
-            .GroupBy(x => CanonicalPhoneGroup(x.Command.Label, x.Tab.Title), StringComparer.Ordinal)
+            .GroupBy(x => CanonicalPhoneGroup(x.Command.Label, x.Tab.Title, x.Group.Title),
+                StringComparer.Ordinal)
             .ToList();
         foreach (var entry in entries)
         {
