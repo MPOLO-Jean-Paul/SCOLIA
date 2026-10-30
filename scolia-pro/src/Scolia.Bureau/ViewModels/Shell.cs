@@ -519,8 +519,12 @@ public sealed class ShellViewModel : Observable
     public async Task JoinAsync(DiscoveredServer server)
     {
         var previous = ConnectionStore.Load();
-        ConnectionStore.Save(new ConnectionSettings(ConnectionSettings.Remote, server.Address.ToString(), server.SchoolId, server.School, server.Machine,
-            previous?.LanPromptDone ?? false));
+        // Ne pas abandonner la liaison actuelle si le nouvel établissement ne peut
+        // pas être mémorisé : après redémarrage, un changement silencieux serait trompeur.
+        if (!ConnectionStore.TrySave(new ConnectionSettings(ConnectionSettings.Remote,
+            server.Address.ToString(), server.SchoolId, server.School, server.Machine,
+            previous?.LanPromptDone ?? false)))
+            throw new IOException("Impossible d'enregistrer la connexion SCOLIA sur cet appareil. Vérifiez l'espace de stockage et les autorisations.");
         if (IsLoggedIn) await LogoutAsync();
         // Un téléphone qui était le serveur et en rejoint un autre arrête le sien : il ne garde qu'un établissement.
         if (Platform.IsMobile && localServer is not null && !server.Address.IsLoopback) localServer.Stop();
