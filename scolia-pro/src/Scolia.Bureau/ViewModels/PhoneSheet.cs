@@ -67,6 +67,20 @@ public sealed class PhoneToolGroupVm : Observable
 /// <summary>Les commandes du ruban apparaissent en blocs cohérents sous les pages.</summary>
 public sealed record PhoneToolBlockVm(string Title, IReadOnlyList<PhoneToolGroupVm> Groups)
 {
+    /// <summary>Une action n'est affichée qu'une fois, même si plusieurs onglets du ruban la proposent.</summary>
+    public static IReadOnlyList<PhoneToolGroupVm> UniqueGroups(IReadOnlyList<PhoneToolGroupVm> groups)
+    {
+        var labels = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var result = new List<PhoneToolGroupVm>();
+        foreach (var group in groups)
+        {
+            var unique = group.Commands.Where(c => labels.Add(c.Label.Trim())).ToList();
+            if (unique.Count == 0) continue;
+            result.Add(new PhoneToolGroupVm(group.Title, unique) { IsExpanded = group.IsExpanded });
+        }
+        return result;
+    }
+
     public static IReadOnlyList<PhoneToolBlockVm> Organize(IReadOnlyList<PhoneToolGroupVm> groups)
     {
         var blocks = new List<PhoneToolBlockVm>();
@@ -80,7 +94,9 @@ public sealed record PhoneToolBlockVm(string Title, IReadOnlyList<PhoneToolGroup
         }
         Add("SCOLARITÉ ET APPRENANTS", "Scolarité", "Secrétariat", "Apprenants");
         Add("FINANCES ET RAPPORTS", "Paiements", "Finances", "Rapports", "Export", "Exports", "Données");
-        Add("ADMINISTRATION DU POSTE", "Administration", "Paramètres", "Préférences", "Sécurité", "Aide");
+        Add("ADMINISTRATION", "Administration", "Paramètres", "Sécurité");
+        Add("AFFICHAGE", "Affichage");
+        Add("AIDE", "Aide");
         var extra = groups.Where(g => !used.Contains(g)).ToArray();
         if (extra.Length != 0) blocks.Add(new PhoneToolBlockVm("AUTRES COMMANDES", extra));
         return blocks;

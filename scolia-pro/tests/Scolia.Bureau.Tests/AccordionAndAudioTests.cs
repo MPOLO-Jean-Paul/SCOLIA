@@ -61,6 +61,36 @@ public class AccordionAndAudioTests
     }
 
     [Fact]
+    public void Outils_mobiles_chaque_commande_est_affichee_une_seule_fois()
+    {
+        var cmd = new RelayCommand(() => { });
+        var duplicate = new RibbonCommandVm("Afficher", Material.Icons.MaterialIconKind.EyeOutline,
+            "", cmd, false, "ToneBlue");
+        var unique = new RibbonCommandVm("Thème", Material.Icons.MaterialIconKind.Palette,
+            "", cmd, false, "TonePurple");
+        var groups = new[]
+        {
+            new PhoneToolGroupVm("Administration", [duplicate]),
+            new PhoneToolGroupVm("Affichage", [duplicate, unique]),
+        };
+        var result = PhoneToolBlockVm.UniqueGroups(groups);
+        Assert.Equal(2, result.SelectMany(g => g.Commands).Count());
+        Assert.Equal(2, result.SelectMany(g => g.Commands).Select(c => c.Label).Distinct().Count());
+    }
+
+    [Fact]
+    public void Affichage_apparait_dans_un_seul_bloc()
+    {
+        var blocks = PhoneToolBlockVm.Organize([
+            new PhoneToolGroupVm("Administration", []),
+            new PhoneToolGroupVm("Affichage", []),
+            new PhoneToolGroupVm("Aide", [])
+        ]);
+        Assert.Equal("AFFICHAGE", blocks.Single(b => b.Groups.Any(g => g.Title == "Affichage")).Title);
+        Assert.Equal(1, blocks.SelectMany(b => b.Groups).Count(g => g.Title == "Affichage"));
+    }
+
+    [Fact]
     public void Son_mobile_transmet_un_wav_valide_au_lecteur()
     {
         var original = Platform.PlayWave;

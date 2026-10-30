@@ -1157,6 +1157,8 @@ public sealed class ShellViewModel : Observable
     {
         "Rechercher", "Actualiser", "Imprimer", "Plein écran", "Barre d'état", "Quadrillage", "Info-bulles", "Barre latérale",
         "Réduire le ruban", "Zoom arrière", "Zoom avant", "Zoom 100 %", "Densité compacte", "Animations",
+        // Le réglage complet est accessible dans Paramètres ; ne pas dupliquer le même écran dans Affichage.
+        "Préférences",
     };
 
     private void RebuildPhoneTools()
@@ -1164,11 +1166,14 @@ public sealed class ShellViewModel : Observable
         var pages = Navigation.SelectMany(g => g.Items).Select(i => i.Label).ToHashSet(StringComparer.Ordinal);
         var expandedTitle = PhoneTools.FirstOrDefault(g => g.IsExpanded)?.Title;
         var groups = new List<PhoneToolGroupVm>();
+        var usedCommands = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var tab in Tabs.Where(t => t.Id is not ("fichier" or "accueil")))
         {
             var commands = tab.Groups.SelectMany(g => g.Commands)
                 .Where(c => !DesktopOnly.Contains(c.Label) && !pages.Contains(c.Label))
                 .Select(c => c.Label == "Raccourcis clavier" ? new RibbonCommandVm("Aide et gestes", Material.Icons.MaterialIconKind.GestureTap, string.Empty, c.Command, false, "ToneBlue") : c)
+                // Déduplication globale : un outil n'appartient qu'à un seul groupe mobile.
+                .Where(c => usedCommands.Add(c.Label.Trim()))
                 .ToList();
             if (commands.Count > 0)
             {
