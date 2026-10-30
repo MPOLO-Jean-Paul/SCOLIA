@@ -409,7 +409,19 @@ public sealed class ShellViewModel : Observable
             RemoteConnection.StartHost(ConnectionStore.LocalAddress);
         if (saved is { IsRemote: true })
         {
-            api.Retarget(new Uri(saved.Url!));
+            if (!Uri.TryCreate(saved.Url, UriKind.Absolute, out var remembered))
+            {
+                ShowChooser([], "L'adresse de connexion mémorisée est invalide. Rejoignez de nouveau votre établissement.");
+                return;
+            }
+            if (TailscaleEndpoint.IsTailnetAddress(remembered)
+                && !await TailscaleEndpoint.ResolvesPrivatelyAsync(remembered))
+            {
+                if (OfferOfflineEntry(saved.School ?? string.Empty)) return;
+                ShowChooser([], "Le réseau privé Tailscale ne résout pas le serveur de votre établissement. Vérifiez l'état du VPN et MagicDNS.");
+                return;
+            }
+            api.Retarget(remembered);
             if (await api.IsRunningAsync())
             {
                 await ShowEntryAsync();
