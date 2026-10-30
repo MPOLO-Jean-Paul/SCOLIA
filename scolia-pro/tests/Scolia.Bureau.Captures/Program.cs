@@ -160,6 +160,9 @@ if (Environment.GetEnvironmentVariable("SCOLIA_MOBILE") == "1")
     Platform.LocalServer = new CaptureServer();
 }
 var shell = new ShellViewModel(api, prefs);
+// Les tests visuels de connexion représentent un établissement déjà configuré.
+// Le démarrage réel ne montre plus la connexion avant la réponse du serveur.
+shell.ApplyInstallationStatus(configured: true);
 // Taille de fenêtre optionnelle (SCOLIA_TAILLE=1024x700) pour vérifier l'adaptation du texte à chaque format d'écran.
 var taille = (Environment.GetEnvironmentVariable("SCOLIA_TAILLE") ?? "1280x820").Split('x');
 // Aperçu du téléphone (SCOLIA_MOBILE=1, avec SCOLIA_TAILLE=412x892) : l'interface garde sa taille réelle et se range.
