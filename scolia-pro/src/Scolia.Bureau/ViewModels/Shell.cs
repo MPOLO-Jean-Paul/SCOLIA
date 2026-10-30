@@ -1173,7 +1173,6 @@ public sealed class ShellViewModel : Observable
     public static string CanonicalPhoneGroup(string label, string originalGroup)
     {
         var name = label.Trim();
-        if (originalGroup == "Affichage") return "Paramètres";
         if (name is "Thème" or "Couleurs" or "Couleur d'accent" or "Thème et couleurs"
             or "Texte et polices" or "Police" or "Taille de police"
             or "Animations et fluidité" or "Sons" or "Apparence")
@@ -1183,7 +1182,7 @@ public sealed class ShellViewModel : Observable
             return "Aide";
         if (name is "Gestion des utilisateurs" or "Gestion des comptes" or "Permissions")
             return "Administration";
-        return originalGroup;
+        return originalGroup == "Affichage" ? "Paramètres" : originalGroup;
     }
 
     private void RebuildPhoneTools()
