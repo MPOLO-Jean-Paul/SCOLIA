@@ -245,8 +245,10 @@
           <ItemsControl.ItemTemplate>
             <DataTemplate>
               <Button Classes="phonetab" Classes.selected="{Binding IsSelected}" Command="{Binding Open}">
-                <StackPanel Spacing="2">
-                  <mi:MaterialIcon Kind="{Binding Icon}" Width="24" Height="24" HorizontalAlignment="Center" Foreground="{Binding Brush}" />
+                <StackPanel Spacing="2" HorizontalAlignment="Center">
+                  <Border Classes="tabicon" Classes.selected="{Binding IsSelected}">
+                    <mi:MaterialIcon Kind="{Binding Icon}" Width="22" Height="22" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{Binding Brush}" />
+                  </Border>
                   <TextBlock Text="{Binding TabLabel}" />
                 </StackPanel>
               </Button>
