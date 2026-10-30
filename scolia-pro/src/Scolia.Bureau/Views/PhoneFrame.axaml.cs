@@ -16,9 +16,9 @@ public partial class PhoneFrame : UserControl
     {
         InitializeComponent();
         // Choisir un outil, depuis le menu ou un onglet, referme le menu, même si l'outil est déjà à l'écran.
-        MenuPanel.AddHandler(Button.ClickEvent, (_, e) => { if (e.Source is Button { Command: not null }) CloseMenu(); }, RoutingStrategies.Bubble);
+        MenuPanel.AddHandler(Button.ClickEvent, (_, e) => { if (e.Source is Button button && button.Command is not null && !button.Classes.Contains("phonecategory")) CloseMenu(); }, RoutingStrategies.Bubble);
         Tabs.AddHandler(Button.ClickEvent, (_, _) => CloseMenu(), RoutingStrategies.Bubble);
-        RailPanel.AddHandler(Button.ClickEvent, (_, e) => { if (e.Source is Button { Command: not null }) CloseMenu(); }, RoutingStrategies.Bubble);
+        RailPanel.AddHandler(Button.ClickEvent, (_, e) => { if (e.Source is Button button && button.Command is not null && !button.Classes.Contains("phonecategory")) CloseMenu(); }, RoutingStrategies.Bubble);
         DataContextChanged += (_, _) => AttachShell();
         AttachedToVisualTree += (_, _) => AttachShell();
         DetachedFromVisualTree += (_, _) => ReleaseShell();
