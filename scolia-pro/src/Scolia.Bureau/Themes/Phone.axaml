@@ -62,6 +62,22 @@
       <Setter Property="FontWeight" Value="SemiBold" />
     </Style>
 
+    <!-- Rubriques repliables : l'utilisateur entre dans un métier ou dans ses réglages à la demande. -->
+    <Style Selector="Button.phonecategory">
+      <Setter Property="Background" Value="{DynamicResource GroupBrush}" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+      <Setter Property="Padding" Value="12,10" />
+      <Setter Property="MinHeight" Value="48" />
+      <Setter Property="CornerRadius" Value="12" />
+      <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+      <Setter Property="Margin" Value="0,10,0,3" />
+    </Style>
+    <Style Selector="Button.phonecategory:pointerover">
+      <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
+    </Style>
+
     <!-- Menu plein écran : chaque outil sur une ligne haute, rangé par métier dans un bloc arrondi -->
     <Style Selector="Button.phonerow">
       <Setter Property="Background" Value="Transparent" />
