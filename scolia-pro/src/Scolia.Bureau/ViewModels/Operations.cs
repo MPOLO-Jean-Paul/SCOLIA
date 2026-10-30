@@ -24,7 +24,7 @@ public sealed class DataPage : PageViewModel
         Action("Sauvegarder", MaterialIconKind.ContentSaveOutline, () => BackupNowAsync(Shell), primary: true);
         Action("Télécharger", MaterialIconKind.Download, DownloadAsync, row: true);
         Action("Restaurer", MaterialIconKind.BackupRestore, RestoreAsync, row: true);
-        Action("Importer SCOLIA V79", MaterialIconKind.Upload, () => ImportAsync(Shell));
+        Action("Importation du classeur", MaterialIconKind.Upload, () => ImportAsync(Shell));
         Action("Modèle d'import", MaterialIconKind.FileExcelOutline, () => TemplateAsync(Shell));
         Action("Vérifier la base", MaterialIconKind.DatabaseCheckOutline, () => CheckDatabaseAsync(Shell));
         if (Shell.Can(Perm.BackupManage))
@@ -103,7 +103,7 @@ public sealed class DataPage : PageViewModel
             "Fermer");
     }
 
-    /// <summary>Lit un classeur SCOLIA V79, montre le contenu détecté, puis l'importe après confirmation.</summary>
+    /// <summary>Importe les apprenants d'un classeur ; paiements et coordonnées sont facultatifs.</summary>
     /// <summary>Classeur vide au format de l'import, pour reprendre des données tenues dans un autre fichier Excel.</summary>
     public static Task TemplateAsync(ShellViewModel shell) => shell.Download("api/import/modele", "modele-import-scolia.xlsx");
 
@@ -122,8 +122,15 @@ public sealed class DataPage : PageViewModel
         }
 
         var detected = $"Promotions : {preview.Promotions} · apprenants : {preview.Students} · reçus : {preview.Receipts} · imputations : {preview.Allocations}";
-        var warnings = preview.Warnings.Count == 0 ? string.Empty : "\n\nAvertissements :\n" + string.Join('\n', preview.Warnings);
-        var confirmed = await shell.Confirm("Importer le classeur V79", $"Contenu détecté dans {picked.Name} : {detected}.{warnings}\n\nUne sauvegarde est faite avant l'import.", "Importer");
+        // Les détails nombreux restent limités à l'aperçu. Aucune liste de contacts
+        // absents ne doit cacher le bouton Importer sur un petit écran.
+        var warnings = preview.Warnings.Count == 0 ? string.Empty
+            : "\n\nÀ vérifier :\n" + string.Join('\n', preview.Warnings.Take(6))
+              + (preview.Warnings.Count > 6 ? $"\n… et {preview.Warnings.Count - 6} autre(s) remarque(s)." : string.Empty);
+        var message = $"Contenu détecté dans {picked.Name} : {detected}.\n\n"
+            + "Les dates, téléphones, mensualités, notes, reçus et paiements peuvent être complétés après l'importation."
+            + warnings + "\n\nUne sauvegarde est faite avant l'import.";
+        var confirmed = await shell.Confirm("Importation du classeur", message, "Importer");
         if (!confirmed) return;
 
         var applied = await shell.Api.UploadAsync<ImportReportDto>(HttpMethod.Post, "api/import/scolia?appliquer=true",
