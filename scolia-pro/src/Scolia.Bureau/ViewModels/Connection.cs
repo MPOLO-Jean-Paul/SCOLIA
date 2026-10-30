@@ -76,7 +76,7 @@ public sealed class ConnectionViewModel : Observable
                 status.SchoolName ?? "Établissement", target.Host, string.Empty, target));
             Message = "Connecté sur le réseau privé Tailscale. Les autorisations de connexion SCOLIA restent nécessaires.";
         }
-        catch (Exception ex) when (ex is HttpRequestException or Api.ApiException or TaskCanceledException)
+        catch (Exception ex) when (ex is HttpRequestException or Api.ApiException or TaskCanceledException or IOException)
         {
             Message = "Connexion Tailscale impossible. Contrôlez que les deux appareils sont approuvés dans le même tailnet et que le port SCOLIA est accessible.";
         }
@@ -109,7 +109,7 @@ public sealed class ConnectionViewModel : Observable
             var school = status.SchoolName ?? "Établissement";
             await shell.JoinAsync(new DiscoveredServer(server.Host, school, server.Host, string.Empty, server));
         }
-        catch (Exception ex) when (ex is HttpRequestException or Api.ApiException or TaskCanceledException)
+        catch (Exception ex) when (ex is HttpRequestException or Api.ApiException or TaskCanceledException or IOException)
         {
             Message = $"SCOLIA ne répond pas à {server.Host}. Vérifiez l'adresse et le Wi-Fi.";
         }
