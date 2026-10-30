@@ -21,6 +21,13 @@ public static class Platform
     /// <summary>Ouvre une adresse : WhatsApp, SMS, appel, e-mail ou page web.</summary>
     public static Action<string>? OpenUri { get; set; }
 
+    /// <summary>
+    /// Depuis l'écran réseau, lance l'application Tailscale déjà installée,
+    /// ou présente le parcours officiel d'installation avec accord utilisateur.
+    /// La plateforme mobile fournit cette fonction, Windows utilise le kit.
+    /// </summary>
+    public static Func<string>? OpenTailscale { get; set; }
+
     /// <summary>Dossier où les documents sont enregistrés sur le téléphone.</summary>
     public static string? DocumentsFolder { get; set; }
 
