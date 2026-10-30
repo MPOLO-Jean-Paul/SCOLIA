@@ -20,6 +20,7 @@
     <AvaloniaUseCompiledBindingsByDefault>false</AvaloniaUseCompiledBindingsByDefault>
     <!-- Le code partagé est vérifié strictement par la compilation de Bureau ; ici, les avertissements propres à Android ne bloquent pas. -->
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <WarningsAsErrors>$(WarningsAsErrors);NU1608</WarningsAsErrors>
     <AnalysisLevel>none</AnalysisLevel>
     <AndroidEnableMultiDex>false</AndroidEnableMultiDex>
     <EmbedAssembliesIntoApk>true</EmbedAssembliesIntoApk>
@@ -48,6 +49,9 @@
     <PackageReference Include="Avalonia" />
     <PackageReference Include="Avalonia.Android" />
     <PackageReference Include="Xamarin.AndroidX.Work.Runtime" />
+    <PackageReference Include="Xamarin.AndroidX.Core.Core.Ktx" />
+    <PackageReference Include="Xamarin.AndroidX.Lifecycle.ViewModelSavedState" />
+    <PackageReference Include="Xamarin.AndroidX.Lifecycle.Process" />
     <PackageReference Include="Avalonia.Themes.Fluent" />
     <PackageReference Include="Avalonia.Controls.DataGrid" />
     <PackageReference Include="Material.Icons.Avalonia" />

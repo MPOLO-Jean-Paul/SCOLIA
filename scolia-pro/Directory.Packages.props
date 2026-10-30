@@ -3,6 +3,10 @@
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
   </PropertyGroup>
   <ItemGroup>
+    <!-- Aligner les dépendances partagées d'Avalonia et WorkManager : core/KTX et Lifecycle. -->
+    <PackageVersion Include="Xamarin.AndroidX.Core.Core.Ktx" Version="1.19.0.1" />
+    <PackageVersion Include="Xamarin.AndroidX.Lifecycle.ViewModelSavedState" Version="2.11.0.1" />
+    <PackageVersion Include="Xamarin.AndroidX.Lifecycle.Process" Version="2.11.0.1" />
     <PackageVersion Include="Xamarin.AndroidX.Work.Runtime" Version="2.11.2.1" />
     <PackageVersion Include="Microsoft.Data.Sqlite" Version="10.0.13" />
     <PackageVersion Include="System.Security.Cryptography.ProtectedData" Version="10.0.0" />

@@ -11,6 +11,7 @@ public sealed class RemoteHost : IDisposable
     private readonly CancellationTokenSource stop = new();
     private readonly Task running;
     private int connected;
+    private int disposed;
     public bool Connected => Volatile.Read(ref connected) == 1;
 
     public RemoteHost(RemoteLink link, Uri server)
@@ -161,5 +162,10 @@ public sealed class RemoteHost : IDisposable
         }
     }
 
-    public void Dispose() { stop.Cancel(); /* Le jeton est libéré quand la boucle et ses requêtes sont terminées. */ _ = running.ContinueWith(_ => stop.Dispose(), TaskScheduler.Default); }
+    public void Dispose()
+    {
+        if (Interlocked.Exchange(ref disposed, 1) != 0) return;
+        stop.Cancel();
+        _ = running.ContinueWith(_ => stop.Dispose(), TaskScheduler.Default);
+    }
 }

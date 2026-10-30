@@ -13,8 +13,15 @@ public static class AndroidSecrets
     private static readonly object Gate = new();
     public static void Initialize()
     {
-        SecretStore.NativeProtect = Encrypt;
-        SecretStore.NativeUnprotect = Decrypt;
+        SecretStore.NativeProtect = bytes => Guard(() => Encrypt(bytes));
+        SecretStore.NativeUnprotect = bytes => Guard(() => Decrypt(bytes));
+    }
+
+    private static byte[] Guard(Func<byte[]> operation)
+    {
+        try { return operation(); }
+        catch (GeneralSecurityException ex)
+        { throw new System.Security.Cryptography.CryptographicException("La protection locale de SCOLIA est indisponible. Les données restent conservées sur cet appareil.", ex); }
     }
 
     private static IKey Key()

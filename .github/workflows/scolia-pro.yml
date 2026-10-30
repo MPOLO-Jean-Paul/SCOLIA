@@ -68,8 +68,8 @@ jobs:
 
       - name: Sources complètes et état de référence
         run: |
-          git archive --format=zip HEAD -o artifacts/SCOLIA_Pro_Sources.zip
-          sha256sum artifacts/SCOLIA_Pro_Sources.zip > artifacts/SCOLIA_Pro_Sources.sha256
+          python3 -m unittest discover -s tests -p 'test_source_archive.py'
+          python3 scripts/archiver-sources.py artifacts/SCOLIA_Pro_Sources.zip
 
       - uses: actions/upload-artifact@v4
         with:
