@@ -6,8 +6,15 @@
     <!-- Rubrique de navigation : un métier et ses outils, chacun sur une ligne haute avec son icône de couleur -->
     <DataTemplate x:Key="NavGroup">
                 <StackPanel>
-                  <TextBlock Text="{Binding Title}" Classes="phonegrouptitle" IsVisible="{Binding HasTitle}" />
-                  <Border Classes="phonegroup" Margin="0,0,0,0">
+                  <Button Classes="phonecategory" IsVisible="{Binding HasTitle}" Command="{Binding Toggle}">
+                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                      <Border Classes="appicon medium" Background="{DynamicResource ToneBlue}"><mi:MaterialIcon Kind="FolderOutline" /></Border>
+                      <TextBlock Grid.Column="1" Text="{Binding Title}" VerticalAlignment="Center" FontWeight="SemiBold" />
+                      <mi:MaterialIcon Grid.Column="2" Kind="ChevronDown" Foreground="{DynamicResource AccentBrush}" IsVisible="{Binding !IsExpanded}" />
+                      <mi:MaterialIcon Grid.Column="2" Kind="ChevronUp" Foreground="{DynamicResource AccentBrush}" IsVisible="{Binding IsExpanded}" />
+                    </Grid>
+                  </Button>
+                  <Border Classes="phonegroup" Margin="0,0,0,0" IsVisible="{Binding IsExpanded}">
                     <ItemsControl ItemsSource="{Binding Items}">
                       <ItemsControl.ItemTemplate>
                         <DataTemplate>
@@ -59,7 +66,7 @@
         <Border Classes="phonegroup" Margin="0,18,0,0">
           <Button Classes="phonerow" Classes.selected="{Binding PhoneMenuOpen}" Click="OnMenuClick">
             <Grid ColumnDefinitions="Auto,*">
-              <Border Classes="appicon medium" Background="{DynamicResource ToneNeutral}" Margin="0,0,12,0"><mi:MaterialIcon Kind="DotsGrid" /></Border>
+              <Border Classes="appicon medium" Background="{DynamicResource ToneIndigo}" Margin="0,0,12,0"><mi:MaterialIcon Kind="DotsGrid" /></Border>
               <TextBlock Grid.Column="1" Text="Commandes et réglages" VerticalAlignment="Center" />
             </Grid>
           </Button>
@@ -177,8 +184,15 @@
             <ItemsControl.ItemTemplate>
               <DataTemplate>
                 <StackPanel>
-                  <TextBlock Text="{Binding Title}" Classes="phonegrouptitle" />
-                  <Border Classes="phonegroup">
+                  <Button Classes="phonecategory" Command="{Binding Toggle}">
+                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                      <Border Classes="appicon medium" Background="{DynamicResource TonePurple}"><mi:MaterialIcon Kind="CogOutline" /></Border>
+                      <TextBlock Grid.Column="1" Text="{Binding Title}" FontWeight="SemiBold" VerticalAlignment="Center" />
+                      <mi:MaterialIcon Grid.Column="2" Kind="ChevronDown" Foreground="{DynamicResource AccentBrush}" IsVisible="{Binding !IsExpanded}" />
+                      <mi:MaterialIcon Grid.Column="2" Kind="ChevronUp" Foreground="{DynamicResource AccentBrush}" IsVisible="{Binding IsExpanded}" />
+                    </Grid>
+                  </Button>
+                  <Border Classes="phonegroup" IsVisible="{Binding IsExpanded}">
                     <ItemsControl ItemsSource="{Binding Commands}">
                       <ItemsControl.ItemTemplate>
                         <DataTemplate>
@@ -204,7 +218,7 @@
             <StackPanel>
               <Button Classes="phonerow" Command="{Binding SearchCommand}">
                 <Grid ColumnDefinitions="Auto,*">
-                  <Border Classes="appicon medium" Background="{DynamicResource ToneNeutral}" Margin="0,0,12,0"><mi:MaterialIcon Kind="Magnify" /></Border>
+                  <Border Classes="appicon medium" Background="{DynamicResource ToneTeal}" Margin="0,0,12,0"><mi:MaterialIcon Kind="Magnify" /></Border>
                   <TextBlock Grid.Column="1" Text="Rechercher" VerticalAlignment="Center" />
                 </Grid>
               </Button>
@@ -232,7 +246,7 @@
             <DataTemplate>
               <Button Classes="phonetab" Classes.selected="{Binding IsSelected}" Command="{Binding Open}">
                 <StackPanel Spacing="2">
-                  <mi:MaterialIcon Kind="{Binding Icon}" Width="24" Height="24" HorizontalAlignment="Center" />
+                  <mi:MaterialIcon Kind="{Binding Icon}" Width="24" Height="24" HorizontalAlignment="Center" Foreground="{Binding Brush}" />
                   <TextBlock Text="{Binding TabLabel}" />
                 </StackPanel>
               </Button>
