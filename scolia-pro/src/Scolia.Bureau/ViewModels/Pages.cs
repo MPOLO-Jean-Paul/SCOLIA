@@ -71,7 +71,8 @@ public sealed class LoginViewModel : Observable
     }
     public bool CanOfferBiometrics => Platform.IsMobile && Platform.IsBiometricAvailable?.Invoke() == true;
     public string BiometricAccount => BiometricAccess.ReadAccount(api.Server) ?? string.Empty;
-    public bool HasBiometricAccount => CanOfferBiometrics && BiometricAccount.Length > 0;
+    public bool HasBiometricAccount => CanOfferBiometrics && BiometricAccount.Length > 0
+        && (Platform.HasBiometricProof?.Invoke() ?? false);
     public bool CanOfferEnrollment => CanOfferBiometrics && !HasBiometricAccount;
     public string BiometricLabel => $"Déverrouiller avec l’empreinte · {BiometricAccount}";
 
