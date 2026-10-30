@@ -25,8 +25,17 @@ public sealed class SyncWorker : Worker
     public override Result DoWork()
     {
         try { return RunAsync().GetAwaiter().GetResult(); }
-        catch (Exception ex) when (ex is HttpRequestException or IOException or TaskCanceledException) { return Result.InvokeRetry(); }
-        catch (Exception ex) when (ex is System.Security.Cryptography.CryptographicException or FormatException) { return Result.InvokeFailure(); }
+        catch (Exception ex) when (ex is HttpRequestException or IOException or TaskCanceledException)
+        { return Result.InvokeRetry(); }
+        // Une session expirée ou un accès refusé ne doit pas relancer la synchronisation
+        // indéfiniment : conserver la file locale et demander la reconnexion à l'utilisateur.
+        catch (ApiException ex) when (ex.Status is 401 or 403 or 409)
+        { Android.Util.Log.Warn("SCOLIA-Sync", $"Opérations en attente, intervention nécessaire ({ex.Status})."); return Result.InvokeSuccess(); }
+        catch (ApiException ex) when (ex.Status is 408 or 429 or >= 500)
+        { return Result.InvokeRetry(); }
+        catch (Exception ex) when (ex is ApiException or JsonException
+            or System.Security.Cryptography.CryptographicException or FormatException)
+        { Android.Util.Log.Warn("SCOLIA-Sync", $"Synchronisation différée : {ex.Message}"); return Result.InvokeFailure(); }
     }
 
     private async Task<Result> RunAsync()
