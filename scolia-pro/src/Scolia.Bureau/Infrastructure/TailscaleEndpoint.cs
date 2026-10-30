@@ -55,11 +55,13 @@ public static class TailscaleEndpoint
         if (IPAddress.TryParse(uri.Host, out var literal)) return IsTailnetIp(literal);
         try
         {
-            var addresses = await Dns.GetHostAddressesAsync(uri.Host, ct).ConfigureAwait(false);
+            using var deadline = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            deadline.CancelAfter(TimeSpan.FromSeconds(6));
+            var addresses = await Dns.GetHostAddressesAsync(uri.Host, deadline.Token).ConfigureAwait(false);
             return addresses.Length > 0 && addresses.All(IsTailnetIp);
         }
         catch (SocketException) { return false; }
-        catch (TaskCanceledException) when (!ct.IsCancellationRequested) { return false; }
+        catch (OperationCanceledException) { return false; }
     }
 
     public static bool IsTailnetIp(IPAddress ip)
