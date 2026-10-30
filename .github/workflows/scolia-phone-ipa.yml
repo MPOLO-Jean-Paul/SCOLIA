@@ -1,0 +1,111 @@
+name: SCOLIA Phone iPhone - IPA signe
+
+# L'IPA reel est un livrable distinct de la compilation du simulateur.
+# Sans les certificats Apple, ce flux refuse explicitement la publication.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: scolia-phone-ipa-${{ github.ref }}
+  cancel-in-progress: false
+
+defaults:
+  run:
+    working-directory: scolia-pro
+
+jobs:
+  ipa-signe:
+    name: IPA pour iPhone physique - signature Apple obligatoire
+    runs-on: xcode-27
+    timeout-minutes: 65
+    env:
+      IOS_CERT_P12_BASE64: ${{ secrets.SCOLIA_IOS_CERT_P12_BASE64 }}
+      IOS_CERT_P12_PASSWORD: ${{ secrets.SCOLIA_IOS_CERT_P12_PASSWORD }}
+      IOS_PROFILE_BASE64: ${{ secrets.SCOLIA_IOS_PROFILE_BASE64 }}
+      IOS_CODESIGN_KEY: ${{ secrets.SCOLIA_IOS_CODESIGN_KEY }}
+      IOS_PROFILE_NAME: ${{ secrets.SCOLIA_IOS_PROFILE_NAME }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: scolia-pro/global.json
+
+      - name: Verifier les secrets Apple avant toute compilation
+        shell: bash
+        run: |
+          set -euo pipefail
+          for name in IOS_CERT_P12_BASE64 IOS_CERT_P12_PASSWORD IOS_PROFILE_BASE64 IOS_CODESIGN_KEY IOS_PROFILE_NAME; do
+            if [[ -z "${!name:-}" ]]; then
+              echo "::error::Publication IPA impossible : secret $name absent. Voir scolia-pro/src/Scolia.Phone.iOS/README.md"
+              exit 1
+            fi
+          done
+
+      - name: Installer la signature Apple dans un trousseau temporaire
+        shell: bash
+        run: |
+          set -euo pipefail
+          cert="$RUNNER_TEMP/ios-distribution.p12"
+          profile="$RUNNER_TEMP/scolia.mobileprovision"
+          keychain="$RUNNER_TEMP/scolia-signing.keychain-db"
+          key_password="$(openssl rand -hex 24)"
+          printf '%s' "$IOS_CERT_P12_BASE64" | base64 --decode > "$cert"
+          printf '%s' "$IOS_PROFILE_BASE64" | base64 --decode > "$profile"
+          security create-keychain -p "$key_password" "$keychain"
+          security set-keychain-settings -lut 21600 "$keychain"
+          security unlock-keychain -p "$key_password" "$keychain"
+          security import "$cert" -P "$IOS_CERT_P12_PASSWORD" -A -t cert -f pkcs12 -k "$keychain"
+          security set-key-partition-list -S apple-tool:,apple: -k "$key_password" "$keychain"
+          security list-keychains -d user -s "$keychain"
+          mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
+          cp "$profile" "$HOME/Library/MobileDevice/Provisioning Profiles/SCOLIA.mobileprovision"
+          # Ne jamais afficher les secrets, certificats ou mots de passe en sortie.
+
+      - name: Installer les outils iOS
+        run: |
+          xcodebuild -version
+          dotnet workload install ios
+
+      - name: Publier IPA iPhone (ios-arm64, signe)
+        shell: bash
+        run: |
+          set -euo pipefail
+          dotnet publish src/Scolia.Phone.iOS/Scolia.Phone.iOS.csproj \
+            -c Release -f net10.0-ios -r ios-arm64 \
+            -p:ArchiveOnBuild=true \
+            -p:EnableCodeSigning=true \
+            -p:CodesignKey="$IOS_CODESIGN_KEY" \
+            -p:CodesignProvision="$IOS_PROFILE_NAME"
+
+      - name: Verifier la presence et la signature du vrai IPA
+        shell: bash
+        run: |
+          set -euo pipefail
+          directory="src/Scolia.Phone.iOS/bin/Release/net10.0-ios/ios-arm64/publish"
+          ipa="$(find "$directory" -maxdepth 2 -name '*.ipa' -type f -print -quit)"
+          if [[ -z "$ipa" ]]; then
+            echo "::error::Aucun IPA cree : aucun livrable iPhone ne sera annonce."
+            exit 1
+          fi
+          tmp="$(mktemp -d)"
+          unzip -q "$ipa" -d "$tmp"
+          app="$(find "$tmp/Payload" -maxdepth 1 -type d -name '*.app' -print -quit)"
+          if [[ -z "$app" ]]; then
+            echo "::error::Le fichier IPA ne contient pas d'application iOS."
+            exit 1
+          fi
+          codesign --verify --deep --verbose=2 "$app"
+          mkdir -p artifacts/ios-signe
+          cp "$ipa" artifacts/ios-signe/SCOLIA_Phone_iPhone_iOS_Signed.ipa
+          printf '%s\n' 'Application iPhone signee Apple. Installation selon le profil de distribution fourni (Ad Hoc ou TestFlight/App Store).' > artifacts/ios-signe/LIRE_MOI.txt
+
+      - name: Livrer l'IPA verifie
+        uses: actions/upload-artifact@v4
+        with:
+          name: SCOLIA_Phone_iPhone_IPA_Signe
+          path: scolia-pro/artifacts/ios-signe/
+          if-no-files-found: error
+          retention-days: 30
