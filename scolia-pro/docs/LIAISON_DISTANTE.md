@@ -29,7 +29,7 @@ Compilation sans Docker : `dotnet publish src/Scolia.Relay -c Release -o artifac
 4. Sur l’autre appareil, dans le choix de l’établissement, coller l’invitation sous **Rejoindre à distance** puis **Vérifier et rejoindre**.
 5. Se connecter avec le compte habituel Comptabilité ou Secrétariat. La possession d’une invitation ne remplace pas le mot de passe et n’accorde aucun droit métier supplémentaire.
 
-Le principal doit être allumé, connecté et garder son service SCOLIA actif. Sur Android, ce service est visible dans une notification, comme le service LAN existant. Une liaison expire après 30 jours. Renouveler la liaison révoque l’ancienne et impose une nouvelle invitation ; la révocation ne supprime pas les données déjà consultées sur un appareil hors ligne. Désactiver Internet conserve la base, les sauvegardes et le partage local.
+Le principal doit être allumé, connecté et garder son service SCOLIA actif. Sur Android, ce service est visible dans une notification, comme le service LAN existant. Une liaison expire après 30 jours. Renouveler la liaison révoque l’ancienne et impose une nouvelle invitation, tout en conservant l’identité du cache local et sa file en attente ; la révocation ne supprime pas les données déjà consultées sur un appareil hors ligne. Désactiver Internet conserve la base, les sauvegardes et le partage local.
 
 ## Protocole et protection
 
@@ -48,7 +48,7 @@ Les opérations éligibles sont inscrites durablement avant l’envoi réseau. L
 
 ## Android en arrière-plan
 
-Une tâche WorkManager unique, périodique (minimum 15 minutes), avec réseau connecté, batterie non faible et reprise exponentielle tente d’envoyer la file distante. Elle utilise uniquement le cookie chiffré de la dernière session, jamais un mot de passe conservé ; si la session expire ou est révoquée, elle attend une connexion normale. Le service existant de l’appareil principal conserve sa notification visible. Doze, économie d’énergie, restrictions constructeur et arrêt forcé peuvent retarder ou empêcher le travail. Téléphone éteint ou hors réseau : aucune réception instantanée garantie.
+Une tâche WorkManager unique, périodique (minimum 15 minutes), avec réseau connecté, batterie non faible et reprise exponentielle tente d’envoyer la file distante et de rafraîchir jusqu’à 32 pages JSON déjà consultées, sans toucher à l’écran. Elle utilise uniquement le cookie chiffré de la dernière session, jamais un mot de passe conservé ; si la session expire ou est révoquée, elle attend une connexion normale. La déconnexion efface le cookie de reprise sans supprimer les opérations en attente. Le service existant de l’appareil principal conserve sa notification visible. Doze, économie d’énergie, restrictions constructeur et arrêt forcé peuvent retarder ou empêcher le travail. Téléphone éteint ou hors réseau : aucune réception instantanée garantie.
 
 FCM n’est **pas activé** : aucun projet Firebase, fichier `google-services.json`, compte serveur ni jeton réel fourni. Aucun faux service de notification ni clé privée embarquée. La reprise périodique ne dépend pas d’une notification FCM. Une intégration FCM ultérieure devra envoyer uniquement un signal technique via un serveur authentifié, sans dossier ni paiement, et déclencher le même travail natif.
 
@@ -57,3 +57,8 @@ FCM n’est **pas activé** : aucun projet Firebase, fichier `google-services.js
 Les tests automatisés démarrent réellement un serveur SQLite et un relais WebSocket séparés sur des ports loopback. Ils vérifient connexion, droits des deux profils, révocation du compte, secret invalide, flux en direct, coupure/reprise d’inscription, paiement répété après suppression du cache HTTP, chiffrement/altération/époque/ordre et migration/concurrence du journal. Ils ne remplacent pas un essai sur deux téléphones Airtel/Orange/Vodacom, le réseau public, le Keystore d’un téléphone physique ou Doze.
 
 Le relais fourni doit être déployé et son adresse renseignée avant un usage à distance réel. Aucun domaine, compte Firebase ou hébergement actif inventé. Cette livraison ne prétend pas remplir une architecture WebRTC/FCM/multimaster intégrale : elle ajoute un chemin longue portée opérationnel dans le code tout en conservant les règles actuelles et leurs limites hors ligne.
+
+
+## Mise à jour Android sans perte de données
+
+L’APK doit être signé avec la **même clé** que la version déjà installée. Les secrets GitHub `SCOLIA_ANDROID_KEYSTORE` (keystore en base64) et `SCOLIA_ANDROID_KEYSTORE_PASS` permettent une signature stable. Sans ces secrets, la compilation utilise une clé de développement du runner : ne pas supposer qu’une mise à jour sur un ancien APK sera acceptée. **Ne pas désinstaller une application contenant des données pour contourner une erreur de signature.** Sauvegarder depuis SCOLIA et faire signer la nouvelle version avec la clé d’origine. Le Keystore Android contenant les secrets locaux est supprimé lors d’une désinstallation.

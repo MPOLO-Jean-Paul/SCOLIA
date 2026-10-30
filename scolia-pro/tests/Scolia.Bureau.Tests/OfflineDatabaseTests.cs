@@ -75,5 +75,19 @@ public sealed class OfflineDatabaseTests : IDisposable
             Assert.DoesNotContain("PRIVE-APPRENANT-928", Encoding.UTF8.GetString(File.ReadAllBytes(file)), StringComparison.Ordinal);
     }
 
+    [Fact]
+    public void Logging_out_clears_background_session_but_preserves_pending_operations()
+    {
+        var store = Store();
+        var session = new Scolia.Bureau.Api.SessionDto(Guid.NewGuid(), "secretariat", "Secrétariat", "Secretariat", "Secrétariat", [], false, "Institut", null, null, "FC", "243");
+        store.SaveCredential("SECRETARIAT", "Secretariat1", session, "scolia.session=private-cookie");
+        store.Enqueue(new OutboxItem { Key = "pending-logout", Path = "api/apprenants" });
+        Assert.Equal("scolia.session=private-cookie", store.SavedCredential?.SessionCookie);
+        store.ClearBackgroundSession();
+        Assert.Equal(string.Empty, Store().SavedCredential?.SessionCookie);
+        Assert.Single(Store().Outbox());
+        Assert.NotNull(Store().OfflineLogin("SECRETARIAT", "Secretariat1"));
+    }
+
     public void Dispose() { if (Directory.Exists(folder)) Directory.Delete(folder, true); }
 }

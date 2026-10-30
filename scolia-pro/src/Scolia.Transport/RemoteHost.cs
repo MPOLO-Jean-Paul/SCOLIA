@@ -28,6 +28,7 @@ public sealed class RemoteHost : IDisposable
         {
             using var socket = new ClientWebSocket();
             using var session = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            session.CancelAfter(link.ExpiresUtc - DateTime.UtcNow);
             using var send = new SemaphoreSlim(1, 1);
             var epoch = RandomNumberGenerator.GetBytes(32);
             var seen = new HashSet<Guid>();
@@ -42,6 +43,8 @@ public sealed class RemoteHost : IDisposable
                 using var connect = CancellationTokenSource.CreateLinkedTokenSource(ct);
                 connect.CancelAfter(TimeSpan.FromSeconds(8));
                 await socket.ConnectAsync(link.Endpoint("host"), connect.Token);
+                var acknowledged = await RelayWire.ReceiveAsync(socket, connect.Token);
+                if (!acknowledged.AsSpan().SequenceEqual(epoch)) throw new IOException("Le relais n'a pas confirmé l'hébergement.");
                 Interlocked.Exchange(ref connected, 1);
                 delay = 2;
                 using var http = new HttpClient(new SocketsHttpHandler { UseCookies = false, AllowAutoRedirect = false, ConnectTimeout = TimeSpan.FromSeconds(4) })

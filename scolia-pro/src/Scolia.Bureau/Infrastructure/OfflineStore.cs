@@ -66,14 +66,18 @@ public sealed class OfflineStore
     private string ConflictFile => "conflits.json";
     private string CredentialFile => "session.json";
 
-    private sealed record SavedPage(string Json, DateTime SavedAt);
-    private string PageKey(string path) => "page:" + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(User.ToUpperInvariant()))) + ":" + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(path)));
+    private sealed record SavedPage(string Json, DateTime SavedAt, string? Path = null);
+    private string PagePrefix => "page:" + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(User.ToUpperInvariant()))) + ":";
+    private string PageKey(string path) => PagePrefix + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(path)));
+    public IReadOnlyList<string> CachedPaths() => User.Length == 0 ? [] : database.ReadPrefix(PagePrefix, 32)
+        .Select(text => JsonSerializer.Deserialize<SavedPage>(text, Json)?.Path)
+        .OfType<string>().Where(path => path != "api/etablissement/logo").ToList();
 
     /// <summary>Pages chiffrées dans SQLite ; les anciennes pages sont migrées à leur première lecture.</summary>
     public void SavePage(string path, string json)
     {
         if (User.Length == 0) return;
-        database.Write(PageKey(path), JsonSerializer.Serialize(new SavedPage(json, DateTime.Now), Json));
+        database.Write(PageKey(path), JsonSerializer.Serialize(new SavedPage(json, DateTime.Now, path), Json));
     }
 
     public (string Json, DateTime SavedAt)? ReadPage(string path)
@@ -88,7 +92,7 @@ public sealed class OfflineStore
         if (!File.Exists(file)) return null;
         var json = File.ReadAllText(file);
         var savedAt = File.GetLastWriteTime(file);
-        database.Write(PageKey(path), JsonSerializer.Serialize(new SavedPage(json, savedAt), Json));
+        database.Write(PageKey(path), JsonSerializer.Serialize(new SavedPage(json, savedAt, path), Json));
         ArchiveLegacy(file);
         return (json, savedAt);
     }
@@ -161,6 +165,8 @@ public sealed class OfflineStore
     /// <summary>Garde la session d'un compte après une connexion réussie, avec une empreinte salée du mot de passe.</summary>
     public void SaveCredential(string userName, string password, SessionDto session, string sessionCookie = "")
     {
+        if (sessionCookie.Length == 0 && SavedCredential is { } previous && previous.UserName == session.UserName)
+            sessionCookie = previous.SessionCookie;
         var salt = RandomNumberGenerator.GetBytes(16);
         var credential = new OfflineCredential
         {
@@ -195,6 +201,18 @@ public sealed class OfflineStore
     /// <summary>Reprise différée : cookie limité à la durée de session, jamais de mot de passe stocké.</summary>
     public OfflineCredential? SavedCredential => database.Read(CredentialFile) is { Length: > 0 } text
         ? JsonSerializer.Deserialize<OfflineCredential>(text, Json) : null;
+
+    public void ClearBackgroundSession()
+    {
+        database.Update([CredentialFile], values =>
+        {
+            if (values[CredentialFile] is not { Length: > 0 } text) return;
+            var saved = JsonSerializer.Deserialize<OfflineCredential>(text, Json);
+            if (saved is null) return;
+            saved.SessionCookie = string.Empty;
+            values[CredentialFile] = JsonSerializer.Serialize(saved, Json);
+        });
+    }
 
     public bool HasCredential => database.Read(CredentialFile) is { Length: > 0 };
 

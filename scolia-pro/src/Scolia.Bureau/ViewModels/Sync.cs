@@ -299,7 +299,8 @@ public sealed class SyncCenter : Observable, IDisposable
                     shell.Notify("Le serveur est revenu : reconnectez-vous pour envoyer les opérations en attente.");
                     return;
                 }
-                await api.LoginAsync(userName, password);
+                var restored = await api.LoginAsync(userName, password);
+                api.Offline?.SaveCredential(userName, password, restored, api.SessionCookie);
             }
             var (sent, refused) = await api.FlushAsync();
             if (sent > 0) shell.Notify($"{sent} opération(s) envoyée(s) à l'ordinateur principal.");

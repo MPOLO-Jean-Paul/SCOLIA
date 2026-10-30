@@ -33,6 +33,19 @@ internal sealed class OfflineDatabase
         return Read(db, null, key);
     }
 
+    public IReadOnlyList<string> ReadPrefix(string prefix, int limit)
+    {
+        using var db = Open();
+        using var command = db.CreateCommand();
+        command.CommandText = "SELECT value FROM state WHERE key LIKE $prefix || '%' ORDER BY key LIMIT $limit";
+        command.Parameters.AddWithValue("$prefix", prefix);
+        command.Parameters.AddWithValue("$limit", limit);
+        using var reader = command.ExecuteReader();
+        var result = new List<string>();
+        while (reader.Read()) result.Add(Encoding.UTF8.GetString(SecretStore.Unprotect((byte[])reader[0])));
+        return result;
+    }
+
     private static string? Read(SqliteConnection db, SqliteTransaction? transaction, string key)
     {
         using var command = db.CreateCommand();

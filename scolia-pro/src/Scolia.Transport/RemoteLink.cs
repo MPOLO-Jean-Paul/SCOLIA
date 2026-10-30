@@ -18,6 +18,16 @@ public sealed record RemoteLink(string Relay, string Room, string ClientToken, s
             Convert.ToHexString(RandomNumberGenerator.GetBytes(32)), DateTime.UtcNow.AddDays(30), token).Validate();
     }
 
+    public RemoteLink Renew(string relay)
+    {
+        if (!CanHost) throw new InvalidOperationException("Seul l'appareil principal renouvelle sa liaison.");
+        return (this with
+        {
+            Relay = relay, ClientToken = Convert.ToHexString(RandomNumberGenerator.GetBytes(32)),
+            Key = Convert.ToHexString(RandomNumberGenerator.GetBytes(32)), ExpiresUtc = DateTime.UtcNow.AddDays(30),
+        }).Validate();
+    }
+
     public RemoteLink Validate()
     {
         if (!Uri.TryCreate(Relay, UriKind.Absolute, out var uri) ||

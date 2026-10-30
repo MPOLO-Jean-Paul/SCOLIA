@@ -119,7 +119,11 @@ public sealed class ScoliaClient : IDisposable
     public async Task LogoutAsync(CancellationToken ct = default)
     {
         try { await SendAsync(HttpMethod.Delete, "api/session", null, ct); }
-        finally { cookies.GetAllCookies().Cast<Cookie>().ToList().ForEach(c => c.Expired = true); }
+        finally
+        {
+            cookies.GetAllCookies().Cast<Cookie>().ToList().ForEach(c => c.Expired = true);
+            Offline?.ClearBackgroundSession();
+        }
     }
 
     public async Task<bool> IsRunningAsync(CancellationToken ct = default)
@@ -154,7 +158,7 @@ public sealed class ScoliaClient : IDisposable
             using var response = await SendRawAsync(HttpMethod.Get, path, null, ct);
             if (response.StatusCode == HttpStatusCode.NoContent) return default!;
             text = await response.Content.ReadAsStringAsync(ct);
-            if (Cacheable(path)) Offline?.SavePage(path, text);
+            if (Cacheable(path) && Offline is { } cache) await Task.Run(() => cache.SavePage(path, text), ct);
         }
         catch (Exception ex) when (IsDisconnected(ex, ct))
         {
@@ -205,12 +209,12 @@ public sealed class ScoliaClient : IDisposable
                 Label = Describe(method, path), User = Offline.User,
             };
             // Enregistrement durable AVANT l'envoi : un arrêt après validation serveur mais avant réponse est rejouable.
-            Offline.Enqueue(durable);
+            await Task.Run(() => Offline!.Enqueue(durable), ct);
         }
         try
         {
             var response = await SendRawAsync(method, path, body, ct, key);
-            if (durable is not null) Offline!.Sent(durable.Id);
+            if (durable is not null) await Task.Run(() => Offline!.Sent(durable.Id), ct);
             return response;
         }
         catch (Exception ex) when (IsDisconnected(ex, ct))

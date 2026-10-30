@@ -352,6 +352,11 @@ public sealed class ShellViewModel : Observable
         var saved = ConnectionStore.Load();
         if (RemoteConnection.Load() is { Host: false } remote && saved?.Mode == ConnectionSettings.Internet)
         {
+            if (remote.Link.ExpiresUtc <= DateTime.UtcNow)
+            {
+                ShowChooser([], "La liaison Internet a expiré. Demandez au secrétariat de la renouveler, puis collez la nouvelle invitation. Les données et opérations locales restent conservées.");
+                return;
+            }
             api.UseRemote(remote.Link);
             if (await api.IsRunningAsync()) await ShowEntryAsync();
             else if (!OfferOfflineEntry(remote.School)) ShowChooser([], "L'appareil principal est indisponible sur Internet. Vos données locales restent conservées. Vérifiez sa connexion ou rejoignez-le sur le Wi-Fi.");

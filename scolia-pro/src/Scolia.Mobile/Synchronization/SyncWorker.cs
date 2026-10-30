@@ -1,11 +1,13 @@
 using Android.Content;
 using AndroidX.Work;
+using System.Text.Json;
 using Scolia.Bureau.Api;
 using Scolia.Bureau.Infrastructure;
 
 namespace Scolia.Mobile.Synchronization;
 
 /// <summary>Reprise différée sans interface. Android choisit le créneau ; aucune garantie en cas d'arrêt forcé.</summary>
+[Android.Runtime.Register("com/jpservices/scolia/SyncWorker")]
 public sealed class SyncWorker : Worker
 {
     public SyncWorker(Context context, WorkerParameters parameters) : base(context, parameters) { }
@@ -31,14 +33,13 @@ public sealed class SyncWorker : Worker
     {
         Security.AndroidSecrets.Initialize();
         var saved = RemoteConnection.Load();
-        if (saved is null || saved.Host || saved.Link.ExpiresUtc <= DateTime.UtcNow ||
+        if (saved is null || saved.Host || !saved.Enabled || saved.Link.ExpiresUtc <= DateTime.UtcNow ||
             ConnectionStore.Load()?.Mode != ConnectionSettings.Internet) return Result.InvokeSuccess();
         using var api = new ScoliaClient(saved.Link.VirtualServer);
         api.UseRemote(saved.Link);
         var store = new OfflineStore(api.Server);
         if (store.SavedCredential is not { SessionCookie.Length: > 0 } credential) return Result.InvokeSuccess();
         store.User = credential.UserName;
-        if (store.Outbox().Count == 0) return Result.InvokeSuccess();
         api.Offline = store;
         api.RestoreSessionCookie(credential.SessionCookie);
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(90));
@@ -46,6 +47,12 @@ public sealed class SyncWorker : Worker
         // Une session expirée attend une connexion normale ; aucun droit auto-déclaré, aucun mot de passe en tâche native.
         if (await api.CurrentSessionAsync(timeout.Token) is null) return Result.InvokeSuccess();
         await api.FlushAsync(timeout.Token);
+        foreach (var path in store.CachedPaths())
+        {
+            if (IsStopped) break;
+            try { await api.GetAsync<JsonElement>(path, timeout.Token); }
+            catch (ApiException ex) when (ex.Status is 400 or 403 or 404) { }
+        }
         return store.Outbox().Count > 0 ? Result.InvokeRetry() : Result.InvokeSuccess();
     }
 }

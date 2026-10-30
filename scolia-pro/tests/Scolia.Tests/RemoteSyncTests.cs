@@ -75,7 +75,7 @@ public sealed class RemoteSyncTests : IAsyncLifetime
     [Fact]
     public async Task Offline_registration_survives_host_interruption_and_is_applied_once_on_reconnection()
     {
-        var promotion = await secretary.Post("/api/etablissement/promotions", new { code = "DIST1", name = "Première", level = 1, isActive = true, monthlyFee = 50000m, oneTimeFees = Array.Empty<object>() }).Ok();
+        var promotion = await secretary.Post("/api/etablissement/promotions", new { code = "DST1", name = "Première", level = 1, isActive = true, monthlyFee = 50000m, oneTimeFees = Array.Empty<object>() }).Ok();
         using var phone = Phone();
         var session = await phone.LoginAsync("admin", "Scolia2026!");
         phone.Offline = new OfflineStore(phone.Server, folder) { User = session.UserName };

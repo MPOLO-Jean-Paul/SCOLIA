@@ -16,7 +16,7 @@ public sealed class RemoteConnectionViewModel : Observable
         if (RemoteConnection.Load() is { } current)
         {
             relay = current.Link.Relay;
-            if (current.Host) invitation = current.Link.Invitation();
+            if (current.Host && current.Enabled) invitation = current.Link.Invitation();
         }
         Enable = new AsyncCommand(EnableAsync);
         Disable = new RelayCommand(() =>
@@ -39,7 +39,8 @@ public sealed class RemoteConnectionViewModel : Observable
         if (!CanManage) { Message = "Le secrétariat configure la liaison sur l'appareil principal."; return; }
         try
         {
-            var link = RemoteLink.Create(Relay.Trim());
+            var link = RemoteConnection.Load() is { Host: true } previous
+                ? previous.Link.Renew(Relay.Trim()) : RemoteLink.Create(Relay.Trim());
             // Vérifier le relais avant de remplacer une liaison encore utilisable.
             var address = new UriBuilder(link.Relay) { Scheme = new Uri(link.Relay).Scheme == "wss" ? "https" : "http", Path = "/health" }.Uri;
             using var probe = new HttpClient { Timeout = TimeSpan.FromSeconds(8) };

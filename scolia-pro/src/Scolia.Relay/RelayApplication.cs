@@ -43,6 +43,7 @@ public static class RelayApplication
             if (!hosts.TryAdd(room, host)) { socket.Abort(); return; }
             try
             {
+                await socket.SendAsync(epoch.AsMemory(), WebSocketMessageType.Binary, true, http.RequestAborted);
                 using var lifetime = CancellationTokenSource.CreateLinkedTokenSource(http.RequestAborted, app.Lifetime.ApplicationStopping);
                 lifetime.CancelAfter(TimeSpan.FromHours(1));
                 while (!lifetime.IsCancellationRequested)

@@ -3,7 +3,7 @@ using Scolia.Transport;
 
 namespace Scolia.Bureau.Infrastructure;
 
-public sealed record RemoteConfiguration(RemoteLink Link, bool Host, string School);
+public sealed record RemoteConfiguration(RemoteLink Link, bool Host, string School, bool Enabled = true);
 
 /// <summary>Configuration privée, séparée des paramètres LAN. Désactiver Internet ne coupe pas le Wi-Fi.</summary>
 public static class RemoteConnection
@@ -22,7 +22,7 @@ public static class RemoteConnection
     public static void StartHost(Uri localServer)
     {
         StopHost();
-        if (Load() is { Host: true } configuration && configuration.Link.ExpiresUtc > DateTime.UtcNow)
+        if (Load() is { Host: true, Enabled: true } configuration && configuration.Link.ExpiresUtc > DateTime.UtcNow)
             host = new RemoteHost(configuration.Link, localServer);
     }
 
@@ -30,6 +30,6 @@ public static class RemoteConnection
     public static void Disable()
     {
         StopHost();
-        if (File.Exists(FilePath)) File.Delete(FilePath);
+        if (Load() is { } current) Save(current with { Enabled = false });
     }
 }

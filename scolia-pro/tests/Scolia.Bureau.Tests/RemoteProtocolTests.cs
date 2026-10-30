@@ -21,6 +21,17 @@ public sealed class RemoteProtocolTests
     }
 
     [Fact]
+    public void Renewal_revokes_the_previous_secret_without_stranding_the_local_queue_identity()
+    {
+        var original = RemoteLink.Create("wss://relay.example/");
+        var renewed = original.Renew("wss://another-relay.example/");
+        Assert.Equal(original.VirtualServer, renewed.VirtualServer);
+        Assert.Equal(original.HostToken, renewed.HostToken);
+        Assert.NotEqual(original.ClientToken, renewed.ClientToken);
+        Assert.NotEqual(original.Key, renewed.Key);
+    }
+
+    [Fact]
     public void Ciphertext_is_bound_to_request_direction_sequence_epoch_and_key()
     {
         var link = RemoteLink.Create("wss://relay.example/");
@@ -30,12 +41,12 @@ public sealed class RemoteProtocolTests
         var packet = RelayWire.Seal(link, epoch, id, 0, false, clear);
         Assert.Equal(clear, RelayWire.Open(link, epoch, packet, id, 0, false));
         Assert.DoesNotContain("paiement", Encoding.UTF8.GetString(packet), StringComparison.Ordinal);
-        Assert.Throws<CryptographicException>(() => RelayWire.Open(link, epoch, packet, Guid.NewGuid(), 0, false));
-        Assert.Throws<CryptographicException>(() => RelayWire.Open(link, epoch, packet, id, 1, false));
-        Assert.Throws<CryptographicException>(() => RelayWire.Open(link, epoch, packet, id, 0, true));
-        Assert.Throws<CryptographicException>(() => RelayWire.Open(link, RandomNumberGenerator.GetBytes(32), packet, id, 0, false));
-        Assert.Throws<CryptographicException>(() => RelayWire.Open(link with { Key = Convert.ToHexString(RandomNumberGenerator.GetBytes(32)) }, epoch, packet, id, 0, false));
+        Assert.ThrowsAny<CryptographicException>(() => RelayWire.Open(link, epoch, packet, Guid.NewGuid(), 0, false));
+        Assert.ThrowsAny<CryptographicException>(() => RelayWire.Open(link, epoch, packet, id, 1, false));
+        Assert.ThrowsAny<CryptographicException>(() => RelayWire.Open(link, epoch, packet, id, 0, true));
+        Assert.ThrowsAny<CryptographicException>(() => RelayWire.Open(link, RandomNumberGenerator.GetBytes(32), packet, id, 0, false));
+        Assert.ThrowsAny<CryptographicException>(() => RelayWire.Open(link with { Key = Convert.ToHexString(RandomNumberGenerator.GetBytes(32)) }, epoch, packet, id, 0, false));
         packet[^1] ^= 1;
-        Assert.Throws<CryptographicException>(() => RelayWire.Open(link, epoch, packet, id, 0, false));
+        Assert.ThrowsAny<CryptographicException>(() => RelayWire.Open(link, epoch, packet, id, 0, false));
     }
 }
