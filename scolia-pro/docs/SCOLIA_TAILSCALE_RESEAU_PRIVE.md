@@ -9,6 +9,16 @@ Tailscale crée un **réseau privé chiffré** entre des appareils approuvés (t
 - Les annonces UDP Wi-Fi ne traversent pas automatiquement Tailscale : pour joindre un appareil à distance, utiliser **Rejoindre par Tailscale** et son adresse privée. Ne pas activer l'accès Internet public, ne pas ouvrir/forwarder le port 5080 sur le routeur.
 - Les deux appareils doivent avoir une connexion Internet, le VPN Tailscale actif et des autorisations réseau adaptées.
 
+## Assistant d'installation dans SCOLIA (Android et Windows)
+
+- Le bouton **Installer le relais privé Tailscale** affiche d'abord une fenêtre SCOLIA avec trois étapes : détection, installation, vérification finale.
+- Si Tailscale manque, SCOLIA ouvre sa fiche officielle Google Play sur Android (ou l'installateur officiel prévu sur Windows) ; c'est le magasin qui affiche les octets ou pourcentages de téléchargement réels.
+- Pendant cette phase, SCOLIA affiche une barre d'attente indéterminée, une progression **des trois étapes** et une indication claire que la progression du téléchargement appartient au magasin d'applications. SCOLIA ne prétend pas lire le pourcentage de Google Play, qui n'est pas exposé à l'application.
+- À la reprise de l'activité SCOLIA sur Android, le gestionnaire vérifie si le paquet officiel `com.tailscale.ipn` existe : seulement alors l'état devient **Installation terminée**. Un bouton **Vérifier l'installation** permet de relancer manuellement le contrôle ; **Ouvrir le magasin officiel** réessaie si nécessaire.
+- Le bouton **Fermer · Revenir au partage** ferme l'assistant, avec ou sans installation. Une fois installé, un bouton distinct **Configurer Tailscale (première connexion)** est proposé pour rejoindre et autoriser le tailnet ; cette étape doit rester sous contrôle de l'utilisateur.
+- L'assistant est disponible depuis la première configuration du Phone Serveur, depuis l'écran de connexion client et depuis **Réseau et activité** de l'appareil principal.
+- Une fermeture de SCOLIA **n'annule pas** un téléchargement en cours dans Google Play. Après retour dans SCOLIA, le contrôle de présence reprend ; aucun téléchargement n'est effectué par SCOLIA lui-même.
+
 ## A. Installer et autoriser
 
 ### Parcours d'installation depuis SCOLIA
