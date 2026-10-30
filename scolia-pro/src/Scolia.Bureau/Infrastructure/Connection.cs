@@ -31,14 +31,35 @@ public static class ConnectionStore
         catch (Exception ex) when (ex is IOException or JsonException or UnauthorizedAccessException) { return null; }
     }
 
-    public static void Save(ConnectionSettings settings)
+    public static void Save(ConnectionSettings settings) => _ = TrySave(settings);
+
+    /// <summary>
+    /// Écriture atomique du serveur mémorisé : éviter qu'une coupure pendant l'écriture
+    /// tronque le fichier et fasse perdre la connexion de l'établissement au redémarrage.
+    /// La connexion Tailscale avertit l'utilisateur si la sauvegarde n'a pas abouti.
+    /// </summary>
+    public static bool TrySave(ConnectionSettings settings)
     {
+        string? temporary = null;
         try
         {
-            Directory.CreateDirectory(Path.GetDirectoryName(FilePath)!);
-            File.WriteAllText(FilePath, JsonSerializer.Serialize(settings));
+            var folder = Path.GetDirectoryName(FilePath)!;
+            Directory.CreateDirectory(folder);
+            temporary = Path.Combine(folder, $"connexion-{Guid.NewGuid():N}.tmp");
+            File.WriteAllText(temporary, JsonSerializer.Serialize(settings));
+            File.Move(temporary, FilePath, overwrite: true);
+            return true;
         }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return false;
+        }
+        finally
+        {
+            if (temporary is not null)
+                try { File.Delete(temporary); }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { }
+        }
     }
 
     /// <summary>Vrai si ce poste porte déjà la base d'un établissement : il en est le serveur.</summary>
