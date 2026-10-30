@@ -21,6 +21,24 @@ public class TailscaleEndpointTests
     }
 
     [Theory]
+    [InlineData("100.64.0.1", true)]
+    [InlineData("100.127.255.254", true)]
+    [InlineData("100.63.255.255", false)]
+    [InlineData("100.128.0.1", false)]
+    [InlineData("fd7a:115c:a1e0::12", true)]
+    [InlineData("fd7a:115c:a1e1::12", false)]
+    [InlineData("2001:db8::1", false)]
+    public void Le_reseau_prive_est_valide_en_IPv4_et_IPv6(string address, bool expected)
+        => Assert.Equal(expected, TailscaleEndpoint.IsTailnetIp(System.Net.IPAddress.Parse(address)));
+
+    [Fact]
+    public async Task La_verification_des_adresses_litterales_ne_depend_pas_du_DNS()
+    {
+        Assert.True(await TailscaleEndpoint.ResolvesPrivatelyAsync(new Uri("http://100.100.100.100:5080")));
+        Assert.False(await TailscaleEndpoint.ResolvesPrivatelyAsync(new Uri("http://192.168.1.1:5080")));
+    }
+
+    [Theory]
     [InlineData("192.168.1.1")]
     [InlineData("100.63.255.255")]
     [InlineData("100.128.0.1")]
