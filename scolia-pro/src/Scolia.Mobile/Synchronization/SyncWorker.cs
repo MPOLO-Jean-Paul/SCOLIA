@@ -62,6 +62,11 @@ public sealed class SyncWorker : Worker
             server = relay.VirtualServer;
         }
         if (server is null) return Result.InvokeSuccess();
+        // Même hors interface, ne jamais envoyer les cookies de session à un
+        // nom MagicDNS qui pointerait désormais hors de l'espace privé Tailscale.
+        if (TailscaleEndpoint.IsTailnetAddress(server)
+            && !await TailscaleEndpoint.ResolvesPrivatelyAsync(server))
+            return Result.InvokeRetry();
         using var api = new ScoliaClient(server);
         if (relay is not null) api.UseRemote(relay);
         var store = new OfflineStore(api.Server);
