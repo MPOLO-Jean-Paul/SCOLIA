@@ -30,7 +30,7 @@ public static class MobilePlatform
         Platform.OpenUri = OpenUri;
         Platform.PlayWave = AndroidAudio.PlayWave;
         // Sans ordinateur dans l'établissement, ce téléphone peut en être le serveur.
-        Platform.LocalServer = new Server.PhoneServer(app);
+        Platform.LocalServer = Server.PhoneServer.Get(app);
     }
 
     public static void Attach(Context activity) => context ??= activity.ApplicationContext ?? activity;
