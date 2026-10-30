@@ -282,7 +282,9 @@ public sealed class ShellViewModel : Observable
     public string AccountName => session?.DisplayName ?? string.Empty;
     public string ServerLine => IsServerComputer
         ? $"Serveur de l'établissement · port {api.Server.Port}"
-        : ConnectionStore.Load() is { IsRemote: true } link ? $"Relié à {link.Machine} · {api.Server.Host}" : $"Serveur {api.Server.Host}:{api.Server.Port}";
+        : ConnectionStore.Load() is { IsRemote: true } link && TailscaleEndpoint.IsTailnetAddress(api.Server)
+            ? $"Tailscale privé · {link.School ?? link.Machine} · {api.Server.Host}"
+        : ConnectionStore.Load() is { IsRemote: true } direct ? $"Relié à {direct.Machine} · {api.Server.Host}" : $"Serveur {api.Server.Host}:{api.Server.Port}";
 
     public PageViewModel? Current
     {
@@ -411,6 +413,14 @@ public sealed class ShellViewModel : Observable
             if (await api.IsRunningAsync())
             {
                 await ShowEntryAsync();
+                return;
+            }
+            // Une adresse Tailscale n'est pas retrouvable par diffusion UDP LAN :
+            // épargner une recherche inutile et préserver l'adresse privée mémorisée.
+            if (TailscaleEndpoint.IsTailnetAddress(api.Server))
+            {
+                if (OfferOfflineEntry(saved.School ?? string.Empty)) return;
+                ShowChooser([], "Le serveur privé Tailscale de votre établissement ne répond pas. Vérifiez le VPN sur les deux appareils, l'approbation Tailscale et le service SCOLIA sur le téléphone principal. Vous pouvez saisir à nouveau son adresse Tailscale.");
                 return;
             }
             Status = $"Recherche du serveur de {saved.School}…";
