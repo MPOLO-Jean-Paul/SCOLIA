@@ -27,6 +27,9 @@ public static class Platform
     /// </summary>
     public static Func<string>? OpenTailscale { get; set; }
 
+    /// <summary>Activation VPN demandée sans ouvrir la fenêtre Tailscale.</summary>
+    public static Func<Task<string>>? ConnectTailscaleInBackground { get; set; }
+
     /// <summary>Dossier où les documents sont enregistrés sur le téléphone.</summary>
     public static string? DocumentsFolder { get; set; }
 
