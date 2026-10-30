@@ -24,6 +24,27 @@ public static class FeatureVisuals
         _ => MaterialIconKind.ViewDashboard
     };
 
+    /// <summary>Couleur fonctionnelle des petites commandes, jamais une teinte arbitraire.</summary>
+    public static string CommandTone(string label, string originalTone)
+    {
+        if (originalTone != "ToneNeutral") return originalTone;
+        if (label.StartsWith("Effacer", StringComparison.OrdinalIgnoreCase)
+            || label.StartsWith("Annuler", StringComparison.OrdinalIgnoreCase)) return "ToneRed";
+        if (label.StartsWith("Nouvel", StringComparison.OrdinalIgnoreCase)
+            || label.StartsWith("Sauvegarder", StringComparison.OrdinalIgnoreCase)) return "ToneGreen";
+        if (label.Contains("reçu", StringComparison.OrdinalIgnoreCase)
+            || label.Contains("débiteur", StringComparison.OrdinalIgnoreCase)) return "ToneOrange";
+        if (label.Contains("PDF", StringComparison.OrdinalIgnoreCase)) return "ToneIndigo";
+        if (label.Contains("Excel", StringComparison.OrdinalIgnoreCase)
+            || label.StartsWith("Importer", StringComparison.OrdinalIgnoreCase)) return "ToneTeal";
+        if (label.StartsWith("Vérifier", StringComparison.OrdinalIgnoreCase)
+            || label.Contains("Sécurité", StringComparison.OrdinalIgnoreCase)) return "ToneTeal";
+        if (label.Contains("Police", StringComparison.OrdinalIgnoreCase)
+            || label.Contains("texte", StringComparison.OrdinalIgnoreCase)
+            || label.Contains("Préférences", StringComparison.OrdinalIgnoreCase)) return "TonePurple";
+        return "ToneBlue";
+    }
+
     public static string Tone(string title) => title switch
     {
         "" or "Accueil" or "Secrétariat" => "ToneBlue",
