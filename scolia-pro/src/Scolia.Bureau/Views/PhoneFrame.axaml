@@ -5,7 +5,7 @@
   <UserControl.Resources>
     <!-- Rubrique de navigation : un métier et ses outils, chacun sur une ligne haute avec son icône de couleur -->
     <DataTemplate x:Key="NavGroup">
-      <Border Classes="phoneaccordion" Margin="0,0,0,6">
+      <Border Classes="phoneaccordion">
         <StackPanel Spacing="0">
                   <Button Classes="phonecategory" IsVisible="{Binding HasTitle}" Command="{Binding Toggle}">
                     <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
@@ -38,11 +38,11 @@
     <DataTemplate x:Key="NavBlock">
       <StackPanel Spacing="4" Margin="0,10,0,6">
         <TextBlock Text="{Binding Title}" Classes="phoneblocktitle" />
-        <ItemsControl ItemsSource="{Binding Groups}" ItemTemplate="{StaticResource NavGroup}" />
+        <Border Classes="phoneblockcard"><ItemsControl ItemsSource="{Binding Groups}" ItemTemplate="{StaticResource NavGroup}" /></Border>
       </StackPanel>
     </DataTemplate>
     <DataTemplate x:Key="PhoneToolGroup">
-      <Border Classes="phoneaccordion" Margin="0,0,0,6">
+      <Border Classes="phoneaccordion">
         <StackPanel Spacing="0">
           <Button Classes="phonecategory" Command="{Binding Toggle}">
             <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
@@ -76,7 +76,7 @@
     <DataTemplate x:Key="PhoneToolBlock">
       <StackPanel Spacing="4" Margin="0,10,0,6">
         <TextBlock Text="{Binding Title}" Classes="phoneblocktitle" />
-        <ItemsControl ItemsSource="{Binding Groups}" ItemTemplate="{StaticResource PhoneToolGroup}" />
+        <Border Classes="phoneblockcard"><ItemsControl ItemsSource="{Binding Groups}" ItemTemplate="{StaticResource PhoneToolGroup}" /></Border>
       </StackPanel>
     </DataTemplate>
   </UserControl.Resources>
