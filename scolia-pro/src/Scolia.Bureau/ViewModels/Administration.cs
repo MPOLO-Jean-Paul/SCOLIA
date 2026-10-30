@@ -305,6 +305,28 @@ public sealed class SettingsPage : PageViewModel
     private PromotionRowVm? selectedPromotion;
     private string subtitle = string.Empty;
     private FormViewModel? schoolForm;
+    private bool mobileDetailsShown;
+
+    /// <summary>Android : une première liste de rubriques, puis une page de réglages.</summary>
+    public bool MobileCategoriesVisible => Phone && !mobileDetailsShown;
+    public bool SettingsDetailVisible => !Phone || mobileDetailsShown;
+    public RelayCommand<BackstageItemVm> OpenMobileSection { get; }
+    public RelayCommand BackToMobileSections { get; }
+
+    /// <summary>Le bouton retour système Android revient d'abord aux familles de réglages.</summary>
+    public bool TryBackToMobileSections()
+    {
+        if (!Phone || !mobileDetailsShown) return false;
+        mobileDetailsShown = false;
+        RefreshMobileSectionVisibility();
+        return true;
+    }
+
+    private void RefreshMobileSectionVisibility()
+    {
+        Raise(nameof(MobileCategoriesVisible));
+        Raise(nameof(SettingsDetailVisible));
+    }
 
     public SettingsPage(ShellViewModel shell, string? open = null) : base(shell)
     {
@@ -331,6 +353,16 @@ public sealed class SettingsPage : PageViewModel
         if (Preferences.MobileLayout) PosteSections = [.. PosteSections.Where(s => s.Value != "fenetres")];
         var all = SchoolSections.Concat(PosteSections).ToList();
         section = all.FirstOrDefault(s => s.Value == open) ?? all[0];
+        // Ouverture ciblée depuis une autre fonctionnalité : afficher directement la rubrique.
+        mobileDetailsShown = open is not null || !Phone;
+        OpenMobileSection = new RelayCommand<BackstageItemVm>(item =>
+        {
+            if (item is null) return;
+            mobileDetailsShown = true;
+            Section = item;
+            RefreshMobileSectionVisibility();
+        });
+        BackToMobileSections = new RelayCommand(() => TryBackToMobileSections());
         Swatches = Preferences.AccentSwatches.Select(a => new AccentSwatchVm(a.Key, a.Label, new SolidColorBrush(a.Color),
             new RelayCommand(() => { Prefs.Accent = a.Key; RaiseSwatches(); }), () => Prefs.Accent == a.Key)).ToList();
         ResetPrefs = new RelayCommand(() => { Prefs.Reset(); RaisePrefs(); Shell.Notify("Réglages de ce poste rétablis."); });

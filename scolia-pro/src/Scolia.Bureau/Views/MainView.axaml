@@ -142,8 +142,9 @@
          avant de connaître l’état réel de configuration. -->
     <Border Background="{DynamicResource BgBrush}" IsVisible="{Binding ShowStartup}">
       <StackPanel MaxWidth="340" Margin="24" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="12">
-        <Border Width="66" Height="66" CornerRadius="18" Background="{DynamicResource AccentBrush}" HorizontalAlignment="Center">
-          <Image Source="{DynamicResource ScoliaMark}" Width="46" Height="46" HorizontalAlignment="Center" VerticalAlignment="Center" />
+        <Border Width="76" Height="76" CornerRadius="20" Background="{DynamicResource Surface2Brush}"
+                BorderBrush="{DynamicResource LineBrush}" BorderThickness="1" HorizontalAlignment="Center">
+          <Image Source="{DynamicResource ScoliaMark}" Width="54" Height="54" HorizontalAlignment="Center" VerticalAlignment="Center" />
         </Border>
         <TextBlock Text="SCOLIA Pro" FontSize="22" FontWeight="SemiBold" TextAlignment="Center" HorizontalAlignment="Center" />
         <TextBlock Text="{Binding Status}" Classes="muted" TextWrapping="Wrap" TextAlignment="Center" HorizontalAlignment="Center" />
@@ -163,11 +164,14 @@
       <Grid.RenderTransform><TranslateTransform /></Grid.RenderTransform>
       <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" VerticalAlignment="Center">
       <StackPanel x:Name="WelcomeContent" MaxWidth="320" Margin="24" HorizontalAlignment="Stretch" Spacing="12">
-        <Panel Width="64" Height="64" HorizontalAlignment="Center">
-          <Image Source="{Binding SchoolLogo}" IsVisible="{Binding HasSchoolLogo}" />
-          <Image Source="{DynamicResource ScoliaMark}" IsVisible="{Binding !HasSchoolLogo}" Width="60" Height="60" />
-        </Panel>
-        <TextBlock Text="{Binding OpeningTitle}" Classes="title" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" />
+        <Border Width="92" Height="92" CornerRadius="24" Background="{DynamicResource Surface2Brush}"
+                BorderBrush="{DynamicResource LineBrush}" BorderThickness="1" HorizontalAlignment="Center">
+          <Image Source="{DynamicResource ScoliaMark}" Width="68" Height="68"
+                 HorizontalAlignment="Center" VerticalAlignment="Center" />
+        </Border>
+        <TextBlock Text="SCOLIA Pro" FontSize="22" FontWeight="SemiBold" HorizontalAlignment="Center" />
+        <TextBlock Text="{Binding OpeningTitle}" Classes="muted"
+                   HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" />
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="6" Margin="0,2,0,2">
           <Border Classes="welcomedot first" /><Border Classes="welcomedot second" /><Border Classes="welcomedot third" />
         </StackPanel>
