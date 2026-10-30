@@ -116,7 +116,7 @@
           </Border>
           <TextBlock Text="Installation du réseau privé" FontSize="19" FontWeight="Bold" TextAlignment="Center" TextWrapping="Wrap" />
           <TextBlock Text="{Binding Installer.Step}" FontWeight="SemiBold" TextAlignment="Center" TextWrapping="Wrap" />
-          <ProgressBar Minimum="0" Maximum="3" Value="{Binding Installer.StepProgress}" Height="7" MinHeight="7" />
+          <ProgressBar Minimum="0" Maximum="3" Value="{Binding Installer.StepProgress, Mode=OneWay}" Height="7" MinHeight="7" />
           <ProgressBar IsIndeterminate="True" IsVisible="{Binding Installer.IsWaiting}" Height="3" MinHeight="3" />
           <TextBlock Text="{Binding Installer.Status}" Classes="muted" TextWrapping="Wrap" TextAlignment="Center" />
           <TextBlock Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" TextAlignment="Center"
