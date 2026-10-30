@@ -182,6 +182,15 @@ public sealed class ShellViewModel : Observable
     /// <summary>Un écran neutre apparaît durant la détection, jamais une fausse connexion.</summary>
     public bool ShowStartup => !entryChecked && !ChoosingServer && !Opening && !IsLoggedIn;
 
+    /// <summary>Une réponse vérifiée du serveur décide entre connexion et assistant.</summary>
+    public void ApplyInstallationStatus(bool configured)
+    {
+        IsSetupRequired = !configured;
+        if (entryChecked) return;
+        entryChecked = true;
+        RaiseLogin();
+    }
+
     private void MarkEntryChecked()
     {
         if (entryChecked) return;
@@ -592,16 +601,14 @@ public sealed class ShellViewModel : Observable
         {
             var status = await api.GetAsync<SetupStatusDto>("api/installation");
             Login.SchoolName = status.SchoolName ?? string.Empty;
-            IsSetupRequired = !status.IsConfigured;
-            // Rendre la première page immédiatement : la proposition d’année et le logo
-            // sont accessoires et ne doivent jamais bloquer l’assistant ou la connexion.
-            if (IsSetupRequired)
+            // La proposition d’année et le logo sont accessoires : ils ne bloquent plus la première page.
+            if (!status.IsConfigured)
             {
                 SchoolLogo = null;
                 _ = Setup.LoadAsync();
             }
             else _ = RefreshLogoAsync();
-            MarkEntryChecked();
+            ApplyInstallationStatus(status.IsConfigured);
         }
         catch (Exception ex) when (ex is ApiException or HttpRequestException or TaskCanceledException)
         {
