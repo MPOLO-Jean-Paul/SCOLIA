@@ -32,11 +32,29 @@ public sealed class SyncWorker : Worker
     private async Task<Result> RunAsync()
     {
         Security.AndroidSecrets.Initialize();
-        var saved = RemoteConnection.Load();
-        if (saved is null || saved.Host || !saved.Enabled || saved.Link.ExpiresUtc <= DateTime.UtcNow ||
-            ConnectionStore.Load()?.Mode != ConnectionSettings.Internet) return Result.InvokeSuccess();
-        using var api = new ScoliaClient(saved.Link.VirtualServer);
-        api.UseRemote(saved.Link);
+        // Un téléphone client peut rejoindre un serveur privé Tailscale sans relais cloud.
+        // WorkManager reste différé (~15 min minimum) : jamais une promesse de temps réel
+        // quand Android a arrêté l'application cliente.
+        var connection = ConnectionStore.Load();
+        Uri? server = null;
+        Scolia.Transport.RemoteLink? relay = null;
+        if (connection is { Mode: ConnectionSettings.Remote, Url: { Length: > 0 } url }
+            && Uri.TryCreate(url, UriKind.Absolute, out var privateServer)
+            && TailscaleEndpoint.IsTailnetAddress(privateServer))
+        {
+            server = privateServer;
+        }
+        else if (connection?.Mode == ConnectionSettings.Internet)
+        {
+            var saved = RemoteConnection.Load();
+            if (saved is null || saved.Host || !saved.Enabled || saved.Link.ExpiresUtc <= DateTime.UtcNow)
+                return Result.InvokeSuccess();
+            relay = saved.Link;
+            server = relay.VirtualServer;
+        }
+        if (server is null) return Result.InvokeSuccess();
+        using var api = new ScoliaClient(server);
+        if (relay is not null) api.UseRemote(relay);
         var store = new OfflineStore(api.Server);
         if (store.SavedCredential is not { SessionCookie.Length: > 0 } credential) return Result.InvokeSuccess();
         store.User = credential.UserName;
