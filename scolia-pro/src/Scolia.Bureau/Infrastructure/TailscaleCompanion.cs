@@ -13,6 +13,13 @@ public static class TailscaleCompanion
     public const string WindowsInstallerRelativePath = "Outils/Tailscale-Setup.exe";
     public const string OfficialWindowsDownload = "https://tailscale.com/download/windows";
 
+    /// <summary>Demande de connexion discrète, après la première configuration Tailscale.</summary>
+    public static async Task<string> ConnectInBackgroundAsync()
+    {
+        if (Platform.ConnectTailscaleInBackground is { } native)
+            return await native().ConfigureAwait(false);
+        return "L'activation discrète du VPN n'est pas disponible sur cet appareil.";
+    }
     public static string Open()
     {
         if (Platform.OpenTailscale is { } native) return native();
