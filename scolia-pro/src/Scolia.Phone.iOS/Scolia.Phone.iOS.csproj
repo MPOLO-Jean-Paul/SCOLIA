@@ -10,7 +10,7 @@
     <ApplicationDisplayVersion>1.2.0</ApplicationDisplayVersion>
     <AssemblyName>SCOLIA</AssemblyName>
     <RootNamespace>Scolia.Phone.iOS</RootNamespace>
-    <RuntimeIdentifiers>ios-arm64;iossimulator-arm64</RuntimeIdentifiers>
+    <RuntimeIdentifiers>ios-arm64;iossimulator-arm64;iossimulator-x64</RuntimeIdentifiers>
     <AvaloniaUseCompiledBindingsByDefault>false</AvaloniaUseCompiledBindingsByDefault>
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
     <PublishTrimmed>false</PublishTrimmed>
