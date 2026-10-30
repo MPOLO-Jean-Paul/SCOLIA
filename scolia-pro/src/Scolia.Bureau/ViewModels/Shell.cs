@@ -1164,6 +1164,8 @@ public sealed class ShellViewModel : Observable
         // Toutes ces commandes sont déjà dans Paramètres de l'établissement ou
         // concernent exclusivement un ordinateur : ne pas les dupliquer sur mobile.
         "Mode sombre", "Taille du texte",
+        // La destination Rapports figure déjà dans la navigation du même menu.
+        "Rapports et exports",
     };
 
     private void RebuildPhoneTools()

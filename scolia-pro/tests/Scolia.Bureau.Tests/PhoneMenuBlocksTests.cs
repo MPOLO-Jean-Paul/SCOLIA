@@ -22,9 +22,9 @@ public sealed class PhoneMenuBlocksTests
         var blocks = PhoneMenuBlockVm.Build(navigation, commands);
         Assert.Equal(navigation.Length, blocks.Sum(b => b.NavigationGroups.Count));
         Assert.Equal(commands.Length, blocks.Sum(b => b.ToolGroups.Count));
-        Assert.All(navigation, group => Assert.Single(blocks.Where(b => b.NavigationGroups.Contains(group))));
-        Assert.All(commands, group => Assert.Single(blocks.Where(b => b.ToolGroups.Contains(group))));
-        Assert.Single(blocks.Where(b => b.Title == "AFFICHAGE"));
+        Assert.All(navigation, group => Assert.Single(blocks, b => b.NavigationGroups.Contains(group)));
+        Assert.All(commands, group => Assert.Single(blocks, b => b.ToolGroups.Contains(group)));
+        Assert.Single(blocks, b => b.Title == "AFFICHAGE");
     }
 
     [Fact]
@@ -37,7 +37,7 @@ public sealed class PhoneMenuBlocksTests
             new PhoneToolGroupVm("Scolarité", []),
         };
         var blocks = PhoneMenuBlockVm.Build([], groups);
-        var display = Assert.Single(blocks.Where(b => b.Title == "AFFICHAGE"));
+        var display = Assert.Single(blocks, b => b.Title == "AFFICHAGE");
         Assert.Equal("Affichage", Assert.Single(display.ToolGroups).Title);
         Assert.Empty(display.NavigationGroups);
         Assert.DoesNotContain(display.ToolGroups, x => x.Title == "Finances" || x.Title == "Scolarité");
