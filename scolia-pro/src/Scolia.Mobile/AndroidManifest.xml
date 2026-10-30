@@ -23,6 +23,8 @@
   </application>
   <!-- Ouvrir WhatsApp, les SMS, le téléphone, l'e-mail et les documents avec les applications installées. -->
   <queries>
+    <!-- Android 11+ : autoriser uniquement la détection du VPN Tailscale officiel. -->
+    <package android:name="com.tailscale.ipn" />
     <intent><action android:name="android.intent.action.VIEW" /><data android:scheme="https" /></intent>
     <intent><action android:name="android.intent.action.VIEW" /><data android:scheme="sms" /></intent>
     <intent><action android:name="android.intent.action.VIEW" /><data android:scheme="tel" /></intent>

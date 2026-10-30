@@ -21,6 +21,12 @@ public static class Platform
     /// <summary>Ouvre une adresse : WhatsApp, SMS, appel, e-mail ou page web.</summary>
     public static Action<string>? OpenUri { get; set; }
 
+    /// <summary>
+    /// À la demande de l'utilisateur, ouvre Tailscale ou son installateur officiel.
+    /// La permission VPN et la connexion au tailnet restent sous contrôle d'Android.
+    /// </summary>
+    public static Func<string>? OpenTailscale { get; set; }
+
     /// <summary>Dossier où les documents sont enregistrés sur le téléphone.</summary>
     public static string? DocumentsFolder { get; set; }
 

@@ -30,6 +30,7 @@ public sealed class ConnectionViewModel : Observable
         UseThisComputer = new AsyncCommand(() => shell.UseThisComputerAsync());
         ConnectAddress = new AsyncCommand(ConnectAddressAsync);
         ConnectTailnet = new AsyncCommand(ConnectTailnetAsync);
+        PrepareTailnet = new RelayCommand(() => Message = TailscaleCompanion.Open());
         JoinInternet = new AsyncCommand(JoinInternetAsync);
     }
 
@@ -52,9 +53,16 @@ public sealed class ConnectionViewModel : Observable
     /// <summary>IPv4 Tailscale ou nom MagicDNS complet de l'appareil qui porte la base.</summary>
     public string TailscaleAddress { get => tailscaleAddress; set => Set(ref tailscaleAddress, value); }
     public AsyncCommand ConnectTailnet { get; }
+    /// <summary>Installation ou ouverture du client VPN, uniquement après un clic de l'utilisateur.</summary>
+    public RelayCommand PrepareTailnet { get; }
 
     private async Task ConnectTailnetAsync()
     {
+        if (string.IsNullOrWhiteSpace(TailscaleAddress))
+        {
+            Message = "Commencez par installer ou ouvrir Tailscale, puis saisissez l'adresse privée du téléphone ou PC serveur.";
+            return;
+        }
         if (!TailscaleEndpoint.TryParse(TailscaleAddress, PosteAdmin.DefaultPort, out var target) || target is null)
         {
             Message = "Adresse Tailscale invalide. Utilisez l'adresse 100.64–100.127.x.x ou un nom complet .ts.net, avec le port SCOLIA.";

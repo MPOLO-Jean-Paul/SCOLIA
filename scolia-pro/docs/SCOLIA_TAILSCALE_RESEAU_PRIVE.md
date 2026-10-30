@@ -11,6 +11,8 @@ Tailscale crée un **réseau privé chiffré** entre des appareils approuvés (t
 
 ## A. Installer et autoriser
 
+Dans **SCOLIA > Rejoindre votre établissement > Réseau privé Tailscale**, le bouton **Installer ou ouvrir Tailscale** lance l'application officielle si elle est installée, sinon ouvre sa page d'installation officielle. Android demandera toujours l'accord de l'utilisateur pour installer l'application et activer son VPN. SCOLIA ne contient pas le moteur VPN Tailscale et ne stocke aucune clé de connexion Tailscale.
+
 1. Depuis chaque téléphone Android, installer Tailscale via https://tailscale.com/docs/install/android, accepter sa configuration VPN et se connecter au **même tailnet** avec un compte autorisé.
 2. Depuis chaque PC Windows, installer et ouvrir https://tailscale.com/docs/install/windows, puis se connecter au même tailnet.
 3. L'administrateur du tailnet active l'approbation des appareils, si souhaitée : https://tailscale.com/docs/features/access-control/device-management/device-approval. Dans l'onglet **Machines**, examiner chaque appareil marqué **Needs approval**, puis choisir **Approve**. N'approuver que les appareils reconnus.

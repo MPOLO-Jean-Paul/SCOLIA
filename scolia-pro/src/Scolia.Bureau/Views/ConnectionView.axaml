@@ -75,6 +75,8 @@
           </Grid>
           <TextBlock Classes="muted" TextWrapping="Wrap"
                      Text="Sur le téléphone ou PC principal, laissez SCOLIA en mode serveur. Entrez ci-dessous son IP Tailscale ou son nom MagicDNS complet." />
+          <Button Classes="ghost" Content="Installer ou ouvrir Tailscale" Command="{Binding PrepareTailnet}"
+                  IsEnabled="{Binding NotSearching}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" />
           <TextBox Text="{Binding TailscaleAddress}" PlaceholderText="100.110.22.33:5080 ou machine.tailnet.ts.net:5080" />
           <Button Classes="primary" Content="Rejoindre par Tailscale" Command="{Binding ConnectTailnet}"
                   IsEnabled="{Binding NotSearching}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" />
