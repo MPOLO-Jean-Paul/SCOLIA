@@ -12,6 +12,8 @@ namespace Scolia.Mobile.Server;
 /// et reçoit les recherches des autres postes.
 /// </summary>
 [Service(Name = "com.jpservices.scolia.ServeurScolia", Exported = false, ForegroundServiceType = ForegroundService.TypeSpecialUse)]
+[MetaData(Name = "android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE",
+    Value = "Local school records server voluntarily enabled by the user, with visible notification for authorized devices")]
 public sealed class ServeurScolia : Service
 {
     private const string Channel = "serveur";
