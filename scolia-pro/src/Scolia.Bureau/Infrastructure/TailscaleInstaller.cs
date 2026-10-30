@@ -20,7 +20,7 @@ public sealed class TailscaleInstaller : Observable
 
     private TailscaleInstaller()
     {
-        Verify = new RelayCommand(CheckInstallation);
+        Verify = new RelayCommand(() => { CheckInstallation(); });
         Close = new RelayCommand(() => IsOpen = false);
         OpenStore = new RelayCommand(LaunchStore);
         Configure = new RelayCommand(() => Status = TailscaleCompanion.Open());
