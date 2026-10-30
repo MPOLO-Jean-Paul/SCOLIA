@@ -13,6 +13,25 @@ public static class TailscaleCompanion
     public const string WindowsInstallerRelativePath = "Outils/Tailscale-Setup.exe";
     public const string OfficialWindowsDownload = "https://tailscale.com/download/windows";
 
+    public static bool IsInstalled()
+    {
+        if (Platform.IsTailscaleInstalled is { } check) return check();
+        if (!OperatingSystem.IsWindows()) return false;
+        return new[]
+        {
+            Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
+            Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86)
+        }.Any(folder => File.Exists(Path.Combine(folder, "Tailscale", "tailscale-ipn.exe")));
+    }
+
+    /// <summary>La progression réelle appartient au magasin d'applications, pas à SCOLIA.</summary>
+    public static string OpenInstallPage()
+    {
+        if (Platform.OpenTailscaleInstallPage is { } open) return open();
+        return Open();
+    }
+
+
     /// <summary>Demande de connexion discrète, après la première configuration Tailscale.</summary>
     public static async Task<string> ConnectInBackgroundAsync()
     {
