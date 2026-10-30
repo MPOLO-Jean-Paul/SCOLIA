@@ -20,6 +20,7 @@ public sealed class RemoteConnectionViewModel : Observable
         }
         Enable = new AsyncCommand(EnableAsync);
         ShareTailnet = new AsyncCommand(ShareTailnetNowAsync);
+        InstallTailnet = new AsyncCommand(Installer.BeginAsync);
         Disable = new RelayCommand(() =>
         {
             if (!CanManage) return;
@@ -36,6 +37,8 @@ public sealed class RemoteConnectionViewModel : Observable
 
     /// <summary>Demande Tailscale en arrière-plan ; la connexion doit être testée par un client.</summary>
     public AsyncCommand ShareTailnet { get; }
+    public AsyncCommand InstallTailnet { get; }
+    public TailscaleInstaller Installer { get; } = TailscaleInstaller.Instance;
 
     private async Task ShareTailnetNowAsync()
     {

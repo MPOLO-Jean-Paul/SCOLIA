@@ -30,7 +30,7 @@ public sealed class ConnectionViewModel : Observable
         UseThisComputer = new AsyncCommand(() => shell.UseThisComputerAsync());
         ConnectAddress = new AsyncCommand(ConnectAddressAsync);
         ConnectTailnet = new AsyncCommand(ConnectTailnetAsync);
-        PrepareTailnet = new RelayCommand(() => Message = TailscaleCompanion.Open());
+        PrepareTailnet = new AsyncCommand(Installer.BeginAsync);
         JoinInternet = new AsyncCommand(JoinInternetAsync);
     }
 
@@ -54,7 +54,8 @@ public sealed class ConnectionViewModel : Observable
     public string TailscaleAddress { get => tailscaleAddress; set => Set(ref tailscaleAddress, value); }
     public AsyncCommand ConnectTailnet { get; }
     /// <summary>Installation ou ouverture du client VPN, uniquement après un clic de l'utilisateur.</summary>
-    public RelayCommand PrepareTailnet { get; }
+    public AsyncCommand PrepareTailnet { get; }
+    public TailscaleInstaller Installer { get; } = TailscaleInstaller.Instance;
 
     private async Task ConnectTailnetAsync()
     {

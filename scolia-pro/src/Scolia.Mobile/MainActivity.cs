@@ -40,6 +40,7 @@ public sealed class MainActivity : AvaloniaMainActivity
         startup?.SetActive(true);
         // La recherche du serveur sur le Wi-Fi a besoin de recevoir les réponses en diffusion.
         MobilePlatform.HoldMulticast(true);
+        ScoliaPlatform.NotifyAppResumed();
     }
 
     protected override void OnPause()
