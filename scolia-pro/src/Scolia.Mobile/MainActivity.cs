@@ -41,7 +41,10 @@ public sealed class MainActivity : AvaloniaMainActivity
         // La recherche du serveur sur le Wi-Fi a besoin de recevoir les réponses en diffusion.
         MobilePlatform.HoldMulticast(true);
         ScoliaPlatform.NotifyAppResumed();
-        Synchronization.SyncWorker.ScheduleOnResume(this);
+        // Une erreur de WorkManager ne doit pas empêcher de revenir sur l'écran SCOLIA.
+        try { Synchronization.SyncWorker.ScheduleOnResume(this); }
+        catch (Exception ex)
+        { Android.Util.Log.Warn("SCOLIA-Sync", $"Reprise différée indisponible : {ex.GetType().Name}"); }
     }
 
     protected override void OnPause()
