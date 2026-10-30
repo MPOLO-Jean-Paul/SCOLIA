@@ -131,7 +131,7 @@ public sealed class StudentCardsApiTests : IDisposable
             new { enrollmentIds = new[] { student }, month = 9, year = 2026, copies = 1, includeLeft = false });
         var invalid = await response.Fail();
         Assert.Equal(HttpStatusCode.BadRequest, invalid.Status);
-        Assert.Contains("logo", invalid.Content.ToString(), StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("logo", invalid.Body.ToString(), StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
