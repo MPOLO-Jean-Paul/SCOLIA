@@ -44,10 +44,17 @@ internal sealed class StartupScreen : FrameLayout
         content.SetPadding(Dp(24), Dp(24), Dp(24), Dp(24));
         scroll.AddView(content, new ScrollView.LayoutParams(LayoutParams.MatchParent, LayoutParams.WrapContent));
 
-        var logo = new ImageView(activity) { ImportantForAccessibility = ImportantForAccessibility.No };
-        logo.SetImageResource(Resource.Drawable.logo);
-        logo.SetScaleType(ImageView.ScaleType.FitCenter);
-        content.AddView(logo, new LinearLayout.LayoutParams(Dp(96), Dp(96)) { BottomMargin = Dp(16) });
+         // La marque neutre du logiciel, jamais le logo d’un établissement codé en dur.
+        // Le vrai logo de l’école est chargé ensuite depuis sa configuration.
+        var markBackground = new GradientDrawable();
+        markBackground.SetShape(ShapeType.Rectangle);
+        markBackground.SetCornerRadius(Dp(24));
+        markBackground.SetColor(Color.Rgb(15, 79, 196));
+        var mark = new TextView(activity) { Text = "S", TextSize = 44, Gravity = GravityFlags.Center, ImportantForAccessibility = ImportantForAccessibility.No };
+        mark.SetTextColor(Color.White);
+        mark.SetTypeface(null, TypefaceStyle.Bold);
+        mark.Background = markBackground;
+        content.AddView(mark, new LinearLayout.LayoutParams(Dp(88), Dp(88)) { BottomMargin = Dp(16), Gravity = GravityFlags.CenterHorizontal });
 
         var title = new TextView(activity) { Text = "SCOLIA", TextSize = 22, Gravity = GravityFlags.Center };
         title.SetTextColor(Color.Rgb(15, 43, 107));
