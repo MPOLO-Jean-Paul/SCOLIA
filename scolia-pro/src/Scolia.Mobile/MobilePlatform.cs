@@ -28,6 +28,7 @@ public static class MobilePlatform
             ?? Path.Combine(app.FilesDir?.AbsolutePath ?? Path.GetTempPath(), "Documents");
         Platform.OpenFile = OpenFile;
         Platform.OpenUri = OpenUri;
+        Platform.OpenTailscale = OpenTailscale;
         Platform.PlayWave = AndroidAudio.PlayWave;
         // Sans ordinateur dans l'établissement, ce téléphone peut en être le serveur.
         Platform.LocalServer = Server.PhoneServer.Get(app);
@@ -85,6 +86,44 @@ public static class MobilePlatform
         catch (ActivityNotFoundException)
         {
             Toast.MakeText(ctx, "Aucune application du téléphone ne sait ouvrir ce lien.", ToastLength.Long)?.Show();
+        }
+    }
+
+    /// <summary>
+    /// Le VPN Tailscale est une application système distincte. Android ne permet pas à
+    /// SCOLIA de l'installer ou de l'autoriser silencieusement. On ouvre directement
+    /// son écran si elle est installée, sinon sa fiche officielle d'installation.
+    /// </summary>
+    private static string OpenTailscale()
+    {
+        if (context is not { } ctx)
+            return "Le téléphone n'est pas prêt pour ouvrir Tailscale.";
+        try
+        {
+            var installed = ctx.PackageManager?.GetLaunchIntentForPackage("com.tailscale.ipn");
+            if (installed is not null)
+            {
+                installed.AddFlags(ActivityFlags.NewTask);
+                ctx.StartActivity(installed);
+                return "Tailscale est ouvert. Activez le VPN et connectez-vous au réseau privé de votre établissement, puis revenez dans SCOLIA.";
+            }
+
+            var playStore = new Intent(Intent.ActionView,
+                AndroidUri.Parse("market://details?id=com.tailscale.ipn"));
+            playStore.AddFlags(ActivityFlags.NewTask);
+            try { ctx.StartActivity(playStore); }
+            catch (ActivityNotFoundException)
+            {
+                var browser = new Intent(Intent.ActionView,
+                    AndroidUri.Parse("https://play.google.com/store/apps/details?id=com.tailscale.ipn"));
+                browser.AddFlags(ActivityFlags.NewTask);
+                ctx.StartActivity(browser);
+            }
+            return "Installation officielle de Tailscale ouverte. Confirmez l'installation et l'autorisation VPN demandée par Android, puis revenez dans SCOLIA.";
+        }
+        catch (Exception ex) when (ex is ActivityNotFoundException or Java.Lang.SecurityException)
+        {
+            return "Impossible d'ouvrir Tailscale. Vous pouvez installer l'APK officiel présent dans le kit SCOLIA (dossier Téléphone).";
         }
     }
 
