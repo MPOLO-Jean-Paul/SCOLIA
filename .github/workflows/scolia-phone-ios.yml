@@ -24,7 +24,8 @@ defaults:
 jobs:
   simulateur:
     name: SCOLIA Phone iPhone - simulateur non signe
-    runs-on: macos-15
+    # .NET iOS 10.0 (SDK 27.1) requiert la chaîne Apple 27, pas le Xcode 16.4 de macos-15.
+    runs-on: xcode-27
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v5
@@ -39,12 +40,15 @@ jobs:
         run: dotnet workload install ios
       - name: Compilation client iOS sans signature (simulateur)
         run: |
-          dotnet build src/Scolia.Phone.iOS/Scolia.Phone.iOS.csproj -c Debug -f net10.0-ios -r iossimulator-x64 -p:EnableCodeSigning=false -p:CodesignRequireProvisioningProfile=false
+          dotnet build src/Scolia.Phone.iOS/Scolia.Phone.iOS.csproj -c Debug -f net10.0-ios -r iossimulator-arm64 -p:PublishTrimmed=true -p:EnableCodeSigning=false -p:CodesignRequireProvisioningProfile=false
       - name: Archive de verification pour simulateur uniquement
         run: |
+          set -euo pipefail
           mkdir -p artifacts/ios-simulateur
-          find src/Scolia.Phone.iOS/bin/Debug/net10.0-ios -name '*.app' -type d -maxdepth 6 -print -exec cp -R {} artifacts/ios-simulateur/ \;
-          find artifacts/ios-simulateur -maxdepth 2 -type d | head
+          # Les .app du simulateur ne sont jamais des IPA iPhone physiques.
+          find src/Scolia.Phone.iOS/bin/Debug/net10.0-ios -maxdepth 8 -type d -name '*.app' -print -exec cp -R {} artifacts/ios-simulateur/ \;
+          test -n "$(find artifacts/ios-simulateur -maxdepth 1 -type d -name '*.app' -print -quit)"
+          printf '%s\n' 'SCOLIA Phone iOS : version simulateur non signee, non installable sur iPhone reel.' > artifacts/ios-simulateur/LIRE_MOI.txt
       - uses: actions/upload-artifact@v4
         with:
           name: SCOLIA_Phone_iPhone_Simulateur_NonSigne
