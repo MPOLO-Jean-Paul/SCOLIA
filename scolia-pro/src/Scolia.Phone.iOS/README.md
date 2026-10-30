@@ -29,3 +29,34 @@ dotnet build src/Scolia.Phone.iOS/Scolia.Phone.iOS.csproj -f net10.0-ios -c Debu
 ```
 
 La compilation iPhone physique exige `ios-arm64`, un certificat et un profil Apple. Elle ne devient installable qu'apres signature et validation sur un vrai iPhone.
+
+## Publier un vrai IPA signé (appareil physique)
+
+Un fichier du simulateur ne peut pas devenir un IPA par renommage. La CI fournit désormais
+le flux GitHub Actions **SCOLIA Phone iPhone - IPA signe** dans
+`.github/workflows/scolia-phone-ipa.yml`. Ce workflow est **manuel** et ne livre rien
+sans signature Apple. Pour rendre son bouton manuel disponible, le workflow doit être
+présent sur la branche principale de GitHub (via la PR approuvée).
+
+Dans **GitHub > Settings > Secrets and variables > Actions > New repository secret**,
+configurer les cinq secrets suivants, sans les envoyer par message :
+
+- `SCOLIA_IOS_CERT_P12_BASE64` : contenu base64 du certificat Apple Distribution
+  au format P12 **avec sa clé privée**.
+- `SCOLIA_IOS_CERT_P12_PASSWORD` : mot de passe du fichier P12.
+- `SCOLIA_IOS_PROFILE_BASE64` : contenu base64 du profil de distribution
+  `.mobileprovision` correspondant à `com.jpservices.scolia.ios`.
+- `SCOLIA_IOS_CODESIGN_KEY` : nom exact de l'identité « Apple Distribution: … ».
+- `SCOLIA_IOS_PROFILE_NAME` : nom ou UUID du profil correspondant.
+
+Exécuter ensuite **Actions > SCOLIA Phone iPhone - IPA signe > Run workflow**.
+La compilation utilise macOS / Xcode 27, publie pour `ios-arm64`, vérifie la
+signature du `.app` dans l'IPA, puis affiche un téléchargement nommé
+`SCOLIA_Phone_iPhone_IPA_Signe` avec le vrai fichier
+`SCOLIA_Phone_iPhone_iOS_Signed.ipa` à l'intérieur.
+
+**Choix de distribution :** un profil Ad Hoc nécessite l'enregistrement des iPhone
+cibles auprès d'Apple ; un profil App Store permet l'envoi vers TestFlight ou l'App Store,
+mais le simple téléchargement de l'IPA n'installe pas l'application sur l'iPhone.
+Le certificat, le profil et les autorisations Apple doivent appartenir à
+l'établissement ou au responsable autorisé. Les secrets doivent rester hors du dépôt.
