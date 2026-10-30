@@ -122,6 +122,19 @@ public sealed class StudentCardsApiTests : IDisposable
     }
 
     [Fact]
+    public async Task Export_sans_logo_de_l_ecole_est_refuse_plutot_que_d_imprimer_un_sceau_etranger()
+    {
+        var admin = await app.InstalledAdmin();
+        var promotion = await PromotionAsync(admin);
+        var student = await StudentAsync(admin, promotion, "MUKENDI");
+        var response = await admin.Post("/api/cartes/export",
+            new { enrollmentIds = new[] { student }, month = 9, year = 2026, copies = 1, includeLeft = false });
+        var invalid = await response.Fail();
+        Assert.Equal(HttpStatusCode.BadRequest, invalid.Status);
+        Assert.Contains("logo", invalid.Content.ToString(), StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public async Task Export_returns_a_pdf_and_records_the_batch()
     {
         var admin = await app.InstalledAdmin();
