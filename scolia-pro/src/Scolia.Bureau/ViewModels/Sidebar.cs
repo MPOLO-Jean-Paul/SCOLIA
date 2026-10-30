@@ -45,12 +45,16 @@ public sealed class NavGroupVm : Observable
     {
         Title = title;
         Items = items;
+        Icon = FeatureVisuals.Icon(title);
+        Brush = ThemeBrush.Get(FeatureVisuals.Tone(title));
         // L'accueil est accessible immédiatement ; les autres métiers sont repliés sur mobile.
         isExpanded = title.Length == 0;
         Toggle = new RelayCommand(() => IsExpanded = !IsExpanded);
     }
 
     public string Title { get; }
+    public MaterialIconKind Icon { get; }
+    public IBrush Brush { get; }
     public IReadOnlyList<NavItemVm> Items { get; }
     public bool HasTitle => Title.Length > 0;
     public bool IsExpanded { get => isExpanded; set => Set(ref isExpanded, value); }
@@ -91,7 +95,7 @@ public static class Sidebar
                 Item("Recouvrement", MaterialIconKind.ChartBar, "ToneOrange", Perm.ReportsRead, typeof(DebtorsPage), () => new DebtorsPage(shell)),
                 Item("Caisse", MaterialIconKind.CashMultiple, "ToneGreen", Perm.PaymentsRead, typeof(CashPage), () => new CashPage(shell)),
                 Item("Dépenses", MaterialIconKind.Wallet, "ToneRed", Perm.PaymentsRead, typeof(ExpensesPage), () => new ExpensesPage(shell)),
-                Item("Prises en charge", MaterialIconKind.ShieldCheck, "TonePink", Perm.PaymentsRead, typeof(SponsorshipsPage), () => new SponsorshipsPage(shell))),
+                Item("Prises en charge", MaterialIconKind.HandHeart, "TonePink", Perm.PaymentsRead, typeof(SponsorshipsPage), () => new SponsorshipsPage(shell))),
             Group("Scolarité",
                 Item("Cours et notes", MaterialIconKind.BookOpenVariant, "TonePurple", Perm.AcademicsRead, typeof(GradesPage), () => new GradesPage(shell)),
                 Item("Résultats", MaterialIconKind.Certificate, "ToneIndigo", Perm.AcademicsRead, typeof(ResultsPage), () => new ResultsPage(shell)),
