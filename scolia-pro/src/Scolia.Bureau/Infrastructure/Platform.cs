@@ -23,6 +23,8 @@ public static class Platform
     public static Func<Task<bool>>? EnrollBiometricAsync { get; set; }
     /// <summary>Retire la clé biométrique native et son consentement local, sans toucher aux données scolaires.</summary>
     public static Action? DisableBiometricAccess { get; set; }
+    /// <summary>Vrai seulement si l'appareil possède la preuve native liée à une activation biométrique.</summary>
+    public static Func<bool>? HasBiometricProof { get; set; }
 
     /// <summary>Ouvre un document enregistré, un PDF ou un classeur, avec l'application du téléphone.</summary>
     public static Action<string>? OpenFile { get; set; }
