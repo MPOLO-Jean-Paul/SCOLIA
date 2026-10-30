@@ -63,6 +63,18 @@ public sealed class StudentCardsApiTests : IDisposable
     private readonly ScoliaApp app = new();
     public void Dispose() => app.Dispose();
 
+    private static async Task ConfigureSchoolLogoAsync(HttpClient admin)
+    {
+        // Les tests installent un logo de l'établissement simulé au lieu d'utiliser
+        // un sceau intégré automatiquement par le générateur de cartes.
+        using var form = new MultipartFormDataContent();
+        using var image = new ByteArrayContent(Scolia.Infrastructure.Documents.DocumentService.DefaultLogo());
+        image.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("image/png");
+        form.Add(image, "fichier", "ecole-test.png");
+        using var response = await admin.PutAsync("/api/etablissement/logo", form);
+        Assert.True(response.IsSuccessStatusCode, await response.Content.ReadAsStringAsync());
+    }
+
     private static async Task<string> PromotionAsync(HttpClient admin)
     {
         var promotion = await admin.Post("/api/etablissement/promotions", new
@@ -113,6 +125,7 @@ public sealed class StudentCardsApiTests : IDisposable
     public async Task Export_returns_a_pdf_and_records_the_batch()
     {
         var admin = await app.InstalledAdmin();
+        await ConfigureSchoolLogoAsync(admin);
         var promotion = await PromotionAsync(admin);
         var student = await StudentAsync(admin, promotion, "MUKENDI");
 
@@ -133,6 +146,7 @@ public sealed class StudentCardsApiTests : IDisposable
     public async Task Word_export_is_a_well_formed_package_recorded_as_word()
     {
         var admin = await app.InstalledAdmin();
+        await ConfigureSchoolLogoAsync(admin);
         var promotion = await PromotionAsync(admin);
         var student = await StudentAsync(admin, promotion, "MUKENDI");
 
@@ -160,6 +174,7 @@ public sealed class StudentCardsApiTests : IDisposable
     public async Task Left_students_are_counted_as_skipped_and_ten_cards_make_two_pages()
     {
         var admin = await app.InstalledAdmin();
+        await ConfigureSchoolLogoAsync(admin);
         var promotion = await PromotionAsync(admin);
         var first = await StudentAsync(admin, promotion, "MUKENDI");
         var second = await StudentAsync(admin, promotion, "NGANDU");
