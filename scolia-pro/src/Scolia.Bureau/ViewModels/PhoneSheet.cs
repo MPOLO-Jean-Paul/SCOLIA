@@ -79,6 +79,19 @@ public sealed record PhoneMenuBlockVm(string Title, IReadOnlyList<NavGroupVm> Na
         var usedTools = new HashSet<PhoneToolGroupVm>();
         var result = new List<PhoneMenuBlockVm>();
 
+        // Réunir les réglages d'affichage et les autres outils des Paramètres
+        // dans le même accordéon de navigation, sans deuxième rubrique « Paramètres ».
+        foreach (var group in navigation) group.SetSupplementalCommands([]);
+        var settings = navigation.FirstOrDefault(g => g.Title == "Paramètres");
+        if (settings is not null)
+        {
+            var settingsTools = tools.Where(g => g.Title is "Paramètres" or "Affichage").ToArray();
+            var commands = settingsTools.SelectMany(g => g.Commands)
+                .DistinctBy(c => c.Label.Trim(), StringComparer.OrdinalIgnoreCase).ToArray();
+            settings.SetSupplementalCommands(commands);
+            foreach (var group in settingsTools) usedTools.Add(group);
+        }
+
         void Add(string title, string[] navigationTitles, string[] toolTitles)
         {
             var nav = navigation.Where(g => navigationTitles.Contains(g.Title, StringComparer.Ordinal)
@@ -93,8 +106,7 @@ public sealed record PhoneMenuBlockVm(string Title, IReadOnlyList<NavGroupVm> Na
         Add("DONNÉES ET SAUVEGARDES", ["Données"], ["Données", "Sauvegardes", "Export", "Exports"]);
         Add("GESTION SCOLAIRE", ["Secrétariat", "Scolarité"], ["Secrétariat", "Scolarité", "Apprenants"]);
         Add("GESTION FINANCIÈRE", ["Finances"], ["Finances", "Paiements", "Rapports"]);
-        Add("ADMINISTRATION", ["Administration", "Paramètres"], ["Administration", "Paramètres", "Sécurité"]);
-        Add("AFFICHAGE", [], ["Affichage"]);
+        Add("ADMINISTRATION", ["Administration", "Paramètres"], ["Administration", "Paramètres", "Affichage", "Sécurité"]);
         Add("AIDE", [], ["Aide"]);
 
         var remainingNav = navigation.Where(g => usedNav.Add(g)).ToArray();
@@ -135,8 +147,7 @@ public sealed record PhoneToolBlockVm(string Title, IReadOnlyList<PhoneToolGroup
         }
         Add("SCOLARITÉ ET APPRENANTS", "Scolarité", "Secrétariat", "Apprenants");
         Add("FINANCES ET RAPPORTS", "Paiements", "Finances", "Rapports", "Export", "Exports", "Données");
-        Add("ADMINISTRATION", "Administration", "Paramètres", "Sécurité");
-        Add("AFFICHAGE", "Affichage");
+        Add("ADMINISTRATION", "Administration", "Paramètres", "Affichage", "Sécurité");
         Add("AIDE", "Aide");
         var extra = groups.Where(g => !used.Contains(g)).ToArray();
         if (extra.Length != 0) blocks.Add(new PhoneToolBlockVm("AUTRES COMMANDES", extra));

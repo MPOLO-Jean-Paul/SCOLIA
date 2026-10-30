@@ -1168,15 +1168,16 @@ public sealed class ShellViewModel : Observable
         "Rapports et exports",
     };
 
-    // Affichage, administration et aide sont des destinations uniques, quelle que
-    // soit leur provenance dans les onglets du bureau.
+    // Les préférences d'affichage appartiennent à Paramètres sur téléphone.
+    // Aucun groupe « Affichage » ne doit être créé séparément.
     public static string CanonicalPhoneGroup(string label, string originalGroup)
     {
         var name = label.Trim();
+        if (originalGroup == "Affichage") return "Paramètres";
         if (name is "Thème" or "Couleurs" or "Couleur d'accent" or "Thème et couleurs"
             or "Texte et polices" or "Police" or "Taille de police"
             or "Animations et fluidité" or "Sons" or "Apparence")
-            return "Affichage";
+            return "Paramètres";
         if (name is "À propos" or "Aide" or "Aide et gestes" or "Documentation"
             or "Guide utilisateur")
             return "Aide";
