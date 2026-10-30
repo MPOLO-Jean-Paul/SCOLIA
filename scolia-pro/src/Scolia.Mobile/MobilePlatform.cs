@@ -1,5 +1,6 @@
 using Android.Content;
 using Android.Media;
+using Android.Net;
 using Android.Net.Wifi;
 using Android.Widget;
 using Scolia.Bureau.Infrastructure;
@@ -29,6 +30,7 @@ public static class MobilePlatform
         Platform.OpenFile = OpenFile;
         Platform.OpenUri = OpenUri;
         Platform.OpenTailscale = OpenTailscale;
+        Platform.ConnectTailscaleInBackground = ConnectTailscaleInBackgroundAsync;
         Platform.PlayWave = AndroidAudio.PlayWave;
         // Sans ordinateur dans l'établissement, ce téléphone peut en être le serveur.
         Platform.LocalServer = Server.PhoneServer.Get(app);
@@ -123,6 +125,42 @@ public static class MobilePlatform
         catch (Exception ex) when (ex is ActivityNotFoundException or Java.Lang.SecurityException or Java.Lang.IllegalArgumentException)
         {
             return "Impossible d'ouvrir Tailscale automatiquement. Consultez le site officiel tailscale.com/download/android.";
+        }
+    }
+
+
+    /// <summary>
+    /// Active Tailscale par sa diffusion Android exportée, sans ouvrir sa fenêtre.
+    /// Ne peut ni installer l'application ni accorder la permission VPN à sa place.
+    /// </summary>
+    private static async Task<string> ConnectTailscaleInBackgroundAsync()
+    {
+        if (context is not { } ctx)
+            return "SCOLIA n'est pas encore prêt à contacter le VPN.";
+        try
+        {
+            if (ctx.PackageManager?.GetLaunchIntentForPackage("com.tailscale.ipn") is null)
+                return "Tailscale n'est pas installé. Terminez d'abord l'installation depuis SCOLIA.";
+
+            var request = new Intent("com.tailscale.ipn.CONNECT_VPN");
+            request.SetClassName("com.tailscale.ipn", "com.tailscale.ipn.IPNReceiver");
+            ctx.SendBroadcast(request);
+            await Task.Delay(TimeSpan.FromSeconds(2)).ConfigureAwait(false);
+
+            if (ctx.GetSystemService(Context.ConnectivityService) is ConnectivityManager manager
+                && manager.AllNetworks is { } networks)
+            {
+                foreach (var network in networks)
+                {
+                    if (manager.GetNetworkCapabilities(network)?.HasTransport(TransportType.Vpn) == true)
+                        return "Demande envoyée sans quitter SCOLIA. Android détecte un VPN, sans confirmer son identité : vérifiez la liaison Tailscale depuis un autre téléphone.";
+                }
+            }
+            return "Demande d'activation envoyée en arrière-plan. Le VPN n'est pas encore confirmé. Vérifiez la première autorisation et la connexion au compte Tailscale.";
+        }
+        catch (Exception ex) when (ex is Java.Lang.SecurityException or Java.Lang.IllegalArgumentException or InvalidOperationException)
+        {
+            return "Android a refusé la demande de connexion silencieuse. Vérifiez la configuration initiale et les restrictions du téléphone.";
         }
     }
 
