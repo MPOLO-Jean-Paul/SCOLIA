@@ -18,7 +18,7 @@ public class SettingsNavigationTests
         Assert.True(page.MobileCategoriesVisible);
         Assert.False(page.SettingsDetailVisible);
 
-        var appearance = Assert.Single(page.PosteSections.Where(s => s.Value == "apparence"));
+        var appearance = Assert.Single(page.PosteSections, s => s.Value == "apparence");
         page.OpenMobileSection.Execute(appearance);
 
         Assert.False(page.MobileCategoriesVisible);
