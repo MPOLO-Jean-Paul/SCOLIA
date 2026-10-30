@@ -155,18 +155,23 @@ public sealed class ShellViewModel : Observable
     /// <summary>Nom court de l'établissement pour l'en-tête du volet.</summary>
     public string SchoolTitle => session?.SchoolShortName is { Length: > 0 } shortName ? shortName : session?.SchoolName ?? Login.SchoolName;
 
-    /// <summary>Recharge le logo, au démarrage et après un changement dans les paramètres.</summary>
+    private int logoRequest;
+    /// <summary>Recharge uniquement le logo de l'établissement actif, jamais un logo en cache d'un ancien serveur.</summary>
     public async Task RefreshLogoAsync()
     {
+        var request = ++logoRequest;
+        var server = api.Server;
+        SchoolLogo = null;
         try
         {
             var bytes = await api.DownloadAsync("api/etablissement/logo");
+            if (request != logoRequest || api.Server != server) return;
             using var stream = new MemoryStream(bytes);
             SchoolLogo = new Avalonia.Media.Imaging.Bitmap(stream);
         }
         catch (Exception ex) when (ex is ApiException or HttpRequestException or TaskCanceledException or ArgumentException or InvalidOperationException or NotSupportedException)
         {
-            SchoolLogo = null;
+            if (request == logoRequest) SchoolLogo = null;
         }
     }
     public bool IsLoggedIn => session is not null;
