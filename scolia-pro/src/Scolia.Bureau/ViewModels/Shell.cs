@@ -60,7 +60,14 @@ public sealed class ShellViewModel : Observable
             if (args.PropertyName == nameof(Preferences.StatusBar)) Raise(nameof(ShowStatusBar));
             prefs.Apply();
             prefs.Save();
-            if (IsLoggedIn) RebuildRibbon();
+            // Une préférence ne change pas les permissions ni les pages disponibles :
+            // conserver les objets de navigation et leurs états, sans recréer le menu.
+            if (IsLoggedIn && args.PropertyName is
+                nameof(Preferences.Theme) or nameof(Preferences.Compact) or
+                nameof(Preferences.Animations) or nameof(Preferences.Grid) or
+                nameof(Preferences.StatusBar) or nameof(Preferences.Sidebar) or
+                nameof(Preferences.RibbonCollapsed) or nameof(Preferences.Tips))
+                RebuildRibbon(rebuildNavigation: false);
         };
         prefs.Apply();
         FormViewModel.Finished += ok => Sounds.Play(Prefs, ok ? SoundKind.Success : SoundKind.Error);
@@ -947,7 +954,13 @@ public sealed class ShellViewModel : Observable
         // La barre latérale suit le rôle et le thème (ses couleurs sont lues au moment de la construction).
         if (rebuildNavigation)
         {
+            var expanded = Navigation.Where(g => g.IsExpanded).Select(g => g.Title)
+                .ToHashSet(StringComparer.Ordinal);
+            var hadMenu = Navigation.Count != 0;
             Navigation = IsLoggedIn ? Sidebar.Build(this) : [];
+            if (hadMenu)
+                foreach (var group in Navigation)
+                    group.IsExpanded = expanded.Contains(group.Title);
             Raise(nameof(Navigation));
             RebuildPhoneTabs();
         }
@@ -1087,6 +1100,7 @@ public sealed class ShellViewModel : Observable
     private void RebuildPhoneTools()
     {
         var pages = Navigation.SelectMany(g => g.Items).Select(i => i.Label).ToHashSet(StringComparer.Ordinal);
+        var expanded = PhoneTools.Where(g => g.IsExpanded).Select(g => g.Title).ToHashSet(StringComparer.Ordinal);
         var groups = new List<PhoneToolGroupVm>();
         foreach (var tab in Tabs.Where(t => t.Id is not ("fichier" or "accueil")))
         {
@@ -1094,7 +1108,11 @@ public sealed class ShellViewModel : Observable
                 .Where(c => !DesktopOnly.Contains(c.Label) && !pages.Contains(c.Label))
                 .Select(c => c.Label == "Raccourcis clavier" ? new RibbonCommandVm("Aide et gestes", Material.Icons.MaterialIconKind.GestureTap, string.Empty, c.Command, false, "ToneBlue") : c)
                 .ToList();
-            if (commands.Count > 0) groups.Add(new PhoneToolGroupVm(tab.Title, commands));
+            if (commands.Count > 0)
+            {
+                var group = new PhoneToolGroupVm(tab.Title, commands) { IsExpanded = expanded.Contains(tab.Title) };
+                groups.Add(group);
+            }
         }
         PhoneTools = groups;
         Raise(nameof(PhoneTools));
