@@ -120,6 +120,8 @@ public sealed class SyncCenter : Observable, IDisposable
     public string StatusDetail => Offline
         ? "L'ordinateur principal ne répond pas. Vous travaillez sur les données gardées sur cet appareil ; vos opérations seront envoyées à son retour."
         : HasConflicts ? "Le serveur a refusé des opérations faites hors ligne. Ouvrez la liste pour les revoir."
+        : TailscaleEndpoint.IsTailnetAddress(api.Server)
+            ? $"Réseau privé Tailscale · {PeersText}. La base reste sur l'appareil principal ; les droits SCOLIA restent appliqués."
         : api.IsLongDistance ? $"Liaison Internet chiffrée · {PeersText}. Les opérations sont confirmées par l’appareil principal."
         : $"Relié à l'ordinateur principal · {PeersText}.";
 
