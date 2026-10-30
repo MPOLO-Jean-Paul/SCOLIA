@@ -40,6 +40,7 @@ public sealed class MainActivity : AvaloniaMainActivity
         startup?.SetActive(true);
         // La recherche du serveur sur le Wi-Fi a besoin de recevoir les réponses en diffusion.
         MobilePlatform.HoldMulticast(true);
+        Security.AndroidBiometrics.Attach(this);
         ScoliaPlatform.NotifyAppResumed();
         // Une erreur de WorkManager ne doit pas empêcher de revenir sur l'écran SCOLIA.
         try { Synchronization.SyncWorker.ScheduleOnResume(this); }
@@ -51,6 +52,7 @@ public sealed class MainActivity : AvaloniaMainActivity
     {
         startup?.SetActive(false);
         MobilePlatform.HoldMulticast(false);
+        Security.AndroidBiometrics.Detach(this);
         base.OnPause();
     }
 

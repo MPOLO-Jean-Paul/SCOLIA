@@ -8,5 +8,7 @@
   <key>NSLocalNetworkUsageDescription</key><string>SCOLIA recherche le serveur scolaire autorisé de votre établissement sur le réseau privé.</string>
   <key>NSAppTransportSecurity</key><dict><key>NSAllowsLocalNetworking</key><true/></dict>
   <key>UIRequiredDeviceCapabilities</key><array><string>arm64</string></array>
+  <key>NSFaceIDUsageDescription</key>
+  <string>SCOLIA demande Face ID pour confirmer l'accès au compte scolaire déjà authentifié sur cet iPhone.</string>
 </dict>
 </plist>

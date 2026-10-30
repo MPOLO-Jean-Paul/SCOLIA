@@ -1,4 +1,5 @@
 using Foundation;
+using LocalAuthentication;
 using Scolia.Bureau.Infrastructure;
 using UIKit;
 
@@ -13,6 +14,8 @@ public static class IosPlatform
     public static void Prepare()
     {
         Platform.IsMobile = true;
+        Platform.IsBiometricAvailable = CanAuthenticate;
+        Platform.VerifyBiometricAsync = VerifyAsync;
         Preferences.MobileLayout = true;
         Platform.DeviceName = UIDevice.CurrentDevice.Name;
         Platform.LocalServer = null;
@@ -24,6 +27,28 @@ public static class IosPlatform
         Platform.ReadTailnetState = null;
         Platform.ConnectTailscaleInBackground = null;
         Platform.DocumentsFolder = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+    }
+
+    private static bool CanAuthenticate()
+    {
+        using var context = new LAContext();
+        return context.CanEvaluatePolicy(LAPolicy.DeviceOwnerAuthenticationWithBiometrics, out _);
+    }
+
+    private static async Task<bool> VerifyAsync()
+    {
+        using var context = new LAContext();
+        if (!context.CanEvaluatePolicy(LAPolicy.DeviceOwnerAuthenticationWithBiometrics, out _))
+            return false;
+        try
+        {
+            return await context.EvaluatePolicyAsync(LAPolicy.DeviceOwnerAuthenticationWithBiometrics,
+                "Confirmer l'accès à votre session SCOLIA Phone");
+        }
+        catch (Exception)
+        {
+            return false;
+        }
     }
 
     private static void OpenUri(string uri)

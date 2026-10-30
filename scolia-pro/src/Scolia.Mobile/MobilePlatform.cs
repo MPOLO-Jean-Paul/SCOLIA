@@ -24,6 +24,8 @@ public static class MobilePlatform
         Security.AndroidSecrets.Initialize();
         Synchronization.SyncWorker.Schedule(app);
         Platform.IsMobile = true;
+        Platform.IsBiometricAvailable = Security.AndroidBiometrics.IsAvailable;
+        Platform.VerifyBiometricAsync = Security.AndroidBiometrics.VerifyAsync;
         Preferences.MobileLayout = true;
         Platform.DeviceName = $"{Android.OS.Build.Manufacturer} {Android.OS.Build.Model}".Trim();
         Platform.DocumentsFolder = app.GetExternalFilesDir(Android.OS.Environment.DirectoryDocuments)?.AbsolutePath
