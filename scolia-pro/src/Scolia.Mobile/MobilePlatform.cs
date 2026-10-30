@@ -30,6 +30,8 @@ public static class MobilePlatform
         Platform.OpenFile = OpenFile;
         Platform.OpenUri = OpenUri;
         Platform.OpenTailscale = OpenTailscale;
+        Platform.IsTailscaleInstalled = IsTailscaleInstalled;
+        Platform.OpenTailscaleInstallPage = OpenTailscaleInstallPage;
         Platform.ConnectTailscaleInBackground = ConnectTailscaleInBackgroundAsync;
         Platform.PlayWave = AndroidAudio.PlayWave;
         // Sans ordinateur dans l'établissement, ce téléphone peut en être le serveur.
@@ -95,6 +97,36 @@ public static class MobilePlatform
     /// Lance le client VPN officiel quand il est installé. Sinon, ouvre son installation
     /// par une action volontaire ; SCOLIA n'installe ni n'active un VPN en silence.
     /// </summary>
+    private static bool IsTailscaleInstalled() =>
+        context?.PackageManager?.GetLaunchIntentForPackage("com.tailscale.ipn") is not null;
+
+    /// <summary>
+    /// Lance l'installation officielle : le Play Store affiche la vraie progression.
+    /// Le pourcentage du téléchargement Play Store n'est pas accessible depuis SCOLIA.
+    /// </summary>
+    private static string OpenTailscaleInstallPage()
+    {
+        if (context is not { } ctx)
+            return "Android n'est pas encore prêt pour l'installation.";
+        try
+        {
+            var market = new Intent(Intent.ActionView, AndroidUri.Parse("market://details?id=com.tailscale.ipn"));
+            market.AddFlags(ActivityFlags.NewTask);
+            try { ctx.StartActivity(market); }
+            catch (ActivityNotFoundException)
+            {
+                var browser = new Intent(Intent.ActionView, AndroidUri.Parse("https://play.google.com/store/apps/details?id=com.tailscale.ipn"));
+                browser.AddFlags(ActivityFlags.NewTask);
+                ctx.StartActivity(browser);
+            }
+            return "Le magasin d'applications est ouvert. Suivez le téléchargement et confirmez l'installation, puis revenez dans SCOLIA.";
+        }
+        catch (Exception ex) when (ex is ActivityNotFoundException or Java.Lang.SecurityException or Java.Lang.IllegalArgumentException)
+        {
+            return "Impossible d'ouvrir le magasin d'applications. Vérifiez Internet et Google Play sur cet appareil.";
+        }
+    }
+
     private static string OpenTailscale()
     {
         if (context is not { } ctx)
