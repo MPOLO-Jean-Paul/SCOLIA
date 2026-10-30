@@ -19,6 +19,7 @@ public sealed class RemoteConnectionViewModel : Observable
             if (current.Host && current.Enabled) invitation = current.Link.Invitation();
         }
         Enable = new AsyncCommand(EnableAsync);
+        ShareTailnet = new RelayCommand(ShareTailnetNow);
         Disable = new RelayCommand(() =>
         {
             if (!CanManage) return;
@@ -32,6 +33,24 @@ public sealed class RemoteConnectionViewModel : Observable
     public string Invitation { get => invitation; private set => Set(ref invitation, value); }
     public string Message { get => message; private set => Set(ref message, value); }
     public AsyncCommand Enable { get; }
+    /// <summary>
+    /// Lance le consentement VPN dans le client Tailscale officiel lors d'un clic volontaire.
+    /// SCOLIA ne peut ni accorder cette permission ni démarrer le VPN d'une autre application.
+    /// </summary>
+    public RelayCommand ShareTailnet { get; }
+
+    private void ShareTailnetNow()
+    {
+        if (!CanManage)
+        {
+            Message = "Seul un responsable autorisé du téléphone ou PC principal peut partager cet établissement.";
+            return;
+        }
+        Message = TailscaleCompanion.Open()
+            + " Dans Tailscale, activez la connexion et acceptez la demande VPN d'Android si elle apparaît. "
+            + "Revenez dans SCOLIA : son serveur reste accessible sur le port 5080 aux appareils autorisés du même réseau privé. "
+            + "Aucun partage distant ne peut être confirmé avant un essai depuis un second appareil.";
+    }
     public RelayCommand Disable { get; }
 
     private async Task EnableAsync()

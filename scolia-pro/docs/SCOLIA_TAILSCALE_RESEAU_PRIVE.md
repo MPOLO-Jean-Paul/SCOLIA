@@ -11,6 +11,17 @@ Tailscale crée un **réseau privé chiffré** entre des appareils approuvés (t
 
 ## A. Installer et autoriser
 
+### Parcours d'installation depuis SCOLIA
+
+- Sur l'écran de première liaison du **téléphone serveur**, toucher **Installer le relais privé Tailscale**. Ce bouton ouvre le Play Store officiel (Internet indispensable pour cette installation) ou Tailscale s'il est déjà installé. Installer et ouvrir Tailscale avec confirmation de l'utilisateur ; relier cet appareil au tailnet de l'établissement.
+- Configurer SCOLIA sur ce téléphone comme serveur. La base scolaire demeure locale et le service SCOLIA écoute sur TCP 5080.
+- Depuis une session SCOLIA autorisée sur le téléphone serveur, ouvrir **Réseau et activité > Partager via Tailscale · autoriser le VPN**. SCOLIA ouvre Tailscale ; dans Tailscale, activer le réseau et accepter la boîte de dialogue VPN Android. Ce bouton **ne peut pas autoriser le VPN à la place de Tailscale**, ni garantir qu'il est actif : tester la liaison avec un appareil client.
+- Installer Tailscale sur les téléphones clients et les faire approuver dans le même tailnet. Dans SCOLIA client, renseigner l'IP Tailscale du serveur suivie de **:5080** et sélectionner **Rejoindre par Tailscale**.
+- Après autorisation, Tailscale peut rester connecté en arrière-plan sans réouverture constante de son écran, mais Android affiche toujours son indicateur VPN et peut signaler le service actif. L'utilisateur peut couper le VPN dans les réglages. Ne jamais présenter cet indicateur comme masquable.
+- Le **relais WebSocket WSS** de SCOLIA est un autre mécanisme qui nécessite un relais séparé ; il n'est **pas nécessaire** pour une liaison Tailscale. Ne pas activer ou annoncer les deux mécanismes comme interchangeables automatiquement.
+- L'installation Internet initiale de Tailscale ne doit **pas** empêcher SCOLIA de continuer à fonctionner hors ligne sur les réseaux locaux déjà configurés.
+
+
 Dans **SCOLIA > Rejoindre votre établissement > Réseau privé Tailscale**, le bouton **Installer ou ouvrir Tailscale** lance l'application officielle si elle est installée, sinon ouvre sa page d'installation officielle. Android demandera toujours l'accord de l'utilisateur pour installer l'application et activer son VPN. SCOLIA ne contient pas le moteur VPN Tailscale et ne stocke aucune clé de connexion Tailscale.
 
 1. Depuis chaque téléphone Android, installer Tailscale via https://tailscale.com/docs/install/android, accepter sa configuration VPN et se connecter au **même tailnet** avec un compte autorisé.

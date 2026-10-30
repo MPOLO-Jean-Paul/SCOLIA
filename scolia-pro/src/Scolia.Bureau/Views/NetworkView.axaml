@@ -19,10 +19,24 @@
         <StackPanel Spacing="12">
           <TextBlock Text="{Binding Sync.StatusDetail}" Classes="muted" TextWrapping="Wrap" />
 
+          <!-- VPN privé (sans relais WSS) : le système Android et l'utilisateur autorisent Tailscale. -->
           <Border Classes="phonegroup" IsVisible="{Binding Remote.CanManage}">
             <StackPanel Margin="14,12" Spacing="8">
-              <TextBlock Text="Lier la comptabilité à distance" FontWeight="SemiBold" TextWrapping="Wrap" />
-              <TextBlock Classes="muted" TextWrapping="Wrap" Text="Ajoutez une liaison Internet sans couper le Wi-Fi. Les données restent sur cet appareil principal ; le relais ne transporte que des messages chiffrés." />
+              <TextBlock Text="Partager via Tailscale" FontWeight="SemiBold" TextWrapping="Wrap" />
+              <TextBlock Classes="muted" TextWrapping="Wrap"
+                         Text="Le serveur SCOLIA conserve les données sur cet appareil. Préparez Tailscale avec Internet, puis autorisez son VPN une fois depuis l'application officielle. Il reste actif en arrière-plan selon les réglages Android." />
+              <Button Classes="primary" Content="Partager via Tailscale · autoriser le VPN" Command="{Binding Remote.ShareTailnet}"
+                      HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" />
+              <TextBlock Classes="muted" TextWrapping="Wrap" FontSize="{DynamicResource FsSmall}"
+                         Text="Le partage ne sera opérationnel qu'après connexion au même tailnet et test depuis un appareil client. Android conserve son indicateur VPN et peut imposer une notification." />
+              <TextBlock Text="{Binding Remote.Message}" Classes="muted" TextWrapping="Wrap" />
+            </StackPanel>
+          </Border>
+
+          <Border Classes="phonegroup" IsVisible="{Binding Remote.CanManage}">
+            <StackPanel Margin="14,12" Spacing="8">
+              <TextBlock Text="Autre option : relais WebSocket" FontWeight="SemiBold" TextWrapping="Wrap" />
+              <TextBlock Classes="muted" TextWrapping="Wrap" Text="Cette liaison nécessite un relais WSS déployé séparément ; elle n'est pas nécessaire pour Tailscale. Les données scolaires restent sur cet appareil." />
               <TextBox Text="{Binding Remote.Relay}" PlaceholderText="wss://adresse-de-votre-relais" />
               <Button Content="Créer ou renouveler la liaison" Command="{Binding Remote.Enable}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" />
               <TextBlock Text="Invitation privée à transmettre à l'autre appareil" Classes="muted" TextWrapping="Wrap" />

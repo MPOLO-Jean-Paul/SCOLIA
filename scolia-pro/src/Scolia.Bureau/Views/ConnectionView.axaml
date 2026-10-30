@@ -44,6 +44,10 @@
                          Text="L'établissement se configure sur ce téléphone et ses données y sont gardées. Les autres téléphones et ordinateurs le trouvent sur le même Wi-Fi et s'y connectent." />
             </StackPanel>
           </Grid>
+          <TextBlock Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap"
+                     Text="Première préparation du partage distant (Internet requis) : installez le client Tailscale officiel, puis connectez l'appareil au réseau privé de l'école. Aucun VPN ne démarre sans votre autorisation." />
+          <Button Classes="ghost" Content="Installer le relais privé Tailscale" Command="{Binding PrepareTailnet}"
+                  IsEnabled="{Binding NotSearching}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Height="44" />
           <Button Classes="primary" Command="{Binding UseThisComputer}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Height="44">
             <StackPanel Orientation="Horizontal" Spacing="8">
               <mi:MaterialIcon Kind="CogOutline" Width="18" Height="18" />
@@ -75,7 +79,7 @@
           </Grid>
           <TextBlock Classes="muted" TextWrapping="Wrap"
                      Text="Sur le téléphone ou PC principal, laissez SCOLIA en mode serveur. Entrez ci-dessous son IP Tailscale ou son nom MagicDNS complet." />
-          <Button Classes="ghost" Content="Installer ou ouvrir Tailscale" Command="{Binding PrepareTailnet}"
+          <Button Classes="ghost" Content="Installer le relais privé Tailscale" Command="{Binding PrepareTailnet}"
                   IsEnabled="{Binding NotSearching}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" />
           <TextBox Text="{Binding TailscaleAddress}" PlaceholderText="100.110.22.33:5080 ou machine.tailnet.ts.net:5080" />
           <Button Classes="primary" Content="Rejoindre par Tailscale" Command="{Binding ConnectTailnet}"
