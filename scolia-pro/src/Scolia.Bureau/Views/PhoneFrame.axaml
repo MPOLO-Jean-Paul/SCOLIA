@@ -8,7 +8,7 @@
                 <StackPanel>
                   <Button Classes="phonecategory" IsVisible="{Binding HasTitle}" Command="{Binding Toggle}">
                     <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
-                      <Border Classes="appicon medium" Background="{DynamicResource ToneBlue}"><mi:MaterialIcon Kind="FolderOutline" /></Border>
+                      <Border Classes="appicon medium" Background="{Binding Brush}"><mi:MaterialIcon Kind="{Binding Icon}" /></Border>
                       <TextBlock Grid.Column="1" Text="{Binding Title}" VerticalAlignment="Center" FontWeight="SemiBold" />
                       <mi:MaterialIcon Grid.Column="2" Kind="ChevronDown" Foreground="{DynamicResource AccentBrush}" IsVisible="{Binding !IsExpanded}" />
                       <mi:MaterialIcon Grid.Column="2" Kind="ChevronUp" Foreground="{DynamicResource AccentBrush}" IsVisible="{Binding IsExpanded}" />
@@ -186,7 +186,7 @@
                 <StackPanel>
                   <Button Classes="phonecategory" Command="{Binding Toggle}">
                     <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
-                      <Border Classes="appicon medium" Background="{DynamicResource TonePurple}"><mi:MaterialIcon Kind="CogOutline" /></Border>
+                      <Border Classes="appicon medium" Background="{Binding Brush}"><mi:MaterialIcon Kind="{Binding Icon}" /></Border>
                       <TextBlock Grid.Column="1" Text="{Binding Title}" FontWeight="SemiBold" VerticalAlignment="Center" />
                       <mi:MaterialIcon Grid.Column="2" Kind="ChevronDown" Foreground="{DynamicResource AccentBrush}" IsVisible="{Binding !IsExpanded}" />
                       <mi:MaterialIcon Grid.Column="2" Kind="ChevronUp" Foreground="{DynamicResource AccentBrush}" IsVisible="{Binding IsExpanded}" />
