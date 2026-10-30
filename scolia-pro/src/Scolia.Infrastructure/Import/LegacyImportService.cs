@@ -58,7 +58,7 @@ public sealed class LegacyImportService(IAppDbContext db, IWriteGate gate, IAudi
             {
                 var fee = payments.Where(x => x.Promotion == code).Select(x => x.Amount).DefaultIfEmpty(0).Max();
                 promotions[code] = new LegacyPromotion(code, code, null, 0, fee, true);
-                warnings.Add($"Promotion {code} absente de la feuille PROMOTIONS : créée avec une mensualité de {fee:N0} à vérifier.");
+                // Une liste nominative n'est pas un journal comptable : la mensualité peut être renseignée ensuite.
             }
 
         var existingPromotions = await db.Promotions.Include(p => p.Fees).Where(p => p.AcademicYearId == year.Id).ToDictionaryAsync(p => p.Code, ct);
@@ -92,6 +92,23 @@ public sealed class LegacyImportService(IAppDbContext db, IWriteGate gate, IAudi
             if (apply) db.Promotions.Add(promotion);
         }
 
+        // Permet d'ajouter les paiements plus tard sans réimporter les apprenants déjà enregistrés.
+        // Ne jamais recréer un dossier permanent lorsque son matricule est connu.
+        List<Enrollment> storedEnrollments = payments.Count == 0 ? [] : await db.Enrollments
+            .Include(e => e.Student)
+            .Where(e => e.AcademicYearId == year.Id)
+            .ToListAsync(ct);
+        // Enrollment contient PromotionId, et pas de navigation Promotion.
+        // Réutiliser les promotions réelles de l'année avec leurs rubriques de frais.
+        var existingEnrollmentByMatricule = storedEnrollments
+            .Where(e => e.Student is not null && existingPromotions.Values.Any(p => p.Id == e.PromotionId))
+            .GroupBy(e => e.Student!.Matricule, StringComparer.Ordinal)
+            .ToDictionary(g => g.Key, g =>
+            {
+                var enrollment = g.First();
+                var promotion = existingPromotions.Values.First(p => p.Id == enrollment.PromotionId);
+                return (Student: enrollment.Student!, Enrollment: enrollment, Promotion: promotion);
+            }, StringComparer.Ordinal);
         var enrollments = new Dictionary<string, (Student Student, Enrollment Enrollment, Promotion Promotion)>(StringComparer.Ordinal);
         var newStudents = 0;
         foreach (var ls in students.Values)
@@ -101,14 +118,12 @@ public sealed class LegacyImportService(IAppDbContext db, IWriteGate gate, IAudi
             var student = new Student
             {
                 Matricule = ls.Matricule, LastName = ls.Last.ToUpperInvariant(), MiddleName = ls.Middle.ToUpperInvariant(), FirstName = TextKey.ProperName(ls.First),
-                Gender = ls.Gender.StartsWith('F') ? Gender.F : Gender.M, BirthDate = ls.Birth, BirthPlace = ls.Place, GuardianName = ls.Guardian,
+                Gender = ls.Gender.StartsWith('F') ? Gender.F : ls.Gender.StartsWith('M') ? Gender.M : Gender.Inconnu, BirthDate = ls.Birth, BirthPlace = ls.Place, GuardianName = ls.Guardian,
                 GuardianPhone = Phone(ls.Phone1, ls.Matricule, warnings), GuardianPhone2 = Phone(ls.Phone2, ls.Matricule, warnings), Address = ls.Address,
                 Notes = $"Importé de {ls.Source}",
             };
             student.RefreshKeys();
-            // Le contact parent sert aux relances : un dossier repris sans numéro est signalé pour être complété.
-            if (student.GuardianPhone is null && student.GuardianPhone2 is null)
-                warnings.Add($"{ls.Matricule} : aucun contact parent, à compléter sur la fiche pour pouvoir relancer.");
+            // Les coordonnées absentes sont normales pour un registre nominatif ; on peut les compléter plus tard.
             var status = TextKey.Normalize(ls.Status) switch { "SUSPENDU" => EnrollmentStatus.Suspendu, "SORTI" => EnrollmentStatus.Sorti, _ => EnrollmentStatus.Actif };
             var enrollment = new Enrollment { StudentId = student.Id, AcademicYearId = year.Id, PromotionId = promotion.Id, EnrolledOn = ls.Enrolled ?? year.StartDate, Status = status };
             enrollments[ls.Matricule] = (student, enrollment, promotion);
@@ -130,8 +145,12 @@ public sealed class LegacyImportService(IAppDbContext db, IWriteGate gate, IAudi
             if (existingKeys.Contains(key)) { warnings.Add($"Reçu {first.Number} de {first.Matricule} déjà importé : ignoré."); continue; }
             if (!enrollments.TryGetValue(first.Matricule, out var target))
             {
-                errors.Add($"Paiement {first.Number} ({first.Source}, ligne {first.Row}) : matricule {first.Matricule} absent des apprenants importés.");
-                continue;
+                if (!existingEnrollmentByMatricule.TryGetValue(first.Matricule, out var stored))
+                {
+                    errors.Add($"Paiement {first.Number} ({first.Source}, ligne {first.Row}) : aucun dossier actif pour {first.Matricule} dans l'année {year.Label}.");
+                    continue;
+                }
+                target = stored;
             }
             var allocations = new List<ReceiptAllocation>();
             foreach (var p in group)
@@ -162,6 +181,12 @@ public sealed class LegacyImportService(IAppDbContext db, IWriteGate gate, IAudi
             newAllocations += allocations.Count;
             if (apply) db.Receipts.Add(receipt);
         }
+
+        // Aucune écriture partielle si des matricules, mois ou frais sont introuvables :
+        // une erreur exige d'abord la correction du classeur ou du paramétrage des frais.
+        if (apply && errors.Count > 0)
+            return new ImportReport(false, newPromotions, newStudents, newReceipts, newAllocations,
+                warnings.Take(500).ToList(), errors.Take(500).ToList());
 
         if (apply)
         {
@@ -200,11 +225,11 @@ public sealed class LegacyImportService(IAppDbContext db, IWriteGate gate, IAudi
             "Recopiez vos données à partir de la ligne 5 de chaque feuille. La ligne 3 montre un exemple : elle n'est pas importée.",
             "1. PROMOTIONS : une ligne par promotion. Le code compte 4 caractères. La mensualité est en francs congolais.",
             "2. APPRENANTS : une ligne par apprenant. Le matricule est conservé. La promotion reprend un code de la feuille PROMOTIONS.",
-            "   Comme dans SCOLIA V79, la naissance, le lieu et le contact parent 1 sont obligatoires. Le contact 1 reçoit les relances WhatsApp et SMS.",
+            "   Les dates, lieux et contacts sont facultatifs à l’importation. Complétez-les après l’enregistrement, avant les relances.",
             "3. PAIEMENTS : une ligne par mois payé. Plusieurs lignes avec le même N° reçu forment un seul reçu.",
             "Le mois s'écrit en toutes lettres, comme dans l'année scolaire : Septembre, Octobre...",
             "Les colonnes marquées « Non lue » peuvent rester vides.",
-            "Dans SCOLIA : Sauvegardes, Importer SCOLIA V79. Un essai à blanc montre ce qui sera créé avant toute écriture.",
+            "Dans SCOLIA : Sauvegardes, Importation du classeur. Un aperçu montre ce qui sera créé avant toute écriture.",
             "Relancer l'import ne crée aucun doublon : les matricules et les reçus déjà importés sont ignorés.",
         ];
         for (var i = 0; i < lines.Length; i++) notice.Cell(i + 1, 1).Value = lines[i];
@@ -290,7 +315,7 @@ public sealed class LegacyImportService(IAppDbContext db, IWriteGate gate, IAudi
             var code = Promotion.NormalizeCode(Text(row.Cell(1)));
             if (code.Length == 0) continue;
             var monthly = Number(row.Cell(6)) ?? 0;
-            if (monthly <= 0) warnings.Add($"Promotion {code} : mensualité absente ou nulle.");
+            // La mensualité manquante est volontairement autorisée pour une importation nominative.
             var level = int.TryParse(new string(Text(row.Cell(4)).Where(char.IsDigit).Take(2).ToArray()), out var parsed) ? parsed : 0;
             target.TryAdd(code, new LegacyPromotion(code, string.IsNullOrWhiteSpace(Text(row.Cell(2))) ? code : Text(row.Cell(2)), NullIfEmpty(Text(row.Cell(3))), level,
                 monthly, TextKey.Normalize(Text(row.Cell(8))) != "INACTIVE"));

@@ -12,7 +12,9 @@ public static class FeatureVisuals
     public static MaterialIconKind Icon(string title) => title switch
     {
         "" or "Accueil" => MaterialIconKind.Home,
-        "Données" => MaterialIconKind.DatabaseExport,
+        "Données" or "Sauvegardes" => MaterialIconKind.DatabaseExport,
+        "Contrôle" => MaterialIconKind.DatabaseCheck,
+        "Effacement" => MaterialIconKind.DeleteSweep,
         "Secrétariat" => MaterialIconKind.AccountGroup,
         "Finances" or "Paiements" => MaterialIconKind.CashMultiple,
         "Scolarité" => MaterialIconKind.School,
@@ -49,6 +51,8 @@ public static class FeatureVisuals
     {
         "" or "Accueil" or "Secrétariat" => "ToneBlue",
         "Données" or "Exports" or "Export" or "Rapports" => "ToneIndigo",
+        "Sauvegardes" or "Contrôle" => "ToneTeal",
+        "Effacement" => "ToneRed",
         "Finances" or "Paiements" => "ToneGreen",
         "Scolarité" => "TonePurple",
         "Administration" => "ToneOrange",

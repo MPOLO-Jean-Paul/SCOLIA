@@ -64,9 +64,77 @@ public sealed class PhoneToolGroupVm : Observable
     public RelayCommand Toggle { get; }
 }
 
+/// <summary>
+/// Menu mobile unifié : les pages et leurs commandes apparaissent dans le même
+/// bloc métier. Chaque groupe n'est présent qu'une fois, sans relancer les
+/// mêmes fonctionnalités dans un deuxième bloc plus bas.
+/// </summary>
+public sealed record PhoneMenuBlockVm(string Title, IReadOnlyList<NavGroupVm> NavigationGroups,
+    IReadOnlyList<PhoneToolGroupVm> ToolGroups)
+{
+    public static IReadOnlyList<PhoneMenuBlockVm> Build(IReadOnlyList<NavGroupVm> navigation,
+        IReadOnlyList<PhoneToolGroupVm> tools)
+    {
+        var usedNav = new HashSet<NavGroupVm>();
+        var usedTools = new HashSet<PhoneToolGroupVm>();
+        var result = new List<PhoneMenuBlockVm>();
+
+        // Fusionner les outils de chaque métier avec son accordéon de navigation.
+        // Évite deux lignes « Scolarité », « Finances », « Paramètres », etc.
+        foreach (var nav in navigation)
+        {
+            var aliases = nav.Title == "Paramètres"
+                ? new[] { "Paramètres", "Affichage" } // compatibilité anciens groupes
+                : new[] { nav.Title };
+            var matched = tools.Where(g => aliases.Contains(g.Title, StringComparer.Ordinal)).ToArray();
+            var commands = matched.SelectMany(g => g.Commands)
+                .DistinctBy(c => c.Label.Trim(), StringComparer.OrdinalIgnoreCase).ToArray();
+            nav.SetSupplementalCommands(commands);
+            foreach (var group in matched) usedTools.Add(group);
+        }
+
+        void Add(string title, string[] navigationTitles, string[] toolTitles)
+        {
+            var nav = navigation.Where(g => navigationTitles.Contains(g.Title, StringComparer.Ordinal)
+                && usedNav.Add(g)).ToArray();
+            var actions = tools.Where(g => toolTitles.Contains(g.Title, StringComparer.Ordinal)
+                && usedTools.Add(g)).ToArray();
+            if (nav.Length > 0 || actions.Length > 0)
+                result.Add(new PhoneMenuBlockVm(title, nav, actions));
+        }
+
+        Add("ACCUEIL", [""], []);
+        Add("DONNÉES ET SAUVEGARDES", ["Données"], ["Données", "Sauvegardes", "Export", "Exports", "Rapports", "Contrôle", "Effacement"]);
+        Add("GESTION SCOLAIRE", ["Secrétariat", "Scolarité"], ["Secrétariat", "Scolarité", "Apprenants"]);
+        Add("GESTION FINANCIÈRE", ["Finances"], ["Finances", "Paiements"]);
+        Add("ADMINISTRATION", ["Administration", "Paramètres"], ["Administration", "Paramètres", "Affichage", "Sécurité"]);
+        Add("AIDE", [], ["Aide"]);
+
+        var remainingNav = navigation.Where(g => usedNav.Add(g)).ToArray();
+        var remainingTools = tools.Where(g => usedTools.Add(g)).ToArray();
+        if (remainingNav.Length > 0 || remainingTools.Length > 0)
+            result.Add(new PhoneMenuBlockVm("AUTRES OUTILS", remainingNav, remainingTools));
+        return result;
+    }
+}
+
 /// <summary>Les commandes du ruban apparaissent en blocs cohérents sous les pages.</summary>
 public sealed record PhoneToolBlockVm(string Title, IReadOnlyList<PhoneToolGroupVm> Groups)
 {
+    /// <summary>Une action n'est affichée qu'une fois, même si plusieurs onglets du ruban la proposent.</summary>
+    public static IReadOnlyList<PhoneToolGroupVm> UniqueGroups(IReadOnlyList<PhoneToolGroupVm> groups)
+    {
+        var labels = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var result = new List<PhoneToolGroupVm>();
+        foreach (var group in groups)
+        {
+            var unique = group.Commands.Where(c => labels.Add(c.Label.Trim())).ToList();
+            if (unique.Count == 0) continue;
+            result.Add(new PhoneToolGroupVm(group.Title, unique) { IsExpanded = group.IsExpanded });
+        }
+        return result;
+    }
+
     public static IReadOnlyList<PhoneToolBlockVm> Organize(IReadOnlyList<PhoneToolGroupVm> groups)
     {
         var blocks = new List<PhoneToolBlockVm>();
@@ -79,8 +147,10 @@ public sealed record PhoneToolBlockVm(string Title, IReadOnlyList<PhoneToolGroup
             blocks.Add(new PhoneToolBlockVm(title, entries));
         }
         Add("SCOLARITÉ ET APPRENANTS", "Scolarité", "Secrétariat", "Apprenants");
-        Add("FINANCES ET RAPPORTS", "Paiements", "Finances", "Rapports", "Export", "Exports", "Données");
-        Add("ADMINISTRATION DU POSTE", "Administration", "Paramètres", "Préférences", "Sécurité", "Aide");
+        Add("FINANCES", "Paiements", "Finances");
+        Add("DONNÉES ET SAUVEGARDES", "Données", "Sauvegardes", "Rapports", "Export", "Exports", "Contrôle", "Effacement");
+        Add("ADMINISTRATION", "Administration", "Paramètres", "Affichage", "Sécurité");
+        Add("AIDE", "Aide");
         var extra = groups.Where(g => !used.Contains(g)).ToArray();
         if (extra.Length != 0) blocks.Add(new PhoneToolBlockVm("AUTRES COMMANDES", extra));
         return blocks;

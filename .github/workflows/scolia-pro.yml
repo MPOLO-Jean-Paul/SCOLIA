@@ -225,6 +225,12 @@ jobs:
           name: SCOLIA_Pro_Android
           path: scolia-pro/artifacts/android
 
+      - name: Sources complètes pour préparer SCOLIA Phone iPhone
+        uses: actions/download-artifact@v5
+        with:
+          name: SCOLIA_Pro_Sources
+          path: scolia-pro/artifacts/sources
+
       - name: Publication autonome (un seul exécutable)
         shell: pwsh
         run: ./scripts/publier-windows.ps1

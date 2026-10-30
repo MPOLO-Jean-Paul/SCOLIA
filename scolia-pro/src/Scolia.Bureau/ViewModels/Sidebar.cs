@@ -61,6 +61,16 @@ public sealed class NavGroupVm : Observable
     public IBrush Brush { get; }
     public IReadOnlyList<NavItemVm> Items { get; }
     public bool HasTitle => Title.Length > 0;
+
+    /// <summary>Actions d'affichage et autres réglages rassemblés dans le seul accordéon Paramètres.</summary>
+    public IReadOnlyList<RibbonCommandVm> SupplementalCommands { get; private set; } = [];
+
+    public void SetSupplementalCommands(IReadOnlyList<RibbonCommandVm> commands)
+    {
+        SupplementalCommands = commands;
+        Raise(nameof(SupplementalCommands));
+    }
+
     public bool IsExpanded { get => isExpanded; set => Set(ref isExpanded, value); }
     public RelayCommand Toggle { get; }
 }

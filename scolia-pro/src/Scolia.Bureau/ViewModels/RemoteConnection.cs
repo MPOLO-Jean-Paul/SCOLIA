@@ -10,6 +10,7 @@ public sealed class RemoteConnectionViewModel : Observable
     private string relay = string.Empty;
     private string invitation = string.Empty;
     private string message = string.Empty;
+    private string diagnostic = "Partage distant non encore vérifié.";
     public RemoteConnectionViewModel(ShellViewModel shell)
     {
         this.shell = shell;
@@ -19,6 +20,9 @@ public sealed class RemoteConnectionViewModel : Observable
             if (current.Host && current.Enabled) invitation = current.Link.Invitation();
         }
         Enable = new AsyncCommand(EnableAsync);
+        ShareTailnet = new AsyncCommand(ShareTailnetNowAsync);
+        InstallTailnet = new AsyncCommand(Installer.BeginAsync);
+        DiagnoseTailnet = new AsyncCommand(DiagnoseTailnetAsync);
         Disable = new RelayCommand(() =>
         {
             if (!CanManage) return;
@@ -32,6 +36,39 @@ public sealed class RemoteConnectionViewModel : Observable
     public string Invitation { get => invitation; private set => Set(ref invitation, value); }
     public string Message { get => message; private set => Set(ref message, value); }
     public AsyncCommand Enable { get; }
+
+    /// <summary>Demande Tailscale en arrière-plan ; la connexion doit être testée par un client.</summary>
+    public AsyncCommand ShareTailnet { get; }
+    public AsyncCommand InstallTailnet { get; }
+    public AsyncCommand DiagnoseTailnet { get; }
+    public string Diagnostic { get => diagnostic; private set => Set(ref diagnostic, value); }
+    public TailscaleInstaller Installer { get; } = TailscaleInstaller.Instance;
+
+    private async Task ShareTailnetNowAsync()
+    {
+        if (!CanManage)
+        {
+            Message = "Seul un responsable autorisé peut partager cet établissement.";
+            return;
+        }
+        Message = "Demande d'activation du réseau privé en arrière-plan…";
+        Message = await TailscaleCompanion.ConnectInBackgroundAsync();
+        await DiagnoseTailnetAsync();
+    }
+
+    private async Task DiagnoseTailnetAsync()
+    {
+        if (!CanManage) return;
+        Diagnostic = "Diagnostic du réseau privé en cours…";
+        bool installed = TailscaleCompanion.IsInstalled();
+        bool? vpn = Platform.IsVpnActive?.Invoke();
+        bool localReady;
+        try { localReady = await shell.Api.IsRunningAsync(); }
+        catch (Exception ex) when (ex is HttpRequestException or IOException or TaskCanceledException)
+        { localReady = false; }
+        Diagnostic = TailnetDiagnostics.DescribeServer(installed, vpn, localReady);
+    }
+
     public RelayCommand Disable { get; }
 
     private async Task EnableAsync()

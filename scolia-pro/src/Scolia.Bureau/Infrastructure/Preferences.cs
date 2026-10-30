@@ -10,6 +10,7 @@ public sealed class Preferences : Observable
 {
     private static readonly string FilePath = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "SCOLIA", "bureau.json");
+    private static readonly object FileGate = new();
 
     /// <summary>Facteurs de zoom proposés par la taille du texte.</summary>
     public static readonly IReadOnlyList<ChoiceItem> TextSizes =
@@ -176,26 +177,61 @@ public sealed class Preferences : Observable
     public static Preferences Load()
     {
         var prefs = new Preferences();
-        try
+        lock (FileGate)
         {
-            if (File.Exists(FilePath))
+            // Si la dernière écriture a été interrompue, revenir à une copie
+            // valide plutôt qu'effacer silencieusement toutes les préférences.
+            foreach (var path in new[] { FilePath, FilePath + ".bak" })
             {
-                var data = JsonSerializer.Deserialize<Stored>(File.ReadAllText(FilePath));
-                if (data is not null) data.ApplyTo(prefs);
+                try
+                {
+                    if (!File.Exists(path)) continue;
+                    var data = JsonSerializer.Deserialize<Stored>(File.ReadAllText(path));
+                    if (data is null) continue;
+                    data.ApplyTo(prefs);
+                    break;
+                }
+                catch (Exception ex) when (ex is IOException or JsonException or UnauthorizedAccessException)
+                {
+                    // Lire la copie de secours si le fichier principal est illisible.
+                }
             }
         }
-        catch (Exception ex) when (ex is IOException or JsonException or UnauthorizedAccessException) { }
         return prefs;
     }
 
     public void Save()
     {
-        try
+        lock (FileGate)
         {
-            Directory.CreateDirectory(Path.GetDirectoryName(FilePath)!);
-            File.WriteAllText(FilePath, JsonSerializer.Serialize(Stored.From(this)));
+            var temporary = FilePath + ".tmp";
+            try
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(FilePath)!);
+                File.WriteAllText(temporary, JsonSerializer.Serialize(Stored.From(this)));
+                // Ne jamais écraser une copie de secours valide avec un fichier
+                // potentiellement endommagé.
+                if (File.Exists(FilePath))
+                {
+                    try
+                    {
+                        if (JsonSerializer.Deserialize<Stored>(File.ReadAllText(FilePath)) is not null)
+                            File.Copy(FilePath, FilePath + ".bak", overwrite: true);
+                    }
+                    catch (Exception ex) when (ex is IOException or JsonException or UnauthorizedAccessException)
+                    {
+                        // Garder l'ancienne sauvegarde intacte.
+                    }
+                }
+                File.Move(temporary, FilePath, overwrite: true);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { }
+            finally
+            {
+                try { if (File.Exists(temporary)) File.Delete(temporary); }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { }
+            }
         }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { }
     }
 
     /// <summary>

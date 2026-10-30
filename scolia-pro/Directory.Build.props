@@ -11,7 +11,7 @@
     <Deterministic>true</Deterministic>
     <Company>Jp-Services</Company>
     <Product>SCOLIA Pro</Product>
-    <Version>1.2.0</Version>
+    <Version>1.2.3</Version>
     <Copyright>© 2026 Jp-Services. Développé par Jean Paul MPOLO LONO.</Copyright>
     <InvariantGlobalization>false</InvariantGlobalization>
   </PropertyGroup>

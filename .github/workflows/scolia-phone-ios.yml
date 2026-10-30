@@ -1,0 +1,57 @@
+name: SCOLIA Phone iPhone - compilation de verification
+
+on:
+  push:
+    paths:
+      - 'scolia-pro/src/Scolia.Phone.iOS/**'
+      - 'scolia-pro/src/Scolia.Bureau/**'
+      - 'scolia-pro/src/Scolia.Transport/**'
+      - 'scolia-pro/Directory.Packages.props'
+      - '.github/workflows/scolia-phone-ios.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: scolia-phone-iphone-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: scolia-pro
+
+jobs:
+  simulateur:
+    name: SCOLIA Phone iPhone - simulateur non signe
+    # .NET iOS 10.0 (SDK 27.1) requiert la chaîne Apple 27, pas le Xcode 16.4 de macos-15.
+    runs-on: xcode-27
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: scolia-pro/global.json
+      - name: Environnement Apple
+        run: |
+          xcodebuild -version
+          dotnet --info
+      - name: Installation du SDK iOS
+        run: dotnet workload install ios
+      - name: Compilation client iOS sans signature (simulateur)
+        run: |
+          dotnet build src/Scolia.Phone.iOS/Scolia.Phone.iOS.csproj -c Debug -f net10.0-ios -r iossimulator-arm64 -p:PublishTrimmed=true -p:EnableCodeSigning=false -p:CodesignRequireProvisioningProfile=false
+      - name: Archive de verification pour simulateur uniquement
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/ios-simulateur
+          # Les .app du simulateur ne sont jamais des IPA iPhone physiques.
+          find src/Scolia.Phone.iOS/bin/Debug/net10.0-ios -maxdepth 8 -type d -name '*.app' -print -exec cp -R {} artifacts/ios-simulateur/ \;
+          test -n "$(find artifacts/ios-simulateur -maxdepth 1 -type d -name '*.app' -print -quit)"
+          printf '%s\n' 'SCOLIA Phone iOS : version simulateur non signee, non installable sur iPhone reel.' > artifacts/ios-simulateur/LIRE_MOI.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SCOLIA_Phone_iPhone_Simulateur_NonSigne
+          path: scolia-pro/artifacts/ios-simulateur/
+          retention-days: 30
+          if-no-files-found: error

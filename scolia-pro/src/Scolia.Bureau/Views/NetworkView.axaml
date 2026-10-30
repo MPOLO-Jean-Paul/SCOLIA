@@ -4,6 +4,7 @@
              xmlns:mi="using:Material.Icons.Avalonia"
              x:Class="Scolia.Bureau.Views.NetworkView">
   <!-- Réseau et activité : l'état de la connexion, les autres postes, puis ce qui attend d'être envoyé -->
+  <Grid>
   <Border Classes="card" infra:Adaptive.FitDialog="True" Width="560" Padding="0" CornerRadius="16" Background="{DynamicResource SurfaceBrush}" ClipToBounds="True" BoxShadow="0 12 40 0 #33000000">
     <Grid RowDefinitions="Auto,*,Auto">
       <Grid ColumnDefinitions="Auto,*,Auto" Margin="18,18,12,8">
@@ -19,10 +20,29 @@
         <StackPanel Spacing="12">
           <TextBlock Text="{Binding Sync.StatusDetail}" Classes="muted" TextWrapping="Wrap" />
 
+          <!-- VPN privé (sans relais WSS) : le système Android et l'utilisateur autorisent Tailscale. -->
           <Border Classes="phonegroup" IsVisible="{Binding Remote.CanManage}">
             <StackPanel Margin="14,12" Spacing="8">
-              <TextBlock Text="Lier la comptabilité à distance" FontWeight="SemiBold" TextWrapping="Wrap" />
-              <TextBlock Classes="muted" TextWrapping="Wrap" Text="Ajoutez une liaison Internet sans couper le Wi-Fi. Les données restent sur cet appareil principal ; le relais ne transporte que des messages chiffrés." />
+              <TextBlock Text="Partager via Tailscale" FontWeight="SemiBold" TextWrapping="Wrap" />
+              <TextBlock Classes="muted" TextWrapping="Wrap"
+                         Text="Après la première configuration Tailscale et l'autorisation VPN Android, ce bouton demande la connexion en arrière-plan sans ouvrir Tailscale. Les données restent sur cet appareil." />
+              <Button Classes="ghost" Content="Installer le relais privé Tailscale" Command="{Binding Remote.InstallTailnet}"
+                      HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" />
+              <Button Classes="primary" Content="Partager via Tailscale" Command="{Binding Remote.ShareTailnet}"
+                      HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" />
+              <TextBlock Classes="muted" TextWrapping="Wrap" FontSize="{DynamicResource FsSmall}"
+                         Text="L'envoi de la commande n'est pas une confirmation de connexion. Testez le partage depuis un appareil client autorisé. Android conserve son indicateur VPN." />
+              <Button Classes="ghost" Content="Vérifier le partage et le serveur" Command="{Binding Remote.DiagnoseTailnet}"
+                      HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" />
+              <TextBlock Text="{Binding Remote.Diagnostic}" Classes="muted" TextWrapping="Wrap" />
+              <TextBlock Text="{Binding Remote.Message}" Classes="muted" TextWrapping="Wrap" />
+            </StackPanel>
+          </Border>
+
+          <Border Classes="phonegroup" IsVisible="{Binding Remote.CanManage}">
+            <StackPanel Margin="14,12" Spacing="8">
+              <TextBlock Text="Autre option : relais WebSocket" FontWeight="SemiBold" TextWrapping="Wrap" />
+              <TextBlock Classes="muted" TextWrapping="Wrap" Text="Cette liaison nécessite un relais WSS déployé séparément ; elle n'est pas nécessaire pour Tailscale. Les données scolaires restent sur cet appareil." />
               <TextBox Text="{Binding Remote.Relay}" PlaceholderText="wss://adresse-de-votre-relais" />
               <Button Content="Créer ou renouveler la liaison" Command="{Binding Remote.Enable}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" />
               <TextBlock Text="Invitation privée à transmettre à l'autre appareil" Classes="muted" TextWrapping="Wrap" />
@@ -101,4 +121,27 @@
       </Grid>
     </Grid>
   </Border>
+    <!-- Assistant SCOLIA : étapes vérifiées, sans pourcentage fictif de téléchargement Play Store. -->
+    <Grid IsVisible="{Binding Remote.Installer.IsOpen}" Background="#CC091326">
+      <Border Classes="card" MaxWidth="450" Margin="18" Padding="22" HorizontalAlignment="Center" VerticalAlignment="Center"
+              Background="{DynamicResource SurfaceBrush}" CornerRadius="18">
+        <StackPanel Spacing="12">
+          <Border Classes="appicon large" Background="{DynamicResource ToneTeal}" HorizontalAlignment="Center">
+            <mi:MaterialIcon Kind="ShieldCheckOutline" />
+          </Border>
+          <TextBlock Text="Installation du réseau privé" FontSize="19" FontWeight="Bold" TextAlignment="Center" TextWrapping="Wrap" />
+          <TextBlock Text="{Binding Remote.Installer.Step}" FontWeight="SemiBold" TextAlignment="Center" TextWrapping="Wrap" />
+          <ProgressBar Minimum="0" Maximum="3" Value="{Binding Remote.Installer.StepProgress, Mode=OneWay}" Height="7" MinHeight="7" />
+          <ProgressBar IsIndeterminate="True" IsVisible="{Binding Remote.Installer.IsWaiting}" Height="3" MinHeight="3" />
+          <TextBlock Text="{Binding Remote.Installer.Status}" Classes="muted" TextWrapping="Wrap" TextAlignment="Center" />
+          <TextBlock Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" TextAlignment="Center"
+                     Text="Le téléchargement est réalisé par Google Play. Son pourcentage réel apparaît dans le Play Store ; SCOLIA affiche les étapes et vérifie l'installation au retour." />
+          <Button Classes="ghost" Content="Ouvrir le magasin officiel" Command="{Binding Remote.Installer.OpenStore}" IsVisible="{Binding Remote.Installer.NeedsInstallation}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" />
+          <Button Content="Vérifier l'installation" Command="{Binding Remote.Installer.Verify}" IsVisible="{Binding Remote.Installer.NeedsInstallation}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" />
+          <Button Classes="ghost" Content="Configurer Tailscale (première connexion)" Command="{Binding Remote.Installer.Configure}" IsVisible="{Binding Remote.Installer.IsInstalled}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" />
+          <Button Classes="primary" Content="Fermer · Revenir au partage" Command="{Binding Remote.Installer.Close}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Height="44" />
+        </StackPanel>
+      </Border>
+    </Grid>
+  </Grid>
 </UserControl>

@@ -8,7 +8,7 @@ using ScoliaPlatform = Scolia.Bureau.Infrastructure.Platform;
 namespace Scolia.Mobile;
 
 /// <summary>Écran de SCOLIA sur le téléphone. Le clavier pousse le formulaire vers le haut au lieu de le cacher.</summary>
-[Activity(Label = "SCOLIA", Theme = "@style/ScoliaLaunchTheme", Icon = "@mipmap/icon", RoundIcon = "@mipmap/icon_round", MainLauncher = true, Exported = true,
+[Activity(Label = "SCOLIA Phone", Theme = "@style/ScoliaLaunchTheme", Icon = "@mipmap/icon", RoundIcon = "@mipmap/icon_round", MainLauncher = true, Exported = true,
     ConfigurationChanges = ConfigChanges.Orientation | ConfigChanges.ScreenSize | ConfigChanges.UiMode | ConfigChanges.ScreenLayout | ConfigChanges.SmallestScreenSize | ConfigChanges.Keyboard | ConfigChanges.KeyboardHidden,
     WindowSoftInputMode = SoftInput.AdjustResize)]
 public sealed class MainActivity : AvaloniaMainActivity
@@ -40,12 +40,19 @@ public sealed class MainActivity : AvaloniaMainActivity
         startup?.SetActive(true);
         // La recherche du serveur sur le Wi-Fi a besoin de recevoir les réponses en diffusion.
         MobilePlatform.HoldMulticast(true);
+        Security.AndroidBiometrics.Attach(this);
+        ScoliaPlatform.NotifyAppResumed();
+        // Une erreur de WorkManager ne doit pas empêcher de revenir sur l'écran SCOLIA.
+        try { Synchronization.SyncWorker.ScheduleOnResume(this); }
+        catch (Exception ex)
+        { Android.Util.Log.Warn("SCOLIA-Sync", $"Reprise différée indisponible : {ex.GetType().Name}"); }
     }
 
     protected override void OnPause()
     {
         startup?.SetActive(false);
         MobilePlatform.HoldMulticast(false);
+        Security.AndroidBiometrics.Detach(this);
         base.OnPause();
     }
 

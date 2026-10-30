@@ -15,11 +15,39 @@ public static class Platform
     /// <summary>Relance une initialisation en échec depuis l'écran de démarrage Android.</summary>
     public static Func<Task>? RetryStartup { get; set; }
 
+    /// <summary>Le système confirme une biométrie enrôlée et disponible.</summary>
+    public static Func<bool>? IsBiometricAvailable { get; set; }
+    /// <summary>Le système présente son propre dialogue d'authentification ; aucune empreinte n'est lue par SCOLIA.</summary>
+    public static Func<Task<bool>>? VerifyBiometricAsync { get; set; }
+
     /// <summary>Ouvre un document enregistré, un PDF ou un classeur, avec l'application du téléphone.</summary>
     public static Action<string>? OpenFile { get; set; }
 
     /// <summary>Ouvre une adresse : WhatsApp, SMS, appel, e-mail ou page web.</summary>
     public static Action<string>? OpenUri { get; set; }
+
+    /// <summary>
+    /// À la demande de l'utilisateur, ouvre Tailscale ou son installateur officiel.
+    /// La permission VPN et la connexion au tailnet restent sous contrôle d'Android.
+    /// </summary>
+    public static Func<string>? OpenTailscale { get; set; }
+
+    /// <summary>Activation VPN demandée sans ouvrir la fenêtre Tailscale.</summary>
+    public static Func<Task<string>>? ConnectTailscaleInBackground { get; set; }
+
+    public static Func<bool>? IsTailscaleInstalled { get; set; }
+
+    /// <summary>VPN Android actif, sans certitude de son fournisseur.</summary>
+    public static Func<bool?>? IsVpnActive { get; set; }
+
+    /// <summary>Diagnostic du VPN et adresse locale éventuelle ; aucune donnée de compte Tailscale.</summary>
+    public static Func<TailnetSnapshot>? ReadTailnetState { get; set; }
+    public static Func<string>? OpenTailscaleInstallPage { get; set; }
+
+    /// <summary>Android signale le retour à SCOLIA après une installation externe.</summary>
+    public static event Action? AppResumed;
+    public static void NotifyAppResumed() => AppResumed?.Invoke();
+
 
     /// <summary>Dossier où les documents sont enregistrés sur le téléphone.</summary>
     public static string? DocumentsFolder { get; set; }

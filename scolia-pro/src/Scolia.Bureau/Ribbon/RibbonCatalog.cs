@@ -163,7 +163,7 @@ public static class RibbonCatalog
                 Group("Sauvegardes",
                     Large(shell, "Sauvegardes", DatabaseExportOutline, "Sauvegardes vérifiées, téléchargement et restauration.", () => shell.Open(() => new DataPage(shell)), Green, perm: Perm.BackupManage),
                     Small(shell, "Sauvegarder", ContentSaveOutline, "Crée tout de suite une sauvegarde vérifiée.", () => DataPage.BackupNowAsync(shell), Neutral, perm: Perm.BackupManage),
-                    Small(shell, "Importer SCOLIA V79", Upload, "Reprend les données d'un classeur Excel de l'ancienne version.", () => DataPage.ImportAsync(shell), Neutral, perm: Perm.BackupManage),
+                    Small(shell, "Importation du classeur", Upload, "Importe les listes nominatives, promotions et, s’ils existent, les paiements d’un classeur Excel.", () => DataPage.ImportAsync(shell), Neutral, perm: Perm.BackupManage),
                     Small(shell, "Modèle d'import", FileExcelOutline, "Classeur vide à remplir pour reprendre des données tenues dans un autre fichier Excel.", () => DataPage.TemplateAsync(shell), Neutral, perm: Perm.BackupManage)),
                 Group("Contrôle",
                     Large(shell, "Journal d'audit", FileDocumentOutline, "Qui a fait quoi, et vérification de la chaîne d'empreintes.", () => shell.Open(() => new AuditPage(shell)), Neutral, perm: Perm.AuditRead),

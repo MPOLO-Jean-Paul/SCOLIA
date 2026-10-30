@@ -30,7 +30,11 @@ public partial class LoginView : UserControl
     {
         ReleaseLogin();
         subscribedLogin = DataContext as LoginViewModel;
-        if (subscribedLogin is not null) subscribedLogin.Unlocked += OnUnlocked;
+        if (subscribedLogin is not null)
+        {
+            subscribedLogin.Unlocked += OnUnlocked;
+            subscribedLogin.RefreshBiometrics();
+        }
     }
 
     private void ReleaseLogin()

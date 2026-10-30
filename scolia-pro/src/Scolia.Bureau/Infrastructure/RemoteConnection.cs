@@ -10,7 +10,8 @@ public static class RemoteConnection
 {
     private static readonly string FilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "SCOLIA", "liaison-distante.enc");
     private static RemoteHost? host;
-    public static bool Hosting => host?.Connected == true;
+    private static readonly object HostGate = new();
+    public static bool Hosting { get { lock (HostGate) return host?.Connected == true; } }
     public static RemoteConfiguration? Load()
     {
         if (!File.Exists(FilePath)) return null;
@@ -21,12 +22,34 @@ public static class RemoteConnection
 
     public static void StartHost(Uri localServer)
     {
-        StopHost();
-        if (Load() is { Host: true, Enabled: true } configuration && configuration.Link.ExpiresUtc > DateTime.UtcNow)
-            host = new RemoteHost(configuration.Link, localServer);
+        lock (HostGate)
+        {
+            StopHost();
+            StartHostIfMissing(localServer);
+        }
     }
 
-    public static void StopHost() { host?.Dispose(); host = null; }
+    /// <summary>Restaure le relais sortant après un redémarrage, sans interrompre
+    /// une connexion déjà en cours de reprise.</summary>
+    public static void StartHostIfMissing(Uri localServer)
+    {
+        lock (HostGate)
+        {
+            if (host is not null) return;
+            if (Load() is { Host: true, Enabled: true } configuration
+                && configuration.Link.ExpiresUtc > DateTime.UtcNow)
+                host = new RemoteHost(configuration.Link, localServer);
+        }
+    }
+
+    public static void StopHost()
+    {
+        lock (HostGate)
+        {
+            host?.Dispose();
+            host = null;
+        }
+    }
     public static void Disable()
     {
         StopHost();

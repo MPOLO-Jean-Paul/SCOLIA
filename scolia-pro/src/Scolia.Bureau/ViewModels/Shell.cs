@@ -282,7 +282,9 @@ public sealed class ShellViewModel : Observable
     public string AccountName => session?.DisplayName ?? string.Empty;
     public string ServerLine => IsServerComputer
         ? $"Serveur de l'établissement · port {api.Server.Port}"
-        : ConnectionStore.Load() is { IsRemote: true } link ? $"Relié à {link.Machine} · {api.Server.Host}" : $"Serveur {api.Server.Host}:{api.Server.Port}";
+        : ConnectionStore.Load() is { IsRemote: true } link && TailscaleEndpoint.IsTailnetAddress(api.Server)
+            ? $"Tailscale privé · {link.School ?? link.Machine} · {api.Server.Host}"
+        : ConnectionStore.Load() is { IsRemote: true } direct ? $"Relié à {direct.Machine} · {api.Server.Host}" : $"Serveur {api.Server.Host}:{api.Server.Port}";
 
     public PageViewModel? Current
     {
@@ -407,10 +409,30 @@ public sealed class ShellViewModel : Observable
             RemoteConnection.StartHost(ConnectionStore.LocalAddress);
         if (saved is { IsRemote: true })
         {
-            api.Retarget(new Uri(saved.Url!));
+            if (!Uri.TryCreate(saved.Url, UriKind.Absolute, out var remembered))
+            {
+                ShowChooser([], "L'adresse de connexion mémorisée est invalide. Rejoignez de nouveau votre établissement.");
+                return;
+            }
+            if (TailscaleEndpoint.IsTailnetAddress(remembered)
+                && !await TailscaleEndpoint.ResolvesPrivatelyAsync(remembered))
+            {
+                if (OfferOfflineEntry(saved.School ?? string.Empty)) return;
+                ShowChooser([], "Le réseau privé Tailscale ne résout pas le serveur de votre établissement. Vérifiez l'état du VPN et MagicDNS.");
+                return;
+            }
+            api.Retarget(remembered);
             if (await api.IsRunningAsync())
             {
                 await ShowEntryAsync();
+                return;
+            }
+            // Une adresse Tailscale n'est pas retrouvable par diffusion UDP LAN :
+            // épargner une recherche inutile et préserver l'adresse privée mémorisée.
+            if (TailscaleEndpoint.IsTailnetAddress(api.Server))
+            {
+                if (OfferOfflineEntry(saved.School ?? string.Empty)) return;
+                ShowChooser([], "Le serveur privé Tailscale de votre établissement ne répond pas. Vérifiez le VPN sur les deux appareils, l'approbation Tailscale et le service SCOLIA sur le téléphone principal. Vous pouvez saisir à nouveau son adresse Tailscale.");
                 return;
             }
             Status = $"Recherche du serveur de {saved.School}…";
@@ -509,8 +531,12 @@ public sealed class ShellViewModel : Observable
     public async Task JoinAsync(DiscoveredServer server)
     {
         var previous = ConnectionStore.Load();
-        ConnectionStore.Save(new ConnectionSettings(ConnectionSettings.Remote, server.Address.ToString(), server.SchoolId, server.School, server.Machine,
-            previous?.LanPromptDone ?? false));
+        // Ne pas abandonner la liaison actuelle si le nouvel établissement ne peut
+        // pas être mémorisé : après redémarrage, un changement silencieux serait trompeur.
+        if (!ConnectionStore.TrySave(new ConnectionSettings(ConnectionSettings.Remote,
+            server.Address.ToString(), server.SchoolId, server.School, server.Machine,
+            previous?.LanPromptDone ?? false)))
+            throw new IOException("Impossible d'enregistrer la connexion SCOLIA sur cet appareil. Vérifiez l'espace de stockage et les autorisations.");
         if (IsLoggedIn) await LogoutAsync();
         // Un téléphone qui était le serveur et en rejoint un autre arrête le sien : il ne garde qu'un établissement.
         if (Platform.IsMobile && localServer is not null && !server.Address.IsLoopback) localServer.Stop();
@@ -541,7 +567,9 @@ public sealed class ShellViewModel : Observable
     public async Task UseThisComputerAsync()
     {
         var previous = ConnectionStore.Load();
-        ConnectionStore.Save(new ConnectionSettings(ConnectionSettings.Local, LanPromptDone: previous?.LanPromptDone ?? false));
+        if (!ConnectionStore.TrySave(new ConnectionSettings(ConnectionSettings.Local,
+            LanPromptDone: previous?.LanPromptDone ?? false)))
+            throw new IOException("Impossible de mémoriser ce téléphone comme serveur SCOLIA. Vérifiez son stockage.");
         if (IsLoggedIn) await LogoutAsync();
         api.Retarget(ConnectionStore.LocalAddress);
         RemoteConnection.StartHost(ConnectionStore.LocalAddress);
@@ -1124,29 +1152,94 @@ public sealed class ShellViewModel : Observable
     /// </summary>
     public IReadOnlyList<PhoneToolGroupVm> PhoneTools { get; private set; } = [];
     public IReadOnlyList<PhoneToolBlockVm> PhoneToolBlocks { get; private set; } = [];
+    /// <summary>Une seule liste de blocs métier sur téléphone, pages et actions réunies.</summary>
+    public IReadOnlyList<PhoneMenuBlockVm> PhoneMenuBlocks { get; private set; } = [];
 
     private static readonly HashSet<string> DesktopOnly = new(StringComparer.Ordinal)
     {
         "Rechercher", "Actualiser", "Imprimer", "Plein écran", "Barre d'état", "Quadrillage", "Info-bulles", "Barre latérale",
         "Réduire le ruban", "Zoom arrière", "Zoom avant", "Zoom 100 %", "Densité compacte", "Animations",
+        // Le réglage complet est accessible dans Paramètres ; ne pas dupliquer le même écran dans Affichage.
+        "Préférences",
+        // Toutes ces commandes sont déjà dans Paramètres de l'établissement ou
+        // concernent exclusivement un ordinateur : ne pas les dupliquer sur mobile.
+        "Mode sombre", "Taille du texte",
+        // La destination Rapports figure déjà dans la navigation du même menu.
+        "Rapports et exports",
     };
+
+    // Un menu mobile est classé par finalité, non par l'onglet du ruban Windows.
+    // Une même action est conservée une seule fois par RebuildPhoneTools.
+    public static string CanonicalPhoneGroup(string label, string originalTab, string ribbonGroup = "")
+    {
+        var name = label.Trim();
+        if (name is "Thème" or "Couleurs" or "Couleur d'accent" or "Thème et couleurs"
+            or "Police et taille du texte" or "Texte et polices" or "Police"
+            or "Taille de police" or "Animations et fluidité" or "Sons"
+            or "Apparence" or "Préférences" or "Nouvelle promotion" or "Nouvelle année")
+            return "Paramètres";
+
+        if (name is "À propos" or "Aide" or "Aide et gestes" or "Documentation"
+            or "Guide utilisateur" or "Raccourcis clavier")
+            return "Aide";
+
+        if (name is "Gestion des utilisateurs" or "Gestion des comptes"
+            or "Permissions" or "Nouvel utilisateur" or "Nouveau membre")
+            return "Administration";
+
+        if (name is "Nouvelle inscription" or "Modifier" or "Liste des apprenants")
+            return "Secrétariat";
+        if (name is "Nouveau cours" or "Nouvelle évaluation" or "Nouvel incident")
+            return "Scolarité";
+        if (name is "Nouvelle dépense" or "Arrêter la caisse" or "Annuler le reçu"
+            or "Vérifier en ligne" or "Relevé de compte")
+            return "Finances";
+
+        if (originalTab == "Données")
+        {
+            if (ribbonGroup is "Exports rapides" or "Pilotage") return "Exports";
+            if (ribbonGroup is "Sauvegardes" or "Contrôle" or "Effacement")
+                return ribbonGroup;
+            return "Données";
+        }
+
+        return originalTab switch
+        {
+            "Apprenant" => "Secrétariat",
+            "Reçu" => "Finances",
+            "Affichage" => "Paramètres",
+            _ => originalTab
+        };
+    }
 
     private void RebuildPhoneTools()
     {
         var pages = Navigation.SelectMany(g => g.Items).Select(i => i.Label).ToHashSet(StringComparer.Ordinal);
         var expandedTitle = PhoneTools.FirstOrDefault(g => g.IsExpanded)?.Title;
         var groups = new List<PhoneToolGroupVm>();
-        foreach (var tab in Tabs.Where(t => t.Id is not ("fichier" or "accueil")))
+        // Attribution canonique : une fonction n'appartient qu'à un seul groupe,
+        // même si les rubans de bureau la proposent dans plusieurs onglets.
+        var usedCommands = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var entries = Tabs.Where(t => t.Id is not ("fichier" or "accueil"))
+            .SelectMany(tab => tab.Groups.SelectMany(g => g.Commands
+                .Select(command => (Tab: tab, Group: g, Command: command))))
+            .Where(x => !DesktopOnly.Contains(x.Command.Label) && !pages.Contains(x.Command.Label))
+            .Select(x => (x.Tab, x.Group, Command: x.Command.Label == "Raccourcis clavier"
+                ? new RibbonCommandVm("Aide et gestes", Material.Icons.MaterialIconKind.GestureTap, string.Empty, x.Command.Command, false, "ToneBlue")
+                : x.Command))
+            .GroupBy(x => CanonicalPhoneGroup(x.Command.Label, x.Tab.Title, x.Group.Title),
+                StringComparer.Ordinal)
+            .ToList();
+        foreach (var entry in entries)
         {
-            var commands = tab.Groups.SelectMany(g => g.Commands)
-                .Where(c => !DesktopOnly.Contains(c.Label) && !pages.Contains(c.Label))
-                .Select(c => c.Label == "Raccourcis clavier" ? new RibbonCommandVm("Aide et gestes", Material.Icons.MaterialIconKind.GestureTap, string.Empty, c.Command, false, "ToneBlue") : c)
+            var commands = entry.Select(x => x.Command)
+                .Where(c => usedCommands.Add(c.Label.Trim()))
                 .ToList();
             if (commands.Count > 0)
             {
-                var group = new PhoneToolGroupVm(tab.Title, commands, TogglePhoneToolGroup)
+                var group = new PhoneToolGroupVm(entry.Key, commands, TogglePhoneToolGroup)
                 {
-                    IsExpanded = expandedTitle == tab.Title &&
+                    IsExpanded = expandedTitle == entry.Key &&
                         !Navigation.Any(g => g.HasTitle && g.IsExpanded)
                 };
                 groups.Add(group);
@@ -1154,8 +1247,10 @@ public sealed class ShellViewModel : Observable
         }
         PhoneTools = groups;
         PhoneToolBlocks = PhoneToolBlockVm.Organize(groups);
+        PhoneMenuBlocks = PhoneMenuBlockVm.Build(Navigation, PhoneTools);
         Raise(nameof(PhoneTools));
         Raise(nameof(PhoneToolBlocks));
+        Raise(nameof(PhoneMenuBlocks));
     }
 
     private bool phoneMenuOpen;

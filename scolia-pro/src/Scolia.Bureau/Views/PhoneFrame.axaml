@@ -16,21 +16,40 @@
                     </Grid>
                   </Button>
                   <Border Classes="phonecontent" IsVisible="{Binding IsExpanded}">
-                    <ItemsControl ItemsSource="{Binding Items}">
-                      <ItemsControl.ItemTemplate>
-                        <DataTemplate>
-                          <Button Classes="phonerow" Classes.selected="{Binding IsSelected}" Command="{Binding Open}">
-                            <Grid ColumnDefinitions="Auto,*,Auto">
-                              <Border Classes="appicon medium" Background="{Binding Brush}" Margin="0,0,12,0">
-                                <mi:MaterialIcon Kind="{Binding Icon}" />
-                              </Border>
-                              <TextBlock Grid.Column="1" Text="{Binding Label}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
-                              <mi:MaterialIcon Grid.Column="2" Kind="ChevronRight" Width="20" Height="20" Foreground="{DynamicResource MutedBrush}" />
-                            </Grid>
-                          </Button>
-                        </DataTemplate>
-                      </ItemsControl.ItemTemplate>
-                    </ItemsControl>
+                    <StackPanel Spacing="0">
+                      <ItemsControl ItemsSource="{Binding Items}">
+                        <ItemsControl.ItemTemplate>
+                          <DataTemplate>
+                            <Button Classes="phonerow" Classes.selected="{Binding IsSelected}" Command="{Binding Open}">
+                              <Grid ColumnDefinitions="Auto,*,Auto">
+                                <Border Classes="appicon medium" Background="{Binding Brush}" Margin="0,0,12,0">
+                                  <mi:MaterialIcon Kind="{Binding Icon}" />
+                                </Border>
+                                <TextBlock Grid.Column="1" Text="{Binding Label}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                                <mi:MaterialIcon Grid.Column="2" Kind="ChevronRight" Width="20" Height="20" Foreground="{DynamicResource MutedBrush}" />
+                              </Grid>
+                            </Button>
+                          </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                      </ItemsControl>
+                      <!-- Réglages d'affichage intégrés au même groupe Paramètres, sans second accordéon. -->
+                      <ItemsControl ItemsSource="{Binding SupplementalCommands}">
+                        <ItemsControl.ItemTemplate>
+                          <DataTemplate>
+                            <Button Classes="phonerow" Command="{Binding Command}">
+                              <Grid ColumnDefinitions="Auto,*,Auto">
+                                <Border Classes="appicon medium" Background="{Binding Brush}" Margin="0,0,12,0">
+                                  <mi:MaterialIcon Kind="{Binding Icon}" />
+                                </Border>
+                                <TextBlock Grid.Column="1" Text="{Binding Label}" TextWrapping="Wrap" VerticalAlignment="Center" />
+                                <mi:MaterialIcon Grid.Column="2" Kind="Check" Width="20" Height="20"
+                                                 Foreground="{DynamicResource AccentBrush}" IsVisible="{Binding IsOn}" />
+                              </Grid>
+                            </Button>
+                          </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                      </ItemsControl>
+                    </StackPanel>
                   </Border>
         </StackPanel>
       </Border>
@@ -72,6 +91,18 @@
           </Border>
         </StackPanel>
       </Border>
+    </DataTemplate>
+    <!-- Un bloc unique pour chaque famille : pages et commandes dans une seule carte. -->
+    <DataTemplate x:Key="UnifiedPhoneBlock">
+      <StackPanel Spacing="4" Margin="0,10,0,6">
+        <TextBlock Text="{Binding Title}" Classes="phoneblocktitle" />
+        <Border Classes="phoneblockcard">
+          <StackPanel Spacing="0">
+            <ItemsControl ItemsSource="{Binding NavigationGroups}" ItemTemplate="{StaticResource NavGroup}" />
+            <ItemsControl ItemsSource="{Binding ToolGroups}" ItemTemplate="{StaticResource PhoneToolGroup}" />
+          </StackPanel>
+        </Border>
+      </StackPanel>
     </DataTemplate>
     <DataTemplate x:Key="PhoneToolBlock">
       <StackPanel Spacing="4" Margin="0,10,0,6">
@@ -223,10 +254,8 @@
             </StackPanel>
           </Border>
 
-          <ItemsControl ItemsSource="{Binding NavigationBlocks}" ItemTemplate="{StaticResource NavBlock}" />
-
-          <!-- Blocs d'actions : même regroupement que les pages, sans lignes sous les titres. -->
-          <ItemsControl ItemsSource="{Binding PhoneToolBlocks}" ItemTemplate="{StaticResource PhoneToolBlock}" />
+          <!-- Une seule liste de blocs, sans répétition des familles ni des actions. -->
+          <ItemsControl ItemsSource="{Binding PhoneMenuBlocks}" ItemTemplate="{StaticResource UnifiedPhoneBlock}" />
 
           <Border Classes="phonegroup" Margin="0,18,0,0">
             <StackPanel>
