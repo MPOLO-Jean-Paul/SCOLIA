@@ -287,7 +287,7 @@
     <Setter Property="CornerRadius" Value="{StaticResource RadiusCard}" />
     <Setter Property="Padding" Value="14,12,8,12" />
     <Setter Property="Margin" Value="0,0,0,8" />
-    <Setter Property="BorderThickness" Value="1.5" />
+    <Setter Property="BorderThickness" Value="1" />
     <Setter Property="BorderBrush" Value="Transparent" />
   </Style>
   <Style Selector="Border.phonecard.selected">
@@ -435,6 +435,10 @@
   <Style Selector="DataGridRow:pointerover /template/ Rectangle#BackgroundRectangle">
     <Setter Property="Fill" Value="{DynamicResource HoverBrush}" />
     <Setter Property="Opacity" Value="1" />
+  </Style>
+  <!-- La ligne sélectionnée reste visible même quand la souris la survole. -->
+  <Style Selector="DataGridRow:selected:pointerover /template/ Rectangle#BackgroundRectangle">
+    <Setter Property="Fill" Value="{DynamicResource AccentSoftBrush}" />
   </Style>
 
   <!-- Barre de progression -->
@@ -630,13 +634,27 @@
     <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
   </Style>
 
-  <!-- Volet latéral flottant des Réglages de macOS : gris clair, coins arrondis, sélection grise arrondie -->
+  <!-- Volet latéral natif : une seule surface, peu d'ombre et des groupes clairs. -->
   <Style Selector="Border.sidebar">
     <Setter Property="Background" Value="{DynamicResource SidebarBrush}" />
     <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
     <Setter Property="BorderThickness" Value="1" />
     <Setter Property="CornerRadius" Value="16" />
-    <Setter Property="BoxShadow" Value="0 2 10 0 #14000000" />
+    <Setter Property="BoxShadow" Value="0 1 5 0 #10000000" />
+  </Style>
+  <Style Selector="Button.navcategory">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Foreground" Value="{DynamicResource Text2Brush}" />
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    <Setter Property="MinHeight" Value="32" />
+    <Setter Property="Padding" Value="8,4" />
+    <Setter Property="CornerRadius" Value="9" />
+    <Setter Property="FontSize" Value="{DynamicResource FsSmall}" />
+  </Style>
+  <Style Selector="Button.navcategory:pointerover">
+    <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
   </Style>
   <Style Selector="Button.navitem">
     <Setter Property="Background" Value="Transparent" />
@@ -653,7 +671,8 @@
     <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
   </Style>
   <Style Selector="Button.navitem.selected">
-    <Setter Property="Background" Value="{DynamicResource SidebarSelectedBrush}" />
+    <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
+    <Setter Property="FontWeight" Value="SemiBold" />
   </Style>
 
   <Style Selector="Border.navmark">

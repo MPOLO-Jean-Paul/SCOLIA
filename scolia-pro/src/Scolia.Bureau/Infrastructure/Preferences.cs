@@ -51,7 +51,8 @@ public sealed class Preferences : Observable
     private static readonly (string Key, string Desktop, string Mobile, string Family, bool OnPhone)[] FontTable =
     [
         ("systeme", "Système (Segoe UI)", "", $"Segoe UI Variable Text, Segoe UI, {Bundled}Inter", false),
-        ("inter", "Inter", "Inter (moderne)", $"{Bundled}Inter", true),
+        ("android", "", "Système Android (Roboto)", $"Roboto, {Bundled}Inter", true),
+        ("inter", "Inter", "Inter", $"{Bundled}Inter", true),
         ("calibri", "Calibri", "Carlito (comme Calibri)", $"Calibri, {Bundled}Carlito", true),
         ("arial", "Arial", "Liberation Sans (comme Arial)", $"Arial, {Bundled}Liberation Sans", true),
         ("verdana", "Verdana (très lisible)", "DejaVu Sans (très lisible)", $"Verdana, {Bundled}DejaVu Sans", true),
@@ -67,8 +68,8 @@ public sealed class Preferences : Observable
     /// <summary>Famille de caractères d'une police, pour l'appliquer ou la montrer dans un aperçu.</summary>
     public static FontFamily FamilyOf(string key) => new(FontTable.FirstOrDefault(f => f.Key == key).Family ?? $"{Bundled}Inter");
 
-    /// <summary>Police par défaut : celle du système sur Windows, Inter sur un téléphone.</summary>
-    private static string DefaultFont => Platform.IsMobile ? "inter" : "systeme";
+    /// <summary>Police native de l'appareil par défaut, sans dépendance au réseau.</summary>
+    private static string DefaultFont => Platform.IsMobile ? "android" : "systeme";
 
     public static readonly IReadOnlyList<ChoiceItem> StartupModes =
     [
@@ -102,7 +103,7 @@ public sealed class Preferences : Observable
     private bool animations = true;
     private bool ribbonCollapsed;
     private bool sidebar = true;
-    private string font = "systeme";
+    private string font = Platform.IsMobile ? "android" : "systeme";
     private string startup = "normale";
     private string speed = "normale";
     private int openingSeconds = 2;
@@ -114,6 +115,8 @@ public sealed class Preferences : Observable
     private bool soundError = true;
     private bool soundNotify;
     private bool soundOpening = true;
+    private Avalonia.Application? resourcesOwner;
+    private string? resourcesAccent;
 
     public string Theme { get => theme; set { if (Set(ref theme, value)) Raise(nameof(IsDark)); } }
     public bool IsDark { get => theme == "dark"; set => Theme = value ? "dark" : "light"; }
@@ -232,7 +235,15 @@ public sealed class Preferences : Observable
             _ => ThemeVariant.Default,
         };
         var r = app.Resources;
-        ApplyAccent(r);
+        // Les deux palettes sont déjà installées : ne pas les recréer pour un
+        // changement de police, de zoom ou de densité. Cela évite les
+        // invalidations visuelles sur l'ensemble des pages et des tableaux.
+        if (resourcesOwner != app || resourcesAccent != accent)
+        {
+            ApplyAccent(r);
+            resourcesOwner = app;
+            resourcesAccent = accent;
+        }
         r["UiFont"] = FamilyOf(font);
         var k = Factor;
         GridPriority.SetTextFactor(k);
@@ -326,7 +337,7 @@ public sealed class Preferences : Observable
             p.Animations = Animations;
             p.RibbonCollapsed = RibbonCollapsed;
             p.Sidebar = Sidebar;
-            p.Font = Font ?? "systeme";
+            p.Font = Font ?? DefaultFont;
             p.Startup = Startup ?? "normale";
             p.Speed = Speed ?? "normale";
             p.OpeningSeconds = OpeningSeconds;

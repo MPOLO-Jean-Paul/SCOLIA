@@ -31,6 +31,16 @@
     </Style>
 
     <!-- Onglets du bas : icône et libellé, l'onglet actif en couleur -->
+    <Style Selector="Border.tabicon">
+      <Setter Property="Width" Value="56" />
+      <Setter Property="Height" Value="30" />
+      <Setter Property="CornerRadius" Value="15" />
+      <Setter Property="HorizontalAlignment" Value="Center" />
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
+    <Style Selector="Border.tabicon.selected">
+      <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
+    </Style>
     <Style Selector="Border.phonetabs">
       <Setter Property="Background" Value="{DynamicResource BgBrush}" />
       <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
@@ -43,9 +53,9 @@
       <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
       <Setter Property="HorizontalAlignment" Value="Stretch" />
       <Setter Property="HorizontalContentAlignment" Value="Center" />
-      <Setter Property="Padding" Value="0,4" />
-      <Setter Property="MinHeight" Value="48" />
-      <Setter Property="CornerRadius" Value="10" />
+      <Setter Property="Padding" Value="2,4" />
+      <Setter Property="MinHeight" Value="50" />
+      <Setter Property="CornerRadius" Value="12" />
     </Style>
     <Style Selector="Button.phonetab:pointerover">
       <Setter Property="Background" Value="Transparent" />
@@ -77,6 +87,9 @@
     <Style Selector="Button.phonecategory:pointerover">
       <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
     </Style>
+    <Style Selector="Button.phonecategory:pressed">
+      <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
+    </Style>
 
     <!-- Menu plein écran : chaque outil sur une ligne haute, rangé par métier dans un bloc arrondi -->
     <Style Selector="Button.phonerow">
@@ -94,6 +107,7 @@
     </Style>
     <Style Selector="Button.phonerow.selected">
       <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
+      <Setter Property="FontWeight" Value="SemiBold" />
     </Style>
     <Style Selector="Border.phonegroup">
       <Setter Property="Background" Value="{DynamicResource GroupBrush}" />
@@ -113,7 +127,7 @@
       <Setter Property="CornerRadius" Value="18,18,0,0" />
       <Setter Property="Padding" Value="10,8,10,14" />
       <Setter Property="VerticalAlignment" Value="Bottom" />
-      <Setter Property="BoxShadow" Value="0 -4 24 0 #33000000" />
+      <Setter Property="BoxShadow" Value="0 -3 16 0 #1D000000" />
     </Style>
     <Style Selector="Button.sheetitem">
       <Setter Property="Background" Value="Transparent" />
@@ -146,7 +160,7 @@
       <Setter Property="Background" Value="{DynamicResource SidebarBrush}" />
       <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
       <Setter Property="BorderThickness" Value="0,0,1,0" />
-      <Setter Property="Width" Value="300" />
+      <Setter Property="Width" Value="288" />
     </Style>
 
   <!-- Mobile : une précision qui ne tient pas sur une ligne passe sur deux, au lieu d'être coupée -->
@@ -231,10 +245,20 @@
     <Setter Property="BoxShadow" Value="0 4 14 0 #33000000" />
   </Style>
 
+  <!-- L'ouverture d'une catégorie n'anime que l'opacité : aucun déplacement des éléments sous le doigt. -->
+  <Style Selector="LayoutTransformControl.anim Border.phonegroup[IsVisible=True]">
+    <Style.Animations>
+      <Animation Duration="0:0:0.12" Easing="CubicEaseOut" FillMode="Both">
+        <KeyFrame Cue="0%"><Setter Property="Opacity" Value="0.65" /></KeyFrame>
+        <KeyFrame Cue="100%"><Setter Property="Opacity" Value="1" /></KeyFrame>
+      </Animation>
+    </Style.Animations>
+  </Style>
+
   <!-- Fluidité : la feuille d'actions monte du bas, le menu apparaît en fondu (préférence « Animations ») -->
   <Style Selector="LayoutTransformControl.anim Grid.sheethost[IsVisible=True] > Border.phonesheet">
     <Style.Animations>
-      <Animation Duration="0:0:0.2" Easing="CubicEaseOut" FillMode="Both">
+      <Animation Duration="0:0:0.16" Easing="CubicEaseOut" FillMode="Both">
         <KeyFrame Cue="0%"><Setter Property="TranslateTransform.Y" Value="24" /><Setter Property="Opacity" Value="0.4" /></KeyFrame>
         <KeyFrame Cue="100%"><Setter Property="TranslateTransform.Y" Value="0" /><Setter Property="Opacity" Value="1" /></KeyFrame>
       </Animation>
@@ -250,7 +274,7 @@
   </Style>
   <Style Selector="LayoutTransformControl.anim Border.phonemenu[IsVisible=True]">
     <Style.Animations>
-      <Animation Duration="0:0:0.1" FillMode="Both">
+      <Animation Duration="0:0:0.12" FillMode="Both">
         <KeyFrame Cue="0%"><Setter Property="Opacity" Value="0.8" /></KeyFrame>
         <KeyFrame Cue="100%"><Setter Property="Opacity" Value="1" /></KeyFrame>
       </Animation>

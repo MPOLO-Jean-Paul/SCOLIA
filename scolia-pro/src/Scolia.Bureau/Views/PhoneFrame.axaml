@@ -8,7 +8,7 @@
                 <StackPanel>
                   <Button Classes="phonecategory" IsVisible="{Binding HasTitle}" Command="{Binding Toggle}">
                     <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
-                      <Border Classes="appicon medium" Background="{DynamicResource ToneBlue}"><mi:MaterialIcon Kind="FolderOutline" /></Border>
+                      <Border Classes="appicon medium" Background="{Binding Brush}"><mi:MaterialIcon Kind="{Binding Icon}" /></Border>
                       <TextBlock Grid.Column="1" Text="{Binding Title}" VerticalAlignment="Center" FontWeight="SemiBold" />
                       <mi:MaterialIcon Grid.Column="2" Kind="ChevronDown" Foreground="{DynamicResource AccentBrush}" IsVisible="{Binding !IsExpanded}" />
                       <mi:MaterialIcon Grid.Column="2" Kind="ChevronUp" Foreground="{DynamicResource AccentBrush}" IsVisible="{Binding IsExpanded}" />
@@ -186,7 +186,7 @@
                 <StackPanel>
                   <Button Classes="phonecategory" Command="{Binding Toggle}">
                     <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
-                      <Border Classes="appicon medium" Background="{DynamicResource TonePurple}"><mi:MaterialIcon Kind="CogOutline" /></Border>
+                      <Border Classes="appicon medium" Background="{Binding Brush}"><mi:MaterialIcon Kind="{Binding Icon}" /></Border>
                       <TextBlock Grid.Column="1" Text="{Binding Title}" FontWeight="SemiBold" VerticalAlignment="Center" />
                       <mi:MaterialIcon Grid.Column="2" Kind="ChevronDown" Foreground="{DynamicResource AccentBrush}" IsVisible="{Binding !IsExpanded}" />
                       <mi:MaterialIcon Grid.Column="2" Kind="ChevronUp" Foreground="{DynamicResource AccentBrush}" IsVisible="{Binding IsExpanded}" />
@@ -245,8 +245,10 @@
           <ItemsControl.ItemTemplate>
             <DataTemplate>
               <Button Classes="phonetab" Classes.selected="{Binding IsSelected}" Command="{Binding Open}">
-                <StackPanel Spacing="2">
-                  <mi:MaterialIcon Kind="{Binding Icon}" Width="24" Height="24" HorizontalAlignment="Center" Foreground="{Binding Brush}" />
+                <StackPanel Spacing="2" HorizontalAlignment="Center">
+                  <Border Classes="tabicon" Classes.selected="{Binding IsSelected}">
+                    <mi:MaterialIcon Kind="{Binding Icon}" Width="22" Height="22" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{Binding Brush}" />
+                  </Border>
                   <TextBlock Text="{Binding TabLabel}" />
                 </StackPanel>
               </Button>

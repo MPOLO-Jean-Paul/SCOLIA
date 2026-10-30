@@ -291,20 +291,38 @@
             <ItemsControl ItemsSource="{Binding Navigation}" Margin="10,4,10,12">
               <ItemsControl.ItemTemplate>
                 <DataTemplate>
-                  <ItemsControl ItemsSource="{Binding Items}" Margin="0,0,0,14">
-                    <ItemsControl.ItemTemplate>
-                      <DataTemplate>
-                        <Button Classes="navitem" Classes.selected="{Binding IsSelected}" Command="{Binding Open}" Margin="0,1" HorizontalContentAlignment="Stretch">
-                          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
-                            <Border Classes="appicon" Background="{Binding Brush}">
-                              <mi:MaterialIcon Kind="{Binding Icon}" />
-                            </Border>
-                            <TextBlock Grid.Column="1" Text="{Binding Label}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Label}" />
-                          </Grid>
-                        </Button>
-                      </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                  </ItemsControl>
+                  <StackPanel Margin="0,0,0,6">
+                    <!-- Catégories du volet : icône métier, couleur et état repliable.
+                         Sur ordinateur les catégories sont ouvertes au premier affichage. -->
+                    <Button Classes="navcategory" IsVisible="{Binding HasTitle}" Command="{Binding Toggle}" ToolTip.Tip="{Binding Title}">
+                      <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
+                        <Border Classes="appicon" Background="{Binding Brush}">
+                          <mi:MaterialIcon Kind="{Binding Icon}" />
+                        </Border>
+                        <TextBlock Grid.Column="1" Text="{Binding Title}" FontWeight="SemiBold" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                        <mi:MaterialIcon Grid.Column="2" Kind="ChevronDown" Width="16" Height="16" VerticalAlignment="Center"
+                                         Foreground="{DynamicResource MutedBrush}" IsVisible="{Binding !IsExpanded}" />
+                        <mi:MaterialIcon Grid.Column="2" Kind="ChevronUp" Width="16" Height="16" VerticalAlignment="Center"
+                                         Foreground="{DynamicResource MutedBrush}" IsVisible="{Binding IsExpanded}" />
+                      </Grid>
+                    </Button>
+                    <ItemsControl ItemsSource="{Binding Items}" IsVisible="{Binding IsExpanded}" Margin="0,2,0,4">
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                          <Button Classes="navitem" Classes.selected="{Binding IsSelected}" Command="{Binding Open}"
+                                  Margin="0,1" HorizontalContentAlignment="Stretch">
+                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                              <Border Classes="appicon" Background="{Binding Brush}">
+                                <mi:MaterialIcon Kind="{Binding Icon}" />
+                              </Border>
+                              <TextBlock Grid.Column="1" Text="{Binding Label}" VerticalAlignment="Center"
+                                         TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Label}" />
+                            </Grid>
+                          </Button>
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                  </StackPanel>
                 </DataTemplate>
               </ItemsControl.ItemTemplate>
             </ItemsControl>

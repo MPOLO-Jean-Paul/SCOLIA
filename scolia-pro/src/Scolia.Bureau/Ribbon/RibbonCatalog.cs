@@ -117,11 +117,11 @@ public static class RibbonCatalog
                 Group("Suivi",
                     Large(shell, "Suivi mensuel", CalendarCheck, "Qui a payé le mois choisi, par promotion ou pour tout l'établissement.", () => shell.Open(() => new MonthlyPage(shell)), Blue, perm: Perm.ReportsRead),
                     Large(shell, "Recouvrement", ChartBar, "Retards classés par ancienneté, avec rappels WhatsApp et SMS.", () => shell.Open(() => new DebtorsPage(shell)), Orange, perm: Perm.ReportsRead),
-                    Small(shell, "Prises en charge", ShieldCheckOutline, "Bourses, sponsors et exonérations de l'année.", () => shell.Open(() => new SponsorshipsPage(shell)), Neutral, perm: Perm.PaymentsRead)),
+                    Small(shell, "Prises en charge", HandHeart, "Bourses, sponsors et exonérations de l'année.", () => shell.Open(() => new SponsorshipsPage(shell)), Neutral, perm: Perm.PaymentsRead)),
                 Group("Caisse",
                     Large(shell, "Caisse", CashMultiple, "Mouvements de la période et situation de la caisse.", () => shell.Open(() => new CashPage(shell)), Green, perm: Perm.PaymentsRead),
                     Large(shell, "Dépenses", WalletOutline, "Sorties de caisse et de banque, numérotées et justifiées.", () => shell.Open(() => new ExpensesPage(shell)), Red, perm: Perm.PaymentsRead),
-                    Small(shell, "Nouvelle dépense", Plus, "Ouvre le formulaire d'une nouvelle dépense.", () => ExpensesPage.NewExpenseAsync(shell), Neutral, perm: Perm.ExpensesWrite),
+                    Small(shell, "Nouvelle dépense", WalletPlusOutline, "Ouvre le formulaire d'une nouvelle dépense.", () => ExpensesPage.NewExpenseAsync(shell), Neutral, perm: Perm.ExpensesWrite),
                     Small(shell, "Arrêter la caisse", LockOutline, "Compte les espèces et verrouille la période.", () => CashPage.ClosingAsync(shell), Neutral, perm: Perm.CashClose)),
             ]),
             new("scolarite", "Scolarité",
@@ -134,19 +134,19 @@ public static class RibbonCatalog
                 Group("Vie de classe",
                     Large(shell, "Présences", ClipboardCheckOutline, "Appel quotidien par promotion et taux d'assiduité.", () => shell.Open(() => new AttendancePage(shell)), Blue, perm: Perm.AcademicsRead),
                     Large(shell, "Discipline", AlertOctagonOutline, "Incidents, sanctions et suivi du comportement.", () => shell.Open(() => new DisciplinePage(shell)), Red, perm: Perm.AcademicsRead),
-                    Small(shell, "Nouvel incident", Plus, "Signale un incident de discipline.", () => DisciplinePage.NewDecisionAsync(shell), Neutral, perm: Perm.AcademicsWrite)),
+                    Small(shell, "Nouvel incident", AlertPlusOutline, "Signale un incident de discipline.", () => DisciplinePage.NewDecisionAsync(shell), Neutral, perm: Perm.AcademicsWrite)),
             ]),
             new("administration", "Administration",
             [
                 Group("Personnel",
                     Large(shell, "Personnel et paie", BriefcaseOutline, "Dossiers du personnel, bulletins mensuels et paiement des salaires.", () => shell.Open(() => new StaffPage(shell)), Neutral, perm: Perm.StaffManage),
-                    Small(shell, "Nouveau membre", AccountPlusOutline, "Ajoute un membre du personnel.", () => StaffPage.NewMemberAsync(shell), Neutral, perm: Perm.StaffManage)),
+                    Small(shell, "Nouveau membre", AccountTieOutline, "Ajoute un membre du personnel.", () => StaffPage.NewMemberAsync(shell), Neutral, perm: Perm.StaffManage)),
                 Group("Établissement",
                     Large(shell, "Paramètres", CogOutline, "Établissement, années, sections et promotions, puis les réglages de ce poste : thème, police, fenêtres, animations et sons.", () => shell.Open(() => new SettingsPage(shell)), Neutral),
                     Large(shell, "Utilisateurs", AccountCogOutline, "Comptes nominatifs, rôles et mots de passe provisoires.", () => shell.Open(() => new UsersPage(shell)), Neutral, perm: Perm.UsersManage),
-                    Small(shell, "Nouvelle promotion", Plus, "Crée une promotion avec ses frais.", () => SettingsPage.NewPromotionAsync(shell), Neutral, perm: Perm.SettingsWrite),
+                    Small(shell, "Nouvelle promotion", School, "Crée une promotion avec ses frais.", () => SettingsPage.NewPromotionAsync(shell), Neutral, perm: Perm.SettingsWrite),
                     Small(shell, "Nouvelle année", CalendarPlus, "Prépare une nouvelle année scolaire.", () => SettingsPage.NewYearAsync(shell), Neutral, perm: Perm.SettingsWrite),
-                    Small(shell, "Nouvel utilisateur", AccountPlusOutline, "Crée un compte nominatif.", () => UsersPage.NewUserAsync(shell), Neutral, perm: Perm.UsersManage)),
+                    Small(shell, "Nouvel utilisateur", AccountKeyOutline, "Crée un compte nominatif.", () => UsersPage.NewUserAsync(shell), Neutral, perm: Perm.UsersManage)),
             ]),
             new("donnees", "Données",
             [
@@ -155,11 +155,11 @@ public static class RibbonCatalog
                     Large(shell, "Rapports et exports", FileChartOutline, "Tous les documents de SCOLIA en PDF ou en Excel, au même endroit.", () => shell.Open(() => new ReportsPage(shell)), Blue)),
                 Group("Exports rapides",
                     Small(shell, "Situation (PDF)", FilePdfBox, "Situation financière de chaque promotion, en PDF.", () => shell.Download("api/rapports/promotions/export?format=pdf", "situation-par-promotion.pdf"), Neutral, perm: Perm.ReportsRead),
-                    Small(shell, "Apprenants (Excel)", FileExcelOutline, "Liste générale des apprenants de l'année avec leur solde.", () => shell.Download("api/rapports/apprenants/export?format=xlsx", "liste-generale-apprenants.xlsx"), Neutral, perm: Perm.ReportsRead),
-                    Small(shell, "Reçus (Excel)", FileExcelOutline, "Exporte tous les reçus dans un classeur Excel.", () => shell.Download("api/paiements/export?format=xlsx", "recus.xlsx"), Neutral, perm: Perm.PaymentsRead),
-                    Small(shell, "Reçus (PDF)", FilePdfBox, "Exporte la liste des reçus au format PDF.", () => shell.Download("api/paiements/export?format=pdf", "recus.pdf"), Neutral, perm: Perm.PaymentsRead),
-                    Small(shell, "Débiteurs (Excel)", FileExcelOutline, "Exporte la liste des retards de paiement dans Excel.", () => shell.Download("api/rapports/debiteurs/export?format=xlsx", "debiteurs.xlsx"), Neutral, perm: Perm.ReportsRead),
-                    Small(shell, "Débiteurs (PDF)", FilePdfBox, "Exporte la liste des retards de paiement en PDF.", () => shell.Download("api/rapports/debiteurs/export?format=pdf", "debiteurs.pdf"), Neutral, perm: Perm.ReportsRead)),
+                    Small(shell, "Apprenants (Excel)", AccountGroupOutline, "Liste générale des apprenants de l'année avec leur solde.", () => shell.Download("api/rapports/apprenants/export?format=xlsx", "liste-generale-apprenants.xlsx"), Neutral, perm: Perm.ReportsRead),
+                    Small(shell, "Reçus (Excel)", ReceiptTextOutline, "Exporte tous les reçus dans un classeur Excel.", () => shell.Download("api/paiements/export?format=xlsx", "recus.xlsx"), Neutral, perm: Perm.PaymentsRead),
+                    Small(shell, "Reçus (PDF)", ReceiptText, "Exporte la liste des reçus au format PDF.", () => shell.Download("api/paiements/export?format=pdf", "recus.pdf"), Neutral, perm: Perm.PaymentsRead),
+                    Small(shell, "Débiteurs (Excel)", ChartBar, "Exporte la liste des retards de paiement dans Excel.", () => shell.Download("api/rapports/debiteurs/export?format=xlsx", "debiteurs.xlsx"), Neutral, perm: Perm.ReportsRead),
+                    Small(shell, "Débiteurs (PDF)", AlertCircleOutline, "Exporte la liste des retards de paiement en PDF.", () => shell.Download("api/rapports/debiteurs/export?format=pdf", "debiteurs.pdf"), Neutral, perm: Perm.ReportsRead)),
                 Group("Sauvegardes",
                     Large(shell, "Sauvegardes", DatabaseExportOutline, "Sauvegardes vérifiées, téléchargement et restauration.", () => shell.Open(() => new DataPage(shell)), Green, perm: Perm.BackupManage),
                     Small(shell, "Sauvegarder", ContentSaveOutline, "Crée tout de suite une sauvegarde vérifiée.", () => DataPage.BackupNowAsync(shell), Neutral, perm: Perm.BackupManage),
@@ -240,7 +240,7 @@ public static class RibbonCatalog
     {
         if (perm is not null && !shell.Can(perm)) return null;
         var command = new AsyncCommand(() => shell.Run(action));
-        var vm = new RibbonCommandVm(label, icon, shell.Prefs.Tips ? tip : string.Empty, command, large, tone, toggle, shortcut ?? Shortcuts.GetValueOrDefault(label));
+        var vm = new RibbonCommandVm(label, icon, shell.Prefs.Tips ? tip : string.Empty, command, large, FeatureVisuals.CommandTone(label, tone), toggle, shortcut ?? Shortcuts.GetValueOrDefault(label));
         if (isOn is not null) vm.IsOn = isOn();
         return vm;
     }
