@@ -41,14 +41,14 @@ public sealed class NavGroupVm : Observable
 {
     private bool isExpanded;
 
-    public NavGroupVm(string title, IReadOnlyList<NavItemVm> items)
+    public NavGroupVm(string title, IReadOnlyList<NavItemVm> items, bool expandedByDefault = false)
     {
         Title = title;
         Items = items;
         Icon = FeatureVisuals.Icon(title);
         Brush = ThemeBrush.Get(FeatureVisuals.Tone(title));
         // L'accueil est accessible immédiatement ; les autres métiers sont repliés sur mobile.
-        isExpanded = title.Length == 0;
+        isExpanded = title.Length == 0 || expandedByDefault;
         Toggle = new RelayCommand(() => IsExpanded = !IsExpanded);
     }
 
@@ -72,7 +72,7 @@ public static class Sidebar
         NavItemVm? Item(string label, MaterialIconKind icon, string tone, string? perm, Type page, Func<PageViewModel> create) =>
             perm is null || shell.Can(perm) ? new NavItemVm(label, icon, tone, page, create, shell) : null;
 
-        NavGroupVm Group(string title, params NavItemVm?[] items) => new(title, items.OfType<NavItemVm>().ToList());
+        NavGroupVm Group(string title, params NavItemVm?[] items) => new(title, items.OfType<NavItemVm>().ToList(), expandedByDefault: !Platform.IsMobile);
 
         var groups = new[]
         {
