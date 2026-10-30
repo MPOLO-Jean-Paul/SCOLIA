@@ -10,6 +10,30 @@ namespace Scolia.Mobile.Synchronization;
 [Android.Runtime.Register("com/jpservices/scolia/SyncWorker")]
 public sealed class SyncWorker : Worker
 {
+    private static readonly SemaphoreSlim WorkerGate = new(1, 1);
+    private static readonly object ResumeGate = new();
+    private static DateTime lastResumeUtc;
+
+    /// <summary>Reprise opportuniste à l'ouverture de SCOLIA Client.
+    /// WorkManager reste soumis aux règles d'Android : pas de temps réel garanti.</summary>
+    public static void ScheduleOnResume(Context context)
+    {
+        var saved = ConnectionStore.Load();
+        if (saved?.Mode is not (ConnectionSettings.Remote or ConnectionSettings.Internet)) return;
+        lock (ResumeGate)
+        {
+            var now = DateTime.UtcNow;
+            if (now - lastResumeUtc < TimeSpan.FromMinutes(2)) return;
+            lastResumeUtc = now;
+        }
+        var constraints = new Constraints.Builder()
+            .SetRequiredNetworkType(NetworkType.Connected)!.Build();
+        var once = new OneTimeWorkRequest.Builder(typeof(SyncWorker))
+            .SetConstraints(constraints)!.Build();
+        WorkManager.GetInstance(context).EnqueueUniqueWork(
+            "scolia-synchronisation-reprise", ExistingWorkPolicy.Keep!, once);
+    }
+
     public SyncWorker(Context context, WorkerParameters parameters) : base(context, parameters) { }
 
     public static void Schedule(Context context)
@@ -24,6 +48,9 @@ public sealed class SyncWorker : Worker
 
     public override Result DoWork()
     {
+        // La reprise et la tâche périodique ne doivent pas accéder
+        // simultanément au même cache et à la même file hors ligne.
+        if (!WorkerGate.Wait(0)) return Result.InvokeRetry();
         try { return RunAsync().GetAwaiter().GetResult(); }
         catch (Exception ex) when (ex is HttpRequestException or IOException or TaskCanceledException)
         { return Result.InvokeRetry(); }
@@ -36,6 +63,7 @@ public sealed class SyncWorker : Worker
         catch (Exception ex) when (ex is ApiException or JsonException
             or System.Security.Cryptography.CryptographicException or FormatException)
         { Android.Util.Log.Warn("SCOLIA-Sync", $"Synchronisation différée : {ex.Message}"); return Result.InvokeFailure(); }
+        finally { WorkerGate.Release(); }
     }
 
     private async Task<Result> RunAsync()

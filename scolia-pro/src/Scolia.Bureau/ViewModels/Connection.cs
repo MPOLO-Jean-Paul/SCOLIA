@@ -74,6 +74,15 @@ public sealed class ConnectionViewModel : Observable
         Message = "Vérification de la liaison privée Tailscale…";
         try
         {
+            // Lors d'un choix volontaire de rejoindre le tailnet, demander sa
+            // reconnexion discrète sans présenter l'envoi comme un succès.
+            if (Platform.IsMobile && !TailscaleCompanion.IsInstalled())
+            {
+                Message = "Tailscale est absent. Lancez son assistant d'installation avant de rejoindre le serveur.";
+                return;
+            }
+            if (Platform.ConnectTailscaleInBackground is not null)
+                await TailscaleCompanion.ConnectInBackgroundAsync();
             if (!await TailscaleEndpoint.ResolvesPrivatelyAsync(target))
             {
                 Message = "L'adresse indiquée ne correspond pas à un appareil privé Tailscale joignable. Vérifiez MagicDNS et l'état du VPN.";

@@ -111,6 +111,14 @@ public sealed class PhoneServer(Context context) : ILocalServer
                 if (keep) server = created;
             }
             if (!keep) await created.StopAsync().ConfigureAwait(false);
+            else
+            {
+                // Restaurer aussi le relais Internet (s'il avait été activé) :
+                // la reconnexion ne doit ni arrêter le serveur ni effacer sa base.
+                try { RemoteConnection.StartHostIfMissing(ConnectionStore.LocalAddress); }
+                catch (Exception ex)
+                { Android.Util.Log.Warn("SCOLIA", $"Relais distant non restauré : {ex.GetType().Name}"); }
+            }
         }
         catch (Exception ex)
         {

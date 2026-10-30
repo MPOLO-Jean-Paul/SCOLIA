@@ -76,3 +76,11 @@ Dans **SCOLIA > Rejoindre votre établissement > Réseau privé Tailscale**, le 
 - Ne pas diffuser les IP, identifiants ou codes d'invitation de l'école dans des canaux publics.
 
 **Références :** https://tailscale.com/docs/how-to/connect-to-devices — https://developer.android.com/develop/background-work/services/fgs/restrictions-bg-start — https://developer.android.com/develop/background-work/services/fgs/timeout
+
+## Renforcement de disponibilité et de diagnostic
+
+- Dans **Réseau et activité**, le bouton « Vérifier le partage et le serveur » distingue l'installation de Tailscale, la présence possible d'un VPN et la disponibilité locale de l'API SCOLIA. Il ne certifie jamais une connexion distante à lui seul.
+- Quand Android recrée le serveur de l'établissement, SCOLIA essaie également de restaurer un relais WebSocket WSS préalablement configuré et encore valide. Une panne de ce relais ne doit pas arrêter le serveur local. L'ancienne liaison en reconnexion n'est pas redémarrée par erreur.
+- Sur Android Client, un **travail de synchronisation unique WorkManager** est demandé lorsque l'application revient au premier plan (au plus une fois toutes les deux minutes). Cette reprise s'ajoute à la synchronisation périodique et se sérialise avec elle dans le processus Android. La connexion Internet reste une condition, et Android choisit quand démarrer la tâche.
+- Quand le client appuie sur **Rejoindre par Tailscale**, SCOLIA vérifie que le client VPN est installé, demande discrètement sa reconnexion, puis exige que le serveur SCOLIA réponde réellement sur une adresse privée du tailnet.
+- Les reçus, paiements, comptes SCOLIA et la base scolaire principale restent soumis aux contrôles métier existants. Ces renforcements n'autorisent pas une synchronisation instantanée lorsque l'appareil est arrêté, ni une autorisation VPN sans action de l'utilisateur.
