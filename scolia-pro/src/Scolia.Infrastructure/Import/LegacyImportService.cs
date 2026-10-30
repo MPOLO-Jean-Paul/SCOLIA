@@ -95,13 +95,20 @@ public sealed class LegacyImportService(IAppDbContext db, IWriteGate gate, IAudi
         // Permet d'ajouter les paiements plus tard sans réimporter les apprenants déjà enregistrés.
         // Ne jamais recréer un dossier permanent lorsque son matricule est connu.
         List<Enrollment> storedEnrollments = payments.Count == 0 ? [] : await db.Enrollments
-            .Include(e => e.Student).Include(e => e.Promotion).ThenInclude(p => p!.Fees)
+            .Include(e => e.Student)
             .Where(e => e.AcademicYearId == year.Id)
             .ToListAsync(ct);
+        // Enrollment contient PromotionId, et pas de navigation Promotion.
+        // Réutiliser les promotions réelles de l'année avec leurs rubriques de frais.
         var existingEnrollmentByMatricule = storedEnrollments
-            .Where(e => e.Student is not null && e.Promotion is not null)
+            .Where(e => e.Student is not null && existingPromotions.Values.Any(p => p.Id == e.PromotionId))
             .GroupBy(e => e.Student!.Matricule, StringComparer.Ordinal)
-            .ToDictionary(g => g.Key, g => g.First(), StringComparer.Ordinal);
+            .ToDictionary(g => g.Key, g =>
+            {
+                var enrollment = g.First();
+                var promotion = existingPromotions.Values.First(p => p.Id == enrollment.PromotionId);
+                return (Student: enrollment.Student!, Enrollment: enrollment, Promotion: promotion);
+            }, StringComparer.Ordinal);
         var enrollments = new Dictionary<string, (Student Student, Enrollment Enrollment, Promotion Promotion)>(StringComparer.Ordinal);
         var newStudents = 0;
         foreach (var ls in students.Values)
@@ -138,13 +145,12 @@ public sealed class LegacyImportService(IAppDbContext db, IWriteGate gate, IAudi
             if (existingKeys.Contains(key)) { warnings.Add($"Reçu {first.Number} de {first.Matricule} déjà importé : ignoré."); continue; }
             if (!enrollments.TryGetValue(first.Matricule, out var target))
             {
-                if (!existingEnrollmentByMatricule.TryGetValue(first.Matricule, out var stored)
-                    || stored.Student is null || stored.Promotion is null)
+                if (!existingEnrollmentByMatricule.TryGetValue(first.Matricule, out var stored))
                 {
                     errors.Add($"Paiement {first.Number} ({first.Source}, ligne {first.Row}) : aucun dossier actif pour {first.Matricule} dans l'année {year.Label}.");
                     continue;
                 }
-                target = (stored.Student, stored, stored.Promotion);
+                target = stored;
             }
             var allocations = new List<ReceiptAllocation>();
             foreach (var p in group)
