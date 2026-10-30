@@ -62,7 +62,9 @@ public static class AndroidBiometrics
                     done.TrySetResult(false);
                 }
             });
-            return await done.Task.ConfigureAwait(false);
+            // Un fournisseur Android qui ne répond plus ne doit pas figer la connexion.
+            try { return await done.Task.WaitAsync(TimeSpan.FromSeconds(60)).ConfigureAwait(false); }
+            catch (TimeoutException) { return false; }
         }
         finally { Interlocked.Exchange(ref inProgress, 0); }
     }
