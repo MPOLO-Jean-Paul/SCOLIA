@@ -18,6 +18,7 @@ public sealed class LoginViewModel : Observable
     {
         this.api = api;
         Submit = new AsyncCommand(SubmitAsync);
+        SignInWithBiometrics = new AsyncCommand(BiometricSignInAsync);
     }
 
     public event Action<SessionDto>? LoggedIn;
@@ -51,6 +52,68 @@ public sealed class LoginViewModel : Observable
     /// <summary>Pied de la fenêtre de connexion : version et éditeur.</summary>
     public string Footer => $"SCOLIA Pro {typeof(LoginViewModel).Assembly.GetName().Version?.ToString(3) ?? "1.1.0"} · {AboutInfo.Publisher}";
     public AsyncCommand Submit { get; }
+    public AsyncCommand SignInWithBiometrics { get; }
+
+    private bool enableBiometricsAfterLogin;
+    public bool EnableBiometricsAfterLogin
+    {
+        get => enableBiometricsAfterLogin;
+        set => Set(ref enableBiometricsAfterLogin, value);
+    }
+    public bool CanOfferBiometrics => Platform.IsMobile && Platform.IsBiometricAvailable?.Invoke() == true;
+    public string BiometricAccount => BiometricAccess.ReadAccount(api.Server) ?? string.Empty;
+    public bool HasBiometricAccount => CanOfferBiometrics && BiometricAccount.Length > 0;
+    public string BiometricLabel => $"Se connecter avec l’empreinte · {BiometricAccount}";
+
+    public void RefreshBiometrics()
+    {
+        Raise(nameof(CanOfferBiometrics));
+        Raise(nameof(BiometricAccount));
+        Raise(nameof(HasBiometricAccount));
+        Raise(nameof(BiometricLabel));
+    }
+
+    private async Task BiometricSignInAsync()
+    {
+        if (Busy || Locked || !CanOfferBiometrics || Platform.VerifyBiometricAsync is not { } verify) return;
+        Error = null;
+        Notice = null;
+        var account = BiometricAccess.ReadAccount(api.Server);
+        if (account is null) { RefreshBiometrics(); return; }
+        Busy = true;
+        try
+        {
+            // L'empreinte confirme seulement la présence du propriétaire du téléphone.
+            // Le serveur doit ENCORE valider le cookie sauvegardé pour ce compte et ce serveur.
+            if (!await verify()) return;
+            var cache = new OfflineStore(api.Server);
+            var credential = cache.SavedCredential;
+            if (credential is null || !BiometricAccess.AccountMatches(account, credential.UserName)
+                || string.IsNullOrWhiteSpace(credential.SessionCookie))
+            {
+                Error = "Session enregistrée absente ou fermée. Utilisez le mot de passe pour reconnecter ce compte.";
+                return;
+            }
+            api.RestoreSessionCookie(credential.SessionCookie);
+            var session = await api.CurrentSessionAsync();
+            if (session is null || !BiometricAccess.AccountMatches(session.UserName, account))
+            {
+                Error = "La session SCOLIA a expiré ou a changé d'utilisateur. Reconnectez-vous avec le mot de passe.";
+                return;
+            }
+            cache.User = session.UserName;
+            api.Offline = cache;
+            Password = string.Empty;
+            LoggedIn?.Invoke(session);
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or ApiException
+                                 or IOException or System.Security.Cryptography.CryptographicException)
+        {
+            Error = "Impossible de valider la session avec le serveur. Utilisez le mot de passe SCOLIA.";
+        }
+        finally { Busy = false; }
+    }
+
 
     private Avalonia.Media.Imaging.Bitmap? logo;
 
@@ -63,6 +126,8 @@ public sealed class LoginViewModel : Observable
         Password = string.Empty;
         Error = null;
         Restored = false;
+        EnableBiometricsAfterLogin = false;
+        RefreshBiometrics();
     }
 
     // ---------- Verrouillage après 5 erreurs : compte à rebours jusqu'à 0, puis l'accès revient ----------
@@ -122,6 +187,11 @@ public sealed class LoginViewModel : Observable
         {
             var session = await api.LoginAsync(UserName.Trim(), Password);
             Authenticated?.Invoke(UserName.Trim(), Password, session);
+            if (EnableBiometricsAfterLogin && CanOfferBiometrics
+                && Platform.VerifyBiometricAsync is { } verify && await verify())
+                BiometricAccess.Enable(api.Server, session.UserName);
+            EnableBiometricsAfterLogin = false;
+            RefreshBiometrics();
             Password = string.Empty;
             LoggedIn?.Invoke(session);
         }

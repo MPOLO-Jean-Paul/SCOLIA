@@ -15,6 +15,11 @@ public static class Platform
     /// <summary>Relance une initialisation en échec depuis l'écran de démarrage Android.</summary>
     public static Func<Task>? RetryStartup { get; set; }
 
+    /// <summary>Le système confirme une biométrie enrôlée et disponible.</summary>
+    public static Func<bool>? IsBiometricAvailable { get; set; }
+    /// <summary>Le système présente son propre dialogue d'authentification ; aucune empreinte n'est lue par SCOLIA.</summary>
+    public static Func<Task<bool>>? VerifyBiometricAsync { get; set; }
+
     /// <summary>Ouvre un document enregistré, un PDF ou un classeur, avec l'application du téléphone.</summary>
     public static Action<string>? OpenFile { get; set; }
 
