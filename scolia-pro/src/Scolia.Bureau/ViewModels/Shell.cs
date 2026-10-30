@@ -555,7 +555,9 @@ public sealed class ShellViewModel : Observable
     public async Task UseThisComputerAsync()
     {
         var previous = ConnectionStore.Load();
-        ConnectionStore.Save(new ConnectionSettings(ConnectionSettings.Local, LanPromptDone: previous?.LanPromptDone ?? false));
+        if (!ConnectionStore.TrySave(new ConnectionSettings(ConnectionSettings.Local,
+            LanPromptDone: previous?.LanPromptDone ?? false)))
+            throw new IOException("Impossible de mémoriser ce téléphone comme serveur SCOLIA. Vérifiez son stockage.");
         if (IsLoggedIn) await LogoutAsync();
         api.Retarget(ConnectionStore.LocalAddress);
         RemoteConnection.StartHost(ConnectionStore.LocalAddress);
