@@ -94,7 +94,7 @@ public sealed class LegacyImportService(IAppDbContext db, IWriteGate gate, IAudi
 
         // Permet d'ajouter les paiements plus tard sans réimporter les apprenants déjà enregistrés.
         // Ne jamais recréer un dossier permanent lorsque son matricule est connu.
-        var storedEnrollments = payments.Count == 0 ? [] : await db.Enrollments
+        List<Enrollment> storedEnrollments = payments.Count == 0 ? [] : await db.Enrollments
             .Include(e => e.Student).Include(e => e.Promotion).ThenInclude(p => p!.Fees)
             .Where(e => e.AcademicYearId == year.Id)
             .ToListAsync(ct);
