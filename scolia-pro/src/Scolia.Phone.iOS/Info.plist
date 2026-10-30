@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>CFBundleDisplayName</key><string>SCOLIA Phone</string>
+  <key>CFBundleName</key><string>SCOLIA</string>
+  <key>UIDeviceFamily</key><array><integer>1</integer><integer>2</integer></array>
+  <key>NSLocalNetworkUsageDescription</key><string>SCOLIA recherche le serveur scolaire autorisé de votre établissement sur le réseau privé.</string>
+  <key>NSAppTransportSecurity</key><dict><key>NSAllowsLocalNetworking</key><true/></dict>
+  <key>UIRequiredDeviceCapabilities</key><array><string>arm64</string></array>
+</dict>
+</plist>
