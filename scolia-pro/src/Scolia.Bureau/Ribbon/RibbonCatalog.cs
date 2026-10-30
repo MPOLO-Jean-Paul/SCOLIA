@@ -144,7 +144,7 @@ public static class RibbonCatalog
                 Group("Établissement",
                     Large(shell, "Paramètres", CogOutline, "Établissement, années, sections et promotions, puis les réglages de ce poste : thème, police, fenêtres, animations et sons.", () => shell.Open(() => new SettingsPage(shell)), Neutral),
                     Large(shell, "Utilisateurs", AccountCogOutline, "Comptes nominatifs, rôles et mots de passe provisoires.", () => shell.Open(() => new UsersPage(shell)), Neutral, perm: Perm.UsersManage),
-                    Small(shell, "Nouvelle promotion", AccountGroupPlusOutline, "Crée une promotion avec ses frais.", () => SettingsPage.NewPromotionAsync(shell), Neutral, perm: Perm.SettingsWrite),
+                    Small(shell, "Nouvelle promotion", School, "Crée une promotion avec ses frais.", () => SettingsPage.NewPromotionAsync(shell), Neutral, perm: Perm.SettingsWrite),
                     Small(shell, "Nouvelle année", CalendarPlus, "Prépare une nouvelle année scolaire.", () => SettingsPage.NewYearAsync(shell), Neutral, perm: Perm.SettingsWrite),
                     Small(shell, "Nouvel utilisateur", AccountKeyOutline, "Crée un compte nominatif.", () => UsersPage.NewUserAsync(shell), Neutral, perm: Perm.UsersManage)),
             ]),
