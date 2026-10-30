@@ -42,8 +42,10 @@ public static class IosPlatform
             return false;
         try
         {
-            return await context.EvaluatePolicyAsync(LAPolicy.DeviceOwnerAuthenticationWithBiometrics,
+            var (accepted, error) = await context.EvaluatePolicyAsync(
+                LAPolicy.DeviceOwnerAuthenticationWithBiometrics,
                 "Confirmer l'accès à votre session SCOLIA Phone");
+            return accepted && error is null;
         }
         catch (Exception)
         {
