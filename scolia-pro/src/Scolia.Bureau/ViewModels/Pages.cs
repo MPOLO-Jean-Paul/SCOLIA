@@ -129,6 +129,20 @@ public sealed class LoginViewModel : Observable
                 }
             }
 
+            // Si le serveur est joignable mais qu'aucun cookie valide n'existe,
+            // l'empreinte seule ne peut pas recréer une identité côté serveur.
+            if (string.IsNullOrWhiteSpace(credential.SessionCookie))
+            {
+                try
+                {
+                    if (await api.IsRunningAsync())
+                    {
+                        Error = "La session serveur n'est plus enregistrée. Reconnectez-vous avec votre mot de passe.";
+                        return;
+                    }
+                }
+                catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or IOException) { }
+            }
             // L'accès hors ligne ne peut être accordé qu'après la preuve Android Keystore.
             // Le cache ne vaut ni nouveau jeton serveur, ni validation de droits à distance.
             var offline = cache.BiometricOfflineLogin(account);
