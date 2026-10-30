@@ -313,6 +313,15 @@ public sealed class SettingsPage : PageViewModel
     public RelayCommand<BackstageItemVm> OpenMobileSection { get; }
     public RelayCommand BackToMobileSections { get; }
 
+    /// <summary>Le bouton retour système Android revient d'abord aux familles de réglages.</summary>
+    public bool TryBackToMobileSections()
+    {
+        if (!Phone || !mobileDetailsShown) return false;
+        mobileDetailsShown = false;
+        RefreshMobileSectionVisibility();
+        return true;
+    }
+
     private void RefreshMobileSectionVisibility()
     {
         Raise(nameof(MobileCategoriesVisible));
@@ -353,11 +362,7 @@ public sealed class SettingsPage : PageViewModel
             Section = item;
             RefreshMobileSectionVisibility();
         });
-        BackToMobileSections = new RelayCommand(() =>
-        {
-            mobileDetailsShown = false;
-            RefreshMobileSectionVisibility();
-        });
+        BackToMobileSections = new RelayCommand(() => TryBackToMobileSections());
         Swatches = Preferences.AccentSwatches.Select(a => new AccentSwatchVm(a.Key, a.Label, new SolidColorBrush(a.Color),
             new RelayCommand(() => { Prefs.Accent = a.Key; RaiseSwatches(); }), () => Prefs.Accent == a.Key)).ToList();
         ResetPrefs = new RelayCommand(() => { Prefs.Reset(); RaisePrefs(); Shell.Notify("Réglages de ce poste rétablis."); });
