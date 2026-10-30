@@ -23,7 +23,7 @@ public class NativeVisualsTests
         var navigation = new NavGroupVm("Scolarité", Array.Empty<NavItemVm>());
         var tools = new PhoneToolGroupVm("Scolarité", Array.Empty<RibbonCommandVm>());
         Assert.Equal(navigation.Icon, tools.Icon);
-        Assert.Equal(FeatureVisuals.Tone(navigation.Title), "TonePurple");
+        Assert.Equal("TonePurple", FeatureVisuals.Tone(navigation.Title));
         Assert.False(navigation.IsExpanded);
         Assert.False(tools.IsExpanded);
 
