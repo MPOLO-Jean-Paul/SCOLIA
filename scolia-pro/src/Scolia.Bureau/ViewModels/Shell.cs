@@ -1168,25 +1168,50 @@ public sealed class ShellViewModel : Observable
         "Rapports et exports",
     };
 
+    // Affichage, administration et aide sont des destinations uniques, quelle que
+    // soit leur provenance dans les onglets du bureau.
+    internal static string CanonicalPhoneGroup(string label, string originalGroup)
+    {
+        var name = label.Trim();
+        if (name is "Thème" or "Couleurs" or "Couleur d'accent" or "Thème et couleurs"
+            or "Texte et polices" or "Police" or "Taille de police"
+            or "Animations et fluidité" or "Sons" or "Apparence")
+            return "Affichage";
+        if (name is "À propos" or "Aide" or "Aide et gestes" or "Documentation"
+            or "Guide utilisateur")
+            return "Aide";
+        if (name is "Gestion des utilisateurs" or "Gestion des comptes" or "Permissions")
+            return "Administration";
+        return originalGroup;
+    }
+
     private void RebuildPhoneTools()
     {
         var pages = Navigation.SelectMany(g => g.Items).Select(i => i.Label).ToHashSet(StringComparer.Ordinal);
         var expandedTitle = PhoneTools.FirstOrDefault(g => g.IsExpanded)?.Title;
         var groups = new List<PhoneToolGroupVm>();
+        // Attribution canonique : une fonction n'appartient qu'à un seul groupe,
+        // même si les rubans de bureau la proposent dans plusieurs onglets.
         var usedCommands = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var tab in Tabs.Where(t => t.Id is not ("fichier" or "accueil")))
+        var entries = Tabs.Where(t => t.Id is not ("fichier" or "accueil"))
+            .SelectMany(tab => tab.Groups.SelectMany(g => g.Commands)
+                .Select(command => (Tab: tab, Command: command)))
+            .Where(x => !DesktopOnly.Contains(x.Command.Label) && !pages.Contains(x.Command.Label))
+            .Select(x => (x.Tab, Command: x.Command.Label == "Raccourcis clavier"
+                ? new RibbonCommandVm("Aide et gestes", Material.Icons.MaterialIconKind.GestureTap, string.Empty, x.Command.Command, false, "ToneBlue")
+                : x.Command))
+            .GroupBy(x => CanonicalPhoneGroup(x.Command.Label, x.Tab.Title), StringComparer.Ordinal)
+            .ToList();
+        foreach (var entry in entries)
         {
-            var commands = tab.Groups.SelectMany(g => g.Commands)
-                .Where(c => !DesktopOnly.Contains(c.Label) && !pages.Contains(c.Label))
-                .Select(c => c.Label == "Raccourcis clavier" ? new RibbonCommandVm("Aide et gestes", Material.Icons.MaterialIconKind.GestureTap, string.Empty, c.Command, false, "ToneBlue") : c)
-                // Déduplication globale : un outil n'appartient qu'à un seul groupe mobile.
+            var commands = entry.Select(x => x.Command)
                 .Where(c => usedCommands.Add(c.Label.Trim()))
                 .ToList();
             if (commands.Count > 0)
             {
-                var group = new PhoneToolGroupVm(tab.Title, commands, TogglePhoneToolGroup)
+                var group = new PhoneToolGroupVm(entry.Key, commands, TogglePhoneToolGroup)
                 {
-                    IsExpanded = expandedTitle == tab.Title &&
+                    IsExpanded = expandedTitle == entry.Key &&
                         !Navigation.Any(g => g.HasTitle && g.IsExpanded)
                 };
                 groups.Add(group);
