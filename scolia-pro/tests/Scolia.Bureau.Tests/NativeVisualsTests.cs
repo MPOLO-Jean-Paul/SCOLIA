@@ -33,6 +33,19 @@ public class NativeVisualsTests
         Assert.True(tools.IsExpanded);
     }
 
+    [Theory]
+    [InlineData("Nouvelle dépense", "ToneGreen")]
+    [InlineData("Effacer des dossiers", "ToneRed")]
+    [InlineData("Reçus (PDF)", "ToneOrange")]
+    [InlineData("Vérifier la base", "ToneTeal")]
+    [InlineData("Taille du texte", "TonePurple")]
+    [InlineData("Situation (PDF)", "ToneIndigo")]
+    public void Les_commandes_secondaires_recoivent_une_couleur_metier(string label, string expectedTone)
+    {
+        Assert.Equal(expectedTone, FeatureVisuals.CommandTone(label, "ToneNeutral"));
+        Assert.Equal("TonePink", FeatureVisuals.CommandTone(label, "TonePink"));
+    }
+
     [Fact]
     public void Les_rubriques_desktop_peuvent_etre_ouvertes_immediatement()
     {
