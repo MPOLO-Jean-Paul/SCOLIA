@@ -25,7 +25,8 @@ public class SettingsNavigationTests
         Assert.True(page.SettingsDetailVisible);
         Assert.Equal("Thème et couleurs", page.SectionTitle);
 
-        page.BackToMobileSections.Execute(null);
+        Assert.True(page.TryBackToMobileSections());
+        Assert.False(page.TryBackToMobileSections());
         Assert.True(page.MobileCategoriesVisible);
         Assert.False(page.SettingsDetailVisible);
     }
