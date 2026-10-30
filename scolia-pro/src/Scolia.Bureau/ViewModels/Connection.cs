@@ -65,6 +65,11 @@ public sealed class ConnectionViewModel : Observable
         Message = "Vérification de la liaison privée Tailscale…";
         try
         {
+            if (!await TailscaleEndpoint.ResolvesPrivatelyAsync(target))
+            {
+                Message = "L'adresse indiquée ne correspond pas à un appareil privé Tailscale joignable. Vérifiez MagicDNS et l'état du VPN.";
+                return;
+            }
             using var probe = new Api.ScoliaClient(target);
             if (!await probe.IsRunningAsync())
             {
