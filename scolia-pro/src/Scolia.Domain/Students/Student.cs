@@ -3,7 +3,7 @@ using Scolia.Domain.Common;
 
 namespace Scolia.Domain.Students;
 
-public enum Gender { M = 0, F = 1 }
+public enum Gender { M = 0, F = 1, Inconnu = 2 }
 
 /// <summary>Dossier permanent d'un apprenant (indépendant de l'année scolaire).</summary>
 public sealed class Student : Entity
