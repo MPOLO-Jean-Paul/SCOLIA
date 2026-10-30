@@ -106,5 +106,27 @@
                  Text="Le serveur de l'établissement, ordinateur ou téléphone, doit avoir SCOLIA ouvert et être joignable par Wi-Fi ou par la liaison Internet sécurisée." />
     </StackPanel>
     </ScrollViewer>
+    <!-- Assistant SCOLIA : étapes vérifiées, sans pourcentage fictif de téléchargement Play Store. -->
+    <Grid IsVisible="{Binding Installer.IsOpen}" Background="#CC091326">
+      <Border Classes="card" MaxWidth="450" Margin="18" Padding="22" HorizontalAlignment="Center" VerticalAlignment="Center"
+              Background="{DynamicResource SurfaceBrush}" CornerRadius="18">
+        <StackPanel Spacing="12">
+          <Border Classes="appicon large" Background="{DynamicResource ToneTeal}" HorizontalAlignment="Center">
+            <mi:MaterialIcon Kind="ShieldCheckOutline" />
+          </Border>
+          <TextBlock Text="Installation du réseau privé" FontSize="19" FontWeight="Bold" TextAlignment="Center" TextWrapping="Wrap" />
+          <TextBlock Text="{Binding Installer.Step}" FontWeight="SemiBold" TextAlignment="Center" TextWrapping="Wrap" />
+          <ProgressBar Minimum="0" Maximum="3" Value="{Binding Installer.StepProgress}" Height="7" MinHeight="7" />
+          <ProgressBar IsIndeterminate="True" IsVisible="{Binding Installer.IsWaiting}" Height="3" MinHeight="3" />
+          <TextBlock Text="{Binding Installer.Status}" Classes="muted" TextWrapping="Wrap" TextAlignment="Center" />
+          <TextBlock Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" TextAlignment="Center"
+                     Text="Le téléchargement est réalisé par Google Play. Son pourcentage réel apparaît dans le Play Store ; SCOLIA affiche les étapes et vérifie l'installation au retour." />
+          <Button Classes="ghost" Content="Ouvrir le magasin officiel" Command="{Binding Installer.OpenStore}" IsVisible="{Binding Installer.NeedsInstallation}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" />
+          <Button Content="Vérifier l'installation" Command="{Binding Installer.Verify}" IsVisible="{Binding Installer.NeedsInstallation}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" />
+          <Button Classes="ghost" Content="Configurer Tailscale (première connexion)" Command="{Binding Installer.Configure}" IsVisible="{Binding Installer.IsInstalled}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" />
+          <Button Classes="primary" Content="Fermer · Revenir au partage" Command="{Binding Installer.Close}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Height="44" />
+        </StackPanel>
+      </Border>
+    </Grid>
   </Grid>
 </UserControl>
