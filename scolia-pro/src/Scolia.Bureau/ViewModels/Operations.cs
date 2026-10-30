@@ -135,6 +135,13 @@ public sealed class DataPage : PageViewModel
 
         var applied = await shell.Api.UploadAsync<ImportReportDto>(HttpMethod.Post, "api/import/scolia?appliquer=true",
             [new UploadedFile("fichiers", picked.Name, picked.Data)]);
+        if (!applied.Applied || applied.Errors.Count > 0)
+        {
+            await shell.Confirm("Importation non appliquée",
+                "Aucune nouvelle donnée n'a été enregistrée. Corrigez les erreurs suivantes :\n"
+                + string.Join('\n', applied.Errors.Take(8)), "Fermer");
+            return;
+        }
         shell.Notify($"Import terminé : {applied.Students} apprenant(s), {applied.Receipts} reçu(s).");
         if (shell.Current is DataPage page) await page.RefreshAsync();
     }

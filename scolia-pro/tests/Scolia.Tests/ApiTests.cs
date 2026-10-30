@@ -672,6 +672,52 @@ public sealed class BusinessApiTests : IDisposable
     }
 
     [Fact]
+    public async Task Import_nominatif_accepte_les_champs_facultatifs_vides_et_ne_duplique_pas()
+    {
+        var admin = await app.InstalledAdmin();
+        using var stream = new MemoryStream();
+        using (var book = new XLWorkbook())
+        {
+            var promotions = book.AddWorksheet("PROMOTIONS");
+            promotions.Cell(4, 1).Value = "Code";
+            promotions.Cell(5, 1).Value = "ACC2";
+            promotions.Cell(5, 2).Value = "Deuxième accoucheuse";
+            // Aucun tarif, reçu, date, sexe, contact ou adresse.
+            var students = book.AddWorksheet("APPRENANTS");
+            students.Cell(4, 1).Value = "Matricule";
+            students.Cell(5, 1).Value = "ACC201";
+            students.Cell(5, 2).Value = "MUKENDI";
+            students.Cell(5, 3).Value = "KASONGO";
+            students.Cell(5, 8).Value = "ACC2";
+            students.Cell(6, 1).Value = "ACC202";
+            students.Cell(6, 2).Value = "KABONGO";
+            students.Cell(6, 8).Value = "ACC2";
+            book.SaveAs(stream);
+        }
+
+        async Task<JsonElement> Import(bool apply)
+        {
+            using var form = new MultipartFormDataContent();
+            form.Add(new ByteArrayContent(stream.ToArray()), "fichiers", "noms-seulement.xlsx");
+            return await admin.PostAsync($"/api/import/scolia?appliquer={apply}", form).Ok();
+        }
+
+        var preview = await Import(false);
+        Assert.Empty(preview.GetProperty("errors").EnumerateArray());
+        Assert.Empty(preview.GetProperty("warnings").EnumerateArray());
+        Assert.Equal(2, preview.GetProperty("students").GetInt32());
+        Assert.Equal(0, preview.GetProperty("receipts").GetInt32());
+        var applied = await Import(true);
+        Assert.True(applied.GetProperty("applied").GetBoolean());
+        Assert.Equal(2, applied.GetProperty("students").GetInt32());
+        var studentList = await admin.GetAsync("/api/apprenants?q=ACC201").Ok();
+        Assert.Equal(1, studentList.GetProperty("total").GetInt32());
+        var repeated = await Import(true);
+        Assert.Equal(0, repeated.GetProperty("students").GetInt32());
+        Assert.Equal(0, repeated.GetProperty("receipts").GetInt32());
+    }
+
+    [Fact]
     public async Task Legacy_workbook_import_is_simulated_then_applied_once()
     {
         var admin = await app.InstalledAdmin();

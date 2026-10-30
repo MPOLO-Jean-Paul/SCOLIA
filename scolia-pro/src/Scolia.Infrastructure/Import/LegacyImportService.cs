@@ -92,6 +92,16 @@ public sealed class LegacyImportService(IAppDbContext db, IWriteGate gate, IAudi
             if (apply) db.Promotions.Add(promotion);
         }
 
+        // Permet d'ajouter les paiements plus tard sans réimporter les apprenants déjà enregistrés.
+        // Ne jamais recréer un dossier permanent lorsque son matricule est connu.
+        var storedEnrollments = payments.Count == 0 ? [] : await db.Enrollments
+            .Include(e => e.Student).Include(e => e.Promotion).ThenInclude(p => p!.Fees)
+            .Where(e => e.AcademicYearId == year.Id)
+            .ToListAsync(ct);
+        var existingEnrollmentByMatricule = storedEnrollments
+            .Where(e => e.Student is not null && e.Promotion is not null)
+            .GroupBy(e => e.Student!.Matricule, StringComparer.Ordinal)
+            .ToDictionary(g => g.Key, g => g.First(), StringComparer.Ordinal);
         var enrollments = new Dictionary<string, (Student Student, Enrollment Enrollment, Promotion Promotion)>(StringComparer.Ordinal);
         var newStudents = 0;
         foreach (var ls in students.Values)
@@ -128,8 +138,13 @@ public sealed class LegacyImportService(IAppDbContext db, IWriteGate gate, IAudi
             if (existingKeys.Contains(key)) { warnings.Add($"Reçu {first.Number} de {first.Matricule} déjà importé : ignoré."); continue; }
             if (!enrollments.TryGetValue(first.Matricule, out var target))
             {
-                errors.Add($"Paiement {first.Number} ({first.Source}, ligne {first.Row}) : matricule {first.Matricule} absent des apprenants importés.");
-                continue;
+                if (!existingEnrollmentByMatricule.TryGetValue(first.Matricule, out var stored)
+                    || stored.Student is null || stored.Promotion is null)
+                {
+                    errors.Add($"Paiement {first.Number} ({first.Source}, ligne {first.Row}) : aucun dossier actif pour {first.Matricule} dans l'année {year.Label}.");
+                    continue;
+                }
+                target = (stored.Student, stored, stored.Promotion);
             }
             var allocations = new List<ReceiptAllocation>();
             foreach (var p in group)
@@ -160,6 +175,12 @@ public sealed class LegacyImportService(IAppDbContext db, IWriteGate gate, IAudi
             newAllocations += allocations.Count;
             if (apply) db.Receipts.Add(receipt);
         }
+
+        // Aucune écriture partielle si des matricules, mois ou frais sont introuvables :
+        // une erreur exige d'abord la correction du classeur ou du paramétrage des frais.
+        if (apply && errors.Count > 0)
+            return new ImportReport(false, newPromotions, newStudents, newReceipts, newAllocations,
+                warnings.Take(500).ToList(), errors.Take(500).ToList());
 
         if (apply)
         {
