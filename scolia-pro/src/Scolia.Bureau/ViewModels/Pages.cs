@@ -21,6 +21,7 @@ public sealed class LoginViewModel : Observable
         SignInWithBiometrics = new AsyncCommand(BiometricSignInAsync);
         DisableBiometrics = new RelayCommand(() =>
         {
+            Platform.DisableBiometricAccess?.Invoke();
             BiometricAccess.Disable();
             EnableBiometricsAfterLogin = false;
             RefreshBiometrics();
@@ -72,7 +73,7 @@ public sealed class LoginViewModel : Observable
     public string BiometricAccount => BiometricAccess.ReadAccount(api.Server) ?? string.Empty;
     public bool HasBiometricAccount => CanOfferBiometrics && BiometricAccount.Length > 0;
     public bool CanOfferEnrollment => CanOfferBiometrics && !HasBiometricAccount;
-    public string BiometricLabel => $"Se connecter avec l’empreinte · {BiometricAccount}";
+    public string BiometricLabel => $"Déverrouiller avec l’empreinte · {BiometricAccount}";
 
     public void RefreshBiometrics()
     {
@@ -98,23 +99,48 @@ public sealed class LoginViewModel : Observable
             if (!await verify()) return;
             var cache = new OfflineStore(api.Server);
             var credential = cache.SavedCredential;
-            if (credential is null || !BiometricAccess.AccountMatches(account, credential.UserName)
-                || string.IsNullOrWhiteSpace(credential.SessionCookie))
+            if (credential is null || !BiometricAccess.AccountMatches(account, credential.UserName))
             {
-                Error = "Session enregistrée absente ou fermée. Utilisez le mot de passe pour reconnecter ce compte.";
+                Error = "Ce compte n'est plus enregistré sur ce téléphone. Reconnectez-vous avec le mot de passe.";
                 return;
             }
-            api.RestoreSessionCookie(credential.SessionCookie);
-            var session = await api.CurrentSessionAsync();
-            if (session is null || !BiometricAccess.AccountMatches(session.UserName, account))
+
+            if (!string.IsNullOrWhiteSpace(credential.SessionCookie))
             {
-                Error = "La session SCOLIA a expiré ou a changé d'utilisateur. Reconnectez-vous avec le mot de passe.";
+                api.RestoreSessionCookie(credential.SessionCookie);
+                try
+                {
+                    var session = await api.CurrentSessionAsync();
+                    if (session is null || !BiometricAccess.AccountMatches(session.UserName, account))
+                    {
+                        Error = "La session du serveur est expirée ou a changé de compte. Reconnectez-vous avec le mot de passe.";
+                        return;
+                    }
+                    cache.User = session.UserName;
+                    api.Offline = cache;
+                    Password = string.Empty;
+                    LoggedIn?.Invoke(session);
+                    return;
+                }
+                catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or IOException)
+                {
+                    // Une coupure réseau autorise la même session locale limitée que la connexion hors ligne classique.
+                }
+            }
+
+            // L'accès hors ligne ne peut être accordé qu'après la preuve Android Keystore.
+            // Le cache ne vaut ni nouveau jeton serveur, ni validation de droits à distance.
+            var offline = cache.BiometricOfflineLogin(account);
+            if (offline is null)
+            {
+                Error = "Aucune session locale du compte n'est disponible. Connectez-vous avec le mot de passe.";
                 return;
             }
-            cache.User = session.UserName;
+            cache.User = offline.UserName;
             api.Offline = cache;
             Password = string.Empty;
-            LoggedIn?.Invoke(session);
+            Notice = "Connexion biométrique hors ligne · les changements seront vérifiés au retour du serveur.";
+            LoggedIn?.Invoke(offline);
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or ApiException
                                  or IOException or System.Security.Cryptography.CryptographicException)
@@ -198,8 +224,13 @@ public sealed class LoginViewModel : Observable
             var session = await api.LoginAsync(UserName.Trim(), Password);
             Authenticated?.Invoke(UserName.Trim(), Password, session);
             if (EnableBiometricsAfterLogin && CanOfferBiometrics
-                && Platform.VerifyBiometricAsync is { } verify && await verify())
-                BiometricAccess.Enable(api.Server, session.UserName);
+                && Platform.EnrollBiometricAsync is { } enroll)
+            {
+                if (await enroll())
+                    BiometricAccess.Enable(api.Server, session.UserName);
+                else
+                    Notice = "L'accès par empreinte n'a pas été activé. Vous pourrez réessayer après une connexion par mot de passe.";
+            }
             EnableBiometricsAfterLogin = false;
             RefreshBiometrics();
             Password = string.Empty;
