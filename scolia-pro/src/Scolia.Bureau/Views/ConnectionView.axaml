@@ -62,6 +62,27 @@
         </StackPanel>
       </Border>
 
+      <!-- Appareils autorisés par Tailscale : aucune découverte UDP distante, jamais d'identifiants VPN dans SCOLIA. -->
+      <Border Classes="card">
+        <StackPanel Spacing="10">
+          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+            <Border Classes="appicon medium" Background="{DynamicResource ToneTeal}"><mi:MaterialIcon Kind="ShieldLockOutline" /></Border>
+            <StackPanel Grid.Column="1" Spacing="3">
+              <TextBlock Text="Réseau privé Tailscale" FontWeight="SemiBold" />
+              <TextBlock Classes="muted" TextWrapping="Wrap"
+                         Text="Installez Tailscale sur chaque appareil, connectez-les au même réseau privé et faites approuver les appareils concernés. SCOLIA conserve ses comptes et ses permissions." />
+            </StackPanel>
+          </Grid>
+          <TextBlock Classes="muted" TextWrapping="Wrap"
+                     Text="Sur le téléphone ou PC principal, laissez SCOLIA en mode serveur. Entrez ci-dessous son IP Tailscale ou son nom MagicDNS complet." />
+          <TextBox Text="{Binding TailscaleAddress}" Watermark="100.101.102.103:5080 ou machine.tailnet.ts.net:5080" />
+          <Button Classes="primary" Content="Rejoindre par Tailscale" Command="{Binding ConnectTailnet}"
+                  IsEnabled="{Binding NotSearching}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" />
+          <TextBlock Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap"
+                     Text="Tailscale doit rester connecté sur les deux appareils. Le serveur du téléphone utilise une notification Android ; sa disponibilité permanente ne peut pas être garantie si Android arrête l’application." />
+        </StackPanel>
+      </Border>
+
       <!-- Adresse saisie : quand le Wi-Fi empêche la recherche automatique -->
       <Border Classes="card">
         <StackPanel Spacing="8">
