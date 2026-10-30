@@ -718,6 +718,60 @@ public sealed class BusinessApiTests : IDisposable
     }
 
     [Fact]
+    public async Task Import_paiements_apres_liste_nominative_reutilise_le_dossier_existant()
+    {
+        var admin = await app.InstalledAdmin();
+        using var roster = new MemoryStream();
+        using (var book = new XLWorkbook())
+        {
+            var promotion = book.AddWorksheet("PROMOTIONS");
+            promotion.Cell(4, 1).Value = "Code";
+            promotion.Cell(5, 1).Value = "INF1";
+            promotion.Cell(5, 2).Value = "Première infirmière";
+            promotion.Cell(5, 6).Value = 50000;
+            var student = book.AddWorksheet("APPRENANTS");
+            student.Cell(4, 1).Value = "Matricule";
+            student.Cell(5, 1).Value = "INF195";
+            student.Cell(5, 2).Value = "MUKADI";
+            student.Cell(5, 8).Value = "INF1";
+            book.SaveAs(roster);
+        }
+        async Task<JsonElement> Upload(byte[] bytes, bool apply)
+        {
+            using var form = new MultipartFormDataContent();
+            form.Add(new ByteArrayContent(bytes), "fichiers", "liste.xlsx");
+            return await admin.PostAsync($"/api/import/scolia?appliquer={apply}", form).Ok();
+        }
+        var names = await Upload(roster.ToArray(), true);
+        Assert.True(names.GetProperty("applied").GetBoolean());
+        Assert.Equal(1, names.GetProperty("students").GetInt32());
+
+        using var payments = new MemoryStream();
+        using (var book = new XLWorkbook())
+        {
+            var sheet = book.AddWorksheet("PAIEMENTS");
+            sheet.Cell(4, 1).Value = "ID";
+            sheet.Cell(5, 1).Value = 1;
+            sheet.Cell(5, 3).Value = "OLD-001";
+            sheet.Cell(5, 4).Value = "INF195";
+            sheet.Cell(5, 6).Value = "INF1";
+            sheet.Cell(5, 7).Value = "Septembre";
+            sheet.Cell(5, 9).Value = 50000;
+            book.SaveAs(payments);
+        }
+        var preview = await Upload(payments.ToArray(), false);
+        Assert.Empty(preview.GetProperty("errors").EnumerateArray());
+        Assert.Equal(0, preview.GetProperty("students").GetInt32());
+        Assert.Equal(1, preview.GetProperty("receipts").GetInt32());
+        var paid = await Upload(payments.ToArray(), true);
+        Assert.True(paid.GetProperty("applied").GetBoolean());
+        Assert.Equal(1, paid.GetProperty("receipts").GetInt32());
+        Assert.Equal(50000m, (await admin.GetAsync("/api/paiements").Ok()).GetProperty("sum").GetDecimal());
+        Assert.Equal(1, (await admin.GetAsync("/api/apprenants?q=INF195").Ok()).GetProperty("total").GetInt32());
+        Assert.Equal(0, (await Upload(payments.ToArray(), true)).GetProperty("receipts").GetInt32());
+    }
+
+    [Fact]
     public async Task Legacy_workbook_import_is_simulated_then_applied_once()
     {
         var admin = await app.InstalledAdmin();
