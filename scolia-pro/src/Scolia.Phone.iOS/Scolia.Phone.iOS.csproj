@@ -6,8 +6,8 @@
     <OutputType>Exe</OutputType>
     <ApplicationTitle>SCOLIA Phone</ApplicationTitle>
     <ApplicationId>com.jpservices.scolia.ios</ApplicationId>
-    <ApplicationVersion>122</ApplicationVersion>
-    <ApplicationDisplayVersion>1.2.2</ApplicationDisplayVersion>
+    <ApplicationVersion>123</ApplicationVersion>
+    <ApplicationDisplayVersion>1.2.3</ApplicationDisplayVersion>
     <AssemblyName>SCOLIA</AssemblyName>
     <RootNamespace>Scolia.Phone.iOS</RootNamespace>
     <RuntimeIdentifiers>ios-arm64;iossimulator-arm64;iossimulator-x64</RuntimeIdentifiers>
