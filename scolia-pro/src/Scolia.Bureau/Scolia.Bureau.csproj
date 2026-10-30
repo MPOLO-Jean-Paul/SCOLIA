@@ -30,4 +30,9 @@
     <Compile Include="../Scolia.Infrastructure/Network/LanProtocol.cs" Link="Infrastructure/LanProtocol.cs" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Data.Sqlite" />
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" />
+    <Compile Include="../Scolia.Transport/*.cs" Link="Transport/%(Filename)%(Extension)" />
+  </ItemGroup>
 </Project>

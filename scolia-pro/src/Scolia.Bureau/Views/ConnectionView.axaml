@@ -53,6 +53,15 @@
         </StackPanel>
       </Border>
 
+      <Border Classes="card">
+        <StackPanel Spacing="8">
+          <TextBlock Text="Rejoindre à distance" FontWeight="SemiBold" />
+          <TextBlock Classes="muted" TextWrapping="Wrap" Text="Sur un autre Wi-Fi ou un réseau mobile, collez l'invitation privée créée par le secrétariat dans Réseau et activité. Vos comptes restent les mêmes." />
+          <TextBox Text="{Binding Invitation}" PlaceholderText="Invitation privée SCOLIA" TextWrapping="Wrap" MaxHeight="104" />
+          <Button Classes="primary" Content="Vérifier et rejoindre" Command="{Binding JoinInternet}" IsEnabled="{Binding NotSearching}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" />
+        </StackPanel>
+      </Border>
+
       <!-- Adresse saisie : quand le Wi-Fi empêche la recherche automatique -->
       <Border Classes="card">
         <StackPanel Spacing="8">
@@ -67,7 +76,7 @@
       <TextBlock Classes="muted" TextWrapping="Wrap" TextAlignment="Center" FontSize="{DynamicResource FsSmall}" IsVisible="{Binding DesktopCanBeServer}"
                  Text="Sur l'ordinateur principal, SCOLIA doit être ouvert et partagé : il le propose à la première connexion, ou dans Fichier &gt; Poste et réseau." />
       <TextBlock Classes="muted" TextWrapping="Wrap" TextAlignment="Center" FontSize="{DynamicResource FsSmall}" IsVisible="{Binding IsPhone}"
-                 Text="Le serveur de l'établissement, ordinateur ou téléphone, doit avoir SCOLIA ouvert et être sur le même Wi-Fi." />
+                 Text="Le serveur de l'établissement, ordinateur ou téléphone, doit avoir SCOLIA ouvert et être joignable par Wi-Fi ou par la liaison Internet sécurisée." />
     </StackPanel>
     </ScrollViewer>
   </Grid>

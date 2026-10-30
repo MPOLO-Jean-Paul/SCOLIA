@@ -2,6 +2,8 @@ using System.Globalization;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using System.Text.Json.Nodes;
+using Scolia.Transport;
 
 namespace Scolia.Bureau.Api;
 
@@ -16,6 +18,11 @@ public sealed class ScoliaClient : IDisposable
     private CookieContainer cookies = new();
     private HttpClient http;
     private bool online = true;
+    private RemoteLink? remoteLink;
+    private readonly SemaphoreSlim flushGate = new(1, 1);
+    public bool IsLongDistance => remoteLink is not null;
+    public string SessionCookie => cookies.GetCookieHeader(Server);
+    public void RestoreSessionCookie(string cookie) { if (!string.IsNullOrWhiteSpace(cookie)) cookies.SetCookies(Server, cookie); }
 
     /// <summary>Verrous d'action déclarés par l'écriture en cours : le serveur refuse si un autre poste les tient.</summary>
     private static readonly AsyncLocal<string?> CurrentLocks = new();
@@ -62,7 +69,8 @@ public sealed class ScoliaClient : IDisposable
     /// <summary>Change de serveur (ce poste ou celui de l'établissement) : nouvelle connexion, sans session ouverte.</summary>
     public void Retarget(Uri server)
     {
-        if (server == Server) return;
+        if (server == Server && remoteLink is null) return;
+        remoteLink = null;
         var previous = http;
         cookies = new CookieContainer();
         http = Create(server);
@@ -70,10 +78,22 @@ public sealed class ScoliaClient : IDisposable
         previous.Dispose();
     }
 
+    public void UseRemote(RemoteLink link)
+    {
+        link.Validate();
+        var previous = http;
+        remoteLink = link;
+        cookies = new CookieContainer();
+        Server = link.VirtualServer;
+        http = Create(Server);
+        previous.Dispose();
+    }
+
     private HttpClient Create(Uri server)
     {
         // Délai de connexion court : un ordinateur principal éteint est détecté en quelques secondes, pas en vingt.
-        var handler = new SocketsHttpHandler { CookieContainer = cookies, UseCookies = true, ConnectTimeout = TimeSpan.FromSeconds(4) };
+        HttpMessageHandler handler = remoteLink is { } link ? new RemoteHttpHandler(link, cookies)
+            : new SocketsHttpHandler { CookieContainer = cookies, UseCookies = true, ConnectTimeout = TimeSpan.FromSeconds(4) };
         var client = new HttpClient(handler) { BaseAddress = server, Timeout = TimeSpan.FromSeconds(60) };
         client.DefaultRequestHeaders.Add("X-Scolia", "1");
         client.DefaultRequestHeaders.Add("X-Scolia-Poste", Infrastructure.DeviceIdentity.Id);
@@ -84,7 +104,8 @@ public sealed class ScoliaClient : IDisposable
     /// <summary>Client sans délai global, pour le flux en direct qui reste ouvert.</summary>
     public HttpClient CreateStreamClient()
     {
-        var handler = new SocketsHttpHandler { CookieContainer = cookies, UseCookies = true, ConnectTimeout = TimeSpan.FromSeconds(4) };
+        HttpMessageHandler handler = remoteLink is { } link ? new RemoteHttpHandler(link, cookies)
+            : new SocketsHttpHandler { CookieContainer = cookies, UseCookies = true, ConnectTimeout = TimeSpan.FromSeconds(4) };
         var client = new HttpClient(handler) { BaseAddress = Server, Timeout = Timeout.InfiniteTimeSpan };
         client.DefaultRequestHeaders.Add("X-Scolia", "1");
         client.DefaultRequestHeaders.Add("X-Scolia-Poste", Infrastructure.DeviceIdentity.Id);
@@ -167,27 +188,42 @@ public sealed class ScoliaClient : IDisposable
     private async Task<HttpResponseMessage> WriteAsync(HttpMethod method, string path, object? body, CancellationToken ct)
     {
         var key = Guid.NewGuid().ToString("N");
+        if (method == HttpMethod.Post && (path is "api/paiements" or "api/paiements/lot") && body is not null)
+        {
+            var payload = JsonSerializer.SerializeToNode(body, Json.Options)!.AsObject();
+            key = payload["idempotencyKey"]?.GetValue<string>() is { Length: > 0 } previousKey ? previousKey : key;
+            payload["idempotencyKey"] = key;
+            body = payload;
+        }
+        Infrastructure.OutboxItem? durable = null;
+        if (Offline is not null && Queueable(method, path))
+        {
+            durable = new Infrastructure.OutboxItem
+            {
+                Key = key, Method = method.Method, Path = path,
+                Body = JsonSerializer.Serialize(body ?? new { }, Json.Options),
+                Label = Describe(method, path), User = Offline.User,
+            };
+            // Enregistrement durable AVANT l'envoi : un arrêt après validation serveur mais avant réponse est rejouable.
+            Offline.Enqueue(durable);
+        }
         try
         {
-            return await SendRawAsync(method, path, body, ct, key);
+            var response = await SendRawAsync(method, path, body, ct, key);
+            if (durable is not null) Offline!.Sent(durable.Id);
+            return response;
         }
         catch (Exception ex) when (IsDisconnected(ex, ct))
         {
             SetOnline(false);
-            if (Offline is null || !Queueable(method, path))
-                throw new OfflineException("Ordinateur principal injoignable : cette action demande la connexion. Elle sera possible dès son retour.");
-            var item = new Infrastructure.OutboxItem
-            {
-                Key = key,
-                Method = method.Method,
-                Path = path,
-                Body = JsonSerializer.Serialize(body ?? new { }, Json.Options),
-                Label = Describe(method, path),
-                User = Offline.User,
-            };
-            Offline.Enqueue(item);
-            Queued?.Invoke(item);
-            throw new OfflineQueuedException($"{item.Label} : enregistré sur cet appareil. Envoi automatique au retour de l'ordinateur principal.");
+            if (durable is null) throw new OfflineException("Appareil principal injoignable : cette action demande la connexion. Elle sera possible dès son retour.");
+            Queued?.Invoke(durable);
+            throw new OfflineQueuedException($"{durable.Label} : enregistré sur cet appareil. Envoi automatique au retour de l'appareil principal.");
+        }
+        catch (ApiException ex)
+        {
+            if (durable is not null && ex.Status != 401) Offline!.Refused(durable.Id, ex.Message);
+            throw;
         }
     }
 
@@ -199,6 +235,9 @@ public sealed class ScoliaClient : IDisposable
     public async Task<(int Sent, int Refused)> FlushAsync(CancellationToken ct = default)
     {
         if (Offline is null) return (0, 0);
+        await flushGate.WaitAsync(ct);
+        try
+        {
         int sent = 0, refused = 0;
         foreach (var item in Offline.Outbox())
         {
@@ -231,6 +270,8 @@ public sealed class ScoliaClient : IDisposable
         }
         if (sent > 0) SetOnline(true);
         return (sent, refused);
+        }
+        finally { flushGate.Release(); }
     }
 
     /// <summary>Coupure de l'ordinateur principal ou du Wi-Fi, par opposition à un refus du serveur.</summary>

@@ -29,6 +29,7 @@ public sealed class OfflineCredential
     public string Hash { get; set; } = string.Empty;
     public string Session { get; set; } = string.Empty;
     public DateTime SavedAt { get; set; }
+    public string SessionCookie { get; set; } = string.Empty;
 }
 
 /// <summary>
@@ -43,12 +44,15 @@ public sealed class OfflineStore
     private static readonly JsonSerializerOptions Json = new() { WriteIndented = false };
     private readonly object gate = new();
     private readonly string root;
+    private readonly OfflineDatabase database;
 
     public OfflineStore(Uri server, string? baseFolder = null)
     {
         var name = $"{server.Host}_{server.Port}".Replace(':', '_');
         root = Path.Combine(baseFolder ?? DefaultFolder, name);
         Directory.CreateDirectory(root);
+        database = new OfflineDatabase(root);
+        MigrateJournal();
     }
 
     public static string DefaultFolder { get; set; } =
@@ -58,89 +62,79 @@ public sealed class OfflineStore
     public string User { get; set; } = string.Empty;
 
     private string CacheFolder => Path.Combine(root, "pages", Safe(User));
-    private string OutboxFile => Path.Combine(root, "envois.json");
-    private string ConflictFile => Path.Combine(root, "conflits.json");
-    private string CredentialFile => Path.Combine(root, "session.json");
+    private string OutboxFile => "envois.json";
+    private string ConflictFile => "conflits.json";
+    private string CredentialFile => "session.json";
 
-    /// <summary>Garde la réponse d'une page lue en ligne.</summary>
+    private sealed record SavedPage(string Json, DateTime SavedAt);
+    private string PageKey(string path) => "page:" + Safe(User) + ":" + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(path)));
+
+    /// <summary>Pages chiffrées dans SQLite ; les anciennes pages sont migrées à leur première lecture.</summary>
     public void SavePage(string path, string json)
     {
         if (User.Length == 0) return;
-        try
-        {
-            Directory.CreateDirectory(CacheFolder);
-            File.WriteAllText(PageFile(path), json);
-        }
-        catch (IOException) { }
-        catch (UnauthorizedAccessException) { }
+        database.Write(PageKey(path), JsonSerializer.Serialize(new SavedPage(json, DateTime.Now), Json));
     }
 
-    /// <summary>Dernière version gardée d'une page, avec l'heure où elle a été lue.</summary>
     public (string Json, DateTime SavedAt)? ReadPage(string path)
     {
+        if (User.Length == 0) return null;
+        if (database.Read(PageKey(path)) is { } text)
+        {
+            var page = JsonSerializer.Deserialize<SavedPage>(text, Json) ?? throw new InvalidDataException("Cache local invalide.");
+            return (page.Json, page.SavedAt);
+        }
         var file = PageFile(path);
-        if (User.Length == 0 || !File.Exists(file)) return null;
-        try { return (File.ReadAllText(file), File.GetLastWriteTime(file)); }
-        catch (IOException) { return null; }
+        if (!File.Exists(file)) return null;
+        var json = File.ReadAllText(file);
+        var savedAt = File.GetLastWriteTime(file);
+        database.Write(PageKey(path), JsonSerializer.Serialize(new SavedPage(json, savedAt), Json));
+        ArchiveLegacy(file);
+        return (json, savedAt);
     }
 
-    public IReadOnlyList<OutboxItem> Outbox() => Load(OutboxFile);
-    public IReadOnlyList<OutboxItem> Conflicts() => Load(ConflictFile);
+    public IReadOnlyList<OutboxItem> Outbox() => Load(OutboxFile).Where(i => i.User == User).ToList();
+    public IReadOnlyList<OutboxItem> Conflicts() => Load(ConflictFile).Where(i => i.User == User).ToList();
 
     public void Enqueue(OutboxItem item)
     {
-        lock (gate)
+        if (string.IsNullOrEmpty(item.User)) item.User = User;
+        Change((pending, _) => { if (pending.All(i => i.Id != item.Id)) pending.Add(item); });
+    }
+
+    public void Sent(string id) => Change((pending, _) => pending.RemoveAll(i => i.Id == id && i.User == User));
+
+    public void Refused(string id, string error) => Change((pending, conflicts) =>
+    {
+        var item = pending.FirstOrDefault(i => i.Id == id && i.User == User);
+        if (item is null) return;
+        item.Error = error;
+        pending.Remove(item);
+        conflicts.Add(item);
+    });
+
+    public void Retry(string id) => Change((pending, conflicts) =>
+    {
+        var item = conflicts.FirstOrDefault(i => i.Id == id && i.User == User);
+        if (item is null) return;
+        conflicts.Remove(item);
+        item.Error = null;
+        pending.Add(item);
+        pending.Sort((a, b) => a.CreatedAt.CompareTo(b.CreatedAt));
+    });
+
+    public void Discard(string id) => Change((_, conflicts) => conflicts.RemoveAll(i => i.Id == id && i.User == User));
+
+    private void Change(Action<List<OutboxItem>, List<OutboxItem>> change)
+    {
+        lock (gate) database.Update([OutboxFile, ConflictFile], values =>
         {
-            var items = Load(OutboxFile).ToList();
-            items.Add(item);
-            Store(OutboxFile, items);
-        }
-    }
-
-    /// <summary>Opération acceptée par le serveur : elle sort de la file.</summary>
-    public void Sent(string id)
-    {
-        lock (gate) Store(OutboxFile, Load(OutboxFile).Where(i => i.Id != id).ToList());
-    }
-
-    /// <summary>Opération refusée par le serveur : elle passe en conflit, avec le motif, pour décision de l'utilisateur.</summary>
-    public void Refused(string id, string error)
-    {
-        lock (gate)
-        {
-            var items = Load(OutboxFile).ToList();
-            var item = items.FirstOrDefault(i => i.Id == id);
-            if (item is null) return;
-            items.Remove(item);
-            item.Error = error;
-            var conflicts = Load(ConflictFile).ToList();
-            conflicts.Add(item);
-            Store(OutboxFile, items);
-            Store(ConflictFile, conflicts);
-        }
-    }
-
-    /// <summary>Remet un conflit dans la file, pour un nouvel essai après correction sur l'autre poste.</summary>
-    public void Retry(string id)
-    {
-        lock (gate)
-        {
-            var conflicts = Load(ConflictFile).ToList();
-            var item = conflicts.FirstOrDefault(i => i.Id == id);
-            if (item is null) return;
-            conflicts.Remove(item);
-            item.Error = null;
-            var items = Load(OutboxFile).ToList();
-            items.Add(item);
-            Store(ConflictFile, conflicts);
-            Store(OutboxFile, items);
-        }
-    }
-
-    /// <summary>Abandonne un conflit : l'opération ne sera jamais envoyée.</summary>
-    public void Discard(string id)
-    {
-        lock (gate) Store(ConflictFile, Load(ConflictFile).Where(i => i.Id != id).ToList());
+            var pending = Decode(values[OutboxFile]);
+            var conflicts = Decode(values[ConflictFile]);
+            change(pending, conflicts);
+            values[OutboxFile] = JsonSerializer.Serialize(pending, Json);
+            values[ConflictFile] = JsonSerializer.Serialize(conflicts, Json);
+        });
     }
 
     /// <summary>
@@ -165,19 +159,19 @@ public sealed class OfflineStore
     }
 
     /// <summary>Garde la session d'un compte après une connexion réussie, avec une empreinte salée du mot de passe.</summary>
-    public void SaveCredential(string userName, string password, SessionDto session)
+    public void SaveCredential(string userName, string password, SessionDto session, string sessionCookie = "")
     {
         var salt = RandomNumberGenerator.GetBytes(16);
         var credential = new OfflineCredential
         {
-            UserName = userName.Trim(),
+            UserName = session.UserName,
             Salt = Convert.ToBase64String(salt),
             Hash = Convert.ToBase64String(Derive(password, salt)),
             Session = JsonSerializer.Serialize(session, Api.Json.Options),
             SavedAt = DateTime.Now,
+            SessionCookie = sessionCookie,
         };
-        try { File.WriteAllText(CredentialFile, JsonSerializer.Serialize(credential, Json)); }
-        catch (IOException) { }
+        database.Write(CredentialFile, JsonSerializer.Serialize(credential, Json));
     }
 
     /// <summary>
@@ -185,10 +179,10 @@ public sealed class OfflineStore
     /// </summary>
     public SessionDto? OfflineLogin(string userName, string password)
     {
-        if (!File.Exists(CredentialFile)) return null;
+        if (database.Read(CredentialFile) is not { Length: > 0 } credentialJson) return null;
         try
         {
-            var credential = JsonSerializer.Deserialize<OfflineCredential>(File.ReadAllText(CredentialFile), Json);
+            var credential = JsonSerializer.Deserialize<OfflineCredential>(credentialJson, Json);
             if (credential is null || !string.Equals(credential.UserName, userName.Trim(), StringComparison.OrdinalIgnoreCase)) return null;
             var expected = Convert.FromBase64String(credential.Hash);
             var actual = Derive(password, Convert.FromBase64String(credential.Salt));
@@ -198,7 +192,11 @@ public sealed class OfflineStore
         catch (Exception ex) when (ex is IOException or JsonException or FormatException) { return null; }
     }
 
-    public bool HasCredential => File.Exists(CredentialFile);
+    /// <summary>Reprise différée : cookie limité à la durée de session, jamais de mot de passe stocké.</summary>
+    public OfflineCredential? SavedCredential => database.Read(CredentialFile) is { Length: > 0 } text
+        ? JsonSerializer.Deserialize<OfflineCredential>(text, Json) : null;
+
+    public bool HasCredential => database.Read(CredentialFile) is { Length: > 0 };
 
     private static byte[] Derive(string password, byte[] salt) =>
         Rfc2898DeriveBytes.Pbkdf2(Encoding.UTF8.GetBytes(password), salt, 100_000, HashAlgorithmName.SHA256, 32);
@@ -209,17 +207,36 @@ public sealed class OfflineStore
     private static string Safe(string text) =>
         string.Concat(text.Select(c => char.IsLetterOrDigit(c) ? char.ToLowerInvariant(c) : '_'));
 
-    private static List<OutboxItem> Load(string file)
+    private List<OutboxItem> Load(string key) => Decode(database.Read(key));
+    private static List<OutboxItem> Decode(string? text) =>
+        text is null ? [] : JsonSerializer.Deserialize<List<OutboxItem>>(text, Json) ?? throw new InvalidDataException("Journal local invalide : restauration nécessaire, aucune opération abandonnée.");
+
+    private void MigrateJournal()
     {
-        try { return File.Exists(file) ? JsonSerializer.Deserialize<List<OutboxItem>>(File.ReadAllText(file), Json) ?? [] : []; }
-        catch (Exception ex) when (ex is IOException or JsonException) { return []; }
+        var files = new[] { OutboxFile, ConflictFile, CredentialFile };
+        database.Update(["migration:v1", .. files], values =>
+        {
+            if (values["migration:v1"] == "done") return;
+            foreach (var file in files.Where(name => File.Exists(Path.Combine(root, name))))
+            {
+                var text = File.ReadAllText(Path.Combine(root, file));
+                // Refuse une ancienne file corrompue plutôt que la remplacer silencieusement par une file vide.
+                if (file == CredentialFile) _ = JsonSerializer.Deserialize<OfflineCredential>(text, Json) ?? throw new InvalidDataException("Session locale invalide.");
+                else _ = Decode(text);
+                values[file] ??= text;
+            }
+            values[OutboxFile] ??= "[]";
+            values[ConflictFile] ??= "[]";
+            values[CredentialFile] ??= string.Empty;
+            values["migration:v1"] = "done";
+        });
+        foreach (var file in files.Where(name => File.Exists(Path.Combine(root, name)))) ArchiveLegacy(Path.Combine(root, file));
     }
 
-    private static void Store(string file, List<OutboxItem> items)
+    private static void ArchiveLegacy(string file)
     {
-        // Écriture dans un fichier voisin puis remplacement : une coupure ne laisse jamais une file à moitié écrite.
-        var temp = file + ".tmp";
-        File.WriteAllText(temp, JsonSerializer.Serialize(items, Json));
-        File.Move(temp, file, overwrite: true);
+        // L'original reste récupérable, mais n'est plus conservé en clair dans le dossier privé.
+        SecretStore.Save(file + ".avant-sqlite.enc", File.ReadAllBytes(file));
+        File.Delete(file);
     }
 }

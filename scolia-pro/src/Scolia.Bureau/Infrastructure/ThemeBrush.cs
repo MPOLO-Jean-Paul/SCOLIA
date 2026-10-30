@@ -7,11 +7,11 @@ namespace Scolia.Bureau.Infrastructure;
 public static class ThemeBrush
 {
     private static readonly Dictionary<string, SolidColorBrush> Brushes = new(StringComparer.Ordinal);
-    private static Application? observed;
+    private static Avalonia.Application? observed;
 
     public static IBrush Get(string key)
     {
-        var app = Application.Current;
+        var app = Avalonia.Application.Current;
         if (app is null) return Avalonia.Media.Brushes.Gray;
         if (observed != app)
         {
@@ -31,7 +31,7 @@ public static class ThemeBrush
 
     public static void Refresh()
     {
-        if (Application.Current is not { } app) return;
+        if (Avalonia.Application.Current is not { } app) return;
         foreach (var (key, brush) in Brushes.ToArray())
             if (app.TryGetResource(key, app.ActualThemeVariant, out var value) && value is ISolidColorBrush source)
             { brush.Color = source.Color; brush.Opacity = source.Opacity; }

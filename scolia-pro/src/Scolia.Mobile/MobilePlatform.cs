@@ -19,6 +19,8 @@ public static class MobilePlatform
     public static void Prepare(Context app)
     {
         context = app;
+        Security.AndroidSecrets.Initialize();
+        Synchronization.SyncWorker.Schedule(app);
         Platform.IsMobile = true;
         Preferences.MobileLayout = true;
         Platform.DeviceName = $"{Android.OS.Build.Manufacturer} {Android.OS.Build.Model}".Trim();

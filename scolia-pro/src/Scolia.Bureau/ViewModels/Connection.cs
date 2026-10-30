@@ -29,6 +29,7 @@ public sealed class ConnectionViewModel : Observable
         Search = new AsyncCommand(SearchAsync);
         UseThisComputer = new AsyncCommand(() => shell.UseThisComputerAsync());
         ConnectAddress = new AsyncCommand(ConnectAddressAsync);
+        JoinInternet = new AsyncCommand(JoinInternetAsync);
     }
 
     /// <summary>Tout ordinateur peut être le serveur ; un téléphone aussi, quand l'établissement n'a pas d'ordinateur.</summary>
@@ -77,6 +78,28 @@ public sealed class ConnectionViewModel : Observable
         {
             Message = $"SCOLIA ne répond pas à {server.Host}. Vérifiez l'adresse et le Wi-Fi.";
         }
+        finally { Searching = false; }
+    }
+
+    private string invitation = string.Empty;
+    public string Invitation { get => invitation; set => Set(ref invitation, value); }
+    public AsyncCommand JoinInternet { get; }
+    private async Task JoinInternetAsync()
+    {
+        Searching = true;
+        Message = "Vérification de la liaison Internet sécurisée…";
+        try
+        {
+            var link = Scolia.Transport.RemoteLink.Parse(Invitation);
+            using var probe = new Api.ScoliaClient(link.VirtualServer);
+            probe.UseRemote(link);
+            if (!await probe.IsRunningAsync())
+            { Message = "L'appareil principal ne répond pas. Vérifiez qu'il a activé la liaison et qu'il est connecté à Internet."; return; }
+            await shell.JoinInternetAsync(link);
+            Invitation = string.Empty;
+        }
+        catch (Exception ex) when (ex is FormatException or HttpRequestException or Api.ApiException or TaskCanceledException or IOException)
+        { Message = "Connexion non établie. Vérifiez l'invitation privée, sa date de validité et la connexion de l'appareil principal."; }
         finally { Searching = false; }
     }
 

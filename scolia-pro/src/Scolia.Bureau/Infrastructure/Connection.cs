@@ -11,6 +11,7 @@ public sealed record ConnectionSettings(string Mode, string? Url = null, string?
 {
     public const string Local = "local";
     public const string Remote = "distant";
+    public const string Internet = "internet";
 
     public bool IsRemote => Mode == Remote && Url is not null;
 }

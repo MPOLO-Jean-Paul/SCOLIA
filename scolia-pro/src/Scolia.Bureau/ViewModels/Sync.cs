@@ -120,6 +120,7 @@ public sealed class SyncCenter : Observable, IDisposable
     public string StatusDetail => Offline
         ? "L'ordinateur principal ne répond pas. Vous travaillez sur les données gardées sur cet appareil ; vos opérations seront envoyées à son retour."
         : HasConflicts ? "Le serveur a refusé des opérations faites hors ligne. Ouvrez la liste pour les revoir."
+        : api.IsLongDistance ? $"Liaison Internet chiffrée · {PeersText}. Les opérations sont confirmées par l’appareil principal."
         : $"Relié à l'ordinateur principal · {PeersText}.";
 
     public IBrush StatusBrush => ThemeBrush.Get(syncing ? "ToneBlue" : Offline ? "ToneOrange" : HasConflicts ? "ToneRed" : "ToneGreen");
@@ -288,7 +289,7 @@ public sealed class SyncCenter : Observable, IDisposable
         {
             if (!await api.IsRunningAsync())
             {
-                if (manual) shell.Notify("L'ordinateur principal ne répond toujours pas. Vérifiez qu'il est allumé et sur le même Wi-Fi.");
+                if (manual) shell.Notify("L'ordinateur principal ne répond toujours pas. Vérifiez qu'il est allumé et que la liaison Wi-Fi ou Internet est disponible.");
                 return;
             }
             if (await api.CurrentSessionAsync() is null)
@@ -465,10 +466,12 @@ public sealed class NetworkViewModel
     public NetworkViewModel(ShellViewModel shell)
     {
         Sync = shell.Sync;
+        Remote = new RemoteConnectionViewModel(shell);
         Sync.LoadQueue();
         Close = new RelayCommand(shell.CloseDialog);
     }
 
     public SyncCenter Sync { get; }
+    public RemoteConnectionViewModel Remote { get; }
     public RelayCommand Close { get; }
 }

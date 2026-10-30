@@ -19,6 +19,19 @@
         <StackPanel Spacing="12">
           <TextBlock Text="{Binding Sync.StatusDetail}" Classes="muted" TextWrapping="Wrap" />
 
+          <Border Classes="phonegroup" IsVisible="{Binding Remote.CanManage}">
+            <StackPanel Margin="14,12" Spacing="8">
+              <TextBlock Text="Lier la comptabilité à distance" FontWeight="SemiBold" TextWrapping="Wrap" />
+              <TextBlock Classes="muted" TextWrapping="Wrap" Text="Ajoutez une liaison Internet sans couper le Wi-Fi. Les données restent sur cet appareil principal ; le relais ne transporte que des messages chiffrés." />
+              <TextBox Text="{Binding Remote.Relay}" PlaceholderText="wss://adresse-de-votre-relais" />
+              <Button Content="Créer ou renouveler la liaison" Command="{Binding Remote.Enable}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" />
+              <TextBlock Text="Invitation privée à transmettre à l'autre appareil" Classes="muted" TextWrapping="Wrap" />
+              <TextBox Text="{Binding Remote.Invitation}" IsReadOnly="True" TextWrapping="Wrap" MaxHeight="100" />
+              <TextBlock Text="{Binding Remote.Message}" Classes="muted" TextWrapping="Wrap" />
+              <Button Classes="ghost" Content="Désactiver la liaison Internet" Command="{Binding Remote.Disable}" HorizontalAlignment="Stretch" />
+            </StackPanel>
+          </Border>
+
           <!-- Autres postes connectés -->
           <TextBlock Text="Postes connectés" Classes="heading" Margin="0,4,0,0" />
           <Border Classes="phonegroup">

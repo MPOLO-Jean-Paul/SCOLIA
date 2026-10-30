@@ -42,7 +42,7 @@ public sealed class ShellViewModel : Observable
         Login.Authenticated += (user, secret, s) =>
         {
             api.Offline = new OfflineStore(api.Server) { User = s.UserName };
-            api.Offline.SaveCredential(user, secret, s);
+            api.Offline.SaveCredential(user, secret, s, api.SessionCookie);
             Sync.Remember(user, secret);
         };
         Sync.RemoteChange += OnRemoteChange;
@@ -350,6 +350,15 @@ public sealed class ShellViewModel : Observable
         }
 
         var saved = ConnectionStore.Load();
+        if (RemoteConnection.Load() is { Host: false } remote && saved?.Mode == ConnectionSettings.Internet)
+        {
+            api.UseRemote(remote.Link);
+            if (await api.IsRunningAsync()) await ShowEntryAsync();
+            else if (!OfferOfflineEntry(remote.School)) ShowChooser([], "L'appareil principal est indisponible sur Internet. Vos données locales restent conservées. Vérifiez sa connexion ou rejoignez-le sur le Wi-Fi.");
+            return;
+        }
+        if (RemoteConnection.Load() is { Host: true } && saved?.Mode == ConnectionSettings.Local)
+            RemoteConnection.StartHost(ConnectionStore.LocalAddress);
         if (saved is { IsRemote: true })
         {
             api.Retarget(new Uri(saved.Url!));
@@ -458,10 +467,27 @@ public sealed class ShellViewModel : Observable
         if (IsLoggedIn) await LogoutAsync();
         // Un téléphone qui était le serveur et en rejoint un autre arrête le sien : il ne garde qu'un établissement.
         if (Platform.IsMobile && localServer is not null && !server.Address.IsLoopback) localServer.Stop();
+        RemoteConnection.StopHost();
         api.Retarget(server.Address);
         ChoosingServer = false;
         await ShowEntryAsync();
         Notify($"Ce poste est relié à SCOLIA · {server.School} (ordinateur {server.Machine}).");
+    }
+
+    public async Task JoinInternetAsync(Scolia.Transport.RemoteLink link)
+    {
+        if (IsLoggedIn) await LogoutAsync();
+        // Aucun effacement de l'établissement précédemment porté par cet appareil.
+        localServer?.Stop();
+        RemoteConnection.StopHost();
+        api.UseRemote(link);
+        var installation = await api.GetAsync<SetupStatusDto>("api/installation");
+        var school = installation.SchoolName ?? "Établissement";
+        RemoteConnection.Save(new RemoteConfiguration(link, false, school));
+        ConnectionStore.Save(new ConnectionSettings(ConnectionSettings.Internet, link.VirtualServer.ToString(), School: school, Machine: "Internet chiffré"));
+        ChoosingServer = false;
+        await ShowEntryAsync();
+        Notify("Liaison Internet sécurisée prête. Connectez-vous avec votre compte habituel.");
     }
 
     /// <summary>Cet ordinateur, ou ce téléphone, devient (ou redevient) le serveur de l'établissement.</summary>
@@ -471,6 +497,7 @@ public sealed class ShellViewModel : Observable
         ConnectionStore.Save(new ConnectionSettings(ConnectionSettings.Local, LanPromptDone: previous?.LanPromptDone ?? false));
         if (IsLoggedIn) await LogoutAsync();
         api.Retarget(ConnectionStore.LocalAddress);
+        RemoteConnection.StartHost(ConnectionStore.LocalAddress);
         ChoosingServer = false;
         await ShowEntryAsync();
     }

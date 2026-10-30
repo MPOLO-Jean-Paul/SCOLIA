@@ -47,6 +47,7 @@
   <ItemGroup>
     <PackageReference Include="Avalonia" />
     <PackageReference Include="Avalonia.Android" />
+    <PackageReference Include="Xamarin.AndroidX.Work.Runtime" />
     <PackageReference Include="Avalonia.Themes.Fluent" />
     <PackageReference Include="Avalonia.Controls.DataGrid" />
     <PackageReference Include="Material.Icons.Avalonia" />
@@ -70,4 +71,9 @@
     <AvaloniaResource Include="../Scolia.Bureau/Assets/**" Link="Assets/%(RecursiveDir)%(Filename)%(Extension)" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Data.Sqlite" />
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" />
+    <Compile Include="../Scolia.Transport/*.cs" Link="Transport/%(Filename)%(Extension)" />
+  </ItemGroup>
 </Project>
