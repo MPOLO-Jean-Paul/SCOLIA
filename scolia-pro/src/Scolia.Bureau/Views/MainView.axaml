@@ -138,7 +138,19 @@
   </Border>
   <LayoutTransformControl x:Name="Scaler" Grid.Row="1" Classes.anim="{Binding Prefs.Animations}">
   <Grid>
-    <!-- Connexion : tant qu'aucune session n'est ouverte -->
+    <!-- Détection de première installation : jamais afficher le formulaire de connexion
+         avant de connaître l’état réel de configuration. -->
+    <Border Background="{DynamicResource BgBrush}" IsVisible="{Binding ShowStartup}">
+      <StackPanel MaxWidth="340" Margin="24" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="12">
+        <Border Width="66" Height="66" CornerRadius="18" Background="{DynamicResource AccentBrush}" HorizontalAlignment="Center">
+          <Image Source="{DynamicResource ScoliaMark}" Width="46" Height="46" HorizontalAlignment="Center" VerticalAlignment="Center" />
+        </Border>
+        <TextBlock Text="SCOLIA Pro" FontSize="22" FontWeight="SemiBold" TextAlignment="Center" HorizontalAlignment="Center" />
+        <TextBlock Text="{Binding Status}" Classes="muted" TextWrapping="Wrap" TextAlignment="Center" HorizontalAlignment="Center" />
+        <ProgressBar IsIndeterminate="True" Height="3" MinHeight="3" Width="164" HorizontalAlignment="Center" />
+      </StackPanel>
+    </Border>
+    <!-- Connexion : seulement si l’établissement est déjà configuré -->
     <!-- Première installation : l'assistant remplace la connexion tant qu'aucune configuration n'existe -->
     <ContentControl Content="{Binding Setup}" IsVisible="{Binding ShowSetup}" />
     <ContentControl x:Name="LoginHost" Content="{Binding Login}" IsVisible="{Binding ShowLogin}">

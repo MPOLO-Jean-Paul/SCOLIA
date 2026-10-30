@@ -60,7 +60,7 @@ public sealed class SetupViewModel : Observable
     /// <summary>Logo choisi : il figure ensuite sur la connexion, les reçus, les listes et les cartes d'accès.</summary>
     public Avalonia.Media.Imaging.Bitmap? Logo { get => logo; private set { if (Set(ref logo, value)) Raise(nameof(HasLogo)); } }
     public bool HasLogo => logo is not null;
-    public string LogoLine => logoName ?? "Aucun logo choisi : le sceau par défaut sera utilisé.";
+    public string LogoLine => logoName ?? "Aucun logo choisi : le symbole neutre de SCOLIA sera affiché.";
 
     public System.Collections.ObjectModel.ObservableCollection<PromotionDraftVm> Promotions { get; } = [];
     public RelayCommand AddPromotion { get; }

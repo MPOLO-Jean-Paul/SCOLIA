@@ -155,30 +155,55 @@ public sealed class ShellViewModel : Observable
     /// <summary>Nom court de l'établissement pour l'en-tête du volet.</summary>
     public string SchoolTitle => session?.SchoolShortName is { Length: > 0 } shortName ? shortName : session?.SchoolName ?? Login.SchoolName;
 
-    /// <summary>Recharge le logo, au démarrage et après un changement dans les paramètres.</summary>
+    private int logoRequest;
+    /// <summary>Recharge uniquement le logo de l'établissement actif, jamais un logo en cache d'un ancien serveur.</summary>
     public async Task RefreshLogoAsync()
     {
+        var request = ++logoRequest;
+        var server = api.Server;
+        SchoolLogo = null;
         try
         {
             var bytes = await api.DownloadAsync("api/etablissement/logo");
+            if (request != logoRequest || api.Server != server) return;
             using var stream = new MemoryStream(bytes);
             SchoolLogo = new Avalonia.Media.Imaging.Bitmap(stream);
         }
         catch (Exception ex) when (ex is ApiException or HttpRequestException or TaskCanceledException or ArgumentException or InvalidOperationException or NotSupportedException)
         {
-            SchoolLogo = null;
+            if (request == logoRequest) SchoolLogo = null;
         }
     }
     public bool IsLoggedIn => session is not null;
 
     private bool setupRequired;
+    private bool entryChecked;
+
+    /// <summary>Un écran neutre apparaît durant la détection, jamais une fausse connexion.</summary>
+    public bool ShowStartup => !entryChecked && !ChoosingServer && !Opening && !IsLoggedIn;
+
+    /// <summary>Une réponse vérifiée du serveur décide entre connexion et assistant.</summary>
+    public void ApplyInstallationStatus(bool configured)
+    {
+        IsSetupRequired = !configured;
+        if (entryChecked) return;
+        entryChecked = true;
+        RaiseLogin();
+    }
+
+    private void MarkEntryChecked()
+    {
+        if (entryChecked) return;
+        entryChecked = true;
+        RaiseLogin();
+    }
 
     /// <summary>Premier lancement : aucune configuration sur ce serveur, l'assistant remplace la connexion.</summary>
     public bool IsSetupRequired { get => setupRequired; set { if (Set(ref setupRequired, value)) { RaiseLogin(); Raise(nameof(ShowSetup)); } } }
-    public bool ShowSetup => IsSetupRequired && !Opening;
+    public bool ShowSetup => entryChecked && IsSetupRequired && !Opening;
 
     /// <summary>La connexion s'affiche seulement quand une configuration existe et qu'aucune session n'est ouverte.</summary>
-    public bool ShowLogin => !IsLoggedIn && !IsSetupRequired && !ChoosingServer && !Opening;
+    public bool ShowLogin => entryChecked && !IsLoggedIn && !IsSetupRequired && !ChoosingServer && !Opening;
 
     /// <summary>L'application s'affiche une fois l'ouverture terminée.</summary>
     public bool ShowApp => IsLoggedIn && !Opening;
@@ -198,7 +223,7 @@ public sealed class ShellViewModel : Observable
         private set
         {
             if (!Set(ref opening, value)) return;
-            Raise(nameof(ShowLogin)); Raise(nameof(ShowSetup)); Raise(nameof(ShowApp)); Raise(nameof(CompactWindow));
+            Raise(nameof(ShowLogin)); Raise(nameof(ShowSetup)); Raise(nameof(ShowStartup)); Raise(nameof(ShowApp)); Raise(nameof(CompactWindow));
         }
     }
 
@@ -230,6 +255,8 @@ public sealed class ShellViewModel : Observable
     {
         Raise(nameof(IsLoggedIn));
         Raise(nameof(ShowLogin));
+        Raise(nameof(ShowSetup));
+        Raise(nameof(ShowStartup));
         Raise(nameof(ShowApp));
         Raise(nameof(CompactWindow));
     }
@@ -444,6 +471,7 @@ public sealed class ShellViewModel : Observable
         Login.Notice = "L'ordinateur principal ne répond pas. Connectez-vous avec le dernier compte utilisé sur cet appareil pour travailler hors ligne : tout sera envoyé à son retour.";
         IsSetupRequired = false;
         ChoosingServer = false;
+        MarkEntryChecked();
         Status = "Hors ligne : connexion avec les données de cet appareil.";
         return true;
     }
@@ -573,13 +601,19 @@ public sealed class ShellViewModel : Observable
         {
             var status = await api.GetAsync<SetupStatusDto>("api/installation");
             Login.SchoolName = status.SchoolName ?? string.Empty;
-            await RefreshLogoAsync();
-            IsSetupRequired = !status.IsConfigured;
-            if (IsSetupRequired) await Setup.LoadAsync();
+            // La proposition d’année et le logo sont accessoires : ils ne bloquent plus la première page.
+            if (!status.IsConfigured)
+            {
+                SchoolLogo = null;
+                _ = Setup.LoadAsync();
+            }
+            else _ = RefreshLogoAsync();
+            ApplyInstallationStatus(status.IsConfigured);
         }
         catch (Exception ex) when (ex is ApiException or HttpRequestException or TaskCanceledException)
         {
             Status = "Impossible de vérifier la configuration de SCOLIA.";
+            ShowChooser([], "Impossible de vérifier la configuration. Réessayez la connexion au serveur.");
         }
     }
 
@@ -591,7 +625,9 @@ public sealed class ShellViewModel : Observable
     {
         var watch = System.Diagnostics.Stopwatch.StartNew();
         // Durée choisie dans Paramètres, Animations et fluidité ; l'outil de captures peut la fixer à part.
-        var minimum = MinimumOpening == TimeSpan.FromSeconds(2) ? TimeSpan.FromSeconds(Prefs.OpeningSeconds) : MinimumOpening;
+        // Après la création du premier compte, éviter la séquence d’attente de connexion.
+        var minimum = IsSetupRequired ? TimeSpan.FromMilliseconds(320)
+            : MinimumOpening == TimeSpan.FromSeconds(2) ? TimeSpan.FromSeconds(Prefs.OpeningSeconds) : MinimumOpening;
         var pace = minimum / 4;
         openingCompact = compact;
         session = s;

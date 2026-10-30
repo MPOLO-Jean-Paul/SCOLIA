@@ -37,9 +37,24 @@ public sealed class NavItemVm : Observable
 }
 
 /// <summary>Rubrique de la barre latérale, avec son titre discret.</summary>
-public sealed record NavGroupVm(string Title, IReadOnlyList<NavItemVm> Items)
+public sealed class NavGroupVm : Observable
 {
+    private bool isExpanded;
+
+    public NavGroupVm(string title, IReadOnlyList<NavItemVm> items)
+    {
+        Title = title;
+        Items = items;
+        // L'accueil est accessible immédiatement ; les autres métiers sont repliés sur mobile.
+        isExpanded = title.Length == 0;
+        Toggle = new RelayCommand(() => IsExpanded = !IsExpanded);
+    }
+
+    public string Title { get; }
+    public IReadOnlyList<NavItemVm> Items { get; }
     public bool HasTitle => Title.Length > 0;
+    public bool IsExpanded { get => isExpanded; set => Set(ref isExpanded, value); }
+    public RelayCommand Toggle { get; }
 }
 
 /// <summary>
@@ -63,7 +78,7 @@ public static class Sidebar
                 Item("Tableau de bord", MaterialIconKind.ViewDashboard, "ToneBlue", null, typeof(DashboardPage), () => new DashboardPage(shell)),
                 Item("Rapports et exports", MaterialIconKind.FileChart, "ToneIndigo", null, typeof(ReportsPage), () => new ReportsPage(shell)),
                 Item("Sauvegardes", MaterialIconKind.DatabaseExport, "ToneGreen", Perm.BackupManage, typeof(DataPage), () => new DataPage(shell)),
-                Item("Journal d'audit", MaterialIconKind.ShieldCheck, "ToneNeutral", Perm.AuditRead, typeof(AuditPage), () => new AuditPage(shell)),
+                Item("Journal d'audit", MaterialIconKind.ShieldCheck, "ToneIndigo", Perm.AuditRead, typeof(AuditPage), () => new AuditPage(shell)),
                 Item("Effacement", MaterialIconKind.DeleteSweep, "ToneRed", Perm.BackupManage, typeof(EraseDataPage), () => new EraseDataPage(shell, payments: true))),
             Group("Secrétariat",
                 Item("Apprenants", MaterialIconKind.AccountGroup, "ToneBlue", Perm.StudentsRead, typeof(StudentsPage), () => new StudentsPage(shell)),
@@ -86,8 +101,9 @@ public static class Sidebar
                 Item("Cartes d'accès", MaterialIconKind.CardAccountDetails, "ToneBlue", Perm.AcademicsRead, typeof(CardsPage), () => new CardsPage(shell))),
             Group("Administration",
                 Item("Personnel et paie", MaterialIconKind.Briefcase, "ToneOrange", Perm.StaffManage, typeof(StaffPage), () => new StaffPage(shell)),
-                Item("Pointage", MaterialIconKind.ClockCheck, "ToneTeal", Perm.StaffManage, typeof(StaffAttendancePage), () => new StaffAttendancePage(shell)),
-                Item("Paramètres", MaterialIconKind.Cog, "ToneNeutral", null, typeof(SettingsPage), () => new SettingsPage(shell)),
+                Item("Pointage", MaterialIconKind.ClockCheck, "ToneTeal", Perm.StaffManage, typeof(StaffAttendancePage), () => new StaffAttendancePage(shell))),
+            Group("Paramètres",
+                Item("Paramètres", MaterialIconKind.Cog, "TonePurple", null, typeof(SettingsPage), () => new SettingsPage(shell)),
                 Item("Utilisateurs", MaterialIconKind.AccountCog, "ToneBlue", Perm.UsersManage, typeof(UsersPage), () => new UsersPage(shell))),
         };
         return groups.Where(g => g.Items.Count > 0).ToList();

@@ -18,7 +18,9 @@ public partial class MainWindow : Window
     {
         fullscreenHandler = ApplyFullscreen;
         InitializeComponent();
-        if (OperatingSystem.IsWindows()) ExtendClientAreaToDecorationsHint = true;
+        // La barre de titre native reste distincte du bandeau bleu : pas de texte superposé
+        // aux décorations système sur Windows, même avec une mise à l’échelle élevée.
+        if (OperatingSystem.IsWindows()) ExtendClientAreaToDecorationsHint = false;
         Opened += (_, _) => ApplyWindowMode();
         Closed += (_, _) => ReleaseShell();
         DataContextChanged += (_, _) =>

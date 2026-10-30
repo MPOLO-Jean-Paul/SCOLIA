@@ -39,4 +39,19 @@ public sealed class SheetVm(string title, string subtitle, IReadOnlyList<SheetIt
 }
 
 /// <summary>Rubrique des commandes du menu du téléphone : un métier et ses commandes qui ne sont pas des pages.</summary>
-public sealed record PhoneToolGroupVm(string Title, IReadOnlyList<RibbonCommandVm> Commands);
+public sealed class PhoneToolGroupVm : Observable
+{
+    private bool isExpanded;
+
+    public PhoneToolGroupVm(string title, IReadOnlyList<RibbonCommandVm> commands)
+    {
+        Title = title;
+        Commands = commands;
+        Toggle = new RelayCommand(() => IsExpanded = !IsExpanded);
+    }
+
+    public string Title { get; }
+    public IReadOnlyList<RibbonCommandVm> Commands { get; }
+    public bool IsExpanded { get => isExpanded; set => Set(ref isExpanded, value); }
+    public RelayCommand Toggle { get; }
+}
