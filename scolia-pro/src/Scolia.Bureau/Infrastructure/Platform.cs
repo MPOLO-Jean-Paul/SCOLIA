@@ -31,6 +31,9 @@ public static class Platform
     public static Func<Task<string>>? ConnectTailscaleInBackground { get; set; }
 
     public static Func<bool>? IsTailscaleInstalled { get; set; }
+
+    /// <summary>VPN Android actif, sans certitude de son fournisseur.</summary>
+    public static Func<bool?>? IsVpnActive { get; set; }
     public static Func<string>? OpenTailscaleInstallPage { get; set; }
 
     /// <summary>Android signale le retour à SCOLIA après une installation externe.</summary>

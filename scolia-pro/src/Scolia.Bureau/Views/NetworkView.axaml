@@ -32,6 +32,9 @@
                       HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" />
               <TextBlock Classes="muted" TextWrapping="Wrap" FontSize="{DynamicResource FsSmall}"
                          Text="L'envoi de la commande n'est pas une confirmation de connexion. Testez le partage depuis un appareil client autorisé. Android conserve son indicateur VPN." />
+              <Button Classes="ghost" Content="Vérifier le partage et le serveur" Command="{Binding Remote.DiagnoseTailnet}"
+                      HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" />
+              <TextBlock Text="{Binding Remote.Diagnostic}" Classes="muted" TextWrapping="Wrap" />
               <TextBlock Text="{Binding Remote.Message}" Classes="muted" TextWrapping="Wrap" />
             </StackPanel>
           </Border>

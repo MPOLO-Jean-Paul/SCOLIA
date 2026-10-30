@@ -31,6 +31,7 @@ public static class MobilePlatform
         Platform.OpenUri = OpenUri;
         Platform.OpenTailscale = OpenTailscale;
         Platform.IsTailscaleInstalled = IsTailscaleInstalled;
+        Platform.IsVpnActive = IsVpnActive;
         Platform.OpenTailscaleInstallPage = OpenTailscaleInstallPage;
         Platform.ConnectTailscaleInBackground = ConnectTailscaleInBackgroundAsync;
         Platform.PlayWave = AndroidAudio.PlayWave;
@@ -99,6 +100,19 @@ public static class MobilePlatform
     /// </summary>
     private static bool IsTailscaleInstalled() =>
         context?.PackageManager?.GetLaunchIntentForPackage("com.tailscale.ipn") is not null;
+
+    /// <summary>La présence d'un VPN n'établit pas son identité.</summary>
+    private static bool? IsVpnActive()
+    {
+        try
+        {
+            if (context?.GetSystemService(Context.ConnectivityService) is not ConnectivityManager manager
+                || manager.ActiveNetwork is not { } network)
+                return null;
+            return manager.GetNetworkCapabilities(network)?.HasTransport(TransportType.Vpn);
+        }
+        catch (Java.Lang.SecurityException) { return null; }
+    }
 
     /// <summary>
     /// Lance l'installation officielle : le Play Store affiche la vraie progression.
