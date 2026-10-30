@@ -24,11 +24,11 @@
             <StackPanel Margin="14,12" Spacing="8">
               <TextBlock Text="Partager via Tailscale" FontWeight="SemiBold" TextWrapping="Wrap" />
               <TextBlock Classes="muted" TextWrapping="Wrap"
-                         Text="Le serveur SCOLIA conserve les données sur cet appareil. Préparez Tailscale avec Internet, puis autorisez son VPN une fois depuis l'application officielle. Il reste actif en arrière-plan selon les réglages Android." />
-              <Button Classes="primary" Content="Partager via Tailscale · autoriser le VPN" Command="{Binding Remote.ShareTailnet}"
+                         Text="Après la première configuration Tailscale et l'autorisation VPN Android, ce bouton demande la connexion en arrière-plan sans ouvrir Tailscale. Les données restent sur cet appareil." />
+              <Button Classes="primary" Content="Partager via Tailscale" Command="{Binding Remote.ShareTailnet}"
                       HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" />
               <TextBlock Classes="muted" TextWrapping="Wrap" FontSize="{DynamicResource FsSmall}"
-                         Text="Le partage ne sera opérationnel qu'après connexion au même tailnet et test depuis un appareil client. Android conserve son indicateur VPN et peut imposer une notification." />
+                         Text="L'envoi de la commande n'est pas une confirmation de connexion. Testez le partage depuis un appareil client autorisé. Android conserve son indicateur VPN." />
               <TextBlock Text="{Binding Remote.Message}" Classes="muted" TextWrapping="Wrap" />
             </StackPanel>
           </Border>
