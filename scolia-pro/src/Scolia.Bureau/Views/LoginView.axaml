@@ -83,7 +83,7 @@
 
         <!-- Consentement explicite lors de la première connexion par mot de passe. -->
         <CheckBox Content="Activer ensuite l’accès par empreinte sur ce téléphone"
-                  IsVisible="{Binding CanOfferBiometrics}" IsChecked="{Binding EnableBiometricsAfterLogin}"
+                  IsVisible="{Binding CanOfferEnrollment}" IsChecked="{Binding EnableBiometricsAfterLogin}"
                   IsEnabled="{Binding CanType}" FontSize="13" />
         <Button Classes="ghost signinbutton" Command="{Binding SignInWithBiometrics}"
                 IsVisible="{Binding HasBiometricAccount}" IsEnabled="{Binding CanType}">
@@ -93,6 +93,9 @@
           </StackPanel>
         </Button>
 
+        <Button Classes="ghost" Content="Désactiver l'accès biométrique sur cet appareil"
+                Command="{Binding DisableBiometrics}" IsVisible="{Binding HasBiometricAccount}"
+                HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" />
         <Button Classes="primary signinbutton" Command="{Binding Submit}" IsEnabled="{Binding CanType}" ToolTip.Tip="Se connecter (Entrée)" Margin="0,4,0,0">
           <StackPanel Orientation="Horizontal" Spacing="8">
             <mi:MaterialIcon Kind="Loading" Classes="spin" Width="18" Height="18" Foreground="{DynamicResource OnAccentBrush}" IsVisible="{Binding Busy}" />

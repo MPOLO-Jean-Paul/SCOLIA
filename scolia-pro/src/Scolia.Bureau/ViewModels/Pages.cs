@@ -19,6 +19,13 @@ public sealed class LoginViewModel : Observable
         this.api = api;
         Submit = new AsyncCommand(SubmitAsync);
         SignInWithBiometrics = new AsyncCommand(BiometricSignInAsync);
+        DisableBiometrics = new RelayCommand(() =>
+        {
+            BiometricAccess.Disable();
+            EnableBiometricsAfterLogin = false;
+            RefreshBiometrics();
+            Notice = "Connexion biométrique désactivée sur cet appareil.";
+        });
     }
 
     public event Action<SessionDto>? LoggedIn;
@@ -53,6 +60,7 @@ public sealed class LoginViewModel : Observable
     public string Footer => $"SCOLIA Pro {typeof(LoginViewModel).Assembly.GetName().Version?.ToString(3) ?? "1.1.0"} · {AboutInfo.Publisher}";
     public AsyncCommand Submit { get; }
     public AsyncCommand SignInWithBiometrics { get; }
+    public RelayCommand DisableBiometrics { get; }
 
     private bool enableBiometricsAfterLogin;
     public bool EnableBiometricsAfterLogin
@@ -63,6 +71,7 @@ public sealed class LoginViewModel : Observable
     public bool CanOfferBiometrics => Platform.IsMobile && Platform.IsBiometricAvailable?.Invoke() == true;
     public string BiometricAccount => BiometricAccess.ReadAccount(api.Server) ?? string.Empty;
     public bool HasBiometricAccount => CanOfferBiometrics && BiometricAccount.Length > 0;
+    public bool CanOfferEnrollment => CanOfferBiometrics && !HasBiometricAccount;
     public string BiometricLabel => $"Se connecter avec l’empreinte · {BiometricAccount}";
 
     public void RefreshBiometrics()
@@ -70,6 +79,7 @@ public sealed class LoginViewModel : Observable
         Raise(nameof(CanOfferBiometrics));
         Raise(nameof(BiometricAccount));
         Raise(nameof(HasBiometricAccount));
+        Raise(nameof(CanOfferEnrollment));
         Raise(nameof(BiometricLabel));
     }
 
