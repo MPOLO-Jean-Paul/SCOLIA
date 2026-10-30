@@ -46,6 +46,7 @@ public sealed class SetupViewModel : Observable
         Back = new RelayCommand(() => { Step = 1; Error = string.Empty; });
         Finish = new AsyncCommand(FinishAsync);
         JoinExisting = new AsyncCommand(() => shell.ChooseServerAsync());
+        PrepareTailnet = new AsyncCommand(Installer.BeginAsync);
         AddPromotion = new RelayCommand(() => Promotions.Add(new PromotionDraftVm(d => Promotions.Remove(d))));
         PickLogo = new AsyncCommand(PickLogoAsync);
         ClearLogo = new RelayCommand(() => SetLogo(null, null));
@@ -63,6 +64,8 @@ public sealed class SetupViewModel : Observable
     public string LogoLine => logoName ?? "Aucun logo choisi : le symbole neutre de SCOLIA sera affiché.";
 
     public System.Collections.ObjectModel.ObservableCollection<PromotionDraftVm> Promotions { get; } = [];
+    public TailscaleInstaller Installer { get; } = TailscaleInstaller.Instance;
+    public AsyncCommand PrepareTailnet { get; }
     public RelayCommand AddPromotion { get; }
     public AsyncCommand PickLogo { get; }
     public RelayCommand ClearLogo { get; }

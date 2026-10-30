@@ -34,8 +34,20 @@
 
     <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled">
       <StackPanel Margin="16,16,16,12" Spacing="14">
-        <!-- Étape 1 -->
+        <!-- Étape 1 : la préparation du réseau privé est visible avant l'inscription de l'établissement. -->
         <StackPanel IsVisible="{Binding IsStepOne}" Spacing="14">
+          <Border Classes="card">
+            <StackPanel Spacing="8">
+              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                <Border Classes="appicon medium" Background="{DynamicResource ToneTeal}"><mi:MaterialIcon Kind="ShieldLockOutline" /></Border>
+                <StackPanel Grid.Column="1" Spacing="3">
+                  <TextBlock Text="Connexion privée à distance" FontWeight="SemiBold" />
+                  <TextBlock Text="Facultatif : préparer Tailscale maintenant ou après la configuration, pour partager SCOLIA entre plusieurs téléphones." Classes="muted" TextWrapping="Wrap" />
+                </StackPanel>
+              </Grid>
+              <Button Content="Installer ou configurer Tailscale" Classes="ghost" Command="{Binding PrepareTailnet}" Height="44" HorizontalAlignment="Stretch" />
+            </StackPanel>
+          </Border>
           <Border Classes="card">
             <StackPanel Spacing="10">
               <Grid ColumnDefinitions="Auto,*">
@@ -148,5 +160,29 @@
         <Button Grid.Column="1" Classes="primary" Command="{Binding Finish}" IsVisible="{Binding IsStepTwo}" IsEnabled="{Binding !Busy}" Height="46" HorizontalAlignment="Right" Content="Terminer" MinWidth="150" />
       </Grid>
     </Border>
+    <!-- Installation demandée depuis la première configuration ; aucun VPN n'est imposé. -->
+    <Grid Grid.RowSpan="3" IsVisible="{Binding Installer.IsOpen}" Background="#CC091326">
+      <Border Classes="card" HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="440"
+              Margin="14" Padding="18" CornerRadius="16" infra:Adaptive.FitDialog="True">
+        <StackPanel Spacing="12">
+          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+            <Border Classes="appicon medium" Background="{DynamicResource ToneTeal}"><mi:MaterialIcon Kind="ShieldCheckOutline" /></Border>
+            <StackPanel Grid.Column="1" Spacing="3">
+              <TextBlock Text="Installation de Tailscale" FontSize="18" FontWeight="SemiBold" TextWrapping="Wrap" />
+              <TextBlock Text="{Binding Installer.Step}" Classes="muted" TextWrapping="Wrap" />
+            </StackPanel>
+          </Grid>
+          <ProgressBar Minimum="0" Maximum="3" Value="{Binding Installer.StepProgress, Mode=OneWay}" Height="6" />
+          <ProgressBar IsIndeterminate="True" IsVisible="{Binding Installer.IsWaiting}" Height="3" />
+          <TextBlock Text="{Binding Installer.Status}" TextWrapping="Wrap" />
+          <TextBlock Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap"
+                     Text="Le magasin officiel affiche le téléchargement réel ; SCOLIA vérifie l'installation au retour. La permission VPN reste sous votre contrôle." />
+          <Button Classes="ghost" Content="Ouvrir le magasin officiel" Command="{Binding Installer.OpenStore}" IsVisible="{Binding Installer.NeedsInstallation}" HorizontalAlignment="Stretch" />
+          <Button Content="Vérifier l'installation" Command="{Binding Installer.Verify}" IsVisible="{Binding Installer.NeedsInstallation}" HorizontalAlignment="Stretch" />
+          <Button Classes="ghost" Content="Configurer Tailscale (première connexion)" Command="{Binding Installer.Configure}" IsVisible="{Binding Installer.IsInstalled}" HorizontalAlignment="Stretch" />
+          <Button Classes="primary" Content="Fermer · Revenir à la configuration" Command="{Binding Installer.Close}" Height="44" HorizontalAlignment="Stretch" />
+        </StackPanel>
+      </Border>
+    </Grid>
   </Grid>
 </UserControl>
