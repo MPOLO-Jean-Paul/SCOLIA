@@ -772,6 +772,42 @@ public sealed class BusinessApiTests : IDisposable
     }
 
     [Fact]
+    public async Task Paiement_invalide_ne_provoque_aucune_importation_partielle()
+    {
+        var admin = await app.InstalledAdmin();
+        using var stream = new MemoryStream();
+        using (var book = new XLWorkbook())
+        {
+            var promotion = book.AddWorksheet("PROMOTIONS");
+            promotion.Cell(4, 1).Value = "Code";
+            promotion.Cell(5, 1).Value = "INF1";
+            promotion.Cell(5, 2).Value = "Première infirmière";
+            promotion.Cell(5, 6).Value = 50000;
+            var apprenant = book.AddWorksheet("APPRENANTS");
+            apprenant.Cell(4, 1).Value = "Matricule";
+            apprenant.Cell(5, 1).Value = "INF175";
+            apprenant.Cell(5, 2).Value = "KAZADI";
+            apprenant.Cell(5, 8).Value = "INF1";
+            var payment = book.AddWorksheet("PAIEMENTS");
+            payment.Cell(4, 1).Value = "ID";
+            payment.Cell(5, 1).Value = 13;
+            payment.Cell(5, 3).Value = "OLD-13";
+            payment.Cell(5, 4).Value = "INEXISTANT";
+            payment.Cell(5, 6).Value = "INF1";
+            payment.Cell(5, 7).Value = "Septembre";
+            payment.Cell(5, 9).Value = 50000;
+            book.SaveAs(stream);
+        }
+        using var form = new MultipartFormDataContent();
+        form.Add(new ByteArrayContent(stream.ToArray()), "fichiers", "erreur.xlsx");
+        var result = await admin.PostAsync("/api/import/scolia?appliquer=true", form).Ok();
+        Assert.False(result.GetProperty("applied").GetBoolean());
+        Assert.NotEmpty(result.GetProperty("errors").EnumerateArray());
+        Assert.Equal(0, (await admin.GetAsync("/api/apprenants?q=INF175").Ok()).GetProperty("total").GetInt32());
+        Assert.Equal(0, (await admin.GetAsync("/api/paiements").Ok()).GetProperty("sum").GetDecimal());
+    }
+
+    [Fact]
     public async Task Legacy_workbook_import_is_simulated_then_applied_once()
     {
         var admin = await app.InstalledAdmin();
