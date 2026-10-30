@@ -29,14 +29,26 @@ if ($LASTEXITCODE) { throw 'dotnet publish client natif' }
 Write-Host "==> Documentation du paquet"
 Copy-Item (Join-Path $racine 'scripts\windows\LIRE_MOI.txt') $paquet
 
-# Application du téléphone, si elle a été produite avant (scripts/publier-android.sh).
+# Livraison SCOLIA Phone : deux plateformes distinctes et aucun faux IPA.
+# Android : APK. iPhone : IPA signe uniquement si fourni par la compilation Apple.
+$phone = Join-Path $paquet 'Phone'
+$android = Join-Path $phone 'Android'
+$iphone = Join-Path $phone 'iPhone'
+New-Item -ItemType Directory -Force $android, $iphone | Out-Null
+Copy-Item (Join-Path $racine 'scripts\windows\LIRE_MOI_TELEPHONE.txt') (Join-Path $android 'LIRE_MOI_ANDROID.txt')
+Copy-Item (Join-Path $racine 'scripts\windows\LIRE_MOI_IPHONE.txt') (Join-Path $iphone 'LIRE_MOI_IPHONE.txt')
 $apk = Get-ChildItem (Join-Path $Sortie 'android') -Filter 'SCOLIA_Pro_*_Android.apk' -ErrorAction SilentlyContinue | Select-Object -First 1
 if ($apk) {
-  Write-Host '==> Application Android jointe au paquet'
-  $telephone = Join-Path $paquet 'Telephone'
-  New-Item -ItemType Directory -Force $telephone | Out-Null
-  Copy-Item $apk.FullName (Join-Path $telephone 'SCOLIA-Android.apk')
-  Copy-Item (Join-Path $racine 'scripts\windows\LIRE_MOI_TELEPHONE.txt') $telephone
+  Write-Host '==> SCOLIA Phone Android (APK)'
+  Copy-Item $apk.FullName (Join-Path $android 'SCOLIA-Android.apk')
+}
+$ipa = Get-ChildItem (Join-Path $Sortie 'ios') -Filter '*.ipa' -ErrorAction SilentlyContinue | Select-Object -First 1
+if ($ipa) {
+  Write-Host '==> SCOLIA Phone iPhone (IPA fourni par le pipeline Apple)'
+  Copy-Item $ipa.FullName (Join-Path $iphone 'SCOLIA-iPhone.ipa')
+}
+else {
+  Write-Host '==> SCOLIA Phone iPhone : source disponible, IPA signe non fourni'
 }
 Get-ChildItem $paquet -Filter *.pdb | Remove-Item
 
