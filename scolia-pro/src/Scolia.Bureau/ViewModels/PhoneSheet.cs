@@ -47,10 +47,14 @@ public sealed class PhoneToolGroupVm : Observable
     {
         Title = title;
         Commands = commands;
+        Icon = FeatureVisuals.Icon(title);
+        Brush = ThemeBrush.Get(FeatureVisuals.Tone(title));
         Toggle = new RelayCommand(() => IsExpanded = !IsExpanded);
     }
 
     public string Title { get; }
+    public MaterialIconKind Icon { get; }
+    public IBrush Brush { get; }
     public IReadOnlyList<RibbonCommandVm> Commands { get; }
     public bool IsExpanded { get => isExpanded; set => Set(ref isExpanded, value); }
     public RelayCommand Toggle { get; }
