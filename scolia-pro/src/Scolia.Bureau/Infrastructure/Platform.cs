@@ -30,6 +30,14 @@ public static class Platform
     /// <summary>Activation VPN demandée sans ouvrir la fenêtre Tailscale.</summary>
     public static Func<Task<string>>? ConnectTailscaleInBackground { get; set; }
 
+    public static Func<bool>? IsTailscaleInstalled { get; set; }
+    public static Func<string>? OpenTailscaleInstallPage { get; set; }
+
+    /// <summary>Android signale le retour à SCOLIA après une installation externe.</summary>
+    public static event Action? AppResumed;
+    public static void NotifyAppResumed() => AppResumed?.Invoke();
+
+
     /// <summary>Dossier où les documents sont enregistrés sur le téléphone.</summary>
     public static string? DocumentsFolder { get; set; }
 
