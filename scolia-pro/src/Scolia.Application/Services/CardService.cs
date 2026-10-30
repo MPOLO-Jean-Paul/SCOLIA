@@ -63,16 +63,19 @@ public sealed class CardService(IAppDbContext db, IWriteGate gate, IAuditLog aud
         }
 
         var school = await db.Schools.AsNoTracking().OrderBy(x => x.CreatedAtUtc).FirstAsync(ct);
-        // Mentions officielles de la version 79, sauf si l'établissement a saisi les siennes ; le logo est celui du profil.
+        if (school.Logo is not { Length: > 0 })
+            throw new DomainException("cartes",
+                "Le logo de votre établissement n'est pas configuré. Ajoutez-le dans Paramètres > Établissement avant d'imprimer les cartes d'accès.");
+        // Les cartes reprennent l'identité propre à l'établissement actif, jamais un nom ou un sceau ITM imposé.
         var header = new SchoolCardHeader(
             CardHeaderDefaults.Or(school.Country, CardHeaderDefaults.Country),
             CardHeaderDefaults.Or(school.CardMinistry, CardHeaderDefaults.Ministry),
             CardHeaderDefaults.Or(school.CardDirection, CardHeaderDefaults.Direction),
             CardHeaderDefaults.Or(school.CardDivision, CardHeaderDefaults.Division),
             CardHeaderDefaults.Or(school.CardZone, CardHeaderDefaults.CityZone),
-            CardHeaderDefaults.Or(school.CardInstitute, CardHeaderDefaults.Institute),
-            CardHeaderDefaults.Or(school.CardAddress, CardHeaderDefaults.Address),
-            school.Logo is { Length: > 0 } logo ? logo : null);
+            CardHeaderDefaults.Or(school.CardInstitute, school.Name),
+            CardHeaderDefaults.Or(school.CardAddress, school.Address ?? string.Empty),
+            school.Logo);
         var cards = new List<CardItem>();
         foreach (var r in selected)
         {
