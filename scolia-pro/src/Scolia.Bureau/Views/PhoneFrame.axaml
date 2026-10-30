@@ -73,6 +73,18 @@
         </StackPanel>
       </Border>
     </DataTemplate>
+    <!-- Un bloc unique pour chaque famille : pages et commandes dans une seule carte. -->
+    <DataTemplate x:Key="UnifiedPhoneBlock">
+      <StackPanel Spacing="4" Margin="0,10,0,6">
+        <TextBlock Text="{Binding Title}" Classes="phoneblocktitle" />
+        <Border Classes="phoneblockcard">
+          <StackPanel Spacing="0">
+            <ItemsControl ItemsSource="{Binding NavigationGroups}" ItemTemplate="{StaticResource NavGroup}" />
+            <ItemsControl ItemsSource="{Binding ToolGroups}" ItemTemplate="{StaticResource PhoneToolGroup}" />
+          </StackPanel>
+        </Border>
+      </StackPanel>
+    </DataTemplate>
     <DataTemplate x:Key="PhoneToolBlock">
       <StackPanel Spacing="4" Margin="0,10,0,6">
         <TextBlock Text="{Binding Title}" Classes="phoneblocktitle" />
@@ -223,10 +235,8 @@
             </StackPanel>
           </Border>
 
-          <ItemsControl ItemsSource="{Binding NavigationBlocks}" ItemTemplate="{StaticResource NavBlock}" />
-
-          <!-- Blocs d'actions : même regroupement que les pages, sans lignes sous les titres. -->
-          <ItemsControl ItemsSource="{Binding PhoneToolBlocks}" ItemTemplate="{StaticResource PhoneToolBlock}" />
+          <!-- Une seule liste de blocs, sans répétition des familles ni des actions. -->
+          <ItemsControl ItemsSource="{Binding PhoneMenuBlocks}" ItemTemplate="{StaticResource UnifiedPhoneBlock}" />
 
           <Border Classes="phonegroup" Margin="0,18,0,0">
             <StackPanel>

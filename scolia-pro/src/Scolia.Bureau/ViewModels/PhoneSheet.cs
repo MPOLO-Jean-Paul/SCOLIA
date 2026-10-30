@@ -64,6 +64,47 @@ public sealed class PhoneToolGroupVm : Observable
     public RelayCommand Toggle { get; }
 }
 
+/// <summary>
+/// Menu mobile unifié : les pages et leurs commandes apparaissent dans le même
+/// bloc métier. Chaque groupe n'est présent qu'une fois, sans relancer les
+/// mêmes fonctionnalités dans un deuxième bloc plus bas.
+/// </summary>
+public sealed record PhoneMenuBlockVm(string Title, IReadOnlyList<NavGroupVm> NavigationGroups,
+    IReadOnlyList<PhoneToolGroupVm> ToolGroups)
+{
+    public static IReadOnlyList<PhoneMenuBlockVm> Build(IReadOnlyList<NavGroupVm> navigation,
+        IReadOnlyList<PhoneToolGroupVm> tools)
+    {
+        var usedNav = new HashSet<NavGroupVm>();
+        var usedTools = new HashSet<PhoneToolGroupVm>();
+        var result = new List<PhoneMenuBlockVm>();
+
+        void Add(string title, string[] navigationTitles, string[] toolTitles)
+        {
+            var nav = navigation.Where(g => navigationTitles.Contains(g.Title, StringComparer.Ordinal)
+                && usedNav.Add(g)).ToArray();
+            var actions = tools.Where(g => toolTitles.Contains(g.Title, StringComparer.Ordinal)
+                && usedTools.Add(g)).ToArray();
+            if (nav.Length > 0 || actions.Length > 0)
+                result.Add(new PhoneMenuBlockVm(title, nav, actions));
+        }
+
+        Add("ACCUEIL", [""], []);
+        Add("DONNÉES ET SAUVEGARDES", ["Données"], ["Données", "Sauvegardes", "Export", "Exports"]);
+        Add("GESTION SCOLAIRE", ["Secrétariat", "Scolarité"], ["Secrétariat", "Scolarité", "Apprenants"]);
+        Add("GESTION FINANCIÈRE", ["Finances"], ["Finances", "Paiements", "Rapports"]);
+        Add("ADMINISTRATION", ["Administration", "Paramètres"], ["Administration", "Paramètres", "Sécurité"]);
+        Add("AFFICHAGE", [], ["Affichage"]);
+        Add("AIDE", [], ["Aide"]);
+
+        var remainingNav = navigation.Where(g => usedNav.Add(g)).ToArray();
+        var remainingTools = tools.Where(g => usedTools.Add(g)).ToArray();
+        if (remainingNav.Length > 0 || remainingTools.Length > 0)
+            result.Add(new PhoneMenuBlockVm("AUTRES OUTILS", remainingNav, remainingTools));
+        return result;
+    }
+}
+
 /// <summary>Les commandes du ruban apparaissent en blocs cohérents sous les pages.</summary>
 public sealed record PhoneToolBlockVm(string Title, IReadOnlyList<PhoneToolGroupVm> Groups)
 {

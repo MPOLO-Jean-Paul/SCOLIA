@@ -1152,6 +1152,8 @@ public sealed class ShellViewModel : Observable
     /// </summary>
     public IReadOnlyList<PhoneToolGroupVm> PhoneTools { get; private set; } = [];
     public IReadOnlyList<PhoneToolBlockVm> PhoneToolBlocks { get; private set; } = [];
+    /// <summary>Une seule liste de blocs métier sur téléphone, pages et actions réunies.</summary>
+    public IReadOnlyList<PhoneMenuBlockVm> PhoneMenuBlocks { get; private set; } = [];
 
     private static readonly HashSet<string> DesktopOnly = new(StringComparer.Ordinal)
     {
@@ -1159,6 +1161,9 @@ public sealed class ShellViewModel : Observable
         "Réduire le ruban", "Zoom arrière", "Zoom avant", "Zoom 100 %", "Densité compacte", "Animations",
         // Le réglage complet est accessible dans Paramètres ; ne pas dupliquer le même écran dans Affichage.
         "Préférences",
+        // Toutes ces commandes sont déjà dans Paramètres de l'établissement ou
+        // concernent exclusivement un ordinateur : ne pas les dupliquer sur mobile.
+        "Mode sombre", "Taille du texte",
     };
 
     private void RebuildPhoneTools()
@@ -1187,8 +1192,10 @@ public sealed class ShellViewModel : Observable
         }
         PhoneTools = groups;
         PhoneToolBlocks = PhoneToolBlockVm.Organize(groups);
+        PhoneMenuBlocks = PhoneMenuBlockVm.Build(Navigation, PhoneTools);
         Raise(nameof(PhoneTools));
         Raise(nameof(PhoneToolBlocks));
+        Raise(nameof(PhoneMenuBlocks));
     }
 
     private bool phoneMenuOpen;
