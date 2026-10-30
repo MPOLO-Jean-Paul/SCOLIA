@@ -29,6 +29,7 @@ public sealed class ConnectionViewModel : Observable
         Search = new AsyncCommand(SearchAsync);
         UseThisComputer = new AsyncCommand(() => shell.UseThisComputerAsync());
         ConnectAddress = new AsyncCommand(ConnectAddressAsync);
+        ConnectTailnet = new AsyncCommand(ConnectTailnetAsync);
         JoinInternet = new AsyncCommand(JoinInternetAsync);
     }
 
@@ -47,6 +48,40 @@ public sealed class ConnectionViewModel : Observable
     /// <summary>Adresse saisie à la main, quand le Wi-Fi bloque la recherche automatique : 192.168.1.10, ou 192.168.1.10:5080.</summary>
     public string Address { get => address; set => Set(ref address, value); }
     public AsyncCommand ConnectAddress { get; }
+    private string tailscaleAddress = string.Empty;
+    /// <summary>IPv4 Tailscale ou nom MagicDNS complet de l'appareil qui porte la base.</summary>
+    public string TailscaleAddress { get => tailscaleAddress; set => Set(ref tailscaleAddress, value); }
+    public AsyncCommand ConnectTailnet { get; }
+
+    private async Task ConnectTailnetAsync()
+    {
+        if (!TailscaleEndpoint.TryParse(TailscaleAddress, PosteAdmin.DefaultPort, out var target) || target is null)
+        {
+            Message = "Adresse Tailscale invalide. Utilisez l'adresse 100.64–100.127.x.x ou un nom complet .ts.net, avec le port SCOLIA.";
+            return;
+        }
+
+        Searching = true;
+        Message = "Vérification de la liaison privée Tailscale…";
+        try
+        {
+            using var probe = new Api.ScoliaClient(target);
+            if (!await probe.IsRunningAsync())
+            {
+                Message = "SCOLIA ne répond pas sur le réseau privé. Vérifiez Tailscale sur les deux appareils, leur autorisation et le serveur SCOLIA.";
+                return;
+            }
+            var status = await probe.GetAsync<Api.SetupStatusDto>("api/installation");
+            await shell.JoinAsync(new DiscoveredServer(target.Host,
+                status.SchoolName ?? "Établissement", target.Host, string.Empty, target));
+            Message = "Connecté sur le réseau privé Tailscale. Les autorisations de connexion SCOLIA restent nécessaires.";
+        }
+        catch (Exception ex) when (ex is HttpRequestException or Api.ApiException or TaskCanceledException)
+        {
+            Message = "Connexion Tailscale impossible. Contrôlez que les deux appareils sont approuvés dans le même tailnet et que le port SCOLIA est accessible.";
+        }
+        finally { Searching = false; }
+    }
 
     /// <summary>Vérifie que SCOLIA répond à l'adresse saisie, puis relie l'appareil à ce serveur.</summary>
     private async Task ConnectAddressAsync()
