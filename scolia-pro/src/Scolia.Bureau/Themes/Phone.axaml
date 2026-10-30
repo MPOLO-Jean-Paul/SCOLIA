@@ -79,10 +79,14 @@
       <Setter Property="FontWeight" Value="SemiBold" />
       <Setter Property="Margin" Value="14,5,0,7" />
     </Style>
-    <Style Selector="Border.phoneaccordion">
+    <Style Selector="Border.phoneblockcard">
       <Setter Property="Background" Value="{DynamicResource GroupBrush}" />
-      <Setter Property="CornerRadius" Value="16" />
+      <Setter Property="CornerRadius" Value="18" />
       <Setter Property="ClipToBounds" Value="True" />
+    </Style>
+    <Style Selector="Border.phoneaccordion">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="CornerRadius" Value="0" />
     </Style>
     <Style Selector="Border.phonecontent">
       <Setter Property="Background" Value="Transparent" />
