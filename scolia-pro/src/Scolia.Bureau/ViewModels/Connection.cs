@@ -76,7 +76,7 @@ public sealed class ConnectionViewModel : Observable
         {
             // Lors d'un choix volontaire de rejoindre le tailnet, demander sa
             // reconnexion discrète sans présenter l'envoi comme un succès.
-            if (Platform.IsMobile && !TailscaleCompanion.IsInstalled())
+            if (Platform.IsMobile && Platform.IsTailscaleInstalled?.Invoke() == false)
             {
                 Message = "Tailscale est absent. Lancez son assistant d'installation avant de rejoindre le serveur.";
                 return;
