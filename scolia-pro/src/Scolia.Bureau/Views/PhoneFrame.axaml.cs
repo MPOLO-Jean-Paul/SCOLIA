@@ -65,7 +65,7 @@ public partial class PhoneFrame : UserControl
     private void ApplyTransition()
     {
         PhoneHost.PageTransition = subscribedShell is { } shell && shell.Prefs.Animations && shell.Prefs.PageTransitions
-            ? new Avalonia.Animation.CrossFade(TimeSpan.FromMilliseconds(150) * shell.Prefs.SpeedFactor) : null;
+            ? new Avalonia.Animation.CrossFade(TimeSpan.FromMilliseconds(120) * shell.Prefs.SpeedFactor) : null;
     }
 
     private void OnPreferencesChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs args)
