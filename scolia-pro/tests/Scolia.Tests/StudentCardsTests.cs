@@ -127,9 +127,8 @@ public sealed class StudentCardsApiTests : IDisposable
         var admin = await app.InstalledAdmin();
         var promotion = await PromotionAsync(admin);
         var student = await StudentAsync(admin, promotion, "MUKENDI");
-        var response = await admin.Post("/api/cartes/export",
-            new { enrollmentIds = new[] { student }, month = 9, year = 2026, copies = 1, includeLeft = false });
-        var invalid = await response.Fail();
+        var invalid = await admin.Post("/api/cartes/export",
+            new { enrollmentIds = new[] { student }, month = 9, year = 2026, copies = 1, includeLeft = false }).Fail();
         Assert.Equal(HttpStatusCode.BadRequest, invalid.Status);
         Assert.Contains("logo", invalid.Body.ToString(), StringComparison.OrdinalIgnoreCase);
     }
