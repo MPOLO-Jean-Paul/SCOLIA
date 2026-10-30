@@ -12,7 +12,7 @@ namespace Scolia.Mobile.Server;
 /// n'est faite sur les téléphones clients.
 /// </summary>
 [BroadcastReceiver(Enabled = true, Exported = true)]
-[IntentFilter([Intent.ActionBootCompleted])]
+[IntentFilter(new[] { Intent.ActionBootCompleted })]
 public sealed class BootReceiver : BroadcastReceiver
 {
     public override void OnReceive(Context? context, Intent? intent)
