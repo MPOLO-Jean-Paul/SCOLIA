@@ -184,15 +184,16 @@ public static class MobilePlatform
             return "Le téléphone n'est pas prêt à ouvrir Tailscale.";
         try
         {
-            var launch = IsTailscaleInstalled()
-                ? ctx.PackageManager?.GetLaunchIntentForPackage("com.tailscale.ipn")
-                : null;
+            var installed = IsTailscaleInstalled();
+            var launch = installed ? ctx.PackageManager?.GetLaunchIntentForPackage("com.tailscale.ipn") : null;
             if (launch is not null)
             {
                 launch.AddFlags(ActivityFlags.NewTask);
                 ctx.StartActivity(launch);
                 return "Tailscale est ouvert. Connectez-vous au réseau privé de l'établissement, activez le VPN et revenez dans SCOLIA.";
             }
+            if (installed)
+                return "Tailscale est déjà installé. Android n'a pas transmis son écran de lancement : ouvrez-le depuis la liste de vos applications, activez le VPN, puis revenez dans SCOLIA.";
 
             var market = new Intent(Intent.ActionView,
                 AndroidUri.Parse("market://details?id=com.tailscale.ipn"));
