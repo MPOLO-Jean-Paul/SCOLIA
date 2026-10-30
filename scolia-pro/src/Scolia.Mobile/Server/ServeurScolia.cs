@@ -38,7 +38,23 @@ public sealed class ServeurScolia : Service
         if (OperatingSystem.IsAndroidVersionAtLeast(34)) StartForeground(NotificationId, notification, ForegroundService.TypeSpecialUse);
         else StartForeground(NotificationId, notification);
         Hold();
-        // Arrêté par Android faute de mémoire : il est relancé, et le serveur avec lui à la réouverture de SCOLIA.
+        // Si Android recrée le service après une récupération mémoire, rétablir aussi
+        // le serveur de données. Une notification seule ne rendrait pas SCOLIA accessible.
+        // Aucune tentative si ce téléphone est configuré comme simple client.
+        try
+        {
+            if (Scolia.Bureau.Infrastructure.ConnectionStore.Load()?.Mode ==
+                Scolia.Bureau.Infrastructure.ConnectionSettings.Local)
+            {
+                Scolia.Mobile.Security.AndroidSecrets.Initialize();
+                PhoneServer.Get(ApplicationContext ?? this).RestoreAfterServiceRestart();
+            }
+        }
+        catch (Exception ex)
+        {
+            Android.Util.Log.Warn("SCOLIA", $"Serveur non restauré : {ex.Message}");
+        }
+        // La reprise reste soumise au système Android et à l'alimentation de l'appareil.
         return StartCommandResult.Sticky;
     }
 
@@ -59,7 +75,7 @@ public sealed class ServeurScolia : Service
         var tap = open is null ? null : PendingIntent.GetActivity(this, 0, open, PendingIntentFlags.Immutable | PendingIntentFlags.UpdateCurrent);
         var builder = OperatingSystem.IsAndroidVersionAtLeast(26) ? new Notification.Builder(this, Channel) : new Notification.Builder(this);
         builder.SetContentTitle("SCOLIA · serveur actif")
-            .SetContentText("Les autres postes de l'établissement travaillent sur ce téléphone. Gardez-le allumé et sur le Wi-Fi.")
+            .SetContentText("Le serveur SCOLIA partage les données locales. Gardez Tailscale connecté si vous travaillez à distance.")
             .SetSmallIcon(Resource.Mipmap.icon)
             .SetOngoing(true);
         if (tap is not null) builder.SetContentIntent(tap);
