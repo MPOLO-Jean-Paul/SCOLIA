@@ -1170,7 +1170,7 @@ public sealed class ShellViewModel : Observable
 
     // Affichage, administration et aide sont des destinations uniques, quelle que
     // soit leur provenance dans les onglets du bureau.
-    internal static string CanonicalPhoneGroup(string label, string originalGroup)
+    public static string CanonicalPhoneGroup(string label, string originalGroup)
     {
         var name = label.Trim();
         if (name is "Thème" or "Couleurs" or "Couleur d'accent" or "Thème et couleurs"
