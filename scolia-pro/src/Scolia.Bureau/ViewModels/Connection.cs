@@ -30,6 +30,7 @@ public sealed class ConnectionViewModel : Observable
         UseThisComputer = new AsyncCommand(() => shell.UseThisComputerAsync());
         ConnectAddress = new AsyncCommand(ConnectAddressAsync);
         ConnectTailnet = new AsyncCommand(ConnectTailnetAsync);
+        PrepareTailnet = new RelayCommand(() => Message = TailscaleCompanion.Open());
         JoinInternet = new AsyncCommand(JoinInternetAsync);
     }
 
@@ -52,9 +53,17 @@ public sealed class ConnectionViewModel : Observable
     /// <summary>IPv4 Tailscale ou nom MagicDNS complet de l'appareil qui porte la base.</summary>
     public string TailscaleAddress { get => tailscaleAddress; set => Set(ref tailscaleAddress, value); }
     public AsyncCommand ConnectTailnet { get; }
+    /// <summary>Ouvre Tailscale (ou l'installateur fourni dans le kit) après une action explicite.</summary>
+    public RelayCommand PrepareTailnet { get; }
 
     private async Task ConnectTailnetAsync()
     {
+        if (string.IsNullOrWhiteSpace(TailscaleAddress))
+        {
+            Message = "Préparation du réseau privé : " + TailscaleCompanion.Open()
+                + " Revenez dans SCOLIA pour saisir l'adresse de l'appareil principal.";
+            return;
+        }
         if (!TailscaleEndpoint.TryParse(TailscaleAddress, PosteAdmin.DefaultPort, out var target) || target is null)
         {
             Message = "Adresse Tailscale invalide. Utilisez l'adresse 100.64–100.127.x.x ou un nom complet .ts.net, avec le port SCOLIA.";
@@ -68,7 +77,9 @@ public sealed class ConnectionViewModel : Observable
             using var probe = new Api.ScoliaClient(target);
             if (!await probe.IsRunningAsync())
             {
-                Message = "SCOLIA ne répond pas sur le réseau privé. Vérifiez Tailscale sur les deux appareils, leur autorisation et le serveur SCOLIA.";
+                Message = "SCOLIA ne répond pas sur le réseau privé. "
+                    + TailscaleCompanion.Open()
+                    + " Vérifiez ensuite que le serveur SCOLIA est actif sur l'appareil principal.";
                 return;
             }
             var status = await probe.GetAsync<Api.SetupStatusDto>("api/installation");
@@ -78,7 +89,8 @@ public sealed class ConnectionViewModel : Observable
         }
         catch (Exception ex) when (ex is HttpRequestException or Api.ApiException or TaskCanceledException)
         {
-            Message = "Connexion Tailscale impossible. Contrôlez que les deux appareils sont approuvés dans le même tailnet et que le port SCOLIA est accessible.";
+            Message = "Connexion Tailscale impossible. " + TailscaleCompanion.Open()
+                + " Contrôlez ensuite l'approbation des deux appareils et le port SCOLIA.";
         }
         finally { Searching = false; }
     }
