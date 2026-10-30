@@ -58,7 +58,12 @@ public sealed class ShellViewModel : Observable
         {
             if (args.PropertyName == nameof(Preferences.Sidebar)) Raise(nameof(SidebarShown));
             if (args.PropertyName == nameof(Preferences.StatusBar)) Raise(nameof(ShowStatusBar));
-            prefs.Apply();
+            // Les sons et la vitesse de transition ne changent pas les ressources
+            // graphiques : les réappliquer ici reconstruirait inutilement toute l'interface.
+            if (args.PropertyName is nameof(Preferences.Theme) or nameof(Preferences.Accent)
+                or nameof(Preferences.Font) or nameof(Preferences.Scale)
+                or nameof(Preferences.Compact) or nameof(Preferences.Grid))
+                prefs.Apply();
             prefs.Save();
             // Une préférence ne change pas les permissions ni les pages disponibles :
             // conserver les objets de navigation et leurs états, sans recréer le menu.
