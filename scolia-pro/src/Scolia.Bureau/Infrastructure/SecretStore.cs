@@ -34,8 +34,9 @@ public static class SecretStore
             Directory.CreateDirectory(Path.GetDirectoryName(path)!);
             if (!File.Exists(path))
             {
-                using var created = new FileStream(path, new FileStreamOptions
-                { Mode = FileMode.CreateNew, Access = FileAccess.Write, UnixCreateMode = UnixFileMode.UserRead | UnixFileMode.UserWrite });
+                var options = new FileStreamOptions { Mode = FileMode.CreateNew, Access = FileAccess.Write };
+                if (!OperatingSystem.IsWindows()) options.UnixCreateMode = UnixFileMode.UserRead | UnixFileMode.UserWrite;
+                using var created = new FileStream(path, options);
                 created.Write(RandomNumberGenerator.GetBytes(32));
             }
             key = File.ReadAllBytes(path);

@@ -28,7 +28,7 @@ public static class RelayWire
 
     public static byte[] Seal(RemoteLink link, byte[] epoch, Guid id, long sequence, bool response, ReadOnlySpan<byte> body)
     {
-        if (sequence < 0) throw new ArgumentOutOfRangeException(nameof(sequence));
+        ArgumentOutOfRangeException.ThrowIfNegative(sequence);
         var frame = new byte[24 + body.Length + 16];
         id.TryWriteBytes(frame);
         BinaryPrimitives.WriteInt64BigEndian(frame.AsSpan(16, 8), sequence);

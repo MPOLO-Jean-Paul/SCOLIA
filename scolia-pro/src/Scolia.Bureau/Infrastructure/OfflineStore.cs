@@ -67,7 +67,7 @@ public sealed class OfflineStore
     private string CredentialFile => "session.json";
 
     private sealed record SavedPage(string Json, DateTime SavedAt);
-    private string PageKey(string path) => "page:" + Safe(User) + ":" + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(path)));
+    private string PageKey(string path) => "page:" + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(User.ToUpperInvariant()))) + ":" + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(path)));
 
     /// <summary>Pages chiffrées dans SQLite ; les anciennes pages sont migrées à leur première lecture.</summary>
     public void SavePage(string path, string json)

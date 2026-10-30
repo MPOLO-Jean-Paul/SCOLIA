@@ -57,6 +57,28 @@ jobs:
           dotnet build Scolia.sln -c Release
           dotnet build tests/Scolia.Bureau.Captures -c Release
 
+      - name: Relais longue distance (publication autonome Linux)
+        run: dotnet publish src/Scolia.Relay -c Release --no-restore -o artifacts/relais
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SCOLIA_Pro_Relais_Linux
+          path: scolia-pro/artifacts/relais/
+          retention-days: 30
+
+      - name: Sources complètes et état de référence
+        run: |
+          git archive --format=zip HEAD -o artifacts/SCOLIA_Pro_Sources.zip
+          sha256sum artifacts/SCOLIA_Pro_Sources.zip > artifacts/SCOLIA_Pro_Sources.sha256
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SCOLIA_Pro_Sources
+          path: |
+            scolia-pro/artifacts/SCOLIA_Pro_Sources.zip
+            scolia-pro/artifacts/SCOLIA_Pro_Sources.sha256
+          retention-days: 30
+
       - name: Tests du domaine et de l'API
         run: dotnet test Scolia.sln -c Release --no-build --logger "trx;LogFileName=resultats.trx"
 

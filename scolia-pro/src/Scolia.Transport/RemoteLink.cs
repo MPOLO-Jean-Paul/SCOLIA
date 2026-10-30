@@ -8,7 +8,7 @@ namespace Scolia.Transport;
 public sealed record RemoteLink(string Relay, string Room, string ClientToken, string Key, DateTime ExpiresUtc, string? HostToken = null)
 {
     public const string Prefix = "scolia-link:v1:";
-    public Uri VirtualServer => new($"http://{Room}.scolia.invalid/");
+    public Uri VirtualServer => new($"http://{Room[..32]}.{Room[32..]}.scolia.invalid/");
     public bool CanHost => HostToken is not null;
 
     public static RemoteLink Create(string relay)
@@ -25,7 +25,7 @@ public sealed record RemoteLink(string Relay, string Room, string ClientToken, s
             uri.UserInfo.Length > 0 || uri.Query.Length > 0 || uri.Fragment.Length > 0 || uri.AbsolutePath != "/")
             throw new FormatException("Le relais doit être une adresse wss:// avec un certificat valide, sans chemin ni identifiants.");
         foreach (var value in new[] { Room, ClientToken, Key })
-            if (value.Length != 64 || !value.All(Uri.IsHexDigit)) throw new FormatException("Invitation de liaison invalide.");
+            if (value is not { Length: 64 } || !value.All(Uri.IsHexDigit)) throw new FormatException("Invitation de liaison invalide.");
         if (HostToken is not null && (HostToken.Length != 64 || !HostToken.All(Uri.IsHexDigit) || Hash(HostToken) != Room))
             throw new FormatException("Identité de l'appareil principal invalide.");
         if (ExpiresUtc <= DateTime.UtcNow || ExpiresUtc > DateTime.UtcNow.AddDays(31))

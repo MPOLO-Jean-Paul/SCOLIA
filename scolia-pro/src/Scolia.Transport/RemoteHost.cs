@@ -51,7 +51,11 @@ public sealed class RemoteHost : IDisposable
                     var frame = await RelayWire.ReceiveAsync(socket, session.Token);
                     if (frame.Length == 16)
                     {
-                        if (cancellations.TryGetValue(new Guid(frame), out var cancelled)) await cancelled.CancelAsync();
+                        if (cancellations.TryGetValue(new Guid(frame), out var cancelled))
+                        {
+                            try { await cancelled.CancelAsync(); }
+                            catch (ObjectDisposedException) { }
+                        }
                         continue;
                     }
                     if (frame.Length < 40) continue;
@@ -102,6 +106,7 @@ public sealed class RemoteHost : IDisposable
         try
         {
             var input = JsonSerializer.Deserialize<RemoteRequest>(clear) ?? throw new IOException("Requête invalide.");
+            if (input.Path is null || input.Headers is null || input.Body is null) throw new IOException("Requête incomplète.");
             var uri = new Uri(http.BaseAddress!, input.Path);
             if (uri.Scheme != http.BaseAddress!.Scheme || uri.Authority != http.BaseAddress.Authority ||
                 !uri.AbsolutePath.StartsWith("/api/", StringComparison.Ordinal) ||
