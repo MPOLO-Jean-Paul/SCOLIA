@@ -300,6 +300,8 @@ public sealed class ShellViewModel : Observable
             Raise(nameof(PhonePage));
             PhoneMenuOpen = false;
             Sheet = null;
+            // Entrer dans une fonctionnalité referme son accordéon, y compris au clavier.
+            CollapseGroups();
             MarkNavigation();
         }
     }
@@ -959,14 +961,16 @@ public sealed class ShellViewModel : Observable
         // La barre latérale suit le rôle et le thème (ses couleurs sont lues au moment de la construction).
         if (rebuildNavigation)
         {
-            var expanded = Navigation.Where(g => g.IsExpanded).Select(g => g.Title)
-                .ToHashSet(StringComparer.Ordinal);
-            var hadMenu = Navigation.Count != 0;
+            var expandedTitle = Navigation.FirstOrDefault(g => g.HasTitle && g.IsExpanded)?.Title;
             Navigation = IsLoggedIn ? Sidebar.Build(this) : [];
-            if (hadMenu)
-                foreach (var group in Navigation)
-                    group.IsExpanded = expanded.Contains(group.Title);
+            if (expandedTitle is not null)
+            {
+                var active = Navigation.FirstOrDefault(g => g.Title == expandedTitle);
+                if (active is not null) active.IsExpanded = true;
+            }
+            NavigationBlocks = Sidebar.Blocks(Navigation);
             Raise(nameof(Navigation));
+            Raise(nameof(NavigationBlocks));
             RebuildPhoneTabs();
         }
         else RebuildPhoneTools();
@@ -975,6 +979,30 @@ public sealed class ShellViewModel : Observable
 
     /// <summary>Navigation principale, à gauche : un écran par ligne, rangés par métier.</summary>
     public IReadOnlyList<NavGroupVm> Navigation { get; private set; } = [];
+    public IReadOnlyList<NavBlockVm> NavigationBlocks { get; private set; } = [];
+
+    /// <summary>Un seul accordéon ouvert, qu'il appartienne au menu ou au ruban mobile.</summary>
+    public void CollapseGroups()
+    {
+        foreach (var group in Navigation)
+            if (group.HasTitle) group.IsExpanded = false;
+        foreach (var group in PhoneTools)
+            group.IsExpanded = false;
+    }
+
+    public void ToggleNavGroup(NavGroupVm selected)
+    {
+        var wasOpen = selected.IsExpanded;
+        CollapseGroups();
+        if (!wasOpen) selected.IsExpanded = true;
+    }
+
+    public void TogglePhoneToolGroup(PhoneToolGroupVm selected)
+    {
+        var wasOpen = selected.IsExpanded;
+        CollapseGroups();
+        if (!wasOpen) selected.IsExpanded = true;
+    }
 
     /// <summary>Surligne l'entrée de la barre latérale qui correspond à l'écran affiché.</summary>
     private void MarkNavigation()
@@ -1095,6 +1123,7 @@ public sealed class ShellViewModel : Observable
     /// Ce qui ne sert qu'à l'ordinateur en est exclu : fenêtre, zoom, ruban, info-bulles et quadrillage.
     /// </summary>
     public IReadOnlyList<PhoneToolGroupVm> PhoneTools { get; private set; } = [];
+    public IReadOnlyList<PhoneToolBlockVm> PhoneToolBlocks { get; private set; } = [];
 
     private static readonly HashSet<string> DesktopOnly = new(StringComparer.Ordinal)
     {
@@ -1105,7 +1134,7 @@ public sealed class ShellViewModel : Observable
     private void RebuildPhoneTools()
     {
         var pages = Navigation.SelectMany(g => g.Items).Select(i => i.Label).ToHashSet(StringComparer.Ordinal);
-        var expanded = PhoneTools.Where(g => g.IsExpanded).Select(g => g.Title).ToHashSet(StringComparer.Ordinal);
+        var expandedTitle = PhoneTools.FirstOrDefault(g => g.IsExpanded)?.Title;
         var groups = new List<PhoneToolGroupVm>();
         foreach (var tab in Tabs.Where(t => t.Id is not ("fichier" or "accueil")))
         {
@@ -1115,12 +1144,18 @@ public sealed class ShellViewModel : Observable
                 .ToList();
             if (commands.Count > 0)
             {
-                var group = new PhoneToolGroupVm(tab.Title, commands) { IsExpanded = expanded.Contains(tab.Title) };
+                var group = new PhoneToolGroupVm(tab.Title, commands, TogglePhoneToolGroup)
+                {
+                    IsExpanded = expandedTitle == tab.Title &&
+                        !Navigation.Any(g => g.HasTitle && g.IsExpanded)
+                };
                 groups.Add(group);
             }
         }
         PhoneTools = groups;
+        PhoneToolBlocks = PhoneToolBlockVm.Organize(groups);
         Raise(nameof(PhoneTools));
+        Raise(nameof(PhoneToolBlocks));
     }
 
     private bool phoneMenuOpen;
@@ -1132,6 +1167,7 @@ public sealed class ShellViewModel : Observable
         set
         {
             if (!Set(ref phoneMenuOpen, value)) return;
+            if (!value) CollapseGroups();
             Raise(nameof(PhoneMenuSelected));
         }
     }
@@ -1285,7 +1321,9 @@ public sealed class ShellViewModel : Observable
         Tabs.Clear();
         ClearHistory();
         Navigation = [];
+        NavigationBlocks = [];
         Raise(nameof(Navigation));
+        Raise(nameof(NavigationBlocks));
         RebuildPhoneTabs();
         PhoneMenuOpen = false;
         Sheet = null;
