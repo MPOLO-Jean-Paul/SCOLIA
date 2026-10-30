@@ -131,11 +131,13 @@ public sealed class ScoliaClient : IDisposable
         try
         {
             using var response = await http.GetAsync("api/sante", ct);
-            if (response.IsSuccessStatusCode) SetOnline(true);
+            // Une sonde négative doit être annoncée à la synchronisation :
+            // autrement le poste reste affiché « en ligne » après une coupure VPN.
+            SetOnline(response.IsSuccessStatusCode);
             return response.IsSuccessStatusCode;
         }
-        catch (HttpRequestException) { return false; }
-        catch (TaskCanceledException) { return false; }
+        catch (HttpRequestException) { SetOnline(false); return false; }
+        catch (TaskCanceledException) { if (!ct.IsCancellationRequested) SetOnline(false); return false; }
     }
 
     public async Task<SessionDto?> CurrentSessionAsync(CancellationToken ct = default)
