@@ -21,7 +21,7 @@ namespace Scolia.Bureau.Views;
 public partial class MainView : UserControl
 {
     /// <summary>Durée du fondu entre deux pages : assez courte pour ne pas ralentir la saisie.</summary>
-    private static readonly TimeSpan PageFade = TimeSpan.FromMilliseconds(180);
+    private static readonly TimeSpan PageFade = TimeSpan.FromMilliseconds(135);
 
     private ShellViewModel? subscribedShell;
     private PageViewModel? observedPage;
@@ -120,8 +120,12 @@ public partial class MainView : UserControl
         if (subscribedShell is not { } shell) return;
         if (args.PropertyName is nameof(Preferences.Animations) or nameof(Preferences.PageTransitions) or nameof(Preferences.Speed))
             ApplyPageTransition(shell.Prefs);
-        // Le zoom et la police peuvent élargir les boutons sans changer la taille de la fenêtre.
-        QueueFitPageActions();
+        // Ne pas mesurer de nouveau l'en-tête quand un son, une animation ou
+        // une préférence sans incidence géométrique est modifié.
+        if (args.PropertyName is nameof(Preferences.Scale) or nameof(Preferences.Font)
+            or nameof(Preferences.Compact) or nameof(Preferences.Sidebar)
+            or nameof(Preferences.RibbonCollapsed))
+            QueueFitPageActions();
     }
 
     private void OnShellChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs args)
@@ -168,7 +172,9 @@ public partial class MainView : UserControl
         if (Shell is not { } shell || themeChanging) return;
         var next = ActualThemeVariant == Avalonia.Styling.ThemeVariant.Dark ? "light" : "dark";
         var size = Scaler.Bounds.Size;
-        if (!shell.Prefs.Animations || size.Width <= 0 || size.Height <= 0)
+        // Une capture bitmap du plein écran est coûteuse sur Android : la plateforme
+        // applique le thème directement, sans surcharge GPU ni gel de la saisie.
+        if (shell.Phone || Platform.IsMobile || !shell.Prefs.Animations || size.Width <= 0 || size.Height <= 0)
         {
             shell.Prefs.Theme = next;
             return;
