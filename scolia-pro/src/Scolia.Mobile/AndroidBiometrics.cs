@@ -127,7 +127,7 @@ public static class AndroidBiometrics
             using var key = ReadKey(true);
             if (key is null) return false;
             using var cipher = Cipher.GetInstance("AES/GCM/NoPadding")!;
-            cipher.Init(CipherMode.EncryptMode, key);
+            cipher.Init(Javax.Crypto.CipherMode.EncryptMode, key);
             var authorized = await PromptAsync(cipher, "Activer l'empreinte pour ce compte");
             if (authorized is null) return false;
             var iv = authorized.GetIV();
@@ -157,7 +157,7 @@ public static class AndroidBiometrics
             if (key is null) return false;
             using var cipher = Cipher.GetInstance("AES/GCM/NoPadding")!;
             using var parameters = new GCMParameterSpec(128, proof[..12]);
-            cipher.Init(CipherMode.DecryptMode, key, parameters);
+            cipher.Init(Javax.Crypto.CipherMode.DecryptMode, key, parameters);
             var authorized = await PromptAsync(cipher, "Ouvrir mon espace SCOLIA");
             if (authorized is null) return false;
             var clear = authorized.DoFinal(proof[12..]);
