@@ -18,7 +18,7 @@ public static class CardWordWriter
     private const int GapTwip = 340;        // 6 mm
     private const int RowGapTwip = 397;     // 7 mm
     private const int CardHeightTwip = 3572; // 63 mm
-    private const int BandTwip = 352;       // 6,2 mm
+    private const int BandTwip = 193;       // 3,4 mm, bande de promotion compacte
     private const int SealTwip = 1500;      // colonne du sceau
     private const int QrTwip = 1500;        // colonne du QR
     private const int InnerTwip = 170;      // marge intérieure de la carte : 3 mm
@@ -44,7 +44,11 @@ public static class CardWordWriter
     public static byte[] Write(CardDocument d)
     {
         var images = new Images();
-        var sealRid = images.Add("seal", () => d.Header.Logo is { Length: > 0 } logo && IsSupportedImage(logo) ? logo : StudentCardPdf.DefaultSeal());
+        var schoolLogo = d.Header.Logo is { Length: > 0 } logo ? logo :
+            throw new InvalidOperationException("Le logo de l'établissement est nécessaire pour créer ses cartes d'accès.");
+        if (!IsSupportedImage(schoolLogo))
+            throw new InvalidOperationException("Le logo des cartes doit être au format PNG ou JPEG.");
+        var sealRid = images.Add("school-logo", () => schoolLogo);
         var body = new StringBuilder();
         var rowsPerPage = StudentCardRules.CardsPerPage / 2;
         var cardRows = (d.Cards.Count + 1) / 2;
@@ -96,7 +100,7 @@ public static class CardWordWriter
         // En-tête : sceau à gauche, mentions centrées à droite.
         content.Append(TableStart(new[] { SealTwip, InnerWidthTwip - SealTwip }, InnerTwip));
         content.Append($"<w:tr><w:tc><w:tcPr><w:tcW w:w=\"{SealTwip}\" w:type=\"dxa\"/><w:vAlign w:val=\"center\"/></w:tcPr>")
-            .Append(Picture(sealRid, 13.5, 13.5, 1, "Sceau")).Append("</w:tc>");
+            .Append(Picture(sealRid, 13.5, 13.5, 1, "Logo établissement")).Append("</w:tc>");
         content.Append($"<w:tc><w:tcPr><w:tcW w:w=\"{InnerWidthTwip - SealTwip}\" w:type=\"dxa\"/><w:vAlign w:val=\"center\"/></w:tcPr>");
         Mention(content, d.Header.Country, 10, true);
         Mention(content, d.Header.Ministry, 9, false);
@@ -126,7 +130,7 @@ public static class CardWordWriter
         Field(content, "CLASSE", card.Classe);
         content.Append($"</w:tc><w:tc><w:tcPr><w:tcW w:w=\"{QrTwip}\" w:type=\"dxa\"/><w:vAlign w:val=\"center\"/></w:tcPr>")
             .Append(Picture(qrRid, 18, 18, 2, "QR"))
-            .Append(Paragraph("Contrôle d'accès", 8, false, false, "center", "5B6878"))
+            .Append(Paragraph("QR de vérification", 8, false, false, "center", "5B6878"))
             .Append("</w:tc></w:tr></w:tbl>");
         content.Append(Paragraph($"Année scolaire {d.AcademicYear}", 10, true, false, "left", "0B3B6F", 80, indentTwip: InnerTwip + 60));
 
