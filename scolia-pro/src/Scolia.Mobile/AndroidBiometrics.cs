@@ -40,6 +40,8 @@ public static class AndroidBiometrics
     private static ISharedPreferences? Prefs =>
         Active?.GetSharedPreferences(PreferencesName, FileCreationMode.Private);
 
+    public static bool HasProof() => Prefs?.GetString(ProofKey, null) is { Length: > 0 };
+
     public static bool IsAvailable()
     {
         if (Build.VERSION.SdkInt < BuildVersionCodes.Q || Active is not { } activity)
