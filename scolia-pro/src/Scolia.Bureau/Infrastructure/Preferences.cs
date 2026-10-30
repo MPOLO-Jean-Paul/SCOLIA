@@ -115,6 +115,8 @@ public sealed class Preferences : Observable
     private bool soundError = true;
     private bool soundNotify;
     private bool soundOpening = true;
+    private Avalonia.Application? resourcesOwner;
+    private string? resourcesAccent;
 
     public string Theme { get => theme; set { if (Set(ref theme, value)) Raise(nameof(IsDark)); } }
     public bool IsDark { get => theme == "dark"; set => Theme = value ? "dark" : "light"; }
@@ -233,7 +235,15 @@ public sealed class Preferences : Observable
             _ => ThemeVariant.Default,
         };
         var r = app.Resources;
-        ApplyAccent(r);
+        // Les deux palettes sont déjà installées : ne pas les recréer pour un
+        // changement de police, de zoom ou de densité. Cela évite les
+        // invalidations visuelles sur l'ensemble des pages et des tableaux.
+        if (resourcesOwner != app || resourcesAccent != accent)
+        {
+            ApplyAccent(r);
+            resourcesOwner = app;
+            resourcesAccent = accent;
+        }
         r["UiFont"] = FamilyOf(font);
         var k = Factor;
         GridPriority.SetTextFactor(k);
