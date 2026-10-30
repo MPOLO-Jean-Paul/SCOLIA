@@ -44,19 +44,30 @@ internal sealed class StartupScreen : FrameLayout
         content.SetPadding(Dp(24), Dp(24), Dp(24), Dp(24));
         scroll.AddView(content, new ScrollView.LayoutParams(LayoutParams.MatchParent, LayoutParams.WrapContent));
 
-         // La marque neutre du logiciel, jamais le logo d’un établissement codé en dur.
-        // Le vrai logo de l’école est chargé ensuite depuis sa configuration.
+        // Le dessin vectoriel reprend exactement le symbole SCOLIA utilisé dans Avalonia.
+        // Il n'appartient à aucun établissement et ne remplace jamais son logo configuré.
         var markBackground = new GradientDrawable();
         markBackground.SetShape(ShapeType.Rectangle);
-        markBackground.SetCornerRadius(Dp(24));
-        markBackground.SetColor(Color.Rgb(15, 79, 196));
-        var mark = new TextView(activity) { Text = "S", TextSize = 44, Gravity = GravityFlags.Center, ImportantForAccessibility = ImportantForAccessibility.No };
-        mark.SetTextColor(Color.White);
-        mark.SetTypeface(null, TypefaceStyle.Bold);
+        markBackground.SetCornerRadius(Dp(26));
+        markBackground.SetColor(Color.Rgb(241, 246, 252));
+        var mark = new ImageView(activity) { ImportantForAccessibility = ImportantForAccessibility.No };
+        mark.SetImageResource(Resource.Drawable.scolia_mark);
+        mark.SetScaleType(ImageView.ScaleType.FitCenter);
+        mark.SetPadding(Dp(14), Dp(14), Dp(14), Dp(14));
         mark.Background = markBackground;
-        content.AddView(mark, new LinearLayout.LayoutParams(Dp(88), Dp(88)) { BottomMargin = Dp(16), Gravity = GravityFlags.CenterHorizontal });
+        content.AddView(mark, new LinearLayout.LayoutParams(Dp(112), Dp(112))
+        {
+            BottomMargin = Dp(20),
+            Gravity = GravityFlags.CenterHorizontal,
+        });
+        // Une seule entrée discrète, désactivée si l'appareil réduit les animations.
+        if (animationScale > 0)
+        {
+            mark.Alpha = 0f;
+            mark.Animate()?.Alpha(1f)?.SetDuration((long)(240 * animationScale))?.Start();
+        }
 
-        var title = new TextView(activity) { Text = "SCOLIA", TextSize = 22, Gravity = GravityFlags.Center };
+        var title = new TextView(activity) { Text = "SCOLIA Pro", TextSize = 23, Gravity = GravityFlags.Center };
         title.SetTextColor(Color.Rgb(15, 43, 107));
         title.SetTypeface(null, TypefaceStyle.Bold);
         content.AddView(title, new LinearLayout.LayoutParams(LayoutParams.MatchParent, LayoutParams.WrapContent));
