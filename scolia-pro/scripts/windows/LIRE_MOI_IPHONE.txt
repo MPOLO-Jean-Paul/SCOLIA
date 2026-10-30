@@ -1,0 +1,26 @@
+SCOLIA PHONE - iPhone / iPad
+
+Le fichier iPhone est un IPA signe par Apple, PAS un APK Android.
+SCOLIA Phone pour iOS utilise les memes interfaces et regles metier que SCOLIA Pro.
+
+ETAT DE LA VERSION IPHONE
+- Le projet source iOS se trouve dans src/Scolia.Phone.iOS.
+- Un Mac avec Xcode, le SDK .NET iOS et un profil Apple de distribution
+  sont necessaires pour publier et installer un IPA sur un iPhone reel.
+- Une application de simulateur non signee, si la compilation macOS reussit,
+  NE PEUT PAS etre installee sur un iPhone reel.
+- L'IPA n'est inclus dans ce dossier que lorsqu'une compilation Apple signee
+  le fournit effectivement. L'absence du fichier signifie : non disponible.
+
+CONNEXION
+1. Installer Tailscale depuis l'App Store iOS et rejoindre le meme tailnet.
+2. Activer l'option VPN On Demand si elle est adaptee aux parametres du telephone.
+3. Dans SCOLIA Phone, saisir l'adresse Tailscale privee du serveur scolaire.
+4. Se connecter avec le compte SCOLIA autorise par l'etablissement.
+
+IMPORTANT
+iOS ne permet pas a une application ordinaire de demarrer silencieusement le
+VPN d'une autre application ni de maintenir librement un serveur de donnees
+en permanence lorsque le telephone est verrouille. Le role iPhone est client.
+Les operations hors connexion ne doivent jamais etre annoncees synchronisees
+avant l'accuse de reception du serveur SCOLIA.
