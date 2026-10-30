@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- SCOLIA Phone : même interface Avalonia que Windows/Android ; iPhone client uniquement. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0-ios</TargetFramework>
+    <SupportedOSPlatformVersion>17.0</SupportedOSPlatformVersion>
+    <OutputType>Exe</OutputType>
+    <ApplicationTitle>SCOLIA Phone</ApplicationTitle>
+    <ApplicationId>com.jpservices.scolia.ios</ApplicationId>
+    <ApplicationVersion>120</ApplicationVersion>
+    <ApplicationDisplayVersion>1.2.0</ApplicationDisplayVersion>
+    <AssemblyName>SCOLIA</AssemblyName>
+    <RootNamespace>Scolia.Phone.iOS</RootNamespace>
+    <RuntimeIdentifiers>ios-arm64;iossimulator-arm64</RuntimeIdentifiers>
+    <AvaloniaUseCompiledBindingsByDefault>false</AvaloniaUseCompiledBindingsByDefault>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <PublishTrimmed>false</PublishTrimmed>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Avalonia" />
+    <PackageReference Include="Avalonia.iOS" />
+    <PackageReference Include="Avalonia.Themes.Fluent" />
+    <PackageReference Include="Avalonia.Controls.DataGrid" />
+    <PackageReference Include="Material.Icons.Avalonia" />
+    <PackageReference Include="Microsoft.Data.Sqlite" />
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="../Scolia.Bureau/**/*.cs" Exclude="../Scolia.Bureau/bin/**;../Scolia.Bureau/obj/**;../Scolia.Bureau/Program.cs" Link="Bureau/%(RecursiveDir)%(Filename)%(Extension)" />
+    <Compile Include="../Scolia.Transport/*.cs" Link="Transport/%(Filename)%(Extension)" />
+    <Compile Include="../Scolia.Infrastructure/Network/LanProtocol.cs" Link="Bureau/Infrastructure/LanProtocol.cs" />
+    <AvaloniaXaml Include="../Scolia.Bureau/**/*.axaml" Exclude="../Scolia.Bureau/bin/**;../Scolia.Bureau/obj/**" Link="%(RecursiveDir)%(Filename)%(Extension)" />
+    <AvaloniaResource Include="../Scolia.Bureau/Assets/**" Link="Assets/%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
+</Project>
