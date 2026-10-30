@@ -86,7 +86,8 @@ public class AccordionAndAudioTests
             new PhoneToolGroupVm("Affichage", []),
             new PhoneToolGroupVm("Aide", [])
         ]);
-        Assert.Equal("AFFICHAGE", blocks.Single(b => b.Groups.Any(g => g.Title == "Affichage")).Title);
+        Assert.Equal("ADMINISTRATION", blocks.Single(b => b.Groups.Any(g => g.Title == "Affichage")).Title);
+        Assert.DoesNotContain(blocks, b => b.Title == "AFFICHAGE");
         Assert.Equal(1, blocks.SelectMany(b => b.Groups).Count(g => g.Title == "Affichage"));
     }
 
