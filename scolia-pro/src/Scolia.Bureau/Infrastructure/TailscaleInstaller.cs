@@ -66,6 +66,17 @@ public sealed class TailscaleInstaller : Observable
     /// <summary>Renvoie vrai seulement lorsque le paquet officiel est réellement détecté.</summary>
     private bool CheckInstallation()
     {
+        // iOS n'autorise pas l'énumération des autres applications installées.
+        // Ne jamais afficher « absent » ou une barre d'attente infinie à tort.
+        if (Platform.IsMobile && Platform.IsTailscaleInstalled is null)
+        {
+            IsInstalled = false;
+            Step = "Configuration sur iPhone";
+            StepProgress = 2;
+            IsWaiting = false;
+            Status = "iOS ne permet pas à SCOLIA de vérifier automatiquement l'installation de Tailscale. Terminez-la dans l'App Store, activez VPN On Demand, puis revenez à la connexion SCOLIA.";
+            return false;
+        }
         bool found = TailscaleCompanion.IsInstalled();
         IsInstalled = found;
         if (found)
@@ -92,7 +103,8 @@ public sealed class TailscaleInstaller : Observable
         StepProgress = 2;
         string result = TailscaleCompanion.OpenInstallPage();
         Status = result;
-        IsWaiting = !result.StartsWith("Impossible", StringComparison.OrdinalIgnoreCase)
+        IsWaiting = Platform.IsTailscaleInstalled is not null
+                    && !result.StartsWith("Impossible", StringComparison.OrdinalIgnoreCase)
                     && !result.StartsWith("Android n'est pas", StringComparison.OrdinalIgnoreCase);
     }
 }
