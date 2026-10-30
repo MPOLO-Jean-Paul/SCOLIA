@@ -148,14 +148,9 @@ public static class MobilePlatform
             await Task.Delay(TimeSpan.FromSeconds(2)).ConfigureAwait(false);
 
             if (ctx.GetSystemService(Context.ConnectivityService) is ConnectivityManager manager
-                && manager.AllNetworks is { } networks)
-            {
-                foreach (var network in networks)
-                {
-                    if (manager.GetNetworkCapabilities(network)?.HasTransport(TransportType.Vpn) == true)
-                        return "Demande envoyée sans quitter SCOLIA. Android détecte un VPN, sans confirmer son identité : vérifiez la liaison Tailscale depuis un autre téléphone.";
-                }
-            }
+                && manager.ActiveNetwork is { } activeNetwork
+                && manager.GetNetworkCapabilities(activeNetwork)?.HasTransport(TransportType.Vpn) == true)
+                return "Demande envoyée sans quitter SCOLIA. Android détecte un VPN actif, sans confirmer son identité : vérifiez la liaison Tailscale depuis un autre téléphone.";
             return "Demande d'activation envoyée en arrière-plan. Le VPN n'est pas encore confirmé. Vérifiez la première autorisation et la connexion au compte Tailscale.";
         }
         catch (Exception ex) when (ex is Java.Lang.SecurityException or Java.Lang.IllegalArgumentException or InvalidOperationException)
