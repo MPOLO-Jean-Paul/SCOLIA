@@ -28,13 +28,15 @@ public static class CardWordWriter
 
     private sealed class Images
     {
-        public readonly Dictionary<string, (string Rid, byte[] Bytes)> ByKey = new();
+        public readonly Dictionary<string, (string Rid, byte[] Bytes, string Extension)> ByKey = new();
 
         public string Add(string key, Func<byte[]> bytes)
         {
             if (!ByKey.TryGetValue(key, out var image))
             {
-                image = ($"rImg{ByKey.Count + 1}", bytes());
+                var content = bytes();
+                image = ($"rImg{ByKey.Count + 1}", content,
+                    content.Length >= 4 && content[0] == 0x89 && content[1] == 'P' ? "png" : "jpg");
                 ByKey[key] = image;
             }
             return image.Rid;
@@ -83,9 +85,9 @@ public static class CardWordWriter
             Entry(zip, "_rels/.rels", RootRels);
             Entry(zip, "word/_rels/document.xml.rels", DocumentRels(images));
             Entry(zip, "word/document.xml", Document(body.ToString()));
-            foreach (var (rid, bytes) in images.ByKey.Values)
+            foreach (var (rid, bytes, ext) in images.ByKey.Values)
             {
-                using var target = zip.CreateEntry($"word/media/{rid}.png").Open();
+                using var target = zip.CreateEntry($"word/media/{rid}.{ext}").Open();
                 target.Write(bytes, 0, bytes.Length);
             }
         }
@@ -246,6 +248,7 @@ public static class CardWordWriter
         "<Default Extension=\"rels\" ContentType=\"application/vnd.openxmlformats-package.relationships+xml\"/>" +
         "<Default Extension=\"xml\" ContentType=\"application/xml\"/>" +
         "<Default Extension=\"png\" ContentType=\"image/png\"/>" +
+        "<Default Extension=\"jpg\" ContentType=\"image/jpeg\"/>" +
         "<Override PartName=\"/word/document.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml\"/>" +
         "</Types>";
 
@@ -259,8 +262,8 @@ public static class CardWordWriter
     {
         var sb = new StringBuilder("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>" +
             "<Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\">");
-        foreach (var (rid, _) in images.ByKey.Values)
-            sb.Append($"<Relationship Id=\"{rid}\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/image\" Target=\"media/{rid}.png\"/>");
+        foreach (var (rid, _, ext) in images.ByKey.Values)
+            sb.Append($"<Relationship Id=\"{rid}\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/image\" Target=\"media/{rid}.{ext}\"/>");
         return sb.Append("</Relationships>").ToString();
     }
 
