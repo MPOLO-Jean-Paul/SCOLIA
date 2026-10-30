@@ -1,0 +1,31 @@
+name: Inspecter sources SCOLIA (sans modification)
+on:
+  push:
+    branches:
+      - feature/scolia-biometric-mobile
+    paths:
+      - '.github/workflows/inspect-scolia-archive.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  inventory:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Vérifier structure de l'archive
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import zipfile
+          path = 'SCOLIA OK.zip'
+          with zipfile.ZipFile(path) as archive:
+              names = archive.namelist()
+              print("TOTAL_ENTRIES",len(names))
+              print("ROOT_ENTRIES",*[n for n in names if '/' not in n][:100],sep='\n')
+              print("RELEVANT_PATHS")
+              for n in names:
+                  if any(k in n.lower() for k in ['mobile','android','login','auth','secret','security','csproj','solution','.sln']):
+                      print(n)
+              print("TOP_PATHS",*names[:65],sep='\n')
+          PY
