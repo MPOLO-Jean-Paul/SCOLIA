@@ -28,7 +28,7 @@ public static class MobilePlatform
             ?? Path.Combine(app.FilesDir?.AbsolutePath ?? Path.GetTempPath(), "Documents");
         Platform.OpenFile = OpenFile;
         Platform.OpenUri = OpenUri;
-        Platform.PlayWave = PlayWave;
+        Platform.PlayWave = AndroidAudio.PlayWave;
         // Sans ordinateur dans l'établissement, ce téléphone peut en être le serveur.
         Platform.LocalServer = new Server.PhoneServer(app);
     }
@@ -99,21 +99,4 @@ public static class MobilePlatform
         _ => "*/*",
     };
 
-    /// <summary>Joue les notes de SCOLIA : un fichier WAV 16 bits mono, lu directement par le haut-parleur.</summary>
-    private static void PlayWave(byte[] wav)
-    {
-        if (wav.Length <= 44) return;
-        var rate = BitConverter.ToInt32(wav, 24);
-        var pcm = wav.AsSpan(44).ToArray();
-        var track = new AudioTrack.Builder()
-            .SetAudioAttributes(new AudioAttributes.Builder().SetUsage(AudioUsageKind.AssistanceSonification)!.SetContentType(AudioContentType.Sonification)!.Build()!)
-            .SetAudioFormat(new AudioFormat.Builder().SetEncoding(Encoding.Pcm16bit)!.SetSampleRate(rate)!.SetChannelMask(ChannelOut.Mono)!.Build()!)
-            .SetBufferSizeInBytes(pcm.Length)
-            .SetTransferMode(AudioTrackMode.Static)
-            .Build();
-        track.Write(pcm, 0, pcm.Length);
-        track.Play();
-        var duration = TimeSpan.FromSeconds(pcm.Length / 2.0 / rate) + TimeSpan.FromMilliseconds(300);
-        _ = Task.Delay(duration).ContinueWith(_ => { track.Stop(); track.Release(); }, TaskScheduler.Default);
-    }
 }

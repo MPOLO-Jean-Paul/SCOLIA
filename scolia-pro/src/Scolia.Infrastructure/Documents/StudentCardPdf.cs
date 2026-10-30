@@ -34,7 +34,8 @@ internal static class StudentCardPdf
 
     public static byte[] Build(CardDocument d)
     {
-        var seal = d.Header.Logo ?? DefaultSeal();
+        var seal = d.Header.Logo is { Length: > 0 } logo ? logo :
+            throw new InvalidOperationException("Le logo de l'établissement est nécessaire pour créer ses cartes d'accès.");
         var pages = new List<IReadOnlyList<CardItem>>();
         for (var start = 0; start < d.Cards.Count; start += StudentCardRules.CardsPerPage)
             pages.Add(d.Cards.Skip(start).Take(StudentCardRules.CardsPerPage).ToList());
@@ -71,7 +72,7 @@ internal static class StudentCardPdf
         }).GeneratePdf();
     }
 
-    private const float BandHeight = 6.2f;
+    private const float BandHeight = 3.4f;
     private const float RibbonHeight = 6f;
 
     /// <summary>
@@ -82,7 +83,7 @@ internal static class StudentCardPdf
     private static void Card(IContainer container, CardDocument d, CardItem card, byte[] seal)
     {
         // Hauteur fixe : la carte ne déborde jamais de sa case, la bande reste collée au bas.
-        container.CornerRadius(Mm(2.2f)).Border(0.6f).BorderColor(Frame).Background(Paper).Column(column =>
+        container.CornerRadius(Mm(2.4f)).Border(0.6f).BorderColor(Frame).Background(Paper).Column(column =>
         {
             column.Item().Height(Mm(CardHeight - BandHeight)).Column(body =>
             {
@@ -111,11 +112,11 @@ internal static class StudentCardPdf
                 });
 
                 // Identité à gauche, QR de contrôle à droite.
-                body.Item().PaddingTop(Mm(2f)).PaddingHorizontal(Mm(4f)).Row(row =>
+                body.Item().PaddingTop(Mm(2.7f)).PaddingHorizontal(Mm(4f)).Row(row =>
                 {
                     row.RelativeItem().Column(identity =>
                     {
-                        identity.Spacing(Mm(1.4f));
+                        identity.Spacing(Mm(1.7f));
                         Field(identity, "NOM", card.LastName);
                         Field(identity, "POST-NOM", card.MiddleName);
                         Field(identity, "PRÉNOM", card.FirstName);
@@ -123,8 +124,8 @@ internal static class StudentCardPdf
                     });
                     row.ConstantItem(Mm(19)).Column(qr =>
                     {
-                        qr.Item().Height(Mm(17)).AlignCenter().Image(DocumentService.QrPng(card.QrText)).FitArea();
-                        qr.Item().AlignCenter().Text("Contrôle d'accès").FontSize(4.2f).FontColor(Muted);
+                        qr.Item().Height(Mm(18.5f)).AlignCenter().Image(DocumentService.QrPng(card.QrText)).FitArea();
+                        qr.Item().AlignCenter().Text("QR de vérification").FontSize(4.6f).FontColor(Muted);
                     });
                 });
                 // Bas de carte : l'année scolaire à gauche, la place du visa de la direction à droite.

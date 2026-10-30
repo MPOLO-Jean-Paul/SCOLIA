@@ -297,7 +297,8 @@ public sealed class SkiaDocumentService : IDocumentService
     /// <summary>Huit cartes de 92 × 63 mm par A4, sur la même grille que les cartes de l'ordinateur, avec les repères de découpe.</summary>
     public byte[] StudentCards(CardDocument d)
     {
-        var seal = d.Header.Logo ?? DocumentService.DefaultLogo();
+        var seal = d.Header.Logo is { Length: > 0 } logo ? logo :
+            throw new InvalidOperationException("Le logo de l'établissement est nécessaire pour créer ses cartes d'accès.");
         var pages = Enumerable.Range(0, StudentCardRules.PagesFor(d.Cards.Count))
             .Select(p => d.Cards.Skip(p * StudentCardRules.CardsPerPage).Take(StudentCardRules.CardsPerPage).ToList()).ToList();
         var page = 0;
@@ -323,7 +324,7 @@ public sealed class SkiaDocumentService : IDocumentService
     {
         var w = Mm(StudentCardRules.CardWidthMm);
         var h = Mm(StudentCardRules.CardHeightMm);
-        var radius = Mm(2.2f);
+        var radius = Mm(2.4f);
         f.Canvas.Save();
         using (var clip = new SkiaSharp.SKPath())
         {
@@ -331,7 +332,7 @@ public sealed class SkiaDocumentService : IDocumentService
             f.Canvas.ClipPath(clip, antialias: true);
             f.Fill(x, y, w, h, "#FFFFFF");
             // Bande de la promotion, en bas, sans texte.
-            f.Fill(x, y + h - Mm(6.2f), w, Mm(6.2f), card.Color.StartsWith('#') ? card.Color : "#" + card.Color);
+            f.Fill(x, y + h - Mm(3.4f), w, Mm(3.4f), card.Color.StartsWith('#') ? card.Color : "#" + card.Color);
         }
         f.Canvas.Restore();
         f.Stroke(x, y, w, h, Frame, 0.6f, radius);
@@ -368,20 +369,20 @@ public sealed class SkiaDocumentService : IDocumentService
         f.DrawText(session, sessionStyle, x + w / 2, ribbonY + (Mm(6) - PdfFlow.LineHeight(sessionStyle)) / 2, w / 2 - Mm(3), PdfAlign.Right);
 
         // Identité à gauche, QR de contrôle à droite.
-        var idY = ribbonY + Mm(6) + Mm(2);
+        var idY = ribbonY + Mm(6) + Mm(2.7f);
         var idW = w - Mm(8) - Mm(19);
         foreach (var (label, value) in new[] { ("NOM", card.LastName), ("POST-NOM", card.MiddleName), ("PRÉNOM", card.FirstName), ("CLASSE", card.Classe) })
         {
             var used = f.DrawSpans([($"{label} : ", new PdfStyle(5.6f, true, false, CardMuted)), (value, new PdfStyle(value.Length > 24 ? 6.8f : 7.8f, true, false, CardInk))], x + Mm(4), idY, idW);
-            idY += used + Mm(1.4f) - 2;
+            idY += used + Mm(1.7f) - 2;
         }
         var qrX = x + w - Mm(4) - Mm(19);
-        var qrY = ribbonY + Mm(6) + Mm(2);
-        f.Image(DocumentService.QrPng(card.QrText), qrX, qrY, Mm(19), Mm(17), sharp: true);
-        f.DrawText("Contrôle d'accès", new PdfStyle(4.2f, false, false, CardMuted), qrX, qrY + Mm(17), Mm(19), PdfAlign.Center);
+        var qrY = ribbonY + Mm(6) + Mm(2.7f);
+        f.Image(DocumentService.QrPng(card.QrText), qrX, qrY, Mm(19), Mm(18.5f), sharp: true);
+        f.DrawText("QR de vérification", new PdfStyle(4.6f, false, false, CardMuted), qrX, qrY + Mm(18.5f), Mm(19), PdfAlign.Center);
 
         // Bas de carte : l'année à gauche, le visa de la direction à droite.
-        var baseY = y + h - Mm(6.2f) - Mm(1.4f);
+        var baseY = y + h - Mm(3.4f) - Mm(1.4f);
         var yearStyle = new PdfStyle(5.2f, true, false, CardNavy);
         f.DrawText($"Année scolaire {d.AcademicYear}", yearStyle, x + Mm(4), baseY - PdfFlow.LineHeight(yearStyle), w / 2);
         var visaX = x + w - Mm(4) - Mm(30);

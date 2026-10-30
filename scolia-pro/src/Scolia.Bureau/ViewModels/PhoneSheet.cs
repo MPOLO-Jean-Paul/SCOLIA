@@ -43,13 +43,17 @@ public sealed class PhoneToolGroupVm : Observable
 {
     private bool isExpanded;
 
-    public PhoneToolGroupVm(string title, IReadOnlyList<RibbonCommandVm> commands)
+    public PhoneToolGroupVm(string title, IReadOnlyList<RibbonCommandVm> commands, Action<PhoneToolGroupVm>? toggleGroup = null)
     {
         Title = title;
         Commands = commands;
         Icon = FeatureVisuals.Icon(title);
         Brush = ThemeBrush.Get(FeatureVisuals.Tone(title));
-        Toggle = new RelayCommand(() => IsExpanded = !IsExpanded);
+        Toggle = new RelayCommand(() =>
+        {
+            if (toggleGroup is not null) toggleGroup(this);
+            else IsExpanded = !IsExpanded;
+        });
     }
 
     public string Title { get; }
@@ -58,4 +62,27 @@ public sealed class PhoneToolGroupVm : Observable
     public IReadOnlyList<RibbonCommandVm> Commands { get; }
     public bool IsExpanded { get => isExpanded; set => Set(ref isExpanded, value); }
     public RelayCommand Toggle { get; }
+}
+
+/// <summary>Les commandes du ruban apparaissent en blocs cohérents sous les pages.</summary>
+public sealed record PhoneToolBlockVm(string Title, IReadOnlyList<PhoneToolGroupVm> Groups)
+{
+    public static IReadOnlyList<PhoneToolBlockVm> Organize(IReadOnlyList<PhoneToolGroupVm> groups)
+    {
+        var blocks = new List<PhoneToolBlockVm>();
+        var used = new HashSet<PhoneToolGroupVm>();
+        void Add(string title, params string[] titles)
+        {
+            var entries = groups.Where(g => titles.Contains(g.Title, StringComparer.Ordinal)).ToArray();
+            if (entries.Length == 0) return;
+            foreach (var entry in entries) used.Add(entry);
+            blocks.Add(new PhoneToolBlockVm(title, entries));
+        }
+        Add("SCOLARITÉ ET APPRENANTS", "Scolarité", "Secrétariat", "Apprenants");
+        Add("FINANCES ET RAPPORTS", "Paiements", "Finances", "Rapports", "Export", "Exports", "Données");
+        Add("ADMINISTRATION DU POSTE", "Administration", "Paramètres", "Préférences", "Sécurité", "Aide");
+        var extra = groups.Where(g => !used.Contains(g)).ToArray();
+        if (extra.Length != 0) blocks.Add(new PhoneToolBlockVm("AUTRES COMMANDES", extra));
+        return blocks;
+    }
 }

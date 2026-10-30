@@ -41,7 +41,7 @@ public sealed class NavGroupVm : Observable
 {
     private bool isExpanded;
 
-    public NavGroupVm(string title, IReadOnlyList<NavItemVm> items, bool expandedByDefault = false)
+    public NavGroupVm(string title, IReadOnlyList<NavItemVm> items, bool expandedByDefault = false, Action<NavGroupVm>? toggleGroup = null)
     {
         Title = title;
         Items = items;
@@ -49,7 +49,11 @@ public sealed class NavGroupVm : Observable
         Brush = ThemeBrush.Get(FeatureVisuals.Tone(title));
         // L'accueil est accessible immédiatement ; les autres métiers sont repliés sur mobile.
         isExpanded = title.Length == 0 || expandedByDefault;
-        Toggle = new RelayCommand(() => IsExpanded = !IsExpanded);
+        Toggle = new RelayCommand(() =>
+        {
+            if (toggleGroup is not null) toggleGroup(this);
+            else IsExpanded = !IsExpanded;
+        });
     }
 
     public string Title { get; }
@@ -60,6 +64,9 @@ public sealed class NavGroupVm : Observable
     public bool IsExpanded { get => isExpanded; set => Set(ref isExpanded, value); }
     public RelayCommand Toggle { get; }
 }
+
+/// <summary>Bloc métier : plusieurs rubriques de même nature dans une carte visuelle.</summary>
+public sealed record NavBlockVm(string Title, IReadOnlyList<NavGroupVm> Groups);
 
 /// <summary>
 /// Navigation principale, façon Finder ou Mail : chaque écran est à un clic, rangé par métier.
@@ -72,7 +79,8 @@ public static class Sidebar
         NavItemVm? Item(string label, MaterialIconKind icon, string tone, string? perm, Type page, Func<PageViewModel> create) =>
             perm is null || shell.Can(perm) ? new NavItemVm(label, icon, tone, page, create, shell) : null;
 
-        NavGroupVm Group(string title, params NavItemVm?[] items) => new(title, items.OfType<NavItemVm>().ToList(), expandedByDefault: !Platform.IsMobile);
+        NavGroupVm Group(string title, params NavItemVm?[] items) =>
+            new(title, items.OfType<NavItemVm>().ToList(), toggleGroup: shell.ToggleNavGroup);
 
         var groups = new[]
         {
@@ -111,5 +119,26 @@ public static class Sidebar
                 Item("Utilisateurs", MaterialIconKind.AccountCog, "ToneBlue", Perm.UsersManage, typeof(UsersPage), () => new UsersPage(shell))),
         };
         return groups.Where(g => g.Items.Count > 0).ToList();
+    }
+
+    /// <summary>Classe les rubriques autorisées en blocs, sans répéter ni cacher de fonctions.</summary>
+    public static IReadOnlyList<NavBlockVm> Blocks(IReadOnlyList<NavGroupVm> groups)
+    {
+        var blocks = new List<NavBlockVm>();
+        var used = new HashSet<NavGroupVm>();
+        void Add(string title, params string[] names)
+        {
+            var entries = groups.Where(g => names.Contains(g.Title, StringComparer.Ordinal)).ToArray();
+            if (entries.Length == 0) return;
+            foreach (var entry in entries) used.Add(entry);
+            blocks.Add(new NavBlockVm(title, entries));
+        }
+        Add("VUE D’ENSEMBLE", "", "Données");
+        Add("GESTION SCOLAIRE", "Secrétariat", "Scolarité");
+        Add("GESTION FINANCIÈRE", "Finances");
+        Add("ORGANISATION ET RÉGLAGES", "Administration", "Paramètres");
+        var other = groups.Where(g => !used.Contains(g)).ToArray();
+        if (other.Length != 0) blocks.Add(new NavBlockVm("AUTRES OUTILS", other));
+        return blocks;
     }
 }

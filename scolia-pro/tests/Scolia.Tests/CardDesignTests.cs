@@ -10,7 +10,7 @@ namespace Scolia.Tests;
 public class CardDesignTests
 {
     private static CardDocument Sample() => new(
-        new SchoolCardHeader("République démocratique du Congo", null, null, null, null, "Institut technique médical Cœur de Dieu", null, null),
+        new SchoolCardHeader("République démocratique du Congo", null, null, null, null, "École de démonstration", null, DocumentService.DefaultLogo()),
         "NOVEMBRE 2026", "2026-2027",
         [new CardItem("MUKENDI", "KABEYA", "Grâce", "INF1", "#F5C518", "qr", "INF101"), new CardItem("NGOY", "KAZADI", "Paul", "TLM1", "#1D4ED8", "qr2", "TLM104")]);
 
@@ -21,7 +21,7 @@ public class CardDesignTests
         using var zip = new ZipArchive(new MemoryStream(bytes));
         using var reader = new StreamReader(zip.GetEntry("word/document.xml")!.Open(), Encoding.UTF8);
         var xml = reader.ReadToEnd();
-        foreach (var text in new[] { "CARTE D'ACCÈS", "SESSION NOVEMBRE 2026", "NOM : ", "PRÉNOM : ", "CLASSE : ", "INF1", "Contrôle d'accès" })
+        foreach (var text in new[] { "CARTE D'ACCÈS", "SESSION NOVEMBRE 2026", "NOM : ", "PRÉNOM : ", "CLASSE : ", "INF1", "QR de vérification" })
             Assert.Contains(System.Security.SecurityElement.Escape(text), xml, StringComparison.Ordinal);
         // La bande de couleur reste sans texte.
         Assert.DoesNotContain("MATRICULE", xml, StringComparison.Ordinal);
@@ -36,7 +36,27 @@ public class CardDesignTests
     }
 
     [Fact]
-    public void Chaque_document_a_un_logo_meme_sans_logo_dans_le_profil()
+    public void Les_cartes_ne_substituent_jamais_un_logo_generique_a_celui_de_l_ecole()
+    {
+        var doc = Sample() with { Header = Sample().Header with { Logo = null } };
+        Assert.Throws<InvalidOperationException>(() => new DocumentService().StudentCards(doc));
+        Assert.Throws<InvalidOperationException>(() => CardWordWriter.Write(doc));
+    }
+
+    [Fact]
+    public void Le_logo_configure_est_embarque_dans_les_cartes_word()
+    {
+        var logo = DocumentService.DefaultLogo(); // Uniquement une image de test, pas un fallback de production.
+        var bytes = CardWordWriter.Write(Sample());
+        using var zip = new ZipArchive(new MemoryStream(bytes));
+        using var image = zip.GetEntry("word/media/rImg1.png")!.Open();
+        using var memory = new MemoryStream();
+        image.CopyTo(memory);
+        Assert.Equal(logo, memory.ToArray());
+    }
+
+    [Fact]
+    public void Les_documents_generaux_gardent_leur_mise_en_page()
     {
         var logo = DocumentService.DefaultLogo();
         Assert.Equal(0x89, logo[0]); // PNG

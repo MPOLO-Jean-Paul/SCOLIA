@@ -83,7 +83,7 @@ public sealed class DocumentTests
     public void Dix_cartes_donnent_deux_pages_de_huit_cartes()
     {
         var header = new SchoolCardHeader("République démocratique du Congo", "Ministère de l'Enseignement", "Direction provinciale", "Division Kinshasa",
-            "Ville de Kinshasa", "Complexe Scolaire Les Étoiles", "Avenue de la Paix 12", null);
+            "Ville de Kinshasa", "Complexe Scolaire Les Étoiles", "Avenue de la Paix 12", DocumentService.DefaultLogo());
         var cards = Enumerable.Range(1, 10).Select(i => new CardItem($"MUKENDI{i}", "KAZADI", "Josué", "ACC1", i % 2 == 0 ? "#2563EB" : "#16A34A", $"SCOLIA|ACC{i:000}", $"ACC{i:000}")).ToList();
         var doc = new CardDocument(header, "OCTOBRE 2026", "2026-2027", cards);
         var pdf = phone.StudentCards(doc);

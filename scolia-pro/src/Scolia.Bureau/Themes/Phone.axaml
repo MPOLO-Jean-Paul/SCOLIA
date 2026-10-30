@@ -72,17 +72,37 @@
       <Setter Property="FontWeight" Value="SemiBold" />
     </Style>
 
+    <!-- Un bloc dessine une seule surface continue : aucun trait entre son titre et ses outils. -->
+    <Style Selector="TextBlock.phoneblocktitle">
+      <Setter Property="FontSize" Value="{DynamicResource FsSmall}" />
+      <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="Margin" Value="14,5,0,7" />
+    </Style>
+    <Style Selector="Border.phoneblockcard">
+      <Setter Property="Background" Value="{DynamicResource GroupBrush}" />
+      <Setter Property="CornerRadius" Value="18" />
+      <Setter Property="ClipToBounds" Value="True" />
+    </Style>
+    <Style Selector="Border.phoneaccordion">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="CornerRadius" Value="0" />
+    </Style>
+    <Style Selector="Border.phonecontent">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Padding" Value="0,0,0,5" />
+    </Style>
     <!-- Rubriques repliables : l'utilisateur entre dans un métier ou dans ses réglages à la demande. -->
     <Style Selector="Button.phonecategory">
-      <Setter Property="Background" Value="{DynamicResource GroupBrush}" />
+      <Setter Property="Background" Value="Transparent" />
       <Setter Property="BorderThickness" Value="0" />
       <Setter Property="HorizontalAlignment" Value="Stretch" />
       <Setter Property="HorizontalContentAlignment" Value="Stretch" />
       <Setter Property="Padding" Value="12,10" />
-      <Setter Property="MinHeight" Value="48" />
-      <Setter Property="CornerRadius" Value="12" />
+      <Setter Property="MinHeight" Value="54" />
+      <Setter Property="CornerRadius" Value="0" />
       <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
-      <Setter Property="Margin" Value="0,10,0,3" />
+      <Setter Property="Margin" Value="0" />
     </Style>
     <Style Selector="Button.phonecategory:pointerover">
       <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
