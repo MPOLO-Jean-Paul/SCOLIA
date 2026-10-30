@@ -12,6 +12,16 @@ namespace Scolia.Mobile.Server;
 /// </summary>
 public sealed class PhoneServer(Context context) : ILocalServer
 {
+    private static readonly object SharedGate = new();
+    private static PhoneServer? shared;
+
+    /// <summary>Une seule instance, même quand Android recrée le service sans rouvrir l'écran.</summary>
+    public static PhoneServer Get(Context context)
+    {
+        lock (SharedGate)
+            return shared ??= new PhoneServer(context.ApplicationContext ?? context);
+    }
+
     private readonly object gate = new();
     private EmbeddedServer? server;
     private Task? running;
@@ -19,12 +29,17 @@ public sealed class PhoneServer(Context context) : ILocalServer
     /// <summary>Dossier des données de l'établissement sur ce téléphone, sauvegardes comprises.</summary>
     public string DataDirectory => Path.Combine(context.FilesDir?.AbsolutePath ?? Path.GetTempPath(), "serveur");
 
-    public void Start()
+    public void Start() => StartCore(startForegroundService: true);
+
+    /// <summary>Redémarrage depuis la notification Android déjà active : pas de second lancement du service.</summary>
+    internal void RestoreAfterServiceRestart() => StartCore(startForegroundService: false);
+
+    private void StartCore(bool startForegroundService)
     {
         lock (gate)
         {
             if (server is not null) return;
-            ServeurScolia.Begin(context);
+            if (startForegroundService) ServeurScolia.Begin(context);
             var created = new EmbeddedServer
             {
                 DataDirectory = DataDirectory,
