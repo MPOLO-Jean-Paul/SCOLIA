@@ -1,4 +1,5 @@
 using Android.Content;
+using Android.Content.PM;
 using Android.Media;
 using Android.Net;
 using Android.Net.Wifi;
@@ -32,6 +33,7 @@ public static class MobilePlatform
         Platform.OpenTailscale = OpenTailscale;
         Platform.IsTailscaleInstalled = IsTailscaleInstalled;
         Platform.IsVpnActive = IsVpnActive;
+        Platform.ReadTailnetState = ReadTailnetState;
         Platform.OpenTailscaleInstallPage = OpenTailscaleInstallPage;
         Platform.ConnectTailscaleInBackground = ConnectTailscaleInBackgroundAsync;
         Platform.PlayWave = AndroidAudio.PlayWave;
@@ -98,21 +100,56 @@ public static class MobilePlatform
     /// Lance le client VPN officiel quand il est installé. Sinon, ouvre son installation
     /// par une action volontaire ; SCOLIA n'installe ni n'active un VPN en silence.
     /// </summary>
-    private static bool IsTailscaleInstalled() =>
-        context?.PackageManager?.GetLaunchIntentForPackage("com.tailscale.ipn") is not null;
-
-    /// <summary>La présence d'un VPN n'établit pas son identité.</summary>
-    private static bool? IsVpnActive()
+    // GetLaunchIntentForPackage renvoie parfois null même si le paquet est présent.
+    // Le manifeste SCOLIA contient uniquement <queries><package name="com.tailscale.ipn"/>.
+    private static bool IsTailscaleInstalled()
     {
         try
         {
-            if (context?.GetSystemService(Context.ConnectivityService) is not ConnectivityManager manager
-                || manager.ActiveNetwork is not { } network)
-                return null;
-            return manager.GetNetworkCapabilities(network)?.HasTransport(TransportType.Vpn);
+            return context?.PackageManager?.GetPackageInfo(
+                "com.tailscale.ipn", PackageInfoFlags.MatchAll) is not null;
         }
-        catch (Java.Lang.SecurityException) { return null; }
+        catch (Java.Lang.Exception) { return false; }
     }
+
+    private static TailnetSnapshot ReadTailnetState()
+    {
+        bool installed = IsTailscaleInstalled();
+        bool? vpnFound = null;
+        string? address = null;
+        try
+        {
+            if (context?.GetSystemService(Context.ConnectivityService) is ConnectivityManager manager)
+            {
+                bool anyNetwork = false;
+                foreach (var network in manager.AllNetworks ?? [])
+                {
+                    var capabilities = manager.GetNetworkCapabilities(network);
+                    if (capabilities is null) continue;
+                    anyNetwork = true;
+                    if (!capabilities.HasTransport(TransportType.Vpn)) continue;
+                    vpnFound = true;
+                    var links = manager.GetLinkProperties(network)?.LinkAddresses;
+                    if (links is null) continue;
+                    foreach (var link in links)
+                    {
+                        var candidate = link?.Address?.HostAddress;
+                        if (!TailnetSnapshot.IsCandidateTailscaleIp(candidate)) continue;
+                        address = candidate;
+                        break;
+                    }
+                    if (address is not null) break;
+                }
+                vpnFound ??= anyNetwork ? false : null;
+            }
+        }
+        catch (Java.Lang.SecurityException) { vpnFound = null; }
+        catch (Java.Lang.IllegalArgumentException) { vpnFound = null; }
+        return new TailnetSnapshot(installed, vpnFound, address);
+    }
+
+    /// <summary>La présence d'un VPN n'établit pas son identité.</summary>
+    private static bool? IsVpnActive() => ReadTailnetState().VpnActive;
 
     /// <summary>
     /// Lance l'installation officielle : le Play Store affiche la vraie progression.
@@ -147,7 +184,9 @@ public static class MobilePlatform
             return "Le téléphone n'est pas prêt à ouvrir Tailscale.";
         try
         {
-            var launch = ctx.PackageManager?.GetLaunchIntentForPackage("com.tailscale.ipn");
+            var launch = IsTailscaleInstalled()
+                ? ctx.PackageManager?.GetLaunchIntentForPackage("com.tailscale.ipn")
+                : null;
             if (launch is not null)
             {
                 launch.AddFlags(ActivityFlags.NewTask);
@@ -185,7 +224,7 @@ public static class MobilePlatform
             return "SCOLIA n'est pas encore prêt à contacter le VPN.";
         try
         {
-            if (ctx.PackageManager?.GetLaunchIntentForPackage("com.tailscale.ipn") is null)
+            if (!IsTailscaleInstalled())
                 return "Tailscale n'est pas installé. Terminez d'abord l'installation depuis SCOLIA.";
 
             var request = new Intent("com.tailscale.ipn.CONNECT_VPN");
@@ -193,9 +232,7 @@ public static class MobilePlatform
             ctx.SendBroadcast(request);
             await Task.Delay(TimeSpan.FromSeconds(2)).ConfigureAwait(false);
 
-            if (ctx.GetSystemService(Context.ConnectivityService) is ConnectivityManager manager
-                && manager.ActiveNetwork is { } activeNetwork
-                && manager.GetNetworkCapabilities(activeNetwork)?.HasTransport(TransportType.Vpn) == true)
+            if (ReadTailnetState().VpnActive == true)
                 return "Demande envoyée sans quitter SCOLIA. Android détecte un VPN actif, sans confirmer son identité : vérifiez la liaison Tailscale depuis un autre téléphone.";
             return "Demande d'activation envoyée en arrière-plan. Le VPN n'est pas encore confirmé. Vérifiez la première autorisation et la connexion au compte Tailscale.";
         }

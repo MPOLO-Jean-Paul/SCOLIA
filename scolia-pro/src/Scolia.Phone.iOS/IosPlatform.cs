@@ -21,6 +21,7 @@ public static class IosPlatform
         Platform.OpenTailscaleInstallPage = OpenTailscale;
         Platform.IsTailscaleInstalled = null;
         Platform.IsVpnActive = null;
+        Platform.ReadTailnetState = null;
         Platform.ConnectTailscaleInBackground = null;
         Platform.DocumentsFolder = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
     }

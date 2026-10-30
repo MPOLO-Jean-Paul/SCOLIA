@@ -17,6 +17,8 @@ public sealed class TailscaleInstaller : Observable
     private string step = "Vérification de Tailscale";
     private string status = "Prêt à vérifier l'installation.";
     private int stepProgress;
+    private string networkSummary = "Vérification du réseau privé…";
+    private string actionText = "Vérifier le réseau privé";
 
     private TailscaleInstaller()
     {
@@ -24,10 +26,8 @@ public sealed class TailscaleInstaller : Observable
         Close = new RelayCommand(() => IsOpen = false);
         OpenStore = new RelayCommand(LaunchStore);
         Configure = new RelayCommand(() => Status = TailscaleCompanion.Open());
-        Platform.AppResumed += () => Dispatcher.UIThread.Post(() =>
-        {
-            if (IsOpen) CheckInstallation();
-        });
+        Platform.AppResumed += () => Dispatcher.UIThread.Post(() => Refresh());
+        Refresh();
     }
 
     public bool IsOpen { get => isOpen; private set => Set(ref isOpen, value); }
@@ -40,6 +40,33 @@ public sealed class TailscaleInstaller : Observable
         }
     }
     public bool NeedsInstallation => !IsInstalled;
+    public string NetworkSummary { get => networkSummary; private set => Set(ref networkSummary, value); }
+    public string ActionText { get => actionText; private set => Set(ref actionText, value); }
+    public bool LikelyConnected => snapshot?.LikelyConnected == true;
+    private TailnetSnapshot? snapshot;
+    public void Refresh()
+    {
+        var state = Platform.ReadTailnetState?.Invoke();
+        snapshot = state;
+        if (state is not null)
+        {
+            IsInstalled = state.Installed;
+            NetworkSummary = state.Summary;
+            ActionText = state.LikelyConnected ? "Afficher l'état du réseau"
+                : state.Installed ? "Vérifier ou activer Tailscale" : "Installer Tailscale";
+            Raise(nameof(LikelyConnected));
+        }
+        else
+        {
+            NetworkSummary = Platform.IsMobile
+                ? "L'état Tailscale n'est pas consultable automatiquement sur cet appareil."
+                : "Vérifiez la connexion du poste dans Tailscale.";
+            IsInstalled = TailscaleCompanion.IsInstalled();
+            ActionText = IsInstalled ? "Vérifier Tailscale" : "Installer Tailscale";
+            Raise(nameof(LikelyConnected));
+        }
+        if (IsOpen) CheckInstallation();
+    }
     public bool IsWaiting { get => isWaiting; private set => Set(ref isWaiting, value); }
     public string Step { get => step; private set => Set(ref step, value); }
     public string Status { get => status; private set => Set(ref status, value); }
@@ -59,8 +86,9 @@ public sealed class TailscaleInstaller : Observable
         StepProgress = 1;
         IsWaiting = true;
         await Task.Delay(150); // Laisse la fenêtre SCOLIA s'afficher avant d'ouvrir le magasin.
-        if (CheckInstallation()) return;
-        LaunchStore();
+        CheckInstallation();
+        // Une vérification n'ouvre jamais automatiquement le Play Store.
+        // Seul le bouton explicite « Ouvrir le magasin » le fait.
     }
 
     /// <summary>Renvoie vrai seulement lorsque le paquet officiel est réellement détecté.</summary>
@@ -77,21 +105,32 @@ public sealed class TailscaleInstaller : Observable
             Status = "iOS ne permet pas à SCOLIA de vérifier automatiquement l'installation de Tailscale. Terminez-la dans l'App Store, activez VPN On Demand, puis revenez à la connexion SCOLIA.";
             return false;
         }
-        bool found = TailscaleCompanion.IsInstalled();
+        var state = Platform.ReadTailnetState?.Invoke();
+        snapshot = state;
+        bool found = state?.Installed ?? TailscaleCompanion.IsInstalled();
         IsInstalled = found;
+        if (state is not null)
+        {
+            NetworkSummary = state.Summary;
+            ActionText = state.LikelyConnected ? "Afficher l'état du réseau" : found
+                ? "Vérifier ou activer Tailscale" : "Installer Tailscale";
+            Raise(nameof(LikelyConnected));
+        }
         if (found)
         {
             Step = "Étape 3 sur 3 · Installation terminée";
             StepProgress = 3;
             IsWaiting = false;
-            Status = "Tailscale a été détecté sur cet appareil. Fermez cette fenêtre pour revenir au partage, ou configurez le réseau privé si c'est la première utilisation.";
+            Status = state is { LikelyConnected: true }
+                ? $"{state.Summary} Votre compte et l'identité du tailnet ne sont pas accessibles à SCOLIA ; testez le partage depuis un autre téléphone."
+                : $"{state?.Summary ?? "Tailscale installé."} Ouvrez Tailscale seulement pour autoriser ou rétablir sa connexion.";
         }
         else
         {
             Step = "Étape 2 sur 3 · Téléchargement et installation";
             StepProgress = 2;
             IsWaiting = true;
-            Status = "Tailscale n'est pas encore installé. Téléchargez-le dans le magasin officiel et revenez dans SCOLIA ; la détection reprendra automatiquement.";
+            Status = state?.Summary ?? "Tailscale non détecté. Choisissez l'installation officielle si nécessaire.";
         }
         return found;
     }

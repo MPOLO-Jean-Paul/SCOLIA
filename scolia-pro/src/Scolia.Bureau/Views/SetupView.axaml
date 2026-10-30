@@ -112,9 +112,9 @@
                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
                   <StackPanel Spacing="3">
                     <TextBlock Text="Réseau privé Tailscale (facultatif)" FontWeight="SemiBold" />
-                    <TextBlock Text="Préparez la connexion distante maintenant, ou ultérieurement dans Réseau et activité." Classes="muted" TextWrapping="Wrap" />
+                    <TextBlock Text="{Binding Installer.NetworkSummary}" Classes="muted" TextWrapping="Wrap" />
                   </StackPanel>
-                  <Button Grid.Column="1" Classes="ghost" Command="{Binding PrepareTailnet}" Content="Installer ou configurer Tailscale" VerticalAlignment="Center" />
+                  <Button Grid.Column="1" Classes="ghost" Command="{Binding PrepareTailnet}" Content="{Binding Installer.ActionText}" VerticalAlignment="Center" />
                 </Grid>
               </Border>
               <Grid ColumnDefinitions="Auto,*">
@@ -323,11 +323,11 @@
           <ProgressBar Minimum="0" Maximum="3" Value="{Binding Installer.StepProgress, Mode=OneWay}" Height="6" />
           <ProgressBar IsIndeterminate="True" IsVisible="{Binding Installer.IsWaiting}" Height="3" />
           <TextBlock Text="{Binding Installer.Status}" TextWrapping="Wrap" />
+          <TextBlock Text="{Binding Installer.NetworkSummary}" Classes="muted" TextWrapping="Wrap" />
           <TextBlock Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap"
                      Text="Le magasin officiel affiche le téléchargement réel ; SCOLIA vérifie l'installation au retour. La permission VPN reste sous votre contrôle." />
           <Button Classes="ghost" Content="Ouvrir le magasin officiel" Command="{Binding Installer.OpenStore}" IsVisible="{Binding Installer.NeedsInstallation}" HorizontalAlignment="Stretch" />
           <Button Content="Vérifier l'installation" Command="{Binding Installer.Verify}" IsVisible="{Binding Installer.NeedsInstallation}" HorizontalAlignment="Stretch" />
-          <Button Classes="ghost" Content="Configurer Tailscale (première connexion)" Command="{Binding Installer.Configure}" IsVisible="{Binding Installer.IsInstalled}" HorizontalAlignment="Stretch" />
           <Button Classes="primary" Content="Fermer · Revenir à la configuration" Command="{Binding Installer.Close}" Height="44" HorizontalAlignment="Stretch" />
         </StackPanel>
       </Border>

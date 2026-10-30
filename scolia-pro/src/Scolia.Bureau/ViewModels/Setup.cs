@@ -47,6 +47,7 @@ public sealed class SetupViewModel : Observable
         Finish = new AsyncCommand(FinishAsync);
         JoinExisting = new AsyncCommand(() => shell.ChooseServerAsync());
         PrepareTailnet = new AsyncCommand(Installer.BeginAsync);
+        Installer.Refresh();
         AddPromotion = new RelayCommand(() => Promotions.Add(new PromotionDraftVm(d => Promotions.Remove(d))));
         PickLogo = new AsyncCommand(PickLogoAsync);
         ClearLogo = new RelayCommand(() => SetLogo(null, null));

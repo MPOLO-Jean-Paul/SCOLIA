@@ -34,6 +34,9 @@ public static class Platform
 
     /// <summary>VPN Android actif, sans certitude de son fournisseur.</summary>
     public static Func<bool?>? IsVpnActive { get; set; }
+
+    /// <summary>Diagnostic du VPN et adresse locale éventuelle ; aucune donnée de compte Tailscale.</summary>
+    public static Func<TailnetSnapshot>? ReadTailnetState { get; set; }
     public static Func<string>? OpenTailscaleInstallPage { get; set; }
 
     /// <summary>Android signale le retour à SCOLIA après une installation externe.</summary>
