@@ -1,31 +1,37 @@
-name: Inspecter sources SCOLIA (sans modification)
+name: Inspecter archives SCOLIA
 on:
   push:
     branches:
       - feature/scolia-biometric-mobile
     paths:
       - '.github/workflows/inspect-scolia-archive.yml'
-  workflow_dispatch:
 permissions:
-  contents: read
+  contents: write
 jobs:
   inventory:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Vérifier structure de l'archive
+        with:
+          ref: feature/scolia-biometric-mobile
+      - name: Inventorier l'archive sans modifier les sources
         shell: bash
         run: |
           python3 - <<'PY'
-          import zipfile
-          path = 'SCOLIA OK.zip'
-          with zipfile.ZipFile(path) as archive:
-              names = archive.namelist()
-              print("TOTAL_ENTRIES",len(names))
-              print("ROOT_ENTRIES",*[n for n in names if '/' not in n][:100],sep='\n')
-              print("RELEVANT_PATHS")
-              for n in names:
-                  if any(k in n.lower() for k in ['mobile','android','login','auth','secret','security','csproj','solution','.sln']):
-                      print(n)
-              print("TOP_PATHS",*names[:65],sep='\n')
+          import zipfile, pathlib
+          file=pathlib.Path('SCOLIA OK.zip')
+          with zipfile.ZipFile(file) as z:
+              names=z.namelist()
+              report=['Archive vérifiée: '+file.name, 'Entrées: '+str(len(names)),
+                      'Chemins liés aux sources et à la connexion:']
+              report += [n for n in names if any(x in n.lower() for x in ('mobile','android','login','auth','secret','security','csproj','sln','gradle','package.json'))][:240]
+              report += ['Premières entrées:'] + names[:90]
+          pathlib.Path('ARCHIVE_INVENTORY.txt').write_text('\n'.join(report)+'\n')
           PY
+      - name: Sauvegarder uniquement l'inventaire sur la branche de travail
+        shell: bash
+        run: |
+          git config user.name "scolia-actions"
+          git config user.email "actions@users.noreply.github.com"
+          git add ARCHIVE_INVENTORY.txt
+          git diff --cached --quiet || (git commit -m "docs: inventory existing SCOLIA archive" && git push)
