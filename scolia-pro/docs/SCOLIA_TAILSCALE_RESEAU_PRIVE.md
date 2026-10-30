@@ -15,7 +15,7 @@ Tailscale crée un **réseau privé chiffré** entre des appareils approuvés (t
 2. Depuis chaque PC Windows, installer et ouvrir https://tailscale.com/docs/install/windows, puis se connecter au même tailnet.
 3. L'administrateur du tailnet active l'approbation des appareils, si souhaitée : https://tailscale.com/docs/features/access-control/device-management/device-approval. Dans l'onglet **Machines**, examiner chaque appareil marqué **Needs approval**, puis choisir **Approve**. N'approuver que les appareils reconnus.
 4. Vérifier les **grants/ACL** : n'autoriser que les postes scolaires autorisés à atteindre le serveur SCOLIA sur **TCP 5080**. Ne pas partager de clés, d'invitations, de mots de passe ni de captures des comptes.
-5. Dans la liste **Machines** de Tailscale, noter l'IP privée du téléphone principal (par exemple `100.101.102.103`, exemple fictif) ou son nom MagicDNS complet `nom.telecole.ts.net` (exemple fictif).
+5. Dans la liste **Machines** de Tailscale, noter l'IP privée du téléphone principal (par exemple `100.110.22.33`, exemple fictif) ou son nom MagicDNS complet `nom.telecole.ts.net` (exemple fictif).
 6. Garder une seule connexion VPN active sur Android. Dans les réglages Android **VPN**, activer **VPN permanent / Always-on VPN** pour Tailscale si disponible ; SCOLIA doit rester inclus dans le trafic Tailscale. Tester la connectivité après redémarrage.
 
 ## B. Garder le téléphone principal en mode serveur
@@ -29,7 +29,7 @@ Tailscale crée un **réseau privé chiffré** entre des appareils approuvés (t
 ## C. Joindre SCOLIA depuis un autre appareil
 
 1. Ouvrir SCOLIA → **Rejoindre votre établissement** → **Réseau privé Tailscale**.
-2. Entrer `100.101.102.103:5080` ou `nom.telecole.ts.net:5080`, en remplaçant ces exemples par la véritable IP/le véritable nom affichés dans Tailscale.
+2. Entrer `100.110.22.33:5080` ou `nom.telecole.ts.net:5080`, en remplaçant ces exemples par la véritable IP/le véritable nom affichés dans Tailscale.
 3. Appuyer sur **Rejoindre par Tailscale**. SCOLIA vérifie que le serveur scolaire répond avant de mémoriser sa liaison.
 4. Se connecter avec un **compte SCOLIA autorisé** (Secrétariat, Comptabilité, etc.). L'appareil ne doit pas être configuré avec une autre base scolaire par erreur.
 
