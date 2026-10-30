@@ -804,7 +804,7 @@ public sealed class BusinessApiTests : IDisposable
         Assert.False(result.GetProperty("applied").GetBoolean());
         Assert.NotEmpty(result.GetProperty("errors").EnumerateArray());
         Assert.Equal(0, (await admin.GetAsync("/api/apprenants?q=INF175").Ok()).GetProperty("total").GetInt32());
-        Assert.Equal(0, (await admin.GetAsync("/api/paiements").Ok()).GetProperty("sum").GetDecimal());
+        Assert.Equal(0m, (await admin.GetAsync("/api/paiements").Ok()).GetProperty("sum").GetDecimal());
     }
 
     [Fact]
