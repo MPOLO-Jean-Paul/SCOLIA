@@ -21,9 +21,4 @@ public sealed class AppDelegate : AvaloniaAppDelegate<Scolia.Bureau.App>
         return base.CustomizeAppBuilder(builder);
     }
 
-    public override void OnActivated(UIApplication application)
-    {
-        base.OnActivated(application);
-        Platform.NotifyAppResumed();
-    }
 }
