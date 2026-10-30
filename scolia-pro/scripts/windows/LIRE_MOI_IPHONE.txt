@@ -5,6 +5,9 @@ SCOLIA Phone pour iOS utilise les memes interfaces et regles metier que SCOLIA P
 
 ETAT DE LA VERSION IPHONE
 - Le projet source iOS se trouve dans src/Scolia.Phone.iOS.
+- Le fichier SCOLIA_Phone_iPhone_Sources.zip du kit contient le projet iOS
+  et ses dependances sources communes lorsque l'archive est disponible.
+  Il ne doit PAS etre installe sur un iPhone.
 - Un Mac avec Xcode, le SDK .NET iOS et un profil Apple de distribution
   sont necessaires pour publier et installer un IPA sur un iPhone reel.
 - Une application de simulateur non signee, si la compilation macOS reussit,

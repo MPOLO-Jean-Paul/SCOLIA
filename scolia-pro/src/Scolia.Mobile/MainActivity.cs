@@ -8,7 +8,7 @@ using ScoliaPlatform = Scolia.Bureau.Infrastructure.Platform;
 namespace Scolia.Mobile;
 
 /// <summary>Écran de SCOLIA sur le téléphone. Le clavier pousse le formulaire vers le haut au lieu de le cacher.</summary>
-[Activity(Label = "SCOLIA", Theme = "@style/ScoliaLaunchTheme", Icon = "@mipmap/icon", RoundIcon = "@mipmap/icon_round", MainLauncher = true, Exported = true,
+[Activity(Label = "SCOLIA Phone", Theme = "@style/ScoliaLaunchTheme", Icon = "@mipmap/icon", RoundIcon = "@mipmap/icon_round", MainLauncher = true, Exported = true,
     ConfigurationChanges = ConfigChanges.Orientation | ConfigChanges.ScreenSize | ConfigChanges.UiMode | ConfigChanges.ScreenLayout | ConfigChanges.SmallestScreenSize | ConfigChanges.Keyboard | ConfigChanges.KeyboardHidden,
     WindowSoftInputMode = SoftInput.AdjustResize)]
 public sealed class MainActivity : AvaloniaMainActivity

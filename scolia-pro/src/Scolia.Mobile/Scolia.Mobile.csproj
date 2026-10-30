@@ -12,9 +12,9 @@
     <AssemblyName>SCOLIA</AssemblyName>
     <RootNamespace>Scolia.Mobile</RootNamespace>
     <ApplicationId>com.jpservices.scolia</ApplicationId>
-    <ApplicationTitle>SCOLIA</ApplicationTitle>
-    <ApplicationVersion>120</ApplicationVersion>
-    <ApplicationDisplayVersion>1.2.0</ApplicationDisplayVersion>
+    <ApplicationTitle>SCOLIA Phone</ApplicationTitle>
+    <ApplicationVersion>121</ApplicationVersion>
+    <ApplicationDisplayVersion>1.2.1</ApplicationDisplayVersion>
     <AndroidPackageFormat>apk</AndroidPackageFormat>
     <RuntimeIdentifiers>android-arm64;android-arm</RuntimeIdentifiers>
     <AvaloniaUseCompiledBindingsByDefault>false</AvaloniaUseCompiledBindingsByDefault>

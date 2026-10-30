@@ -5,7 +5,7 @@ Le client natif iOS partage la meme interface Avalonia, les formulaires et les r
 ## Etat
 
 - Le projet source iOS est en place sous `src/Scolia.Phone.iOS`.
-- La compilation de verification pour simulateur est lancee par `.github/workflows/scolia-phone-ios.yml` sur macOS.
+- La compilation de verification pour simulateur est lancee par `.github/workflows/scolia-phone-ios.yml` sur un environnement Apple Silicon avec Xcode 27.
 - **iOS utilise un IPA, jamais un APK.** Pour obtenir une application installable sur un iPhone physique, une signature Apple et un profil de distribution sont necessaires.
 - Aucune archive de simulateur non signee ne doit etre presentee comme un IPA pour iPhone reel.
 - Le mode iPhone est CLIENT d'un SCOLIA Phone Serveur Android ou d'un serveur Windows. Aucun service de base scolaire en permanence en arriere-plan n'est promis sous iOS.

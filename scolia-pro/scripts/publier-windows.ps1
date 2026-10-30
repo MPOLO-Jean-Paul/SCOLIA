@@ -42,7 +42,15 @@ if ($apk) {
   Write-Host '==> SCOLIA Phone Android (APK)'
   Copy-Item $apk.FullName (Join-Path $android 'SCOLIA-Android.apk')
 }
-$ipa = Get-ChildItem (Join-Path $Sortie 'ios') -Filter '*.ipa' -ErrorAction SilentlyContinue | Select-Object -First 1
+# Le code iPhone et les ressources partagées restent disponibles dans le kit,
+# sans faire croire qu'une compilation de simulateur équivaut à un IPA signé.
+$sourceIos = Join-Path $Sortie 'sources/SCOLIA_Pro_Sources.zip'
+if (Test-Path $sourceIos) {
+  Copy-Item $sourceIos (Join-Path $iphone 'SCOLIA_Phone_iPhone_Sources.zip')
+}
+# Un IPA fourni manuellement n'est pas admis comme livrable par défaut :
+# seule une archive explicitement nommée iOS_Signed peut être jointe.
+$ipa = Get-ChildItem (Join-Path $Sortie 'ios') -Filter 'SCOLIA_Phone_*_iOS_Signed.ipa' -ErrorAction SilentlyContinue | Select-Object -First 1
 if ($ipa) {
   Write-Host '==> SCOLIA Phone iPhone (IPA fourni par le pipeline Apple)'
   Copy-Item $ipa.FullName (Join-Path $iphone 'SCOLIA-iPhone.ipa')

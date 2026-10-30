@@ -7,7 +7,7 @@ using Avalonia.Android;
 namespace Scolia.Mobile;
 
 /// <summary>Application Android de SCOLIA : la même application Avalonia que sur l'ordinateur, en vue unique.</summary>
-[Application(Label = "SCOLIA", Icon = "@mipmap/icon", RoundIcon = "@mipmap/icon_round", UsesCleartextTraffic = true, AllowBackup = false)]
+[Application(Label = "SCOLIA Phone", Icon = "@mipmap/icon", RoundIcon = "@mipmap/icon_round", UsesCleartextTraffic = true, AllowBackup = false)]
 public sealed class AndroidApp : AvaloniaAndroidApplication<Scolia.Bureau.App>
 {
     public AndroidApp(IntPtr javaReference, JniHandleOwnership transfer) : base(javaReference, transfer) { }
