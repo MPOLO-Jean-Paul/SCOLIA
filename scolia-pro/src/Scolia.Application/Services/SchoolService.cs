@@ -125,9 +125,9 @@ public sealed class SchoolService(IAppDbContext db, IWriteGate gate, IAuditLog a
 
     /// <summary>
     /// Modifie les mois de paiement et leur échéance sur une année EXISTANTE, sans recréer l'année.
-    /// Toute affectation de reçu ou prise en charge d'une mensualité verrouille la modification
-    /// pour éviter de changer l'historique comptable.
-    /// Les identifiants des périodes/frais inchangés sont conservés pour les inscriptions existantes.
+    /// Toute mensualité déjà payée ou prise en charge garde son mois, son identifiant et son échéance.
+    /// Il reste possible d'ajouter des mois à la fin ou de changer les dates des mois non affectés,
+    /// mais jamais de renommer ou supprimer rétroactivement une mensualité comptabilisée.
     /// </summary>
     public Task<AcademicYearDto> UpdateYearScheduleAsync(Guid id, AcademicYearScheduleUpdate input, CancellationToken ct = default) =>
         gate.RunAsync(async () =>
@@ -153,11 +153,30 @@ public sealed class SchoolService(IAppDbContext db, IWriteGate gate, IAuditLog a
             var monthlyFees = promotions.SelectMany(p => p.Fees)
                 .Where(f => f.Kind == FeeKind.Mensualite).ToList();
             var feeIds = monthlyFees.Select(f => f.Id).ToList();
-            if (feeIds.Count > 0 &&
-                (await db.ReceiptAllocations.AnyAsync(a => feeIds.Contains(a.FeeItemId), ct) ||
-                 await db.SponsorshipLines.AnyAsync(a => feeIds.Contains(a.FeeItemId), ct)))
-                throw new DomainException("periodes",
-                    "Le calendrier contient déjà des paiements ou prises en charge. Il est verrouillé afin de conserver les reçus et les comptes. Créez une nouvelle année si nécessaire.");
+            var protectedFees = new HashSet<Guid>();
+            if (feeIds.Count > 0)
+            {
+                protectedFees.UnionWith(await db.ReceiptAllocations
+                    .Where(a => feeIds.Contains(a.FeeItemId))
+                    .Select(a => a.FeeItemId).Distinct().ToListAsync(ct));
+                protectedFees.UnionWith(await db.SponsorshipLines
+                    .Where(a => feeIds.Contains(a.FeeItemId))
+                    .Select(a => a.FeeItemId).Distinct().ToListAsync(ct));
+            }
+            var protectedPeriodIds = monthlyFees
+                .Where(f => protectedFees.Contains(f.Id) && f.PeriodId.HasValue)
+                .Select(f => f.PeriodId!.Value).ToHashSet();
+
+            // Les mois associés à une écriture financière doivent rester à leur place.
+            for (var i = 0; i < previous.Count; i++)
+            {
+                if (!protectedPeriodIds.Contains(previous[i].Id)) continue;
+                if (i >= proposed.Count || previous[i].Month != proposed[i].Month ||
+                    previous[i].CalendarYear != proposed[i].CalendarYear)
+                    throw new DomainException("periodes",
+                        $"Le mois de {previous[i].Name} {previous[i].CalendarYear} possède déjà un paiement ou une prise en charge. " +
+                        "Il ne peut pas être déplacé ou supprimé. Conservez les mois payés et ajustez uniquement les mois suivants.");
+            }
 
             // Réutiliser les périodes présentes pour préserver les clés et les liens des frais.
             var ordered = new List<AcademicPeriod>(proposed.Count);
@@ -169,7 +188,9 @@ public sealed class SchoolService(IAppDbContext db, IWriteGate gate, IAuditLog a
                 period.Name = generated.Name;
                 period.Month = generated.Month;
                 period.CalendarYear = generated.CalendarYear;
-                period.DueDate = generated.DueDate;
+                // L'échéance historique d'un mois déjà comptabilisé reste identique.
+                if (!protectedPeriodIds.Contains(period.Id))
+                    period.DueDate = generated.DueDate;
                 if (i >= previous.Count) year.Periods.Add(period);
                 ordered.Add(period);
             }
@@ -210,7 +231,9 @@ public sealed class SchoolService(IAppDbContext db, IWriteGate gate, IAuditLog a
             year.EndDate = new DateOnly(last.CalendarYear, last.Month,
                 DateTime.DaysInMonth(last.CalendarYear, last.Month));
             audit.Record("annee.calendrier.modifie", "AnneeScolaire", year.Id.ToString(),
-                $"Année {year.Label} : {first.Name} {first.CalendarYear} à {last.Name} {last.CalendarYear}, paiement sans retard jusqu'au {lastOnTimeDay} du mois suivant.");
+                $"Année {year.Label} : {first.Name} {first.CalendarYear} à {last.Name} {last.CalendarYear}, " +
+                $"limite le {lastOnTimeDay} du mois suivant pour les mois non encore comptabilisés ; " +
+                $"{protectedPeriodIds.Count} échéance(s) historique(s) conservée(s).");
             await db.SaveChangesAsync(ct);
             return ToDto(year);
         }, ct);
