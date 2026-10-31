@@ -284,7 +284,9 @@ public sealed class SearchViewModel : Observable
             var url = destination.StartsWith("compte/", StringComparison.Ordinal)
                 || destination.StartsWith("navigation/", StringComparison.Ordinal)
                 ? "/" + destination : "/parametres/" + destination;
-            Results.Add(new SearchHitRow(new SearchHitDto("Paramètre", setting.Title, setting.Section, url)));
+            var kind = destination.StartsWith("navigation/", StringComparison.Ordinal)
+                ? "Fonctionnalité" : "Paramètre";
+            Results.Add(new SearchHitRow(new SearchHitDto(kind, setting.Title, setting.Section, url)));
         }
 
         var dataUnavailable = false;
@@ -387,7 +389,9 @@ public sealed class SearchHitRow
 
     /// <summary>Icône du résultat, la même que celle de son outil dans le volet latéral.</summary>
     public MaterialIconKind Icon => Hit.Type == "Reçu" ? MaterialIconKind.ReceiptText
-        : Hit.Type == "Paramètre" ? MaterialIconKind.CogOutline : MaterialIconKind.AccountGroup;
+        : Hit.Type == "Paramètre" ? MaterialIconKind.CogOutline
+        : Hit.Type == "Fonctionnalité" ? MaterialIconKind.ViewGrid
+        : MaterialIconKind.AccountGroup;
     public IBrush Brush => ThemeBrush.Get(Hit.Type == "Reçu" ? "ToneOrange" : "ToneBlue");
 }
 
