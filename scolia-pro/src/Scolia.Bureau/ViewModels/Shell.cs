@@ -50,6 +50,7 @@ public sealed class ShellViewModel : Observable
         ReloadCommand = new AsyncCommand(() => Run(Reload));
         SearchCommand = new RelayCommand(ShowSearch);
         SettingsSearch = new PhoneSettingsSearchVm(this);
+        HeaderSearch = new PhoneHeaderSearchVm(this);
         ToggleSidebarCommand = new RelayCommand(ToggleSidebar);
         BackCommand = new RelayCommand(GoBack);
         ForwardCommand = new RelayCommand(GoForward);
@@ -91,6 +92,7 @@ public sealed class ShellViewModel : Observable
     public RelayCommand SearchCommand { get; private set; } = null!;
     /// <summary>Recherche locale des réglages dans le bandeau mobile, jamais dans les apprenants.</summary>
     public PhoneSettingsSearchVm SettingsSearch { get; }
+    public PhoneHeaderSearchVm HeaderSearch { get; }
     public RelayCommand ToggleSidebarCommand { get; private set; } = null!;
     public SessionDto? Session => session;
 
@@ -320,6 +322,7 @@ public sealed class ShellViewModel : Observable
             Raise(nameof(HasPage));
             Raise(nameof(DesktopPage));
             Raise(nameof(PhonePage));
+            HeaderSearch.PageChanged();
             PhoneMenuOpen = false;
             Sheet = null;
             // Entrer dans une fonctionnalité referme son accordéon, y compris au clavier.
@@ -1295,6 +1298,7 @@ public sealed class ShellViewModel : Observable
                 SettingsSearch.Reset();
             }
             Raise(nameof(PhoneMenuSelected));
+            HeaderSearch.MenuChanged();
         }
     }
 
