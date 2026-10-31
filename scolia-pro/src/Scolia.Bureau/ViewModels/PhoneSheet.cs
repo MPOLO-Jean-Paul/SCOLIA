@@ -158,7 +158,7 @@ public sealed class PhoneSettingsSearchVm : Observable
             "audio musique notifications volume silence activation son", Page("sons"));
         Add("Sécurité du compte", "Confidentialité", MaterialIconKind.ShieldLockOutline, "ToneTeal",
             "biometrie empreinte digitale identification connexion authentification code secret mot de passe",
-            Page("securite"));
+            Account("mot-de-passe"));
         Add("Poste et réseau", "Connexions", MaterialIconKind.LanConnect, "ToneGreen",
             "tailscale vpn wifi internet serveur partage reseaux connexion poste magicdns",
             Account("poste"));
