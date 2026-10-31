@@ -78,7 +78,7 @@ public sealed class FormViewModel : Observable
         Subtitle = subtitle;
         this.onSubmit = onSubmit;
         Submit = new AsyncCommand(SubmitAsync);
-        Cancel = new RelayCommand(() => Close(false));
+        Cancel = new RelayCommand(() => { if (!Busy) Close(false); });
     }
 
     public string Title { get; }
@@ -253,7 +253,7 @@ public sealed class FormViewModel : Observable
 
     private async Task SubmitAsync()
     {
-        if (onSubmit is null) return;
+        if (onSubmit is null || Busy) return;
         if (!Validate()) { Finished?.Invoke(false); return; }
         Error = null;
         Busy = true;
