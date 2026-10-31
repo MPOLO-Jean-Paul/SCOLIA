@@ -9,6 +9,9 @@ public static class Platform
     /// <summary>Vrai dans l'application du téléphone : pas de serveur sur l'appareil, il se connecte à celui de l'établissement.</summary>
     public static bool IsMobile { get; set; }
 
+    /// <summary>Libellé présenté par le système de l'appareil : Android, Face ID ou Touch ID.</summary>
+    public static string BiometricDisplayName { get; set; } = "Empreinte digitale";
+
     /// <summary>Initialisation du téléphone : l'écran natif garde le logo jusqu'à ce que la première page soit prête.</summary>
     public static Task? StartupTask { get; set; }
 
