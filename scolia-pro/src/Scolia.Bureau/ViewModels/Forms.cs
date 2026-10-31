@@ -42,6 +42,7 @@ public sealed class FormField : Observable
     public bool Flag { get => flag; set => Set(ref flag, value); }
     public string? Error { get => error; set { if (Set(ref error, value)) Raise(nameof(HasError)); } }
     public bool HasError => !string.IsNullOrEmpty(error);
+    public bool HasHint => !string.IsNullOrWhiteSpace(Hint);
 
     public bool IsText => Kind is FieldKind.Text or FieldKind.Amount;
     public bool IsPhone => Kind == FieldKind.Phone;
