@@ -55,4 +55,26 @@ public class SettingsNavigationTests
         Assert.True(page.SettingsDetailVisible);
         Assert.False(page.MobileCategoriesVisible);
     }
+
+    [Theory]
+    [InlineData("police", "Texte et polices")]
+    [InlineData("thème", "Thème et couleurs")]
+    [InlineData("animations", "Animations et fluidité")]
+    [InlineData("son", "Sons")]
+    [InlineData("empreinte", "Sécurité du compte")]
+    public void Recherche_du_menu_ouvre_directement_le_bon_reglage_et_non_l_accueil(string query, string titre)
+    {
+        using var api = new ScoliaClient(new Uri("http://localhost:5080/"));
+        var shell = new ShellViewModel(api, new Preferences()) { Phone = true };
+        shell.PhoneMenuOpen = true;
+        shell.SettingsSearch.Activate.Execute(null);
+        shell.SettingsSearch.Query = query;
+        var result = Assert.Single(shell.SettingsSearch.Results, r => r.Title == titre);
+        result.Open.Execute(null);
+
+        Assert.False(shell.PhoneMenuOpen);
+        var page = Assert.IsType<SettingsPage>(shell.Current);
+        Assert.True(page.SettingsDetailVisible);
+        Assert.Equal(titre, page.SectionTitle);
+    }
 }
