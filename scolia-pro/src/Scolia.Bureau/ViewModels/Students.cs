@@ -442,7 +442,7 @@ public static class StudentForms
             // Changer le nom, la promotion ou les coordonnées impose une nouvelle vérification.
             var identityKey = string.Join("|", f.ChoiceValue("promotion"), f.Text("nom").ToUpperInvariant(),
                 f.Text("postNom").ToUpperInvariant(), f.Text("prenom").ToUpperInvariant(),
-                f.ChoiceValue("sexe"), f.Day("naissance"), f.Text("lieu"), f.Text("contact1"));
+                f.ChoiceValue("sexe"), f.Day("naissance"), f.Text("lieu"), f.Text("contact1"), f.Day("inscription"));
             var doubles = await shell.Api.GetAsync<List<DuplicateCandidateDto>>("api/apprenants/doublons" + ScoliaClient.Query(
                 ("nom", f.Text("nom")), ("postNom", f.Text("postNom")), ("prenom", f.Text("prenom"))));
             if (doubles.Count > 0 && confirmedIdentity != identityKey)
