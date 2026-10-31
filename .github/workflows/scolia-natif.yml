@@ -1,0 +1,48 @@
+name: SCOLIA Natif - controle des parcours Windows et Android
+
+on:
+  push:
+    paths:
+      - 'scolia-pro/src/Scolia.Bureau/**'
+      - 'scolia-pro/src/Scolia.Mobile/**'
+      - 'scolia-pro/tests/Scolia.Bureau.Tests/**'
+      - '.github/workflows/scolia-natif.yml'
+  pull_request:
+    paths:
+      - 'scolia-pro/src/Scolia.Bureau/**'
+      - 'scolia-pro/src/Scolia.Mobile/**'
+      - 'scolia-pro/tests/Scolia.Bureau.Tests/**'
+      - '.github/workflows/scolia-natif.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: scolia-natif-ux-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: scolia-pro
+
+jobs:
+  tests-natifs:
+    name: Tester les parcours natifs et les formulaires
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: scolia-pro/global.json
+      - name: Compiler le client Avalonia Windows Android iOS partage
+        run: dotnet build src/Scolia.Bureau/Scolia.Bureau.csproj -c Release
+      - name: Tester la navigation, les droits, les validations et les autres modules
+        run: dotnet test tests/Scolia.Bureau.Tests/Scolia.Bureau.Tests.csproj -c Release --logger "trx;LogFileName=natif.trx"
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: SCOLIA_Natif_Logs_Erreurs
+          path: scolia-pro/tests/Scolia.Bureau.Tests/TestResults/
+          if-no-files-found: ignore
