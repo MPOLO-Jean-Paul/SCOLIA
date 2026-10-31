@@ -37,6 +37,9 @@ public sealed class StaffAttendanceService(IAppDbContext db, IWriteGate gate, IA
 
         var now = clock.UtcNow;
         var local = TimeOnly.FromDateTime(now.ToLocalTime());
+        // Un retour en arrière de l'horloge ne peut pas faire valider une sortie antérieure à l'entrée.
+        if (mark == StaffMark.Sortie && todays.Any(m => m.Kind == StaffMark.Entree && m.Time >= local))
+            throw new DomainException("pointage", "L'heure de sortie doit être postérieure à l'heure d'entrée. Vérifiez l'horloge.");
         var signature = new StaffAttendanceMark
         {
             StaffMemberId = member.Id, Date = today, Kind = mark, Time = local,
