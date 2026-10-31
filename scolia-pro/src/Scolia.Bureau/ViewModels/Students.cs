@@ -452,6 +452,9 @@ public static class StudentForms
 
         // La promotion d'abord, comme dans la version 79 : elle donne le début du matricule.
         form.AddChoice("promotion", "Promotion", promotions.Select(Choices.Promotion).ToList(), null, required: true);
+        // Pour une nouvelle inscription, ne pas affecter implicitement la première promotion.
+        // L'utilisateur doit choisir explicitement le niveau scolaire.
+        form.Find("promotion").Choice = null;
         AddIdentityFields(form, null);
         form.AddDay("inscription", "Date d'inscription", DateOnly.FromDateTime(DateTime.Today));
 
@@ -559,12 +562,15 @@ public static class StudentForms
     /// </summary>
     private static void AddIdentityFields(FormViewModel form, StudentDto? s)
     {
+        form.AddHeader("Identité de l'apprenant", "Renseignez les noms tels qu'ils apparaissent sur le dossier scolaire.");
         form.Add("nom", "Nom", value: s?.LastName, required: true);
         form.Add("postNom", "Post-nom", value: s?.MiddleName, required: true);
         form.Add("prenom", "Prénom", value: s?.FirstName, required: true);
-        form.AddChoice("sexe", "Sexe", Labels.Genders, s?.Gender ?? "M", required: true);
+        form.AddChoice("sexe", "Sexe", Labels.Genders, s?.Gender, required: true);
+        if (s is null) form.Find("sexe").Choice = null;
         form.AddDay("naissance", "Date de naissance", s?.BirthDate, required: true);
         form.Add("lieu", "Lieu de naissance", value: s?.BirthPlace, required: true);
+        form.AddHeader("Contact et adresse", "Le contact du parent servira aux communications et aux rappels de paiement.");
         form.Add("tuteur", "Parent ou tuteur", value: s?.GuardianName);
         form.Add("adresse", "Adresse", value: s?.Address, hint: "Quartier, avenue et numéro");
         form.Add("contact1", "Contact parent (relances WhatsApp)", FieldKind.Phone, value: s?.GuardianPhone, required: true,
