@@ -21,7 +21,7 @@ export function DashboardPage() {
       <PageHead title="Tableau de bord" eyebrow={todayLabel()} subtitle={d ? `Année scolaire ${d.academicYear} · situation en temps réel` : 'Chargement…'}
         actions={<>
           {can(P.paymentsCreate) && <Button variant="primary" icon={<HandCoins />} onClick={() => navigate('/encaisser')}>Encaisser (F2)</Button>}
-          <Button icon={<AlertTriangle />} onClick={() => navigate('/recouvrement')}>Retards de paiement</Button>
+          {can(P.reportsRead) && <Button icon={<AlertTriangle />} onClick={() => navigate('/recouvrement')}>Retards de paiement</Button>}
         </>} />
       <div className="toolbar">
         <SelectField label="Promotion" value={promotionId} onChange={(e) => setPromotionId(e.target.value)}>
@@ -60,7 +60,7 @@ export function DashboardPage() {
                     <tbody>
                       {d.promotions.map((p) => (
                         <tr key={p.id} className="clickable" onClick={() => navigate(`/apprenants?promotionId=${p.id}`)}>
-                          <td><span className="tag-code">{p.code}</span> <span className="muted small">{p.name}</span></td>
+                          <td><Link to={`/apprenants?promotionId=${p.id}`} className="tag-code">{p.code}</Link> <span className="muted small">{p.name}</span></td>
                           <td className="num">{p.students}</td>
                           <td className="num">{money(p.collected)}</td>
                           <td className="num" style={{ color: p.overdue > 0 ? 'var(--orange)' : undefined }}>{money(p.overdue)}</td>
@@ -84,7 +84,7 @@ export function DashboardPage() {
                   <thead><tr><th>N° reçu</th><th>Date</th><th>Apprenant</th><th>Mode</th><th>Caissier</th><th>Statut</th><th className="num">Montant</th></tr></thead>
                   <tbody>{d.latestReceipts.map((r) => (
                     <tr key={r.id} className="clickable" onClick={() => navigate(`/paiements/recus/${r.id}`)}>
-                      <td className="tag-code">{r.number}</td><td>{date(r.date)}</td><td>{r.allocations}</td><td>{r.method}</td><td className="muted">{r.cashier}</td>
+                      <td><Link className="tag-code" to={`/paiements/recus/${r.id}`}>{r.number}</Link></td><td>{date(r.date)}</td><td>{r.allocations}</td><td>{r.method}</td><td className="muted">{r.cashier}</td>
                       <td><Badge tone={statusTone(r.status)}>{r.status}</Badge></td><td className="num">{money(r.amount)}</td>
                     </tr>))}
                   </tbody>
