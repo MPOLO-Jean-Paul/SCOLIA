@@ -12,7 +12,7 @@ interface Group { title: string; items: { to: string; label: string; icon: React
 interface Entry { kind: string; title: string; subtitle?: string; url: string; icon: ReactNode }
 
 /** Palette de commandes (Ctrl+K) : navigation et recherche globale au clavier. */
-export function CommandPalette({ groups, onClose, onPreferences, canConfigureSchool }: { groups: Group[]; onClose: () => void; onPreferences: () => void; canConfigureSchool: boolean }) {
+export function CommandPalette({ groups, onClose, onPreferences, canConfigureSchool, canSearchRecords }: { groups: Group[]; onClose: () => void; onPreferences: () => void; canConfigureSchool: boolean; canSearchRecords: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
   const listId = useId();
   useDialogFocus(ref, onClose);
@@ -25,10 +25,10 @@ export function CommandPalette({ groups, onClose, onPreferences, canConfigureSch
 
   useEffect(() => {
     let cancelled = false;
-    if (debounced.trim().length < 2) { setHits({ query: '', items: [] }); return; }
+    if (!canSearchRecords || debounced.trim().length < 2) { setHits({ query: '', items: [] }); return; }
     api.get<SearchHit[]>('/api/recherche', { q: debounced }).then((h) => { if (!cancelled) setHits({query: debounced, items: h}); }).catch(() => { if (!cancelled) setHits({query: debounced, items: []}); });
     return () => { cancelled = true; };
-  }, [debounced]);
+  }, [debounced, canSearchRecords]);
 
   const entries = useMemo<Entry[]>(() => {
     const k = key(text);
