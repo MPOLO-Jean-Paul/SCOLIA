@@ -67,6 +67,9 @@ public interface IWriteGate
 public interface IAuditLog
 {
     void Record(string action, string entityType, string? entityId, string summary, object? data = null);
+
+    /// <summary>Même enregistrement, attribué à un auteur précis : utile avant l'ouverture de sa session (connexion).</summary>
+    void RecordAs(string actor, string action, string entityType, string? entityId, string summary) => Record(action, entityType, entityId, summary);
 }
 
 public interface IPasswordService

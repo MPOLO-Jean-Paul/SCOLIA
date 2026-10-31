@@ -94,7 +94,7 @@ public sealed class UserService(IAppDbContext db, IWriteGate gate, IAuditLog aud
             found.FailedLoginCount = 0;
             found.LockoutEndUtc = null;
             found.LastLoginUtc = now;
-            audit.Record("connexion.reussie", "Utilisateur", found.Id.ToString(), $"Connexion de {found.UserName}.");
+            audit.RecordAs(found.DisplayName, "connexion.reussie", "Utilisateur", found.Id.ToString(), $"Connexion de {found.UserName}.");
             await db.SaveChangesAsync(ct);
             return (found, null, null);
         }, ct);

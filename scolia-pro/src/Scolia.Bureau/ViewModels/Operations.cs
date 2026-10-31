@@ -274,6 +274,11 @@ public sealed class SearchViewModel : Observable
         // Réglages : catalogue local filtré selon les permissions et jamais envoyé au serveur.
         // Sur un compte Promoteur, aucune requête sur les dossiers des apprenants n'est autorisée.
         var terms = new PhoneSettingsSearchVm(shell) { Query = Query.Trim() };
+        // Classement compris sans formation : une fonction dont le TITRE correspond vient en tête ;
+        // une fonction trouvée seulement par un mot-clé caché passe après les apprenants et les reçus.
+        // « ACC » trouve donc d'abord les matricules ACC…, pas « Thème et couleurs » (mot-clé « accent »).
+        var strong = new List<SearchHitRow>();
+        var weak = new List<SearchHitRow>();
         foreach (var setting in terms.Results)
         {
             // Le résultat porte sa COMMANDE NATIVE et non une adresse recomposée
@@ -290,7 +295,7 @@ public sealed class SearchViewModel : Observable
             if (settingsOnly && !isSetting) continue;
             var kind = isSetting ? "Paramètre" : "Fonctionnalité";
             // Un seul geste (toucher, clic ou Entrée) lance la commande réelle du résultat.
-            Results.Add(new SearchHitRow(
+            (PhoneSettingsSearchVm.Matches(Query.Trim(), setting.Title) ? strong : weak).Add(new SearchHitRow(
                 new SearchHitDto(kind, setting.Title, setting.Section,
                     "/native/" + Uri.EscapeDataString(setting.Title)), _ =>
                 {
@@ -305,6 +310,10 @@ public sealed class SearchViewModel : Observable
                 }));
         }
 
+        // Une saisie qui ressemble à un matricule (« ACC », « INF104 ») cherche d'abord des dossiers.
+        var raw = Query.Trim();
+        var looksLikeCode = raw.Any(char.IsDigit) || (raw.Length >= 2 && raw.All(c => char.IsLetter(c) && char.IsUpper(c)));
+        if (!looksLikeCode) foreach (var hit in strong) Results.Add(hit);
         var dataUnavailable = false;
         if (!settingsOnly && shell.Can(Perm.StudentsRead))
         {
@@ -324,6 +333,8 @@ public sealed class SearchViewModel : Observable
             catch (HttpRequestException) { dataUnavailable = true; }
             catch (ApiException) { dataUnavailable = true; }
         }
+        if (looksLikeCode) foreach (var hit in strong) Results.Add(hit);
+        foreach (var hit in weak) Results.Add(hit);
         Selected = Results.Count > 0 ? Results[0] : null;
         Message = dataUnavailable
             ? "Serveur indisponible : utilisez les paramètres et fonctionnalités locales."

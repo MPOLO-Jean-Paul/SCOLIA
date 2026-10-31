@@ -44,9 +44,10 @@
               <CheckBox IsVisible="{Binding IsFlag}" IsChecked="{Binding Flag}" Content="{Binding Label}" />
               <StackPanel IsVisible="{Binding IsInput}" Spacing="4">
                 <TextBlock Text="{Binding Caption}" Classes="fieldlabel" />
-                <TextBox IsVisible="{Binding IsText}" Text="{Binding Text}" PlaceholderText="{Binding Hint}" />
-                <TextBox IsVisible="{Binding IsPhone}" Text="{Binding Text}" PlaceholderText="{Binding Hint}" infra:PhoneInput.Digits="{Binding IsPhone}" />
-                <TextBox IsVisible="{Binding IsSecret}" Text="{Binding Text}" PasswordChar="•" PlaceholderText="{Binding Hint}" />
+                <!-- L'aide s'écrit une seule fois, sous le champ : elle reste lisible pendant la saisie. -->
+                <TextBox IsVisible="{Binding IsText}" Text="{Binding Text}" />
+                <TextBox IsVisible="{Binding IsPhone}" Text="{Binding Text}" infra:PhoneInput.Digits="{Binding IsPhone}" />
+                <TextBox IsVisible="{Binding IsSecret}" Text="{Binding Text}" PasswordChar="•" />
                 <TextBox IsVisible="{Binding IsMultiline}" Text="{Binding Text}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="84" />
                 <CalendarDatePicker PlaceholderText="jj/mm/aaaa" SelectedDateFormat="Short" IsVisible="{Binding IsDay}" SelectedDate="{Binding Day}" HorizontalAlignment="Stretch" />
                 <ComboBox IsVisible="{Binding IsChoice}" ItemsSource="{Binding Options}" SelectedItem="{Binding Choice}" HorizontalAlignment="Stretch" />

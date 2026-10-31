@@ -72,16 +72,30 @@ public sealed class GradesPage : PageViewModel
         get => course;
         set
         {
-            if (Set(ref course, value)) _ = Shell.Run(LoadAssessmentsAsync);
+            if (Set(ref course, value))
+            {
+                Raise(nameof(NoCourse));
+                _ = Shell.Run(LoadAssessmentsAsync);
+            }
         }
     }
+
+    /// <summary>Aucun cours choisi : les évaluations disent par où commencer.</summary>
+    public bool NoCourse => course is null;
+
+    /// <summary>Aucune évaluation choisie : la liste des notes dit quoi faire.</summary>
+    public bool NoAssessment => assessment is null;
 
     public AssessmentRowVm? Assessment
     {
         get => assessment;
         set
         {
-            if (Set(ref assessment, value)) _ = Shell.Run(LoadSheetAsync);
+            if (Set(ref assessment, value))
+            {
+                Raise(nameof(NoAssessment));
+                _ = Shell.Run(LoadSheetAsync);
+            }
         }
     }
 

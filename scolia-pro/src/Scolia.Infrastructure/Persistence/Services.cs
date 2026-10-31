@@ -81,12 +81,19 @@ public sealed class AuditLog(AuditBuffer buffer, ICurrentUser user, IClock clock
 {
     private static readonly JsonSerializerOptions Json = new() { WriteIndented = false };
 
-    public void Record(string action, string entityType, string? entityId, string summary, object? data = null)
+    public void Record(string action, string entityType, string? entityId, string summary, object? data = null) =>
+        Add(user.Name, action, entityType, entityId, summary, data);
+
+    /// <summary>Connexion : la session n'existe pas encore, le journal porte le nom du compte qui se connecte.</summary>
+    public void RecordAs(string actor, string action, string entityType, string? entityId, string summary) =>
+        Add(actor, action, entityType, entityId, summary, null);
+
+    private void Add(string actor, string action, string entityType, string? entityId, string summary, object? data)
     {
         buffer.Pending.Add(new AuditEntry
         {
             AtUtc = clock.UtcNow,
-            UserName = user.Name,
+            UserName = actor,
             Action = action,
             EntityType = entityType,
             EntityId = entityId,

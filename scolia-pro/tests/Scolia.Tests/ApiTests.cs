@@ -645,6 +645,18 @@ public sealed class BusinessApiTests : IDisposable
     }
 
     [Fact]
+    public async Task Login_is_traced_under_the_account_name_not_the_system()
+    {
+        var admin = await app.InstalledAdmin();
+        await app.Login("admin", "Scolia2026!");
+        var trail = (await admin.GetAsync("/api/audit?q=connexion.reussie").Ok()).GetRawText();
+        Assert.Contains("connexion.reussie", trail, StringComparison.Ordinal);
+        // Le journal dit qui s'est connecté : le nom du compte, et jamais « système ».
+        Assert.Contains("\"userName\":\"Administrateur\"", trail, StringComparison.Ordinal);
+        Assert.DoesNotContain("\"userName\":\"syst", trail, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task Audit_journal_exports_as_csv_and_the_export_is_traced()
     {
         var admin = await app.InstalledAdmin();
