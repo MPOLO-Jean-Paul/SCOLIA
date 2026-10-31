@@ -89,6 +89,9 @@ public class SettingsNavigationTests
         Assert.Equal("mensualites", PhoneHeaderSearchVm.Scope(new MonthlyPage(shell)));
         Assert.Equal("debiteurs", PhoneHeaderSearchVm.Scope(new DebtorsPage(shell)));
         Assert.Equal("encaissement", PhoneHeaderSearchVm.Scope(new CashierPage(shell)));
+        Assert.Equal("encaissement_lot", PhoneHeaderSearchVm.Scope(new BatchPaymentPage(shell)));
+        Assert.Equal("cartes", PhoneHeaderSearchVm.Scope(new CardsPage(shell)));
+        Assert.Equal("audit", PhoneHeaderSearchVm.Scope(new AuditPage(shell)));
         Assert.Equal("depenses", PhoneHeaderSearchVm.Scope(new ExpensesPage(shell)));
         Assert.Equal(string.Empty, PhoneHeaderSearchVm.Scope(new HomePage(shell)));
         Assert.Equal(string.Empty, PhoneHeaderSearchVm.Scope(new SettingsPage(shell)));
