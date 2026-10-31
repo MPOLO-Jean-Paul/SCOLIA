@@ -476,7 +476,14 @@ public sealed class CashierPage : PageViewModel
     private void Reset()
     {
         Receipt = null;
-        foreach (var month in Months) month.IsSelected = false;
+        updatingMonthSelection = true;
+        try
+        {
+            foreach (var month in Months) month.IsSelected = false;
+        }
+        finally { updatingMonthSelection = false; }
+        // Après avoir enregistré un reçu, proposer le prochain mois dû plutôt qu'un formulaire vide.
+        SelectedMonth = Months.FirstOrDefault(m => m.Overdue) ?? Months.FirstOrDefault();
         // Nouveau versement : nouvelle référence ; le téléphone reste celui de l'apprenant choisi.
         Reference = enrollment is null ? string.Empty : NewReference(DateTime.Now);
         Note = string.Empty;
