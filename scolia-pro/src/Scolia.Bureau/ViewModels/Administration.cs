@@ -654,7 +654,6 @@ public sealed class SettingsPage : PageViewModel
         }
         subtitle = $"{Format.Count(years.Count, "année scolaire", "années scolaires")} · choisissez une année pour configurer les mois et la date limite";
         Raise(nameof(Subtitle));
-        Raise(nameof(Subtitle));
     }
 
     private async Task LoadSectionsAsync()
