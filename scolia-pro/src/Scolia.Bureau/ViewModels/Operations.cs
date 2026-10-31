@@ -286,7 +286,20 @@ public sealed class SearchViewModel : Observable
                 ? "/" + destination : "/parametres/" + destination;
             var kind = destination.StartsWith("navigation/", StringComparison.Ordinal)
                 ? "Fonctionnalité" : "Paramètre";
-            Results.Add(new SearchHitRow(new SearchHitDto(kind, setting.Title, setting.Section, url), OpenHitAsync));
+            // Le résultat ouvre SA commande réelle, pas une route reconstruite depuis
+            // son libellé. Les actions (nouvelle inscription, export...) et les réglages
+            // fonctionnent ainsi comme les pages, en un seul geste sur toutes les plateformes.
+            Results.Add(new SearchHitRow(new SearchHitDto(kind, setting.Title, setting.Section, url), _ =>
+            {
+                if (!setting.Open.CanExecute(null))
+                {
+                    shell.Notify("Cette action est momentanément indisponible.");
+                    return Task.CompletedTask;
+                }
+                shell.CloseDialog();
+                setting.Open.Execute(null);
+                return Task.CompletedTask;
+            }));
         }
 
         var dataUnavailable = false;
@@ -315,7 +328,12 @@ public sealed class SearchViewModel : Observable
             : Format.Count(Results.Count, "résultat", "résultats");
     }
 
-    private Task OpenSelectedAsync() => Selected is null ? Task.CompletedTask : OpenHitAsync(Selected);
+    // Le clavier utilise exactement la même commande que le clic/toucher sur le résultat.
+    private Task OpenSelectedAsync()
+    {
+        if (Selected?.Open is { } command && command.CanExecute(null)) command.Execute(null);
+        return Task.CompletedTask;
+    }
 
     /// <summary>Chaque résultat porte sa destination : un seul clic ou une touche Entrée l'ouvre,
     /// même si la sélection visuelle n'a pas encore changé.</summary>
