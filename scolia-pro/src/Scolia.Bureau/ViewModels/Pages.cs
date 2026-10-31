@@ -68,8 +68,12 @@ public sealed class LoginViewModel : Observable
     public bool HasBiometricAccount => Platform.IsMobile && BiometricAccount.Length > 0
         && (Platform.HasBiometricProof?.Invoke() ?? false);
     public bool CanUseBiometricSignIn => HasBiometricAccount && CanOfferBiometrics;
-    public bool CanOfferEnrollment => CanOfferBiometrics && !HasBiometricAccount;
-    public string BiometricLabel => $"Déverrouiller avec l’empreinte · {BiometricAccount}";
+    public bool CanOfferEnrollment => CanOfferBiometrics && !HasBiometricAccount && Platform.EnrollBiometricAsync is not null;
+    public string BiometricLabel => $"Déverrouiller avec {Platform.BiometricInSentence} · {BiometricAccount}";
+    public string EnrollmentText => $"Activer {Platform.BiometricInSentence} après cette connexion";
+    public string EnrollmentHint => Platform.BiometricInSentence == "l’empreinte"
+        ? "Réservé à un téléphone personnel : toute empreinte forte enregistrée sur cet appareil pourra ouvrir le compte associé. Aucun modèle d’empreinte n’est enregistré par SCOLIA."
+        : $"Réservé à un appareil personnel : tout visage ou empreinte enregistré dans {Platform.BiometricDisplayName} pourra ouvrir le compte associé. SCOLIA n’enregistre aucune donnée biométrique.";
 
     public void RefreshBiometrics()
     {
@@ -108,7 +112,7 @@ public sealed class LoginViewModel : Observable
                 if (!string.IsNullOrWhiteSpace(UserName)
                     && !BiometricAccess.AccountMatches(UserName, account))
                 {
-                    Error = "Le mot de passe doit être celui du compte associé à l’empreinte.";
+                    Error = $"Le mot de passe doit être celui du compte associé à {Platform.BiometricInSentence}.";
                     return;
                 }
                 try
@@ -301,7 +305,7 @@ public sealed class LoginViewModel : Observable
                 if (await enroll())
                     BiometricAccess.Enable(api.Server, session.UserName);
                 else
-                    Notice = "L'accès par empreinte n'a pas été activé. Vous pourrez réessayer après une connexion par mot de passe.";
+                    Notice = $"L'accès par {Platform.BiometricDisplayName.ToLowerInvariant()} n'a pas été activé. Vous pourrez réessayer après une connexion par mot de passe.";
             }
             EnableBiometricsAfterLogin = false;
             RefreshBiometrics();

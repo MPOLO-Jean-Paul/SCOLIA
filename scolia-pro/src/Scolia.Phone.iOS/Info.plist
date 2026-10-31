@@ -4,11 +4,40 @@
 <dict>
   <key>CFBundleDisplayName</key><string>SCOLIA Phone</string>
   <key>CFBundleName</key><string>SCOLIA</string>
+  <key>CFBundleDevelopmentRegion</key><string>fr</string>
   <key>UIDeviceFamily</key><array><integer>1</integer><integer>2</integer></array>
-  <key>NSLocalNetworkUsageDescription</key><string>SCOLIA recherche le serveur scolaire autorisé de votre établissement sur le réseau privé.</string>
-  <key>NSAppTransportSecurity</key><dict><key>NSAllowsLocalNetworking</key><true/></dict>
   <key>UIRequiredDeviceCapabilities</key><array><string>arm64</string></array>
-  <key>NSFaceIDUsageDescription</key>
-  <string>SCOLIA demande Face ID pour confirmer l'accès au compte scolaire déjà authentifié sur cet iPhone.</string>
+  <!-- Icône de l'écran d'accueil (catalogue Assets.xcassets/AppIcon) -->
+  <key>XSAppIconAssets</key><string>Assets.xcassets/AppIcon.appiconset</string>
+  <!-- Écran de lancement : sans lui, iOS affiche l'application en format réduit d'ancien iPhone -->
+  <key>UILaunchScreen</key>
+  <dict>
+    <key>UIColorName</key><string>LaunchBackground</string>
+    <key>UIImageName</key><string>LaunchLogo</string>
+    <key>UIImageRespectsSafeAreaInsets</key><true/>
+  </dict>
+  <key>UISupportedInterfaceOrientations</key>
+  <array>
+    <string>UIInterfaceOrientationPortrait</string>
+  </array>
+  <key>UISupportedInterfaceOrientations~ipad</key>
+  <array>
+    <string>UIInterfaceOrientationPortrait</string>
+    <string>UIInterfaceOrientationPortraitUpsideDown</string>
+    <string>UIInterfaceOrientationLandscapeLeft</string>
+    <string>UIInterfaceOrientationLandscapeRight</string>
+  </array>
+  <key>UIStatusBarStyle</key><string>UIStatusBarStyleDefault</string>
+  <!-- Reçus et relevés enregistrés : visibles dans l'app Fichiers, « Sur mon iPhone > SCOLIA » -->
+  <key>UIFileSharingEnabled</key><true/>
+  <key>LSSupportsOpeningDocumentsInPlace</key><true/>
+  <key>NSLocalNetworkUsageDescription</key><string>SCOLIA recherche le serveur scolaire autorisé de votre établissement sur le réseau privé.</string>
+  <key>NSAppTransportSecurity</key>
+  <dict>
+    <key>NSAllowsLocalNetworking</key><true/>
+  </dict>
+  <key>NSFaceIDUsageDescription</key><string>SCOLIA demande Face ID pour confirmer l'accès au compte scolaire déjà authentifié sur cet iPhone.</string>
+  <!-- Chiffrement standard d'iOS seulement : pas de déclaration d'exportation à faire pour TestFlight -->
+  <key>ITSAppUsesNonExemptEncryption</key><false/>
 </dict>
 </plist>

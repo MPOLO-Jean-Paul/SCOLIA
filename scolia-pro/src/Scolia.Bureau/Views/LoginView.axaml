@@ -82,11 +82,11 @@
         </Panel>
 
         <!-- Consentement explicite lors de la première connexion par mot de passe. -->
-        <CheckBox Content="Activer l’empreinte après cette connexion"
+        <CheckBox Content="{Binding EnrollmentText}"
                   IsVisible="{Binding CanOfferEnrollment}" IsChecked="{Binding EnableBiometricsAfterLogin}"
                   IsEnabled="{Binding CanType}" FontSize="13" />
         <TextBlock IsVisible="{Binding CanOfferEnrollment}"
-                   Text="Réservé à un téléphone personnel : toute empreinte forte enregistrée sur cet appareil pourra ouvrir le compte associé. Aucun modèle d’empreinte n’est enregistré par SCOLIA."
+                   Text="{Binding EnrollmentHint}"
                    Classes="muted" FontSize="11" TextWrapping="Wrap" />
         <Button Classes="ghost signinbutton" Command="{Binding SignInWithBiometrics}"
                 IsVisible="{Binding CanUseBiometricSignIn}" IsEnabled="{Binding CanType}">

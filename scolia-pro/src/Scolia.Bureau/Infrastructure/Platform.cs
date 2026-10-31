@@ -11,6 +11,9 @@ public static class Platform
 
     /// <summary>Libellé présenté par le système de l'appareil : Android, Face ID ou Touch ID.</summary>
     public static string BiometricDisplayName { get; set; } = "Empreinte digitale";
+    /// <summary>Pour une phrase : « l’empreinte » sur Android, « Face ID » ou « Touch ID » sur iPhone.</summary>
+    public static string BiometricInSentence => BiometricDisplayName.StartsWith("Empreinte", StringComparison.Ordinal)
+        ? "l’empreinte" : BiometricDisplayName;
 
     /// <summary>Initialisation du téléphone : l'écran natif garde le logo jusqu'à ce que la première page soit prête.</summary>
     public static Task? StartupTask { get; set; }

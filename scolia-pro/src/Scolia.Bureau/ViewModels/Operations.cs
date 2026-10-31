@@ -624,8 +624,8 @@ public sealed class BackstageViewModel : Observable
                 if (string.IsNullOrWhiteSpace(SecurityPassword))
                 {
                     SecurityNotice = enabled
-                        ? "Confirmez votre empreinte ou saisissez le mot de passe actuel pour désactiver."
-                        : "Saisissez votre mot de passe actuel pour activer l'empreinte.";
+                        ? $"Confirmez avec {Platform.BiometricInSentence} ou saisissez le mot de passe actuel pour désactiver."
+                        : $"Saisissez votre mot de passe actuel pour activer {Platform.BiometricInSentence}.";
                     return;
                 }
                 try

@@ -84,3 +84,78 @@ jobs:
           path: scolia-pro/artifacts/ios-simulateur/
           retention-days: 30
           if-no-files-found: error
+
+  ipa-appareil:
+    name: iOS natif - IPA iPhone et iPad (arm64), a signer avec votre identifiant Apple
+    runs-on: xcode-27
+    timeout-minutes: 80
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: scolia-pro/global.json
+      - name: Installer les outils iOS .NET 10
+        run: dotnet workload install ios
+      - name: Compiler pour iPhone et iPad (arm64, Release), sans certificat
+        run: |
+          dotnet build src/Scolia.Phone.iOS/Scolia.Phone.iOS.csproj \
+            -c Release -f net10.0-ios -r ios-arm64 \
+            -p:EnableCodeSigning=false \
+            -p:CodesignRequireProvisioningProfile=false \
+            -p:BuildIpa=false
+      - name: Verifier le paquet et assembler l'IPA
+        shell: bash
+        run: |
+          set -euo pipefail
+          app="$(find src/Scolia.Phone.iOS/bin/Release/net10.0-ios/ios-arm64 -maxdepth 3 -type d -name '*.app' -print -quit)"
+          [[ -n "$app" ]] || { echo '::error::Aucune application iPhone dans la compilation.'; exit 1; }
+          plist="$app/Info.plist"
+          bundle="$(/usr/libexec/PlistBuddy -c 'Print CFBundleIdentifier' "$plist")"
+          [[ "$bundle" == 'com.jpservices.scolia.ios' ]] || { echo '::error::Identifiant iOS incoherent.'; exit 1; }
+          executable="$(/usr/libexec/PlistBuddy -c 'Print CFBundleExecutable' "$plist")"
+          test -s "$app/$executable"
+          lipo -archs "$app/$executable" | grep -Eq '(^| )arm64( |$)' || { echo '::error::Binaire arm64 absent.'; exit 1; }
+          platform="$(/usr/libexec/PlistBuddy -c 'Print DTPlatformName' "$plist" 2>/dev/null || echo iphoneos)"
+          [[ "$platform" == 'iphoneos' ]] || { echo "::error::Plateforme inattendue : $platform"; exit 1; }
+          test -f "$app/Assets.car" || { echo '::error::Icone et ecran de lancement absents (Assets.car).'; exit 1; }
+          /usr/libexec/PlistBuddy -c 'Print UILaunchScreen' "$plist" >/dev/null || { echo '::error::Ecran de lancement non declare.'; exit 1; }
+          version="$(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' "$plist")"
+          echo "Application $bundle $version, $(du -sh "$app" | cut -f1)"
+          out="$PWD/artifacts/ios-appareil"
+          mkdir -p "$out" "$RUNNER_TEMP/ipa/Payload"
+          cp -R "$app" "$RUNNER_TEMP/ipa/Payload/"
+          (cd "$RUNNER_TEMP/ipa" && zip -qry -X "$out/SCOLIA_Phone_iOS.ipa" Payload)
+          unzip -tqq "$out/SCOLIA_Phone_iOS.ipa"
+          (cd "$out" && shasum -a 256 SCOLIA_Phone_iOS.ipa > SCOLIA_Phone_iOS.ipa.sha256)
+          cat > "$out/LIRE_MOI.txt" <<'TXT'
+          SCOLIA Phone pour iPhone et iPad - IPA a signer
+          
+          Ce fichier contient la vraie application iPhone (arm64, iOS 17 ou plus).
+          Apple exige une signature avant toute installation. Elle se fait avec votre
+          propre identifiant Apple, sans Mac :
+          
+          1. Sur un PC Windows ou un Mac, installez Sideloadly (sideloadly.io) et iTunes.
+          2. Branchez l'iPhone en USB et faites-lui confiance.
+          3. Glissez SCOLIA_Phone_iOS.ipa dans Sideloadly, saisissez votre identifiant
+             Apple, puis Start.
+          4. Sur l'iPhone : Reglages > General > VPN et gestion de l'appareil >
+             votre identifiant > Faire confiance. Activez aussi le Mode developpeur
+             si iOS le demande (Reglages > Confidentialite et securite).
+          
+          Identifiant Apple gratuit : l'application doit etre re-signee tous les 7 jours.
+          Compte Apple Developer (99 USD par an) : signature valable un an, ou
+          distribution par TestFlight avec le workflow « SCOLIA Phone iPhone - IPA signe ».
+          
+          L'iPhone se connecte au serveur SCOLIA de l'etablissement (ordinateur ou
+          telephone Android serveur) : saisissez son adresse au premier lancement.
+          TXT
+          sed -i '' 's/^          //' "$out/LIRE_MOI.txt"
+          ls -la "$out"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SCOLIA_Phone_iPhone_IPA_a_signer
+          path: scolia-pro/artifacts/ios-appareil/
+          retention-days: 30
+          if-no-files-found: error
