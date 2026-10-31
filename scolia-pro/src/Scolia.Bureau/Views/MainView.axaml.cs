@@ -23,6 +23,9 @@ public partial class MainView : UserControl
     /// <summary>Durée du fondu entre deux pages : assez courte pour ne pas ralentir la saisie.</summary>
     private static readonly TimeSpan PageFade = TimeSpan.FromMilliseconds(135);
 
+    /// <summary>Clavier du téléphone : l'écran s'arrête au-dessus de lui et le champ actif reste visible.</summary>
+    public KeyboardAvoidance Keyboard { get; }
+
     private ShellViewModel? subscribedShell;
     private PageViewModel? observedPage;
     private TopLevel? backHost;
@@ -40,6 +43,7 @@ public partial class MainView : UserControl
         copyHandler = CopyAsync;
         isTypingHandler = IsTypingInView;
         InitializeComponent();
+        Keyboard = new KeyboardAvoidance(this);
         SizeChanged += (_, e) => FitWindow(e.NewSize);
         AttachedToVisualTree += (_, _) =>
         {

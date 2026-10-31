@@ -8,6 +8,8 @@
              x:DataType="vm:ShellViewModel"
              KeyDown="OnKeyDown">
   <UserControl.Styles>
+    <!-- Clavier ouvert sur le téléphone : la barre d'onglets du bas se retire pour laisser voir la saisie -->
+    <Style Selector="views|MainView.keyboard Border.phonetabs"><Setter Property="MaxHeight" Value="0" /><Setter Property="ClipToBounds" Value="True" /></Style>
     <Style Selector="TransitioningContentControl#PageHost"><Setter Property="Margin" Value="20,8,20,16" /></Style>
     <!-- Barre d'action fixe : la page laisse sa place en bas pour ne rien cacher -->
     <Style Selector="TransitioningContentControl#PageHost.withsticky"><Setter Property="Margin" Value="20,8,20,92" /></Style>

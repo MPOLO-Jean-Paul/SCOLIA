@@ -389,6 +389,85 @@ if (args.Length > 3 && args[3] == "contraste")
     return;
 }
 
+// Clavier du téléphone (argument « clavier ») : un clavier simulé couvre le bas de l'écran ; le champ actif doit rester
+// visible juste au-dessus de lui, sur la page Configuration comme dans une fenêtre de saisie.
+if (args.Length > 3 && args[3] == "clavier")
+{
+    window.Width = 360;
+    window.Height = 760;
+    var keyFailures = 0;
+    void KeyCheck(string label, bool ok)
+    {
+        Console.WriteLine($"{(ok ? "OK  " : "ECHEC")} {label}");
+        if (!ok) keyFailures++;
+    }
+    Wait(shell.OpenSessionAsync(Result(api.LoginAsync("admin", password))));
+    var mainView = window.GetVisualDescendants().OfType<MainView>().First();
+    var fake = new FakeKeyboard();
+    KeyboardAvoidance.PaneOverride = fake;
+    mainView.Keyboard.Attach();
+    const double keyboardHeight = 300;
+
+    // Vérifie le champ actif : entièrement visible, au-dessus du clavier, sous l'en-tête.
+    void Probe(string where, TextBox box)
+    {
+        box.Focus();
+        fake.Open(new Rect(0, window.Bounds.Height - keyboardHeight, window.Bounds.Width, keyboardHeight));
+        for (var i = 0; i < 8; i++) { Dispatcher.UIThread.RunJobs(); window.UpdateLayout(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(20); }
+        var bounds = box.TransformToVisual(window) is { } m ? new Rect(box.Bounds.Size).TransformToAABB(m) : default;
+        var keyboardTop = window.Bounds.Height - keyboardHeight;
+        KeyCheck($"{where} : place du clavier réservée ({mainView.Keyboard.Reserved:0} px)", Math.Abs(mainView.Keyboard.Reserved - keyboardHeight) < 2);
+        KeyCheck($"{where} : champ au-dessus du clavier (bas {bounds.Bottom:0} ≤ {keyboardTop:0})", bounds.Height > 0 && bounds.Bottom <= keyboardTop + 1);
+        KeyCheck($"{where} : champ sous l'en-tête (haut {bounds.Top:0})", bounds.Top >= 40);
+        var tabs = window.GetVisualDescendants().OfType<Border>().FirstOrDefault(b => b.Classes.Contains("phonetabs"));
+        KeyCheck($"{where} : barre d'onglets retirée pendant la saisie", tabs is null || !tabs.IsEffectivelyVisible || tabs.Bounds.Height < 1);
+    }
+    void CloseKeyboard()
+    {
+        fake.Close();
+        for (var i = 0; i < 4; i++) { Dispatcher.UIThread.RunJobs(); window.UpdateLayout(); }
+        KeyCheck("Clavier fermé : l'écran reprend toute sa hauteur", mainView.Keyboard.Reserved == 0 && mainView.Padding.Bottom == 0);
+    }
+
+    // 1. Configuration de l'établissement : le dernier champ du formulaire, tout en bas de la page.
+    Wait(shell.Open(() => new SettingsPage(shell, "etablissement")));
+    Wait(Task.Delay(400));
+    window.UpdateLayout();
+    var fields = window.GetVisualDescendants().OfType<TextBox>().Where(t => t.IsEffectivelyVisible && t.IsEnabled).ToList();
+    KeyCheck($"Configuration : {fields.Count} champs de saisie trouvés", fields.Count >= 3);
+    if (fields.Count > 0)
+    {
+        Probe("Configuration, dernier champ", fields[^1]);
+        Save(window, "clavier-configuration-dernier.png");
+        Probe("Configuration, champ du milieu", fields[fields.Count / 2]);
+        Save(window, "clavier-configuration-milieu.png");
+        CloseKeyboard();
+        Save(window, "clavier-configuration-ferme.png");
+    }
+
+    // 2. Fenêtre de saisie : un long formulaire, le dernier champ.
+    var longForm = new FormViewModel("Saisie longue", "Vérification du clavier", _ => Task.FromResult(true));
+    for (var i = 1; i <= 9; i++) longForm.Add($"champ{i}", $"Champ {i}");
+    _ = shell.Ask(longForm);
+    Wait(Task.Delay(400));
+    window.UpdateLayout();
+    var dialogFields = window.GetVisualDescendants().OfType<TextBox>().Where(t => t.IsEffectivelyVisible && t.DataContext is FormField).ToList();
+    KeyCheck($"Fenêtre : {dialogFields.Count} champs", dialogFields.Count >= 9);
+    if (dialogFields.Count > 0)
+    {
+        Probe("Fenêtre de saisie, dernier champ", dialogFields[^1]);
+        Save(window, "clavier-fenetre-dernier.png");
+        CloseKeyboard();
+    }
+    shell.CloseDialog();
+    KeyboardAvoidance.PaneOverride = null;
+    shell.Sync.Stop();
+    window.Close();
+    Console.WriteLine(keyFailures == 0 ? "Clavier : tout est visible." : $"Clavier : {keyFailures} échec(s).");
+    Environment.ExitCode = keyFailures == 0 ? 0 : 1;
+    return;
+}
+
 // Espace Promoteur (argument « promoteur », compte SCOLIA_COMPTE) : vue d'ensemble, puis le bas de la page.
 if (args.Length > 3 && args[3] == "promoteur")
 {
@@ -1778,5 +1857,27 @@ static class Touch
             _ => p.HasDefaultValue ? p.DefaultValue : null,
         }).ToArray();
         input.DynamicInvoke(ctor.Invoke(values));
+    }
+}
+
+/// <summary>Clavier simulé : il s'ouvre et se ferme comme celui d'Android, sans téléphone.</summary>
+sealed class FakeKeyboard : IKeyboardArea
+{
+    public bool IsOpen { get; private set; }
+    public Rect Area { get; private set; }
+    public event Action<TimeSpan>? Changed;
+
+    public void Open(Rect area)
+    {
+        Area = area;
+        IsOpen = true;
+        Changed?.Invoke(TimeSpan.Zero);
+    }
+
+    public void Close()
+    {
+        Area = default;
+        IsOpen = false;
+        Changed?.Invoke(TimeSpan.Zero);
     }
 }
