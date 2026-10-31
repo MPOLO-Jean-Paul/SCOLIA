@@ -99,9 +99,6 @@ public static class Sidebar
                     shell.Can(Perm.PilotageRead) && !shell.Can(Perm.ReportsRead) ? typeof(PromoterDashboardPage) : typeof(HomePage),
                     () => shell.Can(Perm.PilotageRead) && !shell.Can(Perm.ReportsRead)
                         ? new PromoterDashboardPage(shell) : new HomePage(shell))),
-            Group("Pilotage",
-                Item("Vue d'ensemble", MaterialIconKind.ChartBoxOutline, "ToneBlue", Perm.PilotageRead,
-                    typeof(PromoterDashboardPage), () => new PromoterDashboardPage(shell))),
             Group("Données",
                 Item("Tableau de bord", MaterialIconKind.ViewDashboard, "ToneBlue", Perm.ReportsRead, typeof(DashboardPage), () => new DashboardPage(shell)),
                 Item("Rapports et exports", MaterialIconKind.FileChart, "ToneIndigo", Perm.ReportsRead, typeof(ReportsPage), () => new ReportsPage(shell)),
