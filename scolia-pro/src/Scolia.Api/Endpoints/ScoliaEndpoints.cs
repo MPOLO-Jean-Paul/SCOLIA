@@ -82,6 +82,9 @@ public static class ScoliaEndpoints
         MapStudents(secured);
         MapFinance(secured);
         MapReports(secured);
+        // Endpoint de pilotage séparé : aucun rapport nominatif ni fichier téléchargeable avec ce droit.
+        secured.MapGet("/pilotage/synthese", (ReportService reports, CancellationToken ct) =>
+            reports.PromoterDashboardAsync(ct)).RequireAuthorization(Permissions.PilotageRead);
         MapAcademics(secured);
         MapStaff(secured);
         MapAdministration(secured);
