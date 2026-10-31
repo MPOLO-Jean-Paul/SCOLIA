@@ -140,6 +140,18 @@ public sealed record DashboardDto(string AcademicYear, int ActiveStudents, int N
 
 public sealed record SeriesPoint(string Label, decimal Value, decimal? Secondary = null);
 
+/// <summary>Lecture financière du Promoteur : uniquement des totaux sans élèves, contacts ni reçus nominatifs.</summary>
+public sealed record PromoterPeriodDto(Guid PeriodId, string Label, decimal CollectedOnDates,
+    decimal DueNet, decimal PaidAgainstDue, decimal RemainingDue);
+
+public sealed record PromoterPromotionDto(Guid Id, string Code, string Name, int ActiveStudents,
+    int StudentsWithBalance, int StudentsOverdue, decimal CollectedToday, decimal CollectedThisMonth,
+    decimal CollectedTotal, decimal Outstanding, decimal Overdue, IReadOnlyList<PromoterPeriodDto> Periods);
+
+public sealed record PromoterDashboardDto(string AcademicYear, DateOnly AsOf, int ActiveStudents,
+    int StudentsWithBalance, int StudentsOverdue, decimal CollectedToday, decimal CollectedThisMonth,
+    decimal CollectedTotal, decimal Outstanding, decimal Overdue, IReadOnlyList<PromoterPromotionDto> Promotions);
+
 // ---------- Suivi des paiements par mois ----------
 /// <summary>Filtres du suivi mensuel : le mois, la promotion (toutes si absente), l'état et une recherche.</summary>
 public sealed record MonthlyQuery(Guid? PeriodeId, Guid? PromotionId, string? Etat, string? Q);
