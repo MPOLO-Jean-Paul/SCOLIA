@@ -48,7 +48,7 @@ public sealed class StudentsPage : PageViewModel
         {
             debounce?.Stop();
             search = string.Empty;
-            promotion = Promotions.FirstOrDefault();
+            promotion = Promotions.Count > 0 ? Promotions[0] : null;
             status = StatusChoices[0];
             page = 1;
             Selected = null;
