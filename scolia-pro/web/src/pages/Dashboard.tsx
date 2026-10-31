@@ -30,7 +30,7 @@ export function DashboardPage() {
         </SelectField>
       </div>
       <ErrorAlert error={q.error} />
-      {!d ? <Loading rows={6} /> : (
+      {!d ? (q.isError ? <Card><Empty title="Tableau de bord indisponible" text="Impossible d'obtenir les chiffres. Vérifiez la connexion et réessayez."><Button onClick={() => { void q.refetch(); }}>Réessayer</Button></Empty></Card> : <Loading rows={6} />) : (
         <div className="stack">
           <div className="grid cols-4">
             <Kpi icon={<Users size={15} />} label="Apprenants actifs" value={int(d.activeStudents)} hint={`${d.genderFemale} filles · ${d.genderMale} garçons`} />
@@ -53,7 +53,9 @@ export function DashboardPage() {
           </div>
           <div className="grid mobile-split-grid">
             <Card title="Situation par promotion" pad={false}>
-              {d.promotions.length === 0 ? <Empty text="Aucune promotion configurée." /> : (
+              {d.promotions.length === 0 ? <Empty text="Aucune promotion configurée : les inscriptions commenceront après sa création.">
+                {can(P.settingsWrite) && <Button onClick={() => navigate('/parametres?onglet=promotions')}>Configurer les promotions</Button>}
+              </Empty> : (
                 <div className="table-wrap" style={{ border: 'none', borderRadius: 0 }}>
                   <table className="data">
                     <thead><tr><th>Promotion</th><th className="num">Effectif</th><th className="num">Encaissé</th><th className="num">Exigible impayé</th><th style={{ width: 170 }}>Recouvrement</th></tr></thead>
