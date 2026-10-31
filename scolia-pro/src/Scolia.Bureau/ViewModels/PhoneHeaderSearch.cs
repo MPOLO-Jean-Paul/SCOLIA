@@ -25,6 +25,11 @@ public sealed class PhoneHeaderSearchVm : Observable
     public bool HasQuery => Query.Length > 0;
     public bool IsVisible => shell.PhoneMenuOpen || shell.Current is HomePage or PromoterDashboardPage ||
                              Scope(shell.Current).Length > 0;
+    public bool IsContextual => Scope(shell.Current).Length > 0 && !shell.PhoneMenuOpen;
+    public string ShortcutText => IsContextual ? "Filtre" : "Ctrl+K";
+    public string SearchHint => shell.PhoneMenuOpen ? "Rechercher une fonctionnalité ou un paramètre du menu"
+        : IsContextual ? "Filtrer uniquement les données de cet écran"
+        : "Recherche globale : dossiers, reçus et fonctionnalités autorisées";
     public static string Scope(PageViewModel? page) => page switch
     {
         StudentsPage => "apprenants",
@@ -49,7 +54,7 @@ public sealed class PhoneHeaderSearchVm : Observable
         "cartes" => "Apprenant ou matricule de la carte",
         "audit" => "Événement du journal d'audit",
         "depenses" => "Dépense ou référence",
-        _ => "Rechercher dans cette page",
+        _ => "Rechercher dans SCOLIA",
     };
     public string Query
     {
@@ -108,6 +113,15 @@ public sealed class PhoneHeaderSearchVm : Observable
         Raise(nameof(Query));
         Raise(nameof(HasQuery));
         Raise(nameof(IsVisible));
+        Raise(nameof(IsContextual));
+        Raise(nameof(ShortcutText));
+        Raise(nameof(SearchHint));
     }
-    public void MenuChanged() => Raise(nameof(IsVisible));
+    public void MenuChanged()
+    {
+        Raise(nameof(IsVisible));
+        Raise(nameof(IsContextual));
+        Raise(nameof(ShortcutText));
+        Raise(nameof(SearchHint));
+    }
 }

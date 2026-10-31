@@ -14,6 +14,7 @@ public static class IosPlatform
     public static void Prepare()
     {
         Platform.IsMobile = true;
+        Platform.BiometricDisplayName = "Face ID ou Touch ID";
         Platform.IsBiometricAvailable = CanAuthenticate;
         Platform.VerifyBiometricAsync = VerifyAsync;
         Preferences.MobileLayout = true;

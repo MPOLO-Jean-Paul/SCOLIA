@@ -61,7 +61,6 @@ public class SettingsNavigationTests
     [InlineData("thème", "Thème et couleurs")]
     [InlineData("animations", "Animations et fluidité")]
     [InlineData("son", "Sons")]
-    [InlineData("empreinte", "Sécurité du compte")]
     public void Recherche_du_menu_ouvre_directement_le_bon_reglage_et_non_l_accueil(string query, string titre)
     {
         using var api = new ScoliaClient(new Uri("http://localhost:5080/"));
@@ -76,6 +75,22 @@ public class SettingsNavigationTests
         var page = Assert.IsType<SettingsPage>(shell.Current);
         Assert.True(page.SettingsDetailVisible);
         Assert.Equal(titre, page.SectionTitle);
+    }
+
+    [Fact]
+    public void Recherche_empreinte_ouvre_directement_la_securite_du_compte()
+    {
+        using var api = new ScoliaClient(new Uri("http://localhost:5080/"));
+        var shell = new ShellViewModel(api, new Preferences()) { Phone = true };
+        shell.PhoneMenuOpen = true;
+        shell.SettingsSearch.Query = "empreinte";
+        var target = Assert.Single(shell.SettingsSearch.Results, item => item.Title == "Sécurité du compte");
+
+        target.Open.Execute(null);
+
+        Assert.False(shell.PhoneMenuOpen);
+        Assert.True(shell.BackstageOpen);
+        Assert.True(shell.Backstage.IsPassword);
     }
 
     [Fact]

@@ -82,7 +82,7 @@
                   </Border>
                   <StackPanel Spacing="3" VerticalAlignment="Center">
                     <TextBlock Text="Sécurité du compte" FontSize="18" FontWeight="SemiBold" />
-                    <TextBlock Text="Vos accès sont protégés" Classes="muted" FontSize="{DynamicResource FsSmall}" />
+                    <TextBlock Text="Mot de passe et biométrie de l'appareil" Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
                   </StackPanel>
                 </StackPanel>
                 <TextBlock Text="Choisissez comment protéger votre session et votre appareil."
@@ -111,7 +111,7 @@
                                      Foreground="{DynamicResource AccentBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
                   </Border>
                   <StackPanel Spacing="3" VerticalAlignment="Center">
-                    <TextBlock Text="Empreinte digitale" FontSize="16" FontWeight="SemiBold" />
+                    <TextBlock Text="{Binding BiometricTitle}" FontSize="16" FontWeight="SemiBold" />
                     <TextBlock Text="Accès sur cet appareil" Classes="muted" FontSize="{DynamicResource FsSmall}" />
                   </StackPanel>
                 </StackPanel>
@@ -119,10 +119,10 @@
                   <TextBlock Text="{Binding BiometricSecurityStatus}" TextWrapping="Wrap"
                              FontSize="{DynamicResource FsSmall}" />
                 </Border>
-                <TextBlock Text="Vérification supplémentaire" FontWeight="SemiBold" />
+                <TextBlock Text="Vérification de votre identité" FontWeight="SemiBold" />
                 <TextBox Text="{Binding SecurityPassword}" PasswordChar="•"
                          PlaceholderText="Mot de passe actuel du compte" />
-                <TextBlock Text="Activation : le mot de passe et la validation Android sont nécessaires. Désactivation : confirmez votre empreinte ou votre mot de passe."
+                <TextBlock Text="{Binding BiometricVerificationHelp}"
                            Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
                 <Button Classes="primary" Content="{Binding BiometricActionLabel}" Command="{Binding ManageBiometrics}"
                         IsEnabled="{Binding BiometricSecurityAllowed}" HorizontalAlignment="Stretch"

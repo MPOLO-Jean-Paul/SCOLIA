@@ -153,13 +153,13 @@ public sealed class HomePage : PageViewModel
             () => StudentForms.CreateAsync(Shell));
         Add(Perm.ReportsRead, "Recouvrement", "Voir les retards et relancer les parents.", MaterialIconKind.ChartBar, "ToneOrange",
             () => Shell.Open(() => new DebtorsPage(Shell)));
-        Add(null, "Rapports et exports", "Tous les documents en PDF ou en Excel.", MaterialIconKind.FileChart, "ToneRed",
+        Add(Perm.ReportsRead, "Rapports et exports", "Tous les documents en PDF ou en Excel.", MaterialIconKind.FileChart, "ToneRed",
             () => Shell.Open(() => new ReportsPage(Shell)));
         Add(Perm.PaymentsRead, "Journal des reçus", "Retrouver, imprimer ou annuler un reçu.", MaterialIconKind.ReceiptText, "TonePurple",
             () => Shell.Open(() => new ReceiptsPage(Shell)));
         Add(Perm.AcademicsRead, "Présences", "Faire l'appel du jour par promotion.", MaterialIconKind.ClipboardCheck, "ToneTeal",
             () => Shell.Open(() => new AttendancePage(Shell)));
-        Add(null, "Tableau de bord", "Recettes, retards et indicateurs de l'année.", MaterialIconKind.ViewDashboard, "ToneIndigo",
+        Add(Perm.ReportsRead, "Tableau de bord", "Recettes, retards et indicateurs de l'année.", MaterialIconKind.ViewDashboard, "ToneIndigo",
             () => Shell.Open(() => new DashboardPage(Shell)));
         Add(Perm.StudentsRead, "Apprenants", "Rechercher un dossier et ouvrir sa fiche.", MaterialIconKind.AccountGroup, "ToneBlue",
             () => Shell.Open(() => new StudentsPage(Shell)));

@@ -201,7 +201,7 @@
           </Panel>
         </Button>
         <Button Grid.Column="3" Classes="phoneicon" Command="{Binding HeaderSearch.Toggle}"
-                IsVisible="{Binding HeaderSearch.IsVisible}" ToolTip.Tip="Rechercher dans cette page">
+                IsVisible="{Binding HeaderSearch.IsVisible}" ToolTip.Tip="{Binding HeaderSearch.SearchHint}">
           <Panel Width="24" Height="24">
             <mi:MaterialIcon Kind="Magnify" IsVisible="{Binding !HeaderSearch.IsOpen}" />
             <mi:MaterialIcon Kind="Close" IsVisible="{Binding HeaderSearch.IsOpen}" />
@@ -265,7 +265,7 @@
                 <mi:MaterialIcon Kind="Magnify" Width="20" Height="20" Foreground="{DynamicResource AccentBrush}" VerticalAlignment="Center" />
                 <TextBox x:Name="MenuSearchBox" Grid.Column="1"
                          Text="{Binding SettingsSearch.Query, Mode=TwoWay}"
-                         PlaceholderText="Rechercher un paramètre…" Background="Transparent"
+                         PlaceholderText="Outil ou paramètre à ouvrir…"  Background="Transparent"
                          BorderThickness="0" FontSize="16" VerticalAlignment="Center"
                          KeyDown="OnSettingsSearchKeyDown" />
                 <Button Grid.Column="2" Classes="phoneicon settingssearchcontrol"
@@ -276,7 +276,7 @@
               </Grid>
             </Border>
             <Button Grid.Column="2" Classes="phoneicon settingssearchcontrol" Command="{Binding SettingsSearch.Toggle}"
-                    ToolTip.Tip="Rechercher dans les réglages" Width="44" Height="44">
+                    ToolTip.Tip="Trouver une fonctionnalité ou un réglage" Width="44" Height="44">
               <Panel Width="24" Height="24">
                 <mi:MaterialIcon Kind="Magnify" IsVisible="{Binding !SettingsSearch.IsOpen}" Width="23" Height="23" />
                 <mi:MaterialIcon Kind="Close" IsVisible="{Binding SettingsSearch.IsOpen}" Width="23" Height="23" />
@@ -303,7 +303,7 @@
 
           <!-- Les résultats sont filtrés localement parmi les réglages autorisés. -->
           <StackPanel IsVisible="{Binding SettingsSearch.HasQuery}" Spacing="8" Margin="0,14,0,4">
-            <TextBlock Text="RÉSULTATS DANS LES PARAMÈTRES" Classes="phoneblocktitle" Margin="12,0,0,0" />
+            <TextBlock Text="FONCTIONNALITÉS ET PARAMÈTRES" Classes="phoneblocktitle" Margin="12,0,0,0" />
             <Border Classes="phonegroup" IsVisible="{Binding SettingsSearch.HasResults}">
               <ItemsControl ItemsSource="{Binding SettingsSearch.Results}">
                 <ItemsControl.ItemTemplate>
@@ -328,8 +328,8 @@
             <Border Classes="phonegroup" IsVisible="{Binding SettingsSearch.NoResults}" Padding="22,28">
               <StackPanel HorizontalAlignment="Center" Spacing="10">
                 <mi:MaterialIcon Kind="Magnify" Width="32" Height="32" Foreground="{DynamicResource MutedBrush}" HorizontalAlignment="Center" />
-                <TextBlock Text="Aucun réglage trouvé" FontWeight="SemiBold" TextAlignment="Center" />
-                <TextBlock Text="Essayez : empreinte, Tailscale, police, sons ou promotion."
+                <TextBlock Text="Aucune fonctionnalité trouvée" FontWeight="SemiBold" TextAlignment="Center" />
+                <TextBlock Text="Essayez : apprenants, encaisser, reçus, empreinte, Tailscale ou promotion."
                            Classes="muted" TextWrapping="Wrap" TextAlignment="Center" />
               </StackPanel>
             </Border>

@@ -63,7 +63,7 @@
                 </Border>
                 <StackPanel Spacing="3" VerticalAlignment="Center">
                   <TextBlock Text="Sécurité du compte" Classes="heading" />
-                  <TextBlock Text="Mot de passe et authentification locale" Classes="muted" />
+                  <TextBlock Text="Mot de passe et protection de cet appareil" Classes="muted" TextWrapping="Wrap" />
                 </StackPanel>
               </StackPanel>
               <TextBlock Text="Ces réglages protègent votre session. Toute activation ou désactivation biométrique exige une vérification."
@@ -84,17 +84,17 @@
             <StackPanel Spacing="12">
               <StackPanel Orientation="Horizontal" Spacing="10">
                 <mi:MaterialIcon Kind="Fingerprint" Width="24" Height="24" Foreground="{DynamicResource AccentBrush}" />
-                <TextBlock Text="Connexion par empreinte" FontSize="16" FontWeight="SemiBold" />
+                <TextBlock Text="{Binding BiometricTitle}" FontSize="16" FontWeight="SemiBold" />
               </StackPanel>
               <Border Background="{DynamicResource GroupBrush}" Padding="14,12" CornerRadius="12">
                 <TextBlock Text="{Binding BiometricSecurityStatus}" TextWrapping="Wrap" />
               </Border>
-              <TextBlock Text="Mot de passe de vérification" FontWeight="SemiBold" />
+              <TextBlock Text="Vérification de votre identité" FontWeight="SemiBold" />
               <TextBox Text="{Binding SecurityPassword}" PasswordChar="•" PlaceholderText="Mot de passe actuel" />
-              <TextBlock Classes="muted" TextWrapping="Wrap"
-                         Text="Activer exige votre mot de passe et une validation Android. Pour désactiver, l'empreinte ou le mot de passe actuel peuvent confirmer votre identité." />
+              <TextBlock Classes="muted" TextWrapping="Wrap" Text="{Binding BiometricVerificationHelp}" />
               <Button Classes="primary" Command="{Binding ManageBiometrics}" Content="{Binding BiometricActionLabel}"
-                      IsEnabled="{Binding BiometricSecurityAllowed}" HorizontalAlignment="Left" />
+                      IsEnabled="{Binding BiometricSecurityAllowed}" HorizontalAlignment="Stretch"
+                      HorizontalContentAlignment="Center" MinHeight="46" />
               <TextBlock Text="{Binding SecurityNotice}" Classes="muted" IsVisible="{Binding HasSecurityNotice}" TextWrapping="Wrap" />
             </StackPanel>
           </Border>
