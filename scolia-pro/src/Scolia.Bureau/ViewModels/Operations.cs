@@ -439,6 +439,8 @@ public sealed class BackstageViewModel : Observable
     private PosteViewModel? poste;
     private string securityPassword = string.Empty;
     private string securityNotice = string.Empty;
+    private bool biometricBusy;
+    private bool securityPasswordVisible;
 
     public BackstageViewModel(ShellViewModel shell)
     {
@@ -458,6 +460,7 @@ public sealed class BackstageViewModel : Observable
         Logout = new AsyncCommand(() => shell.LogoutAsync());
         PasswordForm = BuildPasswordForm();
         ManageBiometrics = new AsyncCommand(ManageBiometricsAsync);
+        ToggleSecurityPassword = new RelayCommand(() => SecurityPasswordVisible = !SecurityPasswordVisible);
     }
 
     public IReadOnlyList<BackstageItemVm> Items { get; }
@@ -484,6 +487,7 @@ public sealed class BackstageViewModel : Observable
                 {
                     PasswordForm = BuildPasswordForm();
                     SecurityPassword = string.Empty;
+                    SecurityPasswordVisible = false;
                     SecurityNotice = string.Empty;
                     RefreshSecurity();
                 }
@@ -520,17 +524,39 @@ public sealed class BackstageViewModel : Observable
         && BiometricAccess.AccountMatches(account, session.UserName);
     public bool OtherBiometricAccount => BiometricAccount is { } account && shell.Session is { } session
         && !BiometricAccess.AccountMatches(account, session.UserName);
+    /// <summary>Ne jamais proposer une activation sans enrôlement et preuve cryptographique natives.</summary>
+    public bool BiometricEnrollmentReady => Platform.EnrollBiometricAsync is not null
+        && Platform.HasBiometricProof is not null && Platform.IsBiometricAvailable?.Invoke() == true;
     public string BiometricSecurityStatus => OtherBiometricAccount
-        ? "Une autre session est associée à la biométrie de ce téléphone. Reconnectez-vous avec le compte concerné pour la modifier."
+        ? "Une autre session est associée à la biométrie de cet appareil. Connectez-vous avec ce compte pour la modifier."
         : BiometricsEnabled
-            ? "Empreinte activée pour ce compte sur ce téléphone. Chaque utilisation demande une validation Android."
-            : Platform.IsBiometricAvailable?.Invoke() == true
-                ? "Empreinte disponible. Son activation exige le mot de passe du compte et votre accord."
-                : "Empreinte indisponible sur cet appareil ou non configurée dans Android.";
-    public string BiometricActionLabel => BiometricsEnabled ? "Désactiver l'empreinte" : "Activer l'empreinte";
+            ? "Activée pour votre compte. Une vérification biométrique locale sera demandée lors de chaque accès."
+            : !BiometricEnrollmentReady
+                ? "Non disponible pour l'activation sur cet appareil : une preuve biométrique sécurisée SCOLIA est nécessaire. Votre mot de passe reste utilisable."
+                : "Prête à être activée : confirmez votre mot de passe, puis validez l'invite sécurisée de l'appareil.";
+    public string BiometricActionLabel => BiometricsEnabled ? "Désactiver la biométrie" : "Activer la biométrie";
     public bool BiometricSecurityAllowed => ShowBiometricSecurity && !OtherBiometricAccount
-        && (BiometricsEnabled || Platform.IsBiometricAvailable?.Invoke() == true);
+        && !BiometricBusy && (BiometricsEnabled || BiometricEnrollmentReady);
+    public bool BiometricBusy
+    {
+        get => biometricBusy;
+        private set { if (Set(ref biometricBusy, value)) Raise(nameof(BiometricSecurityAllowed)); }
+    }
     public string SecurityPassword { get => securityPassword; set => Set(ref securityPassword, value); }
+    public bool SecurityPasswordVisible
+    {
+        get => securityPasswordVisible;
+        private set
+        {
+            if (!Set(ref securityPasswordVisible, value)) return;
+            Raise(nameof(SecurityPasswordMask));
+            Raise(nameof(SecurityEyeIcon));
+        }
+    }
+    public char SecurityPasswordMask => SecurityPasswordVisible ? '\0' : '•';
+    public MaterialIconKind SecurityEyeIcon => SecurityPasswordVisible
+        ? MaterialIconKind.EyeOffOutline : MaterialIconKind.EyeOutline;
+    public RelayCommand ToggleSecurityPassword { get; }
     public string SecurityNotice { get => securityNotice; private set { if (Set(ref securityNotice, value)) Raise(nameof(HasSecurityNotice)); } }
     public bool HasSecurityNotice => SecurityNotice.Length > 0;
     public AsyncCommand ManageBiometrics { get; }
@@ -541,6 +567,7 @@ public sealed class BackstageViewModel : Observable
     {
         Raise(nameof(BiometricsEnabled));
         Raise(nameof(OtherBiometricAccount));
+        Raise(nameof(BiometricEnrollmentReady));
         Raise(nameof(BiometricSecurityStatus));
         Raise(nameof(BiometricActionLabel));
         Raise(nameof(BiometricSecurityAllowed));
@@ -549,65 +576,76 @@ public sealed class BackstageViewModel : Observable
     /// <summary>Chaque changement sensible exige une preuve fraîche, jamais la seule session ouverte.</summary>
     private async Task ManageBiometricsAsync()
     {
-        if (shell.Session is not { } session || !ShowBiometricSecurity) return;
-        SecurityNotice = string.Empty;
-        if (OtherBiometricAccount)
+        if (BiometricBusy || shell.Session is null || !ShowBiometricSecurity) return;
+        BiometricBusy = true;
+        try
         {
-            SecurityNotice = "Ce téléphone est déjà associé à un autre compte : déconnectez-vous et utilisez ce compte.";
-            return;
-        }
-
-        var enabled = BiometricsEnabled;
-        var verified = false;
-        if (enabled && Platform.VerifyBiometricAsync is { } verify)
-            verified = await verify();
-
-        // Activer requiert systématiquement le mot de passe SCOLIA ; désactiver
-        // admet soit une preuve Android fraîche, soit le mot de passe du même compte.
-        if (!enabled || !verified)
-        {
-            if (string.IsNullOrWhiteSpace(SecurityPassword))
+            SecurityNotice = string.Empty;
+            if (OtherBiometricAccount)
             {
-                SecurityNotice = enabled
-                    ? "Confirmez votre empreinte ou saisissez le mot de passe actuel pour désactiver."
-                    : "Saisissez votre mot de passe actuel pour activer l'empreinte.";
+                SecurityNotice = "Ce téléphone est déjà associé à un autre compte : déconnectez-vous et utilisez ce compte.";
                 return;
             }
-            try
+    
+            var enabled = BiometricsEnabled;
+            var verified = false;
+            if (enabled && Platform.VerifyBiometricAsync is { } verify)
+                verified = await verify();
+    
+            // Activer requiert systématiquement le mot de passe SCOLIA ; désactiver
+            // admet soit une preuve Android fraîche, soit le mot de passe du même compte.
+            if (!enabled || !verified)
             {
-                var authenticated = await shell.Api.LoginAsync(session.UserName, SecurityPassword);
-                verified = BiometricAccess.AccountMatches(authenticated.UserName, session.UserName);
+                if (string.IsNullOrWhiteSpace(SecurityPassword))
+                {
+                    SecurityNotice = enabled
+                        ? "Confirmez votre empreinte ou saisissez le mot de passe actuel pour désactiver."
+                        : "Saisissez votre mot de passe actuel pour activer l'empreinte.";
+                    return;
+                }
+                try
+                {
+                    var authenticated = await shell.Api.LoginAsync(session.UserName, SecurityPassword);
+                    verified = BiometricAccess.AccountMatches(authenticated.UserName, session.UserName);
+                }
+                catch (Api.ApiException)
+                {
+                    SecurityNotice = "Mot de passe incorrect. Aucun réglage biométrique n'a été modifié.";
+                    return;
+                }
+                catch (Exception ex) when (ex is HttpRequestException or IOException or TaskCanceledException)
+                {
+                    SecurityNotice = "Le serveur ne peut pas vérifier votre mot de passe. Réessayez lorsque la connexion est rétablie.";
+                    return;
+                }
             }
-            catch (Api.ApiException)
+            SecurityPassword = string.Empty;
+            if (!verified) { SecurityNotice = "Vérification refusée. Aucun réglage n'a été modifié."; return; }
+    
+            if (enabled)
             {
-                SecurityNotice = "Mot de passe incorrect. Aucun réglage biométrique n'a été modifié.";
-                return;
+                Platform.DisableBiometricAccess?.Invoke();
+                BiometricAccess.Disable();
+                SecurityNotice = "Connexion par empreinte désactivée après vérification.";
             }
-            catch (Exception ex) when (ex is HttpRequestException or IOException or TaskCanceledException)
+            else if (Platform.EnrollBiometricAsync is { } enroll && await enroll())
             {
-                SecurityNotice = "Le serveur ne peut pas vérifier votre mot de passe. Réessayez lorsque la connexion est rétablie.";
-                return;
+                BiometricAccess.Enable(shell.Api.Server, session.UserName);
+                SecurityNotice = "Empreinte activée pour votre compte sur ce téléphone.";
             }
-        }
-        SecurityPassword = string.Empty;
-        if (!verified) { SecurityNotice = "Vérification refusée. Aucun réglage n'a été modifié."; return; }
-
-        if (enabled)
+            else SecurityNotice = "Activation annulée ou indisponible : le mot de passe reste nécessaire.";
+    
+            Raise(nameof(HasSecurityNotice));
+            RefreshSecurity();
+            shell.Login.RefreshBiometrics();
+            }
+        finally
         {
-            Platform.DisableBiometricAccess?.Invoke();
-            BiometricAccess.Disable();
-            SecurityNotice = "Connexion par empreinte désactivée après vérification.";
+            // Même après une annulation ou une erreur réseau : réautoriser une tentative.
+            SecurityPassword = string.Empty;
+            BiometricBusy = false;
+            RefreshSecurity();
         }
-        else if (Platform.EnrollBiometricAsync is { } enroll && await enroll())
-        {
-            BiometricAccess.Enable(shell.Api.Server, session.UserName);
-            SecurityNotice = "Empreinte activée pour votre compte sur ce téléphone.";
-        }
-        else SecurityNotice = "Activation annulée ou indisponible : le mot de passe reste nécessaire.";
-
-        Raise(nameof(HasSecurityNotice));
-        RefreshSecurity();
-        shell.Login.RefreshBiometrics();
     }
 
     /// <summary>Rubrique poste et réseau, créée à la première ouverture.</summary>
