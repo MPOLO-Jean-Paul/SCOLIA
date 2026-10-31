@@ -137,7 +137,7 @@ public sealed class PhoneSettingsSearchVm : Observable
             "clair sombre noir blanc nuit mode couleur accent fonds", Page("apparence"));
         Add("Texte et polices", "Affichage", MaterialIconKind.FormatFont, "ToneBlue",
             "taille lettres caractere police texte agrandir zoom typographie", Page("texte"));
-        if (!Infrastructure.Platform.IsMobile)
+        if (!Platform.IsMobile)
             Add("Fenêtres et affichage", "Affichage", MaterialIconKind.WindowMaximize, "ToneTeal",
                 "fenetre volet ruban barre", Page("fenetres"));
         Add("Animations et fluidité", "Affichage", MaterialIconKind.AnimationPlay, "ToneOrange",
