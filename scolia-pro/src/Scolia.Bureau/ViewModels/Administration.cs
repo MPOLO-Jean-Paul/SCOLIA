@@ -277,7 +277,8 @@ public sealed class StaffPage : PageViewModel
 }
 
 /// <summary>Année scolaire dans la liste des paramètres.</summary>
-public sealed record YearRowVm(Guid Id, string Label, string Period, string Status, bool IsCurrent, string Months, IBrush StatusBrush);
+public sealed record YearRowVm(Guid Id, string Label, string Period, string Status, bool IsCurrent, string Months,
+    IBrush StatusBrush, string Deadline, AcademicYearDto Source);
 
 /// <summary>Section d'enseignement dans la liste des paramètres.</summary>
 public sealed record SectionRowVm(Guid Id, string Code, string Name, string Active, SectionDto Source);
@@ -449,6 +450,7 @@ public sealed class SettingsPage : PageViewModel
         {
             case "annees":
                 Action("Nouvelle année", MaterialIconKind.CalendarPlusOutline, () => NewYearAsync(Shell), primary: true);
+                Action("Configurer les mois et le retard", MaterialIconKind.CalendarEditOutline, EditYearScheduleAsync, row: true);
                 Action("Définir comme courante", MaterialIconKind.CalendarCheckOutline, SetCurrentYearAsync, row: true);
                 Action("Clôturer l'année", MaterialIconKind.CalendarLockOutline, CloseYearAsync, row: true);
                 break;
@@ -541,6 +543,8 @@ public sealed class SettingsPage : PageViewModel
 
     public FormViewModel? SchoolForm { get => schoolForm; private set => Set(ref schoolForm, value); }
     public ObservableCollection<YearRowVm> Years { get; } = [];
+    public AsyncCommand EditSelectedCalendar => editSelectedCalendar ??= new AsyncCommand(() => Shell.Run(EditYearScheduleAsync));
+    private AsyncCommand? editSelectedCalendar;
     public ObservableCollection<SectionRowVm> SectionRows { get; } = [];
     public ObservableCollection<PromotionRowVm> Promotions { get; } = [];
     public YearRowVm? SelectedYear { get => selectedYear; set => Set(ref selectedYear, value); }
@@ -641,10 +645,15 @@ public sealed class SettingsPage : PageViewModel
         foreach (var y in years)
         {
             var status = Labels.Status(y.Status);
+            var periods = y.Periods.OrderBy(p => p.Order).ToArray();
+            var deadline = periods.Length == 0 ? "À configurer"
+                : $"Limite : le {periods[0].DueDate.AddDays(-1).Day} du mois suivant · retard dès le lendemain";
             Years.Add(new YearRowVm(y.Id, y.Label, $"{Format.Date(y.StartDate)} → {Format.Date(y.EndDate)}", status, y.IsCurrent,
-                string.Join(" · ", y.Periods.Select(p => p.Name[..Math.Min(3, p.Name.Length)])), ThemeBrush.Get(y.Status == "Closed" ? "ToneNeutral" : "ToneGreen")));
+                periods.Length == 0 ? "Aucun mois" : $"{periods[0].Name} {periods[0].CalendarYear} → {periods[^1].Name} {periods[^1].CalendarYear} ({periods.Length} mois)",
+                ThemeBrush.Get(y.Status == "Closed" ? "ToneNeutral" : "ToneGreen"), deadline, y));
         }
-        subtitle = $"{Format.Count(years.Count, "année scolaire", "années scolaires")}";
+        subtitle = $"{Format.Count(years.Count, "année scolaire", "années scolaires")} · choisissez une année pour configurer les mois et la date limite";
+        Raise(nameof(Subtitle));
         Raise(nameof(Subtitle));
     }
 
@@ -771,31 +780,86 @@ public sealed class SettingsPage : PageViewModel
         if (await Shell.Ask(form)) await RefreshAsync();
     }
 
-    /// <summary>Crée l'année suivante, avec proposition de libellé et copie des promotions.</summary>
+    /// <summary>Mois scolaires affichés par leur nom, au lieu d'exiger des numéros 1-12.</summary>
+    public static IReadOnlyList<ChoiceItem> CalendarMonths { get; } =
+        Enumerable.Range(1, 12).Select(i => new ChoiceItem(i.ToString(CultureInfo.InvariantCulture),
+            Scolia.Domain.School.AcademicPeriod.FrenchMonths[i - 1])).ToArray();
+
+    public static IReadOnlyList<ChoiceItem> PaymentDeadlineDays { get; } =
+        Enumerable.Range(1, 28).Select(i => new ChoiceItem(i.ToString(CultureInfo.InvariantCulture),
+            $"{i} du mois suivant")).ToArray();
+
+    /// <summary>Calendrier complet à la création : début, fin et dernier jour sans retard.</summary>
     public static async Task NewYearAsync(ShellViewModel shell)
     {
         var proposal = await shell.Api.GetAsync<Dictionary<string, string>>("api/installation/annee-proposee");
-        var form = new FormViewModel("Nouvelle année scolaire", "L'année peut être rendue courante dès sa création.", async f =>
+        var form = new FormViewModel("Nouvelle année scolaire",
+            "Définissez les mois à encaisser et la limite de paiement. Le retard commencera le jour suivant.", async f =>
         {
+            var start = int.Parse(f.ChoiceValue("debut")!, CultureInfo.InvariantCulture);
+            var end = int.Parse(f.ChoiceValue("fin")!, CultureInfo.InvariantCulture);
+            var cutoff = int.Parse(f.ChoiceValue("limite")!, CultureInfo.InvariantCulture);
             await shell.Api.SendAsync(HttpMethod.Post, "api/etablissement/annees", new
             {
                 label = f.Text("libelle"),
-                startMonth = (int)f.Amount("rentree"),
-                monthCount = (int)f.Amount("mois"),
-                dueDay = (int)f.Amount("echeance"),
+                startMonth = start,
+                endMonth = end,
+                monthCount = Scolia.Domain.School.AcademicPeriod.CountBetween(start, end),
+                lastOnTimeDay = cutoff,
+                dueDay = cutoff + 1,
                 copyPromotionsFromCurrent = f.Flag("copier"),
                 makeCurrent = f.Flag("courante"),
             });
-            shell.Notify("Année scolaire créée.");
+            shell.Notify("Année créée : les mois à encaisser et les dates de retard sont configurés.");
             return true;
         });
-        form.Add("libelle", "Libellé", value: proposal.GetValueOrDefault("label"), required: true);
-        form.Add("rentree", "Mois de rentrée (1-12)", FieldKind.Amount, "9", required: true);
-        form.Add("mois", "Mois facturés", FieldKind.Amount, "10", required: true);
-        form.Add("echeance", "Jour d'échéance (mois suivant)", FieldKind.Amount, "5", required: true);
-        form.AddFlag("copier", "Copier les promotions de l'année courante", true);
-        form.AddFlag("courante", "Définir comme année courante", true);
+        form.Add("libelle", "Année scolaire", value: proposal.GetValueOrDefault("label"), required: true,
+            hint: "Exemple : 2026-2027");
+        form.AddHeader("Mois de facturation", "Les deux mois sont inclus, même si la période traverse décembre.");
+        form.AddChoice("debut", "Premier mois à encaisser", CalendarMonths, "9", required: true);
+        form.AddChoice("fin", "Dernier mois à encaisser", CalendarMonths, "6", required: true);
+        form.AddChoice("limite", "Dernier jour pour payer sans retard", PaymentDeadlineDays, "5", required: true);
+        form.AddHeader("Exemple", "Pour octobre, limite le 5 novembre : déclaration de retard dès le 6 novembre.");
+        form.AddFlag("copier", "Copier les promotions et leurs frais de l'année courante", true);
+        form.AddFlag("courante", "Utiliser cette nouvelle année pour les inscriptions et paiements", true);
         if (await shell.Ask(form) && shell.Current is SettingsPage page) await page.RefreshAsync();
+    }
+
+    /// <summary>Modifier les périodes d'une année existante, en conservant les identifiants des mensualités.</summary>
+    private async Task EditYearScheduleAsync()
+    {
+        if (SelectedYear is not { } chosen)
+        {
+            Shell.Notify("Sélectionnez d'abord une année scolaire dans la liste.");
+            return;
+        }
+        if (chosen.Source.Status == "Closed")
+        {
+            Shell.Notify("Cette année est clôturée : son calendrier ne peut plus être modifié.");
+            return;
+        }
+        var periods = chosen.Source.Periods.OrderBy(p => p.Order).ToArray();
+        var first = periods.FirstOrDefault()?.Month ?? 9;
+        var last = periods.LastOrDefault()?.Month ?? 6;
+        var cutoff = periods.Length == 0 ? 5 : periods[0].DueDate.AddDays(-1).Day;
+        var form = new FormViewModel($"Mois et échéance · {chosen.Label}",
+            "Modifiez le début, la fin et le dernier jour sans retard. Les mois de paiement seront mis à jour dans toutes les promotions de cette année.", async f =>
+        {
+            await Shell.Api.SendAsync(HttpMethod.Put, $"api/etablissement/annees/{chosen.Id}/calendrier", new
+            {
+                startMonth = int.Parse(f.ChoiceValue("debut")!, CultureInfo.InvariantCulture),
+                endMonth = int.Parse(f.ChoiceValue("fin")!, CultureInfo.InvariantCulture),
+                lastOnTimeDay = int.Parse(f.ChoiceValue("limite")!, CultureInfo.InvariantCulture),
+            });
+            Shell.Notify("Calendrier mis à jour : les mois apparaîtront dans Encaisser, pour les promotions avec une mensualité.");
+            return true;
+        });
+        form.AddHeader("Période de l'année", "Choisissez les mois par leur nom. La période peut traverser décembre.");
+        form.AddChoice("debut", "Premier mois de paiement", CalendarMonths, first.ToString(CultureInfo.InvariantCulture), required: true);
+        form.AddChoice("fin", "Dernier mois de paiement", CalendarMonths, last.ToString(CultureInfo.InvariantCulture), required: true);
+        form.AddChoice("limite", "Dernier jour sans retard (mois suivant)", PaymentDeadlineDays, cutoff.ToString(CultureInfo.InvariantCulture), required: true);
+        form.AddHeader("Protection des reçus", "Si des mensualités ont déjà été encaissées ou prises en charge, le calendrier ne pourra pas être modifié : les reçus restent inchangés.");
+        if (await Shell.Ask(form)) await RefreshAsync();
     }
 
     /// <summary>Crée une promotion avec ses frais mensuels et ses frais ponctuels.</summary>
