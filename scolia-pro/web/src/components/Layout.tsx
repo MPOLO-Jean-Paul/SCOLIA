@@ -282,7 +282,7 @@ export function Layout() {
 
       {statusBar && <StatusBar pageTitle={pageTitle} zoom={zoom} onZoom={changeZoom} />}
 
-      {palette && <CommandPalette groups={paletteGroups} onClose={() => setPalette(false)} />}
+      {palette && <CommandPalette groups={paletteGroups} onClose={() => setPalette(false)} onPreferences={() => setDialog('preferences')} canConfigureSchool={can(P.settingsWrite)} />}
       {backstage && (
         <Backstage onClose={() => setBackstage(false)} onNavigate={(to) => { setBackstage(false); navigate(to); }} onRun={(id) => void run(id)} />
       )}
