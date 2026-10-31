@@ -18,6 +18,8 @@
           <TextBlock Text="Statut" Classes="fieldlabel" />
           <ComboBox Width="190" ItemsSource="{Binding StatusChoices}" SelectedItem="{Binding Status}" />
         </StackPanel>
+        <Button Content="Effacer les filtres" Command="{Binding ClearFilters}" VerticalAlignment="Bottom" Margin="0,0,12,12"
+                ToolTip.Tip="Affiche à nouveau tous les apprenants, sans filtre" />
         <Button Command="{Binding PreviousPage}" IsEnabled="{Binding CanPrevious}" Content="Précédent" VerticalAlignment="Bottom" Margin="0,0,12,12" />
         <Button Command="{Binding NextPage}" IsEnabled="{Binding CanNext}" Content="Suivant" VerticalAlignment="Bottom" Margin="0,0,12,12" />
         <TextBlock Text="{Binding PageText}" Classes="muted" VerticalAlignment="Bottom" Margin="0,0,12,20" />
