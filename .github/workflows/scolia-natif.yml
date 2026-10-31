@@ -1,0 +1,52 @@
+name: SCOLIA Natif - recherche, navigation et securite (Windows Android iOS)
+
+on:
+  push:
+    paths:
+      - 'scolia-pro/src/Scolia.Bureau/**'
+      - 'scolia-pro/src/Scolia.Mobile/**'
+      - 'scolia-pro/src/Scolia.Phone.iOS/**'
+      - 'scolia-pro/tests/Scolia.Bureau.Tests/**'
+      - '.github/workflows/scolia-natif.yml'
+  pull_request:
+    paths:
+      - 'scolia-pro/src/Scolia.Bureau/**'
+      - 'scolia-pro/src/Scolia.Mobile/**'
+      - 'scolia-pro/src/Scolia.Phone.iOS/**'
+      - 'scolia-pro/tests/Scolia.Bureau.Tests/**'
+      - '.github/workflows/scolia-natif.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: scolia-native-ux-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: scolia-pro
+
+jobs:
+  qualite-native:
+    name: Tests de navigation et composants Avalonia natifs
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: scolia-pro/global.json
+      - name: Compiler le client Avalonia (vues partagees Windows Android iOS)
+        run: dotnet build src/Scolia.Bureau/Scolia.Bureau.csproj -c Release
+      - name: Verifier les resultats du menu, les recherches contextuelles et la securite
+        run: dotnet test tests/Scolia.Bureau.Tests/Scolia.Bureau.Tests.csproj -c Release --logger "trx;LogFileName=natif.trx"
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: SCOLIA_Natif_Diagnostics
+          path: scolia-pro/tests/Scolia.Bureau.Tests/TestResults/
+          if-no-files-found: ignore
