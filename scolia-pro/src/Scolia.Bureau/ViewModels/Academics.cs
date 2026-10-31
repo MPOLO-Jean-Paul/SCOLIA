@@ -301,7 +301,10 @@ public sealed class ResultsPage : PageViewModel
         Items.Clear();
         foreach (var r in results.Rows)
         {
-            var courses = string.Join(" · ", results.Courses.Select((name, i) => $"{name} {Fmt(r.CourseAverages.ElementAtOrDefault(i))}"));
+            // Seuls les cours déjà notés : une suite de tirets ne dit rien. Sur le téléphone, un cours par ligne.
+            var graded = results.Courses.Select((name, i) => (name, value: r.CourseAverages.ElementAtOrDefault(i)))
+                .Where(c => c.value is not null).Select(c => $"{c.name} : {Fmt(c.value)}").ToList();
+            var courses = graded.Count == 0 ? "Aucune note" : string.Join(Preferences.MobileLayout ? "\n" : " · ", graded);
             Items.Add(new ResultRowVm(r.EnrollmentId, r.Rank is int rank ? $"{rank}" : "—", r.Matricule, r.FullName, Fmt(r.Average),
                 r.Decision, ThemeBrush.Get(DecisionTone(r.Decision)), courses));
         }

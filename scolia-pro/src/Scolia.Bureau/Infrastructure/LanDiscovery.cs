@@ -46,6 +46,9 @@ public static class LanDiscovery
         }
         catch (OperationCanceledException) when (!ct.IsCancellationRequested) { }
         catch (SocketException) { }
+        // iPhone : la diffusion sur le Wi-Fi est réservée par Apple ; la recherche rend une liste vide
+        // et l'écran propose de saisir l'adresse du serveur.
+        catch (Exception ex) when (ex is System.Net.NetworkInformation.NetworkInformationException or PlatformNotSupportedException or UnauthorizedAccessException) { }
         return found.Values.OrderBy(s => s.School, StringComparer.CurrentCulture).ThenBy(s => s.Machine, StringComparer.CurrentCulture).ToList();
     }
 

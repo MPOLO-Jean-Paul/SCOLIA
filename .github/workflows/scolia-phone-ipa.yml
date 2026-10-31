@@ -118,6 +118,7 @@ jobs:
           set -euo pipefail
           dotnet publish src/Scolia.Phone.iOS/Scolia.Phone.iOS.csproj \
             -c Release -f net10.0-ios -r ios-arm64 \
+            -p:RuntimeIdentifiers=ios-arm64 \
             -p:ArchiveOnBuild=true \
             -p:EnableCodeSigning=true \
             -p:CodesignKey="$IOS_CODESIGN_KEY" \

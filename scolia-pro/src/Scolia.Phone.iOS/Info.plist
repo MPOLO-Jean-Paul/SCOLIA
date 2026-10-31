@@ -34,7 +34,17 @@
   <key>NSLocalNetworkUsageDescription</key><string>SCOLIA recherche le serveur scolaire autorisé de votre établissement sur le réseau privé.</string>
   <key>NSAppTransportSecurity</key>
   <dict>
+    <!-- Serveur de l'établissement sur le Wi-Fi (adresse IP ou nom .local) -->
     <key>NSAllowsLocalNetworking</key><true/>
+    <!-- Serveur joint par Tailscale (nom MagicDNS) : le tunnel WireGuard chiffre déjà la liaison -->
+    <key>NSExceptionDomains</key>
+    <dict>
+      <key>ts.net</key>
+      <dict>
+        <key>NSIncludesSubdomains</key><true/>
+        <key>NSExceptionAllowsInsecureHTTPLoads</key><true/>
+      </dict>
+    </dict>
   </dict>
   <key>NSFaceIDUsageDescription</key><string>SCOLIA demande Face ID pour confirmer l'accès au compte scolaire déjà authentifié sur cet iPhone.</string>
   <!-- Chiffrement standard d'iOS seulement : pas de déclaration d'exportation à faire pour TestFlight -->

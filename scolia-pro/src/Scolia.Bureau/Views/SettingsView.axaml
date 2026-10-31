@@ -294,18 +294,19 @@
                   <TextBlock Text="Couleur d'accent" FontWeight="SemiBold" />
                   <TextBlock Text="Boutons principaux, sélection dans les listes, liens et barres de progression." Classes="muted" TextWrapping="Wrap" />
                 </StackPanel>
-                <ItemsControl ItemsSource="{Binding Swatches}">
-                  <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                <!-- Les six couleurs sur une seule ligne, même sur un téléphone de 360 points -->
+                <ItemsControl ItemsSource="{Binding Swatches}" MaxWidth="460" HorizontalAlignment="Left">
+                  <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Rows="1" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
                   <ItemsControl.ItemTemplate>
                     <DataTemplate>
-                      <Button Classes="swatch" Command="{Binding Choose}" ToolTip.Tip="{Binding Label}" Margin="0,0,14,0">
+                      <Button Classes="swatch" Command="{Binding Choose}" ToolTip.Tip="{Binding Label}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Padding="0,4">
                         <StackPanel Spacing="6">
                           <Panel Width="34" Height="34" HorizontalAlignment="Center">
                             <Ellipse Fill="{Binding Brush}" />
                             <Ellipse Stroke="{DynamicResource TextBrush}" StrokeThickness="2" Margin="-4" IsVisible="{Binding IsSelected}" />
                             <mi:MaterialIcon Kind="Check" Width="18" Height="18" Foreground="White" IsVisible="{Binding IsSelected}" />
                           </Panel>
-                          <TextBlock Text="{Binding Label}" Classes="muted" HorizontalAlignment="Center" />
+                          <TextBlock Text="{Binding Label}" Classes="muted" FontSize="{DynamicResource FsSmall}" HorizontalAlignment="Center" TextWrapping="NoWrap" TextTrimming="None" ClipToBounds="False" />
                         </StackPanel>
                       </Button>
                     </DataTemplate>

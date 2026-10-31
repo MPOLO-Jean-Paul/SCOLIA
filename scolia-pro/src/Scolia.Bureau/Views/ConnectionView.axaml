@@ -45,10 +45,10 @@
                          Text="L'établissement se configure sur ce téléphone et ses données y sont gardées. Les autres téléphones et ordinateurs le trouvent sur le même Wi-Fi et s'y connectent." />
             </StackPanel>
           </Grid>
-           <Button Classes="primary" Command="{Binding UseThisComputer}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Height="44">
+           <Button Classes="primary" Command="{Binding UseThisComputer}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" MinHeight="44">
             <StackPanel Orientation="Horizontal" Spacing="8">
-              <mi:MaterialIcon Kind="CogOutline" Width="18" Height="18" />
-              <TextBlock Text="Configurer l'établissement sur ce téléphone" />
+              <mi:MaterialIcon Kind="CogOutline" Width="18" Height="18" VerticalAlignment="Center" />
+              <TextBlock Text="Configurer sur ce téléphone" TextWrapping="Wrap" VerticalAlignment="Center" />
             </StackPanel>
           </Button>
         </StackPanel>

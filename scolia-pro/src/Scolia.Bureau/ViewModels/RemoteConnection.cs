@@ -32,6 +32,19 @@ public sealed class RemoteConnectionViewModel : Observable
         });
     }
     public bool CanManage => shell.IsServerComputer && shell.Can("parametres.ecrire");
+
+    /// <summary>Explication propre à l'appareil : Android, iPhone ou ordinateur n'activent pas Tailscale de la même façon.</summary>
+    public string TailnetHelp =>
+        OperatingSystem.IsAndroid()
+            ? "Après la première configuration de Tailscale et l'autorisation VPN d'Android, ce bouton demande la connexion en arrière-plan sans ouvrir Tailscale. Les données restent sur cet appareil."
+            : OperatingSystem.IsIOS()
+                ? "Sur iPhone et iPad, Tailscale s'active dans son application. Activez « VPN à la demande » une fois : l'appareil reste relié au réseau de l'établissement."
+                : "Une fois Tailscale installé et connecté au compte de l'établissement, cet ordinateur est joignable par son adresse privée. Les données restent sur cet ordinateur.";
+
+    public string TailnetNote =>
+        OperatingSystem.IsAndroid()
+            ? "L'envoi de la commande n'est pas une confirmation de connexion. Testez le partage depuis un appareil client autorisé. Android conserve son indicateur VPN."
+            : "Testez le partage depuis un appareil client autorisé : c'est la seule preuve que la liaison fonctionne.";
     public string Relay { get => relay; set => Set(ref relay, value); }
     public string Invitation { get => invitation; private set => Set(ref invitation, value); }
     public string Message { get => message; private set => Set(ref message, value); }

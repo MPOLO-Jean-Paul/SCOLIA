@@ -8,7 +8,11 @@ using Scolia.Bureau.Ribbon;
 namespace Scolia.Bureau.ViewModels;
 
 /// <summary>Outil proposé sur l'accueil : son icône de couleur, son nom, ce qu'il fait et le bouton qui l'ouvre.</summary>
-public sealed record ToolCardVm(string Title, string Description, MaterialIconKind Icon, IBrush Brush, AsyncCommand Open);
+public sealed record ToolCardVm(string Title, string Description, MaterialIconKind Icon, IBrush Brush, AsyncCommand Open)
+{
+    /// <summary>Libellé d'un seul mot pour les gros boutons du téléphone : jamais coupé au milieu d'un mot.</summary>
+    public string ShortTitle { get; init; } = Title;
+}
 
 /// <summary>Reçu récent de l'accueil : une ligne de la liste « Récents », qui ouvre le reçu.</summary>
 public sealed record RecentReceiptVm(string Number, string Student, string Date, string Method, string Amount, string Status, AsyncCommand Open);
@@ -162,26 +166,27 @@ public sealed class HomePage : PageViewModel
     /// <summary>Les outils les plus utilisés, selon les droits du compte : quatre en tête, comme sur l'accueil d'Acrobat.</summary>
     private void BuildTools()
     {
-        void Add(string? perm, string title, string description, MaterialIconKind icon, string tone, Func<Task> run)
+        void Add(string? perm, string title, string description, MaterialIconKind icon, string tone, Func<Task> run, string? shortTitle = null)
         {
             if (perm is null || Shell.Can(perm))
-                Tools.Add(new ToolCardVm(title, description, icon, ThemeBrush.Get(tone), new AsyncCommand(() => Shell.Run(run))));
+                Tools.Add(new ToolCardVm(title, description, icon, ThemeBrush.Get(tone), new AsyncCommand(() => Shell.Run(run)))
+                    { ShortTitle = shortTitle ?? title });
         }
 
         Add(Perm.PaymentsCreate, "Encaisser", "Choisir les mois payés et imprimer le reçu numéroté.", MaterialIconKind.HandCoin, "ToneGreen",
             () => Shell.Open(() => new CashierPage(Shell)));
         Add(Perm.StudentsWrite, "Inscrire un apprenant", "Créer le dossier. Le matricule est attribué seul.", MaterialIconKind.AccountPlus, "ToneBlue",
-            () => StudentForms.CreateAsync(Shell));
+            () => StudentForms.CreateAsync(Shell), "Inscrire");
         Add(Perm.ReportsRead, "Recouvrement", "Voir les retards et relancer les parents.", MaterialIconKind.ChartBar, "ToneOrange",
-            () => Shell.Open(() => new DebtorsPage(Shell)));
+            () => Shell.Open(() => new DebtorsPage(Shell)), "Retards");
         Add(Perm.ReportsRead, "Rapports et exports", "Tous les documents en PDF ou en Excel.", MaterialIconKind.FileChart, "ToneRed",
-            () => Shell.Open(() => new ReportsPage(Shell)));
+            () => Shell.Open(() => new ReportsPage(Shell)), "Rapports");
         Add(Perm.PaymentsRead, "Journal des reçus", "Retrouver, imprimer ou annuler un reçu.", MaterialIconKind.ReceiptText, "TonePurple",
-            () => Shell.Open(() => new ReceiptsPage(Shell)));
+            () => Shell.Open(() => new ReceiptsPage(Shell)), "Reçus");
         Add(Perm.AcademicsRead, "Présences", "Faire l'appel du jour par promotion.", MaterialIconKind.ClipboardCheck, "ToneTeal",
             () => Shell.Open(() => new AttendancePage(Shell)));
         Add(Perm.ReportsRead, "Tableau de bord", "Recettes, retards et indicateurs de l'année.", MaterialIconKind.ViewDashboard, "ToneIndigo",
-            () => Shell.Open(() => new DashboardPage(Shell)));
+            () => Shell.Open(() => new DashboardPage(Shell)), "Indicateurs");
         Add(Perm.StudentsRead, "Apprenants", "Rechercher un dossier et ouvrir sa fiche.", MaterialIconKind.AccountGroup, "ToneBlue",
             () => Shell.Open(() => new StudentsPage(Shell)));
         while (Tools.Count > 4) Tools.RemoveAt(Tools.Count - 1);

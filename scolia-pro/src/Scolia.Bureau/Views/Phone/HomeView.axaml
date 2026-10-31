@@ -106,7 +106,7 @@
           <Button Classes="quick" Command="{Binding Open}">
             <StackPanel Spacing="6">
               <Border Classes="quickicon" Background="{Binding Brush}"><mi:MaterialIcon Kind="{Binding Icon}" /></Border>
-              <TextBlock Text="{Binding Title}" FontSize="12" FontWeight="SemiBold" TextAlignment="Center" TextWrapping="Wrap" MaxLines="2" HorizontalAlignment="Center" />
+              <TextBlock Text="{Binding ShortTitle}" FontSize="12" FontWeight="SemiBold" TextAlignment="Center" TextTrimming="CharacterEllipsis" HorizontalAlignment="Center" ToolTip.Tip="{Binding Title}" />
             </StackPanel>
           </Button>
         </DataTemplate>
