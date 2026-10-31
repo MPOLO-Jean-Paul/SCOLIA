@@ -152,7 +152,7 @@
               <mi:MaterialIcon Kind="ShieldLockOutline" Foreground="{DynamicResource AccentBrush}" Width="24" Height="24" />
               <TextBlock Text="Protéger votre compte" FontWeight="SemiBold" VerticalAlignment="Center" />
             </StackPanel>
-            <TextBlock Text="Modifiez votre mot de passe, activez ou désactivez l'empreinte digitale après vérification de votre identité." Classes="muted" TextWrapping="Wrap" />
+            <TextBlock Text="Modifiez votre mot de passe et gérez la biométrie lorsque cette option est disponible sur votre appareil." Classes="muted" TextWrapping="Wrap" />
             <Button Classes="primary" Content="Gérer la sécurité du compte" Command="{Binding OpenAccountSecurity}"
                     HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" />
           </StackPanel>
