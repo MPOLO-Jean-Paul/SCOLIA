@@ -6,6 +6,8 @@
   <UserControl.Styles>
     <!-- Formulaire intégré à une page : ni ombre ni en-tête, les champs défilent avec la page -->
     <Style Selector="Border.sheet.embedded">
+      <Setter Property="MinWidth" Value="0" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
       <Setter Property="BoxShadow" Value="0 0 0 0 Transparent" />
       <Setter Property="Background" Value="{DynamicResource GroupBrush}" />
       <Setter Property="MaxWidth" Value="720" />
