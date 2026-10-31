@@ -782,7 +782,8 @@ public sealed class SettingsPage : PageViewModel
     /// <summary>Mois scolaires affichés par leur nom, au lieu d'exiger des numéros 1-12.</summary>
     public static IReadOnlyList<ChoiceItem> CalendarMonths { get; } =
         Enumerable.Range(1, 12).Select(i => new ChoiceItem(i.ToString(CultureInfo.InvariantCulture),
-            Scolia.Domain.School.AcademicPeriod.FrenchMonths[i - 1])).ToArray();
+            CultureInfo.GetCultureInfo("fr-FR").DateTimeFormat.GetMonthName(i) is { } month
+                ? char.ToUpperInvariant(month[0]) + month[1..] : i.ToString(CultureInfo.InvariantCulture))).ToArray();
 
     public static IReadOnlyList<ChoiceItem> PaymentDeadlineDays { get; } =
         Enumerable.Range(1, 28).Select(i => new ChoiceItem(i.ToString(CultureInfo.InvariantCulture),
@@ -803,7 +804,7 @@ public sealed class SettingsPage : PageViewModel
                 label = f.Text("libelle"),
                 startMonth = start,
                 endMonth = end,
-                monthCount = Scolia.Domain.School.AcademicPeriod.CountBetween(start, end),
+                monthCount = (end - start + 12) % 12 + 1,
                 lastOnTimeDay = cutoff,
                 dueDay = cutoff + 1,
                 copyPromotionsFromCurrent = f.Flag("copier"),
