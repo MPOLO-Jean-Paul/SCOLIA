@@ -58,6 +58,8 @@ public sealed class CashierPage : PageViewModel
         NewPayment = new AsyncCommand(() => Shell.Run(() => { Reset(); return Task.CompletedTask; }));
         PrintReceipt = new AsyncCommand(() => Shell.Run(() => PrintAsync()));
         OpenReceipt = new AsyncCommand(() => Shell.Run(() => Shell.Open(() => new ReceiptDetailPage(Shell, receipt!.Id))));
+        ConfigureCalendar = new AsyncCommand(() => Shell.Run(() => Shell.Open(() => new SettingsPage(Shell, "annees"))));
+        ConfigurePromotion = new AsyncCommand(() => Shell.Run(() => Shell.Open(() => new SettingsPage(Shell, "promotions"))));
         Action("Journal des reçus", MaterialIconKind.ReceiptTextOutline, () => Shell.Open(() => new ReceiptsPage(Shell)));
         // Le total et le bouton Encaisser restent en bas de l'écran dès qu'un apprenant est choisi :
         // pas besoin de faire défiler tout le formulaire pour valider.
@@ -99,6 +101,9 @@ public sealed class CashierPage : PageViewModel
     public AsyncCommand NewPayment { get; }
     public AsyncCommand PrintReceipt { get; }
     public AsyncCommand OpenReceipt { get; }
+    public AsyncCommand ConfigureCalendar { get; }
+    public AsyncCommand ConfigurePromotion { get; }
+    public bool CanConfigureFees => Shell.Can(Perm.SettingsWrite);
 
     public ObservableCollection<PayerRow> Results { get; } = [];
     public ObservableCollection<AllocationRowVm> Allocations { get; } = [];
@@ -155,6 +160,9 @@ public sealed class CashierPage : PageViewModel
     /// <summary>Mois à payer : chaque mois se règle en entier, à son montant dû. Aucun montant n'est saisi.</summary>
     public ObservableCollection<MonthRowVm> Months { get; } = [];
     public bool HasMonths => Months.Count > 0;
+    public bool NoAvailableMonths => HasStudent && !HasMonths;
+    private string monthListStatus = string.Empty;
+    public string MonthListStatus { get => monthListStatus; private set => Set(ref monthListStatus, value); }
     public bool HasSelection => SelectedCount > 0;
     public int SelectedCount => Months.Count(m => m.IsSelected);
     public decimal SelectedTotal => Months.Where(m => m.IsSelected).Sum(m => m.Amount);
@@ -276,6 +284,7 @@ public sealed class CashierPage : PageViewModel
         previewing = true;
         enrollment = null;
         Months.Clear();
+        MonthListStatus = string.Empty;
         selectedMonth = null;
         Allocations.Clear();
         BalanceAfter = string.Empty;
@@ -293,6 +302,7 @@ public sealed class CashierPage : PageViewModel
         Raise(nameof(HasStudent));
         Raise(nameof(ShowPayment));
         Raise(nameof(HasMonths));
+        Raise(nameof(NoAvailableMonths));
         Raise(nameof(HasSelection));
         Raise(nameof(CanPay));
         if (row.EnrollmentId is not { } eid)
@@ -321,10 +331,26 @@ public sealed class CashierPage : PageViewModel
         Raise(nameof(SelectedMonth));
         // Les mois encaissés hors ligne sur cet appareil, pas encore envoyés, ne se proposent plus.
         var pending = Shell.Api.Offline?.PendingFeeItems(eid) ?? new HashSet<Guid>();
-        // Seule la scolarité se règle par mois : inscription et examen ne figurent pas dans cette liste.
-        foreach (var line in account.Lines.Where(l => l.Remaining > 0 && l.Kind == "Mensualite" && !pending.Contains(l.FeeItemId)))
+        // Le calendrier vient des mensualités de la promotion dans l'année scolaire configurée.
+        // Les frais d'inscription et d'examen ne sont pas proposés comme des mois.
+        var configuredMonths = account.Lines.Where(l => l.Kind == "Mensualite").ToArray();
+        foreach (var line in configuredMonths.Where(l => l.Remaining > 0 && !pending.Contains(l.FeeItemId)))
             Months.Add(new MonthRowVm(line.FeeItemId, line.Label, line.Remaining, Money(line.Remaining), line.IsOverdue, MonthsChanged));
+
+        MonthListStatus = configuredMonths.Length == 0
+            ? "Aucun mois n'est facturé pour cette promotion. Dans Configuration, vérifiez les mois de l'année et attribuez une mensualité à la promotion."
+            : configuredMonths.All(l => l.Remaining <= 0)
+                ? "Toutes les mensualités de cette année sont déjà réglées ou couvertes."
+                : Months.Count == 0
+                    ? "Les mensualités restant à payer sont déjà en attente de synchronisation sur cet appareil."
+                    : $"{Months.Count} mois disponible(s). Le mois le plus ancien en retard est proposé ; vous pouvez en choisir un autre.";
+
+        // Un choix immédiat évite le formulaire vide : l'utilisateur peut toujours changer de mois
+        // ou en cocher plusieurs. Les mois déjà soldés ne peuvent jamais être encaissés une deuxième fois.
+        if (Months.Count > 0)
+            SelectedMonth = Months.FirstOrDefault(m => m.Overdue) ?? Months[0];
         Raise(nameof(HasMonths));
+        Raise(nameof(NoAvailableMonths));
         Raise(nameof(Total));
         Raise(nameof(TotalCaption));
         Raise(nameof(HasSelection));
@@ -334,7 +360,8 @@ public sealed class CashierPage : PageViewModel
         Overdue = Money(account.Overdue);
         OverdueBrush = ThemeBrush.Get(account.Overdue > 0 ? "ToneRed" : "ToneGreen");
         Raise(nameof(OverdueBrush));
-        Hint = pending.Count > 0 ? $"{pending.Count} mois déjà encaissé(s) sur cet appareil, en attente d'envoi à l'ordinateur principal." : null;
+        Hint = Months.Count == 0 ? MonthListStatus :
+            pending.Count > 0 ? $"{pending.Count} mois déjà encaissé(s) sur cet appareil, en attente d'envoi à l'ordinateur principal." : null;
         Raise(nameof(HasStudent));
         Raise(nameof(ShowPayment));
         // Seul le mode de paiement reste à choisir : la référence, le visa et le téléphone se remplissent ici.
