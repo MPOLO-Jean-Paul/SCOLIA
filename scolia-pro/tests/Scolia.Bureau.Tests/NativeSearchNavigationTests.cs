@@ -25,6 +25,35 @@ public sealed class NativeSearchNavigationTests
         Assert.Equal("/apprenants/1f4dc0cd-4ca7-482b-ab1b-9ae0ea6aca67", destination);
     }
 
+    [Fact]
+    public void Touche_entree_execute_la_commande_exacte_du_resultat_selectionne()
+    {
+        using var api = new ScoliaClient(new Uri("http://localhost:5080/"));
+        var shell = new ShellViewModel(api, new Preferences());
+        var search = new SearchViewModel(shell);
+        var clicked = false;
+        search.Selected = new SearchHitRow(
+            new SearchHitDto("Fonctionnalité", "Nouvelle inscription", "Secrétariat", "/navigation/Nouvelle%20inscription"),
+            _ =>
+            {
+                clicked = true;
+                return Task.CompletedTask;
+            });
+
+        search.Open.Execute(null);
+
+        Assert.True(clicked);
+    }
+
+    [Fact]
+    public void L_accueil_ne_propose_pas_de_modules_non_autorises()
+    {
+        using var api = new ScoliaClient(new Uri("http://localhost:5080/"));
+        var shell = new ShellViewModel(api, new Preferences());
+        var home = new HomePage(shell);
+        Assert.DoesNotContain(home.Tools, item => item.Title == "Rapports et exports" || item.Title == "Tableau de bord");
+    }
+
     [Theory]
     [InlineData("police", "Texte et polices")]
     [InlineData("thème", "Thème et couleurs")]
