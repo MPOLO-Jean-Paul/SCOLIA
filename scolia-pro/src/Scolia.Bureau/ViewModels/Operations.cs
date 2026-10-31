@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Net.Http;
+using System.Windows.Input;
 using Avalonia.Media;
 using Avalonia.Threading;
 using Material.Icons;
@@ -223,18 +224,27 @@ public sealed class AuditPage : PageViewModel
 public sealed class SearchViewModel : Observable
 {
     private readonly ShellViewModel shell;
+    private readonly bool settingsOnly;
     private DispatcherTimer? timer;
     private string query = string.Empty;
     private SearchHitRow? selected;
-    private string message = "Recherche globale : apprenants, reçus, fonctionnalités et paramètres autorisés.";
+    private string message;
 
-    public SearchViewModel(ShellViewModel shell)
+    public SearchViewModel(ShellViewModel shell, bool settingsOnly = false)
     {
         this.shell = shell;
+        this.settingsOnly = settingsOnly;
+        message = settingsOnly
+            ? "Cherchez un réglage de l'application, sans consulter les données scolaires."
+            : "Recherche générale : apprenants, reçus, fonctionnalités et paramètres autorisés.";
         Open = new AsyncCommand(OpenSelectedAsync);
         Close = new RelayCommand(shell.CloseDialog);
     }
 
+    public bool SettingsOnly => settingsOnly;
+    public string Placeholder => settingsOnly ? "Rechercher un réglage : police, mot de passe, mois…" :
+        "Apprenant, matricule, reçu, fonctionnalité ou réglage";
+    public string SearchTitle => settingsOnly ? "Rechercher un réglage" : "Rechercher dans SCOLIA";
     public string Query { get => query; set { if (Set(ref query, value)) Schedule(); } }
     public string Message { get => message; private set => Set(ref message, value); }
     public ObservableCollection<SearchHitRow> Results { get; } = [];
@@ -256,7 +266,9 @@ public sealed class SearchViewModel : Observable
         Selected = null;
         if (Query.Trim().Length < 2)
         {
-            Message = "Saisissez au moins deux caractères pour trouver un apprenant, un reçu ou un réglage.";
+            Message = settingsOnly
+                ? "Saisissez au moins deux caractères pour retrouver un réglage."
+                : "Saisissez au moins deux caractères pour trouver un apprenant, un reçu ou un réglage.";
             return;
         }
         // Réglages : catalogue local filtré selon les permissions et jamais envoyé au serveur.
@@ -264,33 +276,23 @@ public sealed class SearchViewModel : Observable
         var terms = new PhoneSettingsSearchVm(shell) { Query = Query.Trim() };
         foreach (var setting in terms.Results)
         {
-            var destination = setting.Title switch
-            {
-                "Configuration" or "Thème et couleurs" => "apparence",
-                "Texte et polices" => "texte",
-                "Fenêtres et affichage" => "fenetres",
-                "Animations et fluidité" => "animations",
-                "Sons" => "sons",
-                "Sécurité du compte" => "compte/mot-de-passe",
-                "Poste et réseau" => "compte/poste",
-                "Établissement" => "etablissement",
-                "Années scolaires" or "Nouvelle année" => "annees",
-                "Sections" => "sections",
-                "Promotions et frais" or "Nouvelle promotion" => "promotions",
-                "Utilisateurs" => "utilisateurs",
-                _ => "navigation/" + Uri.EscapeDataString(setting.Title),
-            };
-            if (destination.Length == 0) continue;
-            var url = destination.StartsWith("compte/", StringComparison.Ordinal)
-                || destination.StartsWith("navigation/", StringComparison.Ordinal)
-                ? "/" + destination : "/parametres/" + destination;
-            var kind = destination.StartsWith("navigation/", StringComparison.Ordinal)
-                ? "Fonctionnalité" : "Paramètre";
-            Results.Add(new SearchHitRow(new SearchHitDto(kind, setting.Title, setting.Section, url)));
+            // Le résultat porte sa COMMANDE NATIVE et non une adresse recomposée
+            // d'après son libellé. Ainsi « promotions », « sécurité », « reçus »
+            // et toutes les autres fonctions ouvrent réellement leur destination.
+            var functionality = setting.Section is "Navigation" or "Données" or "Secrétariat"
+                or "Finances" or "Scolarité" or "Administration";
+            // Dans une page Paramètres, n'afficher que des réglages. La recherche
+            // de l'Accueil reste globale et propose aussi les dossiers autorisés.
+            if (settingsOnly && functionality && setting.Title != "Utilisateurs") continue;
+            var kind = functionality ? "Fonctionnalité" : "Paramètre";
+            Results.Add(new SearchHitRow(
+                new SearchHitDto(kind, setting.Title, setting.Section,
+                    "/native/" + Uri.EscapeDataString(setting.Title)),
+                setting.Open));
         }
 
         var dataUnavailable = false;
-        if (shell.Can(Perm.StudentsRead))
+        if (!settingsOnly && shell.Can(Perm.StudentsRead))
         {
             var current = Query.Trim();
             try
@@ -310,15 +312,28 @@ public sealed class SearchViewModel : Observable
         }
         Selected = Results.Count > 0 ? Results[0] : null;
         Message = dataUnavailable
-            ? "Serveur indisponible : paramètres et fonctionnalités locales seulement."
+            ? "Serveur indisponible : utilisez les paramètres et fonctionnalités locales."
             : Results.Count == 0 ? "Aucun résultat dans les catégories autorisées."
             : Format.Count(Results.Count, "résultat", "résultats");
     }
 
     private async Task OpenSelectedAsync()
     {
-        if (Selected is null) return;
-        var url = Selected.Hit.Url;
+        if (Selected is not { } selectedHit) return;
+        // Recherche interne : commande conservée sur le résultat sélectionné.
+        // Ne pas reconstruire la destination via un titre ni revenir à Accueil.
+        if (selectedHit.OpenAction is { } command)
+        {
+            if (!command.CanExecute(null))
+            {
+                Message = "Cette fonctionnalité n'est plus disponible pour ce compte.";
+                return;
+            }
+            shell.CloseDialog();
+            command.Execute(null);
+            return;
+        }
+        var url = selectedHit.Hit.Url;
         var target = PageFor(url);
         if (url is "/compte/poste" or "/compte/mot-de-passe")
         {
@@ -383,9 +398,15 @@ public sealed class SearchViewModel : Observable
 /// <summary>Résultat de recherche dans la liste, avec son libellé de type.</summary>
 public sealed class SearchHitRow
 {
-    public SearchHitRow(SearchHitDto hit) => Hit = hit;
+    public SearchHitRow(SearchHitDto hit, ICommand? openAction = null)
+    {
+        Hit = hit;
+        OpenAction = openAction;
+    }
 
     public SearchHitDto Hit { get; }
+    /// <summary>Action native directement associée au résultat de menu.</summary>
+    public ICommand? OpenAction { get; }
     public string Type => Hit.Type;
     public string Title => Hit.Title;
     public string Subtitle => Hit.Subtitle;
