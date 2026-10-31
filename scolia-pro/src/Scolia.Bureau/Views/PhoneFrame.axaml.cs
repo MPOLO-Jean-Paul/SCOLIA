@@ -20,7 +20,8 @@ public partial class PhoneFrame : UserControl
         {
             if (e.Source is Button button && button.Command is not null
                 && !button.Classes.Contains("phonecategory")
-                && !button.Classes.Contains("settingssearchcontrol"))
+                && !button.Classes.Contains("settingssearchcontrol")
+                && !button.Classes.Contains("settingssearchresult"))
                 CloseMenu();
         }, RoutingStrategies.Bubble);
         Tabs.AddHandler(Button.ClickEvent, (_, _) => CloseMenu(), RoutingStrategies.Bubble);
