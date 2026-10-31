@@ -19,14 +19,7 @@ public sealed class LoginViewModel : Observable
         this.api = api;
         Submit = new AsyncCommand(SubmitAsync);
         SignInWithBiometrics = new AsyncCommand(BiometricSignInAsync);
-        DisableBiometrics = new RelayCommand(() =>
-        {
-            Platform.DisableBiometricAccess?.Invoke();
-            BiometricAccess.Disable();
-            EnableBiometricsAfterLogin = false;
-            RefreshBiometrics();
-            Notice = "Connexion biométrique désactivée sur cet appareil.";
-        });
+        DisableBiometrics = new AsyncCommand(DisableBiometricsAsync);
     }
 
     public event Action<SessionDto>? LoggedIn;
@@ -61,7 +54,7 @@ public sealed class LoginViewModel : Observable
     public string Footer => $"SCOLIA Pro {typeof(LoginViewModel).Assembly.GetName().Version?.ToString(3) ?? "1.1.0"} · {AboutInfo.Publisher}";
     public AsyncCommand Submit { get; }
     public AsyncCommand SignInWithBiometrics { get; }
-    public RelayCommand DisableBiometrics { get; }
+    public AsyncCommand DisableBiometrics { get; }
 
     private bool enableBiometricsAfterLogin;
     public bool EnableBiometricsAfterLogin
@@ -83,6 +76,67 @@ public sealed class LoginViewModel : Observable
         Raise(nameof(HasBiometricAccount));
         Raise(nameof(CanOfferEnrollment));
         Raise(nameof(BiometricLabel));
+    }
+
+    /// <summary>
+    /// Révoquer la liaison biométrique exige une preuve fraîche : Android Keystore,
+    /// ou le mot de passe SCOLIA du compte exact, vérifié par le serveur.
+    /// Un simple accès à la page de connexion ne suffit jamais.
+    /// </summary>
+    private async Task DisableBiometricsAsync()
+    {
+        if (Busy || Locked) return;
+        Error = null;
+        Notice = null;
+        var account = BiometricAccess.ReadAccount(api.Server);
+        if (string.IsNullOrWhiteSpace(account)) { RefreshBiometrics(); return; }
+
+        Busy = true;
+        try
+        {
+            var authorized = false;
+            if (CanOfferBiometrics && Platform.VerifyBiometricAsync is { } verify)
+                authorized = await verify();
+
+            // Si l'empreinte a été annulée, supprimée ou est indisponible,
+            // le propriétaire peut saisir le mot de passe lié dans le formulaire.
+            if (!authorized && !string.IsNullOrWhiteSpace(Password))
+            {
+                if (!string.IsNullOrWhiteSpace(UserName)
+                    && !BiometricAccess.AccountMatches(UserName, account))
+                {
+                    Error = "Le mot de passe doit être celui du compte associé à l’empreinte.";
+                    return;
+                }
+                try
+                {
+                    var verified = await api.LoginAsync(account, Password);
+                    authorized = BiometricAccess.AccountMatches(verified.UserName, account);
+                }
+                catch (ApiException)
+                {
+                    Error = "Mot de passe incorrect. La biométrie reste activée.";
+                    return;
+                }
+            }
+            if (!authorized)
+            {
+                Error = "Désactivation refusée. Validez votre empreinte ou saisissez le mot de passe du compte associé, puis réessayez.";
+                return;
+            }
+
+            Platform.DisableBiometricAccess?.Invoke();
+            BiometricAccess.Disable();
+            EnableBiometricsAfterLogin = false;
+            Password = string.Empty;
+            RefreshBiometrics();
+            Notice = "Accès biométrique désactivé après vérification d’identité.";
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or IOException)
+        {
+            Error = "Impossible de vérifier le mot de passe avec le serveur. La biométrie reste activée.";
+        }
+        finally { Busy = false; }
     }
 
     private async Task BiometricSignInAsync()
