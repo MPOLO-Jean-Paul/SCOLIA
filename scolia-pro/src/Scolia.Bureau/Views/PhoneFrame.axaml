@@ -224,6 +224,7 @@
 
     <!-- Menu : tous les outils, le compte et la déconnexion -->
     <Border Grid.Row="0" Grid.RowSpan="2" Classes="phonemenu" Background="{DynamicResource BgBrush}" IsVisible="{Binding PhoneMenuOpen}">
+      <Border.RenderTransform><TranslateTransform /></Border.RenderTransform>
       <ScrollViewer x:Name="MenuScroll" HorizontalScrollBarVisibility="Disabled">
         <StackPanel x:Name="MenuPanel" Margin="12,12,12,20">
           <!-- Recherche Android : dans le même en-tête, sans nouvelle page ni dialogue au centre. -->
