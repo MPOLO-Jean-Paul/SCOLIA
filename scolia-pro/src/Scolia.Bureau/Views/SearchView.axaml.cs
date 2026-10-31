@@ -25,9 +25,12 @@ public partial class SearchView : UserControl
                     break;
             }
         };
-        ResultList.DoubleTapped += (_, _) =>
+        ResultList.KeyDown += (_, e) =>
         {
-            if (DataContext is SearchViewModel search && search.Open.CanExecute(null)) search.Open.Execute(null);
+            if (e.Key != Key.Enter || DataContext is not SearchViewModel search
+                || search.Selected?.Open is not { } open || !open.CanExecute(null)) return;
+            open.Execute(null);
+            e.Handled = true;
         };
     }
 }
