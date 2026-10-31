@@ -111,8 +111,9 @@ public partial class PhoneFrame : UserControl
             Shell.SettingsSearch.Reset();
             e.Handled = true;
         }
-        else if (e.Key == Key.Enter && Shell?.SettingsSearch.Results.FirstOrDefault() is { } result)
+        else if (e.Key == Key.Enter && Shell is { } shell && shell.SettingsSearch.Results.Count > 0)
         {
+            var result = shell.SettingsSearch.Results[0];
             if (result.Open.CanExecute(null)) result.Open.Execute(null);
             e.Handled = true;
         }
