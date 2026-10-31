@@ -646,8 +646,11 @@ public sealed class SettingsPage : PageViewModel
         {
             var status = Labels.Status(y.Status);
             var periods = y.Periods.OrderBy(p => p.Order).ToArray();
+            var days = periods.Select(p => p.DueDate.AddDays(-1).Day).Distinct().ToArray();
             var deadline = periods.Length == 0 ? "À configurer"
-                : $"Limite : le {periods[0].DueDate.AddDays(-1).Day} du mois suivant · retard dès le lendemain";
+                : days.Length == 1
+                    ? $"Limite : le {days[0]} du mois suivant · retard dès le lendemain"
+                    : "Limites variables : échéances déjà comptabilisées conservées";
             Years.Add(new YearRowVm(y.Id, y.Label, $"{Format.Date(y.StartDate)} → {Format.Date(y.EndDate)}", status, y.IsCurrent,
                 periods.Length == 0 ? "Aucun mois" : $"{periods[0].Name} {periods[0].CalendarYear} → {periods[^1].Name} {periods[^1].CalendarYear} ({periods.Length} mois)",
                 ThemeBrush.Get(y.Status == "Closed" ? "ToneNeutral" : "ToneGreen"), deadline, y));
@@ -841,7 +844,8 @@ public sealed class SettingsPage : PageViewModel
         var periods = chosen.Source.Periods.OrderBy(p => p.Order).ToArray();
         var first = periods.FirstOrDefault()?.Month ?? 9;
         var last = periods.LastOrDefault()?.Month ?? 6;
-        var cutoff = periods.Length == 0 ? 5 : periods[0].DueDate.AddDays(-1).Day;
+        // Le calendrier des mois à venir prime sur les échéances historiques déjà payées.
+        var cutoff = periods.Length == 0 ? 5 : periods[^1].DueDate.AddDays(-1).Day;
         var form = new FormViewModel($"Mois et échéance · {chosen.Label}",
             "Modifiez le début, la fin et le dernier jour sans retard. Les mois de paiement seront mis à jour dans toutes les promotions de cette année.", async f =>
         {
@@ -858,7 +862,7 @@ public sealed class SettingsPage : PageViewModel
         form.AddChoice("debut", "Premier mois de paiement", CalendarMonths, first.ToString(CultureInfo.InvariantCulture), required: true);
         form.AddChoice("fin", "Dernier mois de paiement", CalendarMonths, last.ToString(CultureInfo.InvariantCulture), required: true);
         form.AddChoice("limite", "Dernier jour sans retard (mois suivant)", PaymentDeadlineDays, cutoff.ToString(CultureInfo.InvariantCulture), required: true);
-        form.AddHeader("Protection des reçus", "Si des mensualités ont déjà été encaissées ou prises en charge, le calendrier ne pourra pas être modifié : les reçus restent inchangés.");
+        form.AddHeader("Protection des reçus", "Les mois déjà encaissés ou pris en charge ne peuvent pas être renommés ni supprimés ; leur échéance historique reste inchangée. Les mois non réglés et les nouveaux mois peuvent être configurés. Synchronisez les appareils avant de modifier.");
         if (await Shell.Ask(form)) await RefreshAsync();
     }
 
