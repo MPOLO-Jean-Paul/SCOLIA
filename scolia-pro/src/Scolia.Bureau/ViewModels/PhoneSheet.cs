@@ -129,29 +129,22 @@ public sealed class PhoneSettingsSearchVm : Observable
         void Add(string name, string section, MaterialIconKind icon, string tone, string keywords, ICommand command)
             => catalog.Add(new PhoneSettingsResultVm(name, section, icon, ThemeBrush.Get(tone), keywords, command));
 
-        // Fermer d'abord le menu et son champ de recherche, puis ouvrir la destination
-        // explicitement : ne jamais déléguer la destination à l'événement Click du menu.
-        // Cela évite le retour intempestif à Accueil causé par une navigation non achevée
-        // lorsque les résultats sont détruits pendant la fermeture du menu.
-        ICommand Page(string section) => new AsyncCommand(async () =>
-        {
-            shell.PhoneMenuOpen = false;
-            await shell.Run(() => shell.Open(() => new SettingsPage(shell, section)));
-        });
+        // Naviguer d'abord : Shell.Current ferme lui-même le menu après avoir choisi
+        // le nouvel écran. Effacer les résultats avant de naviguer pouvait retirer
+        // le bouton sélectionné pendant son propre clic et laisser l'accueil visible.
+        ICommand Page(string? section) => new AsyncCommand(() =>
+            shell.Run(() => shell.Open(() => new SettingsPage(shell, section))));
         ICommand Account(string key) => new RelayCommand(() =>
         {
-            shell.PhoneMenuOpen = false;
             shell.OpenBackstage();
+            shell.PhoneMenuOpen = false;
             shell.Backstage.Section = shell.Backstage.Items.First(i => i.Value == key);
         });
-        ICommand OpenPage(Func<PageViewModel> page) => new AsyncCommand(async () =>
-        {
-            shell.PhoneMenuOpen = false;
-            await shell.Run(() => shell.Open(page));
-        });
+        ICommand OpenPage(Func<PageViewModel> page) => new AsyncCommand(() =>
+            shell.Run(() => shell.Open(page)));
 
         Add("Configuration", "Réglages", MaterialIconKind.Cog, "TonePurple",
-            "personnalisation options preferences reglages parametres", Page("apparence"));
+            "personnalisation options preferences reglages parametres", Page(null));
         Add("Thème et couleurs", "Affichage", MaterialIconKind.Palette, "TonePurple",
             "clair sombre noir blanc nuit mode couleur accent fonds", Page("apparence"));
         Add("Texte et polices", "Affichage", MaterialIconKind.FormatFont, "ToneBlue",
@@ -204,8 +197,8 @@ public sealed class PhoneSettingsSearchVm : Observable
                     destination.Brush, destination.TabLabel,
                     new RelayCommand(() =>
                     {
-                        shell.PhoneMenuOpen = false;
-                        destination.Open.Execute(null);
+                        // Même commande que dans le volet natif, sans retour intermédiaire à Accueil.
+                        if (destination.Open.CanExecute(null)) destination.Open.Execute(null);
                     })));
             }
         }
