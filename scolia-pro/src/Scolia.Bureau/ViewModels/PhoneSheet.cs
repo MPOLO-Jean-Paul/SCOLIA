@@ -203,10 +203,30 @@ public sealed class PhoneSettingsSearchVm : Observable
             }
         }
 
-        Results = catalog.Where(item =>
+        // Rechercher AUSSI dans les commandes de métier du Menu (nouvelle inscription,
+        // nouveaux frais, export, actions métier). Ne pas se limiter aux pages de navigation.
+        // PhoneTools contient déjà les commandes autorisées pour le rôle connecté.
+        foreach (var group in shell.PhoneTools)
         {
-            return Matches(Query, item.Title + " " + item.Section + " " + item.Keywords);
-        }).ToArray();
+            foreach (var command in group.Commands)
+            {
+                var action = command;
+                catalog.Add(new PhoneSettingsResultVm(action.Label, group.Title, action.Icon,
+                    action.Brush, action.Label, new RelayCommand(() =>
+                    {
+                        if (!action.Command.CanExecute(null)) return;
+                        action.Command.Execute(null);
+                        // Une commande non navigante (formulaire/export) doit aussi fermer le menu.
+                        if (shell.PhoneMenuOpen) shell.PhoneMenuOpen = false;
+                    })));
+            }
+        }
+
+        // Les commandes et le volet peuvent nommer la même destination : montrer un seul résultat.
+        Results = catalog.Where(item => Matches(Query, item.Title + " " + item.Section + " " + item.Keywords))
+            .GroupBy(item => item.Title, StringComparer.OrdinalIgnoreCase)
+            .Select(group => group.First())
+            .ToArray();
     }
 }
 
