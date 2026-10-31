@@ -167,6 +167,23 @@ public sealed class ShellViewModel : Observable
     /// <summary>Nom court de l'établissement pour l'en-tête du volet.</summary>
     public string SchoolTitle => session?.SchoolShortName is { Length: > 0 } shortName ? shortName : session?.SchoolName ?? Login.SchoolName;
 
+    /// <summary>Libellé compact et lisible sur les petits écrans, sans modifier le nom officiel des documents.</summary>
+    public string SchoolHeaderTitle
+    {
+        get
+        {
+            var title = SchoolTitle.Trim();
+            const string prefix = "INSTITUT TECHNIQUE MÉDICAL";
+            if (title.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+            {
+                var rest = title[prefix.Length..].Trim();
+                return "ITM" + (rest.Length == 0 ? string.Empty : " " +
+                    System.Globalization.CultureInfo.GetCultureInfo("fr-FR").TextInfo.ToTitleCase(rest.ToLowerInvariant()));
+            }
+            return title;
+        }
+    }
+
     private int logoRequest;
     /// <summary>Recharge uniquement le logo de l'établissement actif, jamais un logo en cache d'un ancien serveur.</summary>
     public async Task RefreshLogoAsync()
@@ -687,6 +704,7 @@ public sealed class ShellViewModel : Observable
         {
             await OpeningStepAsync("Vérification du compte", 20, pace);
             Raise(nameof(SchoolTitle));
+            Raise(nameof(SchoolHeaderTitle));
             Raise(nameof(SchoolYearLine));
             await OpeningStepAsync($"Chargement de {s.SchoolName}", 45, pace);
             if (SchoolLogo is null) await RefreshLogoAsync();
