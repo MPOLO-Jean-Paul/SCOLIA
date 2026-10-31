@@ -15,7 +15,7 @@ public sealed record SchoolUpdate(string Name, string ShortName, string? Motto, 
 
 public sealed record SetupRequest(string SchoolName, string ShortName, string? Motto, string? City, string? Phone, string CurrencyCode, string CurrencySymbol,
     string YearLabel, int StartMonth, int MonthCount, string AdminUserName, string AdminDisplayName, string AdminPassword, bool LoadDemoData,
-    IReadOnlyList<SetupAccount>? Accounts = null, int LastOnTimeDay = 5);
+    IReadOnlyList<SetupAccount>? Accounts = null, int LastOnTimeDay = 5, int? EndMonth = null);
 
 /// <summary>Compte métier créé pendant l'installation. Rôle : Secretariat ou Comptabilite.</summary>
 public sealed record SetupAccount(string Role, string UserName, string DisplayName, string Password);
