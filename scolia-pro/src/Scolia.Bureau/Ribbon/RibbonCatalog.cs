@@ -291,6 +291,7 @@ public static class Perm
     public const string ExpensesWrite = "depenses.ecrire";
     public const string CashClose = "caisse.arreter";
     public const string ReportsRead = "rapports.lire";
+    public const string PilotageRead = "pilotage.lire";
     public const string SettingsWrite = "parametres.ecrire";
     public const string UsersManage = "utilisateurs.gerer";
     public const string AuditRead = "audit.lire";
