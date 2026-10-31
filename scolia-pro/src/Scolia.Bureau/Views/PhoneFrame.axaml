@@ -255,8 +255,10 @@
             </Border>
             <Button Grid.Column="2" Classes="phoneicon settingssearchcontrol" Command="{Binding SettingsSearch.Toggle}"
                     ToolTip.Tip="Rechercher dans les réglages" Width="44" Height="44">
-              <mi:MaterialIcon Kind="Magnify" IsVisible="{Binding !SettingsSearch.IsOpen}" Width="23" Height="23" />
-              <mi:MaterialIcon Kind="Close" IsVisible="{Binding SettingsSearch.IsOpen}" Width="23" Height="23" />
+              <Panel Width="24" Height="24">
+                <mi:MaterialIcon Kind="Magnify" IsVisible="{Binding !SettingsSearch.IsOpen}" Width="23" Height="23" />
+                <mi:MaterialIcon Kind="Close" IsVisible="{Binding SettingsSearch.IsOpen}" Width="23" Height="23" />
+              </Panel>
             </Button>
           </Grid>
 
