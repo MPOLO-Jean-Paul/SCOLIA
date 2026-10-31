@@ -164,12 +164,29 @@
           <Image Source="{Binding SchoolLogo}" IsVisible="{Binding HasSchoolLogo}" Width="30" Height="30" />
           <Image Source="{DynamicResource ScoliaMark}" IsVisible="{Binding !HasSchoolLogo}" Width="26" Height="26" />
         </Panel>
-        <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="4,0,0,0">
+        <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="4,0,0,0" IsVisible="{Binding !HeaderSearch.IsOpen}">
           <!-- Petit téléphone : un titre long passe sur deux lignes plutôt que d'être coupé -->
           <TextBlock Text="{Binding PhonePage.Heading}" FontSize="17" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" TextWrapping="Wrap" MaxLines="2" LineHeight="20" />
           <TextBlock Text="{Binding PhonePage.Subtitle}" Classes="muted" FontSize="{DynamicResource FsSmall}" TextTrimming="CharacterEllipsis" TextWrapping="Wrap" MaxLines="1"
                      IsVisible="{Binding PhonePage.Subtitle, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
         </StackPanel>
+        <!-- Filtre de la page active : inline dans l'entête, aucun mélange avec la recherche du Menu. -->
+        <Border Grid.Column="1" IsVisible="{Binding HeaderSearch.IsOpen}" CornerRadius="14"
+                Background="{DynamicResource GroupBrush}" BorderThickness="1"
+                BorderBrush="{DynamicResource LineBrush}" Padding="9,0" Margin="2,0,2,0">
+          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="4">
+            <TextBox x:Name="ContextSearchBox" Grid.Column="0"
+                     Text="{Binding HeaderSearch.Query, Mode=TwoWay}"
+                     PlaceholderText="{Binding HeaderSearch.Placeholder}"
+                     BorderThickness="0" Background="Transparent" FontSize="14"
+                     KeyDown="OnContextSearchKeyDown" VerticalAlignment="Center" />
+            <Button Grid.Column="1" Classes="phoneicon" Width="32" Height="36"
+                    Command="{Binding HeaderSearch.Clear}" IsVisible="{Binding HeaderSearch.HasQuery}"
+                    ToolTip.Tip="Effacer ce filtre">
+              <mi:MaterialIcon Kind="CloseCircleOutline" Width="18" Height="18"/>
+            </Button>
+          </Grid>
+        </Border>
         <!-- Présence : les autres postes connectés ; le point vert bat quand l'un d'eux enregistre quelque chose -->
         <Button Grid.Column="2" Classes="phoneicon" Command="{Binding NetworkCommand}" ToolTip.Tip="Réseau et activité">
           <Panel>
@@ -183,8 +200,12 @@
             </Panel>
           </Panel>
         </Button>
-        <Button Grid.Column="3" Classes="phoneicon" Command="{Binding SettingsSearch.Activate}" ToolTip.Tip="Rechercher un paramètre">
-          <mi:MaterialIcon Kind="Magnify" />
+        <Button Grid.Column="3" Classes="phoneicon" Command="{Binding HeaderSearch.Toggle}"
+                IsVisible="{Binding HeaderSearch.IsVisible}" ToolTip.Tip="Rechercher dans cette page">
+          <Panel Width="24" Height="24">
+            <mi:MaterialIcon Kind="Magnify" IsVisible="{Binding !HeaderSearch.IsOpen}" />
+            <mi:MaterialIcon Kind="Close" IsVisible="{Binding HeaderSearch.IsOpen}" />
+          </Panel>
         </Button>
         <Button Grid.Column="4" Classes="phoneicon" Click="OnActionsClick" IsVisible="{Binding PhonePage.HasHeaderActions}" ToolTip.Tip="Actions de la page">
           <mi:MaterialIcon Kind="DotsHorizontalCircleOutline" />
