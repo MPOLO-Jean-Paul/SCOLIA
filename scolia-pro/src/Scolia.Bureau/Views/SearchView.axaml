@@ -8,11 +8,11 @@
       <Grid ColumnDefinitions="*,Auto" Margin="18,14,14,0">
         <StackPanel Orientation="Horizontal" Spacing="8">
           <mi:MaterialIcon Kind="Magnify" Width="18" Height="18" Foreground="{DynamicResource AccentBrush}" />
-          <TextBlock Text="Rechercher dans SCOLIA" FontWeight="SemiBold" VerticalAlignment="Center" />
+          <TextBlock Text="{Binding SearchTitle}" FontWeight="SemiBold" VerticalAlignment="Center" />
         </StackPanel>
         <Button Grid.Column="1" Classes="closex" Command="{Binding Close}"><mi:MaterialIcon Kind="Close" /></Button>
       </Grid>
-      <TextBox x:Name="QueryBox" Text="{Binding Query}" PlaceholderText="Apprenant, matricule, numéro de reçu ou nom d'une page"
+      <TextBox x:Name="QueryBox" Text="{Binding Query}" PlaceholderText="{Binding Placeholder}"
                Margin="16,10,16,8" Height="40" FontSize="{DynamicResource FsHeading}" CornerRadius="10" />
       <ListBox ItemsSource="{Binding Results}" SelectedItem="{Binding Selected}" MaxHeight="380"
                Background="Transparent" BorderThickness="0" Margin="8,0" x:Name="ResultList">
