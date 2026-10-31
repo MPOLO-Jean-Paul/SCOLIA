@@ -1164,6 +1164,10 @@ public sealed class ShellViewModel : Observable
         // Toutes ces commandes sont déjà dans Paramètres de l'établissement ou
         // concernent exclusivement un ordinateur : ne pas les dupliquer sur mobile.
         "Mode sombre", "Taille du texte",
+        // Ces préférences sont déjà accessibles dans Configuration.
+        "Thème", "Couleurs", "Couleur d'accent", "Thème et couleurs",
+        "Police et taille du texte", "Texte et polices", "Police",
+        "Taille de police", "Sons",
         // La destination Rapports figure déjà dans la navigation du même menu.
         "Rapports et exports",
     };
