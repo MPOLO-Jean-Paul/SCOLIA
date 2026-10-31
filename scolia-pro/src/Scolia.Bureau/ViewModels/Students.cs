@@ -466,9 +466,9 @@ public static class StudentForms
 
         // La promotion d'abord, comme dans la version 79 : elle donne le début du matricule.
         form.AddChoice("promotion", "Promotion", promotions.Select(Choices.Promotion).ToList(), null, required: true);
-        // Pour une nouvelle inscription, ne pas affecter implicitement la première promotion.
-        // L'utilisateur doit choisir explicitement le niveau scolaire.
-        form.Find("promotion").Choice = null;
+        // Pour une nouvelle inscription, ne pas affecter implicitement la première promotion :
+        // l'utilisateur choisit le niveau scolaire. S'il n'en existe qu'une, il n'y a rien à choisir.
+        if (promotions.Count > 1) form.Find("promotion").Choice = null;
         AddIdentityFields(form, null);
         form.AddDay("inscription", "Date d'inscription", DateOnly.FromDateTime(DateTime.Today));
 

@@ -6,6 +6,7 @@ using Avalonia.Data;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Layout;
+using Avalonia.LogicalTree;
 using Avalonia.Media;
 using Avalonia.VisualTree;
 using Material.Icons;
@@ -148,7 +149,7 @@ public static class PhoneCards
         }
         foreach (var column in fields)
         {
-            var line = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,*"), Margin = new Thickness(0, 2, 0, 0) };
+            var line = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,*"), RowDefinitions = new RowDefinitions("Auto,Auto"), Margin = new Thickness(0, 2, 0, 0) };
             var label = new TextBlock { Text = HeaderText(column), TextWrapping = TextWrapping.Wrap, MaxWidth = 150, VerticalAlignment = VerticalAlignment.Top };
             label.Classes.Add("phonelabel");
             var value = Value(grid, column, emphasis: false);
@@ -159,6 +160,9 @@ public static class PhoneCards
             line.Children.Add(label);
             line.Children.Add(value);
             body.Children.Add(line);
+            // Texte simple ou modèle qui n'affiche qu'un texte ; un champ de saisie ou une liste reste tel quel.
+            var shown = value as TextBlock ?? (value is Panel or Border or ContentControl and not Button ? FirstText(value) : null);
+            if (shown is not null) FitLine(line, value, shown);
         }
 
         var layout = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,*,Auto") };
@@ -216,6 +220,33 @@ public static class PhoneCards
         card.DetachedFromVisualTree += (_, _) => grid.SelectionChanged -= Mark;
         card.DataContextChanged += (_, _) => Mark(null, null!);
         return card;
+    }
+
+    /// <summary>Texte affiché par une cellule de modèle, quand elle n'en contient qu'un.</summary>
+    private static TextBlock? FirstText(Control cell) =>
+        cell.GetLogicalDescendants().OfType<TextBlock>().Take(2).ToList() is [var only] ? only : null;
+
+    /// <summary>
+    /// Ligne « libellé : valeur » d'une carte : vide, elle disparaît (rien à lire) ; longue, la valeur passe sous
+    /// son libellé et se lit de gauche à droite au lieu d'être tassée à droite sur plusieurs lignes.
+    /// </summary>
+    private static void FitLine(Grid line, Control value, TextBlock text)
+    {
+        const int LongText = 28;
+        void Apply()
+        {
+            var content = text.Text ?? string.Empty;
+            line.IsVisible = !string.IsNullOrWhiteSpace(content);
+            var stacked = content.Length > LongText;
+            Grid.SetRow(value, stacked ? 1 : 0);
+            Grid.SetColumn(value, stacked ? 0 : 1);
+            Grid.SetColumnSpan(value, stacked ? 2 : 1);
+            value.HorizontalAlignment = stacked ? HorizontalAlignment.Left : HorizontalAlignment.Right;
+            value.Margin = stacked ? new Thickness(0, 2, 0, 0) : new Thickness(12, 0, 0, 0);
+            text.TextAlignment = stacked ? TextAlignment.Left : TextAlignment.Right;
+        }
+        text.PropertyChanged += (_, e) => { if (e.Property == TextBlock.TextProperty) Apply(); };
+        Apply();
     }
 
     private static Control Value(DataGrid grid, DataGridColumn column, bool emphasis)

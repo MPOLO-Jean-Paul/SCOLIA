@@ -231,8 +231,28 @@
 
     <!-- Page : elle défile en entier, jamais sur le côté -->
     <ScrollViewer x:Name="PhoneScroll" Grid.Row="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
-      <TransitioningContentControl x:Name="PhoneHost" Content="{Binding PhonePage}" Margin="12,12,12,20" />
+      <TransitioningContentControl x:Name="PhoneHost" Content="{Binding PhonePage}"
+                                   Classes.withsticky="{Binding PhonePage.Sticky.IsVisible, FallbackValue=False}" />
     </ScrollViewer>
+    <!-- Barre d'action fixe de la page : le total et le bouton qui valide, toujours visibles en bas -->
+    <Border Grid.Row="1" Classes="stickybar" VerticalAlignment="Bottom" IsVisible="{Binding PhonePage.Sticky.IsVisible, FallbackValue=False}">
+      <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+        <StackPanel VerticalAlignment="Center" Spacing="1">
+          <TextBlock Text="{Binding PhonePage.Sticky.Title}" Classes="muted" FontSize="{DynamicResource FsSmall}" />
+          <TextBlock Text="{Binding PhonePage.Sticky.Value}" FontSize="20" FontWeight="Bold" TextTrimming="CharacterEllipsis" />
+          <TextBlock Text="{Binding PhonePage.Sticky.Detail}" Classes="muted" FontSize="{DynamicResource FsSmall}" TextTrimming="CharacterEllipsis"
+                     IsVisible="{Binding PhonePage.Sticky.HasDetail, FallbackValue=False}" />
+        </StackPanel>
+        <Button x:Name="StickyAction" Grid.Column="1" Classes="primary stickyaction" Command="{Binding PhonePage.Sticky.Command}"
+                IsEnabled="{Binding PhonePage.Sticky.CanRun, FallbackValue=False}" VerticalAlignment="Center">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <mi:MaterialIcon Kind="CheckCircleOutline" Width="20" Height="20" />
+            <TextBlock Text="{Binding PhonePage.Sticky.Label}" FontWeight="SemiBold" VerticalAlignment="Center" />
+          </StackPanel>
+        </Button>
+      </Grid>
+    </Border>
+
     <ProgressBar Grid.Row="1" IsIndeterminate="True" IsVisible="{Binding PhonePage.Busy}" VerticalAlignment="Top" Height="2" MinHeight="2" />
     <!-- L'activité en arrière-plan est signalée par le point de présence dans l'en-tête. -->
     <!-- Des données ont changé ailleurs pendant une saisie : rien ne bouge tant qu'on ne le demande pas -->

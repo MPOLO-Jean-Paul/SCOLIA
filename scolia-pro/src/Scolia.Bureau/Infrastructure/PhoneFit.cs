@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Data;
 using Avalonia.Interactivity;
 using Avalonia.Layout;
+using Avalonia.LogicalTree;
 
 namespace Scolia.Bureau.Infrastructure;
 
@@ -70,6 +71,7 @@ public static class PhoneFit
 
     private static void OnBorderLoaded(Border border, RoutedEventArgs e)
     {
+        if (PhoneLayout.Active && border.Classes.Contains("band")) FoldFilters(border);
         if (!PhoneLayout.Active || !border.Classes.Contains("segmented") || border.Child is not StackPanel { Orientation: Orientation.Horizontal } row) return;
         border.SetValue(Layoutable.HorizontalAlignmentProperty, HorizontalAlignment.Stretch, BindingPriority.Animation);
         void Share()
@@ -89,5 +91,73 @@ public static class PhoneFit
             if (Math.Abs(args.NewSize.Width - args.PreviousSize.Width) > 0.5) Avalonia.Threading.Dispatcher.UIThread.Post(Share);
         };
         Avalonia.Threading.Dispatcher.UIThread.Post(Share, Avalonia.Threading.DispatcherPriority.Loaded);
+    }
+
+    /// <summary>Nombre de champs de filtre au-delà duquel le téléphone replie les filtres secondaires.</summary>
+    private const int FoldFrom = 3;
+
+    /// <summary>
+    /// Bandeau de filtres d'une liste, sur le téléphone : le champ principal (la recherche, s'il y en a une) reste
+    /// visible, les autres filtres se replient derrière « Filtres », qui dit combien sont actifs. La liste se voit
+    /// ainsi dès l'ouverture, sans faire défiler cinq ou six champs. Rien ne change sur l'ordinateur.
+    /// </summary>
+    private static void FoldFilters(Border band)
+    {
+        if (band.Child is not Panel panel || panel.Children.OfType<Button>().Any(b => b.Classes.Contains("filtertoggle"))) return;
+        var fields = panel.Children.OfType<StackPanel>().Where(f => f.Classes.Contains("field")).ToList();
+        if (fields.Count < FoldFrom) return;
+        var primary = fields.FirstOrDefault(f => f.Children.OfType<TextBox>().Any()) ?? fields[0];
+        var folded = panel.Children.OfType<Control>().Where(c => c != primary && c.IsVisible).ToList();
+        var toggle = new Button { HorizontalAlignment = HorizontalAlignment.Stretch, HorizontalContentAlignment = HorizontalAlignment.Left };
+        toggle.Classes.Add("filtertoggle");
+        var label = new TextBlock { VerticalAlignment = VerticalAlignment.Center };
+        var icon = new Material.Icons.Avalonia.MaterialIcon { Kind = Material.Icons.MaterialIconKind.FilterVariant, Width = 18, Height = 18, Margin = new Thickness(0, 0, 8, 0) };
+        var chevron = new Material.Icons.Avalonia.MaterialIcon { Kind = Material.Icons.MaterialIconKind.ChevronDown, Width = 18, Height = 18 };
+        var row = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,*,Auto") };
+        Grid.SetColumn(label, 1);
+        Grid.SetColumn(chevron, 2);
+        row.Children.Add(icon);
+        row.Children.Add(label);
+        row.Children.Add(chevron);
+        toggle.Content = row;
+        var open = false;
+        var inputs = folded.SelectMany(c => c.GetLogicalDescendants().Prepend(c)).OfType<Control>()
+            .Where(c => c is ComboBox or CalendarDatePicker or TextBox or CheckBox).ToList();
+        static object? Read(Control c) => c switch
+        {
+            ComboBox box => box.SelectedIndex,
+            CalendarDatePicker date => date.SelectedDate,
+            TextBox text => text.Text ?? string.Empty,
+            CheckBox check => check.IsChecked,
+            _ => null,
+        };
+        // Les valeurs par défaut de l'écran (date du jour, mois en cours…) ne sont pas des filtres choisis :
+        // on compte seulement ce que l'utilisateur a changé depuis qu'il a ouvert les filtres.
+        Dictionary<Control, object?>? baseline = null;
+        int Active() => baseline is null ? 0 : inputs.Count(c => !Equals(Read(c), baseline[c]));
+        void Show()
+        {
+            foreach (var control in folded) control.IsVisible = open;
+            var active = Active();
+            label.Text = open ? "Masquer les filtres" : active > 0 ? $"Filtres · {active} actif{(active > 1 ? "s" : string.Empty)}" : "Filtres";
+            chevron.Kind = open ? Material.Icons.MaterialIconKind.ChevronUp : Material.Icons.MaterialIconKind.ChevronDown;
+            toggle.Classes.Set("active", !open && active > 0);
+        }
+        toggle.Click += (_, _) =>
+        {
+            baseline ??= inputs.ToDictionary(c => c, Read);
+            open = !open;
+            Show();
+        };
+        // Un filtre changé ailleurs (actualisation, « Effacer les filtres ») met le compte à jour.
+        foreach (var control in folded.SelectMany(c => c.GetLogicalDescendants().Prepend(c)))
+            switch (control)
+            {
+                case ComboBox box: box.SelectionChanged += (_, _) => { if (!open) Show(); }; break;
+                case CalendarDatePicker date: date.SelectedDateChanged += (_, _) => { if (!open) Show(); }; break;
+                case CheckBox check: check.IsCheckedChanged += (_, _) => { if (!open) Show(); }; break;
+            }
+        panel.Children.Insert(panel.Children.IndexOf(primary) + 1, toggle);
+        Show();
     }
 }

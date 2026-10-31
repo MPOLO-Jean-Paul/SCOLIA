@@ -250,7 +250,8 @@ int VerifyPayments(LayoutServer fixture, bool mobile)
             Check("Caisse : champs contenus en largeur", cashier.GetVisualDescendants().OfType<Control>()
                 .Where(control => control is TextBox or ComboBox or CalendarDatePicker or CheckBox).Where(control => control.IsEffectivelyVisible)
                 .All(control => Bounds(control).Left >= -1 && Bounds(control).Right <= window.Bounds.Width + 1));
-            var pay = Named("PayButton");
+            // Le bouton Encaisser vit dans la barre fixe en bas de l'écran, toujours visible.
+            var pay = Named(mobile ? "StickyAction" : "DesktopStickyAction");
             Reveal(pay);
             Check("Caisse : bouton Encaisser entièrement accessible", Reachable(pay));
             Check("Caisse : cible tactile et validation disponible", pay.Bounds.Height >= 44 && pay.IsEnabled && page.CanPay);
@@ -1042,6 +1043,9 @@ void Smoke(ShellViewModel shell, ScoliaClient api, Window window, string passwor
     inscriptionForm.Find("nom").Text = "SMOKETEST";
     inscriptionForm.Find("prenom").Text = "Parcours";
     inscriptionForm.Find("postNom").Text = "Test";
+    // Promotion et sexe ne sont plus préremplis : on les choisit, comme un utilisateur.
+    inscriptionForm.Find("promotion").Choice ??= inscriptionForm.Find("promotion").Options[0];
+    inscriptionForm.Find("sexe").Choice = inscriptionForm.Find("sexe").Options[0];
     // Champs obligatoires comme dans la version 79 : naissance, lieu et contact du parent.
     inscriptionForm.Find("naissance").Day = new DateTime(2008, 3, 14);
     inscriptionForm.Find("lieu").Text = "Lubumbashi";
@@ -1056,7 +1060,8 @@ void Smoke(ShellViewModel shell, ScoliaClient api, Window window, string passwor
         WaitValidation(inscriptionForm, inscription);
     }
     var inscriptionDone = inscription.IsCompleted;
-    if (!inscriptionDone) Console.WriteLine($"  (inscription non terminée : {inscriptionForm.Error})");
+    if (!inscriptionDone) Console.WriteLine($"  (inscription non terminée : {inscriptionForm.Error} · "
+        + string.Join(", ", inscriptionForm.Fields.Where(f => f.HasError).Select(f => $"{f.Label} : {f.Error}")) + ")");
     Check("nouvelle inscription", Result(api.GetAsync<PagedResult<StudentListItem>>("api/apprenants?taille=1")).Total == studentsBefore + 1);
 
     var detailForModif = new StudentDetailPage(shell, first.Id);

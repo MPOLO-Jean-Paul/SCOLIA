@@ -172,9 +172,7 @@
               <DataGridTextColumn Header="Reste après" Binding="{Binding Remaining}" Width="Auto" MinWidth="140" />
             </DataGrid.Columns>
           </DataGrid>
-          <Button x:Name="PayButton" Classes="primary" Command="{Binding Pay}" IsEnabled="{Binding CanPay}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" MinHeight="48" Padding="12,10">
-            <TextBlock Text="Encaisser et imprimer le reçu" TextWrapping="Wrap" TextAlignment="Center" />
-          </Button>
+          <!-- Le bouton Encaisser est dans la barre fixe en bas de l'écran, toujours visible. -->
         </StackPanel>
       </Border>
 

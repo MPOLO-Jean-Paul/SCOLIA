@@ -33,8 +33,37 @@ public sealed record ActionVm(string Label, MaterialIconKind Icon, ICommand Comm
 }
 
 /// <summary>Écran de l'application. Chaque écran charge ses données et publie ses actions dans l'en-tête.</summary>
+/// <summary>
+/// Barre d'action fixe en bas de l'écran : le total et le bouton qui valide restent toujours visibles,
+/// même quand le formulaire est long (encaisser, lot, appel). Le cadre du téléphone et la fenêtre de
+/// l'ordinateur la dessinent hors de la zone qui défile.
+/// </summary>
+public sealed class StickyBarVm(string label, ICommand command) : Observable
+{
+    private bool visible;
+    private bool canRun;
+    private string title = string.Empty;
+    private string value = string.Empty;
+    private string detail = string.Empty;
+
+    public string Label { get; } = label;
+    public ICommand Command { get; } = command;
+    public bool IsVisible { get => visible; set => Set(ref visible, value); }
+    public bool CanRun { get => canRun; set => Set(ref canRun, value); }
+    /// <summary>Petit libellé au-dessus du montant, par exemple « Total à encaisser ».</summary>
+    public string Title { get => title; set => Set(ref title, value); }
+    /// <summary>Montant ou nombre principal, en gras.</summary>
+    public string Value { get => value; set => Set(ref this.value, value); }
+    /// <summary>Précision sous le montant, ou ce qu'il reste à faire pour pouvoir valider.</summary>
+    public string Detail { get => detail; set { if (Set(ref detail, value)) Raise(nameof(HasDetail)); } }
+    public bool HasDetail => detail.Length > 0;
+}
+
 public abstract class PageViewModel : Observable
 {
+    /// <summary>Barre d'action fixe de l'écran, ou rien.</summary>
+    public StickyBarVm? Sticky { get; protected init; }
+
     /// <summary>Boutons visibles au plus dans l'en-tête : au-delà, les actions passent dans le menu « Plus ».</summary>
     private const int MaxVisible = 3;
     /// <summary>Nombre de boutons fixé par la largeur de la fenêtre ; -1 tant qu'elle ne l'a pas mesuré.</summary>

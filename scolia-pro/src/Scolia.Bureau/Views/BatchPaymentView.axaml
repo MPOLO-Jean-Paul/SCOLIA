@@ -48,6 +48,6 @@
       </DataGrid.Columns>
     </DataGrid>
     <TextBlock Grid.Row="2" Text="{Binding SelectionSummary}" Classes="muted" Margin="0,8,0,0" />
-    <c:EmptyState Grid.Row="1" Icon="FormatListChecks" Title="Aucun apprenant à encaisser" Hint="Aucun apprenant à régler dans cette promotion : tous les dossiers sont à jour." IsVisible="{Binding Items.Count, Converter={StaticResource IsEmpty}}" />
+    <c:EmptyState Grid.Row="1" Icon="FormatListChecks" Title="Aucun apprenant à encaisser" Hint="Personne n'a de mois à régler pour ce choix. Pour encaisser plus tôt, choisissez « Prochain mois » ou « Tous les mois ouverts » dans « Mois à régler »." IsVisible="{Binding Items.Count, Converter={StaticResource IsEmpty}}" />
   </Grid>
 </UserControl>

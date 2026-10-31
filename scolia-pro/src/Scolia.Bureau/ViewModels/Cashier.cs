@@ -59,6 +59,35 @@ public sealed class CashierPage : PageViewModel
         PrintReceipt = new AsyncCommand(() => Shell.Run(() => PrintAsync()));
         OpenReceipt = new AsyncCommand(() => Shell.Run(() => Shell.Open(() => new ReceiptDetailPage(Shell, receipt!.Id))));
         Action("Journal des reçus", MaterialIconKind.ReceiptTextOutline, () => Shell.Open(() => new ReceiptsPage(Shell)));
+        // Le total et le bouton Encaisser restent en bas de l'écran dès qu'un apprenant est choisi :
+        // pas besoin de faire défiler tout le formulaire pour valider.
+        Sticky = new StickyBarVm("Encaisser", Pay) { Title = "Total à encaisser" };
+        PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName is nameof(CanPay) or nameof(Total) or nameof(TotalCaption) or nameof(HasStudent)
+                or nameof(HasReceipt) or nameof(HasSelection) or nameof(IsLocked)) UpdateSticky();
+        };
+    }
+
+    /// <summary>Mois choisis en une ligne courte : leurs noms jusqu'à deux, sinon le premier et le dernier.</summary>
+    private string SelectedMonthsSummary()
+    {
+        var chosen = Months.Where(m => m.IsSelected).Select(m => m.Label).ToList();
+        return chosen.Count <= 2
+            ? $"{Format.Count(chosen.Count, "mois", "mois")} · {string.Join(", ", chosen)}"
+            : $"{chosen.Count} mois · de {chosen[0]} à {chosen[^1]}";
+    }
+
+    /// <summary>Met la barre du bas au diapason du formulaire : total, mois choisis, ou ce qui manque encore.</summary>
+    private void UpdateSticky()
+    {
+        if (Sticky is not { } bar) return;
+        bar.IsVisible = HasStudent && !HasReceipt;
+        bar.Value = HasSelection ? Money(SelectedTotal) : "—";
+        bar.Detail = IsLocked ? "Encaissement en cours sur un autre poste"
+            : !HasSelection ? "Choisissez au moins un mois"
+            : SelectedMonthsSummary();
+        bar.CanRun = CanPay;
     }
 
     public override string Title => "Encaisser";

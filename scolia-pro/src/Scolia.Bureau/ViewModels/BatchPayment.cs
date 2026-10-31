@@ -110,6 +110,8 @@ public sealed class BatchPaymentPage : PageViewModel
         {
             Action("Vérifier le lot", MaterialIconKind.ClipboardCheckOutline, async () => { await CheckAsync(); });
             Action("Enregistrer le lot", MaterialIconKind.CashCheck, PayAsync, primary: true);
+            // Le total coché et « Enregistrer le lot » restent en bas de l'écran pendant qu'on coche.
+            Sticky = new StickyBarVm("Enregistrer le lot", new AsyncCommand(() => Shell.Run(PayAsync))) { Title = "Total du lot" };
         }
         Action("Tout cocher", MaterialIconKind.CheckboxMultipleMarkedOutline, () => { SetAll(true); return Task.CompletedTask; });
         Action("Tout décocher", MaterialIconKind.CheckboxMultipleBlankOutline, () => { SetAll(false); return Task.CompletedTask; });
@@ -165,18 +167,39 @@ public sealed class BatchPaymentPage : PageViewModel
         var candidates = await Shell.Api.GetAsync<List<BatchCandidateDto>>("api/paiements/lot/candidats" + ScoliaClient.Query(
             ("promotionId", Promotion?.Value), ("q", Search.Trim())));
 
-        Items.Clear();
+        allRows.Clear();
         foreach (var candidate in candidates)
         {
             var row = new BatchRowVm(candidate, Money(candidate.Balance), Money(candidate.Overdue), SelectionChanged);
             row.ApplyMonths(PlanFor(candidate), Money, LateOnly);
             if (results.TryGetValue(candidate.EnrollmentId, out var previous)) row.ShowResult(previous);
-            Items.Add(row);
+            allRows.Add(row);
         }
-        subtitle = $"{Format.Count(candidates.Count, "apprenant à régler", "apprenants à régler")} · reste total {Money(candidates.Sum(c => c.Balance))}";
-        Raise(nameof(Subtitle));
+        ShowRows();
         SelectionChanged();
     }
+
+    /// <summary>Tous les apprenants chargés ; la liste n'affiche que ceux qui ont à régler dans le mode choisi.</summary>
+    private readonly List<BatchRowVm> allRows = [];
+
+    /// <summary>
+    /// Seuls les apprenants qui ont des mois à régler dans le mode choisi apparaissent : la liste ne commence
+    /// pas par des lignes « À jour » sans rien à encaisser. Une ligne déjà traitée reste pour montrer son résultat.
+    /// </summary>
+    private void ShowRows()
+    {
+        Items.Clear();
+        foreach (var row in allRows.Where(r => r.FeeItemIds.Count > 0 || r.Result.Length > 0)) Items.Add(row);
+        var due = Items.Where(r => r.FeeItemIds.Count > 0).ToList();
+        subtitle = due.Count == 0
+            ? (LateOnly ? "Aucun apprenant n'a de mois en retard" : "Aucun mois à régler")
+            : $"{Format.Count(due.Count, "apprenant à régler", "apprenants à régler")} · {Money(due.Sum(r => r.Total))}";
+        Raise(nameof(Subtitle));
+        Raise(nameof(IsEmpty));
+    }
+
+    /// <summary>Rien à régler dans ce mode : la page le dit au lieu de montrer une liste vide.</summary>
+    public bool IsEmpty => Items.Count == 0;
 
     private bool LateOnly => Mode?.Value == "late";
 
@@ -189,7 +212,13 @@ public sealed class BatchPaymentPage : PageViewModel
 
     private void ApplyMode()
     {
-        foreach (var row in Items) row.ApplyMonths(PlanFor(row.Candidate), Money, LateOnly);
+        foreach (var row in allRows)
+        {
+            row.ApplyMonths(PlanFor(row.Candidate), Money, LateOnly);
+            // Un apprenant qui n'a plus rien à régler dans le nouveau mode n'est plus coché.
+            if (row.FeeItemIds.Count == 0) row.Selected = false;
+        }
+        ShowRows();
         SelectionChanged();
     }
 
@@ -207,6 +236,13 @@ public sealed class BatchPaymentPage : PageViewModel
         var chosen = Items.Where(i => i.Selected).ToList();
         SelectionSummary = chosen.Count == 0 ? "Aucun apprenant coché"
             : $"{Format.Count(chosen.Count, "apprenant coché", "apprenants cochés")} · total {Money(chosen.Sum(i => i.Total))}";
+        if (Sticky is { } bar)
+        {
+            bar.IsVisible = chosen.Count > 0;
+            bar.Value = Money(chosen.Sum(i => i.Total));
+            bar.Detail = Format.Count(chosen.Count, "apprenant coché", "apprenants cochés");
+            bar.CanRun = chosen.Count > 0;
+        }
     }
 
     private List<BatchRowVm> Chosen() => Items.Where(i => i.Selected).ToList();
