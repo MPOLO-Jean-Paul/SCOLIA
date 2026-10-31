@@ -1,0 +1,129 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:infra="using:Scolia.Bureau.Infrastructure"
+             xmlns:mi="using:Material.Icons.Avalonia"
+             x:Class="Scolia.Bureau.Views.PromoterDashboardView">
+  <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+    <StackPanel Spacing="16" Margin="4,6,4,18">
+      <Border Classes="card" Padding="16">
+        <StackPanel Spacing="6">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <mi:MaterialIcon Kind="ViewDashboardOutline" Width="23" Height="23"
+                             Foreground="{DynamicResource AccentBrush}" />
+            <TextBlock Text="Pilotage de l'établissement" FontWeight="SemiBold" FontSize="18"
+                       TextWrapping="Wrap" />
+          </StackPanel>
+          <TextBlock Text="{Binding AsOf}" Classes="muted" TextWrapping="Wrap"/>
+          <TextBlock Text="Consultation uniquement · chiffres consolidés, sans dossiers ni informations nominatives."
+                     Classes="muted" TextWrapping="Wrap"/>
+        </StackPanel>
+      </Border>
+
+      <ItemsControl ItemsSource="{Binding Kpis}">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate>
+            <UniformGrid Rows="1" infra:Adaptive.MinItemWidth="165"/>
+          </ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate>
+            <Border Classes="card" Padding="16" Margin="0,0,10,10">
+              <StackPanel Spacing="6">
+                <TextBlock Text="{Binding Label}" Classes="muted" TextWrapping="Wrap"/>
+                <TextBlock Text="{Binding Value}" FontSize="22" FontWeight="SemiBold"
+                           TextWrapping="Wrap"/>
+                <TextBlock Text="{Binding Detail}" Classes="muted" FontSize="{DynamicResource FsSmall}"
+                           TextWrapping="Wrap"/>
+              </StackPanel>
+            </Border>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+
+      <TextBlock Text="Situation par promotion" Classes="heading" FontWeight="SemiBold"/>
+      <ItemsControl ItemsSource="{Binding Promotions}">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate>
+            <Border Classes="card" Padding="14" Margin="0,0,0,12">
+              <StackPanel Spacing="12">
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                  <StackPanel Spacing="3">
+                    <TextBlock Text="{Binding Code}" FontSize="18" FontWeight="SemiBold"/>
+                    <TextBlock Text="{Binding Name}" Classes="muted" TextWrapping="Wrap"/>
+                  </StackPanel>
+                  <Border Grid.Column="1" Background="{DynamicResource AccentSoftBrush}"
+                          CornerRadius="14" Padding="10,6" VerticalAlignment="Top">
+                    <StackPanel Spacing="1">
+                      <TextBlock Text="{Binding Students}" FontWeight="Bold"
+                                 Foreground="{DynamicResource AccentBrush}" HorizontalAlignment="Center"/>
+                      <TextBlock Text="inscrits" Classes="muted" FontSize="{DynamicResource FsSmall}"/>
+                    </StackPanel>
+                  </Border>
+                </Grid>
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="10" RowDefinitions="Auto,Auto,Auto" RowSpacing="8">
+                  <StackPanel>
+                    <TextBlock Text="Dossiers débiteurs" Classes="muted" FontSize="{DynamicResource FsSmall}"/>
+                    <TextBlock Text="{Binding Debtors}" FontWeight="SemiBold"/>
+                  </StackPanel>
+                  <StackPanel Grid.Column="1">
+                    <TextBlock Text="En retard" Classes="muted" FontSize="{DynamicResource FsSmall}"/>
+                    <TextBlock Text="{Binding LateDebtors}" FontWeight="SemiBold"/>
+                  </StackPanel>
+                  <StackPanel Grid.Row="1">
+                    <TextBlock Text="Encaissé aujourd'hui" Classes="muted" FontSize="{DynamicResource FsSmall}"/>
+                    <TextBlock Text="{Binding CollectedToday}" FontWeight="SemiBold" TextWrapping="Wrap"/>
+                  </StackPanel>
+                  <StackPanel Grid.Row="1" Grid.Column="1">
+                    <TextBlock Text="Encaissé ce mois" Classes="muted" FontSize="{DynamicResource FsSmall}"/>
+                    <TextBlock Text="{Binding CollectedMonth}" FontWeight="SemiBold" TextWrapping="Wrap"/>
+                  </StackPanel>
+                  <StackPanel Grid.Row="2">
+                    <TextBlock Text="Solde restant" Classes="muted" FontSize="{DynamicResource FsSmall}"/>
+                    <TextBlock Text="{Binding Outstanding}" FontWeight="SemiBold" TextWrapping="Wrap"/>
+                  </StackPanel>
+                  <StackPanel Grid.Row="2" Grid.Column="1">
+                    <TextBlock Text="Déjà exigible" Classes="muted" FontSize="{DynamicResource FsSmall}"/>
+                    <TextBlock Text="{Binding Overdue}" FontWeight="SemiBold" TextWrapping="Wrap"/>
+                  </StackPanel>
+                </Grid>
+                <TextBlock Text="Mois de l'année scolaire" FontWeight="SemiBold" Margin="0,4,0,0"/>
+                <TextBlock Text="Encaissements : date du reçu · Solde : mois des frais"
+                           Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap"/>
+                <ItemsControl ItemsSource="{Binding Periods}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                      <Border Padding="8,10" Background="{DynamicResource GroupBrush}"
+                              CornerRadius="12" Margin="0,0,0,6">
+                        <StackPanel Spacing="5">
+                          <TextBlock Text="{Binding Period}" FontWeight="SemiBold" TextWrapping="Wrap"/>
+                          <Grid ColumnDefinitions="*,*" ColumnSpacing="8" RowDefinitions="Auto,Auto" RowSpacing="5">
+                            <StackPanel>
+                              <TextBlock Text="Recettes du mois" Classes="muted" FontSize="{DynamicResource FsSmall}"/>
+                              <TextBlock Text="{Binding Collected}" TextWrapping="Wrap"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="1">
+                              <TextBlock Text="Montant dû" Classes="muted" FontSize="{DynamicResource FsSmall}"/>
+                              <TextBlock Text="{Binding Due}" TextWrapping="Wrap"/>
+                            </StackPanel>
+                            <StackPanel Grid.Row="1">
+                              <TextBlock Text="Réglé sur le mois" Classes="muted" FontSize="{DynamicResource FsSmall}"/>
+                              <TextBlock Text="{Binding Paid}" TextWrapping="Wrap"/>
+                            </StackPanel>
+                            <StackPanel Grid.Row="1" Grid.Column="1">
+                              <TextBlock Text="Reste du mois" Classes="muted" FontSize="{DynamicResource FsSmall}"/>
+                              <TextBlock Text="{Binding Remaining}" FontWeight="SemiBold" TextWrapping="Wrap"/>
+                            </StackPanel>
+                          </Grid>
+                        </StackPanel>
+                      </Border>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </StackPanel>
+            </Border>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>
