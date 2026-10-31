@@ -29,7 +29,6 @@ public sealed class NativeSearchNavigationTests
     [InlineData("police", "Texte et polices")]
     [InlineData("thème", "Thème et couleurs")]
     [InlineData("sons", "Sons")]
-    [InlineData("empreinte", "Sécurité du compte")]
     [InlineData("animation", "Animations et fluidité")]
     public void Depuis_le_menu_le_resultat_mene_a_la_rubrique_precise(string query, string expected)
     {
@@ -61,6 +60,22 @@ public sealed class NativeSearchNavigationTests
 
         Assert.IsType<SettingsPage>(shell.Current);
         Assert.True(((SettingsPage)shell.Current!).MobileCategoriesVisible);
+    }
+
+    [Fact]
+    public void Recherche_empreinte_ouvre_directement_la_securite_du_compte()
+    {
+        using var api = new ScoliaClient(new Uri("http://localhost:5080/"));
+        var shell = new ShellViewModel(api, new Preferences()) { Phone = true };
+        shell.PhoneMenuOpen = true;
+        shell.SettingsSearch.Query = "empreinte";
+        var target = Assert.Single(shell.SettingsSearch.Results, item => item.Title == "Sécurité du compte");
+
+        target.Open.Execute(null);
+
+        Assert.False(shell.PhoneMenuOpen);
+        Assert.True(shell.BackstageOpen);
+        Assert.True(shell.Backstage.IsPassword);
     }
 
     [Fact]
