@@ -1,0 +1,226 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:infra="using:Scolia.Bureau.Infrastructure"
+             xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:c="using:Scolia.Bureau.Controls"
+             x:Class="Scolia.Bureau.Views.HomeView">
+  <UserControl.Styles>
+    <Style Selector="TextBlock.greeting"><Setter Property="FontSize" Value="{DynamicResource FsDisplay}" /></Style>
+    <Style Selector="TextBlock.kpivalue"><Setter Property="FontSize" Value="{DynamicResource FsTitle}" /></Style>
+    <!-- Pastille du bandeau : fond blanc translucide, texte blanc -->
+    <Style Selector="Border.herochip">
+      <Setter Property="Background" Value="#26FFFFFF" />
+      <Setter Property="CornerRadius" Value="14" />
+      <Setter Property="Padding" Value="11,5" />
+    </Style>
+    <Style Selector="Border.herochip TextBlock"><Setter Property="Foreground" Value="White" /></Style>
+    <!-- Action du bandeau : bouton blanc, texte de la couleur d'accent -->
+    <Style Selector="Button.heroaction">
+      <Setter Property="Background" Value="White" />
+      <Setter Property="Foreground" Value="#0B4FC4" />
+      <Setter Property="CornerRadius" Value="12" />
+      <Setter Property="Padding" Value="16,0" />
+      <Setter Property="Height" Value="40" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="BorderThickness" Value="0" />
+    </Style>
+    <Style Selector="Button.heroaction:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="#E8F0FF" />
+    </Style>
+    <!-- Pastille cliquable : le bouton ne dessine rien, la pastille s'éclaircit au survol -->
+    <Style Selector="Button.bare">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Padding" Value="0" />
+    </Style>
+    <Style Selector="Button.bare:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
+    <Style Selector="Button.bare:pointerover Border.herochip"><Setter Property="Background" Value="#40FFFFFF" /></Style>
+    <!-- Outil : tuile compacte, l'icône à gauche, le nom et une ligne de description -->
+    <Style Selector="Button.tooltile">
+      <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="14" />
+      <Setter Property="Padding" Value="14,12" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    </Style>
+    <Style Selector="Button.tooltile:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+    </Style>
+  </UserControl.Styles>
+  <ScrollViewer>
+    <StackPanel Spacing="16" Margin="0,0,6,12">
+
+      <!-- Bienvenue : bandeau aux couleurs de SCOLIA, la date, la salutation, l'état du poste et deux actions -->
+      <Border CornerRadius="18" ClipToBounds="True">
+        <Border.Background>
+          <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+            <GradientStop Offset="0" Color="#1565E0" />
+            <GradientStop Offset="0.6" Color="#0B4FC4" />
+            <GradientStop Offset="1" Color="#0E2A5C" />
+          </LinearGradientBrush>
+        </Border.Background>
+        <Grid ColumnDefinitions="*,Auto" Margin="24,20" infra:Adaptive.StackBelow="640">
+          <StackPanel Spacing="3" VerticalAlignment="Center">
+            <TextBlock Text="{Binding DateLine}" Foreground="#CFE0FF" />
+            <TextBlock Text="{Binding Greeting}" Classes="greeting" Foreground="White" FontWeight="Bold" TextWrapping="Wrap" />
+            <TextBlock Text="{Binding AccountContextLine}" Foreground="#DCE8FF" TextTrimming="CharacterEllipsis" TextWrapping="Wrap" />
+            <WrapPanel Margin="0,10,0,0">
+              <Border Classes="herochip" IsVisible="{Binding HasCashLine}" Margin="0,0,8,6">
+                <StackPanel Orientation="Horizontal" Spacing="7">
+                  <Ellipse Width="10" Height="10" Fill="{Binding CashBrush}" Stroke="White" StrokeThickness="1.5" VerticalAlignment="Center" />
+                  <TextBlock Text="{Binding CashLine}" FontWeight="SemiBold" />
+                </StackPanel>
+              </Border>
+              <Button Classes="bare" Command="{Binding Network}" Margin="0,0,8,6" ToolTip.Tip="Réseau et activité">
+                <Border Classes="herochip">
+                  <StackPanel Orientation="Horizontal" Spacing="7">
+                    <Ellipse Width="10" Height="10" Fill="{Binding Sync.StatusBrush}" Stroke="White" StrokeThickness="1.5" VerticalAlignment="Center" />
+                    <TextBlock Text="{Binding Sync.StatusText}" FontWeight="SemiBold" />
+                    <TextBlock Text="{Binding Sync.PeersText}" Opacity="0.85" />
+                  </StackPanel>
+                </Border>
+              </Button>
+            </WrapPanel>
+          </StackPanel>
+          <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="16" VerticalAlignment="Center" Margin="16,0,0,0">
+            <ItemsControl ItemsSource="{Binding QuickActions}" VerticalAlignment="Center">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="10" /></ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <Button Classes="heroaction" Command="{Binding Open}">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                      <mi:MaterialIcon Kind="{Binding Icon}" Width="18" Height="18" Foreground="#0B4FC4" />
+                      <TextBlock Text="{Binding Title}" VerticalAlignment="Center" />
+                    </StackPanel>
+                  </Button>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <Border Width="78" Height="78" CornerRadius="39" Background="White" IsVisible="{Binding HasSchoolLogo}" BoxShadow="0 6 18 0 #33000000">
+              <Image Source="{Binding SchoolLogo}" Width="62" Height="62" />
+            </Border>
+          </StackPanel>
+        </Grid>
+      </Border>
+
+      <!-- Quatre indicateurs : un clic ouvre la page qui détaille le chiffre -->
+      <ItemsControl ItemsSource="{Binding Kpis}" IsVisible="{Binding HasKpis}" Margin="0,0,-12,0">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate><UniformGrid Columns="4" infra:Adaptive.MinItemWidth="190" /></ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate>
+            <Button Classes="cardbutton" Command="{Binding Open}" Margin="0,0,12,0" ToolTip.Tip="Ouvrir le détail">
+              <Border Classes="toolcard" MinHeight="0" Padding="16,14">
+                <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto">
+                  <TextBlock Text="{Binding Label}" Foreground="{DynamicResource Text2Brush}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                  <Border Grid.Column="1" Grid.RowSpan="2" Classes="appicon medium" Background="{Binding Brush}" VerticalAlignment="Top" Margin="10,0,0,0"><mi:MaterialIcon Kind="{Binding Icon}" /></Border>
+                  <TextBlock Grid.Row="1" Text="{Binding Value}" Classes="kpivalue" FontWeight="Bold" TextTrimming="CharacterEllipsis" Margin="0,4,0,0" />
+                  <TextBlock Grid.Row="2" Grid.ColumnSpan="2" Text="{Binding Hint}" Classes="muted" FontSize="{DynamicResource FsSmall}" TextTrimming="CharacterEllipsis" Margin="0,4,0,0" />
+                </Grid>
+              </Border>
+            </Button>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+
+      <!-- Outils : tuiles compactes, un clic ouvre l'outil -->
+      <StackPanel Spacing="8">
+        <Grid ColumnDefinitions="*,Auto">
+          <TextBlock Text="Outils" Classes="heading" VerticalAlignment="Center" />
+          <Button Grid.Column="1" Classes="link" Content="Afficher tous les outils" Command="{Binding ShowAllTools}" />
+        </Grid>
+        <ItemsControl ItemsSource="{Binding Tools}" Margin="0,0,-12,0">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate><UniformGrid Columns="4" infra:Adaptive.MinItemWidth="190" /></ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate>
+              <Button Classes="tooltile" Command="{Binding Open}" Margin="0,0,12,0" ToolTip.Tip="{Binding Description}">
+                <Grid ColumnDefinitions="Auto,*,Auto">
+                  <Border Classes="appicon medium" Background="{Binding Brush}" VerticalAlignment="Center" Margin="0,0,12,0"><mi:MaterialIcon Kind="{Binding Icon}" /></Border>
+                  <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="1">
+                    <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                    <TextBlock Text="{Binding Description}" Classes="muted" FontSize="{DynamicResource FsSmall}" TextTrimming="CharacterEllipsis" />
+                  </StackPanel>
+                  <mi:MaterialIcon Grid.Column="2" Kind="ChevronRight" Width="16" Height="16" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" Margin="6,0,0,0" />
+                </Grid>
+              </Button>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </StackPanel>
+
+      <!-- Derniers reçus, et à côté ce qui reste à faire aujourd'hui -->
+      <Grid ColumnDefinitions="2*,16,*" infra:Adaptive.StackBelow="760">
+        <StackPanel Spacing="8">
+          <Grid ColumnDefinitions="*,Auto">
+            <TextBlock Text="Derniers reçus" Classes="heading" VerticalAlignment="Center" />
+            <TextBlock Grid.Column="1" Text="{Binding TodayLine}" Classes="muted" VerticalAlignment="Center" IsVisible="{Binding HasTodayLine}" />
+          </Grid>
+          <Border Classes="card" Padding="0">
+            <StackPanel>
+              <Grid ColumnDefinitions="2*,3*,1.3*,1.4*" Margin="16,10,16,8">
+                <TextBlock Text="Reçu" Classes="colhead" />
+                <TextBlock Grid.Column="1" Text="Apprenant" Classes="colhead" />
+                <TextBlock Grid.Column="2" Text="Date" Classes="colhead" />
+                <TextBlock Grid.Column="3" Text="Montant" Classes="colhead" TextAlignment="Right" />
+              </Grid>
+              <Border Height="1" Background="{DynamicResource LineBrush}" />
+              <ItemsControl ItemsSource="{Binding Receipts}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate>
+                    <Button Classes="row" Command="{Binding Open}" ToolTip.Tip="Ouvrir le reçu">
+                      <Grid ColumnDefinitions="2*,3*,1.3*,1.4*">
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                          <mi:MaterialIcon Kind="ReceiptTextOutline" Width="18" Height="18" Foreground="{DynamicResource TonePurple}" />
+                          <TextBlock Text="{Binding Number}" VerticalAlignment="Center" />
+                        </StackPanel>
+                        <TextBlock Grid.Column="1" Text="{Binding Student}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                        <TextBlock Grid.Column="2" Text="{Binding Date}" Classes="muted" VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="3" Text="{Binding Amount}" FontWeight="SemiBold" VerticalAlignment="Center" TextAlignment="Right" />
+                      </Grid>
+                    </Button>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+              <c:EmptyState Icon="ReceiptTextOutline" Title="Aucun reçu récent" Hint="Les derniers encaissements apparaîtront ici." IsVisible="{Binding !Receipts.Count}" Margin="24" />
+            </StackPanel>
+          </Border>
+        </StackPanel>
+
+        <StackPanel Grid.Column="2" Spacing="8">
+          <TextBlock Text="{Binding TasksTitle}" Classes="heading" />
+          <Border Classes="card" Padding="6">
+            <StackPanel>
+              <ItemsControl ItemsSource="{Binding Tasks}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate>
+                    <Button Classes="listrow" Command="{Binding Open}" Padding="10,8">
+                      <Grid ColumnDefinitions="Auto,*,Auto">
+                        <Border Classes="appicon" Background="{Binding Brush}" VerticalAlignment="Center" Margin="0,0,10,0"><mi:MaterialIcon Kind="{Binding Icon}" /></Border>
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                          <TextBlock Classes="wrap2" Text="{Binding Text}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                          <TextBlock Text="{Binding Detail}" Classes="wrap2 muted" TextTrimming="CharacterEllipsis" />
+                        </StackPanel>
+                        <mi:MaterialIcon Grid.Column="2" Kind="ChevronRight" Width="16" Height="16" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" />
+                      </Grid>
+                    </Button>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+              <c:EmptyState Icon="CheckCircleOutline" Title="Rien en attente" Hint="La caisse, l'appel et les rendez-vous du jour sont à jour." IsVisible="{Binding !HasTasks}" Margin="16" />
+            </StackPanel>
+          </Border>
+        </StackPanel>
+      </Grid>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

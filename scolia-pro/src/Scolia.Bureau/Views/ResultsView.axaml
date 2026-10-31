@@ -1,0 +1,40 @@
+<UserControl xmlns:infra="using:Scolia.Bureau.Infrastructure"
+             xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Scolia.Bureau.Controls"
+             x:Class="Scolia.Bureau.Views.ResultsView">
+  <Grid RowDefinitions="Auto,*">
+    <Border Grid.Row="0" Classes="band" Margin="0,0,0,10">
+      <WrapPanel>
+        <StackPanel Classes="field">
+          <TextBlock Text="Promotion" Classes="fieldlabel" />
+          <ComboBox Width="260" ItemsSource="{Binding Promotions}" SelectedItem="{Binding Promotion}" />
+        </StackPanel>
+        <StackPanel Classes="field">
+          <TextBlock Text="Période" Classes="fieldlabel" />
+          <ComboBox Width="170" ItemsSource="{Binding Terms}" SelectedItem="{Binding Term}" />
+        </StackPanel>
+      </WrapPanel>
+    </Border>
+    <DataGrid Grid.Row="1" ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}" AutoGenerateColumns="False" IsReadOnly="True">
+      <DataGrid.Columns>
+        <DataGridTextColumn Header="Rang" Binding="{Binding Rank}" Width="Auto" MinWidth="84" />
+        <DataGridTextColumn Header="Matricule" Binding="{Binding Matricule}" Width="Auto" MinWidth="122" />
+        <DataGridTextColumn Header="Nom complet" Binding="{Binding Name}" Width="2*" MinWidth="260" />
+        <DataGridTextColumn Header="Moyenne" Binding="{Binding Average}" Width="Auto" MinWidth="107" />
+        <DataGridTemplateColumn Header="Décision" Width="Auto" MinWidth="140">
+          <DataGridTemplateColumn.CellTemplate>
+            <DataTemplate>
+              <StackPanel Classes="status">
+                <Ellipse Width="8" Height="8" Fill="{Binding DecisionBrush}" VerticalAlignment="Center" />
+                <TextBlock Text="{Binding Decision}" VerticalAlignment="Center" />
+              </StackPanel>
+            </DataTemplate>
+          </DataGridTemplateColumn.CellTemplate>
+        </DataGridTemplateColumn>
+        <DataGridTextColumn infra:GridPriority.Level="2" Header="Moyennes par cours" Binding="{Binding Courses}" Width="3*" MinWidth="480" />
+      </DataGrid.Columns>
+    </DataGrid>
+    <c:EmptyState Grid.Row="1" Icon="CertificateOutline" Title="Aucun résultat à afficher" Hint="Aucun résultat pour cette promotion : vérifiez que les notes sont saisies." IsVisible="{Binding Items.Count, Converter={StaticResource IsEmpty}}" />
+  </Grid>
+</UserControl>

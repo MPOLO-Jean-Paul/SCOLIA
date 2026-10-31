@@ -1,0 +1,83 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Application Android de SCOLIA : la même interface que Bureau, sur le téléphone. Elle se connecte au serveur
+       SCOLIA de l'établissement sur le même Wi-Fi, ou l'est elle-même quand l'établissement n'a pas d'ordinateur :
+       le serveur tourne alors dans l'application. Les vues et le code de Bureau sont liés, pas copiés :
+       une correction faite pour l'ordinateur vaut aussi pour le téléphone. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0-android</TargetFramework>
+    <SupportedOSPlatformVersion>24</SupportedOSPlatformVersion>
+    <OutputType>Exe</OutputType>
+    <!-- Même nom d'assemblage que Bureau : les ressources avares://SCOLIA/... restent valables. -->
+    <AssemblyName>SCOLIA</AssemblyName>
+    <RootNamespace>Scolia.Mobile</RootNamespace>
+    <ApplicationId>com.jpservices.scolia</ApplicationId>
+    <ApplicationTitle>SCOLIA Phone</ApplicationTitle>
+    <ApplicationVersion>123</ApplicationVersion>
+    <ApplicationDisplayVersion>1.2.3</ApplicationDisplayVersion>
+    <AndroidPackageFormat>apk</AndroidPackageFormat>
+    <RuntimeIdentifiers>android-arm64;android-arm</RuntimeIdentifiers>
+    <AvaloniaUseCompiledBindingsByDefault>false</AvaloniaUseCompiledBindingsByDefault>
+    <!-- Le code partagé est vérifié strictement par la compilation de Bureau ; ici, les avertissements propres à Android ne bloquent pas. -->
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <WarningsAsErrors>$(WarningsAsErrors);NU1608</WarningsAsErrors>
+    <AnalysisLevel>none</AnalysisLevel>
+    <AndroidEnableMultiDex>false</AndroidEnableMultiDex>
+    <EmbedAssembliesIntoApk>true</EmbedAssembliesIntoApk>
+  </PropertyGroup>
+
+  <!-- APK installable directement, signé avec la clé fournie à la compilation (variables SCOLIA_KEYSTORE_*). -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <AndroidKeyStore Condition="'$(SCOLIA_KEYSTORE)' != ''">true</AndroidKeyStore>
+    <AndroidSigningKeyStore Condition="'$(SCOLIA_KEYSTORE)' != ''">$(SCOLIA_KEYSTORE)</AndroidSigningKeyStore>
+    <AndroidSigningStorePass Condition="'$(SCOLIA_KEYSTORE)' != ''">env:SCOLIA_KEYSTORE_PASS</AndroidSigningStorePass>
+    <AndroidSigningKeyAlias Condition="'$(SCOLIA_KEYSTORE)' != ''">scolia</AndroidSigningKeyAlias>
+    <AndroidSigningKeyPass Condition="'$(SCOLIA_KEYSTORE)' != ''">env:SCOLIA_KEYSTORE_PASS</AndroidSigningKeyPass>
+    <RunAOTCompilation>false</RunAOTCompilation>
+    <PublishTrimmed>false</PublishTrimmed>
+  </PropertyGroup>
+
+  <!-- Le serveur de l'établissement, pour le téléphone qui en tient lieu. Le protocole de découverte vient avec lui.
+       Il est en .NET pur : il se compile sans l'architecture du téléphone (android-arm64, android-arm). -->
+  <ItemGroup>
+    <ProjectReference Include="../Scolia.Api/Scolia.Api.csproj" SetTargetFramework="TargetFramework=net10.0"
+                      GlobalPropertiesToRemove="RuntimeIdentifier;SelfContained" />
+  </ItemGroup>
+  <Import Project="AspNetCoreLocal.props" />
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" />
+    <PackageReference Include="Avalonia.Android" />
+    <PackageReference Include="Xamarin.AndroidX.Work.Runtime" />
+    <PackageReference Include="Xamarin.AndroidX.Core.Core.Ktx" />
+    <PackageReference Include="Xamarin.AndroidX.Lifecycle.ViewModelSavedState" />
+    <PackageReference Include="Xamarin.AndroidX.Lifecycle.Process" />
+    <PackageReference Include="Avalonia.Themes.Fluent" />
+    <PackageReference Include="Avalonia.Controls.DataGrid" />
+    <PackageReference Include="Material.Icons.Avalonia" />
+  </ItemGroup>
+
+  <!-- Les espaces de noms d'Android ne sont pas ajoutés d'office : ils entreraient en conflit avec ceux d'Avalonia
+       dans le code partagé (Application, Button…). Les fichiers propres à Android les déclarent eux-mêmes. -->
+  <ItemGroup>
+    <Using Remove="Android.App" />
+    <Using Remove="Android.Widget" />
+    <Using Remove="Android.OS.Bundle" />
+    <Using Remove="Android.Content" />
+    <Using Remove="Android.Views" />
+    <Using Remove="Android.Runtime" />
+  </ItemGroup>
+
+  <!-- Code et vues de Bureau, aux mêmes chemins que dans Bureau. -->
+  <ItemGroup>
+    <Compile Include="../Scolia.Bureau/**/*.cs" Exclude="../Scolia.Bureau/bin/**;../Scolia.Bureau/obj/**;../Scolia.Bureau/Program.cs" Link="Bureau/%(RecursiveDir)%(Filename)%(Extension)" />
+    <AvaloniaXaml Include="../Scolia.Bureau/**/*.axaml" Exclude="../Scolia.Bureau/bin/**;../Scolia.Bureau/obj/**" Link="%(RecursiveDir)%(Filename)%(Extension)" />
+    <AvaloniaResource Include="../Scolia.Bureau/Assets/**" Link="Assets/%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Data.Sqlite" />
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" />
+    <Compile Include="../Scolia.Transport/*.cs" Link="Transport/%(Filename)%(Extension)" />
+  </ItemGroup>
+</Project>

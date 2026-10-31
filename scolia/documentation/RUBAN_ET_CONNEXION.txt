@@ -1,0 +1,4 @@
+Ruban : commandes sans cadre permanent, libellé puis icône, séparateurs fins entre groupes, aide au survol, focus clavier et état désactivé. Les groupes passent à la ligne quand la fenêtre est réduite.
+Connexion : correction de la lecture des tableaux JSON du journal sous Windows PowerShell 5.1, qui pouvait produire un tableau imbriqué et rendre Row introuvable. Les données Excel restent inchangées.
+Remplacer uniquement programme, conserver data, fermer puis relancer APPLICATION.vbs. Cette mise à jour visuelle et de connexion ne nécessite pas de réinstaller les corrections du classeur.
+Validation locale : syntaxe et intégrité du paquet. Excel et Windows ne sont pas disponibles dans cet environnement ; la connexion réelle reste à valider sur le poste Windows.

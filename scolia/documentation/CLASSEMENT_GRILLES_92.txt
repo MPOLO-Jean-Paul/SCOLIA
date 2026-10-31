@@ -1,0 +1,28 @@
+ÉDITION 92 — CLASSEMENT ALPHABÉTIQUE DES GRILLES
+
+Les grilles de promotion sont classées automatiquement par nom, postnom puis
+prénom, avec comparaison française et normalisation des accents et espaces.
+Le classement s'applique à la préparation d'une grille, au remplissage d'une
+copie avec les cotes et à l'enregistrement d'une copie délibérée.
+
+La ligne complète est déplacée : identité, cotes, formules relatives et décision.
+La numérotation est refaite dans l'ordre ; les lignes sans nom sont en bas.
+Les calculs et décisions sont recalculés après classement. Les contrôles de
+cotes après enregistrement recherchent le nom de l'apprenant à sa nouvelle ligne.
+Le journal d'import indique les nouvelles lignes de la copie enregistrée.
+Les grilles originales restent intactes.
+
+UTILISATION
+Pour une grille existante, ouvrir Scolarité > Vérifier la délibération et
+Enregistrer une copie délibérée. La copie sera classée automatiquement.
+L'import de nouvelles cotes effectue le même classement dans sa copie.
+
+VÉRIFICATIONS
+Tests : accents, espaces, cotes à zéro, conservation de toutes les colonnes,
+formules relatives, lignes vides, numérotation, classement stable, identité
+séparée en nom/postnom/prénom et refus des noms complets répétés.
+Parcours réel de la fonction d'enregistrement testé avec Excel simulé : copie
+publiée, cotes conservées après tri et refus d'une cote altérée à la sauvegarde.
+Tests antérieurs de correspondance, de décisions et de blocage des commandes
+passés. Syntaxe des 77 scripts et compilation C# 5 contrôlées.
+L'exécution avec Excel réel reste à confirmer sur le poste Windows.

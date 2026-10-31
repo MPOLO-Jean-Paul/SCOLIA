@@ -1,0 +1,88 @@
+﻿SCOLIA — REVUE ET CORRECTIONS FONCTIONNELLES — 13 OCTOBRE 2026
+
+CORRECTIONS
+1. Commandes et raccourcis
+   La commande de nettoyage reçoit Ctrl+Shift+Delete et continue de demander une confirmation.
+   Un raccourci vide ne provoque plus d’erreur lors de la création de l’aide ou du ruban.
+   Les imports de paiements/apprenants, l’historique des imports et les brouillons reçus
+   disposent d’aides, d’icônes et de raccourcis. Les permissions du ruban correspondent aux actions.
+   L’aide de suppression d’un apprenant précise que son historique de paiement est conservé.
+2. Recherche globale
+   Les paiements de caisse sont trouvés par matricule, catégorie de frais et date,
+   en plus des noms et références. Les reçus annulés et corrigés sont explicitement signalés.
+   Le cache se renouvelle lors du remplacement du journal, même si le nombre de reçus
+   et leur dernier identifiant restent identiques ; il distingue les comptes connectés.
+3. Suivi des présences
+   Les anciennes feuilles de deux promotions restent comptées comme une seule journée.
+   Une promotion contradictoire reste à vérifier et ne déclenche pas d’absence automatique
+   tant que sa période n’est pas établie. Le résultat ne dépend plus de l’ordre des feuilles.
+   Les statuts et signatures déjà enregistrés sont conservés.
+4. Suppression d’un apprenant
+   L’appel au classeur propriétaire utilise le matricule réel du dossier sélectionné,
+   même lorsque l’identifiant fourni contient des espaces ou des minuscules.
+   Motif obligatoire, contrôle des droits et conservation des paiements maintenus.
+
+VÉRIFICATIONS
+42 suites isolées passent : comptes, connexion, recherche, rubans, caisse synchronisée,
+reçus communs, corrections/annulations, imports réseau, réception, personnel, présences,
+salaires, retards, cotes/délibération, réinscription, sauvegardes et nettoyage.
+Certains tests compilant les composants .NET Framework ont été exécutés avec une adaptation
+au moteur Linux ; les chaînes de dates JSON restent des chaînes comme sous PowerShell 5.1.
+Les calculs et services utilisent le code du logiciel, avec données de test et faux serveurs
+Excel lorsque nécessaire. Aucune donnée scolaire réelle n’a été utilisée pour ces tests.
+Les fenêtres Windows, les appels Excel COM et le parcours complet sur votre poste ne sont
+pas certifiés par cette revue ; les essais qui nécessitent ces composants restent à faire.
+178 scripts PowerShell analysés sans erreur ; intégrité du ZIP, empreintes et manifeste vérifiés.
+Les fichiers data/configuration/ressources/sources de l’archive d’origine sont inchangés.
+
+MISE À JOUR
+Fermer SCOLIA et Excel. Extraire le ZIP complet dans un nouveau dossier.
+Lancer 00_Demarrage/METTRE_A_JOUR_V57.cmd et choisir APPLICATION.vbs de votre installation.
+Relancer le lanceur habituel. Les améliorations précédentes sont toutes incluses.
+Le numéro V57 reste celui du mécanisme de mise à jour compatible avec votre installation.
+Les vérifications isolées sous Windows sont accessibles par :
+00_Demarrage/VERIFIER_FONCTIONNALITES.cmd.
+
+SUITES PASSÉES
+TestsAuditCotes
+TestsCatalogueCommandes
+TestsCentreRechercheV55
+TestsComptes
+TestsCotes
+TestsDeliberation
+TestsDoublonsIdentite
+TestsExploitation
+TestsFinancePasserelle
+TestsFinanceSynchronisee
+TestsFonctionnalitesV55
+TestsHistorique
+TestsImportsReseau
+TestsNettoyageSauvegardes
+TestsPersonnelV56
+TestsPresenceFinJourV57
+TestsPresencesV55
+TestsPrisesEnCharge
+TestsReinscriptionV55
+TestsRetardsCalendrier
+TestsRetardsPaieV57
+TestsRevueFonctionnelle
+TestsRevueFonctionnelleV58
+TestsSalairesV56
+TestsSauvegardesPersonnalisees
+TestsSauvegardesV55
+TestsSauvegardesV56
+TestsScoliaCatalogue
+TestsScoliaConfiguration
+TestsScoliaFiabilite
+TestsScoliaImport
+TestsScoliaLedger
+TestsScoliaOptimisations
+TestsScoliaReception
+TestsServicesPersonnelV56
+TestsSeuilHoraireV57
+TestsSoldesEtRechercheV52
+TestsSourcesPaieV57
+TestsSuiviApprenantsV56
+TestsSuppressionApprenant
+TestsTransactionApprenant
+TestsValidationConnexion

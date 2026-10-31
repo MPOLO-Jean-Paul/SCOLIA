@@ -1,0 +1,30 @@
+﻿FORMULAIRE D’INSCRIPTION MODERNE
++
++Trois sections : Identité, Contacts et résidence, Scolarité et situation.
++Cartes blanches, titres bleus numérotés, champs espacés et boutons fixes
++au bas de la fenêtre. Les champs passent sur une ou deux colonnes selon
++la largeur et l’échelle Windows. Les sections restent accessibles par défilement.
++
++Les astérisques signalent les principaux champs requis. Avant d’enregistrer,
++les champs manquants et contacts saisis avec une longueur incorrecte sont
++signalés avec une icône à côté du champ. Le premier champ en erreur reçoit
++le focus. Les contrôles complets du classeur restent exécutés avant l’écriture.
++
++Pour une nouvelle inscription, choisir une promotion sélectionne son année
++scolaire si elle correspond à une seule promotion active. L’année reste
++visible. Les valeurs existantes en modification et les règles protégeant
++l’historique des paiements restent conservées. L’adresse est toujours présente.
++Le matricule automatique et la sauvegarde suivent les règles précédentes.
++
++Le mot de passe de l’application accepte maintenant de 4 à 128 caractères,
++avec confirmation identique. Cette règle s’applique à l’activation, au changement
++et à la récupération. Les mots de passe existants restent utilisables.
++
++Extraire cette édition dans un nouveau dossier, puis lancer APPLICATION.vbs.
++Utiliser le classeur corrigé ACTUEL ; aucune modification VBA supplémentaire
++n’est nécessaire pour cette mise à jour d’interface.
++
++Contrôles statiques et scénarios indépendants de géométrie effectués.
++Rendu réel, erreurs près des champs et saisie à différentes échelles à vérifier
++sous Windows. Cet environnement ne dispose pas de Windows Forms ni d’Excel.
++

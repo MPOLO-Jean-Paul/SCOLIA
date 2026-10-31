@@ -1,0 +1,16 @@
+﻿ADAPTATION AUX FENÊTRES ET AUX ÉCRANS
+
+Les préférences se présentent sur deux colonnes dans une fenêtre large et sur une colonne dans une fenêtre étroite. Les champs restent dans leur zone ; les descriptions et cases à cocher gagnent de la hauteur quand leur texte revient à la ligne.
+
+L’en-tête place les actions sous le nom de l’institut lorsque la largeur manque. Les onglets et groupes de commandes se réorganisent. Les commandes gardent leur nom et leur icône. Les zones de navigation et de contenu restent accessibles par défilement lorsque la fenêtre devient très petite.
+
+Les filtres, actions, formulaires, dossiers, indicateurs, graphiques et exports adaptent leur largeur et leur disposition. Les libellés et descriptions sont mesurés pour fixer la hauteur utile. Les graphiques étroits placent leurs libellés et montants au-dessus des barres.
+
+La taille du texte diminue progressivement selon la largeur de la fenêtre, avec un plancher de 9 points pour rester lisible. Elle retrouve sa taille lorsque la fenêtre s’agrandit. La taille choisie dans Préférences reste la référence mémorisée : le redimensionnement ne réécrit pas ce choix. Les lignes des listes suivent la police et l’espacement choisis. Les tableaux contenant de nombreuses colonnes conservent un défilement horizontal pour ne pas écraser les données.
+
+Le centre d’aide place son sommaire au-dessus des instructions dans une fenêtre étroite. Le formulaire de connexion mesure ses textes et réorganise ses actions. Les thèmes et formes rectangulaires sont conservés.
+
+VÉRIFICATION
+Programme\TestsResponsiveContenus.ps1 : scénario WinForms isolé, sans Excel ni écriture de préférences. Il contrôle les largeurs 360, 480, 680, 960 et 1280, les textes longs, les dispositions, la taille de référence, les redimensionnements successifs et la connexion. Programme\TestsNavigation.ps1 contrôle les onglets. Exécuter ces tests avec Windows PowerShell 5.1 en mode STA, puis vérifier l’application à 100 %, 150 % et 200 % de mise à l’échelle Windows.
+
+Les syntaxes PowerShell/C#, les dépendances et les invariants de calcul sont contrôlés lors de la préparation. Les fenêtres et Excel ne peuvent pas être exécutés dans l’environnement Linux utilisé pour préparer ce ZIP : le rendu Windows reste à valider. Les classeurs sources sont inchangés.

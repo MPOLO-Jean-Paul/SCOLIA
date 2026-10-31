@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Client natif de SCOLIA : interface Avalonia, sans navigateur ni moteur web.
+       Il dialogue avec le serveur SCOLIA du poste (ou du réseau local). -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <AssemblyName>SCOLIA</AssemblyName>
+    <RootNamespace>Scolia.Bureau</RootNamespace>
+    <Nullable>enable</Nullable>
+    <AvaloniaUseCompiledBindingsByDefault>false</AvaloniaUseCompiledBindingsByDefault>
+    <ApplicationIcon>../Scolia.Api/scolia.ico</ApplicationIcon>
+    <BuiltInComInteropSupport>false</BuiltInComInteropSupport>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" />
+    <PackageReference Include="Avalonia.Desktop" />
+    <PackageReference Include="Avalonia.Themes.Fluent" />
+    <PackageReference Include="Avalonia.Controls.DataGrid" />
+    <PackageReference Include="Material.Icons.Avalonia" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AvaloniaResource Include="Assets/**" />
+  </ItemGroup>
+
+  <!-- Protocole de découverte réseau, partagé avec le serveur : un seul fichier, aucune divergence possible. -->
+  <ItemGroup>
+    <Compile Include="../Scolia.Infrastructure/Network/LanProtocol.cs" Link="Infrastructure/LanProtocol.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Data.Sqlite" />
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" />
+    <Compile Include="../Scolia.Transport/*.cs" Link="Transport/%(Filename)%(Extension)" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,1 @@
+SCOLIA V6 : a chaque nouvelle commande VBA, le verrou residuel de la precedente operation est libere avant la preparation. La sauvegarde et la confirmation existantes sont conservees. Sauvegardez les donnees et fermez Excel avant installation. Controlez que le module installe est bien ModuleFiabilite V6. Test Windows non effectue.

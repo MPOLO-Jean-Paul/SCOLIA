@@ -1,0 +1,9 @@
+﻿CORRECTION DES IMAGES DU TABLEAU DE BORD
+
+Cause : les PictureBox du tableau de bord réutilisaient les bitmaps du cache des onglets. L’application des thèmes libérait ce cache, puis Windows tentait de lire la taille des images déjà libérées.
+
+Correction : chaque image du tableau de bord appartient à son PictureBox. Le remplacement d’une image est effectué avant la libération de l’ancienne. Les icônes du tableau de bord suivent le thème et sont libérées à la fermeture de leurs contrôles. Les onglets détachent aussi leurs anciennes images avant de libérer leur cache.
+
+Fermer l’application puis remplacer programme et documentation. Conserver data et sources. Aucune préparation supplémentaire du classeur n’est nécessaire pour ce correctif graphique.
+
+Contrôles locaux : syntaxe et ordre des remplacements, intégrité du ZIP et conservation des classeurs. Le test TestsImagesTheme.ps1 est prévu pour Windows ; il n’a pas été exécuté dans cet environnement.

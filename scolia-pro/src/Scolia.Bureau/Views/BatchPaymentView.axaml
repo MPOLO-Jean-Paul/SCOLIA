@@ -1,0 +1,53 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Scolia.Bureau.Controls"
+             xmlns:infra="using:Scolia.Bureau.Infrastructure"
+             x:Class="Scolia.Bureau.Views.BatchPaymentView">
+  <Grid RowDefinitions="Auto,*,Auto">
+    <Border Grid.Row="0" Classes="band" Margin="0,0,0,10">
+      <WrapPanel>
+        <StackPanel Classes="field">
+          <TextBlock Text="Rechercher" Classes="fieldlabel" />
+          <TextBox Width="260" Text="{Binding Search}" PlaceholderText="Nom ou matricule" />
+        </StackPanel>
+        <StackPanel Classes="field">
+          <TextBlock Text="Promotion" Classes="fieldlabel" />
+          <ComboBox Width="200" ItemsSource="{Binding Promotions}" SelectedItem="{Binding Promotion}" />
+        </StackPanel>
+        <StackPanel Classes="field">
+          <TextBlock Text="Mois à régler" Classes="fieldlabel" />
+          <ComboBox Width="220" ItemsSource="{Binding Modes}" SelectedItem="{Binding Mode}" />
+        </StackPanel>
+        <StackPanel Classes="field">
+          <TextBlock Text="Mode de paiement" Classes="fieldlabel" />
+          <ComboBox Width="190" ItemsSource="{Binding Methods}" SelectedItem="{Binding Method}" />
+        </StackPanel>
+        <StackPanel Classes="field">
+          <TextBlock Text="Date" Classes="fieldlabel" />
+          <CalendarDatePicker Width="170" PlaceholderText="jj/mm/aaaa" SelectedDateFormat="Short" SelectedDate="{Binding Day}" />
+        </StackPanel>
+      </WrapPanel>
+    </Border>
+    <DataGrid Grid.Row="1" ItemsSource="{Binding Items}" AutoGenerateColumns="False" CanUserSortColumns="False">
+      <DataGrid.Columns>
+        <DataGridCheckBoxColumn Header="Payer" Binding="{Binding Selected}" Width="Auto" MinWidth="80" />
+        <DataGridTextColumn infra:GridPriority.Level="2" Header="Matricule" Binding="{Binding Matricule}" IsReadOnly="True" Width="Auto" MinWidth="122" />
+        <DataGridTextColumn Header="Nom complet" Binding="{Binding Name}" IsReadOnly="True" Width="2*" MinWidth="280" />
+        <DataGridTextColumn infra:GridPriority.Level="3" Header="Classe" Binding="{Binding Promotion}" IsReadOnly="True" Width="Auto" MinWidth="99" />
+        <DataGridTextColumn Header="Mois à payer" Binding="{Binding Plan}" IsReadOnly="True" Width="2*" MinWidth="200" />
+        <DataGridTextColumn infra:GridPriority.Level="2" Header="Reste exigible" Binding="{Binding Overdue}" IsReadOnly="True" Width="Auto" MinWidth="160" />
+        <DataGridTextColumn Header="Montant" Binding="{Binding Amount}" IsReadOnly="True" Width="Auto" MinWidth="120" />
+        <DataGridTemplateColumn infra:GridPriority.Level="3" Header="Référence" Width="Auto" MinWidth="180">
+          <DataGridTemplateColumn.CellTemplate>
+            <DataTemplate>
+              <TextBox Text="{Binding Reference}" PlaceholderText="Automatique si vide" />
+            </DataTemplate>
+          </DataGridTemplateColumn.CellTemplate>
+        </DataGridTemplateColumn>
+        <DataGridTextColumn infra:GridPriority.Level="2" Header="Résultat" Binding="{Binding Result}" IsReadOnly="True" Width="Auto" MinWidth="240" />
+      </DataGrid.Columns>
+    </DataGrid>
+    <TextBlock Grid.Row="2" Text="{Binding SelectionSummary}" Classes="muted" Margin="0,8,0,0" />
+    <c:EmptyState Grid.Row="1" Icon="FormatListChecks" Title="Aucun apprenant à encaisser" Hint="Personne n'a de mois à régler pour ce choix. Pour encaisser plus tôt, choisissez « Prochain mois » ou « Tous les mois ouverts » dans « Mois à régler »." IsVisible="{Binding Items.Count, Converter={StaticResource IsEmpty}}" />
+  </Grid>
+</UserControl>

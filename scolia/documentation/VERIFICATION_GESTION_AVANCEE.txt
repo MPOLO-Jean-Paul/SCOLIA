@@ -1,0 +1,23 @@
+﻿VERIFICATION DE LA GESTION AVANCEE — 6 octobre 2026
+
+Contrôles effectués dans cet environnement :
+- Structure lexicale des quatorze scripts PowerShell, chaînes et délimiteurs.
+- Géométrie adaptative : scénarios décrits dans INTERFACES_ADAPTATIVES.txt.
+- Quinze modules du manifeste : empreintes à jour, anciennes éditions compatibles.
+- Procédures VBA, blocs des modules modifiés, chaînes et longueur des lignes.
+- Correspondance des opérations appelées par l'interface avec la passerelle VBA.
+- L'aperçu de correction précède toute ouverture de transaction/écriture.
+- Présence de la sauvegarde, du journal et des chemins d'annulation.
+- Clôture : archive avant préparation, paiements effacés uniquement dans la copie.
+- Comparaison binaire : nouveau FICHIER_SOURCE.xlsm identique au fichier reçu ;
++  cinq autres classeurs XLSM identiques au paquet précédent.
+- Scénarios d'un modèle de référence FIFO : augmentation, diminution,
+  conservation du total des autres reçus et des dates, plafond annuel,
+  conservation des lignes et de l'ordre relatif des autres apprenants.
+
+Ces contrôles statiques et le modèle de référence ne constituent pas une
+compilation/exécution du code VBA ni un test des fenêtres sur Windows.
+Excel, Windows Forms, COM et l'imprimante ne sont pas disponibles ici.
+L'installation réalise les contrôles Excel prévus sur la copie de votre classeur.
+Les nouveaux parcours doivent être essayés sur une copie avant utilisation réelle.
+Les anciennes notes de vérification concernent les éditions précédentes.

@@ -1,0 +1,34 @@
+﻿SCOLIA — NETTOYAGE DES SAUVEGARDES — 13 OCTOBRE 2026
+
+L’option Nettoyer les sauvegardes est disponible dans Données, dans le ruban de gestion et dans Classeurs et données.
+Elle présente les copies à supprimer, la dernière sauvegarde conservée et l’espace occupé.
+Après confirmation, elle supprime les anciennes copies complètes, manuelles ou automatiques, de la même base.
+La dernière sauvegarde est vérifiée avant et après l’opération.
+Les données actives, les réglages, les dossiers d’une autre base et les dossiers non admissibles sont conservés.
+Les dossiers contenant des liens sont exclus.
+Le nettoyage requiert un compte administrateur et un dossier data connecté.
+
+Le nettoyage est ponctuel. Pour limiter aussi les futures copies automatiques, régler Copies automatiques à conserver sur 1.
+La sauvegarde automatique, la création de copies et les restaurations partagent un verrou avec le nettoyage.
+Si la liste change depuis son affichage, l’opération demande de l’actualiser avant la suppression.
+Le résultat indique le nombre de copies supprimées et la taille de leurs fichiers libérée ; les erreurs de suppression sont affichées.
+
+MISE À JOUR
+1. Fermer SCOLIA et Excel.
+2. Extraire tout le ZIP dans un nouveau dossier.
+3. Lancer 00_Demarrage/METTRE_A_JOUR_V57.cmd dans ce nouveau dossier.
+4. Sélectionner APPLICATION.vbs de l’installation habituelle.
+5. Relancer ce lanceur.
+Toutes les améliorations précédentes des fenêtres, PDF, cartes, recherche, sauvegardes et logo sont incluses.
+
+TESTS EFFECTUÉS
+- Nettoyage réel de copies de test : seules les anciennes copies de la base choisie sont supprimées.
+- Dernière copie intacte, taille comptée, base active et réglages préservés.
+- Dernière sauvegarde corrompue : nettoyage bloqué.
+- Changement de liste, verrous, liens et permissions contrôlés.
+- Sauvegarde/restauration V55 et V56 testées avec les nouveaux verrous.
+- Sauvegardes personnalisées testées à nouveau.
+- 175 scripts PowerShell analysés sans erreur.
+- Empreintes, manifeste de mise à jour et intégrité du ZIP contrôlés.
+L’interface complète sous Windows reste à vérifier sur votre poste.
+Test isolé fourni : 00_Demarrage/VERIFIER_NETTOYAGE_SAUVEGARDES.cmd.

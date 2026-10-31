@@ -1,0 +1,23 @@
+﻿INSTALLATION — ATTENTE À LA VÉRIFICATION DE LA PASSERELLE
+7 octobre 2026
+
+La capture indique une attente à l'étape 94, après recalcul et exports.
+À cet endroit, ITMTesterStockage créait deux copies Excel et exécutait des
+inscriptions, paiements et exports fictifs entre classeurs, même lorsque la
+case Vérification approfondie était décochée. Le code confirme ce travail
+supplémentaire ; sans le journal détaillé du PC, il ne permet pas de mesurer
+sa durée ni d'exclure une autre cause de blocage dans la même étape.
+
+Le test de deux classeurs est désormais exécuté uniquement si Vérification
+approfondie est cochée. Le test complet de basculement, sauvegarde et
+restauration reste également dans ce mode.
+Les contrôles obligatoires de conservation des données, totaux, exports,
+modules et refus des saisies invalides sont conservés.
+Chaque contrôle de cette étape affiche maintenant son nom et écrit sa durée
+dans le journal, même en cas d'erreur.
+
+Pour remplacer les fichiers, arrêter d'abord la tentative en cours avec
+Arrêter, attendre le message d'arrêt, puis fermer l'installateur et l'application.
+Remplacer le dossier programme par celui de ce ZIP ; conserver data entier.
+Relancer INSTALLER.vbs sans cocher Vérification approfondie pour une installation
+courante. Les temps réels restent à vérifier sous Windows et Excel.

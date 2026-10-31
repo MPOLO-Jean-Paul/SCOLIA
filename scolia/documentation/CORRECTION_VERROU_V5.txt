@@ -1,0 +1,3 @@
+SCOLIA V5 — Correction du verrou de saisie
+Si le classeur est deja sauvegarde, un verrou VBA residuel est libere avant le prochain enregistrement. Si le classeur contient des modifications non sauvegardees, le verrou reste protege pour eviter la perte de donnees.
+Verifier sur Windows : deux inscriptions consecutives et deux paiements consecutifs, puis confirmer le message de succes. Faire une sauvegarde avant installation.

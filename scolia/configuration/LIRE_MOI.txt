@@ -1,0 +1,1 @@
+﻿SCOLIA crée ici le choix de configuration, les préférences de réception et les opérations en attente. Conservez ce dossier lors des mises à jour. Ne recopiez pas une opération en attente sur un second poste.

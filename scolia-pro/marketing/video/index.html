@@ -1,0 +1,462 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>SCOLIA Pro publicité</title>
+<style>
+@font-face { font-family: Inter; font-weight: 400; src: url(assets/Inter-Regular.otf); }
+@font-face { font-family: Inter; font-weight: 500; src: url(assets/Inter-Medium.otf); }
+@font-face { font-family: Inter; font-weight: 600; src: url(assets/Inter-SemiBold.otf); }
+@font-face { font-family: Inter; font-weight: 700; src: url(assets/Inter-Bold.otf); }
+@font-face { font-family: Inter; font-weight: 800; src: url(assets/Inter-ExtraBold.otf); }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 100%; height: 100%; overflow: hidden; background: #f5f5f7; }
+body { font-family: Inter, sans-serif; color: #1d1d1f; -webkit-font-smoothing: antialiased; }
+#stage { position: absolute; left: 0; top: 0; overflow: hidden; background: #f5f5f7; }
+.abs { position: absolute; left: 0; top: 0; will-change: transform, opacity; }
+.blob { position: absolute; border-radius: 50%; }
+.cap { position: absolute; }
+.cap .k { font-weight: 600; letter-spacing: .01em; }
+.cap .t { font-weight: 800; letter-spacing: -.025em; line-height: 1.05; margin-top: .25em; }
+.cap .s { font-weight: 400; color: #48484a; line-height: 1.4; margin-top: .7em; }
+.cap > div { will-change: transform, opacity; }
+
+.dev { background: #1d1d1f; box-shadow: 0 40px 90px rgba(17,24,39,.25), 0 10px 26px rgba(17,24,39,.12), inset 0 0 0 2px #3a3a3c; }
+.dev .screen { position: absolute; overflow: hidden; background: #fff; }
+.dev .status { position: absolute; left: 0; right: 0; top: 0; background: #fff; display: flex; align-items: center; justify-content: space-between; font-weight: 600; color: #1d1d1f; }
+.dev .view { position: absolute; left: 0; right: 0; bottom: 0; overflow: hidden; }
+.dev .view img { position: absolute; left: 0; top: 0; width: 100%; }
+.dev .cam { position: absolute; border-radius: 50%; background: #0b0b0c; box-shadow: inset 0 0 0 2px #2a2a2c; }
+.mark { position: absolute; border: 3px solid #0a84ff; box-shadow: 0 0 0 6px rgba(10,132,255,.18); }
+
+.lid { background: #1d1d1f; border-radius: 22px 22px 10px 10px; box-shadow: inset 0 0 0 2px #3a3a3c; }
+.base { background: linear-gradient(#e9e9ec, #c7c7cc 60%, #a9a9ae); border-radius: 2px 2px 16px 16px; box-shadow: 0 30px 60px rgba(17,24,39,.22); }
+.base i { position: absolute; left: 50%; top: 0; width: 140px; height: 7px; margin-left: -70px; background: #b4b4b9; border-radius: 0 0 8px 8px; }
+
+.zoom { background: #fff; border-radius: 26px; overflow: hidden; transform-origin: left top;
+  box-shadow: 0 50px 100px rgba(17,24,39,.28), 0 14px 30px rgba(17,24,39,.14), 0 0 0 1px rgba(0,0,0,.05); }
+.zoom img { position: absolute; }
+
+.tile { background: #fff; border-radius: 26px; padding: 30px 28px;
+  box-shadow: 0 18px 40px rgba(17,24,39,.08), 0 2px 6px rgba(17,24,39,.05), 0 0 0 1px rgba(0,0,0,.04); }
+.tile .ic { width: 64px; height: 64px; border-radius: 17px; display: flex; align-items: center; justify-content: center; }
+.tile .n { font-weight: 700; font-size: 27px; margin-top: 22px; letter-spacing: -.01em; }
+.tile .d { font-size: 19px; color: #6e6e73; margin-top: 6px; line-height: 1.35; }
+.cta { display: inline-flex; align-items: center; gap: 12px; background: #007aff; color: #fff; font-weight: 700; border-radius: 999px; box-shadow: 0 16px 36px rgba(0,122,255,.35); }
+.center { text-align: center; }
+.w { display: inline-block; overflow: hidden; vertical-align: bottom; padding: 0 .04em .1em; margin: 0 -.04em -.1em; }
+.w > span { display: inline-block; will-change: transform; }
+.wipe { position: absolute; left: 0; top: 0; pointer-events: none; will-change: transform; }
+.shine { position: absolute; top: -10%; height: 120%; pointer-events: none;
+  background: linear-gradient(100deg, rgba(255,255,255,0) 0%, rgba(255,255,255,.42) 50%, rgba(255,255,255,0) 100%); }
+.ring { position: absolute; border-radius: 50%; border: 3px solid #34c759; pointer-events: none; }
+.warm { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse at 70% 40%, rgba(255,149,0,.18), rgba(255,149,0,0) 60%); }
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<script>
+const F = new URLSearchParams(location.search).get('f') || 'h';
+const V = F === 'v';
+const W = V ? 1080 : 1920, H = V ? 1920 : 1080;
+const DURATION = 51;
+const stage = document.getElementById('stage');
+stage.style.width = W + 'px'; stage.style.height = H + 'px';
+
+// ---------- Outils de mouvement ----------
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const easeOut = x => 1 - Math.pow(1 - clamp(x), 3);
+const easeIn = x => Math.pow(clamp(x), 3);
+const easeInOut = x => { x = clamp(x); return x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2; };
+const lerp = (a, b, x) => a + (b - a) * x;
+function el(tag, cls, parent, html) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (html !== undefined) e.innerHTML = html;
+  (parent || stage).appendChild(e);
+  return e;
+}
+const tracks = [];
+function track(e, x, y, fn) { e.style.left = x + 'px'; e.style.top = y + 'px'; tracks.push({ e, fn }); return e; }
+function apply(e, st) {
+  const o = st.o === undefined ? 1 : st.o;
+  e.style.opacity = o.toFixed(4);
+  e.style.visibility = o <= 0.001 ? 'hidden' : 'visible';
+  const rot = (st.rx || st.ry) ? ` perspective(1600px) rotateX(${(st.rx || 0).toFixed(2)}deg) rotateY(${(st.ry || 0).toFixed(2)}deg)` : '';
+  e.style.transform = `translate(${(st.x || 0).toFixed(2)}px, ${(st.y || 0).toFixed(2)}px)${rot} scale(${(st.s || 1).toFixed(5)})`;
+  e.style.filter = st.b > .05 ? `blur(${st.b.toFixed(2)}px)` : 'none';
+}
+const easeOutBack = x => { x = clamp(x); const c = 1.5; return 1 + (c + 1) * Math.pow(x - 1, 3) + c * Math.pow(x - 1, 2); };
+// Entrée puis sortie d'un élément dans une scène [a, b].
+function life(t, a, b, opt = {}) {
+  const din = opt.din || .9, dout = opt.dout || .55, dy = opt.dy === undefined ? 70 : opt.dy;
+  const i = easeOut((t - a) / din), q = easeIn((t - (b - dout)) / dout);
+  const s0 = opt.s0 === undefined ? .955 : opt.s0;
+  const st = {
+    o: t < a || t > b ? 0 : Math.min(clamp((t - a) / (din * .7)), 1 - q),
+    x: (1 - i) * (opt.dx || 0),
+    y: (1 - i) * dy - q * (opt.oy === undefined ? 34 : opt.oy) + (opt.float ? Math.sin((t - a) * 1.1) * opt.float : 0),
+    s: lerp(s0, 1, i) * (1 + q * (opt.os || 0)),
+    b: (1 - i) * (opt.blurIn || 0),
+  };
+  // Sorties particulières : retournement, plongée vers la caméra, poussée sur le côté.
+  if (opt.exit === 'flip') { const f = easeIn((t - (b - .35)) / .35); st.ry = f * 90; st.o = t < a || t > b ? 0 : clamp((t - a) / (din * .7)) * (f < .98 ? 1 : 0); st.y = (1 - i) * dy; st.s = lerp(s0, 1, i); }
+  if (opt.enter === 'flip') { const f = easeOut((t - a) / .4); st.ry = (1 - f) * -90; st.o = t < a || t > b ? 0 : (f > .02 ? 1 - q : 0); st.y = -q * 34; st.s = 1; }
+  if (opt.exit === 'zoom') { const z = easeIn((t - (b - .55)) / .55); st.s *= 1 + z * .7; st.b = Math.max(st.b, z * 16); st.y = (1 - i) * dy; }
+  if (opt.exit === 'push') { const z = easeInOut((t - (b - .5)) / .5); st.x -= z * (V ? 1100 : 1500); st.o = t < a || t > b ? 0 : clamp((t - a) / (din * .7)); st.y = (1 - i) * dy; st.b = Math.max(st.b, Math.sin(Math.PI * z) * 6); }
+  return st;
+}
+
+// ---------- Fond ----------
+const blobs = [
+  { c: 'rgba(0,122,255,.16)', r: V ? 900 : 1000, x: .15, y: .2, ax: .08, ay: .06, sp: .11 },
+  { c: 'rgba(52,199,89,.13)', r: V ? 820 : 900, x: .88, y: .85, ax: .07, ay: .05, sp: .09 },
+  { c: 'rgba(175,82,222,.10)', r: V ? 760 : 800, x: .8, y: .1, ax: .06, ay: .08, sp: .07 },
+].map(b => {
+  const e = el('div', 'blob');
+  e.style.width = e.style.height = b.r + 'px';
+  e.style.background = `radial-gradient(circle at center, ${b.c} 0%, rgba(255,255,255,0) 68%)`;
+  return { ...b, e };
+});
+function background(t) {
+  for (const b of blobs) {
+    const x = (b.x + Math.sin(t * b.sp * 2 * Math.PI / 4) * b.ax) * W - b.r / 2;
+    const y = (b.y + Math.cos(t * b.sp * 2 * Math.PI / 5) * b.ay) * H - b.r / 2;
+    b.e.style.transform = `translate(${x}px, ${y}px)`;
+  }
+}
+
+// ---------- Appareils ----------
+// Téléphone : écran de 412 points de large, barre d'état de 30 points, captures à 2x (affichage) et 3x (loupe).
+const PH = { w: 412, h: 915, bar: 30, bz: 13 };
+function phoneFrame(scale, shots) {
+  const sw = PH.w * scale, bar = PH.bar * scale, sh = PH.h * scale + bar, bz = PH.bz * scale;
+  const d = el('div', 'abs dev');
+  d.style.width = (sw + 2 * bz) + 'px'; d.style.height = (sh + 2 * bz) + 'px'; d.style.borderRadius = (54 * scale) + 'px';
+  const sc = el('div', 'screen', d);
+  Object.assign(sc.style, { left: bz + 'px', top: bz + 'px', width: sw + 'px', height: sh + 'px', borderRadius: (42 * scale) + 'px' });
+  const st = el('div', 'status', sc, `<span>08:15</span><span>${signal()}</span>`);
+  Object.assign(st.style, { height: bar + 'px', fontSize: (13 * scale) + 'px', padding: `0 ${22 * scale}px`, paddingTop: (4 * scale) + 'px' });
+  st.lastChild.style.display = 'flex'; st.lastChild.style.height = (12 * scale) + 'px';
+  const cam = el('div', 'cam', sc); const cr = 11 * scale;
+  Object.assign(cam.style, { width: cr + 'px', height: cr + 'px', left: (sw / 2 - cr / 2) + 'px', top: (9 * scale) + 'px' });
+  const view = el('div', 'view', sc); view.style.top = bar + 'px';
+  const imgs = shots.map(n => { const i = el('img', '', view); i.src = `assets/p2-${n}.png`; return i; });
+  return { e: d, imgs, view, scale, w: sw + 2 * bz, h: sh + 2 * bz, ox: bz, oy: bz + bar };
+}
+function signal() {
+  return `<svg viewBox="0 0 54 12" height="100%"><g fill="#1d1d1f"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5" width="3" height="7" rx="1"/><rect x="10" y="2" width="3" height="10" rx="1"/>
+  <path d="M22 4.5a9 9 0 0 1 11 0l-1.6 1.8a6.5 6.5 0 0 0-7.8 0zM24.8 7.6a5 5 0 0 1 5.4 0l-2.7 3z"/>
+  <rect x="38" y="1.5" width="14" height="9" rx="2.5" fill="none" stroke="#1d1d1f" stroke-width="1.3"/><rect x="40" y="3.4" width="9" height="5.2" rx="1.2"/></g></svg>`;
+}
+function tabletFrame(width, image) {
+  const sh = width * 800 / 1280, bz = 16;
+  const d = el('div', 'abs dev');
+  d.style.width = (width + 2 * bz) + 'px'; d.style.height = (sh + 2 * bz) + 'px'; d.style.borderRadius = '30px';
+  const sc = el('div', 'screen', d);
+  Object.assign(sc.style, { left: bz + 'px', top: bz + 'px', width: width + 'px', height: sh + 'px', borderRadius: '14px' });
+  const view = el('div', 'view', sc); view.style.top = '0';
+  el('img', '', view).src = 'assets/' + image;
+  return { e: d, w: width + 2 * bz, h: sh + 2 * bz };
+}
+// Ordinateur portable : écran 16:10 dans son cadre, posé sur un socle plus large.
+function laptopFrame(width, image) {
+  const bz = 18, top = 24, sw = width - 2 * bz, sh = sw * 900 / 1440;
+  const box = el('div', 'abs');
+  const lidH = sh + bz + top, baseW = width * 1.14, baseH = Math.round(width * .022);
+  box.style.width = baseW + 'px'; box.style.height = (lidH + baseH) + 'px';
+  const lid = el('div', 'lid', box);
+  Object.assign(lid.style, { position: 'absolute', left: ((baseW - width) / 2) + 'px', top: '0', width: width + 'px', height: lidH + 'px' });
+  const sc = el('div', '', lid);
+  Object.assign(sc.style, { position: 'absolute', left: bz + 'px', top: top + 'px', width: sw + 'px', height: sh + 'px', overflow: 'hidden', borderRadius: '4px', background: '#fff' });
+  const img = el('img', '', sc); img.src = 'assets/' + image; img.style.width = '100%'; img.style.display = 'block';
+  const cam = el('div', '', lid);
+  Object.assign(cam.style, { position: 'absolute', width: '7px', height: '7px', borderRadius: '50%', background: '#3a3a3c', left: (width / 2 - 3.5) + 'px', top: '9px' });
+  const base = el('div', 'base', box, '<i></i>');
+  Object.assign(base.style, { position: 'absolute', left: '0', top: lidH + 'px', width: baseW + 'px', height: baseH + 'px' });
+  return { e: box, sc, sw, w: baseW, h: lidH + baseH };
+}
+
+// Changement d'écran dans un téléphone : l'écran suivant apparaît en fondu à l'instant donné.
+function screens(dev, times) {
+  dev.imgs.forEach((img, k) => { if (k > 0) tracks.push({ e: img, fn: t => ({ o: clamp((t - times[k - 1]) / .5) }) }); });
+}
+
+// Reflet de lumière qui passe sur un écran quand l'appareil se pose.
+function shine(parent, width, at) {
+  const e = el('div', 'shine', parent); e.style.width = (width * .45) + 'px';
+  tracks.push({ e, fn: t => { const p = clamp((t - at) / 1.1); return { o: p > 0 && p < 1 ? 1 : 0, x: lerp(-width * .5, width * 1.1, easeInOut(p)) }; } });
+}
+// Ondes autour d'un point de l'écran : un autre poste est connecté.
+function rings(view, cx, cy, a, b, scale) {
+  for (let k = 0; k < 3; k++) {
+    const r = el('div', 'ring', view);
+    tracks.push({ e: r, fn: t => {
+      if (t < a || t > b) return { o: 0 };
+      const p = ((t - a) / 1.5 + k / 3) % 1, rad = lerp(8, 60, easeOut(p)) * scale;
+      Object.assign(r.style, { width: 2 * rad + 'px', height: 2 * rad + 'px', left: (cx * scale - rad) + 'px', top: (cy * scale - rad) + 'px' });
+      return { o: (1 - p) * .8 * Math.min(clamp((t - a) / .3), clamp((b - t) / .3)) };
+    } });
+  }
+}
+// Balayage aux couleurs de SCOLIA entre deux grandes parties : la bande couvre l'écran à l'instant T.
+function wipe(T) {
+  const band = Math.hypot(W, H) * 1.5;
+  const e = el('div', 'wipe');
+  Object.assign(e.style, { width: band + 'px', height: (band * 1.4) + 'px', left: (W / 2 - band / 2) + 'px', top: (H / 2 - band * .7) + 'px',
+    background: 'linear-gradient(90deg, rgba(29,78,216,0) 0%, #1D4ED8 14%, #0a84ff 50%, #16A34A 86%, rgba(22,163,74,0) 100%)', zIndex: 50 });
+  tracks.push({ e, fn: t => {
+    const p = (t - (T - .45)) / .9;
+    if (p <= 0 || p >= 1) return { o: 0 };
+    return { o: 1, x: lerp(-band * 1.05, band * 1.05, easeInOut(p)), y: 0, r: 0 };
+  } });
+  e.style.transformOrigin = 'center';
+  e.style.rotate = '-18deg';
+}
+
+// ---------- Loupe ----------
+// Une zone de l'écran du téléphone se soulève et grandit jusqu'à une carte lisible, puis repart.
+// r : zone en points de l'écran (x, y, largeur, hauteur) ; la carte vient de la capture à 3x, donc reste nette.
+function zoom(dev, devX, devY, shot, r, a, b) {
+  const [rx, ry, rw, rh] = r;
+  const maxW = V ? 1000 : 600, maxH = V ? 640 : 780;
+  const mag = Math.min(maxW / rw, maxH / rh, V ? 2.9 : 2.2);
+  const cw = rw * mag, ch = rh * mag;
+  // Source sur la scène
+  const sx = devX + dev.ox + rx * dev.scale, sy = devY + dev.oy + ry * dev.scale, ss = dev.scale / mag;
+  let tx, ty;
+  if (V) { tx = (W - cw) / 2; ty = clamp(sy + rh * dev.scale / 2 - ch / 2, 610, H - 90 - ch); }
+  else { tx = 1250 + (600 - cw) / 2; ty = clamp(sy + rh * dev.scale / 2 - ch / 2, 70, H - 70 - ch); }
+  // Repère sur l'écran
+  const m = el('div', 'mark', dev.view);
+  Object.assign(m.style, { left: (rx * dev.scale - 4) + 'px', top: (ry * dev.scale - 4) + 'px', width: (rw * dev.scale + 8) + 'px', height: (rh * dev.scale + 8) + 'px', borderRadius: (14 * dev.scale) + 'px' });
+  tracks.push({ e: m, fn: t => {
+    const k = clamp((t - a) / .6);
+    m.style.boxShadow = `0 0 0 ${6 + 18 * easeOut(k)}px rgba(10,132,255,${(.18 * (1 - k) + .12).toFixed(3)})`;
+    return { o: t < a || t > b ? 0 : Math.min(clamp((t - a) / .3), clamp((b - t) / .3)) };
+  } });
+  // Carte
+  const c = el('div', 'abs zoom');
+  c.style.width = cw + 'px'; c.style.height = ch + 'px';
+  const img = el('img', '', c); img.src = `assets/p3-${shot}.png`;
+  Object.assign(img.style, { width: (PH.w * mag) + 'px', left: (-rx * mag) + 'px', top: (-ry * mag) + 'px' });
+  track(c, tx, ty, t => {
+    if (t < a + .15 || t > b) return { o: 0 };
+    const u = (t - a - .15) / .85, p = easeInOut(u), g = easeOutBack(u), q = easeIn((t - (b - .4)) / .4);
+    return {
+      o: Math.min(clamp((t - a - .15) / .2), 1 - q),
+      x: lerp(sx - tx, 0, p), y: lerp(sy - ty, 0, p) + q * 24 + (u >= 1 ? Math.sin((t - a) * 1.3) * 3 : 0),
+      s: lerp(ss, 1, g) * (1 - q * .04),
+      b: Math.sin(Math.PI * clamp(u)) * 3,
+    };
+  });
+}
+
+// ---------- Icônes ----------
+const I = {
+  people: '<circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c.8-3 3-4.6 5.5-4.6s4.7 1.6 5.5 4.6"/><circle cx="16.6" cy="9" r="2.5"/><path d="M15.8 14.2c2.3 0 4 1.4 4.8 4.3"/>',
+  receipt: '<path d="M6 3h12v18l-2-1.4-2 1.4-2-1.4-2 1.4-2-1.4L6 21z"/><path d="M9 8h6M9 12h6M9 16h3.5"/>',
+  calendar: '<rect x="3.5" y="5" width="17" height="15.5" rx="2.8"/><path d="M3.5 10h17M8 3v4M16 3v4M9 15.2l2 2 4-4"/>',
+  chat: '<path d="M4.5 5h15a1.5 1.5 0 0 1 1.5 1.5v8a1.5 1.5 0 0 1-1.5 1.5H10l-5 4v-4h-.5A1.5 1.5 0 0 1 3 14.5v-8A1.5 1.5 0 0 1 4.5 5z"/><path d="M8 10.5h.01M12 10.5h.01M16 10.5h.01"/>',
+  cap: '<path d="M2.5 9.5 12 5l9.5 4.5L12 14z"/><path d="M6.5 11.6v4.4c0 1.5 2.5 3 5.5 3s5.5-1.5 5.5-3v-4.4M21.5 9.5v5"/>',
+  check: '<rect x="5" y="4" width="14" height="17" rx="2.5"/><path d="M9 4V2.8h6V4M8.6 13.2l2.4 2.4 4.4-4.8"/>',
+  badge: '<rect x="4" y="3" width="16" height="18" rx="2.8"/><circle cx="12" cy="10" r="2.8"/><path d="M7.5 17.2c.9-2 2.5-3 4.5-3s3.6 1 4.5 3"/>',
+  cloud: '<path d="M7 18.5a4.5 4.5 0 0 1-.6-9 6 6 0 0 1 11.5 1.6 3.8 3.8 0 0 1-.4 7.4z"/><path d="M12 16.5v-5M9.8 13.7 12 11.5l2.2 2.2"/>',
+};
+const icon = (name, size, color = '#fff', sw = 2) =>
+  `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round">${I[name]}</svg>`;
+
+// ---------- Légendes ----------
+function caption(k, color, title, sub, a, b, top = false) {
+  const c = el('div', 'cap');
+  const fs = V ? { k: 30, t: 84, s: 34 } : top ? { k: 26, t: 66, s: 30 } : { k: 26, t: 74, s: 30 };
+  if (V) Object.assign(c.style, { left: '70px', width: (W - 140) + 'px', top: '170px', textAlign: 'center' });
+  else if (top) Object.assign(c.style, { left: '0', width: W + 'px', top: '70px', textAlign: 'center' });
+  else Object.assign(c.style, { left: '130px', width: '580px', top: '0px', height: H + 'px', display: 'flex', flexDirection: 'column', justifyContent: 'center' });
+  const words = title.split(' ').map(w => `<span class="w"><span>${w}</span></span>`).join(' ');
+  const parts = [el('div', 'k', c, k), el('div', 't', c, words), el('div', 's', c, sub)];
+  parts[0].style.fontSize = fs.k + 'px'; parts[0].style.color = color;
+  parts[1].style.fontSize = fs.t + 'px';
+  parts[2].style.fontSize = fs.s + 'px';
+  tracks.push({ e: parts[0], fn: t => life(t, a + .1, b, { dy: 0, dx: -40, s0: 1, din: .7, oy: 0 }) });
+  [...parts[1].querySelectorAll('.w > span')].forEach((w, j) => tracks.push({ e: w, fn: t => {
+    const i = easeOut((t - a - .2 - j * .07) / .7), q = easeIn((t - (b - .45 + j * .03)) / .4);
+    return { o: t > b ? 0 : 1, y: (1 - i) * fs.t * 1.15 - q * fs.t * 1.15 };
+  } }));
+  tracks.push({ e: parts[2], fn: t => life(t, a + .55, b, { dy: 24, s0: 1, din: .9, blurIn: 10 }) });
+}
+
+// ---------- Scène d'un téléphone avec ses loupes ----------
+function phoneScene(o) {
+  caption(o.k, o.color, o.title, o.sub, o.a, o.b);
+  const scale = V ? 1.08 : 1;
+  const dev = phoneFrame(scale, o.shots.map(s => s.n));
+  const x = V ? (W - dev.w) / 2 : 770, y = V ? 610 : (H - dev.h) / 2;
+  const enter = o.enter === 'flip' ? { enter: 'flip', din: .4 } : o.enter === 'push' ? { dx: V ? 1100 : 1500, dy: 0, din: 1, s0: 1 } : o.enter === 'zoom' ? { dy: 0, s0: .7, din: .9, blurIn: 14 } : { dy: 110, din: 1.1 };
+  track(dev.e, x, y, t => life(t, o.a, o.b, { ...enter, exit: o.exit }));
+  screens(dev, o.shots.slice(1).map(s => s.at));
+  o.shots.forEach(s => zoom(dev, x, y, s.n, s.r, s.za, s.zb));
+  shine(dev.view, dev.w, o.a + .8);
+  if (o.rings) rings(dev.view, ...o.rings);
+}
+
+// ---------- Ouverture ----------
+const SCOLIA_SVG = `<svg viewBox="40 40 432 432" width="100%" height="100%"><g fill="none" stroke-width="62" stroke-linecap="round" stroke-linejoin="round">
+  <path class="lp1" d="M330 118 H206 Q148 118 148 176 Q148 234 206 234 H226" stroke="#1D4ED8"/>
+  <path class="lp2" d="M286 278 H306 Q364 278 364 336 Q364 394 306 394 H182" stroke="#16A34A"/></g>
+  <circle class="lc1" cx="418" cy="118" r="38" fill="#1D4ED8"/><circle class="lc2" cx="94" cy="394" r="38" fill="#16A34A"/></svg>`;
+function logoBlock(size, y, a, b, intro) {
+  const box = el('div', 'abs');
+  box.style.width = box.style.height = size + 'px';
+  const card = el('div', '', box);
+  Object.assign(card.style, { position: 'absolute', inset: '0', background: '#fff', borderRadius: (size * .23) + 'px',
+    boxShadow: '0 30px 70px rgba(29,78,216,.18), 0 8px 20px rgba(17,24,39,.08), 0 0 0 1px rgba(0,0,0,.04)' });
+  const inner = el('div', '', box, SCOLIA_SVG);
+  Object.assign(inner.style, { position: 'absolute', left: (size * .17) + 'px', top: (size * .17) + 'px', width: (size * .66) + 'px', height: (size * .66) + 'px' });
+  const p1 = inner.querySelector('.lp1'), p2 = inner.querySelector('.lp2'), c1 = inner.querySelector('.lc1'), c2 = inner.querySelector('.lc2');
+  const L1 = p1.getTotalLength(), L2 = p2.getTotalLength();
+  p1.style.strokeDasharray = L1; p2.style.strokeDasharray = L2;
+  [c1, c2].forEach(c => { c.style.transformBox = 'fill-box'; c.style.transformOrigin = 'center'; });
+  tracks.push({ e: box, fn: t => {
+    const st = life(t, a, b, { dy: intro ? 0 : 40, s0: intro ? .6 : .9, din: intro ? 1.1 : .8, os: intro ? .08 : 0, oy: intro ? 0 : 30 });
+    const d = intro ? a + .35 : a + .2;
+    p1.style.strokeDashoffset = L1 * (1 - easeInOut((t - d) / .9));
+    p2.style.strokeDashoffset = L2 * (1 - easeInOut((t - d - .35) / .9));
+    c1.style.transform = `scale(${easeOut((t - d - .75) / .45)})`;
+    c2.style.transform = `scale(${easeOut((t - d - 1.1) / .45)})`;
+    return st;
+  } });
+  box.style.left = (W / 2 - size / 2) + 'px'; box.style.top = y + 'px';
+}
+function centeredText(html, y, size, weight, color, a, b, opt = {}) {
+  const e = el('div', 'abs center', stage, html);
+  Object.assign(e.style, { width: W + 'px', fontSize: size + 'px', fontWeight: weight, color, letterSpacing: opt.ls || '-.02em', lineHeight: 1.25 });
+  track(e, 0, y, t => life(t, a, b, { dy: 30, s0: 1, din: .8, ...opt }));
+  return e;
+}
+{
+  const a = 0, b = 4.4, cy = V ? 640 : 250, size = V ? 300 : 250;
+  logoBlock(size, cy, a, b, true);
+  centeredText('SCOLIA <span style="color:#1D4ED8">Pro</span>', cy + size + (V ? 70 : 55), V ? 120 : 108, 800, '#1d1d1f', 1.35, b, { ls: '-.035em', os: .03 });
+  centeredText('La gestion scolaire, simple et sûre.', cy + size + (V ? 230 : 195), V ? 44 : 40, 500, '#515154', 1.75, b, { os: .02 });
+}
+
+// ---------- Scène 1 : encaisser ----------
+phoneScene({ a: 4.1, b: 11.9, exit: 'flip', k: 'Caisse', color: '#34c759', title: 'Encaissez en quelques secondes.',
+  sub: 'Cochez les mois payés, encaissez : le reçu numéroté sort avec son code de vérification.',
+  shots: [
+    { n: '05-encaisser', r: [21, 390, 369, 296], za: 5.2, zb: 8.3 },
+    { n: '07-recu', at: 8.3, r: [13, 69, 375, 266], za: 8.6, zb: 11.5 },
+  ] });
+
+// ---------- Scène 2 : pilotage ----------
+phoneScene({ a: 11.9, b: 18.8, enter: 'flip', k: 'Pilotage', color: '#007aff', title: 'Tout l’établissement d’un coup d’œil.',
+  sub: 'Recettes, reste à percevoir, taux de recouvrement et suivi de chaque mois.',
+  shots: [
+    { n: '22e-tableau-de-bord', r: [11, 404, 385, 308], za: 12.8, zb: 15.6 },
+    { n: '08b-suivi-mensuel', at: 15.6, r: [11, 306, 390, 174], za: 15.9, zb: 18.8 },
+  ] });
+
+// ---------- Scène 3 : ordinateur, tablette, téléphone ----------
+{
+  const a = 18.5, b = 25.0;
+  caption('Partout', '#af52de', 'Ordinateur, tablette et téléphone.', 'La même application sur Windows et Android, pensée pour chaque écran.', a, b, true);
+  const lap = laptopFrame(V ? 900 : 1020, 'd-accueil.png');
+  const lx = (W - lap.w) / 2, ly = V ? 640 : 300;
+  track(lap.e, lx, ly, t => life(t, a, b, { dy: 90, din: 1.1, exit: 'zoom' }));
+  shine(lap.sc, lap.sw, a + 1);
+  const tab = tabletFrame(V ? 560 : 480, 't-accueil.png');
+  const tx = V ? 50 : 90, ty = V ? 1330 : ly + lap.h - tab.h + 24;
+  track(tab.e, tx, ty, t => life(t, a + .3, b, { dy: 110, din: 1.1, float: 4, exit: 'zoom' }));
+  const ph = phoneFrame(V ? .62 : .58, ['02-accueil']);
+  const px = V ? W - ph.w - 60 : 1560, py = V ? 1215 : ly + lap.h - ph.h + 36;
+  track(ph.e, px, py, t => life(t, a + .55, b, { dy: 120, din: 1.1, float: 5, exit: 'zoom' }));
+}
+
+// ---------- Scène 4 : en direct ----------
+phoneScene({ a: 24.8, b: 32.0, enter: 'zoom', exit: 'push', rings: [330, 30, 25.2, 28.4, V ? 1.08 : 1], k: 'Travail à plusieurs', color: '#30b0c7', title: 'Plusieurs postes, en direct.',
+  sub: 'Chaque écran se met à jour seul. Une action en cours sur un poste est bloquée sur les autres.',
+  shots: [
+    { n: '32-mobile-direct', r: [0, 0, 412, 84], za: 25.9, zb: 28.6 },
+    { n: '36-mobile-encaissement-bloque', at: 28.6, r: [12, 98, 388, 262], za: 28.9, zb: 31.4 },
+  ] });
+
+// ---------- Scène 5 : hors ligne ----------
+phoneScene({ a: 31.6, b: 39.0, enter: 'push', k: 'Hors ligne', color: '#ff9500', title: 'Même sans réseau.',
+  sub: 'Le travail continue sur l’appareil. Tout part au retour de l’ordinateur principal, sans doublon.',
+  shots: [
+    { n: '34-mobile-hors-ligne', r: [0, 0, 412, 95], za: 32.9, zb: 35.6 },
+    { n: '35-mobile-reseau-hors-ligne', at: 35.6, r: [23, 245, 365, 108], za: 35.9, zb: 39.0 },
+  ] });
+
+{
+  const warm = el('div', 'warm');
+  tracks.push({ e: warm, fn: t => ({ o: Math.min(clamp((t - 31.8) / .8), clamp((39.0 - t) / .6)) }) });
+}
+
+// ---------- Scène 6 : fonctions ----------
+{
+  const a = 38.7, b = 45.0;
+  const title = el('div', 'abs center', stage, 'Tout pour gérer votre école.');
+  Object.assign(title.style, { width: W + 'px', fontSize: (V ? 80 : 70) + 'px', fontWeight: 800, letterSpacing: '-.03em', padding: V ? '0 70px' : '0' });
+  track(title, 0, V ? 200 : 120, t => life(t, a, b, { dy: 30, s0: 1 }));
+  const items = [
+    ['people', '#007aff', 'Apprenants', 'Dossiers, matricules, réinscriptions'],
+    ['receipt', '#34c759', 'Encaissement', 'Reçus numérotés avec QR code'],
+    ['calendar', '#ff9500', 'Suivi mensuel', 'Qui a payé, qui est en retard'],
+    ['chat', '#30b0c7', 'Relances', 'WhatsApp et SMS aux parents'],
+    ['cap', '#5856d6', 'Cours et notes', 'Évaluations et résultats'],
+    ['check', '#ff2d55', 'Présences', 'Appel, retards et discipline'],
+    ['badge', '#af52de', 'Personnel', 'Pointage, paie, cartes d’accès'],
+    ['cloud', '#8e8e93', 'Sauvegardes', 'Automatiques et vérifiées'],
+  ];
+  const cols = V ? 2 : 4, tw = V ? 440 : 385, th = V ? 255 : 220, gx = V ? 40 : 28, gy = V ? 40 : 28;
+  const ox = (W - cols * tw - (cols - 1) * gx) / 2, oy = V ? 480 : 310;
+  items.forEach(([ic, c, n, d], i) => {
+    const e = el('div', 'abs tile', stage, `<div class="ic" style="background:${c}">${icon(ic, 34)}</div><div class="n">${n}</div><div class="d">${d}</div>`);
+    e.style.width = tw + 'px'; e.style.height = th + 'px';
+    if (V) { e.querySelector('.n').style.fontSize = '32px'; e.querySelector('.d').style.fontSize = '23px'; e.style.padding = '38px 34px'; }
+    const col = i % cols, row = Math.floor(i / cols);
+    track(e, ox + col * (tw + gx), oy + row * (th + gy), t => {
+      const st = life(t, a + .35 + i * .09, b, { dy: 60, s0: .9, din: .8, blurIn: 8 });
+      st.rx = (1 - easeOut((t - a - .35 - i * .09) / .8)) * 65;
+      return st;
+    });
+  });
+}
+
+// ---------- Scène 7 : fin ----------
+{
+  const a = 44.7, b = DURATION + 1;
+  const size = V ? 230 : 170, y0 = V ? 470 : 130;
+  logoBlock(size, y0, a, b, false);
+  centeredText('SCOLIA <span style="color:#1D4ED8">Pro</span>', y0 + size + (V ? 60 : 40), V ? 110 : 92, 800, '#1d1d1f', a + .3, b, { ls: '-.035em' });
+  centeredText('La gestion scolaire, simple et sûre.', y0 + size + (V ? 210 : 165), V ? 42 : 36, 500, '#515154', a + .5, b);
+  const cta = centeredText(`<span class="cta">${icon('chat', V ? 34 : 28)}Demandez une démonstration</span>`, y0 + size + (V ? 330 : 255), 1, 700, '#fff', a + .8, b);
+  const pill = cta.querySelector('.cta');
+  Object.assign(pill.style, { fontSize: (V ? 40 : 32) + 'px', padding: V ? '26px 50px' : '20px 40px', position: 'relative', overflow: 'hidden' });
+  shine(pill, V ? 700 : 560, a + 1.9);
+  tracks.push({ e: pill, fn: t => ({ s: 1 + .025 * Math.sin(Math.max(0, t - a - 1.6) * 3) }) });
+  const contact = V
+    ? '<b style="color:#1d1d1f">Jp-Services</b><br>Jean Paul MPOLO LONO<br>+243 977 152 825<br>jeanpaulmpolo242@gmail.com'
+    : '<b style="color:#1d1d1f">Jp-Services</b> · Jean Paul MPOLO LONO<br>+243 977 152 825 · jeanpaulmpolo242@gmail.com';
+  centeredText(contact, y0 + size + (V ? 510 : 400), V ? 38 : 30, 500, '#515154', a + 1.1, b, { ls: '-.01em' }).style.lineHeight = 1.55;
+  centeredText('Windows · Android', V ? H - 170 : H - 90, V ? 30 : 24, 600, '#8e8e93', a + 1.4, b, { ls: '.02em' });
+}
+
+[4.25, 18.65, 38.85, 44.85].forEach(wipe);
+
+// ---------- Rendu d'une image ----------
+window.render = function (t) {
+  background(t);
+  for (const k of tracks) { const st = k.fn(t); if (st) apply(k.e, st); }
+};
+window.ready = async function () {
+  await document.fonts.ready;
+  await Promise.all([...document.images].map(i => i.complete ? i.decode().catch(() => 0) : new Promise(r => { i.onload = i.onerror = r; })));
+  return { W, H, DURATION };
+};
+render(Number(new URLSearchParams(location.search).get('t') || 0));
+</script>
+</body>
+</html>

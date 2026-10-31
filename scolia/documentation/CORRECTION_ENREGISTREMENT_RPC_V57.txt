@@ -1,0 +1,13 @@
+SCOLIA V57 — Correctif enregistrement apprenant / Excel RPC
+Date : 12/10/2026
+
+Correctif appliqué :
+- détection de la référence COM Excel devenue obsolète (RPC_E_DISCONNECTED / 0x80010108) ;
+- rattachement automatique au classeur encore ouvert dans la session Excel privée de SCOLIA ;
+- mémorisation sûre du chemin du classeur actif ;
+- passage des appels Excel.Run par la passerelle COM gérée commune ;
+- sécurisation des écritures apprenants et des lectures de contrôle après sauvegarde ;
+- sécurisation des transactions du dossier data et des segments Excel.
+
+But : éviter qu'une ancienne référence Excel ferme ou rouvre un classeur et bloque ensuite
+l'enregistrement d'un apprenant avec « L'objet invoqué s'est déconnecté de ses clients ».

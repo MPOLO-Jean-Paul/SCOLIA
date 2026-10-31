@@ -1,0 +1,18 @@
+SCOLIA — Revue de la version inscription V3
+
+CORRECTION CONFIRMÉE
+- Empreinte normalisée du module ModuleInterfacePremium corrigée dans programme/manifest.json.
+- Contrôle des 16 modules : leurs empreintes correspondent maintenant au manifeste.
+- Aucun fichier de données scolaires modifié.
+
+POINTS DE VIGILANCE
+- Le module de présentation masque volontairement les champs absents de son plan : vérifier que tous les champs requis restent accessibles.
+- Le rendu MSForms, la compilation VBA et les enregistrements réels doivent être testés dans Excel sur Windows.
+- Effectuer une sauvegarde du classeur avant l'installation.
+
+TESTS CONSEILLÉS
+1. Lancer l'installation depuis le dossier extrait.
+2. Ouvrir Inscription et contrôler champs, navigation clavier et défilement.
+3. Enregistrer deux apprenants successifs, vérifier les confirmations.
+4. Enregistrer deux paiements successifs et vérifier les montants.
+5. Vérifier que la fermeture et la réouverture conservent les données.

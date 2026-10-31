@@ -1,0 +1,7 @@
+﻿ONGLETS ET COMMANDES DE CONNEXION
+
+Les onglets utilisent leur largeur mesurée. Si nécessaire, l’espacement et les icônes deviennent compacts, puis le texte passe à 9,5 ou 9 points. Les onglets restent sur une ligne dès que leurs libellés complets tiennent dans la largeur disponible. Ils reviennent sur plusieurs lignes uniquement si nécessaire, selon la largeur et la mise à l’échelle de Windows.
+
+Ouvrir données, Fermer données et Préparer figurent seulement dans Données. Le groupe Outils garde Actualiser et Aide dans les autres onglets. Les raccourcis de connexion ouvrent Données avant de lancer sa commande.
+
+Fermer l’application, remplacer programme et documentation ; conserver data et sources. Les classeurs ne sont pas modifiés.

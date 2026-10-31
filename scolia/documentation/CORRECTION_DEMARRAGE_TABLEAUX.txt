@@ -1,0 +1,29 @@
+﻿CORRECTION DU DÉMARRAGE — TABLEAUX — 6 octobre 2026
+
+Le diagnostic reçu signale une exception MinimumWidth dans Lisibilite.ps1
+pendant la construction de l'onglet Sécurité.
+
+Cette édition prépare les colonnes avant leur ajout au tableau, puis associe
+les données. Le mode Fill est remplacé par des largeurs explicites : les
+colonnes utilisent l'espace disponible dans une grande fenêtre et disposent
+d'un défilement horizontal dans une petite fenêtre. Le réglage est protégé
+contre les appels imbriqués pendant un redimensionnement ou une liaison.
+Aucune modification de MinimumWidth n'est faite sur les colonnes déjà attachées.
+Les en-têtes conservent leur hauteur automatique et les textes leur retour à la ligne.
+
+UTILISATION
+1. Fermer l'application ITM CD.
+2. Extraire tout le nouveau ZIP dans un nouveau dossier.
+3. Lancer APPLICATION.vbs dans ce nouveau dossier.
+4. Recréer les raccourcis depuis Administration > Raccourcis si nécessaire.
+   Un ancien raccourci peut toujours lancer la version précédente.
+
+Cette correction ne nécessite pas de préparer à nouveau le classeur.
+Les fichiers Excel du paquet n'ont pas été modifiés. Le choix mémorisé du
+classeur et la protection par mot de passe de l'utilisateur sont conservés.
+
+VÉRIFICATION SUR WINDOWS
+Tester le démarrage, l'onglet Sécurité avec et sans historique, la recherche
+sans résultat et avec résultats, puis réduire et agrandir la fenêtre.
+Les contrôles effectués ici sont statiques ; Windows Forms et Excel ne sont
+pas disponibles pour exécuter ces parcours dans cet environnement.

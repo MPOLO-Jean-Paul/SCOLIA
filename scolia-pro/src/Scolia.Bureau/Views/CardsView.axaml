@@ -1,0 +1,48 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Scolia.Bureau.Controls"
+             xmlns:infra="using:Scolia.Bureau.Infrastructure"
+             x:Class="Scolia.Bureau.Views.CardsView">
+  <Grid RowDefinitions="Auto,*">
+    <Border Grid.Row="0" Classes="band" Margin="0,0,0,10">
+      <WrapPanel>
+        <StackPanel Classes="field">
+          <TextBlock Text="Promotion" Classes="fieldlabel" />
+          <ComboBox Width="230" ItemsSource="{Binding Promotions}" SelectedItem="{Binding Promotion}" />
+        </StackPanel>
+        <StackPanel Classes="field">
+          <TextBlock Text="Rechercher" Classes="fieldlabel" />
+          <TextBox Width="240" Text="{Binding Search}" PlaceholderText="Nom ou matricule" />
+        </StackPanel>
+        <StackPanel Classes="field">
+          <TextBlock Text="Mois de la session" Classes="fieldlabel" />
+          <ComboBox Width="150" ItemsSource="{Binding Months}" SelectedItem="{Binding Month}" />
+        </StackPanel>
+        <StackPanel Classes="field">
+          <TextBlock Text="Année" Classes="fieldlabel" />
+          <ComboBox Width="110" ItemsSource="{Binding Years}" SelectedItem="{Binding Year}" />
+        </StackPanel>
+        <StackPanel Classes="field">
+          <TextBlock Text="Exemplaires" Classes="fieldlabel" />
+          <ComboBox Width="150" ItemsSource="{Binding Copies}" SelectedItem="{Binding Copy}" />
+        </StackPanel>
+        <StackPanel Classes="field">
+          <TextBlock Text="Format" Classes="fieldlabel" />
+          <ComboBox Width="200" ItemsSource="{Binding Formats}" SelectedItem="{Binding ExportFormat}" />
+        </StackPanel>
+        <CheckBox Content="Sortis et suspendus" IsChecked="{Binding IncludeLeft}" VerticalAlignment="Bottom" Margin="0,0,12,12" />
+      </WrapPanel>
+    </Border>
+    <DataGrid Grid.Row="1" ItemsSource="{Binding Rows}" AutoGenerateColumns="False" CanUserSortColumns="True">
+      <DataGrid.Columns>
+        <DataGridCheckBoxColumn Header="Carte" Binding="{Binding Selected}" Width="Auto" MinWidth="70" infra:GridPriority.Level="1" />
+        <DataGridTextColumn Header="Matricule" Binding="{Binding Matricule}" IsReadOnly="True" Width="Auto" MinWidth="122" infra:GridPriority.Level="1" />
+        <DataGridTextColumn Header="Nom complet" Binding="{Binding Name}" IsReadOnly="True" Width="*" MinWidth="220" infra:GridPriority.Level="1" />
+        <DataGridTextColumn Header="Promotion" Binding="{Binding Promotion}" IsReadOnly="True" Width="Auto" MinWidth="122" infra:GridPriority.Level="2" />
+        <DataGridTextColumn Header="Statut" Binding="{Binding Status}" IsReadOnly="True" Width="Auto" MinWidth="100" infra:GridPriority.Level="2" />
+        <DataGridTextColumn Header="Diagnostic" Binding="{Binding Diagnostic}" IsReadOnly="True" Width="Auto" MinWidth="170" infra:GridPriority.Level="1" />
+      </DataGrid.Columns>
+    </DataGrid>
+    <c:EmptyState Grid.Row="1" Icon="CardAccountDetailsOutline" Title="Aucun apprenant pour ces critères" Hint="Changez de promotion ou incluez les sortis et suspendus." IsVisible="{Binding !Rows.Count}" />
+  </Grid>
+</UserControl>

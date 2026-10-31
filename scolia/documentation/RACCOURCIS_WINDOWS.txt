@@ -1,0 +1,30 @@
+﻿RACCOURCIS WINDOWS — ITM CD
+
+Lancer APPLICATION.vbs, puis ouvrir Administration > Raccourcis.
+Cliquer sur Créer un raccourci sur le Bureau.
+Deux raccourcis sont créés pour l'utilisateur Windows courant :
+- ITM CD - Secrétariat sur le Bureau ;
+- ITM CD - Secrétariat dans le menu Démarrer.
+Ils utilisent le logo de l'école et ouvrent l'application graphique.
+La fenêtre principale affiche aussi l'icône de l'école.
+
+Pour épingler : clic droit sur le raccourci ITM CD, puis Épingler à la barre
+ des tâches. Selon Windows, cette option se trouve dans Afficher plus d'options,
+ ou depuis le menu Démarrer : rechercher ITM CD, clic droit, Plus si proposé,
+ puis Épingler à la barre des tâches. Cette action reste manuelle.
+Aucune modification des stratégies Windows ni épinglage forcé n'est effectué.
+L'identité Windows du processus et des raccourcis est ItmCd.Secretariat,
+pour associer l'application à son raccourci plutôt qu'à un PowerShell générique.
+
+Le programme doit rester dans son dossier extrait, pas dans le ZIP.
+Si vous déplacez le dossier ou utilisez une nouvelle édition, recréez les
+raccourcis depuis cette copie. Si une icône déjà épinglée ouvre l'ancien dossier,
+détachez-la puis épinglez le nouveau raccourci.
+Le même nom de raccourci ITM CD est mis à jour quand le bouton est réutilisé.
+Aucun droit administrateur, changement du classeur ou réglage de mot de passe
+n'est nécessaire. La sélection mémorisée du classeur est conservée.
+
+Contrôles réalisés : structure PowerShell, génération de l'icône multi-taille,
+arguments de lancement explicites, usage des dossiers spéciaux de l'utilisateur,
+identité commune et intégrité du paquet. Windows/COM et compilation C# non
+exécutés ici : création réelle, épinglage et regroupement à vérifier sous Windows.

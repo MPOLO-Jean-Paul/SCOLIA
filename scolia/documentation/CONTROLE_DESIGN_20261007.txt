@@ -1,0 +1,12 @@
+﻿Contrôles de préparation du 7 octobre 2026
+- Conservation exacte de tous les classeurs, modules VBA et fichiers de calcul.
+- Conservation du mécanisme d’authentification et des données de sécurité.
+- Analyse syntaxique des cinq sources C# réussie.
+- Analyse PowerShell comparée : aucun nouveau problème de grammaire détecté
+  par le parseur tiers. Ce contrôle ne remplace pas le parseur natif PowerShell.
+- Branchements des contrôles de connexion vérifiés.
+- Calculs de disposition vérifiés pour tailles compactes et mises à l’échelle
+  de 100 %, 125 %, 150 %, 200 % et 250 % ; défilement vertical prévu.
+- Contrastes du texte de connexion, du bouton et des erreurs vérifiés.
+- Aperçu de conception rendu et inspecté visuellement.
+Exécution native Windows/Excel et essais de clics : non disponibles ici.

@@ -1,0 +1,57 @@
+SCOLIA V75 — OPTIMISATION DES PERFORMANCES
+Base : SCOLIA_V74_2_DISCIPLINE_CORRIGEE
+
+UTILISATION
+1. Fermez SCOLIA.
+2. Extrayez tout ce ZIP dans un nouveau dossier, puis lancez
+   00_Demarrage/APPLICATION.vbs.
+3. Utilisez votre classeur de travail actuel. Ne remplacez pas vos données
+   récentes par les classeurs d'exemple ou les copies incluses dans l'archive.
+Les corrections de cette édition portent sur le programme, pas sur les données
+ni les macros du classeur. Les corrections V74.1 et V74.2 sont conservées.
+
+CHANGEMENTS
+- Réutilisation des groupes et boutons du ruban lors du retour sur un onglet.
+- Mise à jour de l'ancienne et de la nouvelle page seulement.
+- Vérification des droits, de l'année clôturée et de l'activité conservée lors
+  de chaque réutilisation du ruban. Invalidation sur changement de contexte,
+  de compte, de thème ou de préférences. Reconstruction forcée conservée.
+- Fin des parcours de toutes les polices et des tableaux cachés à chaque
+  redimensionnement. La taille uniforme et le réglage des préférences restent
+  appliqués à la création et lors des changements explicites.
+- Cache borné de normalisation des textes (accents, espaces, casse), utilisé
+  dans les recherches et calculs. Aucune mise en cache des autorisations.
+- Calcul des mois exigibles et des dettes une seule fois par apprenant dans
+  le tableau de bord. La date d'actualisation est maintenant mémorisée.
+- Chargement groupé des tables en mémoire. Suppression des passes de mise
+  en forme doublonnées pendant leur liaison aux grilles.
+- Au lancement, réutilisation de l'analyse syntaxique pour les scripts
+  critiques dont l'empreinte de contenu est identique à celle déjà validée.
+  Leur contenu reste vérifié par SHA-256.
+
+MESURES SUR LE POSTE
+Après utilisation et fermeture normale, les 1000 dernières mesures maximum
+sont enregistrées dans :
+%LOCALAPPDATA%\ITMCD\diagnostics\performance-v75.csv
+Pour ouvrir ce dossier : Windows + R, puis coller le chemin du dossier.
+Le fichier indique l'heure, l'étape et la durée en millisecondes, sans noms
+ni montants d'apprenants. Il remplace les mesures de la session précédente.
+Les mesures sont imbriquées : une opération peut inclure un tableau et un
+rafraîchissement ; il ne faut pas additionner toutes les lignes.
+
+VÉRIFICATIONS
+00_Demarrage/VERIFIER_PERFORMANCES_V75.cmd lance les vérifications ciblées.
+Les tests automatiques vérifient la normalisation, le cache borné, les
+changements de ruban simulés, les droits, les clôtures, l'invalidation des
+préférences et les montants/calendriers des retards.
+
+LIMITES
+La validation de livraison a été exécutée sous PowerShell 7.4.6 sur Linux,
+avec des objets simulés pour l'interface. Le programme conserve la syntaxe
+Windows PowerShell 5.1. L'affichage WinForms réel, Excel COM, les imprimantes
+et le réseau partagé n'ont pas pu être exécutés dans cet environnement.
+Les temps de production devront être mesurés sur le poste Windows.
+Cette édition n'introduit pas de travail Excel en parallèle : les écritures
+restent séquentielles pour conserver leurs validations et leur durabilité.
+Aucun engagement de quelques millisecondes pour tout traitement : ouverture
+Excel, sauvegarde de classeur, export et réseau dépendent du poste et des données.

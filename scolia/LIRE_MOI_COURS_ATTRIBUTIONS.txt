@@ -1,0 +1,83 @@
+﻿SCOLIA — COURS, ATTRIBUTIONS ET CHARGES DES ENSEIGNANTS
+13 OCTOBRE 2026
+
+MISE À JOUR
+1. Fermer SCOLIA et Excel.
+2. Extraire ce ZIP complet dans un nouveau dossier.
+3. Lancer 00_Demarrage/METTRE_A_JOUR_V57.cmd dans ce dossier.
+4. Choisir APPLICATION.vbs de l’installation habituelle et relancer ce lanceur.
+Le mécanisme V57 applique aussi ces nouveaux modules. Toutes les corrections précédentes sont incluses.
+Les données et réglages existants ne sont pas remplacés par cette mise à jour.
+
+OÙ TROUVER LES COMMANDES
+Espace du secrétariat : Outils scolaires > Gestion des cours / Attribution des cours / Charges des enseignants.
+Elles figurent aussi dans Scolarité, groupe Cours et attributions.
+La gestion des enseignants et le suivi de leur présence donnent également accès à la charge des cours.
+Le compte comptable n’a pas accès à la gestion pédagogique.
+La consultation demande les données scolaires connectées ; la modification demande le droit Saisie.
+Les fiches d’enseignants restent administrées selon les droits déjà configurés.
+
+1. CLASSES ET COURS
+Les classes proposées sont les promotions actives déjà configurées pour l’année scolaire.
+Ajouter un cours : choisir la promotion, saisir le numéro du cours, le nom, le volume horaire
+ANNUEL prévu et la cotation maximale en points. Un prochain numéro libre est proposé.
+Le numéro doit être de 1 à 9999 et unique dans la classe, y compris dans ses archives.
+Les volumes et cotations sont positifs, avec deux décimales au maximum.
+Les noms identiques, y compris les différences de casse ou d’accents, sont refusés dans une même classe active.
+Un même cours peut exister dans plusieurs classes avec des volumes et barèmes différents.
+La modification actualise les charges affichées. Elle ne modifie pas automatiquement les anciens fichiers
+Excel de cotes, leurs formules ni les salaires.
+La promotion d’un cours enregistré est fixe : créer le cours dans une autre classe si nécessaire.
+Archiver un cours conserve son historique ; retirer d’abord son attribution.
+Cocher Afficher les cours archivés pour les retrouver et éventuellement les réactiver.
+
+2. ATTRIBUTIONS
+Sélectionner une ligne de cours et cliquer Attribuer.
+Choisir l’enseignant puis enregistrer. Aucun enregistrement n’est possible sans enseignant choisi.
+Un cours dans sa classe ne possède qu’UNE attribution active.
+Un enseignant peut recevoir plusieurs cours et enseigner un même cours dans plusieurs promotions.
+Réattribuer remplace l’enseignant de cette ligne après confirmation et conserve le précédent dans l’historique.
+Retirer l’attribution garde l’historique et rend le cours disponible pour une nouvelle attribution.
+Les enseignants proposés ont une période d’activité qui recoupe l’année scolaire.
+Créer d’abord les enseignants manquants dans leur gestion habituelle.
+
+3. TABLEAU DE BORD DES ENSEIGNANTS
+Charges des enseignants présente le nombre de cours, le nombre de promotions et le total d’heures prévues
+pour chaque enseignant, y compris ceux sans cours (0 heure).
+Détail présente pour l’enseignant sélectionné : promotion, numéro, cours, volume et cotation maximale.
+Chaque attribution compte le volume complet du cours de sa promotion.
+Exemple : Anatomie INF1 30,5 h + Physiologie INF1 45 h + Anatomie INF2 60 h = 135,5 h.
+Les cours archivés et attributions retirées ne comptent plus dans les charges actives.
+Il s’agit d’une CHARGE PÉDAGOGIQUE ANNUELLE PRÉVUE, pas d’un relevé d’heures réellement dispensées.
+Le suivi des présences et les salaires conservent leur fonctionnement propre.
+
+4. RECHERCHE, HISTORIQUE ET EXPORT
+Filtrer par promotion, cours, numéro ou enseignant. La recherche réutilise les données chargées.
+Actualiser relit les enregistrements du dossier data.
+Le menu Actions regroupe modification, archivage, retrait, historique et export CSV selon la fenêtre.
+Les commandes principales restent compactes sur un petit écran ; les tableaux permettent le défilement.
+Les colonnes horaires, numéros et barèmes restent numériques pour un tri correct.
+Les exports CSV nécessitent le droit Exporter et concernent les lignes affichées.
+Raccourcis : cours Ctrl+Alt+Shift+C ; attributions Ctrl+Alt+Shift+T ; charges Ctrl+Alt+Shift+H.
+
+CONSERVATION ET CONTRÔLES
+Cours et attributions sont isolés par base et année scolaire, sauvegardés et restaurés avec les enseignants.
+Une nouvelle année commence sans recopier automatiquement les anciennes attributions.
+Les écritures sont atomiques et protégées par révision et verrous ; une modification concurrente
+ou un changement de base/année/compte provoque un refus et une invitation à actualiser.
+Une année clôturée est consultable sans modification.
+Aucun cours ni aucune attribution d’exemple n’a été injecté dans vos données.
+
+VÉRIFICATION EFFECTUÉE
+44 suites métier et de non-régression passées ; 33 contrôles ciblés des cours et attributions.
+Cours par classe, doublons, enseignant unique, plusieurs cours/classes, total décimal, réattribution,
+historique, archives, droits, clôture, verrou, révision et isolation annuelle vérifiés.
+Sauvegarde et restauration réelles sur fichiers de test : cours et enseignants identiques après restauration.
+Sauvegarde, restauration et nettoyage à nouveau testés après intégration du verrou d’entretien.
+Tri numérique et compatibilité avec les anciennes grilles testés.
+183 scripts PowerShell analysés sans erreur. Manifestes, empreintes et ZIP contrôlés.
+Les essais ont été réalisés sur données isolées ; le moteur de test adapte les références .NET Framework
+et les dates JSON à l’environnement de vérification. Aucun Excel réel n’a été ouvert.
+Les nouvelles fenêtres Windows et le parcours Excel complet restent à valider sur votre poste.
+Test fourni : 00_Demarrage/VERIFIER_COURS_ATTRIBUTIONS.cmd (tests métier puis vraies fenêtres Windows).
+Toutes les suites : 00_Demarrage/VERIFIER_FONCTIONNALITES.cmd.

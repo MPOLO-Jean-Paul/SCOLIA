@@ -1,0 +1,11 @@
+Contrôles statiques SCOLIA V20
+
+- Le gestionnaire de sauvegarde ne ferme plus le formulaire après succès.
+- Le succès est présenté dans le bandeau du formulaire avec le matricule.
+- Une nouvelle inscription vide les champs personnels, conserve la promotion sélectionnée et replace le curseur dans Nom.
+- La modification d'un dossier existant reste dans le formulaire.
+- La référence des valeurs enregistrées est actualisée après succès pour éviter une alerte de modifications non enregistrées injustifiée.
+- Les champs de mot de passe de ITMLoginForm et ITMAccountForm désactivent AutoSize et calculent une hauteur intérieure adaptée à la police et au DPI.
+- TestsConfirmationInscription.ps1 ajouté pour être exécuté sur Windows PowerShell 5.1.
+
+Non revendiqué : aucun test Excel/VBA ni capture de rendu Windows n'a été exécuté dans cet environnement.

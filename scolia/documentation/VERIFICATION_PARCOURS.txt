@@ -1,0 +1,7 @@
+﻿CONTROLES DU PARCOURS DE PAIEMENT
+
+Contrôles statiques réussis : recherche à plusieurs mots, invalidation de l'ancien dossier à la recherche, montant remis à zéro après confirmation du moteur VBA, sauvegarde distinguée de l'actualisation, verrou du bouton jusqu'à actualisation réussie, rejet du montant nul ou supérieur au solde avant confirmation.
+Double-clic et touche Entrée raccordés à la même fonction de sélection.
+Tous les modules VBA et classeurs inchangés par rapport à l'édition précédente.
+Champ Adresse et agrandissement de la recherche conservés.
+Ces contrôles ne constituent pas une exécution sous Windows et Excel.

@@ -1,0 +1,42 @@
+ÉDITION 94 — OPTIMISATION DU DÉMARRAGE
+
+CHANGEMENTS
+1. Les composants C# compilés sont conservés pour les prochains lancements.
+   Le cache est séparé des données scolaires, dans le profil Windows de
+   l'utilisateur : LocalAppData/ITMCD/cache/compilation.
+   Le code source, les références, la version de PowerShell et de .NET ainsi
+   que l'architecture déterminent le composant utilisé. Toute modification
+   produit une nouvelle compilation. Un binaire endommagé est reconstruit.
+   Les lancements simultanés coordonnent la publication du cache.
+   Si la création du cache échoue, la compilation en mémoire reste disponible.
+2. La collecte des commandes fréquentes ne construit plus les rubans des
+   onglets masqués. Les commandes et leurs raccourcis restent enregistrés.
+   Le ruban visible est conservé ; les autres sont créés quand ils sont utilisés.
+3. Les scripts de tests ne sont plus analysés par le lanceur de production.
+   Les 35 scripts de production sont toujours contrôlés ; les tests complets
+   restent fournis pour les vérifications techniques.
+4. La recherche du classeur mémorisé est déplacée après l'ouverture de la
+   fenêtre principale. Elle utilise l'indicateur de traitement et conserve
+   les contrôles d'intégrité et la reconnexion automatique existants.
+
+UTILISATION
+Lancer APPLICATION.vbs comme auparavant. Le premier lancement de cette édition
+crée le cache de compilation ; les suivants le réutilisent automatiquement.
+Ne supprimez pas le cache entre chaque lancement si vous souhaitez ce gain.
+Les mots de passe, les paramètres de sécurité et les données ne sont pas
+modifiés par cette optimisation. Conserver le dossier data lors de la mise à jour.
+
+VÉRIFICATIONS
+- Compilation réelle et rechargement dans des processus séparés.
+- Reconstruction après altération du DLL et recompilation après modification
+  du code source.
+- Parcours des 10 onglets et 66 commandes, sans construire de groupes masqués.
+- Conservation du ruban visible pendant la collecte des commandes fréquentes.
+- Syntaxe des 80 scripts PowerShell.
+- Tests de classement, cotes décimales, décisions et récupération après erreur.
+- Intégrité du ZIP et conservation des six XLSM et des lanceurs VBS.
+
+Les mesures d'un composant isolé confirment la réutilisation du cache dans
+l'environnement de test. Elles ne mesurent pas le lancement complet du logiciel
+sur le PC Windows de l'école. Aucun délai de démarrage précis n'est garanti ;
+Excel et la lecture des données interviennent encore après l'ouverture.

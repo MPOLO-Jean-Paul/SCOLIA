@@ -1,0 +1,2 @@
+SCOLIA – Habillage du formulaire Apprenant
+Champs sur surfaces blanches, soulignement bleu, typographie Segoe UI, espacement vertical de 80 points. Les noms des contrôles et les traitements restent inchangés. Vérification visuelle sous Windows et test de l’installateur nécessaires avant production.

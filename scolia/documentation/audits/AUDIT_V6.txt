@@ -1,0 +1,7 @@
+AUDIT SCOLIA V6
+
+Erreur confirmee : empreinte du module ModuleFiabilite incorrecte dans manifest.json, empechant potentiellement son installation. Empreinte recalculee avec la normalisation de Installer.ps1.
+
+Risque restant : ITMDebutSaisie restaure un verrou actif sans distinguer une operation encore en cours. Cela pourrait permettre des operations imbriquees. A verifier sous Windows.
+
+Tests non executes : compilation VBA, installation Windows, enregistrement consecutif et paiements. Sauvegarder les donnees avant installation.

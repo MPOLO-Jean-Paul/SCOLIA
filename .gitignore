@@ -1,0 +1,34 @@
+# Donnees de l'etablissement : ne jamais publier (depot public)
+scolia/data/*
+scolia/journaux/*
+scolia/configuration/*
+scolia/archives/*
+scolia/exports/*
+scolia/sources/*
+!scolia/*/LIRE_MOI.txt
+*.xlsm
+*.xlsx
+*.bak
+*.lock
+# Outils de construction
+build/
+dist/
+**/bin/
+**/obj/
+# Documents pouvant contenir des donnees reelles (noms, paiements, captures)
+scolia/documentation/RAPPROCHEMENT_PAIEMENTS_A_CONFIRMER.csv
+scolia/documentation/*.png
+scolia/documentation/Exemples/
+# SCOLIA Pro
+scolia-pro/src/Scolia.Api/wwwroot/
+scolia-pro/**/*.db
+scolia-pro/**/*.db-shm
+scolia-pro/**/*.db-wal
+scolia-pro/**/donnees/
+scolia-pro/web/node_modules/
+scolia-pro/web/dist/
+scolia-pro/e2e/node_modules/
+scolia-pro/e2e/test-results/
+scolia-pro/e2e/playwright-report/
+scolia-pro/artifacts/
+scolia-pro/web/tsconfig.tsbuildinfo

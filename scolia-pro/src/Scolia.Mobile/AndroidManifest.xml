@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" android:installLocation="auto">
+  <!-- Réseau de l'établissement : connexion au serveur SCOLIA de l'ordinateur principal et recherche sur le Wi-Fi. -->
+  <uses-permission android:name="android.permission.INTERNET" />
+  <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+  <!-- Dialogue biométrique entièrement fourni par Android. -->
+  <uses-permission android:name="android.permission.USE_BIOMETRIC" />
+  <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+  <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE" />
+  <!-- Téléphone serveur de l'établissement : service de premier plan, Wi-Fi et processeur éveillés, notification. -->
+  <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+  <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+  <uses-permission android:name="android.permission.WAKE_LOCK" />
+  <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+  <!-- Reprise sur les appareils volontairement configurés comme serveur de l’établissement. -->
+  <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+  <!-- Installation de Tailscale téléchargé par SCOLIA : Android demande toujours l'accord de l'utilisateur. -->
+  <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+  <application android:label="SCOLIA" android:networkSecurityConfig="@xml/reseau" android:supportsRtl="false">
+    <!-- Les documents enregistrés s'ouvrent dans le lecteur PDF ou le tableur du téléphone. -->
+    <provider android:name="androidx.core.content.FileProvider"
+              android:authorities="com.jpservices.scolia.fichiers"
+              android:exported="false"
+              android:grantUriPermissions="true">
+      <meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/fichiers" />
+    </provider>
+  </application>
+  <!-- Ouvrir WhatsApp, les SMS, le téléphone, l'e-mail et les documents avec les applications installées. -->
+  <queries>
+    <!-- Android 11+ : autoriser uniquement la détection du VPN Tailscale officiel. -->
+    <package android:name="com.tailscale.ipn" />
+    <intent><action android:name="android.intent.action.VIEW" /><data android:scheme="https" /></intent>
+    <intent><action android:name="android.intent.action.VIEW" /><data android:scheme="sms" /></intent>
+    <intent><action android:name="android.intent.action.VIEW" /><data android:scheme="tel" /></intent>
+    <intent><action android:name="android.intent.action.VIEW" /><data android:scheme="mailto" /></intent>
+    <intent><action android:name="android.intent.action.VIEW" /><data android:mimeType="application/pdf" /></intent>
+  </queries>
+</manifest>

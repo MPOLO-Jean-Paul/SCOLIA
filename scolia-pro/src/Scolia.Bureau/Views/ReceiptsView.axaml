@@ -1,0 +1,60 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Scolia.Bureau.Controls"
+             xmlns:infra="using:Scolia.Bureau.Infrastructure"
+             x:Class="Scolia.Bureau.Views.ReceiptsView">
+  <Grid RowDefinitions="Auto,*">
+    <Border Grid.Row="0" Classes="band" Margin="0,0,0,10">
+      <WrapPanel>
+        <StackPanel Classes="field">
+          <TextBlock Text="Rechercher" Classes="fieldlabel" />
+          <TextBox Width="260" Text="{Binding Search}" PlaceholderText="N° de reçu, matricule, nom" />
+        </StackPanel>
+        <StackPanel Classes="field">
+          <TextBlock Text="Du" Classes="fieldlabel" />
+          <CalendarDatePicker PlaceholderText="Début" SelectedDateFormat="Short" Width="160" SelectedDate="{Binding From}" />
+        </StackPanel>
+        <StackPanel Classes="field">
+          <TextBlock Text="Au" Classes="fieldlabel" />
+          <CalendarDatePicker PlaceholderText="Fin" SelectedDateFormat="Short" Width="160" SelectedDate="{Binding To}" />
+        </StackPanel>
+        <StackPanel Classes="field">
+          <TextBlock Text="Mode de paiement" Classes="fieldlabel" />
+          <ComboBox Width="170" ItemsSource="{Binding Methods}" SelectedItem="{Binding Method}" />
+        </StackPanel>
+        <StackPanel Classes="field">
+          <TextBlock Text="Statut" Classes="fieldlabel" />
+          <ComboBox Width="150" ItemsSource="{Binding Statuses}" SelectedItem="{Binding Status}" />
+        </StackPanel>
+        <StackPanel Classes="field">
+          <TextBlock Text="Promotion" Classes="fieldlabel" />
+          <ComboBox Width="220" ItemsSource="{Binding Promotions}" SelectedItem="{Binding Promotion}" />
+        </StackPanel>
+      </WrapPanel>
+    </Border>
+    <DataGrid x:Name="ReceiptGrid" Grid.Row="1" ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}"
+              AutoGenerateColumns="False" IsReadOnly="True">
+      <DataGrid.Columns>
+        <DataGridTextColumn Header="N° de reçu" Binding="{Binding Number}" Width="Auto" MinWidth="150" />
+        <DataGridTextColumn infra:GridPriority.Level="2" Header="Date" Binding="{Binding Date}" Width="Auto" MinWidth="120" />
+        <DataGridTextColumn infra:GridPriority.Level="2" Header="Matricule" Binding="{Binding Matricule}" Width="Auto" MinWidth="122" />
+        <DataGridTextColumn Header="Apprenant" Binding="{Binding Student}" Width="2*" MinWidth="260" />
+        <DataGridTextColumn infra:GridPriority.Level="3" Header="Promotion" Binding="{Binding Promotion}" Width="Auto" MinWidth="122" />
+        <DataGridTextColumn Header="Montant" Binding="{Binding Amount}" Width="Auto" MinWidth="130" />
+        <DataGridTextColumn infra:GridPriority.Level="3" Header="Mode" Binding="{Binding Method}" Width="Auto" MinWidth="140" />
+        <DataGridTemplateColumn Header="Statut" Width="Auto" MinWidth="100">
+          <DataGridTemplateColumn.CellTemplate>
+            <DataTemplate>
+              <StackPanel Classes="status">
+                <Ellipse Width="8" Height="8" Fill="{Binding StatusBrush}" VerticalAlignment="Center" />
+                <TextBlock Text="{Binding Status}" VerticalAlignment="Center" />
+              </StackPanel>
+            </DataTemplate>
+          </DataGridTemplateColumn.CellTemplate>
+        </DataGridTemplateColumn>
+        <DataGridTextColumn infra:GridPriority.Level="3" Header="Caissier" Binding="{Binding Cashier}" Width="Auto" MinWidth="150" />
+      </DataGrid.Columns>
+    </DataGrid>
+    <c:EmptyState Grid.Row="1" Icon="ReceiptTextOutline" Title="Aucun reçu sur ces critères" Hint="Changez la période, le mode de paiement ou le statut." IsVisible="{Binding Items.Count, Converter={StaticResource IsEmpty}}" />
+  </Grid>
+</UserControl>

@@ -1,0 +1,40 @@
+﻿ITM CŒUR DE DIEU — ÉDITION 87
+
+CORRECTION CIBLÉE DU JOURNAL FOURNI
+Le journal situe le défaut dans System.Management.Automation.ComInterop,
+GetTypeAttrForTypeInfo / PSDispExComObject.EnsureScanDefinedMethods,
+lors de la lecture Count des propriétés personnalisées du classeur.
+L’adaptateur COM de PowerShell échoue avant cette lecture.
+
+Les lectures, écritures et appels COM du transport partagé passent désormais
+par ExcelDispatch.cs. La réflexion est exécutée entièrement en C#, sans
+appel GetType/InvokeMember depuis PowerShell sur l’objet Office.
+Les paramètres facultatifs des appels Office sont explicitement conservés.
+Aucune répétition automatique des écritures n’est ajoutée.
+Les erreurs gardent leur cause interne dans le diagnostic.
+
+La fenêtre de diagnostic utilise maintenant le logo ITM dans l’entête et
+une icône ITM au format compatible dans la barre de titre. Son texte reste
+sélectionnable, avec Copier le diagnostic, Fermer, Entrée et Échap.
+
+MISE EN PLACE
+Fermez l’application et Excel. Extrayez entièrement cette édition.
+Remplacez les fichiers programme de votre application par ceux de ce ZIP,
+ainsi que les ressources Assets correspondantes. Conservez votre dossier
+data, vos paramètres et vos journaux. Ne recréez pas votre base.
+Lancez APPLICATION.vbs puis reconnectez votre classeur existant.
+INSTALLER.vbs conserve l’installation graphique des corrections.
+
+VÉRIFICATIONS
+Compilation C# 5, syntaxe des 69 scripts et encodages Windows PowerShell 5.1.
+Tests du composant C# : Count, Item, Name, Value, Add, Close, paramètres
+facultatifs de Run, erreurs internes et absence de répétition des appels.
+Tests graphiques sous Mono : diagnostic clair/sombre à deux largeurs,
+logo et icône, actions clavier, comptes, ruban, icônes et contraste.
+Les six XLSM, le VBA et les lanceurs VBS sont identiques à l’édition 86.
+
+LIMITATION DE VALIDATION
+Ces tests ne remplacent pas un essai avec Windows PowerShell 5.1 et Excel
+réel : cette intégration n’est pas exécutable dans cet environnement.
+Les scénarios TestsPasserelleCOM.ps1 et TestsIdentiteInitialisation.ps1
+sont fournis pour une vérification native sur Windows.

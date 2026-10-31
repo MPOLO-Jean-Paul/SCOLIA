@@ -1,0 +1,26 @@
+﻿Tests sous PowerShell 7.4.6 / Linux, interface simulee.
+
+TestsSyntaxePowerShellV722
+OK - 221 scripts PowerShell analyses sans erreur de syntaxe.
+
+TestsPerformancesV75
+PASS normalisation Unicode, clés ordinales, limite mémoire
+BENCH texte, 3000 appels: ancien=431.0 ms; nouveau=34.6 ms
+PASS cache ruban, droits, activité, clôture, thème, rôle, reconstruction forcée
+BENCH rubans simulés: 100 changements=34.0 ms; 0 groupe reconstruit
+PASS montants, mois de retard, filtre mensuel, date du tableau de bord
+
+TestsReactivitePages
+PASS navigation en cache, invalidation après modification, liste cachée évitée, changement de date des retards
+
+TestsRetardsCalendrier
+PASS seuil du 6, année civile, paiement complet/partiel, libellés des seuls mois impayés, filtre du mois courant
+PASS dix mois des prises en charge et exclusion des mensualités couvertes
+
+TestsRaccourcisFrequents
+PASS : trois raccourcis, classement évolutif, droits, valeurs initiales et lecture de l'historique.
+
+Test historique TestsEnregistrementActualisation.ps1 : echec identique dans la base V74.2 et V75 (Test-ITMPageNeedsRefresh non importe par le test). Non compte comme reussi.
+Windows, WinForms, Excel COM et reseau : validation sur poste utilisateur requise.
+
+Verification complementaire : premier affichage avec currentPage deja initialise ; TestsReactivitePages PASS. Syntaxe finale : 221 scripts PASS.

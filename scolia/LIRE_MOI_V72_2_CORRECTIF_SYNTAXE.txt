@@ -1,0 +1,12 @@
+﻿SCOLIA V72.2 - Correctif syntaxe PowerShell 5.1
+
+Correctifs :
+- PaiementsMultiplesV72.ps1 : correction de la ligne 247 qui contenait une apostrophe typographique dans une chaine delimitee par apostrophes.
+- Les erreurs en cascade (terminateur manquant, accolade manquante, Catch/Finally manquant) provenaient de cette rupture de chaine.
+- TestsPaiementsMultiplesV72.ps1 : messages de test rendus compatibles PowerShell 5.1.
+- Ajout d'un controle qui analyse la syntaxe de tous les fichiers .ps1 avec le parseur natif de Windows PowerShell.
+
+Avant le premier lancement, vous pouvez executer :
+00_Demarrage\VERIFIER_LANCEMENT_V72_2.cmd
+
+Si les trois etapes affichent OK, lancez SCOLIA normalement.

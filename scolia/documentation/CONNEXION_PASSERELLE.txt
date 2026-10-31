@@ -1,0 +1,9 @@
+﻿CORRECTION DE LA VÉRIFICATION DE LA PASSERELLE — ÉDITION 81
+
+La vérification de version et la lecture des données utilisent désormais un appel COM explicite. Les trente paramètres optionnels de Run sont renseignés avec Missing.Value. Le nom complet de la macro est calculé avant l’appel. La session Excel, le classeur et son nom sont contrôlés avant toute lecture. Une erreur conserve la cause et précise la macro concernée dans le diagnostic.
+
+Le contrôle des versions reconnues reste obligatoire. Aucun résultat n’est inventé, aucun enregistrement n’est relancé automatiquement. Les écritures, la gestion des identités et les classeurs sources ne sont pas modifiés.
+
+Fermez l’application et Excel. Extrayez cette édition dans un nouveau dossier, puis lancez APPLICATION.vbs. Conservez votre dossier data existant et reconnectez-le si nécessaire. Ne recréez pas vos données.
+
+Contrôles fournis : programme/TestsPasserelleCOM.ps1 vérifie le transport par réflexion sans Excel ; TestsConnexionObjet.ps1 vérifie les scénarios de connexion simulés. Ces tests PowerShell et la connexion Excel doivent être exécutés sous Windows. Les contrôles statiques, de compilation C# et d’intégrité ZIP ont été exécutés dans l’environnement de livraison ; Excel COM n’y est pas disponible.

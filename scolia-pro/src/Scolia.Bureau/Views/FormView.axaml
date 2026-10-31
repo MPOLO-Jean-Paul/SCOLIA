@@ -1,0 +1,81 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:infra="using:Scolia.Bureau.Infrastructure"
+             x:Class="Scolia.Bureau.Views.FormView">
+  <UserControl.Styles>
+    <Style Selector="Border.sheet"><Setter Property="MinWidth" Value="460" /></Style>
+    <!-- Formulaire intégré à une page : largeur adaptative, ni ombre ni en-tête -->
+    <Style Selector="Border.sheet.embedded">
+      <Setter Property="MinWidth" Value="0" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="BoxShadow" Value="0 0 0 0 Transparent" />
+      <Setter Property="Background" Value="{DynamicResource GroupBrush}" />
+      <Setter Property="MaxWidth" Value="720" />
+    </Style>
+  </UserControl.Styles>
+  <!-- Feuille de dialogue macOS : titre gras, champs, boutons en capsule alignés à droite -->
+  <Border Classes="card sheet" infra:Adaptive.FitDialog="True" Classes.embedded="{Binding Embedded}" MaxWidth="620" Padding="0" CornerRadius="14" Background="{DynamicResource SurfaceBrush}" ClipToBounds="True"
+          BoxShadow="0 8 32 0 #3D000000">
+    <Grid RowDefinitions="Auto,*,Auto,Auto">
+      <Grid ColumnDefinitions="Auto,*,Auto" Margin="24,22,18,0" IsVisible="{Binding !Embedded}">
+        <Border Classes="appicon large" Background="{Binding HeaderBrush}" VerticalAlignment="Top" Margin="0,0,14,0">
+          <mi:MaterialIcon Kind="{Binding HeaderIcon}" />
+        </Border>
+        <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
+          <TextBlock Text="{Binding Title}" FontSize="17" FontWeight="Bold" TextWrapping="Wrap" />
+          <TextBlock Text="{Binding Subtitle}" Classes="muted" TextWrapping="Wrap" IsVisible="{Binding HasSubtitle}" />
+        </StackPanel>
+        <Button Grid.Column="2" Classes="closex" Command="{Binding Cancel}" IsEnabled="{Binding !Busy}" Margin="12,0,0,0"><mi:MaterialIcon Kind="Close" /></Button>
+      </Grid>
+
+      <!-- Le message et les champs defilent ensemble, le bouton Importer reste fixe sur mobile. -->
+      <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="24,12,10,8">
+        <StackPanel>
+        <TextBlock Text="{Binding Message}" TextWrapping="Wrap" IsVisible="{Binding HasMessage}" Margin="0,0,14,12" />
+      <ItemsControl ItemsSource="{Binding Fields}" Margin="0,0,14,0">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate>
+            <StackPanel Spacing="4" Margin="0,0,0,8">
+              <StackPanel IsVisible="{Binding IsHeader}" Spacing="2" Margin="0,10,0,2">
+                <TextBlock Text="{Binding Label}" Classes="heading" />
+                <TextBlock Text="{Binding Hint}" Classes="muted" TextWrapping="Wrap" IsVisible="{Binding Hint, Converter={x:Static ObjectConverters.IsNotNull}}" />
+              </StackPanel>
+              <CheckBox IsVisible="{Binding IsFlag}" IsChecked="{Binding Flag}" Content="{Binding Label}" />
+              <StackPanel IsVisible="{Binding IsInput}" Spacing="4">
+                <TextBlock Text="{Binding Caption}" Classes="fieldlabel" />
+                <!-- L'aide s'écrit une seule fois, sous le champ : elle reste lisible pendant la saisie. -->
+                <TextBox IsVisible="{Binding IsText}" Text="{Binding Text}" />
+                <TextBox IsVisible="{Binding IsPhone}" Text="{Binding Text}" infra:PhoneInput.Digits="{Binding IsPhone}" />
+                <TextBox IsVisible="{Binding IsSecret}" Text="{Binding Text}" PasswordChar="•" />
+                <TextBox IsVisible="{Binding IsMultiline}" Text="{Binding Text}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="84" />
+                <CalendarDatePicker PlaceholderText="jj/mm/aaaa" SelectedDateFormat="Short" IsVisible="{Binding IsDay}" SelectedDate="{Binding Day}" HorizontalAlignment="Stretch" />
+                <ComboBox IsVisible="{Binding IsChoice}" ItemsSource="{Binding Options}" SelectedItem="{Binding Choice}" HorizontalAlignment="Stretch" />
+                <TextBlock Text="{Binding Hint}" Classes="muted" FontSize="{DynamicResource FsSmall}" IsVisible="{Binding HasHint}" TextWrapping="Wrap" />
+                <TextBlock Text="{Binding Error}" Classes="error" IsVisible="{Binding HasError}" TextWrapping="Wrap" />
+              </StackPanel>
+            </StackPanel>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+        </StackPanel>
+      </ScrollViewer>
+
+      <Border Grid.Row="2" Background="{DynamicResource RedSoftBrush}" CornerRadius="{StaticResource RadiusSmall}" Padding="12,8" Margin="24,4,24,8" IsVisible="{Binding HasError}">
+        <TextBlock Text="{Binding Error}" Classes="error" TextWrapping="Wrap" />
+      </Border>
+
+      <!-- Actions : Annuler puis le bouton principal, alignés à droite -->
+      <Panel Grid.Row="3" Margin="20,12,20,16">
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="12" IsVisible="{Binding CanSubmit}">
+          <Button Content="{Binding CancelText}" Command="{Binding Cancel}" IsVisible="{Binding ShowCancel}" IsEnabled="{Binding !Busy}" MinWidth="96" />
+          <Button Content="{Binding SubmitText}" Command="{Binding Submit}" IsEnabled="{Binding !Busy}" MinWidth="96"
+                  Classes.primary="{Binding !Danger}" Classes.danger="{Binding Danger}" />
+        </StackPanel>
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" IsVisible="{Binding !CanSubmit}">
+          <Button Content="{Binding CancelText}" Command="{Binding Cancel}" Classes="primary" MinWidth="96" />
+        </StackPanel>
+      </Panel>
+    </Grid>
+  </Border>
+</UserControl>

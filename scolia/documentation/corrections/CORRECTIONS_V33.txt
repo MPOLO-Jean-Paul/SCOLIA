@@ -1,0 +1,18 @@
+SCOLIA — Corrections V33
+
+1. Champ mot de passe
+- Champ agrandi et espacé pour éviter la coupe des caractères.
+- Bouton œil accessible au clavier, avec nom accessible qui bascule entre afficher/masquer.
+- Correction de l'ordre d'affichage des contrôles : le champ de saisie ne recouvre plus le bouton œil.
+- Focus visuel conservé sur le cadre, style moderne cohérent avec Windows.
+- Application du contrôle partagé aux formulaires de connexion et aux champs de mot de passe de configuration.
+
+2. Configuration initiale
+- Ajout d'un indicateur animé pendant l'enregistrement.
+- Ajout d'un statut explicite « Vérification et enregistrement… ».
+- Désactivation temporaire des boutons pendant l'opération pour éviter les doubles clics.
+- Curseur d'attente et rafraîchissement de l'interface avant les opérations disque.
+- Message d'échec visible si la validation ou l'enregistrement échoue; les boutons sont réactivés.
+- Confirmation de succès avant la fermeture normale de la fenêtre après un enregistrement réussi.
+
+À vérifier sur le poste Windows cible : ouvrir la configuration, saisir plusieurs classes au format CODE;montant, enregistrer et confirmer l'apparition de l'indicateur; vérifier que profil-scolia.json est créé dans le dossier sélectionné. Tester également l'œil du champ de connexion et la navigation au clavier.

@@ -1,0 +1,29 @@
+﻿ONGLETS ET RUBAN MODERNES — 6 octobre 2026
+
+Navigation inspirée des onglets d'éditeur VS Code : une seule rangée,
+icônes à gauche, trait bleu de l'onglet actif, survol discret, accès clavier.
+En petite fenêtre, faites défiler horizontalement la barre d'onglets.
+Les pages métier restent ouvertes : aucun bouton de fermeture artificiel.
+
+Le ruban regroupe les quatre commandes du classeur et une action rapide
+adaptée à la page active : inscription, recherche, export PDF, actualisation,
+raccourci Windows ou mot de passe. Ces actions réutilisent les parcours et
+les validations existants. Les actions nécessitant un classeur sont désactivées
+quand aucun classeur n'est connecté. Pendant une opération elles sont bloquées.
+Le ruban passe sur deux rangées dans une fenêtre étroite.
+
+Le style s'inspire des surfaces claires et du langage Liquid Glass de macOS,
+ainsi que des boutons arrondis de Material 3 Expressive / Android 16.
+Il s'agit d'une adaptation native Windows : dégradés légers, contours fins,
+couleurs lisibles, surfaces arrondies et onglets secondaires harmonisés.
+Aucun moteur de flou système ni moteur web n'est ajouté.
+Le logo transparent, les accents Unicode et l'indicateur de traitement sont conservés.
+
+Fermez ITM CD, extrayez tout le ZIP dans un nouveau dossier, lancez APPLICATION.vbs.
+Recréez vos raccourcis depuis Administration > Raccourcis si nécessaire.
+Cette modification visuelle ne nécessite aucune nouvelle préparation du classeur.
+Les fichiers Excel du paquet restent inchangés.
+
+Contrôles effectués : vérifications statiques des scripts et conservation des
+classeurs. Le rendu natif, le clavier et le défilement doivent être essayés
+sur Windows : cet environnement ne dispose pas de Windows Forms ni d'Excel.

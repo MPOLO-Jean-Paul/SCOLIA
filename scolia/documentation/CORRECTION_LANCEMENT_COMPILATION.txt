@@ -1,0 +1,12 @@
+﻿CORRECTION DU LANCEMENT
+
+Cause : dans ActivityIndicator.cs, la variable locale primary était déclarée dans la méthode OnPaint, puis déclarée une seconde fois dans un bloc interne. Le compilateur C# refuse ce conflit de portée (CS0136).
+
+Correction : la variable du bloc sombre est renommée darkPrimary. Le comportement visuel et les opérations sur les classeurs ne sont pas modifiés.
+
+Vérification effectuée : l’erreur CS0136 est reproduite en compilant la version précédente. Les cinq sources C# corrigées sont ensuite compilées séparément avec Mono mcs en mode C# 5, avec les références WinForms/Drawing nécessaires. Aucune erreur de compilation ; trois avertissements préexistants sur des champs inutilisés de l’animation. La syntaxe des scripts et l’intégrité du ZIP sont également contrôlées.
+
+Le démarrage complet Windows/Excel n’est pas exécuté sous Linux. TestsCompilation.ps1 est fourni pour refaire la compilation avec Windows PowerShell 5.1, dans un processus neuf ; il n’ouvre aucune fenêtre ni aucun classeur.
+
+MISE À JOUR
+Fermez l’application ITM CD. Remplacez le dossier programme par celui du ZIP corrigé, puis relancez APPLICATION.vbs. Il n’est pas nécessaire de réinstaller les corrections du classeur pour cette erreur. Conservez vos dossiers data et vos classeurs.

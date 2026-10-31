@@ -1,0 +1,261 @@
+﻿Option Explicit
+Private mActive As Boolean
+Private mDebutOperation As Date
+Private mEtatCapture As Boolean
+Private mSheet As Worksheet
+Private mInitialLast As Long
+Private mReservedLast As Long
+Private mEvents As Boolean
+Private mScreen As Boolean
+Private mCalculation As XlCalculation
+Private mAutoFill As Boolean
+Private mBackup As String
+Private mRecoveryRequired As Boolean
+
+Public Function ITMPerformanceVersion() As String
+    ITMPerformanceVersion = "ITM-PERF-2"
+End Function
+
+Public Function ITMTransactionVersion() As String
+    ITMTransactionVersion = "ITM-TRANSACTION-19"
+End Function
+
+Public Function ITMColonnesDonnees(ByVal ws As Worksheet) As Long
+    Select Case UCase$(ws.Name)
+        Case "APPRENANTS": ITMColonnesDonnees = 15
+        Case "PAIEMENTS": ITMColonnesDonnees = 14
+        Case "PROMOTIONS": ITMColonnesDonnees = 8
+        Case Else: ITMColonnesDonnees = 15
+    End Select
+    If ws.ListObjects.Count = 1 Then ITMColonnesDonnees = Application.Max(ITMColonnesDonnees, ws.ListObjects(1).ListColumns.Count)
+End Function
+
+Public Function ITMDerniereLigne(ByVal ws As Worksheet) As Long
+    Dim c As Range, zone As Range
+    Set zone = ws.Range(ws.Cells(5, 1), ws.Cells(ws.Rows.Count, ITMColonnesDonnees(ws)))
+    Set c = zone.Find(What:="*", After:=zone.Cells(1, 1), _
+        LookIn:=xlValues, LookAt:=xlPart, SearchOrder:=xlByRows, _
+        SearchDirection:=xlPrevious, MatchCase:=False, SearchFormat:=False)
+    ITMDerniereLigne = 4
+    If Not c Is Nothing Then ITMDerniereLigne = c.Row
+End Function
+
+Private Sub ITMVerifierZoneSaisie(ByVal ws As Worksheet)
+    Dim t As ListObject
+    If ws.ListObjects.Count <> 1 Then Err.Raise vbObjectError + 921, , "Un tableau de donnees unique est requis."
+    Set t = ws.ListObjects(1)
+    If t.HeaderRowRange.Row <> 4 Or t.Range.Column <> 1 Then Err.Raise vbObjectError + 922, , "Preparez le classeur : les titres du tableau doivent commencer en A4."
+    If t.ListColumns.Count < ITMColonnesDonnees(ws) Then Err.Raise vbObjectError + 923, , "Des colonnes de donnees manquent dans le tableau."
+    If t.ShowTotals Then Err.Raise vbObjectError + 924, , "Desactivez la ligne des totaux du tableau avant une saisie."
+End Sub
+
+Private Function ITMTransactionExterneActive() As Boolean
+    Dim chemin As String
+    On Error GoTo Fin
+    If ThisWorkbook.Path = "" Then Exit Function
+    chemin = ThisWorkbook.Path & Application.PathSeparator & "transaction.json"
+    ITMTransactionExterneActive = (Dir$(chemin, vbNormal) <> "")
+Fin:
+End Function
+
+Public Function ITMSauvegarde() As String
+    Dim dossier As String, chemin As String, suffixe As Long
+    If ThisWorkbook.ReadOnly Then Err.Raise vbObjectError + 910, , "Le fichier est en lecture seule."
+    If ThisWorkbook.Path = "" Then Err.Raise vbObjectError + 911, , "Enregistrez le fichier sur le disque avant de saisir."
+    dossier = ThisWorkbook.Path & Application.PathSeparator & "Sauvegardes"
+    If Dir$(dossier, vbDirectory) = "" Then MkDir dossier
+    chemin = dossier & Application.PathSeparator & "ITM_" & Format$(Now, "yyyymmdd_hhnnss")
+    Do While Dir$(chemin & "_" & suffixe & ".xlsm") <> ""
+        suffixe = suffixe + 1
+    Loop
+    ITMSauvegarde = chemin & "_" & suffixe & ".xlsm"
+    ThisWorkbook.SaveCopyAs ITMSauvegarde
+End Function
+
+Public Sub ITMDebutSaisie(ByVal ws As Worksheet)
+    Dim erreur As Long, texte As String, erreursRecuperation As String
+    ' Une transaction qui n'a pas pu etre annulee interdit toute nouvelle saisie.
+    If mRecoveryRequired Then
+        Err.Raise vbObjectError + 929, "ITMDebutSaisie", _
+            "Une transaction precedente n'a pas pu etre restauree. Fermez le classeur sans enregistrer les changements partiels, puis restaurez la sauvegarde : " & mBackup
+    End If
+    ' VBA est synchrone : un mActive residuel correspond a une transaction
+    ' abandonnee. Restaurer d'abord les donnees, puis annuler le journal.
+    ' Les deux operations sont tentees independamment afin qu'une erreur du
+    ' journal ne saute jamais l'annulation de la ligne reservee.
+    If mActive Then
+        erreursRecuperation = ""
+        On Error Resume Next
+        Err.Clear
+        ITMAnnulerSaisie
+        If Err.Number <> 0 Then erreursRecuperation = "Annulation des donnees : " & Err.Description
+        Err.Clear
+        ITMJournalAnnuler
+        If Err.Number <> 0 Then
+            If Len(erreursRecuperation) > 0 Then erreursRecuperation = erreursRecuperation & " ; "
+            erreursRecuperation = erreursRecuperation & "Annulation du journal : " & Err.Description
+        End If
+        Err.Clear
+        ITMRestaurerEtat
+        On Error GoTo 0
+        If Len(erreursRecuperation) > 0 Then
+            mRecoveryRequired = True
+            Err.Raise vbObjectError + 928, "ITMDebutSaisie", _
+                "La transaction precedente n'a pas pu etre restauree completement (" & erreursRecuperation & "). Aucune nouvelle saisie n'est autorisee. Fermez le classeur sans enregistrer les changements partiels et restaurez la sauvegarde : " & mBackup
+        End If
+        mRecoveryRequired = False
+    End If
+    On Error GoTo EH
+    ITMVerifierAnneeOuverte
+    If ws.ProtectContents Then Err.Raise vbObjectError + 913, , "La feuille est protegee."
+    ITMVerifierZoneSaisie ws
+    ' Dans le dossier data, PowerShell a deja cree une copie transactionnelle
+    ' verifiee avant l'appel VBA. Ne pas refaire un SaveCopyAs identique ici.
+    If ITMTransactionExterneActive() Then
+        mBackup = ThisWorkbook.Path & Application.PathSeparator & "transaction.json"
+    Else
+        mBackup = ITMSauvegarde()
+    End If
+    Set mSheet = ws
+    mInitialLast = ITMDerniereLigne(ws)
+    mReservedLast = mInitialLast
+    mEvents = Application.EnableEvents
+    mScreen = Application.ScreenUpdating
+    mCalculation = Application.Calculation
+    mAutoFill = Application.AutoCorrect.AutoFillFormulasInLists
+    mEtatCapture = True
+    mActive = True
+    mDebutOperation = Now
+    Application.EnableEvents = False
+    Application.ScreenUpdating = False
+    Application.Calculation = xlCalculationManual
+    Application.AutoCorrect.AutoFillFormulasInLists = False
+    Exit Sub
+RecuperationEH:
+    erreur = Err.Number: texte = Err.Description
+    On Error Resume Next
+    ITMRestaurerEtat
+    On Error GoTo 0
+    Err.Raise erreur, "ITMDebutSaisie", "Recuperation de la saisie precedente impossible : " & texte & ". Consultez la sauvegarde avant de continuer."
+EH:
+    erreur = Err.Number: texte = Err.Description
+    ITMRestaurerEtat
+    Err.Raise erreur, "ITMDebutSaisie", "Preparation de la saisie impossible : " & texte
+End Sub
+
+Public Function ITMReserverLigne(ByVal ws As Worksheet) As Long
+    Dim r As Long, t As ListObject
+    If Not mActive Then Err.Raise vbObjectError + 914, , "Aucune saisie ouverte."
+    If Not (ws Is mSheet) Then Err.Raise vbObjectError + 915, , "Feuille de saisie incorrecte."
+    ITMVerifierZoneSaisie ws
+    r = ITMDerniereLigne(ws) + 1
+    If r < 5 Then r = 5
+    If r > ws.Rows.Count Then Err.Raise vbObjectError + 916, , "La feuille Excel est pleine."
+    Set t = ws.ListObjects(1)
+    If r <= mReservedLast Then Err.Raise vbObjectError + 925, , "La derniere ligne reservee n'a pas encore ete renseignee."
+    If Application.CountA(ws.Range(ws.Cells(r, 1), ws.Cells(r, t.ListColumns.Count))) <> 0 Then Err.Raise vbObjectError + 926, , "La ligne suivante contient une valeur ou une formule. Aucune donnee n'a ete remplacee."
+    mReservedLast = r
+    t.Resize ws.Range(ws.Cells(4, 1), ws.Cells(r, t.ListColumns.Count))
+    If r > 5 Then
+        ws.Range(ws.Cells(r - 1, 1), ws.Cells(r - 1, t.ListColumns.Count)).Copy
+        ws.Cells(r, 1).PasteSpecial xlPasteFormats
+        Application.CutCopyMode = False
+    End If
+    If Application.CountA(ws.Range(ws.Cells(r, 1), ws.Cells(r, t.ListColumns.Count))) <> 0 Then Err.Raise vbObjectError + 927, , "La nouvelle ligne n'est plus vide : saisie interrompue."
+    ITMReserverLigne = r
+End Function
+
+Public Sub ITMValiderSaisie()
+    Dim numeroErreur As Long, detail As String
+    If Not mActive Then Err.Raise vbObjectError + 917, , "Aucune saisie ouverte."
+    On Error GoTo Echec
+    ITMActualiserSituation
+    ' Ne jamais recalculer les autres classeurs/segments ouverts : seul le classeur
+    ' modifie doit etre remis a jour avant sa sauvegarde durable.
+    ThisWorkbook.Calculate
+    ThisWorkbook.Save
+    ITMRestaurerEtat
+    Exit Sub
+Echec:
+    numeroErreur = Err.Number: detail = Err.Description
+    ' Ne pas liberer le verrou ici : l'appelant doit d'abord annuler la transaction
+    ' (journal, ligne reservee et modifications de donnees). Le liberer avant
+    ' ITMAnnulerSaisie rendait l'annulation inoperante et pouvait laisser un dossier partiel.
+    Err.Raise numeroErreur, "ITMValiderSaisie", detail
+End Sub
+
+Public Sub ITMActualiserSituation()
+    Dim ws As Worksheet, learnerLast As Long, formulaLast As Long, startRow As Long
+    Set ws = ThisWorkbook.Worksheets("SITUATION")
+    learnerLast = Application.Max(5, ITMDerniereLigne(ThisWorkbook.Worksheets("APPRENANTS")))
+    formulaLast = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row
+    If formulaLast < 5 Then formulaLast = 5
+    ' Les formules existantes ne sont plus recopiees sur toutes les lignes a chaque
+    ' paiement/modification. On etend uniquement la zone lorsqu'un nouvel apprenant
+    ' cree une ligne supplementaire.
+    If learnerLast > formulaLast Then
+        startRow = Application.Max(5, formulaLast)
+        ws.Range(ws.Cells(startRow, 1), ws.Cells(learnerLast, 16)).FillDown
+    End If
+    ' Les reglages d'impression appartiennent aux exports, pas a la saisie.
+End Sub
+
+Private Sub ITMRestaurerEtat()
+    ' Liberer d'abord le verrou : aucune propriete Excel ne doit le bloquer.
+    mActive = False
+    mDebutOperation = 0
+    Set mSheet = Nothing
+    If Not mEtatCapture Then Exit Sub
+    mEtatCapture = False
+    ' Chaque restauration est tentee, meme si la precedente echoue.
+    On Error Resume Next
+    Application.Calculation = mCalculation
+    Application.AutoCorrect.AutoFillFormulasInLists = mAutoFill
+    Application.ScreenUpdating = mScreen
+    Application.EnableEvents = mEvents
+    On Error GoTo 0
+End Sub
+
+Public Sub ITMAnnulerSaisie()
+    Dim t As ListObject, dernier As Long, erreur As Long, texte As String
+    If Not mActive Then Exit Sub
+    On Error GoTo EH
+    Set t = mSheet.ListObjects(1)
+    dernier = Application.Max(mReservedLast, ITMDerniereLigne(mSheet))
+    If dernier > mInitialLast Then
+        mSheet.Range(mSheet.Cells(mInitialLast + 1, 1), mSheet.Cells(dernier, t.ListColumns.Count)).ClearContents
+    End If
+    t.Resize mSheet.Range(mSheet.Cells(4, 1), mSheet.Cells(Application.Max(5, mInitialLast), t.ListColumns.Count))
+    ITMRestaurerEtat
+    Exit Sub
+EH:
+    erreur = Err.Number: texte = Err.Description
+    ITMRestaurerEtat
+    Err.Raise erreur, , "Annulation incomplete : " & texte & ". Sauvegarde : " & mBackup
+End Sub
+
+Public Function ITMVerifierInstallation() As Boolean
+    Dim nom As Variant, ws As Worksheet, t As ListObject, r As Long, dernier As Long
+    For Each nom In Array("APPRENANTS", "PAIEMENTS")
+        Set ws = ThisWorkbook.Worksheets(CStr(nom))
+        Set t = ws.ListObjects(1)
+        If t.HeaderRowRange.Row <> 4 Then Err.Raise vbObjectError + 918, , "Titres incorrects : " & nom
+        dernier = ITMDerniereLigne(ws)
+        For r = 5 To dernier
+            If Application.CountA(ws.Range(ws.Cells(r, 1), ws.Cells(r, t.ListColumns.Count))) = 0 Then _
+                Err.Raise vbObjectError + 919, , "Ligne entierement vide dans " & nom & " : " & r
+        Next r
+        If t.Range.Row + t.Range.Rows.Count - 1 <> Application.Max(5, dernier) Then _
+            Err.Raise vbObjectError + 920, , "Taille du tableau incorrecte : " & nom
+    Next nom
+    ITMVerifierInstallation = True
+End Function
+
+Public Sub ITMFinSaisieSansSituation()
+    ITMRestaurerEtat
+End Sub
+
+' Reinitialisation explicite uniquement lorsque la passerelle signale une operation terminee.
+Public Sub ITMLibererVerrouSaisie()
+    ITMRestaurerEtat
+End Sub

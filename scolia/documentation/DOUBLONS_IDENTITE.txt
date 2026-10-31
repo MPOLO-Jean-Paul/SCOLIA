@@ -1,0 +1,13 @@
+Contrôle des inscriptions en double
+
+La règle est : nom, post-nom, prénom et promotion identiques. La casse, les accents, les espaces multiples et les espaces insécables sont normalisés. La date de naissance, le contact, le statut ou l’année saisie ne permettent plus de créer un second dossier ayant cette même identité dans cette même promotion.
+
+Le logiciel relit les apprenants des segments connectés avant toute création de segment ou écriture. Les lignes incomplètes et non éligibles sont également comparées. Le refus indique le matricule du dossier existant. Modifier le même dossier reste autorisé ; une modification qui ferait correspondre un autre dossier est bloquée. Une identité identique dans une autre promotion reste autorisée conformément à cette règle.
+
+Deux protections : contrôle dans l’application, actif même avec un ancien module VBA ; contrôle dans ITMAppDossier après installation des corrections pour couvrir aussi les formulaires Excel. Le formulaire VBA ne propose plus de créer quand même le doublon.
+
+Mise à jour : remplacez programme, puis lancez APPLICATION.vbs. Pour protéger aussi les saisies directes dans Excel, fermez Excel et lancez l’installateur des corrections de ce ZIP. Les versions précédentes des modules restent reconnues par l’installateur.
+
+Aucun doublon déjà enregistré n’est supprimé ou fusionné automatiquement ; ses paiements sont conservés. Les six classeurs sources du ZIP sont strictement inchangés.
+
+Vérifications : syntaxe PowerShell et cohérence des signatures du manifeste. TestsDoublonsIdentite.ps1 couvre les variantes et l’absence d’écriture avant refus ; ITMTesterStockage couvre le doublon dans un autre segment avec une date différente sur des copies de test. Ces tests natifs PowerShell/Excel restent à exécuter sous Windows.

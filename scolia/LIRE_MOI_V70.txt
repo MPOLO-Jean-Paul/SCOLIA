@@ -1,0 +1,15 @@
+SCOLIA V70 — Groupes du ruban sur une seule rangée
+
+Extraire entièrement le ZIP et lancer 00_Demarrage/APPLICATION.vbs.
+
+Les groupes restent sur la même rangée, notamment dans Scolarité.
+Leur disposition ne peut plus revenir à la ligne dans le ruban.
+Le logiciel adapte la largeur des boutons et le nombre de lignes de
+commandes à l’intérieur de chaque groupe. En espace réduit, les icônes
+remplacent les textes ; les intitulés restent disponibles dans l’aide
+au survol et pour les outils d’accessibilité. Les textes reviennent
+lorsque la largeur le permet. Aucune commande n’est supprimée.
+
+Contrôles géométriques : 288 configurations, de 330 à 1600 unités,
+avec des mises à l’échelle de 100 à 200 %, sans seconde rangée de groupes.
+La vérification graphique Windows est fournie dans VERIFIER_V70.cmd.

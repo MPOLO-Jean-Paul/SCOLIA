@@ -1,0 +1,67 @@
+﻿REVUE DES BOUTONS - VERSION 2
+
+La revue ci-dessous porte sur le code et les noms reels des controles du fichier.
+L'installateur controle les gestionnaires des 15 boutons natifs dans Excel.
+Un essai manuel de clic, d'affichage et de PDF sur votre PC reste necessaire.
+Les libelles utiles sont harmonises ; les procedures anciennes sans bouton
+visible ne sont pas affichees en doublon.
+
+INSCRIPTION : 3 boutons natifs
+CommandEnregistrer : valide l'identite et les contacts, reserve un matricule
+  libre, sauvegarde, ajoute a la suite de la base puis enregistre le classeur.
+CommandButton1 / Nouveau : remet une inscription vierge avec les valeurs
+  par defaut et une date d'inscription utilisable.
+CommandButton2 / Fermer : ferme le formulaire et libere les actions.
+Aucun second bouton Effacer n'est ajoute : il ferait doublon avec Nouveau.
+
+PAIEMENT : 3 boutons natifs + 5 dynamiques
+CommandEnregistrerPaiement : valide, repartit le montant par mois, sauvegarde,
+  ecrit puis enregistre. Une erreur d'ecriture annule toute cette tentative.
+CommandNouveauPaiement : reinitialise pour rechercher un autre apprenant.
+CommandFermerPaiement : ferme le formulaire et libere les actions.
+CommandEffacerSaisie : efface le versement saisi et conserve l'apprenant choisi.
+Les quatre boutons financiers sont decrits plus bas.
+Le champ TextAffectation est visible : il presente la repartition avant saisie.
+
+GESTION : 7 boutons natifs + 7 dynamiques
+CommandActualiser : recharge la base et conserve les filtres.
+CommandModifier : valide les informations, sauvegarde et enregistre la fiche.
+  Les contacts restent en texte ; la date est controlee au format JJ/MM/AAAA.
+CommandChangerPromotion : enregistre la promotion choisie, conserve le matricule
+  et recalcule la situation, avec copie avant modification.
+CommandChangeStatut : enregistre le nouveau statut avec copie et recalcul.
+CommandFicheApprenant : renseigne C8 et ouvre la feuille de la fiche.
+CommandImrpimerListe : ouvre l'apercu de la liste filtree actuellement affichee,
+  triee par nom, puis revient au formulaire ; aucune impression automatique.
+CommandFemerDashboard : ferme Gestion et libere les actions.
+CommandReinitialiser : remet les filtres a Tous et vide la recherche.
+CommandNouvelleInscription : ouvre Inscription et recharge Gestion au retour.
+CommandListeInscritsPDF : exporte les inscrits correspondant aux filtres.
+Les quatre boutons financiers sont decrits plus bas.
+Les deux choix de statut portent des libelles distincts : filtre et modification.
+La selection d'une fiche ne change plus le filtre d'annee scolaire.
+
+TABLEAU DE BORD : 2 boutons natifs + 6 dynamiques
+CommandActualiserDashboard : recharge les promotions et conserve les filtres.
+CommandFemerDashboard : ferme et libere les actions.
+CommandReinitialiser : remet les trois filtres a Tous.
+CommandListeInscritsPDF : exporte les inscrits de la promotion choisie, ou toutes.
+Les quatre boutons financiers sont decrits plus bas.
+
+BOUTONS FINANCIERS COMMUNS : 4 sur Paiement, Gestion et Tableau de bord
+CommandExporterEnOrdrePDF / Mois solde - PDF : au moins la mensualite du mois.
+CommandExporterPaiementsMois / Paiements - Excel : versements positifs du mois.
+CommandExportPaiementsPDF / Paiements - PDF : meme selection que l'Excel.
+CommandExportLitigesPDF / Litiges et retards - PDF : dettes jusqu'au mois choisi.
+Tous passent par un moteur commun, sans plafond de lignes. Les versements
+partiels sont inclus dans Paiements ; les mensualites proviennent de PROMOTIONS.
+La liste des inscrits ne depend pas d'un paiement.
+Les annulations de boite de dialogue ferment proprement le rapport temporaire.
+Les rapports existants ne sont remplaces qu'apres une confirmation dans Excel.
+Les erreurs rendent les evenements et l'affichage Excel a leur etat initial.
+
+ACCUEIL / ANCIENNES ENTREES
+Les macros d'accueil de paiement et inscription appellent les formulaires
+actuels. L'ancienne copie de paiement dans une zone de formulaire est retiree.
+Le fichier original fourni reste inclus intact ; utilisez le classeur cree
+par INSTALLER.cmd pour profiter des corrections.

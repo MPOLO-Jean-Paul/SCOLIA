@@ -1,0 +1,3 @@
+Connexion : formulaire natif direct, sans carte ni panneau extérieur. Logo, titre, champ mot de passe, options et boutons placés directement dans la fenêtre. Défilement prévu pour petits écrans. Authentification inchangée.
+Fermer l’application, remplacer programme en conservant data, puis relancer APPLICATION.vbs. Aucune réinstallation du classeur nécessaire.
+Syntaxe et conservation des fichiers vérifiées localement. Affichage Windows à valider sur le poste utilisateur.

@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <NoWarn>$(NoWarn);CA1001;CA2000;CA1063;CA1816;CA2234</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
+    <PackageReference Include="ClosedXML" />
+  </ItemGroup>
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Scolia.Api\Scolia.Api.csproj" />
+    <ProjectReference Include="..\..\src\Scolia.Relay\Scolia.Relay.csproj" Aliases="relay" />
+    <!-- Le client du poste et du téléphone, pour éprouver la coupure du serveur et l'envoi au retour. -->
+    <ProjectReference Include="..\..\src\Scolia.Bureau\Scolia.Bureau.csproj" Aliases="bureau" />
+  </ItemGroup>
+</Project>

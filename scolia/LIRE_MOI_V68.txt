@@ -1,0 +1,21 @@
+SCOLIA V68 — Correction des commandes et navigation plus réactive
+
+Extraire entièrement le ZIP et lancer 00_Demarrage/APPLICATION.vbs.
+
+Correction de l’erreur « Invoke-ScoliaWorkspaceView n’est pas reconnu » :
+les boutons gardent maintenant la référence directe de la fonction à appeler.
+Le test reproduit un clic après la disparition du contexte de création.
+
+Recherche globale rétablie en haut de l’application, accessible depuis tous
+les onglets avec Ctrl+K. Les interfaces intégrées et les exports restent en place.
+
+Optimisations :
+- cache borné des calculs de disposition du ruban, invalidé selon taille et DPI ;
+- suppression des passes de navigation identiques ;
+- construction de l’index seulement à partir d’une requête de deux caractères ;
+- réutilisation des interfaces et de leurs filtres ;
+- réduction des lectures COM pour identifier le contexte de travail.
+
+Les performances sur le PC dépendent aussi d’Excel, du disque et du réseau.
+Les traitements métier et les contrôles de permissions restent actifs.
+Vérification Windows : 00_Demarrage/VERIFIER_V68.cmd.

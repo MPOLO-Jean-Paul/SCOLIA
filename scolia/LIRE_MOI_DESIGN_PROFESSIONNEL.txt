@@ -1,0 +1,38 @@
+﻿SCOLIA — PRÉSENTATION PROFESSIONNELLE — 13 OCTOBRE 2026
+
+Améliorations
+- Palette bleue harmonisée, surfaces sobres et bordures cohérentes.
+- Marges réduites dans les dossiers apprenants et les formulaires.
+- Barres d’actions adaptatives : les commandes longues passent sur une autre ligne.
+- Fenêtres limitées à la zone utile de l’écran.
+- Champs et libellés distincts : deux colonnes sur écran large, empilement sur petite fenêtre.
+- Les grandes zones de texte gardent leur hauteur et les formulaires longs restent accessibles par défilement.
+- Colonnes de tableaux lisibles : défilement interne sur petite fenêtre, sans étirer la page.
+- Nouvel indicateur de traitement : carte bordée, animation circulaire, titre et message distincts, barre animée et durée après 12 secondes.
+- Message intégral de l’indicateur accessible au survol et aux outils d’accessibilité.
+- Indicateur inline de configuration harmonisé avec le reste du logiciel.
+- Notifications et progression d’installation alignées sur la palette.
+
+Installation existante
+1. Fermer SCOLIA et Excel.
+2. Extraire ce ZIP entièrement dans un nouveau dossier.
+3. Ouvrir 00_Demarrage/METTRE_A_JOUR_V57.cmd dans ce nouveau dossier.
+4. Sélectionner le fichier APPLICATION.vbs de votre installation habituelle.
+   Le programme sauvegarde les fichiers remplacés avant la mise à jour.
+5. Relancer votre APPLICATION.vbs habituel.
+
+Pour lancer directement le dossier extrait : 00_Demarrage/APPLICATION.vbs.
+Ne remplacez pas votre dossier de données par une copie neuve si vous avez déjà des enregistrements.
+
+Vérifications effectuées
+- 170 scripts PowerShell analysés sans erreur de syntaxe.
+- ActivityIndicator.cs, ChromeModerne.cs et NotificationsModernes.cs compilés en C# 5.
+- 12 rendus de l’indicateur, clair/sombre, largeurs 280, 440 et 720 px.
+- Contrôle visuel du formulaire de connexion et de la barre d’actions.
+- Barres d’actions contrôlées à plusieurs largeurs et cycle d’ouverture/fermeture de l’indicateur vérifié.
+- Classeur source, configuration et données existantes conservés à l’identique dans le paquet.
+
+Limite de validation
+Les rendus et tests natifs ont été réalisés avec Mono dans cet environnement.
+Le parcours complet sur Windows avec Excel/COM, les résolutions et le DPI de votre poste ne peuvent pas être certifiés ici.
+Les tests Windows spécifiques sont fournis : VERIFIER_DESIGN_PRO.cmd.

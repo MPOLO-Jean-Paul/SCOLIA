@@ -1,0 +1,220 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:infra="using:Scolia.Bureau.Infrastructure"
+             xmlns:mi="using:Material.Icons.Avalonia"
+             x:Class="Scolia.Bureau.Views.DashboardView">
+  <ScrollViewer>
+    <StackPanel Spacing="16" Margin="0,0,6,8">
+
+      <!-- Rappel de sauvegarde : barre d'information de Windows, seulement s'il y a lieu -->
+      <Border Background="{DynamicResource OrangeSoftBrush}" BorderBrush="{DynamicResource LineBrush}" BorderThickness="1"
+              CornerRadius="{StaticResource RadiusSmall}" Padding="14,8" IsVisible="{Binding HasBackupLine}">
+        <Grid ColumnDefinitions="Auto,*,Auto">
+          <mi:MaterialIcon Kind="AlertCircleOutline" Width="18" Height="18" Foreground="{DynamicResource ToneOrange}" VerticalAlignment="Center" Margin="0,0,10,0" />
+          <TextBlock Grid.Column="1" Text="{Binding BackupLine}" TextWrapping="Wrap" VerticalAlignment="Center" />
+          <Button Grid.Column="2" Content="Sauvegarder maintenant" Command="{Binding BackupNow}" Margin="12,0,0,0" VerticalAlignment="Center" />
+        </Grid>
+      </Border>
+
+      <!-- Journée en cours : quatre chiffres, puis les convocations et les anniversaires -->
+      <Border Classes="card" Padding="0" IsVisible="{Binding HasToday}">
+        <StackPanel>
+          <TextBlock Text="{Binding TodayTitle}" Classes="heading" Margin="16,12,16,8" />
+          <ItemsControl ItemsSource="{Binding TodayStats}" Margin="16,0,16,14">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate><UniformGrid Rows="1" infra:Adaptive.MinItemWidth="150" /></ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate>
+                <StackPanel Spacing="1" Margin="0,0,16,0">
+                  <TextBlock Text="{Binding Label}" Foreground="{DynamicResource Text2Brush}" />
+                  <TextBlock Classes="wrap2" Text="{Binding Value}" FontSize="{DynamicResource FsHeading}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                  <TextBlock Text="{Binding Hint}" Classes="muted" TextWrapping="Wrap" />
+                </StackPanel>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+
+          <Border Height="1" Background="{DynamicResource LineBrush}" IsVisible="{Binding HasPeople}" />
+          <Grid ColumnDefinitions="*,*" Margin="16,10,16,12" IsVisible="{Binding HasPeople}" infra:Adaptive.StackBelow="560">
+            <StackPanel Spacing="4" Margin="0,0,16,0">
+              <TextBlock Text="Parents convoqués aujourd'hui" FontWeight="SemiBold" />
+              <TextBlock Text="Aucun rendez-vous prévu." Classes="muted" IsVisible="{Binding !HasAppointments}" />
+              <ItemsControl ItemsSource="{Binding Appointments}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate>
+                    <Button Classes="listrow" Command="{Binding Open}">
+                      <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock Classes="wrap2" TextTrimming="CharacterEllipsis">
+                          <Run Text="{Binding Name, Mode=OneWay}" />
+                          <Run Text="{Binding Promotion, StringFormat=' · {0}', Mode=OneWay}" Foreground="{DynamicResource MutedBrush}" />
+                        </TextBlock>
+                        <TextBlock Grid.Column="1" Text="{Binding Detail}" Classes="muted" Margin="10,0,0,0" />
+                      </Grid>
+                    </Button>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </StackPanel>
+            <StackPanel Grid.Column="1" Spacing="4">
+              <TextBlock Text="Anniversaires" FontWeight="SemiBold" />
+              <TextBlock Text="Aucun anniversaire aujourd'hui." Classes="muted" IsVisible="{Binding !HasBirthdays}" />
+              <ItemsControl ItemsSource="{Binding Birthdays}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate>
+                    <Button Classes="listrow" Command="{Binding Open}">
+                      <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock Classes="wrap2" TextTrimming="CharacterEllipsis">
+                          <Run Text="{Binding Name, Mode=OneWay}" />
+                          <Run Text="{Binding Promotion, StringFormat=' · {0}', Mode=OneWay}" Foreground="{DynamicResource MutedBrush}" />
+                        </TextBlock>
+                        <TextBlock Grid.Column="1" Text="{Binding Detail}" Classes="muted" Margin="10,0,0,0" />
+                      </Grid>
+                    </Button>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </StackPanel>
+          </Grid>
+        </StackPanel>
+      </Border>
+
+      <!-- Indicateurs de l'année -->
+      <ItemsControl ItemsSource="{Binding Kpis}" ItemTemplate="{StaticResource KpiTile}" Margin="0,0,-12,-12">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate><UniformGrid Columns="3" infra:Adaptive.MinItemWidth="175" /></ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+      </ItemsControl>
+
+      <Grid ColumnDefinitions="3*,2*" infra:Adaptive.StackBelow="760">
+        <!-- Encaissements par mois : l'attendu en gris, l'encaissé dans l'accent -->
+        <Border Classes="card" Grid.Column="0" Margin="0,0,12,0">
+          <StackPanel Spacing="12">
+            <Grid ColumnDefinitions="*,Auto">
+              <TextBlock Text="Encaissements par mois" Classes="heading" />
+              <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="14" VerticalAlignment="Center">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                  <Rectangle Width="10" Height="10" Fill="{DynamicResource AccentBrush}" VerticalAlignment="Center" />
+                  <TextBlock Text="Encaissé" Classes="muted" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                  <Rectangle Width="10" Height="10" Fill="{DynamicResource LineStrongBrush}" VerticalAlignment="Center" />
+                  <TextBlock Text="Attendu" Classes="muted" />
+                </StackPanel>
+              </StackPanel>
+            </Grid>
+            <ItemsControl ItemsSource="{Binding Months}" Height="200" IsVisible="{Binding NotPhone}">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate><UniformGrid Rows="1" infra:Adaptive.MinItemWidth="150" /></ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <DockPanel Margin="4,0" ToolTip.Tip="{Binding Value}">
+                    <TextBlock DockPanel.Dock="Bottom" Text="{Binding Label}" Classes="muted" HorizontalAlignment="Center" Margin="0,6,0,0" />
+                    <Panel VerticalAlignment="Bottom" MaxWidth="30">
+                      <Border Background="{DynamicResource LineBrush}" CornerRadius="2,2,0,0" Height="{Binding Track}" VerticalAlignment="Bottom" />
+                      <StackPanel VerticalAlignment="Bottom" Spacing="3">
+                        <TextBlock Text="{Binding Value}" FontSize="11" Foreground="{DynamicResource Text2Brush}" HorizontalAlignment="Center" />
+                        <Border Background="{DynamicResource AccentBrush}" CornerRadius="2,2,0,0" Height="{Binding Height}" />
+                      </StackPanel>
+                    </Panel>
+                  </DockPanel>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <!-- Mobile : un mois par ligne, barre horizontale et montant lisible en entier -->
+            <ItemsControl ItemsSource="{Binding Months}" IsVisible="{Binding Phone}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <Grid ColumnDefinitions="52,*,Auto" Margin="0,5">
+                    <TextBlock Text="{Binding Label}" Classes="muted" VerticalAlignment="Center" />
+                    <Panel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,10,0">
+                      <ProgressBar Classes="slim" Value="{Binding Track, Mode=OneWay}" Maximum="150" Opacity="0.35" />
+                      <ProgressBar Classes="slim" Value="{Binding Height, Mode=OneWay}" Maximum="150" Background="Transparent" />
+                    </Panel>
+                    <TextBlock Grid.Column="2" Text="{Binding Value}" FontWeight="SemiBold" MinWidth="44" TextAlignment="Right" VerticalAlignment="Center" />
+                  </Grid>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </Border>
+
+        <!-- Retards par ancienneté et répartition -->
+        <Border Classes="card" Grid.Column="1">
+          <StackPanel Spacing="10">
+            <TextBlock Text="Retards par ancienneté" Classes="heading" />
+            <ItemsControl ItemsSource="{Binding Aging}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <StackPanel Spacing="4" Margin="0,4">
+                    <Grid ColumnDefinitions="*,Auto">
+                      <TextBlock Text="{Binding Label}" />
+                      <TextBlock Grid.Column="1" Text="{Binding Value}" FontWeight="SemiBold" />
+                    </Grid>
+                    <ProgressBar Classes="slim warn" Value="{Binding Height, Mode=OneWay}" Maximum="100" />
+                  </StackPanel>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <Border Height="1" Background="{DynamicResource LineBrush}" Margin="0,6" />
+            <TextBlock Text="Répartition des apprenants" FontWeight="SemiBold" />
+            <ProgressBar Classes="slim" Value="{Binding MaleShare, Mode=OneWay}" Maximum="100" />
+            <TextBlock Text="{Binding GenderText}" Classes="muted" />
+          </StackPanel>
+        </Border>
+      </Grid>
+
+      <Grid ColumnDefinitions="3*,2*" infra:Adaptive.StackBelow="760">
+        <!-- Recouvrement par promotion -->
+        <Border Classes="card" Grid.Column="0" Margin="0,0,12,0">
+          <StackPanel Spacing="10">
+            <TextBlock Text="Recouvrement par promotion" Classes="heading" />
+            <DataGrid ItemsSource="{Binding Promotions}" AutoGenerateColumns="False" IsReadOnly="True" MaxHeight="340" BorderThickness="0">
+              <DataGrid.Columns>
+                <DataGridTextColumn Header="Promotion" Binding="{Binding Code}" Width="Auto" MinWidth="110" />
+                <DataGridTextColumn Header="Effectif" Binding="{Binding Students}" Width="Auto" MinWidth="84" />
+                <DataGridTextColumn Header="Encaissé" Binding="{Binding Collected}" Width="*" MinWidth="120" />
+                <DataGridTemplateColumn Header="Recouvrement" Width="1.4*" MinWidth="170">
+                  <DataGridTemplateColumn.CellTemplate>
+                    <DataTemplate>
+                      <Grid ColumnDefinitions="*,Auto" Margin="10,0">
+                        <ProgressBar Classes="slim" Value="{Binding RecoveryValue, Mode=OneWay}" Maximum="100" VerticalAlignment="Center" Margin="0,0,12,0" />
+                        <TextBlock Grid.Column="1" Text="{Binding Recovery}" VerticalAlignment="Center" MinWidth="56" TextAlignment="Right" />
+                      </Grid>
+                    </DataTemplate>
+                  </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+              </DataGrid.Columns>
+            </DataGrid>
+          </StackPanel>
+        </Border>
+
+        <!-- Derniers reçus -->
+        <Border Classes="card" Grid.Column="1">
+          <StackPanel Spacing="6">
+            <TextBlock Text="Derniers reçus" Classes="heading" Margin="0,0,0,4" />
+            <ItemsControl ItemsSource="{Binding Latest}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <Border BorderBrush="{DynamicResource LineBrush}" BorderThickness="0,0,0,1" Padding="0,6">
+                    <Grid ColumnDefinitions="*,Auto">
+                      <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="{Binding Number}" />
+                        <TextBlock Text="{Binding Date}" Classes="muted" />
+                      </StackPanel>
+                      <StackPanel Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding Amount}" FontWeight="SemiBold" HorizontalAlignment="Right" />
+                        <TextBlock Text="{Binding Method}" Classes="muted" HorizontalAlignment="Right" />
+                      </StackPanel>
+                    </Grid>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </Border>
+      </Grid>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

@@ -1,0 +1,24 @@
+﻿SCOLIA V56 — Présences et salaires mensuels
+
+MISE À JOUR AVEC VOS DONNÉES ACTUELLES
+Fermez SCOLIA et Excel. Extrayez ce ZIP entièrement dans un nouveau dossier.
+Lancez 00_Demarrage/METTRE_A_JOUR_V56.cmd depuis ce nouveau dossier et sélectionnez APPLICATION.vbs de votre installation actuelle.
+Le programme vérifie les fichiers et la syntaxe puis sauvegarde et remplace uniquement le programme. Vos données et configurations sont conservées. En cas d'échec avant validation, les fichiers remplacés sont restaurés.
+Pour une nouvelle installation : 00_Demarrage/APPLICATION.vbs.
+
+OUTILS DU MENU
+Enseignants : ajoutez les enseignants avec leur période d'activité, puis cochez Entrée et Sortie le jour même. Chaque case enregistre immédiatement l'heure de l'ordinateur et le compte de saisie. Les heures déjà enregistrées sont conservées.
+Salaires : choisissez le mois, déclarez les jours ouvrables réels et renseignez le salaire brut en FC de chaque enseignant. Le relevé calcule les absences et retenues ; finalisez après la fin du mois et la vérification des motifs.
+Présences et absences : choisissez le mois et la promotion, déclarez les jours de cours et cochez la présence du jour de chaque apprenant. Les bilans et alertes sont mensuels ; les alertes sont visibles dans À traiter.
+
+RÈGLES PRINCIPALES
+Deux signatures enseignantes = présent. Aucune ou une seule signature sur un jour ouvrable passé = absence ; pendant la journée, une entrée seule reste sortie attendue.
+Absence justifiée payée par défaut ; option mensuelle modifiable dans Salaires.
+Salaire net = salaire brut - (salaire brut / nombre total de jours ouvrables déclarés × jours d'absence déductibles), avec arrondi du net une seule fois au FC. La retenue affichée équilibre brut et net.
+Le relevé en cours de mois est provisoire. Le relevé finalisé conserve ses sources et ne peut plus être modifié.
+Aucun jour futur ou non ouvrable n'est compté comme une absence automatique. Le calendrier doit être déclaré.
+
+GUIDE : documentation/GUIDE_POINTAGE_SALAIRES_V56.md
+VÉRIFICATIONS WINDOWS : 00_Demarrage/VERIFIER_V56.cmd
+Les contrôles statiques et l'intégrité du ZIP ont été vérifiés ici. Les tests Windows PowerShell, WinForms et Excel restent à exécuter sur Windows, indisponible dans cet environnement Linux.
+Les nouveaux outils utilisent les données scolaires préparées en mode data et leurs sauvegardes complètes.

@@ -1,0 +1,9 @@
+SCOLIA V28 — lanceur sans console et réduction des rafraîchissements
+
+1. Ajout de INSTALLER_CORRECTIONS.vbs : lance l’installateur en arrière-plan, sans fenêtre PowerShell visible. Utiliser ce fichier au lieu d’ouvrir un .ps1 par double-clic.
+2. La recherche regroupe les frappes rapprochées avec un délai de 200 ms, pour éviter de relire et redessiner les listes à chaque frappe.
+3. Le guide de démarrage précise le flux d’installation et les précautions de performance.
+
+À savoir : PowerShell reste le moteur interne de l’application ; seul son affichage de console est masqué. Cette modification ne transforme pas le logiciel en application compilée native.
+
+Contrôle requis sur le PC Windows : lancer VERIFICATION_SYNTAXE_V27.ps1 via le vérificateur existant ou depuis le terminal, puis ouvrir APPLICATION.vbs et tester les opérations courantes avec une copie de sauvegarde des données. Aucun test réel Excel/Windows ne peut être certifié depuis cet environnement.

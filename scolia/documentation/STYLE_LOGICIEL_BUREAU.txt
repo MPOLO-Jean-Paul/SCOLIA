@@ -1,0 +1,28 @@
+﻿STYLE LOGICIEL DE BUREAU — 6 octobre 2026
+
+Les cartes sont réservées aux indicateurs du tableau de bord.
+Les pages métier utilisent un espace de travail blanc, des barres de commandes
+compactes, des séparateurs fins et des tableaux visibles en premier plan.
+
+Apprenants : recherche, filtres, commandes de largeur adaptée au texte,
+puis tableau qui occupe le reste de l'espace. Les commandes passent à la
+ligne uniquement lorsque la largeur manque.
+Paiements : dans une grande fenêtre, recherche et sélection à gauche,
+situation de l'apprenant et saisie du reçu à droite, historique en dessous.
+Dans une petite fenêtre, ces zones se suivent verticalement avec défilement.
+Exports : formulaire de paramètres alignés, barre d'export, contrôle et accès
+au dernier document. Aucun faux aperçu de rapport n'est affiché.
+Inscription et fiche : sections sobres séparées par une ligne, sans cartes
+arrondies ; les onglets et les validations sont conservés.
+Administration, diagnostic et sécurité : surfaces planes et commandes compactes.
+Les boutons ont des coins légèrement arrondis et des états de survol/focus.
+
+Utilisation : fermer ITM CD, extraire tout le ZIP dans un nouveau dossier,
+puis lancer APPLICATION.vbs. Recréer les raccourcis si nécessaire.
+Cette modification de l'interface n'exige aucune préparation du classeur.
+Les fichiers Excel, la connexion mémorisée et la configuration de sécurité
+ne sont pas modifiés par ces changements.
+
+Les contrôles ici sont statiques. Le rendu et le fonctionnement des fenêtres
+restent à vérifier sur Windows, car Windows Forms et Excel ne sont pas
+exécutables dans cet environnement.

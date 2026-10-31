@@ -1,0 +1,50 @@
+﻿ENREGISTREMENT ET ACTUALISATION
+
+Après une modification, seule la page affichée est reconstruite. L'administration,
+le journal complet, les listes de sauvegardes et les cartes d'examens ne sont plus
+rechargés à chaque inscription ou paiement. Ils affichent la dernière version des
+données à leur prochaine ouverture. La recherche utilise les données fraîches.
+
+La lecture Excel des apprenants et des paiements se fait par blocs, avec conservation
+des dates, matricules, numéros de reçus, sources, lignes et contrôles de qualité.
+Un recalcul normal des cellules modifiées remplace le recalcul intégral systématique.
+La sauvegarde avant saisie, le journal, les contrôles des doublons et les soldes restent.
+La confirmation d'un paiement apparaît après l'actualisation.
+
+Le verrou de l'interface est libéré dans tous les chemins de sortie, même si la
+préparation de l'affichage ou la fermeture de la roue rencontre une erreur.
+Les verrous Excel terminés sont libérés entre deux appels synchrones, uniquement
+si le classeur est déjà sauvegardé et qu'aucune transaction data n'est en attente.
+Une opération non sauvegardée n'est pas débloquée aveuglément. Aucune saisie n'est
+relancée automatiquement et aucun paiement n'est rejoué.
+Un succès durable reste signalé comme enregistré si l'affichage échoue ensuite.
+
+APPLICATION.vbs peut mettre à jour les deux modules de performance de votre base
+existante au lancement. Tous les segments et leurs modules sont vérifiés avant
+la moindre modification. Seules les versions connues immédiatement précédentes
+sont remplacées. Une sauvegarde complète de récupération est créée avant l'édition
+et le code relu est contrôlé. Les modules personnalisés et les projets verrouillés
+sont conservés. Une interruption conserve le journal pour restaurer la base.
+La mise à jour ne se répète pas aux lancements suivants.
+
+Si Excel refuse l'accès au projet VBA, l'optimisation de l'interface reste active
+et la connexion est conservée. Le logiciel affiche une indication explicite.
+Dans Excel : Fichier > Options > Centre de gestion de la confidentialité >
+Paramètres du Centre > Paramètres des macros > Accès approuvé au modèle d'objet
+du projet VBA. Fermer Excel puis relancer APPLICATION.vbs. Le logiciel ne change
+pas lui-même les paramètres de sécurité Excel.
+
+Pour appliquer : fermer l'application et Excel, remplacer le dossier programme,
+conserver data, sources et les sauvegardes, puis ouvrir APPLICATION.vbs.
+Ne pas réinstaller ni recréer les classeurs existants. Le premier lancement peut
+prendre davantage de temps pour conserver la sauvegarde et appliquer ces deux modules.
+La reconnexion sur 24 heures, les cartes, les thèmes et les prises en charge restent.
+Les six fichiers XLSM d'origine de l'archive sont inchangés.
+
+Vérifications effectuées ici : syntaxe/encodage PowerShell, signatures et structures
+VBA, dépendances, intégrité du ZIP et conservation des fichiers sources.
+Tests natifs fournis, à exécuter sous Windows : TestsEnregistrementActualisation.ps1,
+TestsMiseAJourPerformance.ps1 et TestsStockage.ps1. Ils couvrent les verrous, les
+échecs, les pages différées, la migration protégée, les données et paiements sur
+copies temporaires. Windows/Excel ne sont pas disponibles ici ; aucun temps réel
+sur votre ordinateur ni résultat de ces tests natifs n'est prétendu.

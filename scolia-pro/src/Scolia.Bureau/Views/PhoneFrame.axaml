@@ -1,0 +1,442 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mi="using:Material.Icons.Avalonia"
+             x:Class="Scolia.Bureau.Views.PhoneFrame">
+  <UserControl.Resources>
+    <!-- Rubrique de navigation : un métier et ses outils, chacun sur une ligne haute avec son icône de couleur -->
+    <DataTemplate x:Key="NavGroup">
+      <Border Classes="phoneaccordion">
+        <StackPanel Spacing="0">
+                  <Button Classes="phonecategory" IsVisible="{Binding HasTitle}" Command="{Binding Toggle}">
+                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                      <Border Classes="appicon medium" Background="{Binding Brush}"><mi:MaterialIcon Kind="{Binding Icon}" /></Border>
+                      <TextBlock Grid.Column="1" Text="{Binding Title}" VerticalAlignment="Center" FontWeight="SemiBold" />
+                      <mi:MaterialIcon Grid.Column="2" Kind="ChevronDown" Foreground="{DynamicResource AccentBrush}" IsVisible="{Binding !IsExpanded}" />
+                      <mi:MaterialIcon Grid.Column="2" Kind="ChevronUp" Foreground="{DynamicResource AccentBrush}" IsVisible="{Binding IsExpanded}" />
+                    </Grid>
+                  </Button>
+                  <Border Classes="phonecontent" IsVisible="{Binding IsExpanded}">
+                    <StackPanel Spacing="0">
+                      <ItemsControl ItemsSource="{Binding Items}">
+                        <ItemsControl.ItemTemplate>
+                          <DataTemplate>
+                            <Button Classes="phonerow" Classes.selected="{Binding IsSelected}" Command="{Binding Open}">
+                              <Grid ColumnDefinitions="Auto,*,Auto">
+                                <Border Classes="appicon medium" Background="{Binding Brush}" Margin="0,0,12,0">
+                                  <mi:MaterialIcon Kind="{Binding Icon}" />
+                                </Border>
+                                <TextBlock Grid.Column="1" Text="{Binding Label}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                                <mi:MaterialIcon Grid.Column="2" Kind="ChevronRight" Width="20" Height="20" Foreground="{DynamicResource MutedBrush}" />
+                              </Grid>
+                            </Button>
+                          </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                      </ItemsControl>
+                      <!-- Réglages d'affichage intégrés au même groupe Paramètres, sans second accordéon. -->
+                      <ItemsControl ItemsSource="{Binding SupplementalCommands}">
+                        <ItemsControl.ItemTemplate>
+                          <DataTemplate>
+                            <Button Classes="phonerow" Command="{Binding Command}">
+                              <Grid ColumnDefinitions="Auto,*,Auto">
+                                <Border Classes="appicon medium" Background="{Binding Brush}" Margin="0,0,12,0">
+                                  <mi:MaterialIcon Kind="{Binding Icon}" />
+                                </Border>
+                                <TextBlock Grid.Column="1" Text="{Binding Label}" TextWrapping="Wrap" VerticalAlignment="Center" />
+                                <mi:MaterialIcon Grid.Column="2" Kind="Check" Width="20" Height="20"
+                                                 Foreground="{DynamicResource AccentBrush}" IsVisible="{Binding IsOn}" />
+                              </Grid>
+                            </Button>
+                          </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                      </ItemsControl>
+                    </StackPanel>
+                  </Border>
+        </StackPanel>
+      </Border>
+    </DataTemplate>
+    <DataTemplate x:Key="NavBlock">
+      <StackPanel Spacing="4" Margin="0,10,0,6">
+        <TextBlock Text="{Binding Title}" Classes="phoneblocktitle" />
+        <Border Classes="phoneblockcard"><ItemsControl ItemsSource="{Binding Groups}" ItemTemplate="{StaticResource NavGroup}" /></Border>
+      </StackPanel>
+    </DataTemplate>
+    <DataTemplate x:Key="PhoneToolGroup">
+      <Border Classes="phoneaccordion">
+        <StackPanel Spacing="0">
+          <Button Classes="phonecategory" Command="{Binding Toggle}">
+            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+              <Border Classes="appicon medium" Background="{Binding Brush}"><mi:MaterialIcon Kind="{Binding Icon}" /></Border>
+              <TextBlock Grid.Column="1" Text="{Binding Title}" FontWeight="SemiBold" VerticalAlignment="Center" />
+              <mi:MaterialIcon Grid.Column="2" Kind="ChevronDown" Foreground="{DynamicResource AccentBrush}" IsVisible="{Binding !IsExpanded}" />
+              <mi:MaterialIcon Grid.Column="2" Kind="ChevronUp" Foreground="{DynamicResource AccentBrush}" IsVisible="{Binding IsExpanded}" />
+            </Grid>
+          </Button>
+          <Border Classes="phonecontent" IsVisible="{Binding IsExpanded}">
+            <ItemsControl ItemsSource="{Binding Commands}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <Button Classes="phonerow" Command="{Binding Command}">
+                    <Grid ColumnDefinitions="Auto,*,Auto">
+                      <Border Classes="appicon medium" Background="{Binding Brush}" Margin="0,0,12,0">
+                        <mi:MaterialIcon Kind="{Binding Icon}" />
+                      </Border>
+                      <TextBlock Grid.Column="1" Text="{Binding Label}" VerticalAlignment="Center" TextWrapping="Wrap" />
+                      <mi:MaterialIcon Grid.Column="2" Kind="Check" Width="20" Height="20"
+                                       Foreground="{DynamicResource AccentBrush}" IsVisible="{Binding IsOn}" />
+                    </Grid>
+                  </Button>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </Border>
+        </StackPanel>
+      </Border>
+    </DataTemplate>
+    <!-- Un bloc unique pour chaque famille : pages et commandes dans une seule carte. -->
+    <DataTemplate x:Key="UnifiedPhoneBlock">
+      <StackPanel Spacing="4" Margin="0,10,0,6">
+        <TextBlock Text="{Binding Title}" Classes="phoneblocktitle" />
+        <Border Classes="phoneblockcard">
+          <StackPanel Spacing="0">
+            <ItemsControl ItemsSource="{Binding NavigationGroups}" ItemTemplate="{StaticResource NavGroup}" />
+            <ItemsControl ItemsSource="{Binding ToolGroups}" ItemTemplate="{StaticResource PhoneToolGroup}" />
+          </StackPanel>
+        </Border>
+      </StackPanel>
+    </DataTemplate>
+    <DataTemplate x:Key="PhoneToolBlock">
+      <StackPanel Spacing="4" Margin="0,10,0,6">
+        <TextBlock Text="{Binding Title}" Classes="phoneblocktitle" />
+        <Border Classes="phoneblockcard"><ItemsControl ItemsSource="{Binding Groups}" ItemTemplate="{StaticResource PhoneToolGroup}" /></Border>
+      </StackPanel>
+    </DataTemplate>
+  </UserControl.Resources>
+
+  <Grid ColumnDefinitions="Auto,*">
+  <Border Grid.Column="0" Classes="phonerail" IsVisible="{Binding PhoneRail}">
+    <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+      <StackPanel x:Name="RailPanel" Margin="12,14,12,20">
+        <Grid ColumnDefinitions="Auto,*" Margin="2,0,0,6">
+          <Panel Width="40" Height="40" Margin="0,0,10,0">
+            <Image Source="{Binding SchoolLogo}" IsVisible="{Binding HasSchoolLogo}" />
+            <Image Source="{DynamicResource ScoliaMark}" IsVisible="{Binding !HasSchoolLogo}" Width="32" Height="32" />
+          </Panel>
+          <StackPanel Grid.Column="1" VerticalAlignment="Center">
+            <TextBlock Text="{Binding SchoolTitle}" FontWeight="SemiBold" TextWrapping="Wrap" />
+            <TextBlock Text="{Binding SchoolYearLine}" Classes="muted" FontSize="{DynamicResource FsSmall}" />
+          </StackPanel>
+        </Grid>
+        <Border Classes="phonegroup" Margin="0,8,0,0">
+          <Button Classes="phonerow" Click="OnAccountClick">
+            <Grid ColumnDefinitions="Auto,*">
+              <Border Width="32" Height="32" CornerRadius="16" Background="{DynamicResource ToneNeutral}" Margin="0,0,12,0">
+                <TextBlock Text="{Binding UserInitials}" FontWeight="SemiBold" Foreground="{DynamicResource OnAccentBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+              </Border>
+              <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                <TextBlock Text="{Binding AccountName}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                <TextBlock Text="Compte et réglages" Classes="muted" FontSize="{DynamicResource FsSmall}" />
+              </StackPanel>
+            </Grid>
+          </Button>
+        </Border>
+        <ItemsControl ItemsSource="{Binding NavigationBlocks}" ItemTemplate="{StaticResource NavBlock}" />
+        <Border Classes="phonegroup" Margin="0,18,0,0">
+          <Button Classes="phonerow" Classes.selected="{Binding PhoneMenuOpen}" Click="OnMenuClick">
+            <Grid ColumnDefinitions="Auto,*">
+              <Border Classes="appicon medium" Background="{DynamicResource ToneIndigo}" Margin="0,0,12,0"><mi:MaterialIcon Kind="DotsGrid" /></Border>
+              <TextBlock Grid.Column="1" Text="Commandes et réglages" VerticalAlignment="Center" />
+            </Grid>
+          </Button>
+        </Border>
+      </StackPanel>
+    </ScrollViewer>
+  </Border>
+
+  <Grid Grid.Column="1" RowDefinitions="Auto,*,Auto">
+    <!-- Barre du haut -->
+    <Border Grid.Row="0" Classes="phonebar">
+      <StackPanel>
+      <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto">
+        <Button Classes="phoneicon" Command="{Binding BackCommand}" IsVisible="{Binding CanGoBack}" ToolTip.Tip="Retour">
+          <mi:MaterialIcon Kind="ChevronLeft" />
+        </Button>
+        <Panel Width="44" Height="44" IsVisible="{Binding !CanGoBack}">
+          <Image Source="{Binding SchoolLogo}" IsVisible="{Binding HasSchoolLogo}" Width="30" Height="30" />
+          <Image Source="{DynamicResource ScoliaMark}" IsVisible="{Binding !HasSchoolLogo}" Width="26" Height="26" />
+        </Panel>
+        <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="4,0,0,0" IsVisible="{Binding !HeaderSearch.IsOpen}">
+          <!-- Petit téléphone : un titre long passe sur deux lignes plutôt que d'être coupé -->
+          <TextBlock Text="{Binding PhonePage.Heading}" FontSize="17" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" TextWrapping="Wrap" MaxLines="2" LineHeight="20" />
+          <TextBlock Text="{Binding PhonePage.Subtitle}" Classes="muted" FontSize="{DynamicResource FsSmall}" TextTrimming="CharacterEllipsis" TextWrapping="Wrap" MaxLines="1"
+                     IsVisible="{Binding PhonePage.Subtitle, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+        </StackPanel>
+        <!-- Filtre de la page active : inline dans l'entête, aucun mélange avec la recherche du Menu. -->
+        <Border Grid.Column="1" IsVisible="{Binding HeaderSearch.IsOpen}" CornerRadius="14"
+                Background="{DynamicResource GroupBrush}" BorderThickness="1"
+                BorderBrush="{DynamicResource LineBrush}" Padding="9,0" Margin="2,0,2,0">
+          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="4">
+            <TextBox x:Name="ContextSearchBox" Grid.Column="0"
+                     Text="{Binding HeaderSearch.Query, Mode=TwoWay}"
+                     PlaceholderText="{Binding HeaderSearch.Placeholder}"
+                     BorderThickness="0" Background="Transparent" FontSize="14"
+                     KeyDown="OnContextSearchKeyDown" VerticalAlignment="Center" />
+            <Button Grid.Column="1" Classes="phoneicon" Width="32" Height="36"
+                    Command="{Binding HeaderSearch.Clear}" IsVisible="{Binding HeaderSearch.HasQuery}"
+                    ToolTip.Tip="Effacer ce filtre">
+              <mi:MaterialIcon Kind="CloseCircleOutline" Width="18" Height="18"/>
+            </Button>
+          </Grid>
+        </Border>
+        <!-- Présence : les autres postes connectés ; le point vert bat quand l'un d'eux enregistre quelque chose -->
+        <Button Grid.Column="2" Classes="phoneicon" Command="{Binding NetworkCommand}" ToolTip.Tip="Réseau et activité">
+          <Panel>
+            <mi:MaterialIcon Kind="CloudOffOutline" Foreground="{DynamicResource ToneOrange}" IsVisible="{Binding Sync.Offline}" />
+            <Panel IsVisible="{Binding Sync.Online}">
+              <mi:MaterialIcon Kind="AccountMultipleOutline" />
+              <Border Classes="livedot" Classes.pulse="{Binding Sync.Pulse}" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-2,-4,0" />
+              <Border Classes="peercount" IsVisible="{Binding Sync.HasPeers}" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,-8,-4">
+                <TextBlock Text="{Binding Sync.PeersCount}" />
+              </Border>
+            </Panel>
+          </Panel>
+        </Button>
+        <Button Grid.Column="3" Classes="phoneicon" Command="{Binding HeaderSearch.Toggle}"
+                IsVisible="{Binding HeaderSearch.IsVisible}" ToolTip.Tip="{Binding HeaderSearch.SearchHint}">
+          <Panel Width="24" Height="24">
+            <mi:MaterialIcon Kind="Magnify" IsVisible="{Binding !HeaderSearch.IsOpen}" />
+            <mi:MaterialIcon Kind="Close" IsVisible="{Binding HeaderSearch.IsOpen}" />
+          </Panel>
+        </Button>
+        <Button Grid.Column="4" Classes="phoneicon" Click="OnActionsClick" IsVisible="{Binding PhonePage.HasHeaderActions}" ToolTip.Tip="Actions de la page">
+          <mi:MaterialIcon Kind="DotsHorizontalCircleOutline" />
+        </Button>
+      </Grid>
+      <!-- Hors ligne : le travail continue, et l'utilisateur sait ce qui attend d'être envoyé -->
+      <Button Classes="livestrip offline" Command="{Binding NetworkCommand}" IsVisible="{Binding Sync.Offline}">
+        <Grid ColumnDefinitions="Auto,2*,3*" ColumnSpacing="8">
+          <mi:MaterialIcon Kind="CloudOffOutline" Width="16" Height="16" />
+          <TextBlock Grid.Column="1" Text="{Binding Sync.StatusText}" FontWeight="SemiBold" />
+          <TextBlock Grid.Column="2" Text="· envoi au retour de l'ordinateur principal" />
+        </Grid>
+      </Button>
+      <Button Classes="livestrip conflict" Command="{Binding NetworkCommand}" IsVisible="{Binding Sync.HasConflicts}">
+        <Grid ColumnDefinitions="Auto,2*,3*" ColumnSpacing="8">
+          <mi:MaterialIcon Kind="AlertCircleOutline" Width="16" Height="16" />
+          <TextBlock Grid.Column="1" Text="{Binding Sync.Conflicts}" FontWeight="SemiBold" />
+          <TextBlock Grid.Column="2" Text="opération(s) refusée(s) : touchez pour décider" />
+        </Grid>
+      </Button>
+      </StackPanel>
+    </Border>
+
+    <!-- Page : elle défile en entier, jamais sur le côté -->
+    <ScrollViewer x:Name="PhoneScroll" Grid.Row="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+      <TransitioningContentControl x:Name="PhoneHost" Content="{Binding PhonePage}"
+                                   Classes.withsticky="{Binding PhonePage.Sticky.IsVisible, FallbackValue=False}" />
+    </ScrollViewer>
+    <!-- Barre d'action fixe de la page : le total et le bouton qui valide, toujours visibles en bas -->
+    <Border Grid.Row="1" Classes="stickybar" VerticalAlignment="Bottom" IsVisible="{Binding PhonePage.Sticky.IsVisible, FallbackValue=False}">
+      <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+        <StackPanel VerticalAlignment="Center" Spacing="1">
+          <TextBlock Text="{Binding PhonePage.Sticky.Title}" Classes="muted" FontSize="{DynamicResource FsSmall}" />
+          <TextBlock Text="{Binding PhonePage.Sticky.Value}" FontSize="20" FontWeight="Bold" TextTrimming="CharacterEllipsis" />
+          <TextBlock Text="{Binding PhonePage.Sticky.Detail}" Classes="muted" FontSize="{DynamicResource FsSmall}" TextTrimming="CharacterEllipsis"
+                     IsVisible="{Binding PhonePage.Sticky.HasDetail, FallbackValue=False}" />
+        </StackPanel>
+        <Button x:Name="StickyAction" Grid.Column="1" Classes="primary stickyaction" Command="{Binding PhonePage.Sticky.Command}"
+                IsEnabled="{Binding PhonePage.Sticky.CanRun, FallbackValue=False}" VerticalAlignment="Center">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <mi:MaterialIcon Kind="CheckCircleOutline" Width="20" Height="20" />
+            <TextBlock Text="{Binding PhonePage.Sticky.Label}" FontWeight="SemiBold" VerticalAlignment="Center" />
+          </StackPanel>
+        </Button>
+      </Grid>
+    </Border>
+
+    <ProgressBar Grid.Row="1" IsIndeterminate="True" IsVisible="{Binding PhonePage.Busy}" VerticalAlignment="Top" Height="2" MinHeight="2" />
+    <!-- L'activité en arrière-plan est signalée par le point de présence dans l'en-tête. -->
+    <!-- Des données ont changé ailleurs pendant une saisie : rien ne bouge tant qu'on ne le demande pas -->
+    <Button Grid.Row="1" Classes="remotechip" Command="{Binding ApplyRemoteCommand}" IsVisible="{Binding RemoteWaiting}" VerticalAlignment="Top" HorizontalAlignment="Center" Margin="0,10,0,0">
+      <StackPanel Orientation="Horizontal" Spacing="6">
+        <mi:MaterialIcon Kind="ArrowDownBoldCircleOutline" Width="16" Height="16" />
+        <TextBlock Text="Nouvelles données · Afficher" />
+      </StackPanel>
+    </Button>
+
+    <!-- Menu : tous les outils, le compte et la déconnexion -->
+    <Border Grid.Row="0" Grid.RowSpan="2" Classes="phonemenu" Background="{DynamicResource BgBrush}" IsVisible="{Binding PhoneMenuOpen}">
+      <Border.RenderTransform><TranslateTransform /></Border.RenderTransform>
+      <ScrollViewer x:Name="MenuScroll" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel x:Name="MenuPanel" Margin="12,12,12,20">
+          <!-- Recherche Android : dans le même en-tête, sans nouvelle page ni dialogue au centre. -->
+          <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8" Margin="2,4,2,6" MinHeight="52">
+            <Panel Width="42" Height="42" VerticalAlignment="Center" IsVisible="{Binding !SettingsSearch.IsOpen}">
+              <Image Source="{Binding SchoolLogo}" IsVisible="{Binding HasSchoolLogo}" Width="34" Height="34" />
+              <Image Source="{DynamicResource ScoliaMark}" IsVisible="{Binding !HasSchoolLogo}" Width="34" Height="34" />
+            </Panel>
+            <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2" IsVisible="{Binding !SettingsSearch.IsOpen}">
+              <TextBlock Text="{Binding SchoolHeaderTitle}" FontSize="18" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" MaxLines="1" />
+              <TextBlock Text="{Binding SchoolYearLine}" Classes="muted" FontSize="{DynamicResource FsSmall}" />
+            </StackPanel>
+            <Border Grid.ColumnSpan="2" IsVisible="{Binding SettingsSearch.IsOpen}"
+                    Background="{DynamicResource GroupBrush}" CornerRadius="17"
+                    BorderBrush="{DynamicResource LineBrush}" BorderThickness="1" Padding="10,2">
+              <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="6" MinHeight="44">
+                <mi:MaterialIcon Kind="Magnify" Width="20" Height="20" Foreground="{DynamicResource AccentBrush}" VerticalAlignment="Center" />
+                <TextBox x:Name="MenuSearchBox" Grid.Column="1"
+                         Text="{Binding SettingsSearch.Query, Mode=TwoWay}"
+                         PlaceholderText="Outil ou paramètre à ouvrir…"  Background="Transparent"
+                         BorderThickness="0" FontSize="16" VerticalAlignment="Center"
+                         KeyDown="OnSettingsSearchKeyDown" />
+                <Button Grid.Column="2" Classes="phoneicon settingssearchcontrol"
+                        Command="{Binding SettingsSearch.Clear}" IsVisible="{Binding SettingsSearch.HasQuery}"
+                        Width="36" Height="36" ToolTip.Tip="Effacer la recherche">
+                  <mi:MaterialIcon Kind="CloseCircleOutline" Width="20" Height="20" />
+                </Button>
+              </Grid>
+            </Border>
+            <Button Grid.Column="2" Classes="phoneicon settingssearchcontrol" Command="{Binding SettingsSearch.Toggle}"
+                    ToolTip.Tip="Trouver une fonctionnalité ou un réglage" Width="44" Height="44">
+              <Panel Width="24" Height="24">
+                <mi:MaterialIcon Kind="Magnify" IsVisible="{Binding !SettingsSearch.IsOpen}" Width="23" Height="23" />
+                <mi:MaterialIcon Kind="Close" IsVisible="{Binding SettingsSearch.IsOpen}" Width="23" Height="23" />
+              </Panel>
+            </Button>
+          </Grid>
+
+          <Border Classes="phonegroup" Margin="0,12,0,0" IsVisible="{Binding !SettingsSearch.HasQuery}">
+            <StackPanel>
+              <Button Classes="phonerow" Click="OnAccountClick">
+                <Grid ColumnDefinitions="Auto,*,Auto">
+                  <Border Width="36" Height="36" CornerRadius="18" Background="{DynamicResource ToneNeutral}" Margin="0,0,12,0">
+                    <TextBlock Text="{Binding UserInitials}" FontWeight="SemiBold" Foreground="{DynamicResource OnAccentBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                  </Border>
+                  <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding AccountName}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                    <TextBlock Text="Compte, poste et réglages" Classes="muted" FontSize="{DynamicResource FsSmall}" />
+                  </StackPanel>
+                  <mi:MaterialIcon Grid.Column="2" Kind="ChevronRight" Width="20" Height="20" Foreground="{DynamicResource MutedBrush}" />
+                </Grid>
+              </Button>
+            </StackPanel>
+          </Border>
+
+          <!-- Les résultats sont filtrés localement parmi les réglages autorisés. -->
+          <StackPanel IsVisible="{Binding SettingsSearch.HasQuery}" Spacing="8" Margin="0,14,0,4">
+            <TextBlock Text="FONCTIONNALITÉS ET PARAMÈTRES" Classes="phoneblocktitle" Margin="12,0,0,0" />
+            <Border Classes="phonegroup" IsVisible="{Binding SettingsSearch.HasResults}">
+              <ItemsControl ItemsSource="{Binding SettingsSearch.Results}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate>
+                    <Button Classes="phonerow settingssearchresult" Command="{Binding Open}" MinHeight="64">
+                      <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                        <Border Classes="appicon medium" Background="{Binding Brush}" VerticalAlignment="Center">
+                          <mi:MaterialIcon Kind="{Binding Icon}" />
+                        </Border>
+                        <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
+                          <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                          <TextBlock Text="{Binding Section}" Classes="muted" FontSize="{DynamicResource FsSmall}" />
+                        </StackPanel>
+                        <mi:MaterialIcon Grid.Column="2" Kind="ChevronRight" Width="20" Height="20"
+                                         Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" />
+                      </Grid>
+                    </Button>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </Border>
+            <Border Classes="phonegroup" IsVisible="{Binding SettingsSearch.NoResults}" Padding="22,28">
+              <StackPanel HorizontalAlignment="Center" Spacing="10">
+                <mi:MaterialIcon Kind="Magnify" Width="32" Height="32" Foreground="{DynamicResource MutedBrush}" HorizontalAlignment="Center" />
+                <TextBlock Text="Aucune fonctionnalité trouvée" FontWeight="SemiBold" TextAlignment="Center" />
+                <TextBlock Text="Essayez : apprenants, encaisser, reçus, empreinte, Tailscale ou promotion."
+                           Classes="muted" TextWrapping="Wrap" TextAlignment="Center" />
+              </StackPanel>
+            </Border>
+          </StackPanel>
+
+          <!-- Navigation normale tant qu'aucune recherche n'est saisie. -->
+          <ItemsControl ItemsSource="{Binding PhoneMenuBlocks}" ItemTemplate="{StaticResource UnifiedPhoneBlock}"
+                        IsVisible="{Binding !SettingsSearch.HasQuery}" />
+
+          <Border Classes="phonegroup" Margin="0,18,0,0" IsVisible="{Binding !SettingsSearch.HasQuery}">
+            <StackPanel>
+              <Button Classes="phonerow" Click="OnLogoutClick">
+                <Grid ColumnDefinitions="Auto,*">
+                  <Border Classes="appicon medium" Background="{DynamicResource ToneRed}" Margin="0,0,12,0"><mi:MaterialIcon Kind="Logout" /></Border>
+                  <TextBlock Grid.Column="1" Text="Se déconnecter" VerticalAlignment="Center" Foreground="{DynamicResource ToneRed}" />
+                </Grid>
+              </Button>
+            </StackPanel>
+          </Border>
+          <TextBlock Text="{Binding ServerLine}" Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" TextAlignment="Center" Margin="0,16,0,0" IsVisible="{Binding !SettingsSearch.HasQuery}" />
+        </StackPanel>
+      </ScrollViewer>
+    </Border>
+
+    <!-- Onglets du bas -->
+    <Border Grid.Row="2" Classes="phonetabs" IsVisible="{Binding PhoneBottomTabs}">
+      <Grid x:Name="TabGrid" ColumnDefinitions="*,Auto">
+        <ItemsControl x:Name="Tabs" ItemsSource="{Binding PhoneTabs}">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate><UniformGrid Rows="1" /></ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate>
+              <Button Classes="phonetab" Classes.selected="{Binding IsSelected}" Command="{Binding Open}">
+                <StackPanel Spacing="2" HorizontalAlignment="Center">
+                  <Border Classes="tabicon" Classes.selected="{Binding IsSelected}">
+                    <mi:MaterialIcon Kind="{Binding Icon}" Width="22" Height="22" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{Binding Brush}" />
+                  </Border>
+                  <TextBlock Text="{Binding TabLabel}" ToolTip.Tip="{Binding Label}" />
+                </StackPanel>
+              </Button>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+        <Button Grid.Column="1" x:Name="MenuTab" Classes="phonetab" Classes.selected="{Binding PhoneMenuSelected}" Click="OnMenuClick" MinWidth="56">
+          <StackPanel Spacing="2">
+            <mi:MaterialIcon Kind="Menu" Width="24" Height="24" HorizontalAlignment="Center" />
+            <TextBlock Text="Menu" />
+          </StackPanel>
+        </Button>
+      </Grid>
+    </Border>
+
+  </Grid>
+
+    <!-- Feuille d'actions : le voile referme la feuille -->
+    <Grid Grid.ColumnSpan="2" Classes="sheethost" IsVisible="{Binding HasSheet}">
+      <Border Background="{DynamicResource ScrimBrush}" PointerPressed="OnScrimPressed" />
+      <Border x:Name="ActionSheet" Classes="phonesheet">
+        <Border.RenderTransform><TranslateTransform /></Border.RenderTransform>
+        <Grid x:Name="SheetPanel" RowDefinitions="Auto,Auto,Auto,*,Auto" RowSpacing="2">
+          <Border Width="40" Height="5" CornerRadius="3" Background="{DynamicResource LineStrongBrush}" HorizontalAlignment="Center" Margin="0,0,0,8" />
+          <TextBlock Grid.Row="1" Text="{Binding Sheet.Title}" FontWeight="SemiBold" TextWrapping="Wrap" Margin="12,0,12,0" />
+          <TextBlock Grid.Row="2" Text="{Binding Sheet.Subtitle}" Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" Margin="12,0,12,6" IsVisible="{Binding Sheet.HasSubtitle}" />
+          <ScrollViewer Grid.Row="3" MaxHeight="440" HorizontalScrollBarVisibility="Disabled">
+            <ItemsControl ItemsSource="{Binding Sheet.Items}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <Button Classes="sheetitem" Classes.danger="{Binding Danger}" Classes.emphasis="{Binding Emphasis}" Command="{Binding Command}" HorizontalContentAlignment="Stretch">
+                    <Grid ColumnDefinitions="Auto,*,Auto">
+                      <mi:MaterialIcon Kind="{Binding Icon}" Width="22" Height="22" Foreground="{Binding Brush}" Margin="0,0,14,0" />
+                      <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="1" Margin="0,6">
+                        <TextBlock Text="{Binding Label}" TextWrapping="Wrap" />
+                        <TextBlock Text="{Binding Detail}" Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" IsVisible="{Binding HasDetail}" />
+                      </StackPanel>
+                      <mi:MaterialIcon Grid.Column="2" Kind="Check" Width="22" Height="22" Foreground="{DynamicResource AccentBrush}" Margin="10,0,0,0" IsVisible="{Binding IsChecked}" />
+                    </Grid>
+                  </Button>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </ScrollViewer>
+          <Button x:Name="CancelSheetButton" Grid.Row="4" Classes="sheetitem" Click="OnSheetCancel" HorizontalContentAlignment="Center" Margin="0,6,0,0" Background="{DynamicResource GroupBrush}">
+            <TextBlock Text="Annuler" FontWeight="SemiBold" />
+          </Button>
+        </Grid>
+      </Border>
+    </Grid>
+  </Grid>
+</UserControl>

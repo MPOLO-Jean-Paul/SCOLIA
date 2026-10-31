@@ -1,0 +1,19 @@
+﻿COMPTES UTILISATEURS
+
+Le bouton Compte se trouve à droite de Masquer/Afficher les commandes. Ctrl+Alt+U ouvre également cette fenêtre.
+
+Windows : Utiliser ma session Windows emploie le nom et le SID de la session Windows déjà ouverte. Aucun mot de passe Windows n’est demandé ou conservé ; cette option ne connecte pas un autre utilisateur Windows ni un compte Microsoft en ligne.
+
+Application : Créer mon compte, saisir un identifiant unique (3 à 32 lettres/chiffres/points/tirets/traits de soulignement), un nom affiché (2 à 80 caractères), un mot de passe de 8 à 128 caractères et sa confirmation. Conserver le code de récupération affiché une seule fois. Le compte est ensuite connecté.
+
+Connexion au compte vérifie l’identifiant et le mot de passe. Après cinq erreurs, attendre cinq minutes. Le mode et l’identifiant sont mémorisés ; un compte d’application demande son mot de passe au prochain lancement.
+
+Récupérer mon compte demande son identifiant, son code de récupération et un nouveau mot de passe confirmé. Le code est renouvelé. Déconnecter le compte ferme l’application ; les données enregistrées restent conservées.
+
+Les comptes sont locaux au profil Windows actuel, dans comptes.dat protégé par Windows DPAPI. Les mots de passe et codes sont stockés comme empreintes PBKDF2-SHA256, sans mot de passe en clair. Le fichier illisible bloque le démarrage au lieu de réinitialiser les comptes.
+
+La protection existante dans Sécurité est conservée et vérifiée avant l’accès aux comptes. Les identités locales partagent les mêmes données ; les permissions dépendent de leur rôle Administrateur, Secrétariat ou Consultation. Il n’y a pas d’isolation des classeurs. Le Journal scolaire conserve ses informations Windows/Excel actuelles ; le journal nominatif de l’application complète cet historique.
+
+Mise à jour : remplacer programme et documentation, application fermée. Conserver data et sources. Aucun changement du classeur nécessaire.
+
+Rôles : premier compte local Administrateur ; nouveaux comptes supplémentaires Consultation. Un administrateur choisit Secrétariat ou Administrateur depuis Gérer les rôles. Les permissions limitent les commandes de l’application, sans modifier les autorisations Windows sur les fichiers. Retour à la session Windows depuis un compte restreint : authentification administrateur requise. Voir le chapitre Sécurité du guide complet.

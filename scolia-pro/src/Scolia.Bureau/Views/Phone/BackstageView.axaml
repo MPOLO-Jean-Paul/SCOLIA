@@ -1,0 +1,166 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mi="using:Material.Icons.Avalonia"
+             x:Class="Scolia.Bureau.Views.Phone.BackstageView">
+  <!-- Compte sur le mobile, comme les Réglages : profil, rubriques en lignes, puis la déconnexion -->
+  <Grid RowDefinitions="Auto,*" Background="{DynamicResource BgBrush}">
+    <Border Classes="phonebar">
+      <Grid ColumnDefinitions="Auto,*">
+        <Button Classes="phoneicon" Command="{Binding Close}" IsVisible="{Binding ShowList}" ToolTip.Tip="Retour">
+          <mi:MaterialIcon Kind="ChevronLeft" />
+        </Button>
+        <Button Classes="phoneicon" Command="{Binding BackToList}" IsVisible="{Binding ShowDetail}" ToolTip.Tip="Retour">
+          <mi:MaterialIcon Kind="ChevronLeft" />
+        </Button>
+        <TextBlock Grid.Column="1" Text="Compte et réglages" IsVisible="{Binding ShowList}" FontSize="17" FontWeight="SemiBold" VerticalAlignment="Center" Margin="4,0,0,0" />
+        <TextBlock Grid.Column="1" Text="{Binding DetailTitle}" IsVisible="{Binding ShowDetail}" FontSize="17" FontWeight="SemiBold" VerticalAlignment="Center" Margin="4,0,0,0" />
+      </Grid>
+    </Border>
+
+    <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled">
+      <Panel Margin="12,14,12,24" MaxWidth="720">
+        <StackPanel Spacing="14" IsVisible="{Binding ShowList}">
+          <!-- Profil -->
+          <Border Classes="card">
+            <Grid ColumnDefinitions="Auto,*">
+              <Border Width="56" Height="56" CornerRadius="28" Background="{DynamicResource AccentBrush}" Margin="0,0,14,0">
+                <TextBlock Text="{Binding Initials}" FontSize="20" FontWeight="SemiBold" Foreground="{DynamicResource OnAccentBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+              </Border>
+              <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="1">
+                <TextBlock Text="{Binding UserName}" FontSize="17" FontWeight="SemiBold" TextWrapping="Wrap" />
+                <TextBlock Text="{Binding Role}" Classes="muted" />
+                <TextBlock Text="{Binding School}" Classes="muted" TextWrapping="Wrap" />
+              </StackPanel>
+            </Grid>
+          </Border>
+
+          <!-- Rubriques -->
+          <Border Classes="phonegroup">
+            <ItemsControl ItemsSource="{Binding Items}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <Button Classes="phonerow" Command="{Binding $parent[ItemsControl].DataContext.OpenItem}" CommandParameter="{Binding}" IsVisible="{Binding Value, Converter={x:Static ObjectConverters.NotEqual}, ConverterParameter=infos}">
+                    <Grid ColumnDefinitions="Auto,*,Auto">
+                      <Border Classes="appicon medium" Background="{Binding Brush}" Margin="0,0,12,0"><mi:MaterialIcon Kind="{Binding Icon}" /></Border>
+                      <TextBlock Grid.Column="1" Text="{Binding Label}" VerticalAlignment="Center" />
+                      <mi:MaterialIcon Grid.Column="2" Kind="ChevronRight" Width="20" Height="20" Foreground="{DynamicResource MutedBrush}" />
+                    </Grid>
+                  </Button>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </Border>
+
+          <!-- Informations -->
+          <TextBlock Text="Informations" Classes="phonegrouptitle" Margin="14,4,0,-6" />
+          <Border Classes="card">
+            <StackPanel Spacing="10">
+              <StackPanel Spacing="1"><TextBlock Text="Établissement" Classes="phonelabel" /><TextBlock Text="{Binding School}" TextWrapping="Wrap" /></StackPanel>
+              <StackPanel Spacing="1"><TextBlock Text="Année courante" Classes="phonelabel" /><TextBlock Text="{Binding Year}" /></StackPanel>
+              <StackPanel Spacing="1"><TextBlock Text="Serveur" Classes="phonelabel" /><TextBlock Text="{Binding Server}" TextWrapping="Wrap" /></StackPanel>
+              <StackPanel Spacing="1"><TextBlock Text="Application" Classes="phonelabel" /><TextBlock Text="{Binding Version}" /></StackPanel>
+            </StackPanel>
+          </Border>
+
+          <Button Classes="destructive" Command="{Binding Logout}" HorizontalAlignment="Stretch" Height="48" Margin="0,6,0,0">
+            <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
+              <mi:MaterialIcon Kind="Logout" Width="18" Height="18" />
+              <TextBlock Text="Se déconnecter" />
+            </StackPanel>
+          </Button>
+        </StackPanel>
+
+        <StackPanel IsVisible="{Binding ShowDetail}">
+          <!-- Android 16 : sécurité regroupée en blocs lisibles, sans défilement horizontal. -->
+          <!-- Sécurité du compte : présentation tactile native, inspirée des paramètres système modernes. -->
+          <StackPanel IsVisible="{Binding IsPassword}" Spacing="14">
+            <Border Classes="card" Padding="16,16" CornerRadius="20">
+              <StackPanel Spacing="12">
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14">
+                  <Border Background="{DynamicResource AccentSoftBrush}" Width="56" Height="56" CornerRadius="18">
+                    <mi:MaterialIcon Kind="ShieldCheckOutline" Width="30" Height="30"
+                                     Foreground="{DynamicResource AccentBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                  </Border>
+                  <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3">
+                    <TextBlock Text="Sécurité du compte" FontSize="19" FontWeight="SemiBold" TextWrapping="Wrap" />
+                    <TextBlock Text="Mot de passe et biométrie de l'appareil" Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
+                  </StackPanel>
+                </Grid>
+                <Border Background="{DynamicResource GroupBrush}" CornerRadius="14" Padding="12,12">
+                  <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                    <mi:MaterialIcon Kind="AccountCircleOutline" Width="24" Height="24" Foreground="{DynamicResource AccentBrush}" />
+                    <StackPanel Grid.Column="1" Spacing="2">
+                      <TextBlock Text="{Binding UserName}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                      <TextBlock Text="{Binding Role}" Classes="muted" />
+                    </StackPanel>
+                  </Grid>
+                </Border>
+              </StackPanel>
+            </Border>
+
+            <Border Classes="card" Padding="16,16" CornerRadius="20">
+              <StackPanel Spacing="12">
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                  <Border Width="44" Height="44" Background="{DynamicResource GroupBrush}" CornerRadius="14">
+                    <mi:MaterialIcon Kind="LockReset" Width="25" Height="25"
+                                     Foreground="{DynamicResource AccentBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                  </Border>
+                  <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
+                    <TextBlock Text="01 · Mot de passe" FontSize="17" FontWeight="SemiBold" />
+                    <TextBlock Text="Modifier votre code d'accès SCOLIA" Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
+                  </StackPanel>
+                </Grid>
+                <TextBlock Text="Saisissez votre ancien mot de passe, puis le nouveau deux fois. Le changement est appliqué à votre compte."
+                           Classes="muted" TextWrapping="Wrap" />
+                <ContentControl Content="{Binding PasswordForm}" HorizontalAlignment="Stretch" />
+              </StackPanel>
+            </Border>
+
+            <Border Classes="card" IsVisible="{Binding ShowBiometricSecurity}" Padding="16,16" CornerRadius="20">
+              <StackPanel Spacing="12">
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                  <Border Background="{DynamicResource AccentSoftBrush}" Width="44" Height="44" CornerRadius="14">
+                    <mi:MaterialIcon Kind="Fingerprint" Width="26" Height="26"
+                                     Foreground="{DynamicResource AccentBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                  </Border>
+                  <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
+                    <TextBlock Text="02 · Accès biométrique" FontSize="17" FontWeight="SemiBold" TextWrapping="Wrap" />
+                    <TextBlock Text="Empreinte ou Face ID selon l'appareil" Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
+                  </StackPanel>
+                </Grid>
+                <Border Background="{DynamicResource GroupBrush}" CornerRadius="14" Padding="14,12">
+                  <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                    <mi:MaterialIcon Kind="ShieldCheckOutline" Width="22" Height="22" Foreground="{DynamicResource AccentBrush}" />
+                    <TextBlock Grid.Column="1" Text="{Binding BiometricSecurityStatus}" TextWrapping="Wrap"
+                               FontSize="{DynamicResource FsSmall}" />
+                  </Grid>
+                </Border>
+                <TextBlock Text="Vérifier avec mon mot de passe" FontWeight="SemiBold" />
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
+                  <TextBox Text="{Binding SecurityPassword}" PasswordChar="{Binding SecurityPasswordMask}"
+                           PlaceholderText="Mot de passe actuel" MinHeight="48" />
+                  <Button Grid.Column="1" Classes="phoneicon" Command="{Binding ToggleSecurityPassword}"
+                          ToolTip.Tip="Afficher ou masquer le mot de passe" MinWidth="48" MinHeight="48">
+                    <mi:MaterialIcon Kind="{Binding SecurityEyeIcon}" Width="23" Height="23" />
+                  </Button>
+                </Grid>
+                <TextBlock Text="SCOLIA n'enregistre aucune image d'empreinte : l'appareil confirme lui-même votre identité. Le mot de passe reste utilisable."
+                           Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
+                <Button Classes="primary" Content="{Binding BiometricActionLabel}" Command="{Binding ManageBiometrics}"
+                        IsEnabled="{Binding BiometricSecurityAllowed}" HorizontalAlignment="Stretch"
+                        HorizontalContentAlignment="Center" MinHeight="48" />
+                <Border Background="{DynamicResource AccentSoftBrush}" CornerRadius="12" Padding="12,10"
+                        IsVisible="{Binding HasSecurityNotice}">
+                  <TextBlock Text="{Binding SecurityNotice}" TextWrapping="Wrap" FontSize="{DynamicResource FsSmall}" />
+                </Border>
+              </StackPanel>
+            </Border>
+            <Button Classes="ghost" Content="Retour à mon compte" Command="{Binding CloseSecurity}"
+                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" MinHeight="48" />
+          </StackPanel>
+          <ContentControl IsVisible="{Binding IsPoste}" Content="{Binding PosteSection}" />
+        </StackPanel>
+      </Panel>
+    </ScrollViewer>
+  </Grid>
+</UserControl>

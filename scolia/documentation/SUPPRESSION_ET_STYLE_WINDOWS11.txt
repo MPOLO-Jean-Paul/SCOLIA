@@ -1,0 +1,15 @@
+﻿SUPPRESSION ET INTERFACE
+
+Dans Apprenants, sélectionnez une ligne puis choisissez Supprimer l’apprenant dans la page ou dans le groupe DOSSIERS. Raccourci : Ctrl+Maj+D.
+La confirmation indique le nom, la promotion et le matricule. Non est sélectionné par défaut. La suppression est refusée si un paiement existe dans un classeur connecté, même pour un dossier inactif. Dans ce cas, utilisez Modifier puis le statut Sorti ou Suspendu.
+Pour un dossier sans paiement, une sauvegarde précède la suppression et une trace est conservée dans le journal. Les dossiers suivants sont replacés sans trou ; les données restent à partir de la ligne 5. Aucun doublon déjà présent n’est supprimé automatiquement.
+
+MISE À JOUR
+Fermez l’application et Excel. Extrayez le ZIP, puis lancez INSTALLER.vbs pour installer la nouvelle commande VBA dans votre classeur. Lancez ensuite APPLICATION.vbs. Les scripts compatibles Windows PowerShell 5.1 gardent le lancement graphique sans CMD.
+
+Les boutons partagés, champs de mot de passe, rubans, onglets et couleurs reprennent une présentation de bureau inspirée de Windows 11 : surfaces sobres, contours nets, états de survol, focus clavier visible et contraste clair/sombre. La commande Supprimer porte une icône de corbeille et un texte distinctif.
+Les contrôles natifs Windows, les boîtes de dialogue et le rendu exact dépendent de Windows et de son échelle d’affichage.
+
+VÉRIFICATIONS
+Le contrôle syntaxique PowerShell, la compilation des six fichiers C# et les signatures des modules VBA sont vérifiés lors de la préparation du paquet. TestsSuppressionApprenant.ps1 fournit des tests isolés des protections et du routage, sans toucher aux données. L’exécution native de ces tests et le traitement Excel restent à vérifier sur Windows ; ils ne sont pas exécutables dans l’environnement de préparation Linux.
+Les six classeurs sources sont conservés à l’identique.

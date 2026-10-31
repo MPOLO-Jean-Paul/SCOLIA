@@ -1,0 +1,25 @@
+﻿SCOLIA V74 — Amélioration approfondie des interfaces
+
+Paiements multiples
+En-tête, filtres, outils, informations et validation mesurés à partir de leur contenu. Le formulaire devient redimensionnable à partir d une petite largeur ; un défilement global conserve l accès aux commandes. La grille garde une hauteur minimale utile. Les messages de résultat ne sont plus limités à 32 pixels.
+
+Comptes
+Création, récupération et connexion : suppression de la compression verticale des champs. Les deux premiers champs passent en colonne lorsque nécessaire ; les libellés et boutons sont mesurés avec la police choisie. Les commandes restent groupées et passent à la ligne. Le corps défile sur les écrans courts.
+
+Prises en charge
+Formulaire de saisie reconstruit avec les champs adaptatifs communs et un espace suffisant pour le motif. La liste utilise la page métier commune avec recherche, promotion, tableau, messages et commandes adaptatifs.
+
+Finances et importation
+Les motifs de paiement et l importation réseau utilisent également la page métier commune. Les textes explicatifs et messages de progression déclenchent un recalcul de hauteur.
+
+Tableaux
+Les colonnes à cases à cocher conservent une largeur compacte pour réserver davantage de place aux données.
+
+Contrôles réalisés
+Analyse de 219 scripts avec le parseur PowerShell ; compilation sémantique de ChromeModerne.cs et ActivityIndicator.cs avec Roslyn et les références Windows Forms .NET 8. Comparaison des traitements de boutons des modules retouchés : préservés à l identique. Vérification de l intégrité du ZIP et conservation des données et classeurs.
+
+Limites
+Les fenêtres réelles ne peuvent pas être affichées dans cet environnement Linux. La compilation de contrôle .NET 8 ne remplace pas un essai dans Windows PowerShell 5.1. Le script programme/TestsInterfacesV74.ps1 fournit des contrôles de disposition à exécuter sous Windows (powershell.exe -NoProfile -STA -File programme\TestsInterfacesV74.ps1). Ces tests Windows n ont pas été exécutés ici.
+
+Utilisation
+Décompresser le ZIP complet et utiliser le lanceur habituel APPLICATION.

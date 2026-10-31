@@ -1,0 +1,29 @@
+ÉDITION 93 — CORRECTION DU LANCEMENT
+
+CAUSE
+La collecte des commandes fréquentes parcourt tous les onglets au démarrage.
+Les commandes « Cotes et délibération » et « Grilles remplies » ne figuraient
+pas dans le catalogue des descriptions et raccourcis. La création du ruban
+était donc interrompue par « Aide de commande manquante ».
+
+CORRECTIONS
+- Ajout de la description et du raccourci de Cotes et délibération : Ctrl+Alt+G.
+- Ajout de la description et du raccourci de Grilles remplies : Ctrl+Alt+D.
+- Accès au traitement des cotes cohérent avec la permission Administrer.
+- Le dossier des grilles peut être ouvert sans classeur connecté.
+- Icône de dossier pour Grilles remplies.
+
+VÉRIFICATIONS
+L'erreur de la capture a été reproduite par l'exécution du code de construction
+du ruban avant correction. Après correction, les 10 onglets et 66 commandes
+distinctes sont construits, avec descriptions et raccourcis présents.
+La syntaxe des 78 scripts PowerShell est contrôlée. Les tests de classement
+alphabétique, de conservation des cotes et de libération des commandes passent.
+Cette vérification utilise des contrôles simulés ; le lancement graphique
+complet reste à confirmer sous Windows avec Office.
+
+MISE À JOUR
+Fermer l'application et Excel. Utiliser cette archive selon DEMARRER_ICI.txt,
+en conservant le dossier data et les paramètres existants.
+Ce défaut vient de l'application : ne recréez pas la base des apprenants.
+Lancer APPLICATION.vbs. L'installation graphique INSTALLER.vbs est conservée.

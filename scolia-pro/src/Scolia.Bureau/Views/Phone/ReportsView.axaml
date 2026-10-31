@@ -1,0 +1,68 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mi="using:Material.Icons.Avalonia"
+             x:Class="Scolia.Bureau.Views.Phone.ReportsView">
+  <!-- Rapports sur le mobile : chaque document sur sa ligne, ses formats en dessous, larges pour le doigt -->
+  <StackPanel Spacing="14">
+    <Border Classes="filterbar">
+      <WrapPanel>
+        <StackPanel Classes="field">
+          <TextBlock Text="Du" Classes="fieldlabel" />
+          <CalendarDatePicker PlaceholderText="Début" SelectedDateFormat="Short" Width="170" SelectedDate="{Binding From}" />
+        </StackPanel>
+        <StackPanel Classes="field">
+          <TextBlock Text="Au" Classes="fieldlabel" />
+          <CalendarDatePicker PlaceholderText="Fin" SelectedDateFormat="Short" Width="170" SelectedDate="{Binding To}" />
+        </StackPanel>
+        <StackPanel Classes="field">
+          <TextBlock Text="Promotion" Classes="fieldlabel" />
+          <ComboBox Width="280" ItemsSource="{Binding Promotions}" SelectedItem="{Binding Promotion}" />
+        </StackPanel>
+      </WrapPanel>
+    </Border>
+
+    <ItemsControl ItemsSource="{Binding Sections}">
+      <ItemsControl.ItemTemplate>
+        <DataTemplate>
+          <StackPanel>
+            <TextBlock Text="{Binding Title}" Classes="phonegrouptitle" />
+            <Border Classes="phonegroup">
+              <ItemsControl ItemsSource="{Binding Reports}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate>
+                    <Border BorderBrush="{DynamicResource LineBrush}" BorderThickness="0,0,0,1" Padding="14,12">
+                      <StackPanel Spacing="10">
+                        <Grid ColumnDefinitions="Auto,*">
+                          <Border Classes="appicon medium" Background="{Binding Brush}" Margin="0,0,12,0" VerticalAlignment="Top"><mi:MaterialIcon Kind="{Binding Icon}" /></Border>
+                          <StackPanel Grid.Column="1" Spacing="1">
+                            <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                            <TextBlock Text="{Binding Description}" Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
+                          </StackPanel>
+                        </Grid>
+                        <ItemsControl ItemsSource="{Binding Formats}" Margin="40,0,0,0">
+                          <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate><UniformGrid Rows="1" /></ItemsPanelTemplate>
+                          </ItemsControl.ItemsPanel>
+                          <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                              <Button Command="{Binding Run}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Height="40" Margin="0,0,8,0">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                  <mi:MaterialIcon Kind="Download" Width="16" Height="16" />
+                                  <TextBlock Text="{Binding Label}" />
+                                </StackPanel>
+                              </Button>
+                            </DataTemplate>
+                          </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                      </StackPanel>
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </Border>
+          </StackPanel>
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
+  </StackPanel>
+</UserControl>

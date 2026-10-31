@@ -1,0 +1,170 @@
+/* ==========================================================================
+   Coque de l'application : barre de titre, ruban à onglets, espace de
+   travail, barre d'état, vue Fichier. Même vocabulaire visuel que les suites
+   bureautiques (onglets, groupes de commandes, info-bulles, touches d'accès),
+   aux couleurs de SCOLIA.
+   ========================================================================== */
+
+:root {
+  --tone-blue: var(--blue);
+  --tone-green: var(--green);
+  --tone-orange: var(--orange);
+  --tone-purple: var(--purple);
+  --tone-red: var(--red);
+  --ribbon-h: 118px;
+}
+
+.app { display: grid; grid-template-rows: auto auto minmax(0, 1fr) auto; height: 100%; background: var(--bg); min-width: 0; }
+
+/* ---------- Barre de titre ---------- */
+.titlebar { background: var(--navy); color: #fff; display: flex; align-items: center; gap: 12px; height: 46px; padding: 0 10px 0 8px; min-width: 0; }
+.qat { display: flex; align-items: center; gap: 2px; flex: none; }
+.qat-logo { width: 26px; height: 26px; border-radius: 6px; background: #fff; padding: 2px; object-fit: contain; margin-right: 8px; }
+.qat-btn { width: 30px; height: 30px; border-radius: 6px; border: none; background: transparent; color: #e8eefa; display: grid; place-items: center; cursor: pointer; }
+.qat-btn:hover { background: rgba(255, 255, 255, 0.14); }
+.qat-btn:focus-visible { box-shadow: 0 0 0 2px #93b4ee; }
+.qat-btn svg { width: 16px; height: 16px; }
+.titlebar-doc { font-size: calc(13.5px * var(--fs, 1)); font-weight: 700; color: #f1f5fb; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; flex: 0 1 auto; }
+.titlebar-doc span { color: var(--navy-text); font-weight: 500; }
+.titlebar-search { margin-left: auto; width: min(400px, 36vw); height: 30px; display: flex; align-items: center; gap: 8px; padding: 0 10px; border-radius: 7px; border: 1px solid rgba(255, 255, 255, 0.2); background: rgba(255, 255, 255, 0.1); color: #cfdbef; cursor: pointer; font-size: calc(12.5px * var(--fs, 1)); min-width: 0; }
+.titlebar-search:hover { background: rgba(255, 255, 255, 0.16); }
+.titlebar-search svg { width: 15px; height: 15px; flex: none; }
+.titlebar-search span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; text-align: left; }
+.titlebar-search kbd { background: rgba(255, 255, 255, 0.1); border-color: rgba(255, 255, 255, 0.25); color: #e8eefa; flex: none; }
+.user-menu { position: relative; flex: none; }
+.user-menu .user-chip { background: rgba(255, 255, 255, 0.08); border-color: rgba(255, 255, 255, 0.18); color: #fff; padding: 2px 10px 2px 2px; }
+.user-menu .who { display: flex; flex-direction: column; }
+.user-menu .who-name { font-weight: 700; font-size: calc(12.5px * var(--fs, 1)); }
+.user-menu .who small { color: var(--navy-text); }
+.user-menu .avatar { width: 28px; height: 28px; background: var(--blue); }
+.user-dropdown { position: absolute; right: 0; top: 44px; width: 240px; z-index: 30; padding: 6px; display: flex; flex-direction: column; color: var(--text); }
+.user-dropdown .btn { width: 100%; justify-content: flex-start; border: none; height: 36px; }
+.danger-text { color: var(--red) !important; }
+
+/* ---------- Ruban ---------- */
+.ribbon { background: var(--surface); border-bottom: 1px solid var(--border); position: relative; z-index: 20; user-select: none; }
+.ribbon-tabs { display: flex; align-items: flex-end; gap: 6px; padding: 0 8px; background: var(--surface-2); border-bottom: 1px solid var(--border); min-height: 34px; }
+.rb-file { height: 34px; padding: 0 16px; border: none; background: var(--blue); color: #fff; font-weight: 700; font-size: calc(13px * var(--fs, 1)); cursor: pointer; position: relative; flex: none; }
+.rb-file:hover { background: var(--blue-hover); }
+.rb-file:focus-visible { box-shadow: inset 0 0 0 2px #fff; }
+.rb-tablist { display: flex; align-items: flex-end; gap: 2px; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+.rb-tablist::-webkit-scrollbar { display: none; }
+.rb-tab-wrap { display: flex; flex-direction: column; justify-content: flex-end; flex: none; }
+.rb-tab-wrap.has-ctx { background: color-mix(in srgb, var(--ctx) 14%, transparent); border-radius: 6px 6px 0 0; padding: 0 3px; }
+.rb-ctx-head { font-size: calc(10.5px * var(--fs, 1)); font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ctx); padding: 3px 10px 0; white-space: nowrap; }
+.rb-tab { position: relative; height: 32px; padding: 0 14px; margin-bottom: -1px; border: 1px solid transparent; border-bottom: none; border-radius: 6px 6px 0 0; background: none; color: var(--text-2); font-weight: 600; font-size: calc(13px * var(--fs, 1)); cursor: pointer; white-space: nowrap; }
+.rb-tab:hover { background: var(--blue-soft); }
+.rb-tab.on { background: var(--surface); color: var(--blue-text); border-color: var(--border); border-bottom-color: var(--surface); font-weight: 700; }
+.rb-tab:focus-visible { box-shadow: var(--focus); }
+.rb-spacer { flex: 1; min-width: 8px; }
+.rb-collapse { height: 26px; width: 30px; margin-bottom: 4px; border: 1px solid transparent; border-radius: 6px; background: none; color: var(--muted); cursor: pointer; display: grid; place-items: center; flex: none; }
+.rb-collapse:hover { background: var(--blue-soft); color: var(--blue-text); }
+.rb-collapse svg { width: 16px; height: 16px; }
+
+.ribbon-body { display: flex; flex-wrap: wrap; align-items: stretch; gap: 0; padding: 8px 10px 0; min-height: var(--ribbon-h); background: var(--surface); animation: ribbon-in .12s ease; }
+@keyframes ribbon-in { from { opacity: 0; transform: translateY(-3px); } }
+.rb-group { position: relative; display: flex; flex-direction: column; padding: 0 12px 22px; border-right: 1px solid var(--border); margin: 2px 0; }
+.rb-group:last-child { border-right: none; }
+.rb-group[aria-label]:first-child { padding-left: 2px; }
+.rb-cmds { display: flex; align-items: flex-start; gap: 2px; flex: 1; }
+.rb-group-name { position: absolute; left: 0; right: 0; bottom: 3px; text-align: center; font-size: calc(11.5px * var(--fs, 1)); color: var(--muted); white-space: nowrap; padding-right: 14px; }
+.rb-launcher { position: absolute; right: 2px; bottom: 2px; width: 18px; height: 18px; border: none; background: none; color: var(--muted); cursor: pointer; border-radius: 4px; display: grid; place-items: center; padding: 0; }
+.rb-launcher:hover { background: var(--blue-soft); color: var(--blue); }
+.rb-launcher svg { width: 12px; height: 12px; }
+
+.rb-cmd { position: relative; display: flex; border: 1px solid transparent; background: none; color: var(--text); cursor: pointer; border-radius: 5px; font-family: inherit; padding: 0; }
+.rb-cmd:hover { background: var(--blue-soft); border-color: color-mix(in srgb, var(--blue) 30%, transparent); }
+.rb-cmd:active { background: color-mix(in srgb, var(--blue) 22%, transparent); }
+.rb-cmd.is-on { background: color-mix(in srgb, var(--blue) 22%, transparent); border-color: color-mix(in srgb, var(--blue) 45%, transparent); }
+.rb-cmd:focus-visible { box-shadow: var(--focus); }
+.rb-cmd .rb-icon { display: grid; place-items: center; color: var(--tone, var(--blue)); flex: none; }
+.rb-cmd .rb-label { font-size: calc(12px * var(--fs, 1)); color: var(--text); }
+.tone-blue { --tone: var(--tone-blue); }
+.tone-green { --tone: var(--tone-green); }
+.tone-orange { --tone: var(--tone-orange); }
+.tone-purple { --tone: var(--tone-purple); }
+.tone-red { --tone: var(--tone-red); }
+
+.rb-large { flex-direction: column; align-items: center; justify-content: flex-start; gap: 5px; width: 86px; min-height: 70px; padding: 6px 4px 2px; text-align: center; line-height: 1.15; }
+.rb-large .rb-icon svg { width: 30px; height: 30px; stroke-width: 1.8; }
+.rb-large .rb-label { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; max-width: 84px; overflow-wrap: anywhere; }
+
+.rb-smalls { display: grid; grid-template-rows: repeat(3, auto); grid-auto-flow: column; grid-auto-columns: max-content; gap: 2px 3px; align-content: start; padding-top: 2px; }
+.rb-small { flex-direction: row; align-items: center; gap: 6px; height: 25px; padding: 0 9px 0 6px; white-space: nowrap; font-size: calc(12px * var(--fs, 1)); }
+.rb-small .rb-icon svg { width: 15px; height: 15px; }
+.rb-small .rb-label { color: var(--text-2); }
+.rb-cmd.is-on .rb-label { font-weight: 700; }
+
+.rb-keytip { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 6; min-width: 18px; height: 18px; padding: 0 4px; border: none; border-radius: 4px; background: #1f2937; color: #fff; font: 700 11px/18px system-ui, sans-serif; display: inline-grid; place-items: center; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3); pointer-events: none; }
+/* Touches d'accès : posées sur le bord, pour ne jamais masquer le libellé. */
+.rb-tab .rb-keytip { top: 100%; transform: translate(-50%, -55%); }
+.rb-file .rb-keytip { left: auto; right: 3px; top: auto; bottom: 3px; transform: none; }
+.rb-large .rb-keytip { top: 15px; }
+.rb-small .rb-keytip { left: 3px; top: 50%; transform: translateY(-50%); }
+
+/* Info-bulles : titre, raccourci et description, comme dans les suites bureautiques. */
+.rb-tip { position: absolute; top: calc(100% + 6px); left: 0; transform: translateY(-4px); width: max-content; max-width: 250px; z-index: 40; display: grid; gap: 4px; padding: 9px 11px; border-radius: 7px; background: #1f2937; color: #f3f4f6; font-size: calc(12px * var(--fs, 1)); line-height: 1.4; font-weight: 500; text-align: left; white-space: normal; box-shadow: var(--shadow-lg); opacity: 0; pointer-events: none; transition: opacity 0.12s ease, transform 0.12s ease; }
+.rb-tip b { font-weight: 800; color: #fff; }
+.rb-tip kbd { justify-self: start; background: rgba(255, 255, 255, 0.12); border-color: rgba(255, 255, 255, 0.3); color: #fff; }
+.rb-tip > span { color: #cbd5e1; }
+.rb-cmd:hover .rb-tip, .rb-cmd:focus-visible .rb-tip { opacity: 1; transform: translateY(0); transition-delay: 0.45s; }
+
+/* ---------- Espace de travail ---------- */
+.content { min-height: 0; overflow-y: auto; padding: 22px 26px 40px; }
+
+/* ---------- Barre d'état ---------- */
+.statusbar { height: 26px; background: var(--navy); color: #d6e0f2; display: flex; align-items: center; gap: 16px; padding: 0 10px; font-size: calc(12px * var(--fs, 1)); min-width: 0; }
+.sb-item { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.sb-item svg { width: 14px; height: 14px; }
+.sb-page { color: #fff; font-weight: 600; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.sb-spacer { flex: 1; }
+.sb-zoom { display: flex; align-items: center; gap: 4px; flex: none; }
+.sb-zoom button { height: 20px; border: none; background: transparent; color: inherit; cursor: pointer; border-radius: 4px; display: grid; place-items: center; padding: 0 3px; }
+.sb-zoom button:hover:not(:disabled) { background: rgba(255, 255, 255, 0.14); }
+.sb-zoom button:disabled { opacity: 0.4; cursor: default; }
+.sb-zoom button svg { width: 14px; height: 14px; }
+.sb-zoom input[type="range"] { width: 110px; accent-color: #93b4ee; margin: 0 4px; }
+.sb-zoom-value { min-width: 48px; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+/* ---------- Vue Fichier (backstage) ---------- */
+.backstage { position: fixed; inset: 0; z-index: 70; background: var(--surface); display: grid; grid-template-columns: 250px minmax(0, 1fr); animation: fade 0.12s ease; }
+.bs-side { background: var(--surface-2); border-right: 1px solid var(--border); padding: 18px 12px; display: flex; flex-direction: column; gap: 14px; }
+.bs-back { width: 40px; height: 40px; border-radius: 50%; border: none; background: var(--blue); color: #fff; display: grid; place-items: center; cursor: pointer; margin-left: 4px; }
+.bs-back:hover { background: var(--blue-hover); }
+.bs-back svg { width: 18px; height: 18px; }
+.bs-side nav { display: flex; flex-direction: column; gap: 2px; }
+.bs-item { display: flex; align-items: center; gap: 12px; height: 40px; padding: 0 12px; border: none; border-left: 3px solid transparent; background: none; color: var(--text); font-weight: 600; font-size: calc(13.5px * var(--fs, 1)); text-align: left; cursor: pointer; border-radius: 0 6px 6px 0; }
+.bs-item:hover { background: var(--blue-soft); }
+.bs-item.on { background: var(--surface); border-left-color: var(--blue); color: var(--blue-text); font-weight: 700; }
+.bs-item svg { width: 18px; height: 18px; color: var(--blue); flex: none; }
+.bs-item.danger, .bs-item.danger svg { color: var(--red); }
+.bs-main { overflow-y: auto; padding: 34px 48px 48px; min-width: 0; }
+.bs-main h1 { font-size: calc(28px * var(--fs, 1)); font-weight: 800; }
+.bs-main h2 { font-size: calc(15px * var(--fs, 1)); font-weight: 700; margin: 30px 0 12px; color: var(--table-head-text); }
+.bs-sub { color: var(--muted); margin: 6px 0 0; }
+.bs-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; }
+.bs-card { border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); padding: 16px 18px; display: flex; flex-direction: column; gap: 4px; box-shadow: var(--shadow); }
+.bs-card-label { font-size: calc(12px * var(--fs, 1)); color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
+.bs-card strong { font-size: calc(16px * var(--fs, 1)); }
+.bs-card-hint { font-size: calc(12.5px * var(--fs, 1)); color: var(--muted); }
+.bs-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.bs-actions .btn svg { width: 16px; height: 16px; }
+
+/* ---------- Adaptation aux petits écrans ---------- */
+@media (max-width: 1100px) {
+  .titlebar-doc span { display: none; }
+  .titlebar-search { width: 240px; }
+}
+@media (max-width: 820px) {
+  .titlebar { gap: 6px; }
+  .titlebar-doc, .titlebar-search { display: none; }
+  .rb-group { padding: 0 8px 22px; }
+  .rb-large { width: 72px; }
+  .backstage { grid-template-columns: 1fr; }
+  .bs-side { flex-direction: row; overflow-x: auto; align-items: center; padding: 10px; }
+  .bs-side nav { flex-direction: row; }
+  .bs-item { white-space: nowrap; border-left: none; border-bottom: 3px solid transparent; border-radius: 6px 6px 0 0; }
+  .bs-item.on { border-bottom-color: var(--blue); }
+  .bs-main { padding: 22px 18px; }
+  .statusbar .sb-item:not(.sb-page) { display: none; }
+}

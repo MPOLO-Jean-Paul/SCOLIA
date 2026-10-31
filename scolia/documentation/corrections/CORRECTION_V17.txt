@@ -1,0 +1,7 @@
+SCOLIA COMPLET V17 - correction ciblée du démarrage
+
+Correctif : le fichier SCOLIA/programme/TableauDeBordModerne.ps1 a été restauré depuis la base V7, qui ne contient pas la réécriture de tableau de bord ayant déclenché les erreurs de parsing signalées. Les autres fichiers sont conservés depuis V16.
+
+Installation : fermer SCOLIA et Excel, sauvegarder le dossier de production, extraire cette archive dans un dossier temporaire, puis remplacer le dossier programme complet de l’installation avec le dossier programme fourni (ne pas fusionner seulement quelques fichiers). Conserver le dossier data existant.
+
+Validation : archive ZIP relue et vérifiée. Le parseur Windows PowerShell 5.1 n’est pas disponible dans l’environnement de préparation ; test final à faire sur le poste Windows.

@@ -1,0 +1,9 @@
+﻿AFFICHAGE DES COMMANDES
+
+Préférences > Affichage du ruban > Onglets et commandes / Onglets seuls. Le mode s’applique immédiatement. Le choix est mémorisé pour le compte Windows.
+
+Le bouton dans l’en-tête et Ctrl+F1 changent directement le mode mémorisé. Les onglets restent visibles. En mode Onglets seuls, cliquer sur l’onglet actif ouvre ou referme temporairement ses groupes ; changer d’onglet les referme. Les raccourcis clavier des commandes restent utilisables.
+
+Le ruban masqué occupe zéro hauteur : la page dispose de l’espace libéré. Valeurs par défaut rétablit Onglets et commandes. Les réglages existants sans cette nouvelle préférence gardent aussi le ruban affiché.
+
+Mise à jour : fermer le logiciel et remplacer programme et documentation. Conserver data et sources. Aucun classeur modifié.

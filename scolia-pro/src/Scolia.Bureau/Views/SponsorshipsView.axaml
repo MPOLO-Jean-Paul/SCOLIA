@@ -1,0 +1,32 @@
+<UserControl xmlns:infra="using:Scolia.Bureau.Infrastructure"
+             xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Scolia.Bureau.Controls"
+             x:Class="Scolia.Bureau.Views.SponsorshipsView">
+  <Panel>
+  <c:EmptyState Icon="ShieldAccountOutline" Title="Aucune prise en charge"
+                Hint="Une bourse ou une prise en charge s'ajoute depuis la fiche de l'apprenant, avec « Prise en charge »."
+                IsVisible="{Binding Items.Count, Converter={StaticResource IsEmpty}}" />
+  <DataGrid ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}" AutoGenerateColumns="False" IsReadOnly="True">
+    <DataGrid.Columns>
+      <DataGridTextColumn infra:GridPriority.Level="2" Header="Matricule" Binding="{Binding Matricule}" Width="Auto" MinWidth="122" />
+      <DataGridTextColumn Header="Apprenant" Binding="{Binding Name}" Width="*" MinWidth="140" />
+      <DataGridTextColumn infra:GridPriority.Level="2" Header="Promotion" Binding="{Binding Promotion}" Width="Auto" MinWidth="122" />
+      <DataGridTextColumn Header="Garant ou organisme" Binding="{Binding Sponsor}" Width="Auto" MinWidth="198" />
+      <DataGridTextColumn infra:GridPriority.Level="3" Header="Motif" Binding="{Binding Reason}" Width="Auto" MinWidth="170" />
+      <DataGridTextColumn infra:GridPriority.Level="3" Header="Effet" Binding="{Binding Since}" Width="Auto" MinWidth="120" />
+      <DataGridTextColumn Header="Couvert" Binding="{Binding Covered}" Width="Auto" MinWidth="130" />
+      <DataGridTemplateColumn Header="État" Width="Auto" MinWidth="110">
+        <DataGridTemplateColumn.CellTemplate>
+          <DataTemplate>
+            <StackPanel Classes="status">
+                <Ellipse Width="8" Height="8" Fill="{Binding StatusBrush}" VerticalAlignment="Center" />
+                <TextBlock Text="{Binding Status}" VerticalAlignment="Center" />
+              </StackPanel>
+          </DataTemplate>
+        </DataGridTemplateColumn.CellTemplate>
+      </DataGridTemplateColumn>
+    </DataGrid.Columns>
+  </DataGrid>
+  </Panel>
+</UserControl>

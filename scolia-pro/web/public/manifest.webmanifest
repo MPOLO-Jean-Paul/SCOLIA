@@ -1,0 +1,15 @@
+{
+  "name": "SCOLIA — Gestion scolaire",
+  "short_name": "SCOLIA",
+  "description": "Inscriptions, paiements, caisse, scolarité et rapports de l'établissement.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#F3F6FB",
+  "theme_color": "#1E3A8A",
+  "lang": "fr",
+  "icons": [
+    { "src": "/scolia.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/scolia.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

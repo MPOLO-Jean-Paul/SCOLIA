@@ -1,0 +1,46 @@
+﻿Option Explicit
+Public WithEvents Bouton As MSForms.CommandButton
+Public WithEvents BoutonPDF As MSForms.CommandButton
+Public WithEvents BoutonPaiementsPDF As MSForms.CommandButton
+Public WithEvents BoutonLitigesPDF As MSForms.CommandButton
+Public WithEvents BoutonListe As MSForms.CommandButton
+Public WithEvents BoutonReset As MSForms.CommandButton
+Public WithEvents BoutonEffacer As MSForms.CommandButton
+Public WithEvents BoutonNouveau As MSForms.CommandButton
+Public Formulaire As Object
+Private Sub Bouton_Click()
+    ITMExportDepuisFormulaire Formulaire, "PAIEMENTS_XLSX"
+End Sub
+Private Sub BoutonPDF_Click()
+    ITMExportDepuisFormulaire Formulaire, "ENORDRE_PDF"
+End Sub
+Private Sub BoutonPaiementsPDF_Click()
+    ITMExportDepuisFormulaire Formulaire, "PAIEMENTS_PDF"
+End Sub
+Private Sub BoutonLitigesPDF_Click()
+    ITMExportDepuisFormulaire Formulaire, "RETARDS_PDF"
+End Sub
+Private Sub BoutonListe_Click()
+    ITMExportDepuisFormulaire Formulaire, "INSCRITS_PDF"
+End Sub
+Private Sub BoutonReset_Click()
+    On Error GoTo EH
+    Formulaire.ITMResetFiltres
+    Exit Sub
+EH:
+    MsgBox "Reinitialisation impossible : " & Err.Description, vbExclamation
+End Sub
+Private Sub BoutonEffacer_Click()
+    On Error GoTo EH
+    Formulaire.ITMEffacerSaisie
+    Exit Sub
+EH:
+    MsgBox "Effacement impossible : " & Err.Description, vbExclamation
+End Sub
+Private Sub BoutonNouveau_Click()
+    On Error GoTo EH
+    Formulaire.ITMNouvelleInscription
+    Exit Sub
+EH:
+    MsgBox "Ouverture impossible : " & Err.Description, vbExclamation
+End Sub

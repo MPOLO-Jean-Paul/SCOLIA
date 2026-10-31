@@ -1,0 +1,20 @@
+﻿ÉDITION 95 — MODE CLAIR, RÉACTIVITÉ ET RETARDS
+
+INSTALLATION
+Fermez l’application et Excel. Extrayez tout le ZIP. Lancez INSTALLER.vbs et choisissez votre classeur ACTUEL contenant les dernières saisies : les corrections des rapports doivent être installées dans sa copie corrigée. Ne recréez pas votre base pour cette mise à jour. Conservez votre dossier data complet, les comptes et les préférences. Lancez ensuite APPLICATION.vbs et connectez la copie corrigée si nécessaire.
+
+APPARENCE
+Le mode clair utilise des fonds bleutés discrets, des séparations plus douces, des textes lisibles et un bleu d’action harmonisé. Le dessin, la palette et les états des commandes en mode sombre sont conservés.
+
+RÉACTIVITÉ
+Une page déjà à jour s’ouvre sans déclencher un nouveau cycle de traitement. Une modification des données invalide le cache et actualise les pages concernées. La sélection des cartes n’est plus reparcourue pendant les opérations d’autres onglets. La recherche attend 120 ms après la saisie au lieu de 250 ms. Le thème ne s’applique plus deux fois à la fenêtre principale.
+Le cache de compilation et l’ouverture progressive de l’édition 94 sont conservés. Les enregistrements et exports continuent d’attendre la fin des opérations nécessaires dans Excel ; aucune promesse de latence nulle.
+
+RETARDS
+Le mois de septembre de l’année scolaire 2026–2027 devient en retard le 6 octobre 2026. Le 5 octobre, il n’est pas encore en retard. Décembre devient en retard le 6 janvier 2027.
+Seul le solde impayé d’un mois échu est comptabilisé. Les mensualités complètement payées ou couvertes par une prise en charge ne figurent pas dans la liste des retards. Les paiements partiels affichent uniquement le reste. La période du tableau de bord et des rapports liste uniquement les mois impayés concernés, et non les mois déjà payés.
+Le filtre de mois d’un rapport limite les mois examinés sans déclarer les mois futurs en retard. Les versements encaissés restent visibles même s’ils concernent un mois non encore échu. Les montants des prises en charge restent séparés des encaissements réels. Le tableau de bord est recalculé à sa réouverture si la date a changé, même sans nouvelle saisie.
+
+VÉRIFICATIONS
+Syntaxe des 82 scripts PowerShell ; compilation C# 5 ; construction des 66 commandes ; navigation en cache et invalidation ; seuil du 6, changement d’année, paiements complets/partiels, prise en charge ; contraste des textes et actions en mode clair ; comparaison des dessins des boutons et onglets sombres avant/après. Les contrôles de classement et de gestion des côtes restent réussis.
+Les fonctions PowerShell ont été exécutées avec des données de test ; les commandes Excel/VBA des rapports ont été revues mais leur exécution finale exige Windows et Excel, indisponibles dans l’environnement de vérification. Les six classeurs XLSM et les deux lanceurs VBS d’origine ne sont pas modifiés dans le ZIP.

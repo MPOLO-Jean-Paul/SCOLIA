@@ -1,0 +1,161 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <!-- Couleurs des Réglages de macOS : fenêtre blanche, volet latéral gris clair, réglages rangés dans des blocs
+       gris arrondis, bleu système, et les couleurs système d'Apple pour les icônes des outils. -->
+  <ResourceDictionary.ThemeDictionaries>
+    <ResourceDictionary x:Key="Light">
+      <!-- Marque SCOLIA : marine et vert sur fond clair -->
+      <SolidColorBrush x:Key="LogoPrimaryBrush" Color="#0B2A6F" />
+      <SolidColorBrush x:Key="LogoSecondaryBrush" Color="#16A34A" />
+      <SolidColorBrush x:Key="AccentBrush" Color="#007AFF" />
+      <SolidColorBrush x:Key="AccentHoverBrush" Color="#0066D6" />
+      <SolidColorBrush x:Key="AccentSoftBrush" Color="#DCEBFF" />
+      <SolidColorBrush x:Key="OnAccentBrush" Color="#FFFFFF" />
+      <SolidColorBrush x:Key="OnToneBrush" Color="#FFFFFF" />
+      <SolidColorBrush x:Key="DangerBrush" Color="#B3261E" />
+      <SolidColorBrush x:Key="OnDangerBrush" Color="#FFFFFF" />
+      <SolidColorBrush x:Key="BgBrush" Color="#FFFFFF" />
+      <SolidColorBrush x:Key="SurfaceBrush" Color="#FFFFFF" />
+      <SolidColorBrush x:Key="Surface2Brush" Color="#E8E8ED" />
+      <SolidColorBrush x:Key="GroupBrush" Color="#F4F4F6" />
+      <SolidColorBrush x:Key="ToolbarBrush" Color="#FFFFFF" />
+      <SolidColorBrush x:Key="SidebarBrush" Color="#F3F3F5" />
+      <SolidColorBrush x:Key="FieldBrush" Color="#FFFFFF" />
+      <SolidColorBrush x:Key="SearchBrush" Color="#FFFFFF" />
+      <SolidColorBrush x:Key="LineBrush" Color="#E3E3E6" />
+      <SolidColorBrush x:Key="LineStrongBrush" Color="#C9C9CE" />
+      <SolidColorBrush x:Key="ButtonLineBrush" Color="#C9C9CE" />
+      <SolidColorBrush x:Key="ButtonHoverBrush" Color="#DCDCE1" />
+      <SolidColorBrush x:Key="TextBrush" Color="#1D1D1F" />
+      <SolidColorBrush x:Key="Text2Brush" Color="#3C3C43" />
+      <SolidColorBrush x:Key="MutedBrush" Color="#6E6E73" />
+      <SolidColorBrush x:Key="TableHeadBrush" Color="#F4F4F6" />
+      <SolidColorBrush x:Key="TableAltBrush" Color="#F4F4F6" />
+      <SolidColorBrush x:Key="SidebarSelectedBrush" Color="#DFE6EE" />
+      <SolidColorBrush x:Key="HoverBrush" Color="#EBEBEF" />
+      <SolidColorBrush x:Key="SnackbarBrush" Color="#1D1D1F" />
+      <SolidColorBrush x:Key="ScrimBrush" Color="#33000000" />
+      <SolidColorBrush x:Key="ToneBlue" Color="#007AFF" />
+      <SolidColorBrush x:Key="ToneGreen" Color="#34C759" />
+      <SolidColorBrush x:Key="ToneOrange" Color="#FF9500" />
+      <SolidColorBrush x:Key="TonePurple" Color="#AF52DE" />
+      <SolidColorBrush x:Key="ToneRed" Color="#FF3B30" />
+      <SolidColorBrush x:Key="ToneTeal" Color="#30B0C7" />
+      <SolidColorBrush x:Key="ToneIndigo" Color="#5856D6" />
+      <SolidColorBrush x:Key="TonePink" Color="#FF2D55" />
+      <SolidColorBrush x:Key="ToneNeutral" Color="#8E8E93" />
+      <SolidColorBrush x:Key="GreenSoftBrush" Color="#E3F7E8" />
+      <SolidColorBrush x:Key="OrangeSoftBrush" Color="#FFF2DF" />
+      <SolidColorBrush x:Key="RedSoftBrush" Color="#FFE5E3" />
+      <SolidColorBrush x:Key="PurpleSoftBrush" Color="#F5E8FB" />
+      <SolidColorBrush x:Key="NeutralSoftBrush" Color="#F2F2F7" />
+      <!-- Bandeau du haut : bleu ciel, du titre de la fenêtre jusqu'à la barre de la page -->
+      <LinearGradientBrush x:Key="HeaderBrush" StartPoint="0%,0%" EndPoint="100%,0%">
+        <GradientStop Offset="0" Color="#BFE4FF" />
+        <GradientStop Offset="1" Color="#93CDF8" />
+      </LinearGradientBrush>
+      <SolidColorBrush x:Key="HeaderTextBrush" Color="#0B2545" />
+      <SolidColorBrush x:Key="HeaderMutedBrush" Color="#2E5376" />
+      <SolidColorBrush x:Key="HeaderControlBrush" Color="#8CFFFFFF" />
+      <SolidColorBrush x:Key="HeaderHoverBrush" Color="#D9FFFFFF" />
+      <SolidColorBrush x:Key="HeaderLineBrush" Color="#7FB6DD" />
+      <SolidColorBrush x:Key="FileTabBrush" Color="#007AFF" />
+      <Color x:Key="AccentColor">#007AFF</Color>
+      <Color x:Key="ShadowColor">#1F000000</Color>
+    </ResourceDictionary>
+
+    <ResourceDictionary x:Key="Dark">
+      <!-- Marque SCOLIA : bleu et vert éclaircis sur fond sombre -->
+      <SolidColorBrush x:Key="LogoPrimaryBrush" Color="#5B8DEF" />
+      <SolidColorBrush x:Key="LogoSecondaryBrush" Color="#22C55E" />
+      <SolidColorBrush x:Key="AccentBrush" Color="#78B9FF" />
+      <SolidColorBrush x:Key="AccentHoverBrush" Color="#99CAFF" />
+      <SolidColorBrush x:Key="AccentSoftBrush" Color="#1C3A5E" />
+      <SolidColorBrush x:Key="OnAccentBrush" Color="#111111" />
+      <SolidColorBrush x:Key="OnToneBrush" Color="#111111" />
+      <SolidColorBrush x:Key="DangerBrush" Color="#FFB4AB" />
+      <SolidColorBrush x:Key="OnDangerBrush" Color="#111111" />
+      <SolidColorBrush x:Key="BgBrush" Color="#1E1E1E" />
+      <SolidColorBrush x:Key="SurfaceBrush" Color="#1E1E1E" />
+      <SolidColorBrush x:Key="Surface2Brush" Color="#3A3A3C" />
+      <SolidColorBrush x:Key="GroupBrush" Color="#2A2A2C" />
+      <SolidColorBrush x:Key="ToolbarBrush" Color="#1E1E1E" />
+      <SolidColorBrush x:Key="SidebarBrush" Color="#262628" />
+      <SolidColorBrush x:Key="FieldBrush" Color="#2C2C2E" />
+      <SolidColorBrush x:Key="SearchBrush" Color="#2C2C2E" />
+      <SolidColorBrush x:Key="LineBrush" Color="#38383A" />
+      <SolidColorBrush x:Key="LineStrongBrush" Color="#48484A" />
+      <SolidColorBrush x:Key="ButtonLineBrush" Color="#48484A" />
+      <SolidColorBrush x:Key="ButtonHoverBrush" Color="#48484A" />
+      <SolidColorBrush x:Key="TextBrush" Color="#F5F5F7" />
+      <SolidColorBrush x:Key="Text2Brush" Color="#D1D1D6" />
+      <SolidColorBrush x:Key="MutedBrush" Color="#B0B0B6" />
+      <SolidColorBrush x:Key="TableHeadBrush" Color="#2A2A2C" />
+      <SolidColorBrush x:Key="TableAltBrush" Color="#2A2A2C" />
+      <SolidColorBrush x:Key="SidebarSelectedBrush" Color="#35445B" />
+      <SolidColorBrush x:Key="HoverBrush" Color="#333335" />
+      <SolidColorBrush x:Key="SnackbarBrush" Color="#F5F5F7" />
+      <SolidColorBrush x:Key="ScrimBrush" Color="#66000000" />
+      <SolidColorBrush x:Key="ToneBlue" Color="#78B9FF" />
+      <SolidColorBrush x:Key="ToneGreen" Color="#63E58A" />
+      <SolidColorBrush x:Key="ToneOrange" Color="#FFB45E" />
+      <SolidColorBrush x:Key="TonePurple" Color="#D09BFF" />
+      <SolidColorBrush x:Key="ToneRed" Color="#FF8A80" />
+      <SolidColorBrush x:Key="ToneTeal" Color="#65D8E8" />
+      <SolidColorBrush x:Key="ToneIndigo" Color="#B7B4FF" />
+      <SolidColorBrush x:Key="TonePink" Color="#FF91AA" />
+      <SolidColorBrush x:Key="ToneNeutral" Color="#B0B0B6" />
+      <SolidColorBrush x:Key="GreenSoftBrush" Color="#173A22" />
+      <SolidColorBrush x:Key="OrangeSoftBrush" Color="#3D2C12" />
+      <SolidColorBrush x:Key="RedSoftBrush" Color="#3E1A18" />
+      <SolidColorBrush x:Key="PurpleSoftBrush" Color="#2E1A3D" />
+      <SolidColorBrush x:Key="NeutralSoftBrush" Color="#2C2C2E" />
+      <LinearGradientBrush x:Key="HeaderBrush" StartPoint="0%,0%" EndPoint="100%,0%">
+        <GradientStop Offset="0" Color="#0F2E4C" />
+        <GradientStop Offset="1" Color="#164272" />
+      </LinearGradientBrush>
+      <SolidColorBrush x:Key="HeaderTextBrush" Color="#F2F8FF" />
+      <SolidColorBrush x:Key="HeaderMutedBrush" Color="#A8C4E0" />
+      <SolidColorBrush x:Key="HeaderControlBrush" Color="#1FFFFFFF" />
+      <SolidColorBrush x:Key="HeaderHoverBrush" Color="#38FFFFFF" />
+      <SolidColorBrush x:Key="HeaderLineBrush" Color="#2A5885" />
+      <SolidColorBrush x:Key="FileTabBrush" Color="#78B9FF" />
+      <Color x:Key="AccentColor">#78B9FF</Color>
+      <Color x:Key="ShadowColor">#66000000</Color>
+    </ResourceDictionary>
+  </ResourceDictionary.ThemeDictionaries>
+
+  <!-- Logo du logiciel, dessiné en vecteurs : net à toutes les tailles, couleurs selon le thème. Même tracé que docs/logo/scolia.svg. -->
+  <DrawingImage x:Key="ScoliaMark">
+    <DrawingImage.Drawing>
+      <DrawingGroup>
+        <GeometryDrawing Brush="Transparent" Geometry="M40,40 H472 V472 H40 Z" />
+        <GeometryDrawing Geometry="M330,118 H206 Q148,118 148,176 Q148,234 206,234 H226">
+          <GeometryDrawing.Pen><Pen Brush="{DynamicResource LogoPrimaryBrush}" Thickness="62" LineCap="Round" LineJoin="Round" /></GeometryDrawing.Pen>
+        </GeometryDrawing>
+        <GeometryDrawing Geometry="M286,278 H306 Q364,278 364,336 Q364,394 306,394 H182">
+          <GeometryDrawing.Pen><Pen Brush="{DynamicResource LogoSecondaryBrush}" Thickness="62" LineCap="Round" LineJoin="Round" /></GeometryDrawing.Pen>
+        </GeometryDrawing>
+        <GeometryDrawing Brush="{DynamicResource LogoPrimaryBrush}"><GeometryDrawing.Geometry><EllipseGeometry Center="418,118" RadiusX="38" RadiusY="38" /></GeometryDrawing.Geometry></GeometryDrawing>
+        <GeometryDrawing Brush="{DynamicResource LogoSecondaryBrush}"><GeometryDrawing.Geometry><EllipseGeometry Center="94,394" RadiusX="38" RadiusY="38" /></GeometryDrawing.Geometry></GeometryDrawing>
+      </DrawingGroup>
+    </DrawingImage.Drawing>
+  </DrawingImage>
+
+  <!-- Police du système : Segoe UI Variable sous Windows 11, Segoe UI sous Windows 10, Inter embarquée ailleurs. -->
+  <FontFamily x:Key="UiFont">Segoe UI Variable Text, Segoe UI, avares://SCOLIA/Assets/Fonts#Inter</FontFamily>
+  <!-- Géométrie macOS : boutons en capsule, champs à 6 px, blocs à 12 px. -->
+  <CornerRadius x:Key="RadiusCard">14</CornerRadius>
+  <CornerRadius x:Key="RadiusField">6</CornerRadius>
+  <CornerRadius x:Key="RadiusPill">14</CornerRadius>
+  <CornerRadius x:Key="RadiusSmall">6</CornerRadius>
+  <x:Double x:Key="FsBase">13.5</x:Double>
+  <x:Double x:Key="FsSmall">12</x:Double>
+  <x:Double x:Key="FsCaption">11</x:Double>
+  <x:Double x:Key="FsHeading">15</x:Double>
+  <x:Double x:Key="FsTitle">22</x:Double>
+  <x:Double x:Key="FsDisplay">28</x:Double>
+  <x:Double x:Key="RowHeight">36</x:Double>
+  <x:Double x:Key="CtlHeight">30</x:Double>
+</ResourceDictionary>

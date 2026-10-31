@@ -1,0 +1,11 @@
+Journal de l’installation
+
+La lecture du journal autorise désormais son écriture. Les écritures sont exclusives entre écrivains, avec trois attentes courtes (150 ms au total) en cas de verrouillage. Si un programme externe maintient le verrou, le message est conservé dans un fichier journal-secours distinct, affiché et inclus dans le journal exporté. Une erreur de journalisation ne transforme plus une installation en échec. Les contrôles du classeur et la publication restent obligatoires.
+
+Préférences : Fenêtre de travail
+
+Une seule fenêtre (par défaut) : un nouveau lancement revient à la fenêtre existante. Plusieurs fenêtres : le bouton Nouvelle fenêtre ouvre une session indépendante ; choisissez son onglet pour travailler sur une autre tâche. Chaque fenêtre garde sa connexion et ses protections de données. Le passage au mode unique empêche les nouveaux lancements, sans fermer de force les fenêtres déjà ouvertes. Fermez les fenêtres supplémentaires quand leurs tâches sont terminées. Les choix sont mémorisés pour le compte Windows.
+
+Les traces des fenêtres sont placées dans le profil Windows ; un arrêt brutal libère automatiquement le verrou et les traces périmées sont nettoyées au lancement suivant. Les six classeurs inclus sont inchangés.
+
+Vérification : analyse syntaxique et compilation C#. TestsInstallationSession.ps1 couvre la lecture simultanée, le verrou exclusif, le journal de secours et son archivage. Les scénarios natifs PowerShell 5.1 et Excel doivent être exécutés sous Windows.

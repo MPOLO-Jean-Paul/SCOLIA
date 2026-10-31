@@ -1,0 +1,27 @@
+﻿NOUVELLE BASE — FICHIER_SOURCE.xlsm reçu le 6 octobre 2026
+
+Le fichier FICHIER_SOURCE.xlsm à la racine de ce paquet est maintenant
+exactement le nouveau classeur fourni : 57 dossiers apprenants et
+59 lignes de paiement. Les lignes d'affectation ne correspondent pas
+nécessairement à 59 reçus distincts.
+
+Les données, adresses, macros et éléments du fichier source sont conservés
+à l'identique ; aucune réécriture du classeur n'a été faite ici.
+La première fiche est en ligne 4 ; l'installateur l'inclut dans son contrôle.
+La colonne supplémentaire P est conservée lors de la préparation.
+La compatibilité des modules VBA existants avec le manifeste a été contrôlée.
+
+1. Extrayez le ZIP dans un NOUVEAU dossier et fermez Excel.
+2. Lancez INSTALLER.vbs : ce nouveau FICHIER_SOURCE.xlsm est présélectionné.
+3. Attendez « Installation réussie ».
+4. Lancez APPLICATION.vbs et connectez le SYSTEME_SECRETARIAT_CORRIGE.xlsm
+   créé par CETTE installation dans un nouveau dossier Installation_ITM_...
+
+Les anciens dossiers Installation_ITM_... déjà fournis sont historiques.
+Ils ne contiennent pas ces nouvelles données. Ne les utilisez pas comme base.
+Si vous faites de nouvelles saisies après ce fichier, sélectionnez toujours
+votre classeur le plus récent lors de la prochaine préparation.
+
+L'installation applique les nouvelles interfaces et fonctions sur une copie
+et vérifie les valeurs des lignes avant/après. Le fichier source reste intact.
+L'exécution Windows/Excel reste à vérifier sur votre ordinateur.

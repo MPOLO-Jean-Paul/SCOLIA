@@ -1,0 +1,5 @@
+Style de bureau appliqué à toutes les interfaces natives.
+Périmètre : tableau de bord (indicateurs et graphiques), apprenants et inscription, paiements et correction, fiches et historique, exports et vérification, diagnostic, administration et promotions, classeurs et sauvegardes, année scolaire, sécurité et connexion, installation des corrections.
+Boutons Windows, fonds neutres, titres sobres, groupes à séparateurs fins, aucune surface arrondie ni dégradé décoratif. Graphiques, sélections, états désactivés et avertissements restent lisibles. Ruban à libellés/icônes et roue locale conservés.
+Fermer l’application et l’installateur, remplacer programme, conserver data, relancer APPLICATION.vbs. Aucune réinstallation des corrections du classeur requise pour le style.
+Contrôles locaux : syntaxe, intégrité de l’archive et conservation de tous les classeurs et du code métier. Affichage natif Windows/Excel non exécuté ici.

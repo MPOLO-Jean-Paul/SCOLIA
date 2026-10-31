@@ -1,0 +1,76 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mi="using:Material.Icons.Avalonia"
+             x:Class="Scolia.Bureau.Views.PosteView">
+  <StackPanel Spacing="16" MaxWidth="760" HorizontalAlignment="Left">
+    <TextBlock Text="Poste et réseau" Classes="title" />
+    <TextBlock Classes="muted" TextWrapping="Wrap"
+               Text="SCOLIA relie les ordinateurs de l'établissement tout seul : aucune adresse à saisir, et les réglages s'appliquent tout de suite." />
+
+    <!-- Connexion de ce poste -->
+    <TextBlock Text="Ce poste" Classes="section" Margin="0,8,0,-8" />
+    <Border Classes="card" Padding="0">
+      <StackPanel>
+        <Grid ColumnDefinitions="Auto,*" Margin="18,16">
+          <Border Classes="appicon medium" Background="{DynamicResource ToneBlue}" Margin="0,0,14,0"><mi:MaterialIcon Kind="DesktopTowerMonitor" /></Border>
+          <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+            <TextBlock Text="{Binding ConnectionTitle}" FontWeight="SemiBold" TextWrapping="Wrap" />
+            <TextBlock Text="{Binding ConnectionLine}" Classes="muted" TextWrapping="Wrap" FontSize="{DynamicResource FsSmall}" />
+          </StackPanel>
+        </Grid>
+        <Border Height="1" Background="{DynamicResource LineBrush}" Margin="58,0,0,0" />
+        <WrapPanel Margin="58,12,18,14">
+          <Button Content="Rechercher SCOLIA sur le réseau" Command="{Binding Search}" IsEnabled="{Binding NotSearching}" Margin="0,0,10,0" />
+          <Button Classes="ghost" Content="Utiliser cet ordinateur comme serveur" Command="{Binding UseThisComputer}" IsVisible="{Binding CanBecomeServer}" />
+        </WrapPanel>
+        <ProgressBar IsIndeterminate="True" IsVisible="{Binding Searching}" Height="2" MinHeight="2" Margin="58,0,18,10" />
+        <TextBlock Text="{Binding SearchLine}" IsVisible="{Binding HasSearchLine}" Classes="muted" TextWrapping="Wrap" Margin="58,0,18,12" FontSize="{DynamicResource FsSmall}" />
+        <ItemsControl ItemsSource="{Binding Servers}" Margin="42,0,10,4">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate>
+              <Grid ColumnDefinitions="*,Auto" Margin="16,8">
+                <StackPanel VerticalAlignment="Center" Spacing="2">
+                  <TextBlock Text="{Binding School}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                  <TextBlock Text="{Binding Detail}" Classes="muted" TextWrapping="Wrap" FontSize="{DynamicResource FsSmall}" />
+                </StackPanel>
+                <Button Grid.Column="1" Classes="primary" Content="Rejoindre" Command="{Binding Join}" VerticalAlignment="Center" />
+              </Grid>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </StackPanel>
+    </Border>
+
+    <!-- Ordinateur principal : partage et démarrage automatique -->
+    <TextBlock Text="Ordinateur principal" Classes="section" Margin="0,8,0,-8" IsVisible="{Binding IsServerComputer}" />
+    <Border Classes="card" Padding="0" IsVisible="{Binding IsServerComputer}">
+      <StackPanel>
+        <Grid ColumnDefinitions="Auto,*,Auto" Margin="18,16">
+          <Border Classes="appicon medium" Background="{DynamicResource ToneGreen}" Margin="0,0,14,0"><mi:MaterialIcon Kind="LanConnect" /></Border>
+          <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+            <TextBlock Text="Partager avec les autres ordinateurs" />
+            <TextBlock Text="{Binding LanLine}" Classes="muted" TextWrapping="Wrap" FontSize="{DynamicResource FsSmall}" />
+          </StackPanel>
+          <ToggleSwitch Grid.Column="2" VerticalAlignment="Center" OnContent="" OffContent="" IsChecked="{Binding LanEnabled, Mode=OneWay}"
+                        Command="{Binding ToggleLan}" IsEnabled="{Binding IsWindows}" />
+        </Grid>
+
+        <Border Height="1" Background="{DynamicResource LineBrush}" Margin="58,0,0,0" />
+
+        <Grid ColumnDefinitions="Auto,*,Auto" Margin="18,16">
+          <Border Classes="appicon medium" Background="{DynamicResource ToneNeutral}" Margin="0,0,14,0"><mi:MaterialIcon Kind="Power" /></Border>
+          <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+            <TextBlock Text="Démarrer avec Windows" />
+            <TextBlock Text="{Binding ServiceLine}" Classes="muted" TextWrapping="Wrap" FontSize="{DynamicResource FsSmall}" />
+          </StackPanel>
+          <ToggleSwitch Grid.Column="2" VerticalAlignment="Center" OnContent="" OffContent="" IsChecked="{Binding ServiceInstalled, Mode=OneWay}"
+                        Command="{Binding ToggleService}" IsEnabled="{Binding IsWindows}" />
+        </Grid>
+      </StackPanel>
+    </Border>
+
+    <TextBlock Text="{Binding AddressLine}" TextWrapping="Wrap" Classes="muted" IsVisible="{Binding HasAddress}" />
+    <TextBlock Classes="muted" TextWrapping="Wrap" FontSize="{DynamicResource FsSmall}" IsVisible="{Binding IsServerComputer}"
+               Text="Windows demande une seule autorisation. SCOLIA ouvre alors son port et sa découverte dans le pare-feu (réseaux privés uniquement) et déclare le réseau de l'établissement comme privé." />
+  </StackPanel>
+</UserControl>

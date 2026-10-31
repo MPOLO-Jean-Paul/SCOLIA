@@ -1,0 +1,14 @@
+﻿SCOLIA 96 — contrôles exécutés
+
+PASS syntaxe des 88 scripts PowerShell.
+PASS comptes libres/protégés, vraie vérification PBKDF2, rôles et persistance.
+PASS journal : soldes antérieurs, répartition, référence unique, surpaiement, concurrence, session périmée, intégrité.
+PASS orchestration d'import avec Excel simulé : reprise après accusé interrompu et rollback après échec macro.
+PASS catalogue et rubans comptables distincts.
+PASS contrôles du seuil de retard au 6 du mois suivant et rapprochement des cotes.
+PASS compilation C#5/.NET4 du journal et du champ mot de passe.
+PASS masque, affichage et effacement du mot de passe ; absence de chevauchement de l'icône.
+PASS correspondance des empreintes VBA attendues avec les sources livrées.
+PASS conservation intégrale des six classeurs XLSM.
+
+Excel sous Windows et partage SMB entre deux postes : non exécutés ici.

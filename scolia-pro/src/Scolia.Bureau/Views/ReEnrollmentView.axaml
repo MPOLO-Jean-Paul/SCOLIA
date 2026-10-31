@@ -1,0 +1,34 @@
+<UserControl xmlns:infra="using:Scolia.Bureau.Infrastructure"
+             xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Scolia.Bureau.Controls"
+             x:Class="Scolia.Bureau.Views.ReEnrollmentView">
+  <Grid RowDefinitions="Auto,*">
+    <Border Grid.Row="0" Classes="band" Margin="0,0,0,10">
+      <WrapPanel>
+        <StackPanel Classes="field">
+          <TextBlock Text="Année cible" Classes="fieldlabel" />
+          <ComboBox Width="260" ItemsSource="{Binding Years}" SelectedItem="{Binding Year}" />
+        </StackPanel>
+        <TextBlock Text="Cochez les apprenants à reconduire, puis choisissez leur promotion cible." Classes="muted" VerticalAlignment="Bottom" Margin="0,0,12,20" />
+      </WrapPanel>
+    </Border>
+    <DataGrid Grid.Row="1" ItemsSource="{Binding Items}" AutoGenerateColumns="False" CanUserSortColumns="False">
+      <DataGrid.Columns>
+        <DataGridCheckBoxColumn Header="Reconduire" Binding="{Binding Selected}" Width="Auto" MinWidth="110" />
+        <DataGridTextColumn Header="Matricule" Binding="{Binding Matricule}" IsReadOnly="True" Width="Auto" MinWidth="122" />
+        <DataGridTextColumn Header="Nom complet" Binding="{Binding Name}" IsReadOnly="True" Width="*" MinWidth="140" />
+        <DataGridTextColumn Header="Promotion actuelle" Binding="{Binding FromPromotion}" IsReadOnly="True" Width="Auto" MinWidth="190" />
+        <DataGridTextColumn infra:GridPriority.Level="2" Header="Solde reporté" Binding="{Binding PreviousBalance}" IsReadOnly="True" Width="Auto" MinWidth="152" />
+        <DataGridTemplateColumn Header="Promotion cible" Width="Auto" MinWidth="260">
+          <DataGridTemplateColumn.CellTemplate>
+            <DataTemplate>
+              <ComboBox ItemsSource="{Binding Choices}" SelectedItem="{Binding Target}" HorizontalAlignment="Stretch" />
+            </DataTemplate>
+          </DataGridTemplateColumn.CellTemplate>
+        </DataGridTemplateColumn>
+      </DataGrid.Columns>
+    </DataGrid>
+    <c:EmptyState Grid.Row="1" Icon="SchoolOutline" Title="Aucun apprenant à reconduire" Hint="{Binding EmptyHint}" IsVisible="{Binding Items.Count, Converter={StaticResource IsEmpty}}" />
+  </Grid>
+</UserControl>

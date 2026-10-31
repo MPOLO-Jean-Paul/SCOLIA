@@ -1,0 +1,37 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Scolia.Bureau.Controls"
+             xmlns:infra="using:Scolia.Bureau.Infrastructure"
+             x:Class="Scolia.Bureau.Views.DisciplineView">
+  <Grid RowDefinitions="Auto,*">
+    <Border Grid.Row="0" Classes="band" Margin="0,0,0,10">
+      <WrapPanel>
+        <StackPanel Classes="field">
+          <TextBlock Text="Promotion" Classes="fieldlabel" />
+          <ComboBox Width="240" ItemsSource="{Binding Promotions}" SelectedItem="{Binding Promotion}" />
+        </StackPanel>
+        <StackPanel Classes="field">
+          <TextBlock Text="Mesure" Classes="fieldlabel" />
+          <ComboBox Width="200" ItemsSource="{Binding Measures}" SelectedItem="{Binding Measure}" />
+        </StackPanel>
+      </WrapPanel>
+    </Border>
+    <DataGrid Grid.Row="1" ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}" AutoGenerateColumns="False" IsReadOnly="True">
+      <DataGrid.Columns>
+        <DataGridTextColumn Header="Décidé le" Binding="{Binding Date}" Width="Auto" MinWidth="122" infra:GridPriority.Level="1" />
+        <DataGridTextColumn Header="Matricule" Binding="{Binding Matricule}" Width="Auto" MinWidth="122" infra:GridPriority.Level="1" />
+        <DataGridTextColumn Header="Apprenant" Binding="{Binding Name}" Width="2*" MinWidth="240" infra:GridPriority.Level="1" />
+        <DataGridTextColumn Header="Mesure" Binding="{Binding Measure}" Width="Auto" MinWidth="140" infra:GridPriority.Level="1" />
+        <DataGridTextColumn Header="Motif" Binding="{Binding Reason}" Width="3*" MinWidth="220" infra:GridPriority.Level="1" />
+        <DataGridTextColumn Header="Période ou rendez-vous" Binding="{Binding Period}" Width="Auto" MinWidth="240" infra:GridPriority.Level="2" />
+        <DataGridTextColumn Header="Durée" Binding="{Binding Duration}" Width="Auto" MinWidth="92" infra:GridPriority.Level="3" />
+        <DataGridTextColumn Header="Retour" Binding="{Binding ReturnFrom}" Width="Auto" MinWidth="105" infra:GridPriority.Level="3" />
+        <DataGridTextColumn Header="Réception" Binding="{Binding Reception}" Width="Auto" MinWidth="122" infra:GridPriority.Level="2" />
+        <DataGridTextColumn Header="Statut" Binding="{Binding State}" Width="Auto" MinWidth="99" infra:GridPriority.Level="2" />
+        <DataGridTextColumn Header="Statut effectif" Binding="{Binding Status}" Width="Auto" MinWidth="168" infra:GridPriority.Level="2" />
+        <DataGridTextColumn Header="Origine" Binding="{Binding Origin}" Width="Auto" MinWidth="120" infra:GridPriority.Level="3" />
+      </DataGrid.Columns>
+    </DataGrid>
+    <c:EmptyState Grid.Row="1" Icon="ShieldCheckOutline" Title="Aucune décision enregistrée" Hint="Le registre se remplit avec les renvois et les convocations. Changez la promotion ou la mesure." IsVisible="{Binding Items.Count, Converter={StaticResource IsEmpty}}" />
+  </Grid>
+</UserControl>

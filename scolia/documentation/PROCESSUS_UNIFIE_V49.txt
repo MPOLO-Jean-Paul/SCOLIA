@@ -1,0 +1,13 @@
+SCOLIA V49 - PROCESSUS UNIFIE
+
+1. L utilisateur lance uniquement 00_Demarrage\APPLICATION.vbs.
+2. Si aucun classeur SCOLIA prepare n est disponible, l assistant Installation des corrections s ouvre.
+3. Deux chemins sont proposes :
+   - Choisir : préparer une source existante sans modifier l original.
+   - Nouvelle source : créer un classeur vide depuis le modèle interne, supprimer les anciens apprenants/paiements du modèle, puis appliquer immédiatement les corrections.
+4. Après une installation réussie en mode première utilisation, la fenêtre se ferme automatiquement et SCOLIA enchaîne avec la configuration initiale si elle manque.
+5. Une fois la configuration disponible, la page de connexion est affichée.
+6. Aux lancements suivants, si le classeur préparé existe déjà, SCOLIA saute l installation. Si la configuration existe aussi, l utilisateur arrive directement à la page de connexion.
+7. Une connexion réussie mémorise l instant de dernière connexion pour le diagnostic et les évolutions futures.
+
+Sécurité : la création d une nouvelle source travaille sur une copie dans le dossier sources. Le modèle interne reste intact. Le classeur corrigé final est publié dans data/installations après les contrôles existants.

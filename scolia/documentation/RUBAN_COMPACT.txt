@@ -1,0 +1,5 @@
+Ruban et onglets
+
+Les commandes sont espacées de 3 unités logiques. Leur largeur suit le texte et se réduit avec la fenêtre, avec retour à la ligne pour les intitulés longs. Les groupes d’une même rangée ont des commandes, titres et séparateurs alignés. Aucun séparateur ne suit le dernier groupe de la rangée. Les onglets utilisent des marges plus fines, un soulignement actif et des séparations discrètes.
+
+Compilation C# et analyse syntaxique vérifiées. TestsNavigation.ps1 inclut des scénarios de largeur et d’alignement à exécuter sur Windows. Le rendu graphique Windows et Excel ne peut pas être exécuté dans cet environnement. Les six classeurs sources sont conservés sans modification.

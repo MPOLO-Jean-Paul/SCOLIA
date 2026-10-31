@@ -1,0 +1,7 @@
+SCOLIA V7 - AUDIT STATIQUE
+
+Correction: suppression de la liberation forcee du verrou au debut de ITMDebutSaisie. Cela evitera les transactions imbriquees et pertes de donnees. La passerelle conserve la liberation apres sauvegarde confirmee.
+
+Controle: empreintes du manifeste recalculees et verifiees.
+
+Limites: Excel/VBA et interface Windows non executes. Ne pas installer sur les donnees de production sans sauvegarde et essai sur copie.

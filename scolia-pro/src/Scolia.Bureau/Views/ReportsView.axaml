@@ -1,0 +1,66 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mi="using:Material.Icons.Avalonia"
+             x:Class="Scolia.Bureau.Views.ReportsView">
+  <ScrollViewer>
+    <StackPanel Spacing="18" Margin="0,0,6,8">
+
+      <!-- Critères communs : la période sert aux reçus et aux dépenses, la promotion aux listes -->
+      <Border Classes="filterbar">
+        <WrapPanel>
+          <StackPanel Classes="field">
+            <TextBlock Text="Du" Classes="fieldlabel" />
+            <CalendarDatePicker PlaceholderText="Début" SelectedDateFormat="Short" Width="170" SelectedDate="{Binding From}" />
+          </StackPanel>
+          <StackPanel Classes="field">
+            <TextBlock Text="Au" Classes="fieldlabel" />
+            <CalendarDatePicker PlaceholderText="Fin" SelectedDateFormat="Short" Width="170" SelectedDate="{Binding To}" />
+          </StackPanel>
+          <StackPanel Classes="field">
+            <TextBlock Text="Promotion" Classes="fieldlabel" />
+            <ComboBox Width="280" ItemsSource="{Binding Promotions}" SelectedItem="{Binding Promotion}" />
+          </StackPanel>
+          
+        </WrapPanel>
+      </Border>
+
+      <!-- Chaque rubrique est une liste : le document à gauche, ses formats à droite, comme les Paramètres de Windows -->
+      <ItemsControl ItemsSource="{Binding Sections}">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate>
+            <StackPanel Spacing="6" Margin="0,0,0,16">
+              <TextBlock Text="{Binding Title}" Classes="section" />
+              <Border Classes="card" Padding="0">
+                <ItemsControl ItemsSource="{Binding Reports}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                      <Border BorderBrush="{DynamicResource LineBrush}" BorderThickness="0,0,0,1" Padding="16,10">
+                        <Grid ColumnDefinitions="Auto,*,Auto">
+                          <Border Classes="appicon medium" Background="{Binding Brush}" Margin="0,0,14,0"><mi:MaterialIcon Kind="{Binding Icon}" /></Border>
+                          <StackPanel Grid.Column="1" Spacing="1" VerticalAlignment="Center">
+                            <TextBlock Text="{Binding Title}" />
+                            <TextBlock Text="{Binding Description}" Classes="muted" TextWrapping="Wrap" />
+                          </StackPanel>
+                          <ItemsControl Grid.Column="2" ItemsSource="{Binding Formats}" VerticalAlignment="Center" Margin="16,0,0,0">
+                            <ItemsControl.ItemsPanel>
+                              <ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="8" /></ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                              <DataTemplate>
+                                <Button Command="{Binding Run}" Content="{Binding Label}" MinWidth="72" />
+                              </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                          </ItemsControl>
+                        </Grid>
+                      </Border>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </Border>
+            </StackPanel>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

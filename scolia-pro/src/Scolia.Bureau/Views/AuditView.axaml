@@ -1,0 +1,39 @@
+<UserControl xmlns:infra="using:Scolia.Bureau.Infrastructure"
+             xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Scolia.Bureau.Controls"
+             x:Class="Scolia.Bureau.Views.AuditView">
+  <Grid RowDefinitions="Auto,*">
+    <Border Grid.Row="0" Classes="band" Margin="0,0,0,10">
+      <WrapPanel>
+        <StackPanel Classes="field">
+          <TextBlock Text="Rechercher" Classes="fieldlabel" />
+          <TextBox Width="260" Text="{Binding Search}" PlaceholderText="Utilisateur, action, résumé" />
+        </StackPanel>
+        <StackPanel Classes="field">
+          <TextBlock Text="Type d'objet" Classes="fieldlabel" />
+          <TextBox Width="200" Text="{Binding Entity}" PlaceholderText="Type d'objet" />
+        </StackPanel>
+        <StackPanel Classes="field">
+          <TextBlock Text="Du" Classes="fieldlabel" />
+          <CalendarDatePicker PlaceholderText="Début" SelectedDateFormat="Short" Width="160" SelectedDate="{Binding From}" />
+        </StackPanel>
+        <StackPanel Classes="field">
+          <TextBlock Text="Au" Classes="fieldlabel" />
+          <CalendarDatePicker PlaceholderText="Fin" SelectedDateFormat="Short" Width="160" SelectedDate="{Binding To}" />
+        </StackPanel>
+      </WrapPanel>
+    </Border>
+    <DataGrid Grid.Row="1" ItemsSource="{Binding Items}" AutoGenerateColumns="False" IsReadOnly="True">
+      <DataGrid.Columns>
+        <DataGridTextColumn Header="Date (locale)" Binding="{Binding At}" Width="Auto" MinWidth="165" />
+        <DataGridTextColumn Header="Utilisateur" Binding="{Binding User}" Width="Auto" MinWidth="137" />
+        <DataGridTextColumn Header="Action" Binding="{Binding Action}" Width="Auto" MinWidth="160" />
+        <DataGridTextColumn Header="Objet" Binding="{Binding Entity}" Width="Auto" MinWidth="130" />
+        <DataGridTextColumn Header="Résumé" Binding="{Binding Summary}" Width="*" MinWidth="140" />
+        <DataGridTextColumn infra:GridPriority.Level="2" Header="Adresse" Binding="{Binding Ip}" Width="Auto" MinWidth="130" />
+      </DataGrid.Columns>
+    </DataGrid>
+    <c:EmptyState Grid.Row="1" Icon="History" Title="Aucune opération trouvée" Hint="Élargissez la période ou effacez la recherche." IsVisible="{Binding Items.Count, Converter={StaticResource IsEmpty}}" />
+  </Grid>
+</UserControl>

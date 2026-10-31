@@ -1,0 +1,344 @@
+<!-- Styles de l'application mobile : cadre à onglets, menu, feuilles d'actions et écrans dédiés au toucher.
+     Mêmes couleurs, mêmes coins arrondis et même typographie que la version de bureau, avec des cibles assez
+     grandes pour le doigt. -->
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:mi="using:Material.Icons.Avalonia">
+    <!-- Barre du haut : retour, titre de la page, recherche et actions -->
+    <Style Selector="Border.phonebar">
+      <Setter Property="Background" Value="{DynamicResource BgBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
+      <Setter Property="BorderThickness" Value="0,0,0,1" />
+      <Setter Property="Padding" Value="4,4,4,4" />
+    </Style>
+    <Style Selector="Button.phoneicon">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
+      <Setter Property="Width" Value="44" />
+      <Setter Property="Height" Value="44" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="CornerRadius" Value="22" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button.phoneicon:pointerover">
+      <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
+    </Style>
+    <Style Selector="Button.phoneicon mi|MaterialIcon">
+      <Setter Property="Width" Value="24" />
+      <Setter Property="Height" Value="24" />
+    </Style>
+
+    <!-- Onglets du bas : icône et libellé, l'onglet actif en couleur -->
+    <Style Selector="Border.tabicon">
+      <Setter Property="Width" Value="56" />
+      <Setter Property="Height" Value="30" />
+      <Setter Property="CornerRadius" Value="15" />
+      <Setter Property="HorizontalAlignment" Value="Center" />
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
+    <Style Selector="Border.tabicon.selected">
+      <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
+    </Style>
+    <!-- Barre du bas : la sélection réagit immédiatement, avec une impulsion légère
+         purement visuelle, sans bloquer le changement de page. -->
+    <Style Selector="LayoutTransformControl.anim Border.tabicon.selected">
+      <Setter Property="RenderTransform" Value="scale(1)" />
+      <Setter Property="RenderTransformOrigin" Value="50%,50%" />
+      <Style.Animations>
+        <Animation Duration="0:0:0.17" Easing="CubicEaseOut" FillMode="Both">
+          <KeyFrame Cue="0%">
+            <Setter Property="ScaleTransform.ScaleX" Value="0.92" />
+            <Setter Property="ScaleTransform.ScaleY" Value="0.92" />
+            <Setter Property="Opacity" Value="0.84" />
+          </KeyFrame>
+          <KeyFrame Cue="100%">
+            <Setter Property="ScaleTransform.ScaleX" Value="1" />
+            <Setter Property="ScaleTransform.ScaleY" Value="1" />
+            <Setter Property="Opacity" Value="1" />
+          </KeyFrame>
+        </Animation>
+      </Style.Animations>
+    </Style>
+    <Style Selector="Border.phonetabs">
+      <Setter Property="Background" Value="{DynamicResource BgBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
+      <Setter Property="BorderThickness" Value="0,1,0,0" />
+      <Setter Property="Padding" Value="0,4,0,4" />
+    </Style>
+    <Style Selector="Button.phonetab">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="Padding" Value="2,4" />
+      <Setter Property="MinHeight" Value="50" />
+      <Setter Property="CornerRadius" Value="12" />
+    </Style>
+    <Style Selector="Button.phonetab:pointerover">
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
+    <Style Selector="Button.phonetab.selected">
+      <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
+    </Style>
+    <Style Selector="Button.phonetab TextBlock">
+      <Setter Property="FontSize" Value="11" />
+      <Setter Property="HorizontalAlignment" Value="Center" />
+      <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+    </Style>
+    <Style Selector="Button.phonetab.selected TextBlock">
+      <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+
+    <!-- Un bloc dessine une seule surface continue : aucun trait entre son titre et ses outils. -->
+    <Style Selector="TextBlock.phoneblocktitle">
+      <Setter Property="FontSize" Value="{DynamicResource FsSmall}" />
+      <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="Margin" Value="14,5,0,7" />
+    </Style>
+    <Style Selector="Border.phoneblockcard">
+      <Setter Property="Background" Value="{DynamicResource GroupBrush}" />
+      <Setter Property="CornerRadius" Value="18" />
+      <Setter Property="ClipToBounds" Value="True" />
+    </Style>
+    <Style Selector="Border.phoneaccordion">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="CornerRadius" Value="0" />
+    </Style>
+    <Style Selector="Border.phonecontent">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Padding" Value="0,0,0,5" />
+    </Style>
+    <!-- Accordéon : apparition discrète du contenu, sans ajouter de délai ni déplacer les commandes. -->
+    <Style Selector="LayoutTransformControl.anim Border.phonecontent[IsVisible=True]">
+      <Style.Animations>
+        <Animation Duration="0:0:0.13" Easing="CubicEaseOut" FillMode="Both">
+          <KeyFrame Cue="0%"><Setter Property="Opacity" Value="0.55" /></KeyFrame>
+          <KeyFrame Cue="100%"><Setter Property="Opacity" Value="1" /></KeyFrame>
+        </Animation>
+      </Style.Animations>
+    </Style>
+    <!-- Rubriques repliables : l'utilisateur entre dans un métier ou dans ses réglages à la demande. -->
+    <Style Selector="Button.phonecategory">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+      <Setter Property="Padding" Value="12,10" />
+      <Setter Property="MinHeight" Value="54" />
+      <Setter Property="CornerRadius" Value="0" />
+      <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+      <Setter Property="Margin" Value="0" />
+    </Style>
+    <Style Selector="Button.phonecategory:pointerover">
+      <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
+    </Style>
+    <Style Selector="Button.phonecategory:pressed">
+      <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
+    </Style>
+
+    <!-- Menu plein écran : chaque outil sur une ligne haute, rangé par métier dans un bloc arrondi -->
+    <Style Selector="Button.phonerow">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+      <Setter Property="Padding" Value="12,0,10,0" />
+      <Setter Property="MinHeight" Value="50" />
+      <Setter Property="CornerRadius" Value="0" />
+      <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+    </Style>
+    <Style Selector="Button.phonerow:pointerover">
+      <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
+    </Style>
+    <Style Selector="Button.phonerow.selected">
+      <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+    <Style Selector="Border.phonegroup">
+      <Setter Property="Background" Value="{DynamicResource GroupBrush}" />
+      <Setter Property="CornerRadius" Value="{StaticResource RadiusCard}" />
+      <Setter Property="ClipToBounds" Value="True" />
+    </Style>
+    <Style Selector="TextBlock.phonegrouptitle">
+      <Setter Property="FontSize" Value="{DynamicResource FsSmall}" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
+      <Setter Property="Margin" Value="14,18,0,6" />
+    </Style>
+
+    <!-- Feuille d'actions : elle monte du bas, chaque action est une ligne haute -->
+    <Style Selector="Border.phonesheet">
+      <Setter Property="Background" Value="{DynamicResource BgBrush}" />
+      <Setter Property="CornerRadius" Value="18,18,0,0" />
+      <Setter Property="Padding" Value="10,8,10,14" />
+      <Setter Property="VerticalAlignment" Value="Bottom" />
+      <Setter Property="BoxShadow" Value="0 -3 16 0 #1D000000" />
+    </Style>
+    <Style Selector="Button.sheetitem">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Left" />
+      <Setter Property="Padding" Value="12,0" />
+      <Setter Property="MinHeight" Value="50" />
+      <Setter Property="CornerRadius" Value="12" />
+      <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+    </Style>
+    <Style Selector="Button.sheetitem:pointerover">
+      <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
+    </Style>
+    <Style Selector="Button.sheetitem.danger">
+      <Setter Property="Foreground" Value="{DynamicResource ToneRed}" />
+    </Style>
+    <Style Selector="Button.sheetitem.danger TextBlock">
+      <Setter Property="Foreground" Value="{DynamicResource ToneRed}" />
+    </Style>
+    <Style Selector="Button.sheetitem.danger:pointerover /template/ ContentPresenter#PART_ContentPresenter, Button.sheetitem.danger:pressed /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource ToneRed}" />
+    </Style>
+    <Style Selector="Button.sheetitem.emphasis TextBlock">
+      <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+    <!-- Tablette en largeur : volet de navigation à gauche, comme la barre latérale de l'iPad -->
+    <Style Selector="Border.phonerail">
+      <Setter Property="Background" Value="{DynamicResource SidebarBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
+      <Setter Property="BorderThickness" Value="0,0,1,0" />
+      <Setter Property="Width" Value="288" />
+    </Style>
+
+  <!-- Mobile : une précision qui ne tient pas sur une ligne passe sur deux, au lieu d'être coupée -->
+  <Style Selector="LayoutTransformControl.phone TextBlock.wrap2">
+    <Setter Property="TextWrapping" Value="Wrap" />
+    <Setter Property="MaxLines" Value="2" />
+  </Style>
+
+  <!-- Direct : point vert de présence, qui bat à chaque activité d'un autre poste -->
+  <Style Selector="Border.livedot">
+    <Setter Property="Width" Value="9" />
+    <Setter Property="Height" Value="9" />
+    <Setter Property="CornerRadius" Value="5" />
+    <Setter Property="Background" Value="{DynamicResource ToneGreen}" />
+    <Setter Property="RenderTransform" Value="scale(1)" />
+  </Style>
+  <Style Selector="LayoutTransformControl.anim Border.livedot.pulse">
+    <Style.Animations>
+      <Animation Duration="0:0:0.7" IterationCount="1" Easing="CubicEaseOut">
+        <KeyFrame Cue="0%"><Setter Property="ScaleTransform.ScaleX" Value="1" /><Setter Property="ScaleTransform.ScaleY" Value="1" /><Setter Property="Opacity" Value="1" /></KeyFrame>
+        <KeyFrame Cue="50%"><Setter Property="ScaleTransform.ScaleX" Value="1.25" /><Setter Property="ScaleTransform.ScaleY" Value="1.25" /><Setter Property="Opacity" Value="0.55" /></KeyFrame>
+        <KeyFrame Cue="100%"><Setter Property="ScaleTransform.ScaleX" Value="1" /><Setter Property="ScaleTransform.ScaleY" Value="1" /><Setter Property="Opacity" Value="1" /></KeyFrame>
+      </Animation>
+    </Style.Animations>
+  </Style>
+  <Style Selector="Border.peercount">
+    <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
+    <Setter Property="CornerRadius" Value="8" />
+    <Setter Property="MinWidth" Value="16" />
+    <Setter Property="Height" Value="16" />
+    <Setter Property="Padding" Value="4,0" />
+  </Style>
+  <Style Selector="Border.peercount > TextBlock">
+    <Setter Property="FontSize" Value="10" />
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="Foreground" Value="{DynamicResource OnAccentBrush}" />
+    <Setter Property="HorizontalAlignment" Value="Center" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <!-- Bandeaux du direct sous la barre du haut : hors ligne en orange, conflits en rouge -->
+  <Style Selector="Button.livestrip">
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="HorizontalContentAlignment" Value="Left" />
+    <Setter Property="CornerRadius" Value="10" />
+    <Setter Property="Padding" Value="12,7" />
+    <Setter Property="Margin" Value="8,4,8,2" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="FontSize" Value="{DynamicResource FsSmall}" />
+  </Style>
+  <Style Selector="Button.livestrip TextBlock">
+    <Setter Property="TextWrapping" Value="NoWrap" />
+    <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+  </Style>
+  <Style Selector="Button.livestrip.offline">
+    <Setter Property="Background" Value="{DynamicResource OrangeSoftBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource ToneOrange}" />
+  </Style>
+  <Style Selector="Button.livestrip.conflict">
+    <Setter Property="Background" Value="{DynamicResource RedSoftBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource ToneRed}" />
+  </Style>
+  <Style Selector="Border.liveticker">
+    <Setter Property="Margin" Value="14,2,14,4" />
+  </Style>
+  <Style Selector="LayoutTransformControl.anim Border.liveticker[IsVisible=True]">
+    <Style.Animations>
+      <Animation Duration="0:0:0.3" FillMode="Both">
+        <KeyFrame Cue="0%"><Setter Property="Opacity" Value="0" /></KeyFrame>
+        <KeyFrame Cue="100%"><Setter Property="Opacity" Value="1" /></KeyFrame>
+      </Animation>
+    </Style.Animations>
+  </Style>
+  <!-- Pastille « Nouvelles données » : elle flotte au-dessus de la page, sans la déplacer -->
+  <Style Selector="Button.remotechip">
+    <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
+    <Setter Property="Foreground" Value="White" />
+    <Setter Property="CornerRadius" Value="18" />
+    <Setter Property="Padding" Value="14,7" />
+    <Setter Property="BorderThickness" Value="0" />
+  </Style>
+  <Style Selector="Button.remotechip /template/ ContentPresenter">
+    <Setter Property="BoxShadow" Value="0 4 14 0 #33000000" />
+  </Style>
+
+  <!-- L'ouverture d'une catégorie n'anime que l'opacité : aucun déplacement des éléments sous le doigt. -->
+  <Style Selector="LayoutTransformControl.anim Border.phonegroup[IsVisible=True]">
+    <Style.Animations>
+      <Animation Duration="0:0:0.12" Easing="CubicEaseOut" FillMode="Both">
+        <KeyFrame Cue="0%"><Setter Property="Opacity" Value="0.65" /></KeyFrame>
+        <KeyFrame Cue="100%"><Setter Property="Opacity" Value="1" /></KeyFrame>
+      </Animation>
+    </Style.Animations>
+  </Style>
+
+  <!-- Fluidité : la feuille d'actions monte du bas, le menu apparaît en fondu (préférence « Animations ») -->
+  <Style Selector="LayoutTransformControl.anim Grid.sheethost[IsVisible=True] > Border.phonesheet">
+    <Style.Animations>
+      <Animation Duration="0:0:0.16" Easing="CubicEaseOut" FillMode="Both">
+        <KeyFrame Cue="0%"><Setter Property="TranslateTransform.Y" Value="24" /><Setter Property="Opacity" Value="0.4" /></KeyFrame>
+        <KeyFrame Cue="100%"><Setter Property="TranslateTransform.Y" Value="0" /><Setter Property="Opacity" Value="1" /></KeyFrame>
+      </Animation>
+    </Style.Animations>
+  </Style>
+  <Style Selector="LayoutTransformControl.anim Grid.sheethost[IsVisible=True] > Border:not(.phonesheet)">
+    <Style.Animations>
+      <Animation Duration="0:0:0.2" FillMode="Both">
+        <KeyFrame Cue="0%"><Setter Property="Opacity" Value="0" /></KeyFrame>
+        <KeyFrame Cue="100%"><Setter Property="Opacity" Value="1" /></KeyFrame>
+      </Animation>
+    </Style.Animations>
+  </Style>
+  <!-- Android : le menu reste disponible immédiatement, avec un glissement discret
+       de 10 dp et un fondu de 165 ms. Aucun blocage ni chargement supplémentaire. -->
+  <Style Selector="LayoutTransformControl.anim Border.phonemenu[IsVisible=True]">
+    <Style.Animations>
+      <Animation Duration="0:0:0.165" Easing="CubicEaseOut" FillMode="Both">
+        <KeyFrame Cue="0%">
+          <Setter Property="TranslateTransform.Y" Value="10" />
+          <Setter Property="Opacity" Value="0.76" />
+        </KeyFrame>
+        <KeyFrame Cue="100%">
+          <Setter Property="TranslateTransform.Y" Value="0" />
+          <Setter Property="Opacity" Value="1" />
+        </KeyFrame>
+      </Animation>
+    </Style.Animations>
+  </Style>
+  <!-- Retour tactile par la couleur, sans déplacement ni changement de taille. -->
+  <Style Selector="Button.phonerow:pressed, Button.sheetitem:pressed, Button.phonetab:pressed">
+    <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
+  </Style>
+</Styles>

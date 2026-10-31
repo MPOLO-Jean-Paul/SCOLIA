@@ -1,0 +1,25 @@
+﻿CONTROLE AVANT INSERTION
+
+Avant chaque ajout d'apprenant ou de ligne de paiement, le moteur vérifie
+la structure du tableau et recherche à nouveau la dernière ligne avec une
+valeur dans toutes ses colonnes de données, y compris la colonne supplémentaire.
+La mise en forme et les lignes vides du tableau ne déterminent pas cette position.
+Il vérifie que la ligne suivante est vide avant et après le redimensionnement.
+Une valeur, une formule ou une réservation précédente non renseignée bloquent
+la saisie ; le moteur ne vide plus cette ligne pour écrire à sa place.
+Chaque affectation d'un paiement vérifie de nouveau la position de la ligne.
+Les promotions utilisent aussi toutes leurs colonnes pour situer le prochain ajout.
+
+Dans le nouveau classeur reçu : 57 apprenants et 59 lignes de paiement.
+Après préparation et regroupement à partir de la ligne 5, les prochains ajouts
+doivent commencer en ligne 62 pour APPRENANTS et 64 pour PAIEMENTS.
+Ces positions ne sont pas codées en dur : elles sont recalculées à chaque ajout.
+Les anciens trous sont regroupés par l'installateur sur une copie du classeur.
+
+Contrôles statiques et modèle de référence effectués. Le parcours d'insertion
+avec Excel/Windows reste à essayer sur une copie sur votre ordinateur.
+Relancez INSTALLER.vbs sur votre classeur actuel pour appliquer ce renforcement.
+
+Scénarios de référence vérifiés : feuille vide, dernière ligne partielle sans ID,
+valeur zéro, colonne supplémentaire P, colonnes hors zone ignorées,
+lignes de tableau vides jusqu’à 1206 et trois affectations consécutives.

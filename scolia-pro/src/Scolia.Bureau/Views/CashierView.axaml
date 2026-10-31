@@ -1,0 +1,211 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:infra="using:Scolia.Bureau.Infrastructure"
+             xmlns:c="using:Scolia.Bureau.Controls"
+             x:Class="Scolia.Bureau.Views.CashierView">
+  <UserControl.Styles>
+    <!-- Champ rempli par SCOLIA : même hauteur qu'un champ de saisie, fond gris, une icône qui dit d'où vient la valeur -->
+    <Style Selector="Border.autofield">
+      <Setter Property="Background" Value="{DynamicResource GroupBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="Padding" Value="10,0" />
+      <Setter Property="MinHeight" Value="{DynamicResource CtlHeight}" />
+    </Style>
+    <Style Selector="Border.autofield TextBlock">
+      <Setter Property="VerticalAlignment" Value="Center" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+    <Style Selector="Border.autofield mi|MaterialIcon">
+      <Setter Property="Width" Value="15" />
+      <Setter Property="Height" Value="15" />
+      <Setter Property="Margin" Value="6,0,0,0" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+      <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
+    </Style>
+    <!-- Mois à encaisser : ligne grise, bleue une fois cochée ; échéance en rouge quand le mois est en retard -->
+    <Style Selector="Border.monthrow"><Setter Property="Background" Value="{DynamicResource GroupBrush}" /></Style>
+    <Style Selector="Border.monthrow.chosen"><Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" /></Style>
+    <Style Selector="TextBlock.late"><Setter Property="Foreground" Value="{DynamicResource ToneRed}" /></Style>
+  </UserControl.Styles>
+  <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+  <Grid ColumnDefinitions="2*,3*" infra:Adaptive.StackBelow="1000">
+    <!-- Gauche : recherche de l'apprenant, puis saisie du versement -->
+    <StackPanel Grid.Column="0" Spacing="12" Margin="0,0,16,0">
+      <Border Classes="card">
+        <StackPanel Spacing="8">
+          <TextBlock Text="1. Apprenant" Classes="heading" />
+          <TextBox Text="{Binding Search}" PlaceholderText="Nom ou matricule (au moins deux caractères)" />
+          <TextBlock Text="{Binding SearchStatus}" IsVisible="{Binding HasSearchStatus}" Classes="muted"
+                     FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
+          <ListBox ItemsSource="{Binding Results}" SelectedItem="{Binding Selected}" MaxHeight="200" Background="Transparent" BorderThickness="0">
+            <ListBox.ItemTemplate>
+              <DataTemplate>
+                <StackPanel Margin="4,4">
+                  <TextBlock Text="{Binding Label}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                  <TextBlock Text="{Binding Detail}" Classes="muted" TextWrapping="Wrap" />
+                </StackPanel>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+          <StackPanel IsVisible="{Binding HasStudent}" Spacing="2" Margin="0,8,0,0">
+            <TextBlock Text="{Binding StudentName}" FontWeight="SemiBold" FontSize="{DynamicResource FsHeading}" TextWrapping="Wrap" />
+            <TextBlock Text="{Binding StudentInfo}" Classes="muted" TextWrapping="Wrap" />
+            <Grid ColumnDefinitions="*,*" Margin="0,8,0,0" infra:Adaptive.StackBelow="360">
+              <StackPanel>
+                <TextBlock Text="Solde à payer" Classes="caption" />
+                <TextBlock Text="{Binding Balance}" Classes="kpi" TextWrapping="Wrap" />
+              </StackPanel>
+              <StackPanel Grid.Column="1">
+                <TextBlock Text="Reste exigible" Classes="caption" />
+                <TextBlock Text="{Binding Overdue}" Classes="kpi" Foreground="{Binding OverdueBrush}" TextWrapping="Wrap" />
+              </StackPanel>
+            </Grid>
+          </StackPanel>
+          <!-- Un autre poste encaisse déjà cet apprenant : l'action est bloquée ici, sans risque de double reçu -->
+          <Border Background="{DynamicResource OrangeSoftBrush}" CornerRadius="10" Padding="12,10" IsVisible="{Binding IsLocked}">
+            <Grid ColumnDefinitions="Auto,*">
+              <mi:MaterialIcon Kind="LockOutline" Width="20" Height="20" Foreground="{DynamicResource ToneOrange}" Margin="0,0,10,0" VerticalAlignment="Top" />
+              <TextBlock Grid.Column="1" Text="{Binding LockedBy}" TextWrapping="Wrap" />
+            </Grid>
+          </Border>
+          <TextBlock Text="{Binding Hint}" Classes="error" IsVisible="{Binding HasHint}" TextWrapping="Wrap" />
+        </StackPanel>
+      </Border>
+    </StackPanel>
+
+    <!-- Droite : versement, répartition, reçu -->
+    <StackPanel Grid.Column="1" Spacing="12">
+      <!-- Tant qu'aucun apprenant n'est choisi, le versement n'a rien à montrer : une seule consigne. -->
+      <Border Classes="card" IsVisible="{Binding !HasStudent}">
+        <c:EmptyState Icon="AccountSearchOutline" Title="2. Versement"
+                      Hint="Cherchez d'abord l'apprenant dans « 1. Apprenant » : ses mois à payer s'affichent ici." />
+      </Border>
+      <Border Classes="card" IsVisible="{Binding ShowPayment}">
+        <StackPanel Spacing="10">
+          <TextBlock Text="2. Versement" Classes="heading" />
+          <!-- Mois à encaisser : une ligne par mois, touchée n'importe où pour la cocher. Le plus ancien en retard est déjà coché. -->
+          <StackPanel Spacing="6">
+            <TextBlock Text="Mois à encaisser" Classes="caption" />
+            <TextBlock Text="{Binding MonthListStatus}" Classes="muted" TextWrapping="Wrap" FontSize="{DynamicResource FsSmall}" IsVisible="{Binding HasMonths}" />
+            <!-- Aucune liste silencieusement vide : diagnostiquer la configuration et proposer le bon écran. -->
+            <Border Background="{DynamicResource OrangeSoftBrush}" CornerRadius="12" Padding="12"
+                    IsVisible="{Binding NoAvailableMonths}">
+              <StackPanel Spacing="8">
+                <TextBlock Text="Mois de paiement indisponibles" FontWeight="SemiBold" />
+                <TextBlock Text="{Binding MonthListStatus}" TextWrapping="Wrap" />
+                <StackPanel Spacing="6" IsVisible="{Binding CanConfigureFees}">
+                  <Button Content="Configurer les mois de l'année" Command="{Binding ConfigureCalendar}"
+                          HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" MinHeight="42" />
+                  <Button Content="Vérifier les mensualités de la promotion" Command="{Binding ConfigurePromotion}"
+                          HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" MinHeight="42" />
+                </StackPanel>
+              </StackPanel>
+            </Border>
+            <ItemsControl ItemsSource="{Binding Months}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <Border Classes="monthrow" Classes.chosen="{Binding IsSelected}" CornerRadius="12" Margin="0,2">
+                    <CheckBox IsChecked="{Binding IsSelected}" MinHeight="52" Padding="8,0,12,0"
+                              HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+                      <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                        <StackPanel Spacing="1" VerticalAlignment="Center">
+                          <TextBlock Text="{Binding Label}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                          <TextBlock Text="{Binding Deadline}" IsVisible="{Binding HasDeadline}" FontSize="{DynamicResource FsSmall}"
+                                     Classes="muted" Classes.late="{Binding Overdue}" TextWrapping="Wrap" />
+                        </StackPanel>
+                        <TextBlock Grid.Column="1" Text="{Binding AmountText}" FontWeight="SemiBold" VerticalAlignment="Center" TextAlignment="Right" />
+                      </Grid>
+                    </CheckBox>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <TextBlock Text="Chaque mois se règle en entier, à son montant." Classes="muted" FontSize="{DynamicResource FsSmall}" IsVisible="{Binding HasMonths}" />
+            <TextBlock Text="{Binding TotalCaption}" Classes="muted" />
+          </StackPanel>
+          <Grid ColumnDefinitions="*,*,*" RowDefinitions="Auto,Auto" infra:Adaptive.StackBelow="700">
+            <StackPanel Grid.Column="0" Margin="0,0,10,0">
+              <TextBlock Text="Total à encaisser" Classes="caption" />
+              <TextBlock Text="{Binding Total}" Classes="kpi" />
+            </StackPanel>
+            <StackPanel Grid.Column="1" Margin="0,0,10,0">
+              <TextBlock Text="Date du reçu" Classes="caption" />
+              <CalendarDatePicker PlaceholderText="jj/mm/aaaa" SelectedDateFormat="Short" SelectedDate="{Binding Day}" HorizontalAlignment="Stretch" />
+            </StackPanel>
+            <StackPanel Grid.Column="2">
+              <TextBlock Text="Mode" Classes="caption" />
+              <ComboBox ItemsSource="{Binding Methods}" SelectedItem="{Binding Method}" HorizontalAlignment="Stretch" />
+            </StackPanel>
+            <!-- Remplis par SCOLIA : la référence, la personne connectée, le téléphone du dossier. Seul le mode se choisit. -->
+            <StackPanel Grid.Row="1" Grid.Column="0" Margin="0,10,10,0">
+              <TextBlock Text="Référence de la transaction" Classes="caption" />
+              <Border Classes="autofield" ToolTip.Tip="Donnée par SCOLIA pour chaque versement">
+                <Grid ColumnDefinitions="*,Auto">
+                  <TextBlock Text="{Binding ReferenceText}" TextTrimming="CharacterEllipsis" FontWeight="Normal" FontSize="{DynamicResource FsSmall}" ToolTip.Tip="{Binding ReferenceText}" />
+                  <mi:MaterialIcon Grid.Column="1" Kind="Autorenew" />
+                </Grid>
+              </Border>
+            </StackPanel>
+            <StackPanel Grid.Row="1" Grid.Column="1" Margin="0,10,10,0">
+              <TextBlock Text="Visé par" Classes="caption" />
+              <Border Classes="autofield" ToolTip.Tip="La personne connectée, qui reçoit l'argent">
+                <Grid ColumnDefinitions="*,Auto">
+                  <TextBlock Text="{Binding ReviewedBy}" TextTrimming="CharacterEllipsis" />
+                  <mi:MaterialIcon Grid.Column="1" Kind="AccountCheckOutline" />
+                </Grid>
+              </Border>
+            </StackPanel>
+            <StackPanel Grid.Row="1" Grid.Column="2" Margin="0,10,0,0">
+              <TextBlock Text="Téléphone du payeur" Classes="caption" />
+              <Border Classes="autofield" ToolTip.Tip="Le téléphone du tuteur, repris du dossier de l'apprenant">
+                <Grid ColumnDefinitions="*,Auto">
+                  <TextBlock Text="{Binding PayerPhoneText}" TextTrimming="CharacterEllipsis" />
+                  <mi:MaterialIcon Grid.Column="1" Kind="PhoneOutline" />
+                </Grid>
+              </Border>
+            </StackPanel>
+          </Grid>
+          <StackPanel Margin="0,4,0,0">
+            <TextBlock Text="Observation (facultative)" Classes="caption" />
+            <TextBox Text="{Binding Note}" AcceptsReturn="True" Height="60" TextWrapping="Wrap" PlaceholderText="Laissée vide, le reçu portera « OK »" />
+          </StackPanel>
+        </StackPanel>
+      </Border>
+
+      <!-- Répartition calculée en direct sur les échéances -->
+      <Border Classes="card" IsVisible="{Binding ShowPayment}">
+        <StackPanel Spacing="8">
+          <Grid ColumnDefinitions="*,Auto">
+            <TextBlock Text="Répartition" Classes="heading" />
+            <TextBlock Grid.Column="1" Text="{Binding BalanceAfter}" Classes="muted" TextWrapping="Wrap" />
+          </Grid>
+          <DataGrid ItemsSource="{Binding Allocations}" AutoGenerateColumns="False" IsReadOnly="True" MaxHeight="260">
+            <DataGrid.Columns>
+              <DataGridTextColumn Header="Échéance" Binding="{Binding Label}" Width="*" MinWidth="140" />
+              <DataGridTextColumn Header="Imputé" Binding="{Binding Amount}" Width="Auto" MinWidth="140" />
+              <DataGridTextColumn Header="Reste après" Binding="{Binding Remaining}" Width="Auto" MinWidth="140" />
+            </DataGrid.Columns>
+          </DataGrid>
+          <!-- Le bouton Encaisser est dans la barre fixe en bas de l'écran, toujours visible. -->
+        </StackPanel>
+      </Border>
+
+      <!-- Reçu enregistré -->
+      <Border Classes="card" IsVisible="{Binding HasReceipt}">
+        <StackPanel Spacing="10">
+          <TextBlock Text="Versement enregistré" Classes="heading" Foreground="{DynamicResource ToneGreen}" />
+          <TextBlock Text="{Binding ReceiptText}" TextWrapping="Wrap" />
+          <Grid ColumnDefinitions="*,*,*" infra:Adaptive.StackBelow="700" Margin="0,8,0,0" ColumnSpacing="8">
+            <Button x:Name="PrintReceiptButton" Classes="primary" Command="{Binding PrintReceipt}" HorizontalAlignment="Stretch" MinHeight="48"><TextBlock Text="Imprimer le reçu" TextWrapping="Wrap" /></Button>
+            <Button x:Name="OpenReceiptButton" Grid.Column="1" Command="{Binding OpenReceipt}" HorizontalAlignment="Stretch" MinHeight="48"><TextBlock Text="Voir le reçu" TextWrapping="Wrap" /></Button>
+            <Button x:Name="NewPaymentButton" Grid.Column="2" Classes="ghost" Command="{Binding NewPayment}" HorizontalAlignment="Stretch" MinHeight="48"><TextBlock Text="Nouveau versement" TextWrapping="Wrap" /></Button>
+          </Grid>
+        </StackPanel>
+      </Border>
+    </StackPanel>
+  </Grid>
+  </ScrollViewer>
+</UserControl>

@@ -1,0 +1,89 @@
+SCOLIA PRO 1.1 - GESTION SCOLAIRE
+
+NOUVEAUTÉS DE LA VERSION 1.1
+- Encaissement par lot (Finances > Encaissement) : plusieurs apprenants et plusieurs
+  mois en une opération. Chaque apprenant reçoit son propre reçu numéroté. « Vérifier
+  le lot » contrôle sans rien écrire : montants, erreurs et reçus semblables.
+- Effacement volontaire (Données) : « Effacer données » retire les paiements des
+  apprenants cochés ou de tous ; « Effacer tous les apprenants » retire les dossiers.
+  Les deux exigent le mot de passe de votre compte et font une sauvegarde avant.
+- Personnel et paie : le mois se choisit dans une liste, avec un message quand
+  aucun bulletin n'a encore été préparé.
+- Tableaux : colonnes lisibles, titres entiers, sous-titres qui reviennent à la ligne.
+
+AUCUNE INSTALLATION
+Le dossier SCOLIA contient tout ce qui est nécessaire. Il n'y a rien à installer
+(ni .NET, ni PowerShell, ni Excel, ni base de données) et aucun script à lancer.
+
+OUVRIR SCOLIA
+1. Copier le dossier SCOLIA à un endroit stable, par exemple C:\SCOLIA.
+   Éviter « Program Files » : les données sont enregistrées dans le dossier donnees.
+2. Double-cliquer sur SCOLIA.exe. Il démarre seul le serveur SCOLIA-Serveur.exe,
+   qui doit rester dans le même dossier.
+3. À la première ouverture, l'assistant crée l'établissement, l'année scolaire et
+   le compte administrateur. Des données de démonstration fictives peuvent être
+   chargées pour découvrir le logiciel.
+
+PLUSIEURS ORDINATEURS (RÉSEAU DE L'ÉTABLISSEMENT) - AUTOMATIQUE
+1. Sur l'ordinateur principal (celui qui garde la base), ouvrir SCOLIA et se
+   connecter. SCOLIA propose une seule fois « Partager SCOLIA avec les autres
+   ordinateurs » : cliquer sur Autoriser, puis accepter la demande de Windows.
+   SCOLIA ouvre alors son port et sa découverte dans le pare-feu (réseaux privés
+   uniquement), déclare le réseau de l'établissement comme privé et applique le
+   réglage tout de suite.
+2. Sur chaque autre ordinateur, copier le dossier SCOLIA et lancer SCOLIA.exe.
+   SCOLIA trouve seul l'ordinateur principal sur le réseau et s'y relie : il n'y a
+   aucune adresse à saisir. S'il trouve plusieurs établissements, il les propose.
+3. Si l'adresse de l'ordinateur principal change (box, routeur), les postes le
+   retrouvent automatiquement au démarrage suivant.
+Fichier > Poste et réseau : voir à quel serveur le poste est relié, rechercher
+et rejoindre un autre serveur, ou utiliser cet ordinateur comme serveur. Sur
+l'ordinateur principal : ouvrir ou fermer le partage, démarrer avec Windows
+(service). Depuis un navigateur, les postes peuvent aussi ouvrir l'adresse
+affichée, par exemple http://192.168.1.10:5080.
+
+TRAVAILLER DEPUIS UN TÉLÉPHONE ANDROID
+- Le dossier Telephone contient SCOLIA-Android.apk.
+- Le téléphone et l'ordinateur principal doivent être sur le même Wi-Fi.
+- SCOLIA doit être ouvert et partagé sur l'ordinateur principal.
+- Le téléphone trouve SCOLIA tout seul. Sinon, saisir l'adresse affichée dans
+  Fichier > Poste et réseau.
+- Détails dans Telephone\LIRE_MOI_TELEPHONE.txt.
+
+TRAVAILLER À PLUSIEURS ET HORS LIGNE
+- Les écrans des autres postes se mettent à jour seuls après chaque enregistrement.
+  La barre d'état indique les postes connectés et ce qui vient d'être fait.
+- Une action en cours sur un poste est bloquée sur les autres : encaissement d'un même
+  apprenant, modification d'un même dossier, arrêté de caisse.
+- Si l'ordinateur principal s'éteint, les autres postes et les téléphones continuent sur
+  les pages déjà consultées. Leurs opérations du quotidien sont gardées, puis envoyées
+  seules et une seule fois à son retour.
+
+DONNÉES ET SAUVEGARDES
+- La base est le fichier donnees\scolia.db (SQLite, transactionnelle).
+- Une sauvegarde vérifiée est faite automatiquement chaque jour dans
+  donnees\sauvegardes, conservée 30 jours. Menu Administration > Sauvegardes
+  pour une sauvegarde immédiate, un téléchargement ou une restauration.
+- Copier régulièrement le dossier donnees\sauvegardes sur une clé USB ou un
+  disque externe.
+
+REPRENDRE LES DONNÉES DE SCOLIA V79/V80 (EXCEL)
+Administration > Import SCOLIA : choisir le classeur .xlsm de la base.
+Un essai à blanc montre ce qui sera repris avant toute écriture. L'import peut
+être relancé sans créer de doublons.
+
+MISE À JOUR
+Fermer la fenêtre SCOLIA, remplacer tous les
+fichiers sauf le dossier donnees, puis relancer SCOLIA.exe.
+La base est mise à jour automatiquement après une sauvegarde de sécurité.
+
+DÉSINSTALLATION
+Retirer le service dans Fichier > Poste et réseau s'il a été installé, puis
+supprimer le dossier SCOLIA. Le dossier donnees contient toutes les données :
+le conserver avant toute suppression.
+
+RÉGLAGES (appsettings.json, à côté de SCOLIA-Serveur.exe)
+- Scolia:Reseau:Port : port d'écoute (5080 par défaut).
+- Scolia:Reseau:AccesReseauLocal : géré par la rubrique « Poste et réseau ».
+- Scolia:Reseau:PortDecouverte : port UDP de la découverte des postes (48630).
+- Scolia:Stockage:DataDirectory : autre dossier de données (vide = donnees).

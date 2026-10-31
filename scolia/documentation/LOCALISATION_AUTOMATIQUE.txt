@@ -1,0 +1,32 @@
+﻿DÉTECTION AUTOMATIQUE DU CLASSEUR — 7 OCTOBRE 2026
+
+INSTALLER.vbs recherche automatiquement le classeur actuel : choix mémorisé,
+base data, puis dernière installation réussie. Le fichier initial fourni sert
+uniquement au premier démarrage si aucune autre source n’est retrouvée.
+Le chemin est affiché ; Choisir permet toujours de sélectionner un autre fichier.
+Dossier source ouvre directement son emplacement dans l’Explorateur Windows.
+Après réussite, le nouveau classeur corrigé est mémorisé pour APPLICATION.vbs.
+
+APPLICATION.vbs retrouve le choix mémorisé ou une base unique dans data.
+Le registre de la base désigne toujours le segment actif après une rotation.
+Pour un choix mémorisé, une copie de même identifiant déplacée dans le dossier
+data de cette application est prioritaire, même si l'ancienne copie existe
+encore. Un chemin choisi explicitement reste prioritaire sur cette détection. Plusieurs bases sans choix mémorisé exigent une sélection.
+Connecter ouvre le sélecteur directement dans le dossier détecté et présélectionne
+le fichier. Cliquez sur la ligne du classeur en haut pour voir son dossier.
+Déconnecter désactive la reconnexion automatique jusqu’à une nouvelle connexion.
+Un support absent n’entraîne jamais la sélection automatique d’une vieille copie.
+
+Une base répartie dans data se reconnecte en entier dans APPLICATION.vbs.
+L’installateur refuse de réinstaller un segment isolé, pour conserver l’ensemble
+des apprenants et paiements. Les fichiers source ne sont pas modifiés.
+
+VALIDATION
+Analyses statiques des scripts et contrôle de conservation des classeurs fournis.
+Tests natifs ajoutés à l’installateur : fichiers fictifs en dossier temporaire,
+choix mémorisé, segment actif, déplacement, ambiguïté, support absent,
+installation incomplète/réussie et dossier initial du sélecteur.
+Les tests Windows/Excel ne peuvent pas être exécutés dans cet environnement Linux.
+
+Avant la connexion, les segments enregistrés doivent tous être présents.
+Une transaction en attente suit la récupération avec vérification des empreintes.

@@ -1,0 +1,28 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:infra="using:Scolia.Bureau.Infrastructure"
+             x:Class="Scolia.Bureau.Views.StaffAttendanceView">
+  <Grid RowDefinitions="2*,Auto,*">
+    <DataGrid Grid.Row="0" ItemsSource="{Binding Members}" SelectedItem="{Binding Selected}" AutoGenerateColumns="False" IsReadOnly="True">
+      <DataGrid.Columns>
+        <DataGridTextColumn Header="Nom" Binding="{Binding Name}" Width="*" MinWidth="220" infra:GridPriority.Level="1" />
+        <DataGridTextColumn Header="Fonction" Binding="{Binding Function}" Width="Auto" MinWidth="150" infra:GridPriority.Level="2" />
+        <DataGridTextColumn Header="Entrée du jour" Binding="{Binding Entry}" Width="Auto" MinWidth="160" infra:GridPriority.Level="1" />
+        <DataGridTextColumn Header="Sortie du jour" Binding="{Binding Exit}" Width="Auto" MinWidth="160" infra:GridPriority.Level="2" />
+        <DataGridTextColumn Header="Journée" Binding="{Binding Today}" Width="Auto" MinWidth="130" infra:GridPriority.Level="1" />
+      </DataGrid.Columns>
+    </DataGrid>
+    <TextBlock Grid.Row="1" Text="Bilan de la période (base de la préparation de la paie)" Classes="section" Margin="0,14,0,6" />
+    <DataGrid Grid.Row="2" ItemsSource="{Binding Bilan}" AutoGenerateColumns="False" IsReadOnly="True">
+      <DataGrid.Columns>
+        <DataGridTextColumn Header="Nom" Binding="{Binding Name}" Width="*" MinWidth="220" infra:GridPriority.Level="1" />
+        <DataGridTextColumn Header="Présents" Binding="{Binding Present}" Width="Auto" MinWidth="114" infra:GridPriority.Level="1" />
+        <DataGridTextColumn Header="Retards" Binding="{Binding Late}" Width="Auto" MinWidth="107" infra:GridPriority.Level="1" />
+        <DataGridTextColumn Header="Absences" Binding="{Binding Absent}" Width="Auto" MinWidth="114" infra:GridPriority.Level="1" />
+        <DataGridTextColumn Header="Justifiées" Binding="{Binding Justified}" Width="Auto" MinWidth="130" infra:GridPriority.Level="2" />
+        <DataGridTextColumn Header="Conversions" Binding="{Binding Conversions}" Width="Auto" MinWidth="137" infra:GridPriority.Level="2" />
+        <DataGridTextColumn Header="Jours déductibles" Binding="{Binding Deductible}" Width="Auto" MinWidth="183" infra:GridPriority.Level="1" />
+      </DataGrid.Columns>
+    </DataGrid>
+  </Grid>
+</UserControl>

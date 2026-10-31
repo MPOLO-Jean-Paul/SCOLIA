@@ -1,0 +1,456 @@
+﻿Option Explicit
+' ITM CD - Interface native MSForms. Aucune modification de données.
+Private Const UIPMarge As Single = 24
+Private Const UIPEcart As Single = 16
+
+Public Sub ITMHabillerFormulaire(ByVal f As Object)
+    Dim c As Object, plan As Variant, item As Variant, choisi As Object
+    Dim utilises As Object, w As Single, y As Single, n As Long, cols As Long
+    Dim section As Long, liste As Collection, autres As Collection, k As Long
+    Dim hauteur As Single, chrome As Single, disponible As Single, ligne As Single
+    Set utilises = CreateObject("Scripting.Dictionary")
+    utilises.CompareMode = vbTextCompare
+    f.BackColor = RGB(243, 246, 251)
+    f.Font.Name = "Segoe UI": f.Font.Size = 10
+    f.Caption = "ITM CD | " & UIPTitre(f.Name)
+    f.ScrollBars = fmScrollBarsNone: f.ScrollTop = 0: f.ScrollLeft = 0
+    disponible = Application.Width - 36
+    If disponible < 280 Then disponible = 280
+    f.Width = Application.Min(880, disponible)
+    w = f.InsideWidth - UIPMarge * 2 - 12
+    cols = 3
+    If w < 620 Then cols = 2
+    If w < 390 Then cols = 1
+    For Each c In f.Controls
+        If TypeName(c) = "Label" Or TypeName(c) = "Image" Then c.Visible = False
+        Select Case TypeName(c)
+            Case "TextBox", "ComboBox", "ListBox", "CommandButton": UIPStyle c
+        End Select
+    Next c
+    UIPEntete f, w
+    y = 114: n = 0: ligne = 62
+    If w < 390 Then y = 154
+    plan = UIPPlan(f.Name)
+    For Each item In plan
+        If Left$(CStr(item), 1) = "@" Then
+            UIPFinLigne y, n, cols, ligne
+            section = section + 1
+            UIPSection f, Mid$(CStr(item), 2), w, y, section
+        Else
+            Set choisi = UIPChoisir(f, CStr(item), utilises)
+            If Not choisi Is Nothing Then
+                If choisi.Visible Then
+                    UIPChamp f, choisi, w, y, n, cols, ligne
+                    utilises(choisi.Name) = True
+                End If
+            End If
+        End If
+    Next item
+    UIPFinLigne y, n, cols, ligne
+    ' Garder accessibles les champs supplémentaires d'une version compatible.
+    Set autres = New Collection
+    For Each c In f.Controls
+        If c.Visible And Not utilises.Exists(c.Name) Then
+            Select Case TypeName(c)
+                Case "TextBox", "ComboBox", "ListBox": autres.Add c
+            End Select
+        End If
+    Next c
+    If autres.Count > 0 Then
+        section = section + 1
+        UIPSection f, "INFORMATIONS COMPLÉMENTAIRES", w, y, section
+        For k = 1 To autres.Count
+            Set c = autres(k)
+            UIPChamp f, c, w, y, n, cols, ligne
+        Next k
+        UIPFinLigne y, n, cols, ligne
+    End If
+    UIPActions f, w, y, cols, False
+    UIPActions f, w, y, cols, True
+    y = y + 12
+    UIPLabel f, "UIP_Note", "ITM Cœur de Dieu  •  Secrétariat scolaire", UIPMarge, y, w, 18, 9, RGB(100, 116, 139), False
+    hauteur = y + 36
+    chrome = f.Height - f.InsideHeight
+    disponible = Application.Height - 36
+    If disponible < 220 Then disponible = 220
+    f.Height = Application.Min(hauteur + chrome, disponible)
+    f.ScrollHeight = hauteur
+    f.ScrollWidth = f.InsideWidth - 18
+    If hauteur > f.InsideHeight Then f.ScrollBars = fmScrollBarsVertical
+    f.StartUpPosition = 0
+    f.Left = Application.Left + (Application.Width - f.Width) / 2
+    f.Top = Application.Top + (Application.Height - f.Height) / 2
+    f.ScrollTop = 0
+    UIPOrdreTab f
+End Sub
+
+Private Function UIPControle(ByVal f As Object, ByVal nom As String) As Object
+    On Error Resume Next
+    Set UIPControle = f.Controls(nom)
+    On Error GoTo 0
+End Function
+
+Private Function UIPChoisir(ByVal f As Object, ByVal noms As String, ByVal utilises As Object) As Object
+    Dim nom As Variant, c As Object, premier As Object
+    For Each nom In Split(noms, "~")
+        Set c = UIPControle(f, CStr(nom))
+        If Not c Is Nothing Then
+            If premier Is Nothing Then
+                Set premier = c
+            Else
+                c.Visible = False: utilises(c.Name) = True
+            End If
+        End If
+    Next nom
+    Set UIPChoisir = premier
+End Function
+
+Private Sub UIPStyle(ByVal c As Object)
+    c.Font.Name = "Segoe UI": c.Font.Size = 10
+    c.ForeColor = RGB(30, 41, 59)
+    Select Case TypeName(c)
+        Case "TextBox", "ComboBox", "ListBox"
+            c.SpecialEffect = fmSpecialEffectFlat
+            c.BorderStyle = fmBorderStyleSingle
+            c.BorderColor = RGB(216, 225, 237)
+            c.BackColor = vbWhite
+            If TypeName(c) = "TextBox" Then
+                If c.Locked Then
+                    c.BackColor = RGB(234, 240, 248): c.TabStop = False
+                End If
+                If LCase$(c.Name) = "textrecherche" Then
+                    c.BorderColor = RGB(37, 99, 235)
+                    c.ControlTipText = "Saisissez un matricule ou un nom."
+                End If
+                If LCase$(c.Name) = "textmontantpaye" Then
+                    c.BorderColor = RGB(37, 99, 235)
+                    c.Font.Bold = True: c.Font.Size = 12
+                End If
+            End If
+            If TypeName(c) = "ListBox" Then c.IntegralHeight = False
+        Case "CommandButton"
+            c.Font.Bold = True: c.Font.Size = 10
+            c.WordWrap = True: c.AutoSize = False
+            c.ControlTipText = c.Caption
+    End Select
+End Sub
+
+Private Sub UIPLabel(ByVal f As Object, ByVal nom As String, ByVal texte As String, ByVal x As Single, ByVal y As Single, ByVal w As Single, ByVal h As Single, ByVal taille As Single, ByVal couleur As Long, ByVal gras As Boolean)
+    Dim l As Object
+    Set l = UIPControle(f, nom)
+    If l Is Nothing Then Set l = f.Controls.Add("Forms.Label.1", nom, True)
+    With l
+        .Caption = texte: .Left = x: .Top = y: .Width = w: .Height = h
+        .Font.Name = "Segoe UI": .Font.Size = taille: .Font.Bold = gras
+        .ForeColor = couleur: .BackStyle = fmBackStyleTransparent
+        .WordWrap = True: .Visible = True
+    End With
+End Sub
+
+Private Sub UIPSurface(ByVal f As Object, ByVal nom As String, ByVal x As Single, ByVal y As Single, ByVal w As Single, ByVal h As Single, ByVal couleur As Long)
+    Dim l As Object
+    UIPLabel f, nom, "", x, y, w, h, 1, couleur, False
+    Set l = f.Controls(nom)
+    l.BackStyle = fmBackStyleOpaque: l.BackColor = couleur
+    l.ZOrder 1
+End Sub
+
+Private Sub UIPEntete(ByVal f As Object, ByVal w As Single)
+    If w < 390 Then
+        UIPSurface f, "UIP_Header", 0, 0, f.InsideWidth, 134, RGB(18, 43, 77)
+        UIPSurface f, "UIP_Accent", 0, 134, f.InsideWidth, 4, RGB(37, 99, 235)
+        UIPLabel f, "UIP_Institution", "INSTITUT TECHNIQUE MÉDICAL CŒUR DE DIEU", UIPMarge, 12, w, 30, 8, RGB(191, 211, 237), True
+        UIPLabel f, "UIP_Titre", UIPTitre(f.Name), UIPMarge, 46, w, 40, 16, vbWhite, True
+        UIPLabel f, "UIP_SousTitre", UIPSousTitre(f.Name), UIPMarge, 96, w, 32, 9, RGB(210, 224, 242), False
+        Exit Sub
+    End If
+    UIPSurface f, "UIP_Header", 0, 0, f.InsideWidth, 94, RGB(18, 43, 77)
+    UIPSurface f, "UIP_Accent", 0, 94, f.InsideWidth, 4, RGB(37, 99, 235)
+    UIPLabel f, "UIP_Institution", "INSTITUT TECHNIQUE MÉDICAL CŒUR DE DIEU", UIPMarge, 14, w, 17, 9, RGB(191, 211, 237), True
+    UIPLabel f, "UIP_Titre", UIPTitre(f.Name), UIPMarge, 34, w, 30, 21, vbWhite, True
+    UIPLabel f, "UIP_SousTitre", UIPSousTitre(f.Name), UIPMarge, 70, w, 18, 9, RGB(210, 224, 242), False
+End Sub
+
+Private Sub UIPSection(ByVal f As Object, ByVal titre As String, ByVal w As Single, ByRef y As Single, ByVal n As Long)
+    y = y + 8
+    UIPLabel f, "UIP_Section" & n, Format$(n, "00") & "  " & titre, UIPMarge, y, w, 20, 10, RGB(24, 64, 120), True
+    y = y + 30
+End Sub
+
+Private Sub UIPFinLigne(ByRef y As Single, ByRef n As Long, ByVal cols As Long, ByVal h As Single)
+    If n > 0 Then y = y + h: n = 0
+End Sub
+
+Private Function UIPIndicateur(ByVal f As Object, ByVal c As Object) As Boolean
+    If TypeName(c) <> "TextBox" Then Exit Function
+    If f.Name = "TableauDeBord" Then
+        UIPIndicateur = True
+    ElseIf f.Name = "GestionApprenant" Then
+        Select Case LCase$(c.Name)
+            Case "texttotalapprenants", "textapprenantspromotion", "textrevenutotal", "textrevenumois", "textnombrelitiges", "textmontantlitige", "texttauxpaiement", "texttauxajour": UIPIndicateur = True
+        End Select
+    End If
+End Function
+
+Private Sub UIPChamp(ByVal f As Object, ByVal c As Object, ByVal w As Single, ByRef y As Single, ByRef n As Long, ByVal cols As Long, ByRef ligne As Single)
+    Dim x As Single, cw As Single, grand As Boolean, titre As String, h As Single
+    Dim kpi As Boolean, kc As Long, couleur As Long
+    grand = TypeName(c) = "ListBox" Or LCase$(c.Name) = "textadresse" Or LCase$(c.Name) = "textaffectation"
+    kpi = UIPIndicateur(f, c)
+    If grand Then UIPFinLigne y, n, cols, ligne
+    kc = cols
+    If kpi And cols = 3 Then kc = 4
+    cw = (w - (kc - 1) * UIPEcart) / kc
+    x = UIPMarge + n * (cw + UIPEcart)
+    h = 62
+    If grand Then x = UIPMarge: cw = w
+    titre = UIPLibelle(c.Name)
+    If f.Name = "Apprenant" And c.Name = "ListPromotion" Then titre = "Promotion"
+    If f.Name = "Apprenant" And c.Name = "ListStatut" Then titre = "Statut de l'apprenant"
+    If f.Name = "GestionApprenant" And c.Name = "ListStatut" Then titre = "Statut de l'apprenant"
+    c.Left = x: c.Top = y + 23: c.Width = cw: c.Height = 28
+    c.Font.Size = 10
+    If Not kpi Then
+        UIPLabel f, "UIP_L_" & c.Name, titre, x, y, cw, 20, 9, RGB(71, 85, 105), True
+    Else
+        h = 86
+        UIPSurface f, "UIP_Card_" & c.Name, x, y, cw, 72, vbWhite
+        couleur = RGB(37, 99, 235)
+        If InStr(LCase$(c.Name), "litige") > 0 Then couleur = RGB(180, 100, 28)
+        If InStr(LCase$(c.Name), "taux") > 0 Then couleur = RGB(15, 118, 110)
+        UIPSurface f, "UIP_Bar_" & c.Name, x, y, 3, 72, couleur
+        UIPLabel f, "UIP_L_" & c.Name, titre, x + 14, y + 10, cw - 26, 22, 9, RGB(100, 116, 139), False
+        c.Left = x + 14: c.Top = y + 34: c.Width = cw - 26: c.Height = 27
+        c.Font.Size = 16: c.Font.Bold = True: c.ForeColor = RGB(24, 64, 120)
+        c.BorderStyle = fmBorderStyleNone: c.BackColor = vbWhite
+        c.TextAlign = fmTextAlignLeft
+    End If
+    If TypeName(c) = "TextBox" And Not kpi Then
+        If InStr(LCase$(c.Name), "montant") > 0 Or InStr(LCase$(c.Name), "reste") > 0 Or InStr(LCase$(c.Name), "total") > 0 Or InStr(LCase$(c.Name), "dettes") > 0 Then c.TextAlign = fmTextAlignRight
+    End If
+    If LCase$(c.Name) = "textmontantpaye" Then c.Font.Size = 12: c.Font.Bold = True
+    If TypeName(c) = "ComboBox" Then c.ListRows = 10
+    If TypeName(c) = "ListBox" Then
+        c.Height = 126
+        If c.Name = "ListApprenantsLitige" Or c.Name = "ListHistoriquePaiements" Then c.Height = 168
+        UIPColonnes f, c, cw
+    End If
+    If LCase$(c.Name) = "textadresse" Or LCase$(c.Name) = "textaffectation" Then
+        c.MultiLine = True: c.Height = 54: c.ScrollBars = fmScrollBarsVertical
+    End If
+    c.Visible = True
+    If Not kpi Then
+        If Len(c.ControlTipText) = 0 Then c.ControlTipText = titre
+    End If
+    ligne = h
+    If grand Then
+        y = c.Top + c.Height + 18: n = 0
+    Else
+        n = n + 1
+        If n = kc Then y = y + h: n = 0
+    End If
+End Sub
+
+Private Sub UIPColonnes(ByVal f As Object, ByVal c As Object, ByVal w As Single)
+    Dim proportions As Variant, i As Long, total As Single, widths As String
+    Select Case c.Name
+        Case "ListApprenantsLitige": proportions = Array(0.12, 0.38, 0.15, 0.13, 0.22)
+        Case "ListHistoriquePaiements": proportions = Array(0.2, 0.23, 0.27, 0.3)
+        Case "ListResultats": proportions = Array(0.14, 0.23, 0.23, 0.23, 0.17)
+        Case Else: proportions = Array(0.14, 0.43, 0.23, 0.2)
+    End Select
+    If c.ColumnCount <> UBound(proportions) + 1 Then Exit Sub
+    For i = 0 To UBound(proportions)
+        If i > 0 Then widths = widths & ";"
+        widths = widths & CStr(CLng((w - 20) * proportions(i))) & " pt"
+    Next i
+    c.ColumnWidths = widths
+End Sub
+
+Private Sub UIPActions(ByVal f As Object, ByVal w As Single, ByRef y As Single, ByVal cols As Long, ByVal exports As Boolean)
+    Dim ordre As Variant, nom As Variant, c As Object, deja As Object
+    Dim boutons As Collection, k As Long, n As Long, cw As Single, isExport As Boolean
+    Set boutons = New Collection
+    Set deja = CreateObject("Scripting.Dictionary")
+    ordre = Split("CommandEnregistrer|CommandEnregistrerPaiement|CommandModifier|CommandNouvelleInscription|CommandButton1|CommandNouveauPaiement|CommandActualiserDashboard|CommandActualiser|CommandChangerPromotion|CommandChangeStatut|CommandFicheApprenant|CommandImrpimerListe|CommandReinitialiser|CommandEffacerSaisie|CommandEffacer|CommandEffacerPaiement|CommandFermerPaiement|CommandFemerDashboard|CommandFermerDashboard|CommandButton2|CommandExporterPaiementsMois|CommandExporterEnOrdrePDF|CommandExportPaiementsPDF|CommandExportLitigesPDF|CommandListeInscritsPDF", "|")
+    For Each nom In ordre
+        Set c = UIPControle(f, CStr(nom))
+        If Not c Is Nothing Then
+            If c.Visible And TypeName(c) = "CommandButton" Then
+                isExport = InStr(LCase$(c.Name), "export") > 0 Or c.Name = "CommandListeInscritsPDF"
+                If isExport = exports Then boutons.Add c: deja(c.Name) = True
+            End If
+        End If
+    Next nom
+    For Each c In f.Controls
+        If TypeName(c) = "CommandButton" And c.Visible Then
+            isExport = InStr(LCase$(c.Name), "export") > 0 Or c.Name = "CommandListeInscritsPDF"
+            If isExport = exports And Not deja.Exists(c.Name) Then boutons.Add c
+        End If
+    Next c
+    If boutons.Count = 0 Then Exit Sub
+    y = y + 12
+    If exports Then
+        UIPLabel f, "UIP_Exports", "EXPORTS ET DOCUMENTS", UIPMarge, y, w, 20, 10, RGB(24, 64, 120), True
+        y = y + 28
+    End If
+    cw = (w - (cols - 1) * UIPEcart) / cols
+    For k = 1 To boutons.Count
+        Set c = boutons(k)
+        c.Left = UIPMarge + (n Mod cols) * (cw + UIPEcart)
+        c.Top = y + (n \ cols) * 42
+        c.Width = cw: c.Height = 32
+        c.BackColor = RGB(224, 233, 247): c.ForeColor = RGB(24, 64, 120)
+        If InStr(LCase$(c.Name), "enregistrer") > 0 Or c.Name = "CommandModifier" Or c.Name = "CommandActualiserDashboard" Or c.Name = "CommandNouvelleInscription" Then
+            c.BackColor = RGB(37, 99, 235): c.ForeColor = vbWhite
+        End If
+        If InStr(LCase$(c.Caption), "fermer") > 0 Then c.BackColor = RGB(229, 233, 239): c.ForeColor = RGB(71, 85, 105)
+        c.Font.Size = 9: c.Font.Bold = True: c.WordWrap = True
+        c.ControlTipText = c.Caption
+        n = n + 1
+    Next k
+    y = y + ((n + cols - 1) \ cols) * 42
+End Sub
+Private Function UIPPlan(ByVal nom As String) As Variant
+    Select Case nom
+        Case "Apprenant": UIPPlan = Split("@IDENTITÉ|TextMatricule|TextNomApprenant|TextPostNom|TextPrenom|ListSexe|TextDateNaissance|TextLieuNaissance|@CONTACTS ET RÉSIDENCE|TextTuteur|TextParent1|TextParent2|TextAdresse|@INSCRIPTION|ListPromotion|ListAnnee|ListStatut|TextDateInscription", "|")
+        Case "Paiement": UIPPlan = Split("@RECHERCHER UN APPRENANT|TextRecherche|ListResultats|@APPRENANT SÉLECTIONNÉ|TextMatricule|TextNomApprenant|TextPostNom|TextPrenom|TextPromotion|@REÇU ET VERSEMENT|TextDatePaiement|TextNumeroEnregistrement|TextMoisConcerne|TextMontantDu|TextDettesAnterieures|TextMontantPaye|TextAffectation|@SITUATION ANNUELLE|TextTotalPaye|TextTotalAnnuel|TextResteAnnuel|TextStatut", "|")
+        Case "GestionApprenant": UIPPlan = Split("@RECHERCHE ET FILTRES|TextRecherche|ListPromotion|ListAnnee|ListStatutApprenant|ListMois|ListNombreMoisLitige|ListApprenants~ListApprenant|@IDENTITÉ ET CONTACTS|TextMatricule|TextNomApprenant|TextPostNom|TextPrenom|TextSexe|TextDateNaissance|TextLieuNaissance|TextTuteur|TextContact1|TextContact2|@INSCRIPTION|ListPromotionApprenant|ListStatut|TextDateInscription|@SITUATION DE PAIEMENT|TextSituation|TextMoisPaye|TextMoisLitige|TextMoisNonPayes|TextResteAnnuel|ListHistoriquePaiements|@INDICATEURS DU FILTRE|TextTotalApprenants|TextApprenantsPromotion|TextRevenuTotal|TextRevenuMois|TextNombreLitiges|TextMontantLitige|TextTauxPaiement|TextTauxAjour", "|")
+        Case "TableauDeBord": UIPPlan = Split("@FILTRES|ComboPromotionDashboard~ListPromotionDashboard|ComboMoisDashboard~ListMoisDashboard|ComboNombreMoisLitige~ListNombreMoisLitige|@EFFECTIFS ET RECETTES|TextTotalAp~TextTotalApprenants|TextApprenantsPromotion|TextRevenuTotal|TextRevenuMois|@LITIGES ET TAUX DE PAIEMENT|TextNombreLitiges|TextMontantLitige|TextTauxPaiement|TextTauxAjour|@APPRENANTS EN LITIGE|ListApprenantsLitige", "|")
+        Case Else: UIPPlan = Array()
+    End Select
+End Function
+Private Function UIPTitre(ByVal nom As String) As String
+    Select Case nom
+        Case "Apprenant": UIPTitre = "Inscription d'un apprenant"
+        Case "Paiement": UIPTitre = "Enregistrement des paiements"
+        Case "GestionApprenant": UIPTitre = "Gestion des apprenants"
+        Case "TableauDeBord": UIPTitre = "Tableau de bord"
+        Case Else: UIPTitre = nom
+    End Select
+End Function
+Private Function UIPSousTitre(ByVal nom As String) As String
+    Select Case nom
+        Case "Apprenant": UIPSousTitre = "Identité, coordonnées et affectation à une promotion."
+        Case "Paiement": UIPSousTitre = "Rechercher un apprenant et enregistrer son reçu validé à la caisse."
+        Case "GestionApprenant": UIPSousTitre = "Retrouver un dossier, mettre à jour les informations et consulter les paiements."
+        Case "TableauDeBord": UIPSousTitre = "Effectifs, recettes et suivi des litiges selon les filtres sélectionnés."
+        Case Else: UIPSousTitre = "Secrétariat scolaire"
+    End Select
+End Function
+Private Function UIPLibelle(ByVal nom As String) As String
+    Select Case LCase$(nom)
+        Case "textmatricule": UIPLibelle = "Matricule"
+        Case "textnomapprenant": UIPLibelle = "Nom"
+        Case "textpostnom": UIPLibelle = "Post-nom"
+        Case "textprenom": UIPLibelle = "Prénom"
+        Case "listsexe": UIPLibelle = "Sexe"
+        Case "textsexe": UIPLibelle = "Sexe"
+        Case "textdatenaissance": UIPLibelle = "Naissance (jj/mm/aaaa)"
+        Case "textlieunaissance": UIPLibelle = "Lieu de naissance"
+        Case "textadresse": UIPLibelle = "Adresse de résidence"
+        Case "texttuteur": UIPLibelle = "Parent ou tuteur"
+        Case "textparent1": UIPLibelle = "Contact parent 1"
+        Case "textcontact1": UIPLibelle = "Contact parent 1"
+        Case "textparent2": UIPLibelle = "Contact parent 2"
+        Case "textcontact2": UIPLibelle = "Contact parent 2"
+        Case "listpromotion": UIPLibelle = "Promotion (filtre)"
+        Case "combopromotiondashboard": UIPLibelle = "Promotion (filtre)"
+        Case "listpromotionapprenant": UIPLibelle = "Promotion de l'apprenant"
+        Case "textpromotion": UIPLibelle = "Promotion"
+        Case "listannee": UIPLibelle = "Année scolaire"
+        Case "liststatut": UIPLibelle = "Statut (filtre)"
+        Case "liststatutapprenant": UIPLibelle = "Statut (filtre)"
+        Case "textdateinscription": UIPLibelle = "Date d'inscription"
+        Case "textrecherche": UIPLibelle = "Recherche : matricule ou nom"
+        Case "listapprenant": UIPLibelle = "Apprenants trouvés"
+        Case "listapprenants": UIPLibelle = "Apprenants trouvés"
+        Case "listresultats": UIPLibelle = "Résultats de recherche"
+        Case "listmois": UIPLibelle = "Mois (filtre)"
+        Case "combomoisdashboard": UIPLibelle = "Mois (filtre)"
+        Case "listnombremoislitige": UIPLibelle = "Nombre de mois en litige"
+        Case "combonombremoislitige": UIPLibelle = "Nombre de mois en litige"
+        Case "textdatepaiement": UIPLibelle = "Date de paiement"
+        Case "textnumeroenregistrement": UIPLibelle = "N° d'enregistrement"
+        Case "textmoisconcerne": UIPLibelle = "Mois concerne"
+        Case "textdettesanterieures": UIPLibelle = "Dettes antérieures (FC)"
+        Case "textmontantdu": UIPLibelle = "Montant dû (FC)"
+        Case "textmontantpaye": UIPLibelle = "Montant versé (FC)"
+        Case "texttotalpaye": UIPLibelle = "Total annuel verse (FC)"
+        Case "texttotalannuel": UIPLibelle = "Total annuel attendu (FC)"
+        Case "textresteannuel": UIPLibelle = "Reste annuel (FC)"
+        Case "textstatut": UIPLibelle = "Situation du paiement"
+        Case "textaffectation": UIPLibelle = "Repartition du paiement"
+        Case "textsituation": UIPLibelle = "Situation de l'apprenant"
+        Case "textmoispaye": UIPLibelle = "Mois payés"
+        Case "textmoislitige": UIPLibelle = "Mois partiellement payés"
+        Case "textmoisnonpayes": UIPLibelle = "Mois impayés"
+        Case "texttotalap": UIPLibelle = "Effectif total"
+        Case "texttotalapprenants": UIPLibelle = "Effectif total"
+        Case "textapprenantspromotion": UIPLibelle = "Effectif de la promotion"
+        Case "textrevenutotal": UIPLibelle = "Recettes totales (FC)"
+        Case "textrevenumois": UIPLibelle = "Recettes du mois (FC)"
+        Case "textnombrelitiges": UIPLibelle = "Apprenants en litige"
+        Case "textmontantlitige": UIPLibelle = "Montant en litige (FC)"
+        Case "texttauxpaiement": UIPLibelle = "Taux de paiement (%)"
+        Case "texttauxajour": UIPLibelle = "Apprenants à jour (%)"
+        Case "listapprenantslitige": UIPLibelle = "Liste des apprenants en litige"
+        Case "listhistoriquepaiements": UIPLibelle = "Historique des paiements"
+        Case Else: UIPLibelle = nom
+    End Select
+End Function
+
+Private Sub UIPOrdreTab(ByVal f As Object)
+    Dim elements() As Object, c As Object, temp As Object
+    Dim n As Long, i As Long, j As Long
+    ReDim elements(1 To f.Controls.Count)
+    For Each c In f.Controls
+        If c.Visible Then
+            Select Case TypeName(c)
+                Case "TextBox", "ComboBox", "ListBox", "CommandButton"
+                    n = n + 1: Set elements(n) = c
+            End Select
+        End If
+    Next c
+    For i = 1 To n - 1
+        For j = i + 1 To n
+            If elements(j).Top < elements(i).Top Or (elements(j).Top = elements(i).Top And elements(j).Left < elements(i).Left) Then
+                Set temp = elements(i): Set elements(i) = elements(j): Set elements(j) = temp
+            End If
+        Next j
+    Next i
+    For i = 1 To n
+        elements(i).TabIndex = i - 1
+    Next i
+End Sub
+
+Public Function ITMVerifierInterface() As String
+    Dim nom As Variant, f As Object, c As Object, resultat As String, n As Long
+    On Error GoTo EH
+    For Each nom In Array("Apprenant", "Paiement", "GestionApprenant", "TableauDeBord")
+        Set f = VBA.UserForms.Add(CStr(nom))
+        If UIPControle(f, "UIP_Titre") Is Nothing Then Err.Raise vbObjectError + 910, , "Interface non initialisée : " & CStr(nom)
+        n = 0
+        For Each c In f.Controls
+            If c.Visible Then
+                Select Case TypeName(c)
+                    Case "TextBox", "ComboBox", "ListBox", "CommandButton"
+                        If c.Left < 0 Or c.Width < 20 Or c.Left + c.Width > f.InsideWidth Then Err.Raise vbObjectError + 911, , "Largeur non valide : " & CStr(nom) & "." & c.Name
+                        If c.Top < 98 Or c.Top + c.Height > f.ScrollHeight Then Err.Raise vbObjectError + 912, , "Position non valide : " & CStr(nom) & "." & c.Name
+                        n = n + 1
+                End Select
+            End If
+        Next c
+        resultat = resultat & CStr(nom) & " : " & n & " contrôles visibles, dimensions vérifiées." & vbCrLf
+        Unload f: Set f = Nothing
+    Next nom
+    ITMVerifierInterface = resultat
+    Exit Function
+EH:
+    Dim description As String
+    description = Err.Description
+    On Error Resume Next
+    If Not f Is Nothing Then Unload f
+    On Error GoTo 0
+    Err.Raise vbObjectError + 913, "ITMVerifierInterface", description
+End Function

@@ -1,0 +1,31 @@
+﻿Option Explicit
+Public Sub ouvrirApprenants()
+    Apprenant.Show
+End Sub
+Public Sub GestionPaiements()
+    Paiement.Show
+End Sub
+Public Sub VoirBaseApprenants()
+    ThisWorkbook.Worksheets("APPRENANTS").Activate
+End Sub
+Public Sub VoirHistoriquePaiements()
+    ThisWorkbook.Worksheets("PAIEMENTS").Activate
+End Sub
+Public Sub VoirSituationFinanciere()
+    ThisWorkbook.Worksheets("SITUATION").Activate
+End Sub
+Public Sub AllerAccueil()
+    ThisWorkbook.Worksheets("ACCUEIL").Activate
+End Sub
+Public Sub EnregistrerApprenant()
+    Apprenant.Show
+End Sub
+Public Sub EffacerFormulaireApprenant()
+    Apprenant.Show
+End Sub
+Public Sub EnregistrerPaiement()
+    Paiement.Show
+End Sub
+Public Sub EffacerFormulairePaiement()
+    Paiement.Show
+End Sub

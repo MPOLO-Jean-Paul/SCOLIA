@@ -1,0 +1,7 @@
+SCOLIA V21 — FUSION DES DOUBLONS ET SUPPRESSION MOTIVEE
+
+Diagnostic > Doublons : sélectionner une ligne puis « Fusionner les dossiers sélectionnés ». Le formulaire permet de choisir le matricule à conserver, le matricule à fusionner et un motif obligatoire. L'identité et la promotion sont revérifiées avant toute écriture. Les paiements attachés au matricule fusionné sont rattachés au matricule conservé; la fiche en doublon est retirée; l'opération est inscrite au journal.
+
+Scolarité > Supprimer un apprenant : un motif de 5 caractères minimum est obligatoire. Les paiements existants ne bloquent plus la suppression de la fiche : les lignes de paiements restent conservées dans l'historique comptable et le journal précise leur nombre et le motif. Les dossiers avec historique de prise en charge restent protégés et doivent être passés à Sorti/Suspendu.
+
+IMPORTANT : faire une sauvegarde avant installation. Le correctif modifie les modules VBA; installer sur le classeur actif via INSTALLER puis reconnecter les données. Vérifier sur une copie avec un doublon et un dossier ayant des paiements. Les tests statiques ne remplacent pas l'essai dans Excel/Windows PowerShell 5.1.

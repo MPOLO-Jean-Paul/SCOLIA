@@ -1,0 +1,12 @@
+﻿SCOLIA V46 - CORRECTION ACTIVE DE LA SYNTAXE POWERSHELL 5.1
+
+Cause confirmee : PowerShell traite les guillemets typographiques U+2018/U+2019/U+201C/U+201D comme des delimitateurs de chaine.
+Dans ScoliaConfiguration.ps1, des apostrophes typographiques etaient placees a l interieur de chaines delimitees par des apostrophes simples. Le parseur fermait donc la chaine trop tot, puis produisait de nombreuses erreurs en cascade.
+
+Corrections :
+- remplacement des apostrophes typographiques ambigues dans ScoliaConfiguration.ps1 ;
+- correction des scripts de tests qui contenaient le meme motif ;
+- ajout de TestsSyntaxeV46.ps1 qui analyse tous les scripts avec le parseur natif PowerShell et refuse les guillemets typographiques ambigus ;
+- conservation de l encodage UTF-8 avec BOM et des fins de ligne CRLF.
+
+Le correctif vise directement les erreurs affichees autour des lignes 127, 225, 226 et suivantes de ScoliaConfiguration.ps1.

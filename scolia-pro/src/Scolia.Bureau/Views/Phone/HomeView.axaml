@@ -1,0 +1,229 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:infra="using:Scolia.Bureau.Infrastructure"
+             xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:c="using:Scolia.Bureau.Controls"
+             x:Class="Scolia.Bureau.Views.Phone.HomeView">
+  <UserControl.Styles>
+    <!-- En-tête de l'accueil : grande salutation, puis l'état de la caisse et de la connexion en pastilles -->
+    <Style Selector="Border.hero">
+      <Setter Property="Background" Value="{DynamicResource GroupBrush}" />
+      <Setter Property="CornerRadius" Value="20" />
+      <Setter Property="Padding" Value="18,16" />
+    </Style>
+    <Style Selector="Border.statechip">
+      <Setter Property="Background" Value="{DynamicResource BgBrush}" />
+      <Setter Property="CornerRadius" Value="14" />
+      <Setter Property="Padding" Value="10,5" />
+      <Setter Property="Margin" Value="0,0,8,8" />
+    </Style>
+    <!-- Actions rapides : grandes icônes arrondies, libellé dessous, comme l'écran d'accueil d'un téléphone -->
+    <Style Selector="Button.quick">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Padding" Value="2,4" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="CornerRadius" Value="14" />
+    </Style>
+    <Style Selector="Button.quick:pointerover">
+      <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
+    </Style>
+    <Style Selector="Button.quick:pressed">
+      <Setter Property="RenderTransform" Value="scale(0.96)" />
+    </Style>
+    <Style Selector="Border.quickicon">
+      <Setter Property="Width" Value="56" />
+      <Setter Property="Height" Value="56" />
+      <Setter Property="CornerRadius" Value="16" />
+      <Setter Property="HorizontalAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Border.quickicon > mi|MaterialIcon">
+      <Setter Property="Width" Value="28" />
+      <Setter Property="Height" Value="28" />
+      <Setter Property="Foreground" Value="{DynamicResource OnToneBrush}" />
+    </Style>
+    <!-- Indicateurs : tuiles nettes, chiffre en grand, une touche ouvre le détail -->
+    <Style Selector="Button.kpitile">
+      <Setter Property="Background" Value="{DynamicResource GroupBrush}" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="CornerRadius" Value="16" />
+      <Setter Property="Padding" Value="14,12" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+      <Setter Property="VerticalAlignment" Value="Stretch" />
+      <Setter Property="VerticalContentAlignment" Value="Top" />
+      <Setter Property="Margin" Value="0,0,10,10" />
+    </Style>
+    <Style Selector="Button.kpitile:pressed">
+      <Setter Property="RenderTransform" Value="scale(0.98)" />
+    </Style>
+  </UserControl.Styles>
+
+  <StackPanel x:Name="Sections" Spacing="20">
+    <!-- Bienvenue -->
+    <Border Classes="hero">
+      <StackPanel Spacing="10">
+        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+          <Border Width="46" Height="46" CornerRadius="15" Background="{DynamicResource AccentSoftBrush}" VerticalAlignment="Top">
+            <TextBlock Text="{Binding Initials}" Foreground="{DynamicResource AccentBrush}" FontSize="17"
+                       FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" />
+          </Border>
+          <StackPanel Grid.Column="1" Spacing="4" VerticalAlignment="Center">
+            <TextBlock Text="{Binding Greeting}" FontSize="22" FontWeight="Bold" TextWrapping="Wrap" />
+            <TextBlock Text="{Binding AccountContextLine}" Foreground="{DynamicResource Text2Brush}" TextWrapping="Wrap"
+                       FontSize="{DynamicResource FsSmall}" />
+            <TextBlock Text="{Binding DateLine}" Classes="muted" FontSize="{DynamicResource FsSmall}" />
+          </StackPanel>
+        </Grid>
+        <WrapPanel>
+          <Border Classes="statechip" IsVisible="{Binding HasCashLine}">
+            <StackPanel Orientation="Horizontal" Spacing="7">
+              <Ellipse Width="8" Height="8" Fill="{Binding CashBrush}" VerticalAlignment="Center" />
+              <TextBlock Text="{Binding CashLine}" FontWeight="SemiBold" FontSize="{DynamicResource FsSmall}" />
+            </StackPanel>
+          </Border>
+          <Button Classes="ghost" Padding="0" Command="{Binding Network}">
+            <Border Classes="statechip" Margin="0,0,0,8">
+              <StackPanel Orientation="Horizontal" Spacing="7">
+                <Ellipse Width="8" Height="8" Fill="{Binding Sync.StatusBrush}" VerticalAlignment="Center" />
+                <TextBlock Text="{Binding Sync.StatusText}" FontWeight="SemiBold" FontSize="{DynamicResource FsSmall}" />
+                <TextBlock Text="{Binding Sync.PeersText}" Classes="muted" FontSize="{DynamicResource FsSmall}" IsVisible="{Binding Sync.Online}" />
+              </StackPanel>
+            </Border>
+          </Button>
+        </WrapPanel>
+      </StackPanel>
+    </Border>
+
+    <!-- Actions rapides -->
+    <ItemsControl ItemsSource="{Binding Tools}">
+      <ItemsControl.ItemsPanel>
+        <ItemsPanelTemplate><UniformGrid Columns="4" /></ItemsPanelTemplate>
+      </ItemsControl.ItemsPanel>
+      <ItemsControl.ItemTemplate>
+        <DataTemplate>
+          <Button Classes="quick" Command="{Binding Open}">
+            <StackPanel Spacing="6">
+              <Border Classes="quickicon" Background="{Binding Brush}"><mi:MaterialIcon Kind="{Binding Icon}" /></Border>
+              <TextBlock Text="{Binding Title}" FontSize="12" FontWeight="SemiBold" TextAlignment="Center" TextWrapping="Wrap" MaxLines="2" HorizontalAlignment="Center" />
+            </StackPanel>
+          </Button>
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
+
+    <!-- Aperçu du jour -->
+    <StackPanel Spacing="8" IsVisible="{Binding HasKpis}">
+      <TextBlock Text="Aperçu" Classes="phonegrouptitle" Margin="4,0,0,0" />
+      <ItemsControl ItemsSource="{Binding Kpis}" Margin="0,0,-10,0">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate><UniformGrid Columns="4" infra:Adaptive.MinItemWidth="160" /></ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate>
+            <Button Classes="kpitile" Command="{Binding Open}">
+              <StackPanel Spacing="4">
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+                  <Border Classes="appicon" Background="{Binding Brush}"><mi:MaterialIcon Kind="{Binding Icon}" /></Border>
+                  <TextBlock Grid.Column="1" Text="{Binding Label}" Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" MaxLines="2" VerticalAlignment="Center" />
+                </Grid>
+                <TextBlock Text="{Binding Value}" FontSize="19" FontWeight="Bold" TextWrapping="Wrap" />
+                <TextBlock Text="{Binding Hint}" Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" MaxLines="2" />
+              </StackPanel>
+            </Button>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </StackPanel>
+
+    <!-- À faire aujourd'hui -->
+    <StackPanel Spacing="8">
+      <TextBlock Text="{Binding TasksTitle}" Classes="phonegrouptitle" Margin="4,0,0,0" />
+      <Border Classes="phonegroup">
+        <StackPanel>
+          <ItemsControl ItemsSource="{Binding Tasks}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate>
+                <Button Classes="phonerow" Command="{Binding Open}">
+                  <Grid ColumnDefinitions="Auto,*,Auto" Margin="0,8">
+                    <Border Classes="appicon medium" Background="{Binding Brush}" Margin="0,0,12,0" VerticalAlignment="Center"><mi:MaterialIcon Kind="{Binding Icon}" /></Border>
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="1">
+                      <TextBlock Text="{Binding Text}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                      <TextBlock Text="{Binding Detail}" Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
+                    </StackPanel>
+                    <mi:MaterialIcon Grid.Column="2" Kind="ChevronRight" Width="20" Height="20" Foreground="{DynamicResource MutedBrush}" />
+                  </Grid>
+                </Button>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+          <c:EmptyState Icon="CheckCircleOutline" Title="Rien en attente" Hint="La caisse, l'appel et les rendez-vous du jour sont à jour." IsVisible="{Binding !HasTasks}" Margin="16" />
+        </StackPanel>
+      </Border>
+    </StackPanel>
+
+    <!-- Activité du réseau : les autres postes, et ce qui attend d'être envoyé -->
+    <StackPanel Spacing="8">
+      <TextBlock Text="Réseau de l'établissement" Classes="phonegrouptitle" Margin="4,0,0,0" />
+      <Button Classes="phonerow" Command="{Binding Network}" Background="{DynamicResource GroupBrush}" CornerRadius="16" Padding="14,12">
+        <StackPanel Spacing="10">
+          <Grid ColumnDefinitions="Auto,*,Auto">
+            <Border Classes="appicon medium" Background="{Binding Sync.StatusBrush}" Margin="0,0,12,0"><mi:MaterialIcon Kind="LanConnect" /></Border>
+            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+              <TextBlock Text="{Binding Sync.StatusText}" FontWeight="SemiBold" />
+              <TextBlock Text="{Binding Sync.PeersText}" Classes="muted" FontSize="{DynamicResource FsSmall}" />
+            </StackPanel>
+            <mi:MaterialIcon Grid.Column="2" Kind="ChevronRight" Width="20" Height="20" Foreground="{DynamicResource MutedBrush}" />
+          </Grid>
+          <ItemsControl ItemsSource="{Binding Sync.Peers}" IsVisible="{Binding Sync.HasPeers}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate>
+                <Grid ColumnDefinitions="Auto,*" Margin="0,4">
+                  <Border Width="30" Height="30" CornerRadius="15" Background="{DynamicResource AccentBrush}" Margin="0,0,10,0">
+                    <TextBlock Text="{Binding Initials}" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource OnAccentBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                  </Border>
+                  <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding Line}" FontSize="{DynamicResource FsSmall}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                    <TextBlock Text="{Binding Doing}" Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
+                  </StackPanel>
+                </Grid>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
+      </Button>
+    </StackPanel>
+
+    <!-- Derniers reçus -->
+    <StackPanel Spacing="8">
+      <Grid ColumnDefinitions="*,Auto">
+        <TextBlock Text="Derniers reçus" Classes="phonegrouptitle" Margin="4,0,0,0" />
+        <TextBlock Grid.Column="1" Text="{Binding TodayLine}" Classes="muted" FontSize="{DynamicResource FsSmall}" VerticalAlignment="Center" IsVisible="{Binding HasTodayLine}" />
+      </Grid>
+      <Border Classes="phonegroup">
+        <StackPanel>
+          <ItemsControl ItemsSource="{Binding Receipts}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate>
+                <Button Classes="phonerow" Command="{Binding Open}">
+                  <Grid ColumnDefinitions="Auto,*,Auto" Margin="0,8">
+                    <Border Classes="appicon medium" Background="{DynamicResource TonePurple}" Margin="0,0,12,0" VerticalAlignment="Center"><mi:MaterialIcon Kind="ReceiptTextOutline" /></Border>
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="1">
+                      <TextBlock Text="{Binding Student}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                      <TextBlock Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap">
+                        <Run Text="{Binding Number, Mode=OneWay}" /><Run Text=" · " /><Run Text="{Binding Date, Mode=OneWay}" />
+                      </TextBlock>
+                    </StackPanel>
+                    <TextBlock Grid.Column="2" Text="{Binding Amount}" FontWeight="Bold" VerticalAlignment="Center" Margin="10,0,0,0" />
+                  </Grid>
+                </Button>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+          <c:EmptyState Icon="ReceiptTextOutline" Title="Aucun reçu récent" Hint="Les derniers encaissements apparaîtront ici." IsVisible="{Binding !Receipts.Count}" Margin="16" />
+        </StackPanel>
+      </Border>
+    </StackPanel>
+  </StackPanel>
+</UserControl>

@@ -1,0 +1,113 @@
+{
+  "version": "V53",
+  "scripts_ps1": 125,
+  "composants_cs": 14,
+  "controles_locaux": [
+    "equilibre lexical avec guillemets PowerShell et chaines verbatim C#",
+    "JSON et references",
+    "appel de sauvegarde et arguments preserves",
+    "manifeste de mise a jour limite au programme et a la documentation",
+    "balises et libelles de la maquette",
+    "contrastes calcules sur les palettes"
+  ],
+  "non_executes": [
+    "parseur PowerShell natif",
+    "compilation C# Windows",
+    "rendu WinForms et parcours Excel",
+    "rendu Chromium bloque par le bac a sable"
+  ],
+  "contrastes": {
+    "texte_clair": 14.67911847763172,
+    "texte_sombre": 13.315335405888149,
+    "primaire_clair": 6.880374233890463,
+    "primaire_sombre": 7.971920425403115,
+    "cadre_champ_clair": 3.080635222627123,
+    "cadre_champ_sombre": 3.342880397246724
+  },
+  "fichiers_mis_a_jour": [
+    {
+      "Path": "programme/EtatEspace.ps1",
+      "SHA256": "A5CC61B73AD1105E85BA275F2179980B08B01C2818ABEE41C13CB038DFF41FFA"
+    },
+    {
+      "Path": "programme/StockageClasseurs.ps1",
+      "SHA256": "307B6B0A069AB557B2A717520E0CAD74BCF5B328130010CC9D8058AADDEB2AC1"
+    },
+    {
+      "Path": "programme/TestsSoldesEtRechercheV52.ps1",
+      "SHA256": "4828DDBCB11A9FB6D85A15DD08CCE2A640B7E69BEDC01D3942FC55CCB1623DE8"
+    },
+    {
+      "Path": "programme/TestsTransitionRuntimeV52.ps1",
+      "SHA256": "88E6D4BA810A1E728F3AB7881149F81D32CF8C42466744B8872F5E1D844E16A1"
+    },
+    {
+      "Path": "programme/TestsSyntaxeV52.ps1",
+      "SHA256": "EEE6F84C84C824BB1268ED12A4B0F43F7CB4AEAFCE350FC3B33B70F886062D6B"
+    },
+    {
+      "Path": "programme/Application.ps1",
+      "SHA256": "197D4AFD58AD007EF746BD751CA9EEBE626A60F3B40829009443891F54297CA3"
+    },
+    {
+      "Path": "programme/ActivityIndicator.cs",
+      "SHA256": "2F9F5D684868B38B192E646AB643FC84FC619011F764090B0B712191F5893416"
+    },
+    {
+      "Path": "programme/ChromeModerne.cs",
+      "SHA256": "2E7C70EF338AF23E4A2E07663AEC41D6AB6735DCBEE1E7A7EC5705CEDEDB1E18"
+    },
+    {
+      "Path": "programme/InterfaceResponsive.ps1",
+      "SHA256": "B6DDAB232C454DDBBCC28B6C3987728EE30F61D58CAB4644B5F4DE9F218EC818"
+    },
+    {
+      "Path": "programme/Ergonomie.ps1",
+      "SHA256": "0F0ECA8B69A9E3C2B6F5C5FC424ADB7376A7B2452DFBF78F9165184DD8FED945"
+    },
+    {
+      "Path": "programme/ThemesAffichage.ps1",
+      "SHA256": "BA913521E4F54D9DA3CD693204F71E9B0C670F26DE4C4224C5BB8B09BCA9607D"
+    },
+    {
+      "Path": "programme/Lancer.ps1",
+      "SHA256": "7485200B27FCD1B66E2501822AF5A36D1947EDBA56CEF76E9D02404DEF175F6B"
+    },
+    {
+      "Path": "programme/TestsImagesTheme.ps1",
+      "SHA256": "C61BCD2732D7D7764C1A10E4F7A4697FCA777AFCD2AD465BE5B75CCC65DEB738"
+    },
+    {
+      "Path": "programme/TestsInscriptionPageUnique.ps1",
+      "SHA256": "BD85B7713910ADC12A73FE6000B2154061D3867AC1863193A84F9EC7B4FCC2F1"
+    },
+    {
+      "Path": "programme/TestsInscriptionDesignV53.ps1",
+      "SHA256": "CD483DE1962F5D145F20D78CDA608F1B9F1A4FD08497B70B2DCCCE61CD0E2F0C"
+    },
+    {
+      "Path": "programme/VerifierV53.ps1",
+      "SHA256": "62897FC2199D3F3111F0A59B096235D5FF9842120E052410F824416B3C191015"
+    },
+    {
+      "Path": "00_Demarrage/VERIFIER_SYNTAXE_V52.cmd",
+      "SHA256": "730BE9584D1C9816CC3FA0FAEE87A71FA07AF916F7F6FD3C6936096986352E3E"
+    },
+    {
+      "Path": "00_Demarrage/VERIFIER_V53.cmd",
+      "SHA256": "F2B9BC6C658E7C99C02CA4AC883FC459C7945F0A52FD83B57D07862C91FF3115"
+    },
+    {
+      "Path": "LISEZ_MOI_V53.txt",
+      "SHA256": "F7C55A123B285B7420F4E0ABBBA0A56E656E2A5DC54E4DE894B9DED5B924CCC4"
+    },
+    {
+      "Path": "documentation/EVOLUTIONS_DESIGN_V53.md",
+      "SHA256": "178935290617660BC11B38B476BEA9DAFE9DF8E0393C77280FA2EA328F80B049"
+    },
+    {
+      "Path": "documentation/APERCU_INSCRIPTION_V53.html",
+      "SHA256": "1BFB656FF7D177361354D48B06F87376338E202B085DCF34E033C3AF40288CC1"
+    }
+  ]
+}

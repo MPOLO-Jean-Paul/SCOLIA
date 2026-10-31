@@ -1,0 +1,1 @@
+Les classeurs sources générés par l’onglet Données sont placés ici. Les données de travail restent dans data. Conservez les deux dossiers.

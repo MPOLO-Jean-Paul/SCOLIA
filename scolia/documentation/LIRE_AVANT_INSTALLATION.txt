@@ -1,0 +1,67 @@
+﻿APPLICATION WINDOWS : lancez 00_Demarrage\APPLICATION.vbs.
+Guide principal : DEMARRER_ICI.txt.
+
+ITM COEUR DE DIEU - INSTALLATEUR GRAPHIQUE
+
+1. Extrayez TOUT le ZIP dans un dossier (ne lancez pas depuis le ZIP).
+2. Fermez Excel.
+3. Double-cliquez sur 00_Demarrage\INSTALLER.vbs : une fenetre graphique s'ouvre.
+4. Cliquez sur Choisir et selectionnez votre classeur ACTUEL .xlsm,
+   celui qui contient vos dernieres inscriptions et vos paiements.
+5. Cliquez sur Installer les corrections et attendez le resultat.
+6. Apres le message Installation reussie, cliquez sur Voir le fichier corrige.
+   Utilisez SYSTEME_SECRETARIAT_CORRIGE.xlsm pour les nouvelles saisies.
+
+Aucune fenetre CMD n'est necessaire. Aucun logiciel supplementaire a installer.
+Necessite Windows, Excel de bureau et Windows PowerShell avec Windows Script Host.
+
+Si Excel bloque l'acces au projet VBA :
+Excel > Fichier > Options > Centre de gestion de la confidentialite >
+Parametres du Centre > Parametres des macros > Acces approuve au modele
+ d'objet du projet VBA. Fermez Excel et relancez 00_Demarrage\INSTALLER.vbs.
+L'installateur ne modifie pas cette option de securite.
+
+PROTECTION ET RESULTAT
+Votre original reste intact. Une sauvegarde AVANT_INSTALLATION.xlsm et
+les anciens codes sont places dans le sous-dossier Sauvegardes.
+La copie corrigee est creee dans un nouveau dossier Installation_ITM_...
+a cote de votre classeur. Les lignes apprenants et paiements sont reunies
+sans inventer de mois, de montants ou de rapprochements.
+Les donnees constantes, les nombres de lignes et le total des montants
+sont compares avant et apres les corrections.
+Les anomalies de saisie sont indiquees dans DONNEES_A_VERIFIER.csv.
+Le journal contient les etapes et les details d'un eventuel echec.
+Aucun fichier corrige n'est livre comme valide en cas d'echec.
+
+CORRECTION DU BLOCAGE TABLEAUDEBORD
+Les fichiers du correctif restent controles par SHA-256.
+Le code relu dans Excel est compare par elements VBA, en preservant les
+litteraux et les separations d'instructions. La casse des identifiants,
+les espaces, les lignes vides et les commentaires ne font plus echouer
+l'installation. L'insertion est faite a la premiere ligne du module.
+Le controle est repete apres sauvegarde et reouverture dans Excel.
+
+FICHIER_SOURCE.xlsm est le classeur de reference de l'ancien paquet.
+Pour conserver vos dernieres saisies, selectionnez votre classeur ACTUEL.
+
+Les controles Excel sont executes sur votre ordinateur pendant l'installation.
+La preparation de ce paquet a ete realisee sans Windows ni Excel :
+le fonctionnement complet de l'interface et des macros doit donc etre
+confirme par ces controles et par votre utilisation sous Excel.
+
+INTERFACE GRAPHIQUE PROFESSIONNELLE
+Les quatre formulaires ont une nouvelle disposition native Excel :
+- Inscription : identité, contacts/résidence et inscription.
+- Paiements : recherche, apprenant sélectionné, reçu/versement, situation annuelle.
+- Gestion : filtres, liste, identité, inscription, paiements, indicateurs.
+- Tableau de bord : filtres, cartes statistiques et liste des litiges.
+En-tête bleu nuit, champs lisibles, boutons hiérarchisés et zones d'export séparées.
+La disposition passe à deux ou une colonne sur les petites fenêtres.
+Un défilement vertical garde tous les champs et boutons accessibles.
+Les noms et événements des contrôles existants sont conservés.
+Les listes conservent leurs colonnes, redistribuées selon la largeur disponible.
+Le contrôle Excel des quatre interfaces est consigné dans CONTROLE_INTERFACES.txt.
+L'aperçu PNG joint est une maquette de la charte, pas une capture exécutée d'Excel.
+
+
+SCOLIA V21 : fusion contrôlée des doublons et suppression avec motif obligatoire. Consultez CORRECTION_DOUBLONS_SUPPRESSION_V21.txt.

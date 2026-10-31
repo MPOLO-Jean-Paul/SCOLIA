@@ -1,0 +1,150 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mi="using:Material.Icons.Avalonia"
+             x:Class="Scolia.Bureau.Views.LoginView">
+  <UserControl.Styles>
+    <!-- Champs de connexion : hauts, arrondis, une icône à gauche, le libellé dans le champ -->
+    <Style Selector="TextBox.signin">
+      <Setter Property="Height" Value="46" />
+      <Setter Property="Padding" Value="44,0,14,0" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+      <Setter Property="CornerRadius" Value="10" />
+      <Setter Property="FontSize" Value="15" />
+      <Setter Property="BorderThickness" Value="1" />
+    </Style>
+    <Style Selector="TextBox.signin.pass"><Setter Property="Padding" Value="44,0,48,0" /></Style>
+    <Style Selector="mi|MaterialIcon.fieldicon">
+      <Setter Property="Width" Value="19" /><Setter Property="Height" Value="19" />
+      <Setter Property="Margin" Value="15,0,0,0" />
+      <Setter Property="HorizontalAlignment" Value="Left" /><Setter Property="VerticalAlignment" Value="Center" />
+      <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
+      <Setter Property="IsHitTestVisible" Value="False" />
+    </Style>
+    <Style Selector="Button.eye">
+      <Setter Property="Width" Value="44" /><Setter Property="Height" Value="44" /><Setter Property="CornerRadius" Value="22" />
+      <Setter Property="Padding" Value="0" /><Setter Property="Background" Value="Transparent" /><Setter Property="BorderThickness" Value="0" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" /><Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button.signinbutton">
+      <Setter Property="Height" Value="46" />
+      <Setter Property="CornerRadius" Value="10" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+      <Setter Property="FontSize" Value="15" />
+    </Style>
+  </UserControl.Styles>
+
+  <!-- Connexion : un bandeau aux couleurs de SCOLIA avec le logo et le nom de l'établissement, puis la carte des identifiants -->
+  <ScrollViewer x:Name="LoginScroll" Background="{DynamicResource BgBrush}" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+  <Grid RowDefinitions="Auto,Auto,Auto">
+    <Border MinHeight="200">
+      <Border.Background>
+        <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+          <GradientStop Offset="0" Color="#1565E0" />
+          <GradientStop Offset="0.6" Color="#0B4FC4" />
+          <GradientStop Offset="1" Color="#0E2A5C" />
+        </LinearGradientBrush>
+      </Border.Background>
+      <StackPanel HorizontalAlignment="Stretch" MaxWidth="420" VerticalAlignment="Top" Margin="24,24,24,54" Spacing="10">
+        <!-- Logo de l'établissement s'il est connu, sinon celui de SCOLIA, dans un médaillon blanc -->
+        <Border Width="64" Height="64" CornerRadius="32" Background="White" HorizontalAlignment="Center" BoxShadow="0 6 18 0 #33000000">
+          <Panel Width="50" Height="50">
+            <Image Source="{Binding Logo}" IsVisible="{Binding HasLogo}" />
+            <Image Source="{DynamicResource ScoliaMark}" IsVisible="{Binding !HasLogo}" Width="44" Height="44" />
+          </Panel>
+        </Border>
+        <TextBlock x:Name="SchoolHeading" Text="{Binding TitleText}" Foreground="White" FontSize="21" FontWeight="Bold" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" MaxWidth="380" />
+      </StackPanel>
+    </Border>
+
+    <!-- Carte des identifiants : elle chevauche le bandeau -->
+    <Border x:Name="LoginCard" Grid.Row="1" VerticalAlignment="Top" Margin="16,-34,16,0" MaxWidth="372" HorizontalAlignment="Stretch"
+            Background="{DynamicResource SurfaceBrush}" CornerRadius="18" Padding="20" BoxShadow="0 6 20 0 #16000000">
+      <StackPanel Spacing="12">
+        <StackPanel Spacing="2" Margin="0,0,0,4">
+          <TextBlock Text="Connexion" FontSize="18" FontWeight="SemiBold" />
+          <TextBlock Text="Saisissez votre identifiant et votre mot de passe." Classes="muted" TextWrapping="Wrap" />
+        </StackPanel>
+
+        <Panel>
+          <TextBox x:Name="UserNameBox" Classes="signin" Text="{Binding UserName}" PlaceholderText="Identifiant" IsEnabled="{Binding CanType}" />
+          <mi:MaterialIcon Classes="fieldicon" Kind="AccountOutline" />
+        </Panel>
+        <Panel>
+          <TextBox x:Name="PasswordBox" Classes="signin pass" Text="{Binding Password}" PlaceholderText="Mot de passe" PasswordChar="•"
+                   RevealPassword="{Binding ShowPassword}" IsEnabled="{Binding CanType}" />
+          <mi:MaterialIcon Classes="fieldicon" Kind="LockOutline" />
+          <Button Classes="eye" Command="{Binding ToggleEye}" ToolTip.Tip="Afficher ou masquer le mot de passe" IsEnabled="{Binding CanType}"
+                  HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,7,0">
+            <mi:MaterialIcon Kind="{Binding EyeIcon}" Width="18" Height="18" Foreground="{DynamicResource MutedBrush}" />
+          </Button>
+        </Panel>
+
+        <!-- Consentement explicite lors de la première connexion par mot de passe. -->
+        <CheckBox Content="Activer l’empreinte après cette connexion"
+                  IsVisible="{Binding CanOfferEnrollment}" IsChecked="{Binding EnableBiometricsAfterLogin}"
+                  IsEnabled="{Binding CanType}" FontSize="13" />
+        <TextBlock IsVisible="{Binding CanOfferEnrollment}"
+                   Text="Réservé à un téléphone personnel : toute empreinte forte enregistrée sur cet appareil pourra ouvrir le compte associé. Aucun modèle d’empreinte n’est enregistré par SCOLIA."
+                   Classes="muted" FontSize="11" TextWrapping="Wrap" />
+        <Button Classes="ghost signinbutton" Command="{Binding SignInWithBiometrics}"
+                IsVisible="{Binding CanUseBiometricSignIn}" IsEnabled="{Binding CanType}">
+          <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="8">
+            <mi:MaterialIcon Kind="Fingerprint" Width="21" Height="21"/>
+            <TextBlock Text="{Binding BiometricLabel}" VerticalAlignment="Center" TextWrapping="Wrap" />
+          </StackPanel>
+        </Button>
+
+        <Button Classes="ghost" Content="Désactiver l'accès biométrique sur cet appareil"
+                Command="{Binding DisableBiometrics}" IsVisible="{Binding HasBiometricAccount}"
+                HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" />
+        <Button Classes="primary signinbutton" Command="{Binding Submit}" IsEnabled="{Binding CanType}" ToolTip.Tip="Se connecter (Entrée)" Margin="0,4,0,0">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <mi:MaterialIcon Kind="Loading" Classes="spin" Width="18" Height="18" Foreground="{DynamicResource OnAccentBrush}" IsVisible="{Binding Busy}" />
+            <TextBlock Text="Se connecter" FontWeight="SemiBold" VerticalAlignment="Center" />
+            <mi:MaterialIcon Kind="ArrowRight" Width="18" Height="18" Foreground="{DynamicResource OnAccentBrush}" IsVisible="{Binding NotBusy}" />
+          </StackPanel>
+        </Button>
+
+        <Border Background="{DynamicResource OrangeSoftBrush}" CornerRadius="10" Padding="12,9" IsVisible="{Binding HasNotice}">
+          <TextBlock Text="{Binding Notice}" TextWrapping="Wrap" />
+        </Border>
+        <Border Background="{DynamicResource RedSoftBrush}" CornerRadius="10" Padding="12,9" IsVisible="{Binding HasError}">
+          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+            <mi:MaterialIcon Kind="AlertCircleOutline" Width="16" Height="16" Foreground="{DynamicResource ToneRed}" VerticalAlignment="Top" Margin="0,1,0,0" />
+            <TextBlock Grid.Column="1" Text="{Binding Error}" Foreground="{DynamicResource ToneRed}" TextWrapping="Wrap" />
+          </Grid>
+        </Border>
+
+        <!-- Verrouillage : compte à rebours jusqu'à 0, puis l'accès revient seul -->
+        <Border Background="{DynamicResource RedSoftBrush}" CornerRadius="12" Padding="14,12,14,14" IsVisible="{Binding Locked}">
+          <Grid ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto">
+            <mi:MaterialIcon Kind="LockOutline" Width="20" Height="20" Foreground="{DynamicResource ToneRed}" VerticalAlignment="Center" Margin="0,0,10,0" />
+            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+              <TextBlock Text="Accès verrouillé" FontWeight="SemiBold" Foreground="{DynamicResource ToneRed}" />
+              <TextBlock Text="5 tentatives incorrectes. Nouvel essai dans :" Foreground="{DynamicResource ToneRed}" TextWrapping="Wrap" />
+            </StackPanel>
+            <TextBlock Grid.Column="2" Text="{Binding CountdownText, Mode=OneWay}" FontSize="24" FontWeight="SemiBold" Foreground="{DynamicResource ToneRed}" VerticalAlignment="Center" Margin="10,0,0,0" />
+            <ProgressBar Grid.Row="1" Grid.ColumnSpan="3" Minimum="0" Maximum="100" Value="{Binding LockProgress, Mode=OneWay}" Height="4" MinHeight="4" Margin="0,10,0,0" Foreground="{DynamicResource ToneRed}" />
+          </Grid>
+        </Border>
+        <Border Background="{DynamicResource GreenSoftBrush}" CornerRadius="10" Padding="12,9" IsVisible="{Binding Restored}">
+          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+            <mi:MaterialIcon Kind="CheckCircleOutline" Width="16" Height="16" Foreground="{DynamicResource ToneGreen}" />
+            <TextBlock Grid.Column="1" Text="Accès rétabli. Vous pouvez réessayer." Foreground="{DynamicResource ToneGreen}" VerticalAlignment="Center" TextWrapping="Wrap" />
+          </Grid>
+        </Border>
+
+        <Grid ColumnDefinitions="Auto,*" Margin="0,4,0,0">
+          <mi:MaterialIcon Kind="ShieldLockOutline" Width="15" Height="15" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Top" Margin="0,1,8,0" />
+          <TextBlock Grid.Column="1" Text="Après 5 erreurs, l'accès est verrouillé 2 minutes. Mot de passe oublié : contactez le secrétariat."
+                     Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
+        </Grid>
+      </StackPanel>
+    </Border>
+
+    <TextBlock x:Name="LoginFooter" Grid.Row="2" Text="{Binding Footer}" Classes="muted" FontSize="{DynamicResource FsSmall}" HorizontalAlignment="Stretch" TextAlignment="Center" TextWrapping="Wrap" Margin="16,18,16,20" />
+  </Grid>
+  </ScrollViewer>
+</UserControl>

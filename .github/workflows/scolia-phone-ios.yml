@@ -1,0 +1,86 @@
+name: SCOLIA Phone iPhone - compilation de verification
+
+# Validation sans certificat : chaque changement du code natif est compile par GitHub sur macOS.
+on:
+  push:
+    paths:
+      - 'scolia-pro/src/Scolia.Phone.iOS/**'
+      - 'scolia-pro/src/Scolia.Bureau/**'
+      - 'scolia-pro/src/Scolia.Transport/**'
+      - 'scolia-pro/Directory.Packages.props'
+      - 'scolia-pro/global.json'
+      - 'scolia-pro/scripts/ios_signing.py'
+      - 'scolia-pro/scripts/test_ios_signing.py'
+      - '.github/workflows/scolia-phone-ios.yml'
+      - '.github/workflows/scolia-phone-ipa.yml'
+  pull_request:
+    paths:
+      - 'scolia-pro/src/Scolia.Phone.iOS/**'
+      - 'scolia-pro/src/Scolia.Bureau/**'
+      - 'scolia-pro/src/Scolia.Transport/**'
+      - 'scolia-pro/Directory.Packages.props'
+      - 'scolia-pro/global.json'
+      - 'scolia-pro/scripts/ios_signing.py'
+      - 'scolia-pro/scripts/test_ios_signing.py'
+      - '.github/workflows/scolia-phone-ios.yml'
+      - '.github/workflows/scolia-phone-ipa.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: scolia-phone-iphone-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: scolia-pro
+
+jobs:
+  simulateur:
+    name: iOS natif - simulateur Apple Silicon, sans signature
+    runs-on: xcode-27
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: scolia-pro/global.json
+      - name: Tests des validations de signature Apple (sans secrets)
+        run: python3 -m unittest discover -s scripts -p test_ios_signing.py -v
+      - name: Identifier l'environnement Apple
+        run: |
+          xcodebuild -version
+          dotnet --info
+      - name: Installer les outils iOS .NET 10
+        run: dotnet workload install ios
+      - name: Compiler l'application native iOS pour le simulateur
+        run: |
+          dotnet build src/Scolia.Phone.iOS/Scolia.Phone.iOS.csproj \
+            -c Debug -f net10.0-ios -r iossimulator-arm64 \
+            -p:PublishTrimmed=true \
+            -p:EnableCodeSigning=false \
+            -p:CodesignRequireProvisioningProfile=false
+      - name: Verifier le vrai bundle de simulateur
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/ios-simulateur
+          app="$(find src/Scolia.Phone.iOS/bin/Debug/net10.0-ios -maxdepth 8 -type d -name '*.app' -print -quit)"
+          [[ -n "$app" ]] || { echo '::error::Aucune application native iOS dans la compilation.'; exit 1; }
+          bundle="$(/usr/libexec/PlistBuddy -c 'Print CFBundleIdentifier' "$app/Info.plist")"
+          [[ "$bundle" == 'com.jpservices.scolia.ios' ]] || { echo '::error::Identifiant iOS incoherent.'; exit 1; }
+          executable="$(/usr/libexec/PlistBuddy -c 'Print CFBundleExecutable' "$app/Info.plist")"
+          test -s "$app/$executable"
+          lipo -archs "$app/$executable" | grep -Eq '(^| )arm64( |$)'
+          cp -R "$app" artifacts/ios-simulateur/
+          printf '%s\n' 'Application Avalonia iOS pour simulateur Apple Silicon, NON SIGNEE et NON INSTALLABLE sur iPhone physique. Utiliser le workflow IPA signe pour les vrais appareils.' > artifacts/ios-simulateur/LIRE_MOI.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SCOLIA_Phone_iPhone_Simulateur_NonSigne
+          path: scolia-pro/artifacts/ios-simulateur/
+          retention-days: 30
+          if-no-files-found: error
