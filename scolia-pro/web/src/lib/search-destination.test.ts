@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { validSearchDestination as valid } from './search-destination';
 
 describe('recherche globale et liens directs', () => {
-  it.each(['/', '/apprenants', '/apprenants?nouveau=1', '/notes?action=evaluation',
+  it.each(['/', '/pilotage', '/apprenants', '/apprenants?nouveau=1, '/notes?action=evaluation',
     '/caisse?action=arreter', '/depenses?action=nouvelle',
     '/parametres?onglet=promotions&action=promotion',
     '/parametres?onglet=annees&action=annee',
