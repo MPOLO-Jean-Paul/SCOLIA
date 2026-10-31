@@ -723,7 +723,9 @@ public sealed class ShellViewModel : Observable
             ClearHistory();
             OpeningStep = "Ouverture de l'accueil";
             OpeningProgress = 90;
-            await Open(() => new HomePage(this));
+            await Open(() => s.Permissions.Contains(Perm.PilotageRead) &&
+                !s.Permissions.Contains(Perm.ReportsRead)
+                ? new PromoterDashboardPage(this) : new HomePage(this));
             var rest = minimum - watch.Elapsed;
             if (rest > TimeSpan.Zero) await Task.Delay(rest);
             OpeningProgress = 100;
@@ -1129,7 +1131,7 @@ public sealed class ShellViewModel : Observable
     public IReadOnlyList<NavItemVm> PhoneTabs { get; private set; } = [];
 
     private static readonly Type[] PhoneTabOrder =
-        [typeof(HomePage), typeof(StudentsPage), typeof(CashierPage), typeof(ReceiptsPage), typeof(MonthlyPage), typeof(DebtorsPage), typeof(CashPage)];
+        [typeof(HomePage), typeof(PromoterDashboardPage), typeof(StudentsPage), typeof(CashierPage), typeof(ReceiptsPage), typeof(MonthlyPage), typeof(DebtorsPage), typeof(CashPage)];
 
     private void RebuildPhoneTabs()
     {
