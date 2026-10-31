@@ -389,6 +389,31 @@ if (args.Length > 3 && args[3] == "contraste")
     return;
 }
 
+// Espace Promoteur (argument « promoteur », compte SCOLIA_COMPTE) : vue d'ensemble, puis le bas de la page.
+if (args.Length > 3 && args[3] == "promoteur")
+{
+    window.Width = Preferences.MobileLayout ? 360 : 1280;
+    window.Height = Preferences.MobileLayout ? 760 : 820;
+    var suffix = Preferences.MobileLayout ? "mobile" : "bureau";
+    Wait(shell.OpenSessionAsync(Result(api.LoginAsync(Environment.GetEnvironmentVariable("SCOLIA_COMPTE") ?? "promoteur", password))));
+    Wait(Task.Delay(600));
+    Save(window, $"promoteur-1-{suffix}.png");
+    foreach (var expander in window.GetVisualDescendants().OfType<Expander>().Take(2)) expander.IsExpanded = true;
+    Wait(Task.Delay(300));
+    var scrollers = window.GetVisualDescendants().OfType<ScrollViewer>().Where(v => v.IsEffectivelyVisible && v.Extent.Height > v.Viewport.Height + 4).ToList();
+    var step = 1;
+    foreach (var offset in new[] { 0.33, 0.66, 1.0 })
+    {
+        foreach (var scroller in scrollers) scroller.Offset = new Vector(0, (scroller.Extent.Height - scroller.Viewport.Height) * offset);
+        Save(window, $"promoteur-{++step}-{suffix}.png");
+    }
+    Console.WriteLine($"Page : {shell.Current?.GetType().Name} · {shell.Current?.Title} · {shell.Current?.Subtitle}");
+    Console.WriteLine("Menu : " + string.Join(", ", shell.Navigation.SelectMany(g => g.Items).Select(i => i.Label)));
+    shell.Sync.Stop();
+    window.Close();
+    return;
+}
+
 // Assistant Tailscale : fenêtre Réseau puis assistant ouvert, sans réseau (téléchargement non lancé).
 if (args.Length > 3 && args[3] == "tailscale")
 {
