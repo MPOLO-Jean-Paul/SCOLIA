@@ -23,7 +23,7 @@ public sealed class PhoneHeaderSearchVm : Observable
     public RelayCommand Clear { get; }
     public bool IsOpen { get => isOpen; private set => Set(ref isOpen, value); }
     public bool HasQuery => Query.Length > 0;
-    public bool IsVisible => shell.PhoneMenuOpen || shell.Current is HomePage ||
+    public bool IsVisible => shell.PhoneMenuOpen || shell.Current is HomePage or PromoterDashboardPage ||
                              Scope(shell.Current).Length > 0;
     public static string Scope(PageViewModel? page) => page switch
     {
@@ -81,7 +81,7 @@ public sealed class PhoneHeaderSearchVm : Observable
             shell.SettingsSearch.Activate.Execute(null);
             return;
         }
-        if (shell.Current is HomePage)
+        if (shell.Current is HomePage or PromoterDashboardPage)
         {
             // L'accueil cherche dans les données autorisées et les réglages locaux.
             shell.ShowSearch();
