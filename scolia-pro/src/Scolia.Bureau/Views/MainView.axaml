@@ -214,15 +214,41 @@
               <TextBlock Text="{Binding Current.Subtitle}" Classes="muted" TextTrimming="CharacterEllipsis" />
             </StackPanel>
           </Grid>
-          <!-- Recherche au centre du bandeau : apprenants, reçus, pages et commandes -->
-          <Button x:Name="HeaderSearch" Grid.Column="3" Classes="hdrsearch" Command="{Binding SearchCommand}" ToolTip.Tip="Rechercher (Ctrl+K)"
-                  HorizontalAlignment="Stretch" MaxWidth="440" MinWidth="180" Margin="18,0" VerticalAlignment="Center">
-            <Grid ColumnDefinitions="Auto,*,Auto">
-              <mi:MaterialIcon Kind="Magnify" Width="17" Height="17" Margin="0,0,8,0" />
-              <TextBlock Grid.Column="1" Text="Rechercher un apprenant, un reçu, une page" Classes="muted" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
-              <Border Grid.Column="2" Classes="keycap" Margin="8,0,0,0"><TextBlock Text="Ctrl+K" /></Border>
-            </Grid>
-          </Button>
+          <!-- En-tête desktop : la recherche suit UNIQUEMENT la page visible.
+               Ctrl+K reste la recherche générale via le menu/raccourci. -->
+          <Grid Grid.Column="3" IsVisible="{Binding ContextSearchAvailable}"
+                HorizontalAlignment="Stretch" MaxWidth="440" MinWidth="180" Margin="18,0" VerticalAlignment="Center">
+            <Button x:Name="HeaderSearch" Classes="hdrsearch" Command="{Binding ContextSearchCommand}"
+                    IsVisible="{Binding !HeaderSearch.IsOpen}" ToolTip.Tip="Rechercher dans cette page"
+                    HorizontalAlignment="Stretch">
+              <Grid ColumnDefinitions="Auto,*">
+                <mi:MaterialIcon Kind="Magnify" Width="17" Height="17" Margin="0,0,8,0" />
+                <TextBlock Grid.Column="1" Text="{Binding ContextSearchPlaceholder}" Classes="muted"
+                           VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+              </Grid>
+            </Button>
+            <Border IsVisible="{Binding HeaderSearch.IsOpen}" Classes="hdrsearch" Padding="6,2"
+                    Background="{DynamicResource GroupBrush}" BorderBrush="{DynamicResource AccentBrush}"
+                    BorderThickness="1" CornerRadius="12">
+              <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="4" MinHeight="38">
+                <mi:MaterialIcon Kind="Magnify" Width="18" Height="18" Foreground="{DynamicResource AccentBrush}"
+                                 VerticalAlignment="Center" />
+                <TextBox x:Name="DesktopContextSearchBox" Grid.Column="1"
+                         Text="{Binding HeaderSearch.Query, Mode=TwoWay}"
+                         PlaceholderText="{Binding HeaderSearch.Placeholder}" BorderThickness="0"
+                         Background="Transparent" VerticalAlignment="Center" />
+                <Button Grid.Column="2" Classes="quiet" Command="{Binding HeaderSearch.Clear}"
+                        IsVisible="{Binding HeaderSearch.HasQuery}" ToolTip.Tip="Effacer le filtre"
+                        MinWidth="36" MinHeight="36">
+                  <mi:MaterialIcon Kind="CloseCircleOutline" Width="18" Height="18" />
+                </Button>
+                <Button Grid.Column="3" Classes="quiet" Command="{Binding HeaderSearch.Close}"
+                        ToolTip.Tip="Fermer la recherche" MinWidth="36" MinHeight="36">
+                  <mi:MaterialIcon Kind="Close" Width="18" Height="18" />
+                </Button>
+              </Grid>
+            </Border>
+          </Grid>
           <StackPanel Grid.Column="4" Orientation="Horizontal" VerticalAlignment="Center" Spacing="6">
             <ItemsControl ItemsSource="{Binding Current.VisibleActions}">
               <ItemsControl.ItemsPanel>
