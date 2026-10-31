@@ -70,10 +70,34 @@ public partial class PhoneFrame : UserControl
         captureScroll = null;
     }
 
+    /// <summary>
+    /// Motion Android : transition native Avalonia non bloquante.
+    /// Onglets du bas, raccourcis et pages utilisent le même mouvement court,
+    /// tandis que l'utilisateur peut déjà toucher la nouvelle page.
+    /// </summary>
     private void ApplyTransition()
     {
-        PhoneHost.PageTransition = subscribedShell is { } shell && shell.Prefs.Animations && shell.Prefs.PageTransitions
-            ? new Avalonia.Animation.CrossFade(TimeSpan.FromMilliseconds(120) * shell.Prefs.SpeedFactor) : null;
+        if (subscribedShell is not { } shell || !shell.Prefs.Animations || !shell.Prefs.PageTransitions)
+        {
+            PhoneHost.PageTransition = null;
+            return;
+        }
+
+        // Les durées restent bornées même si l'utilisateur choisit « Douce ».
+        // Aucun Task.Delay ni animation de toute la fenêtre : le menu demeure aussi réactif que les onglets.
+        var duration = TimeSpan.FromMilliseconds(Math.Clamp(175 * shell.Prefs.SpeedFactor, 105, 220));
+        PhoneHost.PageTransition = new Avalonia.Animation.CompositePageTransition
+        {
+            PageTransitions =
+            {
+                new Avalonia.Animation.PageSlide(duration, Avalonia.Animation.PageSlide.SlideAxis.Horizontal)
+                {
+                    SlideInEasing = new Avalonia.Animation.Easings.CubicEaseOut(),
+                    SlideOutEasing = new Avalonia.Animation.Easings.CubicEaseIn()
+                },
+                new Avalonia.Animation.CrossFade(TimeSpan.FromMilliseconds(duration.TotalMilliseconds * 0.8))
+            }
+        };
     }
 
     private void OnPreferencesChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs args)
