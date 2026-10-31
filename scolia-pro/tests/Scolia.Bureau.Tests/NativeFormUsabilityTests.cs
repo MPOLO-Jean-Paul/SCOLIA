@@ -1,3 +1,4 @@
+using Scolia.Bureau.Infrastructure;
 using Scolia.Bureau.ViewModels;
 
 namespace Scolia.Bureau.Tests;
