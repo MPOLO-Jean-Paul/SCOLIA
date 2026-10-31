@@ -144,7 +144,8 @@ public sealed class PhoneSettingsSearchVm : Observable
             new AsyncCommand(() => shell.Run(() => shell.Open(page)));
 
         Add("Configuration", "Réglages", MaterialIconKind.Cog, "TonePurple",
-            "personnalisation options preferences reglages parametres", Page("apparence"));
+            "personnalisation options preferences reglages parametres",
+            new AsyncCommand(() => shell.Run(() => shell.Open(() => new SettingsPage(shell)))));
         Add("Thème et couleurs", "Affichage", MaterialIconKind.Palette, "TonePurple",
             "clair sombre noir blanc nuit mode couleur accent fonds", Page("apparence"));
         Add("Texte et polices", "Affichage", MaterialIconKind.FormatFont, "ToneBlue",
@@ -158,7 +159,7 @@ public sealed class PhoneSettingsSearchVm : Observable
             "audio musique notifications volume silence activation son", Page("sons"));
         Add("Sécurité du compte", "Confidentialité", MaterialIconKind.ShieldLockOutline, "ToneTeal",
             "biometrie empreinte digitale identification connexion authentification code secret mot de passe",
-            Page("securite"));
+            Account("mot-de-passe"));
         Add("Poste et réseau", "Connexions", MaterialIconKind.LanConnect, "ToneGreen",
             "tailscale vpn wifi internet serveur partage reseaux connexion poste magicdns",
             Account("poste"));
