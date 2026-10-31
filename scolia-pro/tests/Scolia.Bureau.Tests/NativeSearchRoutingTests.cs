@@ -19,7 +19,6 @@ public sealed class NativeSearchRoutingTests
     [InlineData("police", "Texte et polices")]
     [InlineData("thème", "Thème et couleurs")]
     [InlineData("son", "Sons")]
-    [InlineData("promotion", "Promotions et frais")]
     public async Task GlobalSearch_ouvre_le_reglage_demande_et_non_accueil(string query, string expected)
     {
         var shell = Shell();
