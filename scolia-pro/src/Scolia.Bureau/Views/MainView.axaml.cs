@@ -134,10 +134,10 @@ public partial class MainView : UserControl
     private void OnContextSearchChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs args)
     {
         if (args.PropertyName != nameof(PhoneHeaderSearchVm.IsOpen) ||
-            subscribedShell?.HeaderSearch.IsOpen != true || subscribedShell.Phone) return;
+            subscribedShell is not { } shell || !shell.HeaderSearch.IsOpen || shell.Phone) return;
         Avalonia.Threading.Dispatcher.UIThread.Post(() =>
         {
-            if (subscribedShell?.HeaderSearch.IsOpen == true && !subscribedShell.Phone)
+            if (subscribedShell is { } current && current.HeaderSearch.IsOpen && !current.Phone)
                 DesktopContextSearchBox.Focus();
         }, Avalonia.Threading.DispatcherPriority.Loaded);
     }
