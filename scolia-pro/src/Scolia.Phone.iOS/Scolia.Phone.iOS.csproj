@@ -17,6 +17,9 @@
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
     <PublishTrimmed>true</PublishTrimmed>
     <MtouchLink>None</MtouchLink>
+    <!-- Les échanges avec le serveur utilisent la sérialisation JSON par réflexion : elle doit rester active
+         même quand la compilation iOS déclare le code « réduit » (PublishTrimmed). -->
+    <JsonSerializerIsReflectionEnabledByDefault>true</JsonSerializerIsReflectionEnabledByDefault>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Avalonia" />
