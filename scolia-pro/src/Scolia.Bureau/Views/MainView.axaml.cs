@@ -76,6 +76,7 @@ public partial class MainView : UserControl
         shell.Prefs.LayoutScaleChanged += OnLayoutScaleChanged;
         shell.Prefs.PropertyChanged += OnPreferencesChanged;
         shell.PropertyChanged += OnShellChanged;
+        shell.HeaderSearch.PropertyChanged += OnContextSearchChanged;
         shell.PickFileHandler = pickFileHandler;
         shell.IsTyping = isTypingHandler;
         shell.CopyHandler = copyHandler;
@@ -93,6 +94,7 @@ public partial class MainView : UserControl
             shell.Prefs.LayoutScaleChanged -= OnLayoutScaleChanged;
             shell.Prefs.PropertyChanged -= OnPreferencesChanged;
             shell.PropertyChanged -= OnShellChanged;
+            shell.HeaderSearch.PropertyChanged -= OnContextSearchChanged;
             if (shell.PickFileHandler == pickFileHandler) shell.PickFileHandler = null;
             if (shell.IsTyping == isTypingHandler) shell.IsTyping = null;
             if (shell.CopyHandler == copyHandler) shell.CopyHandler = null;
@@ -126,6 +128,18 @@ public partial class MainView : UserControl
             or nameof(Preferences.Compact) or nameof(Preferences.Sidebar)
             or nameof(Preferences.RibbonCollapsed))
             QueueFitPageActions();
+    }
+
+    /// <summary>Place le curseur dans le filtre de la page sans ouvrir la recherche globale.</summary>
+    private void OnContextSearchChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs args)
+    {
+        if (args.PropertyName != nameof(PhoneHeaderSearchVm.IsOpen) ||
+            subscribedShell?.HeaderSearch.IsOpen != true || subscribedShell.Phone) return;
+        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        {
+            if (subscribedShell?.HeaderSearch.IsOpen == true && !subscribedShell.Phone)
+                DesktopContextSearchBox.Focus();
+        }, Avalonia.Threading.DispatcherPriority.Loaded);
     }
 
     private void OnShellChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs args)
