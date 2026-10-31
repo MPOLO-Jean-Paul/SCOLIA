@@ -1,5 +1,5 @@
 /** No unknown global-search URL may fall back to the home screen. */
-const pages = new Set(['/', '/apprenants', '/reinscriptions', '/encaisser', '/paiements',
+const pages = new Set(['/', '/pilotage', '/apprenants', '/reinscriptions', '/encaisser', '/paiements',
   '/recouvrement', '/prises-en-charge', '/caisse', '/depenses', '/notes', '/presences',
   '/discipline', '/personnel', '/parametres', '/utilisateurs', '/donnees', '/audit', '/profil']);
 const actions: Record<string, ReadonlySet<string>> = {
