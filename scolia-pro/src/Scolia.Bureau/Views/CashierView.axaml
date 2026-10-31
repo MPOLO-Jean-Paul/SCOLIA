@@ -74,9 +74,21 @@
       <Border Classes="card" IsVisible="{Binding !HasReceipt}">
         <StackPanel Spacing="10">
           <TextBlock Text="2. Versement" Classes="heading" />
-          <!-- Les mois se cochent : le montant de chaque mois est celui de l'échéance, sans saisie -->
+          <!-- Le choix du mois affiche immédiatement le montant dû ; cases conservées pour plusieurs mois. -->
           <StackPanel Spacing="6">
-            <TextBlock Text="Mois payés" Classes="caption" />
+            <TextBlock Text="Choisir le mois à encaisser" Classes="caption" />
+            <ComboBox x:Name="MonthPicker" ItemsSource="{Binding Months}" SelectedItem="{Binding SelectedMonth}"
+                      MinHeight="44" MaxDropDownHeight="320" HorizontalAlignment="Stretch"
+                      PlaceholderText="Sélectionner un mois…">
+              <ComboBox.ItemTemplate>
+                <DataTemplate>
+                  <TextBlock Text="{Binding Label}" TextWrapping="Wrap" />
+                </DataTemplate>
+              </ComboBox.ItemTemplate>
+            </ComboBox>
+            <TextBlock Text="Sélectionnez un mois : SCOLIA affiche automatiquement le solde à encaisser. Cochez d'autres mois ci-dessous si nécessaire."
+                       Classes="muted" TextWrapping="Wrap" FontSize="{DynamicResource FsSmall}" />
+            <TextBlock Text="Autres mois à régler" Classes="caption" />
             <TextBlock Text="Chaque mois se règle en entier, à son montant. Les paiements partiels ne sont pas enregistrés." Classes="muted" TextWrapping="Wrap" FontSize="{DynamicResource FsSmall}" />
             <TextBlock Text="Aucun mois à payer pour cet apprenant." Classes="muted" IsVisible="{Binding !HasMonths}" />
             <ItemsControl ItemsSource="{Binding Months}">
