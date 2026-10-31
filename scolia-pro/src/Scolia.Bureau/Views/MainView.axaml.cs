@@ -138,6 +138,31 @@ public partial class MainView : UserControl
         PageScroll.Offset = default;
     }
 
+    /// <summary>La recherche desktop suit le contexte : filtre local sur une liste,
+    /// palette globale uniquement sur l'accueil et sur les écrans sans filtre.</summary>
+    private void OnDesktopSearchClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (Shell is not { } shell) return;
+        if (PhoneHeaderSearchVm.Scope(shell.Current).Length == 0)
+        {
+            shell.ShowSearch();
+            return;
+        }
+        shell.HeaderSearch.Toggle.Execute(null);
+        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        {
+            if (Shell == shell && shell.HeaderSearch.IsOpen)
+                DesktopContextSearchBox.Focus();
+        }, Avalonia.Threading.DispatcherPriority.Loaded);
+    }
+
+    private void OnDesktopContextSearchKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (e.Key != Key.Escape || Shell is not { } shell) return;
+        shell.HeaderSearch.Close.Execute(null);
+        e.Handled = true;
+    }
+
     private bool IsTypingInView() => TopLevel.GetTopLevel(this)?.FocusManager?.GetFocusedElement() is TextBox;
 
     private async Task CopyAsync(string text)
