@@ -72,6 +72,7 @@ export function buildTabs({ pathname, recents, can }: RibbonContext): RibbonTab[
         },
         {
           title: 'Page', commands: [
+            large({ id: 'pilotage', label: 'Vue d’ensemble', tip: 'Situation globale et finances par promotion, en consultation.', icon: <LayoutDashboard />, key: 'V', to: '/pilotage', perm: P.pilotageRead, tone: 'purple' }),
             large({ id: 'actualiser', label: 'Actualiser', tip: 'Recharge les données affichées depuis le serveur.', icon: <RefreshCw />, key: 'A', shortcut: 'F5', tone: 'blue' }),
             large({ id: 'imprimer', label: 'Imprimer', tip: 'Imprime la page affichée.', icon: <Printer />, key: 'I', shortcut: 'Ctrl+P', tone: 'blue' }),
             small({ id: 'plein-ecran', label: 'Plein écran', tip: 'Affiche SCOLIA sans bordures de fenêtre. Échap pour revenir.', icon: <Maximize />, key: 'P', toggle: true }),
