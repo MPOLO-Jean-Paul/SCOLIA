@@ -431,7 +431,7 @@ public sealed class BackstageViewModel : Observable
     public bool BiometricSecurityAllowed => ShowBiometricSecurity && !OtherBiometricAccount
         && (BiometricsEnabled || Platform.IsBiometricAvailable?.Invoke() == true);
     public string SecurityPassword { get => securityPassword; set => Set(ref securityPassword, value); }
-    public string SecurityNotice { get => securityNotice; private set => Set(ref securityNotice, value); }
+    public string SecurityNotice { get => securityNotice; private set { if (Set(ref securityNotice, value)) Raise(nameof(HasSecurityNotice)); } }
     public bool HasSecurityNotice => SecurityNotice.Length > 0;
     public AsyncCommand ManageBiometrics { get; }
     public RelayCommand CloseSecurity => closeSecurity ??= new RelayCommand(() => Section = Items[0]);
