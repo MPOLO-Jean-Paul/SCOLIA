@@ -18,7 +18,7 @@ const Ctx = createContext<SessionState | null>(null);
 export const P = {
   studentsRead: 'apprenants.lire', studentsWrite: 'apprenants.ecrire', paymentsRead: 'paiements.lire', paymentsCreate: 'paiements.encaisser',
   paymentsCancel: 'paiements.annuler', expensesWrite: 'depenses.ecrire', cashClose: 'caisse.arreter', reportsRead: 'rapports.lire',
-  settingsWrite: 'parametres.ecrire', usersManage: 'utilisateurs.gerer', auditRead: 'audit.lire', backupManage: 'sauvegardes.gerer',
+  pilotageRead: 'pilotage.lire', settingsWrite: 'parametres.ecrire', usersManage: 'utilisateurs.gerer', auditRead: 'audit.lire', backupManage: 'sauvegardes.gerer',
   academicsWrite: 'scolarite.ecrire', academicsRead: 'scolarite.lire', staffManage: 'personnel.gerer',
 } as const;
 
