@@ -64,16 +64,17 @@
     <!-- Bienvenue -->
     <Border Classes="hero">
       <StackPanel Spacing="10">
-        <Grid ColumnDefinitions="*,Auto">
-          <StackPanel Spacing="2">
+        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+          <Border Width="46" Height="46" CornerRadius="15" Background="{DynamicResource AccentSoftBrush}" VerticalAlignment="Top">
+            <TextBlock Text="{Binding Initials}" Foreground="{DynamicResource AccentBrush}" FontSize="17"
+                       FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" />
+          </Border>
+          <StackPanel Grid.Column="1" Spacing="4" VerticalAlignment="Center">
+            <TextBlock Text="{Binding Greeting}" FontSize="22" FontWeight="Bold" TextWrapping="Wrap" />
+            <TextBlock Text="{Binding AccountContextLine}" Foreground="{DynamicResource Text2Brush}" TextWrapping="Wrap"
+                       FontSize="{DynamicResource FsSmall}" />
             <TextBlock Text="{Binding DateLine}" Classes="muted" FontSize="{DynamicResource FsSmall}" />
-            <TextBlock Text="{Binding Greeting}" FontSize="24" FontWeight="Bold" TextWrapping="Wrap" />
-            <TextBlock Text="{Binding SchoolLine}" Foreground="{DynamicResource Text2Brush}" TextWrapping="Wrap" />
           </StackPanel>
-          <Panel Grid.Column="1" Width="48" Height="48" VerticalAlignment="Top" Margin="12,0,0,0">
-            <Image Source="{Binding SchoolLogo}" IsVisible="{Binding HasSchoolLogo}" />
-            <Image Source="{DynamicResource ScoliaMark}" IsVisible="{Binding !HasSchoolLogo}" Width="40" Height="40" />
-          </Panel>
         </Grid>
         <WrapPanel>
           <Border Classes="statechip" IsVisible="{Binding HasCashLine}">
