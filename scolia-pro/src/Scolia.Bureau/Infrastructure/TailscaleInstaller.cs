@@ -62,8 +62,7 @@ public sealed class TailscaleInstaller : Observable
             Raise(nameof(NeedsInstallation));
             Raise(nameof(NeedsActivation));
             NetworkSummary = state.Summary;
-            ActionText = state.LikelyConnected || state.HasCandidateIp ? "Afficher les réseaux"
-                : state.Installed ? "Ouvrir Tailscale" : "Installer Tailscale";
+            ActionText = state.Installed || state.HasCandidateIp ? "Afficher les réseaux" : "Installer Tailscale";
             Raise(nameof(LikelyConnected));
         }
         else
@@ -74,7 +73,7 @@ public sealed class TailscaleInstaller : Observable
             IsInstalled = TailscaleCompanion.IsInstalled();
             Raise(nameof(NeedsInstallation));
             Raise(nameof(NeedsActivation));
-            ActionText = IsInstalled ? "Ouvrir Tailscale" : "Installer Tailscale";
+            ActionText = IsInstalled ? "Afficher les réseaux" : "Installer Tailscale";
             Raise(nameof(LikelyConnected));
         }
         if (IsOpen) CheckInstallation();
@@ -126,8 +125,7 @@ public sealed class TailscaleInstaller : Observable
         if (state is not null)
         {
             NetworkSummary = state.Summary;
-            ActionText = state.LikelyConnected || state.HasCandidateIp ? "Afficher les réseaux" : found
-                ? "Ouvrir Tailscale" : "Installer Tailscale";
+            ActionText = found || state.HasCandidateIp ? "Afficher les réseaux" : "Installer Tailscale";
             Raise(nameof(LikelyConnected));
         }
         if (found)
