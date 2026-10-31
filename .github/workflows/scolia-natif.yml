@@ -6,14 +6,24 @@ on:
       - 'scolia-pro/src/Scolia.Bureau/**'
       - 'scolia-pro/src/Scolia.Mobile/**'
       - 'scolia-pro/src/Scolia.Phone.iOS/**'
+      - 'scolia-pro/src/Scolia.Api/**'
+      - 'scolia-pro/src/Scolia.Application/**'
+      - 'scolia-pro/src/Scolia.Domain/**'
+      - 'scolia-pro/src/Scolia.Infrastructure/**'
       - 'scolia-pro/tests/Scolia.Bureau.Tests/**'
+      - 'scolia-pro/tests/Scolia.Tests/**'
       - '.github/workflows/scolia-natif.yml'
   pull_request:
     paths:
       - 'scolia-pro/src/Scolia.Bureau/**'
       - 'scolia-pro/src/Scolia.Mobile/**'
       - 'scolia-pro/src/Scolia.Phone.iOS/**'
+      - 'scolia-pro/src/Scolia.Api/**'
+      - 'scolia-pro/src/Scolia.Application/**'
+      - 'scolia-pro/src/Scolia.Domain/**'
+      - 'scolia-pro/src/Scolia.Infrastructure/**'
       - 'scolia-pro/tests/Scolia.Bureau.Tests/**'
+      - 'scolia-pro/tests/Scolia.Tests/**'
       - '.github/workflows/scolia-natif.yml'
   workflow_dispatch:
 
@@ -44,6 +54,10 @@ jobs:
         run: dotnet build src/Scolia.Bureau/Scolia.Bureau.csproj -c Release
       - name: Verifier les resultats du menu, les recherches contextuelles et la securite
         run: dotnet test tests/Scolia.Bureau.Tests/Scolia.Bureau.Tests.csproj -c Release --logger "trx;LogFileName=natif.trx"
+      - name: Compiler les services de l'annee scolaire et des paiements
+        run: dotnet build src/Scolia.Api/Scolia.Api.csproj -c Release
+      - name: Verifier les regles de retard, les comptes et les API avec une base de test
+        run: dotnet test tests/Scolia.Tests/Scolia.Tests.csproj -c Release --logger "trx;LogFileName=metier.trx"
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
