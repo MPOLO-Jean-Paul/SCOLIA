@@ -1,0 +1,205 @@
+name: SCOLIA Natif - Windows Android
+
+on:
+  push:
+    paths:
+      - 'scolia-pro/src/Scolia.Bureau/**'
+      - 'scolia-pro/src/Scolia.Mobile/**'
+      - 'scolia-pro/src/Scolia.Phone.iOS/**'
+      - 'scolia-pro/src/Scolia.Application/**'
+      - 'scolia-pro/tests/**'
+      - '.github/workflows/scolia-natif.yml'
+  pull_request:
+    paths:
+      - 'scolia-pro/src/Scolia.Bureau/**'
+      - 'scolia-pro/src/Scolia.Mobile/**'
+      - 'scolia-pro/src/Scolia.Phone.iOS/**'
+      - 'scolia-pro/src/Scolia.Application/**'
+      - 'scolia-pro/tests/**'
+      - '.github/workflows/scolia-natif.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: scolia-natif-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: scolia-pro
+
+env:
+  DOTNET_NOLOGO: 'true'
+  DOTNET_CLI_TELEMETRY_OPTOUT: 'true'
+
+jobs:
+  verification:
+    name: Tests et vues natives (sans Playwright web)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-dotnet@v5
+        id: dotnet
+        continue-on-error: true
+        with:
+          global-json-file: scolia-pro/global.json
+      - name: Installer SDK .NET de secours
+        if: steps.dotnet.outcome == 'failure'
+        run: bash scripts/installer-dotnet.sh
+      - name: Compilation stricte native et API
+        run: |
+          dotnet build Scolia.sln -c Release
+          dotnet build tests/Scolia.Bureau.Captures -c Release
+      - name: Tests domaine, permissions et vues C#
+        run: dotnet test Scolia.sln -c Release --no-build --logger "trx;LogFileName=resultats.trx"
+      - name: Captures interface Android / tactile
+        env:
+          SCOLIA_MOBILE: '1'
+          SCOLIA_ASTUCES: '0'
+        run: dotnet run --no-build --project tests/Scolia.Bureau.Captures -c Release -- artifacts/audit-mobile http://127.0.0.1:5293/ Scolia2026! fluidite
+      - name: Captures interface bureau / clavier
+        env:
+          SCOLIA_MOBILE: '0'
+          SCOLIA_ASTUCES: '0'
+        run: dotnet run --no-build --project tests/Scolia.Bureau.Captures -c Release -- artifacts/audit-desktop http://127.0.0.1:5293/ Scolia2026! bureau
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: SCOLIA_Natif_Captures
+          path: |
+            scolia-pro/artifacts/audit-mobile/
+            scolia-pro/artifacts/audit-desktop/
+          if-no-files-found: ignore
+          retention-days: 14
+      - name: Migrations compatibles avec le modèle
+        run: |
+          dotnet tool restore
+          dotnet ef migrations has-pending-model-changes --project src/Scolia.Infrastructure --startup-project src/Scolia.Infrastructure
+      - name: Archive des sources vérifiées
+        run: |
+          python3 -m unittest discover -s tests -p 'test_source_archive.py'
+          python3 scripts/archiver-sources.py artifacts/SCOLIA_Pro_Sources.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SCOLIA_Natif_Sources
+          path: |
+            scolia-pro/artifacts/SCOLIA_Pro_Sources.zip
+            scolia-pro/artifacts/SCOLIA_Pro_Sources.sha256
+          retention-days: 30
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: SCOLIA_Natif_Rapports_Erreurs
+          path: scolia-pro/tests/**/TestResults/
+          if-no-files-found: ignore
+
+  android:
+    name: APK Android apres tests natifs
+    needs: verification
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-dotnet@v5
+        id: dotnet
+        continue-on-error: true
+        with:
+          global-json-file: scolia-pro/global.json
+      - name: Installer SDK .NET de secours
+        if: steps.dotnet.outcome == 'failure'
+        run: bash scripts/installer-dotnet.sh
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Installer Android SDK
+        run: |
+          dotnet workload install android
+          dotnet build src/Scolia.Mobile -t:InstallAndroidDependencies -f net10.0-android \
+            -p:AndroidSdkDirectory="$ANDROID_HOME" -p:JavaSdkDirectory="$JAVA_HOME" -p:AcceptAndroidSDKLicenses=True
+      - name: Générer et signer APK
+        env:
+          SCOLIA_ANDROID_KEYSTORE: ${{ secrets.SCOLIA_ANDROID_KEYSTORE }}
+          SCOLIA_KEYSTORE_PASS: ${{ secrets.SCOLIA_ANDROID_KEYSTORE_PASS }}
+        run: |
+          if [ -n "$SCOLIA_ANDROID_KEYSTORE" ]; then
+            echo "$SCOLIA_ANDROID_KEYSTORE" | base64 -d > "$RUNNER_TEMP/scolia.keystore"
+            export SCOLIA_KEYSTORE="$RUNNER_TEMP/scolia.keystore"
+          fi
+          export JavaSdkDirectory="$JAVA_HOME"
+          bash scripts/publier-android.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SCOLIA_Natif_Android_APK
+          path: scolia-pro/artifacts/android/
+          if-no-files-found: error
+          retention-days: 30
+
+  windows:
+    name: Executable Windows apres tests natifs
+    needs: [verification, android]
+    runs-on: windows-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-dotnet@v5
+        id: dotnet
+        continue-on-error: true
+        with:
+          global-json-file: scolia-pro/global.json
+      - name: Installer SDK .NET de secours
+        if: steps.dotnet.outcome == 'failure'
+        shell: bash
+        run: |
+          if dotnet --list-sdks | grep -q '^10\.'; then exit 0; fi
+          curl -fsSL https://dot.net/v1/dotnet-install.ps1 -o "$RUNNER_TEMP/dotnet-install.ps1"
+          v="$(curl -fsSL https://builds.dotnet.microsoft.com/dotnet/release-metadata/10.0/releases.json | jq -r '."latest-sdk"')"
+          pwsh -File "$RUNNER_TEMP/dotnet-install.ps1" -Version "$v" -InstallDir "$USERPROFILE/.dotnet" -AzureFeed https://builds.dotnet.microsoft.com/dotnet
+          echo "$USERPROFILE/.dotnet" >> "$GITHUB_PATH"
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: scolia-pro/web/package-lock.json
+      - uses: actions/download-artifact@v5
+        with:
+          name: SCOLIA_Natif_Android_APK
+          path: scolia-pro/artifacts/android
+      - uses: actions/download-artifact@v5
+        with:
+          name: SCOLIA_Natif_Sources
+          path: scolia-pro/artifacts/sources
+      - name: Publier client desktop autonome et son serveur
+        shell: pwsh
+        run: ./scripts/publier-windows.ps1
+      - name: Vérifier les exécutables et la santé du serveur
+        shell: pwsh
+        run: |
+          foreach ($exe in 'SCOLIA.exe', 'SCOLIA-Serveur.exe') {
+            if (-not (Test-Path "artifacts/SCOLIA/$exe")) { throw "$exe absent." }
+          }
+          $env:Scolia__Reseau__Port = '5280'
+          $env:Scolia__OuvrirNavigateur = 'false'
+          $env:Scolia__Stockage__DataDirectory = Join-Path $env:RUNNER_TEMP 'scolia-natif-verification'
+          $process = Start-Process -FilePath artifacts/SCOLIA/SCOLIA-Serveur.exe -PassThru
+          try {
+            $ok = $false
+            for ($i = 0; $i -lt 60 -and -not $ok; $i++) {
+              Start-Sleep -Milliseconds 500
+              try { $ok = (Invoke-WebRequest http://localhost:5280/api/sante -UseBasicParsing -TimeoutSec 3).StatusCode -eq 200 } catch { }
+            }
+            if (-not $ok) { throw 'Serveur SCOLIA inaccessible.' }
+          } finally {
+            Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
+          }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SCOLIA_Natif_Windows_x64
+          path: |
+            scolia-pro/artifacts/*.zip
+            scolia-pro/artifacts/*.sha256
+          if-no-files-found: error
+          retention-days: 30
