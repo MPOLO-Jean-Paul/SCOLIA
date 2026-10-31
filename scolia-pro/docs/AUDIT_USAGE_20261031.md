@@ -43,3 +43,8 @@ Base de travail : les branches Codex du 31 octobre, réunies sur la branche de t
 - Le geste du doigt et la barre fixe sur un téléphone Android réel.
 - Le repli des filtres avec le clavier du téléphone ouvert.
 - L'écran d'un établissement neuf de bout en bout, avec un vrai compte Comptabilité.
+
+## Captures
+
+Dans `docs/audit-20261031/` : Encaisser avec la barre fixe, listes aux filtres repliés,
+Cours et notes guidé, établissement neuf guidé.
