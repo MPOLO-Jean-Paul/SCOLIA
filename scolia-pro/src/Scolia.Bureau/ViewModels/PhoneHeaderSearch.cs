@@ -32,6 +32,9 @@ public sealed class PhoneHeaderSearchVm : Observable
         MonthlyPage => "mensualites",
         DebtorsPage => "debiteurs",
         CashierPage => "encaissement",
+        BatchPaymentPage => "encaissement_lot",
+        CardsPage => "cartes",
+        AuditPage => "audit",
         ExpensesPage => "depenses",
         _ => string.Empty,
     };
@@ -42,6 +45,9 @@ public sealed class PhoneHeaderSearchVm : Observable
         "mensualites" => "Apprenant ou matricule",
         "debiteurs" => "Apprenant en dette",
         "encaissement" => "Apprenant à encaisser",
+        "encaissement_lot" => "Apprenants du lot",
+        "cartes" => "Apprenant ou matricule de la carte",
+        "audit" => "Événement du journal d'audit",
         "depenses" => "Dépense ou référence",
         _ => "Rechercher dans cette page",
     };
@@ -54,6 +60,9 @@ public sealed class PhoneHeaderSearchVm : Observable
             MonthlyPage p => p.Search,
             DebtorsPage p => p.Search,
             CashierPage p => p.Search,
+            BatchPaymentPage p => p.Search,
+            CardsPage p => p.Search,
+            AuditPage p => p.Search,
             ExpensesPage p => p.Search,
             _ => string.Empty,
         };
@@ -67,6 +76,9 @@ public sealed class PhoneHeaderSearchVm : Observable
                 case MonthlyPage p: p.Search = query; break;
                 case DebtorsPage p: p.Search = query; break;
                 case CashierPage p: p.Search = query; break;
+                case BatchPaymentPage p: p.Search = query; break;
+                case CardsPage p: p.Search = query; break;
+                case AuditPage p: p.Search = query; break;
                 case ExpensesPage p: p.Search = query; break;
                 default: return;
             }
