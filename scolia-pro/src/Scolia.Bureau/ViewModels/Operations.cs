@@ -279,12 +279,16 @@ public sealed class SearchViewModel : Observable
             // Le résultat porte sa COMMANDE NATIVE et non une adresse recomposée
             // d'après son libellé. Ainsi « promotions », « sécurité », « reçus »
             // et toutes les autres fonctions ouvrent réellement leur destination.
-            var functionality = setting.Section is "Navigation" or "Données" or "Secrétariat"
-                or "Finances" or "Scolarité" or "Administration";
-            // Dans une page Paramètres, n'afficher que des réglages. La recherche
-            // de l'Accueil reste globale et propose aussi les dossiers autorisés.
-            if (settingsOnly && functionality && setting.Title != "Utilisateurs") continue;
-            var kind = functionality ? "Fonctionnalité" : "Paramètre";
+            var isSetting = setting.Title is "Configuration" or "Thème et couleurs"
+                or "Texte et polices" or "Fenêtres et affichage" or "Animations et fluidité"
+                or "Sons" or "Sécurité du compte" or "Poste et réseau"
+                or "Établissement" or "Années scolaires" or "Sections"
+                or "Promotions et frais" or "Nouvelle promotion" or "Nouvelle année"
+                or "Utilisateurs";
+            // Un filtre de catégorie seul ne suffit pas : « Administration » contient
+            // aussi bien les réglages que le pointage des enseignants.
+            if (settingsOnly && !isSetting) continue;
+            var kind = isSetting ? "Paramètre" : "Fonctionnalité";
             Results.Add(new SearchHitRow(
                 new SearchHitDto(kind, setting.Title, setting.Section,
                     "/native/" + Uri.EscapeDataString(setting.Title)),
