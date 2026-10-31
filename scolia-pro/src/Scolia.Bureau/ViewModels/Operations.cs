@@ -337,6 +337,8 @@ public sealed class BackstageViewModel : Observable
     private BackstageItemVm? section;
     private FormViewModel? passwordForm;
     private PosteViewModel? poste;
+    private string securityPassword = string.Empty;
+    private string securityNotice = string.Empty;
 
     public BackstageViewModel(ShellViewModel shell)
     {
@@ -344,7 +346,7 @@ public sealed class BackstageViewModel : Observable
         Items =
         [
             new BackstageItemVm("infos", "Informations", MaterialIconKind.Information, "ToneBlue"),
-            new BackstageItemVm("mot-de-passe", "Mot de passe", MaterialIconKind.Key, "ToneOrange"),
+            new BackstageItemVm("mot-de-passe", "Sécurité", MaterialIconKind.ShieldLockOutline, "ToneOrange"),
             new BackstageItemVm("poste", "Poste et réseau", MaterialIconKind.LanConnect, "ToneGreen"),
             new BackstageItemVm("preferences", "Préférences", MaterialIconKind.TuneVariant, "TonePurple"),
             Preferences.MobileLayout
@@ -355,6 +357,7 @@ public sealed class BackstageViewModel : Observable
         Close = new RelayCommand(shell.CloseBackstage);
         Logout = new AsyncCommand(() => shell.LogoutAsync());
         PasswordForm = BuildPasswordForm();
+        ManageBiometrics = new AsyncCommand(ManageBiometricsAsync);
     }
 
     public IReadOnlyList<BackstageItemVm> Items { get; }
@@ -377,6 +380,13 @@ public sealed class BackstageViewModel : Observable
             }
             if (Set(ref section, value))
             {
+                if (value.Value == "mot-de-passe")
+                {
+                    PasswordForm = BuildPasswordForm();
+                    SecurityPassword = string.Empty;
+                    SecurityNotice = string.Empty;
+                    RefreshSecurity();
+                }
                 Raise(nameof(IsInfos));
                 Raise(nameof(IsPassword));
                 Raise(nameof(IsPoste));
@@ -391,7 +401,7 @@ public sealed class BackstageViewModel : Observable
     /// <summary>Mobile : la liste des rubriques s'affiche tant qu'aucune rubrique à page propre n'est ouverte.</summary>
     public bool ShowList => !IsPassword && !IsPoste;
     public bool ShowDetail => !ShowList;
-    public string DetailTitle => IsPassword ? "Mot de passe" : IsPoste ? "Poste et réseau" : string.Empty;
+    public string DetailTitle => IsPassword ? "Sécurité du compte" : IsPoste ? "Poste et réseau" : string.Empty;
     public string Initials => string.Concat(UserName.Split(' ', StringSplitOptions.RemoveEmptyEntries).Take(2).Select(w => char.ToUpperInvariant(w[0])));
     /// <summary>Mobile : revient de la rubrique ouverte à la liste des rubriques.</summary>
     public RelayCommand BackToList => backToList ??= new RelayCommand(() => Section = Items[0]);
@@ -402,6 +412,103 @@ public sealed class BackstageViewModel : Observable
     public bool IsPassword => section?.Value == "mot-de-passe";
     public bool IsPoste => section?.Value == "poste";
     public FormViewModel PasswordForm { get => passwordForm!; private set => Set(ref passwordForm, value); }
+
+    public bool ShowBiometricSecurity => Platform.IsMobile;
+    private string? BiometricAccount => BiometricAccess.ReadAccount(shell.Api.Server);
+    public bool BiometricsEnabled => ShowBiometricSecurity && (Platform.HasBiometricProof?.Invoke() ?? false)
+        && BiometricAccount is { } account && shell.Session is { } session
+        && BiometricAccess.AccountMatches(account, session.UserName);
+    public bool OtherBiometricAccount => BiometricAccount is { } account && shell.Session is { } session
+        && !BiometricAccess.AccountMatches(account, session.UserName);
+    public string BiometricSecurityStatus => OtherBiometricAccount
+        ? "Une autre session est associée à la biométrie de ce téléphone. Reconnectez-vous avec le compte concerné pour la modifier."
+        : BiometricsEnabled
+            ? "Empreinte activée pour ce compte sur ce téléphone. Chaque utilisation demande une validation Android."
+            : Platform.IsBiometricAvailable?.Invoke() == true
+                ? "Empreinte disponible. Son activation exige le mot de passe du compte et votre accord."
+                : "Empreinte indisponible sur cet appareil ou non configurée dans Android.";
+    public string BiometricActionLabel => BiometricsEnabled ? "Désactiver l'empreinte" : "Activer l'empreinte";
+    public bool BiometricSecurityAllowed => ShowBiometricSecurity && !OtherBiometricAccount
+        && (BiometricsEnabled || Platform.IsBiometricAvailable?.Invoke() == true);
+    public string SecurityPassword { get => securityPassword; set => Set(ref securityPassword, value); }
+    public string SecurityNotice { get => securityNotice; private set => Set(ref securityNotice, value); }
+    public bool HasSecurityNotice => SecurityNotice.Length > 0;
+    public AsyncCommand ManageBiometrics { get; }
+    public RelayCommand CloseSecurity => closeSecurity ??= new RelayCommand(() => Section = Items[0]);
+    private RelayCommand? closeSecurity;
+
+    public void RefreshSecurity()
+    {
+        Raise(nameof(BiometricsEnabled));
+        Raise(nameof(OtherBiometricAccount));
+        Raise(nameof(BiometricSecurityStatus));
+        Raise(nameof(BiometricActionLabel));
+        Raise(nameof(BiometricSecurityAllowed));
+    }
+
+    /// <summary>Chaque changement sensible exige une preuve fraîche, jamais la seule session ouverte.</summary>
+    private async Task ManageBiometricsAsync()
+    {
+        if (shell.Session is not { } session || !ShowBiometricSecurity) return;
+        SecurityNotice = string.Empty;
+        if (OtherBiometricAccount)
+        {
+            SecurityNotice = "Ce téléphone est déjà associé à un autre compte : déconnectez-vous et utilisez ce compte.";
+            return;
+        }
+
+        var enabled = BiometricsEnabled;
+        var verified = false;
+        if (enabled && Platform.VerifyBiometricAsync is { } verify)
+            verified = await verify();
+
+        // Activer requiert systématiquement le mot de passe SCOLIA ; désactiver
+        // admet soit une preuve Android fraîche, soit le mot de passe du même compte.
+        if (!enabled || !verified)
+        {
+            if (string.IsNullOrWhiteSpace(SecurityPassword))
+            {
+                SecurityNotice = enabled
+                    ? "Confirmez votre empreinte ou saisissez le mot de passe actuel pour désactiver."
+                    : "Saisissez votre mot de passe actuel pour activer l'empreinte.";
+                return;
+            }
+            try
+            {
+                var authenticated = await shell.Api.LoginAsync(session.UserName, SecurityPassword);
+                verified = BiometricAccess.AccountMatches(authenticated.UserName, session.UserName);
+            }
+            catch (Api.ApiException)
+            {
+                SecurityNotice = "Mot de passe incorrect. Aucun réglage biométrique n'a été modifié.";
+                return;
+            }
+            catch (Exception ex) when (ex is HttpRequestException or IOException or TaskCanceledException)
+            {
+                SecurityNotice = "Le serveur ne peut pas vérifier votre mot de passe. Réessayez lorsque la connexion est rétablie.";
+                return;
+            }
+        }
+        SecurityPassword = string.Empty;
+        if (!verified) { SecurityNotice = "Vérification refusée. Aucun réglage n'a été modifié."; return; }
+
+        if (enabled)
+        {
+            Platform.DisableBiometricAccess?.Invoke();
+            BiometricAccess.Disable();
+            SecurityNotice = "Connexion par empreinte désactivée après vérification.";
+        }
+        else if (Platform.EnrollBiometricAsync is { } enroll && await enroll())
+        {
+            BiometricAccess.Enable(shell.Api.Server, session.UserName);
+            SecurityNotice = "Empreinte activée pour votre compte sur ce téléphone.";
+        }
+        else SecurityNotice = "Activation annulée ou indisponible : le mot de passe reste nécessaire.";
+
+        Raise(nameof(HasSecurityNotice));
+        RefreshSecurity();
+        shell.Login.RefreshBiometrics();
+    }
 
     /// <summary>Rubrique poste et réseau, créée à la première ouverture.</summary>
     public PosteViewModel PosteSection => poste ??= new PosteViewModel(shell);
@@ -425,6 +532,8 @@ public sealed class BackstageViewModel : Observable
             }
             await shell.Api.SendAsync(HttpMethod.Post, "api/session/mot-de-passe", new { currentPassword = f.Text("actuel"), newPassword = f.Text("nouveau") });
             shell.Notify("Mot de passe modifié.");
+            PasswordForm = BuildPasswordForm();
+            shell.CloseBackstage();
             return true;
         })
         { SubmitText = "Enregistrer" };
