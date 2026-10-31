@@ -5,6 +5,7 @@ import { Command, HandCoins, KeyRound, LogOut, RefreshCw, Search } from 'lucide-
 import { api, openDocument } from '../api/client';
 import { P, saveTheme, storedTheme, useSession, type Theme } from '../lib/session';
 import { initials } from '../lib/format';
+import { canOpenPath } from '../lib/access';
 import { allCommands, buildTabs, type RibbonCommand } from '../lib/ribbon';
 import { runCommand } from '../lib/commands';
 import { Ribbon } from './Ribbon';
@@ -35,8 +36,15 @@ function clampZoom(value: number): number {
   if (Number.isNaN(value)) return 100;
   return Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, Math.round(value / ZOOM_STEP) * ZOOM_STEP));
 }
-function readRecents(): Recent[] {
-  try { return JSON.parse(localStorage.getItem(RECENTS_KEY) ?? '[]') as Recent[]; } catch { return []; }
+/** Historique propre à chaque compte : aucun utilisateur ne voit les pages récentes d'un autre. */
+function recentKey(user: string) { return `${RECENTS_KEY}.${encodeURIComponent(user)}`; }
+function readRecents(user?: string): Recent[] {
+  if (!user) return [];
+  try {
+    const items: unknown = JSON.parse(localStorage.getItem(recentKey(user)) ?? '[]');
+    return Array.isArray(items) ? items.filter((x): x is Recent =>
+      !!x && typeof x === 'object' && typeof x.to === 'string' && typeof x.label === 'string').slice(0, 6) : [];
+  } catch { return []; }
 }
 function isDark(theme: Theme): boolean {
   return theme === 'sombre' || (theme === 'systeme' && window.matchMedia('(prefers-color-scheme: dark)').matches);
@@ -54,7 +62,7 @@ export function Layout() {
   const [statusBar, setStatusBar] = useState(() => readPref('scolia.barreetat', '1') === '1');
   const [collapsed, setCollapsed] = useState(() => readPref('scolia.ruban', '0') === '1');
   const [zoom, setZoom] = useState(() => clampZoom(Number(readPref('scolia.zoom', '100'))));
-  const [recents, setRecents] = useState<Recent[]>(readRecents);
+  const [recents, setRecents] = useState<Recent[]>(() => readRecents(session?.userName));
   const [activeId, setActiveId] = useState('accueil');
   const [backstage, setBackstage] = useState(false);
   const [palette, setPalette] = useState(false);
@@ -65,7 +73,10 @@ export function Layout() {
   const [grid, setGrid] = useState(() => readPref('scolia.quadrillage', '0') === '1');
   const [fullscreen, setFullscreen] = useState(() => !!document.fullscreenElement);
 
-  const tabs = useMemo(() => buildTabs({ pathname: location.pathname, recents, can }), [location.pathname, recents, can]);
+  // Même si un ancien lien reste en cache, ne pas l'afficher à un compte sans le droit correspondant.
+  const visibleRecents = useMemo(() => recents.filter(r =>
+    canOpenPath(r.to.split('?')[0], session?.permissions ?? [])), [recents, session?.permissions]);
+  const tabs = useMemo(() => buildTabs({ pathname: location.pathname, recents: visibleRecents, can }), [location.pathname, visibleRecents, can]);
   const pageLabels = useMemo(() => {
     const labels = new Map<string, string>();
     for (const c of allCommands()) if (c.to && !labels.has(c.to)) labels.set(c.to, c.label);
@@ -80,16 +91,18 @@ export function Layout() {
   const contextId = tabs.find((t) => t.context)?.id;
   useEffect(() => { if (contextId) setActiveId(contextId); }, [contextId]);
 
-  // Mémorise les pages récemment ouvertes pour le groupe « Récents ».
+  useEffect(() => { setRecents(readRecents(session?.userName)); }, [session?.userName]);
+
+  // Mémorise uniquement les pages ouvertes par ce compte, sans mélanger les sessions.
   useEffect(() => {
     const label = pageLabels.get(location.pathname);
-    if (!label) return;
+    if (!label || !session?.userName || !canOpenPath(location.pathname, session.permissions)) return;
     setRecents((current) => {
       const next = [{ to: location.pathname, label }, ...current.filter((r) => r.to !== location.pathname)].slice(0, 6);
-      writePref(RECENTS_KEY, JSON.stringify(next));
+      writePref(recentKey(session.userName), JSON.stringify(next));
       return next;
     });
-  }, [location.pathname, pageLabels]);
+  }, [location.pathname, pageLabels, session?.userName, session?.permissions]);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -282,7 +295,7 @@ export function Layout() {
 
       {statusBar && <StatusBar pageTitle={pageTitle} zoom={zoom} onZoom={changeZoom} />}
 
-      {palette && <CommandPalette groups={paletteGroups} onClose={() => setPalette(false)} onPreferences={() => setDialog('preferences')} canConfigureSchool={can(P.settingsWrite)} />}
+      {palette && <CommandPalette groups={paletteGroups} onClose={() => setPalette(false)} onPreferences={() => setDialog('preferences')} canConfigureSchool={can(P.settingsWrite)} canSearchRecords={can(P.studentsRead) || can(P.paymentsRead)} />}
       {backstage && (
         <Backstage onClose={() => setBackstage(false)} onNavigate={(to) => { setBackstage(false); navigate(to); }} onRun={(id) => void run(id)} />
       )}
