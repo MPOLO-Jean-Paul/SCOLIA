@@ -31,6 +31,7 @@ public sealed class ConnectionViewModel : Observable
         ConnectAddress = new AsyncCommand(ConnectAddressAsync);
         ConnectTailnet = new AsyncCommand(ConnectTailnetAsync);
         PrepareTailnet = new AsyncCommand(Installer.BeginAsync);
+        Installer.Refresh();
         JoinInternet = new AsyncCommand(JoinInternetAsync);
     }
 
