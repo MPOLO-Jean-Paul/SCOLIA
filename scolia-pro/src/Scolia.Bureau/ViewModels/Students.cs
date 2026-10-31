@@ -421,23 +421,29 @@ public static class StudentForms
             promotions = (await shell.Api.GetAsync<List<PromotionDto>>("api/etablissement/promotions")).Where(p => p.IsActive).ToList();
             if (promotions.Count == 0) return;
         }
-        var needsConfirmation = false;
+        string? confirmedIdentity = null;
         var form = new FormViewModel("Nouvelle inscription", "Le matricule est attribué automatiquement à l'enregistrement.", async f =>
         {
+            // La confirmation d'un homonyme ne vaut que pour la saisie vérifiée.
+            // Changer le nom, la promotion ou les coordonnées impose une nouvelle vérification.
+            var identityKey = string.Join("|", f.ChoiceValue("promotion"), f.Text("nom").ToUpperInvariant(),
+                f.Text("postNom").ToUpperInvariant(), f.Text("prenom").ToUpperInvariant(),
+                f.ChoiceValue("sexe"), f.Day("naissance"), f.Text("lieu"), f.Text("contact1"));
             var doubles = await shell.Api.GetAsync<List<DuplicateCandidateDto>>("api/apprenants/doublons" + ScoliaClient.Query(
                 ("nom", f.Text("nom")), ("postNom", f.Text("postNom")), ("prenom", f.Text("prenom"))));
-            if (doubles.Count > 0 && !needsConfirmation)
+            if (doubles.Count > 0 && confirmedIdentity != identityKey)
             {
-                needsConfirmation = true;
-                f.Fail($"Un apprenant porte déjà ce nom : {string.Join(", ", doubles.Select(d => $"{d.FullName} ({d.Matricule})"))}. Cliquez à nouveau sur Inscrire pour confirmer.");
+                confirmedIdentity = identityKey;
+                f.Fail($"Un dossier possède déjà cette identité : {string.Join(", ", doubles.Select(d => $"{d.FullName} ({d.Matricule})"))}. Vérifiez les informations, puis cliquez à nouveau sur Inscrire uniquement s'il s'agit d'une autre personne.");
                 return false;
             }
+            if (doubles.Count == 0) confirmedIdentity = null;
             await shell.Api.SendAsync(HttpMethod.Post, "api/apprenants", new
             {
                 identity = Identity(f, null),
                 promotionId = Guid.Parse(f.ChoiceValue("promotion")!),
                 enrolledOn = f.Day("inscription"),
-                confirmDuplicate = needsConfirmation,
+                confirmDuplicate = doubles.Count > 0 && confirmedIdentity == identityKey,
             });
             shell.Notify("Apprenant inscrit.");
             return true;
@@ -473,7 +479,7 @@ public static class StudentForms
     {
         var s = await shell.Api.GetAsync<StudentDto>($"api/apprenants/{id}");
         var before = Format.FullName(s.LastName, s.MiddleName, s.FirstName);
-        var needsConfirmation = false;
+        string? confirmedIdentity = null;
         var form = new FormViewModel("Renommer l'apprenant", $"{before} · matricule {s.Matricule}", async f =>
         {
             var (last, middle, first) = (f.Text("nom"), f.Text("postNom"), f.Text("prenom"));
@@ -485,12 +491,14 @@ public static class StudentForms
             }
             var doubles = await shell.Api.GetAsync<List<DuplicateCandidateDto>>("api/apprenants/doublons" + ScoliaClient.Query(
                 ("nom", last), ("postNom", middle), ("prenom", first), ("exclure", id)));
-            if (doubles.Count > 0 && !needsConfirmation)
+            var identityKey = string.Join("|", last.ToUpperInvariant(), middle.ToUpperInvariant(), first.ToUpperInvariant());
+            if (doubles.Count > 0 && confirmedIdentity != identityKey)
             {
-                needsConfirmation = true;
-                f.Fail($"Un autre apprenant porte déjà ce nom : {string.Join(", ", doubles.Select(d => $"{d.FullName} ({d.Matricule})"))}. Cliquez à nouveau sur Renommer pour confirmer.");
+                confirmedIdentity = identityKey;
+                f.Fail($"Un autre dossier possède déjà ce nom : {string.Join(", ", doubles.Select(d => $"{d.FullName} ({d.Matricule})"))}. Vérifiez l'identité et cliquez à nouveau sur Renommer uniquement s'il s'agit d'une autre personne.");
                 return false;
             }
+            if (doubles.Count == 0) confirmedIdentity = null;
             await shell.Api.SendAsync(HttpMethod.Put, $"api/apprenants/{id}", new
             {
                 lastName = last, middleName = middle, firstName = first,
