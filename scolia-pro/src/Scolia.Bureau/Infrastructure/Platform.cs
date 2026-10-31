@@ -53,6 +53,22 @@ public static class Platform
     public static Func<TailnetSnapshot>? ReadTailnetState { get; set; }
     public static Func<string>? OpenTailscaleInstallPage { get; set; }
 
+    /// <summary>
+    /// Plateforme dont SCOLIA peut télécharger et installer lui-même le paquet officiel de Tailscale :
+    /// « android » (APK universel) ou « windows » (installateur). Rien ailleurs (iPhone : App Store seulement).
+    /// </summary>
+    public static string? TailscalePackageKind { get; set; } = OperatingSystem.IsWindows() ? "windows" : null;
+
+    /// <summary>Dossier où SCOLIA range le paquet téléchargé avant son installation.</summary>
+    public static string? DownloadFolder { get; set; }
+
+    /// <summary>
+    /// Remet un paquet téléchargé à l'installateur du système. Android : vérifie qu'il s'agit bien de
+    /// com.tailscale.ipn, demande au besoin l'autorisation « Installer des applications », puis ouvre la
+    /// confirmation d'installation. Le texte rendu décrit ce que l'utilisateur doit faire, ou le résultat.
+    /// </summary>
+    public static Func<string, Task<TailscaleInstallResult>>? InstallTailscalePackage { get; set; }
+
     /// <summary>Android signale le retour à SCOLIA après une installation externe.</summary>
     public static event Action? AppResumed;
     public static void NotifyAppResumed() => AppResumed?.Invoke();
@@ -76,3 +92,8 @@ public static class Platform
     /// <summary>Nom de l'appareil, affiché au serveur lors de la demande d'accès.</summary>
     public static string? DeviceName { get; set; }
 }
+
+/// <summary>Issue d'une installation lancée par SCOLIA.</summary>
+public enum TailscaleInstallOutcome { Installed, WaitingForUser, NeedsPermission, Refused, Failed }
+
+public sealed record TailscaleInstallResult(TailscaleInstallOutcome Outcome, string Message);
