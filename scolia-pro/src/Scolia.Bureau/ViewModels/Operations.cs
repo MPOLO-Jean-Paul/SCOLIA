@@ -576,7 +576,7 @@ public sealed class BackstageViewModel : Observable
     /// <summary>Chaque changement sensible exige une preuve fraîche, jamais la seule session ouverte.</summary>
     private async Task ManageBiometricsAsync()
     {
-        if (BiometricBusy || shell.Session is null || !ShowBiometricSecurity) return;
+        if (BiometricBusy || shell.Session is not { } session || !ShowBiometricSecurity) return;
         BiometricBusy = true;
         try
         {
