@@ -88,7 +88,11 @@ function PaymentForm({ account, onDone }: { account: Account; onDone: (r: Receip
   const chosen = months.filter((l) => selected.includes(l.feeItemId));
   const total = chosen.reduce((sum, l) => sum + l.remaining, 0);
   const hasSelection = chosen.length > 0;
-  const toggle = (id: string, on: boolean) => setSelected(on ? [...selected, id] : selected.filter((x) => x !== id));
+  // Le sélecteur principal fixe un mois ; les cases permettent ensuite de payer plusieurs mois.
+  // Dans les deux cas, le montant provient uniquement du compte réel de l'apprenant.
+  const activeMonth = chosen.length === 1 ? chosen[0].feeItemId : '';
+  const toggle = (id: string, on: boolean) => setSelected((current) =>
+    on ? [...new Set([...current, id])] : current.filter((x) => x !== id));
 
   useEffect(() => {
     setIdempotencyKey(newKey());
@@ -132,8 +136,18 @@ function PaymentForm({ account, onDone }: { account: Account; onDone: (r: Receip
       <div className="card card-pad">
         <SectionTitle num="02">Mois payés et versement</SectionTitle>
         <div className="field span-2">
-          <span className="label">Mois payés</span>
-          <p className="small muted" style={{ margin: '2px 0 8px' }}>Chaque mois se règle en entier, à son montant. Les paiements partiels ne sont pas enregistrés.</p>
+          <label className="label" htmlFor="cashier-month">Choisir le mois à encaisser</label>
+          <select id="cashier-month" className="input" aria-label="Choisir le mois à encaisser"
+            value={activeMonth} disabled={busy || months.length === 0}
+            onChange={(e) => setSelected(e.target.value ? [e.target.value] : [])}>
+            <option value="">Sélectionner un mois…</option>
+            {months.map((l) => <option key={l.feeItemId} value={l.feeItemId}>{l.label} — {money(l.remaining)}</option>)}
+          </select>
+          <p className="small muted" style={{ margin: '6px 0 12px' }}>
+            Sélectionnez un mois pour afficher automatiquement son montant. Pour régler plusieurs mois, cochez-les ci-dessous.
+          </p>
+          <span className="label">Autres mois à régler (sélection multiple)</span>
+          <p className="small muted" style={{ margin: '2px 0 8px' }}>Chaque mois est réglé à hauteur de son solde dû. Aucun montant arbitraire n'est saisi.</p>
           {months.length === 0 ? <Empty text="Aucun mois à payer pour cet apprenant." /> : (
             <div className="row" style={{ flexWrap: 'wrap', gap: 8 }}>
               {months.map((l) => (
@@ -145,6 +159,12 @@ function PaymentForm({ account, onDone }: { account: Account; onDone: (r: Receip
             </div>
           )}
           <div className="small" style={{ marginTop: 8 }}>{hasSelection ? `${chosen.length} mois · total ${money(total)}` : 'Aucun mois choisi'}</div>
+          <div className="row" style={{ alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '12px 0 4px' }}>
+            <span className="label">Montant à encaisser</span>
+            <output data-testid="cashier-amount" htmlFor="cashier-month" aria-live="polite" style={{ fontWeight: 750, fontSize: 'clamp(18px, 3vw, 24px)', fontVariantNumeric: 'tabular-nums' }}>
+              {hasSelection ? money(total) : '—'}
+            </output>
+          </div>
         </div>
         <div className="grid cols-2" style={{ marginTop: 14 }}>
           <div className="field span-2"><span className="label">Mode de paiement</span><Segmented value={method} onChange={(value) => { if (!busy) setMethod(value); }} items={METHODS} /></div>
