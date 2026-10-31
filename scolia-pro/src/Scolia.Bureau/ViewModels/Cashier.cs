@@ -25,6 +25,9 @@ public sealed class CashierPage : PageViewModel
     private DispatcherTimer? searchTimer;
     private DispatcherTimer? previewTimer;
     private string search = string.Empty;
+    private string? searchStatus = "Saisissez au moins deux caractères pour rechercher un apprenant.";
+    private int searchVersion;
+    private int selectionVersion;
     private PayerRow? selected;
     private EnrollmentChoice? enrollment;
     private DateTime? day = DateTime.Now;
@@ -78,12 +81,25 @@ public sealed class CashierPage : PageViewModel
         set
         {
             if (!Set(ref search, value)) return;
+            // Invalide immédiatement les anciennes réponses pendant la nouvelle saisie.
+            searchVersion++;
+            Results.Clear();
+            SearchStatus = search.Trim().Length < 2
+                ? "Saisissez au moins deux caractères pour rechercher un apprenant."
+                : "Recherche en cours…";
             searchTimer?.Stop();
             searchTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(300) };
             searchTimer.Tick += async (_, _) => { searchTimer?.Stop(); await Shell.Run(SearchAsync); };
             searchTimer.Start();
         }
     }
+
+    public string? SearchStatus
+    {
+        get => searchStatus;
+        private set { if (Set(ref searchStatus, value)) Raise(nameof(HasSearchStatus)); }
+    }
+    public bool HasSearchStatus => !string.IsNullOrWhiteSpace(SearchStatus);
 
     public PayerRow? Selected
     {
@@ -195,24 +211,73 @@ public sealed class CashierPage : PageViewModel
 
     public async Task SearchAsync()
     {
+        var version = ++searchVersion;
+        var query = search.Trim();
         Results.Clear();
-        if (search.Trim().Length < 2) return;
-        var page = await Shell.Api.GetAsync<PagedResult<StudentListItem>>("api/apprenants" + ScoliaClient.Query(("q", search.Trim()), ("taille", 12)));
-        foreach (var s in page.Items)
-            Results.Add(new PayerRow(s.EnrollmentId, s.Id, $"{s.Matricule} · {Format.FullName(s.LastName, s.MiddleName, s.FirstName)}",
-                $"{s.PromotionCode ?? "sans promotion"} · {Labels.Status(s.Status ?? string.Empty)}"));
+        if (query.Length < 2)
+        {
+            SearchStatus = "Saisissez au moins deux caractères pour rechercher un apprenant.";
+            return;
+        }
+        SearchStatus = "Recherche en cours…";
+        try
+        {
+            var page = await Shell.Api.GetAsync<PagedResult<StudentListItem>>("api/apprenants" + ScoliaClient.Query(("q", query), ("taille", 12)));
+            // Une réponse tardive ne doit jamais remplacer les résultats d'une recherche plus récente.
+            if (version != searchVersion) return;
+            foreach (var s in page.Items)
+                Results.Add(new PayerRow(s.EnrollmentId, s.Id, $"{s.Matricule} · {Format.FullName(s.LastName, s.MiddleName, s.FirstName)}",
+                    $"{s.PromotionCode ?? "sans promotion"} · {Labels.Status(s.Status ?? string.Empty)}"));
+            SearchStatus = page.Items.Count == 0 ? "Aucun apprenant trouvé. Vérifiez le nom ou le matricule." : null;
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            if (version == searchVersion) SearchStatus = "Recherche indisponible. Vérifiez la connexion puis réessayez.";
+            throw;
+        }
     }
 
     public async Task ChooseAsync(PayerRow row)
     {
+        var version = ++selectionVersion;
+        ++previewVersion; // Invalide aussi l'aperçu de l'ancien apprenant.
+        previewValid = false;
+        previewing = true;
+        enrollment = null;
+        Months.Clear();
+        Receipt = null;
+        StudentName = string.Empty;
+        StudentInfo = string.Empty;
+        Balance = string.Empty;
+        Overdue = string.Empty;
+        Reference = string.Empty;
+        Hint = "Chargement du compte de l'apprenant…";
+        Raise(nameof(HasStudent));
+        Raise(nameof(HasMonths));
+        Raise(nameof(HasSelection));
+        Raise(nameof(CanPay));
         if (row.EnrollmentId is not { } eid)
         {
             Hint = "Cet apprenant n'a pas d'inscription active : encaissement impossible.";
+            previewing = false;
+            Raise(nameof(CanPay));
             return;
         }
-        var account = await Shell.Api.GetAsync<AccountDto>($"api/inscriptions/{eid}/compte");
+        AccountDto account;
+        try { account = await Shell.Api.GetAsync<AccountDto>($"api/inscriptions/{eid}/compte"); }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            if (version == selectionVersion)
+            {
+                Hint = "Compte indisponible. Vérifiez la connexion et sélectionnez à nouveau l'apprenant.";
+                previewing = false;
+                Raise(nameof(CanPay));
+            }
+            throw;
+        }
+        if (version != selectionVersion) return;
+        previewing = false;
         enrollment = new EnrollmentChoice(eid, account.Balance);
-        Months.Clear();
         selectedMonth = null;
         Raise(nameof(SelectedMonth));
         // Les mois encaissés hors ligne sur cet appareil, pas encore envoyés, ne se proposent plus.
@@ -283,7 +348,8 @@ public sealed class CashierPage : PageViewModel
     /// <summary>Enregistre le versement : crée le reçu puis affiche sa confirmation.</summary>
     public async Task PayAsync()
     {
-        if (paying || previewing) return;
+        // L'interface désactive le bouton ; la commande native applique la même sécurité.
+        if (!CanPay || paying || previewing) return;
         paying = true;
         Raise(nameof(CanPay));
         try { await RecordPaymentAsync(); }
@@ -367,6 +433,11 @@ public sealed class CashierPage : PageViewModel
         if (lockKey is { } previous && previous != key) await Shell.Sync.ReleaseAsync(previous);
         lockKey = key;
         var (granted, holder) = await Shell.Sync.AcquireAsync(key, $"Encaissement de {name}");
+        if (lockKey != key)
+        {
+            if (granted) await Shell.Sync.ReleaseAsync(key);
+            return;
+        }
         LockedBy = granted ? null : holder;
         Shell.Sync.Activity = granted ? $"Encaissement de {name}" : null;
     }
