@@ -106,6 +106,8 @@ public static class ScoliaEndpoints
 
         g.MapGet("/annees", (SchoolService s, CancellationToken ct) => s.YearsAsync(ct));
         g.MapPost("/annees", (AcademicYearCreate input, SchoolService s, CancellationToken ct) => s.CreateYearAsync(input, ct)).RequireAuthorization(Permissions.SettingsWrite);
+        g.MapPut("/annees/{id:guid}/calendrier", (Guid id, AcademicYearScheduleUpdate input, SchoolService s, CancellationToken ct) =>
+            s.UpdateYearScheduleAsync(id, input, ct)).RequireAuthorization(Permissions.SettingsWrite);
         g.MapPost("/annees/{id:guid}/courante", async (Guid id, SchoolService s, CancellationToken ct) => { await s.SetCurrentYearAsync(id, ct); return Results.NoContent(); })
             .RequireAuthorization(Permissions.SettingsWrite);
         g.MapPost("/annees/{id:guid}/cloture", async (Guid id, SchoolService s, BackupService backups, CancellationToken ct) =>
