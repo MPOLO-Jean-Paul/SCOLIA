@@ -531,6 +531,10 @@ public sealed class BackstageViewModel : Observable
                 return false;
             }
             await shell.Api.SendAsync(HttpMethod.Post, "api/session/mot-de-passe", new { currentPassword = f.Text("actuel"), newPassword = f.Text("nouveau") });
+            // Le cache chiffré hors ligne doit immédiatement reconnaître le nouveau
+            // mot de passe, jamais l'ancien, après la confirmation du serveur.
+            if (shell.Api.Offline is { } cache && shell.Session is { } authenticatedSession)
+                cache.SaveCredential(authenticatedSession.UserName, f.Text("nouveau"), authenticatedSession, shell.Api.SessionCookie);
             shell.Notify("Mot de passe modifié.");
             PasswordForm = BuildPasswordForm();
             shell.CloseBackstage();
