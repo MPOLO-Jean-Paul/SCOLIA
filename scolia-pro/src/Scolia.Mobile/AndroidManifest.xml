@@ -14,6 +14,8 @@
   <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
   <!-- Reprise sur les appareils volontairement configurés comme serveur de l’établissement. -->
   <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+  <!-- Installation de Tailscale téléchargé par SCOLIA : Android demande toujours l'accord de l'utilisateur. -->
+  <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
   <application android:label="SCOLIA" android:networkSecurityConfig="@xml/reseau" android:supportsRtl="false">
     <!-- Les documents enregistrés s'ouvrent dans le lecteur PDF ou le tableur du téléphone. -->
     <provider android:name="androidx.core.content.FileProvider"

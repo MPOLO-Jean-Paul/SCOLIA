@@ -389,6 +389,36 @@ if (args.Length > 3 && args[3] == "contraste")
     return;
 }
 
+// Assistant Tailscale : fenêtre Réseau puis assistant ouvert, sans réseau (téléchargement non lancé).
+if (args.Length > 3 && args[3] == "tailscale")
+{
+    window.Width = Preferences.MobileLayout ? 360 : 1280;
+    window.Height = Preferences.MobileLayout ? 760 : 820;
+    var suffix = Preferences.MobileLayout ? "mobile" : "bureau";
+    Wait(shell.OpenSessionAsync(Result(api.LoginAsync("admin", password))));
+    shell.ShowNetwork();
+    Save(window, $"tailscale-reseau-{suffix}.png");
+    if (Preferences.MobileLayout)
+    {
+        // Comme sur Android : détection disponible, paquet APK officiel, installation remise au système.
+        Platform.IsTailscaleInstalled = () => false;
+        Platform.TailscalePackageKind = "android";
+    }
+    var wizard = TailscaleInstaller.Instance;
+    var begin = wizard.BeginAsync();
+    for (var i = 0; i < 300 && !begin.IsCompleted; i++) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(10); }
+    Save(window, $"tailscale-assistant-{suffix}.png");
+    var shown = window.GetVisualDescendants().OfType<TailscaleWizardView>().Count(v => v.IsEffectivelyVisible && v.Bounds.Height > 0);
+    Console.WriteLine($"{(wizard.IsOpen && shown >= 1 ? "OK  " : "ECHEC")} Assistant Tailscale ouvert ({shown} vue visible), étape : {wizard.Step}");
+    Console.WriteLine($"     Téléchargement proposé : {wizard.CanDownload} · magasin : {wizard.ShowStoreFallback} · état : {wizard.Status}");
+    wizard.Close.Execute(null);
+    shell.CloseDialog();
+    shell.Sync.Stop();
+    window.Close();
+    Environment.ExitCode = wizard.IsOpen || shown < 1 ? 1 : 0;
+    return;
+}
+
 // Vérification bureau autonome : redimensionnement, texte agrandi, dialogues et transitions.
 if (args.Length > 3 && args[3] == "bureau")
 {

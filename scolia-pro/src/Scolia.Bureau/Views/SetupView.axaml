@@ -2,6 +2,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:infra="using:Scolia.Bureau.Infrastructure"
              xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:views="using:Scolia.Bureau.Views"
              x:Class="Scolia.Bureau.Views.SetupView">
   <UserControl.Styles>
     <!-- Champ de l'assistant : libellé court au-dessus, champ dessous, peu d'espace entre les deux -->
@@ -308,30 +309,7 @@
         </Grid>
       </Border>
     </ScrollViewer>
-    <!-- Installation demandée depuis la première configuration ; aucun VPN n'est imposé. -->
-    <Grid Grid.RowSpan="3" IsVisible="{Binding Installer.IsOpen}" Background="#CC091326">
-      <Border Classes="card" HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="440"
-              Margin="14" Padding="18" CornerRadius="16" infra:Adaptive.FitDialog="True">
-        <StackPanel Spacing="12">
-          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
-            <Border Classes="appicon medium" Background="{DynamicResource ToneTeal}"><mi:MaterialIcon Kind="ShieldCheckOutline" /></Border>
-            <StackPanel Grid.Column="1" Spacing="3">
-              <TextBlock Text="Installation de Tailscale" FontSize="18" FontWeight="SemiBold" TextWrapping="Wrap" />
-              <TextBlock Text="{Binding Installer.Step}" Classes="muted" TextWrapping="Wrap" />
-            </StackPanel>
-          </Grid>
-          <ProgressBar Minimum="0" Maximum="3" Value="{Binding Installer.StepProgress, Mode=OneWay}" Height="6" />
-          <ProgressBar IsIndeterminate="True" IsVisible="{Binding Installer.IsWaiting}" Height="3" />
-          <TextBlock Text="{Binding Installer.Status}" TextWrapping="Wrap" />
-          <TextBlock Text="{Binding Installer.NetworkSummary}" Classes="muted" TextWrapping="Wrap" />
-          <TextBlock Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap"
-                     Text="Le magasin officiel affiche le téléchargement réel ; SCOLIA vérifie l'installation au retour. La permission VPN reste sous votre contrôle." />
-          <Button Classes="ghost" Content="Ouvrir le magasin officiel" Command="{Binding Installer.OpenStore}" IsVisible="{Binding Installer.NeedsInstallation}" HorizontalAlignment="Stretch" />
-          <Button Content="Vérifier la connexion" Command="{Binding Installer.Verify}" HorizontalAlignment="Stretch" />
-          <Button Classes="ghost" Content="Activer Tailscale" Command="{Binding Installer.Configure}" IsVisible="{Binding Installer.NeedsActivation}" HorizontalAlignment="Stretch" />
-          <Button Classes="primary" Content="Fermer · Revenir à la configuration" Command="{Binding Installer.Close}" Height="44" HorizontalAlignment="Stretch" />
-        </StackPanel>
-      </Border>
-    </Grid>
+    <!-- Assistant Tailscale commun (téléchargement et installation depuis SCOLIA). -->
+    <views:TailscaleWizardView Grid.RowSpan="3" />
   </Grid>
 </UserControl>

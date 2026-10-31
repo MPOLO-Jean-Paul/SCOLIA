@@ -2,6 +2,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:infra="using:Scolia.Bureau.Infrastructure"
              xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:views="using:Scolia.Bureau.Views"
              x:Class="Scolia.Bureau.Views.NetworkView">
   <!-- Réseau et activité : l'état de la connexion, les autres postes, puis ce qui attend d'être envoyé -->
   <Grid>
@@ -121,27 +122,7 @@
       </Grid>
     </Grid>
   </Border>
-    <!-- Assistant SCOLIA : étapes vérifiées, sans pourcentage fictif de téléchargement Play Store. -->
-    <Grid IsVisible="{Binding Remote.Installer.IsOpen}" Background="#CC091326">
-      <Border Classes="card" MaxWidth="450" Margin="18" Padding="22" HorizontalAlignment="Center" VerticalAlignment="Center"
-              Background="{DynamicResource SurfaceBrush}" CornerRadius="18">
-        <StackPanel Spacing="12">
-          <Border Classes="appicon large" Background="{DynamicResource ToneTeal}" HorizontalAlignment="Center">
-            <mi:MaterialIcon Kind="ShieldCheckOutline" />
-          </Border>
-          <TextBlock Text="Installation du réseau privé" FontSize="19" FontWeight="Bold" TextAlignment="Center" TextWrapping="Wrap" />
-          <TextBlock Text="{Binding Remote.Installer.Step}" FontWeight="SemiBold" TextAlignment="Center" TextWrapping="Wrap" />
-          <ProgressBar Minimum="0" Maximum="3" Value="{Binding Remote.Installer.StepProgress, Mode=OneWay}" Height="7" MinHeight="7" />
-          <ProgressBar IsIndeterminate="True" IsVisible="{Binding Remote.Installer.IsWaiting}" Height="3" MinHeight="3" />
-          <TextBlock Text="{Binding Remote.Installer.Status}" Classes="muted" TextWrapping="Wrap" TextAlignment="Center" />
-          <TextBlock Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" TextAlignment="Center"
-                     Text="Le téléchargement est réalisé par Google Play. Son pourcentage réel apparaît dans le Play Store ; SCOLIA affiche les étapes et vérifie l'installation au retour." />
-          <Button Classes="ghost" Content="Ouvrir le magasin officiel" Command="{Binding Remote.Installer.OpenStore}" IsVisible="{Binding Remote.Installer.NeedsInstallation}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" />
-          <Button Content="Vérifier l'installation" Command="{Binding Remote.Installer.Verify}" IsVisible="{Binding Remote.Installer.NeedsInstallation}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" />
-          <Button Classes="ghost" Content="Configurer Tailscale (première connexion)" Command="{Binding Remote.Installer.Configure}" IsVisible="{Binding Remote.Installer.IsInstalled}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" />
-          <Button Classes="primary" Content="Fermer · Revenir au partage" Command="{Binding Remote.Installer.Close}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Height="44" />
-        </StackPanel>
-      </Border>
-    </Grid>
+    <!-- Assistant Tailscale commun (téléchargement et installation depuis SCOLIA). -->
+    <views:TailscaleWizardView />
   </Grid>
 </UserControl>

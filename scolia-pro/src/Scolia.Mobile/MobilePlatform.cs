@@ -41,6 +41,10 @@ public static class MobilePlatform
         Platform.ReadTailnetState = ReadTailnetState;
         Platform.OpenTailscaleInstallPage = OpenTailscaleInstallPage;
         Platform.ConnectTailscaleInBackground = ConnectTailscaleInBackgroundAsync;
+        // Tailscale se télécharge et s'installe depuis SCOLIA : APK officiel, empreinte vérifiée, confirmation Android.
+        Platform.TailscalePackageKind = "android";
+        Platform.DownloadFolder = Path.Combine(app.CacheDir?.AbsolutePath ?? Path.GetTempPath(), "tailscale");
+        Platform.InstallTailscalePackage = path => AndroidTailscaleSetup.InstallAsync(context ?? app, path);
         Platform.PlayWave = AndroidAudio.PlayWave;
         // Sans ordinateur dans l'établissement, ce téléphone peut en être le serveur.
         Platform.LocalServer = Server.PhoneServer.Get(app);
