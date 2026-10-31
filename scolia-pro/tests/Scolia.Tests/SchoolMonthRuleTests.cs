@@ -31,7 +31,7 @@ public sealed class SchoolMonthRuleTests
     [Fact]
     public void Leap_february_last_day_is_respected()
     {
-        var period = AcademicPeriod.Monthly(Guid.NewGuid(), 2023, 2, 1, dueDay: 29)[0];
+        var period = AcademicPeriod.Monthly(Guid.NewGuid(), 2023, 1, 1, dueDay: 29)[0];
         Assert.Equal(new DateOnly(2023, 3, 1), period.DueDate);
         var leap = AcademicPeriod.Monthly(Guid.NewGuid(), 2024, 1, 1, dueDay: 29)[0];
         Assert.Equal(new DateOnly(2024, 2, 29), leap.DueDate);
