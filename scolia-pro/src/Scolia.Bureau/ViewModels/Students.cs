@@ -44,6 +44,19 @@ public sealed class StudentsPage : PageViewModel
         {
             if (await StudentForms.DeleteAsync(Shell, id)) await RefreshAsync();
         }), danger: true);
+        ClearFilters = new AsyncCommand(async () =>
+        {
+            debounce?.Stop();
+            search = string.Empty;
+            promotion = Promotions.FirstOrDefault();
+            status = StatusChoices[0];
+            page = 1;
+            Selected = null;
+            Raise(nameof(Search));
+            Raise(nameof(Promotion));
+            Raise(nameof(Status));
+            await RefreshAsync();
+        });
         PreviousPage = new AsyncCommand(async () => { page--; await RefreshAsync(); });
         NextPage = new AsyncCommand(async () => { page++; await RefreshAsync(); });
     }
@@ -81,6 +94,7 @@ public sealed class StudentsPage : PageViewModel
 
     public AsyncCommand PreviousPage { get; }
     public AsyncCommand NextPage { get; }
+    public AsyncCommand ClearFilters { get; }
 
     public override async Task LoadAsync()
     {
