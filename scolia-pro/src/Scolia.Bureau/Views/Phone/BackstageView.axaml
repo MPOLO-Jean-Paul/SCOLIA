@@ -71,7 +71,28 @@
         </StackPanel>
 
         <StackPanel IsVisible="{Binding ShowDetail}">
-          <ContentControl IsVisible="{Binding IsPassword}" Content="{Binding PasswordForm}" />
+          <StackPanel IsVisible="{Binding IsPassword}" Spacing="12">
+            <TextBlock Text="Protégez votre compte" FontSize="17" FontWeight="SemiBold" Margin="6,0,0,0" />
+            <TextBlock Text="Mot de passe et connexion biométrique sont gérés au même endroit." Classes="muted" Margin="6,0,0,0" TextWrapping="Wrap" />
+            <ContentControl Content="{Binding PasswordForm}" />
+            <Border Classes="card" IsVisible="{Binding ShowBiometricSecurity}" Margin="0,8,0,0">
+              <StackPanel Spacing="12">
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                  <mi:MaterialIcon Kind="Fingerprint" Width="22" Height="22" Foreground="{DynamicResource AccentBrush}" />
+                  <TextBlock Text="Connexion par empreinte" FontWeight="SemiBold" VerticalAlignment="Center" TextWrapping="Wrap" />
+                </StackPanel>
+                <TextBlock Text="{Binding BiometricSecurityStatus}" Classes="muted" TextWrapping="Wrap" />
+                <TextBlock Text="Confirmation du compte" Classes="phonelabel" />
+                <TextBox Text="{Binding SecurityPassword}" PasswordChar="•" PlaceholderText="Mot de passe actuel" />
+                <TextBlock Text="Pour désactiver, une empreinte valide peut remplacer le mot de passe." Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
+                <Button Classes="primary" Content="{Binding BiometricActionLabel}" Command="{Binding ManageBiometrics}"
+                        IsEnabled="{Binding BiometricSecurityAllowed}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" />
+                <TextBlock Text="{Binding SecurityNotice}" Classes="muted" TextWrapping="Wrap" IsVisible="{Binding HasSecurityNotice}" />
+              </StackPanel>
+            </Border>
+            <Button Classes="ghost" Content="Retour aux réglages" Command="{Binding CloseSecurity}"
+                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Height="44" />
+          </StackPanel>
           <ContentControl IsVisible="{Binding IsPoste}" Content="{Binding PosteSection}" />
         </StackPanel>
       </Panel>
