@@ -900,7 +900,7 @@ public sealed class UsersPage : PageViewModel
     /// <summary>Formulaire de création d'un compte nominatif.</summary>
     public static async Task NewUserAsync(ShellViewModel shell)
     {
-        var form = new FormViewModel("Nouvel utilisateur", "Secrétariat : administre SCOLIA, paramétrage compris. Comptabilité : encaissements, dépenses et caisse. Le mot de passe provisoire devra être changé à la première connexion.", async f =>
+        var form = new FormViewModel("Nouvel utilisateur", "Secrétariat : administration. Comptabilité : encaissements et caisse. Promoteur : consultation d'indicateurs agrégés, sans modification. Le mot de passe provisoire devra être changé à la première connexion.", async f =>
         {
             await shell.Api.SendAsync(HttpMethod.Post, "api/utilisateurs", new
             {

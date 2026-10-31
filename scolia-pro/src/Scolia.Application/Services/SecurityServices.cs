@@ -51,7 +51,8 @@ public sealed class UserService(IAppDbContext db, IWriteGate gate, IAuditLog aud
         var n => $" Encore {n} tentatives avant le verrouillage.",
     };
 
-    private static readonly (Role, string)[] RoleLabels = [(Role.Secretariat, "Secrétariat"), (Role.Comptabilite, "Comptabilité")];
+    private static readonly (Role, string)[] RoleLabels =
+        [(Role.Secretariat, "Secrétariat"), (Role.Comptabilite, "Comptabilité"), (Role.Promoteur, "Promoteur / Responsable")];
 
     public static UserDto ToDto(AppUser u, DateTime now) => new(u.Id, u.UserName, u.DisplayName, u.Role.ToString(), Permissions.Label(u.Role), u.IsActive,
         u.MustChangePassword, u.LastLoginUtc, u.LockoutEndUtc is not null && u.LockoutEndUtc > now);
@@ -109,7 +110,7 @@ public sealed class UserService(IAppDbContext db, IWriteGate gate, IAuditLog aud
     private static Role AssignableRole(string? value)
     {
         var role = EnumText.Parse(value, "role", RoleLabels);
-        return Permissions.Assignable.Contains(role) ? role : throw new DomainException("role", "Rôle : secrétariat ou comptabilité uniquement.");
+        return Permissions.Assignable.Contains(role) ? role : throw new DomainException("role", "Rôle : secrétariat, comptabilité ou promoteur uniquement.");
     }
 
     public async Task<IReadOnlyList<UserDto>> ListAsync(CancellationToken ct = default) =>

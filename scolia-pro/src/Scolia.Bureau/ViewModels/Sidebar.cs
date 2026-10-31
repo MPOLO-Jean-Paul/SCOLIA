@@ -95,10 +95,13 @@ public static class Sidebar
         var groups = new[]
         {
             Group(string.Empty,
-                Item("Accueil", MaterialIconKind.Home, "ToneBlue", null, typeof(HomePage), () => new HomePage(shell))),
+                Item("Accueil", MaterialIconKind.Home, "ToneBlue", null,
+                    shell.Can(Perm.PilotageRead) && !shell.Can(Perm.ReportsRead) ? typeof(PromoterDashboardPage) : typeof(HomePage),
+                    () => shell.Can(Perm.PilotageRead) && !shell.Can(Perm.ReportsRead)
+                        ? new PromoterDashboardPage(shell) : new HomePage(shell))),
             Group("Données",
-                Item("Tableau de bord", MaterialIconKind.ViewDashboard, "ToneBlue", null, typeof(DashboardPage), () => new DashboardPage(shell)),
-                Item("Rapports et exports", MaterialIconKind.FileChart, "ToneIndigo", null, typeof(ReportsPage), () => new ReportsPage(shell)),
+                Item("Tableau de bord", MaterialIconKind.ViewDashboard, "ToneBlue", Perm.ReportsRead, typeof(DashboardPage), () => new DashboardPage(shell)),
+                Item("Rapports et exports", MaterialIconKind.FileChart, "ToneIndigo", Perm.ReportsRead, typeof(ReportsPage), () => new ReportsPage(shell)),
                 Item("Sauvegardes", MaterialIconKind.DatabaseExport, "ToneGreen", Perm.BackupManage, typeof(DataPage), () => new DataPage(shell)),
                 Item("Journal d'audit", MaterialIconKind.ShieldCheck, "ToneIndigo", Perm.AuditRead, typeof(AuditPage), () => new AuditPage(shell)),
                 Item("Effacement", MaterialIconKind.DeleteSweep, "ToneRed", Perm.BackupManage, typeof(EraseDataPage), () => new EraseDataPage(shell, payments: true))),

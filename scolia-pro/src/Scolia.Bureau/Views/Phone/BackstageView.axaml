@@ -71,23 +71,64 @@
         </StackPanel>
 
         <StackPanel IsVisible="{Binding ShowDetail}">
-          <StackPanel IsVisible="{Binding IsPassword}" Spacing="12">
-            <TextBlock Text="Protégez votre compte" FontSize="17" FontWeight="SemiBold" Margin="6,0,0,0" />
-            <TextBlock Text="Mot de passe et connexion biométrique sont gérés au même endroit." Classes="muted" Margin="6,0,0,0" TextWrapping="Wrap" />
-            <ContentControl Content="{Binding PasswordForm}" />
-            <Border Classes="card" IsVisible="{Binding ShowBiometricSecurity}" Margin="0,8,0,0">
+          <!-- Android 16 : sécurité regroupée en blocs lisibles, sans défilement horizontal. -->
+          <StackPanel IsVisible="{Binding IsPassword}" Spacing="14">
+            <Border Classes="card" Padding="16,16">
+              <StackPanel Spacing="8">
+                <StackPanel Orientation="Horizontal" Spacing="12">
+                  <Border Background="{DynamicResource AccentSoftBrush}" Width="46" Height="46" CornerRadius="15">
+                    <mi:MaterialIcon Kind="ShieldCheckOutline" Width="25" Height="25"
+                                     Foreground="{DynamicResource AccentBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                  </Border>
+                  <StackPanel Spacing="3" VerticalAlignment="Center">
+                    <TextBlock Text="Sécurité du compte" FontSize="18" FontWeight="SemiBold" />
+                    <TextBlock Text="Vos accès sont protégés" Classes="muted" FontSize="{DynamicResource FsSmall}" />
+                  </StackPanel>
+                </StackPanel>
+                <TextBlock Text="Choisissez comment protéger votre session et votre appareil."
+                           Classes="muted" TextWrapping="Wrap" />
+              </StackPanel>
+            </Border>
+
+            <Border Classes="card" Padding="14,14">
               <StackPanel Spacing="12">
                 <StackPanel Orientation="Horizontal" Spacing="10">
-                  <mi:MaterialIcon Kind="Fingerprint" Width="22" Height="22" Foreground="{DynamicResource AccentBrush}" />
-                  <TextBlock Text="Connexion par empreinte" FontWeight="SemiBold" VerticalAlignment="Center" TextWrapping="Wrap" />
+                  <mi:MaterialIcon Kind="LockReset" Width="23" Height="23"
+                                   Foreground="{DynamicResource AccentBrush}" />
+                  <TextBlock Text="Mot de passe" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center" />
                 </StackPanel>
-                <TextBlock Text="{Binding BiometricSecurityStatus}" Classes="muted" TextWrapping="Wrap" />
-                <TextBlock Text="Confirmation du compte" Classes="phonelabel" />
-                <TextBox Text="{Binding SecurityPassword}" PasswordChar="•" PlaceholderText="Mot de passe actuel" />
-                <TextBlock Text="Pour désactiver, une empreinte valide peut remplacer le mot de passe." Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
+                <TextBlock Text="Renouvelez votre mot de passe avec l'ancien pour sécuriser la connexion."
+                           Classes="muted" TextWrapping="Wrap" />
+                <ContentControl Content="{Binding PasswordForm}" HorizontalAlignment="Stretch" />
+              </StackPanel>
+            </Border>
+
+            <Border Classes="card" IsVisible="{Binding ShowBiometricSecurity}" Padding="14,14">
+              <StackPanel Spacing="12">
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                  <Border Background="{DynamicResource AccentSoftBrush}" Width="40" Height="40" CornerRadius="13">
+                    <mi:MaterialIcon Kind="Fingerprint" Width="24" Height="24"
+                                     Foreground="{DynamicResource AccentBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                  </Border>
+                  <StackPanel Spacing="3" VerticalAlignment="Center">
+                    <TextBlock Text="Empreinte digitale" FontSize="16" FontWeight="SemiBold" />
+                    <TextBlock Text="Accès sur cet appareil" Classes="muted" FontSize="{DynamicResource FsSmall}" />
+                  </StackPanel>
+                </StackPanel>
+                <Border Background="{DynamicResource GroupBrush}" CornerRadius="12" Padding="12,10">
+                  <TextBlock Text="{Binding BiometricSecurityStatus}" TextWrapping="Wrap"
+                             FontSize="{DynamicResource FsSmall}" />
+                </Border>
+                <TextBlock Text="Vérification supplémentaire" FontWeight="SemiBold" />
+                <TextBox Text="{Binding SecurityPassword}" PasswordChar="•"
+                         PlaceholderText="Mot de passe actuel du compte" />
+                <TextBlock Text="Activation : le mot de passe et la validation Android sont nécessaires. Désactivation : confirmez votre empreinte ou votre mot de passe."
+                           Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
                 <Button Classes="primary" Content="{Binding BiometricActionLabel}" Command="{Binding ManageBiometrics}"
-                        IsEnabled="{Binding BiometricSecurityAllowed}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" />
-                <TextBlock Text="{Binding SecurityNotice}" Classes="muted" TextWrapping="Wrap" IsVisible="{Binding HasSecurityNotice}" />
+                        IsEnabled="{Binding BiometricSecurityAllowed}" HorizontalAlignment="Stretch"
+                        HorizontalContentAlignment="Center" Height="46" />
+                <TextBlock Text="{Binding SecurityNotice}" Classes="muted" TextWrapping="Wrap"
+                           IsVisible="{Binding HasSecurityNotice}" />
               </StackPanel>
             </Border>
             <Button Classes="ghost" Content="Retour aux réglages" Command="{Binding CloseSecurity}"

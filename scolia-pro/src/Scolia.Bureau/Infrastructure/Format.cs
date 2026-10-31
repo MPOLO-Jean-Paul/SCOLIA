@@ -129,8 +129,9 @@ public static class Labels
 
     public static readonly IReadOnlyList<ChoiceItem> Roles =
     [
-        // Deux comptes, comme la V79 : le secrétariat administre SCOLIA, la comptabilité tient la caisse.
+        // Rôle de direction : consultation des statistiques, sans droit de modifier les données.
         new("Secretariat", "Secrétariat"), new("Comptabilite", "Comptabilité"),
+        new("Promoteur", "Promoteur / Responsable"),
     ];
 
     public static readonly IReadOnlyList<ChoiceItem> PayrollModes =

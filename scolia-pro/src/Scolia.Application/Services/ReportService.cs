@@ -12,6 +12,63 @@ namespace Scolia.Application.Services;
 /// <summary>Tableau de bord, liste des débiteurs, balance âgée et exports.</summary>
 public sealed class ReportService(IAppDbContext db, IClock clock, AccountService accounts, IDocumentService documents, ISpreadsheetService spreadsheets)
 {
+    /// <summary>
+    /// Vue exclusivement agrégée du promoteur : aucune ligne nominative n'est renvoyée.
+    /// Les encaissements par mois se fondent sur la DATE du reçu validé (flux de trésorerie).
+    /// La dette par mois suit la PÉRIODE de frais et son solde net (comptabilité scolaire).
+    /// Ces deux dimensions ne doivent jamais être confondues pour les paiements en retard.
+    /// </summary>
+    public async Task<PromoterDashboardDto> PromoterDashboardAsync(CancellationToken ct = default)
+    {
+        var year = await YearContext.CurrentAsync(db, ct);
+        var today = clock.Today;
+        var monthStart = new DateOnly(today.Year, today.Month, 1);
+        var accountsByEnrollment = await accounts.ComputeAsync(year.Id, null, today, ct);
+        var accountRows = accountsByEnrollment.Values.ToList();
+        var active = accountRows.Where(a => a.Enrollment.Status == EnrollmentStatus.Actif).ToList();
+        var periods = year.Periods.OrderBy(p => p.Order).ToList();
+        var promotions = await db.Promotions.AsNoTracking().Where(p => p.AcademicYearId == year.Id)
+            .OrderBy(p => p.Code).ToListAsync(ct);
+
+        // Ne sélectionner ni les noms ni les contacts, mais seulement les montants nécessaires.
+        var receipts = await (from receipt in db.Receipts.AsNoTracking()
+                              join enrollment in db.Enrollments.AsNoTracking()
+                                  on receipt.EnrollmentId equals enrollment.Id
+                              where receipt.AcademicYearId == year.Id && receipt.Status == OperationStatus.Valide
+                              select new { enrollment.PromotionId, receipt.Date, receipt.Amount }).ToListAsync(ct);
+
+        var summaries = promotions.Select(p =>
+        {
+            var members = accountRows.Where(a => a.Promotion.Id == p.Id).ToList();
+            var currentMembers = members.Where(a => a.Enrollment.Status == EnrollmentStatus.Actif).ToList();
+            var money = receipts.Where(r => r.PromotionId == p.Id).ToList();
+
+            var periodsStats = periods.Select(period =>
+            {
+                var first = new DateOnly(period.CalendarYear, period.Month, 1);
+                var last = first.AddMonths(1).AddDays(-1);
+                var lines = members.SelectMany(a => a.Account.Lines).Where(l => l.PeriodId == period.Id).ToList();
+                return new PromoterPeriodDto(period.Id, $"{period.Name} {period.CalendarYear}",
+                    money.Where(r => r.Date >= first && r.Date <= last).Sum(r => r.Amount),
+                    lines.Sum(l => l.Net), lines.Sum(l => l.Paid), lines.Sum(l => l.Remaining));
+            }).ToList();
+
+            return new PromoterPromotionDto(p.Id, p.Code, p.Name, currentMembers.Count,
+                members.Count(a => a.Account.Balance > 0), members.Count(a => a.Account.Overdue > 0),
+                money.Where(r => r.Date == today).Sum(r => r.Amount),
+                money.Where(r => r.Date >= monthStart && r.Date <= today).Sum(r => r.Amount),
+                money.Sum(r => r.Amount), members.Sum(a => a.Account.Balance),
+                members.Sum(a => a.Account.Overdue), periodsStats);
+        }).ToList();
+
+        // Toujours calculer la synthèse globale à partir des mêmes groupes : pas de divergence entre écran et totaux.
+        return new PromoterDashboardDto(year.Label, today, active.Count,
+            summaries.Sum(p => p.StudentsWithBalance), summaries.Sum(p => p.StudentsOverdue),
+            summaries.Sum(p => p.CollectedToday), summaries.Sum(p => p.CollectedThisMonth),
+            summaries.Sum(p => p.CollectedTotal), summaries.Sum(p => p.Outstanding),
+            summaries.Sum(p => p.Overdue), summaries);
+    }
+
     public async Task<DashboardDto> DashboardAsync(Guid? promotionId, CancellationToken ct = default)
     {
         var year = await YearContext.CurrentAsync(db, ct);

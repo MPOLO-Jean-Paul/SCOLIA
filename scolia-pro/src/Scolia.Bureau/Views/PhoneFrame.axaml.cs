@@ -20,7 +20,8 @@ public partial class PhoneFrame : UserControl
         {
             if (e.Source is Button button && button.Command is not null
                 && !button.Classes.Contains("phonecategory")
-                && !button.Classes.Contains("settingssearchcontrol"))
+                && !button.Classes.Contains("settingssearchcontrol")
+                && !button.Classes.Contains("settingssearchresult"))
                 CloseMenu();
         }, RoutingStrategies.Bubble);
         Tabs.AddHandler(Button.ClickEvent, (_, _) => CloseMenu(), RoutingStrategies.Bubble);
@@ -43,6 +44,7 @@ public partial class PhoneFrame : UserControl
         shell.Prefs.PropertyChanged += OnPreferencesChanged;
         shell.PropertyChanged += OnShellChanged;
         shell.SettingsSearch.PropertyChanged += OnSettingsSearchChanged;
+        shell.HeaderSearch.PropertyChanged += OnHeaderSearchChanged;
         // Restauration après la mesure naturelle : aucune mise en page forcée pendant le défilement.
         captureScroll = () =>
         {
@@ -64,6 +66,7 @@ public partial class PhoneFrame : UserControl
             shell.Prefs.PropertyChanged -= OnPreferencesChanged;
             shell.PropertyChanged -= OnShellChanged;
             shell.SettingsSearch.PropertyChanged -= OnSettingsSearchChanged;
+            shell.HeaderSearch.PropertyChanged -= OnHeaderSearchChanged;
             if (shell.KeepScrollPosition == captureScroll) shell.KeepScrollPosition = null;
         }
         subscribedShell = null;
@@ -125,6 +128,22 @@ public partial class PhoneFrame : UserControl
                     MenuSearchBox.Focus();
             }, Avalonia.Threading.DispatcherPriority.Loaded);
         }
+    }
+
+    private void OnHeaderSearchChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName != nameof(PhoneHeaderSearchVm.IsOpen) || Shell?.HeaderSearch.IsOpen != true) return;
+        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        {
+            if (Shell?.HeaderSearch.IsOpen == true) ContextSearchBox.Focus();
+        }, Avalonia.Threading.DispatcherPriority.Loaded);
+    }
+
+    private void OnContextSearchKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (e.Key != Key.Escape || Shell is not { } shell) return;
+        shell.HeaderSearch.Close.Execute(null);
+        e.Handled = true;
     }
 
     /// <summary>Le clavier entre dans le résultat sans ouvrir de recherche globale.</summary>

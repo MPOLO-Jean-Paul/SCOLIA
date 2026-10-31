@@ -57,6 +57,15 @@ public sealed record DashboardDto(
 
 public sealed record SeriesPoint(string Label, decimal Value, decimal? Secondary);
 
+public sealed record PromoterPeriodDto(Guid PeriodId, string Label, decimal CollectedOnDates,
+    decimal DueNet, decimal PaidAgainstDue, decimal RemainingDue);
+public sealed record PromoterPromotionDto(Guid Id, string Code, string Name, int ActiveStudents,
+    int StudentsWithBalance, int StudentsOverdue, decimal CollectedToday, decimal CollectedThisMonth,
+    decimal CollectedTotal, decimal Outstanding, decimal Overdue, IReadOnlyList<PromoterPeriodDto> Periods);
+public sealed record PromoterDashboardDto(string AcademicYear, DateOnly AsOf, int ActiveStudents,
+    int StudentsWithBalance, int StudentsOverdue, decimal CollectedToday, decimal CollectedThisMonth,
+    decimal CollectedTotal, decimal Outstanding, decimal Overdue, IReadOnlyList<PromoterPromotionDto> Promotions);
+
 public sealed record PeriodChoiceDto(Guid Id, string Name, bool IsCurrent);
 
 public sealed record MonthlyRowDto(Guid StudentId, Guid EnrollmentId, string Matricule, string FullName, string PromotionCode,

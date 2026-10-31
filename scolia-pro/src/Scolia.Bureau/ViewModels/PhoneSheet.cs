@@ -129,13 +129,25 @@ public sealed class PhoneSettingsSearchVm : Observable
         void Add(string name, string section, MaterialIconKind icon, string tone, string keywords, ICommand command)
             => catalog.Add(new PhoneSettingsResultVm(name, section, icon, ThemeBrush.Get(tone), keywords, command));
 
-        ICommand Page(string section) => new AsyncCommand(
-            () => shell.Run(() => shell.Open(() => new SettingsPage(shell, section))));
+        // Fermer d'abord le menu et son champ de recherche, puis ouvrir la destination
+        // explicitement : ne jamais déléguer la destination à l'événement Click du menu.
+        // Cela évite le retour intempestif à Accueil causé par une navigation non achevée
+        // lorsque les résultats sont détruits pendant la fermeture du menu.
+        ICommand Page(string section) => new AsyncCommand(async () =>
+        {
+            shell.PhoneMenuOpen = false;
+            await shell.Run(() => shell.Open(() => new SettingsPage(shell, section)));
+        });
         ICommand Account(string key) => new RelayCommand(() =>
         {
             shell.PhoneMenuOpen = false;
             shell.OpenBackstage();
             shell.Backstage.Section = shell.Backstage.Items.First(i => i.Value == key);
+        });
+        ICommand OpenPage(Func<PageViewModel> page) => new AsyncCommand(async () =>
+        {
+            shell.PhoneMenuOpen = false;
+            await shell.Run(() => shell.Open(page));
         });
 
         Add("Configuration", "Réglages", MaterialIconKind.Cog, "TonePurple",
@@ -153,7 +165,7 @@ public sealed class PhoneSettingsSearchVm : Observable
             "audio musique notifications volume silence activation son", Page("sons"));
         Add("Sécurité du compte", "Confidentialité", MaterialIconKind.ShieldLockOutline, "ToneTeal",
             "biometrie empreinte digitale identification connexion authentification code secret mot de passe",
-            Account("mot-de-passe"));
+            Page("securite"));
         Add("Poste et réseau", "Connexions", MaterialIconKind.LanConnect, "ToneGreen",
             "tailscale vpn wifi internet serveur partage reseaux connexion poste magicdns",
             Account("poste"));
@@ -169,14 +181,34 @@ public sealed class PhoneSettingsSearchVm : Observable
             Add("Promotions et frais", "Administration", MaterialIconKind.School, "ToneBlue",
                 "classes promotions mensualite cout frais scolarite", Page("promotions"));
             Add("Nouvelle promotion", "Administration", MaterialIconKind.FolderPlusOutline, "ToneBlue",
-                "ajouter creer classe promotion frais", new AsyncCommand(() => shell.Run(() => SettingsPage.NewPromotionAsync(shell))));
+                "ajouter creer classe promotion frais", new AsyncCommand(async () => { shell.PhoneMenuOpen = false; await shell.Run(() => SettingsPage.NewPromotionAsync(shell)); }));
             Add("Nouvelle année", "Administration", MaterialIconKind.CalendarPlusOutline, "ToneRed",
-                "ajouter creer annee scolaire", new AsyncCommand(() => shell.Run(() => SettingsPage.NewYearAsync(shell))));
+                "ajouter creer annee scolaire", new AsyncCommand(async () => { shell.PhoneMenuOpen = false; await shell.Run(() => SettingsPage.NewYearAsync(shell)); }));
         }
         if (shell.Can(Perm.UsersManage))
             Add("Utilisateurs", "Administration", MaterialIconKind.AccountCog, "ToneBlue",
                 "compte membre permission roles acces utilisateur personnel",
-                new AsyncCommand(() => shell.Run(() => shell.Open(() => new UsersPage(shell)))));
+                OpenPage(() => new UsersPage(shell)));
+
+        // Rechercher aussi les fonctionnalités du menu (pas leurs dossiers) en réutilisant
+        // exactement la navigation filtrée par permissions. Aucune liste d'apprenants/reçus n'est lue ici.
+        foreach (var group in shell.Navigation)
+        {
+            foreach (var item in group.Items)
+            {
+                if (item.PageType == typeof(SettingsPage) || item.PageType == typeof(UsersPage))
+                    continue; // déjà indexés plus haut avec leurs rubriques ciblées
+                var destination = item;
+                var category = string.IsNullOrWhiteSpace(group.Title) ? "Navigation" : group.Title;
+                catalog.Add(new PhoneSettingsResultVm(destination.Label, category, destination.Icon,
+                    destination.Brush, destination.TabLabel,
+                    new RelayCommand(() =>
+                    {
+                        shell.PhoneMenuOpen = false;
+                        destination.Open.Execute(null);
+                    })));
+            }
+        }
 
         Results = catalog.Where(item =>
         {
