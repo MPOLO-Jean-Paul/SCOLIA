@@ -72,6 +72,15 @@ public sealed class CashierPage : PageViewModel
     }
 
     /// <summary>Mois choisis en une ligne courte : leurs noms jusqu'à deux, sinon le premier et le dernier.</summary>
+    /// <summary>La date d'échéance est le premier jour de retard : le dernier jour pour payer est la veille.</summary>
+    private static string Deadline(DateOnly firstLateDay, bool overdue)
+    {
+        var french = System.Globalization.CultureInfo.GetCultureInfo("fr-FR");
+        return overdue
+            ? $"En retard depuis le {firstLateDay.ToString("d MMM yyyy", french)}"
+            : $"À payer jusqu'au {firstLateDay.AddDays(-1).ToString("d MMM yyyy", french)}";
+    }
+
     private string SelectedMonthsSummary()
     {
         var chosen = Months.Where(m => m.IsSelected).Select(m => m.Label).ToList();
@@ -335,7 +344,8 @@ public sealed class CashierPage : PageViewModel
         // Les frais d'inscription et d'examen ne sont pas proposés comme des mois.
         var configuredMonths = account.Lines.Where(l => l.Kind == "Mensualite").ToArray();
         foreach (var line in configuredMonths.Where(l => l.Remaining > 0 && !pending.Contains(l.FeeItemId)))
-            Months.Add(new MonthRowVm(line.FeeItemId, line.Label, line.Remaining, Money(line.Remaining), line.IsOverdue, MonthsChanged));
+            Months.Add(new MonthRowVm(line.FeeItemId, line.Label, line.Remaining, Money(line.Remaining), line.IsOverdue, MonthsChanged,
+                Deadline(line.DueDate, line.IsOverdue)));
 
         MonthListStatus = configuredMonths.Length == 0
             ? "Aucun mois n'est facturé pour cette promotion. Dans Configuration, vérifiez les mois de l'année et attribuez une mensualité à la promotion."
@@ -343,7 +353,9 @@ public sealed class CashierPage : PageViewModel
                 ? "Toutes les mensualités de cette année sont déjà réglées ou couvertes."
                 : Months.Count == 0
                     ? "Les mensualités restant à payer sont déjà en attente de synchronisation sur cet appareil."
-                    : $"{Months.Count} mois disponible(s). Le mois le plus ancien en retard est proposé ; vous pouvez en choisir un autre.";
+                    : Months.Any(m => m.Overdue)
+                        ? "Le mois le plus ancien en retard est coché. Cochez les autres mois payés."
+                        : "Le prochain mois à payer est coché. Cochez les autres mois payés.";
 
         // Un choix immédiat évite le formulaire vide : l'utilisateur peut toujours changer de mois
         // ou en cocher plusieurs. Les mois déjà soldés ne peuvent jamais être encaissés une deuxième fois.
@@ -547,9 +559,13 @@ public sealed class CashierPage : PageViewModel
 }
 
 /// <summary>Un mois à payer : coché pour l'encaissement, réglé en entier à son montant dû.</summary>
-public sealed class MonthRowVm(Guid id, string label, decimal amount, string amountText, bool overdue, Action changed) : Observable
+public sealed class MonthRowVm(Guid id, string label, decimal amount, string amountText, bool overdue, Action changed, string deadline = "") : Observable
 {
     private bool selected;
+
+    /// <summary>Échéance lisible : « à payer jusqu'au 5 déc. » ou « en retard depuis le 6 oct. ».</summary>
+    public string Deadline { get; } = deadline;
+    public bool HasDeadline => Deadline.Length > 0;
 
     public Guid Id { get; } = id;
     public string Label { get; } = label;

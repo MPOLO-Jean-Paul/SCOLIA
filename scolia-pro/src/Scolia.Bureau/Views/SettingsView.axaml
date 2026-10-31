@@ -169,13 +169,32 @@
                 <TextBlock Text="Calendrier de l'année scolaire" FontWeight="SemiBold" FontSize="16" />
                 <TextBlock Text="Choisissez le premier mois, le dernier mois et le dernier jour pour payer sans retard. Ces mois seront utilisés par Encaisser et les rapports."
                            TextWrapping="Wrap" Classes="muted" />
-                <TextBlock Text="Exemple : mensualité d'octobre → paiement jusqu'au 5 novembre, retard à partir du 6 novembre."
+                <TextBlock Text="Exemple : mensualité d'octobre, paiement jusqu'au 5 novembre, retard à partir du 6 novembre."
                            TextWrapping="Wrap" Classes="muted" />
+                <!-- L'année choisie : ses mois et sa date limite, lisibles sans élargir le tableau -->
+                <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="10" Padding="12,10" Margin="0,4,0,0"
+                        IsVisible="{Binding HasSelectedYear}">
+                  <StackPanel Spacing="4">
+                    <TextBlock Text="{Binding SelectedYearTitle}" FontWeight="SemiBold" />
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                      <mi:MaterialIcon Kind="CalendarMonthOutline" Width="16" Height="16" Foreground="{DynamicResource AccentBrush}" />
+                      <TextBlock Text="{Binding SelectedYear.Months}" TextWrapping="Wrap" />
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                      <mi:MaterialIcon Kind="ClockAlertOutline" Width="16" Height="16" Foreground="{DynamicResource ToneOrange}" />
+                      <TextBlock Text="{Binding SelectedYear.Deadline}" TextWrapping="Wrap" />
+                    </StackPanel>
+                  </StackPanel>
+                </Border>
               </StackPanel>
             </Border>
             <Button Classes="primary" Command="{Binding EditSelectedCalendar}" MinHeight="44"
-                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
-                    Content="Configurer les mois et la date limite de l'année sélectionnée" />
+                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Center">
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <mi:MaterialIcon Kind="CalendarEditOutline" Width="18" Height="18" />
+                <TextBlock Text="Modifier les mois et la date limite" FontWeight="SemiBold" VerticalAlignment="Center" TextWrapping="Wrap" />
+              </StackPanel>
+            </Button>
             <DataGrid ItemsSource="{Binding Years}" SelectedItem="{Binding SelectedYear}" AutoGenerateColumns="False" IsReadOnly="True" MaxHeight="420">
               <DataGrid.Columns>
                 <DataGridTextColumn Header="Année" Binding="{Binding Label}" Width="Auto" MinWidth="130" />

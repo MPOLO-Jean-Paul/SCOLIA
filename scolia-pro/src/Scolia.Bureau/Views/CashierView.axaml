@@ -25,6 +25,10 @@
       <Setter Property="VerticalAlignment" Value="Center" />
       <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
     </Style>
+    <!-- Mois à encaisser : ligne grise, bleue une fois cochée ; échéance en rouge quand le mois est en retard -->
+    <Style Selector="Border.monthrow"><Setter Property="Background" Value="{DynamicResource GroupBrush}" /></Style>
+    <Style Selector="Border.monthrow.chosen"><Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" /></Style>
+    <Style Selector="TextBlock.late"><Setter Property="Foreground" Value="{DynamicResource ToneRed}" /></Style>
   </UserControl.Styles>
   <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
   <Grid ColumnDefinitions="2*,3*" infra:Adaptive.StackBelow="1000">
@@ -82,23 +86,10 @@
       <Border Classes="card" IsVisible="{Binding ShowPayment}">
         <StackPanel Spacing="10">
           <TextBlock Text="2. Versement" Classes="heading" />
-          <!-- Le choix du mois affiche immédiatement le montant dû ; cases conservées pour plusieurs mois. -->
+          <!-- Mois à encaisser : une ligne par mois, touchée n'importe où pour la cocher. Le plus ancien en retard est déjà coché. -->
           <StackPanel Spacing="6">
-            <TextBlock Text="Choisir le mois à encaisser" Classes="caption" />
-            <ComboBox x:Name="MonthPicker" ItemsSource="{Binding Months}" SelectedItem="{Binding SelectedMonth}"
-                      MinHeight="48" MaxDropDownHeight="360" HorizontalAlignment="Stretch"
-                      IsEnabled="{Binding HasMonths}" ToolTip.Tip="Les mois proviennent du calendrier de l'année scolaire"
-                      PlaceholderText="Sélectionner un mois…">
-              <ComboBox.ItemTemplate>
-                <DataTemplate>
-                  <TextBlock Text="{Binding Label}" TextWrapping="Wrap" />
-                </DataTemplate>
-              </ComboBox.ItemTemplate>
-            </ComboBox>
-            <TextBlock Text="Sélectionnez un mois : SCOLIA affiche automatiquement le solde à encaisser. Cochez d'autres mois ci-dessous si nécessaire."
-                       Classes="muted" TextWrapping="Wrap" FontSize="{DynamicResource FsSmall}" />
-            <TextBlock Text="Autres mois à régler" Classes="caption" />
-            <TextBlock Text="Chaque mois se règle en entier, à son montant. Les paiements partiels ne sont pas enregistrés." Classes="muted" TextWrapping="Wrap" FontSize="{DynamicResource FsSmall}" />
+            <TextBlock Text="Mois à encaisser" Classes="caption" />
+            <TextBlock Text="{Binding MonthListStatus}" Classes="muted" TextWrapping="Wrap" FontSize="{DynamicResource FsSmall}" IsVisible="{Binding HasMonths}" />
             <!-- Aucune liste silencieusement vide : diagnostiquer la configuration et proposer le bon écran. -->
             <Border Background="{DynamicResource OrangeSoftBrush}" CornerRadius="12" Padding="12"
                     IsVisible="{Binding NoAvailableMonths}">
@@ -116,17 +107,23 @@
             <ItemsControl ItemsSource="{Binding Months}">
               <ItemsControl.ItemTemplate>
                 <DataTemplate>
-                  <Grid ColumnDefinitions="Auto,2*,*" Margin="0,3" ColumnSpacing="6">
-                    <CheckBox IsChecked="{Binding IsSelected}" MinWidth="44" MinHeight="44" />
-                    <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
-                      <TextBlock Text="{Binding Label}" TextWrapping="Wrap" />
-                      <TextBlock Text="en retard" IsVisible="{Binding Overdue}" Foreground="{DynamicResource ToneRed}" FontSize="{DynamicResource FsSmall}" VerticalAlignment="Center" />
-                    </StackPanel>
-                    <TextBlock Grid.Column="2" Text="{Binding AmountText}" FontWeight="SemiBold" VerticalAlignment="Center" TextWrapping="Wrap" TextAlignment="Right" />
-                  </Grid>
+                  <Border Classes="monthrow" Classes.chosen="{Binding IsSelected}" CornerRadius="12" Margin="0,2">
+                    <CheckBox IsChecked="{Binding IsSelected}" MinHeight="52" Padding="8,0,12,0"
+                              HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+                      <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                        <StackPanel Spacing="1" VerticalAlignment="Center">
+                          <TextBlock Text="{Binding Label}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                          <TextBlock Text="{Binding Deadline}" IsVisible="{Binding HasDeadline}" FontSize="{DynamicResource FsSmall}"
+                                     Classes="muted" Classes.late="{Binding Overdue}" TextWrapping="Wrap" />
+                        </StackPanel>
+                        <TextBlock Grid.Column="1" Text="{Binding AmountText}" FontWeight="SemiBold" VerticalAlignment="Center" TextAlignment="Right" />
+                      </Grid>
+                    </CheckBox>
+                  </Border>
                 </DataTemplate>
               </ItemsControl.ItemTemplate>
             </ItemsControl>
+            <TextBlock Text="Chaque mois se règle en entier, à son montant." Classes="muted" FontSize="{DynamicResource FsSmall}" IsVisible="{Binding HasMonths}" />
             <TextBlock Text="{Binding TotalCaption}" Classes="muted" />
           </StackPanel>
           <Grid ColumnDefinitions="*,*,*" RowDefinitions="Auto,Auto" infra:Adaptive.StackBelow="700">

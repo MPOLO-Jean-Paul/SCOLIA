@@ -547,7 +547,14 @@ public sealed class SettingsPage : PageViewModel
     private AsyncCommand? editSelectedCalendar;
     public ObservableCollection<SectionRowVm> SectionRows { get; } = [];
     public ObservableCollection<PromotionRowVm> Promotions { get; } = [];
-    public YearRowVm? SelectedYear { get => selectedYear; set => Set(ref selectedYear, value); }
+    public YearRowVm? SelectedYear
+    {
+        get => selectedYear;
+        set { if (Set(ref selectedYear, value)) { Raise(nameof(HasSelectedYear)); Raise(nameof(SelectedYearTitle)); } }
+    }
+    public bool HasSelectedYear => selectedYear is not null;
+    public string SelectedYearTitle => selectedYear is null ? string.Empty
+        : $"Année {selectedYear.Label}{(selectedYear.IsCurrent ? " · courante" : string.Empty)}";
     public SectionRowVm? SelectedSection { get => selectedSection; set => Set(ref selectedSection, value); }
     public PromotionRowVm? SelectedPromotion { get => selectedPromotion; set => Set(ref selectedPromotion, value); }
 
@@ -641,6 +648,7 @@ public sealed class SettingsPage : PageViewModel
     private async Task LoadYearsAsync()
     {
         var years = await Shell.Api.GetAsync<List<AcademicYearDto>>("api/etablissement/annees");
+        var keep = SelectedYear?.Id;
         Years.Clear();
         foreach (var y in years)
         {
@@ -655,7 +663,9 @@ public sealed class SettingsPage : PageViewModel
                 periods.Length == 0 ? "Aucun mois" : $"{periods[0].Name} {periods[0].CalendarYear} → {periods[^1].Name} {periods[^1].CalendarYear} ({periods.Length} mois)",
                 ThemeBrush.Get(y.Status == "Closed" ? "ToneNeutral" : "ToneGreen"), deadline, y));
         }
-        subtitle = $"{Format.Count(years.Count, "année scolaire", "années scolaires")} · choisissez une année pour configurer les mois et la date limite";
+        // L'année courante est choisie d'office : le bouton « Configurer » agit tout de suite sur elle.
+        SelectedYear = Years.FirstOrDefault(y => y.Id == keep) ?? Years.FirstOrDefault(y => y.IsCurrent) ?? Years.FirstOrDefault();
+        subtitle = Format.Count(years.Count, "année scolaire", "années scolaires");
         Raise(nameof(Subtitle));
     }
 
