@@ -46,7 +46,12 @@ public sealed class SetupService(IAppDbContext db, IWriteGate gate, IAuditLog au
             ReceiptFooter = "Conservez ce reçu. Son authenticité peut être vérifiée en scannant le code QR.",
         };
         db.Schools.Add(school);
-        var year = SchoolService.BuildYear(input.YearLabel, input.StartMonth, input.MonthCount);
+        if (input.LastOnTimeDay is < 1 or > 28)
+            throw new DomainException("echeance", "Le dernier jour autorisé sans retard doit être compris entre 1 et 28.");
+        var count = input.EndMonth is { } endMonth
+            ? AcademicPeriod.CountBetween(input.StartMonth, endMonth)
+            : input.MonthCount;
+        var year = SchoolService.BuildYear(input.YearLabel, input.StartMonth, count, input.LastOnTimeDay + 1);
         year.IsCurrent = true;
         db.AcademicYears.Add(year);
         var admin = new AppUser
