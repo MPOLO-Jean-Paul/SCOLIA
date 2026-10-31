@@ -368,13 +368,13 @@
                   <Border Classes="tabicon" Classes.selected="{Binding IsSelected}">
                     <mi:MaterialIcon Kind="{Binding Icon}" Width="22" Height="22" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{Binding Brush}" />
                   </Border>
-                  <TextBlock Text="{Binding TabLabel}" />
+                  <TextBlock Text="{Binding TabLabel}" ToolTip.Tip="{Binding Label}" />
                 </StackPanel>
               </Button>
             </DataTemplate>
           </ItemsControl.ItemTemplate>
         </ItemsControl>
-        <Button Grid.Column="1" x:Name="MenuTab" Classes="phonetab" Classes.selected="{Binding PhoneMenuSelected}" Click="OnMenuClick" MinWidth="72">
+        <Button Grid.Column="1" x:Name="MenuTab" Classes="phonetab" Classes.selected="{Binding PhoneMenuSelected}" Click="OnMenuClick" MinWidth="56">
           <StackPanel Spacing="2">
             <mi:MaterialIcon Kind="Menu" Width="24" Height="24" HorizontalAlignment="Center" />
             <TextBlock Text="Menu" />

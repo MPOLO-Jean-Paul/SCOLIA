@@ -751,7 +751,7 @@ public sealed class AboutViewModel : Observable
     public string Phone => AboutInfo.Phone;
     public string Email => AboutInfo.Email;
     public string Copyright => AboutInfo.Copyright;
-    public string Accounts => "Deux comptes : Secrétariat, qui administre SCOLIA, et Comptabilité.";
+    public string Accounts => "Trois espaces : Secrétariat, Comptabilité et Promoteur (consultation des indicateurs uniquement).";
 
     public RelayCommand Close { get; }
     public RelayCommand WriteEmail { get; }

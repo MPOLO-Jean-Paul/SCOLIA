@@ -26,7 +26,7 @@
           <TextBlock Text="{Binding Title}" FontSize="17" FontWeight="Bold" TextWrapping="Wrap" />
           <TextBlock Text="{Binding Subtitle}" Classes="muted" TextWrapping="Wrap" IsVisible="{Binding HasSubtitle}" />
         </StackPanel>
-        <Button Grid.Column="2" Classes="closex" Command="{Binding Cancel}" Margin="12,0,0,0"><mi:MaterialIcon Kind="Close" /></Button>
+        <Button Grid.Column="2" Classes="closex" Command="{Binding Cancel}" IsEnabled="{Binding !Busy}" Margin="12,0,0,0"><mi:MaterialIcon Kind="Close" /></Button>
       </Grid>
 
       <!-- Le message et les champs defilent ensemble, le bouton Importer reste fixe sur mobile. -->
@@ -50,6 +50,7 @@
                 <TextBox IsVisible="{Binding IsMultiline}" Text="{Binding Text}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="84" />
                 <CalendarDatePicker PlaceholderText="jj/mm/aaaa" SelectedDateFormat="Short" IsVisible="{Binding IsDay}" SelectedDate="{Binding Day}" HorizontalAlignment="Stretch" />
                 <ComboBox IsVisible="{Binding IsChoice}" ItemsSource="{Binding Options}" SelectedItem="{Binding Choice}" HorizontalAlignment="Stretch" />
+                <TextBlock Text="{Binding Hint}" Classes="muted" FontSize="{DynamicResource FsSmall}" IsVisible="{Binding HasHint}" TextWrapping="Wrap" />
                 <TextBlock Text="{Binding Error}" Classes="error" IsVisible="{Binding HasError}" TextWrapping="Wrap" />
               </StackPanel>
             </StackPanel>
@@ -66,7 +67,7 @@
       <!-- Actions : Annuler puis le bouton principal, alignés à droite -->
       <Panel Grid.Row="3" Margin="20,12,20,16">
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="12" IsVisible="{Binding CanSubmit}">
-          <Button Content="{Binding CancelText}" Command="{Binding Cancel}" IsVisible="{Binding ShowCancel}" MinWidth="96" />
+          <Button Content="{Binding CancelText}" Command="{Binding Cancel}" IsVisible="{Binding ShowCancel}" IsEnabled="{Binding !Busy}" MinWidth="96" />
           <Button Content="{Binding SubmitText}" Command="{Binding Submit}" IsEnabled="{Binding !Busy}" MinWidth="96"
                   Classes.primary="{Binding !Danger}" Classes.danger="{Binding Danger}" />
         </StackPanel>

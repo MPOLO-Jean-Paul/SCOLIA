@@ -44,6 +44,19 @@ public sealed class StudentsPage : PageViewModel
         {
             if (await StudentForms.DeleteAsync(Shell, id)) await RefreshAsync();
         }), danger: true);
+        ClearFilters = new AsyncCommand(async () =>
+        {
+            debounce?.Stop();
+            search = string.Empty;
+            promotion = Promotions.Count > 0 ? Promotions[0] : null;
+            status = StatusChoices[0];
+            page = 1;
+            Selected = null;
+            Raise(nameof(Search));
+            Raise(nameof(Promotion));
+            Raise(nameof(Status));
+            await RefreshAsync();
+        });
         PreviousPage = new AsyncCommand(async () => { page--; await RefreshAsync(); });
         NextPage = new AsyncCommand(async () => { page++; await RefreshAsync(); });
     }
@@ -81,6 +94,7 @@ public sealed class StudentsPage : PageViewModel
 
     public AsyncCommand PreviousPage { get; }
     public AsyncCommand NextPage { get; }
+    public AsyncCommand ClearFilters { get; }
 
     public override async Task LoadAsync()
     {
@@ -421,23 +435,29 @@ public static class StudentForms
             promotions = (await shell.Api.GetAsync<List<PromotionDto>>("api/etablissement/promotions")).Where(p => p.IsActive).ToList();
             if (promotions.Count == 0) return;
         }
-        var needsConfirmation = false;
+        string? confirmedIdentity = null;
         var form = new FormViewModel("Nouvelle inscription", "Le matricule est attribué automatiquement à l'enregistrement.", async f =>
         {
+            // La confirmation d'un homonyme ne vaut que pour la saisie vérifiée.
+            // Changer le nom, la promotion ou les coordonnées impose une nouvelle vérification.
+            var identityKey = string.Join("|", f.ChoiceValue("promotion"), f.Text("nom").ToUpperInvariant(),
+                f.Text("postNom").ToUpperInvariant(), f.Text("prenom").ToUpperInvariant(),
+                f.ChoiceValue("sexe"), f.Day("naissance"), f.Text("lieu"), f.Text("contact1"), f.Day("inscription"));
             var doubles = await shell.Api.GetAsync<List<DuplicateCandidateDto>>("api/apprenants/doublons" + ScoliaClient.Query(
                 ("nom", f.Text("nom")), ("postNom", f.Text("postNom")), ("prenom", f.Text("prenom"))));
-            if (doubles.Count > 0 && !needsConfirmation)
+            if (doubles.Count > 0 && confirmedIdentity != identityKey)
             {
-                needsConfirmation = true;
-                f.Fail($"Un apprenant porte déjà ce nom : {string.Join(", ", doubles.Select(d => $"{d.FullName} ({d.Matricule})"))}. Cliquez à nouveau sur Inscrire pour confirmer.");
+                confirmedIdentity = identityKey;
+                f.Fail($"Un dossier possède déjà cette identité : {string.Join(", ", doubles.Select(d => $"{d.FullName} ({d.Matricule})"))}. Vérifiez les informations, puis cliquez à nouveau sur Inscrire uniquement s'il s'agit d'une autre personne.");
                 return false;
             }
+            if (doubles.Count == 0) confirmedIdentity = null;
             await shell.Api.SendAsync(HttpMethod.Post, "api/apprenants", new
             {
                 identity = Identity(f, null),
                 promotionId = Guid.Parse(f.ChoiceValue("promotion")!),
                 enrolledOn = f.Day("inscription"),
-                confirmDuplicate = needsConfirmation,
+                confirmDuplicate = doubles.Count > 0 && confirmedIdentity == identityKey,
             });
             shell.Notify("Apprenant inscrit.");
             return true;
@@ -446,6 +466,9 @@ public static class StudentForms
 
         // La promotion d'abord, comme dans la version 79 : elle donne le début du matricule.
         form.AddChoice("promotion", "Promotion", promotions.Select(Choices.Promotion).ToList(), null, required: true);
+        // Pour une nouvelle inscription, ne pas affecter implicitement la première promotion.
+        // L'utilisateur doit choisir explicitement le niveau scolaire.
+        form.Find("promotion").Choice = null;
         AddIdentityFields(form, null);
         form.AddDay("inscription", "Date d'inscription", DateOnly.FromDateTime(DateTime.Today));
 
@@ -473,7 +496,7 @@ public static class StudentForms
     {
         var s = await shell.Api.GetAsync<StudentDto>($"api/apprenants/{id}");
         var before = Format.FullName(s.LastName, s.MiddleName, s.FirstName);
-        var needsConfirmation = false;
+        string? confirmedIdentity = null;
         var form = new FormViewModel("Renommer l'apprenant", $"{before} · matricule {s.Matricule}", async f =>
         {
             var (last, middle, first) = (f.Text("nom"), f.Text("postNom"), f.Text("prenom"));
@@ -485,12 +508,14 @@ public static class StudentForms
             }
             var doubles = await shell.Api.GetAsync<List<DuplicateCandidateDto>>("api/apprenants/doublons" + ScoliaClient.Query(
                 ("nom", last), ("postNom", middle), ("prenom", first), ("exclure", id)));
-            if (doubles.Count > 0 && !needsConfirmation)
+            var identityKey = string.Join("|", last.ToUpperInvariant(), middle.ToUpperInvariant(), first.ToUpperInvariant());
+            if (doubles.Count > 0 && confirmedIdentity != identityKey)
             {
-                needsConfirmation = true;
-                f.Fail($"Un autre apprenant porte déjà ce nom : {string.Join(", ", doubles.Select(d => $"{d.FullName} ({d.Matricule})"))}. Cliquez à nouveau sur Renommer pour confirmer.");
+                confirmedIdentity = identityKey;
+                f.Fail($"Un autre dossier possède déjà ce nom : {string.Join(", ", doubles.Select(d => $"{d.FullName} ({d.Matricule})"))}. Vérifiez l'identité et cliquez à nouveau sur Renommer uniquement s'il s'agit d'une autre personne.");
                 return false;
             }
+            if (doubles.Count == 0) confirmedIdentity = null;
             await shell.Api.SendAsync(HttpMethod.Put, $"api/apprenants/{id}", new
             {
                 lastName = last, middleName = middle, firstName = first,
@@ -551,12 +576,15 @@ public static class StudentForms
     /// </summary>
     private static void AddIdentityFields(FormViewModel form, StudentDto? s)
     {
+        form.AddHeader("Identité de l'apprenant", "Renseignez les noms tels qu'ils apparaissent sur le dossier scolaire.");
         form.Add("nom", "Nom", value: s?.LastName, required: true);
         form.Add("postNom", "Post-nom", value: s?.MiddleName, required: true);
         form.Add("prenom", "Prénom", value: s?.FirstName, required: true);
-        form.AddChoice("sexe", "Sexe", Labels.Genders, s?.Gender ?? "M", required: true);
+        form.AddChoice("sexe", "Sexe", Labels.Genders, s?.Gender, required: true);
+        if (s is null) form.Find("sexe").Choice = null;
         form.AddDay("naissance", "Date de naissance", s?.BirthDate, required: true);
         form.Add("lieu", "Lieu de naissance", value: s?.BirthPlace, required: true);
+        form.AddHeader("Contact et adresse", "Le contact du parent servira aux communications et aux rappels de paiement.");
         form.Add("tuteur", "Parent ou tuteur", value: s?.GuardianName);
         form.Add("adresse", "Adresse", value: s?.Address, hint: "Quartier, avenue et numéro");
         form.Add("contact1", "Contact parent (relances WhatsApp)", FieldKind.Phone, value: s?.GuardianPhone, required: true,
