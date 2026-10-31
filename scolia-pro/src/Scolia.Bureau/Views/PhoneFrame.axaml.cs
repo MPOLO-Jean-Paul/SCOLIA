@@ -16,7 +16,13 @@ public partial class PhoneFrame : UserControl
     {
         InitializeComponent();
         // Choisir un outil, depuis le menu ou un onglet, referme le menu, même si l'outil est déjà à l'écran.
-        MenuPanel.AddHandler(Button.ClickEvent, (_, e) => { if (e.Source is Button button && button.Command is not null && !button.Classes.Contains("phonecategory")) CloseMenu(); }, RoutingStrategies.Bubble);
+        MenuPanel.AddHandler(Button.ClickEvent, (_, e) =>
+        {
+            if (e.Source is Button button && button.Command is not null
+                && !button.Classes.Contains("phonecategory")
+                && !button.Classes.Contains("settingssearchcontrol"))
+                CloseMenu();
+        }, RoutingStrategies.Bubble);
         Tabs.AddHandler(Button.ClickEvent, (_, _) => CloseMenu(), RoutingStrategies.Bubble);
         RailPanel.AddHandler(Button.ClickEvent, (_, e) => { if (e.Source is Button button && button.Command is not null && !button.Classes.Contains("phonecategory")) CloseMenu(); }, RoutingStrategies.Bubble);
         DataContextChanged += (_, _) => AttachShell();
@@ -36,6 +42,7 @@ public partial class PhoneFrame : UserControl
         ApplyTransition();
         shell.Prefs.PropertyChanged += OnPreferencesChanged;
         shell.PropertyChanged += OnShellChanged;
+        shell.SettingsSearch.PropertyChanged += OnSettingsSearchChanged;
         // Restauration après la mesure naturelle : aucune mise en page forcée pendant le défilement.
         captureScroll = () =>
         {
@@ -56,6 +63,7 @@ public partial class PhoneFrame : UserControl
         {
             shell.Prefs.PropertyChanged -= OnPreferencesChanged;
             shell.PropertyChanged -= OnShellChanged;
+            shell.SettingsSearch.PropertyChanged -= OnSettingsSearchChanged;
             if (shell.KeepScrollPosition == captureScroll) shell.KeepScrollPosition = null;
         }
         subscribedShell = null;
@@ -78,6 +86,36 @@ public partial class PhoneFrame : UserControl
     {
         // Une nouvelle page s'ouvre en haut, sans toucher la position d'une page simplement actualisée.
         if (args.PropertyName == nameof(ShellViewModel.PhonePage)) PhoneScroll.Offset = default;
+    }
+
+    private void OnSettingsSearchChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName is nameof(PhoneSettingsSearchVm.IsOpen) or nameof(PhoneSettingsSearchVm.Query))
+        {
+            if (Shell?.SettingsSearch.IsOpen != true) return;
+            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+            {
+                if (Shell?.SettingsSearch.IsOpen != true) return;
+                MenuScroll.Offset = default;
+                if (e.PropertyName == nameof(PhoneSettingsSearchVm.IsOpen))
+                    MenuSearchBox.Focus();
+            }, Avalonia.Threading.DispatcherPriority.Loaded);
+        }
+    }
+
+    /// <summary>Le clavier entre dans le résultat sans ouvrir de recherche globale.</summary>
+    private void OnSettingsSearchKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Escape && Shell?.SettingsSearch.IsOpen == true)
+        {
+            Shell.SettingsSearch.Reset();
+            e.Handled = true;
+        }
+        else if (e.Key == Key.Enter && Shell?.SettingsSearch.Results.FirstOrDefault() is { } result)
+        {
+            if (result.Open.CanExecute(null)) result.Open.Execute(null);
+            e.Handled = true;
+        }
     }
 
     private ShellViewModel? Shell => DataContext as ShellViewModel;
