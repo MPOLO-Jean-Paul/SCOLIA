@@ -190,6 +190,26 @@ public sealed class PhoneSettingsSearchVm : Observable
                 "compte membre permission roles acces utilisateur personnel",
                 OpenPage(() => new UsersPage(shell)));
 
+        // Rechercher aussi les fonctionnalités du menu (pas leurs dossiers) en réutilisant
+        // exactement la navigation filtrée par permissions. Aucune liste d'apprenants/reçus n'est lue ici.
+        foreach (var group in shell.Navigation)
+        {
+            foreach (var item in group.Items)
+            {
+                if (item.PageType == typeof(SettingsPage) || item.PageType == typeof(UsersPage))
+                    continue; // déjà indexés plus haut avec leurs rubriques ciblées
+                var destination = item;
+                var category = string.IsNullOrWhiteSpace(group.Title) ? "Navigation" : group.Title;
+                catalog.Add(new PhoneSettingsResultVm(destination.Label, category, destination.Icon,
+                    destination.Brush, destination.TabLabel,
+                    new RelayCommand(() =>
+                    {
+                        shell.PhoneMenuOpen = false;
+                        destination.Open.Execute(null);
+                    })));
+            }
+        }
+
         Results = catalog.Where(item =>
         {
             return Matches(Query, item.Title + " " + item.Section + " " + item.Keywords);
