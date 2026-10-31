@@ -43,9 +43,24 @@ for (const viewport of [{ width: 320, height: 360 }, { width: 390, height: 640 }
     await search.fill('Kabeya');
     await page.getByRole('button', { name: /SC-2026-00001/ }).click();
     await expect(page.locator('.payment-month')).toHaveCount(12);
+    const monthSelector = page.getByRole('combobox', { name: 'Choisir le mois à encaisser' });
+    const amount = page.getByTestId('cashier-amount');
+    await expect(monthSelector).toHaveValue('');
+    await expect(amount).toHaveText('—');
+    await expect(page.getByRole('button', { name: /Valider le paiement/ })).toBeDisabled();
+    await monthSelector.selectOption('mois-1');
+    await expect(page.locator('.payment-month input').nth(1)).toBeChecked();
+    await expect(amount).not.toHaveText('—');
+    expect((await amount.textContent())?.replace(/\D/g, '')).toBe('125000');
+    // Changer de mois retire l'ancienne sélection ; le montant se recalcule.
+    await monthSelector.selectOption('mois-0');
+    await expect(page.locator('.payment-month input').nth(1)).not.toBeChecked();
+    await expect(page.locator('.payment-month input').nth(0)).toBeChecked();
     await page.locator('.payment-month input').nth(0).check();
     await page.locator('.payment-month input').nth(1).check();
     await page.locator('.payment-month input').nth(2).check();
+    await expect(monthSelector).toHaveValue('');
+    expect((await amount.textContent())?.replace(/\D/g, '')).toBe('375000');
     const pay = page.getByRole('button', { name: /Valider le paiement/ });
     await expect(pay).toBeEnabled();
     await pay.scrollIntoViewIfNeeded();

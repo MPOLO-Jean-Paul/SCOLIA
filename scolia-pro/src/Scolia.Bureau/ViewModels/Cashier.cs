@@ -29,6 +29,8 @@ public sealed class CashierPage : PageViewModel
     private EnrollmentChoice? enrollment;
     private DateTime? day = DateTime.Now;
     private ChoiceItem? method;
+    private MonthRowVm? selectedMonth;
+    private bool updatingMonthSelection;
     private string reference = string.Empty;
     private string payerPhone = string.Empty;
     private string note = string.Empty;
@@ -109,12 +111,34 @@ public sealed class CashierPage : PageViewModel
     public bool HasSelection => SelectedCount > 0;
     public int SelectedCount => Months.Count(m => m.IsSelected);
     public decimal SelectedTotal => Months.Where(m => m.IsSelected).Sum(m => m.Amount);
-    public string Total => Money(SelectedTotal);
+    public string Total => HasSelection ? Money(SelectedTotal) : "—";
+    /// <summary>Choix rapide d'un mois ; les cases à cocher conservent le paiement de plusieurs mois.</summary>
+    public MonthRowVm? SelectedMonth
+    {
+        get => selectedMonth;
+        set
+        {
+            if (!Set(ref selectedMonth, value)) return;
+            updatingMonthSelection = true;
+            try
+            {
+                foreach (var month in Months)
+                    month.IsSelected = value is not null && ReferenceEquals(month, value);
+            }
+            finally { updatingMonthSelection = false; }
+            MonthsChanged();
+        }
+    }
+
     public string TotalCaption => SelectedCount == 0 ? "Aucun mois choisi" : $"{SelectedCount} mois · total {Money(SelectedTotal)}";
 
     /// <summary>Un mois coché ou décoché met à jour le total et l'aperçu de répartition.</summary>
     private void MonthsChanged()
     {
+        if (updatingMonthSelection) return;
+        // En cochant plusieurs mois, le choix rapide revient à son invite sans perdre les coches.
+        var single = SelectedCount == 1 ? Months.First(m => m.IsSelected) : null;
+        Set(ref selectedMonth, single);
         Raise(nameof(Total));
         Raise(nameof(TotalCaption));
         Raise(nameof(HasSelection));
@@ -189,6 +213,8 @@ public sealed class CashierPage : PageViewModel
         var account = await Shell.Api.GetAsync<AccountDto>($"api/inscriptions/{eid}/compte");
         enrollment = new EnrollmentChoice(eid, account.Balance);
         Months.Clear();
+        selectedMonth = null;
+        Raise(nameof(SelectedMonth));
         // Les mois encaissés hors ligne sur cet appareil, pas encore envoyés, ne se proposent plus.
         var pending = Shell.Api.Offline?.PendingFeeItems(eid) ?? new HashSet<Guid>();
         // Seule la scolarité se règle par mois : inscription et examen ne figurent pas dans cette liste.
