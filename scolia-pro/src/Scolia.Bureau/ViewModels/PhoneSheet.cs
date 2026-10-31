@@ -112,11 +112,18 @@ public sealed class PhoneSettingsSearchVm : Observable
             .Where(c => CharUnicodeInfo.GetUnicodeCategory(c) != UnicodeCategory.NonSpacingMark))
         .ToLowerInvariant();
 
+    /// <summary>Recherche sans casse ni accents, avec tous les mots de la saisie.</summary>
+    public static bool Matches(string query, string labelAndKeywords)
+    {
+        var words = Normalize(query).Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        var haystack = Normalize(labelAndKeywords);
+        return words.Length > 0 && words.All(word => haystack.Contains(word, StringComparison.Ordinal));
+    }
+
     private void Refresh()
     {
         Raise(nameof(HasQuery));
         if (!HasQuery) { Results = []; return; }
-        var words = Normalize(Query).Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
         var catalog = new List<PhoneSettingsResultVm>();
 
         void Add(string name, string section, MaterialIconKind icon, string tone, string keywords, ICommand command)
@@ -132,7 +139,7 @@ public sealed class PhoneSettingsSearchVm : Observable
         });
 
         Add("Configuration", "Réglages", MaterialIconKind.Cog, "TonePurple",
-            "personnalisation options preferences reglages", Page("apparence"));
+            "personnalisation options preferences reglages parametres", Page("apparence"));
         Add("Thème et couleurs", "Affichage", MaterialIconKind.Palette, "TonePurple",
             "clair sombre noir blanc nuit mode couleur accent fonds", Page("apparence"));
         Add("Texte et polices", "Affichage", MaterialIconKind.FormatFont, "ToneBlue",
@@ -173,8 +180,7 @@ public sealed class PhoneSettingsSearchVm : Observable
 
         Results = catalog.Where(item =>
         {
-            var searchable = Normalize(item.Title + " " + item.Section + " " + item.Keywords);
-            return words.All(w => searchable.Contains(w, StringComparison.Ordinal));
+            return Matches(Query, item.Title + " " + item.Section + " " + item.Keywords);
         }).ToArray();
     }
 }
