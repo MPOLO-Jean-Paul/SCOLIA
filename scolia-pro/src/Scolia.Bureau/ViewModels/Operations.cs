@@ -536,7 +536,7 @@ public sealed class BackstageViewModel : Observable
             shell.CloseBackstage();
             return true;
         })
-        { SubmitText = "Enregistrer" };
+        { SubmitText = "Enregistrer", Embedded = true, ShowCancel = false };
         form.Add("actuel", "Mot de passe actuel", FieldKind.Secret, required: true);
         form.Add("nouveau", "Nouveau mot de passe", FieldKind.Secret, required: true);
         form.Add("confirmation", "Confirmer", FieldKind.Secret, required: true);
