@@ -198,6 +198,28 @@ public sealed class OfflineStore
         catch (Exception ex) when (ex is IOException or JsonException or FormatException) { return null; }
     }
 
+    /// <summary>
+    /// Lecture du dernier compte hors ligne : l'appelant DOIT avoir validé
+    /// une preuve cryptographique biométrique native sur cet appareil.
+    /// N'ouvre jamais un autre utilisateur que celui enregistré localement.
+    /// </summary>
+    public SessionDto? BiometricOfflineLogin(string userName)
+    {
+        if (database.Read(CredentialFile) is not { Length: > 0 } credentialJson) return null;
+        try
+        {
+            var saved = JsonSerializer.Deserialize<OfflineCredential>(credentialJson, Json);
+            if (saved is null || saved.Session.Length == 0
+                || !string.Equals(saved.UserName, userName.Trim(), StringComparison.OrdinalIgnoreCase))
+                return null;
+            var session = JsonSerializer.Deserialize<SessionDto>(saved.Session, Api.Json.Options);
+            return session is not null
+                   && string.Equals(session.UserName, saved.UserName, StringComparison.OrdinalIgnoreCase)
+                ? session : null;
+        }
+        catch (Exception ex) when (ex is IOException or JsonException or FormatException) { return null; }
+    }
+
     /// <summary>Reprise différée : cookie limité à la durée de session, jamais de mot de passe stocké.</summary>
     public OfflineCredential? SavedCredential => database.Read(CredentialFile) is { Length: > 0 } text
         ? JsonSerializer.Deserialize<OfflineCredential>(text, Json) : null;

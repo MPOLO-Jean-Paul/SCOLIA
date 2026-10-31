@@ -20,9 +20,14 @@ public partial class LoginView : UserControl
         AttachedToVisualTree += (_, _) =>
         {
             SubscribeLogin();
+            Platform.AppResumed += RefreshOnResume;
             if (!Platform.IsMobile && !PhoneLayout.Active) UserNameBox.Focus();
         };
-        DetachedFromVisualTree += (_, _) => ReleaseLogin();
+        DetachedFromVisualTree += (_, _) =>
+        {
+            Platform.AppResumed -= RefreshOnResume;
+            ReleaseLogin();
+        };
         DataContextChanged += (_, _) => SubscribeLogin();
     }
 
@@ -42,6 +47,8 @@ public partial class LoginView : UserControl
         if (subscribedLogin is not null) subscribedLogin.Unlocked -= OnUnlocked;
         subscribedLogin = null;
     }
+
+    private void RefreshOnResume() => subscribedLogin?.RefreshBiometrics();
 
     private void OnUnlocked()
     {

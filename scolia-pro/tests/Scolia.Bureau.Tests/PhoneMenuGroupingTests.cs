@@ -60,4 +60,17 @@ public sealed class PhoneMenuGroupingTests
     public void Groupe_du_ruban_est_classe_selon_sa_nature(string label, string onglet, string groupe, string attendu)
         => Assert.Equal(attendu, ShellViewModel.CanonicalPhoneGroup(label, onglet, groupe));
 
+
+    [Theory]
+    [InlineData("empreinte", "Sécurité du compte biométrie empreinte digitale", true)]
+    [InlineData("securite", "Sécurité du compte biométrie empreinte digitale", true)]
+    [InlineData("TAILSCALE vpn", "Poste et réseau tailscale vpn WiFi", true)]
+    [InlineData("couleur accent", "Thème et couleurs couleur d'accent", true)]
+    [InlineData("police", "Texte et polices taille de police", true)]
+    [InlineData("apprenants", "Thème et couleurs couleur d'accent", false)]
+    [InlineData("finance", "Sons notifications", false)]
+    [InlineData("empreinte réseau", "Sécurité du compte biométrie empreinte digitale", false)]
+    public void Recherche_des_reglages_ignore_accents_et_ne_parcourt_pas_les_donnees(
+        string saisie, string reglage, bool attendu)
+        => Assert.Equal(attendu, PhoneSettingsSearchVm.Matches(saisie, reglage));
 }

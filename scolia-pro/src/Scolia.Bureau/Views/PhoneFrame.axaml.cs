@@ -16,7 +16,13 @@ public partial class PhoneFrame : UserControl
     {
         InitializeComponent();
         // Choisir un outil, depuis le menu ou un onglet, referme le menu, même si l'outil est déjà à l'écran.
-        MenuPanel.AddHandler(Button.ClickEvent, (_, e) => { if (e.Source is Button button && button.Command is not null && !button.Classes.Contains("phonecategory")) CloseMenu(); }, RoutingStrategies.Bubble);
+        MenuPanel.AddHandler(Button.ClickEvent, (_, e) =>
+        {
+            if (e.Source is Button button && button.Command is not null
+                && !button.Classes.Contains("phonecategory")
+                && !button.Classes.Contains("settingssearchcontrol"))
+                CloseMenu();
+        }, RoutingStrategies.Bubble);
         Tabs.AddHandler(Button.ClickEvent, (_, _) => CloseMenu(), RoutingStrategies.Bubble);
         RailPanel.AddHandler(Button.ClickEvent, (_, e) => { if (e.Source is Button button && button.Command is not null && !button.Classes.Contains("phonecategory")) CloseMenu(); }, RoutingStrategies.Bubble);
         DataContextChanged += (_, _) => AttachShell();
@@ -36,6 +42,7 @@ public partial class PhoneFrame : UserControl
         ApplyTransition();
         shell.Prefs.PropertyChanged += OnPreferencesChanged;
         shell.PropertyChanged += OnShellChanged;
+        shell.SettingsSearch.PropertyChanged += OnSettingsSearchChanged;
         // Restauration après la mesure naturelle : aucune mise en page forcée pendant le défilement.
         captureScroll = () =>
         {
@@ -56,16 +63,41 @@ public partial class PhoneFrame : UserControl
         {
             shell.Prefs.PropertyChanged -= OnPreferencesChanged;
             shell.PropertyChanged -= OnShellChanged;
+            shell.SettingsSearch.PropertyChanged -= OnSettingsSearchChanged;
             if (shell.KeepScrollPosition == captureScroll) shell.KeepScrollPosition = null;
         }
         subscribedShell = null;
         captureScroll = null;
     }
 
+    /// <summary>
+    /// Motion Android : transition native Avalonia non bloquante.
+    /// Onglets du bas, raccourcis et pages utilisent le même mouvement court,
+    /// tandis que l'utilisateur peut déjà toucher la nouvelle page.
+    /// </summary>
     private void ApplyTransition()
     {
-        PhoneHost.PageTransition = subscribedShell is { } shell && shell.Prefs.Animations && shell.Prefs.PageTransitions
-            ? new Avalonia.Animation.CrossFade(TimeSpan.FromMilliseconds(120) * shell.Prefs.SpeedFactor) : null;
+        if (subscribedShell is not { } shell || !shell.Prefs.Animations || !shell.Prefs.PageTransitions)
+        {
+            PhoneHost.PageTransition = null;
+            return;
+        }
+
+        // Les durées restent bornées même si l'utilisateur choisit « Douce ».
+        // Aucun Task.Delay ni animation de toute la fenêtre : le menu demeure aussi réactif que les onglets.
+        var duration = TimeSpan.FromMilliseconds(Math.Clamp(175 * shell.Prefs.SpeedFactor, 105, 220));
+        PhoneHost.PageTransition = new Avalonia.Animation.CompositePageTransition
+        {
+            PageTransitions =
+            {
+                new Avalonia.Animation.PageSlide(duration, Avalonia.Animation.PageSlide.SlideAxis.Horizontal)
+                {
+                    SlideInEasing = new Avalonia.Animation.Easings.CubicEaseOut(),
+                    SlideOutEasing = new Avalonia.Animation.Easings.CubicEaseIn()
+                },
+                new Avalonia.Animation.CrossFade(TimeSpan.FromMilliseconds(duration.TotalMilliseconds * 0.8))
+            }
+        };
     }
 
     private void OnPreferencesChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs args)
@@ -78,6 +110,37 @@ public partial class PhoneFrame : UserControl
     {
         // Une nouvelle page s'ouvre en haut, sans toucher la position d'une page simplement actualisée.
         if (args.PropertyName == nameof(ShellViewModel.PhonePage)) PhoneScroll.Offset = default;
+    }
+
+    private void OnSettingsSearchChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName is nameof(PhoneSettingsSearchVm.IsOpen) or nameof(PhoneSettingsSearchVm.Query))
+        {
+            if (Shell?.SettingsSearch.IsOpen != true) return;
+            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+            {
+                if (Shell?.SettingsSearch.IsOpen != true) return;
+                MenuScroll.Offset = default;
+                if (e.PropertyName == nameof(PhoneSettingsSearchVm.IsOpen))
+                    MenuSearchBox.Focus();
+            }, Avalonia.Threading.DispatcherPriority.Loaded);
+        }
+    }
+
+    /// <summary>Le clavier entre dans le résultat sans ouvrir de recherche globale.</summary>
+    private void OnSettingsSearchKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Escape && Shell?.SettingsSearch.IsOpen == true)
+        {
+            Shell.SettingsSearch.Reset();
+            e.Handled = true;
+        }
+        else if (e.Key == Key.Enter && Shell is { } shell && shell.SettingsSearch.Results.Count > 0)
+        {
+            var result = shell.SettingsSearch.Results[0];
+            if (result.Open.CanExecute(null)) result.Open.Execute(null);
+            e.Handled = true;
+        }
     }
 
     private ShellViewModel? Shell => DataContext as ShellViewModel;

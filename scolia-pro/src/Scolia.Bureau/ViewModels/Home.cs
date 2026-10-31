@@ -47,6 +47,8 @@ public sealed class HomePage : PageViewModel
     public string Greeting => $"{(DateTime.Now.Hour >= 18 ? "Bonsoir" : "Bonjour")}, {Shell.AccountName}";
     public string DateLine => Format.LongDate(DateOnly.FromDateTime(DateTime.Today));
     public string SchoolLine => Shell.SchoolLine;
+    public string AccountContextLine => $"{Shell.Session?.RoleLabel ?? "Compte"} · {Shell.SchoolHeaderTitle}";
+    public string HeaderSchoolLine => $"{Shell.SchoolHeaderTitle}{(string.IsNullOrWhiteSpace(Shell.SchoolYearLine) ? string.Empty : $" · {Shell.SchoolYearLine}")}";
     /// <summary>Mobile : l'accueil montre l'état de la connexion et l'activité des autres postes.</summary>
     public SyncCenter Sync => Shell.Sync;
     public RelayCommand Network => Shell.NetworkCommand;
@@ -69,10 +71,12 @@ public sealed class HomePage : PageViewModel
 
     public override async Task LoadAsync()
     {
-        subtitle = Shell.SchoolLine;
+        subtitle = HeaderSchoolLine;
         Raise(nameof(Subtitle));
         Raise(nameof(Greeting));
         Raise(nameof(SchoolLine));
+        Raise(nameof(AccountContextLine));
+        Raise(nameof(HeaderSchoolLine));
         if (!Shell.Can(Perm.ReportsRead)) { RaiseLists(); return; }
 
         // Toutes les réponses sont prêtes avant de toucher aux cartes affichées.

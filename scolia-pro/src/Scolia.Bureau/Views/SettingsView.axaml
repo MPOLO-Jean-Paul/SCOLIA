@@ -77,7 +77,7 @@
       <StackPanel Spacing="14" Margin="0,0,6,12">
         <!-- Android : un écran de rubriques indépendant, pas un long formulaire ni une liste déroulante. -->
         <StackPanel IsVisible="{Binding MobileCategoriesVisible}" Spacing="12">
-          <TextBlock Text="Paramètres" FontSize="{DynamicResource FsTitle}" FontWeight="SemiBold" Margin="4,2,0,0" />
+          <TextBlock Text="Configuration" FontSize="{DynamicResource FsTitle}" FontWeight="SemiBold" Margin="4,2,0,0" />
           <TextBlock Text="Choisissez la rubrique à personnaliser." Classes="muted" Margin="4,0,0,6" />
 
           <StackPanel IsVisible="{Binding HasSchoolSections}" Spacing="5">
@@ -144,6 +144,19 @@
             <TextBlock Text="{Binding SectionHint}" Classes="muted" TextWrapping="Wrap" />
           </StackPanel>
         </Grid>
+
+        <!-- Sécurité : un point d'entrée vers les mêmes contrôles protégés pour tous les comptes. -->
+        <Border Classes="card" IsVisible="{Binding IsSecurity}">
+          <StackPanel Spacing="12">
+            <StackPanel Orientation="Horizontal" Spacing="10">
+              <mi:MaterialIcon Kind="ShieldLockOutline" Foreground="{DynamicResource AccentBrush}" Width="24" Height="24" />
+              <TextBlock Text="Protéger votre compte" FontWeight="SemiBold" VerticalAlignment="Center" />
+            </StackPanel>
+            <TextBlock Text="Modifiez votre mot de passe, activez ou désactivez l'empreinte digitale après vérification de votre identité." Classes="muted" TextWrapping="Wrap" />
+            <Button Classes="primary" Content="Gérer la sécurité du compte" Command="{Binding OpenAccountSecurity}"
+                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" />
+          </StackPanel>
+        </Border>
 
         <!-- Établissement : formulaire intégré, rangé en groupes -->
         <ContentControl Content="{Binding SchoolForm}" IsVisible="{Binding IsSchool}" HorizontalAlignment="Left" />

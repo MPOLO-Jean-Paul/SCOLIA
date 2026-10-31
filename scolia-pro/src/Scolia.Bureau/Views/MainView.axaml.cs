@@ -338,7 +338,9 @@ public partial class MainView : UserControl
         if (shell.HasSheet) shell.CloseSheet();
         else if (shell.Dialog is FormViewModel form) { if (!form.Busy) form.Cancel.Execute(null); }
         else if (shell.HasDialog) shell.CloseDialog();
-        else if (shell.BackstageOpen) shell.CloseBackstage();
+        else if (shell.BackstageOpen) { if (shell.Backstage.ShowDetail) shell.Backstage.BackToList.Execute(null); else shell.CloseBackstage(); }
+        else if (shell.PhoneMenuOpen && shell.SettingsSearch.IsOpen) shell.SettingsSearch.Reset();
+        else if (shell.PhoneMenuOpen && shell.SettingsSearch.IsOpen) shell.SettingsSearch.Reset();
         else if (shell.PhoneMenuOpen) shell.PhoneMenuOpen = false;
         else if (shell.Current is SettingsPage settings && settings.TryBackToMobileSections()) { }
         else if (!shell.Phone && shell.Narrow && shell.SidebarShown) shell.ToggleSidebar();
@@ -443,7 +445,7 @@ public partial class MainView : UserControl
         if (shell.HasSheet) shell.CloseSheet();
         else if (shell.Dialog is FormViewModel form) { if (!form.Busy) form.Cancel.Execute(null); }
         else if (shell.HasDialog) shell.CloseDialog();
-        else if (shell.BackstageOpen) shell.CloseBackstage();
+        else if (shell.BackstageOpen) { if (shell.Backstage.ShowDetail) shell.Backstage.BackToList.Execute(null); else shell.CloseBackstage(); }
         else if (shell.PhoneMenuOpen) shell.PhoneMenuOpen = false;
         else return;
         e.Handled = true;

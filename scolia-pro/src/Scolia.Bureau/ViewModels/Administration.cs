@@ -348,6 +348,7 @@ public sealed class SettingsPage : PageViewModel
             new BackstageItemVm("fenetres", "Fenêtres et affichage", MaterialIconKind.WindowMaximize, "ToneTeal"),
             new BackstageItemVm("animations", "Animations et fluidité", MaterialIconKind.AnimationPlay, "ToneOrange"),
             new BackstageItemVm("sons", "Sons", MaterialIconKind.VolumeHigh, "TonePink"),
+            new BackstageItemVm("securite", "Sécurité du compte", MaterialIconKind.ShieldLockOutline, "ToneTeal"),
         ];
         // Sur le mobile, l'application occupe tout l'écran : la taille de fenêtre, le volet et le ruban n'existent pas.
         if (Preferences.MobileLayout) PosteSections = [.. PosteSections.Where(s => s.Value != "fenetres")];
@@ -363,6 +364,11 @@ public sealed class SettingsPage : PageViewModel
             RefreshMobileSectionVisibility();
         });
         BackToMobileSections = new RelayCommand(() => TryBackToMobileSections());
+        OpenAccountSecurity = new RelayCommand(() =>
+        {
+            Shell.OpenBackstage();
+            Shell.Backstage.Section = Shell.Backstage.Items.First(item => item.Value == "mot-de-passe");
+        });
         Swatches = Preferences.AccentSwatches.Select(a => new AccentSwatchVm(a.Key, a.Label, new SolidColorBrush(a.Color),
             new RelayCommand(() => { Prefs.Accent = a.Key; RaiseSwatches(); }), () => Prefs.Accent == a.Key)).ToList();
         ResetPrefs = new RelayCommand(() => { Prefs.Reset(); RaisePrefs(); Shell.Notify("Réglages de ce poste rétablis."); });
@@ -374,6 +380,7 @@ public sealed class SettingsPage : PageViewModel
     public Preferences Prefs => Shell.Prefs;
     public IReadOnlyList<AccentSwatchVm> Swatches { get; }
     public RelayCommand ResetPrefs { get; }
+    public RelayCommand OpenAccountSecurity { get; }
     public RelayCommand<string> TestSound { get; }
     public IReadOnlyList<ChoiceItem> Themes => Preferences.Themes;
     public IReadOnlyList<ChoiceItem> Fonts => Preferences.Fonts;
@@ -464,7 +471,7 @@ public sealed class SettingsPage : PageViewModel
         ActionRefresh();
     }
 
-    public override string Title => "Paramètres";
+    public override string Title => "Configuration";
     public override string Subtitle => subtitle;
     public override MaterialIconKind Glyph => MaterialIconKind.CogOutline;
 
@@ -486,7 +493,7 @@ public sealed class SettingsPage : PageViewModel
         {
             if (!Set(ref section, value)) return;
             foreach (var name in new[] { nameof(IsSchool), nameof(IsYears), nameof(IsSections), nameof(IsPromotions), nameof(IsAppearance), nameof(IsText),
-                         nameof(IsWindows), nameof(IsAnimations), nameof(IsSounds), nameof(IsPoste), nameof(SchoolSection), nameof(PosteSection), nameof(SectionTitle), nameof(SectionHint) })
+                         nameof(IsWindows), nameof(IsAnimations), nameof(IsSounds), nameof(IsSecurity), nameof(IsPoste), nameof(SchoolSection), nameof(PosteSection), nameof(SectionTitle), nameof(SectionHint) })
                 Raise(name);
             RebuildActions();
             if (value is not null) _ = Shell.Run(RefreshAsync);
@@ -512,6 +519,7 @@ public sealed class SettingsPage : PageViewModel
     public bool IsWindows => section?.Value == "fenetres";
     public bool IsAnimations => section?.Value == "animations";
     public bool IsSounds => section?.Value == "sons";
+    public bool IsSecurity => section?.Value == "securite";
     public bool IsPoste => PosteSections.Contains(section!);
     public string SectionTitle => section?.Label ?? string.Empty;
 
@@ -527,6 +535,7 @@ public sealed class SettingsPage : PageViewModel
         "fenetres" => "La taille de la fenêtre au lancement et les éléments affichés autour des pages.",
         "animations" => "Les mouvements de l'interface : fondus, transitions entre pages et écran d'ouverture.",
         "sons" => "Un son discret quand une action réussit, échoue ou quand un message s'affiche.",
+        "securite" => "Mot de passe du compte et connexion biométrique de cet appareil.",
         _ => string.Empty,
     };
 

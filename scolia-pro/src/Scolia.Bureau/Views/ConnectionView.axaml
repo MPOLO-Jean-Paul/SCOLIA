@@ -44,11 +44,7 @@
                          Text="L'établissement se configure sur ce téléphone et ses données y sont gardées. Les autres téléphones et ordinateurs le trouvent sur le même Wi-Fi et s'y connectent." />
             </StackPanel>
           </Grid>
-          <TextBlock Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap"
-                     Text="Première préparation du partage distant (Internet requis) : installez le client Tailscale officiel, puis connectez l'appareil au réseau privé de l'école. Aucun VPN ne démarre sans votre autorisation." />
-          <Button Classes="ghost" Content="Installer le relais privé Tailscale" Command="{Binding PrepareTailnet}"
-                  IsEnabled="{Binding NotSearching}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Height="44" />
-          <Button Classes="primary" Command="{Binding UseThisComputer}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Height="44">
+           <Button Classes="primary" Command="{Binding UseThisComputer}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Height="44">
             <StackPanel Orientation="Horizontal" Spacing="8">
               <mi:MaterialIcon Kind="CogOutline" Width="18" Height="18" />
               <TextBlock Text="Configurer l'établissement sur ce téléphone" />
@@ -79,7 +75,8 @@
           </Grid>
           <TextBlock Classes="muted" TextWrapping="Wrap"
                      Text="Sur le téléphone ou PC principal, laissez SCOLIA en mode serveur. Entrez ci-dessous son IP Tailscale ou son nom MagicDNS complet." />
-          <Button Classes="ghost" Content="Installer le relais privé Tailscale" Command="{Binding PrepareTailnet}"
+          <TextBlock Text="{Binding Installer.NetworkSummary}" Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
+          <Button Classes="ghost" Content="{Binding Installer.ActionText}" Command="{Binding PrepareTailnet}"
                   IsEnabled="{Binding NotSearching}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" />
           <TextBox Text="{Binding TailscaleAddress}" PlaceholderText="100.110.22.33:5080 ou machine.tailnet.ts.net:5080" />
           <Button Classes="primary" Content="Rejoindre par Tailscale" Command="{Binding ConnectTailnet}"
@@ -114,16 +111,16 @@
           <Border Classes="appicon large" Background="{DynamicResource ToneTeal}" HorizontalAlignment="Center">
             <mi:MaterialIcon Kind="ShieldCheckOutline" />
           </Border>
-          <TextBlock Text="Installation du réseau privé" FontSize="19" FontWeight="Bold" TextAlignment="Center" TextWrapping="Wrap" />
+          <TextBlock Text="{Binding Installer.DialogTitle}" FontSize="19" FontWeight="Bold" TextAlignment="Center" TextWrapping="Wrap" />
           <TextBlock Text="{Binding Installer.Step}" FontWeight="SemiBold" TextAlignment="Center" TextWrapping="Wrap" />
           <ProgressBar Minimum="0" Maximum="3" Value="{Binding Installer.StepProgress, Mode=OneWay}" Height="7" MinHeight="7" />
           <ProgressBar IsIndeterminate="True" IsVisible="{Binding Installer.IsWaiting}" Height="3" MinHeight="3" />
           <TextBlock Text="{Binding Installer.Status}" Classes="muted" TextWrapping="Wrap" TextAlignment="Center" />
           <TextBlock Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" TextAlignment="Center"
-                     Text="Le téléchargement est réalisé par Google Play. Son pourcentage réel apparaît dans le Play Store ; SCOLIA affiche les étapes et vérifie l'installation au retour." />
+                     Text="Si une installation est nécessaire, Google Play affiche sa progression réelle. SCOLIA vérifie ensuite l'état du client et du réseau privé." />
           <Button Classes="ghost" Content="Ouvrir le magasin officiel" Command="{Binding Installer.OpenStore}" IsVisible="{Binding Installer.NeedsInstallation}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" />
           <Button Content="Vérifier l'installation" Command="{Binding Installer.Verify}" IsVisible="{Binding Installer.NeedsInstallation}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" />
-          <Button Classes="ghost" Content="Configurer Tailscale (première connexion)" Command="{Binding Installer.Configure}" IsVisible="{Binding Installer.IsInstalled}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" />
+          <Button Classes="ghost" Content="Ouvrir Tailscale" Command="{Binding Installer.Configure}" IsVisible="{Binding Installer.IsInstalled}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" />
           <Button Classes="primary" Content="Fermer · Revenir au partage" Command="{Binding Installer.Close}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Height="44" />
         </StackPanel>
       </Border>

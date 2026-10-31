@@ -36,7 +36,11 @@ public sealed class TailscaleInstaller : Observable
         get => isInstalled;
         private set
         {
-            if (Set(ref isInstalled, value)) Raise(nameof(NeedsInstallation));
+            if (Set(ref isInstalled, value))
+            {
+                Raise(nameof(NeedsInstallation));
+                Raise(nameof(DialogTitle));
+            }
         }
     }
     // Un VPN privé déjà reconnu par Android n'est pas une raison de forcer
@@ -45,6 +49,7 @@ public sealed class TailscaleInstaller : Observable
     public bool NeedsActivation => IsInstalled && !LikelyConnected;
     public string NetworkSummary { get => networkSummary; private set => Set(ref networkSummary, value); }
     public string ActionText { get => actionText; private set => Set(ref actionText, value); }
+    public string DialogTitle => IsInstalled ? "Réseau privé Tailscale" : "Installation de Tailscale";
     public bool LikelyConnected => snapshot?.LikelyConnected == true;
     private TailnetSnapshot? snapshot;
     public void Refresh()
@@ -57,8 +62,7 @@ public sealed class TailscaleInstaller : Observable
             Raise(nameof(NeedsInstallation));
             Raise(nameof(NeedsActivation));
             NetworkSummary = state.Summary;
-            ActionText = state.LikelyConnected || state.HasCandidateIp ? "Afficher l'état du réseau"
-                : state.Installed ? "Vérifier ou activer Tailscale" : "Installer Tailscale";
+            ActionText = state.Installed || state.HasCandidateIp ? "Afficher les réseaux" : "Installer Tailscale";
             Raise(nameof(LikelyConnected));
         }
         else
@@ -69,7 +73,7 @@ public sealed class TailscaleInstaller : Observable
             IsInstalled = TailscaleCompanion.IsInstalled();
             Raise(nameof(NeedsInstallation));
             Raise(nameof(NeedsActivation));
-            ActionText = IsInstalled ? "Vérifier Tailscale" : "Installer Tailscale";
+            ActionText = IsInstalled ? "Afficher les réseaux" : "Installer Tailscale";
             Raise(nameof(LikelyConnected));
         }
         if (IsOpen) CheckInstallation();
@@ -121,13 +125,12 @@ public sealed class TailscaleInstaller : Observable
         if (state is not null)
         {
             NetworkSummary = state.Summary;
-            ActionText = state.LikelyConnected || state.HasCandidateIp ? "Afficher l'état du réseau" : found
-                ? "Vérifier ou activer Tailscale" : "Installer Tailscale";
+            ActionText = found || state.HasCandidateIp ? "Afficher les réseaux" : "Installer Tailscale";
             Raise(nameof(LikelyConnected));
         }
         if (found)
         {
-            Step = "Étape 3 sur 3 · Installation terminée";
+            Step = "Client Tailscale détecté";
             StepProgress = 3;
             IsWaiting = false;
             Status = state is { LikelyConnected: true }

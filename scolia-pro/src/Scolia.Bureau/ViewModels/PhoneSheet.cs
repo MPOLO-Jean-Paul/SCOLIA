@@ -1,7 +1,10 @@
 using System.Windows.Input;
+using System.Globalization;
+using System.Text;
 using Avalonia.Media;
 using Material.Icons;
 using Scolia.Bureau.Infrastructure;
+using Scolia.Bureau.Ribbon;
 
 namespace Scolia.Bureau.ViewModels;
 
@@ -36,6 +39,150 @@ public sealed class SheetVm(string title, string subtitle, IReadOnlyList<SheetIt
     public string Subtitle { get; } = subtitle;
     public bool HasSubtitle => Subtitle.Length > 0;
     public IReadOnlyList<SheetItemVm> Items { get; } = items;
+}
+
+
+    
+/// <summary>Une destination de réglage accessible sans rechercher dans les dossiers scolaires.</summary>
+public sealed record PhoneSettingsResultVm(string Title, string Section, MaterialIconKind Icon,
+    IBrush Brush, string Keywords, ICommand Open);
+
+/// <summary>
+/// Recherche des paramètres directement dans l'en-tête du menu Android.
+/// Index local uniquement : aucun apprenant, reçu ou autre donnée personnelle n'est consulté.
+/// </summary>
+public sealed class PhoneSettingsSearchVm : Observable
+{
+    private readonly ShellViewModel shell;
+    private bool isOpen;
+    private string query = string.Empty;
+    private IReadOnlyList<PhoneSettingsResultVm> results = [];
+
+    public PhoneSettingsSearchVm(ShellViewModel shell)
+    {
+        this.shell = shell;
+        Activate = new RelayCommand(() =>
+        {
+            shell.PhoneMenuOpen = true;
+            IsOpen = true;
+        });
+        Toggle = new RelayCommand(() =>
+        {
+            if (IsOpen) Reset();
+            else Activate.Execute(null);
+        });
+        Clear = new RelayCommand(() => Query = string.Empty);
+    }
+
+    public RelayCommand Activate { get; }
+    public RelayCommand Toggle { get; }
+    public RelayCommand Clear { get; }
+    public bool IsOpen { get => isOpen; private set => Set(ref isOpen, value); }
+    public string Query
+    {
+        get => query;
+        set
+        {
+            if (!Set(ref query, value ?? string.Empty)) return;
+            Refresh();
+        }
+    }
+    public IReadOnlyList<PhoneSettingsResultVm> Results
+    {
+        get => results;
+        private set
+        {
+            if (!Set(ref results, value)) return;
+            Raise(nameof(HasResults));
+            Raise(nameof(NoResults));
+        }
+    }
+    public bool HasQuery => !string.IsNullOrWhiteSpace(Query);
+    public bool HasResults => Results.Count > 0;
+    public bool NoResults => HasQuery && !HasResults;
+
+    public void Reset()
+    {
+        IsOpen = false;
+        Query = string.Empty;
+    }
+
+    private static string Normalize(string text) => string.Concat(
+        text.Normalize(NormalizationForm.FormD)
+            .Where(c => CharUnicodeInfo.GetUnicodeCategory(c) != UnicodeCategory.NonSpacingMark))
+        .ToLowerInvariant();
+
+    /// <summary>Recherche sans casse ni accents, avec tous les mots de la saisie.</summary>
+    public static bool Matches(string query, string labelAndKeywords)
+    {
+        var words = Normalize(query).Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        var haystack = Normalize(labelAndKeywords);
+        return words.Length > 0 && words.All(word => haystack.Contains(word, StringComparison.Ordinal));
+    }
+
+    private void Refresh()
+    {
+        Raise(nameof(HasQuery));
+        if (!HasQuery) { Results = []; return; }
+        var catalog = new List<PhoneSettingsResultVm>();
+
+        void Add(string name, string section, MaterialIconKind icon, string tone, string keywords, ICommand command)
+            => catalog.Add(new PhoneSettingsResultVm(name, section, icon, ThemeBrush.Get(tone), keywords, command));
+
+        ICommand Page(string section) => new AsyncCommand(
+            () => shell.Run(() => shell.Open(() => new SettingsPage(shell, section))));
+        ICommand Account(string key) => new RelayCommand(() =>
+        {
+            shell.PhoneMenuOpen = false;
+            shell.OpenBackstage();
+            shell.Backstage.Section = shell.Backstage.Items.First(i => i.Value == key);
+        });
+
+        Add("Configuration", "Réglages", MaterialIconKind.Cog, "TonePurple",
+            "personnalisation options preferences reglages parametres", Page("apparence"));
+        Add("Thème et couleurs", "Affichage", MaterialIconKind.Palette, "TonePurple",
+            "clair sombre noir blanc nuit mode couleur accent fonds", Page("apparence"));
+        Add("Texte et polices", "Affichage", MaterialIconKind.FormatFont, "ToneBlue",
+            "taille lettres caractere police texte agrandir zoom typographie", Page("texte"));
+        if (!Platform.IsMobile)
+            Add("Fenêtres et affichage", "Affichage", MaterialIconKind.WindowMaximize, "ToneTeal",
+                "fenetre volet ruban barre", Page("fenetres"));
+        Add("Animations et fluidité", "Affichage", MaterialIconKind.AnimationPlay, "ToneOrange",
+            "transition mouvement vitesse rapidite animation performance", Page("animations"));
+        Add("Sons", "Personnalisation", MaterialIconKind.VolumeHigh, "TonePink",
+            "audio musique notifications volume silence activation son", Page("sons"));
+        Add("Sécurité du compte", "Confidentialité", MaterialIconKind.ShieldLockOutline, "ToneTeal",
+            "biometrie empreinte digitale identification connexion authentification code secret mot de passe",
+            Account("mot-de-passe"));
+        Add("Poste et réseau", "Connexions", MaterialIconKind.LanConnect, "ToneGreen",
+            "tailscale vpn wifi internet serveur partage reseaux connexion poste magicdns",
+            Account("poste"));
+
+        if (shell.Can(Perm.SettingsWrite))
+        {
+            Add("Établissement", "Administration", MaterialIconKind.OfficeBuilding, "ToneNeutral",
+                "ecole institut logo nom coordonnees identite monnaie carte", Page("etablissement"));
+            Add("Années scolaires", "Administration", MaterialIconKind.Calendar, "ToneRed",
+                "annee cours rentree periode mois paiement", Page("annees"));
+            Add("Sections", "Administration", MaterialIconKind.ViewGrid, "ToneIndigo",
+                "section filiere options infirmiere laboratoire", Page("sections"));
+            Add("Promotions et frais", "Administration", MaterialIconKind.School, "ToneBlue",
+                "classes promotions mensualite cout frais scolarite", Page("promotions"));
+            Add("Nouvelle promotion", "Administration", MaterialIconKind.FolderPlusOutline, "ToneBlue",
+                "ajouter creer classe promotion frais", new AsyncCommand(() => shell.Run(() => SettingsPage.NewPromotionAsync(shell))));
+            Add("Nouvelle année", "Administration", MaterialIconKind.CalendarPlusOutline, "ToneRed",
+                "ajouter creer annee scolaire", new AsyncCommand(() => shell.Run(() => SettingsPage.NewYearAsync(shell))));
+        }
+        if (shell.Can(Perm.UsersManage))
+            Add("Utilisateurs", "Administration", MaterialIconKind.AccountCog, "ToneBlue",
+                "compte membre permission roles acces utilisateur personnel",
+                new AsyncCommand(() => shell.Run(() => shell.Open(() => new UsersPage(shell)))));
+
+        Results = catalog.Where(item =>
+        {
+            return Matches(Query, item.Title + " " + item.Section + " " + item.Keywords);
+        }).ToArray();
+    }
 }
 
 /// <summary>Rubrique des commandes du menu du téléphone : un métier et ses commandes qui ne sont pas des pages.</summary>

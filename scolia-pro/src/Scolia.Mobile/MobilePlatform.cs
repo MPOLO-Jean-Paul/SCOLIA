@@ -26,6 +26,9 @@ public static class MobilePlatform
         Platform.IsMobile = true;
         Platform.IsBiometricAvailable = Security.AndroidBiometrics.IsAvailable;
         Platform.VerifyBiometricAsync = Security.AndroidBiometrics.VerifyAsync;
+        Platform.EnrollBiometricAsync = Security.AndroidBiometrics.EnrollAsync;
+        Platform.DisableBiometricAccess = Security.AndroidBiometrics.Disable;
+        Platform.HasBiometricProof = Security.AndroidBiometrics.HasProof;
         Preferences.MobileLayout = true;
         Platform.DeviceName = $"{Android.OS.Build.Manufacturer} {Android.OS.Build.Model}".Trim();
         Platform.DocumentsFolder = app.GetExternalFilesDir(Android.OS.Environment.DirectoryDocuments)?.AbsolutePath

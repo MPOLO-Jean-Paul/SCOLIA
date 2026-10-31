@@ -4,15 +4,18 @@
              xmlns:infra="using:Scolia.Bureau.Infrastructure"
              x:Class="Scolia.Bureau.Views.FormView">
   <UserControl.Styles>
-    <!-- Formulaire intégré à une page : ni ombre ni en-tête, les champs défilent avec la page -->
+    <Style Selector="Border.sheet"><Setter Property="MinWidth" Value="460" /></Style>
+    <!-- Formulaire intégré à une page : largeur adaptative, ni ombre ni en-tête -->
     <Style Selector="Border.sheet.embedded">
+      <Setter Property="MinWidth" Value="0" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
       <Setter Property="BoxShadow" Value="0 0 0 0 Transparent" />
       <Setter Property="Background" Value="{DynamicResource GroupBrush}" />
       <Setter Property="MaxWidth" Value="720" />
     </Style>
   </UserControl.Styles>
   <!-- Feuille de dialogue macOS : titre gras, champs, boutons en capsule alignés à droite -->
-  <Border Classes="card sheet" infra:Adaptive.FitDialog="True" Classes.embedded="{Binding Embedded}" MinWidth="460" MaxWidth="620" Padding="0" CornerRadius="14" Background="{DynamicResource SurfaceBrush}" ClipToBounds="True"
+  <Border Classes="card sheet" infra:Adaptive.FitDialog="True" Classes.embedded="{Binding Embedded}" MaxWidth="620" Padding="0" CornerRadius="14" Background="{DynamicResource SurfaceBrush}" ClipToBounds="True"
           BoxShadow="0 8 32 0 #3D000000">
     <Grid RowDefinitions="Auto,*,Auto,Auto">
       <Grid ColumnDefinitions="Auto,*,Auto" Margin="24,22,18,0" IsVisible="{Binding !Embedded}">
