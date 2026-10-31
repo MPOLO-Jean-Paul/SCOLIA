@@ -226,7 +226,7 @@ public sealed class SearchViewModel : Observable
     private DispatcherTimer? timer;
     private string query = string.Empty;
     private SearchHitRow? selected;
-    private string message = "Tapez au moins deux caractères : nom, matricule, numéro de reçu ou nom d'une page.";
+    private string message = "Recherche globale : apprenants, reçus, fonctionnalités et paramètres autorisés.";
 
     public SearchViewModel(ShellViewModel shell)
     {
@@ -256,20 +256,66 @@ public sealed class SearchViewModel : Observable
         Selected = null;
         if (Query.Trim().Length < 2)
         {
-            Message = "Tapez au moins deux caractères : nom, matricule, numéro de reçu ou nom d'une page.";
+            Message = "Saisissez au moins deux caractères pour trouver un apprenant, un reçu ou un réglage.";
             return;
         }
-        var hits = await shell.Api.GetAsync<List<SearchHitDto>>("api/recherche" + ScoliaClient.Query(("q", Query.Trim())));
-        foreach (var h in hits) Results.Add(new SearchHitRow(h));
-        Selected = Results.FirstOrDefault();
-        Message = hits.Count == 0 ? "Aucun résultat." : Format.Count(hits.Count, "résultat", "résultats");
+        // Réglages : catalogue local filtré selon les permissions et jamais envoyé au serveur.
+        // Sur un compte Promoteur, aucune requête sur les dossiers des apprenants n'est autorisée.
+        var terms = new PhoneSettingsSearchVm(shell) { Query = Query.Trim() };
+        foreach (var setting in terms.Results)
+        {
+            var destination = setting.Title switch
+            {
+                "Configuration" or "Thème et couleurs" => "apparence",
+                "Texte et polices" => "texte",
+                "Fenêtres et affichage" => "fenetres",
+                "Animations et fluidité" => "animations",
+                "Sons" => "sons",
+                "Sécurité du compte" => "securite",
+                "Poste et réseau" => "compte/poste",
+                "Établissement" => "etablissement",
+                "Années scolaires" or "Nouvelle année" => "annees",
+                "Sections" => "sections",
+                "Promotions et frais" or "Nouvelle promotion" => "promotions",
+                "Utilisateurs" => "utilisateurs",
+                _ => string.Empty,
+            };
+            if (destination.Length == 0) continue;
+            var url = destination.StartsWith("compte/", StringComparison.Ordinal)
+                ? "/" + destination : "/parametres/" + destination;
+            Results.Add(new SearchHitRow(new SearchHitDto("Paramètre", setting.Title, setting.Section, url)));
+        }
+
+        if (shell.Can(Perm.StudentsRead))
+        {
+            var current = Query.Trim();
+            var hits = await shell.Api.GetAsync<List<SearchHitDto>>(
+                "api/recherche" + ScoliaClient.Query(("q", current)));
+            // Un aller-retour ancien ne doit pas écraser une nouvelle saisie.
+            if (!string.Equals(current, Query.Trim(), StringComparison.Ordinal)) return;
+            foreach (var h in hits)
+            {
+                if (h.Type == "Reçu" && !shell.Can(Perm.PaymentsRead)) continue;
+                Results.Add(new SearchHitRow(h));
+            }
+        }
+        Selected = Results.Count > 0 ? Results[0] : null;
+        Message = Results.Count == 0 ? "Aucun résultat dans les catégories autorisées." :
+            Format.Count(Results.Count, "résultat", "résultats");
     }
 
     private async Task OpenSelectedAsync()
     {
         if (Selected is null) return;
-        var target = PageFor(Selected.Hit.Url);
+        var url = Selected.Hit.Url;
+        var target = PageFor(url);
         shell.CloseDialog();
+        if (url == "/compte/poste")
+        {
+            shell.OpenBackstage();
+            shell.Backstage.Section = shell.Backstage.Items.First(i => i.Value == "poste");
+            return;
+        }
         if (target is null)
         {
             shell.Notify("Cette commande s'ouvre depuis le ruban.");
@@ -299,6 +345,9 @@ public sealed class SearchViewModel : Observable
             "presences" => () => new AttendancePage(shell),
             "discipline" => () => new DisciplinePage(shell),
             "personnel" => () => new StaffPage(shell),
+            "parametres" when parts.Length > 1 && parts[1] == "utilisateurs" && shell.Can(Perm.UsersManage)
+                => () => new UsersPage(shell),
+            "parametres" when parts.Length > 1 => () => new SettingsPage(shell, parts[1]),
             "parametres" => () => new SettingsPage(shell),
             "utilisateurs" => () => new UsersPage(shell),
             "donnees" => () => new DataPage(shell),
@@ -319,7 +368,8 @@ public sealed class SearchHitRow
     public string Subtitle => Hit.Subtitle;
 
     /// <summary>Icône du résultat, la même que celle de son outil dans le volet latéral.</summary>
-    public MaterialIconKind Icon => Hit.Type == "Reçu" ? MaterialIconKind.ReceiptText : MaterialIconKind.AccountGroup;
+    public MaterialIconKind Icon => Hit.Type == "Reçu" ? MaterialIconKind.ReceiptText
+        : Hit.Type == "Paramètre" ? MaterialIconKind.CogOutline : MaterialIconKind.AccountGroup;
     public IBrush Brush => ThemeBrush.Get(Hit.Type == "Reçu" ? "ToneOrange" : "ToneBlue");
 }
 
