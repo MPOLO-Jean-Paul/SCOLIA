@@ -18,7 +18,10 @@
                Background="Transparent" BorderThickness="0" Margin="8,0" x:Name="ResultList">
         <ListBox.ItemTemplate>
           <DataTemplate>
-            <Grid ColumnDefinitions="Auto,*" Margin="4,6">
+            <!-- Une ligne entière est un bouton : un seul clic sur Windows, un toucher sur Android/iOS. -->
+            <Button Classes="ghost" Command="{Binding Open}" HorizontalContentAlignment="Stretch" MinHeight="60"
+                    HorizontalAlignment="Stretch" Padding="8,5" ToolTip.Tip="Ouvrir ce résultat">
+              <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
               <Border Classes="appicon medium" Background="{Binding Brush}" Margin="0,0,12,0" ToolTip.Tip="{Binding Type}">
                 <mi:MaterialIcon Kind="{Binding Icon}" />
               </Border>
@@ -26,11 +29,16 @@
                 <TextBlock Text="{Binding Title}" FontWeight="SemiBold" />
                 <TextBlock Classes="muted"><Run Text="{Binding Type, Mode=OneWay}" /><Run Text=" · " /><Run Text="{Binding Subtitle, Mode=OneWay}" /></TextBlock>
               </StackPanel>
-            </Grid>
+              <mi:MaterialIcon Grid.Column="2" Kind="ChevronRight" Width="18" Height="18"
+                               Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" />
+              </Grid>
+            </Button>
           </DataTemplate>
         </ListBox.ItemTemplate>
       </ListBox>
-      <TextBlock Text="{Binding Message}" Classes="muted" Margin="18,10,18,16" />
+      <TextBlock Text="{Binding Message}" Classes="muted" Margin="18,10,18,6" />
+      <TextBlock Text="Touchez un résultat pour ouvrir directement la fiche ou le réglage."
+                 Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" Margin="18,0,18,16" />
     </StackPanel>
   </Border>
 </UserControl>
