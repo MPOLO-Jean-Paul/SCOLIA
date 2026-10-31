@@ -68,7 +68,7 @@
           <StackPanel Spacing="3" VerticalAlignment="Center">
             <TextBlock Text="{Binding DateLine}" Foreground="#CFE0FF" />
             <TextBlock Text="{Binding Greeting}" Classes="greeting" Foreground="White" FontWeight="Bold" TextWrapping="Wrap" />
-            <TextBlock Text="{Binding SchoolLine}" Foreground="#DCE8FF" TextTrimming="CharacterEllipsis" />
+            <TextBlock Text="{Binding AccountContextLine}" Foreground="#DCE8FF" TextTrimming="CharacterEllipsis" TextWrapping="Wrap" />
             <WrapPanel Margin="0,10,0,0">
               <Border Classes="herochip" IsVisible="{Binding HasCashLine}" Margin="0,0,8,6">
                 <StackPanel Orientation="Horizontal" Spacing="7">
