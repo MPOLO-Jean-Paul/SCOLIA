@@ -163,7 +163,19 @@
 
         <!-- Années scolaires -->
         <Border Classes="card" IsVisible="{Binding IsYears}">
-          <StackPanel Spacing="8">
+          <StackPanel Spacing="12">
+            <Border Background="{DynamicResource AccentSoftBrush}" CornerRadius="12" Padding="14,12">
+              <StackPanel Spacing="6">
+                <TextBlock Text="Calendrier de l'année scolaire" FontWeight="SemiBold" FontSize="16" />
+                <TextBlock Text="Choisissez le premier mois, le dernier mois et le dernier jour pour payer sans retard. Ces mois seront utilisés par Encaisser et les rapports."
+                           TextWrapping="Wrap" Classes="muted" />
+                <TextBlock Text="Exemple : mensualité d'octobre → paiement jusqu'au 5 novembre, retard à partir du 6 novembre."
+                           TextWrapping="Wrap" Classes="muted" />
+              </StackPanel>
+            </Border>
+            <Button Classes="primary" Command="{Binding EditSelectedCalendar}" MinHeight="44"
+                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                    Content="Configurer les mois et la date limite de l'année sélectionnée" />
             <DataGrid ItemsSource="{Binding Years}" SelectedItem="{Binding SelectedYear}" AutoGenerateColumns="False" IsReadOnly="True" MaxHeight="420">
               <DataGrid.Columns>
                 <DataGridTextColumn Header="Année" Binding="{Binding Label}" Width="Auto" MinWidth="130" />
@@ -179,7 +191,8 @@
                   </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
                 <DataGridCheckBoxColumn Header="Courante" Binding="{Binding IsCurrent}" IsReadOnly="True" Width="Auto" MinWidth="95" />
-                <DataGridTextColumn infra:GridPriority.Level="2" Header="Périodes" Binding="{Binding Months}" Width="2*" MinWidth="260" />
+                <DataGridTextColumn infra:GridPriority.Level="2" Header="Mois à encaisser" Binding="{Binding Months}" Width="2*" MinWidth="260" />
+                <DataGridTextColumn infra:GridPriority.Level="2" Header="Retard" Binding="{Binding Deadline}" Width="2*" MinWidth="310" />
               </DataGrid.Columns>
             </DataGrid>
           </StackPanel>

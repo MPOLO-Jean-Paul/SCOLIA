@@ -15,7 +15,7 @@ public sealed record SchoolUpdate(string Name, string ShortName, string? Motto, 
 
 public sealed record SetupRequest(string SchoolName, string ShortName, string? Motto, string? City, string? Phone, string CurrencyCode, string CurrencySymbol,
     string YearLabel, int StartMonth, int MonthCount, string AdminUserName, string AdminDisplayName, string AdminPassword, bool LoadDemoData,
-    IReadOnlyList<SetupAccount>? Accounts = null);
+    IReadOnlyList<SetupAccount>? Accounts = null, int LastOnTimeDay = 5, int? EndMonth = null);
 
 /// <summary>Compte métier créé pendant l'installation. Rôle : Secretariat ou Comptabilite.</summary>
 public sealed record SetupAccount(string Role, string UserName, string DisplayName, string Password);
@@ -26,7 +26,13 @@ public sealed record PeriodDto(Guid Id, int Order, string Name, int Month, int C
 
 public sealed record AcademicYearDto(Guid Id, string Label, DateOnly StartDate, DateOnly EndDate, string Status, bool IsCurrent, IReadOnlyList<PeriodDto> Periods);
 
-public sealed record AcademicYearCreate(string Label, int StartMonth, int MonthCount, int DueDay, bool CopyPromotionsFromCurrent, bool MakeCurrent);
+/// <summary>LastOnTimeDay = dernier jour où payer sans retard, du mois suivant (1..28).
+/// EndMonth permet de choisir explicitement la fin, même à cheval sur décembre.</summary>
+public sealed record AcademicYearCreate(string Label, int StartMonth, int MonthCount, int DueDay,
+    bool CopyPromotionsFromCurrent, bool MakeCurrent, int? EndMonth = null, int? LastOnTimeDay = null);
+
+/// <summary>Modification du calendrier existant, bloquée si une mensualité a été affectée ou prise en charge.</summary>
+public sealed record AcademicYearScheduleUpdate(int StartMonth, int EndMonth, int LastOnTimeDay);
 
 public sealed record SectionDto(Guid Id, string Code, string Name, bool IsActive);
 

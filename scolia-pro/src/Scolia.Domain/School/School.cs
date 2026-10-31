@@ -71,20 +71,33 @@ public sealed class AcademicPeriod : Entity
     public static readonly string[] FrenchMonths =
         ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"];
 
-    /// <summary>Construit les périodes mensuelles d'une année scolaire.
-    /// La mensualité d'un mois est exigible le <paramref name="dueDay"/> du mois suivant (règle V79 : le 6).</summary>
+    /// <summary>Nombre de mois inclusifs entre la rentrée et la fin, avec passage au calendrier suivant.</summary>
+    public static int CountBetween(int startMonth, int endMonth)
+    {
+        if (startMonth is < 1 or > 12 || endMonth is < 1 or > 12)
+            throw new DomainException("periodes", "Choisissez des mois entre janvier et décembre.");
+        return (endMonth - startMonth + 12) % 12 + 1;
+    }
+
+    /// <summary>
+    /// Crée les mensualités de début à fin. DueDay est le PREMIER jour de retard
+    /// du mois suivant (ex. 6 : limite le 5, retard à partir du 6).
+    /// Le jour 29 est admis ; pour février sans 29, la date devient le 1er mars.
+    /// </summary>
     public static List<AcademicPeriod> Monthly(Guid yearId, int firstCalendarYear, int startMonth, int count, int dueDay = 6)
     {
         if (startMonth is < 1 or > 12) throw new DomainException("periodes", "Mois de rentrée invalide.");
         if (count is < 1 or > 12) throw new DomainException("periodes", "Le nombre de mois facturés doit être compris entre 1 et 12.");
-        if (dueDay is < 1 or > 28) throw new DomainException("periodes", "Le jour d'échéance doit être compris entre 1 et 28.");
+        if (dueDay is < 2 or > 29) throw new DomainException("periodes", "Le dernier jour sans retard doit être compris entre 1 et 28.");
         var list = new List<AcademicPeriod>(count);
         for (var i = 0; i < count; i++)
         {
             var month = startMonth + i;
             var year = firstCalendarYear;
             while (month > 12) { month -= 12; year++; }
-            var due = new DateOnly(year, month, dueDay).AddMonths(1);
+            // La dernière journée autorisée est (dueDay - 1) du mois suivant ;
+            // calcul par décalage pour gérer février et les années bissextiles.
+            var due = new DateOnly(year, month, 1).AddMonths(1).AddDays(dueDay - 1);
             list.Add(new AcademicPeriod
             {
                 AcademicYearId = yearId,

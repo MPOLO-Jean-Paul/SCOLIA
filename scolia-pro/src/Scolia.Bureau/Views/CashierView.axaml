@@ -86,7 +86,8 @@
           <StackPanel Spacing="6">
             <TextBlock Text="Choisir le mois à encaisser" Classes="caption" />
             <ComboBox x:Name="MonthPicker" ItemsSource="{Binding Months}" SelectedItem="{Binding SelectedMonth}"
-                      MinHeight="44" MaxDropDownHeight="320" HorizontalAlignment="Stretch"
+                      MinHeight="48" MaxDropDownHeight="360" HorizontalAlignment="Stretch"
+                      IsEnabled="{Binding HasMonths}" ToolTip.Tip="Les mois proviennent du calendrier de l'année scolaire"
                       PlaceholderText="Sélectionner un mois…">
               <ComboBox.ItemTemplate>
                 <DataTemplate>
@@ -98,7 +99,20 @@
                        Classes="muted" TextWrapping="Wrap" FontSize="{DynamicResource FsSmall}" />
             <TextBlock Text="Autres mois à régler" Classes="caption" />
             <TextBlock Text="Chaque mois se règle en entier, à son montant. Les paiements partiels ne sont pas enregistrés." Classes="muted" TextWrapping="Wrap" FontSize="{DynamicResource FsSmall}" />
-            <TextBlock Text="Aucun mois à payer pour cet apprenant." Classes="muted" IsVisible="{Binding !HasMonths}" />
+            <!-- Aucune liste silencieusement vide : diagnostiquer la configuration et proposer le bon écran. -->
+            <Border Background="{DynamicResource OrangeSoftBrush}" CornerRadius="12" Padding="12"
+                    IsVisible="{Binding NoAvailableMonths}">
+              <StackPanel Spacing="8">
+                <TextBlock Text="Mois de paiement indisponibles" FontWeight="SemiBold" />
+                <TextBlock Text="{Binding MonthListStatus}" TextWrapping="Wrap" />
+                <StackPanel Spacing="6" IsVisible="{Binding CanConfigureFees}">
+                  <Button Content="Configurer les mois de l'année" Command="{Binding ConfigureCalendar}"
+                          HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" MinHeight="42" />
+                  <Button Content="Vérifier les mensualités de la promotion" Command="{Binding ConfigurePromotion}"
+                          HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" MinHeight="42" />
+                </StackPanel>
+              </StackPanel>
+            </Border>
             <ItemsControl ItemsSource="{Binding Months}">
               <ItemsControl.ItemTemplate>
                 <DataTemplate>

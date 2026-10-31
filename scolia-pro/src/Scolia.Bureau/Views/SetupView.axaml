@@ -160,23 +160,35 @@
                 </Grid>
               </Grid>
 
-              <!-- Année scolaire, sur une ligne -->
-              <StackPanel Spacing="8">
-                <TextBlock Text="Année scolaire" Classes="section" />
-                <Grid ColumnDefinitions="*,*,*" ColumnSpacing="12">
+              <!-- Calendrier scolaire : choix explicites du début, de la fin et du dernier jour autorisé. -->
+              <StackPanel Spacing="10">
+                <TextBlock Text="Année scolaire et paiements" Classes="section" />
+                <Grid ColumnDefinitions="*,*,*" ColumnSpacing="12" infra:Adaptive.StackBelow="700">
                   <StackPanel Classes="field">
                     <TextBlock Text="Année" />
                     <TextBox Text="{Binding YearLabel}" PlaceholderText="2026-2027" />
                   </StackPanel>
                   <StackPanel Classes="field" Grid.Column="1">
-                    <TextBlock Text="Premier mois de paiement" />
+                    <TextBlock Text="Premier mois à encaisser" />
                     <ComboBox ItemsSource="{Binding StartMonths}" SelectedItem="{Binding StartMonth}" HorizontalAlignment="Stretch" />
                   </StackPanel>
                   <StackPanel Classes="field" Grid.Column="2">
-                    <TextBlock Text="Durée de l'année" />
-                    <ComboBox ItemsSource="{Binding MonthCounts}" SelectedItem="{Binding MonthCount}" HorizontalAlignment="Stretch" />
+                    <TextBlock Text="Dernier mois à encaisser" />
+                    <ComboBox ItemsSource="{Binding EndMonths}" SelectedItem="{Binding EndMonth}" HorizontalAlignment="Stretch" />
                   </StackPanel>
                 </Grid>
+                <Grid ColumnDefinitions="*,2*" ColumnSpacing="12" infra:Adaptive.StackBelow="580">
+                  <StackPanel Classes="field">
+                    <TextBlock Text="Dernier jour sans retard (mois suivant)" TextWrapping="Wrap" />
+                    <ComboBox ItemsSource="{Binding PaymentDeadlineDays}" SelectedItem="{Binding LastOnTimeDay}"
+                              HorizontalAlignment="Stretch" />
+                  </StackPanel>
+                  <Border Grid.Column="1" Background="{DynamicResource AccentSoftBrush}" CornerRadius="12" Padding="12,10">
+                    <TextBlock Text="{Binding MonthRangeSummary}" TextWrapping="Wrap" VerticalAlignment="Center" />
+                  </Border>
+                </Grid>
+                <TextBlock Text="Exemple : octobre peut être payé jusqu'au 5 novembre ; l'apprenant est en retard dès le 6 novembre."
+                           Classes="muted" TextWrapping="Wrap" />
               </StackPanel>
 
               <!-- Promotions : un code de 4 caractères et la mensualité ; la liste défile au-delà de trois -->

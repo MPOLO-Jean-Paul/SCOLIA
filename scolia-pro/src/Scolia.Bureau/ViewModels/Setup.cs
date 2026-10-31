@@ -39,9 +39,13 @@ public sealed class SetupViewModel : Observable
     {
         this.shell = shell;
         StartMonths = Months;
-        MonthCounts = [.. Enumerable.Range(6, 7).Select(n => new ChoiceItem(n.ToString(System.Globalization.CultureInfo.InvariantCulture), $"{n} mois"))];
+        EndMonths = Months;
+        MonthCounts = [.. Enumerable.Range(1, 12).Select(n => new ChoiceItem(n.ToString(System.Globalization.CultureInfo.InvariantCulture), $"{n} mois"))];
+        PaymentDeadlineDays = [.. Enumerable.Range(1, 28).Select(n => new ChoiceItem(n.ToString(System.Globalization.CultureInfo.InvariantCulture), $"Le {n} du mois suivant"))];
         StartMonth = Months.First(m => m.Value == "9");
+        EndMonth = Months.First(m => m.Value == "6");
         MonthCount = MonthCounts.First(m => m.Value == "10");
+        LastOnTimeDay = PaymentDeadlineDays.First(d => d.Value == "5");
         Next = new AsyncCommand(NextAsync);
         Back = new RelayCommand(() => { Step = 1; Error = string.Empty; });
         Finish = new AsyncCommand(FinishAsync);
@@ -96,7 +100,9 @@ public sealed class SetupViewModel : Observable
     }
 
     public IReadOnlyList<ChoiceItem> StartMonths { get; }
+    public IReadOnlyList<ChoiceItem> EndMonths { get; }
     public IReadOnlyList<ChoiceItem> MonthCounts { get; }
+    public IReadOnlyList<ChoiceItem> PaymentDeadlineDays { get; }
 
     private static readonly IReadOnlyList<ChoiceItem> Months =
     [
@@ -153,10 +159,41 @@ public sealed class SetupViewModel : Observable
     public string YearLabel { get => yearLabel; set => Set(ref yearLabel, value); }
 
     private ChoiceItem startMonth = null!;
-    public ChoiceItem StartMonth { get => startMonth; set => Set(ref startMonth, value); }
+    public ChoiceItem StartMonth
+    {
+        get => startMonth;
+        set { if (Set(ref startMonth, value)) UpdateMonthRange(); }
+    }
+
+    private ChoiceItem endMonth = null!;
+    public ChoiceItem EndMonth
+    {
+        get => endMonth;
+        set { if (Set(ref endMonth, value)) UpdateMonthRange(); }
+    }
 
     private ChoiceItem monthCount = null!;
+    /// <summary>Valeur calculée à partir du mois de début et de fin, jamais saisie à l'aveugle.</summary>
     public ChoiceItem MonthCount { get => monthCount; set => Set(ref monthCount, value); }
+
+    private ChoiceItem lastOnTimeDay = null!;
+    public ChoiceItem LastOnTimeDay { get => lastOnTimeDay; set { if (Set(ref lastOnTimeDay, value)) Raise(nameof(MonthRangeSummary)); } }
+
+    public string MonthRangeSummary => StartMonth is null || EndMonth is null || LastOnTimeDay is null
+        ? "Choisissez les mois et la date limite."
+        : $"{MonthCount?.Label ?? "Période"} · {StartMonth.Label} à {EndMonth.Label}. " +
+          $"Paiement autorisé jusqu'au {LastOnTimeDay.Value} du mois suivant, retard dès le lendemain.";
+
+    private void UpdateMonthRange()
+    {
+        if (StartMonth is null || EndMonth is null) return;
+        var start = int.Parse(StartMonth.Value, System.Globalization.CultureInfo.InvariantCulture);
+        var end = int.Parse(EndMonth.Value, System.Globalization.CultureInfo.InvariantCulture);
+        var count = (end - start + 12) % 12 + 1;
+        if (MonthCounts is { Count: > 0 })
+            MonthCount = MonthCounts.First(m => m.Value == count.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        Raise(nameof(MonthRangeSummary));
+    }
 
     public string CurrencyLine => "Monnaie : franc congolais (FC)";
     public bool LoadDemo { get; set; }
@@ -242,7 +279,8 @@ public sealed class SetupViewModel : Observable
         var years = YearPattern.Match(YearLabel);
         if (!years.Success || int.Parse(years.Groups[2].Value) != int.Parse(years.Groups[1].Value) + 1)
             return "L'année scolaire doit couvrir deux années consécutives, par exemple 2026 - 2027.";
-        if (StartMonth is null || MonthCount is null) return "Choisissez le mois de début et la durée de l'année.";
+        if (StartMonth is null || EndMonth is null || MonthCount is null || LastOnTimeDay is null)
+            return "Choisissez le mois de début, le mois de fin et le dernier jour sans retard.";
         return ValidatePromotions();
     }
 
@@ -344,7 +382,9 @@ public sealed class SetupViewModel : Observable
             currencySymbol = "FC",
             yearLabel = $"{match.Groups[1].Value}-{match.Groups[2].Value}",
             startMonth = int.Parse(StartMonth.Value, System.Globalization.CultureInfo.InvariantCulture),
+            endMonth = int.Parse(EndMonth.Value, System.Globalization.CultureInfo.InvariantCulture),
             monthCount = int.Parse(MonthCount.Value, System.Globalization.CultureInfo.InvariantCulture),
+            lastOnTimeDay = int.Parse(LastOnTimeDay.Value, System.Globalization.CultureInfo.InvariantCulture),
             adminUserName = AdminUserName.Trim(),
             adminDisplayName = AdminDisplayName.Trim(),
             adminPassword = AdminPassword,
