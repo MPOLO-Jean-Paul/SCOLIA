@@ -167,7 +167,7 @@
         <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="4,0,0,0">
           <!-- Petit téléphone : un titre long passe sur deux lignes plutôt que d'être coupé -->
           <TextBlock Text="{Binding PhonePage.Heading}" FontSize="17" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" TextWrapping="Wrap" MaxLines="2" LineHeight="20" />
-          <TextBlock Text="{Binding PhonePage.Subtitle}" Classes="muted" FontSize="{DynamicResource FsSmall}" TextTrimming="CharacterEllipsis" TextWrapping="Wrap" MaxLines="2"
+          <TextBlock Text="{Binding PhonePage.Subtitle}" Classes="muted" FontSize="{DynamicResource FsSmall}" TextTrimming="CharacterEllipsis" TextWrapping="Wrap" MaxLines="1"
                      IsVisible="{Binding PhonePage.Subtitle, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
         </StackPanel>
         <!-- Présence : les autres postes connectés ; le point vert bat quand l'un d'eux enregistre quelque chose -->
@@ -183,7 +183,7 @@
             </Panel>
           </Panel>
         </Button>
-        <Button Grid.Column="3" Classes="phoneicon" Command="{Binding SearchCommand}" ToolTip.Tip="Rechercher">
+        <Button Grid.Column="3" Classes="phoneicon" Command="{Binding SettingsSearch.Activate}" ToolTip.Tip="Rechercher un paramètre">
           <mi:MaterialIcon Kind="Magnify" />
         </Button>
         <Button Grid.Column="4" Classes="phoneicon" Click="OnActionsClick" IsVisible="{Binding PhonePage.HasHeaderActions}" ToolTip.Tip="Actions de la page">
@@ -224,20 +224,43 @@
 
     <!-- Menu : tous les outils, le compte et la déconnexion -->
     <Border Grid.Row="0" Grid.RowSpan="2" Classes="phonemenu" Background="{DynamicResource BgBrush}" IsVisible="{Binding PhoneMenuOpen}">
-      <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+      <ScrollViewer x:Name="MenuScroll" HorizontalScrollBarVisibility="Disabled">
         <StackPanel x:Name="MenuPanel" Margin="12,12,12,20">
-          <Grid ColumnDefinitions="Auto,*" Margin="2,4,0,4">
-            <Panel Width="44" Height="44" Margin="0,0,10,0">
-              <Image Source="{Binding SchoolLogo}" IsVisible="{Binding HasSchoolLogo}" />
+          <!-- Recherche Android : dans le même en-tête, sans nouvelle page ni dialogue au centre. -->
+          <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8" Margin="2,4,2,6" MinHeight="52">
+            <Panel Width="42" Height="42" VerticalAlignment="Center" IsVisible="{Binding !SettingsSearch.IsOpen}">
+              <Image Source="{Binding SchoolLogo}" IsVisible="{Binding HasSchoolLogo}" Width="34" Height="34" />
               <Image Source="{DynamicResource ScoliaMark}" IsVisible="{Binding !HasSchoolLogo}" Width="34" Height="34" />
             </Panel>
-            <StackPanel Grid.Column="1" VerticalAlignment="Center">
-              <TextBlock Text="{Binding SchoolTitle}" FontSize="17" FontWeight="SemiBold" TextWrapping="Wrap" />
-              <TextBlock Text="{Binding SchoolYearLine}" Classes="muted" />
+            <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2" IsVisible="{Binding !SettingsSearch.IsOpen}">
+              <TextBlock Text="{Binding SchoolHeaderTitle}" FontSize="18" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" MaxLines="1" />
+              <TextBlock Text="{Binding SchoolYearLine}" Classes="muted" FontSize="{DynamicResource FsSmall}" />
             </StackPanel>
+            <Border Grid.ColumnSpan="2" IsVisible="{Binding SettingsSearch.IsOpen}"
+                    Background="{DynamicResource GroupBrush}" CornerRadius="17"
+                    BorderBrush="{DynamicResource LineBrush}" BorderThickness="1" Padding="10,2">
+              <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="6" MinHeight="44">
+                <mi:MaterialIcon Kind="Magnify" Width="20" Height="20" Foreground="{DynamicResource AccentBrush}" VerticalAlignment="Center" />
+                <TextBox x:Name="MenuSearchBox" Grid.Column="1"
+                         Text="{Binding SettingsSearch.Query, Mode=TwoWay}"
+                         Watermark="Rechercher un paramètre…" Background="Transparent"
+                         BorderThickness="0" FontSize="16" VerticalAlignment="Center"
+                         KeyDown="OnSettingsSearchKeyDown" />
+                <Button Grid.Column="2" Classes="phoneicon settingssearchcontrol"
+                        Command="{Binding SettingsSearch.Clear}" IsVisible="{Binding SettingsSearch.HasQuery}"
+                        Width="36" Height="36" ToolTip.Tip="Effacer la recherche">
+                  <mi:MaterialIcon Kind="CloseCircleOutline" Width="20" Height="20" />
+                </Button>
+              </Grid>
+            </Border>
+            <Button Grid.Column="2" Classes="phoneicon settingssearchcontrol" Command="{Binding SettingsSearch.Toggle}"
+                    ToolTip.Tip="Rechercher dans les réglages" Width="44" Height="44">
+              <mi:MaterialIcon Kind="Magnify" IsVisible="{Binding !SettingsSearch.IsOpen}" Width="23" Height="23" />
+              <mi:MaterialIcon Kind="Close" IsVisible="{Binding SettingsSearch.IsOpen}" Width="23" Height="23" />
+            </Button>
           </Grid>
 
-          <Border Classes="phonegroup" Margin="0,12,0,0">
+          <Border Classes="phonegroup" Margin="0,12,0,0" IsVisible="{Binding !SettingsSearch.HasQuery}">
             <StackPanel>
               <Button Classes="phonerow" Click="OnAccountClick">
                 <Grid ColumnDefinitions="Auto,*,Auto">
@@ -254,17 +277,46 @@
             </StackPanel>
           </Border>
 
-          <!-- Une seule liste de blocs, sans répétition des familles ni des actions. -->
-          <ItemsControl ItemsSource="{Binding PhoneMenuBlocks}" ItemTemplate="{StaticResource UnifiedPhoneBlock}" />
+          <!-- Les résultats sont filtrés localement parmi les réglages autorisés. -->
+          <StackPanel IsVisible="{Binding SettingsSearch.HasQuery}" Spacing="8" Margin="0,14,0,4">
+            <TextBlock Text="RÉSULTATS DANS LES PARAMÈTRES" Classes="phoneblocktitle" Margin="12,0,0,0" />
+            <Border Classes="phonegroup" IsVisible="{Binding SettingsSearch.HasResults}">
+              <ItemsControl ItemsSource="{Binding SettingsSearch.Results}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate>
+                    <Button Classes="phonerow" Command="{Binding Open}" MinHeight="64">
+                      <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                        <Border Classes="appicon medium" Background="{Binding Brush}" VerticalAlignment="Center">
+                          <mi:MaterialIcon Kind="{Binding Icon}" />
+                        </Border>
+                        <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
+                          <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                          <TextBlock Text="{Binding Section}" Classes="muted" FontSize="{DynamicResource FsSmall}" />
+                        </StackPanel>
+                        <mi:MaterialIcon Grid.Column="2" Kind="ChevronRight" Width="20" Height="20"
+                                         Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" />
+                      </Grid>
+                    </Button>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </Border>
+            <Border Classes="phonegroup" IsVisible="{Binding SettingsSearch.NoResults}" Padding="22,28">
+              <StackPanel HorizontalAlignment="Center" Spacing="10">
+                <mi:MaterialIcon Kind="MagnifyClose" Width="32" Height="32" Foreground="{DynamicResource MutedBrush}" HorizontalAlignment="Center" />
+                <TextBlock Text="Aucun réglage trouvé" FontWeight="SemiBold" TextAlignment="Center" />
+                <TextBlock Text="Essayez : empreinte, Tailscale, police, sons ou promotion."
+                           Classes="muted" TextWrapping="Wrap" TextAlignment="Center" />
+              </StackPanel>
+            </Border>
+          </StackPanel>
 
-          <Border Classes="phonegroup" Margin="0,18,0,0">
+          <!-- Navigation normale tant qu'aucune recherche n'est saisie. -->
+          <ItemsControl ItemsSource="{Binding PhoneMenuBlocks}" ItemTemplate="{StaticResource UnifiedPhoneBlock}"
+                        IsVisible="{Binding !SettingsSearch.HasQuery}" />
+
+          <Border Classes="phonegroup" Margin="0,18,0,0" IsVisible="{Binding !SettingsSearch.HasQuery}">
             <StackPanel>
-              <Button Classes="phonerow" Command="{Binding SearchCommand}">
-                <Grid ColumnDefinitions="Auto,*">
-                  <Border Classes="appicon medium" Background="{DynamicResource ToneTeal}" Margin="0,0,12,0"><mi:MaterialIcon Kind="Magnify" /></Border>
-                  <TextBlock Grid.Column="1" Text="Rechercher" VerticalAlignment="Center" />
-                </Grid>
-              </Button>
               <Button Classes="phonerow" Click="OnLogoutClick">
                 <Grid ColumnDefinitions="Auto,*">
                   <Border Classes="appicon medium" Background="{DynamicResource ToneRed}" Margin="0,0,12,0"><mi:MaterialIcon Kind="Logout" /></Border>
@@ -273,7 +325,7 @@
               </Button>
             </StackPanel>
           </Border>
-          <TextBlock Text="{Binding ServerLine}" Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" TextAlignment="Center" Margin="0,16,0,0" />
+          <TextBlock Text="{Binding ServerLine}" Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" TextAlignment="Center" Margin="0,16,0,0" IsVisible="{Binding !SettingsSearch.HasQuery}" />
         </StackPanel>
       </ScrollViewer>
     </Border>
