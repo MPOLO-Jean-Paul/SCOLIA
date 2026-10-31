@@ -81,5 +81,13 @@ public sealed class NativeSearchNavigationTests
         shell.HeaderSearch.Query = "RC-2026";
         Assert.Equal("RC-2026", receipts.Search);
         Assert.Equal("KABEYA", students.Search);
+        Assert.True(shell.HeaderSearch.IsContextual);
+        Assert.Equal("Filtre", shell.HeaderSearch.ShortcutText);
+
+        var home = new HomePage(shell);
+        await shell.Open(() => home);
+        Assert.False(shell.HeaderSearch.IsContextual);
+        Assert.Equal("Ctrl+K", shell.HeaderSearch.ShortcutText);
+        Assert.Equal(string.Empty, shell.HeaderSearch.Query);
     }
 }
