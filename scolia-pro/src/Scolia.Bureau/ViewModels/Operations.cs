@@ -287,22 +287,30 @@ public sealed class SearchViewModel : Observable
             Results.Add(new SearchHitRow(new SearchHitDto("Paramètre", setting.Title, setting.Section, url)));
         }
 
+        var dataUnavailable = false;
         if (shell.Can(Perm.StudentsRead))
         {
             var current = Query.Trim();
-            var hits = await shell.Api.GetAsync<List<SearchHitDto>>(
-                "api/recherche" + ScoliaClient.Query(("q", current)));
-            // Un aller-retour ancien ne doit pas écraser une nouvelle saisie.
-            if (!string.Equals(current, Query.Trim(), StringComparison.Ordinal)) return;
-            foreach (var h in hits)
+            try
             {
-                if (h.Type == "Reçu" && !shell.Can(Perm.PaymentsRead)) continue;
-                Results.Add(new SearchHitRow(h));
+                var hits = await shell.Api.GetAsync<List<SearchHitDto>>(
+                    "api/recherche" + ScoliaClient.Query(("q", current)));
+                // Un aller-retour ancien ne doit pas écraser une nouvelle saisie.
+                if (!string.Equals(current, Query.Trim(), StringComparison.Ordinal)) return;
+                foreach (var h in hits)
+                {
+                    if (h.Type == "Reçu" && !shell.Can(Perm.PaymentsRead)) continue;
+                    Results.Add(new SearchHitRow(h));
+                }
             }
+            catch (HttpRequestException) { dataUnavailable = true; }
+            catch (ApiException) { dataUnavailable = true; }
         }
         Selected = Results.Count > 0 ? Results[0] : null;
-        Message = Results.Count == 0 ? "Aucun résultat dans les catégories autorisées." :
-            Format.Count(Results.Count, "résultat", "résultats");
+        Message = dataUnavailable
+            ? "Serveur indisponible : paramètres et fonctionnalités locales seulement."
+            : Results.Count == 0 ? "Aucun résultat dans les catégories autorisées."
+            : Format.Count(Results.Count, "résultat", "résultats");
     }
 
     private async Task OpenSelectedAsync()
