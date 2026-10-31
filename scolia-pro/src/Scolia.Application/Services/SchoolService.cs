@@ -76,7 +76,14 @@ public sealed class SchoolService(IAppDbContext db, IWriteGate gate, IAuditLog a
     {
         var label = AcademicYear.NormalizeLabel(input.Label);
         if (await db.AcademicYears.AnyAsync(y => y.Label == label, ct)) throw new ConflictException($"L'année {label} existe déjà.");
-        var year = BuildYear(label, input.StartMonth, input.MonthCount, input.DueDay);
+        // Les anciennes intégrations peuvent encore envoyer dueDay (premier jour de retard).
+        // Les nouvelles précisent explicitement le mois de fin et le DERNIER jour autorisé.
+        var count = input.EndMonth is { } endMonth
+            ? AcademicPeriod.CountBetween(input.StartMonth, endMonth)
+            : input.MonthCount;
+        var firstLateDay = input.LastOnTimeDay is { } cutoff
+            ? ValidatedLastOnTimeDay(cutoff) + 1 : input.DueDay;
+        var year = BuildYear(label, input.StartMonth, count, firstLateDay);
         var previous = await db.AcademicYears.FirstOrDefaultAsync(y => y.IsCurrent, ct);
         db.AcademicYears.Add(year);
         if (input.CopyPromotionsFromCurrent && previous is not null)
@@ -107,6 +114,106 @@ public sealed class SchoolService(IAppDbContext db, IWriteGate gate, IAuditLog a
         await db.SaveChangesAsync(ct);
         return ToDto(year);
     }, ct);
+
+    /// <summary>La date limite est comprise entre le 1er et le 28 du mois suivant.</summary>
+    private static int ValidatedLastOnTimeDay(int day)
+    {
+        if (day is < 1 or > 28)
+            throw new DomainException("echeance", "Le dernier jour pour payer sans retard doit être compris entre 1 et 28.");
+        return day;
+    }
+
+    /// <summary>
+    /// Modifie les mois de paiement et leur échéance sur une année EXISTANTE, sans recréer l'année.
+    /// Toute affectation de reçu ou prise en charge d'une mensualité verrouille la modification
+    /// pour éviter de changer l'historique comptable.
+    /// Les identifiants des périodes/frais inchangés sont conservés pour les inscriptions existantes.
+    /// </summary>
+    public Task<AcademicYearDto> UpdateYearScheduleAsync(Guid id, AcademicYearScheduleUpdate input, CancellationToken ct = default) =>
+        gate.RunAsync(async () =>
+        {
+            var year = await db.AcademicYears.Include(y => y.Periods)
+                .FirstOrDefaultAsync(y => y.Id == id, ct)
+                ?? throw new NotFoundException("Année scolaire introuvable.");
+            if (year.Status == AcademicYearStatus.Closed)
+                throw new DomainException("annee", "Cette année est clôturée : son calendrier ne peut plus être modifié.");
+
+            var lastOnTimeDay = ValidatedLastOnTimeDay(input.LastOnTimeDay);
+            var count = AcademicPeriod.CountBetween(input.StartMonth, input.EndMonth);
+            var proposed = AcademicPeriod.Monthly(year.Id, year.FirstCalendarYear, input.StartMonth, count, lastOnTimeDay + 1);
+            var previous = year.Periods.OrderBy(p => p.Order).ToList();
+            if (previous.Count == proposed.Count && previous.Zip(proposed)
+                    .All(pair => pair.First.Month == pair.Second.Month &&
+                                 pair.First.CalendarYear == pair.Second.CalendarYear &&
+                                 pair.First.DueDate == pair.Second.DueDate))
+                return ToDto(year);
+
+            var promotions = await db.Promotions.Include(p => p.Fees)
+                .Where(p => p.AcademicYearId == id).ToListAsync(ct);
+            var monthlyFees = promotions.SelectMany(p => p.Fees)
+                .Where(f => f.Kind == FeeKind.Mensualite).ToList();
+            var feeIds = monthlyFees.Select(f => f.Id).ToList();
+            if (feeIds.Count > 0 &&
+                (await db.ReceiptAllocations.AnyAsync(a => feeIds.Contains(a.FeeItemId), ct) ||
+                 await db.SponsorshipLines.AnyAsync(a => feeIds.Contains(a.FeeItemId), ct)))
+                throw new DomainException("periodes",
+                    "Le calendrier contient déjà des paiements ou prises en charge. Il est verrouillé afin de conserver les reçus et les comptes. Créez une nouvelle année si nécessaire.");
+
+            // Réutiliser les périodes présentes pour préserver les clés et les liens des frais.
+            var ordered = new List<AcademicPeriod>(proposed.Count);
+            for (var i = 0; i < proposed.Count; i++)
+            {
+                var generated = proposed[i];
+                var period = i < previous.Count ? previous[i] : new AcademicPeriod { AcademicYearId = year.Id };
+                period.Order = i + 1;
+                period.Name = generated.Name;
+                period.Month = generated.Month;
+                period.CalendarYear = generated.CalendarYear;
+                period.DueDate = generated.DueDate;
+                if (i >= previous.Count) year.Periods.Add(period);
+                ordered.Add(period);
+            }
+
+            foreach (var promotion in promotions)
+            {
+                var oldFees = promotion.Fees.Where(f => f.Kind == FeeKind.Mensualite).ToList();
+                var monthlyAmount = oldFees.Select(f => f.Amount).DefaultIfEmpty(0m).Max();
+                foreach (var period in ordered)
+                {
+                    var fee = oldFees.FirstOrDefault(f => f.PeriodId == period.Id);
+                    if (fee is null && monthlyAmount > 0)
+                    {
+                        fee = new FeeItem { PromotionId = promotion.Id, PeriodId = period.Id, Kind = FeeKind.Mensualite };
+                        promotion.Fees.Add(fee);
+                    }
+                    if (fee is null) continue;
+                    fee.Label = $"{period.Name} {period.CalendarYear}";
+                    fee.DueDate = period.DueDate;
+                    fee.Order = period.Order;
+                }
+                var validPeriodIds = ordered.Select(p => p.Id).ToHashSet();
+                foreach (var fee in oldFees.Where(f => f.PeriodId is not { } periodId || !validPeriodIds.Contains(periodId)))
+                {
+                    promotion.Fees.Remove(fee);
+                    db.FeeItems.Remove(fee);
+                }
+            }
+            foreach (var removed in previous.Skip(ordered.Count))
+            {
+                year.Periods.Remove(removed);
+                db.Periods.Remove(removed);
+            }
+
+            var first = ordered[0];
+            var last = ordered[^1];
+            year.StartDate = new DateOnly(first.CalendarYear, first.Month, 1);
+            year.EndDate = new DateOnly(last.CalendarYear, last.Month,
+                DateTime.DaysInMonth(last.CalendarYear, last.Month));
+            audit.Record("annee.calendrier.modifie", "AnneeScolaire", year.Id.ToString(),
+                $"Année {year.Label} : {first.Name} {first.CalendarYear} à {last.Name} {last.CalendarYear}, paiement sans retard jusqu'au {lastOnTimeDay} du mois suivant.");
+            await db.SaveChangesAsync(ct);
+            return ToDto(year);
+        }, ct);
 
     public static AcademicYear BuildYear(string label, int startMonth, int monthCount, int dueDay = 6)
     {
