@@ -271,7 +271,7 @@ public sealed class SearchViewModel : Observable
                 "Fenêtres et affichage" => "fenetres",
                 "Animations et fluidité" => "animations",
                 "Sons" => "sons",
-                "Sécurité du compte" => "securite",
+                "Sécurité du compte" => "compte/mot-de-passe",
                 "Poste et réseau" => "compte/poste",
                 "Établissement" => "etablissement",
                 "Années scolaires" or "Nouvelle année" => "annees",
@@ -320,15 +320,17 @@ public sealed class SearchViewModel : Observable
         if (Selected is null) return;
         var url = Selected.Hit.Url;
         var target = PageFor(url);
-        shell.CloseDialog();
-        if (url == "/compte/poste")
+        if (url is "/compte/poste" or "/compte/mot-de-passe")
         {
+            shell.CloseDialog();
             shell.OpenBackstage();
-            shell.Backstage.Section = shell.Backstage.Items.First(i => i.Value == "poste");
+            var section = url == "/compte/poste" ? "poste" : "mot-de-passe";
+            shell.Backstage.Section = shell.Backstage.Items.First(i => i.Value == section);
             return;
         }
         if (url.StartsWith("/navigation/", StringComparison.Ordinal))
         {
+            shell.CloseDialog();
             var label = Uri.UnescapeDataString(url["/navigation/".Length..]);
             var feature = shell.Navigation.SelectMany(group => group.Items)
                 .FirstOrDefault(item => item.Label == label);
@@ -338,9 +340,10 @@ public sealed class SearchViewModel : Observable
         }
         if (target is null)
         {
-            shell.Notify("Cette commande s'ouvre depuis le ruban.");
+            Message = "Fonctionnalité introuvable ou accès non autorisé.";
             return;
         }
+        shell.CloseDialog();
         await shell.Open(target);
     }
 
@@ -348,30 +351,30 @@ public sealed class SearchViewModel : Observable
     private Func<PageViewModel>? PageFor(string url)
     {
         var parts = url.Trim('/').Split('/', StringSplitOptions.RemoveEmptyEntries);
-        if (parts.Length == 0) return () => new DashboardPage(shell);
+        if (parts.Length == 0) return null;
         return parts[0] switch
         {
-            "apprenants" when parts.Length > 1 && Guid.TryParse(parts[1], out var id) => () => new StudentDetailPage(shell, id),
-            "apprenants" => () => new StudentsPage(shell),
-            "paiements" when parts.Length > 2 && Guid.TryParse(parts[2], out var rid) => () => new ReceiptDetailPage(shell, rid),
-            "paiements" => () => new ReceiptsPage(shell),
-            "encaisser" => () => new CashierPage(shell),
-            "recouvrement" => () => new DebtorsPage(shell),
-            "prises-en-charge" => () => new SponsorshipsPage(shell),
-            "caisse" => () => new CashPage(shell),
-            "depenses" => () => new ExpensesPage(shell),
-            "reinscriptions" => () => new ReEnrollmentPage(shell),
-            "notes" => () => new GradesPage(shell),
-            "presences" => () => new AttendancePage(shell),
-            "discipline" => () => new DisciplinePage(shell),
-            "personnel" => () => new StaffPage(shell),
+            "apprenants" when shell.Can(Perm.StudentsRead) && parts.Length > 1 && Guid.TryParse(parts[1], out var id) => () => new StudentDetailPage(shell, id),
+            "apprenants" when shell.Can(Perm.StudentsRead) => () => new StudentsPage(shell),
+            "paiements" when shell.Can(Perm.PaymentsRead) && parts.Length > 2 && Guid.TryParse(parts[2], out var rid) => () => new ReceiptDetailPage(shell, rid),
+            "paiements" when shell.Can(Perm.PaymentsRead) => () => new ReceiptsPage(shell),
+            "encaisser" when shell.Can(Perm.PaymentsCreate) => () => new CashierPage(shell),
+            "recouvrement" when shell.Can(Perm.ReportsRead) => () => new DebtorsPage(shell),
+            "prises-en-charge" when shell.Can(Perm.PaymentsRead) => () => new SponsorshipsPage(shell),
+            "caisse" when shell.Can(Perm.PaymentsRead) => () => new CashPage(shell),
+            "depenses" when shell.Can(Perm.PaymentsRead) => () => new ExpensesPage(shell),
+            "reinscriptions" when shell.Can(Perm.StudentsWrite) => () => new ReEnrollmentPage(shell),
+            "notes" when shell.Can(Perm.AcademicsRead) => () => new GradesPage(shell),
+            "presences" when shell.Can(Perm.AcademicsRead) => () => new AttendancePage(shell),
+            "discipline" when shell.Can(Perm.AcademicsRead) => () => new DisciplinePage(shell),
+            "personnel" when shell.Can(Perm.StaffManage) => () => new StaffPage(shell),
             "parametres" when parts.Length > 1 && parts[1] == "utilisateurs" && shell.Can(Perm.UsersManage)
                 => () => new UsersPage(shell),
-            "parametres" when parts.Length > 1 => () => new SettingsPage(shell, parts[1]),
+            "parametres" when parts.Length > 1 && (new[] { "apparence", "texte", "fenetres", "animations", "sons" }.Contains(parts[1]) || (shell.Can(Perm.SettingsWrite) && new[] { "etablissement", "annees", "sections", "promotions" }.Contains(parts[1]))) => () => new SettingsPage(shell, parts[1]),
             "parametres" => () => new SettingsPage(shell),
-            "utilisateurs" => () => new UsersPage(shell),
-            "donnees" => () => new DataPage(shell),
-            "audit" => () => new AuditPage(shell),
+            "utilisateurs" when shell.Can(Perm.UsersManage) => () => new UsersPage(shell),
+            "donnees" when shell.Can(Perm.BackupManage) => () => new DataPage(shell),
+            "audit" when shell.Can(Perm.AuditRead) => () => new AuditPage(shell),
             _ => null,
         };
     }
