@@ -287,7 +287,7 @@
               <ItemsControl ItemsSource="{Binding SettingsSearch.Results}">
                 <ItemsControl.ItemTemplate>
                   <DataTemplate>
-                    <Button Classes="phonerow" Command="{Binding Open}" MinHeight="64">
+                    <Button Classes="phonerow settingssearchresult" Command="{Binding Open}" MinHeight="64">
                       <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
                         <Border Classes="appicon medium" Background="{Binding Brush}" VerticalAlignment="Center">
                           <mi:MaterialIcon Kind="{Binding Icon}" />
