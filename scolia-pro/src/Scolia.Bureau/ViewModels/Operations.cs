@@ -278,10 +278,11 @@ public sealed class SearchViewModel : Observable
                 "Sections" => "sections",
                 "Promotions et frais" or "Nouvelle promotion" => "promotions",
                 "Utilisateurs" => "utilisateurs",
-                _ => string.Empty,
+                _ => "navigation/" + Uri.EscapeDataString(setting.Title),
             };
             if (destination.Length == 0) continue;
             var url = destination.StartsWith("compte/", StringComparison.Ordinal)
+                || destination.StartsWith("navigation/", StringComparison.Ordinal)
                 ? "/" + destination : "/parametres/" + destination;
             Results.Add(new SearchHitRow(new SearchHitDto("Paramètre", setting.Title, setting.Section, url)));
         }
@@ -314,6 +315,15 @@ public sealed class SearchViewModel : Observable
         {
             shell.OpenBackstage();
             shell.Backstage.Section = shell.Backstage.Items.First(i => i.Value == "poste");
+            return;
+        }
+        if (url.StartsWith("/navigation/", StringComparison.Ordinal))
+        {
+            var label = Uri.UnescapeDataString(url["/navigation/".Length..]);
+            var feature = shell.Navigation.SelectMany(group => group.Items)
+                .FirstOrDefault(item => item.Label == label);
+            if (feature is not null) feature.Open.Execute(null);
+            else shell.Notify("Cette fonctionnalité n'est plus disponible pour ce compte.");
             return;
         }
         if (target is null)
