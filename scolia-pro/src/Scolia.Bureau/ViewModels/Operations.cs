@@ -497,6 +497,11 @@ public sealed class BackstageViewModel : Observable
     public FormViewModel PasswordForm { get => passwordForm!; private set => Set(ref passwordForm, value); }
 
     public bool ShowBiometricSecurity => Platform.IsMobile;
+    /// <summary>Android : empreinte ; iPhone/iPad : Face ID ou Touch ID, selon l'appareil.</summary>
+    public string BiometricTitle => Platform.BiometricDisplayName;
+    public string BiometricVerificationHelp => Platform.EnrollBiometricAsync is null
+        ? "La connexion biométrique n'est pas encore activable sur cette version de l'appareil. Votre mot de passe reste disponible."
+        : $"Pour activer : mot de passe puis validation {BiometricTitle.ToLowerInvariant()}. Pour désactiver : validation biométrique ou mot de passe.";
     private string? BiometricAccount => BiometricAccess.ReadAccount(shell.Api.Server);
     public bool BiometricsEnabled => ShowBiometricSecurity && (Platform.HasBiometricProof?.Invoke() ?? false)
         && BiometricAccount is { } account && shell.Session is { } session
@@ -504,15 +509,18 @@ public sealed class BackstageViewModel : Observable
     public bool OtherBiometricAccount => BiometricAccount is { } account && shell.Session is { } session
         && !BiometricAccess.AccountMatches(account, session.UserName);
     public string BiometricSecurityStatus => OtherBiometricAccount
-        ? "Une autre session est associée à la biométrie de ce téléphone. Reconnectez-vous avec le compte concerné pour la modifier."
+        ? "Un autre compte est associé à la biométrie de cet appareil. Connectez-vous d'abord avec ce compte."
         : BiometricsEnabled
-            ? "Empreinte activée pour ce compte sur ce téléphone. Chaque utilisation demande une validation Android."
-            : Platform.IsBiometricAvailable?.Invoke() == true
-                ? "Empreinte disponible. Son activation exige le mot de passe du compte et votre accord."
-                : "Empreinte indisponible sur cet appareil ou non configurée dans Android.";
-    public string BiometricActionLabel => BiometricsEnabled ? "Désactiver l'empreinte" : "Activer l'empreinte";
+            ? $"{BiometricTitle} activé pour ce compte. Une confirmation de l'appareil est demandée à chaque utilisation."
+            : Platform.EnrollBiometricAsync is null
+                ? $"Le système propose {BiometricTitle}, mais SCOLIA ne peut pas encore l'activer ici. Utilisez le mot de passe."
+                : Platform.IsBiometricAvailable?.Invoke() == true
+                    ? $"{BiometricTitle} disponible. L'activation nécessite le mot de passe SCOLIA et votre consentement."
+                    : $"La biométrie n'est pas disponible ou n'est pas configurée sur cet appareil.";
+    public string BiometricActionLabel => BiometricsEnabled ? "Désactiver la biométrie" : "Activer la biométrie";
     public bool BiometricSecurityAllowed => ShowBiometricSecurity && !OtherBiometricAccount
-        && (BiometricsEnabled || Platform.IsBiometricAvailable?.Invoke() == true);
+        && (BiometricsEnabled || (Platform.EnrollBiometricAsync is not null
+            && Platform.IsBiometricAvailable?.Invoke() == true));
     public string SecurityPassword { get => securityPassword; set => Set(ref securityPassword, value); }
     public string SecurityNotice { get => securityNotice; private set { if (Set(ref securityNotice, value)) Raise(nameof(HasSecurityNotice)); } }
     public bool HasSecurityNotice => SecurityNotice.Length > 0;
@@ -525,6 +533,8 @@ public sealed class BackstageViewModel : Observable
         Raise(nameof(BiometricsEnabled));
         Raise(nameof(OtherBiometricAccount));
         Raise(nameof(BiometricSecurityStatus));
+        Raise(nameof(BiometricTitle));
+        Raise(nameof(BiometricVerificationHelp));
         Raise(nameof(BiometricActionLabel));
         Raise(nameof(BiometricSecurityAllowed));
     }
@@ -606,7 +616,7 @@ public sealed class BackstageViewModel : Observable
 
     private FormViewModel BuildPasswordForm()
     {
-        var form = new FormViewModel("Changer le mot de passe", "Le nouveau mot de passe remplace le provisoire.", async f =>
+        var form = new FormViewModel("Changer le mot de passe", "Votre mot de passe protège l'accès aux dossiers scolaires. Choisissez-en un nouveau, différent de l'ancien.", async f =>
         {
             if (f.Text("nouveau") != f.Text("confirmation"))
             {
