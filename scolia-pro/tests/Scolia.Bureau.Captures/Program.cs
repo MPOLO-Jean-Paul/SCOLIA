@@ -1074,7 +1074,13 @@ void Smoke(ShellViewModel shell, ScoliaClient api, Window window, string passwor
     cashier.Search = "ACC";
     Wait(cashier.SearchAsync());
     Check("recherche d'apprenant à l'encaissement", cashier.Results.Count > 0, $"{cashier.Results.Count} résultat(s)");
-    Wait(cashier.ChooseAsync(cashier.Results[0]));
+    // Le premier apprenant qui a encore un mois à payer : sur une base déjà utilisée, les premiers peuvent être soldés.
+    foreach (var candidate in cashier.Results.ToList())
+    {
+        Wait(cashier.ChooseAsync(candidate));
+        if (cashier.Months.Count > 0) break;
+    }
+    Check("un apprenant avec un mois à payer", cashier.Months.Count > 0, $"{cashier.Months.Count} mois proposé(s)");
     // Encaissement par mois : on coche le premier mois dû, le montant vient de l'échéance.
     var firstMonth = cashier.Months.First();
     firstMonth.IsSelected = true;

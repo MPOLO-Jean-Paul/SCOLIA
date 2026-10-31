@@ -10,7 +10,9 @@
     <ApplicationDisplayVersion>1.2.3</ApplicationDisplayVersion>
     <AssemblyName>SCOLIA</AssemblyName>
     <RootNamespace>Scolia.Phone.iOS</RootNamespace>
-    <RuntimeIdentifiers>ios-arm64;iossimulator-arm64;iossimulator-x64</RuntimeIdentifiers>
+    <!-- La cible est donnée à chaque compilation : -r ios-arm64 (iPhone, iPad) ou -r iossimulator-arm64.
+         Une liste fixe mêlant appareil et simulateur faisait lier la bibliothèque SQLite de l'iPhone dans une
+         compilation de simulateur. -->
     <AvaloniaUseCompiledBindingsByDefault>false</AvaloniaUseCompiledBindingsByDefault>
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
     <PublishTrimmed>true</PublishTrimmed>
