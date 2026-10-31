@@ -77,4 +77,33 @@ public class SettingsNavigationTests
         Assert.True(page.SettingsDetailVisible);
         Assert.Equal(titre, page.SectionTitle);
     }
+
+    [Fact]
+    public void Recherche_en_tete_est_limitee_au_metier_de_la_page_active()
+    {
+        using var api = new ScoliaClient(new Uri("http://localhost:5080/"));
+        var shell = new ShellViewModel(api, new Preferences()) { Phone = true };
+
+        Assert.Equal("apprenants", PhoneHeaderSearchVm.Scope(new StudentsPage(shell)));
+        Assert.Equal("recus", PhoneHeaderSearchVm.Scope(new ReceiptsPage(shell)));
+        Assert.Equal("mensualites", PhoneHeaderSearchVm.Scope(new MonthlyPage(shell)));
+        Assert.Equal("debiteurs", PhoneHeaderSearchVm.Scope(new DebtorsPage(shell)));
+        Assert.Equal("encaissement", PhoneHeaderSearchVm.Scope(new CashierPage(shell)));
+        Assert.Equal("depenses", PhoneHeaderSearchVm.Scope(new ExpensesPage(shell)));
+        Assert.Equal(string.Empty, PhoneHeaderSearchVm.Scope(new HomePage(shell)));
+        Assert.Equal(string.Empty, PhoneHeaderSearchVm.Scope(new SettingsPage(shell)));
+    }
+
+    [Fact]
+    public void Le_menu_conserve_la_recherche_des_parametres_et_l_accueil_une_recherche_globale()
+    {
+        using var api = new ScoliaClient(new Uri("http://localhost:5080/"));
+        var shell = new ShellViewModel(api, new Preferences()) { Phone = true };
+        shell.PhoneMenuOpen = true;
+        shell.HeaderSearch.Toggle.Execute(null);
+        Assert.True(shell.SettingsSearch.IsOpen);
+        Assert.True(shell.PhoneMenuOpen);
+        shell.PhoneMenuOpen = false;
+        Assert.False(shell.SettingsSearch.IsOpen);
+    }
 }
