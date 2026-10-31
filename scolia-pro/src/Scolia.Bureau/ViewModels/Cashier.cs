@@ -245,6 +245,13 @@ public sealed class CashierPage : PageViewModel
         previewing = true;
         enrollment = null;
         Months.Clear();
+        selectedMonth = null;
+        Allocations.Clear();
+        BalanceAfter = string.Empty;
+        LockedBy = null;
+        Raise(nameof(SelectedMonth));
+        Raise(nameof(Total));
+        Raise(nameof(TotalCaption));
         Receipt = null;
         StudentName = string.Empty;
         StudentInfo = string.Empty;
