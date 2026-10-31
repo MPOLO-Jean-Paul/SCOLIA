@@ -1,8 +1,9 @@
-import { lazy, Suspense } from 'react';
-import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
-import { useSession } from './lib/session';
+import { lazy, Suspense, type ReactNode } from 'react';
+import { Link, Navigate, Route, Routes, useLocation } from 'react-router-dom';
+import { P, useSession } from './lib/session';
+import { accountHome } from './lib/access';
 import { Layout } from './components/Layout';
-import { Loading } from './components/ui';
+import { Card, Loading, PageHead } from './components/ui';
 import { StartupScreen } from './components/StartupScreen';
 import { LoginPage, SetupPage } from './pages/Auth';
 
@@ -10,6 +11,7 @@ import { LoginPage, SetupPage } from './pages/Auth';
 const page = <K extends string>(load: () => Promise<Record<K, React.ComponentType>>, name: K) =>
   lazy(() => load().then((m) => ({ default: m[name] })));
 const DashboardPage = page(() => import('./pages/Dashboard'), 'DashboardPage');
+const PromoterDashboardPage = page(() => import('./pages/PromoterDashboard'), 'PromoterDashboardPage');
 const StudentsPage = page(() => import('./pages/Students'), 'StudentsPage');
 const StudentDetailPage = page(() => import('./pages/StudentDetail'), 'StudentDetailPage');
 const CashierPage = page(() => import('./pages/Cashier'), 'CashierPage');
@@ -31,6 +33,28 @@ const ProfilePage = page(() => import('./pages/Misc'), 'ProfilePage');
 const ReEnrollmentPage = page(() => import('./pages/Misc'), 'ReEnrollmentPage');
 const VerifyPage = page(() => import('./pages/Misc'), 'VerifyPage');
 
+/** Expliquer une route impossible plutôt que renvoyer silencieusement à l'accueil. */
+function NotAvailable({ title, reason }: { title: string; reason: string }) {
+  const { session } = useSession();
+  return <div className="stack">
+    <PageHead title={title} subtitle={reason} />
+    <Card><p>Vous pouvez revenir à votre espace ou sélectionner une fonctionnalité dans le menu.</p>
+      <Link className="btn primary" to={accountHome(session?.permissions ?? [])}>Revenir à mon espace</Link>
+    </Card>
+  </div>;
+}
+
+function RequirePermission({ right, children }: { right: string; children: ReactNode }) {
+  const { can } = useSession();
+  return can(right) ? <>{children}</> : <NotAvailable title="Accès limité" reason="Votre compte n'a pas l'autorisation d'ouvrir cette fonctionnalité." />;
+}
+
+function Landing() {
+  const { session } = useSession();
+  const home = accountHome(session?.permissions ?? []);
+  return home === '/' ? <DashboardPage /> : <Navigate to={home} replace />;
+}
+
 function Protected() {
   const { session, loading, configured } = useSession();
   const location = useLocation();
@@ -49,27 +73,28 @@ export function App() {
       <Route path="/installation" element={loading ? <StartupScreen /> : configured ? <Navigate to="/" replace /> : <SetupPage />} />
       <Route path="/connexion" element={loading ? <StartupScreen /> : session ? <Navigate to="/" replace /> : configured === false ? <Navigate to="/installation" replace /> : <LoginPage />} />
       <Route element={<Protected />}>
-        <Route index element={<DashboardPage />} />
-        <Route path="apprenants" element={<StudentsPage />} />
-        <Route path="apprenants/:id" element={<StudentDetailPage />} />
-        <Route path="reinscriptions" element={<ReEnrollmentPage />} />
-        <Route path="encaisser" element={<CashierPage />} />
-        <Route path="paiements" element={<ReceiptsPage />} />
-        <Route path="paiements/recus/:id" element={<ReceiptDetailPage />} />
-        <Route path="recouvrement" element={<DebtorsPage />} />
-        <Route path="prises-en-charge" element={<SponsorshipsPage />} />
-        <Route path="depenses" element={<ExpensesPage />} />
-        <Route path="caisse" element={<CashPage />} />
-        <Route path="notes" element={<GradesPage />} />
-        <Route path="presences" element={<AttendancePage />} />
-        <Route path="discipline" element={<DisciplinePage />} />
-        <Route path="personnel" element={<StaffPage />} />
-        <Route path="parametres" element={<SettingsPage />} />
-        <Route path="utilisateurs" element={<UsersPage />} />
-        <Route path="donnees" element={<DataPage />} />
-        <Route path="audit" element={<AuditPage />} />
+        <Route index element={<Landing />} />
+        <Route path="pilotage" element={<RequirePermission right={P.pilotageRead}><PromoterDashboardPage /></RequirePermission>} />
+        <Route path="apprenants" element={<RequirePermission right={P.studentsRead}><StudentsPage /></RequirePermission>} />
+        <Route path="apprenants/:id" element={<RequirePermission right={P.studentsRead}><StudentDetailPage /></RequirePermission>} />
+        <Route path="reinscriptions" element={<RequirePermission right={P.studentsWrite}><ReEnrollmentPage /></RequirePermission>} />
+        <Route path="encaisser" element={<RequirePermission right={P.paymentsCreate}><CashierPage /></RequirePermission>} />
+        <Route path="paiements" element={<RequirePermission right={P.paymentsRead}><ReceiptsPage /></RequirePermission>} />
+        <Route path="paiements/recus/:id" element={<RequirePermission right={P.paymentsRead}><ReceiptDetailPage /></RequirePermission>} />
+        <Route path="recouvrement" element={<RequirePermission right={P.reportsRead}><DebtorsPage /></RequirePermission>} />
+        <Route path="prises-en-charge" element={<RequirePermission right={P.paymentsRead}><SponsorshipsPage /></RequirePermission>} />
+        <Route path="depenses" element={<RequirePermission right={P.paymentsRead}><ExpensesPage /></RequirePermission>} />
+        <Route path="caisse" element={<RequirePermission right={P.paymentsRead}><CashPage /></RequirePermission>} />
+        <Route path="notes" element={<RequirePermission right={P.academicsRead}><GradesPage /></RequirePermission>} />
+        <Route path="presences" element={<RequirePermission right={P.academicsRead}><AttendancePage /></RequirePermission>} />
+        <Route path="discipline" element={<RequirePermission right={P.academicsRead}><DisciplinePage /></RequirePermission>} />
+        <Route path="personnel" element={<RequirePermission right={P.staffManage}><StaffPage /></RequirePermission>} />
+        <Route path="parametres" element={<RequirePermission right={P.settingsWrite}><SettingsPage /></RequirePermission>} />
+        <Route path="utilisateurs" element={<RequirePermission right={P.usersManage}><UsersPage /></RequirePermission>} />
+        <Route path="donnees" element={<RequirePermission right={P.backupManage}><DataPage /></RequirePermission>} />
+        <Route path="audit" element={<RequirePermission right={P.auditRead}><AuditPage /></RequirePermission>} />
         <Route path="profil" element={<ProfilePage />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="*" element={<NotAvailable title="Page introuvable" reason="Ce lien n’existe plus ou contient une erreur." />} />
       </Route>
     </Routes>
   );
