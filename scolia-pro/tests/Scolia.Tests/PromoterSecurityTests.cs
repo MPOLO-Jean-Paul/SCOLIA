@@ -9,16 +9,17 @@ public sealed class PromoterSecurityTests
     {
         Assert.Contains(Role.Promoteur, Permissions.Assignable);
         var permissions = Permissions.For(Role.Promoteur);
-        foreach (var read in new[] {
-            Permissions.StudentsRead, Permissions.PaymentsRead,
-            Permissions.ReportsRead, Permissions.AcademicsRead
-        }) Assert.Contains(read, permissions);
+        // L'espace promoteur n'obtient que le droit de pilotage agrégé.
+        Assert.Contains(Permissions.PilotageRead, permissions);
+        Assert.Single(permissions);
         foreach (var write in new[] {
             Permissions.StudentsWrite, Permissions.PaymentsCreate,
             Permissions.PaymentsCancel, Permissions.ExpensesWrite,
             Permissions.CashClose, Permissions.SettingsWrite, Permissions.UsersManage,
             Permissions.BackupManage, Permissions.StaffManage, Permissions.AcademicsWrite,
-            Permissions.DisciplineCancel, Permissions.AuditRead
+            Permissions.DisciplineCancel, Permissions.AuditRead,
+            Permissions.StudentsRead, Permissions.PaymentsRead,
+            Permissions.ReportsRead, Permissions.AcademicsRead
         }) Assert.DoesNotContain(write, permissions);
     }
 
