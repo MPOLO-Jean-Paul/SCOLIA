@@ -243,7 +243,7 @@
                 <mi:MaterialIcon Kind="Magnify" Width="20" Height="20" Foreground="{DynamicResource AccentBrush}" VerticalAlignment="Center" />
                 <TextBox x:Name="MenuSearchBox" Grid.Column="1"
                          Text="{Binding SettingsSearch.Query, Mode=TwoWay}"
-                         Watermark="Rechercher un paramètre…" Background="Transparent"
+                         PlaceholderText="Rechercher un paramètre…" Background="Transparent"
                          BorderThickness="0" FontSize="16" VerticalAlignment="Center"
                          KeyDown="OnSettingsSearchKeyDown" />
                 <Button Grid.Column="2" Classes="phoneicon settingssearchcontrol"
@@ -303,7 +303,7 @@
             </Border>
             <Border Classes="phonegroup" IsVisible="{Binding SettingsSearch.NoResults}" Padding="22,28">
               <StackPanel HorizontalAlignment="Center" Spacing="10">
-                <mi:MaterialIcon Kind="MagnifyClose" Width="32" Height="32" Foreground="{DynamicResource MutedBrush}" HorizontalAlignment="Center" />
+                <mi:MaterialIcon Kind="Magnify" Width="32" Height="32" Foreground="{DynamicResource MutedBrush}" HorizontalAlignment="Center" />
                 <TextBlock Text="Aucun réglage trouvé" FontWeight="SemiBold" TextAlignment="Center" />
                 <TextBlock Text="Essayez : empreinte, Tailscale, police, sons ou promotion."
                            Classes="muted" TextWrapping="Wrap" TextAlignment="Center" />
