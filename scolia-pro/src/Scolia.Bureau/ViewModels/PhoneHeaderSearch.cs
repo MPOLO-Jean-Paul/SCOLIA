@@ -25,6 +25,9 @@ public sealed class PhoneHeaderSearchVm : Observable
     public bool HasQuery => Query.Length > 0;
     public bool IsVisible => shell.PhoneMenuOpen || shell.Current is HomePage or PromoterDashboardPage ||
                              Scope(shell.Current).Length > 0;
+    public string SearchHint => shell.PhoneMenuOpen ? "Rechercher une fonctionnalité ou un paramètre du menu"
+        : shell.Current is HomePage or PromoterDashboardPage ? "Recherche globale : dossiers, reçus et outils autorisés"
+        : "Filtrer les éléments de la page affichée";
     public static string Scope(PageViewModel? page) => page switch
     {
         StudentsPage => "apprenants",
@@ -108,6 +111,7 @@ public sealed class PhoneHeaderSearchVm : Observable
         Raise(nameof(Query));
         Raise(nameof(HasQuery));
         Raise(nameof(IsVisible));
+        Raise(nameof(SearchHint));
     }
-    public void MenuChanged() => Raise(nameof(IsVisible));
+    public void MenuChanged() { Raise(nameof(IsVisible)); Raise(nameof(SearchHint)); }
 }
