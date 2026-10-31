@@ -51,7 +51,7 @@ for (const viewport of [{ width: 320, height: 360 }, { width: 390, height: 640 }
     await monthSelector.selectOption('mois-1');
     await expect(page.locator('.payment-month input').nth(1)).toBeChecked();
     await expect(amount).not.toHaveText('—');
-    expect((await amount.textContent())?.replace(/\\D/g, '')).toBe('125000');
+    expect((await amount.textContent())?.replace(/\D/g, '')).toBe('125000');
     // Changer de mois retire l'ancienne sélection ; le montant se recalcule.
     await monthSelector.selectOption('mois-0');
     await expect(page.locator('.payment-month input').nth(1)).not.toBeChecked();
@@ -60,7 +60,7 @@ for (const viewport of [{ width: 320, height: 360 }, { width: 390, height: 640 }
     await page.locator('.payment-month input').nth(1).check();
     await page.locator('.payment-month input').nth(2).check();
     await expect(monthSelector).toHaveValue('');
-    expect((await amount.textContent())?.replace(/\\D/g, '')).toBe('375000');
+    expect((await amount.textContent())?.replace(/\D/g, '')).toBe('375000');
     const pay = page.getByRole('button', { name: /Valider le paiement/ });
     await expect(pay).toBeEnabled();
     await pay.scrollIntoViewIfNeeded();
