@@ -24,7 +24,8 @@ public sealed class PaidCalendarSafetyTests : IDisposable
             identity = new
             {
                 lastName = "KASA", middleName = "TEST", firstName = "Noé",
-                gender = "M", guardianPhone = "0812345678", guardianName = "Parent",
+                gender = "M", birthDate = new DateOnly(2008, 2, 20), birthPlace = "Lubumbashi",
+                guardianPhone = "0812345678", guardianName = "Parent",
             },
             promotionId = promotion.GetProperty("id").GetString()!,
             confirmDuplicate = false,
@@ -62,7 +63,8 @@ public sealed class PaidCalendarSafetyTests : IDisposable
             identity = new
             {
                 lastName = "TEST", middleName = "DUPONT", firstName = "Alex",
-                gender = "M", guardianPhone = "0812345678", guardianName = "Parent",
+                gender = "M", birthDate = new DateOnly(2008, 2, 20), birthPlace = "Lubumbashi",
+                guardianPhone = "0812345678", guardianName = "Parent",
             },
             promotionId = promotion.GetProperty("id").GetString()!,
             confirmDuplicate = false,
