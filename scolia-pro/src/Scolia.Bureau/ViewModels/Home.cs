@@ -103,6 +103,24 @@ public sealed class HomePage : PageViewModel
         nextKpis.Add(new HomeKpiVm("Recouvrement", $"{d.RecoveryRate:0} %", d.StudentsLate > 0 ? $"{Format.Count(d.StudentsLate, "apprenant en retard", "apprenants en retard")}" : "Tout le monde est à jour",
             MaterialIconKind.ChartBar, ThemeBrush.Get(d.StudentsLate > 0 ? "ToneOrange" : "ToneGreen"), Go(() => new DebtorsPage(Shell))));
 
+        // Établissement tout neuf : les premiers pas, dans l'ordre, avant les tâches du quotidien.
+        var starting = d.ActiveStudents == 0;
+        TasksTitle = starting ? "Pour bien démarrer" : "Aujourd'hui";
+        Raise(nameof(TasksTitle));
+        if (starting)
+        {
+            var promotions = Shell.Can(Perm.SettingsWrite) ? await PromotionsAsync() : [];
+            if (Shell.Can(Perm.SettingsWrite) && promotions.Count == 0)
+                nextTasks.Add(new HomeTaskVm("1. Créer les promotions et leurs frais", "Chaque apprenant est inscrit dans une promotion, avec sa mensualité",
+                    MaterialIconKind.School, ThemeBrush.Get("ToneIndigo"), new AsyncCommand(() => Shell.Run(() => SettingsPage.NewPromotionAsync(Shell)))));
+            if (Shell.Can(Perm.StudentsWrite))
+                nextTasks.Add(new HomeTaskVm($"{(nextTasks.Count + 1)}. Inscrire le premier apprenant", "Son matricule est donné automatiquement",
+                    MaterialIconKind.AccountPlus, ThemeBrush.Get("ToneBlue"), new AsyncCommand(() => Shell.Run(() => StudentForms.CreateAsync(Shell)))));
+            if (Shell.Can(Perm.PaymentsCreate))
+                nextTasks.Add(new HomeTaskVm($"{(nextTasks.Count + 1)}. Encaisser une mensualité", "Le reçu numéroté s'imprime aussitôt",
+                    MaterialIconKind.HandCoin, ThemeBrush.Get("ToneGreen"), Go(() => new CashierPage(Shell))));
+        }
+
         if (t is not null)
         {
             CashLine = t.CashClosed ? "Caisse arrêtée" : t.ReceiptsToday > 0 ? "Caisse à arrêter" : "Caisse ouverte";
@@ -110,7 +128,7 @@ public sealed class HomePage : PageViewModel
             if (!t.CashClosed && t.ReceiptsToday > 0 && Shell.Can(Perm.CashClose))
                 nextTasks.Add(new HomeTaskVm("Arrêter la caisse", $"{Format.Count(t.ReceiptsToday, "reçu", "reçus")} pour {Money(t.CollectedToday)}", MaterialIconKind.CashRegister,
                     ThemeBrush.Get("ToneOrange"), Go(() => new CashPage(Shell))));
-            if (t.AttendanceMarked == 0 && Shell.Can(Perm.AcademicsWrite))
+            if (!starting && t.AttendanceMarked == 0 && Shell.Can(Perm.AcademicsWrite))
                 nextTasks.Add(new HomeTaskVm("Faire l'appel", "Aucun apprenant pointé aujourd'hui", MaterialIconKind.ClipboardCheck, ThemeBrush.Get("ToneTeal"),
                     Go(() => new AttendancePage(Shell))));
             foreach (var a in t.Appointments.Take(3))
@@ -127,6 +145,9 @@ public sealed class HomePage : PageViewModel
         CollectionSync.Apply(Tasks, nextTasks);
         RaiseLists();
     }
+
+    /// <summary>« Pour bien démarrer » tant que l'établissement n'a aucun apprenant, puis « Aujourd'hui ».</summary>
+    public string TasksTitle { get; private set; } = "Aujourd'hui";
 
     private void RaiseLists()
     {

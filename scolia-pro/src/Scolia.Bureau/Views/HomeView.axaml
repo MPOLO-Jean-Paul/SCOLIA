@@ -197,7 +197,7 @@
         </StackPanel>
 
         <StackPanel Grid.Column="2" Spacing="8">
-          <TextBlock Text="Aujourd'hui" Classes="heading" />
+          <TextBlock Text="{Binding TasksTitle}" Classes="heading" />
           <Border Classes="card" Padding="6">
             <StackPanel>
               <ItemsControl ItemsSource="{Binding Tasks}">

@@ -139,7 +139,7 @@
 
     <!-- À faire aujourd'hui -->
     <StackPanel Spacing="8">
-      <TextBlock Text="Aujourd'hui" Classes="phonegrouptitle" Margin="4,0,0,0" />
+      <TextBlock Text="{Binding TasksTitle}" Classes="phonegrouptitle" Margin="4,0,0,0" />
       <Border Classes="phonegroup">
         <StackPanel>
           <ItemsControl ItemsSource="{Binding Tasks}">

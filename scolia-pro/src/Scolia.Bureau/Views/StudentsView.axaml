@@ -53,6 +53,6 @@
         </DataGridTemplateColumn>
       </DataGrid.Columns>
     </DataGrid>
-    <c:EmptyState Grid.Row="1" Icon="AccountSearchOutline" Title="Aucun apprenant trouvé" Hint="Modifiez la recherche ou la promotion." IsVisible="{Binding Items.Count, Converter={StaticResource IsEmpty}}" />
+    <c:EmptyState Grid.Row="1" Icon="AccountSearchOutline" Title="{Binding EmptyTitle}" Hint="{Binding EmptyHint}" IsVisible="{Binding Items.Count, Converter={StaticResource IsEmpty}}" />
   </Grid>
 </UserControl>

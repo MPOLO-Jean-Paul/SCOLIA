@@ -34,7 +34,7 @@ public sealed class GradesPage : PageViewModel
     private CourseRowVm? course;
     private AssessmentRowVm? assessment;
     private string subtitle = string.Empty;
-    private string sheetTitle = "Sélectionnez une évaluation";
+    private string sheetTitle = "3. Notes";
     private bool ready;
 
     public GradesPage(ShellViewModel shell) : base(shell)
@@ -122,7 +122,7 @@ public sealed class GradesPage : PageViewModel
         Raise(nameof(Course));
         Assessments.Clear();
         Grades.Clear();
-        SheetTitle = "Sélectionnez un cours";
+        SheetTitle = "3. Notes";
     }
 
     private async Task LoadAssessmentsAsync()
@@ -131,7 +131,7 @@ public sealed class GradesPage : PageViewModel
         Grades.Clear();
         assessment = null;
         Raise(nameof(Assessment));
-        SheetTitle = "Sélectionnez une évaluation";
+        SheetTitle = "3. Notes";
         if (Course is null) return;
         var list = await Shell.Api.GetAsync<List<AssessmentDto>>($"api/scolarite/cours/{Course.Id}/evaluations");
         foreach (var a in list)
@@ -422,15 +422,24 @@ public sealed class AttendancePage : PageViewModel
                 Rows.Add(new AttendanceEditRowVm(r.EnrollmentId, r.Matricule, r.FullName, status, note));
             }
             var absent = Rows.Count(r => r.Status.Value == "Absent");
+            // Tant qu'aucune ligne n'a de statut enregistré, l'appel n'est pas fait : « 0 absent » serait faux.
+            var taken = sheet.Rows.Any(r => !string.IsNullOrEmpty(r.Status));
             var dayState = sheet.CourseDay ? "jour de cours" : "jour non confirmé";
             // Le code de la promotion suffit : le sous-titre tient aussi sur l'écran du téléphone.
             var code = Promotion.Label.Split(" · ")[0];
-            subtitle = $"Appel du {Format.Date(date)} · {code} · {Format.Count(absent, "absent", "absents")} · {dayState}";
+            subtitle = taken
+                ? $"Appel du {Format.Date(date)} · {code} · {Format.Count(absent, "absent", "absents")} · {dayState}"
+                : $"Appel du {Format.Date(date)} · {code} · pas encore fait";
+            CallPending = !taken && Rows.Count > 0;
         }
         Raise(nameof(Subtitle));
     }
 
-    private Task MarkAllPresentAsync()
+    /// <summary>L'appel du jour n'est pas encore enregistré : la page dit comment le faire.</summary>
+    public bool CallPending { get => callPending; private set => Set(ref callPending, value); }
+    private bool callPending;
+
+        private Task MarkAllPresentAsync()
     {
         foreach (var r in Rows) r.Status = Statuses[0];
         Shell.Notify("Tous les apprenants sont marqués présents. Enregistrez l'appel pour le conserver.");

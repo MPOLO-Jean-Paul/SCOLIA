@@ -2,6 +2,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mi="using:Material.Icons.Avalonia"
              xmlns:infra="using:Scolia.Bureau.Infrastructure"
+             xmlns:c="using:Scolia.Bureau.Controls"
              x:Class="Scolia.Bureau.Views.CashierView">
   <UserControl.Styles>
     <!-- Champ rempli par SCOLIA : même hauteur qu'un champ de saisie, fond gris, une icône qui dit d'où vient la valeur -->
@@ -73,7 +74,12 @@
 
     <!-- Droite : versement, répartition, reçu -->
     <StackPanel Grid.Column="1" Spacing="12">
-      <Border Classes="card" IsVisible="{Binding !HasReceipt}">
+      <!-- Tant qu'aucun apprenant n'est choisi, le versement n'a rien à montrer : une seule consigne. -->
+      <Border Classes="card" IsVisible="{Binding !HasStudent}">
+        <c:EmptyState Icon="AccountSearchOutline" Title="2. Versement"
+                      Hint="Cherchez d'abord l'apprenant dans « 1. Apprenant » : ses mois à payer s'affichent ici." />
+      </Border>
+      <Border Classes="card" IsVisible="{Binding ShowPayment}">
         <StackPanel Spacing="10">
           <TextBlock Text="2. Versement" Classes="heading" />
           <!-- Le choix du mois affiche immédiatement le montant dû ; cases conservées pour plusieurs mois. -->
@@ -159,7 +165,7 @@
       </Border>
 
       <!-- Répartition calculée en direct sur les échéances -->
-      <Border Classes="card" IsVisible="{Binding !HasReceipt}">
+      <Border Classes="card" IsVisible="{Binding ShowPayment}">
         <StackPanel Spacing="8">
           <Grid ColumnDefinitions="*,Auto">
             <TextBlock Text="Répartition" Classes="heading" />

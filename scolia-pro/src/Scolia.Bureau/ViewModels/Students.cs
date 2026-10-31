@@ -88,6 +88,8 @@ public sealed class StudentsPage : PageViewModel
     }
 
     public StudentRow? Selected { get => selected; set => Set(ref selected, value); }
+    public string EmptyTitle { get; private set; } = "Aucun apprenant trouvé";
+    public string EmptyHint { get; private set; } = string.Empty;
     public string PageText => $"Page {page} sur {pageCount}";
     public bool CanPrevious => page > 1;
     public bool CanNext => page < pageCount;
@@ -127,6 +129,13 @@ public sealed class StudentsPage : PageViewModel
         }));
 
         subtitle = Format.Count(total, "apprenant", "apprenants") + (Promotion is { Value.Length: > 0 } ? $" · {Promotion.Label}" : string.Empty);
+        // Liste vide : sans filtre, l'établissement n'a encore aucun apprenant ; avec un filtre, il faut l'élargir.
+        var filtered = Search.Trim().Length > 0 || Promotion is { Value.Length: > 0 } || Status is { Value.Length: > 0 };
+        EmptyTitle = filtered ? "Aucun apprenant trouvé" : "Aucun apprenant inscrit";
+        EmptyHint = filtered ? "Modifiez la recherche, ou choisissez « Toutes les promotions » et « Tous les statuts »."
+            : "Inscrivez le premier avec « Nouvelle inscription ».";
+        Raise(nameof(EmptyTitle));
+        Raise(nameof(EmptyHint));
         Raise(nameof(Subtitle));
         Raise(nameof(PageText));
         Raise(nameof(CanPrevious));

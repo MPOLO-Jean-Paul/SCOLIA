@@ -1014,4 +1014,11 @@
     <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
   </Style>
   <Style Selector="Button.filtertoggle.active TextBlock"><Setter Property="Foreground" Value="{DynamicResource AccentBrush}" /></Style>
+  <!-- Encadré de marche à suivre : une consigne courte, en bleu doux, au-dessus de ce qu'elle concerne -->
+  <Style Selector="Border.guide">
+    <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
+    <Setter Property="CornerRadius" Value="12" />
+    <Setter Property="Padding" Value="14,10" />
+  </Style>
+  <Style Selector="Border.guide mi|MaterialIcon"><Setter Property="Foreground" Value="{DynamicResource AccentBrush}" /></Style>
 </Styles>

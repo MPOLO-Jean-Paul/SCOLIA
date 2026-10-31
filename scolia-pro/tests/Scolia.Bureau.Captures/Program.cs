@@ -1162,8 +1162,21 @@ void Page(Func<PageViewModel> create, string name, Action<PageViewModel>? prepar
 
 var students = Result(api.GetAsync<PagedResult<StudentListItem>>("api/apprenants?taille=1"));
 var receipts = Result(api.GetAsync<PagedResult<ReceiptRowDto>>("api/paiements?taille=1"));
-var firstStudent = students.Items[0].Id;
-var firstReceipt = receipts.Items[0].Id;
+// Établissement tout neuf (sans apprenant ni reçu) : on capture aussi ses écrans vides.
+var firstStudent = students.Items.Count > 0 ? students.Items[0].Id : Guid.Empty;
+var firstReceipt = receipts.Items.Count > 0 ? receipts.Items[0].Id : Guid.Empty;
+if (firstStudent == Guid.Empty)
+{
+    Page(() => new StudentsPage(shell), "03-apprenants.png");
+    Page(() => new CashierPage(shell), "05-encaisser.png");
+    Page(() => new ReceiptsPage(shell), "06-journal-recus.png");
+    Page(() => new SponsorshipsPage(shell), "09-prises-en-charge.png");
+    Page(() => new GradesPage(shell), "13-cours-et-notes.png");
+    Page(() => new AttendancePage(shell), "15-presences.png");
+    Page(() => new DashboardPage(shell), "22e-tableau-de-bord.png");
+    window.Close();
+    return;
+}
 
 Page(() => new StudentsPage(shell), "03-apprenants.png");
 Page(() => new StudentDetailPage(shell, firstStudent), "04-fiche-apprenant.png");

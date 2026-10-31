@@ -146,7 +146,9 @@ public sealed class CashierPage : PageViewModel
     public string? Hint { get => hint; private set { if (Set(ref hint, value)) Raise(nameof(HasHint)); } }
     public bool HasHint => !string.IsNullOrEmpty(hint);
     public bool HasStudent => enrollment is not null;
-    public ReceiptDto? Receipt { get => receipt; private set { if (Set(ref receipt, value)) Raise(nameof(HasReceipt)); } }
+    /// <summary>Le formulaire de versement s'affiche quand un apprenant est choisi et tant que le reçu n'est pas fait.</summary>
+    public bool ShowPayment => HasStudent && !HasReceipt;
+    public ReceiptDto? Receipt { get => receipt; private set { if (Set(ref receipt, value)) { Raise(nameof(HasReceipt)); Raise(nameof(ShowPayment)); } } }
     public bool HasReceipt => receipt is not null;
     public string ReceiptText => receipt is null ? string.Empty : $"Reçu N° {receipt.Number} enregistré pour {Money(receipt.Amount)}.";
 
@@ -289,6 +291,7 @@ public sealed class CashierPage : PageViewModel
         Reference = string.Empty;
         Hint = "Chargement du compte de l'apprenant…";
         Raise(nameof(HasStudent));
+        Raise(nameof(ShowPayment));
         Raise(nameof(HasMonths));
         Raise(nameof(HasSelection));
         Raise(nameof(CanPay));
@@ -333,6 +336,7 @@ public sealed class CashierPage : PageViewModel
         Raise(nameof(OverdueBrush));
         Hint = pending.Count > 0 ? $"{pending.Count} mois déjà encaissé(s) sur cet appareil, en attente d'envoi à l'ordinateur principal." : null;
         Raise(nameof(HasStudent));
+        Raise(nameof(ShowPayment));
         // Seul le mode de paiement reste à choisir : la référence, le visa et le téléphone se remplissent ici.
         Reference = NewReference(DateTime.Now);
         PayerPhone = account.GuardianPhone?.Trim() ?? string.Empty;

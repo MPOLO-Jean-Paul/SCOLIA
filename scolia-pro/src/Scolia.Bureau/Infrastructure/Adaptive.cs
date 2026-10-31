@@ -123,7 +123,9 @@ public static class Adaptive
             var children = grid.Children.OfType<Control>().ToList();
             foreach (var c in children)
                 state.Children.Add((c, Grid.GetRow(c), Grid.GetColumn(c), Grid.GetRowSpan(c), Grid.GetColumnSpan(c)));
-            var ordered = state.Children.OrderBy(c => c.Row).ThenBy(c => c.Column).ToList();
+            // Ordre de lecture : ligne par ligne, mais un bloc qui couvre plusieurs lignes vient après les blocs
+            // des lignes qu'il couvre (la saisie des notes après le cours et l'évaluation qu'elle concerne).
+            var ordered = state.Children.OrderBy(c => c.Row + c.RowSpan - 1).ThenBy(c => c.Column).ToList();
             grid.ColumnDefinitions = new ColumnDefinitions("*");
             var rows = GetStackedRows(grid) is { Length: > 0 } custom ? custom.Split(',') : [];
             grid.RowDefinitions = new RowDefinitions(string.Join(",", Enumerable.Range(0, ordered.Count).Select(i => i < rows.Length ? rows[i].Trim() : "Auto")));
