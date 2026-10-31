@@ -49,6 +49,7 @@ public sealed class ShellViewModel : Observable
         Backstage = new BackstageViewModel(this);
         ReloadCommand = new AsyncCommand(() => Run(Reload));
         SearchCommand = new RelayCommand(ShowSearch);
+        SettingsSearch = new PhoneSettingsSearchVm(this);
         ToggleSidebarCommand = new RelayCommand(ToggleSidebar);
         BackCommand = new RelayCommand(GoBack);
         ForwardCommand = new RelayCommand(GoForward);
@@ -88,6 +89,8 @@ public sealed class ShellViewModel : Observable
     /// <summary>Commandes de la barre d'accès rapide.</summary>
     public AsyncCommand ReloadCommand { get; private set; } = null!;
     public RelayCommand SearchCommand { get; private set; } = null!;
+    /// <summary>Recherche locale des réglages dans le bandeau mobile, jamais dans les apprenants.</summary>
+    public PhoneSettingsSearchVm SettingsSearch { get; }
     public RelayCommand ToggleSidebarCommand { get; private set; } = null!;
     public SessionDto? Session => session;
 
@@ -1284,7 +1287,11 @@ public sealed class ShellViewModel : Observable
         set
         {
             if (!Set(ref phoneMenuOpen, value)) return;
-            if (!value) CollapseGroups();
+            if (!value)
+            {
+                CollapseGroups();
+                SettingsSearch.Reset();
+            }
             Raise(nameof(PhoneMenuSelected));
         }
     }
