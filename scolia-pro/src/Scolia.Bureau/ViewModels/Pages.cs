@@ -64,8 +64,10 @@ public sealed class LoginViewModel : Observable
     }
     public bool CanOfferBiometrics => Platform.IsMobile && Platform.IsBiometricAvailable?.Invoke() == true;
     public string BiometricAccount => BiometricAccess.ReadAccount(api.Server) ?? string.Empty;
-    public bool HasBiometricAccount => CanOfferBiometrics && BiometricAccount.Length > 0
+    // Le retrait doit rester disponible par mot de passe lorsque le capteur a été désactivé.
+    public bool HasBiometricAccount => Platform.IsMobile && BiometricAccount.Length > 0
         && (Platform.HasBiometricProof?.Invoke() ?? false);
+    public bool CanUseBiometricSignIn => HasBiometricAccount && CanOfferBiometrics;
     public bool CanOfferEnrollment => CanOfferBiometrics && !HasBiometricAccount;
     public string BiometricLabel => $"Déverrouiller avec l’empreinte · {BiometricAccount}";
 
@@ -74,6 +76,7 @@ public sealed class LoginViewModel : Observable
         Raise(nameof(CanOfferBiometrics));
         Raise(nameof(BiometricAccount));
         Raise(nameof(HasBiometricAccount));
+        Raise(nameof(CanUseBiometricSignIn));
         Raise(nameof(CanOfferEnrollment));
         Raise(nameof(BiometricLabel));
     }
