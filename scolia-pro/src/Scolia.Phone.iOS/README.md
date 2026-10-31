@@ -30,33 +30,69 @@ dotnet build src/Scolia.Phone.iOS/Scolia.Phone.iOS.csproj -f net10.0-ios -c Debu
 
 La compilation iPhone physique exige `ios-arm64`, un certificat et un profil Apple. Elle ne devient installable qu'apres signature et validation sur un vrai iPhone.
 
-## Publier un vrai IPA signé (appareil physique)
+## Compiler et publier depuis GitHub (sans Mac personnel)
 
-Un fichier du simulateur ne peut pas devenir un IPA par renommage. La CI fournit désormais
-le flux GitHub Actions **SCOLIA Phone iPhone - IPA signe** dans
-`.github/workflows/scolia-phone-ipa.yml`. Ce workflow est **manuel** et ne livre rien
-sans signature Apple. Pour rendre son bouton manuel disponible, le workflow doit être
-présent sur la branche principale de GitHub (via la PR approuvée).
+Le dépôt comporte **deux workflows indépendants** : la compilation du simulateur
+(`.github/workflows/scolia-phone-ios.yml`) et la **publication d'un véritable IPA signé**
+(`.github/workflows/scolia-phone-ipa.yml`). Les deux utilisent les Mac Apple Silicon
+de GitHub Actions et **Xcode 27**. Seul le second est installable sur iPhone/iPad
+réels, suivant la distribution définie par Apple.
 
-Dans **GitHub > Settings > Secrets and variables > Actions > New repository secret**,
-configurer les cinq secrets suivants, sans les envoyer par message :
+### Avant de générer un IPA réel
 
-- `SCOLIA_IOS_CERT_P12_BASE64` : contenu base64 du certificat Apple Distribution
-  au format P12 **avec sa clé privée**.
-- `SCOLIA_IOS_CERT_P12_PASSWORD` : mot de passe du fichier P12.
-- `SCOLIA_IOS_PROFILE_BASE64` : contenu base64 du profil de distribution
-  `.mobileprovision` correspondant à `com.jpservices.scolia.ios`.
-- `SCOLIA_IOS_CODESIGN_KEY` : nom exact de l'identité « Apple Distribution: … ».
-- `SCOLIA_IOS_PROFILE_NAME` : nom ou UUID du profil correspondant.
+Un responsable du compte Apple Developer doit disposer d'un certificat
+**Apple Distribution (.p12 avec clé privée)**, de son mot de passe et d'un
+profil `.mobileprovision` non expiré pour l'identifiant
+**`com.jpservices.scolia.ios`**. Le profil doit correspondre **au même
+certificat** et au mode de distribution choisi.
 
-Exécuter ensuite **Actions > SCOLIA Phone iPhone - IPA signe > Run workflow**.
-La compilation utilise macOS / Xcode 27, publie pour `ios-arm64`, vérifie la
-signature du `.app` dans l'IPA, puis affiche un téléchargement nommé
-`SCOLIA_Phone_iPhone_IPA_Signe` avec le vrai fichier
-`SCOLIA_Phone_iPhone_iOS_Signed.ipa` à l'intérieur.
+Dans **GitHub > Settings > Secrets and variables > Actions**, configurer
+**quatre secrets obligatoires**, sans jamais les publier dans le dépôt :
 
-**Choix de distribution :** un profil Ad Hoc nécessite l'enregistrement des iPhone
-cibles auprès d'Apple ; un profil App Store permet l'envoi vers TestFlight ou l'App Store,
-mais le simple téléchargement de l'IPA n'installe pas l'application sur l'iPhone.
-Le certificat, le profil et les autorisations Apple doivent appartenir à
-l'établissement ou au responsable autorisé. Les secrets doivent rester hors du dépôt.
+- `SCOLIA_IOS_CERT_P12_BASE64` : fichier `.p12` encodé en base64 ;
+- `SCOLIA_IOS_CERT_P12_PASSWORD` : mot de passe du P12 ;
+- `SCOLIA_IOS_PROFILE_BASE64` : profil `.mobileprovision` encodé en base64 ;
+- `SCOLIA_IOS_CODESIGN_KEY` : identité exacte « Apple Distribution: … ».
+
+`SCOLIA_IOS_PROFILE_NAME` reste **facultatif** : nom ou UUID du profil,
+comme vérification supplémentaire. Ces secrets ne sont jamais exposés
+aux exécutions de compilation non signée.
+
+### Exécution
+
+1. Après intégration du workflow sur la **branche GitHub par défaut**,
+   ouvrir **Actions > SCOLIA Phone iPhone - IPA signe > Run workflow**.
+2. Choisir la branche approuvée contenant les dernières corrections natives.
+3. Sélectionner le canal : **ad-hoc** pour les appareils enregistrés dans
+   Apple Developer ; **app-store** pour TestFlight ou l'App Store.
+4. Le workflow vérifie les secrets, la date d'expiration, le certificat,
+   son empreinte, l'identifiant de l'application et le type de profil
+   **avant** toute publication.
+5. Seule une compilation réussie avec signature valide fournit l'artefact
+   **`SCOLIA_Phone_iPhone_IPA_Signe`**, contenant :
+   - `SCOLIA_Phone_iPhone_iOS_Signed.ipa` ;
+   - `SCOLIA_Phone_iPhone_iOS_Signed.ipa.sha256` ;
+   - `LIRE_MOI.txt`.
+
+**Ad Hoc :** les iPhone et iPad cibles doivent avoir été enregistrés dans
+le profil chez Apple ; utiliser Xcode ou Apple Configurator pour installer.
+**App Store :** transmettre le fichier à App Store Connect / TestFlight :
+un fichier IPA App Store ne s'installe pas par simple téléchargement.
+Une compilation réussie ne remplace pas les tests sur un vrai iPhone
+(Face ID, connexion, synchronisation, pointage, reçus).
+
+### Tests des mécanismes de signature sans certificat Apple
+
+Depuis le répertoire `scolia-pro` :
+
+```bash
+python3 -m unittest discover -s scripts -p test_ios_signing.py -v
+```
+
+Ces tests sont également exécutés automatiquement par GitHub avec la
+compilation du simulateur (sur chaque modification du projet iOS natif).
+Les profils expirés, mauvais certificats, mauvaises identités d'application,
+canaux incompatibles ou signatures invalides entraînent un **échec explicite**,
+sans artefact IPA trompeur.
+
+Voir [le guide GitHub iOS détaillé](../../docs/IOS_GITHUB.md).
