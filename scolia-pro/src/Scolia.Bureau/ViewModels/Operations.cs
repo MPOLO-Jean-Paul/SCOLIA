@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Net.Http;
+using System.Windows.Input;
 using Avalonia.Media;
 using Avalonia.Threading;
 using Material.Icons;
@@ -223,18 +224,27 @@ public sealed class AuditPage : PageViewModel
 public sealed class SearchViewModel : Observable
 {
     private readonly ShellViewModel shell;
+    private readonly bool settingsOnly;
     private DispatcherTimer? timer;
     private string query = string.Empty;
     private SearchHitRow? selected;
-    private string message = "Recherche globale : apprenants, reçus, fonctionnalités et paramètres autorisés.";
+    private string message;
 
-    public SearchViewModel(ShellViewModel shell)
+    public SearchViewModel(ShellViewModel shell, bool settingsOnly = false)
     {
         this.shell = shell;
+        this.settingsOnly = settingsOnly;
+        message = settingsOnly
+            ? "Cherchez un réglage de l'application, sans consulter les données scolaires."
+            : "Recherche générale : apprenants, reçus, fonctionnalités et paramètres autorisés.";
         Open = new AsyncCommand(OpenSelectedAsync);
         Close = new RelayCommand(shell.CloseDialog);
     }
 
+    public bool SettingsOnly => settingsOnly;
+    public string Placeholder => settingsOnly ? "Rechercher un réglage : police, mot de passe, mois…" :
+        "Apprenant, matricule, reçu, fonctionnalité ou réglage";
+    public string SearchTitle => settingsOnly ? "Rechercher un réglage" : "Rechercher dans SCOLIA";
     public string Query { get => query; set { if (Set(ref query, value)) Schedule(); } }
     public string Message { get => message; private set => Set(ref message, value); }
     public ObservableCollection<SearchHitRow> Results { get; } = [];
@@ -256,7 +266,9 @@ public sealed class SearchViewModel : Observable
         Selected = null;
         if (Query.Trim().Length < 2)
         {
-            Message = "Saisissez au moins deux caractères pour trouver un apprenant, un reçu ou un réglage.";
+            Message = settingsOnly
+                ? "Saisissez au moins deux caractères pour retrouver un réglage."
+                : "Saisissez au moins deux caractères pour trouver un apprenant, un reçu ou un réglage.";
             return;
         }
         // Réglages : catalogue local filtré selon les permissions et jamais envoyé au serveur.
@@ -264,33 +276,27 @@ public sealed class SearchViewModel : Observable
         var terms = new PhoneSettingsSearchVm(shell) { Query = Query.Trim() };
         foreach (var setting in terms.Results)
         {
-            var destination = setting.Title switch
-            {
-                "Configuration" or "Thème et couleurs" => "apparence",
-                "Texte et polices" => "texte",
-                "Fenêtres et affichage" => "fenetres",
-                "Animations et fluidité" => "animations",
-                "Sons" => "sons",
-                "Sécurité du compte" => "compte/mot-de-passe",
-                "Poste et réseau" => "compte/poste",
-                "Établissement" => "etablissement",
-                "Années scolaires" or "Nouvelle année" => "annees",
-                "Sections" => "sections",
-                "Promotions et frais" or "Nouvelle promotion" => "promotions",
-                "Utilisateurs" => "utilisateurs",
-                _ => "navigation/" + Uri.EscapeDataString(setting.Title),
-            };
-            if (destination.Length == 0) continue;
-            var url = destination.StartsWith("compte/", StringComparison.Ordinal)
-                || destination.StartsWith("navigation/", StringComparison.Ordinal)
-                ? "/" + destination : "/parametres/" + destination;
-            var kind = destination.StartsWith("navigation/", StringComparison.Ordinal)
-                ? "Fonctionnalité" : "Paramètre";
-            Results.Add(new SearchHitRow(new SearchHitDto(kind, setting.Title, setting.Section, url)));
+            // Le résultat porte sa COMMANDE NATIVE et non une adresse recomposée
+            // d'après son libellé. Ainsi « promotions », « sécurité », « reçus »
+            // et toutes les autres fonctions ouvrent réellement leur destination.
+            var isSetting = setting.Title is "Configuration" or "Thème et couleurs"
+                or "Texte et polices" or "Fenêtres et affichage" or "Animations et fluidité"
+                or "Sons" or "Sécurité du compte" or "Poste et réseau"
+                or "Établissement" or "Années scolaires" or "Sections"
+                or "Promotions et frais" or "Nouvelle promotion" or "Nouvelle année"
+                or "Utilisateurs";
+            // Un filtre de catégorie seul ne suffit pas : « Administration » contient
+            // aussi bien les réglages que le pointage des enseignants.
+            if (settingsOnly && !isSetting) continue;
+            var kind = isSetting ? "Paramètre" : "Fonctionnalité";
+            Results.Add(new SearchHitRow(
+                new SearchHitDto(kind, setting.Title, setting.Section,
+                    "/native/" + Uri.EscapeDataString(setting.Title)),
+                setting.Open));
         }
 
         var dataUnavailable = false;
-        if (shell.Can(Perm.StudentsRead))
+        if (!settingsOnly && shell.Can(Perm.StudentsRead))
         {
             var current = Query.Trim();
             try
@@ -310,15 +316,28 @@ public sealed class SearchViewModel : Observable
         }
         Selected = Results.Count > 0 ? Results[0] : null;
         Message = dataUnavailable
-            ? "Serveur indisponible : paramètres et fonctionnalités locales seulement."
+            ? "Serveur indisponible : utilisez les paramètres et fonctionnalités locales."
             : Results.Count == 0 ? "Aucun résultat dans les catégories autorisées."
             : Format.Count(Results.Count, "résultat", "résultats");
     }
 
     private async Task OpenSelectedAsync()
     {
-        if (Selected is null) return;
-        var url = Selected.Hit.Url;
+        if (Selected is not { } selectedHit) return;
+        // Recherche interne : commande conservée sur le résultat sélectionné.
+        // Ne pas reconstruire la destination via un titre ni revenir à Accueil.
+        if (selectedHit.OpenAction is { } command)
+        {
+            if (!command.CanExecute(null))
+            {
+                Message = "Cette fonctionnalité n'est plus disponible pour ce compte.";
+                return;
+            }
+            shell.CloseDialog();
+            command.Execute(null);
+            return;
+        }
+        var url = selectedHit.Hit.Url;
         var target = PageFor(url);
         if (url is "/compte/poste" or "/compte/mot-de-passe")
         {
@@ -383,9 +402,15 @@ public sealed class SearchViewModel : Observable
 /// <summary>Résultat de recherche dans la liste, avec son libellé de type.</summary>
 public sealed class SearchHitRow
 {
-    public SearchHitRow(SearchHitDto hit) => Hit = hit;
+    public SearchHitRow(SearchHitDto hit, ICommand? openAction = null)
+    {
+        Hit = hit;
+        OpenAction = openAction;
+    }
 
     public SearchHitDto Hit { get; }
+    /// <summary>Action native directement associée au résultat de menu.</summary>
+    public ICommand? OpenAction { get; }
     public string Type => Hit.Type;
     public string Title => Hit.Title;
     public string Subtitle => Hit.Subtitle;
@@ -414,6 +439,8 @@ public sealed class BackstageViewModel : Observable
     private PosteViewModel? poste;
     private string securityPassword = string.Empty;
     private string securityNotice = string.Empty;
+    private bool biometricBusy;
+    private bool securityPasswordVisible;
 
     public BackstageViewModel(ShellViewModel shell)
     {
@@ -433,6 +460,7 @@ public sealed class BackstageViewModel : Observable
         Logout = new AsyncCommand(() => shell.LogoutAsync());
         PasswordForm = BuildPasswordForm();
         ManageBiometrics = new AsyncCommand(ManageBiometricsAsync);
+        ToggleSecurityPassword = new RelayCommand(() => SecurityPasswordVisible = !SecurityPasswordVisible);
     }
 
     public IReadOnlyList<BackstageItemVm> Items { get; }
@@ -459,6 +487,7 @@ public sealed class BackstageViewModel : Observable
                 {
                     PasswordForm = BuildPasswordForm();
                     SecurityPassword = string.Empty;
+                    SecurityPasswordVisible = false;
                     SecurityNotice = string.Empty;
                     RefreshSecurity();
                 }
@@ -495,17 +524,39 @@ public sealed class BackstageViewModel : Observable
         && BiometricAccess.AccountMatches(account, session.UserName);
     public bool OtherBiometricAccount => BiometricAccount is { } account && shell.Session is { } session
         && !BiometricAccess.AccountMatches(account, session.UserName);
+    /// <summary>Ne jamais proposer une activation sans enrôlement et preuve cryptographique natives.</summary>
+    public bool BiometricEnrollmentReady => Platform.EnrollBiometricAsync is not null
+        && Platform.HasBiometricProof is not null && Platform.IsBiometricAvailable?.Invoke() == true;
     public string BiometricSecurityStatus => OtherBiometricAccount
-        ? "Une autre session est associée à la biométrie de ce téléphone. Reconnectez-vous avec le compte concerné pour la modifier."
+        ? "Une autre session est associée à la biométrie de cet appareil. Connectez-vous avec ce compte pour la modifier."
         : BiometricsEnabled
-            ? "Empreinte activée pour ce compte sur ce téléphone. Chaque utilisation demande une validation Android."
-            : Platform.IsBiometricAvailable?.Invoke() == true
-                ? "Empreinte disponible. Son activation exige le mot de passe du compte et votre accord."
-                : "Empreinte indisponible sur cet appareil ou non configurée dans Android.";
-    public string BiometricActionLabel => BiometricsEnabled ? "Désactiver l'empreinte" : "Activer l'empreinte";
+            ? "Activée pour votre compte. Une vérification biométrique locale sera demandée lors de chaque accès."
+            : !BiometricEnrollmentReady
+                ? "Non disponible pour l'activation sur cet appareil : une preuve biométrique sécurisée SCOLIA est nécessaire. Votre mot de passe reste utilisable."
+                : "Prête à être activée : confirmez votre mot de passe, puis validez l'invite sécurisée de l'appareil.";
+    public string BiometricActionLabel => BiometricsEnabled ? "Désactiver la biométrie" : "Activer la biométrie";
     public bool BiometricSecurityAllowed => ShowBiometricSecurity && !OtherBiometricAccount
-        && (BiometricsEnabled || Platform.IsBiometricAvailable?.Invoke() == true);
+        && !BiometricBusy && (BiometricsEnabled || BiometricEnrollmentReady);
+    public bool BiometricBusy
+    {
+        get => biometricBusy;
+        private set { if (Set(ref biometricBusy, value)) Raise(nameof(BiometricSecurityAllowed)); }
+    }
     public string SecurityPassword { get => securityPassword; set => Set(ref securityPassword, value); }
+    public bool SecurityPasswordVisible
+    {
+        get => securityPasswordVisible;
+        private set
+        {
+            if (!Set(ref securityPasswordVisible, value)) return;
+            Raise(nameof(SecurityPasswordMask));
+            Raise(nameof(SecurityEyeIcon));
+        }
+    }
+    public char SecurityPasswordMask => SecurityPasswordVisible ? '\0' : '•';
+    public MaterialIconKind SecurityEyeIcon => SecurityPasswordVisible
+        ? MaterialIconKind.EyeOffOutline : MaterialIconKind.EyeOutline;
+    public RelayCommand ToggleSecurityPassword { get; }
     public string SecurityNotice { get => securityNotice; private set { if (Set(ref securityNotice, value)) Raise(nameof(HasSecurityNotice)); } }
     public bool HasSecurityNotice => SecurityNotice.Length > 0;
     public AsyncCommand ManageBiometrics { get; }
@@ -516,6 +567,7 @@ public sealed class BackstageViewModel : Observable
     {
         Raise(nameof(BiometricsEnabled));
         Raise(nameof(OtherBiometricAccount));
+        Raise(nameof(BiometricEnrollmentReady));
         Raise(nameof(BiometricSecurityStatus));
         Raise(nameof(BiometricActionLabel));
         Raise(nameof(BiometricSecurityAllowed));
@@ -524,65 +576,76 @@ public sealed class BackstageViewModel : Observable
     /// <summary>Chaque changement sensible exige une preuve fraîche, jamais la seule session ouverte.</summary>
     private async Task ManageBiometricsAsync()
     {
-        if (shell.Session is not { } session || !ShowBiometricSecurity) return;
-        SecurityNotice = string.Empty;
-        if (OtherBiometricAccount)
+        if (BiometricBusy || shell.Session is not { } session || !ShowBiometricSecurity) return;
+        BiometricBusy = true;
+        try
         {
-            SecurityNotice = "Ce téléphone est déjà associé à un autre compte : déconnectez-vous et utilisez ce compte.";
-            return;
-        }
-
-        var enabled = BiometricsEnabled;
-        var verified = false;
-        if (enabled && Platform.VerifyBiometricAsync is { } verify)
-            verified = await verify();
-
-        // Activer requiert systématiquement le mot de passe SCOLIA ; désactiver
-        // admet soit une preuve Android fraîche, soit le mot de passe du même compte.
-        if (!enabled || !verified)
-        {
-            if (string.IsNullOrWhiteSpace(SecurityPassword))
+            SecurityNotice = string.Empty;
+            if (OtherBiometricAccount)
             {
-                SecurityNotice = enabled
-                    ? "Confirmez votre empreinte ou saisissez le mot de passe actuel pour désactiver."
-                    : "Saisissez votre mot de passe actuel pour activer l'empreinte.";
+                SecurityNotice = "Ce téléphone est déjà associé à un autre compte : déconnectez-vous et utilisez ce compte.";
                 return;
             }
-            try
+    
+            var enabled = BiometricsEnabled;
+            var verified = false;
+            if (enabled && Platform.VerifyBiometricAsync is { } verify)
+                verified = await verify();
+    
+            // Activer requiert systématiquement le mot de passe SCOLIA ; désactiver
+            // admet soit une preuve Android fraîche, soit le mot de passe du même compte.
+            if (!enabled || !verified)
             {
-                var authenticated = await shell.Api.LoginAsync(session.UserName, SecurityPassword);
-                verified = BiometricAccess.AccountMatches(authenticated.UserName, session.UserName);
+                if (string.IsNullOrWhiteSpace(SecurityPassword))
+                {
+                    SecurityNotice = enabled
+                        ? "Confirmez votre empreinte ou saisissez le mot de passe actuel pour désactiver."
+                        : "Saisissez votre mot de passe actuel pour activer l'empreinte.";
+                    return;
+                }
+                try
+                {
+                    var authenticated = await shell.Api.LoginAsync(session.UserName, SecurityPassword);
+                    verified = BiometricAccess.AccountMatches(authenticated.UserName, session.UserName);
+                }
+                catch (Api.ApiException)
+                {
+                    SecurityNotice = "Mot de passe incorrect. Aucun réglage biométrique n'a été modifié.";
+                    return;
+                }
+                catch (Exception ex) when (ex is HttpRequestException or IOException or TaskCanceledException)
+                {
+                    SecurityNotice = "Le serveur ne peut pas vérifier votre mot de passe. Réessayez lorsque la connexion est rétablie.";
+                    return;
+                }
             }
-            catch (Api.ApiException)
+            SecurityPassword = string.Empty;
+            if (!verified) { SecurityNotice = "Vérification refusée. Aucun réglage n'a été modifié."; return; }
+    
+            if (enabled)
             {
-                SecurityNotice = "Mot de passe incorrect. Aucun réglage biométrique n'a été modifié.";
-                return;
+                Platform.DisableBiometricAccess?.Invoke();
+                BiometricAccess.Disable();
+                SecurityNotice = "Connexion par empreinte désactivée après vérification.";
             }
-            catch (Exception ex) when (ex is HttpRequestException or IOException or TaskCanceledException)
+            else if (Platform.EnrollBiometricAsync is { } enroll && await enroll())
             {
-                SecurityNotice = "Le serveur ne peut pas vérifier votre mot de passe. Réessayez lorsque la connexion est rétablie.";
-                return;
+                BiometricAccess.Enable(shell.Api.Server, session.UserName);
+                SecurityNotice = "Empreinte activée pour votre compte sur ce téléphone.";
             }
-        }
-        SecurityPassword = string.Empty;
-        if (!verified) { SecurityNotice = "Vérification refusée. Aucun réglage n'a été modifié."; return; }
-
-        if (enabled)
+            else SecurityNotice = "Activation annulée ou indisponible : le mot de passe reste nécessaire.";
+    
+            Raise(nameof(HasSecurityNotice));
+            RefreshSecurity();
+            shell.Login.RefreshBiometrics();
+            }
+        finally
         {
-            Platform.DisableBiometricAccess?.Invoke();
-            BiometricAccess.Disable();
-            SecurityNotice = "Connexion par empreinte désactivée après vérification.";
+            // Même après une annulation ou une erreur réseau : réautoriser une tentative.
+            SecurityPassword = string.Empty;
+            BiometricBusy = false;
+            RefreshSecurity();
         }
-        else if (Platform.EnrollBiometricAsync is { } enroll && await enroll())
-        {
-            BiometricAccess.Enable(shell.Api.Server, session.UserName);
-            SecurityNotice = "Empreinte activée pour votre compte sur ce téléphone.";
-        }
-        else SecurityNotice = "Activation annulée ou indisponible : le mot de passe reste nécessaire.";
-
-        Raise(nameof(HasSecurityNotice));
-        RefreshSecurity();
-        shell.Login.RefreshBiometrics();
     }
 
     /// <summary>Rubrique poste et réseau, créée à la première ouverture.</summary>

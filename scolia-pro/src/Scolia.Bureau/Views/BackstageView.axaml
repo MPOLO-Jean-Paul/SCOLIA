@@ -53,52 +53,86 @@
           </Border>
         </StackPanel>
 
+        <!-- Compte Windows : même structure de protection que les applications Android/iOS modernes. -->
         <StackPanel IsVisible="{Binding IsPassword}" Spacing="16" MaxWidth="640">
-          <Border Classes="card" Padding="20,18">
-            <StackPanel Spacing="8">
-              <StackPanel Orientation="Horizontal" Spacing="12">
-                <Border Background="{DynamicResource AccentSoftBrush}" Width="48" Height="48" CornerRadius="14">
-                  <mi:MaterialIcon Kind="ShieldCheckOutline" Width="26" Height="26"
+          <Border Classes="card" Padding="20,18" CornerRadius="18">
+            <StackPanel Spacing="10">
+              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14">
+                <Border Background="{DynamicResource AccentSoftBrush}" Width="54" Height="54" CornerRadius="18">
+                  <mi:MaterialIcon Kind="ShieldCheckOutline" Width="28" Height="28"
                                    Foreground="{DynamicResource AccentBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
                 </Border>
-                <StackPanel Spacing="3" VerticalAlignment="Center">
-                  <TextBlock Text="Sécurité du compte" Classes="heading" />
-                  <TextBlock Text="Mot de passe et authentification locale" Classes="muted" />
+                <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
+                  <TextBlock Text="Votre sécurité" FontSize="21" FontWeight="SemiBold" />
+                  <TextBlock Text="Compte protégé · Windows" Classes="muted" />
                 </StackPanel>
-              </StackPanel>
-              <TextBlock Text="Ces réglages protègent votre session. Toute activation ou désactivation biométrique exige une vérification."
+              </Grid>
+              <TextBlock Text="Modifiez les accès depuis cette page. SCOLIA ne vous demande jamais votre mot de passe ailleurs que dans ses formulaires sécurisés."
                          Classes="muted" TextWrapping="Wrap" />
+              <Border Background="{DynamicResource GroupBrush}" CornerRadius="12" Padding="12,10">
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                  <mi:MaterialIcon Kind="AccountCircleOutline" Foreground="{DynamicResource AccentBrush}" Width="22" Height="22" />
+                  <StackPanel Grid.Column="1" Spacing="3">
+                    <TextBlock Text="{Binding UserName}" FontWeight="SemiBold" />
+                    <TextBlock Text="{Binding Role}" Classes="muted" />
+                  </StackPanel>
+                </Grid>
+              </Border>
             </StackPanel>
           </Border>
-          <Border Classes="card" Padding="18,16">
+          <Border Classes="card" Padding="20,18" CornerRadius="18">
             <StackPanel Spacing="12">
-              <StackPanel Orientation="Horizontal" Spacing="10">
-                <mi:MaterialIcon Kind="LockReset" Width="22" Height="22"
-                                 Foreground="{DynamicResource AccentBrush}" />
-                <TextBlock Text="Changer le mot de passe" FontSize="16" FontWeight="SemiBold" />
-              </StackPanel>
+              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                <Border Width="42" Height="42" CornerRadius="13" Background="{DynamicResource GroupBrush}">
+                  <mi:MaterialIcon Kind="LockReset" Width="24" Height="24"
+                                   Foreground="{DynamicResource AccentBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Border>
+                <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
+                  <TextBlock Text="01 · Mot de passe" FontSize="17" FontWeight="SemiBold" />
+                  <TextBlock Text="Modifier mon mot de passe de connexion" Classes="muted" />
+                </StackPanel>
+              </Grid>
+              <TextBlock Text="Saisissez votre mot de passe actuel, choisissez-en un nouveau et confirmez-le. Vous restez propriétaire de votre session."
+                         Classes="muted" TextWrapping="Wrap" />
               <ContentControl Content="{Binding PasswordForm}" HorizontalAlignment="Stretch" />
             </StackPanel>
           </Border>
-          <Border Classes="card" IsVisible="{Binding ShowBiometricSecurity}" Padding="18,16">
+          <Border Classes="card" IsVisible="{Binding ShowBiometricSecurity}" Padding="20,18" CornerRadius="18">
             <StackPanel Spacing="12">
-              <StackPanel Orientation="Horizontal" Spacing="10">
-                <mi:MaterialIcon Kind="Fingerprint" Width="24" Height="24" Foreground="{DynamicResource AccentBrush}" />
-                <TextBlock Text="Connexion par empreinte" FontSize="16" FontWeight="SemiBold" />
-              </StackPanel>
-              <Border Background="{DynamicResource GroupBrush}" Padding="14,12" CornerRadius="12">
-                <TextBlock Text="{Binding BiometricSecurityStatus}" TextWrapping="Wrap" />
+              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                <Border Width="42" Height="42" CornerRadius="13" Background="{DynamicResource AccentSoftBrush}">
+                  <mi:MaterialIcon Kind="Fingerprint" Width="24" Height="24"
+                                   Foreground="{DynamicResource AccentBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Border>
+                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3">
+                  <TextBlock Text="02 · Biométrie" FontSize="17" FontWeight="SemiBold" />
+                  <TextBlock Text="Empreinte ou reconnaissance biométrique de cet appareil" Classes="muted" TextWrapping="Wrap" />
+                </StackPanel>
+              </Grid>
+              <Border Background="{DynamicResource GroupBrush}" CornerRadius="12" Padding="14,12">
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                  <mi:MaterialIcon Kind="ShieldCheckOutline" Width="22" Height="22" Foreground="{DynamicResource AccentBrush}" />
+                  <TextBlock Grid.Column="1" Text="{Binding BiometricSecurityStatus}" TextWrapping="Wrap" />
+                </Grid>
               </Border>
               <TextBlock Text="Mot de passe de vérification" FontWeight="SemiBold" />
-              <TextBox Text="{Binding SecurityPassword}" PasswordChar="•" PlaceholderText="Mot de passe actuel" />
+              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
+                <TextBox Text="{Binding SecurityPassword}" PasswordChar="{Binding SecurityPasswordMask}"
+                         PlaceholderText="Mot de passe actuel du compte" MinHeight="44" />
+                <Button Grid.Column="1" Classes="quiet" Command="{Binding ToggleSecurityPassword}"
+                        ToolTip.Tip="Afficher ou masquer le mot de passe" MinWidth="44" MinHeight="44">
+                  <mi:MaterialIcon Kind="{Binding SecurityEyeIcon}" Width="20" Height="20" />
+                </Button>
+              </Grid>
               <TextBlock Classes="muted" TextWrapping="Wrap"
-                         Text="Activer exige votre mot de passe et une validation Android. Pour désactiver, l'empreinte ou le mot de passe actuel peuvent confirmer votre identité." />
+                         Text="L'activation exige votre mot de passe et une confirmation sécurisée de l'appareil. La désactivation requiert une nouvelle preuve d'identité." />
               <Button Classes="primary" Command="{Binding ManageBiometrics}" Content="{Binding BiometricActionLabel}"
-                      IsEnabled="{Binding BiometricSecurityAllowed}" HorizontalAlignment="Left" />
-              <TextBlock Text="{Binding SecurityNotice}" Classes="muted" IsVisible="{Binding HasSecurityNotice}" TextWrapping="Wrap" />
+                      IsEnabled="{Binding BiometricSecurityAllowed}" MinHeight="46" HorizontalAlignment="Stretch" />
+              <TextBlock Text="{Binding SecurityNotice}" IsVisible="{Binding HasSecurityNotice}"
+                         TextWrapping="Wrap" Foreground="{DynamicResource AccentBrush}" />
             </StackPanel>
           </Border>
-          <Button Classes="ghost" Content="Fermer la sécurité" Command="{Binding CloseSecurity}" HorizontalAlignment="Left" />
+          <Button Classes="ghost" Content="Retour au compte" Command="{Binding CloseSecurity}" HorizontalAlignment="Left" MinHeight="44" />
         </StackPanel>
         <ContentControl IsVisible="{Binding IsPoste}" Content="{Binding PosteSection}" HorizontalAlignment="Stretch" />
       </StackPanel>

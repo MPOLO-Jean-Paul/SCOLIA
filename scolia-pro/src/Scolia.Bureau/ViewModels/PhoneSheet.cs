@@ -129,29 +129,23 @@ public sealed class PhoneSettingsSearchVm : Observable
         void Add(string name, string section, MaterialIconKind icon, string tone, string keywords, ICommand command)
             => catalog.Add(new PhoneSettingsResultVm(name, section, icon, ThemeBrush.Get(tone), keywords, command));
 
-        // Fermer d'abord le menu et son champ de recherche, puis ouvrir la destination
-        // explicitement : ne jamais déléguer la destination à l'événement Click du menu.
-        // Cela évite le retour intempestif à Accueil causé par une navigation non achevée
-        // lorsque les résultats sont détruits pendant la fermeture du menu.
-        ICommand Page(string section) => new AsyncCommand(async () =>
-        {
-            shell.PhoneMenuOpen = false;
-            await shell.Run(() => shell.Open(() => new SettingsPage(shell, section)));
-        });
+        // Une navigation est d'abord initiée vers sa destination. Le shell ferme le
+        // menu en affichant la nouvelle page ; fermer avant la commande détruirait
+        // le bouton et ses résultats pendant le même clic (retour parasite à Accueil).
+        ICommand Page(string section) => new AsyncCommand(
+            () => shell.Run(() => shell.Open(() => new SettingsPage(shell, section))));
         ICommand Account(string key) => new RelayCommand(() =>
         {
             shell.PhoneMenuOpen = false;
             shell.OpenBackstage();
             shell.Backstage.Section = shell.Backstage.Items.First(i => i.Value == key);
         });
-        ICommand OpenPage(Func<PageViewModel> page) => new AsyncCommand(async () =>
-        {
-            shell.PhoneMenuOpen = false;
-            await shell.Run(() => shell.Open(page));
-        });
+        ICommand OpenPage(Func<PageViewModel> page) =>
+            new AsyncCommand(() => shell.Run(() => shell.Open(page)));
 
         Add("Configuration", "Réglages", MaterialIconKind.Cog, "TonePurple",
-            "personnalisation options preferences reglages parametres", Page("apparence"));
+            "personnalisation options preferences reglages parametres",
+            new AsyncCommand(() => shell.Run(() => shell.Open(() => new SettingsPage(shell)))));
         Add("Thème et couleurs", "Affichage", MaterialIconKind.Palette, "TonePurple",
             "clair sombre noir blanc nuit mode couleur accent fonds", Page("apparence"));
         Add("Texte et polices", "Affichage", MaterialIconKind.FormatFont, "ToneBlue",
@@ -165,7 +159,7 @@ public sealed class PhoneSettingsSearchVm : Observable
             "audio musique notifications volume silence activation son", Page("sons"));
         Add("Sécurité du compte", "Confidentialité", MaterialIconKind.ShieldLockOutline, "ToneTeal",
             "biometrie empreinte digitale identification connexion authentification code secret mot de passe",
-            Page("securite"));
+            Account("mot-de-passe"));
         Add("Poste et réseau", "Connexions", MaterialIconKind.LanConnect, "ToneGreen",
             "tailscale vpn wifi internet serveur partage reseaux connexion poste magicdns",
             Account("poste"));
@@ -204,8 +198,9 @@ public sealed class PhoneSettingsSearchVm : Observable
                     destination.Brush, destination.TabLabel,
                     new RelayCommand(() =>
                     {
-                        shell.PhoneMenuOpen = false;
-                        destination.Open.Execute(null);
+                        // Ici encore : la page cible ferme le menu, pas l'inverse.
+                        // La commande navigue donc réellement avant disparition du résultat.
+                        if (destination.Open.CanExecute(null)) destination.Open.Execute(null);
                     })));
             }
         }
