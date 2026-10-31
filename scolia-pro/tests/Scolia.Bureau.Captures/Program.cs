@@ -403,6 +403,9 @@ if (args.Length > 3 && args[3] == "clavier")
     }
     Wait(shell.OpenSessionAsync(Result(api.LoginAsync("admin", password))));
     var mainView = window.GetVisualDescendants().OfType<MainView>().First();
+    // Comme Avalonia sur un iPhone à encoche ou un Android bord à bord : marges du système posées au niveau Style.
+    var safeArea = new Thickness(0, 24, 0, 20);
+    mainView.SetValue(Avalonia.Controls.Primitives.TemplatedControl.PaddingProperty, safeArea, Avalonia.Data.BindingPriority.Style);
     var fake = new FakeKeyboard();
     KeyboardAvoidance.PaneOverride = fake;
     mainView.Keyboard.Attach();
@@ -416,7 +419,8 @@ if (args.Length > 3 && args[3] == "clavier")
         for (var i = 0; i < 8; i++) { Dispatcher.UIThread.RunJobs(); window.UpdateLayout(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(20); }
         var bounds = box.TransformToVisual(window) is { } m ? new Rect(box.Bounds.Size).TransformToAABB(m) : default;
         var keyboardTop = window.Bounds.Height - keyboardHeight;
-        KeyCheck($"{where} : place du clavier réservée ({mainView.Keyboard.Reserved:0} px)", Math.Abs(mainView.Keyboard.Reserved - keyboardHeight) < 2);
+        // Le contenu s'arrête déjà au-dessus de la zone sûre du bas : seule la différence est à réserver.
+        KeyCheck($"{where} : place du clavier réservée ({mainView.Keyboard.Reserved:0} px)", Math.Abs(mainView.Keyboard.Reserved - (keyboardHeight - safeArea.Bottom)) < 2);
         KeyCheck($"{where} : champ au-dessus du clavier (bas {bounds.Bottom:0} ≤ {keyboardTop:0})", bounds.Height > 0 && bounds.Bottom <= keyboardTop + 1);
         KeyCheck($"{where} : champ sous l'en-tête (haut {bounds.Top:0})", bounds.Top >= 40);
         var tabs = window.GetVisualDescendants().OfType<Border>().FirstOrDefault(b => b.Classes.Contains("phonetabs"));
@@ -426,7 +430,9 @@ if (args.Length > 3 && args[3] == "clavier")
     {
         fake.Close();
         for (var i = 0; i < 4; i++) { Dispatcher.UIThread.RunJobs(); window.UpdateLayout(); }
-        KeyCheck("Clavier fermé : l'écran reprend toute sa hauteur", mainView.Keyboard.Reserved == 0 && mainView.Padding.Bottom == 0);
+        var rootContent = mainView.GetVisualDescendants().OfType<Grid>().First(g => g.Name == "RootContent");
+        KeyCheck("Clavier fermé : l'écran reprend toute sa hauteur", mainView.Keyboard.Reserved == 0 && rootContent.Margin.Bottom == 0);
+        KeyCheck($"Zone sûre du système gardée (haut {mainView.Padding.Top:0}, bas {mainView.Padding.Bottom:0})", mainView.Padding == safeArea);
     }
 
     // 1. Configuration de l'établissement : le dernier champ du formulaire, tout en bas de la page.

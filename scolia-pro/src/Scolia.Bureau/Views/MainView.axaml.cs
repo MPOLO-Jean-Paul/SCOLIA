@@ -43,7 +43,7 @@ public partial class MainView : UserControl
         copyHandler = CopyAsync;
         isTypingHandler = IsTypingInView;
         InitializeComponent();
-        Keyboard = new KeyboardAvoidance(this);
+        Keyboard = new KeyboardAvoidance(this, RootContent);
         SizeChanged += (_, e) => FitWindow(e.NewSize);
         AttachedToVisualTree += (_, _) =>
         {

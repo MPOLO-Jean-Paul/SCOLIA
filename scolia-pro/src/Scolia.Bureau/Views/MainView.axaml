@@ -130,7 +130,7 @@
   </UserControl.Styles>
 
   <!-- Toute l'interface suit la taille de la fenêtre : la mise en page de 1280 × 720, agrandie ou réduite d'un bloc -->
-  <Grid RowDefinitions="Auto,*">
+  <Grid x:Name="RootContent" RowDefinitions="Auto,*">
   <!-- Barre de titre de Windows dessinée par SCOLIA : bleu ciel comme le bandeau de la page, les trois boutons de la fenêtre à droite -->
   <Border x:Name="TitleRow" Classes="titlerow" Classes.onbrand="{Binding ShowLogin}" IsVisible="False" chrome:WindowDecorationProperties.ElementRole="TitleBar">
     <StackPanel Orientation="Horizontal" Spacing="8" Margin="12,0,150,0" VerticalAlignment="Center" IsHitTestVisible="False">

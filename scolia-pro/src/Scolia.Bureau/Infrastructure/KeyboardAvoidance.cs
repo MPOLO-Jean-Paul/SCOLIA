@@ -1,6 +1,7 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Platform;
+using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
@@ -44,18 +45,22 @@ public sealed class KeyboardAvoidance
     /// <summary>Clavier de remplacement pour les vérifications sans écran ; null sur un vrai téléphone.</summary>
     public static IKeyboardArea? PaneOverride { get; set; }
 
-    private readonly ContentControl root;
-    private readonly Thickness basePadding;
+    private readonly TemplatedControl root;
+    private readonly Control content;
+    private readonly Thickness baseMargin;
     private TopLevel? top;
     private IKeyboardArea? pane;
     private readonly Dictionary<IInputPane, SystemKeyboard> adapters = [];
     private double closedHeight;
     private double applied;
 
-    public KeyboardAvoidance(ContentControl root)
+    /// <param name="root">L'écran entier : sa marge intérieure appartient au système (encoche, barres d'Android).</param>
+    /// <param name="content">Le contenu, qui s'arrête au-dessus du clavier par sa marge du bas.</param>
+    public KeyboardAvoidance(TemplatedControl root, Control content)
     {
         this.root = root;
-        basePadding = root.Padding;
+        this.content = content;
+        baseMargin = content.Margin;
         root.AttachedToVisualTree += (_, _) => Attach();
         root.DetachedFromVisualTree += (_, _) => Detach();
         root.SizeChanged += (_, e) =>
@@ -123,7 +128,9 @@ public sealed class KeyboardAvoidance
         var reserve = 0d;
         if (IsOpen)
         {
-            var bottom = root.TranslatePoint(new Point(0, root.Bounds.Height), top)?.Y ?? root.Bounds.Height;
+            // Bas du contenu, au-dessus de la zone sûre du système (barre de navigation, indicateur d'accueil).
+            var inner = root.Bounds.Height - root.Padding.Bottom;
+            var bottom = root.TranslatePoint(new Point(0, inner), top)?.Y ?? inner;
             var shrunk = closedHeight > 0 ? closedHeight - root.Bounds.Height : 0;
             reserve = Overlap(bottom, pane.Area, shrunk);
         }
@@ -131,7 +138,8 @@ public sealed class KeyboardAvoidance
         {
             var wasOpen = applied > 0;
             applied = reserve;
-            root.Padding = new Thickness(basePadding.Left, basePadding.Top, basePadding.Right, basePadding.Bottom + reserve);
+            // La marge intérieure de l'écran reste celle du système (encoche, barre d'état) : seul le contenu se réduit.
+            content.Margin = new Thickness(baseMargin.Left, baseMargin.Top, baseMargin.Right, baseMargin.Bottom + reserve);
             root.Classes.Set("keyboard", reserve > 0);
             if (wasOpen != reserve > 0) KeyboardChanged?.Invoke(reserve > 0);
         }
