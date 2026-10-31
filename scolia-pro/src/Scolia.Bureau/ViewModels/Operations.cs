@@ -286,7 +286,7 @@ public sealed class SearchViewModel : Observable
                 ? "/" + destination : "/parametres/" + destination;
             var kind = destination.StartsWith("navigation/", StringComparison.Ordinal)
                 ? "Fonctionnalité" : "Paramètre";
-            Results.Add(new SearchHitRow(new SearchHitDto(kind, setting.Title, setting.Section, url)));
+            Results.Add(new SearchHitRow(new SearchHitDto(kind, setting.Title, setting.Section, url), OpenHitAsync));
         }
 
         var dataUnavailable = false;
@@ -302,7 +302,7 @@ public sealed class SearchViewModel : Observable
                 foreach (var h in hits)
                 {
                     if (h.Type == "Reçu" && !shell.Can(Perm.PaymentsRead)) continue;
-                    Results.Add(new SearchHitRow(h));
+                    Results.Add(new SearchHitRow(h, OpenHitAsync));
                 }
             }
             catch (HttpRequestException) { dataUnavailable = true; }
@@ -315,10 +315,13 @@ public sealed class SearchViewModel : Observable
             : Format.Count(Results.Count, "résultat", "résultats");
     }
 
-    private async Task OpenSelectedAsync()
+    private Task OpenSelectedAsync() => Selected is null ? Task.CompletedTask : OpenHitAsync(Selected);
+
+    /// <summary>Chaque résultat porte sa destination : un seul clic ou une touche Entrée l'ouvre,
+    /// même si la sélection visuelle n'a pas encore changé.</summary>
+    private async Task OpenHitAsync(SearchHitRow hit)
     {
-        if (Selected is null) return;
-        var url = Selected.Hit.Url;
+        var url = hit.Hit.Url;
         var target = PageFor(url);
         if (url is "/compte/poste" or "/compte/mot-de-passe")
         {
@@ -383,9 +386,14 @@ public sealed class SearchViewModel : Observable
 /// <summary>Résultat de recherche dans la liste, avec son libellé de type.</summary>
 public sealed class SearchHitRow
 {
-    public SearchHitRow(SearchHitDto hit) => Hit = hit;
+    public SearchHitRow(SearchHitDto hit, Func<SearchHitRow, Task>? open = null)
+    {
+        Hit = hit;
+        Open = new AsyncCommand(() => open is null ? Task.CompletedTask : open(this));
+    }
 
     public SearchHitDto Hit { get; }
+    public AsyncCommand Open { get; }
     public string Type => Hit.Type;
     public string Title => Hit.Title;
     public string Subtitle => Hit.Subtitle;
