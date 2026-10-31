@@ -23,7 +23,7 @@ public sealed class PhoneHeaderSearchVm : Observable
     public RelayCommand Clear { get; }
     public bool IsOpen { get => isOpen; private set => Set(ref isOpen, value); }
     public bool HasQuery => Query.Length > 0;
-    public bool IsVisible => shell.PhoneMenuOpen || shell.Current is HomePage or PromoterDashboardPage ||
+    public bool IsVisible => shell.PhoneMenuOpen || shell.Current is HomePage or PromoterDashboardPage or SettingsPage ||
                              Scope(shell.Current).Length > 0;
     public bool IsContextual => Scope(shell.Current).Length > 0 && !shell.PhoneMenuOpen;
     public string ShortcutText => IsContextual ? "Filtre" : "Ctrl+K";
@@ -54,7 +54,7 @@ public sealed class PhoneHeaderSearchVm : Observable
         "cartes" => "Apprenant ou matricule de la carte",
         "audit" => "Événement du journal d'audit",
         "depenses" => "Dépense ou référence",
-        _ => "Rechercher dans SCOLIA",
+        _ => shell.Current is SettingsPage ? "Rechercher un réglage ou une option" : "Rechercher dans SCOLIA",
     };
     public string Query
     {
@@ -100,10 +100,17 @@ public sealed class PhoneHeaderSearchVm : Observable
         }
         if (shell.Current is HomePage or PromoterDashboardPage)
         {
-            // L'accueil cherche dans les données autorisées et les réglages locaux.
+            // L'accueil est le seul écran dont le champ recherche aussi les dossiers
+            // et les fonctionnalités de toute l'application (selon les permissions).
             shell.ShowSearch();
             return;
         }
+        if (shell.Current is SettingsPage)
+        {
+            shell.ShowSettingsSearch();
+            return;
+        }
+        // Sur une liste, la saisie est liée uniquement au filtre du métier affiché.
         if (Scope(shell.Current).Length > 0) IsOpen = !IsOpen;
     }
     public void PageChanged()

@@ -49,6 +49,7 @@ public sealed class ShellViewModel : Observable
         Backstage = new BackstageViewModel(this);
         ReloadCommand = new AsyncCommand(() => Run(Reload));
         SearchCommand = new RelayCommand(ShowSearch);
+        ContextSearchCommand = new RelayCommand(ShowContextSearch);
         SettingsSearch = new PhoneSettingsSearchVm(this);
         HeaderSearch = new PhoneHeaderSearchVm(this);
         ToggleSidebarCommand = new RelayCommand(ToggleSidebar);
@@ -89,7 +90,15 @@ public sealed class ShellViewModel : Observable
 
     /// <summary>Commandes de la barre d'accès rapide.</summary>
     public AsyncCommand ReloadCommand { get; private set; } = null!;
+    /// <summary>Ctrl+K : recherche générale, indépendamment de l'écran actif.</summary>
     public RelayCommand SearchCommand { get; private set; } = null!;
+    /// <summary>Bandeau de la page : recherche limitée au métier ou aux réglages actifs.</summary>
+    public RelayCommand ContextSearchCommand { get; }
+    public bool ContextSearchAvailable => Current is HomePage or PromoterDashboardPage or SettingsPage ||
+                                          PhoneHeaderSearchVm.Scope(Current).Length > 0;
+    public string ContextSearchPlaceholder => Current is HomePage or PromoterDashboardPage
+        ? "Recherche générale : dossiers, reçus, fonctionnalités…"
+        : HeaderSearch.Placeholder;
     /// <summary>Recherche locale des réglages dans le bandeau mobile, jamais dans les apprenants.</summary>
     public PhoneSettingsSearchVm SettingsSearch { get; }
     public PhoneHeaderSearchVm HeaderSearch { get; }
@@ -323,6 +332,8 @@ public sealed class ShellViewModel : Observable
             Raise(nameof(DesktopPage));
             Raise(nameof(PhonePage));
             HeaderSearch.PageChanged();
+            Raise(nameof(ContextSearchAvailable));
+            Raise(nameof(ContextSearchPlaceholder));
             PhoneMenuOpen = false;
             Sheet = null;
             // Entrer dans une fonctionnalité referme son accordéon, y compris au clavier.
@@ -949,8 +960,14 @@ public sealed class ShellViewModel : Observable
 
     public void CloseDialog() => Dialog = null;
 
-    /// <summary>Affiche la recherche globale, Ctrl+K.</summary>
+    /// <summary>Ctrl+K et Accueil : cherche globalement dans les droits du compte.</summary>
     public void ShowSearch() => Dialog = new SearchViewModel(this);
+
+    /// <summary>Menu Paramètres ou rubrique Configuration : index local des options seulement.</summary>
+    public void ShowSettingsSearch() => Dialog = new SearchViewModel(this, settingsOnly: true);
+
+    /// <summary>Recherche de l'en-tête : son périmètre vient exclusivement de la page affichée.</summary>
+    public void ShowContextSearch() => HeaderSearch.ActivateOrClose();
 
     /// <summary>Fenêtre « À propos » : version, éditeur et développeur.</summary>
     public void ShowAbout() => Dialog = new AboutViewModel(this);

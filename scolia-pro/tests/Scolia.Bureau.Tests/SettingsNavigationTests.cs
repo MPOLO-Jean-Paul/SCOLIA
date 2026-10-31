@@ -83,14 +83,14 @@ public class SettingsNavigationTests
         using var api = new ScoliaClient(new Uri("http://localhost:5080/"));
         var shell = new ShellViewModel(api, new Preferences()) { Phone = true };
         shell.PhoneMenuOpen = true;
+        shell.SettingsSearch.Activate.Execute(null);
         shell.SettingsSearch.Query = "empreinte";
-        var target = Assert.Single(shell.SettingsSearch.Results, item => item.Title == "Sécurité du compte");
-
-        target.Open.Execute(null);
-
+        var result = Assert.Single(shell.SettingsSearch.Results, r => r.Title == "Sécurité du compte");
+        result.Open.Execute(null);
         Assert.False(shell.PhoneMenuOpen);
         Assert.True(shell.BackstageOpen);
         Assert.True(shell.Backstage.IsPassword);
+        Assert.Null(shell.Current);
     }
 
     [Fact]
