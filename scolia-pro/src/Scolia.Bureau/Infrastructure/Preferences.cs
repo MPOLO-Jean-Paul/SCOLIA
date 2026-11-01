@@ -116,6 +116,11 @@ public sealed class Preferences : Observable
     private bool soundError = true;
     private bool soundNotify;
     private bool soundOpening = true;
+    private bool alerts = true;
+    private bool alertPayments = true;
+    private bool alertBackups = true;
+    private bool alertReports = true;
+    private List<string> recentSearches = [];
     private Avalonia.Application? resourcesOwner;
     private string? resourcesAccent;
 
@@ -162,6 +167,36 @@ public sealed class Preferences : Observable
     public bool SoundError { get => soundError; set => Set(ref soundError, value); }
     public bool SoundNotify { get => soundNotify; set => Set(ref soundNotify, value); }
     public bool SoundOpening { get => soundOpening; set => Set(ref soundOpening, value); }
+
+    /// <summary>Bannières et notifications du téléphone pour ce qui se passe sur les autres postes.</summary>
+    public bool Alerts { get => alerts; set => Set(ref alerts, value); }
+    /// <summary>Nouvel encaissement enregistré sur un autre poste.</summary>
+    public bool AlertPayments { get => alertPayments; set => Set(ref alertPayments, value); }
+    /// <summary>Nouvelle sauvegarde faite sur un autre poste.</summary>
+    public bool AlertBackups { get => alertBackups; set => Set(ref alertBackups, value); }
+    /// <summary>Rapport journalier prêt sur l'ordinateur principal.</summary>
+    public bool AlertReports { get => alertReports; set => Set(ref alertReports, value); }
+
+    /// <summary>Dernières recherches, la plus récente en tête (six au plus), comme le Play Store.</summary>
+    public IReadOnlyList<string> RecentSearches => recentSearches;
+
+    public void RememberSearch(string query)
+    {
+        var text = query.Trim();
+        if (text.Length < 2) return;
+        recentSearches.RemoveAll(q => string.Equals(q, text, StringComparison.OrdinalIgnoreCase));
+        recentSearches.Insert(0, text);
+        if (recentSearches.Count > 6) recentSearches.RemoveRange(6, recentSearches.Count - 6);
+        Raise(nameof(RecentSearches));
+        Save();
+    }
+
+    public void ForgetSearch(string query)
+    {
+        if (recentSearches.RemoveAll(q => string.Equals(q, query, StringComparison.OrdinalIgnoreCase)) == 0) return;
+        Raise(nameof(RecentSearches));
+        Save();
+    }
 
     public bool SoundFor(SoundKind kind) => kind switch
     {
@@ -351,6 +386,11 @@ public sealed class Preferences : Observable
         public bool SoundError { get; set; } = true;
         public bool SoundNotify { get; set; }
         public bool SoundOpening { get; set; } = true;
+        public bool Alerts { get; set; } = true;
+        public bool AlertPayments { get; set; } = true;
+        public bool AlertBackups { get; set; } = true;
+        public bool AlertReports { get; set; } = true;
+        public List<string>? RecentSearches { get; set; }
 
         public static Stored From(Preferences p) => new()
         {
@@ -359,6 +399,7 @@ public sealed class Preferences : Observable
             Font = p.font, Startup = p.startup, Speed = p.speed, OpeningSeconds = p.openingSeconds, PageTransitions = p.pageTransitions,
             Sounds = p.sounds, SoundVolume = p.soundVolume, SoundStyle = p.soundStyle, SoundSuccess = p.soundSuccess,
             SoundError = p.soundError, SoundNotify = p.soundNotify, SoundOpening = p.soundOpening,
+            Alerts = p.alerts, AlertPayments = p.alertPayments, AlertBackups = p.alertBackups, AlertReports = p.alertReports, RecentSearches = [.. p.recentSearches],
         };
 
         public void ApplyTo(Preferences p)
@@ -385,6 +426,11 @@ public sealed class Preferences : Observable
             p.SoundError = SoundError;
             p.SoundNotify = SoundNotify;
             p.SoundOpening = SoundOpening;
+            p.Alerts = Alerts;
+            p.AlertPayments = AlertPayments;
+            p.AlertBackups = AlertBackups;
+            p.AlertReports = AlertReports;
+            p.recentSearches = (RecentSearches ?? []).Where(q => !string.IsNullOrWhiteSpace(q)).Take(6).ToList();
         }
     }
 }

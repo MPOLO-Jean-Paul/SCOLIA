@@ -168,7 +168,7 @@
         <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="4,0,0,0" IsVisible="{Binding !HeaderSearch.IsOpen}">
           <!-- Petit téléphone : un titre long passe sur deux lignes plutôt que d'être coupé -->
           <TextBlock Text="{Binding PhonePage.Heading}" FontSize="17" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" TextWrapping="Wrap" MaxLines="2" LineHeight="20" />
-          <TextBlock Text="{Binding PhonePage.Subtitle}" Classes="muted" FontSize="{DynamicResource FsSmall}" TextTrimming="CharacterEllipsis" TextWrapping="Wrap" MaxLines="1"
+          <TextBlock Text="{Binding PhonePage.Subtitle}" Classes="muted" FontSize="{DynamicResource FsSmall}" TextTrimming="CharacterEllipsis" TextWrapping="Wrap" MaxLines="2"
                      IsVisible="{Binding PhonePage.Subtitle, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
         </StackPanel>
         <!-- Filtre de la page active : inline dans l'entête, aucun mélange avec la recherche du Menu. -->

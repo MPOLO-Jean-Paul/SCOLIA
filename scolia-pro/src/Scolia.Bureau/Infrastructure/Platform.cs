@@ -81,6 +81,15 @@ public static class Platform
     /// </summary>
     public static Func<string, Task<TailscaleInstallResult>>? InstallTailscalePackage { get; set; }
 
+    /// <summary>
+    /// Notification du système (Android, iPhone), visible même quand SCOLIA est en arrière-plan : bannière en haut
+    /// de l'écran et son du téléphone. Sur l'ordinateur, elle reste vide : la bannière de SCOLIA suffit.
+    /// </summary>
+    public static Action<AppAlert>? ShowSystemNotification { get; set; }
+
+    /// <summary>Vrai tant que SCOLIA est à l'écran ; en arrière-plan, l'alerte passe par la notification du système.</summary>
+    public static Func<bool>? IsInForeground { get; set; }
+
     /// <summary>Android signale le retour à SCOLIA après une installation externe.</summary>
     public static event Action? AppResumed;
     public static void NotifyAppResumed() => AppResumed?.Invoke();

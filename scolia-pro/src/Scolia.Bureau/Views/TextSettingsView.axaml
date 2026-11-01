@@ -90,7 +90,7 @@
             <ItemsControl.ItemTemplate>
               <DataTemplate>
                 <Button Classes="preset" Classes.selected="{Binding IsSelected}" Command="{Binding Choose}" Margin="2,0">
-                  <TextBlock Text="{Binding Label}" TextTrimming="CharacterEllipsis" FontSize="{DynamicResource FsSmall}" />
+                  <TextBlock Text="{Binding Label}" TextWrapping="Wrap" TextAlignment="Center" FontSize="{DynamicResource FsSmall}" Margin="0,4" />
                 </Button>
               </DataTemplate>
             </ItemsControl.ItemTemplate>

@@ -41,6 +41,12 @@ public static class DependencyInjection
         services.AddSingleton<DataRevision>();
         services.AddSingleton<Live.LiveHub>();
         services.AddHostedService<AutomaticBackupWorker>();
+        // Rapport journalier : PDF du jour à l'heure choisie, envoyé par WhatsApp si l'établissement l'a configuré.
+        services.AddHttpClient("whatsapp", c => c.Timeout = TimeSpan.FromSeconds(60));
+        services.AddSingleton<Reports.DailyReportStore>();
+        services.AddSingleton<Reports.WhatsAppCloudSender>();
+        services.AddSingleton<Reports.DailyReportRunner>();
+        services.AddHostedService<Reports.DailyReportWorker>();
         services.AddHostedService<Network.LanAnnouncer>();
         services.AddScoped<LegacyImportService>();
 
@@ -54,6 +60,7 @@ public static class DependencyInjection
         services.AddScoped<DataErasureService>();
         services.AddScoped<CashService>();
         services.AddScoped<ReportService>();
+        services.AddScoped<DailyReportService>();
         services.AddScoped<UserService>();
         services.AddSingleton<UnknownLoginTracker>();
         services.AddScoped<AuditService>();

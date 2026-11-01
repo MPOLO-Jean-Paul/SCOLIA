@@ -227,3 +227,10 @@ public sealed record StaffDayDto(DateOnly Date, string Status, string? Entry, st
 
 /// <summary>Bilan d'un membre sur une période, pour la préparation de la paie.</summary>
 public sealed record StaffBilanDto(Guid StaffMemberId, string Name, int Present, int Late, int Absent, int Justified, int Conversions, int Deductible);
+
+/// <summary>Réglages du rapport journalier tels que l'ordinateur principal les montre : jamais le jeton lui-même.</summary>
+public sealed record DailyReportViewDto(bool Enabled, string Time, List<string> Recipients, string? WhatsAppPhoneNumberId,
+    string? WhatsAppTemplate, string WhatsAppLanguage, bool HasToken, bool WhatsAppReady, string? LastStatus);
+
+/// <summary>Résultat d'un envoi demandé : le fichier, ce qui a été fait, et les chiffres du jour.</summary>
+public sealed record DailyReportResultDto(string FileName, string Status, string Summary);

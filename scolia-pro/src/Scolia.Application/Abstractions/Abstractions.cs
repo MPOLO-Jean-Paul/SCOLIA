@@ -84,6 +84,8 @@ public interface IDocumentService
     byte[] Receipt(ReceiptDocument document);
     byte[] Statement(StatementDocument document);
     byte[] Table(TableDocument document);
+    /// <summary>Rapport à plusieurs parties : chiffres clés, puis un tableau par partie (rapport journalier).</summary>
+    byte[] Report(ReportDocument document);
     byte[] ReportCard(ReportCardDocument document);
     byte[] StudentCards(CardDocument document);
     byte[] StudentCardsWord(CardDocument document);
@@ -113,6 +115,14 @@ public sealed record SchoolCardHeader(string Country, string? Ministry, string? 
 public sealed record CardItem(string LastName, string MiddleName, string FirstName, string Classe, string Color, string QrText, string Matricule = "");
 
 public sealed record CardDocument(SchoolCardHeader Header, string Session, string AcademicYear, IReadOnlyList<CardItem> Cards);
+
+/// <summary>Partie d'un rapport : un titre, un tableau, et un texte quand il n'y a rien à montrer.</summary>
+public sealed record ReportSection(string Title, IReadOnlyList<string> Columns, IReadOnlyList<IReadOnlyList<string>> Rows,
+    IReadOnlyList<string>? Totals = null, string? Empty = null);
+
+/// <summary>Rapport à plusieurs parties : en-tête de l'établissement, chiffres clés en tuiles, puis les parties.</summary>
+public sealed record ReportDocument(SchoolHeader School, string Title, string? Subtitle, IReadOnlyList<(string Label, string Value)> Figures,
+    IReadOnlyList<ReportSection> Sections, string? Note = null);
 
 public sealed record TableDocument(SchoolHeader School, string Title, string? Subtitle, IReadOnlyList<string> Columns, IReadOnlyList<IReadOnlyList<string>> Rows, IReadOnlyList<string>? Totals = null, bool Landscape = false);
 

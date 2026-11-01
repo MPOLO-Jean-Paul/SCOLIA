@@ -125,7 +125,10 @@ public sealed class StaffPage : PageViewModel
                 Payroll.Add(new PayrollRowVm(p.Id, p.Number, p.FullName, p.Function, Money(p.BaseSalary), Money(p.Allowances), Money(p.Deductions),
                     Money(p.Advances), Money(p.Net), Labels.Status(p.Status), ThemeBrush.Get(p.Status == "Paye" ? "ToneGreen" : "ToneOrange"),
                     p.PaidOn is { } d ? Format.Date(d) : "—", p));
-            subtitle = $"Paie d'{MonthLabel(key).ToLowerInvariant()} · {Format.Count(rows.Count, "bulletin", "bulletins")} · net {Money(rows.Sum(r => r.Net))}";
+            var month = MonthLabel(key).ToLowerInvariant();
+            // « Paie d'avril », « Paie d'août », « Paie d'octobre », mais « Paie de novembre ».
+            var of = month.Length > 0 && "aeiouyéèâàô".Contains(month[0]) ? "d'" : "de ";
+            subtitle = $"Paie {of}{month} · {Format.Count(rows.Count, "bulletin", "bulletins")} · net {Money(rows.Sum(r => r.Net))}";
         }
         else
         {
@@ -393,6 +396,11 @@ public sealed class SettingsPage : PageViewModel
     public RelayCommand ResetPrefs { get; }
     public RelayCommand OpenAccountSecurity { get; }
     public RelayCommand<string> TestSound { get; }
+
+    /// <summary>Montre une bannière d'exemple : la personne voit ce qu'elle recevra d'un autre poste.</summary>
+    public RelayCommand TestAlert => testAlert ??= new RelayCommand(() => Shell.ShowAlert(new AppAlert(AlertKind.Payment,
+        "Nouvel encaissement", "Exemple : reçu R-000123 de 50 000 FC pour ACC101 (Espèces).", "Secrétariat · PC-ACCUEIL")));
+    private RelayCommand? testAlert;
     public IReadOnlyList<ChoiceItem> Themes => Preferences.Themes;
     public IReadOnlyList<ChoiceItem> Fonts => Preferences.Fonts;
     public IReadOnlyList<ChoiceItem> TextSizes => Preferences.TextSizes;
@@ -546,7 +554,7 @@ public sealed class SettingsPage : PageViewModel
         "texte" => "La police et la taille du texte de toute l'interface.",
         "fenetres" => "La taille de la fenêtre au lancement et les éléments affichés autour des pages.",
         "animations" => "Les mouvements de l'interface : fondus, transitions entre pages et écran d'ouverture.",
-        "sons" => "Un son discret quand une action réussit, échoue ou quand un message s'affiche.",
+        "sons" => "Un son discret quand une action réussit ou échoue, et les bannières des encaissements et sauvegardes faits sur les autres postes.",
         "securite" => "Mot de passe du compte et connexion biométrique de cet appareil.",
         _ => string.Empty,
     };

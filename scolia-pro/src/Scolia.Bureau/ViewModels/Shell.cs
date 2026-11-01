@@ -128,6 +128,7 @@ public sealed class ShellViewModel : Observable
     /// </summary>
     private void OnRemoteChange(LiveEventDto change)
     {
+        if (Infrastructure.Alerts.From(change, Prefs) is { } alert) ShowAlert(alert);
         knownRevision = Math.Max(knownRevision, change.Revision);
         if (MustWait) RemoteWaiting = true;
         else _ = RefreshQuietlyAsync();
@@ -353,12 +354,22 @@ public sealed class ShellViewModel : Observable
         {
             if (!Set(ref dialog, value)) return;
             Raise(nameof(HasDialog));
+            Raise(nameof(CenteredDialog));
+            Raise(nameof(FullScreenDialog));
+            Raise(nameof(CenteredDialogContent));
+            Raise(nameof(FullScreenDialogContent));
             Raise(nameof(Working));
             // La fenêtre se ferme : les mises à jour venues d'un autre poste pendant la saisie s'affichent.
             if (value is null && remoteWaiting) _ = RefreshQuietlyAsync();
         }
     }
     public bool HasDialog => dialog is not null;
+    /// <summary>Téléphone : la recherche couvre tout l'écran, comme celle du Play Store, au lieu d'une petite fenêtre.</summary>
+    public bool FullScreenDialog => phone && dialog is SearchViewModel or AppInfoViewModel;
+    public bool CenteredDialog => dialog is not null && !FullScreenDialog;
+    /// <summary>Une seule vue par boîte : chaque hôte ne reçoit la boîte que lorsqu'elle lui revient.</summary>
+    public object? CenteredDialogContent => CenteredDialog ? dialog : null;
+    public object? FullScreenDialogContent => FullScreenDialog ? dialog : null;
 
     public bool BackstageOpen { get => backstage; private set => Set(ref backstage, value); }
 
@@ -988,6 +999,9 @@ public sealed class ShellViewModel : Observable
     /// <summary>Fenêtre « À propos » : version, éditeur et développeur.</summary>
     public void ShowAbout() => Dialog = new AboutViewModel(this);
 
+    /// <summary>« Info sur l'application » : le catalogue du fonctionnement général, après « À propos ».</summary>
+    public void ShowAppInfo() => Dialog = new AppInfoViewModel(this);
+
     /// <summary>Aide des raccourcis clavier, rangés par onglet.</summary>
     public void ShowShortcuts() => Dialog = new ShortcutsViewModel(this);
 
@@ -1000,6 +1014,62 @@ public sealed class ShellViewModel : Observable
     public void OpenBackstage() => BackstageOpen = true;
 
     public void CloseBackstage() => BackstageOpen = false;
+
+    // ---------- Bannière en haut de l'écran : encaissement ou sauvegarde faits sur un autre poste ----------
+    private AppAlert? banner;
+    private int bannerToken;
+
+    /// <summary>Alerte affichée en haut de l'écran ; elle disparaît seule après quelques secondes.</summary>
+    public AppAlert? Banner
+    {
+        get => banner;
+        private set
+        {
+            if (!Set(ref banner, value)) return;
+            Raise(nameof(HasBanner));
+            Raise(nameof(BannerBrush));
+        }
+    }
+    public bool HasBanner => banner is not null;
+    public Avalonia.Media.IBrush? BannerBrush => banner is null ? null : ThemeBrush.Get(banner.Tone);
+    public static readonly TimeSpan BannerTime = TimeSpan.FromSeconds(6);
+
+    /// <summary>
+    /// Montre l'alerte : bannière dans SCOLIA, et notification du téléphone quand SCOLIA est en arrière-plan,
+    /// pour qu'elle apparaisse aussi en haut de l'écran d'accueil du téléphone.
+    /// </summary>
+    public void ShowAlert(AppAlert alert)
+    {
+        if (Platform.IsInForeground?.Invoke() == false) Platform.ShowSystemNotification?.Invoke(alert);
+        var token = ++bannerToken;
+        Banner = null;
+        Banner = alert;
+        Sounds.Play(Prefs, SoundKind.Notification);
+        Platform.Haptic?.Invoke(HapticKind.Tap);
+        if (Avalonia.Application.Current is null) return;
+        DispatcherTimer.RunOnce(() => { if (token == bannerToken) Banner = null; }, BannerTime);
+    }
+
+    public RelayCommand DismissBanner => dismissBanner ??= new RelayCommand(() => { bannerToken++; Banner = null; });
+    private RelayCommand? dismissBanner;
+
+    /// <summary>Toucher la bannière ouvre ce dont elle parle : le journal des reçus ou les sauvegardes.</summary>
+    public AsyncCommand OpenBanner => openBanner ??= new AsyncCommand(async () =>
+    {
+        var alert = banner;
+        bannerToken++;
+        Banner = null;
+        if (alert is null || !IsLoggedIn || HasDialog) return;
+        if (alert.Kind == AlertKind.DailyReport)
+        {
+            var day = alert.Data ?? DateTime.Today.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture);
+            if (Can(Perm.ReportsRead)) await Run(() => Download($"api/rapports/journalier?date={day}", $"rapport-journalier-{day}.pdf"));
+            return;
+        }
+        if (alert.Kind == AlertKind.Backup && Can(Perm.BackupManage)) await Run(() => Open(() => new DataPage(this)));
+        else if (alert.Kind != AlertKind.Backup && Can(Perm.PaymentsRead)) await Run(() => Open(() => new ReceiptsPage(this)));
+    });
+    private AsyncCommand? openBanner;
 
     /// <summary>Message discret, effacé après quelques secondes.</summary>
     public void Notify(string text, SoundKind sound = SoundKind.Notification)
@@ -1149,6 +1219,10 @@ public sealed class ShellViewModel : Observable
         set
         {
             if (!Set(ref phone, value)) return;
+            Raise(nameof(FullScreenDialog));
+            Raise(nameof(CenteredDialog));
+            Raise(nameof(CenteredDialogContent));
+            Raise(nameof(FullScreenDialogContent));
             Raise(nameof(ShowStatusBar));
             Raise(nameof(PageScroll));
             Raise(nameof(DesktopPage));
@@ -1242,7 +1316,7 @@ public sealed class ShellViewModel : Observable
             or "Apparence" or "Préférences" or "Nouvelle promotion" or "Nouvelle année")
             return "Paramètres";
 
-        if (name is "À propos" or "Aide" or "Aide et gestes" or "Documentation"
+        if (name is "À propos" or "Info sur l'application" or "Aide" or "Aide et gestes" or "Documentation"
             or "Guide utilisateur" or "Raccourcis clavier")
             return "Aide";
 

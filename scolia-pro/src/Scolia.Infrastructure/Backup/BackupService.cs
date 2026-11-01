@@ -176,7 +176,8 @@ public sealed class BackupService(IOptions<ScoliaStorageOptions> options, ILogge
 }
 
 /// <summary>Sauvegarde automatique au démarrage puis à intervalle régulier.</summary>
-public sealed class AutomaticBackupWorker(BackupService backups, IOptions<ScoliaStorageOptions> options, ILogger<AutomaticBackupWorker> logger) : BackgroundService
+public sealed class AutomaticBackupWorker(BackupService backups, IOptions<ScoliaStorageOptions> options, ILogger<AutomaticBackupWorker> logger,
+    Live.LiveHub live, Persistence.DataRevision revision) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -188,7 +189,12 @@ public sealed class AutomaticBackupWorker(BackupService backups, IOptions<Scolia
             {
                 var list = backups.List();
                 var latest = list.Count > 0 ? list[0] : null;
-                if (latest is null || latest.CreatedUtc < DateTime.UtcNow.AddHours(-hours)) await backups.CreateAsync("automatique", stoppingToken);
+                if (latest is null || latest.CreatedUtc < DateTime.UtcNow.AddHours(-hours))
+                {
+                    await backups.CreateAsync("automatique", stoppingToken);
+                    live.Changed(revision.Value, null, "Ordinateur principal", "Sauvegarde automatique",
+                        "Sauvegarde automatique enregistrée et vérifiée.", ["Sauvegarde"]);
+                }
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {

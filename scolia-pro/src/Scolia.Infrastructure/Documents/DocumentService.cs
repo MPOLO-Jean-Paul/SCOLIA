@@ -279,6 +279,66 @@ public sealed class DocumentService : IDocumentService
         page.Footer().Element(c => Footer(c, null));
     })).GeneratePdf();
 
+    /// <summary>
+    /// Rapport à plusieurs parties : les chiffres clés en tuiles de quatre par ligne, puis chaque partie avec son titre
+    /// et son tableau ; une partie vide dit simplement qu'il n'y a rien ce jour-là.
+    /// </summary>
+    public byte[] Report(ReportDocument d) => Document.Create(doc => doc.Page(page =>
+    {
+        page.Size(PageSizes.A4);
+        page.Margin(28);
+        page.DefaultTextStyle(s => s.FontFamily(Font).FontSize(8.5f).FontColor("#1E293B"));
+        page.Header().Element(c => Header(c, d.School, d.Title, d.Subtitle));
+        page.Content().PaddingTop(10).Column(col =>
+        {
+            col.Spacing(12);
+            foreach (var chunk in d.Figures.Chunk(4))
+                col.Item().Row(row =>
+                {
+                    row.Spacing(8);
+                    foreach (var (label, value) in chunk)
+                        row.RelativeItem().Background(Soft).Padding(8).Column(c =>
+                        {
+                            c.Item().Text(label).FontSize(7.5f).FontColor(Muted);
+                            c.Item().Text(value).FontSize(11).Bold().FontColor(Navy);
+                        });
+                    for (var i = chunk.Length; i < 4; i++) row.RelativeItem();
+                });
+            foreach (var section in d.Sections)
+            {
+                col.Item().PaddingTop(4).Text(section.Title).FontSize(11).Bold().FontColor(Navy);
+                if (section.Rows.Count == 0)
+                {
+                    col.Item().Text(section.Empty ?? "Rien à signaler.").Italic().FontColor(Muted);
+                    continue;
+                }
+                var table = new TableDocument(d.School, section.Title, null, section.Columns, section.Rows, section.Totals);
+                var widths = ColumnWidths(table);
+                var amounts = AmountColumns(table);
+                col.Item().Table(t =>
+                {
+                    t.ColumnsDefinition(c => { foreach (var w in widths) c.RelativeColumn(w); });
+                    t.Header(h =>
+                    {
+                        for (var c = 0; c < section.Columns.Count; c++)
+                            Align(h.Cell().Background(Navy).Padding(4), amounts[c]).Text(section.Columns[c]).FontColor(Colors.White).Bold().FontSize(8);
+                    });
+                    var i = 0;
+                    foreach (var row in section.Rows)
+                    {
+                        var bg = i++ % 2 == 0 ? "#FFFFFF" : "#F7F9FD";
+                        for (var c = 0; c < row.Count; c++) Align(t.Cell().Background(bg).Padding(4), c < amounts.Length && amounts[c]).Text(row[c]);
+                    }
+                    if (section.Totals is not null)
+                        for (var c = 0; c < section.Totals.Count; c++)
+                            Align(t.Cell().BorderTop(1).BorderColor(Navy).Padding(4), c < amounts.Length && amounts[c]).Text(section.Totals[c]).Bold();
+                });
+            }
+            if (d.Note is { Length: > 0 } note) col.Item().PaddingTop(6).Text(note).FontSize(7.5f).Italic().FontColor(Muted);
+        });
+        page.Footer().Element(c => Footer(c, null));
+    })).GeneratePdf();
+
     /// <summary>Largeur de chaque colonne selon son contenu : un nom complet a plus de place qu'un code de promotion.</summary>
     private static float[] ColumnWidths(TableDocument d) => d.Columns.Select((title, c) =>
     {

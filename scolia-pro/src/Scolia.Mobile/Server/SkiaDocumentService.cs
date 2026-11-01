@@ -231,6 +231,60 @@ public sealed class SkiaDocumentService : IDocumentService
         Header(d.School, d.Title, d.Subtitle), Footer(null), 22);
     }
 
+    // ---------- Rapport à plusieurs parties (rapport journalier) ----------
+
+    public byte[] Report(ReportDocument d) => PdfFlow.Create(PdfFlow.A4Width, PdfFlow.A4Height, 28, f =>
+    {
+        f.Y += 10;
+        const float gap = 8, tile = 40;
+        var width = (f.ContentWidth - 3 * gap) / 4;
+        foreach (var chunk in d.Figures.Chunk(4))
+        {
+            f.Ensure(tile + gap);
+            var x = f.Left;
+            foreach (var (label, value) in chunk)
+            {
+                f.Fill(x, f.Y, width, tile, "#E8EEF7");
+                f.DrawText(label, S(7.5f, color: "#64748B"), x + 8, f.Y + 7, width - 16);
+                f.DrawText(value, S(11, true, Navy), x + 8, f.Y + 19, width - 16);
+                x += width + gap;
+            }
+            f.Y += tile + gap;
+        }
+        foreach (var section in d.Sections)
+        {
+            f.Y += 6;
+            f.Ensure(40);
+            f.Paragraph(section.Title, S(11, true, Navy), spaceAfter: 4);
+            if (section.Rows.Count == 0)
+            {
+                f.Paragraph(section.Empty ?? "Rien à signaler.", S(8.5f, color: "#64748B", italic: true), spaceAfter: 4);
+                continue;
+            }
+            var widths = section.Columns.Select((title, c) =>
+            {
+                var longest = section.Rows.Take(300).Select(r => c < r.Count ? r[c].Length : 0).DefaultIfEmpty(0).Max();
+                return Math.Clamp(Math.Max(title.Length * 0.8f, longest), 3f, 30f);
+            }).ToArray();
+            var amounts = section.Columns.Select((_, c) =>
+            {
+                var values = section.Rows.Select(r => c < r.Count ? r[c] : string.Empty).Where(v => v.Length > 0).ToList();
+                return values.Count > 0 && values.All(v => v.EndsWith(" FC", StringComparison.Ordinal) || v.EndsWith(" $", StringComparison.Ordinal));
+            }).ToArray();
+            var columns = widths.Select((w, c) => new PdfColumn(w, amounts[c] ? PdfAlign.Right : PdfAlign.Left)).ToList();
+            f.Table(columns, section.Columns.Select(c => new PdfCell(c)).ToList(),
+                section.Rows.Select(r => (IReadOnlyList<PdfCell>)r.Select(v => new PdfCell(v)).ToList()),
+                S(8.5f), Solid with { HeadStyle = S(8, true, "#FFFFFF"), Padding = 4, RightInset = 8 },
+                section.Totals?.Select(v => new PdfCell(v)).ToList());
+        }
+        if (d.Note is { Length: > 0 } note)
+        {
+            f.Y += 8;
+            f.Paragraph(note, S(7.5f, color: "#64748B", italic: true));
+        }
+    },
+    Header(d.School, d.Title, d.Subtitle), Footer(null), 22);
+
     // ---------- Bulletin ----------
 
     public byte[] ReportCard(ReportCardDocument d) => PdfFlow.Create(PdfFlow.A4Width, PdfFlow.A4Height, 36, f =>

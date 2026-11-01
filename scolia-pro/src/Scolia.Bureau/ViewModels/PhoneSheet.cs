@@ -155,7 +155,7 @@ public sealed class PhoneSettingsSearchVm : Observable
         Add("Animations et fluidité", "Cet appareil", MaterialIconKind.AnimationPlay, "ToneOrange",
             "transition mouvement vitesse rapidite animation performance", Page("animations"));
         Add("Sons", "Cet appareil", MaterialIconKind.VolumeHigh, "TonePink",
-            "audio musique notifications volume silence activation son", Page("sons"));
+            "audio musique notifications notification banniere bannieres alerte alertes encaissement sauvegarde volume silence activation son", Page("sons"));
         Add("Sécurité du compte", "Mon compte", MaterialIconKind.ShieldLockOutline, "ToneTeal",
             "biometrie empreinte digitale identification connexion authentification code secret mot de passe",
             Account("mot-de-passe"));

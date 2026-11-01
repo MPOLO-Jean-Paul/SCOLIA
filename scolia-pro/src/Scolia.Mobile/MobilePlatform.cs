@@ -48,6 +48,9 @@ public static class MobilePlatform
         Platform.InstallTailscalePackage = path => AndroidTailscaleSetup.InstallAsync(context ?? app, path);
         Platform.PlayWave = AndroidAudio.PlayWave;
         Platform.Haptic = Haptic;
+        // Encaissement ou sauvegarde sur un autre poste : bannière du système quand SCOLIA est en arrière-plan.
+        Platform.IsInForeground = AndroidAlerts.InForeground;
+        Platform.ShowSystemNotification = alert => AndroidAlerts.Show(context ?? app, alert);
         // Sans ordinateur dans l'établissement, ce téléphone peut en être le serveur.
         Platform.LocalServer = Server.PhoneServer.Get(app);
     }

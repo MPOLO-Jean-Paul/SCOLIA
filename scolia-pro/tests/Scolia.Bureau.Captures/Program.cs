@@ -623,6 +623,147 @@ if (args.Length > 3 && args[3] == "biometrie")
     return;
 }
 
+// Recherche du téléphone (argument « recherche ») : plein écran comme le Play Store, récents et accès rapides, résultats.
+if (args.Length > 3 && args[3] == "recherche")
+{
+    window.Width = 360;
+    window.Height = 760;
+    var searchFailures = 0;
+    void SearchCheck(string label, bool ok)
+    {
+        Console.WriteLine($"{(ok ? "OK  " : "ECHEC")} {label}");
+        if (!ok) searchFailures++;
+    }
+    Wait(shell.OpenSessionAsync(Result(api.LoginAsync("admin", password))));
+    // Partir d'un historique vide : une recherche laissée par un autre parcours fausserait le compte.
+    foreach (var old in prefs.RecentSearches.ToList()) prefs.ForgetSearch(old);
+    prefs.RememberSearch("Kabeya");
+    prefs.RememberSearch("frais scolaires");
+    shell.ShowSearch();
+    var limit = DateTime.UtcNow.AddSeconds(3);
+    while (DateTime.UtcNow < limit) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(10); }
+    SearchCheck("Téléphone : la recherche couvre tout l'écran", shell.FullScreenDialog && !shell.CenteredDialog);
+    var finder = (SearchViewModel)shell.Dialog!;
+    SearchCheck($"Recherches récentes : {finder.Recent.Count}", finder.Recent.Count == 2 && finder.Recent[0].Text == "frais scolaires");
+    SearchCheck($"Accès rapides : {finder.Shortcuts.Count}", finder.Shortcuts.Count >= 4);
+    var box = window.GetVisualDescendants().OfType<TextBox>().FirstOrDefault(t => t.Name == "QueryBox" && t.IsEffectivelyVisible);
+    SearchCheck("Le champ reçoit le clavier aussitôt", box?.IsFocused == true);
+    Save(window, "recherche-accueil.png");
+    finder.Query = "ACC";
+    Wait(finder.SearchAsync());
+    SearchCheck($"Résultats : {finder.Results.Count}", finder.Results.Count > 0 && finder.HasResults);
+    Save(window, "recherche-resultats.png");
+    finder.Results[0].Open.Execute(null);
+    limit = DateTime.UtcNow.AddSeconds(3);
+    while (DateTime.UtcNow < limit && shell.HasDialog) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(10); }
+    SearchCheck("Ouvrir un résultat ferme la recherche", !shell.HasDialog);
+    SearchCheck("La saisie rejoint les récentes", prefs.RecentSearches.FirstOrDefault() == "ACC");
+    foreach (var q in prefs.RecentSearches.ToList()) prefs.ForgetSearch(q);
+
+    // Info sur l'application : le catalogue, plein écran sur le téléphone, avec sa recherche.
+    shell.ShowAppInfo();
+    for (var i = 0; i < 20; i++) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(10); }
+    var info = (AppInfoViewModel)shell.Dialog!;
+    SearchCheck($"Info sur l'application : {info.Totals}", shell.FullScreenDialog && info.Modules.Count >= 10);
+    Save(window, "info-application.png");
+    info.Query = "empreinte";
+    SearchCheck($"Catalogue : « empreinte » trouvée dans {info.Modules.Count} module(s)", info.Modules.Count >= 1 && info.Modules.All(m => m.IsExpanded));
+    Save(window, "info-application-recherche.png");
+    shell.CloseDialog();
+    var aide = shell.Tabs.FirstOrDefault(t => t.Id == "aide");
+    SearchCheck("Aide : « Info sur l'application » juste après « À propos »",
+        aide?.Groups.SelectMany(g => g.Commands).Select(c => c.Label).SkipWhile(l => l != "À propos").Skip(1).FirstOrDefault() == "Info sur l'application");
+    shell.Sync.Stop();
+    window.Close();
+    Console.WriteLine(searchFailures == 0 ? "Recherche : tout est en place." : $"Recherche : {searchFailures} échec(s).");
+    Environment.ExitCode = searchFailures == 0 ? 0 : 1;
+    return;
+}
+
+// Bannières (argument « alertes ») : un autre poste fait une sauvegarde, ce poste l'affiche en haut de l'écran.
+if (args.Length > 3 && args[3] == "alertes")
+{
+    window.Width = 360;
+    window.Height = 760;
+    var alertFailures = 0;
+    void AlertCheck(string label, bool ok)
+    {
+        Console.WriteLine($"{(ok ? "OK  " : "ECHEC")} {label}");
+        if (!ok) alertFailures++;
+    }
+    Wait(shell.OpenSessionAsync(Result(api.LoginAsync("admin", password))));
+    var system = new List<AppAlert>();
+    Platform.IsInForeground = () => false;
+    Platform.ShowSystemNotification = system.Add;
+    // Laisser le direct se brancher avant d'agir sur l'autre poste.
+    var until = DateTime.UtcNow.AddSeconds(3);
+    while (DateTime.UtcNow < until) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(10); }
+
+    // L'autre poste : un client distinct, avec son propre identifiant de poste.
+    using var other = new HttpClient(new HttpClientHandler { CookieContainer = new System.Net.CookieContainer() }) { BaseAddress = server };
+    other.DefaultRequestHeaders.Add("X-Scolia", "1");
+    other.DefaultRequestHeaders.Add("X-Scolia-Poste", "poste-test-alertes");
+    other.DefaultRequestHeaders.Add("X-Scolia-Appareil", "PC-COMPTABILITE");
+    Result(other.PostAsJsonAsync("api/session", new { userName = "admin", password })).EnsureSuccessStatusCode();
+    Result(other.PostAsync("api/sauvegardes", null)).EnsureSuccessStatusCode();
+    until = DateTime.UtcNow.AddSeconds(15);
+    while (DateTime.UtcNow < until && !shell.HasBanner) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(20); }
+    AlertCheck($"Bannière reçue : « {shell.Banner?.Title} · {shell.Banner?.Text} »", shell.Banner?.Kind == AlertKind.Backup);
+    AlertCheck($"Origine indiquée : {shell.Banner?.Origin}", shell.Banner?.Origin.Contains("PC-COMPTABILITE") == true);
+    AlertCheck("Arrière-plan : notification du téléphone envoyée", system.Count == 1 && system[0].Kind == AlertKind.Backup);
+    for (var i = 0; i < 20; i++) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(20); }
+    Save(window, "alerte-sauvegarde.png");
+    shell.OpenBanner.Execute(null);
+    until = DateTime.UtcNow.AddSeconds(5);
+    while (DateTime.UtcNow < until && shell.Current is not DataPage) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(20); }
+    AlertCheck("Toucher la bannière ouvre les sauvegardes", shell.Current is DataPage && !shell.HasBanner);
+
+    // Exemple depuis les réglages, et réglage coupé.
+    shell.ShowAlert(new AppAlert(AlertKind.Payment, "Nouvel encaissement", "Reçu R-000123 : 50 000 FC pour ACC101 (Espèces).", "Secrétariat · PC-ACCUEIL"));
+    for (var i = 0; i < 20; i++) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(20); }
+    Save(window, "alerte-encaissement.png");
+    prefs.Alerts = false;
+    Result(other.PostAsync("api/sauvegardes", null)).EnsureSuccessStatusCode();
+    shell.DismissBanner.Execute(null);
+    until = DateTime.UtcNow.AddSeconds(4);
+    while (DateTime.UtcNow < until) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(20); }
+    // L'exemple ci-dessus compte aussi : deux notifications, aucune de plus une fois les alertes coupées.
+    AlertCheck("Notifications coupées : plus de bannière", !shell.HasBanner && system.Count == 2);
+    prefs.Alerts = true;
+
+    // Rapport journalier : programmé sans compte WhatsApp, envoyé depuis l'autre poste, puis la bannière l'annonce ici.
+    Result(other.PutAsJsonAsync("api/rapports/journalier/reglages", new { enabled = false, time = "18:00", recipients = new[] { "0812345678" } })).EnsureSuccessStatusCode();
+    var sent = Result(Result(other.PostAsync("api/rapports/journalier/envoyer", null)).Content.ReadAsStringAsync());
+    AlertCheck($"Envoi sans compte WhatsApp : {sent}", sent.Contains("non configuré"));
+    until = DateTime.UtcNow.AddSeconds(15);
+    while (DateTime.UtcNow < until && shell.Banner?.Kind != AlertKind.DailyReport) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(20); }
+    AlertCheck($"Bannière « {shell.Banner?.Title} » : {shell.Banner?.Text}", shell.Banner?.Kind == AlertKind.DailyReport && shell.Banner.Data is { Length: 10 });
+    for (var i = 0; i < 20; i++) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(20); }
+    Save(window, "alerte-rapport.png");
+    shell.DismissBanner.Execute(null);
+    var reportsPage = new ReportsPage(shell);
+    Wait(shell.Open(() => reportsPage));
+    var daily = reportsPage.Sections.SelectMany(x => x.Reports).FirstOrDefault(r => r.Title == "Rapport journalier");
+    AlertCheck($"Rapports et exports : carte « Rapport journalier » ({string.Join(", ", daily?.Formats.Select(f => f.Label) ?? [])})",
+        daily?.Formats.Select(f => f.Label).SequenceEqual(["PDF", "Planifier", "Envoyer"]) == true);
+    Save(window, "rapport-carte.png");
+    daily!.Formats[1].Run.Execute(null);
+    until = DateTime.UtcNow.AddSeconds(8);
+    while (DateTime.UtcNow < until && shell.Dialog is not FormViewModel) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(20); }
+    var scheduleForm = shell.Dialog as FormViewModel;
+    AlertCheck("Programmer : le formulaire s'ouvre avec les numéros enregistrés", scheduleForm?.Find("numeros").Text == "0812345678");
+    Save(window, "rapport-programmer.png");
+    scheduleForm?.Cancel.Execute(null);
+
+    Platform.IsInForeground = null;
+    Platform.ShowSystemNotification = null;
+    shell.Sync.Stop();
+    window.Close();
+    Console.WriteLine(alertFailures == 0 ? "Alertes : tout est en place." : $"Alertes : {alertFailures} échec(s).");
+    Environment.ExitCode = alertFailures == 0 ? 0 : 1;
+    return;
+}
+
 // Logo animé (argument « logo ») : huit instants de l'assemblage puis de la descente, clair et sombre.
 if (args.Length > 3 && args[3] == "logo")
 {

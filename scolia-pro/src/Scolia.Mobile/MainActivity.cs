@@ -21,6 +21,8 @@ public sealed class MainActivity : AvaloniaMainActivity
         MobilePlatform.Attach(this);
         // Le fond du thème couvre aussi la préparation d'Avalonia dans base.OnCreate.
         base.OnCreate(savedInstanceState);
+        // Android 13+ : permission des notifications (encaissements et sauvegardes des autres postes).
+        AndroidAlerts.AskPermission(this);
         // Une reprise d'activité déjà prête ne rejoue pas le lancement. Une rotation pendant la préparation le garde.
         if (!launchPresented || ScoliaPlatform.StartupTask is { IsCompletedSuccessfully: false })
         {
@@ -37,6 +39,7 @@ public sealed class MainActivity : AvaloniaMainActivity
     protected override void OnResume()
     {
         base.OnResume();
+        AndroidAlerts.SetForeground(true);
         startup?.SetActive(true);
         // La recherche du serveur sur le Wi-Fi a besoin de recevoir les réponses en diffusion.
         MobilePlatform.HoldMulticast(true);
@@ -50,6 +53,7 @@ public sealed class MainActivity : AvaloniaMainActivity
 
     protected override void OnPause()
     {
+        AndroidAlerts.SetForeground(false);
         startup?.SetActive(false);
         MobilePlatform.HoldMulticast(false);
         Security.AndroidBiometrics.Detach(this);

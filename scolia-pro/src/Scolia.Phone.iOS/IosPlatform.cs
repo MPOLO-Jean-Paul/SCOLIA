@@ -3,6 +3,7 @@ using CoreGraphics;
 using Foundation;
 using Scolia.Bureau.Infrastructure;
 using UIKit;
+using UserNotifications;
 
 namespace Scolia.Phone.iOS;
 
@@ -48,6 +49,24 @@ public static class IosPlatform
         Platform.DocumentsFolder = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
 
         foregroundObserver ??= UIApplication.Notifications.ObserveWillEnterForeground((_, _) => Platform.NotifyAppResumed());
+
+        // Encaissement ou sauvegarde sur un autre poste : notification d'iOS quand SCOLIA passe en arrière-plan.
+        Platform.IsInForeground = () => UIApplication.SharedApplication.ApplicationState == UIApplicationState.Active;
+        Platform.ShowSystemNotification = ShowNotification;
+        UNUserNotificationCenter.Current.RequestAuthorization(UNAuthorizationOptions.Alert | UNAuthorizationOptions.Sound, (_, _) => { });
+    }
+
+    private static void ShowNotification(AppAlert alert)
+    {
+        var content = new UNMutableNotificationContent
+        {
+            Title = alert.Title,
+            Body = string.IsNullOrWhiteSpace(alert.Origin) ? alert.Text : $"{alert.Text}\n{alert.Origin}",
+            Sound = UNNotificationSound.Default,
+            ThreadIdentifier = alert.Tag,
+        };
+        var request = UNNotificationRequest.FromIdentifier(Guid.NewGuid().ToString("N"), content, null);
+        UNUserNotificationCenter.Current.AddNotificationRequest(request, _ => { });
     }
 
     private static void OpenUri(string uri)

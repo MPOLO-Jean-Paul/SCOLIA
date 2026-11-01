@@ -7,7 +7,7 @@ using Scolia.Bureau.Ribbon;
 namespace Scolia.Bureau.ViewModels;
 
 /// <summary>Bouton de format d'un rapport : PDF, Excel ou CSV.</summary>
-public sealed record ReportFormatVm(string Label, AsyncCommand Run);
+public sealed record ReportFormatVm(string Label, AsyncCommand Run, MaterialIconKind Icon = MaterialIconKind.Download);
 
 /// <summary>Rapport proposé : ce qu'il contient, ce dont il dépend et ses formats.</summary>
 public sealed record ReportCardVm(string Title, string Description, MaterialIconKind Icon, IBrush Brush, string Scope, IReadOnlyList<ReportFormatVm> Formats)
@@ -68,6 +68,15 @@ public sealed class ReportsPage : PageViewModel
         }
 
         Section("Finances",
+            Shell.Can(Perm.SettingsWrite)
+                ? Card(Perm.ReportsRead, "Rapport journalier", "Encaissements, dépenses, inscriptions et absences de la journée, détaillés par promotion. Envoi automatique chaque jour, à l'heure et au numéro choisis.",
+                    MaterialIconKind.FileChartOutline, "ToneIndigo", "le jour « Au » ou aujourd'hui",
+                    new ReportFormatVm("PDF", Command(DailyPath, "rapport-journalier.pdf")),
+                    new ReportFormatVm("Planifier", new AsyncCommand(() => Shell.Run(ScheduleDailyAsync)), MaterialIconKind.CalendarClock),
+                    new ReportFormatVm("Envoyer", new AsyncCommand(() => Shell.Run(SendDailyAsync)), MaterialIconKind.SendOutline))
+                : Card(Perm.ReportsRead, "Rapport journalier", "Encaissements, dépenses, inscriptions et absences de la journée, détaillés par promotion.",
+                    MaterialIconKind.FileChartOutline, "ToneIndigo", "le jour « Au » ou aujourd'hui",
+                    new ReportFormatVm("PDF", Command(DailyPath, "rapport-journalier.pdf"))),
             Card(Perm.ReportsRead, "Situation par promotion", "Effectif, attendu à ce jour, encaissé, reste et taux de recouvrement de chaque promotion.",
                 MaterialIconKind.ChartBox, "ToneBlue", "", Pdf(() => "api/rapports/promotions/export", "situation-par-promotion"), Excel(() => "api/rapports/promotions/export", "situation-par-promotion")),
             Card(Perm.PaymentsRead, "Journal des encaissements", "Tous les reçus de la période, annulés compris, avec le total valide.",
@@ -97,6 +106,65 @@ public sealed class ReportsPage : PageViewModel
                 MaterialIconKind.ShieldCheck, "ToneNeutral", "",
                 new ReportFormatVm("CSV", Command(() => "api/audit/export?format=csv", "journal-audit.csv"))));
         return sections;
+    }
+
+    // ---------- Rapport journalier ----------
+    private string DailyDay => ToDay(to ?? DateTime.Today).ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture);
+    private string DailyPath() => $"api/rapports/journalier?date={DailyDay}";
+
+    /// <summary>Heures proposées pour l'envoi automatique : de midi à 22 h, toutes les demi-heures.</summary>
+    private static readonly IReadOnlyList<ChoiceItem> DailyTimes = Enumerable.Range(24, 21)
+        .Select(i => $"{i / 2:00}:{(i % 2) * 30:00}").Select(t => new ChoiceItem(t, t.Replace(":", " h "))).ToList();
+
+    /// <summary>Envoi automatique : chaque jour, à l'heure choisie, l'ordinateur principal prépare le PDF et l'envoie.</summary>
+    private async Task ScheduleDailyAsync()
+    {
+        var current = await Shell.Api.GetAsync<DailyReportViewDto>("api/rapports/journalier/reglages");
+        var status = current.LastStatus is { Length: > 0 } last ? $"Dernier passage : {last}" : "Aucun envoi pour l'instant.";
+        var form = new FormViewModel("Programmer le rapport journalier", status, async f =>
+        {
+            var numbers = f.Text("numeros").Split([',', ';', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
+            await Shell.Api.SendAsync<DailyReportViewDto>(HttpMethod.Put, "api/rapports/journalier/reglages", new
+            {
+                enabled = f.Find("actif").Flag,
+                time = f.Find("heure").Choice?.Value ?? "18:00",
+                recipients = numbers,
+                whatsAppPhoneNumberId = f.Text("phoneId"),
+                whatsAppToken = f.Find("jeton").Text,
+                clearToken = f.Fields.Any(x => x.Key == "effacer") && f.Find("effacer").Flag,
+                whatsAppTemplate = f.Text("modele"),
+                whatsAppLanguage = f.Text("langue"),
+            });
+            Shell.Notify(f.Find("actif").Flag
+                ? $"Rapport journalier programmé chaque jour à {f.Find("heure").Choice?.Label}."
+                : "Envoi automatique du rapport journalier désactivé.", SoundKind.Success);
+            return true;
+        });
+        form.AddFlag("actif", "Envoyer automatiquement chaque jour", current.Enabled);
+        var times = DailyTimes.Any(t => t.Value == current.Time) ? DailyTimes : [.. DailyTimes, new ChoiceItem(current.Time, current.Time)];
+        form.AddChoice("heure", "Heure d'envoi", times, current.Time, required: true);
+        form.Add("numeros", "Numéros qui reçoivent le rapport", FieldKind.Text, string.Join(", ", current.Recipients),
+            hint: "Un ou plusieurs numéros séparés par une virgule : 0812345678, +243991234567.");
+        form.AddHeader("Envoi WhatsApp automatique",
+            current.WhatsAppReady
+                ? "Configuré : le PDF part tout seul à l'heure choisie."
+                : "Pour un envoi sans personne, renseignez le compte WhatsApp Business de l'établissement (Meta). Sans lui, le PDF est préparé chaque jour et une notification propose de le partager.");
+        form.Add("phoneId", "Identifiant du numéro WhatsApp (Phone number ID)", FieldKind.Text, current.WhatsAppPhoneNumberId);
+        form.Add("jeton", current.HasToken ? "Jeton d'accès (déjà enregistré)" : "Jeton d'accès", FieldKind.Secret, null,
+            hint: current.HasToken ? "Laissez vide pour garder le jeton enregistré." : "Fourni par Meta for Developers, jamais affiché ensuite.");
+        if (current.HasToken) form.AddFlag("effacer", "Effacer le jeton enregistré", false);
+        form.Add("modele", "Modèle de message approuvé (facultatif)", FieldKind.Text, current.WhatsAppTemplate,
+            hint: "Modèle avec un document en en-tête, approuvé par Meta : il permet d'écrire en premier, à toute heure.");
+        form.Add("langue", "Langue du modèle", FieldKind.Text, current.WhatsAppLanguage);
+        await Shell.Ask(form);
+    }
+
+    /// <summary>Envoyer maintenant : le PDF du jour est fait, envoyé si WhatsApp est configuré, puis ouvert ici.</summary>
+    private async Task SendDailyAsync()
+    {
+        var result = await Shell.Api.SendAsync<DailyReportResultDto>(HttpMethod.Post, $"api/rapports/journalier/envoyer?date={DailyDay}");
+        Shell.Notify($"Rapport du {DailyDay} : {result.Status}.", SoundKind.Success);
+        await Shell.Download(DailyPath(), result.FileName);
     }
 
     private ReportCardVm? Card(string perm, string title, string description, MaterialIconKind icon, string tone, string scope, params ReportFormatVm[] formats) =>

@@ -534,6 +534,47 @@
               </Grid>
               </StackPanel>
             </Border>
+
+            <!-- Bannières et notifications : ce qui se passe sur les autres postes de l'établissement -->
+            <TextBlock Text="Notifications" Classes="muted" FontWeight="SemiBold" Margin="4,6,0,-6" />
+            <Border Classes="card" Padding="16,4">
+              <StackPanel>
+              <Grid ColumnDefinitions="*,Auto,Auto" Classes="prefrow">
+                <StackPanel VerticalAlignment="Center" Margin="0,0,16,0">
+                  <TextBlock Text="Bannières des autres postes" />
+                  <TextBlock Text="En haut de l'écran ; sur le téléphone, aussi quand SCOLIA est en arrière-plan." Classes="muted" TextWrapping="Wrap" />
+                </StackPanel>
+                <Button Grid.Column="1" Classes="small" Command="{Binding TestAlert}" ToolTip.Tip="Voir une bannière d'exemple" Margin="0,0,12,0" VerticalAlignment="Center">
+                  <StackPanel Orientation="Horizontal" Spacing="6"><mi:MaterialIcon Kind="BellRingOutline" Width="14" Height="14" /><TextBlock Text="Essayer" /></StackPanel>
+                </Button>
+                <ToggleSwitch Grid.Column="2" IsChecked="{Binding Prefs.Alerts}" OnContent="" OffContent="" VerticalAlignment="Center" />
+              </Grid>
+              <Border Classes="prefsep" />
+              <Grid ColumnDefinitions="*,Auto" Classes="prefrow" IsEnabled="{Binding Prefs.Alerts}">
+                <StackPanel VerticalAlignment="Center" Margin="0,0,16,0">
+                  <TextBlock Text="Encaissements" />
+                  <TextBlock Text="Nouveau reçu, lot de paiements ou reçu annulé." Classes="muted" TextWrapping="Wrap" />
+                </StackPanel>
+                <ToggleSwitch Grid.Column="1" IsChecked="{Binding Prefs.AlertPayments}" OnContent="" OffContent="" VerticalAlignment="Center" />
+              </Grid>
+              <Border Classes="prefsep" />
+              <Grid ColumnDefinitions="*,Auto" Classes="prefrow" IsEnabled="{Binding Prefs.Alerts}">
+                <StackPanel VerticalAlignment="Center" Margin="0,0,16,0">
+                  <TextBlock Text="Sauvegardes" />
+                  <TextBlock Text="Sauvegarde manuelle ou automatique faite sur l'ordinateur principal." Classes="muted" TextWrapping="Wrap" />
+                </StackPanel>
+                <ToggleSwitch Grid.Column="1" IsChecked="{Binding Prefs.AlertBackups}" OnContent="" OffContent="" VerticalAlignment="Center" />
+              </Grid>
+              <Border Classes="prefsep" />
+              <Grid ColumnDefinitions="*,Auto" Classes="prefrow" IsEnabled="{Binding Prefs.Alerts}">
+                <StackPanel VerticalAlignment="Center" Margin="0,0,16,0">
+                  <TextBlock Text="Rapport journalier" />
+                  <TextBlock Text="Le PDF du jour est prêt, à l'heure programmée." Classes="muted" TextWrapping="Wrap" />
+                </StackPanel>
+                <ToggleSwitch Grid.Column="1" IsChecked="{Binding Prefs.AlertReports}" OnContent="" OffContent="" VerticalAlignment="Center" />
+              </Grid>
+              </StackPanel>
+            </Border>
           </StackPanel>
 
         <Button Classes="link" Content="Rétablir les réglages d'origine de ce poste" Command="{Binding ResetPrefs}" IsVisible="{Binding IsPoste}" HorizontalAlignment="Left" />

@@ -206,7 +206,8 @@ public static class RibbonCatalog
             [
                 Group("Aide",
                     Large(shell, "Raccourcis clavier", Keyboard, "Liste des raccourcis clavier de SCOLIA.", () => ShortcutsDialog.ShowAsync(shell), Blue),
-                    Large(shell, "À propos", Information, "Version de SCOLIA Pro et conditions d'utilisation.", () => AboutDialog.ShowAsync(shell), Neutral)),
+                    Large(shell, "À propos", Information, "Version de SCOLIA Pro et conditions d'utilisation.", () => AboutDialog.ShowAsync(shell), Neutral),
+                    Large(shell, "Info sur l'application", BookOpenPageVariantOutline, "Catalogue du fonctionnement général de SCOLIA, module par module.", () => { shell.ShowAppInfo(); return Task.CompletedTask; }, Blue)),
             ]),
         };
 

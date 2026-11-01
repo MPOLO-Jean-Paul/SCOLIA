@@ -239,13 +239,66 @@ public sealed class SearchViewModel : Observable
             : "Recherche générale : apprenants, reçus, fonctionnalités et paramètres autorisés.";
         Open = new AsyncCommand(OpenSelectedAsync);
         Close = new RelayCommand(shell.CloseDialog);
+        ClearQuery = new RelayCommand(() => Query = string.Empty);
+        ClearRecent = new RelayCommand(() =>
+        {
+            foreach (var text in shell.Prefs.RecentSearches.ToList()) shell.Prefs.ForgetSearch(text);
+            RefreshRecent();
+        });
+        RefreshRecent();
+        // Accès rapides : les outils autorisés de ce compte, en tuiles colorées comme « Découvrir » du Play Store.
+        Shortcuts = settingsOnly ? [] : shell.Navigation.SelectMany(g => g.Items)
+            .Where(i => i.PageType != typeof(HomePage)).Take(8)
+            .Select(i => new SearchShortcutRow(i.TabLabel, i.Icon, i.Brush, new RelayCommand(() =>
+            {
+                shell.CloseDialog();
+                if (i.Open.CanExecute(null)) i.Open.Execute(null);
+            }))).ToList();
+    }
+
+    /// <summary>Champ vide : l'écran montre les recherches récentes et les accès rapides, comme le Play Store.</summary>
+    public bool IsIdle => query.Trim().Length < 2;
+    public bool HasResults => !IsIdle;
+    public bool HasQuery => query.Length > 0;
+    public RelayCommand ClearQuery { get; }
+    public RelayCommand ClearRecent { get; }
+    public ObservableCollection<RecentSearchRow> Recent { get; } = [];
+    public bool HasRecent => Recent.Count > 0;
+    public IReadOnlyList<SearchShortcutRow> Shortcuts { get; }
+    public bool HasShortcuts => Shortcuts.Count > 0;
+
+    private void RefreshRecent()
+    {
+        Recent.Clear();
+        foreach (var text in shell.Prefs.RecentSearches)
+            Recent.Add(new RecentSearchRow(text,
+                new RelayCommand(() => Query = text),
+                new RelayCommand(() => { shell.Prefs.ForgetSearch(text); RefreshRecent(); })));
+        Raise(nameof(HasRecent));
+    }
+
+    /// <summary>Un résultat ouvert : la saisie rejoint les recherches récentes.</summary>
+    private void Remember()
+    {
+        if (!settingsOnly) shell.Prefs.RememberSearch(query);
     }
 
     public bool SettingsOnly => settingsOnly;
     public string Placeholder => settingsOnly ? "Rechercher un réglage : police, mot de passe, mois…" :
         "Apprenant, matricule, reçu, fonctionnalité ou réglage";
     public string SearchTitle => settingsOnly ? "Rechercher un réglage" : "Rechercher dans SCOLIA";
-    public string Query { get => query; set { if (Set(ref query, value)) Schedule(); } }
+    public string Query
+    {
+        get => query;
+        set
+        {
+            if (!Set(ref query, value ?? string.Empty)) return;
+            Raise(nameof(IsIdle));
+            Raise(nameof(HasResults));
+            Raise(nameof(HasQuery));
+            Schedule();
+        }
+    }
     public string Message { get => message; private set => Set(ref message, value); }
     public ObservableCollection<SearchHitRow> Results { get; } = [];
     public SearchHitRow? Selected { get => selected; set => Set(ref selected, value); }
@@ -304,6 +357,7 @@ public sealed class SearchViewModel : Observable
                         Message = "Cette fonctionnalité n'est plus disponible pour ce compte.";
                         return Task.CompletedTask;
                     }
+                    Remember();
                     shell.CloseDialog();
                     setting.Open.Execute(null);
                     return Task.CompletedTask;
@@ -353,6 +407,7 @@ public sealed class SearchViewModel : Observable
     /// même si la sélection visuelle n'a pas encore changé.</summary>
     private async Task OpenHitAsync(SearchHitRow hit)
     {
+        Remember();
         var url = hit.Hit.Url;
         var target = PageFor(url);
         if (url is "/compte/poste" or "/compte/mot-de-passe")
@@ -416,6 +471,12 @@ public sealed class SearchViewModel : Observable
 }
 
 /// <summary>Résultat de recherche dans la liste, avec son libellé de type.</summary>
+/// <summary>Recherche récente : la toucher la relance, la croix l'oublie.</summary>
+public sealed record RecentSearchRow(string Text, RelayCommand Use, RelayCommand Remove);
+
+/// <summary>Tuile d'accès rapide de la recherche : un outil autorisé, avec sa couleur.</summary>
+public sealed record SearchShortcutRow(string Label, MaterialIconKind Icon, Avalonia.Media.IBrush Brush, RelayCommand Open);
+
 public sealed class SearchHitRow
 {
     public SearchHitRow(SearchHitDto hit, Func<SearchHitRow, Task>? open = null)

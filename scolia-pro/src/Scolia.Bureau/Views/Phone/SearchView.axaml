@@ -1,0 +1,165 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mi="using:Material.Icons.Avalonia"
+             x:Class="Scolia.Bureau.Views.Phone.SearchView">
+  <!-- Recherche du téléphone, comme le Play Store : tout l'écran, le champ en haut avec le clavier ouvert,
+       les recherches récentes et les accès rapides tant que rien n'est saisi, puis les résultats en lignes. -->
+  <UserControl.Styles>
+    <Style Selector="TextBlock.searchsection">
+      <Setter Property="FontSize" Value="16" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="Margin" Value="20,18,20,8" />
+    </Style>
+    <Style Selector="Button.searchrow">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="CornerRadius" Value="0" />
+      <Setter Property="Padding" Value="20,10" />
+      <Setter Property="MinHeight" Value="60" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button.searchrow /template/ ContentPresenter">
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
+    <Style Selector="Button.searchrow:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
+    </Style>
+    <Style Selector="Button.tile">
+      <Setter Property="Background" Value="{DynamicResource GroupBrush}" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="CornerRadius" Value="18" />
+      <Setter Property="Padding" Value="12,0,8,0" />
+      <Setter Property="Height" Value="72" />
+      <Setter Property="Margin" Value="4" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button.tile /template/ ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource GroupBrush}" />
+    </Style>
+    <Style Selector="Button.tile:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
+    </Style>
+    <!-- Champ sans cadre, même au toucher : comme la barre de recherche du Play Store -->
+    <Style Selector="TextBox.searchfield /template/ Border#PART_BorderElement">
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
+    <Style Selector="TextBox.searchfield:focus /template/ Border#PART_BorderElement">
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
+    <Style Selector="TextBox.searchfield:pointerover /template/ Border#PART_BorderElement">
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
+    <Style Selector="Border.typepill">
+      <Setter Property="Background" Value="{DynamicResource GroupBrush}" />
+      <Setter Property="CornerRadius" Value="10" />
+      <Setter Property="Padding" Value="8,2" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+  </UserControl.Styles>
+
+  <Grid RowDefinitions="Auto,*" Background="{DynamicResource BgBrush}">
+    <!-- Champ de recherche : retour, saisie, effacer -->
+    <Border BorderBrush="{DynamicResource LineBrush}" BorderThickness="0,0,0,1" Padding="4,8,8,8">
+      <Grid ColumnDefinitions="Auto,*,Auto">
+        <Button Classes="phoneicon" Command="{Binding Close}" ToolTip.Tip="Retour" MinWidth="48" MinHeight="48">
+          <mi:MaterialIcon Kind="ArrowLeft" Width="24" Height="24" />
+        </Button>
+        <TextBox x:Name="QueryBox" Grid.Column="1" Classes="searchfield" Text="{Binding Query}" PlaceholderText="Rechercher dans SCOLIA"
+                 BorderThickness="0" Background="Transparent" FontSize="18" VerticalContentAlignment="Center" MinHeight="48"
+                 TextInputOptions.ReturnKeyType="Search" />
+        <Button Grid.Column="2" Classes="phoneicon" Command="{Binding ClearQuery}" IsVisible="{Binding HasQuery}"
+                ToolTip.Tip="Effacer" MinWidth="48" MinHeight="48">
+          <mi:MaterialIcon Kind="Close" Width="22" Height="22" />
+        </Button>
+      </Grid>
+    </Border>
+
+    <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled">
+      <StackPanel Margin="0,0,0,24">
+        <!-- Rien de saisi : recherches récentes et accès rapides -->
+        <StackPanel IsVisible="{Binding IsIdle}">
+          <StackPanel IsVisible="{Binding HasRecent}">
+            <Grid ColumnDefinitions="*,Auto">
+              <TextBlock Text="Recherches récentes" Classes="searchsection" />
+              <Button Grid.Column="1" Classes="ghost" Content="Effacer" Command="{Binding ClearRecent}" Margin="0,10,12,0" VerticalAlignment="Center" />
+            </Grid>
+            <ItemsControl ItemsSource="{Binding Recent}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <Button Classes="searchrow" Command="{Binding Use}">
+                    <Grid ColumnDefinitions="Auto,*,Auto">
+                      <Border Width="40" Height="40" CornerRadius="20" Background="{DynamicResource GroupBrush}" Margin="0,0,18,0">
+                        <mi:MaterialIcon Kind="History" Width="22" Height="22" Foreground="{DynamicResource MutedBrush}"
+                                         HorizontalAlignment="Center" VerticalAlignment="Center" />
+                      </Border>
+                      <TextBlock Grid.Column="1" Text="{Binding Text}" FontSize="16" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                      <mi:MaterialIcon Grid.Column="2" Kind="ArrowTopLeft" Width="22" Height="22" Foreground="{DynamicResource MutedBrush}" />
+                    </Grid>
+                  </Button>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+
+          <StackPanel IsVisible="{Binding HasShortcuts}">
+            <TextBlock Text="Accès rapides" Classes="searchsection" />
+            <ItemsControl ItemsSource="{Binding Shortcuts}" Margin="12,0">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate><UniformGrid Columns="2" /></ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <Button Classes="tile" Command="{Binding Open}">
+                    <Grid ColumnDefinitions="*,Auto">
+                      <TextBlock Text="{Binding Label}" FontSize="14" FontWeight="Medium" VerticalAlignment="Center"
+                                 TextWrapping="WrapWithOverflow" MaxLines="2" TextTrimming="CharacterEllipsis" />
+                      <Border Grid.Column="1" Width="38" Height="38" CornerRadius="12" Background="{Binding Brush}" Margin="6,0,0,0">
+                        <mi:MaterialIcon Kind="{Binding Icon}" Width="22" Height="22" Foreground="White"
+                                         HorizontalAlignment="Center" VerticalAlignment="Center" />
+                      </Border>
+                    </Grid>
+                  </Button>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+
+          <TextBlock Text="{Binding Message}" Classes="muted" TextWrapping="Wrap" Margin="20,18,20,0" />
+        </StackPanel>
+
+        <!-- Résultats : une ligne par apprenant, reçu ou fonctionnalité -->
+        <StackPanel IsVisible="{Binding HasResults}">
+          <TextBlock Text="{Binding Message}" Classes="muted" Margin="20,14,20,6" TextWrapping="Wrap" />
+          <ItemsControl ItemsSource="{Binding Results}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate>
+                <Button Classes="searchrow" Command="{Binding Open}" MinHeight="72">
+                  <Grid ColumnDefinitions="Auto,*">
+                    <Border Width="52" Height="52" CornerRadius="14" Background="{Binding Brush}" Margin="0,0,16,0">
+                      <mi:MaterialIcon Kind="{Binding Icon}" Width="28" Height="28" Foreground="White"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                    <StackPanel Grid.Column="1" Spacing="4" VerticalAlignment="Center">
+                      <TextBlock Text="{Binding Title}" FontSize="16" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                      <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Border Classes="typepill"><TextBlock Text="{Binding Type}" FontSize="12" FontWeight="Medium" /></Border>
+                        <TextBlock Text="{Binding Subtitle}" Classes="muted" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" MaxWidth="220" />
+                      </StackPanel>
+                    </StackPanel>
+                  </Grid>
+                </Button>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
+      </StackPanel>
+    </ScrollViewer>
+  </Grid>
+</UserControl>

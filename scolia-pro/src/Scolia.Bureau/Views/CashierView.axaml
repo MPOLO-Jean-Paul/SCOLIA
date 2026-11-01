@@ -97,10 +97,12 @@
                 <TextBlock Text="Mois de paiement indisponibles" FontWeight="SemiBold" />
                 <TextBlock Text="{Binding MonthListStatus}" TextWrapping="Wrap" />
                 <StackPanel Spacing="6" IsVisible="{Binding CanConfigureFees}">
-                  <Button Content="Configurer les mois de l'année" Command="{Binding ConfigureCalendar}"
-                          HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" MinHeight="42" />
-                  <Button Content="Vérifier les mensualités de la promotion" Command="{Binding ConfigurePromotion}"
-                          HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" MinHeight="42" />
+                  <Button Command="{Binding ConfigureCalendar}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" MinHeight="42">
+                    <TextBlock Text="Configurer les mois de l'année" TextWrapping="Wrap" TextAlignment="Center" />
+                  </Button>
+                  <Button Command="{Binding ConfigurePromotion}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" MinHeight="42">
+                    <TextBlock Text="Vérifier les mensualités de la promotion" TextWrapping="Wrap" TextAlignment="Center" />
+                  </Button>
                 </StackPanel>
               </StackPanel>
             </Border>

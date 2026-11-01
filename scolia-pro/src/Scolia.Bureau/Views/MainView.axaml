@@ -452,16 +452,44 @@
       <!-- Compte et réglages du poste : couvre la fenêtre -->
       <ContentControl Content="{Binding Backstage}" IsVisible="{Binding BackstageOpen}" Background="{DynamicResource BgBrush}" />
 
+      <!-- Bannière en haut : encaissement ou sauvegarde faits sur un autre poste. Elle descend, se lit, s'en va seule. -->
+      <Border x:Name="AlertBanner" Classes="alertbanner" IsVisible="{Binding HasBanner}" VerticalAlignment="Top" HorizontalAlignment="Stretch"
+              MaxWidth="560" Margin="10,8,10,0">
+        <Grid ColumnDefinitions="*,Auto">
+          <Button Classes="bannerbody" Command="{Binding OpenBanner}" ToolTip.Tip="Ouvrir">
+            <Grid ColumnDefinitions="Auto,*">
+              <Border Width="40" Height="40" CornerRadius="20" Background="{Binding BannerBrush}" Margin="0,0,12,0" VerticalAlignment="Top">
+                <mi:MaterialIcon Kind="{Binding Banner.Icon}" Width="22" Height="22" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
+              </Border>
+              <StackPanel Grid.Column="1" Spacing="2">
+                <TextBlock Text="{Binding Banner.Title}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                <TextBlock Text="{Binding Banner.Text}" TextWrapping="Wrap" MaxLines="3" TextTrimming="CharacterEllipsis" />
+                <TextBlock Classes="muted" FontSize="12" TextWrapping="Wrap">
+                  <Run Text="{Binding Banner.Origin, Mode=OneWay}" /><Run Text=" · à l'instant" />
+                </TextBlock>
+              </StackPanel>
+            </Grid>
+          </Button>
+          <Button Grid.Column="1" Classes="closex" Command="{Binding DismissBanner}" ToolTip.Tip="Masquer" VerticalAlignment="Top" Margin="0,8,8,0">
+            <mi:MaterialIcon Kind="Close" />
+          </Button>
+        </Grid>
+      </Border>
+
       <!-- Notification discrète, en bas -->
       <Border x:Name="Snackbar" Classes="snackbar" HorizontalAlignment="Left" VerticalAlignment="Bottom" IsVisible="{Binding HasNotice}" IsHitTestVisible="False">
         <TextBlock Text="{Binding Notice}" Foreground="{DynamicResource BgBrush}" TextWrapping="Wrap" />
       </Border>
 
       <!-- Boîte de dialogue modale : elle couvre toute la fenêtre -->
-      <Border Classes="scrim" IsVisible="{Binding HasDialog}">
-        <ContentControl Content="{Binding Dialog}" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="24" RenderTransformOrigin="50%,50%">
+      <Border Classes="scrim" IsVisible="{Binding CenteredDialog}">
+        <ContentControl Content="{Binding CenteredDialogContent}" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="24" RenderTransformOrigin="50%,50%">
           <ContentControl.RenderTransform><ScaleTransform /></ContentControl.RenderTransform>
         </ContentControl>
+      </Border>
+      <!-- Téléphone : la recherche prend tout l'écran, comme celle du Play Store -->
+      <Border x:Name="FullScreenHost" Classes="fullscreendialog" Background="{DynamicResource BgBrush}" IsVisible="{Binding FullScreenDialog}">
+        <ContentControl Content="{Binding FullScreenDialogContent}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" />
       </Border>
 
       <!-- Traitement qui dure : un indicateur au centre, la fenêtre reste visible mais n'accepte pas de second clic -->

@@ -239,7 +239,60 @@ public static class ScoliaEndpoints
             Table(await r.StudentsTableAsync(ct), format, "liste-generale-apprenants", r));
         g.MapGet("/liste-classe/{promotionId:guid}", async (Guid promotionId, string? format, ReportService r, CancellationToken ct) =>
             Table(await r.ClassListAsync(promotionId, ct), format, "liste-nominative", r));
+
+        // ---------- Rapport journalier : PDF du jour, envoi automatique à l'heure choisie ----------
+        g.MapGet("/journalier", async (DateOnly? date, DailyReportService r, IClock clock, CancellationToken ct) =>
+        {
+            var day = date ?? clock.Today;
+            var (pdf, _) = await r.BuildAsync(day, ct);
+            return Results.File(pdf, "application/pdf", DailyReportService.FileName(day));
+        });
+        var daily = g.MapGroup("/journalier").RequireAuthorization(Permissions.SettingsWrite);
+        daily.MapGet("/reglages", (Scolia.Infrastructure.Reports.DailyReportStore store) => DailyReportView(store.Load()));
+        daily.MapPut("/reglages", async (DailyReportInput input, Scolia.Infrastructure.Reports.DailyReportStore store, IAuditLog log, ScoliaDbContext db, CancellationToken ct) =>
+        {
+            if (!Scolia.Infrastructure.Reports.DailyReportSettings.TryTime(input.Time, out var at))
+                throw new DomainException("heure", "Heure invalide : choisissez par exemple 18:00.");
+            var numbers = (input.Recipients ?? []).Select(n => n.Trim()).Where(n => n.Length > 0).Distinct().ToList();
+            foreach (var n in numbers)
+                if (n.Count(char.IsDigit) is < 9 or > 15) throw new DomainException("numeros", $"Numéro invalide : {n}. Exemple : 0812345678 ou +243812345678.");
+            if (input.Enabled && numbers.Count == 0)
+                throw new DomainException("numeros", "Ajoutez au moins un numéro qui recevra le rapport.");
+            store.Update(s =>
+            {
+                s.Enabled = input.Enabled;
+                s.Time = at.ToString("HH:mm", System.Globalization.CultureInfo.InvariantCulture);
+                s.Recipients = numbers;
+                s.WhatsAppPhoneNumberId = string.IsNullOrWhiteSpace(input.WhatsAppPhoneNumberId) ? null : input.WhatsAppPhoneNumberId.Trim();
+                s.WhatsAppTemplate = string.IsNullOrWhiteSpace(input.WhatsAppTemplate) ? null : input.WhatsAppTemplate.Trim();
+                if (!string.IsNullOrWhiteSpace(input.WhatsAppLanguage)) s.WhatsAppLanguage = input.WhatsAppLanguage.Trim();
+                // Le jeton ne revient jamais à l'écran : vide le garde, « effacer » le retire.
+                if (input.ClearToken) s.WhatsAppToken = null;
+                else if (!string.IsNullOrWhiteSpace(input.WhatsAppToken)) s.WhatsAppToken = input.WhatsAppToken.Trim();
+                // Réglage changé : le rapport du jour part à la nouvelle heure, sans renvoyer ceux des jours passés.
+                s.LastDate = DateOnly.FromDateTime(DateTime.Now).AddDays(-1).ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture);
+            });
+            log.Record("rapport.journalier.reglages", "RapportJournalier", null,
+                input.Enabled ? $"Rapport journalier programmé à {at.ToString("HH:mm", System.Globalization.CultureInfo.InvariantCulture)} pour {numbers.Count} numéro(s)." : "Rapport journalier automatique désactivé.");
+            await db.SaveChangesAsync(ct);
+            return DailyReportView(store.Load());
+        });
+        daily.MapPost("/envoyer", async (DateOnly? date, Scolia.Infrastructure.Reports.DailyReportRunner runner, IClock clock, CancellationToken ct) =>
+        {
+            var run = await runner.RunAsync(date ?? clock.Today, send: true, "manuel", ct);
+            return new DailyReportResult(run.FileName, run.Status, run.Summary.Text);
+        });
     }
+
+    private static DailyReportViewDto DailyReportView(Scolia.Infrastructure.Reports.DailyReportSettings s) =>
+        new(s.Enabled, s.Time, s.Recipients, s.WhatsAppPhoneNumberId, s.WhatsAppTemplate, s.WhatsAppLanguage,
+            !string.IsNullOrWhiteSpace(s.WhatsAppToken), s.WhatsAppReady, s.LastStatus);
+
+    public sealed record DailyReportInput(bool Enabled, string? Time, List<string>? Recipients, string? WhatsAppPhoneNumberId,
+        string? WhatsAppToken, bool ClearToken, string? WhatsAppTemplate, string? WhatsAppLanguage);
+    public sealed record DailyReportViewDto(bool Enabled, string Time, List<string> Recipients, string? WhatsAppPhoneNumberId,
+        string? WhatsAppTemplate, string WhatsAppLanguage, bool HasToken, bool WhatsAppReady, string? LastStatus);
+    public sealed record DailyReportResult(string FileName, string Status, string Summary);
 
     private static void MapCards(RouteGroupBuilder api)
     {
@@ -357,11 +410,14 @@ public static class ScoliaEndpoints
 
         var backups = api.MapGroup("/sauvegardes").RequireAuthorization(Permissions.BackupManage);
         backups.MapGet("", (BackupService b) => b.List());
-        backups.MapPost("", async (BackupService b, IAuditLog log, ScoliaDbContext db, CancellationToken ct) =>
+        backups.MapPost("", async (BackupService b, IAuditLog log, ScoliaDbContext db, ICurrentUser user,
+            Scolia.Infrastructure.Live.LiveHub live, DataRevision revision, CancellationToken ct) =>
         {
             var info = await b.CreateAsync("manuelle", ct);
             log.Record("sauvegarde.creee", "Sauvegarde", info.Name, $"Sauvegarde manuelle {info.Name}.");
             await db.SaveChangesAsync(ct);
+            // Les autres postes l'apprennent tout de suite : bannière et notification du téléphone.
+            live.Changed(revision.Value, user.DeviceId, user.Device, user.Name, "Sauvegarde manuelle enregistrée et vérifiée.", ["Sauvegarde"]);
             return info;
         });
         backups.MapGet("/{name}", (string name, BackupService b) => Results.File(b.PathOf(name), "application/vnd.sqlite3", name));

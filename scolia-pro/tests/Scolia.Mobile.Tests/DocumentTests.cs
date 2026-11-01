@@ -62,6 +62,24 @@ public sealed class DocumentTests
     }
 
     [Fact]
+    public void Le_rapport_journalier_du_telephone_serveur_est_complet()
+    {
+        var receipts = Enumerable.Range(1, 60).Select(i => (IReadOnlyList<string>)
+            [$"RC-2026-{i:000000}", $"ACC{i:000} · APPRENANT {i}", "ACC1", "Espèces", "Secrétariat", "Valide", "55 000 FC"]).ToList();
+        var doc = new ReportDocument(School, "Rapport journalier", "Dimanche 1 novembre 2026 · année scolaire 2026-2027",
+            [("Encaissé", "3 300 000 FC"), ("Reçus valides", "60"), ("Dépenses", "50 000 FC"), ("Solde du jour", "3 250 000 FC"),
+             ("Reçus annulés", "0"), ("Inscriptions", "2"), ("Absences", "4"), ("Caisse", "Non arrêtée")],
+            [
+                new ReportSection("Encaissements par promotion", ["Promotion", "Reçus", "Encaissé"], [["ACC1 · Première année", "60", "3 300 000 FC"]], ["Total", "60", "3 300 000 FC"]),
+                new ReportSection("Détail des reçus", ["N°", "Apprenant", "Promotion", "Mode", "Caissier", "État", "Montant"], receipts),
+                new ReportSection("Dépenses", ["N°", "Catégorie", "Bénéficiaire", "Montant"], [], Empty: "Aucune dépense ce jour."),
+            ], "Rapport établi automatiquement par SCOLIA.");
+        var pdf = phone.Report(doc);
+        Assert.True(Pages(pdf) >= 2, $"{Pages(pdf)} page(s)");
+        Keep("rapport-journalier", pdf, () => new DocumentService().Report(doc));
+    }
+
+    [Fact]
     public void Un_releve_et_un_bulletin_sont_complets()
     {
         var lines = Enumerable.Range(0, 10).Select(m => new AccountLineDto(Guid.NewGuid(), $"Mensualité {new DateOnly(2026, 9, 1).AddMonths(m):MMMM yyyy}",
