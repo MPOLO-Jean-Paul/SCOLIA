@@ -78,7 +78,7 @@ public sealed class SetupViewModel : Observable
     private async Task PickLogoAsync()
     {
         if (shell.PickFileHandler is null) return;
-        var picked = await shell.PickFileHandler([".png", ".jpg", ".jpeg"]);
+        var picked = await shell.PickFileHandler(LogoImage.Extensions);
         if (picked is null) return;
         SetLogo(picked.Data, picked.Name);
     }
@@ -87,14 +87,20 @@ public sealed class SetupViewModel : Observable
     {
         try
         {
-            Logo = data is null ? null : new Avalonia.Media.Imaging.Bitmap(new MemoryStream(data));
-            logoData = data;
+            // Toute image courante est convertie en PNG léger : c'est ce PNG qui est montré puis enregistré.
+            var png = data is null ? null : LogoImage.ToPng(data, name);
+            Logo = png is null ? null : new Avalonia.Media.Imaging.Bitmap(new MemoryStream(png));
+            logoData = png;
             logoName = name;
             Error = string.Empty;
         }
+        catch (LogoImageException ex)
+        {
+            Error = ex.Message;
+        }
         catch (Exception ex) when (ex is ArgumentException or InvalidOperationException or NotSupportedException)
         {
-            Error = "Cette image ne peut pas être lue. Choisissez un fichier PNG ou JPEG.";
+            Error = $"Cette image ne peut pas être lue. Formats acceptés : {LogoImage.Formats}.";
         }
         Raise(nameof(LogoLine));
     }
@@ -344,7 +350,7 @@ public sealed class SetupViewModel : Observable
         var problems = new List<string>();
         if (logoData is not null)
         {
-            try { await shell.Api.UploadAsync<object>(HttpMethod.Put, "api/etablissement/logo", [new UploadedFile("fichier", logoName ?? "logo.png", logoData)]); }
+            try { await shell.Api.UploadAsync<object>(HttpMethod.Put, "api/etablissement/logo", [new UploadedFile("fichier", Path.ChangeExtension(logoName ?? "logo", ".png"), logoData)]); }
             catch (ApiException ex) { problems.Add($"Logo non enregistré : {ex.Message}"); }
         }
         foreach (var p in Promotions.Where(p => !p.IsBlank))

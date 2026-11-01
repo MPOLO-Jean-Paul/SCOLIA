@@ -35,6 +35,9 @@ public static class Platform
     /// <summary>Ouvre un document enregistré, un PDF ou un classeur, avec l'application du téléphone.</summary>
     public static Action<string>? OpenFile { get; set; }
 
+    /// <summary>Décodeur d'images du téléphone (photo HEIC, TIFF…) : rend un PNG, ou rien s'il ne sait pas lire.</summary>
+    public static Func<byte[], byte[]?>? DecodeImage { get; set; }
+
     /// <summary>Ouvre une adresse : WhatsApp, SMS, appel, e-mail ou page web.</summary>
     public static Action<string>? OpenUri { get; set; }
 

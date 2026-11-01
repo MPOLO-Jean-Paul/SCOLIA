@@ -34,6 +34,7 @@ public static class IosPlatform
         Platform.LocalServer = null;
         Platform.OpenUri = OpenUri;
         Platform.OpenFile = OpenFile;
+        Platform.DecodeImage = DecodeImage;
         Platform.PlayWave = PlayWave;
         Platform.OpenTailscale = OpenTailscale;
         Platform.OpenTailscaleInstallPage = OpenTailscale;
@@ -71,6 +72,14 @@ public static class IosPlatform
             popover.PermittedArrowDirections = 0;
         }
         host.PresentViewController(share, true, null);
+    }
+
+    /// <summary>Photo HEIC de l'iPhone, TIFF et autres formats lus par iOS : rendus en PNG.</summary>
+    private static byte[]? DecodeImage(byte[] data)
+    {
+        using var image = UIImage.LoadFromData(NSData.FromArray(data));
+        using var png = image?.AsPNG();
+        return png?.ToArray();
     }
 
     private static UIViewController? TopController()

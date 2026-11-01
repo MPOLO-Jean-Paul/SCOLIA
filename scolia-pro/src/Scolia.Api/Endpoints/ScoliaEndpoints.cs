@@ -149,10 +149,12 @@ public static class ScoliaEndpoints
             byte[]? content = null;
             if (fichier is not null)
             {
-                if (fichier.ContentType is not ("image/jpeg" or "image/png" or "image/webp")) throw new DomainException("photo", "La photo doit être au format JPEG, PNG ou WebP.");
                 using var ms = new MemoryStream();
                 await fichier.CopyToAsync(ms, ct);
                 content = ms.ToArray();
+                // Type lu dans le fichier, pas dans l'en-tête de l'envoi (souvent absent depuis les applications).
+                if (ImageKind.Detect(content) is not ("image/jpeg" or "image/png" or "image/webp"))
+                    throw new DomainException("photo", "La photo doit être au format JPEG, PNG ou WebP.");
             }
             await s.SetPhotoAsync(id, content, ct);
             return Results.NoContent();

@@ -35,5 +35,7 @@
     <PackageVersion Include="Avalonia.Headless" Version="12.1.4" />
     <PackageVersion Include="Avalonia.Controls.DataGrid" Version="12.1.2" />
     <PackageVersion Include="Material.Icons.Avalonia" Version="3.0.2" />
+    <!-- Logos au format SVG : dessinés en image par SkiaSharp, la même version que celle d'Avalonia -->
+    <PackageVersion Include="Svg.Skia" Version="4.9.1" />
 </ItemGroup>
 </Project>

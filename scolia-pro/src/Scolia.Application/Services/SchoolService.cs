@@ -48,7 +48,14 @@ public sealed class SchoolService(IAppDbContext db, IWriteGate gate, IAuditLog a
     public Task SetLogoAsync(byte[]? content, string? contentType, CancellationToken ct = default) => gate.RunAsync(async () =>
     {
         if (content is { Length: > 2_000_000 }) throw new DomainException("logo", "Le logo ne doit pas dépasser 2 Mo.");
-        if (content is not null && contentType is not ("image/png" or "image/jpeg")) throw new DomainException("logo", "Le logo doit être une image PNG ou JPEG.");
+        // Le type est lu dans le fichier lui-même : un envoi sans type déclaré, ou mal déclaré, reste accepté.
+        // Les applications SCOLIA convertissent déjà toute image (GIF, WebP, SVG, HEIC…) en PNG avant l'envoi.
+        if (content is not null)
+        {
+            contentType = ImageKind.Detect(content);
+            if (contentType is not ("image/png" or "image/jpeg"))
+                throw new DomainException("logo", "Ce fichier n'est pas une image lisible. Choisissez le logo depuis l'application SCOLIA : elle convertit toute image courante.");
+        }
         var s = await db.Schools.OrderBy(x => x.CreatedAtUtc).FirstAsync(ct);
         s.Logo = content; s.LogoContentType = contentType;
         audit.Record("etablissement.logo", "Etablissement", s.Id.ToString(), content is null ? "Logo retiré." : "Logo remplacé.");

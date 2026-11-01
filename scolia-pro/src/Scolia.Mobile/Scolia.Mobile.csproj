@@ -55,6 +55,7 @@
     <PackageReference Include="Avalonia.Themes.Fluent" />
     <PackageReference Include="Avalonia.Controls.DataGrid" />
     <PackageReference Include="Material.Icons.Avalonia" />
+    <PackageReference Include="Svg.Skia" />
   </ItemGroup>
 
   <!-- Les espaces de noms d'Android ne sont pas ajoutés d'office : ils entreraient en conflit avec ceux d'Avalonia

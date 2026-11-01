@@ -501,12 +501,29 @@ public partial class MainView : UserControl
         {
             Title = "Choisir un fichier",
             AllowMultiple = false,
-            FileTypeFilter = [new FilePickerFileType("Fichiers acceptés") { Patterns = extensions.Select(e => "*" + e).ToList() }],
+            FileTypeFilter = [FileTypeFor(extensions)],
         });
         if (files.Count == 0) return null;
         await using var stream = await files[0].OpenReadAsync();
         using var memory = new MemoryStream();
         await stream.CopyToAsync(memory);
         return new PickedFile(files[0].Name, memory.ToArray());
+    }
+
+    /// <summary>
+    /// Filtre du sélecteur. Pour une image, le téléphone filtre par type (image/*) et non par extension :
+    /// toutes les photos et images de la galerie restent proposées.
+    /// </summary>
+    private static FilePickerFileType FileTypeFor(IReadOnlyList<string> extensions)
+    {
+        var images = extensions.Count > 0 && extensions.All(e => LogoImage.Extensions.Contains(e, StringComparer.OrdinalIgnoreCase));
+        return images
+            ? new FilePickerFileType("Images")
+            {
+                Patterns = extensions.Select(e => "*" + e).ToList(),
+                MimeTypes = ["image/*"],
+                AppleUniformTypeIdentifiers = ["public.image", "public.svg-image"],
+            }
+            : new FilePickerFileType("Fichiers acceptés") { Patterns = extensions.Select(e => "*" + e).ToList() };
     }
 }

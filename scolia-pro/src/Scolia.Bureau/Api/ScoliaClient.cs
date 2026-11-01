@@ -359,13 +359,33 @@ public sealed class ScoliaClient : IDisposable
     public async Task<T> UploadAsync<T>(HttpMethod method, string path, IEnumerable<UploadedFile> files, CancellationToken ct = default)
     {
         using var content = new MultipartFormDataContent();
-        foreach (var file in files) content.Add(new ByteArrayContent(file.Data), file.Field, file.FileName);
+        foreach (var file in files)
+        {
+            // Le type du fichier accompagne l'envoi : le serveur et les journaux savent ce qu'ils reçoivent.
+            var part = new ByteArrayContent(file.Data);
+            part.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(MediaTypeOf(file.FileName));
+            content.Add(part, file.Field, file.FileName);
+        }
         using var request = new HttpRequestMessage(method, path) { Content = content };
         using var response = await http.SendAsync(request, ct);
         if (!response.IsSuccessStatusCode) throw await ToException(response);
         if (response.StatusCode == HttpStatusCode.NoContent) return default!;
         return (await response.Content.ReadFromJsonAsync<T>(Json.Options, ct))!;
     }
+
+    private static string MediaTypeOf(string fileName) => Path.GetExtension(fileName).ToLowerInvariant() switch
+    {
+        ".png" => "image/png",
+        ".jpg" or ".jpeg" or ".jpe" or ".jfif" => "image/jpeg",
+        ".webp" => "image/webp",
+        ".gif" => "image/gif",
+        ".xlsx" => "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        ".csv" => "text/csv",
+        ".pdf" => "application/pdf",
+        ".zip" => "application/zip",
+        ".db" or ".sqlite" => "application/vnd.sqlite3",
+        _ => "application/octet-stream",
+    };
 
     /// <summary>Construit une chaîne de requête. Les valeurs vides sont omises.</summary>
     public static string Query(params (string Key, object? Value)[] parameters)

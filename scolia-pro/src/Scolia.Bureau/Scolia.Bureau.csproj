@@ -19,6 +19,7 @@
     <PackageReference Include="Avalonia.Themes.Fluent" />
     <PackageReference Include="Avalonia.Controls.DataGrid" />
     <PackageReference Include="Material.Icons.Avalonia" />
+    <PackageReference Include="Svg.Skia" />
   </ItemGroup>
 
   <ItemGroup>

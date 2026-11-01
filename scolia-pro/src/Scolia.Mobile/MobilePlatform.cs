@@ -34,6 +34,7 @@ public static class MobilePlatform
         Platform.DocumentsFolder = app.GetExternalFilesDir(Android.OS.Environment.DirectoryDocuments)?.AbsolutePath
             ?? Path.Combine(app.FilesDir?.AbsolutePath ?? Path.GetTempPath(), "Documents");
         Platform.OpenFile = OpenFile;
+        Platform.DecodeImage = DecodeImage;
         Platform.OpenUri = OpenUri;
         Platform.OpenTailscale = OpenTailscale;
         Platform.IsTailscaleInstalled = IsTailscaleInstalled;
@@ -88,6 +89,15 @@ public static class MobilePlatform
         {
             Toast.MakeText(ctx, "Aucune application du téléphone ne sait ouvrir ce document.", ToastLength.Long)?.Show();
         }
+    }
+
+    /// <summary>Images que seul Android sait lire (photo HEIF/HEIC des téléphones récents) : rendues en PNG.</summary>
+    private static byte[]? DecodeImage(byte[] data)
+    {
+        using var bitmap = Android.Graphics.BitmapFactory.DecodeByteArray(data, 0, data.Length);
+        if (bitmap is null) return null;
+        using var output = new MemoryStream();
+        return bitmap.Compress(Android.Graphics.Bitmap.CompressFormat.Png!, 100, output) ? output.ToArray() : null;
     }
 
     private static void OpenUri(string address)

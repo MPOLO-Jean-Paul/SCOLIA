@@ -771,9 +771,18 @@ public sealed class SettingsPage : PageViewModel
     private async Task ChangeLogoAsync()
     {
         if (Shell.PickFileHandler is null) return;
-        var picked = await Shell.PickFileHandler([".png", ".jpg", ".jpeg"]);
+        var picked = await Shell.PickFileHandler(LogoImage.Extensions);
         if (picked is null) return;
-        await Shell.Api.UploadAsync<object>(HttpMethod.Put, "api/etablissement/logo", [new UploadedFile("fichier", picked.Name, picked.Data)]);
+        // Toute image courante est acceptée : SCOLIA la convertit en PNG net, redressé, de 512 points au plus.
+        byte[] png;
+        try { png = await Task.Run(() => LogoImage.ToPng(picked.Data, picked.Name)); }
+        catch (LogoImageException ex)
+        {
+            Shell.Notify(ex.Message);
+            return;
+        }
+        await Shell.Api.UploadAsync<object>(HttpMethod.Put, "api/etablissement/logo",
+            [new UploadedFile("fichier", Path.ChangeExtension(picked.Name, ".png"), png)]);
         await Shell.RefreshLogoAsync();
         Shell.Notify("Logo mis à jour. Il figure désormais sur l'écran de connexion, les reçus, les listes et les cartes.");
     }

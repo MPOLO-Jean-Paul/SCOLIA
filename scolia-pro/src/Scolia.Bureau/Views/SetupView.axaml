@@ -123,7 +123,7 @@
                 <StackPanel Spacing="6" Margin="0,0,18,0" Width="112">
                   <Button Command="{Binding PickLogo}" Width="112" Height="112" Padding="0" CornerRadius="16"
                           Background="{DynamicResource Surface2Brush}" BorderBrush="{DynamicResource LineBrush}" BorderThickness="1"
-                          HorizontalContentAlignment="Center" VerticalContentAlignment="Center" ToolTip.Tip="Choisir le logo : image PNG ou JPEG, de préférence carrée.">
+                          HorizontalContentAlignment="Center" VerticalContentAlignment="Center" ToolTip.Tip="Choisir le logo : toute image (PNG, JPEG, WebP, SVG, photo…), de préférence carrée.">
                     <Panel>
                       <Image Source="{Binding Logo}" IsVisible="{Binding HasLogo}" Width="96" Height="96" />
                       <StackPanel IsVisible="{Binding !HasLogo}" Spacing="4" HorizontalAlignment="Center">
