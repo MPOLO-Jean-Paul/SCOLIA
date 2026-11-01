@@ -199,6 +199,33 @@
       </StackPanel>
     </Border>
 
+    <TextBlock Text="Mise en veille" Classes="hubsection" />
+    <Border Classes="hubgroup">
+      <StackPanel>
+        <Grid ColumnDefinitions="Auto,*" Margin="16,14,16,8">
+          <Border Classes="hubicon"><mi:MaterialIcon Kind="LockClock" /></Border>
+          <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+            <TextBlock Text="Verrouillage automatique" Classes="hubtitle" />
+            <TextBlock Text="{Binding LockSummary}" Classes="hubsub" />
+          </StackPanel>
+        </Grid>
+        <ComboBox x:Name="LockDelay" ItemsSource="{Binding LockChoices}" SelectedItem="{Binding LockChoice}"
+                  HorizontalAlignment="Stretch" Margin="72,0,16,12" MinHeight="44" />
+        <Border Classes="hubdivider" />
+        <Button x:Name="LockNowRow" Classes="hubrow" Command="{Binding LockNow}">
+          <Grid ColumnDefinitions="Auto,*,Auto">
+            <Border Classes="hubicon"><mi:MaterialIcon Kind="LockOutline" /></Border>
+            <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+              <TextBlock Text="Verrouiller maintenant" Classes="hubtitle" />
+              <TextBlock Text="Avant de laisser l'appareil : le code sera redemandé" Classes="hubsub" />
+            </StackPanel>
+            <mi:MaterialIcon Grid.Column="2" Kind="ChevronRight" Width="22" Height="22" Margin="8,0,0,0"
+                             Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" />
+          </Grid>
+        </Button>
+      </StackPanel>
+    </Border>
+
     <TextBlock Text="Bon à savoir" Classes="hubsection" />
     <Border Classes="hubgroup" Padding="18,16">
       <StackPanel Spacing="14">

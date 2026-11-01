@@ -8,7 +8,7 @@ rapport journalier envoyé automatiquement, audit complet et catalogue du foncti
 | Contrôle | Résultat |
 |---|---|
 | Tests de l'application (Bureau) | 253 réussis, 0 échec |
-| Tests du serveur | 217 réussis, 0 échec, dont 7 nouveaux pour le rapport journalier |
+| Tests du serveur | 223 réussis, 0 échec, dont 9 nouveaux pour le rapport journalier (e-mail compris) |
 | Tests du téléphone serveur (PDF) | 11 réussis, 0 échec, dont 1 nouveau pour le rapport journalier |
 | Commandes essayées une à une, téléphone | 135, 0 à revoir |
 | Commandes essayées une à une, ordinateur | 173, 0 à revoir |
@@ -58,6 +58,28 @@ rapport journalier envoyé automatiquement, audit complet et catalogue du foncti
 
 ### Info sur l'application
 - Dans Aide, juste après « À propos ». Le catalogue compte 12 modules et 50 fonctions décrites, avec une recherche.
+
+### Complément : envoi par e-mail et mise en veille
+
+#### Rapport par e-mail
+- Dans « Planifier », la partie « Destinataires » accepte des numéros WhatsApp et des adresses e-mail : l'un, l'autre ou les deux.
+- La partie « Envoi par e-mail » demande le serveur de messagerie, le port, la connexion chiffrée, l'identifiant et le mot de passe, chiffré sur l'ordinateur principal. L'adresse d'envoi est facultative.
+- Exemple avec Gmail :
+  - serveur smtp.gmail.com, port 587, connexion chiffrée ;
+  - un « mot de passe d'application » créé dans le compte Google.
+- Le PDF part en pièce jointe. Si un canal échoue, l'autre part quand même, et le message indique ce qui est parti.
+- Vérifié par un test : un petit serveur de messagerie lancé pour l'occasion reçoit bien le message, avec le PDF et le bon destinataire.
+
+#### Mise en veille
+- Réglage dans Sécurité du compte, rubrique « Mise en veille » : Jamais, 1, 2, 5, 10, 15 ou 30 minutes. 5 minutes par défaut.
+- Sans toucher, clic ni frappe pendant ce délai, SCOLIA se verrouille. Le temps passé en arrière-plan compte aussi.
+- L'écran « SCOLIA est en veille » redemande le code, ou l'empreinte si elle est activée.
+- La session reste ouverte derrière : on reprend exactement sur la même page.
+- Un mauvais code compte comme une erreur de connexion : cinq erreurs, deux minutes de blocage.
+- Sans réseau, le code est vérifié sur l'appareil.
+- En veille, aucune bannière ne s'affiche : le contenu reste privé.
+- Le geste retour et les raccourcis clavier sont bloqués.
+- « Verrouiller maintenant » met en veille tout de suite ; « Changer de compte » ferme la session.
 
 ## 4. Limites à connaître
 

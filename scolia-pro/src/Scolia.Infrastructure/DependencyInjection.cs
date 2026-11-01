@@ -45,6 +45,7 @@ public static class DependencyInjection
         services.AddHttpClient("whatsapp", c => c.Timeout = TimeSpan.FromSeconds(60));
         services.AddSingleton<Reports.DailyReportStore>();
         services.AddSingleton<Reports.WhatsAppCloudSender>();
+        services.AddSingleton<Reports.EmailReportSender>();
         services.AddSingleton<Reports.DailyReportRunner>();
         services.AddHostedService<Reports.DailyReportWorker>();
         services.AddHostedService<Network.LanAnnouncer>();

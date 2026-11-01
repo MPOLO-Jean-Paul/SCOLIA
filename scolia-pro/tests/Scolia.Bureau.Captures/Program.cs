@@ -146,6 +146,8 @@ Application.Current!.DataTemplates.Add(new ViewLocator());
 var api = new ScoliaClient(server);
 var prefs = Preferences.Load();
 prefs.Theme = dark ? "dark" : "light";
+// Les parcours durent plusieurs minutes sans toucher simulé : la mise en veille ne doit pas les interrompre.
+prefs.LockMinutes = 0;
 // Captures figées : les animations se rejouent à l'écran, une image doit montrer l'état final.
 prefs.Animations = Environment.GetEnvironmentVariable("SCOLIA_ANIMATIONS") == "1";
 prefs.Accent = Environment.GetEnvironmentVariable("SCOLIA_ACCENT") ?? "bleu";
@@ -761,6 +763,109 @@ if (args.Length > 3 && args[3] == "alertes")
     window.Close();
     Console.WriteLine(alertFailures == 0 ? "Alertes : tout est en place." : $"Alertes : {alertFailures} échec(s).");
     Environment.ExitCode = alertFailures == 0 ? 0 : 1;
+    return;
+}
+
+// Mise en veille (argument « veille ») : délai écoulé, écran verrouillé, mauvais code refusé, bon code, empreinte, retour.
+if (args.Length > 3 && args[3] == "veille")
+{
+    window.Width = 360;
+    window.Height = 760;
+    var lockFailures = 0;
+    void LockCheck(string label, bool ok)
+    {
+        Console.WriteLine($"{(ok ? "OK  " : "ECHEC")} {label}");
+        if (!ok) lockFailures++;
+    }
+    void Settle(int ms)
+    {
+        var until = DateTime.UtcNow.AddMilliseconds(ms);
+        while (DateTime.UtcNow < until) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(10); }
+    }
+    Wait(shell.OpenSessionAsync(Result(api.LoginAsync("admin", password))));
+    var receiptsPage = new ReceiptsPage(shell);
+    Wait(shell.Open(() => receiptsPage));
+    prefs.LockMinutes = 2;
+    shell.NoteActivity();
+    shell.CheckIdle(DateTime.UtcNow.AddSeconds(90));
+    LockCheck("Avant le délai : pas de veille", !shell.IsLocked);
+    shell.CheckIdle(DateTime.UtcNow.AddMinutes(3));
+    LockCheck("Délai écoulé : SCOLIA se met en veille", shell.IsLocked && shell.ShowLockScreen);
+    shell.ShowAlert(new AppAlert(AlertKind.Payment, "Nouvel encaissement", "Reçu R-1", "Secrétariat"));
+    LockCheck("En veille : aucune bannière sur l'écran verrouillé", !shell.HasBanner);
+    Settle(300);
+    Save(window, "veille-ecran.png");
+
+    shell.LockScreen.Code = "mauvais-code";
+    shell.LockScreen.Unlock.Execute(null);
+    var limit = DateTime.UtcNow.AddSeconds(10);
+    while (DateTime.UtcNow < limit && !shell.LockScreen.HasError) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(10); }
+    LockCheck($"Mauvais code refusé : « {shell.LockScreen.Error} »", shell.IsLocked && shell.LockScreen.HasError);
+    Settle(200);
+    Save(window, "veille-erreur.png");
+
+    shell.LockScreen.Code = password;
+    shell.LockScreen.Unlock.Execute(null);
+    limit = DateTime.UtcNow.AddSeconds(10);
+    while (DateTime.UtcNow < limit && shell.IsLocked) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(10); }
+    LockCheck("Bon code : retour exact sur la même page", !shell.IsLocked && shell.Current == receiptsPage);
+
+    // Retour d'arrière-plan après le délai : le temps passé hors de SCOLIA compte.
+    shell.CheckIdle(DateTime.UtcNow.AddMinutes(5));
+    LockCheck("Retour après 5 minutes en arrière-plan : en veille", shell.IsLocked);
+
+    // Empreinte : le téléphone rend l'accès scellé pour ce compte.
+    string? chip = BiometricAccess.Seal("admin", password);
+    Platform.IsMobile = true;
+    Platform.IsBiometricAvailable = () => true;
+    Platform.UnlockBiometricAsync = () => Task.FromResult(chip);
+    BiometricAccess.Enable(server, "admin");
+    shell.LockScreen.Shown();
+    LockCheck("Empreinte proposée sur l'écran de veille", shell.LockScreen.CanUseBiometrics);
+    Settle(200);
+    Save(window, "veille-empreinte.png");
+    shell.LockScreen.UnlockWithBiometrics.Execute(null);
+    limit = DateTime.UtcNow.AddSeconds(10);
+    while (DateTime.UtcNow < limit && shell.IsLocked) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(10); }
+    LockCheck("Empreinte : déverrouillé", !shell.IsLocked);
+    BiometricAccess.Disable();
+    Platform.UnlockBiometricAsync = null;
+    Platform.IsMobile = false;
+
+    // Réglage dans Sécurité du compte, puis « Verrouiller maintenant ».
+    shell.OpenBackstage();
+    shell.Backstage.Section = shell.Backstage.Items.First(i => i.Value == "mot-de-passe");
+    shell.Backstage.LockChoice = shell.Backstage.LockChoices.First(c => c.Value == "10");
+    LockCheck($"Réglage : {shell.Backstage.LockSummary}", prefs.LockMinutes == 10);
+    Settle(300);
+    var hubScroll = window.GetVisualDescendants().OfType<ComboBox>().FirstOrDefault(c => c.Name == "LockDelay");
+    hubScroll?.BringIntoView();
+    Settle(300);
+    Save(window, "veille-reglage.png");
+    shell.Backstage.LockNow.Execute(null);
+    LockCheck("Verrouiller maintenant", shell.IsLocked && !shell.BackstageOpen);
+    shell.CheckIdle();
+
+    // Jamais : plus de mise en veille.
+    shell.LockScreen.Code = password;
+    shell.LockScreen.Unlock.Execute(null);
+    limit = DateTime.UtcNow.AddSeconds(10);
+    while (DateTime.UtcNow < limit && shell.IsLocked) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(10); }
+    prefs.LockMinutes = 0;
+    shell.CheckIdle(DateTime.UtcNow.AddHours(3));
+    LockCheck("Réglé sur « Jamais » : pas de veille", !shell.IsLocked);
+
+    // Changer de compte : la session se ferme.
+    shell.LockNow();
+    shell.LockScreen.SwitchAccount.Execute(null);
+    limit = DateTime.UtcNow.AddSeconds(10);
+    while (DateTime.UtcNow < limit && shell.IsLoggedIn) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(10); }
+    LockCheck("Changer de compte : retour à la connexion", !shell.IsLoggedIn && !shell.IsLocked);
+
+    shell.Sync.Stop();
+    window.Close();
+    Console.WriteLine(lockFailures == 0 ? "Veille : tout est en place." : $"Veille : {lockFailures} échec(s).");
+    Environment.ExitCode = lockFailures == 0 ? 0 : 1;
     return;
 }
 

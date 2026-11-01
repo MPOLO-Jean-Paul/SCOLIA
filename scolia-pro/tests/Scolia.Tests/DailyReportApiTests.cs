@@ -58,6 +58,112 @@ public sealed class DailyReportApiTests : IDisposable
     }
 }
 
+/// <summary>Envoi par e-mail : un vrai dialogue SMTP avec un petit serveur de messagerie lancé pour le test.</summary>
+public sealed class DailyReportEmailTests : IDisposable
+{
+    private readonly ScoliaApp app = new();
+    public void Dispose() => app.Dispose();
+
+    [Fact]
+    public async Task Le_rapport_part_aussi_par_email_avec_le_pdf_en_piece_jointe()
+    {
+        using var smtp = new FakeSmtpServer();
+        var admin = await app.InstalledAdmin();
+        var saved = await admin.PutAsJsonAsync("/api/rapports/journalier/reglages", new
+        {
+            enabled = true, time = "18:00", recipients = Array.Empty<string>(),
+            emailRecipients = new[] { "direction@ecole.cd" },
+            smtpHost = "127.0.0.1", smtpPort = smtp.Port, smtpSsl = false, smtpFrom = "scolia@ecole.cd",
+            smtpUser = "scolia@ecole.cd", smtpPassword = "mot-de-passe-messagerie",
+        });
+        Assert.True(saved.IsSuccessStatusCode, await saved.Content.ReadAsStringAsync());
+        var settings = await (await admin.GetAsync("/api/rapports/journalier/reglages")).Content.ReadAsStringAsync();
+        Assert.Contains("\"emailReady\":true", settings);
+        Assert.DoesNotContain("mot-de-passe-messagerie", settings);
+        var file = Directory.GetFiles(app.DataDirectory, "rapport-journalier.json", SearchOption.AllDirectories).Single();
+        Assert.DoesNotContain("mot-de-passe-messagerie", File.ReadAllText(file));
+
+        var sent = await admin.PostAsync("/api/rapports/journalier/envoyer", null);
+        var body = await sent.Content.ReadAsStringAsync();
+        Assert.True(sent.IsSuccessStatusCode, body);
+        Assert.Contains("envoyé par e-mail à 1 adresse(s)", body);
+        var mail = smtp.Messages.Single();
+        Assert.Contains("RCPT TO:<direction@ecole.cd>", mail.Envelope);
+        Assert.Contains("application/pdf", mail.Data);
+        Assert.Contains("rapport-journalier-", mail.Data);
+    }
+
+    [Fact]
+    public async Task Une_adresse_invalide_est_refusee()
+    {
+        var admin = await app.InstalledAdmin();
+        var refused = await admin.PutAsJsonAsync("/api/rapports/journalier/reglages",
+            new { enabled = true, time = "18:00", emailRecipients = new[] { "direction-ecole" } });
+        Assert.Equal(HttpStatusCode.BadRequest, refused.StatusCode);
+    }
+}
+
+/// <summary>Serveur SMTP minimal : il accepte les messages et les garde pour le test, sans rien envoyer ailleurs.</summary>
+public sealed class FakeSmtpServer : IDisposable
+{
+    public sealed record Received(string Envelope, string Data);
+    private readonly System.Net.Sockets.TcpListener listener = new(System.Net.IPAddress.Loopback, 0);
+    private readonly CancellationTokenSource stop = new();
+    public System.Collections.Concurrent.ConcurrentQueue<Received> Messages { get; } = new();
+    public int Port => ((System.Net.IPEndPoint)listener.LocalEndpoint).Port;
+
+    public FakeSmtpServer()
+    {
+        listener.Start();
+        _ = Task.Run(AcceptAsync);
+    }
+
+    private async Task AcceptAsync()
+    {
+        while (!stop.IsCancellationRequested)
+        {
+            System.Net.Sockets.TcpClient client;
+            try { client = await listener.AcceptTcpClientAsync(stop.Token); }
+            catch (Exception) { return; }
+            _ = Task.Run(() => ServeAsync(client));
+        }
+    }
+
+    private async Task ServeAsync(System.Net.Sockets.TcpClient client)
+    {
+        using var _ = client;
+        using var stream = client.GetStream();
+        using var reader = new StreamReader(stream, System.Text.Encoding.ASCII);
+        using var writer = new StreamWriter(stream, System.Text.Encoding.ASCII) { NewLine = "\r\n", AutoFlush = true };
+        await writer.WriteLineAsync("220 test ESMTP");
+        var envelope = new System.Text.StringBuilder();
+        while (await reader.ReadLineAsync() is { } line)
+        {
+            var verb = line.Split(' ', 2)[0].ToUpperInvariant();
+            if (verb is "EHLO") { await writer.WriteLineAsync("250-test"); await writer.WriteLineAsync("250-AUTH LOGIN PLAIN"); await writer.WriteLineAsync("250 OK"); }
+            else if (verb is "HELO") await writer.WriteLineAsync("250 OK");
+            else if (verb is "AUTH") await writer.WriteLineAsync("235 OK");
+            else if (verb is "MAIL" or "RCPT") { envelope.AppendLine(line); await writer.WriteLineAsync("250 OK"); }
+            else if (verb is "DATA")
+            {
+                await writer.WriteLineAsync("354 Envoyez");
+                var data = new System.Text.StringBuilder();
+                while (await reader.ReadLineAsync() is { } d && d != ".") data.AppendLine(d);
+                Messages.Enqueue(new Received(envelope.ToString(), data.ToString()));
+                await writer.WriteLineAsync("250 OK");
+            }
+            else if (verb is "QUIT") { await writer.WriteLineAsync("221 Au revoir"); return; }
+            else await writer.WriteLineAsync("250 OK");
+        }
+    }
+
+    public void Dispose()
+    {
+        stop.Cancel();
+        listener.Stop();
+    }
+}
+
 /// <summary>Heure d'envoi : le jour du rapport, avec le rattrapage de la veille si l'ordinateur était éteint.</summary>
 public sealed class DailyReportScheduleTests
 {

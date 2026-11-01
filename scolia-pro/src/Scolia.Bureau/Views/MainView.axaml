@@ -492,6 +492,10 @@
         <ContentControl Content="{Binding FullScreenDialogContent}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" />
       </Border>
 
+      <!-- Mise en veille : au-dessus de tout, jusqu'au code ou à l'empreinte -->
+      <ContentControl x:Name="LockHost" Content="{Binding LockScreen}" IsVisible="{Binding ShowLockScreen}"
+                      HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" />
+
       <!-- Traitement qui dure : un indicateur au centre, la fenêtre reste visible mais n'accepte pas de second clic -->
       <Border Classes="working" Background="#14000000" IsVisible="{Binding Working}">
         <Border Classes="card" HorizontalAlignment="Center" VerticalAlignment="Center" Padding="22,16" BoxShadow="0 8 28 0 #33000000">

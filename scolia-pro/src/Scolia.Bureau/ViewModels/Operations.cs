@@ -722,6 +722,36 @@ public sealed class BackstageViewModel : Observable
         RefreshSecurity();
     }
 
+    // ---------- Mise en veille : délai réglable sur cet appareil ----------
+    public IReadOnlyList<ChoiceItem> LockChoices { get; } = Preferences.LockDelays
+        .Select(m => new ChoiceItem(m.ToString(System.Globalization.CultureInfo.InvariantCulture),
+            m == 0 ? "Jamais" : m == 1 ? "Après 1 minute" : $"Après {m} minutes")).ToList();
+
+    /// <summary>Délai choisi : sans activité pendant ce temps, SCOLIA se met en veille et redemande le code.</summary>
+    public ChoiceItem? LockChoice
+    {
+        get => LockChoices.FirstOrDefault(c => c.Value == shell.Prefs.LockMinutes.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        set
+        {
+            if (value is null || !int.TryParse(value.Value, out var minutes) || minutes == shell.Prefs.LockMinutes) return;
+            shell.Prefs.LockMinutes = minutes;
+            Raise(nameof(LockChoice));
+            Raise(nameof(LockSummary));
+            shell.NoteActivity();
+        }
+    }
+    public string LockSummary => shell.Prefs.LockMinutes == 0
+        ? "Désactivée : la session reste ouverte jusqu'à la déconnexion"
+        : $"Verrouillage après {(shell.Prefs.LockMinutes == 1 ? "1 minute" : $"{shell.Prefs.LockMinutes} minutes")} sans activité, aussi en arrière-plan";
+
+    /// <summary>Verrouille tout de suite, par exemple avant de laisser l'appareil sur le bureau.</summary>
+    public RelayCommand LockNow => lockNow ??= new RelayCommand(() =>
+    {
+        shell.CloseBackstage();
+        shell.LockNow();
+    });
+    private RelayCommand? lockNow;
+
     // ---------- Présentation façon Android 16 : un état en tête, puis des lignes qui s'ouvrent sur place ----------
     private bool codeProvisional;
     private bool codeEditorOpen;

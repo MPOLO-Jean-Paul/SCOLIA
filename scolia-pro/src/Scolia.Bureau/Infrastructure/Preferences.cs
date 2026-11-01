@@ -117,6 +117,7 @@ public sealed class Preferences : Observable
     private bool soundNotify;
     private bool soundOpening = true;
     private bool alerts = true;
+    private int lockMinutes = 5;
     private bool alertPayments = true;
     private bool alertBackups = true;
     private bool alertReports = true;
@@ -167,6 +168,15 @@ public sealed class Preferences : Observable
     public bool SoundError { get => soundError; set => Set(ref soundError, value); }
     public bool SoundNotify { get => soundNotify; set => Set(ref soundNotify, value); }
     public bool SoundOpening { get => soundOpening; set => Set(ref soundOpening, value); }
+
+    /// <summary>Délais de mise en veille proposés, en minutes ; 0 : jamais.</summary>
+    public static readonly int[] LockDelays = [0, 1, 2, 5, 10, 15, 30];
+
+    /// <summary>
+    /// Mise en veille : sans toucher ni frappe pendant ce délai (ou après autant de temps en arrière-plan), SCOLIA se
+    /// verrouille et redemande le code ou l'empreinte. 0 : jamais.
+    /// </summary>
+    public int LockMinutes { get => lockMinutes; set => Set(ref lockMinutes, LockDelays.Contains(value) ? value : 5); }
 
     /// <summary>Bannières et notifications du téléphone pour ce qui se passe sur les autres postes.</summary>
     public bool Alerts { get => alerts; set => Set(ref alerts, value); }
@@ -387,6 +397,7 @@ public sealed class Preferences : Observable
         public bool SoundNotify { get; set; }
         public bool SoundOpening { get; set; } = true;
         public bool Alerts { get; set; } = true;
+        public int LockMinutes { get; set; } = 5;
         public bool AlertPayments { get; set; } = true;
         public bool AlertBackups { get; set; } = true;
         public bool AlertReports { get; set; } = true;
@@ -399,7 +410,7 @@ public sealed class Preferences : Observable
             Font = p.font, Startup = p.startup, Speed = p.speed, OpeningSeconds = p.openingSeconds, PageTransitions = p.pageTransitions,
             Sounds = p.sounds, SoundVolume = p.soundVolume, SoundStyle = p.soundStyle, SoundSuccess = p.soundSuccess,
             SoundError = p.soundError, SoundNotify = p.soundNotify, SoundOpening = p.soundOpening,
-            Alerts = p.alerts, AlertPayments = p.alertPayments, AlertBackups = p.alertBackups, AlertReports = p.alertReports, RecentSearches = [.. p.recentSearches],
+            Alerts = p.alerts, LockMinutes = p.lockMinutes, AlertPayments = p.alertPayments, AlertBackups = p.alertBackups, AlertReports = p.alertReports, RecentSearches = [.. p.recentSearches],
         };
 
         public void ApplyTo(Preferences p)
@@ -427,6 +438,7 @@ public sealed class Preferences : Observable
             p.SoundNotify = SoundNotify;
             p.SoundOpening = SoundOpening;
             p.Alerts = Alerts;
+            p.LockMinutes = LockMinutes;
             p.AlertPayments = AlertPayments;
             p.AlertBackups = AlertBackups;
             p.AlertReports = AlertReports;

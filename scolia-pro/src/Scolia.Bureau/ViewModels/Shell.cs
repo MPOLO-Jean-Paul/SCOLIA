@@ -759,6 +759,10 @@ public sealed class ShellViewModel : Observable
             await Task.Delay(TimeSpan.FromMilliseconds(minimum > TimeSpan.Zero ? 150 : 0));
         }
         finally { Opening = false; }
+        // La mise en veille compte à partir de l'ouverture de la session.
+        lastActivity = DateTime.UtcNow;
+        IsLocked = false;
+        StartIdleWatch();
         Sounds.Play(Prefs, SoundKind.Opening);
         // Code provisoire donné par le secrétariat : la personne choisit tout de suite son propre code PIN ou mot de passe.
         if (s.MustChangePassword)
@@ -1015,6 +1019,62 @@ public sealed class ShellViewModel : Observable
 
     public void CloseBackstage() => BackstageOpen = false;
 
+    // ---------- Mise en veille : après un temps sans activité, l'écran se verrouille ----------
+    private DateTime lastActivity = DateTime.UtcNow;
+    private bool locked;
+    private DispatcherTimer? idleTimer;
+
+    /// <summary>Écran de verrouillage, au-dessus de tout le reste quand SCOLIA est en veille.</summary>
+    public LockScreenViewModel LockScreen => lockScreen ??= new LockScreenViewModel(this);
+    private LockScreenViewModel? lockScreen;
+
+    public bool IsLocked
+    {
+        get => locked;
+        private set { if (Set(ref locked, value)) Raise(nameof(ShowLockScreen)); }
+    }
+    public bool ShowLockScreen => locked && IsLoggedIn;
+
+    /// <summary>Un toucher, un clic ou une frappe : le compte à rebours de la mise en veille repart.</summary>
+    public void NoteActivity()
+    {
+        if (!locked) lastActivity = DateTime.UtcNow;
+    }
+
+    /// <summary>
+    /// Vérifie le délai : appelée toutes les dix secondes et au retour de l'arrière-plan, pour que le temps passé hors de
+    /// SCOLIA compte aussi.
+    /// </summary>
+    public void CheckIdle(DateTime? now = null)
+    {
+        if (locked || !IsLoggedIn || Opening || Prefs.LockMinutes <= 0) return;
+        if ((now ?? DateTime.UtcNow) - lastActivity >= TimeSpan.FromMinutes(Prefs.LockMinutes)) LockNow(byRequest: false);
+    }
+
+    /// <summary>Met SCOLIA en veille tout de suite : la session reste ouverte, l'écran est caché.</summary>
+    public void LockNow(bool byRequest = true)
+    {
+        if (!IsLoggedIn) return;
+        Banner = null;
+        LockScreen.Shown(byRequest);
+        IsLocked = true;
+    }
+
+    /// <summary>Code ou empreinte vérifiés : retour exact là où la personne était.</summary>
+    public void Unlock()
+    {
+        IsLocked = false;
+        lastActivity = DateTime.UtcNow;
+    }
+
+    private void StartIdleWatch()
+    {
+        if (idleTimer is not null || Avalonia.Application.Current is null) return;
+        idleTimer = new DispatcherTimer(TimeSpan.FromSeconds(10), DispatcherPriority.Background, (_, _) => CheckIdle());
+        idleTimer.Start();
+        Platform.AppResumed += () => Dispatcher.UIThread.Post(() => CheckIdle());
+    }
+
     // ---------- Bannière en haut de l'écran : encaissement ou sauvegarde faits sur un autre poste ----------
     private AppAlert? banner;
     private int bannerToken;
@@ -1041,6 +1101,8 @@ public sealed class ShellViewModel : Observable
     public void ShowAlert(AppAlert alert)
     {
         if (Platform.IsInForeground?.Invoke() == false) Platform.ShowSystemNotification?.Invoke(alert);
+        // En veille, rien n'apparaît sur l'écran verrouillé : le contenu de l'alerte reste privé.
+        if (locked) return;
         var token = ++bannerToken;
         Banner = null;
         Banner = alert;
@@ -1556,6 +1618,8 @@ public sealed class ShellViewModel : Observable
         Sync.Stop();
         Sync.Forget();
         session = null;
+        IsLocked = false;
+        if (HasDialog) CloseDialog();
         Tabs.Clear();
         ClearHistory();
         Navigation = [];

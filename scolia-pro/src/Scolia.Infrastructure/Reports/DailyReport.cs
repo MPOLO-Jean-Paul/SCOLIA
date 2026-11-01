@@ -31,11 +31,23 @@ public sealed class DailyReportSettings
     /// <summary>Modèle de message approuvé par Meta, avec un document en en-tête : nécessaire pour écrire en premier.</summary>
     public string? WhatsAppTemplate { get; set; }
     public string WhatsAppLanguage { get; set; } = "fr";
+    /// <summary>Adresses e-mail qui reçoivent aussi le rapport, en pièce jointe.</summary>
+    public List<string> EmailRecipients { get; set; } = [];
+    public string? SmtpHost { get; set; }
+    public int SmtpPort { get; set; } = 587;
+    /// <summary>Connexion chiffrée (STARTTLS), exigée par Gmail, Outlook et la plupart des messageries.</summary>
+    public bool SmtpSsl { get; set; } = true;
+    public string? SmtpUser { get; set; }
+    public string? SmtpPassword { get; set; }
+    /// <summary>Adresse qui envoie ; par défaut, l'identifiant de connexion.</summary>
+    public string? SmtpFrom { get; set; }
     public string? LastDate { get; set; }
     public string? LastStatus { get; set; }
     public DateTime? LastRunUtc { get; set; }
 
     public bool WhatsAppReady => !string.IsNullOrWhiteSpace(WhatsAppPhoneNumberId) && !string.IsNullOrWhiteSpace(WhatsAppToken);
+    public bool EmailReady => !string.IsNullOrWhiteSpace(SmtpHost) && SmtpPort is > 0 and < 65536
+        && !string.IsNullOrWhiteSpace(SmtpFrom ?? SmtpUser);
 
     /// <summary>
     /// Journée dont le rapport doit partir maintenant : aujourd'hui une fois l'heure passée, sinon hier s'il n'est pas
@@ -54,8 +66,8 @@ public sealed class DailyReportSettings
 }
 
 /// <summary>
-/// Lecture et écriture des réglages, une à la fois. Le jeton WhatsApp est chiffré sur le disque par la protection
-/// de clés du serveur : copié ailleurs, le fichier ne le révèle pas.
+/// Lecture et écriture des réglages, une à la fois. Le jeton WhatsApp et le mot de passe de la messagerie sont chiffrés
+/// sur le disque par la protection de clés du serveur : copié ailleurs, le fichier ne les révèle pas.
 /// </summary>
 public sealed class DailyReportStore(IOptions<ScoliaStorageOptions> options, Microsoft.AspNetCore.DataProtection.IDataProtectionProvider? protection = null)
 {
@@ -90,6 +102,7 @@ public sealed class DailyReportStore(IOptions<ScoliaStorageOptions> options, Mic
                     ? JsonSerializer.Deserialize<DailyReportSettings>(File.ReadAllText(FilePath), Json) ?? new DailyReportSettings()
                     : new DailyReportSettings();
                 settings.WhatsAppToken = Open(settings.WhatsAppToken);
+                settings.SmtpPassword = Open(settings.SmtpPassword);
                 return settings;
             }
             catch (Exception ex) when (ex is IOException or JsonException or UnauthorizedAccessException) { return new DailyReportSettings(); }
@@ -102,10 +115,11 @@ public sealed class DailyReportStore(IOptions<ScoliaStorageOptions> options, Mic
         {
             Directory.CreateDirectory(storage.DataDirectory);
             var temporary = FilePath + ".tmp";
-            var token = settings.WhatsAppToken;
+            var (token, password) = (settings.WhatsAppToken, settings.SmtpPassword);
             settings.WhatsAppToken = Seal(token);
+            settings.SmtpPassword = Seal(password);
             try { File.WriteAllText(temporary, JsonSerializer.Serialize(settings, Json)); }
-            finally { settings.WhatsAppToken = token; }
+            finally { (settings.WhatsAppToken, settings.SmtpPassword) = (token, password); }
             File.Move(temporary, FilePath, overwrite: true);
         }
     }
@@ -191,12 +205,40 @@ public sealed class WhatsAppCloudSender(IHttpClientFactory clients)
     }
 }
 
+/// <summary>
+/// Envoi par e-mail : un message avec le PDF en pièce jointe, par le serveur de messagerie de l'établissement (SMTP),
+/// par exemple smtp.gmail.com, port 587, connexion chiffrée, avec un mot de passe d'application.
+/// </summary>
+public sealed class EmailReportSender
+{
+    public async Task<string> SendAsync(DailyReportSettings settings, byte[] pdf, string fileName, string subject, string body, CancellationToken ct)
+    {
+        var from = (settings.SmtpFrom ?? settings.SmtpUser)!.Trim();
+        using var message = new System.Net.Mail.MailMessage { From = new System.Net.Mail.MailAddress(from, "SCOLIA Pro"), Subject = subject, Body = body };
+        foreach (var address in settings.EmailRecipients) message.To.Add(address);
+        using var attachment = new System.Net.Mail.Attachment(new MemoryStream(pdf), fileName, "application/pdf");
+        message.Attachments.Add(attachment);
+#pragma warning disable SYSLIB0014 // SmtpClient reste le client SMTP fourni par .NET ; il suffit pour un message par jour.
+        using var client = new System.Net.Mail.SmtpClient(settings.SmtpHost!.Trim(), settings.SmtpPort)
+        {
+            EnableSsl = settings.SmtpSsl,
+            DeliveryMethod = System.Net.Mail.SmtpDeliveryMethod.Network,
+            Timeout = 60_000,
+        };
+#pragma warning restore SYSLIB0014
+        if (!string.IsNullOrWhiteSpace(settings.SmtpUser))
+            client.Credentials = new System.Net.NetworkCredential(settings.SmtpUser.Trim(), settings.SmtpPassword ?? string.Empty);
+        await client.SendMailAsync(message, ct);
+        return $"envoyé par e-mail à {settings.EmailRecipients.Count} adresse(s)";
+    }
+}
+
 /// <summary>Résultat d'un passage : le PDF fait, ce qui a été envoyé, et le message à montrer.</summary>
 public sealed record DailyReportRun(DateOnly Date, string FileName, string Status, DailyReportSummary Summary);
 
 /// <summary>Prépare le rapport d'une journée, l'enregistre, l'envoie si possible, et prévient les autres postes.</summary>
 public sealed class DailyReportRunner(IServiceScopeFactory scopes, DailyReportStore store, WhatsAppCloudSender sender,
-    Live.LiveHub live, DataRevision revision, ILogger<DailyReportRunner> logger)
+    EmailReportSender mailer, Live.LiveHub live, DataRevision revision, ILogger<DailyReportRunner> logger)
 {
     public async Task<DailyReportRun> RunAsync(DateOnly day, bool send, string trigger, CancellationToken ct)
     {
@@ -210,23 +252,8 @@ public sealed class DailyReportRunner(IServiceScopeFactory scopes, DailyReportSt
 
         var settings = store.Load();
         var countryCode = await db.Schools.AsNoTracking().OrderBy(s => s.CreatedAtUtc).Select(s => s.PhoneCountryCode).FirstOrDefaultAsync(ct) ?? "243";
-        string status;
-        if (!send) status = "PDF préparé";
-        else if (settings.Recipients.Count == 0) status = "PDF préparé ; aucun numéro configuré pour l'envoi";
-        else if (!settings.WhatsAppReady) status = "PDF préparé ; envoi WhatsApp automatique non configuré, partagez-le depuis SCOLIA";
-        else
-        {
-            try
-            {
-                status = await sender.SendAsync(settings, countryCode, pdf, name,
-                    $"Rapport journalier du {day:dd/MM/yyyy} · {summary.SchoolName}\n{summary.Text}", ct);
-            }
-            catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or JsonException or InvalidOperationException or KeyNotFoundException)
-            {
-                logger.LogWarning(ex, "Envoi WhatsApp du rapport journalier impossible");
-                status = "PDF préparé ; WhatsApp injoignable, l'envoi n'a pas pu se faire";
-            }
-        }
+        var caption = $"Rapport journalier du {day:dd/MM/yyyy} · {summary.SchoolName}\n{summary.Text}";
+        var status = send ? await SendAsync(settings, countryCode, pdf, name, caption, day, ct) : "PDF préparé";
         store.Update(s =>
         {
             s.LastRunUtc = DateTime.UtcNow;
@@ -238,7 +265,46 @@ public sealed class DailyReportRunner(IServiceScopeFactory scopes, DailyReportSt
             $"Rapport du {day:dd/MM/yyyy} prêt : {summary.Text}", ["RapportJournalier", day.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)]);
         return new DailyReportRun(day, name, status, summary);
     }
+
+    /// <summary>
+    /// Les deux canaux, chacun s'il est configuré : WhatsApp vers les numéros, e-mail vers les adresses. L'échec de
+    /// l'un n'empêche pas l'autre ; le message dit ce qui est parti et ce qui manque.
+    /// </summary>
+    private async Task<string> SendAsync(DailyReportSettings settings, string countryCode, byte[] pdf, string name, string caption,
+        DateOnly day, CancellationToken ct)
+    {
+        var parts = new List<string>();
+        if (settings.Recipients.Count > 0)
+        {
+            if (!settings.WhatsAppReady) parts.Add("WhatsApp non configuré, partagez le PDF depuis SCOLIA");
+            else
+            {
+                try { parts.Add(await sender.SendAsync(settings, countryCode, pdf, name, caption, ct)); }
+                catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or JsonException or InvalidOperationException or KeyNotFoundException)
+                {
+                    logger.LogWarning(ex, "Envoi WhatsApp du rapport journalier impossible");
+                    parts.Add("WhatsApp injoignable, l'envoi n'a pas pu se faire");
+                }
+            }
+        }
+        if (settings.EmailRecipients.Count > 0)
+        {
+            if (!settings.EmailReady) parts.Add("messagerie non configurée");
+            else
+            {
+                try { parts.Add(await mailer.SendAsync(settings, pdf, name, $"Rapport journalier du {day:dd/MM/yyyy}", caption, ct)); }
+                catch (Exception ex) when (ex is System.Net.Mail.SmtpException or IOException or InvalidOperationException
+                                           or FormatException or TaskCanceledException or System.Security.Authentication.AuthenticationException)
+                {
+                    logger.LogWarning(ex, "Envoi par e-mail du rapport journalier impossible");
+                    parts.Add($"e-mail refusé ({ex.Message.TrimEnd('.')})");
+                }
+            }
+        }
+        return parts.Count == 0 ? "PDF préparé ; aucun numéro ni aucune adresse configurés pour l'envoi" : "PDF préparé ; " + string.Join(" ; ", parts);
+    }
 }
+
 
 /// <summary>
 /// Chaque minute : si l'heure choisie est passée et que le rapport du jour n'est pas parti, il part. Si l'ordinateur

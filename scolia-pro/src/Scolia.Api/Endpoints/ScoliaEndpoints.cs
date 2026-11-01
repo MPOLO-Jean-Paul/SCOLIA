@@ -256,8 +256,16 @@ public static class ScoliaEndpoints
             var numbers = (input.Recipients ?? []).Select(n => n.Trim()).Where(n => n.Length > 0).Distinct().ToList();
             foreach (var n in numbers)
                 if (n.Count(char.IsDigit) is < 9 or > 15) throw new DomainException("numeros", $"Numéro invalide : {n}. Exemple : 0812345678 ou +243812345678.");
-            if (input.Enabled && numbers.Count == 0)
-                throw new DomainException("numeros", "Ajoutez au moins un numéro qui recevra le rapport.");
+            var emails = (input.EmailRecipients ?? []).Select(e => e.Trim()).Where(e => e.Length > 0).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+            foreach (var e in emails)
+                if (!System.Net.Mail.MailAddress.TryCreate(e, out var parsed) || parsed.Address != e || !e.Contains('.'))
+                    throw new DomainException("emails", $"Adresse e-mail invalide : {e}. Exemple : direction@ecole.cd");
+            if (input.Enabled && numbers.Count == 0 && emails.Count == 0)
+                throw new DomainException("numeros", "Ajoutez au moins un numéro WhatsApp ou une adresse e-mail qui recevra le rapport.");
+            if (input.SmtpPort is { } port && port is < 1 or > 65535)
+                throw new DomainException("smtpPort", "Port de messagerie invalide : 587 en général.");
+            if (!string.IsNullOrWhiteSpace(input.SmtpFrom) && !System.Net.Mail.MailAddress.TryCreate(input.SmtpFrom.Trim(), out _))
+                throw new DomainException("smtpFrom", $"Adresse d'envoi invalide : {input.SmtpFrom}.");
             store.Update(s =>
             {
                 s.Enabled = input.Enabled;
@@ -269,11 +277,20 @@ public static class ScoliaEndpoints
                 // Le jeton ne revient jamais à l'écran : vide le garde, « effacer » le retire.
                 if (input.ClearToken) s.WhatsAppToken = null;
                 else if (!string.IsNullOrWhiteSpace(input.WhatsAppToken)) s.WhatsAppToken = input.WhatsAppToken.Trim();
+                // Messagerie : même règle pour le mot de passe, jamais renvoyé à l'écran.
+                s.EmailRecipients = emails;
+                s.SmtpHost = string.IsNullOrWhiteSpace(input.SmtpHost) ? null : input.SmtpHost.Trim();
+                s.SmtpPort = input.SmtpPort ?? 587;
+                s.SmtpSsl = input.SmtpSsl ?? true;
+                s.SmtpUser = string.IsNullOrWhiteSpace(input.SmtpUser) ? null : input.SmtpUser.Trim();
+                s.SmtpFrom = string.IsNullOrWhiteSpace(input.SmtpFrom) ? null : input.SmtpFrom.Trim();
+                if (input.ClearSmtpPassword) s.SmtpPassword = null;
+                else if (!string.IsNullOrEmpty(input.SmtpPassword)) s.SmtpPassword = input.SmtpPassword;
                 // Réglage changé : le rapport du jour part à la nouvelle heure, sans renvoyer ceux des jours passés.
                 s.LastDate = DateOnly.FromDateTime(DateTime.Now).AddDays(-1).ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture);
             });
             log.Record("rapport.journalier.reglages", "RapportJournalier", null,
-                input.Enabled ? $"Rapport journalier programmé à {at.ToString("HH:mm", System.Globalization.CultureInfo.InvariantCulture)} pour {numbers.Count} numéro(s)." : "Rapport journalier automatique désactivé.");
+                input.Enabled ? $"Rapport journalier programmé à {at.ToString("HH:mm", System.Globalization.CultureInfo.InvariantCulture)} pour {numbers.Count} numéro(s) et {emails.Count} adresse(s) e-mail." : "Rapport journalier automatique désactivé.");
             await db.SaveChangesAsync(ct);
             return DailyReportView(store.Load());
         });
@@ -286,12 +303,17 @@ public static class ScoliaEndpoints
 
     private static DailyReportViewDto DailyReportView(Scolia.Infrastructure.Reports.DailyReportSettings s) =>
         new(s.Enabled, s.Time, s.Recipients, s.WhatsAppPhoneNumberId, s.WhatsAppTemplate, s.WhatsAppLanguage,
-            !string.IsNullOrWhiteSpace(s.WhatsAppToken), s.WhatsAppReady, s.LastStatus);
+            !string.IsNullOrWhiteSpace(s.WhatsAppToken), s.WhatsAppReady, s.LastStatus,
+            s.EmailRecipients, s.SmtpHost, s.SmtpPort, s.SmtpSsl, s.SmtpUser, s.SmtpFrom, !string.IsNullOrEmpty(s.SmtpPassword), s.EmailReady);
 
     public sealed record DailyReportInput(bool Enabled, string? Time, List<string>? Recipients, string? WhatsAppPhoneNumberId,
-        string? WhatsAppToken, bool ClearToken, string? WhatsAppTemplate, string? WhatsAppLanguage);
+        string? WhatsAppToken, bool ClearToken, string? WhatsAppTemplate, string? WhatsAppLanguage,
+        List<string>? EmailRecipients = null, string? SmtpHost = null, int? SmtpPort = null, bool? SmtpSsl = null,
+        string? SmtpUser = null, string? SmtpPassword = null, bool ClearSmtpPassword = false, string? SmtpFrom = null);
     public sealed record DailyReportViewDto(bool Enabled, string Time, List<string> Recipients, string? WhatsAppPhoneNumberId,
-        string? WhatsAppTemplate, string WhatsAppLanguage, bool HasToken, bool WhatsAppReady, string? LastStatus);
+        string? WhatsAppTemplate, string WhatsAppLanguage, bool HasToken, bool WhatsAppReady, string? LastStatus,
+        List<string> EmailRecipients, string? SmtpHost, int SmtpPort, bool SmtpSsl, string? SmtpUser, string? SmtpFrom,
+        bool HasSmtpPassword, bool EmailReady);
     public sealed record DailyReportResult(string FileName, string Status, string Summary);
 
     private static void MapCards(RouteGroupBuilder api)

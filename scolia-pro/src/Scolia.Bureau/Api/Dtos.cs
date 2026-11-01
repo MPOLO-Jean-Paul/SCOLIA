@@ -230,7 +230,9 @@ public sealed record StaffBilanDto(Guid StaffMemberId, string Name, int Present,
 
 /// <summary>Réglages du rapport journalier tels que l'ordinateur principal les montre : jamais le jeton lui-même.</summary>
 public sealed record DailyReportViewDto(bool Enabled, string Time, List<string> Recipients, string? WhatsAppPhoneNumberId,
-    string? WhatsAppTemplate, string WhatsAppLanguage, bool HasToken, bool WhatsAppReady, string? LastStatus);
+    string? WhatsAppTemplate, string WhatsAppLanguage, bool HasToken, bool WhatsAppReady, string? LastStatus,
+    List<string>? EmailRecipients = null, string? SmtpHost = null, int SmtpPort = 587, bool SmtpSsl = true, string? SmtpUser = null,
+    string? SmtpFrom = null, bool HasSmtpPassword = false, bool EmailReady = false);
 
 /// <summary>Résultat d'un envoi demandé : le fichier, ce qui a été fait, et les chiffres du jour.</summary>
 public sealed record DailyReportResultDto(string FileName, string Status, string Summary);

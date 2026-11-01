@@ -30,6 +30,7 @@ public static class AppCatalog
                 new("Code PIN ou mot de passe", "Chacun choisit un code PIN (6 chiffres ou plus) ou un mot de passe (8 caractères ou plus). Un code provisoire donné par le secrétariat doit être remplacé à la première connexion."),
                 new("Empreinte et Face ID", "Sur le téléphone, l'empreinte ou Face ID ouvre SCOLIA sans saisir le code. Le téléphone garde l'accès dans sa puce de sécurité ; une nouvelle empreinte enregistrée le désactive."),
                 new("Protection", "Après cinq erreurs de code, la connexion se bloque deux minutes puis revient seule. Personne, pas même le secrétariat, ne voit les codes."),
+                new("Mise en veille", "Sans activité pendant le délai choisi (1 à 30 minutes, réglé dans Sécurité du compte), ou au retour après ce temps en arrière-plan, SCOLIA se verrouille : le code ou l'empreinte est redemandé, et la session reprend là où elle était."),
             ]),
         new("Accueil", "HomeOutline", "ToneBlue",
             "La journée en un coup d'œil, avec les actions les plus fréquentes.",
@@ -44,7 +45,7 @@ public static class AppCatalog
             [
                 new("Tableau de bord", "Encaissé, attendu à ce jour, reste à payer, taux de recouvrement, évolution mensuelle, ancienneté des retards et situation de chaque promotion."),
                 new("Rapports et exports", "Situation par promotion, journal des encaissements, suivi mensuel, retards de paiement, dépenses, listes d'apprenants et de classe, discipline et audit, en PDF ou Excel."),
-                new("Rapport journalier", "Chaque jour : encaissements, dépenses, inscriptions et absences, détaillés par promotion, en PDF. Il peut partir tout seul à l'heure et aux numéros choisis (« Planifier »)."),
+                new("Rapport journalier", "Chaque jour : encaissements, dépenses, inscriptions et absences, détaillés par promotion, en PDF. Il peut partir tout seul à l'heure choisie, par WhatsApp aux numéros et par e-mail aux adresses indiqués (« Planifier »)."),
                 new("Espace promoteur", "Le promoteur voit les indicateurs agrégés, jamais les dossiers nominatifs."),
             ]),
         new("Secrétariat", "AccountGroup", "ToneIndigo",

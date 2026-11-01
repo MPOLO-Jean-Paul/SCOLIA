@@ -69,7 +69,7 @@ public sealed class ReportsPage : PageViewModel
 
         Section("Finances",
             Shell.Can(Perm.SettingsWrite)
-                ? Card(Perm.ReportsRead, "Rapport journalier", "Encaissements, dépenses, inscriptions et absences de la journée, détaillés par promotion. Envoi automatique chaque jour, à l'heure et au numéro choisis.",
+                ? Card(Perm.ReportsRead, "Rapport journalier", "Encaissements, dépenses, inscriptions et absences de la journée, détaillés par promotion. Envoi automatique chaque jour, à l'heure choisie, par WhatsApp et par e-mail.",
                     MaterialIconKind.FileChartOutline, "ToneIndigo", "le jour « Au » ou aujourd'hui",
                     new ReportFormatVm("PDF", Command(DailyPath, "rapport-journalier.pdf")),
                     new ReportFormatVm("Planifier", new AsyncCommand(() => Shell.Run(ScheduleDailyAsync)), MaterialIconKind.CalendarClock),
@@ -123,7 +123,10 @@ public sealed class ReportsPage : PageViewModel
         var status = current.LastStatus is { Length: > 0 } last ? $"Dernier passage : {last}" : "Aucun envoi pour l'instant.";
         var form = new FormViewModel("Programmer le rapport journalier", status, async f =>
         {
-            var numbers = f.Text("numeros").Split([',', ';', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
+            static List<string> List(string text) => text.Split([',', ';', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
+            var numbers = List(f.Text("numeros"));
+            var emails = List(f.Text("emails"));
+            if (!int.TryParse(f.Text("smtpPort"), out var port)) port = 587;
             await Shell.Api.SendAsync<DailyReportViewDto>(HttpMethod.Put, "api/rapports/journalier/reglages", new
             {
                 enabled = f.Find("actif").Flag,
@@ -134,6 +137,14 @@ public sealed class ReportsPage : PageViewModel
                 clearToken = f.Fields.Any(x => x.Key == "effacer") && f.Find("effacer").Flag,
                 whatsAppTemplate = f.Text("modele"),
                 whatsAppLanguage = f.Text("langue"),
+                emailRecipients = emails,
+                smtpHost = f.Text("smtpHost"),
+                smtpPort = port,
+                smtpSsl = f.Find("smtpSsl").Flag,
+                smtpUser = f.Text("smtpUser"),
+                smtpPassword = f.Find("smtpPassword").Text,
+                clearSmtpPassword = f.Fields.Any(x => x.Key == "effacerSmtp") && f.Find("effacerSmtp").Flag,
+                smtpFrom = f.Text("smtpFrom"),
             });
             Shell.Notify(f.Find("actif").Flag
                 ? $"Rapport journalier programmé chaque jour à {f.Find("heure").Choice?.Label}."
@@ -143,9 +154,12 @@ public sealed class ReportsPage : PageViewModel
         form.AddFlag("actif", "Envoyer automatiquement chaque jour", current.Enabled);
         var times = DailyTimes.Any(t => t.Value == current.Time) ? DailyTimes : [.. DailyTimes, new ChoiceItem(current.Time, current.Time)];
         form.AddChoice("heure", "Heure d'envoi", times, current.Time, required: true);
-        form.Add("numeros", "Numéros qui reçoivent le rapport", FieldKind.Text, string.Join(", ", current.Recipients),
+        form.AddHeader("Destinataires", "Le rapport part par WhatsApp aux numéros et par e-mail aux adresses : l'un, l'autre ou les deux.");
+        form.Add("numeros", "Numéros WhatsApp", FieldKind.Text, string.Join(", ", current.Recipients),
             hint: "Un ou plusieurs numéros séparés par une virgule : 0812345678, +243991234567.");
-        form.AddHeader("Envoi WhatsApp automatique",
+        form.Add("emails", "Adresses e-mail", FieldKind.Text, string.Join(", ", current.EmailRecipients ?? []),
+            hint: "Une ou plusieurs adresses séparées par une virgule : direction@ecole.cd, promoteur@gmail.com.");
+        form.AddHeader("Envoi par WhatsApp",
             current.WhatsAppReady
                 ? "Configuré : le PDF part tout seul à l'heure choisie."
                 : "Pour un envoi sans personne, renseignez le compte WhatsApp Business de l'établissement (Meta). Sans lui, le PDF est préparé chaque jour et une notification propose de le partager.");
@@ -156,6 +170,18 @@ public sealed class ReportsPage : PageViewModel
         form.Add("modele", "Modèle de message approuvé (facultatif)", FieldKind.Text, current.WhatsAppTemplate,
             hint: "Modèle avec un document en en-tête, approuvé par Meta : il permet d'écrire en premier, à toute heure.");
         form.Add("langue", "Langue du modèle", FieldKind.Text, current.WhatsAppLanguage);
+        form.AddHeader("Envoi par e-mail",
+            current.EmailReady
+                ? "Configuré : le PDF part en pièce jointe à l'heure choisie."
+                : "Renseignez la messagerie qui envoie le rapport. Gmail : smtp.gmail.com, port 587, connexion chiffrée, et un « mot de passe d'application » créé dans le compte Google.");
+        form.Add("smtpHost", "Serveur de messagerie (SMTP)", FieldKind.Text, current.SmtpHost, hint: "Exemple : smtp.gmail.com ou mail.ecole.cd");
+        form.Add("smtpPort", "Port", FieldKind.Text, current.SmtpPort.ToString(System.Globalization.CultureInfo.InvariantCulture), hint: "587 en général.");
+        form.AddFlag("smtpSsl", "Connexion chiffrée (STARTTLS)", current.SmtpSsl);
+        form.Add("smtpUser", "Identifiant de la messagerie", FieldKind.Text, current.SmtpUser, hint: "Souvent l'adresse e-mail elle-même.");
+        form.Add("smtpPassword", current.HasSmtpPassword ? "Mot de passe (déjà enregistré)" : "Mot de passe de la messagerie", FieldKind.Secret, null,
+            hint: current.HasSmtpPassword ? "Laissez vide pour garder le mot de passe enregistré." : "Chiffré sur l'ordinateur principal, jamais affiché ensuite.");
+        if (current.HasSmtpPassword) form.AddFlag("effacerSmtp", "Effacer le mot de passe enregistré", false);
+        form.Add("smtpFrom", "Adresse d'envoi (facultatif)", FieldKind.Text, current.SmtpFrom, hint: "Par défaut, l'identifiant de la messagerie.");
         await Shell.Ask(form);
     }
 

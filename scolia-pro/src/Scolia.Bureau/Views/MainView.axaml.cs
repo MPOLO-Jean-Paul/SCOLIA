@@ -46,6 +46,11 @@ public partial class MainView : UserControl
         Keyboard = new KeyboardAvoidance(this, RootContent);
         // Onde au toucher sur les boutons et les lignes, comme sur Android ; coupée avec les animations.
         TouchFeedback.Attach(this, () => Shell?.Prefs.Animations ?? true);
+        // Toute activité repousse la mise en veille : toucher, clic, molette, frappe.
+        AddHandler(PointerPressedEvent, (_, _) => Shell?.NoteActivity(), Avalonia.Interactivity.RoutingStrategies.Tunnel, handledEventsToo: true);
+        AddHandler(PointerWheelChangedEvent, (_, _) => Shell?.NoteActivity(), Avalonia.Interactivity.RoutingStrategies.Tunnel, handledEventsToo: true);
+        AddHandler(KeyDownEvent, (_, _) => Shell?.NoteActivity(), Avalonia.Interactivity.RoutingStrategies.Tunnel, handledEventsToo: true);
+        AddHandler(TextInputEvent, (_, _) => Shell?.NoteActivity(), Avalonia.Interactivity.RoutingStrategies.Tunnel, handledEventsToo: true);
         SizeChanged += (_, e) => FitWindow(e.NewSize);
         AttachedToVisualTree += (_, _) =>
         {
@@ -156,6 +161,9 @@ public partial class MainView : UserControl
         if (args.PropertyName == nameof(ShellViewModel.CompactWindow)) FitWindow(Bounds.Size);
         // Lancement et ouverture de session : le logo s'assemble, puis le nom, le message et les trois points suivent.
         if (args.PropertyName == nameof(ShellViewModel.ShowStartup) && shell.ShowStartup) PlayIntro(StartupLogo, StartupContent, shell);
+        if (args.PropertyName == nameof(ShellViewModel.ShowLockScreen) && shell.ShowLockScreen)
+            Avalonia.Threading.Dispatcher.UIThread.Post(() => LockHost.GetVisualDescendants().OfType<LockScreenView>().FirstOrDefault()?.FocusCode(),
+                Avalonia.Threading.DispatcherPriority.Loaded);
         // Accueil après la connexion : le logo, déjà assemblé au lancement, se pose seulement ; le message suit aussitôt.
         if (args.PropertyName == nameof(ShellViewModel.Opening) && shell.Opening) PlayIntro(OpeningLogo, WelcomeContent, shell, assemble: false);
         if (args.PropertyName != nameof(ShellViewModel.Current)) return;
@@ -426,6 +434,8 @@ public partial class MainView : UserControl
     private void OnBackRequested(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
         if (Shell is not { } shell) return;
+        // En veille, le geste retour ne doit rien ouvrir derrière l'écran verrouillé.
+        if (shell.IsLocked) { e.Handled = true; return; }
         if (shell.HasSheet) shell.CloseSheet();
         else if (shell.Dialog is FormViewModel form) { if (!form.Busy) form.Cancel.Execute(null); }
         else if (shell.HasDialog) shell.CloseDialog();
@@ -519,6 +529,8 @@ public partial class MainView : UserControl
     private void OnKeyDown(object? sender, KeyEventArgs e)
     {
         if (Shell is not { IsLoggedIn: true } shell) return;
+        // En veille, aucun raccourci n'agit derrière l'écran verrouillé.
+        if (shell.IsLocked) return;
         // Le voile de traitement et les fenêtres modales bloquent aussi la navigation au clavier.
         if (shell.Working || (e.Key != Key.Escape && (shell.HasDialog || shell.HasSheet || shell.BackstageOpen))) return;
         if (e.KeyModifiers == KeyModifiers.Alt && e.Key is Key.Left or Key.Right && !shell.HasDialog)
