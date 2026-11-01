@@ -17,6 +17,9 @@ public static class Sounds
 
     public static void Play(Preferences prefs, SoundKind kind, bool force = false)
     {
+        // Réussite ou refus : une vibration discrète accompagne l'action, même son coupé (comme Android).
+        if (!force && kind is SoundKind.Success or SoundKind.Error)
+            Platform.Haptic?.Invoke(kind == SoundKind.Success ? HapticKind.Success : HapticKind.Error);
         if (!force && (!prefs.Sounds || !prefs.SoundFor(kind))) return;
         if (prefs.SoundVolume <= 0) return;
         // Téléphone : les mêmes notes, jouées par le haut-parleur d'Android ; les sons de Windows n'y existent pas.

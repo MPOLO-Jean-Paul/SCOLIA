@@ -378,9 +378,12 @@
       <Grid Grid.Row="1" Grid.Column="1" IsVisible="{Binding HasPage}">
         <!-- Sur téléphone, la page entière défile ; sur l'ordinateur, chaque page garde sa hauteur et ses tableaux défilent -->
         <ScrollViewer x:Name="PageScroll" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="{Binding PageScroll}">
-          <TransitioningContentControl x:Name="PageHost" Content="{Binding DesktopPage}"
+          <TransitioningContentControl x:Name="PageHost" Content="{Binding DesktopPage}" IsTransitionReversed="{Binding NavigatingBack}"
                                        Classes.withsticky="{Binding Current.Sticky.IsVisible, FallbackValue=False}" />
         </ScrollViewer>
+        <!-- Premier chargement un peu long : silhouettes à la place d'une page vide -->
+        <views:SkeletonView Background="{DynamicResource BgBrush}" Margin="8,0" MaxWidth="900" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                            IsVisible="{Binding Current.ShowSkeleton, FallbackValue=False}" />
         <!-- Barre d'action fixe de la page : le total et le bouton qui valide, toujours visibles en bas -->
         <Border Classes="stickybar" VerticalAlignment="Bottom" IsVisible="{Binding Current.Sticky.IsVisible, FallbackValue=False}">
           <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">

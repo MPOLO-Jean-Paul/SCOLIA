@@ -86,6 +86,9 @@ public static class Platform
     /// <summary>Joue un son au format WAV, 16 bits mono : les notes de SCOLIA sur le haut-parleur du téléphone.</summary>
     public static Action<byte[]>? PlayWave { get; set; }
 
+    /// <summary>Vibration légère du téléphone (toucher, réussite, refus), selon les réglages de vibration du système.</summary>
+    public static Action<HapticKind>? Haptic { get; set; }
+
     /// <summary>
     /// Serveur que ce téléphone peut porter lui-même, quand l'établissement n'a pas d'ordinateur : fourni par l'application
     /// Android. Null sur un appareil qui ne peut que rejoindre un serveur.

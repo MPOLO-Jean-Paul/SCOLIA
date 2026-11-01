@@ -88,19 +88,9 @@ public partial class PhoneFrame : UserControl
 
         // Les durées restent bornées même si l'utilisateur choisit « Douce ».
         // Aucun Task.Delay ni animation de toute la fenêtre : le menu demeure aussi réactif que les onglets.
-        var duration = TimeSpan.FromMilliseconds(Math.Clamp(175 * shell.Prefs.SpeedFactor, 105, 220));
-        PhoneHost.PageTransition = new Avalonia.Animation.CompositePageTransition
-        {
-            PageTransitions =
-            {
-                new Avalonia.Animation.PageSlide(duration, Avalonia.Animation.PageSlide.SlideAxis.Horizontal)
-                {
-                    SlideInEasing = new Avalonia.Animation.Easings.CubicEaseOut(),
-                    SlideOutEasing = new Avalonia.Animation.Easings.CubicEaseIn()
-                },
-                new Avalonia.Animation.CrossFade(TimeSpan.FromMilliseconds(duration.TotalMilliseconds * 0.8))
-            }
-        };
+        // Axe partagé d'Android 16 : glissement de quelques points et fondu, jamais toute la largeur.
+        PhoneHost.PageTransition = new Infrastructure.SharedAxisTransition(
+            TimeSpan.FromMilliseconds(Math.Clamp(260 * shell.Prefs.SpeedFactor, 160, 320)), 28);
     }
 
     private void OnPreferencesChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs args)

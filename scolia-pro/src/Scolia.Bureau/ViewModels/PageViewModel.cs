@@ -126,6 +126,13 @@ public abstract class PageViewModel : Observable
     }
     public bool Busy { get => busy; protected set => Set(ref busy, value); }
 
+    private bool loadedOnce;
+    private bool showSkeleton;
+    /// <summary>Délai avant les silhouettes : une page rapide n'en montre jamais, donc aucun clignotement.</summary>
+    public static readonly TimeSpan SkeletonDelay = TimeSpan.FromMilliseconds(150);
+    /// <summary>Premier chargement un peu long : des cartes grises animées tiennent la place du contenu.</summary>
+    public bool ShowSkeleton { get => showSkeleton; private set => Set(ref showSkeleton, value); }
+
     /// <summary>Écran de téléphone : certaines pages montrent alors une présentation en lignes au lieu d'un tableau large.</summary>
     public bool Phone => Shell.Phone;
     public bool NotPhone => !Shell.Phone;
@@ -192,6 +199,11 @@ public abstract class PageViewModel : Observable
         var completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         refreshCompletion = completion;
         if (!quiet) Busy = true;
+        if (!quiet && !loadedOnce)
+            _ = Task.Delay(SkeletonDelay).ContinueWith(_ => Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+            {
+                if (Busy && !loadedOnce) ShowSkeleton = true;
+            }), TaskScheduler.Default);
         try { await LoadAsync(); }
         catch (ApiException ex) { if (!quiet) Shell.Notify(ex.Message); }
         catch (HttpRequestException) { if (!quiet) Shell.Notify("Le serveur SCOLIA ne répond pas."); }
@@ -199,6 +211,8 @@ public abstract class PageViewModel : Observable
         finally
         {
             if (!quiet) Busy = false;
+            loadedOnce = true;
+            ShowSkeleton = false;
             refreshCompletion = null;
             completion.TrySetResult();
         }

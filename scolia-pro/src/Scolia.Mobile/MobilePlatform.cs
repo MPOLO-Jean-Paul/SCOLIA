@@ -47,11 +47,32 @@ public static class MobilePlatform
         Platform.DownloadFolder = Path.Combine(app.CacheDir?.AbsolutePath ?? Path.GetTempPath(), "tailscale");
         Platform.InstallTailscalePackage = path => AndroidTailscaleSetup.InstallAsync(context ?? app, path);
         Platform.PlayWave = AndroidAudio.PlayWave;
+        Platform.Haptic = Haptic;
         // Sans ordinateur dans l'établissement, ce téléphone peut en être le serveur.
         Platform.LocalServer = Server.PhoneServer.Get(app);
     }
 
-    public static void Attach(Context activity) => context ??= activity.ApplicationContext ?? activity;
+    private static WeakReference<Android.App.Activity>? screen;
+
+    public static void Attach(Context activity)
+    {
+        context ??= activity.ApplicationContext ?? activity;
+        if (activity is Android.App.Activity shown) screen = new WeakReference<Android.App.Activity>(shown);
+    }
+
+    /// <summary>Vibration du système : elle suit les réglages de vibration du téléphone (désactivable par l'utilisateur).</summary>
+    private static void Haptic(HapticKind kind)
+    {
+        if (screen?.TryGetTarget(out var activity) != true || activity!.Window?.DecorView is not { } view) return;
+        var feedback = kind switch
+        {
+            HapticKind.Success when OperatingSystem.IsAndroidVersionAtLeast(30) => Android.Views.FeedbackConstants.Confirm,
+            HapticKind.Error when OperatingSystem.IsAndroidVersionAtLeast(30) => Android.Views.FeedbackConstants.Reject,
+            HapticKind.Error => Android.Views.FeedbackConstants.LongPress,
+            _ => Android.Views.FeedbackConstants.KeyboardTap,
+        };
+        activity.RunOnUiThread(() => view.PerformHapticFeedback(feedback));
+    }
 
     /// <summary>Garde la réception des diffusions du Wi-Fi pendant que SCOLIA est à l'écran, et la rend ensuite.</summary>
     public static void HoldMulticast(bool hold)

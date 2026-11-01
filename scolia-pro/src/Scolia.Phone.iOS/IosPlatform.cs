@@ -36,6 +36,7 @@ public static class IosPlatform
         Platform.OpenFile = OpenFile;
         Platform.DecodeImage = DecodeImage;
         Platform.PlayWave = PlayWave;
+        Platform.Haptic = Haptic;
         Platform.OpenTailscale = OpenTailscale;
         Platform.OpenTailscaleInstallPage = OpenTailscale;
         // iOS ne laisse ni voir les autres applications ni lire l'état d'un VPN : l'assistant le dit clairement.
@@ -103,6 +104,22 @@ public static class IosPlatform
             player?.Play();
         }
         catch (Exception ex) when (ex is NSErrorException or ObjCRuntime.ObjCException or InvalidOperationException) { }
+    }
+
+    private static UIImpactFeedbackGenerator? tap;
+    private static UINotificationFeedbackGenerator? outcome;
+
+    /// <summary>Retour haptique d'iOS : petit choc au toucher, signal de réussite ou d'erreur.</summary>
+    private static void Haptic(HapticKind kind)
+    {
+        if (kind == HapticKind.Tap)
+        {
+            tap ??= new UIImpactFeedbackGenerator(UIImpactFeedbackStyle.Light);
+            tap.ImpactOccurred();
+            return;
+        }
+        outcome ??= new UINotificationFeedbackGenerator();
+        outcome.NotificationOccurred(kind == HapticKind.Success ? UINotificationFeedbackType.Success : UINotificationFeedbackType.Error);
     }
 
     private static string OpenTailscale()

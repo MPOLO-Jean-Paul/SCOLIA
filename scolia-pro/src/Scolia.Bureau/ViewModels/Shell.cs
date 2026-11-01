@@ -329,6 +329,8 @@ public sealed class ShellViewModel : Observable
             Notice = null;
             RemoteWaiting = false;
             Raise(nameof(HasPage));
+            // Le sens du passage est connu avant la nouvelle page : la transition part du bon côté.
+            Raise(nameof(NavigatingBack));
             Raise(nameof(DesktopPage));
             Raise(nameof(PhonePage));
             HeaderSearch.PageChanged();
@@ -799,8 +801,14 @@ public sealed class ShellViewModel : Observable
         var page = backStack[^1];
         backStack.RemoveAt(backStack.Count - 1);
         BackstageOpen = false;
-        Show(page);
+        navigatingBack = true;
+        try { Show(page); }
+        finally { navigatingBack = false; }
     }
+
+    private bool navigatingBack;
+    /// <summary>Vrai pendant un retour à l'écran précédent : la page glisse alors dans l'autre sens.</summary>
+    public bool NavigatingBack => navigatingBack;
 
     /// <summary>
     /// Quitte un écran dont l'objet vient d'être supprimé : retour à l'écran précédent, ou à celui proposé,

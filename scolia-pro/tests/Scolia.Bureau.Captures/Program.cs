@@ -389,6 +389,111 @@ if (args.Length > 3 && args[3] == "contraste")
     return;
 }
 
+// Élégance (argument « elegance ») : silhouettes de chargement, onde au toucher et vibration, transition en cours.
+if (args.Length > 3 && args[3] == "elegance")
+{
+    window.Width = 360;
+    window.Height = 760;
+    var eleganceFailures = 0;
+    void ElegantCheck(string label, bool ok)
+    {
+        Console.WriteLine($"{(ok ? "OK  " : "ECHEC")} {label}");
+        if (!ok) eleganceFailures++;
+    }
+    void Pump(int ms)
+    {
+        var until = DateTime.UtcNow.AddMilliseconds(ms);
+        while (DateTime.UtcNow < until) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(10); }
+    }
+    Wait(shell.OpenSessionAsync(Result(api.LoginAsync("admin", password))));
+
+    // 1. Silhouettes : une page dont le chargement est retenu.
+    var gate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+    var opening = shell.Open(() => new SlowPage(shell, gate.Task));
+    Pump(400);
+    var skeleton = window.GetVisualDescendants().OfType<SkeletonView>().FirstOrDefault(v => v.IsEffectivelyVisible);
+    ElegantCheck("Chargement long : silhouettes affichées", skeleton is not null);
+    Save(window, "elegance-silhouettes.png");
+    gate.SetResult();
+    Wait(opening);
+    Pump(100);
+    ElegantCheck("Chargement fini : silhouettes retirées", !window.GetVisualDescendants().OfType<SkeletonView>().Any(v => v.IsEffectivelyVisible));
+
+    // Une page rapide n'en montre jamais (pas de clignotement).
+    var quick = shell.Open(() => new StudentsPage(shell));
+    var flashed = false;
+    for (var i = 0; i < 40 && !quick.IsCompleted; i++)
+    {
+        Pump(10);
+        flashed |= window.GetVisualDescendants().OfType<SkeletonView>().Any(v => v.IsEffectivelyVisible) && (shell.Current?.Busy ?? false) && i < 10;
+    }
+    Wait(quick);
+    ElegantCheck("Page rapide : pas de silhouettes avant 150 ms", !flashed);
+
+    // 2. Onde et vibration : toucher le bouton principal de la page.
+    prefs.Animations = true;
+    var haptics = new List<HapticKind>();
+    Platform.Haptic = kind => haptics.Add(kind);
+    Wait(shell.Open(() => new HomePage(shell)));
+    Pump(400);
+    var primary = window.GetVisualDescendants().OfType<Button>().FirstOrDefault(b => b.IsEffectivelyVisible && (b.Classes.Contains("quick") || b.Classes.Contains("primary")));
+    if (primary is not null && primary.TransformToVisual(window) is { } m)
+    {
+        var center = new Rect(primary.Bounds.Size).TransformToAABB(m).Center;
+        window.MouseDown(center, Avalonia.Input.MouseButton.Left);
+        Pump(140);
+        var layer = Avalonia.Controls.Primitives.AdornerLayer.GetAdornerLayer(primary);
+        ElegantCheck("Toucher : une onde part du doigt", layer?.Children.Any(c => c.GetType().Name == "RippleAdorner") == true);
+        Save(window, "elegance-onde.png");
+        window.MouseUp(center, Avalonia.Input.MouseButton.Left);
+        Pump(500);
+        ElegantCheck("Toucher : l'onde disparaît seule", layer?.Children.Any(c => c.GetType().Name == "RippleAdorner") != true);
+    }
+    else ElegantCheck("Toucher : bouton trouvé", false);
+    var stickyHost = new CashierPage(shell);
+    Wait(shell.Open(() => stickyHost));
+    stickyHost.Search = "ACC";
+    Wait(stickyHost.SearchAsync());
+    foreach (var candidate in stickyHost.Results.ToList())
+    {
+        Wait(stickyHost.ChooseAsync(candidate));
+        if (stickyHost.Months.Count > 0) break;
+    }
+    Pump(300);
+    var mainButton = window.GetVisualDescendants().OfType<Button>().FirstOrDefault(b => b.IsEffectivelyVisible && b.Name == "StickyAction");
+    if (mainButton is not null && mainButton.TransformToVisual(window) is { } pm)
+    {
+        var at = new Rect(mainButton.Bounds.Size).TransformToAABB(pm).Center;
+        // Seulement appuyer : le relâcher encaisserait vraiment.
+        window.MouseDown(at, Avalonia.Input.MouseButton.Left);
+        Pump(100);
+        Save(window, "elegance-onde-bouton.png");
+    }
+    ElegantCheck($"Bouton principal : vibration légère ({haptics.Count(k => k == HapticKind.Tap)})", haptics.Contains(HapticKind.Tap));
+    Sounds.Play(prefs, SoundKind.Success);
+    ElegantCheck("Réussite : vibration de confirmation", haptics.Contains(HapticKind.Success));
+
+    // 3. Transition : à mi-parcours, la nouvelle page arrive en glissant et en apparaissant.
+    prefs.Animations = true;
+    prefs.PageTransitions = true;
+    var next = shell.Open(() => new ReceiptsPage(shell));
+    Pump(90);
+    Save(window, "elegance-transition.png");
+    Wait(next);
+    Pump(400);
+    shell.GoBack();
+    Pump(60);
+    ElegantCheck("Retour : la page repart dans l'autre sens", shell.NavigatingBack == false);
+    Pump(400);
+
+    Platform.Haptic = null;
+    shell.Sync.Stop();
+    window.Close();
+    Console.WriteLine(eleganceFailures == 0 ? "Élégance : tout est en place." : $"Élégance : {eleganceFailures} échec(s).");
+    Environment.ExitCode = eleganceFailures == 0 ? 0 : 1;
+    return;
+}
+
 // Logo animé (argument « logo ») : huit instants de l'assemblage puis de la descente, clair et sombre.
 if (args.Length > 3 && args[3] == "logo")
 {
@@ -1925,4 +2030,11 @@ sealed class FakeKeyboard : IKeyboardArea
         IsOpen = false;
         Changed?.Invoke(TimeSpan.Zero);
     }
+}
+
+/// <summary>Page de vérification dont le chargement attend un signal : sert à voir les silhouettes.</summary>
+sealed class SlowPage(ShellViewModel shell, Task gate) : PageViewModel(shell)
+{
+    public override string Title => "Chargement";
+    public override Task LoadAsync() => gate;
 }

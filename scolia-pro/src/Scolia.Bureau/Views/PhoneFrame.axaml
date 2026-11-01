@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:views="using:Scolia.Bureau.Views"
              x:Class="Scolia.Bureau.Views.PhoneFrame">
   <UserControl.Resources>
     <!-- Rubrique de navigation : un métier et ses outils, chacun sur une ligne haute avec son icône de couleur -->
@@ -231,9 +232,12 @@
 
     <!-- Page : elle défile en entier, jamais sur le côté -->
     <ScrollViewer x:Name="PhoneScroll" Grid.Row="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
-      <TransitioningContentControl x:Name="PhoneHost" Content="{Binding PhonePage}"
+      <TransitioningContentControl x:Name="PhoneHost" Content="{Binding PhonePage}" IsTransitionReversed="{Binding NavigatingBack}"
                                    Classes.withsticky="{Binding PhonePage.Sticky.IsVisible, FallbackValue=False}" />
     </ScrollViewer>
+    <!-- Premier chargement un peu long : silhouettes à la place d'une page vide -->
+    <views:SkeletonView Grid.Row="1" Background="{DynamicResource BgBrush}" VerticalAlignment="Stretch"
+                        IsVisible="{Binding PhonePage.ShowSkeleton, FallbackValue=False}" />
     <!-- Barre d'action fixe de la page : le total et le bouton qui valide, toujours visibles en bas -->
     <Border Grid.Row="1" Classes="stickybar" VerticalAlignment="Bottom" IsVisible="{Binding PhonePage.Sticky.IsVisible, FallbackValue=False}">
       <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">

@@ -22,7 +22,6 @@ namespace Scolia.Bureau.Views;
 public partial class MainView : UserControl
 {
     /// <summary>Durée du fondu entre deux pages : assez courte pour ne pas ralentir la saisie.</summary>
-    private static readonly TimeSpan PageFade = TimeSpan.FromMilliseconds(135);
 
     /// <summary>Clavier du téléphone : l'écran s'arrête au-dessus de lui et le champ actif reste visible.</summary>
     public KeyboardAvoidance Keyboard { get; }
@@ -45,6 +44,8 @@ public partial class MainView : UserControl
         isTypingHandler = IsTypingInView;
         InitializeComponent();
         Keyboard = new KeyboardAvoidance(this, RootContent);
+        // Onde au toucher sur les boutons et les lignes, comme sur Android ; coupée avec les animations.
+        TouchFeedback.Attach(this, () => Shell?.Prefs.Animations ?? true);
         SizeChanged += (_, e) => FitWindow(e.NewSize);
         AttachedToVisualTree += (_, _) =>
         {
@@ -388,7 +389,9 @@ public partial class MainView : UserControl
 
     /// <summary>Fondu entre les pages, désactivé par la préférence « Animations ».</summary>
     private void ApplyPageTransition(Preferences prefs) =>
-        PageHost.PageTransition = prefs.Animations && prefs.PageTransitions ? new CrossFade(PageFade * prefs.SpeedFactor) : null;
+        PageHost.PageTransition = prefs.Animations && prefs.PageTransitions
+            ? new SharedAxisTransition(TimeSpan.FromMilliseconds(Math.Clamp(220 * prefs.SpeedFactor, 140, 280)), 16)
+            : null;
 
     private ShellViewModel? Shell => DataContext as ShellViewModel;
 
