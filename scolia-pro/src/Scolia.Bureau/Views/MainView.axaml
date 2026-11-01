@@ -146,7 +146,9 @@
   <Grid>
     <!-- Détection de première installation : jamais afficher le formulaire de connexion
          avant de connaître l’état réel de configuration. -->
-    <Border Background="{DynamicResource BgBrush}" IsVisible="{Binding ShowStartup}">
+    <!-- Le lancement reste toujours blanc avec le logo, même en mode sombre : la première image est la même pour tous. -->
+    <ThemeVariantScope RequestedThemeVariant="Light" IsVisible="{Binding ShowStartup}">
+    <Border Background="{DynamicResource BgBrush}">
       <StackPanel x:Name="StartupContent" MaxWidth="340" Margin="24" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="12">
         <Border Width="76" Height="76" CornerRadius="20" Background="{DynamicResource Surface2Brush}"
                 BorderBrush="{DynamicResource LineBrush}" BorderThickness="1" HorizontalAlignment="Center">
@@ -159,6 +161,7 @@
         <ProgressBar IsIndeterminate="True" Height="3" MinHeight="3" Width="164" HorizontalAlignment="Center" />
       </StackPanel>
     </Border>
+    </ThemeVariantScope>
     <!-- Connexion : seulement si l’établissement est déjà configuré -->
     <!-- Première installation : l'assistant remplace la connexion tant qu'aucune configuration n'existe -->
     <ContentControl Content="{Binding Setup}" IsVisible="{Binding ShowSetup}" />

@@ -96,9 +96,10 @@
           </StackPanel>
         </Button>
 
-        <Button Classes="ghost" Content="Désactiver l'accès biométrique sur cet appareil"
-                Command="{Binding DisableBiometrics}" IsVisible="{Binding HasBiometricAccount}"
-                HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" />
+        <Button Classes="ghost" Command="{Binding DisableBiometrics}" IsVisible="{Binding HasBiometricAccount}"
+                HorizontalAlignment="Stretch" HorizontalContentAlignment="Center">
+          <TextBlock Text="Retirer l'empreinte de cet appareil" TextWrapping="Wrap" TextAlignment="Center" />
+        </Button>
         <Button Classes="primary signinbutton" Command="{Binding Submit}" IsEnabled="{Binding CanType}" ToolTip.Tip="Se connecter (Entrée)" Margin="0,4,0,0">
           <StackPanel Orientation="Horizontal" Spacing="8">
             <mi:MaterialIcon Kind="Loading" Classes="spin" Width="18" Height="18" Foreground="{DynamicResource OnAccentBrush}" IsVisible="{Binding Busy}" />

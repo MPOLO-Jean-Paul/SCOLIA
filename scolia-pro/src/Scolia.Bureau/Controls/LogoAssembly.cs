@@ -44,8 +44,11 @@ public sealed class LogoAssembly : Control
     /// <summary>Fin de l'assemblage : la page peut faire apparaître la suite (nom, message, trois points).</summary>
     public event EventHandler? Assembled;
 
-    /// <summary>Joue l'ouverture ; sans animation, le logo est complet tout de suite.</summary>
-    public void Play(bool animate)
+    /// <summary>
+    /// Joue l'ouverture ; sans animation, le logo est complet tout de suite. <paramref name="assemble"/> faux : le logo
+    /// est déjà assemblé (il l'a été au lancement) et se pose seulement à sa place, pour un accueil qui ne traîne pas.
+    /// </summary>
+    public void Play(bool animate, bool assemble = true)
     {
         timer?.Stop();
         if (!animate)
@@ -54,17 +57,18 @@ public sealed class LogoAssembly : Control
             Assembled?.Invoke(this, EventArgs.Empty);
             return;
         }
-        var total = AssemblyTime + DescentTime;
+        var assembly = assemble ? AssemblyTime : TimeSpan.Zero;
+        var total = assembly + DescentTime;
         var watch = Stopwatch.StartNew();
         var assembled = false;
-        Progress = 0;
+        Progress = assemble ? 0 : 1;
         timer = new DispatcherTimer(TimeSpan.FromMilliseconds(15), DispatcherPriority.Render, (_, _) =>
         {
             var elapsed = watch.Elapsed;
-            Progress = elapsed < AssemblyTime
-                ? elapsed / AssemblyTime
-                : 1 + 0.35 * Math.Min(1, (elapsed - AssemblyTime) / DescentTime);
-            if (!assembled && elapsed >= AssemblyTime)
+            Progress = elapsed < assembly
+                ? elapsed / assembly
+                : 1 + 0.35 * Math.Min(1, (elapsed - assembly) / DescentTime);
+            if (!assembled && elapsed >= assembly)
             {
                 assembled = true;
                 Assembled?.Invoke(this, EventArgs.Empty);

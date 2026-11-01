@@ -13,16 +13,19 @@ using Scolia.Bureau.Infrastructure;
 namespace Scolia.Mobile.Security;
 
 /// <summary>
-/// Preuve biométrique par opération Android Keystore. Le téléphone conserve
-/// uniquement une preuve chiffrée. Aucun gabarit d'empreinte ou mot de passe
-/// n'entre dans SCOLIA ; l'authentification reste gérée par Android.
+/// Accès par empreinte avec Android Keystore : à l'activation, l'accès SCOLIA (compte et code vérifiés par le serveur)
+/// est chiffré par une clé de la puce de sécurité, utilisable seulement après une empreinte forte. Une nouvelle
+/// empreinte enregistrée dans le téléphone détruit la clé : le code redevient nécessaire. SCOLIA ne voit jamais
+/// l'empreinte elle-même.
 /// </summary>
 public static class AndroidBiometrics
 {
-    private const string Alias = "scolia-biometric-proof-v2";
-    private const string PreferencesName = "scolia-biometric-proof-v2";
-    private const string ProofKey = "sealed-proof";
-    private const string ProofText = "SCOLIA-PHONE-BIOMETRIC-v2";
+    // v3 : l'accès scellé remplace l'ancienne simple preuve, qui dépendait d'une session effacée à la déconnexion.
+    private const string Alias = "scolia-biometric-access-v3";
+    private const string PreferencesName = "scolia-biometric-access-v3";
+    private const string ProofKey = "sealed-access";
+    private const string OldAlias = "scolia-biometric-proof-v2";
+    private const string OldPreferences = "scolia-biometric-proof-v2";
     private static WeakReference<Activity>? current;
     private static int inProgress;
 
@@ -118,23 +121,27 @@ public static class AndroidBiometrics
         finally { Interlocked.Exchange(ref inProgress, 0); }
     }
 
-    /// <summary>À appeler exclusivement après une connexion SCOLIA par mot de passe réussie et consentie.</summary>
-    public static async Task<bool> EnrollAsync()
+    /// <summary>À appeler seulement avec un accès que le serveur vient de valider, et avec l'accord de l'utilisateur.</summary>
+    public static async Task<bool> EnrollAsync(string access)
     {
         if (!IsAvailable() || Prefs is not { } prefs) return false;
         try
         {
+            RemoveKey(OldAlias);
+            Active?.GetSharedPreferences(OldPreferences, FileCreationMode.Private)?.Edit()?.Clear()?.Commit();
+            // Nouvelle clé à chaque activation : un ancien accès scellé ne peut plus jamais être relu.
+            RemoveKey(Alias);
             using var key = ReadKey(true);
             if (key is null) return false;
             using var cipher = Cipher.GetInstance("AES/GCM/NoPadding")!;
             cipher.Init(Javax.Crypto.CipherMode.EncryptMode, key);
-            var authorized = await PromptAsync(cipher, "Activer l'empreinte pour ce compte");
+            var authorized = await PromptAsync(cipher, "Confirmez votre empreinte pour l'associer à votre compte");
             if (authorized is null) return false;
             var iv = authorized.GetIV();
-            var bytes = authorized.DoFinal(Encoding.UTF8.GetBytes(ProofText));
+            var bytes = authorized.DoFinal(Encoding.UTF8.GetBytes(access));
             if (iv is not { Length: 12 } || bytes is null) return false;
-            byte[] sealedProof = [.. iv, .. bytes];
-            return prefs.Edit()!.PutString(ProofKey, Convert.ToBase64String(sealedProof))!.Commit();
+            byte[] sealedAccess = [.. iv, .. bytes];
+            return prefs.Edit()!.PutString(ProofKey, Convert.ToBase64String(sealedAccess))!.Commit();
         }
         catch (Exception ex) when (ex is Java.Lang.Exception or GeneralSecurityException
                                    or InvalidOperationException or CryptographicException)
@@ -143,50 +150,55 @@ public static class AndroidBiometrics
         }
     }
 
-    /// <summary>Déchiffrement uniquement si Android a autorisé l'opération biométrique forte.</summary>
-    public static async Task<bool> VerifyAsync()
+    /// <summary>Rend l'accès scellé, seulement si Android a validé une empreinte forte ; sinon rien.</summary>
+    public static async Task<string?> UnlockAsync()
     {
-        if (!IsAvailable() || Prefs is not { } prefs) return false;
+        if (!IsAvailable() || Prefs is not { } prefs) return null;
         var saved = prefs.GetString(ProofKey, null);
-        if (string.IsNullOrEmpty(saved)) return false; // jamais de création d'une clé au déverrouillage
+        if (string.IsNullOrEmpty(saved)) return null; // jamais de création d'une clé au déverrouillage
         try
         {
-            byte[] proof = Convert.FromBase64String(saved);
-            if (proof.Length < 28) return false;
+            byte[] sealedAccess = Convert.FromBase64String(saved);
+            if (sealedAccess.Length < 28) return null;
             using var key = ReadKey(false);
-            if (key is null) return false;
+            if (key is null) return null;
             using var cipher = Cipher.GetInstance("AES/GCM/NoPadding")!;
-            using var parameters = new GCMParameterSpec(128, proof[..12]);
+            using var parameters = new GCMParameterSpec(128, sealedAccess[..12]);
             cipher.Init(Javax.Crypto.CipherMode.DecryptMode, key, parameters);
             var authorized = await PromptAsync(cipher, "Ouvrir mon espace SCOLIA");
-            if (authorized is null) return false;
-            var clear = authorized.DoFinal(proof[12..]);
-            var expected = Encoding.UTF8.GetBytes(ProofText);
-            return clear is not null && CryptographicOperations.FixedTimeEquals(clear, expected);
+            if (authorized is null) return null;
+            var clear = authorized.DoFinal(sealedAccess[12..]);
+            return clear is { Length: > 0 } ? Encoding.UTF8.GetString(clear) : null;
         }
         catch (KeyPermanentlyInvalidatedException)
         {
-            // Toute nouvelle empreinte ou suppression du verrou Android exige le mot de passe SCOLIA.
+            // Toute nouvelle empreinte ou suppression du verrou Android exige à nouveau le code SCOLIA.
             Disable();
-            return false;
+            return null;
         }
         catch (Exception ex) when (ex is Java.Lang.Exception or GeneralSecurityException
                                    or FormatException or InvalidOperationException or CryptographicException)
         {
-            return false;
+            return null;
         }
+    }
+
+    private static void RemoveKey(string alias)
+    {
+        try
+        {
+            using var store = KeyStore.GetInstance("AndroidKeyStore")!;
+            store.Load(null);
+            if (store.ContainsAlias(alias)) store.DeleteEntry(alias);
+        }
+        catch (Java.Lang.Exception) { /* Rien à retirer. */ }
     }
 
     public static void Disable()
     {
         Prefs?.Edit()?.Remove(ProofKey)?.Commit();
-        try
-        {
-            using var store = KeyStore.GetInstance("AndroidKeyStore")!;
-            store.Load(null);
-            if (store.ContainsAlias(Alias)) store.DeleteEntry(Alias);
-        }
-        catch (Java.Lang.Exception) { /* Le lien SCOLIA reste désactivé. */ }
+        RemoveKey(Alias);
+        RemoveKey(OldAlias);
         BiometricAccess.Disable();
     }
 

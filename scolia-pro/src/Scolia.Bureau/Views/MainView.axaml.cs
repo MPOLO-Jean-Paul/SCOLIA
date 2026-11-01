@@ -156,7 +156,8 @@ public partial class MainView : UserControl
         if (args.PropertyName == nameof(ShellViewModel.CompactWindow)) FitWindow(Bounds.Size);
         // Lancement et ouverture de session : le logo s'assemble, puis le nom, le message et les trois points suivent.
         if (args.PropertyName == nameof(ShellViewModel.ShowStartup) && shell.ShowStartup) PlayIntro(StartupLogo, StartupContent, shell);
-        if (args.PropertyName == nameof(ShellViewModel.Opening) && shell.Opening) PlayIntro(OpeningLogo, WelcomeContent, shell);
+        // Accueil après la connexion : le logo, déjà assemblé au lancement, se pose seulement ; le message suit aussitôt.
+        if (args.PropertyName == nameof(ShellViewModel.Opening) && shell.Opening) PlayIntro(OpeningLogo, WelcomeContent, shell, assemble: false);
         if (args.PropertyName != nameof(ShellViewModel.Current)) return;
         WatchPage(shell.Current);
         QueueFitPageActions();
@@ -167,16 +168,22 @@ public partial class MainView : UserControl
     /// Ouverture animée : le logo s'assemble (voir <see cref="Controls.LogoAssembly"/>) pendant que le reste de l'écran
     /// attend, puis le nom, le message, les trois points et la progression apparaissent l'un après l'autre.
     /// </summary>
-    private static void PlayIntro(Controls.LogoAssembly logo, Panel content, ShellViewModel shell)
+    private static void PlayIntro(Controls.LogoAssembly logo, Panel content, ShellViewModel shell, bool assemble = true)
     {
         var animate = shell.Prefs.Animations;
         var followers = content.Children.Where(c => !c.GetVisualDescendants().Contains(logo)).ToList();
         foreach (var follower in followers)
         {
+            // Chaque ligne apparaît en remontant de quelques points, comme les écrans d'Android 16.
             follower.Transitions = animate
-                ? [new Avalonia.Animation.DoubleTransition { Property = OpacityProperty, Duration = TimeSpan.FromMilliseconds(260), Easing = new Avalonia.Animation.Easings.CubicEaseOut() }]
+                ?
+                [
+                    new Avalonia.Animation.DoubleTransition { Property = OpacityProperty, Duration = TimeSpan.FromMilliseconds(320), Easing = new Avalonia.Animation.Easings.CubicEaseOut() },
+                    new Avalonia.Animation.TransformOperationsTransition { Property = RenderTransformProperty, Duration = TimeSpan.FromMilliseconds(360), Easing = new Avalonia.Animation.Easings.CubicEaseOut() },
+                ]
                 : null;
             follower.Opacity = animate ? 0 : 1;
+            follower.RenderTransform = animate ? Avalonia.Media.Transformation.TransformOperations.Parse("translateY(8px)") : null;
         }
         void Reveal(object? sender, EventArgs e)
         {
@@ -184,11 +191,15 @@ public partial class MainView : UserControl
             for (var i = 0; i < followers.Count; i++)
             {
                 var follower = followers[i];
-                Avalonia.Threading.DispatcherTimer.RunOnce(() => follower.Opacity = 1, TimeSpan.FromMilliseconds(120 + i * 80));
+                Avalonia.Threading.DispatcherTimer.RunOnce(() =>
+                {
+                    follower.Opacity = 1;
+                    follower.RenderTransform = Avalonia.Media.Transformation.TransformOperations.Parse("translateY(0px)");
+                }, TimeSpan.FromMilliseconds(140 + i * 90));
             }
         }
         logo.Assembled += Reveal;
-        logo.Play(animate);
+        logo.Play(animate, assemble);
     }
 
     /// <summary>La recherche desktop suit le contexte : filtre local sur une liste,
@@ -390,7 +401,7 @@ public partial class MainView : UserControl
     /// <summary>Fondu entre les pages, désactivé par la préférence « Animations ».</summary>
     private void ApplyPageTransition(Preferences prefs) =>
         PageHost.PageTransition = prefs.Animations && prefs.PageTransitions
-            ? new SharedAxisTransition(TimeSpan.FromMilliseconds(Math.Clamp(220 * prefs.SpeedFactor, 140, 280)), 16)
+            ? new SharedAxisTransition(TimeSpan.FromMilliseconds(Math.Clamp(250 * prefs.SpeedFactor, 180, 320)), 18)
             : null;
 
     private ShellViewModel? Shell => DataContext as ShellViewModel;

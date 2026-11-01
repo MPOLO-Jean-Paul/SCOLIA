@@ -1,5 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-  <!-- Mode sombre du téléphone : lancement sur le même gris très foncé que SCOLIA, sans éclair blanc. -->
-  <color name="fond_lancement">#131316</color>
-</resources>

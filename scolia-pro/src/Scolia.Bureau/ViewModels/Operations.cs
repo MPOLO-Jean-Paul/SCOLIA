@@ -512,6 +512,8 @@ public sealed class BackstageViewModel : Observable
                     SecurityPassword = string.Empty;
                     SecurityPasswordVisible = false;
                     SecurityNotice = string.Empty;
+                    CodeEditorOpen = codeProvisional;
+                    BiometricPanelOpen = false;
                     RefreshSecurity();
                 }
                 Raise(nameof(IsInfos));
@@ -651,8 +653,54 @@ public sealed class BackstageViewModel : Observable
     private AsyncCommand? saveCode;
 
     /// <summary>Premier accès avec un code provisoire : le message invite à choisir son propre code.</summary>
-    public void AskForOwnCode() =>
+    public void AskForOwnCode()
+    {
+        codeProvisional = true;
+        CodeEditorOpen = true;
         CodeNotice = "Votre code actuel est provisoire. Choisissez maintenant votre propre code PIN ou mot de passe : personne d'autre ne le connaîtra.";
+        RefreshSecurity();
+    }
+
+    // ---------- Présentation façon Android 16 : un état en tête, puis des lignes qui s'ouvrent sur place ----------
+    private bool codeProvisional;
+    private bool codeEditorOpen;
+    private bool biometricPanelOpen;
+
+    /// <summary>La ligne « Code d'accès » est ouverte : le formulaire du nouveau code s'affiche dessous.</summary>
+    public bool CodeEditorOpen
+    {
+        get => codeEditorOpen;
+        set { if (Set(ref codeEditorOpen, value)) { Raise(nameof(CodeChevron)); if (value) BiometricPanelOpen = false; } }
+    }
+    /// <summary>La ligne biométrique est ouverte : explication, code de confirmation et bouton.</summary>
+    public bool BiometricPanelOpen
+    {
+        get => biometricPanelOpen;
+        set { if (Set(ref biometricPanelOpen, value)) { Raise(nameof(BiometricChevron)); if (value) CodeEditorOpen = false; } }
+    }
+    public MaterialIconKind CodeChevron => codeEditorOpen ? MaterialIconKind.ChevronUp : MaterialIconKind.ChevronDown;
+    public MaterialIconKind BiometricChevron => biometricPanelOpen ? MaterialIconKind.ChevronUp : MaterialIconKind.ChevronDown;
+    public RelayCommand ToggleCodeEditor => toggleCodeEditor ??= new RelayCommand(() => CodeEditorOpen = !CodeEditorOpen);
+    private RelayCommand? toggleCodeEditor;
+    public RelayCommand ToggleBiometricPanel => toggleBiometricPanel ??= new RelayCommand(() => BiometricPanelOpen = !BiometricPanelOpen);
+    private RelayCommand? toggleBiometricPanel;
+
+    /// <summary>Tout est en ordre : code personnel et, sur le téléphone, déverrouillage biométrique.</summary>
+    public bool SecurityHealthy => !codeProvisional && (!ShowBiometricSecurity || BiometricsEnabled || !BiometricEnrollmentReady);
+    public bool SecurityNeedsAction => !SecurityHealthy;
+    public string SecurityHeadline => codeProvisional ? "Choisissez votre propre code"
+        : SecurityHealthy ? "Votre compte est protégé" : "Protection recommandée";
+    public string SecuritySubline => codeProvisional
+        ? "Le code donné par le secrétariat est provisoire."
+        : SecurityHealthy
+            ? ShowBiometricSecurity && BiometricsEnabled ? $"Code personnel et {BiometricTitle.ToLowerInvariant()} actifs." : "Votre code personnel protège l'accès."
+            : $"Activez {Platform.BiometricInSentence} pour ouvrir SCOLIA d'un geste.";
+    public MaterialIconKind SecurityIcon => SecurityHealthy ? MaterialIconKind.ShieldCheck : MaterialIconKind.ShieldAlertOutline;
+    public string CodeSummary => codeProvisional ? "Provisoire · à remplacer maintenant" : "Code PIN ou mot de passe · Modifier";
+    public string BiometricStateLabel => BiometricsEnabled ? "Activée" : BiometricEnrollmentReady ? "Désactivée" : "Indisponible";
+    public string BiometricSummary => BiometricsEnabled ? "Ouvrir SCOLIA sans saisir votre code" : OtherBiometricAccount
+        ? "Associée à un autre compte sur ce téléphone" : BiometricEnrollmentReady
+            ? "Touchez pour l'activer" : "Enregistrez une empreinte dans les réglages du téléphone";
 
     private void RaiseCode()
     {
@@ -674,11 +722,20 @@ public sealed class BackstageViewModel : Observable
             if (shell.Api.Offline is { } cache && shell.Session is { } session)
                 cache.SaveCredential(session.UserName, newCode, session, shell.Api.SessionCookie);
             var kind = usePin ? "Code PIN" : "Mot de passe";
+            var saved = newCode;
             currentCode = newCode = confirmCode = string.Empty;
             Raise(nameof(CurrentCode)); Raise(nameof(NewCode)); Raise(nameof(ConfirmCode));
             RaiseCode();
+            codeProvisional = false;
+            CodeEditorOpen = false;
             CodeNotice = $"{kind} enregistré. Il sert dès maintenant à vous connecter.";
+            RefreshSecurity();
             shell.Notify($"{kind} modifié.");
+            if (shell.Session is { } current)
+            {
+                shell.Sync.Remember(current.UserName, saved);
+                await ResealBiometricsAsync(current.UserName, saved);
+            }
         }
         catch (ApiException ex)
         {
@@ -692,8 +749,33 @@ public sealed class BackstageViewModel : Observable
     }
     private RelayCommand? closeSecurity;
 
+    /// <summary>
+    /// Nouveau code : l'empreinte doit garder le nouveau, sinon la connexion suivante serait refusée. Le téléphone
+    /// demande l'empreinte une fois ; si elle est refusée, la biométrie est coupée plutôt que laissée fausse.
+    /// </summary>
+    private async Task ResealBiometricsAsync(string userName, string secret)
+    {
+        if (!BiometricsEnabled || Platform.EnrollBiometricAsync is not { } enroll) return;
+        if (await enroll(BiometricAccess.Seal(userName, secret)))
+        {
+            BiometricAccess.Enable(shell.Api.Server, userName);
+            CodeNotice += $" {BiometricTitle} reconnaît aussi le nouveau code.";
+        }
+        else
+        {
+            Platform.DisableBiometricAccess?.Invoke();
+            BiometricAccess.Disable();
+            CodeNotice += $" {BiometricTitle} a été désactivée : réactivez-la ci-dessous pour ne plus saisir le code.";
+        }
+        RefreshSecurity();
+        shell.Login.RefreshBiometrics();
+    }
+
     public void RefreshSecurity()
     {
+        foreach (var name in new[] { nameof(SecurityHealthy), nameof(SecurityNeedsAction), nameof(SecurityHeadline), nameof(SecuritySubline),
+                     nameof(SecurityIcon), nameof(CodeSummary), nameof(BiometricStateLabel), nameof(BiometricSummary) })
+            Raise(name);
         Raise(nameof(BiometricsEnabled));
         Raise(nameof(OtherBiometricAccount));
         Raise(nameof(BiometricEnrollmentReady));
@@ -720,8 +802,11 @@ public sealed class BackstageViewModel : Observable
     
             var enabled = BiometricsEnabled;
             var verified = false;
-            if (enabled && Platform.VerifyBiometricAsync is { } verify)
-                verified = await verify();
+            if (enabled && Platform.UnlockBiometricAsync is { } unlock)
+                verified = BiometricAccess.Open(await unlock()) is { } opened
+                    && BiometricAccess.AccountMatches(opened.UserName, session.UserName);
+            // Le code vérifié par le serveur est celui que l'empreinte gardera pour les connexions suivantes.
+            var secret = SecurityPassword;
     
             // Activer requiert systématiquement le mot de passe SCOLIA ; désactiver
             // admet soit une preuve Android fraîche, soit le mot de passe du même compte.
@@ -757,12 +842,12 @@ public sealed class BackstageViewModel : Observable
             {
                 Platform.DisableBiometricAccess?.Invoke();
                 BiometricAccess.Disable();
-                SecurityNotice = "Connexion par empreinte désactivée après vérification.";
+                SecurityNotice = $"{BiometricTitle} désactivée. Votre code sera demandé à chaque connexion.";
             }
-            else if (Platform.EnrollBiometricAsync is { } enroll && await enroll())
+            else if (Platform.EnrollBiometricAsync is { } enroll && await enroll(BiometricAccess.Seal(session.UserName, secret)))
             {
                 BiometricAccess.Enable(shell.Api.Server, session.UserName);
-                SecurityNotice = "Empreinte activée pour votre compte sur ce téléphone.";
+                SecurityNotice = $"{BiometricTitle} activée. À la prochaine connexion, touchez « Déverrouiller » : votre code ne sera plus demandé.";
             }
             else SecurityNotice = "Activation annulée ou indisponible : le mot de passe reste nécessaire.";
     

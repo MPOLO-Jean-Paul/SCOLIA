@@ -25,7 +25,7 @@ public static class IosPlatform
 
         Platform.BiometricDisplayName = IosBiometrics.DisplayName();
         Platform.IsBiometricAvailable = IosBiometrics.IsAvailable;
-        Platform.VerifyBiometricAsync = IosBiometrics.VerifyAsync;
+        Platform.UnlockBiometricAsync = IosBiometrics.UnlockAsync;
         Platform.EnrollBiometricAsync = IosBiometrics.EnrollAsync;
         Platform.HasBiometricProof = IosBiometrics.HasProof;
         Platform.DisableBiometricAccess = IosBiometrics.Disable;

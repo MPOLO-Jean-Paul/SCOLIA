@@ -57,6 +57,9 @@ public sealed class LoginViewModel : Observable
     public AsyncCommand DisableBiometrics { get; }
 
     private bool enableBiometricsAfterLogin;
+    /// <summary>Compte dont le code a changé ailleurs : sa prochaine connexion au clavier met l'empreinte à jour.</summary>
+    private string? resealFor;
+    public bool ResealPending => resealFor is not null;
     public bool EnableBiometricsAfterLogin
     {
         get => enableBiometricsAfterLogin;
@@ -102,8 +105,9 @@ public sealed class LoginViewModel : Observable
         try
         {
             var authorized = false;
-            if (CanOfferBiometrics && Platform.VerifyBiometricAsync is { } verify)
-                authorized = await verify();
+            if (CanOfferBiometrics && Platform.UnlockBiometricAsync is { } unlock)
+                authorized = BiometricAccess.Open(await unlock()) is { } opened
+                    && BiometricAccess.AccountMatches(opened.UserName, account);
 
             // Si l'empreinte a été annulée, supprimée ou est indisponible,
             // le propriétaire peut saisir le mot de passe lié dans le formulaire.
@@ -146,9 +150,14 @@ public sealed class LoginViewModel : Observable
         finally { Busy = false; }
     }
 
+    /// <summary>
+    /// Connexion par empreinte : le téléphone rend l'accès scellé à l'activation, puis SCOLIA se connecte au serveur
+    /// comme avec le clavier. Elle marche donc après une déconnexion, qu'on l'ait activée depuis cette page ou depuis
+    /// Sécurité du compte. Sans réseau, le dernier compte connecté s'ouvre hors ligne.
+    /// </summary>
     private async Task BiometricSignInAsync()
     {
-        if (Busy || Locked || !CanOfferBiometrics || Platform.VerifyBiometricAsync is not { } verify) return;
+        if (Busy || Locked || !CanOfferBiometrics || Platform.UnlockBiometricAsync is not { } unlock) return;
         Error = null;
         Notice = null;
         var account = BiometricAccess.ReadAccount(api.Server);
@@ -156,76 +165,25 @@ public sealed class LoginViewModel : Observable
         Busy = true;
         try
         {
-            // L'empreinte confirme seulement la présence du propriétaire du téléphone.
-            // Le serveur doit ENCORE valider le cookie sauvegardé pour ce compte et ce serveur.
-            if (!await verify()) return;
-            var cache = new OfflineStore(api.Server);
-            var credential = cache.SavedCredential;
-            if (credential is null || !BiometricAccess.AccountMatches(account, credential.UserName))
+            var opened = BiometricAccess.Open(await unlock());
+            if (opened is not { } access)
             {
-                Error = "Ce compte n'est plus enregistré sur ce téléphone. Reconnectez-vous avec le mot de passe.";
+                // Annulé, ou empreintes du téléphone modifiées depuis l'activation : le code reste disponible.
+                RefreshBiometrics();
+                if (!HasBiometricAccount)
+                    Error = $"{Platform.BiometricDisplayName} a changé sur ce téléphone. Connectez-vous avec votre code, puis réactivez-la.";
                 return;
             }
-
-            if (!string.IsNullOrWhiteSpace(credential.SessionCookie))
+            if (!BiometricAccess.AccountMatches(access.UserName, account))
             {
-                api.RestoreSessionCookie(credential.SessionCookie);
-                try
-                {
-                    var session = await api.CurrentSessionAsync();
-                    if (session is null || !BiometricAccess.AccountMatches(session.UserName, account))
-                    {
-                        Error = "La session du serveur est expirée ou a changé de compte. Reconnectez-vous avec le mot de passe.";
-                        return;
-                    }
-                    cache.User = session.UserName;
-                    api.Offline = cache;
-                    Password = string.Empty;
-                    LoggedIn?.Invoke(session);
-                    return;
-                }
-                catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or IOException)
-                {
-                    // Une coupure réseau autorise la même session locale limitée que la connexion hors ligne classique.
-                }
-            }
-
-            // Si le serveur est joignable mais qu'aucun cookie valide n'existe,
-            // l'empreinte seule ne peut pas recréer une identité côté serveur.
-            if (string.IsNullOrWhiteSpace(credential.SessionCookie))
-            {
-                try
-                {
-                    if (await api.IsRunningAsync())
-                    {
-                        Error = "La session serveur n'est plus enregistrée. Reconnectez-vous avec votre mot de passe.";
-                        return;
-                    }
-                }
-                catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or IOException) { }
-            }
-            // L'accès hors ligne ne peut être accordé qu'après la preuve Android Keystore.
-            // Le cache ne vaut ni nouveau jeton serveur, ni validation de droits à distance.
-            var offline = cache.BiometricOfflineLogin(account);
-            if (offline is null)
-            {
-                Error = "Aucune session locale du compte n'est disponible. Connectez-vous avec le mot de passe.";
+                Error = "Ce téléphone est associé à un autre compte. Connectez-vous avec votre code.";
                 return;
             }
-            cache.User = offline.UserName;
-            api.Offline = cache;
-            Password = string.Empty;
-            Notice = "Connexion biométrique hors ligne · les changements seront vérifiés au retour du serveur.";
-            LoggedIn?.Invoke(offline);
-        }
-        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or ApiException
-                                 or IOException or System.Security.Cryptography.CryptographicException)
-        {
-            Error = "Impossible de valider la session avec le serveur. Utilisez le mot de passe SCOLIA.";
+            UserName = access.UserName;
+            await SignInAsync(access.UserName, access.Secret, fromBiometrics: true);
         }
         finally { Busy = false; }
     }
-
 
     private Avalonia.Media.Imaging.Bitmap? logo;
 
@@ -292,20 +250,30 @@ public sealed class LoginViewModel : Observable
     private async Task SubmitAsync()
     {
         if (Locked) return;
+        Busy = true;
+        try { await SignInAsync(UserName.Trim(), Password, fromBiometrics: false); }
+        finally { Busy = false; }
+    }
+
+    /// <summary>Connexion au serveur, au clavier ou après l'empreinte ; hors ligne, le dernier compte de l'appareil.</summary>
+    private async Task SignInAsync(string user, string secret, bool fromBiometrics)
+    {
         Error = null;
         Restored = false;
-        Busy = true;
         try
         {
-            var session = await api.LoginAsync(UserName.Trim(), Password);
-            Authenticated?.Invoke(UserName.Trim(), Password, session);
-            if (EnableBiometricsAfterLogin && CanOfferBiometrics
+            var session = await api.LoginAsync(user, secret);
+            Authenticated?.Invoke(user, secret, session);
+            // Mise à jour après un code changé ailleurs : déjà consentie, elle ne dépend pas de la case à cocher.
+            var reseal = resealFor is { } account && BiometricAccess.AccountMatches(account, session.UserName);
+            resealFor = null;
+            if ((EnableBiometricsAfterLogin || reseal) && CanOfferBiometrics
                 && Platform.EnrollBiometricAsync is { } enroll)
             {
-                if (await enroll())
+                if (await enroll(BiometricAccess.Seal(session.UserName, secret)))
                     BiometricAccess.Enable(api.Server, session.UserName);
                 else
-                    Notice = $"L'accès par {Platform.BiometricDisplayName.ToLowerInvariant()} n'a pas été activé. Vous pourrez réessayer après une connexion par mot de passe.";
+                    Notice = $"L'accès par {Platform.BiometricDisplayName.ToLowerInvariant()} n'a pas été activé. Vous pourrez l'activer plus tard dans Sécurité du compte.";
             }
             EnableBiometricsAfterLogin = false;
             RefreshBiometrics();
@@ -316,20 +284,26 @@ public sealed class LoginViewModel : Observable
         {
             // Ordinateur principal injoignable : le dernier compte connecté sur cet appareil peut travailler hors ligne.
             var store = api.Offline ?? new Infrastructure.OfflineStore(api.Server);
-            if (store.OfflineLogin(UserName.Trim(), Password) is { } saved)
+            if (store.OfflineLogin(user, secret) is { } saved)
             {
                 api.Offline = store;
-                Authenticated?.Invoke(UserName.Trim(), Password, saved);
+                Authenticated?.Invoke(user, secret, saved);
                 Password = string.Empty;
+                if (fromBiometrics) Notice = "Connexion hors ligne · les changements seront envoyés au retour du serveur.";
                 LoggedIn?.Invoke(saved);
             }
             else Error = store.HasCredential
-                ? "Ordinateur principal injoignable. Hors ligne, seul le dernier compte connecté sur cet appareil peut s'ouvrir, avec son mot de passe."
+                ? "Ordinateur principal injoignable. Hors ligne, seul le dernier compte connecté sur cet appareil peut s'ouvrir, avec son code."
                 : "Ordinateur principal injoignable. Une première connexion en ligne est nécessaire pour travailler ensuite hors ligne.";
         }
         catch (ApiException locked) when (locked.RetryAfterSeconds is > 0) { StartLock(locked.RetryAfterSeconds.Value, DateTime.UtcNow); }
+        catch (ApiException ex) when (fromBiometrics && ex.Status is 400 or 401)
+        {
+            // Le code a été changé depuis un autre appareil : une saisie suffit, l'empreinte est alors mise à jour.
+            resealFor = user;
+            Error = $"Votre code a changé depuis l'activation de {Platform.BiometricInSentence}. Saisissez-le une fois : {Platform.BiometricInSentence} sera mise à jour.";
+        }
         catch (ApiException ex) { Error = ex.Message; }
         catch (HttpRequestException) { Error = "Le serveur SCOLIA ne répond pas. Vérifiez qu'il est lancé sur ce poste."; }
-        finally { Busy = false; }
     }
 }

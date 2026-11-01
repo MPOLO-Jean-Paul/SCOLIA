@@ -15,6 +15,28 @@ public static class BiometricAccess
         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
         "SCOLIA", "biometrie.compte");
 
+    private sealed record Sealed(string UserName, string Secret);
+
+    /// <summary>
+    /// Ce que la puce de sécurité du téléphone garde sous l'empreinte : le compte et son code, ensemble. Une fois
+    /// l'empreinte validée, SCOLIA se connecte comme avec le clavier : la biométrie marche aussi après une
+    /// déconnexion, et le serveur vérifie toujours le code.
+    /// </summary>
+    public static string Seal(string userName, string secret) =>
+        JsonSerializer.Serialize(new Sealed(userName.Trim(), secret));
+
+    /// <summary>Lit ce que l'empreinte a rendu ; rien si ce n'est pas un accès SCOLIA complet.</summary>
+    public static (string UserName, string Secret)? Open(string? sealedAccess)
+    {
+        if (string.IsNullOrEmpty(sealedAccess)) return null;
+        try
+        {
+            return JsonSerializer.Deserialize<Sealed>(sealedAccess) is { UserName.Length: > 0, Secret.Length: > 0 } value
+                ? (value.UserName, value.Secret) : null;
+        }
+        catch (JsonException) { return null; }
+    }
+
     public static bool AccountMatches(string a, string b) =>
         string.Equals(a.Trim(), b.Trim(), StringComparison.OrdinalIgnoreCase);
 

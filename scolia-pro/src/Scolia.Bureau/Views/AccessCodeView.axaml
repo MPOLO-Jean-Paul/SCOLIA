@@ -5,30 +5,32 @@
   <!-- Code d'accès, comme le verrouillage d'écran d'Android : la personne choisit un code PIN ou un mot de passe,
        les règles se cochent pendant la saisie, un seul bouton enregistre. Téléphone et ordinateur. -->
   <UserControl.Styles>
+    <!-- Dans le groupe gris de la page Sécurité : les choix et les règles ressortent sur la surface -->
+    <Style Selector="Border.methods">
+      <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+      <Setter Property="CornerRadius" Value="18" />
+      <Setter Property="ClipToBounds" Value="True" />
+    </Style>
     <Style Selector="Button.method">
-      <Setter Property="Background" Value="{DynamicResource FieldBrush}" />
-      <Setter Property="BorderBrush" Value="{DynamicResource LineStrongBrush}" />
-      <Setter Property="BorderThickness" Value="2" />
-      <Setter Property="CornerRadius" Value="16" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="CornerRadius" Value="0" />
       <Setter Property="Padding" Value="14,12" />
+      <Setter Property="MinHeight" Value="60" />
       <Setter Property="HorizontalAlignment" Value="Stretch" />
       <Setter Property="HorizontalContentAlignment" Value="Stretch" />
     </Style>
     <Style Selector="Button.method /template/ ContentPresenter">
-      <Setter Property="Background" Value="{DynamicResource FieldBrush}" />
-      <Setter Property="BorderBrush" Value="{DynamicResource LineStrongBrush}" />
-    </Style>
-    <Style Selector="Button.method.chosen">
-      <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
-      <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
     </Style>
     <Style Selector="Button.method.chosen /template/ ContentPresenter">
       <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
-      <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
     </Style>
     <Style Selector="TextBox.code">
-      <Setter Property="MinHeight" Value="48" />
+      <Setter Property="MinHeight" Value="52" />
       <Setter Property="FontSize" Value="17" />
+      <Setter Property="CornerRadius" Value="14" />
     </Style>
     <Style Selector="TextBlock.fieldlabel">
       <Setter Property="FontWeight" Value="SemiBold" />
@@ -36,51 +38,40 @@
     </Style>
   </UserControl.Styles>
 
-  <Border Classes="card" Padding="18,18" CornerRadius="20">
-    <StackPanel Spacing="12">
-      <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
-        <Border Width="44" Height="44" CornerRadius="14" Background="{DynamicResource AccentSoftBrush}">
-          <mi:MaterialIcon Kind="LockOutline" Width="24" Height="24" Foreground="{DynamicResource AccentBrush}"
-                           HorizontalAlignment="Center" VerticalAlignment="Center" />
-        </Border>
-        <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
-          <TextBlock Text="Code d'accès" FontSize="18" FontWeight="SemiBold" />
-          <TextBlock Text="Choisissez comment vous vous connectez à SCOLIA" Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
+  <StackPanel Spacing="10" Margin="0,4,0,0">
+      <!-- 1. La méthode, comme « Verrouillage de l'écran » d'Android : deux lignes à cocher -->
+      <TextBlock Text="Type de code" Classes="fieldlabel" />
+      <Border Classes="methods">
+        <StackPanel>
+          <Button x:Name="PinChoice" Classes="method" Classes.chosen="{Binding UsePin}" Command="{Binding ChoosePin}">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+              <mi:MaterialIcon Kind="Dialpad" Width="22" Height="22" Foreground="{DynamicResource AccentBrush}" Margin="0,0,14,0" />
+              <StackPanel Grid.Column="1" Spacing="1" VerticalAlignment="Center">
+                <TextBlock Text="Code PIN" FontWeight="Medium" />
+                <TextBlock Text="6 chiffres ou plus, rapide à saisir" Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
+              </StackPanel>
+              <Panel Grid.Column="2" Width="22" Height="22" Margin="10,0,0,0">
+                <mi:MaterialIcon Kind="RadioboxMarked" Foreground="{DynamicResource AccentBrush}" IsVisible="{Binding UsePin}" />
+                <mi:MaterialIcon Kind="RadioboxBlank" Foreground="{DynamicResource MutedBrush}" IsVisible="{Binding !UsePin}" />
+              </Panel>
+            </Grid>
+          </Button>
+          <Border Height="1" Background="{DynamicResource LineBrush}" Margin="50,0,12,0" />
+          <Button x:Name="PasswordChoice" Classes="method" Classes.chosen="{Binding UsePassword}" Command="{Binding ChoosePassword}">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+              <mi:MaterialIcon Kind="FormTextboxPassword" Width="22" Height="22" Foreground="{DynamicResource AccentBrush}" Margin="0,0,14,0" />
+              <StackPanel Grid.Column="1" Spacing="1" VerticalAlignment="Center">
+                <TextBlock Text="Mot de passe" FontWeight="Medium" />
+                <TextBlock Text="8 caractères ou plus : lettres, chiffres, symboles" Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
+              </StackPanel>
+              <Panel Grid.Column="2" Width="22" Height="22" Margin="10,0,0,0">
+                <mi:MaterialIcon Kind="RadioboxMarked" Foreground="{DynamicResource AccentBrush}" IsVisible="{Binding UsePassword}" />
+                <mi:MaterialIcon Kind="RadioboxBlank" Foreground="{DynamicResource MutedBrush}" IsVisible="{Binding !UsePassword}" />
+              </Panel>
+            </Grid>
+          </Button>
         </StackPanel>
-      </Grid>
-
-      <Border Background="{DynamicResource AccentSoftBrush}" CornerRadius="12" Padding="12,10" IsVisible="{Binding HasCodeNotice}">
-        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
-          <mi:MaterialIcon Kind="InformationOutline" Width="20" Height="20" Foreground="{DynamicResource AccentBrush}" VerticalAlignment="Top" />
-          <TextBlock Grid.Column="1" Text="{Binding CodeNotice}" TextWrapping="Wrap" />
-        </Grid>
       </Border>
-
-      <!-- 1. La méthode -->
-      <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
-        <Button x:Name="PinChoice" Classes="method" Classes.chosen="{Binding UsePin}" Command="{Binding ChoosePin}">
-          <Grid ColumnDefinitions="*,Auto">
-            <StackPanel Spacing="4">
-              <mi:MaterialIcon Kind="Dialpad" Width="24" Height="24" Foreground="{DynamicResource AccentBrush}" HorizontalAlignment="Left" />
-              <TextBlock Text="Code PIN" FontWeight="SemiBold" />
-              <TextBlock Text="6 chiffres ou plus" Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
-            </StackPanel>
-            <mi:MaterialIcon Grid.Column="1" Kind="CheckCircle" Width="20" Height="20" VerticalAlignment="Top"
-                             Foreground="{DynamicResource AccentBrush}" IsVisible="{Binding UsePin}" />
-          </Grid>
-        </Button>
-        <Button x:Name="PasswordChoice" Grid.Column="1" Classes="method" Classes.chosen="{Binding UsePassword}" Command="{Binding ChoosePassword}">
-          <Grid ColumnDefinitions="*,Auto">
-            <StackPanel Spacing="4">
-              <mi:MaterialIcon Kind="FormTextboxPassword" Width="24" Height="24" Foreground="{DynamicResource AccentBrush}" HorizontalAlignment="Left" />
-              <TextBlock Text="Mot de passe" FontWeight="SemiBold" />
-              <TextBlock Text="8 caractères ou plus" Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
-            </StackPanel>
-            <mi:MaterialIcon Grid.Column="1" Kind="CheckCircle" Width="20" Height="20" VerticalAlignment="Top"
-                             Foreground="{DynamicResource AccentBrush}" IsVisible="{Binding UsePassword}" />
-          </Grid>
-        </Button>
-      </Grid>
       <TextBlock Text="{Binding MethodHint}" Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
 
       <!-- 2. Le code actuel -->
@@ -100,7 +91,7 @@
                TextInputOptions.ContentType="Pin" TextInputOptions.IsSensitive="True" MaxLength="16" PlaceholderText="Chiffres seulement" />
       <TextBox x:Name="NewPasswordBox" Classes="code" Text="{Binding NewCode}" PasswordChar="{Binding CodeMask}" IsVisible="{Binding UsePassword}"
                TextInputOptions.ContentType="Password" TextInputOptions.IsSensitive="True" MaxLength="128" PlaceholderText="Lettres, chiffres, symboles" />
-      <Border Background="{DynamicResource GroupBrush}" CornerRadius="12" Padding="12,10">
+      <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="14" Padding="14,10">
         <ItemsControl ItemsSource="{Binding CodeRules}">
           <ItemsControl.ItemTemplate>
             <DataTemplate>
@@ -129,16 +120,15 @@
         <TextBlock Text="{Binding MatchText}" FontSize="{DynamicResource FsSmall}" VerticalAlignment="Center" />
       </StackPanel>
 
-      <Border Background="{DynamicResource RedSoftBrush}" CornerRadius="12" Padding="12,10" IsVisible="{Binding HasCodeError}">
+      <Border Background="{DynamicResource RedSoftBrush}" CornerRadius="14" Padding="14,10" IsVisible="{Binding HasCodeError}">
         <TextBlock Text="{Binding CodeError}" TextWrapping="Wrap" />
       </Border>
       <Button x:Name="SaveCodeButton" Classes="primary" Command="{Binding SaveCode}" IsEnabled="{Binding CanSaveCode}"
-              HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" MinHeight="48">
+              HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" MinHeight="52" CornerRadius="26" Margin="0,4,0,0">
         <StackPanel Orientation="Horizontal" Spacing="8">
           <mi:MaterialIcon Kind="ContentSaveOutline" Width="18" Height="18" />
           <TextBlock Text="Enregistrer le nouveau code" FontWeight="SemiBold" VerticalAlignment="Center" />
         </StackPanel>
       </Button>
-    </StackPanel>
-  </Border>
+  </StackPanel>
 </UserControl>

@@ -25,7 +25,7 @@ public static class MobilePlatform
         Synchronization.SyncWorker.Schedule(app);
         Platform.IsMobile = true;
         Platform.IsBiometricAvailable = Security.AndroidBiometrics.IsAvailable;
-        Platform.VerifyBiometricAsync = Security.AndroidBiometrics.VerifyAsync;
+        Platform.UnlockBiometricAsync = Security.AndroidBiometrics.UnlockAsync;
         Platform.EnrollBiometricAsync = Security.AndroidBiometrics.EnrollAsync;
         Platform.DisableBiometricAccess = Security.AndroidBiometrics.Disable;
         Platform.HasBiometricProof = Security.AndroidBiometrics.HasProof;

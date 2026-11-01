@@ -23,10 +23,16 @@ public static class Platform
 
     /// <summary>Le système confirme une biométrie enrôlée et disponible.</summary>
     public static Func<bool>? IsBiometricAvailable { get; set; }
-    /// <summary>Le système présente son propre dialogue d'authentification ; aucune empreinte n'est lue par SCOLIA.</summary>
-    public static Func<Task<bool>>? VerifyBiometricAsync { get; set; }
-    /// <summary>L'activation nécessite une première authentification SCOLIA par mot de passe puis une empreinte forte.</summary>
-    public static Func<Task<bool>>? EnrollBiometricAsync { get; set; }
+    /// <summary>
+    /// Le système présente son propre dialogue (empreinte, Face ID) ; s'il le valide, il rend l'accès scellé à
+    /// l'activation. Annulation, échec ou empreinte modifiée : rien. Aucune empreinte n'est lue par SCOLIA.
+    /// </summary>
+    public static Func<Task<string?>>? UnlockBiometricAsync { get; set; }
+    /// <summary>
+    /// Activation, après un code vérifié par le serveur : le système demande l'empreinte, puis scelle l'accès dans
+    /// sa puce de sécurité (Android Keystore, trousseau d'Apple). Il ne s'ouvre ensuite qu'avec une empreinte.
+    /// </summary>
+    public static Func<string, Task<bool>>? EnrollBiometricAsync { get; set; }
     /// <summary>Retire la clé biométrique native et son consentement local, sans toucher aux données scolaires.</summary>
     public static Action? DisableBiometricAccess { get; set; }
     /// <summary>Vrai seulement si l'appareil possède la preuve native liée à une activation biométrique.</summary>

@@ -494,6 +494,135 @@ if (args.Length > 3 && args[3] == "elegance")
     return;
 }
 
+// Biométrie (argument « biometrie ») : activée depuis Sécurité du compte, elle doit ouvrir la session à la connexion
+// suivante, même après une déconnexion, puis suivre un changement de code fait ici ou ailleurs.
+if (args.Length > 3 && args[3] == "biometrie")
+{
+    window.Width = 360;
+    window.Height = 760;
+    var bioFailures = 0;
+    void BioCheck(string label, bool ok)
+    {
+        Console.WriteLine($"{(ok ? "OK  " : "ECHEC")} {label}");
+        if (!ok) bioFailures++;
+    }
+    void Until(Func<bool> done, int ms = 15000)
+    {
+        var limit = DateTime.UtcNow.AddMilliseconds(ms);
+        while (!done() && DateTime.UtcNow < limit) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(10); }
+    }
+    // Téléphone simulé : la puce de sécurité garde ce qu'on lui confie et ne le rend qu'après « l'empreinte ».
+    string? chip = null;
+    var prompts = 0;
+    Platform.IsMobile = true;
+    Platform.IsBiometricAvailable = () => true;
+    Platform.HasBiometricProof = () => chip is not null;
+    Platform.EnrollBiometricAsync = sealedAccess => { prompts++; chip = sealedAccess; return Task.FromResult(true); };
+    Platform.UnlockBiometricAsync = () => { prompts++; return Task.FromResult(chip); };
+    Platform.DisableBiometricAccess = () => chip = null;
+    BiometricAccess.Disable();
+
+    var admin = new ScoliaClient(server);
+    Result(admin.LoginAsync("admin", password));
+    var bioUser = "bio" + Guid.NewGuid().ToString("N")[..6];
+    var firstCode = "Bio2026!kz";
+    var created = Result(admin.SendAsync<UserDto>(HttpMethod.Post, "api/utilisateurs", new { userName = bioUser, displayName = "Test biométrie", role = "Comptabilite", password = firstCode }));
+
+    // 1. Connexion au clavier, puis activation depuis Sécurité du compte.
+    shell.Login.UserName = bioUser;
+    shell.Login.Password = firstCode;
+    shell.Login.Submit.Execute(null);
+    Until(() => shell.IsLoggedIn && !shell.Opening);
+    BioCheck("Connexion au clavier", shell.IsLoggedIn);
+    var backstage = shell.Backstage;
+    backstage.Section = backstage.Items.First(i => i.Value == "mot-de-passe");
+    backstage.SecurityPassword = firstCode;
+    backstage.ManageBiometrics.Execute(null);
+    Until(() => backstage.BiometricsEnabled);
+    BioCheck("Sécurité du compte : empreinte activée", backstage.BiometricsEnabled);
+    BioCheck($"Message clair : « {backstage.SecurityNotice} »", backstage.SecurityNotice.Contains("Déverrouiller"));
+
+    // 2. Déconnexion, puis l'empreinte à la page de connexion.
+    Wait(shell.LogoutAsync());
+    shell.Login.RefreshBiometrics();
+    BioCheck("Page de connexion : bouton Déverrouiller proposé", shell.Login.CanUseBiometricSignIn);
+    shell.Login.UserName = string.Empty;
+    shell.Login.SignInWithBiometrics.Execute(null);
+    Until(() => shell.IsLoggedIn && !shell.Opening);
+    BioCheck($"Empreinte après déconnexion : session ouverte {(shell.Login.Error is { } e1 ? "(" + e1 + ")" : "")}",
+        shell.IsLoggedIn && BiometricAccess.AccountMatches(shell.Session!.UserName, bioUser));
+
+    // 3. Nouveau code depuis Sécurité du compte : l'empreinte suit.
+    backstage = shell.Backstage;
+    backstage.Section = backstage.Items.First(i => i.Value == "mot-de-passe");
+    backstage.CurrentCode = firstCode;
+    backstage.UsePin = true;
+    backstage.NewCode = "482915";
+    backstage.ConfirmCode = "482915";
+    BioCheck("Nouveau code PIN accepté par le formulaire", backstage.CanSaveCode);
+    backstage.SaveCode.Execute(null);
+    Until(() => BiometricAccess.Open(chip)?.Secret == "482915");
+    BioCheck($"Code changé : l'empreinte garde le nouveau ({backstage.CodeNotice})", BiometricAccess.Open(chip)?.Secret == "482915");
+    Wait(shell.LogoutAsync());
+    shell.Login.RefreshBiometrics();
+    shell.Login.SignInWithBiometrics.Execute(null);
+    Until(() => shell.IsLoggedIn && !shell.Opening);
+    BioCheck("Empreinte avec le nouveau code : session ouverte", shell.IsLoggedIn);
+
+    // Page Sécurité façon Android 16 : fermée, code ouvert, empreinte ouverte, puis en sombre.
+    Until(() => !shell.Opening);
+    var hub = shell.Backstage;
+    shell.OpenBackstage();
+    hub.Section = hub.Items.First(i => i.Value == "mot-de-passe");
+    BioCheck("Sécurité : en-tête « protégé » avec l'empreinte active", hub.SecurityHealthy && hub.BiometricStateLabel == "Activée");
+    Save(window, "securite-telephone.png");
+    hub.CodeEditorOpen = true;
+    Save(window, "securite-code.png");
+    hub.BiometricPanelOpen = true;
+    BioCheck("Sécurité : une seule ligne ouverte à la fois", hub.BiometricPanelOpen && !hub.CodeEditorOpen);
+    Save(window, "securite-empreinte.png");
+    hub.BiometricPanelOpen = false;
+    prefs.Theme = "dark";
+    Save(window, "securite-sombre.png");
+    prefs.Theme = "light";
+    shell.CloseBackstage();
+
+    // 4. Code remplacé ailleurs (par l'administrateur) : un message clair, une saisie, et l'empreinte est à jour.
+    Wait(shell.LogoutAsync());
+    Wait(admin.SendAsync(HttpMethod.Post, $"api/utilisateurs/{created.Id}/mot-de-passe", new { newPassword = "Autre2026!qz" }));
+    shell.Login.RefreshBiometrics();
+    shell.Login.SignInWithBiometrics.Execute(null);
+    Until(() => shell.Login.HasError);
+    BioCheck($"Code changé ailleurs : « {shell.Login.Error} »", !shell.IsLoggedIn && shell.Login.Error?.Contains("a changé") == true);
+    BioCheck("Code changé ailleurs : mise à jour de l'empreinte prévue", shell.Login.ResealPending);
+    Save(window, "biometrie-code-change.png");
+    shell.Login.Password = "Autre2026!qz";
+    shell.Login.Submit.Execute(null);
+    Until(() => shell.IsLoggedIn && !shell.Opening);
+    BioCheck($"Après une saisie : l'empreinte garde le code du serveur (session {shell.IsLoggedIn}{shell.Login.Error})",
+        shell.IsLoggedIn && BiometricAccess.Open(chip)?.Secret == "Autre2026!qz");
+
+    // 5. Empreinte annulée : rien ne s'ouvre, le code reste proposé.
+    Wait(shell.LogoutAsync());
+    var kept = chip;
+    Platform.UnlockBiometricAsync = () => Task.FromResult<string?>(null);
+    shell.Login.RefreshBiometrics();
+    shell.Login.SignInWithBiometrics.Execute(null);
+    Until(() => !shell.Login.Busy, 3000);
+    BioCheck("Empreinte annulée : aucune session ouverte", !shell.IsLoggedIn);
+    Save(window, "biometrie-connexion.png");
+
+    Platform.UnlockBiometricAsync = null;
+    chip = null;
+    BiometricAccess.Disable();
+    Platform.IsMobile = false;
+    shell.Sync.Stop();
+    window.Close();
+    Console.WriteLine(bioFailures == 0 ? $"Biométrie : tout est en place ({prompts} demandes d'empreinte)." : $"Biométrie : {bioFailures} échec(s).");
+    Environment.ExitCode = bioFailures == 0 ? 0 : 1;
+    return;
+}
+
 // Logo animé (argument « logo ») : huit instants de l'assemblage puis de la descente, clair et sombre.
 if (args.Length > 3 && args[3] == "logo")
 {

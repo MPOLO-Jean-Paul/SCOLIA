@@ -90,7 +90,7 @@ public partial class PhoneFrame : UserControl
         // Aucun Task.Delay ni animation de toute la fenêtre : le menu demeure aussi réactif que les onglets.
         // Axe partagé d'Android 16 : glissement de quelques points et fondu, jamais toute la largeur.
         PhoneHost.PageTransition = new Infrastructure.SharedAxisTransition(
-            TimeSpan.FromMilliseconds(Math.Clamp(260 * shell.Prefs.SpeedFactor, 160, 320)), 28);
+            TimeSpan.FromMilliseconds(Math.Clamp(300 * shell.Prefs.SpeedFactor, 220, 400)), 30);
     }
 
     private void OnPreferencesChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs args)
