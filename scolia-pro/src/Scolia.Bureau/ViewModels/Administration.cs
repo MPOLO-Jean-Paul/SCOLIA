@@ -1012,7 +1012,8 @@ public sealed class UsersPage : PageViewModel
         form.Add("identifiant", "Identifiant", required: true);
         form.Add("nom", "Nom complet", required: true);
         form.AddChoice("role", "Rôle", Labels.Roles, "Secretariat", required: true);
-        form.Add("motDePasse", "Mot de passe provisoire", FieldKind.Secret, required: true);
+        form.Add("motDePasse", "Code provisoire", FieldKind.Secret, required: true,
+            hint: AccessCode.Hint + " La personne choisira le sien à sa première connexion.");
         if (await shell.Ask(form) && shell.Current is UsersPage page) await page.RefreshAsync();
     }
 
@@ -1055,7 +1056,8 @@ public sealed class UsersPage : PageViewModel
             Shell.Notify("Mot de passe provisoire défini. Il sera à changer à la prochaine connexion.");
             return true;
         });
-        form.Add("motDePasse", "Nouveau mot de passe provisoire", FieldKind.Secret, required: true);
+        form.Add("motDePasse", "Nouveau code provisoire", FieldKind.Secret, required: true,
+            hint: AccessCode.Hint + " La personne choisira le sien à sa prochaine connexion.");
         if (await Shell.Ask(form)) await RefreshAsync();
     }
 }

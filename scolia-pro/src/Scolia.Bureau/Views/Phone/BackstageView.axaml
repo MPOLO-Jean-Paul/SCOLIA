@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:views="using:Scolia.Bureau.Views"
              x:Class="Scolia.Bureau.Views.Phone.BackstageView">
   <!-- Compte sur le mobile, comme les Réglages : profil, rubriques en lignes, puis la déconnexion -->
   <Grid RowDefinitions="Auto,*" Background="{DynamicResource BgBrush}">
@@ -83,7 +84,7 @@
                   </Border>
                   <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3">
                     <TextBlock Text="Sécurité du compte" FontSize="19" FontWeight="SemiBold" TextWrapping="Wrap" />
-                    <TextBlock Text="Mot de passe et biométrie de l'appareil" Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
+                    <TextBlock Text="Code d'accès et déverrouillage biométrique" Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
                   </StackPanel>
                 </Grid>
                 <Border Background="{DynamicResource GroupBrush}" CornerRadius="14" Padding="12,12">
@@ -98,23 +99,7 @@
               </StackPanel>
             </Border>
 
-            <Border Classes="card" Padding="16,16" CornerRadius="20">
-              <StackPanel Spacing="12">
-                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
-                  <Border Width="44" Height="44" Background="{DynamicResource GroupBrush}" CornerRadius="14">
-                    <mi:MaterialIcon Kind="LockReset" Width="25" Height="25"
-                                     Foreground="{DynamicResource AccentBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                  </Border>
-                  <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
-                    <TextBlock Text="01 · Mot de passe" FontSize="17" FontWeight="SemiBold" />
-                    <TextBlock Text="Modifier votre code d'accès SCOLIA" Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
-                  </StackPanel>
-                </Grid>
-                <TextBlock Text="Saisissez votre ancien mot de passe, puis le nouveau deux fois. Le changement est appliqué à votre compte."
-                           Classes="muted" TextWrapping="Wrap" />
-                <ContentControl Content="{Binding PasswordForm}" HorizontalAlignment="Stretch" />
-              </StackPanel>
-            </Border>
+            <views:AccessCodeView />
 
             <Border Classes="card" IsVisible="{Binding ShowBiometricSecurity}" Padding="16,16" CornerRadius="20">
               <StackPanel Spacing="12">
@@ -124,8 +109,8 @@
                                      Foreground="{DynamicResource AccentBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
                   </Border>
                   <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
-                    <TextBlock Text="02 · Accès biométrique" FontSize="17" FontWeight="SemiBold" TextWrapping="Wrap" />
-                    <TextBlock Text="Empreinte ou Face ID selon l'appareil" Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
+                    <TextBlock Text="{Binding BiometricTitle}" FontSize="17" FontWeight="SemiBold" TextWrapping="Wrap" />
+                    <TextBlock Text="Déverrouiller SCOLIA sans saisir votre code" Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
                   </StackPanel>
                 </Grid>
                 <Border Background="{DynamicResource GroupBrush}" CornerRadius="14" Padding="14,12">
@@ -135,10 +120,10 @@
                                FontSize="{DynamicResource FsSmall}" />
                   </Grid>
                 </Border>
-                <TextBlock Text="Vérifier avec mon mot de passe" FontWeight="SemiBold" />
+                <TextBlock Text="Confirmer avec votre code actuel" FontWeight="SemiBold" />
                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
                   <TextBox Text="{Binding SecurityPassword}" PasswordChar="{Binding SecurityPasswordMask}"
-                           PlaceholderText="Mot de passe actuel" MinHeight="48" />
+                           PlaceholderText="Code PIN ou mot de passe" MinHeight="48" />
                   <Button Grid.Column="1" Classes="phoneicon" Command="{Binding ToggleSecurityPassword}"
                           ToolTip.Tip="Afficher ou masquer le mot de passe" MinWidth="48" MinHeight="48">
                     <mi:MaterialIcon Kind="{Binding SecurityEyeIcon}" Width="23" Height="23" />

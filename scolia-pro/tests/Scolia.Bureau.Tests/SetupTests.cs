@@ -53,7 +53,10 @@ public class SetupTests
         var wizard = NewWizard();
         wizard.AdminPassword = "motdepasse";
         wizard.AdminConfirm = "motdepasse";
-        Assert.Contains("lettres et des chiffres", wizard.ValidateStepTwo());
+        Assert.Contains("trop courant", wizard.ValidateStepTwo());
+        wizard.AdminPassword = "123456";
+        wizard.AdminConfirm = "123456";
+        Assert.Contains("trop facile", wizard.ValidateStepTwo());
         wizard.AdminPassword = "Scolia2026!";
         wizard.AdminConfirm = "autre";
         Assert.Contains("ne correspondent pas", wizard.ValidateStepTwo());

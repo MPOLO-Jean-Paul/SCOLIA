@@ -57,12 +57,23 @@ public sealed class TextAndIdentityTests
     [InlineData("", false)]
     public void Names_contain_letters_only(string value, bool valid) => Assert.Equal(valid, IdentityRules.IsValidName(value));
 
-    [Fact]
-    public void Password_policy_requires_letters_digits_and_length()
+    [Theory]
+    [InlineData("Scolia2026x", true)]      // mot de passe alphanumérique
+    [InlineData("ma devise ecole", true)]  // phrase de passe
+    [InlineData("sanschiffres", true)]     // lettres seules : la personne choisit
+    [InlineData("482915", true)]           // code PIN de 6 chiffres
+    [InlineData("70315582", true)]         // code PIN plus long
+    [InlineData("court1", false)]          // mot de passe trop court
+    [InlineData("12345", false)]           // code PIN trop court
+    [InlineData("111111", false)]          // chiffres identiques
+    [InlineData("123456", false)]          // suite montante
+    [InlineData("987654", false)]          // suite descendante
+    [InlineData("motdepasse", false)]      // trop courant
+    [InlineData("        ", false)]        // espaces seulement
+    public void Code_d_acces_au_choix_pin_ou_mot_de_passe(string code, bool accepted)
     {
-        Assert.Throws<DomainException>(() => PasswordPolicy.Validate("court1"));
-        Assert.Throws<DomainException>(() => PasswordPolicy.Validate("sanschiffres"));
-        PasswordPolicy.Validate("Scolia2026");
+        if (accepted) PasswordPolicy.Validate(code);
+        else Assert.Throws<DomainException>(() => PasswordPolicy.Validate(code));
     }
 }
 

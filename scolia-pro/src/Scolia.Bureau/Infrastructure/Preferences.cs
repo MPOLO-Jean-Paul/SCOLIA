@@ -304,7 +304,7 @@ public sealed class Preferences : Observable
     {
         var a = AccentTable.First(x => x.Key == accent);
         resources.ThemeDictionaries[ThemeVariant.Light] = AccentDictionary(Color.Parse(a.Light), Colors.White, dark: false);
-        resources.ThemeDictionaries[ThemeVariant.Dark] = AccentDictionary(Color.Parse(a.Dark), Color.Parse("#1C1C1E"), dark: true);
+        resources.ThemeDictionaries[ThemeVariant.Dark] = AccentDictionary(Color.Parse(a.Dark), Color.Parse("#212126"), dark: true);
     }
 
     private static Avalonia.Controls.ResourceDictionary AccentDictionary(Color color, Color background, bool dark)

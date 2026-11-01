@@ -335,8 +335,8 @@ public sealed class SetupViewModel : Observable
         if (name.Length is < 3 or > 40 || !name.All(c => char.IsAsciiLetterOrDigit(c) || c is '.' or '-' or '_'))
             return $"{who} : identifiant de 3 à 40 caractères (lettres, chiffres, point, tiret ou tiret bas).";
         if (string.IsNullOrWhiteSpace(displayName)) return $"{who} : indiquez le nom de la personne.";
-        if (password.Length < 8 || !password.Any(char.IsLetter) || !password.Any(char.IsDigit))
-            return $"{who} : le mot de passe compte au moins 8 caractères, avec des lettres et des chiffres.";
+        if (AccessCode.Problem(password) is { } weak)
+            return $"{who} : {char.ToLowerInvariant(weak[0])}{weak[1..]}";
         if (password != confirm) return $"{who} : les deux mots de passe ne correspondent pas.";
         return null;
     }

@@ -73,18 +73,62 @@ public static class Permissions
     };
 }
 
+/// <summary>
+/// Code d'accès choisi par la personne, comme sur Android : un code PIN (chiffres seulement, 6 à 16) ou un mot de passe
+/// (8 caractères ou plus, lettres, chiffres ou symboles). Les codes trop faciles à deviner sont refusés ; après cinq
+/// essais faux, le compte est de toute façon verrouillé quelques minutes.
+/// </summary>
 public static class PasswordPolicy
 {
+    public const int PinMinLength = 6;
+    public const int PinMaxLength = 16;
+    public const int PasswordMinLength = 8;
+    public const int MaxLength = 128;
+
+    private static readonly HashSet<string> Common = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "password", "motdepasse", "azertyuiop", "qwertyuiop", "azerty123", "password1", "motdepasse1",
+        "scolia2026", "administrateur", "secretariat", "comptabilite", "abcdefgh", "abc12345", "00000000",
+    };
+
+    public static bool IsPin(string? code) => !string.IsNullOrEmpty(code) && code.All(char.IsAsciiDigit);
+
     public static void Validate(string? password)
     {
         var v = new ValidationBuilder();
-        v.Require(!string.IsNullOrEmpty(password) && password.Length >= 8, "motDePasse", "Le mot de passe doit contenir au moins 8 caractères.");
-        if (!string.IsNullOrEmpty(password))
+        if (IsPin(password))
         {
-            v.Require(password.Any(char.IsLetter) && password.Any(char.IsDigit), "motDePasse", "Le mot de passe doit contenir des lettres et des chiffres.");
-            v.Require(password.Length <= 128, "motDePasse", "Le mot de passe est trop long.");
+            var pin = password!;
+            v.Require(pin.Length >= PinMinLength, "motDePasse", $"Le code PIN doit compter au moins {PinMinLength} chiffres.");
+            v.Require(pin.Length <= PinMaxLength, "motDePasse", $"Le code PIN compte au plus {PinMaxLength} chiffres.");
+            v.Require(!IsTrivialPin(pin), "motDePasse", "Ce code est trop facile à deviner (chiffres identiques ou qui se suivent).");
         }
-        v.ThrowIfInvalid("Mot de passe trop faible.");
+        else
+        {
+            v.Require(!string.IsNullOrEmpty(password) && password.Length >= PasswordMinLength, "motDePasse",
+                $"Le mot de passe doit contenir au moins {PasswordMinLength} caractères.");
+            if (!string.IsNullOrEmpty(password))
+            {
+                v.Require(password.Length <= MaxLength, "motDePasse", "Le mot de passe est trop long.");
+                v.Require(!string.IsNullOrWhiteSpace(password), "motDePasse", "Le mot de passe ne peut pas être fait que d'espaces.");
+                v.Require(!Common.Contains(password), "motDePasse", "Ce mot de passe est trop courant : choisissez-en un autre.");
+            }
+        }
+        v.ThrowIfInvalid("Code d'accès trop faible.");
+    }
+
+    /// <summary>111111, 123456, 987654… : refusés, comme sur un téléphone.</summary>
+    public static bool IsTrivialPin(string pin)
+    {
+        if (pin.Length < 2) return true;
+        if (pin.All(c => c == pin[0])) return true;
+        bool Step(int delta)
+        {
+            for (var i = 1; i < pin.Length; i++)
+                if ((pin[i] - pin[i - 1] + 10) % 10 != (delta + 10) % 10) return false;
+            return true;
+        }
+        return Step(1) || Step(-1);
     }
 }
 

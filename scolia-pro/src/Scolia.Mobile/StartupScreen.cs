@@ -28,11 +28,25 @@ internal sealed class StartupScreen : FrameLayout
     private bool closed;
     private bool active = true;
 
+    /// <summary>Thème choisi dans SCOLIA ; « Système » suit le mode sombre du téléphone.</summary>
+    private static bool IsDark(Activity activity)
+    {
+        var theme = "system";
+        try { theme = Scolia.Bureau.Infrastructure.Preferences.Load().Theme; }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Text.Json.JsonException) { }
+        if (theme == "dark") return true;
+        if (theme == "light") return false;
+        var mode = activity.Resources?.Configuration?.UiMode ?? Android.Content.Res.UiMode.NightNo;
+        return (mode & Android.Content.Res.UiMode.NightMask) == Android.Content.Res.UiMode.NightYes;
+    }
+
     public StartupScreen(Activity activity) : base(activity)
     {
         this.activity = activity;
         animationScale = ReadAnimationScale(activity);
-        SetBackgroundColor(Color.White);
+        // Même ambiance que l'application : sombre si le thème choisi (ou celui du téléphone) est sombre.
+        var dark = IsDark(activity);
+        SetBackgroundColor(dark ? Color.Rgb(19, 19, 22) : Color.White);
         Clickable = true;
         Focusable = true;
 
@@ -49,7 +63,7 @@ internal sealed class StartupScreen : FrameLayout
         var markBackground = new GradientDrawable();
         markBackground.SetShape(ShapeType.Rectangle);
         markBackground.SetCornerRadius(Dp(26));
-        markBackground.SetColor(Color.Rgb(241, 246, 252));
+        markBackground.SetColor(dark ? Color.Rgb(33, 33, 38) : Color.Rgb(241, 246, 252));
         var mark = new ImageView(activity) { ImportantForAccessibility = ImportantForAccessibility.No };
         mark.SetImageResource(Resource.Drawable.scolia_mark);
         mark.SetScaleType(ImageView.ScaleType.FitCenter);
@@ -68,7 +82,7 @@ internal sealed class StartupScreen : FrameLayout
         }
 
         var title = new TextView(activity) { Text = "SCOLIA Pro", TextSize = 23, Gravity = GravityFlags.Center };
-        title.SetTextColor(Color.Rgb(15, 43, 107));
+        title.SetTextColor(dark ? Color.Rgb(230, 230, 235) : Color.Rgb(15, 43, 107));
         title.SetTypeface(null, TypefaceStyle.Bold);
         content.AddView(title, new LinearLayout.LayoutParams(LayoutParams.MatchParent, LayoutParams.WrapContent));
 
@@ -79,7 +93,7 @@ internal sealed class StartupScreen : FrameLayout
             Gravity = GravityFlags.Center,
             AccessibilityLiveRegion = AccessibilityLiveRegion.Polite,
         };
-        status.SetTextColor(Color.Rgb(91, 105, 126));
+        status.SetTextColor(dark ? Color.Rgb(161, 161, 169) : Color.Rgb(91, 105, 126));
         content.AddView(status, new LinearLayout.LayoutParams(LayoutParams.MatchParent, LayoutParams.WrapContent)
         {
             TopMargin = Dp(8),
@@ -92,7 +106,7 @@ internal sealed class StartupScreen : FrameLayout
         {
             var shape = new GradientDrawable();
             shape.SetShape(ShapeType.Oval);
-            shape.SetColor(i == 1 ? Color.Rgb(20, 159, 72) : Color.Rgb(15, 43, 107));
+            shape.SetColor(i == 1 ? Color.Rgb(20, 159, 72) : dark ? Color.Rgb(120, 185, 255) : Color.Rgb(15, 43, 107));
             var dot = new AndroidView(activity) { Background = shape, Alpha = animationScale > 0 ? 0.25f : 1f };
             dots.AddView(dot, new LinearLayout.LayoutParams(Dp(6), Dp(6)) { LeftMargin = Dp(4), RightMargin = Dp(4) });
             if (animationScale <= 0) continue;

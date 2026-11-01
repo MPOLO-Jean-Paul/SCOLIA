@@ -6,6 +6,7 @@
              xmlns:chrome="using:Avalonia.Controls.Chrome"
              x:Class="Scolia.Bureau.Views.MainView"
              x:DataType="vm:ShellViewModel"
+             Background="{DynamicResource BgBrush}"
              KeyDown="OnKeyDown">
   <UserControl.Styles>
     <!-- Clavier ouvert sur le téléphone : la barre d'onglets du bas se retire pour laisser voir la saisie -->

@@ -747,6 +747,14 @@ public sealed class ShellViewModel : Observable
         }
         finally { Opening = false; }
         Sounds.Play(Prefs, SoundKind.Opening);
+        // Code provisoire donné par le secrétariat : la personne choisit tout de suite son propre code PIN ou mot de passe.
+        if (s.MustChangePassword)
+        {
+            OpenBackstage();
+            Backstage.Section = Backstage.Items.First(i => i.Value == "mot-de-passe");
+            Backstage.AskForOwnCode();
+            return;
+        }
         await OfferNetworkAsync();
     }
 

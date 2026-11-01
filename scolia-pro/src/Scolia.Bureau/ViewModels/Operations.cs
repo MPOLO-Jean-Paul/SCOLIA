@@ -505,6 +505,10 @@ public sealed class BackstageViewModel : Observable
                 if (value.Value == "mot-de-passe")
                 {
                     PasswordForm = BuildPasswordForm();
+                    currentCode = newCode = confirmCode = string.Empty;
+                    Raise(nameof(CurrentCode)); Raise(nameof(NewCode)); Raise(nameof(ConfirmCode));
+                    CodeVisible = false;
+                    RaiseCode();
                     SecurityPassword = string.Empty;
                     SecurityPasswordVisible = false;
                     SecurityNotice = string.Empty;
@@ -585,6 +589,107 @@ public sealed class BackstageViewModel : Observable
     public bool HasSecurityNotice => SecurityNotice.Length > 0;
     public AsyncCommand ManageBiometrics { get; }
     public RelayCommand CloseSecurity => closeSecurity ??= new RelayCommand(() => Section = Items[0]);
+
+    // ---------- Code d'accès : code PIN ou mot de passe, au choix de la personne ----------
+    private bool usePin;
+    private string currentCode = string.Empty;
+    private string newCode = string.Empty;
+    private string confirmCode = string.Empty;
+    private bool codeVisible;
+    private bool savingCode;
+    private string codeError = string.Empty;
+
+    /// <summary>Code PIN (chiffres seulement) choisi ; sinon, mot de passe.</summary>
+    public bool UsePin
+    {
+        get => usePin;
+        set
+        {
+            if (!Set(ref usePin, value)) return;
+            newCode = string.Empty;
+            confirmCode = string.Empty;
+            Raise(nameof(NewCode));
+            Raise(nameof(ConfirmCode));
+            RaiseCode();
+        }
+    }
+    public bool UsePassword => !usePin;
+    public RelayCommand ChoosePin => choosePin ??= new RelayCommand(() => UsePin = true);
+    private RelayCommand? choosePin;
+    public RelayCommand ChoosePassword => choosePassword ??= new RelayCommand(() => UsePin = false);
+    private RelayCommand? choosePassword;
+
+    public string CurrentCode { get => currentCode; set { if (Set(ref currentCode, value ?? string.Empty)) RaiseCode(); } }
+    public string NewCode { get => newCode; set { if (Set(ref newCode, value ?? string.Empty)) RaiseCode(); } }
+    public string ConfirmCode { get => confirmCode; set { if (Set(ref confirmCode, value ?? string.Empty)) RaiseCode(); } }
+
+    public bool CodeVisible { get => codeVisible; private set { if (Set(ref codeVisible, value)) { Raise(nameof(CodeMask)); Raise(nameof(CodeEyeIcon)); } } }
+    public char CodeMask => codeVisible ? '\0' : '•';
+    public MaterialIconKind CodeEyeIcon => codeVisible ? MaterialIconKind.EyeOffOutline : MaterialIconKind.EyeOutline;
+    public RelayCommand ToggleCodeVisible => toggleCodeVisible ??= new RelayCommand(() => CodeVisible = !CodeVisible);
+    private RelayCommand? toggleCodeVisible;
+
+    public string NewCodeLabel => usePin ? "Nouveau code PIN" : "Nouveau mot de passe";
+    public string ConfirmCodeLabel => usePin ? "Confirmer le code PIN" : "Confirmer le mot de passe";
+    public string MethodHint => usePin
+        ? "Chiffres seulement, comme le code de déverrouillage d'un téléphone. Rapide à saisir sur le pavé numérique."
+        : "Lettres, chiffres et symboles, au choix. Une courte phrase facile à retenir convient très bien.";
+    /// <summary>Règles de la méthode choisie, cochées pendant la saisie.</summary>
+    public IReadOnlyList<AccessCodeRule> CodeRules => AccessCode.Rules(newCode, usePin);
+    public bool CodesMatch => confirmCode.Length > 0 && confirmCode == newCode;
+    public bool ShowMatch => confirmCode.Length > 0;
+    public string MatchText => CodesMatch ? "Les deux saisies correspondent." : "Les deux saisies sont différentes.";
+    public bool CanSaveCode => !savingCode && currentCode.Length > 0 && AccessCode.IsPin(newCode) == usePin
+        && AccessCode.Problem(newCode) is null && CodesMatch && newCode != currentCode;
+    private string codeNotice = string.Empty;
+    /// <summary>Message du code d'accès : code provisoire à remplacer, ou nouveau code enregistré.</summary>
+    public string CodeNotice { get => codeNotice; private set { if (Set(ref codeNotice, value)) Raise(nameof(HasCodeNotice)); } }
+    public bool HasCodeNotice => codeNotice.Length > 0;
+    public string CodeError { get => codeError; private set { if (Set(ref codeError, value)) Raise(nameof(HasCodeError)); } }
+    public bool HasCodeError => codeError.Length > 0;
+    public AsyncCommand SaveCode => saveCode ??= new AsyncCommand(SaveCodeAsync);
+    private AsyncCommand? saveCode;
+
+    /// <summary>Premier accès avec un code provisoire : le message invite à choisir son propre code.</summary>
+    public void AskForOwnCode() =>
+        CodeNotice = "Votre code actuel est provisoire. Choisissez maintenant votre propre code PIN ou mot de passe : personne d'autre ne le connaîtra.";
+
+    private void RaiseCode()
+    {
+        CodeError = string.Empty;
+        foreach (var name in new[] { nameof(UsePassword), nameof(NewCodeLabel), nameof(ConfirmCodeLabel), nameof(MethodHint),
+                     nameof(CodeRules), nameof(CodesMatch), nameof(ShowMatch), nameof(MatchText), nameof(CanSaveCode) })
+            Raise(name);
+    }
+
+    private async Task SaveCodeAsync()
+    {
+        if (!CanSaveCode) return;
+        savingCode = true;
+        Raise(nameof(CanSaveCode));
+        try
+        {
+            await shell.Api.SendAsync(HttpMethod.Post, "api/session/mot-de-passe", new { currentPassword = currentCode, newPassword = newCode });
+            // Le cache chiffré hors ligne reconnaît aussitôt le nouveau code, jamais l'ancien.
+            if (shell.Api.Offline is { } cache && shell.Session is { } session)
+                cache.SaveCredential(session.UserName, newCode, session, shell.Api.SessionCookie);
+            var kind = usePin ? "Code PIN" : "Mot de passe";
+            currentCode = newCode = confirmCode = string.Empty;
+            Raise(nameof(CurrentCode)); Raise(nameof(NewCode)); Raise(nameof(ConfirmCode));
+            RaiseCode();
+            CodeNotice = $"{kind} enregistré. Il sert dès maintenant à vous connecter.";
+            shell.Notify($"{kind} modifié.");
+        }
+        catch (ApiException ex)
+        {
+            CodeError = ex.Message;
+        }
+        finally
+        {
+            savingCode = false;
+            Raise(nameof(CanSaveCode));
+        }
+    }
     private RelayCommand? closeSecurity;
 
     public void RefreshSecurity()

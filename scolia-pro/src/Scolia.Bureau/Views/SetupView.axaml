@@ -277,7 +277,7 @@
                 <StackPanel Orientation="Horizontal" Spacing="10">
                   <Border Classes="appicon medium" Background="{DynamicResource ToneIndigo}"><mi:MaterialIcon Kind="FormTextboxPassword" /></Border>
                   <TextBlock Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" MaxWidth="220" VerticalAlignment="Center"
-                             Text="Au moins 8 caractères, avec des lettres et des chiffres." />
+                             Text="Code PIN de 6 chiffres ou plus, ou mot de passe de 8 caractères ou plus." />
                 </StackPanel>
                 <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10">
                   <Border Classes="appicon medium" Background="{DynamicResource ToneOrange}"><mi:MaterialIcon Kind="LockClock" /></Border>
