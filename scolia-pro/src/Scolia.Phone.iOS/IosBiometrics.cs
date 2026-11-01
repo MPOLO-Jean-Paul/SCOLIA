@@ -40,7 +40,7 @@ public static class IosBiometrics
     public static bool HasProof() => NSUserDefaults.StandardUserDefaults.BoolForKey(FlagKey);
 
     /// <summary>Activation : l'utilisateur confirme d'abord avec Face ID ou Touch ID, puis l'accès est déposé.</summary>
-    public static async Task<bool> EnrollAsync(string access)
+    public static async Task<bool> EnrollAsync(string sealedAccess)
     {
         if (!await AskAsync("Activer le déverrouillage de SCOLIA Phone").ConfigureAwait(false)) return false;
         return await Task.Run(() =>
@@ -51,7 +51,7 @@ public static class IosBiometrics
             {
                 Service = Service,
                 Account = Account,
-                ValueData = NSData.FromArray(System.Text.Encoding.UTF8.GetBytes(access)),
+                ValueData = NSData.FromArray(System.Text.Encoding.UTF8.GetBytes(sealedAccess)),
                 AccessControl = access,
             };
             if (SecKeyChain.Add(record) != SecStatusCode.Success) return false;
