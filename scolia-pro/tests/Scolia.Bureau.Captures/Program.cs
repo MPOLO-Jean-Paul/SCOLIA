@@ -389,6 +389,39 @@ if (args.Length > 3 && args[3] == "contraste")
     return;
 }
 
+// Logo animé (argument « logo ») : huit instants de l'assemblage puis de la descente, clair et sombre.
+if (args.Length > 3 && args[3] == "logo")
+{
+    window.Width = 1040;
+    window.Height = 300;
+    var row = new StackPanel { Orientation = Avalonia.Layout.Orientation.Horizontal, Spacing = 10, Margin = new Thickness(10) };
+    var frames = new[] { 0.0, 0.15, 0.3, 0.45, 0.6, 0.8, 1.0, 1.35 };
+    var logos = new List<Scolia.Bureau.Controls.LogoAssembly>();
+    foreach (var value in frames)
+    {
+        var logo = new Scolia.Bureau.Controls.LogoAssembly
+        {
+            Width = 110, Height = 110, Progress = value,
+            Primary = new Avalonia.Media.SolidColorBrush(Avalonia.Media.Color.Parse("#0B2A6F")),
+            Secondary = new Avalonia.Media.SolidColorBrush(Avalonia.Media.Color.Parse("#16A34A")),
+        };
+        logos.Add(logo);
+        row.Children.Add(new StackPanel
+        {
+            Spacing = 4,
+            Children =
+            {
+                new Border { Width = 118, Height = 200, Background = Avalonia.Media.Brushes.White, CornerRadius = new CornerRadius(14), Child = logo },
+                new TextBlock { Text = value.ToString("0.00"), HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center },
+            },
+        });
+    }
+    window.Content = row;
+    Save(window, "logo-etapes.png");
+    window.Close();
+    return;
+}
+
 // Clavier du téléphone (argument « clavier ») : un clavier simulé couvre le bas de l'écran ; le champ actif doit rester
 // visible juste au-dessus de lui, sur la page Configuration comme dans une fenêtre de saisie.
 if (args.Length > 3 && args[3] == "clavier")

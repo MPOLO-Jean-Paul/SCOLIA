@@ -4,6 +4,7 @@
              xmlns:mi="using:Material.Icons.Avalonia"
              xmlns:views="using:Scolia.Bureau.Views"
              xmlns:chrome="using:Avalonia.Controls.Chrome"
+             xmlns:ctl="using:Scolia.Bureau.Controls"
              x:Class="Scolia.Bureau.Views.MainView"
              x:DataType="vm:ShellViewModel"
              Background="{DynamicResource BgBrush}"
@@ -146,10 +147,12 @@
     <!-- Détection de première installation : jamais afficher le formulaire de connexion
          avant de connaître l’état réel de configuration. -->
     <Border Background="{DynamicResource BgBrush}" IsVisible="{Binding ShowStartup}">
-      <StackPanel MaxWidth="340" Margin="24" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="12">
+      <StackPanel x:Name="StartupContent" MaxWidth="340" Margin="24" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="12">
         <Border Width="76" Height="76" CornerRadius="20" Background="{DynamicResource Surface2Brush}"
                 BorderBrush="{DynamicResource LineBrush}" BorderThickness="1" HorizontalAlignment="Center">
-          <Image Source="{DynamicResource ScoliaMark}" Width="54" Height="54" HorizontalAlignment="Center" VerticalAlignment="Center" />
+          <!-- Le logo s'assemble en tournant, descend à sa place, puis le reste apparaît -->
+          <ctl:LogoAssembly x:Name="StartupLogo" Width="54" Height="54" HorizontalAlignment="Center" VerticalAlignment="Center"
+                            Primary="{DynamicResource LogoPrimaryBrush}" Secondary="{DynamicResource LogoSecondaryBrush}" />
         </Border>
         <TextBlock Text="SCOLIA Pro" FontSize="22" FontWeight="SemiBold" TextAlignment="Center" HorizontalAlignment="Center" />
         <TextBlock Text="{Binding Status}" Classes="muted" TextWrapping="Wrap" TextAlignment="Center" HorizontalAlignment="Center" />
@@ -171,8 +174,8 @@
       <StackPanel x:Name="WelcomeContent" MaxWidth="320" Margin="24" HorizontalAlignment="Stretch" Spacing="12">
         <Border Width="92" Height="92" CornerRadius="24" Background="{DynamicResource Surface2Brush}"
                 BorderBrush="{DynamicResource LineBrush}" BorderThickness="1" HorizontalAlignment="Center">
-          <Image Source="{DynamicResource ScoliaMark}" Width="68" Height="68"
-                 HorizontalAlignment="Center" VerticalAlignment="Center" />
+          <ctl:LogoAssembly x:Name="OpeningLogo" Width="68" Height="68" HorizontalAlignment="Center" VerticalAlignment="Center"
+                            Primary="{DynamicResource LogoPrimaryBrush}" Secondary="{DynamicResource LogoSecondaryBrush}" />
         </Border>
         <TextBlock Text="SCOLIA Pro" FontSize="22" FontWeight="SemiBold" HorizontalAlignment="Center" />
         <TextBlock Text="{Binding OpeningTitle}" Classes="muted"

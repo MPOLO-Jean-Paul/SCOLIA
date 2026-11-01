@@ -5,6 +5,7 @@ using Avalonia.Controls.Primitives.PopupPositioning;
 using Material.Icons;
 using Material.Icons.Avalonia;
 using Avalonia.Controls;
+using Avalonia.VisualTree;
 using Avalonia.Input;
 using Avalonia.Platform.Storage;
 using Scolia.Bureau.Infrastructure;
@@ -80,6 +81,8 @@ public partial class MainView : UserControl
         shell.Prefs.LayoutScaleChanged += OnLayoutScaleChanged;
         shell.Prefs.PropertyChanged += OnPreferencesChanged;
         shell.PropertyChanged += OnShellChanged;
+        // Premier affichage : l'écran de lancement est déjà là, son logo s'assemble tout de suite.
+        if (shell.ShowStartup) Avalonia.Threading.Dispatcher.UIThread.Post(() => { if (Shell == shell && shell.ShowStartup) PlayIntro(StartupLogo, StartupContent, shell); });
         shell.HeaderSearch.PropertyChanged += OnContextSearchChanged;
         shell.PickFileHandler = pickFileHandler;
         shell.IsTyping = isTypingHandler;
@@ -150,10 +153,41 @@ public partial class MainView : UserControl
     {
         if (subscribedShell is not { } shell) return;
         if (args.PropertyName == nameof(ShellViewModel.CompactWindow)) FitWindow(Bounds.Size);
+        // Lancement et ouverture de session : le logo s'assemble, puis le nom, le message et les trois points suivent.
+        if (args.PropertyName == nameof(ShellViewModel.ShowStartup) && shell.ShowStartup) PlayIntro(StartupLogo, StartupContent, shell);
+        if (args.PropertyName == nameof(ShellViewModel.Opening) && shell.Opening) PlayIntro(OpeningLogo, WelcomeContent, shell);
         if (args.PropertyName != nameof(ShellViewModel.Current)) return;
         WatchPage(shell.Current);
         QueueFitPageActions();
         PageScroll.Offset = default;
+    }
+
+    /// <summary>
+    /// Ouverture animée : le logo s'assemble (voir <see cref="Controls.LogoAssembly"/>) pendant que le reste de l'écran
+    /// attend, puis le nom, le message, les trois points et la progression apparaissent l'un après l'autre.
+    /// </summary>
+    private static void PlayIntro(Controls.LogoAssembly logo, Panel content, ShellViewModel shell)
+    {
+        var animate = shell.Prefs.Animations;
+        var followers = content.Children.Where(c => !c.GetVisualDescendants().Contains(logo)).ToList();
+        foreach (var follower in followers)
+        {
+            follower.Transitions = animate
+                ? [new Avalonia.Animation.DoubleTransition { Property = OpacityProperty, Duration = TimeSpan.FromMilliseconds(260), Easing = new Avalonia.Animation.Easings.CubicEaseOut() }]
+                : null;
+            follower.Opacity = animate ? 0 : 1;
+        }
+        void Reveal(object? sender, EventArgs e)
+        {
+            logo.Assembled -= Reveal;
+            for (var i = 0; i < followers.Count; i++)
+            {
+                var follower = followers[i];
+                Avalonia.Threading.DispatcherTimer.RunOnce(() => follower.Opacity = 1, TimeSpan.FromMilliseconds(120 + i * 80));
+            }
+        }
+        logo.Assembled += Reveal;
+        logo.Play(animate);
     }
 
     /// <summary>La recherche desktop suit le contexte : filtre local sur une liste,

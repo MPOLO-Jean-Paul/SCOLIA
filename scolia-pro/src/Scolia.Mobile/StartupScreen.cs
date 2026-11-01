@@ -24,6 +24,10 @@ internal sealed class StartupScreen : FrameLayout
     private readonly LinearLayout dots;
     private readonly Button retry;
     private readonly float animationScale;
+    private readonly LogoAssemblyView logo;
+    private readonly List<AndroidView> intro = [];
+    private readonly TaskCompletionSource introDone = new(TaskCreationOptions.RunContinuationsAsynchronously);
+    private bool introStarted;
     private ObjectAnimator? fade;
     private bool closed;
     private bool active = true;
@@ -64,27 +68,20 @@ internal sealed class StartupScreen : FrameLayout
         markBackground.SetShape(ShapeType.Rectangle);
         markBackground.SetCornerRadius(Dp(26));
         markBackground.SetColor(dark ? Color.Rgb(33, 33, 38) : Color.Rgb(241, 246, 252));
-        var mark = new ImageView(activity) { ImportantForAccessibility = ImportantForAccessibility.No };
-        mark.SetImageResource(Resource.Drawable.scolia_mark);
-        mark.SetScaleType(ImageView.ScaleType.FitCenter);
-        mark.SetPadding(Dp(14), Dp(14), Dp(14), Dp(14));
-        mark.Background = markBackground;
-        content.AddView(mark, new LinearLayout.LayoutParams(Dp(112), Dp(112))
+        // Le logo est dessiné en quatre pièces qui s'assemblent en tournant au lancement.
+        logo = new LogoAssemblyView(activity, dark) { Background = markBackground };
+        logo.SetPadding(Dp(14), Dp(14), Dp(14), Dp(14));
+        content.AddView(logo, new LinearLayout.LayoutParams(Dp(112), Dp(112))
         {
             BottomMargin = Dp(20),
             Gravity = GravityFlags.CenterHorizontal,
         });
-        // Une seule entrée discrète, désactivée si l'appareil réduit les animations.
-        if (animationScale > 0)
-        {
-            mark.Alpha = 0f;
-            mark.Animate()?.Alpha(1f)?.SetDuration((long)(240 * animationScale))?.Start();
-        }
 
         var title = new TextView(activity) { Text = "SCOLIA Pro", TextSize = 23, Gravity = GravityFlags.Center };
         title.SetTextColor(dark ? Color.Rgb(230, 230, 235) : Color.Rgb(15, 43, 107));
         title.SetTypeface(null, TypefaceStyle.Bold);
         content.AddView(title, new LinearLayout.LayoutParams(LayoutParams.MatchParent, LayoutParams.WrapContent));
+        intro.Add(title);
 
         status = new TextView(activity)
         {
@@ -98,10 +95,12 @@ internal sealed class StartupScreen : FrameLayout
         {
             TopMargin = Dp(8),
         });
+        intro.Add(status);
 
         dots = new LinearLayout(activity) { Orientation = Orientation.Horizontal, ImportantForAccessibility = ImportantForAccessibility.No };
         dots.SetGravity(GravityFlags.Center);
         content.AddView(dots, new LinearLayout.LayoutParams(LayoutParams.WrapContent, Dp(24)) { TopMargin = Dp(18) });
+        intro.Add(dots);
         for (var i = 0; i < 3; i++)
         {
             var shape = new GradientDrawable();
@@ -134,8 +133,56 @@ internal sealed class StartupScreen : FrameLayout
 
     public void Begin(Task startup, TimeSpan minimum)
     {
-        StartPulses();
+        PlayIntro();
         _ = OpenAsync(startup, animationScale > 0 ? minimum : TimeSpan.Zero);
+    }
+
+    /// <summary>
+    /// Ouverture : les pièces du logo arrivent en tournant et s'emboîtent, le logo descend à sa place, puis le nom,
+    /// le message et les trois points prennent la relève. Sans animations sur le téléphone, tout s'affiche aussitôt.
+    /// </summary>
+    private void PlayIntro()
+    {
+        if (introStarted) { StartPulses(); return; }
+        introStarted = true;
+        if (animationScale <= 0)
+        {
+            logo.Progress = 1f;
+            StartPulses();
+            introDone.TrySetResult();
+            return;
+        }
+        logo.Progress = 0f;
+        logo.ScaleX = logo.ScaleY = 1.3f;
+        logo.TranslationY = -Dp(40);
+        foreach (var view in intro)
+        {
+            view.Alpha = 0f;
+            view.TranslationY = Dp(10);
+        }
+        var assemble = ValueAnimator.OfFloat(0f, 1f)!;
+        assemble.SetDuration(1100);
+        assemble.SetInterpolator(new Android.Views.Animations.LinearInterpolator());
+        assemble.Update += (_, e) => logo.Progress = (float)(e.Animation.AnimatedValue ?? 1f);
+        assemble.AnimationEnd += (_, _) =>
+        {
+            if (closed) return;
+            // Le logo descend à sa place, en douceur.
+            logo.Animate()?.TranslationY(0f)?.ScaleX(1f)?.ScaleY(1f)?.SetDuration(380)
+                ?.SetInterpolator(new Android.Views.Animations.DecelerateInterpolator(1.6f))?.Start();
+            // Le nom, le message et les trois points apparaissent l'un après l'autre.
+            for (var i = 0; i < intro.Count; i++)
+                intro[i].Animate()?.Alpha(1f)?.TranslationY(0f)?.SetStartDelay(200 + i * 90)?.SetDuration(260)
+                    ?.SetInterpolator(new Android.Views.Animations.DecelerateInterpolator())?.Start();
+            PostDelayed(() =>
+            {
+                if (closed) return;
+                StartPulses();
+                introDone.TrySetResult();
+            }, (long)((200 + intro.Count * 90 + 260) * animationScale));
+        };
+        assemble.Start();
+        if (!active) assemble.Pause();
     }
 
     public void SetActive(bool value)
@@ -170,6 +217,8 @@ internal sealed class StartupScreen : FrameLayout
             if (await Task.WhenAny(ready, patience).ConfigureAwait(false) != ready)
                 await OnUiAsync(() => { if (!closed) status.Text = "La préparation continue. Merci de patienter…"; }).ConfigureAwait(false);
             await ready.ConfigureAwait(false);
+            // L'ouverture du logo va jusqu'au bout : la page suivante ne coupe jamais l'animation en plein vol.
+            await introDone.Task.WaitAsync(TimeSpan.FromSeconds(4), token).ConfigureAwait(false);
             if (animationScale > 0)
             {
                 await OnUiAsync(() =>
