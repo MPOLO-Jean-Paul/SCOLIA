@@ -134,7 +134,7 @@
               </Border>
               <StackPanel Grid.Column="1" VerticalAlignment="Center">
                 <TextBlock Text="{Binding AccountName}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
-                <TextBlock Text="Compte et réglages" Classes="muted" FontSize="{DynamicResource FsSmall}" />
+                <TextBlock Text="Mon compte, sécurité et réseau" Classes="muted" FontSize="{DynamicResource FsSmall}" />
               </StackPanel>
             </Grid>
           </Button>
@@ -313,7 +313,7 @@
                   </Border>
                   <StackPanel Grid.Column="1" VerticalAlignment="Center">
                     <TextBlock Text="{Binding AccountName}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
-                    <TextBlock Text="Compte, poste et réglages" Classes="muted" FontSize="{DynamicResource FsSmall}" />
+                    <TextBlock Text="Mon compte, sécurité et réseau" Classes="muted" FontSize="{DynamicResource FsSmall}" />
                   </StackPanel>
                   <mi:MaterialIcon Grid.Column="2" Kind="ChevronRight" Width="20" Height="20" Foreground="{DynamicResource MutedBrush}" />
                 </Grid>

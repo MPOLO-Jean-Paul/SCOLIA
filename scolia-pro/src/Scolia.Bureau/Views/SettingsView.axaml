@@ -59,7 +59,7 @@
             </DataTemplate>
           </ListBox.ItemTemplate>
         </ListBox>
-        <TextBlock Text="CE POSTE" Classes="caption" Margin="10,10,0,2" />
+        <TextBlock Text="CET APPAREIL" Classes="caption" Margin="10,10,0,2" />
         <ListBox Classes="side" ItemsSource="{Binding PosteSections}" SelectedItem="{Binding PosteSection}" Background="Transparent" BorderThickness="0">
           <ListBox.ItemTemplate>
             <DataTemplate>
@@ -104,7 +104,7 @@
           </StackPanel>
 
           <StackPanel Spacing="5">
-            <TextBlock Text="APPARENCE ET APPAREIL" Classes="caption" Margin="12,10,0,4" />
+            <TextBlock Text="CET APPAREIL" Classes="caption" Margin="12,10,0,4" />
             <Border Classes="phonegroup">
               <ItemsControl ItemsSource="{Binding PosteSections}">
                 <ItemsControl.ItemTemplate>

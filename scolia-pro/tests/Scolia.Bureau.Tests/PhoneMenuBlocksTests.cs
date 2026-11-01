@@ -16,8 +16,8 @@ public sealed class PhoneMenuBlocksTests
     {
         NavGroupVm[] navigation =
         [
-            new("Données", []), new("Secrétariat", []), new("Scolarité", []),
-            new("Finances", []), new("Administration", []), new("Paramètres", []),
+            new("Pilotage", []), new("Secrétariat", []), new("Scolarité", []),
+            new("Finances", []), new("Personnel", []), new("Paramètres", []), new("Données", []),
         ];
         PhoneToolGroupVm[] commands =
         [
@@ -29,7 +29,7 @@ public sealed class PhoneMenuBlocksTests
             new("Secrétariat", [Command("Nouvelle inscription")]),
             new("Scolarité", [Command("Nouveau cours")]),
             new("Finances", [Command("Nouvelle dépense")]),
-            new("Administration", [Command("Nouvel utilisateur")]),
+            new("Personnel", [Command("Nouveau membre")]),
             new("Paramètres", [Command("Thème")]),
             new("Aide", [Command("À propos")]),
         ];
@@ -38,6 +38,8 @@ public sealed class PhoneMenuBlocksTests
         Assert.All(navigation, nav => Assert.Single(blocks, b => b.NavigationGroups.Contains(nav)));
 
         Assert.DoesNotContain(blocks, b => b.Title is "AFFICHAGE" or "AUTRES OUTILS");
+        // Sauvegardes, contrôle et effacement s'ajoutent à la rubrique Données : plus cinq entrées séparées.
+        Assert.DoesNotContain(blocks.SelectMany(b => b.ToolGroups), g => g.Title is "Sauvegardes" or "Contrôle" or "Effacement" or "Exports");
         var visible = blocks.SelectMany(b => b.ToolGroups.SelectMany(g => g.Commands))
             .Concat(navigation.SelectMany(g => g.SupplementalCommands)).ToArray();
         var original = commands.SelectMany(g => g.Commands).ToArray();
@@ -53,7 +55,8 @@ public sealed class PhoneMenuBlocksTests
         var appearance = Command("Thème");
         var color = Command("Couleur d'accent");
         var backups = Command("Sauvegarder");
-        var blocks = PhoneMenuBlockVm.Build([settings],
+        var data = new NavGroupVm("Données", []);
+        var blocks = PhoneMenuBlockVm.Build([settings, data],
         [
             new("Affichage", [appearance, color]),
             new("Paramètres", [Command("Nouvelle année")]),
@@ -63,8 +66,8 @@ public sealed class PhoneMenuBlocksTests
         Assert.DoesNotContain(blocks, b => b.Title == "AFFICHAGE");
         Assert.Equal(3, settings.SupplementalCommands.Count);
         Assert.DoesNotContain(blocks.SelectMany(b => b.ToolGroups),
-            g => g.Title is "Affichage" or "Paramètres");
-        Assert.Contains(blocks, b => b.Title == "DONNÉES ET SAUVEGARDES"
-            && b.ToolGroups.Any(g => g.Commands.Contains(backups)));
+            g => g.Title is "Affichage" or "Paramètres" or "Sauvegardes");
+        Assert.Contains(backups, data.SupplementalCommands);
+        Assert.Single(blocks, b => b.Title == "RÉGLAGES ET DONNÉES");
     }
 }

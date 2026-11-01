@@ -1275,7 +1275,7 @@ void Smoke(ShellViewModel shell, ScoliaClient api, Window window, string passwor
     var usersBefore = Result(api.GetAsync<List<UserDto>>("api/utilisateurs")).Count;
     ok = Submit(shell, UsersPage.NewUserAsync(shell), f =>
     {
-        f.Find("identifiant").Text = "smoke" + DateTime.Now.Second;
+        f.Find("identifiant").Text = "smoke" + Guid.NewGuid().ToString("N")[..6];
         f.Find("nom").Text = "Utilisateur test";
         f.Find("motDePasse").Text = "Smoke2026!";
     });

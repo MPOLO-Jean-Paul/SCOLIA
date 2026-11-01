@@ -12,7 +12,7 @@
         <Button Classes="phoneicon" Command="{Binding BackToList}" IsVisible="{Binding ShowDetail}" ToolTip.Tip="Retour">
           <mi:MaterialIcon Kind="ChevronLeft" />
         </Button>
-        <TextBlock Grid.Column="1" Text="Compte et réglages" IsVisible="{Binding ShowList}" FontSize="17" FontWeight="SemiBold" VerticalAlignment="Center" Margin="4,0,0,0" />
+        <TextBlock Grid.Column="1" Text="Mon compte" IsVisible="{Binding ShowList}" FontSize="17" FontWeight="SemiBold" VerticalAlignment="Center" Margin="4,0,0,0" />
         <TextBlock Grid.Column="1" Text="{Binding DetailTitle}" IsVisible="{Binding ShowDetail}" FontSize="17" FontWeight="SemiBold" VerticalAlignment="Center" Margin="4,0,0,0" />
       </Grid>
     </Border>

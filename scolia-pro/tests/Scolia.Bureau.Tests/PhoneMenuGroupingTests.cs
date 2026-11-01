@@ -20,7 +20,7 @@ public sealed class PhoneMenuGroupingTests
         var blocks = PhoneMenuBlockVm.Build([settings], tools);
 
         Assert.Single(blocks);
-        Assert.Equal("ADMINISTRATION", blocks[0].Title);
+        Assert.Equal("RÉGLAGES ET DONNÉES", blocks[0].Title);
         Assert.DoesNotContain(blocks, b => b.Title == "AFFICHAGE");
         Assert.Empty(blocks[0].ToolGroups);
         Assert.Single(settings.SupplementalCommands);
@@ -30,7 +30,8 @@ public sealed class PhoneMenuGroupingTests
     [Theory]
     [InlineData("Nouvelle promotion", "Administration", "Paramètres")]
     [InlineData("Nouvelle année", "Administration", "Paramètres")]
-    [InlineData("Nouvel utilisateur", "Administration", "Administration")]
+    [InlineData("Nouvel utilisateur", "Administration", "Paramètres")]
+    [InlineData("Nouveau membre", "Administration", "Personnel")]
     [InlineData("Nouvelle inscription", "Secrétariat", "Secrétariat")]
     [InlineData("Nouveau cours", "Scolarité", "Scolarité")]
     [InlineData("Nouvelle dépense", "Finances", "Finances")]
@@ -43,7 +44,7 @@ public sealed class PhoneMenuGroupingTests
     [InlineData("Sons", "Administration", "Paramètres")]
     [InlineData("Texte et polices", "Paramètres", "Paramètres")]
     [InlineData("Aide et gestes", "Affichage", "Aide")]
-    [InlineData("Gestion des utilisateurs", "Paramètres", "Administration")]
+    [InlineData("Gestion des utilisateurs", "Paramètres", "Paramètres")]
     [InlineData("Encaisser", "Finances", "Finances")]
     [InlineData("Option d'affichage", "Affichage", "Paramètres")]
     public void Une_commande_va_dans_son_unique_bloc(string label, string source, string destination)
@@ -51,12 +52,12 @@ public sealed class PhoneMenuGroupingTests
         Assert.Equal(destination, ShellViewModel.CanonicalPhoneGroup(label, source));
     }
     [Theory]
-    [InlineData("Situation (PDF)", "Données", "Exports rapides", "Exports")]
-    [InlineData("Sauvegarder", "Données", "Sauvegardes", "Sauvegardes")]
-    [InlineData("Importation du classeur", "Données", "Sauvegardes", "Sauvegardes")]
-    [InlineData("Vérifier la base", "Données", "Contrôle", "Contrôle")]
-    [InlineData("Effacer des dossiers", "Données", "Effacement", "Effacement")]
-    [InlineData("Tableau de bord", "Données", "Pilotage", "Exports")]
+    [InlineData("Situation (PDF)", "Pilotage", "Exports rapides", "Pilotage")]
+    [InlineData("Sauvegarder", "Données", "Sauvegardes", "Données")]
+    [InlineData("Importation du classeur", "Données", "Sauvegardes", "Données")]
+    [InlineData("Vérifier la base", "Données", "Contrôle", "Données")]
+    [InlineData("Effacer des dossiers", "Données", "Effacement", "Données")]
+    [InlineData("Tableau de bord", "Pilotage", "Pilotage", "Pilotage")]
     public void Groupe_du_ruban_est_classe_selon_sa_nature(string label, string onglet, string groupe, string attendu)
         => Assert.Equal(attendu, ShellViewModel.CanonicalPhoneGroup(label, onglet, groupe));
 

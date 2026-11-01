@@ -1230,9 +1230,12 @@ public sealed class ShellViewModel : Observable
             or "Guide utilisateur" or "Raccourcis clavier")
             return "Aide";
 
+        // Les comptes de connexion se règlent avec l'établissement ; les membres du personnel ont leur propre groupe.
         if (name is "Gestion des utilisateurs" or "Gestion des comptes"
-            or "Permissions" or "Nouvel utilisateur" or "Nouveau membre")
-            return "Administration";
+            or "Permissions" or "Nouvel utilisateur")
+            return "Paramètres";
+        if (name is "Nouveau membre" or "Pointage")
+            return "Personnel";
 
         if (name is "Nouvelle inscription" or "Modifier" or "Liste des apprenants")
             return "Secrétariat";
@@ -1242,19 +1245,17 @@ public sealed class ShellViewModel : Observable
             or "Vérifier en ligne" or "Relevé de compte")
             return "Finances";
 
-        if (originalTab == "Données")
-        {
-            if (ribbonGroup is "Exports rapides" or "Pilotage") return "Exports";
-            if (ribbonGroup is "Sauvegardes" or "Contrôle" or "Effacement")
-                return ribbonGroup;
-            return "Données";
-        }
+        // Un seul groupe par finalité, comme dans le volet : regarder les chiffres (Pilotage),
+        // protéger les données (Données : sauvegardes, contrôle et effacement).
+        if (ribbonGroup is "Exports rapides" or "Pilotage") return "Pilotage";
+        if (ribbonGroup is "Sauvegardes" or "Contrôle" or "Effacement") return "Données";
 
         return originalTab switch
         {
             "Apprenant" => "Secrétariat",
             "Reçu" => "Finances",
             "Affichage" => "Paramètres",
+            "Administration" => "Personnel",
             _ => originalTab
         };
     }

@@ -136,19 +136,14 @@ public static class RibbonCatalog
                     Large(shell, "Discipline", AlertOctagonOutline, "Incidents, sanctions et suivi du comportement.", () => shell.Open(() => new DisciplinePage(shell)), Red, perm: Perm.AcademicsRead),
                     Small(shell, "Nouvel incident", AlertPlusOutline, "Signale un incident de discipline.", () => DisciplinePage.NewDecisionAsync(shell), Neutral, perm: Perm.AcademicsWrite)),
             ]),
-            new("administration", "Administration",
+            new("personnel", "Personnel",
             [
                 Group("Personnel",
                     Large(shell, "Personnel et paie", BriefcaseOutline, "Dossiers du personnel, bulletins mensuels et paiement des salaires.", () => shell.Open(() => new StaffPage(shell)), Neutral, perm: Perm.StaffManage),
-                    Small(shell, "Nouveau membre", AccountTieOutline, "Ajoute un membre du personnel.", () => StaffPage.NewMemberAsync(shell), Neutral, perm: Perm.StaffManage)),
-                Group("Établissement",
-                    Large(shell, "Paramètres", CogOutline, "Établissement, années, sections et promotions, puis les réglages de ce poste : thème, police, fenêtres, animations et sons.", () => shell.Open(() => new SettingsPage(shell)), Neutral),
-                    Large(shell, "Utilisateurs", AccountCogOutline, "Comptes nominatifs, rôles et mots de passe provisoires.", () => shell.Open(() => new UsersPage(shell)), Neutral, perm: Perm.UsersManage),
-                    Small(shell, "Nouvelle promotion", School, "Crée une promotion avec ses frais.", () => SettingsPage.NewPromotionAsync(shell), Neutral, perm: Perm.SettingsWrite),
-                    Small(shell, "Nouvelle année", CalendarPlus, "Prépare une nouvelle année scolaire.", () => SettingsPage.NewYearAsync(shell), Neutral, perm: Perm.SettingsWrite),
-                    Small(shell, "Nouvel utilisateur", AccountKeyOutline, "Crée un compte nominatif.", () => UsersPage.NewUserAsync(shell), Neutral, perm: Perm.UsersManage)),
+                    Large(shell, "Pointage", ClockCheckOutline, "Entrées et sorties du personnel, retards et bilan pour la paie.", () => shell.Open(() => new StaffAttendancePage(shell)), Neutral, perm: Perm.StaffManage),
+                    Small(shell, "Nouveau membre", AccountTieOutline, "Ajoute un membre du personnel.", () => StaffPage.NewMemberAsync(shell), Neutral, perm: Perm.StaffManage))
             ]),
-            new("donnees", "Données",
+            new("pilotage", "Pilotage",
             [
                 Group("Pilotage",
                     Large(shell, "Tableau de bord", ViewDashboardOutline, "Journée en cours, indicateurs de l'année, recettes et retards de paiement.", () => shell.Open(() => new DashboardPage(shell)), Blue),
@@ -159,7 +154,10 @@ public static class RibbonCatalog
                     Small(shell, "Reçus (Excel)", ReceiptTextOutline, "Exporte tous les reçus dans un classeur Excel.", () => shell.Download("api/paiements/export?format=xlsx", "recus.xlsx"), Neutral, perm: Perm.PaymentsRead),
                     Small(shell, "Reçus (PDF)", ReceiptText, "Exporte la liste des reçus au format PDF.", () => shell.Download("api/paiements/export?format=pdf", "recus.pdf"), Neutral, perm: Perm.PaymentsRead),
                     Small(shell, "Débiteurs (Excel)", ChartBar, "Exporte la liste des retards de paiement dans Excel.", () => shell.Download("api/rapports/debiteurs/export?format=xlsx", "debiteurs.xlsx"), Neutral, perm: Perm.ReportsRead),
-                    Small(shell, "Débiteurs (PDF)", AlertCircleOutline, "Exporte la liste des retards de paiement en PDF.", () => shell.Download("api/rapports/debiteurs/export?format=pdf", "debiteurs.pdf"), Neutral, perm: Perm.ReportsRead)),
+                    Small(shell, "Débiteurs (PDF)", AlertCircleOutline, "Exporte la liste des retards de paiement en PDF.", () => shell.Download("api/rapports/debiteurs/export?format=pdf", "debiteurs.pdf"), Neutral, perm: Perm.ReportsRead))
+            ]),
+            new("donnees", "Données",
+            [
                 Group("Sauvegardes",
                     Large(shell, "Sauvegardes", DatabaseExportOutline, "Sauvegardes vérifiées, téléchargement et restauration.", () => shell.Open(() => new DataPage(shell)), Green, perm: Perm.BackupManage),
                     Small(shell, "Sauvegarder", ContentSaveOutline, "Crée tout de suite une sauvegarde vérifiée.", () => DataPage.BackupNowAsync(shell), Neutral, perm: Perm.BackupManage),
@@ -173,8 +171,14 @@ public static class RibbonCatalog
                     Small(shell, "Effacer des paiements", DeleteSweepOutline, "Efface les reçus et paiements des apprenants cochés ou de tous. Les dossiers restent. Mot de passe, récapitulatif et sauvegarde automatique avant.", () => shell.Open(() => new EraseDataPage(shell, payments: true)), Red, perm: Perm.BackupManage),
                     Small(shell, "Effacer des dossiers", AccountRemoveOutline, "Efface les dossiers des apprenants cochés ou de tous, avec leur historique. Mot de passe, récapitulatif et sauvegarde automatique avant.", () => shell.Open(() => new EraseDataPage(shell, payments: false)), Red, perm: Perm.BackupManage)),
             ]),
-            new("affichage", "Affichage",
+            new("parametres", "Paramètres",
             [
+                Group("Établissement",
+                    Large(shell, "Configuration", CogOutline, "Établissement, années scolaires, sections et promotions, puis l'apparence de cet appareil.", () => shell.Open(() => new SettingsPage(shell)), Neutral),
+                    Large(shell, "Utilisateurs", AccountCogOutline, "Comptes nominatifs, rôles et mots de passe provisoires.", () => shell.Open(() => new UsersPage(shell)), Neutral, perm: Perm.UsersManage),
+                    Small(shell, "Nouvelle promotion", School, "Crée une promotion avec ses frais.", () => SettingsPage.NewPromotionAsync(shell), Neutral, perm: Perm.SettingsWrite),
+                    Small(shell, "Nouvelle année", CalendarPlus, "Prépare une nouvelle année scolaire.", () => SettingsPage.NewYearAsync(shell), Neutral, perm: Perm.SettingsWrite),
+                    Small(shell, "Nouvel utilisateur", AccountKeyOutline, "Crée un compte nominatif.", () => UsersPage.NewUserAsync(shell), Neutral, perm: Perm.UsersManage)),
                 // Téléphone : chaque réglage ouvre ses choix (thème, couleur, police et taille), au lieu de basculer d'un coup.
                 Platform.IsMobile ? Group("Apparence",
                     Large(shell, "Thème", ThemeLightDark, "Système, clair ou sombre.", () => { shell.ShowThemeSheet(); return Task.CompletedTask; }, Blue),

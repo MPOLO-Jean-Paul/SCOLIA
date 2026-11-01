@@ -143,43 +143,43 @@ public sealed class PhoneSettingsSearchVm : Observable
         ICommand OpenPage(Func<PageViewModel> page) => new AsyncCommand(() =>
             shell.Run(() => shell.Open(page)));
 
-        Add("Configuration", "Réglages", MaterialIconKind.Cog, "TonePurple",
+        Add("Configuration", "Paramètres", MaterialIconKind.Cog, "TonePurple",
             "personnalisation options preferences reglages parametres", Page(null));
-        Add("Thème et couleurs", "Affichage", MaterialIconKind.Palette, "TonePurple",
+        Add("Thème et couleurs", "Cet appareil", MaterialIconKind.Palette, "TonePurple",
             "clair sombre noir blanc nuit mode couleur accent fonds", Page("apparence"));
-        Add("Texte et polices", "Affichage", MaterialIconKind.FormatFont, "ToneBlue",
+        Add("Texte et polices", "Cet appareil", MaterialIconKind.FormatFont, "ToneBlue",
             "taille lettres caractere police texte agrandir zoom typographie", Page("texte"));
         if (!Platform.IsMobile)
-            Add("Fenêtres et affichage", "Affichage", MaterialIconKind.WindowMaximize, "ToneTeal",
+            Add("Fenêtres et affichage", "Cet appareil", MaterialIconKind.WindowMaximize, "ToneTeal",
                 "fenetre volet ruban barre", Page("fenetres"));
-        Add("Animations et fluidité", "Affichage", MaterialIconKind.AnimationPlay, "ToneOrange",
+        Add("Animations et fluidité", "Cet appareil", MaterialIconKind.AnimationPlay, "ToneOrange",
             "transition mouvement vitesse rapidite animation performance", Page("animations"));
-        Add("Sons", "Personnalisation", MaterialIconKind.VolumeHigh, "TonePink",
+        Add("Sons", "Cet appareil", MaterialIconKind.VolumeHigh, "TonePink",
             "audio musique notifications volume silence activation son", Page("sons"));
-        Add("Sécurité du compte", "Confidentialité", MaterialIconKind.ShieldLockOutline, "ToneTeal",
+        Add("Sécurité du compte", "Mon compte", MaterialIconKind.ShieldLockOutline, "ToneTeal",
             "biometrie empreinte digitale identification connexion authentification code secret mot de passe",
             Account("mot-de-passe"));
-        Add("Poste et réseau", "Connexions", MaterialIconKind.LanConnect, "ToneGreen",
+        Add("Poste et réseau", "Mon compte", MaterialIconKind.LanConnect, "ToneGreen",
             "tailscale vpn wifi internet serveur partage reseaux connexion poste magicdns",
             Account("poste"));
 
         if (shell.Can(Perm.SettingsWrite))
         {
-            Add("Établissement", "Administration", MaterialIconKind.OfficeBuilding, "ToneNeutral",
+            Add("Établissement", "Établissement", MaterialIconKind.OfficeBuilding, "ToneNeutral",
                 "ecole institut logo nom coordonnees identite monnaie carte", Page("etablissement"));
-            Add("Années scolaires", "Administration", MaterialIconKind.Calendar, "ToneRed",
+            Add("Années scolaires", "Établissement", MaterialIconKind.Calendar, "ToneRed",
                 "annee cours rentree periode mois paiement", Page("annees"));
-            Add("Sections", "Administration", MaterialIconKind.ViewGrid, "ToneIndigo",
+            Add("Sections", "Établissement", MaterialIconKind.ViewGrid, "ToneIndigo",
                 "section filiere options infirmiere laboratoire", Page("sections"));
-            Add("Promotions et frais", "Administration", MaterialIconKind.School, "ToneBlue",
+            Add("Promotions et frais", "Établissement", MaterialIconKind.School, "ToneBlue",
                 "classes promotions mensualite cout frais scolarite", Page("promotions"));
-            Add("Nouvelle promotion", "Administration", MaterialIconKind.FolderPlusOutline, "ToneBlue",
+            Add("Nouvelle promotion", "Établissement", MaterialIconKind.FolderPlusOutline, "ToneBlue",
                 "ajouter creer classe promotion frais", new AsyncCommand(async () => { shell.PhoneMenuOpen = false; await shell.Run(() => SettingsPage.NewPromotionAsync(shell)); }));
-            Add("Nouvelle année", "Administration", MaterialIconKind.CalendarPlusOutline, "ToneRed",
+            Add("Nouvelle année", "Établissement", MaterialIconKind.CalendarPlusOutline, "ToneRed",
                 "ajouter creer annee scolaire", new AsyncCommand(async () => { shell.PhoneMenuOpen = false; await shell.Run(() => SettingsPage.NewYearAsync(shell)); }));
         }
         if (shell.Can(Perm.UsersManage))
-            Add("Utilisateurs", "Administration", MaterialIconKind.AccountCog, "ToneBlue",
+            Add("Utilisateurs", "Paramètres", MaterialIconKind.AccountCog, "ToneBlue",
                 "compte membre permission roles acces utilisateur personnel",
                 OpenPage(() => new UsersPage(shell)));
 
@@ -275,9 +275,13 @@ public sealed record PhoneMenuBlockVm(string Title, IReadOnlyList<NavGroupVm> Na
         // Évite deux lignes « Scolarité », « Finances », « Paramètres », etc.
         foreach (var nav in navigation)
         {
-            var aliases = nav.Title == "Paramètres"
-                ? new[] { "Paramètres", "Affichage" } // compatibilité anciens groupes
-                : new[] { nav.Title };
+            var aliases = nav.Title switch
+            {
+                "Paramètres" => new[] { "Paramètres", "Affichage", "Sécurité" },
+                "Données" => new[] { "Données", "Sauvegardes", "Contrôle", "Effacement" },
+                "Pilotage" => new[] { "Pilotage", "Exports", "Export", "Rapports" },
+                _ => new[] { nav.Title },
+            };
             var matched = tools.Where(g => aliases.Contains(g.Title, StringComparer.Ordinal)).ToArray();
             var commands = matched.SelectMany(g => g.Commands)
                 .DistinctBy(c => c.Label.Trim(), StringComparer.OrdinalIgnoreCase).ToArray();
@@ -295,11 +299,12 @@ public sealed record PhoneMenuBlockVm(string Title, IReadOnlyList<NavGroupVm> Na
                 result.Add(new PhoneMenuBlockVm(title, nav, actions));
         }
 
-        Add("ACCUEIL", [""], []);
-        Add("DONNÉES ET SAUVEGARDES", ["Données"], ["Données", "Sauvegardes", "Export", "Exports", "Rapports", "Contrôle", "Effacement"]);
+        // Mêmes blocs que le volet de l'ordinateur, dans le même ordre.
+        Add("VUE D’ENSEMBLE", ["", "Pilotage"], ["Pilotage", "Exports", "Export", "Rapports"]);
         Add("GESTION SCOLAIRE", ["Secrétariat", "Scolarité"], ["Secrétariat", "Scolarité", "Apprenants"]);
         Add("GESTION FINANCIÈRE", ["Finances"], ["Finances", "Paiements"]);
-        Add("ADMINISTRATION", ["Administration", "Paramètres"], ["Administration", "Paramètres", "Affichage", "Sécurité"]);
+        Add("ORGANISATION", ["Personnel"], ["Personnel"]);
+        Add("RÉGLAGES ET DONNÉES", ["Paramètres", "Données"], ["Paramètres", "Affichage", "Sécurité", "Données", "Sauvegardes", "Contrôle", "Effacement"]);
         Add("AIDE", [], ["Aide"]);
 
         var remainingNav = navigation.Where(g => usedNav.Add(g)).ToArray();
@@ -338,10 +343,11 @@ public sealed record PhoneToolBlockVm(string Title, IReadOnlyList<PhoneToolGroup
             foreach (var entry in entries) used.Add(entry);
             blocks.Add(new PhoneToolBlockVm(title, entries));
         }
-        Add("SCOLARITÉ ET APPRENANTS", "Scolarité", "Secrétariat", "Apprenants");
-        Add("FINANCES", "Paiements", "Finances");
-        Add("DONNÉES ET SAUVEGARDES", "Données", "Sauvegardes", "Rapports", "Export", "Exports", "Contrôle", "Effacement");
-        Add("ADMINISTRATION", "Administration", "Paramètres", "Affichage", "Sécurité");
+        Add("VUE D’ENSEMBLE", "Pilotage", "Rapports", "Export", "Exports");
+        Add("GESTION SCOLAIRE", "Secrétariat", "Scolarité", "Apprenants");
+        Add("GESTION FINANCIÈRE", "Finances", "Paiements");
+        Add("ORGANISATION", "Personnel");
+        Add("RÉGLAGES ET DONNÉES", "Paramètres", "Affichage", "Sécurité", "Données", "Sauvegardes", "Contrôle", "Effacement");
         Add("AIDE", "Aide");
         var extra = groups.Where(g => !used.Contains(g)).ToArray();
         if (extra.Length != 0) blocks.Add(new PhoneToolBlockVm("AUTRES COMMANDES", extra));

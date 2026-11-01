@@ -12,17 +12,22 @@ public class AccordionAndAudioTests
         var groups = new[]
         {
             new NavGroupVm("", Array.Empty<NavItemVm>()),
-            new NavGroupVm("Données", Array.Empty<NavItemVm>()),
+            new NavGroupVm("Pilotage", Array.Empty<NavItemVm>()),
+            new NavGroupVm("Secrétariat", Array.Empty<NavItemVm>()),
             new NavGroupVm("Scolarité", Array.Empty<NavItemVm>()),
             new NavGroupVm("Finances", Array.Empty<NavItemVm>()),
+            new NavGroupVm("Personnel", Array.Empty<NavItemVm>()),
             new NavGroupVm("Paramètres", Array.Empty<NavItemVm>()),
+            new NavGroupVm("Données", Array.Empty<NavItemVm>()),
         };
         var blocks = Sidebar.Blocks(groups);
         Assert.Equal(groups.Length, blocks.SelectMany(x => x.Groups).Distinct().Count());
-        Assert.Equal("VUE D’ENSEMBLE", blocks[0].Title);
-        Assert.Equal("GESTION SCOLAIRE", blocks[1].Title);
-        Assert.Equal("GESTION FINANCIÈRE", blocks[2].Title);
-        Assert.Equal("ORGANISATION ET RÉGLAGES", blocks[3].Title);
+        Assert.Equal(["VUE D’ENSEMBLE", "GESTION SCOLAIRE", "GESTION FINANCIÈRE", "ORGANISATION", "RÉGLAGES ET DONNÉES"],
+            blocks.Select(b => b.Title).ToArray());
+        // Pilotage avec l'accueil ; sauvegardes et effacement avec les paramètres, jamais avec les chiffres.
+        Assert.Contains(blocks[0].Groups, g => g.Title == "Pilotage");
+        Assert.Contains(blocks[4].Groups, g => g.Title == "Données");
+        Assert.DoesNotContain(blocks, b => b.Title == "AUTRES OUTILS");
     }
 
     [Fact]
@@ -82,11 +87,11 @@ public class AccordionAndAudioTests
     public void Affichage_apparait_dans_un_seul_bloc()
     {
         var blocks = PhoneToolBlockVm.Organize([
-            new PhoneToolGroupVm("Administration", []),
+            new PhoneToolGroupVm("Personnel", []),
             new PhoneToolGroupVm("Affichage", []),
             new PhoneToolGroupVm("Aide", [])
         ]);
-        Assert.Equal("ADMINISTRATION", blocks.Single(b => b.Groups.Any(g => g.Title == "Affichage")).Title);
+        Assert.Equal("RÉGLAGES ET DONNÉES", blocks.Single(b => b.Groups.Any(g => g.Title == "Affichage")).Title);
         Assert.DoesNotContain(blocks, b => b.Title == "AFFICHAGE");
         Assert.Equal(1, blocks.SelectMany(b => b.Groups).Count(g => g.Title == "Affichage"));
     }

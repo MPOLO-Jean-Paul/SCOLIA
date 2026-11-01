@@ -349,8 +349,18 @@ public sealed class SettingsPage : PageViewModel
             new BackstageItemVm("fenetres", "Fenêtres et affichage", MaterialIconKind.WindowMaximize, "ToneTeal"),
             new BackstageItemVm("animations", "Animations et fluidité", MaterialIconKind.AnimationPlay, "ToneOrange"),
             new BackstageItemVm("sons", "Sons", MaterialIconKind.VolumeHigh, "TonePink"),
-            new BackstageItemVm("securite", "Sécurité du compte", MaterialIconKind.ShieldLockOutline, "ToneTeal"),
         ];
+        // La sécurité du compte (mot de passe, biométrie) appartient à la personne, pas à l'appareil :
+        // elle se règle à un seul endroit, « Mon compte ». Un ancien lien vers « securite » y mène.
+        if (open == "securite")
+        {
+            open = null;
+            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+            {
+                Shell.OpenBackstage();
+                Shell.Backstage.Section = Shell.Backstage.Items.First(i => i.Value == "mot-de-passe");
+            });
+        }
         // Sur le mobile, l'application occupe tout l'écran : la taille de fenêtre, le volet et le ruban n'existent pas.
         if (Preferences.MobileLayout) PosteSections = [.. PosteSections.Where(s => s.Value != "fenetres")];
         var all = SchoolSections.Concat(PosteSections).ToList();

@@ -99,15 +99,15 @@ public static class Sidebar
                     shell.Can(Perm.PilotageRead) && !shell.Can(Perm.ReportsRead) ? typeof(PromoterDashboardPage) : typeof(HomePage),
                     () => shell.Can(Perm.PilotageRead) && !shell.Can(Perm.ReportsRead)
                         ? new PromoterDashboardPage(shell) : new HomePage(shell))),
-            Group("Données",
+            // Pilotage : regarder et exporter les chiffres.
+            Group("Pilotage",
                 Item("Tableau de bord", MaterialIconKind.ViewDashboard, "ToneBlue", Perm.ReportsRead, typeof(DashboardPage), () => new DashboardPage(shell)),
-                Item("Rapports et exports", MaterialIconKind.FileChart, "ToneIndigo", Perm.ReportsRead, typeof(ReportsPage), () => new ReportsPage(shell)),
-                Item("Sauvegardes", MaterialIconKind.DatabaseExport, "ToneGreen", Perm.BackupManage, typeof(DataPage), () => new DataPage(shell)),
-                Item("Journal d'audit", MaterialIconKind.ShieldCheck, "ToneIndigo", Perm.AuditRead, typeof(AuditPage), () => new AuditPage(shell)),
-                Item("Effacement", MaterialIconKind.DeleteSweep, "ToneRed", Perm.BackupManage, typeof(EraseDataPage), () => new EraseDataPage(shell, payments: true))),
+                Item("Rapports et exports", MaterialIconKind.FileChart, "ToneIndigo", Perm.ReportsRead, typeof(ReportsPage), () => new ReportsPage(shell))),
+            // Secrétariat : les dossiers des apprenants et ce qui en sort (cartes d'accès).
             Group("Secrétariat",
                 Item("Apprenants", MaterialIconKind.AccountGroup, "ToneBlue", Perm.StudentsRead, typeof(StudentsPage), () => new StudentsPage(shell)),
-                Item("Réinscriptions", MaterialIconKind.School, "ToneIndigo", Perm.StudentsWrite, typeof(ReEnrollmentPage), () => new ReEnrollmentPage(shell))),
+                Item("Réinscriptions", MaterialIconKind.School, "ToneIndigo", Perm.StudentsWrite, typeof(ReEnrollmentPage), () => new ReEnrollmentPage(shell)),
+                Item("Cartes d'accès", MaterialIconKind.CardAccountDetails, "ToneBlue", Perm.AcademicsRead, typeof(CardsPage), () => new CardsPage(shell))),
             Group("Finances",
                 Item("Encaisser", MaterialIconKind.HandCoin, "ToneGreen", Perm.PaymentsCreate, typeof(CashierPage), () => new CashierPage(shell)),
                 Item("Encaissement par lot", MaterialIconKind.FormatListChecks, "ToneTeal", Perm.PaymentsCreate, typeof(BatchPaymentPage), () => new BatchPaymentPage(shell)),
@@ -117,19 +117,25 @@ public static class Sidebar
                 Item("Caisse", MaterialIconKind.CashMultiple, "ToneGreen", Perm.PaymentsRead, typeof(CashPage), () => new CashPage(shell)),
                 Item("Dépenses", MaterialIconKind.Wallet, "ToneRed", Perm.PaymentsRead, typeof(ExpensesPage), () => new ExpensesPage(shell)),
                 Item("Prises en charge", MaterialIconKind.HandHeart, "TonePink", Perm.PaymentsRead, typeof(SponsorshipsPage), () => new SponsorshipsPage(shell))),
+            // Scolarité : l'enseignement, de l'appel aux résultats.
             Group("Scolarité",
                 Item("Cours et notes", MaterialIconKind.BookOpenVariant, "TonePurple", Perm.AcademicsRead, typeof(GradesPage), () => new GradesPage(shell)),
                 Item("Résultats", MaterialIconKind.Certificate, "ToneIndigo", Perm.AcademicsRead, typeof(ResultsPage), () => new ResultsPage(shell)),
                 Item("Présences", MaterialIconKind.ClipboardCheck, "ToneTeal", Perm.AcademicsRead, typeof(AttendancePage), () => new AttendancePage(shell)),
                 Item("Discipline", MaterialIconKind.AlertOctagon, "ToneRed", Perm.AcademicsRead, typeof(DisciplinePage), () => new DisciplinePage(shell)),
-                Item("Enseignants et cours", MaterialIconKind.AccountSchool, "ToneOrange", Perm.AcademicsRead, typeof(TeachingPage), () => new TeachingPage(shell)),
-                Item("Cartes d'accès", MaterialIconKind.CardAccountDetails, "ToneBlue", Perm.AcademicsRead, typeof(CardsPage), () => new CardsPage(shell))),
-            Group("Administration",
+                Item("Enseignants et cours", MaterialIconKind.AccountSchool, "ToneOrange", Perm.AcademicsRead, typeof(TeachingPage), () => new TeachingPage(shell))),
+            // Personnel : les membres de l'établissement, leur paie et leur pointage.
+            Group("Personnel",
                 Item("Personnel et paie", MaterialIconKind.Briefcase, "ToneOrange", Perm.StaffManage, typeof(StaffPage), () => new StaffPage(shell)),
                 Item("Pointage", MaterialIconKind.ClockCheck, "ToneTeal", Perm.StaffManage, typeof(StaffAttendancePage), () => new StaffAttendancePage(shell))),
             Group("Paramètres",
                 Item("Configuration", MaterialIconKind.Cog, "TonePurple", null, typeof(SettingsPage), () => new SettingsPage(shell)),
                 Item("Utilisateurs", MaterialIconKind.AccountCog, "ToneBlue", Perm.UsersManage, typeof(UsersPage), () => new UsersPage(shell))),
+            // Données : protéger, contrôler et, si besoin, effacer.
+            Group("Données",
+                Item("Sauvegardes", MaterialIconKind.DatabaseExport, "ToneGreen", Perm.BackupManage, typeof(DataPage), () => new DataPage(shell)),
+                Item("Journal d'audit", MaterialIconKind.ShieldCheck, "ToneIndigo", Perm.AuditRead, typeof(AuditPage), () => new AuditPage(shell)),
+                Item("Effacement des données", MaterialIconKind.DeleteSweep, "ToneRed", Perm.BackupManage, typeof(EraseDataPage), () => new EraseDataPage(shell, payments: true)))
         };
         return groups.Where(g => g.Items.Count > 0).ToList();
     }
@@ -146,10 +152,11 @@ public static class Sidebar
             foreach (var entry in entries) used.Add(entry);
             blocks.Add(new NavBlockVm(title, entries));
         }
-        Add("VUE D’ENSEMBLE", "", "Données");
+        Add("VUE D’ENSEMBLE", "", "Pilotage");
         Add("GESTION SCOLAIRE", "Secrétariat", "Scolarité");
         Add("GESTION FINANCIÈRE", "Finances");
-        Add("ORGANISATION ET RÉGLAGES", "Administration", "Paramètres");
+        Add("ORGANISATION", "Personnel");
+        Add("RÉGLAGES ET DONNÉES", "Paramètres", "Données");
         var other = groups.Where(g => !used.Contains(g)).ToArray();
         if (other.Length != 0) blocks.Add(new NavBlockVm("AUTRES OUTILS", other));
         return blocks;
