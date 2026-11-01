@@ -262,6 +262,8 @@ public static class ScoliaEndpoints
                     throw new DomainException("emails", $"Adresse e-mail invalide : {e}. Exemple : direction@ecole.cd");
             if (input.Enabled && numbers.Count == 0 && emails.Count == 0)
                 throw new DomainException("numeros", "Ajoutez au moins un numéro WhatsApp ou une adresse e-mail qui recevra le rapport.");
+            if (!Scolia.Infrastructure.Reports.WhatsAppCloudSender.IsValidVersion(input.WhatsAppApiVersion))
+                throw new DomainException("version", $"Version de l'API WhatsApp invalide : {input.WhatsAppApiVersion}. Exemple : v24.0, ou laissez vide.");
             if (input.SmtpPort is { } port && port is < 1 or > 65535)
                 throw new DomainException("smtpPort", "Port de messagerie invalide : 587 en général.");
             if (!string.IsNullOrWhiteSpace(input.SmtpFrom) && !System.Net.Mail.MailAddress.TryCreate(input.SmtpFrom.Trim(), out _))
@@ -274,6 +276,7 @@ public static class ScoliaEndpoints
                 s.WhatsAppPhoneNumberId = string.IsNullOrWhiteSpace(input.WhatsAppPhoneNumberId) ? null : input.WhatsAppPhoneNumberId.Trim();
                 s.WhatsAppTemplate = string.IsNullOrWhiteSpace(input.WhatsAppTemplate) ? null : input.WhatsAppTemplate.Trim();
                 if (!string.IsNullOrWhiteSpace(input.WhatsAppLanguage)) s.WhatsAppLanguage = input.WhatsAppLanguage.Trim();
+                s.WhatsAppApiVersion = string.IsNullOrWhiteSpace(input.WhatsAppApiVersion) ? null : input.WhatsAppApiVersion.Trim();
                 // Le jeton ne revient jamais à l'écran : vide le garde, « effacer » le retire.
                 if (input.ClearToken) s.WhatsAppToken = null;
                 else if (!string.IsNullOrWhiteSpace(input.WhatsAppToken)) s.WhatsAppToken = input.WhatsAppToken.Trim();
@@ -304,16 +307,18 @@ public static class ScoliaEndpoints
     private static DailyReportViewDto DailyReportView(Scolia.Infrastructure.Reports.DailyReportSettings s) =>
         new(s.Enabled, s.Time, s.Recipients, s.WhatsAppPhoneNumberId, s.WhatsAppTemplate, s.WhatsAppLanguage,
             !string.IsNullOrWhiteSpace(s.WhatsAppToken), s.WhatsAppReady, s.LastStatus,
-            s.EmailRecipients, s.SmtpHost, s.SmtpPort, s.SmtpSsl, s.SmtpUser, s.SmtpFrom, !string.IsNullOrEmpty(s.SmtpPassword), s.EmailReady);
+            s.EmailRecipients, s.SmtpHost, s.SmtpPort, s.SmtpSsl, s.SmtpUser, s.SmtpFrom, !string.IsNullOrEmpty(s.SmtpPassword), s.EmailReady,
+            s.WhatsAppApiVersion);
 
     public sealed record DailyReportInput(bool Enabled, string? Time, List<string>? Recipients, string? WhatsAppPhoneNumberId,
         string? WhatsAppToken, bool ClearToken, string? WhatsAppTemplate, string? WhatsAppLanguage,
         List<string>? EmailRecipients = null, string? SmtpHost = null, int? SmtpPort = null, bool? SmtpSsl = null,
-        string? SmtpUser = null, string? SmtpPassword = null, bool ClearSmtpPassword = false, string? SmtpFrom = null);
+        string? SmtpUser = null, string? SmtpPassword = null, bool ClearSmtpPassword = false, string? SmtpFrom = null,
+        string? WhatsAppApiVersion = null);
     public sealed record DailyReportViewDto(bool Enabled, string Time, List<string> Recipients, string? WhatsAppPhoneNumberId,
         string? WhatsAppTemplate, string WhatsAppLanguage, bool HasToken, bool WhatsAppReady, string? LastStatus,
         List<string> EmailRecipients, string? SmtpHost, int SmtpPort, bool SmtpSsl, string? SmtpUser, string? SmtpFrom,
-        bool HasSmtpPassword, bool EmailReady);
+        bool HasSmtpPassword, bool EmailReady, string? WhatsAppApiVersion);
     public sealed record DailyReportResult(string FileName, string Status, string Summary);
 
     private static void MapCards(RouteGroupBuilder api)

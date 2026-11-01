@@ -137,6 +137,7 @@ public sealed class ReportsPage : PageViewModel
                 clearToken = f.Fields.Any(x => x.Key == "effacer") && f.Find("effacer").Flag,
                 whatsAppTemplate = f.Text("modele"),
                 whatsAppLanguage = f.Text("langue"),
+                whatsAppApiVersion = f.Text("versionApi"),
                 emailRecipients = emails,
                 smtpHost = f.Text("smtpHost"),
                 smtpPort = port,
@@ -170,6 +171,8 @@ public sealed class ReportsPage : PageViewModel
         form.Add("modele", "Modèle de message approuvé (facultatif)", FieldKind.Text, current.WhatsAppTemplate,
             hint: "Modèle avec un document en en-tête, approuvé par Meta : il permet d'écrire en premier, à toute heure.");
         form.Add("langue", "Langue du modèle", FieldKind.Text, current.WhatsAppLanguage);
+        form.Add("versionApi", "Version de l'API Meta (facultatif)", FieldKind.Text, current.WhatsAppApiVersion,
+            hint: "Laissez vide : Meta utilise la version du compte. Sinon, par exemple v24.0.");
         form.AddHeader("Envoi par e-mail",
             current.EmailReady
                 ? "Configuré : le PDF part en pièce jointe à l'heure choisie."

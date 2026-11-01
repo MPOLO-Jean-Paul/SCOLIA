@@ -81,6 +81,22 @@ rapport journalier envoyé automatiquement, audit complet et catalogue du foncti
 - Le geste retour et les raccourcis clavier sont bloqués.
 - « Verrouiller maintenant » met en veille tout de suite ; « Changer de compte » ferme la session.
 
+#### Fiabilité de l'envoi WhatsApp
+- La version de l'API de Meta se règle dans « Planifier ». Laissée vide, c'est la version du compte de l'établissement qui s'applique : SCOLIA ne dépend plus d'une version qui sera retirée.
+- Quatre tests face à un faux serveur Meta vérifient :
+  - le dépôt du PDF, avec le jeton d'accès ;
+  - le numéro converti au format international ;
+  - le message avec modèle, le PDF en en-tête ;
+  - le message sans modèle, en document ;
+  - le refus de Meta, rapporté avec son propre message.
+- Seul l'envoi réel reste à faire, avec le compte Meta de l'établissement.
+
+#### Mises à jour de l'APK sans désinstaller
+- Tous les APK sont signés avec la même clé SCOLIA, créée une fois puis gardée par GitHub. Une clé de l'établissement, placée dans les secrets du dépôt, passe en priorité.
+- Le numéro de version augmente à chaque compilation.
+- Un nouvel APK s'installe donc par-dessus l'ancien, comme une mise à jour.
+- Il faut désinstaller une dernière fois l'ancienne version, signée par une clé jetable.
+
 ## 4. Limites à connaître
 
 | Sujet | Limite | Solution proposée |

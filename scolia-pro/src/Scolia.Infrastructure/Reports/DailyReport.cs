@@ -31,6 +31,8 @@ public sealed class DailyReportSettings
     /// <summary>Modèle de message approuvé par Meta, avec un document en en-tête : nécessaire pour écrire en premier.</summary>
     public string? WhatsAppTemplate { get; set; }
     public string WhatsAppLanguage { get; set; } = "fr";
+    /// <summary>Version de l'API de Meta (v24.0…) ; vide : celle du compte, la plus sûre dans le temps.</summary>
+    public string? WhatsAppApiVersion { get; set; }
     /// <summary>Adresses e-mail qui reçoivent aussi le rapport, en pièce jointe.</summary>
     public List<string> EmailRecipients { get; set; } = [];
     public string? SmtpHost { get; set; }
@@ -140,14 +142,25 @@ public sealed class DailyReportStore(IOptions<ScoliaStorageOptions> options, Mic
 /// modèle approuvé, SCOLIA peut écrire en premier ; sans modèle, WhatsApp n'accepte le document que si le destinataire
 /// a écrit au numéro de l'établissement dans les dernières 24 heures.
 /// </summary>
-public sealed class WhatsAppCloudSender(IHttpClientFactory clients)
+public sealed class WhatsAppCloudSender(IHttpClientFactory clients, Microsoft.Extensions.Configuration.IConfiguration configuration)
 {
-    public const string ApiVersion = "v21.0";
+    /// <summary>Adresse de l'API de Meta ; un test peut la remplacer par un faux serveur (Scolia:WhatsApp:Adresse).</summary>
+    private Uri Root => new(configuration["Scolia:WhatsApp:Adresse"] is { Length: > 0 } address ? address.TrimEnd('/') + "/" : "https://graph.facebook.com/");
+
+    /// <summary>
+    /// Version de l'API : celle choisie dans « Planifier » (v24.0 par exemple), sinon aucune. Sans version, Meta
+    /// utilise celle du compte de l'établissement : SCOLIA ne dépend pas d'une version qui finira par être retirée.
+    /// </summary>
+    public static string VersionPath(string? version) =>
+        string.IsNullOrWhiteSpace(version) ? string.Empty : version.Trim().TrimEnd('/') + "/";
+
+    public static bool IsValidVersion(string? version) =>
+        string.IsNullOrWhiteSpace(version) || System.Text.RegularExpressions.Regex.IsMatch(version.Trim(), @"^v\d{1,3}\.\d{1,2}$");
 
     public async Task<string> SendAsync(DailyReportSettings settings, string countryCode, byte[] pdf, string fileName, string caption, CancellationToken ct)
     {
         var http = clients.CreateClient("whatsapp");
-        http.BaseAddress = new Uri($"https://graph.facebook.com/{ApiVersion}/");
+        http.BaseAddress = new Uri(Root, VersionPath(settings.WhatsAppApiVersion));
         http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", settings.WhatsAppToken!.Trim());
         var phoneId = settings.WhatsAppPhoneNumberId!.Trim();
 
