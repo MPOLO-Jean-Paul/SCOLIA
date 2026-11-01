@@ -3,6 +3,8 @@ name: SCOLIA Natif - recherche, navigation et securite (Windows Android iOS)
 on:
   push:
     paths:
+      - 'scolia-pro/scripts/publier-android.sh'
+      - 'scolia-pro/scripts/cle-android.sh'
       - 'scolia-pro/src/Scolia.Bureau/**'
       - 'scolia-pro/src/Scolia.Mobile/**'
       - 'scolia-pro/src/Scolia.Phone.iOS/**'
@@ -15,6 +17,8 @@ on:
       - '.github/workflows/scolia-natif.yml'
   pull_request:
     paths:
+      - 'scolia-pro/scripts/publier-android.sh'
+      - 'scolia-pro/scripts/cle-android.sh'
       - 'scolia-pro/src/Scolia.Bureau/**'
       - 'scolia-pro/src/Scolia.Mobile/**'
       - 'scolia-pro/src/Scolia.Phone.iOS/**'
@@ -87,12 +91,39 @@ jobs:
           dotnet workload install android
           dotnet build src/Scolia.Mobile -t:InstallAndroidDependencies -f net10.0-android \
             -p:AndroidSdkDirectory="$ANDROID_HOME" -p:JavaSdkDirectory="$JAVA_HOME" -p:AcceptAndroidSDKLicenses=True
-      - name: Compiler APK natif de validation
+      # Même clé à chaque compilation : un nouvel APK s'installe comme une MISE À JOUR de l'ancien, sans conflit.
+      - name: Retrouver la clé de signature SCOLIA
+        id: cle-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.scolia-signature
+          key: scolia-android-signature-v1
+      - name: Préparer la clé de signature
+        env:
+          SCOLIA_ANDROID_KEYSTORE: ${{ secrets.SCOLIA_ANDROID_KEYSTORE }}
+          SCOLIA_ANDROID_KEYSTORE_PASS: ${{ secrets.SCOLIA_ANDROID_KEYSTORE_PASS }}
+        run: bash scripts/cle-android.sh ~/.scolia-signature
+      - name: Garder la clé pour les compilations suivantes
+        if: steps.cle-cache.outputs.cache-hit != 'true' && github.event_name != 'pull_request'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.scolia-signature
+          key: scolia-android-signature-v1
+      - name: Compiler APK natif
         run: |
           set -euo pipefail
+          export JavaSdkDirectory="$JAVA_HOME"
           bash scripts/publier-android.sh
           test -s artifacts/android/SCOLIA_Pro_*_Android.apk
-          echo 'BUILD DE TEST : signature de developpement. Ne pas remplacer un APK signe par une autre cle sans sauvegarder les donnees locales.' > artifacts/android/IMPORTANT-SIGNATURE.txt
+          {
+            echo "Signature : $SCOLIA_SIGNATURE_ORIGINE"
+            echo "Empreinte SHA-256 du certificat : $SCOLIA_SIGNATURE_EMPREINTE"
+            echo ""
+            echo "Toutes les compilations SCOLIA sont signées avec cette même clé et portent un numéro de version"
+            echo "croissant : installez le nouvel APK par-dessus l'ancien, Android propose une MISE À JOUR et garde"
+            echo "les données du téléphone. Seul le passage depuis une ancienne version signée par une autre clé"
+            echo "demande de désinstaller une dernière fois."
+          } > artifacts/android/IMPORTANT-SIGNATURE.txt
       - uses: actions/upload-artifact@v4
         with:
           name: SCOLIA_Natif_Android_APK

@@ -12,10 +12,19 @@ dossier="$sortie/android"
 sdk="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
 if [ -z "$sdk" ]; then echo "ANDROID_HOME n'est pas défini : le SDK Android est nécessaire." >&2; exit 1; fi
 
-echo "==> Application Android $version"
+# Numéro de version Android toujours croissant : minutes écoulées depuis 2020 à la date du commit. Une compilation
+# plus récente a donc toujours un numéro plus grand, et s'installe comme une mise à jour de la précédente.
+code="${SCOLIA_VERSION_CODE:-}"
+if [ -z "$code" ] && horodatage="$(git -C "$racine" log -1 --format=%ct 2>/dev/null)" && [ -n "$horodatage" ]; then
+  code=$(( (horodatage - 1577836800) / 60 ))
+fi
+options=()
+if [ -n "$code" ]; then options+=("-p:ApplicationVersion=$code"); fi
+
+echo "==> Application Android $version${code:+ (numéro $code)}"
 rm -rf "$dossier" && mkdir -p "$dossier"
 dotnet publish "$racine/src/Scolia.Mobile" -c Release -f net10.0-android \
-  -p:AndroidSdkDirectory="$sdk" -p:AndroidPackageFormat=apk -o "$dossier/publication"
+  -p:AndroidSdkDirectory="$sdk" -p:AndroidPackageFormat=apk -o "$dossier/publication" "${options[@]}"
 
 apk="$(ls "$dossier"/publication/*-Signed.apk | head -1)"
 cible="$dossier/SCOLIA_Pro_${version}_Android.apk"

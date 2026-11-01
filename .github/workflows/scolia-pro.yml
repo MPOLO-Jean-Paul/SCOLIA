@@ -173,16 +173,26 @@ jobs:
           dotnet build src/Scolia.Mobile -t:InstallAndroidDependencies -f net10.0-android \
             -p:AndroidSdkDirectory="$ANDROID_HOME" -p:JavaSdkDirectory="$JAVA_HOME" -p:AcceptAndroidSDKLicenses=True
 
-      - name: Compilation et signature de l'APK
+      # Même clé que la compilation native : les deux APK s'installent l'un par-dessus l'autre, en mise à jour.
+      - name: Retrouver la clé de signature SCOLIA
+        id: cle-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.scolia-signature
+          key: scolia-android-signature-v1
+      - name: Préparer la clé de signature
         env:
           SCOLIA_ANDROID_KEYSTORE: ${{ secrets.SCOLIA_ANDROID_KEYSTORE }}
-          SCOLIA_KEYSTORE_PASS: ${{ secrets.SCOLIA_ANDROID_KEYSTORE_PASS }}
+          SCOLIA_ANDROID_KEYSTORE_PASS: ${{ secrets.SCOLIA_ANDROID_KEYSTORE_PASS }}
+        run: bash scripts/cle-android.sh ~/.scolia-signature
+      - name: Garder la clé pour les compilations suivantes
+        if: steps.cle-cache.outputs.cache-hit != 'true' && github.event_name != 'pull_request'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.scolia-signature
+          key: scolia-android-signature-v1
+      - name: Compilation et signature de l'APK
         run: |
-          # Clé de l'établissement si elle est fournie dans les secrets du dépôt, sinon clé de développement.
-          if [ -n "$SCOLIA_ANDROID_KEYSTORE" ]; then
-            echo "$SCOLIA_ANDROID_KEYSTORE" | base64 -d > "$RUNNER_TEMP/scolia.keystore"
-            export SCOLIA_KEYSTORE="$RUNNER_TEMP/scolia.keystore"
-          fi
           export JavaSdkDirectory="$JAVA_HOME"
           bash scripts/publier-android.sh
 
