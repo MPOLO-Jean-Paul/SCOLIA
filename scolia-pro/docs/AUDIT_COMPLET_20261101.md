@@ -260,6 +260,19 @@ Revue des 58 écrans de l'ordinateur en 1366 × 768, comme un portable courant.
 | Barre d'état | Nom de l'établissement coupé, zoom en « − » et « + » texte | Nom entier, icônes de zoom avec info-bulle |
 | Icônes des boutons | Pleines et contour mélangées | Contour partout dans les boutons : annuler, imprimer, enregistrer, encaisser, importer, télécharger |
 
+### Serveur toujours joignable, écran éteint ou fenêtre réduite
+
+| Appareil serveur | Avant | Maintenant |
+|---|---|---|
+| Ordinateur Windows | La fenêtre réduite gardait le serveur, mais Windows pouvait mettre l'ordinateur en veille : les autres postes étaient coupés | Tant que le partage est ouvert, le serveur demande à Windows de rester éveillé. L'écran peut s'éteindre |
+| Portable Windows | Couvercle fermé : veille | Toujours en veille couvercle fermé, c'est un choix de Windows. « Poste et réseau » ouvre les options d'alimentation pour choisir « Ne rien faire » |
+| Téléphone Android | Service au premier plan, mais Android pouvait le freiner écran éteint pour la batterie | SCOLIA demande à sortir des économies de batterie dès que le téléphone devient serveur, puis une fois par lancement tant que ce n'est pas accordé |
+| Wi-Fi du téléphone | Verrou « faible latence », sans effet écran éteint | Verrou « haute performance » jusqu'à Android 13, qui reste actif écran éteint |
+| Tecno, Infinix, itel, Xiaomi, Samsung, Huawei, Oppo, Vivo | Gestionnaires de la marque qui coupent les applications | « Poste et réseau » indique le réglage de la marque et ouvre la page de SCOLIA dans les réglages |
+| iPhone | Ne peut pas être serveur | Inchangé : iOS suspend les applications en arrière-plan. L'iPhone reste un poste relié, qui se reconnecte seul au retour |
+
+Ce qui coupe encore les autres postes : « Quitter » SCOLIA sur le serveur, l'éteindre, le mettre en veille à la main, ou couper son Wi-Fi.
+
 ## 4. Limites à connaître
 
 | Sujet | Limite | Solution proposée |

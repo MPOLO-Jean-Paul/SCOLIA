@@ -119,6 +119,21 @@ public static class Platform
     /// </summary>
     public static ILocalServer? LocalServer { get; set; }
 
+    /// <summary>
+    /// Téléphone serveur : vrai quand le système le laisse travailler écran éteint, sans le freiner pour économiser la
+    /// batterie. Null sur un appareil où la question ne se pose pas.
+    /// </summary>
+    public static Func<bool>? BackgroundAllowed { get; set; }
+
+    /// <summary>Demande au système de laisser SCOLIA travailler en arrière-plan, sans économie de batterie.</summary>
+    public static Action? AllowBackground { get; set; }
+
+    /// <summary>Ouvre la page de SCOLIA dans les réglages du téléphone (batterie, démarrage automatique).</summary>
+    public static Action? OpenAppSettings { get; set; }
+
+    /// <summary>Réglage propre à la marque du téléphone, qui peut couper SCOLIA malgré tout ; vide sinon.</summary>
+    public static string BackgroundHint { get; set; } = string.Empty;
+
     /// <summary>Vrai quand ce poste peut être le serveur de l'établissement : tout ordinateur, et le téléphone qui en a les moyens.</summary>
     public static bool CanHostServer => !IsMobile || LocalServer is not null;
 

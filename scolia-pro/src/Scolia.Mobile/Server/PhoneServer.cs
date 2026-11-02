@@ -38,7 +38,13 @@ public sealed class PhoneServer(Context context) : ILocalServer
         lock (gate)
         {
             shouldHost = true;
-            if (startForegroundService) ServeurScolia.Begin(context);
+            if (startForegroundService)
+            {
+                ServeurScolia.Begin(context);
+                // Les autres postes vont dépendre de ce téléphone : Android ne doit pas l'endormir écran éteint.
+                try { AndroidBackground.AskOnce(context); }
+                catch (Exception ex) { Android.Util.Log.Warn("SCOLIA", $"Demande batterie impossible : {ex.Message}"); }
+            }
             Enqueue(StartEmbeddedAsync);
         }
     }

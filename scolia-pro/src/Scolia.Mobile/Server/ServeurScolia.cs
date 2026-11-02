@@ -98,8 +98,10 @@ public sealed class ServeurScolia : Service
             {
                 if (wifi is null)
                 {
-#pragma warning disable CA1422 // FullHighPerf reste le mode qui garde le Wi-Fi éveillé sur les anciens Android.
-                    wifi = manager.CreateWifiLock(OperatingSystem.IsAndroidVersionAtLeast(29) ? Android.Net.WifiMode.FullLowLatency : Android.Net.WifiMode.FullHighPerf, "scolia:serveur");
+                    // Écran éteint, seul le mode « haute performance » garde le Wi-Fi pleinement éveillé, jusqu'à Android 13.
+                    // Le mode « faible latence » ne joue qu'écran allumé ; Android 14 et plus n'offrent plus que lui.
+#pragma warning disable CA1422 // FullHighPerf reste le mode qui garde le Wi-Fi éveillé écran éteint avant Android 14.
+                    wifi = manager.CreateWifiLock(OperatingSystem.IsAndroidVersionAtLeast(34) ? Android.Net.WifiMode.FullLowLatency : Android.Net.WifiMode.FullHighPerf, "scolia:serveur");
 #pragma warning restore CA1422
                     wifi?.SetReferenceCounted(false);
                     wifi?.Acquire();

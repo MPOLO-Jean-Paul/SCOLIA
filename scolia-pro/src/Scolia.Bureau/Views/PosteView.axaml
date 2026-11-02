@@ -66,6 +66,19 @@
           <ToggleSwitch Grid.Column="2" VerticalAlignment="Center" OnContent="" OffContent="" IsChecked="{Binding ServiceInstalled, Mode=OneWay}"
                         Command="{Binding ToggleService}" IsEnabled="{Binding IsWindows}" />
         </Grid>
+
+        <!-- Les autres postes dépendent de cet ordinateur : il ne s'endort pas, même fenêtre réduite -->
+        <Border Height="1" Background="{DynamicResource LineBrush}" Margin="58,0,0,0" IsVisible="{Binding ShowAwake}" />
+        <Grid ColumnDefinitions="Auto,*,Auto" Margin="18,16" IsVisible="{Binding ShowAwake}">
+          <Border Classes="appicon medium" Background="{DynamicResource ToneIndigo}" Margin="0,0,14,0"><mi:MaterialIcon Kind="WeatherNight" /></Border>
+          <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+            <TextBlock Text="Toujours éveillé pour les autres postes" />
+            <TextBlock Text="{Binding AwakeLine}" Classes="muted" TextWrapping="Wrap" FontSize="{DynamicResource FsSmall}" />
+            <TextBlock Classes="muted" TextWrapping="Wrap" FontSize="{DynamicResource FsSmall}"
+                       Text="Un portable dont on ferme le couvercle s'endort quand même : choisissez « Ne rien faire » quand il est branché." />
+          </StackPanel>
+          <Button Grid.Column="2" Content="Options d'alimentation" Command="{Binding OpenPowerOptions}" VerticalAlignment="Center" Margin="12,0,0,0" />
+        </Grid>
       </StackPanel>
     </Border>
 

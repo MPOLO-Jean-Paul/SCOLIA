@@ -47,6 +47,9 @@ public sealed class MainActivity : AvaloniaMainActivity
         Security.AndroidBiometrics.Attach(this);
         AndroidSpeech.Attach(this);
         ScoliaPlatform.NotifyAppResumed();
+        // Téléphone serveur encore freiné par les économies de batterie : Android le demande, une fois par lancement.
+        try { AndroidBackground.AskOnceIfServer(this); }
+        catch (Exception ex) { Android.Util.Log.Warn("SCOLIA", $"Demande batterie impossible : {ex.GetType().Name}"); }
         // Une erreur de WorkManager ne doit pas empêcher de revenir sur l'écran SCOLIA.
         try { Synchronization.SyncWorker.ScheduleOnResume(this); }
         catch (Exception ex)

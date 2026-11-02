@@ -2271,8 +2271,16 @@ Wait(Task.Delay(100));
 
 shell.OpenBackstage();
 Save(window, "26-fichier.png");
+// Téléphone serveur encore freiné par Android : la carte d'arrière-plan doit se voir, avec le réglage de la marque.
+if (Platform.IsMobile)
+{
+    Platform.BackgroundAllowed = () => false;
+    Platform.BackgroundHint = "Sur ce téléphone, ouvrez aussi Réglages, Gestion des applications au démarrage : mettez SCOLIA en manuel et autorisez tout.";
+}
 shell.Backstage.Section = shell.Backstage.Items.First(i => i.Value == "poste");
 Save(window, "26b-poste.png");
+Platform.BackgroundAllowed = null;
+Platform.BackgroundHint = string.Empty;
 shell.CloseBackstage();
 
 // Préférences et mot de passe du menu Compte.

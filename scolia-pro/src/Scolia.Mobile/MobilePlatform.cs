@@ -55,6 +55,11 @@ public static class MobilePlatform
         Platform.ShowSystemNotification = alert => AndroidAlerts.Show(context ?? app, alert);
         // Sans ordinateur dans l'établissement, ce téléphone peut en être le serveur.
         Platform.LocalServer = Server.PhoneServer.Get(app);
+        // Téléphone serveur : écran éteint, il doit rester joignable. Android ne doit pas le freiner pour la batterie.
+        Platform.BackgroundAllowed = () => AndroidBackground.IsAllowed(context ?? app);
+        Platform.AllowBackground = () => AndroidBackground.Ask(context ?? app);
+        Platform.OpenAppSettings = () => AndroidBackground.OpenSettings(context ?? app);
+        Platform.BackgroundHint = AndroidBackground.HintFor(Android.OS.Build.Manufacturer);
     }
 
     private static WeakReference<Android.App.Activity>? screen;

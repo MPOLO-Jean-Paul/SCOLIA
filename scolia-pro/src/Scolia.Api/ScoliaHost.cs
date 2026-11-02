@@ -180,6 +180,10 @@ public static class ScoliaHost
         app.MapFallbackToFile("index.html");
 
         var storage = app.Services.GetRequiredService<IOptions<ScoliaStorageOptions>>().Value;
+        // Ordinateur principal partagé : Windows ne le met pas en veille tant que les autres postes en dépendent.
+        // Le téléphone serveur a son propre mécanisme (service Android au premier plan).
+        if (embedded is null && lan && app.Configuration.GetValue("Scolia:Reseau:GarderEveille", true))
+            app.Lifetime.ApplicationStarted.Register(() => KeepAwake.Hold(app.Lifetime.ApplicationStopping));
         app.Lifetime.ApplicationStarted.Register(() =>
         {
             var listening = app.Urls.FirstOrDefault() ?? $"http://localhost:{port}";

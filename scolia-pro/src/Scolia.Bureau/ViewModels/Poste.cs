@@ -10,6 +10,9 @@ namespace Scolia.Bureau.ViewModels;
 public sealed class PosteViewModel : Observable
 {
     private readonly ShellViewModel shell;
+    /// <summary>Une seule page à relire au retour des réglages : pas d'abonnement qui retiendrait les anciennes.</summary>
+    private static PosteViewModel? shown;
+    static PosteViewModel() => Platform.AppResumed += () => shown?.Refresh();
     private bool serviceInstalled;
     private bool lanEnabled;
     private bool searching;
@@ -26,6 +29,11 @@ public sealed class PosteViewModel : Observable
             finally { Refresh(); }
         }));
         Search = new AsyncCommand(SearchAsync);
+        AllowBackground = new RelayCommand(() => Platform.AllowBackground?.Invoke());
+        OpenAppSettings = new RelayCommand(() => Platform.OpenAppSettings?.Invoke());
+        OpenPowerOptions = new RelayCommand(PosteAdmin.OpenPowerOptions);
+        // Retour des réglages d'Android : l'état de l'arrière-plan se relit tout de suite, sur la page affichée.
+        shown = this;
         UseThisComputer = new AsyncCommand(() => shell.UseThisComputerAsync());
         // Mobile : quitter l'ordinateur principal actuel pour en choisir un autre, ou saisir son adresse.
         ChangeServer = new AsyncCommand(async () =>
@@ -56,6 +64,23 @@ public sealed class PosteViewModel : Observable
             : lanEnabled ? "Les autres ordinateurs qui ont SCOLIA le trouvent et s'y connectent automatiquement."
                          : "Le partage n'est pas ouvert : les autres ordinateurs ne le voient pas encore.")
         : $"Serveur {ConnectionStore.Load()?.Machine ?? "principal"} · {shell.Api.Server.Host}. Si son adresse change, SCOLIA le retrouve seul.";
+
+    /// <summary>Téléphone serveur : Android le laisse-t-il travailler écran éteint, sans économie de batterie ?</summary>
+    public bool ShowBackground => IsPhoneServer && Platform.BackgroundAllowed is not null;
+    public bool BackgroundOk => Platform.BackgroundAllowed?.Invoke() ?? true;
+    public bool BackgroundBlocked => !BackgroundOk;
+    public string BackgroundTitle => BackgroundOk ? "Actif même écran éteint" : "Android peut endormir SCOLIA";
+    public string BackgroundLine => BackgroundOk
+        ? "Écran éteint ou application réduite, les autres postes restent connectés. Seul « Quitter » ou l'arrêt du téléphone les coupe."
+        : "Écran éteint, Android peut couper SCOLIA pour économiser la batterie : les autres postes seraient déconnectés.";
+    public string BackgroundHint => Platform.BackgroundHint;
+    public bool HasBackgroundHint => ShowBackground && BackgroundHint.Length > 0;
+
+    /// <summary>Ordinateur principal sous Windows : il ne se met pas en veille tant que le partage est ouvert.</summary>
+    public bool ShowAwake => IsWindows && IsServerComputer;
+    public string AwakeLine => lanEnabled
+        ? "Tant que le partage est ouvert, Windows ne met pas cet ordinateur en veille. L'écran peut s'éteindre, la fenêtre être réduite."
+        : "Ouvrez le partage : l'ordinateur restera alors éveillé pour les autres postes.";
 
     /// <summary>Interrupteur du démarrage automatique : true quand le service est installé.</summary>
     public bool ServiceInstalled => serviceInstalled;
@@ -88,6 +113,9 @@ public sealed class PosteViewModel : Observable
     public AsyncCommand Search { get; }
     public AsyncCommand UseThisComputer { get; }
     public AsyncCommand ChangeServer { get; }
+    public RelayCommand AllowBackground { get; }
+    public RelayCommand OpenAppSettings { get; }
+    public RelayCommand OpenPowerOptions { get; }
 
     private void Refresh()
     {
@@ -97,7 +125,8 @@ public sealed class PosteViewModel : Observable
         addresses = lanEnabled ? PosteAdmin.Addresses() : [];
         foreach (var name in new[] { nameof(ServiceInstalled), nameof(LanEnabled), nameof(ServiceLine), nameof(LanLine), nameof(AddressLine),
                      nameof(HasAddress), nameof(ConnectionTitle), nameof(ConnectionLine), nameof(IsServerComputer), nameof(IsLinked),
-                     nameof(IsPhoneServer), nameof(IsPhoneClient), nameof(CanBecomeServer) })
+                     nameof(IsPhoneServer), nameof(IsPhoneClient), nameof(CanBecomeServer), nameof(ShowBackground), nameof(BackgroundOk),
+                     nameof(BackgroundBlocked), nameof(BackgroundTitle), nameof(BackgroundLine), nameof(HasBackgroundHint), nameof(ShowAwake), nameof(AwakeLine) })
             Raise(name);
     }
 

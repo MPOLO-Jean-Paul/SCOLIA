@@ -35,6 +35,17 @@ public static class PosteAdmin
     /// <summary>Lit le réglage d'accès réseau local dans la configuration du serveur.</summary>
     public static bool LanEnabled() => ReadServerSetting("AccesReseauLocal") is bool enabled && enabled;
 
+    /// <summary>
+    /// Options d'alimentation de Windows : c'est là qu'un portable garde l'ordinateur éveillé couvercle fermé
+    /// (« Ne rien faire » quand l'ordinateur est branché). SCOLIA ne change pas ce réglage à la place de l'utilisateur.
+    /// </summary>
+    public static void OpenPowerOptions()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        try { Process.Start(new ProcessStartInfo("control.exe", "powercfg.cpl") { UseShellExecute = true })?.Dispose(); }
+        catch (Exception ex) when (ex is Win32Exception or InvalidOperationException) { }
+    }
+
     /// <summary>Port d'écoute du serveur (5080 par défaut).</summary>
     public static int Port() => ReadServerSetting("Port") is int port && port > 0 ? port : DefaultPort;
 
