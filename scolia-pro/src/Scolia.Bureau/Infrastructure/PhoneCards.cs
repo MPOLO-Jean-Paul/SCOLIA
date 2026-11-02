@@ -75,10 +75,15 @@ public static class PhoneCards
             pending = false;
             var all = source?.Cast<object?>().ToList() ?? [];
             // La liste s'est vidée puis remplie (actualisation) : on garde au moins ce que l'utilisateur avait déjà affiché.
-            var count = Math.Min(all.Count, Math.Max(limit, FirstCards));
+            var target = Math.Min(all.Count, Math.Max(limit, FirstCards));
+            // Fluidité : l'écran s'affiche avec les premières cartes, les suivantes arrivent par petits paquets entre
+            // deux images, en bas de la liste, sans bloquer le doigt ni faire sauter la page.
+            var count = Math.Min(target, Math.Max(shown.Count, 0) + (shown.Count == 0 ? QuickCards : StepCards));
+            if (count < shown.Count) count = Math.Min(target, shown.Count);
             CollectionSync.Apply(shown, all.Take(count));
-            var left = all.Count - shown.Count;
-            more.IsVisible = left > 0;
+            if (shown.Count < target) Later();
+            var left = all.Count - target;
+            more.IsVisible = left > 0 && shown.Count >= target;
             more.Content = $"Afficher {Math.Min(left, MoreCards)} de plus · {Format.Count(left, "restant", "restants")}";
         }
         void Later() { if (pending) return; pending = true; Avalonia.Threading.Dispatcher.UIThread.Post(Fill, Avalonia.Threading.DispatcherPriority.Background); }
@@ -101,6 +106,9 @@ public static class PhoneCards
     /// <summary>Cartes affichées à l'ouverture d'une liste, puis à chaque « Afficher plus ».</summary>
     private const int FirstCards = 40;
     private const int MoreCards = 40;
+    /// <summary>Cartes construites avant la première image, puis à chaque paquet suivant.</summary>
+    private const int QuickCards = 8;
+    private const int StepCards = 8;
 
     private static void UseColumns(ItemsControl list, int columns)
     {

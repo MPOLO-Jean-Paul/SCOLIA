@@ -7,6 +7,7 @@ namespace Scolia.Phone.iOS;
 /// <summary>
 /// Recherche à la voix sur iPhone : la reconnaissance vocale d'Apple écoute en français pendant que le champ affiche
 /// « Parlez maintenant… ». L'écoute s'arrête d'elle-même après un court silence, puis le texte part dans la recherche.
+/// Quand l'iPhone sait reconnaître le français sur l'appareil, l'écoute se fait sans Internet.
 /// Rien n'est enregistré par SCOLIA.
 /// </summary>
 public static class IosSpeech
@@ -60,7 +61,12 @@ public static class IosSpeech
             session.SetCategory(AVAudioSessionCategory.Record, AVAudioSessionCategoryOptions.DuckOthers);
             session.SetActive(true);
 
-            var request = new SFSpeechAudioBufferRecognitionRequest { ShouldReportPartialResults = true };
+            // Hors ligne : l'iPhone reconnaît le français sur l'appareil quand il le sait ; rien ne part sur Internet.
+            var request = new SFSpeechAudioBufferRecognitionRequest
+            {
+                ShouldReportPartialResults = true,
+                RequiresOnDeviceRecognition = recognizer.SupportsOnDeviceRecognition,
+            };
             engine = new AVAudioEngine();
             var input = engine.InputNode;
             input.InstallTapOnBus(0, 1024, input.GetBusOutputFormat(0), (buffer, _) => request.Append(buffer));

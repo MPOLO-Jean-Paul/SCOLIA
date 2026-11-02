@@ -873,6 +873,121 @@ if (args.Length > 3 && args[3] == "veille")
     return;
 }
 
+// Prédiction (argument « prediction ») : fiche promotion et nouvelle année, propositions sous les champs.
+if (args.Length > 3 && args[3] == "prediction")
+{
+    var failures = 0;
+    void PCheck(string label, bool ok) { Console.WriteLine($"{(ok ? "OK  " : "ECHEC")} {label}"); if (!ok) failures++; }
+    void PPump(int ms) { var until = DateTime.UtcNow.AddMilliseconds(ms); while (DateTime.UtcNow < until) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(10); } }
+    var phoneMode = Preferences.MobileLayout;
+    Wait(shell.OpenSessionAsync(Result(api.LoginAsync("admin", password))));
+    Wait(shell.Open(() => new SettingsPage(shell, "promotions")));
+
+    var promoOpening = SettingsPage.NewPromotionAsync(shell);
+    var promoForm = AwaitForm(shell, promoOpening);
+    promoForm.Find("code").Text = "inf 1";
+    PPump(300);
+    var designation = promoForm.Find("nom");
+    PCheck($"Code « inf 1 » : {string.Join(", ", designation.Suggestions)}", designation.Suggestions.FirstOrDefault() == "Première Infirmière" && designation.Suggestions.Count >= 4);
+    PCheck($"Niveau suivi du code : {promoForm.Find("niveau").Text}", promoForm.Find("niveau").Text == "1");
+    Save(window, phoneMode ? "prediction-1-code.png" : "prediction-1-ordinateur-code.png");
+    promoForm.Find("code").Text = "";
+    designation.Text = "Deu";
+    PPump(300);
+    PCheck($"Désignation « Deu », sans code : {string.Join(", ", designation.Suggestions)}", designation.Suggestions.Count == 0 || designation.Suggestions.All(n => n.StartsWith("Deuxième", StringComparison.Ordinal)));
+    designation.Text = "deuxième acc";
+    PPump(300);
+    PCheck($"« deuxième acc » : {string.Join(", ", designation.Suggestions)}", designation.Suggestions.FirstOrDefault() == "Deuxième Accoucheuse");
+    Save(window, phoneMode ? "prediction-2-designation.png" : "prediction-2-ordinateur-designation.png");
+    designation.PickSuggestion.Execute("Deuxième Accoucheuse");
+    PPump(300);
+    PCheck($"Choix rempli : code {promoForm.Text("code")}, niveau {promoForm.Text("niveau")}, suivante {promoForm.Text("suivante")}",
+        promoForm.Text("code") == "ACC2" && promoForm.Text("niveau") == "2" && promoForm.Text("suivante") == "ACC3");
+    Save(window, phoneMode ? "prediction-3-rempli.png" : "prediction-3-ordinateur-rempli.png");
+    promoForm.Cancel.Execute(null);
+    PPump(200);
+
+    var year = SettingsPage.NewYearAsync(shell);
+    var yearForm = AwaitForm(shell, year);
+    yearForm.Find("libelle").Text = "2027";
+    PPump(200);
+    PCheck($"Année « 2027 » : {string.Join(", ", yearForm.Find("libelle").Suggestions)}", yearForm.Find("libelle").Suggestions.SequenceEqual(["2027-2028"]));
+    yearForm.Find("debut").Choice = SettingsPage.CalendarMonths[9];
+    PPump(200);
+    PCheck($"Octobre en premier mois : dernier mois {yearForm.Find("fin").Choice?.Label}", yearForm.ChoiceValue("fin") == "7");
+    Save(window, phoneMode ? "prediction-4-annee.png" : "prediction-4-ordinateur-annee.png");
+    yearForm.Cancel.Execute(null);
+    PPump(200);
+
+    shell.Sync.Stop();
+    window.Close();
+    Console.WriteLine(failures == 0 ? "Prédiction : tout est en place." : $"Prédiction : {failures} échec(s).");
+    Environment.ExitCode = failures == 0 ? 0 : 1;
+    return;
+}
+
+// Fluidité (argument « fluidite ») : chaque page du volet, temps de chargement, de mise en page et nombre d'éléments.
+if (args.Length > 3 && args[3] == "fluidite")
+{
+    Wait(shell.OpenSessionAsync(Result(api.LoginAsync("admin", password))));
+    foreach (var endpoint in new[] { "api/paiements/lot/candidats", "api/apprenants?taille=50", "api/apprenants?taille=200" })
+    {
+        Result(shell.Api.GetAsync<System.Text.Json.JsonElement>(endpoint));
+        var timer = System.Diagnostics.Stopwatch.StartNew();
+        var body = Result(shell.Api.GetAsync<System.Text.Json.JsonElement>(endpoint));
+        Console.WriteLine($"API {endpoint,-34} {timer.Elapsed.TotalMilliseconds,6:0} ms · {body.GetRawText().Length / 1024,5} Ko");
+    }
+    // Données seules, sans écran : la différence avec l'ouverture complète est le coût de l'affichage.
+    foreach (var make in new Func<PageViewModel>[] { () => new BatchPaymentPage(shell), () => new StudentsPage(shell), () => new StaffAttendancePage(shell) })
+    {
+        Wait(make().LoadAsync());
+        var page = make();
+        var timer = System.Diagnostics.Stopwatch.StartNew();
+        Wait(page.LoadAsync());
+        Console.WriteLine($"DONNEES {page.Title,-26} {timer.Elapsed.TotalMilliseconds,6:0} ms");
+    }
+    // Découpage d'une ouverture : partie immédiate, construction de l'écran vide, puis données et cartes.
+    foreach (var make in new Func<PageViewModel>[] { () => new StudentsPage(shell), () => new HomePage(shell) })
+    {
+        for (var pass = 0; pass < 2; pass++)
+        {
+            var timer = System.Diagnostics.Stopwatch.StartNew();
+            var opening = shell.Open(make);
+            var sync = timer.Elapsed.TotalMilliseconds;
+            window.UpdateLayout();
+            var view = timer.Elapsed.TotalMilliseconds - sync;
+            Wait(opening);
+            var data = timer.Elapsed.TotalMilliseconds - sync - view;
+            window.UpdateLayout();
+            var cards = timer.Elapsed.TotalMilliseconds - sync - view - data;
+            if (pass == 1) Console.WriteLine($"DECOUPE {shell.Current?.Title,-20} immédiat {sync,5:0} · écran {view,5:0} · données {data,5:0} · cartes {cards,5:0} ms");
+        }
+    }
+    var rows = new List<(string Page, double Load, double Layout, int Visuals)>();
+    foreach (var item in shell.Navigation.SelectMany(g => g.Items).ToList())
+    {
+        for (var pass = 0; pass < 2; pass++)
+        {
+            var watch = System.Diagnostics.Stopwatch.StartNew();
+            Wait(item.Open.ExecuteAsync());
+            var load = watch.Elapsed.TotalMilliseconds;
+            watch.Restart();
+            Dispatcher.UIThread.RunJobs();
+            window.UpdateLayout();
+            AvaloniaHeadlessPlatform.ForceRenderTimerTick();
+            Dispatcher.UIThread.RunJobs();
+            var layout = watch.Elapsed.TotalMilliseconds;
+            // Deuxième passage seulement : le premier compte aussi la compilation des vues.
+            if (pass == 1) rows.Add((item.Label, load, layout, window.GetVisualDescendants().Count()));
+        }
+    }
+    foreach (var r in rows.OrderByDescending(r => r.Load + r.Layout))
+        Console.WriteLine($"{r.Page,-28} chargement {r.Load,7:0} ms · affichage {r.Layout,6:0} ms · {r.Visuals,5} éléments");
+    shell.Sync.Stop();
+    window.Close();
+    return;
+}
+
 // Toutes les recherches (argument « recherches ») : menu, accueil, paramètres, listes ; même champ, mêmes blocs.
 if (args.Length > 3 && args[3] == "recherches")
 {

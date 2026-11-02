@@ -101,11 +101,27 @@
                 <ItemsControl.ItemTemplate>
                   <DataTemplate>
                     <Border Background="{DynamicResource Surface2Brush}" CornerRadius="12" Padding="10" Margin="0,0,0,8">
-                      <Grid ColumnDefinitions="90,*,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="8" RowSpacing="8">
+                      <Grid ColumnDefinitions="90,*,Auto" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="8" RowSpacing="8">
                         <TextBox Text="{Binding Code}" PlaceholderText="INF1" MaxLength="4" />
                         <TextBox Grid.Column="1" Text="{Binding Fee}" PlaceholderText="Mensualité, 55000" />
                         <Button Grid.Column="2" Classes="toolicon" Command="{Binding Remove}" VerticalAlignment="Center"><mi:MaterialIcon Kind="Close" Width="16" Height="16" /></Button>
-                        <TextBox Grid.Row="1" Grid.ColumnSpan="3" Text="{Binding Name}" PlaceholderText="Désignation, par exemple Première année" />
+                        <TextBox Grid.Row="1" Grid.ColumnSpan="3" Text="{Binding Name}" PlaceholderText="Désignation, par exemple Première Infirmière" />
+                        <!-- Désignations prédites d'après le code : un toucher remplit la ligne -->
+                        <ItemsControl Grid.Row="2" Grid.ColumnSpan="3" ItemsSource="{Binding Suggestions}" IsVisible="{Binding HasSuggestions}">
+                          <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+                          </ItemsControl.ItemsPanel>
+                          <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                              <Button Classes="suggestion" Command="{Binding $parent[ItemsControl].DataContext.Pick}" CommandParameter="{Binding}">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                  <mi:MaterialIcon Kind="AutoFix" Width="14" Height="14" />
+                                  <TextBlock Text="{Binding}" VerticalAlignment="Center" />
+                                </StackPanel>
+                              </Button>
+                            </DataTemplate>
+                          </ItemsControl.ItemTemplate>
+                        </ItemsControl>
                       </Grid>
                     </Border>
                   </DataTemplate>

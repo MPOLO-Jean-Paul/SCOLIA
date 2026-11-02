@@ -240,6 +240,9 @@ public sealed record StaffJustificationDto(Guid Id, DateOnly Date, string Reason
 /// <summary>Une journée du pointage : statut, heures signées, et si elle sert de conversion de retards.</summary>
 public sealed record StaffDayDto(DateOnly Date, string Status, string? Entry, string? Exit, bool Late, bool Justified, bool Conversion, bool ConversionJustified);
 
+/// <summary>Journée d'un membre actif : tout le personnel en une seule réponse pour l'écran Pointage.</summary>
+public sealed record StaffTodayDto(Guid StaffId, StaffDayDto? Day);
+
 /// <summary>Bilan d'un membre sur une période. Les jours déductibles comptent une fois par date.</summary>
 public sealed record StaffBilanDto(Guid StaffMemberId, string Name, int Present, int Late, int Absent, int Justified, int Conversions, int Deductible);
 

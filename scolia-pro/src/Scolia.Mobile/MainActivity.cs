@@ -62,6 +62,13 @@ public sealed class MainActivity : AvaloniaMainActivity
         base.OnPause();
     }
 
+    /// <summary>Accord du micro pour la recherche à la voix dans le téléphone, sans Internet.</summary>
+    public override void OnRequestPermissionsResult(int requestCode, string[] permissions, Permission[] grantResults)
+    {
+        if (AndroidSpeech.CompletePermission(requestCode, grantResults)) return;
+        base.OnRequestPermissionsResult(requestCode, permissions, grantResults);
+    }
+
     /// <summary>Le texte dicté revient ici, puis part dans le champ de recherche.</summary>
     protected override void OnActivityResult(int requestCode, Result resultCode, Android.Content.Intent? data)
     {

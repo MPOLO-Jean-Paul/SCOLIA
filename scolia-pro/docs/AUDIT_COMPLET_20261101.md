@@ -57,7 +57,7 @@ rapport journalier envoyé automatiquement, audit complet et catalogue du foncti
 - À l'heure choisie, l'ordinateur principal prépare le PDF, l'enregistre dans le dossier « rapports », l'envoie, puis prévient tous les postes par la bannière « Rapport du jour prêt ».
 
 ### Info sur l'application
-- Dans Aide, juste après « À propos ». Le catalogue compte 12 modules et 52 fonctions décrites, avec une recherche.
+- Dans Aide, juste après « À propos ». Le catalogue compte 12 modules et 53 fonctions décrites, avec une recherche.
 
 ### Complément : envoi par e-mail et mise en veille
 
@@ -123,6 +123,35 @@ rapport journalier envoyé automatiquement, audit complet et catalogue du foncti
   - Windows : pas de micro dans SCOLIA. La dictée de Windows, touches Windows+H, écrit dans n'importe quel champ.
 - Vérifié par les essais automatiques avec une voix simulée : le micro est présent partout, « Parlez maintenant… » s'affiche, le texte dicté arrive dans le champ. La reconnaissance réelle reste à essayer sur un téléphone.
 
+#### Voix hors ligne
+- Android 12 et plus, si le téléphone le permet : l'écoute se fait dans le téléphone, sans Internet. SCOLIA demande l'accès au micro au premier toucher du micro.
+- Si le français n'est pas encore installé, SCOLIA en demande le téléchargement (Android 13 et plus) pour les fois suivantes. Cette fois-là, la fenêtre du service vocal prend le relais.
+- Sinon, la fenêtre « Parlez maintenant » du service vocal est réglée pour préférer le modèle hors ligne quand il est présent.
+- iPhone : la reconnaissance se fait sur l'appareil quand l'iPhone le sait, sans Internet.
+
+#### Saisie prédictive
+- Fiche promotion, code « INF1 » : propositions « Première Infirmière », « Deuxième », « Troisième », « Quatrième », puis la tournure de la section.
+- Code « ACC » ou désignation « deuxième acc » : « Deuxième Accoucheuse ».
+- Chaque lettre resserre les propositions. Les désignations déjà utilisées ne sont plus proposées.
+- Un choix remplit :
+  - le code, par exemple ACC2 ;
+  - le niveau ;
+  - la promotion suivante, ACC3 ;
+  - la section, si elle existe.
+- SCOLIA apprend les tournures de l'établissement : une promotion « Première Soignante » fait proposer « Deuxième Soignante ».
+- Assistant d'installation : mêmes propositions sous chaque ligne. « Ajouter » prépare la ligne suivante : INF1 puis INF2 « Deuxième Infirmière », même mensualité.
+- Année scolaire : « 2026 » propose « 2026-2027 ». Le dernier mois suit le premier, dix mois d'école, tant qu'il n'est pas choisi à la main. Le résumé se recalcule : nombre de mois, période, exemple de retard.
+
+#### Fluidité
+| Écran | Avant | Après |
+|---|---|---|
+| Pointage, données | 666 ms, une requête par membre | 204 ms, une seule requête pour tout le personnel |
+| Listes du téléphone | 40 cartes construites d'un coup | 8 cartes tout de suite, puis 8 par 8 entre deux images |
+| Recherche | Résultats 250 ms après la frappe | 180 ms |
+
+- Mesures faites sur l'ordinateur d'essai, pas sur un téléphone : sur un téléphone, les durées sont plus longues, mais l'écart reste.
+- Un ordinateur principal pas encore mis à jour fonctionne toujours : SCOLIA revient alors à une requête par membre, six à la fois.
+
 ## 4. Limites à connaître
 
 | Sujet | Limite | Solution proposée |
@@ -131,7 +160,7 @@ rapport journalier envoyé automatiquement, audit complet et catalogue du foncti
 | Notifications téléphone application fermée | Les alertes arrivent tant que SCOLIA est ouvert ou récemment mis en arrière-plan. Une fois l'application fermée par le système, il faudrait un service de notifications push. | Ajouter un relais push (Firebase pour Android, APNs pour iPhone) le jour où l'établissement crée ces comptes. |
 | iPhone en arrière-plan | iOS suspend vite les applications : la notification n'arrive que dans les instants qui suivent la mise en arrière-plan. | Même solution : notifications push. |
 | Vérification sur appareil | L'empreinte réelle, la bannière du système, la recherche à la voix et l'envoi WhatsApp n'ont pas été essayés sur un vrai téléphone ni avec un vrai compte Meta. | Essai sur votre téléphone avec l'APK livré. |
-| Voix sans réseau | Sur la plupart des téléphones, la reconnaissance vocale passe par Internet. | Saisie au clavier, ou langue française téléchargée pour l'usage hors ligne dans les réglages vocaux du téléphone. |
+| Voix sans réseau | Hors ligne seulement si le téléphone sait reconnaître le français sur l'appareil : Android 12 et plus selon le modèle, iPhone. Sur un téléphone plus ancien, la voix a besoin d'Internet. | Télécharger le français pour l'usage hors ligne dans les réglages vocaux du téléphone, une fois, avec Internet. |
 
 ## 5. Pistes suivantes
 

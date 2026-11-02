@@ -133,6 +133,12 @@ public sealed class StaffAttendanceApiTests : IDisposable
         var todayStatus = days.Single(d => d.GetProperty("date").GetString() == today.ToString("yyyy-MM-dd")).GetProperty("status").GetString();
         Assert.Equal(StaffAttendanceRules.IsWorkingDay(today) ? "En attente" : "—", todayStatus);
 
+        // Tout le personnel en une requête : la même journée que la requête membre par membre.
+        var all = (await admin.GetAsync($"/api/personnel/pointage/jour?date={lastWorking:yyyy-MM-dd}").Ok()).EnumerateArray().ToList();
+        var mine = all.Single(d => d.GetProperty("staffId").GetString() == teacher.ToString());
+        Assert.Equal("Absent", mine.GetProperty("day").GetProperty("status").GetString());
+        Assert.Equal(lastWorking.ToString("yyyy-MM-dd"), mine.GetProperty("day").GetProperty("date").GetString());
+
         // Justifier, puis annuler : le motif initial reste dans le registre.
         var justification = await admin.Post($"/api/personnel/{teacher}/justifications", new { date = lastWorking, reason = "Consultation médicale" }).Ok();
         var (twice, _) = await admin.Post($"/api/personnel/{teacher}/justifications", new { date = lastWorking, reason = "Autre motif" }).Fail();

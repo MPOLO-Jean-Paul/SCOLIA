@@ -825,6 +825,55 @@ public sealed class SettingsPage : PageViewModel
             CultureInfo.GetCultureInfo("fr-FR").DateTimeFormat.GetMonthName(i) is { } month
                 ? char.ToUpperInvariant(month[0]) + month[1..] : i.ToString(CultureInfo.InvariantCulture))).ToArray();
 
+    /// <summary>
+    /// Mois prédits : le dernier mois suit le premier (dix mois d'école) tant qu'il n'a pas été choisi à la main,
+    /// et le résumé se recalcule à chaque choix : nombre de mois, période, exemple de retard.
+    /// </summary>
+    public static void PredictMonths(FormViewModel form, FormField summary, bool endFollows = true)
+    {
+        var start = form.Find("debut");
+        var end = form.Find("fin");
+        var limit = form.Find("limite");
+        var endChosen = !endFollows;
+        var following = false;
+        void Describe()
+        {
+            if (start.Choice is null || end.Choice is null || limit.Choice is null) return;
+            var first = int.Parse(start.Choice.Value, CultureInfo.InvariantCulture);
+            var last = int.Parse(end.Choice.Value, CultureInfo.InvariantCulture);
+            var day = int.Parse(limit.Choice.Value, CultureInfo.InvariantCulture);
+            var count = (last - first + 12) % 12 + 1;
+            var following1 = CalendarMonths[SetupViewModel.MonthsAhead(first, 1) - 1].Label.ToLowerInvariant();
+            summary.Hint = $"{Format.Count(count, "mois", "mois")} : de {start.Choice.Label.ToLowerInvariant()} à {end.Choice.Label.ToLowerInvariant()}. " +
+                $"Pour {start.Choice.Label.ToLowerInvariant()}, limite le {day} {following1} : retard dès le {day + 1} {following1}.";
+        }
+        var previous = form.Changed;
+        form.Changed = field =>
+        {
+            previous?.Invoke(field);
+            if (field == end && !following) endChosen = true;
+            if (field == start && !endChosen && start.Choice is { } chosen)
+            {
+                var target = SetupViewModel.MonthsAhead(int.Parse(chosen.Value, CultureInfo.InvariantCulture), 9).ToString(CultureInfo.InvariantCulture);
+                following = true;
+                try { end.Choice = end.Options.First(o => o.Value == target); }
+                finally { following = false; }
+            }
+            if (field == start || field == end || field == limit) Describe();
+        };
+        Describe();
+    }
+
+    /// <summary>Libellés d'année proposés : « 2026 », « 26 » ou « 2026- » donnent « 2026-2027 ».</summary>
+    public static IReadOnlyList<string> YearLabels(string typed)
+    {
+        var digits = new string(typed.TakeWhile(c => char.IsDigit(c)).ToArray());
+        var rest = typed[digits.Length..].Trim();
+        if (rest.Length > 1 || (rest.Length == 1 && rest != "-") || digits.Length is not (2 or 4)) return [];
+        var year = digits.Length == 2 ? 2000 + int.Parse(digits, CultureInfo.InvariantCulture) : int.Parse(digits, CultureInfo.InvariantCulture);
+        return year is < 2000 or > 2099 ? [] : [$"{year}-{year + 1}"];
+    }
+
     public static IReadOnlyList<ChoiceItem> PaymentDeadlineDays { get; } =
         Enumerable.Range(1, 28).Select(i => new ChoiceItem(i.ToString(CultureInfo.InvariantCulture),
             $"{i} du mois suivant")).ToArray();
@@ -859,7 +908,11 @@ public sealed class SettingsPage : PageViewModel
         form.AddChoice("debut", "Premier mois à encaisser", CalendarMonths, "9", required: true);
         form.AddChoice("fin", "Dernier mois à encaisser", CalendarMonths, "6", required: true);
         form.AddChoice("limite", "Dernier jour pour payer sans retard", PaymentDeadlineDays, "5", required: true);
-        form.AddHeader("Exemple", "Pour octobre, limite le 5 novembre : déclaration de retard dès le 6 novembre.");
+        var example = form.AddHeader("Exemple", "Pour octobre, limite le 5 novembre : déclaration de retard dès le 6 novembre.");
+        PredictMonths(form, example);
+        // « 2026 » propose « 2026-2027 », comme une saisie semi-automatique.
+        form.Find("libelle").Suggest = f => YearLabels(f.Text);
+        form.RefreshSuggestions();
         form.AddFlag("copier", "Copier les promotions et leurs frais de l'année courante", true);
         form.AddFlag("courante", "Utiliser cette nouvelle année pour les inscriptions et paiements", true);
         if (await shell.Ask(form) && shell.Current is SettingsPage page) await page.RefreshAsync();
@@ -899,6 +952,7 @@ public sealed class SettingsPage : PageViewModel
         form.AddChoice("debut", "Premier mois de paiement", CalendarMonths, first.ToString(CultureInfo.InvariantCulture), required: true);
         form.AddChoice("fin", "Dernier mois de paiement", CalendarMonths, last.ToString(CultureInfo.InvariantCulture), required: true);
         form.AddChoice("limite", "Dernier jour sans retard (mois suivant)", PaymentDeadlineDays, cutoff.ToString(CultureInfo.InvariantCulture), required: true);
+        PredictMonths(form, form.AddHeader("Résumé"), endFollows: false);
         form.AddHeader("Protection des reçus", "Les mois déjà encaissés ou pris en charge ne peuvent pas être renommés ni supprimés ; leur échéance historique reste inchangée. Les mois non réglés et les nouveaux mois peuvent être configurés. Synchronisez les appareils avant de modifier.");
         if (await Shell.Ask(form)) await RefreshAsync();
     }
@@ -960,8 +1014,91 @@ public sealed class SettingsPage : PageViewModel
         form.AddDay("inscriptionEcheance", "Échéance des frais d'inscription", inscription?.DueDate);
         form.Add("examen", "Frais d'examen (montant)", FieldKind.Amount, examen?.Amount.ToString("0"));
         form.AddDay("examenEcheance", "Échéance des frais d'examen", examen?.DueDate);
+        await PredictPromotionAsync(shell, form, sections, existing);
 
         if (await shell.Ask(form) && shell.Current is SettingsPage page) await page.RefreshAsync();
+    }
+
+    /// <summary>
+    /// Prédiction dans la fiche promotion : « INF1 » propose « Première Infirmière » puis les autres niveaux ;
+    /// une désignation choisie remplit le code, le niveau, la promotion suivante et la section.
+    /// </summary>
+    private static async Task PredictPromotionAsync(ShellViewModel shell, FormViewModel form, IReadOnlyList<SectionDto> sections, PromotionDto? existing)
+    {
+        List<PromotionDto> others;
+        try { others = (await shell.Api.GetAsync<List<PromotionDto>>("api/etablissement/promotions")).Where(p => p.Id != existing?.Id).ToList(); }
+        catch (Exception ex) when (ex is HttpRequestException or ApiException) { others = []; }
+        var context = new PromotionNames.Context(
+            sections.Select(s => (s.Code, s.Name)).ToList(),
+            others.Select(p => (p.Code, p.Name)).ToList());
+        var usedCodes = others.Select(p => p.Code.ToUpperInvariant()).ToHashSet();
+        var usedNames = others.Select(p => PromotionNames.Normalize(p.Name)).ToHashSet();
+        var code = form.Find("code");
+        var name = form.Find("nom");
+        var level = form.Find("niveau");
+        var next = form.Find("suivante");
+        var section = form.Find("section");
+        var levelTouched = existing is not null;
+        var auto = false;
+
+        string Prefix() => PromotionNames.ParseCode(code.Text).Prefix is { Length: >= 2 } p ? p
+            : PromotionNames.TradeOf(name.Text) is { } trade && PromotionNames.PrefixFor(trade, context) is { } q ? q : string.Empty;
+
+        name.Suggest = f => PromotionNames.Suggest(code.Text, f.Text, context)
+            .Where(n => !usedNames.Contains(PromotionNames.Normalize(n))).Take(6).ToList();
+        code.Suggest = f =>
+        {
+            var (prefix, typedLevel) = PromotionNames.ParseCode(f.Text);
+            if (typedLevel is not null && f.Text.Trim().Length > 0) return [];
+            var target = PromotionNames.LevelOf(name.Text);
+            if (prefix.Length < 2) prefix = Prefix();
+            if (prefix.Length < 2) return [];
+            var levels = target is { } t ? [t] : Enumerable.Range(1, PromotionNames.DefaultLevels);
+            return levels.Select(l => PromotionNames.Code(prefix, l)).Where(c => !usedCodes.Contains(c) && c != f.Text.Trim().ToUpperInvariant()).ToList();
+        };
+        name.Picked = (_, chosen) =>
+        {
+            if (PromotionNames.LevelOf(chosen) is not { } l) return;
+            var prefix = Prefix();
+            auto = true;
+            try { if (prefix.Length >= 2 && PromotionNames.ParseCode(code.Text).Level != l) code.Text = PromotionNames.Code(prefix, l); }
+            finally { auto = false; }
+            Fill(l);
+        };
+        code.Picked = (_, chosen) => { if (PromotionNames.ParseCode(chosen).Level is { } l) Fill(l); };
+        form.Changed = changed =>
+        {
+            if (changed == level && !auto) levelTouched = true;
+            // Code complet tapé à la main : le niveau suit, tant que la personne ne l'a pas changé elle-même.
+            if (changed == code && PromotionNames.ParseCode(code.Text).Level is { } l && !levelTouched)
+            {
+                auto = true;
+                try { level.Text = l.ToString(CultureInfo.InvariantCulture); }
+                finally { auto = false; }
+            }
+        };
+
+        void Fill(int l)
+        {
+            auto = true;
+            try { FillLinked(l); }
+            finally { auto = false; }
+        }
+
+        void FillLinked(int l)
+        {
+            if (!levelTouched) level.Text = l.ToString(CultureInfo.InvariantCulture);
+            var prefix = Prefix();
+            if (string.IsNullOrWhiteSpace(next.Text) && prefix.Length >= 2 && l < PromotionNames.DefaultLevels)
+                next.Text = PromotionNames.Code(prefix, l + 1);
+            if (section.Choice is null && PromotionNames.TradeOf(name.Text) is { } trade)
+            {
+                var match = sections.FirstOrDefault(s => s.Code.Equals(prefix, StringComparison.OrdinalIgnoreCase))
+                    ?? sections.FirstOrDefault(s => PromotionNames.Normalize(s.Name) == PromotionNames.Normalize(trade));
+                if (match is not null) section.Choice = section.Options.FirstOrDefault(o => o.Value == match.Id.ToString());
+            }
+        }
+        form.RefreshSuggestions();
     }
 }
 

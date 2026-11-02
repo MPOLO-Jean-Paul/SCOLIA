@@ -89,6 +89,24 @@ public sealed class StaffAttendanceService(IAppDbContext db, IWriteGate gate, IA
         return Build(member, marks, justified, from, to, clock.Today).Days;
     }
 
+    /// <summary>Journée de tous les membres actifs à une date, en une requête : l'écran Pointage s'ouvre d'un coup.</summary>
+    public async Task<IReadOnlyList<StaffTodayDto>> DayOfAllAsync(DateOnly date, CancellationToken ct = default)
+    {
+        var members = await db.Staff.AsNoTracking().Where(s => s.IsActive).ToListAsync(ct);
+        var ids = members.Select(m => m.Id).ToList();
+        var marks = await db.StaffMarks.AsNoTracking().Where(m => ids.Contains(m.StaffMemberId) && m.Date == date).ToListAsync(ct);
+        var justifications = await db.StaffJustifications.AsNoTracking()
+            .Where(j => ids.Contains(j.StaffMemberId) && j.Date == date && j.CancelReason == null).ToListAsync(ct);
+        var today = clock.Today;
+        return members.Select(member =>
+        {
+            var mine = marks.Where(m => m.StaffMemberId == member.Id).ToList();
+            var justified = justifications.Where(j => j.StaffMemberId == member.Id).Select(j => j.Date).ToHashSet();
+            var days = Build(member, mine, justified, date, date, today).Days;
+            return new StaffTodayDto(member.Id, days.Count > 0 ? days[0] : null);
+        }).ToList();
+    }
+
     /// <summary>Bilan de tous les membres actifs : présences, retards, absences et jours déductibles pour la paie.</summary>
     public async Task<IReadOnlyList<StaffBilanDto>> BilanAsync(DateOnly from, DateOnly to, CancellationToken ct = default)
     {

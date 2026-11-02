@@ -321,7 +321,7 @@ public sealed class SearchViewModel : Observable
     private void Schedule()
     {
         timer?.Stop();
-        timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(250) };
+        timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(180) };
         timer.Tick += async (_, _) => { timer?.Stop(); await shell.Run(SearchAsync); };
         timer.Start();
     }

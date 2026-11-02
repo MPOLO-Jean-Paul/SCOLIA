@@ -402,6 +402,7 @@ public static class ScoliaEndpoints
         g.MapPost("/{id:guid}/justifications", (Guid id, StaffJustifyRequest input, StaffAttendanceService s, CancellationToken ct) => s.JustifyAsync(id, input.Date, input.Reason, ct));
         g.MapPost("/justifications/{id:guid}/annulation", (Guid id, StaffCancelRequest input, StaffAttendanceService s, CancellationToken ct) => s.CancelJustificationAsync(id, input.Reason, ct));
         g.MapGet("/pointage/bilan", (DateOnly du, DateOnly au, StaffAttendanceService s, CancellationToken ct) => s.BilanAsync(du, au, ct));
+        g.MapGet("/pointage/jour", (DateOnly date, StaffAttendanceService s, CancellationToken ct) => s.DayOfAllAsync(date, ct));
         g.MapGet("", (StaffService s, CancellationToken ct) => s.ListAsync(ct));
         g.MapPost("", (StaffUpsert input, StaffService s, CancellationToken ct) => s.UpsertAsync(null, input, ct));
         g.MapPut("/{id:guid}", (Guid id, StaffUpsert input, StaffService s, CancellationToken ct) => s.UpsertAsync(id, input, ct));

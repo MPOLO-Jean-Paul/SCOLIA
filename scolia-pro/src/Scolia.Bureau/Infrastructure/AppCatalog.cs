@@ -86,6 +86,7 @@ public static class AppCatalog
             "Les règles de l'établissement et les préférences de chaque poste.",
             [
                 new("Configuration", "Établissement et logo (toute image acceptée), années scolaires, sections, promotions et frais, calendrier et date limite de paiement."),
+                new("Saisie prédictive", "Le code INF1 propose « Première Infirmière » puis les autres niveaux ; ACC propose les accoucheuses. Un choix remplit le code, le niveau, la promotion suivante et la section. Pour une année, « 2026 » donne « 2026-2027 » et le dernier mois suit le premier."),
                 new("Utilisateurs", "Création des comptes, rôles et remise d'un code provisoire."),
                 new("Préférences du poste", "Thème clair ou sombre, couleur, police et taille du texte, animations, sons et notifications : propres à chaque appareil."),
                 new("Mon compte", "Sécurité du compte (code et empreinte), poste et réseau, déconnexion."),
@@ -109,7 +110,7 @@ public static class AppCatalog
             "Trouver vite, comme sur un téléphone moderne.",
             [
                 new("Recherche générale", "Façon Google : apprenants, matricules, reçus, fonctions et réglages en un seul champ, avec les recherches récentes et des accès rapides."),
-                new("Recherche à la voix", "Sur le téléphone, le micro de chaque recherche écoute en français : dites un nom, un matricule ou une fonction. Sur Windows, la dictée Windows+H écrit dans le champ."),
+                new("Recherche à la voix", "Sur le téléphone, le micro de chaque recherche écoute en français : dites un nom, un matricule ou une fonction. Sans Internet, l'écoute se fait dans le téléphone quand il le permet (Android 12 et plus, iPhone). Sur Windows, la dictée Windows+H écrit dans le champ."),
                 new("Filtres", "Sur chaque liste, la loupe ouvre la même barre que la recherche de l'accueil et filtre uniquement les données de l'écran."),
                 new("Raccourcis", "Ctrl+K pour chercher, raccourcis clavier par onglet, menus contextuels et double-clic sur les lignes."),
                 new("Téléphone", "Barre d'onglets en bas, menu complet, retour par le geste d'Android, champs qui remontent au-dessus du clavier."),

@@ -12,6 +12,8 @@
   <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
   <uses-permission android:name="android.permission.WAKE_LOCK" />
   <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+  <!-- Recherche à la voix dans le téléphone, sans Internet : demandé au premier toucher du micro. -->
+  <uses-permission android:name="android.permission.RECORD_AUDIO" />
   <!-- Reprise sur les appareils volontairement configurés comme serveur de l’établissement. -->
   <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
   <!-- Installation de Tailscale téléchargé par SCOLIA : Android demande toujours l'accord de l'utilisateur. -->

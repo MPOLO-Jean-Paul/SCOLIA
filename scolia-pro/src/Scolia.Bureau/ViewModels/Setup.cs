@@ -7,19 +7,68 @@ namespace Scolia.Bureau.ViewModels;
 /// <summary>Promotion saisie dans l'assistant, comme dans le paramétrage de la version 79 : code de 4 caractères, désignation, mensualité.</summary>
 public sealed class PromotionDraftVm : Observable
 {
+    private readonly Func<PromotionDraftVm, PromotionNames.Context> context;
     private string code = string.Empty;
     private string name = string.Empty;
     private string fee = string.Empty;
+    private IReadOnlyList<string> suggestions = [];
+    private bool filling;
 
-    public PromotionDraftVm(Action<PromotionDraftVm> remove) => Remove = new RelayCommand(() => remove(this));
+    public PromotionDraftVm(Action<PromotionDraftVm> remove, Func<PromotionDraftVm, PromotionNames.Context>? context = null)
+    {
+        this.context = context ?? (_ => PromotionNames.Context.Empty);
+        Remove = new RelayCommand(() => remove(this));
+        Pick = new RelayCommand<string>(Choose);
+    }
 
-    public string Code { get => code; set => Set(ref code, value.ToUpperInvariant()); }
-    public string Name { get => name; set => Set(ref name, value); }
+    public string Code { get => code; set { if (Set(ref code, (value ?? string.Empty).ToUpperInvariant())) Refresh(); } }
+    public string Name { get => name; set { if (Set(ref name, value ?? string.Empty)) Refresh(); } }
     public string Fee { get => fee; set => Set(ref fee, value); }
     public RelayCommand Remove { get; }
 
+    /// <summary>Désignations prédites d'après le code et la saisie : « INF1 » donne « Première Infirmière »…</summary>
+    public IReadOnlyList<string> Suggestions { get => suggestions; private set { if (Set(ref suggestions, value)) Raise(nameof(HasSuggestions)); } }
+    public bool HasSuggestions => suggestions.Count > 0;
+    public RelayCommand<string> Pick { get; }
+
     /// <summary>Ligne laissée vide : elle est ignorée.</summary>
     public bool IsBlank => string.IsNullOrWhiteSpace(code) && string.IsNullOrWhiteSpace(name) && string.IsNullOrWhiteSpace(fee);
+
+    public void Refresh()
+    {
+        if (filling) return;
+        var known = context(this);
+        var used = known.Promotions.Select(p => PromotionNames.Normalize(p.Name)).ToHashSet();
+        Suggestions = PromotionNames.Suggest(code, name, known).Where(n => !used.Contains(PromotionNames.Normalize(n))).Take(4).ToList();
+    }
+
+    /// <summary>Une désignation choisie remplit aussi le code (INF + niveau) s'il manque ou ne correspond pas.</summary>
+    private void Choose(string? chosen)
+    {
+        if (string.IsNullOrEmpty(chosen)) return;
+        filling = true;
+        try
+        {
+            Name = chosen;
+            if (PromotionNames.LevelOf(chosen) is { } level)
+            {
+                var prefix = PromotionNames.ParseCode(code).Prefix;
+                if (prefix.Length < 2 && PromotionNames.TradeOf(chosen) is { } trade) prefix = PromotionNames.PrefixFor(trade, context(this)) ?? string.Empty;
+                if (prefix.Length >= 2) Code = PromotionNames.Code(prefix, level);
+            }
+        }
+        finally { filling = false; }
+        Suggestions = [];
+    }
+
+    /// <summary>Ligne suivante préparée d'après celle-ci : INF1 « Première Infirmière » donne INF2 « Deuxième Infirmière ».</summary>
+    public (string Code, string Name)? Next()
+    {
+        var (prefix, level) = PromotionNames.ParseCode(code);
+        if (prefix.Length < 2 || level is not { } l) return null;
+        var trade = PromotionNames.TradeOf(name) ?? PromotionNames.TradeFor(prefix, context(this)) ?? string.Empty;
+        return (PromotionNames.Code(prefix, l + 1), PromotionNames.Name(l + 1, trade));
+    }
 }
 
 /// <summary>
@@ -44,6 +93,7 @@ public sealed class SetupViewModel : Observable
         PaymentDeadlineDays = [.. Enumerable.Range(1, 28).Select(n => new ChoiceItem(n.ToString(System.Globalization.CultureInfo.InvariantCulture), $"Le {n} du mois suivant"))];
         StartMonth = Months.First(m => m.Value == "9");
         EndMonth = Months.First(m => m.Value == "6");
+        endChosen = false;
         MonthCount = MonthCounts.First(m => m.Value == "10");
         LastOnTimeDay = PaymentDeadlineDays.First(d => d.Value == "5");
         Next = new AsyncCommand(NextAsync);
@@ -52,11 +102,33 @@ public sealed class SetupViewModel : Observable
         JoinExisting = new AsyncCommand(() => shell.ChooseServerAsync());
         PrepareTailnet = new AsyncCommand(Installer.BeginAsync);
         Installer.Refresh();
-        AddPromotion = new RelayCommand(() => Promotions.Add(new PromotionDraftVm(d => Promotions.Remove(d))));
+        AddPromotion = new RelayCommand(AddPromotionRow);
         PickLogo = new AsyncCommand(PickLogoAsync);
         ClearLogo = new RelayCommand(() => SetLogo(null, null));
         AddPromotion.Execute(null);
     }
+
+    /// <summary>
+    /// Nouvelle ligne : elle continue la précédente (INF1 puis INF2, « Deuxième Infirmière », même mensualité),
+    /// comme une suite que l'on n'a plus qu'à vérifier.
+    /// </summary>
+    private void AddPromotionRow()
+    {
+        var row = new PromotionDraftVm(d => Promotions.Remove(d), DraftContext);
+        if (Promotions.LastOrDefault() is { } previous && previous.Next() is { } next
+            && Promotions.All(p => !p.Code.Equals(next.Code, StringComparison.OrdinalIgnoreCase)))
+        {
+            row.Code = next.Code;
+            row.Name = next.Name;
+            row.Fee = previous.Fee;
+        }
+        Promotions.Add(row);
+        row.Refresh();
+    }
+
+    /// <summary>Les autres lignes de l'assistant servent d'exemples : un métier saisi une fois est reconnu ensuite.</summary>
+    private PromotionNames.Context DraftContext(PromotionDraftVm current) => new([],
+        Promotions.Where(p => p != current && !string.IsNullOrWhiteSpace(p.Code)).Select(p => (p.Code, p.Name)).ToList());
 
     // ---- Étape 1 : logo et promotions ----
     private byte[]? logoData;
@@ -165,18 +237,41 @@ public sealed class SetupViewModel : Observable
     public string YearLabel { get => yearLabel; set => Set(ref yearLabel, value); }
 
     private ChoiceItem startMonth = null!;
+    /// <summary>Le dernier mois suit le premier (dix mois d'école) tant qu'il n'a pas été choisi à la main.</summary>
     public ChoiceItem StartMonth
     {
         get => startMonth;
-        set { if (Set(ref startMonth, value)) UpdateMonthRange(); }
+        set
+        {
+            if (!Set(ref startMonth, value)) return;
+            if (!endChosen && value is not null && endMonth is not null)
+            {
+                var start = int.Parse(value.Value, System.Globalization.CultureInfo.InvariantCulture);
+                var end = MonthsAhead(start, 9).ToString(System.Globalization.CultureInfo.InvariantCulture);
+                followingEnd = true;
+                try { EndMonth = Months.First(m => m.Value == end); }
+                finally { followingEnd = false; }
+            }
+            UpdateMonthRange();
+        }
     }
 
+    private bool endChosen;
+    private bool followingEnd;
     private ChoiceItem endMonth = null!;
     public ChoiceItem EndMonth
     {
         get => endMonth;
-        set { if (Set(ref endMonth, value)) UpdateMonthRange(); }
+        set
+        {
+            if (!Set(ref endMonth, value)) return;
+            if (!followingEnd && startMonth is not null) endChosen = true;
+            UpdateMonthRange();
+        }
     }
+
+    /// <summary>Mois situé n mois plus loin, en passant décembre : septembre + 9 donne juin.</summary>
+    public static int MonthsAhead(int month, int count) => (month - 1 + count) % 12 + 1;
 
     private ChoiceItem monthCount = null!;
     /// <summary>Valeur calculée à partir du mois de début et de fin, jamais saisie à l'aveugle.</summary>

@@ -25,14 +25,42 @@ public sealed class FormField : Observable
         Label = label;
         Kind = kind;
         Required = required;
-        Hint = hint;
+        this.hint = hint;
     }
+
+    private string? hint;
+    private IReadOnlyList<string> suggestions = [];
+    private RelayCommand<string>? pick;
 
     public string Key { get; }
     public string Label { get; }
     public FieldKind Kind { get; }
     public bool Required { get; }
-    public string? Hint { get; }
+    /// <summary>Aide sous le champ ; elle peut suivre la saisie (exemple de retard, période calculée).</summary>
+    public string? Hint { get => hint; set { if (Set(ref hint, value)) Raise(nameof(HasHint)); } }
+
+    // ---------- Prédiction : propositions sous le champ, comme la barre de suggestions du clavier ----------
+    /// <summary>Calcule les propositions d'après ce champ et les autres champs du formulaire.</summary>
+    public Func<FormField, IReadOnlyList<string>>? Suggest { get; set; }
+    /// <summary>Après un choix : les champs liés se remplissent (code, niveau, promotion suivante…).</summary>
+    public Action<FormField, string>? Picked { get; set; }
+    public IReadOnlyList<string> Suggestions { get => suggestions; private set { if (Set(ref suggestions, value)) Raise(nameof(HasSuggestions)); } }
+    public bool HasSuggestions => suggestions.Count > 0;
+    public RelayCommand<string> PickSuggestion => pick ??= new RelayCommand<string>(value =>
+    {
+        if (string.IsNullOrEmpty(value)) return;
+        Text = value;
+        Picked?.Invoke(this, value);
+        RefreshSuggestions();
+    });
+    public void RefreshSuggestions()
+    {
+        if (Suggest is null) return;
+        IReadOnlyList<string> next;
+        try { next = Suggest(this); }
+        catch (Exception ex) when (ex is ArgumentException or InvalidOperationException or FormatException) { next = []; }
+        if (!next.SequenceEqual(suggestions)) Suggestions = next;
+    }
 
     /// <summary>Un téléphone ne garde que ses 10 chiffres, même si la valeur vient d'un ancien dossier.</summary>
     public string Text { get => text; set { if (Set(ref text, Kind == FieldKind.Phone ? PhoneInput.Clean(value) : value)) Error = null; } }
@@ -80,6 +108,39 @@ public sealed class FormViewModel : Observable
         this.onSubmit = onSubmit;
         Submit = new AsyncCommand(SubmitAsync);
         Cancel = new RelayCommand(() => { if (!Busy) Close(false); });
+        Fields.CollectionChanged += (_, e) =>
+        {
+            foreach (FormField field in e.NewItems ?? Array.Empty<FormField>())
+                field.PropertyChanged += OnFieldChanged;
+        };
+    }
+
+    private bool reacting;
+
+    /// <summary>
+    /// Une valeur change : les champs liés réagissent (<see cref="Changed"/>), puis chaque champ prédictif recalcule
+    /// ses propositions. Une seule passe à la fois, pour qu'un remplissage automatique ne relance pas tout.
+    /// </summary>
+    private void OnFieldChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (reacting || sender is not FormField field || e.PropertyName is not (nameof(FormField.Text) or nameof(FormField.Choice) or nameof(FormField.Day) or nameof(FormField.Flag)))
+            return;
+        reacting = true;
+        try
+        {
+            Changed?.Invoke(field);
+            foreach (var other in Fields) other.RefreshSuggestions();
+        }
+        finally { reacting = false; }
+    }
+
+    /// <summary>Réaction d'un formulaire à la saisie : remplir un champ lié, recalculer une aide.</summary>
+    public Action<FormField>? Changed { get; set; }
+
+    /// <summary>Premier calcul des propositions, avant toute saisie.</summary>
+    public void RefreshSuggestions()
+    {
+        foreach (var field in Fields) field.RefreshSuggestions();
     }
 
     public string Title { get; }

@@ -212,18 +212,36 @@
                       <TextBlock Grid.Column="1" Text="Désignation" Classes="muted" FontSize="{DynamicResource FsSmall}" />
                       <TextBlock Grid.Column="2" Text="Mensualité (FC)" Classes="muted" FontSize="{DynamicResource FsSmall}" />
                     </Grid>
-                    <ScrollViewer MaxHeight="128" HorizontalScrollBarVisibility="Disabled">
+                    <ScrollViewer MaxHeight="200" HorizontalScrollBarVisibility="Disabled">
                       <ItemsControl ItemsSource="{Binding Promotions}">
                         <ItemsControl.ItemTemplate>
                           <DataTemplate>
-                            <Grid ColumnDefinitions="96,*,150,36" ColumnSpacing="10" Margin="0,0,0,6">
-                              <TextBox Text="{Binding Code}" PlaceholderText="INF1" MaxLength="4" />
-                              <TextBox Grid.Column="1" Text="{Binding Name}" PlaceholderText="Première année" />
-                              <TextBox Grid.Column="2" Text="{Binding Fee}" PlaceholderText="55000" />
-                              <Button Grid.Column="3" Classes="toolicon" Command="{Binding Remove}" ToolTip.Tip="Retirer cette promotion" HorizontalAlignment="Right">
-                                <mi:MaterialIcon Kind="Close" Width="16" Height="16" />
-                              </Button>
-                            </Grid>
+                            <StackPanel Margin="0,0,0,6" Spacing="4">
+                              <Grid ColumnDefinitions="96,*,150,36" ColumnSpacing="10">
+                                <TextBox Text="{Binding Code}" PlaceholderText="INF1" MaxLength="4" />
+                                <TextBox Grid.Column="1" Text="{Binding Name}" PlaceholderText="Première Infirmière" />
+                                <TextBox Grid.Column="2" Text="{Binding Fee}" PlaceholderText="55000" />
+                                <Button Grid.Column="3" Classes="toolicon" Command="{Binding Remove}" ToolTip.Tip="Retirer cette promotion" HorizontalAlignment="Right">
+                                  <mi:MaterialIcon Kind="Close" Width="16" Height="16" />
+                                </Button>
+                              </Grid>
+                              <!-- Désignations prédites d'après le code : un toucher remplit la ligne -->
+                              <ItemsControl ItemsSource="{Binding Suggestions}" IsVisible="{Binding HasSuggestions}" Margin="106,0,46,0">
+                                <ItemsControl.ItemsPanel>
+                                  <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                  <DataTemplate>
+                                    <Button Classes="suggestion" Command="{Binding $parent[ItemsControl].DataContext.Pick}" CommandParameter="{Binding}">
+                                      <StackPanel Orientation="Horizontal" Spacing="6">
+                                        <mi:MaterialIcon Kind="AutoFix" Width="14" Height="14" />
+                                        <TextBlock Text="{Binding}" VerticalAlignment="Center" />
+                                      </StackPanel>
+                                    </Button>
+                                  </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                              </ItemsControl>
+                            </StackPanel>
                           </DataTemplate>
                         </ItemsControl.ItemTemplate>
                       </ItemsControl>
