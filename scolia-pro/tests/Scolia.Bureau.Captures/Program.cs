@@ -769,8 +769,11 @@ if (args.Length > 3 && args[3] == "alertes")
 // Mise en veille (argument « veille ») : délai écoulé, écran verrouillé, mauvais code refusé, bon code, empreinte, retour.
 if (args.Length > 3 && args[3] == "veille")
 {
-    window.Width = 360;
-    window.Height = 760;
+    if (Preferences.MobileLayout)
+    {
+        window.Width = 360;
+        window.Height = 760;
+    }
     var lockFailures = 0;
     void LockCheck(string label, bool ok)
     {
@@ -859,12 +862,34 @@ if (args.Length > 3 && args[3] == "veille")
     shell.CheckIdle(DateTime.UtcNow.AddHours(3));
     LockCheck("Réglé sur « Jamais » : pas de veille", !shell.IsLocked);
 
-    // Changer de compte : la session se ferme.
+    // Changer de compte : la page de connexion s'affiche, la session verrouillée attend derrière.
     shell.LockNow();
+    Settle(200);
+    Save(window, "veille-ecran-manuel.png");
     shell.LockScreen.SwitchAccount.Execute(null);
-    limit = DateTime.UtcNow.AddSeconds(10);
-    while (DateTime.UtcNow < limit && shell.IsLoggedIn) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(10); }
-    LockCheck("Changer de compte : retour à la connexion", !shell.IsLoggedIn && !shell.IsLocked);
+    Settle(300);
+    LockCheck("Changer de compte : page de connexion, session gardée",
+        shell.ShowLogin && shell.IsLoggedIn && !shell.ShowLockScreen && !shell.ShowApp && shell.Login.CanResume);
+    LockCheck($"Retour proposé : « {shell.Login.ResumeText} »", shell.Login.ResumeText.Contains(shell.Session!.DisplayName, StringComparison.Ordinal));
+    Save(window, "veille-connexion-retour.png");
+    shell.Login.Resume.Execute(null);
+    Settle(300);
+    LockCheck("Revenir : écran de veille, même page derrière", shell.ShowLockScreen && shell.IsLocked && !shell.ShowLogin && shell.Current == receiptsPage);
+
+    // Une autre connexion réussie depuis la page de connexion ferme la session verrouillée.
+    shell.LockScreen.SwitchAccount.Execute(null);
+    Settle(200);
+    shell.Login.UserName = "admin";
+    shell.Login.Password = password;
+    shell.Login.Submit.Execute(null);
+    limit = DateTime.UtcNow.AddSeconds(15);
+    while (DateTime.UtcNow < limit && (shell.SwitchingAccount || shell.Opening || !shell.ShowApp)) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(10); }
+    LockCheck("Nouvelle connexion : session ouverte, plus de verrou ni de retour", shell.ShowApp && !shell.IsLocked && !shell.Login.CanResume);
+
+    // Se déconnecter depuis l'application ne propose aucun retour.
+    Wait(shell.LogoutAsync());
+    Settle(200);
+    LockCheck("Déconnexion : connexion simple, sans retour", shell.ShowLogin && !shell.IsLoggedIn && !shell.Login.CanResume);
 
     shell.Sync.Stop();
     window.Close();

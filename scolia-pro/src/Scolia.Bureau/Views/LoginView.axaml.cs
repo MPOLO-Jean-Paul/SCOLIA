@@ -16,6 +16,13 @@ public partial class LoginView : UserControl
         {
             if (e.Key == Key.Enter && DataContext is LoginViewModel login && login.Submit.CanExecute(null)) login.Submit.Execute(null);
         };
+        // Échap ramène à la session verrouillée quand on est venu de l'écran de veille.
+        KeyDown += (_, e) =>
+        {
+            if (e.Key != Key.Escape || DataContext is not LoginViewModel login || !login.CanResume) return;
+            login.Resume.Execute(null);
+            e.Handled = true;
+        };
         // Sur le téléphone, laisser le formulaire visible : le clavier s'ouvre au premier toucher.
         AttachedToVisualTree += (_, _) =>
         {

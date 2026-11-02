@@ -152,6 +152,24 @@ rapport journalier envoyé automatiquement, audit complet et catalogue du foncti
 - Mesures faites sur l'ordinateur d'essai, pas sur un téléphone : sur un téléphone, les durées sont plus longues, mais l'écart reste.
 - Un ordinateur principal pas encore mis à jour fonctionne toujours : SCOLIA revient alors à une requête par membre, six à la fois.
 
+#### Écran de veille refait
+- Présentation comme l'écran verrouillé d'un téléphone :
+  - logo et nom de l'établissement en haut ;
+  - heure et date en grand, l'heure se met à jour ;
+  - pastille « Verrouillé depuis 14:32 » ;
+  - carte du compte : initiales, nom, rôle et identifiant.
+- Champ du code : icône de cadenas, œil pour afficher ou masquer, bordure bleue à la saisie.
+- Erreur en rouge avec son icône. Le message parle du code, plus de l'identifiant : « Code incorrect. Encore 4 tentatives… ».
+- Empreinte : un rond au centre, sous « ou », comme sur Android.
+- « Changer de compte » reste sur l'écran de veille, avec l'explication : « Cette session reste verrouillée, vous pourrez y revenir ».
+
+#### Retour depuis la page de connexion
+- Avant, « Changer de compte » fermait la session : impossible de revenir.
+- Maintenant, la session reste verrouillée derrière la page de connexion. La page de connexion propose en tête « Revenir à la session de Secrétariat ».
+- Le geste retour d'Android et la touche Échap y ramènent aussi.
+- Une nouvelle connexion réussie ferme la session verrouillée. Une déconnexion normale ne propose aucun retour.
+- Vérifié par 5 contrôles automatiques, sur téléphone et sur ordinateur.
+
 ## 4. Limites à connaître
 
 | Sujet | Limite | Solution proposée |

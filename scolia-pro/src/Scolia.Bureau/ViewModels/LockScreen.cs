@@ -25,6 +25,40 @@ public sealed class LockScreenViewModel : Observable
         SwitchAccount = new AsyncCommand(SwitchAsync);
     }
 
+    // ---------- Présentation : heure, date, établissement et compte, comme l'écran verrouillé d'un téléphone ----------
+    private static readonly System.Globalization.CultureInfo Fr = System.Globalization.CultureInfo.GetCultureInfo("fr-FR");
+    private DateTime lockedAt = DateTime.Now;
+    private Avalonia.Threading.DispatcherTimer? clock;
+    public string Time => DateTime.Now.ToString("HH:mm", Fr);
+    public string DateText
+    {
+        get
+        {
+            var text = DateTime.Now.ToString("dddd d MMMM", Fr);
+            return char.ToUpperInvariant(text[0]) + text[1..];
+        }
+    }
+    public string LockedSince => $"Verrouillé depuis {lockedAt.ToString("HH:mm", Fr)}";
+    public string Role => shell.Session?.RoleLabel ?? string.Empty;
+    public string AccountLine => string.IsNullOrWhiteSpace(Role) ? UserName : $"{Role} · {UserName}";
+    public Avalonia.Media.Imaging.Bitmap? Logo => shell.SchoolLogo;
+    public bool HasLogo => shell.HasSchoolLogo;
+    public string Footer => "SCOLIA Pro · session protégée, rien n'est perdu";
+
+    private void StartClock()
+    {
+        if (clock is not null || Avalonia.Application.Current is null) return;
+        clock = new Avalonia.Threading.DispatcherTimer(TimeSpan.FromSeconds(15), Avalonia.Threading.DispatcherPriority.Background,
+            (_, _) => { Raise(nameof(Time)); Raise(nameof(DateText)); });
+        clock.Start();
+    }
+
+    private void StopClock()
+    {
+        clock?.Stop();
+        clock = null;
+    }
+
     public string UserName => shell.Session?.UserName ?? string.Empty;
     public string DisplayName => shell.Session?.DisplayName ?? string.Empty;
     public string School => shell.Session?.SchoolName ?? string.Empty;
@@ -33,7 +67,7 @@ public sealed class LockScreenViewModel : Observable
     private bool manual;
     public string Message => manual
         ? "Verrouillé à votre demande. Saisissez votre code pour reprendre là où vous étiez."
-        : $"Mise en veille après {Delay} sans activité. Saisissez votre code pour reprendre là où vous étiez.";
+        : $"Mis en veille après {Delay} sans activité. Saisissez votre code pour reprendre là où vous étiez.";
 
     public string Code { get => code; set { if (Set(ref code, value ?? string.Empty)) { Error = null; Unlock.Refresh(); } } }
     public string? Error { get => error; private set { if (Set(ref error, value)) Raise(nameof(HasError)); } }
@@ -62,11 +96,14 @@ public sealed class LockScreenViewModel : Observable
     {
         visible = true;
         manual = byRequest;
+        lockedAt = DateTime.Now;
+        StartClock();
         Code = string.Empty;
         Error = null;
         ShowCode = false;
         foreach (var name in new[] { nameof(UserName), nameof(DisplayName), nameof(School), nameof(Initials), nameof(Delay),
-                     nameof(Message), nameof(CanUseBiometrics), nameof(BiometricLabel) })
+                     nameof(Message), nameof(CanUseBiometrics), nameof(BiometricLabel), nameof(Time), nameof(DateText),
+                     nameof(LockedSince), nameof(Role), nameof(AccountLine), nameof(Logo), nameof(HasLogo) })
             Raise(name);
     }
 
@@ -109,22 +146,29 @@ public sealed class LockScreenViewModel : Observable
             if (store.OfflineLogin(UserName, secret) is not null) Done();
             else Error = "Code incorrect, ou ordinateur principal injoignable et code jamais utilisé sur cet appareil.";
         }
-        catch (ApiException ex) { Error = ex.Message; }
+        // Sur l'écran de veille, seul le code est saisi : le message parle du code, pas de l'identifiant.
+        catch (ApiException ex) { Error = ex.Message.Replace("Identifiant ou mot de passe incorrect.", "Code incorrect.", StringComparison.Ordinal); }
         finally { Busy = false; }
     }
 
     private void Done()
     {
         visible = false;
+        StopClock();
         Code = string.Empty;
         shell.Unlock();
     }
 
-    /// <summary>Une autre personne veut travailler : la session se ferme, la page de connexion s'affiche.</summary>
-    private async Task SwitchAsync()
+    /// <summary>
+    /// Une autre personne veut travailler : la page de connexion s'affiche, mais cette session reste verrouillée derrière.
+    /// La page de connexion propose d'y revenir.
+    /// </summary>
+    private Task SwitchAsync()
     {
         visible = false;
+        StopClock();
         Code = string.Empty;
-        await shell.LogoutAsync();
+        shell.BeginAccountSwitch();
+        return Task.CompletedTask;
     }
 }

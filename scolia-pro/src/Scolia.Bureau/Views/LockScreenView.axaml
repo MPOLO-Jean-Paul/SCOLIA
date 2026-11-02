@@ -2,61 +2,184 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mi="using:Material.Icons.Avalonia"
              x:Class="Scolia.Bureau.Views.LockScreenView">
-  <!-- Mise en veille : tout l'écran est couvert ; la session attend derrière, intacte. -->
-  <Grid Background="{DynamicResource BgBrush}">
-    <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
-      <StackPanel MaxWidth="380" Margin="24,40" VerticalAlignment="Center" Spacing="14">
-        <Border Width="88" Height="88" CornerRadius="44" Background="{DynamicResource AccentSoftBrush}" HorizontalAlignment="Center">
-          <mi:MaterialIcon Kind="LockOutline" Width="42" Height="42" Foreground="{DynamicResource AccentBrush}"
-                           HorizontalAlignment="Center" VerticalAlignment="Center" />
-        </Border>
-        <TextBlock Text="SCOLIA est en veille" FontSize="24" FontWeight="SemiBold" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" />
-        <TextBlock Text="{Binding School}" Classes="muted" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" />
+  <!-- Mise en veille, comme l'écran verrouillé d'un téléphone : heure et date en grand sur le bandeau SCOLIA,
+       puis la carte du compte avec le code. La session attend derrière, intacte. -->
+  <UserControl.Styles>
+    <Style Selector="TextBox.lockfield">
+      <Setter Property="Height" Value="52" />
+      <Setter Property="Padding" Value="46,0,50,0" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+      <Setter Property="CornerRadius" Value="14" />
+      <Setter Property="FontSize" Value="17" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="Background" Value="{DynamicResource GroupBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
+    </Style>
+    <Style Selector="TextBox.lockfield /template/ Border#PART_BorderElement">
+      <Setter Property="Background" Value="{DynamicResource GroupBrush}" />
+    </Style>
+    <Style Selector="TextBox.lockfield:focus">
+      <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+      <Setter Property="BorderThickness" Value="2" />
+    </Style>
+    <Style Selector="mi|MaterialIcon.lockfieldicon">
+      <Setter Property="Width" Value="20" /><Setter Property="Height" Value="20" />
+      <Setter Property="Margin" Value="16,0,0,0" />
+      <Setter Property="HorizontalAlignment" Value="Left" /><Setter Property="VerticalAlignment" Value="Center" />
+      <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
+      <Setter Property="IsHitTestVisible" Value="False" />
+    </Style>
+    <Style Selector="Button.lockeye">
+      <Setter Property="Width" Value="44" /><Setter Property="Height" Value="44" /><Setter Property="CornerRadius" Value="22" />
+      <Setter Property="Padding" Value="0" /><Setter Property="Background" Value="Transparent" /><Setter Property="BorderThickness" Value="0" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" /><Setter Property="VerticalContentAlignment" Value="Center" />
+      <Setter Property="HorizontalAlignment" Value="Right" /><Setter Property="VerticalAlignment" Value="Center" />
+      <Setter Property="Margin" Value="0,0,5,0" />
+    </Style>
+    <Style Selector="Button.unlock">
+      <Setter Property="Height" Value="52" />
+      <Setter Property="CornerRadius" Value="14" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+      <Setter Property="FontSize" Value="16" />
+    </Style>
+    <!-- Empreinte : un rond comme sur l'écran verrouillé d'Android -->
+    <Style Selector="Button.fingerprint">
+      <Setter Property="Width" Value="64" /><Setter Property="Height" Value="64" /><Setter Property="CornerRadius" Value="32" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="HorizontalAlignment" Value="Center" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" /><Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button.fingerprint /template/ ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
+    </Style>
+    <Style Selector="Button.fingerprint:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
+    </Style>
+    <Style Selector="Button.switchaccount">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="CornerRadius" Value="14" />
+      <Setter Property="Padding" Value="10,10" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    </Style>
+    <Style Selector="Button.switchaccount /template/ ContentPresenter">
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
+    <Style Selector="Button.switchaccount:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
+    </Style>
+  </UserControl.Styles>
 
-        <!-- Le compte en veille -->
-        <Border Background="{DynamicResource GroupBrush}" CornerRadius="20" Padding="14,10" HorizontalAlignment="Center" Margin="0,4,0,0">
-          <StackPanel Orientation="Horizontal" Spacing="10">
-            <Border Width="36" Height="36" CornerRadius="18" Background="{DynamicResource AccentBrush}">
-              <TextBlock Text="{Binding Initials}" FontWeight="SemiBold" Foreground="{DynamicResource OnAccentBrush}"
+  <Grid>
+    <Grid.Background>
+      <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+        <GradientStop Offset="0" Color="#1565E0" />
+        <GradientStop Offset="0.55" Color="#0B4FC4" />
+        <GradientStop Offset="1" Color="#0E2A5C" />
+      </LinearGradientBrush>
+    </Grid.Background>
+    <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+      <StackPanel MaxWidth="420" Margin="20,28,20,24" VerticalAlignment="Center">
+        <!-- Établissement -->
+        <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Center">
+          <Border Width="34" Height="34" CornerRadius="17" Background="White">
+            <Panel Width="26" Height="26">
+              <Image Source="{Binding Logo}" IsVisible="{Binding HasLogo}" />
+              <Image Source="{DynamicResource ScoliaMark}" IsVisible="{Binding !HasLogo}" Width="22" Height="22" />
+            </Panel>
+          </Border>
+          <TextBlock Text="{Binding School}" Foreground="White" FontSize="15" FontWeight="SemiBold" VerticalAlignment="Center"
+                     TextTrimming="CharacterEllipsis" MaxWidth="320" />
+        </StackPanel>
+
+        <!-- Heure et date -->
+        <TextBlock x:Name="LockTime" Text="{Binding Time}" Foreground="White" FontSize="68" FontWeight="Light" HorizontalAlignment="Center" Margin="0,22,0,0" />
+        <TextBlock Text="{Binding DateText}" Foreground="White" Opacity="0.88" FontSize="17" HorizontalAlignment="Center" Margin="0,-4,0,0" />
+        <Border Background="#33FFFFFF" CornerRadius="14" Padding="12,5" HorizontalAlignment="Center" Margin="0,14,0,0">
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <mi:MaterialIcon Kind="Lock" Width="14" Height="14" Foreground="White" VerticalAlignment="Center" />
+            <TextBlock Text="{Binding LockedSince}" Foreground="White" FontSize="{DynamicResource FsSmall}" VerticalAlignment="Center" />
+          </StackPanel>
+        </Border>
+
+        <!-- Carte du compte -->
+        <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="24" Padding="22,24,22,14" Margin="0,24,0,0" BoxShadow="0 12 32 0 #40000000">
+          <StackPanel Spacing="12">
+            <Border Width="76" Height="76" CornerRadius="38" Background="{DynamicResource AccentBrush}" HorizontalAlignment="Center"
+                    BorderBrush="{DynamicResource AccentSoftBrush}" BorderThickness="4">
+              <TextBlock Text="{Binding Initials}" FontSize="26" FontWeight="SemiBold" Foreground="{DynamicResource OnAccentBrush}"
                          HorizontalAlignment="Center" VerticalAlignment="Center" />
             </Border>
-            <StackPanel VerticalAlignment="Center">
-              <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" MaxWidth="240" />
-              <TextBlock Text="{Binding UserName}" Classes="muted" FontSize="12" TextTrimming="CharacterEllipsis" MaxWidth="240" />
+            <StackPanel Spacing="2">
+              <TextBlock Text="{Binding DisplayName}" FontSize="20" FontWeight="SemiBold" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" />
+              <TextBlock Text="{Binding AccountLine}" Classes="muted" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" />
             </StackPanel>
+            <TextBlock Text="{Binding Message}" Classes="muted" TextWrapping="Wrap" TextAlignment="Center" FontSize="{DynamicResource FsSmall}" Margin="4,0" />
+
+            <!-- Code -->
+            <Panel Margin="0,4,0,0">
+              <TextBox x:Name="LockCode" Classes="lockfield" Text="{Binding Code}" PasswordChar="•" RevealPassword="{Binding ShowCode}"
+                       PlaceholderText="Code PIN ou mot de passe" TextInputOptions.ContentType="Password" TextInputOptions.IsSensitive="True"
+                       IsEnabled="{Binding NotBusy}" />
+              <mi:MaterialIcon Classes="lockfieldicon" Kind="LockOutline" />
+              <Button Classes="lockeye" Command="{Binding ToggleCode}" ToolTip.Tip="Afficher ou masquer le code" IsEnabled="{Binding NotBusy}">
+                <mi:MaterialIcon Kind="{Binding EyeIcon}" Width="20" Height="20" Foreground="{DynamicResource MutedBrush}" />
+              </Button>
+            </Panel>
+            <Border Background="{DynamicResource RedSoftBrush}" CornerRadius="12" Padding="12,9" IsVisible="{Binding HasError}">
+              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+                <mi:MaterialIcon Kind="AlertCircleOutline" Width="17" Height="17" Foreground="{DynamicResource ToneRed}" VerticalAlignment="Top" Margin="0,1,0,0" />
+                <TextBlock Grid.Column="1" Text="{Binding Error}" Foreground="{DynamicResource ToneRed}" TextWrapping="Wrap" />
+              </Grid>
+            </Border>
+            <Button x:Name="UnlockButton" Classes="primary unlock" Command="{Binding Unlock}">
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <mi:MaterialIcon Kind="Loading" Classes="spin" Width="18" Height="18" IsVisible="{Binding Busy}" Foreground="{DynamicResource OnAccentBrush}" />
+                <mi:MaterialIcon Kind="LockOpenVariantOutline" Width="19" Height="19" IsVisible="{Binding NotBusy}" />
+                <TextBlock Text="Déverrouiller" FontWeight="SemiBold" VerticalAlignment="Center" />
+              </StackPanel>
+            </Button>
+
+            <!-- Empreinte -->
+            <StackPanel IsVisible="{Binding CanUseBiometrics}" Spacing="8" Margin="0,4,0,0">
+              <Grid ColumnDefinitions="*,Auto,*" ColumnSpacing="10">
+                <Border Height="1" Background="{DynamicResource LineBrush}" VerticalAlignment="Center" />
+                <TextBlock Grid.Column="1" Text="ou" Classes="muted" FontSize="{DynamicResource FsSmall}" />
+                <Border Grid.Column="2" Height="1" Background="{DynamicResource LineBrush}" VerticalAlignment="Center" />
+              </Grid>
+              <Button Classes="fingerprint" Command="{Binding UnlockWithBiometrics}" ToolTip.Tip="{Binding BiometricLabel}">
+                <mi:MaterialIcon Kind="Fingerprint" Width="34" Height="34" />
+              </Button>
+              <TextBlock Text="{Binding BiometricLabel}" Classes="muted" FontSize="{DynamicResource FsSmall}" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" />
+            </StackPanel>
+
+            <!-- Autre compte : la session reste verrouillée derrière -->
+            <Border Height="1" Background="{DynamicResource LineBrush}" Margin="-22,6,-22,0" />
+            <Button x:Name="SwitchAccountButton" Classes="switchaccount" Command="{Binding SwitchAccount}" IsEnabled="{Binding NotBusy}">
+              <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                <Border Width="36" Height="36" CornerRadius="18" Background="{DynamicResource GroupBrush}">
+                  <mi:MaterialIcon Kind="AccountSwitchOutline" Width="20" Height="20" Foreground="{DynamicResource AccentBrush}"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Border>
+                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="1">
+                  <TextBlock Text="Changer de compte" FontWeight="SemiBold" />
+                  <TextBlock Text="Cette session reste verrouillée, vous pourrez y revenir." Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
+                </StackPanel>
+                <mi:MaterialIcon Grid.Column="2" Kind="ChevronRight" Width="20" Height="20" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" />
+              </Grid>
+            </Button>
           </StackPanel>
         </Border>
 
-        <TextBlock Text="{Binding Message}" Classes="muted" TextWrapping="Wrap" TextAlignment="Center" FontSize="{DynamicResource FsSmall}" />
-
-        <!-- Code -->
-        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
-          <TextBox x:Name="LockCode" Text="{Binding Code}" PasswordChar="{Binding CodeMask}" PlaceholderText="Code PIN ou mot de passe"
-                   TextInputOptions.ContentType="Password" TextInputOptions.IsSensitive="True"
-                   MinHeight="52" CornerRadius="14" FontSize="17" IsEnabled="{Binding NotBusy}" />
-          <Button Grid.Column="1" Classes="quiet" Command="{Binding ToggleCode}" MinWidth="48" MinHeight="48" ToolTip.Tip="Afficher ou masquer le code">
-            <mi:MaterialIcon Kind="{Binding EyeIcon}" Width="22" Height="22" />
-          </Button>
-        </Grid>
-        <Border Background="{DynamicResource RedSoftBrush}" CornerRadius="14" Padding="14,10" IsVisible="{Binding HasError}">
-          <TextBlock Text="{Binding Error}" TextWrapping="Wrap" />
-        </Border>
-        <Button x:Name="UnlockButton" Classes="primary" Command="{Binding Unlock}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
-                MinHeight="52" CornerRadius="26">
-          <StackPanel Orientation="Horizontal" Spacing="8">
-            <mi:MaterialIcon Kind="Loading" Classes="spin" Width="18" Height="18" IsVisible="{Binding Busy}" Foreground="{DynamicResource OnAccentBrush}" />
-            <mi:MaterialIcon Kind="LockOpenVariantOutline" Width="18" Height="18" IsVisible="{Binding NotBusy}" />
-            <TextBlock Text="Déverrouiller" FontWeight="SemiBold" VerticalAlignment="Center" />
-          </StackPanel>
-        </Button>
-        <Button Classes="ghost" Command="{Binding UnlockWithBiometrics}" IsVisible="{Binding CanUseBiometrics}"
-                HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" MinHeight="48">
-          <StackPanel Orientation="Horizontal" Spacing="8">
-            <mi:MaterialIcon Kind="Fingerprint" Width="22" Height="22" />
-            <TextBlock Text="{Binding BiometricLabel}" VerticalAlignment="Center" TextWrapping="Wrap" />
-          </StackPanel>
-        </Button>
-        <Button Classes="link" Content="Changer de compte" Command="{Binding SwitchAccount}" HorizontalAlignment="Center" Margin="0,6,0,0" />
+        <TextBlock Text="{Binding Footer}" Foreground="White" Opacity="0.75" FontSize="{DynamicResource FsSmall}" HorizontalAlignment="Center"
+                   TextAlignment="Center" TextWrapping="Wrap" Margin="0,16,0,0" />
       </StackPanel>
     </ScrollViewer>
   </Grid>

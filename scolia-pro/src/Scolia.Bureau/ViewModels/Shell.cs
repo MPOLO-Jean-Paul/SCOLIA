@@ -36,6 +36,7 @@ public sealed class ShellViewModel : Observable
         Setup = new SetupViewModel(this);
         Connection = new ConnectionViewModel(this);
         Login.LoggedIn += s => _ = OpenSessionAsync(s);
+        Login.ResumeRequested += ReturnToLockedSession;
         Sync = new SyncCenter(this, api);
         // Connexion réussie : le compte est gardé sur l'appareil pour une connexion hors ligne, et en mémoire pour
         // rouvrir seul la session quand l'ordinateur principal revient après une coupure.
@@ -247,10 +248,10 @@ public sealed class ShellViewModel : Observable
     public bool ShowSetup => entryChecked && IsSetupRequired && !Opening;
 
     /// <summary>La connexion s'affiche seulement quand une configuration existe et qu'aucune session n'est ouverte.</summary>
-    public bool ShowLogin => entryChecked && !IsLoggedIn && !IsSetupRequired && !ChoosingServer && !Opening;
+    public bool ShowLogin => entryChecked && (!IsLoggedIn || switchingAccount) && !IsSetupRequired && !ChoosingServer && !Opening;
 
     /// <summary>L'application s'affiche une fois l'ouverture terminée.</summary>
-    public bool ShowApp => IsLoggedIn && !Opening;
+    public bool ShowApp => IsLoggedIn && !Opening && !switchingAccount;
 
     // ---------- Ouverture : entre la connexion et l'accueil, une roue et les étapes, au moins deux secondes ----------
     /// <summary>Durée minimale de l'écran d'ouverture : le passage à l'accueil reste lisible, sans cassure.</summary>
@@ -718,6 +719,9 @@ public sealed class ShellViewModel : Observable
         var minimum = IsSetupRequired ? TimeSpan.FromMilliseconds(320)
             : MinimumOpening == TimeSpan.FromSeconds(2) ? TimeSpan.FromSeconds(Prefs.OpeningSeconds) : MinimumOpening;
         var pace = minimum / 4;
+        // Une autre personne vient de se connecter depuis l'écran de veille : la session verrouillée se ferme ici.
+        // Le serveur a déjà remplacé l'accès par celui du nouveau compte, il n'y a rien à lui envoyer.
+        if (switchingAccount) CloseLocalSession();
         openingCompact = compact;
         session = s;
         knownRevision = -1;
@@ -1033,7 +1037,40 @@ public sealed class ShellViewModel : Observable
         get => locked;
         private set { if (Set(ref locked, value)) Raise(nameof(ShowLockScreen)); }
     }
-    public bool ShowLockScreen => locked && IsLoggedIn;
+    public bool ShowLockScreen => locked && IsLoggedIn && !switchingAccount;
+
+    // ---------- Changer de compte depuis l'écran de veille, sans perdre la session verrouillée ----------
+    private bool switchingAccount;
+    /// <summary>Vrai pendant qu'une autre personne se connecte : la session verrouillée attend derrière, intacte.</summary>
+    public bool SwitchingAccount => switchingAccount;
+
+    /// <summary>
+    /// « Changer de compte » : la page de connexion s'affiche, la session verrouillée reste ouverte derrière. La page de
+    /// connexion propose d'y revenir ; une nouvelle connexion réussie la ferme.
+    /// </summary>
+    public void BeginAccountSwitch()
+    {
+        if (!IsLoggedIn || switchingAccount) return;
+        switchingAccount = true;
+        if (string.IsNullOrWhiteSpace(Login.SchoolName)) Login.SchoolName = session!.SchoolName;
+        Login.OfferResume(session!.DisplayName, session.UserName);
+        RaiseLogin();
+        Raise(nameof(ShowLockScreen));
+        Raise(nameof(SwitchingAccount));
+    }
+
+    /// <summary>Retour à l'écran de veille : la session verrouillée reprend, le code est demandé comme avant.</summary>
+    public void ReturnToLockedSession()
+    {
+        if (!switchingAccount) return;
+        switchingAccount = false;
+        Login.OfferResume(null, null);
+        LockScreen.Shown(byRequest: true);
+        IsLocked = true;
+        RaiseLogin();
+        Raise(nameof(ShowLockScreen));
+        Raise(nameof(SwitchingAccount));
+    }
 
     /// <summary>Un toucher, un clic ou une frappe : le compte à rebours de la mise en veille repart.</summary>
     public void NoteActivity()
@@ -1615,6 +1652,15 @@ public sealed class ShellViewModel : Observable
     {
         try { await api.LogoutAsync(); }
         catch (HttpRequestException) { }
+        CloseLocalSession();
+    }
+
+    /// <summary>Ferme la session sur cet appareil : pages, onglets, direct et verrou. Le serveur n'est pas prévenu.</summary>
+    private void CloseLocalSession()
+    {
+        switchingAccount = false;
+        Login.OfferResume(null, null);
+        Raise(nameof(SwitchingAccount));
         Sync.Stop();
         Sync.Forget();
         session = null;

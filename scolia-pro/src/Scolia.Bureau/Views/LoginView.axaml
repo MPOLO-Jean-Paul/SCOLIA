@@ -25,6 +25,21 @@
       <Setter Property="Padding" Value="0" /><Setter Property="Background" Value="Transparent" /><Setter Property="BorderThickness" Value="0" />
       <Setter Property="HorizontalContentAlignment" Value="Center" /><Setter Property="VerticalContentAlignment" Value="Center" />
     </Style>
+    <!-- Retour à la session verrouillée : une ligne teintée, en tête de la carte -->
+    <Style Selector="Button.resume">
+      <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="CornerRadius" Value="14" />
+      <Setter Property="Padding" Value="12,10" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    </Style>
+    <Style Selector="Button.resume /template/ ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
+    </Style>
+    <Style Selector="Button.resume:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
+    </Style>
     <Style Selector="Button.signinbutton">
       <Setter Property="Height" Value="46" />
       <Setter Property="CornerRadius" Value="10" />
@@ -62,9 +77,24 @@
     <Border x:Name="LoginCard" Grid.Row="1" VerticalAlignment="Top" Margin="16,-34,16,0" MaxWidth="372" HorizontalAlignment="Stretch"
             Background="{DynamicResource SurfaceBrush}" CornerRadius="18" Padding="20" BoxShadow="0 6 20 0 #16000000">
       <StackPanel Spacing="12">
+        <!-- Venu de l'écran de veille : la session verrouillée attend, un toucher y ramène -->
+        <Button x:Name="ResumeButton" Classes="resume" Command="{Binding Resume}" IsVisible="{Binding CanResume}" IsEnabled="{Binding NotBusy}"
+                ToolTip.Tip="Revenir à l'écran de veille (Échap)">
+          <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+            <Border Width="40" Height="40" CornerRadius="20" Background="{DynamicResource AccentBrush}">
+              <mi:MaterialIcon Kind="ArrowLeft" Width="20" Height="20" Foreground="{DynamicResource OnAccentBrush}"
+                               HorizontalAlignment="Center" VerticalAlignment="Center" />
+            </Border>
+            <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="1">
+              <TextBlock Text="{Binding ResumeText}" FontWeight="SemiBold" TextWrapping="Wrap" />
+              <TextBlock Text="{Binding ResumeHint}" Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
+            </StackPanel>
+            <mi:MaterialIcon Grid.Column="2" Kind="LockOutline" Width="18" Height="18" Foreground="{DynamicResource AccentBrush}" VerticalAlignment="Center" />
+          </Grid>
+        </Button>
         <StackPanel Spacing="2" Margin="0,0,0,4">
           <TextBlock Text="Connexion" FontSize="18" FontWeight="SemiBold" />
-          <TextBlock Text="Saisissez votre identifiant et votre mot de passe." Classes="muted" TextWrapping="Wrap" />
+          <TextBlock Text="{Binding IntroText}" Classes="muted" TextWrapping="Wrap" />
         </StackPanel>
 
         <Panel>

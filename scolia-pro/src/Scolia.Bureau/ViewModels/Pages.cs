@@ -24,6 +24,37 @@ public sealed class LoginViewModel : Observable
 
     public event Action<SessionDto>? LoggedIn;
 
+    /// <summary>« Revenir à la session de … » : la page de connexion rend la main à l'écran de veille.</summary>
+    public event Action? ResumeRequested;
+    private string? resumeName;
+    private string? resumeUser;
+    /// <summary>Compte resté verrouillé derrière la page de connexion, ou rien.</summary>
+    public string? ResumeName => resumeName;
+    public bool CanResume => resumeName is not null;
+    public string ResumeText => $"Revenir à la session de {resumeName}";
+    /// <summary>Phrase sous « Connexion » : elle rappelle qu'une session attend, verrouillée.</summary>
+    public string IntroText => resumeName is null
+        ? "Saisissez votre identifiant et votre mot de passe."
+        : "Connectez un autre compte. La session verrouillée reste ouverte : vous pouvez y revenir à tout moment.";
+    public string ResumeHint => resumeUser is null ? string.Empty : $"{resumeUser} · session verrouillée, rien n'est perdu";
+    public RelayCommand Resume => resume ??= new RelayCommand(() =>
+    {
+        if (Busy || !CanResume) return;
+        Password = string.Empty;
+        Error = null;
+        ResumeRequested?.Invoke();
+    });
+    private RelayCommand? resume;
+
+    /// <summary>Annonce, ou retire, la session verrouillée à laquelle on peut revenir.</summary>
+    public void OfferResume(string? displayName, string? userName)
+    {
+        resumeName = displayName is null ? null : (string.IsNullOrWhiteSpace(displayName) ? userName : displayName);
+        resumeUser = displayName is null ? null : userName;
+        if (resumeName is not null) { UserName = string.Empty; Password = string.Empty; Error = null; }
+        foreach (var name in new[] { nameof(ResumeName), nameof(CanResume), nameof(ResumeText), nameof(ResumeHint), nameof(IntroText) }) Raise(name);
+    }
+
     /// <summary>Connexion vérifiée par le serveur : le compte peut être gardé pour une connexion hors ligne.</summary>
     public event Action<string, string, SessionDto>? Authenticated;
 
