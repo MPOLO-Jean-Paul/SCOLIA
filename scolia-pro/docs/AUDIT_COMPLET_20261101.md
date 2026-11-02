@@ -206,6 +206,40 @@ rapport journalier envoyé automatiquement, audit complet et catalogue du foncti
 - Vérifié par un test avec une liste tenue à la main : 8 lignes, 6 apprenants créés, la ligne recopiée fusionnée.
 - Le fichier de 209 apprenants n'a pas pu être essayé ici : il n'a pas été transmis.
 
+### Revue finale du 2 novembre
+
+#### Contrôles
+
+| Contrôle | Résultat |
+|---|---|
+| Tests de l'application | 284 réussis |
+| Tests du serveur | 228 réussis |
+| Tests du téléphone serveur | 11 réussis |
+| Commandes essayées une à une, téléphone | 135, 0 à revoir |
+| Commandes essayées une à une, ordinateur | 173, 0 à revoir |
+| Parcours complet, téléphone et ordinateur | Réussis |
+| Scénarios : veille, alertes, empreinte, recherche, recherches, clavier, prédiction, thème sombre | Réussis |
+| Écrans du téléphone sans texte coupé | 68 sur 68 |
+| Écrans de l'ordinateur | 58 captures examinées |
+
+#### Défauts trouvés et corrigés
+
+| Défaut | Effet | Correction |
+|---|---|---|
+| Recherche lancée à la main pendant l'attente de la frappe | Deux requêtes, la première jetée : liste parfois vide | Une recherche lancée remplace celle qui attendait (Encaisser et recherche générale) |
+| Encaisser : barre du haut restée ouverte après le choix | Clavier et barre gênent la saisie du versement | Elle se referme dès que l'apprenant est choisi |
+| Encaisser : « Saisissez au moins deux caractères » sans champ dans la page | Message trompeur | Message retiré ; le bouton du corps renvoie à la barre du haut |
+| Barre du bas : « Mensualité de septembre — … à Mensualité de … » | Résumé coupé | « septembre », sur deux lignes au besoin |
+| Bandeaux « hors ligne » et « opérations refusées » | Texte coupé sur téléphone | Le texte passe à la ligne |
+| Sous-titres Suivi mensuel, Cartes d'accès, Effacer | Coupés sur téléphone | Sous-titres courts |
+| Listes et dates des formulaires | Encore encadrées | Même champ Windows 11 que le texte |
+
+#### Contrôles de durée
+- Trois contrôles mesurent des délais très courts : ouverture d'une page depuis le menu (moins de 500 ms), onde au toucher (140 ms), pas de silhouettes avant 150 ms.
+- Sur la machine d'essai, chargée par les compilations et les autres contrôles, ils échouent de façon variable, un délai différent à chaque passage.
+- Sur la machine propre de la compilation en ligne, les mêmes contrôles passent : étapes « Interfaces natives mobiles » et « Thème sombre natif » réussies.
+- Les durées mesurées ici ne sont donc pas comparées entre elles : seules les améliorations déjà mesurées au calme (Pointage, listes par paquets) sont retenues.
+
 ## 4. Limites à connaître
 
 | Sujet | Limite | Solution proposée |
