@@ -926,8 +926,8 @@ if (args.Length > 3 && args[3] == "prediction")
     return;
 }
 
-// Fluidité (argument « fluidite ») : chaque page du volet, temps de chargement, de mise en page et nombre d'éléments.
-if (args.Length > 3 && args[3] == "fluidite")
+// Mesures (argument « mesures ») : chaque page du volet, temps de chargement, de mise en page et nombre d'éléments.
+if (args.Length > 3 && args[3] == "mesures")
 {
     Wait(shell.OpenSessionAsync(Result(api.LoginAsync("admin", password))));
     foreach (var endpoint in new[] { "api/paiements/lot/candidats", "api/apprenants?taille=50", "api/apprenants?taille=200" })
