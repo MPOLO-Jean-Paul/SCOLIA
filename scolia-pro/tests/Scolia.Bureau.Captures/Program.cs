@@ -341,7 +341,8 @@ int VerifyPayments(LayoutServer fixture, bool mobile)
         var response = System.Diagnostics.Stopwatch.StartNew();
         target.Open.Execute(null);
         Render();
-        Check("Menu : la page et le retour tactile précèdent la réponse réseau", !shell.PhoneMenuOpen && shell.Current is StudentsPage { Busy: true } && response.ElapsedMilliseconds < 500);
+        Check($"Menu : la page et le retour tactile précèdent la réponse réseau (menu {(shell.PhoneMenuOpen ? "ouvert" : "fermé")}, page {shell.Current?.GetType().Name}, occupé {shell.Current?.Busy}, {response.ElapsedMilliseconds} ms)",
+            !shell.PhoneMenuOpen && shell.Current is StudentsPage { Busy: true } && response.ElapsedMilliseconds < 500);
         Wait(Task.Delay(450));
         Check("Menu : un chargement de page ne bloque pas toute l'interface", !shell.Working);
         shell.TogglePhoneMenu();

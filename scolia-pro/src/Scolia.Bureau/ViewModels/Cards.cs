@@ -109,7 +109,12 @@ public sealed class CardsPage : PageViewModel
             var diagnostic = !c.IdentityComplete ? "Identité incomplète" : c.DuplicateMatricule ? "Matricule répété" : !c.Eligible ? $"Exclu : {c.Status}" : string.Empty;
             Rows.Add(new CardRowVm(c, diagnostic));
         }
-        subtitle = $"{Format.Count(Rows.Count, "apprenant", "apprenants")} · {Rows.Count(r => r.Selectable)} imprimable(s) · session {Month?.Label} {Year?.Value}";
+        // Sous-titre court : il tient sur deux lignes d'un téléphone. Le nombre d'apprenants n'est rappelé que s'il diffère.
+        var printable = Rows.Count(r => r.Selectable);
+        subtitle = (printable == Rows.Count
+            ? Format.Count(printable, "carte à imprimer", "cartes à imprimer")
+            : $"{Format.Count(printable, "carte à imprimer", "cartes à imprimer")} sur {Rows.Count}")
+            + $" · {Month?.Label} {Year?.Value}";
         Raise(nameof(Subtitle));
     }
 

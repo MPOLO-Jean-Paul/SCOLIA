@@ -171,7 +171,7 @@ public sealed class EraseDataPage : PageViewModel
             Items.Add(row);
         }
         total = page.Total;
-        subtitle = "Une sauvegarde est faite avant chaque effacement : il se rattrape depuis Sauvegardes.";
+        subtitle = "Sauvegarde faite avant chaque effacement, à rattraper depuis Sauvegardes.";
         if (page.Items.Count < page.Total) subtitle += $" Liste limitée à {page.Items.Count} apprenant(s) sur {page.Total} : utilisez la recherche.";
         Raise(nameof(Subtitle));
         SelectionChanged();

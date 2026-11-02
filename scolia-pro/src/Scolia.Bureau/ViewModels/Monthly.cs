@@ -111,8 +111,9 @@ public sealed class MonthlyPage : PageViewModel
         CollectionSync.Apply(Items, d.Rows.Select(r => new MonthlyRowVm(r.StudentId, r.Matricule, r.FullName, r.PromotionCode, Money(r.Amount), Money(r.Paid), Money(r.Remaining),
                 r.Status, ThemeBrush.Get(Tone(r.Status)), r.ReceiptNumber ?? "—", r.PaidOn is { } on ? Format.Date(on) : "—", r.WhatsAppLink, r.SmsLink)));
 
-        var scope = Promotion is { Value.Length: > 0 } p ? p.Label : "toutes les promotions";
-        subtitle = $"{d.Period} · {scope} · {Format.Count(d.Rows.Count, "apprenant affiché", "apprenants affichés")}";
+        // Sous-titre court, lisible sur deux lignes d'un téléphone : la promotion n'est citée que si elle est choisie.
+        var scope = Promotion is { Value.Length: > 0 } p ? $" · {p.Label}" : string.Empty;
+        subtitle = $"{d.Period}{scope} · {Format.Count(d.Rows.Count, "apprenant", "apprenants")}";
         Raise(nameof(Subtitle));
     }
 
