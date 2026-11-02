@@ -306,6 +306,8 @@ public sealed class CashierPage : PageViewModel
 
     public async Task ChooseAsync(PayerRow row)
     {
+        // L'apprenant est trouvé : la barre de recherche du haut se referme, le clavier laisse la place au versement.
+        if (Shell.Current == this && Shell.HeaderSearch.IsOpen) Shell.HeaderSearch.Close.Execute(null);
         var version = ++selectionVersion;
         ++previewVersion; // Invalide aussi l'aperçu de l'ancien apprenant.
         previewValid = false;
