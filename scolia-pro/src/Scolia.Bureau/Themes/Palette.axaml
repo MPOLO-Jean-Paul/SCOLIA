@@ -102,13 +102,13 @@
       <SolidColorBrush x:Key="ScrimBrush" Color="#66000000" />
       <!-- Couleurs des icônes : les mêmes teintes franches qu'en clair, comme les couleurs système d'iOS et de macOS
            en sombre. Une icône garde sa nature et sa netteté quand on change de thème ; elle ne pâlit jamais. -->
-      <SolidColorBrush x:Key="ToneBlue" Color="#0A84FF" />
+      <SolidColorBrush x:Key="ToneBlue" Color="#409CFF" />
       <SolidColorBrush x:Key="ToneGreen" Color="#30D158" />
       <SolidColorBrush x:Key="ToneOrange" Color="#FF9F0A" />
       <SolidColorBrush x:Key="TonePurple" Color="#BF5AF2" />
       <SolidColorBrush x:Key="ToneRed" Color="#FF453A" />
       <SolidColorBrush x:Key="ToneTeal" Color="#40C8E0" />
-      <SolidColorBrush x:Key="ToneIndigo" Color="#5E5CE6" />
+      <SolidColorBrush x:Key="ToneIndigo" Color="#8B88FF" />
       <SolidColorBrush x:Key="TonePink" Color="#FF375F" />
       <SolidColorBrush x:Key="ToneNeutral" Color="#98989D" />
       <SolidColorBrush x:Key="GreenSoftBrush" Color="#173A22" />

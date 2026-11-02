@@ -775,6 +775,8 @@
 
   <!-- Jauge fine de Windows 11 -->
   <Style Selector="ProgressBar.slim">
+    <!-- Aucune largeur imposée : une barre fine suit la place donnée, sans déborder sur le texte voisin -->
+    <Setter Property="MinWidth" Value="0" />
     <Setter Property="MinHeight" Value="4" />
     <Setter Property="Height" Value="4" />
     <Setter Property="CornerRadius" Value="2" />

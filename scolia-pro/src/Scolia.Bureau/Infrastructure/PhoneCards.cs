@@ -168,6 +168,17 @@ public static class PhoneCards
             line.Children.Add(label);
             line.Children.Add(value);
             body.Children.Add(line);
+            // Une barre de progression (recouvrement…) se lit sous son étiquette, sur toute la largeur de la carte :
+            // à droite de l'étiquette, elle n'aurait pas la place et chevaucherait le texte.
+            if (value.GetLogicalDescendants().Prepend(value).OfType<ProgressBar>().Any())
+            {
+                Grid.SetRow(value, 1);
+                Grid.SetColumn(value, 0);
+                Grid.SetColumnSpan(value, 2);
+                value.HorizontalAlignment = HorizontalAlignment.Stretch;
+                value.Margin = new Thickness(0, 4, 0, 2);
+                continue;
+            }
             // Texte simple ou modèle qui n'affiche qu'un texte ; un champ de saisie ou une liste reste tel quel.
             var shown = value as TextBlock ?? (value is Panel or Border or ContentControl and not Button ? FirstText(value) : null);
             if (shown is not null) FitLine(line, value, shown);

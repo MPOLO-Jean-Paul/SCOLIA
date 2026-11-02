@@ -51,6 +51,7 @@ public static class MobilePlatform
         // Encaissement ou sauvegarde sur un autre poste : bannière du système quand SCOLIA est en arrière-plan.
         Platform.IsInForeground = AndroidAlerts.InForeground;
         Platform.RecognizeSpeechAsync = AndroidSpeech.ListenAsync;
+        AndroidSpeech.Initialize(app);
         Platform.CanRecognizeSpeech = AndroidSpeech.IsAvailable;
         // Code QR du serveur : photo prise par l'appareil photo du téléphone, lue ensuite par SCOLIA.
         Platform.CaptureImageAsync = AndroidCamera.CaptureAsync;

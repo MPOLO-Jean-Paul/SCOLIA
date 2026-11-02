@@ -46,13 +46,26 @@ public static class AndroidSpeech
         catch (Exception) { return false; }
     }
 
-    /// <summary>Vrai si le téléphone peut écouter : sur l'appareil, ou par un service vocal installé.</summary>
+    private static Context? application;
+
+    /// <summary>Contexte de l'application, connu dès le lancement, avant même que l'écran soit prêt.</summary>
+    public static void Initialize(Context context) => application = context.ApplicationContext ?? context;
+
+    /// <summary>
+    /// Vrai si le téléphone peut écouter : sur l'appareil, par un service vocal (Google, fabricant) ou par sa fenêtre
+    /// vocale. Le contrôle se fait sur l'application, pas sur l'écran : le micro apparaît même quand la recherche
+    /// est préparée avant l'affichage.
+    /// </summary>
     public static bool IsAvailable()
     {
-        if (Active is not { } activity) return false;
-        if (OnDevice(activity)) return true;
-        try { return Intent(true).ResolveActivity(activity.PackageManager!) is not null; }
-        catch (Exception) { return false; }
+        if ((Active as Context ?? application) is not { } context) return true;
+        if (OnDevice(context)) return true;
+        try
+        {
+            if (SpeechRecognizer.IsRecognitionAvailable(context)) return true;
+            return Intent(true).ResolveActivity(context.PackageManager!) is not null;
+        }
+        catch (Exception) { return true; }
     }
 
     public static async Task<string?> ListenAsync()
@@ -149,7 +162,14 @@ public static class AndroidSpeech
         var waiting = new TaskCompletionSource<string?>(TaskCreationOptions.RunContinuationsAsynchronously);
         pending = waiting;
         try { activity.StartActivityForResult(Intent(true), RequestCode); }
-        catch (ActivityNotFoundException) { pending = null; return Task.FromResult<string?>(null); }
+        catch (ActivityNotFoundException)
+        {
+            pending = null;
+            // Aucun service vocal : le dire, plutôt qu'un micro sans effet.
+            Android.Widget.Toast.MakeText(activity, "Saisie vocale indisponible : activez « Saisie vocale Google » ou installez l'application Google.",
+                Android.Widget.ToastLength.Long)?.Show();
+            return Task.FromResult<string?>(null);
+        }
         return waiting.Task;
     }
 

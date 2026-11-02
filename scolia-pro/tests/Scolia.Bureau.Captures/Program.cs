@@ -2144,6 +2144,23 @@ void Page(Func<PageViewModel> create, string name, Action<PageViewModel>? prepar
     prepare?.Invoke(page);
     Wait(shell.Open(() => page));
     Save(window, name);
+    // Tableau de bord : la page entière, en plusieurs vues, pour contrôler graphiques et barres jusqu'en bas.
+    if (name.StartsWith("22e", StringComparison.Ordinal))
+    {
+        var scroller = window.GetVisualDescendants().OfType<ScrollViewer>()
+            .Where(v => v.IsEffectivelyVisible && v.Extent.Height > v.Viewport.Height + 40)
+            .OrderByDescending(v => v.Viewport.Height * v.Viewport.Width).FirstOrDefault();
+        if (scroller is null) return;
+        var step = Math.Max(200, scroller.Viewport.Height - 80);
+        for (var (y, i) = (step, 2); i <= 6; y += step, i++)
+        {
+            scroller.Offset = new Vector(0, Math.Min(y, scroller.Extent.Height - scroller.Viewport.Height));
+            Wait(Task.Delay(250));
+            Save(window, name.Replace(".png", $"-{i}.png", StringComparison.Ordinal));
+            if (y >= scroller.Extent.Height - scroller.Viewport.Height) break;
+        }
+        scroller.Offset = default;
+    }
 }
 
 var students = Result(api.GetAsync<PagedResult<StudentListItem>>("api/apprenants?taille=1"));
