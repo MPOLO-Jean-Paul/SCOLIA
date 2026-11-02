@@ -88,7 +88,8 @@ jobs:
   ipa-appareil:
     name: iOS natif - IPA iPhone et iPad (arm64), a signer avec votre identifiant Apple
     runs-on: xcode-27
-    timeout-minutes: 80
+    # La compilation AOT de l'IPA dépasse 80 minutes depuis l'ajout des codes QR (QRCoder, ZXing) : marge large.
+    timeout-minutes: 150
     steps:
       - uses: actions/checkout@v5
         with:
