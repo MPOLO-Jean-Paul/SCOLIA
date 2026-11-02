@@ -1,0 +1,24 @@
+SCOLIA V37 — AUDIT TECHNIQUE
+============================
+
+Contrôles effectués :
+- 16/16 modules du manifest.json : empreinte « after » conforme au fichier de correction.
+- Fichiers de compatibilité présents : empreintes reconnues dans les listes « compatible ».
+- ModuleApplicationITM : SCOLIA-PERF-3 et fonction ITMAppEtatApprenant présentes.
+- Fichiers PowerShell modifiés : délimiteurs (), [] et {} équilibrés après tokenisation lexicale.
+- NotificationsModernes.cs : délimiteurs équilibrés ; type ITMSuccessToast présent.
+- Module VBA principal : nombre de procédures Function/Sub cohérent avec les End Function/End Sub.
+- Aucun changement volontaire des données d'établissement, des fichiers de paiements ou des apprenants du package.
+
+Chemins de performance revus :
+1. démarrage et analyse syntaxique ;
+2. recherche apprenants ;
+3. reconstruction DataGridView ;
+4. inscription successive ;
+5. paiement ;
+6. prise en charge ;
+7. réception comptable SCOLIA ;
+8. sauvegarde transactionnelle multi-segments.
+
+Limite du contrôle :
+L'environnement de génération ne possède pas Windows PowerShell 5.1, Excel COM ni le compilateur .NET Framework de Windows. Les contrôles réels de compilation/exécution doivent donc être faits sur Windows. Le lanceur SCOLIA reparsera automatiquement les scripts modifiés au premier démarrage et signalera toute erreur de syntaxe PowerShell avant l'ouverture de l'application.

@@ -1,0 +1,23 @@
+﻿LOGO ET ACCENTS — 6 octobre 2026
+
+Le logo original fourni est intégré dans Assets/Logo_ITM_CD.png, sans retouche.
+L'en-tête affiche le logo à gauche et le nom de l'établissement à côté.
+Le mode Zoom conserve les proportions. À petite largeur, les boutons passent
+sur une ligne séparée pour préserver l'espace du nom et du logo.
+L'image est chargée une seule fois et libérée à la fermeture.
+
+Deux scripts récents avaient été livrés en UTF-8 sans marque BOM :
+TableauDeBordModerne.ps1 et PagesModernes.ps1. Cette omission est corrigée.
+Tous les scripts PowerShell et sources C# sont maintenant en UTF-8 avec BOM
+pour leur lecture Unicode sous Windows PowerShell. Aucun remplacement de
+caractères n'est effectué dans les noms ou les données du classeur.
+
+Fermer l'application, extraire entièrement le nouveau ZIP dans un dossier neuf,
+puis lancer APPLICATION.vbs. Ne pas mélanger les scripts des anciens paquets.
+Aucune nouvelle préparation du classeur n'est nécessaire pour le logo/encodage.
+Si la date de paiement modifiable n'était pas encore activée, suivre les
+instructions INTERFACES_ET_DATES_RECUS.txt sur le classeur ACTUEL.
+
+Contrôles statiques : encodage et absence de séquences de texte corrompu dans
+les sources de l'interface, logo identique à l'image reçue, intégrité du ZIP,
+comparaison binaire des classeurs. Le rendu réel reste à vérifier sous Windows.

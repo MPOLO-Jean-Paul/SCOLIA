@@ -1,0 +1,77 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:infra="using:Scolia.Bureau.Infrastructure"
+             x:Class="Scolia.Bureau.Views.TailscaleWizardView"
+             x:DataType="infra:TailscaleInstaller">
+  <!-- Assistant Tailscale commun à la configuration, à la connexion et au réseau : un seul dessin, partout pareil.
+       Téléchargement et installation se font depuis SCOLIA ; on ne sort que pour se connecter au compte Tailscale. -->
+  <Grid IsVisible="{Binding IsOpen}" Background="#CC091326">
+    <Border Classes="card" MaxWidth="460" Margin="16" Padding="20" HorizontalAlignment="Center" VerticalAlignment="Center"
+            Background="{DynamicResource SurfaceBrush}" CornerRadius="18" infra:Adaptive.FitDialog="True">
+      <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+        <StackPanel Spacing="12">
+          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+            <Border Classes="appicon medium" Background="{DynamicResource ToneTeal}"><mi:MaterialIcon Kind="ShieldCheckOutline" /></Border>
+            <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+              <TextBlock Text="{Binding DialogTitle}" FontSize="18" FontWeight="SemiBold" TextWrapping="Wrap" />
+              <TextBlock Text="{Binding Step}" Classes="muted" TextWrapping="Wrap" />
+            </StackPanel>
+          </Grid>
+
+          <!-- Étapes : vérification, téléchargement, installation, configuration -->
+          <ProgressBar Minimum="0" Maximum="{Binding StepCount}" Value="{Binding StepProgress, Mode=OneWay}" Height="6" MinHeight="6" />
+
+          <!-- Téléchargement : pourcentage réel mesuré par SCOLIA -->
+          <StackPanel Spacing="6" IsVisible="{Binding IsDownloading}">
+            <ProgressBar Minimum="0" Maximum="100" Value="{Binding DownloadPercent, Mode=OneWay}" Height="10" MinHeight="10" CornerRadius="5" />
+            <Grid ColumnDefinitions="*,Auto">
+              <TextBlock Text="{Binding DownloadText}" FontWeight="SemiBold" VerticalAlignment="Center" />
+              <Button Grid.Column="1" Classes="ghost" Content="Annuler" Command="{Binding CancelDownload}" />
+            </Grid>
+          </StackPanel>
+          <ProgressBar IsIndeterminate="True" IsVisible="{Binding IsWaiting}" Height="3" MinHeight="3" />
+
+          <TextBlock Text="{Binding Status}" TextWrapping="Wrap" />
+
+          <!-- Prêt : l'adresse privée à donner aux autres postes -->
+          <Border Classes="guide" IsVisible="{Binding HasTailnetAddress}">
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+              <StackPanel Spacing="2" VerticalAlignment="Center">
+                <TextBlock Text="Adresse de cet appareil sur le réseau privé" Classes="muted" FontSize="{DynamicResource FsSmall}" />
+                <TextBlock Text="{Binding TailnetAddress}" FontSize="17" FontWeight="Bold" />
+              </StackPanel>
+              <Button Grid.Column="1" Classes="ghost" Command="{Binding CopyAddress}" VerticalAlignment="Center">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                  <mi:MaterialIcon Kind="ContentCopy" Width="16" Height="16" />
+                  <TextBlock Text="Copier" VerticalAlignment="Center" />
+                </StackPanel>
+              </Button>
+            </Grid>
+          </Border>
+
+          <Button Classes="primary" Command="{Binding DownloadAndInstall}" IsVisible="{Binding CanDownload}"
+                  HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" MinHeight="46">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <mi:MaterialIcon Kind="Download" Width="18" Height="18" />
+              <TextBlock Text="Télécharger et installer" FontWeight="SemiBold" VerticalAlignment="Center" TextWrapping="Wrap" />
+            </StackPanel>
+          </Button>
+          <Button Classes="primary" Command="{Binding Configure}" IsVisible="{Binding NeedsActivation}"
+                  HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" MinHeight="46">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <mi:MaterialIcon Kind="OpenInNew" Width="18" Height="18" />
+              <TextBlock Text="Configurer Tailscale" FontWeight="SemiBold" VerticalAlignment="Center" TextWrapping="Wrap" />
+            </StackPanel>
+          </Button>
+          <Button Content="Vérifier à nouveau" Command="{Binding Verify}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" />
+          <Button Classes="ghost" Content="Passer par le magasin officiel" Command="{Binding OpenStore}" IsVisible="{Binding ShowStoreFallback}"
+                  HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" />
+          <TextBlock Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap"
+                     Text="Le fichier vient du site officiel de Tailscale et son empreinte est vérifiée. Le système demande toujours votre accord pour installer l'application et activer le VPN." />
+          <Button Classes="ghost" Content="Fermer" Command="{Binding Close}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" MinHeight="44" />
+        </StackPanel>
+      </ScrollViewer>
+    </Border>
+  </Grid>
+</UserControl>

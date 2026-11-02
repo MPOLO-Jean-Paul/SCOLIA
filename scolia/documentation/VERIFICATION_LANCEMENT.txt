@@ -1,0 +1,14 @@
+﻿VÉRIFICATION DU LANCEMENT ET DU ZIP
+
+L’ancien ActivityIndicator.cs reproduit l’erreur C# CS0136, causée par deux variables locales primary dans des portées imbriquées. Le fichier corrigé utilise darkPrimary dans le bloc sombre.
+
+Les cinq sources C# extraites du ZIP ont été compilées séparément avec Mono mcs, en mode C# 5 : ActivityIndicator, ChromeModerne, DashboardChart, SecurityCrypto et WindowsShortcuts. Aucune erreur. Trois avertissements préexistants concernent des champs inutilisés de l’animation.
+
+Les syntaxes des 42 scripts PowerShell et des cinq sources C# ont été contrôlées avec les analyseurs disponibles. Le lanceur APPLICATION.vbs utilise le dossier programme voisin et Windows PowerShell en mode STA, sans console. Les dépendances locales sont présentes. Les six classeurs XLSM restent identiques.
+
+Un second défaut a été relevé : les commandes du ruban étaient dessinées sur une seule ligne avec troncature, malgré la hauteur calculée pour plusieurs lignes. Le dessin autorise maintenant le retour à la ligne dans la zone du texte, sans modifier les icônes ni les formes. Les cinq composants sont compilés à nouveau après cette correction.
+
+Limites : Windows PowerShell 5.1, Excel et le lancement complet Windows ne sont pas exécutés ici. Un essai de rendu WinForms sous Mono a été tenté, mais le serveur graphique n’a pas pu démarrer dans cet environnement ; aucun résultat de rendu n’est donc revendiqué. TestsCompilation.ps1 permet le contrôle avec le compilateur Windows. Les autres tests de fenêtres fournis restent à exécuter sur Windows.
+
+MISE À JOUR
+Fermez l’application, remplacez le dossier programme par celui de ce ZIP, puis lancez APPLICATION.vbs. Ne remplacez pas vos données. Aucune réinstallation des corrections du classeur n’est nécessaire pour ces deux changements du programme.

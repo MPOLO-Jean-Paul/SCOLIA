@@ -1,0 +1,22 @@
+﻿SCOLIA V41 - NUANCES D’INTERACTIVITÉ FLUIDE
+
+Objectif
+Rendre l’interface plus vivante sans ajouter de traitements lourds ni ralentir Excel.
+
+Améliorations
+- Boutons principaux : transition douce au survol, clic avec enfoncement discret, focus clavier visible.
+- Onglets : transition progressive de l’état actif et du soulignement, sans clignotement.
+- Ruban : survol et clic adoucis, conservation des icônes métier.
+- Connexion/configuration : boutons harmonisés avec les mêmes contrôles modernes.
+- Configuration initiale : onglets SCOLIA modernisés et boutons réseau harmonisés.
+- Indicateur de traitement : apparition/disparition en fondu, sans voler le focus.
+- Confirmation de succès : apparition douce depuis le bas, maintien discret, disparition en fondu.
+- Thèmes clair/sombre : couleurs interpolées à partir du thème courant.
+
+Performance
+Les minuteurs d’animation ne tournent que pendant une transition courte (environ 120 à 145 ms).
+Aucun minuteur permanent supplémentaire n’est ajouté aux pages inactives.
+Aucune requête Excel, réseau ou lecture de classeur n’est déclenchée par les animations.
+
+Test Windows
+Exécuter TestsInteractionsV41.ps1 sous Windows PowerShell 5.1 si un contrôle visuel doit être vérifié indépendamment.

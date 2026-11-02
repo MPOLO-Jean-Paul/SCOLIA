@@ -1,0 +1,706 @@
+﻿Option Explicit
+Private mActionsPro As CExportMensuel
+
+
+Private Sub CommandButton2_Click()
+Unload Me
+End Sub
+
+' ============================================================
+' ITM COEUR DE DIEU
+' USERFORM : GESTION / INSCRIPTION DES APPRENANTS
+'
+' Noms des contrôles utilisés :
+' TextMatricule
+' TextNomApprenant
+' TextPostNom
+' TextPrenom
+' ListSexe
+' TextDateNaissance
+' TextLieuNaissance
+' ListPromotion
+' TextTuteur
+' TextParent1
+' TextParent2
+' TextDateInscription
+' ListAnnee
+' ListStatut
+'
+' Boutons :
+' CommandEnregistrer
+' CommandButton1   = Nouveau
+' CommandEffacer
+' ============================================================
+
+
+' ============================================================
+' 1. INITIALISATION DU FORMULAIRE
+' ============================================================
+
+Private Sub UserForm_Initialize()
+
+    With ListSexe
+        .Clear
+        .AddItem "M"
+        .AddItem "F"
+        .ListIndex = -1
+    End With
+
+    With ListStatut
+        .Clear
+        .AddItem "Actif"
+        .AddItem "Suspendu"
+        .AddItem "Sorti"
+        .ListIndex = 0
+    End With
+
+    Dim wsProm As Worksheet, rp As Long
+    Set wsProm = ThisWorkbook.Worksheets("PROMOTIONS")
+    ListPromotion.Clear
+    For rp = 5 To wsProm.Cells(wsProm.Rows.Count, 1).End(xlUp).Row
+        If UCase$(Trim$(CStr(wsProm.Cells(rp, 8).Value))) = "ACTIVE" Then
+            ListPromotion.AddItem CStr(wsProm.Cells(rp, 1).Value)
+        End If
+    Next rp
+    ListPromotion.ListIndex = -1
+
+    With ListAnnee
+        .Clear
+        .AddItem "2026-2027"
+        .ListIndex = 0
+    End With
+
+    TextMatricule.MaxLength = 6
+    TextMatricule.Locked = True
+    TextMatricule.TabStop = False
+    TextMatricule.ControlTipText = "Matricule automatique selon la promotion."
+    TextParent1.MaxLength = 10
+    TextParent2.MaxLength = 10
+    TextDateNaissance.MaxLength = 10
+
+    TextDateInscription.Value = Format(Date, "dd/mm/yyyy")
+
+    Set mActionsPro = ConfigurerFormulairePro(Me)
+End Sub
+
+
+' ============================================================
+' 2. BOUTON ENREGISTRER
+' ============================================================
+
+Private Sub CommandEnregistrer_Click()
+
+    Dim saisieOuverte As Boolean, saisieValidee As Boolean
+    Dim derniereIdentite As Long, identiteExistante As Long
+    Dim descriptionErreur As String
+    Dim ws As Worksheet
+    Dim ligne As Long
+    Dim dateNais As Date
+
+    On Error GoTo ITM_Erreur
+    Set ws = ThisWorkbook.Worksheets("APPRENANTS")
+
+    If ListPromotion.ListIndex = -1 Then
+        MsgBox "Choisissez la promotion pour generer le matricule.", vbExclamation
+        ListPromotion.SetFocus
+        Exit Sub
+    End If
+    GenererMatriculeInscription
+    If Len(TextMatricule.Value) <> 6 Then Exit Sub
+    TextMatricule.Value = UCase(Trim(TextMatricule.Value))
+
+    ' ----- MATRICULE -----
+    If Len(TextMatricule.Value) <> 6 Then
+        MsgBox "Le matricule est obligatoire et doit contenir exactement 6 caractères.", _
+               vbExclamation, "Matricule incorrect"
+        TextNomApprenant.SetFocus
+        Exit Sub
+    End If
+
+    ' ----- NOM -----
+    If Not NomValide(TextNomApprenant.Value) Then
+        MsgBox "Le nom est obligatoire et ne doit contenir que des lettres.", _
+               vbExclamation, "Nom incorrect"
+        TextNomApprenant.SetFocus
+        Exit Sub
+    End If
+
+    ' ----- POST-NOM -----
+    If Not NomValide(TextPostNom.Value) Then
+        MsgBox "Le post-nom est obligatoire et ne doit contenir que des lettres.", _
+               vbExclamation, "Post-nom incorrect"
+        TextPostNom.SetFocus
+        Exit Sub
+    End If
+
+    ' ----- PRENOM -----
+    If Not NomValide(TextPrenom.Value) Then
+        MsgBox "Le prénom est obligatoire et ne doit contenir que des lettres.", _
+               vbExclamation, "Prénom incorrect"
+        TextPrenom.SetFocus
+        Exit Sub
+    End If
+
+    ' ----- SEXE -----
+    If ListSexe.ListIndex = -1 Then
+        MsgBox "Veuillez sélectionner le sexe.", _
+               vbExclamation, "Champ obligatoire"
+        ListSexe.SetFocus
+        Exit Sub
+    End If
+
+    ' ----- DATE DE NAISSANCE -----
+    If Not ConvertirDateNaissance(TextDateNaissance.Value, dateNais) Then
+        MsgBox "La date de naissance est incorrecte." & vbCrLf & _
+               "Utilisez le format JJ/MM/AAAA, par exemple : 15/08/2010.", _
+               vbExclamation, "Date incorrecte"
+        TextDateNaissance.SetFocus
+        Exit Sub
+    End If
+
+    ' ----- LIEU DE NAISSANCE -----
+    If Trim(TextLieuNaissance.Value) = "" Then
+        MsgBox "Veuillez saisir le lieu de naissance.", _
+               vbExclamation, "Champ obligatoire"
+        TextLieuNaissance.SetFocus
+        Exit Sub
+    End If
+
+    ' ----- PROMOTION -----
+    If ListPromotion.ListIndex = -1 Then
+        MsgBox "Veuillez sélectionner la promotion.", _
+               vbExclamation, "Champ obligatoire"
+        ListPromotion.SetFocus
+        Exit Sub
+    End If
+
+    ' ----- CONTACT PARENT 1 -----
+    If Not NumeroValide(TextParent1.Value, True) Then
+        MsgBox "Le numéro du parent 1 est obligatoire et doit contenir exactement 10 chiffres.", _
+               vbExclamation, "Numéro incorrect"
+        TextParent1.SetFocus
+        Exit Sub
+    End If
+
+    ' ----- CONTACT PARENT 2 -----
+    If Not NumeroValide(TextParent2.Value, False) Then
+        MsgBox "Le numéro du parent 2 doit contenir exactement 10 chiffres ou rester vide.", _
+               vbExclamation, "Numéro incorrect"
+        TextParent2.SetFocus
+        Exit Sub
+    End If
+
+    ' ----- ANNEE SCOLAIRE -----
+    If ListAnnee.ListIndex = -1 Then
+        MsgBox "Veuillez sélectionner l'année scolaire.", _
+               vbExclamation, "Champ obligatoire"
+        ListAnnee.SetFocus
+        Exit Sub
+    End If
+
+    ' ----- STATUT -----
+    If ListStatut.ListIndex = -1 Then
+        MsgBox "Veuillez sélectionner le statut.", _
+               vbExclamation, "Champ obligatoire"
+        ListStatut.SetFocus
+        Exit Sub
+    End If
+
+    ' ----- MATRICULE EN DOUBLE -----
+    If Application.WorksheetFunction.CountIf(ws.Columns("A"), TextMatricule.Value) > 0 Then
+        MsgBox "Ce matricule existe déjà dans la base des apprenants.", _
+               vbExclamation, "Matricule déjà utilisé"
+        TextNomApprenant.SetFocus
+        Exit Sub
+    End If
+
+    ' ----- PROCHAINE LIGNE -----
+    derniereIdentite = ITMDerniereLigne(ws)
+    For identiteExistante = 5 To derniereIdentite
+        If StrComp(Trim$(CStr(ws.Cells(identiteExistante, 2).Value)), Trim$(TextNomApprenant.Value), vbTextCompare) = 0 _
+        And StrComp(Trim$(CStr(ws.Cells(identiteExistante, 3).Value)), Trim$(TextPostNom.Value), vbTextCompare) = 0 _
+        And StrComp(Trim$(CStr(ws.Cells(identiteExistante, 4).Value)), Trim$(TextPrenom.Value), vbTextCompare) = 0 Then
+            If IsDate(ws.Cells(identiteExistante, 6).Value) Then
+                If CDate(ws.Cells(identiteExistante, 6).Value) = dateNais Then
+                    If MsgBox("Une inscription avec cette identite et cette date de naissance existe deja : " & _
+                        ws.Cells(identiteExistante, 1).Value & vbCrLf & "Creer quand meme une autre inscription ?", _
+                        vbYesNo + vbQuestion + vbDefaultButton2, "Inscription deja presente") <> vbYes Then Exit Sub
+                    Exit For
+                End If
+            End If
+        End If
+    Next identiteExistante
+    ITMDebutSaisie ws
+    saisieOuverte = True
+    ligne = ITMReserverLigne(ws)
+
+    If ligne < 5 Then ligne = 5
+
+    ' Conserver les éventuels zéros initiaux
+    ws.Cells(ligne, "A").NumberFormat = "@"
+    ws.Cells(ligne, "J").NumberFormat = "@"
+    ws.Cells(ligne, "K").NumberFormat = "@"
+
+    ' ----- ENREGISTREMENT -----
+    ws.Cells(ligne, "A").Value = TextMatricule.Value
+    ws.Cells(ligne, "B").Value = UCase(Trim(TextNomApprenant.Value))
+    ws.Cells(ligne, "C").Value = UCase(Trim(TextPostNom.Value))
+    ws.Cells(ligne, "D").Value = UCase$(Trim$(TextPrenom.Value))
+    ws.Cells(ligne, "E").Value = ListSexe.Value
+
+    ws.Cells(ligne, "F").Value = dateNais
+    ws.Cells(ligne, "F").NumberFormat = "dd/mm/yyyy"
+
+    ws.Cells(ligne, "G").Value = Trim(TextLieuNaissance.Value)
+    ws.Cells(ligne, "H").Value = ListPromotion.Value
+    ws.Cells(ligne, "I").Value = Trim(TextTuteur.Value)
+    ws.Cells(ligne, "J").Value = TextParent1.Value
+    ws.Cells(ligne, "K").Value = TextParent2.Value
+
+    ws.Cells(ligne, "L").Value = Date
+    ws.Cells(ligne, "L").NumberFormat = "dd/mm/yyyy"
+
+    ws.Cells(ligne, "M").Value = ListAnnee.Value
+    ws.Cells(ligne, "N").Value = ListStatut.Value
+    ws.Cells(ligne, "O").NumberFormat = "@"
+    ws.Cells(ligne, "O").Value = Trim$(CStr(Me.Controls("TextAdresse").Value))
+
+    ITMValiderSaisie
+    saisieOuverte = False
+    saisieValidee = True
+
+    MsgBox "Bravo ! L'apprenant a été enregistré avec succès.", _
+           vbInformation, "ITM Coeur de Dieu"
+
+    PreparerNouveau
+
+    Exit Sub
+ITM_Erreur:
+    descriptionErreur = Err.Description
+    If saisieOuverte Then
+        On Error Resume Next
+        ITMAnnulerSaisie
+        If Err.Number <> 0 Then descriptionErreur = descriptionErreur & vbCrLf & Err.Description
+        On Error GoTo 0
+    End If
+    If saisieValidee Then
+        MsgBox "Les donnees sont enregistrees. Le formulaire n'a pas pu etre actualise : " & descriptionErreur, vbExclamation
+    Else
+        MsgBox "Enregistrement interrompu : " & descriptionErreur & vbCrLf & "Vos champs sont conserves. Consultez la sauvegarde si necessaire.", vbCritical
+    End If
+End Sub
+' ============================================================
+' 3. BOUTON NOUVEAU
+' ============================================================
+
+Private Sub CommandButton1_Click()
+
+    PreparerNouveau
+
+End Sub
+
+
+' ============================================================
+' 4. BOUTON EFFACER
+' ============================================================
+
+Private Sub CommandEffacer_Click()
+
+    Dim reponse As VbMsgBoxResult
+
+    reponse = MsgBox( _
+        "Voulez-vous vraiment effacer les informations saisies ?" & vbCrLf & _
+        "Cette action ne supprime aucun apprenant déjà enregistré.", _
+        vbQuestion + vbYesNo + vbDefaultButton2, _
+        "ITM Coeur de Dieu")
+
+    If reponse <> vbYes Then Exit Sub
+
+    PreparerNouveau
+
+    TextNomApprenant.SetFocus
+
+End Sub
+
+
+' ============================================================
+' 5. PREPARER UNE NOUVELLE SAISIE
+' ============================================================
+
+Private Sub PreparerNouveau()
+
+    TextMatricule.Value = ""
+    TextNomApprenant.Value = ""
+    TextPostNom.Value = ""
+    TextPrenom.Value = ""
+
+    ListSexe.ListIndex = -1
+
+    TextDateNaissance.Value = ""
+    TextLieuNaissance.Value = ""
+
+    ListPromotion.ListIndex = -1
+
+    TextTuteur.Value = ""
+    Me.Controls("TextAdresse").Value = ""
+    TextParent1.Value = ""
+    TextParent2.Value = ""
+
+    TextDateInscription.Value = Format(Date, "dd/mm/yyyy")
+
+    If ListAnnee.ListCount > 0 Then
+        ListAnnee.ListIndex = 0
+    End If
+
+    If ListStatut.ListCount > 0 Then
+        ListStatut.ListIndex = 0
+    End If
+
+    TextNomApprenant.SetFocus
+
+End Sub
+
+
+' ============================================================
+' 6. VIDER COMPLETEMENT LE FORMULAIRE
+' ============================================================
+
+Private Sub ViderTousLesChamps()
+
+    TextMatricule.Value = ""
+    TextNomApprenant.Value = ""
+    TextPostNom.Value = ""
+    TextPrenom.Value = ""
+
+    ListSexe.ListIndex = -1
+
+    TextDateNaissance.Value = ""
+    TextLieuNaissance.Value = ""
+
+    ListPromotion.ListIndex = -1
+
+    TextTuteur.Value = ""
+    Me.Controls("TextAdresse").Value = ""
+    TextParent1.Value = ""
+    TextParent2.Value = ""
+
+    TextDateInscription.Value = ""
+
+    ListAnnee.ListIndex = -1
+    ListStatut.ListIndex = -1
+
+End Sub
+
+
+' ============================================================
+' 7. VALIDATION DES NOMS
+' ============================================================
+
+Private Function NomValide(ByVal valeur As String) As Boolean
+
+    Dim i As Long
+    Dim caractere As String
+    Dim codeCaractere As Long
+
+    valeur = Trim(valeur)
+
+    If valeur = "" Then
+        NomValide = False
+        Exit Function
+    End If
+
+    For i = 1 To Len(valeur)
+
+        caractere = Mid$(valeur, i, 1)
+        codeCaractere = AscW(caractere)
+
+        ' Lettres, lettres accentuées, espace, tiret et apostrophe
+        If Not ((codeCaractere >= 65 And codeCaractere <= 90) _
+            Or (codeCaractere >= 97 And codeCaractere <= 122) _
+            Or (codeCaractere >= 192 And codeCaractere <= 255) _
+            Or caractere = " " _
+            Or caractere = "-" _
+            Or caractere = "'") Then
+
+            NomValide = False
+            Exit Function
+
+        End If
+
+    Next i
+
+    NomValide = True
+
+End Function
+
+
+' ============================================================
+' 8. VALIDATION DES NUMEROS DE TELEPHONE
+' ============================================================
+
+Private Function NumeroValide(ByVal valeur As String, _
+                              ByVal obligatoire As Boolean) As Boolean
+
+    Dim i As Long
+    Dim caractere As String
+
+    valeur = Trim(valeur)
+
+    If valeur = "" Then
+        NumeroValide = Not obligatoire
+        Exit Function
+    End If
+
+    If Len(valeur) <> 10 Then
+        NumeroValide = False
+        Exit Function
+    End If
+
+    For i = 1 To Len(valeur)
+
+        caractere = Mid$(valeur, i, 1)
+
+        If caractere < "0" Or caractere > "9" Then
+            NumeroValide = False
+            Exit Function
+        End If
+
+    Next i
+
+    NumeroValide = True
+
+End Function
+
+
+' ============================================================
+' 9. VALIDATION DE LA DATE DE NAISSANCE
+'    Format obligatoire : JJ/MM/AAAA
+' ============================================================
+
+Private Function ConvertirDateNaissance(ByVal texte As String, _
+                                        ByRef resultat As Date) As Boolean
+
+    Dim parties() As String
+    Dim jour As Long
+    Dim mois As Long
+    Dim annee As Long
+    Dim dateTest As Date
+
+    texte = Trim(texte)
+
+    If Len(texte) <> 10 Then Exit Function
+
+    parties = Split(texte, "/")
+
+    If UBound(parties) <> 2 Then Exit Function
+
+    If Not IsNumeric(parties(0)) Then Exit Function
+    If Not IsNumeric(parties(1)) Then Exit Function
+    If Not IsNumeric(parties(2)) Then Exit Function
+
+    If Len(parties(0)) <> 2 Then Exit Function
+    If Len(parties(1)) <> 2 Then Exit Function
+    If Len(parties(2)) <> 4 Then Exit Function
+
+    jour = CLng(parties(0))
+    mois = CLng(parties(1))
+    annee = CLng(parties(2))
+
+    If jour < 1 Or jour > 31 Then Exit Function
+    If mois < 1 Or mois > 12 Then Exit Function
+    If annee < 1900 Or annee > Year(Date) Then Exit Function
+
+    On Error GoTo DateInvalide
+
+    dateTest = DateSerial(annee, mois, jour)
+
+    ' Empêcher 31/02, 31/04, etc.
+    If Day(dateTest) <> jour Then Exit Function
+    If Month(dateTest) <> mois Then Exit Function
+    If Year(dateTest) <> annee Then Exit Function
+
+    ' Interdire une date future
+    If dateTest > Date Then Exit Function
+
+    resultat = dateTest
+    ConvertirDateNaissance = True
+
+    Exit Function
+
+DateInvalide:
+
+    ConvertirDateNaissance = False
+
+End Function
+
+
+' ============================================================
+' 10. SAISIE DU MATRICULE
+'     Lettres et chiffres uniquement
+' ============================================================
+
+Private Sub TextMatricule_KeyPress(ByVal KeyAscii As MSForms.ReturnInteger)
+
+    If Not ((KeyAscii >= 48 And KeyAscii <= 57) _
+        Or (KeyAscii >= 65 And KeyAscii <= 90) _
+        Or (KeyAscii >= 97 And KeyAscii <= 122) _
+        Or KeyAscii = 8) Then
+
+        KeyAscii = 0
+
+    End If
+
+End Sub
+
+
+' ============================================================
+' 11. SAISIE CONTACT PARENT 1
+'     Chiffres uniquement
+' ============================================================
+
+Private Sub TextParent1_KeyPress(ByVal KeyAscii As MSForms.ReturnInteger)
+
+    If Not ((KeyAscii >= 48 And KeyAscii <= 57) _
+        Or KeyAscii = 8) Then
+
+        KeyAscii = 0
+
+    End If
+
+End Sub
+
+
+' ============================================================
+' 12. SAISIE CONTACT PARENT 2
+'     Chiffres uniquement
+' ============================================================
+
+Private Sub TextParent2_KeyPress(ByVal KeyAscii As MSForms.ReturnInteger)
+
+    If Not ((KeyAscii >= 48 And KeyAscii <= 57) _
+        Or KeyAscii = 8) Then
+
+        KeyAscii = 0
+
+    End If
+
+End Sub
+
+
+' ============================================================
+' 13. SAISIE DATE DE NAISSANCE
+'     Chiffres + / uniquement
+' ============================================================
+
+Private Sub TextDateNaissance_KeyPress(ByVal KeyAscii As MSForms.ReturnInteger)
+
+    If Not ((KeyAscii >= 48 And KeyAscii <= 57) _
+        Or KeyAscii = 47 _
+        Or KeyAscii = 8) Then
+
+        KeyAscii = 0
+
+    End If
+
+End Sub
+
+
+' ============================================================
+' 14. VERIFICATION DE LA DATE EN QUITTANT LE CHAMP
+' ============================================================
+
+Private Sub TextDateNaissance_Exit(ByVal Cancel As MSForms.ReturnBoolean)
+
+    Dim dateTest As Date
+
+    If Trim(TextDateNaissance.Value) = "" Then Exit Sub
+
+    If Not ConvertirDateNaissance(TextDateNaissance.Value, dateTest) Then
+
+        MsgBox "Date de naissance incorrecte." & vbCrLf & _
+               "Utilisez le format JJ/MM/AAAA.", _
+               vbExclamation, "Date incorrecte"
+
+        Cancel = True
+
+    End If
+
+End Sub
+
+
+
+Private Sub TextMatricule_Change()
+    MajusculeChamp Me.Controls("TextMatricule")
+End Sub
+
+Private Sub TextNomApprenant_Change()
+    MajusculeChamp Me.Controls("TextNomApprenant")
+End Sub
+
+Private Sub TextPostNom_Change()
+    MajusculeChamp Me.Controls("TextPostNom")
+End Sub
+
+Private Sub TextPrenom_Change()
+    MajusculeChamp Me.Controls("TextPrenom")
+End Sub
+
+Private Sub UserForm_QueryClose(Cancel As Integer, CloseMode As Integer)
+    If Not mActionsPro Is Nothing Then
+        Set mActionsPro.BoutonPaiementsPDF = Nothing
+        Set mActionsPro.BoutonLitigesPDF = Nothing
+        Set mActionsPro.BoutonPDF = Nothing
+        Set mActionsPro.Bouton = Nothing
+        Set mActionsPro.BoutonListe = Nothing
+        Set mActionsPro.BoutonReset = Nothing
+        Set mActionsPro.BoutonEffacer = Nothing
+        Set mActionsPro.BoutonNouveau = Nothing
+        Set mActionsPro.Formulaire = Nothing
+        Set mActionsPro = Nothing
+    End If
+End Sub
+
+Private Sub ListPromotion_Change()
+    GenererMatriculeInscription
+End Sub
+Private Sub GenererMatriculeInscription()
+    Dim prefixe As String, code As String, numero As Long, alphabet As String
+    Dim ws As Worksheet, ligne As Long, colonne As Long, nom As Variant
+    Dim pris As Object, premier As Long, second As Long, suffixe As String
+    TextMatricule.Value = ""
+    prefixe = UCase$(Trim$(CStr(ListPromotion.Value)))
+    If prefixe = "" Then Exit Sub
+    If Len(prefixe) <> 4 Then
+        MsgBox "Le code promotion doit avoir 4 caracteres pour un matricule de 6 caracteres.", vbExclamation
+        Exit Sub
+    End If
+    Set pris = CreateObject("Scripting.Dictionary")
+    For Each nom In Array("APPRENANTS", "PAIEMENTS")
+        Set ws = ThisWorkbook.Worksheets(CStr(nom))
+        colonne = 1
+        If nom = "PAIEMENTS" Then colonne = 4
+        For ligne = 5 To ws.Cells(ws.Rows.Count, colonne).End(xlUp).Row
+            code = UCase$(Trim$(CStr(ws.Cells(ligne, colonne).Value)))
+            If code <> "" Then pris(code) = True
+        Next ligne
+    Next nom
+    For numero = 1 To 99
+        code = prefixe & Format$(numero, "00")
+        If Not pris.Exists(code) Then TextMatricule.Value = code: Exit Sub
+    Next numero
+    alphabet = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    For premier = 1 To Len(alphabet)
+        For second = 1 To Len(alphabet)
+            suffixe = Mid$(alphabet, premier, 1) & Mid$(alphabet, second, 1)
+            If Not suffixe Like "##" Then
+                code = prefixe & suffixe
+                If Not pris.Exists(code) Then TextMatricule.Value = code: Exit Sub
+            End If
+        Next second
+    Next premier
+    MsgBox "Les 1295 matricules disponibles pour " & prefixe & " sont occupes. Aucune inscription n'a ete ajoutee. Le format doit etre etendu avant de continuer.", vbExclamation
+End Sub
+
+Public Sub ITMEffacerSaisie()
+    CommandEffacer_Click
+End Sub

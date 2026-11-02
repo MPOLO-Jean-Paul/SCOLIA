@@ -1,0 +1,25 @@
+SCOLIA V66 — Identité, connexion et exports
+
+Extraire entièrement le ZIP et lancer 00_Demarrage/APPLICATION.vbs.
+
+Le logo SCOLIA est utilisé dans l’en-tête de l’application, les fenêtres,
+les notifications et les raccourcis créés par SCOLIA. Le logo personnalisé
+de l’établissement reste utilisé pour ses documents et ses cartes.
+
+Connexion : la roue et « Connexion en cours… » s’affichent dès le clic.
+L’indicateur animé apparaît avant la vérification du compte et accompagne
+l’ouverture de l’accueil. En cas d’erreur, il se ferme et la saisie reprend.
+
+Onglet Exports :
+- Rapports : rapports habituels et rapport de rentrée PDF/Word modifiable.
+- Cartes d’examen : filtres, sélection, session, aperçu, PDF, Word,
+  impression, historique, dossier des cartes et accès aux grilles remplies.
+
+Scolarité conserve les outils de suivi, les enseignements, la discipline,
+les présences, la réinscription et les cotes/délibération.
+
+Contrôles locaux : syntaxe PowerShell et C#, scénarios de connexion,
+catalogue des commandes, navigation et regroupement des exports.
+Les contrôles graphiques Windows sont fournis dans VERIFIER_V66.cmd.
+Le rendu WinForms et les interfaces COM Office doivent être vérifiés
+sur Windows. L’export PDF du rapport de rentrée nécessite Microsoft Word.

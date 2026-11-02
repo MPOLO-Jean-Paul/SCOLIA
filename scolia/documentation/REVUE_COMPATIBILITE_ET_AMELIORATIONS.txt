@@ -1,0 +1,27 @@
+﻿ITM CD — FONCTIONNALITÉS AJOUTÉES ET CONTRÔLES
+
+Nouveautés de cette révision
+1. Sauvegarde quotidienne complète du dossier data, vérification SHA-256 des segments, conservation configurable (7, 14, 30, 60 copies). La conservation ne supprime que les anciennes copies automatiques identifiées, après une nouvelle copie vérifiée. Les sauvegardes manuelles sont conservées. Application ouverte, rôle Administrateur ou Secrétariat et dossier data connecté requis. Une vérification sur copie existe dans Administration > Sauvegardes. Elle contrôle les fichiers sans effectuer de restauration.
+2. Rôles Administrateur, Secrétariat et Consultation, attribution depuis Compte ou Administration. Les commandes et leurs fonctions d’exécution vérifient les autorisations. Le premier compte local et le premier ancien compte migré sont administrateurs ; les autres anciens comptes sont Secrétariat, les nouveaux supplémentaires Consultation. Le dernier administrateur local ne peut pas être rétrogradé. Retour d’un compte restreint à Windows : authentification administrateur requise. Le journal nominatif enregistre les principales saisies et opérations de gestion, avec le compte et le rôle.
+3. Diagnostic de compatibilité exportable sans données scolaires : Windows, PowerShell, .NET, Excel, présence des fichiers, capacité configurée, accès et espace disponible du dossier data, mémoire de connexion et dernière sauvegarde automatique vérifiée.
+4. Mémoriser ce classeur active explicitement la reconnexion au prochain lancement. Fermer données conserve désormais la mémoire. Les clés Windows existantes ne sont plus recréées ; mémoriser un autre réglage ne doit pas effacer le chemin du classeur.
+
+Conservation
+Les six classeurs livrés sont conservés à l’octet près. Les fichiers de comptes, les données existantes et les réglages antérieurs ne sont pas réinitialisés. La migration ajoute des rôles aux comptes existants. Les sources ne sont pas modifiées par cette livraison. Le basculement automatique de capacité reste accessible au secrétariat lors d’une saisie ; la création manuelle d’un segment reste administrative.
+
+Portée des permissions
+Les rôles limitent les commandes du logiciel. La session Windows principale est une identité de confiance du profil Windows ; les autorisations sur les classeurs, les journaux et l’installateur direct relèvent de Windows. Les rôles ne protègent pas les fichiers contre une personne pouvant les modifier en dehors du logiciel. Les comptes restent propres au profil Windows actuel.
+Le dossier data dispose déjà d’un verrou exclusif de session : deux éditions simultanées du même dossier sont refusées. La consultation partagée en lecture seule n’a pas été ajoutée dans cette révision.
+
+Vérification
+Contrôle de syntaxe de tous les fichiers PowerShell et C#, dépendances livrées, cohérence des commandes et raccourcis ajoutés, intégrité du ZIP et comparaison des classeurs.
+Scénarios Windows ajoutés : TestsExploitation.ps1 (rôles, refus écriture, dernier administrateur, sauvegardes quotidiennes, corruption et rétention) ; TestsMemoireConnexion.ps1 (mémoire persistante et réglages indépendants). Les tests existants sont adaptés aux nouvelles autorisations.
+Ces scénarios et les fenêtres n’ont pas été exécutés sous Windows dans l’environnement de préparation. Les tests Excel COM, la restauration réelle et le fonctionnement de l’installateur doivent être validés sur le poste Windows. Un contrôle de syntaxe n’équivaut pas à un test réel d’Office.
+
+Utilisation
+Données > Mémoriser ce classeur : reconnexion activée. Décochez la reconnexion uniquement pour la désactiver volontairement.
+Administration > Sauvegardes : Sauvegardes automatiques et Vérifier la sauvegarde.
+Compte > Gérer les rôles : choisir compte et autorisation, puis enregistrer.
+Diagnostic : Compatibilité et sauvegardes ; Exporter le diagnostic.
+Administration > Journal : Journal nominatif.
+L’aide intégrée explique ces commandes dans leurs chapitres respectifs.

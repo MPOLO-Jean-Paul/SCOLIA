@@ -1,0 +1,80 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:infra="using:Scolia.Bureau.Infrastructure"
+             xmlns:mi="using:Material.Icons.Avalonia"
+             x:Class="Scolia.Bureau.Views.Phone.ShortcutsView">
+  <UserControl.Styles>
+    <Style Selector="Grid.gesture">
+      <Setter Property="Margin" Value="0,6" />
+    </Style>
+    <Style Selector="Grid.gesture > Border">
+      <Setter Property="Width" Value="36" />
+      <Setter Property="Height" Value="36" />
+      <Setter Property="CornerRadius" Value="10" />
+      <Setter Property="Margin" Value="0,0,12,0" />
+      <Setter Property="VerticalAlignment" Value="Top" />
+    </Style>
+    <Style Selector="Grid.gesture > Border > mi|MaterialIcon">
+      <Setter Property="Width" Value="20" />
+      <Setter Property="Height" Value="20" />
+      <Setter Property="Foreground" Value="{DynamicResource OnToneBrush}" />
+    </Style>
+  </UserControl.Styles>
+  <!-- Aide du mobile : les gestes à la place des raccourcis clavier, et où trouver chaque outil -->
+  <Border Classes="card" infra:Adaptive.FitDialog="True" Width="560" Padding="0" CornerRadius="16" Background="{DynamicResource SurfaceBrush}" ClipToBounds="True">
+    <Grid RowDefinitions="Auto,*,Auto">
+      <Grid ColumnDefinitions="Auto,*,Auto" Margin="18,18,12,6">
+        <Border Classes="appicon large" Background="{DynamicResource ToneBlue}" Margin="0,0,12,0"><mi:MaterialIcon Kind="GestureTap" /></Border>
+        <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+          <TextBlock Text="Aide et gestes" FontSize="17" FontWeight="Bold" />
+          <TextBlock Text="SCOLIA sur le téléphone et la tablette" Classes="muted" />
+        </StackPanel>
+        <Button Grid.Column="2" Classes="closex" Command="{Binding Close}"><mi:MaterialIcon Kind="Close" /></Button>
+      </Grid>
+      <ScrollViewer Grid.Row="1" MaxHeight="560" HorizontalScrollBarVisibility="Disabled" Padding="18,4,18,8">
+        <StackPanel Spacing="4">
+          <TextBlock Text="Gestes" Classes="heading" Margin="0,6,0,2" />
+          <Grid Classes="gesture" ColumnDefinitions="Auto,*">
+            <Border Background="{DynamicResource ToneBlue}"><mi:MaterialIcon Kind="GestureTap" /></Border>
+            <StackPanel Grid.Column="1"><TextBlock Text="Toucher une carte" FontWeight="SemiBold" /><TextBlock Text="Choisit la ligne : un apprenant, un reçu, une dépense." Classes="muted" TextWrapping="Wrap" /></StackPanel>
+          </Grid>
+          <Grid Classes="gesture" ColumnDefinitions="Auto,*">
+            <Border Background="{DynamicResource ToneIndigo}"><mi:MaterialIcon Kind="DotsHorizontal" /></Border>
+            <StackPanel Grid.Column="1"><TextBlock Text="« … » sur une carte, ou appui long" FontWeight="SemiBold" /><TextBlock Text="Ouvre les actions de la ligne : fiche, encaisser, imprimer, relancer, annuler." Classes="muted" TextWrapping="Wrap" /></StackPanel>
+          </Grid>
+          <Grid Classes="gesture" ColumnDefinitions="Auto,*">
+            <Border Background="{DynamicResource ToneGreen}"><mi:MaterialIcon Kind="GestureDoubleTap" /></Border>
+            <StackPanel Grid.Column="1"><TextBlock Text="Double appui" FontWeight="SemiBold" /><TextBlock Text="Ouvre directement la fiche de l'apprenant ou le reçu." Classes="muted" TextWrapping="Wrap" /></StackPanel>
+          </Grid>
+          <Grid Classes="gesture" ColumnDefinitions="Auto,*">
+            <Border Background="{DynamicResource ToneOrange}"><mi:MaterialIcon Kind="DotsHorizontalCircleOutline" /></Border>
+            <StackPanel Grid.Column="1"><TextBlock Text="« … » en haut à droite" FontWeight="SemiBold" /><TextBlock Text="Actions de la page : nouveau, exporter en PDF ou Excel, imprimer, actualiser." Classes="muted" TextWrapping="Wrap" /></StackPanel>
+          </Grid>
+          <Grid Classes="gesture" ColumnDefinitions="Auto,*">
+            <Border Background="{DynamicResource ToneNeutral}"><mi:MaterialIcon Kind="ArrowLeft" /></Border>
+            <StackPanel Grid.Column="1"><TextBlock Text="Bouton Retour du téléphone" FontWeight="SemiBold" /><TextBlock Text="Ferme la fenêtre ou la feuille ouverte, puis revient à la page précédente." Classes="muted" TextWrapping="Wrap" /></StackPanel>
+          </Grid>
+
+          <TextBlock Text="Où trouver les outils" Classes="heading" Margin="0,12,0,2" />
+          <Grid Classes="gesture" ColumnDefinitions="Auto,*">
+            <Border Background="{DynamicResource ToneBlue}"><mi:MaterialIcon Kind="Home" /></Border>
+            <StackPanel Grid.Column="1"><TextBlock Text="Onglets du bas" FontWeight="SemiBold" /><TextBlock Text="Accueil, apprenants, encaissement, reçus : les outils du quotidien, à un appui." Classes="muted" TextWrapping="Wrap" /></StackPanel>
+          </Grid>
+          <Grid Classes="gesture" ColumnDefinitions="Auto,*">
+            <Border Background="{DynamicResource ToneNeutral}"><mi:MaterialIcon Kind="Menu" /></Border>
+            <StackPanel Grid.Column="1"><TextBlock Text="Menu" FontWeight="SemiBold" /><TextBlock Text="Tous les outils, rangés par métier, puis les commandes : nouvelle inscription, nouvelle dépense, exports, sauvegardes, contrôles." Classes="muted" TextWrapping="Wrap" /></StackPanel>
+          </Grid>
+          <Grid Classes="gesture" ColumnDefinitions="Auto,*">
+            <Border Background="{DynamicResource ToneTeal}"><mi:MaterialIcon Kind="Magnify" /></Border>
+            <StackPanel Grid.Column="1"><TextBlock Text="Loupe" FontWeight="SemiBold" /><TextBlock Text="Retrouve un apprenant, un reçu ou un outil par son nom." Classes="muted" TextWrapping="Wrap" /></StackPanel>
+          </Grid>
+          <Grid Classes="gesture" ColumnDefinitions="Auto,*">
+            <Border Background="{DynamicResource ToneGreen}"><mi:MaterialIcon Kind="Wifi" /></Border>
+            <StackPanel Grid.Column="1"><TextBlock Text="Wi-Fi de l'établissement" FontWeight="SemiBold" /><TextBlock Text="Le téléphone travaille sur la base de l'ordinateur principal : il doit rester sur le même Wi-Fi." Classes="muted" TextWrapping="Wrap" /></StackPanel>
+          </Grid>
+        </StackPanel>
+      </ScrollViewer>
+      <Button Grid.Row="2" Classes="primary" Content="Compris" Command="{Binding Close}" HorizontalAlignment="Stretch" Height="44" Margin="18,8,18,18" HorizontalContentAlignment="Center" />
+    </Grid>
+  </Border>
+</UserControl>

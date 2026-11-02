@@ -1,0 +1,16 @@
+﻿COHÉRENCE DU THÈME SOMBRE
+
+Textes des titres, valeurs et groupes : dessin explicite avec contraste contrôlé, y compris lorsque leur zone est désactivée. Les informations restent lisibles sans rendre actives les commandes indisponibles.
+
+Listes déroulantes : fond et texte cohérents dans le champ et la liste, avec un état sélectionné contrasté. Les tableaux appliquent aussi les couleurs aux lignes et aux en-têtes sélectionnés.
+
+Boutons désactivés, barre d’état et traits des graphiques : couleurs adaptées au fond sombre. Retour au thème clair prévu sans modification des données.
+
+Remplacer programme et documentation, application fermée. Conserver data et sources. Aucun changement du classeur nécessaire.
+
+Syntaxe et contrastes contrôlés dans cet environnement. La peinture native Windows reste à vérifier sur le poste.
+
+Nuances du thème sombre
+Le fond général est bleu ardoise, le ruban légèrement plus clair, les surfaces de contenu et les champs distincts. Les titres, textes secondaires, séparateurs, lignes alternées, sélections et commandes principales possèdent des couleurs dédiées. Les états de survol, de sélection, de focus et de désactivation restent visibles. Les fenêtres ouvertes prennent les nouvelles couleurs immédiatement.
+Les dimensions, alignements, formes rectangulaires et groupes de commandes sont conservés. Le retour au thème clair restaure les couleurs initiales. Les sélecteurs de date et dialogues natifs gardent le rendu Windows.
+Vérification Windows : programme\TestsNuancesSombres.ps1 teste les couleurs, le retour au thème clair et la conservation de la géométrie. Ce test nécessite Windows ; il n’a pas été exécuté dans l’environnement de préparation Linux.

@@ -1,0 +1,193 @@
+﻿Option Explicit
+' The desktop opens every registered segment before calling a business API.
+' An ordinary workbook keeps its existing single-file behaviour.
+Public Function ITMClasseurs() As Collection
+    Dim result As New Collection, livre As Workbook, groupe As String, autre As String, attendu As Long
+    On Error Resume Next
+    groupe = CStr(ThisWorkbook.CustomDocumentProperties("ITM_DataSet").Value)
+    attendu = CLng(ThisWorkbook.CustomDocumentProperties("ITM_SegmentCount").Value)
+    On Error GoTo 0
+    If groupe = "" Then
+        result.Add ThisWorkbook
+    Else
+        For Each livre In Application.Workbooks
+            autre = ""
+            On Error Resume Next
+            autre = CStr(livre.CustomDocumentProperties("ITM_DataSet").Value)
+            On Error GoTo 0
+            If autre = groupe And LCase$(livre.Path) = LCase$(ThisWorkbook.Path) Then result.Add livre
+        Next livre
+        If attendu < 1 Or result.Count <> attendu Then Err.Raise vbObjectError + 1200, , "Un classeur du dossier data est absent. Ouvrez les donnees depuis APPLICATION.vbs. Aucun calcul partiel n'est autorise."
+    End If
+    Set ITMClasseurs = result
+End Function
+Public Sub ITMSetProperty(ByVal livre As Workbook, ByVal nom As String, ByVal valeur As Variant)
+    Dim prop As Object, typ As Long
+    On Error Resume Next
+    Set prop = livre.CustomDocumentProperties(nom)
+    On Error GoTo 0
+    If prop Is Nothing Then
+        typ = 4
+        If VarType(valeur) = vbBoolean Then typ = 2
+        If IsNumeric(valeur) And VarType(valeur) <> vbString Then typ = 1
+        livre.CustomDocumentProperties.Add nom, False, typ, valeur
+    Else
+        prop.Value = valeur
+    End If
+End Sub
+Public Function ITMAppCapacite() As String
+    ITMAppCapacite = "{""learners"":" & Application.Max(0, ITMDerniereLigne(ThisWorkbook.Worksheets("APPRENANTS")) - 4) & ",""payments"":" & Application.Max(0, ITMDerniereLigne(ThisWorkbook.Worksheets("PAIEMENTS")) - 4) & "}"
+End Function
+Private Sub SVider(ByVal livre As Workbook, ByVal nom As String, ByVal colonnes As Long)
+    Dim w As Worksheet
+    Set w = livre.Worksheets(nom)
+    w.Range(w.Cells(5, 1), w.Cells(Application.Max(5, ITMDerniereLigne(w)), colonnes)).ClearContents
+    If w.ListObjects.Count = 1 Then w.ListObjects(1).Resize w.Range(w.Cells(4, 1), w.Cells(5, colonnes))
+End Sub
+Public Function ITMAppSegment(ByVal chemin As String) As String
+    Dim livre As Workbook, w As Worksheet, texte As String
+    On Error GoTo EH
+    If Dir$(chemin) <> "" Then Err.Raise vbObjectError + 1201, , "Le fichier suivant existe deja."
+    ThisWorkbook.SaveCopyAs chemin
+    Set livre = Application.Workbooks.Open(chemin, UpdateLinks:=0, ReadOnly:=False)
+    If livre.ReadOnly Then Err.Raise vbObjectError + 1202, , "Le nouveau classeur est en lecture seule."
+    SVider livre, "APPRENANTS", 15
+    SVider livre, "PAIEMENTS", 14
+    On Error Resume Next
+    Set w = livre.Worksheets("JOURNAL_ITM")
+    On Error GoTo EH
+    If Not w Is Nothing Then w.Range("A2:I" & Application.Max(2, w.Cells(w.Rows.Count, 1).End(xlUp).Row)).ClearContents
+    livre.Save
+    ITMAppSegment = "{""ok"":true}": Exit Function
+EH:
+    texte = Err.Description
+    On Error Resume Next
+    If Not livre Is Nothing Then livre.Close False
+    On Error GoTo 0
+    ITMAppSegment = "{""ok"":false,""error"":" & ModuleApplicationITM.ITMAppEncoder(texte) & "}"
+End Function
+Private Sub SCopier(ByVal src As Worksheet, ByVal dest As Worksheet, ByVal columns As Long, ByRef row As Long, Optional ByVal mat As String = "")
+    Dim dernier As Long, r As Long, mc As Long
+    dernier = ITMDerniereLigne(src): mc = IIf(columns = 15, 1, 4)
+    If mat = "" And dernier >= 5 Then
+        If row + dernier - 5 > dest.Rows.Count Then Err.Raise vbObjectError + 1203, , "La consolidation annuelle depasse la capacite d'une feuille Excel. Aucune donnee n'a ete modifiee."
+        dest.Range(dest.Cells(row, 1), dest.Cells(row + dernier - 5, columns)).Value2 = src.Range(src.Cells(5, 1), src.Cells(dernier, columns)).Value2
+        row = row + dernier - 4
+    ElseIf mat <> "" Then
+        For r = 5 To dernier
+            If ITMCleTexte(src.Cells(r, mc).Value2) = ITMCleTexte(mat) Then
+                If row > dest.Rows.Count Then Err.Raise vbObjectError + 1203, , "Historique trop volumineux pour la consolidation."
+                dest.Range(dest.Cells(row, 1), dest.Cells(row, columns)).Value2 = src.Range(src.Cells(r, 1), src.Cells(r, columns)).Value2
+                row = row + 1
+            End If
+        Next r
+    End If
+End Sub
+Public Function ITMAppConsolider(ByVal chemin As String, Optional ByVal mat As String = "") As String
+    Dim livres As Collection, livre As Workbook, copy As Workbook, w As Worksheet
+    Dim row As Long, nom As Variant, cols As Long, r As Long, maxID As Long, texte As String
+    On Error GoTo EH
+    Set livres = ITMClasseurs()
+    If Dir$(chemin) <> "" Then Err.Raise vbObjectError + 1201, , "Ce fichier temporaire existe deja."
+    ThisWorkbook.SaveCopyAs chemin
+    Set copy = Application.Workbooks.Open(chemin, UpdateLinks:=0, ReadOnly:=False)
+    If copy.ReadOnly Then Err.Raise vbObjectError + 1202, , "Copie en lecture seule."
+    copy.CustomDocumentProperties("ITM_DataSet").Delete
+    copy.CustomDocumentProperties("ITM_SegmentCount").Delete
+    For Each nom In Array("APPRENANTS", "PAIEMENTS")
+        cols = IIf(nom = "APPRENANTS", 15, 14): SVider copy, CStr(nom), cols
+        Set w = copy.Worksheets(CStr(nom)): row = 5
+        For Each livre In livres
+            SCopier livre.Worksheets(CStr(nom)), w, cols, row, mat
+        Next livre
+        If w.ListObjects.Count = 1 Then w.ListObjects(1).Resize w.Range(w.Cells(4, 1), w.Cells(Application.Max(5, row - 1), cols))
+        If nom = "APPRENANTS" Then
+            w.Range("F5:F" & Application.Max(5, row - 1)).NumberFormat = "dd/mm/yyyy"
+            w.Range("L5:L" & Application.Max(5, row - 1)).NumberFormat = "dd/mm/yyyy"
+        Else
+            w.Range("B5:B" & Application.Max(5, row - 1)).NumberFormat = "dd/mm/yyyy"
+        End If
+    Next nom
+    For Each livre In livres
+        Set w = livre.Worksheets("PAIEMENTS")
+        For r = 5 To ITMDerniereLigne(w)
+            If IsNumeric(w.Cells(r, 1).Value2) Then If CLng(w.Cells(r, 1).Value2) > maxID Then maxID = CLng(w.Cells(r, 1).Value2)
+        Next r
+    Next livre
+    ITMSetProperty copy, "ITM_GlobalMaxID", maxID
+    copy.Save
+    ITMAppConsolider = "{""ok"":true}": Exit Function
+EH:
+    texte = Err.Description
+    On Error Resume Next
+    If Not copy Is Nothing Then copy.Close False
+    On Error GoTo 0
+    ITMAppConsolider = "{""ok"":false,""error"":" & ModuleApplicationITM.ITMAppEncoder(texte) & "}"
+End Function
+' Native installation smoke test: uses disposable copies, never real learner rows.
+Public Function ITMTesterStockage() As Boolean
+    Dim a As Workbook, b As Workbook, w As Worksheet, d As Object, groupe As String
+    Dim folder As String, pa As String, pb As String, resultat As String, erreur As String
+    Dim oldSecurity As Long, fso As Object, v As Variant, r As Long, i As Long
+    On Error GoTo EH
+    oldSecurity = Application.AutomationSecurity: Application.AutomationSecurity = 1
+    Set fso = CreateObject("Scripting.FileSystemObject")
+    folder = Environ$("TEMP") & Application.PathSeparator & fso.GetTempName
+    fso.CreateFolder folder
+    pa = folder & Application.PathSeparator & "test-a.xlsm": pb = folder & Application.PathSeparator & "test-b.xlsm"
+    resultat = ITMAppSegment(pa)
+    If InStr(resultat, """ok"":true") = 0 Then Err.Raise vbObjectError + 1210, , resultat
+    Set a = Application.Workbooks("test-a.xlsm")
+    resultat = ITMAppSegment(pb)
+    If InStr(resultat, """ok"":true") = 0 Then Err.Raise vbObjectError + 1211, , resultat
+    Set b = Application.Workbooks("test-b.xlsm")
+    groupe = fso.GetTempName
+    On Error Resume Next
+    a.CustomDocumentProperties("ITM_AnneeCloturee").Delete
+    b.CustomDocumentProperties("ITM_AnneeCloturee").Delete
+    On Error GoTo EH
+    For i = 1 To 2
+        If i = 1 Then Set w = a.Worksheets("PROMOTIONS") Else Set w = b.Worksheets("PROMOTIONS")
+        w.Range("A5:H" & Application.Max(5, ITMDerniereLigne(w))).ClearContents
+        w.Range("A5:H5").Value = Array("TST1", "TEST", "", "", "2026-2027", 10000, 90000, "ACTIVE")
+        If i = 1 Then Set w = a.Worksheets("APPRENANTS") Else Set w = b.Worksheets("APPRENANTS")
+        w.Range("A5:O5").NumberFormat = "@"
+        w.Range("A5:O5").Value = Array("TST10" & i, "TEST", "DOSSIER", IIf(i = 1, "ALPHA", "BETA"), "M", "", "LUBUMBASHI", "TST1", "PARENT", "0990000000", "", "", "2026-2027", "Actif", "ADRESSE")
+        w.Cells(5, 6).Value = DateSerial(2005, 1, i): w.Cells(5, 12).Value = Date
+        w.Cells(5, 6).NumberFormat = "dd/mm/yyyy": w.Cells(5, 12).NumberFormat = "dd/mm/yyyy"
+        If i = 1 Then Set w = a.Worksheets("PAIEMENTS") Else Set w = b.Worksheets("PAIEMENTS")
+        w.Range("A5:N5").Value = Array(i, CDbl(Date), "TEST" & i, "TST101", "TEST DOSSIER ALPHA", "TST1", "Septembre", 10000, 2500, 7500, "LITIGE", 2500 * i, 90000, 90000 - 2500 * i)
+        w.Cells(5, 2).NumberFormat = "dd/mm/yyyy"
+    Next i
+    ITMSetProperty a, "ITM_DataSet", groupe: ITMSetProperty b, "ITM_DataSet", groupe
+    ITMSetProperty a, "ITM_SegmentCount", 2: ITMSetProperty b, "ITM_SegmentCount", 2
+    Set d = Application.Run("'test-a.xlsm'!ModuleExportsFiables.ITMChargerDonnees")
+    If d("personnes").Count <> 2 Or d("sommes")("TST101|SEPTEMBRE") <> 5000 Then Err.Raise vbObjectError + 1212, , "La lecture commune des classeurs a echoue."
+    resultat = Application.Run("'test-b.xlsm'!ModuleApplicationITM.ITMAppPaiement", "TST101", 5000, Format$(Date, "yyyy-mm-dd"))
+    If InStr(resultat, """ok"":true") = 0 Then Err.Raise vbObjectError + 1213, , "Paiement inter-classeurs : " & resultat
+    Set d = Application.Run("'test-a.xlsm'!ModuleExportsFiables.ITMChargerDonnees")
+    If d("sommes")("TST101|SEPTEMBRE") <> 10000 Then Err.Raise vbObjectError + 1214, , "Solde global incorrect apres paiement."
+    resultat = Application.Run("'test-b.xlsm'!ModuleApplicationITM.ITMAppDossier", "", "TEST", "NOUVEAU", "GAMMA", "F", "01/01/2006", "LUBUMBASHI", "PARENT", "0990000000", "", "TST1", "2026-2027", "Actif", "ADRESSE")
+    If InStr(resultat, """matricule"":""TST103""") = 0 Then Err.Raise vbObjectError + 1215, , "Matricule global non unique : " & resultat
+    resultat = Application.Run("'test-a.xlsm'!ModuleApplicationITM.ITMAppVerifierRapport", "", "", 3)
+    If InStr(resultat, """rows"":3") = 0 Then Err.Raise vbObjectError + 1216, , "Export global incomplet : " & resultat
+    b.Close False: Set b = Nothing
+    On Error Resume Next
+    Set d = Application.Run("'test-a.xlsm'!ModuleExportsFiables.ITMChargerDonnees")
+    r = Err.Number: Err.Clear
+    On Error GoTo EH
+    If r = 0 Then Err.Raise vbObjectError + 1217, , "Un classeur manquant n'a pas bloque le calcul partiel."
+    a.Close False: Set a = Nothing
+    fso.DeleteFolder folder, True
+    Application.AutomationSecurity = oldSecurity
+    ITMTesterStockage = True: Exit Function
+EH:
+    erreur = Err.Description
+    On Error Resume Next
+    If Not a Is Nothing Then a.Close False
+    If Not b Is Nothing Then b.Close False
+    If Not fso Is Nothing And folder <> "" Then fso.DeleteFolder folder, True
+    Application.AutomationSecurity = oldSecurity
+    On Error GoTo 0
+    Err.Raise vbObjectError + 1218, , "Test natif stockage : " & erreur
+End Function

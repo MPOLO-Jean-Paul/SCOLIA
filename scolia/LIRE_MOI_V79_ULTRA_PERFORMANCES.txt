@@ -1,0 +1,58 @@
+SCOLIA V79 — ULTRA PERFORMANCES + DOSSIER MODIFIABLE APRÈS PAIEMENT
+
+Extraire cette édition dans un NOUVEAU dossier puis lancer APPLICATION comme
+habituellement. Reconnecter ensuite le dossier de données de l'établissement.
+Ne remplacez jamais les données réelles par les classeurs d'exemple du paquet.
+
+CORRECTION MÉTIER PRINCIPALE
+1. Un paiement historique ne verrouille plus le dossier de l'apprenant.
+2. Après un paiement, les champs du dossier restent modifiables : identité,
+   contacts, adresse, statut, promotion et année scolaire.
+3. Lors d'une correction d'identité, le nom affiché sur les lignes de paiements
+   rattachées est actualisé de manière ciblée.
+4. La promotion inscrite sur un ancien paiement reste celle enregistrée au moment
+   du reçu : l'historique comptable n'est pas réécrit artificiellement.
+5. Les nouveaux paiements utilisent la promotion actuellement enregistrée dans le
+   dossier de l'apprenant.
+6. La règle propre aux prises en charge reste distincte : une prise en charge déjà
+   enregistrée peut encore imposer la conservation de l'année/promotion selon le
+   processus métier existant.
+
+PERFORMANCES V79
+- Encaissement : suppression du rechargement intégral de la base avant chaque reçu.
+  Les lectures Excel portent maintenant sur les colonnes et lignes utiles.
+- Dossiers : suppression d'une copie de récupération redondante lorsqu'une
+  transaction de stockage SCOLIA protège déjà l'écriture.
+- Recalcul : remplacement du recalcul global d'Excel par celui du classeur concerné.
+- Formules : plus de recopie intégrale des formules après chaque écriture ; elles
+  sont étendues uniquement quand la table des apprenants grandit réellement.
+- Numéros de reçu : recherche limitée à la plage réellement utilisée.
+- Index en mémoire : accès direct par matricule et par identité pour les opérations
+  courantes au lieu de rescanner toute la liste des apprenants. Après un paiement,
+  le dossier, ses reçus et ses soldes sont actualisés de manière différentielle : les
+  objets existants restent en place et seuls les nouveaux éléments sont ajoutés.
+  Les index apprenants/paiements/soldes restent donc chauds sans reconstruction globale.
+- Tableaux : suppression de l'auto-dimensionnement permanent des lignes. La mesure
+  est faite lors d'un changement de données, pas à chaque peinture/défilement.
+- Interface : regroupement des recalculs de disposition d'une même trame Windows.
+- Recherches : temporisation courte de 45 ms pour regrouper les frappes successives.
+- Scolarité : liste triée, promotions et doublons mis en cache ; une simple recherche
+  ne relit plus les fichiers de discipline à chaque caractère saisi.
+- Cours/attributions, Discipline, paiements multiples et prises en charge : filtrage
+  regroupé pour éviter les séries de traitements complets pendant la frappe.
+- Paiements multiples : clé de recherche préparée une seule fois par ligne au lieu de
+  reconstruire le texte de recherche à chaque caractère.
+- Diagnostics : les durées sont consignées dans performance-v79.csv.
+
+VALIDATION LOCALE WINDOWS
+Lancer : 00_Demarrage\VERIFIER_PERFORMANCES_V79.cmd
+Ce contrôle exécute les tests de syntaxe et les régressions ciblées sur les modules
+modifiés. Les contrôles statiques et d'intégrité du paquet ont été effectués lors de
+la préparation de cette édition. La validation Excel/WinForms réelle doit être faite
+sur Windows avec une copie représentative de la base de l'établissement.
+
+REMARQUE
+Aucune application Excel/WinForms ne peut garantir mathématiquement « zéro latence »
+sur tout matériel. V79 retire les principales causes de lenteur identifiées dans les
+clics, recherches, ouvertures de pages et enregistrements, tout en conservant les
+contrôles de cohérence et les mécanismes de récupération.

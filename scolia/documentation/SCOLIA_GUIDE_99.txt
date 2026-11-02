@@ -1,0 +1,322 @@
+﻿SCOLIA — GESTION SCOLAIRE ET COMPTABLE
+Édition 99
+
+1. INSTALLATION ET PREMIÈRE CONNEXION
+Décompressez entièrement SCOLIA.zip. Lancez APPLICATION.vbs : aucune fenêtre
+CMD à ouvrir. Windows PowerShell 5.1, .NET Framework 4 et Microsoft Excel
+avec macros sont nécessaires aux fonctions utilisant les classeurs.
+La caisse et la configuration utilisent un journal de fichiers indépendant.
+
+Au premier démarrage, le logiciel ouvre la configuration sans demander de mot
+de passe. Étape 1 : nom de l'école, année scolaire, nombre de mensualités
+(1 à 12), premier mois, classes et tarif mensuel en FC. Une ligne par classe :
+INF1;50000
+ACC1;45000
+Utilisez un code unique de quatre lettres/chiffres, compatible avec les
+matricules existants. Les montants sont des FC entiers positifs.
+Le total annuel payant est le tarif mensuel multiplié par le nombre de mois.
+Ces exemples expliquent la saisie ; aucun tarif n'est imposé à votre école.
+
+Étape 2 : deux comptes séparés, compte Mixte, Secrétariat seul ou Comptabilité
+seule. Pour chaque compte, choisissez libre ou protégé. Un compte protégé
+exige un mot de passe d'au moins huit caractères et sa confirmation.
+Les champs inutiles à l'organisation choisie sont masqués.
+
+Après configuration : sélectionnez le compte. Le champ Mot de passe apparaît
+uniquement pour un compte protégé. Cliquez sur Se connecter pour ouvrir son
+espace. Cinq erreurs successives suspendent les tentatives pendant cinq
+minutes sur ce poste. Le bouton Compte permet de changer d'espace.
+
+2. RÔLES ET ESPACES
+Secrétariat : apprenants, suivi des paiements reçus, exports, diagnostic,
+scolarité, administration, préférences et données.
+Comptabilité : tableau des opérations, encaissements, dépenses, journal,
+reçus, diagnostic, administration, préférences et données.
+Mixte : les deux espaces dans une seule interface ; les paiements passent
+par le même mécanisme de réception interne, sans saisie scolaire en double.
+
+Dans SCOLIA, les nouveaux paiements se saisissent dans Comptabilité > Encaisser.
+Le formulaire scolaire de paiement manuel ne crée plus de versements.
+Les anciennes fonctionnalités de consultation restent disponibles.
+Les reçus importés sont protégés contre la correction locale au secrétariat,
+pour conserver leur concordance avec le journal partagé. Les écritures de
+caisse validées sont conservées ; cette édition ne propose pas encore leur
+annulation comptable. Vérifiez donc identité, classe, montant et référence
+avant l'enregistrement. Les corrections des anciens reçus restent possibles.
+
+3. CLASSEUR DU SECRÉTARIAT
+Fermez Excel. Pour conserver vos données, préparez VOTRE classeur actuel avec
+INSTALLER.vbs, puis connectez sa copie corrigée depuis Données. Ne remplacez
+jamais une base remplie par le modèle de ressources.
+Une nouvelle base vide, générée et préparée depuis Données, reçoit les classes
+et mensualités SCOLIA automatiquement lors de sa connexion si elles diffèrent.
+Configuration SCOLIA permet également de les appliquer explicitement.
+Une base contenant des paiements n'est pas réécrite : alignez les paramètres
+SCOLIA sur ses tarifs/calendrier existants, ou préparez une nouvelle année.
+Les classes contenant déjà des apprenants doivent être conservées.
+Le nom et le logo de l'école sont personnalisables dans Administration ; le
+logo de l'école reste distinct de l'icône de l'application SCOLIA.
+
+La mémorisation/reconnexion du classeur et les sauvegardes existantes sont
+conservées. Le poste de comptabilité peut tenir sa caisse sans ouvrir Excel ;
+le secrétariat doit connecter sa base pour intégrer les paiements reçus.
+Connectez d'abord la base actuelle du secrétariat afin de publier les identités
+et les soldes antérieurs avant d'encaisser pour des apprenants déjà inscrits.
+
+4. DEUX ORDINATEURS SUR LE MÊME RÉSEAU
+Sur le poste principal, créez un dossier, par exemple D:\SCOLIA_PARTAGE.
+Dans Windows, partagez ce dossier avec les utilisateurs autorisés et accordez
+les droits de lecture/écriture au partage ET aux fichiers. Sélectionnez cet
+emplacement lors de la première configuration. Un chemin réseau UNC est
+conseillé, par exemple \\POSTE_PRINCIPAL\SCOLIA_PARTAGE.
+
+Sur le deuxième poste, installez la même édition. À la première configuration,
+cliquez Rejoindre une configuration SCOLIA existante puis sélectionnez
+profil-scolia.json dans ce même dossier partagé. Ne créez pas une deuxième
+configuration pour la même école. Les deux postes utilisent la même identité,
+les mêmes comptes, tarifs et calendrier. Chaque poste conserve ses réglages
+locaux d'affichage et de récupération automatique.
+
+Le secrétariat garde son dossier de classeurs Excel. Le partage SCOLIA contient
+la configuration, le journal de caisse et le répertoire des identités/soldes.
+Ne faites pas ouvrir simultanément le même classeur Excel par deux postes.
+Gardez le poste qui héberge le partage disponible ; le même réseau ne suffit
+pas si Windows refuse l'accès au dossier ou si ce poste est éteint.
+
+Le logiciel vérifie le partage en arrière-plan toutes les deux secondes ;
+la réception dépend aussi du temps de lecture réseau et du traitement Excel.
+Ce fonctionnement actualise les paiements régulièrement, sans promettre une
+latence nulle. En cas de réseau indisponible, les écritures déjà validées sont
+conservées ; l'import attend le retour du partage et de la base scolaire.
+
+5. ENCAISSEMENTS ET DÉPENSES
+Dans Comptabilité > Encaisser, sélectionnez un apprenant du répertoire, ou
+saisissez nom, post-nom, prénom et classe. Ces quatre informations sont
+obligatoires. Les autres champs du dossier sont facultatifs à ce stade.
+Entrez date, référence de caisse unique et montant en FC.
+Le logiciel affecte le paiement aux mensualités restantes dans l'ordre scolaire,
+en déduisant les versements antérieurs et les mensualités prises en charge
+connues. Un dépassement du reste annuel ou une référence déjà utilisée pour
+le même type d'opération et la même année est refusé.
+
+Chaque opération possède aussi un identifiant technique unique. Les accès
+simultanés sont sérialisés par un verrou du journal ; si un autre poste écrit,
+la commande peut demander de réessayer après libération du journal.
+Un fichier d'opération est publié seulement après son écriture complète.
+
+Nouvelle dépense : date, référence, montant et objet/catégorie obligatoire.
+Le tableau de bord de comptabilité présente recettes, dépenses et solde des
+opérations du journal SCOLIA. Les anciens paiements servent aux soldes élèves,
+mais ne sont pas inventés comme nouvelles recettes dans ce journal.
+Journal CSV exporte les écritures de l'année. Reçu / imprimer affiche la pièce
+sélectionnée ; choisissez Microsoft Print to PDF pour un exemplaire PDF.
+
+Cette édition assure une caisse scolaire et ses transferts, pas une comptabilité
+légale complète en partie double : plan comptable, bilan et états réglementaires
+ne sont pas inclus dans cette évolution.
+
+6. RÉCEPTION ET BROUILLONS
+Un paiement d'un apprenant reconnu par nom, post-nom, prénom, classe et année
+est reçu automatiquement quand la base du secrétariat est connectée et ouverte.
+Si le dossier n'existe pas, le transfert reste dans Données > Transférés en
+brouillon. Sélectionnez un transfert puis Importer la sélection pour créer le
+dossier et intégrer le paiement. Aucun nouveau paiement manuel n'est requis.
+
+Préférences > Récupération automatique permet de créer aussi les dossiers
+absents sans sélection individuelle. Les informations manquantes sont
+signalées dans Diagnostic et complétables dans Apprenants > Modifier.
+Les identités ambiguës ou les erreurs de rapprochement ne sont pas forcées :
+elles restent à vérifier dans les brouillons.
+Le numéro unique est inscrit dans le journal du classeur avec les paiements,
+puis l'accusé de réception est conservé localement. La reprise d'un transfert
+validé ne doit donc pas créer une deuxième écriture.
+Les prises en charge existantes restent gérées sur leurs dix mois historiques
+(septembre à juin) ; un calendrier différent n'étend pas automatiquement cette
+couverture aux autres mois. Les soldes payants suivent le calendrier configuré.
+
+7. INTERRUPTION ET REPRISE
+Si le réseau se coupe pendant un enregistrement, ne ressaisissez pas ce paiement.
+La caisse conserve une opération en attente. Cliquez Vérifier opération en
+attente. Le logiciel relit le journal : s'il retrouve l'identifiant, il confirme
+l'enregistrement ; sinon, après une lecture réussie, vous pouvez lever le
+blocage et saisir de nouveau. Si le partage reste inaccessible, le blocage
+est conservé. Le même contrôle est disponible après un redémarrage.
+Les fichiers temporaires incomplets ne sont pas utilisés comme reçus.
+
+8. PARAMÈTRES ET SÉCURITÉ
+Administration > Paramètres SCOLIA permet de modifier nom de l'école, année,
+classes, mensualités et protection des comptes existants. Pour modifier ou
+désactiver la protection d'un compte déjà verrouillé, fournissez son mot de
+passe actuel. Un changement sur l'autre poste rend la session précédente
+périmée : utilisez Compte pour vous reconnecter.
+Les tarifs/calendriers d'une année ayant des écritures de caisse sont protégés.
+Utilisez une nouvelle année et une base correspondante pour un autre tarif.
+
+Les mots de passe sont conservés sous forme de dérivés PBKDF2, jamais en clair.
+Les droits SCOLIA s'appliquent dans l'interface. Les autorisations Windows du
+dossier partagé protègent les fichiers eux-mêmes : limitez-les aux personnes
+habilitées. Le contrôle d'intégrité détecte une altération accidentelle ; il
+ne constitue pas une signature contre une personne pouvant réécrire tous les
+fichiers du partage. La configuration initiale définit les comptes métier ;
+les paramètres courants permettent de changer leur protection, pas de convertir
+une organisation séparée en Mixte à la volée.
+
+9. SAUVEGARDES ET MISE À JOUR
+Conservez la totalité des dossiers data et configuration, votre logo personnalisé,
+les sources utiles et le dossier partagé SCOLIA. Une sauvegarde des seuls
+classeurs Excel n'inclut pas le journal de caisse indépendant.
+Pour une copie cohérente du partage, fermez SCOLIA sur les deux postes avant
+la sauvegarde. Copiez aussi les états de réception conservés avec la base.
+Lors d'une mise à jour, extrayez dans un nouveau dossier et recopiez vos données
+et configuration existantes sans effacer la version précédente. Le profil
+partagé existant est conservé : utilisez son emplacement, ne le recréez pas.
+
+10. RACCOURCIS
+Encaisser : Ctrl+Alt+P. Dépense : Ctrl+Alt+E. Journal CSV : Ctrl+Alt+J.
+Reçu : Ctrl+Alt+R. Brouillons : Ctrl+Alt+B. Paramètres : Ctrl+Alt+F2.
+Configuration du classeur : Ctrl+Alt+F3. À propos : Ctrl+Alt+A.
+Vérifier une opération en attente : Ctrl+Alt+V.
+Les infobulles des commandes du ruban indiquent leur fonction et raccourci.
+
+11. VÉRIFICATIONS DE CETTE ÉDITION
+Tests exécutés : syntaxe PowerShell, comptes libres/protégés avec vraie
+vérification de mot de passe, droits métier, persistance, calendrier, reports
+de soldes antérieurs, références uniques, surpaiement, concurrence, session
+périmée, intégrité du journal, orchestration d'import avec Excel simulé,
+catalogue des commandes et compilation C#5/.NET4 des nouveaux contrôles.
+Le champ mot de passe est testé pour masquage, révélation et effacement.
+Les classeurs sources sont conservés à l'identique.
+L'exécution complète avec Microsoft Excel sous Windows et deux vrais postes
+sur un partage SMB n'a pas été réalisée dans cet environnement de préparation.
+Un contrôle sur ces postes reste nécessaire avant usage en production.
+
+À PROPOS
+SCOLIA — Gestion scolaire et comptable.
+Apprenants, promotions, suivi financier, prises en charge, cartes d'accès aux
+examens, notes, délibération, exports, diagnostics et sauvegardes.
+Programmeur : Jean Paul MPOLO LONO
+Phone : +243 977 152 825
+Email : jeanpaulmpolo242@gmail.com
+
+13. TRANSFERTS, ANNÉES ET REPRISE APRÈS ERREUR — ÉDITION 97
+Dans Données > Transférés en brouillon, le sélecteur d'année permet de
+consulter les transferts de chaque année, y compris ceux des années antérieures.
+À l'ouverture, le journal partagé est relu en arrière-plan. Le bouton
+Actualiser le partage effectue une nouvelle lecture réseau : il ne se limite
+plus aux données déjà affichées. En cas de coupure, la liste précédente est
+conservée ; reconnectez le réseau puis cliquez à nouveau sur Actualiser.
+
+La réception automatique concerne seulement l'année du classeur connecté.
+Les transferts des autres années restent dans le journal, sans être tentés
+ni déclarés en erreur. Un classeur fermé ou dont les promotions définissent
+plusieurs années bloque cette réception. Vérifiez sa configuration.
+
+Pour reprendre un transfert en erreur : corrigez la cause indiquée, connectez
+le classeur de son année, sélectionnez la ligne puis cliquez sur
+Importer / réessayer la sélection. Confirmez l'import. La référence technique
+d'origine est conservée : la passerelle reconnaît un paiement déjà intégré,
+même après interruption de l'accusé de réception. Ne ressaisissez pas le
+paiement à la caisse pour le débloquer. Les erreurs ne sont pas réessayées
+en boucle automatiquement.
+
+Dans Comptabilité, la pièce imprimée correspond au type d'opération et à
+l'année de la ligne sélectionnée. Un paiement et une dépense portant la même
+référence sont distingués. Une pièce ambiguë est bloquée : actualisez le
+journal avant de sélectionner à nouveau. Le titre précise PAIEMENT ou DÉPENSE.
+
+14. FIABILITÉ DES PARAMÈTRES ET CONNEXIONS — ÉDITION 98
+La période de blocage après cinq mots de passe incorrects concerne seulement
+le compte choisi et l'établissement courant. Le secrétariat reste accessible
+si le compte comptabilité est temporairement bloqué, et inversement.
+Le délai de cinq minutes est enregistré en UTC pour éviter les décalages.
+Lorsqu'un compte est laissé libre, aucun ancien blocage par mot de passe
+n'empêche sa connexion. La protection choisie dans les paramètres prend
+également effet pour le verrouillage de la session courante.
+
+Le formulaire de connexion relit la configuration partagée à son ouverture.
+Si la protection d'un compte a changé sur un autre poste, les champs de
+connexion sont actualisés après la tentative. Les comptes et leurs mots de
+passe restent ceux du dossier SCOLIA configuré.
+
+Chaque tentative d'enregistrement des paramètres utilise une copie
+indépendante du profil initial. Une erreur de saisie ou de mot de passe
+ne modifie pas le profil en mémoire utilisé pour la tentative suivante.
+Le mot de passe actuel reste nécessaire pour modifier la protection d'un
+compte protégé, même après une tentative précédente incomplète.
+
+Les tarifs, le nombre de mensualités et le premier mois scolaire restent
+protégés lorsqu'il existe des écritures ou des mensualités prises en charge.
+Changer seulement les espaces dans « 2026 - 2027 » ne crée pas une nouvelle
+année et ne permet pas de modifier ces éléments. Le changement de nom de
+l'établissement reste possible ; les changements de tarifs se font pour
+une nouvelle année sans réécrire les obligations de l'année précédente.
+
+Un dossier réseau manquant, une configuration inaccessible ou celle d'une
+autre institution provoquent une erreur de lecture. Ils ne sont pas
+interprétés comme une caisse ou un répertoire vide. En cas d'opération
+en attente, le blocage est conservé tant que le journal n'a pas pu être
+vérifié. Reconnectez le réseau puis utilisez Vérifier opération en attente.
+
+Après changement d'année dans Administration, connectez le classeur de
+l'année courante. Le répertoire partagé est publié uniquement depuis une
+base dont l'année correspond à la configuration actuelle. L'ancien classeur
+ne peut pas remplacer ce répertoire par des données de l'année passée.
+
+15. ASSISTANT RÉSEAU AUTOMATIQUE — ÉDITION 99
+
+Sur le poste qui conserve les données :
+1. Ouvrez Données > Configurer le réseau (Ctrl+Alt+F5).
+   Au premier lancement, utilisez Assistant réseau automatique dans Configuration.
+2. Choisissez Héberger. Le dossier SCOLIA déjà configuré est repris sans déplacer
+   ni recréer vos données. Lors de la configuration initiale, choisissez un dossier
+   local réservé aux données SCOLIA, puis terminez aussi les étapes Établissement
+   et Comptes dans l'assistant initial.
+3. Le compte Windows proposé est celui de la session actuelle. Vous pouvez indiquer
+   un autre compte Windows existant sur ce poste ou dans votre domaine.
+4. Sélectionnez le réseau de l'école. S'il est Public, cochez la confirmation
+   uniquement s'il s'agit du réseau privé de l'établissement.
+5. Cliquez Configurer le partage automatiquement et acceptez la demande Windows.
+   Le partage accorde l'écriture au compte Windows choisi ; SCOLIA ajoute son droit
+   NTFS Modifier et ouvre uniquement SMB TCP 445 et la découverte UDP 48629 pour
+   les réseaux privés/domaine et les ordinateurs du sous-réseau local.
+6. L'adresse apparaît, par exemple \\POSTE-ECOLE\SCOLIA_ABC12345.
+   Aucun CMD à lancer, aucun mot de passe Windows conservé par SCOLIA.
+
+Sur l'autre poste :
+1. Ouvrez Assistant réseau automatique ou Données > Configurer le réseau.
+2. Choisissez Rejoindre, puis Rechercher les établissements. SCOLIA doit être ouvert
+   sur le poste hôte. La recherche dure environ trois secondes et ne bloque pas
+   les commandes Windows. Choisissez l'école trouvée.
+3. Cliquez Vérifier et mémoriser la connexion. SCOLIA lit le profil et vérifie
+   l'écriture ainsi que le remplacement atomique des fichiers de ce partage.
+4. Si Windows refuse l'accès, cliquez Autoriser l'accès Windows et authentifiez-vous
+   avec le compte Windows autorisé sur le poste hôte, puis réessayez. Le mot de passe
+   du compte SCOLIA est distinct de celui du compte Windows. Windows peut refuser
+   l'accès réseau aux comptes locaux sans mot de passe ; utilisez un compte Windows
+   pouvant s'authentifier à distance. SCOLIA ne modifie pas cette sécurité Windows.
+5. Si la découverte est bloquée, saisissez l'adresse affichée sur le poste hôte.
+   Cela fonctionne aussi lorsque SCOLIA est fermé sur l'hôte, à condition que ce
+   poste soit allumé et que son partage soit accessible.
+
+Après connexion, le dossier reste mémorisé et est repris au lancement suivant.
+Le nom Windows du poste hôte est utilisé par la découverte pour supporter les
+changements d'adresse IP. La réception reprend après une coupure réseau grâce
+au contrôle périodique existant ; aucune base vide ne remplace les données.
+Si le poste hôte est éteint au démarrage, un écran permet de réessayer ou rechercher
+le même établissement. Un profil d'une autre école est refusé, sans effacer la
+configuration. Attendez la fin d'une publication et vérifiez toute écriture de
+caisse en attente avant de changer l'adresse de connexion.
+
+Le partage Windows persiste après fermeture de SCOLIA ; la découverte automatique
+est active uniquement lorsqu'une session SCOLIA est ouverte sur l'hôte. Les postes
+clients n'ont pas à créer de partage ni à demander les droits administrateur.
+La recherche concerne les réseaux IPv4 privés/domaine connectés. Un réseau Wi-Fi
+isolant ses clients, un pare-feu d'entreprise, des identifiants Windows refusés ou
+un poste hôte éteint peuvent empêcher l'accès ; SCOLIA conserve la configuration
+et affiche l'erreur au lieu de recréer la base. Il ne désactive pas le pare-feu,
+ne permet pas les accès invités et n'active pas SMB1.
+
+En cas d'échec pendant la configuration Windows, le helper tente de retirer le
+partage et les règles qu'il vient de créer, de restaurer les droits NTFS et la
+catégorie réseau antérieure. Les partages tiers et les données existantes ne sont
+pas supprimés. Un nom de partage déjà utilisé pour un autre dossier est refusé.

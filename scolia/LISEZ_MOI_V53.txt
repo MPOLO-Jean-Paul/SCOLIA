@@ -1,0 +1,55 @@
+﻿SCOLIA V53 - INSCRIPTION ET DESIGN SOBRE
+
+Cette version complete conserve les corrections de lancement V52.2.
+
+MISE A JOUR DE VOTRE INSTALLATION ACTUELLE
+1. Fermez SCOLIA et extrayez tout le ZIP dans un nouveau dossier.
+2. Depuis la nouvelle copie, ouvrez 00_Demarrage/METTRE_A_JOUR_V53.cmd.
+3. Choisissez APPLICATION.vbs dans le 00_Demarrage de votre installation
+   actuelle, celle qui contient deja vos donnees et votre configuration.
+4. L'outil compile les composants modifies et controle la syntaxe avant
+   remplacement, sauvegarde les anciens scripts, puis ouvre le lanceur
+   selectionne. Le message attendu est MISE A JOUR V53 TERMINEE.
+Cette mise a jour porte uniquement sur le programme et sa documentation.
+Elle ne remplace pas les donnees, la configuration ou les classeurs.
+Les anciennes copies des scripts sont dans journaux/reparation_V53_...
+
+DEMARRAGE DE LA NOUVELLE COPIE
+Pour une installation distincte, le lanceur est 00_Demarrage/APPLICATION.vbs.
+Conservez l'ancien dossier et reconnectez vos donnees existantes selon
+la configuration de l'etablissement. Les correctifs Excel n'ont pas
+change dans cette livraison et ne necessitent pas une reinstallation.
+
+NOUVEAUTES VISUELLES
+- Formulaire d'inscription : Identite, Scolarite, Contacts et residence.
+- Champs plus lisibles, contours de focus et signal des champs invalides.
+- Boutons fixes ; defilement vertical quand la hauteur est insuffisante.
+- Grille de une a trois colonnes selon l'espace disponible.
+- Sur une grande fenetre, scolarite et contacts sont cote a cote.
+- Taille de lecture choisie conservee lorsque la fenetre est reduite.
+- Confirmation affichee uniquement apres un message, sans bande vide.
+- Couleurs sobres dans les themes clair et sombre, boutons et surfaces
+  harmonises sur les autres ecrans utilisant les composants communs.
+- Correction du cache des icones lors du changement de theme.
+
+Les champs, les valeurs optionnelles existantes, le matricule automatique,
+les validations et la passerelle d'enregistrement restent ceux de SCOLIA.
+La saisie consecutive de plusieurs apprenants est conservee.
+
+VERIFICATIONS WINDOWS
+Syntaxe seule : 00_Demarrage/VERIFIER_SYNTAXE_V52.cmd.
+Suite technique : 00_Demarrage/VERIFIER_V53.cmd.
+Les tests utilisent des controles et donnees isoles, sans ouvrir les
+classeurs scolaires en production. Les journaux sont dans journaux.
+
+APERÇU DU DESIGN
+documentation/APERCU_INSCRIPTION_V53.html est une maquette de presentation
+consultable dans un navigateur, avec les deux themes. Ce fichier n'est
+pas l'application et ne remplace pas l'essai des fenetres sous Windows.
+
+La preparation et les controles locaux ont ete executes sous Linux.
+Le parseur PowerShell natif, WinForms et Excel COM ne sont pas disponibles
+dans cet environnement. Le lancement et le rendu Windows restent a
+verifier sur votre PC ; les outils de verification sont inclus.
+
+Details : documentation/EVOLUTIONS_DESIGN_V53.md.

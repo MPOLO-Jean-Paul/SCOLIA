@@ -1,0 +1,20 @@
+﻿SCOLIA V39 — ORGANISATION DES FICHIERS
+
+Objectif : aucun fichier isolé à la racine du dossier SCOLIA.
+
+00_Demarrage : lanceurs visibles par l'utilisateur et guide de démarrage.
+programme : scripts PowerShell, sources C#, ressources internes et correctifs VBA.
+configuration : configuration locale/partagée de SCOLIA.
+data : données et classeurs de travail.
+ressources : modèle Excel et ressources de départ.
+sources : fichiers sources conservés.
+exports : exports PDF/CSV/Excel.
+journaux : diagnostics et journaux.
+documentation : guides, audits, corrections et historique de versions.
+archives : anciennes installations et sauvegardes livrées.
+
+Les lanceurs de 00_Demarrage ont été adaptés pour retrouver automatiquement la racine SCOLIA.
+Le bouton Nouvelle fenêtre et le contrôle de prélancement utilisent également le nouveau chemin.
+
+Mise à jour V40 : les indicateurs de traitement ont été harmonisés sans modifier
+l'organisation des dossiers de la V39. Aucun fichier n'est ajouté à la racine.

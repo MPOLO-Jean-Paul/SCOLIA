@@ -1,0 +1,22 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Scolia.Bureau.Controls"
+             xmlns:mi="using:Material.Icons.Avalonia"
+             x:Class="Scolia.Bureau.Views.DataView">
+  <Grid RowDefinitions="Auto,*">
+    <!-- Une ligne discrète au lieu d'un paragraphe : l'essentiel, sans encombrer la liste -->
+    <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="8" Margin="2,0,0,10">
+      <mi:MaterialIcon Kind="ShieldCheckOutline" Width="16" Height="16" Foreground="{DynamicResource ToneGreen}" VerticalAlignment="Center" />
+      <TextBlock Classes="muted" VerticalAlignment="Center" TextWrapping="Wrap"
+                 Text="Sauvegarde automatique chaque jour. Une restauration garde d'abord une copie de la base actuelle." />
+    </StackPanel>
+    <DataGrid Grid.Row="1" ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}" AutoGenerateColumns="False" IsReadOnly="True">
+      <DataGrid.Columns>
+        <DataGridTextColumn Header="Fichier" Binding="{Binding Name}" Width="*" MinWidth="140" />
+        <DataGridTextColumn Header="Créée le" Binding="{Binding Created}" Width="Auto" MinWidth="190" />
+        <DataGridTextColumn Header="Taille" Binding="{Binding Size}" Width="Auto" MinWidth="110" />
+      </DataGrid.Columns>
+    </DataGrid>
+    <c:EmptyState Grid.Row="1" Icon="DatabaseOutline" Title="Aucune sauvegarde pour l'instant" Hint="Cliquez sur « Sauvegarder » pour créer la première." IsVisible="{Binding Items.Count, Converter={StaticResource IsEmpty}}" />
+  </Grid>
+</UserControl>

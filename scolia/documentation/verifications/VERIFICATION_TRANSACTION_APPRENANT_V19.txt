@@ -1,0 +1,9 @@
+﻿SCOLIA V19 — CONTROLES STATIQUES
+
+- ModuleFiabilite contient ITM-TRANSACTION-19.
+- Le rollback de la ligne est tente avant l'annulation du journal.
+- Les deux actions sont tentees meme si l'une echoue.
+- Un rollback incomplet bloque explicitement toute nouvelle saisie et affiche le chemin de sauvegarde.
+- Le manifeste d'installation contient l'empreinte du module corrige.
+
+Limite : aucun Excel/Windows PowerShell n'est disponible dans l'environnement de fabrication ; test de bout en bout requis sur Windows.

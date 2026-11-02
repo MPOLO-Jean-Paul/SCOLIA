@@ -1,0 +1,88 @@
+﻿SCOLIA — IMPORTS RÉSEAU DES PAIEMENTS ET DES APPRENANTS
+
+MISE À JOUR SUR LES DEUX ORDINATEURS
+1. Fermez SCOLIA sur les deux postes.
+2. Conservez une copie du dossier actuel de chaque poste.
+3. Remplacez le dossier « programme » de chaque poste par celui de cette version.
+   Gardez les dossiers « data » et « configuration » propres à chaque ordinateur.
+   Ne copiez pas la configuration du secrétaire sur le poste comptable.
+4. Relancez APPLICATION. Les données contenues dans cette archive sont conservées.
+
+CONNEXION RÉSEAU
+Les deux comptes doivent rejoindre le même dossier SCOLIA partagé, pour le même
+établissement et la même année scolaire. Utilisez le réglage réseau existant :
+« Héberger » sur le poste qui porte le partage et « Rejoindre » sur l’autre.
+Le poste hôte doit être allumé et son partage Windows accessible.
+
+PUBLICATION DU SECRÉTARIAT
+Ouvrez la base habituelle au secrétariat puis cliquez sur Actualiser une première
+fois. Le répertoire des apprenants et les reçus locaux sont publiés sur le partage.
+Les nouveaux enregistrements déclenchent ensuite une publication automatique.
+Si le réseau est indisponible, rétablissez la connexion et actualisez avant l’import.
+
+DANS LE COMPTE COMPTABLE
+- Comptabilité > Importer les apprenants : ouvre le répertoire publié.
+  Cliquez sur « Importer tous les apprenants ». Les dossiers sont enregistrés
+  localement, classés par promotion, puis par nom et matricule. Noms, contacts,
+  naissance, adresse, tuteur, inscription, année et statut sont conservés.
+  « Visualiser l’importation » affiche les dossiers importés.
+- Encaisser : choisissez un apprenant importé. Son identité et sa promotion
+  sont reprises automatiquement ; la référence et le montant restent à saisir.
+  Si son dossier a changé, réimportez le répertoire avant l’encaissement.
+- Importer les paiements : cliquez sur « Importer tous les paiements ».
+  Tous les reçus publiés par le secrétariat pour l’année choisie sont ajoutés
+  au journal comptable, avec leurs affectations mensuelles d’origine.
+
+DANS LE COMPTE SECRÉTARIAT
+- Paiements > IMPORTS RÉSEAU > Importer les paiements.
+- Cliquez sur « Importer tous les paiements » pour recevoir les opérations
+  comptables de l’année dans la base ouverte. Le traitement complète la liste
+  existante et conserve ses reçus. Les doublons techniques sont reconnus.
+- Visualiser l’importation affiche les reçus effectivement reçus et leurs mois.
+- La réception automatique existante reste disponible ; les reçus déjà reçus
+  automatiquement sont eux aussi reconnus lors d’un import manuel.
+
+ORDRE ET CONTRÔLES
+Le traitement se fait par date, référence puis identifiant. Le journal comptable
+est présenté par date ; l’historique du secrétariat garde son tri chronologique
+habituel, du plus récent au plus ancien. Les lignes existantes sont conservées.
+Le bouton peut être utilisé plusieurs fois : une référence de transfert durable
+empêche de recréer la même opération et évite de recompter un paiement dans le solde.
+
+La synthèse distingue les nouvelles données, celles déjà importées et celles
+à vérifier. Un reçu source modifié après son import est signalé sans écraser
+l’écriture comptable. Une coupure réseau permet de reprendre au prochain import.
+Les données d’un autre établissement ou d’une autre année sont refusées.
+
+VALIDATION
+Compilation C# et syntaxe des fichiers PowerShell modifiés vérifiées.
+Tests automatisés : import, répétition, affectations mensuelles, publication,
+retour comptable, reprise, verrouillage, réseau indisponible et répertoire invalide.
+Les interactions graphiques et Excel COM nécessitent une vérification sur Windows.
+Aucune donnée métier du ZIP d’origine n’a été modifiée pendant cette mise à jour.
+
+BROUILLONS REÇUS AUTOMATIQUEMENT
+La réception en brouillon fonctionne dans les deux comptes dès que SCOLIA est
+ouvert et que le partage réseau est accessible. Elle ne demande aucun clic sur
+Importer et conserve localement les paiements et le répertoire publiés.
+
+- Comptabilité : les paiements du secrétariat attendent dans « Brouillons reçus ».
+  Dans « Importer les apprenants », le bouton « Brouillons reçus » affiche les
+  dossiers nouveaux ou modifiés qui ne sont pas encore appliqués au répertoire local.
+- Secrétariat : les paiements comptables non encore intégrés attendent dans
+  « Paiements > Brouillons reçus ».
+- Après fermeture et réouverture de SCOLIA, les brouillons restent conservés.
+  Ils sont consultables même si une nouvelle lecture du partage échoue.
+- Un import réussi retire les enregistrements de la liste d’attente et les garde
+  dans « Visualiser l’importation ». Un clic répété ne crée pas de doublon.
+- La conservation des brouillons est toujours active. La case des Préférences
+  « Importer automatiquement les paiements reçus » commande uniquement leur
+  intégration dans la base du secrétariat. Si elle est désactivée, utilisez Importer.
+- Le journal comptable partagé nécessite le réseau pour valider un import.
+  Si l’application était fermée ou le réseau coupé, les données encore publiées
+  sont récupérées à la prochaine connexion. Le poste source doit aussi utiliser
+  cette version pour publier les nouveaux reçus et les dossiers actualisés.
+
+Tests supplémentaires réussis : brouillons des deux comptes, relecture dans
+un nouveau processus, coupure réseau, dossiers modifiés, sortie de la liste
+d’attente après import, isolation par compte/année et contrôle d’intégrité.

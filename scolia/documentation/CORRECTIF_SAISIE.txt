@@ -1,0 +1,42 @@
+﻿CORRECTIF DES FORMULAIRES ET DU VERROU DE SAISIE
+
+1. Fermez l'application ITM CD et Excel.
+2. Extraire tout ce ZIP dans un NOUVEAU dossier.
+3. Lancez INSTALLER.vbs et selectionnez votre classeur ACTUEL contenant vos dernieres saisies.
+   Si vous travaillez sur celui transmis : Installation_ITM_20261006_102726_977/SYSTEME_SECRETARIAT_CORRIGE.xlsm.
+4. L'installateur cree une nouvelle copie corrigee et conserve les enregistrements existants.
+5. Lancez APPLICATION.vbs et connectez la NOUVELLE copie annoncee par l'installateur.
+
+Les textes de corrections ne modifient pas, a eux seuls, un ancien classeur :
+l'etape 3 est indispensable pour corriger le moteur d'enregistrement.
+Le champ Adresse de residence est present dans l'inscription et la modification des dossiers.
+Les champs parent/tuteur et informations supplementaires restent retires de l'interface.
+Les valeurs deja presentes dans les colonnes restent conservees.
+Le nom du parent/tuteur n'est plus requis pour enregistrer un apprenant.
+Les regles de repartition des paiements et le numero automatique restent identiques.
+La saisie ne depend plus des reglages d'impression ; les exports gardent leur mise en page.
+Le verrou est libere meme apres une erreur de preparation/restauration d'etat Excel.
+Une vraie operation en cours reste protegee contre une seconde saisie.
+
+Ne ressaisissez pas un paiement deja visible dans l'historique.
+Controles statiques realises ; execution complete Windows/Excel encore a confirmer.
+
+RESULTATS DE RECHERCHE
+Liste agrandie en hauteur et largeur ; noms, post-noms, prenoms et promotions lisibles.
+Application Windows : liste sur toute la largeur, retour a la ligne pour les noms longs.
+Formulaires Excel : hauteur 228 points et colonnes des noms de 150 points minimum.
+
+VERIFICATION DU PARCOURS RECHERCHE ET PAIEMENT
+- Recherche par plusieurs mots, dans n'importe quel ordre, sans distinction d'accents.
+- Nouvelle recherche : ancien dossier deselectionne et montant remis a zero.
+- Double-clic ou touche Entree pour selectionner un resultat.
+- Confirmation impossible avec montant nul ou superieur a la dette restante.
+- Paiement reussi : montant remis a zero ; actualisation requise avant la prochaine saisie.
+- Si l'actualisation echoue, utiliser Actualiser sans ressaisir le paiement enregistre.
+
+INTERFACE AVEC ONGLETS SUPERIEURS
+Les rubriques du menu gauche sont desormais en haut, avec icones :
+Tableau de bord, Apprenants, Paiements, Exports et Diagnostic.
+L'onglet actif est bleu ; les tableaux utilisent la largeur disponible.
+Les boutons de connexion, preparation et actualisation sont regroupes en haut a droite.
+Aucune installation d'icones ou connexion internet necessaire.

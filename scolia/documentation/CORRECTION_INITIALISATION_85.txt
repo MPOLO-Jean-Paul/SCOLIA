@@ -1,0 +1,15 @@
+﻿ITM CŒUR DE DIEU — ÉDITION 85
+
+Objet : erreur « Initialisation du dossier data : La référence d’objet n’est pas définie à une instance d’un objet ».
+
+La lecture et l’écriture des propriétés personnalisées du classeur passent désormais par des appels COM explicites. L’identité ITM_DataSet et le nombre de segments conservent leurs mêmes valeurs et types. Les cinq emplacements de DocumentProperties.Add sont fournis, y compris LinkSource omis explicitement ; aucune écriture n’est répétée en cas d’erreur. La copie initiale, la fermeture de la source et la sauvegarde de son identité utilisent également le transport explicite. Une collection de propriétés ou un classeur absent produit une erreur précise.
+
+Le registre data est toujours publié après les contrôles et la sauvegarde. Le fichier source reste intact. Les identités d’autres bases ne sont jamais remplacées, et les protections de sauvegarde/récupération sont conservées. Le diagnostic indique maintenant la sous-étape data et le dernier accès Excel.
+
+Installation : fermer ITM et Excel ; extraire l’édition 85 dans le dossier de l’application ; conserver le dossier data existant et lancer APPLICATION.vbs. Ne pas recréer le classeur, ni effacer registre.json ou ses segments.
+
+Validation disponible : syntaxe et encodage PowerShell ; compilation des composants graphiques inchangés ; contrôle des appels, de l’ordre de publication et des procédures métier ; six classeurs et VBA inchangés. TestsIdentiteInitialisation.ps1 teste les fonctions réelles avec des doubles stricts sous Windows PowerShell 5.1 sans utiliser Excel.
+
+Limite : la capture situe l’étape mais ne fournit pas la ligne exacte du diagnostic. Excel COM et le nouveau test PowerShell ne peuvent pas être exécutés dans l’environnement Linux de préparation. Si le blocage persiste, fournir le dernier fichier TXT du dossier journaux/connexions de cette édition pour analyser sa pile d’erreur complète.
+
+Référence de signature Office : https://learn.microsoft.com/en-us/office/vba/api/office.documentproperties.add

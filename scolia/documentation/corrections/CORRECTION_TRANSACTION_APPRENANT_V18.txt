@@ -1,0 +1,20 @@
+SCOLIA COMPLET V18 — CORRECTION DU CADRE MÉTIER D'INSCRIPTION
+
+Constat
+Le verrou métier ITM pouvait rester actif après un échec de calcul ou de sauvegarde. ITMValiderSaisie libérait alors l'état de transaction avant que la passerelle puisse annuler les écritures partielles. L'annulation ne retrouvait plus la ligne réservée, ce qui pouvait laisser un état incohérent et bloquer l'inscription suivante.
+
+Corrections intégrées
+1. ITMValiderSaisie conserve l'état de transaction en cas d'échec. L'appelant peut alors restaurer le journal et annuler la ligne réservée avant de libérer le verrou.
+2. ITMDebutSaisie récupère un verrou résiduel en annulant le journal en attente et la transaction incomplète. Si la récupération échoue, la saisie est arrêtée avec un message de restauration plutôt que de poursuivre silencieusement.
+3. Le manifeste d'installation accepte la version précédente de ModuleFiabilite afin que le correctif puisse être installé sur le classeur déjà mis à jour par V17.
+4. Ajout de TestsTransactionApprenant.ps1 pour contrôler statiquement les invariants de la transaction d'inscription.
+
+À vérifier dans Excel après installation
+- Inscrire un apprenant test avec une promotion valide.
+- Vérifier le message de succès et la présence d'une seule ligne dans APPRENANTS.
+- Inscrire un deuxième apprenant sans fermer SCOLIA.
+- Fermer puis rouvrir Excel et confirmer que les deux dossiers sont présents.
+- Si une opération échoue, vérifier que la ligne partielle est annulée et que la prochaine saisie n'est pas bloquée.
+
+Limite de validation
+Le code et le manifeste ont été contrôlés statiquement et l'archive ZIP a été vérifiée. L'exécution réelle d'Excel/VBA et du lanceur sous Windows doit encore être réalisée sur le poste cible ; aucune validation d'exécution n'est revendiquée.

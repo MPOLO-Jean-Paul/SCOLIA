@@ -1,0 +1,27 @@
+﻿SCOLIA — VALIDATION DE CONNEXION — 13 OCTOBRE 2026
+
+Pour les comptes protégés, Se connecter reste désactivé tant que le mot de passe est vide.
+Une saisie composée uniquement d’espaces est refusée.
+Un mauvais mot de passe affiche le message d’échec, efface le champ et permet une nouvelle saisie.
+Aucun indicateur de processus n’apparaît pendant une tentative refusée.
+L’indicateur d’ouverture apparaît après authentification réussie.
+Les comptes configurés sans protection restent accessibles selon leur configuration.
+Les mots de passe et les paramètres existants sont conservés.
+
+MISE À JOUR
+1. Fermer SCOLIA et Excel.
+2. Extraire ce ZIP complet dans un nouveau dossier.
+3. Lancer 00_Demarrage/METTRE_A_JOUR_V57.cmd depuis ce dossier.
+4. Sélectionner APPLICATION.vbs de votre installation habituelle.
+5. Relancer votre lanceur habituel.
+Ce ZIP contient aussi les améliorations précédentes : interfaces, listes PDF,
+cartes d’apprenants, recherche, sauvegardes, logo et nettoyage des anciennes copies.
+
+VÉRIFICATIONS
+Contrôle natif des boutons : saisie vide, espaces, saisie valide, tentative en cours,
+retour après échec, nouvelle saisie et comptes sans protection.
+Test isolé du gestionnaire réel de connexion : refus sans indicateur, succès avec indicateur.
+176 scripts PowerShell analysés sans erreur. Compilation C# 5 et tests graphiques effectués.
+Les données de l’archive d’origine sont inchangées. Manifestes et ZIP vérifiés.
+Le parcours complet sous Windows et Excel reste à vérifier sur votre poste.
+Test isolé fourni : 00_Demarrage/VERIFIER_VALIDATION_CONNEXION.cmd.

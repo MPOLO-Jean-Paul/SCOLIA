@@ -1,0 +1,16 @@
+﻿STYLE WINDOWS SOBRE — 6 octobre 2026
+
+La référence retenue est la fenêtre de transfert Bluetooth fournie : fond
+blanc, titres bleus, champs natifs, boutons rectangulaires, zones aérées.
+Ce style est appliqué aux pages et aux formulaires du lanceur.
+Le formulaire d'inscription et de modification dispose d'un bandeau gris
+avec Enregistrer et Annuler regroupés à droite. Les fenêtres utilisant une
+barre d'actions en bas ont également des commandes alignées à droite.
+Le tableau de bord conserve ses indicateurs et ses deux vues de suivi.
+L'installateur précédemment apprécié conserve sa présentation.
+
+Les actions, les validations, la connexion mémorisée et les règles financières
+sont conservées. Aucun classeur du paquet n'est modifié par ces changements.
+Extraire tout le ZIP dans un nouveau dossier et lancer APPLICATION.vbs.
+Aucune nouvelle préparation du classeur n'est nécessaire.
+Contrôles statiques effectués ; rendu natif à vérifier sous Windows.

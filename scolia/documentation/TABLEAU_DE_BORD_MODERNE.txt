@@ -1,0 +1,29 @@
+﻿TABLEAU DE BORD MODERNE — 6 octobre 2026
+
+Présentation : en-tête, filtres promotion/période, quatre cartes avec explication,
+couleurs distinctes, texte adapté à la largeur, heure de calcul, graphiques
+locaux, puis liste des dossiers à régulariser et export des contacts.
+
+Le graphique mensuel montre les affectations de paiement de toute l'année
+scolaire, pour la promotion sélectionnée. Il n'est pas limité au mois du filtre.
+Le graphique des restes utilise la période et la promotion choisies.
+Au-delà de huit promotions, les suivantes sont regroupées dans « Autres ».
+Le filtre de nombre de mois en retard concerne seulement la liste et son export.
+Les indicateurs et graphiques restent calculés sur tous les dossiers valides
+de la promotion choisie. « Dossiers à jour » est une part de dossiers sans reste
+pour la période, et non un taux de recettes encaissées.
+Tous les mois : le reste exigible concerne les mois échus à ce jour.
+Le calcul métier existant et les fichiers Excel sont conservés.
+
+Mise en page : cartes sur 4, 2 ou 1 colonne, graphiques côte à côte ou empilés,
+actions empilées sur petite largeur, défilement vertical, dimensions DPI.
+Les dessins ne font aucun appel Excel et ne sont pas animés en permanence.
+
+Utilisation : fermer l'application, extraire le nouveau ZIP dans un dossier neuf,
+ouvrir APPLICATION. Aucun changement de mot de passe ni nouvelle préparation
+VBA nécessaire pour cette évolution visuelle.
+
+Contrôles : structure lexicale PowerShell, logique de regroupement des graphiques,
+modèle de géométrie sur plusieurs largeurs et DPI, intégrité du paquet,
+conservation binaire des classeurs. Windows/Excel/compilation C# indisponibles
+ici : vérifier le rendu et le fonctionnement réel sous Windows.

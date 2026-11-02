@@ -1,0 +1,48 @@
+﻿CORRECTION DE SAUVEGARDE ET NOUVELLE FICHE
++
++Le message de la capture apparaît sur l’appel à Replace lors de la sauvegarde
++des paramètres, avant validation du changement. L’appel direct PowerShell
++File.Replace(tmp, destination, $null) est remplacé par une méthode C#.
++Cette méthode appelle File.Replace avec un vrai null littéral pour le nom de
++sauvegarde facultatif et normalise les deux chemins. Elle conserve la création
++initiale par Move, l’écriture temporaire dans le même dossier et le remplacement
++du fichier existant. Aucun paramètre de sécurité n’est supprimé ou désactivé
++automatiquement. Le fichier temporaire est nettoyé sans masquer l’erreur initiale.
++Le changement de mot de passe revient à l’état précédent si la sauvegarde échoue.
++Le mot de passe reste accepté de 4 à 128 caractères et le code est renouvelé
++uniquement après un changement enregistré.
++
++Microsoft documente le troisième paramètre null :
++https://learn.microsoft.com/en-us/dotnet/api/system.io.file.replace?view=netframework-4.8
++La conversion de $null lors de l’appel PowerShell est la cause suspectée d’après
++le message ; aucun accès au poste Windows n’est disponible pour la confirmer.
++
++FICHE APPRENANT
++En-tête bleu foncé avec nom, matricule, promotion, année et statut.
++Onglet Dossier : cartes Identité, Contacts et résidence, Scolarité ; valeurs
++absentes indiquées sans remplir ni modifier le classeur. L’adresse est conservée.
++Onglet Situation financière : montant annuel, total versé, reste annuel et
++tableau mensuel. Les restes des mois futurs ne sont pas automatiquement des retards.
++Onglet Historique : affectations détaillées, avec le numéro d’enregistrement.
++Plusieurs affectations peuvent appartenir au même reçu ; les lignes ne sont
++pas présentées comme des reçus distincts. Les filtres et contrôles métier sont conservés.
++Les cartes se réorganisent selon la largeur, les textes longs adaptent la hauteur
++et les tableaux gardent un défilement si nécessaire. Modification, paiement
++et aperçu avant impression sont conservés ; le texte imprimé reste celui du dossier.
++
++MISE A JOUR
++Fermer l’application, extraire le ZIP dans un nouveau dossier puis lancer
++APPLICATION.vbs. Ne pas supprimer les paramètres de sécurité pour appliquer
++ce correctif. Utiliser le mot de passe ACTUEL, puis réessayer le changement.
++Conserver le nouveau code de récupération. Fermer et rouvrir pour vérifier
++le nouveau mot de passe. La connexion au classeur reste mémorisée.
++Aucune nouvelle installation VBA nécessaire pour cette mise à jour.
++
++VALIDATION
++Contrôles statiques des huit scripts, de l’appel C# avec null littéral,
++de l’annulation du changement en cas d’échec et de la conservation des six
++classeurs XLSM. Modèles indépendants de géométrie de cartes effectués.
++Compilation C#, sauvegarde DPAPI, changement réel du mot de passe et rendu
++des fenêtres restent à vérifier sous Windows. Les données originales ne sont
++pas remplacées par cette correction.
++

@@ -1,0 +1,32 @@
+﻿ITM CD — DESIGN DE L’APPLICATION, ÉDITION DU 7 OCTOBRE 2026
+
+Page de connexion : identité de l’institution avec le logo original, panneau
+bleu nuit, formulaire blanc centré, mot de passe lisible, indication Verr. Maj,
+affichage du mot de passe, message d’erreur et récupération. Navigation au
+clavier : Tab, Entrée et Échap. Sur une fenêtre étroite, le panneau d’accueil
+s’efface et le formulaire reste accessible avec défilement si nécessaire.
+
+Autres pages : boutons arrondis et états de survol/focus/désactivation,
+couleurs homogènes, tableaux plus légers, fonds reposants et surfaces bordées.
+Les pages Paiements, Exports, Diagnostic, Sécurité et Administration ainsi que
+les fiches utilisent les mêmes principes. Les cartes et graphiques du tableau
+de bord sont conservés et harmonisés avec la palette du logiciel.
+L’installateur reste un fichier VBS à lancer directement.
+
+UTILISATION
+1. Fermez l’application et extrayez TOUT ce ZIP dans un nouveau dossier.
+2. Lancez APPLICATION.vbs et connectez votre classeur de travail actuel si
+   le chemin mémorisé n’est plus accessible.
+3. Les changements sont visuels : aucune réinstallation du classeur n’est
+   nécessaire pour en profiter. Ne remplacez pas votre classeur de travail
+   par FICHIER_SOURCE.xlsm ni par une ancienne copie présente dans le ZIP.
+4. Le mot de passe et le code de récupération déjà configurés sont conservés.
+   L’écran de connexion apparaît lorsque la protection est activée.
+
+CONTRÔLES
+Le ZIP, les branchements de connexion et la conservation des fichiers de
+sécurité, de calcul et des classeurs ont été vérifiés. L’environnement de
+préparation ne dispose pas de Windows/Excel : les nouveaux contrôles natifs
+et leur affichage à différentes mises à l’échelle doivent être essayés sur
+votre PC. APERCU_CONNEXION_PRO.png est un aperçu de conception, pas une
+capture de l’application exécutée sous Windows.

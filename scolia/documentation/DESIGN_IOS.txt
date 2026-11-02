@@ -1,0 +1,19 @@
+﻿HARMONISATION VISUELLE — ÉDITION 82
+
+Les nuances de la référence sont adaptées à une application de bureau : fond blanc bleuté, surfaces de contenu blanches, bleu pour les actions principales, séparateurs fins et petits arrondis sur les boutons et champs de connexion. Les rubans conservent des commandes plates, leur icône colorée et leurs groupes alignés. Les boutons de l’installateur conservent leurs coins droits.
+
+Portée : tableau de bord, apprenants, paiements et prises en charge, scolarité, exports, diagnostic, administration, sécurité, préférences, données, connexion et comptes. Le thème partagé s’applique à l’arbre des composants des pages et à l’ouverture des fenêtres secondaires : inscription, fiche complète, correction de paiement, promotions, sauvegardes, rôles, récupération et aide. Les dialogues système de Windows conservent leur présentation native.
+
+Les icônes des onglets et du tableau de bord ont des couleurs par fonction. Les commandes du ruban utilisent des pictogrammes colorés ; les boutons des pages disposent de petits symboles vectoriels. Les textes, le clavier et les noms accessibles restent utilisables.
+
+Le centre d’aide propose des lignes sélectionnées en bleu doux, des pictogrammes discrets et une hauteur recalculée lorsque la largeur change. La sélection et la position de lecture du sommaire sont conservées.
+
+Le thème sombre distingue le fond de fenêtre, les contenus, le ruban, les champs éditables, les champs calculés et les sélections. Les boutons secondaires gardent une teinte neutre ; ils ne sont plus confondus avec les actions principales. Les réglages de taille de texte et d’espacement existants continuent de s’appliquer.
+
+MISE EN SERVICE
+Fermez l’application et Excel, extrayez cette édition dans un nouveau dossier puis ouvrez APPLICATION.vbs. Conservez votre dossier data et vos sauvegardes existants. Cette mise à jour visuelle ne demande pas de recréer ni de préparer à nouveau les données.
+
+VÉRIFICATIONS
+Compilation des composants C# avec la syntaxe C# 5 ; syntaxe des scripts PowerShell et encodage Windows PowerShell 5.1 ; affichage des composants en clair et sombre ; redimensionnement du sommaire et conservation de sélection ; formulaires de compte aux largeurs 360, 440 et 560 pixels ; maintien des validations et blocage des commandes pendant un traitement ; intégrité du ZIP et conservation exacte des six classeurs sources, des modules VBA et des lanceurs graphiques.
+
+Les rendus de composants ont été vérifiés sous Mono/WinForms. Le fonctionnement de toutes les pages avec Excel doit être vérifié sous Windows : cet environnement ne dispose pas d’Excel COM ni de Windows PowerShell. TestsDesignIOS.ps1, TestsImagesTheme.ps1, TestsNuancesSombres.ps1 et TestsCompteInterface.ps1 fournissent des scénarios supplémentaires à exécuter sous Windows.

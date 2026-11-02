@@ -1,0 +1,304 @@
+# Audit complet de SCOLIA Pro · 1er novembre 2026
+
+Ce document fait suite à la demande du 1er novembre : recherche façon Play Store, notifications des autres postes,
+rapport journalier envoyé automatiquement, audit complet et catalogue du fonctionnement.
+
+## 1. Résultat
+
+| Contrôle | Résultat |
+|---|---|
+| Tests de l'application (Bureau) | 253 réussis, 0 échec |
+| Tests du serveur | 223 réussis, 0 échec, dont 9 nouveaux pour le rapport journalier (e-mail compris) |
+| Tests du téléphone serveur (PDF) | 11 réussis, 0 échec, dont 1 nouveau pour le rapport journalier |
+| Commandes essayées une à une, téléphone | 135, 0 à revoir |
+| Commandes essayées une à une, ordinateur | 173, 0 à revoir |
+| Textes tronqués sur téléphone | 43 avant, 11 après |
+| Textes coupés ou hors de l'écran | 0 |
+| Compilation Android | réussie |
+
+## 2. Défauts trouvés et corrigés
+
+| N° | Défaut | Effet pour l'utilisateur | Correction |
+|---|---|---|---|
+| 1 | Les sauvegardes n'étaient jamais annoncées aux autres postes | Personne ne savait qu'une sauvegarde venait d'être faite | Chaque sauvegarde, manuelle ou automatique, est annoncée en direct |
+| 2 | Recherche du téléphone en petite fenêtre | Peu lisible, différente des usages Android | Recherche plein écran façon Play Store : récentes, accès rapides, résultats en lignes |
+| 3 | Sous-titres des pages coupés à une ligne sur téléphone | Le nombre de reçus, le total ou la période étaient cachés | Sous-titre sur deux lignes |
+| 4 | Bouton « Vérifier les mensualités de la promotion » coupé | Texte illisible dans Encaisser | Le texte passe à la ligne |
+| 5 | « Paie d'novembre » | Faute visible dans Personnel et paie | « Paie de novembre », « Paie d'avril » |
+| 6 | Taille « Très grand » tronquée | Choix illisible dans Texte et polices | Le libellé passe à la ligne |
+| 7 | Rapport du jour perdu si l'ordinateur principal était éteint à l'heure prévue | Pas de rapport ce jour-là | Rattrapage : le rapport de la veille part au démarrage suivant |
+| 8 | Jeton WhatsApp lisible sur le disque | Risque si le dossier des données est copié | Jeton chiffré par la protection de clés du serveur, jamais renvoyé à l'écran |
+
+## 3. Nouveautés livrées
+
+### Recherche façon Play Store
+- La loupe de l'accueil ouvre une page plein écran : champ en haut avec le clavier ouvert, bouton retour, croix pour effacer.
+- Sans saisie : « Recherches récentes » (six au plus, avec « Effacer ») et « Accès rapides » en tuiles colorées.
+- Avec saisie : une ligne par apprenant, reçu ou fonction, avec une pastille de type.
+
+### Notifications et bannières
+- Un encaissement, un lot, un reçu annulé ou une sauvegarde faits sur un autre poste s'annoncent par une bannière en haut de l'écran.
+- La bannière indique qui l'a fait, sur quel poste, et ouvre le journal des reçus ou les sauvegardes d'un toucher.
+- Quand SCOLIA est en arrière-plan, la même alerte arrive dans les notifications d'Android, ou d'iOS sur iPhone.
+- Réglages dans Paramètres, Sons, rubrique Notifications : un interrupteur par sorte d'alerte et un bouton « Essayer ».
+
+### Rapport journalier automatique
+- Le PDF contient :
+  - les chiffres clés en tuiles ;
+  - les encaissements par promotion (effectif, reçus, payeurs, encaissé, reste échu, absents) ;
+  - les modes de paiement ;
+  - le détail des reçus ;
+  - les dépenses ;
+  - les nouvelles inscriptions.
+- Dans Rapports et exports, la carte « Rapport journalier » propose :
+  - « PDF » : le rapport du jour, ou du jour « Au » ;
+  - « Planifier » : l'heure, les numéros et le compte WhatsApp ;
+  - « Envoyer » : l'envoi tout de suite.
+- À l'heure choisie, l'ordinateur principal prépare le PDF, l'enregistre dans le dossier « rapports », l'envoie, puis prévient tous les postes par la bannière « Rapport du jour prêt ».
+
+### Info sur l'application
+- Dans Aide, juste après « À propos ». Le catalogue compte 12 modules et 53 fonctions décrites, avec une recherche.
+
+### Complément : envoi par e-mail et mise en veille
+
+#### Rapport par e-mail
+- Dans « Planifier », la partie « Destinataires » accepte des numéros WhatsApp et des adresses e-mail : l'un, l'autre ou les deux.
+- La partie « Envoi par e-mail » demande le serveur de messagerie, le port, la connexion chiffrée, l'identifiant et le mot de passe, chiffré sur l'ordinateur principal. L'adresse d'envoi est facultative.
+- Exemple avec Gmail :
+  - serveur smtp.gmail.com, port 587, connexion chiffrée ;
+  - un « mot de passe d'application » créé dans le compte Google.
+- Le PDF part en pièce jointe. Si un canal échoue, l'autre part quand même, et le message indique ce qui est parti.
+- Vérifié par un test : un petit serveur de messagerie lancé pour l'occasion reçoit bien le message, avec le PDF et le bon destinataire.
+
+#### Mise en veille
+- Réglage dans Sécurité du compte, rubrique « Mise en veille » : Jamais, 1, 2, 5, 10, 15 ou 30 minutes. 5 minutes par défaut.
+- Sans toucher, clic ni frappe pendant ce délai, SCOLIA se verrouille. Le temps passé en arrière-plan compte aussi.
+- L'écran « SCOLIA est en veille » redemande le code, ou l'empreinte si elle est activée.
+- La session reste ouverte derrière : on reprend exactement sur la même page.
+- Un mauvais code compte comme une erreur de connexion : cinq erreurs, deux minutes de blocage.
+- Sans réseau, le code est vérifié sur l'appareil.
+- En veille, aucune bannière ne s'affiche : le contenu reste privé.
+- Le geste retour et les raccourcis clavier sont bloqués.
+- « Verrouiller maintenant » met en veille tout de suite ; « Changer de compte » ferme la session.
+
+#### Fiabilité de l'envoi WhatsApp
+- La version de l'API de Meta se règle dans « Planifier ». Laissée vide, c'est la version du compte de l'établissement qui s'applique : SCOLIA ne dépend plus d'une version qui sera retirée.
+- Quatre tests face à un faux serveur Meta vérifient :
+  - le dépôt du PDF, avec le jeton d'accès ;
+  - le numéro converti au format international ;
+  - le message avec modèle, le PDF en en-tête ;
+  - le message sans modèle, en document ;
+  - le refus de Meta, rapporté avec son propre message.
+- Seul l'envoi réel reste à faire, avec le compte Meta de l'établissement.
+
+#### Mises à jour de l'APK sans désinstaller
+- Tous les APK sont signés avec la même clé SCOLIA, créée une fois puis gardée par GitHub. Une clé de l'établissement, placée dans les secrets du dépôt, passe en priorité.
+- Le numéro de version augmente à chaque compilation.
+- Un nouvel APK s'installe donc par-dessus l'ancien, comme une mise à jour.
+- Il faut désinstaller une dernière fois l'ancienne version, signée par une clé jetable.
+
+#### Recherche façon Google partout, avec la voix
+- Toutes les recherches reprennent la barre de la recherche de l'accueil :
+  - retour à gauche ;
+  - champ sans cadre ;
+  - croix pour effacer ;
+  - micro à droite.
+- Endroits concernés :
+
+| Recherche | Téléphone | Ordinateur |
+|---|---|---|
+| Accueil, la référence | Plein écran | Fenêtre, même contenu |
+| Menu, outils et réglages | Barre en haut du menu, mêmes lignes de résultats | Sans objet |
+| Filtre d'une liste | Barre à la place de l'en-tête | Barre en pilule dans l'en-tête |
+| Recherche des réglages | Même page que l'accueil | Même fenêtre que l'accueil |
+| Info sur l'application | Barre en pilule | Barre en pilule |
+| Champs « Rechercher » des pages | Remplacés par le filtre de l'en-tête | Pilule arrondie avec loupe |
+
+- La voix :
+  - Android : la fenêtre « Parlez maintenant » du service vocal du téléphone, en français. SCOLIA n'a pas besoin de la permission du micro.
+  - iPhone : la reconnaissance vocale d'Apple, en français. iOS demande une fois l'accord pour le micro et la dictée. L'écoute s'arrête seule après un court silence.
+  - Pendant l'écoute, le champ affiche « Parlez maintenant… » et le micro passe au rouge.
+  - Le texte dicté lance la recherche aussitôt.
+  - Sans service vocal, le micro ne s'affiche pas.
+  - Windows : pas de micro dans SCOLIA. La dictée de Windows, touches Windows+H, écrit dans n'importe quel champ.
+- Vérifié par les essais automatiques avec une voix simulée : le micro est présent partout, « Parlez maintenant… » s'affiche, le texte dicté arrive dans le champ. La reconnaissance réelle reste à essayer sur un téléphone.
+
+#### Voix hors ligne
+- Android 12 et plus, si le téléphone le permet : l'écoute se fait dans le téléphone, sans Internet. SCOLIA demande l'accès au micro au premier toucher du micro.
+- Si le français n'est pas encore installé, SCOLIA en demande le téléchargement (Android 13 et plus) pour les fois suivantes. Cette fois-là, la fenêtre du service vocal prend le relais.
+- Sinon, la fenêtre « Parlez maintenant » du service vocal est réglée pour préférer le modèle hors ligne quand il est présent.
+- iPhone : la reconnaissance se fait sur l'appareil quand l'iPhone le sait, sans Internet.
+
+#### Saisie prédictive
+- Fiche promotion, code « INF1 » : propositions « Première Infirmière », « Deuxième », « Troisième », « Quatrième », puis la tournure de la section.
+- Code « ACC » ou désignation « deuxième acc » : « Deuxième Accoucheuse ».
+- Chaque lettre resserre les propositions. Les désignations déjà utilisées ne sont plus proposées.
+- Un choix remplit :
+  - le code, par exemple ACC2 ;
+  - le niveau ;
+  - la promotion suivante, ACC3 ;
+  - la section, si elle existe.
+- SCOLIA apprend les tournures de l'établissement : une promotion « Première Soignante » fait proposer « Deuxième Soignante ».
+- Assistant d'installation : mêmes propositions sous chaque ligne. « Ajouter » prépare la ligne suivante : INF1 puis INF2 « Deuxième Infirmière », même mensualité.
+- Année scolaire : « 2026 » propose « 2026-2027 ». Le dernier mois suit le premier, dix mois d'école, tant qu'il n'est pas choisi à la main. Le résumé se recalcule : nombre de mois, période, exemple de retard.
+
+#### Fluidité
+| Écran | Avant | Après |
+|---|---|---|
+| Pointage, données | 666 ms, une requête par membre | 204 ms, une seule requête pour tout le personnel |
+| Listes du téléphone | 40 cartes construites d'un coup | 8 cartes tout de suite, puis 8 par 8 entre deux images |
+| Recherche | Résultats 250 ms après la frappe | 180 ms |
+
+- Mesures faites sur l'ordinateur d'essai, pas sur un téléphone : sur un téléphone, les durées sont plus longues, mais l'écart reste.
+- Un ordinateur principal pas encore mis à jour fonctionne toujours : SCOLIA revient alors à une requête par membre, six à la fois.
+
+#### Écran de veille refait
+- Présentation comme l'écran verrouillé d'un téléphone :
+  - logo et nom de l'établissement en haut ;
+  - heure et date en grand, l'heure se met à jour ;
+  - pastille « Verrouillé depuis 14:32 » ;
+  - carte du compte : initiales, nom, rôle et identifiant.
+- Champ du code : icône de cadenas, œil pour afficher ou masquer, bordure bleue à la saisie.
+- Erreur en rouge avec son icône. Le message parle du code, plus de l'identifiant : « Code incorrect. Encore 4 tentatives… ».
+- Empreinte : un rond au centre, sous « ou », comme sur Android.
+- « Changer de compte » reste sur l'écran de veille, avec l'explication : « Cette session reste verrouillée, vous pourrez y revenir ».
+
+#### Retour depuis la page de connexion
+- Avant, « Changer de compte » fermait la session : impossible de revenir.
+- Maintenant, la session reste verrouillée derrière la page de connexion. La page de connexion propose en tête « Revenir à la session de Secrétariat ».
+- Le geste retour d'Android et la touche Échap y ramènent aussi.
+- Une nouvelle connexion réussie ferme la session verrouillée. Une déconnexion normale ne propose aucun retour.
+- Vérifié par 5 contrôles automatiques, sur téléphone et sur ordinateur.
+
+#### Connexion et veille au style Windows 11
+- Fond uniforme : dégradé bleu avec un halo blanc en haut, comme l'écran de connexion de Windows 11. Plus de carte blanche ni de contour.
+- Champs de verre translucide, sans cadre autour : un trait fin en bas, qui devient blanc et plus épais à la saisie.
+- Dans le champ du mot de passe ou du code : l'œil, puis la flèche pour valider, comme le code PIN de Windows 11. Entrée valide aussi.
+- Le même champ façon Windows 11, sur fond clair, partout où l'on configure :
+  - mots de passe et codes : Sécurité du compte, changement de code, effacement des données ;
+  - assistant d'installation : établissement, comptes, mots de passe ;
+  - adresses : ordinateur principal, Tailscale, invitation privée ;
+  - tous les formulaires de réglages.
+
+#### Encaisser : une seule recherche
+- Le champ de recherche du corps de la page est retiré. La recherche de l'apprenant se fait dans la barre du haut, qui s'ouvre d'elle-même en arrivant sur Encaisser.
+- Venu d'une fiche avec « Encaisser », la barre reste fermée : l'apprenant est déjà choisi.
+
+#### Ordinateur principal injoignable : plus d'impasse
+- La page de connexion rappelle à quel ordinateur ce poste est relié et propose « Changer d'ordinateur principal ».
+- Le choix de l'ordinateur principal propose « Retour ». Le geste retour d'Android y ramène aussi.
+- Vérifié par 2 contrôles automatiques.
+
+#### Import Excel : aucun apprenant laissé de côté
+- Avant, une ligne était écartée sans être importée quand :
+  - le matricule était vide ;
+  - le matricule était repris par une autre personne ;
+  - la promotion était vide, ou son code ne comptait pas 4 caractères ;
+  - les titres des colonnes n'étaient pas à la ligne 4 du modèle.
+- Maintenant, chaque ligne devient un apprenant :
+  - matricule vide : SCOLIA en attribue un, dans la promotion de l'apprenant ;
+  - matricule déjà pris par une autre personne : l'apprenant reçoit un nouveau matricule ;
+  - ligne recopiée, même matricule et même nom : une seule fiche, signalée ;
+  - code de promotion mal formé : il reçoit un code de 4 caractères proche, signalé ;
+  - promotion vide : l'apprenant va dans « À classer », à réaffecter ensuite ;
+  - titres des colonnes trouvés où qu'ils soient : « Matricule », « Nom », « Noms », « Promotion », « Téléphone »…, et un nom complet dans une seule colonne est découpé.
+- L'aperçu commence par un bilan : « 209 apprenant(s) lu(s) dans le classeur · 209 à créer… », puis chaque ajustement, ligne par ligne.
+- Vérifié par un test avec une liste tenue à la main : 8 lignes, 6 apprenants créés, la ligne recopiée fusionnée.
+- Le fichier de 209 apprenants n'a pas pu être essayé ici : il n'a pas été transmis.
+
+### Revue finale du 2 novembre
+
+#### Contrôles
+
+| Contrôle | Résultat |
+|---|---|
+| Tests de l'application | 284 réussis |
+| Tests du serveur | 228 réussis |
+| Tests du téléphone serveur | 11 réussis |
+| Commandes essayées une à une, téléphone | 135, 0 à revoir |
+| Commandes essayées une à une, ordinateur | 173, 0 à revoir |
+| Parcours complet, téléphone et ordinateur | Réussis |
+| Scénarios : veille, alertes, empreinte, recherche, recherches, clavier, prédiction, thème sombre | Réussis |
+| Écrans du téléphone sans texte coupé | 68 sur 68 |
+| Écrans de l'ordinateur | 58 captures examinées |
+
+#### Défauts trouvés et corrigés
+
+| Défaut | Effet | Correction |
+|---|---|---|
+| Recherche lancée à la main pendant l'attente de la frappe | Deux requêtes, la première jetée : liste parfois vide | Une recherche lancée remplace celle qui attendait (Encaisser et recherche générale) |
+| Encaisser : barre du haut restée ouverte après le choix | Clavier et barre gênent la saisie du versement | Elle se referme dès que l'apprenant est choisi |
+| Encaisser : « Saisissez au moins deux caractères » sans champ dans la page | Message trompeur | Message retiré ; le bouton du corps renvoie à la barre du haut |
+| Barre du bas : « Mensualité de septembre — … à Mensualité de … » | Résumé coupé | « septembre », sur deux lignes au besoin |
+| Bandeaux « hors ligne » et « opérations refusées » | Texte coupé sur téléphone | Le texte passe à la ligne |
+| Sous-titres Suivi mensuel, Cartes d'accès, Effacer | Coupés sur téléphone | Sous-titres courts |
+| Listes et dates des formulaires | Encore encadrées | Même champ Windows 11 que le texte |
+
+#### Contrôles de durée
+- Trois contrôles mesurent des délais très courts : ouverture d'une page depuis le menu (moins de 500 ms), onde au toucher (140 ms), pas de silhouettes avant 150 ms.
+- Sur la machine d'essai, chargée par les compilations et les autres contrôles, ils échouent de façon variable, un délai différent à chaque passage.
+- Sur la machine propre de la compilation en ligne, les mêmes contrôles passent : étapes « Interfaces natives mobiles » et « Thème sombre natif » réussies.
+- Les durées mesurées ici ne sont donc pas comparées entre elles : seules les améliorations déjà mesurées au calme (Pointage, listes par paquets) sont retenues.
+
+### Windows haut de gamme, écran par écran
+
+Revue des 58 écrans de l'ordinateur en 1366 × 768, comme un portable courant.
+
+| Écran | Avant | Après |
+|---|---|---|
+| Listes (Apprenants, Reçus, Dépenses, Suivi mensuel…) | Deux recherches : celle de la page et celle du bandeau | Une seule : le filtre du bandeau, ouvert d'office, loupe fixe ; Échap le vide |
+| Bandeau du haut | Trois boutons et « … », texte de recherche coupé | L'action principale et une autre, le reste dans « … » ; champ de recherche plus large |
+| Tableaux | Titres de colonne décalés par rapport aux cellules | Titres alignés sur le texte des cellules |
+| Apprenants | « Précédent », « Suivant » au milieu des filtres | Pagination compacte à droite, en flèches ; « Effacer les filtres » discret |
+| Accueil | « Encaisser » et « Inscrire » en double, rôle répété sous le salut | Le bandeau garde ces deux actions, la grille propose les quatre suivantes ; nom complet de l'établissement |
+| Encaisser | Même message trois fois, total répété dans la page | Un seul encadré avec ses deux boutons ; le total reste dans la barre du bas ; champs alignés |
+| Fiche apprenant | « Payé » en gris | « Payé » et « Pris en charge » en vert, « Impayé » en rouge |
+| Journal d'audit | Codes bruts : « connexion.reussie » | Libellés : « Connexion réussie », « Encaissement »… |
+| Texte et polices | Liste des polices vide | La police choisie s'affiche ; explication courte |
+| Paramètres du poste | « Rétablir » en haut et en bas | Une fois, dans le bandeau |
+| Sauvegardes, Tableau de bord, Rapports, Pointage, Caisse | Sous-titres longs, coupés | Sous-titres courts |
+| Barre d'état | Nom de l'établissement coupé, zoom en « − » et « + » texte | Nom entier, icônes de zoom avec info-bulle |
+| Icônes des boutons | Pleines et contour mélangées | Contour partout dans les boutons : annuler, imprimer, enregistrer, encaisser, importer, télécharger |
+
+### Serveur toujours joignable, écran éteint ou fenêtre réduite
+
+| Appareil serveur | Avant | Maintenant |
+|---|---|---|
+| Ordinateur Windows | La fenêtre réduite gardait le serveur, mais Windows pouvait mettre l'ordinateur en veille : les autres postes étaient coupés | Tant que le partage est ouvert, le serveur demande à Windows de rester éveillé. L'écran peut s'éteindre |
+| Portable Windows | Couvercle fermé : veille | Toujours en veille couvercle fermé, c'est un choix de Windows. « Poste et réseau » ouvre les options d'alimentation pour choisir « Ne rien faire » |
+| Téléphone Android | Service au premier plan, mais Android pouvait le freiner écran éteint pour la batterie | SCOLIA demande à sortir des économies de batterie dès que le téléphone devient serveur, puis une fois par lancement tant que ce n'est pas accordé |
+| Wi-Fi du téléphone | Verrou « faible latence », sans effet écran éteint | Verrou « haute performance » jusqu'à Android 13, qui reste actif écran éteint |
+| Tecno, Infinix, itel, Xiaomi, Samsung, Huawei, Oppo, Vivo | Gestionnaires de la marque qui coupent les applications | « Poste et réseau » indique le réglage de la marque et ouvre la page de SCOLIA dans les réglages |
+| iPhone | Ne peut pas être serveur | Inchangé : iOS suspend les applications en arrière-plan. L'iPhone reste un poste relié, qui se reconnecte seul au retour |
+
+Ce qui coupe encore les autres postes : « Quitter » SCOLIA sur le serveur, l'éteindre, le mettre en veille à la main, ou couper son Wi-Fi.
+
+### Recherche dans la barre, code QR, logo, icônes
+
+| Sujet | Maintenant |
+|---|---|
+| Recherche de l'accueil sur ordinateur | Elle se fait dans la barre du haut : on tape, les résultats se déroulent dessous. Micro dans la barre. Plus de fenêtre à part, plus de « Ctrl+K » affiché |
+| Relier un appareil | Le serveur montre un code QR (Poste et réseau). L'autre appareil le scanne : appareil photo sur téléphone, image ou code collé sur ordinateur. Wi-Fi, puis Tailscale, puis Internet. Aucune adresse publique acceptée |
+| Logo | Logo SCOLIA et nom de l'école dans le volet, l'accueil, la connexion, la veille et le téléphone. Le logo de l'école sert aux reçus, rapports et cartes |
+| Icônes | Tuiles façon Android 16 : coins arrondis, reflet, ombre douce, pictogramme blanc. Icônes pleines dans les boutons |
+| Mode sombre | Les icônes gardent leurs couleurs franches ; bleu et indigo en variantes à contraste renforcé |
+| Fluidité sur ordinateur | Couleurs qui glissent au survol, tuiles qui se soulèvent, appui qui enfonce à peine, résultats qui descendent en fondu |
+| Tableau de bord du téléphone | Les barres de recouvrement passent sous leur étiquette : plus de chevauchement avec le texte |
+| Voix sur le téléphone | Le micro ne disparaît plus si l'écran n'était pas prêt au moment du contrôle ; sans service vocal, un message dit quoi activer |
+
+Non vérifié sur appareil réel : la photo du code QR sur téléphone, la voix, et la veille de Windows sur un vrai PC.
+
+## 4. Limites à connaître
+
+| Sujet | Limite | Solution proposée |
+|---|---|---|
+| Envoi WhatsApp sans intervention | Il faut un compte WhatsApp Business de l'établissement chez Meta : identifiant du numéro et jeton d'accès. Pour écrire en premier, il faut aussi un modèle de message approuvé, avec un document en en-tête. Aucun identifiant n'a été inventé. | Créer le compte sur Meta for Developers, puis saisir les trois valeurs dans « Planifier ». Sans elles, le PDF est préparé chaque jour et la notification propose de le partager. |
+| Notifications téléphone application fermée | Les alertes arrivent tant que SCOLIA est ouvert ou récemment mis en arrière-plan. Une fois l'application fermée par le système, il faudrait un service de notifications push. | Ajouter un relais push (Firebase pour Android, APNs pour iPhone) le jour où l'établissement crée ces comptes. |
+| iPhone en arrière-plan | iOS suspend vite les applications : la notification n'arrive que dans les instants qui suivent la mise en arrière-plan. | Même solution : notifications push. |
+| Vérification sur appareil | L'empreinte réelle, la bannière du système, la recherche à la voix et l'envoi WhatsApp n'ont pas été essayés sur un vrai téléphone ni avec un vrai compte Meta. | Essai sur votre téléphone avec l'APK livré. |
+| Voix sans réseau | Hors ligne seulement si le téléphone sait reconnaître le français sur l'appareil : Android 12 et plus selon le modèle, iPhone. Sur un téléphone plus ancien, la voix a besoin d'Internet. | Télécharger le français pour l'usage hors ligne dans les réglages vocaux du téléphone, une fois, avec Internet. |
+
+## 5. Pistes suivantes
+
+- Relais push pour les notifications quand l'application est fermée.
+- Rapport hebdomadaire et mensuel, sur le même modèle que le rapport journalier.

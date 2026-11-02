@@ -1,0 +1,33 @@
+SCOLIA V38 - AUDIT DE SYNTAXE ET DE LANCEMENT
+Date : 2026-10-11
+
+Objet
+-----
+Cette révision part de SCOLIA_UX_PERFORMANCE_V37.zip et traite les erreurs de syntaxe signalées sur la version précédente, notamment dans ScoliaConfiguration.ps1.
+
+Constats
+--------
+1. Le bloc ScoliaConfiguration.ps1 à l'origine du diagnostic de la version précédente n'est plus présent sous cette forme dans V37/V38. Les numéros de lignes 100, 129, 168, 181 et 193 correspondent désormais à d'autres instructions et le fichier est structurellement équilibré.
+
+2. Une autre erreur réelle a été trouvée dans programme/TestsFenetres.ps1 : la fermeture d'une here-string PowerShell était suivie d'arguments sur la même ligne. Windows PowerShell 5.1 exige que le marqueur de fermeture soit seul sur sa ligne. Le code a été réécrit avec une variable $childSource puis WriteAllText sur la ligne suivante.
+
+3. Le lanceur programme/Lancer.ps1 a été renforcé : les scripts critiques suivants sont désormais analysés à chaque lancement par le parseur PowerShell, même si le cache syntaxique existe :
+   - ScoliaConfiguration.ps1
+   - Application.ps1
+   - ScoliaIntegration.ps1
+   - PrisesEnCharge.ps1
+   - MiseAJourPerformance.ps1
+
+4. VERIFICATION_PRELANCEMENT_V32.ps1 et VERIFICATION_SYNTAXE_V27.ps1 vérifient maintenant récursivement tous les scripts PowerShell, y compris les scripts de test.
+
+Contrôles statiques effectués dans l'environnement de préparation
+-----------------------------------------------------------------
+- 105 fichiers .ps1 : délimiteurs, chaînes et here-strings contrôlés.
+- 3 fichiers JSON : syntaxe JSON valide.
+- manifest.json : 16 modules VBA, 16 empreintes normalisées conformes.
+- INSTALLER.vbs, INSTALLER_CORRECTIONS.vbs et APPLICATION.vbs : pas de BOM UTF-8 et contenu ASCII compatible WSH.
+- Aucune incohérence détectée par ces contrôles.
+
+Limite
+------
+L'environnement de préparation ne contient pas Windows PowerShell 5.1 ni Excel COM. La validation officielle du parseur PowerShell 5.1 reste donc exécutée automatiquement par Lancer.ps1 sur le PC Windows avant l'ouverture de l'application/installeur. Si une erreur subsiste, le lancement est bloqué avant toute modification des données et le diagnostic indique le fichier, la ligne et la colonne.

@@ -1,0 +1,5 @@
+SCOLIA V34 — correction du bloc d'enregistrement de la configuration
+
+Correction ciblée : réécriture du bloc catch/finally dans programme/ScoliaConfiguration.ps1 pour éviter l'apostrophe typographique dans le message d'erreur et garantir la remise en état de l'indicateur de progression, du curseur et des boutons après une erreur.
+
+À vérifier sur le poste Windows cible : lancer l'installation des corrections et confirmer que la page de configuration s'ouvre, qu'un enregistrement valide fonctionne et qu'une erreur de validation affiche un message sans fermer la fenêtre.

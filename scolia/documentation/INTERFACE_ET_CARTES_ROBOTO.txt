@@ -1,0 +1,54 @@
+﻿CARTES ET AFFICHAGE — VERSION 74
+
+Cartes d’accès
+Les cartes conservent le format de huit cartes par page A4 : 92 × 63 mm,
+espaces de coupe de 6 mm horizontalement et 7 mm verticalement.
+La bande colorée mesure maintenant 7 mm et ne porte aucun texte.
+La classe reste dans la zone d’identité ; le matricule n’est plus imprimé.
+Roboto Regular et Bold sont fournis dans Assets/Fonts. Le PDF intègre ces
+polices et le Word les embarque ; aucune installation manuelle de police
+n’est requise pour générer les cartes.
+L’en-tête a un fond très clair et une ligne de séparation. Le titre SESSION
+est centré et CARTE D’ACCÈS est souligné. Le PDF et l’impression ajoutent
+un motif discret dans la zone droite. Word conserve un fond d’en-tête clair.
+Le QR contient le nom, post-nom, prénom, classe, session, année et établissement.
+Il fonctionne hors connexion et ne contient aucun matricule ni lien externe.
+Le QR ne valide pas un paiement et ne constitue pas une signature électronique.
+Les identités restent du texte modifiable dans Word. Après une modification
+dans Word, le QR doit être régénéré depuis le logiciel pour refléter ces changements.
+Les exemples livrés dans documentation/Exemples présentent des identités de démonstration.
+
+Ruban
+Dès 900 unités de largeur disponible, les groupes partagent une même rangée.
+Les commandes se disposent en une à trois colonnes selon la largeur de leur
+groupe. Les hauteurs et les noms des groupes sont alignés. Une fenêtre plus
+étroite permet plusieurs rangées, sans défilement horizontal du ruban.
+
+Tableaux et préférences
+Les colonnes visibles se partagent la largeur du tableau. Le texte et les
+titres passent à la ligne, avec des hauteurs recalculées ; les données restent
+intégrales. Les marges latérales des cellules sont réduites à deux pixels.
+Le défilement vertical reste disponible pour consulter de nombreuses lignes.
+Une fenêtre très étroite affiche naturellement davantage de lignes de texte.
+La taille sélectionnée, de 9 à 14 points, est désormais conservée exactement
+pour les listes et historiques, y compris après redimensionnement ou actualisation.
+Les autres textes de l’interface gardent leur adaptation à la fenêtre.
+
+Vérifications
+Huit composants C# compilés en C# 5 et scripts vérifiés pour PowerShell 5.1.
+Génération réelle de PDF et Word pour 1, 7, 8, 9, 16 et 1001 cartes.
+Contrôle des pages A4, du débordement, des exports atomiques et des fichiers temporaires.
+PDF et Word rendus et contrôlés sur les deux pages de l’exemple à neuf cartes.
+Lecture des neuf QR dans chacun des deux formats. Vérification des deux
+polices embarquées, des fichiers XML Word et de l’intégrité ZIP.
+Tests natifs TestsNavigation.ps1, TestsTableauxAdaptatifs.ps1,
+TestsPreferencesImmediates.ps1 et TestsResponsiveContenus.ps1 livrés.
+L’exécution des fenêtres et des macros sur Windows/Excel reste à vérifier
+sur un poste Windows. Les six classeurs sources et les corrections VBA
+restent identiques à la version 73.
+
+Installation
+Fermez l’application, extrayez le ZIP complet et lancez APPLICATION.vbs.
+Si les corrections de prise en charge de la version 73 ont déjà été installées,
+ces changements d’interface ne demandent pas de nouvelle installation dans Excel.
+Conservez votre dossier data et toutes ses sauvegardes.

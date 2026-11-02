@@ -1,0 +1,28 @@
+SCOLIA V43 — AUDIT SENIOR STATIQUE
+Date de génération : 2026-10-11T10:48:14
+
+Inventaire
+- Scripts PowerShell : 109
+- Sources C# : 14
+- Fichiers JSON : 3
+- Lanceurs VBS : 3
+- Modules VBA référencés par manifest.json : 16
+
+Contrôles réalisés dans cet environnement
+- Equilibrage lexical des accolades/parenthèses/crochets des scripts PowerShell : OK
+- JSON lisibles : OK
+- Empreintes des modules VBA du manifeste : OK
+- Fichiers isolés à la racine SCOLIA : Aucun
+- Transition continue après connexion : présente
+- Réapplication de l'espace métier après construction : présente
+- Configuration des classes avec ajout rapide + validation : présente
+- Test d'écriture du dossier data avant finalisation : présent
+- Minimum de fenêtre principale responsive : corrigé
+- Paiement suivant : recherche remise au focus après succès
+- Inscriptions successives : formulaire conservé et confirmation non bloquante
+- Verrou d'opération UI libéré dans finally : conservé
+- Nettoyage du verrou Excel terminé : conservé
+- Recherche instantanée des prises en charge : conservée
+
+Limite de l'audit
+Cet environnement n'exécute pas Windows PowerShell 5.1, WinForms Windows ni Excel COM. Les tests réels de compilation, d'affichage et d'écriture Excel doivent donc être exécutés sur Windows. Le fichier programme/TestsAuditSeniorV43.ps1 a été ajouté pour ce contrôle sur le poste cible.

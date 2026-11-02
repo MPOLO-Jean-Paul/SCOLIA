@@ -1,0 +1,103 @@
+﻿BASE ACTUELLE : FICHIER_SOURCE.xlsm reçu le 6 octobre, 57 apprenants et 59 lignes de paiement. Lire NOUVELLES_DONNEES.txt.
+
+ITM CD — GESTION AVANCEE
+
+INSTALLER CETTE EDITION
+1. Extrayez entièrement le ZIP dans un nouveau dossier.
+2. Fermez Excel, puis double-cliquez sur INSTALLER.vbs.
+3. Choisissez votre classeur ACTUEL contenant vos dernières saisies.
+4. Attendez « Installation réussie ». L'original est conservé ; une copie
+   SYSTEME_SECRETARIAT_CORRIGE.xlsm est créée dans Installation_ITM_...
+5. Lancez APPLICATION.vbs et connectez cette nouvelle copie corrigée.
+Cette mise à jour du classeur est nécessaire, même si une ancienne application
+fonctionne déjà. La passerelle de cette édition est ITM-DESKTOP-2 (15 modules).
+Ne repartez pas d'un ancien fichier source si vous avez saisi de nouvelles données.
+
+MODIFIER UN DOSSIER
+Onglet Apprenants → recherchez puis sélectionnez l'apprenant → Fiche complète
+→ Modifier ce dossier. Le bouton Modifier du tableau ouvre aussi l'éditeur.
+Vous pouvez corriger identité, date/lieu de naissance, contacts, adresse et statut.
+L'adresse reste visible. Le matricule, la date d'inscription et le tuteur existant
+sont conservés. Si des paiements existent, promotion et année ne peuvent pas être
+changées dans ce dossier : leur historique financier doit rester cohérent.
+Le nom corrigé est reporté sur les lignes de paiement du même matricule.
+Une identité et une date de naissance déjà présentes bloquent la création
+d'un doublon. Un matricule en double bloque sa modification.
+
+FICHE COMPLETE
+Identité, adresse, contacts, promotion, année, statut, total versé, reste annuel
+et historique des paiements dans une fenêtre dédiée avec aperçu avant impression.
+Une imprimante Windows, y compris une imprimante PDF, doit être disponible.
+Dernier dossier rouvre le dernier dossier consulté ou enregistré dans cette session.
+Effacer recherche retire le texte ; le compteur indique les résultats affichés.
+
+CORRIGER UN PAIEMENT
+Onglet Paiements → sélectionnez une ligne dans l'historique
+→ Corriger paiement sélectionné → nouveau montant TOTAL du reçu
+→ motif de 5 à 250 caractères → Vérifier puis confirmer.
+Le montant est un entier positif en FC. L'aperçu présente l'ancien et le nouveau
+montant et la nouvelle répartition de tous les reçus de cet apprenant.
+Fermer ou répondre Non à la confirmation ne modifie aucune donnée.
+Après confirmation, les reçus sont recalculés par date, puis par ordre initial
+si les dates sont identiques, de septembre à mai. Le total des autres reçus,
+leurs numéros et leurs dates sont conservés. Les autres apprenants sont conservés.
+Les anciennes et nouvelles lignes sont journalisées avec le motif.
+La correction porte sur le montant, pas sur le matricule, la date ou la suppression.
+Un historique incomplet, un numéro partagé, des tarifs historiques différents
+ou plusieurs lignes du même reçu pour le même mois bloquent ce recalcul.
+Il faut alors rapprocher les données des reçus, sans inventer de montants.
+Lors d'une nouvelle saisie, un même montant déjà enregistré aujourd'hui pour
+le même apprenant déclenche un avertissement ; un second versement réel reste possible.
+
+RETARDS
+Tableau de bord → filtre promotion/mois et seuil de mois en retard
+→ Exporter les retards. Le CSV inclut les contacts disponibles.
+Les mois échus suivent l'année scolaire de septembre à mai.
+Les dossiers invalides sont signalés dans Diagnostic et exclus des indicateurs
+individuels. Consultez ce diagnostic avant d'utiliser une liste pour des relances.
+
+ADMINISTRATION
+Promotions : créer une promotion ou modifier sa désignation, son année et ses frais.
+Code de 4 caractères ; total annuel égal à 9 mensualités.
+Une promotion avec paiements garde ses frais, son année et son activation.
+Une promotion avec apprenants garde son année ; préparer une nouvelle année
+plutôt que modifier rétroactivement l'année de leurs dossiers.
+
+Sauvegardes : créer une copie manuelle, consulter les copies et restaurer
+la copie sélectionnée sous un NOUVEAU nom .xlsm. Aucun fichier existant n'est écrasé.
+Une ancienne sauvegarde peut nécessiter de nouveau INSTALLER.vbs pour être connectée.
+Une sauvegarde avant opération accompagne les écritures prévues par l'application.
+
+Année scolaire : archiver et préparer uniquement l'année suivante.
+L'archive conserve les paiements. Le classeur actuel est marqué clôturé.
+Le nouveau classeur conserve dossiers, contacts, adresses, statuts et promotions ;
+seuls ses paiements sont remis à zéro. Les frais existants sont reconduits,
+puis peuvent être ajustés dans ce nouveau classeur avant les premiers paiements.
+Les dettes de l'ancienne année restent dans l'archive : elles ne sont pas reportées
+automatiquement sur la nouvelle année. Les promotions/statuts ne progressent
+pas automatiquement ; vérifiez chaque dossier avant les nouvelles saisies.
+L'application et l'enregistrement ordinaire Excel bloquent les modifications
+de l'année clôturée. Ce marqueur ne remplace pas une protection des fichiers.
+En cas d'échec, consultez le message et la sauvegarde ; n'utilisez pas un fichier
+partiellement préparé sans confirmation de réussite.
+
+Journal : date, utilisateur Windows/Excel, action, matricule, reçu, motif et année.
+Double-cliquez une ligne pour voir avant/après ; export CSV disponible.
+Le journal commence avec les opérations de cette mise à jour, sans reconstruire
+les anciennes modifications. Les modifications directes de cellules Excel
+ne sont pas tracées par ce journal. Les noms Windows/Excel ne sont pas une
+authentification et le journal n'est pas un registre inviolable.
+
+Doublons : liste de dossiers ayant la même identité et date de naissance.
+Les dossiers ne sont jamais fusionnés automatiquement.
+
+VALIDATION
+Les contrôles statiques et les scénarios d'un modèle de référence sont décrits
+dans VERIFICATION_GESTION_AVANCEE.txt. Aucune exécution Windows/Excel de ces
+nouveaux parcours n'est affirmée dans cet environnement.
+Sur une COPIE de votre classeur : essayez une modification d'adresse,
+une correction de paiement (aperçu puis confirmation), une restauration sous
+un autre nom et une clôture vers une année de test. Vérifiez les données et
+le journal avant d'utiliser ces nouveaux parcours pour des opérations réelles.
+Le nouveau FICHIER_SOURCE.xlsm est conservé à l'identique ; les cinq classeurs
+historiques fournis ne doivent pas servir de base pour ces nouvelles données.

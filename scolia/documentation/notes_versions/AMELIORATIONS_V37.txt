@@ -1,0 +1,43 @@
+SCOLIA V37 — ERGONOMIE, ICÔNES ET RÉACTIVITÉ
+=============================================
+
+Cette édition part du ZIP SCOLIA_COMPLET_V35_AUDIT_CORRIGE fourni par l'utilisateur.
+
+1. ICÔNES MÉTIER
+- Un pictogramme spécifique est dessiné pour chaque espace principal : Tableau de bord, Apprenants, Paiements, Exports, Diagnostic, Administration, Sécurité, Préférences, Données, Scolarité et Comptabilité.
+- Comptabilité ne réutilise plus l'icône des Paiements.
+- Les pictogrammes sont locaux : aucune police ou bibliothèque d'icônes externe n'est nécessaire.
+
+2. RÉACTIVITÉ
+- Les inscriptions et paiements ne relisent plus toute la base après chaque écriture dans le chemin normal.
+- Une passerelle ciblée relit uniquement l'apprenant concerné, ses paiements et ses soldes.
+- Pendant une série d'inscriptions, la grille située derrière le formulaire n'est plus reconstruite à chaque sauvegarde : elle est actualisée lorsque le formulaire est fermé.
+- Les transactions d'inscription ne copient plus tous les segments du dossier data : seul le classeur réellement modifié est sauvegardé pour récupération, tout en gardant la compatibilité avec les anciens journaux de transaction.
+- Les grilles conservent leurs colonnes si le schéma n'a pas changé au lieu de les recréer à chaque filtre.
+- Le cache de syntaxe du démarrage utilise taille + date UTC et n'ouvre/re-hache plus tous les scripts inchangés à chaque lancement.
+- Les prises en charge n'effectuent plus de relecture Excel complète après une modification du registre XML.
+- La réception d'un paiement SCOLIA actualise uniquement le dossier concerné au lieu de recharger toute la base.
+
+3. PRISES EN CHARGE
+- Ajout d'une zone « Rechercher un apprenant ».
+- Recherche instantanée par matricule, nom, promotion, garant ou régime.
+- Temporisation courte de 130 ms pour rester fluide pendant la frappe.
+- Filtrage en mémoire : Excel n'est pas relu à chaque touche.
+- Ctrl+F place directement le curseur dans le champ de recherche.
+- Affichage du nombre de résultats.
+
+4. INSCRIPTION DES APPRENANTS
+- Après sauvegarde, le formulaire reste prêt pour l'apprenant suivant.
+- La promotion choisie est conservée pour accélérer les inscriptions en série.
+- Message de confirmation moderne, non bloquant, avec coche verte, matricule et disparition automatique.
+- Le toast s'adapte au thème clair/sombre.
+- La grille principale est actualisée après fermeture du formulaire, ce qui accélère chaque sauvegarde successive.
+
+5. FIABILITÉ
+- Les mécanismes de transaction et de récupération sont conservés.
+- Une transaction ciblée V37 enregistre la liste des fichiers protégés ; les anciens journaux sans cette information restent restaurés selon l'ancien mode intégral.
+- La passerelle de performance est versionnée SCOLIA-PERF-3.
+- Le manifeste des 16 modules VBA a été recalculé/vérifié.
+
+IMPORTANT
+Cette archive a été contrôlée statiquement dans l'environnement de génération, mais Excel/VBA et WinForms Windows PowerShell 5.1 ne peuvent pas y être exécutés. Effectuer le premier essai sur une copie des données avant le déploiement en production.

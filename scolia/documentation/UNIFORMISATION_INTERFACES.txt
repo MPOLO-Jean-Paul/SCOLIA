@@ -1,0 +1,26 @@
+﻿UNIFORMISATION DES INTERFACES — RÉVISION 71
+
+CORRECTIONS
+Les pages Paiements, Exports, Diagnostic, Sécurité, Données et les rubriques Administration partagent des marges et espacements cohérents. Les champs natifs utilisent leur hauteur préférée après application de la police. Les libellés et commandes longs sont mesurés avec les mêmes règles que le rendu.
+Les listes déroulantes adaptent leur hauteur à la police et leur largeur de menu aux libellés, dans la limite de l’écran. Le rendu des textes est partagé entre clair et sombre.
+La recherche et le filtre Promotion de la page Apprenants ne se positionnent plus sur des hauteurs de libellé fixes. Les titres et séparateurs de la fiche apprenant suivent leur contenu. Les fenêtres d’aide et les dialogues communs utilisent une mise à l’échelle DPI cohérente.
+Un passage final de mise en page est regroupé après redimensionnement : police, bandeau, puis pages et préférences. Les réglages de texte et d’espacement recalculent aussi les rubriques Administration.
+Le bandeau devient compact dans une fenêtre basse. Si le ruban laisserait moins de place à la page, il se replie temporairement sans changer votre choix enregistré. Le bouton Ruban ou Afficher les commandes maximise alors la fenêtre. Les commandes de page et raccourcis restent utilisables. Les pages longues conservent un défilement vertical ; les tableaux gardent leurs propres barres de défilement pour consulter toutes les colonnes.
+Les messages de la barre d’état conservent leur texte intégral dans l’infobulle.
+Le diagnostic des doublons utilise maintenant la même identité que le contrôle d’inscription : nom, post-nom, prénom et promotion normalisés. La date de naissance n’est pas une condition de cette règle. Aucune donnée existante n’est fusionnée ou supprimée automatiquement.
+
+MISE À JOUR
+Fermez Excel et ITM CD. Extrayez le ZIP dans votre dossier de programme. Lancez INSTALLER.vbs pour mettre également à jour le diagnostic VBA du classeur, puis APPLICATION.vbs. Conservez votre dossier data et vos fichiers de travail lors d’une mise à jour. Les six classeurs sources du paquet ne sont pas modifiés.
+
+CONTRÔLES EFFECTUÉS DANS L’ENVIRONNEMENT DE PRÉPARATION
+49 scripts : analyse syntaxique, prise en compte des guillemets et apostrophes typographiques, encodage UTF-8 compatible avec Windows PowerShell 5.1.
+Six modules C# : compilation avec le langage C# 5 compatible avec la cible .NET.
+Couleurs principales et secondaires : calculs de contraste exécutés, minimum 4,5:1 pour les associations de texte activé vérifiées en clair et sombre.
+Signatures et structure des modules VBA, compatibilité avec les versions précédentes et dépendances des scripts vérifiées. Intégrité ZIP et conservation exacte des six classeurs vérifiées.
+
+CONTRÔLES NATIFS FOURNIS
+TestsResponsiveContenus.ps1 : scénarios de 360, 480, 680, 960 et 1280 unités, textes longs, préférences, dialogues, listes déroulantes et surfaces communes des pages.
+TestsNavigation.ps1 : onglets, groupes, séparateurs, raccourcis fréquents, fenêtres basses et conservation de la préférence du ruban.
+TestsInscriptionPageUnique.ps1 : champs d’inscription sur une page et champ de mot de passe.
+TestsDoublonsIdentite.ps1 : diagnostic cohérent avec le refus des doublons à l’inscription.
+Ces scénarios doivent être exécutés avec Windows PowerShell 5.1 en STA sur Windows. Ils n’ont pas été exécutés ici : Windows et Excel ne sont pas disponibles dans l’environnement Linux. Le rendu visuel exact, les DPI et les opérations Excel restent à valider sur la machine Windows.

@@ -1,0 +1,34 @@
+SCOLIA V71 — Paiements au secrétariat et cohérence des interfaces
+
+Extraire entièrement le ZIP et lancer 00_Demarrage/APPLICATION.vbs.
+
+Paiement enregistré : import à reprendre signifie que le journal partagé
+contient déjà le reçu, mais que le classeur local n’a pas reçu ses lignes.
+Ne pas créer un second paiement pour le même reçu.
+
+Le secrétariat utilise maintenant directement les apprenants de sa base
+connectée. Son paiement est enregistré avec son compte, dans le journal,
+puis intégré dans son classeur. Le compte comptable conserve son répertoire
+importé. La référence automatique et l’identité de transfert restent uniques.
+
+L’import initial reconnaît les passerelles à six arguments et Finance 2
+à huit arguments. Il n’est plus bloqué uniquement parce que la fonction
+de version Finance 2 est absente. Le même UUID permet une reprise sans
+duplicata. Les anciens reçus propres au compte, bloqués par ce message,
+peuvent être intégrés automatiquement lorsque leur année est connectée.
+Les autres erreurs métier restent à vérifier. Les corrections de reçus
+nécessitent toujours une passerelle prenant en charge les révisions.
+
+Interfaces : Segoe UI et une taille unique selon Préférences (10 pt par
+défaut), pour les champs, titres, boutons, menus et tableaux de l’application.
+Les titres peuvent rester en gras. Les documents exportés gardent leur
+mise en page spécifique. Les formulaires courants gardent des champs
+compacts sur deux colonnes quand l’espace le permet, avec les commandes
+fixes en bas ; seul leur corps peut défiler si nécessaire.
+
+Les confirmations et messages de l’application utilisent également une
+présentation commune ; les choix de réponse et le bouton par défaut des
+actions sensibles sont conservés.
+
+La vérification graphique et Excel réelle doit être effectuée sur Windows.
+Contrôles fournis : 00_Demarrage/VERIFIER_V71.cmd.

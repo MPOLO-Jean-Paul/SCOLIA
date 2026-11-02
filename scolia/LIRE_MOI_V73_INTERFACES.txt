@@ -1,0 +1,26 @@
+﻿SCOLIA V73 — Disposition des écrans et formulaires
+
+Améliorations
+- Formulaires simples : libellés mesurés, champs réorganisés en colonne sur petite largeur, défilement du corps.
+- Dossier apprenant : même taille de police choisie que le reste de l’interface ; hauteur des boutons de validation calculée sur leur texte.
+- Pages communes et paiements : désactivation de l’AutoSize qui contredisait les dimensions calculées ; conservation de la hauteur des panneaux internes.
+- Recherche : hauteur des libellés calculée avec la police courante et réévaluée lors des changements de police ou de texte.
+- Présences, personnel, salaires, discipline, cours, recherche et autres écrans construits avec le formulaire commun : contenu défilant lorsque la fenêtre est trop basse ; réserve de hauteur pour le tableau.
+- Barres de commandes des formulaires : boutons dimensionnés selon leur libellé, retours à la ligne et adaptation à la largeur.
+- Ruban : commandes sur une rangée de groupes, cibles de 32 pixels logiques minimum ; défilement horizontal pour les rubans trop denses.
+- Recalcul différé après redimensionnement ; nettoyage du minuteur à la fermeture.
+
+Utilisation
+Décompressez le ZIP complet et utilisez le lanceur habituel APPLICATION.
+Les données, classeurs, comptes, paramètres et traitements métier du ZIP fourni sont conservés à l’identique.
+
+Vérifications
+- Analyse syntaxique des scripts PowerShell avec le parseur PowerShell 7.4.
+- Analyse syntaxique C# avec Roslyn ; ceci ne remplace pas la compilation WinForms sur Windows.
+- Test du ruban : 288 cas, largeurs 330 à 1600 et échelles 100 à 200 %, commandes et groupes conservés, absence d’intersections.
+- Intégrité du ZIP et comparaison octet par octet des fichiers non modifiés.
+
+Limite de validation
+L’environnement de travail est Linux : les fenêtres Windows/WinForms et Excel n’ont pas pu être exécutés ni inspectés visuellement. Cette version ne constitue donc pas une certification visuelle de chaque écran.
+Les tests Windows existants sont conservés. Le test programme/TestsDispositionV73.ps1 complète leur couverture pour les barres de commandes à différentes largeurs et tailles de police.
+Exécution sous Windows : powershell.exe -NoProfile -STA -File programme\TestsDispositionV73.ps1

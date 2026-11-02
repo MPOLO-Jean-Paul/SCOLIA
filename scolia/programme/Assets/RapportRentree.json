@@ -1,0 +1,1148 @@
+﻿{
+  "Schema": 1,
+  "Blocks": [
+    {
+      "kind": "heading",
+      "text": "PLAN DU RAPPORT",
+      "label": "PLAN DU RAPPORT"
+    },
+    {
+      "kind": "text",
+      "text": "I. Introduction",
+      "label": "I. Introduction"
+    },
+    {
+      "kind": "text",
+      "text": "1.1. Situation géographique",
+      "label": "1.1. Situation géographique"
+    },
+    {
+      "kind": "text",
+      "text": "1.2. Historique de l’ITM",
+      "label": "1.2. Historique de l’ITM"
+    },
+    {
+      "kind": "text",
+      "text": "1.3. Dates de la rentrée",
+      "label": "1.3. Dates de la rentrée"
+    },
+    {
+      "kind": "text",
+      "text": "1.4. Conditions environnementales de démarrage",
+      "label": "1.4. Conditions environnementales de démarrage"
+    },
+    {
+      "kind": "text",
+      "text": "1.5. Objectifs",
+      "label": "1.5. Objectifs"
+    },
+    {
+      "kind": "text",
+      "text": "II. Développement",
+      "label": "II. Développement"
+    },
+    {
+      "kind": "text",
+      "text": "2.1. Structure administrative",
+      "label": "2.1. Structure administrative"
+    },
+    {
+      "kind": "text",
+      "text": "2.2. Infrastructure et équipements",
+      "label": "2.2. Infrastructure et équipements"
+    },
+    {
+      "kind": "text",
+      "text": "2.3. Population scolaire",
+      "label": "2.3. Population scolaire"
+    },
+    {
+      "kind": "text",
+      "text": "2.4. Activités pédagogiques",
+      "label": "2.4. Activités pédagogiques"
+    },
+    {
+      "kind": "text",
+      "text": "2.5. Prévisions budgétaires",
+      "label": "2.5. Prévisions budgétaires"
+    },
+    {
+      "kind": "text",
+      "text": "III. Différents projets à réaliser",
+      "label": "III. Différents projets à réaliser"
+    },
+    {
+      "kind": "text",
+      "text": "3.1. Projets à court terme",
+      "label": "3.1. Projets à court terme"
+    },
+    {
+      "kind": "text",
+      "text": "3.2. Projets à moyen terme",
+      "label": "3.2. Projets à moyen terme"
+    },
+    {
+      "kind": "text",
+      "text": "3.3. Projets à long terme",
+      "label": "3.3. Projets à long terme"
+    },
+    {
+      "kind": "text",
+      "text": "3.4. Plan de développement de l’école",
+      "label": "3.4. Plan de développement de l’école"
+    },
+    {
+      "kind": "text",
+      "text": "IV. Conclusion et recommandations",
+      "label": "IV. Conclusion et recommandations"
+    },
+    {
+      "kind": "text",
+      "text": "ANNEXES : liste des apprenants, procès-verbal de délibération, suivi des actions et perspectives",
+      "label": "ANNEXES : liste des apprenants, procès-verbal de délibération, suivi des actions et p"
+    },
+    {
+      "kind": "heading",
+      "text": "I. INTRODUCTION",
+      "label": "I. INTRODUCTION"
+    },
+    {
+      "kind": "text",
+      "text": "Le présent rapport de rentrée scolaire rend compte des conditions de préparation, de démarrage et d’organisation de l’année scolaire {ANNEE} à l’{INSTITUT}. Il reprend les principaux éléments du canevas de rapport de rentrée : situation géographique, historique, dates de la rentrée, conditions environnementales, objectifs, structure administrative, infrastructures et équipements, population scolaire, activités pédagogiques, prévisions budgétaires, projets et perspectives de développement.",
+      "label": "Le présent rapport de rentrée scolaire rend compte des conditions de préparation, de "
+    },
+    {
+      "kind": "text",
+      "text": "L’année scolaire {ANNEE} est placée sous le signe de la consolidation de l’organisation scolaire, de l’amélioration de la qualité de l’enseignement et du renforcement de la formation pratique des apprenants.",
+      "label": "L’année scolaire {ANNEE} est placée sous le signe de la consolidation de l’organisati"
+    },
+    {
+      "kind": "text",
+      "text": "Une attention particulière est accordée à la tenue régulière des documents pédagogiques, au suivi des enseignements et à l’intégration progressive de l’école dans l’Approche par Compétences (APC).",
+      "label": "Une attention particulière est accordée à la tenue régulière des documents pédagogiqu"
+    },
+    {
+      "kind": "text",
+      "text": "La réunion de rentrée et les décisions prises sont consignées dans les documents de l’établissement. {REUNION}",
+      "label": "La réunion de rentrée et les décisions prises sont consignées dans les documents de l"
+    },
+    {
+      "kind": "heading",
+      "text": "1.1. Situation géographique",
+      "label": "1.1. Situation géographique"
+    },
+    {
+      "kind": "text",
+      "text": "{INSTITUT} est situé à {ADRESSE}. {LOCALISATION}",
+      "label": "{INSTITUT} est situé à {ADRESSE}. {LOCALISATION}"
+    },
+    {
+      "kind": "text",
+      "text": "La localisation détaillée, les limites administratives et les autres mentions d’adresse seront reprises conformément aux documents administratifs officiels de l’établissement.",
+      "label": "La localisation détaillée, les limites administratives et les autres mentions d’adres"
+    },
+    {
+      "kind": "heading",
+      "text": "1.2. Historique de l’ITM",
+      "label": "1.2. Historique de l’ITM"
+    },
+    {
+      "kind": "text",
+      "text": "L’{INSTITUT} a été créé afin de contribuer à la formation des jeunes dans les filières techniques des sciences de santé. L’établissement poursuit son développement en renforçant progressivement son organisation administrative, ses capacités pédagogiques, ses équipements et ses dispositifs de formation pratique.",
+      "label": "L’{INSTITUT} a été créé afin de contribuer à la formation des jeunes dans les filière"
+    },
+    {
+      "kind": "text",
+      "text": "Pour l’année {ANNEE}, les priorités portent sur la consolidation des acquis, la régularisation des documents pédagogiques, l’encadrement des apprenants et la mise en œuvre progressive de l’Approche par Compétences.",
+      "label": "Pour l’année {ANNEE}, les priorités portent sur la consolidation des acquis, la régul"
+    },
+    {
+      "kind": "heading",
+      "text": "1.3. Dates de la rentrée",
+      "label": "1.3. Dates de la rentrée"
+    },
+    {
+      "kind": "text",
+      "text": "Le calendrier de rentrée de l’année scolaire {ANNEE} est précisé comme suit : {DATES}",
+      "label": "Le calendrier de rentrée de l’année scolaire {ANNEE} est précisé comme suit : {DATES}"
+    },
+    {
+      "kind": "heading",
+      "text": "1.4. Conditions environnementales de démarrage",
+      "label": "1.4. Conditions environnementales de démarrage"
+    },
+    {
+      "kind": "text",
+      "text": "Assurer la propreté et l’entretien régulier des locaux.",
+      "label": "Assurer la propreté et l’entretien régulier des locaux."
+    },
+    {
+      "kind": "text",
+      "text": "Veiller à la disponibilité des salles et du matériel nécessaire aux enseignements.",
+      "label": "Veiller à la disponibilité des salles et du matériel nécessaire aux enseignements."
+    },
+    {
+      "kind": "text",
+      "text": "Organiser les documents pédagogiques avant et pendant le déroulement des cours.",
+      "label": "Organiser les documents pédagogiques avant et pendant le déroulement des cours."
+    },
+    {
+      "kind": "text",
+      "text": "Renforcer la discipline, la ponctualité et l’assiduité.",
+      "label": "Renforcer la discipline, la ponctualité et l’assiduité."
+    },
+    {
+      "kind": "text",
+      "text": "Créer un cadre propice aux travaux pratiques et aux situations d’intégration.",
+      "label": "Créer un cadre propice aux travaux pratiques et aux situations d’intégration."
+    },
+    {
+      "kind": "text",
+      "text": "Suivre l’état de la salle technique et poursuivre les aménagements nécessaires.",
+      "label": "Suivre l’état de la salle technique et poursuivre les aménagements nécessaires."
+    },
+    {
+      "kind": "heading",
+      "text": "1.5. Objectifs",
+      "label": "1.5. Objectifs"
+    },
+    {
+      "kind": "heading",
+      "text": "1.5.1. Objectif général",
+      "label": "1.5.1. Objectif général"
+    },
+    {
+      "kind": "text",
+      "text": "Assurer une rentrée scolaire organisée et un fonctionnement pédagogique efficace de l’{INSTITUT} au cours de l’année {ANNEE}, en améliorant la qualité de la formation théorique et pratique et en engageant progressivement l’établissement dans l’Approche par Compétences.",
+      "label": "Assurer une rentrée scolaire organisée et un fonctionnement pédagogique efficace de l"
+    },
+    {
+      "kind": "heading",
+      "text": "1.5.2. Objectifs spécifiques",
+      "label": "1.5.2. Objectifs spécifiques"
+    },
+    {
+      "kind": "text",
+      "text": "Mettre en place une organisation administrative et pédagogique claire.",
+      "label": "Mettre en place une organisation administrative et pédagogique claire."
+    },
+    {
+      "kind": "text",
+      "text": "Assurer la tenue régulière et conforme des documents pédagogiques.",
+      "label": "Assurer la tenue régulière et conforme des documents pédagogiques."
+    },
+    {
+      "kind": "text",
+      "text": "Planifier et suivre l’exploitation du calendrier scolaire.",
+      "label": "Planifier et suivre l’exploitation du calendrier scolaire."
+    },
+    {
+      "kind": "text",
+      "text": "Répartir les enseignements selon les qualifications et responsabilités des enseignants.",
+      "label": "Répartir les enseignements selon les qualifications et responsabilités des enseignant"
+    },
+    {
+      "kind": "text",
+      "text": "Renforcer les capacités des enseignants par la formation et l’accompagnement pédagogique.",
+      "label": "Renforcer les capacités des enseignants par la formation et l’accompagnement pédagogi"
+    },
+    {
+      "kind": "text",
+      "text": "Introduire et consolider les principes de l’Approche par Compétences dans les pratiques d’enseignement.",
+      "label": "Introduire et consolider les principes de l’Approche par Compétences dans les pratiqu"
+    },
+    {
+      "kind": "text",
+      "text": "Améliorer l’utilisation des matériels didactiques, techniques et de laboratoire.",
+      "label": "Améliorer l’utilisation des matériels didactiques, techniques et de laboratoire."
+    },
+    {
+      "kind": "text",
+      "text": "Renforcer le suivi des apprenants, leur discipline et leur participation aux activités pratiques.",
+      "label": "Renforcer le suivi des apprenants, leur discipline et leur participation aux activité"
+    },
+    {
+      "kind": "text",
+      "text": "Préparer les conditions nécessaires aux stages et aux activités d’intégration.",
+      "label": "Préparer les conditions nécessaires aux stages et aux activités d’intégration."
+    },
+    {
+      "kind": "heading",
+      "text": "II. DÉVELOPPEMENT",
+      "label": "II. DÉVELOPPEMENT"
+    },
+    {
+      "kind": "heading",
+      "text": "2.1. STRUCTURE ADMINISTRATIVE",
+      "label": "2.1. STRUCTURE ADMINISTRATIVE"
+    },
+    {
+      "kind": "heading",
+      "text": "2.1.1. Organisation de l’école – tableau actualisé",
+      "label": "2.1.1. Organisation de l’école – tableau actualisé"
+    },
+    {
+      "kind": "auto",
+      "source": "administration",
+      "headers": [
+        "N°",
+        "Noms et post-noms",
+        "Qualification",
+        "Fonction"
+      ],
+      "rows": [],
+      "label": "2.1.1. Organisation de l’école – tableau actualisé - tableau"
+    },
+    {
+      "kind": "heading",
+      "text": "2.1.2. Composition administrative et du personnel",
+      "label": "2.1.2. Composition administrative et du personnel"
+    },
+    {
+      "kind": "text",
+      "text": "La composition du personnel est présentée selon les catégories suivantes : enseignants à temps plein, enseignants à temps partiel et ouvriers.",
+      "label": "La composition du personnel est présentée selon les catégories suivantes : enseignant"
+    },
+    {
+      "kind": "heading",
+      "text": "A) Enseignants à temps plein",
+      "label": "A) Enseignants à temps plein"
+    },
+    {
+      "kind": "table",
+      "source": "",
+      "headers": [
+        "N°",
+        "Noms et post-noms",
+        "Qualification",
+        "Fonction"
+      ],
+      "rows": [],
+      "label": "A) Enseignants à temps plein - tableau"
+    },
+    {
+      "kind": "heading",
+      "text": "B) Enseignants à temps partiel",
+      "label": "B) Enseignants à temps partiel"
+    },
+    {
+      "kind": "table",
+      "source": "",
+      "headers": [
+        "N°",
+        "Noms et post-noms",
+        "Qualification",
+        "Fonction"
+      ],
+      "rows": [],
+      "label": "B) Enseignants à temps partiel - tableau"
+    },
+    {
+      "kind": "heading",
+      "text": "C) Ouvriers",
+      "label": "C) Ouvriers"
+    },
+    {
+      "kind": "table",
+      "source": "",
+      "headers": [
+        "N°",
+        "Noms et post-noms",
+        "Fonction"
+      ],
+      "rows": [],
+      "label": "C) Ouvriers - tableau"
+    },
+    {
+      "kind": "heading",
+      "text": "2.2. INFRASTRUCTURE ET ÉQUIPEMENT",
+      "label": "2.2. INFRASTRUCTURE ET ÉQUIPEMENT"
+    },
+    {
+      "kind": "heading",
+      "text": "2.2.1. Bâtiments scolaires",
+      "label": "2.2.1. Bâtiments scolaires"
+    },
+    {
+      "kind": "text",
+      "text": "{INTERNAT}",
+      "label": "{INTERNAT}"
+    },
+    {
+      "kind": "table",
+      "source": "",
+      "headers": [
+        "N°",
+        "Désignation",
+        "Nombre",
+        "Nature / Type",
+        "État",
+        "Observations"
+      ],
+      "rows": [],
+      "label": "2.2.1. Bâtiments scolaires - tableau"
+    },
+    {
+      "kind": "heading",
+      "text": "2.2.2. Mobiliers des bureaux",
+      "label": "2.2.2. Mobiliers des bureaux"
+    },
+    {
+      "kind": "table",
+      "source": "",
+      "headers": [
+        "N°",
+        "Désignation",
+        "Nombre",
+        "Nature",
+        "État",
+        "Observation"
+      ],
+      "rows": [],
+      "label": "2.2.2. Mobiliers des bureaux - tableau"
+    },
+    {
+      "kind": "heading",
+      "text": "2.2.3. Matériels didactiques",
+      "label": "2.2.3. Matériels didactiques"
+    },
+    {
+      "kind": "text",
+      "text": "Voir l’inventaire des matériels didactiques et les besoins d’actualisation consignés dans les documents de l’établissement.",
+      "label": "Voir l’inventaire des matériels didactiques et les besoins d’actualisation consignés "
+    },
+    {
+      "kind": "heading",
+      "text": "2.2.4. Manuels scolaires",
+      "label": "2.2.4. Manuels scolaires"
+    },
+    {
+      "kind": "text",
+      "text": "Les ressources documentaires de {INSTITUT} sont présentées dans l’inventaire ci-dessous. Les références et quantités doivent être actualisées par l’administration.",
+      "label": "Les ressources documentaires de {INSTITUT} sont présentées dans l’inventaire ci-desso"
+    },
+    {
+      "kind": "table",
+      "source": "",
+      "headers": [
+        "N°",
+        "Discipline",
+        "Titre / thème relevé",
+        "Auteur / référence",
+        "Nombre",
+        "Année",
+        "Observation"
+      ],
+      "rows": [],
+      "label": "2.2.4. Manuels scolaires - tableau"
+    },
+    {
+      "kind": "heading",
+      "text": "2.2.5. Matériels pour la salle technique et de laboratoire",
+      "label": "2.2.5. Matériels pour la salle technique et de laboratoire"
+    },
+    {
+      "kind": "table",
+      "source": "",
+      "headers": [
+        "N°",
+        "Désignation",
+        "Nombre",
+        "Nature",
+        "État",
+        "Observations"
+      ],
+      "rows": [],
+      "label": "2.2.5. Matériels pour la salle technique et de laboratoire - tableau"
+    },
+    {
+      "kind": "heading",
+      "text": "2.3. POPULATION SCOLAIRE",
+      "label": "2.3. POPULATION SCOLAIRE"
+    },
+    {
+      "kind": "text",
+      "text": "{POPULATION}",
+      "label": "{POPULATION}"
+    },
+    {
+      "kind": "auto",
+      "source": "population",
+      "headers": [
+        "N°",
+        "Section / Classe",
+        "F",
+        "M",
+        "Total",
+        "Nationaux",
+        "Étrangers"
+      ],
+      "rows": [],
+      "label": "2.3. POPULATION SCOLAIRE - automatique"
+    },
+    {
+      "kind": "heading",
+      "text": "2.4. ACTIVITÉS PÉDAGOGIQUES",
+      "label": "2.4. ACTIVITÉS PÉDAGOGIQUES"
+    },
+    {
+      "kind": "heading",
+      "text": "2.4.1. Plan d’exploitation du calendrier scolaire",
+      "label": "2.4.1. Plan d’exploitation du calendrier scolaire"
+    },
+    {
+      "kind": "text",
+      "text": "Le tableau ci-dessous présente le plan d’exploitation du calendrier scolaire de {INSTITUT} pour {ANNEE}.",
+      "label": "Le tableau ci-dessous présente le plan d’exploitation du calendrier scolaire de {INST"
+    },
+    {
+      "kind": "table",
+      "source": "",
+      "headers": [
+        "Période / activité",
+        "Orientation prévue",
+        "Suivi"
+      ],
+      "rows": [
+        [
+          "À préciser",
+          "Préparation et démarrage de la rentrée",
+          "Direction"
+        ],
+        [
+          "Toute l’année",
+          "Enseignement théorique et pratique",
+          "Coordination pédagogique"
+        ],
+        [
+          "Selon calendrier validé",
+          "Stages et évaluations",
+          "Responsables désignés"
+        ]
+      ],
+      "label": "2.4.1. Plan d’exploitation du calendrier scolaire - tableau"
+    },
+    {
+      "kind": "heading",
+      "text": "2.4.1.1. Enseignement théorique, pratique, intégration et stage",
+      "label": "2.4.1.1. Enseignement théorique, pratique, intégration et stage"
+    },
+    {
+      "kind": "text",
+      "text": "Enseignement théorique : acquisition des connaissances et développement des capacités nécessaires à l’exercice professionnel.",
+      "label": "Enseignement théorique : acquisition des connaissances et développement des capacités"
+    },
+    {
+      "kind": "text",
+      "text": "Travaux pratiques : mise en application des notions étudiées dans les salles techniques et de laboratoire.",
+      "label": "Travaux pratiques : mise en application des notions étudiées dans les salles techniqu"
+    },
+    {
+      "kind": "text",
+      "text": "Situation d’intégration : mobilisation de plusieurs ressources dans une situation professionnelle contextualisée.",
+      "label": "Situation d’intégration : mobilisation de plusieurs ressources dans une situation pro"
+    },
+    {
+      "kind": "text",
+      "text": "Stage : confrontation des apprentissages aux situations réelles de soins et développement progressif des compétences professionnelles.",
+      "label": "Stage : confrontation des apprentissages aux situations réelles de soins et développe"
+    },
+    {
+      "kind": "heading",
+      "text": "2.4.1.2. Réunions administratives, pédagogiques, de direction, de gestion, de discipline et des parents",
+      "label": "2.4.1.2. Réunions administratives, pédagogiques, de direction, de gestion, de discipl"
+    },
+    {
+      "kind": "table",
+      "source": "",
+      "headers": [
+        "Réunion / mois",
+        "Sept.",
+        "Oct.",
+        "Nov.",
+        "Déc.",
+        "Jan.",
+        "Fév.",
+        "Mars",
+        "Avr.",
+        "Mai",
+        "Juin"
+      ],
+      "rows": [
+        [
+          "Gestion",
+          "À préciser",
+          "À préciser",
+          "À préciser",
+          "À préciser",
+          "À préciser",
+          "À préciser",
+          "À préciser",
+          "À préciser",
+          "À préciser",
+          "À préciser"
+        ],
+        [
+          "Discipline",
+          "À préciser",
+          "À préciser",
+          "À préciser",
+          "À préciser",
+          "À préciser",
+          "À préciser",
+          "À préciser",
+          "À préciser",
+          "À préciser",
+          "À préciser"
+        ],
+        [
+          "Pédagogique",
+          "À préciser",
+          "À préciser",
+          "À préciser",
+          "À préciser",
+          "À préciser",
+          "À préciser",
+          "À préciser",
+          "À préciser",
+          "À préciser",
+          "À préciser"
+        ],
+        [
+          "Direction",
+          "À préciser",
+          "À préciser",
+          "À préciser",
+          "À préciser",
+          "À préciser",
+          "À préciser",
+          "À préciser",
+          "À préciser",
+          "À préciser",
+          "À préciser"
+        ],
+        [
+          "Parents",
+          "À préciser",
+          "À préciser",
+          "À préciser",
+          "À préciser",
+          "À préciser",
+          "À préciser",
+          "À préciser",
+          "À préciser",
+          "À préciser",
+          "À préciser"
+        ]
+      ],
+      "label": "2.4.1.2. Réunions administratives, pédagogiques, de direction, de gestion, de discipline et des parents - tableau"
+    },
+    {
+      "kind": "heading",
+      "text": "2.4.1.3. Formation pédagogique du personnel",
+      "label": "2.4.1.3. Formation pédagogique du personnel"
+    },
+    {
+      "kind": "text",
+      "text": "{FORMATION} Les axes proposés comprennent la préparation des enseignements, la tenue des documents pédagogiques, l’évaluation et l’accompagnement des apprenants.",
+      "label": "{FORMATION} Les axes proposés comprennent la préparation des enseignements, la tenue "
+    },
+    {
+      "kind": "text",
+      "text": "Renforcement des capacités en planification et préparation des leçons.",
+      "label": "Renforcement des capacités en planification et préparation des leçons."
+    },
+    {
+      "kind": "text",
+      "text": "Harmonisation de l’utilisation des syllabus et fiches descriptives.",
+      "label": "Harmonisation de l’utilisation des syllabus et fiches descriptives."
+    },
+    {
+      "kind": "text",
+      "text": "Appropriation progressive de l’Approche par Compétences (APC).",
+      "label": "Appropriation progressive de l’Approche par Compétences (APC)."
+    },
+    {
+      "kind": "text",
+      "text": "Amélioration des techniques d’évaluation et de suivi des apprentissages.",
+      "label": "Amélioration des techniques d’évaluation et de suivi des apprentissages."
+    },
+    {
+      "kind": "text",
+      "text": "Développement d’une culture de collaboration et de suivi pédagogique.",
+      "label": "Développement d’une culture de collaboration et de suivi pédagogique."
+    },
+    {
+      "kind": "heading",
+      "text": "2.4.1.4. Tenue des documents pédagogiques",
+      "label": "2.4.1.4. Tenue des documents pédagogiques"
+    },
+    {
+      "kind": "table",
+      "source": "",
+      "headers": [
+        "Document",
+        "Exigence",
+        "Responsable du suivi",
+        "Fréquence"
+      ],
+      "rows": [
+        [
+          "Syllabus",
+          "Disponible, actualisé et exploitable",
+          "Coordination pédagogique",
+          "Contrôle périodique"
+        ],
+        [
+          "Fiche descriptive",
+          "Conforme au cours et aux orientations pédagogiques",
+          "Coordination pédagogique",
+          "Avant exploitation"
+        ],
+        [
+          "Fiche de préparation",
+          "Préparée avant la leçon",
+          "Enseignant",
+          "À chaque leçon"
+        ],
+        [
+          "Cahier de textes / registre",
+          "Mise à jour régulière",
+          "Enseignant / coordination",
+          "Régulière"
+        ],
+        [
+          "Évaluations",
+          "Planifiées, administrées et corrigées",
+          "Enseignant",
+          "Selon programmation"
+        ],
+        [
+          "Registre des présences",
+          "Complété et suivi",
+          "Enseignant / administration",
+          "Quotidienne"
+        ],
+        [
+          "Documents de stage",
+          "Tenus et exploités",
+          "Responsable de stage",
+          "Pendant les stages"
+        ]
+      ],
+      "label": "2.4.1.4. Tenue des documents pédagogiques - tableau"
+    },
+    {
+      "kind": "heading",
+      "text": "2.4.1.5. Intégration de l’école dans l’Approche par Compétences (APC)",
+      "label": "2.4.1.5. Intégration de l’école dans l’Approche par Compétences (APC)"
+    },
+    {
+      "kind": "text",
+      "text": "L’intégration de l’{INSTITUT} dans l’Approche par Compétences constitue une orientation pédagogique majeure. Elle consiste à faire évoluer progressivement les pratiques d’enseignement vers une formation centrée sur la mobilisation des ressources par l’apprenant dans des situations professionnelles significatives.",
+      "label": "L’intégration de l’{INSTITUT} dans l’Approche par Compétences constitue une orientati"
+    },
+    {
+      "kind": "text",
+      "text": "Identifier les compétences visées par les enseignements.",
+      "label": "Identifier les compétences visées par les enseignements."
+    },
+    {
+      "kind": "text",
+      "text": "Relier les contenus des cours aux situations professionnelles rencontrées dans les services de santé.",
+      "label": "Relier les contenus des cours aux situations professionnelles rencontrées dans les se"
+    },
+    {
+      "kind": "text",
+      "text": "Préparer les activités d’apprentissage à partir d’objectifs et de situations contextualisées.",
+      "label": "Préparer les activités d’apprentissage à partir d’objectifs et de situations contextu"
+    },
+    {
+      "kind": "text",
+      "text": "Favoriser la participation active de l’apprenant.",
+      "label": "Favoriser la participation active de l’apprenant."
+    },
+    {
+      "kind": "text",
+      "text": "Mettre en place des situations d’intégration permettant de mobiliser plusieurs ressources.",
+      "label": "Mettre en place des situations d’intégration permettant de mobiliser plusieurs ressou"
+    },
+    {
+      "kind": "text",
+      "text": "Adapter progressivement les modalités d’évaluation à l’Approche par Compétences.",
+      "label": "Adapter progressivement les modalités d’évaluation à l’Approche par Compétences."
+    },
+    {
+      "kind": "text",
+      "text": "Accompagner les enseignants dans la production et l’utilisation des outils pédagogiques APC.",
+      "label": "Accompagner les enseignants dans la production et l’utilisation des outils pédagogiqu"
+    },
+    {
+      "kind": "heading",
+      "text": "2.4.2. Plan d’exploitation du programme des cours par la répartition des cours aux enseignants",
+      "label": "2.4.2. Plan d’exploitation du programme des cours par la répartition des cours aux en"
+    },
+    {
+      "kind": "heading",
+      "text": "A. Identification et fonction des enseignants",
+      "label": "A. Identification et fonction des enseignants"
+    },
+    {
+      "kind": "auto",
+      "source": "teachers",
+      "headers": [
+        "N°",
+        "Nom et post-nom",
+        "Qualification",
+        "Diplôme",
+        "Fonction"
+      ],
+      "rows": [],
+      "label": "A. Identification et fonction des enseignants - automatique"
+    },
+    {
+      "kind": "heading",
+      "text": "B. Matières enseignées et volumes horaires par classe",
+      "label": "B. Matières enseignées et volumes horaires par classe"
+    },
+    {
+      "kind": "auto",
+      "source": "courses",
+      "headers": [
+        "N°",
+        "Nom et post-nom",
+        "Principales matières relevées",
+        "1ère",
+        "2ème",
+        "3ème",
+        "4ème",
+        "Total H/an"
+      ],
+      "rows": [],
+      "label": "B. Matières enseignées et volumes horaires par classe - automatique"
+    },
+    {
+      "kind": "heading",
+      "text": "2.5. PRÉVISIONS BUDGÉTAIRES",
+      "label": "2.5. PRÉVISIONS BUDGÉTAIRES"
+    },
+    {
+      "kind": "text",
+      "text": "Les prévisions budgétaires de {INSTITUT} pour {ANNEE} sont présentées ci-dessous. Les frais mensuels issus des promotions sont indicatifs et ne constituent pas des recettes encaissées. Les autres recettes et dépenses doivent être renseignées et validées par l’administration.",
+      "label": "Les prévisions budgétaires de {INSTITUT} pour {ANNEE} sont présentées ci-dessous. Les"
+    },
+    {
+      "kind": "heading",
+      "text": "A. Recettes à réaliser",
+      "label": "A. Recettes à réaliser"
+    },
+    {
+      "kind": "auto",
+      "source": "fees",
+      "headers": [
+        "N°",
+        "Libellé",
+        "Effectif concerné",
+        "Montant à payer",
+        "Total / mois",
+        "Total / trimestre",
+        "Total annuel",
+        "Observations"
+      ],
+      "rows": [],
+      "label": "A. Recettes à réaliser - tableau"
+    },
+    {
+      "kind": "table",
+      "headers": [
+        "N°",
+        "Libellé",
+        "Effectif concerné",
+        "Montant à payer",
+        "Total / mois",
+        "Total / trimestre",
+        "Total annuel",
+        "Observations"
+      ],
+      "rows": [],
+      "label": "Autres recettes prévues à renseigner"
+    },
+    {
+      "kind": "heading",
+      "text": "B. Dépenses à effectuer",
+      "label": "B. Dépenses à effectuer"
+    },
+    {
+      "kind": "table",
+      "source": "",
+      "headers": [
+        "N°",
+        "Libellé",
+        "Total / mois",
+        "Total / trimestre",
+        "Total annuel",
+        "Observations"
+      ],
+      "rows": [],
+      "label": "B. Dépenses à effectuer - tableau"
+    },
+    {
+      "kind": "heading",
+      "text": "III. DIFFÉRENTS PROJETS À RÉALISER",
+      "label": "III. DIFFÉRENTS PROJETS À RÉALISER"
+    },
+    {
+      "kind": "heading",
+      "text": "3.1. Projets à court terme",
+      "label": "3.1. Projets à court terme"
+    },
+    {
+      "kind": "text",
+      "text": "Finaliser et harmoniser les documents pédagogiques de tous les enseignants.",
+      "label": "Finaliser et harmoniser les documents pédagogiques de tous les enseignants."
+    },
+    {
+      "kind": "text",
+      "text": "Poursuivre l’accompagnement des enseignants dans la préparation des leçons selon les orientations APC.",
+      "label": "Poursuivre l’accompagnement des enseignants dans la préparation des leçons selon les "
+    },
+    {
+      "kind": "text",
+      "text": "Actualiser les inventaires des matériels didactiques, techniques et de laboratoire.",
+      "label": "Actualiser les inventaires des matériels didactiques, techniques et de laboratoire."
+    },
+    {
+      "kind": "text",
+      "text": "Renforcer la discipline, la ponctualité et l’assiduité.",
+      "label": "Renforcer la discipline, la ponctualité et l’assiduité."
+    },
+    {
+      "kind": "text",
+      "text": "Mettre en place un système régulier de suivi pédagogique.",
+      "label": "Mettre en place un système régulier de suivi pédagogique."
+    },
+    {
+      "kind": "text",
+      "text": "Finaliser l’aménagement de la salle technique.",
+      "label": "Finaliser l’aménagement de la salle technique."
+    },
+    {
+      "kind": "heading",
+      "text": "3.2. Projets à moyen terme",
+      "label": "3.2. Projets à moyen terme"
+    },
+    {
+      "kind": "text",
+      "text": "Consolider l’intégration de l’APC dans les pratiques d’enseignement.",
+      "label": "Consolider l’intégration de l’APC dans les pratiques d’enseignement."
+    },
+    {
+      "kind": "text",
+      "text": "Renforcer les équipements des salles techniques et du laboratoire.",
+      "label": "Renforcer les équipements des salles techniques et du laboratoire."
+    },
+    {
+      "kind": "text",
+      "text": "Développer une bibliothèque ou un fonds documentaire adapté aux besoins des apprenants.",
+      "label": "Développer une bibliothèque ou un fonds documentaire adapté aux besoins des apprenant"
+    },
+    {
+      "kind": "text",
+      "text": "Améliorer l’organisation et le suivi des activités pratiques et des stages.",
+      "label": "Améliorer l’organisation et le suivi des activités pratiques et des stages."
+    },
+    {
+      "kind": "text",
+      "text": "Renforcer la formation continue du personnel enseignant.",
+      "label": "Renforcer la formation continue du personnel enseignant."
+    },
+    {
+      "kind": "heading",
+      "text": "3.3. Projets à long terme",
+      "label": "3.3. Projets à long terme"
+    },
+    {
+      "kind": "text",
+      "text": "Développer les infrastructures scolaires et techniques.",
+      "label": "Développer les infrastructures scolaires et techniques."
+    },
+    {
+      "kind": "text",
+      "text": "Consolider la qualité de la formation professionnelle en sciences de santé.",
+      "label": "Consolider la qualité de la formation professionnelle en sciences de santé."
+    },
+    {
+      "kind": "text",
+      "text": "Mettre en place un système durable d’assurance qualité pédagogique.",
+      "label": "Mettre en place un système durable d’assurance qualité pédagogique."
+    },
+    {
+      "kind": "text",
+      "text": "Développer des partenariats favorisant les stages et la formation pratique.",
+      "label": "Développer des partenariats favorisant les stages et la formation pratique."
+    },
+    {
+      "kind": "text",
+      "text": "Renforcer progressivement les ressources documentaires et technologiques de l’établissement.",
+      "label": "Renforcer progressivement les ressources documentaires et technologiques de l’établis"
+    },
+    {
+      "kind": "heading",
+      "text": "3.4. Plan de développement de l’école",
+      "label": "3.4. Plan de développement de l’école"
+    },
+    {
+      "kind": "text",
+      "text": "Le plan de développement de l’{INSTITUT} sera suivi à travers des objectifs mesurables, des actions concrètes, des responsables identifiés, des échéances et des indicateurs de résultats. Les priorités portent sur la qualité pédagogique, l’intégration de l’APC, la formation continue, les travaux pratiques, le suivi des apprenants, les ressources documentaires et le renforcement progressif des infrastructures.",
+      "label": "Le plan de développement de l’{INSTITUT} sera suivi à travers des objectifs mesurable"
+    },
+    {
+      "kind": "heading",
+      "text": "IV. CONCLUSION ET RECOMMANDATIONS",
+      "label": "IV. CONCLUSION ET RECOMMANDATIONS"
+    },
+    {
+      "kind": "text",
+      "text": "Au terme de la préparation et du démarrage de l’année scolaire {ANNEE}, l’{INSTITUT} s’engage à poursuivre ses efforts pour assurer un fonctionnement administratif et pédagogique organisé. La rentrée constitue une étape importante pour clarifier les responsabilités, renforcer la collaboration du personnel et améliorer la qualité de la formation.",
+      "label": "Au terme de la préparation et du démarrage de l’année scolaire {ANNEE}, l’{INSTITUT} "
+    },
+    {
+      "kind": "text",
+      "text": "Les priorités retenues concernent notamment la tenue des documents pédagogiques, la formation continue des enseignants, l’intégration progressive de l’Approche par Compétences, le suivi des apprenants, l’amélioration des travaux pratiques et la disponibilité des équipements nécessaires à la formation.",
+      "label": "Les priorités retenues concernent notamment la tenue des documents pédagogiques, la f"
+    },
+    {
+      "kind": "text",
+      "text": "La réussite de ces orientations dépendra de l’implication de l’ensemble du personnel, du respect des responsabilités attribuées, du suivi régulier des activités et de la disponibilité des moyens nécessaires.",
+      "label": "La réussite de ces orientations dépendra de l’implication de l’ensemble du personnel,"
+    },
+    {
+      "kind": "heading",
+      "text": "RECOMMANDATIONS / SUGGESTIONS",
+      "label": "RECOMMANDATIONS / SUGGESTIONS"
+    },
+    {
+      "kind": "text",
+      "text": "Veiller à la ponctualité et à l’assiduité de tous les acteurs scolaires.",
+      "label": "Veiller à la ponctualité et à l’assiduité de tous les acteurs scolaires."
+    },
+    {
+      "kind": "text",
+      "text": "Contrôler régulièrement la tenue et l’exploitation des documents pédagogiques.",
+      "label": "Contrôler régulièrement la tenue et l’exploitation des documents pédagogiques."
+    },
+    {
+      "kind": "text",
+      "text": "Poursuivre la formation et l’accompagnement des enseignants dans l’APC.",
+      "label": "Poursuivre la formation et l’accompagnement des enseignants dans l’APC."
+    },
+    {
+      "kind": "text",
+      "text": "Renforcer la coordination entre la direction, la coordination pédagogique et les enseignants.",
+      "label": "Renforcer la coordination entre la direction, la coordination pédagogique et les ense"
+    },
+    {
+      "kind": "text",
+      "text": "Prévoir progressivement les matériels nécessaires aux travaux pratiques et au laboratoire.",
+      "label": "Prévoir progressivement les matériels nécessaires aux travaux pratiques et au laborat"
+    },
+    {
+      "kind": "text",
+      "text": "Finaliser l’équipement de la salle technique.",
+      "label": "Finaliser l’équipement de la salle technique."
+    },
+    {
+      "kind": "text",
+      "text": "Assurer un suivi régulier des apprenants et des résultats scolaires.",
+      "label": "Assurer un suivi régulier des apprenants et des résultats scolaires."
+    },
+    {
+      "kind": "text",
+      "text": "Documenter les réunions, formations, activités pédagogiques et décisions prises.",
+      "label": "Documenter les réunions, formations, activités pédagogiques et décisions prises."
+    },
+    {
+      "kind": "text",
+      "text": "Mettre à jour les listes nominatives et vérifier l’orthographe des noms dans les registres officiels.",
+      "label": "Mettre à jour les listes nominatives et vérifier l’orthographe des noms dans les regi"
+    },
+    {
+      "kind": "text",
+      "text": "Fait à {VILLE}, le {DATE}",
+      "label": "Fait à {VILLE}, le {DATE}"
+    },
+    {
+      "kind": "signature",
+      "source": "RapportRentree",
+      "label": "Signature automatique du responsable"
+    },
+    {
+      "kind": "heading",
+      "text": "ANNEXES",
+      "label": "Annexes"
+    },
+    {
+      "kind": "heading",
+      "text": "Annexe 1 Liste des apprenants par section et par classe",
+      "label": "Liste des apprenants"
+    },
+    {
+      "kind": "auto",
+      "source": "learners",
+      "headers": [],
+      "rows": [],
+      "label": "Annexe 1 Liste des apprenants par section et par classe - automatique"
+    },
+    {
+      "kind": "heading",
+      "text": "Annexe 2 Procès-verbal de délibération des examens d’admission",
+      "label": "Procès-verbal admission"
+    },
+    {
+      "kind": "text",
+      "text": "Les résultats des examens d’admission sont à renseigner sur la base du procès-verbal signé. Aucune décision d’admission ni note ne peut être déduite du seul registre des inscriptions.",
+      "label": "Introduction du procès-verbal"
+    },
+    {
+      "kind": "table",
+      "headers": [
+        "N°",
+        "Nom et post-nom",
+        "Sexe",
+        "Pourcentage",
+        "Décision"
+      ],
+      "rows": [],
+      "label": "Annexe 2 Procès-verbal de délibération des examens d’admission - tableau"
+    },
+    {
+      "kind": "heading",
+      "text": "Annexe 3 Suivi des actions prioritaires de la rentrée",
+      "label": "Suivi des actions"
+    },
+    {
+      "kind": "table",
+      "headers": [
+        "N°",
+        "Action prioritaire",
+        "Responsable",
+        "Échéance",
+        "État",
+        "Observation"
+      ],
+      "rows": [],
+      "label": "Annexe 3 Suivi des actions prioritaires de la rentrée - tableau"
+    },
+    {
+      "kind": "heading",
+      "text": "Annexe 4 Perspective d’avenir et plan de développement",
+      "label": "Perspectives"
+    },
+    {
+      "kind": "text",
+      "text": "Le plan de développement de {INSTITUT} pour {ANNEE} sera suivi à travers des objectifs mesurables, des actions concrètes, des responsables identifiés, des échéances et des indicateurs de résultats. Les priorités portent sur la qualité pédagogique, la formation continue, le suivi des apprenants et le renforcement progressif des infrastructures.",
+      "label": "Perspective d’avenir"
+    }
+  ],
+  "LayoutVersion": 2
+}

@@ -1,0 +1,18 @@
+SCOLIA V35 — AUDIT STATIQUE ET FIABILITÉ
+
+Corrections appliquées dans cette archive
+1. Écriture atomique des fichiers JSON de configuration et de stockage : sérialisation explicite, encodage UTF-8 sans BOM, vidage du flux sur disque, fichier temporaire unique et remplacement atomique.
+2. Gestion des sauvegardes précédentes : le fichier .bak/.precedent obsolète est supprimé avant de créer la nouvelle sauvegarde, ce qui évite un échec lors d'écritures successives sur certains postes Windows.
+3. Gestion défensive des verrous pendant l'enregistrement des paramètres : les handles sont initialisés puis libérés uniquement s'ils ont été ouverts.
+4. Conservation de la vérification de persistance des inscriptions : l'application doit relire le dossier depuis la source de données avant de confirmer la sauvegarde et annuler la transaction si la vérification échoue.
+5. Contrôle d'intégrité de l'archive après modification.
+
+Contrôles à effectuer sur le PC Windows/Excel cible avant usage en production
+- Exécuter INSTALLER_CORRECTIONS.vbs depuis une extraction complète dans un dossier neuf.
+- Vérifier que la configuration initiale s'ouvre, enregistrer plusieurs classes/tarifs, fermer puis rouvrir et vérifier profil-scolia.json.
+- Inscrire un apprenant, attendre le message de succès, fermer SCOLIA, relancer et vérifier que le dossier reste présent. Répéter en mode classeur autonome et en mode dossier data si les deux modes sont utilisés.
+- Vérifier un paiement, un redémarrage après interruption simulée, les sauvegardes et la restauration transactionnelle.
+- Vérifier les comptes/rôles, les droits de suppression et les journaux.
+
+Limite importante
+Cet environnement ne dispose pas de Windows PowerShell 5.1 ni d'Excel COM. L'archive a donc fait l'objet d'une inspection statique et d'un contrôle ZIP, mais le parseur PowerShell natif, les macros VBA et les scénarios réels d'enregistrement/reconnexion ne peuvent pas être certifiés ici. Ne pas interpréter cette livraison comme un test d'exécution réussi sur le PC cible.

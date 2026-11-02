@@ -1,0 +1,22 @@
+﻿SCOLIA V55 — Outils scolaires et reprise de saisie
+
+INSTALLATION SUR VOTRE LOGICIEL EXISTANT
+1. Fermez SCOLIA et Excel. Extrayez entièrement ce ZIP dans un NOUVEAU dossier.
+2. Dans le nouveau dossier, ouvrez 00_Demarrage/METTRE_A_JOUR_V55.cmd.
+3. Sélectionnez APPLICATION.vbs dans 00_Demarrage de votre installation actuelle.
+Le programme vérifie le contenu et la syntaxe, sauvegarde les fichiers remplacés puis met à jour les fichiers du logiciel. Vos données et votre configuration sont conservées. En cas d'échec avant validation, il restaure les fichiers remplacés.
+Pour une nouvelle installation, utilisez 00_Demarrage/APPLICATION.vbs du dossier extrait.
+
+NOUVELLES FONCTIONS
+- Inscription : sauvegarde automatique d'un brouillon local et reprise proposée.
+- Menu À traiter : anomalies, transferts et opérations en attente, brouillons, plans de réinscription à terminer.
+- Menu Recherche globale (Ctrl+K) : apprenants et paiements ; ouverture de la fiche ou de l'historique correspondant.
+- Menu Présences et absences : appel par promotion, motifs, bilan et export.
+- Menu Réinscription : décisions à vérifier, aperçu enregistré puis application dans l'année préparée et connectée.
+Le guide documentation/GUIDE_FONCTIONNALITES_V55.md décrit ces parcours.
+
+Les présences et réinscriptions utilisent le dossier data et ses sauvegardes complètes. Les anciennes passerelles de classeur unique doivent être préparées avec INSTALLER avant d'activer ces deux outils. Les fonctions existantes restent disponibles. Les brouillons sont propres à l'utilisateur et ne font pas partie des sauvegardes scolaires partagées.
+
+VÉRIFICATION
+00_Demarrage/VERIFIER_V55.cmd exécute des tests isolés avec Windows PowerShell 5.1, sans vos données de production.
+L'intégrité de l'archive et des contrôles statiques ont été vérifiés ici. Les tests natifs PowerShell, Excel et WinForms ne peuvent pas être exécutés dans l'environnement Linux utilisé : ils restent à confirmer sur Windows.

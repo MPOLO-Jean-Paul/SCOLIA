@@ -1,0 +1,129 @@
+﻿SCOLIA — REÇUS COMMUNS, CORRECTIONS ET MOTIFS PARAMÉTRABLES
+Édition finance synchronisée — 12 octobre 2026
+
+INSTALLATION SUR LES DEUX POSTES
+1. Fermez SCOLIA et Excel sur les deux ordinateurs. Conservez une copie de vos
+   dossiers actuels avant la mise à jour.
+2. Remplacez uniquement le dossier « programme » par celui de cette archive.
+   Conservez les dossiers data, configuration, archives, exports et votre partage
+   réseau actuels. Ne remplacez pas des données plus récentes par celles du ZIP.
+3. Lancez APPLICATION depuis votre raccourci habituel. Pour une base gérée par
+   SCOLIA, la passerelle Excel connue est mise à jour avec sauvegarde préalable.
+   Si le programme signale une passerelle ancienne, utilisez le parcours existant
+   d'installation des corrections avant d'importer des mensualités corrigées.
+   Si le projet VBA est personnalisé ou verrouillé, la mise à jour automatique
+   s'arrête et indique le problème ; aucun code personnalisé n'est remplacé.
+4. Les deux postes doivent utiliser cette version, le même dossier SCOLIA
+   partagé, le même établissement et la même année.
+5. Au secrétariat, ouvrez la base puis Actualiser. En comptabilité, importez les
+   apprenants et les anciens paiements du secrétariat.
+
+Les fichiers de données et la configuration de l'archive fournie sont conservés
+à l'identique. La mise à jour ne supprime ni apprenant ni paiement existant.
+
+MOTIFS DE PAIEMENT PARAMÉTRABLES
+Ouvrez Administration > Paramètres SCOLIA > Motifs / catégories de paiement.
+La commande « Motifs de paiement » est aussi disponible dans Comptabilité.
+- SCOLARITE est le motif mensuel existant. Son tarif et son calendrier viennent
+  des promotions configurées.
+- Ajoutez les autres motifs : inscription, examens, stage, dossier, etc.
+- Code : 2 à 24 lettres majuscules, chiffres ou traits de soulignement, unique.
+- Libellé : nom présenté pendant la saisie et sur les reçus.
+- Montant : total attendu PAR APPRENANT pour ce motif et cette année, en FC
+  entiers. Les versements partiels sont autorisés jusqu'à ce total.
+- Promotion : vide pour toutes, ou code existant de quatre caractères. Pour des
+  tarifs différents par promotion, créez des codes distincts.
+- Actif : autorise les nouveaux paiements de ce motif.
+Un motif déjà utilisé conserve son tarif et sa promotion pour cette année.
+Vous pouvez le désactiver. Créez un nouveau code pour une nouvelle tarification.
+Une correction d'un reçu existant reste possible après désactivation du motif.
+Les frais autres que SCOLARITE ne soldent aucune mensualité : ils figurent dans
+le journal partagé, les reçus, les imports et le rapprochement, séparément du
+suivi mensuel Excel. Leur réception est conservée dans les pièces locales SCOLIA.
+
+RÉFÉRENCE COMMUNE DES REÇUS
+Lors d'une nouvelle saisie, utilisez le numéro figurant sur le reçu de caisse.
+La même année + la même référence désignent un seul paiement, quel que soit le
+compte qui le saisit. Une nouvelle tentative identique retrouve le reçu existant.
+Si le montant, la date, le motif ou l'apprenant diffèrent, la saisie est refusée :
+consultez le reçu et corrigez-le, sans créer un deuxième versement.
+Une référence annulée reste réservée et ne peut pas être réutilisée.
+Les anciens reçus conservent leurs références historiques SEC-… : aucune
+correspondance avec un ancien reçu papier n'est inventée automatiquement.
+
+ENREGISTREMENT AU SECRÉTARIAT
+Le bouton Enregistrer de Paiements ouvre désormais la saisie commune avec
+l'apprenant sélectionné. Choisissez le motif, la référence, la date et le montant.
+Le journal partagé enregistre le reçu puis le secrétariat tente son import dans
+la base ouverte. Si cette deuxième étape échoue, le message indique que le reçu
+est déjà enregistré : reprenez l'import, sans ressaisir un autre paiement.
+L'onglet Comptabilité est également accessible au secrétariat pour consulter les
+motifs, le journal, les reçus et le rapprochement. Les dépenses restent réservées
+aux rôles Comptabilité et Mixte.
+
+CORRIGER OU ANNULER UN REÇU
+Dans Comptabilité, sélectionnez le reçu puis « Corriger / annuler le reçu ».
+- Indiquez le nouveau montant, la date et un motif explicite.
+- Montant zéro = annulation. Une annulation reste visible dans le journal.
+- La référence, l'apprenant et la catégorie restent attachés au reçu original.
+- L'historique conserve chaque version, la date, l'auteur et le motif.
+- Une modification concurrente bloque une correction faite sur une version
+  ancienne : actualisez avant de recommencer.
+Les deux comptes lisent la version corrigée dans le journal partagé. Les reçus
+qui étaient déjà importés au secrétariat sont corrigés automatiquement lors de
+la réception suivante, même si l'import automatique des NOUVEAUX reçus est
+désactivé. Les erreurs locales restent visibles et peuvent être réessayées via
+Importer les paiements. Une base fermée, ancienne ou non connectée doit d'abord
+être reconnectée et mise à jour. Une annulation reçue avant le premier import
+ne crée aucun paiement dans Excel.
+La correction des mensualités remplace seulement le reçu concerné, conserve les
+autres versements, vérifie le reste local, actualise la situation et compacte les
+lignes. Une modification locale concurrente entraîne un refus pour rapprochement.
+
+RAPPROCHEMENT DES DEUX COMPTES
+Comptabilité > Rapprochement des comptes compare le journal partagé avec la
+dernière publication effective du secrétariat :
+- Rapproché : même reçu, date, montant et affectation.
+- Écart : une correction ou une affectation reste à appliquer.
+- À importer : paiement absent du dernier état publié du secrétariat.
+- Secrétariat seulement : ancien reçu à importer dans le journal partagé.
+- Annulé synchronisé : annulation appliquée au secrétariat.
+La date de publication est affichée. Après un import, laissez la publication
+s'achever, puis rouvrez le rapprochement. Le tableau est exportable en CSV.
+Le contrôle est une comparaison ; il n'efface pas automatiquement les écarts.
+
+COMPTES NOMINATIFS
+Administration > Comptes nominatifs, ou Paramètres SCOLIA > Comptes nominatifs.
+Chaque personne a son nom, son identifiant stable et son mot de passe personnel.
+Plusieurs secrétaires et plusieurs comptables peuvent être créés.
+Réglez l'espace métier, l'activation, le droit de correction, le droit de gérer
+les motifs et le rôle administrateur. Les nouveaux comptes sont sans droits
+administrateur par défaut. Les droits historiques sont conservés à la migration.
+Les comptes sont désactivés plutôt qu'effacés afin de préserver les auteurs de
+l'historique. Le dernier administrateur actif ne peut pas être retiré.
+Une modification des comptes impose aux autres sessions de se reconnecter.
+Les mots de passe sont conservés sous forme de protections salées et dérivées,
+comme dans la version précédente. Les permissions de l'application ne remplacent
+pas les autorisations Windows du dossier partagé.
+
+RÉSEAU ET REPRISE
+Les nouveautés du journal sont conservées dans les brouillons reçus locaux.
+Les corrections de versions déjà reçues ne doivent jamais faire régresser ce
+cache. Un partage indisponible ne remplace pas les brouillons par une liste vide.
+Le journal partagé est nécessaire pour valider une écriture. En cas de coupure,
+utilisez les brouillons de saisie ; validez-les lorsque le réseau est rétabli.
+Le stockage des brouillons reçus ne peut récupérer un enregistrement qui n'a
+pas encore atteint le partage. Les publications en attente reprennent ensuite.
+
+VÉRIFICATIONS EFFECTUÉES
+Tests automatisés : références communes, doublons, conflits de montant, plafonds
+par motif, tarifs protégés, corrections concurrentes, annulations, historique,
+rapprochement, cache hors connexion, imports et droits nominatifs.
+Compatibilité contrôlée avec un journal et des brouillons produits par la version
+précédente ; contrôles d'intégrité conservés.
+Syntaxe PowerShell, compilation du moteur C#, empreintes des correctifs et
+intégrité ZIP vérifiées. Données existantes comparées octet par octet.
+Les tests de passerelle utilisent une simulation d'Excel. L'affichage WinForms,
+l'exécution VBA et le réseau Windows réel n'ont pas pu être exécutés dans
+l'environnement de préparation. Vérifiez un reçu d'essai sur une copie de base
+avant l'utilisation simultanée sur vos deux postes.

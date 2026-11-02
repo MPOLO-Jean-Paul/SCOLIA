@@ -1,0 +1,18 @@
+AUDIT SCOLIA V42 - PRE-CONNEXION
+
+Fichiers fonctionnels modifiés :
+- programme/ScoliaConfiguration.ps1
+- programme/Application.ps1
+
+Ajout :
+- programme/TestsTransitionConfigurationV42.ps1
+
+Contrôles intégrés :
+- ScoliaConfiguration.ps1 et Application.ps1 font partie des scripts critiques déjà analysés par Lancer.ps1 avec le parseur PowerShell avant lancement.
+- Test V42 supplémentaire vérifiant l'ordre Configuration > Connexion > Formulaire principal.
+- Aucune temporisation artificielle entre la fin de configuration et l'ouverture de la connexion.
+- Structure V39 conservée : aucun fichier volontairement placé à la racine de SCOLIA.
+- Manifeste VBA non modifié ; les 16 empreintes normalisées restent conformes aux correctifs.
+
+Limite de cet environnement :
+La compilation/exécution réelle WinForms avec Windows PowerShell 5.1 et Excel COM doit être confirmée sur Windows. Le lanceur effectuera son contrôle syntaxique avant d'ouvrir l'application.

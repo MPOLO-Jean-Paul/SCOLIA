@@ -1,0 +1,29 @@
+﻿SCOLIA 99 — vérifications réalisées
+
+PASS analyse syntaxique de 93 scripts PowerShell.
+PASS compilation du nouveau module réseau en C#5 compatible .NET4.
+PASS dialogue UDP réel entre un hôte et un client sur la boucle locale, exécuté
+     sous PowerShell 7 et sous Mono ; fermeture de la socket et de l'hôte.
+PASS annonces trop longues, identité invalide, mauvais nonce, nom de partage ou
+     d'hôte invalide, version inconnue et source hors réseau refusés.
+PASS adresse de diffusion calculée pour un réseau /23, nom hôte persistant.
+PASS lecture du profil sans mutation, création temporaire, écriture et Flush,
+     remplacement atomique, lecture de vérification et nettoyage des fichiers.
+PASS erreurs de contrôle réseau transmises par les tâches asynchrones.
+PASS autre établissement, compte absent, révision de compte périmée, publication
+     en cours ou opération de caisse en attente bloquent le changement de connexion.
+PASS régressions : configuration persistante, tarifs, prises en charge, mots de
+     passe, caisse, concurrence, doublons, reprise d'import, isolation des années,
+     catalogue, raccourcis, droits du réseau, démarrage, cotes et retards.
+PASS archive : les six classeurs XLSM, VBA, manifeste et lanceurs sont inchangés ;
+     aucun fichier de la version précédente n'est supprimé.
+
+Contrôles restant à réaliser dans l'environnement de déploiement :
+- Windows PowerShell 5.1, WinForms et Excel réels.
+- Autorisation UAC, New-SmbShare, droits NTFS, règles du pare-feu, changement
+  de catégorie réseau et retour arrière après un échec de configuration.
+- Deux ordinateurs Windows, identifiants Windows, résolution du nom du poste,
+  découverte UDP à travers le réseau réel et redémarrage des postes.
+Ces opérations Windows ne sont pas disponibles dans l'environnement Linux
+utilisé pour préparer cette édition. Les tests UDP locaux et de fichiers ne
+prétendent pas valider un réseau SMB Windows réel ni le rendu des formulaires.

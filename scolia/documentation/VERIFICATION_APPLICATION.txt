@@ -1,0 +1,21 @@
+﻿VÉRIFICATION — CORRECTION DU DÉMARRAGE WINDOWS
+
+Contrôles réalisés dans l'environnement de préparation :
+- 14 fichiers VBA : empreintes conformes au manifeste.
+- Apostrophes PowerShell corrigées dans les deux scripts ; test de régression sur le texte fautif.
+- Lanceur commun : contrôle syntaxique natif avant exécution, journal détaillé et lancement masqué.
+- Délimiteurs et chaînes des trois scripts PowerShell ; chaînes et procédures du nouveau module VBA.
+- Correspondance des cinq endpoints entre l'application et la passerelle.
+- Les anciens modules sont conservés ; le moteur d'export reçoit uniquement une nouvelle entrée publique. Le classeur de référence reste identique.
+- Les lectures de données de la passerelle ne contiennent aucune écriture.
+- Les chemins d'enregistrement utilisent sauvegarde, validation et annulation.
+- Les réponses d'enregistrement sont confirmées avant l'actualisation de l'écran.
+- Scénarios de référence pour la répartition : dette partielle, report au mois suivant,
+  mois déjà soldés, année complète et rejet des dépassements/montants invalides.
+- 1 295 suffixes de matricules distincts et spécification d'échappement JSON contrôlés.
+
+Limite : ces contrôles sont statiques et des scénarios de référence ; ils ne sont
+pas une exécution du code PowerShell/VBA sous Windows et Excel.
+L'installateur exécute sous Excel les contrôles existants, la relecture complète
+par la passerelle et le rejet de saisies vides sans créer de fausses données.
+La première utilisation complète sur le PC Windows reste à confirmer.

@@ -1,0 +1,12 @@
+﻿SCOLIA V27 — correction ciblée du parseur PowerShell
+
+Cause identifiée dans Application.ps1 : deux apostrophes typographiques U+2019 étaient placées à l’intérieur de chaînes délimitées par des apostrophes ASCII. Windows PowerShell les traite également comme des délimiteurs de chaîne, ce qui faisait dérailler l’analyse à partir du code de motif de suppression et provoquait les erreurs secondaires sur la fusion des doublons.
+
+Correction : les deux apostrophes internes sont maintenant échappées conformément à la syntaxe PowerShell (apostrophe ASCII doublée). Le texte affiché demeure « d’audit » et « l’opération » avec une apostrophe dans le message final.
+
+Vérification sur Windows : fermer SCOLIA, ouvrir PowerShell dans le dossier programme et exécuter :
+  powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\VERIFICATION_SYNTAXE_V27.ps1
+
+Le vérificateur appelle le parseur PowerShell installé sur le poste et contrôle les fichiers .ps1, .psm1 et .psd1 du dossier programme et de ses sous-dossiers. Si une erreur reste affichée, conserver le texte complet (chemin, ligne et colonne) pour une correction ciblée.
+
+Limite : l’archive peut être inspectée statiquement ici, mais la validation finale du parseur doit être exécutée dans Windows PowerShell 5.1 sur le poste concerné.

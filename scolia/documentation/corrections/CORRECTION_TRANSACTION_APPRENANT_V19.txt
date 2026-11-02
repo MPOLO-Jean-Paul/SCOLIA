@@ -1,0 +1,19 @@
+﻿SCOLIA COMPLET V19 — REVUE DU VERROU D'INSCRIPTION
+
+Correction principale
+- La récupération d'une transaction résiduelle annule maintenant la ligne réservée avant d'annuler le journal.
+- Les deux opérations de restauration sont tentées indépendamment : une erreur du journal ne peut plus empêcher le rollback des données.
+- Si le rollback échoue, la saisie reste bloquée avec un message explicite et le chemin de sauvegarde. Le système n'autorise pas silencieusement une nouvelle inscription sur un état partiel.
+- Ajout d'un identifiant de version transactionnelle et de contrôles statiques dédiés.
+- Le manifeste d'installation a été recalculé pour le module VBA corrigé.
+
+Installation indispensable pour un classeur déjà utilisé
+1. Fermer SCOLIA et Excel.
+2. Extraire ce ZIP dans un nouveau dossier.
+3. Lancer INSTALLER.vbs et sélectionner le classeur actif qui contient les apprenants et paiements actuels.
+4. Attendre la fin de l'installation et vérifier le journal d'installation.
+5. Lancer ensuite APPLICATION.vbs depuis le même dossier V19.
+Ne pas se contenter de copier les fichiers ni lancer l'application depuis l'ancien dossier : les modules VBA du classeur doivent être mis à jour par l'installateur.
+
+Validation
+Le contenu du ZIP, les empreintes du manifeste et les invariants transactionnels ont été vérifiés statiquement. L'exécution réelle Excel/VBA sous Windows doit encore être testée sur le poste cible. Faire un essai avec un classeur de copie avant toute utilisation en production.

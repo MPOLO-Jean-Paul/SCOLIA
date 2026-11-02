@@ -1,0 +1,48 @@
+﻿INSTALLATION — PERFORMANCE ET GESTION DES BLOCAGES
+7 octobre 2026
+
+Ouvrir INSTALLER.vbs. L'installateur reste graphique, sans fenêtre CMD.
+Vérifier le classeur détecté, fermer Excel, puis Installer les corrections.
+
+Le traitement Excel s'exécute dans un processus caché distinct de la fenêtre.
+Le minuteur de la fenêtre affiche l'étape atteinte et le temps écoulé.
+Les pourcentages indiquent des étapes : ils ne prédisent pas la durée restante.
+Un appel Excel long ne bloque plus directement la boucle de la fenêtre.
+
+PERFORMANCE
+- Recalcul automatique suspendu pendant les modifications de la copie,
+  puis recalcul complet avant sauvegarde et contrôles.
+- Copies des lignes consécutives par blocs de 1 000 au maximum.
+- Lecture des formules par plages ; écritures limitées aux références modifiées.
+- Modules déjà identiques au correctif conservés ; relecture de tous les modules.
+- Tests de basculement, sauvegarde, restauration et lecture JSON complète
+  accessibles dans Vérification approfondie, décochée au démarrage.
+- Contrôles obligatoires conservés : compatibilité, sources des correctifs,
+  signatures de chaque ligne, nombre de lignes, total des paiements,
+  structure, export à grand volume, passerelle, boutons, interfaces et saisies.
+
+ARRÊT ET ERREURS
+Arrêter demande confirmation. Il arrête le moteur et ne ferme que l'instance
+Excel identifiée comme créée par lui, avec numéro de processus et heure de
+création vérifiés. Une instance déjà ouverte n'est pas ciblée par l'arrêt.
+Le fichier source reste intact ; sa sauvegarde et les journaux sont conservés.
+Une copie interrompue ne reçoit pas le rapport de réussite et n'est jamais
+sélectionnée automatiquement comme une installation réussie.
+Un verrou empêche deux installations simultanées dans le même dossier.
+L'arrêt automatique intervient après 15 minutes sans nouvelle étape, ou
+60 minutes au total. Une étape très lente peut aussi atteindre ce seuil :
+consulter le journal pour distinguer lenteur et blocage.
+
+Les traces de chaque tentative se trouvent dans journaux/installations.
+Les traces et sauvegardes du classeur se trouvent dans data/installations.
+Une erreur montre le dossier du diagnostic et active le bouton Voir le journal. Pour un blocage persistant,
+transmettre journal.txt et erreur-processus.txt depuis le dossier indiqué.
+
+VÉRIFICATIONS
+Les six classeurs fournis restent identiques octet pour octet.
+Analyses statiques des scripts, contrôle des références et intégrité du ZIP.
+Tests natifs non destructifs ajoutés : suivi JSON, fichier incomplet, verrou
+exclusif et identification du processus. Les tests approfondis existants
+restent disponibles avec toutes leurs assertions et un suivi par sous-étape.
+Windows PowerShell et Excel COM ne sont pas disponibles dans cet environnement :
+les temps réels et les interactions natives doivent être vérifiés sur votre PC.

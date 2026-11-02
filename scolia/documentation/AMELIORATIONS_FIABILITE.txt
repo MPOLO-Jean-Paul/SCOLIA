@@ -1,0 +1,41 @@
+﻿REVUE DE FIABILITÉ — 7 OCTOBRE 2026
+
+AMÉLIORATIONS APPLIQUÉES
+1. Récupération d'une transaction interrompue avant de lire le registre courant.
+   Si le registre est absent ou illisible, le journal de transaction fournit
+   l'index antérieur. Toutes les copies et leurs empreintes doivent être valides
+   avant toute restauration. Une sauvegarde incomplète bloque la récupération.
+2. Connexion : vérification des segments manquants avant de déconnecter la base
+   actuelle ou d'ouvrir les fichiers de la nouvelle base. Une transaction en
+   attente passe par la récupération et ses contrôles, jamais par une ouverture
+   partielle des classeurs.
+3. Déplacement : pour le choix mémorisé, la base de même identifiant dans le data
+   de cette application est préférée à l'ancienne copie. Un choix explicite
+   conserve le chemin désigné par l'utilisateur.
+4. Fiche apprenant et aperçu imprimé : historique trié par date, puis identifiant
+   du paiement, avec départage entre segments. Les dates non reconnues sont
+   placées après les dates valides ; aucune date n'est modifiée ni inventée.
+5. Installation : bouton Voir le journal après une erreur ; Voir le fichier
+   corrigé reste disponible après réussite.
+
+INSTALLER CETTE ÉDITION
+Extraire le ZIP dans un nouveau dossier.
+Si vous utilisez déjà data, fermer l'application et Excel, puis copier votre
+DOSSIER DATA COMPLET dans le nouveau dossier, en conservant la copie précédente.
+Ouvrir APPLICATION.vbs. Les améliorations de bureau s'appliquent sans réinstaller
+un segment Excel isolé. Recréer les raccourcis vers cette copie si nécessaire.
+Pour un ancien classeur, INSTALLER.vbs reste disponible avec ses sauvegardes.
+
+CONTRÔLES
+- Six classeurs fournis conservés octet pour octet.
+- Correctifs VBA, sources C# et compatibilités existantes conservés.
+- Analyse statique des neuf scripts ajoutés/modifiés et de leurs références.
+- Tests natifs ajoutés : ancien et nouveau dossier tous deux présents, choix
+  explicite, segment manquant, détection via transaction en attente, chronologie
+  des paiements à travers plusieurs segments, liste vide et paiement unique.
+- Vérification approfondie étendue : reconnexion après registre illisible et
+  absent sur des bases fictives temporaires, avec conservation des 101 dossiers,
+  de l'identité et du total des paiements du scénario.
+
+Les tests Windows/Excel ne sont pas exécutables dans cet environnement Linux.
+Ces analyses ne constituent pas un essai complet de tous les boutons sur votre PC.

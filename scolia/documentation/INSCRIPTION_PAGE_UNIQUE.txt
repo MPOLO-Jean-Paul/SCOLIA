@@ -1,0 +1,9 @@
+Inscription et connexion
+
+Tous les champs d’inscription sont réunis sur une page, en trois colonnes lorsque la largeur le permet et deux colonnes dans les fenêtres plus étroites. Les sous-onglets et les boutons Suivant / Précédent sont supprimés. Le formulaire réserve la hauteur nécessaire aux champs, dans les limites de la zone de travail de l’écran. Les contrôles de saisie, date automatique avec /, Ctrl+S, champs protégés et avertissement en cas de fermeture avec modifications restent actifs.
+
+Le mot de passe utilise un champ avec bouton œil intégré, bordure discrète et repère bleu à la prise de focus, inspiré de Windows 11. Le bouton est utilisable au clavier (Tabulation puis Espace) et annonce Afficher / Masquer le mot de passe. Le mot de passe reste masqué par défaut.
+
+Les groupes du ruban privilégient trois commandes par ligne à partir de quatre commandes, si la largeur disponible le permet. Les groupes se redisposent et le ruban prend sa hauteur réelle, sans barres ni navigation de défilement. Les noms, descriptions et raccourcis sont conservés.
+
+Analyse syntaxique et compilation C# vérifiées. Les tests visuels natifs restent à exécuter sous Windows. Les six classeurs sont inchangés.

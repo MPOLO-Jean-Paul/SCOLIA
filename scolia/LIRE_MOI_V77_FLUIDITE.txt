@@ -1,0 +1,40 @@
+SCOLIA V77 — INTERFACE SANS CYCLE DE RECHARGEMENT DES ONGLETS
+
+Extraire le ZIP dans un nouveau dossier et utiliser le lanceur habituel.
+Conserver le dossier de données actuel et sa sauvegarde. Ne pas remplacer les
+classeur(s) de travail par les exemples du paquet. Reconnecter les données actuelles.
+
+CHANGEMENTS
+- Le changement d'onglet n'active plus le cycle global « Actualisation de la page »
+  qui désactivait les commandes et affichait une attente. Les vues déjà à jour
+  restent en mémoire ; une vue nouvelle ou périmée est alimentée depuis les
+  données locales. Les totaux restent cohérents après une écriture.
+- Les tableaux disposant d'une identité unique gardent leur liaison et leurs
+  lignes existantes. Seules les cellules modifiées, lignes ajoutées et lignes
+  supprimées sont transmises à l'affichage. Le tri et les lignes conservées restent
+  en place. Un tableau identique n'émet aucune notification de modification.
+  Un changement de structure ou des identités ambiguës garde le chemin de
+  reconstruction sûr : aucune association hasardeuse entre deux élèves.
+- Les statistiques de raccourcis n'accèdent plus au registre et n'attendent plus
+  de verrou à chaque clic. Elles sont fusionnées à la fermeture, sans attente du
+  verrou. En cas d'arrêt brutal/concurrence, seuls ces compteurs facultatifs
+  peuvent être perdus, jamais les inscriptions ou paiements.
+- La synchronisation ne reconstruit plus un journal comptable masqué. Ses données
+  sont présentées à la prochaine ouverture. Une fenêtre de saisie ouverte suspend
+  les traitements du moniteur ; ils reprennent après sa fermeture.
+
+VALIDATION
+10 suites de tests passent, dont la syntaxe de tous les scripts, navigation,
+transactions, enregistrement ciblé, migrations, soldes et recherche.
+Tests effectués sous PowerShell 7.4.6/Linux avec objets simulés. L'interface
+WinForms, Excel VBA et PowerShell 5.1 doivent encore être vérifiés sur Windows.
+Voir documentation/VALIDATION_V77.txt et documentation/AUDIT_PERFORMANCES_V77.txt.
+VERIFIER_FLUIDITE_V77.cmd permet de lancer les tests isolés sur Windows.
+
+LIMITES
+Cette édition ne promet pas toutes les opérations en quelques millisecondes.
+La première préparation d'une grande vue, Excel, les sauvegardes et le partage
+réseau peuvent encore prendre du temps. Les contrôles et sauvegardes financières
+restent actifs. L'actualisation manuelle reste disponible pour relire Excel.
+Les durées sont consignées à la fermeture dans :
+%LOCALAPPDATA%\ITMCD\diagnostics\performance-v77.csv

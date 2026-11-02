@@ -1,0 +1,36 @@
+﻿RECONNEXION ET PREPARATION AUTOMATIQUE — 24 HEURES
+
+Après une première préparation et une connexion réussies, le logiciel mémorise
+le classeur actif dans data. Fermer APPLICATION ne supprime ni ce choix ni les
+apprenants, paiements et prises en charge. Au lancement suivant, la base complète
+se reconnecte, si la reconnexion automatique est activée dans Données.
+
+Le contrôle de structure est valable 24 heures. Après expiration, il se renouvelle
+automatiquement au prochain lancement. Il ne recrée pas le classeur, ne réinstalle
+pas les macros chaque jour et ne réinitialise aucune feuille. Une modification de
+version ou de la liste des segments déclenche aussi ce contrôle. Les identités,
+fichiers manquants et passerelles sont contrôlés même pendant les 24 heures.
+
+L'identité data est écrite directement dans les propriétés Excel, sauvegardée,
+puis relue dans le fichier XLSM sur disque. Si une ancienne base enregistrée a
+perdu cette identité, le logiciel contrôle TOUS ses segments, conserve une copie
+de récupération de chacun dans transaction-..., puis rétablit l'identité issue
+du registre. Une identité appartenant à une autre base ne sera jamais remplacée.
+Une interruption conserve le journal permettant la restauration au lancement suivant.
+
+Pour appliquer cette mise à jour : fermer APPLICATION et Excel, extraire le ZIP
+et remplacer le dossier programme de l'application existante par le nouveau.
+Conserver les dossiers data, sources et les sauvegardes existantes. Ouvrir ensuite
+APPLICATION.vbs. Pour une base déjà préparée, ne relancer pas INSTALLER.vbs.
+Les six fichiers XLSM fournis dans l'archive restent strictement inchangés.
+
+Si un support est débranché, un segment absent ou le registre endommagé sans journal
+de récupération, la connexion est bloquée sans choisir une ancienne copie.
+Réunir le dossier data complet. La réparation ne contourne pas un verrou Excel.
+
+Vérifications : syntaxe PowerShell et intégrité du paquet contrôlées ici.
+TestsPreparation24h.ps1 vérifie sans Excel les limites de 24 heures et l'identité
+sur disque. TestsStockage.ps1 étend les essais Excel sur des COPIES TEMPORAIRES :
+fermeture/reconnexion, identité perdue, renouvellement à 25 heures, maintien des
+101 dossiers et des paiements, blocage d'une identité étrangère. Ces scripts natifs
+Windows/Excel sont fournis ; leur exécution n'est pas possible dans cet environnement.

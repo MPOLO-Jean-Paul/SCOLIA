@@ -1,0 +1,49 @@
+SCOLIA V78 — PERFORMANCES GÉNÉRALES
+
+Extraire dans un NOUVEAU dossier et lancer APPLICATION comme d'habitude.
+Reconnecter le dossier de données actuel. Ne pas écraser les données de travail
+avec les exemples livrés dans le paquet. Les protections financières sont conservées.
+
+AMÉLIORATIONS
+1. Historique des paiements indexé par matricule. Le tri est conservé entre les
+   sélections et les filtres ; tout remplacement des données invalide cet index.
+2. Journal comptable : tri, recherche normalisée et totaux préparés une fois par
+   version de données et année, puis réutilisés pendant la recherche.
+3. Discipline : décisions regroupées par matricule avant l'application aux élèves,
+   au lieu de reparcourir toutes les décisions pour chacun. Validations conservées.
+4. Réception réseau automatique : lecture ET sauvegarde vérifiée des brouillons
+   effectuées par un traitement C# en arrière-plan, sans accès Excel sur ce fil.
+5. Un journal réseau inchangé conserve ses objets et son affichage. Les réponses
+   d'une ancienne connexion/année sont ignorées. Le moniteur ne peut pas se relancer
+   pendant son propre traitement.
+6. Publication réseau identique réutilisée uniquement avec dossier privé verrouillé,
+   sans invalidation en attente. Les échecs et changements restent republiés.
+   Un paiement attend la publication de la dernière version des données.
+7. Les attentes de publication et les écritures réseau des paiements multiples
+   utilisent des tâches asynchrones avec une fenêtre d'attente qui traite les
+   événements Windows. Une panne d'affichage ne permet jamais de considérer une
+   écriture réseau en cours comme un refus certain ni d'effacer son suivi.
+8. Paiements multiples : actualisation finale de la vue active uniquement.
+9. Diagnostics : constitution de la liste sans recopier tout son contenu à chaque
+   élève. Une remesure redondante de la grille des apprenants a également été retirée.
+
+Les corrections V75 à V77 restent incluses : absence de cycle bloquant au changement
+ d'onglet, tableaux conservés, ruban réutilisé, enregistrement ciblé, écritures
+ facultatives du registre retirées des clics.
+
+VALIDATION ET MESURES
+22 suites passent sous PowerShell 7.4.6/Linux. C# compilé et exécuté ; Excel simulé.
+Rapport : documentation/VALIDATION_V78.txt.
+Audit : documentation/AUDIT_PERFORMANCES_V78.md.
+Le contrôle de la vraie boucle WinForms est fourni pour Windows dans
+programme/TestsAttenteReseauWindowsV78.ps1 ; il n'a pas été exécuté ici.
+Lancer 00_Demarrage/VERIFIER_PERFORMANCES_V78.cmd pour les contrôles locaux Windows.
+Le CSV de durées de l'application se trouve après fermeture normale dans :
+%LOCALAPPDATA%\ITMCD\diagnostics\performance-v78.csv
+
+LIMITES À CONNAÎTRE
+Les opérations Excel COM/VBA, les copies de sécurité, certains exports et la première
+préparation d'une grosse vue restent synchrones. Cette édition réduit des causes
+identifiées ; elle ne garantit pas l'absence totale de lenteur ni des enregistrements
+en quelques millisecondes. La validation finale nécessite Excel/Windows et une base
+représentative. Une migration complète d'Excel vers un worker STA n'est pas incluse.

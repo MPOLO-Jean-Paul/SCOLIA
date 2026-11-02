@@ -1,0 +1,17 @@
+SCOLIA V74.1 — CORRECTIF COMPTE NOMINATIF
+
+Fenêtre concernée
+Configuration > Comptes nominatifs.
+
+Correction réalisée
+- Le champ « Confirmer le mot de passe » possède désormais exactement la même hauteur et la même base de largeur que le champ « Mot de passe ».
+- Les deux champs restent alignés et utilisent toute la largeur de saisie disponible.
+- Sur une fenêtre étroite, le libellé passe proprement au-dessus du champ au lieu de comprimer ou décaler la confirmation.
+- Le corps du formulaire et la barre « Enregistrer le compte / Fermer » sont séparés en deux zones : le champ de confirmation ne peut plus passer sous les boutons.
+- Le corps devient défilant sur un écran court ou avec une taille de texte/DPI élevée.
+
+Métier
+Aucune règle de compte, aucun mot de passe, aucun droit, aucune donnée et aucun traitement d'enregistrement n'a été modifié.
+
+Vérification Windows
+Lancer : 00_Demarrage\VERIFIER_COMPTE_NOMINATIF_V74_1.cmd

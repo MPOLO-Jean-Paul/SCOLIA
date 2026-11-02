@@ -1,0 +1,781 @@
+﻿Option Explicit
+Private pecDocument As Object
+Private pecPath As String
+Private pecRecords As Object
+Private mExportEnCours As Boolean
+
+Public Function ITMCleTexte(ByVal valeur As Variant) As String
+    Dim s As String, a As Variant, b As Variant, i As Long
+    If IsError(valeur) Or IsNull(valeur) Or IsEmpty(valeur) Then Exit Function
+    s = UCase$(Trim$(Replace(CStr(valeur), ChrW(160), " ")))
+    a = Array("É", "È", "Ê", "Ë", "À", "Â", "Ä", "Î", "Ï", "Ô", "Ö", "Ù", "Û", "Ü", "Ç")
+    b = Array("E", "E", "E", "E", "A", "A", "A", "I", "I", "O", "O", "U", "U", "U", "C")
+    For i = 0 To UBound(a): s = Replace(s, a(i), b(i)): Next i
+    Do While InStr(s, "  ") > 0: s = Replace(s, "  ", " "): Loop
+    ITMCleTexte = s
+End Function
+
+Public Function ITMPromotion(ByVal valeur As Variant) As String
+    Dim s As String
+    s = Replace(Replace(ITMCleTexte(valeur), " ", ""), "-", "")
+    If s = "TML1" Then s = "TLM1"
+    If s = "TOUTESLESPROMOTIONS" Or s = "TOUS" Then s = ""
+    ITMPromotion = s
+End Function
+
+Public Function ITMPromotionCorrespond(ByVal valeur As Variant, ByVal filtre As String) As Boolean
+    ITMPromotionCorrespond = (ITMPromotion(filtre) = "" Or ITMPromotion(valeur) = ITMPromotion(filtre))
+End Function
+
+Public Function ITMControle(ByVal f As Object, ByVal nom As String, Optional ByVal secours As String = "") As Object
+    On Error Resume Next
+    Set ITMControle = f.Controls(nom)
+    If ITMControle Is Nothing And secours <> "" Then Set ITMControle = f.Controls(secours)
+    On Error GoTo 0
+End Function
+
+Public Function ITMFiltre(ByVal f As Object, ByVal nom As String, Optional ByVal secours As String = "") As String
+    Dim c As Object
+    Set c = ITMControle(f, nom, secours)
+    If Not c Is Nothing Then
+        If Not IsNull(c.Value) Then ITMFiltre = Trim$(CStr(c.Value))
+    End If
+End Function
+
+Private Sub AjouterProbleme(ByVal issues As Collection, ByVal feuille As String, ByVal ligne As Long, ByVal matricule As String, ByVal numero As String, ByVal motif As String)
+    issues.Add Array(feuille, ligne, matricule, numero, motif)
+End Sub
+
+Public Function ITMChargerDonnees() As Object
+    Dim livres As Collection, livre As Workbook
+    Dim d As Object, personnes As Object, doublons As Object, sommes As Object, promotions As Object, mois As Object
+    Dim issues As Collection, w As Worksheet, data As Variant, p As Variant, i As Long
+    Dim mat As String, promo As String, m As String, numero As String, k As String, texte As String, montant As Currency
+    ITMPECInitialiser
+    Set d = CreateObject("Scripting.Dictionary")
+    Set personnes = CreateObject("Scripting.Dictionary")
+    Set doublons = CreateObject("Scripting.Dictionary")
+    Set sommes = CreateObject("Scripting.Dictionary")
+    Set promotions = CreateObject("Scripting.Dictionary")
+    Set mois = CreateObject("Scripting.Dictionary")
+    Set issues = New Collection
+    Set w = ThisWorkbook.Worksheets("PROMOTIONS")
+    If w.Cells(w.Rows.Count, 1).End(xlUp).Row >= 5 Then
+        data = w.Range("A5:H" & w.Cells(w.Rows.Count, 1).End(xlUp).Row).Value2
+        For i = 1 To UBound(data, 1)
+            promo = ITMPromotion(data(i, 1))
+            If promo <> "" Then
+                If IsNumeric(data(i, 6)) And IsNumeric(data(i, 7)) Then
+                    If CCur(data(i, 6)) > 0 And CCur(data(i, 7)) >= CCur(data(i, 6)) Then
+                        If Not promotions.Exists(promo) Then promotions.Add promo, Array(CCur(data(i, 6)), CCur(data(i, 7)))
+                    Else
+                        AjouterProbleme issues, "PROMOTIONS", i + 4, promo, "", "Frais mensuels ou annuels incoherents."
+                    End If
+                Else
+                    AjouterProbleme issues, "PROMOTIONS", i + 4, promo, "", "Frais mensuels ou annuels manquants."
+                End If
+            End If
+        Next i
+    End If
+    Set w = ThisWorkbook.Worksheets("PARAMETRES")
+    For i = 5 To w.Cells(w.Rows.Count, 1).End(xlUp).Row
+        m = ITMCleTexte(w.Cells(i, 1).Value2)
+        If m <> "" And Not mois.Exists(m) Then mois.Add m, CStr(w.Cells(i, 1).Value2)
+    Next i
+    If Dir$(ThisWorkbook.Path & Application.PathSeparator & "prises-en-charge.xml") <> "" Then
+        If Not mois.Exists("JUIN") Then mois.Add "JUIN", "Juin"
+    End If
+    Set livres = ITMClasseurs()
+    For Each livre In livres
+    Set w = livre.Worksheets("APPRENANTS")
+    If ITMDerniereLigne(w) >= 5 Then
+        data = w.Range("A5:O" & ITMDerniereLigne(w)).Value2
+        For i = 1 To UBound(data, 1)
+            mat = ITMCleTexte(data(i, 1)): promo = ITMPromotion(data(i, 8))
+            If mat = "" Then
+                AjouterProbleme issues, livre.Name & " / APPRENANTS", i + 4, "", "", "Matricule absent. Fiche exclue du rapport."
+            Else
+                If Len(mat) <> 6 Or mat Like "*[!A-Z0-9]*" Then
+                    AjouterProbleme issues, livre.Name & " / APPRENANTS", i + 4, mat, "", "Matricule invalide. Identite a verifier."
+                ElseIf doublons.Exists(mat) Then
+                    AjouterProbleme issues, livre.Name & " / APPRENANTS", i + 4, mat, "", "Matricule en double : exclu des calculs individuels."
+                ElseIf personnes.Exists(mat) Then
+                    personnes.Remove mat: doublons.Add mat, True
+                    AjouterProbleme issues, livre.Name & " / APPRENANTS", i + 4, mat, "", "Matricule en double : toutes ses inscriptions sont exclues des calculs individuels."
+                ElseIf Not promotions.Exists(promo) Then
+                    AjouterProbleme issues, livre.Name & " / APPRENANTS", i + 4, mat, "", "Promotion inconnue : " & CStr(data(i, 8))
+                Else
+                    personnes.Add mat, Array(CStr(data(i, 2)), CStr(data(i, 3)), CStr(data(i, 4)), promo, _
+                        CStr(data(i, 10)), CStr(data(i, 14)), Replace(ITMCleTexte(data(i, 13)), " ", ""), i + 4, _
+                        CStr(data(i, 5)) & " " & CStr(data(i, 9)) & " " & CStr(data(i, 11)))
+                End If
+            End If
+        Next i
+    End If
+    Next livre
+    For Each livre In livres
+    Set w = livre.Worksheets("PAIEMENTS")
+    If ITMDerniereLigne(w) >= 5 Then
+        data = w.Range("A5:N" & ITMDerniereLigne(w)).Value2
+        For i = 1 To UBound(data, 1)
+            mat = ITMCleTexte(data(i, 4)): m = ITMCleTexte(data(i, 7)): numero = CStr(data(i, 3))
+            texte = ""
+            If mat = "" Then
+                texte = "Montant sans matricule : rapprochement necessaire."
+            ElseIf Not personnes.Exists(mat) Then
+                texte = "Apprenant introuvable, matricule duplique ou fiche invalide."
+            ElseIf Not mois.Exists(m) Then
+                texte = "Mois manquant ou non reconnu."
+            ElseIf IsEmpty(data(i, 9)) Or CStr(data(i, 9)) = "" Then
+                texte = "Montant paye manquant."
+            ElseIf Not IsNumeric(data(i, 9)) Then
+                texte = "Montant paye non numerique."
+            ElseIf CCur(data(i, 9)) < 0 Then
+                texte = "Montant paye negatif."
+            End If
+            If texte <> "" Then
+                AjouterProbleme issues, livre.Name & " / PAIEMENTS", i + 4, mat, numero, texte
+            Else
+                p = personnes(mat)
+                promo = ITMPromotion(data(i, 6))
+                If promo <> "" And promo <> p(3) Then _
+                    AjouterProbleme issues, livre.Name & " / PAIEMENTS", i + 4, mat, numero, "Promotion historique differente. Le rapport classe l'apprenant dans sa promotion actuelle : " & p(3)
+                If numero = "" Then AjouterProbleme issues, livre.Name & " / PAIEMENTS", i + 4, mat, "", "Numero absent. Montant rattache au matricule et au mois, a verifier avec le recu."
+                k = mat & "|" & m: montant = CCur(data(i, 9))
+                If sommes.Exists(k) Then sommes(k) = CCur(sommes(k)) + montant Else sommes.Add k, montant
+            End If
+        Next i
+    End If
+    Next livre
+    d.Add "personnes", personnes: d.Add "sommes", sommes: d.Add "promotions", promotions: d.Add "mois", mois: d.Add "issues", issues
+    Set ITMChargerDonnees = d
+End Function
+
+Public Function ITMFraisMensuels(ByVal promotion As String) As Currency
+    Dim w As Worksheet, i As Long
+    Set w = ThisWorkbook.Worksheets("PROMOTIONS")
+    For i = 5 To w.Cells(w.Rows.Count, 1).End(xlUp).Row
+        If ITMPromotion(w.Cells(i, 1).Value2) = ITMPromotion(promotion) Then
+            If IsNumeric(w.Cells(i, 6).Value2) Then ITMFraisMensuels = CCur(w.Cells(i, 6).Value2)
+            Exit Function
+        End If
+    Next i
+End Function
+
+Public Function ITMFraisAnnuels(ByVal promotion As String) As Currency
+    Dim w As Worksheet, i As Long
+    Set w = ThisWorkbook.Worksheets("PROMOTIONS")
+    For i = 5 To w.Cells(w.Rows.Count, 1).End(xlUp).Row
+        If ITMPromotion(w.Cells(i, 1).Value2) = ITMPromotion(promotion) Then
+            If IsNumeric(w.Cells(i, 7).Value2) Then ITMFraisAnnuels = CCur(w.Cells(i, 7).Value2)
+            Exit Function
+        End If
+    Next i
+End Function
+
+Private Function ChoisirMois(ByVal d As Object, ByVal demande As String) As String
+    Dim noms As Variant, i As Long, choix As Variant, texte As String, m As Object
+    Set m = d("mois")
+    If m.Count = 0 Then Err.Raise vbObjectError + 930, , "Les mois scolaires ne sont pas configures."
+    demande = ITMCleTexte(demande)
+    If demande = "" Or demande = "TOUS LES MOIS" Then
+        noms = m.Keys
+        For i = 0 To UBound(noms): texte = texte & (i + 1) & " : " & m(noms(i)) & vbCrLf: Next i
+        choix = Application.InputBox("Choisissez le mois a exporter :" & vbCrLf & texte, "Mois du rapport", Type:=1)
+        If VarType(choix) = vbBoolean Then Exit Function
+        If choix <> Fix(choix) Or choix < 1 Or choix > m.Count Then Err.Raise vbObjectError + 931, , "Numero de mois invalide."
+        demande = noms(CLng(choix) - 1)
+    End If
+    If Not m.Exists(demande) Then Err.Raise vbObjectError + 932, , "Mois non reconnu : " & demande
+    ChoisirMois = demande
+End Function
+
+Private Function RechercheOK(ByVal p As Variant, ByVal mat As String, ByVal recherche As String) As Boolean
+    Dim texte As String, mot As Variant
+    texte = ITMCleTexte(mat & " " & p(0) & " " & p(1) & " " & p(2) & " " & p(3) & " " & p(4))
+    If UBound(p) >= 8 Then texte = texte & " " & ITMCleTexte(p(8))
+    texte = Replace(Replace(texte, "-", " "), "'", " ")
+    recherche = Replace(Replace(ITMCleTexte(recherche), "-", " "), "'", " ")
+    For Each mot In Split(recherche, " ")
+        If CStr(mot) <> "" Then
+            If InStr(1, texte, CStr(mot), vbTextCompare) = 0 Then Exit Function
+        End If
+    Next mot
+    RechercheOK = True
+End Function
+
+Public Function ITMMoisEnRetard(ByVal mois As String, ByVal annee As String, ByVal au As Date) As Boolean
+    Dim liste As Variant, i As Long, debut As Long, numero As Long, exercice As Long, premier As Long, valeur As String
+    liste = Array("JANVIER", "FEVRIER", "MARS", "AVRIL", "MAI", "JUIN", "JUILLET", "AOUT", "SEPTEMBRE", "OCTOBRE", "NOVEMBRE", "DECEMBRE")
+    annee = Trim$(annee)
+    If Len(annee) < 4 Then Exit Function
+    If Not IsNumeric(Left$(annee, 4)) Then Exit Function
+    debut = CLng(Left$(annee, 4))
+    If debut < 1900 Or debut > 9998 Then Exit Function
+    premier = 9
+    valeur = ITMCleTexte(ThisWorkbook.Worksheets("PARAMETRES").Cells(5, 1).Value2)
+    For i = 0 To UBound(liste)
+        If liste(i) = valeur Then premier = i + 1: Exit For
+    Next i
+    mois = ITMCleTexte(mois)
+    For i = 0 To UBound(liste)
+        If mois = liste(i) Then
+            numero = i + 1: exercice = debut
+            If numero < premier Then exercice = exercice + 1
+            ITMMoisEnRetard = (DateSerial(exercice, numero + 1, 6) <= DateValue(au))
+            Exit Function
+        End If
+    Next i
+End Function
+
+Public Function ITMSelectionRapport(ByVal d As Object, ByVal mois As String, ByVal promotion As String, ByVal mode As Long, _
+    Optional ByVal statut As String = "", Optional ByVal annee As String = "", Optional ByVal recherche As String = "", Optional ByVal nombreLitiges As Long = 0, Optional ByVal moisLitiges As String = "") As Object
+    Dim groupes As Object, personnes As Object, sommes As Object, frais As Object, moisListe As Object, lignes As Collection
+    Dim mat As Variant, p As Variant, f As Variant, verse As Currency, du As Currency, dette As Currency
+    Dim promo As String, k As String, m As Variant, rec As Variant, selection As Boolean, periode As String, situation As String
+    Dim nbPartiels As Long, verseFiltre As Currency, resteMois As Currency
+    Set groupes = CreateObject("Scripting.Dictionary")
+    Set personnes = d("personnes"): Set sommes = d("sommes"): Set frais = d("promotions"): Set moisListe = d("mois")
+    mois = ITMCleTexte(mois): statut = ITMCleTexte(statut): annee = Replace(ITMCleTexte(annee), " ", "")
+    For Each mat In personnes.Keys
+        p = personnes(mat): promo = p(3)
+        If ITMPromotionCorrespond(promo, promotion) And (statut = "" Or statut = "TOUS" Or statut = ITMCleTexte(p(5))) _
+            And (annee = "" Or annee = p(6)) And RechercheOK(p, CStr(mat), recherche) Then
+            f = frais(promo): du = f(0): verse = 0: dette = 0: periode = "": selection = False
+            k = mat & "|" & mois
+            If sommes.Exists(k) Then verse = CCur(sommes(k))
+            Select Case mode
+                Case 1: selection = (du > 0 And verse + ITMPECMontant(CStr(mat), CStr(p(6)), mois, du) >= du)
+                Case 2: selection = (verse > 0)
+                Case 3: selection = True
+                Case 4
+                    If ITMCleTexte(p(5)) = "ACTIF" Or ITMCleTexte(p(5)) = "" Then
+                        For Each m In ITMPECMois(CStr(mat), CStr(p(6)))
+                            m = ITMCleTexte(m)
+                            If ITMMoisEnRetard(CStr(m), CStr(p(6)), Date) Then
+                                k = mat & "|" & m: resteMois = du - ITMPECMontant(CStr(mat), CStr(p(6)), CStr(m), du)
+                                If sommes.Exists(k) Then resteMois = resteMois - CCur(sommes(k))
+                                If resteMois > 0 Then
+                                    dette = dette + resteMois
+                                    If periode <> "" Then periode = periode & ", "
+                                    periode = periode & moisListe(m)
+                                End If
+                            End If
+                            If m = mois Then Exit For
+                        Next m
+                    End If
+                    selection = (dette > 0)
+            End Select
+            If selection And nombreLitiges > 0 Then
+                nbPartiels = 0
+                For Each m In moisListe.Keys
+                    If ITMCleTexte(moisLitiges) = "" Or ITMCleTexte(moisLitiges) = "TOUS LES MOIS" Or CStr(m) = ITMCleTexte(moisLitiges) Then
+                        verseFiltre = 0: k = mat & "|" & m
+                        If sommes.Exists(k) Then verseFiltre = CCur(sommes(k))
+                        If verseFiltre > 0 And verseFiltre < du Then nbPartiels = nbPartiels + 1
+                    End If
+                Next m
+                selection = (nbPartiels = nombreLitiges)
+            End If
+            If selection Then
+                If Not groupes.Exists(promo) Then
+                    Set lignes = New Collection
+                    groupes.Add promo, lignes
+                End If
+                Set lignes = groupes(promo)
+                If mode = 3 Then
+                    rec = Array(mat, p(0), p(1), p(2), promo, p(4), p(5), p(6), "", "")
+                ElseIf mode = 4 Then
+                    rec = Array(mat, p(0), p(1), p(2), promo, p(4), periode, dette, "A REGULARISER", "")
+                Else
+                    situation = IIf(verse >= du, "PAYE", "PARTIEL")
+                    If ITMPECMontant(CStr(mat), CStr(p(6)), mois, du) > 0 Then situation = "PRIS EN CHARGE"
+                    rec = Array(mat, p(0), p(1), p(2), promo, moisListe(mois), du, verse, Application.Max(0, du - verse - ITMPECMontant(CStr(mat), CStr(p(6)), mois, du)), situation)
+                End If
+                lignes.Add rec
+            End If
+        End If
+    Next mat
+    Set ITMSelectionRapport = groupes
+End Function
+
+Private Sub ITMCalculerRapport(ByVal wb As Workbook)
+    Dim feuille As Worksheet
+    For Each feuille In wb.Worksheets
+        feuille.Calculate
+    Next feuille
+End Sub
+
+Private Sub ITMVerifierDemandeRapport(ByVal d As Object, ByVal demandeMois As String, ByVal promotion As String, ByVal mode As Long)
+    If mode < 1 Or mode > 4 Then Err.Raise vbObjectError + 1041, , "Type de rapport non reconnu."
+    If mode <> 3 Then
+        If Not d("mois").Exists(ITMCleTexte(demandeMois)) Then Err.Raise vbObjectError + 1043, , "Choisissez un mois scolaire precis."
+    End If
+    If ITMPromotion(promotion) <> "" Then
+        If Not d("promotions").Exists(ITMPromotion(promotion)) Then Err.Raise vbObjectError + 1044, , "Promotion non reconnue."
+    End If
+End Sub
+
+Public Function ITMAppApercuRapport(ByVal demandeMois As String, ByVal promotion As String, ByVal mode As Long) As String
+    Dim d As Object, groupes As Object, k As Variant, lignes As Collection, detail As String, premiere As Boolean
+    On Error GoTo EH
+    Set d = ITMChargerDonnees()
+    ITMVerifierDemandeRapport d, demandeMois, promotion, mode
+    Set groupes = ITMSelectionRapport(d, ITMCleTexte(demandeMois), promotion, mode)
+    detail = "[": premiere = True
+    For Each k In groupes.Keys
+        Set lignes = groupes(k)
+        If Not premiere Then detail = detail & ","
+        premiere = False
+        detail = detail & "{""Promotion"":" & ModuleApplicationITM.ITMAppEncoder(CStr(k)) & ",""Dossiers"":" & lignes.Count & "}"
+    Next k
+    ITMAppApercuRapport = "{""ok"":true,""rows"":" & TotalLignes(groupes) & ",""issues"":" & d("issues").Count & ",""groups"":" & detail & "]}": Exit Function
+EH:
+    ITMAppApercuRapport = "{""ok"":false,""error"":" & ModuleApplicationITM.ITMAppEncoder("Verification du rapport : " & Err.Description) & "}"
+End Function
+
+Private Function TotalLignes(ByVal groupes As Object) As Long
+    Dim k As Variant, c As Collection
+    For Each k In groupes.Keys: Set c = groupes(k): TotalLignes = TotalLignes + c.Count: Next k
+End Function
+
+Private Sub FeuilleDiagnostic(ByVal wb As Workbook, ByVal issues As Collection)
+    Dim w As Worksheet, i As Long
+    If issues.Count = 0 Then Exit Sub
+    If wb.Worksheets.Count = 1 And wb.Worksheets(1).Range("A1").Value = "" Then
+        Set w = wb.Worksheets(1)
+    Else
+        Set w = wb.Worksheets.Add(After:=wb.Worksheets(wb.Worksheets.Count))
+    End If
+    w.Name = "Diagnostic"
+    w.Range("A1:E1").Merge: w.Range("A1").Value = "ITM CD - DONNEES A VERIFIER"
+    w.Range("A2:E2").Merge: w.Range("A2").Value = "Ces lignes ne doivent pas etre assimilees a des paiements valides sans verification."
+    w.Range("A4:E4").Value = Array("Feuille", "Ligne actuelle", "Matricule", "Numero", "Observation")
+    w.Columns("C:D").NumberFormat = "@"
+    For i = 1 To issues.Count: w.Cells(i + 4, 1).Resize(1, 5).Value = issues(i): Next i
+    w.Columns("A:D").ColumnWidth = 18: w.Columns("E").ColumnWidth = 70
+    w.Range("A4:E" & issues.Count + 4).WrapText = True: w.Range("A4:E" & issues.Count + 4).Rows.AutoFit
+    HabillerRapportPDF w, 4, issues.Count + 4, 5, False
+    w.PageSetup.PrintArea = w.Range("A1:E" & issues.Count + 4).Address
+    w.PageSetup.PrintTitleRows = "$1:$4"
+    w.PageSetup.Orientation = xlLandscape
+    w.PageSetup.Zoom = False: w.PageSetup.FitToPagesWide = 1: w.PageSetup.FitToPagesTall = False
+End Sub
+
+Private Function PreparerRapport(ByVal groupes As Object, ByVal d As Object, ByVal mode As Long, ByVal mois As String) As Workbook
+    Dim wb As Workbook, w As Worksheet, keys As Variant, x As Long, y As Long, tmp As Variant
+    Dim promo As Variant, lignes As Collection, i As Long, r As Long, titre As String, index As Long, etape As String
+    On Error GoTo EH
+    etape = "Creation du classeur de rapport"
+    Set wb = Workbooks.Add(xlWBATWorksheet)
+    Select Case mode
+        Case 1: titre = "APPRENANTS EN ORDRE POUR " & d("mois")(mois)
+        Case 2: titre = "APPRENANTS AYANT VERSE POUR " & d("mois")(mois)
+        Case 3: titre = "LISTE D'ENREGISTREMENT"
+        Case 4: titre = "LITIGES ET RETARDS JUSQU'A " & d("mois")(mois)
+    End Select
+    If groupes.Count > 0 Then
+        keys = groupes.Keys
+        For x = LBound(keys) To UBound(keys) - 1
+            For y = x + 1 To UBound(keys)
+                If CStr(keys(x)) > CStr(keys(y)) Then tmp = keys(x): keys(x) = keys(y): keys(y) = tmp
+            Next y
+        Next x
+        For Each promo In keys
+            etape = "Construction de la promotion " & CStr(promo)
+            index = index + 1
+            If index = 1 Then Set w = wb.Worksheets(1) Else Set w = wb.Worksheets.Add(After:=wb.Worksheets(wb.Worksheets.Count))
+            w.Name = CStr(promo)
+            w.Range("A1:J1").Merge: w.Range("A1").Value = "INSTITUT TECHNIQUE MEDICAL COEUR DE DIEU - ITM CD"
+            w.Range("A2:J2").Merge: w.Range("A2").Value = titre
+            Set lignes = groupes(promo)
+            w.Range("A3:J3").Merge: w.Range("A3").Value = "Promotion : " & promo & " | Apprenants : " & lignes.Count & " | " & Format(Now, "dd/mm/yyyy hh:nn")
+            If mode = 3 Then
+                w.Range("A5:J5").Value = Array("Matricule", "Nom", "Post-nom", "Prenom", "Promotion", "Contact", "Statut", "Annee scolaire", "", "")
+            ElseIf mode = 4 Then
+                w.Range("A5:J5").Value = Array("Matricule", "Nom", "Post-nom", "Prenom", "Promotion", "Contact", "Periode", "Dette FC", "Situation", "")
+            Else
+                w.Range("A5:J5").Value = Array("Matricule", "Nom", "Post-nom", "Prenom", "Promotion", "Mois", "Du mensuel FC", "Verse FC", "Reste FC", "Statut")
+            End If
+            w.Columns("A").NumberFormat = "@"
+            If mode >= 3 Then w.Columns("F").NumberFormat = "@"
+            Dim bloc As Variant, j As Long, v As Variant
+            ReDim bloc(1 To lignes.Count, 1 To 10)
+            For i = 1 To lignes.Count
+                v = lignes(i)
+                For j = 1 To 10: bloc(i, j) = v(j - 1): Next j
+            Next i
+            w.Range("A6:J" & lignes.Count + 5).Value = bloc
+            r = lignes.Count + 6
+            w.Range("A6:J" & r - 1).Sort Key1:=w.Range("B6"), Order1:=xlAscending, Key2:=w.Range("C6"), Order2:=xlAscending, Key3:=w.Range("D6"), Order3:=xlAscending, Header:=xlNo
+            If mode <> 3 Then
+                w.Cells(r, 7).Value = "TOTAL"
+                w.Cells(r, 8).Formula = "=SUM(H6:H" & r - 1 & ")"
+                If mode <> 4 Then w.Cells(r, 9).Formula = "=SUM(I6:I" & r - 1 & ")"
+            End If
+            w.Columns("A").ColumnWidth = 13: w.Columns("B:D").ColumnWidth = 20
+            w.Columns("E:F").ColumnWidth = 14: w.Columns("G:I").ColumnWidth = 16: w.Columns("J").ColumnWidth = 13
+            w.Range("A5:J" & r).WrapText = True: w.Range("A5:J" & r).Rows.AutoFit
+            If mode < 3 Then w.Range("G6:I" & r).NumberFormat = "#,##0"
+            If mode = 4 Then w.Range("H6:H" & r).NumberFormat = "#,##0"
+            If mode = 3 Then
+                w.Columns("I:J").Hidden = True
+                HabillerRapportPDF w, 5, r - 1, 8, False
+            Else
+                HabillerRapportPDF w, 5, r, 10
+            End If
+            If mode = 3 Then
+                w.PageSetup.PrintArea = w.Range("A1:H" & r - 1).Address
+            Else
+                w.PageSetup.PrintArea = w.Range("A1:J" & r).Address
+            End If
+            w.PageSetup.PrintTitleRows = "$1:$5"
+            w.PageSetup.Orientation = xlLandscape
+            w.PageSetup.CenterFooter = "Page &P / &N"
+            w.PageSetup.Zoom = False: w.PageSetup.FitToPagesWide = 1: w.PageSetup.FitToPagesTall = False
+        Next promo
+    End If
+    etape = "Mise en forme du diagnostic"
+    FeuilleDiagnostic wb, d("issues")
+    Set PreparerRapport = wb
+    Exit Function
+EH:
+    Dim message As String: message = etape & " (erreur " & Err.Number & ") : " & Err.Description
+    On Error Resume Next: wb.Close False: On Error GoTo 0
+    Err.Raise vbObjectError + 933, , message
+End Function
+
+Public Sub ITMExporterRapport(Optional ByVal demandeMois As String = "", Optional ByVal promotion As String = "", _
+    Optional ByVal pdf As Boolean = True, Optional ByVal mode As Long = 1, Optional ByVal statut As String = "", _
+    Optional ByVal annee As String = "", Optional ByVal recherche As String = "", Optional ByVal nombreLitiges As Long = 0)
+    Dim d As Object, groupes As Object, wb As Workbook, mois As String, chemin As Variant, extension As String
+    Dim nombre As Long, screenAvant As Boolean, eventsAvant As Boolean, debut As Boolean, message As String
+    If mExportEnCours Then Exit Sub
+    On Error GoTo EH
+    mExportEnCours = True
+    Set d = ITMChargerDonnees()
+    If mode <> 3 Then
+        mois = ChoisirMois(d, demandeMois)
+        If mois = "" Then GoTo Fin
+    End If
+    If ITMPromotion(promotion) <> "" Then
+        If Not d("promotions").Exists(ITMPromotion(promotion)) Then Err.Raise vbObjectError + 934, , "Promotion non reconnue : " & promotion
+    End If
+    Set groupes = ITMSelectionRapport(d, mois, promotion, mode, statut, annee, recherche, nombreLitiges, demandeMois)
+    nombre = TotalLignes(groupes)
+    If nombre = 0 And d("issues").Count = 0 Then MsgBox "Aucun apprenant ne correspond au mois et aux filtres choisis.", vbInformation: GoTo Fin
+    extension = IIf(pdf, ".pdf", ".xlsx")
+    chemin = Application.GetSaveAsFilename("ITM_" & IIf(mode = 1, "En_ordre", IIf(mode = 3, "Enregistrement", "Paiements")) & "_" & _
+        Format(Now, "yyyymmdd_hhnnss") & extension, IIf(pdf, "PDF (*.pdf), *.pdf", "Classeur Excel (*.xlsx), *.xlsx"))
+    If VarType(chemin) = vbBoolean Then GoTo Fin
+    If LCase$(Right$(CStr(chemin), Len(extension))) <> extension Then chemin = CStr(chemin) & extension
+    If Dir$(CStr(chemin)) <> "" Then
+        If MsgBox("Remplacer le fichier existant ?", vbYesNo + vbQuestion + vbDefaultButton2) <> vbYes Then GoTo Fin
+    End If
+    screenAvant = Application.ScreenUpdating: eventsAvant = Application.EnableEvents: debut = True
+    Application.ScreenUpdating = False: Application.EnableEvents = False
+    Set wb = PreparerRapport(groupes, d, mode, mois)
+    ITMCalculerRapport wb
+    If pdf Then
+        wb.ExportAsFixedFormat Type:=xlTypePDF, Filename:=CStr(chemin), Quality:=xlQualityStandard, IgnorePrintAreas:=False, OpenAfterPublish:=False
+    Else
+        wb.SaveAs Filename:=CStr(chemin), FileFormat:=xlOpenXMLWorkbook
+    End If
+    wb.Close False: Set wb = Nothing
+    MsgBox nombre & " apprenant(s), " & groupes.Count & " promotion(s) exportes." & vbCrLf & _
+        "Observations dans la section Diagnostic : " & d("issues").Count & vbCrLf & CStr(chemin), vbInformation, "ITM CD"
+Fin:
+    If debut Then Application.EnableEvents = eventsAvant: Application.ScreenUpdating = screenAvant
+    mExportEnCours = False
+    Exit Sub
+EH:
+    message = Err.Description
+    On Error Resume Next
+    If Not wb Is Nothing Then wb.Close False
+    If debut Then Application.EnableEvents = eventsAvant: Application.ScreenUpdating = screenAvant
+    mExportEnCours = False
+    MsgBox "Export interrompu : " & message & vbCrLf & "Aucun plafond de lignes n'est applique. Verifiez le diagnostic et les filtres.", vbExclamation, "ITM CD"
+End Sub
+
+Public Sub ITMExportDepuisFormulaire(ByVal f As Object, ByVal action As String)
+    Dim mois As String, promo As String, statut As String, annee As String, recherche As String, nombreLitiges As Long
+    nombreLitiges = CLng(Val(ITMFiltre(f, "ComboNombreMoisLitige", "ListNombreMoisLitige")))
+    mois = ITMFiltre(f, "ComboMoisDashboard", "ListMois")
+    promo = ITMFiltre(f, "ComboPromotionDashboard", "ListPromotion")
+    If f.Name = "GestionApprenant" Then
+        statut = ITMFiltre(f, "ListStatutApprenant"): annee = ITMFiltre(f, "ListAnnee"): recherche = ITMFiltre(f, "TextRecherche")
+    ElseIf f.Name = "Paiement" Then
+        promo = ITMFiltre(f, "TextPromotion")
+    End If
+    Select Case action
+        Case "ENORDRE_PDF": ITMExporterRapport mois, promo, True, 1, statut, annee, recherche, nombreLitiges
+        Case "PAIEMENTS_PDF": ITMExporterRapport mois, promo, True, 2, statut, annee, recherche, nombreLitiges
+        Case "PAIEMENTS_XLSX": ITMExporterRapport mois, promo, False, 2, statut, annee, recherche, nombreLitiges
+        Case "INSCRITS_PDF": ITMExporterRapport mois, promo, True, 3, statut, annee, recherche, nombreLitiges
+        Case "RETARDS_PDF": ITMExporterRapport mois, promo, True, 4, statut, annee, recherche, nombreLitiges
+    End Select
+End Sub
+
+Public Function ITMTesterExports() As String
+    Dim d As Object, total As Object, g As Object, promo As Variant, m As Variant, mode As Long, n As Long
+    Set d = ITMChargerDonnees()
+    For Each m In d("mois").Keys
+        For mode = 1 To 4
+            Set total = ITMSelectionRapport(d, CStr(m), "", mode)
+            n = 0
+            For Each promo In d("promotions").Keys
+                Set g = ITMSelectionRapport(d, CStr(m), CStr(promo), mode)
+                n = n + TotalLignes(g)
+            Next promo
+            If n <> TotalLignes(total) Then Err.Raise vbObjectError + 935, , "Effectifs par promotion incoherents."
+        Next mode
+    Next m
+    ITMTesterExports = "Filtres et effectifs concordants. Fiches exploitables : " & d("personnes").Count & "; observations : " & d("issues").Count
+End Function
+
+Public Sub ITMRestaurerChoix(ByVal liste As Object, ByVal valeur As String, Optional ByVal defaut As String = "")
+    Dim i As Long, cible As String
+    cible = ITMCleTexte(valeur)
+    For i = 0 To liste.ListCount - 1
+        If ITMCleTexte(liste.List(i, 0)) = cible Then liste.ListIndex = i: Exit Sub
+    Next i
+    For i = 0 To liste.ListCount - 1
+        If ITMCleTexte(liste.List(i, 0)) = ITMCleTexte(defaut) Then liste.ListIndex = i: Exit Sub
+    Next i
+    liste.ListIndex = -1
+End Sub
+
+Public Function ITMLireDate(ByVal texte As String, ByRef resultat As Date) As Boolean
+    Dim parties As Variant, j As Long, m As Long, a As Long, test As Date
+    On Error GoTo Fin
+    parties = Split(Trim$(texte), "/")
+    If UBound(parties) <> 2 Then Exit Function
+    If Len(parties(0)) <> 2 Or Len(parties(1)) <> 2 Or Len(parties(2)) <> 4 Then Exit Function
+    If Not IsNumeric(parties(0)) Or Not IsNumeric(parties(1)) Or Not IsNumeric(parties(2)) Then Exit Function
+    j = CLng(parties(0)): m = CLng(parties(1)): a = CLng(parties(2))
+    If a < 1900 Or m < 1 Or m > 12 Or j < 1 Or j > 31 Then Exit Function
+    test = DateSerial(a, m, j)
+    If Day(test) <> j Or Month(test) <> m Or Year(test) <> a Or test > Date Then Exit Function
+    resultat = test: ITMLireDate = True
+Fin:
+End Function
+
+Public Sub ITMImprimerListeFiltree(ByVal f As Object)
+    Dim liste As Object, wb As Workbook, w As Worksheet, sourceSheet As Worksheet, i As Long, lig As Variant
+    Dim cache As Boolean, erreur As String
+    On Error GoTo EH
+    Set liste = ITMControle(f, "ListApprenants", "ListApprenant")
+    If liste Is Nothing Then Err.Raise vbObjectError + 936, , "Liste filtree introuvable."
+    If liste.ListCount = 0 Then MsgBox "La liste filtree est vide.", vbInformation: Exit Sub
+    Set sourceSheet = ThisWorkbook.Worksheets("APPRENANTS")
+    Set wb = Workbooks.Add(xlWBATWorksheet): Set w = wb.Worksheets(1)
+    w.Name = "Liste filtree"
+    w.Range("A1:H1").Merge: w.Range("A1").Value = "ITM CD - LISTE D'ENREGISTREMENT"
+    w.Range("A2:H2").Merge: w.Range("A2").Value = "Liste affichee dans le formulaire. Effectif : " & liste.ListCount
+    w.Range("A4:H4").Value = Array("Matricule", "Nom", "Post-nom", "Prenom", "Promotion", "Contact 1", "Contact 2", "Statut")
+    w.Columns("A").NumberFormat = "@": w.Columns("F:G").NumberFormat = "@"
+    For i = 0 To liste.ListCount - 1
+        lig = Application.Match(CStr(liste.List(i, 0)), sourceSheet.Columns(1), 0)
+        If IsError(lig) Then Err.Raise vbObjectError + 937, , "Apprenant absent de la sourceSheet : " & liste.List(i, 0)
+        w.Cells(i + 5, 1).Resize(1, 8).Value = Array(sourceSheet.Cells(lig, 1).Value, sourceSheet.Cells(lig, 2).Value, sourceSheet.Cells(lig, 3).Value, _
+            sourceSheet.Cells(lig, 4).Value, sourceSheet.Cells(lig, 8).Value, sourceSheet.Cells(lig, 10).Text, sourceSheet.Cells(lig, 11).Text, sourceSheet.Cells(lig, 14).Value)
+    Next i
+    w.Columns("A:H").ColumnWidth = 19
+    w.Range("A5:H" & liste.ListCount + 4).Sort Key1:=w.Range("B5"), Order1:=xlAscending, Key2:=w.Range("C5"), Order2:=xlAscending, Header:=xlNo
+    HabillerRapportPDF w, 4, liste.ListCount + 4, 8, False
+    w.PageSetup.PrintArea = w.Range("A1:H" & liste.ListCount + 4).Address
+    w.PageSetup.PrintTitleRows = "$1:$4": w.PageSetup.Orientation = xlLandscape
+    w.PageSetup.Zoom = False: w.PageSetup.FitToPagesWide = 1: w.PageSetup.FitToPagesTall = False
+    f.Hide: cache = True
+    w.PrintPreview
+    wb.Close False: Set wb = Nothing
+    f.Show
+    Exit Sub
+EH:
+    erreur = Err.Description
+    On Error Resume Next
+    If Not wb Is Nothing Then wb.Close False
+    MsgBox "Apercu impossible : " & erreur, vbExclamation
+    If cache Then f.Show
+End Sub
+
+Public Function ITMTesterVolumeExports() As Boolean
+    Dim d As Object, p As Object, s As Object, promos As Object, mois As Object, issues As Collection
+    Dim i As Long, mat As String, promo As String, g As Object, f As Variant
+    Set d = CreateObject("Scripting.Dictionary"): Set p = CreateObject("Scripting.Dictionary")
+    Set s = CreateObject("Scripting.Dictionary"): Set promos = CreateObject("Scripting.Dictionary")
+    Set mois = CreateObject("Scripting.Dictionary"): Set issues = New Collection
+    mois.Add "SEPTEMBRE", "Septembre"
+    For Each f In Array("INF1", "INF2", "ACC1"): promos.Add CStr(f), Array(CCur(55000), CCur(495000)): Next f
+    For i = 1 To 1501
+        mat = "T" & Format$(i, "00000")
+        promo = Choose((i - 1) Mod 3 + 1, "INF1", "INF2", "ACC1")
+        p.Add mat, Array("NOM", "POSTNOM", "PRENOM", promo, "", "Actif", "2026-2027", i + 4)
+        s.Add mat & "|SEPTEMBRE", IIf(i <= 1500, CCur(55000), CCur(30000))
+    Next i
+    d.Add "personnes", p: d.Add "sommes", s: d.Add "promotions", promos: d.Add "mois", mois: d.Add "issues", issues
+    Set g = ITMSelectionRapport(d, "Septembre", "", 1)
+    If TotalLignes(g) <> 1500 Then Err.Raise vbObjectError + 938, , "Test des exports a grand volume echoue."
+    Set g = ITMSelectionRapport(d, "Septembre", "INF 1", 1)
+    If TotalLignes(g) <> 500 Then Err.Raise vbObjectError + 939, , "Test du filtre promotion echoue."
+    Set g = ITMSelectionRapport(d, "Septembre", "", 2)
+    If TotalLignes(g) <> 1501 Then Err.Raise vbObjectError + 940, , "Un paiement partiel est exclu a tort."
+    Set g = ITMSelectionRapport(d, "Septembre", "", 3)
+    If TotalLignes(g) <> 1501 Then Err.Raise vbObjectError + 941, , "Test de la liste des inscrits echoue."
+    ITMTesterVolumeExports = True
+End Function
+
+' Export demandé par l'interface Windows : aucun dialogue Excel.
+Public Function ITMAppRapport(ByVal chemin As String, ByVal demandeMois As String, ByVal promotion As String, ByVal pdf As Boolean, ByVal mode As Long) As String
+    Dim d As Object, groupes As Object, rapport As Workbook, mois As String, extension As String
+    Dim nombre As Long, screenAvant As Boolean, eventsAvant As Boolean, debut As Boolean, erreur As String, etape As String, acquis As Boolean
+    On Error GoTo EH
+    If mExportEnCours Then Err.Raise vbObjectError + 1040, , "Un export est déjà en cours."
+    mExportEnCours = True: acquis = True
+    etape = "Verification de la demande"
+    If mode < 1 Or mode > 4 Then Err.Raise vbObjectError + 1041, , "Type de rapport non reconnu."
+    extension = IIf(pdf, ".pdf", ".xlsx")
+    If Len(chemin) < Len(extension) + 1 Or LCase$(Right$(chemin, Len(extension))) <> extension Then Err.Raise vbObjectError + 1042, , "Extension de fichier incorrecte."
+    Set d = ITMChargerDonnees()
+    ITMVerifierDemandeRapport d, demandeMois, promotion, mode
+    Dim fso As Object
+    Set fso = CreateObject("Scripting.FileSystemObject")
+    chemin = fso.GetAbsolutePathName(chemin)
+    If Not fso.FolderExists(fso.GetParentFolderName(chemin)) Then Err.Raise vbObjectError + 1046, , "Le dossier de destination est introuvable."
+    If mode <> 3 Then
+        If Not d("mois").Exists(ITMCleTexte(demandeMois)) Then Err.Raise vbObjectError + 1043, , "Choisissez un mois scolaire précis."
+        mois = ITMCleTexte(demandeMois)
+    End If
+    If ITMPromotion(promotion) <> "" Then
+        If Not d("promotions").Exists(ITMPromotion(promotion)) Then Err.Raise vbObjectError + 1044, , "Promotion non reconnue."
+    End If
+    Set groupes = ITMSelectionRapport(d, mois, promotion, mode, "", "", "", 0, demandeMois)
+    nombre = TotalLignes(groupes)
+    If nombre = 0 And d("issues").Count = 0 Then Err.Raise vbObjectError + 1045, , "Aucun dossier ne correspond à ce rapport."
+    screenAvant = Application.ScreenUpdating: eventsAvant = Application.EnableEvents: debut = True
+    Application.ScreenUpdating = False: Application.EnableEvents = False
+    etape = "Construction des feuilles et mise en page"
+    Set rapport = PreparerRapport(groupes, d, mode, mois)
+    etape = "Calcul des totaux du rapport"
+    ITMCalculerRapport rapport
+    etape = IIf(pdf, "Generation du PDF", "Enregistrement du rapport Excel")
+    If pdf Then
+        rapport.ExportAsFixedFormat Type:=xlTypePDF, Filename:=chemin, Quality:=xlQualityStandard, IgnorePrintAreas:=False, OpenAfterPublish:=False
+    Else
+        rapport.SaveAs Filename:=chemin, FileFormat:=xlOpenXMLWorkbook
+    End If
+    If Not fso.FileExists(chemin) Then Err.Raise vbObjectError + 1047, , "Le rapport n'a pas ete cree."
+    If fso.GetFile(chemin).Size = 0 Then Err.Raise vbObjectError + 1048, , "Le fichier de rapport est vide."
+    rapport.Close False: Set rapport = Nothing
+    ITMAppRapport = "{""ok"":true,""rows"":" & nombre & ",""groups"":" & groupes.Count & ",""issues"":" & d("issues").Count & ",""path"":" & ModuleApplicationITM.ITMAppEncoder(chemin) & "}"
+    GoTo Fin
+EH:
+    erreur = etape & " (erreur " & Err.Number & ") : " & Err.Description
+    On Error Resume Next
+    If Not rapport Is Nothing Then rapport.Close False
+    On Error GoTo 0
+    ITMAppRapport = "{""ok"":false,""error"":" & ModuleApplicationITM.ITMAppEncoder(erreur) & "}"
+Fin:
+    If acquis Then mExportEnCours = False
+    On Error Resume Next
+    If debut Then Application.EnableEvents = eventsAvant: Application.ScreenUpdating = screenAvant
+    On Error GoTo 0
+End Function
+
+' Prises en charge: registre du dossier data, jamais un faux paiement.
+Public Sub ITMPECInitialiser()
+    Set pecDocument = Nothing
+    Set pecRecords = Nothing
+    pecPath = ""
+End Sub
+Public Function ITMPECAnnee(ByVal valeur As String) As String
+    ITMPECAnnee = Replace(Replace(Replace(ITMCleTexte(valeur), " ", ""), ChrW(8211), "-"), ChrW(8212), "-")
+End Function
+Private Function PECCharger() As Object
+    Dim fichier As String, doc As Object, dataset As String
+    fichier = ThisWorkbook.Path & Application.PathSeparator & "prises-en-charge.xml"
+    If Dir$(fichier) = "" Then
+        If Dir$(ThisWorkbook.Path & Application.PathSeparator & "prises-en-charge.presence") <> "" Or Dir$(fichier & ".precedent") <> "" Then Err.Raise vbObjectError + 1190, , "Registre des prises en charge manquant. Restaurez une sauvegarde complète."
+        Exit Function
+    End If
+    If Not pecDocument Is Nothing And pecPath = fichier Then Set PECCharger = pecDocument: Exit Function
+    Set doc = CreateObject("MSXML2.DOMDocument.6.0")
+    doc.async = False: doc.resolveExternals = False: doc.validateOnParse = False
+    doc.setProperty "ProhibitDTD", True
+    If Not doc.Load(fichier) Then Err.Raise vbObjectError + 1190, , "Registre des prises en charge illisible. Paiements bloqués."
+    If doc.documentElement.nodeName <> "PrisesEnCharge" Or doc.documentElement.getAttribute("Version") <> "1" Then Err.Raise vbObjectError + 1191, , "Format des prises en charge incompatible."
+    On Error Resume Next
+    dataset = CStr(ThisWorkbook.CustomDocumentProperties("ITM_DataSet").Value)
+    If dataset = "" Then dataset = CStr(ThisWorkbook.CustomDocumentProperties("ITM_PECDataSet").Value)
+    On Error GoTo 0
+    If doc.documentElement.getAttribute("Dataset") <> dataset Then Err.Raise vbObjectError + 1192, , "Les prises en charge appartiennent à un autre dossier data."
+    Set pecDocument = doc: pecPath = fichier: Set PECCharger = doc
+End Function
+Private Function PECRecord(ByVal mat As String, ByVal annee As String) As Object
+    Dim doc As Object, node As Object, resultat As Object
+    Set doc = PECCharger()
+    If doc Is Nothing Then Exit Function
+    Dim cle As String
+    If pecRecords Is Nothing Then
+        Set pecRecords = CreateObject("Scripting.Dictionary")
+        For Each node In doc.SelectNodes("/PrisesEnCharge/Records/Record")
+            cle = ITMCleTexte(node.getAttribute("Matricule")) & "|" & ITMPECAnnee(node.getAttribute("Annee"))
+            If pecRecords.Exists(cle) Then Err.Raise vbObjectError + 1193, , "Prise en charge en double."
+            If node.SelectNodes("Couverture/boolean").Length <> 10 Then Err.Raise vbObjectError + 1194, , "Dix mois de prise en charge attendus."
+            pecRecords.Add cle, node
+        Next node
+    End If
+    cle = ITMCleTexte(mat) & "|" & ITMPECAnnee(annee)
+    If pecRecords.Exists(cle) Then Set resultat = pecRecords(cle)
+    Set PECRecord = resultat
+End Function
+Public Function ITMPECExiste(ByVal mat As String, ByVal annee As String) As Boolean
+    Dim node As Object
+    Set node = PECRecord(mat, annee): ITMPECExiste = Not node Is Nothing
+End Function
+Public Function ITMPECMois(ByVal mat As String, ByVal annee As String) As Variant
+    If ITMPECExiste(mat, annee) And Not ITMEstScolia() Then
+        ITMPECMois = Array("Septembre", "Octobre", "Novembre", "Décembre", "Janvier", "Février", "Mars", "Avril", "Mai", "Juin")
+    Else
+        Dim w As Worksheet, noms() As String, last As Long, j As Long
+        Set w = ThisWorkbook.Worksheets("PARAMETRES"): last = w.Cells(w.Rows.Count, 1).End(xlUp).Row
+        If last < 5 Or last > 16 Then Err.Raise vbObjectError + 1330, , "Calendrier scolaire invalide."
+        ReDim noms(0 To last - 5)
+        For j = 5 To last: noms(j - 5) = CStr(w.Cells(j, 1).Value2): Next j
+        ITMPECMois = noms
+    End If
+End Function
+Public Function ITMPECMontant(ByVal mat As String, ByVal annee As String, ByVal mois As String, ByVal tarif As Currency) As Currency
+    Dim node As Object, flags As Object, noms As Variant, i As Long
+    Set node = PECRecord(mat, annee): If node Is Nothing Then Exit Function
+    Set flags = node.SelectNodes("Couverture/boolean")
+    noms = Array("Septembre", "Octobre", "Novembre", "Décembre", "Janvier", "Février", "Mars", "Avril", "Mai", "Juin")
+    For i = 0 To 9
+        If ITMCleTexte(noms(i)) = ITMCleTexte(mois) Then
+            If flags.Item(i).Text <> "true" And flags.Item(i).Text <> "false" Then Err.Raise vbObjectError + 1195, , "Couverture mensuelle invalide."
+            If flags.Item(i).Text = "true" Then ITMPECMontant = tarif
+            Exit Function
+        End If
+    Next i
+End Function
+Public Function ITMPECAnnuelPayant(ByVal mat As String, ByVal annee As String, ByVal tarif As Currency, ByVal habituel As Currency) As Currency
+    Dim m As Variant, total As Currency
+    If Not ITMPECExiste(mat, annee) Then ITMPECAnnuelPayant = habituel: Exit Function
+    total = tarif * 10
+    If ITMEstScolia() Then total = habituel
+    For Each m In ITMPECMois(mat, annee): total = total - ITMPECMontant(mat, annee, CStr(m), tarif): Next m
+    ITMPECAnnuelPayant = total
+End Function
+
+Public Function PECAnneeApprenant(ByVal mat As String) As String
+    Dim d As Object, p As Variant
+    Set d = ITMChargerDonnees()
+    If Not d("personnes").Exists(ITMCleTexte(mat)) Then Err.Raise vbObjectError + 1196, , "Apprenant invalide pour le contrôle de prise en charge."
+    p = d("personnes")(ITMCleTexte(mat)): PECAnneeApprenant = CStr(p(6))
+End Function
+
+Public Function ITMEstScolia() As Boolean
+    On Error Resume Next
+    ITMEstScolia = (Len(CStr(ThisWorkbook.CustomDocumentProperties("ScoliaInstitutionId").Value)) > 0)
+    On Error GoTo 0
+End Function

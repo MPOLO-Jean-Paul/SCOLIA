@@ -1,0 +1,870 @@
+﻿Option Explicit
+Private mActionsPro As CExportMensuel
+
+
+
+' ============================================================
+' ITM COEUR DE DIEU
+' USERFORM : GestionApprenant
+' Version corrigée à partir du classeur SYSTEME SECRETARIAT.xlsm
+'
+' FEUILLE APPRENANTS :
+' A Matricule | B Nom | C Post-nom | D Prénom | E Sexe
+' F Date naissance | G Lieu naissance | H Promotion
+' I Parent/Tuteur | J Contact 1 | K Contact 2
+' L Date inscription | M Année scolaire | N Statut
+'
+' FEUILLE PAIEMENTS :
+' D Matricule | F Promotion | G Mois | I Montant payé
+' ============================================================
+
+Private Const MONTANT_MENSUEL As Currency = 55000
+Private Const TOTAL_ANNUEL As Currency = 495000
+Private EnChargement As Boolean
+
+Private Property Get ListeRecherche() As Object
+    Dim liste As Object
+    On Error Resume Next
+    Set liste = Me.Controls("ListApprenants")
+    If liste Is Nothing Then Set liste = Me.Controls("ListApprenant")
+    On Error GoTo 0
+    If liste Is Nothing Then Err.Raise vbObjectError + 701, "GestionApprenant", "Liste des apprenants introuvable."
+    Set ListeRecherche = liste
+End Property
+
+Private Sub UserForm_Initialize()
+    On Error GoTo EH
+    EnChargement = True
+
+    ChargerFiltres
+    ConfigurerFormulaire
+
+    ListPromotion.Value = "Toutes les promotions"
+    ListMois.Value = "Tous les mois"
+    ListNombreMoisLitige.Value = "Tous"
+
+    EnChargement = False
+    ActualiserGestion
+    Set mActionsPro = ConfigurerFormulairePro(Me)
+    Exit Sub
+EH:
+    EnChargement = False
+    MsgBox "Erreur à l'ouverture : " & Err.Description, vbCritical, "ITM Coeur de Dieu"
+End Sub
+
+Private Sub ConfigurerFormulaire()
+    On Error Resume Next
+    TextMatricule.Locked = True
+    TextNomApprenant.Locked = False
+    TextPostNom.Locked = False
+    TextPrenom.Locked = False
+    TextSexe.Locked = False
+    TextTuteur.Locked = False
+    TextLieuNaissance.Locked = False
+    TextDateNaissance.Locked = False
+    TextResteAnnuel.Locked = True
+    TextTotalApprenants.Locked = True
+    TextContact1.Locked = False
+    TextContact2.Locked = False
+    TextDateInscription.Locked = True
+    TextMoisPaye.Locked = True
+    TextMoisLitige.Locked = True
+    TextMoisNonPayes.Locked = True
+    TextSituation.Locked = True
+    TextRevenuMois.Locked = True
+    TextRevenuTotal.Locked = True
+    TextTauxPaiement.Locked = True
+    TextNombreLitiges.Locked = True
+    TextMontantLitige.Locked = True
+    TextTauxAjour.Locked = True
+    TextApprenantsPromotion.Locked = True
+
+    With ListeRecherche
+        .Clear
+        .ColumnCount = 4
+        .ColumnWidths = "75 pt;145 pt;75 pt;65 pt"
+    End With
+
+    With ListHistoriquePaiements
+        .Clear
+        .ColumnCount = 4
+        .ColumnWidths = "65 pt;75 pt;75 pt;80 pt"
+    End With
+    On Error GoTo 0
+End Sub
+
+Private Sub ChargerFiltres()
+    Dim ws As Worksheet, d As Object, i As Long, dl As Long, k As Variant
+    Set ws = ThisWorkbook.Worksheets("APPRENANTS")
+    Set d = CreateObject("Scripting.Dictionary")
+
+    ListPromotion.Clear
+    ListPromotion.AddItem "Toutes les promotions"
+
+    ListPromotionApprenant.Clear
+
+    dl = ws.Cells(ws.Rows.Count, "A").End(xlUp).Row
+    ChargerPromotionsValides ListPromotion, True
+    ChargerPromotionsValides ListPromotionApprenant
+
+    ListMois.Clear
+    ListMois.AddItem "Tous les mois"
+    For Each k In TableauMois()
+        ListMois.AddItem CStr(k)
+    Next k
+
+    ListNombreMoisLitige.Clear
+    ListNombreMoisLitige.AddItem "Tous"
+    For i = 1 To 9
+        ListNombreMoisLitige.AddItem CStr(i) & " mois"
+    Next i
+
+    On Error Resume Next
+    ListStatutApprenant.Clear
+    ListStatutApprenant.AddItem "Tous"
+    ListStatutApprenant.AddItem "Actif"
+    ListStatutApprenant.AddItem "Suspendu"
+    ListStatutApprenant.AddItem "Sorti"
+
+    ListStatut.Clear
+    ListStatut.AddItem "Actif"
+    ListStatut.AddItem "Suspendu"
+    ListStatut.AddItem "Sorti"
+
+    ListAnnee.Clear
+    Set d = CreateObject("Scripting.Dictionary")
+    For i = 5 To dl
+        If Trim$(CStr(ws.Cells(i, "M").Value)) <> "" Then
+            If Not d.Exists(Trim$(CStr(ws.Cells(i, "M").Value))) Then
+                d.Add Trim$(CStr(ws.Cells(i, "M").Value)), True
+                ListAnnee.AddItem Trim$(CStr(ws.Cells(i, "M").Value))
+            End If
+        End If
+    Next i
+    On Error GoTo 0
+End Sub
+
+
+Private Sub ListPromotion_Change()
+    If EnChargement Then Exit Sub
+    ActualiserGestion
+End Sub
+
+Private Sub ListMois_Change()
+    If EnChargement Then Exit Sub
+    ActualiserGestion
+End Sub
+
+Private Sub ListNombreMoisLitige_Change()
+    If EnChargement Then Exit Sub
+    ChargerListeApprenants
+End Sub
+
+Private Sub ListStatutApprenant_Change()
+    If EnChargement Then Exit Sub
+    ChargerListeApprenants
+End Sub
+
+Private Sub ListAnnee_Change()
+    If EnChargement Then Exit Sub
+    ActualiserGestion
+End Sub
+
+Private Sub ActualiserGestion()
+    On Error GoTo EH
+    CalculerIndicateurs
+    ChargerListeApprenants
+    Exit Sub
+EH:
+    MsgBox "Impossible d'actualiser : " & Err.Description, vbExclamation, "ITM Coeur de Dieu"
+End Sub
+
+Private Sub ChargerListeApprenants()
+    On Error GoTo EH
+
+    Dim ws As Worksheet
+    Dim dl As Long, i As Long, idx As Long
+    Dim recherche As String, promotion As String, statut As String, annee As String
+    Dim matricule As String, nomComplet As String, texte As String
+    Dim nbLitiges As Long, filtreLitige As Long
+
+    Set ws = ThisWorkbook.Worksheets("APPRENANTS")
+    ListeRecherche.Clear
+
+    recherche = NormaliserRecherche(CStr(TextRecherche.Value))
+    promotion = Trim$(CStr(ListPromotion.Value))
+
+    On Error Resume Next
+    statut = Trim$(CStr(ListStatutApprenant.Value))
+    annee = Trim$(CStr(ListAnnee.Value))
+    On Error GoTo EH
+
+    filtreLitige = NombreMoisLitigeSelectionne()
+    dl = ws.Cells(ws.Rows.Count, "A").End(xlUp).Row
+
+    For i = 5 To dl
+        matricule = Trim$(UCase$(CStr(ws.Cells(i, "A").Value)))
+
+        If matricule <> "" Then
+            nomComplet = Trim$(UCase$(CStr(ws.Cells(i, "B").Value)) & " " & _
+                               UCase$(CStr(ws.Cells(i, "C").Value)) & " " & _
+                               UCase$(CStr(ws.Cells(i, "D").Value)))
+
+            ' Recherche sur matricule, nom, post-nom, prénom, sexe,
+            ' promotion, tuteur et contacts.
+            texte = NormaliserRecherche( _
+                    matricule & " " & _
+                    UCase$(CStr(ws.Cells(i, "B").Value)) & " " & _
+                    UCase$(CStr(ws.Cells(i, "C").Value)) & " " & _
+                    UCase$(CStr(ws.Cells(i, "D").Value)) & " " & _
+                    CStr(ws.Cells(i, "E").Value) & " " & _
+                    CStr(ws.Cells(i, "H").Value) & " " & _
+                    CStr(ws.Cells(i, "I").Value) & " " & _
+                    CStr(ws.Cells(i, "J").Value) & " " & _
+                    CStr(ws.Cells(i, "K").Value))
+
+            If RechercheCorrespond(texte, recherche) _
+               And PromotionOK(CStr(ws.Cells(i, "H").Value), promotion) _
+               And (statut = "" Or statut = "Tous" Or _
+                    StrComp(Trim$(CStr(ws.Cells(i, "N").Value)), statut, vbTextCompare) = 0) _
+               And (annee = "" Or _
+                    StrComp(Trim$(CStr(ws.Cells(i, "M").Value)), annee, vbTextCompare) = 0) Then
+
+                nbLitiges = CompterMoisLitige(matricule, Trim$(CStr(ListMois.Value)))
+
+                If filtreLitige = 0 Or nbLitiges = filtreLitige Then
+                    ListeRecherche.AddItem matricule
+                    idx = ListeRecherche.ListCount - 1
+                    ListeRecherche.List(idx, 1) = nomComplet
+                    ListeRecherche.List(idx, 2) = CStr(ws.Cells(i, "H").Value)
+                    ListeRecherche.List(idx, 3) = CStr(ws.Cells(i, "N").Value)
+                End If
+            End If
+        End If
+    Next i
+
+    Exit Sub
+
+EH:
+    MsgBox "Erreur pendant la recherche : " & Err.Description, _
+           vbExclamation, "ITM Coeur de Dieu"
+End Sub
+
+Private Function NormaliserRecherche(ByVal valeur As String) As String
+    valeur = LCase$(Trim$(valeur))
+
+    valeur = Replace(valeur, "à", "a")
+    valeur = Replace(valeur, "â", "a")
+    valeur = Replace(valeur, "ä", "a")
+    valeur = Replace(valeur, "á", "a")
+    valeur = Replace(valeur, "ã", "a")
+
+    valeur = Replace(valeur, "ç", "c")
+
+    valeur = Replace(valeur, "é", "e")
+    valeur = Replace(valeur, "è", "e")
+    valeur = Replace(valeur, "ê", "e")
+    valeur = Replace(valeur, "ë", "e")
+
+    valeur = Replace(valeur, "î", "i")
+    valeur = Replace(valeur, "ï", "i")
+    valeur = Replace(valeur, "í", "i")
+
+    valeur = Replace(valeur, "ô", "o")
+    valeur = Replace(valeur, "ö", "o")
+    valeur = Replace(valeur, "ó", "o")
+
+    valeur = Replace(valeur, "ù", "u")
+    valeur = Replace(valeur, "û", "u")
+    valeur = Replace(valeur, "ü", "u")
+    valeur = Replace(valeur, "ú", "u")
+
+    valeur = Replace(valeur, "-", " ")
+    valeur = Replace(valeur, "_", " ")
+    valeur = Replace(valeur, ".", " ")
+    valeur = Replace(valeur, ",", " ")
+    valeur = Replace(valeur, "'", " ")
+
+    Do While InStr(valeur, "  ") > 0
+        valeur = Replace(valeur, "  ", " ")
+    Loop
+
+    NormaliserRecherche = Trim$(valeur)
+End Function
+
+Private Function RechercheCorrespond(ByVal texte As String, _
+                                     ByVal recherche As String) As Boolean
+    Dim mots As Variant
+    Dim mot As Variant
+
+    If Trim$(recherche) = "" Then
+        RechercheCorrespond = True
+        Exit Function
+    End If
+
+    mots = Split(recherche, " ")
+
+    For Each mot In mots
+        If Trim$(CStr(mot)) <> "" Then
+            If InStr(1, texte, CStr(mot), vbTextCompare) = 0 Then
+                RechercheCorrespond = False
+                Exit Function
+            End If
+        End If
+    Next mot
+
+    RechercheCorrespond = True
+End Function
+
+Private Sub TextRecherche_Change()
+    MajusculeChamp Me.Controls("TextRecherche")
+    If EnChargement Then Exit Sub
+    ChargerListeApprenants
+End Sub
+
+Private Sub TextRecherche_KeyDown(ByVal KeyCode As MSForms.ReturnInteger, _
+                                  ByVal Shift As Integer)
+    If KeyCode = vbKeyEscape Then
+        TextRecherche.Value = ""
+        ChargerListeApprenants
+
+    ElseIf KeyCode = vbKeyDown Then
+        If ListeRecherche.ListCount > 0 Then
+            ListeRecherche.SetFocus
+            ListeRecherche.ListIndex = 0
+        End If
+
+    ElseIf KeyCode = vbKeyReturn Then
+        If ListeRecherche.ListCount = 1 Then
+            ListeRecherche.ListIndex = 0
+            AfficherApprenant CStr(ListeRecherche.List(0, 0))
+        End If
+    End If
+End Sub
+
+Private Sub ListApprenants_Change()
+    If EnChargement Then Exit Sub
+    If ListeRecherche.ListIndex < 0 Then Exit Sub
+    AfficherApprenant CStr(ListeRecherche.List(ListeRecherche.ListIndex, 0))
+End Sub
+
+Private Sub ListApprenants_Click()
+    If ListeRecherche.ListIndex < 0 Then Exit Sub
+    AfficherApprenant CStr(ListeRecherche.List(ListeRecherche.ListIndex, 0))
+End Sub
+
+Private Sub ListApprenants_DblClick(ByVal Cancel As MSForms.ReturnBoolean)
+    If ListeRecherche.ListIndex < 0 Then Exit Sub
+    AfficherApprenant CStr(ListeRecherche.List(ListeRecherche.ListIndex, 0))
+End Sub
+
+Private Sub AfficherApprenant(ByVal matricule As String)
+    Dim ws As Worksheet, lig As Variant
+    On Error GoTo EH
+    Set ws = ThisWorkbook.Worksheets("APPRENANTS")
+    lig = Application.Match(matricule, ws.Columns("A"), 0)
+    If IsError(lig) Then Exit Sub
+
+    EnChargement = True
+    TextMatricule.Value = UCase$(CStr(ws.Cells(lig, "A").Value))
+    TextNomApprenant.Value = UCase$(CStr(ws.Cells(lig, "B").Value))
+    TextPostNom.Value = UCase$(CStr(ws.Cells(lig, "C").Value))
+    TextPrenom.Value = UCase$(CStr(ws.Cells(lig, "D").Value))
+    TextSexe.Value = CStr(ws.Cells(lig, "E").Value)
+
+    If IsDate(ws.Cells(lig, "F").Value) Then
+        TextDateNaissance.Value = Format(ws.Cells(lig, "F").Value, "dd/mm/yyyy")
+    Else
+        TextDateNaissance.Value = CStr(ws.Cells(lig, "F").Value)
+    End If
+
+    TextLieuNaissance.Value = CStr(ws.Cells(lig, "G").Value)
+    ITMRestaurerChoix ListPromotionApprenant, PromotionCanonique(CStr(ws.Cells(lig, "H").Value))
+    TextTuteur.Value = CStr(ws.Cells(lig, "I").Value)
+    TextContact1.Value = CStr(ws.Cells(lig, "J").Value)
+    TextContact2.Value = CStr(ws.Cells(lig, "K").Value)
+
+    If IsDate(ws.Cells(lig, "L").Value) Then
+        TextDateInscription.Value = Format(ws.Cells(lig, "L").Value, "dd/mm/yyyy")
+    Else
+        TextDateInscription.Value = CStr(ws.Cells(lig, "L").Value)
+    End If
+
+    On Error Resume Next
+    ' Le filtre d annee ne doit pas changer lors de la selection d un apprenant.
+    ListStatut.Value = CStr(ws.Cells(lig, "N").Value)
+    On Error GoTo 0
+
+    EnChargement = False
+    AfficherSituationIndividuelle matricule
+    ChargerHistorique matricule
+    Exit Sub
+EH:
+    EnChargement = False
+    MsgBox "Selection impossible : " & Err.Description, vbExclamation
+End Sub
+
+Private Sub AfficherSituationIndividuelle(ByVal matricule As String)
+    Dim m As Variant, paye As Currency, Total As Currency
+    Dim nbPaye As Long, nbLitige As Long, nbNonPaye As Long
+    Dim detailPaye As String, reste As Currency
+
+    For Each m In TableauMois()
+        paye = TotalPayeMois(matricule, CStr(m))
+        Total = Total + paye
+
+        If paye >= MONTANT_MENSUEL Then
+            nbPaye = nbPaye + 1
+            detailPaye = detailPaye & CStr(m) & "; "
+        ElseIf paye > 0 Then
+            nbLitige = nbLitige + 1
+        Else
+            nbNonPaye = nbNonPaye + 1
+        End If
+    Next m
+
+    reste = TOTAL_ANNUEL - Total
+    If reste < 0 Then reste = 0
+
+    TextResteAnnuel.Value = Format(reste, "#,##0") & " FC"
+    TextMoisPaye.Value = CStr(nbPaye)
+    TextMoisLitige.Value = CStr(nbLitige)
+    TextMoisNonPayes.Value = CStr(nbNonPaye)
+
+    If reste = 0 Then
+        TextSituation.Value = "SOLDE"
+    ElseIf nbLitige > 0 Then
+        TextSituation.Value = "LITIGE"
+    Else
+        TextSituation.Value = "NON SOLDE"
+    End If
+End Sub
+
+Private Sub ChargerHistorique(ByVal matricule As String)
+    Dim ws As Worksheet, dl As Long, i As Long, idx As Long
+    Set ws = ThisWorkbook.Worksheets("PAIEMENTS")
+    ListHistoriquePaiements.Clear
+    dl = ws.Cells(ws.Rows.Count, "A").End(xlUp).Row
+
+    For i = 5 To dl
+        If StrComp(Trim$(UCase$(CStr(ws.Cells(i, "D").Value))), Trim$(matricule), vbTextCompare) = 0 Then
+            If Trim$(ListMois.Value) = "Tous les mois" Or Trim$(ListMois.Value) = "" _
+               Or StrComp(CStr(ws.Cells(i, "G").Value), Trim$(ListMois.Value), vbTextCompare) = 0 Then
+
+                ListHistoriquePaiements.AddItem Format(ws.Cells(i, "B").Value, "dd/mm/yyyy")
+                idx = ListHistoriquePaiements.ListCount - 1
+                ListHistoriquePaiements.List(idx, 1) = CStr(ws.Cells(i, "G").Value)
+                ListHistoriquePaiements.List(idx, 2) = Format(Val(ws.Cells(i, "I").Value), "#,##0") & " FC"
+                ListHistoriquePaiements.List(idx, 3) = CStr(ws.Cells(i, "K").Value)
+            End If
+        End If
+    Next i
+End Sub
+
+Private Sub CalculerIndicateurs()
+    Dim wsA As Worksheet, wsP As Worksheet
+    Dim dl As Long, i As Long, effectif As Long, totalGlobal As Long
+    Dim promotion As String, mois As String, annee As String
+    Dim revenuTotal As Currency, revenuMois As Currency, attendu As Currency
+    Dim nbLitiges As Long, montantLitige As Currency, nbAJour As Long
+    Dim matricule As String, paye As Currency, m As Variant, ok As Boolean
+
+    Set wsA = ThisWorkbook.Worksheets("APPRENANTS")
+    Set wsP = ThisWorkbook.Worksheets("PAIEMENTS")
+
+    promotion = Trim$(ListPromotion.Value)
+    mois = Trim$(ListMois.Value)
+    On Error Resume Next
+    annee = Trim$(ListAnnee.Value)
+    On Error GoTo 0
+
+    dl = wsA.Cells(wsA.Rows.Count, "A").End(xlUp).Row
+    For i = 5 To dl
+        If Trim$(CStr(wsA.Cells(i, "A").Value)) <> "" Then
+            totalGlobal = totalGlobal + 1
+            If PromotionOK(CStr(wsA.Cells(i, "H").Value), promotion) _
+               And (annee = "" Or StrComp(CStr(wsA.Cells(i, "M").Value), annee, vbTextCompare) = 0) Then
+                effectif = effectif + 1
+            End If
+        End If
+    Next i
+
+    dl = wsP.Cells(wsP.Rows.Count, "A").End(xlUp).Row
+    For i = 5 To dl
+        If PromotionOK(CStr(wsP.Cells(i, "F").Value), promotion) Then
+            If IsNumeric(wsP.Cells(i, "I").Value) Then
+                revenuTotal = revenuTotal + CCur(wsP.Cells(i, "I").Value)
+                If mois = "" Or mois = "Tous les mois" _
+                   Or StrComp(CStr(wsP.Cells(i, "G").Value), mois, vbTextCompare) = 0 Then
+                    revenuMois = revenuMois + CCur(wsP.Cells(i, "I").Value)
+                End If
+            End If
+        End If
+    Next i
+
+    dl = wsA.Cells(wsA.Rows.Count, "A").End(xlUp).Row
+    For i = 5 To dl
+        matricule = Trim$(CStr(wsA.Cells(i, "A").Value))
+        If matricule <> "" And PromotionOK(CStr(wsA.Cells(i, "H").Value), promotion) Then
+            If mois = "" Or mois = "Tous les mois" Then
+                ok = True
+                For Each m In TableauMois()
+                    paye = TotalPayeMois(matricule, CStr(m))
+                    If paye > 0 And paye < MONTANT_MENSUEL Then
+                        nbLitiges = nbLitiges + 1
+                        montantLitige = montantLitige + (MONTANT_MENSUEL - paye)
+                    End If
+                    If paye < MONTANT_MENSUEL Then ok = False
+                Next m
+                If ok Then nbAJour = nbAJour + 1
+            Else
+                paye = TotalPayeMois(matricule, mois)
+                If paye > 0 And paye < MONTANT_MENSUEL Then
+                    nbLitiges = nbLitiges + 1
+                    montantLitige = montantLitige + (MONTANT_MENSUEL - paye)
+                End If
+                If paye >= MONTANT_MENSUEL Then nbAJour = nbAJour + 1
+            End If
+        End If
+    Next i
+
+    TextTotalApprenants.Value = Format(totalGlobal, "#,##0")
+    TextApprenantsPromotion.Value = Format(effectif, "#,##0")
+    TextRevenuTotal.Value = Format(revenuTotal, "#,##0") & " FC"
+    TextRevenuMois.Value = Format(revenuMois, "#,##0") & " FC"
+    TextNombreLitiges.Value = Format(nbLitiges, "#,##0")
+    TextMontantLitige.Value = Format(montantLitige, "#,##0") & " FC"
+
+    If effectif > 0 Then
+        If mois = "" Or mois = "Tous les mois" Then
+            attendu = CCur(effectif) * MONTANT_MENSUEL * 9
+        Else
+            attendu = CCur(effectif) * MONTANT_MENSUEL
+        End If
+
+        If attendu > 0 Then
+            If mois = "" Or mois = "Tous les mois" Then
+            TextTauxPaiement.Value = Format((revenuTotal / attendu) * 100, "0.00") & " %"
+        Else
+            TextTauxPaiement.Value = Format((revenuMois / attendu) * 100, "0.00") & " %"
+        End If
+        Else
+            TextTauxPaiement.Value = "0,00 %"
+        End If
+
+        TextTauxAjour.Value = Format((nbAJour / effectif) * 100, "0.00") & " %"
+    Else
+        TextTauxPaiement.Value = "0,00 %"
+        TextTauxAjour.Value = "0,00 %"
+    End If
+End Sub
+
+Private Function TotalPayeMois(ByVal matricule As String, ByVal mois As String) As Currency
+    Dim ws As Worksheet, dl As Long, i As Long, t As Currency
+    Set ws = ThisWorkbook.Worksheets("PAIEMENTS")
+    dl = ws.Cells(ws.Rows.Count, "A").End(xlUp).Row
+
+    For i = 5 To dl
+        If StrComp(Trim$(UCase$(CStr(ws.Cells(i, "D").Value))), Trim$(matricule), vbTextCompare) = 0 _
+           And StrComp(Trim$(CStr(ws.Cells(i, "G").Value)), Trim$(mois), vbTextCompare) = 0 Then
+            If IsNumeric(ws.Cells(i, "I").Value) Then t = t + CCur(ws.Cells(i, "I").Value)
+        End If
+    Next i
+    TotalPayeMois = t
+End Function
+
+Private Function CompterMoisLitige(ByVal matricule As String, ByVal filtreMois As String) As Long
+    Dim m As Variant, p As Currency, n As Long
+    For Each m In TableauMois()
+        If filtreMois = "" Or filtreMois = "Tous les mois" _
+           Or StrComp(CStr(m), filtreMois, vbTextCompare) = 0 Then
+            p = TotalPayeMois(matricule, CStr(m))
+            If p > 0 And p < MONTANT_MENSUEL Then n = n + 1
+        End If
+    Next m
+    CompterMoisLitige = n
+End Function
+
+Private Function NombreMoisLitigeSelectionne() As Long
+    Dim s As String
+    s = Trim$(ListNombreMoisLitige.Value)
+    If s = "" Or StrComp(s, "Tous", vbTextCompare) = 0 Then
+        NombreMoisLitigeSelectionne = 0
+    Else
+        NombreMoisLitigeSelectionne = Val(s)
+    End If
+End Function
+
+Private Function PromotionOK(ByVal valeur As String, ByVal filtre As String) As Boolean
+    PromotionOK = ITMPromotionCorrespond(valeur, filtre)
+End Function
+Private Function TableauMois() As Variant
+    TableauMois = Array("Septembre", "Octobre", "Novembre", "Décembre", _
+                        "Janvier", "Février", "Mars", "Avril", "Mai")
+End Function
+
+Private Sub CommandActualiser_Click()
+    Dim recherche As String
+    Dim p As String, m As String, n As String
+    Dim s As String, a As String
+
+    recherche = CStr(TextRecherche.Value)
+    p = CStr(ListPromotion.Value)
+    m = CStr(ListMois.Value)
+    n = CStr(ListNombreMoisLitige.Value)
+
+    On Error Resume Next
+    s = CStr(ListStatutApprenant.Value)
+    a = CStr(ListAnnee.Value)
+    On Error GoTo 0
+
+    EnChargement = True
+    ChargerFiltres
+
+    ListPromotion.Value = IIf(Trim$(p) = "", "Toutes les promotions", p)
+    ListMois.Value = IIf(Trim$(m) = "", "Tous les mois", m)
+    ListNombreMoisLitige.Value = IIf(Trim$(n) = "", "Tous", n)
+
+    On Error Resume Next
+    If s <> "" Then ListStatutApprenant.Value = s
+    If a <> "" Then ListAnnee.Value = a
+    On Error GoTo 0
+
+    TextRecherche.Value = recherche
+    EnChargement = False
+
+    ActualiserGestion
+End Sub
+
+Private Sub ReinitialiserFiltres()
+    EnChargement = True
+
+    TextRecherche.Value = ""
+    ListPromotion.Value = "Toutes les promotions"
+    ListMois.Value = "Tous les mois"
+    ListNombreMoisLitige.Value = "Tous"
+
+    On Error Resume Next
+    ListStatutApprenant.Value = "Tous"
+    ListAnnee.ListIndex = -1
+    On Error GoTo 0
+
+    EnChargement = False
+    ActualiserGestion
+End Sub
+
+Private Sub CommandModifier_Click()
+    On Error GoTo ITM_ErreurModification
+    Dim ws As Worksheet, lig As Variant
+    Dim dateNais As Date
+    If UCase$(Trim$(TextMatricule.Value)) = "" Then
+        MsgBox "Sélectionnez d'abord un apprenant.", vbExclamation, "ITM Coeur de Dieu"
+        Exit Sub
+    End If
+
+    If Trim$(TextNomApprenant.Value) = "" Or Trim$(TextPostNom.Value) = "" Or Trim$(TextPrenom.Value) = "" Then
+        MsgBox "Nom, post-nom et prenom sont obligatoires.", vbExclamation: Exit Sub
+    End If
+    If Not ContactValide(CStr(TextContact1.Value), True) Or Not ContactValide(CStr(TextContact2.Value), False) Then
+        MsgBox "Les contacts doivent comporter 10 chiffres. Le premier est obligatoire.", vbExclamation: Exit Sub
+    End If
+    If Not ITMLireDate(CStr(TextDateNaissance.Value), dateNais) Then
+        MsgBox "Date de naissance invalide. Utilisez JJ/MM/AAAA, sans date future.", vbExclamation: Exit Sub
+    End If
+    If UCase$(Trim$(TextSexe.Value)) <> "M" And UCase$(Trim$(TextSexe.Value)) <> "F" Then
+        MsgBox "Le sexe doit etre M ou F.", vbExclamation: Exit Sub
+    End If
+    If Trim$(TextLieuNaissance.Value) = "" Then
+        MsgBox "Le lieu de naissance est obligatoire.", vbExclamation: Exit Sub
+    End If
+    Set ws = ThisWorkbook.Worksheets("APPRENANTS")
+    lig = Application.Match(TextMatricule.Value, ws.Columns("A"), 0)
+    If IsError(lig) Then Exit Sub
+
+    If MsgBox("Enregistrer les modifications de cet apprenant ?", _
+              vbYesNo + vbQuestion, "ITM Coeur de Dieu") <> vbYes Then Exit Sub
+
+    Call ITMSauvegarde
+    ws.Cells(lig, "B").Value = UCase$(Trim$(TextNomApprenant.Value))
+    ws.Cells(lig, "C").Value = UCase$(Trim$(TextPostNom.Value))
+    ws.Cells(lig, "D").Value = UCase$(Trim$(TextPrenom.Value))
+    ws.Cells(lig, "E").Value = UCase$(Trim$(TextSexe.Value))
+    ws.Cells(lig, "G").Value = Trim$(TextLieuNaissance.Value)
+    ws.Cells(lig, "I").Value = Trim$(TextTuteur.Value)
+    ws.Cells(lig, "J").NumberFormat = "@"
+    ws.Cells(lig, "K").NumberFormat = "@"
+    ws.Cells(lig, "J").Value = Trim$(TextContact1.Value)
+    ws.Cells(lig, "K").Value = Trim$(TextContact2.Value)
+
+    ws.Cells(lig, "F").Value = dateNais
+    ws.Cells(lig, "F").NumberFormat = "dd/mm/yyyy"
+
+    ITMActualiserSituation
+    Application.CalculateFull
+    ThisWorkbook.Save
+    MsgBox "Apprenant modifié avec succès.", vbInformation, "ITM Coeur de Dieu"
+    ActualiserGestion
+    Exit Sub
+ITM_ErreurModification:
+    MsgBox "Modification interrompue : " & Err.Description & vbCrLf & "La copie avant modification se trouve dans Sauvegardes.", vbCritical
+End Sub
+Private Sub CommandChangerPromotion_Click()
+    On Error GoTo ITM_ErreurModification
+    Dim ws As Worksheet, lig As Variant, nouvelle As String
+    If UCase$(Trim$(TextMatricule.Value)) = "" Then
+        MsgBox "Sélectionnez d'abord un apprenant.", vbExclamation
+        Exit Sub
+    End If
+
+    nouvelle = Trim$(ListPromotionApprenant.Value)
+    If nouvelle = "" Then
+        MsgBox "Choisissez la nouvelle promotion.", vbExclamation
+        Exit Sub
+    End If
+
+    Set ws = ThisWorkbook.Worksheets("APPRENANTS")
+    lig = Application.Match(TextMatricule.Value, ws.Columns("A"), 0)
+    If IsError(lig) Then Exit Sub
+
+    Call ITMSauvegarde
+    ws.Cells(lig, "H").Value = nouvelle
+    ITMActualiserSituation
+    Application.CalculateFull
+    ThisWorkbook.Save
+    MsgBox "Promotion modifiée avec succès.", vbInformation, "ITM Coeur de Dieu"
+    ActualiserGestion
+    Exit Sub
+ITM_ErreurModification:
+    MsgBox "Modification interrompue : " & Err.Description & vbCrLf & "La copie avant modification se trouve dans Sauvegardes.", vbCritical
+End Sub
+Private Sub CommandChangeStatut_Click()
+    On Error GoTo ITM_ErreurModification
+    Dim ws As Worksheet, lig As Variant, nouveau As String
+    If UCase$(Trim$(TextMatricule.Value)) = "" Then
+        MsgBox "Sélectionnez d'abord un apprenant.", vbExclamation
+        Exit Sub
+    End If
+
+    nouveau = Trim$(ListStatut.Value)
+    If nouveau = "" Then
+        MsgBox "Choisissez le nouveau statut.", vbExclamation
+        Exit Sub
+    End If
+
+    Set ws = ThisWorkbook.Worksheets("APPRENANTS")
+    lig = Application.Match(TextMatricule.Value, ws.Columns("A"), 0)
+    If IsError(lig) Then Exit Sub
+
+    Call ITMSauvegarde
+    ws.Cells(lig, "N").Value = nouveau
+    ITMActualiserSituation
+    Application.CalculateFull
+    ThisWorkbook.Save
+    MsgBox "Statut modifié avec succès.", vbInformation, "ITM Coeur de Dieu"
+    ActualiserGestion
+    Exit Sub
+ITM_ErreurModification:
+    MsgBox "Modification interrompue : " & Err.Description & vbCrLf & "La copie avant modification se trouve dans Sauvegardes.", vbCritical
+End Sub
+Private Sub CommandFicheApprenant_Click()
+    On Error GoTo EH
+    If Trim$(TextMatricule.Value) = "" Then MsgBox "Selectionnez un apprenant.", vbExclamation: Exit Sub
+    With ThisWorkbook.Worksheets("FICHE_APPRENANT")
+        .Range("C8").NumberFormat = "@"
+        .Range("C8").Value = TextMatricule.Value
+        .Calculate
+        Me.Hide
+        .Activate
+    End With
+    Unload Me
+    Exit Sub
+EH:
+    MsgBox "Fiche inaccessible : " & Err.Description, vbExclamation
+End Sub
+Private Sub CommandImrpimerListe_Click()
+    On Error GoTo EH
+    ITMImprimerListeFiltree Me
+    Exit Sub
+EH:
+    MsgBox "Impression impossible : " & Err.Description, vbExclamation
+End Sub
+Private Sub CommandFemerDashboard_Click()
+    Unload Me
+End Sub
+
+Private Sub CommandFermerDashboard_Click()
+    Unload Me
+End Sub
+
+
+' ============================================================
+' OPTION : BOUTON "REINITIALISER"
+' ============================================================
+' Si le formulaire possède déjà un bouton de réinitialisation,
+' appelez simplement ReinitialiserFiltres dans son événement Click.
+'
+' Exemple :
+' Private Sub CommandReinitialiser_Click()
+'     ReinitialiserFiltres
+' End Sub
+'
+' Ne créez PAS ce contrôle si vous souhaitez conserver exactement
+' l'interface actuelle.
+
+
+
+Private Sub TextMatricule_Change()
+    MajusculeChamp Me.Controls("TextMatricule")
+End Sub
+
+Private Sub TextNomApprenant_Change()
+    MajusculeChamp Me.Controls("TextNomApprenant")
+End Sub
+
+Private Sub TextPostNom_Change()
+    MajusculeChamp Me.Controls("TextPostNom")
+End Sub
+
+Private Sub TextPrenom_Change()
+    MajusculeChamp Me.Controls("TextPrenom")
+End Sub
+
+Private Sub UserForm_QueryClose(Cancel As Integer, CloseMode As Integer)
+    If Not mActionsPro Is Nothing Then
+        Set mActionsPro.BoutonPaiementsPDF = Nothing
+        Set mActionsPro.BoutonLitigesPDF = Nothing
+        Set mActionsPro.BoutonPDF = Nothing
+        Set mActionsPro.Bouton = Nothing
+        Set mActionsPro.BoutonListe = Nothing
+        Set mActionsPro.BoutonReset = Nothing
+        Set mActionsPro.BoutonEffacer = Nothing
+        Set mActionsPro.BoutonNouveau = Nothing
+        Set mActionsPro.Formulaire = Nothing
+        Set mActionsPro = Nothing
+    End If
+End Sub
+
+Private Sub ListApprenant_Change()
+    ListApprenants_Change
+End Sub
+Private Sub ListApprenant_Click()
+    ListApprenants_Click
+End Sub
+Private Sub ListApprenant_DblClick(ByVal Cancel As MSForms.ReturnBoolean)
+    ListApprenants_DblClick Cancel
+End Sub
+
+Public Sub ITMResetFiltres()
+    ReinitialiserFiltres
+End Sub
+Public Sub ITMNouvelleInscription()
+    On Error GoTo EH
+    Me.Hide
+    Apprenant.Show
+    ActualiserGestion
+    Me.Show
+    Exit Sub
+EH:
+    MsgBox "Ouverture impossible : " & Err.Description, vbExclamation
+    Me.Show
+End Sub

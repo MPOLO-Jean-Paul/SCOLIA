@@ -1,0 +1,31 @@
+﻿INTERFACES ADAPTATIVES — ITM CD
+
+La fenêtre principale peut être réduite jusqu'à environ 680 x 540 pixels,
+selon l'espace disponible à l'écran. Les textes s'ajustent à la largeur
+avec un minimum de 9 points ; les titres et valeurs restent plus grands.
+
+Onglets principaux : sept sur une rangée en grand écran, quatre par rangée
+dans une fenêtre réduite. Icônes, état actif et boutons arrondis conservés.
+Les commandes de préparation/connexion passent sous le nom de l'institution
+lorsque la largeur diminue. Les onglets Administration autorisent plusieurs rangées.
+
+Tableau de bord : quatre cartes en grand écran, deux par rangée en fenêtre étroite.
+Dossier apprenant : champs sur deux colonnes, puis une sous le seuil de largeur ;
+l'adresse et les boutons restent accessibles. Les fenêtres secondaires et
+l'installateur deviennent redimensionnables et sont ajustés à l'écran.
+
+Les tableaux gardent des colonnes lisibles : défilement horizontal dans le
+tableau lorsque toutes les colonnes ne tiennent pas. Les formulaires longs
+gardent un défilement vertical. Le contenu n'est pas réduit à une taille illisible.
+
+Extraire ce nouveau ZIP dans un nouveau dossier, puis lancer APPLICATION.vbs.
+Utiliser la copie corrigée de votre classeur. Les améliorations de rapports
+de cette édition exigent encore INSTALLER.vbs si elles ne sont pas déjà installées.
+
+Vérifications effectuées : structure des sept scripts PowerShell et modèles
+de géométrie pour huit largeurs, champs sans chevauchement, cartes alignées,
+navigation et boutons dans les limites prévues. Données du classeur conservées.
+Les modèles ne constituent pas une exécution des fenêtres : le rendu réel
+à différentes résolutions et aux échelles Windows 100/125/150 % reste à vérifier
+sur un ordinateur Windows avec Excel. Les PDF gardent leur format de page ;
+leur zoom dépend du lecteur PDF.
