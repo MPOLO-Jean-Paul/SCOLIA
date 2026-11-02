@@ -61,7 +61,7 @@ public sealed class CashierPage : PageViewModel
         OpenReceipt = new AsyncCommand(() => Shell.Run(() => Shell.Open(() => new ReceiptDetailPage(Shell, receipt!.Id))));
         ConfigureCalendar = new AsyncCommand(() => Shell.Run(() => Shell.Open(() => new SettingsPage(Shell, "annees"))));
         ConfigurePromotion = new AsyncCommand(() => Shell.Run(() => Shell.Open(() => new SettingsPage(Shell, "promotions"))));
-        Action("Journal des reçus", MaterialIconKind.ReceiptTextOutline, () => Shell.Open(() => new ReceiptsPage(Shell)));
+        Action("Journal des reçus", MaterialIconKind.ReceiptText, () => Shell.Open(() => new ReceiptsPage(Shell)));
         // Le total et le bouton Encaisser restent en bas de l'écran dès qu'un apprenant est choisi :
         // pas besoin de faire défiler tout le formulaire pour valider.
         Sticky = new StickyBarVm("Encaisser", Pay) { Title = "Total à encaisser" };
@@ -619,12 +619,12 @@ public sealed class ReceiptsPage : PageViewModel
 
     public ReceiptsPage(ShellViewModel shell) : base(shell)
     {
-        if (Shell.Can(Perm.PaymentsCreate)) Action("Encaisser", MaterialIconKind.HandCoinOutline, () => Shell.Open(() => new CashierPage(Shell)), primary: true);
-        Action("Ouvrir le reçu", MaterialIconKind.ReceiptTextOutline, OpenSelectedAsync, open: true);
-        Action("Excel", MaterialIconKind.FileExcelOutline, () => ExportAsync("xlsx"));
+        if (Shell.Can(Perm.PaymentsCreate)) Action("Encaisser", MaterialIconKind.HandCoin, () => Shell.Open(() => new CashierPage(Shell)), primary: true);
+        Action("Ouvrir le reçu", MaterialIconKind.ReceiptText, OpenSelectedAsync, open: true);
+        Action("Excel", MaterialIconKind.FileExcel, () => ExportAsync("xlsx"));
         Action("PDF", MaterialIconKind.FilePdfBox, () => ExportAsync("pdf"));
         ActionRefresh();
-        MenuAction("Imprimer le reçu", MaterialIconKind.PrinterOutline, () =>
+        MenuAction("Imprimer le reçu", MaterialIconKind.Printer, () =>
         {
             if (Selected is { } r) return Shell.Download($"api/paiements/{r.Id}/recu.pdf", $"recu-{r.Number}.pdf");
             Shell.Notify("Sélectionnez un reçu dans la liste.");
@@ -721,8 +721,8 @@ public sealed class ReceiptDetailPage : PageViewModel
     public ReceiptDetailPage(ShellViewModel shell, Guid receiptId) : base(shell)
     {
         this.receiptId = receiptId;
-        if (Shell.Can(Perm.PaymentsCancel)) Action("Annuler le reçu", MaterialIconKind.CloseCircleOutline, CancelAsync);
-        Action("Imprimer", MaterialIconKind.PrinterOutline, PrintAsync, primary: true);
+        if (Shell.Can(Perm.PaymentsCancel)) Action("Annuler le reçu", MaterialIconKind.CloseCircle, CancelAsync);
+        Action("Imprimer", MaterialIconKind.Printer, PrintAsync, primary: true);
         ActionRefresh();
     }
 

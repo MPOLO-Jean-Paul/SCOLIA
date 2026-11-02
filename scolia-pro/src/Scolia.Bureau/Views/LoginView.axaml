@@ -54,8 +54,8 @@
         <StackPanel HorizontalAlignment="Stretch" MaxWidth="420" Margin="24,8,24,22" Spacing="12">
           <Border Width="96" Height="96" CornerRadius="48" Background="White" HorizontalAlignment="Center" BoxShadow="0 8 24 0 #33000000">
             <Panel Width="72" Height="72">
-              <Image Source="{Binding Logo}" IsVisible="{Binding HasLogo}" />
-              <Image Source="{DynamicResource ScoliaMark}" IsVisible="{Binding !HasLogo}" Width="62" Height="62" />
+              <!-- L'application porte le logo SCOLIA ; celui de l'école est réservé aux reçus, rapports et cartes -->
+              <Image Source="{DynamicResource ScoliaMark}" Width="62" Height="62" />
             </Panel>
           </Border>
           <TextBlock x:Name="SchoolHeading" Text="{Binding TitleText}" Foreground="White" FontSize="24" FontWeight="SemiBold"

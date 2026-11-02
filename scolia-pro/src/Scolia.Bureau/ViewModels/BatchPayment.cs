@@ -108,13 +108,13 @@ public sealed class BatchPaymentPage : PageViewModel
         method = Labels.Methods[0];
         if (Shell.Can(Perm.PaymentsCreate))
         {
-            Action("Vérifier le lot", MaterialIconKind.ClipboardCheckOutline, async () => { await CheckAsync(); });
+            Action("Vérifier le lot", MaterialIconKind.ClipboardCheck, async () => { await CheckAsync(); });
             Action("Enregistrer le lot", MaterialIconKind.CashCheck, PayAsync, primary: true);
             // Le total coché et « Enregistrer le lot » restent en bas de l'écran pendant qu'on coche.
             Sticky = new StickyBarVm("Enregistrer le lot", new AsyncCommand(() => Shell.Run(PayAsync))) { Title = "Total du lot" };
         }
-        Action("Tout cocher", MaterialIconKind.CheckboxMultipleMarkedOutline, () => { SetAll(true); return Task.CompletedTask; });
-        Action("Tout décocher", MaterialIconKind.CheckboxMultipleBlankOutline, () => { SetAll(false); return Task.CompletedTask; });
+        Action("Tout cocher", MaterialIconKind.CheckboxMultipleMarked, () => { SetAll(true); return Task.CompletedTask; });
+        Action("Tout décocher", MaterialIconKind.CheckboxMultipleBlank, () => { SetAll(false); return Task.CompletedTask; });
         ActionRefresh();
     }
 

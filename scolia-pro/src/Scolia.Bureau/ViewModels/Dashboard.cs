@@ -45,7 +45,7 @@ public sealed class DashboardPage : PageViewModel
 
     public DashboardPage(ShellViewModel shell) : base(shell)
     {
-        Action("Encaisser", MaterialIconKind.HandCoinOutline, () => Shell.Open(() => new CashierPage(Shell)), primary: true);
+        Action("Encaisser", MaterialIconKind.HandCoin, () => Shell.Open(() => new CashierPage(Shell)), primary: true);
         ActionRefresh();
     }
 

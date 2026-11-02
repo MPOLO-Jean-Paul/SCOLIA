@@ -30,11 +30,11 @@ public sealed class TeachingPage : PageViewModel
     {
         if (Shell.Can(Perm.AcademicsWrite))
         {
-            Action("Nouveau cours", MaterialIconKind.FileDocumentPlusOutline, () => GradesPage.NewCourseAsync(Shell, PromotionId));
-            Action("Modifier le cours", MaterialIconKind.PencilOutline, EditCourseAsync, open: true);
-            Action("Attribuer", MaterialIconKind.AccountArrowRightOutline, AssignAsync, primary: true, row: true);
-            Action("Retirer l'attribution", MaterialIconKind.AccountMinusOutline, UnassignAsync, row: true);
-            Action("Archiver ou réactiver", MaterialIconKind.ArchiveOutline, ToggleArchiveAsync, row: true);
+            Action("Nouveau cours", MaterialIconKind.FileDocumentPlus, () => GradesPage.NewCourseAsync(Shell, PromotionId));
+            Action("Modifier le cours", MaterialIconKind.Pencil, EditCourseAsync, open: true);
+            Action("Attribuer", MaterialIconKind.AccountArrowRight, AssignAsync, primary: true, row: true);
+            Action("Retirer l'attribution", MaterialIconKind.AccountMinus, UnassignAsync, row: true);
+            Action("Archiver ou réactiver", MaterialIconKind.Archive, ToggleArchiveAsync, row: true);
         }
         Action("Historique des attributions", MaterialIconKind.History, ShowHistoryAsync);
         ActionRefresh();

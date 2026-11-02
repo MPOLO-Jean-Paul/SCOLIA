@@ -27,11 +27,11 @@ public sealed class StaffPage : PageViewModel
 
     public StaffPage(ShellViewModel shell) : base(shell)
     {
-        Action("Nouveau membre", MaterialIconKind.AccountPlusOutline, () => NewMemberAsync(Shell), primary: true);
-        Action("Modifier le membre", MaterialIconKind.AccountEditOutline, EditMemberAsync, open: true);
-        Action("Préparer la paie", MaterialIconKind.CalendarPlusOutline, PreparePayrollAsync);
-        Action("Pointage et bilan", MaterialIconKind.ClockCheckOutline, () => Shell.Open(() => new StaffAttendancePage(Shell)));
-        Action("Modifier le bulletin", MaterialIconKind.PencilOutline, EditPayslipAsync, row: true);
+        Action("Nouveau membre", MaterialIconKind.AccountPlus, () => NewMemberAsync(Shell), primary: true);
+        Action("Modifier le membre", MaterialIconKind.AccountEdit, EditMemberAsync, open: true);
+        Action("Préparer la paie", MaterialIconKind.CalendarPlus, PreparePayrollAsync);
+        Action("Pointage et bilan", MaterialIconKind.ClockCheck, () => Shell.Open(() => new StaffAttendancePage(Shell)));
+        Action("Modifier le bulletin", MaterialIconKind.Pencil, EditPayslipAsync, row: true);
         Action("Payer le salaire", MaterialIconKind.CashCheck, PayAsync, row: true);
         periodChoice = Periods.FirstOrDefault(p => p.Value == period);
         ActionRefresh();
@@ -467,22 +467,22 @@ public sealed class SettingsPage : PageViewModel
         switch (section?.Value)
         {
             case "annees":
-                Action("Nouvelle année", MaterialIconKind.CalendarPlusOutline, () => NewYearAsync(Shell), primary: true);
-                Action("Configurer les mois et le retard", MaterialIconKind.CalendarEditOutline, EditYearScheduleAsync, row: true);
-                Action("Définir comme courante", MaterialIconKind.CalendarCheckOutline, SetCurrentYearAsync, row: true);
-                Action("Clôturer l'année", MaterialIconKind.CalendarLockOutline, CloseYearAsync, row: true);
+                Action("Nouvelle année", MaterialIconKind.CalendarPlus, () => NewYearAsync(Shell), primary: true);
+                Action("Configurer les mois et le retard", MaterialIconKind.CalendarEdit, EditYearScheduleAsync, row: true);
+                Action("Définir comme courante", MaterialIconKind.CalendarCheck, SetCurrentYearAsync, row: true);
+                Action("Clôturer l'année", MaterialIconKind.CalendarLock, CloseYearAsync, row: true);
                 break;
             case "sections":
-                Action("Nouvelle section", MaterialIconKind.ViewGridPlusOutline, NewSectionAsync, primary: true);
-                Action("Modifier", MaterialIconKind.PencilOutline, EditSelectedAsync, open: true);
+                Action("Nouvelle section", MaterialIconKind.ViewGridPlus, NewSectionAsync, primary: true);
+                Action("Modifier", MaterialIconKind.Pencil, EditSelectedAsync, open: true);
                 break;
             case "promotions":
-                Action("Nouvelle promotion", MaterialIconKind.FolderPlusOutline, () => NewPromotionAsync(Shell), primary: true);
-                Action("Modifier", MaterialIconKind.PencilOutline, EditSelectedAsync, open: true);
-                Action("Supprimer", MaterialIconKind.DeleteOutline, DeletePromotionAsync, row: true);
+                Action("Nouvelle promotion", MaterialIconKind.FolderPlus, () => NewPromotionAsync(Shell), primary: true);
+                Action("Modifier", MaterialIconKind.Pencil, EditSelectedAsync, open: true);
+                Action("Supprimer", MaterialIconKind.Delete, DeletePromotionAsync, row: true);
                 break;
             case "etablissement":
-                Action("Changer le logo", MaterialIconKind.ImageOutline, ChangeLogoAsync);
+                Action("Changer le logo", MaterialIconKind.Image, ChangeLogoAsync);
                 break;
             default:
                 Action("Rétablir les réglages", MaterialIconKind.Restore, () => { ResetPrefs.Execute(null); return Task.CompletedTask; });
@@ -1115,8 +1115,8 @@ public sealed class UsersPage : PageViewModel
 
     public UsersPage(ShellViewModel shell) : base(shell)
     {
-        Action("Nouvel utilisateur", MaterialIconKind.AccountPlusOutline, () => NewUserAsync(Shell), primary: true);
-        Action("Modifier", MaterialIconKind.AccountEditOutline, EditAsync, open: true);
+        Action("Nouvel utilisateur", MaterialIconKind.AccountPlus, () => NewUserAsync(Shell), primary: true);
+        Action("Modifier", MaterialIconKind.AccountEdit, EditAsync, open: true);
         Action("Réinitialiser le mot de passe", MaterialIconKind.KeyChange, ResetPasswordAsync, row: true);
         ActionRefresh();
     }

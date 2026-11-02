@@ -72,8 +72,8 @@ public sealed class EraseDataPage : PageViewModel
         Actions.Clear();
         if (Shell.Can(Perm.BackupManage))
             Action(payments ? "Effacer les paiements" : "Effacer les dossiers", MaterialIconKind.DeleteForeverOutline, EraseAsync, primary: true, danger: true);
-        Action("Tout cocher", MaterialIconKind.CheckboxMultipleMarkedOutline, () => { SetAll(true); return Task.CompletedTask; });
-        Action("Tout décocher", MaterialIconKind.CheckboxMultipleBlankOutline, () => { SetAll(false); return Task.CompletedTask; });
+        Action("Tout cocher", MaterialIconKind.CheckboxMultipleMarked, () => { SetAll(true); return Task.CompletedTask; });
+        Action("Tout décocher", MaterialIconKind.CheckboxMultipleBlank, () => { SetAll(false); return Task.CompletedTask; });
         ActionRefresh();
     }
 

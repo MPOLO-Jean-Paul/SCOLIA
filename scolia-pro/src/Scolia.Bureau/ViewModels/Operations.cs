@@ -22,16 +22,16 @@ public sealed class DataPage : PageViewModel
 
     public DataPage(ShellViewModel shell) : base(shell)
     {
-        Action("Sauvegarder", MaterialIconKind.ContentSaveOutline, () => BackupNowAsync(Shell), primary: true);
-        Action("Télécharger", MaterialIconKind.TrayArrowDown, DownloadAsync, row: true);
+        Action("Sauvegarder", MaterialIconKind.ContentSave, () => BackupNowAsync(Shell), primary: true);
+        Action("Télécharger", MaterialIconKind.Download, DownloadAsync, row: true);
         Action("Restaurer", MaterialIconKind.BackupRestore, RestoreAsync, row: true);
-        Action("Importation du classeur", MaterialIconKind.TrayArrowUp, () => ImportAsync(Shell));
-        Action("Modèle d'import", MaterialIconKind.FileExcelOutline, () => TemplateAsync(Shell));
-        Action("Vérifier la base", MaterialIconKind.DatabaseCheckOutline, () => CheckDatabaseAsync(Shell));
+        Action("Importation du classeur", MaterialIconKind.Upload, () => ImportAsync(Shell));
+        Action("Modèle d'import", MaterialIconKind.FileExcel, () => TemplateAsync(Shell));
+        Action("Vérifier la base", MaterialIconKind.DatabaseCheck, () => CheckDatabaseAsync(Shell));
         if (Shell.Can(Perm.BackupManage))
         {
-            Action("Effacer des paiements", MaterialIconKind.DeleteSweepOutline, () => Shell.Open(() => new EraseDataPage(Shell, payments: true)));
-            Action("Effacer des dossiers", MaterialIconKind.AccountRemoveOutline, () => Shell.Open(() => new EraseDataPage(Shell, payments: false)));
+            Action("Effacer des paiements", MaterialIconKind.DeleteSweep, () => Shell.Open(() => new EraseDataPage(Shell, payments: true)));
+            Action("Effacer des dossiers", MaterialIconKind.AccountRemove, () => Shell.Open(() => new EraseDataPage(Shell, payments: false)));
         }
         ActionRefresh();
     }
@@ -167,8 +167,8 @@ public sealed class AuditPage : PageViewModel
 
     public AuditPage(ShellViewModel shell) : base(shell)
     {
-        Action("Vérifier le journal", MaterialIconKind.ShieldCheckOutline, () => VerifyAsync(Shell));
-        Action("Exporter en CSV", MaterialIconKind.FileExportOutline, ExportAsync);
+        Action("Vérifier le journal", MaterialIconKind.ShieldCheck, () => VerifyAsync(Shell));
+        Action("Exporter en CSV", MaterialIconKind.FileExport, ExportAsync);
         ActionRefresh();
     }
 

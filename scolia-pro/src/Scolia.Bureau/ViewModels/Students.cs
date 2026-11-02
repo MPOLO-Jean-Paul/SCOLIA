@@ -30,17 +30,17 @@ public sealed class StudentsPage : PageViewModel
 
     public StudentsPage(ShellViewModel shell) : base(shell)
     {
-        if (Shell.Can(Perm.StudentsWrite)) Action("Nouvelle inscription", MaterialIconKind.AccountPlusOutline, () => StudentForms.CreateAsync(Shell), primary: true);
-        Action("Ouvrir la fiche", MaterialIconKind.AccountOutline, OpenSelectedAsync, open: true);
-        if (Shell.Can(Perm.ReportsRead)) Action("Suivi par mois", MaterialIconKind.CalendarCheckOutline, () => Shell.Open(() => new MonthlyPage(Shell)));
+        if (Shell.Can(Perm.StudentsWrite)) Action("Nouvelle inscription", MaterialIconKind.AccountPlus, () => StudentForms.CreateAsync(Shell), primary: true);
+        Action("Ouvrir la fiche", MaterialIconKind.Account, OpenSelectedAsync, open: true);
+        if (Shell.Can(Perm.ReportsRead)) Action("Suivi par mois", MaterialIconKind.CalendarCheck, () => Shell.Open(() => new MonthlyPage(Shell)));
         ActionRefresh();
-        MenuAction("Aperçu rapide", MaterialIconKind.EyeOutline, () => WithSelected(id => QuickView.StudentAsync(Shell, id)));
-        if (Shell.Can(Perm.PaymentsCreate)) MenuAction("Encaisser", MaterialIconKind.HandCoinOutline, () => WithSelected(id => Shell.Open(() => new CashierPage(Shell, id))));
-        if (Shell.Can(Perm.StudentsWrite)) MenuAction("Renommer", MaterialIconKind.RenameOutline, () => WithSelected(async id =>
+        MenuAction("Aperçu rapide", MaterialIconKind.Eye, () => WithSelected(id => QuickView.StudentAsync(Shell, id)));
+        if (Shell.Can(Perm.PaymentsCreate)) MenuAction("Encaisser", MaterialIconKind.HandCoin, () => WithSelected(id => Shell.Open(() => new CashierPage(Shell, id))));
+        if (Shell.Can(Perm.StudentsWrite)) MenuAction("Renommer", MaterialIconKind.Rename, () => WithSelected(async id =>
         {
             if (await StudentForms.RenameAsync(Shell, id)) await RefreshAsync();
         }));
-        if (CanDelete(Shell)) MenuAction("Supprimer le dossier", MaterialIconKind.DeleteOutline, () => WithSelected(async id =>
+        if (CanDelete(Shell)) MenuAction("Supprimer le dossier", MaterialIconKind.Delete, () => WithSelected(async id =>
         {
             if (await StudentForms.DeleteAsync(Shell, id)) await RefreshAsync();
         }), danger: true);
@@ -211,15 +211,15 @@ public sealed class StudentDetailPage : PageViewModel
     {
         this.studentId = studentId;
         EndSponsorship = new AsyncCommand(() => Shell.Run(EndSelectedSponsorshipAsync));
-        if (Shell.Can(Perm.PaymentsCreate)) Action("Encaisser", MaterialIconKind.HandCoinOutline, () => Shell.Open(() => new CashierPage(Shell, studentId)), primary: true);
-        if (Shell.Can(Perm.StudentsWrite)) Action("Modifier", MaterialIconKind.PencilOutline, EditAsync);
-        if (Shell.Can(Perm.StudentsWrite)) Action("Renommer", MaterialIconKind.RenameOutline, RenameAsync);
-        if (Shell.Can(Perm.PaymentsRead)) Action("Relevé de compte", MaterialIconKind.FileDocumentOutline, StatementAsync);
-        if (Shell.Can(Perm.StudentsWrite)) Action("Changer le statut", MaterialIconKind.AccountSwitchOutline, ChangeStatusAsync);
+        if (Shell.Can(Perm.PaymentsCreate)) Action("Encaisser", MaterialIconKind.HandCoin, () => Shell.Open(() => new CashierPage(Shell, studentId)), primary: true);
+        if (Shell.Can(Perm.StudentsWrite)) Action("Modifier", MaterialIconKind.Pencil, EditAsync);
+        if (Shell.Can(Perm.StudentsWrite)) Action("Renommer", MaterialIconKind.Rename, RenameAsync);
+        if (Shell.Can(Perm.PaymentsRead)) Action("Relevé de compte", MaterialIconKind.FileDocument, StatementAsync);
+        if (Shell.Can(Perm.StudentsWrite)) Action("Changer le statut", MaterialIconKind.AccountSwitch, ChangeStatusAsync);
         if (Shell.Can(Perm.StudentsWrite)) Action("Changer de promotion", MaterialIconKind.SwapHorizontal, ChangePromotionAsync);
-        if (Shell.Can(Perm.PaymentsCreate)) Action("Prise en charge", MaterialIconKind.ShieldAccountOutline, NewSponsorshipAsync);
+        if (Shell.Can(Perm.PaymentsCreate)) Action("Prise en charge", MaterialIconKind.ShieldAccount, NewSponsorshipAsync);
         if (Shell.Can(Perm.PaymentsRead)) Action("Relancer par WhatsApp", MaterialIconKind.Whatsapp, RemindAsync);
-        if (StudentsPage.CanDelete(Shell)) Action("Supprimer le dossier", MaterialIconKind.DeleteOutline, DeleteAsync, danger: true);
+        if (StudentsPage.CanDelete(Shell)) Action("Supprimer le dossier", MaterialIconKind.Delete, DeleteAsync, danger: true);
         ActionRefresh();
     }
 

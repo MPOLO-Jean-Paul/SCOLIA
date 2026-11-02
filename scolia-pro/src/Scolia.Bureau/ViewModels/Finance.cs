@@ -27,13 +27,13 @@ public sealed class DebtorsPage : PageViewModel
     public DebtorsPage(ShellViewModel shell) : base(shell)
     {
         Action("Relancer par WhatsApp", MaterialIconKind.Whatsapp, () => OpenLinkAsync(r => r.WhatsAppLink), row: true);
-        Action("Relancer par SMS", MaterialIconKind.MessageTextOutline, () => OpenLinkAsync(r => r.SmsLink), row: true);
-        Action("Excel", MaterialIconKind.FileExcelOutline, () => ExportAsync("xlsx"));
+        Action("Relancer par SMS", MaterialIconKind.MessageText, () => OpenLinkAsync(r => r.SmsLink), row: true);
+        Action("Excel", MaterialIconKind.FileExcel, () => ExportAsync("xlsx"));
         Action("PDF", MaterialIconKind.FilePdfBox, () => ExportAsync("pdf"));
         ActionRefresh();
-        MenuAction("Aperçu rapide", MaterialIconKind.EyeOutline, () => WithSelected(id => QuickView.StudentAsync(Shell, id)));
-        MenuAction("Ouvrir la fiche", MaterialIconKind.AccountOutline, () => WithSelected(id => Shell.Open(() => new StudentDetailPage(Shell, id))), open: true);
-        if (Shell.Can(Perm.PaymentsCreate)) MenuAction("Encaisser", MaterialIconKind.HandCoinOutline, () => WithSelected(id => Shell.Open(() => new CashierPage(Shell, id))));
+        MenuAction("Aperçu rapide", MaterialIconKind.Eye, () => WithSelected(id => QuickView.StudentAsync(Shell, id)));
+        MenuAction("Ouvrir la fiche", MaterialIconKind.Account, () => WithSelected(id => Shell.Open(() => new StudentDetailPage(Shell, id))), open: true);
+        if (Shell.Can(Perm.PaymentsCreate)) MenuAction("Encaisser", MaterialIconKind.HandCoin, () => WithSelected(id => Shell.Open(() => new CashierPage(Shell, id))));
     }
 
     private Task WithSelected(Func<Guid, Task> work)
@@ -133,7 +133,7 @@ public sealed class SponsorshipsPage : PageViewModel
 
     public SponsorshipsPage(ShellViewModel shell) : base(shell)
     {
-        if (Shell.Can(Perm.PaymentsRead)) Action("Terminer la prise en charge", MaterialIconKind.ShieldOffOutline, EndSelectedAsync, row: true);
+        if (Shell.Can(Perm.PaymentsRead)) Action("Terminer la prise en charge", MaterialIconKind.ShieldOff, EndSelectedAsync, row: true);
         ActionRefresh();
     }
 
@@ -191,7 +191,7 @@ public sealed class CashPage : PageViewModel
 
     public CashPage(ShellViewModel shell) : base(shell)
     {
-        if (Shell.Can(Perm.CashClose)) Action("Arrêter la caisse", MaterialIconKind.LockOutline, () => ClosingAsync(Shell), primary: true);
+        if (Shell.Can(Perm.CashClose)) Action("Arrêter la caisse", MaterialIconKind.Lock, () => ClosingAsync(Shell), primary: true);
         ActionRefresh();
     }
 
@@ -280,7 +280,7 @@ public sealed class ExpensesPage : PageViewModel
     public ExpensesPage(ShellViewModel shell) : base(shell)
     {
         if (Shell.Can(Perm.ExpensesWrite)) Action("Nouvelle dépense", MaterialIconKind.CashMinus, () => NewExpenseAsync(Shell), primary: true);
-        if (Shell.Can(Perm.ExpensesWrite)) Action("Annuler la dépense", MaterialIconKind.CloseCircleOutline, CancelSelectedAsync, row: true);
+        if (Shell.Can(Perm.ExpensesWrite)) Action("Annuler la dépense", MaterialIconKind.CloseCircle, CancelSelectedAsync, row: true);
         ActionRefresh();
     }
 
@@ -425,8 +425,8 @@ public sealed class ReEnrollmentPage : PageViewModel
 
     public ReEnrollmentPage(ShellViewModel shell) : base(shell)
     {
-        if (Shell.Can(Perm.StudentsWrite)) Action("Lancer les réinscriptions", MaterialIconKind.SchoolOutline, ApplyAsync, primary: true);
-        if (Shell.Can(Perm.SettingsWrite)) Action("Nouvelle année", MaterialIconKind.CalendarPlusOutline, async () =>
+        if (Shell.Can(Perm.StudentsWrite)) Action("Lancer les réinscriptions", MaterialIconKind.School, ApplyAsync, primary: true);
+        if (Shell.Can(Perm.SettingsWrite)) Action("Nouvelle année", MaterialIconKind.CalendarPlus, async () =>
         {
             await SettingsPage.NewYearAsync(Shell);
             ready = false;

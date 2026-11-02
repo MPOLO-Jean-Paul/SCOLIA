@@ -58,8 +58,7 @@
         <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Center">
           <Border Width="32" Height="32" CornerRadius="16" Background="White">
             <Panel Width="24" Height="24">
-              <Image Source="{Binding Logo}" IsVisible="{Binding HasLogo}" />
-              <Image Source="{DynamicResource ScoliaMark}" IsVisible="{Binding !HasLogo}" Width="20" Height="20" />
+              <Image Source="{DynamicResource ScoliaMark}" Width="20" Height="20" />
             </Panel>
           </Border>
           <TextBlock Text="{Binding School}" Foreground="White" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center"

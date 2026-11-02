@@ -29,9 +29,9 @@ public sealed class StaffAttendancePage : PageViewModel
         {
             Action("Entrée", MaterialIconKind.LoginVariant, () => MarkAsync("Entree"), primary: true, row: true);
             Action("Sortie", MaterialIconKind.LogoutVariant, () => MarkAsync("Sortie"), row: true);
-            Action("Justifier une absence", MaterialIconKind.FileCheckOutline, JustifyAsync, row: true);
+            Action("Justifier une absence", MaterialIconKind.FileCheck, JustifyAsync, row: true);
         }
-        Action("Mois précédent ou en cours", MaterialIconKind.CalendarRangeOutline, async () =>
+        Action("Mois précédent ou en cours", MaterialIconKind.CalendarRange, async () =>
         {
             previousMonth = !previousMonth;
             await RefreshAsync();

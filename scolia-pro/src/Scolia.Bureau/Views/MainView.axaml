@@ -129,6 +129,58 @@
     <Style Selector="LayoutTransformControl.phone Grid#OpeningHost TextBlock.title">
       <Setter Property="FontSize" Value="22" />
     </Style>
+    <!-- Ordinateur, même douceur que sur le téléphone : les couleurs glissent au survol, les tuiles se soulèvent
+         légèrement, l'appui enfonce à peine. Tout suit le réglage « Animations ». -->
+    <Style Selector="LayoutTransformControl.anim Grid#DesktopArea Button /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Transitions">
+        <Transitions>
+          <BrushTransition Property="Background" Duration="0:0:0.16" Easing="CubicEaseOut" />
+        </Transitions>
+      </Setter>
+    </Style>
+    <Style Selector="LayoutTransformControl.anim Grid#DesktopArea Button.tooltile, LayoutTransformControl.anim Grid#DesktopArea Button.cardbutton,
+                     LayoutTransformControl.anim Grid#DesktopArea Button.heroaction, LayoutTransformControl.anim Grid#DesktopArea Button.hdr,
+                     LayoutTransformControl.anim Grid#DesktopArea Button.navitem, LayoutTransformControl.anim Grid#DesktopArea Button.navcategory,
+                     LayoutTransformControl.anim Grid#DesktopArea Button.searchrow, LayoutTransformControl.anim Grid#DesktopArea Button.searchtile,
+                     LayoutTransformControl.anim Grid#DesktopArea Button.listrow">
+      <Setter Property="RenderTransform" Value="none" />
+      <Setter Property="Transitions">
+        <Transitions>
+          <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.18" Easing="CubicEaseOut" />
+        </Transitions>
+      </Setter>
+    </Style>
+    <Style Selector="LayoutTransformControl.anim Grid#DesktopArea Button.tooltile:pointerover, LayoutTransformControl.anim Grid#DesktopArea Button.cardbutton:pointerover,
+                     LayoutTransformControl.anim Grid#DesktopArea Button.searchtile:pointerover, LayoutTransformControl.anim Grid#DesktopArea Button.heroaction:pointerover">
+      <Setter Property="RenderTransform" Value="translateY(-2px)" />
+    </Style>
+    <Style Selector="LayoutTransformControl.anim Grid#DesktopArea Button.tooltile:pressed, LayoutTransformControl.anim Grid#DesktopArea Button.cardbutton:pressed,
+                     LayoutTransformControl.anim Grid#DesktopArea Button.searchtile:pressed, LayoutTransformControl.anim Grid#DesktopArea Button.heroaction:pressed,
+                     LayoutTransformControl.anim Grid#DesktopArea Button.searchrow:pressed, LayoutTransformControl.anim Grid#DesktopArea Button.listrow:pressed">
+      <Setter Property="RenderTransform" Value="scale(0.98)" />
+    </Style>
+    <Style Selector="LayoutTransformControl.anim Grid#DesktopArea Button.hdr:pressed, LayoutTransformControl.anim Grid#DesktopArea Button.navitem:pressed,
+                     LayoutTransformControl.anim Grid#DesktopArea Button.navcategory:pressed">
+      <Setter Property="RenderTransform" Value="scale(0.97)" />
+    </Style>
+    <!-- Les résultats de la barre descendent en fondu, comme le menu du téléphone -->
+    <Style Selector="Border#HeaderFinderDrop">
+      <Setter Property="RenderTransform"><TranslateTransform /></Setter>
+    </Style>
+    <Style Selector="LayoutTransformControl.anim Border#HeaderFinderDrop[IsVisible=True]">
+      <Style.Animations>
+        <Animation Duration="0:0:0.17" Easing="CubicEaseOut" FillMode="Both">
+          <KeyFrame Cue="0%">
+            <Setter Property="TranslateTransform.Y" Value="-8" />
+            <Setter Property="Opacity" Value="0" />
+          </KeyFrame>
+          <KeyFrame Cue="100%">
+            <Setter Property="TranslateTransform.Y" Value="0" />
+            <Setter Property="Opacity" Value="1" />
+          </KeyFrame>
+        </Animation>
+      </Style.Animations>
+    </Style>
     <!-- Liste de la recherche de la barre : une carte claire, ombrée, posée sous la barre -->
     <Style Selector="Border.finderdrop">
       <Setter Property="Background" Value="{DynamicResource BgBrush}" />
@@ -236,7 +288,7 @@
             </StackPanel>
           </Grid>
           <!-- Recherche générale, dans la barre même, façon Android : on tape ici, les résultats se déroulent dessous.
-               Sur une liste, la même place sert au filtre de la page (ci-dessous). Ctrl+K y place le curseur. -->
+               Sur une liste, la même place sert au filtre de la page (ci-dessous). -->
           <Border x:Name="HeaderFinderBar" Grid.Column="3" Classes="googlebar pill" MaxWidth="460" MinWidth="220" Margin="18,0"
                   VerticalAlignment="Center" IsVisible="{Binding !HeaderSearch.IsOpen}">
             <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto">
@@ -244,8 +296,7 @@
                                Foreground="{DynamicResource MutedBrush}" IsHitTestVisible="False" />
               <TextBox x:Name="HeaderFinderBox" Grid.Column="1" Classes="searchfield" MinHeight="40"
                        Text="{Binding HeaderFinder.Query, Mode=TwoWay}" PlaceholderText="{Binding HeaderFinder.Placeholder}"
-                       GotFocus="OnHeaderFinderFocus" KeyDown="OnHeaderFinderKeyDown" ToolTip.Tip="Apprenants, reçus, pages et réglages (Ctrl+K)" />
-              <Border Grid.Column="2" Classes="keycap" Margin="6,0,6,0" IsVisible="{Binding !HeaderFinder.HasQuery}"><TextBlock Text="Ctrl+K" /></Border>
+                       GotFocus="OnHeaderFinderFocus" KeyDown="OnHeaderFinderKeyDown" ToolTip.Tip="Apprenants, reçus, pages et réglages" />
               <Button Grid.Column="3" Classes="baricon" Command="{Binding HeaderFinder.ClearQuery}" IsVisible="{Binding HeaderFinder.HasQuery}"
                       ToolTip.Tip="Effacer" Width="40" Height="40">
                 <mi:MaterialIcon Kind="Close" />
@@ -335,10 +386,9 @@
       <Border Grid.Row="1" Grid.Column="0" Classes="sidebar" Width="250" Margin="8,8,0,8" IsVisible="{Binding SidebarShown}">
         <DockPanel>
           <StackPanel DockPanel.Dock="Top" Spacing="8" Margin="10,12,10,6">
-            <!-- L'établissement : son logo et son nom, en tête du volet -->
+            <!-- En tête du volet : le logo SCOLIA et le nom de l'établissement. Le logo de l'école est pour les documents. -->
             <Grid ColumnDefinitions="Auto,*" Margin="4,0,4,4">
-              <Image Source="{Binding SchoolLogo}" IsVisible="{Binding HasSchoolLogo}" Width="38" Height="38" Margin="0,0,10,0" VerticalAlignment="Center" />
-              <Image Source="{DynamicResource ScoliaMark}" IsVisible="{Binding !HasSchoolLogo}" Width="30" Height="30" Margin="0,0,10,0" VerticalAlignment="Center" />
+              <Image Source="{DynamicResource ScoliaMark}" Width="32" Height="32" Margin="0,0,10,0" VerticalAlignment="Center" />
               <StackPanel Grid.Column="1" VerticalAlignment="Center">
                 <TextBlock Text="{Binding SchoolTitle}" FontWeight="Bold" TextTrimming="CharacterEllipsis" />
                 <TextBlock Text="{Binding SchoolYearLine}" Classes="muted" FontSize="{DynamicResource FsCaption}" TextTrimming="CharacterEllipsis" />

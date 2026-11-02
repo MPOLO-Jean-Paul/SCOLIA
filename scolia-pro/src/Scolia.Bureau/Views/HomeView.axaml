@@ -103,9 +103,6 @@
                 </DataTemplate>
               </ItemsControl.ItemTemplate>
             </ItemsControl>
-            <Border Width="78" Height="78" CornerRadius="39" Background="White" IsVisible="{Binding HasSchoolLogo}" BoxShadow="0 6 18 0 #33000000">
-              <Image Source="{Binding SchoolLogo}" Width="62" Height="62" />
-            </Border>
           </StackPanel>
         </Grid>
       </Border>

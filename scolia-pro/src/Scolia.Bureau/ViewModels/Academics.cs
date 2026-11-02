@@ -41,13 +41,13 @@ public sealed class GradesPage : PageViewModel
     {
         if (Shell.Can(Perm.AcademicsWrite))
         {
-            Action("Nouveau cours", MaterialIconKind.FileDocumentPlusOutline, () => NewCourseAsync(Shell, Promotion is { } p ? Guid.Parse(p.Value) : (Guid?)null));
-            Action("Attributions et charges", MaterialIconKind.AccountSchoolOutline, () => Shell.Open(() => new TeachingPage(Shell)));
-            Action("Nouvelle évaluation", MaterialIconKind.ClipboardPlusOutline, () => NewAssessmentAsync(Shell, Course?.Id));
-            Action("Enregistrer les notes", MaterialIconKind.ContentSaveOutline, SaveGradesAsync, primary: true);
+            Action("Nouveau cours", MaterialIconKind.FileDocumentPlus, () => NewCourseAsync(Shell, Promotion is { } p ? Guid.Parse(p.Value) : (Guid?)null));
+            Action("Attributions et charges", MaterialIconKind.AccountSchool, () => Shell.Open(() => new TeachingPage(Shell)));
+            Action("Nouvelle évaluation", MaterialIconKind.ClipboardPlus, () => NewAssessmentAsync(Shell, Course?.Id));
+            Action("Enregistrer les notes", MaterialIconKind.ContentSave, SaveGradesAsync, primary: true);
         }
-        Action("Résultats", MaterialIconKind.CertificateOutline, () => Shell.Open(() => new ResultsPage(Shell)));
-        Action("Cartes d'accès", MaterialIconKind.CardAccountDetailsOutline, () => Shell.Open(() => new CardsPage(Shell)));
+        Action("Résultats", MaterialIconKind.Certificate, () => Shell.Open(() => new ResultsPage(Shell)));
+        Action("Cartes d'accès", MaterialIconKind.CardAccountDetails, () => Shell.Open(() => new CardsPage(Shell)));
         ActionRefresh();
     }
 
@@ -357,12 +357,12 @@ public sealed class AttendancePage : PageViewModel
     {
         if (Shell.Can(Perm.AcademicsWrite))
         {
-            Action("Tous présents", MaterialIconKind.AccountCheckOutline, MarkAllPresentAsync);
-            Action("Enregistrer l'appel", MaterialIconKind.ContentSaveOutline, SaveAsync, primary: true);
-            Action("Confirmer le jour de cours", MaterialIconKind.CalendarCheckOutline, () => ConfirmDayAsync(true));
-            Action("Retirer la confirmation", MaterialIconKind.CalendarRemoveOutline, () => ConfirmDayAsync(false));
+            Action("Tous présents", MaterialIconKind.AccountCheck, MarkAllPresentAsync);
+            Action("Enregistrer l'appel", MaterialIconKind.ContentSave, SaveAsync, primary: true);
+            Action("Confirmer le jour de cours", MaterialIconKind.CalendarCheck, () => ConfirmDayAsync(true));
+            Action("Retirer la confirmation", MaterialIconKind.CalendarRemove, () => ConfirmDayAsync(false));
         }
-        Action("Apprenants à traiter", MaterialIconKind.AlertCircleOutline, ShowAlertsAsync);
+        Action("Apprenants à traiter", MaterialIconKind.AlertCircle, ShowAlertsAsync);
         ActionRefresh();
     }
 
@@ -519,12 +519,12 @@ public sealed class DisciplinePage : PageViewModel
         if (Shell.Can(Perm.AcademicsWrite))
         {
             Action("Nouvelle décision", MaterialIconKind.Gavel, () => NewDecisionAsync(Shell), primary: true);
-            Action("Parent reçu ou absent", MaterialIconKind.AccountCheckOutline, ReceptionAsync, row: true);
+            Action("Parent reçu ou absent", MaterialIconKind.AccountCheck, ReceptionAsync, row: true);
         }
-        Action("Convocation à imprimer", MaterialIconKind.PrinterOutline, PrintConvocationAsync, row: true);
+        Action("Convocation à imprimer", MaterialIconKind.Printer, PrintConvocationAsync, row: true);
         Action("Historique de l'apprenant", MaterialIconKind.History, ShowHistoryAsync, row: true);
-        if (Shell.Can(Perm.DisciplineCancel)) Action("Annuler la décision", MaterialIconKind.CloseCircleOutline, CancelAsync, row: true);
-        Action("Exporter en CSV", MaterialIconKind.FileExportOutline, ExportAsync);
+        if (Shell.Can(Perm.DisciplineCancel)) Action("Annuler la décision", MaterialIconKind.CloseCircle, CancelAsync, row: true);
+        Action("Exporter en CSV", MaterialIconKind.FileExport, ExportAsync);
         ActionRefresh();
     }
 

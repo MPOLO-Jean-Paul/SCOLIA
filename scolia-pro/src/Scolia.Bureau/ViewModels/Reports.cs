@@ -30,7 +30,7 @@ public sealed class ReportsPage : PageViewModel
 
     public ReportsPage(ShellViewModel shell) : base(shell)
     {
-        Action("Effacer les filtres", MaterialIconKind.FilterRemoveOutline, () =>
+        Action("Effacer les filtres", MaterialIconKind.FilterRemove, () =>
         {
             From = null;
             To = null;

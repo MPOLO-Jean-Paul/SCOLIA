@@ -119,8 +119,7 @@
       <StackPanel x:Name="RailPanel" Margin="12,14,12,20">
         <Grid ColumnDefinitions="Auto,*" Margin="2,0,0,6">
           <Panel Width="40" Height="40" Margin="0,0,10,0">
-            <Image Source="{Binding SchoolLogo}" IsVisible="{Binding HasSchoolLogo}" />
-            <Image Source="{DynamicResource ScoliaMark}" IsVisible="{Binding !HasSchoolLogo}" Width="32" Height="32" />
+            <Image Source="{DynamicResource ScoliaMark}" Width="32" Height="32" />
           </Panel>
           <StackPanel Grid.Column="1" VerticalAlignment="Center">
             <TextBlock Text="{Binding SchoolTitle}" FontWeight="SemiBold" TextWrapping="Wrap" />
@@ -162,8 +161,7 @@
           <mi:MaterialIcon Kind="ChevronLeft" />
         </Button>
         <Panel Width="44" Height="44" IsVisible="{Binding !CanGoBack}">
-          <Image Source="{Binding SchoolLogo}" IsVisible="{Binding HasSchoolLogo}" Width="30" Height="30" />
-          <Image Source="{DynamicResource ScoliaMark}" IsVisible="{Binding !HasSchoolLogo}" Width="26" Height="26" />
+          <Image Source="{DynamicResource ScoliaMark}" Width="26" Height="26" />
         </Panel>
         <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="4,0,0,0" IsVisible="{Binding !HeaderSearch.IsOpen}">
           <!-- Petit téléphone : un titre long passe sur deux lignes plutôt que d'être coupé -->
@@ -273,8 +271,7 @@
                ouverte, il devient retour, champ, croix et micro, sans nouvelle page. -->
           <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8" Margin="2,4,2,6" MinHeight="52" IsVisible="{Binding !SettingsSearch.IsOpen}">
             <Panel Width="42" Height="42" VerticalAlignment="Center">
-              <Image Source="{Binding SchoolLogo}" IsVisible="{Binding HasSchoolLogo}" Width="34" Height="34" />
-              <Image Source="{DynamicResource ScoliaMark}" IsVisible="{Binding !HasSchoolLogo}" Width="34" Height="34" />
+              <Image Source="{DynamicResource ScoliaMark}" Width="34" Height="34" />
             </Panel>
             <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
               <TextBlock Text="{Binding SchoolHeaderTitle}" FontSize="18" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" MaxLines="1" />

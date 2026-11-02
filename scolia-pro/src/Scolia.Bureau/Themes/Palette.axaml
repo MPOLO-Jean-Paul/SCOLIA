@@ -75,7 +75,8 @@
       <SolidColorBrush x:Key="AccentHoverBrush" Color="#99CAFF" />
       <SolidColorBrush x:Key="AccentSoftBrush" Color="#1C3A5E" />
       <SolidColorBrush x:Key="OnAccentBrush" Color="#111111" />
-      <SolidColorBrush x:Key="OnToneBrush" Color="#111111" />
+      <!-- Pictogramme des icônes : blanc, comme en clair -->
+      <SolidColorBrush x:Key="OnToneBrush" Color="#FFFFFF" />
       <SolidColorBrush x:Key="DangerBrush" Color="#FFB4AB" />
       <SolidColorBrush x:Key="OnDangerBrush" Color="#111111" />
       <SolidColorBrush x:Key="BgBrush" Color="#131316" />
@@ -99,15 +100,17 @@
       <SolidColorBrush x:Key="HoverBrush" Color="#2A2A30" />
       <SolidColorBrush x:Key="SnackbarBrush" Color="#E6E6EB" />
       <SolidColorBrush x:Key="ScrimBrush" Color="#66000000" />
-      <SolidColorBrush x:Key="ToneBlue" Color="#78B9FF" />
-      <SolidColorBrush x:Key="ToneGreen" Color="#63E58A" />
-      <SolidColorBrush x:Key="ToneOrange" Color="#FFB45E" />
-      <SolidColorBrush x:Key="TonePurple" Color="#D09BFF" />
-      <SolidColorBrush x:Key="ToneRed" Color="#FF8A80" />
-      <SolidColorBrush x:Key="ToneTeal" Color="#65D8E8" />
-      <SolidColorBrush x:Key="ToneIndigo" Color="#B7B4FF" />
-      <SolidColorBrush x:Key="TonePink" Color="#FF91AA" />
-      <SolidColorBrush x:Key="ToneNeutral" Color="#B0B0B6" />
+      <!-- Couleurs des icônes : les mêmes teintes franches qu'en clair, comme les couleurs système d'iOS et de macOS
+           en sombre. Une icône garde sa nature et sa netteté quand on change de thème ; elle ne pâlit jamais. -->
+      <SolidColorBrush x:Key="ToneBlue" Color="#0A84FF" />
+      <SolidColorBrush x:Key="ToneGreen" Color="#30D158" />
+      <SolidColorBrush x:Key="ToneOrange" Color="#FF9F0A" />
+      <SolidColorBrush x:Key="TonePurple" Color="#BF5AF2" />
+      <SolidColorBrush x:Key="ToneRed" Color="#FF453A" />
+      <SolidColorBrush x:Key="ToneTeal" Color="#40C8E0" />
+      <SolidColorBrush x:Key="ToneIndigo" Color="#5E5CE6" />
+      <SolidColorBrush x:Key="TonePink" Color="#FF375F" />
+      <SolidColorBrush x:Key="ToneNeutral" Color="#98989D" />
       <SolidColorBrush x:Key="GreenSoftBrush" Color="#173A22" />
       <SolidColorBrush x:Key="OrangeSoftBrush" Color="#3D2C12" />
       <SolidColorBrush x:Key="RedSoftBrush" Color="#3E1A18" />
