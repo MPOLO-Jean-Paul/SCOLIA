@@ -25,7 +25,8 @@ public sealed class CashierPage : PageViewModel
     private DispatcherTimer? searchTimer;
     private DispatcherTimer? previewTimer;
     private string search = string.Empty;
-    private string? searchStatus = "Saisissez au moins deux caractères pour rechercher un apprenant.";
+    // La recherche se fait dans la barre du haut ; le bouton du corps le rappelle, sans message en double.
+    private string? searchStatus;
     private int searchVersion;
     private int selectionVersion;
     private PayerRow? selected;
@@ -81,9 +82,17 @@ public sealed class CashierPage : PageViewModel
             : $"À payer jusqu'au {firstLateDay.AddDays(-1).ToString("d MMM yyyy", french)}";
     }
 
+    private static string ShortMonth(string label)
+    {
+        foreach (var prefix in new[] { "Mensualité de ", "Mensualité d'", "Mensualité d’", "Mensualité " })
+            if (label.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)) return label[prefix.Length..];
+        return label;
+    }
+
     private string SelectedMonthsSummary()
     {
-        var chosen = Months.Where(m => m.IsSelected).Select(m => m.Label).ToList();
+        // Dans le résumé, « Mensualité de septembre » se lit « septembre » : la barre reste courte.
+        var chosen = Months.Where(m => m.IsSelected).Select(m => ShortMonth(m.Label)).ToList();
         return chosen.Count <= 2
             ? $"{Format.Count(chosen.Count, "mois", "mois")} · {string.Join(", ", chosen)}"
             : $"{chosen.Count} mois · de {chosen[0]} à {chosen[^1]}";
@@ -127,8 +136,8 @@ public sealed class CashierPage : PageViewModel
             // Invalide immédiatement les anciennes réponses pendant la nouvelle saisie.
             searchVersion++;
             Results.Clear();
-            SearchStatus = search.Trim().Length < 2
-                ? "Saisissez au moins deux caractères pour rechercher un apprenant."
+            SearchStatus = search.Trim().Length == 0 ? null
+                : search.Trim().Length < 2 ? "Encore un caractère : nom ou matricule, deux caractères au moins."
                 : "Recherche en cours…";
             searchTimer?.Stop();
             searchTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(300) };
@@ -272,7 +281,7 @@ public sealed class CashierPage : PageViewModel
         Results.Clear();
         if (query.Length < 2)
         {
-            SearchStatus = "Saisissez au moins deux caractères pour rechercher un apprenant.";
+            SearchStatus = query.Length == 0 ? null : "Encore un caractère : nom ou matricule, deux caractères au moins.";
             return;
         }
         SearchStatus = "Recherche en cours…";

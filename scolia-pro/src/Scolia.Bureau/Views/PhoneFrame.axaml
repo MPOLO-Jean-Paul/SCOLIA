@@ -240,7 +240,7 @@
         <StackPanel VerticalAlignment="Center" Spacing="1">
           <TextBlock Text="{Binding PhonePage.Sticky.Title}" Classes="muted" FontSize="{DynamicResource FsSmall}" />
           <TextBlock Text="{Binding PhonePage.Sticky.Value}" FontSize="20" FontWeight="Bold" TextTrimming="CharacterEllipsis" />
-          <TextBlock Text="{Binding PhonePage.Sticky.Detail}" Classes="muted" FontSize="{DynamicResource FsSmall}" TextTrimming="CharacterEllipsis"
+          <TextBlock Text="{Binding PhonePage.Sticky.Detail}" Classes="muted" FontSize="{DynamicResource FsSmall}" TextTrimming="CharacterEllipsis" TextWrapping="Wrap" MaxLines="2"
                      IsVisible="{Binding PhonePage.Sticky.HasDetail, FallbackValue=False}" />
         </StackPanel>
         <Button x:Name="StickyAction" Grid.Column="1" Classes="primary stickyaction" Command="{Binding PhonePage.Sticky.Command}"

@@ -393,7 +393,7 @@
             <StackPanel VerticalAlignment="Center" Spacing="1">
               <TextBlock Text="{Binding Current.Sticky.Title}" Classes="muted" FontSize="{DynamicResource FsSmall}" />
               <TextBlock Text="{Binding Current.Sticky.Value}" FontSize="20" FontWeight="Bold" TextTrimming="CharacterEllipsis" />
-              <TextBlock Text="{Binding Current.Sticky.Detail}" Classes="muted" FontSize="{DynamicResource FsSmall}" TextTrimming="CharacterEllipsis"
+              <TextBlock Text="{Binding Current.Sticky.Detail}" Classes="muted" FontSize="{DynamicResource FsSmall}" TextTrimming="CharacterEllipsis" TextWrapping="Wrap" MaxLines="2"
                          IsVisible="{Binding Current.Sticky.HasDetail, FallbackValue=False}" />
             </StackPanel>
             <Button x:Name="DesktopStickyAction" Grid.Column="1" Classes="primary stickyaction" Command="{Binding Current.Sticky.Command}"
