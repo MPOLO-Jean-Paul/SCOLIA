@@ -257,7 +257,7 @@
   <!-- Bandeaux du direct sous la barre du haut : hors ligne en orange, conflits en rouge -->
   <Style Selector="Button.livestrip">
     <Setter Property="HorizontalAlignment" Value="Stretch" />
-    <Setter Property="HorizontalContentAlignment" Value="Left" />
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
     <Setter Property="CornerRadius" Value="10" />
     <Setter Property="Padding" Value="12,7" />
     <Setter Property="Margin" Value="8,4,8,2" />
@@ -265,8 +265,7 @@
     <Setter Property="FontSize" Value="{DynamicResource FsSmall}" />
   </Style>
   <Style Selector="Button.livestrip TextBlock">
-    <Setter Property="TextWrapping" Value="NoWrap" />
-    <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+    <Setter Property="TextWrapping" Value="Wrap" />
   </Style>
   <Style Selector="Button.livestrip.offline">
     <Setter Property="Background" Value="{DynamicResource OrangeSoftBrush}" />

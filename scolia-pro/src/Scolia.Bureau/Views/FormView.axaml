@@ -65,8 +65,8 @@
                 <TextBox Classes="w11" IsVisible="{Binding IsPhone}" Text="{Binding Text}" infra:PhoneInput.Digits="{Binding IsPhone}" />
                 <TextBox Classes="w11" IsVisible="{Binding IsSecret}" Text="{Binding Text}" PasswordChar="•" />
                 <TextBox Classes="w11" IsVisible="{Binding IsMultiline}" Text="{Binding Text}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="84" />
-                <CalendarDatePicker PlaceholderText="jj/mm/aaaa" SelectedDateFormat="Short" IsVisible="{Binding IsDay}" SelectedDate="{Binding Day}" HorizontalAlignment="Stretch" />
-                <ComboBox IsVisible="{Binding IsChoice}" ItemsSource="{Binding Options}" SelectedItem="{Binding Choice}" HorizontalAlignment="Stretch" />
+                <CalendarDatePicker Classes="w11" PlaceholderText="jj/mm/aaaa" SelectedDateFormat="Short" IsVisible="{Binding IsDay}" SelectedDate="{Binding Day}" HorizontalAlignment="Stretch" />
+                <ComboBox Classes="w11" IsVisible="{Binding IsChoice}" ItemsSource="{Binding Options}" SelectedItem="{Binding Choice}" HorizontalAlignment="Stretch" />
                 <TextBlock Text="{Binding Hint}" Classes="muted" FontSize="{DynamicResource FsSmall}" IsVisible="{Binding HasHint}" TextWrapping="Wrap" />
                 <TextBlock Text="{Binding Error}" Classes="error" IsVisible="{Binding HasError}" TextWrapping="Wrap" />
               </StackPanel>

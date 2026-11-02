@@ -210,17 +210,18 @@
       </Grid>
       <!-- Hors ligne : le travail continue, et l'utilisateur sait ce qui attend d'être envoyé -->
       <Button Classes="livestrip offline" Command="{Binding NetworkCommand}" IsVisible="{Binding Sync.Offline}">
-        <Grid ColumnDefinitions="Auto,2*,3*" ColumnSpacing="8">
-          <mi:MaterialIcon Kind="CloudOffOutline" Width="16" Height="16" />
-          <TextBlock Grid.Column="1" Text="{Binding Sync.StatusText}" FontWeight="SemiBold" />
-          <TextBlock Grid.Column="2" Text="· envoi au retour de l'ordinateur principal" />
+        <!-- Bandeaux d'état : le texte passe à la ligne au lieu d'être coupé sur un petit écran -->
+        <Grid ColumnDefinitions="Auto,Auto,*" ColumnSpacing="8">
+          <mi:MaterialIcon Kind="CloudOffOutline" Width="16" Height="16" VerticalAlignment="Top" Margin="0,1,0,0" />
+          <TextBlock Grid.Column="1" Text="{Binding Sync.StatusText}" FontWeight="SemiBold" VerticalAlignment="Top" />
+          <TextBlock Grid.Column="2" Text="· envoi au retour de l'ordinateur principal" TextWrapping="Wrap" />
         </Grid>
       </Button>
       <Button Classes="livestrip conflict" Command="{Binding NetworkCommand}" IsVisible="{Binding Sync.HasConflicts}">
-        <Grid ColumnDefinitions="Auto,2*,3*" ColumnSpacing="8">
-          <mi:MaterialIcon Kind="AlertCircleOutline" Width="16" Height="16" />
-          <TextBlock Grid.Column="1" Text="{Binding Sync.Conflicts}" FontWeight="SemiBold" />
-          <TextBlock Grid.Column="2" Text="opération(s) refusée(s) : touchez pour décider" />
+        <Grid ColumnDefinitions="Auto,Auto,*" ColumnSpacing="8">
+          <mi:MaterialIcon Kind="AlertCircleOutline" Width="16" Height="16" VerticalAlignment="Top" Margin="0,1,0,0" />
+          <TextBlock Grid.Column="1" Text="{Binding Sync.Conflicts}" FontWeight="SemiBold" VerticalAlignment="Top" />
+          <TextBlock Grid.Column="2" Text="opération(s) refusée(s) : touchez pour décider" TextWrapping="Wrap" />
         </Grid>
       </Button>
       </StackPanel>
