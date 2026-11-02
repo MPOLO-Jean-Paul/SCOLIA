@@ -346,6 +346,8 @@ public sealed class SearchViewModel : Observable
 
     public async Task SearchAsync()
     {
+        // Une recherche lancée tout de suite (Entrée, voix) remplace celle qui attendait la fin de la frappe.
+        timer?.Stop();
         Results.Clear();
         Selected = null;
         Groups = [];
