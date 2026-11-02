@@ -21,6 +21,12 @@
         <Border Height="1" Background="{DynamicResource LineBrush}" Margin="58,0,0,0" />
         <WrapPanel Margin="58,12,18,14">
           <Button Content="Rechercher SCOLIA sur le réseau" Command="{Binding Search}" IsEnabled="{Binding NotSearching}" Margin="0,0,10,0" />
+          <Button Command="{Binding ScanCode}" Margin="0,0,10,0">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <mi:MaterialIcon Kind="QrcodeScan" Width="16" Height="16" />
+              <TextBlock Text="{Binding ScanLabel}" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
           <Button Classes="ghost" Content="Utiliser cet ordinateur comme serveur" Command="{Binding UseThisComputer}" IsVisible="{Binding CanBecomeServer}" />
         </WrapPanel>
         <ProgressBar IsIndeterminate="True" IsVisible="{Binding Searching}" Height="2" MinHeight="2" Margin="58,0,18,10" />
@@ -65,6 +71,17 @@
           </StackPanel>
           <ToggleSwitch Grid.Column="2" VerticalAlignment="Center" OnContent="" OffContent="" IsChecked="{Binding ServiceInstalled, Mode=OneWay}"
                         Command="{Binding ToggleService}" IsEnabled="{Binding IsWindows}" />
+        </Grid>
+
+        <!-- Relier un autre appareil : le code QR de ce serveur -->
+        <Border Height="1" Background="{DynamicResource LineBrush}" Margin="58,0,0,0" />
+        <Grid ColumnDefinitions="Auto,*,Auto" Margin="18,16">
+          <Border Classes="appicon medium" Background="{DynamicResource ToneBlue}" Margin="0,0,14,0"><mi:MaterialIcon Kind="QrcodeScan" /></Border>
+          <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+            <TextBlock Text="Relier un autre appareil" />
+            <TextBlock Text="{Binding ShowCodeLine}" Classes="muted" TextWrapping="Wrap" FontSize="{DynamicResource FsSmall}" />
+          </StackPanel>
+          <Button x:Name="ShowCodeButton" Grid.Column="2" Classes="primary" Content="Afficher le code QR" Command="{Binding ShowCode}" VerticalAlignment="Center" Margin="12,0,0,0" />
         </Grid>
 
         <!-- Les autres postes dépendent de cet ordinateur : il ne s'endort pas, même fenêtre réduite -->

@@ -56,6 +56,9 @@
     <PackageReference Include="Avalonia.Controls.DataGrid" />
     <PackageReference Include="Material.Icons.Avalonia" />
     <PackageReference Include="Svg.Skia" />
+    <!-- Relier un appareil : le serveur affiche un code QR, l'autre appareil le lit. -->
+    <PackageReference Include="QRCoder" />
+    <PackageReference Include="ZXing.Net" />
   </ItemGroup>
 
   <!-- Les espaces de noms d'Android ne sont pas ajoutés d'office : ils entreraient en conflit avec ceux d'Avalonia

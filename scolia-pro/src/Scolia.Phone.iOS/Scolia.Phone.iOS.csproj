@@ -28,6 +28,9 @@
     <PackageReference Include="Avalonia.Controls.DataGrid" />
     <PackageReference Include="Material.Icons.Avalonia" />
     <PackageReference Include="Svg.Skia" />
+    <!-- Relier un appareil : le serveur affiche un code QR, l'autre appareil le lit. -->
+    <PackageReference Include="QRCoder" />
+    <PackageReference Include="ZXing.Net" />
     <PackageReference Include="Microsoft.Data.Sqlite" />
     <PackageReference Include="System.Security.Cryptography.ProtectedData" />
   </ItemGroup>

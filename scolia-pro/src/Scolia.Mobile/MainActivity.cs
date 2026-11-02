@@ -20,6 +20,7 @@ public sealed class MainActivity : AvaloniaMainActivity
     {
         MobilePlatform.Attach(this);
         AndroidSpeech.Attach(this);
+        AndroidCamera.Attach(this);
         // Le fond du thème couvre aussi la préparation d'Avalonia dans base.OnCreate.
         base.OnCreate(savedInstanceState);
         // Android 13+ : permission des notifications (encaissements et sauvegardes des autres postes).
@@ -46,6 +47,7 @@ public sealed class MainActivity : AvaloniaMainActivity
         MobilePlatform.HoldMulticast(true);
         Security.AndroidBiometrics.Attach(this);
         AndroidSpeech.Attach(this);
+        AndroidCamera.Attach(this);
         ScoliaPlatform.NotifyAppResumed();
         // Téléphone serveur encore freiné par les économies de batterie : Android le demande, une fois par lancement.
         try { AndroidBackground.AskOnceIfServer(this); }
@@ -76,6 +78,7 @@ public sealed class MainActivity : AvaloniaMainActivity
     protected override void OnActivityResult(int requestCode, Result resultCode, Android.Content.Intent? data)
     {
         if (AndroidSpeech.Complete(requestCode, resultCode, data)) return;
+        if (AndroidCamera.Complete(requestCode, resultCode)) return;
         base.OnActivityResult(requestCode, resultCode, data);
     }
 

@@ -41,5 +41,7 @@
     <!-- Recherche à la voix : trouver le service vocal du téléphone (Google ou celui du fabricant). -->
     <intent><action android:name="android.speech.action.RECOGNIZE_SPEECH" /></intent>
     <intent><action android:name="android.speech.RecognitionService" /></intent>
+    <!-- Code QR du serveur : l'application Appareil photo prend la photo, SCOLIA la lit. -->
+    <intent><action android:name="android.media.action.IMAGE_CAPTURE" /></intent>
   </queries>
 </manifest>

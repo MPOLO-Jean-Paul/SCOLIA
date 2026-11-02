@@ -1012,6 +1012,9 @@ public sealed class ShellViewModel : Observable
     /// <summary>Ctrl+K et Accueil : cherche globalement dans les droits du compte.</summary>
     public void ShowSearch() => Dialog = new SearchViewModel(this);
 
+    /// <summary>« Relier un autre appareil » : le code QR de ce serveur, au-dessus de la page ou du menu Fichier.</summary>
+    public void ShowPairing() => Dialog = new PairingViewModel(this);
+
     // ---------- Recherche générale dans la barre du haut de l'ordinateur ----------
     private SearchViewModel? headerFinder;
     private bool headerFinderOpen;

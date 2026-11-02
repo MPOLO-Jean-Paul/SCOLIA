@@ -55,6 +55,8 @@ public static class IosPlatform
         Platform.ShowSystemNotification = ShowNotification;
         Platform.RecognizeSpeechAsync = IosSpeech.ListenAsync;
         Platform.CanRecognizeSpeech = IosSpeech.IsAvailable;
+        // Code QR du serveur : une photo avec l'appareil photo, lue ensuite sur l'iPhone, sans Internet.
+        Platform.CaptureImageAsync = CaptureImageAsync;
         UNUserNotificationCenter.Current.RequestAuthorization(UNAuthorizationOptions.Alert | UNAuthorizationOptions.Sound, (_, _) => { });
     }
 
@@ -102,6 +104,38 @@ public static class IosPlatform
         using var image = UIImage.LoadFromData(NSData.FromArray(data));
         using var png = image?.AsPNG();
         return png?.ToArray();
+    }
+
+    /// <summary>Appareil photo d'iOS pour photographier le code QR du serveur ; null si l'utilisateur annule.</summary>
+    private static Task<byte[]?> CaptureImageAsync()
+    {
+        var done = new TaskCompletionSource<byte[]?>(TaskCreationOptions.RunContinuationsAsynchronously);
+        UIApplication.SharedApplication.InvokeOnMainThread(() =>
+        {
+            if (!UIImagePickerController.IsSourceTypeAvailable(UIImagePickerControllerSourceType.Camera) || TopController() is not { } host)
+            {
+                done.TrySetResult(null);
+                return;
+            }
+            var picker = new UIImagePickerController
+            {
+                SourceType = UIImagePickerControllerSourceType.Camera,
+                AllowsEditing = false,
+            };
+            picker.FinishedPickingMedia += (_, e) =>
+            {
+                using var jpeg = e.OriginalImage?.AsJPEG(0.9f);
+                done.TrySetResult(jpeg?.ToArray());
+                picker.DismissViewController(true, null);
+            };
+            picker.Canceled += (_, _) =>
+            {
+                done.TrySetResult(null);
+                picker.DismissViewController(true, null);
+            };
+            host.PresentViewController(picker, true, null);
+        });
+        return done.Task;
     }
 
     private static UIViewController? TopController()

@@ -52,6 +52,8 @@ public static class MobilePlatform
         Platform.IsInForeground = AndroidAlerts.InForeground;
         Platform.RecognizeSpeechAsync = AndroidSpeech.ListenAsync;
         Platform.CanRecognizeSpeech = AndroidSpeech.IsAvailable;
+        // Code QR du serveur : photo prise par l'appareil photo du téléphone, lue ensuite par SCOLIA.
+        Platform.CaptureImageAsync = AndroidCamera.CaptureAsync;
         Platform.ShowSystemNotification = alert => AndroidAlerts.Show(context ?? app, alert);
         // Sans ordinateur dans l'établissement, ce téléphone peut en être le serveur.
         Platform.LocalServer = Server.PhoneServer.Get(app);

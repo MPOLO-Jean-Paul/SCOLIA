@@ -2320,6 +2320,11 @@ if (Platform.IsMobile)
 }
 shell.Backstage.Section = shell.Backstage.Items.First(i => i.Value == "poste");
 Save(window, "26b-poste.png");
+// Relier un autre appareil : le code QR du serveur, au-dessus du menu Fichier.
+shell.ShowPairing();
+Wait(Task.Delay(300));
+Save(window, "26c-code-qr.png");
+shell.CloseDialog();
 Platform.BackgroundAllowed = null;
 Platform.BackgroundHint = string.Empty;
 shell.CloseBackstage();

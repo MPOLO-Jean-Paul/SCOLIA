@@ -134,6 +134,12 @@ public static class Platform
     /// <summary>Réglage propre à la marque du téléphone, qui peut couper SCOLIA malgré tout ; vide sinon.</summary>
     public static string BackgroundHint { get; set; } = string.Empty;
 
+    /// <summary>
+    /// Photo prise avec l'appareil photo du téléphone, pour lire un code QR : les octets de l'image, ou null si
+    /// l'utilisateur annule. Null sur un ordinateur, qui lit plutôt une image enregistrée ou un code collé.
+    /// </summary>
+    public static Func<Task<byte[]?>>? CaptureImageAsync { get; set; }
+
     /// <summary>Vrai quand ce poste peut être le serveur de l'établissement : tout ordinateur, et le téléphone qui en a les moyens.</summary>
     public static bool CanHostServer => !IsMobile || LocalServer is not null;
 

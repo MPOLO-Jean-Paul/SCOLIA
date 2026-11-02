@@ -32,6 +32,9 @@ public sealed class PosteViewModel : Observable
         AllowBackground = new RelayCommand(() => Platform.AllowBackground?.Invoke());
         OpenAppSettings = new RelayCommand(() => Platform.OpenAppSettings?.Invoke());
         OpenPowerOptions = new RelayCommand(PosteAdmin.OpenPowerOptions);
+        // Code QR : le serveur le montre, l'autre appareil le scanne.
+        ShowCode = new RelayCommand(shell.ShowPairing);
+        ScanCode = new AsyncCommand(ScanCodeAsync);
         // Retour des réglages d'Android : l'état de l'arrière-plan se relit tout de suite, sur la page affichée.
         shown = this;
         UseThisComputer = new AsyncCommand(() => shell.UseThisComputerAsync());
@@ -113,6 +116,28 @@ public sealed class PosteViewModel : Observable
     public AsyncCommand Search { get; }
     public AsyncCommand UseThisComputer { get; }
     public AsyncCommand ChangeServer { get; }
+    public RelayCommand ShowCode { get; }
+    public AsyncCommand ScanCode { get; }
+    public string ScanLabel => PairingFlow.HasCamera ? "Scanner le code QR d'un serveur" : "Lire une image du code QR d'un serveur";
+    public string ShowCodeLine => Platform.IsMobile
+        ? "Un code QR à scanner avec l'autre appareil : il contient les adresses du Wi-Fi, de Tailscale et d'Internet."
+        : "Un code QR à scanner avec un téléphone, ou à copier pour un autre ordinateur. Wi-Fi, Tailscale et Internet sont inclus.";
+
+    private async Task ScanCodeAsync()
+    {
+        var (text, problem) = await PairingFlow.CaptureAsync(shell);
+        if (text is null)
+        {
+            if (problem is not null) shell.Notify(problem);
+            return;
+        }
+        // Le serveur actuel n'est quitté que si le nouveau répond : la liaison ferme alors la session elle-même.
+        await shell.Run(async () =>
+        {
+            shell.CloseBackstage();
+            shell.Notify(await PairingFlow.JoinAsync(shell, text));
+        });
+    }
     public RelayCommand AllowBackground { get; }
     public RelayCommand OpenAppSettings { get; }
     public RelayCommand OpenPowerOptions { get; }

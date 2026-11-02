@@ -33,6 +33,33 @@ public sealed class ConnectionViewModel : Observable
         PrepareTailnet = new AsyncCommand(Installer.BeginAsync);
         Installer.Refresh();
         JoinInternet = new AsyncCommand(JoinInternetAsync);
+        ScanCode = new AsyncCommand(ScanCodeAsync);
+    }
+
+    // ---------- Code QR du serveur : la voie la plus simple, Wi-Fi, Tailscale ou Internet ----------
+    /// <summary>Téléphone : l'appareil photo. Ordinateur : une image du code (photo, capture d'écran).</summary>
+    public AsyncCommand ScanCode { get; }
+    public string ScanLabel => PairingFlow.HasCamera ? "Scanner le code QR" : "Lire une image du code QR";
+    public string ScanHint => PairingFlow.HasCamera
+        ? "Sur le serveur : Poste et réseau, puis Relier un appareil. Visez le code : SCOLIA choisit seul le Wi-Fi, Tailscale ou Internet."
+        : "Sur le serveur : Poste et réseau, puis Relier un appareil. Ouvrez une photo du code, ou collez le code copié plus bas.";
+
+    private async Task ScanCodeAsync()
+    {
+        var (text, problem) = await PairingFlow.CaptureAsync(shell);
+        if (text is null)
+        {
+            if (problem is not null) Message = problem;
+            return;
+        }
+        await JoinCodeAsync(text);
+    }
+
+    private async Task JoinCodeAsync(string text)
+    {
+        Searching = true;
+        try { Message = await PairingFlow.JoinAsync(shell, text, step => Message = step); }
+        finally { Searching = false; }
     }
 
     /// <summary>Tout ordinateur peut être le serveur ; un téléphone aussi, quand l'établissement n'a pas d'ordinateur.</summary>
@@ -145,6 +172,14 @@ public sealed class ConnectionViewModel : Observable
     public AsyncCommand JoinInternet { get; }
     private async Task JoinInternetAsync()
     {
+        // Le code de liaison copié sur le serveur se colle ici aussi : il essaie le Wi-Fi et Tailscale avant Internet.
+        if (Invitation.Trim().StartsWith(PairingCode.Prefix, StringComparison.OrdinalIgnoreCase))
+        {
+            var code = Invitation;
+            await JoinCodeAsync(code);
+            if (!shell.ChoosingServer) Invitation = string.Empty;
+            return;
+        }
         Searching = true;
         Message = "Vérification de la liaison Internet sécurisée…";
         try

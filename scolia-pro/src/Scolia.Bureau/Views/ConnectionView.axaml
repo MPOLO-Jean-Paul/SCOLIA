@@ -18,6 +18,24 @@
       <TextBlock Text="{Binding Message}" Classes="muted" TextWrapping="Wrap" TextAlignment="Center" />
       <ProgressBar IsIndeterminate="True" IsVisible="{Binding Searching}" Width="220" Height="3" MinHeight="3" HorizontalAlignment="Center" />
 
+      <!-- Code QR du serveur : la voie la plus simple, quel que soit le réseau -->
+      <Border Classes="card">
+        <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto">
+          <Border Classes="appicon large" Background="{DynamicResource ToneBlue}" Margin="0,0,14,0" VerticalAlignment="Top"><mi:MaterialIcon Kind="QrcodeScan" /></Border>
+          <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
+            <TextBlock Text="Relier avec le code QR du serveur" FontWeight="SemiBold" TextWrapping="Wrap" />
+            <TextBlock Text="{Binding ScanHint}" Classes="muted" TextWrapping="Wrap" FontSize="{DynamicResource FsSmall}" />
+          </StackPanel>
+          <Button x:Name="ScanCodeButton" Grid.Row="1" Grid.ColumnSpan="2" Classes="primary" Command="{Binding ScanCode}" IsEnabled="{Binding NotSearching}"
+                  HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" MinHeight="44" Margin="0,12,0,0">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <mi:MaterialIcon Kind="QrcodeScan" Width="18" Height="18" VerticalAlignment="Center" />
+              <TextBlock Text="{Binding ScanLabel}" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
+        </Grid>
+      </Border>
+
       <!-- Serveurs trouvés : une ligne par établissement, façon réglages macOS -->
       <Border Classes="card" Padding="0" IsVisible="{Binding HasServers}">
         <ItemsControl ItemsSource="{Binding Servers}">
@@ -64,8 +82,8 @@
       <Border Classes="card">
         <StackPanel Spacing="8">
           <TextBlock Text="Rejoindre à distance" FontWeight="SemiBold" />
-          <TextBlock Classes="muted" TextWrapping="Wrap" Text="Sur un autre Wi-Fi ou un réseau mobile, collez l'invitation privée créée par le secrétariat dans Réseau et activité. Vos comptes restent les mêmes." />
-          <TextBox Classes="w11" Text="{Binding Invitation}" PlaceholderText="Invitation privée SCOLIA" TextWrapping="Wrap" MaxHeight="104" />
+          <TextBlock Classes="muted" TextWrapping="Wrap" Text="Collez le code de liaison copié sur le serveur, ou l'invitation privée créée par le secrétariat dans Réseau et activité. Vos comptes restent les mêmes." />
+          <TextBox Classes="w11" Text="{Binding Invitation}" PlaceholderText="Code de liaison ou invitation SCOLIA" TextWrapping="Wrap" MaxHeight="104" />
           <Button Classes="primary" Content="Vérifier et rejoindre" Command="{Binding JoinInternet}" IsEnabled="{Binding NotSearching}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" />
         </StackPanel>
       </Border>

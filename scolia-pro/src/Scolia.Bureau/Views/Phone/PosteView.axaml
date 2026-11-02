@@ -68,6 +68,19 @@
       </ItemsControl>
     </Border>
 
+    <!-- Code QR : le téléphone serveur le montre, le téléphone relié le scanne -->
+    <Button x:Name="ShowCodeButton" Classes="primary" Command="{Binding ShowCode}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Height="46" IsVisible="{Binding IsPhoneServer}">
+      <StackPanel Orientation="Horizontal" Spacing="8">
+        <mi:MaterialIcon Kind="QrcodeScan" Width="18" Height="18" />
+        <TextBlock Text="Relier un autre appareil : code QR" />
+      </StackPanel>
+    </Button>
+    <Button Classes="primary" Command="{Binding ScanCode}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Height="46" IsVisible="{Binding IsPhoneClient}">
+      <StackPanel Orientation="Horizontal" Spacing="8">
+        <mi:MaterialIcon Kind="QrcodeScan" Width="18" Height="18" />
+        <TextBlock Text="{Binding ScanLabel}" />
+      </StackPanel>
+    </Button>
     <Button Classes="ghost" Command="{Binding ChangeServer}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Height="46" IsVisible="{Binding IsPhoneClient}">
       <StackPanel Orientation="Horizontal" Spacing="8">
         <mi:MaterialIcon Kind="SwapHorizontal" Width="18" Height="18" />
