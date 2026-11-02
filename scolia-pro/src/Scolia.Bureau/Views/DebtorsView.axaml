@@ -19,8 +19,8 @@
           <ComboBox Width="210" ItemsSource="{Binding Buckets}" SelectedItem="{Binding Bucket}" />
         </StackPanel>
         <StackPanel Classes="field">
-          <TextBlock Text="Retard minimum" Classes="fieldlabel" />
-          <TextBox Width="190" Text="{Binding MinMonths}" PlaceholderText="Retard minimum (mois)" />
+          <TextBlock Text="Retard minimum, en mois" Classes="fieldlabel" />
+          <TextBox Width="190" Text="{Binding MinMonths}" PlaceholderText="Tous" />
         </StackPanel>
       </WrapPanel>
     </Border>

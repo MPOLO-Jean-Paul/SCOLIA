@@ -146,6 +146,8 @@ public partial class MainView : UserControl
     /// <summary>Place le curseur dans le filtre de la page sans ouvrir la recherche globale.</summary>
     private void OnContextSearchChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs args)
     {
+        // Filtre ouvert ou fermé : la place laissée aux boutons de la page change.
+        if (args.PropertyName == nameof(PhoneHeaderSearchVm.IsOpen)) QueueFitPageActions();
         if (args.PropertyName != nameof(PhoneHeaderSearchVm.IsOpen) ||
             subscribedShell is not { } shell || !shell.HeaderSearch.IsOpen || shell.Phone) return;
         Avalonia.Threading.Dispatcher.UIThread.Post(() =>
@@ -231,7 +233,9 @@ public partial class MainView : UserControl
     private void OnDesktopContextSearchKeyDown(object? sender, KeyEventArgs e)
     {
         if (e.Key != Key.Escape || Shell is not { } shell) return;
-        shell.HeaderSearch.Close.Execute(null);
+        // Échap vide le filtre ; le champ reste à sa place, comme dans l'Explorateur de Windows.
+        if (!shell.HeaderSearch.HasQuery) return;
+        shell.HeaderSearch.Clear.Execute(null);
         e.Handled = true;
     }
 
@@ -388,15 +392,17 @@ public partial class MainView : UserControl
         var title = Math.Clamp(Math.Max(heading, sub) + 8 + 42, 140, TitleMax);
         // Le bandeau garde aussi la recherche, au moins sur une largeur lisible, l'état du réseau et le compte.
         var extras = HeaderExtras.Bounds.Width > 0 ? HeaderExtras.Bounds.Width + 12 : 200;
-        var room = PageBar.Bounds.Width - PageBarFixed - title - extras - SearchMin;
+        // Le filtre d'une liste garde sa largeur de saisie ; le bouton de recherche générale peut se resserrer.
+        var search = Shell.HeaderSearch.IsOpen ? SearchMin : 220;
+        var room = PageBar.Bounds.Width - PageBarFixed - title - extras - search;
         var widths = page.HeaderActions.Select(a => TextWidth(a.Label, font, FontWeight.Normal) + 58).ToList();
         const double more = 46;
         int count;
-        if (widths.Count <= 4 && widths.Sum() <= room) count = widths.Count;
+        if (widths.Count <= 3 && widths.Sum() <= room) count = widths.Count;
         else
         {
             count = 0;
-            for (var k = Math.Min(3, widths.Count - 1); k > 0; k--)
+            for (var k = Math.Min(2, widths.Count - 1); k > 0; k--)
                 if (widths.Take(k).Sum() + more <= room) { count = k; break; }
         }
         page.FitActions(count);
@@ -415,10 +421,10 @@ public partial class MainView : UserControl
     private ShellViewModel? Shell => DataContext as ShellViewModel;
 
     /// <summary>Largeur gardée au champ de recherche du bandeau avant de replier les actions de la page.</summary>
-    private const double SearchMin = 220;
+    private const double SearchMin = 300;
 
     /// <summary>Largeur maximale du bloc titre du bandeau (icône, titre et sous-titre), la même que dans la vue.</summary>
-    private const double TitleMax = 300;
+    private const double TitleMax = 340;
 
     /// <summary>
     /// Barre de titre dessinée par SCOLIA, quand la fenêtre s'étend sous celle de Windows : elle prend la hauteur

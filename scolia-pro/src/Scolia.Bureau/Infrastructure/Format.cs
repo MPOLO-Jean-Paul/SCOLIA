@@ -63,6 +63,38 @@ public static class Labels
         _ => code,
     };
 
+    /// <summary>Action du journal d'audit, lisible : « connexion.reussie » devient « Connexion réussie ».</summary>
+    public static string AuditAction(string code) => AuditActions.TryGetValue(code, out var label) ? label
+        : code.Length == 0 ? code : char.ToUpperInvariant(code[0]) + code[1..].Replace('.', ' ').Replace('_', ' ');
+
+    private static readonly Dictionary<string, string> AuditActions = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["annee.cloturee"] = "Année clôturée", ["annee.courante"] = "Année courante choisie", ["annee.creee"] = "Année créée",
+        ["apprenant.inscrit"] = "Apprenant inscrit", ["apprenant.modifie"] = "Apprenant modifié", ["apprenant.photo"] = "Photo de l'apprenant",
+        ["apprenant.reinscrit"] = "Apprenant réinscrit", ["apprenant.renomme"] = "Apprenant renommé", ["apprenant.supprime"] = "Apprenant supprimé",
+        ["audit.exporte"] = "Journal exporté", ["bulletin.pdf"] = "Bulletin imprimé", ["caisse.arretee"] = "Caisse arrêtée",
+        ["cartes.export"] = "Cartes exportées", ["connexion.echec"] = "Connexion refusée", ["connexion.reussie"] = "Connexion réussie",
+        ["connexion.verrouillage"] = "Compte bloqué", ["cours.archive"] = "Cours archivé", ["cours.attribue"] = "Cours attribué",
+        ["cours.cree"] = "Cours créé", ["cours.modifie"] = "Cours modifié", ["cours.reactive"] = "Cours réactivé", ["cours.retrait"] = "Attribution retirée",
+        ["depense.annulee"] = "Dépense annulée", ["depense.creee"] = "Dépense enregistrée",
+        ["discipline.annulation"] = "Décision annulée", ["discipline.csv"] = "Discipline exportée", ["discipline.decision"] = "Décision disciplinaire",
+        ["discipline.incident"] = "Incident signalé", ["discipline.reception"] = "Parent reçu",
+        ["etablissement.logo"] = "Logo changé", ["etablissement.modifie"] = "Établissement modifié",
+        ["evaluation.creee"] = "Évaluation créée", ["evaluation.modifiee"] = "Évaluation modifiée", ["import.scolia"] = "Classeur importé",
+        ["inscription.promotion"] = "Changement de promotion", ["inscription.statut"] = "Statut changé", ["notes.saisies"] = "Notes saisies",
+        ["paie.modifiee"] = "Paie modifiée", ["paie.payee"] = "Salaire payé", ["paie.preparee"] = "Paie préparée",
+        ["paiement.annule"] = "Reçu annulé", ["paiement.encaisse"] = "Encaissement", ["paiement.lot"] = "Encaissement en lot",
+        ["personnel.cree"] = "Membre ajouté", ["personnel.modifie"] = "Membre modifié",
+        ["pointage.annulation"] = "Pointage annulé", ["pointage.justification"] = "Absence justifiée", ["pointage.signature"] = "Pointage signé",
+        ["presences.jours"] = "Jours de cours", ["presences.saisies"] = "Appel enregistré",
+        ["priseencharge.creee"] = "Prise en charge créée", ["priseencharge.modifiee"] = "Prise en charge modifiée", ["priseencharge.terminee"] = "Prise en charge terminée",
+        ["promotion.creee"] = "Promotion créée", ["promotion.modifiee"] = "Promotion modifiée", ["promotion.supprimee"] = "Promotion supprimée",
+        ["recu.pdf"] = "Reçu imprimé", ["reinscription.lot"] = "Réinscriptions", ["releve.pdf"] = "Relevé imprimé",
+        ["sauvegarde.creee"] = "Sauvegarde faite", ["sauvegarde.nettoyage"] = "Anciennes sauvegardes retirées", ["sauvegarde.restauree"] = "Sauvegarde restaurée",
+        ["section.creee"] = "Section créée", ["section.modifiee"] = "Section modifiée",
+        ["utilisateur.cree"] = "Compte créé", ["utilisateur.modifie"] = "Compte modifié", ["utilisateur.motdepasse"] = "Mot de passe changé",
+    };
+
     public static string Method(string code) => code switch
     {
         "Especes" => "Espèces",
@@ -94,8 +126,9 @@ public static class Labels
     /// <summary>Tonalité d'un statut : vert pour le sain, orange pour l'attention, rouge pour l'échec.</summary>
     public static string Tone(string code) => code switch
     {
-        "Valide" or "Actif" or "Paye" or "Couvert" or "Open" => "green",
-        "Annule" or "Sorti" or "Grave" or "Impaye" => "red",
+        // Codes du serveur, et libellés déjà traduits (« Payé », « Pris en charge ») qu'envoient les comptes.
+        "Valide" or "Actif" or "Paye" or "Couvert" or "Open" or "Payé" or "Pris en charge" => "green",
+        "Annule" or "Sorti" or "Grave" or "Impaye" or "Impayé" or "Non payé" => "red",
         "Suspendu" or "Partiel" or "Moyen" or "Retard" or "Brouillon" => "orange",
         _ => "neutral",
     };

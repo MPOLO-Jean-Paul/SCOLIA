@@ -2,9 +2,12 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:c="using:Scolia.Bureau.Controls"
              xmlns:infra="using:Scolia.Bureau.Infrastructure"
+             xmlns:mi="using:Material.Icons.Avalonia"
              x:Class="Scolia.Bureau.Views.StudentsView">
   <Grid RowDefinitions="Auto,*">
     <Border Grid.Row="0" Classes="band" Margin="0,0,0,10">
+      <!-- Filtres à gauche, pagination à droite, comme l'Explorateur et Outlook -->
+      <Grid ColumnDefinitions="*,Auto" infra:Adaptive.StackBelow="640">
       <WrapPanel>
         <StackPanel Classes="field pagesearch">
           <TextBlock Text="Rechercher" Classes="fieldlabel" />
@@ -18,12 +21,24 @@
           <TextBlock Text="Statut" Classes="fieldlabel" />
           <ComboBox Width="190" ItemsSource="{Binding StatusChoices}" SelectedItem="{Binding Status}" />
         </StackPanel>
-        <Button Content="Effacer les filtres" Command="{Binding ClearFilters}" VerticalAlignment="Bottom" Margin="0,0,12,12"
-                ToolTip.Tip="Affiche à nouveau tous les apprenants, sans filtre" />
-        <Button Command="{Binding PreviousPage}" IsEnabled="{Binding CanPrevious}" Content="Précédent" VerticalAlignment="Bottom" Margin="0,0,12,12" />
-        <Button Command="{Binding NextPage}" IsEnabled="{Binding CanNext}" Content="Suivant" VerticalAlignment="Bottom" Margin="0,0,12,12" />
-        <TextBlock Text="{Binding PageText}" Classes="muted" VerticalAlignment="Bottom" Margin="0,0,12,20" />
+        <Button Classes="ghost" Command="{Binding ClearFilters}" VerticalAlignment="Bottom" Margin="0,0,12,12"
+                ToolTip.Tip="Affiche à nouveau tous les apprenants, sans filtre">
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <mi:MaterialIcon Kind="FilterRemoveOutline" Width="17" Height="17" />
+            <TextBlock Text="Effacer les filtres" VerticalAlignment="Center" />
+          </StackPanel>
+        </Button>
       </WrapPanel>
+      <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" VerticalAlignment="Bottom" Margin="0,0,0,12">
+        <TextBlock Text="{Binding PageText}" Classes="muted" VerticalAlignment="Center" Margin="0,0,8,0" />
+        <Button Classes="toolicon" Command="{Binding PreviousPage}" IsEnabled="{Binding CanPrevious}" ToolTip.Tip="Page précédente">
+          <mi:MaterialIcon Kind="ChevronLeft" Width="20" Height="20" />
+        </Button>
+        <Button Classes="toolicon" Command="{Binding NextPage}" IsEnabled="{Binding CanNext}" ToolTip.Tip="Page suivante">
+          <mi:MaterialIcon Kind="ChevronRight" Width="20" Height="20" />
+        </Button>
+      </StackPanel>
+      </Grid>
     </Border>
     <DataGrid Grid.Row="1" x:Name="StudentGrid" ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}"
               AutoGenerateColumns="False" IsReadOnly="True">

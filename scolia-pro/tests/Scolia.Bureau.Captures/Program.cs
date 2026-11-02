@@ -1122,7 +1122,7 @@ if (args.Length > 3 && args[3] == "recherches")
 
     // 4. Filtre d'une liste (Apprenants).
     Wait(shell.Open(() => new StudentsPage(shell)));
-    shell.HeaderSearch.ActivateOrClose();
+    shell.HeaderSearch.Open();
     shell.HeaderSearch.Query = "Kabeya";
     Pump(600);
     AllCheck("Liste : filtre en barre façon Google", SearchStyled(phoneMode ? "ContextSearchBox" : "DesktopContextSearchBox"));
@@ -1131,9 +1131,13 @@ if (args.Length > 3 && args[3] == "recherches")
     AllCheck("Liste : la voix remplit le filtre",
         Dictate(() => shell.HeaderSearch.Listen.ExecuteAsync(), () => shell.HeaderSearch.Query, "Mukendi", null) == "Mukendi");
     if (!phoneMode)
-        AllCheck("Ordinateur : champ de la page Apprenants en pilule, avec micro",
-            window.GetVisualDescendants().OfType<TextBox>().Any(t => t.IsEffectivelyVisible && t.Classes.Contains("search")
-                && t.PlaceholderText == "Rechercher un nom ou un matricule" && t.InnerRightContent is Button mic && mic.Classes.Contains("mic")));
+    {
+        // Une seule recherche par liste : le filtre du bandeau, ouvert d'office ; plus de second champ dans la page.
+        AllCheck("Ordinateur : filtre du bandeau ouvert d'office sur Apprenants", shell.HeaderSearch.IsOpen);
+        AllCheck("Ordinateur : pas de second champ de recherche dans la page",
+            !window.GetVisualDescendants().OfType<TextBox>().Any(t => t.IsEffectivelyVisible && t.Classes.Contains("search")
+                && t.PlaceholderText == "Rechercher un nom ou un matricule"));
+    }
     shell.HeaderSearch.Close.Execute(null);
 
     // 5. Catalogue « Info sur l'application ».

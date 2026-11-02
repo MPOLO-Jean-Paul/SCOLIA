@@ -577,7 +577,7 @@
             </Border>
           </StackPanel>
 
-        <Button Classes="link" Content="Rétablir les réglages d'origine de ce poste" Command="{Binding ResetPrefs}" IsVisible="{Binding IsPoste}" HorizontalAlignment="Left" />
+        <Button Classes="link" Content="Rétablir les réglages d'origine de ce poste" Command="{Binding ResetPrefs}" IsVisible="{Binding ShowResetLink}" HorizontalAlignment="Left" />
         </StackPanel>
       </StackPanel>
     </ScrollViewer>

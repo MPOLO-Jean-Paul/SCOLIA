@@ -101,7 +101,7 @@ public sealed class StaffAttendancePage : PageViewModel
             Bilan.Add(new StaffBilanRowVm(b.Name, b.Present.ToString(System.Globalization.CultureInfo.InvariantCulture), b.Late.ToString(System.Globalization.CultureInfo.InvariantCulture),
                 b.Absent.ToString(System.Globalization.CultureInfo.InvariantCulture), b.Justified.ToString(System.Globalization.CultureInfo.InvariantCulture),
                 b.Conversions.ToString(System.Globalization.CultureInfo.InvariantCulture), b.Deductible.ToString(System.Globalization.CultureInfo.InvariantCulture)));
-        subtitle = $"{Format.Count(Members.Count, "membre actif", "membres actifs")} · bilan du {Format.Date(from)} au {Format.Date(to)}";
+        subtitle = $"{Format.Count(Members.Count, "membre actif", "membres actifs")} · du {Format.Date(from)} au {Format.Date(to)}";
         Raise(nameof(Subtitle));
         Selected = null;
     }

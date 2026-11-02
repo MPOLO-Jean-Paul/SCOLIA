@@ -45,7 +45,7 @@ public sealed class DashboardPage : PageViewModel
 
     public DashboardPage(ShellViewModel shell) : base(shell)
     {
-        Action("Encaisser", MaterialIconKind.HandCoin, () => Shell.Open(() => new CashierPage(Shell)), primary: true);
+        Action("Encaisser", MaterialIconKind.HandCoinOutline, () => Shell.Open(() => new CashierPage(Shell)), primary: true);
         ActionRefresh();
     }
 
@@ -83,7 +83,7 @@ public sealed class DashboardPage : PageViewModel
     public override async Task LoadAsync()
     {
         var d = await Shell.Api.GetAsync<DashboardDto>("api/rapports/tableau-de-bord");
-        subtitle = $"{Capitalize(DateTime.Today.ToString("dddd d MMMM yyyy", Fr))} · année scolaire {d.AcademicYear}";
+        subtitle = $"Année {d.AcademicYear} · au {DateTime.Today.ToString("d MMMM", Fr)}";
         Raise(nameof(Subtitle));
 
         Kpis.Clear();

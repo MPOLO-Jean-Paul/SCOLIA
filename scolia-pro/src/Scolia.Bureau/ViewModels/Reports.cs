@@ -41,7 +41,7 @@ public sealed class ReportsPage : PageViewModel
     }
 
     public override string Title => "Rapports et exports";
-    public override string Subtitle => "Sans période choisie, les reçus et les dépenses sont pris depuis le début";
+    public override string Subtitle => "PDF et Excel, par période et promotion";
     public override MaterialIconKind Glyph => MaterialIconKind.FileChartOutline;
 
     public IReadOnlyList<ReportSectionVm> Sections { get; }

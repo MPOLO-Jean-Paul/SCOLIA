@@ -216,7 +216,7 @@
               </Button>
             </StackPanel>
           </Border>
-          <Grid x:Name="HeaderTitle" Grid.Column="2" ColumnDefinitions="Auto,*" VerticalAlignment="Center" MinWidth="140" MaxWidth="300">
+          <Grid x:Name="HeaderTitle" Grid.Column="2" ColumnDefinitions="Auto,*" VerticalAlignment="Center" MinWidth="140" MaxWidth="340">
             <Border Classes="appicon medium" Background="{Binding CurrentIconBrush}" Margin="0,0,10,0">
               <mi:MaterialIcon Kind="{Binding CurrentIcon}" />
             </Border>
@@ -237,12 +237,12 @@
             </Grid>
           </Button>
           <!-- Filtre ouvert : la barre de la recherche de l'accueil, façon Google, en pilule -->
-          <Border Grid.Column="3" Classes="googlebar pill" MaxWidth="440" MinWidth="180" Margin="18,0" VerticalAlignment="Center"
+          <Border Grid.Column="3" Classes="googlebar pill" MaxWidth="460" MinWidth="260" Margin="18,0" VerticalAlignment="Center"
                   IsVisible="{Binding HeaderSearch.IsOpen}">
             <Grid ColumnDefinitions="Auto,*,Auto,Auto">
-              <Button Classes="baricon" Command="{Binding HeaderSearch.Close}" ToolTip.Tip="Fermer le filtre de cette page (Échap)" Width="40" Height="40">
-                <mi:MaterialIcon Kind="ArrowLeft" />
-              </Button>
+              <!-- Filtre toujours ouvert sur une liste : une loupe fixe, Échap vide le texte -->
+              <mi:MaterialIcon Kind="Magnify" Width="19" Height="19" Margin="14,0,4,0" VerticalAlignment="Center"
+                               Foreground="{DynamicResource MutedBrush}" IsHitTestVisible="False" />
               <TextBox x:Name="DesktopContextSearchBox" Grid.Column="1" Classes="searchfield"
                        Text="{Binding HeaderSearch.Query, Mode=TwoWay}" PlaceholderText="{Binding HeaderSearch.Placeholder}"
                        KeyDown="OnDesktopContextSearchKeyDown" MinHeight="40" />
@@ -418,8 +418,9 @@
 
       <!-- Barre d'état : statut, serveur, zoom -->
       <Border x:Name="DesktopStatusBar" Grid.Row="2" Grid.ColumnSpan="2" Classes="statusbar" IsVisible="{Binding ShowStatusBar}">
-        <Grid ColumnDefinitions="*,2*,*,Auto">
-          <TextBlock Text="{Binding Status}" Classes="muted" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+        <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+          <TextBlock Text="{Binding Status}" Classes="muted" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" MaxWidth="460"
+                     Margin="0,0,16,0" ToolTip.Tip="{Binding Status}" />
           <!-- Direct : autres postes, activité qui vient d'avoir lieu ailleurs, ou travail hors ligne -->
           <Button Grid.Column="1" Classes="ghost" Padding="8,0" MinHeight="0" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Command="{Binding NetworkCommand}" ToolTip.Tip="Réseau et activité" Margin="0,0,16,0">
             <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="7">
@@ -432,15 +433,19 @@
               <TextBlock Grid.Column="2" Text="{Binding Sync.PeersText}" Classes="muted" IsVisible="{Binding Sync.HasPeers}" VerticalAlignment="Center" MaxWidth="100" TextTrimming="CharacterEllipsis" />
             </Grid>
           </Button>
-          <TextBlock x:Name="DesktopServerLine" Text="{Binding ServerLine}" Classes="muted" Grid.Column="2" VerticalAlignment="Center" Margin="0,0,20,0" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding ServerLine}" />
+          <TextBlock x:Name="DesktopServerLine" Text="{Binding ServerLine}" Classes="muted" Grid.Column="2" VerticalAlignment="Center" Margin="0,0,20,0" MaxWidth="320" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding ServerLine}" />
           <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="6">
             <!-- Bascule rapide du thème clair au thème sombre -->
             <Button Classes="ghost" Padding="6,0" MinHeight="0" Click="OnThemeToggle" ToolTip.Tip="Thème clair ou sombre" Margin="0,0,10,0">
               <mi:MaterialIcon x:Name="ThemeIcon" Kind="WeatherNight" Width="15" Height="15" />
             </Button>
-            <Button Classes="ghost" Padding="4,0" MinHeight="0" Click="OnZoomOut" Content="−" />
+            <Button Classes="ghost" Padding="4,2" MinHeight="0" Click="OnZoomOut" ToolTip.Tip="Réduire (Ctrl+-)">
+              <mi:MaterialIcon Kind="Minus" Width="15" Height="15" />
+            </Button>
             <TextBlock Text="{Binding Prefs.ZoomLabel}" Classes="muted" VerticalAlignment="Center" MinWidth="48" TextAlignment="Center" />
-            <Button Classes="ghost" Padding="4,0" MinHeight="0" Click="OnZoomIn" Content="+" />
+            <Button Classes="ghost" Padding="4,2" MinHeight="0" Click="OnZoomIn" ToolTip.Tip="Agrandir (Ctrl++)">
+              <mi:MaterialIcon Kind="Plus" Width="15" Height="15" />
+            </Button>
           </StackPanel>
         </Grid>
       </Border>

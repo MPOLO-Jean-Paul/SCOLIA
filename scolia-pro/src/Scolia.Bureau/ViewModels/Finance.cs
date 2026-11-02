@@ -33,7 +33,7 @@ public sealed class DebtorsPage : PageViewModel
         ActionRefresh();
         MenuAction("Aperçu rapide", MaterialIconKind.EyeOutline, () => WithSelected(id => QuickView.StudentAsync(Shell, id)));
         MenuAction("Ouvrir la fiche", MaterialIconKind.AccountOutline, () => WithSelected(id => Shell.Open(() => new StudentDetailPage(Shell, id))), open: true);
-        if (Shell.Can(Perm.PaymentsCreate)) MenuAction("Encaisser", MaterialIconKind.HandCoin, () => WithSelected(id => Shell.Open(() => new CashierPage(Shell, id))));
+        if (Shell.Can(Perm.PaymentsCreate)) MenuAction("Encaisser", MaterialIconKind.HandCoinOutline, () => WithSelected(id => Shell.Open(() => new CashierPage(Shell, id))));
     }
 
     private Task WithSelected(Func<Guid, Task> work)
@@ -92,7 +92,7 @@ public sealed class DebtorsPage : PageViewModel
         CollectionSync.Apply(Items, rows.Select(d => new DebtorRowVm(d.StudentId, d.Matricule, d.FullName, d.PromotionCode, Money(d.Balance), Money(d.Overdue),
                 $"{d.OverdueCount}", d.Periods, d.AgingBucket, d.GuardianName ?? "—", d.GuardianPhone ?? "—", d.WhatsAppLink, d.SmsLink)));
 
-        subtitle = $"{Format.Count(rows.Count, "dossier en retard", "dossiers en retard")} · reste exigible {Money(rows.Sum(r => r.Overdue))}";
+        subtitle = $"{Format.Count(rows.Count, "en retard", "en retard")} · {Money(rows.Sum(r => r.Overdue))} exigibles";
         Raise(nameof(Subtitle));
     }
 
@@ -280,7 +280,7 @@ public sealed class ExpensesPage : PageViewModel
     public ExpensesPage(ShellViewModel shell) : base(shell)
     {
         if (Shell.Can(Perm.ExpensesWrite)) Action("Nouvelle dépense", MaterialIconKind.CashMinus, () => NewExpenseAsync(Shell), primary: true);
-        if (Shell.Can(Perm.ExpensesWrite)) Action("Annuler la dépense", MaterialIconKind.Cancel, CancelSelectedAsync, row: true);
+        if (Shell.Can(Perm.ExpensesWrite)) Action("Annuler la dépense", MaterialIconKind.CloseCircleOutline, CancelSelectedAsync, row: true);
         ActionRefresh();
     }
 

@@ -44,7 +44,7 @@ public sealed class GradesPage : PageViewModel
             Action("Nouveau cours", MaterialIconKind.FileDocumentPlusOutline, () => NewCourseAsync(Shell, Promotion is { } p ? Guid.Parse(p.Value) : (Guid?)null));
             Action("Attributions et charges", MaterialIconKind.AccountSchoolOutline, () => Shell.Open(() => new TeachingPage(Shell)));
             Action("Nouvelle évaluation", MaterialIconKind.ClipboardPlusOutline, () => NewAssessmentAsync(Shell, Course?.Id));
-            Action("Enregistrer les notes", MaterialIconKind.ContentSave, SaveGradesAsync, primary: true);
+            Action("Enregistrer les notes", MaterialIconKind.ContentSaveOutline, SaveGradesAsync, primary: true);
         }
         Action("Résultats", MaterialIconKind.CertificateOutline, () => Shell.Open(() => new ResultsPage(Shell)));
         Action("Cartes d'accès", MaterialIconKind.CardAccountDetailsOutline, () => Shell.Open(() => new CardsPage(Shell)));
@@ -358,7 +358,7 @@ public sealed class AttendancePage : PageViewModel
         if (Shell.Can(Perm.AcademicsWrite))
         {
             Action("Tous présents", MaterialIconKind.AccountCheckOutline, MarkAllPresentAsync);
-            Action("Enregistrer l'appel", MaterialIconKind.ContentSave, SaveAsync, primary: true);
+            Action("Enregistrer l'appel", MaterialIconKind.ContentSaveOutline, SaveAsync, primary: true);
             Action("Confirmer le jour de cours", MaterialIconKind.CalendarCheckOutline, () => ConfirmDayAsync(true));
             Action("Retirer la confirmation", MaterialIconKind.CalendarRemoveOutline, () => ConfirmDayAsync(false));
         }
@@ -430,9 +430,10 @@ public sealed class AttendancePage : PageViewModel
             var dayState = sheet.CourseDay ? "jour de cours" : "jour non confirmé";
             // Le code de la promotion suffit : le sous-titre tient aussi sur l'écran du téléphone.
             var code = Promotion.Label.Split(" · ")[0];
+            // La date est déjà dans le champ Date : le sous-titre dit l'essentiel, sans être coupé.
             subtitle = taken
-                ? $"Appel du {Format.Date(date)} · {code} · {Format.Count(absent, "absent", "absents")} · {dayState}"
-                : $"Appel du {Format.Date(date)} · {code} · pas encore fait";
+                ? $"{code} · {Format.Count(absent, "absent", "absents")} · {dayState}"
+                : $"{code} · appel pas encore fait";
             CallPending = !taken && Rows.Count > 0;
         }
         Raise(nameof(Subtitle));
@@ -520,9 +521,9 @@ public sealed class DisciplinePage : PageViewModel
             Action("Nouvelle décision", MaterialIconKind.Gavel, () => NewDecisionAsync(Shell), primary: true);
             Action("Parent reçu ou absent", MaterialIconKind.AccountCheckOutline, ReceptionAsync, row: true);
         }
-        Action("Convocation à imprimer", MaterialIconKind.Printer, PrintConvocationAsync, row: true);
+        Action("Convocation à imprimer", MaterialIconKind.PrinterOutline, PrintConvocationAsync, row: true);
         Action("Historique de l'apprenant", MaterialIconKind.History, ShowHistoryAsync, row: true);
-        if (Shell.Can(Perm.DisciplineCancel)) Action("Annuler la décision", MaterialIconKind.Cancel, CancelAsync, row: true);
+        if (Shell.Can(Perm.DisciplineCancel)) Action("Annuler la décision", MaterialIconKind.CloseCircleOutline, CancelAsync, row: true);
         Action("Exporter en CSV", MaterialIconKind.FileExportOutline, ExportAsync);
         ActionRefresh();
     }

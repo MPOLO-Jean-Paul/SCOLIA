@@ -236,7 +236,8 @@ public static class Adaptive
         dialog.MinWidth = Math.Min(state.MinWidth, room);
         dialog.MaxWidth = Math.Min(state.MaxWidth, room);
         // En hauteur aussi : une fiche plus haute que la fenêtre défile au lieu d'être coupée.
-        if (host.Height > 0)
+        // Une fiche posée dans une page (Paramètres) suit le défilement de la page : pas de seconde barre.
+        if (host.Height > 0 && !dialog.Classes.Contains("embedded"))
         {
             var height = Math.Max(0, host.Height - Math.Max(48, verticalMargin));
             dialog.MinHeight = Math.Min(state.MinHeight, height);

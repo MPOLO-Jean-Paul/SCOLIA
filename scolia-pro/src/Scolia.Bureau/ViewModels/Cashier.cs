@@ -111,7 +111,7 @@ public sealed class CashierPage : PageViewModel
     }
 
     public override string Title => "Encaisser";
-    public override string Subtitle => Phone ? "Mois payés · reçu" : "Choisissez les mois payés, puis le mode de paiement";
+    public override string Subtitle => Phone ? "Mois payés · reçu" : "Mois payés, mode, reçu";
     public override MaterialIconKind Glyph => MaterialIconKind.HandCoin;
 
     public AsyncCommand Pay { get; }
@@ -393,7 +393,8 @@ public sealed class CashierPage : PageViewModel
         Overdue = Money(account.Overdue);
         OverdueBrush = ThemeBrush.Get(account.Overdue > 0 ? "ToneRed" : "ToneGreen");
         Raise(nameof(OverdueBrush));
-        Hint = Months.Count == 0 ? MonthListStatus :
+        // Aucun mois : l'encadré « Mois de paiement indisponibles » le dit déjà, avec les boutons pour y remédier.
+        Hint = Months.Count == 0 ? null :
             pending.Count > 0 ? $"{pending.Count} mois déjà encaissé(s) sur cet appareil, en attente d'envoi à l'ordinateur principal." : null;
         Raise(nameof(HasStudent));
         Raise(nameof(ShowPayment));
@@ -618,12 +619,12 @@ public sealed class ReceiptsPage : PageViewModel
 
     public ReceiptsPage(ShellViewModel shell) : base(shell)
     {
-        if (Shell.Can(Perm.PaymentsCreate)) Action("Encaisser", MaterialIconKind.HandCoin, () => Shell.Open(() => new CashierPage(Shell)), primary: true);
+        if (Shell.Can(Perm.PaymentsCreate)) Action("Encaisser", MaterialIconKind.HandCoinOutline, () => Shell.Open(() => new CashierPage(Shell)), primary: true);
         Action("Ouvrir le reçu", MaterialIconKind.ReceiptTextOutline, OpenSelectedAsync, open: true);
         Action("Excel", MaterialIconKind.FileExcelOutline, () => ExportAsync("xlsx"));
         Action("PDF", MaterialIconKind.FilePdfBox, () => ExportAsync("pdf"));
         ActionRefresh();
-        MenuAction("Imprimer le reçu", MaterialIconKind.Printer, () =>
+        MenuAction("Imprimer le reçu", MaterialIconKind.PrinterOutline, () =>
         {
             if (Selected is { } r) return Shell.Download($"api/paiements/{r.Id}/recu.pdf", $"recu-{r.Number}.pdf");
             Shell.Notify("Sélectionnez un reçu dans la liste.");
@@ -679,8 +680,9 @@ public sealed class ReceiptsPage : PageViewModel
         CollectionSync.Apply(Items, page.Items.Select(r => new ReceiptRowVm(r.Id, r.Number, Format.Date(r.Date), r.Matricule, r.StudentName, r.PromotionCode, Money(r.Amount),
                 Labels.Method(r.Method), Labels.Status(r.Status), ThemeBrush.Get(r.Status == "Valide" ? "ToneGreen" : "ToneRed"), r.Cashier)));
 
-        var sum = page.Sum is { } s ? $" · total {Money(s)}" : string.Empty;
-        subtitle = $"{Format.Count(page.Total, "reçu", "reçus")}{sum}" + (page.Total > PageSize ? $" · {PageSize} plus récents affichés" : string.Empty);
+        var sum = page.Sum is { } s ? $" · {Money(s)}" : string.Empty;
+        // Court, pour tenir dans le bandeau : le nombre, le total, et combien sont affichés quand la liste est longue.
+        subtitle = $"{Format.Count(page.Total, "reçu", "reçus")}{sum}" + (page.Total > PageSize ? $" · {PageSize} affichés" : string.Empty);
         Raise(nameof(Subtitle));
     }
 
@@ -719,8 +721,8 @@ public sealed class ReceiptDetailPage : PageViewModel
     public ReceiptDetailPage(ShellViewModel shell, Guid receiptId) : base(shell)
     {
         this.receiptId = receiptId;
-        if (Shell.Can(Perm.PaymentsCancel)) Action("Annuler le reçu", MaterialIconKind.Cancel, CancelAsync);
-        Action("Imprimer", MaterialIconKind.Printer, PrintAsync, primary: true);
+        if (Shell.Can(Perm.PaymentsCancel)) Action("Annuler le reçu", MaterialIconKind.CloseCircleOutline, CancelAsync);
+        Action("Imprimer", MaterialIconKind.PrinterOutline, PrintAsync, primary: true);
         ActionRefresh();
     }
 

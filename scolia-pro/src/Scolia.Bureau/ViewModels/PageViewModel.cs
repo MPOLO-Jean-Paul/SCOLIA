@@ -64,8 +64,8 @@ public abstract class PageViewModel : Observable
     /// <summary>Barre d'action fixe de l'écran, ou rien.</summary>
     public StickyBarVm? Sticky { get; protected init; }
 
-    /// <summary>Boutons visibles au plus dans l'en-tête : au-delà, les actions passent dans le menu « Plus ».</summary>
-    private const int MaxVisible = 3;
+    /// <summary>Boutons visibles au plus dans l'en-tête : l'action principale et une autre, le reste dans « Plus ».</summary>
+    private const int MaxVisible = 2;
     /// <summary>Nombre de boutons fixé par la largeur de la fenêtre ; -1 tant qu'elle ne l'a pas mesuré.</summary>
     private int visibleCount = -1;
     private bool busy;
@@ -98,7 +98,8 @@ public abstract class PageViewModel : Observable
     public bool HasMoreActions => Shown < HeaderActions.Count;
 
     /// <summary>Actions de l'en-tête : toutes, sauf celles réservées au clic droit sur une ligne.</summary>
-    public IReadOnlyList<ActionVm> HeaderActions => Actions.Where(a => !a.MenuOnly).ToList();
+    /// <remarks>L'action principale vient toujours en tête : en fenêtre étroite, c'est elle qui reste visible.</remarks>
+    public IReadOnlyList<ActionVm> HeaderActions => Actions.Where(a => !a.MenuOnly).OrderByDescending(a => a.IsPrimary).ToList();
     public bool HasHeaderActions => Actions.Any(a => !a.MenuOnly);
 
     /// <summary>Nombre de boutons affichés : la place mesurée, ou par défaut trois boutons et le menu pour les autres.</summary>

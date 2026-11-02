@@ -97,7 +97,7 @@
     </Border>
 
     <!-- Actions rapides -->
-    <ItemsControl ItemsSource="{Binding Tools}">
+    <ItemsControl ItemsSource="{Binding PhoneTools}">
       <ItemsControl.ItemsPanel>
         <ItemsPanelTemplate><UniformGrid Columns="4" /></ItemsPanelTemplate>
       </ItemsControl.ItemsPanel>

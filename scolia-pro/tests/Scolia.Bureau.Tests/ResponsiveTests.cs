@@ -15,8 +15,9 @@ public class ResponsiveTests
     {
         var page = new DataPage(NewShell());
         var total = page.Actions.Count;
-        Assert.Equal(3, page.VisibleActions.Count);
-        Assert.Equal(total - 3, page.MoreActions.Count);
+        // Un en-tête sobre : l'action principale et une autre, le reste dans « … ».
+        Assert.Equal(2, page.VisibleActions.Count);
+        Assert.Equal(total - 2, page.MoreActions.Count);
 
         // Fenêtre étroite : un seul bouton à côté du titre, les autres dans « … ».
         page.FitActions(1);

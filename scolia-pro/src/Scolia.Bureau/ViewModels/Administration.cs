@@ -414,7 +414,7 @@ public sealed class SettingsPage : PageViewModel
     public string SystemThemeLabel => Platform.IsMobile ? "Selon l'appareil" : "Selon Windows";
     public string FontHint => Platform.IsMobile
         ? "Toutes les polices sont fournies avec SCOLIA."
-        : "Inter, Carlito, Liberation et DejaVu sont fournies avec SCOLIA. Les autres viennent de Windows quand elles y sont installées.";
+        : "Celles de Windows, ou celles fournies avec SCOLIA.";
     public string VolumeHint => Platform.IsMobile ? "Sans effet sur le volume du téléphone." : "Sans effet sur le volume de Windows.";
     public string SoundStyleHint => Platform.IsMobile ? "Doux ou clochette : deux jeux de sons de SCOLIA." : "Doux et clochette sont des sons de SCOLIA ; ou les sons habituels de Windows.";
 
@@ -513,7 +513,7 @@ public sealed class SettingsPage : PageViewModel
         {
             if (!Set(ref section, value)) return;
             foreach (var name in new[] { nameof(IsSchool), nameof(IsYears), nameof(IsSections), nameof(IsPromotions), nameof(IsAppearance), nameof(IsText),
-                         nameof(IsWindows), nameof(IsAnimations), nameof(IsSounds), nameof(IsSecurity), nameof(IsPoste), nameof(SchoolSection), nameof(PosteSection), nameof(SectionTitle), nameof(SectionHint) })
+                         nameof(IsWindows), nameof(IsAnimations), nameof(IsSounds), nameof(IsSecurity), nameof(IsPoste), nameof(ShowResetLink), nameof(SchoolSection), nameof(PosteSection), nameof(SectionTitle), nameof(SectionHint) })
                 Raise(name);
             RebuildActions();
             if (value is not null) _ = Shell.Run(RefreshAsync);
@@ -541,20 +541,22 @@ public sealed class SettingsPage : PageViewModel
     public bool IsSounds => section?.Value == "sons";
     public bool IsSecurity => section?.Value == "securite";
     public bool IsPoste => PosteSections.Contains(section!);
+    /// <summary>Lien « Rétablir » en bas de page sur le téléphone ; sur l'ordinateur, le bouton de l'en-tête suffit.</summary>
+    public bool ShowResetLink => IsPoste && Platform.IsMobile;
     public string SectionTitle => section?.Label ?? string.Empty;
 
     /// <summary>Phrase d'explication sous le titre de chaque rubrique.</summary>
     public string SectionHint => section?.Value switch
     {
-        "etablissement" => "Identité, coordonnées, monnaie et en-tête des cartes d'accès. Ces informations figurent sur les reçus et les documents.",
+        "etablissement" => "Ce qui figure sur les reçus, les listes et les cartes d'accès.",
         "annees" => "Les années scolaires, leurs mois de paiement et l'année courante.",
         "sections" => "Les filières de l'établissement, qui regroupent les promotions.",
         "promotions" => "Les classes, leur code de 4 caractères, leur mensualité et leurs frais.",
         "apparence" => Platform.IsMobile ? "Clair, sombre ou selon l'appareil, et la couleur des boutons et des sélections." : "Clair, sombre ou selon Windows, et la couleur des boutons et des sélections.",
         "texte" => "La police et la taille du texte de toute l'interface.",
-        "fenetres" => "La taille de la fenêtre au lancement et les éléments affichés autour des pages.",
-        "animations" => "Les mouvements de l'interface : fondus, transitions entre pages et écran d'ouverture.",
-        "sons" => "Un son discret quand une action réussit ou échoue, et les bannières des encaissements et sauvegardes faits sur les autres postes.",
+        "fenetres" => "La fenêtre au lancement et ce qui entoure les pages.",
+        "animations" => "Fondus, transitions entre pages et écran d'ouverture.",
+        "sons" => "Un son discret à chaque action, et les bannières des autres postes.",
         "securite" => "Mot de passe du compte et connexion biométrique de cet appareil.",
         _ => string.Empty,
     };
@@ -580,7 +582,7 @@ public sealed class SettingsPage : PageViewModel
     {
         if (IsPoste)
         {
-            subtitle = "Réglages de ce poste, enregistrés automatiquement";
+            subtitle = "Réglages de ce poste";
             Raise(nameof(Subtitle));
             RaisePrefs();
             return;

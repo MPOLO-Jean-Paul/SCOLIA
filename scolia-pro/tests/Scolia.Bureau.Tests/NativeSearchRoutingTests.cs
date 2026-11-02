@@ -108,7 +108,8 @@ public sealed class NativeSearchRoutingTests
         shell.HeaderSearch.Query = "KABUYA";
         var students = Assert.IsType<StudentsPage>(shell.Current);
         await shell.Open(() => new ReceiptsPage(shell));
-        Assert.False(shell.HeaderSearch.IsOpen);
+        // Ordinateur : le filtre du nouveau métier est ouvert d'office, mais vide.
+        Assert.True(shell.HeaderSearch.IsOpen);
         Assert.Equal(string.Empty, shell.HeaderSearch.Query);
         Assert.Equal("KABUYA", students.Search);
     }

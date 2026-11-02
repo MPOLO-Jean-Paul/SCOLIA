@@ -137,7 +137,7 @@
           <TextBlock Text="Outils" Classes="heading" VerticalAlignment="Center" />
           <Button Grid.Column="1" Classes="link" Content="Afficher tous les outils" Command="{Binding ShowAllTools}" />
         </Grid>
-        <ItemsControl ItemsSource="{Binding Tools}" Margin="0,0,-12,0">
+        <ItemsControl ItemsSource="{Binding MoreTools}" Margin="0,0,-12,0">
           <ItemsControl.ItemsPanel>
             <ItemsPanelTemplate><UniformGrid Columns="4" infra:Adaptive.MinItemWidth="190" /></ItemsPanelTemplate>
           </ItemsControl.ItemsPanel>
@@ -146,10 +146,8 @@
               <Button Classes="tooltile" Command="{Binding Open}" Margin="0,0,12,0" ToolTip.Tip="{Binding Description}">
                 <Grid ColumnDefinitions="Auto,*,Auto">
                   <Border Classes="appicon medium" Background="{Binding Brush}" VerticalAlignment="Center" Margin="0,0,12,0"><mi:MaterialIcon Kind="{Binding Icon}" /></Border>
-                  <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="1">
-                    <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
-                    <TextBlock Text="{Binding Description}" Classes="muted" FontSize="{DynamicResource FsSmall}" TextTrimming="CharacterEllipsis" />
-                  </StackPanel>
+                  <!-- Un titre net ; l'explication reste dans l'info-bulle, au survol -->
+                  <TextBlock Grid.Column="1" Text="{Binding Title}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
                   <mi:MaterialIcon Grid.Column="2" Kind="ChevronRight" Width="16" Height="16" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" Margin="6,0,0,0" />
                 </Grid>
               </Button>

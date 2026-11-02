@@ -240,6 +240,26 @@ rapport journalier envoyé automatiquement, audit complet et catalogue du foncti
 - Sur la machine propre de la compilation en ligne, les mêmes contrôles passent : étapes « Interfaces natives mobiles » et « Thème sombre natif » réussies.
 - Les durées mesurées ici ne sont donc pas comparées entre elles : seules les améliorations déjà mesurées au calme (Pointage, listes par paquets) sont retenues.
 
+### Windows haut de gamme, écran par écran
+
+Revue des 58 écrans de l'ordinateur en 1366 × 768, comme un portable courant.
+
+| Écran | Avant | Après |
+|---|---|---|
+| Listes (Apprenants, Reçus, Dépenses, Suivi mensuel…) | Deux recherches : celle de la page et celle du bandeau | Une seule : le filtre du bandeau, ouvert d'office, loupe fixe ; Échap le vide |
+| Bandeau du haut | Trois boutons et « … », texte de recherche coupé | L'action principale et une autre, le reste dans « … » ; champ de recherche plus large |
+| Tableaux | Titres de colonne décalés par rapport aux cellules | Titres alignés sur le texte des cellules |
+| Apprenants | « Précédent », « Suivant » au milieu des filtres | Pagination compacte à droite, en flèches ; « Effacer les filtres » discret |
+| Accueil | « Encaisser » et « Inscrire » en double, rôle répété sous le salut | Le bandeau garde ces deux actions, la grille propose les quatre suivantes ; nom complet de l'établissement |
+| Encaisser | Même message trois fois, total répété dans la page | Un seul encadré avec ses deux boutons ; le total reste dans la barre du bas ; champs alignés |
+| Fiche apprenant | « Payé » en gris | « Payé » et « Pris en charge » en vert, « Impayé » en rouge |
+| Journal d'audit | Codes bruts : « connexion.reussie » | Libellés : « Connexion réussie », « Encaissement »… |
+| Texte et polices | Liste des polices vide | La police choisie s'affiche ; explication courte |
+| Paramètres du poste | « Rétablir » en haut et en bas | Une fois, dans le bandeau |
+| Sauvegardes, Tableau de bord, Rapports, Pointage, Caisse | Sous-titres longs, coupés | Sous-titres courts |
+| Barre d'état | Nom de l'établissement coupé, zoom en « − » et « + » texte | Nom entier, icônes de zoom avec info-bulle |
+| Icônes des boutons | Pleines et contour mélangées | Contour partout dans les boutons : annuler, imprimer, enregistrer, encaisser, importer, télécharger |
+
 ## 4. Limites à connaître
 
 | Sujet | Limite | Solution proposée |

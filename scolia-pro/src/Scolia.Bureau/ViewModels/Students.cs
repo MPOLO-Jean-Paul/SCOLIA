@@ -32,10 +32,10 @@ public sealed class StudentsPage : PageViewModel
     {
         if (Shell.Can(Perm.StudentsWrite)) Action("Nouvelle inscription", MaterialIconKind.AccountPlusOutline, () => StudentForms.CreateAsync(Shell), primary: true);
         Action("Ouvrir la fiche", MaterialIconKind.AccountOutline, OpenSelectedAsync, open: true);
-        if (Shell.Can(Perm.ReportsRead)) Action("Suivi par mois", MaterialIconKind.CalendarCheck, () => Shell.Open(() => new MonthlyPage(Shell)));
+        if (Shell.Can(Perm.ReportsRead)) Action("Suivi par mois", MaterialIconKind.CalendarCheckOutline, () => Shell.Open(() => new MonthlyPage(Shell)));
         ActionRefresh();
         MenuAction("Aperçu rapide", MaterialIconKind.EyeOutline, () => WithSelected(id => QuickView.StudentAsync(Shell, id)));
-        if (Shell.Can(Perm.PaymentsCreate)) MenuAction("Encaisser", MaterialIconKind.HandCoin, () => WithSelected(id => Shell.Open(() => new CashierPage(Shell, id))));
+        if (Shell.Can(Perm.PaymentsCreate)) MenuAction("Encaisser", MaterialIconKind.HandCoinOutline, () => WithSelected(id => Shell.Open(() => new CashierPage(Shell, id))));
         if (Shell.Can(Perm.StudentsWrite)) MenuAction("Renommer", MaterialIconKind.RenameOutline, () => WithSelected(async id =>
         {
             if (await StudentForms.RenameAsync(Shell, id)) await RefreshAsync();
@@ -211,7 +211,7 @@ public sealed class StudentDetailPage : PageViewModel
     {
         this.studentId = studentId;
         EndSponsorship = new AsyncCommand(() => Shell.Run(EndSelectedSponsorshipAsync));
-        if (Shell.Can(Perm.PaymentsCreate)) Action("Encaisser", MaterialIconKind.HandCoin, () => Shell.Open(() => new CashierPage(Shell, studentId)), primary: true);
+        if (Shell.Can(Perm.PaymentsCreate)) Action("Encaisser", MaterialIconKind.HandCoinOutline, () => Shell.Open(() => new CashierPage(Shell, studentId)), primary: true);
         if (Shell.Can(Perm.StudentsWrite)) Action("Modifier", MaterialIconKind.PencilOutline, EditAsync);
         if (Shell.Can(Perm.StudentsWrite)) Action("Renommer", MaterialIconKind.RenameOutline, RenameAsync);
         if (Shell.Can(Perm.PaymentsRead)) Action("Relevé de compte", MaterialIconKind.FileDocumentOutline, StatementAsync);

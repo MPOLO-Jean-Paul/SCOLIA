@@ -62,9 +62,12 @@ public sealed class Preferences : Observable
     ];
 
     /// <summary>Polices proposées sur cet appareil.</summary>
-    public static IReadOnlyList<ChoiceItem> Fonts => FontTable
-        .Where(f => !Platform.IsMobile || f.OnPhone)
-        .Select(f => new ChoiceItem(f.Key, Platform.IsMobile ? f.Mobile : f.Desktop)).ToList();
+    /// <remarks>La même liste est rendue à chaque lecture : une liste déroulante qui la relit garde ainsi sa sélection.</remarks>
+    public static IReadOnlyList<ChoiceItem> Fonts => Platform.IsMobile ? (mobileFonts ??= FontsFor(true)) : (desktopFonts ??= FontsFor(false));
+    private static IReadOnlyList<ChoiceItem>? mobileFonts, desktopFonts;
+    private static List<ChoiceItem> FontsFor(bool mobile) => FontTable
+        .Where(f => !mobile || f.OnPhone)
+        .Select(f => new ChoiceItem(f.Key, mobile ? f.Mobile : f.Desktop)).ToList();
 
     /// <summary>Famille de caractères d'une police, pour l'appliquer ou la montrer dans un aperçu.</summary>
     public static FontFamily FamilyOf(string key) => new(FontTable.FirstOrDefault(f => f.Key == key).Family ?? $"{Bundled}Inter");

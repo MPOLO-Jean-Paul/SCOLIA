@@ -1,12 +1,15 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:c="using:Scolia.Bureau.Controls"
+             xmlns:mi="using:Material.Icons.Avalonia"
              x:Class="Scolia.Bureau.Views.DataView">
   <Grid RowDefinitions="Auto,*">
-    <Border Grid.Row="0" Classes="card" Margin="0,0,0,12">
-      <TextBlock TextWrapping="Wrap"
-                 Text="Les sauvegardes sont créées chaque jour et avant chaque migration. Restaurer une sauvegarde remplace la base : une copie de la base actuelle est conservée avant." />
-    </Border>
+    <!-- Une ligne discrète au lieu d'un paragraphe : l'essentiel, sans encombrer la liste -->
+    <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="8" Margin="2,0,0,10">
+      <mi:MaterialIcon Kind="ShieldCheckOutline" Width="16" Height="16" Foreground="{DynamicResource ToneGreen}" VerticalAlignment="Center" />
+      <TextBlock Classes="muted" VerticalAlignment="Center" TextWrapping="Wrap"
+                 Text="Sauvegarde automatique chaque jour. Une restauration garde d'abord une copie de la base actuelle." />
+    </StackPanel>
     <DataGrid Grid.Row="1" ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}" AutoGenerateColumns="False" IsReadOnly="True">
       <DataGrid.Columns>
         <DataGridTextColumn Header="Fichier" Binding="{Binding Name}" Width="*" MinWidth="140" />

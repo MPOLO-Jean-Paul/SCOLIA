@@ -739,7 +739,8 @@
     <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
     <Setter Property="FontSize" Value="{DynamicResource FsSmall}" />
     <Setter Property="FontWeight" Value="SemiBold" />
-    <Setter Property="Padding" Value="8,4" />
+    <!-- Le titre de colonne commence au même endroit que le texte des cellules -->
+    <Setter Property="Padding" Value="22,4,8,4" />
     <Setter Property="MinWidth" Value="0" />
   </Style>
   <Style Selector="DataGridColumnHeader TextBlock">

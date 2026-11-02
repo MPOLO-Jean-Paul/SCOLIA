@@ -51,7 +51,20 @@ public sealed class HomePage : PageViewModel
     public string Greeting => $"{(DateTime.Now.Hour >= 18 ? "Bonsoir" : "Bonjour")}, {Shell.AccountName}";
     public string DateLine => Format.LongDate(DateOnly.FromDateTime(DateTime.Today));
     public string SchoolLine => Shell.SchoolLine;
-    public string AccountContextLine => $"{Shell.Session?.RoleLabel ?? "Compte"} · {Shell.SchoolHeaderTitle}";
+    /// <summary>
+    /// Sous le salut : le nom complet de l'établissement ; le rôle seulement s'il ne répète pas le nom du compte
+    /// (« Bonjour, Secrétariat » n'a pas besoin de « Secrétariat » une seconde fois).
+    /// </summary>
+    public string AccountContextLine
+    {
+        get
+        {
+            var school = Shell.SchoolLine.Split(" · ")[0] is { Length: > 0 } full ? full : Shell.SchoolHeaderTitle;
+            var role = Shell.Session?.RoleLabel;
+            return string.IsNullOrWhiteSpace(role) || string.Equals(role, Shell.AccountName, StringComparison.OrdinalIgnoreCase)
+                ? school : $"{role} · {school}";
+        }
+    }
     public string HeaderSchoolLine => $"{Shell.SchoolHeaderTitle}{(string.IsNullOrWhiteSpace(Shell.SchoolYearLine) ? string.Empty : $" · {Shell.SchoolYearLine}")}";
     /// <summary>Mobile : l'accueil montre l'état de la connexion et l'activité des autres postes.</summary>
     public SyncCenter Sync => Shell.Sync;
@@ -70,6 +83,10 @@ public sealed class HomePage : PageViewModel
 
     /// <summary>Les deux premiers outils, en boutons dans le bandeau de bienvenue : l'action du jour d'un clic.</summary>
     public IReadOnlyList<ToolCardVm> QuickActions => Tools.Take(2).ToList();
+    /// <summary>Ordinateur : les outils suivants, sans redire les deux actions déjà dans le bandeau.</summary>
+    public IReadOnlyList<ToolCardVm> MoreTools => Tools.Skip(2).Take(4).ToList();
+    /// <summary>Téléphone : les quatre premiers outils, en grille.</summary>
+    public IReadOnlyList<ToolCardVm> PhoneTools => Tools.Take(4).ToList();
     public string TodayLine { get => todayLine; private set { if (Set(ref todayLine, value)) Raise(nameof(HasTodayLine)); } }
     public bool HasTodayLine => todayLine.Length > 0;
 
@@ -189,6 +206,6 @@ public sealed class HomePage : PageViewModel
             () => Shell.Open(() => new DashboardPage(Shell)), "Indicateurs");
         Add(Perm.StudentsRead, "Apprenants", "Rechercher un dossier et ouvrir sa fiche.", MaterialIconKind.AccountGroup, "ToneBlue",
             () => Shell.Open(() => new StudentsPage(Shell)));
-        while (Tools.Count > 4) Tools.RemoveAt(Tools.Count - 1);
+        while (Tools.Count > 6) Tools.RemoveAt(Tools.Count - 1);
     }
 }

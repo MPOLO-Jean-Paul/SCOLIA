@@ -23,9 +23,9 @@ public sealed class DataPage : PageViewModel
     public DataPage(ShellViewModel shell) : base(shell)
     {
         Action("Sauvegarder", MaterialIconKind.ContentSaveOutline, () => BackupNowAsync(Shell), primary: true);
-        Action("Télécharger", MaterialIconKind.Download, DownloadAsync, row: true);
+        Action("Télécharger", MaterialIconKind.TrayArrowDown, DownloadAsync, row: true);
         Action("Restaurer", MaterialIconKind.BackupRestore, RestoreAsync, row: true);
-        Action("Importation du classeur", MaterialIconKind.Upload, () => ImportAsync(Shell));
+        Action("Importation du classeur", MaterialIconKind.TrayArrowUp, () => ImportAsync(Shell));
         Action("Modèle d'import", MaterialIconKind.FileExcelOutline, () => TemplateAsync(Shell));
         Action("Vérifier la base", MaterialIconKind.DatabaseCheckOutline, () => CheckDatabaseAsync(Shell));
         if (Shell.Can(Perm.BackupManage))
@@ -49,7 +49,7 @@ public sealed class DataPage : PageViewModel
         Items.Clear();
         foreach (var b in backups.OrderByDescending(b => b.CreatedUtc))
             Items.Add(new BackupRowVm(b.Name, Format.DateTime(b.CreatedUtc), Size(b.SizeBytes), b));
-        subtitle = $"{Format.Count(backups.Count, "sauvegarde", "sauvegardes")} · conservées 30 jours, au moins 10 fichiers";
+        subtitle = $"{Format.Count(backups.Count, "sauvegarde", "sauvegardes")} · gardées 30 jours";
         Raise(nameof(Subtitle));
     }
 
@@ -201,8 +201,8 @@ public sealed class AuditPage : PageViewModel
         var page = await Shell.Api.GetAsync<PagedResult<AuditDto>>("api/audit" + Filters(1, 100));
         Items.Clear();
         foreach (var a in page.Items)
-            Items.Add(new AuditRowVm(Format.DateTime(a.AtUtc), a.UserName, a.Action, a.EntityType, a.Summary, a.IpAddress ?? "—"));
-        subtitle = $"{Format.Count(page.Total, "événement", "événements")}" + (page.Total > 100 ? " · 100 plus récents affichés" : string.Empty);
+            Items.Add(new AuditRowVm(Format.DateTime(a.AtUtc), a.UserName, Labels.AuditAction(a.Action), a.EntityType, a.Summary, a.IpAddress ?? "—"));
+        subtitle = $"{Format.Count(page.Total, "événement", "événements")}" + (page.Total > 100 ? " · 100 affichés" : string.Empty);
         Raise(nameof(Subtitle));
     }
 

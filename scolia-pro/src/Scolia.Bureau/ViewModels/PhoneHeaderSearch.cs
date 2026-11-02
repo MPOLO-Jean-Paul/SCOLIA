@@ -124,7 +124,8 @@ public sealed class PhoneHeaderSearchVm : Observable
             return;
         }
         // Sur une liste, la saisie est liée uniquement au filtre du métier affiché.
-        if (Scope(shell.Current).Length > 0) IsOpen = !IsOpen;
+        // Téléphone : la loupe ouvre et ferme le filtre. Ordinateur : il reste ouvert, le raccourci y place le curseur.
+        if (Scope(shell.Current).Length > 0) IsOpen = !shell.Phone || !IsOpen;
     }
     /// <summary>Ouvre le filtre de l'écran, sans le refermer s'il est déjà ouvert.</summary>
     public void Open()
@@ -134,7 +135,10 @@ public sealed class PhoneHeaderSearchVm : Observable
 
     public void PageChanged()
     {
-        IsOpen = shell.Current is CashierPage { OpensHeaderSearch: true };
+        // Ordinateur : sur une liste, le champ de la barre du haut est ouvert d'emblée, prêt à la saisie.
+        // Téléphone : seul Encaisser l'ouvre, pour ne pas sortir le clavier à chaque page.
+        IsOpen = shell.Current is CashierPage { OpensHeaderSearch: true }
+            || (!shell.Phone && Scope(shell.Current).Length > 0 && shell.Current is not CashierPage);
         Raise(nameof(Placeholder));
         Raise(nameof(Query));
         Raise(nameof(HasQuery));
