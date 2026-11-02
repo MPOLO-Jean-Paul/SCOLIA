@@ -276,6 +276,8 @@ public sealed class CashierPage : PageViewModel
 
     public async Task SearchAsync()
     {
+        // Une recherche lancée tout de suite (Entrée) remplace celle qui attendait la fin de la frappe : une seule requête.
+        searchTimer?.Stop();
         var version = ++searchVersion;
         var query = search.Trim();
         Results.Clear();
