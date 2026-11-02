@@ -273,6 +273,21 @@ Revue des 58 écrans de l'ordinateur en 1366 × 768, comme un portable courant.
 
 Ce qui coupe encore les autres postes : « Quitter » SCOLIA sur le serveur, l'éteindre, le mettre en veille à la main, ou couper son Wi-Fi.
 
+### Recherche dans la barre, code QR, logo, icônes
+
+| Sujet | Maintenant |
+|---|---|
+| Recherche de l'accueil sur ordinateur | Elle se fait dans la barre du haut : on tape, les résultats se déroulent dessous. Micro dans la barre. Plus de fenêtre à part, plus de « Ctrl+K » affiché |
+| Relier un appareil | Le serveur montre un code QR (Poste et réseau). L'autre appareil le scanne : appareil photo sur téléphone, image ou code collé sur ordinateur. Wi-Fi, puis Tailscale, puis Internet. Aucune adresse publique acceptée |
+| Logo | Logo SCOLIA et nom de l'école dans le volet, l'accueil, la connexion, la veille et le téléphone. Le logo de l'école sert aux reçus, rapports et cartes |
+| Icônes | Tuiles façon Android 16 : coins arrondis, reflet, ombre douce, pictogramme blanc. Icônes pleines dans les boutons |
+| Mode sombre | Les icônes gardent leurs couleurs franches ; bleu et indigo en variantes à contraste renforcé |
+| Fluidité sur ordinateur | Couleurs qui glissent au survol, tuiles qui se soulèvent, appui qui enfonce à peine, résultats qui descendent en fondu |
+| Tableau de bord du téléphone | Les barres de recouvrement passent sous leur étiquette : plus de chevauchement avec le texte |
+| Voix sur le téléphone | Le micro ne disparaît plus si l'écran n'était pas prêt au moment du contrôle ; sans service vocal, un message dit quoi activer |
+
+Non vérifié sur appareil réel : la photo du code QR sur téléphone, la voix, et la veille de Windows sur un vrai PC.
+
 ## 4. Limites à connaître
 
 | Sujet | Limite | Solution proposée |

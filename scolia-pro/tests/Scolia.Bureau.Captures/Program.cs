@@ -1956,7 +1956,8 @@ void Smoke(ShellViewModel shell, ScoliaClient api, Window window, string passwor
     if (grades.Assessments.Count > 0)
     {
         grades.Assessment = grades.Assessments[0];
-        Wait(Task.Delay(400));
+        // La feuille se charge en arrière-plan : attendre qu'elle arrive, sans délai fixe trop court.
+        for (var waited = 0; waited < 5000 && grades.Grades.Count == 0; waited += 100) Wait(Task.Delay(100));
         Check("feuille de notes", grades.Grades.Count > 0, $"{grades.Grades.Count} élève(s)");
     }
     var results = new ResultsPage(shell);
