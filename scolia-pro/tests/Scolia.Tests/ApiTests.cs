@@ -716,7 +716,9 @@ public sealed class BusinessApiTests : IDisposable
 
         var preview = await Import(false);
         Assert.Empty(preview.GetProperty("errors").EnumerateArray());
-        Assert.Empty(preview.GetProperty("warnings").EnumerateArray());
+        // Seul le bilan s'affiche : tout est lu et créé tel quel.
+        Assert.Equal("Bilan : 2 apprenant(s) lu(s) dans le classeur · 2 à créer.",
+            Assert.Single(preview.GetProperty("warnings").EnumerateArray()).GetString());
         Assert.Equal(2, preview.GetProperty("students").GetInt32());
         Assert.Equal(0, preview.GetProperty("receipts").GetInt32());
         var applied = await Import(true);
@@ -727,6 +729,66 @@ public sealed class BusinessApiTests : IDisposable
         var repeated = await Import(true);
         Assert.Equal(0, repeated.GetProperty("students").GetInt32());
         Assert.Equal(0, repeated.GetProperty("receipts").GetInt32());
+    }
+
+    [Fact]
+    public async Task Import_ne_laisse_aucun_apprenant_de_cote()
+    {
+        // Liste réelle tenue à la main : titres en ligne 1, colonnes dans un autre ordre, nom complet dans une seule
+        // colonne, matricules absents ou repris, code de promotion trop long, promotion absente, ligne de total.
+        var admin = await app.InstalledAdmin();
+        using var stream = new MemoryStream();
+        using (var book = new XLWorkbook())
+        {
+            var list = book.AddWorksheet("Liste 2026");
+            string[] titles = ["N°", "Noms", "Matricule", "Sexe", "Promotion", "Téléphone"];
+            for (var c = 0; c < titles.Length; c++) list.Cell(1, c + 1).Value = titles[c];
+            object[][] rows =
+            [
+                [1, "TSHIMANGA KABEYA Ruth", "TLB101", "F", "TLB1", "0812345678"],
+                [2, "MUKENDI ILUNGA Jean", "", "M", "TLB1", ""],
+                [3, "MUKENDI ILUNGA Jean", "", "M", "TLB1", ""],
+                [4, "KASONGO MBUYI Grâce", "TLB101", "F", "TLB1", ""],
+                [5, "KASONGO MBUYI Grâce", "TLB101", "F", "TLB1", ""],
+                [6, "NGALULA KANKU Sarah", "TLB212", "F", "TLB12", ""],
+                [7, "LUMBALA Esther", "TLB301", "F", "", ""],
+                [8, "TSHIMANGA KABEYA Ruth", "TLB101", "F", "TLB1", ""],
+            ];
+            for (var r = 0; r < rows.Length; r++)
+                for (var c = 0; c < rows[r].Length; c++)
+                    list.Cell(r + 2, c + 1).Value = rows[r][c] switch { int n => n, var v => v.ToString() };
+            list.Cell(10, 2).Value = "TOTAL";
+            list.Cell(10, 1).Value = 8;
+            book.SaveAs(stream);
+        }
+
+        async Task<JsonElement> Import(bool apply)
+        {
+            using var form = new MultipartFormDataContent();
+            form.Add(new ByteArrayContent(stream.ToArray()), "fichiers", "liste-manuelle.xlsx");
+            return await admin.PostAsync($"/api/import/scolia?appliquer={apply}", form).Ok();
+        }
+
+        var preview = await Import(false);
+        Assert.Empty(preview.GetProperty("errors").EnumerateArray());
+        var warnings = preview.GetProperty("warnings").EnumerateArray().Select(w => w.GetString()!).ToList();
+        // Chaque ligne sans matricule reçoit le sien, même pour deux homonymes : rien n'est perdu. Seules les lignes au
+        // même matricule et au même nom sont fusionnées (lignes 6 et 9).
+        Assert.True(warnings[0].StartsWith("Bilan : 8 apprenant(s) lu(s) dans le classeur · 6 à créer", StringComparison.Ordinal), warnings[0]);
+        Assert.Contains(warnings, w => w.Contains("sans matricule, reçoit le matricule", StringComparison.Ordinal));
+        Assert.Contains(warnings, w => w.Contains("déjà pris par TSHIMANGA KABEYA Ruth", StringComparison.Ordinal));
+        Assert.Contains(warnings, w => w.Contains("Promotion « TLB12 »", StringComparison.Ordinal));
+        Assert.Contains(warnings, w => w.Contains("« À classer »", StringComparison.Ordinal));
+        Assert.Equal(6, preview.GetProperty("students").GetInt32());
+
+        var before = (await admin.GetAsync("/api/apprenants?taille=1").Ok()).GetProperty("total").GetInt32();
+        var applied = await Import(true);
+        Assert.True(applied.GetProperty("applied").GetBoolean());
+        Assert.Equal(6, applied.GetProperty("students").GetInt32());
+        var after = (await admin.GetAsync("/api/apprenants?taille=1").Ok()).GetProperty("total").GetInt32();
+        Assert.Equal(before + 6, after);
+        var unclassified = await admin.GetAsync("/api/apprenants?q=LUMBALA").Ok();
+        Assert.Equal(1, unclassified.GetProperty("total").GetInt32());
     }
 
     [Fact]

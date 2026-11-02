@@ -18,7 +18,7 @@ public sealed class LegacyImportService(IAppDbContext db, IWriteGate gate, IAudi
 {
     private sealed record LegacyPromotion(string Code, string Name, string? Section, int Level, decimal Monthly, bool Active);
     private sealed record LegacyStudent(string Matricule, string Last, string Middle, string First, string Gender, DateOnly? Birth, string? Place, string Promotion,
-        string? Guardian, string? Phone1, string? Phone2, DateOnly? Enrolled, string Status, string? Address, string Source);
+        string? Guardian, string? Phone1, string? Phone2, DateOnly? Enrolled, string Status, string? Address, string Source, int Row = 0);
     private sealed record LegacyPayment(long Id, DateOnly? Date, string Number, string Matricule, string Promotion, string Month, decimal Amount, string Source, int Row);
 
     public Task<ImportReport> ImportAsync(IReadOnlyList<(string Name, Stream Content)> files, bool apply, CancellationToken ct = default) => gate.RunAsync(async () =>
@@ -26,7 +26,7 @@ public sealed class LegacyImportService(IAppDbContext db, IWriteGate gate, IAudi
         var warnings = new List<string>();
         var errors = new List<string>();
         var promotions = new Dictionary<string, LegacyPromotion>(StringComparer.Ordinal);
-        var students = new Dictionary<string, LegacyStudent>(StringComparer.Ordinal);
+        var students = new List<LegacyStudent>();
         var payments = new List<LegacyPayment>();
 
         foreach (var (name, content) in files)
@@ -42,8 +42,9 @@ public sealed class LegacyImportService(IAppDbContext db, IWriteGate gate, IAudi
             {
                 if (workbook.TryGetWorksheet("PROMOTIONS", out var p)) ReadPromotions(p, promotions, warnings);
                 if (workbook.TryGetWorksheet("APPRENANTS", out var a)) ReadStudents(a, name, students, warnings);
+                else if (StudentSheet(workbook) is { } list) ReadStudents(list, name, students, warnings);
                 if (workbook.TryGetWorksheet("PAIEMENTS", out var pay)) ReadPayments(pay, name, payments, warnings, errors);
-                if (!workbook.Worksheets.Any(w => w.Name is "PROMOTIONS" or "APPRENANTS" or "PAIEMENTS"))
+                if (!workbook.Worksheets.Any(w => w.Name is "PROMOTIONS" or "APPRENANTS" or "PAIEMENTS") && StudentSheet(workbook) is null)
                     warnings.Add($"{name} : aucune feuille SCOLIA (PROMOTIONS, APPRENANTS, PAIEMENTS) trouvée.");
             }
         }
@@ -52,11 +53,26 @@ public sealed class LegacyImportService(IAppDbContext db, IWriteGate gate, IAudi
         var school = await YearContext.SchoolAsync(db, ct);
         var periodsByName = year.Periods.GroupBy(p => TextKey.Normalize(p.Name)).ToDictionary(g => g.Key, g => g.First());
 
+        // Aucun apprenant n'est écarté pour un code de promotion : un code mal formé reçoit un code de 4 caractères,
+        // une promotion absente range l'apprenant dans « À classer », à réaffecter ensuite.
+        var codes = new PromotionCodes(promotions.Keys.Concat(students.Select(x => x.Promotion)), warnings);
+        foreach (var raw in promotions.Keys.ToList())
+        {
+            var fixedCode = codes.For(raw);
+            if (fixedCode == raw) continue;
+            var lp = promotions[raw];
+            promotions.Remove(raw);
+            promotions.TryAdd(fixedCode, lp with { Code = fixedCode, Name = lp.Name == raw ? $"{lp.Name} (code d'origine {raw})" : lp.Name });
+        }
+        students = students.Select(x => x with { Promotion = x.Promotion.Length == 0 ? Unclassified : codes.For(x.Promotion) }).ToList();
+        if (students.Any(x => x.Promotion == Unclassified) && !promotions.ContainsKey(Unclassified))
+            promotions[Unclassified] = new LegacyPromotion(Unclassified, "À classer", null, 0, 0, true);
+
         // Promotions : celles des apprenants doivent exister ; la mensualité vient du classeur.
-        foreach (var code in students.Values.Select(s => s.Promotion).Where(c => c.Length > 0).Distinct())
+        foreach (var code in students.Select(s => s.Promotion).Where(c => c.Length > 0).Distinct())
             if (!promotions.ContainsKey(code))
             {
-                var fee = payments.Where(x => x.Promotion == code).Select(x => x.Amount).DefaultIfEmpty(0).Max();
+                var fee = payments.Where(x => codes.For(x.Promotion) == code).Select(x => x.Amount).DefaultIfEmpty(0).Max();
                 promotions[code] = new LegacyPromotion(code, code, null, 0, fee, true);
                 // Une liste nominative n'est pas un journal comptable : la mensualité peut être renseignée ensuite.
             }
@@ -111,10 +127,45 @@ public sealed class LegacyImportService(IAppDbContext db, IWriteGate gate, IAudi
             }, StringComparer.Ordinal);
         var enrollments = new Dictionary<string, (Student Student, Enrollment Enrollment, Promotion Promotion)>(StringComparer.Ordinal);
         var newStudents = 0;
-        foreach (var ls in students.Values)
+        // Chaque ligne devient un apprenant : un matricule absent est attribué, un matricule repris par une autre
+        // personne est renuméroté. Seul un doublon exact (même matricule et même identité) est fusionné.
+        var taken = new HashSet<string>(existingMatricules, StringComparer.Ordinal);
+        foreach (var ls in students) if (ls.Matricule.Length > 0) taken.Add(ls.Matricule);
+        var seen = new Dictionary<string, LegacyStudent>(StringComparer.Ordinal);
+        // Tous ceux qui ont porté un même matricule dans le classeur : une ligne recopiée est reconnue même après renumérotation.
+        var sameMatricule = new Dictionary<string, List<LegacyStudent>>(StringComparer.Ordinal);
+        var stats = new ImportStats(students.Count);
+        foreach (var raw in students)
         {
-            if (existingMatricules.Contains(ls.Matricule)) { warnings.Add($"{ls.Matricule} existe déjà dans SCOLIA : dossier conservé tel quel."); continue; }
+            var ls = raw;
+            var who = Who(ls);
+            if (ls.Matricule.Length == 0)
+            {
+                var given = NextMatricule(ls.Promotion, taken);
+                warnings.Add($"{ls.Source} APPRENANTS ligne {ls.Row} : {who} sans matricule, reçoit le matricule {given}.");
+                ls = ls with { Matricule = given };
+                stats.Given++;
+            }
+            else if (seen.TryGetValue(ls.Matricule, out var earlier))
+            {
+                var holders = sameMatricule.GetValueOrDefault(ls.Matricule) ?? [earlier];
+                if (holders.Any(h => SameIdentity(h, ls)))
+                {
+                    warnings.Add($"{ls.Source} APPRENANTS ligne {ls.Row} : {who} ({ls.Matricule}) figure deux fois, une seule fiche est créée.");
+                    stats.Merged++;
+                    continue;
+                }
+                var given = NextMatricule(ls.Promotion, taken);
+                warnings.Add($"{ls.Source} APPRENANTS ligne {ls.Row} : matricule {ls.Matricule} déjà pris par {Who(earlier)} ; {who} reçoit le matricule {given}.");
+                holders.Add(ls);
+                sameMatricule[ls.Matricule] = holders;
+                ls = ls with { Matricule = given };
+                stats.Renumbered++;
+            }
+            seen[ls.Matricule] = ls;
+            if (existingMatricules.Contains(ls.Matricule)) { warnings.Add($"{ls.Matricule} existe déjà dans SCOLIA : dossier conservé tel quel."); stats.Present++; continue; }
             if (!promotionEntities.TryGetValue(ls.Promotion, out var promotion)) { errors.Add($"{ls.Matricule} : promotion « {ls.Promotion} » inconnue, dossier non importé."); continue; }
+            if (ls.Promotion == Unclassified) stats.Unclassified++;
             var student = new Student
             {
                 Matricule = ls.Matricule, LastName = ls.Last.ToUpperInvariant(), MiddleName = ls.Middle.ToUpperInvariant(), FirstName = TextKey.ProperName(ls.First),
@@ -130,6 +181,7 @@ public sealed class LegacyImportService(IAppDbContext db, IWriteGate gate, IAudi
             newStudents++;
             if (apply) { db.Students.Add(student); db.Enrollments.Add(enrollment); }
         }
+        if (stats.Read > 0) warnings.Insert(0, stats.Summary(newStudents));
 
         // Paiements : un reçu par ancien numéro, réparti sur les mois correspondants de la promotion actuelle.
         var counterName = $"RC-{year.FirstCalendarYear}";
@@ -203,7 +255,7 @@ public sealed class LegacyImportService(IAppDbContext db, IWriteGate gate, IAudi
     [
         ("PROMOTIONS", [("Code", "INF1 · 4 caractères"), ("Désignation", "Première année"), ("Section", "Infirmière"), ("Niveau", "1"), ("Année", "Non lue"),
             ("Mensualité", "55000"), ("Total annuel", "Non lue"), ("Activation", "Active ou Inactive")]),
-        ("APPRENANTS", [("Matricule", "INF101 · obligatoire"), ("Nom", "KALONJI"), ("Post-nom", "MBOMBO"), ("Prénom", "Ruth"), ("Sexe", "F ou M"),
+        ("APPRENANTS", [("Matricule", "INF101 · attribué s'il manque"), ("Nom", "KALONJI"), ("Post-nom", "MBOMBO"), ("Prénom", "Ruth"), ("Sexe", "F ou M"),
             ("Naissance", "12/06/2008 · obligatoire"), ("Lieu", "Lubumbashi · obligatoire"), ("Promotion", "INF1 · code de PROMOTIONS"), ("Parent / tuteur", "KALONJI Pierre"),
             ("Contact 1", "0812345678 · obligatoire"), ("Contact 2", "Facultatif, autre numéro"), ("Inscription", "01/09/2026"), ("Année", "Non lue"),
             ("Statut", "Actif, Suspendu ou Sorti"), ("Adresse", "Av. Kasaï 12")]),
@@ -224,7 +276,8 @@ public sealed class LegacyImportService(IAppDbContext db, IWriteGate gate, IAudi
             "Modèle d'import SCOLIA",
             "Recopiez vos données à partir de la ligne 5 de chaque feuille. La ligne 3 montre un exemple : elle n'est pas importée.",
             "1. PROMOTIONS : une ligne par promotion. Le code compte 4 caractères. La mensualité est en francs congolais.",
-            "2. APPRENANTS : une ligne par apprenant. Le matricule est conservé. La promotion reprend un code de la feuille PROMOTIONS.",
+            "2. APPRENANTS : une ligne par apprenant. Le matricule est conservé ; s'il manque, ou s'il est déjà pris par une autre personne, SCOLIA en attribue un.",
+            "   La promotion reprend un code de la feuille PROMOTIONS. Sans promotion, l'apprenant va dans « À classer ». Aucune ligne n'est écartée.",
             "   Les dates, lieux et contacts sont facultatifs à l’importation. Complétez-les après l’enregistrement, avant les relances.",
             "3. PAIEMENTS : une ligne par mois payé. Plusieurs lignes avec le même N° reçu forment un seul reçu.",
             "Le mois s'écrit en toutes lettres, comme dans l'année scolaire : Septembre, Octobre...",
@@ -298,10 +351,10 @@ public sealed class LegacyImportService(IAppDbContext db, IWriteGate gate, IAudi
         return decimal.TryParse(text.Replace(',', '.'), NumberStyles.Number, CultureInfo.InvariantCulture, out var v) ? v : null;
     }
 
-    private static IEnumerable<IXLRow> DataRows(IXLWorksheet sheet)
+    private static IEnumerable<IXLRow> DataRows(IXLWorksheet sheet, int first = 5)
     {
         var last = sheet.LastRowUsed()?.RowNumber() ?? 0;
-        for (var r = 5; r <= last; r++)
+        for (var r = first; r <= last; r++)
         {
             var row = sheet.Row(r);
             if (!row.IsEmpty()) yield return row;
@@ -322,16 +375,159 @@ public sealed class LegacyImportService(IAppDbContext db, IWriteGate gate, IAudi
         }
     }
 
-    private static void ReadStudents(IXLWorksheet sheet, string source, Dictionary<string, LegacyStudent> target, List<string> warnings)
+    /// <summary>Colonnes de la feuille APPRENANTS : trouvées par leur titre, sinon l'ordre du classeur V79.</summary>
+    private sealed class StudentColumns
     {
-        foreach (var row in DataRows(sheet))
+        public int FirstRow = 5;
+        public int Matricule = 1, Last = 2, Middle = 3, First = 4, Gender = 5, Birth = 6, Place = 7, Promotion = 8, Guardian = 9,
+            Phone1 = 10, Phone2 = 11, Enrolled = 12, Status = 14, Address = 15, FullName;
+
+        /// <summary>Repère la ligne des titres (Matricule, Nom…) dans les 15 premières lignes, où qu'elle soit.</summary>
+        public static StudentColumns Find(IXLWorksheet sheet)
         {
-            var matricule = TextKey.Normalize(Text(row.Cell(1))).Replace(" ", string.Empty, StringComparison.Ordinal);
-            if (matricule.Length == 0) { warnings.Add($"{source} APPRENANTS ligne {row.RowNumber()} : matricule absent, ligne ignorée."); continue; }
-            if (target.ContainsKey(matricule)) { warnings.Add($"{source} : matricule {matricule} en double (ligne {row.RowNumber()}), seule la première fiche est importée."); continue; }
-            target[matricule] = new LegacyStudent(matricule, Text(row.Cell(2)), Text(row.Cell(3)), Text(row.Cell(4)), TextKey.Normalize(Text(row.Cell(5))), Date(row.Cell(6)),
-                NullIfEmpty(Text(row.Cell(7))), Promotion.NormalizeCode(Text(row.Cell(8))), NullIfEmpty(Text(row.Cell(9))), NullIfEmpty(Text(row.Cell(10))),
-                NullIfEmpty(Text(row.Cell(11))), Date(row.Cell(12)), Text(row.Cell(14)), NullIfEmpty(Text(row.Cell(15))), source);
+            var columns = new StudentColumns();
+            var lastColumn = Math.Min(sheet.LastColumnUsed()?.ColumnNumber() ?? 15, 40);
+            for (var r = 1; r <= 15; r++)
+            {
+                var titles = Enumerable.Range(1, lastColumn).Select(c => (Column: c, Key: Key(Text(sheet.Cell(r, c))))).Where(t => t.Key.Length > 0).ToList();
+                if (!titles.Any(t => t.Key.StartsWith("MATRICULE", StringComparison.Ordinal))) continue;
+                var defaults = new StudentColumns();
+                var titled = titles.Select(t => t.Column).ToHashSet();
+                int Pick(Func<string, bool> match) => titles.FirstOrDefault(t => match(t.Key)).Column;
+                // Titre absent pour une colonne : on garde la place habituelle du classeur V79 si cette colonne n'a pas
+                // d'autre titre. Le modèle d'import, qui n'a parfois que « Matricule », reste lu comme avant.
+                int Or(int found, int usual) => found > 0 ? found : titled.Contains(usual) ? 0 : usual;
+                columns = new StudentColumns
+                {
+                    FirstRow = r + 1,
+                    Matricule = Pick(k => k.StartsWith("MATRICULE", StringComparison.Ordinal)),
+                    Last = Or(Pick(k => k is "NOM" or "NOMDEFAMILLE"), defaults.Last),
+                    Middle = Or(Pick(k => k is "POSTNOM" or "POSTNOMS"), defaults.Middle),
+                    First = Or(Pick(k => k is "PRENOM" or "PRENOMS"), defaults.First),
+                    FullName = Pick(k => k is "NOMS" or "NOMCOMPLET" or "APPRENANT" or "APPRENANTS" or "NOMSETPRENOMS" or "NOMETPRENOM" or "NOMPOSTNOMPRENOM" or "IDENTITE"),
+                    Gender = Or(Pick(k => k is "SEXE" or "GENRE" or "S"), defaults.Gender),
+                    Birth = Or(Pick(k => k.Contains("NAISSANCE", StringComparison.Ordinal) && !k.Contains("LIEU", StringComparison.Ordinal)), defaults.Birth),
+                    Place = Or(Pick(k => k.StartsWith("LIEU", StringComparison.Ordinal)), defaults.Place),
+                    Promotion = Or(Pick(k => k is "PROMOTION" or "PROMO" or "CLASSE" or "CODEPROMOTION"), defaults.Promotion),
+                    Guardian = Or(Pick(k => k.Contains("PARENT", StringComparison.Ordinal) || k.Contains("TUTEUR", StringComparison.Ordinal)), defaults.Guardian),
+                    Phone1 = Or(Pick(k => k is "CONTACT1" or "CONTACT" or "TELEPHONE" or "TEL" or "TELEPHONE1" or "CONTACTPARENT"), defaults.Phone1),
+                    Phone2 = Or(Pick(k => k is "CONTACT2" or "TELEPHONE2" or "TEL2"), defaults.Phone2),
+                    Enrolled = Or(Pick(k => k.Contains("INSCRIPTION", StringComparison.Ordinal)), defaults.Enrolled),
+                    Status = Or(Pick(k => k is "STATUT" or "ETAT"), defaults.Status),
+                    Address = Or(Pick(k => k.StartsWith("ADRESSE", StringComparison.Ordinal)), defaults.Address),
+                };
+                // Titres V79 dans l'ordre habituel : la ligne d'exemple n'existe que dans le modèle, au-dessus des titres.
+                break;
+            }
+            return columns;
+        }
+
+        private static string Key(string title) => new(TextKey.Normalize(title).Where(char.IsAsciiLetterOrDigit).ToArray());
+    }
+
+    /// <summary>Liste nominative sans feuille APPRENANTS : la première feuille dont une ligne de titres contient « Matricule ».</summary>
+    private static IXLWorksheet? StudentSheet(XLWorkbook book) =>
+        book.Worksheets.FirstOrDefault(w => w.Name is not ("PROMOTIONS" or "PAIEMENTS" or "NOTICE")
+            && Enumerable.Range(1, 15).Any(r => Enumerable.Range(1, 20).Any(c => TextKey.Normalize(Text(w.Cell(r, c))).StartsWith("MATRICULE", StringComparison.Ordinal))));
+
+    private static string Cell(IXLRow row, int column) => column > 0 ? Text(row.Cell(column)) : string.Empty;
+    private static DateOnly? DateCell(IXLRow row, int column) => column > 0 ? Date(row.Cell(column)) : null;
+
+    private static void ReadStudents(IXLWorksheet sheet, string source, List<LegacyStudent> target, List<string> warnings)
+    {
+        var map = StudentColumns.Find(sheet);
+        foreach (var row in DataRows(sheet, map.FirstRow))
+        {
+            var matricule = TextKey.Normalize(Cell(row, map.Matricule)).Replace(" ", string.Empty, StringComparison.Ordinal);
+            var (last, middle, first) = (Cell(row, map.Last), Cell(row, map.Middle), Cell(row, map.First));
+            if (map.FullName > 0 && last.Length == 0 && first.Length == 0) (last, middle, first) = SplitName(Cell(row, map.FullName));
+            // Ligne sans matricule ni nom : ligne de total, de titre répété ou de séparation, sans apprenant.
+            if (matricule.Length == 0 && last.Length == 0 && middle.Length == 0 && first.Length == 0) continue;
+            if (TextKey.Normalize(last).StartsWith("TOTAL", StringComparison.Ordinal) || matricule.StartsWith("TOTAL", StringComparison.Ordinal)) continue;
+            if (matricule.StartsWith("MATRICULE", StringComparison.Ordinal)) continue;
+            target.Add(new LegacyStudent(matricule, last, middle, first, TextKey.Normalize(Cell(row, map.Gender)), DateCell(row, map.Birth),
+                NullIfEmpty(Cell(row, map.Place)), Promotion.NormalizeCode(Cell(row, map.Promotion)), NullIfEmpty(Cell(row, map.Guardian)),
+                NullIfEmpty(Cell(row, map.Phone1)), NullIfEmpty(Cell(row, map.Phone2)), DateCell(row, map.Enrolled), Cell(row, map.Status),
+                NullIfEmpty(Cell(row, map.Address)), source, row.RowNumber()));
+        }
+    }
+
+    /// <summary>« KALONJI MBOMBO Ruth Grâce » : nom, post-nom, puis prénoms.</summary>
+    private static (string Last, string Middle, string First) SplitName(string full)
+    {
+        var parts = full.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        return parts.Length switch
+        {
+            0 => (string.Empty, string.Empty, string.Empty),
+            1 => (parts[0], string.Empty, string.Empty),
+            2 => (parts[0], string.Empty, parts[1]),
+            _ => (parts[0], parts[1], string.Join(' ', parts.Skip(2))),
+        };
+    }
+
+    // ---------- Aucun apprenant écarté : codes, matricules et compte rendu ----------
+    private const string Unclassified = "ACLS";
+
+    private static string Who(LegacyStudent s)
+    {
+        var name = string.Join(' ', new[] { s.Last, s.Middle, s.First }.Where(x => !string.IsNullOrWhiteSpace(x)));
+        return name.Length == 0 ? "apprenant sans nom" : name;
+    }
+
+    private static bool SameIdentity(LegacyStudent a, LegacyStudent b) =>
+        TextKey.Normalize($"{a.Last} {a.Middle} {a.First}") == TextKey.Normalize($"{b.Last} {b.Middle} {b.First}");
+
+    private static string NextMatricule(string promotion, HashSet<string> taken)
+    {
+        var given = MatriculeGenerator.Next(promotion, taken);
+        taken.Add(given);
+        return given;
+    }
+
+    /// <summary>Codes de promotion de 4 caractères : un code mal formé du classeur reçoit un code proche et unique.</summary>
+    private sealed class PromotionCodes
+    {
+        private readonly Dictionary<string, string> map = new(StringComparer.Ordinal);
+
+        public PromotionCodes(IEnumerable<string> raws, List<string> warnings)
+        {
+            var used = new HashSet<string>(StringComparer.Ordinal);
+            var all = raws.Where(r => r.Length > 0).Distinct(StringComparer.Ordinal).ToList();
+            foreach (var raw in all.Where(Valid)) { map[raw] = raw; used.Add(raw); }
+            foreach (var raw in all.Where(r => !Valid(r)))
+            {
+                var clean = new string(raw.Where(char.IsAsciiLetterOrDigit).ToArray());
+                var letters = new string(clean.Where(char.IsAsciiLetter).Take(3).ToArray());
+                var digit = clean.FirstOrDefault(char.IsAsciiDigit);
+                var candidate = clean.Length >= 4
+                    ? (letters.Length > 0 && digit != default ? (letters.PadRight(3, 'X') + digit) : clean[..4])
+                    : clean.PadRight(4, '0');
+                const string Tail = "123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+                for (var i = 0; used.Contains(candidate) && i < Tail.Length; i++) candidate = candidate[..3] + Tail[i];
+                map[raw] = candidate;
+                used.Add(candidate);
+                warnings.Add($"Promotion « {raw} » : le code doit compter 4 caractères, elle prend le code {candidate}.");
+            }
+        }
+
+        private static bool Valid(string code) => code.Length == 4 && code.All(char.IsAsciiLetterOrDigit);
+        public string For(string raw) => raw.Length == 0 ? raw : map.GetValueOrDefault(raw, raw);
+    }
+
+    private sealed class ImportStats(int read)
+    {
+        public int Read { get; } = read;
+        public int Given, Renumbered, Merged, Present, Unclassified;
+
+        public string Summary(int created)
+        {
+            var parts = new List<string> { $"{Read} apprenant(s) lu(s) dans le classeur", $"{created} à créer" };
+            if (Present > 0) parts.Add($"{Present} déjà présent(s) dans SCOLIA");
+            if (Merged > 0) parts.Add($"{Merged} ligne(s) en double fusionnée(s)");
+            if (Given > 0) parts.Add($"{Given} matricule(s) attribué(s)");
+            if (Renumbered > 0) parts.Add($"{Renumbered} matricule(s) renuméroté(s)");
+            if (Unclassified > 0) parts.Add($"{Unclassified} dans la promotion « À classer »");
+            return "Bilan : " + string.Join(" · ", parts) + ".";
         }
     }
 

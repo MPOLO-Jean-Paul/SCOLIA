@@ -125,10 +125,14 @@ public sealed class DataPage : PageViewModel
         var detected = $"Promotions : {preview.Promotions} · apprenants : {preview.Students} · reçus : {preview.Receipts} · imputations : {preview.Allocations}";
         // Les détails nombreux restent limités à l'aperçu. Aucune liste de contacts
         // absents ne doit cacher le bouton Importer sur un petit écran.
-        var warnings = preview.Warnings.Count == 0 ? string.Empty
-            : "\n\nÀ vérifier :\n" + string.Join('\n', preview.Warnings.Take(6))
-              + (preview.Warnings.Count > 6 ? $"\n… et {preview.Warnings.Count - 6} autre(s) remarque(s)." : string.Empty);
+        // Le bilan dit combien d'apprenants ont été lus et combien seront créés : aucun ne disparaît sans explication.
+        var bilan = preview.Warnings.FirstOrDefault(w => w.StartsWith("Bilan :", StringComparison.Ordinal));
+        var remarks = preview.Warnings.Where(w => !ReferenceEquals(w, bilan)).ToList();
+        var warnings = remarks.Count == 0 ? string.Empty
+            : "\n\nÀ vérifier :\n" + string.Join('\n', remarks.Take(6))
+              + (remarks.Count > 6 ? $"\n… et {remarks.Count - 6} autre(s) remarque(s)." : string.Empty);
         var message = $"Contenu détecté dans {picked.Name} : {detected}.\n\n"
+            + (bilan is null ? string.Empty : bilan + "\n\n")
             + "Les dates, téléphones, mensualités, notes, reçus et paiements peuvent être complétés après l'importation."
             + warnings + "\n\nUne sauvegarde est faite avant l'import.";
         var confirmed = await shell.Confirm("Importation du classeur", message, "Importer");

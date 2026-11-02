@@ -189,6 +189,23 @@ rapport journalier envoyé automatiquement, audit complet et catalogue du foncti
 - Le choix de l'ordinateur principal propose « Retour ». Le geste retour d'Android y ramène aussi.
 - Vérifié par 2 contrôles automatiques.
 
+#### Import Excel : aucun apprenant laissé de côté
+- Avant, une ligne était écartée sans être importée quand :
+  - le matricule était vide ;
+  - le matricule était repris par une autre personne ;
+  - la promotion était vide, ou son code ne comptait pas 4 caractères ;
+  - les titres des colonnes n'étaient pas à la ligne 4 du modèle.
+- Maintenant, chaque ligne devient un apprenant :
+  - matricule vide : SCOLIA en attribue un, dans la promotion de l'apprenant ;
+  - matricule déjà pris par une autre personne : l'apprenant reçoit un nouveau matricule ;
+  - ligne recopiée, même matricule et même nom : une seule fiche, signalée ;
+  - code de promotion mal formé : il reçoit un code de 4 caractères proche, signalé ;
+  - promotion vide : l'apprenant va dans « À classer », à réaffecter ensuite ;
+  - titres des colonnes trouvés où qu'ils soient : « Matricule », « Nom », « Noms », « Promotion », « Téléphone »…, et un nom complet dans une seule colonne est découpé.
+- L'aperçu commence par un bilan : « 209 apprenant(s) lu(s) dans le classeur · 209 à créer… », puis chaque ajustement, ligne par ligne.
+- Vérifié par un test avec une liste tenue à la main : 8 lignes, 6 apprenants créés, la ligne recopiée fusionnée.
+- Le fichier de 209 apprenants n'a pas pu être essayé ici : il n'a pas été transmis.
+
 ## 4. Limites à connaître
 
 | Sujet | Limite | Solution proposée |
