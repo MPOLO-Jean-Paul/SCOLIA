@@ -39,10 +39,12 @@ public sealed class ConnectionViewModel : Observable
     // ---------- Code QR du serveur : la voie la plus simple, Wi-Fi, Tailscale ou Internet ----------
     /// <summary>Téléphone : l'appareil photo. Ordinateur : une image du code (photo, capture d'écran).</summary>
     public AsyncCommand ScanCode { get; }
+    /// <summary>Ordinateur : le code copié sur le serveur (ou une invitation) se colle sous le bouton.</summary>
+    public bool CanPasteCode => !PairingFlow.HasCamera;
     public string ScanLabel => PairingFlow.HasCamera ? "Scanner le code QR" : "Lire une image du code QR";
     public string ScanHint => PairingFlow.HasCamera
         ? "Sur le serveur : Poste et réseau, puis Relier un appareil. Visez le code : SCOLIA choisit seul le Wi-Fi, Tailscale ou Internet."
-        : "Sur le serveur : Poste et réseau, puis Relier un appareil. Ouvrez une photo du code, ou collez le code copié plus bas.";
+        : "Sur le serveur : Poste et réseau, puis Relier un appareil. Ouvrez une photo du code, ou collez le code copié.";
 
     private async Task ScanCodeAsync()
     {
