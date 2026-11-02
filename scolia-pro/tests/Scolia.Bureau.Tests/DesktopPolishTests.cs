@@ -56,4 +56,31 @@ public sealed class DesktopPolishTests
             Platform.BackgroundHint = string.Empty;
         }
     }
+
+    [Fact]
+    public void Rechercher_sur_l_ordinateur_reste_dans_la_barre_du_haut()
+    {
+        using var api = new ScoliaClient(new Uri("http://localhost:5080/"));
+        var shell = new ShellViewModel(api, new Preferences());
+
+        // Sans barre affichée (aucune vue), la fenêtre de recherche reste le recours.
+        shell.FindInHeader();
+        Assert.IsType<SearchViewModel>(shell.Dialog);
+        shell.CloseDialog();
+
+        // Avec la barre de l'ordinateur : le curseur y va, aucune autre fenêtre.
+        var focused = 0;
+        shell.HeaderFinderRequested += () => focused++;
+        shell.FindInHeader();
+        Assert.Equal(1, focused);
+        Assert.True(shell.HeaderFinderOpen);
+        Assert.False(shell.HasDialog);
+
+        // Une saisie garde la liste ouverte ; un résultat ouvert la referme et vide la barre.
+        shell.HeaderFinder.Query = "Kabeya";
+        Assert.True(shell.HeaderFinderOpen);
+        shell.CloseHeaderFinder();
+        Assert.False(shell.HeaderFinderOpen);
+        Assert.Equal(string.Empty, shell.HeaderFinder.Query);
+    }
 }

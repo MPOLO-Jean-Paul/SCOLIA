@@ -94,7 +94,7 @@ public static class RibbonCatalog
             new("accueil", "Accueil",
             [
                 Group("Rechercher",
-                    Large(shell, "Rechercher", Magnify, "Recherche globale : apprenants, reçus, pages et commandes.", () => { shell.ShowSearch(); return Task.CompletedTask; }, Blue)),
+                    Large(shell, "Rechercher", Magnify, "Recherche globale : apprenants, reçus, pages et commandes.", () => { shell.FindInHeader(); return Task.CompletedTask; }, Blue)),
                 Group("Page",
                     Large(shell, "Actualiser", Refresh, "Recharge les données affichées depuis le serveur.", () => shell.Reload(), Blue),
                     Large(shell, "Imprimer", Printer, "Imprime le document de la page affichée.", () => shell.Current?.PrintAsync() ?? Task.CompletedTask, Blue),

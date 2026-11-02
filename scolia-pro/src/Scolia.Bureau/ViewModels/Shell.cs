@@ -50,7 +50,7 @@ public sealed class ShellViewModel : Observable
         Sync.RemoteChange += OnRemoteChange;
         Backstage = new BackstageViewModel(this);
         ReloadCommand = new AsyncCommand(() => Run(Reload));
-        SearchCommand = new RelayCommand(ShowSearch);
+        SearchCommand = new RelayCommand(FindInHeader);
         ContextSearchCommand = new RelayCommand(ShowContextSearch);
         SettingsSearch = new PhoneSettingsSearchVm(this);
         HeaderSearch = new PhoneHeaderSearchVm(this);
@@ -1011,6 +1011,65 @@ public sealed class ShellViewModel : Observable
 
     /// <summary>Ctrl+K et Accueil : cherche globalement dans les droits du compte.</summary>
     public void ShowSearch() => Dialog = new SearchViewModel(this);
+
+    // ---------- Recherche générale dans la barre du haut de l'ordinateur ----------
+    private SearchViewModel? headerFinder;
+    private bool headerFinderOpen;
+
+    /// <summary>La recherche de l'accueil, directement dans la barre du haut : on tape, les résultats se déroulent dessous.</summary>
+    public SearchViewModel HeaderFinder => headerFinder ??= NewHeaderFinder();
+
+    /// <summary>Liste des résultats ouverte sous la barre du haut.</summary>
+    public bool HeaderFinderOpen { get => headerFinderOpen; set => Set(ref headerFinderOpen, value); }
+
+    /// <summary>La vue de l'ordinateur place le curseur dans la barre ; sans elle, la fenêtre de recherche s'ouvre.</summary>
+    public event Action? HeaderFinderRequested;
+
+    /// <summary>
+    /// Ctrl+K et « Rechercher » : sur l'ordinateur, le curseur va dans la barre du haut, sans autre fenêtre.
+    /// Le téléphone, ou une page dont la barre filtre déjà sa liste, garde la fenêtre de recherche.
+    /// </summary>
+    public void FindInHeader()
+    {
+        if (!Phone && !HeaderSearch.IsOpen && !HasDialog && !BackstageOpen && HeaderFinderRequested is not null)
+        {
+            HeaderFinderOpen = true;
+            HeaderFinderRequested();
+        }
+        else ShowSearch();
+    }
+
+    /// <summary>
+    /// Recherche reprise à neuf (récentes et accès rapides à jour, selon les droits du compte connecté)
+    /// tant que rien n'est saisi. Une saisie en cours est gardée.
+    /// </summary>
+    public void FreshHeaderFinder()
+    {
+        if (headerFinder is { HasQuery: true }) return;
+        if (headerFinder is not null) headerFinder.PropertyChanged -= OnHeaderFinderChanged;
+        headerFinder = NewHeaderFinder();
+        Raise(nameof(HeaderFinder));
+    }
+
+    /// <summary>Résultat ouvert, page changée : la liste se referme et la barre se vide.</summary>
+    public void CloseHeaderFinder()
+    {
+        HeaderFinderOpen = false;
+        if (headerFinder is { HasQuery: true }) headerFinder.Query = string.Empty;
+    }
+
+    private SearchViewModel NewHeaderFinder()
+    {
+        var finder = new SearchViewModel(this);
+        finder.PropertyChanged += OnHeaderFinderChanged;
+        return finder;
+    }
+
+    // Une saisie, au clavier ou à la voix, déroule les résultats sous la barre.
+    private void OnHeaderFinderChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(SearchViewModel.Query) && sender is SearchViewModel { HasQuery: true }) HeaderFinderOpen = true;
+    }
 
     /// <summary>Menu Paramètres ou rubrique Configuration : index local des options seulement.</summary>
     public void ShowSettingsSearch() => Dialog = new SearchViewModel(this, settingsOnly: true);

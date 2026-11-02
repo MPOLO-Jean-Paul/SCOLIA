@@ -90,6 +90,7 @@ public partial class MainView : UserControl
         // Premier affichage : l'écran de lancement est déjà là, son logo s'assemble tout de suite.
         if (shell.ShowStartup) Avalonia.Threading.Dispatcher.UIThread.Post(() => { if (Shell == shell && shell.ShowStartup) PlayIntro(StartupLogo, StartupContent, shell); });
         shell.HeaderSearch.PropertyChanged += OnContextSearchChanged;
+        shell.HeaderFinderRequested += FocusHeaderFinder;
         shell.PickFileHandler = pickFileHandler;
         shell.IsTyping = isTypingHandler;
         shell.CopyHandler = copyHandler;
@@ -108,6 +109,7 @@ public partial class MainView : UserControl
             shell.Prefs.PropertyChanged -= OnPreferencesChanged;
             shell.PropertyChanged -= OnShellChanged;
             shell.HeaderSearch.PropertyChanged -= OnContextSearchChanged;
+            shell.HeaderFinderRequested -= FocusHeaderFinder;
             if (shell.PickFileHandler == pickFileHandler) shell.PickFileHandler = null;
             if (shell.IsTyping == isTypingHandler) shell.IsTyping = null;
             if (shell.CopyHandler == copyHandler) shell.CopyHandler = null;
@@ -161,6 +163,10 @@ public partial class MainView : UserControl
     {
         if (subscribedShell is not { } shell) return;
         if (args.PropertyName == nameof(ShellViewModel.CompactWindow)) FitWindow(Bounds.Size);
+        // Un résultat ouvert (page, fiche, fenêtre, menu Fichier) ou la veille : la liste de la barre se referme et se vide.
+        if (shell.HeaderFinderOpen && args.PropertyName is nameof(ShellViewModel.Current) or nameof(ShellViewModel.Dialog)
+                or nameof(ShellViewModel.BackstageOpen) or nameof(ShellViewModel.IsLocked) or nameof(ShellViewModel.IsLoggedIn))
+            shell.CloseHeaderFinder();
         // Lancement et ouverture de session : le logo s'assemble, puis le nom, le message et les trois points suivent.
         if (args.PropertyName == nameof(ShellViewModel.ShowStartup) && shell.ShowStartup) PlayIntro(StartupLogo, StartupContent, shell);
         if (args.PropertyName == nameof(ShellViewModel.ShowLockScreen) && shell.ShowLockScreen)
@@ -212,23 +218,102 @@ public partial class MainView : UserControl
         logo.Play(animate, assemble);
     }
 
-    /// <summary>La recherche desktop suit le contexte : filtre local sur une liste,
-    /// palette globale uniquement sur l'accueil et sur les écrans sans filtre.</summary>
-    private void OnDesktopSearchClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    // ---------- Recherche générale dans la barre du haut ----------
+
+    /// <summary>Ctrl+K ou « Rechercher » : le curseur dans la barre, la liste ouverte dessous. Aucune autre fenêtre.</summary>
+    private void FocusHeaderFinder()
     {
-        if (Shell is not { } shell) return;
-        if (PhoneHeaderSearchVm.Scope(shell.Current).Length == 0)
-        {
-            shell.ShowSearch();
-            return;
-        }
-        shell.HeaderSearch.Toggle.Execute(null);
         Avalonia.Threading.Dispatcher.UIThread.Post(() =>
         {
-            if (Shell == shell && shell.HeaderSearch.IsOpen)
-                DesktopContextSearchBox.Focus();
+            if (Shell is not { } shell || !HeaderFinderBar.IsEffectivelyVisible) return;
+            HeaderFinderBox.Focus();
+            HeaderFinderBox.SelectAll();
+            OpenHeaderFinder(shell);
         }, Avalonia.Threading.DispatcherPriority.Loaded);
     }
+
+    private void OnHeaderFinderFocus(object? sender, FocusChangedEventArgs e)
+    {
+        if (Shell is { } shell) OpenHeaderFinder(shell);
+    }
+
+    private void OnHeaderFinderMic(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (Shell is { } shell) OpenHeaderFinder(shell);
+    }
+
+    private void OpenHeaderFinder(ShellViewModel shell)
+    {
+        // Champ vide : récentes et accès rapides relus pour le compte connecté.
+        shell.FreshHeaderFinder();
+        PlaceHeaderFinder();
+        shell.HeaderFinderOpen = true;
+    }
+
+    /// <summary>La liste se pose juste sous la barre, au moins aussi large qu'elle, sans sortir de la fenêtre.</summary>
+    private void PlaceHeaderFinder()
+    {
+        if (HeaderFinderBar.Bounds.Width <= 0 || HeaderFinderBar.TranslatePoint(new Point(0, HeaderFinderBar.Bounds.Height), DesktopArea) is not { } corner) return;
+        var width = Math.Max(HeaderFinderBar.Bounds.Width, 560);
+        width = Math.Min(width, Math.Max(320, DesktopArea.Bounds.Width - 24));
+        var left = Math.Max(12, Math.Min(corner.X, DesktopArea.Bounds.Width - width - 12));
+        HeaderFinderDrop.Width = width;
+        HeaderFinderDrop.Margin = new Thickness(left, corner.Y + 8, 0, 0);
+    }
+
+    private void OnHeaderFinderOutside(object? sender, PointerPressedEventArgs e)
+    {
+        if (Shell is { } shell) shell.HeaderFinderOpen = false;
+    }
+
+    /// <summary>Entrée ouvre le premier résultat, Bas descend dans la liste, Échap vide puis referme.</summary>
+    private async void OnHeaderFinderKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (Shell is not { } shell) return;
+        var finder = shell.HeaderFinder;
+        switch (e.Key)
+        {
+            case Key.Escape:
+                e.Handled = true;
+                if (finder.HasQuery) finder.Query = string.Empty;
+                else shell.HeaderFinderOpen = false;
+                break;
+            case Key.Down:
+                e.Handled = true;
+                if (!shell.HeaderFinderOpen) OpenHeaderFinder(shell);
+                FinderButtons().FirstOrDefault()?.Focus();
+                break;
+            case Key.Enter:
+                e.Handled = true;
+                if (!finder.HasQuery) break;
+                // Saisie à peine tapée : la recherche part tout de suite, puis le premier résultat s'ouvre.
+                if (finder.Selected is null) await finder.SearchAsync();
+                if (finder.Open.CanExecute(null)) finder.Open.Execute(null);
+                break;
+        }
+    }
+
+    /// <summary>Haut et Bas passent d'un résultat à l'autre ; au-dessus du premier, retour dans la barre.</summary>
+    private void OnHeaderFinderDropKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (e.Key is not (Key.Up or Key.Down or Key.Escape)) return;
+        e.Handled = true;
+        if (e.Key == Key.Escape)
+        {
+            HeaderFinderBox.Focus();
+            if (Shell is { } shell) shell.HeaderFinderOpen = false;
+            return;
+        }
+        var buttons = FinderButtons();
+        var index = buttons.FindIndex(b => b.IsFocused);
+        var next = index + (e.Key == Key.Down ? 1 : -1);
+        if (next < 0) HeaderFinderBox.Focus();
+        else if (next < buttons.Count) buttons[next].Focus();
+    }
+
+    private List<Button> FinderButtons() => HeaderFinderDrop.GetVisualDescendants().OfType<Button>()
+        .Where(b => b.IsEffectivelyVisible && b.IsEffectivelyEnabled && (b.Classes.Contains("searchrow") || b.Classes.Contains("searchtile")))
+        .ToList();
 
     private void OnDesktopContextSearchKeyDown(object? sender, KeyEventArgs e)
     {
@@ -557,7 +642,8 @@ public partial class MainView : UserControl
             return;
         }
         if (e.Key != Key.Escape) return;
-        if (shell.HasSheet) shell.CloseSheet();
+        if (shell.HeaderFinderOpen) shell.HeaderFinderOpen = false;
+        else if (shell.HasSheet) shell.CloseSheet();
         else if (shell.Dialog is FormViewModel form) { if (!form.Busy) form.Cancel.Execute(null); }
         else if (shell.HasDialog) shell.CloseDialog();
         else if (shell.BackstageOpen) { if (shell.Backstage.ShowDetail) shell.Backstage.BackToList.Execute(null); else shell.CloseBackstage(); }

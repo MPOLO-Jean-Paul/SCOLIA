@@ -1087,6 +1087,33 @@ if (args.Length > 3 && args[3] == "recherches")
 
     // 2. Recherche générale (accueil).
     Wait(shell.Open(() => new HomePage(shell)));
+    if (!phoneMode)
+    {
+        // Ordinateur : Ctrl+K place le curseur dans la barre du haut ; les résultats se déroulent dessous, sans autre fenêtre.
+        shell.FindInHeader();
+        Pump(300);
+        var bar = shell.HeaderFinder;
+        AllCheck("Barre du haut : la recherche s'y fait, sans fenêtre", shell.HeaderFinderOpen && !shell.HasDialog);
+        AllCheck("Barre du haut : champ façon Google, curseur dedans",
+            SearchStyled("HeaderFinderBox") && window.GetVisualDescendants().OfType<TextBox>().Any(t => t.Name == "HeaderFinderBox" && t.IsFocused));
+        AllCheck("Barre du haut : micro présent", window.GetVisualDescendants().OfType<Button>()
+            .Any(b => b.Name == "HeaderFinderMic" && b.IsEffectivelyVisible));
+        Save(window, "recherches-0-ordinateur-barre-vide.png");
+        AllCheck("Barre du haut : la voix remplit la recherche",
+            Dictate(() => bar.Listen.ExecuteAsync(), () => bar.Query, "Kabeya", "recherches-0b-ordinateur-barre-ecoute.png") == "Kabeya");
+        Wait(bar.SearchAsync());
+        Pump(300);
+        AllCheck($"Barre du haut : résultats sous la barre ({bar.Results.Count})", bar.Results.Count >= 1 && shell.HeaderFinderOpen);
+        Save(window, "recherches-0c-ordinateur-barre-resultats.png");
+        var before = shell.Current;
+        bar.Open.Execute(null);
+        Pump(600);
+        AllCheck("Barre du haut : le résultat s'ouvre et la liste se referme",
+            (!ReferenceEquals(shell.Current, before) || shell.HasDialog) && !shell.HeaderFinderOpen && !bar.HasQuery);
+        shell.CloseDialog();
+        Wait(shell.Open(() => new HomePage(shell)));
+        Pump(200);
+    }
     shell.ShowSearch();
     Pump(300);
     var general = (SearchViewModel)shell.Dialog!;
@@ -1384,7 +1411,7 @@ if (args.Length > 3 && args[3] == "bureau")
             prefs.Scale = textScale;
             RenderDesktop();
             CheckDesktop($"Bureau {desktopWidth}×{desktopHeight}, texte {textScale:P0} : forme bureau conservée", !shell.Phone);
-            foreach (var name in new[] { "PageBar", "HeaderTitle", "HeaderSearch", "HeaderExtras", "DesktopStatusBar", "DesktopServerLine" })
+            foreach (var name in new[] { "PageBar", "HeaderTitle", "HeaderFinderBar", "HeaderExtras", "DesktopStatusBar", "DesktopServerLine" })
                 CheckDesktop($"{name} dans la fenêtre", InsideDesktop(DesktopNamed(name)));
             Save(window, $"bureau-{desktopWidth}x{desktopHeight}-texte-{textScale:0.0}.png");
         }
@@ -2232,14 +2259,28 @@ if (shell.Current is StudentsPage studentsPage && studentsPage.Items.Count > 2)
 
 // Boîtes de dialogue : recherche globale et formulaire d'inscription.
 Wait(shell.Open(() => new DashboardPage(shell)));
-shell.ShowSearch();
-if (shell.Dialog is SearchViewModel search)
+if (Platform.IsMobile)
 {
-    search.Query = "ACC";
-    Wait(Task.Delay(900));
+    shell.ShowSearch();
+    if (shell.Dialog is SearchViewModel search)
+    {
+        search.Query = "ACC";
+        Wait(Task.Delay(900));
+    }
+    Save(window, "24-recherche.png");
+    shell.CloseDialog();
 }
-Save(window, "24-recherche.png");
-shell.CloseDialog();
+else
+{
+    // Ordinateur : la recherche se fait dans la barre du haut, résultats déroulés dessous.
+    shell.FindInHeader();
+    Wait(Task.Delay(300));
+    Save(window, "24-recherche-vide.png");
+    shell.HeaderFinder.Query = "ACC";
+    Wait(Task.Delay(900));
+    Save(window, "24-recherche.png");
+    shell.CloseHeaderFinder();
+}
 
 // À propos, et l'aide des raccourcis : chaque fenêtre a son bouton Fermer.
 shell.ShowAbout();
@@ -2473,6 +2514,7 @@ int CommandSweep(ShellViewModel shell)
         }
         if (shell.BackstageOpen) shell.CloseBackstage();
         shell.CloseSheet();
+        shell.CloseHeaderFinder();
         shell.PhoneMenuOpen = false;
     }
     string? Try(string where, string label, System.Windows.Input.ICommand command, bool toggle)
@@ -2497,6 +2539,7 @@ int CommandSweep(ShellViewModel shell)
                     : shell.HasSheet ? $"choix « {shell.Sheet!.Title} » : {string.Join(", ", shell.Sheet.Items.Select(i => i.IsChecked ? i.Label + " (coché)" : i.Label))}"
                     : !ReferenceEquals(shell.Current, page) ? $"page « {shell.Current?.Title} »"
                     : shell.BackstageOpen ? "menu Fichier"
+                    : shell.HeaderFinderOpen ? "recherche dans la barre du haut"
                     : noticed ? $"message « {lastNotice} »"
                     : PrefsKey() != prefs ? "réglage modifié"
                     : null;

@@ -129,6 +129,16 @@
     <Style Selector="LayoutTransformControl.phone Grid#OpeningHost TextBlock.title">
       <Setter Property="FontSize" Value="22" />
     </Style>
+    <!-- Liste de la recherche de la barre : une carte claire, ombrée, posée sous la barre -->
+    <Style Selector="Border.finderdrop">
+      <Setter Property="Background" Value="{DynamicResource BgBrush}" />
+      <Setter Property="CornerRadius" Value="18" />
+      <Setter Property="BoxShadow" Value="0 12 36 0 #33000000" />
+      <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="ClipToBounds" Value="True" />
+      <Setter Property="Padding" Value="0,6,0,0" />
+    </Style>
   </UserControl.Styles>
 
   <!-- Toute l'interface suit la taille de la fenêtre : la mise en page de 1280 × 720, agrandie ou réduite d'un bloc -->
@@ -225,17 +235,28 @@
               <TextBlock Text="{Binding Current.Subtitle}" Classes="muted" TextTrimming="CharacterEllipsis" />
             </StackPanel>
           </Grid>
-          <!-- Une seule recherche d'en-tête par métier : locale sur une liste, globale à l'accueil.
-               Ctrl+K conserve toujours la palette globale, y compris sur desktop. -->
-          <Button x:Name="HeaderSearch" Grid.Column="3" Classes="hdrsearch" Click="OnDesktopSearchClick"
-                  IsVisible="{Binding !HeaderSearch.IsOpen}" ToolTip.Tip="{Binding HeaderSearch.SearchHint}"
-                  HorizontalAlignment="Stretch" MaxWidth="440" MinWidth="180" Margin="18,0" VerticalAlignment="Center">
-            <Grid ColumnDefinitions="Auto,*,Auto">
-              <mi:MaterialIcon Kind="Magnify" Width="17" Height="17" Margin="0,0,8,0" />
-              <TextBlock Grid.Column="1" Text="{Binding HeaderSearch.Placeholder}" Classes="muted" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
-              <Border Grid.Column="2" Classes="keycap" Margin="8,0,0,0"><TextBlock Text="{Binding HeaderSearch.ShortcutText}" /></Border>
+          <!-- Recherche générale, dans la barre même, façon Android : on tape ici, les résultats se déroulent dessous.
+               Sur une liste, la même place sert au filtre de la page (ci-dessous). Ctrl+K y place le curseur. -->
+          <Border x:Name="HeaderFinderBar" Grid.Column="3" Classes="googlebar pill" MaxWidth="460" MinWidth="220" Margin="18,0"
+                  VerticalAlignment="Center" IsVisible="{Binding !HeaderSearch.IsOpen}">
+            <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto">
+              <mi:MaterialIcon Kind="Magnify" Width="19" Height="19" Margin="14,0,4,0" VerticalAlignment="Center"
+                               Foreground="{DynamicResource MutedBrush}" IsHitTestVisible="False" />
+              <TextBox x:Name="HeaderFinderBox" Grid.Column="1" Classes="searchfield" MinHeight="40"
+                       Text="{Binding HeaderFinder.Query, Mode=TwoWay}" PlaceholderText="{Binding HeaderFinder.Placeholder}"
+                       GotFocus="OnHeaderFinderFocus" KeyDown="OnHeaderFinderKeyDown" ToolTip.Tip="Apprenants, reçus, pages et réglages (Ctrl+K)" />
+              <Border Grid.Column="2" Classes="keycap" Margin="6,0,6,0" IsVisible="{Binding !HeaderFinder.HasQuery}"><TextBlock Text="Ctrl+K" /></Border>
+              <Button Grid.Column="3" Classes="baricon" Command="{Binding HeaderFinder.ClearQuery}" IsVisible="{Binding HeaderFinder.HasQuery}"
+                      ToolTip.Tip="Effacer" Width="40" Height="40">
+                <mi:MaterialIcon Kind="Close" />
+              </Button>
+              <Button x:Name="HeaderFinderMic" Grid.Column="4" Classes="baricon mic" Classes.listening="{Binding HeaderFinder.Listening}"
+                      Command="{Binding HeaderFinder.Listen}" IsVisible="{Binding HeaderFinder.VoiceAvailable}" Click="OnHeaderFinderMic"
+                      ToolTip.Tip="Rechercher à la voix" Width="40" Height="40">
+                <mi:MaterialIcon Kind="Microphone" />
+              </Button>
             </Grid>
-          </Button>
+          </Border>
           <!-- Filtre ouvert : la barre de la recherche de l'accueil, façon Google, en pilule -->
           <Border Grid.Column="3" Classes="googlebar pill" MaxWidth="460" MinWidth="260" Margin="18,0" VerticalAlignment="Center"
                   IsVisible="{Binding HeaderSearch.IsOpen}">
@@ -448,6 +469,14 @@
             </Button>
           </StackPanel>
         </Grid>
+      </Border>
+
+      <!-- Résultats de la barre du haut : un clic ailleurs les referme, comme le menu de recherche de Windows -->
+      <Border x:Name="HeaderFinderCatcher" Grid.Row="1" Grid.RowSpan="2" Grid.ColumnSpan="2" Background="Transparent"
+              IsVisible="{Binding HeaderFinderOpen}" PointerPressed="OnHeaderFinderOutside" />
+      <Border x:Name="HeaderFinderDrop" Grid.RowSpan="3" Grid.ColumnSpan="2" Classes="finderdrop" IsVisible="{Binding HeaderFinderOpen}"
+              HorizontalAlignment="Left" VerticalAlignment="Top" KeyDown="OnHeaderFinderDropKeyDown">
+        <views:SearchResultsView DataContext="{Binding HeaderFinder}" />
       </Border>
       </Grid>
 
