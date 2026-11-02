@@ -46,6 +46,8 @@
       </dict>
     </dict>
   </dict>
+  <key>NSSpeechRecognitionUsageDescription</key><string>SCOLIA transforme votre voix en texte pour lancer une recherche : apprenant, reçu ou fonction.</string>
+  <key>NSMicrophoneUsageDescription</key><string>SCOLIA écoute le micro seulement quand vous touchez le micro d'une recherche.</string>
   <key>NSFaceIDUsageDescription</key><string>SCOLIA demande Face ID pour confirmer l'accès au compte scolaire déjà authentifié sur cet iPhone.</string>
   <!-- Chiffrement standard d'iOS seulement : pas de déclaration d'exportation à faire pour TestFlight -->
   <key>ITSAppUsesNonExemptEncryption</key><false/>

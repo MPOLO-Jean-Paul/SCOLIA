@@ -30,7 +30,10 @@ public sealed class AsyncCommand(Func<Task> execute) : ICommand
     public bool CanExecute(object? parameter) => !running;
     public void Refresh() => CanExecuteChanged?.Invoke(this, EventArgs.Empty);
 
-    public async void Execute(object? parameter)
+    public async void Execute(object? parameter) => await ExecuteAsync();
+
+    /// <summary>Même commande, attendue jusqu'au bout (essais et enchaînements).</summary>
+    public async Task ExecuteAsync()
     {
         if (running) return;
         running = true;

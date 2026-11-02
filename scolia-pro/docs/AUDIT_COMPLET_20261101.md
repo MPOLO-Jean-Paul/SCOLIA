@@ -57,7 +57,7 @@ rapport journalier envoyé automatiquement, audit complet et catalogue du foncti
 - À l'heure choisie, l'ordinateur principal prépare le PDF, l'enregistre dans le dossier « rapports », l'envoie, puis prévient tous les postes par la bannière « Rapport du jour prêt ».
 
 ### Info sur l'application
-- Dans Aide, juste après « À propos ». Le catalogue compte 12 modules et 50 fonctions décrites, avec une recherche.
+- Dans Aide, juste après « À propos ». Le catalogue compte 12 modules et 52 fonctions décrites, avec une recherche.
 
 ### Complément : envoi par e-mail et mise en veille
 
@@ -97,6 +97,32 @@ rapport journalier envoyé automatiquement, audit complet et catalogue du foncti
 - Un nouvel APK s'installe donc par-dessus l'ancien, comme une mise à jour.
 - Il faut désinstaller une dernière fois l'ancienne version, signée par une clé jetable.
 
+#### Recherche façon Google partout, avec la voix
+- Toutes les recherches reprennent la barre de la recherche de l'accueil :
+  - retour à gauche ;
+  - champ sans cadre ;
+  - croix pour effacer ;
+  - micro à droite.
+- Endroits concernés :
+
+| Recherche | Téléphone | Ordinateur |
+|---|---|---|
+| Accueil, la référence | Plein écran | Fenêtre, même contenu |
+| Menu, outils et réglages | Barre en haut du menu, mêmes lignes de résultats | Sans objet |
+| Filtre d'une liste | Barre à la place de l'en-tête | Barre en pilule dans l'en-tête |
+| Recherche des réglages | Même page que l'accueil | Même fenêtre que l'accueil |
+| Info sur l'application | Barre en pilule | Barre en pilule |
+| Champs « Rechercher » des pages | Remplacés par le filtre de l'en-tête | Pilule arrondie avec loupe |
+
+- La voix :
+  - Android : la fenêtre « Parlez maintenant » du service vocal du téléphone, en français. SCOLIA n'a pas besoin de la permission du micro.
+  - iPhone : la reconnaissance vocale d'Apple, en français. iOS demande une fois l'accord pour le micro et la dictée. L'écoute s'arrête seule après un court silence.
+  - Pendant l'écoute, le champ affiche « Parlez maintenant… » et le micro passe au rouge.
+  - Le texte dicté lance la recherche aussitôt.
+  - Sans service vocal, le micro ne s'affiche pas.
+  - Windows : pas de micro dans SCOLIA. La dictée de Windows, touches Windows+H, écrit dans n'importe quel champ.
+- Vérifié par les essais automatiques avec une voix simulée : le micro est présent partout, « Parlez maintenant… » s'affiche, le texte dicté arrive dans le champ. La reconnaissance réelle reste à essayer sur un téléphone.
+
 ## 4. Limites à connaître
 
 | Sujet | Limite | Solution proposée |
@@ -104,10 +130,10 @@ rapport journalier envoyé automatiquement, audit complet et catalogue du foncti
 | Envoi WhatsApp sans intervention | Il faut un compte WhatsApp Business de l'établissement chez Meta : identifiant du numéro et jeton d'accès. Pour écrire en premier, il faut aussi un modèle de message approuvé, avec un document en en-tête. Aucun identifiant n'a été inventé. | Créer le compte sur Meta for Developers, puis saisir les trois valeurs dans « Planifier ». Sans elles, le PDF est préparé chaque jour et la notification propose de le partager. |
 | Notifications téléphone application fermée | Les alertes arrivent tant que SCOLIA est ouvert ou récemment mis en arrière-plan. Une fois l'application fermée par le système, il faudrait un service de notifications push. | Ajouter un relais push (Firebase pour Android, APNs pour iPhone) le jour où l'établissement crée ces comptes. |
 | iPhone en arrière-plan | iOS suspend vite les applications : la notification n'arrive que dans les instants qui suivent la mise en arrière-plan. | Même solution : notifications push. |
-| Vérification sur appareil | L'empreinte réelle, la bannière du système et l'envoi WhatsApp n'ont pas été essayés sur un vrai téléphone ni avec un vrai compte Meta. | Essai sur votre téléphone avec l'APK livré. |
+| Vérification sur appareil | L'empreinte réelle, la bannière du système, la recherche à la voix et l'envoi WhatsApp n'ont pas été essayés sur un vrai téléphone ni avec un vrai compte Meta. | Essai sur votre téléphone avec l'APK livré. |
+| Voix sans réseau | Sur la plupart des téléphones, la reconnaissance vocale passe par Internet. | Saisie au clavier, ou langue française téléchargée pour l'usage hors ligne dans les réglages vocaux du téléphone. |
 
 ## 5. Pistes suivantes
 
 - Relais push pour les notifications quand l'application est fermée.
 - Rapport hebdomadaire et mensuel, sur le même modèle que le rapport journalier.
-- Envoi du rapport par e-mail en plus de WhatsApp, pour les établissements qui ont une messagerie.

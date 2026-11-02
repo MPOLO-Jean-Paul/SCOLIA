@@ -39,16 +39,19 @@
         </Button>
       </Grid>
       <!-- Recherche dans le catalogue -->
-      <Grid Grid.Row="1" ColumnDefinitions="*,Auto" Margin="16,4,16,10">
-        <TextBox x:Name="CatalogQuery" Text="{Binding Query}" PlaceholderText="Chercher une fonction : reçu, empreinte, sauvegarde…"
-                 MinHeight="44" CornerRadius="22" Padding="40,0,12,0" VerticalContentAlignment="Center" />
-        <mi:MaterialIcon Kind="Magnify" Width="20" Height="20" Foreground="{DynamicResource MutedBrush}"
-                         HorizontalAlignment="Left" VerticalAlignment="Center" Margin="14,0,0,0" IsHitTestVisible="False" />
-        <Button Grid.Column="1" Classes="quiet" Command="{Binding ClearQuery}" IsVisible="{Binding HasQuery}" Margin="6,0,0,0"
-                MinWidth="44" MinHeight="44" ToolTip.Tip="Effacer">
-          <mi:MaterialIcon Kind="Close" Width="18" Height="18" />
-        </Button>
-      </Grid>
+      <Border Grid.Row="1" Classes="googlebar pill" Margin="16,4,16,10">
+        <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+          <mi:MaterialIcon Kind="Magnify" Width="22" Height="22" Margin="12,0,6,0" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" />
+          <TextBox x:Name="CatalogQuery" Grid.Column="1" Classes="searchfield" Text="{Binding Query}" PlaceholderText="{Binding Placeholder}" />
+          <Button Grid.Column="2" Classes="baricon" Command="{Binding ClearQuery}" IsVisible="{Binding HasQuery}" ToolTip.Tip="Effacer" Width="40" Height="40">
+            <mi:MaterialIcon Kind="Close" />
+          </Button>
+          <Button Grid.Column="3" Classes="baricon mic" Classes.listening="{Binding Listening}" Command="{Binding Listen}"
+                  IsVisible="{Binding VoiceAvailable}" ToolTip.Tip="Chercher à la voix" Width="40" Height="40">
+            <mi:MaterialIcon Kind="Microphone" />
+          </Button>
+        </Grid>
+      </Border>
 
       <ScrollViewer Grid.Row="2" HorizontalScrollBarVisibility="Disabled" MaxHeight="620" x:Name="CatalogScroll">
         <StackPanel Margin="16,0,16,18" Spacing="10">

@@ -838,7 +838,11 @@ if (args.Length > 3 && args[3] == "veille")
     shell.Backstage.LockChoice = shell.Backstage.LockChoices.First(c => c.Value == "10");
     LockCheck($"Réglage : {shell.Backstage.LockSummary}", prefs.LockMinutes == 10);
     Settle(300);
-    var hubScroll = window.GetVisualDescendants().OfType<ComboBox>().FirstOrDefault(c => c.Name == "LockDelay");
+    shell.Backstage.LockPanelOpen = true;
+    Settle(300);
+    LockCheck($"Délais en lignes à cocher : {shell.Backstage.LockOptions.Count} choix, « {shell.Backstage.LockOptions.Single(o => o.IsSelected).Label} » coché",
+        shell.Backstage.LockOptions.Count == 7 && shell.Backstage.LockOptions.Single(o => o.IsSelected).Label == "Après 10 minutes");
+    var hubScroll = window.GetVisualDescendants().OfType<ItemsControl>().FirstOrDefault(c => c.Name == "LockDelays");
     hubScroll?.BringIntoView();
     Settle(300);
     Save(window, "veille-reglage.png");
@@ -866,6 +870,129 @@ if (args.Length > 3 && args[3] == "veille")
     window.Close();
     Console.WriteLine(lockFailures == 0 ? "Veille : tout est en place." : $"Veille : {lockFailures} échec(s).");
     Environment.ExitCode = lockFailures == 0 ? 0 : 1;
+    return;
+}
+
+// Toutes les recherches (argument « recherches ») : menu, accueil, paramètres, listes ; même champ, mêmes blocs.
+if (args.Length > 3 && args[3] == "recherches")
+{
+    var phoneMode = Preferences.MobileLayout;
+    var allFailures = 0;
+    void AllCheck(string label, bool ok)
+    {
+        Console.WriteLine($"{(ok ? "OK  " : "ECHEC")} {label}");
+        if (!ok) allFailures++;
+    }
+    void Pump(int ms)
+    {
+        var until = DateTime.UtcNow.AddMilliseconds(ms);
+        while (DateTime.UtcNow < until) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(10); }
+    }
+    // Recherche de l'accueil façon Google partout : champ sans cadre dans la barre, micro à droite.
+    bool SearchStyled(string name) => window.GetVisualDescendants().OfType<TextBox>()
+        .Any(t => t.Name == name && t.IsEffectivelyVisible && t.Classes.Contains("searchfield"));
+    bool MicShown() => window.GetVisualDescendants().OfType<Button>()
+        .Any(b => b.IsEffectivelyVisible && b.Classes.Contains("mic"));
+    // Voix simulée : la vraie reconnaissance est celle du téléphone. Ici, on garde la main sur la fin de l'écoute.
+    TaskCompletionSource<string?>? speaking = null;
+    Scolia.Bureau.Infrastructure.Platform.RecognizeSpeechAsync = () =>
+    {
+        speaking = new TaskCompletionSource<string?>();
+        return speaking.Task;
+    };
+    Scolia.Bureau.Infrastructure.Platform.CanRecognizeSpeech = () => true;
+    string Dictate(Func<Task> listen, Func<string> query, string words, string? capture)
+    {
+        var running = listen();
+        Pump(250);
+        if (capture is not null) Save(window, capture);
+        speaking!.TrySetResult(words);
+        Wait(running);
+        Pump(400);
+        return query();
+    }
+    Wait(shell.OpenSessionAsync(Result(api.LoginAsync("admin", password))));
+    foreach (var old in prefs.RecentSearches.ToList()) prefs.ForgetSearch(old);
+    prefs.RememberSearch("Kabeya");
+
+    if (phoneMode)
+    {
+        // 1. Menu : la référence.
+        shell.SettingsSearch.Activate.Execute(null);
+        shell.SettingsSearch.Query = "recu";
+        Pump(300);
+        AllCheck("Menu : barre façon Google", SearchStyled("MenuSearchBox"));
+        AllCheck("Menu : micro présent", MicShown());
+        Save(window, "recherches-1-menu.png");
+        AllCheck("Menu : la voix remplit la recherche",
+            Dictate(() => shell.SettingsSearch.Listen.ExecuteAsync(), () => shell.SettingsSearch.Query, "sauvegarde", null) == "sauvegarde");
+        shell.SettingsSearch.Reset();
+        shell.PhoneMenuOpen = false;
+        Pump(200);
+    }
+
+    // 2. Recherche générale (accueil).
+    Wait(shell.Open(() => new HomePage(shell)));
+    shell.ShowSearch();
+    Pump(300);
+    var general = (SearchViewModel)shell.Dialog!;
+    AllCheck("Accueil : barre façon Google", SearchStyled("QueryBox"));
+    AllCheck("Accueil : micro présent", MicShown());
+    Save(window, phoneMode ? "recherches-2-accueil-vide.png" : "recherches-2-ordinateur-vide.png");
+    AllCheck("Accueil : « Parlez maintenant », puis le texte dicté",
+        Dictate(() => general.Listen.ExecuteAsync(), () => general.Query, "Kabeya",
+            phoneMode ? "recherches-2b-accueil-ecoute.png" : "recherches-2b-ordinateur-ecoute.png") == "Kabeya");
+    general.Query = "ACC";
+    Wait(general.SearchAsync());
+    Pump(300);
+    AllCheck($"Accueil : résultats en lignes ({general.Results.Count}, {string.Join(", ", general.Groups.Select(g => $"{g.Title} {g.Items.Count}"))})",
+        general.Results.Count >= 2 && general.Groups.Any(g => g.Title == "APPRENANTS"));
+    Save(window, phoneMode ? "recherches-3-accueil-resultats.png" : "recherches-3-ordinateur-resultats.png");
+    general.Query = "zzzqqq";
+    Wait(general.SearchAsync());
+    Pump(200);
+    AllCheck("Accueil : « Aucun résultat »", general.IsEmptyResult);
+    Save(window, phoneMode ? "recherches-4-aucun.png" : "recherches-4-ordinateur-aucun.png");
+    shell.CloseDialog();
+
+    // 3. Recherche des réglages (page Paramètres).
+    Wait(shell.Open(() => new SettingsPage(shell, "apparence")));
+    shell.ShowSettingsSearch();
+    var settingsFinder = (SearchViewModel)shell.Dialog!;
+    settingsFinder.Query = "police";
+    Wait(settingsFinder.SearchAsync());
+    Pump(300);
+    AllCheck($"Paramètres : même barre ({settingsFinder.Results.Count} réglage(s))", SearchStyled("QueryBox") && settingsFinder.Results.Count >= 1);
+    Save(window, phoneMode ? "recherches-5-parametres.png" : "recherches-5-ordinateur-parametres.png");
+    shell.CloseDialog();
+
+    // 4. Filtre d'une liste (Apprenants).
+    Wait(shell.Open(() => new StudentsPage(shell)));
+    shell.HeaderSearch.ActivateOrClose();
+    shell.HeaderSearch.Query = "Kabeya";
+    Pump(600);
+    AllCheck("Liste : filtre en barre façon Google", SearchStyled(phoneMode ? "ContextSearchBox" : "DesktopContextSearchBox"));
+    AllCheck("Liste : micro présent", MicShown());
+    Save(window, phoneMode ? "recherches-6-liste.png" : "recherches-6-ordinateur-liste.png");
+    AllCheck("Liste : la voix remplit le filtre",
+        Dictate(() => shell.HeaderSearch.Listen.ExecuteAsync(), () => shell.HeaderSearch.Query, "Mukendi", null) == "Mukendi");
+    if (!phoneMode)
+        AllCheck("Ordinateur : champ de la page Apprenants en pilule, avec micro",
+            window.GetVisualDescendants().OfType<TextBox>().Any(t => t.IsEffectivelyVisible && t.Classes.Contains("search")
+                && t.PlaceholderText == "Rechercher un nom ou un matricule" && t.InnerRightContent is Button mic && mic.Classes.Contains("mic")));
+    shell.HeaderSearch.Close.Execute(null);
+
+    // 5. Catalogue « Info sur l'application ».
+    shell.ShowAppInfo();
+    Pump(300);
+    AllCheck("Catalogue : barre façon Google et micro", SearchStyled("CatalogQuery") && MicShown());
+    Save(window, phoneMode ? "recherches-7-catalogue.png" : "recherches-7-ordinateur-catalogue.png");
+    shell.CloseDialog();
+
+    shell.Sync.Stop();
+    window.Close();
+    Console.WriteLine(allFailures == 0 ? "Recherches : toutes harmonisées." : $"Recherches : {allFailures} échec(s).");
+    Environment.ExitCode = allFailures == 0 ? 0 : 1;
     return;
 }
 
@@ -1717,6 +1844,21 @@ void Smoke(ShellViewModel shell, ScoliaClient api, Window window, string passwor
         Console.WriteLine($"  (doublon signalé : {inscriptionForm.Error})");
         inscriptionForm.Submit.Execute(null);
         WaitValidation(inscriptionForm, inscription);
+    }
+    // Les essais répétés remplissent la promotion de démonstration : on passe à une promotion qui a encore des places,
+    // comme le ferait la secrétaire devant le message « complète ».
+    foreach (var other in inscriptionForm.Find("promotion").Options.Skip(1))
+    {
+        if (inscription.IsCompleted || !(inscriptionForm.Error ?? string.Empty).Contains("complète", StringComparison.Ordinal)) break;
+        Console.WriteLine($"  (promotion complète, essai sur {other})");
+        inscriptionForm.Find("promotion").Choice = other;
+        inscriptionForm.Submit.Execute(null);
+        WaitValidation(inscriptionForm, inscription);
+        if (!inscription.IsCompleted && (inscriptionForm.Error ?? string.Empty).Contains("identité", StringComparison.Ordinal))
+        {
+            inscriptionForm.Submit.Execute(null);
+            WaitValidation(inscriptionForm, inscription);
+        }
     }
     var inscriptionDone = inscription.IsCompleted;
     if (!inscriptionDone) Console.WriteLine($"  (inscription non terminée : {inscriptionForm.Error} · "

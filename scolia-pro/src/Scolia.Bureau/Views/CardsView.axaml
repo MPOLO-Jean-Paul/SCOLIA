@@ -10,9 +10,9 @@
           <TextBlock Text="Promotion" Classes="fieldlabel" />
           <ComboBox Width="230" ItemsSource="{Binding Promotions}" SelectedItem="{Binding Promotion}" />
         </StackPanel>
-        <StackPanel Classes="field">
+        <StackPanel Classes="field pagesearch">
           <TextBlock Text="Rechercher" Classes="fieldlabel" />
-          <TextBox Width="240" Text="{Binding Search}" PlaceholderText="Nom ou matricule" />
+          <TextBox Classes="search clearButton" Width="240" Text="{Binding Search}" PlaceholderText="Nom ou matricule" />
         </StackPanel>
         <StackPanel Classes="field">
           <TextBlock Text="Mois de la session" Classes="fieldlabel" />

@@ -191,6 +191,158 @@
     <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
     <Setter Property="BorderThickness" Value="2" />
   </Style>
+  <!-- Recherche : le même champ partout, celui du menu. Pilule grise, loupe bleue, croix pour effacer. -->
+  <Style Selector="TextBox.search">
+    <Setter Property="CornerRadius" Value="23" />
+    <Setter Property="Background" Value="{DynamicResource GroupBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="MinHeight" Value="44" />
+    <Setter Property="Padding" Value="2,0,6,0" />
+    <Setter Property="FontSize" Value="15" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+    <Setter Property="infra:VoiceField.Enabled" Value="True" />
+    <Setter Property="InnerLeftContent">
+      <Template>
+        <mi:MaterialIcon Kind="Magnify" Width="20" Height="20" Margin="12,0,4,0" VerticalAlignment="Center"
+                         Foreground="{DynamicResource MutedBrush}" />
+      </Template>
+    </Setter>
+  </Style>
+  <Style Selector="TextBox.search:pointerover">
+    <Setter Property="BorderBrush" Value="{DynamicResource LineStrongBrush}" />
+  </Style>
+  <Style Selector="TextBox.search:focus">
+    <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+  </Style>
+  <Style Selector="TextBox.search /template/ Border#PART_BorderElement">
+    <Setter Property="Background" Value="{DynamicResource GroupBrush}" />
+  </Style>
+
+  <!-- Recherche façon Google, celle de l'accueil, reprise partout : retour, champ sans cadre, croix, micro.
+       Sur le téléphone, la barre occupe le haut de l'écran ; sur l'ordinateur, la même barre en pilule. -->
+  <Style Selector="Border.googlebar">
+    <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
+    <Setter Property="BorderThickness" Value="0,0,0,1" />
+    <Setter Property="Padding" Value="4,6,6,6" />
+  </Style>
+  <Style Selector="Border.googlebar.pill">
+    <Setter Property="Background" Value="{DynamicResource GroupBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="24" />
+    <Setter Property="Padding" Value="2,0,4,0" />
+    <Setter Property="MinHeight" Value="46" />
+  </Style>
+  <Style Selector="Border.googlebar.pill:focus-within">
+    <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+  </Style>
+  <Style Selector="TextBox.searchfield">
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="FontSize" Value="18" />
+    <Setter Property="MinHeight" Value="44" />
+    <Setter Property="Padding" Value="4,0" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Border.googlebar.pill TextBox.searchfield">
+    <Setter Property="FontSize" Value="15" />
+  </Style>
+  <Style Selector="TextBox.searchfield /template/ Border#PART_BorderElement">
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Background" Value="Transparent" />
+  </Style>
+  <Style Selector="TextBox.searchfield:focus /template/ Border#PART_BorderElement">
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Background" Value="Transparent" />
+  </Style>
+  <Style Selector="TextBox.searchfield:pointerover /template/ Border#PART_BorderElement">
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Background" Value="Transparent" />
+  </Style>
+  <Style Selector="Button.baricon">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="CornerRadius" Value="22" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="Width" Value="44" />
+    <Setter Property="Height" Value="44" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+    <Setter Property="HorizontalContentAlignment" Value="Center" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+    <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+  </Style>
+  <Style Selector="Button.baricon /template/ ContentPresenter">
+    <Setter Property="Background" Value="Transparent" />
+  </Style>
+  <Style Selector="Button.baricon:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
+  </Style>
+  <Style Selector="Button.baricon mi|MaterialIcon">
+    <Setter Property="Width" Value="23" />
+    <Setter Property="Height" Value="23" />
+  </Style>
+  <Style Selector="Button.baricon.mic">
+    <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
+  </Style>
+  <!-- Pendant l'écoute, le micro passe au rouge sur un rond teinté, comme dans Google -->
+  <Style Selector="Button.baricon.mic.listening /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
+  </Style>
+  <Style Selector="Button.baricon.mic.listening">
+    <Setter Property="Foreground" Value="{DynamicResource ToneRed}" />
+  </Style>
+  <!-- Le micro reste rouge pendant l'écoute, même si la commande est occupée -->
+  <Style Selector="Button.baricon.mic.listening:disabled /template/ ContentPresenter">
+    <Setter Property="Foreground" Value="{DynamicResource ToneRed}" />
+    <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
+  </Style>
+  <!-- Contenu de la recherche : titres de rubrique, lignes, tuiles et pastille de sorte -->
+  <Style Selector="TextBlock.searchsection">
+    <Setter Property="FontSize" Value="16" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="Margin" Value="20,18,20,8" />
+  </Style>
+  <Style Selector="Button.searchrow">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="CornerRadius" Value="0" />
+    <Setter Property="Padding" Value="20,10" />
+    <Setter Property="MinHeight" Value="60" />
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Button.searchrow /template/ ContentPresenter">
+    <Setter Property="Background" Value="Transparent" />
+  </Style>
+  <Style Selector="Button.searchrow:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
+  </Style>
+  <Style Selector="Button.searchtile">
+    <Setter Property="Background" Value="{DynamicResource GroupBrush}" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="CornerRadius" Value="18" />
+    <Setter Property="Padding" Value="12,0,8,0" />
+    <Setter Property="Height" Value="72" />
+    <Setter Property="Margin" Value="4" />
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Button.searchtile /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource GroupBrush}" />
+  </Style>
+  <Style Selector="Button.searchtile:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
+  </Style>
+  <Style Selector="Border.typepill">
+    <Setter Property="Background" Value="{DynamicResource GroupBrush}" />
+    <Setter Property="CornerRadius" Value="10" />
+    <Setter Property="Padding" Value="8,2" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
   <Style Selector="ComboBox">
     <Setter Property="MinHeight" Value="{DynamicResource CtlHeight}" />
     <Setter Property="CornerRadius" Value="{StaticResource RadiusField}" />

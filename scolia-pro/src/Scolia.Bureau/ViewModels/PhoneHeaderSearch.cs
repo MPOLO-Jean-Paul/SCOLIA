@@ -21,7 +21,20 @@ public sealed class PhoneHeaderSearchVm : Observable
     public RelayCommand Toggle { get; }
     public RelayCommand Close { get; }
     public RelayCommand Clear { get; }
-    public bool IsOpen { get => isOpen; private set => Set(ref isOpen, value); }
+
+    /// <summary>Micro du filtre, comme la recherche de l'accueil.</summary>
+    public bool VoiceAvailable => VoiceInput.Available;
+    private bool listening;
+    public bool Listening { get => listening; private set { if (Set(ref listening, value)) Raise(nameof(Placeholder)); } }
+    public AsyncCommand Listen => listen ??= new AsyncCommand(async () =>
+    {
+        Listening = true;
+        try { if (await VoiceInput.ListenAsync() is { } text) Query = text; }
+        finally { Listening = false; }
+    });
+    private AsyncCommand? listen;
+    // À chaque ouverture, le micro suit le service vocal du moment (installé, coupé ou refusé entre-temps).
+    public bool IsOpen { get => isOpen; private set { if (Set(ref isOpen, value) && value) Raise(nameof(VoiceAvailable)); } }
     public bool HasQuery => Query.Length > 0;
     public bool IsVisible => shell.PhoneMenuOpen || shell.Current is HomePage or PromoterDashboardPage or SettingsPage ||
                              Scope(shell.Current).Length > 0;
@@ -43,7 +56,7 @@ public sealed class PhoneHeaderSearchVm : Observable
         ExpensesPage => "depenses",
         _ => string.Empty,
     };
-    public string Placeholder => Scope(shell.Current) switch
+    public string Placeholder => listening ? "Parlez maintenant…" : Scope(shell.Current) switch
     {
         "apprenants" => "Nom ou matricule de l'apprenant",
         "recus" => "Reçu, matricule ou nom",

@@ -90,6 +90,15 @@ public static class Platform
     /// <summary>Vrai tant que SCOLIA est à l'écran ; en arrière-plan, l'alerte passe par la notification du système.</summary>
     public static Func<bool>? IsInForeground { get; set; }
 
+    /// <summary>
+    /// Recherche à la voix : le système écoute (Google sur Android, reconnaissance vocale d'Apple sur iPhone) et rend
+    /// le texte dicté, ou rien si la personne annule. Vide sur l'ordinateur : le micro n'y est pas proposé.
+    /// </summary>
+    public static Func<Task<string?>>? RecognizeSpeechAsync { get; set; }
+
+    /// <summary>Vrai si l'appareil sait reconnaître la voix (service vocal présent).</summary>
+    public static Func<bool>? CanRecognizeSpeech { get; set; }
+
     /// <summary>Android signale le retour à SCOLIA après une installation externe.</summary>
     public static event Action? AppResumed;
     public static void NotifyAppResumed() => AppResumed?.Invoke();

@@ -45,6 +45,19 @@ public sealed class AppInfoViewModel : Observable
     public bool IsEmpty => Modules.Count == 0;
     public bool HasQuery => query.Length > 0;
 
+    /// <summary>Micro du champ, comme la recherche de l'accueil.</summary>
+    public bool VoiceAvailable => VoiceInput.Available;
+    private bool listening;
+    public bool Listening { get => listening; private set { if (Set(ref listening, value)) Raise(nameof(Placeholder)); } }
+    public string Placeholder => listening ? "Parlez maintenant…" : "Chercher une fonction : reçu, empreinte, sauvegarde…";
+    public AsyncCommand Listen => listen ??= new AsyncCommand(async () =>
+    {
+        Listening = true;
+        try { if (await VoiceInput.ListenAsync() is { } text) Query = text; }
+        finally { Listening = false; }
+    });
+    private AsyncCommand? listen;
+
     /// <summary>Recherche dans tout le catalogue : les modules concernés s'ouvrent sur les fonctions trouvées.</summary>
     public string Query
     {

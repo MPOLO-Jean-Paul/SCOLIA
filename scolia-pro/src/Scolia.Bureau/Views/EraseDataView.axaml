@@ -34,7 +34,7 @@
               <RadioButton Classes="segment" GroupName="erase-scope" Content="Tous les apprenants" IsChecked="{Binding ScopeAll}" />
             </StackPanel>
           </Border>
-          <TextBox Text="{Binding Search}" PlaceholderText="Rechercher un nom ou un matricule" IsEnabled="{Binding IsSelectionScope}" />
+          <TextBox Classes="search clearButton" Text="{Binding Search}" PlaceholderText="Rechercher un nom ou un matricule" IsEnabled="{Binding IsSelectionScope}" />
         </StackPanel>
       </Border>
     </Grid>

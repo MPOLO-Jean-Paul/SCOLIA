@@ -262,6 +262,18 @@ public sealed class SearchViewModel : Observable
     public bool HasQuery => query.Length > 0;
     public RelayCommand ClearQuery { get; }
     public RelayCommand ClearRecent { get; }
+
+    // ---------- Voix : le micro du champ, comme dans Google ----------
+    public bool VoiceAvailable => VoiceInput.Available;
+    private bool listening;
+    public bool Listening { get => listening; private set { if (Set(ref listening, value)) Raise(nameof(Placeholder)); } }
+    public AsyncCommand Listen => listen ??= new AsyncCommand(async () =>
+    {
+        Listening = true;
+        try { if (await VoiceInput.ListenAsync() is { } text) Query = text; }
+        finally { Listening = false; }
+    });
+    private AsyncCommand? listen;
     public ObservableCollection<RecentSearchRow> Recent { get; } = [];
     public bool HasRecent => Recent.Count > 0;
     public IReadOnlyList<SearchShortcutRow> Shortcuts { get; }
@@ -284,8 +296,8 @@ public sealed class SearchViewModel : Observable
     }
 
     public bool SettingsOnly => settingsOnly;
-    public string Placeholder => settingsOnly ? "Rechercher un réglage : police, mot de passe, mois…" :
-        "Apprenant, matricule, reçu, fonctionnalité ou réglage";
+    public string Placeholder => listening ? "Parlez maintenant…" : settingsOnly ? "Rechercher un réglage : police, mot de passe, mois…" :
+        "Rechercher dans SCOLIA";
     public string SearchTitle => settingsOnly ? "Rechercher un réglage" : "Rechercher dans SCOLIA";
     public string Query
     {
@@ -296,6 +308,7 @@ public sealed class SearchViewModel : Observable
             Raise(nameof(IsIdle));
             Raise(nameof(HasResults));
             Raise(nameof(HasQuery));
+            IsEmptyResult = false;
             Schedule();
         }
     }
@@ -313,10 +326,27 @@ public sealed class SearchViewModel : Observable
         timer.Start();
     }
 
+    /// <summary>Résultats rangés par sorte, comme ceux de la recherche du menu : un bloc par sorte, un titre au-dessus.</summary>
+    public IReadOnlyList<SearchGroupVm> Groups { get; private set; } = [];
+    private bool isEmptyResult;
+    /// <summary>Recherche faite, rien trouvé : la carte « Aucun résultat » s'affiche, comme dans le menu.</summary>
+    public bool IsEmptyResult { get => isEmptyResult; private set => Set(ref isEmptyResult, value); }
+
+    private static string GroupTitle(string type) => type switch
+    {
+        "Apprenant" => "APPRENANTS",
+        "Reçu" => "REÇUS",
+        "Fonctionnalité" or "Paramètre" => "FONCTIONNALITÉS ET PARAMÈTRES",
+        _ => type.ToUpperInvariant(),
+    };
+
     public async Task SearchAsync()
     {
         Results.Clear();
         Selected = null;
+        Groups = [];
+        Raise(nameof(Groups));
+        IsEmptyResult = false;
         if (Query.Trim().Length < 2)
         {
             Message = settingsOnly
@@ -390,6 +420,9 @@ public sealed class SearchViewModel : Observable
         if (looksLikeCode) foreach (var hit in strong) Results.Add(hit);
         foreach (var hit in weak) Results.Add(hit);
         Selected = Results.Count > 0 ? Results[0] : null;
+        Groups = Results.GroupBy(r => GroupTitle(r.Type)).Select(g => new SearchGroupVm(g.Key, g.ToList())).ToList();
+        Raise(nameof(Groups));
+        IsEmptyResult = Results.Count == 0;
         Message = dataUnavailable
             ? "Serveur indisponible : utilisez les paramètres et fonctionnalités locales."
             : Results.Count == 0 ? "Aucun résultat dans les catégories autorisées."
@@ -471,6 +504,12 @@ public sealed class SearchViewModel : Observable
 }
 
 /// <summary>Résultat de recherche dans la liste, avec son libellé de type.</summary>
+/// <summary>Un délai de mise en veille, en ligne à cocher.</summary>
+public sealed record LockOptionVm(string Label, bool IsSelected, RelayCommand Choose);
+
+/// <summary>Bloc de résultats d'une même sorte : apprenants, reçus, fonctionnalités et paramètres.</summary>
+public sealed record SearchGroupVm(string Title, IReadOnlyList<SearchHitRow> Items);
+
 /// <summary>Recherche récente : la toucher la relance, la croix l'oublie.</summary>
 public sealed record RecentSearchRow(string Text, RelayCommand Use, RelayCommand Remove);
 
@@ -737,9 +776,26 @@ public sealed class BackstageViewModel : Observable
             shell.Prefs.LockMinutes = minutes;
             Raise(nameof(LockChoice));
             Raise(nameof(LockSummary));
+            Raise(nameof(LockDelayLabel));
             shell.NoteActivity();
         }
     }
+    /// <summary>Les délais en lignes à cocher, comme le type de code : une seule cochée, un toucher suffit.</summary>
+    public IReadOnlyList<LockOptionVm> LockOptions => LockChoices.Select(c => new LockOptionVm(c.Label, c == LockChoice,
+        new RelayCommand(() => { LockChoice = c; Raise(nameof(LockOptions)); LockPanelOpen = false; }))).ToList();
+
+    private bool lockPanelOpen;
+    /// <summary>La ligne « Verrouillage automatique » s'ouvre sur place et montre les délais.</summary>
+    public bool LockPanelOpen
+    {
+        get => lockPanelOpen;
+        set { if (Set(ref lockPanelOpen, value)) Raise(nameof(LockChevron)); }
+    }
+    public MaterialIconKind LockChevron => lockPanelOpen ? MaterialIconKind.ChevronUp : MaterialIconKind.ChevronDown;
+    public RelayCommand ToggleLockPanel => toggleLockPanel ??= new RelayCommand(() => LockPanelOpen = !LockPanelOpen);
+    private RelayCommand? toggleLockPanel;
+    public string LockDelayLabel => LockChoice?.Label ?? "Après 5 minutes";
+
     public string LockSummary => shell.Prefs.LockMinutes == 0
         ? "Désactivée : la session reste ouverte jusqu'à la déconnexion"
         : $"Verrouillage après {(shell.Prefs.LockMinutes == 1 ? "1 minute" : $"{shell.Prefs.LockMinutes} minutes")} sans activité, aussi en arrière-plan";

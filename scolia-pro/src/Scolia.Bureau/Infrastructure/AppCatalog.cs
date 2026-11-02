@@ -108,8 +108,9 @@ public static class AppCatalog
         new("Recherche et navigation", "Magnify", "ToneBlue",
             "Trouver vite, comme sur un téléphone moderne.",
             [
-                new("Recherche générale", "Apprenants, matricules, reçus, fonctions et réglages en un seul champ, avec les recherches récentes et des accès rapides."),
-                new("Filtres", "Sur chaque liste, la loupe filtre uniquement les données de l'écran."),
+                new("Recherche générale", "Façon Google : apprenants, matricules, reçus, fonctions et réglages en un seul champ, avec les recherches récentes et des accès rapides."),
+                new("Recherche à la voix", "Sur le téléphone, le micro de chaque recherche écoute en français : dites un nom, un matricule ou une fonction. Sur Windows, la dictée Windows+H écrit dans le champ."),
+                new("Filtres", "Sur chaque liste, la loupe ouvre la même barre que la recherche de l'accueil et filtre uniquement les données de l'écran."),
                 new("Raccourcis", "Ctrl+K pour chercher, raccourcis clavier par onglet, menus contextuels et double-clic sur les lignes."),
                 new("Téléphone", "Barre d'onglets en bas, menu complet, retour par le geste d'Android, champs qui remontent au-dessus du clavier."),
             ]),

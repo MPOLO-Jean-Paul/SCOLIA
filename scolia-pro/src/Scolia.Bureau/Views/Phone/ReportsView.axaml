@@ -45,10 +45,11 @@
                           </ItemsControl.ItemsPanel>
                           <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                              <Button Command="{Binding Run}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Height="40" Margin="0,0,8,0">
-                                <StackPanel Orientation="Horizontal" Spacing="6">
-                                  <mi:MaterialIcon Kind="{Binding Icon}" Width="16" Height="16" />
-                                  <TextBlock Text="{Binding Label}" />
+                              <!-- Icône au-dessus du libellé : trois actions tiennent sur un téléphone sans couper « Planifier ». -->
+                              <Button Command="{Binding Run}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" MinHeight="52" Margin="0,0,8,0" Padding="4,6">
+                                <StackPanel Spacing="2" HorizontalAlignment="Center">
+                                  <mi:MaterialIcon Kind="{Binding Icon}" Width="18" Height="18" HorizontalAlignment="Center" />
+                                  <TextBlock Text="{Binding Label}" FontSize="{DynamicResource FsSmall}" HorizontalAlignment="Center" TextTrimming="CharacterEllipsis" />
                                 </StackPanel>
                               </Button>
                             </DataTemplate>

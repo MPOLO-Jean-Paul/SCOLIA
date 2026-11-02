@@ -77,7 +77,21 @@ public sealed class PhoneSettingsSearchVm : Observable
     public RelayCommand Activate { get; }
     public RelayCommand Toggle { get; }
     public RelayCommand Clear { get; }
-    public bool IsOpen { get => isOpen; private set => Set(ref isOpen, value); }
+
+    /// <summary>Micro du champ, comme la recherche de l'accueil.</summary>
+    public bool VoiceAvailable => VoiceInput.Available;
+    private bool listening;
+    public bool Listening { get => listening; private set { if (Set(ref listening, value)) Raise(nameof(Placeholder)); } }
+    public string Placeholder => listening ? "Parlez maintenant…" : "Outil ou paramètre à ouvrir…";
+    public AsyncCommand Listen => listen ??= new AsyncCommand(async () =>
+    {
+        Listening = true;
+        try { if (await VoiceInput.ListenAsync() is { } text) Query = text; }
+        finally { Listening = false; }
+    });
+    private AsyncCommand? listen;
+    // À chaque ouverture, le micro suit le service vocal du moment (installé, coupé ou refusé entre-temps).
+    public bool IsOpen { get => isOpen; private set { if (Set(ref isOpen, value) && value) Raise(nameof(VoiceAvailable)); } }
     public string Query
     {
         get => query;

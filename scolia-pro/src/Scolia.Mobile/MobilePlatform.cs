@@ -50,6 +50,8 @@ public static class MobilePlatform
         Platform.Haptic = Haptic;
         // Encaissement ou sauvegarde sur un autre poste : bannière du système quand SCOLIA est en arrière-plan.
         Platform.IsInForeground = AndroidAlerts.InForeground;
+        Platform.RecognizeSpeechAsync = AndroidSpeech.ListenAsync;
+        Platform.CanRecognizeSpeech = AndroidSpeech.IsAvailable;
         Platform.ShowSystemNotification = alert => AndroidAlerts.Show(context ?? app, alert);
         // Sans ordinateur dans l'établissement, ce téléphone peut en être le serveur.
         Platform.LocalServer = Server.PhoneServer.Get(app);

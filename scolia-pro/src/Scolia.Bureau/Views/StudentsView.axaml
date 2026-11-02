@@ -6,9 +6,9 @@
   <Grid RowDefinitions="Auto,*">
     <Border Grid.Row="0" Classes="band" Margin="0,0,0,10">
       <WrapPanel>
-        <StackPanel Classes="field">
+        <StackPanel Classes="field pagesearch">
           <TextBlock Text="Rechercher" Classes="fieldlabel" />
-          <TextBox Width="300" Text="{Binding Search}" PlaceholderText="Rechercher un nom ou un matricule" />
+          <TextBox Classes="search clearButton" Width="300" Text="{Binding Search}" PlaceholderText="Rechercher un nom ou un matricule" />
         </StackPanel>
         <StackPanel Classes="field">
           <TextBlock Text="Promotion" Classes="fieldlabel" />

@@ -157,7 +157,7 @@
     <!-- Barre du haut -->
     <Border Grid.Row="0" Classes="phonebar">
       <StackPanel>
-      <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto">
+      <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto" IsVisible="{Binding !HeaderSearch.IsOpen}">
         <Button Classes="phoneicon" Command="{Binding BackCommand}" IsVisible="{Binding CanGoBack}" ToolTip.Tip="Retour">
           <mi:MaterialIcon Kind="ChevronLeft" />
         </Button>
@@ -171,23 +171,6 @@
           <TextBlock Text="{Binding PhonePage.Subtitle}" Classes="muted" FontSize="{DynamicResource FsSmall}" TextTrimming="CharacterEllipsis" TextWrapping="Wrap" MaxLines="2"
                      IsVisible="{Binding PhonePage.Subtitle, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
         </StackPanel>
-        <!-- Filtre de la page active : inline dans l'entête, aucun mélange avec la recherche du Menu. -->
-        <Border Grid.Column="1" IsVisible="{Binding HeaderSearch.IsOpen}" CornerRadius="14"
-                Background="{DynamicResource GroupBrush}" BorderThickness="1"
-                BorderBrush="{DynamicResource LineBrush}" Padding="9,0" Margin="2,0,2,0">
-          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="4">
-            <TextBox x:Name="ContextSearchBox" Grid.Column="0"
-                     Text="{Binding HeaderSearch.Query, Mode=TwoWay}"
-                     PlaceholderText="{Binding HeaderSearch.Placeholder}"
-                     BorderThickness="0" Background="Transparent" FontSize="14"
-                     KeyDown="OnContextSearchKeyDown" VerticalAlignment="Center" />
-            <Button Grid.Column="1" Classes="phoneicon" Width="32" Height="36"
-                    Command="{Binding HeaderSearch.Clear}" IsVisible="{Binding HeaderSearch.HasQuery}"
-                    ToolTip.Tip="Effacer ce filtre">
-              <mi:MaterialIcon Kind="CloseCircleOutline" Width="18" Height="18"/>
-            </Button>
-          </Grid>
-        </Border>
         <!-- Présence : les autres postes connectés ; le point vert bat quand l'un d'eux enregistre quelque chose -->
         <Button Grid.Column="2" Classes="phoneicon" Command="{Binding NetworkCommand}" ToolTip.Tip="Réseau et activité">
           <Panel>
@@ -203,13 +186,26 @@
         </Button>
         <Button Grid.Column="3" Classes="phoneicon" Command="{Binding HeaderSearch.Toggle}"
                 IsVisible="{Binding HeaderSearch.IsVisible}" ToolTip.Tip="{Binding HeaderSearch.SearchHint}">
-          <Panel Width="24" Height="24">
-            <mi:MaterialIcon Kind="Magnify" IsVisible="{Binding !HeaderSearch.IsOpen}" />
-            <mi:MaterialIcon Kind="Close" IsVisible="{Binding HeaderSearch.IsOpen}" />
-          </Panel>
+          <mi:MaterialIcon Kind="Magnify" />
         </Button>
         <Button Grid.Column="4" Classes="phoneicon" Click="OnActionsClick" IsVisible="{Binding PhonePage.HasHeaderActions}" ToolTip.Tip="Actions de la page">
           <mi:MaterialIcon Kind="DotsHorizontalCircleOutline" />
+        </Button>
+      </Grid>
+      <!-- Filtre de la page active : la barre de la recherche de l'accueil, façon Google, à la place de l'en-tête.
+           Retour pour fermer, champ, croix, micro. Aucun mélange avec la recherche du menu. -->
+      <Grid ColumnDefinitions="Auto,*,Auto,Auto" IsVisible="{Binding HeaderSearch.IsOpen}" MinHeight="48">
+        <Button Classes="baricon" Command="{Binding HeaderSearch.Close}" ToolTip.Tip="Fermer le filtre">
+          <mi:MaterialIcon Kind="ArrowLeft" />
+        </Button>
+        <TextBox x:Name="ContextSearchBox" Grid.Column="1" Classes="searchfield" Text="{Binding HeaderSearch.Query, Mode=TwoWay}"
+                 PlaceholderText="{Binding HeaderSearch.Placeholder}" KeyDown="OnContextSearchKeyDown" TextInputOptions.ReturnKeyType="Search" />
+        <Button Grid.Column="2" Classes="baricon" Command="{Binding HeaderSearch.Clear}" IsVisible="{Binding HeaderSearch.HasQuery}" ToolTip.Tip="Effacer">
+          <mi:MaterialIcon Kind="Close" />
+        </Button>
+        <Button Grid.Column="3" Classes="baricon mic" Classes.listening="{Binding HeaderSearch.Listening}" Command="{Binding HeaderSearch.Listen}"
+                IsVisible="{Binding HeaderSearch.VoiceAvailable}" ToolTip.Tip="Filtrer à la voix">
+          <mi:MaterialIcon Kind="Microphone" />
         </Button>
       </Grid>
       <!-- Hors ligne : le travail continue, et l'utilisateur sait ce qui attend d'être envoyé -->
@@ -272,41 +268,38 @@
       <Border.RenderTransform><TranslateTransform /></Border.RenderTransform>
       <ScrollViewer x:Name="MenuScroll" HorizontalScrollBarVisibility="Disabled">
         <StackPanel x:Name="MenuPanel" Margin="12,12,12,20">
-          <!-- Recherche Android : dans le même en-tête, sans nouvelle page ni dialogue au centre. -->
-          <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8" Margin="2,4,2,6" MinHeight="52">
-            <Panel Width="42" Height="42" VerticalAlignment="Center" IsVisible="{Binding !SettingsSearch.IsOpen}">
+          <!-- Recherche du menu : la barre de la recherche de l'accueil, façon Google. Fermée, l'en-tête montre l'école et la loupe ;
+               ouverte, il devient retour, champ, croix et micro, sans nouvelle page. -->
+          <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8" Margin="2,4,2,6" MinHeight="52" IsVisible="{Binding !SettingsSearch.IsOpen}">
+            <Panel Width="42" Height="42" VerticalAlignment="Center">
               <Image Source="{Binding SchoolLogo}" IsVisible="{Binding HasSchoolLogo}" Width="34" Height="34" />
               <Image Source="{DynamicResource ScoliaMark}" IsVisible="{Binding !HasSchoolLogo}" Width="34" Height="34" />
             </Panel>
-            <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2" IsVisible="{Binding !SettingsSearch.IsOpen}">
+            <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
               <TextBlock Text="{Binding SchoolHeaderTitle}" FontSize="18" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" MaxLines="1" />
               <TextBlock Text="{Binding SchoolYearLine}" Classes="muted" FontSize="{DynamicResource FsSmall}" />
             </StackPanel>
-            <Border Grid.ColumnSpan="2" IsVisible="{Binding SettingsSearch.IsOpen}"
-                    Background="{DynamicResource GroupBrush}" CornerRadius="17"
-                    BorderBrush="{DynamicResource LineBrush}" BorderThickness="1" Padding="10,2">
-              <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="6" MinHeight="44">
-                <mi:MaterialIcon Kind="Magnify" Width="20" Height="20" Foreground="{DynamicResource AccentBrush}" VerticalAlignment="Center" />
-                <TextBox x:Name="MenuSearchBox" Grid.Column="1"
-                         Text="{Binding SettingsSearch.Query, Mode=TwoWay}"
-                         PlaceholderText="Outil ou paramètre à ouvrir…"  Background="Transparent"
-                         BorderThickness="0" FontSize="16" VerticalAlignment="Center"
-                         KeyDown="OnSettingsSearchKeyDown" />
-                <Button Grid.Column="2" Classes="phoneicon settingssearchcontrol"
-                        Command="{Binding SettingsSearch.Clear}" IsVisible="{Binding SettingsSearch.HasQuery}"
-                        Width="36" Height="36" ToolTip.Tip="Effacer la recherche">
-                  <mi:MaterialIcon Kind="CloseCircleOutline" Width="20" Height="20" />
-                </Button>
-              </Grid>
-            </Border>
-            <Button Grid.Column="2" Classes="phoneicon settingssearchcontrol" Command="{Binding SettingsSearch.Toggle}"
-                    ToolTip.Tip="Trouver une fonctionnalité ou un réglage" Width="44" Height="44">
-              <Panel Width="24" Height="24">
-                <mi:MaterialIcon Kind="Magnify" IsVisible="{Binding !SettingsSearch.IsOpen}" Width="23" Height="23" />
-                <mi:MaterialIcon Kind="Close" IsVisible="{Binding SettingsSearch.IsOpen}" Width="23" Height="23" />
-              </Panel>
+            <Button Grid.Column="2" Classes="baricon settingssearchcontrol" Command="{Binding SettingsSearch.Toggle}"
+                    ToolTip.Tip="Trouver une fonctionnalité ou un réglage">
+              <mi:MaterialIcon Kind="Magnify" />
             </Button>
           </Grid>
+          <Border Classes="googlebar" Margin="-12,-12,-12,0" IsVisible="{Binding SettingsSearch.IsOpen}">
+            <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+              <Button Classes="baricon settingssearchcontrol" Command="{Binding SettingsSearch.Toggle}" ToolTip.Tip="Fermer la recherche">
+                <mi:MaterialIcon Kind="ArrowLeft" />
+              </Button>
+              <TextBox x:Name="MenuSearchBox" Grid.Column="1" Classes="searchfield" Text="{Binding SettingsSearch.Query, Mode=TwoWay}"
+                       PlaceholderText="{Binding SettingsSearch.Placeholder}" KeyDown="OnSettingsSearchKeyDown" TextInputOptions.ReturnKeyType="Search" />
+              <Button Grid.Column="2" Classes="baricon" Command="{Binding SettingsSearch.Clear}" IsVisible="{Binding SettingsSearch.HasQuery}" ToolTip.Tip="Effacer">
+                <mi:MaterialIcon Kind="Close" />
+              </Button>
+              <Button Grid.Column="3" Classes="baricon mic" Classes.listening="{Binding SettingsSearch.Listening}" Command="{Binding SettingsSearch.Listen}"
+                      IsVisible="{Binding SettingsSearch.VoiceAvailable}" ToolTip.Tip="Rechercher à la voix">
+                <mi:MaterialIcon Kind="Microphone" />
+              </Button>
+            </Grid>
+          </Border>
 
           <Border Classes="phonegroup" Margin="0,12,0,0" IsVisible="{Binding !SettingsSearch.HasQuery}">
             <StackPanel>
@@ -326,37 +319,34 @@
           </Border>
 
           <!-- Les résultats sont filtrés localement parmi les réglages autorisés. -->
-          <StackPanel IsVisible="{Binding SettingsSearch.HasQuery}" Spacing="8" Margin="0,14,0,4">
-            <TextBlock Text="FONCTIONNALITÉS ET PARAMÈTRES" Classes="phoneblocktitle" Margin="12,0,0,0" />
-            <Border Classes="phonegroup" IsVisible="{Binding SettingsSearch.HasResults}">
-              <ItemsControl ItemsSource="{Binding SettingsSearch.Results}">
-                <ItemsControl.ItemTemplate>
-                  <DataTemplate>
-                    <Button Classes="phonerow settingssearchresult" Command="{Binding Open}" MinHeight="64">
-                      <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
-                        <Border Classes="appicon medium" Background="{Binding Brush}" VerticalAlignment="Center">
-                          <mi:MaterialIcon Kind="{Binding Icon}" />
-                        </Border>
-                        <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
-                          <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextWrapping="Wrap" />
-                          <TextBlock Text="{Binding Section}" Classes="muted" FontSize="{DynamicResource FsSmall}" />
+          <StackPanel IsVisible="{Binding SettingsSearch.HasQuery}" Margin="-12,0,-12,4">
+            <!-- Même lignes que les résultats de la recherche de l'accueil : grande icône, titre, pastille -->
+            <ItemsControl ItemsSource="{Binding SettingsSearch.Results}" IsVisible="{Binding SettingsSearch.HasResults}" Margin="0,6,0,0">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <Button Classes="searchrow settingssearchresult" Command="{Binding Open}" MinHeight="72">
+                    <Grid ColumnDefinitions="Auto,*">
+                      <Border Width="52" Height="52" CornerRadius="14" Background="{Binding Brush}" Margin="0,0,16,0">
+                        <mi:MaterialIcon Kind="{Binding Icon}" Width="28" Height="28" Foreground="White"
+                                         HorizontalAlignment="Center" VerticalAlignment="Center" />
+                      </Border>
+                      <StackPanel Grid.Column="1" Spacing="4" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding Title}" FontSize="16" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                          <Border Classes="typepill"><TextBlock Text="{Binding Section}" FontSize="12" FontWeight="Medium" /></Border>
                         </StackPanel>
-                        <mi:MaterialIcon Grid.Column="2" Kind="ChevronRight" Width="20" Height="20"
-                                         Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" />
-                      </Grid>
-                    </Button>
-                  </DataTemplate>
-                </ItemsControl.ItemTemplate>
-              </ItemsControl>
-            </Border>
-            <Border Classes="phonegroup" IsVisible="{Binding SettingsSearch.NoResults}" Padding="22,28">
-              <StackPanel HorizontalAlignment="Center" Spacing="10">
-                <mi:MaterialIcon Kind="Magnify" Width="32" Height="32" Foreground="{DynamicResource MutedBrush}" HorizontalAlignment="Center" />
-                <TextBlock Text="Aucune fonctionnalité trouvée" FontWeight="SemiBold" TextAlignment="Center" />
-                <TextBlock Text="Essayez : apprenants, encaisser, reçus, empreinte, Tailscale ou promotion."
-                           Classes="muted" TextWrapping="Wrap" TextAlignment="Center" />
-              </StackPanel>
-            </Border>
+                      </StackPanel>
+                    </Grid>
+                  </Button>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <StackPanel IsVisible="{Binding SettingsSearch.NoResults}" HorizontalAlignment="Center" Spacing="10" Margin="28,40,28,0">
+              <mi:MaterialIcon Kind="Magnify" Width="40" Height="40" Foreground="{DynamicResource MutedBrush}" HorizontalAlignment="Center" />
+              <TextBlock Text="Aucune fonctionnalité trouvée" FontSize="17" FontWeight="SemiBold" TextAlignment="Center" />
+              <TextBlock Text="Essayez : apprenants, encaisser, reçus, empreinte, Tailscale ou promotion."
+                         Classes="muted" TextWrapping="Wrap" TextAlignment="Center" />
+            </StackPanel>
           </StackPanel>
 
           <!-- Navigation normale tant qu'aucune recherche n'est saisie. -->

@@ -53,6 +53,8 @@ public static class IosPlatform
         // Encaissement ou sauvegarde sur un autre poste : notification d'iOS quand SCOLIA passe en arrière-plan.
         Platform.IsInForeground = () => UIApplication.SharedApplication.ApplicationState == UIApplicationState.Active;
         Platform.ShowSystemNotification = ShowNotification;
+        Platform.RecognizeSpeechAsync = IosSpeech.ListenAsync;
+        Platform.CanRecognizeSpeech = IosSpeech.IsAvailable;
         UNUserNotificationCenter.Current.RequestAuthorization(UNAuthorizationOptions.Alert | UNAuthorizationOptions.Sound, (_, _) => { });
     }
 

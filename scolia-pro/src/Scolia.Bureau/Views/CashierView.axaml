@@ -37,7 +37,7 @@
       <Border Classes="card">
         <StackPanel Spacing="8">
           <TextBlock Text="1. Apprenant" Classes="heading" />
-          <TextBox Text="{Binding Search}" PlaceholderText="Nom ou matricule (au moins deux caractères)" />
+          <TextBox Classes="search clearButton" Text="{Binding Search}" PlaceholderText="Nom ou matricule (au moins deux caractères)" />
           <TextBlock Text="{Binding SearchStatus}" IsVisible="{Binding HasSearchStatus}" Classes="muted"
                      FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
           <ListBox ItemsSource="{Binding Results}" SelectedItem="{Binding Selected}" MaxHeight="200" Background="Transparent" BorderThickness="0">

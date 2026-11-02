@@ -66,6 +66,9 @@
       <Setter Property="Background" Value="{DynamicResource LineBrush}" />
       <Setter Property="Margin" Value="72,0,16,0" />
     </Style>
+    <Style Selector="Button.lockoption.chosen /template/ ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
+    </Style>
     <Style Selector="Border.pill">
       <Setter Property="CornerRadius" Value="12" />
       <Setter Property="Padding" Value="10,4" />
@@ -152,16 +155,16 @@
 
         <Border Classes="hubdivider" IsVisible="{Binding ShowBiometricSecurity}" />
         <Button x:Name="BiometricRow" Classes="hubrow" Command="{Binding ToggleBiometricPanel}" IsVisible="{Binding ShowBiometricSecurity}">
-          <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+          <Grid ColumnDefinitions="Auto,*,Auto">
             <Border Classes="hubicon"><mi:MaterialIcon Kind="Fingerprint" /></Border>
             <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
               <TextBlock Text="{Binding BiometricTitle}" Classes="hubtitle" />
-              <TextBlock Text="{Binding BiometricSummary}" Classes="hubsub" />
+              <!-- L'état en tête du résumé, comme « Verrouillage automatique » : rien ne serre le titre. -->
+              <TextBlock Classes="hubsub">
+                <Run Text="{Binding BiometricStateLabel, Mode=OneWay}" FontWeight="SemiBold" /><Run Text=" · " /><Run Text="{Binding BiometricSummary, Mode=OneWay}" />
+              </TextBlock>
             </StackPanel>
-            <Border Grid.Column="2" Classes="pill" Classes.on="{Binding BiometricsEnabled}" Margin="8,0,0,0">
-              <TextBlock Text="{Binding BiometricStateLabel}" FontSize="12" FontWeight="SemiBold" />
-            </Border>
-            <mi:MaterialIcon Grid.Column="3" Kind="{Binding BiometricChevron}" Width="22" Height="22" Margin="6,0,0,0"
+            <mi:MaterialIcon Grid.Column="2" Kind="{Binding BiometricChevron}" Width="22" Height="22" Margin="6,0,0,0"
                              Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" />
           </Grid>
         </Button>
@@ -202,15 +205,37 @@
     <TextBlock Text="Mise en veille" Classes="hubsection" />
     <Border Classes="hubgroup">
       <StackPanel>
-        <Grid ColumnDefinitions="Auto,*" Margin="16,14,16,8">
-          <Border Classes="hubicon"><mi:MaterialIcon Kind="LockClock" /></Border>
-          <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
-            <TextBlock Text="Verrouillage automatique" Classes="hubtitle" />
-            <TextBlock Text="{Binding LockSummary}" Classes="hubsub" />
-          </StackPanel>
-        </Grid>
-        <ComboBox x:Name="LockDelay" ItemsSource="{Binding LockChoices}" SelectedItem="{Binding LockChoice}"
-                  HorizontalAlignment="Stretch" Margin="72,0,16,12" MinHeight="44" />
+        <!-- Même présentation que « Code d'accès » : la ligne s'ouvre sur place, les délais se cochent. -->
+        <Button x:Name="LockDelayRow" Classes="hubrow" Command="{Binding ToggleLockPanel}">
+          <Grid ColumnDefinitions="Auto,*,Auto">
+            <Border Classes="hubicon"><mi:MaterialIcon Kind="LockClock" /></Border>
+            <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+              <TextBlock Text="Verrouillage automatique" Classes="hubtitle" />
+              <TextBlock Text="{Binding LockSummary}" Classes="hubsub" />
+            </StackPanel>
+            <mi:MaterialIcon Grid.Column="2" Kind="{Binding LockChevron}" Width="22" Height="22" Margin="6,0,0,0"
+                             Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" />
+          </Grid>
+        </Button>
+        <Border IsVisible="{Binding LockPanelOpen}" Padding="16,0,16,16">
+          <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="18" ClipToBounds="True">
+            <ItemsControl x:Name="LockDelays" ItemsSource="{Binding LockOptions}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <Button Classes="hubrow lockoption" Classes.chosen="{Binding IsSelected}" Command="{Binding Choose}" MinHeight="52" Padding="16,10">
+                    <Grid ColumnDefinitions="*,Auto">
+                      <TextBlock Text="{Binding Label}" FontWeight="Medium" VerticalAlignment="Center" />
+                      <Panel Grid.Column="1" Width="22" Height="22">
+                        <mi:MaterialIcon Kind="RadioboxMarked" Foreground="{DynamicResource AccentBrush}" IsVisible="{Binding IsSelected}" />
+                        <mi:MaterialIcon Kind="RadioboxBlank" Foreground="{DynamicResource MutedBrush}" IsVisible="{Binding !IsSelected}" />
+                      </Panel>
+                    </Grid>
+                  </Button>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </Border>
+        </Border>
         <Border Classes="hubdivider" />
         <Button x:Name="LockNowRow" Classes="hubrow" Command="{Binding LockNow}">
           <Grid ColumnDefinitions="Auto,*,Auto">

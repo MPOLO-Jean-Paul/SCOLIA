@@ -213,6 +213,11 @@
     </Style>
 
   <!-- Mobile : une précision qui ne tient pas sur une ligne passe sur deux, au lieu d'être coupée -->
+  <!-- Téléphone : une liste se filtre par la loupe de l'en-tête, comme la recherche du menu ; le champ de la page,
+       utile sur l'ordinateur, ferait doublon. -->
+  <Style Selector="LayoutTransformControl.phone StackPanel.pagesearch">
+    <Setter Property="IsVisible" Value="False" />
+  </Style>
   <Style Selector="LayoutTransformControl.phone TextBlock.wrap2">
     <Setter Property="TextWrapping" Value="Wrap" />
     <Setter Property="MaxLines" Value="2" />

@@ -19,6 +19,7 @@ public sealed class MainActivity : AvaloniaMainActivity
     protected override void OnCreate(Bundle? savedInstanceState)
     {
         MobilePlatform.Attach(this);
+        AndroidSpeech.Attach(this);
         // Le fond du thème couvre aussi la préparation d'Avalonia dans base.OnCreate.
         base.OnCreate(savedInstanceState);
         // Android 13+ : permission des notifications (encaissements et sauvegardes des autres postes).
@@ -44,6 +45,7 @@ public sealed class MainActivity : AvaloniaMainActivity
         // La recherche du serveur sur le Wi-Fi a besoin de recevoir les réponses en diffusion.
         MobilePlatform.HoldMulticast(true);
         Security.AndroidBiometrics.Attach(this);
+        AndroidSpeech.Attach(this);
         ScoliaPlatform.NotifyAppResumed();
         // Une erreur de WorkManager ne doit pas empêcher de revenir sur l'écran SCOLIA.
         try { Synchronization.SyncWorker.ScheduleOnResume(this); }
@@ -58,6 +60,13 @@ public sealed class MainActivity : AvaloniaMainActivity
         MobilePlatform.HoldMulticast(false);
         Security.AndroidBiometrics.Detach(this);
         base.OnPause();
+    }
+
+    /// <summary>Le texte dicté revient ici, puis part dans le champ de recherche.</summary>
+    protected override void OnActivityResult(int requestCode, Result resultCode, Android.Content.Intent? data)
+    {
+        if (AndroidSpeech.Complete(requestCode, resultCode, data)) return;
+        base.OnActivityResult(requestCode, resultCode, data);
     }
 
     protected override void OnDestroy()

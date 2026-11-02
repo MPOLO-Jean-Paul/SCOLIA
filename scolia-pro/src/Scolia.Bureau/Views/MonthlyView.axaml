@@ -19,9 +19,9 @@
           <TextBlock Text="État" Classes="fieldlabel" />
           <ComboBox Width="190" ItemsSource="{Binding StateChoices}" SelectedItem="{Binding State}" />
         </StackPanel>
-        <StackPanel Classes="field">
+        <StackPanel Classes="field pagesearch">
           <TextBlock Text="Rechercher" Classes="fieldlabel" />
-          <TextBox Width="240" Text="{Binding Search}" PlaceholderText="Nom ou matricule" />
+          <TextBox Classes="search clearButton" Width="240" Text="{Binding Search}" PlaceholderText="Nom ou matricule" />
         </StackPanel>
       </WrapPanel>
     </Border>

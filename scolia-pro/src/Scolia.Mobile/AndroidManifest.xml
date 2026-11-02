@@ -34,5 +34,8 @@
     <intent><action android:name="android.intent.action.VIEW" /><data android:scheme="tel" /></intent>
     <intent><action android:name="android.intent.action.VIEW" /><data android:scheme="mailto" /></intent>
     <intent><action android:name="android.intent.action.VIEW" /><data android:mimeType="application/pdf" /></intent>
+    <!-- Recherche à la voix : trouver le service vocal du téléphone (Google ou celui du fabricant). -->
+    <intent><action android:name="android.speech.action.RECOGNIZE_SPEECH" /></intent>
+    <intent><action android:name="android.speech.RecognitionService" /></intent>
   </queries>
 </manifest>
