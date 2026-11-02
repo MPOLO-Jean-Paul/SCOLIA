@@ -179,7 +179,7 @@
             <TextBlock Text="{Binding BiometricSecurityStatus}" Classes="hubsub" />
             <TextBlock Text="Confirmez avec votre code actuel" FontWeight="SemiBold" Margin="2,2,0,0" />
             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
-              <TextBox x:Name="BiometricCodeBox" Text="{Binding SecurityPassword}" PasswordChar="{Binding SecurityPasswordMask}"
+              <TextBox Classes="w11" x:Name="BiometricCodeBox" Text="{Binding SecurityPassword}" PasswordChar="{Binding SecurityPasswordMask}"
                        TextInputOptions.ContentType="Password" TextInputOptions.IsSensitive="True"
                        PlaceholderText="Code PIN ou mot de passe" MinHeight="52" CornerRadius="14" FontSize="16" />
               <Button Grid.Column="1" Classes="quiet" Command="{Binding ToggleSecurityPassword}"

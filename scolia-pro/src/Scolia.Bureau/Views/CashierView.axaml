@@ -37,7 +37,14 @@
       <Border Classes="card">
         <StackPanel Spacing="8">
           <TextBlock Text="1. Apprenant" Classes="heading" />
-          <TextBox Classes="search clearButton" Text="{Binding Search}" PlaceholderText="Nom ou matricule (au moins deux caractères)" />
+          <!-- Une seule recherche : celle de l'en-tête. Ce bouton y ramène si elle a été fermée. -->
+          <Button Classes="ghost" Command="{Binding OpenHeaderSearch}" IsVisible="{Binding !HasStudent}" HorizontalAlignment="Stretch"
+                  HorizontalContentAlignment="Left" ToolTip.Tip="Chercher l'apprenant dans la barre du haut">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <mi:MaterialIcon Kind="Magnify" Width="18" Height="18" Foreground="{DynamicResource AccentBrush}" />
+              <TextBlock Text="Cherchez l'apprenant dans la barre du haut : nom ou matricule" TextWrapping="Wrap" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
           <TextBlock Text="{Binding SearchStatus}" IsVisible="{Binding HasSearchStatus}" Classes="muted"
                      FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
           <ListBox ItemsSource="{Binding Results}" SelectedItem="{Binding Selected}" MaxHeight="200" Background="Transparent" BorderThickness="0">

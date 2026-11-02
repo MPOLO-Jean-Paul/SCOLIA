@@ -220,6 +220,130 @@
     <Setter Property="Background" Value="{DynamicResource GroupBrush}" />
   </Style>
 
+  <!-- Champs façon Windows 11 : fond doux, coins arrondis, pas de cadre autour, un trait en bas qui devient bleu
+       et plus épais à la saisie. Utilisés pour les mots de passe, les codes et les adresses, partout. -->
+  <Style Selector="TextBox.w11">
+    <Setter Property="MinHeight" Value="40" />
+    <Setter Property="CornerRadius" Value="6" />
+    <Setter Property="Padding" Value="12,0" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+    <Setter Property="Background" Value="{DynamicResource GroupBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource LineStrongBrush}" />
+    <Setter Property="BorderThickness" Value="0,0,0,1" />
+  </Style>
+  <Style Selector="TextBox.w11:pointerover">
+    <Setter Property="BorderThickness" Value="0,0,0,1" />
+  </Style>
+  <Style Selector="TextBox.w11:focus">
+    <Setter Property="BorderThickness" Value="0,0,0,2" />
+    <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+  </Style>
+  <Style Selector="TextBox.w11 /template/ Border#PART_BorderElement">
+    <Setter Property="Background" Value="{DynamicResource GroupBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource LineStrongBrush}" />
+    <Setter Property="BorderThickness" Value="0,0,0,1" />
+  </Style>
+  <Style Selector="TextBox.w11:pointerover /template/ Border#PART_BorderElement">
+    <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource LineStrongBrush}" />
+    <Setter Property="BorderThickness" Value="0,0,0,1" />
+  </Style>
+  <Style Selector="TextBox.w11:focus /template/ Border#PART_BorderElement">
+    <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+    <Setter Property="BorderThickness" Value="0,0,0,2" />
+  </Style>
+  <!-- Sur le fond bleu de la connexion et de la veille : verre blanc translucide, texte blanc -->
+  <Style Selector="TextBox.w11.onbrand">
+    <Setter Property="MinHeight" Value="46" />
+    <Setter Property="FontSize" Value="16" />
+    <Setter Property="Foreground" Value="White" />
+    <Setter Property="CaretBrush" Value="White" />
+    <Setter Property="SelectionBrush" Value="#66FFFFFF" />
+    <Setter Property="PlaceholderForeground" Value="#C8FFFFFF" />
+  </Style>
+  <Style Selector="TextBox.w11.onbrand /template/ Border#PART_BorderElement">
+    <Setter Property="Background" Value="#33FFFFFF" />
+    <Setter Property="BorderBrush" Value="#99FFFFFF" />
+    <Setter Property="BorderThickness" Value="0,0,0,1" />
+  </Style>
+  <Style Selector="TextBox.w11.onbrand:pointerover /template/ Border#PART_BorderElement">
+    <Setter Property="Background" Value="#40FFFFFF" />
+    <Setter Property="BorderBrush" Value="#CCFFFFFF" />
+  </Style>
+  <Style Selector="TextBox.w11.onbrand:focus /template/ Border#PART_BorderElement">
+    <Setter Property="Background" Value="#4DFFFFFF" />
+    <Setter Property="BorderBrush" Value="White" />
+    <Setter Property="BorderThickness" Value="0,0,0,2" />
+  </Style>
+  <Style Selector="TextBox.w11.onbrand:focus">
+    <Setter Property="Foreground" Value="White" />
+  </Style>
+  <Style Selector="TextBox.w11.onbrand:disabled /template/ Border#PART_BorderElement">
+    <Setter Property="Background" Value="#1FFFFFFF" />
+  </Style>
+  <Style Selector="TextBox.w11.onbrand /template/ TextBlock#PART_Watermark">
+    <Setter Property="Foreground" Value="#C8FFFFFF" />
+  </Style>
+  <Style Selector="TextBox.w11.onbrand:focus /template/ TextBlock#PART_Watermark">
+    <Setter Property="Foreground" Value="#A6FFFFFF" />
+  </Style>
+  <!-- Boutons ronds dans le champ (œil, flèche) et boutons de verre sur le fond bleu -->
+  <Style Selector="Button.fieldicon">
+    <Setter Property="Width" Value="36" /><Setter Property="Height" Value="36" /><Setter Property="CornerRadius" Value="6" />
+    <Setter Property="Padding" Value="0" /><Setter Property="Background" Value="Transparent" /><Setter Property="BorderThickness" Value="0" />
+    <Setter Property="HorizontalContentAlignment" Value="Center" /><Setter Property="VerticalContentAlignment" Value="Center" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Button.fieldicon /template/ ContentPresenter">
+    <Setter Property="Background" Value="Transparent" />
+  </Style>
+  <Style Selector="Button.fieldicon:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="#26FFFFFF" />
+  </Style>
+  <Style Selector="Button.fieldicon.go /template/ ContentPresenter">
+    <Setter Property="Background" Value="#40FFFFFF" />
+  </Style>
+  <Style Selector="Button.fieldicon.go:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="#66FFFFFF" />
+  </Style>
+  <Style Selector="Button.glass">
+    <Setter Property="Background" Value="#26FFFFFF" />
+    <Setter Property="Foreground" Value="White" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="CornerRadius" Value="6" />
+    <Setter Property="Padding" Value="14,10" />
+    <Setter Property="HorizontalContentAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Button.glass /template/ ContentPresenter">
+    <Setter Property="Background" Value="#26FFFFFF" />
+    <Setter Property="Foreground" Value="White" />
+  </Style>
+  <Style Selector="Button.glass:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="#40FFFFFF" />
+    <Setter Property="Foreground" Value="White" />
+  </Style>
+  <Style Selector="Button.glass:disabled /template/ ContentPresenter">
+    <Setter Property="Background" Value="#14FFFFFF" />
+    <Setter Property="Foreground" Value="#99FFFFFF" />
+  </Style>
+  <Style Selector="Button.glasslink">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Foreground" Value="White" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Padding" Value="8,6" />
+    <Setter Property="CornerRadius" Value="6" />
+    <Setter Property="HorizontalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Button.glasslink /template/ ContentPresenter">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Foreground" Value="White" />
+  </Style>
+  <Style Selector="Button.glasslink:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="#26FFFFFF" />
+    <Setter Property="Foreground" Value="White" />
+  </Style>
+
   <!-- Recherche façon Google, celle de l'accueil, reprise partout : retour, champ sans cadre, croix, micro.
        Sur le téléphone, la barre occupe le haut de l'écran ; sur l'ordinateur, la même barre en pilule. -->
   <Style Selector="Border.googlebar">

@@ -30,7 +30,7 @@
     <Style Selector="TextBox.code">
       <Setter Property="MinHeight" Value="52" />
       <Setter Property="FontSize" Value="17" />
-      <Setter Property="CornerRadius" Value="14" />
+      <Setter Property="CornerRadius" Value="6" />
     </Style>
     <Style Selector="TextBlock.fieldlabel">
       <Setter Property="FontWeight" Value="SemiBold" />
@@ -77,7 +77,7 @@
       <!-- 2. Le code actuel -->
       <TextBlock Text="Code PIN ou mot de passe actuel" Classes="fieldlabel" />
       <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
-        <TextBox x:Name="CurrentCodeBox" Classes="code" Text="{Binding CurrentCode}" PasswordChar="{Binding CodeMask}"
+        <TextBox x:Name="CurrentCodeBox" Classes="code w11" Text="{Binding CurrentCode}" PasswordChar="{Binding CodeMask}"
                  TextInputOptions.ContentType="Password" TextInputOptions.IsSensitive="True" PlaceholderText="Celui que vous utilisez aujourd'hui" />
         <Button Grid.Column="1" Classes="quiet" Command="{Binding ToggleCodeVisible}" MinWidth="48" MinHeight="48"
                 ToolTip.Tip="Afficher ou masquer les saisies">
@@ -87,9 +87,9 @@
 
       <!-- 3. Le nouveau code, avec le clavier qui convient -->
       <TextBlock Text="{Binding NewCodeLabel}" Classes="fieldlabel" />
-      <TextBox x:Name="NewPinBox" Classes="code" Text="{Binding NewCode}" PasswordChar="{Binding CodeMask}" IsVisible="{Binding UsePin}"
+      <TextBox x:Name="NewPinBox" Classes="code w11" Text="{Binding NewCode}" PasswordChar="{Binding CodeMask}" IsVisible="{Binding UsePin}"
                TextInputOptions.ContentType="Pin" TextInputOptions.IsSensitive="True" MaxLength="16" PlaceholderText="Chiffres seulement" />
-      <TextBox x:Name="NewPasswordBox" Classes="code" Text="{Binding NewCode}" PasswordChar="{Binding CodeMask}" IsVisible="{Binding UsePassword}"
+      <TextBox x:Name="NewPasswordBox" Classes="code w11" Text="{Binding NewCode}" PasswordChar="{Binding CodeMask}" IsVisible="{Binding UsePassword}"
                TextInputOptions.ContentType="Password" TextInputOptions.IsSensitive="True" MaxLength="128" PlaceholderText="Lettres, chiffres, symboles" />
       <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="14" Padding="14,10">
         <ItemsControl ItemsSource="{Binding CodeRules}">
@@ -108,9 +108,9 @@
       </Border>
 
       <TextBlock Text="{Binding ConfirmCodeLabel}" Classes="fieldlabel" />
-      <TextBox x:Name="ConfirmPinBox" Classes="code" Text="{Binding ConfirmCode}" PasswordChar="{Binding CodeMask}" IsVisible="{Binding UsePin}"
+      <TextBox x:Name="ConfirmPinBox" Classes="code w11" Text="{Binding ConfirmCode}" PasswordChar="{Binding CodeMask}" IsVisible="{Binding UsePin}"
                TextInputOptions.ContentType="Pin" TextInputOptions.IsSensitive="True" MaxLength="16" PlaceholderText="Le même code" />
-      <TextBox x:Name="ConfirmPasswordBox" Classes="code" Text="{Binding ConfirmCode}" PasswordChar="{Binding CodeMask}" IsVisible="{Binding UsePassword}"
+      <TextBox x:Name="ConfirmPasswordBox" Classes="code w11" Text="{Binding ConfirmCode}" PasswordChar="{Binding CodeMask}" IsVisible="{Binding UsePassword}"
                TextInputOptions.ContentType="Password" TextInputOptions.IsSensitive="True" MaxLength="128" PlaceholderText="Le même mot de passe" />
       <StackPanel Orientation="Horizontal" Spacing="6" IsVisible="{Binding ShowMatch}">
         <Panel Width="16" Height="16">

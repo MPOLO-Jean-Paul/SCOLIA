@@ -160,6 +160,14 @@ public sealed class CashierPage : PageViewModel
     public string? Hint { get => hint; private set { if (Set(ref hint, value)) Raise(nameof(HasHint)); } }
     public bool HasHint => !string.IsNullOrEmpty(hint);
     public bool HasStudent => enrollment is not null;
+
+    /// <summary>
+    /// Arrivée sur Encaisser sans apprenant choisi : la seule recherche, celle de l'en-tête, s'ouvre d'elle-même.
+    /// Venu d'une fiche (« Encaisser » sur un apprenant), elle reste fermée.
+    /// </summary>
+    public bool OpensHeaderSearch => initialStudent is null && enrollment is null && search.Length == 0;
+    public RelayCommand OpenHeaderSearch => openHeaderSearch ??= new RelayCommand(() => Shell.HeaderSearch.Open());
+    private RelayCommand? openHeaderSearch;
     /// <summary>Le formulaire de versement s'affiche quand un apprenant est choisi et tant que le reçu n'est pas fait.</summary>
     public bool ShowPayment => HasStudent && !HasReceipt;
     public ReceiptDto? Receipt { get => receipt; private set { if (Set(ref receipt, value)) { Raise(nameof(HasReceipt)); Raise(nameof(ShowPayment)); } } }

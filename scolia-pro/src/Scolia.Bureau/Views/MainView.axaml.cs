@@ -434,6 +434,8 @@ public partial class MainView : UserControl
     private void OnBackRequested(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
         if (Shell is not { } shell) return;
+        // Choix de l'ordinateur principal ouvert depuis la connexion : le geste retour y ramène.
+        if (shell.ChoosingServer && shell.Connection.CanGoBack) { shell.LeaveChooser(); e.Handled = true; return; }
         // Page de connexion ouverte depuis l'écran de veille : le geste retour y ramène, comme le bouton « Revenir ».
         if (shell.SwitchingAccount) { if (!shell.Login.Busy) shell.ReturnToLockedSession(); e.Handled = true; return; }
         // En veille, le geste retour ne doit rien ouvrir derrière l'écran verrouillé.

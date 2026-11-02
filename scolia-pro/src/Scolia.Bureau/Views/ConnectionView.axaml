@@ -6,6 +6,13 @@
   <Grid Background="{DynamicResource BgBrush}">
     <ScrollViewer>
     <StackPanel MaxWidth="540" Margin="20,24" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="14">
+      <!-- Retour : on ne reste jamais bloqué ici quand un établissement est déjà relié -->
+      <Button x:Name="ChooserBack" Classes="ghost" Command="{Binding Back}" IsVisible="{Binding CanGoBack}" HorizontalAlignment="Left">
+        <StackPanel Orientation="Horizontal" Spacing="6">
+          <mi:MaterialIcon Kind="ArrowLeft" Width="18" Height="18" />
+          <TextBlock Text="Retour" VerticalAlignment="Center" />
+        </StackPanel>
+      </Button>
       <Image Source="{DynamicResource ScoliaMark}" Width="56" Height="56" HorizontalAlignment="Center" Margin="0,0,0,4" />
       <TextBlock Text="Rejoindre votre établissement" Classes="title" FontSize="{DynamicResource FsDisplay}" HorizontalAlignment="Center" TextAlignment="Center" />
       <TextBlock Text="{Binding Message}" Classes="muted" TextWrapping="Wrap" TextAlignment="Center" />
@@ -58,7 +65,7 @@
         <StackPanel Spacing="8">
           <TextBlock Text="Rejoindre à distance" FontWeight="SemiBold" />
           <TextBlock Classes="muted" TextWrapping="Wrap" Text="Sur un autre Wi-Fi ou un réseau mobile, collez l'invitation privée créée par le secrétariat dans Réseau et activité. Vos comptes restent les mêmes." />
-          <TextBox Text="{Binding Invitation}" PlaceholderText="Invitation privée SCOLIA" TextWrapping="Wrap" MaxHeight="104" />
+          <TextBox Classes="w11" Text="{Binding Invitation}" PlaceholderText="Invitation privée SCOLIA" TextWrapping="Wrap" MaxHeight="104" />
           <Button Classes="primary" Content="Vérifier et rejoindre" Command="{Binding JoinInternet}" IsEnabled="{Binding NotSearching}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" />
         </StackPanel>
       </Border>
@@ -79,7 +86,7 @@
           <TextBlock Text="{Binding Installer.NetworkSummary}" Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
           <Button Classes="ghost" Content="{Binding Installer.ActionText}" Command="{Binding PrepareTailnet}"
                   IsEnabled="{Binding NotSearching}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" />
-          <TextBox Text="{Binding TailscaleAddress}" PlaceholderText="100.110.22.33:5080 ou machine.tailnet.ts.net:5080" />
+          <TextBox Classes="w11" Text="{Binding TailscaleAddress}" PlaceholderText="100.110.22.33:5080 ou machine.tailnet.ts.net:5080" />
           <Button Classes="primary" Content="Rejoindre par Tailscale" Command="{Binding ConnectTailnet}"
                   IsEnabled="{Binding NotSearching}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" />
           <TextBlock Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap"
@@ -93,7 +100,7 @@
           <TextBlock Text="{Binding AddressTitle}" FontWeight="SemiBold" />
           <TextBlock Text="{Binding AddressHint}" Classes="muted" TextWrapping="Wrap" />
           <Grid ColumnDefinitions="*,Auto">
-            <TextBox Text="{Binding Address}" PlaceholderText="192.168.1.10" />
+            <TextBox Classes="w11" Text="{Binding Address}" PlaceholderText="192.168.1.10" />
             <Button Grid.Column="1" Classes="primary" Content="Se connecter" Command="{Binding ConnectAddress}" IsEnabled="{Binding NotSearching}" Margin="8,0,0,0" />
           </Grid>
         </StackPanel>

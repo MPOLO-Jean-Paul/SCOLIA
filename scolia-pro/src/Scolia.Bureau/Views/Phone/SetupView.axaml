@@ -65,20 +65,20 @@
                   <TextBlock Text="{Binding LogoLine}" Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
                 </StackPanel>
               </Grid>
-              <StackPanel Classes="field"><TextBlock Text="Nom de l'établissement" /><TextBox Text="{Binding SchoolName}" PlaceholderText="Institut technique médical" /></StackPanel>
+              <StackPanel Classes="field"><TextBlock Text="Nom de l'établissement" /><TextBox Classes="w11" Text="{Binding SchoolName}" PlaceholderText="Institut technique médical" /></StackPanel>
               <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
-                <StackPanel Classes="field"><TextBlock Text="Sigle" /><TextBox Text="{Binding ShortName}" PlaceholderText="ITM" /></StackPanel>
-                <StackPanel Classes="field" Grid.Column="1"><TextBlock Text="Ville" /><TextBox Text="{Binding City}" PlaceholderText="Kinshasa" /></StackPanel>
+                <StackPanel Classes="field"><TextBlock Text="Sigle" /><TextBox Classes="w11" Text="{Binding ShortName}" PlaceholderText="ITM" /></StackPanel>
+                <StackPanel Classes="field" Grid.Column="1"><TextBlock Text="Ville" /><TextBox Classes="w11" Text="{Binding City}" PlaceholderText="Kinshasa" /></StackPanel>
               </Grid>
-              <StackPanel Classes="field"><TextBlock Text="Téléphone" /><TextBox Text="{Binding Phone}" infra:PhoneInput.Digits="True" PlaceholderText="0812345678" /></StackPanel>
-              <StackPanel Classes="field"><TextBlock Text="Devise (facultatif)" /><TextBox Text="{Binding Motto}" PlaceholderText="Savoir, discipline, service" /></StackPanel>
+              <StackPanel Classes="field"><TextBlock Text="Téléphone" /><TextBox Classes="w11" Text="{Binding Phone}" infra:PhoneInput.Digits="True" PlaceholderText="0812345678" /></StackPanel>
+              <StackPanel Classes="field"><TextBlock Text="Devise (facultatif)" /><TextBox Classes="w11" Text="{Binding Motto}" PlaceholderText="Savoir, discipline, service" /></StackPanel>
             </StackPanel>
           </Border>
 
           <Border Classes="card">
             <StackPanel Spacing="10">
               <TextBlock Text="Année scolaire" FontWeight="SemiBold" />
-              <StackPanel Classes="field"><TextBlock Text="Année" /><TextBox Text="{Binding YearLabel}" PlaceholderText="2026-2027" /></StackPanel>
+              <StackPanel Classes="field"><TextBlock Text="Année" /><TextBox Classes="w11" Text="{Binding YearLabel}" PlaceholderText="2026-2027" /></StackPanel>
               <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
                 <StackPanel Classes="field"><TextBlock Text="Premier mois" /><ComboBox ItemsSource="{Binding StartMonths}" SelectedItem="{Binding StartMonth}" HorizontalAlignment="Stretch" /></StackPanel>
                 <StackPanel Classes="field" Grid.Column="1"><TextBlock Text="Durée" /><ComboBox ItemsSource="{Binding MonthCounts}" SelectedItem="{Binding MonthCount}" HorizontalAlignment="Stretch" /></StackPanel>
@@ -102,10 +102,10 @@
                   <DataTemplate>
                     <Border Background="{DynamicResource Surface2Brush}" CornerRadius="12" Padding="10" Margin="0,0,0,8">
                       <Grid ColumnDefinitions="90,*,Auto" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="8" RowSpacing="8">
-                        <TextBox Text="{Binding Code}" PlaceholderText="INF1" MaxLength="4" />
-                        <TextBox Grid.Column="1" Text="{Binding Fee}" PlaceholderText="Mensualité, 55000" />
+                        <TextBox Classes="w11" Text="{Binding Code}" PlaceholderText="INF1" MaxLength="4" />
+                        <TextBox Classes="w11" Grid.Column="1" Text="{Binding Fee}" PlaceholderText="Mensualité, 55000" />
                         <Button Grid.Column="2" Classes="toolicon" Command="{Binding Remove}" VerticalAlignment="Center"><mi:MaterialIcon Kind="Close" Width="16" Height="16" /></Button>
-                        <TextBox Grid.Row="1" Grid.ColumnSpan="3" Text="{Binding Name}" PlaceholderText="Désignation, par exemple Première Infirmière" />
+                        <TextBox Classes="w11" Grid.Row="1" Grid.ColumnSpan="3" Text="{Binding Name}" PlaceholderText="Désignation, par exemple Première Infirmière" />
                         <!-- Désignations prédites d'après le code : un toucher remplit la ligne -->
                         <ItemsControl Grid.Row="2" Grid.ColumnSpan="3" ItemsSource="{Binding Suggestions}" IsVisible="{Binding HasSuggestions}">
                           <ItemsControl.ItemsPanel>
@@ -142,10 +142,10 @@
                 <TextBlock Text="Secrétariat" FontWeight="SemiBold" VerticalAlignment="Center" />
               </StackPanel>
               <TextBlock Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" Text="Compte administrateur : tout le travail, le paramétrage, les utilisateurs et les sauvegardes." />
-              <StackPanel Classes="field"><TextBlock Text="Identifiant" /><TextBox Text="{Binding AdminUserName}" /></StackPanel>
-              <StackPanel Classes="field"><TextBlock Text="Nom de la personne" /><TextBox Text="{Binding AdminDisplayName}" /></StackPanel>
-              <StackPanel Classes="field"><TextBlock Text="Mot de passe" /><TextBox Text="{Binding AdminPassword}" PasswordChar="•" /></StackPanel>
-              <StackPanel Classes="field"><TextBlock Text="Confirmer le mot de passe" /><TextBox Text="{Binding AdminConfirm}" PasswordChar="•" /></StackPanel>
+              <StackPanel Classes="field"><TextBlock Text="Identifiant" /><TextBox Classes="w11" Text="{Binding AdminUserName}" /></StackPanel>
+              <StackPanel Classes="field"><TextBlock Text="Nom de la personne" /><TextBox Classes="w11" Text="{Binding AdminDisplayName}" /></StackPanel>
+              <StackPanel Classes="field"><TextBlock Text="Mot de passe" /><TextBox Classes="w11" Text="{Binding AdminPassword}" PasswordChar="•" /></StackPanel>
+              <StackPanel Classes="field"><TextBlock Text="Confirmer le mot de passe" /><TextBox Classes="w11" Text="{Binding AdminConfirm}" PasswordChar="•" /></StackPanel>
             </StackPanel>
           </Border>
           <Border Classes="card">
@@ -156,10 +156,10 @@
                 <ToggleSwitch Grid.Column="2" IsChecked="{Binding UseComptabilite}" OnContent="" OffContent="" />
               </Grid>
               <StackPanel Spacing="10" IsVisible="{Binding UseComptabilite}">
-                <StackPanel Classes="field"><TextBlock Text="Identifiant" /><TextBox Text="{Binding ComptabiliteUserName}" /></StackPanel>
-                <StackPanel Classes="field"><TextBlock Text="Nom de la personne" /><TextBox Text="{Binding ComptabiliteDisplayName}" /></StackPanel>
-                <StackPanel Classes="field"><TextBlock Text="Mot de passe" /><TextBox Text="{Binding ComptabilitePassword}" PasswordChar="•" /></StackPanel>
-                <StackPanel Classes="field"><TextBlock Text="Confirmer le mot de passe" /><TextBox Text="{Binding ComptabiliteConfirm}" PasswordChar="•" /></StackPanel>
+                <StackPanel Classes="field"><TextBlock Text="Identifiant" /><TextBox Classes="w11" Text="{Binding ComptabiliteUserName}" /></StackPanel>
+                <StackPanel Classes="field"><TextBlock Text="Nom de la personne" /><TextBox Classes="w11" Text="{Binding ComptabiliteDisplayName}" /></StackPanel>
+                <StackPanel Classes="field"><TextBlock Text="Mot de passe" /><TextBox Classes="w11" Text="{Binding ComptabilitePassword}" PasswordChar="•" /></StackPanel>
+                <StackPanel Classes="field"><TextBlock Text="Confirmer le mot de passe" /><TextBox Classes="w11" Text="{Binding ComptabiliteConfirm}" PasswordChar="•" /></StackPanel>
               </StackPanel>
             </StackPanel>
           </Border>

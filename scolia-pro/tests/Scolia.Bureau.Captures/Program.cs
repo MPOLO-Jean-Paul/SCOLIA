@@ -890,6 +890,19 @@ if (args.Length > 3 && args[3] == "veille")
     Wait(shell.LogoutAsync());
     Settle(200);
     LockCheck("Déconnexion : connexion simple, sans retour", shell.ShowLogin && !shell.IsLoggedIn && !shell.Login.CanResume);
+    Save(window, "veille-connexion.png");
+
+    // Ordinateur principal injoignable : la connexion propose d'en changer, et le choix propose de revenir.
+    shell.Login.Notice = "L'ordinateur principal ne répond pas. Connectez-vous avec le dernier compte utilisé sur cet appareil pour travailler hors ligne : tout sera envoyé à son retour.";
+    Settle(200);
+    Save(window, "veille-connexion-injoignable.png");
+    shell.Login.ChangeServer.Execute(null);
+    Settle(300);
+    LockCheck("Changer d'ordinateur principal : le choix s'ouvre, avec un retour", shell.ChoosingServer && shell.Connection.CanGoBack && !shell.ShowLogin);
+    Save(window, "veille-choix-serveur.png");
+    shell.Connection.Back.Execute(null);
+    Settle(300);
+    LockCheck("Retour : la page de connexion revient, rien n'a changé", !shell.ChoosingServer && shell.ShowLogin);
 
     shell.Sync.Stop();
     window.Close();

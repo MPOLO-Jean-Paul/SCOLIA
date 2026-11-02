@@ -37,6 +37,7 @@ public sealed class ShellViewModel : Observable
         Connection = new ConnectionViewModel(this);
         Login.LoggedIn += s => _ = OpenSessionAsync(s);
         Login.ResumeRequested += ReturnToLockedSession;
+        Login.ChangeServerRequested += () => _ = ChooseServerAsync();
         Sync = new SyncCenter(this, api);
         // Connexion réussie : le compte est gardé sur l'appareil pour une connexion hors ligne, et en mémoire pour
         // rouvrir seul la session quand l'ordinateur principal revient après une coupure.
@@ -298,6 +299,7 @@ public sealed class ShellViewModel : Observable
 
     private void RaiseLogin()
     {
+        Login.RefreshServer();
         Raise(nameof(IsLoggedIn));
         Raise(nameof(ShowLogin));
         Raise(nameof(ShowSetup));
@@ -562,6 +564,7 @@ public sealed class ShellViewModel : Observable
 
     private void ShowChooser(IReadOnlyList<DiscoveredServer> servers, string message)
     {
+        Connection.BackAction = null;
         IsSetupRequired = false;
         Connection.Show(servers, message);
         ChoosingServer = true;
@@ -572,7 +575,17 @@ public sealed class ShellViewModel : Observable
     public async Task ChooseServerAsync()
     {
         ShowChooser([], string.Empty);
+        // Venu de la connexion ou de Poste et réseau : un établissement est déjà relié, on peut y revenir.
+        Connection.BackAction = LeaveChooser;
         await Connection.SearchAsync();
+    }
+
+    /// <summary>Ferme le choix du serveur sans rien changer : retour à la connexion ou à l'application.</summary>
+    public void LeaveChooser()
+    {
+        Connection.BackAction = null;
+        ChoosingServer = false;
+        Status = string.Empty;
     }
 
     /// <summary>Relie ce poste au serveur choisi et le mémorise.</summary>
@@ -590,6 +603,7 @@ public sealed class ShellViewModel : Observable
         if (Platform.IsMobile && localServer is not null && !server.Address.IsLoopback) localServer.Stop();
         RemoteConnection.StopHost();
         api.Retarget(server.Address);
+        Connection.BackAction = null;
         ChoosingServer = false;
         await ShowEntryAsync();
         Notify($"Ce poste est relié à SCOLIA · {server.School} (ordinateur {server.Machine}).");

@@ -126,9 +126,15 @@ public sealed class PhoneHeaderSearchVm : Observable
         // Sur une liste, la saisie est liée uniquement au filtre du métier affiché.
         if (Scope(shell.Current).Length > 0) IsOpen = !IsOpen;
     }
+    /// <summary>Ouvre le filtre de l'écran, sans le refermer s'il est déjà ouvert.</summary>
+    public void Open()
+    {
+        if (Scope(shell.Current).Length > 0) IsOpen = true;
+    }
+
     public void PageChanged()
     {
-        IsOpen = false;
+        IsOpen = shell.Current is CashierPage { OpensHeaderSearch: true };
         Raise(nameof(Placeholder));
         Raise(nameof(Query));
         Raise(nameof(HasQuery));

@@ -171,6 +171,14 @@ public sealed class ConnectionViewModel : Observable
     public AsyncCommand Search { get; }
     public AsyncCommand UseThisComputer { get; }
 
+    // ---------- Retour : on ne reste jamais bloqué sur ce choix ----------
+    private Action? back;
+    /// <summary>Retour à l'écran d'où l'on vient (connexion ou application), quand un établissement est déjà relié.</summary>
+    public Action? BackAction { get => back; set { back = value; Raise(nameof(CanGoBack)); } }
+    public bool CanGoBack => back is not null;
+    public RelayCommand Back => backCommand ??= new RelayCommand(() => back?.Invoke());
+    private RelayCommand? backCommand;
+
     /// <summary>Affiche une liste déjà obtenue, avec le message qui explique la situation.</summary>
     public void Show(IReadOnlyList<DiscoveredServer> servers, string text)
     {

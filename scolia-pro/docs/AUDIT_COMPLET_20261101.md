@@ -170,6 +170,25 @@ rapport journalier envoyé automatiquement, audit complet et catalogue du foncti
 - Une nouvelle connexion réussie ferme la session verrouillée. Une déconnexion normale ne propose aucun retour.
 - Vérifié par 5 contrôles automatiques, sur téléphone et sur ordinateur.
 
+#### Connexion et veille au style Windows 11
+- Fond uniforme : dégradé bleu avec un halo blanc en haut, comme l'écran de connexion de Windows 11. Plus de carte blanche ni de contour.
+- Champs de verre translucide, sans cadre autour : un trait fin en bas, qui devient blanc et plus épais à la saisie.
+- Dans le champ du mot de passe ou du code : l'œil, puis la flèche pour valider, comme le code PIN de Windows 11. Entrée valide aussi.
+- Le même champ façon Windows 11, sur fond clair, partout où l'on configure :
+  - mots de passe et codes : Sécurité du compte, changement de code, effacement des données ;
+  - assistant d'installation : établissement, comptes, mots de passe ;
+  - adresses : ordinateur principal, Tailscale, invitation privée ;
+  - tous les formulaires de réglages.
+
+#### Encaisser : une seule recherche
+- Le champ de recherche du corps de la page est retiré. La recherche de l'apprenant se fait dans la barre du haut, qui s'ouvre d'elle-même en arrivant sur Encaisser.
+- Venu d'une fiche avec « Encaisser », la barre reste fermée : l'apprenant est déjà choisi.
+
+#### Ordinateur principal injoignable : plus d'impasse
+- La page de connexion rappelle à quel ordinateur ce poste est relié et propose « Changer d'ordinateur principal ».
+- Le choix de l'ordinateur principal propose « Retour ». Le geste retour d'Android y ramène aussi.
+- Vérifié par 2 contrôles automatiques.
+
 ## 4. Limites à connaître
 
 | Sujet | Limite | Solution proposée |

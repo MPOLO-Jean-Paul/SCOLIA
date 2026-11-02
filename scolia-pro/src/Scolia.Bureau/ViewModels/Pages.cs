@@ -24,6 +24,19 @@ public sealed class LoginViewModel : Observable
 
     public event Action<SessionDto>? LoggedIn;
 
+    /// <summary>
+    /// « Changer d'ordinateur principal » : l'ordinateur principal ne répond pas, ou ce poste doit rejoindre un autre
+    /// établissement. La page de connexion n'est jamais une impasse.
+    /// </summary>
+    public event Action? ChangeServerRequested;
+    public RelayCommand ChangeServer => changeServer ??= new RelayCommand(() => { if (!Busy) ChangeServerRequested?.Invoke(); });
+    private RelayCommand? changeServer;
+    /// <summary>Ordinateur auquel ce poste est relié, rappelé en bas de la page de connexion.</summary>
+    public string ServerLine => api.Server.IsLoopback
+        ? "Cet appareil est l'ordinateur principal"
+        : $"Relié à l'ordinateur principal {api.Server.Host}";
+    public void RefreshServer() => Raise(nameof(ServerLine));
+
     /// <summary>« Revenir à la session de … » : la page de connexion rend la main à l'écran de veille.</summary>
     public event Action? ResumeRequested;
     private string? resumeName;
