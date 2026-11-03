@@ -48,7 +48,6 @@ public sealed class MainActivity : AvaloniaMainActivity
         Security.AndroidBiometrics.Attach(this);
         AndroidSpeech.Attach(this);
         AndroidCamera.Attach(this);
-        ScoliaPlatform.NotifyAppResumed();
         // Le retour au premier plan est un moment autorisé pour rétablir un service
         // Android interrompu. On n'attend pas la connexion du secrétariat ni
         // l'ouverture d'une page : les autres appareils dépendent de ce serveur.
@@ -57,6 +56,9 @@ public sealed class MainActivity : AvaloniaMainActivity
         catch (Exception ex) when (ex is Java.Lang.SecurityException or InvalidOperationException
             or System.IO.IOException or UnauthorizedAccessException)
         { Android.Util.Log.Warn("SCOLIA", $"Reprise du serveur différée : {ex.Message}"); }
+        // Après la reprise, réactualiser les indicateurs de disponibilité affichés
+        // sur la page Réseau : ne pas montrer un état capturé avant la réparation.
+        ScoliaPlatform.NotifyAppResumed();
         // Téléphone serveur encore freiné par les économies de batterie : Android le demande, une fois par lancement.
         try { AndroidBackground.AskOnceIfServer(this); }
         catch (Exception ex) { Android.Util.Log.Warn("SCOLIA", $"Demande batterie impossible : {ex.GetType().Name}"); }
