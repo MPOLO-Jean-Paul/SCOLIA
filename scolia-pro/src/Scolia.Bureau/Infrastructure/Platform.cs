@@ -119,6 +119,15 @@ public static class Platform
     /// </summary>
     public static ILocalServer? LocalServer { get; set; }
 
+    /// <summary>La notification Android existe réellement et le service est au premier plan.</summary>
+    public static Func<bool>? IsHostForegroundActive { get; set; }
+
+    /// <summary>Le serveur ASP.NET local écoute effectivement sur l'appareil.</summary>
+    public static Func<bool>? IsHostApiServing { get; set; }
+
+    /// <summary>Répare l'hébergement sur demande depuis une interface visible, jamais depuis un client.</summary>
+    public static Action? EnsureHostAvailable { get; set; }
+
     /// <summary>
     /// Téléphone serveur : vrai quand le système le laisse travailler écran éteint, sans le freiner pour économiser la
     /// batterie. Null sur un appareil où la question ne se pose pas.
