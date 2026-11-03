@@ -26,6 +26,9 @@ public sealed class ServeurScolia : Service
     private PowerManager.WakeLock? awake;
     private WifiManager.WifiLock? wifi;
     private WifiManager.MulticastLock? multicast;
+    // Ce contrôle vit dans le service, pas dans l'Activity. Il continue donc
+    // lorsque l'écran s'éteint et ne recrée jamais inutilement une base.
+    private System.Threading.Timer? serverWatchdog;
 
     public static void Begin(Context context)
     {
@@ -71,6 +74,15 @@ public sealed class ServeurScolia : Service
         {
             Android.Util.Log.Warn("SCOLIA", $"Serveur non restauré : {ex.Message}");
         }
+        // Si une erreur locale coupe l'API alors que l'écran est éteint,
+        // une vérification légère du serveur tente de la restaurer. La vérification
+        // ne démarre ni Activity ni nouveau service de premier plan.
+        serverWatchdog ??= new System.Threading.Timer(_ =>
+        {
+            try { PhoneServer.Get(ApplicationContext ?? this).EnsureServingFromForegroundService(); }
+            catch (Exception ex) when (ex is IOException or InvalidOperationException or UnauthorizedAccessException)
+            { Android.Util.Log.Warn("SCOLIA", $"Contrôle d'hébergement différé : {ex.Message}"); }
+        }, null, TimeSpan.FromSeconds(20), TimeSpan.FromSeconds(40));
         // La reprise reste soumise au système Android et à l'alimentation de l'appareil.
         return StartCommandResult.Sticky;
     }
@@ -90,6 +102,8 @@ public sealed class ServeurScolia : Service
     public override void OnDestroy()
     {
         System.Threading.Interlocked.Exchange(ref active, 0);
+        serverWatchdog?.Dispose();
+        serverWatchdog = null;
         Release();
         base.OnDestroy();
     }
