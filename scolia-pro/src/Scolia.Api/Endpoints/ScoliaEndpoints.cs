@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
 using System.Text;
+using System.Net;
 using Microsoft.EntityFrameworkCore;
 using Scolia.Api.Security;
 using Scolia.Application.Abstractions;
@@ -39,6 +40,16 @@ public static class ScoliaEndpoints
         api.MapGet("/etablissement/logo", async (SchoolService s, CancellationToken ct) => await s.GetLogoAsync(ct) is { } logo ? Results.File(logo.Content, logo.Type)
             : Results.NotFound());
         api.MapGet("/installation/annee-proposee", (IClock clock) => Results.Ok(new { label = SetupService.DefaultYearLabel(clock.Today) }));
+        // Préremplir l'identifiant sans publier la liste des comptes sur le réseau.
+        // Seul un client sur le même appareil que le serveur peut lire cette suggestion.
+        api.MapGet("/installation/compte-local", async (HttpContext http, ScoliaDbContext db, CancellationToken ct) =>
+        {
+            if (!IPAddress.IsLoopback(http.Connection.RemoteIpAddress ?? IPAddress.None)) return Results.NotFound();
+            var userName = await db.Users.AsNoTracking().Where(u => u.IsActive)
+                .OrderByDescending(u => u.LastLoginUtc).ThenBy(u => u.UserName)
+                .Select(u => u.UserName).FirstOrDefaultAsync(ct);
+            return Results.Ok(new { userName });
+        });
         api.MapPost("/installation", async (SetupRequest input, SetupService setup, ScoliaDbContext db, HttpContext http, CancellationToken ct) =>
         {
             var admin = await setup.InitializeAsync(input, ct);
