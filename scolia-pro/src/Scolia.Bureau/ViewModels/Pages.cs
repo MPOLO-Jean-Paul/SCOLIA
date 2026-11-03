@@ -133,9 +133,7 @@ public sealed class LoginViewModel : Observable
         editingAccount = true;
         UserName = string.Empty;
         Password = string.Empty;
-        RecoveryCode = string.Empty;
-        NewPassword = string.Empty;
-        ConfirmPassword = string.Empty;
+        ClearRecoverySecrets();
         Error = null;
         RaiseAccountState();
     });
@@ -177,19 +175,52 @@ public sealed class LoginViewModel : Observable
     /// <summary>Connexion vérifiée par le serveur : le compte peut être gardé pour une connexion hors ligne.</summary>
     public event Action<string, string, SessionDto>? Authenticated;
 
-    public string UserName { get => userName; set { if (Set(ref userName, value)) { Raise(nameof(CanSubmitCredentials)); Submit.Refresh(); RaiseAccountState(); } } }
+    public string UserName { get => userName; set { if (Set(ref userName, value)) { Raise(nameof(CanSubmitCredentials)); Submit.Refresh(); RaiseAccountState(); RefreshRecoveryValidation(); } } }
     public string Password { get => password; set { if (Set(ref password, value)) { Raise(nameof(CanSubmitCredentials)); Submit.Refresh(); } } }
     public bool CanSubmitCredentials => !Locked && !Busy && !string.IsNullOrWhiteSpace(UserName) && Password.Length > 0;
     public string? Error { get => error; set { if (Set(ref error, value)) Raise(nameof(HasError)); } }
     public bool HasError => !string.IsNullOrEmpty(error);
 
     /// <summary>Guide d'accès sans contournement de l'authentification, disponible avant connexion.</summary>
-    public bool RecoveryOpen { get => recoveryOpen; private set { if (Set(ref recoveryOpen, value)) Raise(nameof(CanRecoverWithCode)); } }
+    /// <summary>La récupération remplace visuellement le champ de connexion, elle ne s'y empile pas.</summary>
+    public bool RecoveryOpen
+    {
+        get => recoveryOpen;
+        private set
+        {
+            if (!Set(ref recoveryOpen, value)) return;
+            Raise(nameof(ShowSignInPassword));
+            Raise(nameof(RecoveryActionLabel));
+            Raise(nameof(CanRecoverWithCode));
+            Raise(nameof(CanRecoverWithBiometrics));
+        }
+    }
+    public bool ShowSignInPassword => !RecoveryOpen;
+    public string RecoveryActionLabel => RecoveryOpen ? "Revenir à la connexion" : "Mot de passe oublié ?";
+    private void ClearRecoverySecrets()
+    {
+        RecoveryCode = string.Empty;
+        NewPassword = string.Empty;
+        ConfirmPassword = string.Empty;
+        ShowRecoveryCode = false;
+        ShowNewPassword = false;
+        ShowConfirmPassword = false;
+    }
     public RelayCommand ToggleRecoveryHelp => recoveryHelp ??= new RelayCommand(() =>
     {
         if (Busy) return;
-        RecoveryOpen = !RecoveryOpen;
-        if (RecoveryOpen) Password = string.Empty;
+        if (RecoveryOpen)
+        {
+            RecoveryOpen = false;
+            ClearRecoverySecrets();
+        }
+        else
+        {
+            Password = string.Empty;
+            ShowPassword = false;
+            Notice = null;
+            RecoveryOpen = true;
+        }
         Error = null;
     });
     private RelayCommand? recoveryHelp;
@@ -197,20 +228,83 @@ public sealed class LoginViewModel : Observable
     /// <summary>Ouvre l'aide depuis une session verrouillée sans tenter de déverrouiller le compte.</summary>
     public void ShowRecoveryHelp(string account)
     {
-        UserName = account;
+        if (!string.IsNullOrWhiteSpace(account)) RememberAccount(account);
+        manualLoginOpen = true;
+        Raise(nameof(ShowManualCredentials));
+        Raise(nameof(ShowPairingCallToAction));
         Password = string.Empty;
+        ShowPassword = false;
+        ClearRecoverySecrets();
         RecoveryOpen = true;
         Error = null;
+        Notice = null;
     }
     public string RecoveryInstructions =>
         "Choisissez un nouveau mot de passe. Validez avec votre empreinte déjà associée à ce compte, " +
         "ou saisissez le code de secours détenu par le responsable du serveur. Aucune ouverture des paramètres n'est nécessaire.";
 
-    public string RecoveryCode { get => recoveryCode; set { if (Set(ref recoveryCode, value ?? string.Empty)) Raise(nameof(CanRecoverWithCode)); } }
-    public string NewPassword { get => newPassword; set { if (Set(ref newPassword, value ?? string.Empty)) Raise(nameof(CanRecoverWithCode)); } }
-    public string ConfirmPassword { get => confirmPassword; set { if (Set(ref confirmPassword, value ?? string.Empty)) Raise(nameof(CanRecoverWithCode)); } }
-    public bool CanRecoverWithCode => RecoveryOpen && !Busy && !string.IsNullOrWhiteSpace(UserName)
-        && !string.IsNullOrWhiteSpace(RecoveryCode) && NewPassword.Length > 0 && ConfirmPassword.Length > 0;
+    private void RefreshRecoveryValidation()
+    {
+        Raise(nameof(CanRecoverWithCode));
+        Raise(nameof(CanRecoverWithBiometrics));
+        Raise(nameof(RecoveryPasswordHint));
+        Raise(nameof(RecoveryConfirmationHint));
+        Raise(nameof(HasRecoveryPasswordHint));
+        Raise(nameof(HasRecoveryConfirmationHint));
+    }
+
+    public string RecoveryCode
+    {
+        get => recoveryCode;
+        set { if (Set(ref recoveryCode, value ?? string.Empty)) { Error = null; RefreshRecoveryValidation(); } }
+    }
+    public string NewPassword
+    {
+        get => newPassword;
+        set { if (Set(ref newPassword, value ?? string.Empty)) { Error = null; RefreshRecoveryValidation(); } }
+    }
+    public string ConfirmPassword
+    {
+        get => confirmPassword;
+        set { if (Set(ref confirmPassword, value ?? string.Empty)) { Error = null; RefreshRecoveryValidation(); } }
+    }
+
+    /// <summary>Retours discrets sous les champs, plutôt qu'une erreur seulement après soumission.</summary>
+    public string RecoveryPasswordHint => NewPassword.Length == 0 ? AccessCode.Hint
+        : AccessCode.Problem(NewPassword) ?? "Nouveau mot de passe conforme.";
+    public string RecoveryConfirmationHint => ConfirmPassword.Length == 0 ? "Saisissez le même mot de passe une deuxième fois."
+        : NewPassword == ConfirmPassword ? "Les deux mots de passe correspondent."
+        : "Les deux mots de passe ne correspondent pas.";
+    public bool HasRecoveryPasswordHint => RecoveryOpen;
+    public bool HasRecoveryConfirmationHint => RecoveryOpen && ConfirmPassword.Length > 0;
+
+    private bool HasValidRecoveryPassword => !string.IsNullOrWhiteSpace(UserName)
+        && NewPassword.Length > 0 && AccessCode.Problem(NewPassword) is null
+        && NewPassword == ConfirmPassword;
+
+    public bool CanRecoverWithCode => RecoveryOpen && !Busy && HasValidRecoveryPassword
+        && !string.IsNullOrWhiteSpace(RecoveryCode);
+    public bool CanRecoverWithBiometrics => RecoveryOpen && !Busy && HasValidRecoveryPassword
+        && CanUseBiometricSignIn && BiometricAccess.AccountMatches(BiometricAccount, UserName);
+
+    private bool showRecoveryCode;
+    private bool showNewPassword;
+    private bool showConfirmPassword;
+
+    public bool ShowRecoveryCode { get => showRecoveryCode; set { if (Set(ref showRecoveryCode, value)) Raise(nameof(RecoveryCodeEyeIcon)); } }
+    public bool ShowNewPassword { get => showNewPassword; set { if (Set(ref showNewPassword, value)) Raise(nameof(NewPasswordEyeIcon)); } }
+    public bool ShowConfirmPassword { get => showConfirmPassword; set { if (Set(ref showConfirmPassword, value)) Raise(nameof(ConfirmPasswordEyeIcon)); } }
+
+    public Material.Icons.MaterialIconKind RecoveryCodeEyeIcon => ShowRecoveryCode ? Material.Icons.MaterialIconKind.EyeOffOutline : Material.Icons.MaterialIconKind.EyeOutline;
+    public Material.Icons.MaterialIconKind NewPasswordEyeIcon => ShowNewPassword ? Material.Icons.MaterialIconKind.EyeOffOutline : Material.Icons.MaterialIconKind.EyeOutline;
+    public Material.Icons.MaterialIconKind ConfirmPasswordEyeIcon => ShowConfirmPassword ? Material.Icons.MaterialIconKind.EyeOffOutline : Material.Icons.MaterialIconKind.EyeOutline;
+    public RelayCommand ToggleRecoveryCodeEye => toggleRecoveryCodeEye ??= new RelayCommand(() => ShowRecoveryCode = !ShowRecoveryCode);
+    public RelayCommand ToggleNewPasswordEye => toggleNewPasswordEye ??= new RelayCommand(() => ShowNewPassword = !ShowNewPassword);
+    public RelayCommand ToggleConfirmPasswordEye => toggleConfirmPasswordEye ??= new RelayCommand(() => ShowConfirmPassword = !ShowConfirmPassword);
+    private RelayCommand? toggleRecoveryCodeEye;
+    private RelayCommand? toggleNewPasswordEye;
+    private RelayCommand? toggleConfirmPasswordEye;
+
     public AsyncCommand RecoverWithCode { get; }
     public AsyncCommand RecoverWithBiometrics { get; }
 
@@ -237,9 +331,7 @@ public sealed class LoginViewModel : Observable
                 store.RememberAccount(UserName);
             }
             catch (Exception ex) when (ex is System.IO.IOException or UnauthorizedAccessException) { }
-            RecoveryCode = string.Empty;
-            NewPassword = string.Empty;
-            ConfirmPassword = string.Empty;
+            ClearRecoverySecrets();
             Password = string.Empty;
             RecoveryOpen = false;
             Notice = "Mot de passe restauré. Connectez-vous avec le nouveau mot de passe. Le code de secours du serveur a été renouvelé.";
@@ -302,8 +394,7 @@ public sealed class LoginViewModel : Observable
                 }
                 catch (Exception ex) when (ex is System.IO.IOException or UnauthorizedAccessException) { }
                 Password = string.Empty;
-                NewPassword = string.Empty;
-                ConfirmPassword = string.Empty;
+                ClearRecoverySecrets();
                 RecoveryOpen = false;
                 Error = null;
                 Notice = reactivated
@@ -322,7 +413,7 @@ public sealed class LoginViewModel : Observable
     /// <summary>Nom de l'établissement, connu dès le démarrage du serveur : il titre l'écran de connexion.</summary>
     public string SchoolName { get => schoolName; set { if (Set(ref schoolName, value)) { Raise(nameof(TitleText)); } } }
     public string TitleText => string.IsNullOrWhiteSpace(schoolName) ? "SCOLIA" : schoolName;
-    public bool Busy { get => busy; set { if (Set(ref busy, value)) { Raise(nameof(NotBusy)); Raise(nameof(CanType)); Raise(nameof(CanSubmitCredentials)); Raise(nameof(CanRecoverWithCode)); } } }
+    public bool Busy { get => busy; set { if (Set(ref busy, value)) { Raise(nameof(NotBusy)); Raise(nameof(CanType)); Raise(nameof(CanSubmitCredentials)); Raise(nameof(CanRecoverWithCode)); Raise(nameof(CanRecoverWithBiometrics)); } } }
     public bool NotBusy => !busy;
 
     private bool showPassword;
@@ -366,6 +457,7 @@ public sealed class LoginViewModel : Observable
         Raise(nameof(BiometricAccount));
         Raise(nameof(HasBiometricAccount));
         Raise(nameof(CanUseBiometricSignIn));
+        Raise(nameof(CanRecoverWithBiometrics));
         Raise(nameof(CanOfferEnrollment));
         Raise(nameof(BiometricLabel));
     }
@@ -478,9 +570,7 @@ public sealed class LoginViewModel : Observable
         Password = string.Empty;
         Error = null;
         RecoveryOpen = false;
-        RecoveryCode = string.Empty;
-        NewPassword = string.Empty;
-        ConfirmPassword = string.Empty;
+        ClearRecoverySecrets();
         ShowPassword = false;
         Restored = false;
         EnableBiometricsAfterLogin = false;
