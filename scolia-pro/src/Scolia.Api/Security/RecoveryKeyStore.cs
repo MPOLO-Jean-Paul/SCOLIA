@@ -4,7 +4,7 @@ using System.Text;
 namespace Scolia.Api.Security;
 
 /// <summary>Code de secours à usage unique, conservé dans le répertoire privé du serveur.</summary>
-public sealed class RecoveryKeyStore
+public sealed class RecoveryKeyStore : IDisposable
 {
     private readonly string path;
     private readonly SemaphoreSlim gate = new(1, 1);
@@ -13,6 +13,8 @@ public sealed class RecoveryKeyStore
     {
         path = Path.Combine(directory, "cles", "code-de-secours.txt");
     }
+
+    public void Dispose() => gate.Dispose();
 
     public void EnsureCreated()
     {
