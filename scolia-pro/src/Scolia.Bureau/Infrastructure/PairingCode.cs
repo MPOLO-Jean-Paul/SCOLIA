@@ -8,7 +8,7 @@ namespace Scolia.Bureau.Infrastructure;
 /// comment le joindre : ses adresses sur le Wi-Fi, son adresse Tailscale, et l'invitation Internet si elle est active.
 /// Il ne contient aucun mot de passe : l'accord du serveur et la connexion au compte restent demandés.
 /// </summary>
-public sealed record PairingCode(string School, string Machine, IReadOnlyList<Uri> Addresses, string? Invitation = null)
+public sealed record PairingCode(string School, string Machine, IReadOnlyList<Uri> Addresses, string? Invitation = null, string? AccessTicket = null)
 {
     public const string Prefix = "scolia://relier?";
     private const int MaxLength = 2048;
@@ -33,6 +33,7 @@ public sealed record PairingCode(string School, string Machine, IReadOnlyList<Ur
         };
         if (Addresses.Count > 0) parts.Add("a=" + string.Join(',', Addresses.Take(MaxAddresses).Select(a => $"{Host(a)}:{a.Port}")));
         if (HasInvitation) parts.Add("l=" + Uri.EscapeDataString(Invitation!));
+        if (!string.IsNullOrWhiteSpace(AccessTicket)) parts.Add("p=" + Uri.EscapeDataString(AccessTicket));
         return Prefix + string.Join('&', parts);
     }
 
@@ -76,6 +77,13 @@ public sealed record PairingCode(string School, string Machine, IReadOnlyList<Ur
                 if (ToAddress(item) is { } uri && !addresses.Contains(uri)) addresses.Add(uri);
 
         var invitation = values.TryGetValue("l", out var link) && link.StartsWith(Scolia.Transport.RemoteLink.Prefix, StringComparison.Ordinal) ? link : null;
+        // Un code d'accès malformé ne doit pas être discrètement rétrogradé en simple liaison réseau.
+        var accessTicket = values.GetValueOrDefault("p");
+        if (accessTicket is not null && (accessTicket.Length != 48 || !accessTicket.All(char.IsAsciiHexDigit)))
+        {
+            error = "L'invitation de cet appareil est invalide. Générez un nouveau code sur le serveur.";
+            return false;
+        }
         if (addresses.Count == 0 && invitation is null)
         {
             error = "Ce code ne contient aucune adresse utilisable sur le réseau de l'établissement.";
@@ -85,7 +93,7 @@ public sealed record PairingCode(string School, string Machine, IReadOnlyList<Ur
         code = new PairingCode(
             Clean(values.GetValueOrDefault("e"), "Établissement"),
             Clean(values.GetValueOrDefault("m"), string.Empty),
-            addresses, invitation);
+            addresses, invitation, accessTicket);
         error = string.Empty;
         return true;
     }
