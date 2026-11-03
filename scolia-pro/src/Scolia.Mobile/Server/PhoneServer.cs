@@ -54,6 +54,22 @@ public sealed class PhoneServer(Context context) : ILocalServer
                     or System.ComponentModel.Win32Exception)
                 { Android.Util.Log.Error("SCOLIA", $"Réactivation du service serveur refusée : {ex.Message}"); }
             }
+            if (server?.IsRunning != true) Enqueue(StartEmbeddedAsync);
+        }
+    }
+
+    /// <summary>
+    /// Surveillance exécutée par le service Android et non par la fenêtre Avalonia :
+    /// si une panne locale ferme l'API pendant que le téléphone est verrouillé, tenter
+    /// de la remettre en service. N'ouvre ni activité, ni VPN, ni second serveur.
+    /// </summary>
+    internal void EnsureServingFromForegroundService()
+    {
+        if (ConnectionStore.Load()?.Mode != ConnectionSettings.Local) return;
+        lock (gate)
+        {
+            if (explicitlyStopped || server?.IsRunning == true) return;
+            shouldHost = true;
             Enqueue(StartEmbeddedAsync);
         }
     }
@@ -68,11 +84,11 @@ public sealed class PhoneServer(Context context) : ILocalServer
         if (ConnectionStore.Load()?.Mode != ConnectionSettings.Local) return;
         lock (gate)
         {
-            // Le service peut délivrer un événement de démarrage tardif
-            // après un choix explicite « rejoindre un autre établissement ».
-            if (explicitlyStopped) return;
+            // Le service peut délivrer un événement tardif après un choix
+            // explicite « rejoindre un autre établissement ». Le lock est
+            // réentrant et empêche Stop() de s'intercaler entre les deux étapes.
+            if (!explicitlyStopped) StartCore(startForegroundService: false);
         }
-        StartCore(startForegroundService: false);
     }
 
     private void StartCore(bool startForegroundService)
