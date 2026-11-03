@@ -602,8 +602,10 @@ public sealed class ShellViewModel : Observable
             previous?.LanPromptDone ?? false)))
             throw new IOException("Impossible d'enregistrer la connexion SCOLIA sur cet appareil. Vérifiez l'espace de stockage et les autorisations.");
         if (IsLoggedIn) await LogoutAsync();
-        // Un téléphone qui était le serveur et en rejoint un autre arrête le sien : il ne garde qu'un établissement.
-        if (Platform.IsMobile && localServer is not null && !server.Address.IsLoopback) localServer.Stop();
+        // Un changement volontaire d'établissement retire le rôle serveur, sur PC
+        // comme sur téléphone. En revanche réduire la fenêtre, verrouiller la session
+        // ou ouvrir une autre application ne passent jamais par cette commande.
+        if (localServer is not null && !server.Address.IsLoopback) localServer.Stop();
         RemoteConnection.StopHost();
         api.Retarget(server.Address);
         Connection.BackAction = null;
