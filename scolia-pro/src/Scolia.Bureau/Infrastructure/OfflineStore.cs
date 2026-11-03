@@ -65,6 +65,7 @@ public sealed class OfflineStore
     private string OutboxFile => "envois.json";
     private string ConflictFile => "conflits.json";
     private string CredentialFile => "session.json";
+    private const string LastAccountKey = "dernier-compte";
 
     private sealed record SavedPage(string Json, DateTime SavedAt, string? Path = null);
     private string PagePrefix => "page:" + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(User.ToUpperInvariant()))) + ":";
@@ -213,6 +214,18 @@ public sealed class OfflineStore
             values[CredentialFile] = JsonSerializer.Serialize(saved, Json);
         });
     }
+
+    /// <summary>Mémorise l'identifiant du dernier compte utilisé sur ce serveur, jamais son mot de passe.</summary>
+    public string? LastAccount => database.Read(LastAccountKey) is { Length: > 0 } user
+        ? user : SavedCredential?.UserName;
+
+    public void RememberAccount(string userName)
+    {
+        if (!string.IsNullOrWhiteSpace(userName)) database.Write(LastAccountKey, userName.Trim());
+    }
+
+    /// <summary>Un ancien mot de passe ne doit pas permettre la connexion hors ligne après restauration.</summary>
+    public void ForgetCredential() => database.Write(CredentialFile, string.Empty);
 
     public bool HasCredential => database.Read(CredentialFile) is { Length: > 0 };
 
