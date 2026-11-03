@@ -27,6 +27,16 @@ public static class SessionFactory
     public static Task SignInAsync(HttpContext http, AppUser user) =>
         http.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, Principal(user), new AuthenticationProperties { IsPersistent = false, AllowRefresh = true });
 
+    /// <summary>Le ticket d'un appareil lié porte un identifiant révocable et est lié à l'en-tête de ce poste.</summary>
+    public static Task SignInDeviceAsync(HttpContext http, AppUser user, Guid grantId, string deviceId)
+    {
+        var principal = Principal(user);
+        ((ClaimsIdentity)principal.Identity!).AddClaim(new Claim("scolia:device-grant", grantId.ToString()));
+        ((ClaimsIdentity)principal.Identity!).AddClaim(new Claim("scolia:device-id", deviceId));
+        return http.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal,
+            new AuthenticationProperties { IsPersistent = false, AllowRefresh = true });
+    }
+
     public static async Task<SessionDto> DescribeAsync(ScoliaDbContext db, AppUser user, CancellationToken ct)
     {
         var school = await db.Schools.AsNoTracking().OrderBy(s => s.CreatedAtUtc).FirstOrDefaultAsync(ct);
@@ -44,7 +54,16 @@ public static class SessionFactory
         if (!Guid.TryParse(id, out var userId) || stamp is null) { context.RejectPrincipal(); return; }
         var db = context.HttpContext.RequestServices.GetRequiredService<ScoliaDbContext>();
         var current = await db.Users.AsNoTracking().Where(u => u.Id == userId).Select(u => new { u.SecurityStamp, u.IsActive }).FirstOrDefaultAsync();
-        if (current is null || !current.IsActive || current.SecurityStamp != stamp)
+        var invalid = current is null || !current.IsActive || current.SecurityStamp != stamp;
+        if (!invalid && context.Principal?.FindFirstValue("scolia:device-grant") is { } raw)
+        {
+            var expectedDevice = context.Principal.FindFirstValue("scolia:device-id");
+            var actualDevice = LiveHeaders.DeviceId(context.HttpContext);
+            var registry = context.HttpContext.RequestServices.GetRequiredService<DevicePairingRegistry>();
+            invalid = !Guid.TryParse(raw, out var grantId) || expectedDevice != actualDevice
+                || !registry.IsActive(grantId, userId, actualDevice);
+        }
+        if (invalid)
         {
             context.RejectPrincipal();
             await context.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
