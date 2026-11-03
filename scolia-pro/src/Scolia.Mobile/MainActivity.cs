@@ -59,6 +59,8 @@ public sealed class MainActivity : AvaloniaMainActivity
         // Après la reprise, réactualiser les indicateurs de disponibilité affichés
         // sur la page Réseau : ne pas montrer un état capturé avant la réparation.
         ScoliaPlatform.NotifyAppResumed();
+        // Vérifier la disponibilité d'une nouvelle version et reprendre un téléchargement Android terminé.
+        AndroidAppUpdates.OnResume(this);
         // Téléphone serveur encore freiné par les économies de batterie : Android le demande, une fois par lancement.
         try { AndroidBackground.AskOnceIfServer(this); }
         catch (Exception ex) { Android.Util.Log.Warn("SCOLIA", $"Demande batterie impossible : {ex.GetType().Name}"); }
