@@ -69,10 +69,11 @@ public sealed class LockScreenViewModel : Observable
         ? "Verrouillé à votre demande. Saisissez votre code pour reprendre là où vous étiez."
         : $"Mis en veille après {Delay} sans activité. Saisissez votre code pour reprendre là où vous étiez.";
 
-    public string Code { get => code; set { if (Set(ref code, value ?? string.Empty)) { Error = null; Unlock.Refresh(); } } }
+    public string Code { get => code; set { if (Set(ref code, value ?? string.Empty)) { Error = null; Raise(nameof(CanUnlockCode)); Unlock.Refresh(); } } }
+    public bool CanUnlockCode => visible && !Busy && !string.IsNullOrEmpty(Code);
     public string? Error { get => error; private set { if (Set(ref error, value)) Raise(nameof(HasError)); } }
     public bool HasError => !string.IsNullOrEmpty(error);
-    public bool Busy { get => busy; private set { if (Set(ref busy, value)) Raise(nameof(NotBusy)); } }
+    public bool Busy { get => busy; private set { if (Set(ref busy, value)) { Raise(nameof(NotBusy)); Raise(nameof(CanUnlockCode)); } } }
     public bool NotBusy => !busy;
 
     private bool showCode;
@@ -91,10 +92,24 @@ public sealed class LockScreenViewModel : Observable
     public AsyncCommand UnlockWithBiometrics { get; }
     public AsyncCommand SwitchAccount { get; }
 
+    /// <summary>La récupération passe par le secrétariat, sans ouvrir la session ni supprimer son état.</summary>
+    public RelayCommand ForgotCode => forgotCode ??= new RelayCommand(() =>
+    {
+        if (Busy || !visible) return;
+        var account = UserName;
+        visible = false;
+        StopClock();
+        Code = string.Empty;
+        shell.BeginAccountSwitch();
+        shell.Login.ShowRecoveryHelp(account);
+    });
+    private RelayCommand? forgotCode;
+
     /// <summary>Le verrou vient de se fermer : champ vide, informations du compte à jour.</summary>
     public void Shown(bool byRequest = false)
     {
         visible = true;
+        Raise(nameof(CanUnlockCode));
         manual = byRequest;
         lockedAt = DateTime.Now;
         StartClock();
