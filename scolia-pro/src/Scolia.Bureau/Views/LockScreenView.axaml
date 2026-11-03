@@ -87,14 +87,14 @@
         <!-- Code : l'œil et la flèche sont dans le champ, comme le code PIN de Windows 11 -->
         <Panel Margin="0,22,0,0">
           <TextBox x:Name="LockCode" Classes="w11 onbrand codefield" Text="{Binding Code}" PasswordChar="•" RevealPassword="{Binding ShowCode}"
-                   PlaceholderText="Code PIN ou mot de passe" TextInputOptions.ContentType="Password" TextInputOptions.IsSensitive="True"
+                   PlaceholderText="Code PIN ou mot de passe" MaxLength="128" MinHeight="52" TextInputOptions.ContentType="Password" TextInputOptions.IsSensitive="True"
                    IsEnabled="{Binding NotBusy}" />
           <mi:MaterialIcon Classes="inicon" Kind="LockOutline" />
           <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="4" Margin="0,0,5,0">
             <Button Classes="fieldicon" Command="{Binding ToggleCode}" ToolTip.Tip="Afficher ou masquer le code" IsEnabled="{Binding NotBusy}">
               <mi:MaterialIcon Kind="{Binding EyeIcon}" Width="18" Height="18" Foreground="White" />
             </Button>
-            <Button x:Name="UnlockButton" Classes="fieldicon go" Command="{Binding Unlock}" ToolTip.Tip="Déverrouiller (Entrée)">
+            <Button x:Name="UnlockButton" Classes="fieldicon go" Command="{Binding Unlock}" IsEnabled="{Binding CanUnlockCode}" ToolTip.Tip="Déverrouiller (Entrée)">
               <Panel>
                 <mi:MaterialIcon Kind="Loading" Classes="spin" Width="18" Height="18" Foreground="White" IsVisible="{Binding Busy}" />
                 <mi:MaterialIcon Kind="ArrowRight" Width="20" Height="20" Foreground="White" IsVisible="{Binding NotBusy}" />
@@ -109,6 +109,15 @@
             <TextBlock Grid.Column="1" Text="{Binding Error}" Foreground="White" TextWrapping="Wrap" />
           </Grid>
         </Border>
+
+        <Button Classes="glasslink" Command="{Binding ForgotCode}" IsEnabled="{Binding NotBusy}"
+                HorizontalAlignment="Center" MinHeight="44" Margin="0,8,0,0"
+                ToolTip.Tip="Accéder à l'assistance sans déverrouiller la session">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <mi:MaterialIcon Kind="HelpCircleOutline" Width="18" Height="18" />
+            <TextBlock Text="Code ou mot de passe oublié ?" VerticalAlignment="Center" TextWrapping="Wrap" />
+          </StackPanel>
+        </Button>
 
         <!-- Empreinte -->
         <StackPanel IsVisible="{Binding CanUseBiometrics}" Spacing="8" Margin="0,18,0,0">
