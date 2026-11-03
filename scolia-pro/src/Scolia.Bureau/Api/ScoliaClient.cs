@@ -116,6 +116,37 @@ public sealed class ScoliaClient : IDisposable
     public async Task<SessionDto> LoginAsync(string userName, string password, CancellationToken ct = default) =>
         await SendAsync<SessionDto>(HttpMethod.Post, "api/session", new { userName, password }, ct);
 
+    public sealed record PairedSession(SessionDto Session, Guid GrantId, string DeviceSecret, DateTime ExpiresUtc);
+
+    /// <summary>Un QR explicitement créé par le serveur donne accès au compte lié, sans communiquer son mot de passe.</summary>
+    public async Task<SessionDto> AcceptDeviceInvitationAsync(string invitationToken, CancellationToken ct = default)
+    {
+        var linked = await SendAsync<PairedSession>(HttpMethod.Post, "api/jumelage/accepter", new
+        {
+            invitationToken, deviceId = Infrastructure.DeviceIdentity.Id, deviceName = Infrastructure.DeviceIdentity.Name
+        }, ct);
+        Infrastructure.DevicePairingStore.Save(Server, new Infrastructure.DevicePairingStore.Credential(
+            linked.GrantId, linked.DeviceSecret, linked.ExpiresUtc, linked.Session.UserName));
+        return linked.Session;
+    }
+
+    /// <summary>Renouvelle une session reconnue sur le serveur, avec un secret propre à cet appareil.</summary>
+    public async Task<SessionDto?> RestoreDeviceSessionAsync(CancellationToken ct = default)
+    {
+        var stored = Infrastructure.DevicePairingStore.Read(Server);
+        if (stored is null) return null;
+        try
+        {
+            return await SendAsync<SessionDto>(HttpMethod.Post, "api/session/appareil",
+                new { grantId = stored.GrantId, deviceId = Infrastructure.DeviceIdentity.Id, secret = stored.DeviceSecret }, ct);
+        }
+        catch (ApiException ex) when (ex.Status is 401 or 403 or 404)
+        {
+            Infrastructure.DevicePairingStore.Forget(Server);
+            return null;
+        }
+    }
+
     public async Task LogoutAsync(CancellationToken ct = default)
     {
         try { await SendAsync(HttpMethod.Delete, "api/session", null, ct); }
