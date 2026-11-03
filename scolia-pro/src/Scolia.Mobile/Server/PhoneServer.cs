@@ -50,9 +50,12 @@ public sealed class PhoneServer(Context context) : ILocalServer
             if (!ServeurScolia.IsActive)
             {
                 try { ServeurScolia.Begin(context); }
-                catch (Exception ex) when (ex is Java.Lang.SecurityException or InvalidOperationException
+                catch (Exception ex) when (ex is Java.Lang.RuntimeException or InvalidOperationException
                     or System.ComponentModel.Win32Exception)
-                { Android.Util.Log.Error("SCOLIA", $"Réactivation du service serveur refusée : {ex.Message}"); }
+                {
+                    Android.Util.Log.Error("SCOLIA", $"Réactivation du service serveur refusée : {ex.Message}");
+                    return;
+                }
             }
             if (server?.IsRunning != true) Enqueue(StartEmbeddedAsync);
         }
@@ -113,6 +116,7 @@ public sealed class PhoneServer(Context context) : ILocalServer
         lock (gate)
         {
             shouldHost = true;
+            explicitlyStopped = false;
             Enqueue(async () =>
             {
                 await StopEmbeddedAsync().ConfigureAwait(false);
