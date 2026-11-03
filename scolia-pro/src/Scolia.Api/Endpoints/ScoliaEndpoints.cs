@@ -63,6 +63,16 @@ public static class ScoliaEndpoints
             await SessionFactory.SignInAsync(http, user);
             return Results.Ok(await SessionFactory.DescribeAsync(db, user, ct));
         }).RequireRateLimiting("connexion");
+        // Restauration depuis la connexion : code confidentiel détenu par le responsable du serveur.
+        api.MapPost("/session/recuperation", async Task<IResult> (RecoveryInput input, RecoveryKeyStore codes,
+            UserService users, CancellationToken ct) =>
+        {
+            if (input.NewPassword != input.Confirmation)
+                return Results.BadRequest(new { title = "Les mots de passe ne correspondent pas." });
+            var accepted = await codes.ValidateAndRotateAsync(input.RecoveryCode,
+                () => users.RecoverPasswordAsync(input.UserName, input.NewPassword, ct), ct);
+            return accepted ? Results.NoContent() : Results.Unauthorized();
+        }).RequireRateLimiting("connexion");
         api.MapGet("/session", async (ICurrentUser current, ScoliaDbContext db, CancellationToken ct) =>
         {
             var user = await db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == current.Id, ct);
