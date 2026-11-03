@@ -277,3 +277,48 @@ jobs:
               --notes "Binaires compiles par GitHub Actions le 3 novembre 2026, avec sommes SHA-256 verifiees. Android : APK direct. Windows : installateur EXE direct. Sauvegarder les donnees scolaires avant une mise a jour. Verification sur appareils reels a effectuer."
           fi
           gh release view "$tag" --repo "$GH_REPO" --json url,assets
+
+  android-publication-officielle:
+    name: Publier automatiquement l'APK signe sur GitHub Releases
+    # Publier seulement apres une compilation + des tests reussis sur la branche de distribution.
+    # Une PR ou une branche de developpement ne doit JAMAIS publier un APK pour les utilisateurs.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/release/direct-apk-scolia-pro-20261103'
+    needs: android-natif
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: SCOLIA_Natif_Android_APK
+          path: scolia-apk
+      - name: Verifier la somme de controle et publier la version officielle
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          version="$(sed -n 's:.*<Version>\(.*\)</Version>.*:\1:p' scolia-pro/Directory.Build.props | head -1)"
+          [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo 'Version invalide'; exit 1; }
+          apk="scolia-apk/SCOLIA_Pro_${version}_Android.apk"
+          sha="$apk.sha256"
+          test -s "$apk" && test -s "$sha"
+          (cd scolia-apk && sha256sum -c "SCOLIA_Pro_${version}_Android.apk.sha256")
+          tag="scolia-pro-v${version}"
+          if gh release view "$tag" --repo "$GH_REPO" >/dev/null 2>&1; then
+            # Les nouvelles mises a jour doivent augmenter le numero de version.
+            gh release upload "$tag" "$apk" "$sha" --repo "$GH_REPO" --clobber
+          else
+            gh release create "$tag" "$apk" "$sha" \
+              --repo "$GH_REPO" --target "$GITHUB_SHA" --latest \
+              --title "SCOLIA Pro ${version} - Android" \
+              --notes "Mise a jour Android signee, empreinte SHA-256 publiee. Confirmation d'installation par Android. Les donnees scolaires locales ne sont pas effacees."
+          fi
+          gh release view "$tag" --repo "$GH_REPO" --json url,assets \
+            --jq '{url, apk: [.assets[] | select(.name | endswith(".apk")) | {name,url,digest}]}'
