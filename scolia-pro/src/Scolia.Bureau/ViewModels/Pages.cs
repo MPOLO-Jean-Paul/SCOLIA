@@ -65,6 +65,21 @@ public sealed class LoginViewModel : Observable
         }
     }
 
+    public sealed record LocalAccount(string? UserName);
+
+    /// <summary>Sur le serveur seul, retrouve un compte déjà configuré même avant la première connexion de ce poste.</summary>
+    public async Task DetectAccountAsync()
+    {
+        RecallLastAccount();
+        if (!string.IsNullOrWhiteSpace(UserName) || !api.Server.IsLoopback) return;
+        try
+        {
+            var suggested = await api.GetAsync<LocalAccount>("api/installation/compte-local");
+            if (!string.IsNullOrWhiteSpace(suggested?.UserName)) RememberAccount(suggested.UserName);
+        }
+        catch (Exception ex) when (ex is ApiException or OfflineException or HttpRequestException or TaskCanceledException) { }
+    }
+
     public void RememberAccount(string account)
     {
         if (string.IsNullOrWhiteSpace(account)) return;
