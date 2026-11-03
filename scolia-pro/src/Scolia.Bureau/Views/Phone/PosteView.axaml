@@ -23,14 +23,17 @@
       <StackPanel Spacing="10">
         <Grid ColumnDefinitions="Auto,*">
           <Panel Margin="0,0,12,0" VerticalAlignment="Top">
-            <Border Classes="appicon medium" Background="{DynamicResource ToneGreen}" IsVisible="{Binding BackgroundOk}"><mi:MaterialIcon Kind="ShieldCheckOutline" /></Border>
-            <Border Classes="appicon medium" Background="{DynamicResource ToneOrange}" IsVisible="{Binding BackgroundBlocked}"><mi:MaterialIcon Kind="BatteryAlertVariantOutline" /></Border>
+            <Border Classes="appicon medium" Background="{DynamicResource ToneGreen}" IsVisible="{Binding BackgroundHealthy}"><mi:MaterialIcon Kind="ShieldCheckOutline" /></Border>
+            <Border Classes="appicon medium" Background="{DynamicResource ToneOrange}" IsVisible="{Binding BackgroundNeedsAttention}"><mi:MaterialIcon Kind="BatteryAlertVariantOutline" /></Border>
           </Panel>
           <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
             <TextBlock Text="{Binding BackgroundTitle}" FontWeight="SemiBold" TextWrapping="Wrap" />
             <TextBlock Text="{Binding BackgroundLine}" Classes="muted" TextWrapping="Wrap" FontSize="{DynamicResource FsSmall}" />
           </StackPanel>
         </Grid>
+        <Button Classes="primary" Command="{Binding VerifyBackgroundServer}"
+                HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" MinHeight="46"
+                Content="Vérifier et relancer le serveur local" />
         <Button Classes="primary" Command="{Binding AllowBackground}" IsVisible="{Binding BackgroundBlocked}"
                 HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Height="46" Content="Autoriser l'arrière-plan" />
         <TextBlock Text="{Binding BackgroundHint}" IsVisible="{Binding HasBackgroundHint}" TextWrapping="Wrap" FontSize="{DynamicResource FsSmall}" />
