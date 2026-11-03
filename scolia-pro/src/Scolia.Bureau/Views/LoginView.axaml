@@ -141,6 +141,17 @@
                   <TextBlock Text="Restaurer avec mon empreinte" VerticalAlignment="Center" TextWrapping="Wrap" />
                 </StackPanel>
               </Button>
+              <TextBlock Text="Ou utiliser le code de secours de l'établissement" Foreground="#D9FFFFFF" FontSize="12" TextWrapping="Wrap" />
+              <TextBox Text="{Binding RecoveryCode}" PlaceholderText="Code de secours confidentiel" PasswordChar="•" MaxLength="100"
+                       TextInputOptions.ContentType="Password" TextInputOptions.IsSensitive="True"
+                       MinHeight="48" IsEnabled="{Binding NotBusy}" />
+              <Button Classes="glass" Command="{Binding RecoverWithCode}" IsEnabled="{Binding CanRecoverWithCode}"
+                      MinHeight="46">
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="8">
+                  <mi:MaterialIcon Kind="KeyChange" Width="20" Height="20" />
+                  <TextBlock Text="Restaurer mon mot de passe" VerticalAlignment="Center" TextWrapping="Wrap" />
+                </StackPanel>
+              </Button>
             </StackPanel>
           </Border>
 
