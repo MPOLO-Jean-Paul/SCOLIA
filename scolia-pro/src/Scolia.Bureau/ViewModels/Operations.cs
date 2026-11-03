@@ -632,6 +632,18 @@ public sealed class BackstageViewModel : Observable
         }
     }
 
+    public bool CanCheckWindowsUpdates => OperatingSystem.IsWindows();
+
+    /// <summary>Contrôle manuel complémentaire au contrôle automatique Windows à l'ouverture.</summary>
+    public AsyncCommand CheckWindowsUpdates => checkWindowsUpdates ??= new AsyncCommand(async () =>
+    {
+        if (Avalonia.Application.Current?.ApplicationLifetime is
+            Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime
+            { MainWindow: { } window })
+            await DesktopAppUpdates.CheckAsync(window, manual: true);
+    });
+    private AsyncCommand? checkWindowsUpdates;
+
     public bool IsInfos => section?.Value == "infos";
     /// <summary>Mobile : la liste des rubriques s'affiche tant qu'aucune rubrique à page propre n'est ouverte.</summary>
     public bool ShowList => !IsPassword && !IsPoste;
