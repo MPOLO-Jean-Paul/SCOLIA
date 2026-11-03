@@ -69,7 +69,19 @@ public static class TailscaleCompanion
                 return new TailnetSnapshot(true, null, null);
             }
             if (process.ExitCode != 0) return new TailnetSnapshot(true, false, null);
-            using var document = JsonDocument.Parse(output.GetAwaiter().GetResult());
+            return ParseWindowsStatus(output.GetAwaiter().GetResult());
+        }
+        catch (Exception ex) when (ex is Win32Exception or IOException or UnauthorizedAccessException
+            or InvalidOperationException or JsonException)
+        {
+            return new TailnetSnapshot(true, null, null);
+        }
+    }
+
+    /// <summary>Interprétation pure de la réponse officielle (testable sans poste Windows).</summary>
+    public static TailnetSnapshot ParseWindowsStatus(string json)
+    {
+            using var document = JsonDocument.Parse(json);
             var root = document.RootElement;
             var running = root.TryGetProperty("BackendState", out var state)
                 && state.GetString() == "Running";
@@ -85,12 +97,6 @@ public static class TailscaleCompanion
                     .FirstOrDefault(TailnetSnapshot.IsCandidateTailscaleIp);
             }
             return new TailnetSnapshot(true, running, ip);
-        }
-        catch (Exception ex) when (ex is Win32Exception or IOException or UnauthorizedAccessException
-            or InvalidOperationException or JsonException)
-        {
-            return new TailnetSnapshot(true, null, null);
-        }
     }
 
     public static string OpenInstallPage()
