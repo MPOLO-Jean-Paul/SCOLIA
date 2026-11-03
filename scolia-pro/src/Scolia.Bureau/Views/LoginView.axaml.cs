@@ -1,4 +1,6 @@
+using System.ComponentModel;
 using Avalonia.Controls;
+using Avalonia.Threading;
 using Avalonia.Input;
 using Scolia.Bureau.Infrastructure;
 using Scolia.Bureau.ViewModels;
@@ -14,7 +16,27 @@ public partial class LoginView : UserControl
         InitializeComponent();
         PasswordBox.KeyDown += (_, e) =>
         {
-            if (e.Key == Key.Enter && DataContext is LoginViewModel login && login.Submit.CanExecute(null)) login.Submit.Execute(null);
+            if (e.Key != Key.Enter || DataContext is not LoginViewModel login || !login.CanSubmitCredentials) return;
+            login.Submit.Execute(null);
+            e.Handled = true;
+        };
+        NewPasswordBox.KeyDown += (_, e) =>
+        {
+            if (e.Key != Key.Enter) return;
+            ConfirmPasswordBox.Focus();
+            e.Handled = true;
+        };
+        ConfirmPasswordBox.KeyDown += (_, e) =>
+        {
+            if (e.Key != Key.Enter) return;
+            RecoveryCodeBox.Focus();
+            e.Handled = true;
+        };
+        RecoveryCodeBox.KeyDown += (_, e) =>
+        {
+            if (e.Key != Key.Enter || DataContext is not LoginViewModel login || !login.CanRecoverWithCode) return;
+            login.RecoverWithCode.Execute(null);
+            e.Handled = true;
         };
         // Échap ramène à la session verrouillée quand on est venu de l'écran de veille.
         KeyDown += (_, e) =>
@@ -28,7 +50,7 @@ public partial class LoginView : UserControl
         {
             SubscribeLogin();
             Platform.AppResumed += RefreshOnResume;
-            if (!Platform.IsMobile && !PhoneLayout.Active) UserNameBox.Focus();
+            FocusRelevantField();
         };
         DetachedFromVisualTree += (_, _) =>
         {
@@ -45,20 +67,40 @@ public partial class LoginView : UserControl
         if (subscribedLogin is not null)
         {
             subscribedLogin.Unlocked += OnUnlocked;
+            subscribedLogin.PropertyChanged += OnLoginChanged;
             subscribedLogin.RefreshBiometrics();
         }
     }
 
     private void ReleaseLogin()
     {
-        if (subscribedLogin is not null) subscribedLogin.Unlocked -= OnUnlocked;
+        if (subscribedLogin is not null)
+        {
+            subscribedLogin.Unlocked -= OnUnlocked;
+            subscribedLogin.PropertyChanged -= OnLoginChanged;
+        }
         subscribedLogin = null;
     }
 
     private void RefreshOnResume() => subscribedLogin?.RefreshBiometrics();
 
-    private void OnUnlocked()
+    private void OnLoginChanged(object? sender, PropertyChangedEventArgs args)
     {
-        if (!Platform.IsMobile && !PhoneLayout.Active) PasswordBox.Focus();
+        if (args.PropertyName is nameof(LoginViewModel.RecoveryOpen)
+            or nameof(LoginViewModel.ShowManualCredentials)
+            or nameof(LoginViewModel.HasRememberedAccount))
+            Dispatcher.UIThread.Post(FocusRelevantField, DispatcherPriority.Background);
     }
+
+    /// <summary>Respecte le compte déjà reconnu et n'ouvre pas le clavier mobile sans geste de l'utilisateur.</summary>
+    private void FocusRelevantField()
+    {
+        if (Platform.IsMobile || PhoneLayout.Active || DataContext is not LoginViewModel login
+            || !login.ShowManualCredentials) return;
+        if (login.RecoveryOpen) NewPasswordBox.Focus();
+        else if (login.ShowAccountEntry) UserNameBox.Focus();
+        else PasswordBox.Focus();
+    }
+
+    private void OnUnlocked() => FocusRelevantField();
 }
