@@ -1197,14 +1197,33 @@ public sealed class UsersPage : PageViewModel
             return;
         }
         var u = Selected.Source;
-        var form = new FormViewModel("Réinitialiser le mot de passe", $"Compte {u.UserName}", async f =>
+        var form = new FormViewModel("Réinitialiser le mot de passe",
+            $"Compte {u.UserName} · L'accès actuel sera remplacé. Les sessions existantes seront invalidées.", async f =>
         {
-            await Shell.Api.SendAsync(HttpMethod.Post, $"api/utilisateurs/{u.Id}/mot-de-passe", new { newPassword = f.Text("motDePasse") });
-            Shell.Notify("Mot de passe provisoire défini. Il sera à changer à la prochaine connexion.");
+            var temporary = f.Text("motDePasse");
+            if (AccessCode.Problem(temporary) is { } weakness)
+            {
+                f.Find("motDePasse").Error = weakness;
+                f.Fail("Choisissez un code conforme à la politique de sécurité.");
+                return false;
+            }
+            if (temporary != f.Text("confirmation"))
+            {
+                f.Find("confirmation").Error = "Les deux codes ne correspondent pas.";
+                f.Fail("Confirmez le code provisoire avant de continuer.");
+                return false;
+            }
+            await Shell.Api.SendAsync(HttpMethod.Post, $"api/utilisateurs/{u.Id}/mot-de-passe", new { newPassword = temporary });
+            // Le serveur invalide le SecurityStamp et impose le changement au prochain accès.
+            f.Find("motDePasse").Text = string.Empty;
+            f.Find("confirmation").Text = string.Empty;
+            Shell.Notify("Nouveau code provisoire enregistré. Le compte devra le remplacer à sa prochaine connexion.");
             return true;
         });
         form.Add("motDePasse", "Nouveau code provisoire", FieldKind.Secret, required: true,
-            hint: AccessCode.Hint + " La personne choisira le sien à sa prochaine connexion.");
+            hint: AccessCode.Hint + " À remettre uniquement au titulaire du compte.");
+        form.Add("confirmation", "Confirmer le nouveau code", FieldKind.Secret, required: true,
+            hint: "Ressaisissez exactement le même code pour éviter les erreurs.");
         if (await Shell.Ask(form)) await RefreshAsync();
     }
 }

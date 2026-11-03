@@ -24,8 +24,10 @@ public sealed class PairingViewModel : Observable
         Shared = Platform.IsMobile || PosteAdmin.LanEnabled();
         Code = PairingCode.ForThisServer(school, machine, Shared ? PosteAdmin.Addresses() : [], invitation);
         School = school;
-        CodeText = Code.Text();
-        Image = QrCodes.Render(CodeText);
+        CodeText = string.Empty;
+        Image = null;
+        Renew = new AsyncCommand(RenewInvitationAsync);
+        _ = RenewInvitationAsync();
 
         var routes = new List<PairingRouteVm>();
         foreach (var lan in Code.LanAddresses)
@@ -38,16 +40,55 @@ public sealed class PairingViewModel : Observable
 
         Copy = new AsyncCommand(async () =>
         {
+            if (!Ready) return;
             if (shell.CopyHandler is { } copy) await copy(CodeText);
-            shell.Notify("Code de liaison copié : collez-le sur l'autre appareil, dans « Changer d'ordinateur principal ».");
+            shell.Notify("Invitation copiée : utilisez-la sur l'autre appareil avant son expiration.");
         });
         Close = new RelayCommand(shell.CloseDialog);
     }
 
-    public PairingCode Code { get; }
+    private sealed record InvitationReply(string Token, DateTime ExpiresUtc);
+    public PairingCode Code { get; private set; }
     public string School { get; }
-    public string CodeText { get; }
-    public Bitmap Image { get; }
+    public string CodeText { get; private set; }
+    public Bitmap? Image { get; private set; }
+    public bool Ready => Image is not null && Code.AccessTicket is not null;
+    public string ProgressText { get; private set; } = "Préparation d'une invitation sécurisée…";
+    public bool CanInvite => shell.IsServerComputer && shell.Can("utilisateurs.gerer");
+    public AsyncCommand Renew { get; }
+
+    private async Task RenewInvitationAsync()
+    {
+        if (!CanInvite)
+        {
+            ProgressText = "Seul un responsable connecté sur le serveur peut inviter un appareil.";
+            Raise(nameof(ProgressText));
+            return;
+        }
+        ProgressText = "Génération d'un accès à usage unique…";
+        Raise(nameof(ProgressText));
+        CodeText = string.Empty;
+        Image = null;
+        Raise(nameof(Image));
+        Raise(nameof(Ready));
+        try
+        {
+            var invite = await shell.Api.SendAsync<InvitationReply>(HttpMethod.Post, "api/jumelage/inviter", new { });
+            Code = Code with { AccessTicket = invite.Token };
+            CodeText = Code.Text();
+            Image = QrCodes.Render(CodeText);
+            ProgressText = "Invitation valable 5 minutes, une seule utilisation.";
+            Raise(nameof(Code));
+            Raise(nameof(CodeText));
+            Raise(nameof(Image));
+            Raise(nameof(Ready));
+        }
+        catch (Exception ex) when (ex is Api.ApiException or HttpRequestException or TaskCanceledException or IOException)
+        {
+            ProgressText = "Impossible de générer l'invitation. Vérifiez l'accès au serveur et vos autorisations.";
+        }
+        Raise(nameof(ProgressText));
+    }
     public IReadOnlyList<PairingRouteVm> Routes { get; }
     public bool HasRoutes => Routes.Count > 0;
 
@@ -59,7 +100,7 @@ public sealed class PairingViewModel : Observable
     public string Steps => Platform.IsMobile
         ? "Sur l'autre appareil : Changer d'ordinateur principal, puis Scanner le code QR."
         : "Sur l'autre appareil : Changer d'ordinateur principal, puis Scanner le code QR. Sur un ordinateur, collez le code copié.";
-    public string Footer => "Le code ne contient aucun mot de passe : le serveur valide l'appareil, puis chacun se connecte avec son compte.";
+    public string Footer => "Ce QR autorise temporairement un autre appareil à ouvrir ce compte avec les mêmes droits. Ne le partagez qu\u2019avec un appareil de confiance. Vous pourrez révoquer sa liaison.";
 
     public AsyncCommand Copy { get; }
     public RelayCommand Close { get; }

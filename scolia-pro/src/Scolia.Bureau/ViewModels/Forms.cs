@@ -75,6 +75,13 @@ public sealed class FormField : Observable
     public bool IsText => Kind is FieldKind.Text or FieldKind.Amount;
     public bool IsPhone => Kind == FieldKind.Phone;
     public bool IsSecret => Kind == FieldKind.Secret;
+
+    // Visible only on the user's request; secret fields remain masked by default.
+    private bool showSecret;
+    private RelayCommand? toggleSecret;
+    public bool ShowSecret { get => showSecret; set { if (Set(ref showSecret, value)) Raise(nameof(SecretEyeIcon)); } }
+    public MaterialIconKind SecretEyeIcon => ShowSecret ? MaterialIconKind.EyeOffOutline : MaterialIconKind.EyeOutline;
+    public RelayCommand ToggleSecret => toggleSecret ??= new RelayCommand(() => ShowSecret = !ShowSecret);
     public bool IsMultiline => Kind == FieldKind.Multiline;
     public bool IsDay => Kind == FieldKind.Day;
     public bool IsChoice => Kind == FieldKind.Choice;

@@ -2,8 +2,8 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mi="using:Material.Icons.Avalonia"
              x:Class="Scolia.Bureau.Views.LockScreenView">
-  <!-- Mise en veille façon Windows 11 : le même fond bleu dégradé que la connexion, sans carte ni cadre. L'heure en
-       grand, le compte au centre, le code dans un champ de verre avec la flèche. La session attend derrière, intacte. -->
+  <!-- Même identité visuelle que la connexion : fond bleu et halo, sans lourde carte ni
+       horloge dominante. La reprise de session reste claire même sur un petit Android. -->
   <UserControl.Styles>
     <Style Selector="mi|MaterialIcon.inicon">
       <Setter Property="Width" Value="19" /><Setter Property="Height" Value="19" />
@@ -13,23 +13,6 @@
       <Setter Property="IsHitTestVisible" Value="False" />
     </Style>
     <Style Selector="TextBox.w11.onbrand.codefield"><Setter Property="Padding" Value="42,0,86,0" /></Style>
-    <!-- Empreinte : un rond de verre, comme sur l'écran verrouillé -->
-    <Style Selector="Button.fingerprint">
-      <Setter Property="Width" Value="60" /><Setter Property="Height" Value="60" /><Setter Property="CornerRadius" Value="30" />
-      <Setter Property="Padding" Value="0" />
-      <Setter Property="Background" Value="#33FFFFFF" />
-      <Setter Property="Foreground" Value="White" />
-      <Setter Property="BorderThickness" Value="0" />
-      <Setter Property="HorizontalAlignment" Value="Center" />
-      <Setter Property="HorizontalContentAlignment" Value="Center" /><Setter Property="VerticalContentAlignment" Value="Center" />
-    </Style>
-    <Style Selector="Button.fingerprint /template/ ContentPresenter">
-      <Setter Property="Background" Value="#33FFFFFF" />
-      <Setter Property="Foreground" Value="White" />
-    </Style>
-    <Style Selector="Button.fingerprint:pointerover /template/ ContentPresenter">
-      <Setter Property="Background" Value="#4DFFFFFF" />
-    </Style>
   </UserControl.Styles>
 
   <Grid>
@@ -53,85 +36,123 @@
     </Border>
 
     <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
-      <StackPanel MaxWidth="360" Margin="20,28,20,24" VerticalAlignment="Center">
-        <!-- Établissement -->
-        <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Center">
-          <Border Width="32" Height="32" CornerRadius="16" Background="White">
-            <Panel Width="24" Height="24">
-              <Image Source="{DynamicResource ScoliaMark}" Width="20" Height="20" />
+      <Grid RowDefinitions="Auto,Auto,Auto" VerticalAlignment="Center" Margin="0,24">
+        <!-- En-tête identique au premier accès à l'établissement. -->
+        <StackPanel Grid.Row="0" HorizontalAlignment="Stretch" MaxWidth="420"
+                    Margin="24,8,24,18" Spacing="8">
+          <Border Width="96" Height="96" CornerRadius="48" Background="White"
+                  HorizontalAlignment="Center" BoxShadow="0 8 24 0 #33000000">
+            <Panel Width="72" Height="72">
+              <Image Source="{DynamicResource ScoliaMark}" Width="62" Height="62" />
             </Panel>
           </Border>
-          <TextBlock Text="{Binding School}" Foreground="White" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center"
-                     TextTrimming="CharacterEllipsis" MaxWidth="300" />
+          <TextBlock Text="{Binding School}" Foreground="White" FontSize="23" FontWeight="SemiBold"
+                     HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" MaxWidth="380" />
+          <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="8">
+            <mi:MaterialIcon Kind="LockOutline" Width="15" Height="15" Foreground="#D9FFFFFF" VerticalAlignment="Center" />
+            <TextBlock Text="Session protégée" Foreground="#E6FFFFFF" FontSize="13" FontWeight="Medium" />
+          </StackPanel>
+          <!-- Horloge secondaire : elle ne prend plus la place du formulaire. -->
+          <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="9" Margin="0,4,0,0">
+            <TextBlock x:Name="LockTime" Text="{Binding Time}" Foreground="White" FontSize="26" FontWeight="SemiBold" VerticalAlignment="Center" />
+            <Border Width="1" Height="19" Background="#66FFFFFF" VerticalAlignment="Center" />
+            <TextBlock Text="{Binding DateText}" Foreground="#D9FFFFFF" FontSize="13" VerticalAlignment="Center" />
+          </StackPanel>
         </StackPanel>
 
-        <!-- Heure et date -->
-        <TextBlock x:Name="LockTime" Text="{Binding Time}" Foreground="White" FontSize="72" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,18,0,0" />
-        <TextBlock Text="{Binding DateText}" Foreground="White" FontSize="18" HorizontalAlignment="Center" Margin="0,-6,0,0" />
-
-        <!-- Compte -->
-        <Border Width="104" Height="104" CornerRadius="52" Background="#33FFFFFF" HorizontalAlignment="Center" Margin="0,30,0,0">
-          <Border Width="92" Height="92" CornerRadius="46" Background="White">
-            <TextBlock Text="{Binding Initials}" FontSize="34" FontWeight="SemiBold" Foreground="#1258D0"
-                       HorizontalAlignment="Center" VerticalAlignment="Center" />
+        <!-- Les contrôles reprennent les mêmes marges et largeurs que LoginView. -->
+        <StackPanel Grid.Row="1" MaxWidth="360" Margin="20,0" HorizontalAlignment="Stretch" Spacing="12">
+          <Border CornerRadius="12" Background="#26FFFFFF" Padding="12,11">
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+              <Border Width="48" Height="48" CornerRadius="24" Background="White" VerticalAlignment="Center">
+                <TextBlock Text="{Binding Initials}" FontSize="18" FontWeight="SemiBold" Foreground="#1258D0"
+                           HorizontalAlignment="Center" VerticalAlignment="Center" />
+              </Border>
+              <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
+                <TextBlock Text="{Binding DisplayName}" Foreground="White" FontSize="17"
+                           FontWeight="SemiBold" TextWrapping="Wrap" />
+                <TextBlock Text="{Binding AccountLine}" Foreground="#E6FFFFFF" FontSize="12" TextWrapping="Wrap" />
+                <TextBlock Text="{Binding LockedSince}" Foreground="#C8FFFFFF" FontSize="11" TextWrapping="Wrap" />
+              </StackPanel>
+            </Grid>
           </Border>
-        </Border>
-        <TextBlock Text="{Binding DisplayName}" Foreground="White" FontSize="24" FontWeight="SemiBold" HorizontalAlignment="Center"
-                   TextAlignment="Center" TextWrapping="Wrap" Margin="0,14,0,0" />
-        <TextBlock Text="{Binding AccountLine}" Foreground="#D9FFFFFF" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" />
-        <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center" Margin="0,8,0,0">
-          <mi:MaterialIcon Kind="Lock" Width="13" Height="13" Foreground="#CCFFFFFF" VerticalAlignment="Center" />
-          <TextBlock Text="{Binding LockedSince}" Foreground="#CCFFFFFF" FontSize="{DynamicResource FsSmall}" VerticalAlignment="Center" />
-        </StackPanel>
 
-        <!-- Code : l'œil et la flèche sont dans le champ, comme le code PIN de Windows 11 -->
-        <Panel Margin="0,22,0,0">
-          <TextBox x:Name="LockCode" Classes="w11 onbrand codefield" Text="{Binding Code}" PasswordChar="•" RevealPassword="{Binding ShowCode}"
-                   PlaceholderText="Code PIN ou mot de passe" TextInputOptions.ContentType="Password" TextInputOptions.IsSensitive="True"
-                   IsEnabled="{Binding NotBusy}" />
-          <mi:MaterialIcon Classes="inicon" Kind="LockOutline" />
-          <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="4" Margin="0,0,5,0">
-            <Button Classes="fieldicon" Command="{Binding ToggleCode}" ToolTip.Tip="Afficher ou masquer le code" IsEnabled="{Binding NotBusy}">
-              <mi:MaterialIcon Kind="{Binding EyeIcon}" Width="18" Height="18" Foreground="White" />
-            </Button>
-            <Button x:Name="UnlockButton" Classes="fieldicon go" Command="{Binding Unlock}" ToolTip.Tip="Déverrouiller (Entrée)">
-              <Panel>
-                <mi:MaterialIcon Kind="Loading" Classes="spin" Width="18" Height="18" Foreground="White" IsVisible="{Binding Busy}" />
-                <mi:MaterialIcon Kind="ArrowRight" Width="20" Height="20" Foreground="White" IsVisible="{Binding NotBusy}" />
-              </Panel>
-            </Button>
-          </StackPanel>
-        </Panel>
-        <TextBlock Text="{Binding Message}" Foreground="#CCFFFFFF" TextWrapping="Wrap" TextAlignment="Center" FontSize="{DynamicResource FsSmall}" Margin="4,10,4,0" />
-        <Border Background="#40E5484D" CornerRadius="8" Padding="12,9" Margin="0,10,0,0" IsVisible="{Binding HasError}">
-          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
-            <mi:MaterialIcon Kind="AlertCircleOutline" Width="17" Height="17" Foreground="White" VerticalAlignment="Top" Margin="0,1,0,0" />
-            <TextBlock Grid.Column="1" Text="{Binding Error}" Foreground="White" TextWrapping="Wrap" />
-          </Grid>
-        </Border>
+          <TextBlock Text="{Binding Message}" Foreground="#E6FFFFFF" FontSize="13"
+                     TextWrapping="Wrap" TextAlignment="Center" Margin="0,2,0,3" />
 
-        <!-- Empreinte -->
-        <StackPanel IsVisible="{Binding CanUseBiometrics}" Spacing="8" Margin="0,18,0,0">
-          <Button Classes="fingerprint" Command="{Binding UnlockWithBiometrics}" ToolTip.Tip="{Binding BiometricLabel}">
-            <mi:MaterialIcon Kind="Fingerprint" Width="32" Height="32" />
+          <!-- Le même champ verre, icône, œil et flèche que sur la page de connexion. -->
+          <Panel IsVisible="{Binding RequireCode}">
+            <TextBox x:Name="LockCode" Classes="w11 onbrand codefield"
+                     Text="{Binding Code}" PasswordChar="•" RevealPassword="{Binding ShowCode}"
+                     PlaceholderText="Code PIN ou mot de passe" MaxLength="128" MinHeight="52"
+                     TextInputOptions.ContentType="Password" TextInputOptions.IsSensitive="True"
+                     IsEnabled="{Binding NotBusy}" />
+            <mi:MaterialIcon Classes="inicon" Kind="LockOutline" />
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="4" Margin="0,0,5,0">
+              <Button Classes="fieldicon" Command="{Binding ToggleCode}"
+                      ToolTip.Tip="Afficher ou masquer le code" IsEnabled="{Binding NotBusy}">
+                <mi:MaterialIcon Kind="{Binding EyeIcon}" Width="18" Height="18" Foreground="White" />
+              </Button>
+              <Button x:Name="UnlockButton" Classes="fieldicon go" Command="{Binding Unlock}"
+                      IsEnabled="{Binding CanUnlockCode}" ToolTip.Tip="Déverrouiller (Entrée)">
+                <Panel>
+                  <mi:MaterialIcon Kind="Loading" Classes="spin" Width="18" Height="18" Foreground="White" IsVisible="{Binding Busy}" />
+                  <mi:MaterialIcon Kind="ArrowRight" Width="20" Height="20" Foreground="White" IsVisible="{Binding NotBusy}" />
+                </Panel>
+              </Button>
+            </StackPanel>
+          </Panel>
+
+          <!-- Poste invité : le serveur vérifie l'autorisation ; aucun mot de passe de
+               l'administrateur n'est exposé à l'appareil lié. -->
+          <Button Classes="glass" Command="{Binding UnlockWithDevice}" IsVisible="{Binding CanUsePairedDevice}"
+                  IsEnabled="{Binding NotBusy}" MinHeight="52">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="9">
+              <mi:MaterialIcon Kind="ShieldCheckOutline" Width="21" Height="21" />
+              <TextBlock Text="{Binding PairedDeviceText}" VerticalAlignment="Center" TextWrapping="Wrap" />
+            </StackPanel>
           </Button>
-          <TextBlock Text="{Binding BiometricLabel}" Foreground="#D9FFFFFF" FontSize="{DynamicResource FsSmall}" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" />
+
+          <Button Classes="glass" Command="{Binding UnlockWithBiometrics}"
+                  IsVisible="{Binding CanUseBiometrics}" IsEnabled="{Binding NotBusy}" MinHeight="48">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="8">
+              <mi:MaterialIcon Kind="Fingerprint" Width="21" Height="21" />
+              <TextBlock Text="{Binding BiometricLabel}" VerticalAlignment="Center" TextWrapping="Wrap" />
+            </StackPanel>
+          </Button>
+
+          <Border Background="#40E5484D" CornerRadius="8" Padding="12,10" IsVisible="{Binding HasError}">
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+              <mi:MaterialIcon Kind="AlertCircleOutline" Width="18" Height="18" Foreground="White"
+                               VerticalAlignment="Top" Margin="0,1,0,0" />
+              <TextBlock Grid.Column="1" Text="{Binding Error}" Foreground="White" TextWrapping="Wrap" />
+            </Grid>
+          </Border>
+
+          <Button Classes="glasslink" Command="{Binding ForgotCode}" IsEnabled="{Binding NotBusy}"
+                  HorizontalAlignment="Center" MinHeight="44"
+                  ToolTip.Tip="Retrouver votre compte sans déverrouiller la session">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="8">
+              <mi:MaterialIcon Kind="HelpCircleOutline" Width="18" Height="18" />
+              <TextBlock Text="Code ou mot de passe oublié ?" VerticalAlignment="Center" TextWrapping="Wrap" />
+            </StackPanel>
+          </Button>
+          <Button x:Name="SwitchAccountButton" Classes="glasslink" Command="{Binding SwitchAccount}"
+                  IsEnabled="{Binding NotBusy}" HorizontalAlignment="Center" MinHeight="44"
+                  ToolTip.Tip="Garder cette session verrouillée et se connecter avec un autre compte">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="8">
+              <mi:MaterialIcon Kind="AccountSwitchOutline" Width="18" Height="18" />
+              <TextBlock Text="Changer de compte" FontWeight="SemiBold" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
+          <TextBlock Text="Votre session reste protégée si vous changez de compte."
+                     Foreground="#B3FFFFFF" FontSize="11" TextAlignment="Center" TextWrapping="Wrap" />
         </StackPanel>
 
-        <!-- Autre compte : la session reste verrouillée derrière -->
-        <Button x:Name="SwitchAccountButton" Classes="glasslink" Command="{Binding SwitchAccount}" IsEnabled="{Binding NotBusy}" Margin="0,20,0,0"
-                ToolTip.Tip="Cette session reste verrouillée, vous pourrez y revenir">
-          <StackPanel Orientation="Horizontal" Spacing="8">
-            <mi:MaterialIcon Kind="AccountSwitchOutline" Width="18" Height="18" />
-            <TextBlock Text="Changer de compte" FontWeight="SemiBold" VerticalAlignment="Center" />
-          </StackPanel>
-        </Button>
-        <TextBlock Text="Cette session reste verrouillée, vous pourrez y revenir." Foreground="#B3FFFFFF" FontSize="{DynamicResource FsSmall}"
-                   HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" />
-
-        <TextBlock Text="{Binding Footer}" Foreground="#99FFFFFF" FontSize="{DynamicResource FsSmall}" HorizontalAlignment="Center"
-                   TextAlignment="Center" TextWrapping="Wrap" Margin="0,22,0,0" />
-      </StackPanel>
+        <TextBlock Grid.Row="2" Text="{Binding Footer}" Foreground="#B3FFFFFF"
+                   FontSize="{DynamicResource FsSmall}" HorizontalAlignment="Stretch"
+                   TextAlignment="Center" TextWrapping="Wrap" Margin="16,22,16,8" />
+      </Grid>
     </ScrollViewer>
   </Grid>
 </UserControl>

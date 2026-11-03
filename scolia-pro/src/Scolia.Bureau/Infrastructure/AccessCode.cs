@@ -60,6 +60,7 @@ public static class AccessCode
             return null;
         }
         if (code.Length < PasswordMinLength) return $"Le mot de passe doit contenir au moins {PasswordMinLength} caractères.";
+        if (code.Length > 128) return "Le mot de passe compte au plus 128 caractères.";
         if (string.IsNullOrWhiteSpace(code)) return "Le mot de passe ne peut pas être fait que d'espaces.";
         if (Common.Contains(code)) return "Ce mot de passe est trop courant : choisissez-en un autre.";
         return null;

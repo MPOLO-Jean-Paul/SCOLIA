@@ -30,6 +30,18 @@ public sealed class PosteViewModel : Observable
         }));
         Search = new AsyncCommand(SearchAsync);
         AllowBackground = new RelayCommand(() => Platform.AllowBackground?.Invoke());
+        VerifyBackgroundServer = new AsyncCommand(async () =>
+        {
+            if (!IsPhoneServer) return;
+            try { Platform.EnsureHostAvailable?.Invoke(); }
+            catch (Exception ex) when (ex is not OutOfMemoryException)
+            { shell.Notify($"Android n'a pas autorisé la reprise du serveur : {ex.Message}"); }
+            // La création initiale de la base peut se poursuivre après le service :
+            // laisser le temps à l'API de démarrer, puis relire les deux états.
+            for (var i = 0; i < 8 && !(HostForegroundActive && HostApiServing); i++)
+                await Task.Delay(400);
+            Refresh();
+        });
         OpenAppSettings = new RelayCommand(() => Platform.OpenAppSettings?.Invoke());
         OpenPowerOptions = new RelayCommand(PosteAdmin.OpenPowerOptions);
         // Code QR : le serveur le montre, l'autre appareil le scanne.
@@ -72,10 +84,22 @@ public sealed class PosteViewModel : Observable
     public bool ShowBackground => IsPhoneServer && Platform.BackgroundAllowed is not null;
     public bool BackgroundOk => Platform.BackgroundAllowed?.Invoke() ?? true;
     public bool BackgroundBlocked => !BackgroundOk;
-    public string BackgroundTitle => BackgroundOk ? "Actif même écran éteint" : "Android peut endormir SCOLIA";
-    public string BackgroundLine => BackgroundOk
-        ? "Écran éteint ou application réduite, les autres postes restent connectés. Seul « Quitter » ou l'arrêt du téléphone les coupe."
-        : "Écran éteint, Android peut couper SCOLIA pour économiser la batterie : les autres postes seraient déconnectés.";
+    public bool HostForegroundActive => Platform.IsHostForegroundActive?.Invoke() == true;
+    public bool HostApiServing => Platform.IsHostApiServing?.Invoke() == true;
+    public bool BackgroundHealthy => BackgroundOk && HostForegroundActive && HostApiServing;
+    public bool BackgroundNeedsAttention => !BackgroundHealthy;
+    public string BackgroundTitle => !HostForegroundActive
+        ? "Le service serveur doit être réactivé"
+        : !HostApiServing ? "Démarrage du serveur scolaire…"
+        : !BackgroundOk ? "Serveur actif · autorisation batterie nécessaire"
+        : "Serveur actif en arrière-plan";
+    public string BackgroundLine => !HostForegroundActive
+        ? "Le service Android n'est pas au premier plan. Touchez « Vérifier le serveur » pendant que SCOLIA est ouvert pour demander sa réactivation."
+        : !HostApiServing
+            ? "La notification serveur est présente, mais l'API scolaire n'écoute pas encore. Vérifiez le serveur ; ses données seront conservées."
+        : !BackgroundOk
+            ? "L'API scolaire fonctionne, mais Android peut la suspendre en veille. Autorisez l'arrière-plan pour SCOLIA et, à distance, pour Tailscale."
+        : "L'API scolaire écoute indépendamment de l'écran SCOLIA. Les autres appareils restent joignables si le réseau et Tailscale restent actifs ; l'arrêt forcé et les restrictions du fabricant peuvent interrompre le service.";
     public string BackgroundHint => Platform.BackgroundHint;
     public bool HasBackgroundHint => ShowBackground && BackgroundHint.Length > 0;
 
@@ -139,6 +163,7 @@ public sealed class PosteViewModel : Observable
         });
     }
     public RelayCommand AllowBackground { get; }
+    public AsyncCommand VerifyBackgroundServer { get; }
     public RelayCommand OpenAppSettings { get; }
     public RelayCommand OpenPowerOptions { get; }
 
@@ -151,7 +176,9 @@ public sealed class PosteViewModel : Observable
         foreach (var name in new[] { nameof(ServiceInstalled), nameof(LanEnabled), nameof(ServiceLine), nameof(LanLine), nameof(AddressLine),
                      nameof(HasAddress), nameof(ConnectionTitle), nameof(ConnectionLine), nameof(IsServerComputer), nameof(IsLinked),
                      nameof(IsPhoneServer), nameof(IsPhoneClient), nameof(CanBecomeServer), nameof(ShowBackground), nameof(BackgroundOk),
-                     nameof(BackgroundBlocked), nameof(BackgroundTitle), nameof(BackgroundLine), nameof(HasBackgroundHint), nameof(ShowAwake), nameof(AwakeLine) })
+                     nameof(BackgroundBlocked), nameof(HostForegroundActive), nameof(HostApiServing),
+                     nameof(BackgroundHealthy), nameof(BackgroundNeedsAttention),
+                     nameof(BackgroundTitle), nameof(BackgroundLine), nameof(HasBackgroundHint), nameof(ShowAwake), nameof(AwakeLine) })
             Raise(name);
     }
 

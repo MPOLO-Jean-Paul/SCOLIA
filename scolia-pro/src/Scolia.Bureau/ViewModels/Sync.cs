@@ -298,11 +298,18 @@ public sealed class SyncCenter : Observable, IDisposable
             {
                 if (userName is null || password is null)
                 {
-                    shell.Notify("Le serveur est revenu : reconnectez-vous pour envoyer les opérations en attente.");
-                    return;
+                    // Appareil autorisé par QR : renouvelle sa propre session sans le mot de passe du compte du serveur.
+                    if (await api.RestoreDeviceSessionAsync() is null)
+                    {
+                        shell.Notify("Le serveur est revenu mais l'autorisation de cet appareil doit être renouvelée.");
+                        return;
+                    }
                 }
-                var restored = await api.LoginAsync(userName, password);
-                api.Offline?.SaveCredential(userName, password, restored, api.SessionCookie);
+                else
+                {
+                    var restored = await api.LoginAsync(userName, password);
+                    api.Offline?.SaveCredential(userName, password, restored, api.SessionCookie);
+                }
             }
             var (sent, refused) = await api.FlushAsync();
             if (sent > 0) shell.Notify($"{sent} opération(s) envoyée(s) à l'ordinateur principal.");

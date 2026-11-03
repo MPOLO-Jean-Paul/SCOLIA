@@ -1,0 +1,51 @@
+SCOLIA PRO - CONDITIONS D'UTILISATION
+Version 1.2.3 - JP-Services - 2026
+
+1. OBJET
+SCOLIA Pro est un logiciel de gestion scolaire destiné aux utilisateurs autorisés
+par leur établissement : secrétariat, comptabilité, scolarité et administration.
+Son utilisation doit respecter les permissions définies par cet établissement.
+
+2. DONNÉES SCOLAIRES
+Les dossiers des apprenants, les informations de paiement et les identifiants
+appartiennent à l'établissement qui les gère. L'établissement reste responsable
+des autorisations d'accès, de la confidentialité, des corrections, des sauvegardes
+et de la conformité aux obligations légales qui lui sont applicables.
+
+SCOLIA peut fonctionner avec une base locale SQLite. En mode multiposte, les
+appareils autorisés communiquent avec l'appareil serveur. Si Tailscale est
+utilisé, il fournit un réseau privé et recourt à ses propres services de
+coordination. Cette installation ne crée pas de compte distant ni ne transfère
+à elle seule les dossiers scolaires vers un service de stockage en ligne.
+
+3. IDENTIFIANTS ET SÉCURITÉ
+Ne communiquez pas les mots de passe, les codes de secours ou les invitations
+d'accès à des personnes non autorisées. Protégez chaque appareil et choisissez
+des comptes adaptés aux fonctions exercées. Un accès réseau privé ne remplace
+pas l'authentification SCOLIA.
+
+4. DISPONIBILITÉ
+L'accès des autres appareils dépend de l'alimentation du serveur, du réseau
+Wi-Fi ou Internet, des autorisations du système et, le cas échéant, du VPN.
+Aucune continuité absolue n'est garantie en cas d'arrêt forcé, d'extinction,
+de coupure de réseau, de panne matérielle ou de restriction d'Android/Windows.
+
+5. SAUVEGARDES ET MISES À JOUR
+Avant de changer de version ou de machine, effectuez une sauvegarde vérifiée
+de la base scolaire. Ce programme d'installation conserve les données
+présentes dans son dossier d'installation et n'efface pas le dossier de
+données d'une ancienne version portable. Pour les déplacer vers une nouvelle
+installation, restaurez une sauvegarde depuis SCOLIA ; ne déplacez pas une
+base SQLite pendant que le serveur fonctionne.
+
+6. PROGRAMMES TIERS
+Windows, .NET, les bibliothèques et les éventuels services comme Tailscale
+peuvent être soumis à leurs propres conditions. Le logiciel SCOLIA n'accorde
+aucun droit supplémentaire sur ces composants.
+
+7. ASSISTANCE
+Éditeur indiqué pour cette distribution : JP-Services.
+Projet : https://github.com/MPOLO-Jean-Paul/SCOLIA
+
+En cliquant sur « Je comprends et j'accepte » dans cet assistant, vous
+confirmez avoir pris connaissance de ces conditions pour l'installation.

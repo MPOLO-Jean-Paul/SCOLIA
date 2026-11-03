@@ -135,6 +135,29 @@ public sealed class EmbeddedServerTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task L_API_du_telephone_sert_les_clients_sans_une_interface_ouverte()
+    {
+        // Le serveur ASP.NET est indépendant de l'activité Avalonia : l'absence
+        // de vue active ne clôt pas la session de l'appareil distant.
+        var cookies = new CookieContainer();
+        using var admin = await Install(cookies);
+        using var remote = Client();
+        await Ok(await remote.PostAsJsonAsync("api/session", new
+        {
+            userName = "admin", password = "Scolia2026!",
+        }));
+
+        var before = await Ok(await remote.GetAsync("api/apprenants?taille=1"));
+        Assert.True(before.GetProperty("total").GetInt32() > 0);
+
+        // Pendant cet intervalle aucune activité utilisateur ne pilote le serveur.
+        await Task.Delay(400);
+        var after = await Ok(await remote.GetAsync("api/apprenants?taille=1"));
+        Assert.Equal(before.GetProperty("total").GetInt32(), after.GetProperty("total").GetInt32());
+        Assert.True(server.IsRunning);
+    }
+
+    [Fact]
     public async Task Apres_un_redemarrage_les_donnees_et_la_session_sont_toujours_la()
     {
         var cookies = new CookieContainer();

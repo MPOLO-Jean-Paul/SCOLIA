@@ -45,6 +45,8 @@ public sealed class ShellViewModel : Observable
         {
             api.Offline = new OfflineStore(api.Server) { User = s.UserName };
             api.Offline.SaveCredential(user, secret, s, api.SessionCookie);
+            api.Offline.RememberAccount(s.UserName);
+            Login.RememberAccount(s.UserName);
             Sync.Remember(user, secret);
         };
         Sync.RemoteChange += OnRemoteChange;
@@ -299,6 +301,7 @@ public sealed class ShellViewModel : Observable
 
     private void RaiseLogin()
     {
+        Login.ConfigureClientMode(!IsServerComputer);
         Login.RefreshServer();
         Raise(nameof(IsLoggedIn));
         Raise(nameof(ShowLogin));
@@ -599,14 +602,62 @@ public sealed class ShellViewModel : Observable
             previous?.LanPromptDone ?? false)))
             throw new IOException("Impossible d'enregistrer la connexion SCOLIA sur cet appareil. Vérifiez l'espace de stockage et les autorisations.");
         if (IsLoggedIn) await LogoutAsync();
-        // Un téléphone qui était le serveur et en rejoint un autre arrête le sien : il ne garde qu'un établissement.
-        if (Platform.IsMobile && localServer is not null && !server.Address.IsLoopback) localServer.Stop();
+        // Un changement volontaire d'établissement retire le rôle serveur, sur PC
+        // comme sur téléphone. En revanche réduire la fenêtre, verrouiller la session
+        // ou ouvrir une autre application ne passent jamais par cette commande.
+        if (localServer is not null && !server.Address.IsLoopback) localServer.Stop();
         RemoteConnection.StopHost();
         api.Retarget(server.Address);
         Connection.BackAction = null;
         ChoosingServer = false;
         await ShowEntryAsync();
         Notify($"Ce poste est relié à SCOLIA · {server.School} (ordinateur {server.Machine}).");
+    }
+
+    private sealed record DevicePairResult(SessionDto Session, Guid GrantId, string DeviceSecret, DateTime ExpiresUtc);
+
+    /// <summary>Un QR approuvé ouvre directement la session du compte invité, sans exposer son mot de passe.</summary>
+    public async Task<string> AcceptDeviceInvitationAsync(string invitationToken)
+    {
+        if (IsServerComputer) return "Ce poste héberge déjà SCOLIA ; il n'a pas besoin d'être invité.";
+        var accepted = await api.SendAsync<DevicePairResult>(HttpMethod.Post, "api/jumelage/accepter", new
+        {
+            invitationToken, deviceId = DeviceIdentity.Id, deviceName = DeviceIdentity.Name,
+        });
+        // L'autorisation est propre à ce serveur et protégée par DPAPI ou Android Keystore.
+        DevicePairingStore.Save(api.Server, new DevicePairingStore.Credential(
+            accepted.GrantId, accepted.DeviceSecret, accepted.ExpiresUtc, accepted.Session.UserName));
+        if (IsLoggedIn) CloseLocalSession();
+        Login.RememberAccount(accepted.Session.UserName);
+        await OpenSessionAsync(accepted.Session);
+        return $"Appareil autorisé pour {accepted.Session.DisplayName} · connexion immédiate sans mot de passe.";
+    }
+
+    /// <summary>Après un premier jumelage, le serveur vérifie la clé de ce poste à chaque nouvelle ouverture.</summary>
+    private async Task<bool> ResumeDeviceSessionAsync()
+    {
+        if (IsServerComputer || DevicePairingStore.Read(api.Server) is not { } saved) return false;
+        try
+        {
+            var session = await api.SendAsync<SessionDto>(HttpMethod.Post, "api/session/appareil", new
+            {
+                grantId = saved.GrantId, deviceId = DeviceIdentity.Id, secret = saved.DeviceSecret,
+            });
+            Login.RememberAccount(session.UserName);
+            await OpenSessionAsync(session);
+            return true;
+        }
+        catch (ApiException ex) when (ex.Status is 401 or 403)
+        {
+            DevicePairingStore.Forget(api.Server);
+            Login.Notice = "L'autorisation de ce poste est expirée ou révoquée. Demandez un nouveau QR au responsable du serveur.";
+            return false;
+        }
+        catch (Exception ex) when (ex is OfflineException or HttpRequestException or TaskCanceledException)
+        {
+            Login.Notice = "Le serveur ne répond pas. La reprise automatique nécessitera sa connexion.";
+            return false;
+        }
     }
 
     public async Task JoinInternetAsync(Scolia.Transport.RemoteLink link)
@@ -713,6 +764,8 @@ public sealed class ShellViewModel : Observable
             }
             else _ = RefreshLogoAsync();
             ApplyInstallationStatus(status.IsConfigured);
+            if (status.IsConfigured && !await ResumeDeviceSessionAsync())
+                _ = Login.DetectAccountAsync();
         }
         catch (Exception ex) when (ex is ApiException or HttpRequestException or TaskCanceledException)
         {
@@ -742,6 +795,8 @@ public sealed class ShellViewModel : Observable
         // Données gardées sur l'appareil, propres à ce compte ; puis le direct avec les autres postes.
         api.Offline ??= new OfflineStore(api.Server);
         api.Offline.User = s.UserName;
+        api.Offline.RememberAccount(s.UserName);
+        Login.RememberAccount(s.UserName);
         Sync.Start();
         OpeningTitle = IsSetupRequired ? "Configuration terminée" : $"Bienvenue, {s.DisplayName}";
         OpeningProgress = 0;
@@ -1728,6 +1783,7 @@ public sealed class ShellViewModel : Observable
     {
         try { await api.LogoutAsync(); }
         catch (HttpRequestException) { }
+        DevicePairingStore.Forget(api.Server);
         CloseLocalSession();
     }
 

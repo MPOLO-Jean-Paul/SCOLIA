@@ -34,6 +34,26 @@ public sealed class PairingCodeTests
     }
 
     [Fact]
+    public void Une_invitation_de_compte_est_preservee_sur_wifi_et_tailscale()
+    {
+        var ticket = new string('A', 48);
+        var sent = PairingCode.ForThisServer("ITM", "SERVEUR",
+            ["http://100.101.2.3:5080", "http://192.168.2.9:5080"], null) with { AccessTicket = ticket };
+        Assert.True(PairingCode.TryParse(sent.Text(), out var read, out _));
+        Assert.Equal(ticket, read!.AccessTicket);
+        Assert.Single(read.LanAddresses);
+        Assert.Single(read.TailnetAddresses);
+    }
+
+    [Fact]
+    public void Un_jeton_d_invitation_malforme_est_refuse_plutot_que_devenir_un_simple_lien()
+    {
+        Assert.False(PairingCode.TryParse("scolia://relier?v=1&e=ITM&a=192.168.1.9:5080&p=malforme",
+            out _, out var message));
+        Assert.Contains("invalide", message);
+    }
+
+    [Fact]
     public void Le_port_par_defaut_et_les_noms_tailscale_sont_compris()
     {
         Assert.True(PairingCode.TryParse("scolia://relier?v=1&e=%C3%89cole&a=10.0.0.5,machine.tailnet.ts.net:5099", out var code, out _));

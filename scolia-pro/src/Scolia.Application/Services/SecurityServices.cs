@@ -175,6 +175,26 @@ public sealed class UserService(IAppDbContext db, IWriteGate gate, IAuditLog aud
         return true;
     }, ct);
 
+    /// <summary>Restauration autorisée seulement après validation d'un code de secours à usage unique.</summary>
+    public Task RecoverPasswordAsync(string userName, string newPassword, CancellationToken ct = default) => gate.RunAsync(async () =>
+    {
+        PasswordPolicy.Validate(newPassword);
+        var key = TextKey.Normalize(userName ?? string.Empty);
+        var account = await db.Users.FirstOrDefaultAsync(u => u.NormalizedUserName == key && u.IsActive, ct)
+            ?? throw new DomainException("recuperation", "Le compte demandé ne peut pas être restauré.");
+        if (passwords.Verify(account.PasswordHash, newPassword, out _))
+            throw new DomainException("newPassword", "Choisissez un nouveau mot de passe différent du précédent.");
+        account.PasswordHash = passwords.Hash(newPassword);
+        account.MustChangePassword = false;
+        account.FailedLoginCount = 0;
+        account.LockoutEndUtc = null;
+        account.SecurityStamp = Guid.NewGuid().ToString("N");
+        audit.Record("utilisateur.recuperation", "Utilisateur", account.Id.ToString(),
+            $"Restauration du compte {account.UserName} avec code de secours du serveur.");
+        await db.SaveChangesAsync(ct);
+        return true;
+    }, ct);
+
     public Task<AppUser> ChangeOwnPasswordAsync(Guid id, PasswordChange input, CancellationToken ct = default) => gate.RunAsync(async () =>
     {
         var user = await db.Users.FirstOrDefaultAsync(u => u.Id == id, ct) ?? throw new NotFoundException("Utilisateur introuvable.");

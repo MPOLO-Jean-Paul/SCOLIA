@@ -58,6 +58,12 @@ public static class MobilePlatform
         Platform.ShowSystemNotification = alert => AndroidAlerts.Show(context ?? app, alert);
         // Sans ordinateur dans l'établissement, ce téléphone peut en être le serveur.
         Platform.LocalServer = Server.PhoneServer.Get(app);
+        // Les paramètres réseau montrent l'état réellement observé du service
+        // et de l'API. Une notification seule ne prouve pas que les clients peuvent
+        // se connecter : les deux états sont présentés séparément.
+        Platform.IsHostForegroundActive = () => Server.ServeurScolia.IsActive;
+        Platform.IsHostApiServing = () => Server.PhoneServer.Get(app).IsServing;
+        Platform.EnsureHostAvailable = () => Server.PhoneServer.Get(app).EnsureServingOnResume();
         // Téléphone serveur : écran éteint, il doit rester joignable. Android ne doit pas le freiner pour la batterie.
         Platform.BackgroundAllowed = () => AndroidBackground.IsAllowed(context ?? app);
         Platform.AllowBackground = () => AndroidBackground.Ask(context ?? app);

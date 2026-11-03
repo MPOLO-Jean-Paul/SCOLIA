@@ -63,7 +63,17 @@
                   </ItemsControl.ItemTemplate>
                 </ItemsControl>
                 <TextBox Classes="w11" IsVisible="{Binding IsPhone}" Text="{Binding Text}" infra:PhoneInput.Digits="{Binding IsPhone}" />
-                <TextBox Classes="w11" IsVisible="{Binding IsSecret}" Text="{Binding Text}" PasswordChar="•" />
+                <Panel IsVisible="{Binding IsSecret}">
+                  <TextBox Classes="w11" Text="{Binding Text}" PasswordChar="•" RevealPassword="{Binding ShowSecret}"
+                           MinHeight="52" Padding="14,8,52,8"
+                           TextInputOptions.ContentType="Password" TextInputOptions.IsSensitive="True" />
+                  <Button Classes="quiet" Command="{Binding ToggleSecret}" Width="46" MinHeight="44"
+                          HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,4,0"
+                          ToolTip.Tip="Afficher ou masquer ce champ sensible">
+                    <mi:MaterialIcon Kind="{Binding SecretEyeIcon}" Width="20" Height="20"
+                                     Foreground="{DynamicResource TextBrush}" />
+                  </Button>
+                </Panel>
                 <TextBox Classes="w11" IsVisible="{Binding IsMultiline}" Text="{Binding Text}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="84" />
                 <CalendarDatePicker Classes="w11" PlaceholderText="jj/mm/aaaa" SelectedDateFormat="Short" IsVisible="{Binding IsDay}" SelectedDate="{Binding Day}" HorizontalAlignment="Stretch" />
                 <ComboBox Classes="w11" IsVisible="{Binding IsChoice}" ItemsSource="{Binding Options}" SelectedItem="{Binding Choice}" HorizontalAlignment="Stretch" />

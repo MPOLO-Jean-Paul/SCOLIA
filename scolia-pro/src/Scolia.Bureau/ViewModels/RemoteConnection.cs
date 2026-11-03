@@ -17,9 +17,14 @@ public sealed class RemoteConnectionViewModel : Observable
         if (RemoteConnection.Load() is { } current)
         {
             relay = current.Link.Relay;
-            if (current.Host && current.Enabled) invitation = current.Link.Invitation();
+            if (current.Host && current.Enabled) _ = PrepareInvitationAsync(current.Link);
         }
         Enable = new AsyncCommand(EnableAsync);
+        RenewAccess = new AsyncCommand(async () =>
+        {
+            if (CanManage && RemoteConnection.Load() is { Host: true, Enabled: true } current)
+                await PrepareInvitationAsync(current.Link);
+        });
         ShareTailnet = new AsyncCommand(ShareTailnetNowAsync);
         InstallTailnet = new AsyncCommand(Installer.BeginAsync);
         DiagnoseTailnet = new AsyncCommand(DiagnoseTailnetAsync);
@@ -49,6 +54,27 @@ public sealed class RemoteConnectionViewModel : Observable
     public string Invitation { get => invitation; private set => Set(ref invitation, value); }
     public string Message { get => message; private set => Set(ref message, value); }
     public AsyncCommand Enable { get; }
+    public AsyncCommand RenewAccess { get; }
+    private sealed record InvitationReply(string Token, DateTime ExpiresUtc);
+
+    private async Task PrepareInvitationAsync(RemoteLink link)
+    {
+        if (!CanManage) return;
+        try
+        {
+            var access = await shell.Api.SendAsync<InvitationReply>(HttpMethod.Post, "api/jumelage/inviter", new { });
+            var addresses = Platform.IsMobile || PosteAdmin.LanEnabled() ? PosteAdmin.Addresses() : [];
+            var qr = PairingCode.ForThisServer(shell.Login.SchoolName, DeviceIdentity.Name, addresses, link.Invitation())
+                with { AccessTicket = access.Token };
+            Invitation = qr.Text();
+            Message = "Invitation de connexion automatique prête. Valable 5 minutes pour un seul appareil ; renouvelez-la pour le prochain.";
+        }
+        catch (Exception ex) when (ex is Api.ApiException or HttpRequestException or IOException or TaskCanceledException)
+        {
+            Invitation = string.Empty;
+            Message = "Liaison Internet active, mais l'invitation de compte n'a pas été créée. Ouvrez « Relier un appareil » pour générer un nouveau QR.";
+        }
+    }
 
     /// <summary>Demande Tailscale en arrière-plan ; la connexion doit être testée par un client.</summary>
     public AsyncCommand ShareTailnet { get; }
@@ -98,8 +124,7 @@ public sealed class RemoteConnectionViewModel : Observable
             response.EnsureSuccessStatusCode();
             RemoteConnection.Save(new RemoteConfiguration(link, true, shell.Login.SchoolName));
             RemoteConnection.StartHost(shell.Api.Server);
-            Invitation = link.Invitation();
-            Message = "Liaison créée pour 30 jours. Transmettez cette invitation en privé à l'autre appareil. Il devra aussi se connecter avec son compte Secrétariat ou Comptabilité. Créer une nouvelle liaison révoque la précédente.";
+            await PrepareInvitationAsync(link);
         }
         catch (Exception ex) when (ex is FormatException or HttpRequestException or TaskCanceledException or IOException)
         { Message = "Liaison non activée : vérifiez l'adresse et la disponibilité du relais sécurisé."; }

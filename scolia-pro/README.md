@@ -4,15 +4,15 @@ Logiciel de gestion scolaire professionnel : secrétariat, caisse, recouvrement,
 scolarité, personnel et paie. Successeur de SCOLIA V80 (PowerShell + Excel),
 sans aucune dépendance à Excel.
 
-- **Autonome** : aucun prérequis ni script sur le poste (ni .NET, ni PowerShell, ni Excel, ni base à installer). Le paquet est un dossier, sans installeur.
+- **Installateur Windows** : un seul fichier `.exe` autonome, avec assistant en français, conditions d'utilisation, dossier d'installation, raccourcis et désinstallation ; aucun SDK .NET ou Excel à installer.
 - **Multiposte** : un poste garde les données, les autres ouvrent SCOLIA dans leur navigateur.
 - **Données sûres** : base SQLite transactionnelle, sauvegarde quotidienne vérifiée, restauration en un clic.
 - **Traçabilité** : reçus numérotés sans trou, annulation motivée, journal d'audit chaîné par SHA-256.
 
 ## Démarrage rapide (utilisateur)
 
-1. Télécharger `SCOLIA_Pro_<version>_Windows_x64.zip` et l'extraire dans `C:\SCOLIA`.
-2. Lancer `SCOLIA.exe`. Il démarre seul le serveur `SCOLIA-Serveur.exe` du même dossier. L'assistant crée l'établissement, l'année et le compte secrétariat, qui administre SCOLIA.
+1. Télécharger `SCOLIA_Pro_Installation_<version>_Windows_x64.exe` puis l'ouvrir. Accepter les conditions, choisir le dossier et installer SCOLIA. Le format ZIP portable demeure disponible.
+2. Lancer **SCOLIA Pro** depuis le menu Démarrer. Le serveur `SCOLIA-Serveur.exe` est installé avec la fenêtre native. Au premier démarrage, configurer l'établissement ou rejoindre son serveur existant.
 3. Pour plusieurs postes : dans l'onglet Fichier, rubrique « Poste et réseau », installer le
    service (démarrage avec Windows) puis activer l'accès réseau local. Les autres postes ouvrent l'adresse affichée.
 
@@ -109,7 +109,16 @@ cd web && npx vitest run               # fonctions de l'interface
 cd e2e && npm ci && npx playwright test # parcours complets dans Chromium
 ```
 
-Paquet Windows :
+Installateur Windows :
+
+- Le workflow GitHub `SCOLIA Natif` produit `SCOLIA_Pro_Installation_<version>_Windows_x64.exe` via Inno Setup.
+- L'assistant affiche la présentation, les conditions, le choix du dossier, les raccourcis et le lancement de SCOLIA.
+- Le dossier par défaut est `%LOCALAPPDATA%\Programs\SCOLIA Pro` : l'application fonctionne sans droits administrateur.
+- Les mises à jour réalisées **dans le même dossier** conservent `appsettings.json` et `donnees/`. Une ancienne copie portable ailleurs n'est **pas migrée automatiquement**. Sauvegarder et choisir l'ancien dossier ou restaurer une sauvegarde depuis SCOLIA.
+- La désinstallation conserve les données scolaires et la configuration ; si un service Windows SCOLIA existe, le retirer d'abord via **Poste et réseau**.
+- L'EXE n'est pas signé avec un certificat Windows tant qu'un certificat de signature n'est pas configuré ; SmartScreen peut afficher un avertissement.
+
+Paquet Windows portable (sans installation) :
 
 ```bash
 scripts/publier-windows.sh             # depuis Linux ou macOS
