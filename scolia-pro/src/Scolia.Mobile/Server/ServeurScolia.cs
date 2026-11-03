@@ -54,8 +54,20 @@ public sealed class ServeurScolia : Service
         }
 
         var notification = BuildNotification();
-        if (OperatingSystem.IsAndroidVersionAtLeast(34)) StartForeground(NotificationId, notification, ForegroundService.TypeSpecialUse);
-        else StartForeground(NotificationId, notification);
+        try
+        {
+            if (OperatingSystem.IsAndroidVersionAtLeast(34)) StartForeground(NotificationId, notification, ForegroundService.TypeSpecialUse);
+            else StartForeground(NotificationId, notification);
+        }
+        catch (Exception ex) when (ex is Java.Lang.RuntimeException or InvalidOperationException)
+        {
+            // Android 12+ peut refuser un lancement de premier plan trop tardif,
+            // notamment depuis un contexte déjà en arrière-plan. Ne jamais
+            // laisser croire qu'une notification active héberge les données.
+            Android.Util.Log.Error("SCOLIA", $"Service serveur refusé par Android : {ex.Message}");
+            StopSelfResult(startId);
+            return StartCommandResult.NotSticky;
+        }
         System.Threading.Interlocked.Exchange(ref active, 1);
         Hold();
         // Si Android recrée le service après une récupération mémoire, rétablir aussi
