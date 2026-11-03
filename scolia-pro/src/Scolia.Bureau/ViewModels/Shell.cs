@@ -715,6 +715,7 @@ public sealed class ShellViewModel : Observable
             }
             else _ = RefreshLogoAsync();
             ApplyInstallationStatus(status.IsConfigured);
+            if (status.IsConfigured) _ = Login.DetectAccountAsync();
         }
         catch (Exception ex) when (ex is ApiException or HttpRequestException or TaskCanceledException)
         {
