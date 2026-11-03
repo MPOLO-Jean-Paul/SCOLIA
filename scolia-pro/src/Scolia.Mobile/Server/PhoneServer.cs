@@ -25,19 +25,62 @@ public sealed class PhoneServer(Context context) : ILocalServer
     private EmbeddedServer? server;
     private Task lifecycle = Task.CompletedTask;
     private bool shouldHost;
+    // Une commande explicite de changement de serveur ne doit pas être annulée par
+    // un OnResume Android arrivé pendant l'ouverture des réglages ou du VPN.
+    private bool explicitlyStopped;
+
+    /// <summary>Vrai seulement si l'API locale écoute effectivement, pas sur la seule présence de la notification.</summary>
+    public bool IsServing
+    {
+        get { lock (gate) return shouldHost && server?.IsRunning == true; }
+    }
+
+    /// <summary>
+    /// Retour de l'interface : réparer un service de premier plan disparu sans recréer
+    /// la base, ni attendre que l'utilisateur se reconnecte. Minimiser SCOLIA,
+    /// verrouiller Android ou ouvrir Tailscale ne sont jamais des commandes Stop().
+    /// </summary>
+    public void EnsureServingOnResume()
+    {
+        if (ConnectionStore.Load()?.Mode != ConnectionSettings.Local) return;
+        lock (gate)
+        {
+            if (explicitlyStopped) return;
+            shouldHost = true;
+            if (!ServeurScolia.IsActive)
+            {
+                try { ServeurScolia.Begin(context); }
+                catch (Exception ex) when (ex is Java.Lang.SecurityException or InvalidOperationException
+                    or System.ComponentModel.Win32Exception)
+                { Android.Util.Log.Error("SCOLIA", $"Réactivation du service serveur refusée : {ex.Message}"); }
+            }
+            Enqueue(StartEmbeddedAsync);
+        }
+    }
 
     public string DataDirectory => Path.Combine(context.FilesDir?.AbsolutePath ?? Path.GetTempPath(), "serveur");
 
     public void Start() => StartCore(startForegroundService: true);
 
     // Appelé seulement par le service Android déjà en avant-plan.
-    internal void RestoreAfterServiceRestart() => StartCore(startForegroundService: false);
+    internal void RestoreAfterServiceRestart()
+    {
+        if (ConnectionStore.Load()?.Mode != ConnectionSettings.Local) return;
+        lock (gate)
+        {
+            // Le service peut délivrer un événement de démarrage tardif
+            // après un choix explicite « rejoindre un autre établissement ».
+            if (explicitlyStopped) return;
+        }
+        StartCore(startForegroundService: false);
+    }
 
     private void StartCore(bool startForegroundService)
     {
         lock (gate)
         {
             shouldHost = true;
+            explicitlyStopped = false;
             if (startForegroundService)
             {
                 ServeurScolia.Begin(context);
@@ -67,6 +110,7 @@ public sealed class PhoneServer(Context context) : ILocalServer
         lock (gate)
         {
             shouldHost = false;
+            explicitlyStopped = true;
             Enqueue(async () =>
             {
                 await StopEmbeddedAsync().ConfigureAwait(false);
