@@ -99,7 +99,7 @@ public sealed class RemoteConnectionViewModel : Observable
             RemoteConnection.Save(new RemoteConfiguration(link, true, shell.Login.SchoolName));
             RemoteConnection.StartHost(shell.Api.Server);
             Invitation = link.Invitation();
-            Message = "Liaison créée pour 30 jours. Transmettez cette invitation en privé à l'autre appareil. Il devra aussi se connecter avec son compte Secrétariat ou Comptabilité. Créer une nouvelle liaison révoque la précédente.";
+            Message = "Transport Internet sécurisé activé. Pour ouvrir le compte sans mot de passe sur un autre appareil, utilisez « Relier un appareil » et transmettez son QR temporaire. Une simple adresse réseau ne donne jamais accès aux données.";
         }
         catch (Exception ex) when (ex is FormatException or HttpRequestException or TaskCanceledException or IOException)
         { Message = "Liaison non activée : vérifiez l'adresse et la disponibilité du relais sécurisé."; }
