@@ -13,6 +13,7 @@ public sealed class LoginViewModel : Observable
     private string? error;
     private bool busy;
     private string schoolName = string.Empty;
+    private bool recoveryOpen;
 
     public LoginViewModel(ScoliaClient api)
     {
@@ -75,6 +76,24 @@ public sealed class LoginViewModel : Observable
     public string Password { get => password; set { if (Set(ref password, value)) Submit.Refresh(); } }
     public string? Error { get => error; set { if (Set(ref error, value)) Raise(nameof(HasError)); } }
     public bool HasError => !string.IsNullOrEmpty(error);
+
+    /// <summary>Guide d'accès sans contournement de l'authentification, disponible avant connexion.</summary>
+    public bool RecoveryOpen { get => recoveryOpen; private set => Set(ref recoveryOpen, value); }
+    public RelayCommand ToggleRecoveryHelp => recoveryHelp ??= new RelayCommand(() =>
+    {
+        if (Busy) return;
+        RecoveryOpen = !RecoveryOpen;
+        if (RecoveryOpen) Password = string.Empty;
+        Error = null;
+    });
+    private RelayCommand? recoveryHelp;
+    public string RecoveryInstructions =>
+        "Compte d'un membre du personnel : demandez à un responsable habilité du secrétariat d'ouvrir " +
+        "Administration → Utilisateurs → Réinitialiser le mot de passe. Un code provisoire sera défini, " +
+        "et vous devrez le changer à la prochaine connexion. " +
+        "Compte secrétariat sans autre administrateur disponible : contactez la direction et le responsable " +
+        "des sauvegardes de l'établissement. La restauration des données ne supprime pas le mot de passe ; " +
+        "aucun accès ne sera accordé sans vérification de votre autorisation.";
 
     private string? notice;
     /// <summary>Information au-dessus du formulaire : l'ordinateur principal est injoignable, travail hors ligne possible.</summary>
@@ -239,6 +258,7 @@ public sealed class LoginViewModel : Observable
     {
         Password = string.Empty;
         Error = null;
+        RecoveryOpen = false;
         Restored = false;
         EnableBiometricsAfterLogin = false;
         RefreshBiometrics();
