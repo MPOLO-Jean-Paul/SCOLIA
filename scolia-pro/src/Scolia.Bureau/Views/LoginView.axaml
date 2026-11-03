@@ -81,7 +81,19 @@
 
           <TextBlock Text="{Binding IntroText}" Foreground="#E6FFFFFF" TextAlignment="Center" TextWrapping="Wrap" Margin="0,0,0,4" />
 
-          <Panel>
+          <!-- Le dernier compte utilisé est reconnu sans afficher ou conserver son mot de passe. -->
+          <Border Background="#26FFFFFF" CornerRadius="10" Padding="14,10" IsVisible="{Binding HasRememberedAccount}">
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+              <StackPanel Spacing="2">
+                <TextBlock Text="Compte reconnu" FontSize="11" Foreground="#D9FFFFFF" />
+                <TextBlock Text="{Binding UserName}" FontSize="17" FontWeight="SemiBold" Foreground="White" />
+              </StackPanel>
+              <Button Grid.Column="1" Classes="glasslink" Command="{Binding ChangeAccount}" IsEnabled="{Binding NotBusy}" MinHeight="42">
+                <TextBlock Text="Changer" Foreground="White" />
+              </Button>
+            </Grid>
+          </Border>
+          <Panel IsVisible="{Binding ShowAccountEntry}">
             <TextBox x:Name="UserNameBox" Classes="w11 onbrand withicon" Text="{Binding UserName}" PlaceholderText="Identifiant" MaxLength="40" MinHeight="52" IsEnabled="{Binding CanType}" />
             <mi:MaterialIcon Classes="inicon" Kind="AccountOutline" />
           </Panel>
@@ -104,7 +116,7 @@
             </StackPanel>
           </Panel>
 
-          <!-- Récupération assistée : le secrétariat peut réinitialiser un compte, sans porte dérobée. -->
+          <!-- Récupération vérifiée depuis la connexion, sans ouvrir les paramètres. -->
           <Button Classes="glasslink" Command="{Binding ToggleRecoveryHelp}" IsEnabled="{Binding NotBusy}"
                   HorizontalAlignment="Center" MinHeight="44" ToolTip.Tip="Consulter les solutions officielles de récupération">
             <StackPanel Orientation="Horizontal" Spacing="8">
@@ -112,10 +124,23 @@
               <TextBlock Text="Mot de passe oublié ?" VerticalAlignment="Center" />
             </StackPanel>
           </Button>
-          <Border Background="#26FFFFFF" CornerRadius="12" Padding="14,12" IsVisible="{Binding RecoveryOpen}">
-            <StackPanel Spacing="6">
-              <TextBlock Text="Retrouver l'accès à SCOLIA" FontWeight="SemiBold" Foreground="White" />
-              <TextBlock Text="{Binding RecoveryInstructions}" Foreground="White" TextWrapping="Wrap" FontSize="13" />
+          <Border Background="#26FFFFFF" CornerRadius="12" Padding="14,14" IsVisible="{Binding RecoveryOpen}">
+            <StackPanel Spacing="10">
+              <TextBlock Text="Restaurer mon mot de passe" FontWeight="SemiBold" FontSize="17" Foreground="White" />
+              <TextBlock Text="{Binding RecoveryInstructions}" Foreground="#E6FFFFFF" TextWrapping="Wrap" FontSize="12" />
+              <TextBox Text="{Binding NewPassword}" PlaceholderText="Nouveau mot de passe" PasswordChar="•" MaxLength="128"
+                       TextInputOptions.ContentType="Password" TextInputOptions.IsSensitive="True"
+                       MinHeight="48" IsEnabled="{Binding NotBusy}" />
+              <TextBox Text="{Binding ConfirmPassword}" PlaceholderText="Confirmer le nouveau mot de passe" PasswordChar="•" MaxLength="128"
+                       TextInputOptions.ContentType="Password" TextInputOptions.IsSensitive="True"
+                       MinHeight="48" IsEnabled="{Binding NotBusy}" />
+              <Button Classes="glass" Command="{Binding RecoverWithBiometrics}" IsVisible="{Binding CanUseBiometricSignIn}"
+                      IsEnabled="{Binding NotBusy}" MinHeight="46">
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="8">
+                  <mi:MaterialIcon Kind="Fingerprint" Width="20" Height="20" />
+                  <TextBlock Text="Restaurer avec mon empreinte" VerticalAlignment="Center" TextWrapping="Wrap" />
+                </StackPanel>
+              </Button>
             </StackPanel>
           </Border>
 
