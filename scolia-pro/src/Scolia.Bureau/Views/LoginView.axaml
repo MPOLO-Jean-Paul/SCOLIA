@@ -82,6 +82,27 @@
           <TextBlock Text="{Binding IntroText}" Foreground="#E6FFFFFF" TextAlignment="Center" TextWrapping="Wrap" Margin="0,0,0,4" />
 
           <!-- Le dernier compte utilisé est reconnu sans afficher ou conserver son mot de passe. -->
+          <!-- Un poste client s'autorise par invitation, pas par le mot de passe du serveur. -->
+          <StackPanel Spacing="10" IsVisible="{Binding ShowPairingCallToAction}">
+            <Border Background="#26FFFFFF" CornerRadius="12" Padding="14,12">
+              <StackPanel Spacing="7">
+                <TextBlock Text="Appareil à autoriser" FontWeight="SemiBold" Foreground="White" />
+                <TextBlock Text="Sur le serveur, générez un QR dans « Relier un appareil ». Le compte et les droits seront accordés à ce poste sans saisir le mot de passe."
+                           Foreground="White" FontSize="12" TextWrapping="Wrap" />
+              </StackPanel>
+            </Border>
+            <Button Classes="glass" Command="{Binding ChangeServer}" MinHeight="48">
+              <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="8">
+                <mi:MaterialIcon Kind="QrcodeScan" Width="19" Height="19" />
+                <TextBlock Text="Scanner ou coller une invitation" TextWrapping="Wrap" />
+              </StackPanel>
+            </Button>
+            <Button Classes="glasslink" Command="{Binding EnableManualLogin}" HorizontalAlignment="Center">
+              <TextBlock Text="Connexion manuelle à un compte distinct" FontSize="12" TextWrapping="Wrap" />
+            </Button>
+          </StackPanel>
+
+          <StackPanel Spacing="12" IsVisible="{Binding ShowManualCredentials}">
           <Border Background="#26FFFFFF" CornerRadius="10" Padding="14,10" IsVisible="{Binding HasRememberedAccount}">
             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
               <StackPanel Spacing="2">
@@ -154,6 +175,8 @@
               </Button>
             </StackPanel>
           </Border>
+
+          </StackPanel>
 
           <!-- Consentement explicite lors de la première connexion par mot de passe. -->
           <CheckBox Classes="onbrand" Content="{Binding EnrollmentText}"
