@@ -95,7 +95,7 @@
               <Button Classes="fieldicon" Command="{Binding ToggleEye}" ToolTip.Tip="Afficher ou masquer le mot de passe" IsEnabled="{Binding CanType}">
                 <mi:MaterialIcon Kind="{Binding EyeIcon}" Width="18" Height="18" Foreground="White" />
               </Button>
-              <Button x:Name="SignInArrow" Classes="fieldicon go" Command="{Binding Submit}" IsEnabled="{Binding CanType}" ToolTip.Tip="Se connecter (Entrée)">
+              <Button x:Name="SignInArrow" Classes="fieldicon go" Command="{Binding Submit}" IsEnabled="{Binding CanSubmitCredentials}" ToolTip.Tip="Se connecter (Entrée)">
                 <Panel>
                   <mi:MaterialIcon Kind="Loading" Classes="spin" Width="18" Height="18" Foreground="White" IsVisible="{Binding Busy}" />
                   <mi:MaterialIcon Kind="ArrowRight" Width="20" Height="20" Foreground="White" IsVisible="{Binding NotBusy}" />
