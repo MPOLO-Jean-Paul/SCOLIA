@@ -21,7 +21,8 @@ public sealed class LockSwitchTests
         Assert.Equal("Revenir à la session de Secrétariat", login.ResumeText);
         Assert.Contains("secretariat", login.ResumeHint);
         Assert.Contains("verrouillée", login.IntroText);
-        Assert.Equal(string.Empty, login.UserName);
+        Assert.Equal("secretariat", login.UserName);
+        Assert.True(login.HasRememberedAccount);
 
         var asked = 0;
         login.ResumeRequested += () => asked++;
