@@ -1,0 +1,36 @@
+BIENVENUE DANS SCOLIA PRO
+
+Gestion scolaire professionnelle - Version 1.2.3
+Éditeur : JP-Services
+
+Un seul programme d'installation pour le poste Windows 64 bits.
+Il installe l'interface SCOLIA Pro, le moteur serveur local, les ressources
+requises et les raccourcis de lancement. Aucun SDK .NET, navigateur,
+Excel ou script de configuration n'est demandé à l'utilisateur.
+
+FONCTIONNALITÉS
+- Gestion des apprenants, enseignants, promotions et cours.
+- Paiements, reçus, caisse, recouvrement et rapports.
+- Présences, discipline, résultats et documents de scolarité.
+- Connexion de plusieurs ordinateurs et téléphones autorisés.
+- Réseau privé Tailscale en option ; sauvegarde locale des données.
+
+INSTALLATION OU MISE À JOUR
+- Fermez SCOLIA Pro et, si nécessaire, arrêtez le service SCOLIA sur ce poste
+  depuis « Poste et réseau » avant de remplacer des fichiers en cours d'usage.
+- Le dossier choisi est personnel et modifiable par votre compte Windows.
+- Le programme n'écrase pas votre fichier appsettings.json existant.
+- Les dossiers de données créés après l'installation ne sont pas supprimés
+  automatiquement lors de la désinstallation.
+- Si vous utilisez déjà une version portable dans un autre dossier, gardez
+  précieusement son dossier « donnees » et sa sauvegarde ; il n'est PAS migré
+  automatiquement dans le nouvel emplacement. Vous pouvez choisir le même
+  dossier d'installation ou restaurer une sauvegarde dans SCOLIA.
+
+LE PREMIER DÉMARRAGE
+Si le poste est nouveau, SCOLIA vous proposera la configuration de l'école.
+Si la base scolaire est déjà présente dans le dossier choisi, elle sera
+conservée. Sur un poste client, rejoignez l'établissement existant.
+
+La configuration du partage réseau ou du service Windows reste une action
+explicite à réaliser, avec les autorisations nécessaires, dans SCOLIA.
