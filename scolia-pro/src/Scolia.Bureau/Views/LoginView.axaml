@@ -82,12 +82,13 @@
           <TextBlock Text="{Binding IntroText}" Foreground="#E6FFFFFF" TextAlignment="Center" TextWrapping="Wrap" Margin="0,0,0,4" />
 
           <Panel>
-            <TextBox x:Name="UserNameBox" Classes="w11 onbrand withicon" Text="{Binding UserName}" PlaceholderText="Identifiant" IsEnabled="{Binding CanType}" />
+            <TextBox x:Name="UserNameBox" Classes="w11 onbrand withicon" Text="{Binding UserName}" PlaceholderText="Identifiant" MaxLength="40" MinHeight="52" IsEnabled="{Binding CanType}" />
             <mi:MaterialIcon Classes="inicon" Kind="AccountOutline" />
           </Panel>
           <!-- Mot de passe : l'œil et la flèche sont dans le champ, comme le code PIN de Windows 11 -->
           <Panel>
-            <TextBox x:Name="PasswordBox" Classes="w11 onbrand withicon withbuttons" Text="{Binding Password}" PlaceholderText="Mot de passe" PasswordChar="•"
+            <TextBox x:Name="PasswordBox" Classes="w11 onbrand withicon withbuttons" Text="{Binding Password}" PlaceholderText="Mot de passe" PasswordChar="•" MaxLength="128" MinHeight="52"
+                     TextInputOptions.ContentType="Password" TextInputOptions.IsSensitive="True"
                      RevealPassword="{Binding ShowPassword}" IsEnabled="{Binding CanType}" />
             <mi:MaterialIcon Classes="inicon" Kind="LockOutline" />
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="4" Margin="0,0,5,0">
@@ -102,6 +103,21 @@
               </Button>
             </StackPanel>
           </Panel>
+
+          <!-- Récupération assistée : le secrétariat peut réinitialiser un compte, sans porte dérobée. -->
+          <Button Classes="glasslink" Command="{Binding ToggleRecoveryHelp}" IsEnabled="{Binding NotBusy}"
+                  HorizontalAlignment="Center" MinHeight="44" ToolTip.Tip="Consulter les solutions officielles de récupération">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <mi:MaterialIcon Kind="HelpCircleOutline" Width="18" Height="18" />
+              <TextBlock Text="Mot de passe oublié ?" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
+          <Border Background="#26FFFFFF" CornerRadius="12" Padding="14,12" IsVisible="{Binding RecoveryOpen}">
+            <StackPanel Spacing="6">
+              <TextBlock Text="Retrouver l'accès à SCOLIA" FontWeight="SemiBold" Foreground="White" />
+              <TextBlock Text="{Binding RecoveryInstructions}" Foreground="White" TextWrapping="Wrap" FontSize="13" />
+            </StackPanel>
+          </Border>
 
           <!-- Consentement explicite lors de la première connexion par mot de passe. -->
           <CheckBox Classes="onbrand" Content="{Binding EnrollmentText}"
@@ -159,8 +175,6 @@
           </Button>
           <TextBlock Text="{Binding ServerLine}" Foreground="#B3FFFFFF" FontSize="{DynamicResource FsSmall}"
                      HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" />
-          <TextBlock Text="Mot de passe oublié : contactez le secrétariat." Foreground="#B3FFFFFF" FontSize="{DynamicResource FsSmall}"
-                     HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" Margin="0,10,0,0" />
         </StackPanel>
 
         <TextBlock x:Name="LoginFooter" Grid.Row="2" Text="{Binding Footer}" Foreground="#B3FFFFFF" FontSize="{DynamicResource FsSmall}"
