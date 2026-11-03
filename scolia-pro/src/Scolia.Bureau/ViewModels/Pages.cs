@@ -15,6 +15,7 @@ public sealed class LoginViewModel : Observable
     private string schoolName = string.Empty;
     private bool recoveryOpen;
     private bool editingAccount;
+    private Uri? accountServer;
     private string newPassword = string.Empty;
     private string confirmPassword = string.Empty;
 
@@ -25,7 +26,6 @@ public sealed class LoginViewModel : Observable
         SignInWithBiometrics = new AsyncCommand(BiometricSignInAsync);
         DisableBiometrics = new AsyncCommand(DisableBiometricsAsync);
         RecoverWithBiometrics = new AsyncCommand(RecoverWithBiometricsAsync);
-        RecallLastAccount();
     }
 
     public event Action<SessionDto>? LoggedIn;
@@ -50,6 +50,9 @@ public sealed class LoginViewModel : Observable
     /// <summary>Réutilise uniquement l'identifiant du dernier compte pour ce serveur.</summary>
     private void RecallLastAccount()
     {
+        // Changer de compte doit rester un choix explicite, même après un rafraîchissement graphique.
+        if (accountServer == api.Server) return;
+        accountServer = api.Server;
         try
         {
             var last = new OfflineStore(api.Server).LastAccount;
