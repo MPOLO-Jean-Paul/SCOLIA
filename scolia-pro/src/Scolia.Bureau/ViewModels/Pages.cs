@@ -14,6 +14,9 @@ public sealed class LoginViewModel : Observable
     private bool busy;
     private string schoolName = string.Empty;
     private bool recoveryOpen;
+    private bool editingAccount;
+    private string newPassword = string.Empty;
+    private string confirmPassword = string.Empty;
 
     public LoginViewModel(ScoliaClient api)
     {
@@ -21,6 +24,8 @@ public sealed class LoginViewModel : Observable
         Submit = new AsyncCommand(SubmitAsync);
         SignInWithBiometrics = new AsyncCommand(BiometricSignInAsync);
         DisableBiometrics = new AsyncCommand(DisableBiometricsAsync);
+        RecoverWithBiometrics = new AsyncCommand(RecoverWithBiometricsAsync);
+        RecallLastAccount();
     }
 
     public event Action<SessionDto>? LoggedIn;
@@ -36,7 +41,57 @@ public sealed class LoginViewModel : Observable
     public string ServerLine => api.Server.IsLoopback
         ? "Cet appareil est l'ordinateur principal"
         : $"Relié à l'ordinateur principal {api.Server.Host}";
-    public void RefreshServer() => Raise(nameof(ServerLine));
+    public void RefreshServer()
+    {
+        RecallLastAccount();
+        Raise(nameof(ServerLine));
+    }
+
+    /// <summary>Réutilise uniquement l'identifiant du dernier compte pour ce serveur.</summary>
+    private void RecallLastAccount()
+    {
+        try
+        {
+            var last = new OfflineStore(api.Server).LastAccount;
+            if (string.IsNullOrWhiteSpace(last)) last = BiometricAccess.ReadAccount(api.Server);
+            if (!string.IsNullOrWhiteSpace(last)) RememberAccount(last);
+            else { editingAccount = true; UserName = string.Empty; RaiseAccountState(); }
+        }
+        catch (Exception ex) when (ex is System.IO.IOException or UnauthorizedAccessException
+            or System.Security.Cryptography.CryptographicException or System.Text.Json.JsonException)
+        {
+            editingAccount = true;
+            RaiseAccountState();
+        }
+    }
+
+    public void RememberAccount(string account)
+    {
+        if (string.IsNullOrWhiteSpace(account)) return;
+        editingAccount = false;
+        UserName = account.Trim();
+        RaiseAccountState();
+    }
+
+    private void RaiseAccountState()
+    {
+        Raise(nameof(HasRememberedAccount));
+        Raise(nameof(ShowAccountEntry));
+        Raise(nameof(IntroText));
+    }
+
+    public bool HasRememberedAccount => !editingAccount && !string.IsNullOrWhiteSpace(UserName);
+    public bool ShowAccountEntry => !HasRememberedAccount;
+    public RelayCommand ChangeAccount => changeAccount ??= new RelayCommand(() =>
+    {
+        if (Busy) return;
+        editingAccount = true;
+        UserName = string.Empty;
+        Password = string.Empty;
+        Error = null;
+        RaiseAccountState();
+    });
+    private RelayCommand? changeAccount;
 
     /// <summary>« Revenir à la session de … » : la page de connexion rend la main à l'écran de veille.</summary>
     public event Action? ResumeRequested;
@@ -48,7 +103,7 @@ public sealed class LoginViewModel : Observable
     public string ResumeText => $"Revenir à la session de {resumeName}";
     /// <summary>Phrase sous « Connexion » : elle rappelle qu'une session attend, verrouillée.</summary>
     public string IntroText => resumeName is null
-        ? "Saisissez votre identifiant et votre mot de passe."
+        ? (HasRememberedAccount ? "Saisissez votre mot de passe pour continuer." : "Saisissez votre identifiant et votre mot de passe.")
         : "Connectez un autre compte. La session verrouillée reste ouverte : vous pouvez y revenir à tout moment.";
     public string ResumeHint => resumeUser is null ? string.Empty : $"{resumeUser} · session verrouillée, rien n'est perdu";
     public RelayCommand Resume => resume ??= new RelayCommand(() =>
@@ -65,14 +120,14 @@ public sealed class LoginViewModel : Observable
     {
         resumeName = displayName is null ? null : (string.IsNullOrWhiteSpace(displayName) ? userName : displayName);
         resumeUser = displayName is null ? null : userName;
-        if (resumeName is not null) { UserName = string.Empty; Password = string.Empty; Error = null; }
+        if (resumeName is not null) { RememberAccount(userName ?? string.Empty); Password = string.Empty; Error = null; }
         foreach (var name in new[] { nameof(ResumeName), nameof(CanResume), nameof(ResumeText), nameof(ResumeHint), nameof(IntroText) }) Raise(name);
     }
 
     /// <summary>Connexion vérifiée par le serveur : le compte peut être gardé pour une connexion hors ligne.</summary>
     public event Action<string, string, SessionDto>? Authenticated;
 
-    public string UserName { get => userName; set { if (Set(ref userName, value)) { Raise(nameof(CanSubmitCredentials)); Submit.Refresh(); } } }
+    public string UserName { get => userName; set { if (Set(ref userName, value)) { Raise(nameof(CanSubmitCredentials)); Submit.Refresh(); RaiseAccountState(); } } }
     public string Password { get => password; set { if (Set(ref password, value)) { Raise(nameof(CanSubmitCredentials)); Submit.Refresh(); } } }
     public bool CanSubmitCredentials => !Locked && !Busy && !string.IsNullOrWhiteSpace(UserName) && Password.Length > 0;
     public string? Error { get => error; set { if (Set(ref error, value)) Raise(nameof(HasError)); } }
@@ -98,12 +153,75 @@ public sealed class LoginViewModel : Observable
         Error = null;
     }
     public string RecoveryInstructions =>
-        "Compte d'un membre du personnel : demandez à un responsable habilité du secrétariat d'ouvrir " +
-        "Administration → Utilisateurs → Réinitialiser le mot de passe. Un code provisoire sera défini, " +
-        "et vous devrez le changer à la prochaine connexion. " +
-        "Compte secrétariat sans autre administrateur disponible : contactez la direction et le responsable " +
-        "des sauvegardes de l'établissement. La restauration des données ne supprime pas le mot de passe ; " +
-        "aucun accès ne sera accordé sans vérification de votre autorisation.";
+        "Choisissez un nouveau mot de passe, confirmez-le, puis validez avec l'empreinte associée à ce compte. " +
+        "Si aucune empreinte n'est enregistrée, une récupération par un administrateur habilité reste nécessaire.";
+
+    public string NewPassword { get => newPassword; set => Set(ref newPassword, value ?? string.Empty); }
+    public string ConfirmPassword { get => confirmPassword; set => Set(ref confirmPassword, value ?? string.Empty); }
+    public AsyncCommand RecoverWithBiometrics { get; }
+
+    private async Task RecoverWithBiometricsAsync()
+    {
+        if (Busy || !RecoveryOpen || !CanUseBiometricSignIn
+            || Platform.UnlockBiometricAsync is not { } unlock) return;
+        if (!BiometricAccess.AccountMatches(BiometricAccount, UserName))
+        { Error = "Choisissez le compte associé à l'empreinte de cet appareil."; return; }
+        if (AccessCode.Problem(NewPassword) is { } problem) { Error = problem; return; }
+        if (NewPassword != ConfirmPassword)
+        { Error = "Les deux mots de passe ne correspondent pas."; return; }
+        Busy = true;
+        Error = null;
+        bool authenticated = false;
+        bool changed = false;
+        var replacement = NewPassword;
+        try
+        {
+            var opened = BiometricAccess.Open(await unlock());
+            if (opened is not { } proof || !BiometricAccess.AccountMatches(proof.UserName, UserName))
+            { Error = "Empreinte non reconnue pour ce compte."; return; }
+            await api.LoginAsync(proof.UserName, proof.Secret);
+            authenticated = true;
+            await api.SendAsync<SessionDto>(HttpMethod.Post, "api/session/mot-de-passe",
+                new { currentPassword = proof.Secret, newPassword = replacement });
+            changed = true;
+        }
+        catch (ApiException ex) { Error = ex.Message; }
+        catch (Exception ex) when (ex is OfflineException or HttpRequestException or TaskCanceledException)
+        { Error = "Le serveur doit être accessible pour restaurer le mot de passe."; }
+        finally
+        {
+            if (authenticated) { try { await api.LogoutAsync(); } catch (Exception) { } }
+            if (changed)
+            {
+                bool reactivated = false;
+                try
+                {
+                    if (Platform.EnrollBiometricAsync is { } enroll)
+                        reactivated = await enroll(BiometricAccess.Seal(UserName, replacement));
+                }
+                catch (Exception) { }
+                if (reactivated) BiometricAccess.Enable(api.Server, UserName);
+                else { BiometricAccess.Disable(); Platform.DisableBiometricAccess?.Invoke(); }
+                RefreshBiometrics();
+                try
+                {
+                    var store = api.Offline ?? new OfflineStore(api.Server);
+                    store.ForgetCredential();
+                    store.RememberAccount(UserName);
+                }
+                catch (Exception ex) when (ex is System.IO.IOException or UnauthorizedAccessException) { }
+                Password = string.Empty;
+                NewPassword = string.Empty;
+                ConfirmPassword = string.Empty;
+                RecoveryOpen = false;
+                Error = null;
+                Notice = reactivated
+                    ? "Mot de passe restauré. Votre empreinte a aussi été mise à jour."
+                    : "Mot de passe restauré. Connectez-vous avec le nouveau code puis réactivez l'empreinte.";
+            }
+            Busy = false;
+        }
+    }
 
     private string? notice;
     /// <summary>Information au-dessus du formulaire : l'ordinateur principal est injoignable, travail hors ligne possible.</summary>
@@ -269,6 +387,8 @@ public sealed class LoginViewModel : Observable
         Password = string.Empty;
         Error = null;
         RecoveryOpen = false;
+        NewPassword = string.Empty;
+        ConfirmPassword = string.Empty;
         ShowPassword = false;
         Restored = false;
         EnableBiometricsAfterLogin = false;
