@@ -15,6 +15,8 @@ public sealed class LoginViewModel : Observable
     private string schoolName = string.Empty;
     private bool recoveryOpen;
     private bool editingAccount;
+    private bool linkedClient;
+    private bool manualLoginOpen;
     private Uri? accountServer;
     private string recoveryCode = string.Empty;
     private string newPassword = string.Empty;
@@ -100,6 +102,29 @@ public sealed class LoginViewModel : Observable
         Raise(nameof(IntroText));
     }
 
+    /// <summary>Un poste invité rejoint le compte approuvé sans demander son mot de passe.</summary>
+    public bool LinkedClient => linkedClient;
+    public bool ShowManualCredentials => !linkedClient || manualLoginOpen;
+    public bool ShowPairingCallToAction => linkedClient && !manualLoginOpen;
+    public void ConfigureClientMode(bool isClient)
+    {
+        if (linkedClient == isClient) return;
+        linkedClient = isClient;
+        manualLoginOpen = false;
+        Raise(nameof(LinkedClient));
+        Raise(nameof(ShowManualCredentials));
+        Raise(nameof(ShowPairingCallToAction));
+        Raise(nameof(IntroText));
+    }
+
+    public RelayCommand EnableManualLogin => enableManualLogin ??= new RelayCommand(() =>
+    {
+        manualLoginOpen = true;
+        Raise(nameof(ShowManualCredentials));
+        Raise(nameof(ShowPairingCallToAction));
+    });
+    private RelayCommand? enableManualLogin;
+
     public bool HasRememberedAccount => !editingAccount && !string.IsNullOrWhiteSpace(UserName);
     public bool ShowAccountEntry => !HasRememberedAccount;
     public RelayCommand ChangeAccount => changeAccount ??= new RelayCommand(() =>
@@ -126,7 +151,9 @@ public sealed class LoginViewModel : Observable
     public string ResumeText => $"Revenir à la session de {resumeName}";
     /// <summary>Phrase sous « Connexion » : elle rappelle qu'une session attend, verrouillée.</summary>
     public string IntroText => resumeName is null
-        ? (HasRememberedAccount ? "Saisissez votre mot de passe pour continuer." : "Saisissez votre identifiant et votre mot de passe.")
+        ? (linkedClient && !manualLoginOpen
+            ? "Ce poste utilise une invitation du serveur : scannez le QR pour vous connecter automatiquement."
+            : HasRememberedAccount ? "Saisissez votre mot de passe pour continuer." : "Saisissez votre identifiant et votre mot de passe.")
         : "Connectez un autre compte. La session verrouillée reste ouverte : vous pouvez y revenir à tout moment.";
     public string ResumeHint => resumeUser is null ? string.Empty : $"{resumeUser} · session verrouillée, rien n'est perdu";
     public RelayCommand Resume => resume ??= new RelayCommand(() =>
