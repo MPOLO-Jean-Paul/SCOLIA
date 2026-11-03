@@ -72,8 +72,9 @@ public sealed class LoginViewModel : Observable
     /// <summary>Connexion vérifiée par le serveur : le compte peut être gardé pour une connexion hors ligne.</summary>
     public event Action<string, string, SessionDto>? Authenticated;
 
-    public string UserName { get => userName; set { if (Set(ref userName, value)) Submit.Refresh(); } }
-    public string Password { get => password; set { if (Set(ref password, value)) Submit.Refresh(); } }
+    public string UserName { get => userName; set { if (Set(ref userName, value)) { Raise(nameof(CanSubmitCredentials)); Submit.Refresh(); } } }
+    public string Password { get => password; set { if (Set(ref password, value)) { Raise(nameof(CanSubmitCredentials)); Submit.Refresh(); } } }
+    public bool CanSubmitCredentials => !Locked && !Busy && !string.IsNullOrWhiteSpace(UserName) && Password.Length > 0;
     public string? Error { get => error; set { if (Set(ref error, value)) Raise(nameof(HasError)); } }
     public bool HasError => !string.IsNullOrEmpty(error);
 
@@ -87,6 +88,15 @@ public sealed class LoginViewModel : Observable
         Error = null;
     });
     private RelayCommand? recoveryHelp;
+
+    /// <summary>Ouvre l'aide depuis une session verrouillée sans tenter de déverrouiller le compte.</summary>
+    public void ShowRecoveryHelp(string account)
+    {
+        UserName = account;
+        Password = string.Empty;
+        RecoveryOpen = true;
+        Error = null;
+    }
     public string RecoveryInstructions =>
         "Compte d'un membre du personnel : demandez à un responsable habilité du secrétariat d'ouvrir " +
         "Administration → Utilisateurs → Réinitialiser le mot de passe. Un code provisoire sera défini, " +
@@ -103,7 +113,7 @@ public sealed class LoginViewModel : Observable
     /// <summary>Nom de l'établissement, connu dès le démarrage du serveur : il titre l'écran de connexion.</summary>
     public string SchoolName { get => schoolName; set { if (Set(ref schoolName, value)) { Raise(nameof(TitleText)); } } }
     public string TitleText => string.IsNullOrWhiteSpace(schoolName) ? "SCOLIA" : schoolName;
-    public bool Busy { get => busy; set { if (Set(ref busy, value)) Raise(nameof(NotBusy)); } }
+    public bool Busy { get => busy; set { if (Set(ref busy, value)) { Raise(nameof(NotBusy)); Raise(nameof(CanType)); Raise(nameof(CanSubmitCredentials)); } } }
     public bool NotBusy => !busy;
 
     private bool showPassword;
@@ -259,6 +269,7 @@ public sealed class LoginViewModel : Observable
         Password = string.Empty;
         Error = null;
         RecoveryOpen = false;
+        ShowPassword = false;
         Restored = false;
         EnableBiometricsAfterLogin = false;
         RefreshBiometrics();
@@ -275,7 +286,7 @@ public sealed class LoginViewModel : Observable
     public event Action? Unlocked;
 
     public bool Locked => lockedUntil is not null;
-    public bool CanType => !Locked;
+    public bool CanType => !Locked && !Busy;
     public int SecondsLeft { get => secondsLeft; private set { if (Set(ref secondsLeft, value)) { Raise(nameof(CountdownText)); Raise(nameof(LockProgress)); } } }
     public string CountdownText => $"{secondsLeft / 60}:{secondsLeft % 60:00}";
     public double LockProgress => 100.0 * secondsLeft / lockTotal;
@@ -288,7 +299,7 @@ public sealed class LoginViewModel : Observable
         Error = null;
         Restored = false;
         Password = string.Empty;
-        Raise(nameof(Locked)); Raise(nameof(CanType));
+        Raise(nameof(Locked)); Raise(nameof(CanType)); Raise(nameof(CanSubmitCredentials));
         Tick(now);
         if (lockTimer is null && Avalonia.Application.Current is not null)
         {
@@ -306,14 +317,16 @@ public sealed class LoginViewModel : Observable
         if (secondsLeft > 0) return;
         lockTimer?.Stop();
         lockedUntil = null;
-        Raise(nameof(Locked)); Raise(nameof(CanType));
+        Raise(nameof(Locked)); Raise(nameof(CanType)); Raise(nameof(CanSubmitCredentials));
         Restored = true;
         Unlocked?.Invoke();
     }
 
     private async Task SubmitAsync()
     {
-        if (Locked) return;
+        if (Locked || Busy) return;
+        if (string.IsNullOrWhiteSpace(UserName)) { Error = "Renseignez votre identifiant."; return; }
+        if (Password.Length == 0) { Error = "Renseignez votre mot de passe."; return; }
         Busy = true;
         try { await SignInAsync(UserName.Trim(), Password, fromBiometrics: false); }
         finally { Busy = false; }
