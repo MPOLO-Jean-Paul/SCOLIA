@@ -71,6 +71,8 @@ public sealed class ScoliaClient : IDisposable
     {
         if (server == Server && remoteLink is null) return;
         remoteLink = null;
+        // Un changement d'établissement ne doit jamais réutiliser le cache ou les opérations de l'ancien serveur.
+        Offline = null;
         var previous = http;
         cookies = new CookieContainer();
         http = Create(server);
@@ -83,6 +85,7 @@ public sealed class ScoliaClient : IDisposable
         link.Validate();
         var previous = http;
         remoteLink = link;
+        Offline = null;
         cookies = new CookieContainer();
         Server = link.VirtualServer;
         http = Create(Server);
