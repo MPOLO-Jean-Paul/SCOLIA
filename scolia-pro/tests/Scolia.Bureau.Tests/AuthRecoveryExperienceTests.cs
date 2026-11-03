@@ -35,7 +35,7 @@ public class AuthRecoveryExperienceTests
         Assert.True(vm.RecoveryOpen);
         Assert.Empty(vm.Password);
         Assert.False(vm.CanSubmitCredentials);
-        Assert.Contains("Réinitialiser le mot de passe", vm.RecoveryInstructions);
+        Assert.Contains("empreinte", vm.RecoveryInstructions);
 
         vm.ShowRecoveryHelp("secretariat");
         Assert.Equal("secretariat", vm.UserName);
