@@ -25,7 +25,9 @@ public partial class App : Avalonia.Application
             var api = new ScoliaClient(ConnectionStore.LocalAddress);
             var server = new ServerProcess(ConnectionStore.LocalAddress.Port);
             var shell = new ShellViewModel(api, Preferences.Load());
-            desktop.MainWindow = new MainWindow { DataContext = shell };
+            var mainWindow = new MainWindow { DataContext = shell };
+            DesktopAppUpdates.Attach(mainWindow);
+            desktop.MainWindow = mainWindow;
             desktop.ShutdownRequested += (_, _) =>
             {
                 shell.Prefs.Save();
