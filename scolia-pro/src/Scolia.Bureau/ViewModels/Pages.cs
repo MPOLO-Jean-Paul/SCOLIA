@@ -105,6 +105,9 @@ public sealed class LoginViewModel : Observable
     /// <summary>Un poste invité rejoint le compte approuvé sans demander son mot de passe.</summary>
     public bool LinkedClient => linkedClient;
     public bool ShowManualCredentials => !linkedClient || manualLoginOpen;
+    public bool ShowBiometricSignIn => ShowManualCredentials && !RecoveryOpen && CanUseBiometricSignIn;
+    public bool ShowBiometricEnrollment => ShowManualCredentials && !RecoveryOpen && CanOfferEnrollment;
+    public bool ShowRemoveBiometric => ShowManualCredentials && !RecoveryOpen && HasBiometricAccount;
     public bool ShowPairingCallToAction => linkedClient && !manualLoginOpen;
     public void ConfigureClientMode(bool isClient)
     {
@@ -114,6 +117,9 @@ public sealed class LoginViewModel : Observable
         Raise(nameof(LinkedClient));
         Raise(nameof(ShowManualCredentials));
         Raise(nameof(ShowPairingCallToAction));
+        Raise(nameof(ShowBiometricSignIn));
+        Raise(nameof(ShowBiometricEnrollment));
+        Raise(nameof(ShowRemoveBiometric));
         Raise(nameof(IntroText));
     }
 
@@ -122,6 +128,10 @@ public sealed class LoginViewModel : Observable
         manualLoginOpen = true;
         Raise(nameof(ShowManualCredentials));
         Raise(nameof(ShowPairingCallToAction));
+        Raise(nameof(ShowBiometricSignIn));
+        Raise(nameof(ShowBiometricEnrollment));
+        Raise(nameof(ShowRemoveBiometric));
+        Raise(nameof(IntroText));
     });
     private RelayCommand? enableManualLogin;
 
@@ -193,6 +203,9 @@ public sealed class LoginViewModel : Observable
             Raise(nameof(RecoveryActionLabel));
             Raise(nameof(CanRecoverWithCode));
             Raise(nameof(CanRecoverWithBiometrics));
+            Raise(nameof(ShowBiometricSignIn));
+            Raise(nameof(ShowBiometricEnrollment));
+            Raise(nameof(ShowRemoveBiometric));
         }
     }
     public bool ShowSignInPassword => !RecoveryOpen;
@@ -232,6 +245,9 @@ public sealed class LoginViewModel : Observable
         manualLoginOpen = true;
         Raise(nameof(ShowManualCredentials));
         Raise(nameof(ShowPairingCallToAction));
+        Raise(nameof(ShowBiometricSignIn));
+        Raise(nameof(ShowBiometricEnrollment));
+        Raise(nameof(ShowRemoveBiometric));
         Password = string.Empty;
         ShowPassword = false;
         ClearRecoverySecrets();
@@ -459,6 +475,9 @@ public sealed class LoginViewModel : Observable
         Raise(nameof(CanUseBiometricSignIn));
         Raise(nameof(CanRecoverWithBiometrics));
         Raise(nameof(CanOfferEnrollment));
+        Raise(nameof(ShowBiometricSignIn));
+        Raise(nameof(ShowBiometricEnrollment));
+        Raise(nameof(ShowRemoveBiometric));
         Raise(nameof(BiometricLabel));
     }
 
