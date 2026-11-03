@@ -45,6 +45,8 @@ public sealed class ShellViewModel : Observable
         {
             api.Offline = new OfflineStore(api.Server) { User = s.UserName };
             api.Offline.SaveCredential(user, secret, s, api.SessionCookie);
+            api.Offline.RememberAccount(s.UserName);
+            Login.RememberAccount(s.UserName);
             Sync.Remember(user, secret);
         };
         Sync.RemoteChange += OnRemoteChange;
@@ -742,6 +744,8 @@ public sealed class ShellViewModel : Observable
         // Données gardées sur l'appareil, propres à ce compte ; puis le direct avec les autres postes.
         api.Offline ??= new OfflineStore(api.Server);
         api.Offline.User = s.UserName;
+        api.Offline.RememberAccount(s.UserName);
+        Login.RememberAccount(s.UserName);
         Sync.Start();
         OpeningTitle = IsSetupRequired ? "Configuration terminée" : $"Bienvenue, {s.DisplayName}";
         OpeningProgress = 0;
