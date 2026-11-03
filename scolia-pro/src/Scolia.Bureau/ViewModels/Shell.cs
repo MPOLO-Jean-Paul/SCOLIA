@@ -301,6 +301,7 @@ public sealed class ShellViewModel : Observable
 
     private void RaiseLogin()
     {
+        Login.ConfigureClientMode(!IsServerComputer);
         Login.RefreshServer();
         Raise(nameof(IsLoggedIn));
         Raise(nameof(ShowLogin));
