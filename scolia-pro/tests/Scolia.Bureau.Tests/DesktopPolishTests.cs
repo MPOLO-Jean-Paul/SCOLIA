@@ -40,19 +40,33 @@ public sealed class DesktopPolishTests
         var shell = new ShellViewModel(api, new Preferences());
         try
         {
+            Platform.IsHostForegroundActive = () => true;
+            Platform.IsHostApiServing = () => true;
             Platform.BackgroundAllowed = () => false;
             var poste = new PosteViewModel(shell);
             Assert.True(poste.BackgroundBlocked);
-            Assert.Equal("Android peut endormir SCOLIA", poste.BackgroundTitle);
+            Assert.Equal("Serveur actif · autorisation batterie nécessaire", poste.BackgroundTitle);
 
-            // Retour des réglages : l'autorisation donnée se lit aussitôt.
+            // Retour des réglages : l'autorisation batterie et les deux états
+            // du serveur sont suivis indépendamment de la fenêtre Android.
             Platform.BackgroundAllowed = () => true;
             Assert.True(poste.BackgroundOk);
-            Assert.Equal("Actif même écran éteint", poste.BackgroundTitle);
+            Assert.True(poste.BackgroundHealthy);
+            Assert.Equal("Serveur actif en arrière-plan", poste.BackgroundTitle);
+
+            // La présence de la notification ne suffit pas si l'API a échoué.
+            Platform.IsHostApiServing = () => false;
+            Assert.False(poste.BackgroundHealthy);
+            Assert.Equal("Démarrage du serveur scolaire…", poste.BackgroundTitle);
+            Platform.IsHostForegroundActive = () => false;
+            Assert.Equal("Le service serveur doit être réactivé", poste.BackgroundTitle);
         }
         finally
         {
             Platform.BackgroundAllowed = null;
+            Platform.IsHostForegroundActive = null;
+            Platform.IsHostApiServing = null;
+            Platform.EnsureHostAvailable = null;
             Platform.BackgroundHint = string.Empty;
         }
     }
