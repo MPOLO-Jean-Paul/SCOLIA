@@ -1,0 +1,53 @@
+name: SCOLIA Pro - Publication installateur Windows
+
+on:
+  push:
+    branches:
+      - feature/scolia-recovery-login-lock-20261103
+    paths:
+      - '.github/workflows/publier-installateur-windows.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+
+jobs:
+  publication:
+    name: Publier EXE verifie sur GitHub Releases
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Recuperer l'installateur compile et verifier SHA-256
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/scolia"
+          gh run download 41620130356 --repo "$GH_REPO" --name SCOLIA_Pro_Windows_Installateur_EXE --dir "$RUNNER_TEMP/scolia"
+          cd "$RUNNER_TEMP/scolia"
+          test -s SCOLIA_Pro_Installation_1.2.3_Windows_x64.exe
+          sha256sum --check SCOLIA_Pro_Installation_1.2.3_Windows_x64.exe.sha256
+          echo "EXE_PATH=$PWD/SCOLIA_Pro_Installation_1.2.3_Windows_x64.exe" >> "$GITHUB_ENV"
+          echo "SHA_PATH=$PWD/SCOLIA_Pro_Installation_1.2.3_Windows_x64.exe.sha256" >> "$GITHUB_ENV"
+
+      - name: Creer la version telechargeable directement
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          tag="scolia-pro-1.2.3-windows-20261103"
+          if gh release view "$tag" --repo "$GH_REPO" >/dev/null 2>&1; then
+            gh release upload "$tag" "$EXE_PATH" "$SHA_PATH" --repo "$GH_REPO" --clobber
+          else
+            gh release create "$tag" "$EXE_PATH" "$SHA_PATH" \
+              --repo "$GH_REPO" \
+              --target "$GITHUB_SHA" \
+              --title "SCOLIA Pro 1.2.3 - Installateur Windows 64 bits" \
+              --notes "Installateur autonome Windows 10/11 x64. Assistant en francais et conditions d'utilisation. SHA-256 fourni. Application non signee numeriquement. Installer par-dessus une version existante uniquement apres sauvegarde verifiee des donnees scolaires."
+          fi
+          gh release view "$tag" --repo "$GH_REPO" --json url,assets --jq '{url, assets: [.assets[].name]}'
