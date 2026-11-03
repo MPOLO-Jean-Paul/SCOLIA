@@ -22,6 +22,7 @@ public sealed class LockScreenViewModel : Observable
         this.shell = shell;
         Unlock = new AsyncCommand(UnlockAsync);
         UnlockWithBiometrics = new AsyncCommand(BiometricUnlockAsync);
+        UnlockWithDevice = new AsyncCommand(UnlockWithDeviceAsync);
         SwitchAccount = new AsyncCommand(SwitchAsync);
     }
 
@@ -90,6 +91,11 @@ public sealed class LockScreenViewModel : Observable
 
     public AsyncCommand Unlock { get; }
     public AsyncCommand UnlockWithBiometrics { get; }
+    public AsyncCommand UnlockWithDevice { get; }
+    public bool CanUsePairedDevice => !shell.IsServerComputer && DevicePairingStore.Read(shell.Api.Server) is { } grant
+        && string.Equals(grant.UserName, UserName, StringComparison.OrdinalIgnoreCase);
+    public bool RequireCode => !CanUsePairedDevice;
+    public string PairedDeviceText => "Continuer sur cet appareil autorisé";
     public AsyncCommand SwitchAccount { get; }
 
     /// <summary>La récupération passe par le secrétariat, sans ouvrir la session ni supprimer son état.</summary>
@@ -117,7 +123,7 @@ public sealed class LockScreenViewModel : Observable
         Error = null;
         ShowCode = false;
         foreach (var name in new[] { nameof(UserName), nameof(DisplayName), nameof(School), nameof(Initials), nameof(Delay),
-                     nameof(Message), nameof(CanUseBiometrics), nameof(BiometricLabel), nameof(Time), nameof(DateText),
+                     nameof(Message), nameof(CanUseBiometrics), nameof(BiometricLabel), nameof(CanUsePairedDevice), nameof(RequireCode), nameof(Time), nameof(DateText),
                      nameof(LockedSince), nameof(Role), nameof(AccountLine), nameof(Logo), nameof(HasLogo) })
             Raise(name);
     }
@@ -127,6 +133,22 @@ public sealed class LockScreenViewModel : Observable
         if (Busy || !visible) return;
         if (code.Length == 0) { Error = "Saisissez votre code PIN ou votre mot de passe."; return; }
         await VerifyAsync(code);
+    }
+
+    private async Task UnlockWithDeviceAsync()
+    {
+        if (Busy || !visible || !CanUsePairedDevice) return;
+        Busy = true;
+        Error = null;
+        try
+        {
+            if (await shell.Api.RestoreDeviceSessionAsync() is { } session
+                && string.Equals(session.UserName, UserName, StringComparison.OrdinalIgnoreCase)) Done();
+            else Error = "Autorisation de ce poste expirée ou révoquée. Demandez un nouveau QR au serveur.";
+        }
+        catch (Exception ex) when (ex is ApiException or HttpRequestException or TaskCanceledException)
+        { Error = "Impossible de vérifier ce poste auprès du serveur. Vérifiez la connexion privée."; }
+        finally { Busy = false; Raise(nameof(CanUsePairedDevice)); Raise(nameof(RequireCode)); }
     }
 
     private async Task BiometricUnlockAsync()
