@@ -1,0 +1,28 @@
+INSTALLATION TERMINÉE - SCOLIA PRO
+
+Vous pouvez lancer SCOLIA Pro depuis le menu Démarrer ou le raccourci du Bureau.
+
+PREMIÈRE UTILISATION
+1. Ouvrir SCOLIA Pro.
+2. Choisir « Configurer cet appareil comme serveur » s'il doit héberger
+   les données, sinon « Rejoindre votre établissement ».
+3. En mode serveur, configurer l'établissement et ses comptes autorisés.
+4. Dans « Poste et réseau », activer le partage si d'autres postes doivent
+   s'y connecter. Pour les accès éloignés, utiliser Tailscale sur les
+   appareils autorisés et leur jumelage SCOLIA.
+
+IMPORTANT
+Le logiciel ne doit pas être fermé sur l'appareil serveur si d'autres
+utilisateurs dépendent de son processus. Vous pouvez réduire la fenêtre
+ou verrouiller la session. En cas d'arrêt Windows ou de panne réseau,
+les autres appareils peuvent devenir temporairement injoignables.
+
+Pour une installation existante ailleurs : ne supprimez pas l'ancien
+dossier de données avant d'avoir vérifié une restauration ou migration
+de sauvegarde dans cette installation.
+
+DÉSINSTALLATION
+Ouvrez les Applications installées dans Windows, puis désinstallez
+« SCOLIA Pro ». Si le service SCOLIA a été activé dans l'application,
+supprimez-le d'abord dans « Poste et réseau ». La désinstallation
+ne retire pas automatiquement les données de l'établissement.
