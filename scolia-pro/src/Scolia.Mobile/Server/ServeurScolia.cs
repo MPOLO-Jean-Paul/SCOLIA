@@ -19,6 +19,10 @@ public sealed class ServeurScolia : Service
     private const string Channel = "serveur";
     private const int NotificationId = 5080;
 
+    private static int active;
+    /// <summary>Le service a effectivement été promu au premier plan Android.</summary>
+    public static bool IsActive => System.Threading.Volatile.Read(ref active) != 0;
+
     private PowerManager.WakeLock? awake;
     private WifiManager.WifiLock? wifi;
     private WifiManager.MulticastLock? multicast;
@@ -36,9 +40,20 @@ public sealed class ServeurScolia : Service
 
     public override StartCommandResult OnStartCommand(Intent? intent, StartCommandFlags flags, int startId)
     {
+        // Une invitation ou un changement de poste peut avoir désactivé l'hébergement
+        // pendant qu'Android préparait le service. Ne jamais conserver un serveur
+        // sur un appareil désormais client.
+        if (Scolia.Bureau.Infrastructure.ConnectionStore.Load()?.Mode !=
+            Scolia.Bureau.Infrastructure.ConnectionSettings.Local)
+        {
+            StopSelfResult(startId);
+            return StartCommandResult.NotSticky;
+        }
+
         var notification = BuildNotification();
         if (OperatingSystem.IsAndroidVersionAtLeast(34)) StartForeground(NotificationId, notification, ForegroundService.TypeSpecialUse);
         else StartForeground(NotificationId, notification);
+        System.Threading.Interlocked.Exchange(ref active, 1);
         Hold();
         // Si Android recrée le service après une récupération mémoire, rétablir aussi
         // le serveur de données. Une notification seule ne rendrait pas SCOLIA accessible.
@@ -60,8 +75,21 @@ public sealed class ServeurScolia : Service
         return StartCommandResult.Sticky;
     }
 
+    /// <summary>
+    /// Retirer la fenêtre de l'écran des applications récentes ne demande pas l'arrêt
+    /// du serveur de l'établissement. Android garde le service au premier plan et
+    /// sa notification ; l'utilisateur peut arrêter le serveur en changeant de mode
+    /// ou en arrêtant explicitement le service système.
+    /// </summary>
+    public override void OnTaskRemoved(Intent? rootIntent)
+    {
+        Android.Util.Log.Info("SCOLIA", "Interface retirée : le serveur reste hébergé en service de premier plan.");
+        base.OnTaskRemoved(rootIntent);
+    }
+
     public override void OnDestroy()
     {
+        System.Threading.Interlocked.Exchange(ref active, 0);
         Release();
         base.OnDestroy();
     }
