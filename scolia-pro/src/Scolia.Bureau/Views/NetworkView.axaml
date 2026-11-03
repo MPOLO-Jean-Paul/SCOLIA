@@ -46,7 +46,8 @@
               <TextBlock Classes="muted" TextWrapping="Wrap" Text="Cette liaison nécessite un relais WSS déployé séparément ; elle n'est pas nécessaire pour Tailscale. Les données scolaires restent sur cet appareil." />
               <TextBox Text="{Binding Remote.Relay}" PlaceholderText="wss://adresse-de-votre-relais" />
               <Button Content="Créer ou renouveler la liaison" Command="{Binding Remote.Enable}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" />
-              <TextBlock Text="Invitation privée : elle est déjà dans le code QR de Poste et réseau. Sur un ordinateur, elle se colle sous « Lire une image du code QR »." Classes="muted" TextWrapping="Wrap" />
+               <TextBlock Text="Lien d’invitation automatique : code personnel à usage unique, valable cinq minutes. L’appareil invité se connecte sans mot de passe." Classes="muted" TextWrapping="Wrap" />
+               <Button Classes="ghost" Content="Créer une nouvelle invitation d’accès" Command="{Binding Remote.RenewAccess}" HorizontalAlignment="Stretch" />
               <TextBox Text="{Binding Remote.Invitation}" IsReadOnly="True" TextWrapping="Wrap" MaxHeight="100" />
               <TextBlock Text="{Binding Remote.Message}" Classes="muted" TextWrapping="Wrap" />
               <Button Classes="ghost" Content="Désactiver la liaison Internet" Command="{Binding Remote.Disable}" HorizontalAlignment="Stretch" />
