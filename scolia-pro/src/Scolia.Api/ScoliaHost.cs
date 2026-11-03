@@ -80,6 +80,7 @@ public static class ScoliaHost
         });
 
         builder.Services.AddScolia(builder.Configuration, defaultData);
+        builder.Services.AddSingleton(sp => new RecoveryKeyStore(sp.GetRequiredService<IOptions<ScoliaStorageOptions>>().Value.DataDirectory));
         if (embedded is not null)
         {
             // Serveur dans l'application : les clés des sessions restent avec les données, une session survit à un redémarrage.
@@ -123,6 +124,7 @@ public static class ScoliaHost
 
         var app = builder.Build();
         await app.Services.InitializeDatabaseAsync();
+        app.Services.GetRequiredService<RecoveryKeyStore>().EnsureCreated();
 
         app.UseExceptionHandler();
         app.UseResponseCompression();
