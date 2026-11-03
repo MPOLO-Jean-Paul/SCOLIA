@@ -84,8 +84,16 @@
           <TextBlock Text="{Binding LockedSince}" Foreground="#CCFFFFFF" FontSize="{DynamicResource FsSmall}" VerticalAlignment="Center" />
         </StackPanel>
 
+        <!-- Appareil invité : accès local sous contrôle de l'autorisation révocable du serveur. -->
+        <Button Classes="glass" Command="{Binding UnlockWithDevice}" IsVisible="{Binding CanUsePairedDevice}"
+                IsEnabled="{Binding NotBusy}" MinHeight="52" Margin="0,24,0,0">
+          <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="10">
+            <mi:MaterialIcon Kind="ShieldCheckOutline" Width="21" Height="21" />
+            <TextBlock Text="{Binding PairedDeviceText}" VerticalAlignment="Center" TextWrapping="Wrap" />
+          </StackPanel>
+        </Button>
         <!-- Code : l'œil et la flèche sont dans le champ, comme le code PIN de Windows 11 -->
-        <Panel Margin="0,22,0,0">
+        <Panel Margin="0,22,0,0" IsVisible="{Binding RequireCode}">
           <TextBox x:Name="LockCode" Classes="w11 onbrand codefield" Text="{Binding Code}" PasswordChar="•" RevealPassword="{Binding ShowCode}"
                    PlaceholderText="Code PIN ou mot de passe" MaxLength="128" MinHeight="52" TextInputOptions.ContentType="Password" TextInputOptions.IsSensitive="True"
                    IsEnabled="{Binding NotBusy}" />
