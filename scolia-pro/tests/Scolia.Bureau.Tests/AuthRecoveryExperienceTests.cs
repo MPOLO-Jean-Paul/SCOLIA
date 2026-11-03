@@ -46,6 +46,91 @@ public class AuthRecoveryExperienceTests
     }
 
     [Fact]
+    public void Recuperation_et_connexion_sont_des_ecrans_exclusifs_avec_retour()
+    {
+        using var api = new ScoliaClient(new Uri("http://localhost:5080/"));
+        var vm = new LoginViewModel(api);
+        vm.RememberAccount("secretariat");
+        Assert.True(vm.ShowSignInPassword);
+        Assert.Equal("Mot de passe oublié ?", vm.RecoveryActionLabel);
+
+        vm.ToggleRecoveryHelp.Execute(null);
+        Assert.True(vm.RecoveryOpen);
+        Assert.False(vm.ShowSignInPassword);
+        Assert.Equal("Revenir à la connexion", vm.RecoveryActionLabel);
+
+        vm.NewPassword = "code-fiable-2026";
+        vm.ConfirmPassword = "code-fiable-2026";
+        vm.RecoveryCode = "SC-CODE-DE-TEST";
+        Assert.True(vm.CanRecoverWithCode);
+
+        vm.ToggleRecoveryHelp.Execute(null);
+        Assert.False(vm.RecoveryOpen);
+        Assert.True(vm.ShowSignInPassword);
+        Assert.Empty(vm.NewPassword);
+        Assert.Empty(vm.ConfirmPassword);
+        Assert.Empty(vm.RecoveryCode);
+        Assert.False(vm.CanRecoverWithCode);
+    }
+
+    [Fact]
+    public void Restauration_controle_la_qualite_et_la_confirmation_avant_d_activer_le_bouton()
+    {
+        using var api = new ScoliaClient(new Uri("http://localhost:5080/"));
+        var vm = new LoginViewModel(api);
+        vm.RememberAccount("secretariat");
+        vm.ToggleRecoveryHelp.Execute(null);
+        vm.RecoveryCode = "SC-EXEMPLE";
+        vm.NewPassword = "123456";
+        vm.ConfirmPassword = "123456";
+        Assert.False(vm.CanRecoverWithCode);
+        Assert.Contains("facile", vm.RecoveryPasswordHint);
+        vm.NewPassword = "bon-mot-de-passe-2026";
+        Assert.False(vm.CanRecoverWithCode);
+        Assert.Contains("correspondent pas", vm.RecoveryConfirmationHint);
+        vm.ConfirmPassword = vm.NewPassword;
+        Assert.True(vm.CanRecoverWithCode);
+        Assert.Equal("Les deux mots de passe correspondent.", vm.RecoveryConfirmationHint);
+        Assert.False(vm.CanRecoverWithBiometrics);
+    }
+
+    [Fact]
+    public void Trois_champs_de_recuperation_ont_des_yeux_independants_masques_initialement()
+    {
+        using var api = new ScoliaClient(new Uri("http://localhost:5080/"));
+        var vm = new LoginViewModel(api);
+        vm.ToggleRecoveryHelp.Execute(null);
+        Assert.False(vm.ShowNewPassword);
+        Assert.False(vm.ShowConfirmPassword);
+        Assert.False(vm.ShowRecoveryCode);
+        vm.ToggleNewPasswordEye.Execute(null);
+        Assert.True(vm.ShowNewPassword);
+        Assert.False(vm.ShowConfirmPassword);
+        Assert.False(vm.ShowRecoveryCode);
+        vm.ToggleConfirmPasswordEye.Execute(null);
+        vm.ToggleRecoveryCodeEye.Execute(null);
+        Assert.True(vm.ShowConfirmPassword);
+        Assert.True(vm.ShowRecoveryCode);
+        vm.ToggleRecoveryHelp.Execute(null);
+        Assert.False(vm.ShowNewPassword);
+        Assert.False(vm.ShowConfirmPassword);
+        Assert.False(vm.ShowRecoveryCode);
+    }
+
+    [Fact]
+    public void Mot_de_passe_ouvert_depuis_le_verrou_s_affiche_aussi_sur_un_poste_invite()
+    {
+        using var api = new ScoliaClient(new Uri("http://localhost:5080/"));
+        var vm = new LoginViewModel(api);
+        vm.ConfigureClientMode(true);
+        Assert.False(vm.ShowManualCredentials);
+        vm.ShowRecoveryHelp("secretariat");
+        Assert.True(vm.ShowManualCredentials);
+        Assert.True(vm.RecoveryOpen);
+        Assert.Equal("secretariat", vm.UserName);
+    }
+
+    [Fact]
     public void Champs_secrets_sont_masques_par_defaut_et_revelables_a_la_demande()
     {
         var field = new FormField("motDePasse", "Nouveau code", FieldKind.Secret, true, null);
