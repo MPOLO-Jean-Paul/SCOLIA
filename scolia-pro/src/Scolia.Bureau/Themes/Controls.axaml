@@ -279,6 +279,52 @@
     <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
     <Setter Property="BorderThickness" Value="0,0,0,2" />
   </Style>
+  <!-- Migration des anciens formulaires .w11 vers les champs métier « surface douce ».
+       Les TextBox.w11.onbrand du login, de la restauration et du verrou restent intacts.
+       Sélecteurs spécifiques + bordure interne du template pour rendre le changement visible. -->
+  <Style Selector="TextBox.w11:not(.onbrand)">
+    <Setter Property="MinHeight" Value="44" />
+    <Setter Property="CornerRadius" Value="12" />
+    <Setter Property="Background" Value="{DynamicResource FieldBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="Padding" Value="14,8" />
+  </Style>
+  <Style Selector="TextBox.w11:not(.onbrand) /template/ Border#PART_BorderElement">
+    <Setter Property="Background" Value="{DynamicResource FieldBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+  </Style>
+  <Style Selector="TextBox.w11:not(.onbrand):pointerover /template/ Border#PART_BorderElement">
+    <Setter Property="Background" Value="{DynamicResource FieldBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource LineStrongBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+  </Style>
+  <Style Selector="TextBox.w11:not(.onbrand):focus">
+    <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+    <Setter Property="BorderThickness" Value="2" />
+  </Style>
+  <Style Selector="TextBox.w11:not(.onbrand):focus /template/ Border#PART_BorderElement">
+    <Setter Property="Background" Value="{DynamicResource FieldBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+    <Setter Property="BorderThickness" Value="2" />
+  </Style>
+  <Style Selector="ComboBox.w11, CalendarDatePicker.w11">
+    <Setter Property="MinHeight" Value="44" />
+    <Setter Property="CornerRadius" Value="12" />
+    <Setter Property="Background" Value="{DynamicResource FieldBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+  </Style>
+  <Style Selector="ComboBox.w11:pointerover /template/ Border#Background">
+    <Setter Property="Background" Value="{DynamicResource FieldBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource LineStrongBrush}" />
+  </Style>
+  <Style Selector="ComboBox.w11:focus-within, CalendarDatePicker.w11:focus-within">
+    <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+    <Setter Property="BorderThickness" Value="2" />
+  </Style>
+
   <!-- Sur le fond bleu de la connexion et de la veille : verre blanc translucide, texte blanc -->
   <Style Selector="TextBox.w11.onbrand">
     <Setter Property="MinHeight" Value="46" />
