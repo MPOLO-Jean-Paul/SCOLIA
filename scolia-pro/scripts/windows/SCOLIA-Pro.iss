@@ -26,7 +26,6 @@ VersionInfoCompany={#AppPublisher}
 VersionInfoDescription=Installation de SCOLIA Pro pour Windows 64 bits
 VersionInfoProductName={#AppName}
 VersionInfoProductVersion={#AppVersion}
-AppMutex=
 DefaultDirName={localappdata}\Programs\SCOLIA Pro
 DefaultGroupName=SCOLIA Pro
 DisableDirPage=no
