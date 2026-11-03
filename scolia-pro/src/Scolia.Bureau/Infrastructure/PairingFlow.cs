@@ -44,7 +44,7 @@ public static class PairingFlow
             if (await RespondsAsync(address) is { } school)
             {
                 await shell.JoinAsync(new DiscoveredServer(address.Host, school, Machine(code, address), string.Empty, address));
-                return $"Relié à {school} sur le Wi-Fi. Connectez-vous avec votre compte.";
+                return await ActivateAsync(shell, code, school, "Wi-Fi");
             }
         }
 
@@ -61,7 +61,7 @@ public static class PairingFlow
                 if (await RespondsAsync(address) is { } school)
                 {
                     await shell.JoinAsync(new DiscoveredServer(address.Host, school, Machine(code, address), string.Empty, address));
-                    return $"Relié à {school} par Tailscale. Connectez-vous avec votre compte.";
+                    return await ActivateAsync(shell, code, school, "Tailscale");
                 }
             }
         }
@@ -77,7 +77,7 @@ public static class PairingFlow
                 if (await WithinAsync(probe.IsRunningAsync()))
                 {
                     await shell.JoinInternetAsync(link);
-                    return $"Relié à {code.School} par Internet. Connectez-vous avec votre compte.";
+                    return await ActivateAsync(shell, code, code.School, "Internet sécurisé");
                 }
             }
             catch (FormatException ex) { return ex.Message; }
@@ -87,6 +87,27 @@ public static class PairingFlow
         return code.TailnetAddresses.Any() || code.HasInvitation
             ? $"{code.School} ne répond pas. Vérifiez que le serveur est allumé, que les deux appareils sont sur le même Wi-Fi, ou que Tailscale est connecté sur les deux."
             : $"{code.School} ne répond pas sur ce Wi-Fi. Vérifiez que les deux appareils sont sur le même réseau et que le serveur est allumé.";
+    }
+
+    /// <summary>La connexion réseau n'accorde aucun droit : seule l'invitation émise par le compte du serveur ouvre la session.</summary>
+    private static async Task<string> ActivateAsync(ShellViewModel shell, PairingCode code, string school, string network)
+    {
+        if (string.IsNullOrWhiteSpace(code.AccessTicket))
+            return $"Relié à {school} par {network}, mais ce code ne contient aucune autorisation. Faites générer un nouveau QR depuis une session ouverte sur le serveur.";
+        try
+        {
+            var message = await shell.AcceptDeviceInvitationAsync(code.AccessTicket);
+            shell.Notify(message);
+            return message;
+        }
+        catch (Api.ApiException ex) when (ex.Status is 401 or 403 or 429)
+        {
+            return "La liaison réseau fonctionne, mais l'invitation est expirée, déjà utilisée ou non autorisée. Demandez au serveur un nouveau QR.";
+        }
+        catch (Exception ex) when (ex is Api.OfflineException or HttpRequestException or TaskCanceledException or IOException)
+        {
+            return "La liaison a été enregistrée, mais le serveur n'a pas validé l'invitation. Vérifiez le réseau privé et réessayez avec un nouveau QR.";
+        }
     }
 
     /// <summary>Nom de l'établissement si SCOLIA répond à cette adresse dans le délai, sinon null.</summary>
