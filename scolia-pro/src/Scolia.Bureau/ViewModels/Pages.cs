@@ -16,6 +16,7 @@ public sealed class LoginViewModel : Observable
     private bool recoveryOpen;
     private bool editingAccount;
     private Uri? accountServer;
+    private string recoveryCode = string.Empty;
     private string newPassword = string.Empty;
     private string confirmPassword = string.Empty;
 
@@ -26,6 +27,7 @@ public sealed class LoginViewModel : Observable
         SignInWithBiometrics = new AsyncCommand(BiometricSignInAsync);
         DisableBiometrics = new AsyncCommand(DisableBiometricsAsync);
         RecoverWithBiometrics = new AsyncCommand(RecoverWithBiometricsAsync);
+        RecoverWithCode = new AsyncCommand(RecoverWithCodeAsync);
     }
 
     public event Action<SessionDto>? LoggedIn;
@@ -106,6 +108,9 @@ public sealed class LoginViewModel : Observable
         editingAccount = true;
         UserName = string.Empty;
         Password = string.Empty;
+        RecoveryCode = string.Empty;
+        NewPassword = string.Empty;
+        ConfirmPassword = string.Empty;
         Error = null;
         RaiseAccountState();
     });
@@ -152,7 +157,7 @@ public sealed class LoginViewModel : Observable
     public bool HasError => !string.IsNullOrEmpty(error);
 
     /// <summary>Guide d'accès sans contournement de l'authentification, disponible avant connexion.</summary>
-    public bool RecoveryOpen { get => recoveryOpen; private set => Set(ref recoveryOpen, value); }
+    public bool RecoveryOpen { get => recoveryOpen; private set { if (Set(ref recoveryOpen, value)) Raise(nameof(CanRecoverWithCode)); } }
     public RelayCommand ToggleRecoveryHelp => recoveryHelp ??= new RelayCommand(() =>
     {
         if (Busy) return;
@@ -171,12 +176,53 @@ public sealed class LoginViewModel : Observable
         Error = null;
     }
     public string RecoveryInstructions =>
-        "Choisissez un nouveau mot de passe, confirmez-le, puis validez avec l'empreinte associée à ce compte. " +
-        "Si aucune empreinte n'est enregistrée, une récupération par un administrateur habilité reste nécessaire.";
+        "Choisissez un nouveau mot de passe. Validez avec votre empreinte déjà associée à ce compte, " +
+        "ou saisissez le code de secours détenu par le responsable du serveur. Aucune ouverture des paramètres n'est nécessaire.";
 
-    public string NewPassword { get => newPassword; set => Set(ref newPassword, value ?? string.Empty); }
-    public string ConfirmPassword { get => confirmPassword; set => Set(ref confirmPassword, value ?? string.Empty); }
+    public string RecoveryCode { get => recoveryCode; set { if (Set(ref recoveryCode, value ?? string.Empty)) Raise(nameof(CanRecoverWithCode)); } }
+    public string NewPassword { get => newPassword; set { if (Set(ref newPassword, value ?? string.Empty)) Raise(nameof(CanRecoverWithCode)); } }
+    public string ConfirmPassword { get => confirmPassword; set { if (Set(ref confirmPassword, value ?? string.Empty)) Raise(nameof(CanRecoverWithCode)); } }
+    public bool CanRecoverWithCode => RecoveryOpen && !Busy && !string.IsNullOrWhiteSpace(UserName)
+        && !string.IsNullOrWhiteSpace(RecoveryCode) && NewPassword.Length > 0 && ConfirmPassword.Length > 0;
+    public AsyncCommand RecoverWithCode { get; }
     public AsyncCommand RecoverWithBiometrics { get; }
+
+    private async Task RecoverWithCodeAsync()
+    {
+        if (Busy || !RecoveryOpen) return;
+        if (string.IsNullOrWhiteSpace(UserName)) { Error = "Choisissez le compte à restaurer."; return; }
+        if (string.IsNullOrWhiteSpace(RecoveryCode)) { Error = "Saisissez le code de secours du serveur."; return; }
+        if (AccessCode.Problem(NewPassword) is { } problem) { Error = problem; return; }
+        if (NewPassword != ConfirmPassword) { Error = "Les deux mots de passe ne correspondent pas."; return; }
+        Busy = true;
+        Error = null;
+        try
+        {
+            await api.SendAsync(HttpMethod.Post, "api/session/recuperation", new
+            {
+                userName = UserName.Trim(), recoveryCode = RecoveryCode.Trim(),
+                newPassword = NewPassword, confirmation = ConfirmPassword
+            });
+            try
+            {
+                var store = api.Offline ?? new OfflineStore(api.Server);
+                store.ForgetCredential();
+                store.RememberAccount(UserName);
+            }
+            catch (Exception ex) when (ex is System.IO.IOException or UnauthorizedAccessException) { }
+            RecoveryCode = string.Empty;
+            NewPassword = string.Empty;
+            ConfirmPassword = string.Empty;
+            Password = string.Empty;
+            RecoveryOpen = false;
+            Notice = "Mot de passe restauré. Connectez-vous avec le nouveau mot de passe. Le code de secours du serveur a été renouvelé.";
+        }
+        catch (ApiException ex) { Error = ex.Status is 401 or 429
+            ? "Code de secours non reconnu ou nombre de tentatives dépassé." : ex.Message; }
+        catch (Exception ex) when (ex is OfflineException or HttpRequestException or TaskCanceledException)
+        { Error = "Le serveur doit être accessible pour restaurer le mot de passe."; }
+        finally { Busy = false; }
+    }
 
     private async Task RecoverWithBiometricsAsync()
     {
@@ -249,7 +295,7 @@ public sealed class LoginViewModel : Observable
     /// <summary>Nom de l'établissement, connu dès le démarrage du serveur : il titre l'écran de connexion.</summary>
     public string SchoolName { get => schoolName; set { if (Set(ref schoolName, value)) { Raise(nameof(TitleText)); } } }
     public string TitleText => string.IsNullOrWhiteSpace(schoolName) ? "SCOLIA" : schoolName;
-    public bool Busy { get => busy; set { if (Set(ref busy, value)) { Raise(nameof(NotBusy)); Raise(nameof(CanType)); Raise(nameof(CanSubmitCredentials)); } } }
+    public bool Busy { get => busy; set { if (Set(ref busy, value)) { Raise(nameof(NotBusy)); Raise(nameof(CanType)); Raise(nameof(CanSubmitCredentials)); Raise(nameof(CanRecoverWithCode)); } } }
     public bool NotBusy => !busy;
 
     private bool showPassword;
@@ -405,6 +451,7 @@ public sealed class LoginViewModel : Observable
         Password = string.Empty;
         Error = null;
         RecoveryOpen = false;
+        RecoveryCode = string.Empty;
         NewPassword = string.Empty;
         ConfirmPassword = string.Empty;
         ShowPassword = false;
