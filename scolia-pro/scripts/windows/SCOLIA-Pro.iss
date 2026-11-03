@@ -37,7 +37,6 @@ PrivilegesRequired=lowest
 ArchitecturesAllowed=x64compatible
 MinVersion=10.0
 WizardStyle=modern
-WizardResizable=yes
 WizardSizePercent=110
 SetupIconFile=..\..\src\Scolia.Api\scolia.ico
 UninstallDisplayIcon={app}\SCOLIA.exe
