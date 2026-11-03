@@ -54,9 +54,8 @@ public class TailscalePackagesTests
     [InlineData("Stopped", false)]
     public void Windows_distingue_un_vpn_actif_d_une_installation_non_connectee(string state, bool expected)
     {
-        var json = $"""
-            {"BackendState":"{{state}}","Self":{"TailscaleIPs":["fd7a:115c:a1e0::a","100.110.44.55"]}}
-            """;
+        var json = "{\"BackendState\":\"" + state +
+            "\",\"Self\":{\"TailscaleIPs\":[\"fd7a:115c:a1e0::a\",\"100.110.44.55\"]}}";
         var result = TailscaleCompanion.ParseWindowsStatus(json);
         Assert.Equal(expected, result.LikelyConnected);
         Assert.Equal("100.110.44.55", result.CandidateIp);
