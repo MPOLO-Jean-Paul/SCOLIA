@@ -1,3 +1,4 @@
+using System.Text.Json;
 using System.ComponentModel;
 using System.Diagnostics;
 
@@ -37,6 +38,59 @@ public static class TailscaleCompanion
         if (Platform.IsTailscaleInstalled is { } check) return check();
         return FindWindowsExecutable("tailscale-ipn.exe") is not null
             || FindWindowsExecutable("tailscale.exe") is not null;
+    }
+
+    /// <summary>
+    /// Windows n'expose pas son état VPN par l'API Android. Interroge la CLI officielle
+    /// sans modifier la configuration : cela permet d'afficher l'IP 100.x et d'éviter
+    /// « Configurer » en boucle lorsque la connexion est déjà active.
+    /// </summary>
+    public static TailnetSnapshot? ReadWindowsTailnetState()
+    {
+        if (!OperatingSystem.IsWindows()) return null;
+        var cli = FindWindowsExecutable("tailscale.exe");
+        if (cli is null) return new TailnetSnapshot(IsInstalled(), null, null);
+        try
+        {
+            var info = new ProcessStartInfo(cli)
+            {
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                CreateNoWindow = true
+            };
+            info.ArgumentList.Add("status");
+            info.ArgumentList.Add("--json");
+            using var process = Process.Start(info);
+            if (process is null) return new TailnetSnapshot(true, null, null);
+            var output = process.StandardOutput.ReadToEndAsync();
+            if (!process.WaitForExit(2000))
+            {
+                try { process.Kill(entireProcessTree: true); } catch (InvalidOperationException) { }
+                return new TailnetSnapshot(true, null, null);
+            }
+            if (process.ExitCode != 0) return new TailnetSnapshot(true, false, null);
+            using var document = JsonDocument.Parse(output.GetAwaiter().GetResult());
+            var root = document.RootElement;
+            var running = root.TryGetProperty("BackendState", out var state)
+                && state.GetString() == "Running";
+            string? ip = null;
+            if (root.TryGetProperty("Self", out var self)
+                && self.ValueKind == JsonValueKind.Object
+                && self.TryGetProperty("TailscaleIPs", out var addresses)
+                && addresses.ValueKind == JsonValueKind.Array)
+            {
+                ip = addresses.EnumerateArray()
+                    .Where(x => x.ValueKind == JsonValueKind.String)
+                    .Select(x => x.GetString())
+                    .FirstOrDefault(TailnetSnapshot.IsCandidateTailscaleIp);
+            }
+            return new TailnetSnapshot(true, running, ip);
+        }
+        catch (Exception ex) when (ex is Win32Exception or IOException or UnauthorizedAccessException
+            or InvalidOperationException or JsonException)
+        {
+            return new TailnetSnapshot(true, null, null);
+        }
     }
 
     public static string OpenInstallPage()
