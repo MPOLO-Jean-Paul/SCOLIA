@@ -93,7 +93,7 @@ public static class DesktopAppUpdates
                 "Installer")) return;
             using var started = Process.Start(new ProcessStartInfo(setup) { UseShellExecute = true })
                 ?? throw new Win32Exception("Windows n'a pas ouvert l'assistant d'installation.");
-            if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+            if (Avalonia.Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
                 desktop.Shutdown();
         }
         catch (Exception ex) when (ex is HttpRequestException or IOException or UnauthorizedAccessException
