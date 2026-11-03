@@ -90,6 +90,55 @@ public static class ScoliaEndpoints
             return Results.Ok(await SessionFactory.DescribeAsync(db, user, ct));
         }).RequireAuthorization();
 
+        // ---------- Invitation d'un appareil : preuve à usage unique, pas le mot de passe du serveur ----------
+        api.MapPost("/jumelage/inviter", async Task<IResult> (HttpContext http, ICurrentUser current,
+            ScoliaDbContext db, DevicePairingRegistry registry, CancellationToken ct) =>
+        {
+            // Seul le responsable présent sur le serveur peut générer une invitation donnant accès à son compte.
+            if (!IPAddress.IsLoopback(http.Connection.RemoteIpAddress ?? IPAddress.None)) return Results.Forbid();
+            var owner = await db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == current.Id && u.IsActive, ct);
+            if (owner is null) return Results.Unauthorized();
+            var invitation = registry.Invite(owner.Id, owner.SecurityStamp);
+            return Results.Ok(new PairingInvitation(invitation.Token, invitation.ExpiresUtc));
+        }).RequireAuthorization(Permissions.UsersManage).RequireRateLimiting("connexion");
+
+        api.MapPost("/jumelage/accepter", async Task<IResult> (PairingAccept request, HttpContext http,
+            DevicePairingRegistry registry, ScoliaDbContext db, CancellationToken ct) =>
+        {
+            if (request.DeviceId != LiveHeaders.DeviceId(http)) return Results.Unauthorized();
+            var accepted = registry.Redeem(request.InvitationToken, request.DeviceId, request.DeviceName);
+            if (accepted is null) return Results.Unauthorized();
+            var a = accepted.Value;
+            var account = await db.Users.AsNoTracking().FirstOrDefaultAsync(
+                u => u.Id == a.Owner && u.IsActive && u.SecurityStamp == a.Stamp, ct);
+            if (account is null) { registry.Revoke(a.GrantId, a.Owner); return Results.Unauthorized(); }
+            await SessionFactory.SignInDeviceAsync(http, account, a.GrantId, request.DeviceId);
+            return Results.Ok(new PairingAccepted(await SessionFactory.DescribeAsync(db, account, ct),
+                a.GrantId, a.Secret, a.ExpiresUtc));
+        }).RequireRateLimiting("connexion");
+
+        api.MapPost("/session/appareil", async Task<IResult> (DeviceLoginRequest request, HttpContext http,
+            DevicePairingRegistry registry, ScoliaDbContext db, CancellationToken ct) =>
+        {
+            if (request.DeviceId != LiveHeaders.DeviceId(http)) return Results.Unauthorized();
+            var granted = registry.Authorize(request.GrantId, request.DeviceId, request.Secret);
+            if (granted is null) return Results.Unauthorized();
+            var a = granted.Value;
+            var account = await db.Users.AsNoTracking().FirstOrDefaultAsync(
+                u => u.Id == a.Owner && u.IsActive && u.SecurityStamp == a.Stamp, ct);
+            if (account is null) return Results.Unauthorized();
+            await SessionFactory.SignInDeviceAsync(http, account, request.GrantId, request.DeviceId);
+            return Results.Ok(await SessionFactory.DescribeAsync(db, account, ct));
+        }).RequireRateLimiting("connexion");
+
+        api.MapGet("/jumelage/appareils", (ICurrentUser current, DevicePairingRegistry registry) =>
+            Results.Ok(registry.List(current.Id!.Value))).RequireAuthorization(Permissions.UsersManage);
+
+        api.MapPost("/jumelage/appareils/{grantId:guid}/revoquer", (Guid grantId,
+            ICurrentUser current, DevicePairingRegistry registry) =>
+            registry.Revoke(grantId, current.Id!.Value) ? Results.NoContent() : Results.NotFound())
+            .RequireAuthorization(Permissions.UsersManage);
+
         // ---------- Vérification publique des reçus (QR code) ----------
         api.MapGet("/verifier/{code}", (string code, PaymentService payments, CancellationToken ct) => payments.VerifyAsync(code, ct)).RequireRateLimiting("connexion");
 
