@@ -221,18 +221,18 @@
 
           <!-- Consentement explicite lors de la première connexion par mot de passe. -->
           <CheckBox Classes="onbrand" Content="{Binding EnrollmentText}"
-                    IsVisible="{Binding CanOfferEnrollment}" IsChecked="{Binding EnableBiometricsAfterLogin}"
+                    IsVisible="{Binding ShowBiometricEnrollment}" IsChecked="{Binding EnableBiometricsAfterLogin}"
                     IsEnabled="{Binding CanType}" FontSize="13" />
-          <TextBlock IsVisible="{Binding CanOfferEnrollment}" Text="{Binding EnrollmentHint}" Foreground="#D9FFFFFF" FontSize="11" TextWrapping="Wrap" />
+          <TextBlock IsVisible="{Binding ShowBiometricEnrollment}" Text="{Binding EnrollmentHint}" Foreground="#D9FFFFFF" FontSize="11" TextWrapping="Wrap" />
 
-          <Button Classes="glass" Command="{Binding SignInWithBiometrics}" IsVisible="{Binding CanUseBiometricSignIn}" IsEnabled="{Binding CanType}"
+          <Button Classes="glass" Command="{Binding SignInWithBiometrics}" IsVisible="{Binding ShowBiometricSignIn}" IsEnabled="{Binding CanType}"
                   HorizontalAlignment="Stretch" MinHeight="44">
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="8">
               <mi:MaterialIcon Kind="Fingerprint" Width="21" Height="21" />
               <TextBlock Text="{Binding BiometricLabel}" VerticalAlignment="Center" TextWrapping="Wrap" />
             </StackPanel>
           </Button>
-          <Button Classes="glasslink" Command="{Binding DisableBiometrics}" IsVisible="{Binding HasBiometricAccount}">
+          <Button Classes="glasslink" Command="{Binding DisableBiometrics}" IsVisible="{Binding ShowRemoveBiometric}">
             <TextBlock Text="Retirer l'empreinte de cet appareil" TextWrapping="Wrap" TextAlignment="Center" />
           </Button>
 
