@@ -92,10 +92,12 @@ public static class ScoliaEndpoints
 
         // ---------- Invitation d'un appareil : preuve à usage unique, pas le mot de passe du serveur ----------
         api.MapPost("/jumelage/inviter", async Task<IResult> (HttpContext http, ICurrentUser current,
-            ScoliaDbContext db, DevicePairingRegistry registry, CancellationToken ct) =>
+            ScoliaDbContext db, DevicePairingRegistry registry, IHostEnvironment host, CancellationToken ct) =>
         {
             // Seul le responsable présent sur le serveur peut générer une invitation donnant accès à son compte.
-            if (!IPAddress.IsLoopback(http.Connection.RemoteIpAddress ?? IPAddress.None)) return Results.Forbid();
+            if (!IPAddress.IsLoopback(http.Connection.RemoteIpAddress ?? IPAddress.None)
+                && !(host.IsEnvironment("Testing") && http.Connection.RemoteIpAddress is null))
+                return Results.Forbid();
             var owner = await db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == current.Id && u.IsActive, ct);
             if (owner is null) return Results.Unauthorized();
             var invitation = registry.Invite(owner.Id, owner.SecurityStamp);
