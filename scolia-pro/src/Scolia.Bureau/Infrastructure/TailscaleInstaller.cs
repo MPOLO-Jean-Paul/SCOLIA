@@ -41,7 +41,13 @@ public sealed class TailscaleInstaller : Observable, IDisposable
         Verify = new RelayCommand(() => { CheckInstallation(); });
         Close = new RelayCommand(() => IsOpen = false);
         OpenStore = new RelayCommand(LaunchStore);
-        Configure = new RelayCommand(() => Status = TailscaleCompanion.Open());
+        Configure = new RelayCommand(() =>
+        {
+            if (Busy) return;
+            Step = $"Étape 4 sur {Steps} · Connexion Tailscale";
+            StepProgress = 3;
+            Status = TailscaleCompanion.Open();
+        });
         DownloadAndInstall = new AsyncCommand(DownloadAndInstallAsync);
         CancelDownload = new RelayCommand(() => cancel?.Cancel());
         CopyAddress = new AsyncCommand(CopyAddressAsync);
@@ -121,7 +127,7 @@ public sealed class TailscaleInstaller : Observable, IDisposable
 
     public void Refresh()
     {
-        snapshot = Platform.ReadTailnetState?.Invoke();
+        snapshot = Platform.ReadTailnetState?.Invoke() ?? TailscaleCompanion.ReadWindowsTailnetState();
         if (snapshot is { } state)
         {
             IsInstalled = state.Installed;
@@ -198,7 +204,7 @@ public sealed class TailscaleInstaller : Observable, IDisposable
             Status = "Sur iPhone, Tailscale s'installe depuis l'App Store. Touchez « Ouvrir l'App Store », installez-le, connectez-vous, puis revenez dans SCOLIA.";
             return false;
         }
-        snapshot = Platform.ReadTailnetState?.Invoke();
+        snapshot = Platform.ReadTailnetState?.Invoke() ?? TailscaleCompanion.ReadWindowsTailnetState();
         var found = snapshot?.Installed ?? TailscaleCompanion.IsInstalled();
         IsInstalled = found;
         if (snapshot is { } state) NetworkSummary = state.Summary;
@@ -216,7 +222,9 @@ public sealed class TailscaleInstaller : Observable, IDisposable
         {
             Step = $"Étape 4 sur {Steps} · Configuration";
             StepProgress = 3;
-            Status = "Tailscale est installé. Touchez « Configurer Tailscale » : connectez-vous à votre compte et acceptez le VPN, puis revenez ici. SCOLIA détecte la suite seul.";
+            Status = OperatingSystem.IsWindows()
+                ? "Tailscale est installé. Cliquez sur « Configurer Tailscale » : une fenêtre de connexion et votre navigateur doivent s'ouvrir. Si Tailscale ne s'affiche qu'à côté de l'horloge, utilisez son icône et choisissez « Log in ». Revenez ensuite vérifier l'adresse privée."
+                : "Tailscale est installé. Touchez « Configurer Tailscale » : connectez-vous à votre compte et acceptez le VPN, puis revenez ici. SCOLIA détecte la suite seul.";
         }
         else
         {
