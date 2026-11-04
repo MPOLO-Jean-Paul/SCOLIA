@@ -172,7 +172,7 @@
         <!-- Présence : les autres postes connectés ; le point vert bat quand l'un d'eux enregistre quelque chose -->
         <Button Grid.Column="2" Classes="phoneicon" Command="{Binding NetworkCommand}" ToolTip.Tip="Réseau et activité">
           <Panel>
-            <mi:MaterialIcon Kind="CloudOffOutline" Foreground="{DynamicResource ToneOrange}" IsVisible="{Binding Sync.Offline}" />
+            <Ellipse Width="10" Height="10" Fill="{DynamicResource ToneOrange}" IsVisible="{Binding Sync.Offline}" HorizontalAlignment="Center" VerticalAlignment="Center" />
             <Panel IsVisible="{Binding Sync.Online}">
               <mi:MaterialIcon Kind="AccountMultipleOutline" />
               <Border Classes="livedot" Classes.pulse="{Binding Sync.Pulse}" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-2,-4,0" />
