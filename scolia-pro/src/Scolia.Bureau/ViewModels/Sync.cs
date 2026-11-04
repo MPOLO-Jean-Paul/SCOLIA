@@ -353,7 +353,7 @@ public sealed class SyncCenter : Observable, IDisposable
         }
         finally
         {
-            if (networkDialog is not null && shell.Dialog is null) shell.Dialog = networkDialog;
+            if (networkDialog is not null && shell.Dialog is null) shell.ShowNetwork();
         }
 
         if (!confirmed) return;
