@@ -62,7 +62,9 @@ public static class MobilePlatform
         // et de l'API. Une notification seule ne prouve pas que les clients peuvent
         // se connecter : les deux états sont présentés séparément.
         Platform.IsHostForegroundActive = () => Server.ServeurScolia.IsActive;
-        Platform.IsHostApiServing = () => Server.PhoneServer.Get(app).IsServing;
+        Platform.IsHostApiServing = () => Server.PhoneServer.Get(app).IsServingVerified;
+        Platform.HostNetworkDiagnostic = () => Server.PhoneServer.Get(app).LastDiagnostic;
+        Platform.CheckHostNetworkAsync = () => Server.PhoneServer.Get(app).VerifyAndRecoverInBackgroundAsync();
         Platform.EnsureHostAvailable = () => Server.PhoneServer.Get(app).EnsureServingOnResume();
         // Téléphone serveur : écran éteint, il doit rester joignable. Android ne doit pas le freiner pour la batterie.
         Platform.BackgroundAllowed = () => AndroidBackground.IsAllowed(context ?? app);
