@@ -40,6 +40,8 @@ public sealed class PosteViewModel : Observable
             // laisser le temps à l'API de démarrer, puis relire les deux états.
             for (var i = 0; i < 8 && !(HostForegroundActive && HostApiServing); i++)
                 await Task.Delay(400);
+            if (Platform.CheckHostNetworkAsync is { } verify)
+                await verify();
             Refresh();
         });
         OpenAppSettings = new RelayCommand(() => Platform.OpenAppSettings?.Invoke());
@@ -86,20 +88,21 @@ public sealed class PosteViewModel : Observable
     public bool BackgroundBlocked => !BackgroundOk;
     public bool HostForegroundActive => Platform.IsHostForegroundActive?.Invoke() == true;
     public bool HostApiServing => Platform.IsHostApiServing?.Invoke() == true;
+    public string BackgroundDiagnostic => Platform.HostNetworkDiagnostic?.Invoke() ?? "Diagnostic réseau indisponible.";
     public bool BackgroundHealthy => BackgroundOk && HostForegroundActive && HostApiServing;
     public bool BackgroundNeedsAttention => !BackgroundHealthy;
     public string BackgroundTitle => !HostForegroundActive
         ? "Le service serveur doit être réactivé"
         : !HostApiServing ? "Démarrage du serveur scolaire…"
         : !BackgroundOk ? "Serveur actif · autorisation batterie nécessaire"
-        : "Serveur actif en arrière-plan";
+        : "API locale active · liaison aux ordinateurs à confirmer";
     public string BackgroundLine => !HostForegroundActive
         ? "Le service Android n'est pas au premier plan. Touchez « Vérifier le serveur » pendant que SCOLIA est ouvert pour demander sa réactivation."
         : !HostApiServing
             ? "La notification serveur est présente, mais l'API scolaire n'écoute pas encore. Vérifiez le serveur ; ses données seront conservées."
         : !BackgroundOk
             ? "L'API scolaire fonctionne, mais Android peut la suspendre en veille. Autorisez l'arrière-plan pour SCOLIA et, à distance, pour Tailscale."
-        : "L'API scolaire écoute indépendamment de l'écran SCOLIA. Les autres appareils restent joignables si le réseau et Tailscale restent actifs ; l'arrêt forcé et les restrictions du fabricant peuvent interrompre le service.";
+        : "Le service du téléphone fonctionne, mais seul un essai depuis un ordinateur confirme l'accès distant. Si la connexion PC échoue après réduction de SCOLIA, vérifiez l'adresse IP, le Wi-Fi et Tailscale.";
     public string BackgroundHint => Platform.BackgroundHint;
     public bool HasBackgroundHint => ShowBackground && BackgroundHint.Length > 0;
 
@@ -178,7 +181,7 @@ public sealed class PosteViewModel : Observable
                      nameof(IsPhoneServer), nameof(IsPhoneClient), nameof(CanBecomeServer), nameof(ShowBackground), nameof(BackgroundOk),
                      nameof(BackgroundBlocked), nameof(HostForegroundActive), nameof(HostApiServing),
                      nameof(BackgroundHealthy), nameof(BackgroundNeedsAttention),
-                     nameof(BackgroundTitle), nameof(BackgroundLine), nameof(HasBackgroundHint), nameof(ShowAwake), nameof(AwakeLine) })
+                     nameof(BackgroundTitle), nameof(BackgroundLine), nameof(BackgroundDiagnostic), nameof(HasBackgroundHint), nameof(ShowAwake), nameof(AwakeLine) })
             Raise(name);
     }
 

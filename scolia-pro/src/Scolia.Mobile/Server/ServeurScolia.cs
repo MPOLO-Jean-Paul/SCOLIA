@@ -12,15 +12,50 @@ namespace Scolia.Mobile.Server;
 /// ou application quittée, et la notification rappelle que les autres postes en dépendent. Le Wi-Fi reste éveillé
 /// et reçoit les recherches des autres postes.
 /// </summary>
-[Service(Name = "com.jpservices.scolia.ServeurScolia", Exported = false, ForegroundServiceType = ForegroundService.TypeSpecialUse)]
-[MetaData("android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE",
-    Value = "Local school records server voluntarily enabled by the user, with visible notification for authorized devices")]
+// Le serveur maintient volontairement une connexion réseau vers des appareils
+// autorisés : connectedDevice est le type Android prévu pour cette activité.
+[Service(Name = "com.jpservices.scolia.ServeurScolia", Exported = false, ForegroundServiceType = ForegroundService.TypeConnectedDevice)]
 public sealed class ServeurScolia : Service
 {
     private const string Channel = "serveur";
     private const int NotificationId = 5080;
 
     private static int active;
+    private static WeakReference<ServeurScolia>? activeInstance;
+    private string currentStatus = "Démarrage de l'API scolaire…";
+
+    /// <summary>
+    /// L'état affiché correspond au diagnostic réel, pas à la seule présence du service.
+    /// </summary>
+    internal static void UpdateServerNotification(string status)
+    {
+        if (activeInstance?.TryGetTarget(out var service) != true || !IsActive) return;
+        if (string.Equals(service.currentStatus, status, StringComparison.Ordinal)) return;
+        service.currentStatus = status;
+        try
+        {
+            if (service.GetSystemService(NotificationService) is NotificationManager manager)
+                manager.Notify(NotificationId, service.BuildNotification());
+        }
+        catch (Java.Lang.Exception ex)
+        { Android.Util.Log.Warn("SCOLIA-Serveur", $"Actualisation notification : {ex.GetType().Name}"); }
+    }
+
+    /// <summary>
+    /// Le passage vers l'écran d'accueil Android déclenche un vrai test réseau
+    /// après que l'activité est passée en arrière-plan, sans arrêter l'hébergement.
+    /// </summary>
+    internal static void CheckAfterInterfacePaused()
+    {
+        if (activeInstance?.TryGetTarget(out var service) == true)
+            _ = service.VerifyAfterPauseAsync();
+    }
+
+    private async Task VerifyAfterPauseAsync()
+    {
+        await Task.Delay(TimeSpan.FromSeconds(2));
+        if (IsActive) await VerifyServerAsync();
+    }
     /// <summary>Le service a effectivement été promu au premier plan Android.</summary>
     public static bool IsActive => System.Threading.Volatile.Read(ref active) != 0;
 
@@ -59,7 +94,7 @@ public sealed class ServeurScolia : Service
         var notification = BuildNotification();
         try
         {
-            if (OperatingSystem.IsAndroidVersionAtLeast(34)) StartForeground(NotificationId, notification, ForegroundService.TypeSpecialUse);
+            if (OperatingSystem.IsAndroidVersionAtLeast(34)) StartForeground(NotificationId, notification, ForegroundService.TypeConnectedDevice);
             else StartForeground(NotificationId, notification);
         }
         catch (Exception ex) when (ex is Java.Lang.RuntimeException or Java.Lang.SecurityException or InvalidOperationException)
@@ -72,6 +107,7 @@ public sealed class ServeurScolia : Service
             return StartCommandResult.NotSticky;
         }
         System.Threading.Interlocked.Exchange(ref active, 1);
+        activeInstance = new WeakReference<ServeurScolia>(this);
         Hold();
         // Si Android recrée le service après une récupération mémoire, rétablir aussi
         // le serveur de données. Une notification seule ne rendrait pas SCOLIA accessible.
@@ -116,6 +152,8 @@ public sealed class ServeurScolia : Service
     public override void OnDestroy()
     {
         System.Threading.Interlocked.Exchange(ref active, 0);
+        if (activeInstance?.TryGetTarget(out var registered) == true && ReferenceEquals(registered, this))
+            activeInstance = null;
         serverWatchdog?.Dispose();
         serverWatchdog = null;
         if (connectivity is not null && networkObserver is not null)
@@ -132,9 +170,15 @@ public sealed class ServeurScolia : Service
 
     private async Task VerifyServerAsync()
     {
-        try { await PhoneServer.Get(ApplicationContext ?? this).VerifyAndRecoverInBackgroundAsync(); }
-        catch (Exception ex) when (ex is IOException or InvalidOperationException
-            or UnauthorizedAccessException or Java.Lang.Exception)
+        try
+        {
+            if (!IsActive) return;
+            // Android peut relâcher certaines ressources après de longues périodes
+            // de veille ; le service récupère celles que le système autorise encore.
+            Hold();
+            await PhoneServer.Get(ApplicationContext ?? this).VerifyAndRecoverInBackgroundAsync();
+        }
+        catch (Exception ex) when (ex is not OutOfMemoryException)
         { Android.Util.Log.Warn("SCOLIA", $"Contrôle d'hébergement différé : {ex.GetType().Name}"); }
     }
 
@@ -169,8 +213,8 @@ public sealed class ServeurScolia : Service
         var open = PackageManager?.GetLaunchIntentForPackage(PackageName ?? string.Empty);
         var tap = open is null ? null : PendingIntent.GetActivity(this, 0, open, PendingIntentFlags.Immutable | PendingIntentFlags.UpdateCurrent);
         var builder = OperatingSystem.IsAndroidVersionAtLeast(26) ? new Notification.Builder(this, Channel) : new Notification.Builder(this);
-        builder.SetContentTitle("SCOLIA · serveur actif")
-            .SetContentText("Le serveur SCOLIA partage les données locales. Gardez Tailscale connecté si vous travaillez à distance.")
+        builder.SetContentTitle("SCOLIA · serveur de l'établissement")
+            .SetContentText(currentStatus)
             .SetSmallIcon(Resource.Mipmap.icon)
             .SetOngoing(true);
         if (tap is not null) builder.SetContentIntent(tap);

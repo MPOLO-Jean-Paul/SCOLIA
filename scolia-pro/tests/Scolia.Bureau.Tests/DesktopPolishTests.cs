@@ -52,7 +52,9 @@ public sealed class DesktopPolishTests
             Platform.BackgroundAllowed = () => true;
             Assert.True(poste.BackgroundOk);
             Assert.True(poste.BackgroundHealthy);
-            Assert.Equal("Serveur actif en arrière-plan", poste.BackgroundTitle);
+            Assert.Equal("API locale active · liaison aux ordinateurs à confirmer", poste.BackgroundTitle);
+            Platform.HostNetworkDiagnostic = () => "API locale accessible ; test PC nécessaire.";
+            Assert.Contains("test PC", poste.BackgroundDiagnostic);
 
             // La présence de la notification ne suffit pas si l'API a échoué.
             Platform.IsHostApiServing = () => false;
@@ -66,6 +68,8 @@ public sealed class DesktopPolishTests
             Platform.BackgroundAllowed = null;
             Platform.IsHostForegroundActive = null;
             Platform.IsHostApiServing = null;
+            Platform.HostNetworkDiagnostic = null;
+            Platform.CheckHostNetworkAsync = null;
             Platform.EnsureHostAvailable = null;
             Platform.BackgroundHint = string.Empty;
         }
