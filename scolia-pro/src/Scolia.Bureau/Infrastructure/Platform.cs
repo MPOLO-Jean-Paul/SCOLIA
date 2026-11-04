@@ -125,6 +125,12 @@ public static class Platform
     /// <summary>Le serveur ASP.NET local écoute effectivement sur l'appareil.</summary>
     public static Func<bool>? IsHostApiServing { get; set; }
 
+    /// <summary>Résultat des tests de santé du téléphone serveur après minimisation, sans exposer de données scolaires.</summary>
+    public static Func<string>? HostNetworkDiagnostic { get; set; }
+
+    /// <summary>Relance un test de santé explicite, indépendant de la fenêtre.</summary>
+    public static Func<Task>? CheckHostNetworkAsync { get; set; }
+
     /// <summary>Répare l'hébergement sur demande depuis une interface visible, jamais depuis un client.</summary>
     public static Action? EnsureHostAvailable { get; set; }
 
