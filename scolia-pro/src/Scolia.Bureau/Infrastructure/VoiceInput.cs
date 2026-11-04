@@ -42,44 +42,65 @@ public sealed class VoiceCaptureSession
 {
     private CancellationTokenSource? active;
 
-    public bool IsListening => active is { IsCancellationRequested: false };
+    public bool IsListening => active is not null;
 
-    public async Task ToggleAsync(Action<string> accept, Action<bool>? listeningChanged = null)
+    /// <summary>
+    /// Le clic d'arrêt rend le bouton immédiatement réutilisable, sans attendre que
+    /// PowerShell termine la libération du microphone. Un ancien moteur en retard
+    /// ne peut jamais remplir la nouvelle recherche ni modifier son état.
+    /// </summary>
+    public Task ToggleAsync(Action<string> accept, Action<bool>? listeningChanged = null)
     {
-        if (active is { } previous)
+        if (active is not null)
         {
-            if (!previous.IsCancellationRequested)
-            {
-                previous.Cancel();
-                listeningChanged?.Invoke(false);
-            }
-            return;
+            Cancel(listeningChanged);
+            return Task.CompletedTask;
         }
-        if (!VoiceInput.Available) return;
+        if (!VoiceInput.Available) return Task.CompletedTask;
 
-        using var source = new CancellationTokenSource();
+        var source = new CancellationTokenSource();
         active = source;
         listeningChanged?.Invoke(true);
+        return CaptureAsync(source, accept, listeningChanged);
+    }
+
+    private async Task CaptureAsync(CancellationTokenSource source, Action<string> accept,
+        Action<bool>? listeningChanged)
+    {
         try
         {
             var text = await VoiceInput.ListenAsync(source.Token);
-            if (!source.IsCancellationRequested && text is not null) accept(text);
+            if (ReferenceEquals(active, source) && !source.IsCancellationRequested && text is not null)
+                accept(text);
         }
         finally
         {
+            // Si une autre écoute a démarré entre-temps, la précédente ne touche
+            // pas au micro, au tooltip ou au texte de la nouvelle session.
             if (ReferenceEquals(active, source))
             {
                 active = null;
                 listeningChanged?.Invoke(false);
             }
+            source.Dispose();
         }
     }
 
     public void Cancel(Action<bool>? listeningChanged = null)
     {
-        if (active is not { IsCancellationRequested: false } source) return;
-        source.Cancel();
+        var source = active;
+        if (source is null) return;
+        active = null;
         listeningChanged?.Invoke(false);
+        // L'arrêt du véritable processus Windows se fait hors du fil UI.
+        // Le champ est immédiatement libéré, même si le système met un instant à fermer le micro.
+        _ = CancelSourceAsync(source);
+    }
+
+    private static async Task CancelSourceAsync(CancellationTokenSource source)
+    {
+        try { await source.CancelAsync(); }
+        catch (ObjectDisposedException) { } // La dictée vient naturellement de se terminer.
     }
 }
 
@@ -120,6 +141,8 @@ public sealed class VoiceField : Avalonia.AvaloniaObject
             {
                 if (isListening) mic.Classes.Add("listening");
                 else mic.Classes.Remove("listening");
+                if (mic.Content is Material.Icons.Avalonia.MaterialIcon icon)
+                    icon.Kind = isListening ? Material.Icons.MaterialIconKind.Stop : Material.Icons.MaterialIconKind.Microphone;
                 Avalonia.Controls.ToolTip.SetTip(mic, isListening ? "Arrêter l'écoute" : "Dicter la recherche");
             });
             box.InnerRightContent = mic;
