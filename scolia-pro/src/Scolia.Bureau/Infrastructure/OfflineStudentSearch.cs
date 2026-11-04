@@ -61,6 +61,6 @@ public static class OfflineStudentSearch
             Math.Max(1, (int)Math.Ceiling(match.Count / (double)pageSize)));
         var part = match.Skip((safePage - 1) * pageSize).Take(pageSize).ToList();
         return new Result(new PagedResult<StudentListItem>(part, match.Count, safePage, pageSize, null),
-            items.Count, registered, registered > 0 && items.Count >= registered);
+            items.Count, registered, items.Count >= registered);
     }
 }
