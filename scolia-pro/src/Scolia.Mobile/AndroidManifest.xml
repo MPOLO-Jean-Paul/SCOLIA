@@ -21,7 +21,11 @@
   <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
   <!-- Installation de Tailscale téléchargé par SCOLIA : Android demande toujours l'accord de l'utilisateur. -->
   <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
-  <application android:label="SCOLIA" android:networkSecurityConfig="@xml/reseau" android:supportsRtl="false">
+  <!-- Donnees de mineurs et finances scolaires : pas de copie automatique vers un compte cloud ou un autre appareil.
+       La restauration doit passer par les sauvegardes SCOLIA verifiees et autorisees par l'etablissement. -->
+  <application android:label="SCOLIA" android:networkSecurityConfig="@xml/reseau" android:supportsRtl="false"
+               android:allowBackup="false" android:fullBackupContent="false"
+               android:dataExtractionRules="@xml/scolia_data_extraction">
     <!-- Les documents enregistrés s'ouvrent dans le lecteur PDF ou le tableur du téléphone. -->
     <provider android:name="androidx.core.content.FileProvider"
               android:authorities="com.jpservices.scolia.fichiers"
