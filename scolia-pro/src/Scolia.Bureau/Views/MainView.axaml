@@ -302,7 +302,7 @@
                 <mi:MaterialIcon Kind="Close" />
               </Button>
               <Button x:Name="HeaderFinderMic" Grid.Column="4" Classes="baricon mic" Classes.listening="{Binding HeaderFinder.Listening}"
-                      Command="{Binding HeaderFinder.Listen}" IsVisible="{Binding HeaderFinder.VoiceAvailable}" Click="OnHeaderFinderMic"
+                      Command="{Binding HeaderFinder.Listen}" IsVisible="{Binding HeaderFinder.VoiceAvailable}" Focusable="False"
                       ToolTip.Tip="{Binding HeaderFinder.VoiceTip}" Width="40" Height="40">
                 <Grid>
                   <mi:MaterialIcon Kind="Microphone" IsVisible="{Binding !HeaderFinder.Listening}" />
@@ -326,7 +326,7 @@
                 <mi:MaterialIcon Kind="Close" />
               </Button>
               <Button Grid.Column="3" Classes="baricon mic" Classes.listening="{Binding HeaderSearch.Listening}" Command="{Binding HeaderSearch.Listen}"
-                      IsVisible="{Binding HeaderSearch.VoiceAvailable}" ToolTip.Tip="{Binding HeaderSearch.VoiceTip}" Width="40" Height="40">
+                      IsVisible="{Binding HeaderSearch.VoiceAvailable}" Focusable="False" ToolTip.Tip="{Binding HeaderSearch.VoiceTip}" Width="40" Height="40">
                 <Grid>
                   <mi:MaterialIcon Kind="Microphone" IsVisible="{Binding !HeaderSearch.Listening}" />
                   <mi:MaterialIcon Kind="Stop" IsVisible="{Binding HeaderSearch.Listening}" />
