@@ -41,3 +41,15 @@ scolia-pro/**/*.sqlite-shm
 scolia-pro/**/*.sqlite-wal
 scolia-pro/**/idempotence/
 scolia-pro/**/cles/
+
+# Cles privees, sauvegardes sensibles et variables d'environnement
+*.keystore
+*.jks
+*.p12
+*.pfx
+*.pem
+*.sqlite3
+**/.env
+**/.env.*
+**/id_rsa
+**/id_ed25519

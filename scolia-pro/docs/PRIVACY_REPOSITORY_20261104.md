@@ -18,3 +18,12 @@ Le dossier `scolia-pro/SCOLIA/` contenait des caches JSON de l'application, avec
 - La communication HTTP en LAN doit etre migree vers un transport authentifie et chiffre avec distribution de confiance des certificats. Couper simplement HTTP dans Android casserait les installations existantes.
 - Une revue de confidentialite reste necessaire pour les logs, exports, rapports, sauvegardes et traces de synchronisation.
 - La disponibilite d'un telephone serveur sous Android Doze ne peut etre garantie sur tous les modeles.
+
+## Barriere automatique sur toutes les modifications (ajout du 4 novembre)
+
+Le script scolia-pro/scripts/audit-tracked-files.sh parcourt exclusivement les chemins actuellement suivis par Git et refuse les bases SQLite, les fichiers de cle privee et les repertoires de donnees/cache de l'etablissement. Son propre --self-test teste des chemins fictifs positifs et negatifs.
+
+- Le workflow rapide .github/workflows/scolia-repository-privacy.yml s'execute sur chaque push et chaque pull_request, meme lorsque seule une documentation ou un fichier de donnees change.
+- Le pipeline natif appelle egalement le meme controle pour ne pas autoriser une compilation avec des fichiers sensibles suivis.
+- Le filtre porte uniquement sur les noms et emplacements de fichiers, sans inspecter leur contenu ; un nom anodin contenant des informations privees peut encore passer. Il ne remplace pas la revue des captures d'ecran (issue #41).
+- gitignore ne retire pas les fichiers deja commits et ne nettoie pas l'historique Git. Les anciennes revisions sensibles doivent toujours etre traitees a part.

@@ -58,14 +58,11 @@ jobs:
       - uses: actions/setup-dotnet@v5
         with:
           global-json-file: scolia-pro/global.json
-      # Bloquer immédiatement le retour accidentel de caches contenant des dossiers scolaires.
-      - name: Interdire les donnees locales dans Git
+      - name: Bloquer les donnees de l'etablissement et les cles privees dans Git
         shell: bash
         run: |
-          if git ls-files -- SCOLIA/ | grep -q .; then
-            echo "::error::Les fichiers d'execution SCOLIA/ ne doivent pas se trouver dans Git."
-            exit 1
-          fi
+          bash scripts/audit-tracked-files.sh --self-test
+          bash scripts/audit-tracked-files.sh
       - name: Compiler le client Avalonia (vues partagees Windows Android iOS)
         run: dotnet build src/Scolia.Bureau/Scolia.Bureau.csproj -c Release
       - name: Tester les mises a jour Android (fin de telechargement, arriere-plan, erreurs)
