@@ -105,6 +105,20 @@ jobs:
           SCOLIA_ANDROID_KEYSTORE: ${{ secrets.SCOLIA_ANDROID_KEYSTORE }}
           SCOLIA_ANDROID_KEYSTORE_PASS: ${{ secrets.SCOLIA_ANDROID_KEYSTORE_PASS }}
         run: bash scripts/cle-android.sh ~/.scolia-signature
+      - name: Refuser une signature différente de l'APK officiel 1.2.9
+        shell: bash
+        run: |
+          set -euo pipefail
+          attendu="E5:B5:F7:FA:41:54:11:EE:AC:4B:F7:34:84:90:24:FF:CF:7F:93:50:0C:60:13:83:99:31:B0:20:38:F5:89:80"
+          if [ "$GITHUB_REF" = "refs/heads/release/direct-apk-scolia-pro-20261103" ]; then
+            if [ "$SCOLIA_SIGNATURE_EMPREINTE" != "$attendu" ]; then
+              echo "::error::Clé de signature différente de la 1.2.9 : installation par-dessus impossible. Ne pas publier." >&2
+              exit 1
+            fi
+            echo "Certificat de la 1.2.9 confirmé : mise à jour Android compatible."
+          else
+            echo "Branche de validation : la vérification du certificat sera obligatoire sur la branche officielle."
+          fi
       - name: Garder la clé pour les compilations suivantes
         if: steps.cle-cache.outputs.cache-hit != 'true' && github.event_name != 'pull_request'
         uses: actions/cache/save@v4

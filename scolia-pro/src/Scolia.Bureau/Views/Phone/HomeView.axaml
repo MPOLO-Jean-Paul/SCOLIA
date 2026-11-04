@@ -99,7 +99,7 @@
     <!-- Actions rapides -->
     <ItemsControl ItemsSource="{Binding PhoneTools}">
       <ItemsControl.ItemsPanel>
-        <ItemsPanelTemplate><UniformGrid Columns="4" /></ItemsPanelTemplate>
+        <ItemsPanelTemplate><UniformGrid Columns="4" infra:Adaptive.MinItemWidth="78" /></ItemsPanelTemplate>
       </ItemsControl.ItemsPanel>
       <ItemsControl.ItemTemplate>
         <DataTemplate>

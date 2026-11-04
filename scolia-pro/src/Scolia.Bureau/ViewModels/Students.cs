@@ -195,7 +195,7 @@ public sealed record EnrollmentRow(string Year, string Promotion, string Enrolle
 public sealed record AccountRow(string Label, string DueDate, string Amount, string Covered, string Paid, string Remaining, string Status, IBrush StatusBrush);
 
 /// <summary>Prise en charge affichée sur la fiche.</summary>
-public sealed record SponsorshipRow(Guid Id, string Sponsor, string Reason, string Since, string Covered, string Status, bool Active);
+public sealed record SponsorshipRow(Guid Id, string Sponsor, string Reason, string Since, string Covered, string Status, bool Active, string Type = "Historique");
 
 /// <summary>Fiche d'un apprenant : identité, inscriptions, compte, reçus et prises en charge.</summary>
 public sealed class StudentDetailPage : PageViewModel
@@ -217,7 +217,7 @@ public sealed class StudentDetailPage : PageViewModel
         if (Shell.Can(Perm.PaymentsRead)) Action("Relevé de compte", MaterialIconKind.FileDocument, StatementAsync);
         if (Shell.Can(Perm.StudentsWrite)) Action("Changer le statut", MaterialIconKind.AccountSwitch, ChangeStatusAsync);
         if (Shell.Can(Perm.StudentsWrite)) Action("Changer de promotion", MaterialIconKind.SwapHorizontal, ChangePromotionAsync);
-        if (Shell.Can(Perm.PaymentsCreate)) Action("Prise en charge", MaterialIconKind.ShieldAccount, NewSponsorshipAsync);
+        if (Shell.Can(Perm.StudentsWrite)) Action("Prise en charge", MaterialIconKind.ShieldAccount, NewSponsorshipAsync);
         if (Shell.Can(Perm.PaymentsRead)) Action("Relancer par WhatsApp", MaterialIconKind.Whatsapp, RemindAsync);
         if (StudentsPage.CanDelete(Shell)) Action("Supprimer le dossier", MaterialIconKind.Delete, DeleteAsync, danger: true);
         ActionRefresh();
@@ -313,7 +313,7 @@ public sealed class StudentDetailPage : PageViewModel
         var sponsorships = await Shell.Api.GetAsync<List<SponsorshipDto>>($"api/inscriptions/{enrollment.Id}/prises-en-charge");
         foreach (var s in sponsorships)
             Sponsorships.Add(new SponsorshipRow(s.Id, s.SponsorName, s.Reason, Format.Date(s.EffectiveFrom), Money(s.CoveredTotal),
-                s.IsActive ? "Active" : "Terminée", s.IsActive));
+                s.IsActive ? "Active" : "Terminée", s.IsActive, s.Type));
     }
 
     public override async Task PrintAsync() => await StatementAsync();
@@ -377,25 +377,71 @@ public sealed class StudentDetailPage : PageViewModel
             Shell.Notify("Cette promotion n'a pas de frais à prendre en charge.");
             return;
         }
-        var fees = promotion.Fees.ToList();
-        var form = new FormViewModel("Nouvelle prise en charge", "Pourcentage couvert pour chaque frais, de 0 à 100.", f =>
+        var months = promotion.Fees.Where(fee =>
+                fee.Kind.Equals("Mensualite", StringComparison.OrdinalIgnoreCase))
+            .OrderBy(fee => fee.DueDate).ThenBy(fee => fee.Order).ToList();
+        var options = new List<ChoiceItem> { new("Complete", "Complète — tous les frais et tous les mois") };
+        if (months.Count > 0)
+            options.Add(new("PartielleMensuelle", "Partielle — montant à préciser pour chaque mois"));
+
+        var form = new FormViewModel("Nouvelle prise en charge",
+            "La couverture complète couvre tous les frais sans saisie mensuelle. En partielle, indiquez les montants des mois concernés.", f =>
         {
-            var lines = fees
-                .Select(fee => new { feeItemId = fee.Id, percent = f.Amount($"fee-{fee.Id}") })
-                .Where(l => l.percent > 0)
-                .ToList();
-            if (lines.Count == 0)
+            var type = f.ChoiceValue("type");
+            if (type is not ("Complete" or "PartielleMensuelle"))
             {
-                f.Find($"fee-{fees[0].Id}").Error = "Indiquez au moins un pourcentage.";
+                f.Find("type").Error = "Choisissez le type de prise en charge.";
                 return Task.FromResult(false);
             }
+            var lines = new List<object>();
+            if (type == "PartielleMensuelle")
+            {
+                var amounts = months.Select(month =>
+                    (Month: month, Amount: f.Amount($"fee-{month.Id}"))).ToList();
+                foreach (var (month, amount) in amounts)
+                {
+                    if (amount < 0 || amount > month.Amount)
+                    {
+                        f.Find($"fee-{month.Id}").Error =
+                            $"Le montant doit être compris entre 0 et {Money(month.Amount)}.";
+                        return Task.FromResult(false);
+                    }
+                }
+                var selected = amounts.Where(x => x.Amount > 0).ToList();
+                if (selected.Count == 0)
+                {
+                    f.Find($"fee-{months[0].Id}").Error =
+                        "Indiquez le montant pris en charge pour au moins un mois.";
+                    return Task.FromResult(false);
+                }
+                lines.AddRange(selected.Select(x => (object)new { feeItemId = x.Month.Id, amount = x.Amount }));
+            }
             return SaveAsync(HttpMethod.Post, $"api/inscriptions/{enrollment.Id}/prises-en-charge",
-                new { sponsorName = f.Text("sponsor"), reason = f.Text("motif"), effectiveFrom = f.Day("date"), lines }, "Prise en charge enregistrée.");
+                new { sponsorName = f.Text("sponsor"), reason = f.Text("motif"),
+                    effectiveFrom = f.Day("date"), type, lines },
+                "Prise en charge enregistrée.");
         });
+        form.AddChoice("type", "Type de prise en charge", options, required: false);
         form.Add("sponsor", "Garant ou organisme", required: true);
         form.Add("motif", "Motif", required: true);
         form.AddDay("date", "Date d'effet", DateOnly.FromDateTime(DateTime.Today), required: true);
-        foreach (var fee in fees) form.Add($"fee-{fee.Id}", $"{fee.Label} (%)", FieldKind.Amount, "0");
+
+        // Ne demander ni montant ni pourcentage quand l'utilisateur choisit Complète.
+        // En partielle, chaque mois a son propre montant ; les mois à 0 restent à charge.
+        form.Changed = field =>
+        {
+            if (field.Key != "type") return;
+            var partial = form.ChoiceValue("type") == "PartielleMensuelle";
+            foreach (var extra in form.Fields.Where(f => f.Key.StartsWith("fee-", StringComparison.Ordinal)
+                || f.Key == "monthly-header").ToList())
+                form.Fields.Remove(extra);
+            if (!partial) return;
+            form.Add("monthly-header", "Montants par mois",
+                FieldKind.Header, hint: "Remplissez seulement les mois pris en charge. Les autres restent à 0.");
+            foreach (var month in months)
+                form.Add($"fee-{month.Id}", $"{month.Label} — montant pris en charge",
+                    FieldKind.Amount, "0", hint: $"Mensualité prévue : {Money(month.Amount)}.");
+        };
         if (await Shell.Ask(form)) await RefreshAsync();
     }
 
