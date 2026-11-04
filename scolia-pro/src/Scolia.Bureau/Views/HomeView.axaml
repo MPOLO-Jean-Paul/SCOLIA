@@ -5,7 +5,6 @@
              xmlns:c="using:Scolia.Bureau.Controls"
              x:Class="Scolia.Bureau.Views.HomeView">
   <UserControl.Styles>
-    <Style Selector="TextBlock.greeting"><Setter Property="FontSize" Value="{DynamicResource FsDisplay}" /></Style>
     <Style Selector="TextBlock.kpivalue"><Setter Property="FontSize" Value="{DynamicResource FsTitle}" /></Style>
     <!-- Accueil Windows natif : surface système, contraste automatique clair/sombre et bord discret. -->
     <Style Selector="TextBlock.greeting"><Setter Property="FontSize" Value="24" /></Style>
