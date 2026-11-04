@@ -28,12 +28,12 @@ public sealed class AccountService(IAppDbContext db, IClock clock)
         var promotions = await db.Promotions.AsNoTracking().Include(p => p.Fees).Where(p => promotionIds.Contains(p.Id)).ToDictionaryAsync(p => p.Id, ct);
         var ids = enrollments.Select(e => e.Id).ToList();
 
-        var coverage = await (from l in db.SponsorshipLines.AsNoTracking()
-                              join s in db.Sponsorships.AsNoTracking() on l.SponsorshipId equals s.Id
-                              where s.IsActive && ids.Contains(s.EnrollmentId)
-                              select new { s.EnrollmentId, l.FeeItemId, l.Percent }).ToListAsync(ct);
-        var coverageMap = coverage.GroupBy(c => c.EnrollmentId)
-            .ToDictionary(g => g.Key, g => (IReadOnlyDictionary<Guid, decimal>)g.GroupBy(x => x.FeeItemId).ToDictionary(x => x.Key, x => x.Sum(y => y.Percent)));
+        // Les modes Complets et Montant mensuel restent valables pour tous les mois,
+        // même si les frais de la promotion changent après la création de la prise en charge.
+        var sponsorships = await db.Sponsorships.AsNoTracking().Include(s => s.Lines)
+            .Where(s => s.IsActive && ids.Contains(s.EnrollmentId)).ToListAsync(ct);
+        var byEnrollment = sponsorships.GroupBy(s => s.EnrollmentId)
+            .ToDictionary(g => g.Key, g => g.ToList());
 
         var paid = await (from a in db.ReceiptAllocations.AsNoTracking()
                           join r in db.Receipts.AsNoTracking() on a.ReceiptId equals r.Id
@@ -47,9 +47,17 @@ public sealed class AccountService(IAppDbContext db, IClock clock)
         foreach (var e in enrollments)
         {
             var promotion = promotions[e.PromotionId];
-            // Le suivi de l'apprenant ne porte que sur la scolarité : inscription et examen sont des frais de l'institution.
-            var fees = promotion.Fees.Where(f => f.Kind == FeeKind.Mensualite).Select(f => new FeeLineInput(f.Id, f.Label, f.Amount, f.DueDate, f.Order, f.PeriodId, f.Kind));
-            var account = StudentAccount.Compute(fees, coverageMap.GetValueOrDefault(e.Id, empty), paidMap.GetValueOrDefault(e.Id, empty), day, school.WholeAmountsOnly);
+            var paidByFee = paidMap.GetValueOrDefault(e.Id, empty);
+            var sponsors = byEnrollment.GetValueOrDefault(e.Id) ?? [];
+            // La caisse actuelle encaisse exclusivement les mensualités. Ne pas créer
+            // rétroactivement de nouvelles dettes d'inscription ou d'examen lors de cette migration.
+            // Les couvertures complètes s'appliquent néanmoins à ces autres rubriques dans la
+            // règle de prise en charge et dans ses récapitulatifs.
+            var fees = promotion.Fees.Where(f => f.Kind == FeeKind.Mensualite).ToList();
+            var coveredAmounts = fees.ToDictionary(f => f.Id, f =>
+                SponsorshipCoverage.TotalFor(f, sponsors, paidByFee.GetValueOrDefault(f.Id), school.WholeAmountsOnly));
+            var inputs = fees.Select(f => new FeeLineInput(f.Id, f.Label, f.Amount, f.DueDate, f.Order, f.PeriodId, f.Kind));
+            var account = StudentAccount.ComputeAmounts(inputs, coveredAmounts, paidByFee, day, school.WholeAmountsOnly);
             result[e.Id] = new EnrollmentAccount(e, promotion, account);
         }
         return result;
