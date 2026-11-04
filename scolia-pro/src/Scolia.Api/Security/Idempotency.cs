@@ -40,7 +40,7 @@ public static class Idempotency
         var folder = Path.Combine(directory, "idempotence");
         Directory.CreateDirectory(folder);
         if (!OperatingSystem.IsWindows())
-            File.SetUnixFileMode(folder, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+            Directory.SetUnixFileMode(folder, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
         if (Interlocked.Exchange(ref cleaned, 1) == 0) _ = Task.Run(() => Clean(folder));
 
         var userId = http.User.FindFirstValue(ClaimTypes.NameIdentifier) ?? string.Empty;
