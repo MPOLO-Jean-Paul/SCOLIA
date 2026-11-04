@@ -35,8 +35,8 @@ public static class AndroidAppUpdates
     private const string InstallChannel = "scolia-installation";
     private const int NotificationId = 39124;
     private const int InstallNotificationId = 39125;
-    private const int DownloadSuccessStatus = 8; // DownloadManager.STATUS_SUCCESSFUL
-    private const int DownloadFailureStatus = 16; // DownloadManager.STATUS_FAILED
+    private const int DownloadSuccessStatus = UpdateCompletionPolicy.Successful;
+    private const int DownloadFailureStatus = UpdateCompletionPolicy.Failed;
     private const long MaxApkBytes = 350L * 1024 * 1024;
     // Le contrôle en ouvrant SCOLIA doit voir une publication récente ; WorkManager
     // reste à 6 h pour économiser la batterie hors de l'application.
@@ -132,9 +132,10 @@ public static class AndroidAppUpdates
                 var id = Preferences(activity).GetLong(DownloadIdKey, 0);
                 if (id <= 0) return;
                 var status = DownloadStatus(activity, id);
-                if (status is null or DownloadSuccessStatus or DownloadFailureStatus)
+                if (UpdateCompletionPolicy.NeedsForegroundCheck(
+                    IsForeground(activity), id, status))
                 {
-                    await CheckDownloadAsync(activity);
+                    await CheckDownloadSafelyAsync(activity);
                     return;
                 }
                 await Task.Delay(TimeSpan.FromSeconds(2), cancellation);
@@ -156,22 +157,28 @@ public static class AndroidAppUpdates
     public static void DownloadCompleted(Context context, long downloadId)
     {
         if (downloadId <= 0 || Preferences(context).GetLong(DownloadIdKey, 0) != downloadId) return;
-        // DownloadManager notifie aussi les échecs. Ne jamais annoncer « Installer »
-        // sans avoir constaté STATUS_SUCCESSFUL.
+        // DownloadManager notifie aussi les échecs. Seul STATUS_SUCCESSFUL
+        // peut déclencher l'installation ; hors premier plan, notification.
         var status = DownloadStatus(context, downloadId);
-        if (status == DownloadFailureStatus)
+        Activity? screen = null;
+        if (foregroundActivity?.TryGetTarget(out var visible) == true && IsForeground(visible))
+            screen = visible;
+        var action = UpdateCompletionPolicy.Decide(status, screen is not null);
+        switch (action)
         {
-            Report(context, "Échec du téléchargement de la mise à jour.");
-            if (foregroundActivity?.TryGetTarget(out var screen) == true && IsForeground(screen))
-                _ = CheckDownloadSafelyAsync(screen);
-            return;
+            case UpdateCompletionAction.DownloadFailed:
+                Report(context, "Échec du téléchargement de la mise à jour.");
+                if (screen is not null) _ = CheckDownloadSafelyAsync(screen);
+                break;
+            case UpdateCompletionAction.PresentInstall:
+                Report(context, "Téléchargement terminé. Vérification de l'APK avant installation.");
+                if (screen is not null) _ = CheckDownloadSafelyAsync(screen);
+                break;
+            case UpdateCompletionAction.NotifyReady:
+                Report(context, "Téléchargement terminé. Installation proposée à la reprise de SCOLIA.");
+                NotifyInstallReady(context);
+                break;
         }
-        if (status != DownloadSuccessStatus) return;
-        Report(context, "Téléchargement terminé. Vérification de l'APK avant installation.");
-        if (foregroundActivity?.TryGetTarget(out var activity) == true && IsForeground(activity))
-            _ = CheckDownloadSafelyAsync(activity);
-        else
-            NotifyInstallReady(context);
     }
 
     private static async Task CheckDownloadSafelyAsync(Activity activity)
