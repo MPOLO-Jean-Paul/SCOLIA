@@ -11,7 +11,7 @@ public static class PairingFlow
     private static readonly TimeSpan ProbeDelay = TimeSpan.FromSeconds(4);
 
     /// <summary>Vrai sur un appareil qui a un appareil photo pour scanner ; sinon, une image du code est demandée.</summary>
-    public static bool HasCamera => Platform.CaptureImageAsync is not null;
+    public static bool HasCamera => Platform.ScanQrAsync is not null || Platform.CaptureImageAsync is not null;
 
     /// <summary>
     /// Texte du code lu dans une photo ou dans une image choisie. Null si l'utilisateur annule ;
