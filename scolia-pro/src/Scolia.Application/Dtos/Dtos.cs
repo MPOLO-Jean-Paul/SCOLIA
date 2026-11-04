@@ -81,14 +81,16 @@ public sealed record ReEnrollmentChoice(Guid StudentId, Guid PromotionId);
 
 // ---------- Prises en charge ----------
 public sealed record SponsorshipDto(Guid Id, Guid EnrollmentId, string SponsorName, string Reason, DateOnly EffectiveFrom, bool IsActive,
-    IReadOnlyList<SponsorshipLineDto> Lines, decimal CoveredTotal);
+    IReadOnlyList<SponsorshipLineDto> Lines, decimal CoveredTotal, string Type = "Historique", decimal MonthlyAmount = 0m);
 
 public sealed record SponsorshipListItem(Guid Id, Guid EnrollmentId, string Matricule, string FullName, string Promotion, string SponsorName,
-    string Reason, DateOnly EffectiveFrom, bool IsActive, decimal Covered);
+    string Reason, DateOnly EffectiveFrom, bool IsActive, decimal Covered, string Type = "Historique", decimal MonthlyAmount = 0m);
 
 public sealed record SponsorshipLineDto(Guid FeeItemId, string Label, decimal Percent, decimal Amount);
 
-public sealed record SponsorshipUpsert(string SponsorName, string Reason, DateOnly EffectiveFrom, IReadOnlyList<SponsorshipLineInput> Lines);
+/// <summary>Les anciennes requêtes avec Lines et sans Type restent acceptées pour compatibilité.</summary>
+public sealed record SponsorshipUpsert(string SponsorName, string Reason, DateOnly EffectiveFrom, IReadOnlyList<SponsorshipLineInput>? Lines = null,
+    string? Type = null, decimal? MonthlyAmount = null);
 
 public sealed record SponsorshipLineInput(Guid FeeItemId, decimal Percent);
 
