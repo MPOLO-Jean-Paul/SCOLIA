@@ -47,16 +47,14 @@ public sealed class AppInfoViewModel : Observable
 
     /// <summary>Micro du champ, comme la recherche de l'accueil.</summary>
     public bool VoiceAvailable => VoiceInput.Available;
+    private readonly VoiceCaptureSession voiceSession = new();
     private bool listening;
-    public bool Listening { get => listening; private set { if (Set(ref listening, value)) Raise(nameof(Placeholder)); } }
+    public bool Listening { get => listening; private set { if (Set(ref listening, value)) { Raise(nameof(Placeholder)); Raise(nameof(VoiceTip)); } } }
+    public string VoiceTip => Listening ? "Arrêter l'écoute vocale" : "Chercher à la voix";
     public string Placeholder => listening ? "Parlez maintenant…" : "Chercher une fonction : reçu, empreinte, sauvegarde…";
-    public AsyncCommand Listen => listen ??= new AsyncCommand(async () =>
-    {
-        Listening = true;
-        try { if (await VoiceInput.ListenAsync() is { } text) Query = text; }
-        finally { Listening = false; }
-    });
-    private AsyncCommand? listen;
+    public RelayCommand Listen => listen ??= new RelayCommand(() =>
+        _ = voiceSession.ToggleAsync(text => Query = text, active => Listening = active));
+    private RelayCommand? listen;
 
     /// <summary>Recherche dans tout le catalogue : les modules concernés s'ouvrent sur les fonctions trouvées.</summary>
     public string Query
