@@ -31,6 +31,8 @@ public static class WindowsSpeechInput
         finally { $engine.Dispose() }
         """;
 
+    private static readonly SemaphoreSlim MicrophoneGate = new(1, 1);
+
     private static string PowerShellPath =>
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System),
             "WindowsPowerShell", "v1.0", "powershell.exe");
@@ -41,6 +43,16 @@ public static class WindowsSpeechInput
     public static async Task<string?> ListenAsync()
     {
         if (!IsAvailable()) return null;
+        if (!await MicrophoneGate.WaitAsync(0).ConfigureAwait(false)) return null;
+        try
+        {
+        return await RecognizeOnceAsync().ConfigureAwait(false);
+        }
+        finally { MicrophoneGate.Release(); }
+    }
+
+    private static async Task<string?> RecognizeOnceAsync()
+    {
         var start = new ProcessStartInfo(PowerShellPath)
         {
             UseShellExecute = false,
@@ -57,9 +69,11 @@ public static class WindowsSpeechInput
         start.ArgumentList.Add(Convert.ToBase64String(Encoding.Unicode.GetBytes(SpeechScript)));
         using var process = new Process { StartInfo = start };
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(19));
+        var started = false;
         try
         {
-            if (!process.Start()) return null;
+            started = process.Start();
+            if (!started) return null;
             var stdout = process.StandardOutput.ReadToEndAsync(timeout.Token);
             var stderr = process.StandardError.ReadToEndAsync(timeout.Token);
             await process.WaitForExitAsync(timeout.Token).ConfigureAwait(false);
@@ -72,9 +86,9 @@ public static class WindowsSpeechInput
         catch (Exception ex) when (ex is OperationCanceledException or IOException or
             Win32Exception or InvalidOperationException or UnauthorizedAccessException)
         {
-            if (!process.HasExited)
+            if (started)
             {
-                try { process.Kill(entireProcessTree: true); }
+                try { if (!process.HasExited) process.Kill(entireProcessTree: true); }
                 catch (InvalidOperationException) { }
                 catch (Win32Exception) { }
             }
