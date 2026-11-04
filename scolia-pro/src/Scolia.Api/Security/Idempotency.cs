@@ -99,13 +99,10 @@ public static class Idempotency
             await using var copy = new MemoryStream();
             http.Response.Body = copy;
             try { await next(http); }
-            finally
-            {
-                http.Response.Body = original;
-                copy.Position = 0;
-                await copy.CopyToAsync(original, http.RequestAborted);
-            }
+            finally { http.Response.Body = original; }
 
+            // Persister AVANT d'envoyer la confirmation au client.
+            // Une connexion interrompue pendant l'envoi ne doit pas rendre l'écriture rejouable.
             // Garder aussi une preuve sans réponse pour les grosses écritures :
             // ne jamais réexécuter silencieusement une opération déjà terminée.
             if (http.Response.StatusCode < 500)
@@ -116,6 +113,9 @@ public static class Idempotency
                 var protectedBytes = protector.Protect(JsonSerializer.SerializeToUtf8Bytes(record));
                 await WriteAtomicallyAsync(path, Prefix + Convert.ToBase64String(protectedBytes));
             }
+
+            copy.Position = 0;
+            await copy.CopyToAsync(original, http.RequestAborted);
         }
         finally
         {
