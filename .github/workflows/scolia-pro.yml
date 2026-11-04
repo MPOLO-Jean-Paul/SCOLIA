@@ -321,6 +321,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         shell: bash
+        working-directory: .
         run: |
           set -euo pipefail
           version="1.2.10"
