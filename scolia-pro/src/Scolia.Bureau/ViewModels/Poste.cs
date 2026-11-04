@@ -40,6 +40,8 @@ public sealed class PosteViewModel : Observable
             // laisser le temps à l'API de démarrer, puis relire les deux états.
             for (var i = 0; i < 8 && !(HostForegroundActive && HostApiServing); i++)
                 await Task.Delay(400);
+            if (Platform.CheckHostNetworkAsync is { } verify)
+                await verify();
             Refresh();
         });
         OpenAppSettings = new RelayCommand(() => Platform.OpenAppSettings?.Invoke());
