@@ -79,6 +79,7 @@ public sealed class MainActivity : AvaloniaMainActivity
 
     protected override void OnPause()
     {
+        AndroidAppUpdates.OnPause(this);
         AndroidAlerts.SetForeground(false);
         startup?.SetActive(false);
         MobilePlatform.HoldMulticast(false);
