@@ -133,7 +133,7 @@ public sealed class SponsorshipsPage : PageViewModel
 
     public SponsorshipsPage(ShellViewModel shell) : base(shell)
     {
-        if (Shell.Can(Perm.PaymentsRead)) Action("Terminer la prise en charge", MaterialIconKind.ShieldOff, EndSelectedAsync, row: true);
+        if (Shell.Can(Perm.StudentsWrite)) Action("Terminer la prise en charge", MaterialIconKind.ShieldOff, EndSelectedAsync, row: true);
         ActionRefresh();
     }
 
