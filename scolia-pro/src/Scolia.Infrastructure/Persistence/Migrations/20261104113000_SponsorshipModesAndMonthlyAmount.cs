@@ -12,7 +12,7 @@ namespace Scolia.Infrastructure.Persistence.Migrations;
 /// </summary>
 [DbContext(typeof(ScoliaDbContext))]
 [Migration("20261104113000_SponsorshipModesAndMonthlyAmount")]
-public sealed class SponsorshipModesAndMonthlyAmount : Migration
+public partial class SponsorshipModesAndMonthlyAmount : Migration
 {
     protected override void Up(MigrationBuilder migrationBuilder)
     {
