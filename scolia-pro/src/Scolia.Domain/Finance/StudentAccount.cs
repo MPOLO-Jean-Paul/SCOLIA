@@ -40,8 +40,9 @@ public sealed class StudentAccount
         OldestOverdueDate = lines.Where(l => l.IsOverdue).Select(l => (DateOnly?)l.DueDate).Min();
     }
 
-    /// <param name="coverage">Pourcentage couvert par rubrique (somme des prises en charge actives).</param>
-    /// <param name="payments">Montants affectés par rubrique (reçus valides uniquement).</param>
+    /// <summary>Compatibilité des anciens calculs de couverture en pourcentage.</summary>
+    /// <param name="coverage">Pourcentage couvert par rubrique.</param>
+    /// <param name="payments">Montant déjà encaissé par rubrique.</param>
     public static StudentAccount Compute(
         IEnumerable<FeeLineInput> fees,
         IReadOnlyDictionary<Guid, decimal> coverage,
@@ -49,20 +50,38 @@ public sealed class StudentAccount
         DateOnly asOf,
         bool wholeAmounts = true)
     {
+        var feeList = fees.ToList();
+        var covered = feeList.ToDictionary(f => f.FeeItemId, f =>
+        {
+            var percent = Math.Clamp(coverage.GetValueOrDefault(f.FeeItemId), 0m, 100m);
+            return decimal.Round(f.Amount * percent / 100m, wholeAmounts ? 0 : 2, MidpointRounding.AwayFromZero);
+        });
+        return ComputeAmounts(feeList, covered, payments, asOf, wholeAmounts);
+    }
+
+    /// <summary>Nouveau calcul au montant exact couvert, sans conversion en pourcentages.</summary>
+    public static StudentAccount ComputeAmounts(
+        IEnumerable<FeeLineInput> fees,
+        IReadOnlyDictionary<Guid, decimal> coveredAmounts,
+        IReadOnlyDictionary<Guid, decimal> payments,
+        DateOnly asOf,
+        bool wholeAmounts = true)
+    {
         var lines = new List<AccountLine>();
         foreach (var fee in fees.OrderBy(f => f.DueDate).ThenBy(f => f.Order))
         {
-            var percent = Math.Clamp(coverage.TryGetValue(fee.FeeItemId, out var p) ? p : 0m, 0m, 100m);
-            var covered = fee.Amount * percent / 100m;
-            covered = wholeAmounts ? decimal.Round(covered, 0, MidpointRounding.AwayFromZero) : decimal.Round(covered, 2, MidpointRounding.AwayFromZero);
+            var covered = Math.Clamp(coveredAmounts.GetValueOrDefault(fee.FeeItemId), 0m, fee.Amount);
+            covered = decimal.Round(covered, wholeAmounts ? 0 : 2, MidpointRounding.AwayFromZero);
             var net = fee.Amount - covered;
             var paid = payments.TryGetValue(fee.FeeItemId, out var paidAmount) ? paidAmount : 0m;
             var remaining = Math.Max(0m, net - paid);
             var status = net == 0 ? LineStatus.Couvert : remaining == 0 ? LineStatus.Paye : paid > 0 ? LineStatus.Partiel : LineStatus.Impaye;
-            lines.Add(new AccountLine(fee.FeeItemId, fee.Label, fee.DueDate, fee.Order, fee.PeriodId, fee.Amount, covered, net, paid, remaining, status, remaining > 0 && fee.DueDate <= asOf, fee.Kind));
+            lines.Add(new AccountLine(fee.FeeItemId, fee.Label, fee.DueDate, fee.Order, fee.PeriodId, fee.Amount,
+                covered, net, paid, remaining, status, remaining > 0 && fee.DueDate <= asOf, fee.Kind));
         }
         return new StudentAccount(lines);
     }
+
 }
 
 /// <summary>Règlement d'un paiement : les mois choisis, chacun soldé en entier (aucun règlement partiel).</summary>
