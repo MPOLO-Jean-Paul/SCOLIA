@@ -82,6 +82,9 @@ public sealed class MainActivity : AvaloniaMainActivity
         AndroidAlerts.SetForeground(false);
         startup?.SetActive(false);
         MobilePlatform.HoldMulticast(false);
+        // Vérifier la connexion depuis le service, deux secondes APRÈS la disparition
+        // de l'interface. La notification seule ne valide pas l'accessibilité du serveur.
+        Server.ServeurScolia.CheckAfterInterfacePaused();
         // Ne jamais arrêter PhoneServer ni ServeurScolia ici : OnPause est déclenché
         // quand on affiche le bureau Android, le VPN, une notification ou un dialogue.
         Security.AndroidBiometrics.Detach(this);
