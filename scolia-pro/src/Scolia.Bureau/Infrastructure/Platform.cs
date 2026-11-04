@@ -134,6 +134,9 @@ public static class Platform
     /// <summary>Contrôle manuel GitHub Releases, disponible sur Android depuis Poste et réseau.</summary>
     public static Func<Task>? CheckAppUpdatesAsync { get; set; }
 
+    /// <summary>Message de diagnostic de la dernière vérification Android.</summary>
+    public static Func<string>? AppUpdateStatus { get; set; }
+
     /// <summary>Répare l'hébergement sur demande depuis une interface visible, jamais depuis un client.</summary>
     public static Action? EnsureHostAvailable { get; set; }
 
