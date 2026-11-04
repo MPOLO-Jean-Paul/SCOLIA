@@ -24,6 +24,7 @@ public static class Program
         {
             Platform.CanRecognizeSpeech = WindowsSpeechInput.IsAvailable;
             Platform.RecognizeSpeechAsync = WindowsSpeechInput.ListenAsync;
+            Platform.RecognizeSpeechWithCancellationAsync = WindowsSpeechInput.ListenAsync;
         }
         return BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
     }
