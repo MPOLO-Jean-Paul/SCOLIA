@@ -43,6 +43,14 @@
       </StackPanel>
     </Border>
 
+    <Border Classes="card" IsVisible="{Binding CanCheckMobileUpdates}">
+      <StackPanel Spacing="8">
+        <TextBlock Text="Mises à jour de SCOLIA Pro" FontWeight="SemiBold" />
+        <TextBlock Text="Une nouvelle version est recherchée automatiquement à l'ouverture. Vous pouvez aussi vérifier maintenant, sans attendre le contrôle périodique." Classes="muted" TextWrapping="Wrap" />
+        <Button Classes="primary" Command="{Binding CheckMobileUpdates}" Content="Vérifier les mises à jour" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" MinHeight="46" />
+      </StackPanel>
+    </Border>
+
     <Border Classes="card" IsVisible="{Binding HasAddress}">
       <Grid ColumnDefinitions="Auto,*">
         <Border Classes="appicon medium" Background="{DynamicResource ToneBlue}" Margin="0,0,12,0" VerticalAlignment="Top"><mi:MaterialIcon Kind="IpNetworkOutline" /></Border>
