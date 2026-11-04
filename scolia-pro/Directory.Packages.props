@@ -17,6 +17,8 @@
     <PackageVersion Include="QuestPDF" Version="2026.9.1" />
     <PackageVersion Include="QRCoder" Version="1.8.1" />
     <PackageVersion Include="ZXing.Net" Version="0.16.10" />
+    <!-- Lecteur QR natif avec visée en direct ; prise de photo hors ligne en secours. -->
+    <PackageVersion Include="Xamarin.GooglePlayServices.Code.Scanner" Version="116.1.0.17" />
     <!-- Documents PDF du téléphone serveur : SkiaSharp, déjà fourni à Android par Avalonia ; Linux pour les tests. -->
     <PackageVersion Include="SkiaSharp" Version="3.119.4" />
     <PackageVersion Include="SkiaSharp.NativeAssets.Linux" Version="3.119.4" />
