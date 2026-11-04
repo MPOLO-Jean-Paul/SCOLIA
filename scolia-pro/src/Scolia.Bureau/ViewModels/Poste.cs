@@ -30,6 +30,10 @@ public sealed class PosteViewModel : Observable
         }));
         Search = new AsyncCommand(SearchAsync);
         AllowBackground = new RelayCommand(() => Platform.AllowBackground?.Invoke());
+        CheckMobileUpdates = new AsyncCommand(async () =>
+        {
+            if (Platform.CheckAppUpdatesAsync is { } check) await check();
+        });
         VerifyBackgroundServer = new AsyncCommand(async () =>
         {
             if (!IsPhoneServer) return;
