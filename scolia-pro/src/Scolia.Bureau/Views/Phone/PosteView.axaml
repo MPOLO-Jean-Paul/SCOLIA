@@ -31,6 +31,7 @@
             <TextBlock Text="{Binding BackgroundLine}" Classes="muted" TextWrapping="Wrap" FontSize="{DynamicResource FsSmall}" />
           </StackPanel>
         </Grid>
+        <TextBlock Text="{Binding BackgroundDiagnostic}" Classes="muted" TextWrapping="Wrap" FontSize="{DynamicResource FsSmall}" />
         <Button Classes="primary" Command="{Binding VerifyBackgroundServer}"
                 HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" MinHeight="46"
                 Content="Vérifier et relancer le serveur local" />
