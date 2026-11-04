@@ -95,7 +95,7 @@ public sealed class PosteViewModel : Observable
         ? "Le service serveur doit être réactivé"
         : !HostApiServing ? "Démarrage du serveur scolaire…"
         : !BackgroundOk ? "Serveur actif · autorisation batterie nécessaire"
-        : "Serveur actif en arrière-plan";
+        : "API locale active · liaison aux ordinateurs à confirmer";
     public string BackgroundLine => !HostForegroundActive
         ? "Le service Android n'est pas au premier plan. Touchez « Vérifier le serveur » pendant que SCOLIA est ouvert pour demander sa réactivation."
         : !HostApiServing
