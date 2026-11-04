@@ -276,6 +276,8 @@ public sealed class SearchViewModel : Observable
     public ToggleVoiceCommand Listen => listen ??= new ToggleVoiceCommand(() =>
         voiceSession.ToggleAsync(text => Query = text, active => Listening = active));
     private ToggleVoiceCommand? listen;
+    /// <summary>Fermer la recherche interrompt l'écoute et ignore toute ancienne transcription.</summary>
+    public void StopListening() => voiceSession.Cancel(active => Listening = active);
     public ObservableCollection<RecentSearchRow> Recent { get; } = [];
     public bool HasRecent => Recent.Count > 0;
     public IReadOnlyList<SearchShortcutRow> Shortcuts { get; }

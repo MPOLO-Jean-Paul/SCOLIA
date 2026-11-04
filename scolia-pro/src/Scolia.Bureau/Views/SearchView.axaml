@@ -21,7 +21,7 @@
             <mi:MaterialIcon Kind="Close" />
           </Button>
           <Button x:Name="MicButton" Grid.Column="3" Classes="baricon mic" Classes.listening="{Binding Listening}" Command="{Binding Listen}"
-                  IsVisible="{Binding VoiceAvailable}" ToolTip.Tip="{Binding VoiceTip}">
+                  IsVisible="{Binding VoiceAvailable}" Focusable="False" ToolTip.Tip="{Binding VoiceTip}">
             <Grid>
                   <mi:MaterialIcon Kind="Microphone" IsVisible="{Binding !Listening}" />
                   <mi:MaterialIcon Kind="Stop" IsVisible="{Binding Listening}" />
