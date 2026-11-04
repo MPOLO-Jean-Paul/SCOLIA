@@ -62,7 +62,7 @@ jobs:
       - name: Interdire les donnees locales dans Git
         shell: bash
         run: |
-          if git ls-files -- scolia-pro/SCOLIA/ | grep -q .; then
+          if git ls-files -- SCOLIA/ | grep -q .; then
             echo "::error::Les fichiers d'execution SCOLIA/ ne doivent pas se trouver dans Git."
             exit 1
           fi
