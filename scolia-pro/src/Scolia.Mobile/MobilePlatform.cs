@@ -66,6 +66,7 @@ public static class MobilePlatform
         Platform.IsHostApiServing = () => Server.PhoneServer.Get(app).IsServingVerified;
         Platform.HostNetworkDiagnostic = () => Server.PhoneServer.Get(app).LastDiagnostic;
         Platform.CheckHostNetworkAsync = () => Server.PhoneServer.Get(app).VerifyAndRecoverInBackgroundAsync();
+        Platform.AppUpdateStatus = () => AndroidAppUpdates.LastStatus(app);
         Platform.CheckAppUpdatesAsync = async () =>
         {
             if (screen?.TryGetTarget(out var activity) == true && !activity.IsFinishing)
