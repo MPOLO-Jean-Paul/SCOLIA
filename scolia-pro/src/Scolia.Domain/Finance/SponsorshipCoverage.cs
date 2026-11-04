@@ -8,7 +8,6 @@ public static class SponsorshipCoverage
 {
     public static decimal AmountFor(FeeItem fee, Sponsorship sponsorship, bool wholeAmounts = true)
     {
-        if (!sponsorship.IsActive) return 0m;
         var amount = sponsorship.Mode switch
         {
             SponsorshipMode.Complete => fee.Amount,
@@ -30,6 +29,15 @@ public static class SponsorshipCoverage
         var active = sponsorships.Where(s => s.IsActive).ToList();
         if (active.Any(s => s.Mode == SponsorshipMode.Complete))
             return Math.Max(0m, fee.Amount - alreadyPaid);
-        return Math.Clamp(active.Sum(s => AmountFor(fee, s, wholeAmounts)), 0m, Math.Max(0m, fee.Amount));
+        // Garder la sémantique historique : additionner d'abord les pourcentages
+        // puis arrondir une seule fois (évite des écarts d'une unité).
+        var oldPercent = active.Where(s => s.Mode == SponsorshipMode.Historique)
+            .Sum(s => s.Lines.Where(l => l.FeeItemId == fee.Id).Sum(l => l.Percent));
+        var oldAmount = decimal.Round(fee.Amount * oldPercent / 100m, wholeAmounts ? 0 : 2,
+            MidpointRounding.AwayFromZero);
+        var monthly = fee.Kind == FeeKind.Mensualite
+            ? active.Where(s => s.Mode == SponsorshipMode.PartielleMensuelle).Sum(s => s.MonthlyAmount)
+            : 0m;
+        return Math.Clamp(oldAmount + monthly, 0m, Math.Max(0m, fee.Amount));
     }
 }
