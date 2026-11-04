@@ -126,11 +126,11 @@ public sealed record PagedResult<T>(IReadOnlyList<T> Items, int Total, int Page,
 
 public sealed record SponsorshipLineDto(Guid FeeItemId, string Label, decimal Percent, decimal Amount);
 
-public sealed record SponsorshipDto(Guid Id, Guid EnrollmentId, string SponsorName, string Reason, DateOnly EffectiveFrom, bool IsActive, IReadOnlyList<SponsorshipLineDto> Lines, decimal CoveredTotal);
+public sealed record SponsorshipDto(Guid Id, Guid EnrollmentId, string SponsorName, string Reason, DateOnly EffectiveFrom, bool IsActive, IReadOnlyList<SponsorshipLineDto> Lines, decimal CoveredTotal, string Type = "Historique", decimal MonthlyAmount = 0m);
 
 public sealed record SponsorshipListItem(
     Guid Id, Guid EnrollmentId, string Matricule, string FullName, string Promotion, string SponsorName, string Reason, DateOnly EffectiveFrom,
-    bool IsActive, decimal Covered);
+    bool IsActive, decimal Covered, string Type = "Historique", decimal MonthlyAmount = 0m);
 
 public sealed record DebtorDto(
     Guid StudentId, Guid EnrollmentId, string Matricule, string FullName, string PromotionCode, decimal Balance, decimal Overdue, int OverdueCount,
