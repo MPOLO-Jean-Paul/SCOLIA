@@ -52,9 +52,9 @@ public sealed class AppInfoViewModel : Observable
     public bool Listening { get => listening; private set { if (Set(ref listening, value)) { Raise(nameof(Placeholder)); Raise(nameof(VoiceTip)); } } }
     public string VoiceTip => Listening ? "Arrêter l'écoute vocale" : "Chercher à la voix";
     public string Placeholder => listening ? "Parlez maintenant…" : "Chercher une fonction : reçu, empreinte, sauvegarde…";
-    public RelayCommand Listen => listen ??= new RelayCommand(() =>
-        _ = voiceSession.ToggleAsync(text => Query = text, active => Listening = active));
-    private RelayCommand? listen;
+    public ToggleVoiceCommand Listen => listen ??= new ToggleVoiceCommand(() =>
+        voiceSession.ToggleAsync(text => Query = text, active => Listening = active));
+    private ToggleVoiceCommand? listen;
 
     /// <summary>Recherche dans tout le catalogue : les modules concernés s'ouvrent sur les fonctions trouvées.</summary>
     public string Query
