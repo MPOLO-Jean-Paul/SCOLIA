@@ -18,7 +18,7 @@ public static class OfflineStudentSearch
     public static Result? Search(OfflineStore store, string? query, string? promotionCode,
         string? status, int requestedPage, int pageSize = 50)
     {
-        if (pageSize <= 0) throw new ArgumentOutOfRangeException(nameof(pageSize));
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(pageSize);
 
         var items = new Dictionary<Guid, StudentListItem>();
         var registered = 0;
