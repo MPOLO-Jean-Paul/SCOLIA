@@ -72,7 +72,7 @@ public sealed class VoiceInputTests
             Assert.False(mic.IsListening);
             await firstClick.WaitAsync(TimeSpan.FromSeconds(5));
             Assert.Equal("Nom déjà recherché", query);
-            Assert.Equal(true, changes[0]);
+            Assert.True(changes[0]);
             Assert.Contains(false, changes);
 
             Platform.RecognizeSpeechWithCancellationAsync = _ => Task.FromResult<string?>("Deuxième recherche");
