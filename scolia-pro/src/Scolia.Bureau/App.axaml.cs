@@ -27,8 +27,10 @@ public partial class App : Avalonia.Application
             // Le poste principal héberge le serveur dès l'ouverture, avant les
             // appels réseau et la page de connexion. Minimiser la fenêtre ne
             // suspend ni le processus SCOLIA-Serveur ni son superviseur.
+            var savedConnection = OperatingSystem.IsWindows() ? ConnectionStore.Load() : null;
             if (OperatingSystem.IsWindows() &&
-                (ConnectionStore.Load()?.Mode == ConnectionSettings.Local || ConnectionStore.HasLocalData()))
+                (savedConnection?.Mode == ConnectionSettings.Local ||
+                 (savedConnection is null && ConnectionStore.HasLocalData())))
             {
                 try
                 {
