@@ -786,7 +786,10 @@ public sealed class ShellViewModel : Observable
         var watch = System.Diagnostics.Stopwatch.StartNew();
         // Durée choisie dans Paramètres, Animations et fluidité ; l'outil de captures peut la fixer à part.
         // Après la création du premier compte, éviter la séquence d’attente de connexion.
-        var minimum = IsSetupRequired ? TimeSpan.FromMilliseconds(320)
+        // Hors ligne : conserver la transition sans ajouter une animation de
+        // deux secondes à un chargement déjà local et quasi immédiat.
+        var minimum = !api.IsOnline ? TimeSpan.FromMilliseconds(120)
+            : IsSetupRequired ? TimeSpan.FromMilliseconds(320)
             : MinimumOpening == TimeSpan.FromSeconds(2) ? TimeSpan.FromSeconds(Prefs.OpeningSeconds) : MinimumOpening;
         var pace = minimum / 4;
         // Une autre personne vient de se connecter depuis l'écran de veille : la session verrouillée se ferme ici.
@@ -818,7 +821,9 @@ public sealed class ShellViewModel : Observable
             Raise(nameof(UserLine));
             Raise(nameof(UserInitials));
             Raise(nameof(AccountName));
-            Status = $"Connecté : {s.DisplayName} · {s.SchoolName}";
+            Status = api.IsOnline
+                ? $"Connecté : {s.DisplayName} · {s.SchoolName}"
+                : $"Hors ligne · {s.DisplayName} · données locales de {s.SchoolName}";
             Login.Reset();
             await OpeningStepAsync("Préparation des menus", 70, pace);
             RebuildRibbon();

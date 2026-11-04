@@ -287,6 +287,9 @@ public sealed class SyncCenter : Observable, IDisposable
         if (flushing || !shell.IsLoggedIn) return;
         flushing = true;
         Syncing = true;
+        // Une reprise réseau doit recharger les données locales même si aucune
+        // opération n'attend dans le journal.
+        var wasOffline = Offline;
         try
         {
             if (!await api.IsRunningAsync())
@@ -314,7 +317,7 @@ public sealed class SyncCenter : Observable, IDisposable
             var (sent, refused) = await api.FlushAsync();
             if (sent > 0) shell.Notify($"{sent} opération(s) envoyée(s) à l'ordinateur principal.");
             if (refused > 0) shell.Notify($"{refused} opération(s) refusée(s) par le serveur : ouvrez « Envois » pour les revoir.", SoundKind.Error);
-            if (sent > 0 || refused > 0 || manual) await shell.RefreshQuietlyAsync();
+            if (wasOffline || sent > 0 || refused > 0 || manual) await shell.RefreshQuietlyAsync();
         }
         catch (Exception ex) when (ex is ApiException or HttpRequestException or TaskCanceledException) { }
         finally

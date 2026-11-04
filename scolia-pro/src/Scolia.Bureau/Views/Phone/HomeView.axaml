@@ -96,6 +96,22 @@
       </StackPanel>
     </Border>
 
+    <!-- Pas d'écran bloquant : avertissement compact lorsque les chiffres viennent du cache. -->
+    <Border IsVisible="{Binding Sync.Offline}" CornerRadius="14" BorderThickness="1"
+            BorderBrush="{DynamicResource LineBrush}" Background="{DynamicResource GroupBrush}" Padding="12,10">
+      <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+        <mi:MaterialIcon Kind="CloudOffOutline" Width="20" Height="20"
+                         Foreground="{DynamicResource ToneOrange}" VerticalAlignment="Top" />
+        <StackPanel Grid.Column="1" Spacing="3">
+          <TextBlock Text="Travail hors ligne" FontWeight="SemiBold" />
+          <TextBlock Text="Données de la dernière connexion. Les modifications enregistrées attendent le retour du serveur."
+                     Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
+          <Button Classes="link" Command="{Binding Network}" HorizontalAlignment="Left"
+                  Content="Voir les envois en attente" />
+        </StackPanel>
+      </Grid>
+    </Border>
+
     <!-- Actions rapides -->
     <ItemsControl ItemsSource="{Binding PhoneTools}">
       <ItemsControl.ItemsPanel>

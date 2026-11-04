@@ -102,7 +102,14 @@ public sealed class StudentsPage : PageViewModel
     {
         if (!ready)
         {
-            var choices = await PromotionChoicesAsync(withAll: true);
+            IReadOnlyList<ChoiceItem> choices;
+            try { choices = await PromotionChoicesAsync(withAll: true); }
+            catch (OfflineException) when (!Shell.Api.IsOnline)
+            {
+                // Même si les promotions n'ont jamais été consultées, la liste
+                // locale des apprenants peut encore être ouverte sans attendre.
+                choices = [new ChoiceItem(string.Empty, "Toutes les promotions")];
+            }
             Promotions = choices;
             promotion = choices[0];
             status = StatusChoices[0];
@@ -113,7 +120,17 @@ public sealed class StudentsPage : PageViewModel
 
         var query = ScoliaClient.Query(
             ("q", Search.Trim()), ("promotionId", Promotion?.Value), ("statut", Status?.Value), ("page", page), ("taille", PageSize));
-        var result = await Shell.Api.GetAsync<PagedResult<StudentListItem>>("api/apprenants" + query);
+        OfflineStudentSearch.Result? local = null;
+        if (!Shell.Api.IsOnline && Shell.Api.Offline is { } store)
+        {
+            var promotionCode = Promotion?.Value is { Length: > 0 } selectedPromotion
+                ? Promotions.FirstOrDefault(x => x.Value == selectedPromotion)?.Label.Split('·')[0].Trim()
+                : null;
+            local = OfflineStudentSearch.Search(store, Search.Trim(), promotionCode, Status?.Value, page, PageSize);
+        }
+        var result = local?.Page
+            ?? await Shell.Api.GetAsync<PagedResult<StudentListItem>>("api/apprenants" + query);
+        if (local is not null) page = local.Page.Page;
 
         total = result.Total;
         pageCount = Math.Max(1, (int)Math.Ceiling(total / (double)PageSize));
@@ -129,10 +146,16 @@ public sealed class StudentsPage : PageViewModel
         }));
 
         subtitle = Format.Count(total, "apprenant", "apprenants") + (Promotion is { Value.Length: > 0 } ? $" · {Promotion.Label}" : string.Empty);
+        if (!Shell.Api.IsOnline)
+            subtitle += local is { Complete: false }
+                ? $" · recherche locale ({local.Loaded}/{local.Registered} dossiers disponibles)"
+                : " · copie locale, non actualisée";
         // Liste vide : sans filtre, l'établissement n'a encore aucun apprenant ; avec un filtre, il faut l'élargir.
         var filtered = Search.Trim().Length > 0 || Promotion is { Value.Length: > 0 } || Status is { Value.Length: > 0 };
         EmptyTitle = filtered ? "Aucun apprenant trouvé" : "Aucun apprenant inscrit";
-        EmptyHint = filtered ? "Modifiez la recherche, ou choisissez « Toutes les promotions » et « Tous les statuts »."
+        EmptyHint = local is { Complete: false }
+            ? "Recherche limitée aux dossiers téléchargés sur cet appareil. Reconnectez-vous pour voir le registre complet."
+            : filtered ? "Modifiez la recherche, ou choisissez « Toutes les promotions » et « Tous les statuts »."
             : "Inscrivez le premier avec « Nouvelle inscription ».";
         Raise(nameof(EmptyTitle));
         Raise(nameof(EmptyHint));
