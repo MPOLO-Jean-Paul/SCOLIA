@@ -358,7 +358,10 @@ public sealed class ShellViewModel : Observable
         get => dialog;
         private set
         {
+            var previousDialog = dialog;
             if (!Set(ref dialog, value)) return;
+            if (previousDialog is SearchViewModel oldSearch)
+                oldSearch.StopListening();
             Raise(nameof(HasDialog));
             Raise(nameof(CenteredDialog));
             Raise(nameof(FullScreenDialog));
@@ -1114,6 +1117,7 @@ public sealed class ShellViewModel : Observable
     /// <summary>Résultat ouvert, page changée : la liste se referme et la barre se vide.</summary>
     public void CloseHeaderFinder()
     {
+        headerFinder?.StopListening();
         HeaderFinderOpen = false;
         if (headerFinder is { HasQuery: true }) headerFinder.Query = string.Empty;
     }
