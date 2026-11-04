@@ -273,9 +273,9 @@ public sealed class SearchViewModel : Observable
     private bool listening;
     public bool Listening { get => listening; private set { if (Set(ref listening, value)) { Raise(nameof(Placeholder)); Raise(nameof(VoiceTip)); } } }
     public string VoiceTip => Listening ? "Arrêter l'écoute vocale" : "Rechercher à la voix";
-    public RelayCommand Listen => listen ??= new RelayCommand(() =>
-        _ = voiceSession.ToggleAsync(text => Query = text, active => Listening = active));
-    private RelayCommand? listen;
+    public ToggleVoiceCommand Listen => listen ??= new ToggleVoiceCommand(() =>
+        voiceSession.ToggleAsync(text => Query = text, active => Listening = active));
+    private ToggleVoiceCommand? listen;
     public ObservableCollection<RecentSearchRow> Recent { get; } = [];
     public bool HasRecent => Recent.Count > 0;
     public IReadOnlyList<SearchShortcutRow> Shortcuts { get; }
