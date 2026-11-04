@@ -49,7 +49,7 @@ public static class OfflineStudentSearch
                 || string.Equals(s.PromotionCode, promotionCode, StringComparison.OrdinalIgnoreCase))
             .Where(s => string.IsNullOrWhiteSpace(status)
                 || string.Equals(s.Status, status, StringComparison.OrdinalIgnoreCase))
-            .Where(s => searchable.Length == 0 || string.Join(' ', s.Matricule,
+            .Where(s => searchable.Length == 0 || string.Join(" ", s.Matricule,
                 s.LastName, s.MiddleName, s.FirstName, s.GuardianPhone ?? string.Empty)
                 .Contains(searchable, StringComparison.OrdinalIgnoreCase))
             .OrderBy(s => s.LastName, StringComparer.OrdinalIgnoreCase)
