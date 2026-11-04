@@ -400,19 +400,35 @@ public sealed class ScoliaClient : IDisposable
     /// <summary>Télécharge un document (PDF, Excel, CSV, sauvegarde) servi par l'API.</summary>
     public async Task<byte[]> DownloadAsync(string path, CancellationToken ct = default)
     {
-        // Le logo de l'établissement est gardé sur l'appareil : il reste affiché hors ligne.
+        // Le logo de l'établissement est gardé sur l'appareil : il reste affiché
+        // dès la connexion hors ligne, sans essayer un téléchargement de 60 s.
         var keep = path == "api/etablissement/logo";
+        ct.ThrowIfCancellationRequested();
+        if (!IsOnline && CanUseOfflineCache)
+        {
+            if (keep && Offline!.ReadPage(path) is { } cached)
+                return Convert.FromBase64String(cached.Json);
+            throw new OfflineException(keep
+                ? "Le logo de l'établissement n'a pas encore été enregistré sur cet appareil."
+                : "L'export ou le document demandé exige la connexion au serveur.");
+        }
+
         try
         {
-            using var response = await http.GetAsync(path, ct);
+            using var deadline = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            if (keep) deadline.CancelAfter(ReadTimeout);
+            using var response = await http.GetAsync(path, deadline.Token);
             if (!response.IsSuccessStatusCode) throw await ToException(response);
-            var bytes = await response.Content.ReadAsByteArrayAsync(ct);
-            if (keep) Offline?.SavePage(path, Convert.ToBase64String(bytes));
+            var bytes = await response.Content.ReadAsByteArrayAsync(deadline.Token);
+            if (keep && Offline is { } store) store.SavePage(path, Convert.ToBase64String(bytes));
             return bytes;
         }
-        catch (Exception ex) when (keep && IsDisconnected(ex, ct) && Offline?.ReadPage(path) is { } saved)
+        catch (Exception ex) when (keep && IsDisconnected(ex, ct))
         {
-            return Convert.FromBase64String(saved.Json);
+            SetOnline(false);
+            if (Offline?.ReadPage(path) is { } saved)
+                return Convert.FromBase64String(saved.Json);
+            throw new OfflineException("Le logo de l'établissement n'a pas encore été enregistré sur cet appareil.");
         }
     }
 
