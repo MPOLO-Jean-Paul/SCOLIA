@@ -35,6 +35,55 @@ public static class VoiceInput
 }
 
 /// <summary>
+/// Cycle de vie d'un microphone lié à un champ : un clic démarre, un second annule.
+/// Aucune ancienne transcription ne doit modifier la recherche après l'arrêt.
+/// </summary>
+public sealed class VoiceCaptureSession
+{
+    private CancellationTokenSource? active;
+
+    public bool IsListening => active is { IsCancellationRequested: false };
+
+    public async Task ToggleAsync(Action<string> accept, Action<bool>? listeningChanged = null)
+    {
+        if (active is { } previous)
+        {
+            if (!previous.IsCancellationRequested)
+            {
+                previous.Cancel();
+                listeningChanged?.Invoke(false);
+            }
+            return;
+        }
+        if (!VoiceInput.Available) return;
+
+        using var source = new CancellationTokenSource();
+        active = source;
+        listeningChanged?.Invoke(true);
+        try
+        {
+            var text = await VoiceInput.ListenAsync(source.Token);
+            if (!source.IsCancellationRequested && text is not null) accept(text);
+        }
+        finally
+        {
+            if (ReferenceEquals(active, source))
+            {
+                active = null;
+                listeningChanged?.Invoke(false);
+            }
+        }
+    }
+
+    public void Cancel(Action<bool>? listeningChanged = null)
+    {
+        if (active is not { IsCancellationRequested: false } source) return;
+        source.Cancel();
+        listeningChanged?.Invoke(false);
+    }
+}
+
+/// <summary>
 /// Micro ajouté à tout champ de recherche en pilule (classe « search ») : un toucher dicte le texte, comme la barre
 /// de l'accueil. Rien n'est ajouté sur un appareil sans reconnaissance vocale, donc rien sur l'ordinateur.
 /// </summary>
