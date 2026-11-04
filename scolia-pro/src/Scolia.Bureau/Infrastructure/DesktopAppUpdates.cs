@@ -61,8 +61,10 @@ public static class DesktopAppUpdates
                 if (manual) await MessageAsync(owner, "SCOLIA Pro", "Vous utilisez déjà la dernière version officielle.");
                 return;
             }
-            if (!manual && versionPrompted == update.Version.ToString()) return;
+            if (!manual && versionPrompted == update.Version.ToString() &&
+                DateTimeOffset.UtcNow - lastPrompt < TimeSpan.FromHours(12)) return;
             versionPrompted = update.Version.ToString();
+            lastPrompt = DateTimeOffset.UtcNow;
             bool agreed = await AskAsync(owner,
                 $"Mise à jour SCOLIA Pro {update.Version}",
                 $"Une nouvelle version de SCOLIA Pro est disponible.\nTaille : {update.Size / (1024.0 * 1024.0):F1} Mo.\n\n"
