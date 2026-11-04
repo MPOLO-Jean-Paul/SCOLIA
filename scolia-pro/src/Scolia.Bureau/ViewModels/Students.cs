@@ -195,7 +195,7 @@ public sealed record EnrollmentRow(string Year, string Promotion, string Enrolle
 public sealed record AccountRow(string Label, string DueDate, string Amount, string Covered, string Paid, string Remaining, string Status, IBrush StatusBrush);
 
 /// <summary>Prise en charge affichée sur la fiche.</summary>
-public sealed record SponsorshipRow(Guid Id, string Sponsor, string Reason, string Since, string Covered, string Status, bool Active);
+public sealed record SponsorshipRow(Guid Id, string Sponsor, string Reason, string Since, string Covered, string Status, bool Active, string Type = "Historique");
 
 /// <summary>Fiche d'un apprenant : identité, inscriptions, compte, reçus et prises en charge.</summary>
 public sealed class StudentDetailPage : PageViewModel
@@ -313,7 +313,7 @@ public sealed class StudentDetailPage : PageViewModel
         var sponsorships = await Shell.Api.GetAsync<List<SponsorshipDto>>($"api/inscriptions/{enrollment.Id}/prises-en-charge");
         foreach (var s in sponsorships)
             Sponsorships.Add(new SponsorshipRow(s.Id, s.SponsorName, s.Reason, Format.Date(s.EffectiveFrom), Money(s.CoveredTotal),
-                s.IsActive ? "Active" : "Terminée", s.IsActive));
+                s.IsActive ? "Active" : "Terminée", s.IsActive, s.Type));
     }
 
     public override async Task PrintAsync() => await StatementAsync();
@@ -377,25 +377,60 @@ public sealed class StudentDetailPage : PageViewModel
             Shell.Notify("Cette promotion n'a pas de frais à prendre en charge.");
             return;
         }
-        var fees = promotion.Fees.ToList();
-        var form = new FormViewModel("Nouvelle prise en charge", "Pourcentage couvert pour chaque frais, de 0 à 100.", f =>
+        // La couverture est liée à l'inscription de l'année. Les mois sont
+        // automatiquement obtenus depuis la configuration de la promotion.
+        var hasMonthly = promotion.Fees.Any(f => f.Kind.Equals("Mensualite", StringComparison.OrdinalIgnoreCase));
+        var options = new List<ChoiceItem> { new("Complete", "Complète — tous les frais et tous les mois") };
+        if (hasMonthly) options.Add(new("PartielleMensuelle", "Partielle — montant fixe par mois"));
+        var form = new FormViewModel("Nouvelle prise en charge",
+            "Choisissez une couverture complète ou un montant fixe par mensualité.", f =>
         {
-            var lines = fees
-                .Select(fee => new { feeItemId = fee.Id, percent = f.Amount($"fee-{fee.Id}") })
-                .Where(l => l.percent > 0)
-                .ToList();
-            if (lines.Count == 0)
+            var type = f.ChoiceValue("type");
+            if (type is not ("Complete" or "PartielleMensuelle"))
             {
-                f.Find($"fee-{fees[0].Id}").Error = "Indiquez au moins un pourcentage.";
+                f.Find("type").Error = "Choisissez le type de prise en charge.";
                 return Task.FromResult(false);
             }
+            decimal? amount = null;
+            if (type == "PartielleMensuelle")
+            {
+                amount = f.Amount("mensuel");
+                if (amount <= 0)
+                {
+                    f.Find("mensuel").Error = "Saisissez un montant mensuel supérieur à zéro.";
+                    return Task.FromResult(false);
+                }
+                var min = promotion.Fees
+                    .Where(fee => fee.Kind.Equals("Mensualite", StringComparison.OrdinalIgnoreCase) && fee.Amount > 0)
+                    .Select(fee => fee.Amount).DefaultIfEmpty(0m).Min();
+                if (min <= 0 || amount > min)
+                {
+                    f.Find("mensuel").Error = "Le montant ne peut dépasser la plus petite mensualité.";
+                    return Task.FromResult(false);
+                }
+            }
             return SaveAsync(HttpMethod.Post, $"api/inscriptions/{enrollment.Id}/prises-en-charge",
-                new { sponsorName = f.Text("sponsor"), reason = f.Text("motif"), effectiveFrom = f.Day("date"), lines }, "Prise en charge enregistrée.");
+                new { sponsorName = f.Text("sponsor"), reason = f.Text("motif"),
+                    effectiveFrom = f.Day("date"), type, monthlyAmount = amount },
+                "Prise en charge enregistrée.");
         });
+        form.AddChoice("type", "Type de prise en charge", options, required: false);
         form.Add("sponsor", "Garant ou organisme", required: true);
         form.Add("motif", "Motif", required: true);
         form.AddDay("date", "Date d'effet", DateOnly.FromDateTime(DateTime.Today), required: true);
-        foreach (var fee in fees) form.Add($"fee-{fee.Id}", $"{fee.Label} (%)", FieldKind.Amount, "0");
+        // Un seul champ monétaire ; une prise en charge complète ne demande aucun montant.
+        form.Changed = field =>
+        {
+            if (field.Key != "type") return;
+            var partial = form.ChoiceValue("type") == "PartielleMensuelle";
+            var existing = form.Fields.FirstOrDefault(f => f.Key == "mensuel");
+            if (partial && existing is null)
+                form.Add("mensuel", "Montant pris en charge par mois",
+                    FieldKind.Amount, required: true,
+                    hint: "Même montant pour chacun des mois scolaires de cette promotion.");
+            else if (!partial && existing is not null)
+                form.Fields.Remove(existing);
+        };
         if (await Shell.Ask(form)) await RefreshAsync();
     }
 
