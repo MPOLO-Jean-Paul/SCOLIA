@@ -141,7 +141,7 @@ public static class AndroidAppUpdates
                 await Task.Delay(TimeSpan.FromSeconds(2), cancellation);
             }
         }
-        catch (OperationCanceledException) when (cancellation.IsCancellationRequested) { }
+        catch (System.OperationCanceledException) when (cancellation.IsCancellationRequested) { }
         catch (Exception ex)
         {
             Android.Util.Log.Warn("SCOLIA-MAJ", $"Suivi du téléchargement différé : {ex.GetType().Name}");
