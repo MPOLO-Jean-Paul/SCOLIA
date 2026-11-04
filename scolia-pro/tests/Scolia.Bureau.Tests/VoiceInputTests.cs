@@ -44,6 +44,14 @@ public sealed class VoiceInputTests
     }
 
     [Fact]
+    public async Task Le_service_windows_ne_demarre_jamais_sur_un_autre_systeme()
+    {
+        if (OperatingSystem.IsWindows()) return; // Exige un microphone et un moteur fr-FR pour le vrai test Windows.
+        Assert.False(WindowsSpeechInput.IsAvailable());
+        Assert.Null(await WindowsSpeechInput.ListenAsync());
+    }
+
+    [Fact]
     public async Task Une_panne_du_service_vocal_ne_casse_pas_la_recherche()
     {
         var (recognize, can) = (Platform.RecognizeSpeechAsync, Platform.CanRecognizeSpeech);
