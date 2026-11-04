@@ -269,15 +269,13 @@ public sealed class SearchViewModel : Observable
 
     // ---------- Voix : le micro du champ, comme dans Google ----------
     public bool VoiceAvailable => VoiceInput.Available;
+    private readonly VoiceCaptureSession voiceSession = new();
     private bool listening;
-    public bool Listening { get => listening; private set { if (Set(ref listening, value)) Raise(nameof(Placeholder)); } }
-    public AsyncCommand Listen => listen ??= new AsyncCommand(async () =>
-    {
-        Listening = true;
-        try { if (await VoiceInput.ListenAsync() is { } text) Query = text; }
-        finally { Listening = false; }
-    });
-    private AsyncCommand? listen;
+    public bool Listening { get => listening; private set { if (Set(ref listening, value)) { Raise(nameof(Placeholder)); Raise(nameof(VoiceTip)); } } }
+    public string VoiceTip => Listening ? "Arrêter l'écoute vocale" : "Rechercher à la voix";
+    public RelayCommand Listen => listen ??= new RelayCommand(() =>
+        _ = voiceSession.ToggleAsync(text => Query = text, active => Listening = active));
+    private RelayCommand? listen;
     public ObservableCollection<RecentSearchRow> Recent { get; } = [];
     public bool HasRecent => Recent.Count > 0;
     public IReadOnlyList<SearchShortcutRow> Shortcuts { get; }
