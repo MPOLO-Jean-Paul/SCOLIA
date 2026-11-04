@@ -21,6 +21,7 @@ public sealed class MainActivity : AvaloniaMainActivity
         MobilePlatform.Attach(this);
         AndroidSpeech.Attach(this);
         AndroidCamera.Attach(this);
+        AndroidQrScanner.Attach(this);
         // Le fond du thème couvre aussi la préparation d'Avalonia dans base.OnCreate.
         base.OnCreate(savedInstanceState);
         // Activer le service AVANT toute attente de synchronisation, d'écran de
