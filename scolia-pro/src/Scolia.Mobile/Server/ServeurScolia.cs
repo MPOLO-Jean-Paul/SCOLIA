@@ -12,7 +12,7 @@ namespace Scolia.Mobile.Server;
 /// ou application quittée, et la notification rappelle que les autres postes en dépendent. Le Wi-Fi reste éveillé
 /// et reçoit les recherches des autres postes.
 /// </summary>
-[Service(Name = "com.jpservices.scolia.ServeurScolia", Exported = false, StopWithTask = false, ForegroundServiceType = ForegroundService.TypeSpecialUse)]
+[Service(Name = "com.jpservices.scolia.ServeurScolia", Exported = false, ForegroundServiceType = ForegroundService.TypeSpecialUse)]
 [MetaData("android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE",
     Value = "Local school records server voluntarily enabled by the user, with visible notification for authorized devices")]
 public sealed class ServeurScolia : Service
@@ -156,7 +156,7 @@ public sealed class ServeurScolia : Service
     /// <summary>Une connexion disponible provoque une vérification sans redémarrer Kestrel à tort.</summary>
     private sealed class HostNetworkCallback(ServeurScolia host) : ConnectivityManager.NetworkCallback
     {
-        public override void OnAvailable(Network network) => _ = host.VerifyServerAsync();
+        public override void OnAvailable(Android.Net.Network network) => _ = host.VerifyServerAsync();
     }
 
     private Notification BuildNotification()
