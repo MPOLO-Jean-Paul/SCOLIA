@@ -90,6 +90,8 @@ public sealed class SponsorshipLine : Entity
     public Guid SponsorshipId { get; set; }
     public Guid FeeItemId { get; set; }
     public decimal Percent { get; set; }
+    /// <summary>Montant réellement couvert pour ce mois en mode partiel (sans pourcentage).</summary>
+    public decimal Amount { get; set; }
 }
 
 /// <summary>Règles d'identité reprises de SCOLIA V79 et durcies.</summary>
