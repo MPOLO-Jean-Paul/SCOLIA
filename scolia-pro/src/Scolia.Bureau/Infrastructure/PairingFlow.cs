@@ -19,6 +19,16 @@ public static class PairingFlow
     /// </summary>
     public static async Task<(string? Text, string? Problem)> CaptureAsync(ShellViewModel shell, bool fromPhoto = false)
     {
+        // En priorité : viseur Android en direct, sans photographier manuellement le QR.
+        // La fonction native gère un recours local à l'appareil photo si le module manque.
+        if (!fromPhoto && Platform.ScanQrAsync is { } liveScan)
+        {
+            var detected = await liveScan();
+            if (string.IsNullOrWhiteSpace(detected)) return (null, null);
+            return PairingCode.TryParse(detected, out _, out var problem)
+                ? (detected, null) : (null, problem);
+        }
+
         byte[]? image;
         if (fromPhoto && Platform.PickQrImageAsync is { } androidPicker)
             image = await androidPicker();
