@@ -34,7 +34,11 @@ public static class AndroidAppUpdates
     private const int DownloadSuccessStatus = 8; // DownloadManager.STATUS_SUCCESSFUL
     private const int DownloadFailureStatus = 16; // DownloadManager.STATUS_FAILED
     private const long MaxApkBytes = 350L * 1024 * 1024;
-    private const long CheckSeconds = 6 * 60 * 60;
+    // Le contrôle en ouvrant SCOLIA doit voir une publication récente ; WorkManager
+    // reste à 6 h pour économiser la batterie hors de l'application.
+    private const long CheckSeconds = 15 * 60;
+    private const string DeferredVersionKey = "deferred-version";
+    private const string DeferredUntilKey = "deferred-until";
     private static readonly HttpClient Http = new() { Timeout = TimeSpan.FromSeconds(25) };
     private static readonly SemaphoreSlim CheckGate = new(1, 1);
     private static readonly SemaphoreSlim VerificationGate = new(1, 1);
@@ -62,19 +66,47 @@ public static class AndroidAppUpdates
         _ = ResumeAsync(activity);
     }
 
+    /// <summary>Commande visible « Vérifier les mises à jour » : interroge GitHub sans cache.</summary>
+    public static async Task CheckNowAsync(Activity activity)
+    {
+        try
+        {
+            if (await CheckDownloadAsync(activity))
+            {
+                activity.RunOnUiThread(() => Toast.MakeText(activity,
+                    "Une mise à jour est déjà en téléchargement ou prête à installer.",
+                    ToastLength.Long)?.Show());
+                return;
+            }
+            bool found = await CheckLatestAsync(activity, showDialog: true,
+                forceRefresh: true, manual: true);
+            if (!found)
+                activity.RunOnUiThread(() => new AlertDialog.Builder(activity)
+                    .SetTitle("Mises à jour SCOLIA")
+                    .SetMessage("Aucune nouvelle version Android officielle n'est disponible pour cette installation. Les versions de test portant le même numéro ne sont pas considérées comme plus récentes.")
+                    .SetPositiveButton("Fermer", (_, _) => { })
+                    .Show());
+        }
+        catch (Exception ex) when (ex is HttpRequestException or IOException or JsonException
+            or TaskCanceledException or Java.Lang.Exception or InvalidOperationException)
+        {
+            Android.Util.Log.Warn("SCOLIA-MAJ", $"Contrôle manuel impossible : {ex}");
+            activity.RunOnUiThread(() => new AlertDialog.Builder(activity)
+                .SetTitle("Vérification indisponible")
+                .SetMessage("Impossible de consulter GitHub Releases. Vérifiez Internet ou le VPN et réessayez. Détail : " + ex.Message)
+                .SetPositiveButton("Fermer", (_, _) => { })
+                .Show());
+        }
+    }
+
     private static async Task ResumeAsync(Activity activity)
     {
         try
         {
             // Une installation en attente a priorité sur une nouvelle recherche réseau.
             if (await CheckDownloadAsync(activity)) return;
-            var prefs = Preferences(activity);
-            var cached = Deserialize(prefs.GetString(ReleaseKey, null));
-            if (cached is not null && IsNewer(activity, cached.Version))
-            {
-                OfferUpdate(activity, cached);
-                return;
-            }
+            // Ne pas arrêter la recherche sur une ancienne version mémorisée.
+            // Le contrôle automatique contacte GitHub au plus une fois par 15 min.
             await CheckLatestAsync(activity, showDialog: true);
         }
         catch (Exception ex) when (ex is IOException or HttpRequestException or JsonException
@@ -85,18 +117,22 @@ public static class AndroidAppUpdates
     }
 
     /// <summary>Peut être appelée par l'interface ou le worker. Ne télécharge jamais un APK seule.</summary>
-    internal static async Task<bool> CheckLatestAsync(Context context, bool showDialog)
+    internal static async Task<bool> CheckLatestAsync(Context context, bool showDialog,
+        bool forceRefresh = false, bool manual = false)
     {
-        if (!await CheckGate.WaitAsync(0)) return false;
+        // Pour une demande explicite, attendre le contrôle en cours au lieu
+        // d'abandonner silencieusement pendant qu'un worker réseau travaille.
+        if (manual) await CheckGate.WaitAsync();
+        else if (!await CheckGate.WaitAsync(0)) return false;
         try
         {
             var prefs = Preferences(context);
             long now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-            if (now - prefs.GetLong(LastCheckKey, 0) < CheckSeconds)
+            if (!forceRefresh && now - prefs.GetLong(LastCheckKey, 0) < CheckSeconds)
             {
                 var cached = Deserialize(prefs.GetString(ReleaseKey, null));
                 if (cached is null || !IsNewer(context, cached.Version)) return false;
-                if (showDialog && context is Activity shown) OfferUpdate(shown, cached);
+                if (showDialog && context is Activity shown) OfferUpdate(shown, cached, manual);
                 return true;
             }
 
@@ -110,7 +146,7 @@ public static class AndroidAppUpdates
             }
 
             prefs.Edit()!.PutString(ReleaseKey, JsonSerializer.Serialize(release))!.Apply();
-            if (showDialog && context is Activity screen) OfferUpdate(screen, release);
+            if (showDialog && context is Activity screen) OfferUpdate(screen, release, manual);
             else NotifyOnce(context, release);
             return true;
         }
@@ -176,9 +212,13 @@ public static class AndroidAppUpdates
         catch (JsonException) { return null; }
     }
 
-    private static void OfferUpdate(Activity activity, Release release)
+    private static void OfferUpdate(Activity activity, Release release, bool manual = false)
     {
-        if (activity.IsFinishing || activity.IsDestroyed || promptedVersion == release.Version) return;
+        if (activity.IsFinishing || activity.IsDestroyed) return;
+        var prefs = Preferences(activity);
+        if (!manual && prefs.GetString(DeferredVersionKey, null) == release.Version &&
+            DateTimeOffset.UtcNow.ToUnixTimeSeconds() < prefs.GetLong(DeferredUntilKey, 0)) return;
+        if (!manual && promptedVersion == release.Version) return;
         promptedVersion = release.Version;
         activity.RunOnUiThread(() =>
         {
@@ -187,8 +227,21 @@ public static class AndroidAppUpdates
             new AlertDialog.Builder(activity)
                 .SetTitle($"SCOLIA Pro {release.Version} disponible")
                 .SetMessage($"Une mise à jour est disponible.\nTaille : {mb:F1} Mo.\n\nTélécharger maintenant avec Android ? Les données scolaires existantes seront conservées si la signature de l'application est identique.")
-                .SetPositiveButton("Télécharger", (_, _) => StartDownload(activity, release))
-                .SetNegativeButton("Plus tard", (_, _) => { })
+                .SetPositiveButton("Télécharger", (_, _) =>
+                {
+                    promptedVersion = null;
+                    prefs.Edit()!.Remove(DeferredVersionKey)!.Remove(DeferredUntilKey)!.Apply();
+                    StartDownload(activity, release);
+                })
+                .SetNegativeButton("Plus tard", (_, _) =>
+                {
+                    promptedVersion = null;
+                    // Ne pas proposer la même version à chaque changement de page.
+                    prefs.Edit()!
+                        .PutString(DeferredVersionKey, release.Version)!
+                        .PutLong(DeferredUntilKey, DateTimeOffset.UtcNow.AddHours(12).ToUnixTimeSeconds())!
+                        .Apply();
+                })
                 .Show();
         });
     }

@@ -25,7 +25,8 @@ public static class DesktopAppUpdates
     private const string LatestRelease = "https://api.github.com/repos/MPOLO-Jean-Paul/SCOLIA/releases/latest";
     private const string TrustedReleasePath = "/MPOLO-Jean-Paul/SCOLIA/releases/download/";
     private const long MaximumSetupBytes = 400L * 1024 * 1024;
-    private static readonly TimeSpan CheckDelay = TimeSpan.FromHours(6);
+    private static readonly TimeSpan CheckDelay = TimeSpan.FromMinutes(30);
+    private static DateTimeOffset lastPrompt;
     private static readonly HttpClient Http = new() { Timeout = TimeSpan.FromSeconds(35) };
     private static DateTimeOffset lastAttempt;
     private static string? versionPrompted;
@@ -60,8 +61,10 @@ public static class DesktopAppUpdates
                 if (manual) await MessageAsync(owner, "SCOLIA Pro", "Vous utilisez déjà la dernière version officielle.");
                 return;
             }
-            if (!manual && versionPrompted == update.Version.ToString()) return;
+            if (!manual && versionPrompted == update.Version.ToString() &&
+                DateTimeOffset.UtcNow - lastPrompt < TimeSpan.FromHours(12)) return;
             versionPrompted = update.Version.ToString();
+            lastPrompt = DateTimeOffset.UtcNow;
             bool agreed = await AskAsync(owner,
                 $"Mise à jour SCOLIA Pro {update.Version}",
                 $"Une nouvelle version de SCOLIA Pro est disponible.\nTaille : {update.Size / (1024.0 * 1024.0):F1} Mo.\n\n"

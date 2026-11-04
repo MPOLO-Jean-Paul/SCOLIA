@@ -30,6 +30,10 @@ public sealed class PosteViewModel : Observable
         }));
         Search = new AsyncCommand(SearchAsync);
         AllowBackground = new RelayCommand(() => Platform.AllowBackground?.Invoke());
+        CheckMobileUpdates = new AsyncCommand(async () =>
+        {
+            if (Platform.CheckAppUpdatesAsync is { } check) await check();
+        });
         VerifyBackgroundServer = new AsyncCommand(async () =>
         {
             if (!IsPhoneServer) return;
@@ -69,6 +73,7 @@ public sealed class PosteViewModel : Observable
     public bool CanBecomeServer => IsLinked && Platform.CanHostServer;
 
     /// <summary>Téléphone serveur de l'établissement : il garde les données et les autres postes s'y connectent.</summary>
+    public bool CanCheckMobileUpdates => Platform.IsMobile && Platform.CheckAppUpdatesAsync is not null;
     public bool IsPhoneServer => Platform.IsMobile && IsServerComputer;
     public bool IsPhoneClient => Platform.IsMobile && !IsServerComputer;
 
@@ -166,6 +171,7 @@ public sealed class PosteViewModel : Observable
         });
     }
     public RelayCommand AllowBackground { get; }
+    public AsyncCommand CheckMobileUpdates { get; }
     public AsyncCommand VerifyBackgroundServer { get; }
     public RelayCommand OpenAppSettings { get; }
     public RelayCommand OpenPowerOptions { get; }

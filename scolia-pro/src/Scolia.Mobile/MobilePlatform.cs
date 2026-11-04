@@ -65,6 +65,11 @@ public static class MobilePlatform
         Platform.IsHostApiServing = () => Server.PhoneServer.Get(app).IsServingVerified;
         Platform.HostNetworkDiagnostic = () => Server.PhoneServer.Get(app).LastDiagnostic;
         Platform.CheckHostNetworkAsync = () => Server.PhoneServer.Get(app).VerifyAndRecoverInBackgroundAsync();
+        Platform.CheckAppUpdatesAsync = async () =>
+        {
+            if (screen?.TryGetTarget(out var activity) == true && !activity.IsFinishing)
+                await AndroidAppUpdates.CheckNowAsync(activity);
+        };
         Platform.EnsureHostAvailable = () => Server.PhoneServer.Get(app).EnsureServingOnResume();
         // Téléphone serveur : écran éteint, il doit rester joignable. Android ne doit pas le freiner pour la batterie.
         Platform.BackgroundAllowed = () => AndroidBackground.IsAllowed(context ?? app);
