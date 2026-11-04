@@ -181,7 +181,7 @@ public sealed class PosteViewModel : Observable
                      nameof(IsPhoneServer), nameof(IsPhoneClient), nameof(CanBecomeServer), nameof(ShowBackground), nameof(BackgroundOk),
                      nameof(BackgroundBlocked), nameof(HostForegroundActive), nameof(HostApiServing),
                      nameof(BackgroundHealthy), nameof(BackgroundNeedsAttention),
-                     nameof(BackgroundTitle), nameof(BackgroundLine), nameof(HasBackgroundHint), nameof(ShowAwake), nameof(AwakeLine) })
+                     nameof(BackgroundTitle), nameof(BackgroundLine), nameof(BackgroundDiagnostic), nameof(HasBackgroundHint), nameof(ShowAwake), nameof(AwakeLine) })
             Raise(name);
     }
 
