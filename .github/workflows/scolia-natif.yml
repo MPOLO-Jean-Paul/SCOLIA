@@ -309,15 +309,15 @@ jobs:
           test -s "$setup" && test -s "$setup_sha"
           (cd artifacts/ota-setup && sha256sum -c "SCOLIA_Pro_Installation_${version}_Windows_x64.exe.sha256")
           tag="scolia-pro-v${version}"
+          # Une version publiée est IMMUTABLE : ne jamais remplacer un APK/EXE sous le meme tag.
+          # Incrementez Version et AndroidVersionCode dans les sources avant une nouvelle release.
           if gh release view "$tag" --repo "$GH_REPO" >/dev/null 2>&1; then
-            # Les nouvelles mises a jour doivent augmenter le numero de version.
-            gh release upload "$tag" "$apk" "$sha" "$setup" "$setup_sha" --repo "$GH_REPO" --clobber
-            gh release edit "$tag" --repo "$GH_REPO" --latest
-          else
-            gh release create "$tag" "$apk" "$sha" "$setup" "$setup_sha" \
-              --repo "$GH_REPO" --target "${{ github.event.pull_request.head.sha || github.sha }}" --latest \
-              --title "SCOLIA Pro ${version} - Android et Windows" \
-              --notes "Mise a jour Android et installateur Windows x64. SHA-256 publies. Confirmation obligatoire pour l'installation. Conserver les donnees scolaires locales et faire une sauvegarde avant une intervention sur le serveur."
+            echo "::notice::La version $tag est deja publiee : aucun remplacement d'APK ou d'EXE."
+            exit 0
           fi
+          gh release create "$tag" "$apk" "$sha" "$setup" "$setup_sha" \
+            --repo "$GH_REPO" --target "${{ github.sha }}" --latest \
+            --title "SCOLIA Pro ${version} - Android et Windows" \
+            --notes "Mise a jour Android et installateur Windows x64. SHA-256 publies. Confirmation obligatoire pour l'installation. Conserver les donnees scolaires locales et faire une sauvegarde avant une intervention sur le serveur."
           gh release view "$tag" --repo "$GH_REPO" --json url,assets \
             --jq '{url, fichiers: [.assets[] | select(.name | endswith(".apk") or endswith(".exe")) | {name,url,digest}]}'
