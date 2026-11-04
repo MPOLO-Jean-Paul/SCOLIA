@@ -19,9 +19,9 @@ public static class WindowsSpeechInput
         $recognizers = [System.Speech.Recognition.SpeechRecognitionEngine]::InstalledRecognizers()
         $recognizer = $recognizers | Where-Object { $_.Culture.Name -eq 'fr-FR' } | Select-Object -First 1
         if ($null -eq $recognizer) { exit 3 }
-        $engine = New-Object System.Speech.Recognition.SpeechRecognitionEngine($recognizer)
+        $engine = [System.Speech.Recognition.SpeechRecognitionEngine]::new($recognizer)
         try {
-            $engine.LoadGrammar((New-Object System.Speech.Recognition.DictationGrammar))
+            $engine.LoadGrammar([System.Speech.Recognition.DictationGrammar]::new())
             $engine.SetInputToDefaultAudioDevice()
             $result = $engine.Recognize([TimeSpan]::FromSeconds(10))
             if ($null -ne $result -and $result.Confidence -ge 0.30) {
@@ -46,7 +46,7 @@ public static class WindowsSpeechInput
         if (!await MicrophoneGate.WaitAsync(0).ConfigureAwait(false)) return null;
         try
         {
-        return await RecognizeOnceAsync().ConfigureAwait(false);
+            return await RecognizeOnceAsync().ConfigureAwait(false);
         }
         finally { MicrophoneGate.Release(); }
     }
