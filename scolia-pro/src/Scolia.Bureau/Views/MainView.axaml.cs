@@ -239,7 +239,13 @@ public partial class MainView : UserControl
 
     private void OnHeaderFinderMic(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
-        if (Shell is { } shell) OpenHeaderFinder(shell);
+        // Ne pas recréer le ViewModel du champ quand le micro est actionné :
+        // l'arrêt doit atteindre exactement la session qui est en train d'écouter.
+        if (Shell is { } shell)
+        {
+            PlaceHeaderFinder();
+            shell.HeaderFinderOpen = true;
+        }
     }
 
     private void OpenHeaderFinder(ShellViewModel shell)

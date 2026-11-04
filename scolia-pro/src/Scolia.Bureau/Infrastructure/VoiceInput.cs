@@ -8,18 +8,78 @@ namespace Scolia.Bureau.Infrastructure;
 /// </summary>
 public static class VoiceInput
 {
-    public static bool Available => Platform.RecognizeSpeechAsync is not null && (Platform.CanRecognizeSpeech?.Invoke() ?? true);
+    public static bool Available =>
+        (Platform.RecognizeSpeechAsync is not null || Platform.RecognizeSpeechWithCancellationAsync is not null)
+        && (Platform.CanRecognizeSpeech?.Invoke() ?? true);
 
-    /// <summary>Écoute une phrase ; rien si la personne annule ou si l'appareil n'a pas de reconnaissance vocale.</summary>
-    public static async Task<string?> ListenAsync()
+    /// <summary>Retourne uniquement une dictée non annulée. Sous Windows, le jeton arrête le vrai processus vocal.</summary>
+    public static async Task<string?> ListenAsync(CancellationToken cancellationToken = default)
     {
-        if (!Available || Platform.RecognizeSpeechAsync is not { } recognize) return null;
+        if (!Available || cancellationToken.IsCancellationRequested) return null;
         try
         {
-            var text = await recognize();
-            return string.IsNullOrWhiteSpace(text) ? null : text.Trim().TrimEnd('.', '!', '?').TrimEnd();
+            var text = Platform.RecognizeSpeechWithCancellationAsync is { } recognizeCancelable
+                ? await recognizeCancelable(cancellationToken)
+                : Platform.RecognizeSpeechAsync is { } recognize
+                    ? await recognize().WaitAsync(cancellationToken)
+                    : null;
+            return cancellationToken.IsCancellationRequested || string.IsNullOrWhiteSpace(text)
+                ? null : text.Trim().TrimEnd('.', '!', '?').TrimEnd();
         }
-        catch (Exception ex) when (ex is InvalidOperationException or TaskCanceledException or IOException) { return null; }
+        catch (Exception ex) when (ex is OperationCanceledException or InvalidOperationException or IOException)
+        {
+            return null;
+        }
+    }
+
+}
+
+/// <summary>
+/// Cycle de vie d'un microphone lié à un champ : un clic démarre, un second annule.
+/// Aucune ancienne transcription ne doit modifier la recherche après l'arrêt.
+/// </summary>
+public sealed class VoiceCaptureSession
+{
+    private CancellationTokenSource? active;
+
+    public bool IsListening => active is { IsCancellationRequested: false };
+
+    public async Task ToggleAsync(Action<string> accept, Action<bool>? listeningChanged = null)
+    {
+        if (active is { } previous)
+        {
+            if (!previous.IsCancellationRequested)
+            {
+                previous.Cancel();
+                listeningChanged?.Invoke(false);
+            }
+            return;
+        }
+        if (!VoiceInput.Available) return;
+
+        using var source = new CancellationTokenSource();
+        active = source;
+        listeningChanged?.Invoke(true);
+        try
+        {
+            var text = await VoiceInput.ListenAsync(source.Token);
+            if (!source.IsCancellationRequested && text is not null) accept(text);
+        }
+        finally
+        {
+            if (ReferenceEquals(active, source))
+            {
+                active = null;
+                listeningChanged?.Invoke(false);
+            }
+        }
+    }
+
+    public void Cancel(Action<bool>? listeningChanged = null)
+    {
+        if (active is not { IsCancellationRequested: false } source) return;
+        source.Cancel();
+        listeningChanged?.Invoke(false);
     }
 }
 
@@ -48,19 +108,20 @@ public sealed class VoiceField : Avalonia.AvaloniaObject
             mic.Classes.Add("baricon");
             mic.Classes.Add("mic");
             Avalonia.Controls.ToolTip.SetTip(mic, "Dicter la recherche");
-            mic.Click += async (_, _) =>
+            var dictation = new VoiceCaptureSession();
+            mic.Click += (_, _) => _ = dictation.ToggleAsync(text =>
             {
-                mic.Classes.Add("listening");
-                try
+                if (box.IsEnabled)
                 {
-                    if (await VoiceInput.ListenAsync() is { } text && box.IsEnabled)
-                    {
-                        box.Text = text;
-                        box.CaretIndex = text.Length;
-                    }
+                    box.Text = text;
+                    box.CaretIndex = text.Length;
                 }
-                finally { mic.Classes.Remove("listening"); }
-            };
+            }, isListening =>
+            {
+                if (isListening) mic.Classes.Add("listening");
+                else mic.Classes.Remove("listening");
+                Avalonia.Controls.ToolTip.SetTip(mic, isListening ? "Arrêter l'écoute" : "Dicter la recherche");
+            });
             box.InnerRightContent = mic;
         });
     }

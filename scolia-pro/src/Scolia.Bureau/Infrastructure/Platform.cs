@@ -96,6 +96,9 @@ public static class Platform
     /// </summary>
     public static Func<Task<string?>>? RecognizeSpeechAsync { get; set; }
 
+    /// <summary>Reconnaissance annulable pour Windows : un second clic coupe immédiatement le processus et le microphone.</summary>
+    public static Func<CancellationToken, Task<string?>>? RecognizeSpeechWithCancellationAsync { get; set; }
+
     /// <summary>Vrai si l'appareil sait reconnaître la voix (service vocal présent).</summary>
     public static Func<bool>? CanRecognizeSpeech { get; set; }
 

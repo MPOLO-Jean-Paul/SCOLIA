@@ -1103,7 +1103,9 @@ public sealed class ShellViewModel : Observable
     /// </summary>
     public void FreshHeaderFinder()
     {
-        if (headerFinder is { HasQuery: true }) return;
+        // Conserver la même commande et le même jeton pendant la dictée, sans
+        // reconstruire le champ au premier ou au deuxième clic sur le micro.
+        if (headerFinder is { HasQuery: true } or { Listening: true }) return;
         if (headerFinder is not null) headerFinder.PropertyChanged -= OnHeaderFinderChanged;
         headerFinder = NewHeaderFinder();
         Raise(nameof(HeaderFinder));
