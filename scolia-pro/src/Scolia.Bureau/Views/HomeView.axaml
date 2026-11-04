@@ -7,27 +7,32 @@
   <UserControl.Styles>
     <Style Selector="TextBlock.greeting"><Setter Property="FontSize" Value="{DynamicResource FsDisplay}" /></Style>
     <Style Selector="TextBlock.kpivalue"><Setter Property="FontSize" Value="{DynamicResource FsTitle}" /></Style>
-    <!-- Pastille du bandeau : fond blanc translucide, texte blanc -->
-    <Style Selector="Border.herochip">
-      <Setter Property="Background" Value="#26FFFFFF" />
-      <Setter Property="CornerRadius" Value="14" />
-      <Setter Property="Padding" Value="11,5" />
+    <!-- Accueil Windows natif : surface système, contraste automatique clair/sombre et bord discret. -->
+    <Style Selector="TextBlock.greeting"><Setter Property="FontSize" Value="24" /></Style>
+    <Style Selector="Border.desktopwelcome">
+      <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="16" />
     </Style>
-    <Style Selector="Border.herochip TextBlock"><Setter Property="Foreground" Value="White" /></Style>
-    <!-- Action du bandeau : bouton blanc, texte de la couleur d'accent -->
+    <Style Selector="Border.desktopstatechip">
+      <Setter Property="Background" Value="{DynamicResource GroupBrush}" />
+      <Setter Property="CornerRadius" Value="10" />
+      <Setter Property="Padding" Value="10,6" />
+    </Style>
     <Style Selector="Button.heroaction">
-      <Setter Property="Background" Value="White" />
-      <Setter Property="Foreground" Value="#0B4FC4" />
-      <Setter Property="CornerRadius" Value="12" />
-      <Setter Property="Padding" Value="16,0" />
+      <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="10" />
+      <Setter Property="Padding" Value="13,0" />
       <Setter Property="Height" Value="40" />
       <Setter Property="FontWeight" Value="SemiBold" />
-      <Setter Property="BorderThickness" Value="0" />
     </Style>
     <Style Selector="Button.heroaction:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-      <Setter Property="Background" Value="#E8F0FF" />
+      <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
     </Style>
-    <!-- Pastille cliquable : le bouton ne dessine rien, la pastille s'éclaircit au survol -->
     <Style Selector="Button.bare">
       <Setter Property="Background" Value="Transparent" />
       <Setter Property="BorderThickness" Value="0" />
@@ -36,7 +41,9 @@
     <Style Selector="Button.bare:pointerover /template/ ContentPresenter#PART_ContentPresenter">
       <Setter Property="Background" Value="Transparent" />
     </Style>
-    <Style Selector="Button.bare:pointerover Border.herochip"><Setter Property="Background" Value="#40FFFFFF" /></Style>
+    <Style Selector="Button.bare:pointerover Border.desktopstatechip">
+      <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
+    </Style>
     <!-- Outil : tuile compacte, l'icône à gauche, le nom et une ligne de description -->
     <Style Selector="Button.tooltile">
       <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
@@ -55,55 +62,62 @@
   <ScrollViewer>
     <StackPanel Spacing="16" Margin="0,0,6,12">
 
-      <!-- Bienvenue : bandeau aux couleurs de SCOLIA, la date, la salutation, l'état du poste et deux actions -->
-      <Border CornerRadius="18" ClipToBounds="True">
-        <Border.Background>
-          <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-            <GradientStop Offset="0" Color="#1565E0" />
-            <GradientStop Offset="0.6" Color="#0B4FC4" />
-            <GradientStop Offset="1" Color="#0E2A5C" />
-          </LinearGradientBrush>
-        </Border.Background>
-        <Grid ColumnDefinitions="*,Auto" Margin="24,20" infra:Adaptive.StackBelow="640">
-          <StackPanel Spacing="3" VerticalAlignment="Center">
-            <TextBlock Text="{Binding DateLine}" Foreground="#CFE0FF" />
-            <TextBlock Text="{Binding Greeting}" Classes="greeting" Foreground="White" FontWeight="Bold" TextWrapping="Wrap" />
-            <TextBlock Text="{Binding AccountContextLine}" Foreground="#DCE8FF" TextTrimming="CharacterEllipsis" TextWrapping="Wrap" />
-            <WrapPanel Margin="0,10,0,0">
-              <Border Classes="herochip" IsVisible="{Binding HasCashLine}" Margin="0,0,8,6">
+      <!-- Accueil natif de bureau : carte d'identité utilisateur et commandes compactes, sans bandeau web. -->
+      <Border Classes="desktopwelcome" Padding="20,18" ClipToBounds="True">
+        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="16" infra:Adaptive.StackBelow="880">
+          <!-- Initiales : repère personnel du poste, jamais le logo de l'école en dur. -->
+          <Border Width="54" Height="54" CornerRadius="15" Background="{DynamicResource AccentSoftBrush}"
+                  VerticalAlignment="Top">
+            <TextBlock Text="{Binding Initials}" FontSize="19" FontWeight="Bold"
+                       Foreground="{DynamicResource AccentBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+          </Border>
+          <StackPanel Grid.Column="1" Spacing="4" VerticalAlignment="Center">
+            <TextBlock Text="ESPACE DE TRAVAIL" Foreground="{DynamicResource MutedBrush}"
+                       FontSize="11" FontWeight="SemiBold" />
+            <TextBlock Text="{Binding Greeting}" Classes="greeting" Foreground="{DynamicResource TextBrush}"
+                       FontWeight="SemiBold" TextWrapping="Wrap" />
+            <TextBlock Text="{Binding AccountContextLine}" Foreground="{DynamicResource Text2Brush}"
+                       FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
+            <TextBlock Text="{Binding DateLine}" Classes="muted" FontSize="{DynamicResource FsSmall}" />
+            <WrapPanel Margin="0,8,0,0">
+              <Border Classes="desktopstatechip" IsVisible="{Binding HasCashLine}" Margin="0,0,8,6">
                 <StackPanel Orientation="Horizontal" Spacing="7">
-                  <Ellipse Width="10" Height="10" Fill="{Binding CashBrush}" Stroke="White" StrokeThickness="1.5" VerticalAlignment="Center" />
-                  <TextBlock Text="{Binding CashLine}" FontWeight="SemiBold" />
+                  <Ellipse Width="8" Height="8" Fill="{Binding CashBrush}" VerticalAlignment="Center" />
+                  <TextBlock Text="{Binding CashLine}" Foreground="{DynamicResource TextBrush}"
+                             FontSize="{DynamicResource FsSmall}" FontWeight="SemiBold" />
                 </StackPanel>
               </Border>
-              <Button Classes="bare" Command="{Binding Network}" Margin="0,0,8,6" ToolTip.Tip="Réseau et activité">
-                <Border Classes="herochip">
+              <Button Classes="bare" Command="{Binding Network}" Margin="0,0,8,6"
+                      ToolTip.Tip="Afficher l'état du réseau et les postes reliés">
+                <Border Classes="desktopstatechip">
                   <StackPanel Orientation="Horizontal" Spacing="7">
-                    <Ellipse Width="10" Height="10" Fill="{Binding Sync.StatusBrush}" Stroke="White" StrokeThickness="1.5" VerticalAlignment="Center" />
-                    <TextBlock Text="{Binding Sync.StatusText}" FontWeight="SemiBold" />
-                    <TextBlock Text="{Binding Sync.PeersText}" Opacity="0.85" />
+                    <Ellipse Width="8" Height="8" Fill="{Binding Sync.StatusBrush}" VerticalAlignment="Center" />
+                    <TextBlock Text="{Binding Sync.StatusText}" Foreground="{DynamicResource TextBrush}"
+                               FontSize="{DynamicResource FsSmall}" FontWeight="SemiBold" />
+                    <TextBlock Text="{Binding Sync.PeersText}" Foreground="{DynamicResource MutedBrush}"
+                               FontSize="{DynamicResource FsSmall}" />
                   </StackPanel>
                 </Border>
               </Button>
             </WrapPanel>
           </StackPanel>
-          <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="16" VerticalAlignment="Center" Margin="16,0,0,0">
-            <ItemsControl ItemsSource="{Binding QuickActions}" VerticalAlignment="Center">
-              <ItemsControl.ItemsPanel>
-                <ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="10" /></ItemsPanelTemplate>
-              </ItemsControl.ItemsPanel>
-              <ItemsControl.ItemTemplate>
-                <DataTemplate>
-                  <Button Classes="heroaction" Command="{Binding Open}">
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                      <mi:MaterialIcon Kind="{Binding Icon}" Width="18" Height="18" Foreground="#0B4FC4" />
-                      <TextBlock Text="{Binding Title}" VerticalAlignment="Center" />
-                    </StackPanel>
-                  </Button>
-                </DataTemplate>
-              </ItemsControl.ItemTemplate>
-            </ItemsControl>
-          </StackPanel>
+          <ItemsControl Grid.Column="2" ItemsSource="{Binding QuickActions}"
+                        VerticalAlignment="Center" Margin="12,0,0,0">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="8" /></ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate>
+                <Button Classes="heroaction" Command="{Binding Open}" ToolTip.Tip="{Binding Description}">
+                  <StackPanel Orientation="Horizontal" Spacing="7">
+                    <mi:MaterialIcon Kind="{Binding Icon}" Width="18" Height="18"
+                                     Foreground="{DynamicResource AccentBrush}" />
+                    <TextBlock Text="{Binding Title}" VerticalAlignment="Center" />
+                  </StackPanel>
+                </Button>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
         </Grid>
       </Border>
 
