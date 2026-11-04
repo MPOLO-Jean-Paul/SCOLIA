@@ -123,7 +123,7 @@ public sealed class DebtorsPage : PageViewModel
 }
 
 /// <summary>Ligne des prises en charge : bourses, sponsors et exonérations.</summary>
-public sealed record SponsorshipRowVm(Guid Id, Guid EnrollmentId, string Matricule, string Name, string Promotion, string Sponsor, string Reason, string Since, string Covered, string Status, IBrush StatusBrush);
+public sealed record SponsorshipRowVm(Guid Id, Guid EnrollmentId, string Matricule, string Name, string Promotion, string Sponsor, string Reason, string Since, string Covered, string Status, IBrush StatusBrush, string Type);
 
 /// <summary>Prises en charge de l'année : liste et fin d'une prise en charge.</summary>
 public sealed class SponsorshipsPage : PageViewModel
@@ -150,7 +150,7 @@ public sealed class SponsorshipsPage : PageViewModel
         Items.Clear();
         foreach (var s in rows)
             Items.Add(new SponsorshipRowVm(s.Id, s.EnrollmentId, s.Matricule, s.FullName, s.Promotion, s.SponsorName, s.Reason,
-                Format.Date(s.EffectiveFrom), Money(s.Covered), s.IsActive ? "Active" : "Terminée", ThemeBrush.Get(s.IsActive ? "ToneGreen" : "ToneNeutral")));
+                Format.Date(s.EffectiveFrom), Money(s.Covered), s.IsActive ? "Active" : "Terminée", ThemeBrush.Get(s.IsActive ? "ToneGreen" : "ToneNeutral"), s.Type));
         subtitle = $"{Format.Count(rows.Count, "prise en charge", "prises en charge")} · {rows.Count(r => r.IsActive)} active(s)";
         Raise(nameof(Subtitle));
     }
