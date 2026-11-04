@@ -4,7 +4,7 @@ namespace Scolia.Mobile;
 /// Décisions indépendantes d'Android : utiles pour vérifier que la fin du
 /// téléchargement déclenche une action, sans lancer d'installation sans accord.
 /// </summary>
-internal enum UpdateCompletionAction
+public enum UpdateCompletionAction
 {
     Ignore,
     DownloadFailed,
