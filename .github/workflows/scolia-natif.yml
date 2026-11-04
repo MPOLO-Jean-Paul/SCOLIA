@@ -230,7 +230,14 @@ jobs:
     name: Publier automatiquement les versions Android et Windows sur GitHub Releases
     # Publier seulement apres une compilation + des tests reussis sur la branche de distribution.
     # Une PR ou une branche de developpement ne doit JAMAIS publier un APK pour les utilisateurs.
-    if: github.event_name == 'push' && github.ref == 'refs/heads/release/direct-apk-scolia-pro-20261103'
+    # La branche de distribution est aussi la tête d'une PR interne : pour
+    # cette PR, github.ref vaut refs/pull/.../merge et non refs/heads/release.
+    # N'autoriser que les événements de cette branche appartenant au dépôt.
+    if: >-
+      (github.event_name == 'push' && github.ref == 'refs/heads/release/direct-apk-scolia-pro-20261103') ||
+      (github.event_name == 'pull_request' &&
+       github.head_ref == 'release/direct-apk-scolia-pro-20261103' &&
+       github.event.pull_request.head.repo.full_name == github.repository)
     needs: [android-natif, windows-natif]
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -249,6 +256,16 @@ jobs:
         with:
           name: SCOLIA_Pro_Windows_Installateur_EXE
           path: scolia-pro/artifacts/ota-setup
+      - name: Afficher l'evenement et l'origine de la publication
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          REF_NAME: ${{ github.ref }}
+          HEAD_REF: ${{ github.head_ref }}
+        run: |
+          echo "Événement : $EVENT_NAME"
+          echo "Référence : $REF_NAME"
+          echo "Branche PR : $HEAD_REF"
       - name: Verifier les empreintes et publier les programmes officiels
         shell: bash
         env:
@@ -273,7 +290,7 @@ jobs:
             gh release edit "$tag" --repo "$GH_REPO" --latest
           else
             gh release create "$tag" "$apk" "$sha" "$setup" "$setup_sha" \
-              --repo "$GH_REPO" --target "$GITHUB_SHA" --latest \
+              --repo "$GH_REPO" --target "${{ github.event.pull_request.head.sha || github.sha }}" --latest \
               --title "SCOLIA Pro ${version} - Android et Windows" \
               --notes "Mise a jour Android et installateur Windows x64. SHA-256 publies. Confirmation obligatoire pour l'installation. Conserver les donnees scolaires locales et faire une sauvegarde avant une intervention sur le serveur."
           fi
