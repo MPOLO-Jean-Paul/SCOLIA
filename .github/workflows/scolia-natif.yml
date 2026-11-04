@@ -58,6 +58,14 @@ jobs:
       - uses: actions/setup-dotnet@v5
         with:
           global-json-file: scolia-pro/global.json
+      # Bloquer immédiatement le retour accidentel de caches contenant des dossiers scolaires.
+      - name: Interdire les donnees locales dans Git
+        shell: bash
+        run: |
+          if git ls-files -- SCOLIA/ | grep -q .; then
+            echo "::error::Les fichiers d'execution SCOLIA/ ne doivent pas se trouver dans Git."
+            exit 1
+          fi
       - name: Compiler le client Avalonia (vues partagees Windows Android iOS)
         run: dotnet build src/Scolia.Bureau/Scolia.Bureau.csproj -c Release
       - name: Tester les mises a jour Android (fin de telechargement, arriere-plan, erreurs)
@@ -254,10 +262,7 @@ jobs:
     # cette PR, github.ref vaut refs/pull/.../merge et non refs/heads/release.
     # N'autoriser que les événements de cette branche appartenant au dépôt.
     if: >-
-      (github.event_name == 'push' && github.ref == 'refs/heads/release/direct-apk-scolia-pro-20261103') ||
-      (github.event_name == 'pull_request' &&
-       github.head_ref == 'release/direct-apk-scolia-pro-20261103' &&
-       github.event.pull_request.head.repo.full_name == github.repository)
+      (github.event_name == 'push' && github.ref == 'refs/heads/release/direct-apk-scolia-pro-20261103')
     needs: [android-natif, windows-natif]
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -304,15 +309,15 @@ jobs:
           test -s "$setup" && test -s "$setup_sha"
           (cd artifacts/ota-setup && sha256sum -c "SCOLIA_Pro_Installation_${version}_Windows_x64.exe.sha256")
           tag="scolia-pro-v${version}"
+          # Une version publiée est IMMUTABLE : ne jamais remplacer un APK/EXE sous le meme tag.
+          # Incrementez Version et AndroidVersionCode dans les sources avant une nouvelle release.
           if gh release view "$tag" --repo "$GH_REPO" >/dev/null 2>&1; then
-            # Les nouvelles mises a jour doivent augmenter le numero de version.
-            gh release upload "$tag" "$apk" "$sha" "$setup" "$setup_sha" --repo "$GH_REPO" --clobber
-            gh release edit "$tag" --repo "$GH_REPO" --latest
-          else
-            gh release create "$tag" "$apk" "$sha" "$setup" "$setup_sha" \
-              --repo "$GH_REPO" --target "${{ github.event.pull_request.head.sha || github.sha }}" --latest \
-              --title "SCOLIA Pro ${version} - Android et Windows" \
-              --notes "Mise a jour Android et installateur Windows x64. SHA-256 publies. Confirmation obligatoire pour l'installation. Conserver les donnees scolaires locales et faire une sauvegarde avant une intervention sur le serveur."
+            echo "::notice::La version $tag est deja publiee : aucun remplacement d'APK ou d'EXE."
+            exit 0
           fi
+          gh release create "$tag" "$apk" "$sha" "$setup" "$setup_sha" \
+            --repo "$GH_REPO" --target "${{ github.sha }}" --latest \
+            --title "SCOLIA Pro ${version} - Android et Windows" \
+            --notes "Mise a jour Android et installateur Windows x64. SHA-256 publies. Confirmation obligatoire pour l'installation. Conserver les donnees scolaires locales et faire une sauvegarde avant une intervention sur le serveur."
           gh release view "$tag" --repo "$GH_REPO" --json url,assets \
             --jq '{url, fichiers: [.assets[] | select(.name | endswith(".apk") or endswith(".exe")) | {name,url,digest}]}'
