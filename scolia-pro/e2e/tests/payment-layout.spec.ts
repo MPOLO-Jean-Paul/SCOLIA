@@ -17,6 +17,8 @@ for (const viewport of [{ width: 320, height: 360 }, { width: 390, height: 640 }
       id: 'caisse-test', userName: 'caisse', displayName: 'Caisse de test', role: 'Secretariat', roleLabel: 'Secrétariat', permissions: ["apprenants.lire","apprenants.ecrire","paiements.lire","paiements.encaisser","paiements.annuler","depenses.ecrire","caisse.arreter","rapports.lire","pilotage.lire","parametres.ecrire","utilisateurs.gerer","audit.lire","sauvegardes.gerer","scolarite.ecrire","scolarite.lire","personnel.gerer","discipline.annuler"],
       mustChangePassword: false, schoolName: 'Institut de test', currencySymbol: 'FC', phoneCountryCode: '243',
     } }));
+    // La barre d'état est visible également sur les pages de paiement.
+    await page.route('**/api/sauvegardes', (route) => route.fulfill({ json: [] }));
     await page.route('**/api/apprenants?**', (route) => route.fulfill({ json: { items: [{ id: account.studentId, enrollmentId,
       matricule: account.matricule, lastName: 'Kabeya', middleName: 'Mbuyi', firstName: 'Amina', promotionCode: 'INF1',
       status: 'Actif', balance: account.balance, overdue: account.overdue }], total: 1, page: 1, pageSize: 12 } }));
