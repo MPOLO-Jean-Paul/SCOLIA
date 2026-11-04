@@ -11,7 +11,7 @@ public static class PairingFlow
     private static readonly TimeSpan ProbeDelay = TimeSpan.FromSeconds(4);
 
     /// <summary>Vrai sur un appareil qui a un appareil photo pour scanner ; sinon, une image du code est demandée.</summary>
-    public static bool HasCamera => Platform.CaptureImageAsync is not null;
+    public static bool HasCamera => Platform.ScanQrAsync is not null || Platform.CaptureImageAsync is not null;
 
     /// <summary>
     /// Texte du code lu dans une photo ou dans une image choisie. Null si l'utilisateur annule ;
@@ -19,6 +19,16 @@ public static class PairingFlow
     /// </summary>
     public static async Task<(string? Text, string? Problem)> CaptureAsync(ShellViewModel shell, bool fromPhoto = false)
     {
+        // En priorité : viseur Android en direct, sans photographier manuellement le QR.
+        // La fonction native gère un recours local à l'appareil photo si le module manque.
+        if (!fromPhoto && Platform.ScanQrAsync is { } liveScan)
+        {
+            var detected = await liveScan();
+            if (string.IsNullOrWhiteSpace(detected)) return (null, null);
+            return PairingCode.TryParse(detected, out _, out var problem)
+                ? (detected, null) : (null, problem);
+        }
+
         byte[]? image;
         if (fromPhoto && Platform.PickQrImageAsync is { } androidPicker)
             image = await androidPicker();

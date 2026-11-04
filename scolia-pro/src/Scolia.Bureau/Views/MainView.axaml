@@ -370,7 +370,7 @@
             <Button Classes="toolicon" Command="{Binding NetworkCommand}" ToolTip.Tip="{Binding Sync.StatusText}">
               <Panel Width="18" Height="18">
                 <mi:MaterialIcon Kind="LanConnect" Width="18" Height="18" IsVisible="{Binding Sync.Online}" />
-                <mi:MaterialIcon Kind="CloudOffOutline" Width="18" Height="18" Foreground="{DynamicResource ToneOrange}" IsVisible="{Binding Sync.Offline}" />
+                <Ellipse Width="10" Height="10" Fill="{DynamicResource ToneOrange}" IsVisible="{Binding Sync.Offline}" HorizontalAlignment="Center" VerticalAlignment="Center" />
                 <Border Classes="livedot" Classes.pulse="{Binding Sync.Pulse}" IsVisible="{Binding Sync.Online}" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,-3,-3" />
               </Panel>
             </Button>

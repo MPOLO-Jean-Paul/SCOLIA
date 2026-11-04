@@ -263,17 +263,20 @@ public sealed class ScoliaClient : IDisposable
             payload["idempotencyKey"] = key;
             body = payload;
         }
+        var sourceStore = Offline;
+        var sourceUser = sourceStore?.User ?? string.Empty;
         Infrastructure.OutboxItem? durable = null;
-        if (Offline is not null && Queueable(method, path))
+        if (sourceStore is not null && sourceUser.Length > 0 && Queueable(method, path))
         {
             durable = new Infrastructure.OutboxItem
             {
                 Key = key, Method = method.Method, Path = path,
                 Body = JsonSerializer.Serialize(body ?? new { }, Json.Options),
-                Label = Describe(method, path), User = Offline.User,
+                Label = Describe(method, path), User = sourceUser,
             };
-            // Enregistrement durable AVANT l'envoi : un arrêt après validation serveur mais avant réponse est rejouable.
-            await Task.Run(() => Offline!.Enqueue(durable), ct);
+            // Enregistrement durable AVANT l'envoi. En cas de changement de
+            // compte pendant l'attente, la source et son identité sont fixées.
+            await Task.Run(() => sourceStore.Enqueue(durable), ct);
         }
         // Même principe que pour la lecture : lorsqu'une coupure est confirmée,
         // aucune validation ne doit attendre inutilement une nouvelle requête réseau.
@@ -288,7 +291,8 @@ public sealed class ScoliaClient : IDisposable
         try
         {
             var response = await SendRawAsync(method, path, body, ct, key);
-            if (durable is not null) await Task.Run(() => Offline!.Sent(durable.Id), ct);
+            if (durable is not null && sourceStore is not null)
+                await Task.Run(() => sourceStore.SentFor(sourceUser, durable.Id), ct);
             return response;
         }
         catch (Exception ex) when (IsDisconnected(ex, ct))
@@ -300,7 +304,8 @@ public sealed class ScoliaClient : IDisposable
         }
         catch (ApiException ex)
         {
-            if (durable is not null && ex.Status != 401) Offline!.Refused(durable.Id, ex.Message);
+            if (durable is not null && sourceStore is not null && ex.Status != 401)
+                sourceStore.RefusedFor(sourceUser, durable.Id, ex.Message);
             throw;
         }
     }
@@ -317,8 +322,12 @@ public sealed class ScoliaClient : IDisposable
         try
         {
         int sent = 0, refused = 0;
-        foreach (var item in Offline.Outbox())
+        var flushingStore = Offline;
+        var flushingUser = flushingStore.User;
+        foreach (var item in flushingStore.Outbox())
         {
+            if (!string.Equals(flushingStore.User, flushingUser, StringComparison.Ordinal))
+                break; // Un autre compte a pris l'interface pendant l'envoi.
             try
             {
                 using var request = new HttpRequestMessage(new HttpMethod(item.Method), item.Path)
@@ -329,7 +338,7 @@ public sealed class ScoliaClient : IDisposable
                 using var response = await http.SendAsync(request, ct);
                 if (response.IsSuccessStatusCode)
                 {
-                    Offline.Sent(item.Id);
+                    flushingStore.SentFor(flushingUser, item.Id);
                     sent++;
                     continue;
                 }
@@ -337,7 +346,7 @@ public sealed class ScoliaClient : IDisposable
                 var error = await ToException(response);
                 // Session expirée : l'opération attend la reconnexion, elle n'est pas en conflit.
                 if (error.Status == 401) break;
-                Offline.Refused(item.Id, error.Message);
+                flushingStore.RefusedFor(flushingUser, item.Id, error.Message);
                 refused++;
             }
             catch (Exception ex) when (IsDisconnected(ex, ct))
@@ -375,7 +384,11 @@ public sealed class ScoliaClient : IDisposable
     /// </summary>
     public static bool Queueable(HttpMethod method, string path)
     {
-        if (method == HttpMethod.Get || path.Contains("apercu", StringComparison.Ordinal) || path.Contains("export", StringComparison.Ordinal)) return false;
+        if (method != HttpMethod.Post && method != HttpMethod.Put && method.Method != "PATCH") return false;
+        // Les annulations de reçus, effacements et opérations irréversibles restent
+        // à confirmer auprès du serveur : pas de validation fictive hors ligne.
+        if (new[] { "annulation", "effacement", "supprimer", "revoquer", "export", "apercu" }
+            .Any(term => path.Contains(term, StringComparison.OrdinalIgnoreCase))) return false;
         string[] daily =
         [
             "api/apprenants", "api/inscriptions", "api/paiements", "api/depenses", "api/scolarite/presences",

@@ -32,7 +32,9 @@ public static class AndroidAppUpdates
     private const string LastStatusKey = "last-check-result";
     private const string NotifiedKey = "notified-version";
     private const string Channel = "scolia-mises-a-jour";
+    private const string InstallChannel = "scolia-installation";
     private const int NotificationId = 39124;
+    private const int InstallNotificationId = 39125;
     private const int DownloadSuccessStatus = 8; // DownloadManager.STATUS_SUCCESSFUL
     private const int DownloadFailureStatus = 16; // DownloadManager.STATUS_FAILED
     private const long MaxApkBytes = 350L * 1024 * 1024;
@@ -46,6 +48,8 @@ public static class AndroidAppUpdates
     private static readonly SemaphoreSlim VerificationGate = new(1, 1);
     private static string? promptedVersion;
     private static bool waitingForInstallPermission;
+    private static bool installDialogOpen;
+    private static WeakReference<Activity>? foregroundActivity;
 
     internal sealed record Release(string Version, string DownloadUrl, string Sha256, long Size);
 
@@ -65,7 +69,38 @@ public static class AndroidAppUpdates
 
     public static void OnResume(Activity activity)
     {
+        foregroundActivity = new WeakReference<Activity>(activity);
         _ = ResumeAsync(activity);
+    }
+
+    public static void OnPause(Activity activity)
+    {
+        if (foregroundActivity?.TryGetTarget(out var shown) == true && ReferenceEquals(shown, activity))
+            foregroundActivity = null;
+        // Un dialogue disparu avec l'activité ne doit jamais bloquer
+        // la prochaine proposition d'installation.
+        installDialogOpen = false;
+    }
+
+    /// <summary>
+    /// Notification reçue au MOMENT précis où Android finit le téléchargement.
+    /// Si SCOLIA est visible, vérifier l'APK et afficher « Installer » immédiatement.
+    /// En arrière-plan, Android interdit d'ouvrir arbitrairement une activité :
+    /// une notification persistante ramène l'utilisateur à la même proposition.
+    /// </summary>
+    public static void DownloadCompleted(Context context, long downloadId)
+    {
+        if (downloadId <= 0 || Preferences(context).GetLong(DownloadIdKey, 0) != downloadId) return;
+        Report(context, "Téléchargement terminé. Vérification de l'APK avant installation.");
+        if (foregroundActivity?.TryGetTarget(out var activity) == true
+            && !activity.IsFinishing && !activity.IsDestroyed)
+        {
+            _ = CheckDownloadAsync(activity);
+        }
+        else
+        {
+            NotifyInstallReady(context);
+        }
     }
 
     /// <summary>Etat lisible de la vérification, même si Android a désactivé les notifications.</summary>
@@ -372,15 +407,35 @@ public static class AndroidAppUpdates
                 Toast.MakeText(activity, "Mise à jour refusée : APK incorrect, non signé comme attendu ou version obsolète.", ToastLength.Long)?.Show();
                 return false;
             }
-            if (promptedVersion == "installer-" + version && !waitingForInstallPermission) return true;
-            promptedVersion = "installer-" + version;
+            if (installDialogOpen) return true;
             activity.RunOnUiThread(() =>
+            {
+                if (activity.IsFinishing || activity.IsDestroyed)
+                {
+                    NotifyInstallReady(activity);
+                    return;
+                }
+                if (installDialogOpen) return;
+                installDialogOpen = true;
+                Report(activity, $"SCOLIA Pro {version} est vérifié et prêt à installer.");
                 new AlertDialog.Builder(activity)
-                    .SetTitle("Mise à jour téléchargée et vérifiée")
-                    .SetMessage($"SCOLIA Pro {version} est prêt. Android va demander votre accord pour installer l'APK.")
-                    .SetPositiveButton("Installer", (_, _) => OpenSystemInstaller(activity, path))
-                    .SetNegativeButton("Plus tard", (_, _) => { })
-                    .Show());
+                    .SetTitle($"SCOLIA Pro {version} — prêt à installer")
+                    .SetMessage("Le téléchargement est terminé et le fichier APK a été vérifié.\n\n"
+                        + "Appuyez sur Installer : Android affichera son écran de confirmation. "
+                        + "Les données de SCOLIA ne seront pas supprimées.")
+                    .SetPositiveButton("Installer", (_, _) =>
+                    {
+                        installDialogOpen = false;
+                        OpenSystemInstaller(activity, path);
+                    })
+                    .SetNegativeButton("Plus tard", (_, _) =>
+                    {
+                        installDialogOpen = false;
+                        NotifyInstallReady(activity);
+                    })
+                    .SetCancelable(false)
+                    .Show();
+            });
             return true;
         }
         finally { VerificationGate.Release(); }
@@ -436,10 +491,39 @@ public static class AndroidAppUpdates
         }
     }
 
-    private static void ResetPending(Context ctx) =>
+    private static void ResetPending(Context ctx)
+    {
         Preferences(ctx).Edit()!.Remove(DownloadIdKey)!.Remove(FileNameKey)!
             .Remove(DigestKey)!.Remove(DownloadVersionKey)!
             .Remove(DownloadStartedAtKey)!.Apply();
+        installDialogOpen = false;
+        (ctx.GetSystemService(Context.NotificationService) as NotificationManager)?.Cancel(InstallNotificationId);
+    }
+
+    /// <summary>Message Android utilisable même quand l'activité SCOLIA n'est plus affichée.</summary>
+    private static void NotifyInstallReady(Context context)
+    {
+        var version = Preferences(context).GetString(DownloadVersionKey, null);
+        if (string.IsNullOrWhiteSpace(version)) return;
+        if (context.GetSystemService(Context.NotificationService) is not NotificationManager manager) return;
+        if (OperatingSystem.IsAndroidVersionAtLeast(26))
+            manager.CreateNotificationChannel(new NotificationChannel(
+                InstallChannel, "Installation des mises à jour SCOLIA", NotificationImportance.High));
+        var open = context.PackageManager?.GetLaunchIntentForPackage(context.PackageName ?? "");
+        if (open is null) return;
+        open.AddFlags(ActivityFlags.NewTask | ActivityFlags.SingleTop);
+        var action = PendingIntent.GetActivity(context, 1, open,
+            PendingIntentFlags.Immutable | PendingIntentFlags.UpdateCurrent);
+        var builder = OperatingSystem.IsAndroidVersionAtLeast(26)
+            ? new Notification.Builder(context, InstallChannel)
+            : new Notification.Builder(context);
+        builder.SetSmallIcon(Resource.Mipmap.icon)
+            .SetContentTitle($"SCOLIA Pro {version} — téléchargement terminé")
+            .SetContentText("Touchez pour vérifier l'APK et afficher le bouton Installer.")
+            .SetContentIntent(action)
+            .SetAutoCancel(false);
+        manager.Notify(InstallNotificationId, builder.Build());
+    }
 
     private static void NotifyOnce(Context context, Release release)
     {

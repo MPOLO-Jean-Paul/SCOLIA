@@ -13,8 +13,8 @@
     <RootNamespace>Scolia.Mobile</RootNamespace>
     <ApplicationId>com.jpservices.scolia</ApplicationId>
     <ApplicationTitle>SCOLIA Phone</ApplicationTitle>
-    <ApplicationVersion>134</ApplicationVersion>
-    <ApplicationDisplayVersion>1.2.14</ApplicationDisplayVersion>
+    <ApplicationVersion>135</ApplicationVersion>
+    <ApplicationDisplayVersion>1.2.15</ApplicationDisplayVersion>
     <AndroidPackageFormat>apk</AndroidPackageFormat>
     <RuntimeIdentifiers>android-arm64;android-arm</RuntimeIdentifiers>
     <AvaloniaUseCompiledBindingsByDefault>false</AvaloniaUseCompiledBindingsByDefault>
@@ -59,6 +59,7 @@
     <!-- Relier un appareil : le serveur affiche un code QR, l'autre appareil le lit. -->
     <PackageReference Include="QRCoder" />
     <PackageReference Include="ZXing.Net" />
+    <PackageReference Include="Xamarin.GooglePlayServices.Code.Scanner" />
   </ItemGroup>
 
   <!-- Les espaces de noms d'Android ne sont pas ajoutés d'office : ils entreraient en conflit avec ceux d'Avalonia

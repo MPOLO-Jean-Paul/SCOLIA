@@ -117,11 +117,16 @@ public sealed class OfflineStore
         Change((pending, _) => { if (pending.All(i => i.Id != item.Id)) pending.Add(item); });
     }
 
-    public void Sent(string id) => Change((pending, _) => pending.RemoveAll(i => i.Id == id && i.User == User));
+    public void Sent(string id) => SentFor(User, id);
 
-    public void Refused(string id, string error) => Change((pending, conflicts) =>
+    /// <summary>Ne jamais solder la file du compte B lorsque l'envoi appartenait au compte A.</summary>
+    public void SentFor(string user, string id) =>
+        Change((pending, _) => pending.RemoveAll(i => i.Id == id && i.User == user));
+
+    public void Refused(string id, string error) => RefusedFor(User, id, error);
+    public void RefusedFor(string user, string id, string error) => Change((pending, conflicts) =>
     {
-        var item = pending.FirstOrDefault(i => i.Id == id && i.User == User);
+        var item = pending.FirstOrDefault(i => i.Id == id && i.User == user);
         if (item is null) return;
         item.Error = error;
         pending.Remove(item);
