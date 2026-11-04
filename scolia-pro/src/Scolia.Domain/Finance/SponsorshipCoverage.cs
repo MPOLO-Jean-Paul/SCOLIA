@@ -11,7 +11,10 @@ public static class SponsorshipCoverage
         var amount = sponsorship.Mode switch
         {
             SponsorshipMode.Complete => fee.Amount,
-            SponsorshipMode.PartielleMensuelle when fee.Kind == FeeKind.Mensualite => sponsorship.MonthlyAmount,
+            SponsorshipMode.PartielleMensuelle when fee.Kind == FeeKind.Mensualite =>
+                sponsorship.Lines.Count > 0
+                    ? sponsorship.Lines.FirstOrDefault(l => l.FeeItemId == fee.Id)?.Amount ?? 0m
+                    : sponsorship.MonthlyAmount,
             SponsorshipMode.Historique => fee.Amount * (sponsorship.Lines
                 .FirstOrDefault(l => l.FeeItemId == fee.Id)?.Percent ?? 0m) / 100m,
             _ => 0m
@@ -35,9 +38,8 @@ public static class SponsorshipCoverage
             .Sum(s => s.Lines.Where(l => l.FeeItemId == fee.Id).Sum(l => l.Percent));
         var oldAmount = decimal.Round(fee.Amount * oldPercent / 100m, wholeAmounts ? 0 : 2,
             MidpointRounding.AwayFromZero);
-        var monthly = fee.Kind == FeeKind.Mensualite
-            ? active.Where(s => s.Mode == SponsorshipMode.PartielleMensuelle).Sum(s => s.MonthlyAmount)
-            : 0m;
+        var monthly = active.Where(s => s.Mode == SponsorshipMode.PartielleMensuelle)
+            .Sum(s => AmountFor(fee, s, wholeAmounts));
         return Math.Clamp(oldAmount + monthly, 0m, Math.Max(0m, fee.Amount));
     }
 }
