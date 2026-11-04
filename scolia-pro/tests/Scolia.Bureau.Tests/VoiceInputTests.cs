@@ -121,6 +121,82 @@ public sealed class VoiceInputTests
     }
 
     [Fact]
+    public async Task Troisieme_clic_relance_meme_si_ancien_moteur_n_est_pas_encore_termine()
+    {
+        var oldRecognition = Platform.RecognizeSpeechAsync;
+        var oldCancelable = Platform.RecognizeSpeechWithCancellationAsync;
+        var oldAvailable = Platform.CanRecognizeSpeech;
+        try
+        {
+            var oldResult = new TaskCompletionSource<string?>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var called = 0;
+            Platform.RecognizeSpeechAsync = null;
+            Platform.CanRecognizeSpeech = () => true;
+            Platform.RecognizeSpeechWithCancellationAsync = _ =>
+                Interlocked.Increment(ref called) == 1 ? oldResult.Task : Task.FromResult<string?>("Nouveau nom");
+
+            var mic = new VoiceCaptureSession();
+            var query = "Recherche initiale";
+            var states = new List<bool>();
+            var firstClick = mic.ToggleAsync(s => query = s, on => states.Add(on));
+            Assert.True(mic.IsListening);
+
+            await mic.ToggleAsync(s => query = s, on => states.Add(on)); // ARRÊTER immédiatement
+            Assert.False(mic.IsListening);
+            Assert.Equal("Recherche initiale", query);
+
+            await mic.ToggleAsync(s => query = s, on => states.Add(on)); // RECOMMENCER sans attendre l'ancien moteur
+            Assert.Equal("Nouveau nom", query);
+            Assert.False(mic.IsListening);
+            Assert.Equal(2, called);
+
+            oldResult.SetResult("Ancien résultat tardif");
+            await firstClick.WaitAsync(TimeSpan.FromSeconds(5));
+            Assert.Equal("Nouveau nom", query);
+            Assert.Equal(new[] { true, false, true, false }, states);
+        }
+        finally
+        {
+            Platform.RecognizeSpeechAsync = oldRecognition;
+            Platform.RecognizeSpeechWithCancellationAsync = oldCancelable;
+            Platform.CanRecognizeSpeech = oldAvailable;
+        }
+    }
+
+    [Fact]
+    public async Task Arret_explicite_ou_fermeture_annule_la_dictée_sans_changer_le_texte()
+    {
+        var oldRecognition = Platform.RecognizeSpeechAsync;
+        var oldCancelable = Platform.RecognizeSpeechWithCancellationAsync;
+        var oldAvailable = Platform.CanRecognizeSpeech;
+        try
+        {
+            var lateResult = new TaskCompletionSource<string?>(TaskCreationOptions.RunContinuationsAsynchronously);
+            Platform.RecognizeSpeechAsync = null;
+            Platform.CanRecognizeSpeech = () => true;
+            Platform.RecognizeSpeechWithCancellationAsync = _ => lateResult.Task;
+            var mic = new VoiceCaptureSession();
+            var query = "Avant navigation";
+            var states = new List<bool>();
+            var task = mic.ToggleAsync(s => query = s, on => states.Add(on));
+            Assert.True(mic.IsListening);
+
+            mic.Cancel(on => states.Add(on));
+            Assert.False(mic.IsListening);
+            lateResult.SetResult("Ne pas écrire dans la nouvelle page");
+            await task.WaitAsync(TimeSpan.FromSeconds(5));
+            Assert.Equal("Avant navigation", query);
+            Assert.Equal(new[] { true, false }, states);
+        }
+        finally
+        {
+            Platform.RecognizeSpeechAsync = oldRecognition;
+            Platform.RecognizeSpeechWithCancellationAsync = oldCancelable;
+            Platform.CanRecognizeSpeech = oldAvailable;
+        }
+    }
+
+    [Fact]
     public async Task Le_service_windows_ne_demarre_jamais_sur_un_autre_systeme()
     {
         if (OperatingSystem.IsWindows()) return; // Exige un microphone et un moteur fr-FR pour le vrai test Windows.
