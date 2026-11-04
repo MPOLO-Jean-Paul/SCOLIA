@@ -134,6 +134,9 @@ public static class Platform
     /// <summary>Contrôle manuel GitHub Releases, disponible sur Android depuis Poste et réseau.</summary>
     public static Func<Task>? CheckAppUpdatesAsync { get; set; }
 
+    /// <summary>Message de diagnostic de la dernière vérification Android.</summary>
+    public static Func<string>? AppUpdateStatus { get; set; }
+
     /// <summary>Répare l'hébergement sur demande depuis une interface visible, jamais depuis un client.</summary>
     public static Action? EnsureHostAvailable { get; set; }
 
@@ -157,6 +160,9 @@ public static class Platform
     /// l'utilisateur annule. Null sur un ordinateur, qui lit plutôt une image enregistrée ou un code collé.
     /// </summary>
     public static Func<Task<byte[]?>>? CaptureImageAsync { get; set; }
+
+    /// <summary>Ouvre les photos du téléphone pour importer un QR sans accès global à la galerie.</summary>
+    public static Func<Task<byte[]?>>? PickQrImageAsync { get; set; }
 
     /// <summary>Vrai quand ce poste peut être le serveur de l'établissement : tout ordinateur, et le téléphone qui en a les moyens.</summary>
     public static bool CanHostServer => !IsMobile || LocalServer is not null;

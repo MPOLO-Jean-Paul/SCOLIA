@@ -276,7 +276,7 @@ public sealed class ShellViewModel : Observable
     }
 
     /// <summary>La petite fenêtre de connexion reste petite pendant l'ouverture qui suit la connexion.</summary>
-    public bool CompactWindow => ShowLogin || (Opening && openingCompact);
+    public bool CompactWindow => ShowStartup || ShowLogin || (Opening && openingCompact);
     public string OpeningStep { get => openingStep; private set => Set(ref openingStep, value); }
     public double OpeningProgress { get => openingProgress; private set => Set(ref openingProgress, value); }
     private string openingTitle = string.Empty;

@@ -20,7 +20,7 @@
 
       <!-- Code QR du serveur : la voie la plus simple, quel que soit le réseau -->
       <Border Classes="card">
-        <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto">
+        <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto">
           <Border Classes="appicon large" Background="{DynamicResource ToneBlue}" Margin="0,0,14,0" VerticalAlignment="Top"><mi:MaterialIcon Kind="QrcodeScan" /></Border>
           <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
             <TextBlock Text="Relier avec le code QR du serveur" FontWeight="SemiBold" TextWrapping="Wrap" />
@@ -33,8 +33,11 @@
               <TextBlock Text="{Binding ScanLabel}" VerticalAlignment="Center" />
             </StackPanel>
           </Button>
+          <Button Grid.Row="2" Grid.ColumnSpan="2" Command="{Binding ImportQrImage}" IsVisible="{Binding CanImportQrImage}"
+                  IsEnabled="{Binding NotSearching}" Content="Choisir une photo du QR code" HorizontalAlignment="Stretch"
+                  MinHeight="40" Margin="0,8,0,0" />
           <!-- Ordinateur sans appareil photo : le code copié sur le serveur se colle ici -->
-          <Grid Grid.Row="2" Grid.ColumnSpan="2" ColumnDefinitions="*,Auto" ColumnSpacing="8" Margin="0,10,0,0" IsVisible="{Binding CanPasteCode}">
+          <Grid Grid.Row="3" Grid.ColumnSpan="2" ColumnDefinitions="*,Auto" ColumnSpacing="8" Margin="0,10,0,0" IsVisible="{Binding CanPasteCode}">
             <TextBox Classes="w11" Text="{Binding Invitation}" PlaceholderText="Ou collez le code copié sur le serveur" />
             <Button Grid.Column="1" Content="Rejoindre" Command="{Binding JoinInternet}" IsEnabled="{Binding NotSearching}" />
           </Grid>

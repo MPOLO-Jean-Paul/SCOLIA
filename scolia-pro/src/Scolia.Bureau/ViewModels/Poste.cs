@@ -33,6 +33,7 @@ public sealed class PosteViewModel : Observable
         CheckMobileUpdates = new AsyncCommand(async () =>
         {
             if (Platform.CheckAppUpdatesAsync is { } check) await check();
+            Raise(nameof(MobileUpdateStatus));
         });
         VerifyBackgroundServer = new AsyncCommand(async () =>
         {
@@ -53,6 +54,7 @@ public sealed class PosteViewModel : Observable
         // Code QR : le serveur le montre, l'autre appareil le scanne.
         ShowCode = new RelayCommand(shell.ShowPairing);
         ScanCode = new AsyncCommand(ScanCodeAsync);
+        ImportQrImage = new AsyncCommand(() => ReadQrAsync(fromPhoto: true));
         // Retour des réglages d'Android : l'état de l'arrière-plan se relit tout de suite, sur la page affichée.
         shown = this;
         UseThisComputer = new AsyncCommand(() => shell.UseThisComputerAsync());
@@ -74,6 +76,7 @@ public sealed class PosteViewModel : Observable
 
     /// <summary>Téléphone serveur de l'établissement : il garde les données et les autres postes s'y connectent.</summary>
     public bool CanCheckMobileUpdates => Platform.IsMobile && Platform.CheckAppUpdatesAsync is not null;
+    public string MobileUpdateStatus => Platform.AppUpdateStatus?.Invoke() ?? "Contrôle de version indisponible.";
     public bool IsPhoneServer => Platform.IsMobile && IsServerComputer;
     public bool IsPhoneClient => Platform.IsMobile && !IsServerComputer;
 
@@ -150,14 +153,18 @@ public sealed class PosteViewModel : Observable
     public AsyncCommand ChangeServer { get; }
     public RelayCommand ShowCode { get; }
     public AsyncCommand ScanCode { get; }
+    public AsyncCommand ImportQrImage { get; }
+    public bool CanImportQrImage => Platform.IsMobile && Platform.PickQrImageAsync is not null;
     public string ScanLabel => PairingFlow.HasCamera ? "Scanner le code QR d'un serveur" : "Lire une image du code QR d'un serveur";
     public string ShowCodeLine => Platform.IsMobile
         ? "Un code QR à scanner avec l'autre appareil : il contient les adresses du Wi-Fi, de Tailscale et d'Internet."
         : "Un code QR à scanner avec un téléphone, ou à copier pour un autre ordinateur. Wi-Fi, Tailscale et Internet sont inclus.";
 
-    private async Task ScanCodeAsync()
+    private Task ScanCodeAsync() => ReadQrAsync(fromPhoto: false);
+
+    private async Task ReadQrAsync(bool fromPhoto)
     {
-        var (text, problem) = await PairingFlow.CaptureAsync(shell);
+        var (text, problem) = await PairingFlow.CaptureAsync(shell, fromPhoto);
         if (text is null)
         {
             if (problem is not null) shell.Notify(problem);
@@ -187,7 +194,7 @@ public sealed class PosteViewModel : Observable
                      nameof(IsPhoneServer), nameof(IsPhoneClient), nameof(CanBecomeServer), nameof(ShowBackground), nameof(BackgroundOk),
                      nameof(BackgroundBlocked), nameof(HostForegroundActive), nameof(HostApiServing),
                      nameof(BackgroundHealthy), nameof(BackgroundNeedsAttention),
-                     nameof(BackgroundTitle), nameof(BackgroundLine), nameof(BackgroundDiagnostic), nameof(HasBackgroundHint), nameof(ShowAwake), nameof(AwakeLine) })
+                     nameof(BackgroundTitle), nameof(BackgroundLine), nameof(MobileUpdateStatus), nameof(BackgroundDiagnostic), nameof(HasBackgroundHint), nameof(ShowAwake), nameof(AwakeLine) })
             Raise(name);
     }
 

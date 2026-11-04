@@ -55,6 +55,7 @@ public static class MobilePlatform
         Platform.CanRecognizeSpeech = AndroidSpeech.IsAvailable;
         // Code QR du serveur : photo prise par l'appareil photo du téléphone, lue ensuite par SCOLIA.
         Platform.CaptureImageAsync = AndroidCamera.CaptureAsync;
+        Platform.PickQrImageAsync = AndroidCamera.PickImageAsync;
         Platform.ShowSystemNotification = alert => AndroidAlerts.Show(context ?? app, alert);
         // Sans ordinateur dans l'établissement, ce téléphone peut en être le serveur.
         Platform.LocalServer = Server.PhoneServer.Get(app);
@@ -65,6 +66,7 @@ public static class MobilePlatform
         Platform.IsHostApiServing = () => Server.PhoneServer.Get(app).IsServingVerified;
         Platform.HostNetworkDiagnostic = () => Server.PhoneServer.Get(app).LastDiagnostic;
         Platform.CheckHostNetworkAsync = () => Server.PhoneServer.Get(app).VerifyAndRecoverInBackgroundAsync();
+        Platform.AppUpdateStatus = () => AndroidAppUpdates.LastStatus(app);
         Platform.CheckAppUpdatesAsync = async () =>
         {
             if (screen?.TryGetTarget(out var activity) == true && !activity.IsFinishing)
