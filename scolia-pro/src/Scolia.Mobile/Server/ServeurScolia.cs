@@ -12,9 +12,9 @@ namespace Scolia.Mobile.Server;
 /// ou application quittée, et la notification rappelle que les autres postes en dépendent. Le Wi-Fi reste éveillé
 /// et reçoit les recherches des autres postes.
 /// </summary>
-[Service(Name = "com.jpservices.scolia.ServeurScolia", Exported = false, ForegroundServiceType = ForegroundService.TypeSpecialUse)]
-[MetaData("android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE",
-    Value = "Local school records server voluntarily enabled by the user, with visible notification for authorized devices")]
+// Le serveur maintient volontairement une connexion réseau vers des appareils
+// autorisés : connectedDevice est le type Android prévu pour cette activité.
+[Service(Name = "com.jpservices.scolia.ServeurScolia", Exported = false, ForegroundServiceType = ForegroundService.TypeConnectedDevice)]
 public sealed class ServeurScolia : Service
 {
     private const string Channel = "serveur";
@@ -94,7 +94,7 @@ public sealed class ServeurScolia : Service
         var notification = BuildNotification();
         try
         {
-            if (OperatingSystem.IsAndroidVersionAtLeast(34)) StartForeground(NotificationId, notification, ForegroundService.TypeSpecialUse);
+            if (OperatingSystem.IsAndroidVersionAtLeast(34)) StartForeground(NotificationId, notification, ForegroundService.TypeConnectedDevice);
             else StartForeground(NotificationId, notification);
         }
         catch (Exception ex) when (ex is Java.Lang.RuntimeException or Java.Lang.SecurityException or InvalidOperationException)
