@@ -1540,8 +1540,8 @@ namespace Scolia.Infrastructure.Persistence.Migrations
                     b.Property<bool>("IsActive")
                         .HasColumnType("INTEGER");
 
-                    b.Property<decimal>("MonthlyAmount")
-                        .HasColumnType("TEXT");
+                    b.Property<long>("MonthlyAmount")
+                        .HasColumnType("INTEGER");
 
                     b.Property<int>("Mode")
                         .HasColumnType("INTEGER");
@@ -1576,8 +1576,8 @@ namespace Scolia.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("Id")
                         .HasColumnType("TEXT");
 
-                    b.Property<decimal>("Amount")
-                        .HasColumnType("TEXT");
+                    b.Property<long>("Amount")
+                        .HasColumnType("INTEGER");
 
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("TEXT");
