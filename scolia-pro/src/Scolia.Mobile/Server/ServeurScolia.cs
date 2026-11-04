@@ -187,30 +187,33 @@ public sealed class ServeurScolia : Service
                 awake?.SetReferenceCounted(false);
             }
             if (awake?.IsHeld != true) awake?.Acquire();
-            }
             if (GetSystemService(WifiService) is WifiManager manager)
             {
                 if (wifi is null)
                 {
-                    // Écran éteint, seul le mode « haute performance » garde le Wi-Fi pleinement éveillé, jusqu'à Android 13.
-                    // Le mode « faible latence » ne joue qu'écran allumé ; Android 14 et plus n'offrent plus que lui.
-#pragma warning disable CA1422 // FullHighPerf reste le mode qui garde le Wi-Fi éveillé écran éteint avant Android 14.
-                    wifi = manager.CreateWifiLock(OperatingSystem.IsAndroidVersionAtLeast(34) ? Android.Net.WifiMode.FullLowLatency : Android.Net.WifiMode.FullHighPerf, "scolia:serveur");
+                    // Le Wi-Fi doit rester éveillé lorsque le téléphone héberge l'établissement.
+#pragma warning disable CA1422 // FullHighPerf reste requis sur les anciennes versions d'Android.
+                    wifi = manager.CreateWifiLock(
+                        OperatingSystem.IsAndroidVersionAtLeast(34)
+                            ? Android.Net.WifiMode.FullLowLatency
+                            : Android.Net.WifiMode.FullHighPerf,
+                        "scolia:serveur");
 #pragma warning restore CA1422
                     wifi?.SetReferenceCounted(false);
                 }
                 if (wifi?.IsHeld != true) wifi?.Acquire();
-                }
                 if (multicast is null)
                 {
                     multicast = manager.CreateMulticastLock("scolia:decouverte");
                     multicast?.SetReferenceCounted(false);
                 }
                 if (multicast?.IsHeld != true) multicast?.Acquire();
-                }
             }
         }
-        catch (Java.Lang.SecurityException) { }
+        catch (Java.Lang.SecurityException)
+        {
+            Android.Util.Log.Warn("SCOLIA", "Android a refusé un verrou de disponibilité du serveur.");
+        }
     }
 
     private void Release()
