@@ -184,7 +184,11 @@ public sealed class SponsorshipService(IAppDbContext db, IWriteGate gate, IAudit
             var alreadyCovered = others.Sum(s => SponsorshipCoverage.AmountFor(fee, s, school.WholeAmountsOnly));
             var proposed = SponsorshipCoverage.AmountFor(fee, provisional, school.WholeAmountsOnly);
             if (alreadyCovered + proposed > Math.Max(0m, fee.Amount - paid))
-                throw new DomainException("monthlyAmount", $"« {fee.Label} » : prise en charge supérieure au montant restant non payé.");
+            {
+                if (paid > 0m)
+                    throw new DomainException("lines", $"« {fee.Label} » a déjà été payé ({paid:N0}) : la prise en charge ne peut dépasser le reste non payé.");
+                throw new DomainException("lines", $"« {fee.Label} » : prise en charge supérieure au montant restant non payé.");
+            }
         }
 
         sponsorship.SponsorName = input.SponsorName.Trim();
