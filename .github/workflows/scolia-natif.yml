@@ -157,11 +157,19 @@ jobs:
             exit 1
           fi
           certificate_details="$("${signers[-1]}" verify --print-certs "${apks[0]}")"
-          signed_by="$(printf '%s\n' "$certificate_details" | sed -n 's/^Signer #1 certificate SHA-256 digest: *//p' | head -1 | tr '[:lower:]' '[:upper:]' | tr -d '[:space:]:')"
+          # apksigner v36: "Signer #1 certificate SHA-256 digest: ..."
+          # apksigner v37: "V2 Signer: ..." ou "V3.0 Signer: ..."
+          # Refuser plusieurs certificats differents, et ne jamais utiliser le hash de la cle publique.
+          mapfile -t apk_digests < <(printf '%s\n' "$certificate_details" |
+            awk -F 'certificate SHA-256 digest:[[:space:]]*' '/Signer/ && NF == 2 {
+              v = $2
+              gsub(/[[:space:]:]/, "", v)
+              print toupper(v)
+            }' | sort -u)
           expected="$(printf '%s' "$SCOLIA_SIGNATURE_EMPREINTE" | tr '[:lower:]' '[:upper:]' | tr -d '[:space:]:')"
-          echo "::notice::Certificat detecte dans l'APK : ${signed_by:-aucun}"
+          echo "::notice::Certificats detectes dans l'APK : ${apk_digests[*]:-aucun}"
           echo "::notice::Certificat attendu depuis la cle : $expected"
-          if [[ -z "$signed_by" || "$signed_by" != "$expected" ]]; then
+          if [[ "${#apk_digests[@]}" -ne 1 || "${apk_digests[0]:-}" != "$expected" ]]; then
             echo "::error::Signature de l'APK incoherente avec celle de la cle utilisee." >&2
             exit 1
           fi
