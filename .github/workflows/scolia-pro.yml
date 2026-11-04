@@ -268,11 +268,75 @@ jobs:
             Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
           }
 
+      - name: Compiler l'installateur Windows professionnel (Inno Setup)
+        shell: pwsh
+        run: |
+          $version = ([xml](Get-Content 'Directory.Build.props')).Project.PropertyGroup.Version | Where-Object { $_ } | Select-Object -First 1
+          $iscc = Join-Path ${env:ProgramFiles(x86)} 'Inno Setup 6\ISCC.exe'
+          if (-not (Test-Path $iscc)) { throw 'Inno Setup 6 introuvable : la publication est bloquée.' }
+          & $iscc "/DAppVersion=$version" "scripts/windows/SCOLIA-Pro.iss"
+          if ($LASTEXITCODE -ne 0) { throw "Inno Setup a echoue avec $LASTEXITCODE" }
+          $name = "SCOLIA_Pro_Installation_${version}_Windows_x64.exe"
+          $dir = Join-Path 'artifacts' 'installer'
+          $exe = Join-Path $dir $name
+          if (-not (Test-Path $exe) -or (Get-Item $exe).Length -lt 1048576) {
+            throw "L'installateur n'existe pas ou n'est pas valide : $exe"
+          }
+          $hash = (Get-FileHash $exe -Algorithm SHA256).Hash.ToLowerInvariant()
+          "$hash  $name" | Set-Content "$exe.sha256" -Encoding ascii
+          Write-Host "Installeur signe SHA-256 localement (pas de signature Authenticode). $name"
+
       - uses: actions/upload-artifact@v4
         with:
           name: SCOLIA_Pro_Windows_x64
           path: |
             scolia-pro/artifacts/*.zip
             scolia-pro/artifacts/*.sha256
-            scolia-pro/artifacts/android/*.apk
+            scolia-pro/artifacts/installer/*.exe
+            scolia-pro/artifacts/installer/*.sha256
           retention-days: 30
+
+  publication-v1-2-10:
+    name: Publication officielle SCOLIA Pro 1.2.10 (APK et EXE)
+    needs: [qualite, paquet-android, paquet-windows]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/release/direct-apk-scolia-pro-20261103' && github.repository == 'MPOLO-Jean-Paul/SCOLIA'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - name: Télécharger l'APK officiel produit et signé par ce workflow
+        uses: actions/download-artifact@v5
+        with:
+          name: SCOLIA_Pro_Android
+          path: dist/android
+      - name: Télécharger l'installateur Windows de ce même commit
+        uses: actions/download-artifact@v5
+        with:
+          name: SCOLIA_Pro_Windows_x64
+          path: dist/windows
+      - name: Vérifier les fichiers et leurs empreintes avant toute publication
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="1.2.10"
+          apk="$(find dist/android -type f -name "SCOLIA_Pro_${version}_Android.apk" -print -quit)"
+          exe="$(find dist/windows -type f -name "SCOLIA_Pro_Installation_${version}_Windows_x64.exe" -print -quit)"
+          test -n "$apk" && test -s "$apk" && test -s "$apk.sha256"
+          test -n "$exe" && test -s "$exe" && test -s "$exe.sha256"
+          ( cd "$(dirname "$apk")" && sha256sum -c "$(basename "$apk").sha256" )
+          ( cd "$(dirname "$exe")" && sha256sum -c "$(basename "$exe").sha256" )
+          tag="scolia-pro-v${version}"
+          if gh release view "$tag" --repo "$GH_REPO" >/dev/null 2>&1; then
+            echo "La version $tag existe déjà : refus d'écraser une publication existante." >&2
+            exit 1
+          fi
+          gh release create "$tag" "$apk" "$apk.sha256" "$exe" "$exe.sha256" \
+            --repo "$GH_REPO" --target "$GITHUB_SHA" --latest \
+            --title "SCOLIA Pro 1.2.10 — Windows et Android" \
+            --notes "Version commune Android/Windows : recherche vocale Windows, nouvel accueil natif, prises en charge complètes (tous les mois et frais) ou partielles avec montants par mois, migration SQLite additive. SHA-256 fourni pour chaque installateur. Le serveur et la base locale conservent leurs données ; sauvegarder les données scolaires avant la mise à jour du poste principal. Android exige une signature d'application identique à la version installée."
+          gh release view "$tag" --repo "$GH_REPO" --json url,assets --jq '{url, assets: [.assets[].name]}'
