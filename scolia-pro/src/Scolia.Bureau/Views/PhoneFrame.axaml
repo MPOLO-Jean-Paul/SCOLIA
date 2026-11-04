@@ -157,7 +157,7 @@
     <Border Grid.Row="0" Classes="phonebar">
       <StackPanel>
       <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto" IsVisible="{Binding !HeaderSearch.IsOpen}">
-        <Button Classes="phoneicon" Command="{Binding BackCommand}" IsVisible="{Binding CanGoBack}" ToolTip.Tip="{Binding VoiceTip}">
+        <Button Classes="phoneicon" Command="{Binding BackCommand}" IsVisible="{Binding CanGoBack}" ToolTip.Tip="Retour">
           <mi:MaterialIcon Kind="ChevronLeft" />
         </Button>
         <Panel Width="44" Height="44" IsVisible="{Binding !CanGoBack}">
@@ -202,10 +202,10 @@
           <mi:MaterialIcon Kind="Close" />
         </Button>
         <Button Grid.Column="3" Classes="baricon mic" Classes.listening="{Binding HeaderSearch.Listening}" Command="{Binding HeaderSearch.Listen}"
-                IsVisible="{Binding HeaderSearch.VoiceAvailable}" ToolTip.Tip="Filtrer à la voix">
+                IsVisible="{Binding HeaderSearch.VoiceAvailable}" ToolTip.Tip="{Binding HeaderSearch.VoiceTip}">
           <Grid>
-                  <mi:MaterialIcon Kind="Microphone" IsVisible="{Binding !Listening}" />
-                  <mi:MaterialIcon Kind="Stop" IsVisible="{Binding Listening}" />
+                  <mi:MaterialIcon Kind="Microphone" IsVisible="{Binding !HeaderSearch.Listening}" />
+                  <mi:MaterialIcon Kind="Stop" IsVisible="{Binding HeaderSearch.Listening}" />
                 </Grid>
         </Button>
       </Grid>
@@ -281,7 +281,7 @@
               <TextBlock Text="{Binding SchoolYearLine}" Classes="muted" FontSize="{DynamicResource FsSmall}" />
             </StackPanel>
             <Button Grid.Column="2" Classes="baricon settingssearchcontrol" Command="{Binding SettingsSearch.Toggle}"
-                    ToolTip.Tip="{Binding VoiceTip}">
+                    ToolTip.Tip="Trouver une fonctionnalité ou un réglage">
               <mi:MaterialIcon Kind="Magnify" />
             </Button>
           </Grid>
@@ -296,10 +296,10 @@
                 <mi:MaterialIcon Kind="Close" />
               </Button>
               <Button Grid.Column="3" Classes="baricon mic" Classes.listening="{Binding SettingsSearch.Listening}" Command="{Binding SettingsSearch.Listen}"
-                      IsVisible="{Binding SettingsSearch.VoiceAvailable}" ToolTip.Tip="Rechercher à la voix">
+                      IsVisible="{Binding SettingsSearch.VoiceAvailable}" ToolTip.Tip="{Binding SettingsSearch.VoiceTip}">
                 <Grid>
-                  <mi:MaterialIcon Kind="Microphone" IsVisible="{Binding !Listening}" />
-                  <mi:MaterialIcon Kind="Stop" IsVisible="{Binding Listening}" />
+                  <mi:MaterialIcon Kind="Microphone" IsVisible="{Binding !SettingsSearch.Listening}" />
+                  <mi:MaterialIcon Kind="Stop" IsVisible="{Binding SettingsSearch.Listening}" />
                 </Grid>
               </Button>
             </Grid>
