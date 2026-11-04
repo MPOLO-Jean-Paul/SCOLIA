@@ -18,6 +18,13 @@ public static class Program
         CultureInfo.DefaultThreadCurrentUICulture = fr;
         CultureInfo.CurrentCulture = fr;
         CultureInfo.CurrentUICulture = fr;
+        // Activer le micro sur Windows avant la création des ViewModels : les barres de
+        // recherche générale et contextuelle utilisent le même service que le téléphone.
+        if (OperatingSystem.IsWindows())
+        {
+            Platform.CanRecognizeSpeech = WindowsSpeechInput.IsAvailable;
+            Platform.RecognizeSpeechAsync = WindowsSpeechInput.ListenAsync;
+        }
         return BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
     }
 
