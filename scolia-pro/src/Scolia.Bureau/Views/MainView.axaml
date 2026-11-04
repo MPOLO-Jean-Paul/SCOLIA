@@ -264,7 +264,7 @@
       <Border Grid.Row="0" Grid.ColumnSpan="2" Classes="pagebar appheader" x:Name="PageBar">
         <Grid ColumnDefinitions="Auto,Auto,2*,3*,Auto,Auto,Auto" IsVisible="{Binding HasPage}">
           <Button Classes="toolicon" Command="{Binding ToggleSidebarCommand}" Margin="0,0,8,0" VerticalAlignment="Center"
-                  ToolTip.Tip="{Binding VoiceTip}">
+                  ToolTip.Tip="Afficher ou masquer le volet (Ctrl+B)">
             <mi:MaterialIcon Kind="DockLeft" Width="18" Height="18" />
           </Button>
           <Border Grid.Column="1" Classes="navcapsule" VerticalAlignment="Center" Margin="0,0,14,0">
@@ -303,10 +303,10 @@
               </Button>
               <Button x:Name="HeaderFinderMic" Grid.Column="4" Classes="baricon mic" Classes.listening="{Binding HeaderFinder.Listening}"
                       Command="{Binding HeaderFinder.Listen}" IsVisible="{Binding HeaderFinder.VoiceAvailable}" Click="OnHeaderFinderMic"
-                      ToolTip.Tip="Rechercher à la voix" Width="40" Height="40">
+                      ToolTip.Tip="{Binding HeaderFinder.VoiceTip}" Width="40" Height="40">
                 <Grid>
-                  <mi:MaterialIcon Kind="Microphone" IsVisible="{Binding !Listening}" />
-                  <mi:MaterialIcon Kind="Stop" IsVisible="{Binding Listening}" />
+                  <mi:MaterialIcon Kind="Microphone" IsVisible="{Binding !HeaderFinder.Listening}" />
+                  <mi:MaterialIcon Kind="Stop" IsVisible="{Binding HeaderFinder.Listening}" />
                 </Grid>
               </Button>
             </Grid>
@@ -322,14 +322,14 @@
                        Text="{Binding HeaderSearch.Query, Mode=TwoWay}" PlaceholderText="{Binding HeaderSearch.Placeholder}"
                        KeyDown="OnDesktopContextSearchKeyDown" MinHeight="40" />
               <Button Grid.Column="2" Classes="baricon" Command="{Binding HeaderSearch.Clear}" IsVisible="{Binding HeaderSearch.HasQuery}"
-                      ToolTip.Tip="{Binding VoiceTip}" Width="40" Height="40">
+                      ToolTip.Tip="Effacer" Width="40" Height="40">
                 <mi:MaterialIcon Kind="Close" />
               </Button>
               <Button Grid.Column="3" Classes="baricon mic" Classes.listening="{Binding HeaderSearch.Listening}" Command="{Binding HeaderSearch.Listen}"
-                      IsVisible="{Binding HeaderSearch.VoiceAvailable}" ToolTip.Tip="Filtrer à la voix" Width="40" Height="40">
+                      IsVisible="{Binding HeaderSearch.VoiceAvailable}" ToolTip.Tip="{Binding HeaderSearch.VoiceTip}" Width="40" Height="40">
                 <Grid>
-                  <mi:MaterialIcon Kind="Microphone" IsVisible="{Binding !Listening}" />
-                  <mi:MaterialIcon Kind="Stop" IsVisible="{Binding Listening}" />
+                  <mi:MaterialIcon Kind="Microphone" IsVisible="{Binding !HeaderSearch.Listening}" />
+                  <mi:MaterialIcon Kind="Stop" IsVisible="{Binding HeaderSearch.Listening}" />
                 </Grid>
               </Button>
             </Grid>
