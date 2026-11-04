@@ -467,6 +467,20 @@ public static class AndroidAppUpdates
         var pref = Preferences(activity);
         var id = pref.GetLong(DownloadIdKey, 0);
         if (id <= 0) return false;
+        var pendingVersion = pref.GetString(DownloadVersionKey, null);
+        var installedVersion = activity.PackageManager?.GetPackageInfo(activity.PackageName!, 0)?.VersionName;
+        if (UpdateCompletionPolicy.AlreadyInstalled(pendingVersion, installedVersion))
+        {
+            var cachedFile = UpdatePath(activity, pref.GetString(FileNameKey, "") ?? "");
+            if (cachedFile is not null)
+            {
+                try { if (File.Exists(cachedFile)) File.Delete(cachedFile); }
+                catch (IOException) { /* Un cache supprimable au prochain nettoyage. */ }
+            }
+            ResetPending(activity);
+            Report(activity, "Mise à jour déjà installée. Cache de téléchargement nettoyé.");
+            return false;
+        }
         var downloadManager = activity.GetSystemService(Context.DownloadService) as DownloadManager;
         if (downloadManager is null) return false;
         var state = DownloadStatus(activity, id);
