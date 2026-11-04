@@ -203,7 +203,10 @@ public sealed class SponsorshipService(IAppDbContext db, IWriteGate gate, IAudit
                   Amount = mode == SponsorshipMode.PartielleMensuelle ? line.Amount ?? 0m : 0m });
         audit.Record(id is null ? "priseencharge.creee" : "priseencharge.modifiee", "PriseEnCharge", sponsorship.Id.ToString(),
             $"{data.Enrollment.Student!.Matricule} : {Label(mode).ToLowerInvariant()} par {sponsorship.SponsorName}.",
-            new { motif = input.Reason, type = Label(mode), montantMensuel = monthlyAmount });
+            new { motif = input.Reason, type = Label(mode), montantUniforme = monthlyAmount,
+                montantsParMois = mode == SponsorshipMode.PartielleMensuelle
+                    ? (input.Lines ?? []).Select(l => new { l.FeeItemId, l.Amount }).ToList()
+                    : null });
         await db.SaveChangesAsync(ct);
         return (await ListAsync(enrollmentId, ct)).First(s => s.Id == sponsorship.Id);
     }, ct);
