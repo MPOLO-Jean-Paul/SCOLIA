@@ -53,6 +53,7 @@ public sealed class PosteViewModel : Observable
         // Code QR : le serveur le montre, l'autre appareil le scanne.
         ShowCode = new RelayCommand(shell.ShowPairing);
         ScanCode = new AsyncCommand(ScanCodeAsync);
+        ImportQrImage = new AsyncCommand(() => ReadQrAsync(fromPhoto: true));
         // Retour des réglages d'Android : l'état de l'arrière-plan se relit tout de suite, sur la page affichée.
         shown = this;
         UseThisComputer = new AsyncCommand(() => shell.UseThisComputerAsync());
@@ -150,14 +151,18 @@ public sealed class PosteViewModel : Observable
     public AsyncCommand ChangeServer { get; }
     public RelayCommand ShowCode { get; }
     public AsyncCommand ScanCode { get; }
+    public AsyncCommand ImportQrImage { get; }
+    public bool CanImportQrImage => Platform.IsMobile && Platform.PickQrImageAsync is not null;
     public string ScanLabel => PairingFlow.HasCamera ? "Scanner le code QR d'un serveur" : "Lire une image du code QR d'un serveur";
     public string ShowCodeLine => Platform.IsMobile
         ? "Un code QR à scanner avec l'autre appareil : il contient les adresses du Wi-Fi, de Tailscale et d'Internet."
         : "Un code QR à scanner avec un téléphone, ou à copier pour un autre ordinateur. Wi-Fi, Tailscale et Internet sont inclus.";
 
-    private async Task ScanCodeAsync()
+    private Task ScanCodeAsync() => ReadQrAsync(fromPhoto: false);
+
+    private async Task ReadQrAsync(bool fromPhoto)
     {
-        var (text, problem) = await PairingFlow.CaptureAsync(shell);
+        var (text, problem) = await PairingFlow.CaptureAsync(shell, fromPhoto);
         if (text is null)
         {
             if (problem is not null) shell.Notify(problem);
