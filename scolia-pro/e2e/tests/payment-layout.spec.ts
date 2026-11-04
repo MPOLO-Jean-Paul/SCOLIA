@@ -14,7 +14,7 @@ for (const viewport of [{ width: 320, height: 360 }, { width: 390, height: 640 }
     };
     await page.route('**/api/installation', (route) => route.fulfill({ json: { isConfigured: true } }));
     await page.route('**/api/session', (route) => route.fulfill({ json: {
-      id: 'caisse-test', userName: 'caisse', displayName: 'Caisse de test', role: 'Admin', roleLabel: 'Administration', permissions: [],
+      id: 'caisse-test', userName: 'caisse', displayName: 'Caisse de test', role: 'Secretariat', roleLabel: 'Secrétariat', permissions: ["apprenants.lire","apprenants.ecrire","paiements.lire","paiements.encaisser","paiements.annuler","depenses.ecrire","caisse.arreter","rapports.lire","pilotage.lire","parametres.ecrire","utilisateurs.gerer","audit.lire","sauvegardes.gerer","scolarite.ecrire","scolarite.lire","personnel.gerer","discipline.annuler"],
       mustChangePassword: false, schoolName: 'Institut de test', currencySymbol: 'FC', phoneCountryCode: '243',
     } }));
     await page.route('**/api/apprenants?**', (route) => route.fulfill({ json: { items: [{ id: account.studentId, enrollmentId,

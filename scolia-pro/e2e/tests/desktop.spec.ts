@@ -3,7 +3,7 @@ import { expect, test, type Page } from '@playwright/test';
 
 const session = {
   id: 'desktop-test', userName: 'secretariat', displayName: 'Administrateur du secrétariat',
-  role: 'Admin', roleLabel: 'Administrateur', permissions: [], mustChangePassword: false,
+  role: 'Secretariat', roleLabel: 'Secrétariat', permissions: ["apprenants.lire","apprenants.ecrire","paiements.lire","paiements.encaisser","paiements.annuler","depenses.ecrire","caisse.arreter","rapports.lire","pilotage.lire","parametres.ecrire","utilisateurs.gerer","audit.lire","sauvegardes.gerer","scolarite.ecrire","scolarite.lire","personnel.gerer","discipline.annuler"], mustChangePassword: false,
   schoolName: 'Institut Technique Médical', currentYear: '2026-2027', currencySymbol: 'FC', phoneCountryCode: '243',
 };
 
