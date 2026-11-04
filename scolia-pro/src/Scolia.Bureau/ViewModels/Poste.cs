@@ -33,6 +33,7 @@ public sealed class PosteViewModel : Observable
         CheckMobileUpdates = new AsyncCommand(async () =>
         {
             if (Platform.CheckAppUpdatesAsync is { } check) await check();
+            Raise(nameof(MobileUpdateStatus));
         });
         VerifyBackgroundServer = new AsyncCommand(async () =>
         {
