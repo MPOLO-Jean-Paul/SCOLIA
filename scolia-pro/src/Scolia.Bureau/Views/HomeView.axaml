@@ -86,18 +86,7 @@
                              FontSize="{DynamicResource FsSmall}" FontWeight="SemiBold" />
                 </StackPanel>
               </Border>
-              <Button Classes="bare" Command="{Binding Network}" Margin="0,0,8,6"
-                      ToolTip.Tip="Afficher l'état du réseau et les postes reliés">
-                <Border Classes="desktopstatechip">
-                  <StackPanel Orientation="Horizontal" Spacing="7">
-                    <Ellipse Width="8" Height="8" Fill="{Binding Sync.StatusBrush}" VerticalAlignment="Center" />
-                    <TextBlock Text="{Binding Sync.StatusText}" Foreground="{DynamicResource TextBrush}"
-                               FontSize="{DynamicResource FsSmall}" FontWeight="SemiBold" />
-                    <TextBlock Text="{Binding Sync.PeersText}" Foreground="{DynamicResource MutedBrush}"
-                               FontSize="{DynamicResource FsSmall}" />
-                  </StackPanel>
-                </Border>
-              </Button>
+
             </WrapPanel>
           </StackPanel>
           <ItemsControl Grid.Column="2" ItemsSource="{Binding QuickActions}"
@@ -117,25 +106,6 @@
               </DataTemplate>
             </ItemsControl.ItemTemplate>
           </ItemsControl>
-        </Grid>
-      </Border>
-
-      <!-- Mode hors ligne : indiquer explicitement que les chiffres ne sont pas actualisés.
-           L'accès aux outils reste immédiat, sans panneau bloquant. -->
-      <Border IsVisible="{Binding Sync.Offline}" CornerRadius="12" BorderThickness="1"
-              BorderBrush="{DynamicResource LineBrush}" Background="{DynamicResource GroupBrush}"
-              Padding="12,10">
-        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
-          <mi:MaterialIcon Kind="CloudOffOutline" Width="20" Height="20"
-                           Foreground="{DynamicResource ToneOrange}" VerticalAlignment="Center" />
-          <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
-            <TextBlock Text="Mode hors ligne · données enregistrées localement"
-                       FontWeight="SemiBold" TextWrapping="Wrap" />
-            <TextBlock Text="Les indicateurs peuvent dater de la dernière connexion. Les opérations en attente seront synchronisées au retour du serveur."
-                       Foreground="{DynamicResource Text2Brush}" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
-          </StackPanel>
-          <Button Grid.Column="2" Classes="link" Content="Envois" Command="{Binding Network}"
-                  VerticalAlignment="Center" ToolTip.Tip="Consulter les opérations en attente et les éventuels conflits" />
         </Grid>
       </Border>
 

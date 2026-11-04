@@ -164,6 +164,9 @@ public static class Platform
     /// </summary>
     public static Func<Task<byte[]?>>? CaptureImageAsync { get; set; }
 
+    /// <summary>Lecture QR en direct par l'appareil photo ; les photos restent un secours hors ligne.</summary>
+    public static Func<Task<string?>>? ScanQrAsync { get; set; }
+
     /// <summary>Ouvre les photos du téléphone pour importer un QR sans accès global à la galerie.</summary>
     public static Func<Task<byte[]?>>? PickQrImageAsync { get; set; }
 

@@ -96,6 +96,21 @@ public sealed class PairingCodeTests
     }
 
     [Fact]
+    public void QR_dense_d_un_vrai_jumelage_avec_trois_adresses_et_ticket_est_lisible()
+    {
+        var code = PairingCode.ForThisServer("Institut Technique Médical Cœur de Dieu", "ORDINATEUR PRINCIPAL",
+            ["http://192.168.1.15:5080", "http://192.168.43.1:5080",
+             "http://100.101.102.103:5080", "http://10.0.0.20:5080"], null)
+            with { AccessTicket = new string('C', 48) };
+        Assert.Equal(3, code.Addresses.Count);
+        var text = code.Text();
+        Assert.InRange(text.Length, 100, 950);
+        Assert.Equal(text, QrCodes.Read(QrCodes.Png(text, 10)));
+        Assert.True(PairingCode.TryParse(text, out var parsed, out _));
+        Assert.Equal(code.AccessTicket, parsed!.AccessTicket);
+    }
+
+    [Fact]
     public void Une_image_sans_code_ne_donne_rien()
     {
         Assert.Null(QrCodes.Read(new byte[QrCodes.Png("x").Length]));
