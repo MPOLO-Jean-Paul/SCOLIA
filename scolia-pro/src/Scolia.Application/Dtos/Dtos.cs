@@ -92,7 +92,7 @@ public sealed record SponsorshipLineDto(Guid FeeItemId, string Label, decimal Pe
 public sealed record SponsorshipUpsert(string SponsorName, string Reason, DateOnly EffectiveFrom, IReadOnlyList<SponsorshipLineInput>? Lines = null,
     string? Type = null, decimal? MonthlyAmount = null);
 
-public sealed record SponsorshipLineInput(Guid FeeItemId, decimal Percent);
+public sealed record SponsorshipLineInput(Guid FeeItemId, decimal Percent = 0m, decimal? Amount = null);
 
 // ---------- Compte et paiements ----------
 public sealed record AccountLineDto(Guid FeeItemId, string Label, DateOnly DueDate, decimal Amount, decimal Covered, decimal Net, decimal Paid,
