@@ -69,16 +69,26 @@ public sealed class OfflineStore
 
     private sealed record SavedPage(string Json, DateTime SavedAt, string? Path = null);
     private string PagePrefix => "page:" + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(User.ToUpperInvariant()))) + ":";
-    private string PageKey(string path) => PagePrefix + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(path)));
+    private string PageKey(string path) => PageKeyFor(User, path);
+    private static string PageKeyFor(string user, string path) =>
+        "page:" + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(user.ToUpperInvariant()))) +
+        ":" + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(path)));
     public IReadOnlyList<string> CachedPaths() => User.Length == 0 ? [] : database.ReadPrefix(PagePrefix, 32)
         .Select(text => JsonSerializer.Deserialize<SavedPage>(text, Json)?.Path)
         .OfType<string>().Where(path => path != "api/etablissement/logo").ToList();
 
     /// <summary>Pages chiffrées dans SQLite ; les anciennes pages sont migrées à leur première lecture.</summary>
-    public void SavePage(string path, string json)
+    public void SavePage(string path, string json) => SavePageFor(User, path, json);
+
+    /// <summary>
+    /// Écrit sous le compte qui a déclenché la requête HTTP. Une connexion à
+    /// un autre compte pendant l'attente réseau ne peut pas transférer ses données.
+    /// </summary>
+    public void SavePageFor(string user, string path, string json)
     {
-        if (User.Length == 0) return;
-        database.Write(PageKey(path), JsonSerializer.Serialize(new SavedPage(json, DateTime.Now, path), Json));
+        if (string.IsNullOrWhiteSpace(user)) return;
+        database.Write(PageKeyFor(user, path),
+            JsonSerializer.Serialize(new SavedPage(json, DateTime.Now, path), Json));
     }
 
     public (string Json, DateTime SavedAt)? ReadPage(string path)
