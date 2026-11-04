@@ -35,8 +35,8 @@ public static class AndroidAppUpdates
     private const string InstallChannel = "scolia-installation";
     private const int NotificationId = 39124;
     private const int InstallNotificationId = 39125;
-    private const int DownloadSuccessStatus = 8; // DownloadManager.STATUS_SUCCESSFUL
-    private const int DownloadFailureStatus = 16; // DownloadManager.STATUS_FAILED
+    private const int DownloadSuccessStatus = UpdateCompletionPolicy.Successful;
+    private const int DownloadFailureStatus = UpdateCompletionPolicy.Failed;
     private const long MaxApkBytes = 350L * 1024 * 1024;
     // Le contrôle en ouvrant SCOLIA doit voir une publication récente ; WorkManager
     // reste à 6 h pour économiser la batterie hors de l'application.
@@ -50,6 +50,7 @@ public static class AndroidAppUpdates
     private static bool waitingForInstallPermission;
     private static bool installDialogOpen;
     private static WeakReference<Activity>? foregroundActivity;
+    private static CancellationTokenSource? foregroundDownloadWatch;
 
     internal sealed record Release(string Version, string DownloadUrl, string Sha256, long Size);
 
@@ -70,16 +71,81 @@ public static class AndroidAppUpdates
     public static void OnResume(Activity activity)
     {
         foregroundActivity = new WeakReference<Activity>(activity);
+        // Le broadcast Android est utile, mais n'est pas la seule source de vérité :
+        // en cas de signal perdu, un contrôle léger du statut déclenche la fenêtre Installer.
+        if (Preferences(activity).GetLong(DownloadIdKey, 0) > 0)
+            StartForegroundDownloadWatch(activity);
         _ = ResumeAsync(activity);
     }
 
     public static void OnPause(Activity activity)
     {
         if (foregroundActivity?.TryGetTarget(out var shown) == true && ReferenceEquals(shown, activity))
+        {
             foregroundActivity = null;
+            StopForegroundDownloadWatch();
+        }
         // Un dialogue disparu avec l'activité ne doit jamais bloquer
         // la prochaine proposition d'installation.
         installDialogOpen = false;
+    }
+
+    private static bool IsForeground(Activity activity) =>
+        foregroundActivity?.TryGetTarget(out var shown) == true
+        && ReferenceEquals(shown, activity)
+        && !activity.IsFinishing && !activity.IsDestroyed;
+
+    private static void StopForegroundDownloadWatch()
+    {
+        var previous = foregroundDownloadWatch;
+        foregroundDownloadWatch = null;
+        previous?.Cancel();
+        previous?.Dispose();
+    }
+
+    private static void StartForegroundDownloadWatch(Activity activity)
+    {
+        StopForegroundDownloadWatch();
+        var source = new CancellationTokenSource();
+        foregroundDownloadWatch = source;
+        _ = WatchDownloadAsync(activity, source.Token);
+    }
+
+    private static int? DownloadStatus(Context context, long id)
+    {
+        var manager = context.GetSystemService(Context.DownloadService) as DownloadManager;
+        if (manager is null) return null;
+        using var cursor = manager.InvokeQuery(new DownloadManager.Query().SetFilterById(id));
+        if (cursor is null || !cursor.MoveToFirst()) return null;
+        var column = cursor.GetColumnIndex(DownloadManager.ColumnStatus);
+        return column < 0 ? null : cursor.GetInt(column);
+    }
+
+    // Actif uniquement pendant le téléchargement et uniquement lorsque SCOLIA
+    // est visible. Une fois terminé, vérification SHA-256 puis boîte de dialogue.
+    private static async Task WatchDownloadAsync(Activity activity, CancellationToken cancellation)
+    {
+        try
+        {
+            while (!cancellation.IsCancellationRequested && IsForeground(activity))
+            {
+                var id = Preferences(activity).GetLong(DownloadIdKey, 0);
+                if (id <= 0) return;
+                var status = DownloadStatus(activity, id);
+                if (UpdateCompletionPolicy.NeedsForegroundCheck(
+                    IsForeground(activity), id, status))
+                {
+                    await CheckDownloadSafelyAsync(activity);
+                    return;
+                }
+                await Task.Delay(TimeSpan.FromSeconds(2), cancellation);
+            }
+        }
+        catch (System.OperationCanceledException) when (cancellation.IsCancellationRequested) { }
+        catch (Exception ex)
+        {
+            Android.Util.Log.Warn("SCOLIA-MAJ", $"Suivi du téléchargement différé : {ex.GetType().Name}");
+        }
     }
 
     /// <summary>
@@ -91,15 +157,38 @@ public static class AndroidAppUpdates
     public static void DownloadCompleted(Context context, long downloadId)
     {
         if (downloadId <= 0 || Preferences(context).GetLong(DownloadIdKey, 0) != downloadId) return;
-        Report(context, "Téléchargement terminé. Vérification de l'APK avant installation.");
-        if (foregroundActivity?.TryGetTarget(out var activity) == true
-            && !activity.IsFinishing && !activity.IsDestroyed)
+        // DownloadManager notifie aussi les échecs. Seul STATUS_SUCCESSFUL
+        // peut déclencher l'installation ; hors premier plan, notification.
+        var status = DownloadStatus(context, downloadId);
+        Activity? screen = null;
+        if (foregroundActivity?.TryGetTarget(out var visible) == true && IsForeground(visible))
+            screen = visible;
+        var action = UpdateCompletionPolicy.Decide(status, screen is not null);
+        switch (action)
         {
-            _ = CheckDownloadAsync(activity);
+            case UpdateCompletionAction.DownloadFailed:
+                Report(context, "Échec du téléchargement de la mise à jour.");
+                if (screen is not null) _ = CheckDownloadSafelyAsync(screen);
+                break;
+            case UpdateCompletionAction.PresentInstall:
+                Report(context, "Téléchargement terminé. Vérification de l'APK avant installation.");
+                if (screen is not null) _ = CheckDownloadSafelyAsync(screen);
+                break;
+            case UpdateCompletionAction.NotifyReady:
+                Report(context, "Téléchargement terminé. Installation proposée à la reprise de SCOLIA.");
+                NotifyInstallReady(context);
+                break;
         }
-        else
+    }
+
+    private static async Task CheckDownloadSafelyAsync(Activity activity)
+    {
+        try { await CheckDownloadAsync(activity); }
+        catch (Exception ex)
         {
-            NotifyInstallReady(context);
+            Android.Util.Log.Warn("SCOLIA-MAJ", $"Ouverture de l'installation différée : {ex}");
+            Report(activity, "L'installation est disponible depuis la notification ou au prochain retour dans SCOLIA.");
+            NotifyInstallReady(activity);
         }
     }
 
@@ -152,6 +241,29 @@ public static class AndroidAppUpdates
     {
         try
         {
+            // Après l'autorisation « Installer des applications inconnues », reprendre
+            // l'installation déjà consentie sans obliger à rechercher l'APK.
+            if (waitingForInstallPermission)
+            {
+                waitingForInstallPermission = false;
+                if (!OperatingSystem.IsAndroidVersionAtLeast(26)
+                    || activity.PackageManager?.CanRequestPackageInstalls() == true)
+                {
+                    var prefs = Preferences(activity);
+                    var path = UpdatePath(activity, prefs.GetString(FileNameKey, null) ?? "");
+                    var digest = prefs.GetString(DigestKey, "") ?? "";
+                    if (path is not null && File.Exists(path)
+                        && Regex.IsMatch(digest, "^[a-fA-F0-9]{64}$")
+                        && await Task.Run(() => VerifyDownloadedApk(activity, path, digest)))
+                    {
+                        if (IsForeground(activity)) OpenSystemInstaller(activity, path);
+                        else NotifyInstallReady(activity);
+                        return;
+                    }
+                }
+                NotifyInstallReady(activity);
+                return;
+            }
             // Une installation en attente a priorité sur une nouvelle recherche réseau.
             if (await CheckDownloadAsync(activity)) return;
             // Ne pas arrêter la recherche sur une ancienne version mémorisée.
@@ -339,6 +451,8 @@ public static class AndroidAppUpdates
                 .PutString(DownloadVersionKey, release.Version)!
                 .PutLong(DownloadStartedAtKey, DateTimeOffset.UtcNow.ToUnixTimeSeconds())!
                 .Apply();
+            // Ne pas dépendre exclusivement du broadcast DOWNLOAD_COMPLETE.
+            if (IsForeground(activity)) StartForegroundDownloadWatch(activity);
             Report(activity, $"Téléchargement de la mise à jour {release.Version} lancé.");
             Toast.MakeText(activity, "Téléchargement commencé. Android affiche sa progression dans les notifications.", ToastLength.Long)?.Show();
         }
@@ -353,18 +467,29 @@ public static class AndroidAppUpdates
         var pref = Preferences(activity);
         var id = pref.GetLong(DownloadIdKey, 0);
         if (id <= 0) return false;
+        var pendingVersion = pref.GetString(DownloadVersionKey, null);
+        var installedVersion = activity.PackageManager?.GetPackageInfo(activity.PackageName!, 0)?.VersionName;
+        if (UpdateCompletionPolicy.AlreadyInstalled(pendingVersion, installedVersion))
+        {
+            var cachedFile = UpdatePath(activity, pref.GetString(FileNameKey, "") ?? "");
+            if (cachedFile is not null)
+            {
+                try { if (File.Exists(cachedFile)) File.Delete(cachedFile); }
+                catch (IOException) { /* Un cache supprimable au prochain nettoyage. */ }
+            }
+            ResetPending(activity);
+            Report(activity, "Mise à jour déjà installée. Cache de téléchargement nettoyé.");
+            return false;
+        }
         var downloadManager = activity.GetSystemService(Context.DownloadService) as DownloadManager;
         if (downloadManager is null) return false;
-        var query = new DownloadManager.Query().SetFilterById(id);
-        using var cursor = downloadManager.InvokeQuery(query);
-        if (cursor is null || !cursor.MoveToFirst())
+        var state = DownloadStatus(activity, id);
+        if (state is null)
         {
             ResetPending(activity);
             return false;
         }
-        var statusIndex = cursor.GetColumnIndex(DownloadManager.ColumnStatus);
-        if (statusIndex < 0) return false;
-        var status = cursor.GetInt(statusIndex);
+        var status = state.Value;
         if (status == DownloadFailureStatus)
         {
             ResetPending(activity);
@@ -407,34 +532,50 @@ public static class AndroidAppUpdates
                 Toast.MakeText(activity, "Mise à jour refusée : APK incorrect, non signé comme attendu ou version obsolète.", ToastLength.Long)?.Show();
                 return false;
             }
+            if (!IsForeground(activity))
+            {
+                NotifyInstallReady(activity);
+                return true;
+            }
             if (installDialogOpen) return true;
+            // Marquer AVANT RunOnUiThread : broadcast et surveillance ne doivent
+            // pas programmer plusieurs fenêtres « Installer » simultanément.
+            installDialogOpen = true;
             activity.RunOnUiThread(() =>
             {
-                if (activity.IsFinishing || activity.IsDestroyed)
+                if (!IsForeground(activity))
                 {
+                    installDialogOpen = false;
                     NotifyInstallReady(activity);
                     return;
                 }
-                if (installDialogOpen) return;
-                installDialogOpen = true;
-                Report(activity, $"SCOLIA Pro {version} est vérifié et prêt à installer.");
-                new AlertDialog.Builder(activity)
-                    .SetTitle($"SCOLIA Pro {version} — prêt à installer")
-                    .SetMessage("Le téléchargement est terminé et le fichier APK a été vérifié.\n\n"
-                        + "Appuyez sur Installer : Android affichera son écran de confirmation. "
-                        + "Les données de SCOLIA ne seront pas supprimées.")
-                    .SetPositiveButton("Installer", (_, _) =>
-                    {
-                        installDialogOpen = false;
-                        OpenSystemInstaller(activity, path);
-                    })
-                    .SetNegativeButton("Plus tard", (_, _) =>
-                    {
-                        installDialogOpen = false;
-                        NotifyInstallReady(activity);
-                    })
-                    .SetCancelable(false)
-                    .Show();
+                try
+                {
+                    Report(activity, $"SCOLIA Pro {version} est vérifié et prêt à installer.");
+                    new AlertDialog.Builder(activity)
+                        .SetTitle($"SCOLIA Pro {version} — prêt à installer")
+                        .SetMessage("Le téléchargement est terminé et le fichier APK a été vérifié.\n\n"
+                            + "Appuyez sur Installer : Android affichera son écran de confirmation. "
+                            + "Les données de SCOLIA ne seront pas supprimées.")
+                        .SetPositiveButton("Installer", (_, _) =>
+                        {
+                            installDialogOpen = false;
+                            OpenSystemInstaller(activity, path);
+                        })
+                        .SetNegativeButton("Plus tard", (_, _) =>
+                        {
+                            installDialogOpen = false;
+                            NotifyInstallReady(activity);
+                        })
+                        .SetCancelable(false)
+                        .Show();
+                }
+                catch (Java.Lang.Exception ex)
+                {
+                    installDialogOpen = false;
+                    Android.Util.Log.Warn("SCOLIA-MAJ", $"Boîte d'installation reportée : {ex.Message}");
+                    NotifyInstallReady(activity);
+                }
             });
             return true;
         }
