@@ -131,6 +131,9 @@ public static class Platform
     /// <summary>Relance un test de santé explicite, indépendant de la fenêtre.</summary>
     public static Func<Task>? CheckHostNetworkAsync { get; set; }
 
+    /// <summary>Contrôle manuel GitHub Releases, disponible sur Android depuis Poste et réseau.</summary>
+    public static Func<Task>? CheckAppUpdatesAsync { get; set; }
+
     /// <summary>Répare l'hébergement sur demande depuis une interface visible, jamais depuis un client.</summary>
     public static Action? EnsureHostAvailable { get; set; }
 
