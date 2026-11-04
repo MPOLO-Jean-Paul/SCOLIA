@@ -92,6 +92,12 @@ public sealed class ScoliaClient : IDisposable
         previous.Dispose();
     }
 
+    // La rapidité des écrans ne doit pas dépendre du délai global des écritures (60 s).
+    // La sonde du serveur relance ensuite la connexion sans bloquer la navigation.
+    private TimeSpan ReadTimeout => IsLongDistance ? TimeSpan.FromSeconds(7) : TimeSpan.FromSeconds(4);
+    private TimeSpan ProbeTimeout => IsLongDistance ? TimeSpan.FromSeconds(6) : TimeSpan.FromSeconds(3);
+    private bool CanUseOfflineCache => Offline is { } store && !string.IsNullOrWhiteSpace(store.User);
+
     private HttpClient Create(Uri server)
     {
         // Délai de connexion court : un ordinateur principal éteint est détecté en quelques secondes, pas en vingt.
@@ -164,7 +170,10 @@ public sealed class ScoliaClient : IDisposable
     {
         try
         {
-            using var response = await http.GetAsync("api/sante", ct);
+            // Une sonde ne doit jamais attendre les 60 secondes du délai d'une écriture.
+            using var probe = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            probe.CancelAfter(ProbeTimeout);
+            using var response = await http.GetAsync("api/sante", probe.Token);
             // Une sonde négative doit être annoncée à la synchronisation :
             // autrement le poste reste affiché « en ligne » après une coupure VPN.
             SetOnline(response.IsSuccessStatusCode);
@@ -188,19 +197,36 @@ public sealed class ScoliaClient : IDisposable
     /// </summary>
     public async Task<T> GetAsync<T>(string path, CancellationToken ct = default)
     {
+        ct.ThrowIfCancellationRequested();
+        var canCache = Cacheable(path) && CanUseOfflineCache;
+
+        // CIRCUIT HORS LIGNE : une fois la coupure connue, aucun écran n'attend de
+        // nouveau le DNS, un VPN ou un serveur absent. La boucle de synchronisation
+        // contrôle la reprise indépendamment, toutes les 5 secondes.
+        if (!IsOnline && CanUseOfflineCache)
+        {
+            if (canCache && Offline!.ReadPage(path) is { } local)
+                return JsonSerializer.Deserialize<T>(local.Json, Json.Options)!;
+            throw new OfflineException("Cette rubrique n'a pas encore de données sur cet appareil. Reconnectez-vous à l'ordinateur principal pour la consulter.");
+        }
+
         string text;
         try
         {
-            using var response = await SendRawAsync(HttpMethod.Get, path, null, ct);
+            using var deadline = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            deadline.CancelAfter(ReadTimeout);
+            using var response = await SendRawAsync(HttpMethod.Get, path, null, deadline.Token);
             if (response.StatusCode == HttpStatusCode.NoContent) return default!;
-            text = await response.Content.ReadAsStringAsync(ct);
-            if (Cacheable(path) && Offline is { } cache) await Task.Run(() => cache.SavePage(path, text), ct);
+            text = await response.Content.ReadAsStringAsync(deadline.Token);
+            // Une lecture réussie reste réutilisable au prochain démarrage hors ligne.
+            if (canCache && Offline is { } cache)
+                await Task.Run(() => cache.SavePage(path, text), ct);
         }
         catch (Exception ex) when (IsDisconnected(ex, ct))
         {
             SetOnline(false);
-            if (Cacheable(path) && Offline?.ReadPage(path) is { } saved) text = saved.Json;
-            else throw new OfflineException("Ordinateur principal injoignable : cette page n'a pas encore été ouverte sur cet appareil.");
+            if (canCache && Offline!.ReadPage(path) is { } saved) text = saved.Json;
+            else throw new OfflineException("Ordinateur principal injoignable : cette rubrique n'a pas encore été chargée sur cet appareil.");
         }
         return JsonSerializer.Deserialize<T>(text, Json.Options)!;
     }
@@ -246,6 +272,16 @@ public sealed class ScoliaClient : IDisposable
             };
             // Enregistrement durable AVANT l'envoi : un arrêt après validation serveur mais avant réponse est rejouable.
             await Task.Run(() => Offline!.Enqueue(durable), ct);
+        }
+        // Même principe que pour la lecture : lorsqu'une coupure est confirmée,
+        // aucune validation ne doit attendre inutilement une nouvelle requête réseau.
+        // L'opération a déjà été journalisée avec sa clé d'idempotence.
+        if (!IsOnline && CanUseOfflineCache)
+        {
+            if (durable is null)
+                throw new OfflineException("Cette action nécessite l'ordinateur principal. Reconnectez-vous pour la terminer.");
+            Queued?.Invoke(durable);
+            throw new OfflineQueuedException($"{durable.Label} : enregistré sur cet appareil. Envoi automatique au retour de l'appareil principal.");
         }
         try
         {
