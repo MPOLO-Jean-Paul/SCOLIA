@@ -171,6 +171,7 @@ public sealed class PosteViewModel : Observable
         });
     }
     public RelayCommand AllowBackground { get; }
+    public AsyncCommand CheckMobileUpdates { get; }
     public AsyncCommand VerifyBackgroundServer { get; }
     public RelayCommand OpenAppSettings { get; }
     public RelayCommand OpenPowerOptions { get; }
