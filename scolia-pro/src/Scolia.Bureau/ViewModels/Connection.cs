@@ -34,11 +34,14 @@ public sealed class ConnectionViewModel : Observable
         Installer.Refresh();
         JoinInternet = new AsyncCommand(JoinInternetAsync);
         ScanCode = new AsyncCommand(ScanCodeAsync);
+        ImportQrImage = new AsyncCommand(ImportQrImageAsync);
     }
 
     // ---------- Code QR du serveur : la voie la plus simple, Wi-Fi, Tailscale ou Internet ----------
     /// <summary>Téléphone : l'appareil photo. Ordinateur : une image du code (photo, capture d'écran).</summary>
     public AsyncCommand ScanCode { get; }
+    public AsyncCommand ImportQrImage { get; }
+    public bool CanImportQrImage => Platform.IsMobile && Platform.PickQrImageAsync is not null;
     /// <summary>Ordinateur : le code copié sur le serveur (ou une invitation) se colle sous le bouton.</summary>
     public bool CanPasteCode => !PairingFlow.HasCamera;
     public string ScanLabel => PairingFlow.HasCamera ? "Scanner le code QR" : "Lire une image du code QR";
@@ -46,9 +49,13 @@ public sealed class ConnectionViewModel : Observable
         ? "Sur le serveur : Poste et réseau, puis Relier un appareil. Visez le code : SCOLIA choisit seul le Wi-Fi, Tailscale ou Internet."
         : "Sur le serveur : Poste et réseau, puis Relier un appareil. Ouvrez une photo du code, ou collez le code copié.";
 
-    private async Task ScanCodeAsync()
+    private Task ScanCodeAsync() => ReadQrAsync(fromPhoto: false);
+    private Task ImportQrImageAsync() => ReadQrAsync(fromPhoto: true);
+
+    private async Task ReadQrAsync(bool fromPhoto)
     {
-        var (text, problem) = await PairingFlow.CaptureAsync(shell);
+        if (Searching) return;
+        var (text, problem) = await PairingFlow.CaptureAsync(shell, fromPhoto);
         if (text is null)
         {
             if (problem is not null) Message = problem;
@@ -61,6 +68,9 @@ public sealed class ConnectionViewModel : Observable
     {
         Searching = true;
         try { Message = await PairingFlow.JoinAsync(shell, text, step => Message = step); }
+        catch (Exception ex) when (ex is IOException or HttpRequestException or TaskCanceledException
+            or Api.ApiException or InvalidOperationException or UnauthorizedAccessException)
+        { Message = $"Jumelage impossible : {ex.Message}. Le serveur précédent reste disponible."; }
         finally { Searching = false; }
     }
 
