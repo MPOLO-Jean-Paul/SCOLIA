@@ -71,6 +71,31 @@ public sealed class PairingCodeTests
     }
 
     [Fact]
+    public void Une_photo_decran_importee_recupere_le_QR_du_serveur()
+    {
+        var code = PairingCode.ForThisServer("ITM Coeur de Dieu", "SCOLIA-BUREAU",
+            ["http://192.168.1.16:5080", "http://100.102.45.61:5080"], null)
+            with { AccessTicket = new string('F', 48) };
+        using var qr = SkiaSharp.SKBitmap.Decode(QrCodes.Png(code.Text(), 10));
+        Assert.NotNull(qr);
+        using var scene = new SkiaSharp.SKBitmap(new SkiaSharp.SKImageInfo(1600, 900,
+            SkiaSharp.SKColorType.Rgba8888, SkiaSharp.SKAlphaType.Premul));
+        using (var canvas = new SkiaSharp.SKCanvas(scene))
+        {
+            canvas.Clear(SkiaSharp.SKColors.White);
+            canvas.DrawBitmap(qr, new SkiaSharp.SKRect(550, 160, 970, 580));
+            canvas.Flush();
+        }
+        using var preview = SkiaSharp.SKImage.FromBitmap(scene);
+        using var jpeg = preview.Encode(SkiaSharp.SKEncodedImageFormat.Jpeg, 93);
+        var text = QrCodes.Read(jpeg.ToArray());
+        Assert.Equal(code.Text(), text);
+        Assert.True(PairingCode.TryParse(text, out var parsed, out _));
+        Assert.Single(parsed!.LanAddresses);
+        Assert.Single(parsed.TailnetAddresses);
+    }
+
+    [Fact]
     public void Une_image_sans_code_ne_donne_rien()
     {
         Assert.Null(QrCodes.Read(new byte[QrCodes.Png("x").Length]));
