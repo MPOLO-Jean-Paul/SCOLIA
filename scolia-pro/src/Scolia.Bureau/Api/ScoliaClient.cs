@@ -198,7 +198,9 @@ public sealed class ScoliaClient : IDisposable
     public async Task<T> GetAsync<T>(string path, CancellationToken ct = default)
     {
         ct.ThrowIfCancellationRequested();
-        var canCache = Cacheable(path) && CanUseOfflineCache;
+        var sourceStore = Offline;
+        var sourceUser = sourceStore?.User ?? string.Empty;
+        var canCache = Cacheable(path) && sourceUser.Length > 0;
 
         // CIRCUIT HORS LIGNE : une fois la coupure connue, aucun écran n'attend de
         // nouveau le DNS, un VPN ou un serveur absent. La boucle de synchronisation
@@ -219,8 +221,8 @@ public sealed class ScoliaClient : IDisposable
             if (response.StatusCode == HttpStatusCode.NoContent) return default!;
             text = await response.Content.ReadAsStringAsync(deadline.Token);
             // Une lecture réussie reste réutilisable au prochain démarrage hors ligne.
-            if (canCache && Offline is { } cache)
-                await Task.Run(() => cache.SavePage(path, text), ct);
+            if (canCache && sourceStore is not null)
+                await Task.Run(() => sourceStore.SavePageFor(sourceUser, path, text), ct);
         }
         catch (Exception ex) when (IsDisconnected(ex, ct))
         {
@@ -403,6 +405,8 @@ public sealed class ScoliaClient : IDisposable
         // Le logo de l'établissement est gardé sur l'appareil : il reste affiché
         // dès la connexion hors ligne, sans essayer un téléchargement de 60 s.
         var keep = path == "api/etablissement/logo";
+        var logoStore = Offline;
+        var logoUser = logoStore?.User ?? string.Empty;
         ct.ThrowIfCancellationRequested();
         if (!IsOnline && CanUseOfflineCache)
         {
@@ -420,7 +424,8 @@ public sealed class ScoliaClient : IDisposable
             using var response = await http.GetAsync(path, deadline.Token);
             if (!response.IsSuccessStatusCode) throw await ToException(response);
             var bytes = await response.Content.ReadAsByteArrayAsync(deadline.Token);
-            if (keep && Offline is { } store) store.SavePage(path, Convert.ToBase64String(bytes));
+            if (keep && logoStore is not null && logoUser.Length > 0)
+                logoStore.SavePageFor(logoUser, path, Convert.ToBase64String(bytes));
             return bytes;
         }
         catch (Exception ex) when (keep && IsDisconnected(ex, ct))
