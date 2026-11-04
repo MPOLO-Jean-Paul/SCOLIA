@@ -22,10 +22,14 @@ public sealed class SponsorshipModesAndMonthlyAmount : Migration
         migrationBuilder.AddColumn<decimal>(
             name: "MonthlyAmount", table: "PrisesEnCharge", type: "TEXT",
             nullable: false, defaultValue: 0m);
+        migrationBuilder.AddColumn<decimal>(
+            name: "Amount", table: "PrisesEnChargeLignes", type: "TEXT",
+            nullable: false, defaultValue: 0m);
     }
 
     protected override void Down(MigrationBuilder migrationBuilder)
     {
+        migrationBuilder.DropColumn(name: "Amount", table: "PrisesEnChargeLignes");
         migrationBuilder.DropColumn(name: "MonthlyAmount", table: "PrisesEnCharge");
         migrationBuilder.DropColumn(name: "Mode", table: "PrisesEnCharge");
     }
