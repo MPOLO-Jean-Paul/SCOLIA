@@ -22,11 +22,11 @@ else
     keytool -genkeypair -noprompt -keystore "$dossier/scolia.keystore" -alias scolia -keyalg RSA -keysize 3072 -validity 12000 \
       -storepass "$(cat "$dossier/mot-de-passe")" -keypass "$(cat "$dossier/mot-de-passe")" \
       -dname "CN=SCOLIA Pro, O=Jp-Services, C=CD"
-    echo "Nouvelle clé SCOLIA créée : elle servira à toutes les compilations suivantes."
+    echo "Clé de test éphémère créée : cet APK ne remplacera pas la version officielle."
   fi
   cle="$dossier/scolia.keystore"
   mot="$(cat "$dossier/mot-de-passe")"
-  origine="clé SCOLIA gardée par le dépôt"
+  origine="clé de validation temporaire (non officielle)"
 fi
 empreinte="$(keytool -list -v -keystore "$cle" -alias scolia -storepass "$mot" | sed -n 's/^.*SHA256: *//p' | head -1)"
 echo "::add-mask::$mot"
