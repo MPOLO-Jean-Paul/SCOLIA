@@ -60,6 +60,7 @@
     <PackageReference Include="QRCoder" />
     <PackageReference Include="ZXing.Net" />
     <PackageReference Include="Xamarin.GooglePlayServices.Code.Scanner" />
+    <PackageReference Include="Xamarin.AndroidX.Tracing.Tracing.Ktx" />
   </ItemGroup>
 
   <!-- Les espaces de noms d'Android ne sont pas ajoutés d'office : ils entreraient en conflit avec ceux d'Avalonia
