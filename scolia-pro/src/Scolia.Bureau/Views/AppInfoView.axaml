@@ -34,7 +34,7 @@
           <TextBlock Text="{Binding Title}" FontSize="19" FontWeight="SemiBold" TextWrapping="Wrap" />
           <TextBlock Text="{Binding Subtitle}" Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
         </StackPanel>
-        <Button Grid.Column="2" Classes="closex" Command="{Binding Close}" VerticalAlignment="Top" ToolTip.Tip="Fermer">
+        <Button Grid.Column="2" Classes="closex" Command="{Binding Close}" VerticalAlignment="Top" ToolTip.Tip="{Binding VoiceTip}">
           <mi:MaterialIcon Kind="Close" />
         </Button>
       </Grid>
@@ -48,7 +48,10 @@
           </Button>
           <Button Grid.Column="3" Classes="baricon mic" Classes.listening="{Binding Listening}" Command="{Binding Listen}"
                   IsVisible="{Binding VoiceAvailable}" ToolTip.Tip="Chercher à la voix" Width="40" Height="40">
-            <mi:MaterialIcon Kind="Microphone" />
+            <Grid>
+                  <mi:MaterialIcon Kind="Microphone" IsVisible="{Binding !Listening}" />
+                  <mi:MaterialIcon Kind="Stop" IsVisible="{Binding Listening}" />
+                </Grid>
           </Button>
         </Grid>
       </Border>
