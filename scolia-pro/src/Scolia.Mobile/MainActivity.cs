@@ -23,6 +23,13 @@ public sealed class MainActivity : AvaloniaMainActivity
         AndroidCamera.Attach(this);
         // Le fond du thème couvre aussi la préparation d'Avalonia dans base.OnCreate.
         base.OnCreate(savedInstanceState);
+        // Activer le service AVANT toute attente de synchronisation, d'écran de
+        // connexion ou de chargement Avalonia. L'utilisateur peut toucher Accueil
+        // immédiatement : l'hébergement reste indépendant de cette activité.
+        try { Server.PhoneServer.Get(this).EnsureServingOnResume(); }
+        catch (Exception ex) when (ex is Java.Lang.RuntimeException or
+            Java.Lang.SecurityException or InvalidOperationException or IOException)
+        { Android.Util.Log.Warn("SCOLIA-Serveur", $"Démarrage anticipé refusé : {ex.GetType().Name}"); }
         // Android 13+ : permission des notifications (encaissements et sauvegardes des autres postes).
         AndroidAlerts.AskPermission(this);
         // Une reprise d'activité déjà prête ne rejoue pas le lancement. Une rotation pendant la préparation le garde.

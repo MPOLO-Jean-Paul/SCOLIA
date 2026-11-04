@@ -29,6 +29,12 @@ public sealed class PhoneServer(Context context) : ILocalServer
     // un OnResume Android arrivé pendant l'ouverture des réglages ou du VPN.
     private bool explicitlyStopped;
 
+    // La présence de la notification ne prouve pas que Kestrel accepte les connexions.
+    // Le diagnostic est exécuté par le service Android, même si l'activité n'est plus visible.
+    private static readonly HttpClient ProbeClient = new() { Timeout = TimeSpan.FromSeconds(4) };
+    private int consecutiveHealthFailures;
+    private int healthProbeInProgress;
+
     /// <summary>Vrai seulement si l'API locale écoute effectivement, pas sur la seule présence de la notification.</summary>
     public bool IsServing
     {
@@ -77,6 +83,67 @@ public sealed class PhoneServer(Context context) : ILocalServer
         }
     }
 
+    /// <summary>
+    /// Vérifie réellement l'API locale, pas seulement l'objet .NET encore en mémoire.
+    /// Après trois échecs consécutifs, redémarre uniquement l'hébergement local :
+    /// aucun dossier, aucune session ni base scolaire n'est supprimé.
+    /// Lorsque le réseau revient, rétablit aussi le relais distant si nécessaire.
+    /// </summary>
+    internal async Task VerifyAndRecoverInBackgroundAsync()
+    {
+        if (ConnectionStore.Load()?.Mode != ConnectionSettings.Local) return;
+        if (Interlocked.Exchange(ref healthProbeInProgress, 1) != 0) return;
+        try
+        {
+            if (!IsServing)
+            {
+                EnsureServingFromForegroundService();
+                return;
+            }
+
+            bool healthy;
+            try
+            {
+                using var response = await ProbeClient.GetAsync(
+                    new Uri($"http://127.0.0.1:{ConnectionStore.LocalAddress.Port}/api/sante"))
+                    .ConfigureAwait(false);
+                healthy = response.IsSuccessStatusCode;
+            }
+            catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or IOException)
+            {
+                healthy = false;
+            }
+
+            bool shouldRestart = false;
+            lock (gate)
+            {
+                if (!shouldHost || explicitlyStopped) return;
+                consecutiveHealthFailures = healthy ? 0 : consecutiveHealthFailures + 1;
+                if (consecutiveHealthFailures >= 3)
+                {
+                    consecutiveHealthFailures = 0;
+                    shouldRestart = true;
+                    Enqueue(async () =>
+                    {
+                        await StopEmbeddedAsync().ConfigureAwait(false);
+                        await StartEmbeddedAsync().ConfigureAwait(false);
+                    });
+                }
+            }
+            if (shouldRestart)
+                Android.Util.Log.Warn("SCOLIA-Serveur", "API injoignable trois fois : reprise locale sans suppression des données.");
+
+            if (healthy)
+            {
+                // Un changement Wi-Fi / 4G / VPN n'est jamais une demande d'arrêt.
+                try { RemoteConnection.StartHostIfMissing(ConnectionStore.LocalAddress); }
+                catch (Exception ex) when (ex is IOException or HttpRequestException or InvalidOperationException)
+                { Android.Util.Log.Warn("SCOLIA-Serveur", $"Relais distant à reprendre : {ex.GetType().Name}"); }
+            }
+        }
+        finally { Interlocked.Exchange(ref healthProbeInProgress, 0); }
+    }
+
     public string DataDirectory => Path.Combine(context.FilesDir?.AbsolutePath ?? Path.GetTempPath(), "serveur");
 
     public void Start() => StartCore(startForegroundService: true);
@@ -103,9 +170,8 @@ public sealed class PhoneServer(Context context) : ILocalServer
             if (startForegroundService)
             {
                 ServeurScolia.Begin(context);
-                // Les autres postes vont dépendre de ce téléphone : Android ne doit pas l'endormir écran éteint.
-                try { AndroidBackground.AskOnce(context); }
-                catch (Exception ex) { Android.Util.Log.Warn("SCOLIA", $"Demande batterie impossible : {ex.Message}"); }
+                // L'autorisation batterie doit être demandée depuis l'activité visible
+                // (MainActivity.OnResume), jamais par un service déjà en arrière-plan.
             }
             Enqueue(StartEmbeddedAsync);
         }
@@ -131,6 +197,7 @@ public sealed class PhoneServer(Context context) : ILocalServer
         {
             shouldHost = false;
             explicitlyStopped = true;
+            consecutiveHealthFailures = 0;
             Enqueue(async () =>
             {
                 await StopEmbeddedAsync().ConfigureAwait(false);
