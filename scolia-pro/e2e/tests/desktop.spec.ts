@@ -3,13 +3,16 @@ import { expect, test, type Page } from '@playwright/test';
 
 const session = {
   id: 'desktop-test', userName: 'secretariat', displayName: 'Administrateur du secrétariat',
-  role: 'Admin', roleLabel: 'Administrateur', permissions: [], mustChangePassword: false,
+  role: 'Secretariat', roleLabel: 'Secrétariat', permissions: ["apprenants.lire","apprenants.ecrire","paiements.lire","paiements.encaisser","paiements.annuler","depenses.ecrire","caisse.arreter","rapports.lire","pilotage.lire","parametres.ecrire","utilisateurs.gerer","audit.lire","sauvegardes.gerer","scolarite.ecrire","scolarite.lire","personnel.gerer","discipline.annuler"], mustChangePassword: false,
   schoolName: 'Institut Technique Médical', currentYear: '2026-2027', currencySymbol: 'FC', phoneCountryCode: '243',
 };
 
 async function connect(page: Page, overrides: Partial<typeof session> = {}) {
   await page.route('**/api/installation', (route) => route.fulfill({ json: { isConfigured: true } }));
   await page.route('**/api/session', (route) => route.fulfill({ json: { ...session, ...overrides } }));
+  // La barre d'état consulte les sauvegardes dès l'ouverture. Sans ce stub,
+  // l'API de test répond 401 et le gestionnaire de session déconnecte le faux compte.
+  await page.route('**/api/sauvegardes', (route) => route.fulfill({ json: [] }));
 }
 
 test('préférences : garder le focus, contenir le clavier et retrouver le bouton d’ouverture', async ({ page }) => {

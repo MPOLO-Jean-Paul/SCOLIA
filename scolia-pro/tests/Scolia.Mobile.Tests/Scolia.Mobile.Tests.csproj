@@ -24,6 +24,10 @@
     <Compile Include="..\..\src\Scolia.Mobile\StartupReadiness.cs" Link="StartupReadiness.cs" />
     <Compile Include="..\..\src\Scolia.Mobile\UpdateCompletionPolicy.cs" Link="UpdateCompletionPolicy.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\src\Scolia.Mobile\AndroidManifest.xml" Link="AndroidManifest.xml" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\src\Scolia.Mobile\Resources\xml\scolia_data_extraction.xml" Link="scolia_data_extraction.xml" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
   <!-- Comme sur le téléphone : ASP.NET Core vient des fichiers de l'application, pas du framework installé. -->
   <Import Project="..\..\src\Scolia.Mobile\AspNetCoreLocal.props" />
 </Project>
