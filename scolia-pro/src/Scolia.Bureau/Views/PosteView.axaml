@@ -27,6 +27,7 @@
               <TextBlock Text="{Binding ScanLabel}" VerticalAlignment="Center" />
             </StackPanel>
           </Button>
+          <Button Content="Importer une photo QR" Command="{Binding ImportQrImage}" Margin="0,0,10,0" IsVisible="{Binding CanImportQrImage}" />
           <Button Classes="ghost" Content="Utiliser cet ordinateur comme serveur" Command="{Binding UseThisComputer}" IsVisible="{Binding CanBecomeServer}" />
         </WrapPanel>
         <ProgressBar IsIndeterminate="True" IsVisible="{Binding Searching}" Height="2" MinHeight="2" Margin="58,0,18,10" />
