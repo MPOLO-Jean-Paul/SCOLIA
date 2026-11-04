@@ -12,7 +12,9 @@ public sealed record PairingCode(string School, string Machine, IReadOnlyList<Ur
 {
     public const string Prefix = "scolia://relier?";
     private const int MaxLength = 2048;
-    private const int MaxAddresses = 6;
+    // Limiter la densité du QR affiché : une adresse Wi-Fi et les premières
+    // voies privées suffisent, plutôt que six adresses illisibles en photo.
+    private const int MaxAddresses = 3;
 
     /// <summary>Adresses du Wi-Fi de l'établissement, essayées en premier.</summary>
     public IEnumerable<Uri> LanAddresses => Addresses.Where(a => !TailscaleEndpoint.IsTailnetAddress(a));
