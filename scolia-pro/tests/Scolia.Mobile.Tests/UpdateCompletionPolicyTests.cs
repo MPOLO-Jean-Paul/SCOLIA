@@ -31,4 +31,16 @@ public sealed class UpdateCompletionPolicyTests
         Assert.Equal(expected,
             UpdateCompletionPolicy.NeedsForegroundCheck(foreground, downloadId, status));
     }
+
+    [Theory]
+    [InlineData("1.2.16", "1.2.16", true)]
+    [InlineData("1.2.16", "1.2.17", true)]
+    [InlineData("1.2.16", "1.2.15", false)]
+    [InlineData("invalide", "1.2.16", false)]
+    [InlineData(null, "1.2.16", false)]
+    public void UpdatedApplicationDoesNotReopenTheInstaller(
+        string? downloaded, string? installed, bool expected)
+    {
+        Assert.Equal(expected, UpdateCompletionPolicy.AlreadyInstalled(downloaded, installed));
+    }
 }
