@@ -40,7 +40,7 @@ public static class OfflineStudentSearch
             if (response is null) return null;
             registered = Math.Max(registered, response.Total);
             foreach (var student in response.Items) items[student.Id] = student;
-            if (items.Count >= registered && registered > 0) break;
+            if (items.Count >= registered) break;
         }
 
         var searchable = (query ?? string.Empty).Trim();
