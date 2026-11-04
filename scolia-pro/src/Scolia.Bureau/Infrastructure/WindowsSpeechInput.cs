@@ -45,7 +45,7 @@ public static class WindowsSpeechInput
     public static async Task<string?> ListenAsync(CancellationToken cancellationToken)
     {
         if (!IsAvailable() || cancellationToken.IsCancellationRequested) return null;
-        if (!await MicrophoneGate.WaitAsync(0).ConfigureAwait(false)) return null;
+        if (!await MicrophoneGate.WaitAsync(0, cancellationToken).ConfigureAwait(false)) return null;
         try
         {
             return await RecognizeOnceAsync(cancellationToken).ConfigureAwait(false);
