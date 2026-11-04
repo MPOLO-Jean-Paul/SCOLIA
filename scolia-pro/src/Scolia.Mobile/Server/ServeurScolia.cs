@@ -170,9 +170,15 @@ public sealed class ServeurScolia : Service
 
     private async Task VerifyServerAsync()
     {
-        try { await PhoneServer.Get(ApplicationContext ?? this).VerifyAndRecoverInBackgroundAsync(); }
-        catch (Exception ex) when (ex is IOException or InvalidOperationException
-            or UnauthorizedAccessException or Java.Lang.Exception)
+        try
+        {
+            if (!IsActive) return;
+            // Android peut relâcher certaines ressources après de longues périodes
+            // de veille ; le service récupère celles que le système autorise encore.
+            Hold();
+            await PhoneServer.Get(ApplicationContext ?? this).VerifyAndRecoverInBackgroundAsync();
+        }
+        catch (Exception ex) when (ex is not OutOfMemoryException)
         { Android.Util.Log.Warn("SCOLIA", $"Contrôle d'hébergement différé : {ex.GetType().Name}"); }
     }
 
