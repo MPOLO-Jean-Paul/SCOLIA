@@ -167,11 +167,10 @@ jobs:
           distribution: temurin
           java-version: '21'
 
-      - name: Outils Android (.NET et SDK)
+      - name: Installer le workload et SDK Android avec reprises limitees
         run: |
-          dotnet workload install android
-          dotnet build src/Scolia.Mobile -t:InstallAndroidDependencies -f net10.0-android \
-            -p:AndroidSdkDirectory="$ANDROID_HOME" -p:JavaSdkDirectory="$JAVA_HOME" -p:AcceptAndroidSDKLicenses=True
+          bash scripts/install-android-sdk-retry.sh --self-test
+          bash scripts/install-android-sdk-retry.sh
 
       # Même clé que la compilation native : les deux APK s'installent l'un par-dessus l'autre, en mise à jour.
       - name: Retrouver la clé de signature SCOLIA

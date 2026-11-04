@@ -5,6 +5,7 @@ on:
     paths:
       - 'scolia-pro/scripts/publier-android.sh'
       - 'scolia-pro/scripts/cle-android.sh'
+      - 'scolia-pro/scripts/install-android-sdk-retry.sh'
       - 'scolia-pro/scripts/windows/**'
       - 'scolia-pro/src/Scolia.Bureau/**'
       - 'scolia-pro/src/Scolia.Mobile/**'
@@ -21,6 +22,7 @@ on:
     paths:
       - 'scolia-pro/scripts/publier-android.sh'
       - 'scolia-pro/scripts/cle-android.sh'
+      - 'scolia-pro/scripts/install-android-sdk-retry.sh'
       - 'scolia-pro/scripts/windows/**'
       - 'scolia-pro/src/Scolia.Bureau/**'
       - 'scolia-pro/src/Scolia.Mobile/**'
@@ -99,12 +101,10 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
-      - name: Installer le workload et SDK Android
+      - name: Installer le workload et SDK Android avec reprises limitees
         run: |
-          set -euo pipefail
-          dotnet workload install android
-          dotnet build src/Scolia.Mobile -t:InstallAndroidDependencies -f net10.0-android \
-            -p:AndroidSdkDirectory="$ANDROID_HOME" -p:JavaSdkDirectory="$JAVA_HOME" -p:AcceptAndroidSDKLicenses=True
+          bash scripts/install-android-sdk-retry.sh --self-test
+          bash scripts/install-android-sdk-retry.sh
       # Seule la branche de publication doit voir les secrets de signature officiels.
       # Une PR compile avec une cle EPHEMERE : le cache Actions ne doit jamais
       # faire varier le certificat publie ni exposer la cle de l'etablissement.
