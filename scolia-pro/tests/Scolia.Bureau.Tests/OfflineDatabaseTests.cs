@@ -31,6 +31,26 @@ public sealed class OfflineDatabaseTests : IDisposable
     }
 
     [Fact]
+    public void Discard_ne_supprime_que_les_conflits_et_preserve_les_paiements_en_attente()
+    {
+        var store = Store();
+        var pending = new OutboxItem { Key = "operation-en-attente", Path = "api/paiements", Body = "{}" };
+        var refused = new OutboxItem { Key = "operation-refusee", Path = "api/paiements", Body = "{}" };
+        store.Enqueue(pending);
+        store.Enqueue(refused);
+        store.Refused(refused.Id, "Ce mois est déjà réglé");
+
+        // Une action d'abandon ne doit jamais effacer une opération en cours d'envoi.
+        store.Discard(pending.Id);
+        Assert.Equal(pending.Id, Assert.Single(store.Outbox()).Id);
+        Assert.Equal(refused.Id, Assert.Single(store.Conflicts()).Id);
+
+        store.Discard(refused.Id);
+        Assert.Empty(store.Conflicts());
+        Assert.Equal(pending.Id, Assert.Single(store.Outbox()).Id);
+    }
+
+    [Fact]
     public async Task Concurrent_instances_do_not_overwrite_each_others_operations()
     {
         var one = Store();

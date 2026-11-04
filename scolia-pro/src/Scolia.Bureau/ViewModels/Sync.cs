@@ -39,7 +39,7 @@ public sealed class OutboxRowVm(OutboxItem item, bool conflict, SyncCenter sync)
     public string? Error { get; } = item.Error;
     public bool IsConflict { get; } = conflict;
     public RelayCommand Retry { get; } = new(() => sync.Retry(item.Id));
-    public RelayCommand Discard { get; } = new(() => sync.Discard(item.Id));
+    public AsyncCommand Discard { get; } = new(() => sync.DiscardAsync(item.Id, item.Label));
 }
 
 /// <summary>
@@ -323,10 +323,57 @@ public sealed class SyncCenter : Observable, IDisposable
         _ = SyncAsync(manual: true);
     }
 
-    public void Discard(string id)
+    /// <summary>Ne jamais supprimer un conflit hors ligne sans confirmation explicite.</summary>
+    public async Task DiscardAsync(string id, string label)
     {
-        api.Offline?.Discard(id);
+        if (flushing || Syncing)
+        {
+            shell.Notify("Synchronisation en cours : vérifiez le résultat avant d'abandonner cette opération.");
+            return;
+        }
+
+        var store = api.Offline;
+        if (store is null || !store.Conflicts().Any(x => x.Id == id))
+        {
+            LoadQueue();
+            shell.Notify("Cette opération n'est plus en attente de décision.");
+            return;
+        }
+
+        // Le centre réseau est lui-même un dialogue : le restaurer après la confirmation,
+        // qu'elle soit acceptée ou annulée, pour ne pas perdre le contexte de la file.
+        var networkDialog = shell.Dialog is NetworkViewModel ? shell.Dialog : null;
+        bool confirmed;
+        try
+        {
+            confirmed = await shell.Confirm(
+                "Abandonner cette opération hors ligne ?",
+                $"Opération : {label}.\n\nCette modification refusée sera retirée de cet appareil et ne sera plus réessayée. Cela ne supprime ni n'annule aucune opération déjà validée sur le serveur.",
+                "Abandonner définitivement", danger: true);
+        }
+        finally
+        {
+            if (networkDialog is not null && shell.Dialog is null) shell.ShowNetwork();
+        }
+
+        if (!confirmed) return;
+        if (flushing || Syncing || !ReferenceEquals(store, api.Offline))
+        {
+            LoadQueue();
+            shell.Notify("L'état de la synchronisation a changé. Vérifiez de nouveau l'opération.");
+            return;
+        }
+
+        if (!store.Conflicts().Any(x => x.Id == id))
+        {
+            LoadQueue();
+            shell.Notify("Cette opération n'est plus dans les conflits.");
+            return;
+        }
+
+        store.Discard(id);
         LoadQueue();
+        shell.Notify("Opération refusée retirée localement. Aucune transaction du serveur n'a été annulée.");
     }
 
     // ---------------- Connexion, reconnexion et envoi ----------------

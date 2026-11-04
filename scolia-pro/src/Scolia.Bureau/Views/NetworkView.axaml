@@ -100,7 +100,8 @@
                         <TextBlock Text="{Binding Error}" Foreground="{DynamicResource ToneRed}" TextWrapping="Wrap" IsVisible="{Binding IsConflict}" />
                         <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,6,0,0" IsVisible="{Binding IsConflict}">
                           <Button Content="Réessayer" Command="{Binding Retry}" />
-                          <Button Classes="danger" Content="Abandonner" Command="{Binding Discard}" />
+                          <Button Classes="danger" Content="Abandonner" Command="{Binding Discard}"
+                                  ToolTip.Tip="Demande confirmation avant de retirer cette opération refusée de la file locale" />
                         </StackPanel>
                       </StackPanel>
                     </Grid>
@@ -110,7 +111,7 @@
             </StackPanel>
           </Border>
           <TextBlock Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap"
-                     Text="Chaque opération porte une clé unique : renvoyée après une coupure, elle n'est jamais enregistrée deux fois. Une opération refusée, par exemple un mois payé entre-temps sur un autre poste, attend votre décision." />
+                     Text="Les opérations refusées restent enregistrées sur cet appareil jusqu'à votre décision. « Réessayer » renvoie l'opération ; « Abandonner » demande confirmation et retire uniquement le conflit local, sans annuler une transaction validée par le serveur." />
         </StackPanel>
       </ScrollViewer>
 
