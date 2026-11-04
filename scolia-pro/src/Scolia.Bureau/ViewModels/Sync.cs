@@ -387,7 +387,8 @@ public sealed class SyncCenter : Observable, IDisposable
                 }
             }
             var (sent, refused) = await api.FlushAsync();
-            if (sent > 0) shell.Notify($"{sent} opération(s) envoyée(s) à l'ordinateur principal.");
+            // Le point du réseau passe simplement au vert. Ne pas afficher une notification
+            // à chaque reconnexion réussie : seules les opérations refusées demandent une action.
             if (refused > 0) shell.Notify($"{refused} opération(s) refusée(s) par le serveur : ouvrez « Envois » pour les revoir.", SoundKind.Error);
             if (wasOffline || sent > 0 || refused > 0 || manual) await shell.RefreshQuietlyAsync();
             if (wasOffline && running is { } session && !session.IsCancellationRequested)
