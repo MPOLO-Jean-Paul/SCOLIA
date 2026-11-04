@@ -123,8 +123,9 @@ public sealed class StudentsPage : PageViewModel
         OfflineStudentSearch.Result? local = null;
         if (!Shell.Api.IsOnline && Shell.Api.Offline is { } store)
         {
-            var promotionCode = Promotions.FirstOrDefault(x => x.Value == Promotion?.Value)?.Label
-                .Split('·')[0].Trim();
+            var promotionCode = Promotion?.Value is { Length: > 0 } selectedPromotion
+                ? Promotions.FirstOrDefault(x => x.Value == selectedPromotion)?.Label.Split('·')[0].Trim()
+                : null;
             local = OfflineStudentSearch.Search(store, Search.Trim(), promotionCode, Status?.Value, page, PageSize);
         }
         var result = local?.Page
