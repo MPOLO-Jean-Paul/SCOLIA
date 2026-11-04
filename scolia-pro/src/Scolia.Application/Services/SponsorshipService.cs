@@ -98,32 +98,55 @@ public sealed class SponsorshipService(IAppDbContext db, IWriteGate gate, IAudit
             v.Require(input.Lines is { Count: > 0 }, "lines", "Choisissez au moins une rubrique couverte.");
             foreach (var line in input.Lines ?? [])
                 v.Require(line.Percent is > 0 and <= 100, "lines", "Chaque pourcentage doit être compris entre 1 et 100.");
-            v.Require(input.Lines is null || input.Lines.Select(l => l.FeeItemId).Distinct().Count() == input.Lines.Count,
-                "lines", "Une rubrique figure deux fois.");
+        }
+        else if (mode == SponsorshipMode.Complete)
+        {
+            v.Require(input.Lines is null || input.Lines.Count == 0, "lines",
+                "Aucun montant mensuel n'est requis en couverture complète.");
         }
         else
         {
-            v.Require(input.Lines is null || input.Lines.Count == 0, "lines", "Ce mode ne demande aucun pourcentage.");
-            if (mode == SponsorshipMode.PartielleMensuelle)
-                v.Require(input.MonthlyAmount is > 0, "monthlyAmount", "Précisez le montant pris en charge par mois.");
+            v.Require(input.Lines is { Count: > 0 } || input.MonthlyAmount is > 0,
+                "lines", "Précisez au moins un montant pris en charge par mois.");
+            foreach (var line in input.Lines ?? [])
+            {
+                v.Require(line.Amount is > 0, "lines", "Chaque mois sélectionné doit avoir un montant positif.");
+                v.Require(line.Percent == 0, "lines", "Les prises en charge partielles se saisissent en montants, pas en pourcentages.");
+            }
         }
+        v.Require(input.Lines is null || input.Lines.Select(l => l.FeeItemId).Distinct().Count() == input.Lines.Count,
+            "lines", "Une même mensualité figure deux fois.");
         v.ThrowIfInvalid();
 
         var data = await accounts.ForEnrollmentAsync(enrollmentId, null, ct);
         var school = await YearContext.SchoolAsync(db, ct);
         var fees = data.Promotion.Fees.ToDictionary(f => f.Id);
         var monthly = fees.Values.Where(f => f.Kind == FeeKind.Mensualite && f.Amount > 0).ToList();
-        var monthlyAmount = mode == SponsorshipMode.PartielleMensuelle ? input.MonthlyAmount!.Value : 0m;
+        // Compatibilité : un ancien client peut envoyer un montant uniforme. L'interface
+        // actuelle envoie un montant distinct pour chaque mois sélectionné.
+        var monthlyAmount = mode == SponsorshipMode.PartielleMensuelle ? input.MonthlyAmount ?? 0m : 0m;
         if (mode == SponsorshipMode.PartielleMensuelle)
         {
-            if (monthly.Count == 0) throw new DomainException("monthlyAmount", "Aucune mensualité n'est configurée pour cette promotion.");
-            if (monthly.Any(f => monthlyAmount > f.Amount))
-                throw new DomainException("monthlyAmount", "Le montant mensuel pris en charge ne peut dépasser la plus petite mensualité.");
+            if (monthly.Count == 0) throw new DomainException("lines", "Aucune mensualité n'est configurée pour cette promotion.");
+            if (monthlyAmount > 0 && monthly.Any(f => monthlyAmount > f.Amount))
+                throw new DomainException("monthlyAmount", "Le montant uniforme dépasse la plus petite mensualité.");
             if (school.WholeAmountsOnly && monthlyAmount != decimal.Truncate(monthlyAmount))
                 throw new DomainException("monthlyAmount", "Saisissez un montant entier dans la monnaie de l'établissement.");
         }
-        foreach (var l in input.Lines ?? [])
-            if (!fees.ContainsKey(l.FeeItemId)) throw new DomainException("lines", "Une rubrique n'appartient pas à cette promotion.");
+        foreach (var line in input.Lines ?? [])
+        {
+            if (!fees.TryGetValue(line.FeeItemId, out var fee))
+                throw new DomainException("lines", "Une rubrique n'appartient pas à cette promotion.");
+            if (mode == SponsorshipMode.PartielleMensuelle)
+            {
+                if (fee.Kind != FeeKind.Mensualite)
+                    throw new DomainException("lines", "La prise en charge partielle couvre uniquement les mensualités.");
+                if (line.Amount > fee.Amount)
+                    throw new DomainException("lines", $"« {fee.Label} » : le montant couvert dépasse la mensualité.");
+                if (school.WholeAmountsOnly && line.Amount != decimal.Truncate(line.Amount!.Value))
+                    throw new DomainException("lines", $"« {fee.Label} » : saisissez un montant entier.");
+            }
+        }
 
         Sponsorship sponsorship;
         if (id is null)
@@ -151,7 +174,8 @@ public sealed class SponsorshipService(IAppDbContext db, IWriteGate gate, IAudit
             Mode = mode,
             MonthlyAmount = monthlyAmount,
             IsActive = true,
-            Lines = (input.Lines ?? []).Select(l => new SponsorshipLine { FeeItemId = l.FeeItemId, Percent = l.Percent }).ToList()
+            Lines = (input.Lines ?? []).Select(l => new SponsorshipLine
+            { FeeItemId = l.FeeItemId, Percent = l.Percent, Amount = l.Amount ?? 0m }).ToList()
         };
         foreach (var fee in fees.Values)
         {
@@ -171,10 +195,12 @@ public sealed class SponsorshipService(IAppDbContext db, IWriteGate gate, IAudit
         sponsorship.MonthlyAmount = monthlyAmount;
         foreach (var old in sponsorship.Lines.ToList()) db.SponsorshipLines.Remove(old);
         sponsorship.Lines.Clear();
-        if (mode == SponsorshipMode.Historique)
-            foreach (var line in input.Lines!)
+        if (mode != SponsorshipMode.Complete)
+            foreach (var line in input.Lines ?? [])
                 sponsorship.Lines.Add(new SponsorshipLine
-                { SponsorshipId = sponsorship.Id, FeeItemId = line.FeeItemId, Percent = line.Percent });
+                { SponsorshipId = sponsorship.Id, FeeItemId = line.FeeItemId,
+                  Percent = mode == SponsorshipMode.Historique ? line.Percent : 0m,
+                  Amount = mode == SponsorshipMode.PartielleMensuelle ? line.Amount ?? 0m : 0m });
         audit.Record(id is null ? "priseencharge.creee" : "priseencharge.modifiee", "PriseEnCharge", sponsorship.Id.ToString(),
             $"{data.Enrollment.Student!.Matricule} : {Label(mode).ToLowerInvariant()} par {sponsorship.SponsorName}.",
             new { motif = input.Reason, type = Label(mode), montantMensuel = monthlyAmount });
