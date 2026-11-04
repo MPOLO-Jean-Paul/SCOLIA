@@ -94,6 +94,40 @@ public class ConnectivityTests
     }
 
     [Fact]
+    public async Task Connexion_avec_le_dernier_compte_hors_ligne_ne_tente_pas_une_longue_requete()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), "scolia-offline-fast", Guid.NewGuid().ToString("N"));
+        var server = new Uri("http://127.0.0.1:1/");
+        try
+        {
+            var store = new Scolia.Bureau.Infrastructure.OfflineStore(server, directory) { User = "secretariat" };
+            var session = new SessionDto(Guid.NewGuid(), "secretariat", "Secrétariat", "Secretariat", "Secrétariat",
+                [], false, "Institut", null, null, "FC", "243");
+            store.SaveCredential("secretariat", "Secretariat1", session);
+            using var api = new ScoliaClient(server) { Offline = store };
+            Assert.False(await api.IsRunningAsync());
+
+            var login = new Scolia.Bureau.ViewModels.LoginViewModel(api)
+            {
+                UserName = "secretariat",
+                Password = "Secretariat1"
+            };
+            var opened = new TaskCompletionSource<SessionDto>(TaskCreationOptions.RunContinuationsAsynchronously);
+            login.LoggedIn += result => opened.TrySetResult(result);
+            var watch = System.Diagnostics.Stopwatch.StartNew();
+            login.Submit.Execute(null);
+            var restored = await opened.Task.WaitAsync(TimeSpan.FromSeconds(3));
+            watch.Stop();
+
+            Assert.Equal("secretariat", restored.UserName);
+            Assert.True(watch.Elapsed < TimeSpan.FromSeconds(2), $"Connexion hors ligne lente : {watch.Elapsed}");
+            Assert.False(api.IsOnline);
+            Assert.Contains("hors ligne", login.Notice ?? string.Empty, StringComparison.OrdinalIgnoreCase);
+        }
+        finally { if (Directory.Exists(directory)) Directory.Delete(directory, true); }
+    }
+
+    [Fact]
     public async Task Logo_local_s_affiche_sans_attendre_un_serveur_injoignable()
     {
         var directory = Path.Combine(Path.GetTempPath(), "scolia-offline-fast", Guid.NewGuid().ToString("N"));
