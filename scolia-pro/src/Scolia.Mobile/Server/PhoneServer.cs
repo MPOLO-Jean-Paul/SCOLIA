@@ -37,6 +37,7 @@ public sealed class PhoneServer(Context context) : ILocalServer
     private static readonly HttpClient ProbeClient = new() { Timeout = TimeSpan.FromSeconds(4) };
     private int consecutiveHealthFailures;
     private int healthProbeInProgress;
+    private bool? lastLocalHealth;
     private string lastDiagnostic = "Diagnostic non effectué. Vérifiez le serveur depuis Poste et réseau.";
 
     /// <summary>État réel de l'API après les vérifications réseau de ce téléphone.</summary>
@@ -56,6 +57,12 @@ public sealed class PhoneServer(Context context) : ILocalServer
     public bool IsServing
     {
         get { lock (gate) return shouldHost && server?.IsRunning == true; }
+    }
+
+    /// <summary>Ne jamais déclarer l'API « vérifiée » à partir de la notification seule.</summary>
+    public bool IsServingVerified
+    {
+        get { lock (gate) return shouldHost && server?.IsRunning == true && lastLocalHealth == true; }
     }
 
     /// <summary>
@@ -114,6 +121,7 @@ public sealed class PhoneServer(Context context) : ILocalServer
         {
             if (!IsServing)
             {
+                lock (gate) lastLocalHealth = false;
                 SetDiagnostic("Serveur non prêt : tentative de démarrage ou de récupération de l'API.");
                 EnsureServingFromForegroundService();
                 return;
@@ -131,6 +139,8 @@ public sealed class PhoneServer(Context context) : ILocalServer
             {
                 healthy = false;
             }
+
+            lock (gate) lastLocalHealth = healthy;
 
             // Une API accessible sur 127.0.0.1 n'est pas forcément accessible
             // par les autres ordinateurs : contrôler également une adresse IPv4
@@ -270,6 +280,7 @@ public sealed class PhoneServer(Context context) : ILocalServer
             shouldHost = false;
             explicitlyStopped = true;
             consecutiveHealthFailures = 0;
+            lastLocalHealth = false;
             Enqueue(async () =>
             {
                 await StopEmbeddedAsync().ConfigureAwait(false);
@@ -299,6 +310,7 @@ public sealed class PhoneServer(Context context) : ILocalServer
         lock (gate)
         {
             if (!shouldHost || server is not null) return;
+            lastLocalHealth = null;
         }
 
         var created = new EmbeddedServer
@@ -347,6 +359,7 @@ public sealed class PhoneServer(Context context) : ILocalServer
         {
             stopping = server;
             server = null;
+            lastLocalHealth = false;
         }
         if (stopping is not null) await stopping.StopAsync().ConfigureAwait(false);
     }
