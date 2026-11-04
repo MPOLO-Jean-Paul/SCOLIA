@@ -2,6 +2,7 @@ using Android.App;
 using Android.Content;
 using Android.Content.PM;
 using Android.Net.Wifi;
+using Android.Net;
 using Android.OS;
 
 namespace Scolia.Mobile.Server;
@@ -11,7 +12,7 @@ namespace Scolia.Mobile.Server;
 /// ou application quittée, et la notification rappelle que les autres postes en dépendent. Le Wi-Fi reste éveillé
 /// et reçoit les recherches des autres postes.
 /// </summary>
-[Service(Name = "com.jpservices.scolia.ServeurScolia", Exported = false, ForegroundServiceType = ForegroundService.TypeSpecialUse)]
+[Service(Name = "com.jpservices.scolia.ServeurScolia", Exported = false, StopWithTask = false, ForegroundServiceType = ForegroundService.TypeSpecialUse)]
 [MetaData("android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE",
     Value = "Local school records server voluntarily enabled by the user, with visible notification for authorized devices")]
 public sealed class ServeurScolia : Service
@@ -29,6 +30,8 @@ public sealed class ServeurScolia : Service
     // Ce contrôle vit dans le service, pas dans l'Activity. Il continue donc
     // lorsque l'écran s'éteint et ne recrée jamais inutilement une base.
     private System.Threading.Timer? serverWatchdog;
+    private ConnectivityManager? connectivity;
+    private ConnectivityManager.NetworkCallback? networkObserver;
 
     public static void Begin(Context context)
     {
@@ -59,7 +62,7 @@ public sealed class ServeurScolia : Service
             if (OperatingSystem.IsAndroidVersionAtLeast(34)) StartForeground(NotificationId, notification, ForegroundService.TypeSpecialUse);
             else StartForeground(NotificationId, notification);
         }
-        catch (Exception ex) when (ex is Java.Lang.RuntimeException or InvalidOperationException)
+        catch (Exception ex) when (ex is Java.Lang.RuntimeException or Java.Lang.SecurityException or InvalidOperationException)
         {
             // Android 12+ peut refuser un lancement de premier plan trop tardif,
             // notamment depuis un contexte déjà en arrière-plan. Ne jamais
@@ -89,12 +92,11 @@ public sealed class ServeurScolia : Service
         // Si une erreur locale coupe l'API alors que l'écran est éteint,
         // une vérification légère du serveur tente de la restaurer. La vérification
         // ne démarre ni Activity ni nouveau service de premier plan.
-        serverWatchdog ??= new System.Threading.Timer(_ =>
-        {
-            try { PhoneServer.Get(ApplicationContext ?? this).EnsureServingFromForegroundService(); }
-            catch (Exception ex) when (ex is IOException or InvalidOperationException or UnauthorizedAccessException)
-            { Android.Util.Log.Warn("SCOLIA", $"Contrôle d'hébergement différé : {ex.Message}"); }
-        }, null, TimeSpan.FromSeconds(20), TimeSpan.FromSeconds(40));
+        serverWatchdog ??= new System.Threading.Timer(_ => _ = VerifyServerAsync(),
+            null, TimeSpan.FromSeconds(15), TimeSpan.FromSeconds(45));
+        // La liaison locale reste ouverte même quand la connexion Wi-Fi/4G change.
+        // Le callback réseau vit dans le service, pas dans la fenêtre Android.
+        RegisterNetworkObserver();
         // La reprise reste soumise au système Android et à l'alimentation de l'appareil.
         return StartCommandResult.Sticky;
     }
@@ -116,8 +118,45 @@ public sealed class ServeurScolia : Service
         System.Threading.Interlocked.Exchange(ref active, 0);
         serverWatchdog?.Dispose();
         serverWatchdog = null;
+        if (connectivity is not null && networkObserver is not null)
+        {
+            try { connectivity.UnregisterNetworkCallback(networkObserver); }
+            catch (Exception ex) when (ex is Java.Lang.SecurityException or Java.Lang.IllegalArgumentException)
+            { Android.Util.Log.Warn("SCOLIA", $"Observateur réseau retiré : {ex.GetType().Name}"); }
+        }
+        networkObserver = null;
+        connectivity = null;
         Release();
         base.OnDestroy();
+    }
+
+    private async Task VerifyServerAsync()
+    {
+        try { await PhoneServer.Get(ApplicationContext ?? this).VerifyAndRecoverInBackgroundAsync(); }
+        catch (Exception ex) when (ex is IOException or InvalidOperationException
+            or UnauthorizedAccessException or Java.Lang.Exception)
+        { Android.Util.Log.Warn("SCOLIA", $"Contrôle d'hébergement différé : {ex.GetType().Name}"); }
+    }
+
+    private void RegisterNetworkObserver()
+    {
+        if (!OperatingSystem.IsAndroidVersionAtLeast(24) || networkObserver is not null) return;
+        try
+        {
+            if (GetSystemService(ConnectivityService) is not ConnectivityManager manager) return;
+            var observer = new HostNetworkCallback(this);
+            manager.RegisterDefaultNetworkCallback(observer);
+            connectivity = manager;
+            networkObserver = observer;
+        }
+        catch (Exception ex) when (ex is Java.Lang.SecurityException or Java.Lang.RuntimeException)
+        { Android.Util.Log.Warn("SCOLIA", $"Observation réseau indisponible : {ex.GetType().Name}"); }
+    }
+
+    /// <summary>Une connexion disponible provoque une vérification sans redémarrer Kestrel à tort.</summary>
+    private sealed class HostNetworkCallback(ServeurScolia host) : ConnectivityManager.NetworkCallback
+    {
+        public override void OnAvailable(Network network) => _ = host.VerifyServerAsync();
     }
 
     private Notification BuildNotification()
@@ -146,7 +185,8 @@ public sealed class ServeurScolia : Service
             {
                 awake = power.NewWakeLock(WakeLockFlags.Partial, "scolia:serveur");
                 awake?.SetReferenceCounted(false);
-                awake?.Acquire();
+            }
+            if (awake?.IsHeld != true) awake?.Acquire();
             }
             if (GetSystemService(WifiService) is WifiManager manager)
             {
@@ -158,13 +198,15 @@ public sealed class ServeurScolia : Service
                     wifi = manager.CreateWifiLock(OperatingSystem.IsAndroidVersionAtLeast(34) ? Android.Net.WifiMode.FullLowLatency : Android.Net.WifiMode.FullHighPerf, "scolia:serveur");
 #pragma warning restore CA1422
                     wifi?.SetReferenceCounted(false);
-                    wifi?.Acquire();
+                }
+                if (wifi?.IsHeld != true) wifi?.Acquire();
                 }
                 if (multicast is null)
                 {
                     multicast = manager.CreateMulticastLock("scolia:decouverte");
                     multicast?.SetReferenceCounted(false);
-                    multicast?.Acquire();
+                }
+                if (multicast?.IsHeld != true) multicast?.Acquire();
                 }
             }
         }
