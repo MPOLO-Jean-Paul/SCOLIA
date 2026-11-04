@@ -28,6 +28,8 @@ public static class AndroidAppUpdates
     private const string FileNameKey = "file-name";
     private const string DigestKey = "sha256";
     private const string DownloadVersionKey = "download-version";
+    private const string DownloadStartedAtKey = "download-started-at";
+    private const string LastStatusKey = "last-check-result";
     private const string NotifiedKey = "notified-version";
     private const string Channel = "scolia-mises-a-jour";
     private const int NotificationId = 39124;
@@ -64,6 +66,18 @@ public static class AndroidAppUpdates
     public static void OnResume(Activity activity)
     {
         _ = ResumeAsync(activity);
+    }
+
+    /// <summary>Etat lisible de la vérification, même si Android a désactivé les notifications.</summary>
+    public static string LastStatus(Context context) =>
+        Preferences(context).GetString(LastStatusKey, null) ??
+        "Aucune recherche effectuée. Ouvrez Poste et réseau pour vérifier maintenant.";
+
+    private static void Report(Context context, string message)
+    {
+        Preferences(context).Edit()!.PutString(LastStatusKey,
+            $"{DateTime.Now:HH:mm} · {message}")!.Apply();
+        Android.Util.Log.Info("SCOLIA-MAJ", message);
     }
 
     /// <summary>Commande visible « Vérifier les mises à jour » : interroge GitHub sans cache.</summary>
@@ -113,6 +127,7 @@ public static class AndroidAppUpdates
             or TaskCanceledException or Java.Lang.Exception or InvalidOperationException)
         {
             Android.Util.Log.Warn("SCOLIA-MAJ", $"Vérification reportée : {ex.GetType().Name} {ex.Message}");
+            Report(activity, $"Connexion au service de mises à jour impossible ({ex.GetType().Name}).");
         }
     }
 
@@ -132,7 +147,9 @@ public static class AndroidAppUpdates
             {
                 var cached = Deserialize(prefs.GetString(ReleaseKey, null));
                 if (cached is null || !IsNewer(context, cached.Version)) return false;
+                Report(context, $"Version {cached.Version} disponible sur GitHub.");
                 if (showDialog && context is Activity shown) OfferUpdate(shown, cached, manual);
+                else NotifyOnce(context, cached);
                 return true;
             }
 
@@ -142,10 +159,12 @@ public static class AndroidAppUpdates
             if (release is null)
             {
                 prefs.Edit()!.Remove(ReleaseKey)!.Apply();
+                Report(context, "Aucune version plus récente trouvée sur GitHub.");
                 return false;
             }
 
             prefs.Edit()!.PutString(ReleaseKey, JsonSerializer.Serialize(release))!.Apply();
+            Report(context, $"Version {release.Version} disponible, téléchargement proposé.");
             if (showDialog && context is Activity screen) OfferUpdate(screen, release, manual);
             else NotifyOnce(context, release);
             return true;
@@ -219,10 +238,15 @@ public static class AndroidAppUpdates
         if (!manual && prefs.GetString(DeferredVersionKey, null) == release.Version &&
             DateTimeOffset.UtcNow.ToUnixTimeSeconds() < prefs.GetLong(DeferredUntilKey, 0)) return;
         if (!manual && promptedVersion == release.Version) return;
-        promptedVersion = release.Version;
         activity.RunOnUiThread(() =>
         {
-            if (activity.IsFinishing || activity.IsDestroyed) return;
+            if (activity.IsFinishing || activity.IsDestroyed)
+            {
+                NotifyOnce(activity, release);
+                return;
+            }
+            if (!manual && promptedVersion == release.Version) return;
+            promptedVersion = release.Version;
             var mb = release.Size / (1024.0 * 1024.0);
             new AlertDialog.Builder(activity)
                 .SetTitle($"SCOLIA Pro {release.Version} disponible")
@@ -278,7 +302,9 @@ public static class AndroidAppUpdates
                 .PutString(FileNameKey, filename)!
                 .PutString(DigestKey, release.Sha256)!
                 .PutString(DownloadVersionKey, release.Version)!
+                .PutLong(DownloadStartedAtKey, DateTimeOffset.UtcNow.ToUnixTimeSeconds())!
                 .Apply();
+            Report(activity, $"Téléchargement de la mise à jour {release.Version} lancé.");
             Toast.MakeText(activity, "Téléchargement commencé. Android affiche sa progression dans les notifications.", ToastLength.Long)?.Show();
         }
         catch (Exception ex) when (ex is Java.Lang.Exception or IOException or InvalidOperationException)
@@ -296,17 +322,35 @@ public static class AndroidAppUpdates
         if (downloadManager is null) return false;
         var query = new DownloadManager.Query().SetFilterById(id);
         using var cursor = downloadManager.InvokeQuery(query);
-        if (cursor is null || !cursor.MoveToFirst()) return false;
+        if (cursor is null || !cursor.MoveToFirst())
+        {
+            ResetPending(activity);
+            return false;
+        }
         var statusIndex = cursor.GetColumnIndex(DownloadManager.ColumnStatus);
         if (statusIndex < 0) return false;
         var status = cursor.GetInt(statusIndex);
         if (status == DownloadFailureStatus)
         {
-            pref.Edit()!.Remove(DownloadIdKey)!.Apply();
+            ResetPending(activity);
             Toast.MakeText(activity, "La mise à jour a échoué. Vérifiez la connexion ou l'espace libre et réessayez.", ToastLength.Long)?.Show();
             return false;
         }
-        if (status != DownloadSuccessStatus) return true;
+        if (status != DownloadSuccessStatus)
+        {
+            long started = pref.GetLong(DownloadStartedAtKey, 0);
+            // Un ancien enregistrement de téléchargement peut bloquer la
+            // découverte des mises à jour indéfiniment après un échec.
+            long now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            if (started == 0 || now - started > 6 * 60 * 60)
+            {
+                downloadManager.Remove(id);
+                ResetPending(activity);
+                Report(activity, "Un ancien téléchargement interrompu a été nettoyé.");
+                return false;
+            }
+            return true;
+        }
 
         if (!await VerificationGate.WaitAsync(0)) return true;
         try
@@ -394,7 +438,8 @@ public static class AndroidAppUpdates
 
     private static void ResetPending(Context ctx) =>
         Preferences(ctx).Edit()!.Remove(DownloadIdKey)!.Remove(FileNameKey)!
-            .Remove(DigestKey)!.Remove(DownloadVersionKey)!.Apply();
+            .Remove(DigestKey)!.Remove(DownloadVersionKey)!
+            .Remove(DownloadStartedAtKey)!.Apply();
 
     private static void NotifyOnce(Context context, Release release)
     {
