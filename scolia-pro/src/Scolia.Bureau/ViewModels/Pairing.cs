@@ -75,9 +75,18 @@ public sealed class PairingViewModel : Observable
         {
             var invite = await shell.Api.SendAsync<InvitationReply>(HttpMethod.Post, "api/jumelage/inviter", new { });
             Code = Code with { AccessTicket = invite.Token };
+            if (Code.Addresses.Count == 0 && !Code.HasInvitation)
+            {
+                // Un QR composé uniquement d'un ticket, sans adresse de serveur,
+                // paraît valable visuellement mais ne permet aucun jumelage.
+                ProgressText = "Le partage réseau est désactivé : ouvrez « Poste et réseau », activez le Wi-Fi local ou Tailscale, puis générez un nouveau QR.";
+                Raise(nameof(ProgressText));
+                Raise(nameof(Ready));
+                return;
+            }
             CodeText = Code.Text();
             Image = QrCodes.Render(CodeText);
-            ProgressText = "Invitation valable 5 minutes, une seule utilisation.";
+            ProgressText = "Invitation valable 5 minutes, une seule utilisation. SCOLIA choisira la liaison qui répond.";
             Raise(nameof(Code));
             Raise(nameof(CodeText));
             Raise(nameof(Image));
