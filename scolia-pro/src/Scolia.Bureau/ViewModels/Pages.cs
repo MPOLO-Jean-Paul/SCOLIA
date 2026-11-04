@@ -653,11 +653,39 @@ public sealed class LoginViewModel : Observable
         finally { Busy = false; }
     }
 
+    private bool SignInFromOfflineCache(string user, string secret, bool fromBiometrics)
+    {
+        var store = api.Offline ?? new Infrastructure.OfflineStore(api.Server);
+        if (store.OfflineLogin(user, secret) is not { } saved)
+        {
+            Error = store.HasCredential
+                ? "Ordinateur principal injoignable. Hors ligne, seul le dernier compte connecté sur cet appareil peut s'ouvrir, avec son code."
+                : "Ordinateur principal injoignable. Une première connexion en ligne est nécessaire pour travailler ensuite hors ligne.";
+            return false;
+        }
+        api.Offline = store;
+        Authenticated?.Invoke(user, secret, saved);
+        Password = string.Empty;
+        Notice = "Mode hors ligne · données enregistrées sur cet appareil. Les opérations seront synchronisées au retour du serveur.";
+        LoggedIn?.Invoke(saved);
+        return true;
+    }
+
     /// <summary>Connexion au serveur, au clavier ou après l'empreinte ; hors ligne, le dernier compte de l'appareil.</summary>
     private async Task SignInAsync(string user, string secret, bool fromBiometrics)
     {
         Error = null;
         Restored = false;
+
+        // Après une coupure déjà constatée, vérifier immédiatement le compte à
+        // partir de son empreinte locale ; ne pas attendre un nouveau délai HTTP.
+        // Un mot de passe incorrect ne donne jamais accès au cache.
+        if (!api.IsOnline && (api.Offline ?? new Infrastructure.OfflineStore(api.Server)) is { HasCredential: true })
+        {
+            SignInFromOfflineCache(user, secret, fromBiometrics);
+            return;
+        }
+
         try
         {
             var session = await api.LoginAsync(user, secret);
@@ -680,19 +708,9 @@ public sealed class LoginViewModel : Observable
         }
         catch (Exception ex) when (ex is OfflineException or HttpRequestException or TaskCanceledException)
         {
-            // Ordinateur principal injoignable : le dernier compte connecté sur cet appareil peut travailler hors ligne.
-            var store = api.Offline ?? new Infrastructure.OfflineStore(api.Server);
-            if (store.OfflineLogin(user, secret) is { } saved)
-            {
-                api.Offline = store;
-                Authenticated?.Invoke(user, secret, saved);
-                Password = string.Empty;
-                if (fromBiometrics) Notice = "Connexion hors ligne · les changements seront envoyés au retour du serveur.";
-                LoggedIn?.Invoke(saved);
-            }
-            else Error = store.HasCredential
-                ? "Ordinateur principal injoignable. Hors ligne, seul le dernier compte connecté sur cet appareil peut s'ouvrir, avec son code."
-                : "Ordinateur principal injoignable. Une première connexion en ligne est nécessaire pour travailler ensuite hors ligne.";
+            // Le réseau est tombé pendant l'authentification : réutiliser la
+            // même vérification locale, sans contourner le mot de passe enregistré.
+            SignInFromOfflineCache(user, secret, fromBiometrics);
         }
         catch (ApiException locked) when (locked.RetryAfterSeconds is > 0) { StartLock(locked.RetryAfterSeconds.Value, DateTime.UtcNow); }
         catch (ApiException ex) when (fromBiometrics && ex.Status is 400 or 401)
