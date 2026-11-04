@@ -40,18 +40,20 @@ public static class WindowsSpeechInput
     public static bool IsAvailable() =>
         OperatingSystem.IsWindows() && File.Exists(PowerShellPath);
 
-    public static async Task<string?> ListenAsync()
+    public static Task<string?> ListenAsync() => ListenAsync(CancellationToken.None);
+
+    public static async Task<string?> ListenAsync(CancellationToken cancellationToken)
     {
-        if (!IsAvailable()) return null;
+        if (!IsAvailable() || cancellationToken.IsCancellationRequested) return null;
         if (!await MicrophoneGate.WaitAsync(0).ConfigureAwait(false)) return null;
         try
         {
-            return await RecognizeOnceAsync().ConfigureAwait(false);
+            return await RecognizeOnceAsync(cancellationToken).ConfigureAwait(false);
         }
         finally { MicrophoneGate.Release(); }
     }
 
-    private static async Task<string?> RecognizeOnceAsync()
+    private static async Task<string?> RecognizeOnceAsync(CancellationToken cancellationToken)
     {
         var start = new ProcessStartInfo(PowerShellPath)
         {
@@ -68,10 +70,12 @@ public static class WindowsSpeechInput
         start.ArgumentList.Add("-EncodedCommand");
         start.ArgumentList.Add(Convert.ToBase64String(Encoding.Unicode.GetBytes(SpeechScript)));
         using var process = new Process { StartInfo = start };
-        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(19));
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        timeout.CancelAfter(TimeSpan.FromSeconds(19));
         var started = false;
         try
         {
+            cancellationToken.ThrowIfCancellationRequested();
             started = process.Start();
             if (!started) return null;
             var stdout = process.StandardOutput.ReadToEndAsync(timeout.Token);
@@ -91,6 +95,11 @@ public static class WindowsSpeechInput
                 try { if (!process.HasExited) process.Kill(entireProcessTree: true); }
                 catch (InvalidOperationException) { }
                 catch (Win32Exception) { }
+                // Ne libérer le microphone que lorsque le processus PowerShell est réellement arrêté.
+                using var stopTimeout = new CancellationTokenSource(TimeSpan.FromSeconds(2));
+                try { await process.WaitForExitAsync(stopTimeout.Token).ConfigureAwait(false); }
+                catch (OperationCanceledException) { }
+                catch (InvalidOperationException) { }
             }
             return null;
         }
