@@ -66,7 +66,10 @@ public sealed class Enrollment : Entity
     public bool IsReEnrollment { get; set; }
 }
 
-/// <summary>Prise en charge (bourse, sponsor, exonération) d'une partie des frais d'une inscription.</summary>
+/// <summary>Le mode Historique préserve sans changement les dossiers saisis en pourcentage.</summary>
+public enum SponsorshipMode { Historique = 0, Complete = 1, PartielleMensuelle = 2 }
+
+/// <summary>Prise en charge liée à une inscription et à son année scolaire.</summary>
 public sealed class Sponsorship : Entity
 {
     public Guid EnrollmentId { get; set; }
@@ -74,6 +77,10 @@ public sealed class Sponsorship : Entity
     public string Reason { get; set; } = string.Empty;
     public DateOnly EffectiveFrom { get; set; }
     public bool IsActive { get; set; } = true;
+    /// <summary>Complète : toutes les rubriques ; partielle : montant fixe par mensualité ; historique : lignes en %.</summary>
+    public SponsorshipMode Mode { get; set; } = SponsorshipMode.Historique;
+    /// <summary>Montant pris en charge par mois scolaire en mode partiel (dans la devise de l'école).</summary>
+    public decimal MonthlyAmount { get; set; }
     public List<SponsorshipLine> Lines { get; set; } = [];
 }
 
