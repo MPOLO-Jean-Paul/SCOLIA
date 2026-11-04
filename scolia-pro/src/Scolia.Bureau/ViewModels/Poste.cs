@@ -102,7 +102,7 @@ public sealed class PosteViewModel : Observable
             ? "La notification serveur est présente, mais l'API scolaire n'écoute pas encore. Vérifiez le serveur ; ses données seront conservées."
         : !BackgroundOk
             ? "L'API scolaire fonctionne, mais Android peut la suspendre en veille. Autorisez l'arrière-plan pour SCOLIA et, à distance, pour Tailscale."
-        : "L'API scolaire écoute indépendamment de l'écran SCOLIA. Les autres appareils restent joignables si le réseau et Tailscale restent actifs ; l'arrêt forcé et les restrictions du fabricant peuvent interrompre le service.";
+        : "Le service du téléphone fonctionne, mais seul un essai depuis un ordinateur confirme l'accès distant. Si la connexion PC échoue après réduction de SCOLIA, vérifiez l'adresse IP, le Wi-Fi et Tailscale.";
     public string BackgroundHint => Platform.BackgroundHint;
     public bool HasBackgroundHint => ShowBackground && BackgroundHint.Length > 0;
 
