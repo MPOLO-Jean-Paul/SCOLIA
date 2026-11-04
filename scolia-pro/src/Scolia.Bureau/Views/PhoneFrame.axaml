@@ -157,7 +157,7 @@
     <Border Grid.Row="0" Classes="phonebar">
       <StackPanel>
       <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto" IsVisible="{Binding !HeaderSearch.IsOpen}">
-        <Button Classes="phoneicon" Command="{Binding BackCommand}" IsVisible="{Binding CanGoBack}" ToolTip.Tip="Retour">
+        <Button Classes="phoneicon" Command="{Binding BackCommand}" IsVisible="{Binding CanGoBack}" ToolTip.Tip="{Binding VoiceTip}">
           <mi:MaterialIcon Kind="ChevronLeft" />
         </Button>
         <Panel Width="44" Height="44" IsVisible="{Binding !CanGoBack}">
@@ -203,7 +203,10 @@
         </Button>
         <Button Grid.Column="3" Classes="baricon mic" Classes.listening="{Binding HeaderSearch.Listening}" Command="{Binding HeaderSearch.Listen}"
                 IsVisible="{Binding HeaderSearch.VoiceAvailable}" ToolTip.Tip="Filtrer à la voix">
-          <mi:MaterialIcon Kind="Microphone" />
+          <Grid>
+                  <mi:MaterialIcon Kind="Microphone" IsVisible="{Binding !Listening}" />
+                  <mi:MaterialIcon Kind="Stop" IsVisible="{Binding Listening}" />
+                </Grid>
         </Button>
       </Grid>
       <!-- Hors ligne : le travail continue, et l'utilisateur sait ce qui attend d'être envoyé -->
@@ -278,7 +281,7 @@
               <TextBlock Text="{Binding SchoolYearLine}" Classes="muted" FontSize="{DynamicResource FsSmall}" />
             </StackPanel>
             <Button Grid.Column="2" Classes="baricon settingssearchcontrol" Command="{Binding SettingsSearch.Toggle}"
-                    ToolTip.Tip="Trouver une fonctionnalité ou un réglage">
+                    ToolTip.Tip="{Binding VoiceTip}">
               <mi:MaterialIcon Kind="Magnify" />
             </Button>
           </Grid>
@@ -294,7 +297,10 @@
               </Button>
               <Button Grid.Column="3" Classes="baricon mic" Classes.listening="{Binding SettingsSearch.Listening}" Command="{Binding SettingsSearch.Listen}"
                       IsVisible="{Binding SettingsSearch.VoiceAvailable}" ToolTip.Tip="Rechercher à la voix">
-                <mi:MaterialIcon Kind="Microphone" />
+                <Grid>
+                  <mi:MaterialIcon Kind="Microphone" IsVisible="{Binding !Listening}" />
+                  <mi:MaterialIcon Kind="Stop" IsVisible="{Binding Listening}" />
+                </Grid>
               </Button>
             </Grid>
           </Border>
