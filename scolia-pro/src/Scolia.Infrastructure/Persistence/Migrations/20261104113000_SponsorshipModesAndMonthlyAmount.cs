@@ -19,12 +19,12 @@ public partial class SponsorshipModesAndMonthlyAmount : Migration
         migrationBuilder.AddColumn<int>(
             name: "Mode", table: "PrisesEnCharge", type: "INTEGER",
             nullable: false, defaultValue: 0);
-        migrationBuilder.AddColumn<decimal>(
-            name: "MonthlyAmount", table: "PrisesEnCharge", type: "TEXT",
-            nullable: false, defaultValue: 0m);
-        migrationBuilder.AddColumn<decimal>(
-            name: "Amount", table: "PrisesEnChargeLignes", type: "TEXT",
-            nullable: false, defaultValue: 0m);
+        migrationBuilder.AddColumn<long>(
+            name: "MonthlyAmount", table: "PrisesEnCharge", type: "INTEGER",
+            nullable: false, defaultValue: 0L);
+        migrationBuilder.AddColumn<long>(
+            name: "Amount", table: "PrisesEnChargeLignes", type: "INTEGER",
+            nullable: false, defaultValue: 0L);
     }
 
     protected override void Down(MigrationBuilder migrationBuilder)
