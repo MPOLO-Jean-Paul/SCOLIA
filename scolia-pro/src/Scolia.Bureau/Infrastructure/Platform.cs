@@ -162,7 +162,7 @@ public static class Platform
     public static Func<Task<byte[]?>>? CaptureImageAsync { get; set; }
 
     /// <summary>Ouvre les photos du téléphone pour importer un QR sans accès global à la galerie.</summary>
-    public static Func<Task<byte[]?>>? PickQrImageAsync { get; set; };
+    public static Func<Task<byte[]?>>? PickQrImageAsync { get; set; }
 
     /// <summary>Vrai quand ce poste peut être le serveur de l'établissement : tout ordinateur, et le téléphone qui en a les moyens.</summary>
     public static bool CanHostServer => !IsMobile || LocalServer is not null;
