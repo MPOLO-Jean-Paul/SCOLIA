@@ -102,7 +102,7 @@ public sealed class MainActivity : AvaloniaMainActivity
     protected override void OnActivityResult(int requestCode, Result resultCode, Android.Content.Intent? data)
     {
         if (AndroidSpeech.Complete(requestCode, resultCode, data)) return;
-        if (AndroidCamera.Complete(requestCode, resultCode)) return;
+        if (AndroidCamera.Complete(requestCode, resultCode, data)) return;
         base.OnActivityResult(requestCode, resultCode, data);
     }
 
