@@ -12,7 +12,7 @@
       <!-- Barre : retour, saisie, effacer, micro -->
       <Border Classes="googlebar">
         <Grid ColumnDefinitions="Auto,*,Auto,Auto">
-          <Button Classes="baricon" Command="{Binding Close}" ToolTip.Tip="Fermer la recherche (Échap)">
+          <Button Classes="baricon" Command="{Binding Close}" ToolTip.Tip="{Binding VoiceTip}">
             <mi:MaterialIcon Kind="ArrowLeft" />
           </Button>
           <TextBox x:Name="QueryBox" Grid.Column="1" Classes="searchfield" Text="{Binding Query}" PlaceholderText="{Binding Placeholder}"
@@ -22,7 +22,10 @@
           </Button>
           <Button x:Name="MicButton" Grid.Column="3" Classes="baricon mic" Classes.listening="{Binding Listening}" Command="{Binding Listen}"
                   IsVisible="{Binding VoiceAvailable}" ToolTip.Tip="Rechercher à la voix">
-            <mi:MaterialIcon Kind="Microphone" />
+            <Grid>
+                  <mi:MaterialIcon Kind="Microphone" IsVisible="{Binding !Listening}" />
+                  <mi:MaterialIcon Kind="Stop" IsVisible="{Binding Listening}" />
+                </Grid>
           </Button>
         </Grid>
       </Border>
