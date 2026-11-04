@@ -110,6 +110,26 @@ public sealed class OfflineDatabaseTests : IDisposable
     }
 
     [Fact]
+    public void Accuse_de_reception_d_un_ancien_compte_ne_supprime_pas_les_operations_d_un_autre()
+    {
+        var store = Store("secretariat");
+        var a = new OutboxItem { Key = "secretariat-operation", User = "secretariat", Path = "api/paiements" };
+        store.Enqueue(a);
+        store.User = "comptabilite";
+        var b = new OutboxItem { Key = "comptabilite-operation", User = "comptabilite", Path = "api/paiements" };
+        store.Enqueue(b);
+        store.SentFor("secretariat", a.Id);
+
+        Assert.Equal(b.Id, Assert.Single(store.Outbox()).Id);
+        store.User = "secretariat";
+        Assert.Empty(store.Outbox());
+        store.User = "comptabilite";
+        store.RefusedFor("secretariat", b.Id, "Ne doit pas modifier ce compte");
+        Assert.Single(store.Outbox());
+        Assert.Empty(store.Conflicts());
+    }
+
+    [Fact]
     public void Reponse_en_retard_est_enregistree_uniquement_pour_le_compte_a_l_origine()
     {
         var store = Store("secretariat");
