@@ -48,9 +48,14 @@ public sealed class SponsorshipModesTests
     [Fact]
     public void Partielle_couvre_un_montant_fixe_par_mois_uniquement()
     {
-        var partial = new Sponsorship { Mode = SponsorshipMode.PartielleMensuelle, MonthlyAmount = 18000m };
         var months = new[] { Fee("Septembre", 50000), Fee("Octobre", 55000), Fee("Novembre", 52000) };
-        Assert.All(months, month => Assert.Equal(18000m, SponsorshipCoverage.TotalFor(month, [partial], 0m)));
+        var partial = new Sponsorship { Mode = SponsorshipMode.PartielleMensuelle };
+        partial.Lines.Add(new SponsorshipLine { FeeItemId = months[0].Id, Amount = 18000m });
+        partial.Lines.Add(new SponsorshipLine { FeeItemId = months[1].Id, Amount = 12000m });
+        // Le troisième mois reste intégralement à charge.
+        Assert.Equal(18000m, SponsorshipCoverage.TotalFor(months[0], [partial], 0m));
+        Assert.Equal(12000m, SponsorshipCoverage.TotalFor(months[1], [partial], 0m));
+        Assert.Equal(0m, SponsorshipCoverage.TotalFor(months[2], [partial], 0m));
         Assert.Equal(0m, SponsorshipCoverage.TotalFor(Fee("Examen", 25000, FeeKind.Examen), [partial], 0m));
     }
 
