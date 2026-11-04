@@ -8,6 +8,12 @@ repository_root="$(git -C "$(dirname "$0")" rev-parse --show-toplevel)"
 sensitive_path() {
   local path="${1,,}"
   path="${path#./}"
+  # Les six fichiers de notice, expressément conservés par .gitignore,
+  # décrivent les dossiers sans contenir de dossiers scolaires.
+  case "$path" in
+    scolia/data/lire_moi.txt|scolia/journaux/lire_moi.txt|scolia/configuration/lire_moi.txt|scolia/archives/lire_moi.txt|scolia/exports/lire_moi.txt|scolia/sources/lire_moi.txt)
+      return 1 ;;
+  esac
   case "$path" in
     scolia-pro/scolia/*|scolia/data/*|scolia/journaux/*|scolia/configuration/*|scolia/archives/*|scolia/exports/*|scolia/sources/*)
       return 0 ;;
@@ -38,6 +44,8 @@ if [[ "${1:-}" == "--self-test" ]]; then
     "scolia-pro/docs/PRIVACY_REPOSITORY_20261104.md"
     "scolia-pro/tests/Scolia.Tests/IdempotencySecurityTests.cs"
     ".github/workflows/scolia-repository-privacy.yml"
+    "scolia/data/LIRE_MOI.txt"
+    "scolia/archives/LIRE_MOI.txt"
   )
   for path in "${should_block[@]}"; do
     if ! sensitive_path "$path"; then
