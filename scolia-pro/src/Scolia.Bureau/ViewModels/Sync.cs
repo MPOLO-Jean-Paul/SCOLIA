@@ -5,6 +5,7 @@ using Avalonia.Media;
 using Avalonia.Threading;
 using Scolia.Bureau.Api;
 using Scolia.Bureau.Infrastructure;
+using Scolia.Bureau.Ribbon;
 
 namespace Scolia.Bureau.ViewModels;
 
@@ -56,6 +57,7 @@ public sealed class SyncCenter : Observable, IDisposable
     private readonly ShellViewModel shell;
     private readonly ScoliaClient api;
     private readonly HashSet<string> held = new(StringComparer.Ordinal);
+    private readonly SemaphoreSlim offlineWarmupGate = new(1, 1);
     private CancellationTokenSource? running;
     private string? userName;
     private string? password;
@@ -153,7 +155,66 @@ public sealed class SyncCenter : Observable, IDisposable
         var token = running.Token;
         _ = StreamLoopAsync(token);
         _ = HeartbeatLoopAsync(token);
+        // Préparer les pages locales après le rendu de l'accueil, sans retarder l'ouverture.
+        _ = WarmOfflinePagesAsync(token);
         RaiseCounts();
+    }
+
+    /// <summary>
+    /// Précharge en arrière-plan les ressources autorisées dont les utilisateurs ont
+    /// besoin sans connexion. La navigation reste prioritaire ; le réseau et les
+    /// permissions sont toujours contrôlés par l'API réelle.
+    /// </summary>
+    private async Task WarmOfflinePagesAsync(CancellationToken ct)
+    {
+        try
+        {
+            // Ne surtout pas ralentir l'accueil ni la page de connexion.
+            await Task.Delay(TimeSpan.FromSeconds(2), ct);
+            if (!api.IsOnline || !shell.IsLoggedIn || api.Offline is not { } store ||
+                string.IsNullOrWhiteSpace(store.User)) return;
+            if (!await offlineWarmupGate.WaitAsync(0, ct)) return;
+            try
+            {
+                var user = store.User;
+                bool StillAllowed() => !ct.IsCancellationRequested && api.IsOnline &&
+                    shell.IsLoggedIn && ReferenceEquals(api.Offline, store) &&
+                    string.Equals(store.User, user, StringComparison.Ordinal);
+
+                if (StillAllowed() && shell.Can(Perm.ReportsRead))
+                {
+                    try { await api.GetAsync<DashboardDto>("api/rapports/tableau-de-bord", ct); }
+                    catch (Exception ex) when (ex is ApiException or HttpRequestException or TaskCanceledException) { }
+                    if (StillAllowed())
+                    {
+                        try { await api.GetAsync<TodayDto>("api/rapports/aujourdhui", ct); }
+                        catch (Exception ex) when (ex is ApiException or HttpRequestException or TaskCanceledException) { }
+                    }
+                }
+
+                if (!StillAllowed() || !shell.Can(Perm.StudentsRead)) return;
+                try { await api.GetAsync<List<PromotionDto>>("api/etablissement/promotions", ct); }
+                catch (Exception ex) when (ex is ApiException or HttpRequestException or TaskCanceledException) { }
+                for (var page = 1; page <= 20 && StillAllowed(); page++)
+                {
+                    // Mêmes clés de cache que la liste Apprenants ; les 20 premières
+                    // pages couvrent jusqu'à 1 000 dossiers, sans inventer les suivants.
+                    var path = "api/apprenants" + ScoliaClient.Query(("page", page), ("taille", 50));
+                    PagedResult<StudentListItem>? result;
+                    try { result = await api.GetAsync<PagedResult<StudentListItem>>(path, ct); }
+                    catch (Exception ex) when (ex is ApiException or HttpRequestException or TaskCanceledException) { break; }
+                    if (result is null || result.Items.Count == 0 || page * 50 >= result.Total) break;
+                    // Priorité à la fluidité des écrans et à la batterie sur Android.
+                    await Task.Delay(TimeSpan.FromMilliseconds(175), ct);
+                }
+            }
+            finally { offlineWarmupGate.Release(); }
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException)
+        {
+            // Cache indisponible : l'application principale doit continuer à fonctionner.
+        }
     }
 
     public void Stop()
@@ -318,6 +379,8 @@ public sealed class SyncCenter : Observable, IDisposable
             if (sent > 0) shell.Notify($"{sent} opération(s) envoyée(s) à l'ordinateur principal.");
             if (refused > 0) shell.Notify($"{refused} opération(s) refusée(s) par le serveur : ouvrez « Envois » pour les revoir.", SoundKind.Error);
             if (wasOffline || sent > 0 || refused > 0 || manual) await shell.RefreshQuietlyAsync();
+            if (wasOffline && running is { } session && !session.IsCancellationRequested)
+                _ = WarmOfflinePagesAsync(session.Token);
         }
         catch (Exception ex) when (ex is ApiException or HttpRequestException or TaskCanceledException) { }
         finally
