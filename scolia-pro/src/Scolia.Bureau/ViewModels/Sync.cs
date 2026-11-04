@@ -5,6 +5,7 @@ using Avalonia.Media;
 using Avalonia.Threading;
 using Scolia.Bureau.Api;
 using Scolia.Bureau.Infrastructure;
+using Scolia.Bureau.Ribbon;
 
 namespace Scolia.Bureau.ViewModels;
 
