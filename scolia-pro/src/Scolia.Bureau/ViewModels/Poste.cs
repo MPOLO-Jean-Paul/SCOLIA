@@ -73,6 +73,7 @@ public sealed class PosteViewModel : Observable
     public bool CanBecomeServer => IsLinked && Platform.CanHostServer;
 
     /// <summary>Téléphone serveur de l'établissement : il garde les données et les autres postes s'y connectent.</summary>
+    public bool CanCheckMobileUpdates => Platform.IsMobile && Platform.CheckAppUpdatesAsync is not null;
     public bool IsPhoneServer => Platform.IsMobile && IsServerComputer;
     public bool IsPhoneClient => Platform.IsMobile && !IsServerComputer;
 
