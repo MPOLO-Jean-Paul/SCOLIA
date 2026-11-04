@@ -88,6 +88,7 @@ public sealed class PosteViewModel : Observable
     public bool BackgroundBlocked => !BackgroundOk;
     public bool HostForegroundActive => Platform.IsHostForegroundActive?.Invoke() == true;
     public bool HostApiServing => Platform.IsHostApiServing?.Invoke() == true;
+    public string BackgroundDiagnostic => Platform.HostNetworkDiagnostic?.Invoke() ?? "Diagnostic réseau indisponible.";
     public bool BackgroundHealthy => BackgroundOk && HostForegroundActive && HostApiServing;
     public bool BackgroundNeedsAttention => !BackgroundHealthy;
     public string BackgroundTitle => !HostForegroundActive
