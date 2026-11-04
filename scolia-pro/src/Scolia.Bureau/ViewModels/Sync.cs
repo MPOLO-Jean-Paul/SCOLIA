@@ -63,6 +63,7 @@ public sealed class SyncCenter : Observable, IDisposable
     private string? password;
     private bool syncing;
     private bool flushing;
+    private bool pendingNoticeShown;
     private string? activity;
     private string ticker = string.Empty;
     private bool pulse;
@@ -77,7 +78,13 @@ public sealed class SyncCenter : Observable, IDisposable
         api.Queued += item => Dispatcher.UIThread.Post(() =>
         {
             RaiseCounts();
-            shell.Notify($"{item.Label} : gardé sur cet appareil. Il sera envoyé à l'ordinateur principal dès son retour.");
+            // Un seul accusé de réception local par épisode hors ligne.
+            // Les autres opérations restent consultables par le petit point du titre.
+            if (!pendingNoticeShown)
+            {
+                pendingNoticeShown = true;
+                shell.Notify("Modifications enregistrées localement · envoi automatique à la reconnexion.");
+            }
         });
         SyncNow = new AsyncCommand(() => SyncAsync(manual: true));
     }
@@ -327,7 +334,11 @@ public sealed class SyncCenter : Observable, IDisposable
     private void OnConnectivity(bool online)
     {
         RaiseStatus();
-        if (online) _ = SyncAsync(manual: false);
+        if (online)
+        {
+            pendingNoticeShown = false;
+            _ = SyncAsync(manual: false);
+        }
         else
         {
             // Sans serveur, la présence des autres postes n'est plus connue : elle reviendra avec lui.
@@ -335,7 +346,7 @@ public sealed class SyncCenter : Observable, IDisposable
             locks = [];
             Ticker = string.Empty;
             RaisePeers();
-            shell.Notify("Ordinateur principal injoignable : vous continuez sur les données de cet appareil.", SoundKind.Error);
+            // L'icône orange du titre suffit ; ne jamais interrompre la saisie.
         }
     }
 
