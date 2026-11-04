@@ -110,6 +110,24 @@ public sealed class OfflineDatabaseTests : IDisposable
     }
 
     [Fact]
+    public void Reponse_en_retard_est_enregistree_uniquement_pour_le_compte_a_l_origine()
+    {
+        var store = Store("secretariat");
+        const string path = "api/rapports/tableau-de-bord";
+        store.User = "comptabilite"; // Un autre compte ouvre sa session avant la fin de la requête.
+        store.SavePageFor("secretariat", path, """{"nombre":131}""");
+
+        Assert.Null(store.ReadPage(path));
+        store.User = "secretariat";
+        Assert.Contains("131", store.ReadPage(path)?.Json);
+        store.User = "comptabilite";
+        store.SavePage(path, """{"nombre":42}""");
+        Assert.Contains("42", store.ReadPage(path)?.Json);
+        store.User = "secretariat";
+        Assert.Contains("131", store.ReadPage(path)?.Json);
+    }
+
+    [Fact]
     public void Logging_out_clears_background_session_but_preserves_pending_operations()
     {
         var store = Store();
