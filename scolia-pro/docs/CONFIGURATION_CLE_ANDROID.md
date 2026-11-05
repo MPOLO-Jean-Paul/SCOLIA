@@ -54,3 +54,26 @@ Ne jamais publier un APK signé avec une clé temporaire sous
 `scolia-pro-v1.2.17` ; ne jamais désinstaller l'application existante
 pour contourner un conflit de signature, sous peine de perdre des
 données scolaires stockées sur le téléphone.
+
+## Exception automatique vérifiée pour la publication 1.2.17
+
+Le journal de la compilation officielle du 4 novembre 2026
+([run GitHub Actions 41869248798](https://github.com/MPOLO-Jean-Paul/SCOLIA/actions/runs/41869248798))
+confirme que la clé **effectivement utilisée** pour signer la 1.2.16 venait du
+cache `scolia-android-signature-v1` et que son certificat portait exactement
+l'empreinte attendue.
+
+En l'absence des deux secrets Actions, les deux pipelines officiels essaient
+désormais **une seule exception circonscrite à la version 1.2.17** : restaurer
+le cache depuis la branche officielle, vérifier la présence du keystore et
+de son mot de passe, puis vérifier le certificat AVANT d'autoriser la
+compilation. Si le cache manque ou si son empreinte diffère, **aucun APK
+n'est publié** ; aucune nouvelle clé n'est générée. Ce processus n'est
+jamais accessible aux jobs de pull request et ne conserve aucun nouveau cache.
+
+**Cette procédure n'enregistre pas la clé dans les secrets permanents** :
+le jeton automatique des workflows ne possède pas les droits nécessaires
+pour modifier les secrets GitHub. Pour les versions postérieures à 1.2.17,
+un administrateur doit migrer la clé originale dans les secrets GitHub Actions
+par un chemin protégé. Le cache historique reste un mécanisme de récupération
+transitoire, et non un coffre-fort recommandé.
