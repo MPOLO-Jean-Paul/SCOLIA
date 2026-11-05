@@ -176,6 +176,14 @@ public sealed class PhoneSettingsSearchVm : Observable
         Add("Poste et réseau", "Mon compte", MaterialIconKind.LanConnect, "ToneGreen",
             "tailscale vpn wifi internet serveur partage reseaux connexion poste magicdns",
             Account("poste"));
+        if (Platform.IsMobile)
+            Add("Mises à jour de SCOLIA", "Mon compte", MaterialIconKind.Update, "ToneBlue",
+                "rechercher verifier mettre a jour mise a jour miseajour nouvelle version apk android telecharger installer",
+                new AsyncCommand(async () =>
+                {
+                    shell.PhoneMenuOpen = false;
+                    if (Platform.CheckAppUpdatesAsync is { } check) await check();
+                }));
 
         if (shell.Can(Perm.SettingsWrite))
         {

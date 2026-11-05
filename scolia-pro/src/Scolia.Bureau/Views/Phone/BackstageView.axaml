@@ -52,6 +52,28 @@
             </ItemsControl>
           </Border>
 
+          <!-- Vérification indépendante du serveur : accessible directement dans Mon compte,
+               sans ouvrir les réglages réseau ni disposer des droits administrateur. -->
+          <Border Classes="phonegroup" IsVisible="{Binding PosteSection.CanCheckMobileUpdates}">
+            <StackPanel Spacing="9" Margin="12,12,12,14">
+              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                <Border Classes="appicon medium" Background="{DynamicResource ToneBlue}"
+                        VerticalAlignment="Center"><mi:MaterialIcon Kind="Update" /></Border>
+                <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
+                  <TextBlock Text="Mises à jour de SCOLIA" FontWeight="SemiBold" FontSize="15" />
+                  <TextBlock Text="{Binding Version}" Classes="muted"
+                             FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
+                </StackPanel>
+              </Grid>
+              <TextBlock Text="{Binding PosteSection.MobileUpdateStatus}" Classes="muted"
+                         TextWrapping="Wrap" FontSize="{DynamicResource FsSmall}" />
+              <Button Classes="primary" Command="{Binding PosteSection.CheckMobileUpdates}"
+                      Content="Rechercher les mises à jour" MinHeight="46"
+                      HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                      ToolTip.Tip="Comparer cette application à la dernière version Android officielle" />
+            </StackPanel>
+          </Border>
+
           <!-- Informations -->
           <TextBlock Text="Informations" Classes="phonegrouptitle" Margin="14,4,0,-6" />
           <Border Classes="card">

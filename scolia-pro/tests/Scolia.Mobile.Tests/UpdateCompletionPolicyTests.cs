@@ -62,6 +62,13 @@ public sealed class UpdateCompletionPolicyTests
     }
 
     [Theory]
+    [InlineData("1.2.24", null, true)]
+    [InlineData("1.2.25", "1.2.24", true)]
+    [InlineData("1.2.24", "1.2.24", false)]
+    public void InstallerUneVersionNeBloquePasLaRechercheDuneSuivante(string latest, string? pending, bool expected) =>
+        Assert.Equal(expected, UpdateCompletionPolicy.IsNewerThanPending(latest, pending));
+
+    [Theory]
     [InlineData("1.2.16", "1.2.16", true)]
     [InlineData("1.2.16", "1.2.17", true)]
     [InlineData("1.2.16", "1.2.15", false)]
