@@ -209,19 +209,21 @@ public static class AndroidAppUpdates
     {
         try
         {
-            if (await CheckDownloadAsync(activity))
-            {
-                activity.RunOnUiThread(() => Toast.MakeText(activity,
-                    "Une mise à jour est déjà en téléchargement ou prête à installer.",
-                    ToastLength.Long)?.Show());
-                return;
-            }
+            // Toujours consulter GitHub, MEME si une ancienne version attend
+            // deja son installation. L'APK courant reste disponible jusqu'a ce
+            // que l'utilisateur approuve le telechargement de sa remplaçante.
             bool found = await CheckLatestAsync(activity, showDialog: true,
                 forceRefresh: true, manual: true);
-            if (!found)
+            var prefs = Preferences(activity);
+            var latest = Deserialize(prefs.GetString(ReleaseKey, null));
+            var pending = prefs.GetString(DownloadVersionKey, null);
+            bool superseded = latest is not null && !string.IsNullOrEmpty(pending)
+                && UpdateCompletionPolicy.IsNewerThanPending(latest.Version, pending);
+            bool awaiting = await CheckDownloadAsync(activity, showInstallDialog: !superseded);
+            if (!found && !awaiting)
                 activity.RunOnUiThread(() => new AlertDialog.Builder(activity)
                     .SetTitle("Mises à jour SCOLIA")
-                    .SetMessage("Aucune nouvelle version Android officielle n'est disponible pour cette installation. Les versions de test portant le même numéro ne sont pas considérées comme plus récentes.")
+                    .SetMessage("Aucune nouvelle version Android officielle n'est disponible pour cette installation.")
                     .SetPositiveButton("Fermer", (_, _) => { })
                     .Show());
         }
@@ -264,11 +266,23 @@ public static class AndroidAppUpdates
                 NotifyInstallReady(activity);
                 return;
             }
-            // Une installation en attente a priorité sur une nouvelle recherche réseau.
-            if (await CheckDownloadAsync(activity)) return;
-            // Ne pas arrêter la recherche sur une ancienne version mémorisée.
-            // Le contrôle automatique contacte GitHub au plus une fois par 15 min.
-            await CheckLatestAsync(activity, showDialog: true);
+            // AUCUN téléchargement en attente ne doit bloquer la découverte
+            // d'une publication plus récente. Une version supérieure remplace
+            // l'offre précédente seulement après accord de l'utilisateur.
+            try { await CheckLatestAsync(activity, showDialog: true); }
+            catch (Exception ex) when (ex is IOException or HttpRequestException or
+                JsonException or TaskCanceledException or Java.Lang.Exception or InvalidOperationException)
+            {
+                Android.Util.Log.Warn("SCOLIA-MAJ", $"Consultation GitHub reportée : {ex.GetType().Name}");
+                Report(activity, "Vérification réseau reportée, mise à jour déjà téléchargée conservée.");
+            }
+            var prefs = Preferences(activity);
+            var cached = Deserialize(prefs.GetString(ReleaseKey, null));
+            var pendingVersion = prefs.GetString(DownloadVersionKey, null);
+            bool newerAvailable = cached is not null && !string.IsNullOrEmpty(pendingVersion)
+                && IsNewer(activity, cached.Version)
+                && UpdateCompletionPolicy.IsNewerThanPending(cached.Version, pendingVersion);
+            await CheckDownloadAsync(activity, showInstallDialog: !newerAvailable);
         }
         catch (Exception ex) when (ex is IOException or HttpRequestException or JsonException
             or TaskCanceledException or Java.Lang.Exception or InvalidOperationException)
@@ -294,9 +308,7 @@ public static class AndroidAppUpdates
             {
                 var cached = Deserialize(prefs.GetString(ReleaseKey, null));
                 if (cached is null || !IsNewer(context, cached.Version)) return false;
-                Report(context, $"Version {cached.Version} disponible sur GitHub.");
-                if (showDialog && context is Activity shown) OfferUpdate(shown, cached, manual);
-                else NotifyOnce(context, cached);
+                HandleKnownRelease(context, cached, showDialog, manual);
                 return true;
             }
 
@@ -311,12 +323,36 @@ public static class AndroidAppUpdates
             }
 
             prefs.Edit()!.PutString(ReleaseKey, JsonSerializer.Serialize(release))!.Apply();
-            Report(context, $"Version {release.Version} disponible, téléchargement proposé.");
-            if (showDialog && context is Activity screen) OfferUpdate(screen, release, manual);
-            else NotifyOnce(context, release);
+            HandleKnownRelease(context, release, showDialog, manual);
             return true;
         }
         finally { CheckGate.Release(); }
+    }
+
+    /// <summary>
+    /// Ne pas re-proposer le telechargement d'une version deja presente dans
+    /// DownloadManager. Continuer de consulter GitHub et signaler toute version
+    /// qui devient superieure a celle qui attend l'installation.
+    /// </summary>
+    private static void HandleKnownRelease(Context context, Release release,
+        bool showDialog, bool manual)
+    {
+        var prefs = Preferences(context);
+        var pending = prefs.GetString(DownloadVersionKey, null);
+        if (!UpdateCompletionPolicy.IsNewerThanPending(release.Version, pending))
+        {
+            Report(context, $"Version {release.Version} suivie : installation ou téléchargement encore en attente.");
+            var id = prefs.GetLong(DownloadIdKey, 0);
+            if (id > 0 && DownloadStatus(context, id) == DownloadSuccessStatus
+                && context is not Activity)
+                NotifyInstallReady(context);
+            return;
+        }
+        Report(context, pending is null
+            ? $"Version {release.Version} disponible sur GitHub."
+            : $"Version {release.Version} plus récente que l'APK {pending} en attente.");
+        if (showDialog && context is Activity screen) OfferUpdate(screen, release, manual);
+        else NotifyOnce(context, release);
     }
 
     private static async Task<Release?> ReadReleaseAsync(Context context)
@@ -462,7 +498,7 @@ public static class AndroidAppUpdates
         }
     }
 
-    private static async Task<bool> CheckDownloadAsync(Activity activity)
+    private static async Task<bool> CheckDownloadAsync(Activity activity, bool showInstallDialog = true)
     {
         var pref = Preferences(activity);
         var id = pref.GetLong(DownloadIdKey, 0);
@@ -532,7 +568,7 @@ public static class AndroidAppUpdates
                 Toast.MakeText(activity, "Mise à jour refusée : APK incorrect, non signé comme attendu ou version obsolète.", ToastLength.Long)?.Show();
                 return false;
             }
-            if (!IsForeground(activity))
+            if (!IsForeground(activity) || !showInstallDialog)
             {
                 NotifyInstallReady(activity);
                 return true;
