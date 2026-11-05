@@ -47,7 +47,8 @@ else {
   # Windows reste installable independamment d'une panne du SDK Android.
   @'
 APK Android non inclus dans ce paquet Windows.
-La compilation ou la signature Android n'a pas ete validee lors de cette livraison.
+La compilation Android peut etre absente, en erreur ou uniquement une validation
+avec une cle temporaire, non utilisable pour mettre a jour les telephones installes.
 Windows reste autonome et fonctionnel.
 
 Pour obtenir la version officielle Android, consulter :
