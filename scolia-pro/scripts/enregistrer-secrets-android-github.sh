@@ -66,4 +66,4 @@ for name in SCOLIA_ANDROID_KEYSTORE SCOLIA_ANDROID_KEYSTORE_PASS; do
   fi
 done
 echo "Les deux secrets existent dans $repo ; certificat historique verifie localement."
-echo "Etape suivante : fusionner les workflows et verifier le build officiel, sans publier de nouvelle version tant que la signature n'est pas confirmee."
+echo "Etape suivante : fusionner les workflows et verifier le build officiel declenche par le push sur la branche de distribution."
