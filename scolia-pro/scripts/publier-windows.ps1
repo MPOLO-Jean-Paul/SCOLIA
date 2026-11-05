@@ -39,8 +39,26 @@ Copy-Item (Join-Path $racine 'scripts\windows\LIRE_MOI_TELEPHONE.txt') (Join-Pat
 Copy-Item (Join-Path $racine 'scripts\windows\LIRE_MOI_IPHONE.txt') (Join-Path $iphone 'LIRE_MOI_IPHONE.txt')
 $apk = Get-ChildItem (Join-Path $Sortie 'android') -Filter 'SCOLIA_Pro_*_Android.apk' -ErrorAction SilentlyContinue | Select-Object -First 1
 if ($apk) {
-  Write-Host '==> SCOLIA Phone Android (APK)'
+  Write-Host '==> SCOLIA Phone Android (APK verifie)'
   Copy-Item $apk.FullName (Join-Path $android 'SCOLIA-Android.apk')
+}
+else {
+  # Ne jamais joindre un APK de validation ou une signature differente juste pour remplir le paquet.
+  # Windows reste installable independamment d'une panne du SDK Android.
+  @'
+APK Android non inclus dans ce paquet Windows.
+La compilation Android peut etre absente, en erreur ou uniquement une validation
+avec une cle temporaire, non utilisable pour mettre a jour les telephones installes.
+Windows reste autonome et fonctionnel.
+
+Pour obtenir la version officielle Android, consulter :
+https://github.com/MPOLO-Jean-Paul/SCOLIA/releases
+
+NE PAS desinstaller SCOLIA du telephone pour contourner une erreur de signature :
+cela pourrait supprimer les donnees scolaires locales. Demander un APK signe
+avec le certificat officiel de la version deja installee.
+'@ | Set-Content (Join-Path $android 'IMPORTANT-APK-ABSENT.txt') -Encoding utf8
+  Write-Warning 'APK Android non disponible : paquet Windows autonome cree sans installer Android.'
 }
 # Le code iPhone et les ressources partagées restent disponibles dans le kit,
 # sans faire croire qu'une compilation de simulateur équivaut à un IPA signé.

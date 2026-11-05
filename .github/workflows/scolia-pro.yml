@@ -255,7 +255,10 @@ jobs:
 
   paquet-windows:
     name: Paquet Windows
+    # Windows ne doit pas dépendre du SDK ni du certificat Android.
+    # !cancelled() permet d'exécuter Windows après un échec Android, mais pas après une annulation.
     needs: [qualite, paquet-android]
+    if: ${{ !cancelled() && needs.qualite.result == 'success' }}
     runs-on: windows-latest
     timeout-minutes: 30
     steps:
@@ -280,7 +283,9 @@ jobs:
           cache: npm
           cache-dependency-path: scolia-pro/web/package-lock.json
 
-      - name: Application Android à joindre au paquet
+      - name: Application Android à joindre au paquet officiel seulement
+        # Sur une PR, Android est signe avec une cle ephemere : ne jamais diffuser cet APK.
+        if: ${{ needs.paquet-android.result == 'success' && github.event_name == 'push' && github.ref == 'refs/heads/release/direct-apk-scolia-pro-20261103' }}
         uses: actions/download-artifact@v5
         with:
           name: SCOLIA_Pro_Android
