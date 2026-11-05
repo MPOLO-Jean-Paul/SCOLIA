@@ -36,6 +36,7 @@ public sealed class CashierPage : PageViewModel
     private MonthRowVm? selectedMonth;
     private bool updatingMonthSelection;
     private string reference = string.Empty;
+    private string amountText = string.Empty;
     private string payerPhone = string.Empty;
     private string note = string.Empty;
     private string studentName = string.Empty;
@@ -103,9 +104,11 @@ public sealed class CashierPage : PageViewModel
     {
         if (Sticky is not { } bar) return;
         bar.IsVisible = HasStudent && !HasReceipt;
-        bar.Value = HasSelection ? Money(SelectedTotal) : "—";
+        bar.Value = HasValidAmount ? Money(PaymentAmount) : "—";
         bar.Detail = IsLocked ? "Encaissement en cours sur un autre poste"
             : !HasSelection ? "Choisissez au moins un mois"
+            : !HasValidAmount ? "Vérifiez le montant saisi"
+            : !HasValidReference ? "Référence de paiement obligatoire"
             : SelectedMonthsSummary();
         bar.CanRun = CanPay;
     }
@@ -183,7 +186,7 @@ public sealed class CashierPage : PageViewModel
     public bool HasReceipt => receipt is not null;
     public string ReceiptText => receipt is null ? string.Empty : $"Reçu N° {receipt.Number} enregistré pour {Money(receipt.Amount)}.";
 
-    /// <summary>Mois à payer : chaque mois se règle en entier, à son montant dû. Aucun montant n'est saisi.</summary>
+    /// <summary>Mois à payer : un versement partiel peut couvrir tout ou partie des mois choisis.</summary>
     public ObservableCollection<MonthRowVm> Months { get; } = [];
     public bool HasMonths => Months.Count > 0;
     public bool NoAvailableMonths => HasStudent && !HasMonths;
@@ -192,7 +195,26 @@ public sealed class CashierPage : PageViewModel
     public bool HasSelection => SelectedCount > 0;
     public int SelectedCount => Months.Count(m => m.IsSelected);
     public decimal SelectedTotal => Months.Where(m => m.IsSelected).Sum(m => m.Amount);
-    public string Total => HasSelection ? Money(SelectedTotal) : "—";
+    /// <summary>Montant réellement remis, qui peut être inférieur au solde des mois sélectionnés.</summary>
+    public decimal PaymentAmount => decimal.TryParse(amountText,
+        System.Globalization.NumberStyles.Number, System.Globalization.CultureInfo.CurrentCulture, out var current)
+            ? current
+            : decimal.TryParse(amountText, System.Globalization.NumberStyles.Number,
+                System.Globalization.CultureInfo.InvariantCulture, out var invariant) ? invariant : 0m;
+    public bool HasValidAmount => HasSelection && PaymentAmount > 0 && PaymentAmount <= SelectedTotal;
+    public string AmountText
+    {
+        get => amountText;
+        set
+        {
+            if (!Set(ref amountText, value)) return;
+            Raise(nameof(Total));
+            Raise(nameof(TotalCaption));
+            Raise(nameof(HasValidAmount));
+            SchedulePreview();
+        }
+    }
+    public string Total => HasValidAmount ? Money(PaymentAmount) : "—";
     /// <summary>Choix rapide d'un mois ; les cases à cocher conservent le paiement de plusieurs mois.</summary>
     public MonthRowVm? SelectedMonth
     {
@@ -211,7 +233,9 @@ public sealed class CashierPage : PageViewModel
         }
     }
 
-    public string TotalCaption => SelectedCount == 0 ? "Aucun mois choisi" : $"{SelectedCount} mois · total {Money(SelectedTotal)}";
+    public string TotalCaption => SelectedCount == 0 ? "Aucun mois choisi"
+        : HasValidAmount ? $"{SelectedCount} mois · versement {Money(PaymentAmount)} / dû {Money(SelectedTotal)}"
+        : $"Montant invalide : indiquez un montant entre 1 et {Money(SelectedTotal)}";
 
     /// <summary>Un mois coché ou décoché met à jour le total et l'aperçu de répartition.</summary>
     private void MonthsChanged()
@@ -220,14 +244,29 @@ public sealed class CashierPage : PageViewModel
         // En cochant plusieurs mois, le choix rapide revient à son invite sans perdre les coches.
         var single = SelectedCount == 1 ? Months.First(m => m.IsSelected) : null;
         Set(ref selectedMonth, single);
+        // Un changement de mois réinitialise le montant proposé au solde exact.
+        amountText = SelectedTotal.ToString(System.Globalization.CultureInfo.CurrentCulture);
+        Raise(nameof(AmountText));
         Raise(nameof(Total));
         Raise(nameof(TotalCaption));
         Raise(nameof(HasSelection));
-        previewing = true;
+        Raise(nameof(HasValidAmount));
+        SchedulePreview();
+    }
+
+    private void SchedulePreview()
+    {
+        previewTimer?.Stop();
         previewValid = false;
         previewVersion++;
+        previewing = HasValidAmount;
         Raise(nameof(CanPay));
-        previewTimer?.Stop();
+        if (!HasValidAmount)
+        {
+            Allocations.Clear();
+            BalanceAfter = string.Empty;
+            return;
+        }
         previewTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(150) };
         previewTimer.Tick += async (_, _) => { previewTimer?.Stop(); await Shell.Run(PreviewAsync); };
         previewTimer.Start();
@@ -236,10 +275,35 @@ public sealed class CashierPage : PageViewModel
     private List<Guid> SelectedIds() => Months.Where(m => m.IsSelected).Select(m => m.Id).ToList();
 
     public DateTime? Day { get => day; set => Set(ref day, value); }
-    public ChoiceItem? Method { get => method; set => Set(ref method, value); }
-    /// <summary>Référence de la transaction : donnée par SCOLIA dès que l'apprenant est choisi, elle ne se saisit pas.</summary>
-    public string Reference { get => reference; private set { if (Set(ref reference, value)) Raise(nameof(ReferenceText)); } }
-    public string ReferenceText => string.IsNullOrEmpty(reference) ? "Choisissez un apprenant" : reference;
+    public ChoiceItem? Method
+    {
+        get => method;
+        set
+        {
+            if (!Set(ref method, value)) return;
+            // La référence interne SCOLIA ne doit jamais remplacer la confirmation d'un opérateur.
+            Reference = IsCash && HasStudent ? NewReference(DateTime.Now) : string.Empty;
+            Raise(nameof(NeedsExternalReference));
+            Raise(nameof(CanPay));
+        }
+    }
+    public bool IsCash => Method?.Value is null or "Especes" or "Cash";
+    public bool NeedsExternalReference => !IsCash;
+    public bool HasValidReference => IsCash || !string.IsNullOrWhiteSpace(Reference);
+    /// <summary>Référence de confirmation saisie pour Mobile Money, banque ou chèque.</summary>
+    public string Reference
+    {
+        get => reference;
+        set
+        {
+            if (!Set(ref reference, value)) return;
+            Raise(nameof(ReferenceText));
+            Raise(nameof(CanPay));
+            UpdateSticky();
+        }
+    }
+    public string ReferenceText => string.IsNullOrEmpty(reference)
+        ? (NeedsExternalReference ? "Référence de l'opérateur obligatoire" : "Choisissez un apprenant") : reference;
     /// <summary>Visé par : la personne connectée, qui reçoit l'argent. Le serveur l'inscrit aussi sur le reçu.</summary>
     public string ReviewedBy => Shell.AccountName;
     /// <summary>Téléphone du payeur : celui du tuteur, repris du dossier de l'apprenant choisi.</summary>
@@ -399,7 +463,7 @@ public sealed class CashierPage : PageViewModel
         Raise(nameof(HasStudent));
         Raise(nameof(ShowPayment));
         // Seul le mode de paiement reste à choisir : la référence, le visa et le téléphone se remplissent ici.
-        Reference = NewReference(DateTime.Now);
+        Reference = IsCash ? NewReference(DateTime.Now) : string.Empty;
         PayerPhone = account.GuardianPhone?.Trim() ?? string.Empty;
         Raise(nameof(PayerPhoneText));
         Receipt = null;
@@ -411,7 +475,7 @@ public sealed class CashierPage : PageViewModel
     {
         previewTimer?.Stop();
         var version = ++previewVersion;
-        if (enrollment is not { } e || !HasSelection)
+        if (enrollment is not { } e || !HasValidAmount)
         {
             Allocations.Clear();
             BalanceAfter = string.Empty;
@@ -427,7 +491,7 @@ public sealed class CashierPage : PageViewModel
             try
             {
                 preview = await Shell.Api.SendAsync<PaymentPreviewDto>(HttpMethod.Post, "api/paiements/apercu",
-                    new { enrollmentId = e.Id, amount = SelectedTotal, feeItemIds = SelectedIds(), method = Method?.Value });
+                    new { enrollmentId = e.Id, amount = PaymentAmount, feeItemIds = SelectedIds(), method = Method?.Value });
             }
             catch (OfflineException)
             {
@@ -483,10 +547,10 @@ public sealed class CashierPage : PageViewModel
             created = await Shell.Api.SendAsync<ReceiptDto>(HttpMethod.Post, "api/paiements", new
         {
             enrollmentId = e.Id,
-            amount = SelectedTotal,
+            amount = PaymentAmount,
             date = ToDay(Day),
             method = Method?.Value ?? "Especes",
-            reference = string.IsNullOrWhiteSpace(Reference) ? NewReference(DateTime.Now) : Reference,
+            reference = IsCash && string.IsNullOrWhiteSpace(Reference) ? NewReference(DateTime.Now) : Reference.Trim(),
             payerPhone = string.IsNullOrWhiteSpace(PayerPhone) ? null : PayerPhone,
             note = string.IsNullOrWhiteSpace(Note) ? DefaultNote : Note.Trim(),
             feeItemIds = ids,
@@ -519,7 +583,7 @@ public sealed class CashierPage : PageViewModel
         // Après avoir enregistré un reçu, proposer le prochain mois dû plutôt qu'un formulaire vide.
         SelectedMonth = Months.FirstOrDefault(m => m.Overdue) ?? Months.FirstOrDefault();
         // Nouveau versement : nouvelle référence ; le téléphone reste celui de l'apprenant choisi.
-        Reference = enrollment is null ? string.Empty : NewReference(DateTime.Now);
+        Reference = enrollment is null || !IsCash ? string.Empty : NewReference(DateTime.Now);
         Note = string.Empty;
         Day = DateTime.Now;
     }
@@ -532,7 +596,7 @@ public sealed class CashierPage : PageViewModel
     /// <summary>Un autre poste encaisse déjà cet apprenant : l'encaissement est bloqué ici jusqu'à la fin du sien.</summary>
     public string? LockedBy { get => lockedBy; private set { if (Set(ref lockedBy, value)) { Raise(nameof(IsLocked)); Raise(nameof(CanPay)); } } }
     public bool IsLocked => lockedBy is not null;
-    public bool CanPay => HasStudent && HasSelection && !IsLocked && previewValid && !previewing && !paying;
+    public bool CanPay => HasStudent && HasValidAmount && HasValidReference && !IsLocked && previewValid && !previewing && !paying;
 
     /// <summary>Réserve l'encaissement de cet apprenant pour ce poste, et l'annonce aux autres.</summary>
     private async Task ReserveAsync(Guid enrollmentId, string name)
@@ -580,7 +644,7 @@ public sealed class CashierPage : PageViewModel
     }
 }
 
-/// <summary>Un mois à payer : coché pour l'encaissement, réglé en entier à son montant dû.</summary>
+/// <summary>Un mois à payer : coché pour l'encaissement, éventuellement partiellement soldé.</summary>
 public sealed class MonthRowVm(Guid id, string label, decimal amount, string amountText, bool overdue, Action changed, string deadline = "") : Observable
 {
     private bool selected;
