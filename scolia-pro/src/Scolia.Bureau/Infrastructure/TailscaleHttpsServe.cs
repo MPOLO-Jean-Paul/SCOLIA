@@ -55,6 +55,19 @@ public static class TailscaleHttpsServe
                 && services.ValueKind == JsonValueKind.Object && services.EnumerateObject().Any())
                 return PortState.Occupied;
 
+            // Tailscale Funnel publie sur Internet. Ne jamais afficher une
+            // configuration Funnel comme un HTTPS prive, meme si le proxy SCOLIA
+            // semble correctement installe.
+            if (root.TryGetProperty("AllowFunnel", out var funnel))
+            {
+                if (funnel.ValueKind != JsonValueKind.Object && funnel.ValueKind != JsonValueKind.Null)
+                    return PortState.Unknown;
+                if (funnel.ValueKind == JsonValueKind.Object
+                    && funnel.EnumerateObject().Any(x => x.Value.ValueKind != JsonValueKind.False
+                        && x.Value.ValueKind != JsonValueKind.Null))
+                    return PortState.Occupied;
+            }
+
             var tcp = root.TryGetProperty("TCP", out var tcpField) && tcpField.ValueKind == JsonValueKind.Object
                 ? tcpField : default;
             var web = root.TryGetProperty("Web", out var webField) && webField.ValueKind == JsonValueKind.Object
