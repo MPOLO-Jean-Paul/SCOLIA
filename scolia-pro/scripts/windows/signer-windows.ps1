@@ -44,7 +44,7 @@ try {
     }
     $utcNow = (Get-Date).ToUniversalTime()
     if ($leaf.NotBefore.ToUniversalTime() -gt $utcNow -or $leaf.NotAfter.ToUniversalTime() -le $utcNow) {
-        throw 'Le certificat de signature Windows n’est pas valide à la date actuelle.'
+        throw "Le certificat de signature Windows n'est pas valide à la date actuelle."
     }
     if ($env:SCOLIA_WINDOWS_CERT_THUMBPRINT -and
         $leaf.Thumbprint -ne $env:SCOLIA_WINDOWS_CERT_THUMBPRINT.Replace(':','').Replace(' ','').ToUpperInvariant()) {
