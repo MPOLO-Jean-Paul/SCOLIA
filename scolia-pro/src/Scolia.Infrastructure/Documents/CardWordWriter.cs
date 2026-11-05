@@ -14,14 +14,13 @@ namespace Scolia.Infrastructure.Documents;
 /// </summary>
 public static class CardWordWriter
 {
-    private const int CardTwip = 5216;      // 92 mm
-    private const int GapTwip = 340;        // 6 mm
-    private const int RowGapTwip = 397;     // 7 mm
-    private const int CardHeightTwip = 3572; // 63 mm
-    private const int BandTwip = 193;       // 3,4 mm, bande de promotion compacte
-    private const int SealTwip = 1500;      // colonne du sceau
-    private const int QrTwip = 1500;        // colonne du QR
-    private const int InnerTwip = 170;      // marge intérieure de la carte : 3 mm
+    private const int CardTwip = 4853;       // 85,60 mm
+    private const int GapTwip = 340;         // 6 mm
+    private const int RowGapTwip = 397;      // 7 mm
+    private const int CardHeightTwip = 3060; // 53,98 mm
+    private const int SealTwip = 680;        // emplacement du logo
+    private const int QrTwip = 1120;         // QR dans l'ancienne zone du cachet
+    private const int InnerTwip = 114;       // 2 mm de marge interne
     private const int InnerWidthTwip = CardTwip - 2 * InnerTwip;
     private const int Emu = 36000;          // 1 mm en EMU
     private const string TinyParagraph = "<w:p><w:pPr><w:spacing w:before=\"0\" w:after=\"0\" w:line=\"20\" w:lineRule=\"exact\"/></w:pPr></w:p>";
@@ -64,16 +63,11 @@ public static class CardWordWriter
             var first = left < d.Cards.Count ? d.Cards[left] : null;
             var second = right < d.Cards.Count ? d.Cards[right] : null;
 
-            // Chaque carte tient sur deux rangées de la grille : le contenu, puis la bande de promotion collée au bas.
-            body.Append($"<w:tr><w:trPr><w:trHeight w:val=\"{CardHeightTwip - BandTwip}\" w:hRule=\"exact\"/></w:trPr>");
+            // Chaque ligne de la grille porte deux cartes ID-1 complètes.
+            body.Append($"<w:tr><w:trPr><w:trHeight w:val=\"{CardHeightTwip}\" w:hRule=\"exact\"/></w:trPr>");
             ContentCell(body, d, first, sealRid, images);
             body.Append(GapCell());
             ContentCell(body, d, second, sealRid, images);
-            body.Append("</w:tr>");
-            body.Append($"<w:tr><w:trPr><w:trHeight w:val=\"{BandTwip}\" w:hRule=\"exact\"/></w:trPr>");
-            BandCell(body, first);
-            body.Append(GapCell());
-            BandCell(body, second);
             body.Append("</w:tr>");
         }
         body.Append("</w:tbl>");
@@ -142,23 +136,16 @@ public static class CardWordWriter
 
     private static void ContentCell(StringBuilder body, CardDocument d, CardItem? card, string sealRid, Images images)
     {
-        body.Append($"<w:tc><w:tcPr><w:tcW w:w=\"{CardTwip}\" w:type=\"dxa\"/>{Sides(card is not null, top: true, bottom: false)}</w:tcPr>");
+        body.Append($"<w:tc><w:tcPr><w:tcW w:w=\"{CardTwip}\" w:type=\"dxa\"/>{Sides(card is not null, top: true, bottom: true)}</w:tcPr>");
         if (card is null) body.Append(TinyParagraph);
         else AppendCard(body, d, card, sealRid, images);
         body.Append("</w:tc>");
     }
 
-    /// <summary>Bande de la promotion : sa couleur seule, sans texte, collée au bas de la carte.</summary>
-    private static void BandCell(StringBuilder body, CardItem? card)
-    {
-        var fill = card is null ? string.Empty : $"<w:shd w:val=\"clear\" w:color=\"auto\" w:fill=\"{card.Color.TrimStart('#')}\"/>";
-        body.Append($"<w:tc><w:tcPr><w:tcW w:w=\"{CardTwip}\" w:type=\"dxa\"/>{Sides(card is not null, top: false, bottom: true)}{fill}</w:tcPr>{TinyParagraph}</w:tc>");
-    }
-
     private static string GapCell() => $"<w:tc><w:tcPr><w:tcW w:w=\"{GapTwip}\" w:type=\"dxa\"/></w:tcPr>{TinyParagraph}</w:tc>";
 
     private static string Grid() =>
-        "<w:tbl><w:tblPr><w:tblW w:w=\"10772\" w:type=\"dxa\"/><w:tblInd w:w=\"0\" w:type=\"dxa\"/><w:tblLayout w:type=\"fixed\"/>" +
+        $"<w:tbl><w:tblPr><w:tblW w:w=\"{2 * CardTwip + GapTwip}\" w:type=\"dxa\"/><w:tblInd w:w=\"0\" w:type=\"dxa\"/><w:tblLayout w:type=\"fixed\"/>" +
         "<w:tblBorders><w:top w:val=\"nil\"/><w:left w:val=\"nil\"/><w:bottom w:val=\"nil\"/><w:right w:val=\"nil\"/><w:insideH w:val=\"nil\"/><w:insideV w:val=\"nil\"/></w:tblBorders>" +
         "<w:tblCellMar><w:left w:w=\"0\" w:type=\"dxa\"/><w:right w:w=\"0\" w:type=\"dxa\"/></w:tblCellMar></w:tblPr>" +
         $"<w:tblGrid><w:gridCol w:w=\"{CardTwip}\"/><w:gridCol w:w=\"{GapTwip}\"/><w:gridCol w:w=\"{CardTwip}\"/></w:tblGrid>";
@@ -239,7 +226,7 @@ public static class CardWordWriter
         "xmlns:wp=\"http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing\" " +
         "xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" " +
         "xmlns:pic=\"http://schemas.openxmlformats.org/drawingml/2006/picture\"><w:body>" + body +
-        "<w:sectPr><w:pgSz w:w=\"11906\" w:h=\"16838\"/><w:pgMar w:top=\"567\" w:right=\"567\" w:bottom=\"567\" w:left=\"567\" w:header=\"0\" w:footer=\"0\" w:gutter=\"0\"/></w:sectPr>" +
+        "<w:sectPr><w:pgSz w:w=\"11906\" w:h=\"16838\"/><w:pgMar w:top=\"907\" w:right=\"907\" w:bottom=\"907\" w:left=\"907\" w:header=\"0\" w:footer=\"0\" w:gutter=\"0\"/></w:sectPr>" +
         "</w:body></w:document>";
 
     private static string ContentTypes() =>
