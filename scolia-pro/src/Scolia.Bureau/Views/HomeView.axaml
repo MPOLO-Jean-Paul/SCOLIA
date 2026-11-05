@@ -13,13 +13,6 @@
       <Setter Property="FontWeight" Value="SemiBold" />
       <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
     </Style>
-    <Style Selector="Border.offlinestate">
-      <Setter Property="Background" Value="{DynamicResource GroupBrush}" />
-      <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
-      <Setter Property="BorderThickness" Value="1" />
-      <Setter Property="CornerRadius" Value="13" />
-      <Setter Property="Padding" Value="12,9" />
-    </Style>
     <Style Selector="Border.desktopwelcome">
       <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
       <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
@@ -113,6 +106,20 @@
                                FontWeight="SemiBold" />
                   </StackPanel>
                 </Border>
+                <!-- Indicateur compact, sans fenêtre ni notification à chaque coupure. -->
+                <Button Classes="bare" Command="{Binding Network}" IsVisible="{Binding Sync.Offline}"
+                        HorizontalAlignment="Left" Margin="0,5,0,0"
+                        ToolTip.Tip="{Binding Sync.StatusDetail}">
+                  <Border Classes="desktopstatechip">
+                    <StackPanel Orientation="Horizontal" Spacing="7">
+                      <Ellipse Width="7" Height="7" Fill="{Binding Sync.StatusBrush}"
+                               VerticalAlignment="Center" />
+                      <TextBlock Text="{Binding Sync.StatusText}" FontWeight="SemiBold"
+                                 Foreground="{DynamicResource Text2Brush}"
+                                 FontSize="{DynamicResource FsSmall}" />
+                    </StackPanel>
+                  </Border>
+                </Button>
               </StackPanel>
             </Grid>
             <!-- Barre verticale entre le message et la zone des actions. -->
@@ -146,28 +153,6 @@
             </ItemsControl>
           </Grid>
         </StackPanel>
-      </Border>
-
-      <!-- État de connexion non intrusif : reste dans le flux de la page. -->
-      <Border Classes="offlinestate" IsVisible="{Binding Sync.Offline}">
-        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="11">
-          <Border Width="35" Height="35" CornerRadius="11"
-                  Background="{DynamicResource AccentSoftBrush}" VerticalAlignment="Center">
-            <mi:MaterialIcon Kind="CloudOffOutline" Width="21" Height="21"
-                             Foreground="{Binding Sync.StatusBrush}"
-                             HorizontalAlignment="Center" VerticalAlignment="Center" />
-          </Border>
-          <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
-            <TextBlock Text="{Binding Sync.StatusText}" FontWeight="SemiBold"
-                       Foreground="{DynamicResource TextBrush}" FontSize="12" />
-            <TextBlock Text="Les données déjà téléchargées restent consultables. Les opérations autorisées attendent le serveur."
-                       Foreground="{DynamicResource Text2Brush}" TextWrapping="Wrap"
-                       FontSize="{DynamicResource FsSmall}" />
-          </StackPanel>
-          <Button Grid.Column="2" Classes="link" Command="{Binding Network}"
-                  MinWidth="75" MinHeight="40" Content="Détails"
-                  VerticalAlignment="Center" ToolTip.Tip="Voir les envois en attente" />
-        </Grid>
       </Border>
 
       <!-- Indicateurs : 1 à 4 colonnes selon la largeur restante APRÈS le menu latéral ;
