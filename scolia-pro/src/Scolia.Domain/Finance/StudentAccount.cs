@@ -84,27 +84,45 @@ public sealed class StudentAccount
 
 }
 
-/// <summary>Règlement d'un paiement : les mois choisis, chacun soldé en entier (aucun règlement partiel).</summary>
+/// <summary>Répartit un versement total ou partiel sur les mensualités choisies, par ancienneté.</summary>
 public static class PaymentAllocator
 {
-    /// <summary>Règlement par mois : chaque rubrique choisie est soldée en entier, à son montant dû.
-    /// Aucun règlement partiel n'est enregistré : le montant du versement est la somme des mois choisis.</summary>
-    public static IReadOnlyList<(Guid FeeItemId, decimal Amount)> Months(StudentAccount account, IReadOnlyCollection<Guid> selected)
+    /// <summary>
+    /// Le montant demandé doit être strictement positif et ne jamais dépasser les restes dus.
+    /// Un mois déjà payé ou étranger à l'inscription est refusé. L'absence de montant signifie
+    /// que chaque mois sélectionné est soldé (compatibilité avec les anciens clients).
+    /// </summary>
+    public static IReadOnlyList<(Guid FeeItemId, decimal Amount)> Months(
+        StudentAccount account, IReadOnlyCollection<Guid> selected, decimal? amount = null)
     {
         if (selected.Count == 0) throw new DomainException("rubriques", "Choisissez au moins un mois à payer.");
-        var notTuition = account.Lines.Where(l => selected.Contains(l.FeeItemId) && l.Kind != FeeKind.Mensualite).ToList();
-        if (notTuition.Count > 0) throw new DomainException("rubriques", "Seuls les mois de scolarité se règlent par mois.");
-        var unknown = selected.Where(id => account.Lines.All(l => l.FeeItemId != id)).ToList();
-        if (unknown.Count > 0) throw new DomainException("rubriques", "Une rubrique choisie n'appartient pas à cette inscription.");
-        var plan = new List<(Guid, decimal)>();
-        foreach (var line in account.Lines.Where(l => selected.Contains(l.FeeItemId)))
-        {
-            if (line.Remaining <= 0) throw new DomainException("rubriques", $"« {line.Label} » est déjà réglé : actualisez la liste des mois.");
-            plan.Add((line.FeeItemId, line.Remaining));
-        }
-        return plan;
-    }
+        if (selected.Distinct().Count() != selected.Count)
+            throw new DomainException("rubriques", "Un même mois a été choisi plusieurs fois.");
+        var chosen = account.Lines.Where(l => selected.Contains(l.FeeItemId))
+            .OrderBy(l => l.DueDate).ThenBy(l => l.Order).ToList();
+        if (chosen.Count != selected.Count)
+            throw new DomainException("rubriques", "Une rubrique choisie n'appartient pas à cette inscription.");
+        if (chosen.Any(l => l.Kind != FeeKind.Mensualite))
+            throw new DomainException("rubriques", "Seuls les mois de scolarité se règlent par mois.");
+        var settled = chosen.FirstOrDefault(l => l.Remaining <= 0);
+        if (settled is not null)
+            throw new DomainException("rubriques", $"« {settled.Label} » est déjà réglé : actualisez la liste des mois.");
 
+        var maximum = chosen.Sum(l => l.Remaining);
+        var toAllocate = amount ?? maximum;
+        if (toAllocate <= 0 || toAllocate > maximum)
+            throw new DomainException("montant", $"Indiquez un montant positif ne dépassant pas le solde des mois choisis ({maximum}).");
+
+        var allocations = new List<(Guid FeeItemId, decimal Amount)>();
+        foreach (var line in chosen)
+        {
+            if (toAllocate <= 0) break;
+            var allocated = Math.Min(line.Remaining, toAllocate);
+            allocations.Add((line.FeeItemId, allocated));
+            toAllocate -= allocated;
+        }
+        return allocations;
+    }
 }
 
 /// <summary>Balance âgée des créances (norme de suivi du recouvrement).</summary>
