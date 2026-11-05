@@ -28,7 +28,7 @@ public static class BackupProtection
 
         var result = new byte[HeaderSize + plain.Length];
         var header = result.AsSpan(0, Magic.Length);
-        Magic.CopyTo(header);
+        Magic.AsSpan().CopyTo(header);
         var salt = result.AsSpan(Magic.Length, SaltSize);
         var nonce = result.AsSpan(Magic.Length + SaltSize, NonceSize);
         var tag = result.AsSpan(Magic.Length + SaltSize + NonceSize, TagSize);
