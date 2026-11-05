@@ -42,6 +42,15 @@ internal static class UpdateCompletionPolicy
             || latest.CompareTo(pending) > 0;
     }
 
+    // Une connexion mobile peut rester interrompue longtemps : le gestionnaire
+    // Android doit pouvoir reprendre un téléchargement, sans perdre son état
+    // au bout de quelques heures. La recherche GitHub reste indépendante.
+    internal const long PendingDownloadRetentionSeconds = 7L * 24 * 60 * 60;
+
+    internal static bool IsStalePendingDownload(long startedAtUtc, long nowUtc)
+        => startedAtUtc <= 0 || nowUtc < startedAtUtc
+            || nowUtc - startedAtUtc > PendingDownloadRetentionSeconds;
+
     // Après une installation réussie, l'APK en cache n'est plus une nouvelle version.
     // Éviter d'afficher à tort « APK incorrect » lors du redémarrage de SCOLIA.
     internal static bool AlreadyInstalled(string? downloadedVersion, string? installedVersion)
