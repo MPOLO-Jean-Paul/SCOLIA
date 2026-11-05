@@ -629,19 +629,21 @@ public sealed class BackstageViewModel : Observable
     public BackstageViewModel(ShellViewModel shell)
     {
         this.shell = shell;
-        Items =
-        [
-            new BackstageItemVm("infos", "Informations", MaterialIconKind.Information, "ToneBlue"),
-            new BackstageItemVm("mot-de-passe", "Sécurité du compte", MaterialIconKind.ShieldLockOutline, "ToneOrange"),
-            new BackstageItemVm("poste", "Poste et réseau", MaterialIconKind.LanConnect, "ToneGreen"),
-            // Visible depuis Mon compte, sur tous les téléphones, même les postes clients.
-            new BackstageItemVm("updates", "Mises à jour", MaterialIconKind.Update, "ToneBlue"),
-            // Raccourci vers Paramètres > Cet appareil : un seul endroit pour le thème, la police et les sons.
-            new BackstageItemVm("preferences", "Apparence et confort", MaterialIconKind.TuneVariant, "TonePurple"),
-            Preferences.MobileLayout
-                ? new BackstageItemVm("aide", "Aide et gestes", MaterialIconKind.GestureTap, "ToneNeutral")
-                : new BackstageItemVm("aide", "Aide et raccourcis", MaterialIconKind.Keyboard, "ToneNeutral"),
-        ];
+        var items = new List<BackstageItemVm>
+        {
+            new("infos", "Informations", MaterialIconKind.Information, "ToneBlue"),
+            new("mot-de-passe", "Sécurité du compte", MaterialIconKind.ShieldLockOutline, "ToneOrange"),
+            new("poste", "Poste et réseau", MaterialIconKind.LanConnect, "ToneGreen"),
+        };
+        // Disponible à tous les comptes sur Android, y compris les postes clients.
+        // Ne pas créer une rubrique morte sur Windows ni sur une plateforme sans mise à jour APK.
+        if (Platform.IsMobile && Platform.CheckAppUpdatesAsync is not null)
+            items.Add(new BackstageItemVm("updates", "Mises à jour", MaterialIconKind.Update, "ToneBlue"));
+        items.Add(new BackstageItemVm("preferences", "Apparence et confort", MaterialIconKind.TuneVariant, "TonePurple"));
+        items.Add(Preferences.MobileLayout
+            ? new BackstageItemVm("aide", "Aide et gestes", MaterialIconKind.GestureTap, "ToneNeutral")
+            : new BackstageItemVm("aide", "Aide et raccourcis", MaterialIconKind.Keyboard, "ToneNeutral"));
+        Items = items;
         section = Items[0];
         Close = new RelayCommand(shell.CloseBackstage);
         Logout = new AsyncCommand(() => shell.LogoutAsync());
