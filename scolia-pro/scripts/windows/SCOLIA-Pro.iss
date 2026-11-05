@@ -2,7 +2,7 @@
 ; Compile les fichiers publies dans artifacts/SCOLIA via Inno Setup 6+.
 ; L'installeur est autonome ; il ne depend ni de .NET installe ni d'Excel.
 #ifndef AppVersion
-  #define AppVersion "1.2.22"
+  #define AppVersion "1.2.24"
 #endif
 
 #define AppName "SCOLIA Pro"
@@ -81,9 +81,9 @@ Name: "{autodesktop}\SCOLIA Pro"; Filename: "{app}\{#AppExe}"; WorkingDir: "{app
 Filename: "{app}\{#AppExe}"; Description: "Lancer SCOLIA Pro maintenant"; Flags: nowait postinstall skipifsilent
 
 [Code]
-; L'adresse d'assistance reste un véritable lien cliquable dans toutes les étapes
-; de l'assistant. Les zones InfoBeforeFile / InfoAfterFile sont des lecteurs de
-; texte : y écrire l'adresse seule ne crée pas un lien.
+// L'adresse d'assistance est un véritable lien dans toutes les étapes.
+// Les zones InfoBeforeFile / InfoAfterFile sont des lecteurs de texte :
+// y afficher l'adresse ne suffit pas à la rendre cliquable.
 procedure OuvrirAssistance(Sender: TObject);
 var
   CodeRetour: Integer;
