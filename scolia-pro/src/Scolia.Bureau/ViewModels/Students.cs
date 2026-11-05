@@ -567,8 +567,18 @@ public static class StudentForms
             var identityKey = string.Join("|", f.ChoiceValue("promotion"), f.Text("nom").ToUpperInvariant(),
                 f.Text("postNom").ToUpperInvariant(), f.Text("prenom").ToUpperInvariant(),
                 f.ChoiceValue("sexe"), f.Day("naissance"), f.Text("lieu"), f.Text("contact1"), f.Day("inscription"));
-            var doubles = await shell.Api.GetAsync<List<DuplicateCandidateDto>>("api/apprenants/doublons" + ScoliaClient.Query(
-                ("nom", f.Text("nom")), ("postNom", f.Text("postNom")), ("prenom", f.Text("prenom"))));
+            List<DuplicateCandidateDto> doubles;
+            try
+            {
+                doubles = await shell.Api.GetAsync<List<DuplicateCandidateDto>>("api/apprenants/doublons" + ScoliaClient.Query(
+                    ("nom", f.Text("nom")), ("postNom", f.Text("postNom")), ("prenom", f.Text("prenom"))));
+            }
+            catch (OfflineException) when (!shell.Api.IsOnline)
+            {
+                // Le serveur revérifiera les doublons au rejeu. En attendant,
+                // vérifier les dossiers effectivement répliqués sur cet appareil.
+                doubles = LocalDuplicates(shell.Api.Offline, f.Text("nom"), f.Text("postNom"), f.Text("prenom"));
+            }
             if (doubles.Count > 0 && confirmedIdentity != identityKey)
             {
                 confirmedIdentity = identityKey;
@@ -576,14 +586,21 @@ public static class StudentForms
                 return false;
             }
             if (doubles.Count == 0) confirmedIdentity = null;
-            await shell.Api.SendAsync(HttpMethod.Post, "api/apprenants", new
+            try
             {
-                identity = Identity(f, null),
-                promotionId = Guid.Parse(f.ChoiceValue("promotion")!),
-                enrolledOn = f.Day("inscription"),
-                confirmDuplicate = doubles.Count > 0 && confirmedIdentity == identityKey,
-            });
-            shell.Notify("Apprenant inscrit.");
+                await shell.Api.SendAsync(HttpMethod.Post, "api/apprenants", new
+                {
+                    identity = Identity(f, null),
+                    promotionId = Guid.Parse(f.ChoiceValue("promotion")!),
+                    enrolledOn = f.Day("inscription"),
+                    confirmDuplicate = doubles.Count > 0 && confirmedIdentity == identityKey,
+                });
+                shell.Notify("Apprenant inscrit.");
+            }
+            catch (OfflineQueuedException)
+            {
+                shell.Notify("Inscription enregistrée sur cet appareil. Matricule provisoire LOCAL ; confirmation automatique au retour du serveur.");
+            }
             return true;
         })
         { SubmitText = "Inscrire" };
@@ -599,12 +616,41 @@ public static class StudentForms
         if (await shell.Ask(form) && shell.Current is StudentsPage page) await page.RefreshAsync();
     }
 
+    private static List<DuplicateCandidateDto> LocalDuplicates(OfflineStore? store,
+        string last, string middle, string first)
+    {
+        if (store is null) return [];
+        var result = new Dictionary<Guid, DuplicateCandidateDto>();
+        for (var pageNumber = 1; pageNumber <= 20; pageNumber++)
+        {
+            var page = OfflineStudentSearch.Search(store, last, null, null, pageNumber);
+            if (page is null) break;
+            foreach (var student in page.Page.Items)
+            {
+                if (!string.Equals(last, student.LastName, StringComparison.OrdinalIgnoreCase) ||
+                    !string.Equals(middle, student.MiddleName, StringComparison.OrdinalIgnoreCase) ||
+                    !string.Equals(first, student.FirstName, StringComparison.OrdinalIgnoreCase)) continue;
+                result[student.Id] = new DuplicateCandidateDto(student.Id, student.Matricule,
+                    Format.FullName(student.LastName, student.MiddleName, student.FirstName), student.PromotionCode);
+            }
+            if (page.Page.Items.Count < page.Page.PageSize) break;
+        }
+        return result.Values.ToList();
+    }
+
     public static async Task<bool> EditAsync(ShellViewModel shell, StudentDto s)
     {
         var form = new FormViewModel("Modifier l'apprenant", $"Matricule {s.Matricule}", async f =>
         {
-            await shell.Api.SendAsync(HttpMethod.Put, $"api/apprenants/{s.Id}", Identity(f, s));
-            shell.Notify("Dossier enregistré.");
+            try
+            {
+                await shell.Api.SendAsync(HttpMethod.Put, $"api/apprenants/{s.Id}", Identity(f, s));
+                shell.Notify("Dossier enregistré.");
+            }
+            catch (OfflineQueuedException)
+            {
+                shell.Notify("Dossier modifié localement ; l'envoi au serveur se fera automatiquement.");
+            }
             return true;
         });
         AddIdentityFields(form, s);
