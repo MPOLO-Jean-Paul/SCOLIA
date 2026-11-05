@@ -13,7 +13,7 @@ namespace Scolia.Bureau.ViewModels;
 /// </summary>
 public sealed class BatchRowVm : Observable
 {
-    private readonly Action changed;
+    private readonly Action<BatchRowVm> changed;
     private bool selected;
     private string reference = string.Empty;
     private string plan = string.Empty;
@@ -23,7 +23,7 @@ public sealed class BatchRowVm : Observable
     private decimal total;
     private IReadOnlyList<Guid> feeItemIds = [];
 
-    public BatchRowVm(BatchCandidateDto candidate, string balance, string overdue, Action changed)
+    public BatchRowVm(BatchCandidateDto candidate, string balance, string overdue, Action<BatchRowVm> changed)
     {
         Candidate = candidate;
         Balance = balance;
@@ -42,7 +42,7 @@ public sealed class BatchRowVm : Observable
     public bool Selected
     {
         get => selected;
-        set { if (Set(ref selected, value)) changed(); }
+        set { if (Set(ref selected, value)) changed(this); }
     }
 
     public string Reference { get => reference; set => Set(ref reference, value); }
@@ -84,7 +84,7 @@ public sealed class BatchRowVm : Observable
         Result = line.Ok ? $"OK · {line.ReceiptNumber}" : $"Erreur · {line.Error}";
         selected = !line.Ok;
         Raise(nameof(Selected));
-        changed();
+        changed(this);
     }
 }
 
@@ -92,6 +92,11 @@ public sealed class BatchRowVm : Observable
 public sealed class BatchPaymentPage : PageViewModel
 {
     private readonly Dictionary<Guid, BatchPaymentLineDto> results = [];
+    // Le lot appartient à l'utilisateur ; la recherche ne le réinitialise jamais.
+    private readonly Dictionary<Guid, BatchRowVm> selectedRows = [];
+    private int queryVersion;
+    private bool restoringRows;
+    private bool showSelectedOnly;
     private string search = string.Empty;
     private ChoiceItem? promotion;
     private ChoiceItem? mode;
@@ -138,23 +143,42 @@ public sealed class BatchPaymentPage : PageViewModel
         set
         {
             if (!Set(ref search, value)) return;
+            var version = ++queryVersion;
             timer?.Stop();
+            if (!ready) return;
             timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(300) };
-            timer.Tick += async (_, _) => { timer?.Stop(); await Shell.Run(RefreshAsync); };
+            timer.Tick += async (_, _) =>
+            {
+                timer?.Stop();
+                if (version == queryVersion && ReferenceEquals(Shell.Current, this))
+                    await Shell.Run(RefreshAsync);
+            };
             timer.Start();
         }
     }
 
-    public ChoiceItem? Promotion { get => promotion; set { if (Set(ref promotion, value) && ready) _ = Shell.Run(RefreshAsync); } }
+    public ChoiceItem? Promotion { get => promotion; set { if (Set(ref promotion, value) && ready) { queryVersion++; timer?.Stop(); _ = Shell.Run(RefreshAsync); } } }
 
     /// <summary>Le mode choisit les mois de chaque apprenant : en retard, prochain mois ou tous les mois ouverts.</summary>
     public ChoiceItem? Mode { get => mode; set { if (Set(ref mode, value) && ready) ApplyMode(); } }
     public ChoiceItem? Method { get => method; set => Set(ref method, value); }
     public DateTime? Day { get => day; set => Set(ref day, value); }
     public string SelectionSummary { get => selectionSummary; private set => Set(ref selectionSummary, value); }
+    public int SelectedCount => selectedRows.Count;
+    public bool HasSelected => selectedRows.Count > 0;
+    public string SelectedViewTitle => showSelectedOnly ? "Revenir aux résultats" : "Voir le lot sélectionné";
+    public RelayCommand ToggleSelectedView => toggleSelectedView ??= new RelayCommand(() =>
+    {
+        showSelectedOnly = !showSelectedOnly;
+        Raise(nameof(SelectedViewTitle));
+        ShowRows();
+    });
+    private RelayCommand? toggleSelectedView;
+
 
     public override async Task LoadAsync()
     {
+        var version = ++queryVersion;
         if (!ready)
         {
             Promotions = await PromotionChoicesAsync(withAll: true);
@@ -167,16 +191,31 @@ public sealed class BatchPaymentPage : PageViewModel
         var candidates = await Shell.Api.GetAsync<List<BatchCandidateDto>>("api/paiements/lot/candidats" + ScoliaClient.Query(
             ("promotionId", Promotion?.Value), ("q", Search.Trim())));
 
-        allRows.Clear();
-        foreach (var candidate in candidates)
+        // Une ancienne recherche arrivée en retard ne remplace jamais les lignes récentes.
+        if (version != queryVersion) return;
+        var fresh = new List<BatchRowVm>(candidates.Count);
+        restoringRows = true;
+        try
         {
-            var row = new BatchRowVm(candidate, Money(candidate.Balance), Money(candidate.Overdue), SelectionChanged);
-            row.ApplyMonths(PlanFor(candidate), Money, LateOnly);
-            if (results.TryGetValue(candidate.EnrollmentId, out var previous)) row.ShowResult(previous);
-            allRows.Add(row);
+            foreach (var candidate in candidates)
+            {
+                var row = new BatchRowVm(candidate, Money(candidate.Balance), Money(candidate.Overdue), SelectionChanged);
+                row.ApplyMonths(PlanFor(candidate), Money, LateOnly);
+                if (selectedRows.TryGetValue(candidate.EnrollmentId, out var previouslySelected))
+                {
+                    row.Reference = previouslySelected.Reference;
+                    if (row.FeeItemIds.Count > 0) row.Selected = true;
+                    else selectedRows.Remove(candidate.EnrollmentId);
+                }
+                if (results.TryGetValue(candidate.EnrollmentId, out var previousResult)) row.ShowResult(previousResult);
+                fresh.Add(row);
+            }
+            allRows.Clear();
+            allRows.AddRange(fresh);
         }
+        finally { restoringRows = false; }
         ShowRows();
-        SelectionChanged();
+        UpdateSelectionSummary();
     }
 
     /// <summary>Tous les apprenants chargés ; la liste n'affiche que ceux qui ont à régler dans le mode choisi.</summary>
@@ -189,7 +228,10 @@ public sealed class BatchPaymentPage : PageViewModel
     private void ShowRows()
     {
         Items.Clear();
-        foreach (var row in allRows.Where(r => r.FeeItemIds.Count > 0 || r.Result.Length > 0)) Items.Add(row);
+        var visible = showSelectedOnly
+            ? selectedRows.Values.Where(r => r.Selected && r.FeeItemIds.Count > 0)
+            : allRows.Where(r => r.FeeItemIds.Count > 0 || r.Result.Length > 0);
+        foreach (var row in visible.OrderBy(r => r.Promotion).ThenBy(r => r.Name)) Items.Add(row);
         var due = Items.Where(r => r.FeeItemIds.Count > 0).ToList();
         subtitle = due.Count == 0
             ? (LateOnly ? "Aucun apprenant n'a de mois en retard" : "Aucun mois à régler")
@@ -212,28 +254,41 @@ public sealed class BatchPaymentPage : PageViewModel
 
     private void ApplyMode()
     {
-        foreach (var row in allRows)
+        // La nouvelle règle de mois s'applique au lot entier, même aux lignes masquées.
+        foreach (var row in allRows.Concat(selectedRows.Values).DistinctBy(r => r.EnrollmentId).ToList())
         {
             row.ApplyMonths(PlanFor(row.Candidate), Money, LateOnly);
-            // Un apprenant qui n'a plus rien à régler dans le nouveau mode n'est plus coché.
             if (row.FeeItemIds.Count == 0) row.Selected = false;
         }
         ShowRows();
-        SelectionChanged();
+        UpdateSelectionSummary();
     }
 
     private void SetAll(bool value)
     {
-        // « Tout cocher » ne prend que les apprenants qui ont quelque chose à régler dans le mode choisi.
+        // Tout cocher ajoute les lignes visibles. Tout décocher efface l'ensemble du lot.
+        if (!value)
+            foreach (var row in selectedRows.Values.ToList()) row.Selected = false;
         foreach (var row in Items) row.Selected = value && row.FeeItemIds.Count > 0;
-        SelectionChanged();
-        var count = Items.Count(i => i.Selected);
-        Shell.Notify(value ? (count == 0 ? "Aucun apprenant n'a de mois à régler dans ce mode." : $"{Format.Count(count, "apprenant coché", "apprenants cochés")}.") : "Aucun apprenant coché.");
+        UpdateSelectionSummary();
+        var count = selectedRows.Count;
+        Shell.Notify(value ? (count == 0 ? "Aucun apprenant n'a de mois à régler dans ce mode." : $"{Format.Count(count, "apprenant coché", "apprenants cochés")} dans le lot.") : "Tout le lot a été décoché.");
     }
 
-    private void SelectionChanged()
+    private void SelectionChanged(BatchRowVm row)
     {
-        var chosen = Items.Where(i => i.Selected).ToList();
+        if (row.Selected && row.FeeItemIds.Count > 0) selectedRows[row.EnrollmentId] = row;
+        else selectedRows.Remove(row.EnrollmentId);
+        if (!restoringRows)
+        {
+            UpdateSelectionSummary();
+            if (showSelectedOnly && !row.Selected) ShowRows();
+        }
+    }
+
+    private void UpdateSelectionSummary()
+    {
+        var chosen = Chosen();
         SelectionSummary = chosen.Count == 0 ? "Aucun apprenant coché"
             : $"{Format.Count(chosen.Count, "apprenant coché", "apprenants cochés")} · total {Money(chosen.Sum(i => i.Total))}";
         if (Sticky is { } bar)
@@ -243,9 +298,13 @@ public sealed class BatchPaymentPage : PageViewModel
             bar.Detail = Format.Count(chosen.Count, "apprenant coché", "apprenants cochés");
             bar.CanRun = chosen.Count > 0;
         }
+        Raise(nameof(SelectedCount));
+        Raise(nameof(HasSelected));
     }
 
-    private List<BatchRowVm> Chosen() => Items.Where(i => i.Selected).ToList();
+    private List<BatchRowVm> Chosen() => selectedRows.Values
+        .Where(r => r.Selected && r.FeeItemIds.Count > 0)
+        .OrderBy(r => r.Promotion).ThenBy(r => r.Name).ToList();
 
     private object BuildRequest(IReadOnlyList<BatchRowVm> rows, string? key) => new
     {
@@ -262,9 +321,9 @@ public sealed class BatchPaymentPage : PageViewModel
     };
 
     /// <summary>Contrôle le lot sans rien écrire. Chaque ligne affiche son montant, son erreur ou ses doublons.</summary>
-    private async Task<BatchPreviewDto?> CheckAsync()
+    private async Task<BatchPreviewDto?> CheckAsync(IReadOnlyList<BatchRowVm>? fixedSelection = null)
     {
-        var rows = Chosen();
+        var rows = fixedSelection?.ToList() ?? Chosen();
         if (rows.Count == 0)
         {
             Shell.Notify("Cochez au moins un apprenant.");
@@ -277,7 +336,9 @@ public sealed class BatchPaymentPage : PageViewModel
 
     private async Task PayAsync()
     {
-        var preview = await CheckAsync();
+        // On vérifie et confirme le même instantané de sélection, y compris les dossiers filtrés.
+        var rows = Chosen();
+        var preview = await CheckAsync(rows);
         if (preview is null) return;
         if (preview.Errors > 0)
         {
@@ -292,8 +353,19 @@ public sealed class BatchPaymentPage : PageViewModel
 
         // La clé d'idempotence est propre à ce clic : un envoi répété après une coupure ne double pas les reçus.
         var result = await Shell.Api.SendAsync<BatchPaymentResultDto>(HttpMethod.Post, "api/paiements/lot",
-            BuildRequest(Chosen(), Guid.NewGuid().ToString("N")));
-        foreach (var line in result.Lines) results[line.EnrollmentId] = line;
+            BuildRequest(rows, Guid.NewGuid().ToString("N")));
+        foreach (var line in result.Lines)
+        {
+            results[line.EnrollmentId] = line;
+            if (line.Ok)
+            {
+                // Ne plus afficher un paiement terminé dans la sélection prête à encaisser.
+                if (selectedRows.TryGetValue(line.EnrollmentId, out var paidRow)) paidRow.ShowResult(line);
+                selectedRows.Remove(line.EnrollmentId);
+            }
+            else if (selectedRows.TryGetValue(line.EnrollmentId, out var invalidRow)) invalidRow.ShowResult(line);
+        }
+        UpdateSelectionSummary();
         Shell.Notify($"{Format.Count(result.Succeeded, "paiement enregistré", "paiements enregistrés")} · {result.Failed} erreur(s).");
         await RefreshAsync();
     }
