@@ -24,6 +24,8 @@ public sealed class DataPage : PageViewModel
     {
         Action("Sauvegarder", MaterialIconKind.ContentSave, () => BackupNowAsync(Shell), primary: true);
         Action("Télécharger", MaterialIconKind.Download, DownloadAsync, row: true);
+        Action("Exporter chiffré", MaterialIconKind.LockOutline, ExportEncryptedAsync, row: true);
+        Action("Importer chiffré", MaterialIconKind.Upload, ImportEncryptedAsync);
         Action("Restaurer", MaterialIconKind.BackupRestore, RestoreAsync, row: true);
         Action("Importation du classeur", MaterialIconKind.Upload, () => ImportAsync(Shell));
         Action("Modèle d'import", MaterialIconKind.FileExcel, () => TemplateAsync(Shell));
@@ -66,6 +68,62 @@ public sealed class DataPage : PageViewModel
         }
         var name = Selected.Name;
         await Shell.Download($"api/sauvegardes/{Uri.EscapeDataString(name)}", name);
+    }
+
+    private async Task ExportEncryptedAsync()
+    {
+        if (Selected is null)
+        {
+            Shell.Notify("Choisissez d'abord une sauvegarde à protéger.");
+            return;
+        }
+        var name = Selected.Name;
+        var form = new FormViewModel("Exporter une sauvegarde chiffrée",
+            "Une phrase secrète de 12 caractères minimum protégera l'archive portable. Elle ne sera pas enregistrée dans SCOLIA.",
+            async f =>
+            {
+                var passphrase = f.Text("passphrase");
+                if (passphrase.Length < 12)
+                {
+                    f.Find("passphrase").Error = "Indiquez au moins 12 caractères.";
+                    return false;
+                }
+                var (data, _) = await Shell.Api.PostDocumentAsync(
+                    $"api/sauvegardes/{Uri.EscapeDataString(name)}/export-chiffre", new { passphrase });
+                var location = Files.Save(data, name + ".scolia-enc");
+                Shell.Notify($"Archive chiffrée enregistrée : {location}");
+                return true;
+            }) { SubmitText = "Exporter chiffré" };
+        form.Add("passphrase", "Phrase secrète de l'archive", FieldKind.Secret, required: true,
+            hint: "Conservez cette phrase secrète séparément du fichier ; sans elle, l'archive ne pourra pas être restaurée.");
+        await Shell.Ask(form);
+    }
+
+    private async Task ImportEncryptedAsync()
+    {
+        if (Shell.PickFileHandler is null) return;
+        var picked = await Shell.PickFileHandler([".scolia-enc"]);
+        if (picked is null) return;
+        var form = new FormViewModel("Importer une sauvegarde chiffrée",
+            "L'archive sera déchiffrée et vérifiée dans une nouvelle copie. La base actuelle restera inchangée.",
+            async f =>
+            {
+                var passphrase = f.Text("passphrase");
+                if (passphrase.Length < 12)
+                {
+                    f.Find("passphrase").Error = "Indiquez au moins 12 caractères.";
+                    return false;
+                }
+                var result = await Shell.Api.UploadWithFieldsAsync<BackupDto>(HttpMethod.Post,
+                    "api/sauvegardes/import-chiffre",
+                    [new UploadedFile("archive", picked.Name, picked.Data)],
+                    new Dictionary<string, string> { ["passphrase"] = passphrase });
+                Shell.Notify($"Archive validée et importée : {result.Name}. Vous pourrez la restaurer après vérification.");
+                await RefreshAsync();
+                return true;
+            }) { SubmitText = "Importer et vérifier" };
+        form.Add("passphrase", "Phrase secrète de l'archive", FieldKind.Secret, required: true);
+        await Shell.Ask(form);
     }
 
     private async Task RestoreAsync()

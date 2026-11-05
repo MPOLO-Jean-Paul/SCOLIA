@@ -37,7 +37,7 @@ public sealed class BackupService(IOptions<ScoliaStorageOptions> options, ILogge
         await Lock.WaitAsync(ct);
         try
         {
-            Directory.CreateDirectory(settings.BackupDirectory);
+            EnsureBackupDirectory();
             var safeReason = new string(reason.Where(char.IsAsciiLetterOrDigit).ToArray());
             var name = $"scolia-{DateTime.Now.ToString("yyyyMMdd-HHmmss", CultureInfo.InvariantCulture)}-{(safeReason.Length == 0 ? "manuelle" : safeReason)}.db";
             var target = Path.Combine(settings.BackupDirectory, name);
@@ -53,6 +53,8 @@ public sealed class BackupService(IOptions<ScoliaStorageOptions> options, ILogge
                 await mode.ExecuteNonQueryAsync(ct);
             }
             if (!await IsIntactAsync(target, ct)) throw new IOException("La sauvegarde créée n'a pas passé le contrôle d'intégrité.");
+            if (!OperatingSystem.IsWindows())
+                File.SetUnixFileMode(target, UnixFileMode.UserRead | UnixFileMode.UserWrite);
             var hash = await Sha256Async(target, ct);
             await File.WriteAllTextAsync(target + FingerprintExtension, $"{hash}  {name}\n", ct);
             var info = new FileInfo(target);
@@ -63,6 +65,77 @@ public sealed class BackupService(IOptions<ScoliaStorageOptions> options, ILogge
         {
             Lock.Release();
         }
+    }
+
+    /// <summary>
+    /// Exporte une copie vérifiée sous la forme d'une archive portable chiffrée.
+    /// La phrase secrète n'est jamais stockée dans la base ni dans les journaux.
+    /// </summary>
+    public async Task<byte[]> ExportEncryptedAsync(string name, string passphrase, CancellationToken ct = default)
+    {
+        var status = await VerifyAsync(name, ct);
+        if (!status.Intact || (status.HasFingerprint && !status.FingerprintMatches))
+            throw new DomainException("sauvegardes", "Sauvegarde invalide ou altérée : export chiffré refusé.");
+
+        var file = PathOf(name);
+        if (new FileInfo(file).Length > BackupProtection.MaximumPlainBytes)
+            throw new DomainException("sauvegardes", "Sauvegarde supérieure à 48 Mio : utilisez une méthode d'archivage chiffré par flux.");
+
+        var clear = await File.ReadAllBytesAsync(file, ct);
+        try { return BackupProtection.Encrypt(clear, passphrase); }
+        finally { CryptographicOperations.ZeroMemory(clear); }
+    }
+
+    /// <summary>
+    /// Déchiffre dans une NOUVELLE sauvegarde temporaire, vérifie SQLite,
+    /// puis rend la copie disponible à la restauration ordinaire, jamais automatique.
+    /// </summary>
+    public async Task<BackupInfo> ImportEncryptedAsync(byte[] archive, string passphrase, CancellationToken ct = default)
+    {
+        var clear = BackupProtection.Decrypt(archive, passphrase);
+        string? target = null;
+        var locked = false;
+        try
+        {
+            await Lock.WaitAsync(ct);
+            locked = true;
+            EnsureBackupDirectory();
+            var name = $"scolia-{DateTime.UtcNow:yyyyMMdd-HHmmss}-importee-{Guid.NewGuid():N}.db";
+            target = Path.Combine(settings.BackupDirectory, name);
+            await File.WriteAllBytesAsync(target, clear, ct);
+            if (!OperatingSystem.IsWindows())
+                File.SetUnixFileMode(target, UnixFileMode.UserRead | UnixFileMode.UserWrite);
+            if (!await IsIntactAsync(target, ct))
+                throw new DomainException("sauvegardes", "Le fichier déchiffré n'est pas une base SCOLIA SQLite intègre : import refusé.");
+
+            var sha = await Sha256Async(target, ct);
+            await File.WriteAllTextAsync(target + FingerprintExtension, $"{sha}  {name}\n", ct);
+            var info = new FileInfo(target);
+            logger.LogInformation("Sauvegarde chiffrée importée et vérifiée : {Name}", name);
+            return new BackupInfo(name, info.LastWriteTimeUtc, info.Length, sha);
+        }
+        catch
+        {
+            if (target is not null)
+            {
+                if (File.Exists(target)) File.Delete(target);
+                if (File.Exists(target + FingerprintExtension)) File.Delete(target + FingerprintExtension);
+            }
+            throw;
+        }
+        finally
+        {
+            CryptographicOperations.ZeroMemory(clear);
+            if (locked) Lock.Release();
+        }
+    }
+
+    private void EnsureBackupDirectory()
+    {
+        Directory.CreateDirectory(settings.BackupDirectory);
+        if (!OperatingSystem.IsWindows())
+            File.SetUnixFileMode(settings.BackupDirectory,
+                UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
     }
 
     public IReadOnlyList<BackupInfo> List()
