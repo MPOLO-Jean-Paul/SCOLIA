@@ -20,6 +20,7 @@ public sealed class PosteViewModel : Observable
     private string searchLine = string.Empty;
     private string httpsStatus = "HTTPS automatique disponible avec Tailscale sur l'ordinateur principal.";
     private string httpsAddress = string.Empty;
+    private bool httpsRefreshing;
     private IReadOnlyList<string> addresses = [];
 
     public PosteViewModel(ShellViewModel shell)
@@ -52,6 +53,7 @@ public sealed class PosteViewModel : Observable
                 + "La premiere autorisation HTTPS/MagicDNS dans Tailscale peut necessiter votre accord. "
                 + "Les anciennes adresses HTTP du Wi-Fi ne seront pas modifiees.",
                 "Activer HTTPS prive")) return;
+            HttpsStatus = "Verification des autorisations et du partage Tailscale…";
             var outcome = await TailscaleHttpsServe.EnableAsync(PosteAdmin.DefaultPort);
             HttpsAddress = outcome.Ready ? outcome.Address?.ToString() ?? string.Empty : string.Empty;
             HttpsStatus = outcome.Message;
@@ -222,6 +224,7 @@ public sealed class PosteViewModel : Observable
         // Le téléphone serveur est toujours ouvert au Wi-Fi : c'est sa raison d'être.
         lanEnabled = Platform.IsMobile ? shell.IsServerComputer : PosteAdmin.LanEnabled();
         addresses = lanEnabled ? PosteAdmin.Addresses() : [];
+        if (CanEnableAutomaticHttps && !httpsRefreshing) _ = RefreshHttpsStateAsync();
         foreach (var name in new[] { nameof(ServiceInstalled), nameof(LanEnabled), nameof(ServiceLine), nameof(LanLine), nameof(AddressLine),
                      nameof(HasAddress), nameof(CanEnableAutomaticHttps), nameof(ConnectionTitle), nameof(ConnectionLine), nameof(IsServerComputer), nameof(IsLinked),
                      nameof(IsPhoneServer), nameof(IsPhoneClient), nameof(CanBecomeServer), nameof(ShowBackground), nameof(BackgroundOk),
@@ -229,6 +232,22 @@ public sealed class PosteViewModel : Observable
                      nameof(BackgroundHealthy), nameof(BackgroundNeedsAttention),
                      nameof(BackgroundTitle), nameof(BackgroundLine), nameof(MobileUpdateStatus), nameof(BackgroundDiagnostic), nameof(HasBackgroundHint), nameof(ShowAwake), nameof(AwakeLine) })
             Raise(name);
+    }
+
+    private async Task RefreshHttpsStateAsync()
+    {
+        if (httpsRefreshing || !CanEnableAutomaticHttps) return;
+        httpsRefreshing = true;
+        try
+        {
+            var address = await TailscaleHttpsServe.CurrentAddressAsync(PosteAdmin.DefaultPort);
+            if (address is not null)
+            {
+                HttpsAddress = address.ToString();
+                HttpsStatus = "HTTPS prive actif. Certificat gere et renouvele par Tailscale.";
+            }
+        }
+        finally { httpsRefreshing = false; }
     }
 
     private async Task SearchAsync()
