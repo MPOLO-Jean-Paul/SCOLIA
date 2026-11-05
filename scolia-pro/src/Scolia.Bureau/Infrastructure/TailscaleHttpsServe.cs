@@ -63,7 +63,8 @@ public static class TailscaleHttpsServe
                 || (root.TryGetProperty("Web", out var w) && w.ValueKind is not (JsonValueKind.Object or JsonValueKind.Null)))
                 return PortState.Unknown;
 
-            var has443 = tcp.ValueKind == JsonValueKind.Object && tcp.TryGetProperty("443", out var handler);
+            JsonElement handler = default;
+            var has443 = tcp.ValueKind == JsonValueKind.Object && tcp.TryGetProperty("443", out handler);
             var hasWeb443 = web.ValueKind == JsonValueKind.Object &&
                 web.EnumerateObject().Any(x => x.Name.EndsWith(":443", StringComparison.Ordinal));
             var correctTcp = has443 && handler.ValueKind == JsonValueKind.Object
