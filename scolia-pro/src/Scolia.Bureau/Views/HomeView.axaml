@@ -6,10 +6,10 @@
              x:Class="Scolia.Bureau.Views.HomeView">
   <UserControl.Styles>
     <Style Selector="TextBlock.kpivalue"><Setter Property="FontSize" Value="{DynamicResource FsTitle}" /></Style>
-    <!-- Accueil Windows natif : surface système, contraste automatique clair/sombre et bord discret. -->
-    <Style Selector="TextBlock.greeting"><Setter Property="FontSize" Value="23" /></Style>
+    <!-- Style Windows inspiré de macOS 27 : surfaces légères, rayons cohérents et densité de bureau. -->
+    <Style Selector="TextBlock.greeting"><Setter Property="FontSize" Value="20" /></Style>
     <Style Selector="TextBlock.sectiontitle">
-      <Setter Property="FontSize" Value="17" />
+      <Setter Property="FontSize" Value="15" />
       <Setter Property="FontWeight" Value="SemiBold" />
       <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
     </Style>
@@ -17,14 +17,14 @@
       <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
       <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
       <Setter Property="BorderThickness" Value="1" />
-      <Setter Property="CornerRadius" Value="18" />
+      <Setter Property="CornerRadius" Value="16" />
     </Style>
     <Style Selector="Border.desktopstatechip">
       <Setter Property="Background" Value="{DynamicResource GroupBrush}" />
-      <Setter Property="CornerRadius" Value="11" />
+      <Setter Property="CornerRadius" Value="10" />
       <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
       <Setter Property="BorderThickness" Value="1" />
-      <Setter Property="Padding" Value="10,6" />
+      <Setter Property="Padding" Value="8,4" />
     </Style>
     <Style Selector="Button.heroaction">
       <Setter Property="Background" Value="{DynamicResource GroupBrush}" />
@@ -32,8 +32,8 @@
       <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
       <Setter Property="BorderThickness" Value="1" />
       <Setter Property="CornerRadius" Value="12" />
-      <Setter Property="Padding" Value="12,8" />
-      <Setter Property="MinHeight" Value="46" />
+      <Setter Property="Padding" Value="10,7" />
+      <Setter Property="MinHeight" Value="39" />
       <Setter Property="FontWeight" Value="SemiBold" />
     </Style>
     <Style Selector="Button.heroaction:pointerover /template/ ContentPresenter#PART_ContentPresenter">
@@ -55,8 +55,8 @@
       <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
       <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
       <Setter Property="BorderThickness" Value="1" />
-      <Setter Property="CornerRadius" Value="13" />
-      <Setter Property="Padding" Value="12,10" />
+      <Setter Property="CornerRadius" Value="12" />
+      <Setter Property="Padding" Value="10,7" />
       <Setter Property="HorizontalAlignment" Value="Stretch" />
       <Setter Property="HorizontalContentAlignment" Value="Stretch" />
     </Style>
@@ -66,7 +66,7 @@
     </Style>
   </UserControl.Styles>
   <ScrollViewer>
-    <StackPanel Spacing="18" Margin="0,0,6,16">
+    <StackPanel Spacing="10" Margin="0,0,4,8">
 
       <!-- Accueil : la salutation reste TOUJOURS à gauche, les deux commandes
            restent TOUJOURS à droite. Seules les deux commandes passent de
@@ -75,76 +75,70 @@
         <StackPanel Spacing="0">
           <Border Height="3" Background="{DynamicResource AccentBrush}" />
           <Grid x:Name="WelcomeLayout" ColumnDefinitions="*,Auto,Auto"
-                ColumnSpacing="0" Margin="22,19,22,20">
+                ColumnSpacing="0" Margin="15,11,15,12">
             <!-- Bloc de salutation : dimension variable, jamais masqué par des boutons. -->
             <Grid Grid.Column="0" ColumnDefinitions="Auto,*" ColumnSpacing="11"
                   VerticalAlignment="Center">
-              <Border x:Name="WelcomeAvatar" Width="42" Height="42" CornerRadius="12"
+              <Border x:Name="WelcomeAvatar" Width="36" Height="36" CornerRadius="11"
                       Background="{DynamicResource AccentSoftBrush}"
                       VerticalAlignment="Top">
-                <TextBlock Text="{Binding Initials}" FontSize="16" FontWeight="Bold"
+                <TextBlock Text="{Binding Initials}" FontSize="14" FontWeight="Bold"
                            Foreground="{DynamicResource AccentBrush}"
                            HorizontalAlignment="Center" VerticalAlignment="Center" />
               </Border>
-              <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
-                <TextBlock Text="VOTRE ESPACE" FontSize="10" FontWeight="SemiBold"
-                           Foreground="{DynamicResource MutedBrush}" />
+              <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
                 <TextBlock x:Name="WelcomeGreeting" Text="{Binding Greeting}" Classes="greeting"
                            FontWeight="SemiBold" Foreground="{DynamicResource TextBrush}"
-                           TextWrapping="Wrap" />
-                <TextBlock Text="{Binding AccountContextLine}"
-                           FontSize="{DynamicResource FsSmall}" Foreground="{DynamicResource Text2Brush}"
-                           TextWrapping="Wrap" MaxLines="3" />
-                <TextBlock Text="{Binding DateLine}" Classes="muted"
-                           FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
-                <Border Classes="desktopstatechip" IsVisible="{Binding HasCashLine}"
-                        HorizontalAlignment="Left" Margin="0,5,0,0">
-                  <StackPanel Orientation="Horizontal" Spacing="7">
-                    <Ellipse Width="7" Height="7" Fill="{Binding CashBrush}" VerticalAlignment="Center" />
-                    <TextBlock Text="{Binding CashLine}" Foreground="{DynamicResource TextBrush}"
-                               FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap"
-                               FontWeight="SemiBold" />
-                  </StackPanel>
-                </Border>
-                <!-- Indicateur compact, sans fenêtre ni notification à chaque coupure. -->
-                <Button Classes="bare" Command="{Binding Network}" IsVisible="{Binding Sync.Offline}"
-                        HorizontalAlignment="Left" Margin="0,5,0,0"
-                        ToolTip.Tip="{Binding Sync.StatusDetail}">
-                  <Border Classes="desktopstatechip">
-                    <StackPanel Orientation="Horizontal" Spacing="7">
-                      <Ellipse Width="7" Height="7" Fill="{Binding Sync.StatusBrush}"
-                               VerticalAlignment="Center" />
-                      <TextBlock Text="{Binding Sync.StatusText}" FontWeight="SemiBold"
-                                 Foreground="{DynamicResource Text2Brush}"
-                                 FontSize="{DynamicResource FsSmall}" />
+                           TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" MaxLines="1" />
+                <TextBlock Text="{Binding AccountContextLine}" FontSize="{DynamicResource FsSmall}"
+                           Foreground="{DynamicResource Text2Brush}"
+                           TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" MaxLines="1" />
+                <WrapPanel Orientation="Horizontal" ItemSpacing="7" LineSpacing="3" Margin="0,2,0,0">
+                  <TextBlock Text="{Binding DateLine}" Classes="muted" FontSize="{DynamicResource FsSmall}"
+                             VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                  <Border Classes="desktopstatechip" IsVisible="{Binding HasCashLine}">
+                    <StackPanel Orientation="Horizontal" Spacing="5">
+                      <Ellipse Width="6" Height="6" Fill="{Binding CashBrush}" VerticalAlignment="Center" />
+                      <TextBlock Text="{Binding CashLine}" Foreground="{DynamicResource Text2Brush}"
+                                 FontSize="{DynamicResource FsSmall}" TextWrapping="NoWrap" />
                     </StackPanel>
                   </Border>
-                </Button>
+                  <Button Classes="bare" Command="{Binding Network}" IsVisible="{Binding Sync.Offline}"
+                          ToolTip.Tip="{Binding Sync.StatusDetail}">
+                    <Border Classes="desktopstatechip">
+                      <StackPanel Orientation="Horizontal" Spacing="5">
+                        <Ellipse Width="6" Height="6" Fill="{Binding Sync.StatusBrush}" VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding Sync.StatusText}" Foreground="{DynamicResource Text2Brush}"
+                                   FontSize="{DynamicResource FsSmall}" TextWrapping="NoWrap" />
+                      </StackPanel>
+                    </Border>
+                  </Button>
+                </WrapPanel>
               </StackPanel>
             </Grid>
             <!-- Barre verticale entre le message et la zone des actions. -->
             <Border Grid.Column="1" Width="1" Background="{DynamicResource LineBrush}"
-                    Margin="13,2,13,2" VerticalAlignment="Stretch" />
+                    Margin="9,3,9,3" VerticalAlignment="Stretch" />
             <ItemsControl x:Name="WelcomeQuickActions" Grid.Column="2"
-                          ItemsSource="{Binding QuickActions}" Width="278"
+                          ItemsSource="{Binding QuickActions}" Width="244"
                           HorizontalAlignment="Right" VerticalAlignment="Center">
               <ItemsControl.ItemsPanel>
                 <ItemsPanelTemplate>
-                  <UniformGrid Columns="2" infra:Adaptive.MinItemWidth="132" />
+                  <UniformGrid Columns="2" infra:Adaptive.MinItemWidth="112" />
                 </ItemsPanelTemplate>
               </ItemsControl.ItemsPanel>
               <ItemsControl.ItemTemplate>
                 <DataTemplate>
                   <Button Classes="heroaction" Command="{Binding Open}"
                           ToolTip.Tip="{Binding Description}"
-                          Margin="3" Padding="8,10" MinHeight="48"
+                          Margin="2" Padding="7,7" MinHeight="40"
                           HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
-                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
-                      <mi:MaterialIcon Kind="{Binding Icon}" Width="17" Height="17"
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="5">
+                      <mi:MaterialIcon Kind="{Binding Icon}" Width="15" Height="15"
                                        Foreground="{DynamicResource AccentBrush}"
                                        VerticalAlignment="Center" />
                       <TextBlock Grid.Column="1" Text="{Binding ShortTitle}" FontSize="12"
-                                 TextWrapping="Wrap" MaxLines="2" TextAlignment="Center"
+                                 TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" MaxLines="1" TextAlignment="Center"
                                  VerticalAlignment="Center" FontWeight="SemiBold" />
                     </Grid>
                   </Button>
