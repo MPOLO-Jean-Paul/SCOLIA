@@ -7,7 +7,12 @@
   <UserControl.Styles>
     <Style Selector="TextBlock.kpivalue"><Setter Property="FontSize" Value="{DynamicResource FsTitle}" /></Style>
     <!-- Accueil Windows natif : surface système, contraste automatique clair/sombre et bord discret. -->
-    <Style Selector="TextBlock.greeting"><Setter Property="FontSize" Value="22" /></Style>
+    <Style Selector="TextBlock.greeting"><Setter Property="FontSize" Value="23" /></Style>
+    <Style Selector="TextBlock.sectiontitle">
+      <Setter Property="FontSize" Value="17" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+    </Style>
     <Style Selector="Border.desktopwelcome">
       <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
       <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
@@ -61,7 +66,7 @@
     </Style>
   </UserControl.Styles>
   <ScrollViewer>
-    <StackPanel Spacing="16" Margin="0,0,6,12">
+    <StackPanel Spacing="18" Margin="0,0,6,16">
 
       <!-- Accueil : la salutation reste TOUJOURS à gauche, les deux commandes
            restent TOUJOURS à droite. Seules les deux commandes passent de
@@ -70,7 +75,7 @@
         <StackPanel Spacing="0">
           <Border Height="3" Background="{DynamicResource AccentBrush}" />
           <Grid x:Name="WelcomeLayout" ColumnDefinitions="*,Auto,Auto"
-                ColumnSpacing="0" Margin="16,15,16,16">
+                ColumnSpacing="0" Margin="22,19,22,20">
             <!-- Bloc de salutation : dimension variable, jamais masqué par des boutons. -->
             <Grid Grid.Column="0" ColumnDefinitions="Auto,*" ColumnSpacing="11"
                   VerticalAlignment="Center">
@@ -82,7 +87,7 @@
                            HorizontalAlignment="Center" VerticalAlignment="Center" />
               </Border>
               <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
-                <TextBlock Text="ESPACE DE TRAVAIL" FontSize="10" FontWeight="SemiBold"
+                <TextBlock Text="VOTRE ESPACE" FontSize="10" FontWeight="SemiBold"
                            Foreground="{DynamicResource MutedBrush}" />
                 <TextBlock x:Name="WelcomeGreeting" Text="{Binding Greeting}" Classes="greeting"
                            FontWeight="SemiBold" Foreground="{DynamicResource TextBrush}"
@@ -101,6 +106,20 @@
                                FontWeight="SemiBold" />
                   </StackPanel>
                 </Border>
+                <!-- Indicateur compact, sans fenêtre ni notification à chaque coupure. -->
+                <Button Classes="bare" Command="{Binding Network}" IsVisible="{Binding Sync.Offline}"
+                        HorizontalAlignment="Left" Margin="0,5,0,0"
+                        ToolTip.Tip="{Binding Sync.StatusDetail}">
+                  <Border Classes="desktopstatechip">
+                    <StackPanel Orientation="Horizontal" Spacing="7">
+                      <Ellipse Width="7" Height="7" Fill="{Binding Sync.StatusBrush}"
+                               VerticalAlignment="Center" />
+                      <TextBlock Text="{Binding Sync.StatusText}" FontWeight="SemiBold"
+                                 Foreground="{DynamicResource Text2Brush}"
+                                 FontSize="{DynamicResource FsSmall}" />
+                    </StackPanel>
+                  </Border>
+                </Button>
               </StackPanel>
             </Grid>
             <!-- Barre verticale entre le message et la zone des actions. -->
@@ -138,8 +157,11 @@
 
       <!-- Indicateurs : 1 à 4 colonnes selon la largeur restante APRÈS le menu latéral ;
            aucune largeur fixe et aucun chevauchement quand la fenêtre rétrécit. -->
-      <TextBlock Text="VUE D'ENSEMBLE" FontSize="11" FontWeight="SemiBold"
-                 Foreground="{DynamicResource Text2Brush}" Margin="2,0,0,-7" />
+      <Grid ColumnDefinitions="*,Auto" Margin="2,2,8,-8">
+        <TextBlock Text="Indicateurs essentiels" Classes="sectiontitle" />
+        <TextBlock Grid.Column="1" Text="Situation de l'établissement" Classes="muted"
+                   FontSize="{DynamicResource FsSmall}" VerticalAlignment="Center" />
+      </Grid>
       <ItemsControl ItemsSource="{Binding Kpis}" IsVisible="{Binding HasKpis}">
         <ItemsControl.ItemsPanel>
           <ItemsPanelTemplate><UniformGrid Columns="4" infra:Adaptive.MinItemWidth="260" /></ItemsPanelTemplate>
@@ -148,7 +170,7 @@
           <DataTemplate>
             <Button Classes="cardbutton" Command="{Binding Open}" Margin="0,0,10,10"
                     HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" ToolTip.Tip="Ouvrir le détail">
-              <Border Classes="toolcard" MinHeight="126" Padding="16,14" ClipToBounds="True"
+              <Border Classes="toolcard" MinHeight="118" Padding="16,15" ClipToBounds="True"
                       Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource LineBrush}"
                       BorderThickness="1" CornerRadius="14">
                 <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto" RowSpacing="4">
@@ -157,7 +179,7 @@
                              VerticalAlignment="Center" />
                   <Border Grid.Column="1" Grid.RowSpan="2" Classes="appicon medium" Background="{Binding Brush}"
                           VerticalAlignment="Top" Margin="8,0,0,0"><mi:MaterialIcon Kind="{Binding Icon}" /></Border>
-                  <TextBlock Grid.Row="1" Text="{Binding Value}" FontSize="{DynamicResource FsHeading}"
+                  <TextBlock Grid.Row="1" Text="{Binding Value}" FontSize="24"
                              FontWeight="Bold" Foreground="{DynamicResource TextBrush}"
                              TextWrapping="Wrap" MaxLines="2" />
                   <TextBlock Grid.Row="2" Grid.ColumnSpan="2" Text="{Binding Hint}" Classes="muted"
@@ -172,7 +194,7 @@
       <!-- Outils : tuiles compactes, un clic ouvre l'outil -->
       <StackPanel Spacing="8">
         <Grid ColumnDefinitions="*,Auto" infra:Adaptive.StackBelow="410">
-          <TextBlock Text="Outils" Classes="heading" VerticalAlignment="Center" />
+          <TextBlock Text="Accès rapides" Classes="sectiontitle" VerticalAlignment="Center" />
           <Button Grid.Column="1" Classes="link" Content="{Binding AllToolsLabel}" Command="{Binding ShowAllTools}"
                   HorizontalAlignment="Left" MinHeight="36"
                   ToolTip.Tip="Déployer les fonctionnalités autorisées dans cette page" />
@@ -183,11 +205,15 @@
           </ItemsControl.ItemsPanel>
           <ItemsControl.ItemTemplate>
             <DataTemplate>
-              <Button Classes="tooltile" Command="{Binding Open}" Margin="0,0,10,10" MinHeight="58" ToolTip.Tip="{Binding Description}">
+              <Button Classes="tooltile" Command="{Binding Open}" Margin="0,0,10,10" MinHeight="74" ToolTip.Tip="{Binding Description}">
                 <Grid ColumnDefinitions="Auto,*,Auto">
                   <Border Classes="appicon medium" Background="{Binding Brush}" VerticalAlignment="Center" Margin="0,0,12,0"><mi:MaterialIcon Kind="{Binding Icon}" /></Border>
-                  <!-- Un titre net ; l'explication reste dans l'info-bulle, au survol -->
-                  <TextBlock Grid.Column="1" Text="{Binding Title}" FontWeight="SemiBold" TextWrapping="Wrap" MaxLines="2" VerticalAlignment="Center" />
+                  <!-- Nom et fonction visibles pour guider l'utilisateur. -->
+                  <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextWrapping="Wrap" MaxLines="2" />
+                    <TextBlock Text="{Binding Description}" Classes="muted" FontSize="{DynamicResource FsSmall}"
+                               TextWrapping="Wrap" MaxLines="2" />
+                  </StackPanel>
                   <mi:MaterialIcon Grid.Column="2" Kind="ChevronRight" Width="16" Height="16" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" Margin="6,0,0,0" />
                 </Grid>
               </Button>
@@ -235,7 +261,7 @@
       <Grid ColumnDefinitions="2*,16,*" infra:Adaptive.StackBelow="760">
         <StackPanel Spacing="8">
           <Grid ColumnDefinitions="*,Auto" infra:Adaptive.StackBelow="390">
-            <TextBlock Text="Derniers reçus" Classes="heading" VerticalAlignment="Center" />
+            <TextBlock Text="Derniers reçus" Classes="sectiontitle" VerticalAlignment="Center" />
             <TextBlock Grid.Column="1" Text="{Binding TodayLine}" Classes="muted" VerticalAlignment="Center" IsVisible="{Binding HasTodayLine}" />
           </Grid>
           <Border Classes="card" Padding="6">
@@ -270,7 +296,7 @@
         </StackPanel>
 
         <StackPanel Grid.Column="2" Spacing="8">
-          <TextBlock Text="{Binding TasksTitle}" Classes="heading" />
+          <TextBlock Text="{Binding TasksTitle}" Classes="sectiontitle" />
           <Border Classes="card" Padding="6">
             <StackPanel>
               <ItemsControl ItemsSource="{Binding Tasks}">

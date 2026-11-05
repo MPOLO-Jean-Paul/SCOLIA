@@ -53,6 +53,7 @@ public sealed class SyncCenter : Observable, IDisposable
 {
     private static readonly TimeSpan HeartbeatInterval = TimeSpan.FromSeconds(15);
     private static readonly TimeSpan ProbeInterval = TimeSpan.FromSeconds(5);
+    private static readonly TimeSpan OnlineHealthInterval = TimeSpan.FromSeconds(10);
 
     private readonly ShellViewModel shell;
     private readonly ScoliaClient api;
@@ -129,20 +130,20 @@ public sealed class SyncCenter : Observable, IDisposable
     public AsyncCommand SyncNow { get; }
 
     /// <summary>État lisible de la connexion, pour la barre du haut et l'accueil.</summary>
-    public string StatusText => syncing ? "Synchronisation…"
-        : Offline ? (HasPending ? $"Hors ligne · {Pending} en attente" : "Hors ligne")
+    public string StatusText => Offline ? (HasPending ? $"Hors ligne · {Pending} en attente" : "Hors ligne")
+        : syncing ? "Synchronisation…"
         : HasConflicts ? $"{Conflicts} opération(s) refusée(s)"
         : "En ligne";
 
     public string StatusDetail => Offline
-        ? "L'ordinateur principal ne répond pas. Vous travaillez sur les données gardées sur cet appareil ; vos opérations seront envoyées à son retour."
+        ? "Serveur inaccessible : les données déjà téléchargées restent consultables. Seules les opérations autorisées sont enregistrées en attente ; les validations définitives reprennent après reconnexion."
         : HasConflicts ? "Le serveur a refusé des opérations faites hors ligne. Ouvrez la liste pour les revoir."
         : TailscaleEndpoint.IsTailnetAddress(api.Server)
             ? $"Réseau privé Tailscale · {PeersText}. La base reste sur l'appareil principal ; les droits SCOLIA restent appliqués."
         : api.IsLongDistance ? $"Liaison Internet chiffrée · {PeersText}. Les opérations sont confirmées par l’appareil principal."
         : $"Relié à l'ordinateur principal · {PeersText}.";
 
-    public IBrush StatusBrush => ThemeBrush.Get(syncing ? "ToneBlue" : Offline ? "ToneOrange" : HasConflicts ? "ToneRed" : "ToneGreen");
+    public IBrush StatusBrush => ThemeBrush.Get(Offline ? "ToneOrange" : syncing ? "ToneBlue" : HasConflicts ? "ToneRed" : "ToneGreen");
 
     /// <summary>Action en cours sur ce poste, annoncée aux autres : « Encaissement de MUKENDI ».</summary>
     public string? Activity
@@ -170,6 +171,8 @@ public sealed class SyncCenter : Observable, IDisposable
         var token = running.Token;
         _ = StreamLoopAsync(token);
         _ = HeartbeatLoopAsync(token);
+        _ = ReconnectLoopAsync(token);
+        _ = HealthLoopAsync(token);
         // Préparer les pages locales après le rendu de l'accueil, sans retarder l'ouverture.
         _ = WarmOfflinePagesAsync(token);
         RaiseCounts();
@@ -459,17 +462,52 @@ public sealed class SyncCenter : Observable, IDisposable
     }
 
     /// <summary>
-    /// Annonce ce poste toutes les 15 secondes : sa page, son activité et les verrous qu'il tient encore.
-    /// Hors ligne, la même boucle cherche le serveur toutes les 5 secondes.
+    /// Contrôle la disponibilité du serveur même lorsque personne ne navigue et
+    /// que le flux temps réel a été interrompu. Les deux interfaces Avalonia (PC
+    /// et Android) utilisent le même état ; aucune notification répétée.
+    /// La boucle de reprise existante prend le relais dès le premier échec.
+    /// </summary>
+    private async Task HealthLoopAsync(CancellationToken ct)
+    {
+        while (!ct.IsCancellationRequested)
+        {
+            try { await Task.Delay(OnlineHealthInterval, ct); }
+            catch (OperationCanceledException) { return; }
+
+            if (!shell.IsLoggedIn || Offline) continue;
+            try { await api.IsRunningAsync(ct); }
+            catch (OperationCanceledException) when (ct.IsCancellationRequested) { return; }
+            catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or IOException)
+            {
+                // IsRunningAsync annonce déjà une coupure HTTP ; une erreur
+                // inattendue de transport ne doit pas tuer la surveillance.
+                System.Diagnostics.Trace.WriteLine($"SCOLIA : sonde de liaison interrompue ({ex.GetType().Name}).");
+            }
+        }
+    }
+
+    /// <summary>Recherche le serveur toutes les cinq secondes pendant une coupure.</summary>
+    private async Task ReconnectLoopAsync(CancellationToken ct)
+    {
+        while (!ct.IsCancellationRequested)
+        {
+            try { await Task.Delay(ProbeInterval, ct); }
+            catch (OperationCanceledException) { return; }
+            if (Offline) await SyncAsync(manual: false);
+        }
+    }
+
+    /// <summary>
+    /// Annonce l'activité du poste toutes les quinze secondes, sans retarder
+    /// la reprise d'une liaison perdue pendant cette attente.
     /// </summary>
     private async Task HeartbeatLoopAsync(CancellationToken ct)
     {
         while (!ct.IsCancellationRequested)
         {
-            try { await Task.Delay(Offline ? ProbeInterval : HeartbeatInterval, ct); }
+            try { await Task.Delay(HeartbeatInterval, ct); }
             catch (OperationCanceledException) { return; }
-            if (Offline) await SyncAsync(manual: false);
-            else await AnnounceAsync();
+            if (!Offline) await AnnounceAsync();
         }
     }
 

@@ -24,6 +24,45 @@ public class ConnectivityTests
     }
 
     [Fact]
+    public async Task Sonde_fait_basculer_automatiquement_hors_ligne_puis_en_ligne()
+    {
+        // Serveur HTTP minimal sur loopback : aucun réseau extérieur ni
+        // donnée scolaire n'est contacté, les deux états sont déterministes.
+        var listener = new System.Net.Sockets.TcpListener(System.Net.IPAddress.Loopback, 0);
+        listener.Start();
+        try
+        {
+            var port = ((System.Net.IPEndPoint)listener.LocalEndpoint).Port;
+            using var api = new ScoliaClient(new Uri($"http://127.0.0.1:{port}/"));
+            var changes = new List<bool>();
+            api.ConnectivityChanged += changes.Add;
+
+            async Task ReplyOnceAsync(int status, string reason)
+            {
+                using var accepted = await listener.AcceptTcpClientAsync();
+                using var stream = accepted.GetStream();
+                using var reader = new StreamReader(stream, System.Text.Encoding.ASCII, false, 1024, leaveOpen: true);
+                while (await reader.ReadLineAsync() is { Length: > 0 }) { }
+                var response = System.Text.Encoding.ASCII.GetBytes(
+                    $"HTTP/1.1 {status} {reason}\r\nContent-Length: 0\r\nConnection: close\r\n\r\n");
+                await stream.WriteAsync(response);
+            }
+
+            var unavailable = ReplyOnceAsync(503, "Service Unavailable");
+            Assert.False(await api.IsRunningAsync());
+            await unavailable;
+            Assert.False(api.IsOnline);
+
+            var restored = ReplyOnceAsync(200, "OK");
+            Assert.True(await api.IsRunningAsync());
+            await restored;
+            Assert.True(api.IsOnline);
+            Assert.Equal(new[] { false, true }, changes);
+        }
+        finally { listener.Stop(); }
+    }
+
+    [Fact]
     public async Task Lecture_hors_ligne_depuis_le_cache_est_immediate_et_par_compte()
     {
         var directory = Path.Combine(Path.GetTempPath(), "scolia-offline-fast", Guid.NewGuid().ToString("N"));

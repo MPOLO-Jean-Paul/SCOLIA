@@ -117,8 +117,20 @@ public sealed class HomePage : PageViewModel
         Raise(nameof(AllToolGroups));
         if (!Shell.Can(Perm.ReportsRead)) { RaiseLists(); return; }
 
-        // Toutes les réponses sont prêtes avant de toucher aux cartes affichées.
-        var d = await Shell.Api.GetAsync<DashboardDto>("api/rapports/tableau-de-bord");
+        // Hors connexion, l'absence de copie locale ne doit pas empêcher
+        // l'ouverture de l'accueil ni produire des chiffres inventés.
+        DashboardDto d;
+        try { d = await Shell.Api.GetAsync<DashboardDto>("api/rapports/tableau-de-bord"); }
+        catch (OfflineException)
+        {
+            Kpis.Clear();
+            Tasks.Clear();
+            Receipts.Clear();
+            CashLine = string.Empty;
+            TodayLine = string.Empty;
+            RaiseLists();
+            return;
+        }
         TodayDto? t = null;
         try { t = await Shell.Api.GetAsync<TodayDto>("api/rapports/aujourdhui"); }
         catch (ApiException) { }
@@ -177,7 +189,11 @@ public sealed class HomePage : PageViewModel
                     Go(() => new StudentDetailPage(Shell, b.StudentId))));
             TodayLine = Format.Count(t.ReceiptsToday, "reçu aujourd'hui", "reçus aujourd'hui");
         }
-        else TodayLine = string.Empty;
+        else
+        {
+            CashLine = string.Empty;
+            TodayLine = string.Empty;
+        }
         CollectionSync.Apply(Receipts, nextReceipts, (a, b) => a with { Open = b.Open } == b);
         CollectionSync.Apply(Kpis, nextKpis, (a, b) => a with { Open = b.Open } == b);
         CollectionSync.Apply(Tasks, nextTasks);

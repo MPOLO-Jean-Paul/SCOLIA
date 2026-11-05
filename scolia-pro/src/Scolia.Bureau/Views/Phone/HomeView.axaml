@@ -83,7 +83,18 @@
               <TextBlock Text="{Binding CashLine}" FontWeight="SemiBold" FontSize="{DynamicResource FsSmall}" />
             </StackPanel>
           </Border>
-
+          <!-- Point de connexion compact ; un toucher ouvre les opérations locales. -->
+          <Button Command="{Binding Network}" IsVisible="{Binding Sync.Offline}"
+                  Background="Transparent" BorderThickness="0" Padding="0"
+                  ToolTip.Tip="{Binding Sync.StatusDetail}">
+            <Border Classes="statechip">
+              <StackPanel Orientation="Horizontal" Spacing="7">
+                <Ellipse Width="8" Height="8" Fill="{Binding Sync.StatusBrush}" VerticalAlignment="Center" />
+                <TextBlock Text="{Binding Sync.StatusText}" FontWeight="SemiBold"
+                           FontSize="{DynamicResource FsSmall}" />
+              </StackPanel>
+            </Border>
+          </Button>
         </WrapPanel>
       </StackPanel>
     </Border>
