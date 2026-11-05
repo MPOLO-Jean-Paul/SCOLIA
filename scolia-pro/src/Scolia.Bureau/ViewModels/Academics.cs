@@ -168,8 +168,15 @@ public sealed class GradesPage : PageViewModel
             var score = Format.TryAmount(g.Score, out var value) ? (decimal?)value : null;
             rows.Add(new { enrollmentId = g.EnrollmentId, score, comment = string.IsNullOrWhiteSpace(g.Comment) ? null : g.Comment.Trim() });
         }
-        await Shell.Api.SendAsync(HttpMethod.Put, $"api/scolarite/evaluations/{Assessment.Id}/notes", rows);
-        Shell.Notify("Notes enregistrées.");
+        try
+        {
+            await Shell.Api.SendAsync(HttpMethod.Put, $"api/scolarite/evaluations/{Assessment.Id}/notes", rows);
+            Shell.Notify("Notes enregistrées.");
+        }
+        catch (OfflineQueuedException)
+        {
+            Shell.Notify("Notes enregistrées localement ; synchronisation automatique au retour du serveur.");
+        }
         await LoadSheetAsync();
     }
 
@@ -483,8 +490,15 @@ public sealed class AttendancePage : PageViewModel
         if (Promotion is null) return;
         var date = ToDay(Day);
         var rows = Rows.Select(r => new { enrollmentId = r.EnrollmentId, status = r.Status.Value, note = string.IsNullOrWhiteSpace(r.Note) ? null : r.Note.Trim() }).ToList();
-        await Shell.Api.SendAsync(HttpMethod.Put, "api/scolarite/presences" + ScoliaClient.Query(("promotionId", Guid.Parse(Promotion.Value)), ("date", date)), rows);
-        Shell.Notify("Appel enregistré.");
+        try
+        {
+            await Shell.Api.SendAsync(HttpMethod.Put, "api/scolarite/presences" + ScoliaClient.Query(("promotionId", Guid.Parse(Promotion.Value)), ("date", date)), rows);
+            Shell.Notify("Appel enregistré.");
+        }
+        catch (OfflineQueuedException)
+        {
+            Shell.Notify("Appel enregistré sur cet appareil ; transmission automatique dès que le serveur revient.");
+        }
     }
 }
 
