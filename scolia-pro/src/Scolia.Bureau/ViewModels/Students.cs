@@ -33,6 +33,7 @@ public sealed class StudentsPage : PageViewModel
         if (Shell.Can(Perm.StudentsWrite)) Action("Nouvelle inscription", MaterialIconKind.AccountPlus, () => StudentForms.CreateAsync(Shell), primary: true);
         Action("Ouvrir la fiche", MaterialIconKind.Account, OpenSelectedAsync, open: true);
         if (Shell.Can(Perm.ReportsRead)) Action("Suivi par mois", MaterialIconKind.CalendarCheck, () => Shell.Open(() => new MonthlyPage(Shell)));
+        Action("Préparer hors ligne", MaterialIconKind.Download, PrepareOfflineAsync);
         ActionRefresh();
         MenuAction("Aperçu rapide", MaterialIconKind.Eye, () => WithSelected(id => QuickView.StudentAsync(Shell, id)));
         if (Shell.Can(Perm.PaymentsCreate)) MenuAction("Encaisser", MaterialIconKind.HandCoin, () => WithSelected(id => Shell.Open(() => new CashierPage(Shell, id))));
@@ -59,6 +60,51 @@ public sealed class StudentsPage : PageViewModel
         });
         PreviousPage = new AsyncCommand(async () => { page--; await RefreshAsync(); });
         NextPage = new AsyncCommand(async () => { page++; await RefreshAsync(); });
+    }
+
+    /// <summary>
+    /// Consentement explicite avant le téléchargement des fiches nominatives sur l'appareil.
+    /// La copie reste isolée dans le cache chiffré du compte, sans exposition publique.
+    /// </summary>
+    private async Task PrepareOfflineAsync()
+    {
+        if (!Shell.Api.IsOnline)
+        {
+            Shell.Notify("Connectez-vous au serveur de l'établissement avant de préparer cet appareil.");
+            return;
+        }
+        if (Shell.Api.Offline?.User is not { Length: > 0 })
+        {
+            Shell.Notify("Connectez-vous à votre compte avant de préparer les données locales.");
+            return;
+        }
+
+        var form = new FormViewModel("Préparer cet appareil hors ligne",
+            "SCOLIA téléchargera les listes et fiches auxquelles votre compte a accès. Les copies seront chiffrées sur cet appareil.",
+            async f =>
+            {
+                var finance = Shell.Can(Perm.PaymentsRead) && f.Flag("comptes");
+                f.Message = "Téléchargement des données autorisées…";
+                var result = await OfflinePreparation.RunAsync(Shell.Api, finance, p =>
+                {
+                    if (p.Completed % 10 == 0 || p.Completed == p.Expected || p.Completed <= 5)
+                        f.Message = $"{p.Stage} · {p.Completed}/{p.Expected} éléments traités.";
+                });
+
+                var summary = $"{result.Details}/{result.Expected} fiches préparées"
+                    + (finance ? $" · {result.Accounts} comptes de paiement" : string.Empty)
+                    + (result.Errors > 0 ? $" · {result.Errors} élément(s) indisponible(s)." : ".");
+                Shell.Notify(result.Complete ? "Préparation hors ligne terminée : " + summary
+                    : "Préparation partielle : " + summary + " Vérifiez la connexion et relancez la préparation.");
+                return true;
+            })
+        {
+            SubmitText = "Préparer maintenant",
+            Message = "Réalisez cette préparation avant une période sans réseau. Les écritures restent soumises à la synchronisation et à la validation du serveur."
+        };
+        if (Shell.Can(Perm.PaymentsRead))
+            form.AddFlag("comptes", "Inclure les comptes scolaires autorisés (montants et mensualités)", false);
+        await Shell.Ask(form);
     }
 
     public override string Title => "Apprenants";
