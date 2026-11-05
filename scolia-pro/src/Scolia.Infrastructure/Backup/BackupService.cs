@@ -78,6 +78,8 @@ public sealed class BackupService(IOptions<ScoliaStorageOptions> options, ILogge
             throw new DomainException("sauvegardes", "Sauvegarde invalide ou altérée : export chiffré refusé.");
 
         var file = PathOf(name);
+        if (!await IsScoliaDatabaseAsync(file, ct))
+            throw new DomainException("sauvegardes", "Le fichier ne contient pas la structure de base SCOLIA requise.");
         if (new FileInfo(file).Length > BackupProtection.MaximumPlainBytes)
             throw new DomainException("sauvegardes", "Sauvegarde supérieure à 48 Mio : utilisez une méthode d'archivage chiffré par flux.");
 
@@ -105,8 +107,8 @@ public sealed class BackupService(IOptions<ScoliaStorageOptions> options, ILogge
             await File.WriteAllBytesAsync(target, clear, ct);
             if (!OperatingSystem.IsWindows())
                 File.SetUnixFileMode(target, UnixFileMode.UserRead | UnixFileMode.UserWrite);
-            if (!await IsIntactAsync(target, ct))
-                throw new DomainException("sauvegardes", "Le fichier déchiffré n'est pas une base SCOLIA SQLite intègre : import refusé.");
+            if (!await IsIntactAsync(target, ct) || !await IsScoliaDatabaseAsync(target, ct))
+                throw new DomainException("sauvegardes", "Le fichier déchiffré est endommagé ou ne contient pas le schéma SCOLIA attendu : import refusé.");
 
             var sha = await Sha256Async(target, ct);
             await File.WriteAllTextAsync(target + FingerprintExtension, $"{sha}  {name}\n", ct);
@@ -214,6 +216,30 @@ public sealed class BackupService(IOptions<ScoliaStorageOptions> options, ILogge
         return (await command.ExecuteScalarAsync(ct)) as string == "ok";
     }
 
+    /// <summary>
+    /// PRAGMA integrity_check ne distingue pas une base SCOLIA d'une base SQLite
+    /// quelconque. Refuser les restaurations sans les tables fondamentales du produit,
+    /// avant toute copie vers la base active.
+    /// </summary>
+    private static async Task<bool> IsScoliaDatabaseAsync(string path, CancellationToken ct)
+    {
+        await using var connection = new SqliteConnection(new SqliteConnectionStringBuilder
+        {
+            DataSource = path, Mode = SqliteOpenMode.ReadOnly, Pooling = false
+        }.ToString());
+        await connection.OpenAsync(ct);
+        await using var command = connection.CreateCommand();
+        command.CommandText = """
+            SELECT name FROM sqlite_master
+            WHERE type = 'table'
+              AND name IN ('Etablissement', 'Apprenants', 'Inscriptions', 'Recus');
+            """;
+        var found = new HashSet<string>(StringComparer.Ordinal);
+        await using var reader = await command.ExecuteReaderAsync(ct);
+        while (await reader.ReadAsync(ct)) found.Add(reader.GetString(0));
+        return found.Count == 4;
+    }
+
     public async Task<bool> CheckLiveDatabaseAsync(CancellationToken ct = default)
     {
         await using var connection = new SqliteConnection(settings.ConnectionString);
@@ -230,6 +256,8 @@ public sealed class BackupService(IOptions<ScoliaStorageOptions> options, ILogge
         if (!check.Intact) throw new DomainException("sauvegardes", "Cette sauvegarde est endommagée : restauration refusée.");
         if (check.HasFingerprint && !check.FingerprintMatches) throw new DomainException("sauvegardes", "L'empreinte de cette sauvegarde ne correspond plus : restauration refusée.");
         var path = PathOf(name);
+        if (!await IsScoliaDatabaseAsync(path, ct))
+            throw new DomainException("sauvegardes", "La sauvegarde n'est pas une base SCOLIA reconnue : restauration refusée.");
         await CreateAsync("avantrestauration", ct);
         await Lock.WaitAsync(ct);
         try
