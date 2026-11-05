@@ -1,8 +1,9 @@
 BIENVENUE DANS SCOLIA PRO
 
-Gestion scolaire professionnelle - Version 1.2.22
+Gestion scolaire professionnelle
 Éditeur : JP-Services
 Assistance : jeanpaulmpolo242@gmail.com
+Cliquez sur cette adresse, en bas de l'assistant, pour ouvrir votre messagerie.
 
 Un seul programme d'installation pour le poste Windows 64 bits.
 Il installe l'interface SCOLIA Pro, le moteur serveur local, les ressources
