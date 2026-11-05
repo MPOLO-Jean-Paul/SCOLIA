@@ -8,9 +8,14 @@ umask 077
 cache="${1:?dossier du cache historique obligatoire}"
 version="$(sed -n 's:.*<Version>\(.*\)</Version>.*:\1:p' Directory.Build.props | head -1)"
 expected="E5:B5:F7:FA:41:54:11:EE:AC:4B:F7:34:84:90:24:FF:CF:7F:93:50:0C:60:13:83:99:31:B0:20:38:F5:89:80"
-if [[ "${GITHUB_EVENT_NAME:-}" != "push" ||
-      "${GITHUB_REF:-}" != "refs/heads/release/direct-apk-scolia-pro-20261103" ||
-      "$version" != "1.2.17" ]]; then
+trusted_push="false"
+trusted_pr18="false"
+if [[ "${GITHUB_EVENT_NAME:-}" == "push" &&
+      "${GITHUB_REF:-}" == "refs/heads/release/direct-apk-scolia-pro-20261103" ]]; then trusted_push="true"; fi
+if [[ "${GITHUB_EVENT_NAME:-}" == "pull_request" &&
+      "${GITHUB_REF:-}" == "refs/pull/18/merge" &&
+      "${SCOLIA_RECOVERY_PR18:-}" == "true" ]]; then trusted_pr18="true"; fi
+if [[ "$version" != "1.2.17" || ("$trusted_push" != "true" && "$trusted_pr18" != "true") ]]; then
   echo "::error::La restauration de cle historique n'est autorisee que pour la version officielle 1.2.17." >&2
   exit 1
 fi
