@@ -128,6 +128,21 @@ public sealed class OfflineStore
         return (json, savedAt);
     }
 
+    /// <summary>
+    /// Un 403/404 du serveur invalide la copie locale de cette ressource :
+    /// la conservation hors ligne ne doit pas contourner une révocation explicite.
+    /// Le compte d'origine est conservé pour éviter d'effacer la copie d'un autre utilisateur.
+    /// </summary>
+    public void RemovePageFor(string user, string path)
+    {
+        if (string.IsNullOrWhiteSpace(user) || string.IsNullOrWhiteSpace(path)) return;
+        database.Delete(PageKeyFor(user, path));
+        // Éviter la réimportation de l'ancien cache JSON après une suppression serveur.
+        var legacy = Path.Combine(root, "pages", Safe(user),
+            Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(path)))[..32] + ".json");
+        if (File.Exists(legacy)) File.Delete(legacy);
+    }
+
     public IReadOnlyList<OutboxItem> Outbox() => Load(OutboxFile).Where(i => i.User == User).ToList();
     public IReadOnlyList<OutboxItem> Conflicts() => Load(ConflictFile).Where(i => i.User == User).ToList();
 
