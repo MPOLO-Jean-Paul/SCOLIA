@@ -53,6 +53,7 @@ public static class AndroidAppUpdates
     private static bool installDialogOpen;
     private static WeakReference<Activity>? foregroundActivity;
     private static CancellationTokenSource? foregroundDownloadWatch;
+    private static CancellationTokenSource? foregroundReleaseWatch;
 
     internal sealed record Release(string Version, string DownloadUrl, string Sha256, long Size);
 
@@ -82,6 +83,7 @@ public static class AndroidAppUpdates
         // négatif était encore mis en cache. Les reprises suivantes sont limitées.
         var coldLaunch = Interlocked.Exchange(ref firstResumeInProcess, 0) == 1;
         _ = ResumeAsync(activity, coldLaunch);
+        StartForegroundReleaseWatch(activity);
     }
 
     public static void OnPause(Activity activity)
@@ -90,6 +92,7 @@ public static class AndroidAppUpdates
         {
             foregroundActivity = null;
             StopForegroundDownloadWatch();
+            StopForegroundReleaseWatch();
         }
         // Un dialogue disparu avec l'activité ne doit jamais bloquer
         // les prochaines propositions de téléchargement ou d'installation.
@@ -116,6 +119,48 @@ public static class AndroidAppUpdates
         var source = new CancellationTokenSource();
         foregroundDownloadWatch = source;
         _ = WatchDownloadAsync(activity, source.Token);
+    }
+
+    /// <summary>
+    /// Une application laissée ouverte doit continuer à découvrir les nouvelles versions :
+    /// WorkManager à six heures ne suffit pas pour une session d'encaissement prolongée.
+    /// La boucle ne fonctionne QUE tant que la fenêtre du téléphone est au premier plan.
+    /// </summary>
+    private static void StartForegroundReleaseWatch(Activity activity)
+    {
+        StopForegroundReleaseWatch();
+        var source = new CancellationTokenSource();
+        foregroundReleaseWatch = source;
+        _ = WatchReleasesAsync(activity, source.Token);
+    }
+
+    private static void StopForegroundReleaseWatch()
+    {
+        var previous = foregroundReleaseWatch;
+        foregroundReleaseWatch = null;
+        previous?.Cancel();
+        previous?.Dispose();
+    }
+
+    private static async Task WatchReleasesAsync(Activity activity, CancellationToken cancellation)
+    {
+        try
+        {
+            while (!cancellation.IsCancellationRequested)
+            {
+                await Task.Delay(TimeSpan.FromMinutes(8), cancellation);
+                if (!IsForeground(activity)) break;
+                try { await CheckLatestAsync(activity, showDialog: true); }
+                catch (Exception ex) when (ex is HttpRequestException or JsonException
+                    or IOException or TaskCanceledException or InvalidOperationException
+                    or Java.Lang.Exception)
+                {
+                    Android.Util.Log.Warn("SCOLIA-MAJ", $"Vérification périodique différée : {ex.GetType().Name}");
+                    Report(activity, "Vérification automatique reportée ; la recherche manuelle reste disponible.");
+                }
+            }
+        }
+        catch (OperationCanceledException) { }
     }
 
     private static int? DownloadStatus(Context context, long id)
