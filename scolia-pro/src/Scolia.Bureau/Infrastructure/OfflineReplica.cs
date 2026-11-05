@@ -1,5 +1,3 @@
-using System.Security.Cryptography;
-using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Scolia.Bureau.Api;
@@ -76,6 +74,24 @@ public static class OfflineReplica
             }
         }
         return sheet.ToJsonString(Json.Options);
+    }
+
+    /// <summary>
+    /// Projection efficace des modifications nominatives dans le registre :
+    /// tous les changements du journal sont déjà chargés en mémoire.
+    /// </summary>
+    public static StudentListItem ApplyStudentEdits(StudentListItem row, IReadOnlyList<OutboxItem> pending)
+    {
+        JsonObject? view = null;
+        foreach (var item in pending)
+        {
+            if (item.Method != "PUT" || item.Path != $"api/apprenants/{row.Id}")
+                continue;
+            if (JsonNode.Parse(item.Body) is not JsonObject change) continue;
+            view ??= JsonSerializer.SerializeToNode(row, Json.Options)!.AsObject();
+            CopyStudentFields(view, change);
+        }
+        return view is null ? row : view.Deserialize<StudentListItem>(Json.Options) ?? row;
     }
 
     /// <summary>
