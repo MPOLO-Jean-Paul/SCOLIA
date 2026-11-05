@@ -14,7 +14,7 @@ public sealed class StaffAttendanceMark : Entity
     public TimeOnly Time { get; set; }
     public int UtcOffsetMinutes { get; set; }
     public string AccountName { get; set; } = string.Empty;
-    /// <summary>Vrai pour une entrée à 08:00:00 ou après.</summary>
+    /// <summary>Vrai pour une entrée après 08:00:00 (08:00:00 est ponctuel).</summary>
     public bool IsLate { get; set; }
 }
 
@@ -41,7 +41,7 @@ public static class StaffAttendanceRules
     public static readonly TimeOnly LateFrom = new(8, 0, 0);
     public const int LatesPerAbsence = 3;
 
-    public static bool IsLate(TimeOnly time) => time >= LateFrom;
+    public static bool IsLate(TimeOnly time) => time > LateFrom;
 
     public static bool IsWorkingDay(DateOnly day) => day.DayOfWeek is not (DayOfWeek.Saturday or DayOfWeek.Sunday);
 
