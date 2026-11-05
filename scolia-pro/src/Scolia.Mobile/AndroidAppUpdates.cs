@@ -40,7 +40,9 @@ public static class AndroidAppUpdates
     private const long MaxApkBytes = 350L * 1024 * 1024;
     // Le contrôle en ouvrant SCOLIA doit voir une publication récente ; WorkManager
     // reste à 6 h pour économiser la batterie hors de l'application.
-    private const long CheckSeconds = 15 * 60;
+    // Les ouvertures contrôlent une publication fraîche sans attendre quinze minutes.
+    // WorkManager conserve un intervalle de six heures pour la batterie.
+    private const long CheckSeconds = 2 * 60;
     private const string DeferredVersionKey = "deferred-version";
     private const string DeferredUntilKey = "deferred-until";
     private static readonly HttpClient Http = new() { Timeout = TimeSpan.FromSeconds(25) };
@@ -196,7 +198,7 @@ public static class AndroidAppUpdates
     /// <summary>Etat lisible de la vérification, même si Android a désactivé les notifications.</summary>
     public static string LastStatus(Context context) =>
         Preferences(context).GetString(LastStatusKey, null) ??
-        "Aucune recherche effectuée. Ouvrez Poste et réseau pour vérifier maintenant.";
+        "Aucune recherche effectuée. Ouvrez Mon compte puis Rechercher les mises à jour.";
 
     private static void Report(Context context, string message)
     {
@@ -249,7 +251,7 @@ public static class AndroidAppUpdates
             }
             activity.RunOnUiThread(() => new AlertDialog.Builder(activity)
                 .SetTitle("Vérification indisponible")
-                .SetMessage("Impossible de consulter GitHub Releases. Vérifiez Internet ou le VPN et réessayez.")
+                .SetMessage("Impossible de vérifier la publication officielle. Vérifiez Internet ou le VPN, puis réessayez dans Mon compte. Vos données scolaires sont conservées.")
                 .SetPositiveButton("Fermer", (_, _) => { })
                 .Show());
         }
@@ -259,6 +261,19 @@ public static class AndroidAppUpdates
     {
         try
         {
+            // Ne pas afficher les alertes pendant l'écran de lancement natif.
+            // L'utilisateur ne les voyait pas lorsque le splash couvrait l'activité.
+            if (Scolia.Bureau.Infrastructure.Platform.StartupTask is { } startup)
+            {
+                try { await startup; }
+                catch (Exception ex) when (ex is not OutOfMemoryException)
+                {
+                    Android.Util.Log.Warn("SCOLIA-MAJ", $"Interface non prête : {ex.GetType().Name}");
+                    return;
+                }
+            }
+            await Task.Delay(700);
+            if (!IsForeground(activity)) return;
             // Après l'autorisation « Installer des applications inconnues », reprendre
             // l'installation déjà consentie sans obliger à rechercher l'APK.
             if (waitingForInstallPermission)
@@ -380,11 +395,15 @@ public static class AndroidAppUpdates
         await using var stream = await response.Content.ReadAsStreamAsync();
         using var document = await JsonDocument.ParseAsync(stream);
         var root = document.RootElement;
-        if (!root.TryGetProperty("tag_name", out var tagValue)) return null;
+        if (!root.TryGetProperty("tag_name", out var tagValue))
+            throw new InvalidOperationException("La publication officielle n'indique pas sa version.");
         var tag = tagValue.GetString() ?? "";
         var version = Regex.Match(tag, @"(?<!\d)(\d+)\.(\d+)\.(\d+)(?!\d)");
-        if (!version.Success || !IsNewer(context, version.Value)) return null;
-        if (!root.TryGetProperty("assets", out var assets) || assets.ValueKind != JsonValueKind.Array) return null;
+        if (!version.Success)
+            throw new InvalidOperationException("La version GitHub officielle est invalide.");
+        if (!IsNewer(context, version.Value)) return null;
+        if (!root.TryGetProperty("assets", out var assets) || assets.ValueKind != JsonValueKind.Array)
+            throw new InvalidOperationException("La nouvelle publication ne contient aucun APK vérifiable.");
 
         foreach (var asset in assets.EnumerateArray())
         {
@@ -398,7 +417,9 @@ public static class AndroidAppUpdates
             if (!TrustedDownload(url)) continue;
             return new Release(version.Value, url, digest[7..].ToUpperInvariant(), size);
         }
-        return null;
+        // Une release existe mais l'APK ou son empreinte n'est pas encore validé.
+        // Un faux message « déjà à jour » masquerait cette anomalie.
+        throw new InvalidOperationException($"La version {version.Value} n'a pas d'APK Android vérifiable.");
     }
 
     private static bool TrustedDownload(string address) =>
@@ -412,7 +433,10 @@ public static class AndroidAppUpdates
     {
         var v = Version.TryParse(candidate, out var parsed) ? parsed : null;
         var installedName = context.PackageManager?.GetPackageInfo(context.PackageName!, 0)?.VersionName;
-        var installed = Version.TryParse(installedName, out var current) ? current : null;
+        // Quelques constructeurs renvoient un VersionName non standard :
+        // repli sur la version embarquée dans SCOLIA, pas sur une valeur inconnue.
+        var installed = Version.TryParse(installedName, out var current) ? current
+            : Version.TryParse(Scolia.Bureau.Infrastructure.AboutInfo.Version, out var bundled) ? bundled : null;
         return v is not null && installed is not null && v.CompareTo(installed) > 0;
     }
 
