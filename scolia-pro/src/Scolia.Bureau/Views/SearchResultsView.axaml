@@ -72,13 +72,13 @@
                   </Border>
                   <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
                     <TextBlock Text="{Binding Title}" FontSize="14" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
-                    <WrapPanel Orientation="Horizontal">
-                      <Border Classes="typepill" Margin="0,0,7,2">
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="7">
+                      <Border Classes="typepill" VerticalAlignment="Top">
                         <TextBlock Text="{Binding Type}" FontSize="11" FontWeight="Medium" />
                       </Border>
-                      <TextBlock Text="{Binding Subtitle}" Classes="muted" FontSize="12"
+                      <TextBlock Grid.Column="1" Text="{Binding Subtitle}" Classes="muted" FontSize="12"
                                  TextWrapping="Wrap" MaxLines="2" VerticalAlignment="Center" />
-                    </WrapPanel>
+                    </Grid>
                   </StackPanel>
                   <mi:MaterialIcon Grid.Column="2" Kind="ChevronRight" Width="16" Height="16"
                                    Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" />
