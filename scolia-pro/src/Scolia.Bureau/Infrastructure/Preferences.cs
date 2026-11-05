@@ -53,6 +53,9 @@ public sealed class Preferences : Observable
     [
         ("systeme", "Système (Segoe UI)", "", $"Segoe UI Variable Text, Segoe UI, {Bundled}Inter", false),
         ("android", "", "Système Android (Roboto)", $"Roboto, {Bundled}Inter", true),
+        // Windows : option Roboto indépendante du choix Android ; Inter prend le relais
+        // si la famille Roboto n'est pas installée sur l'ordinateur.
+        ("roboto", "Roboto", "", $"Roboto, {Bundled}Inter", false),
         ("inter", "Inter", "Inter", $"{Bundled}Inter", true),
         ("calibri", "Calibri", "Carlito (comme Calibri)", $"Calibri, {Bundled}Carlito", true),
         ("arial", "Arial", "Liberation Sans (comme Arial)", $"Arial, {Bundled}Liberation Sans", true),
