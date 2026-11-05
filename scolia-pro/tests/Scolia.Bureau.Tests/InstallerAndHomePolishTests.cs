@@ -79,11 +79,24 @@ public sealed class InstallerAndHomePolishTests
             e.Attributes().Any(a => a.Name.LocalName == "Name" && a.Value == "WelcomeQuickActions") &&
             e.Attributes().Any(a => a.Name.LocalName == "Grid.Column" && a.Value == "2"));
         Assert.Contains(elements, e => e.Name.LocalName == "UniformGrid" &&
-            e.Attributes().Any(a => a.Name.LocalName.EndsWith("MinItemWidth", StringComparison.Ordinal) && a.Value == "132"));
+            e.Attributes().Any(a => a.Name.LocalName.EndsWith("MinItemWidth", StringComparison.Ordinal) && a.Value == "112"));
         Assert.Contains(elements, e => e.Name.LocalName == "Grid" &&
             e.Attributes().Any(a => a.Name.LocalName.EndsWith("StackBelow", StringComparison.Ordinal) && a.Value == "410"));
         Assert.Contains(elements, e => e.Name.LocalName == "Grid" &&
             e.Attributes().Any(a => a.Name.LocalName.EndsWith("StackBelow", StringComparison.Ordinal) && a.Value == "760"));
+        // Les informations essentielles sont désormais sur une seule ligne.
+        foreach (var property in new[] { "Greeting", "AccountContextLine", "ShortTitle",
+            "Value", "Hint" })
+        {
+            Assert.Contains(elements, e => e.Name.LocalName == "TextBlock" &&
+                e.Attributes().Any(a => a.Name.LocalName == "Text" && a.Value.Contains(property)) &&
+                e.Attributes().Any(a => a.Name.LocalName == "MaxLines" && a.Value == "1") &&
+                e.Attributes().Any(a => a.Name.LocalName == "TextTrimming" && a.Value == "CharacterEllipsis"));
+        }
+        // Le bandeau garde ses deux boutons à droite, sans retour sous le salut.
+        var logic = File.ReadAllText(Source("src/Scolia.Bureau/Views/HomeView.axaml.cs"));
+        Assert.Contains("Math.Min(244, Math.Max(98, available * 0.34))", logic, StringComparison.Ordinal);
+        Assert.Contains("WelcomeQuickActions.Width = rightWidth", logic, StringComparison.Ordinal);
         Assert.Contains(elements, e => e.Name.LocalName == "Button" &&
             e.Attributes().Any(a => a.Name.LocalName == "Command" && a.Value.Contains("ShowAllTools")));
     }
