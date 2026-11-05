@@ -33,7 +33,16 @@ public sealed record PairingCode(string School, string Machine, IReadOnlyList<Ur
             "e=" + Uri.EscapeDataString(School),
             "m=" + Uri.EscapeDataString(Machine),
         };
-        if (Addresses.Count > 0) parts.Add("a=" + string.Join(',', Addresses.Take(MaxAddresses).Select(a => $"{Host(a)}:{a.Port}")));
+        // Le format v1 historique ne sait pas transporter un schema. Ne jamais
+        // transformer une URL HTTPS en HTTP au moment de dessiner le QR.
+        var clear = Addresses.Where(a => a.Scheme == Uri.UriSchemeHttp).Take(MaxAddresses).ToArray();
+        if (clear.Length > 0)
+            parts.Add("a=" + string.Join(',', clear.Select(a => $"{Host(a)}:{a.Port}")));
+        // Extension compatible v1 : une adresse HTTPS Tailnet strictement valide.
+        // Les anciens clients ignorent "h" ; les nouveaux privilegient cette voie.
+        var secure = Addresses.FirstOrDefault(a => a.Scheme == Uri.UriSchemeHttps
+            && a.Port == 443 && TailscaleEndpoint.IsSecureTailnetDns(a.Host));
+        if (secure is not null) parts.Add("h=" + Uri.EscapeDataString(secure.Host));
         if (HasInvitation) parts.Add("l=" + Uri.EscapeDataString(Invitation!));
         if (!string.IsNullOrWhiteSpace(AccessTicket)) parts.Add("p=" + Uri.EscapeDataString(AccessTicket));
         return Prefix + string.Join('&', parts);
@@ -74,6 +83,18 @@ public sealed record PairingCode(string School, string Machine, IReadOnlyList<Ur
         }
 
         var addresses = new List<Uri>();
+        if (values.TryGetValue("h", out var httpsHost))
+        {
+            if (httpsHost.Contains(':') || httpsHost.Contains('/') || httpsHost.Contains('\\')
+                || !TailscaleEndpoint.IsSecureTailnetDns(httpsHost)
+                || !Uri.TryCreate($"https://{httpsHost}/", UriKind.Absolute, out var secure)
+                || secure.Port != 443 || secure.UserInfo.Length > 0 || secure.Query.Length > 0)
+            {
+                error = "L'adresse HTTPS du code QR est invalide : aucune connexion HTTP de remplacement n'a ete lancee.";
+                return false;
+            }
+            addresses.Add(secure);
+        }
         if (values.TryGetValue("a", out var list))
             foreach (var item in list.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Take(MaxAddresses))
                 if (ToAddress(item) is { } uri && !addresses.Contains(uri)) addresses.Add(uri);
@@ -105,9 +126,15 @@ public sealed record PairingCode(string School, string Machine, IReadOnlyList<Ur
     {
         var found = new List<Uri>();
         foreach (var text in addresses)
-            if (Uri.TryCreate(text, UriKind.Absolute, out var uri) && IsAllowed(uri.Host) && !found.Contains(uri)) found.Add(uri);
-        // Le Wi-Fi d'abord : c'est la voie la plus rapide quand les deux appareils sont sur place.
-        var ordered = found.OrderBy(TailscaleEndpoint.IsTailnetAddress).Take(MaxAddresses).ToList();
+            if (Uri.TryCreate(text, UriKind.Absolute, out var uri)
+                && (uri.Scheme == Uri.UriSchemeHttp
+                    || (uri.Scheme == Uri.UriSchemeHttps && uri.Port == 443
+                        && TailscaleEndpoint.IsSecureTailnetDns(uri.Host)))
+                && IsAllowed(uri.Host) && !found.Contains(uri)) found.Add(uri);
+        // HTTPS Tailscale en premier lorsqu'il est configure ; sinon Wi-Fi et
+        // Tailscale HTTP restent dans leur ancien ordre.
+        var ordered = found.OrderBy(uri => uri.Scheme == Uri.UriSchemeHttps ? 0
+            : TailscaleEndpoint.IsTailnetAddress(uri) ? 2 : 1).Take(MaxAddresses).ToList();
         return new PairingCode(school, machine, ordered, invitation);
     }
 

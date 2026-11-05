@@ -64,6 +64,26 @@
 
         <Border Height="1" Background="{DynamicResource LineBrush}" Margin="58,0,0,0" />
 
+        <!-- Publication HTTPS privee sans creation de certificats dans SCOLIA. -->
+        <Grid ColumnDefinitions="Auto,*,Auto" Margin="18,16" IsVisible="{Binding CanEnableAutomaticHttps}">
+          <Border Classes="appicon medium" Background="{DynamicResource ToneTeal}" Margin="0,0,14,0">
+            <mi:MaterialIcon Kind="ShieldLockOutline" />
+          </Border>
+          <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="5">
+            <TextBlock Text="HTTPS securise automatiquement" FontWeight="SemiBold" />
+            <TextBlock Text="{Binding HttpsStatus}" Classes="muted"
+                       TextWrapping="Wrap" FontSize="{DynamicResource FsSmall}" />
+            <TextBox Text="{Binding HttpsAddress}" IsReadOnly="True"
+                     IsVisible="{Binding HasHttpsAddress}" TextWrapping="Wrap" />
+            <TextBlock Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap"
+                       Text="Certificat et renouvellement geres par Tailscale. Premiere autorisation du reseau prive requise ; ne modifie pas le Wi-Fi HTTP." />
+          </StackPanel>
+          <Button Grid.Column="2" Classes="primary" Content="Activer HTTPS"
+                  Command="{Binding EnableAutomaticHttps}"
+                  VerticalAlignment="Center" Margin="12,0,0,0" />
+        </Grid>
+        <Border Height="1" Background="{DynamicResource LineBrush}" Margin="58,0,0,0" IsVisible="{Binding CanEnableAutomaticHttps}" />
+
         <Grid ColumnDefinitions="Auto,*,Auto" Margin="18,16">
           <Border Classes="appicon medium" Background="{DynamicResource ToneNeutral}" Margin="0,0,14,0"><mi:MaterialIcon Kind="Power" /></Border>
           <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">

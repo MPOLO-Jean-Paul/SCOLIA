@@ -59,6 +59,21 @@ public static class PairingFlow
     {
         if (!PairingCode.TryParse(text, out var code, out var error) || code is null) return error;
 
+        // Une adresse HTTPS verifiee par Tailscale prevaut sur HTTP : un echec
+        // ne doit jamais provoquer une retrogradation silencieuse en clair.
+        var secureAddresses = code.TailnetAddresses
+            .Where(address => address.Scheme == Uri.UriSchemeHttps).ToArray();
+        if (secureAddresses.Length > 0)
+        {
+            progress?.Invoke("Connexion HTTPS securisee via Tailscale…");
+            var secure = await CheckRoutesAsync(secureAddresses, code, tailnet: true);
+            if (secure is null)
+                return "Le serveur HTTPS n'est pas accessible. Activez Tailscale sur les deux appareils et verifiez le certificat ; SCOLIA ne revient pas silencieusement a HTTP.";
+            await shell.JoinAsync(new DiscoveredServer(secure.Address.Host, secure.School,
+                Machine(code, secure.Address), string.Empty, secure.Address));
+            return await ActivateAsync(shell, code, secure.School, "HTTPS prive Tailscale");
+        }
+
         // Essayer toutes les adresses Wi-Fi en parallèle (certains équipements ont
         // plusieurs cartes réseau). Préparer Tailscale simultanément pour éviter
         // d'attendre des délais séquentiels sur des adresses obsolètes.
