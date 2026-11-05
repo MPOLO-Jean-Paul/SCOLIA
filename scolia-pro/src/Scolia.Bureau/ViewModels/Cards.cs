@@ -23,7 +23,13 @@ public sealed class CardRowVm(CardCandidateDto source, string diagnostic, Action
     public bool Selected
     {
         get => selected;
-        set { if (Set(ref selected, value)) onSelectionChanged?.Invoke(EnrollmentId, value); }
+        set
+        {
+            // Une carte bloquée par un statut ou un matricule répété ne peut jamais entrer
+            // dans un lot, même si la case de la grille reçoit un clic.
+            if (value && !Selectable) return;
+            if (Set(ref selected, value)) onSelectionChanged?.Invoke(EnrollmentId, value);
+        }
     }
 }
 
