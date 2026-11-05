@@ -2,13 +2,14 @@
 ; Compile les fichiers publies dans artifacts/SCOLIA via Inno Setup 6+.
 ; L'installeur est autonome ; il ne depend ni de .NET installe ni d'Excel.
 #ifndef AppVersion
-  #define AppVersion "1.2.20"
+  #define AppVersion "1.2.22"
 #endif
 
 #define AppName "SCOLIA Pro"
 #define AppPublisher "JP-Services"
 #define AppExe "SCOLIA.exe"
-#define AppWeb "https://github.com/MPOLO-Jean-Paul/SCOLIA"
+#define AppContactEmail "jeanpaulmpolo242@gmail.com"
+#define AppSupportLink "mailto:{#AppContactEmail}"
 
 [Setup]
 AppId=JP-Services.SCOLIA-Pro.Desktop
@@ -16,9 +17,11 @@ AppName={#AppName}
 AppVersion={#AppVersion}
 AppVerName={#AppName} {#AppVersion}
 AppPublisher={#AppPublisher}
-AppPublisherURL={#AppWeb}
-AppSupportURL={#AppWeb}/issues
-AppUpdatesURL={#AppWeb}
+AppContact={#AppContactEmail}
+AppPublisherURL={#AppSupportLink}
+AppSupportURL={#AppSupportLink}
+; Les mises à jour restent détectées et téléchargées par SCOLIA Pro,
+; sans afficher de lien GitHub dans l'assistant d'installation Windows.
 AppCopyright=Copyright 2026 JP-Services
 AppComments=Gestion scolaire : apprenants, paiements, scolarite, rapports et partage prive.
 VersionInfoVersion={#AppVersion}
