@@ -182,8 +182,8 @@ public sealed class StudentCardsApiTests : IDisposable
         using (var stream = document.Open())
         {
             var xml = System.Xml.Linq.XDocument.Load(stream);
-            // Trois cartes : un logo réellement configuré et un QR par exemplaire.
-            Assert.Equal(6, xml.Descendants().Count(e => e.Name.LocalName == "drawing"));
+            // Trois cartes : logo configuré en haut et en bas, et QR par exemplaire.
+            Assert.Equal(9, xml.Descendants().Count(e => e.Name.LocalName == "drawing"));
             var printed = string.Join(" ", xml.Descendants()
                 .Where(e => e.Name.LocalName == "t").Select(e => e.Value));
             Assert.Contains("INSTITUT DE TEST", printed, StringComparison.Ordinal);
