@@ -38,9 +38,11 @@ public static class AndroidAppUpdates
     private const int DownloadSuccessStatus = UpdateCompletionPolicy.Successful;
     private const int DownloadFailureStatus = UpdateCompletionPolicy.Failed;
     private const long MaxApkBytes = 350L * 1024 * 1024;
-    // Le contrôle en ouvrant SCOLIA doit voir une publication récente ; WorkManager
-    // reste à 6 h pour économiser la batterie hors de l'application.
-    private const long CheckSeconds = 15 * 60;
+    // Une réouverture au premier plan ne doit pas masquer une nouvelle Release
+    // à cause d'un résultat négatif gardé trop longtemps (ancienne attente : 15 min).
+    // Le contrôle de fond par WorkManager reste espacé de six heures.
+    private const long CheckSeconds = 2 * 60;
+    private static int firstResumeInProcess = 1;
     private const string DeferredVersionKey = "deferred-version";
     private const string DeferredUntilKey = "deferred-until";
     private static readonly HttpClient Http = new() { Timeout = TimeSpan.FromSeconds(25) };
@@ -51,6 +53,7 @@ public static class AndroidAppUpdates
     private static bool installDialogOpen;
     private static WeakReference<Activity>? foregroundActivity;
     private static CancellationTokenSource? foregroundDownloadWatch;
+    private static CancellationTokenSource? foregroundReleaseWatch;
 
     internal sealed record Release(string Version, string DownloadUrl, string Sha256, long Size);
 
@@ -75,7 +78,12 @@ public static class AndroidAppUpdates
         // en cas de signal perdu, un contrôle léger du statut déclenche la fenêtre Installer.
         if (Preferences(activity).GetLong(DownloadIdKey, 0) > 0)
             StartForegroundDownloadWatch(activity);
-        _ = ResumeAsync(activity);
+        // Dès le premier retour au premier plan après le lancement du processus,
+        // consulter réellement la dernière Release, même si un ancien résultat
+        // négatif était encore mis en cache. Les reprises suivantes sont limitées.
+        var coldLaunch = Interlocked.Exchange(ref firstResumeInProcess, 0) == 1;
+        _ = ResumeAsync(activity, coldLaunch);
+        StartForegroundReleaseWatch(activity);
     }
 
     public static void OnPause(Activity activity)
@@ -84,6 +92,7 @@ public static class AndroidAppUpdates
         {
             foregroundActivity = null;
             StopForegroundDownloadWatch();
+            StopForegroundReleaseWatch();
         }
         // Un dialogue disparu avec l'activité ne doit jamais bloquer
         // les prochaines propositions de téléchargement ou d'installation.
@@ -110,6 +119,48 @@ public static class AndroidAppUpdates
         var source = new CancellationTokenSource();
         foregroundDownloadWatch = source;
         _ = WatchDownloadAsync(activity, source.Token);
+    }
+
+    /// <summary>
+    /// Une application laissée ouverte doit continuer à découvrir les nouvelles versions :
+    /// WorkManager à six heures ne suffit pas pour une session d'encaissement prolongée.
+    /// La boucle ne fonctionne QUE tant que la fenêtre du téléphone est au premier plan.
+    /// </summary>
+    private static void StartForegroundReleaseWatch(Activity activity)
+    {
+        StopForegroundReleaseWatch();
+        var source = new CancellationTokenSource();
+        foregroundReleaseWatch = source;
+        _ = WatchReleasesAsync(activity, source.Token);
+    }
+
+    private static void StopForegroundReleaseWatch()
+    {
+        var previous = foregroundReleaseWatch;
+        foregroundReleaseWatch = null;
+        previous?.Cancel();
+        previous?.Dispose();
+    }
+
+    private static async Task WatchReleasesAsync(Activity activity, CancellationToken cancellation)
+    {
+        try
+        {
+            while (!cancellation.IsCancellationRequested)
+            {
+                await Task.Delay(TimeSpan.FromMinutes(8), cancellation);
+                if (!IsForeground(activity)) break;
+                try { await CheckLatestAsync(activity, showDialog: true); }
+                catch (Exception ex) when (ex is HttpRequestException or JsonException
+                    or IOException or TaskCanceledException or InvalidOperationException
+                    or Java.Lang.Exception)
+                {
+                    Android.Util.Log.Warn("SCOLIA-MAJ", $"Vérification périodique différée : {ex.GetType().Name}");
+                    Report(activity, "Vérification automatique reportée ; la recherche manuelle reste disponible.");
+                }
+            }
+        }
+        catch (OperationCanceledException) { }
     }
 
     private static int? DownloadStatus(Context context, long id)
@@ -196,7 +247,7 @@ public static class AndroidAppUpdates
     /// <summary>Etat lisible de la vérification, même si Android a désactivé les notifications.</summary>
     public static string LastStatus(Context context) =>
         Preferences(context).GetString(LastStatusKey, null) ??
-        "Aucune recherche effectuée. Ouvrez Poste et réseau pour vérifier maintenant.";
+        "Aucune recherche effectuée. Ouvrez Mon compte → Mises à jour pour vérifier maintenant.";
 
     private static void Report(Context context, string message)
     {
@@ -255,7 +306,7 @@ public static class AndroidAppUpdates
         }
     }
 
-    private static async Task ResumeAsync(Activity activity)
+    private static async Task ResumeAsync(Activity activity, bool forceRefreshOnLaunch)
     {
         try
         {
@@ -286,7 +337,8 @@ public static class AndroidAppUpdates
             // attendre les délais d'Internet. Mais la recherche ne s'arrête
             // JAMAIS là : on consulte aussi GitHub lorsque l'APK est en attente.
             bool pending = await CheckDownloadAsync(activity);
-            try { await CheckLatestAsync(activity, showDialog: !pending); }
+            try { await CheckLatestAsync(activity, showDialog: !pending,
+                forceRefresh: forceRefreshOnLaunch); }
             catch (Exception ex) when (ex is IOException or HttpRequestException or
                 JsonException or TaskCanceledException or Java.Lang.Exception or InvalidOperationException)
             {
@@ -386,10 +438,11 @@ public static class AndroidAppUpdates
         if (!version.Success || !IsNewer(context, version.Value)) return null;
         if (!root.TryGetProperty("assets", out var assets) || assets.ValueKind != JsonValueKind.Array) return null;
 
+        var expectedName = $"SCOLIA_Pro_{version.Value}_Android.apk";
         foreach (var asset in assets.EnumerateArray())
         {
             var name = asset.GetProperty("name").GetString() ?? "";
-            if (!Regex.IsMatch(name, @"^SCOLIA_Pro_\d+\.\d+\.\d+_Android\.apk$")) continue;
+            if (!string.Equals(name, expectedName, StringComparison.Ordinal)) continue;
             var digest = asset.TryGetProperty("digest", out var hashValue) ? hashValue.GetString() ?? "" : "";
             if (!Regex.IsMatch(digest, @"^sha256:[a-fA-F0-9]{64}$")) continue; // refuser un fichier invérifiable
             long size = asset.GetProperty("size").GetInt64();
@@ -398,7 +451,10 @@ public static class AndroidAppUpdates
             if (!TrustedDownload(url)) continue;
             return new Release(version.Value, url, digest[7..].ToUpperInvariant(), size);
         }
-        return null;
+        // La publication est récente mais ne comporte aucun APK vérifiable :
+        // ne jamais présenter ce cas comme « Vous êtes à jour ».
+        throw new InvalidOperationException(
+            "Une nouvelle version est publiée, mais aucun APK Android avec empreinte SHA-256 valide n'est disponible.");
     }
 
     private static bool TrustedDownload(string address) =>
@@ -432,6 +488,11 @@ public static class AndroidAppUpdates
     private static void OfferUpdate(Activity activity, Release release, bool manual = false)
     {
         if (activity.IsFinishing || activity.IsDestroyed) return;
+        if (!IsForeground(activity))
+        {
+            NotifyOnce(activity, release);
+            return;
+        }
         var prefs = Preferences(activity);
         if (!manual && prefs.GetString(DeferredVersionKey, null) == release.Version &&
             DateTimeOffset.UtcNow.ToUnixTimeSeconds() < prefs.GetLong(DeferredUntilKey, 0))
@@ -444,7 +505,7 @@ public static class AndroidAppUpdates
         if (!manual && promptedVersion == release.Version) return;
         activity.RunOnUiThread(() =>
         {
-            if (activity.IsFinishing || activity.IsDestroyed)
+            if (activity.IsFinishing || activity.IsDestroyed || !IsForeground(activity))
             {
                 NotifyOnce(activity, release);
                 return;

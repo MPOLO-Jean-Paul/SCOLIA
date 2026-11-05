@@ -6,8 +6,8 @@
     <OutputType>Exe</OutputType>
     <ApplicationTitle>SCOLIA Phone</ApplicationTitle>
     <ApplicationId>com.jpservices.scolia.ios</ApplicationId>
-    <ApplicationVersion>144</ApplicationVersion>
-    <ApplicationDisplayVersion>1.2.24</ApplicationDisplayVersion>
+    <ApplicationVersion>145</ApplicationVersion>
+    <ApplicationDisplayVersion>1.2.25</ApplicationDisplayVersion>
     <AssemblyName>SCOLIA</AssemblyName>
     <RootNamespace>Scolia.Phone.iOS</RootNamespace>
     <!-- La cible est donnée à chaque compilation : -r ios-arm64 (iPhone, iPad) ou -r iossimulator-arm64.
