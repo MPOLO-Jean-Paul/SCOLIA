@@ -7,7 +7,7 @@ using Scolia.Bureau.Ribbon;
 namespace Scolia.Bureau.ViewModels;
 
 /// <summary>Apprenant dans la liste des cartes : la case Carte choisit les impressions.</summary>
-public sealed class CardRowVm(CardCandidateDto source, string diagnostic) : Observable
+public sealed class CardRowVm(CardCandidateDto source, string diagnostic, Action<Guid, bool>? onSelectionChanged = null) : Observable
 {
     private bool selected;
 
@@ -19,7 +19,11 @@ public sealed class CardRowVm(CardCandidateDto source, string diagnostic) : Obse
     public string Diagnostic { get; } = diagnostic;
     public bool Selectable { get; } = source.Eligible && source.IdentityComplete && !source.DuplicateMatricule;
 
-    public bool Selected { get => selected; set => Set(ref selected, value); }
+    public bool Selected
+    {
+        get => selected;
+        set { if (Set(ref selected, value)) onSelectionChanged?.Invoke(EnrollmentId, value); }
+    }
 }
 
 /// <summary>Cartes d'accès aux examens (V79 : Scolarité > Cartes) : choix des apprenants, session, exemplaires et export PDF.</summary>
@@ -44,6 +48,9 @@ public sealed class CardsPage : PageViewModel
     private bool includeLeft;
     private bool ready;
     private string subtitle = string.Empty;
+    // Conserve le lot sélectionné lorsque l'on filtre ou parcourt plusieurs promotions.
+    private readonly HashSet<Guid> selectedCardIds = [];
+    public int SelectedCount => selectedCardIds.Count;
 
     public CardsPage(ShellViewModel shell) : base(shell)
     {
@@ -107,7 +114,11 @@ public sealed class CardsPage : PageViewModel
         foreach (var c in candidates)
         {
             var diagnostic = !c.IdentityComplete ? "Identité incomplète" : c.DuplicateMatricule ? "Matricule répété" : !c.Eligible ? $"Exclu : {c.Status}" : string.Empty;
-            Rows.Add(new CardRowVm(c, diagnostic));
+            var row = new CardRowVm(c, diagnostic, SelectionChanged)
+            {
+                Selected = c.Eligible && c.IdentityComplete && !c.DuplicateMatricule && selectedCardIds.Contains(c.EnrollmentId),
+            };
+            Rows.Add(row);
         }
         // Sous-titre court : il tient sur deux lignes d'un téléphone. Le nombre d'apprenants n'est rappelé que s'il diffère.
         var printable = Rows.Count(r => r.Selectable);
@@ -118,11 +129,22 @@ public sealed class CardsPage : PageViewModel
         Raise(nameof(Subtitle));
     }
 
+    private void SelectionChanged(Guid enrollmentId, bool isSelected)
+    {
+        if (isSelected) selectedCardIds.Add(enrollmentId);
+        else selectedCardIds.Remove(enrollmentId);
+        Raise(nameof(SelectedCount));
+    }
+
     private void SetAll(bool value)
     {
+        // « Tout décocher » concerne le lot entier, y compris les autres promotions.
+        if (!value) selectedCardIds.Clear();
         var rows = Rows.Where(r => r.Selectable).ToList();
         foreach (var row in rows) row.Selected = value;
-        Shell.Notify(value ? $"{Format.Count(rows.Count, "apprenant coché", "apprenants cochés")} pour les cartes." : "Aucun apprenant coché.");
+        Raise(nameof(SelectedCount));
+        Shell.Notify(value ? $"{Format.Count(selectedCardIds.Count, "apprenant coché", "apprenants cochés")} pour les cartes."
+            : "Sélection du lot annulée.");
     }
 
     private static IReadOnlyList<ChoiceItem> YearChoices()
@@ -135,7 +157,7 @@ public sealed class CardsPage : PageViewModel
 
     private async Task ExportAsync()
     {
-        var ids = Rows.Where(r => r.Selected && r.Selectable).Select(r => r.EnrollmentId).ToList();
+        var ids = selectedCardIds.ToList();
         if (ids.Count == 0)
         {
             Shell.Notify("Cochez au moins un apprenant imprimable.");
@@ -150,6 +172,8 @@ public sealed class CardsPage : PageViewModel
         Shell.Notify(skipped == 0
             ? "Cartes générées et enregistrées dans Téléchargements."
             : $"Cartes générées. {skipped} apprenant(s) écarté(s) : sortis, suspendus, identité incomplète ou matricule répété.");
+        selectedCardIds.Clear();
+        Raise(nameof(SelectedCount));
         await RefreshAsync();
     }
 
