@@ -82,9 +82,9 @@ public sealed class BatchRowVm : Observable
     {
         Failed = !line.Ok;
         Result = line.Ok ? $"OK · {line.ReceiptNumber}" : $"Erreur · {line.Error}";
-        selected = !line.Ok;
-        Raise(nameof(Selected));
-        changed(this);
+        // Une erreur de validation ne sélectionne jamais une ligne retirée manuellement.
+        // Une réussite retire la ligne du lot et évite un deuxième encaissement.
+        if (line.Ok) Selected = false;
     }
 }
 
