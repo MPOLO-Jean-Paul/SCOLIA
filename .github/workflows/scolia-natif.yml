@@ -6,6 +6,7 @@ on:
       - 'scolia-pro/scripts/publier-android.sh'
       - 'scolia-pro/scripts/cle-android.sh'
       - 'scolia-pro/scripts/install-android-sdk-retry.sh'
+      - 'scolia-pro/scripts/recuperer-cle-android-cache-1217.sh'
       - 'scolia-pro/scripts/windows/**'
       - 'scolia-pro/src/Scolia.Bureau/**'
       - 'scolia-pro/src/Scolia.Mobile/**'
@@ -23,6 +24,7 @@ on:
       - 'scolia-pro/scripts/publier-android.sh'
       - 'scolia-pro/scripts/cle-android.sh'
       - 'scolia-pro/scripts/install-android-sdk-retry.sh'
+      - 'scolia-pro/scripts/recuperer-cle-android-cache-1217.sh'
       - 'scolia-pro/scripts/windows/**'
       - 'scolia-pro/src/Scolia.Bureau/**'
       - 'scolia-pro/src/Scolia.Mobile/**'
@@ -109,19 +111,55 @@ jobs:
         if: github.event_name != 'push' || github.ref != 'refs/heads/release/direct-apk-scolia-pro-20261103'
         shell: bash
         run: bash scripts/cle-android.sh "$RUNNER_TEMP/scolia-validation-signature"
-      - name: Exiger la cle officielle de signature pour la distribution
+      # La cle historique 1.2.16 a ete utilisee depuis le cache
+      # scolia-android-signature-v1 (run 41869248798). Pour 1.2.17 UNIQUEMENT,
+      # essayer de recuperer CETTE cle si les secrets officiels manquent.
+      # Cette exception ne sera pas reutilisee apres la publication 1.2.17.
+      - name: Determiner la source de signature officielle
         if: github.event_name == 'push' && github.ref == 'refs/heads/release/direct-apk-scolia-pro-20261103'
+        id: source_cle_officielle
         shell: bash
         env:
           SCOLIA_ANDROID_KEYSTORE: ${{ secrets.SCOLIA_ANDROID_KEYSTORE }}
           SCOLIA_ANDROID_KEYSTORE_PASS: ${{ secrets.SCOLIA_ANDROID_KEYSTORE_PASS }}
         run: |
           set -euo pipefail
-          if [[ -z "$SCOLIA_ANDROID_KEYSTORE" || -z "$SCOLIA_ANDROID_KEYSTORE_PASS" ]]; then
-            echo "::error::Cle Android officielle absente. Configurer SCOLIA_ANDROID_KEYSTORE et SCOLIA_ANDROID_KEYSTORE_PASS dans les secrets Actions du depot. Aucun APK de validation ne peut etre publie." >&2
+          version="$(sed -n 's:.*<Version>\(.*\)</Version>.*:\1:p' Directory.Build.props | head -1)"
+          if [[ -n "$SCOLIA_ANDROID_KEYSTORE" && -n "$SCOLIA_ANDROID_KEYSTORE_PASS" ]]; then
+            echo "source=secrets" >> "$GITHUB_OUTPUT"
+          elif [[ -z "$SCOLIA_ANDROID_KEYSTORE" && -z "$SCOLIA_ANDROID_KEYSTORE_PASS" && "$version" == "1.2.17" ]]; then
+            echo "::notice::Recherche de la cle historique dans le cache Actions pour 1.2.17 uniquement."
+            echo "source=cache_historique_1217" >> "$GITHUB_OUTPUT"
+          else
+            echo "::error::Secrets officiels de signature absents ou incomplets. Le secours par cache n'est autorise que pour 1.2.17." >&2
             exit 1
           fi
-          bash scripts/cle-android.sh "$RUNNER_TEMP/scolia-official-signature"
+      - name: Recuperer le cache historique uniquement pour 1.2.17
+        if: steps.source_cle_officielle.outputs.source == 'cache_historique_1217'
+        id: cache_historique_1217
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.scolia-signature
+          key: scolia-android-signature-v1
+          lookup-only: false
+      - name: Charger la cle officielle apres verification
+        if: github.event_name == 'push' && github.ref == 'refs/heads/release/direct-apk-scolia-pro-20261103'
+        shell: bash
+        env:
+          SCOLIA_ANDROID_KEYSTORE: ${{ secrets.SCOLIA_ANDROID_KEYSTORE }}
+          SCOLIA_ANDROID_KEYSTORE_PASS: ${{ secrets.SCOLIA_ANDROID_KEYSTORE_PASS }}
+          SCOLIA_SIGNATURE_SOURCE: ${{ steps.source_cle_officielle.outputs.source }}
+          SCOLIA_CACHE_HIT: ${{ steps.cache_historique_1217.outputs.cache-hit }}
+        run: |
+          set -euo pipefail
+          if [[ "$SCOLIA_SIGNATURE_SOURCE" == "secrets" ]]; then
+            bash scripts/cle-android.sh "$RUNNER_TEMP/scolia-official-signature"
+          elif [[ "$SCOLIA_SIGNATURE_SOURCE" == "cache_historique_1217" && "$SCOLIA_CACHE_HIT" == "true" ]]; then
+            bash scripts/recuperer-cle-android-cache-1217.sh "$HOME/.scolia-signature"
+          else
+            echo "::error::Le cache contenant la cle originale est inaccessible ou absent. Ne jamais generer une nouvelle cle pour une mise a jour." >&2
+            exit 1
+          fi
       - name: Refuser un certificat different de la version Android deja installee
         shell: bash
         run: |
