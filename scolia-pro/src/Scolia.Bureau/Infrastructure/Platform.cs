@@ -91,6 +91,13 @@ public static class Platform
     public static Func<bool>? IsInForeground { get; set; }
 
     /// <summary>
+    /// Android : demande à WorkManager une reprise durable dès que le réseau est disponible,
+    /// après une écriture mise en attente. Aucune promesse de synchronisation immédiate.
+    /// Inactif sur Windows/iOS tant qu'aucun adaptateur natif n'est configuré.
+    /// </summary>
+    public static Action? RequestBackgroundSync { get; set; }
+
+    /// <summary>
     /// Recherche à la voix : le système écoute (Google sur Android, reconnaissance vocale d'Apple sur iPhone) et rend
     /// le texte dicté, ou rien si la personne annule. Vide sur l'ordinateur : le micro n'y est pas proposé.
     /// </summary>
