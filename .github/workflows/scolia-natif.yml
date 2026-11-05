@@ -355,8 +355,14 @@ jobs:
 
   android-publication-officielle:
     name: Publier automatiquement les versions Android et Windows sur GitHub Releases
-    # Publication reservee a la branche officielle et apres succes des tests.
-    if: github.event_name == 'push' && github.ref == 'refs/heads/release/direct-apk-scolia-pro-20261103'
+    # Push officiel avec secrets, OU exception ponctuelle depuis la PR #18
+    # portant la vraie cle historique (version 1.2.18 exclusivement).
+    if: >-
+      (github.event_name == 'push' && github.ref == 'refs/heads/release/direct-apk-scolia-pro-20261103') ||
+      (github.event_name == 'pull_request' && github.event.pull_request.number == 18 &&
+       github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'release/direct-apk-scolia-pro-20261103' &&
+       github.event.pull_request.base.ref == 'feature/scolia-recovery-login-lock-20261103')
     needs: [android-natif, windows-natif]
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -395,6 +401,24 @@ jobs:
           set -euo pipefail
           version="$(sed -n 's:.*<Version>\(.*\)</Version>.*:\1:p' Directory.Build.props | head -1)"
           [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo 'Version invalide'; exit 1; }
+          if [[ "$GITHUB_EVENT_NAME" == 'pull_request' ]]; then
+            if [[ "$SCOLIA_RECOVERY_PR18" != 'true' || "$GITHUB_REF" != 'refs/pull/18/merge' || "$version" != '1.2.18' ]]; then
+              echo '::error::PR de publication non autorisee, ou version differente de 1.2.18.' >&2
+              exit 1
+            fi
+            # Les jobs de compilation ont utilise exclusivement la tete de la
+            # branche officielle. Un nouveau commit pendant le build annule la
+            # publication pour eviter toute fuite d'artefacts perimes.
+            current="$(git ls-remote "https://github.com/${GH_REPO}.git" refs/heads/release/direct-apk-scolia-pro-20261103 | cut -f1)"
+            if [[ -z "$current" || "$current" != "$SCOLIA_CHECKOUT_REF" || "$(git rev-parse HEAD)" != "$current" ]]; then
+              echo "::error::La tete de la branche release a change pendant le build." >&2
+              exit 1
+            fi
+            echo '::notice::Release 1.2.18 depuis PR18, cle Android historique validee ; Windows sans Authenticode (procedure 1.2.17).'
+          elif [[ "$GITHUB_EVENT_NAME" != 'push' || "$GITHUB_REF" != 'refs/heads/release/direct-apk-scolia-pro-20261103' ]]; then
+            echo '::error::Contexte de publication non autorise.' >&2
+            exit 1
+          fi
           apk="artifacts/ota-apk/SCOLIA_Pro_${version}_Android.apk"
           sha="$apk.sha256"
           test -s "$apk" && test -s "$sha"
@@ -411,8 +435,8 @@ jobs:
             exit 0
           fi
           gh release create "$tag" "$apk" "$sha" "$setup" "$setup_sha" \
-            --repo "$GH_REPO" --target "$GITHUB_SHA" --latest \
+            --repo "$GH_REPO" --target "$SCOLIA_CHECKOUT_REF" --latest \
             --title "SCOLIA Pro ${version} - Android et Windows" \
-            --notes "Mise a jour Android et installateur Windows x64. SHA-256 publies. Confirmation obligatoire pour l'installation. Conserver les donnees scolaires locales et faire une sauvegarde avant une intervention sur le serveur."
+            --notes "Version 1.2.18. APK Android signe avec le certificat historique SCOLIA et verifie par apksigner. Installateur Windows x64 de la procedure historique 1.2.17 : non signe Authenticode lorsque publie via PR18, susceptible d'afficher un avertissement Windows. SHA-256 publies. Faire une sauvegarde des donnees scolaires avant mise a jour, ne pas desinstaller l'application Android pour contourner une erreur de signature."
           gh release view "$tag" --repo "$GH_REPO" --json url,assets \
             --jq '{url, fichiers: [.assets[] | select(.name | endswith(".apk") or endswith(".exe")) | {name,url,digest}]}'
