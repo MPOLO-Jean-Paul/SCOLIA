@@ -223,8 +223,12 @@
               <Button Classes="tooltile" Command="{Binding Open}" Margin="0,0,10,10" MinHeight="74" ToolTip.Tip="{Binding Description}">
                 <Grid ColumnDefinitions="Auto,*,Auto">
                   <Border Classes="appicon medium" Background="{Binding Brush}" VerticalAlignment="Center" Margin="0,0,12,0"><mi:MaterialIcon Kind="{Binding Icon}" /></Border>
-                  <!-- Un titre net ; l'explication reste dans l'info-bulle, au survol -->
-                  <TextBlock Grid.Column="1" Text="{Binding Title}" FontWeight="SemiBold" TextWrapping="Wrap" MaxLines="2" VerticalAlignment="Center" />
+                  <!-- Nom et fonction visibles pour guider l'utilisateur. -->
+                  <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextWrapping="Wrap" MaxLines="2" />
+                    <TextBlock Text="{Binding Description}" Classes="muted" FontSize="{DynamicResource FsSmall}"
+                               TextWrapping="Wrap" MaxLines="2" />
+                  </StackPanel>
                   <mi:MaterialIcon Grid.Column="2" Kind="ChevronRight" Width="16" Height="16" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" Margin="6,0,0,0" />
                 </Grid>
               </Button>
