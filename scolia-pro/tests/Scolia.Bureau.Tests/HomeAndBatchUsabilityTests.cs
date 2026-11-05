@@ -27,7 +27,8 @@ public sealed class HomeAndBatchUsabilityTests
             && x.Attributes().Any(a => a.Name.LocalName.EndsWith("MinItemWidth", StringComparison.Ordinal) && a.Value == "260"));
         Assert.NotNull(kpiGrid);
         Assert.Contains(nodes, x => x.Name.LocalName == "ItemsControl"
-            && x.Attributes().Any(a => a.Name.LocalName == "ItemsSource" && a.Value.Contains("QuickActions")));
+            && x.Attributes().Any(a => a.Name.LocalName == "ItemsSource" && a.Value.Contains("QuickActions")) &&
+            x.Attributes().Any(a => a.Name.LocalName == "Grid.Column" && a.Value == "2"));
         Assert.Contains(nodes, x => x.Name.LocalName == "ItemsControl"
             && x.Attributes().Any(a => a.Name.LocalName == "ItemsSource" && a.Value.Contains("AllToolGroups")));
         Assert.Contains(nodes, x => x.Name.LocalName == "Grid"
