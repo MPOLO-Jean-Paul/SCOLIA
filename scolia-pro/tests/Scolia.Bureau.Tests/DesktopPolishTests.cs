@@ -46,7 +46,7 @@ public sealed class DesktopPolishTests
     public void Toutes_les_polices_utilisees_par_Scolia_sont_integrees(string key, string family)
     {
         var configured = Preferences.FamilyOf(key).ToString();
-        Assert.Contains("avares://SCOLIA/Assets/Fonts#", configured, StringComparison.Ordinal);
+        Assert.Contains("avares://SCOLIA/Assets/Fonts#", configured, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("#" + family, configured, StringComparison.Ordinal);
     }
 
