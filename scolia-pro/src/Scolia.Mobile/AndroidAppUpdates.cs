@@ -146,7 +146,7 @@ public static class AndroidAppUpdates
                 }
             }
         }
-        catch (OperationCanceledException) when (cancellation.IsCancellationRequested) { }
+        catch (System.OperationCanceledException) when (cancellation.IsCancellationRequested) { }
     }
 
     private static void StartForegroundDownloadWatch(Activity activity)
