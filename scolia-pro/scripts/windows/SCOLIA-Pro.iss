@@ -9,7 +9,7 @@
 #define AppPublisher "JP-Services"
 #define AppExe "SCOLIA.exe"
 #define AppContactEmail "jeanpaulmpolo242@gmail.com"
-#define AppSupportLink "mailto:{#AppContactEmail}"
+#define AppSupportLink "mailto:jeanpaulmpolo242@gmail.com"
 
 [Setup]
 AppId=JP-Services.SCOLIA-Pro.Desktop
@@ -23,7 +23,7 @@ AppSupportURL={#AppSupportLink}
 ; Les mises à jour restent détectées et téléchargées par SCOLIA Pro,
 ; sans afficher de lien GitHub dans l'assistant d'installation Windows.
 AppCopyright=Copyright 2026 JP-Services
-AppComments=Gestion scolaire : apprenants, paiements, scolarite, rapports et partage prive.
+AppComments=Gestion scolaire : apprenants, paiements, scolarite, rapports et partage prive. Assistance : jeanpaulmpolo242@gmail.com
 VersionInfoVersion={#AppVersion}
 VersionInfoCompany={#AppPublisher}
 VersionInfoDescription=Installation de SCOLIA Pro pour Windows 64 bits
