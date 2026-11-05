@@ -14,7 +14,7 @@
     <ApplicationId>com.jpservices.scolia</ApplicationId>
     <ApplicationTitle>SCOLIA Phone</ApplicationTitle>
     <ApplicationVersion>139</ApplicationVersion>
-    <ApplicationDisplayVersion>1.2.19</ApplicationDisplayVersion>
+    <ApplicationDisplayVersion>1.2.20</ApplicationDisplayVersion>
     <AndroidPackageFormat>apk</AndroidPackageFormat>
     <RuntimeIdentifiers>android-arm64;android-arm</RuntimeIdentifiers>
     <AvaloniaUseCompiledBindingsByDefault>false</AvaloniaUseCompiledBindingsByDefault>
