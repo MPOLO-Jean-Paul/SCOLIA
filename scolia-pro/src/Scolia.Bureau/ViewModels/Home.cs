@@ -34,7 +34,12 @@ public sealed class HomePage : PageViewModel
 
     public HomePage(ShellViewModel shell) : base(shell)
     {
-        ShowAllTools = new RelayCommand(Shell.ShowSidebar);
+        ShowAllTools = new RelayCommand(() =>
+        {
+            AllToolsVisible = !AllToolsVisible;
+            Raise(nameof(AllToolsLabel));
+            Raise(nameof(AllToolGroups));
+        });
         BuildTools();
     }
 
@@ -80,6 +85,17 @@ public sealed class HomePage : PageViewModel
     public bool HasKpis => Kpis.Count > 0;
     public bool HasTasks => Tasks.Count > 0;
     public RelayCommand ShowAllTools { get; }
+    private bool allToolsVisible;
+    /// <summary>Le bouton ouvre le catalogue des fonctionnalités, même si le menu gauche est déjà affiché.</summary>
+    public bool AllToolsVisible
+    {
+        get => allToolsVisible;
+        private set => Set(ref allToolsVisible, value);
+    }
+    public string AllToolsLabel => AllToolsVisible ? "Réduire les outils" : "Afficher tous les outils";
+    /// <summary>Le catalogue utilise les droits effectifs du compte, pas une liste fixe de six raccourcis.</summary>
+    public IReadOnlyList<NavGroupVm> AllToolGroups => Shell.Navigation.Where(g => g.HasTitle && g.Items.Count > 0).ToList();
+
 
     /// <summary>Les deux premiers outils, en boutons dans le bandeau de bienvenue : l'action du jour d'un clic.</summary>
     public IReadOnlyList<ToolCardVm> QuickActions => Tools.Take(2).ToList();
@@ -98,6 +114,7 @@ public sealed class HomePage : PageViewModel
         Raise(nameof(SchoolLine));
         Raise(nameof(AccountContextLine));
         Raise(nameof(HeaderSchoolLine));
+        Raise(nameof(AllToolGroups));
         if (!Shell.Can(Perm.ReportsRead)) { RaiseLists(); return; }
 
         // Toutes les réponses sont prêtes avant de toucher aux cartes affichées.

@@ -51,7 +51,12 @@ public partial class MainView : UserControl
         AddHandler(PointerWheelChangedEvent, (_, _) => Shell?.NoteActivity(), Avalonia.Interactivity.RoutingStrategies.Tunnel, handledEventsToo: true);
         AddHandler(KeyDownEvent, (_, _) => Shell?.NoteActivity(), Avalonia.Interactivity.RoutingStrategies.Tunnel, handledEventsToo: true);
         AddHandler(TextInputEvent, (_, _) => Shell?.NoteActivity(), Avalonia.Interactivity.RoutingStrategies.Tunnel, handledEventsToo: true);
-        SizeChanged += (_, e) => FitWindow(e.NewSize);
+        SizeChanged += (_, e) =>
+        {
+            FitWindow(e.NewSize);
+            if (Shell?.HeaderFinderOpen == true)
+                Avalonia.Threading.Dispatcher.UIThread.Post(PlaceHeaderFinder);
+        };
         AttachedToVisualTree += (_, _) =>
         {
             ShowThemeIcon();
@@ -68,6 +73,10 @@ public partial class MainView : UserControl
         };
         ActualThemeVariantChanged += (_, _) => ShowThemeIcon();
         PageBar.SizeChanged += (_, _) => QueueFitPageActions();
+        HeaderFinderBar.SizeChanged += (_, _) =>
+        {
+            if (Shell?.HeaderFinderOpen == true) PlaceHeaderFinder();
+        };
         PageHost.AddHandler(PointerReleasedEvent, OnPagePointerReleased, Avalonia.Interactivity.RoutingStrategies.Bubble);
         DataContextChanged += (_, _) => AttachShell();
     }
@@ -143,6 +152,11 @@ public partial class MainView : UserControl
             or nameof(Preferences.Compact) or nameof(Preferences.Sidebar)
             or nameof(Preferences.RibbonCollapsed))
             QueueFitPageActions();
+        // L'ouverture du volet décale le champ sans nécessairement changer sa largeur.
+        // Repositionner la liste de suggestions après la nouvelle mise en page.
+        if (args.PropertyName == nameof(Preferences.Sidebar) && shell.HeaderFinderOpen)
+            Avalonia.Threading.Dispatcher.UIThread.Post(PlaceHeaderFinder,
+                Avalonia.Threading.DispatcherPriority.Loaded);
     }
 
     /// <summary>Place le curseur dans le filtre de la page sans ouvrir la recherche globale.</summary>
@@ -163,6 +177,10 @@ public partial class MainView : UserControl
     {
         if (subscribedShell is not { } shell) return;
         if (args.PropertyName == nameof(ShellViewModel.CompactWindow)) FitWindow(Bounds.Size);
+        if (args.PropertyName is nameof(ShellViewModel.SidebarShown) or nameof(ShellViewModel.Narrow)
+            && shell.HeaderFinderOpen)
+            Avalonia.Threading.Dispatcher.UIThread.Post(PlaceHeaderFinder,
+                Avalonia.Threading.DispatcherPriority.Loaded);
         // Un résultat ouvert (page, fiche, fenêtre, menu Fichier) ou la veille : la liste de la barre se referme et se vide.
         if (shell.HeaderFinderOpen && args.PropertyName is nameof(ShellViewModel.Current) or nameof(ShellViewModel.Dialog)
                 or nameof(ShellViewModel.BackstageOpen) or nameof(ShellViewModel.IsLocked) or nameof(ShellViewModel.IsLoggedIn))
@@ -249,10 +267,14 @@ public partial class MainView : UserControl
     private void PlaceHeaderFinder()
     {
         if (HeaderFinderBar.Bounds.Width <= 0 || HeaderFinderBar.TranslatePoint(new Point(0, HeaderFinderBar.Bounds.Height), DesktopArea) is not { } corner) return;
-        var width = Math.Max(HeaderFinderBar.Bounds.Width, 560);
-        width = Math.Min(width, Math.Max(320, DesktopArea.Bounds.Width - 24));
+        // La liste se cale sous le champ et se recompose même après redimensionnement.
+        var space = Math.Max(0, DesktopArea.Bounds.Width - 24);
+        if (space <= 0) return;
+        var width = Math.Min(Math.Max(HeaderFinderBar.Bounds.Width, 500), 580);
+        width = Math.Min(width, space);
         var left = Math.Max(12, Math.Min(corner.X, DesktopArea.Bounds.Width - width - 12));
         HeaderFinderDrop.Width = width;
+        HeaderFinderDrop.MaxHeight = Math.Max(100, Math.Min(490, DesktopArea.Bounds.Height - corner.Y - 16));
         HeaderFinderDrop.Margin = new Thickness(left, corner.Y + 8, 0, 0);
     }
 

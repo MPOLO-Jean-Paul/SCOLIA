@@ -33,6 +33,29 @@ public sealed class DesktopPolishTests
         Assert.Contains(Preferences.Fonts, f => f.Value == new Preferences().Font);
     }
 
+    [Theory]
+    [InlineData("systeme", "Inter")]
+    [InlineData("android", "Roboto")]
+    [InlineData("roboto", "Roboto")]
+    [InlineData("inter", "Inter")]
+    [InlineData("calibri", "Carlito")]
+    [InlineData("arial", "Liberation Sans")]
+    [InlineData("verdana", "DejaVu Sans")]
+    [InlineData("tahoma", "DejaVu Sans")]
+    [InlineData("serif", "Liberation Serif")]
+    public void Toutes_les_polices_utilisees_par_Scolia_sont_integrees(string key, string family)
+    {
+        var configured = Preferences.FamilyOf(key).ToString();
+        Assert.Contains("avares://SCOLIA/Assets/Fonts#", configured, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("#" + family, configured, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Roboto_est_proposee_sur_le_bureau_sans_installer_de_police_Windows()
+    {
+        Assert.Contains(Preferences.Fonts, p => p.Value == "roboto" && p.Label == "Roboto");
+    }
+
     [Fact]
     public void Le_poste_dit_si_android_peut_endormir_le_serveur()
     {
