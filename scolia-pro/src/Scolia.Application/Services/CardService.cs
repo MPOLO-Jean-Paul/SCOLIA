@@ -68,13 +68,13 @@ public sealed class CardService(IAppDbContext db, IWriteGate gate, IAuditLog aud
                 "Le logo de votre établissement n'est pas configuré. Ajoutez-le dans Paramètres > Établissement avant d'imprimer les cartes d'accès.");
         // Les cartes reprennent l'identité propre à l'établissement actif, jamais un nom ou un sceau ITM imposé.
         var header = new SchoolCardHeader(
-            CardHeaderDefaults.Or(school.Country, CardHeaderDefaults.Country),
-            CardHeaderDefaults.Or(school.CardMinistry, CardHeaderDefaults.Ministry),
-            CardHeaderDefaults.Or(school.CardDirection, CardHeaderDefaults.Direction),
-            CardHeaderDefaults.Or(school.CardDivision, CardHeaderDefaults.Division),
-            CardHeaderDefaults.Or(school.CardZone, CardHeaderDefaults.CityZone),
+            school.Country ?? string.Empty,
+            school.CardMinistry,
+            school.CardDirection,
+            school.CardDivision,
+            school.CardZone ?? school.City,
             CardHeaderDefaults.Or(school.CardInstitute, school.Name),
-            CardHeaderDefaults.Or(school.CardAddress, school.Address ?? string.Empty),
+            CardHeaderDefaults.Or(school.CardAddress, school.Address ?? school.City ?? string.Empty),
             school.Logo);
         var cards = new List<CardItem>();
         foreach (var r in selected)
