@@ -575,10 +575,11 @@ public static class AndroidAppUpdates
         if (status != DownloadSuccessStatus)
         {
             long started = pref.GetLong(DownloadStartedAtKey, 0);
-            // Un ancien enregistrement de téléchargement peut bloquer la
-            // découverte des mises à jour indéfiniment après un échec.
+            // Le reseau mobile peut etre interrompu plusieurs jours. Ne pas
+            // detruire le téléchargement apres six heures : Android sait le
+            // reprendre et la recherche de nouvelles versions continue quand meme.
             long now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-            if (started == 0 || now - started > 6 * 60 * 60)
+            if (UpdateCompletionPolicy.IsStalePendingDownload(started, now))
             {
                 downloadManager.Remove(id);
                 ResetPending(activity);
