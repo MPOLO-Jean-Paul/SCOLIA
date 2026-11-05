@@ -256,7 +256,8 @@ public sealed class FormViewModel : Observable
     public FormField AddChoice(string key, string label, IReadOnlyList<ChoiceItem> options, string? value = null, bool required = false)
     {
         var field = new FormField(key, label, FieldKind.Choice, required, null) { Options = options };
-        field.Choice = options.FirstOrDefault(o => o.Value == value) ?? (required && options.Count > 0 ? options[0] : null);
+        field.Choice = options.FirstOrDefault(o => o.Value == value)
+            ?? (required && string.IsNullOrWhiteSpace(value) && options.Count == 1 ? options[0] : null);
         Fields.Add(field);
         return field;
     }
