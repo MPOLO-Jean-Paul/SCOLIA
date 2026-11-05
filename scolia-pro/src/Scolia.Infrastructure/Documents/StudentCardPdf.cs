@@ -162,7 +162,9 @@ internal static class StudentCardPdf
     /// </summary>
     private static void CutLineDown(ColumnDescriptor gutter)
     {
-        for (var i = 0; i < 12; i++)
+        // Dix paires de 2,5 mm = 50 mm ; ne doit jamais dépasser 53,98 mm,
+        // faute de quoi l'interstice agrandirait la rangée et fausserait les coupes.
+        for (var i = 0; i < 10; i++)
         {
             gutter.Item().Height(Mm(2.5f)).AlignCenter().Width(Mm(0.3f)).Background(Guide);
             gutter.Item().Height(Mm(2.5f));
@@ -172,7 +174,8 @@ internal static class StudentCardPdf
     /// <summary>Repère de découpe horizontal : pointillés au centre de l'interstice vertical, sur toute la largeur de la grille.</summary>
     private static void CutLineAcross(RowDescriptor gutter)
     {
-        for (var i = 0; i < 38; i++)
+        // 35 paires de 2,5 mm = 175 mm, à l'intérieur de la largeur 177,2 mm.
+        for (var i = 0; i < 35; i++)
         {
             gutter.ConstantItem(Mm(2.5f)).AlignMiddle().Height(Mm(0.3f)).Background(Guide);
             gutter.ConstantItem(Mm(2.5f));
