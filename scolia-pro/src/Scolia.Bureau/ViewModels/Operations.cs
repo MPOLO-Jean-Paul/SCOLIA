@@ -702,6 +702,17 @@ public sealed class BackstageViewModel : Observable
     });
     private AsyncCommand? checkWindowsUpdates;
 
+    /// <summary>Visible sur Android dans Mon compte : même contrôle forcé que Poste et réseau.</summary>
+    public bool CanCheckPhoneUpdates => Platform.IsMobile && Platform.CheckAppUpdatesAsync is not null;
+    public string PhoneUpdateStatus => Platform.AppUpdateStatus?.Invoke() ?? "Aucune recherche effectuée.";
+    public AsyncCommand CheckPhoneUpdates => checkPhoneUpdates ??= new AsyncCommand(async () =>
+    {
+        if (Platform.CheckAppUpdatesAsync is not { } check) return;
+        await check();
+        Raise(nameof(PhoneUpdateStatus));
+    });
+    private AsyncCommand? checkPhoneUpdates;
+
     public bool IsInfos => section?.Value == "infos";
     /// <summary>Mobile : la liste des rubriques s'affiche tant qu'aucune rubrique à page propre n'est ouverte.</summary>
     public bool ShowList => !IsPassword && !IsPoste;
@@ -1241,6 +1252,16 @@ public sealed class AboutViewModel : Observable
         OpenWhatsApp = new RelayCommand(() => Files.Open($"https://wa.me/{AboutInfo.PhoneDigits}"));
         CopyContacts = new AsyncCommand(CopyAsync);
     }
+
+    public bool CanCheckPhoneUpdates => Platform.IsMobile && Platform.CheckAppUpdatesAsync is not null;
+    public string PhoneUpdateStatus => Platform.AppUpdateStatus?.Invoke() ?? "Aucune recherche effectuée.";
+    public AsyncCommand CheckPhoneUpdates => checkPhoneUpdates ??= new AsyncCommand(async () =>
+    {
+        if (Platform.CheckAppUpdatesAsync is not { } check) return;
+        await check();
+        Raise(nameof(PhoneUpdateStatus));
+    });
+    private AsyncCommand? checkPhoneUpdates;
 
     public string Title => "SCOLIA Pro";
     public string Tagline => AboutInfo.Tagline;
