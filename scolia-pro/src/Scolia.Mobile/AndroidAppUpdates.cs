@@ -470,6 +470,7 @@ public static class AndroidAppUpdates
                         .Apply();
                     NotifyOnce(activity, release);
                 })
+                .SetCancelable(false) // « Plus tard » memorise correctement le rappel, sans blocage du dialogue
                 .Show();
         });
     }
