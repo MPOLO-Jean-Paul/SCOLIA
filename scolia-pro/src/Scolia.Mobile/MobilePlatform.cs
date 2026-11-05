@@ -23,6 +23,8 @@ public static class MobilePlatform
         context = app;
         Security.AndroidSecrets.Initialize();
         Synchronization.SyncWorker.Schedule(app);
+        // Envoi différé durable, déclenché par une nouvelle opération conservée hors ligne.
+        Platform.RequestBackgroundSync = () => Synchronization.SyncWorker.SchedulePending(app);
         Platform.IsMobile = true;
         Platform.IsBiometricAvailable = Security.AndroidBiometrics.IsAvailable;
         Platform.UnlockBiometricAsync = Security.AndroidBiometrics.UnlockAsync;
