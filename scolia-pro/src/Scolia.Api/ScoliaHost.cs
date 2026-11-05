@@ -76,6 +76,9 @@ public static class ScoliaHost
             httpsCertificate = X509CertificateLoader.LoadPkcs12FromFile(pfx, pass);
             if (!httpsCertificate.HasPrivateKey)
                 throw new InvalidOperationException("Le certificat HTTPS doit contenir sa clé privée.");
+            var now = DateTime.UtcNow;
+            if (httpsCertificate.NotBefore.ToUniversalTime() > now || httpsCertificate.NotAfter.ToUniversalTime() <= now)
+                throw new InvalidOperationException("Le certificat HTTPS est expiré ou n'est pas encore valide.");
         }
         var desktop = embedded is null && OperatingSystem.IsWindows() && Environment.UserInteractive && !Microsoft.Extensions.Hosting.WindowsServices.WindowsServiceHelpers.IsWindowsService();
 
