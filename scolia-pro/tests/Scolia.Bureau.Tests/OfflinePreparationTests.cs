@@ -17,6 +17,46 @@ public sealed class OfflinePreparationTests
     }
 
     [Fact]
+    public void Background_cache_refresh_rotates_oldest_pages_and_respects_user_isolation()
+    {
+        var folder = Path.Combine(Path.GetTempPath(), "scolia-offline-refresh-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            var store = new OfflineStore(new Uri("https://school.example:5080/"), folder)
+            {
+                User = "secretariat"
+            };
+            var oldPaths = Enumerable.Range(1, 12).Select(n => $"api/apprenants/ancien-{n}").ToArray();
+            var laterPaths = Enumerable.Range(13, 48).Select(n => $"api/apprenants/recent-{n}").ToArray();
+            foreach (var path in oldPaths) store.SavePage(path, "{}");
+            Thread.Sleep(100); // Horodatages nettement séparés pour un test déterministe.
+            foreach (var path in laterPaths) store.SavePage(path, "{}");
+
+            var initial = store.CachedPaths(limit: 12);
+            Assert.Equal(12, initial.Count);
+            Assert.All(initial, p => Assert.Contains(p, oldPaths));
+
+            Thread.Sleep(100);
+            foreach (var path in initial) store.SavePage(path, "{\"updated\":true}");
+            var next = store.CachedPaths(limit: 12);
+            Assert.Equal(12, next.Count);
+            Assert.DoesNotContain(next, p => initial.Contains(p));
+            Assert.All(next, p => Assert.Contains(p, laterPaths));
+
+            store.User = "comptabilite";
+            Assert.Empty(store.CachedPaths());
+            store.User = "secretariat";
+            Assert.Equal(12, store.CachedPaths(limit: 12).Count);
+            Assert.Empty(store.CachedPaths(limit: 0));
+        }
+        finally
+        {
+            Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
+            if (Directory.Exists(folder)) Directory.Delete(folder, recursive: true);
+        }
+    }
+
+    [Fact]
     public void Cached_index_remains_private_to_the_authenticated_account()
     {
         var folder = Path.Combine(Path.GetTempPath(), "scolia-offline-prepare-" + Guid.NewGuid().ToString("N"));
