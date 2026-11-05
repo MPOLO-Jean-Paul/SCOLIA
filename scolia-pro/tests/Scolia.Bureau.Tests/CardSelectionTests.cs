@@ -26,6 +26,18 @@ public sealed class CardSelectionTests
     }
 
     [Fact]
+    public void Dossier_ineligible_ne_peut_pas_etre_coche_depuis_la_grille()
+    {
+        var selectionEvents = 0;
+        var invalid = new CardCandidateDto(Guid.NewGuid(), "INF293", "SHIMBA MAKITA ELIE",
+            "INF3", "Suspendu", false, true, false);
+        var row = new CardRowVm(invalid, "Exclu : Suspendu", (_, _) => selectionEvents++);
+        row.Selected = true;
+        Assert.False(row.Selected);
+        Assert.Equal(0, selectionEvents);
+    }
+
+    [Fact]
     public void Restauration_de_la_selection_avec_le_meme_identifiant()
     {
         var id = Guid.NewGuid();
