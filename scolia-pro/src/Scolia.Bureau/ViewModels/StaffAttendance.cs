@@ -15,7 +15,7 @@ public sealed record StaffBilanRowVm(string Name, string Present, string Late, s
 
 /// <summary>
 /// Pointage du personnel (version 79) : signer l'entrée et la sortie, justifier une absence, et lire le bilan
-/// de la période. Une entrée à 08:00:00 ou après est signalée en retard.
+/// de la période. Une entrée strictement après 08:00:00 est signalée en retard.
 /// </summary>
 public sealed class StaffAttendancePage : PageViewModel
 {

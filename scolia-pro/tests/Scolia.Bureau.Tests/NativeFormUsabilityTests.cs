@@ -19,6 +19,38 @@ public sealed class NativeFormUsabilityTests
     }
 
     [Fact]
+    public void Enseignant_ou_apprenant_n_est_jamais_choisi_automatiquement_parmi_plusieurs()
+    {
+        var form = new FormViewModel("Attribution");
+        var selected = form.AddChoice("enseignant", "Enseignant",
+        [
+            new ChoiceItem("id1", "KABONGO Anne"),
+            new ChoiceItem("id2", "MUKENDI Paul"),
+        ], required: true);
+        Assert.Null(selected.Choice);
+        Assert.False(form.Validate());
+        Assert.Equal("Champ obligatoire.", selected.Error);
+
+        selected.Choice = selected.Options[1];
+        Assert.True(form.Validate());
+        Assert.Equal("id2", form.ChoiceValue("enseignant"));
+    }
+
+    [Fact]
+    public void Une_valeur_existante_ou_un_choix_unique_reste_intuitif()
+    {
+        var options = new[]
+        {
+            new ChoiceItem("INF1", "Première année"),
+            new ChoiceItem("INF2", "Deuxième année"),
+        };
+        var existing = new FormViewModel("Modifier");
+        Assert.Equal("INF2", existing.AddChoice("promotion", "Promotion", options, "INF2", required: true).Choice?.Value);
+        var only = new FormViewModel("Inscrire");
+        Assert.Equal("INF1", only.AddChoice("promotion", "Promotion", [options[0]], required: true).Choice?.Value);
+    }
+
+    [Fact]
     public void Erreur_du_champ_obligatoire_disparait_quand_le_champ_est_corrige()
     {
         var form = new FormViewModel("Inscription");

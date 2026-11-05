@@ -20,9 +20,9 @@ public sealed class SchoolService(IAppDbContext db, IWriteGate gate, IAuditLog a
 
     public static SchoolDto ToDto(SchoolProfile s) => new(s.Name, s.ShortName, s.Motto, s.Address, s.City, s.Country, s.Phone, s.Email, s.Website,
         s.CurrencyCode, s.CurrencySymbol, s.WholeAmountsOnly, s.ReceiptFooter, s.Logo is { Length: > 0 }, s.PhoneCountryCode,
-        CardHeaderDefaults.Or(s.CardMinistry, CardHeaderDefaults.Ministry), CardHeaderDefaults.Or(s.CardDirection, CardHeaderDefaults.Direction),
-        CardHeaderDefaults.Or(s.CardDivision, CardHeaderDefaults.Division), CardHeaderDefaults.Or(s.CardZone, CardHeaderDefaults.CityZone),
-        CardHeaderDefaults.Or(s.CardInstitute, CardHeaderDefaults.Institute), CardHeaderDefaults.Or(s.CardAddress, CardHeaderDefaults.Address));
+        s.CardMinistry, s.CardDirection, s.CardDivision, s.CardZone ?? s.City,
+        CardHeaderDefaults.Or(s.CardInstitute, s.Name),
+        CardHeaderDefaults.Or(s.CardAddress, s.Address ?? s.City ?? string.Empty));
 
     public Task<SchoolDto> UpdateSchoolAsync(SchoolUpdate input, CancellationToken ct = default) => gate.RunAsync(async () =>
     {

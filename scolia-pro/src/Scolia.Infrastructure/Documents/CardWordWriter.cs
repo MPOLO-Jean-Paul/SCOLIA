@@ -7,21 +7,19 @@ using Scolia.Domain.Students;
 namespace Scolia.Infrastructure.Documents;
 
 /// <summary>
-/// Cartes d'accès au format Word (.docx), écrit en OOXML sans logiciel tiers. Même grille et même mise en page que le PDF :
-/// A4, cartes de 92 × 63 mm sur deux colonnes, interstices de 6 mm et 7 mm, huit cartes par page, en-tête avec le sceau,
-/// identité à gauche, QR à droite, bande de promotion en pied de carte. Le rendu exact dépend du logiciel d'ouverture ;
-/// le PDF reste la version prête à imprimer.
+/// Cartes d'accès au format Word (.docx) : huit inserts ID-1 (85,60 × 53,98 mm) par A4,
+/// logo et identité de l'établissement configurés, Session en grand, QR à la place du cachet,
+/// matricule, noms et promotion. Le PDF reste conseillé pour une découpe à dimensions exactes.
 /// </summary>
 public static class CardWordWriter
 {
-    private const int CardTwip = 5216;      // 92 mm
-    private const int GapTwip = 340;        // 6 mm
-    private const int RowGapTwip = 397;     // 7 mm
-    private const int CardHeightTwip = 3572; // 63 mm
-    private const int BandTwip = 193;       // 3,4 mm, bande de promotion compacte
-    private const int SealTwip = 1500;      // colonne du sceau
-    private const int QrTwip = 1500;        // colonne du QR
-    private const int InnerTwip = 170;      // marge intérieure de la carte : 3 mm
+    private const int CardTwip = 4853;       // 85,60 mm
+    private const int GapTwip = 340;         // 6 mm
+    private const int RowGapTwip = 397;      // 7 mm
+    private const int CardHeightTwip = 3060; // 53,98 mm
+    private const int SealTwip = 680;        // emplacement du logo
+    private const int QrTwip = 1120;         // QR dans l'ancienne zone du cachet
+    private const int InnerTwip = 114;       // 2 mm de marge interne
     private const int InnerWidthTwip = CardTwip - 2 * InnerTwip;
     private const int Emu = 36000;          // 1 mm en EMU
     private const string TinyParagraph = "<w:p><w:pPr><w:spacing w:before=\"0\" w:after=\"0\" w:line=\"20\" w:lineRule=\"exact\"/></w:pPr></w:p>";
@@ -64,16 +62,11 @@ public static class CardWordWriter
             var first = left < d.Cards.Count ? d.Cards[left] : null;
             var second = right < d.Cards.Count ? d.Cards[right] : null;
 
-            // Chaque carte tient sur deux rangées de la grille : le contenu, puis la bande de promotion collée au bas.
-            body.Append($"<w:tr><w:trPr><w:trHeight w:val=\"{CardHeightTwip - BandTwip}\" w:hRule=\"exact\"/></w:trPr>");
+            // Chaque ligne de la grille porte deux cartes ID-1 complètes.
+            body.Append($"<w:tr><w:trPr><w:trHeight w:val=\"{CardHeightTwip}\" w:hRule=\"exact\"/></w:trPr>");
             ContentCell(body, d, first, sealRid, images);
             body.Append(GapCell());
             ContentCell(body, d, second, sealRid, images);
-            body.Append("</w:tr>");
-            body.Append($"<w:tr><w:trPr><w:trHeight w:val=\"{BandTwip}\" w:hRule=\"exact\"/></w:trPr>");
-            BandCell(body, first);
-            body.Append(GapCell());
-            BandCell(body, second);
             body.Append("</w:tr>");
         }
         body.Append("</w:tbl>");
@@ -94,71 +87,62 @@ public static class CardWordWriter
         return stream.ToArray();
     }
 
-    private static void AppendCard(StringBuilder body, CardDocument d, CardItem card, string sealRid, Images images)
+    private static void AppendCard(StringBuilder body, CardDocument d, CardItem card, string logoRid, Images images)
     {
         var qrRid = images.Add("qr:" + card.QrText, () => DocumentService.QrPng(card.QrText));
         var content = new StringBuilder();
+        var names = StudentCardRules.FullName(card.LastName, card.MiddleName, card.FirstName);
+        var schoolName = d.Header.Institute.Trim().ToUpperInvariant();
+        var authority = First(d.Header.Ministry, d.Header.Direction, d.Header.Division);
+        var address = First(d.Header.Address, d.Header.CityZone, d.Header.Country);
 
-        // En-tête : sceau à gauche, mentions centrées à droite.
+        // En-tête réel de l'établissement : son logo et ses mentions configurées.
         content.Append(TableStart(new[] { SealTwip, InnerWidthTwip - SealTwip }, InnerTwip));
         content.Append($"<w:tr><w:tc><w:tcPr><w:tcW w:w=\"{SealTwip}\" w:type=\"dxa\"/><w:vAlign w:val=\"center\"/></w:tcPr>")
-            .Append(Picture(sealRid, 13.5, 13.5, 1, "Logo établissement")).Append("</w:tc>");
+            .Append(Picture(logoRid, 10.5, 10.5, 1, "Logo établissement")).Append("</w:tc>");
         content.Append($"<w:tc><w:tcPr><w:tcW w:w=\"{InnerWidthTwip - SealTwip}\" w:type=\"dxa\"/><w:vAlign w:val=\"center\"/></w:tcPr>");
-        Mention(content, d.Header.Country, 10, true);
-        Mention(content, d.Header.Ministry, 9, false);
-        Mention(content, d.Header.Direction, 9, false);
-        Mention(content, d.Header.Division, 9, false);
-        Mention(content, d.Header.CityZone, 9, false);
-        Mention(content, d.Header.Institute, 10, true);
-        Mention(content, d.Header.Address, 9, false);
+        Mention(content, schoolName, schoolName.Length > 80 ? 8 : schoolName.Length > 50 ? 10 : 12, true);
+        Mention(content, authority, 8, false);
+        Mention(content, address, 8, false);
         content.Append("</w:tc></w:tr></w:tbl>");
 
-        // Bandeau bleu marine : le titre de la carte et la session, comme sur le PDF.
-        content.Append(Paragraph(string.Empty, 4, false, false, "left", null, 40));
-        content.Append(TableStart(new[] { CardTwip / 2, CardTwip - CardTwip / 2 }));
-        content.Append("<w:tr><w:trPr><w:trHeight w:val=\"340\" w:hRule=\"exact\"/></w:trPr>");
-        content.Append($"<w:tc><w:tcPr><w:tcW w:w=\"{CardTwip / 2}\" w:type=\"dxa\"/><w:shd w:val=\"clear\" w:color=\"auto\" w:fill=\"0B3B6F\"/><w:vAlign w:val=\"center\"/></w:tcPr>")
-            .Append(Paragraph("CARTE D'ACCÈS", 15, true, false, "left", "FFFFFF", indentTwip: InnerTwip)).Append("</w:tc>");
-        content.Append($"<w:tc><w:tcPr><w:tcW w:w=\"{CardTwip - CardTwip / 2}\" w:type=\"dxa\"/><w:shd w:val=\"clear\" w:color=\"auto\" w:fill=\"0B3B6F\"/><w:vAlign w:val=\"center\"/></w:tcPr>")
-            .Append(Paragraph($"SESSION {d.Session}", d.Session.Length > 14 ? 12 : 14, true, false, "right", "FFFFFF", indentTwip: InnerTwip)).Append("</w:tc></w:tr></w:tbl>");
-        content.Append(Paragraph(string.Empty, 4, false, false, "left", null, 80));
-
-        // Identité à gauche, QR à droite.
+        // Session et QR à la place du sceau rond du modèle fourni.
         content.Append(TableStart(new[] { InnerWidthTwip - QrTwip, QrTwip }, InnerTwip));
         content.Append($"<w:tr><w:tc><w:tcPr><w:tcW w:w=\"{InnerWidthTwip - QrTwip}\" w:type=\"dxa\"/><w:vAlign w:val=\"center\"/></w:tcPr>");
-        Field(content, "NOM", card.LastName);
-        Field(content, "POST-NOM", card.MiddleName);
-        Field(content, "PRÉNOM", card.FirstName);
-        Field(content, "CLASSE", card.Classe);
-        content.Append($"</w:tc><w:tc><w:tcPr><w:tcW w:w=\"{QrTwip}\" w:type=\"dxa\"/><w:vAlign w:val=\"center\"/></w:tcPr>")
-            .Append(Picture(qrRid, 18, 18, 2, "QR"))
-            .Append(Paragraph("QR de vérification", 8, false, false, "center", "5B6878"))
-            .Append("</w:tc></w:tr></w:tbl>");
-        content.Append(Paragraph($"Année scolaire {d.AcademicYear}", 10, true, false, "left", "0B3B6F", 80, indentTwip: InnerTwip + 60));
+        content.Append(Paragraph("Session " + StudentCardRules.SessionYear(d.Session), 27, true, false, "left", "0B3B6F", 60));
+        content.Append(Paragraph("ACCÈS AUX EXAMENS", 12, true, false, "left", "0B3B6F", 35));
+        content.Append(Paragraph(d.Session, 9, false, false, "left", "5B6878", 20));
+        content.Append("</w:tc>");
+        content.Append($"<w:tc><w:tcPr><w:tcW w:w=\"{QrTwip}\" w:type=\"dxa\"/><w:vAlign w:val=\"center\"/></w:tcPr>");
+        content.Append(Picture(qrRid, 16.5, 16.5, 2, "QR de contrôle"));
+        content.Append(Paragraph("Contrôle QR", 7, false, false, "center", "5B6878"));
+        content.Append("</w:tc></w:tr></w:tbl>");
 
-        // Le paragraphe final est obligatoire dans une cellule, après la dernière table.
+        // Champs alimentés automatiquement depuis le dossier de l'apprenant.
+        content.Append(Paragraph(string.Empty, 4, false, false, "left", null, 25));
+        Field(content, "MATRICULE", card.Matricule, 14);
+        Field(content, "NOMS", names, names.Length > 48 ? 10 : names.Length > 32 ? 12 : 14);
+        Field(content, "PROMOTION", card.Classe, 14);
+        content.Append(Paragraph("Année scolaire " + d.AcademicYear, 8, false, false, "left", "5B6878", 30));
+
         body.Append(content).Append(TinyParagraph);
     }
 
+    private static string? First(params string?[] values) =>
+        values.FirstOrDefault(v => !string.IsNullOrWhiteSpace(v))?.Trim();
+
     private static void ContentCell(StringBuilder body, CardDocument d, CardItem? card, string sealRid, Images images)
     {
-        body.Append($"<w:tc><w:tcPr><w:tcW w:w=\"{CardTwip}\" w:type=\"dxa\"/>{Sides(card is not null, top: true, bottom: false)}</w:tcPr>");
+        body.Append($"<w:tc><w:tcPr><w:tcW w:w=\"{CardTwip}\" w:type=\"dxa\"/>{Sides(card is not null, top: true, bottom: true)}</w:tcPr>");
         if (card is null) body.Append(TinyParagraph);
         else AppendCard(body, d, card, sealRid, images);
         body.Append("</w:tc>");
     }
 
-    /// <summary>Bande de la promotion : sa couleur seule, sans texte, collée au bas de la carte.</summary>
-    private static void BandCell(StringBuilder body, CardItem? card)
-    {
-        var fill = card is null ? string.Empty : $"<w:shd w:val=\"clear\" w:color=\"auto\" w:fill=\"{card.Color.TrimStart('#')}\"/>";
-        body.Append($"<w:tc><w:tcPr><w:tcW w:w=\"{CardTwip}\" w:type=\"dxa\"/>{Sides(card is not null, top: false, bottom: true)}{fill}</w:tcPr>{TinyParagraph}</w:tc>");
-    }
-
     private static string GapCell() => $"<w:tc><w:tcPr><w:tcW w:w=\"{GapTwip}\" w:type=\"dxa\"/></w:tcPr>{TinyParagraph}</w:tc>";
 
     private static string Grid() =>
-        "<w:tbl><w:tblPr><w:tblW w:w=\"10772\" w:type=\"dxa\"/><w:tblInd w:w=\"0\" w:type=\"dxa\"/><w:tblLayout w:type=\"fixed\"/>" +
+        $"<w:tbl><w:tblPr><w:tblW w:w=\"{2 * CardTwip + GapTwip}\" w:type=\"dxa\"/><w:tblInd w:w=\"0\" w:type=\"dxa\"/><w:tblLayout w:type=\"fixed\"/>" +
         "<w:tblBorders><w:top w:val=\"nil\"/><w:left w:val=\"nil\"/><w:bottom w:val=\"nil\"/><w:right w:val=\"nil\"/><w:insideH w:val=\"nil\"/><w:insideV w:val=\"nil\"/></w:tblBorders>" +
         "<w:tblCellMar><w:left w:w=\"0\" w:type=\"dxa\"/><w:right w:w=\"0\" w:type=\"dxa\"/></w:tblCellMar></w:tblPr>" +
         $"<w:tblGrid><w:gridCol w:w=\"{CardTwip}\"/><w:gridCol w:w=\"{GapTwip}\"/><w:gridCol w:w=\"{CardTwip}\"/></w:tblGrid>";
@@ -191,13 +175,12 @@ public static class CardWordWriter
         body.Append(Paragraph(value.Trim().ToUpperInvariant(), halfPoints, bold, false, "center", "1B2430"));
     }
 
-    /// <summary>Une ligne par champ, comme sur le PDF : le libellé, deux points, puis la valeur, « NOM : MUKENDI ».</summary>
-    private static void Field(StringBuilder body, string label, string value)
+    /// <summary>Matricule, noms complets et promotion, sans ligne prédéfinie.</summary>
+    private static void Field(StringBuilder body, string label, string value, int halfPoints)
     {
-        var size = value.Length > 24 ? 14 : 16;
-        body.Append($"<w:p><w:pPr><w:spacing w:before=\"0\" w:after=\"100\" w:line=\"{size * 13}\" w:lineRule=\"exact\"/><w:jc w:val=\"left\"/></w:pPr>")
-            .Append(Run($"{label} : ", 11, "5B6878"))
-            .Append(Run(value, size, "1B2430"))
+        body.Append($"<w:p><w:pPr><w:spacing w:before=\"0\" w:after=\"36\" w:line=\"{Math.Max(halfPoints * 13, 170)}\" w:lineRule=\"atLeast\"/><w:jc w:val=\"left\"/></w:pPr>")
+            .Append(Run(label + " : ", 12, "1B2430"))
+            .Append(Run(value.Trim().ToUpperInvariant(), halfPoints, "1B2430"))
             .Append("</w:p>");
     }
 
@@ -239,7 +222,7 @@ public static class CardWordWriter
         "xmlns:wp=\"http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing\" " +
         "xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" " +
         "xmlns:pic=\"http://schemas.openxmlformats.org/drawingml/2006/picture\"><w:body>" + body +
-        "<w:sectPr><w:pgSz w:w=\"11906\" w:h=\"16838\"/><w:pgMar w:top=\"567\" w:right=\"567\" w:bottom=\"567\" w:left=\"567\" w:header=\"0\" w:footer=\"0\" w:gutter=\"0\"/></w:sectPr>" +
+        "<w:sectPr><w:pgSz w:w=\"11906\" w:h=\"16838\"/><w:pgMar w:top=\"907\" w:right=\"907\" w:bottom=\"907\" w:left=\"907\" w:header=\"0\" w:footer=\"0\" w:gutter=\"0\"/></w:sectPr>" +
         "</w:body></w:document>";
 
     private static string ContentTypes() =>

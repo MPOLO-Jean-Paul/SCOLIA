@@ -531,7 +531,6 @@ public partial class MainView : UserControl
         else if (shell.HasDialog) shell.CloseDialog();
         else if (shell.BackstageOpen) { if (shell.Backstage.ShowDetail) shell.Backstage.BackToList.Execute(null); else shell.CloseBackstage(); }
         else if (shell.PhoneMenuOpen && shell.SettingsSearch.IsOpen) shell.SettingsSearch.Reset();
-        else if (shell.PhoneMenuOpen && shell.SettingsSearch.IsOpen) shell.SettingsSearch.Reset();
         else if (shell.PhoneMenuOpen) shell.PhoneMenuOpen = false;
         else if (shell.Current is SettingsPage settings && settings.TryBackToMobileSections()) { }
         else if (!shell.Phone && shell.Narrow && shell.SidebarShown) shell.ToggleSidebar();

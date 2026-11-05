@@ -10,10 +10,11 @@ public sealed class StaffAttendanceRulesTests
     private static readonly DateOnly Monday = new(2026, 10, 19);
 
     [Fact]
-    public void Entry_at_eight_is_late_but_seven_fifty_nine_is_on_time()
+    public void Entry_at_exactly_eight_is_on_time_but_a_second_later_is_late()
     {
         Assert.False(StaffAttendanceRules.IsLate(new TimeOnly(7, 59, 59)));
-        Assert.True(StaffAttendanceRules.IsLate(new TimeOnly(8, 0, 0)));
+        Assert.False(StaffAttendanceRules.IsLate(new TimeOnly(8, 0, 0)));
+        Assert.True(StaffAttendanceRules.IsLate(new TimeOnly(8, 0, 1)));
     }
 
     [Fact]
@@ -97,7 +98,7 @@ public sealed class StaffAttendanceApiTests : IDisposable
 
         var entry = await admin.Post($"/api/personnel/{teacher}/signature/Entree", new { }).Ok();
         var localNow = DateTime.Now.TimeOfDay;
-        Assert.Equal(localNow >= new TimeSpan(8, 0, 0), entry.GetProperty("isLate").GetBoolean());
+        Assert.Equal(localNow > new TimeSpan(8, 0, 0), entry.GetProperty("isLate").GetBoolean());
 
         var (again, _) = await admin.Post($"/api/personnel/{teacher}/signature/Entree", new { }).Fail();
         Assert.Equal(HttpStatusCode.Conflict, again);

@@ -5,7 +5,7 @@ on:
     paths:
       - 'scolia-pro/scripts/publier-android.sh'
       - 'scolia-pro/scripts/cle-android.sh'
-      - 'scolia-pro/scripts/recuperer-cle-android-pr18-1221.sh'
+      - 'scolia-pro/scripts/recuperer-cle-android-pr18-1222.sh'
       - 'scolia-pro/scripts/install-android-sdk-retry.sh'
       - 'scolia-pro/scripts/windows/**'
       - 'scolia-pro/src/Scolia.Bureau/**'
@@ -23,7 +23,7 @@ on:
     paths:
       - 'scolia-pro/scripts/publier-android.sh'
       - 'scolia-pro/scripts/cle-android.sh'
-      - 'scolia-pro/scripts/recuperer-cle-android-pr18-1221.sh'
+      - 'scolia-pro/scripts/recuperer-cle-android-pr18-1222.sh'
       - 'scolia-pro/scripts/install-android-sdk-retry.sh'
       - 'scolia-pro/scripts/windows/**'
       - 'scolia-pro/src/Scolia.Bureau/**'
@@ -48,7 +48,7 @@ concurrency:
 
 env:
   # Cache de signature accessible uniquement via la PR interne #18.
-  # Cette exception est limitee a la distribution 1.2.21.
+  # Cette exception est limitee a la distribution 1.2.22.
   SCOLIA_RECOVERY_PR18: ${{ github.event_name == 'pull_request' && github.event.pull_request.number == 18 && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'release/direct-apk-scolia-pro-20261103' && github.event.pull_request.base.ref == 'feature/scolia-recovery-login-lock-20261103' }}
   SCOLIA_CHECKOUT_REF: ${{ (github.event_name == 'pull_request' && github.event.pull_request.number == 18 && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'release/direct-apk-scolia-pro-20261103' && github.event.pull_request.base.ref == 'feature/scolia-recovery-login-lock-20261103') && github.event.pull_request.head.sha || github.sha }}
 
@@ -72,8 +72,8 @@ jobs:
       - name: Controler la source de recuperation PR18 sans secret
         shell: bash
         run: |
-          bash -n scripts/recuperer-cle-android-pr18-1221.sh
-          if bash scripts/recuperer-cle-android-pr18-1221.sh "$RUNNER_TEMP/aucune-cle" >/dev/null 2>&1; then
+          bash -n scripts/recuperer-cle-android-pr18-1222.sh
+          if bash scripts/recuperer-cle-android-pr18-1222.sh "$RUNNER_TEMP/aucune-cle" >/dev/null 2>&1; then
             echo "::error::Le script de signature a accepte un contexte sans autorisation." >&2
             exit 1
           fi
@@ -146,17 +146,17 @@ jobs:
       # Le script verifie le certificat AVANT toute compilation distribuable.
       - name: Restaurer le cache historique de la PR 18 uniquement
         if: env.SCOLIA_RECOVERY_PR18 == 'true'
-        id: cache_pr18_1221
+        id: cache_pr18_1222
         uses: actions/cache/restore@v4
         with:
           path: ~/.scolia-signature
           key: scolia-android-signature-v1
-      - name: Authentifier la cle officielle de la PR 18 pour la 1.2.21
+      - name: Authentifier la cle officielle de la PR 18 pour la 1.2.22
         if: env.SCOLIA_RECOVERY_PR18 == 'true'
         shell: bash
         env:
-          SCOLIA_CACHE_HIT: ${{ steps.cache_pr18_1221.outputs.cache-hit }}
-        run: bash scripts/recuperer-cle-android-pr18-1221.sh "$HOME/.scolia-signature"
+          SCOLIA_CACHE_HIT: ${{ steps.cache_pr18_1222.outputs.cache-hit }}
+        run: bash scripts/recuperer-cle-android-pr18-1222.sh "$HOME/.scolia-signature"
       - name: Refuser un certificat different de la version Android deja installee
         shell: bash
         run: |
@@ -356,7 +356,7 @@ jobs:
   android-publication-officielle:
     name: Publier automatiquement les versions Android et Windows sur GitHub Releases
     # Push officiel avec secrets, OU exception ponctuelle depuis la PR #18
-    # portant la vraie cle historique (version 1.2.21 exclusivement).
+    # portant la vraie cle historique (version 1.2.22 exclusivement).
     if: >-
       (github.event_name == 'push' && github.ref == 'refs/heads/release/direct-apk-scolia-pro-20261103') ||
       (github.event_name == 'pull_request' && github.event.pull_request.number == 18 &&
@@ -402,8 +402,8 @@ jobs:
           version="$(sed -n 's:.*<Version>\(.*\)</Version>.*:\1:p' Directory.Build.props | head -1)"
           [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo 'Version invalide'; exit 1; }
           if [[ "$GITHUB_EVENT_NAME" == 'pull_request' ]]; then
-            if [[ "$SCOLIA_RECOVERY_PR18" != 'true' || "$GITHUB_REF" != 'refs/pull/18/merge' || "$version" != '1.2.21' ]]; then
-              echo '::error::PR de publication non autorisee, ou version differente de 1.2.21.' >&2
+            if [[ "$SCOLIA_RECOVERY_PR18" != 'true' || "$GITHUB_REF" != 'refs/pull/18/merge' || "$version" != '1.2.22' ]]; then
+              echo '::error::PR de publication non autorisee, ou version differente de 1.2.22.' >&2
               exit 1
             fi
             # Les jobs de compilation ont utilise exclusivement la tete de la
@@ -414,7 +414,7 @@ jobs:
               echo "::error::La tete de la branche release a change pendant le build." >&2
               exit 1
             fi
-            echo '::notice::Release 1.2.21 depuis PR18, cle Android historique validee ; Windows sans Authenticode (procedure 1.2.17).'
+            echo '::notice::Release 1.2.22 depuis PR18, cle Android historique validee ; Windows sans Authenticode (procedure 1.2.17).'
           elif [[ "$GITHUB_EVENT_NAME" != 'push' || "$GITHUB_REF" != 'refs/heads/release/direct-apk-scolia-pro-20261103' ]]; then
             echo '::error::Contexte de publication non autorise.' >&2
             exit 1
@@ -437,6 +437,6 @@ jobs:
           gh release create "$tag" "$apk" "$sha" "$setup" "$setup_sha" \
             --repo "$GH_REPO" --target "$SCOLIA_CHECKOUT_REF" --latest \
             --title "SCOLIA Pro ${version} - Android et Windows" \
-            --notes "SCOLIA Pro 1.2.21 : réinscriptions fiabilisées. Création automatique des promotions manquantes dans la nouvelle année après confirmation, passage selon la progression configurée, contrôles contre les doublons, capacités dépassées et années clôturées. Les mensualités héritent des paramètres de la classe précédente avec les échéances de la nouvelle année et restent vérifiables par le secrétariat. Recherche continue des mises à jour Android de SCOLIA. HTTPS privé Tailscale conservé. APK signé avec le certificat Android historique vérifié ; installateur Windows non signé Authenticode dans cette voie PR18. Empreintes SHA-256 incluses. Sauvegarder les données scolaires avant mise à jour."
+            --notes "SCOLIA Pro 1.2.22 : cartes d'acces au format ID-1 porte-badge 85,60 x 53,98 mm, huit cartes par A4. Nom et logo de l'etablissement depuis sa configuration, session automatique, matricule, noms, promotion et QR dans la zone du sceau. PDF et Word harmonises. Selection multi-promotions conservee, recherche temporisee, doublons de matricules controles sur l'annee entiere, ponctualite des enseignants a 08h00 respecte. Réinscriptions de 1.2.21 et mise à jour Android conservées. APK vérifié avec le certificat historique ; Windows non signé Authenticode sur la voie PR18. SHA-256 inclus. Faire une sauvegarde avant la mise à jour."
           gh release view "$tag" --repo "$GH_REPO" --json url,assets \
             --jq '{url, fichiers: [.assets[] | select(.name | endswith(".apk") or endswith(".exe")) | {name,url,digest}]}'

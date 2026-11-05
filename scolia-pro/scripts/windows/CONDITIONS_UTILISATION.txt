@@ -1,5 +1,5 @@
 SCOLIA PRO - CONDITIONS D'UTILISATION
-Version 1.2.3 - JP-Services - 2026
+Édition Windows - JP-Services - 2026
 
 1. OBJET
 SCOLIA Pro est un logiciel de gestion scolaire destiné aux utilisateurs autorisés
@@ -45,7 +45,7 @@ aucun droit supplémentaire sur ces composants.
 
 7. ASSISTANCE
 Éditeur indiqué pour cette distribution : JP-Services.
-Projet : https://github.com/MPOLO-Jean-Paul/SCOLIA
+Adresse e-mail de contact : jeanpaulmpolo242@gmail.com
 
 En cliquant sur « Je comprends et j'accepte » dans cet assistant, vous
 confirmez avoir pris connaissance de ces conditions pour l'installation.
