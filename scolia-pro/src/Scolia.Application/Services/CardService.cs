@@ -121,9 +121,7 @@ public sealed class CardService(IAppDbContext db, IWriteGate gate, IAuditLog aud
                               select new { e.Id, e.PromotionId, e.Status, s.Matricule, s.LastName,
                                            s.MiddleName, s.FirstName, Promotion = p.Code })
                              .ToListAsync(ct);
-        var repeated = yearRows.GroupBy(x => x.Matricule, StringComparer.OrdinalIgnoreCase)
-            .Where(g => g.Count() > 1).Select(g => g.Key)
-            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var repeated = StudentCardRules.DuplicateMatricules(yearRows.Select(x => x.Matricule));
         var items = yearRows
             .Where(x => (promotionId is null || x.PromotionId == promotionId)
                         && (only is null || only.Contains(x.Id)))
