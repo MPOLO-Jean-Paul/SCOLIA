@@ -623,6 +623,8 @@ public sealed class BackstageViewModel : Observable
     private string securityNotice = string.Empty;
     private bool biometricBusy;
     private bool securityPasswordVisible;
+    private bool checkingMobileUpdates;
+    private string mobileUpdateNotice = string.Empty;
 
     public BackstageViewModel(ShellViewModel shell)
     {
@@ -632,6 +634,8 @@ public sealed class BackstageViewModel : Observable
             new BackstageItemVm("infos", "Informations", MaterialIconKind.Information, "ToneBlue"),
             new BackstageItemVm("mot-de-passe", "Sécurité du compte", MaterialIconKind.ShieldLockOutline, "ToneOrange"),
             new BackstageItemVm("poste", "Poste et réseau", MaterialIconKind.LanConnect, "ToneGreen"),
+            // Visible depuis Mon compte, sur tous les téléphones, même les postes clients.
+            new BackstageItemVm("updates", "Mises à jour", MaterialIconKind.Update, "ToneBlue"),
             // Raccourci vers Paramètres > Cet appareil : un seul endroit pour le thème, la police et les sons.
             new BackstageItemVm("preferences", "Apparence et confort", MaterialIconKind.TuneVariant, "TonePurple"),
             Preferences.MobileLayout
@@ -683,6 +687,8 @@ public sealed class BackstageViewModel : Observable
                 Raise(nameof(IsInfos));
                 Raise(nameof(IsPassword));
                 Raise(nameof(IsPoste));
+                Raise(nameof(IsUpdates));
+                Raise(nameof(MobileUpdateStatus));
                 Raise(nameof(ShowList));
                 Raise(nameof(ShowDetail));
                 Raise(nameof(DetailTitle));
@@ -691,6 +697,38 @@ public sealed class BackstageViewModel : Observable
     }
 
     public bool CanCheckWindowsUpdates => OperatingSystem.IsWindows();
+
+    public bool CanCheckMobileUpdates => Platform.IsMobile && Platform.CheckAppUpdatesAsync is not null;
+    public bool IsCheckingMobileUpdates
+    {
+        get => checkingMobileUpdates;
+        private set { if (Set(ref checkingMobileUpdates, value)) Raise(nameof(MobileUpdateActionLabel)); }
+    }
+    public string MobileUpdateActionLabel => IsCheckingMobileUpdates ? "Recherche en cours…" : "Rechercher les mises à jour";
+    public string MobileUpdateStatus => string.IsNullOrWhiteSpace(mobileUpdateNotice)
+        ? Platform.AppUpdateStatus?.Invoke() ?? "Aucune recherche effectuée sur cet appareil."
+        : mobileUpdateNotice;
+    public AsyncCommand CheckMobileUpdates => checkMobileUpdates ??= new AsyncCommand(async () =>
+    {
+        if (IsCheckingMobileUpdates) return;
+        if (Platform.CheckAppUpdatesAsync is not { } check)
+        {
+            mobileUpdateNotice = "La vérification Android n’est pas disponible sur cet appareil.";
+            Raise(nameof(MobileUpdateStatus));
+            return;
+        }
+        IsCheckingMobileUpdates = true;
+        mobileUpdateNotice = "Connexion à la dernière publication officielle…";
+        Raise(nameof(MobileUpdateStatus));
+        try { await check(); }
+        finally
+        {
+            mobileUpdateNotice = string.Empty;
+            IsCheckingMobileUpdates = false;
+            Raise(nameof(MobileUpdateStatus));
+        }
+    });
+    private AsyncCommand? checkMobileUpdates;
 
     /// <summary>Contrôle manuel complémentaire au contrôle automatique Windows à l'ouverture.</summary>
     public AsyncCommand CheckWindowsUpdates => checkWindowsUpdates ??= new AsyncCommand(async () =>
@@ -704,9 +742,9 @@ public sealed class BackstageViewModel : Observable
 
     public bool IsInfos => section?.Value == "infos";
     /// <summary>Mobile : la liste des rubriques s'affiche tant qu'aucune rubrique à page propre n'est ouverte.</summary>
-    public bool ShowList => !IsPassword && !IsPoste;
+    public bool ShowList => !IsPassword && !IsPoste && !IsUpdates;
     public bool ShowDetail => !ShowList;
-    public string DetailTitle => IsPassword ? "Sécurité du compte" : IsPoste ? "Poste et réseau" : string.Empty;
+    public string DetailTitle => IsPassword ? "Sécurité du compte" : IsPoste ? "Poste et réseau" : IsUpdates ? "Mises à jour" : string.Empty;
     public string Initials => string.Concat(UserName.Split(' ', StringSplitOptions.RemoveEmptyEntries).Take(2).Select(w => char.ToUpperInvariant(w[0])));
     /// <summary>Mobile : revient de la rubrique ouverte à la liste des rubriques.</summary>
     public RelayCommand BackToList => backToList ??= new RelayCommand(() => Section = Items[0]);
@@ -716,6 +754,7 @@ public sealed class BackstageViewModel : Observable
     private RelayCommand<BackstageItemVm>? openItem;
     public bool IsPassword => section?.Value == "mot-de-passe";
     public bool IsPoste => section?.Value == "poste";
+    public bool IsUpdates => section?.Value == "updates";
     public FormViewModel PasswordForm { get => passwordForm!; private set => Set(ref passwordForm, value); }
 
     public bool ShowBiometricSecurity => Platform.IsMobile;
