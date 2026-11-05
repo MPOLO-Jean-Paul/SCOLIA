@@ -207,8 +207,11 @@ public sealed class ScoliaClient : IDisposable
         // contrôle la reprise indépendamment, toutes les 5 secondes.
         if (!IsOnline && CanUseOfflineCache)
         {
-            if (canCache && Offline!.ReadPage(path) is { } local)
-                return JsonSerializer.Deserialize<T>(local.Json, Json.Options)!;
+            // Lire la dernière copie plus les écritures en attente, sans attendre
+            // le serveur. Les nouvelles inscriptions portent un ID provisoire.
+            var saved = canCache ? Offline!.ReadPage(path)?.Json : null;
+            var local = Infrastructure.OfflineReplica.Project(path, saved, Offline!);
+            if (local is not null) return JsonSerializer.Deserialize<T>(local, Json.Options)!;
             throw new OfflineException("Cette rubrique n'a pas encore de données sur cet appareil. Reconnectez-vous à l'ordinateur principal pour la consulter.");
         }
 
@@ -227,8 +230,10 @@ public sealed class ScoliaClient : IDisposable
         catch (Exception ex) when (IsDisconnected(ex, ct))
         {
             SetOnline(false);
-            if (canCache && Offline!.ReadPage(path) is { } saved) text = saved.Json;
-            else throw new OfflineException("Ordinateur principal injoignable : cette rubrique n'a pas encore été chargée sur cet appareil.");
+            var cached = canCache ? sourceStore?.ReadPage(path)?.Json : null;
+            text = sourceStore is null ? null! : Infrastructure.OfflineReplica.Project(path, cached, sourceStore)!;
+            if (text is null)
+                throw new OfflineException("Ordinateur principal injoignable : cette rubrique n'a pas encore été chargée sur cet appareil.");
         }
         catch (ApiException ex) when (ex.Status is 403 or 404)
         {
@@ -238,6 +243,10 @@ public sealed class ScoliaClient : IDisposable
                 sourceStore.RemovePageFor(sourceUser, path);
             throw;
         }
+        // Une réponse réseau plus ancienne que les écritures encore en file
+        // ne doit pas faire disparaître la saisie locale de l'utilisateur.
+        if (canCache && sourceStore is not null)
+            text = Infrastructure.OfflineReplica.Project(path, text, sourceStore) ?? text;
         return JsonSerializer.Deserialize<T>(text, Json.Options)!;
     }
 
