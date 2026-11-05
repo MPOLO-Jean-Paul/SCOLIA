@@ -57,6 +57,35 @@ public sealed class OfflinePreparationTests
     }
 
     [Fact]
+    public void Revoked_cached_resource_is_removed_only_for_the_original_user()
+    {
+        var folder = Path.Combine(Path.GetTempPath(), "scolia-offline-revoke-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            var store = new OfflineStore(new Uri("https://school.example:5080/"), folder);
+            const string resource = "api/apprenants/74599756-ecfa-48ee-b37c-cef33bcc773a";
+            store.User = "secretariat";
+            store.SavePage(resource, "{\"account\":\"secretariat\"}");
+            store.User = "comptabilite";
+            store.SavePage(resource, "{\"account\":\"comptabilite\"}");
+
+            // Un refus du serveur pour le secrétariat ne doit pas effacer la copie comptabilité.
+            store.RemovePageFor("secretariat", resource);
+            Assert.NotNull(store.ReadPage(resource));
+            Assert.Contains("comptabilite", store.ReadPage(resource)!.Value.Json);
+
+            store.User = "secretariat";
+            Assert.Null(store.ReadPage(resource));
+            Assert.DoesNotContain(resource, store.CachedPaths());
+        }
+        finally
+        {
+            Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
+            if (Directory.Exists(folder)) Directory.Delete(folder, recursive: true);
+        }
+    }
+
+    [Fact]
     public void Cached_index_remains_private_to_the_authenticated_account()
     {
         var folder = Path.Combine(Path.GetTempPath(), "scolia-offline-prepare-" + Guid.NewGuid().ToString("N"));
