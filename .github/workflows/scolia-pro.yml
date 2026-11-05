@@ -188,8 +188,8 @@ jobs:
         id: source_cle_officielle
         shell: bash
         env:
-          SCOLIA_ANDROID_KEYSTORE: ${ secrets.SCOLIA_ANDROID_KEYSTORE }}
-          SCOLIA_ANDROID_KEYSTORE_PASS: ${ secrets.SCOLIA_ANDROID_KEYSTORE_PASS }}
+          SCOLIA_ANDROID_KEYSTORE: ${{ secrets.SCOLIA_ANDROID_KEYSTORE }}
+          SCOLIA_ANDROID_KEYSTORE_PASS: ${{ secrets.SCOLIA_ANDROID_KEYSTORE_PASS }}
         run: |
           set -euo pipefail
           version="$(sed -n 's:.*<Version>\(.*\)</Version>.*:\1:p' Directory.Build.props | head -1)"
@@ -214,10 +214,10 @@ jobs:
         if: github.event_name == 'push' && github.ref == 'refs/heads/release/direct-apk-scolia-pro-20261103'
         shell: bash
         env:
-          SCOLIA_ANDROID_KEYSTORE: ${ secrets.SCOLIA_ANDROID_KEYSTORE }}
-          SCOLIA_ANDROID_KEYSTORE_PASS: ${ secrets.SCOLIA_ANDROID_KEYSTORE_PASS }}
-          SCOLIA_SIGNATURE_SOURCE: ${ steps.source_cle_officielle.outputs.source }}
-          SCOLIA_CACHE_HIT: ${ steps.cache_historique_1217.outputs.cache-hit }}
+          SCOLIA_ANDROID_KEYSTORE: ${{ secrets.SCOLIA_ANDROID_KEYSTORE }}
+          SCOLIA_ANDROID_KEYSTORE_PASS: ${{ secrets.SCOLIA_ANDROID_KEYSTORE_PASS }}
+          SCOLIA_SIGNATURE_SOURCE: ${{ steps.source_cle_officielle.outputs.source }}
+          SCOLIA_CACHE_HIT: ${{ steps.cache_historique_1217.outputs.cache-hit }}
         run: |
           set -euo pipefail
           if [[ "$SCOLIA_SIGNATURE_SOURCE" == "secrets" ]]; then
