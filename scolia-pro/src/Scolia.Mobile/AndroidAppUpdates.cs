@@ -230,10 +230,25 @@ public static class AndroidAppUpdates
         catch (Exception ex) when (ex is HttpRequestException or IOException or JsonException
             or TaskCanceledException or Java.Lang.Exception or InvalidOperationException)
         {
-            Android.Util.Log.Warn("SCOLIA-MAJ", $"Contrôle manuel impossible : {ex}");
+            Android.Util.Log.Warn("SCOLIA-MAJ", $"Contrôle manuel impossible : {ex.GetType().Name}");
+            // Une coupure Internet ne doit pas masquer l'installation d'un APK
+            // deja disponible et verifie localement.
+            try
+            {
+                if (await CheckDownloadAsync(activity))
+                {
+                    Report(activity, "Recherche réseau indisponible ; APK déjà téléchargé toujours installable.");
+                    return;
+                }
+            }
+            catch (Exception pendingError) when (pendingError is IOException or Java.Lang.Exception
+                or InvalidOperationException or UnauthorizedAccessException)
+            {
+                Android.Util.Log.Warn("SCOLIA-MAJ", $"Vérification locale différée : {pendingError.GetType().Name}");
+            }
             activity.RunOnUiThread(() => new AlertDialog.Builder(activity)
                 .SetTitle("Vérification indisponible")
-                .SetMessage("Impossible de consulter GitHub Releases. Vérifiez Internet ou le VPN et réessayez. Détail : " + ex.Message)
+                .SetMessage("Impossible de consulter GitHub Releases. Vérifiez Internet ou le VPN et réessayez.")
                 .SetPositiveButton("Fermer", (_, _) => { })
                 .Show());
         }
