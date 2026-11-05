@@ -15,16 +15,35 @@ public class CardDesignTests
         [new CardItem("MUKENDI", "KABEYA", "Grâce", "INF1", "#F5C518", "qr", "INF101"), new CardItem("NGOY", "KAZADI", "Paul", "TLM1", "#1D4ED8", "qr2", "TLM104")]);
 
     [Fact]
-    public void La_carte_Word_porte_le_bandeau_et_l_identite_en_ligne()
+    public void La_carte_Word_reprend_le_modele_Session_et_les_trois_champs_d_identite()
     {
         var bytes = CardWordWriter.Write(Sample());
         using var zip = new ZipArchive(new MemoryStream(bytes));
         using var reader = new StreamReader(zip.GetEntry("word/document.xml")!.Open(), Encoding.UTF8);
         var xml = reader.ReadToEnd();
-        foreach (var text in new[] { "CARTE D'ACCÈS", "SESSION NOVEMBRE 2026", "NOM : ", "PRÉNOM : ", "CLASSE : ", "INF1", "QR de vérification" })
-            Assert.Contains(System.Security.SecurityElement.Escape(text), xml, StringComparison.Ordinal);
-        // La bande de couleur reste sans texte.
-        Assert.DoesNotContain("MATRICULE", xml, StringComparison.Ordinal);
+        foreach (var label in new[] { "Session 2026", "ACCÈS AUX EXAMENS", "MATRICULE : ",
+            "NOMS : ", "MUKENDI KABEYA GRÂCE", "PROMOTION : ", "INF1", "Contrôle QR", "ÉCOLE DE DÉMONSTRATION" })
+            Assert.Contains(System.Security.SecurityElement.Escape(label), xml, StringComparison.Ordinal);
+        // Le logo ne doit jamais être remplacé par un nom d'école étranger.
+        Assert.DoesNotContain("INSTITUT TECHNIQUE MÉDICAL CŒUR DE DIEU", xml, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Grille_A4_et_taille_physique_des_inserts_sont_exacts()
+    {
+        Assert.Equal(85.6f, Scolia.Domain.Students.StudentCardRules.CardWidthMm);
+        Assert.Equal(53.98f, Scolia.Domain.Students.StudentCardRules.CardHeightMm);
+        Assert.True(Scolia.Domain.Students.StudentCardRules.FitsOnPage());
+        Assert.Equal("2026", Scolia.Domain.Students.StudentCardRules.SessionYear("NOVEMBRE 2026"));
+        Assert.Equal("MUKENDI KABEYA GRÂCE",
+            Scolia.Domain.Students.StudentCardRules.FullName("Mukendi", "Kabeya", "Grâce"));
+
+        using var zip = new ZipArchive(new MemoryStream(CardWordWriter.Write(Sample())));
+        using var reader = new StreamReader(zip.GetEntry("word/document.xml")!.Open(), Encoding.UTF8);
+        var xml = reader.ReadToEnd();
+        Assert.Contains("w:gridCol w:w=\"4853\"", xml, StringComparison.Ordinal);
+        Assert.Contains("w:trHeight w:val=\"3060\"", xml, StringComparison.Ordinal);
+        Assert.Contains("w:top=\"907\"", xml, StringComparison.Ordinal);
     }
 
     [Fact]
