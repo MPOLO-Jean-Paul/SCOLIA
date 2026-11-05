@@ -88,51 +88,49 @@ public static class CardWordWriter
         return stream.ToArray();
     }
 
-    private static void AppendCard(StringBuilder body, CardDocument d, CardItem card, string sealRid, Images images)
+    private static void AppendCard(StringBuilder body, CardDocument d, CardItem card, string logoRid, Images images)
     {
         var qrRid = images.Add("qr:" + card.QrText, () => DocumentService.QrPng(card.QrText));
         var content = new StringBuilder();
+        var names = StudentCardRules.FullName(card.LastName, card.MiddleName, card.FirstName);
+        var schoolName = d.Header.Institute.Trim().ToUpperInvariant();
+        var authority = First(d.Header.Ministry, d.Header.Direction, d.Header.Division);
+        var address = First(d.Header.Address, d.Header.CityZone, d.Header.Country);
 
-        // En-tête : sceau à gauche, mentions centrées à droite.
+        // En-tête réel de l'établissement : son logo et ses mentions configurées.
         content.Append(TableStart(new[] { SealTwip, InnerWidthTwip - SealTwip }, InnerTwip));
         content.Append($"<w:tr><w:tc><w:tcPr><w:tcW w:w=\"{SealTwip}\" w:type=\"dxa\"/><w:vAlign w:val=\"center\"/></w:tcPr>")
-            .Append(Picture(sealRid, 13.5, 13.5, 1, "Logo établissement")).Append("</w:tc>");
+            .Append(Picture(logoRid, 10.5, 10.5, 1, "Logo établissement")).Append("</w:tc>");
         content.Append($"<w:tc><w:tcPr><w:tcW w:w=\"{InnerWidthTwip - SealTwip}\" w:type=\"dxa\"/><w:vAlign w:val=\"center\"/></w:tcPr>");
-        Mention(content, d.Header.Country, 10, true);
-        Mention(content, d.Header.Ministry, 9, false);
-        Mention(content, d.Header.Direction, 9, false);
-        Mention(content, d.Header.Division, 9, false);
-        Mention(content, d.Header.CityZone, 9, false);
-        Mention(content, d.Header.Institute, 10, true);
-        Mention(content, d.Header.Address, 9, false);
+        Mention(content, schoolName, schoolName.Length > 80 ? 8 : schoolName.Length > 50 ? 10 : 12, true);
+        Mention(content, authority, 8, false);
+        Mention(content, address, 8, false);
         content.Append("</w:tc></w:tr></w:tbl>");
 
-        // Bandeau bleu marine : le titre de la carte et la session, comme sur le PDF.
-        content.Append(Paragraph(string.Empty, 4, false, false, "left", null, 40));
-        content.Append(TableStart(new[] { CardTwip / 2, CardTwip - CardTwip / 2 }));
-        content.Append("<w:tr><w:trPr><w:trHeight w:val=\"340\" w:hRule=\"exact\"/></w:trPr>");
-        content.Append($"<w:tc><w:tcPr><w:tcW w:w=\"{CardTwip / 2}\" w:type=\"dxa\"/><w:shd w:val=\"clear\" w:color=\"auto\" w:fill=\"0B3B6F\"/><w:vAlign w:val=\"center\"/></w:tcPr>")
-            .Append(Paragraph("CARTE D'ACCÈS", 15, true, false, "left", "FFFFFF", indentTwip: InnerTwip)).Append("</w:tc>");
-        content.Append($"<w:tc><w:tcPr><w:tcW w:w=\"{CardTwip - CardTwip / 2}\" w:type=\"dxa\"/><w:shd w:val=\"clear\" w:color=\"auto\" w:fill=\"0B3B6F\"/><w:vAlign w:val=\"center\"/></w:tcPr>")
-            .Append(Paragraph($"SESSION {d.Session}", d.Session.Length > 14 ? 12 : 14, true, false, "right", "FFFFFF", indentTwip: InnerTwip)).Append("</w:tc></w:tr></w:tbl>");
-        content.Append(Paragraph(string.Empty, 4, false, false, "left", null, 80));
-
-        // Identité à gauche, QR à droite.
+        // Session et QR à la place du sceau rond du modèle fourni.
         content.Append(TableStart(new[] { InnerWidthTwip - QrTwip, QrTwip }, InnerTwip));
         content.Append($"<w:tr><w:tc><w:tcPr><w:tcW w:w=\"{InnerWidthTwip - QrTwip}\" w:type=\"dxa\"/><w:vAlign w:val=\"center\"/></w:tcPr>");
-        Field(content, "NOM", card.LastName);
-        Field(content, "POST-NOM", card.MiddleName);
-        Field(content, "PRÉNOM", card.FirstName);
-        Field(content, "CLASSE", card.Classe);
-        content.Append($"</w:tc><w:tc><w:tcPr><w:tcW w:w=\"{QrTwip}\" w:type=\"dxa\"/><w:vAlign w:val=\"center\"/></w:tcPr>")
-            .Append(Picture(qrRid, 18, 18, 2, "QR"))
-            .Append(Paragraph("QR de vérification", 8, false, false, "center", "5B6878"))
-            .Append("</w:tc></w:tr></w:tbl>");
-        content.Append(Paragraph($"Année scolaire {d.AcademicYear}", 10, true, false, "left", "0B3B6F", 80, indentTwip: InnerTwip + 60));
+        content.Append(Paragraph("Session " + StudentCardRules.SessionYear(d.Session), 27, true, false, "left", "0B3B6F", 60));
+        content.Append(Paragraph("ACCÈS AUX EXAMENS", 12, true, false, "left", "0B3B6F", 35));
+        content.Append(Paragraph(d.Session, 9, false, false, "left", "5B6878", 20));
+        content.Append("</w:tc>");
+        content.Append($"<w:tc><w:tcPr><w:tcW w:w=\"{QrTwip}\" w:type=\"dxa\"/><w:vAlign w:val=\"center\"/></w:tcPr>");
+        content.Append(Picture(qrRid, 16.5, 16.5, 2, "QR de contrôle"));
+        content.Append(Paragraph("Contrôle QR", 7, false, false, "center", "5B6878"));
+        content.Append("</w:tc></w:tr></w:tbl>");
 
-        // Le paragraphe final est obligatoire dans une cellule, après la dernière table.
+        // Champs alimentés automatiquement depuis le dossier de l'apprenant.
+        content.Append(Paragraph(string.Empty, 4, false, false, "left", null, 25));
+        Field(content, "MATRICULE", card.Matricule, 14);
+        Field(content, "NOMS", names, names.Length > 48 ? 10 : names.Length > 32 ? 12 : 14);
+        Field(content, "PROMOTION", card.Classe, 14);
+        content.Append(Paragraph("Année scolaire " + d.AcademicYear, 8, false, false, "left", "5B6878", 30));
+
         body.Append(content).Append(TinyParagraph);
     }
+
+    private static string? First(params string?[] values) =>
+        values.FirstOrDefault(v => !string.IsNullOrWhiteSpace(v))?.Trim();
 
     private static void ContentCell(StringBuilder body, CardDocument d, CardItem? card, string sealRid, Images images)
     {
