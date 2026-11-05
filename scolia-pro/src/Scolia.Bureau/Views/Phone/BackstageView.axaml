@@ -60,6 +60,15 @@
               <StackPanel Spacing="1"><TextBlock Text="Année courante" Classes="phonelabel" /><TextBlock Text="{Binding Year}" /></StackPanel>
               <StackPanel Spacing="1"><TextBlock Text="Serveur" Classes="phonelabel" /><TextBlock Text="{Binding Server}" TextWrapping="Wrap" /></StackPanel>
               <StackPanel Spacing="1"><TextBlock Text="Application" Classes="phonelabel" /><TextBlock Text="{Binding Version}" /></StackPanel>
+              <Button Classes="phonerow" Command="{Binding CheckMobileUpdates}" IsVisible="{Binding CanCheckMobileUpdates}"
+                      MinHeight="48" Margin="0,6,0,0" ToolTip.Tip="Contrôler immédiatement la dernière version officielle">
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                  <mi:MaterialIcon Kind="Update" Width="20" Height="20" Foreground="{DynamicResource AccentBrush}"
+                                   VerticalAlignment="Center" />
+                  <TextBlock Grid.Column="1" Text="{Binding MobileUpdateActionLabel}" FontWeight="SemiBold"
+                             Foreground="{DynamicResource AccentBrush}" VerticalAlignment="Center" TextWrapping="Wrap" />
+                </Grid>
+              </Button>
             </StackPanel>
           </Border>
 
@@ -77,6 +86,32 @@
             <views:SecurityHubView />
           </StackPanel>
           <ContentControl IsVisible="{Binding IsPoste}" Content="{Binding PosteSection}" />
+          <!-- Accessible sans être serveur : aucun réglage réseau ni compte administrateur n'est requis. -->
+          <StackPanel IsVisible="{Binding IsUpdates}" Spacing="14">
+            <Border Classes="phonegroup" Padding="16">
+              <StackPanel Spacing="12">
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                  <Border Classes="appicon medium" Background="{DynamicResource ToneBlue}">
+                    <mi:MaterialIcon Kind="Update" />
+                  </Border>
+                  <StackPanel Grid.Column="1" Spacing="4" VerticalAlignment="Center">
+                    <TextBlock Text="Mises à jour SCOLIA Pro" FontSize="17" FontWeight="SemiBold" />
+                    <TextBlock Text="{Binding Version}" Classes="muted" TextWrapping="Wrap" />
+                  </StackPanel>
+                </Grid>
+                <TextBlock Text="SCOLIA cherche automatiquement de nouvelles versions à l'ouverture et périodiquement. Une recherche manuelle vérifie immédiatement la dernière publication officielle, même lorsqu'un téléchargement précédent attend l'installation."
+                           TextWrapping="Wrap" Classes="muted" />
+                <TextBlock Text="{Binding MobileUpdateStatus}" TextWrapping="Wrap" Classes="muted" />
+                <Button Classes="primary" Command="{Binding CheckMobileUpdates}"
+                        Content="{Binding MobileUpdateActionLabel}"
+                        IsEnabled="{Binding CanCheckMobileUpdates}"
+                        MinHeight="50" HorizontalAlignment="Stretch"
+                        HorizontalContentAlignment="Center" />
+                <TextBlock Text="Une mise à jour téléchargée est vérifiée puis Android propose son installation. Vos données scolaires sont conservées."
+                           TextWrapping="Wrap" Classes="muted" FontSize="{DynamicResource FsSmall}" />
+              </StackPanel>
+            </Border>
+          </StackPanel>
         </StackPanel>
       </Panel>
     </ScrollViewer>
