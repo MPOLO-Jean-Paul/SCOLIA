@@ -6,7 +6,7 @@ using Xunit;
 
 namespace Scolia.Tests;
 
-/// <summary>Cartes d'accès : bandeau, identité ligne par ligne avec la classe, bande de couleur sans texte, en Word comme en PDF.</summary>
+/// <summary>Cartes d'accès : format ID-1, en-tête personnalisé, session soulignée, identité et QR en Word et PDF.</summary>
 public class CardDesignTests
 {
     private static CardDocument Sample() => new(
@@ -26,6 +26,28 @@ public class CardDesignTests
             Assert.Contains(System.Security.SecurityElement.Escape(label), xml, StringComparison.Ordinal);
         // Le logo ne doit jamais être remplacé par un nom d'école étranger.
         Assert.DoesNotContain("INSTITUT TECHNIQUE MÉDICAL CŒUR DE DIEU", xml, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Les_mention_configurees_sont_toutes_presentes_dans_l_entete_Word()
+    {
+        var configured = Sample() with
+        {
+            Header = new SchoolCardHeader(
+                "PAYS TEST", "MINISTERE TEST", "DIRECTION TEST", "DIVISION TEST",
+                "ZONE TEST", "INSTITUT PERSONNALISE", "ADRESSE TEST", DocumentService.DefaultLogo())
+        };
+        using var zip = new ZipArchive(new MemoryStream(CardWordWriter.Write(configured)));
+        using var reader = new StreamReader(zip.GetEntry("word/document.xml")!.Open(), Encoding.UTF8);
+        var xml = reader.ReadToEnd();
+        foreach (var item in new[] { "INSTITUT PERSONNALISE", "MINISTERE TEST",
+            "DIRECTION TEST", "DIVISION TEST", "ZONE TEST", "ADRESSE TEST", "PAYS TEST" })
+            Assert.Contains(item, xml, StringComparison.Ordinal);
+        Assert.DoesNotContain("INSTITUT TECHNIQUE MÉDICAL CŒUR DE DIEU", xml, StringComparison.Ordinal);
+        // Même logo de la configuration aux deux emplacements, QR séparé et lisible.
+        Assert.True(System.Text.RegularExpressions.Regex.Matches(xml, "r:embed=\"rImg1\"").Count >= 2);
+        Assert.Contains("r:embed=\"rImg2\"", xml, StringComparison.Ordinal);
+        Assert.Contains("<w:u w:val=\"single\"/>", xml, StringComparison.Ordinal);
     }
 
     [Fact]
