@@ -77,3 +77,20 @@ pour modifier les secrets GitHub. Pour les versions postérieures à 1.2.17,
 un administrateur doit migrer la clé originale dans les secrets GitHub Actions
 par un chemin protégé. Le cache historique reste un mécanisme de récupération
 transitoire, et non un coffre-fort recommandé.
+
+## Récupération depuis la PR interne n° 18
+
+Les journaux ont identifié un second cache portant le **même nom** sur la
+branche de distribution, mais avec un certificat incompatible. Le cache de
+la clé correcte a été restauré dans le [run de la PR n° 18](https://github.com/MPOLO-Jean-Paul/SCOLIA/actions/runs/41869248798).
+GitHub isole les caches de PR : la branche officielle ne peut donc pas lire
+cet objet directement.
+
+Pour **1.2.17 uniquement**, le pipeline natif autorise à utiliser le cache
+dans le contexte strictement identifié de cette PR interne, si son auteur,
+le numéro, les branches et le dépôt correspondent. Les tâches compilent le
+**SHA exact** de la branche officielle (pas le merge PR), vérifient le
+certificat, puis le responsable de publication valide à nouveau le SHA
+réel de la branche avant toute GitHub Release. Une autre PR ne peut pas
+exécuter cette procédure. Cette permission exceptionnelle doit être retirée
+après publication, et la clé migrée dans les secrets GitHub.
