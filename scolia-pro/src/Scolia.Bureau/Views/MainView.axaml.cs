@@ -152,6 +152,11 @@ public partial class MainView : UserControl
             or nameof(Preferences.Compact) or nameof(Preferences.Sidebar)
             or nameof(Preferences.RibbonCollapsed))
             QueueFitPageActions();
+        // L'ouverture du volet décale le champ sans nécessairement changer sa largeur.
+        // Repositionner la liste de suggestions après la nouvelle mise en page.
+        if (args.PropertyName == nameof(Preferences.Sidebar) && shell.HeaderFinderOpen)
+            Avalonia.Threading.Dispatcher.UIThread.Post(PlaceHeaderFinder,
+                Avalonia.Threading.DispatcherPriority.Loaded);
     }
 
     /// <summary>Place le curseur dans le filtre de la page sans ouvrir la recherche globale.</summary>
@@ -172,6 +177,10 @@ public partial class MainView : UserControl
     {
         if (subscribedShell is not { } shell) return;
         if (args.PropertyName == nameof(ShellViewModel.CompactWindow)) FitWindow(Bounds.Size);
+        if (args.PropertyName is nameof(ShellViewModel.SidebarShown) or nameof(ShellViewModel.Narrow)
+            && shell.HeaderFinderOpen)
+            Avalonia.Threading.Dispatcher.UIThread.Post(PlaceHeaderFinder,
+                Avalonia.Threading.DispatcherPriority.Loaded);
         // Un résultat ouvert (page, fiche, fenêtre, menu Fichier) ou la veille : la liste de la barre se referme et se vide.
         if (shell.HeaderFinderOpen && args.PropertyName is nameof(ShellViewModel.Current) or nameof(ShellViewModel.Dialog)
                 or nameof(ShellViewModel.BackstageOpen) or nameof(ShellViewModel.IsLocked) or nameof(ShellViewModel.IsLoggedIn))
