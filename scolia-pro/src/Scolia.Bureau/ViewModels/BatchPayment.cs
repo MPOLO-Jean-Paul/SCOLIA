@@ -178,7 +178,6 @@ public sealed class BatchPaymentPage : PageViewModel
 
     public override async Task LoadAsync()
     {
-        var version = ++queryVersion;
         if (!ready)
         {
             Promotions = await PromotionChoicesAsync(withAll: true);
@@ -188,6 +187,9 @@ public sealed class BatchPaymentPage : PageViewModel
             ready = true;
         }
 
+        // Lors du premier chargement, un filtre saisi avant la réponse des promotions
+        // doit être pris en compte et ne doit pas rendre la liste définitivement vide.
+        var version = ++queryVersion;
         var candidates = await Shell.Api.GetAsync<List<BatchCandidateDto>>("api/paiements/lot/candidats" + ScoliaClient.Query(
             ("promotionId", Promotion?.Value), ("q", Search.Trim())));
 
