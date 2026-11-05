@@ -53,6 +53,7 @@ public sealed class SyncCenter : Observable, IDisposable
 {
     private static readonly TimeSpan HeartbeatInterval = TimeSpan.FromSeconds(15);
     private static readonly TimeSpan ProbeInterval = TimeSpan.FromSeconds(5);
+    private static readonly TimeSpan OnlineHealthInterval = TimeSpan.FromSeconds(10);
 
     private readonly ShellViewModel shell;
     private readonly ScoliaClient api;
@@ -135,7 +136,7 @@ public sealed class SyncCenter : Observable, IDisposable
         : "En ligne";
 
     public string StatusDetail => Offline
-        ? "L'ordinateur principal ne répond pas. Vous travaillez sur les données gardées sur cet appareil ; vos opérations seront envoyées à son retour."
+        ? "Serveur inaccessible : les données déjà téléchargées restent consultables. Seules les opérations autorisées sont enregistrées en attente ; les validations définitives reprennent après reconnexion."
         : HasConflicts ? "Le serveur a refusé des opérations faites hors ligne. Ouvrez la liste pour les revoir."
         : TailscaleEndpoint.IsTailnetAddress(api.Server)
             ? $"Réseau privé Tailscale · {PeersText}. La base reste sur l'appareil principal ; les droits SCOLIA restent appliqués."
@@ -170,6 +171,7 @@ public sealed class SyncCenter : Observable, IDisposable
         var token = running.Token;
         _ = StreamLoopAsync(token);
         _ = HeartbeatLoopAsync(token);
+        _ = HealthLoopAsync(token);
         // Préparer les pages locales après le rendu de l'accueil, sans retarder l'ouverture.
         _ = WarmOfflinePagesAsync(token);
         RaiseCounts();
@@ -455,6 +457,31 @@ public sealed class SyncCenter : Observable, IDisposable
             flushing = false;
             Syncing = false;
             RaiseCounts();
+        }
+    }
+
+    /// <summary>
+    /// Contrôle la disponibilité du serveur même lorsque personne ne navigue et
+    /// que le flux temps réel a été interrompu. Les deux interfaces Avalonia (PC
+    /// et Android) utilisent le même état ; aucune notification répétée.
+    /// La boucle de reprise existante prend le relais dès le premier échec.
+    /// </summary>
+    private async Task HealthLoopAsync(CancellationToken ct)
+    {
+        while (!ct.IsCancellationRequested)
+        {
+            try { await Task.Delay(OnlineHealthInterval, ct); }
+            catch (OperationCanceledException) { return; }
+
+            if (!shell.IsLoggedIn || Offline) continue;
+            try { await api.IsRunningAsync(ct); }
+            catch (OperationCanceledException) when (ct.IsCancellationRequested) { return; }
+            catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or IOException)
+            {
+                // IsRunningAsync annonce déjà une coupure HTTP ; une erreur
+                // inattendue de transport ne doit pas tuer la surveillance.
+                System.Diagnostics.Trace.WriteLine($"SCOLIA : sonde de liaison interrompue ({ex.GetType().Name}).");
+            }
         }
     }
 
