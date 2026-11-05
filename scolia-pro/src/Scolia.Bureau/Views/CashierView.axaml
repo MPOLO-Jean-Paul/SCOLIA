@@ -132,8 +132,14 @@
                 </DataTemplate>
               </ItemsControl.ItemTemplate>
             </ItemsControl>
-            <TextBlock Text="Chaque mois se règle en entier, à son montant." Classes="muted" FontSize="{DynamicResource FsSmall}" IsVisible="{Binding HasMonths}" />
-            <TextBlock Text="{Binding TotalCaption}" Classes="muted" IsVisible="{Binding HasMonths}" />
+            <StackPanel Spacing="5" IsVisible="{Binding HasMonths}">
+              <TextBlock Text="Montant réellement reçu" Classes="caption" />
+              <TextBox Text="{Binding AmountText, Mode=TwoWay}" Watermark="Montant du versement"
+                       HorizontalAlignment="Stretch" MinHeight="42" />
+              <TextBlock Text="{Binding TotalCaption}" Classes="muted" TextWrapping="Wrap" />
+              <TextBlock Text="Le reste sera conservé sur le compte. Les mois les plus anciens sont imputés en premier."
+                         Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
+            </StackPanel>
           </StackPanel>
           <Grid ColumnDefinitions="*,*,*" RowDefinitions="Auto,Auto" ColumnSpacing="10" RowSpacing="12" infra:Adaptive.StackBelow="700">
             <!-- Le total se lit dans la barre du bas, à côté du bouton Encaisser : il n'est pas répété ici. -->
@@ -145,15 +151,18 @@
               <TextBlock Text="Mode" Classes="caption" />
               <ComboBox ItemsSource="{Binding Methods}" SelectedItem="{Binding Method}" HorizontalAlignment="Stretch" />
             </StackPanel>
-            <!-- Remplis par SCOLIA : la référence, la personne connectée, le téléphone du dossier. Seul le mode se choisit. -->
-            <StackPanel Grid.Row="1" Grid.Column="0">
+            <!-- Une référence interne est créée pour les espèces ; les références externes sont saisies sur la confirmation réelle. -->
+            <StackPanel Grid.Row="1" Grid.Column="0" Spacing="4">
               <TextBlock Text="Référence de la transaction" Classes="caption" />
-              <Border Classes="autofield" ToolTip.Tip="Donnée par SCOLIA pour chaque versement">
+              <Border Classes="autofield" ToolTip.Tip="Référence interne générée par SCOLIA" IsVisible="{Binding !NeedsExternalReference}">
                 <Grid ColumnDefinitions="*,Auto">
                   <TextBlock Text="{Binding ReferenceText}" TextTrimming="CharacterEllipsis" FontWeight="Normal" FontSize="{DynamicResource FsSmall}" ToolTip.Tip="{Binding ReferenceText}" />
                   <mi:MaterialIcon Grid.Column="1" Kind="Autorenew" />
                 </Grid>
               </Border>
+              <TextBox Text="{Binding Reference, Mode=TwoWay}" IsVisible="{Binding NeedsExternalReference}"
+                       Watermark="Référence réelle de l'opérateur" MinHeight="42"
+                       ToolTip.Tip="Recopiez la référence figurant sur la confirmation Mobile Money, bancaire ou du chèque" />
             </StackPanel>
             <StackPanel Grid.Row="1" Grid.Column="1" Margin="0,10,10,0">
               <TextBlock Text="Visé par" Classes="caption" />
