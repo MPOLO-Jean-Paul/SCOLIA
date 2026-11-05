@@ -69,6 +69,7 @@ public sealed class ReEnrollmentAutoPromotionTests : IDisposable
             .EnumerateArray().ToList();
         var created = Assert.Single(promotions);
         Assert.Equal("INF2", created.GetProperty("code").GetString());
+        Assert.Equal("Deuxième année", created.GetProperty("name").GetString());
         Assert.Equal(10, created.GetProperty("fees").GetArrayLength());
         Assert.Equal(55000m, created.GetProperty("monthlyFee").GetDecimal());
 
