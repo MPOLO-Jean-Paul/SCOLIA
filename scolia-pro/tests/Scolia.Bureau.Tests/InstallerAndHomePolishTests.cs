@@ -31,6 +31,31 @@ public sealed class InstallerAndHomePolishTests
     }
 
     [Fact]
+    public void Accueils_Windows_et_Android_montrent_une_coupure_sans_dialogue_repetitif()
+    {
+        foreach (var view in new[] { "Views/HomeView.axaml", "Views/Phone/HomeView.axaml" })
+        {
+            var doc = XDocument.Load(Source("src/Scolia.Bureau/" + view));
+            var elements = doc.Descendants().ToArray();
+            Assert.Contains(elements, e => e.Name.LocalName == "Button" &&
+                e.Attributes().Any(a => a.Name.LocalName == "IsVisible" && a.Value.Contains("Sync.Offline")) &&
+                e.Attributes().Any(a => a.Name.LocalName == "Command" && a.Value.Contains("Network")));
+            Assert.Contains(elements, e => e.Name.LocalName == "TextBlock" &&
+                e.Attributes().Any(a => a.Name.LocalName == "Text" && a.Value.Contains("Sync.StatusText")));
+        }
+
+        // Un cycle indépendant vérifie le serveur même lorsque l'utilisateur
+        // ne consulte aucune rubrique. La reprise automatique conserve l'outbox.
+        var sync = File.ReadAllText(Source("src/Scolia.Bureau/ViewModels/Sync.cs"));
+        Assert.Contains("_ = HealthLoopAsync(token)", sync, StringComparison.Ordinal);
+        Assert.Contains("await api.IsRunningAsync(ct)", sync, StringComparison.Ordinal);
+        Assert.Contains("if (Offline) await SyncAsync(manual: false)", sync, StringComparison.Ordinal);
+
+        var client = File.ReadAllText(Source("src/Scolia.Bureau/Api/ScoliaClient.cs"));
+        Assert.Contains("if (sent > 0 && !connectionLost) SetOnline(true)", client, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Accueil_desktop_conserve_des_cartes_claires_et_responsives()
     {
         var doc = XDocument.Load(Source("src/Scolia.Bureau/Views/HomeView.axaml"));
