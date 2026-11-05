@@ -50,6 +50,17 @@ public sealed class StudentCardRulesTests
     }
 
     [Fact]
+    public void Matricule_repeté_dans_une_autre_promotion_reste_bloqué_après_filtrage()
+    {
+        // Le filtrage ne doit jamais masquer un dossier ayant le même matricule.
+        var yearMatricules = new[] { "INF293", "ACC102", "inf293", "INF294" };
+        var repeats = StudentCardRules.DuplicateMatricules(yearMatricules);
+        Assert.Contains("INF293", repeats);
+        Assert.DoesNotContain("ACC102", repeats);
+        Assert.Single(repeats);
+    }
+
+    [Fact]
     public void A_name_too_long_for_the_card_is_refused_not_truncated()
     {
         Assert.Throws<DomainException>(() => StudentCardRules.EnsureFits(new string('A', 61), "nom"));
