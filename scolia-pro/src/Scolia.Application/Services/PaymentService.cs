@@ -19,7 +19,10 @@ public sealed class PaymentService(IAppDbContext db, IWriteGate gate, IAuditLog 
     public static PaymentMethod ParseMethod(string? value) => EnumText.Parse(value, "method", MethodLabels);
 
     /// <summary>Aperçu d'un règlement : les mois choisis. Sans mois choisi, aucune répartition n'est proposée.</summary>
-    public async Task<PaymentPreview> PreviewAsync(Guid enrollmentId, IReadOnlyList<Guid>? items, CancellationToken ct = default, decimal? amount = null)
+    public Task<PaymentPreview> PreviewAsync(Guid enrollmentId, IReadOnlyList<Guid>? items, CancellationToken ct = default) =>
+        PreviewAsync(enrollmentId, items, null, ct);
+
+    public async Task<PaymentPreview> PreviewAsync(Guid enrollmentId, IReadOnlyList<Guid>? items, decimal? amount, CancellationToken ct = default)
     {
         var data = await accounts.ForEnrollmentAsync(enrollmentId, null, ct);
         if (items is not { Count: > 0 }) return new PaymentPreview([], data.Account.Balance);
