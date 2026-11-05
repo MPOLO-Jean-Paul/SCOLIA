@@ -81,6 +81,41 @@ Name: "{autodesktop}\SCOLIA Pro"; Filename: "{app}\{#AppExe}"; WorkingDir: "{app
 Filename: "{app}\{#AppExe}"; Description: "Lancer SCOLIA Pro maintenant"; Flags: nowait postinstall skipifsilent
 
 [Code]
+; L'adresse d'assistance reste un véritable lien cliquable dans toutes les étapes
+; de l'assistant. Les zones InfoBeforeFile / InfoAfterFile sont des lecteurs de
+; texte : y écrire l'adresse seule ne crée pas un lien.
+procedure OuvrirAssistance(Sender: TObject);
+var
+  CodeRetour: Integer;
+begin
+  if not ShellExecAsOriginalUser('open', '{#AppSupportLink}', '', '',
+      SW_SHOWNORMAL, ewNoWait, CodeRetour) then
+    MsgBox('Aucune application de messagerie n''est configurée sur ce poste.' + #13#10 +
+      'Vous pouvez écrire à : {#AppContactEmail}', mbInformation, MB_OK);
+end;
+
+procedure InitializeWizard;
+var
+  LienAssistance: TNewStaticText;
+begin
+  if WizardSilent then Exit;
+  // Lien permanent dans le pied de l'assistant, pas dans un fichier texte statique.
+  LienAssistance := TNewStaticText.Create(WizardForm);
+  LienAssistance.Parent := WizardForm;
+  LienAssistance.Caption := '{#AppContactEmail}';
+  LienAssistance.Hint := 'Assistance JP-Services : ouvrir la messagerie pour écrire un e-mail';
+  LienAssistance.ShowHint := True;
+  LienAssistance.Cursor := crHand;
+  LienAssistance.OnClick := @OuvrirAssistance;
+  LienAssistance.Font.Style := LienAssistance.Font.Style + [fsUnderline];
+  LienAssistance.Font.Color := clHotLight;
+  LienAssistance.AutoSize := True;
+  LienAssistance.Left := ScaleX(18);
+  LienAssistance.Top := WizardForm.CancelButton.Top +
+    (WizardForm.CancelButton.Height - LienAssistance.Height) div 2;
+  LienAssistance.Anchors := [akLeft, akBottom];
+end;
+
 function ServiceSCOLIAInstalle(): Boolean;
 var
   CodeRetour: Integer;
