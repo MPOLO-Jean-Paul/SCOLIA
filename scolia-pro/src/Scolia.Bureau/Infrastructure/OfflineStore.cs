@@ -73,9 +73,29 @@ public sealed class OfflineStore
     private static string PageKeyFor(string user, string path) =>
         "page:" + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(user.ToUpperInvariant()))) +
         ":" + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(path)));
-    public IReadOnlyList<string> CachedPaths() => User.Length == 0 ? [] : database.ReadPrefix(PagePrefix, 32)
-        .Select(text => JsonSerializer.Deserialize<SavedPage>(text, Json)?.Path)
-        .OfType<string>().Where(path => path != "api/etablissement/logo").ToList();
+    /// <summary>
+    /// Pages locales à réactualiser, les plus anciennes d'abord. Un classement par hash SQLite
+    /// retraitait toujours les mêmes 32 pages et laissait les autres périmées indéfiniment.
+    /// La lecture reste bornée aux 2048 chemins du compte courant ; le travail réseau est
+    /// limité séparément (24 pages par exécution WorkManager).
+    /// </summary>
+    public IReadOnlyList<string> CachedPaths(int limit = 32)
+    {
+        if (string.IsNullOrWhiteSpace(User) || limit <= 0) return [];
+        return database.ReadPrefix(PagePrefix, 2048)
+            .Select(text =>
+            {
+                try { return JsonSerializer.Deserialize<SavedPage>(text, Json); }
+                catch (JsonException) { return null; }
+            })
+            .OfType<SavedPage>()
+            .Where(p => !string.IsNullOrWhiteSpace(p.Path) && p.Path != "api/etablissement/logo")
+            .OrderBy(p => p.SavedAt)
+            .ThenBy(p => p.Path!, StringComparer.Ordinal)
+            .Take(Math.Min(limit, 128))
+            .Select(p => p.Path!)
+            .ToList();
+    }
 
     /// <summary>Pages chiffrées dans SQLite ; les anciennes pages sont migrées à leur première lecture.</summary>
     public void SavePage(string path, string json) => SavePageFor(User, path, json);
@@ -106,6 +126,21 @@ public sealed class OfflineStore
         database.Write(PageKey(path), JsonSerializer.Serialize(new SavedPage(json, savedAt, path), Json));
         ArchiveLegacy(file);
         return (json, savedAt);
+    }
+
+    /// <summary>
+    /// Un 403/404 du serveur invalide la copie locale de cette ressource :
+    /// la conservation hors ligne ne doit pas contourner une révocation explicite.
+    /// Le compte d'origine est conservé pour éviter d'effacer la copie d'un autre utilisateur.
+    /// </summary>
+    public void RemovePageFor(string user, string path)
+    {
+        if (string.IsNullOrWhiteSpace(user) || string.IsNullOrWhiteSpace(path)) return;
+        database.Delete(PageKeyFor(user, path));
+        // Éviter la réimportation de l'ancien cache JSON après une suppression serveur.
+        var legacy = Path.Combine(root, "pages", Safe(user),
+            Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(path)))[..32] + ".json");
+        if (File.Exists(legacy)) File.Delete(legacy);
     }
 
     public IReadOnlyList<OutboxItem> Outbox() => Load(OutboxFile).Where(i => i.User == User).ToList();

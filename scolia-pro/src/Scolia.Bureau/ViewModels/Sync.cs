@@ -78,6 +78,14 @@ public sealed class SyncCenter : Observable, IDisposable
         api.Queued += item => Dispatcher.UIThread.Post(() =>
         {
             RaiseCounts();
+            // Ne dépend pas du maintien de cette fenêtre au premier plan : Android
+            // prépare une reprise réseau durable pour les opérations de la file.
+            // Une erreur système de planification ne doit jamais perdre l'écriture locale.
+            try { Platform.RequestBackgroundSync?.Invoke(); }
+            catch (Exception ex) when (ex is InvalidOperationException or System.Security.SecurityException)
+            {
+                System.Diagnostics.Trace.WriteLine($"SCOLIA : reprise différée non programmée ({ex.GetType().Name}).");
+            }
             // Un seul accusé de réception local par épisode hors ligne.
             // Les autres opérations restent consultables par le petit point du titre.
             if (!pendingNoticeShown)

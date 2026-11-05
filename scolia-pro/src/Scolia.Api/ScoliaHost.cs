@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.IO.Compression;
 using System.Net;
+using System.Security.Cryptography.X509Certificates;
 using Microsoft.AspNetCore.ResponseCompression;
 using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
@@ -55,19 +56,48 @@ public static class ScoliaHost
 
         var port = builder.Configuration.GetValue("Scolia:Reseau:Port", 5080);
         var lan = builder.Configuration.GetValue("Scolia:Reseau:AccesReseauLocal", false);
+        // Migration volontaire : aucun changement de port ou de protocole sans certificat
+        // configuré et approuvé sur tous les clients. Ne pas créer un certificat éphémère.
+        var httpsEnabled = builder.Configuration.GetValue("Scolia:Reseau:Https:Actif", false);
+        var scheme = httpsEnabled ? "https" : "http";
+        var configuredUrls = builder.Configuration["urls"] ?? Environment.GetEnvironmentVariable("ASPNETCORE_URLS");
+        X509Certificate2? httpsCertificate = null;
+        if (httpsEnabled)
+        {
+            var pfx = builder.Configuration["Scolia:Reseau:Https:CertificatPfx"];
+            var pass = builder.Configuration["Scolia:Reseau:Https:MotDePassePfx"];
+            if (string.IsNullOrWhiteSpace(pfx) || !Path.IsPathRooted(pfx) || !File.Exists(pfx)
+                || string.IsNullOrWhiteSpace(pass))
+                throw new InvalidOperationException("HTTPS activé, mais certificat PFX absolu ou mot de passe manquant. Aucun retour automatique vers HTTP n'est autorisé.");
+            if (!string.IsNullOrWhiteSpace(configuredUrls) &&
+                configuredUrls.Split(';', StringSplitOptions.RemoveEmptyEntries)
+                    .Any(url => url.Trim().StartsWith("http://", StringComparison.OrdinalIgnoreCase)))
+                throw new InvalidOperationException("HTTPS activé : une URL HTTP explicite est interdite. Corrigez ASPNETCORE_URLS avant le démarrage.");
+            httpsCertificate = X509CertificateLoader.LoadPkcs12FromFile(pfx, pass);
+            if (!httpsCertificate.HasPrivateKey)
+                throw new InvalidOperationException("Le certificat HTTPS doit contenir sa clé privée.");
+            var now = DateTime.UtcNow;
+            if (httpsCertificate.NotBefore.ToUniversalTime() > now || httpsCertificate.NotAfter.ToUniversalTime() <= now)
+                throw new InvalidOperationException("Le certificat HTTPS est expiré ou n'est pas encore valide.");
+        }
         var desktop = embedded is null && OperatingSystem.IsWindows() && Environment.UserInteractive && !Microsoft.Extensions.Hosting.WindowsServices.WindowsServiceHelpers.IsWindowsService();
 
         // Deuxième lancement sur le même poste : on rouvre la fenêtre au lieu de démarrer un second serveur.
         if (desktop && DesktopLauncher.AlreadyRunning(port))
         {
             // La fenêtre existe déjà : on la fait apparaître au lieu d'en ouvrir une seconde.
-            if (!DesktopLauncher.ShowRunningInstance(port)) DesktopLauncher.OpenInBrowser($"http://localhost:{port}");
+            if (!DesktopLauncher.ShowRunningInstance(port)) DesktopLauncher.OpenInBrowser($"{scheme}://localhost:{port}");
             return null;
         }
         if (embedded is null) builder.Host.UseWindowsService(o => o.ServiceName = "SCOLIA");
         if (string.IsNullOrEmpty(builder.Configuration["urls"]) && string.IsNullOrEmpty(Environment.GetEnvironmentVariable("ASPNETCORE_URLS")))
-            builder.WebHost.UseUrls(lan ? $"http://0.0.0.0:{port}" : $"http://localhost:{port}");
-        builder.WebHost.ConfigureKestrel(k => k.Limits.MaxRequestBodySize = 60 * 1024 * 1024);
+            builder.WebHost.UseUrls(lan ? $"{scheme}://0.0.0.0:{port}" : $"{scheme}://localhost:{port}");
+        builder.WebHost.ConfigureKestrel(k =>
+        {
+            k.Limits.MaxRequestBodySize = 60 * 1024 * 1024;
+            if (httpsCertificate is not null)
+                k.ConfigureHttpsDefaults(options => options.ServerCertificate = httpsCertificate);
+        });
         // Compression des réponses texte (interface, JSON) : Brotli d'abord, gzip sinon.
         builder.Services.Configure<BrotliCompressionProviderOptions>(o => o.Level = CompressionLevel.Fastest);
         builder.Services.Configure<GzipCompressionProviderOptions>(o => o.Level = CompressionLevel.Fastest);
@@ -189,7 +219,7 @@ public static class ScoliaHost
             app.Lifetime.ApplicationStarted.Register(() => KeepAwake.Hold(app.Lifetime.ApplicationStopping));
         app.Lifetime.ApplicationStarted.Register(() =>
         {
-            var listening = app.Urls.FirstOrDefault() ?? $"http://localhost:{port}";
+            var listening = app.Urls.FirstOrDefault() ?? $"{scheme}://localhost:{port}";
             var url = listening.Replace("0.0.0.0", "localhost", StringComparison.Ordinal).Replace("[::]", "localhost", StringComparison.Ordinal);
             Log.Information("SCOLIA est prêt : {Url} · données : {Data} · accès réseau local : {Lan}", url, storage.DataDirectory, lan);
             if (!desktop) return;

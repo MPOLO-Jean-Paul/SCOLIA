@@ -34,6 +34,25 @@ public sealed class SyncWorker : Worker
             "scolia-synchronisation-reprise", ExistingWorkPolicy.Keep!, once);
     }
 
+    /// <summary>
+    /// Une opération ajoutée à l'outbox déclenche une tâche réseau unique.
+    /// Contrairement au périodique de 15 minutes, Android peut lancer celle-ci
+    /// dès qu'une connexion est disponible ; Doze et le système restent prioritaires.
+    /// </summary>
+    public static void SchedulePending(Context context)
+    {
+        var saved = ConnectionStore.Load();
+        if (saved?.Mode is not (ConnectionSettings.Remote or ConnectionSettings.Internet)) return;
+        var constraints = new Constraints.Builder()
+            .SetRequiredNetworkType(NetworkType.Connected)!.Build();
+        var once = new OneTimeWorkRequest.Builder(typeof(SyncWorker))
+            .SetConstraints(constraints)!
+            .SetBackoffCriteria(BackoffPolicy.Exponential, 30, Java.Util.Concurrent.TimeUnit.Seconds!)!
+            .Build();
+        WorkManager.GetInstance(context).EnqueueUniqueWork(
+            "scolia-synchronisation-pending", ExistingWorkPolicy.Keep!, once);
+    }
+
     public SyncWorker(Context context, WorkerParameters parameters) : base(context, parameters) { }
 
     public static void Schedule(Context context)
@@ -107,9 +126,12 @@ public sealed class SyncWorker : Worker
         // Une session expirée attend une connexion normale ; aucun droit auto-déclaré, aucun mot de passe en tâche native.
         if (await api.CurrentSessionAsync(timeout.Token) is null) return Result.InvokeSuccess();
         await api.FlushAsync(timeout.Token);
-        foreach (var path in store.CachedPaths())
+        // Faire tourner les copies locales les plus anciennes, en paquets bornés :
+        // actualiser indéfiniment les mêmes 32 entrées empêchait les autres
+        // dossiers préchargés d'être remis à jour.
+        foreach (var path in store.CachedPaths(limit: 24))
         {
-            if (IsStopped) break;
+            if (IsStopped || timeout.IsCancellationRequested) break;
             try { await api.GetAsync<JsonElement>(path, timeout.Token); }
             catch (ApiException ex) when (ex.Status is 400 or 403 or 404) { }
         }

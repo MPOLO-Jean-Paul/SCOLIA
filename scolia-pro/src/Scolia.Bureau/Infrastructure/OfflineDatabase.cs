@@ -55,6 +55,16 @@ internal sealed class OfflineDatabase
         return command.ExecuteScalar() is byte[] bytes ? Encoding.UTF8.GetString(SecretStore.Unprotect(bytes)) : null;
     }
 
+    /// <summary>Supprime une seule entrée chiffrée du compte concerné, sans toucher aux journaux.</summary>
+    public void Delete(string key)
+    {
+        using var db = Open();
+        using var command = db.CreateCommand();
+        command.CommandText = "DELETE FROM state WHERE key = $key";
+        command.Parameters.AddWithValue("$key", key);
+        command.ExecuteNonQuery();
+    }
+
     public void Write(string key, string value) => Update([key], values => values[key] = value);
 
     /// <summary>Verrou d'écriture SQLite commun aux instances : lecture et changements font une seule transaction.</summary>
