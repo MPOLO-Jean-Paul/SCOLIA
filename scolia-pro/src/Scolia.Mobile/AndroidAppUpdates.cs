@@ -234,6 +234,7 @@ public static class AndroidAppUpdates
             or TaskCanceledException or Java.Lang.Exception or InvalidOperationException)
         {
             Android.Util.Log.Warn("SCOLIA-MAJ", $"Contrôle manuel impossible : {ex.GetType().Name}");
+            Report(activity, $"Recherche impossible : {ex.Message}");
             // Une coupure Internet ne doit pas masquer l'installation d'un APK
             // deja disponible et verifie localement.
             try
