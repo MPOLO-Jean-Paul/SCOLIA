@@ -72,6 +72,13 @@ public static class StudentCardRules
         _ => "#CBD5E1",
     };
 
+    /// <summary>Détecte les matricules doublés de l'année avant tout filtrage.</summary>
+    public static HashSet<string> DuplicateMatricules(IEnumerable<string> matricules) =>
+        matricules.Where(v => !string.IsNullOrWhiteSpace(v))
+            .GroupBy(v => v.Trim(), StringComparer.OrdinalIgnoreCase)
+            .Where(group => group.Skip(1).Any()).Select(group => group.Key)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
     /// <summary>Une carte est imprimée avec une identité complète, sans matricule répété.</summary>
     public static bool IdentityComplete(string lastName, string firstName) =>
         lastName.Trim().Length > 0 && firstName.Trim().Length > 0;
