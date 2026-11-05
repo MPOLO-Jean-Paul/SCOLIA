@@ -5,6 +5,19 @@ namespace Scolia.Mobile.Tests;
 public sealed class UpdateCompletionPolicyTests
 {
     [Theory]
+    [InlineData(1000L, 1001L, false, false)]
+    [InlineData(1000L, 1179L, false, false)]
+    [InlineData(1000L, 1180L, false, true)]
+    [InlineData(1000L, 1001L, true, true)]
+    [InlineData(0L, 1001L, false, true)]
+    [InlineData(1200L, 1000L, false, true)]
+    public void ManualUpdateCheckAlwaysBypassesAutomaticDelay(
+        long lastCheck, long now, bool manual, bool expected)
+    {
+        Assert.Equal(expected, UpdateCompletionPolicy.ShouldRefreshRelease(lastCheck, now, manual));
+    }
+
+    [Theory]
     [InlineData(8, true, UpdateCompletionAction.PresentInstall)]
     [InlineData(8, false, UpdateCompletionAction.NotifyReady)]
     [InlineData(16, true, UpdateCompletionAction.DownloadFailed)]

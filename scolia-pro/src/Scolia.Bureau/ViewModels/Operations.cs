@@ -690,17 +690,32 @@ public sealed class BackstageViewModel : Observable
         }
     }
 
+    /// <summary>La recherche manuelle est disponible sur Windows et Android.</summary>
+    public bool CanCheckAppUpdates => OperatingSystem.IsWindows() || Platform.CheckAppUpdatesAsync is not null;
     public bool CanCheckWindowsUpdates => OperatingSystem.IsWindows();
+    public string AppUpdateStatus => Platform.AppUpdateStatus?.Invoke() ?? string.Empty;
 
-    /// <summary>Contrôle manuel complémentaire au contrôle automatique Windows à l'ouverture.</summary>
-    public AsyncCommand CheckWindowsUpdates => checkWindowsUpdates ??= new AsyncCommand(async () =>
+    /// <summary>Interroge immédiatement la publication officielle, sans attendre le contrôle automatique.</summary>
+    public AsyncCommand CheckAppUpdates => checkAppUpdates ??= new AsyncCommand(async () =>
     {
-        if (Avalonia.Application.Current?.ApplicationLifetime is
-            Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime
-            { MainWindow: { } window })
-            await DesktopAppUpdates.CheckAsync(window, manual: true);
+        try
+        {
+            if (Platform.CheckAppUpdatesAsync is { } checkAndroid)
+                await checkAndroid();
+            else if (Avalonia.Application.Current?.ApplicationLifetime is
+                Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime
+                { MainWindow: { } window })
+                await DesktopAppUpdates.CheckAsync(window, manual: true);
+        }
+        finally
+        {
+            Raise(nameof(AppUpdateStatus));
+        }
     });
-    private AsyncCommand? checkWindowsUpdates;
+    private AsyncCommand? checkAppUpdates;
+
+    // Compatibilité avec les anciennes vues Windows et leurs tests.
+    public AsyncCommand CheckWindowsUpdates => CheckAppUpdates;
 
     public bool IsInfos => section?.Value == "infos";
     /// <summary>Mobile : la liste des rubriques s'affiche tant qu'aucune rubrique à page propre n'est ouverte.</summary>

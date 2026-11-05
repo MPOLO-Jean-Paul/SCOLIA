@@ -52,11 +52,11 @@
               <Grid ColumnDefinitions="180,*"><TextBlock Text="Application" Classes="muted" /><TextBlock Grid.Column="1" Text="{Binding Version}" /></Grid>
             </StackPanel>
           </Border>
-          <Border Classes="card" IsVisible="{Binding CanCheckWindowsUpdates}">
+          <Border Classes="card" IsVisible="{Binding CanCheckAppUpdates}">
             <StackPanel Spacing="8">
               <TextBlock Text="Mises à jour du logiciel" FontWeight="SemiBold" />
               <TextBlock Text="SCOLIA vérifie périodiquement les nouvelles versions officielles sur GitHub. Vous pouvez aussi lancer la recherche maintenant." TextWrapping="Wrap" Classes="muted" />
-              <Button Content="Vérifier les mises à jour" Command="{Binding CheckWindowsUpdates}" HorizontalAlignment="Left" MinHeight="40" />
+              <Button Content="Vérifier les mises à jour" Command="{Binding CheckAppUpdates}" HorizontalAlignment="Left" MinHeight="40" />
             </StackPanel>
           </Border>
         </StackPanel>
