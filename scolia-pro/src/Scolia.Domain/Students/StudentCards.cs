@@ -3,17 +3,17 @@ using Scolia.Domain.Common;
 namespace Scolia.Domain.Students;
 
 /// <summary>
-/// Cartes d'accès aux examens (version 79). Format A4 portrait, cartes de 92 × 63 mm, deux colonnes et quatre rangées,
-/// espacements de 6 mm entre colonnes et de 7 mm entre rangées, marges de 10 mm.
+/// Cartes d'accès aux examens. Insert au format ISO ID-1/CR80 (85,60 x 53,98 mm),
+/// huit cartes sur A4 en deux colonnes et quatre rangées, avec traits de découpe.
 /// </summary>
 public static class StudentCardRules
 {
     public const int CardsPerPage = 8;
-    public const float CardWidthMm = 92;
-    public const float CardHeightMm = 63;
+    public const float CardWidthMm = 85.6f;
+    public const float CardHeightMm = 53.98f;
     public const float ColumnGapMm = 6;
     public const float RowGapMm = 7;
-    public const float MarginMm = 10;
+    public const float MarginMm = 16;
     public const float PageWidthMm = 210;
     public const float PageHeightMm = 297;
     public const int MinCopies = 1;
@@ -26,6 +26,20 @@ public static class StudentCardRules
     ];
 
     public static int PagesFor(int cards) => cards <= 0 ? 0 : (cards + CardsPerPage - 1) / CardsPerPage;
+
+    /// <summary>Année de la session affichée en grand ; le mois reste inscrit en dessous.</summary>
+    public static string SessionYear(string session)
+    {
+        var last = session.LastIndexOf(' ');
+        return last < 0 ? session.Trim() : session[(last + 1)..].Trim();
+    }
+
+    /// <summary>Nom complet sur une seule rubrique, sans nom d'apprenant codé en dur.</summary>
+    public static string FullName(string lastName, string middleName, string firstName) =>
+        string.Join(' ', new[] { lastName, middleName, firstName }
+            .Where(v => !string.IsNullOrWhiteSpace(v))).ToUpperInvariant();
+
+
 
     /// <summary>La grille tient sur une page A4 : deux cartes et un espacement, quatre rangées et leurs espacements.</summary>
     public static bool FitsOnPage() =>
