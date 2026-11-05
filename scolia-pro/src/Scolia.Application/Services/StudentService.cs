@@ -335,6 +335,21 @@ public sealed class StudentService(IAppDbContext db, IWriteGate gate, IAuditLog 
             }).ToList();
     }
 
+    /// <summary>Conserve la désignation scolaire quand la progression d'année est reconnaissable.</summary>
+    private static string SuggestedPromotionName(Promotion source, string code)
+    {
+        if (string.Equals(source.Code, code, StringComparison.OrdinalIgnoreCase)) return source.Name;
+        string[] levels = ["Première", "Deuxième", "Troisième", "Quatrième", "Cinquième", "Sixième"];
+        int nextLevel = char.IsAsciiDigit(code[^1]) ? code[^1] - '0' : 0;
+        if (source.Level >= 1 && source.Level <= levels.Length && nextLevel >= 1 && nextLevel <= levels.Length)
+        {
+            var previous = levels[source.Level - 1];
+            if (source.Name.StartsWith(previous + " ", StringComparison.OrdinalIgnoreCase))
+                return levels[nextLevel - 1] + source.Name[previous.Length..];
+        }
+        return $"Promotion {code}";
+    }
+
     /// <summary>
     /// Création atomique d'une promotion absente dans l'année cible.
     /// Les frais sont repris comme paramètres initiaux de la classe d'origine.
@@ -348,7 +363,7 @@ public sealed class StudentService(IAppDbContext db, IWriteGate gate, IAuditLog 
         {
             AcademicYearId = targetYear.Id,
             Code = code,
-            Name = sameLevel ? sourcePromotion.Name : $"Promotion {code}",
+            Name = SuggestedPromotionName(sourcePromotion, code),
             SectionId = sourcePromotion.SectionId,
             Level = sameLevel ? sourcePromotion.Level : char.IsAsciiDigit(code[^1])
                 ? code[^1] - '0' : sourcePromotion.Level,
