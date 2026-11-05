@@ -266,23 +266,17 @@ public static class AndroidAppUpdates
                 NotifyInstallReady(activity);
                 return;
             }
-            // AUCUN téléchargement en attente ne doit bloquer la découverte
-            // d'une publication plus récente. Une version supérieure remplace
-            // l'offre précédente seulement après accord de l'utilisateur.
-            try { await CheckLatestAsync(activity, showDialog: true); }
+            // Une installation déjà prête est affichée immédiatement, sans
+            // attendre les délais d'Internet. Mais la recherche ne s'arrête
+            // JAMAIS là : on consulte aussi GitHub lorsque l'APK est en attente.
+            bool pending = await CheckDownloadAsync(activity);
+            try { await CheckLatestAsync(activity, showDialog: !pending); }
             catch (Exception ex) when (ex is IOException or HttpRequestException or
                 JsonException or TaskCanceledException or Java.Lang.Exception or InvalidOperationException)
             {
                 Android.Util.Log.Warn("SCOLIA-MAJ", $"Consultation GitHub reportée : {ex.GetType().Name}");
                 Report(activity, "Vérification réseau reportée, mise à jour déjà téléchargée conservée.");
             }
-            var prefs = Preferences(activity);
-            var cached = Deserialize(prefs.GetString(ReleaseKey, null));
-            var pendingVersion = prefs.GetString(DownloadVersionKey, null);
-            bool newerAvailable = cached is not null && !string.IsNullOrEmpty(pendingVersion)
-                && IsNewer(activity, cached.Version)
-                && UpdateCompletionPolicy.IsNewerThanPending(cached.Version, pendingVersion);
-            await CheckDownloadAsync(activity, showInstallDialog: !newerAvailable);
         }
         catch (Exception ex) when (ex is IOException or HttpRequestException or JsonException
             or TaskCanceledException or Java.Lang.Exception or InvalidOperationException)
@@ -424,7 +418,13 @@ public static class AndroidAppUpdates
         if (activity.IsFinishing || activity.IsDestroyed) return;
         var prefs = Preferences(activity);
         if (!manual && prefs.GetString(DeferredVersionKey, null) == release.Version &&
-            DateTimeOffset.UtcNow.ToUnixTimeSeconds() < prefs.GetLong(DeferredUntilKey, 0)) return;
+            DateTimeOffset.UtcNow.ToUnixTimeSeconds() < prefs.GetLong(DeferredUntilKey, 0))
+        {
+            // « Plus tard » masque le dialogue pendant 12 h, pas la recherche
+            // ni l'indicateur de mise à jour dans Android.
+            NotifyOnce(activity, release);
+            return;
+        }
         if (!manual && promptedVersion == release.Version) return;
         activity.RunOnUiThread(() =>
         {
@@ -453,6 +453,7 @@ public static class AndroidAppUpdates
                         .PutString(DeferredVersionKey, release.Version)!
                         .PutLong(DeferredUntilKey, DateTimeOffset.UtcNow.AddHours(12).ToUnixTimeSeconds())!
                         .Apply();
+                    NotifyOnce(activity, release);
                 })
                 .Show();
         });
