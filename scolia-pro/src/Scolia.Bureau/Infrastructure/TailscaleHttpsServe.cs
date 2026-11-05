@@ -82,6 +82,29 @@ public static class TailscaleHttpsServe
     }
 
     /// <summary>
+    /// Relecture non destructive du partage HTTPS, notamment apres un redemarrage.
+    /// Ne peut renvoyer une adresse qu'apres confirmation de notre propre proxy.
+    /// </summary>
+    public static async Task<Uri?> CurrentAddressAsync(int port, CancellationToken ct = default)
+    {
+        if (!OperatingSystem.IsWindows() || port is < 1 or > 65535) return null;
+        var cli = TailscaleCompanion.FindWindowsExecutable("tailscale.exe");
+        if (cli is null) return null;
+        try
+        {
+            var status = await RunAsync(cli, ["status", "--json"], TimeSpan.FromSeconds(5), ct);
+            var dns = status.ExitCode == 0 ? ParseOwnDnsName(status.Output) : null;
+            if (dns is null) return null;
+            var serve = await RunAsync(cli, ["serve", "status", "--json"], TimeSpan.FromSeconds(5), ct);
+            return serve.ExitCode == 0 && Inspect(serve.Output, dns, port) == PortState.AlreadyScolia
+                ? new Uri($"https://{dns}/") : null;
+        }
+        catch (OperationCanceledException) when (!ct.IsCancellationRequested) { return null; }
+        catch (Exception ex) when (ex is Win32Exception or IOException or UnauthorizedAccessException
+            or InvalidOperationException or JsonException) { return null; }
+    }
+
+    /// <summary>
     /// La seule action qui modifie Tailscale. Necessite une action utilisateur,
     /// une session Tailscale valide et les droits de configuration SCOLIA.
     /// </summary>
