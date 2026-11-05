@@ -43,6 +43,13 @@ public sealed class TailscaleHttpsServeTests
             TailscaleHttpsServe.Inspect(
                 """{"Services":{"svc:autre":{"TCP":{"443":{"HTTPS":true}}}}}""",
                 Dns, 5080));
+        Assert.Equal(TailscaleHttpsServe.PortState.Occupied,
+            TailscaleHttpsServe.Inspect(
+                """{"TCP":{"443":{"HTTPS":true}},"AllowFunnel":{"scolia.ecole.ts.net:443":true},"Web":{"scolia.ecole.ts.net:443":{"Handlers":{"/":{"Proxy":"http://127.0.0.1:5080"}}}}}""",
+                Dns, 5080));
+        Assert.Equal(TailscaleHttpsServe.PortState.Unknown,
+            TailscaleHttpsServe.Inspect(
+                """{"AllowFunnel":"invalid"}""", Dns, 5080));
         Assert.Equal(TailscaleHttpsServe.PortState.Unknown,
             TailscaleHttpsServe.Inspect("erreur", Dns, 5080));
     }
