@@ -10,7 +10,7 @@
           <TextBlock Text="Année cible" Classes="fieldlabel" />
           <ComboBox Width="260" ItemsSource="{Binding Years}" SelectedItem="{Binding Year}" />
         </StackPanel>
-        <TextBlock Text="Cochez les apprenants à reconduire, puis choisissez leur promotion cible." Classes="muted" VerticalAlignment="Bottom" Margin="0,0,12,20" />
+        <TextBlock Text="Cochez les apprenants : si leur promotion cible manque, elle sera créée automatiquement à la validation." Classes="muted" VerticalAlignment="Bottom" Margin="0,0,12,20" />
       </WrapPanel>
     </Border>
     <DataGrid Grid.Row="1" ItemsSource="{Binding Items}" AutoGenerateColumns="False" CanUserSortColumns="False">

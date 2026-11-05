@@ -77,7 +77,8 @@ public sealed record ReEnrollmentPlanItem(Guid StudentId, string Matricule, stri
 
 public sealed record ReEnrollmentRequest(Guid TargetYearId, IReadOnlyList<ReEnrollmentChoice> Choices);
 
-public sealed record ReEnrollmentChoice(Guid StudentId, Guid PromotionId);
+/// <summary>PromotionId existant ou code d'une classe absente à créer lors de la validation.</summary>
+public sealed record ReEnrollmentChoice(Guid StudentId, Guid? PromotionId, string? PromotionCode = null);
 
 // ---------- Prises en charge ----------
 public sealed record SponsorshipDto(Guid Id, Guid EnrollmentId, string SponsorName, string Reason, DateOnly EffectiveFrom, bool IsActive,

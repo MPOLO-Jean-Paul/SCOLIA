@@ -460,12 +460,21 @@ public sealed class ReEnrollmentPage : PageViewModel
             var years = await Shell.Api.GetAsync<List<AcademicYearDto>>("api/etablissement/annees");
             Years = years.Select(y => new ChoiceItem(y.Id.ToString(), $"{y.Label}{(y.IsCurrent ? " (courante)" : string.Empty)}")).ToList();
             Raise(nameof(Years));
-            // L'année cible est la suivante : par défaut, la première qui n'est pas la courante.
-            year = Years.FirstOrDefault(y => !y.Label.EndsWith("(courante)")) ?? (Years.Count > 0 ? Years[0] : null);
+            // Proposer l'année la plus récente, indépendamment de son statut « courante ».
+            // Le serveur retrouve toujours l'année précédente à cette cible.
+            var latest = years.OrderByDescending(y => y.StartDate).FirstOrDefault();
+            year = latest is null ? null : Years.FirstOrDefault(y => y.Value == latest.Id.ToString());
             Raise(nameof(Year));
             ready = true;
         }
-        if (Year is null) return;
+        if (Year is null)
+        {
+            Items.Clear();
+            EmptyHint = "Créez ou choisissez une année scolaire cible pour préparer les réinscriptions.";
+            subtitle = "Aucune année scolaire cible";
+            Raise(nameof(Subtitle));
+            return;
+        }
 
         // Première année de l'établissement : rien à reconduire tant que l'année suivante n'existe pas.
         if (Years.Count < 2)
@@ -480,13 +489,23 @@ public sealed class ReEnrollmentPage : PageViewModel
 
         promotions = await PromotionChoicesFor(Guid.Parse(Year.Value));
         var plan = await Shell.Api.GetAsync<List<ReEnrollmentItemDto>>("api/reinscriptions/plan" + ScoliaClient.Query(("anneeId", Year.Value)));
+        // Une proposition virtuelle apparaît lorsque la promotion cible n'existe pas.
+        // La création réelle intervient seulement lorsque l'utilisateur confirme le lot.
+        var choices = promotions.ToList();
+        foreach (var code in plan.Select(p => p.ToPromotion).Where(c => !string.IsNullOrWhiteSpace(c))
+                     .Distinct(StringComparer.OrdinalIgnoreCase))
+        {
+            if (!choices.Any(c => c.Label.StartsWith(code + " ·", StringComparison.OrdinalIgnoreCase)))
+                choices.Add(new ChoiceItem("auto:" + code, code + " · Créer automatiquement"));
+        }
+        promotions = choices;
         Items.Clear();
         foreach (var p in plan)
         {
-            // Le libellé d'une promotion commence par son code : on retrouve la promotion suivante par ce code.
-            var target = promotions.FirstOrDefault(c => p.ToPromotion is not null && c.Label.StartsWith($"{p.ToPromotion} ·", StringComparison.Ordinal))
-                ?? (promotions.Count > 0 ? promotions[0] : null);
-            Items.Add(new ReEnrollRowVm(p.StudentId, p.Matricule, p.FullName, p.FromPromotion, Money(p.PreviousBalance), p.Selected, target, promotions));
+            var target = promotions.FirstOrDefault(c => p.ToPromotion is not null
+                && c.Label.StartsWith(p.ToPromotion + " ·", StringComparison.OrdinalIgnoreCase));
+            Items.Add(new ReEnrollRowVm(p.StudentId, p.Matricule, p.FullName, p.FromPromotion,
+                Money(p.PreviousBalance), p.Selected, target, promotions));
         }
         subtitle = $"{Format.Count(plan.Count, "apprenant à reconduire", "apprenants à reconduire")} · {Items.Count(i => i.Selected)} sélectionné(s)";
         Raise(nameof(Subtitle));
@@ -501,16 +520,31 @@ public sealed class ReEnrollmentPage : PageViewModel
     private async Task ApplyAsync()
     {
         if (Year is null) return;
-        var choices = Items.Where(i => i.Selected && i.Target is not null)
-            .Select(i => new { studentId = i.StudentId, promotionId = Guid.Parse(i.Target!.Value) })
-            .ToList();
-        if (choices.Count == 0)
+        var selected = Items.Where(i => i.Selected).ToList();
+        if (selected.Count == 0)
         {
-            Shell.Notify("Sélectionnez au moins un apprenant et sa promotion cible.");
+            Shell.Notify("Sélectionnez au moins un apprenant à réinscrire.");
             return;
         }
+        if (selected.Any(i => i.Target is null))
+        {
+            Shell.Notify("Certains apprenants n'ont pas de promotion cible. Choisissez leur classe avant de continuer.");
+            return;
+        }
+        var newPromotions = selected.Select(i => i.Target!.Value)
+            .Where(v => v.StartsWith("auto:", StringComparison.Ordinal))
+            .Select(v => v["auto:".Length..]).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+        var choices = selected.Select(i => new
+        {
+            studentId = i.StudentId,
+            promotionId = Guid.TryParse(i.Target!.Value, out var id) ? (Guid?)id : null,
+            promotionCode = i.Target!.Value.StartsWith("auto:", StringComparison.Ordinal)
+                ? i.Target.Value["auto:".Length..] : null,
+        }).ToList();
+        var automatic = newPromotions.Count == 0 ? string.Empty
+            : $" {newPromotions.Count} promotion(s) absente(s) seront créées automatiquement ({string.Join(", ", newPromotions)}). Leurs frais seront repris comme paramètres initiaux et pourront être vérifiés dans Configuration.";
         var confirmed = await Shell.Confirm("Lancer les réinscriptions",
-            $"{Format.Count(choices.Count, "apprenant sera inscrit", "apprenants seront inscrits")} dans l'année {Year.Label}. Les soldes restent reportés sur le compte.",
+            $"{Format.Count(choices.Count, "apprenant sera inscrit", "apprenants seront inscrits")} dans l'année {Year.Label}. Les soldes restent attachés aux dossiers.{automatic}",
             "Réinscrire");
         if (!confirmed) return;
         var created = await Shell.Api.SendAsync<int>(HttpMethod.Post, "api/reinscriptions", new { targetYearId = Guid.Parse(Year.Value), choices });

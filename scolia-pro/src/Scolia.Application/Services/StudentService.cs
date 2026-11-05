@@ -303,36 +303,155 @@ public sealed class StudentService(IAppDbContext db, IWriteGate gate, IAuditLog 
     }
 
     // ---------- Réinscriptions ----------
+    private static string ExpectedPromotionCode(Promotion source) =>
+        Promotion.NormalizeCode(string.IsNullOrWhiteSpace(source.NextPromotionCode)
+            ? source.Code : source.NextPromotionCode);
+
+    /// <summary>
+    /// Le plan annonce également les promotions manquantes : elles seront créées
+    /// au moment de valider, jamais par une simple consultation de l'écran.
+    /// En absence de promotion suivante paramétrée, on conserve la promotion actuelle.
+    /// </summary>
     public async Task<IReadOnlyList<ReEnrollmentPlanItem>> ReEnrollmentPlanAsync(Guid targetYearId, CancellationToken ct = default)
     {
         var target = await YearContext.GetAsync(db, targetYearId, ct);
-        var source = await db.AcademicYears.AsNoTracking().Where(y => y.StartDate < target.StartDate).OrderByDescending(y => y.StartDate).FirstOrDefaultAsync(ct)
+        var source = await db.AcademicYears.AsNoTracking().Where(y => y.StartDate < target.StartDate)
+            .OrderByDescending(y => y.StartDate).FirstOrDefaultAsync(ct)
             ?? throw new DomainException("annee", "Aucune année précédente à partir de laquelle réinscrire.");
-        var targetPromotions = await db.Promotions.AsNoTracking().Where(p => p.AcademicYearId == target.Id && p.IsActive).ToListAsync(ct);
-        var already = await db.Enrollments.AsNoTracking().Where(e => e.AcademicYearId == target.Id).Select(e => e.StudentId).ToListAsync(ct);
+        var targetPromotions = await db.Promotions.AsNoTracking()
+            .Where(p => p.AcademicYearId == target.Id).ToListAsync(ct);
+        var already = (await db.Enrollments.AsNoTracking().Where(e => e.AcademicYearId == target.Id)
+            .Select(e => e.StudentId).ToListAsync(ct)).ToHashSet();
         var map = await accounts.ComputeAsync(source.Id, null, null, ct);
         return map.Values.Where(x => x.Enrollment.Status == EnrollmentStatus.Actif && !already.Contains(x.Enrollment.StudentId))
             .OrderBy(x => x.Promotion.Code).ThenBy(x => x.Enrollment.Student!.LastName)
             .Select(x =>
             {
-                var next = x.Promotion.NextPromotionCode is null ? null : targetPromotions.FirstOrDefault(p => p.Code == x.Promotion.NextPromotionCode)?.Code;
-                return new ReEnrollmentPlanItem(x.Enrollment.StudentId, x.Enrollment.Student!.Matricule, x.Enrollment.Student.FullName, x.Promotion.Code, next,
-                    x.Account.Balance, next is not null);
+                var next = ExpectedPromotionCode(x.Promotion);
+                // Une classe existante mais désactivée exige une décision du secrétariat.
+                bool available = !targetPromotions.Any(p => p.Code == next && !p.IsActive);
+                return new ReEnrollmentPlanItem(x.Enrollment.StudentId, x.Enrollment.Student!.Matricule,
+                    x.Enrollment.Student.FullName, x.Promotion.Code, next, x.Account.Balance, available);
             }).ToList();
+    }
+
+    /// <summary>Conserve la désignation scolaire quand la progression d'année est reconnaissable.</summary>
+    private static string SuggestedPromotionName(Promotion source, string code)
+    {
+        if (string.Equals(source.Code, code, StringComparison.OrdinalIgnoreCase)) return source.Name;
+        string[] levels = ["Première", "Deuxième", "Troisième", "Quatrième", "Cinquième", "Sixième"];
+        int nextLevel = char.IsAsciiDigit(code[^1]) ? code[^1] - '0' : 0;
+        if (source.Level >= 1 && source.Level <= levels.Length && nextLevel >= 1 && nextLevel <= levels.Length)
+        {
+            var previous = levels[source.Level - 1];
+            if (source.Name.StartsWith(previous + " ", StringComparison.OrdinalIgnoreCase))
+                return levels[nextLevel - 1] + source.Name[previous.Length..];
+        }
+        return $"Promotion {code}";
+    }
+
+    /// <summary>
+    /// Création atomique d'une promotion absente dans l'année cible.
+    /// Les frais sont repris comme paramètres initiaux de la classe d'origine.
+    /// Le calendrier est toujours celui de l'année cible, jamais celui des anciens mois.
+    /// </summary>
+    private static Promotion CopyPromotionForYear(Promotion sourcePromotion, AcademicYear sourceYear,
+        AcademicYear targetYear, string code)
+    {
+        var sameLevel = string.Equals(code, sourcePromotion.Code, StringComparison.OrdinalIgnoreCase);
+        var created = new Promotion
+        {
+            AcademicYearId = targetYear.Id,
+            Code = code,
+            Name = SuggestedPromotionName(sourcePromotion, code),
+            SectionId = sourcePromotion.SectionId,
+            Level = sameLevel ? sourcePromotion.Level : char.IsAsciiDigit(code[^1])
+                ? code[^1] - '0' : sourcePromotion.Level,
+            Capacity = sourcePromotion.Capacity,
+            IsActive = true,
+            NextPromotionCode = sameLevel ? sourcePromotion.NextPromotionCode : null,
+        };
+        var monthly = sourcePromotion.Fees.Where(f => f.Kind == FeeKind.Mensualite).ToList();
+        if (monthly.Count > 0)
+        {
+            var amount = monthly.Select(f => f.Amount).DefaultIfEmpty(0).Max();
+            created.Fees.AddRange(SchoolService.MonthlyFees(created.Id, targetYear, amount));
+        }
+        var yearOffset = targetYear.FirstCalendarYear - sourceYear.FirstCalendarYear;
+        foreach (var fee in sourcePromotion.Fees.Where(f => f.Kind != FeeKind.Mensualite))
+            created.Fees.Add(new FeeItem
+            {
+                PromotionId = created.Id, Kind = fee.Kind, Label = fee.Label, Amount = fee.Amount,
+                DueDate = fee.DueDate.AddYears(yearOffset), Order = fee.Order,
+            });
+        return created;
     }
 
     public Task<int> ReEnrollAsync(ReEnrollmentRequest input, CancellationToken ct = default) => gate.RunAsync(async () =>
     {
         var target = await YearContext.GetAsync(db, input.TargetYearId, ct);
-        var promotions = await db.Promotions.Where(p => p.AcademicYearId == target.Id).ToDictionaryAsync(p => p.Id, ct);
+        if (target.Status == AcademicYearStatus.Closed)
+            throw new DomainException("annee", "L'année cible est clôturée : aucune réinscription n'est possible.");
+        var sourceYear = await db.AcademicYears.AsNoTracking()
+            .Where(y => y.StartDate < target.StartDate).OrderByDescending(y => y.StartDate)
+            .FirstOrDefaultAsync(ct) ?? throw new DomainException("annee", "Aucune année précédente pour ces réinscriptions.");
+        var sourceEnrollments = await db.Enrollments.AsNoTracking()
+            .Where(e => e.AcademicYearId == sourceYear.Id && e.Status == EnrollmentStatus.Actif)
+            .ToDictionaryAsync(e => e.StudentId, ct);
+        var templates = await db.Promotions.AsNoTracking().Include(p => p.Fees)
+            .Where(p => p.AcademicYearId == sourceYear.Id).ToDictionaryAsync(p => p.Id, ct);
+        var destinations = await db.Promotions.Where(p => p.AcademicYearId == target.Id).ToListAsync(ct);
+        var byId = destinations.ToDictionary(p => p.Id);
+        var enrolled = (await db.Enrollments.AsNoTracking().Where(e => e.AcademicYearId == target.Id)
+            .Select(e => e.StudentId).ToListAsync(ct)).ToHashSet();
+        var capacities = await db.Enrollments.AsNoTracking()
+            .Where(e => e.AcademicYearId == target.Id && e.Status == EnrollmentStatus.Actif)
+            .GroupBy(e => e.PromotionId).Select(g => new { Id = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(x => x.Id, x => x.Count, ct);
+        var processed = new HashSet<Guid>();
         var count = 0;
         foreach (var choice in input.Choices)
         {
-            if (!promotions.TryGetValue(choice.PromotionId, out var promotion)) throw new DomainException("choices", "Promotion cible invalide.");
-            if (await db.Enrollments.AnyAsync(e => e.StudentId == choice.StudentId && e.AcademicYearId == target.Id, ct)) continue;
+            if (!processed.Add(choice.StudentId))
+                throw new DomainException("choices", "Un apprenant apparaît plusieurs fois dans le même lot.");
+            if (enrolled.Contains(choice.StudentId)) continue; // répétition sans doublon
+            if (!sourceEnrollments.TryGetValue(choice.StudentId, out var previous)
+                || !templates.TryGetValue(previous.PromotionId, out var sourcePromotion))
+                throw new DomainException("choices", "Un apprenant sélectionné n'a pas d'inscription active dans l'année précédente.");
+
+            Promotion promotion;
+            if (choice.PromotionId is { } promotionId && promotionId != Guid.Empty)
+            {
+                if (!byId.TryGetValue(promotionId, out var existingPromotion))
+                    throw new DomainException("choices", "Promotion cible invalide pour cette année.");
+                promotion = existingPromotion;
+            }
+            else
+            {
+                var code = Promotion.NormalizeCode(choice.PromotionCode);
+                if (code.Length == 0 || code != ExpectedPromotionCode(sourcePromotion))
+                    throw new DomainException("choices", "La promotion à créer ne correspond pas à la progression scolaire configurée.");
+                promotion = destinations.FirstOrDefault(p => p.Code == code)!;
+                if (promotion is null)
+                {
+                    promotion = CopyPromotionForYear(sourcePromotion, sourceYear, target, code);
+                    db.Promotions.Add(promotion);
+                    destinations.Add(promotion);
+                    byId.Add(promotion.Id, promotion);
+                    audit.Record("promotion.creee.reinscription", "Promotion", promotion.Id.ToString(),
+                        $"Promotion {code} créée automatiquement pour {target.Label}, frais repris de {sourcePromotion.Code}.");
+                }
+            }
+            if (!promotion.IsActive)
+                throw new DomainException("choices", $"La promotion {promotion.Code} existe mais est désactivée. Activez-la avant la réinscription.");
+            var occupied = capacities.GetValueOrDefault(promotion.Id);
+            if (promotion.Capacity is { } limit && occupied >= limit)
+                throw new DomainException("choices", $"La promotion {promotion.Code} est complète ({limit} places).");
+            capacities[promotion.Id] = occupied + 1;
             db.Enrollments.Add(new Enrollment
             {
-                StudentId = choice.StudentId, AcademicYearId = target.Id, PromotionId = promotion.Id, EnrolledOn = clock.Today, IsReEnrollment = true,
+                StudentId = choice.StudentId, AcademicYearId = target.Id, PromotionId = promotion.Id,
+                EnrolledOn = clock.Today, IsReEnrollment = true,
             });
             count++;
         }
