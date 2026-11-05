@@ -134,7 +134,7 @@
             </ItemsControl>
             <StackPanel Spacing="5" IsVisible="{Binding HasMonths}">
               <TextBlock Text="Montant réellement reçu" Classes="caption" />
-              <TextBox Text="{Binding AmountText, Mode=TwoWay}" Watermark="Montant du versement"
+              <TextBox Text="{Binding AmountText, Mode=TwoWay}" PlaceholderText="Montant du versement"
                        HorizontalAlignment="Stretch" MinHeight="42" />
               <TextBlock Text="{Binding TotalCaption}" Classes="muted" TextWrapping="Wrap" />
               <TextBlock Text="Le reste sera conservé sur le compte. Les mois les plus anciens sont imputés en premier."
@@ -161,7 +161,7 @@
                 </Grid>
               </Border>
               <TextBox Text="{Binding Reference, Mode=TwoWay}" IsVisible="{Binding NeedsExternalReference}"
-                       Watermark="Référence réelle de l'opérateur" MinHeight="42"
+                       PlaceholderText="Référence réelle de l'opérateur" MinHeight="42"
                        ToolTip.Tip="Recopiez la référence figurant sur la confirmation Mobile Money, bancaire ou du chèque" />
             </StackPanel>
             <StackPanel Grid.Row="1" Grid.Column="1" Margin="0,10,10,0">
