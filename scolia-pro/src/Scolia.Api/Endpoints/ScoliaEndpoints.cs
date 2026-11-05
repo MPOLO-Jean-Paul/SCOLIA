@@ -263,7 +263,7 @@ public static class ScoliaEndpoints
         g.MapGet("", ([AsParameters] ReceiptQuery q, PaymentService p, CancellationToken ct) => p.ListAsync(q, ct));
         g.MapGet("/export", async ([AsParameters] ReceiptQuery q, string? format, PaymentService p, ReportService r, CancellationToken ct) =>
             Table(await r.ReceiptsTableAsync(p, q, ct), format, "journal-encaissements", r));
-        g.MapPost("/apercu", (PaymentRequest input, PaymentService p, CancellationToken ct) => p.PreviewAsync(input.EnrollmentId, input.FeeItemIds, ct, input.Amount))
+        g.MapPost("/apercu", (PaymentRequest input, PaymentService p, CancellationToken ct) => p.PreviewAsync(input.EnrollmentId, input.FeeItemIds, input.Amount, ct))
             .RequireAuthorization(Permissions.PaymentsCreate);
         g.MapPost("", (PaymentRequest input, PaymentService p, CancellationToken ct) => p.CreateAsync(input, ct)).RequireAuthorization(Permissions.PaymentsCreate);
         // Encaissement par lot : un reçu par apprenant, contrôle avant écriture, résultat ligne par ligne.
