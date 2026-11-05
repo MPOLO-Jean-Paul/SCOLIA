@@ -14,7 +14,6 @@ namespace Scolia.Infrastructure.Documents;
 /// </summary>
 internal static class StudentCardPdf
 {
-    private const string Navy = "#0B3B6F";
     private const string Ink = "#1B2430";
     private const string Muted = "#5B6878";
     private const string Frame = "#AEB8C5";
@@ -74,52 +73,50 @@ internal static class StudentCardPdf
     }
 
     /// <summary>
-    /// Carte 85,60 x 53,98 mm : les seuls contenus obligatoires sont l'établissement configuré
-    /// et le dossier scolaire. Le QR remplace le sceau rond du modèle papier.
+    /// Modèle institutionnel : en-tête compact configuré, session centrée et
+    /// soulignée, identité à gauche, QR dans sa zone supérieure droite.
+    /// Le petit logo inférieur rappelle le cachet du modèle sans masquer le QR.
     /// </summary>
     private static void Card(IContainer container, CardDocument d, CardItem card, byte[] schoolLogo)
     {
-        var authority = First(d.Header.Ministry, d.Header.Direction, d.Header.Division);
-        var place = First(d.Header.Address, d.Header.CityZone, d.Header.Country);
+        var authority = Join(d.Header.Ministry, d.Header.Direction, d.Header.Division);
+        var location = Join(d.Header.CityZone, d.Header.Address, d.Header.Country);
         var schoolName = d.Header.Institute.Trim().ToUpperInvariant();
         var fullName = StudentCardRules.FullName(card.LastName, card.MiddleName, card.FirstName);
 
-        container.CornerRadius(Mm(1.8f)).Border(0.6f).BorderColor(Frame).Background(Paper)
-            .Padding(Mm(1.6f)).Column(column =>
+        container.Border(0.45f).BorderColor(Frame).Background(Paper)
+            .Padding(Mm(1.5f)).Column(column =>
         {
-            // En-tête : logo réel de l'école et dénomination, jamais un emblème intégré.
-            column.Item().Height(Mm(11.6f)).Row(row =>
+            // Petite entête de document officiel, semblable à la carte photographiée.
+            // Toutes les mentions viennent des paramètres, aucune n'est codée en dur.
+            column.Item().Height(Mm(11.8f)).Row(row =>
             {
-                row.ConstantItem(Mm(10.6f)).AlignMiddle().Image(schoolLogo).FitArea();
-                row.RelativeItem().PaddingLeft(Mm(1.6f)).AlignMiddle().Column(header =>
+                row.ConstantItem(Mm(11.4f)).AlignMiddle().Image(schoolLogo).FitArea();
+                row.RelativeItem().PaddingLeft(Mm(1.5f)).AlignMiddle().Column(header =>
                 {
-                    header.Spacing(Mm(0.25f));
+                    header.Spacing(Mm(0.18f));
                     header.Item().Text(schoolName)
-                        .FontSize(schoolName.Length > 92 ? 4.1f : schoolName.Length > 58 ? 4.7f : 6.1f)
-                        .Bold().FontColor(Navy).LineHeight(1.04f);
+                        .FontSize(schoolName.Length > 86 ? 4f : schoolName.Length > 54 ? 4.6f : 5.6f)
+                        .SemiBold().FontColor(Ink).LineHeight(1.03f);
                     if (authority is not null)
-                        header.Item().Text(authority).FontSize(3.9f).FontColor(Muted).LineHeight(1.0f);
-                    if (place is not null)
-                        header.Item().Text(place).FontSize(4f).FontColor(Muted).LineHeight(1.0f);
+                        header.Item().Text(authority).FontSize(authority.Length > 150 ? 2.6f : authority.Length > 95 ? 2.9f : 3.2f).FontColor(Ink).LineHeight(1f);
+                    if (location is not null)
+                        header.Item().Text(location).FontSize(location.Length > 150 ? 2.4f : location.Length > 95 ? 2.7f : 3.0f).FontColor(Muted).LineHeight(1f);
                 });
             });
-            column.Item().Height(Mm(0.32f)).Background(Navy);
+            column.Item().Height(Mm(0.22f)).Background("#BCC2CA");
 
-            // Titre central du modèle ; le QR occupe l'ancienne zone du cachet.
-            column.Item().Height(Mm(19.8f)).Row(row =>
+            // QR maintenu dans la colonne à droite de la session (pas dans l'en-tête).
+            column.Item().Height(Mm(17.8f)).Row(row =>
             {
-                row.RelativeItem().PaddingTop(Mm(2.0f)).Column(title =>
+                row.RelativeItem().PaddingTop(Mm(1.7f)).Column(title =>
                 {
-                    title.Item().Text(text =>
-                    {
-                        text.Span("Session ").FontSize(13f).Bold().FontColor(Navy);
-                        text.Span(StudentCardRules.SessionYear(d.Session)).FontSize(14.7f).Bold().FontColor("#1261A0");
-                    });
-                    title.Item().PaddingTop(Mm(0.9f)).LineHorizontal(0.55f).LineColor("#1261A0");
-                    title.Item().PaddingTop(Mm(0.8f)).Text("ACCÈS AUX EXAMENS")
-                        .FontSize(6.2f).SemiBold().Italic().FontColor(Navy);
-                    title.Item().PaddingTop(Mm(0.5f)).Text(d.Session)
-                        .FontSize(5.0f).FontColor(Muted);
+                    title.Item().AlignCenter().Text("Session " + StudentCardRules.SessionYear(d.Session))
+                        .FontSize(14.2f).Bold().Underline().FontColor("#737982");
+                    title.Item().PaddingTop(Mm(0.6f)).AlignCenter()
+                        .Text("ACCÈS AUX EXAMENS").FontSize(5.2f).SemiBold().FontColor(Ink);
+                    title.Item().PaddingTop(Mm(0.4f)).AlignCenter()
+                        .Text(d.Session).FontSize(4.1f).FontColor(Muted);
                 });
                 row.ConstantItem(Mm(18.8f)).AlignMiddle().Column(qr =>
                 {
@@ -130,22 +127,33 @@ internal static class StudentCardPdf
                 });
             });
 
-            // Présentation nominative proche du modèle fourni.
-            column.Item().PaddingTop(Mm(0.7f)).Column(identity =>
+            // Le modèle source présente une lecture en trois lignes à gauche.
+            column.Item().PaddingTop(Mm(1.6f)).Row(row =>
             {
-                identity.Spacing(Mm(0.7f));
-                Field(identity, "MATRICULE", card.Matricule, 7.2f);
-                Field(identity, "NOMS", fullName, fullName.Length > 48 ? 5.2f
-                    : fullName.Length > 32 ? 6f : 7.1f);
-                Field(identity, "PROMOTION", card.Classe, 7.2f);
+                row.RelativeItem().Column(identity =>
+                {
+                    identity.Spacing(Mm(1.1f));
+                    Field(identity, "MATRICULE", card.Matricule, 7.0f);
+                    Field(identity, "NOMS", fullName, fullName.Length > 90 ? 4f
+                        : fullName.Length > 60 ? 4.8f : fullName.Length > 40 ? 5.7f : 6.9f);
+                    Field(identity, "PROMOTION", card.Classe, 7.0f);
+                });
+                // Le même logo configuré remplace une image de sceau fixe en bas.
+                row.ConstantItem(Mm(11f)).AlignRight().AlignBottom()
+                    .Width(Mm(7f)).Height(Mm(7f)).Image(schoolLogo).FitArea();
             });
             column.Item().ExtendVertical().AlignBottom()
-                .Text($"Année scolaire {d.AcademicYear}").FontSize(4.3f).FontColor(Muted);
+                .Text("Année scolaire " + d.AcademicYear).FontSize(4.1f).FontColor(Muted);
         });
     }
 
-    private static string? First(params string?[] values) =>
-        values.FirstOrDefault(v => !string.IsNullOrWhiteSpace(v))?.Trim();
+    private static string? Join(params string?[] values)
+    {
+        var parts = values.Where(v => !string.IsNullOrWhiteSpace(v))
+            .Select(v => v!.Trim()).Distinct(StringComparer.OrdinalIgnoreCase);
+        var joined = string.Join(" · ", parts);
+        return joined.Length == 0 ? null : joined;
+    }
 
     private static void Field(ColumnDescriptor identity, string label, string value, float size)
     {
