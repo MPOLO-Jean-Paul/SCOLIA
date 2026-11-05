@@ -42,7 +42,7 @@ Alternative manuelle : dans GitHub, ouvrir le depot > **Settings > Secrets and v
 ## Validation avant la prochaine release
 
 1. Fusionner le changement de workflows dans `release/direct-apk-scolia-pro-20261103` apres avoir ajoute les secrets.
-2. Executer manuellement le workflow de build officiel (`workflow_dispatch`) et verifier la signature et le resultat des tests. Une execution sur une autre branche est une **validation** et produit un APK qui ne doit pas etre distribue.
+2. Verifier les jobs declenches par le **push de fusion** sur la branche officielle : ils doivent utiliser les secrets et confirmer l'empreinte Android. Un lancement manuel (`workflow_dispatch`), meme depuis cette branche, est traite comme une **validation** et ne produit pas d'APK distribuable.
 3. Ne publier la version suivante qu'apres verification de l'empreinte, du `versionCode` croissant et de la possibilite de mise a jour d'un appareil de test deja equipe de la version officielle.
 4. Conserver une copie de secours **chiffree et hors depot** du keystore et de son mot de passe, avec controle d'acces limite. Une fois le chemin de publication confirme, supprimer l'ancien cache de signature depuis les parametres GitHub Actions et ne plus utiliser l'ancien script `recuperer-cle-android-cache-1217.sh`.
 
