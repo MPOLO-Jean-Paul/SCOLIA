@@ -21,7 +21,10 @@ public static class OfflineStudentSearch
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(pageSize);
 
         var items = new Dictionary<Guid, StudentListItem>();
+        var pending = store.Outbox();
+        var provisional = OfflineReplica.PendingRegistrationRows(store);
         var registered = 0;
+        var snapshotFound = false;
         // 20 pages au maximum pour éviter un balayage SQLite excessif sur le téléphone.
         // Les fiches non téléchargées ne sont pas synthétisées ni inventées.
         for (var number = 1; number <= 20; number++)
@@ -30,7 +33,7 @@ public static class OfflineStudentSearch
             if (store.ReadPage(key) is not { } cached)
             {
                 // Le cache de l'index est paginé et récupéré dans l'ordre.
-                if (number == 1) return null;
+                if (number == 1 && provisional.Count == 0) return null;
                 break;
             }
 
@@ -38,10 +41,15 @@ public static class OfflineStudentSearch
             try { response = JsonSerializer.Deserialize<PagedResult<StudentListItem>>(cached.Json, Json.Options); }
             catch (JsonException) { return null; }
             if (response is null) return null;
+            snapshotFound = true;
             registered = Math.Max(registered, response.Total);
-            foreach (var student in response.Items) items[student.Id] = student;
+            foreach (var student in response.Items)
+                items[student.Id] = OfflineReplica.ApplyStudentEdits(student, pending);
             if (items.Count >= registered) break;
         }
+
+        var loadedFromServer = items.Count;
+        foreach (var local in provisional) items[local.Id] = local;
 
         var searchable = (query ?? string.Empty).Trim();
         var match = items.Values
@@ -61,6 +69,6 @@ public static class OfflineStudentSearch
             Math.Max(1, (int)Math.Ceiling(match.Count / (double)pageSize)));
         var part = match.Skip((safePage - 1) * pageSize).Take(pageSize).ToList();
         return new Result(new PagedResult<StudentListItem>(part, match.Count, safePage, pageSize, null),
-            items.Count, registered, items.Count >= registered);
+            items.Count, registered + provisional.Count, snapshotFound && loadedFromServer >= registered);
     }
 }
