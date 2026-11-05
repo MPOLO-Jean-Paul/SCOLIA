@@ -126,9 +126,12 @@ public sealed class SyncWorker : Worker
         // Une session expirée attend une connexion normale ; aucun droit auto-déclaré, aucun mot de passe en tâche native.
         if (await api.CurrentSessionAsync(timeout.Token) is null) return Result.InvokeSuccess();
         await api.FlushAsync(timeout.Token);
-        foreach (var path in store.CachedPaths())
+        // Faire tourner les copies locales les plus anciennes, en paquets bornés :
+        // actualiser indéfiniment les mêmes 32 entrées empêchait les autres
+        // dossiers préchargés d'être remis à jour.
+        foreach (var path in store.CachedPaths(limit: 24))
         {
-            if (IsStopped) break;
+            if (IsStopped || timeout.IsCancellationRequested) break;
             try { await api.GetAsync<JsonElement>(path, timeout.Token); }
             catch (ApiException ex) when (ex.Status is 400 or 403 or 404) { }
         }
