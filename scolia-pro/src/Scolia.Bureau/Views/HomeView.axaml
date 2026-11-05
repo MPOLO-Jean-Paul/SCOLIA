@@ -74,7 +74,7 @@
             <!-- Bloc de salutation : dimension variable, jamais masqué par des boutons. -->
             <Grid Grid.Column="0" ColumnDefinitions="Auto,*" ColumnSpacing="11"
                   VerticalAlignment="Center">
-              <Border Width="42" Height="42" CornerRadius="12"
+              <Border x:Name="WelcomeAvatar" Width="42" Height="42" CornerRadius="12"
                       Background="{DynamicResource AccentSoftBrush}"
                       VerticalAlignment="Top">
                 <TextBlock Text="{Binding Initials}" FontSize="16" FontWeight="Bold"
@@ -84,7 +84,7 @@
               <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
                 <TextBlock Text="ESPACE DE TRAVAIL" FontSize="10" FontWeight="SemiBold"
                            Foreground="{DynamicResource MutedBrush}" />
-                <TextBlock Text="{Binding Greeting}" Classes="greeting"
+                <TextBlock x:Name="WelcomeGreeting" Text="{Binding Greeting}" Classes="greeting"
                            FontWeight="SemiBold" Foreground="{DynamicResource TextBrush}"
                            TextWrapping="Wrap" />
                 <TextBlock Text="{Binding AccountContextLine}"
