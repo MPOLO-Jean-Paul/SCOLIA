@@ -130,8 +130,8 @@ public sealed class SyncCenter : Observable, IDisposable
     public AsyncCommand SyncNow { get; }
 
     /// <summary>État lisible de la connexion, pour la barre du haut et l'accueil.</summary>
-    public string StatusText => syncing ? "Synchronisation…"
-        : Offline ? (HasPending ? $"Hors ligne · {Pending} en attente" : "Hors ligne")
+    public string StatusText => Offline ? (HasPending ? $"Hors ligne · {Pending} en attente" : "Hors ligne")
+        : syncing ? "Synchronisation…"
         : HasConflicts ? $"{Conflicts} opération(s) refusée(s)"
         : "En ligne";
 
@@ -143,7 +143,7 @@ public sealed class SyncCenter : Observable, IDisposable
         : api.IsLongDistance ? $"Liaison Internet chiffrée · {PeersText}. Les opérations sont confirmées par l’appareil principal."
         : $"Relié à l'ordinateur principal · {PeersText}.";
 
-    public IBrush StatusBrush => ThemeBrush.Get(syncing ? "ToneBlue" : Offline ? "ToneOrange" : HasConflicts ? "ToneRed" : "ToneGreen");
+    public IBrush StatusBrush => ThemeBrush.Get(Offline ? "ToneOrange" : syncing ? "ToneBlue" : HasConflicts ? "ToneRed" : "ToneGreen");
 
     /// <summary>Action en cours sur ce poste, annoncée aux autres : « Encaissement de MUKENDI ».</summary>
     public string? Activity
@@ -171,6 +171,7 @@ public sealed class SyncCenter : Observable, IDisposable
         var token = running.Token;
         _ = StreamLoopAsync(token);
         _ = HeartbeatLoopAsync(token);
+        _ = ReconnectLoopAsync(token);
         _ = HealthLoopAsync(token);
         // Préparer les pages locales après le rendu de l'accueil, sans retarder l'ouverture.
         _ = WarmOfflinePagesAsync(token);
@@ -485,18 +486,28 @@ public sealed class SyncCenter : Observable, IDisposable
         }
     }
 
+    /// <summary>Recherche le serveur toutes les cinq secondes pendant une coupure.</summary>
+    private async Task ReconnectLoopAsync(CancellationToken ct)
+    {
+        while (!ct.IsCancellationRequested)
+        {
+            try { await Task.Delay(ProbeInterval, ct); }
+            catch (OperationCanceledException) { return; }
+            if (Offline) await SyncAsync(manual: false);
+        }
+    }
+
     /// <summary>
-    /// Annonce ce poste toutes les 15 secondes : sa page, son activité et les verrous qu'il tient encore.
-    /// Hors ligne, la même boucle cherche le serveur toutes les 5 secondes.
+    /// Annonce l'activité du poste toutes les quinze secondes, sans retarder
+    /// la reprise d'une liaison perdue pendant cette attente.
     /// </summary>
     private async Task HeartbeatLoopAsync(CancellationToken ct)
     {
         while (!ct.IsCancellationRequested)
         {
-            try { await Task.Delay(Offline ? ProbeInterval : HeartbeatInterval, ct); }
+            try { await Task.Delay(HeartbeatInterval, ct); }
             catch (OperationCanceledException) { return; }
-            if (Offline) await SyncAsync(manual: false);
-            else await AnnounceAsync();
+            if (!Offline) await AnnounceAsync();
         }
     }
 
