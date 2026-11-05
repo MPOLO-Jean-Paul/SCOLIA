@@ -63,6 +63,28 @@
             </StackPanel>
           </Border>
 
+          <!-- Le contrôle manuel Android est accessible au même endroit que sur Windows :
+               Mon compte > Informations, sans dépendre des notifications système. -->
+          <TextBlock Text="Mises à jour" Classes="phonegrouptitle" Margin="14,4,0,-6"
+                     IsVisible="{Binding CanCheckAppUpdates}" />
+          <Border Classes="card" IsVisible="{Binding CanCheckAppUpdates}">
+            <StackPanel Spacing="12">
+              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                <Border Classes="appicon medium" Background="{DynamicResource AccentBrush}">
+                  <mi:MaterialIcon Kind="Update" Foreground="{DynamicResource OnAccentBrush}" />
+                </Border>
+                <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
+                  <TextBlock Text="Mise à jour de SCOLIA Pro" FontWeight="SemiBold" />
+                  <TextBlock Text="Rechercher la dernière version Android officielle, même si aucune notification n'est apparue."
+                             Classes="muted" TextWrapping="Wrap" />
+                </StackPanel>
+              </Grid>
+              <Button Content="Rechercher des mises à jour" Command="{Binding CheckAppUpdates}"
+                      HorizontalAlignment="Stretch" MinHeight="48" />
+              <TextBlock Text="{Binding AppUpdateStatus}" Classes="muted" TextWrapping="Wrap" />
+            </StackPanel>
+          </Border>
+
           <Button Classes="destructive" Command="{Binding Logout}" HorizontalAlignment="Stretch" Height="48" Margin="0,6,0,0">
             <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
               <mi:MaterialIcon Kind="Logout" Width="18" Height="18" />

@@ -38,9 +38,8 @@ public static class AndroidAppUpdates
     private const int DownloadSuccessStatus = UpdateCompletionPolicy.Successful;
     private const int DownloadFailureStatus = UpdateCompletionPolicy.Failed;
     private const long MaxApkBytes = 350L * 1024 * 1024;
-    // Le contrôle en ouvrant SCOLIA doit voir une publication récente ; WorkManager
-    // reste à 6 h pour économiser la batterie hors de l'application.
-    private const long CheckSeconds = 15 * 60;
+    // Contrôle rapproché lorsque SCOLIA est visible ; le contrôle Android en
+    // arrière-plan reste à six heures pour respecter la batterie.
     private const string DeferredVersionKey = "deferred-version";
     private const string DeferredUntilKey = "deferred-until";
     private static readonly HttpClient Http = new() { Timeout = TimeSpan.FromSeconds(25) };
@@ -51,6 +50,7 @@ public static class AndroidAppUpdates
     private static bool installDialogOpen;
     private static WeakReference<Activity>? foregroundActivity;
     private static CancellationTokenSource? foregroundDownloadWatch;
+    private static CancellationTokenSource? foregroundReleaseWatch;
 
     internal sealed record Release(string Version, string DownloadUrl, string Sha256, long Size);
 
@@ -76,6 +76,9 @@ public static class AndroidAppUpdates
         if (Preferences(activity).GetLong(DownloadIdKey, 0) > 0)
             StartForegroundDownloadWatch(activity);
         _ = ResumeAsync(activity);
+        // Si SCOLIA reste ouvert pendant une publication, découvrir la nouvelle
+        // version sans forcer un redémarrage de l'application.
+        StartForegroundReleaseWatch(activity);
     }
 
     public static void OnPause(Activity activity)
@@ -84,6 +87,7 @@ public static class AndroidAppUpdates
         {
             foregroundActivity = null;
             StopForegroundDownloadWatch();
+            StopForegroundReleaseWatch();
         }
         // Un dialogue disparu avec l'activité ne doit jamais bloquer
         // les prochaines propositions de téléchargement ou d'installation.
@@ -110,6 +114,41 @@ public static class AndroidAppUpdates
         var source = new CancellationTokenSource();
         foregroundDownloadWatch = source;
         _ = WatchDownloadAsync(activity, source.Token);
+    }
+
+    private static void StopForegroundReleaseWatch()
+    {
+        var previous = foregroundReleaseWatch;
+        foregroundReleaseWatch = null;
+        previous?.Cancel();
+        previous?.Dispose();
+    }
+
+    private static void StartForegroundReleaseWatch(Activity activity)
+    {
+        StopForegroundReleaseWatch();
+        var source = new CancellationTokenSource();
+        foregroundReleaseWatch = source;
+        _ = WatchReleasesAsync(activity, source.Token);
+    }
+
+    private static async Task WatchReleasesAsync(Activity activity, CancellationToken cancellation)
+    {
+        try
+        {
+            while (!cancellation.IsCancellationRequested && IsForeground(activity))
+            {
+                await Task.Delay(TimeSpan.FromSeconds(UpdateCompletionPolicy.ForegroundReleaseCheckSeconds), cancellation);
+                if (!IsForeground(activity)) return;
+                try { await CheckLatestAsync(activity, showDialog: true); }
+                catch (Exception ex) when (ex is HttpRequestException or IOException or JsonException
+                    or TaskCanceledException or Java.Lang.Exception or InvalidOperationException)
+                {
+                    Android.Util.Log.Warn("SCOLIA-MAJ", $"Contrôle en premier plan reporté : {ex.GetType().Name}");
+                }
+            }
+        }
+        catch (OperationCanceledException) when (cancellation.IsCancellationRequested) { }
     }
 
     private static int? DownloadStatus(Context context, long id)
@@ -314,7 +353,8 @@ public static class AndroidAppUpdates
         {
             var prefs = Preferences(context);
             long now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-            if (!forceRefresh && now - prefs.GetLong(LastCheckKey, 0) < CheckSeconds)
+            if (!UpdateCompletionPolicy.ShouldRefreshRelease(
+                prefs.GetLong(LastCheckKey, 0), now, forceRefresh))
             {
                 var cached = Deserialize(prefs.GetString(ReleaseKey, null));
                 if (cached is null || !IsNewer(context, cached.Version))
@@ -373,6 +413,8 @@ public static class AndroidAppUpdates
     private static async Task<Release?> ReadReleaseAsync(Context context)
     {
         using var request = new HttpRequestMessage(HttpMethod.Get, LatestRelease);
+        // Ne pas laisser un ancien résultat en cache masquer une publication.
+        request.Headers.CacheControl = new CacheControlHeaderValue { NoCache = true };
         request.Headers.UserAgent.ParseAdd("SCOLIA-Pro-Android/1.2");
         request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/vnd.github+json"));
         using var response = await Http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);

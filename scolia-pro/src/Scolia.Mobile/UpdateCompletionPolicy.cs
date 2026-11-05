@@ -14,6 +14,14 @@ public enum UpdateCompletionAction
 
 internal static class UpdateCompletionPolicy
 {
+    // Le premier plan repasse sur GitHub régulièrement, mais sans requêtes à chaque navigation.
+    // Une recherche demandée par l'utilisateur doit toujours ignorer cette temporisation.
+    internal const long ForegroundReleaseCheckSeconds = 3L * 60;
+
+    internal static bool ShouldRefreshRelease(long lastCheckUtc, long nowUtc, bool forceRefresh)
+        => forceRefresh || lastCheckUtc <= 0 || nowUtc < lastCheckUtc
+            || nowUtc - lastCheckUtc >= ForegroundReleaseCheckSeconds;
+
     internal const int Successful = 8; // DownloadManager.STATUS_SUCCESSFUL
     internal const int Failed = 16; // DownloadManager.STATUS_FAILED
 
