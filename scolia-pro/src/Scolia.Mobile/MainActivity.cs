@@ -16,6 +16,10 @@ public sealed class MainActivity : AvaloniaMainActivity
     private static bool launchPresented;
     private StartupScreen? startup;
 
+    // L'état réel du splash, pas une estimation basée sur un délai :
+    // la vérification des mises à jour attend que cet écran ait disparu.
+    internal bool IsStartupOverlayVisible => startup?.Parent is not null;
+
     protected override void OnCreate(Bundle? savedInstanceState)
     {
         MobilePlatform.Attach(this);

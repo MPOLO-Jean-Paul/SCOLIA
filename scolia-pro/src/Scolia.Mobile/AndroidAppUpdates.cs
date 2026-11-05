@@ -273,7 +273,15 @@ public static class AndroidAppUpdates
                     return;
                 }
             }
-            await Task.Delay(700);
+            // Le splash attend encore le dessin de la première page, l'animation du
+            // logo, les points et leur fondu après StartupTask. Un délai fixe de
+            // 700 ms pouvait donc encore afficher la fenêtre derrière cet écran.
+            if (activity is MainActivity main)
+            {
+                while (main.IsStartupOverlayVisible && IsForeground(activity))
+                    await Task.Delay(140);
+            }
+            else await Task.Delay(250);
             if (!IsForeground(activity)) return;
             // Après l'autorisation « Installer des applications inconnues », reprendre
             // l'installation déjà consentie sans obliger à rechercher l'APK.

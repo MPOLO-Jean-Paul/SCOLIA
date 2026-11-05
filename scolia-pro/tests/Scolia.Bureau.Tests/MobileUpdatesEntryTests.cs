@@ -38,6 +38,21 @@ public sealed class MobileUpdatesEntryTests
     }
 
     [Fact]
+    public void Le_controle_automatique_attend_vraiment_la_fermeture_du_splash()
+    {
+        var dir = new DirectoryInfo(AppContext.BaseDirectory);
+        while (dir is not null && !File.Exists(Path.Combine(dir.FullName, "Scolia.sln")))
+            dir = dir.Parent;
+        Assert.NotNull(dir);
+        var mobile = Path.Combine(dir!.FullName, "src", "Scolia.Mobile");
+        var main = File.ReadAllText(Path.Combine(mobile, "MainActivity.cs"));
+        var updater = File.ReadAllText(Path.Combine(mobile, "AndroidAppUpdates.cs"));
+        Assert.Contains("IsStartupOverlayVisible => startup?.Parent is not null", main);
+        Assert.Contains("while (main.IsStartupOverlayVisible && IsForeground(activity))", updater);
+        Assert.Contains("if (!IsForeground(activity)) return", updater);
+    }
+
+    [Fact]
     public void Verification_manuelle_est_disponible_aussi_sur_un_telephone_client()
     {
         bool previousMobile = Platform.IsMobile;
