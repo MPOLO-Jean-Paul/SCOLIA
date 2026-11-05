@@ -92,6 +92,9 @@ public sealed class BatchRowVm : Observable
 public sealed class BatchPaymentPage : PageViewModel
 {
     private readonly Dictionary<Guid, BatchPaymentLineDto> results = [];
+    // Une référence par inscription et par tentative : l'aperçu et l'encaissement
+    // portent exactement la même transaction, même si la recherche change entre-temps.
+    private readonly Dictionary<Guid, string> autoReferences = [];
     // Le lot appartient à l'utilisateur ; la recherche ne le réinitialise jamais.
     private readonly Dictionary<Guid, BatchRowVm> selectedRows = [];
     private int queryVersion;
@@ -320,9 +323,18 @@ public sealed class BatchPaymentPage : PageViewModel
             feeItemIds = r.FeeItemIds,
             method = Method?.Value ?? "Especes",
             // Comme à l'encaissement simple : sans référence saisie, SCOLIA en donne une.
-            reference = string.IsNullOrWhiteSpace(r.Reference) ? CashierPage.NewReference(DateTime.Now) : r.Reference.Trim(),
+            reference = ReferenceFor(r),
         }).ToList(),
     };
+
+    private string ReferenceFor(BatchRowVm row)
+    {
+        if (!string.IsNullOrWhiteSpace(row.Reference)) return row.Reference.Trim();
+        if (autoReferences.TryGetValue(row.EnrollmentId, out var reference)) return reference;
+        reference = CashierPage.NewReference(DateTime.Now);
+        autoReferences[row.EnrollmentId] = reference;
+        return reference;
+    }
 
     /// <summary>Contrôle le lot sans rien écrire. Chaque ligne affiche son montant, son erreur ou ses doublons.</summary>
     private async Task<BatchPreviewDto?> CheckAsync(IReadOnlyList<BatchRowVm>? fixedSelection = null)
@@ -334,7 +346,10 @@ public sealed class BatchPaymentPage : PageViewModel
             return null;
         }
         var preview = await Shell.Api.SendAsync<BatchPreviewDto>(HttpMethod.Post, "api/paiements/lot/apercu", BuildRequest(rows, null));
-        for (var i = 0; i < rows.Count && i < preview.Lines.Count; i++) rows[i].ShowCheck(preview.Lines[i]);
+        // Chaque diagnostic retourne sur le bon apprenant, même si l'API réordonne les lignes.
+        var byEnrollment = rows.ToDictionary(r => r.EnrollmentId);
+        foreach (var line in preview.Lines)
+            if (byEnrollment.TryGetValue(line.EnrollmentId, out var row)) row.ShowCheck(line);
         return preview;
     }
 
@@ -366,6 +381,7 @@ public sealed class BatchPaymentPage : PageViewModel
                 // Ne plus afficher un paiement terminé dans la sélection prête à encaisser.
                 if (selectedRows.TryGetValue(line.EnrollmentId, out var paidRow)) paidRow.ShowResult(line);
                 selectedRows.Remove(line.EnrollmentId);
+                autoReferences.Remove(line.EnrollmentId);
             }
             else if (selectedRows.TryGetValue(line.EnrollmentId, out var invalidRow)) invalidRow.ShowResult(line);
         }
