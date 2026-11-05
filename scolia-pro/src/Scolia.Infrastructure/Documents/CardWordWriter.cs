@@ -22,6 +22,7 @@ public static class CardWordWriter
     private const int InnerTwip = 114;       // 2 mm de marge interne
     private const int InnerWidthTwip = CardTwip - 2 * InnerTwip;
     private const int Emu = 36000;          // 1 mm en EMU
+    private const string WordFont = "<w:rFonts w:ascii=\"Roboto\" w:hAnsi=\"Roboto\" w:cs=\"Roboto\"/>";
     private const string TinyParagraph = "<w:p><w:pPr><w:spacing w:before=\"0\" w:after=\"0\" w:line=\"20\" w:lineRule=\"exact\"/></w:pPr></w:p>";
 
     private sealed class Images
@@ -93,43 +94,57 @@ public static class CardWordWriter
         var content = new StringBuilder();
         var names = StudentCardRules.FullName(card.LastName, card.MiddleName, card.FirstName);
         var schoolName = d.Header.Institute.Trim().ToUpperInvariant();
-        var authority = First(d.Header.Ministry, d.Header.Direction, d.Header.Division);
-        var address = First(d.Header.Address, d.Header.CityZone, d.Header.Country);
+        var authority = Join(d.Header.Ministry, d.Header.Direction, d.Header.Division);
+        var location = Join(d.Header.CityZone, d.Header.Address, d.Header.Country);
 
-        // En-tête réel de l'établissement : son logo et ses mentions configurées.
+        // Haut de la carte : logo et en-tête institutionnel du profil de l'école.
         content.Append(TableStart(new[] { SealTwip, InnerWidthTwip - SealTwip }, InnerTwip));
         content.Append($"<w:tr><w:tc><w:tcPr><w:tcW w:w=\"{SealTwip}\" w:type=\"dxa\"/><w:vAlign w:val=\"center\"/></w:tcPr>")
             .Append(Picture(logoRid, 10.5, 10.5, 1, "Logo établissement")).Append("</w:tc>");
         content.Append($"<w:tc><w:tcPr><w:tcW w:w=\"{InnerWidthTwip - SealTwip}\" w:type=\"dxa\"/><w:vAlign w:val=\"center\"/></w:tcPr>");
-        Mention(content, schoolName, schoolName.Length > 80 ? 8 : schoolName.Length > 50 ? 10 : 12, true);
-        Mention(content, authority, 8, false);
-        Mention(content, address, 8, false);
+        Mention(content, schoolName, schoolName.Length > 86 ? 8 : schoolName.Length > 54 ? 9 : 11, true);
+        Mention(content, authority, 7, false);
+        Mention(content, location, 6, false);
         content.Append("</w:tc></w:tr></w:tbl>");
 
-        // Session et QR à la place du sceau rond du modèle fourni.
+        // Même emplacement QR que l'ancienne carte : à droite du titre.
         content.Append(TableStart(new[] { InnerWidthTwip - QrTwip, QrTwip }, InnerTwip));
         content.Append($"<w:tr><w:tc><w:tcPr><w:tcW w:w=\"{InnerWidthTwip - QrTwip}\" w:type=\"dxa\"/><w:vAlign w:val=\"center\"/></w:tcPr>");
-        content.Append(Paragraph("Session " + StudentCardRules.SessionYear(d.Session), 27, true, false, "left", "0B3B6F", 60));
-        content.Append(Paragraph("ACCÈS AUX EXAMENS", 12, true, false, "left", "0B3B6F", 35));
-        content.Append(Paragraph(d.Session, 9, false, false, "left", "5B6878", 20));
+        content.Append(Paragraph("Session " + StudentCardRules.SessionYear(d.Session), 28, true, true, "center", "737982", 50));
+        content.Append(Paragraph("ACCÈS AUX EXAMENS", 10, true, false, "center", "1B2430", 20));
+        content.Append(Paragraph(d.Session, 8, false, false, "center", "5B6878", 15));
         content.Append("</w:tc>");
         content.Append($"<w:tc><w:tcPr><w:tcW w:w=\"{QrTwip}\" w:type=\"dxa\"/><w:vAlign w:val=\"center\"/></w:tcPr>");
         content.Append(Picture(qrRid, 16.5, 16.5, 2, "QR de contrôle"));
         content.Append(Paragraph("Contrôle QR", 7, false, false, "center", "5B6878"));
         content.Append("</w:tc></w:tr></w:tbl>");
 
-        // Champs alimentés automatiquement depuis le dossier de l'apprenant.
+        // Trois rubriques comme le document de référence ; le nom reste complet.
         content.Append(Paragraph(string.Empty, 4, false, false, "left", null, 25));
         Field(content, "MATRICULE", card.Matricule, 14);
-        Field(content, "NOMS", names, names.Length > 48 ? 10 : names.Length > 32 ? 12 : 14);
+        Field(content, "NOMS", names, names.Length > 90 ? 8 : names.Length > 60 ? 10
+            : names.Length > 40 ? 12 : 14);
         Field(content, "PROMOTION", card.Classe, 14);
-        content.Append(Paragraph("Année scolaire " + d.AcademicYear, 8, false, false, "left", "5B6878", 30));
+
+        // Le petit logo inférieur rappelle le sceau sans occulter le QR de vérification.
+        content.Append(TableStart(new[] { InnerWidthTwip - SealTwip, SealTwip }, InnerTwip));
+        content.Append($"<w:tr><w:tc><w:tcPr><w:tcW w:w=\"{InnerWidthTwip - SealTwip}\" w:type=\"dxa\"/></w:tcPr>");
+        content.Append(Paragraph("Année scolaire " + d.AcademicYear, 8, false, false, "left", "5B6878", 20));
+        content.Append("</w:tc>");
+        content.Append($"<w:tc><w:tcPr><w:tcW w:w=\"{SealTwip}\" w:type=\"dxa\"/></w:tcPr>");
+        content.Append(Picture(logoRid, 6.5, 6.5, 3, "Logo inférieur établissement"));
+        content.Append("</w:tc></w:tr></w:tbl>");
 
         body.Append(content).Append(TinyParagraph);
     }
 
-    private static string? First(params string?[] values) =>
-        values.FirstOrDefault(v => !string.IsNullOrWhiteSpace(v))?.Trim();
+    private static string? Join(params string?[] values)
+    {
+        var parts = values.Where(v => !string.IsNullOrWhiteSpace(v))
+            .Select(v => v!.Trim()).Distinct(StringComparer.OrdinalIgnoreCase);
+        var joined = string.Join(" · ", parts);
+        return joined.Length == 0 ? null : joined;
+    }
 
     private static void ContentCell(StringBuilder body, CardDocument d, CardItem? card, string sealRid, Images images)
     {
@@ -185,11 +200,11 @@ public static class CardWordWriter
     }
 
     private static string Run(string text, int halfPoints, string color, bool bold = true) =>
-        $"<w:r><w:rPr>{(bold ? "<w:b/>" : string.Empty)}<w:color w:val=\"{color}\"/><w:sz w:val=\"{halfPoints}\"/></w:rPr><w:t xml:space=\"preserve\">{Esc(text)}</w:t></w:r>";
+        $"<w:r><w:rPr>{WordFont}{(bold ? "<w:b/>" : string.Empty)}<w:color w:val=\"{color}\"/><w:sz w:val=\"{halfPoints}\"/></w:rPr><w:t xml:space=\"preserve\">{Esc(text)}</w:t></w:r>";
 
     private static string Paragraph(string text, int halfPoints, bool bold, bool underline, string align, string? color, int beforeTwip = 0, int afterTwip = 0, int indentTwip = 0)
     {
-        var props = $"<w:rPr>{(bold ? "<w:b/>" : string.Empty)}{(underline ? "<w:u w:val=\"single\"/>" : string.Empty)}" +
+        var props = $"<w:rPr>{WordFont}{(bold ? "<w:b/>" : string.Empty)}{(underline ? "<w:u w:val=\"single\"/>" : string.Empty)}" +
             $"{(color is null ? string.Empty : $"<w:color w:val=\"{color}\"/>")}<w:sz w:val=\"{halfPoints}\"/></w:rPr>";
         var line = Math.Max(halfPoints * 13, 120);
         var spacing = $"<w:spacing w:before=\"{beforeTwip}\" w:after=\"{afterTwip}\" w:line=\"{line}\" w:lineRule=\"exact\"/>";
