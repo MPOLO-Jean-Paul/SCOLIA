@@ -73,8 +73,8 @@ public sealed class ReEnrollmentAutoPromotionTests : IDisposable
         Assert.Equal(55000m, created.GetProperty("monthlyFee").GetDecimal());
 
         var profile = await admin.GetAsync($"/api/apprenants/{student}").Ok();
-        Assert.Single(profile.GetProperty("enrollments").EnumerateArray()
-            .Where(e => e.GetProperty("academicYearId").GetString() == year));
+        Assert.Single(profile.GetProperty("enrollments").EnumerateArray(),
+            e => e.GetProperty("academicYearId").GetString() == year);
     }
 
     [Fact]
