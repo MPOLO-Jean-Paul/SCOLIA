@@ -460,9 +460,20 @@ public sealed class ScoliaClient : IDisposable
     }
 
     /// <summary>Envoie des fichiers en multipart (import Excel, logo).</summary>
-    public async Task<T> UploadAsync<T>(HttpMethod method, string path, IEnumerable<UploadedFile> files, CancellationToken ct = default)
+    public Task<T> UploadAsync<T>(HttpMethod method, string path, IEnumerable<UploadedFile> files, CancellationToken ct = default) =>
+        UploadFormAsync<T>(method, path, files, null, ct);
+
+    /// <summary>Import de documents protégés : la phrase secrète va dans le corps POST, jamais l'URL.</summary>
+    public Task<T> UploadWithFieldsAsync<T>(HttpMethod method, string path, IEnumerable<UploadedFile> files,
+        IReadOnlyDictionary<string, string> fields, CancellationToken ct = default) =>
+        UploadFormAsync<T>(method, path, files, fields, ct);
+
+    private async Task<T> UploadFormAsync<T>(HttpMethod method, string path, IEnumerable<UploadedFile> files,
+        IReadOnlyDictionary<string, string>? fields, CancellationToken ct)
     {
         using var content = new MultipartFormDataContent();
+        if (fields is not null)
+            foreach (var pair in fields) content.Add(new StringContent(pair.Value), pair.Key);
         foreach (var file in files)
         {
             // Le type du fichier accompagne l'envoi : le serveur et les journaux savent ce qu'ils reçoivent.
