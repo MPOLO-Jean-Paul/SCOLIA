@@ -49,6 +49,19 @@ public sealed class UpdateCompletionPolicyTests
     }
 
     [Theory]
+    [InlineData(1000L, 1000L + 6 * 60 * 60, false)]
+    [InlineData(1000L, 1000L + 3 * 24 * 60 * 60, false)]
+    [InlineData(1000L, 1000L + 8 * 24 * 60 * 60, true)]
+    [InlineData(0L, 1000L, true)]
+    [InlineData(2000L, 1000L, true)]
+    public void InterruptedDownloadsAreRetainedForSeveralDays(
+        long startedAtUtc, long nowUtc, bool expectedStale)
+    {
+        Assert.Equal(expectedStale,
+            UpdateCompletionPolicy.IsStalePendingDownload(startedAtUtc, nowUtc));
+    }
+
+    [Theory]
     [InlineData("1.2.16", "1.2.16", true)]
     [InlineData("1.2.16", "1.2.17", true)]
     [InlineData("1.2.16", "1.2.15", false)]
