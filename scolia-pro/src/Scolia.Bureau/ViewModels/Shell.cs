@@ -727,8 +727,9 @@ public sealed class ShellViewModel : Observable
         ConnectionStore.Save(saved with { LanPromptDone = true });
         var accepted = await Confirm("Partager SCOLIA avec les autres ordinateurs",
             "Les autres ordinateurs de l'établissement qui ont SCOLIA s'y connecteront automatiquement, sans aucun réglage. "
-            + "Windows va vous demander l'autorisation : SCOLIA ouvre alors son port dans le pare-feu et déclare ce réseau comme privé. "
-            + "Vous pourrez changer d'avis dans Fichier > Poste et réseau.",
+            + "Attention : sur le réseau local, SCOLIA utilise HTTP sans chiffrement HTTPS. "
+            + "N'activez le partage que sur un Wi-Fi privé de confiance, jamais sur un réseau public. "
+            + "Windows demandera l'autorisation du pare-feu ; vous pourrez désactiver ce partage dans Fichier > Poste et réseau.",
             "Autoriser");
         if (accepted) await Run(() => SetNetworkAsync(true));
     }

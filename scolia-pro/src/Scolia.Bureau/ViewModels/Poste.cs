@@ -25,7 +25,19 @@ public sealed class PosteViewModel : Observable
         ToggleService = new AsyncCommand(() => RunServiceAsync(serviceInstalled ? "service-desinstaller" : "service-installer"));
         ToggleLan = new AsyncCommand(() => shell.Run(async () =>
         {
-            try { await shell.SetNetworkAsync(!lanEnabled); }
+            try
+            {
+                // Le partage direct ouvre HTTP sur le Wi-Fi : informer avant de l'activer.
+                // Le refus laisse le réglage existant intact (liaison OneWay dans la vue).
+                if (!lanEnabled && !await shell.Confirm(
+                    "Activer le partage sur le réseau local ?",
+                    "SCOLIA utilise actuellement HTTP sur le réseau local : les échanges ne sont pas chiffrés par HTTPS. "
+                    + "N'activez ce partage que sur un réseau privé de confiance, jamais sur un Wi-Fi public. "
+                    + "Une connexion passant par un tunnel chiffré doit être configurée séparément.",
+                    "Activer sur ce réseau"))
+                    return;
+                await shell.SetNetworkAsync(!lanEnabled);
+            }
             finally { Refresh(); }
         }));
         Search = new AsyncCommand(SearchAsync);
