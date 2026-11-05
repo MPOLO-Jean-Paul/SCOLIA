@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using Avalonia.Threading;
 using Material.Icons;
 using Scolia.Bureau.Api;
 using Scolia.Bureau.Infrastructure;
@@ -45,6 +46,8 @@ public sealed class CardsPage : PageViewModel
     private ChoiceItem? year;
     private ChoiceItem? copies;
     private string search = string.Empty;
+    private DispatcherTimer? searchTimer;
+    private int refreshVersion;
     private bool includeLeft;
     private bool ready;
     private string subtitle = string.Empty;
@@ -87,9 +90,27 @@ public sealed class CardsPage : PageViewModel
     public IReadOnlyList<ChoiceItem> Copies => CopyChoices;
     public IReadOnlyList<ChoiceItem> Formats => FormatChoices;
 
-    public ChoiceItem? Promotion { get => promotion; set { if (Set(ref promotion, value) && ready) _ = Shell.Run(RefreshAsync); } }
-    public string Search { get => search; set { if (Set(ref search, value) && ready) _ = Shell.Run(RefreshAsync); } }
-    public bool IncludeLeft { get => includeLeft; set { if (Set(ref includeLeft, value) && ready) _ = Shell.Run(RefreshAsync); } }
+    public ChoiceItem? Promotion { get => promotion; set { if (Set(ref promotion, value) && ready) { refreshVersion++; _ = Shell.Run(RefreshAsync); } } }
+    public string Search
+    {
+        get => search;
+        set
+        {
+            if (!Set(ref search, value)) return;
+            refreshVersion++;
+            searchTimer?.Stop();
+            if (!ready) return;
+            // Une recherche réseau par pause de saisie, pas une requête par caractère.
+            searchTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(300) };
+            searchTimer.Tick += async (_, _) =>
+            {
+                searchTimer?.Stop();
+                if (Shell.Current == this) await Shell.Run(RefreshAsync);
+            };
+            searchTimer.Start();
+        }
+    }
+    public bool IncludeLeft { get => includeLeft; set { if (Set(ref includeLeft, value) && ready) { refreshVersion++; _ = Shell.Run(RefreshAsync); } } }
     public ChoiceItem? Month { get => month; set => Set(ref month, value); }
     public ChoiceItem? Year { get => year; set => Set(ref year, value); }
     public ChoiceItem? Copy { get => copies; set => Set(ref copies, value); }
@@ -97,6 +118,7 @@ public sealed class CardsPage : PageViewModel
 
     public override async Task LoadAsync()
     {
+        var request = ++refreshVersion;
         if (!ready)
         {
             Promotions = await PromotionChoicesAsync(withAll: true);
@@ -110,6 +132,8 @@ public sealed class CardsPage : PageViewModel
             ("recherche", string.IsNullOrWhiteSpace(Search) ? null : Search.Trim()),
             ("sortis", IncludeLeft ? "true" : null));
         var candidates = await Shell.Api.GetAsync<List<CardCandidateDto>>("api/cartes/candidats" + query);
+        // Ignorer toute ancienne réponse arrivée après un filtre plus récent.
+        if (request != refreshVersion) return;
         Rows.Clear();
         foreach (var c in candidates)
         {
