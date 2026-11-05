@@ -171,8 +171,15 @@ public sealed class StudentCardsApiTests : IDisposable
         using (var stream = document.Open())
         {
             var xml = System.Xml.Linq.XDocument.Load(stream);
-            // Trois exemplaires : un sceau et un QR par carte.
+            // Trois cartes : un logo réellement configuré et un QR par exemplaire.
             Assert.Equal(6, xml.Descendants().Count(e => e.Name.LocalName == "drawing"));
+            var printed = string.Join(" ", xml.Descendants()
+                .Where(e => e.Name.LocalName == "t").Select(e => e.Value));
+            Assert.Contains("INSTITUT DE TEST", printed, StringComparison.Ordinal);
+            Assert.Contains("MUKENDI KABEYA GRACE", printed, StringComparison.Ordinal);
+            Assert.Contains("MATRICULE : ", printed, StringComparison.Ordinal);
+            Assert.Contains("PROMOTION : ", printed, StringComparison.Ordinal);
+            Assert.DoesNotContain("INSTITUT TECHNIQUE MÉDICAL CŒUR DE DIEU", printed, StringComparison.Ordinal);
         }
         Assert.NotNull(zip.GetEntry("word/_rels/document.xml.rels"));
         Assert.Contains(zip.Entries, e => e.FullName.StartsWith("word/media/", StringComparison.Ordinal));
