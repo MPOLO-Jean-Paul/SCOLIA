@@ -34,6 +34,35 @@ public sealed class EncryptedBackupTests
     }
 
     [Fact]
+    public async Task Encrypted_archive_with_foreign_sqlite_schema_cannot_replace_scolia()
+    {
+        var folder = Path.Combine(Path.GetTempPath(), "scolia-backup-foreign-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(folder);
+        try
+        {
+            var foreignPath = Path.Combine(folder, "foreign.db");
+            await using (var connection = new SqliteConnection(
+                new SqliteConnectionStringBuilder { DataSource = foreignPath, Pooling = false }.ToString()))
+            {
+                await connection.OpenAsync();
+                await using var command = connection.CreateCommand();
+                command.CommandText = "CREATE TABLE ForeignRecords (Id INTEGER PRIMARY KEY);";
+                await command.ExecuteNonQueryAsync();
+            }
+            var encrypted = BackupProtection.Encrypt(await File.ReadAllBytesAsync(foreignPath), Passphrase);
+            var options = Options.Create(new ScoliaStorageOptions { DataDirectory = folder });
+            var backups = new BackupService(options, NullLogger<BackupService>.Instance);
+            await Assert.ThrowsAsync<DomainException>(() => backups.ImportEncryptedAsync(encrypted, Passphrase));
+            Assert.Empty(backups.List()); // L'archive rejetée ne doit pas survivre sous forme de sauvegarde.
+        }
+        finally
+        {
+            SqliteConnection.ClearAllPools();
+            if (Directory.Exists(folder)) Directory.Delete(folder, recursive: true);
+        }
+    }
+
+    [Fact]
     public async Task Imported_encrypted_copy_is_verified_without_restoring_live_database()
     {
         var folder = Path.Combine(Path.GetTempPath(), "scolia-backup-test-" + Guid.NewGuid().ToString("N"));
@@ -45,7 +74,14 @@ public sealed class EncryptedBackupTests
             {
                 await live.OpenAsync();
                 await using var cmd = live.CreateCommand();
-                cmd.CommandText = "CREATE TABLE Dossiers (Id INTEGER PRIMARY KEY, Valeur TEXT NOT NULL); INSERT INTO Dossiers (Valeur) VALUES ('demo');";
+                cmd.CommandText = """
+                    CREATE TABLE Etablissement (Id INTEGER PRIMARY KEY);
+                    CREATE TABLE Apprenants (Id INTEGER PRIMARY KEY);
+                    CREATE TABLE Inscriptions (Id INTEGER PRIMARY KEY);
+                    CREATE TABLE Recus (Id INTEGER PRIMARY KEY);
+                    CREATE TABLE Dossiers (Id INTEGER PRIMARY KEY, Valeur TEXT NOT NULL);
+                    INSERT INTO Dossiers (Valeur) VALUES ('demo');
+                    """;
                 await cmd.ExecuteNonQueryAsync();
             }
 
