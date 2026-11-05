@@ -179,7 +179,7 @@ public sealed class SecurityApiTests : IDisposable
     }
 
     [Fact]
-    public async Task Payment_by_month_takes_the_monthly_fee_and_refuses_any_other_amount()
+    public async Task Payment_by_month_rejects_amount_greater_than_selected_month_balance()
     {
         var admin = await app.InstalledAdmin(demo: true);
         var student = (await admin.GetAsync("/api/apprenants?taille=1").Ok()).GetProperty("items")[0];
@@ -189,7 +189,7 @@ public sealed class SecurityApiTests : IDisposable
         var feeItemId = month.GetProperty("feeItemId").GetString();
         var monthly = month.GetProperty("remaining").GetDecimal();
 
-        // Un montant qui ne correspond pas au mois choisi est refusé : aucun règlement partiel.
+        // Un montant supérieur au solde choisi est refusé ; un montant inférieur est désormais permis.
         var (refused, _) = await admin.Post("/api/paiements", new
         {
             enrollmentId, amount = monthly + 1, feeItemIds = new[] { feeItemId }, method = "Especes", idempotencyKey = Guid.NewGuid().ToString("N"),
@@ -207,7 +207,7 @@ public sealed class SecurityApiTests : IDisposable
             Assert.Equal(HttpStatusCode.BadRequest, notMonthly);
         }
 
-        // Le mois choisi est encaissé à son montant dû, sans saisie du montant.
+        // Le règlement intégral classique reste compatible avec les versions précédentes.
         var receipt = await admin.Post("/api/paiements", new
         {
             enrollmentId, amount = monthly, feeItemIds = new[] { feeItemId }, method = "Especes", idempotencyKey = Guid.NewGuid().ToString("N"),
@@ -329,6 +329,81 @@ public sealed class BusinessApiTests : IDisposable
         Assert.Equal("INF101", body.GetProperty("candidates")[0].GetProperty("matricule").GetString());
         var confirmed = await admin.Post("/api/apprenants", payload with { confirmDuplicate = true }).Ok();
         Assert.Equal("INF102", confirmed.GetProperty("matricule").GetString());
+    }
+
+    [Fact]
+    public async Task Partial_tuition_payment_keeps_remaining_balance_and_can_be_completed_later()
+    {
+        var admin = await app.InstalledAdmin();
+        var (_, enrollmentId, _) = await NewStudent(admin);
+        var (ids, monthly) = await admin.OpenMonths(enrollmentId, 1);
+        var partial = 12000m;
+        var preview = await admin.Post("/api/paiements/apercu", new
+        {
+            enrollmentId, amount = partial, method = "Especes", feeItemIds = ids,
+        }).Ok();
+        var previewLine = preview.GetProperty("allocations").EnumerateArray().Single();
+        Assert.Equal(partial, previewLine.GetProperty("amount").GetDecimal());
+        Assert.Equal(monthly - partial, previewLine.GetProperty("remainingAfter").GetDecimal());
+
+        var first = await admin.Post("/api/paiements", new
+        {
+            enrollmentId, amount = partial, method = "Especes", feeItemIds = ids,
+            idempotencyKey = "mensualite-partielle-unique",
+        }).Ok();
+        Assert.Equal(partial, first.GetProperty("amount").GetDecimal());
+        var afterFirst = await admin.GetAsync($"/api/inscriptions/{enrollmentId}/compte").Ok();
+        var firstLine = afterFirst.GetProperty("lines").EnumerateArray()
+            .First(l => l.GetProperty("feeItemId").GetString() == ids[0]);
+        Assert.Equal(monthly - partial, firstLine.GetProperty("remaining").GetDecimal());
+        Assert.True(firstLine.GetProperty("status").GetString()?.Contains("Partiel", StringComparison.OrdinalIgnoreCase) == true);
+
+        var repeated = await admin.Post("/api/paiements", new
+        {
+            enrollmentId, amount = partial, method = "Especes", feeItemIds = ids,
+            idempotencyKey = "mensualite-partielle-unique",
+        }).Ok();
+        Assert.Equal(first.GetProperty("id").GetString(), repeated.GetProperty("id").GetString());
+
+        var last = await admin.Post("/api/paiements", new
+        {
+            enrollmentId, amount = monthly - partial, method = "Especes", feeItemIds = ids,
+            idempotencyKey = Guid.NewGuid().ToString("N"),
+        }).Ok();
+        Assert.Equal(monthly - partial, last.GetProperty("amount").GetDecimal());
+        var afterLast = await admin.GetAsync($"/api/inscriptions/{enrollmentId}/compte").Ok();
+        var settled = afterLast.GetProperty("lines").EnumerateArray()
+            .First(l => l.GetProperty("feeItemId").GetString() == ids[0]);
+        Assert.Equal(0m, settled.GetProperty("remaining").GetDecimal());
+    }
+
+    [Fact]
+    public async Task Partial_tuition_payment_allocates_oldest_month_first_and_rejects_excess()
+    {
+        var admin = await app.InstalledAdmin();
+        var (_, enrollmentId, _) = await NewStudent(admin);
+        var (ids, total) = await admin.OpenMonths(enrollmentId, 2);
+        var firstMonth = total / 2m;
+        var paid = firstMonth + 1000m;
+        var receipt = await admin.Post("/api/paiements", new
+        {
+            enrollmentId, amount = paid, method = "MobileMoney", reference = "REFERENCE-OPERATEUR-123",
+            feeItemIds = ids, idempotencyKey = Guid.NewGuid().ToString("N"),
+        }).Ok();
+        Assert.Equal("REFERENCE-OPERATEUR-123", receipt.GetProperty("reference").GetString());
+        var allocations = receipt.GetProperty("allocations").EnumerateArray().ToArray();
+        Assert.Equal(2, allocations.Length);
+        var amounts = allocations.ToDictionary(
+            x => x.GetProperty("feeItemId").GetString()!,
+            x => x.GetProperty("amount").GetDecimal());
+        Assert.Equal(firstMonth, amounts[ids[0]]);
+        Assert.Equal(1000m, amounts[ids[1]]);
+
+        var (refused, _) = await admin.Post("/api/paiements", new
+        {
+            enrollmentId, amount = total, method = "Especes", feeItemIds = ids,
+        }).Fail();
+        Assert.Equal(HttpStatusCode.BadRequest, refused);
     }
 
     [Fact]
