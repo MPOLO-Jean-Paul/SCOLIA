@@ -86,8 +86,9 @@ public static class AndroidAppUpdates
             StopForegroundDownloadWatch();
         }
         // Un dialogue disparu avec l'activité ne doit jamais bloquer
-        // la prochaine proposition d'installation.
+        // les prochaines propositions de téléchargement ou d'installation.
         installDialogOpen = false;
+        promptedVersion = null;
     }
 
     private static bool IsForeground(Activity activity) =>
