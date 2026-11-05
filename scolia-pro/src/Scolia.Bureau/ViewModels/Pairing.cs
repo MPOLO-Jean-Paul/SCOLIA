@@ -75,6 +75,27 @@ public sealed class PairingViewModel : Observable
         {
             var invite = await shell.Api.SendAsync<InvitationReply>(HttpMethod.Post, "api/jumelage/inviter", new { });
             Code = Code with { AccessTicket = invite.Token };
+            // Apres un redemarrage, Tailscale Serve conserve le HTTPS public du
+            // tailnet ; le QR retrouve automatiquement cette adresse securisee.
+            // Aucun fichier de certificat ne passe dans le code QR.
+            var secure = shell.IsServerComputer && OperatingSystem.IsWindows()
+                ? await TailscaleHttpsServe.CurrentAddressAsync(PosteAdmin.DefaultPort) : null;
+            if (secure is not null)
+            {
+                var routes = new List<Uri> { secure };
+                routes.AddRange(Code.Addresses.Where(address => address != secure).Take(2));
+                Code = Code with { Addresses = routes };
+                Shared = true;
+                Raise(nameof(Shared));
+                Raise(nameof(NotShared));
+                if (!Routes.Any(route => route.Title == "HTTPS prive Tailscale"))
+                {
+                    Routes = [new PairingRouteVm(Material.Icons.MaterialIconKind.ShieldLockOutline,
+                        "HTTPS prive Tailscale", secure.ToString()), .. Routes];
+                    Raise(nameof(Routes));
+                    Raise(nameof(HasRoutes));
+                }
+            }
             if (Code.Addresses.Count == 0 && !Code.HasInvitation)
             {
                 // Un QR composé uniquement d'un ticket, sans adresse de serveur,
@@ -98,11 +119,11 @@ public sealed class PairingViewModel : Observable
         }
         Raise(nameof(ProgressText));
     }
-    public IReadOnlyList<PairingRouteVm> Routes { get; }
+    public IReadOnlyList<PairingRouteVm> Routes { get; private set; }
     public bool HasRoutes => Routes.Count > 0;
 
     /// <summary>Ordinateur dont le partage est fermé : aucun autre appareil ne pourrait le joindre.</summary>
-    public bool Shared { get; }
+    public bool Shared { get; private set; }
     public bool NotShared => !Shared;
 
     public string Title => "Relier un autre appareil";
