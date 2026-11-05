@@ -269,7 +269,7 @@ public sealed class BatchPaymentPage : PageViewModel
         // Tout cocher ajoute les lignes visibles. Tout décocher efface l'ensemble du lot.
         if (!value)
             foreach (var row in selectedRows.Values.ToList()) row.Selected = false;
-        foreach (var row in Items) row.Selected = value && row.FeeItemIds.Count > 0;
+        foreach (var row in Items.ToList()) row.Selected = value && row.FeeItemIds.Count > 0;
         UpdateSelectionSummary();
         var count = selectedRows.Count;
         Shell.Notify(value ? (count == 0 ? "Aucun apprenant n'a de mois à régler dans ce mode." : $"{Format.Count(count, "apprenant coché", "apprenants cochés")} dans le lot.") : "Tout le lot a été décoché.");
@@ -282,7 +282,8 @@ public sealed class BatchPaymentPage : PageViewModel
         if (!restoringRows)
         {
             UpdateSelectionSummary();
-            if (showSelectedOnly && !row.Selected) ShowRows();
+            if (showSelectedOnly && !row.Selected)
+                Dispatcher.UIThread.Post(ShowRows); // Ne pas modifier Items pendant le clic DataGrid.
         }
     }
 
