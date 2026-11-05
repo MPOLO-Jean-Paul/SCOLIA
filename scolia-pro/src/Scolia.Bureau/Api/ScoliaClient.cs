@@ -330,6 +330,7 @@ public sealed class ScoliaClient : IDisposable
         try
         {
         int sent = 0, refused = 0;
+        var connectionLost = false;
         var flushingStore = Offline;
         var flushingUser = flushingStore.User;
         foreach (var item in flushingStore.Outbox())
@@ -359,11 +360,14 @@ public sealed class ScoliaClient : IDisposable
             }
             catch (Exception ex) when (IsDisconnected(ex, ct))
             {
+                connectionLost = true;
                 SetOnline(false);
                 break;
             }
         }
-        if (sent > 0) SetOnline(true);
+        // Une première opération envoyée ne signifie pas que les suivantes ont
+        // réussi : ne jamais repasser au vert après une coupure en plein lot.
+        if (sent > 0 && !connectionLost) SetOnline(true);
         return (sent, refused);
         }
         finally { flushGate.Release(); }
