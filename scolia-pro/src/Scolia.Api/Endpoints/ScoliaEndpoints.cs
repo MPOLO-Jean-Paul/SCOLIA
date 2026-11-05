@@ -26,6 +26,11 @@ public static class ScoliaEndpoints
             ? Results.File(reports.Excel(table), Xlsx, $"{baseName}.xlsx")
             : new InlineFileResult(reports.Pdf(table), Pdf, $"{baseName}.pdf");
 
+    // Les mots de passe des archives et les bases téléchargées ne doivent jamais
+    // transiter en clair depuis un autre appareil du réseau local.
+    private static bool TrustedBackupTransport(HttpContext http) =>
+        http.Request.IsHttps || IPAddress.IsLoopback(http.Connection.RemoteIpAddress ?? IPAddress.None);
+
     private static string PublicBase(HttpContext http, IConfiguration config) =>
         config["Scolia:UrlPublique"] is { Length: > 0 } configured ? configured : $"{http.Request.Scheme}://{http.Request.Host}";
 
@@ -521,6 +526,36 @@ public static class ScoliaEndpoints
             return info;
         });
         backups.MapGet("/{name}", (string name, BackupService b) => Results.File(b.PathOf(name), "application/vnd.sqlite3", name));
+        // Export portable chiffré, réservé à une liaison HTTPS vérifiée ou au serveur lui-même.
+        backups.MapPost("/{name}/export-chiffre", async Task<IResult> (
+            string name, EncryptedBackupRequest input, BackupService b, HttpContext http,
+            IAuditLog log, ScoliaDbContext db, CancellationToken ct) =>
+        {
+            if (!TrustedBackupTransport(http)) return Results.StatusCode(StatusCodes.Status403Forbidden);
+            var data = await b.ExportEncryptedAsync(name, input.Passphrase, ct);
+            log.Record("sauvegarde.export-chiffre", "Sauvegarde", name, $"Export protégé de {name}.");
+            await db.SaveChangesAsync(ct);
+            return Results.File(data, "application/octet-stream", name + ".scolia-enc");
+        });
+        // Déchiffrement dans une NOUVELLE copie contrôlée : aucune restauration immédiate.
+        backups.MapPost("/import-chiffre", async Task<IResult> (
+            HttpContext http, BackupService b, IAuditLog log, ScoliaDbContext db, CancellationToken ct) =>
+        {
+            if (!TrustedBackupTransport(http)) return Results.StatusCode(StatusCodes.Status403Forbidden);
+            if (!http.Request.HasFormContentType)
+                throw new DomainException("sauvegardes", "Envoyez un formulaire avec archive et passphrase.");
+            var form = await http.Request.ReadFormAsync(ct);
+            var upload = form.Files.GetFile("archive");
+            if (upload is null || upload.Length is 0 or > BackupProtection.MaximumPlainBytes + 256)
+                throw new DomainException("sauvegardes", "Archive absente ou supérieure à 48 Mio.");
+            await using var data = new MemoryStream();
+            await upload.CopyToAsync(data, ct);
+            var info = await b.ImportEncryptedAsync(data.ToArray(), form["passphrase"].ToString(), ct);
+            log.Record("sauvegarde.import-chiffre", "Sauvegarde", info.Name,
+                $"Archive chiffrée importée sous {info.Name} après vérification d'intégrité.");
+            await db.SaveChangesAsync(ct);
+            return Results.Ok(info);
+        }).DisableAntiforgery();
         backups.MapPost("/{name}/restauration", async (string name, BackupService b, IAuditLog log, ScoliaDbContext db, CancellationToken ct) =>
         {
             await b.RestoreAsync(name, ct);
@@ -585,6 +620,9 @@ public static class ScoliaEndpoints
         }).RequireAuthorization(Permissions.SettingsWrite).DisableAntiforgery();
     }
 }
+
+/// <summary>Phrase secrète jamais persistée et non acceptée sur une liaison HTTP distante.</summary>
+public sealed record EncryptedBackupRequest(string Passphrase);
 
 /// <summary>Fichier affiché dans le navigateur (PDF) avec un nom proposé à l'enregistrement.</summary>
 public sealed class InlineFileResult(byte[] content, string contentType, string fileName) : IResult
