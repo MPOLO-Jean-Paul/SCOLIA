@@ -59,6 +59,38 @@ public sealed class HomeAndBatchUsabilityTests
     }
 
     [Fact]
+    public void Un_lot_de_plusieurs_promotions_survit_aux_filtres_et_compte_les_lignes_masquees()
+    {
+        using var api = new ScoliaClient(new Uri("http://localhost:5080/"));
+        var shell = new ShellViewModel(api, new Preferences());
+        var page = new BatchPaymentPage(shell);
+        var onChanged = typeof(BatchPaymentPage).GetMethod("SelectionChanged",
+            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+        Assert.NotNull(onChanged);
+        BatchRowVm Candidate(string promotion, string matricule)
+        {
+            var row = new BatchRowVm(new BatchCandidateDto(Guid.NewGuid(), matricule,
+                "Élève de " + promotion, promotion, 100, 100,
+                [new BatchMonthDto(Guid.NewGuid(), "Novembre", new DateOnly(2026, 11, 5), 100, true)]),
+                "100", "100", changed => onChanged!.Invoke(page, [changed]));
+            row.ApplyMonths(row.Candidate.Months, amount => amount.ToString("0"));
+            return row;
+        }
+        var inf = Candidate("INF1", "INF001");
+        var acc = Candidate("ACC2", "ACC002");
+        page.Items.Add(inf);
+        inf.Selected = true;
+        page.Items.Clear(); // La recherche a remplacé uniquement les lignes à l'écran.
+        page.Items.Add(acc);
+        acc.Selected = true;
+        Assert.Equal(2, page.SelectedCount);
+        Assert.Contains("2 apprenants cochés", page.SelectionSummary);
+        Assert.Contains("200", page.SelectionSummary);
+        Assert.True(inf.Selected);
+        Assert.True(acc.Selected);
+    }
+
+    [Fact]
     public void Une_erreur_de_paiement_ne_recoche_pas_un_dossier_retiré()
     {
         var eid = Guid.NewGuid();
