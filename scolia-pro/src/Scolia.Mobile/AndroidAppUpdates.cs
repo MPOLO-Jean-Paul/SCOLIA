@@ -307,7 +307,11 @@ public static class AndroidAppUpdates
             if (!forceRefresh && now - prefs.GetLong(LastCheckKey, 0) < CheckSeconds)
             {
                 var cached = Deserialize(prefs.GetString(ReleaseKey, null));
-                if (cached is null || !IsNewer(context, cached.Version)) return false;
+                if (cached is null || !IsNewer(context, cached.Version))
+                {
+                    ClearAvailableNotification(context);
+                    return false;
+                }
                 HandleKnownRelease(context, cached, showDialog, manual);
                 return true;
             }
@@ -318,6 +322,7 @@ public static class AndroidAppUpdates
             if (release is null)
             {
                 prefs.Edit()!.Remove(ReleaseKey)!.Apply();
+                ClearAvailableNotification(context);
                 Report(context, "Aucune version plus récente trouvée sur GitHub.");
                 return false;
             }
@@ -480,13 +485,29 @@ public static class AndroidAppUpdates
             request.SetAllowedOverMetered(true);
             request.SetDestinationInExternalFilesDir(activity, Android.OS.Environment.DirectoryDownloads, filename);
             var id = downloadManager.Enqueue(request);
-            Preferences(activity).Edit()!
+            var prefs = Preferences(activity);
+            var previousId = prefs.GetLong(DownloadIdKey, 0);
+            var previousFile = UpdatePath(activity, prefs.GetString(FileNameKey, "") ?? "");
+            prefs.Edit()!
                 .PutLong(DownloadIdKey, id)!
                 .PutString(FileNameKey, filename)!
                 .PutString(DigestKey, release.Sha256)!
                 .PutString(DownloadVersionKey, release.Version)!
                 .PutLong(DownloadStartedAtKey, DateTimeOffset.UtcNow.ToUnixTimeSeconds())!
                 .Apply();
+            // Remplacer un ancien APK uniquement apres le consentement explicite
+            // et l'enregistrement du nouveau téléchargement. Ne pas accumuler
+            // d'anciens APK ni conserver une notification d'installation obsolète.
+            if (previousId > 0 && previousId != id)
+                downloadManager.Remove(previousId);
+            if (previousFile is not null && previousFile != path)
+            {
+                try { if (File.Exists(previousFile)) File.Delete(previousFile); }
+                catch (IOException) { /* Le gestionnaire Android peut encore libérer le fichier. */ }
+            }
+            (activity.GetSystemService(Context.NotificationService) as NotificationManager)?
+                .Cancel(InstallNotificationId);
+            ClearAvailableNotification(activity);
             // Ne pas dépendre exclusivement du broadcast DOWNLOAD_COMPLETE.
             if (IsForeground(activity)) StartForegroundDownloadWatch(activity);
             Report(activity, $"Téléchargement de la mise à jour {release.Version} lancé.");
@@ -514,6 +535,8 @@ public static class AndroidAppUpdates
                 catch (IOException) { /* Un cache supprimable au prochain nettoyage. */ }
             }
             ResetPending(activity);
+            ClearAvailableNotification(activity);
+            pref.Edit()!.Remove(DeferredVersionKey)!.Remove(DeferredUntilKey)!.Apply();
             Report(activity, "Mise à jour déjà installée. Cache de téléchargement nettoyé.");
             return false;
         }
@@ -698,14 +721,24 @@ public static class AndroidAppUpdates
             .SetContentTitle($"SCOLIA Pro {version} — téléchargement terminé")
             .SetContentText("Touchez pour vérifier l'APK et afficher le bouton Installer.")
             .SetContentIntent(action)
+            .SetOnlyAlertOnce(true)
+            .SetOngoing(true)
             .SetAutoCancel(false);
         manager.Notify(InstallNotificationId, builder.Build());
     }
 
+    private static void ClearAvailableNotification(Context context)
+    {
+        (context.GetSystemService(Context.NotificationService) as NotificationManager)?.Cancel(NotificationId);
+        Preferences(context).Edit()!.Remove(NotifiedKey)!.Apply();
+    }
+
     private static void NotifyOnce(Context context, Release release)
     {
+        // Une notification supprimée par l'utilisateur peut réapparaître au
+        // prochain contrôle planifié, jusqu'à installation effective. Pas
+        // d'alerte sonore à chaque passage : SetOnlyAlertOnce.
         var prefs = Preferences(context);
-        if (prefs.GetString(NotifiedKey, null) == release.Version) return;
         if (context.GetSystemService(Context.NotificationService) is not NotificationManager manager) return;
         if (OperatingSystem.IsAndroidVersionAtLeast(26))
             manager.CreateNotificationChannel(new NotificationChannel(
@@ -721,7 +754,8 @@ public static class AndroidAppUpdates
             .SetContentTitle($"SCOLIA Pro {release.Version} disponible")
             .SetContentText("Touchez pour télécharger la mise à jour depuis SCOLIA.")
             .SetContentIntent(action)
-            .SetAutoCancel(true);
+            .SetOnlyAlertOnce(true)
+            .SetAutoCancel(false);
         manager.Notify(NotificationId, builder.Build());
         prefs.Edit()!.PutString(NotifiedKey, release.Version)!.Apply();
     }
