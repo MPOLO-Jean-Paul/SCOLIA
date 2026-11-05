@@ -2,7 +2,7 @@
 ; Compile les fichiers publies dans artifacts/SCOLIA via Inno Setup 6+.
 ; L'installeur est autonome ; il ne depend ni de .NET installe ni d'Excel.
 #ifndef AppVersion
-  #define AppVersion "1.2.19"
+  #define AppVersion "1.2.20"
 #endif
 
 #define AppName "SCOLIA Pro"

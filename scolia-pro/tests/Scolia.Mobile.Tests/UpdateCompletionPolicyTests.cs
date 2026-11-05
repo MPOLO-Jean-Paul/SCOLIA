@@ -33,6 +33,35 @@ public sealed class UpdateCompletionPolicyTests
     }
 
     [Theory]
+    [InlineData("1.2.20", null, true)]
+    [InlineData("1.2.20", "1.2.19", true)]
+    [InlineData("1.2.20", "1.2.20", false)]
+    [InlineData("1.2.19", "1.2.20", false)]
+    [InlineData("1.2.20", "incorrect", true)]
+    [InlineData("incorrect", "1.2.19", false)]
+    public void ContinueCheckingReleasesWhileAnotherApkIsPending(
+        string latest, string? pending, bool offerReplacement)
+    {
+        // Le contrôle continue quelle que soit la présence de l'APK en attente ;
+        // seule cette comparaison décide s'il faut proposer un nouveau téléchargement.
+        Assert.Equal(offerReplacement,
+            UpdateCompletionPolicy.IsNewerThanPending(latest, pending));
+    }
+
+    [Theory]
+    [InlineData(1000L, 1000L + 6 * 60 * 60, false)]
+    [InlineData(1000L, 1000L + 3 * 24 * 60 * 60, false)]
+    [InlineData(1000L, 1000L + 8 * 24 * 60 * 60, true)]
+    [InlineData(0L, 1000L, true)]
+    [InlineData(2000L, 1000L, true)]
+    public void InterruptedDownloadsAreRetainedForSeveralDays(
+        long startedAtUtc, long nowUtc, bool expectedStale)
+    {
+        Assert.Equal(expectedStale,
+            UpdateCompletionPolicy.IsStalePendingDownload(startedAtUtc, nowUtc));
+    }
+
+    [Theory]
     [InlineData("1.2.16", "1.2.16", true)]
     [InlineData("1.2.16", "1.2.17", true)]
     [InlineData("1.2.16", "1.2.15", false)]
