@@ -24,14 +24,14 @@ public sealed class HomeAndBatchUsabilityTests
         var doc = XDocument.Load(ViewFile("Views/HomeView.axaml"));
         var nodes = doc.Descendants().ToArray();
         var kpiGrid = nodes.FirstOrDefault(x => x.Name.LocalName == "UniformGrid"
-            && x.Attributes().Any(a => a.Name.LocalName == "MinItemWidth" && a.Value == "260"));
+            && x.Attributes().Any(a => a.Name.LocalName.EndsWith("MinItemWidth", StringComparison.Ordinal) && a.Value == "260"));
         Assert.NotNull(kpiGrid);
         Assert.Contains(nodes, x => x.Name.LocalName == "ItemsControl"
             && x.Attributes().Any(a => a.Name.LocalName == "ItemsSource" && a.Value.Contains("QuickActions")));
         Assert.Contains(nodes, x => x.Name.LocalName == "ItemsControl"
             && x.Attributes().Any(a => a.Name.LocalName == "ItemsSource" && a.Value.Contains("AllToolGroups")));
         Assert.Contains(nodes, x => x.Name.LocalName == "Grid"
-            && x.Attributes().Any(a => a.Name.LocalName == "StackBelow" && a.Value == "760"));
+            && x.Attributes().Any(a => a.Name.LocalName.EndsWith("StackBelow", StringComparison.Ordinal) && a.Value == "760"));
     }
 
     [Fact]
@@ -53,7 +53,7 @@ public sealed class HomeAndBatchUsabilityTests
     {
         var doc = XDocument.Load(ViewFile("Views/SearchResultsView.axaml"));
         Assert.Contains(doc.Descendants(), x => x.Name.LocalName == "UniformGrid"
-            && x.Attributes().Any(a => a.Name.LocalName == "MinItemWidth" && a.Value == "230"));
+            && x.Attributes().Any(a => a.Name.LocalName.EndsWith("MinItemWidth", StringComparison.Ordinal) && a.Value == "230"));
         Assert.Contains(doc.Descendants(), x => x.Name.LocalName == "Button"
             && x.Attributes().Any(a => a.Name.LocalName == "Classes" && a.Value == "searchtile"));
     }
@@ -64,15 +64,12 @@ public sealed class HomeAndBatchUsabilityTests
         using var api = new ScoliaClient(new Uri("http://localhost:5080/"));
         var shell = new ShellViewModel(api, new Preferences());
         var page = new BatchPaymentPage(shell);
-        var onChanged = typeof(BatchPaymentPage).GetMethod("SelectionChanged",
-            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-        Assert.NotNull(onChanged);
         BatchRowVm Candidate(string promotion, string matricule)
         {
             var row = new BatchRowVm(new BatchCandidateDto(Guid.NewGuid(), matricule,
                 "Élève de " + promotion, promotion, 100, 100,
                 [new BatchMonthDto(Guid.NewGuid(), "Novembre", new DateOnly(2026, 11, 5), 100, true)]),
-                "100", "100", changed => onChanged!.Invoke(page, [changed]));
+                "100", "100", page.SelectionChanged);
             row.ApplyMonths(row.Candidate.Months, amount => amount.ToString("0"));
             return row;
         }
