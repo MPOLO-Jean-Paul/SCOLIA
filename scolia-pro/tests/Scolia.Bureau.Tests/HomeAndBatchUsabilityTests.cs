@@ -91,6 +91,29 @@ public sealed class HomeAndBatchUsabilityTests
     }
 
     [Fact]
+    public void Apercu_et_paiement_du_meme_lot_partagent_une_reference_inchangee()
+    {
+        using var api = new ScoliaClient(new Uri("http://localhost:5080/"));
+        var page = new BatchPaymentPage(new ShellViewModel(api, new Preferences()));
+        var eid = Guid.NewGuid();
+        var row = new BatchRowVm(new BatchCandidateDto(eid, "INF293", "SHIMBA MAKITA ELIE",
+            "INF3", 100, 100, [new BatchMonthDto(Guid.NewGuid(), "Novembre",
+                new DateOnly(2026, 11, 5), 100, true)]), "100", "100", _ => { });
+        row.ApplyMonths(row.Candidate.Months, x => x.ToString("0"));
+        var method = typeof(BatchPaymentPage).GetMethod("BuildRequest",
+            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+        Assert.NotNull(method);
+        var first = method!.Invoke(page, [new List<BatchRowVm> { row }, null]);
+        var second = method.Invoke(page, [new List<BatchRowVm> { row }, Guid.NewGuid().ToString("N")]);
+        using var preview = System.Text.Json.JsonDocument.Parse(System.Text.Json.JsonSerializer.Serialize(first));
+        using var payment = System.Text.Json.JsonDocument.Parse(System.Text.Json.JsonSerializer.Serialize(second));
+        string Reference(System.Text.Json.JsonDocument doc) =>
+            doc.RootElement.GetProperty("items")[0].GetProperty("reference").GetString()!;
+        Assert.StartsWith("TR", Reference(preview));
+        Assert.Equal(Reference(preview), Reference(payment));
+    }
+
+    [Fact]
     public void Une_erreur_de_paiement_ne_recoche_pas_un_dossier_retiré()
     {
         var eid = Guid.NewGuid();
