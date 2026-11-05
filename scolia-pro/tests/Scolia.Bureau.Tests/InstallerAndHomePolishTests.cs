@@ -41,8 +41,19 @@ public sealed class InstallerAndHomePolishTests
         Assert.Contains(elements, e => e.Name.LocalName == "Border" &&
             e.Attributes().Any(a => a.Name.LocalName == "Height" && a.Value == "3") &&
             e.Attributes().Any(a => a.Name.LocalName == "Background" && a.Value.Contains("AccentBrush")));
+        // Les boutons doivent demeurer à droite du séparateur VERTICAL sur petits
+        // et grands écrans, et non sous le message d'accueil.
+        Assert.Contains(elements, e => e.Name.LocalName == "Grid" &&
+            e.Attributes().Any(a => a.Name.LocalName == "Name" && a.Value == "WelcomeLayout") &&
+            e.Attributes().Any(a => a.Name.LocalName == "ColumnDefinitions" && a.Value == "*,Auto,Auto"));
+        Assert.Contains(elements, e => e.Name.LocalName == "Border" &&
+            e.Attributes().Any(a => a.Name.LocalName == "Grid.Column" && a.Value == "1") &&
+            e.Attributes().Any(a => a.Name.LocalName == "Width" && a.Value == "1"));
+        Assert.Contains(elements, e => e.Name.LocalName == "ItemsControl" &&
+            e.Attributes().Any(a => a.Name.LocalName == "Name" && a.Value == "WelcomeQuickActions") &&
+            e.Attributes().Any(a => a.Name.LocalName == "Grid.Column" && a.Value == "2"));
         Assert.Contains(elements, e => e.Name.LocalName == "UniformGrid" &&
-            e.Attributes().Any(a => a.Name.LocalName.EndsWith("MinItemWidth", StringComparison.Ordinal) && a.Value == "170"));
+            e.Attributes().Any(a => a.Name.LocalName.EndsWith("MinItemWidth", StringComparison.Ordinal) && a.Value == "132"));
         Assert.Contains(elements, e => e.Name.LocalName == "Grid" &&
             e.Attributes().Any(a => a.Name.LocalName.EndsWith("StackBelow", StringComparison.Ordinal) && a.Value == "410"));
         Assert.Contains(elements, e => e.Name.LocalName == "Grid" &&
