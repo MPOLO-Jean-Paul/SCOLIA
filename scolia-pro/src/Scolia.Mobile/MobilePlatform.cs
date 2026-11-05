@@ -72,8 +72,10 @@ public static class MobilePlatform
         Platform.AppUpdateStatus = () => AndroidAppUpdates.LastStatus(app);
         Platform.CheckAppUpdatesAsync = async () =>
         {
-            if (screen?.TryGetTarget(out var activity) == true && !activity.IsFinishing)
+            if (screen?.TryGetTarget(out var activity) == true && !activity.IsFinishing && !activity.IsDestroyed)
                 await AndroidAppUpdates.CheckNowAsync(activity);
+            else
+                Android.Util.Log.Warn("SCOLIA-MAJ", "Vérification demandée sans activité Android visible.");
         };
         Platform.EnsureHostAvailable = () => Server.PhoneServer.Get(app).EnsureServingOnResume();
         // Téléphone serveur : écran éteint, il doit rester joignable. Android ne doit pas le freiner pour la batterie.

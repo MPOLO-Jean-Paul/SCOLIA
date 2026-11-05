@@ -63,6 +63,7 @@ public sealed class PosteViewModel : Observable
         CheckMobileUpdates = new AsyncCommand(async () =>
         {
             if (Platform.CheckAppUpdatesAsync is { } check) await check();
+            else shell.Notify("Vérification Android indisponible sur cet appareil.");
             Raise(nameof(MobileUpdateStatus));
         });
         VerifyBackgroundServer = new AsyncCommand(async () =>

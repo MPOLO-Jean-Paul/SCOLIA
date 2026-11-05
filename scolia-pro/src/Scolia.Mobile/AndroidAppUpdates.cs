@@ -51,6 +51,7 @@ public static class AndroidAppUpdates
     private static bool installDialogOpen;
     private static WeakReference<Activity>? foregroundActivity;
     private static CancellationTokenSource? foregroundDownloadWatch;
+    private static CancellationTokenSource? foregroundReleaseWatch;
 
     internal sealed record Release(string Version, string DownloadUrl, string Sha256, long Size);
 
@@ -75,6 +76,9 @@ public static class AndroidAppUpdates
         // en cas de signal perdu, un contrôle léger du statut déclenche la fenêtre Installer.
         if (Preferences(activity).GetLong(DownloadIdKey, 0) > 0)
             StartForegroundDownloadWatch(activity);
+        // Rester ouvert sur SCOLIA ne doit plus repousser la prochaine vérification
+        // jusqu'au retour dans l'application ou au prochain passage WorkManager.
+        StartForegroundReleaseWatch(activity);
         _ = ResumeAsync(activity);
     }
 
@@ -84,6 +88,7 @@ public static class AndroidAppUpdates
         {
             foregroundActivity = null;
             StopForegroundDownloadWatch();
+            StopForegroundReleaseWatch();
         }
         // Un dialogue disparu avec l'activité ne doit jamais bloquer
         // les prochaines propositions de téléchargement ou d'installation.
@@ -102,6 +107,46 @@ public static class AndroidAppUpdates
         foregroundDownloadWatch = null;
         previous?.Cancel();
         previous?.Dispose();
+    }
+
+    private static void StopForegroundReleaseWatch()
+    {
+        var previous = foregroundReleaseWatch;
+        foregroundReleaseWatch = null;
+        previous?.Cancel();
+        previous?.Dispose();
+    }
+
+    private static void StartForegroundReleaseWatch(Activity activity)
+    {
+        StopForegroundReleaseWatch();
+        var source = new CancellationTokenSource();
+        foregroundReleaseWatch = source;
+        _ = WatchReleasesWhileOpenAsync(activity, source.Token);
+    }
+
+    /// <summary>
+    /// En plus du contrôle à l'ouverture, chercher régulièrement les nouvelles
+    /// versions tant que la fenêtre Android reste ouverte. Aucune installation
+    /// ni aucun téléchargement n'est exécuté sans confirmation de l'utilisateur.
+    /// </summary>
+    private static async Task WatchReleasesWhileOpenAsync(Activity activity, CancellationToken cancellation)
+    {
+        try
+        {
+            while (!cancellation.IsCancellationRequested && IsForeground(activity))
+            {
+                await Task.Delay(TimeSpan.FromSeconds(CheckSeconds), cancellation);
+                if (!IsForeground(activity)) return;
+                try { await CheckLatestAsync(activity, showDialog: true); }
+                catch (Exception ex) when (ex is IOException or HttpRequestException or
+                    JsonException or TaskCanceledException or Java.Lang.Exception or InvalidOperationException)
+                {
+                    Android.Util.Log.Warn("SCOLIA-MAJ", $"Vérification en cours de session différée : {ex.GetType().Name}");
+                }
+            }
+        }
+        catch (OperationCanceledException) when (cancellation.IsCancellationRequested) { }
     }
 
     private static void StartForegroundDownloadWatch(Activity activity)
@@ -196,7 +241,7 @@ public static class AndroidAppUpdates
     /// <summary>Etat lisible de la vérification, même si Android a désactivé les notifications.</summary>
     public static string LastStatus(Context context) =>
         Preferences(context).GetString(LastStatusKey, null) ??
-        "Aucune recherche effectuée. Ouvrez Poste et réseau pour vérifier maintenant.";
+        "Aucune recherche effectuée. Ouvrez Menu → Rechercher les mises à jour.";
 
     private static void Report(Context context, string message)
     {

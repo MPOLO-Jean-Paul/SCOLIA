@@ -322,6 +322,25 @@
             </StackPanel>
           </Border>
 
+          <!-- Mise à jour accessible en un geste depuis le menu Android. -->
+          <Border Classes="phonegroup" Margin="0,10,0,0"
+                  IsVisible="{Binding !SettingsSearch.HasQuery}">
+            <Button Classes="phonerow" Command="{Binding Backstage.PosteSection.CheckMobileUpdates}"
+                    ToolTip.Tip="Rechercher la dernière version Android officielle">
+              <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                <Border Classes="appicon medium" Background="{DynamicResource ToneBlue}"
+                        VerticalAlignment="Center"><mi:MaterialIcon Kind="Update" /></Border>
+                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3">
+                  <TextBlock Text="Rechercher les mises à jour" FontWeight="SemiBold" TextWrapping="Wrap" />
+                  <TextBlock Text="{Binding Backstage.PosteSection.MobileUpdateStatus}" Classes="muted"
+                             FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" MaxLines="2" />
+                </StackPanel>
+                <mi:MaterialIcon Grid.Column="2" Kind="ChevronRight" Width="18" Height="18"
+                                 Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" />
+              </Grid>
+            </Button>
+          </Border>
+
           <!-- Les résultats sont filtrés localement parmi les réglages autorisés. -->
           <StackPanel IsVisible="{Binding SettingsSearch.HasQuery}" Margin="-12,0,-12,4">
             <!-- Même lignes que les résultats de la recherche de l'accueil : grande icône, titre, pastille -->
