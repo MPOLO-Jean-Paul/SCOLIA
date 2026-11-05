@@ -407,8 +407,9 @@ public sealed class StudentService(IAppDbContext db, IWriteGate gate, IAuditLog 
             Promotion promotion;
             if (choice.PromotionId is { } promotionId && promotionId != Guid.Empty)
             {
-                if (!byId.TryGetValue(promotionId, out promotion!))
+                if (!byId.TryGetValue(promotionId, out var existingPromotion))
                     throw new DomainException("choices", "Promotion cible invalide pour cette année.");
+                promotion = existingPromotion;
             }
             else
             {
