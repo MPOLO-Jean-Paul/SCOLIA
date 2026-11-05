@@ -32,7 +32,11 @@ try {
     $imported = @(Import-PfxCertificate -FilePath $temporaryPfx -CertStoreLocation Cert:\CurrentUser\My -Password $securePassword -ErrorAction Stop)
     $leaf = $imported | Where-Object {
         $_.HasPrivateKey -and
-        ($_.EnhancedKeyUsageList | Where-Object { $_.Oid.Value -eq '1.3.6.1.5.5.7.3.3' })
+        ($_.EnhancedKeyUsageList | Where-Object {
+            $_.ObjectId -eq '1.3.6.1.5.5.7.3.3' -or
+            $_.Value -eq '1.3.6.1.5.5.7.3.3' -or
+            $_.FriendlyName -eq 'Code Signing'
+        })
     } | Select-Object -First 1
 
     if ($null -eq $leaf) {
