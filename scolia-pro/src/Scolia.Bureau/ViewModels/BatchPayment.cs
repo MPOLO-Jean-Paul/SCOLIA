@@ -277,7 +277,8 @@ public sealed class BatchPaymentPage : PageViewModel
         Shell.Notify(value ? (count == 0 ? "Aucun apprenant n'a de mois à régler dans ce mode." : $"{Format.Count(count, "apprenant coché", "apprenants cochés")} dans le lot.") : "Tout le lot a été décoché.");
     }
 
-    private void SelectionChanged(BatchRowVm row)
+    /// <summary>Actualise le lot indépendant des résultats visibles de recherche.</summary>
+    public void SelectionChanged(BatchRowVm row)
     {
         if (row.Selected && row.FeeItemIds.Count > 0) selectedRows[row.EnrollmentId] = row;
         else selectedRows.Remove(row.EnrollmentId);
