@@ -5,6 +5,7 @@ on:
     paths:
       - 'scolia-pro/scripts/publier-android.sh'
       - 'scolia-pro/scripts/cle-android.sh'
+      - 'scolia-pro/scripts/recuperer-cle-android-pr18-1218.sh'
       - 'scolia-pro/scripts/install-android-sdk-retry.sh'
       - 'scolia-pro/scripts/windows/**'
       - 'scolia-pro/src/Scolia.Bureau/**'
@@ -22,6 +23,7 @@ on:
     paths:
       - 'scolia-pro/scripts/publier-android.sh'
       - 'scolia-pro/scripts/cle-android.sh'
+      - 'scolia-pro/scripts/recuperer-cle-android-pr18-1218.sh'
       - 'scolia-pro/scripts/install-android-sdk-retry.sh'
       - 'scolia-pro/scripts/windows/**'
       - 'scolia-pro/src/Scolia.Bureau/**'
@@ -44,6 +46,12 @@ concurrency:
   group: scolia-native-ux-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  # Cache de signature accessible uniquement via la PR interne #18.
+  # Cette exception est limitee a la distribution 1.2.18.
+  SCOLIA_RECOVERY_PR18: ${{ github.event_name == 'pull_request' && github.event.pull_request.number == 18 && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'release/direct-apk-scolia-pro-20261103' && github.event.pull_request.base.ref == 'feature/scolia-recovery-login-lock-20261103' }}
+  SCOLIA_CHECKOUT_REF: ${{ (github.event_name == 'pull_request' && github.event.pull_request.number == 18 && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'release/direct-apk-scolia-pro-20261103' && github.event.pull_request.base.ref == 'feature/scolia-recovery-login-lock-20261103') && github.event.pull_request.head.sha || github.sha }}
+
 defaults:
   run:
     working-directory: scolia-pro
@@ -57,9 +65,18 @@ jobs:
       - uses: actions/checkout@v5
         with:
           persist-credentials: false
+          ref: ${{ env.SCOLIA_RECOVERY_PR18 == 'true' && env.SCOLIA_CHECKOUT_REF || '' }}
       - uses: actions/setup-dotnet@v5
         with:
           global-json-file: scolia-pro/global.json
+      - name: Controler la source de recuperation PR18 sans secret
+        shell: bash
+        run: |
+          bash -n scripts/recuperer-cle-android-pr18-1218.sh
+          if bash scripts/recuperer-cle-android-pr18-1218.sh "$RUNNER_TEMP/aucune-cle" >/dev/null 2>&1; then
+            echo "::error::Le script de signature a accepte un contexte sans autorisation." >&2
+            exit 1
+          fi
       - name: Bloquer les donnees de l'etablissement et les cles privees dans Git
         shell: bash
         run: |
@@ -91,6 +108,7 @@ jobs:
       - uses: actions/checkout@v5
         with:
           persist-credentials: false
+          ref: ${{ env.SCOLIA_RECOVERY_PR18 == 'true' && env.SCOLIA_CHECKOUT_REF || '' }}
       - uses: actions/setup-dotnet@v5
         with:
           global-json-file: scolia-pro/global.json
@@ -106,7 +124,7 @@ jobs:
       # Une PR compile avec une cle EPHEMERE : le cache Actions ne doit jamais
       # faire varier le certificat publie ni exposer la cle de l'etablissement.
       - name: Preparer la cle de validation (jamais publiable)
-        if: github.event_name != 'push' || github.ref != 'refs/heads/release/direct-apk-scolia-pro-20261103'
+        if: (github.event_name != 'push' || github.ref != 'refs/heads/release/direct-apk-scolia-pro-20261103') && env.SCOLIA_RECOVERY_PR18 != 'true'
         shell: bash
         run: bash scripts/cle-android.sh "$RUNNER_TEMP/scolia-validation-signature"
       # Une release officielle utilise exclusivement les secrets GitHub Actions.
@@ -124,12 +142,27 @@ jobs:
             exit 1
           fi
           bash scripts/cle-android.sh "$RUNNER_TEMP/scolia-official-signature"
+      # La PR #18 est la seule ref permettant d'acceder au cache original.
+      # Le script verifie le certificat AVANT toute compilation distribuable.
+      - name: Restaurer le cache historique de la PR 18 uniquement
+        if: env.SCOLIA_RECOVERY_PR18 == 'true'
+        id: cache_pr18_1218
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.scolia-signature
+          key: scolia-android-signature-v1
+      - name: Authentifier la cle officielle de la PR 18 pour la 1.2.18
+        if: env.SCOLIA_RECOVERY_PR18 == 'true'
+        shell: bash
+        env:
+          SCOLIA_CACHE_HIT: ${{ steps.cache_pr18_1218.outputs.cache-hit }}
+        run: bash scripts/recuperer-cle-android-pr18-1218.sh "$HOME/.scolia-signature"
       - name: Refuser un certificat different de la version Android deja installee
         shell: bash
         run: |
           set -euo pipefail
           attendu="E5:B5:F7:FA:41:54:11:EE:AC:4B:F7:34:84:90:24:FF:CF:7F:93:50:0C:60:13:83:99:31:B0:20:38:F5:89:80"
-          if [[ "$GITHUB_EVENT_NAME" == "push" && "$GITHUB_REF" == "refs/heads/release/direct-apk-scolia-pro-20261103" ]]; then
+          if [[ ("$GITHUB_EVENT_NAME" == "push" && "$GITHUB_REF" == "refs/heads/release/direct-apk-scolia-pro-20261103") || ("$SCOLIA_RECOVERY_PR18" == "true" && "$GITHUB_REF" == "refs/pull/18/merge") ]]; then
             if [[ "$SCOLIA_SIGNATURE_EMPREINTE" != "$attendu" ]]; then
               echo "::error::Empreinte officielle Android incorrecte. Ne pas changer la signature: les telephones ne pourraient plus mettre SCOLIA a jour." >&2
               exit 1
@@ -172,7 +205,7 @@ jobs:
             echo "::error::Signature de l'APK incoherente avec celle de la cle utilisee." >&2
             exit 1
           fi
-          if [[ "$GITHUB_EVENT_NAME" == "push" && "$GITHUB_REF" == "refs/heads/release/direct-apk-scolia-pro-20261103" ]]; then
+          if [[ ("$GITHUB_EVENT_NAME" == "push" && "$GITHUB_REF" == "refs/heads/release/direct-apk-scolia-pro-20261103") || ("$SCOLIA_RECOVERY_PR18" == "true" && "$GITHUB_REF" == "refs/pull/18/merge") ]]; then
             echo "Signature de l'APK officiel verifiee."
             printf 'Signature : cle officielle de distribution SCOLIA\nEmpreinte certificat SHA-256 : %s\nCompatible avec les mises a jour des versions signees avec le meme certificat.\n' "$SCOLIA_SIGNATURE_EMPREINTE" > artifacts/android/IMPORTANT-SIGNATURE.txt
           else
@@ -195,6 +228,7 @@ jobs:
       - uses: actions/checkout@v5
         with:
           persist-credentials: false
+          ref: ${{ env.SCOLIA_RECOVERY_PR18 == 'true' && env.SCOLIA_CHECKOUT_REF || '' }}
       - uses: actions/setup-dotnet@v5
         with:
           global-json-file: scolia-pro/global.json
@@ -333,6 +367,7 @@ jobs:
       - uses: actions/checkout@v5
         with:
           persist-credentials: false
+          ref: ${{ env.SCOLIA_RECOVERY_PR18 == 'true' && env.SCOLIA_CHECKOUT_REF || '' }}
       - uses: actions/download-artifact@v4
         with:
           name: SCOLIA_Natif_Android_APK
