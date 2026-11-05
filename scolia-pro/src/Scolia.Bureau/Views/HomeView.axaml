@@ -7,26 +7,28 @@
   <UserControl.Styles>
     <Style Selector="TextBlock.kpivalue"><Setter Property="FontSize" Value="{DynamicResource FsTitle}" /></Style>
     <!-- Accueil Windows natif : surface système, contraste automatique clair/sombre et bord discret. -->
-    <Style Selector="TextBlock.greeting"><Setter Property="FontSize" Value="23" /></Style>
+    <Style Selector="TextBlock.greeting"><Setter Property="FontSize" Value="22" /></Style>
     <Style Selector="Border.desktopwelcome">
       <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
       <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
       <Setter Property="BorderThickness" Value="1" />
-      <Setter Property="CornerRadius" Value="16" />
+      <Setter Property="CornerRadius" Value="18" />
     </Style>
     <Style Selector="Border.desktopstatechip">
       <Setter Property="Background" Value="{DynamicResource GroupBrush}" />
-      <Setter Property="CornerRadius" Value="10" />
+      <Setter Property="CornerRadius" Value="11" />
+      <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
       <Setter Property="Padding" Value="10,6" />
     </Style>
     <Style Selector="Button.heroaction">
-      <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
-      <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
+      <Setter Property="Background" Value="{DynamicResource GroupBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
       <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
       <Setter Property="BorderThickness" Value="1" />
-      <Setter Property="CornerRadius" Value="10" />
-      <Setter Property="Padding" Value="13,0" />
-      <Setter Property="MinHeight" Value="44" />
+      <Setter Property="CornerRadius" Value="12" />
+      <Setter Property="Padding" Value="12,8" />
+      <Setter Property="MinHeight" Value="46" />
       <Setter Property="FontWeight" Value="SemiBold" />
     </Style>
     <Style Selector="Button.heroaction:pointerover /template/ ContentPresenter#PART_ContentPresenter">
@@ -48,8 +50,8 @@
       <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
       <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
       <Setter Property="BorderThickness" Value="1" />
-      <Setter Property="CornerRadius" Value="14" />
-      <Setter Property="Padding" Value="14,12" />
+      <Setter Property="CornerRadius" Value="13" />
+      <Setter Property="Padding" Value="12,10" />
       <Setter Property="HorizontalAlignment" Value="Stretch" />
       <Setter Property="HorizontalContentAlignment" Value="Stretch" />
     </Style>
@@ -63,8 +65,11 @@
 
       <!-- Carte d'accueil compacte : avatar à gauche, informations lisibles,
            deux actions sur une ligne quand la largeur le permet. Jamais de 3e colonne flottante. -->
-      <Border Classes="desktopwelcome" Padding="18,16" ClipToBounds="True">
-        <StackPanel Spacing="12">
+      <Border Classes="desktopwelcome" Padding="0" ClipToBounds="True">
+        <StackPanel Spacing="0">
+          <!-- Liseré discret : une seule couleur d'accent de l'application, jour/nuit. -->
+          <Border Height="3" Background="{DynamicResource AccentBrush}" />
+          <StackPanel Spacing="12" Margin="18,15,18,17">
           <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14">
             <Border Width="48" Height="48" CornerRadius="14" Background="{DynamicResource AccentSoftBrush}"
                     VerticalAlignment="Top">
@@ -110,11 +115,14 @@
               </DataTemplate>
             </ItemsControl.ItemTemplate>
           </ItemsControl>
+          </StackPanel>
         </StackPanel>
       </Border>
 
       <!-- Indicateurs : 1 à 4 colonnes selon la largeur restante APRÈS le menu latéral ;
            aucune largeur fixe et aucun chevauchement quand la fenêtre rétrécit. -->
+      <TextBlock Text="VUE D'ENSEMBLE" FontSize="11" FontWeight="SemiBold"
+                 Foreground="{DynamicResource Text2Brush}" Margin="2,0,0,-7" />
       <ItemsControl ItemsSource="{Binding Kpis}" IsVisible="{Binding HasKpis}">
         <ItemsControl.ItemsPanel>
           <ItemsPanelTemplate><UniformGrid Columns="4" infra:Adaptive.MinItemWidth="260" /></ItemsPanelTemplate>
@@ -123,14 +131,18 @@
           <DataTemplate>
             <Button Classes="cardbutton" Command="{Binding Open}" Margin="0,0,10,10"
                     HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" ToolTip.Tip="Ouvrir le détail">
-              <Border Classes="toolcard" MinHeight="120" Padding="14,12" ClipToBounds="True">
+              <Border Classes="toolcard" MinHeight="126" Padding="16,14" ClipToBounds="True"
+                      Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource LineBrush}"
+                      BorderThickness="1" CornerRadius="14">
                 <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto" RowSpacing="4">
                   <TextBlock Text="{Binding Label}" Foreground="{DynamicResource Text2Brush}"
-                             TextWrapping="Wrap" MaxLines="2" VerticalAlignment="Center" />
+                             FontSize="12" FontWeight="SemiBold" TextWrapping="Wrap" MaxLines="2"
+                             VerticalAlignment="Center" />
                   <Border Grid.Column="1" Grid.RowSpan="2" Classes="appicon medium" Background="{Binding Brush}"
                           VerticalAlignment="Top" Margin="8,0,0,0"><mi:MaterialIcon Kind="{Binding Icon}" /></Border>
                   <TextBlock Grid.Row="1" Text="{Binding Value}" FontSize="{DynamicResource FsHeading}"
-                             FontWeight="Bold" TextWrapping="Wrap" MaxLines="2" />
+                             FontWeight="Bold" Foreground="{DynamicResource TextBrush}"
+                             TextWrapping="Wrap" MaxLines="2" />
                   <TextBlock Grid.Row="2" Grid.ColumnSpan="2" Text="{Binding Hint}" Classes="muted"
                              FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" MaxLines="2" />
                 </Grid>
@@ -142,9 +154,10 @@
 
       <!-- Outils : tuiles compactes, un clic ouvre l'outil -->
       <StackPanel Spacing="8">
-        <Grid ColumnDefinitions="*,Auto">
+        <Grid ColumnDefinitions="*,Auto" infra:Adaptive.StackBelow="410">
           <TextBlock Text="Outils" Classes="heading" VerticalAlignment="Center" />
           <Button Grid.Column="1" Classes="link" Content="{Binding AllToolsLabel}" Command="{Binding ShowAllTools}"
+                  HorizontalAlignment="Left" MinHeight="36"
                   ToolTip.Tip="Déployer les fonctionnalités autorisées dans cette page" />
         </Grid>
         <ItemsControl ItemsSource="{Binding MoreTools}">
@@ -204,7 +217,7 @@
       <!-- Derniers reçus, et à côté ce qui reste à faire aujourd'hui -->
       <Grid ColumnDefinitions="2*,16,*" infra:Adaptive.StackBelow="760">
         <StackPanel Spacing="8">
-          <Grid ColumnDefinitions="*,Auto">
+          <Grid ColumnDefinitions="*,Auto" infra:Adaptive.StackBelow="390">
             <TextBlock Text="Derniers reçus" Classes="heading" VerticalAlignment="Center" />
             <TextBlock Grid.Column="1" Text="{Binding TodayLine}" Classes="muted" VerticalAlignment="Center" IsVisible="{Binding HasTodayLine}" />
           </Grid>
@@ -225,7 +238,7 @@
                             <TextBlock Text="{Binding Date}" Classes="muted" TextTrimming="CharacterEllipsis" />
                           </StackPanel>
                         </StackPanel>
-                        <TextBlock Grid.Column="2" Text="{Binding Amount}" FontWeight="SemiBold"
+                        <TextBlock Grid.Column="2" Text="{Binding Amount}" FontWeight="SemiBold" MaxWidth="120"
                                    VerticalAlignment="Center" TextAlignment="Right" TextWrapping="Wrap" MaxLines="2" />
                       </Grid>
                     </Button>
