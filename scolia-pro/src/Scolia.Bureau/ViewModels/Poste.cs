@@ -17,6 +17,8 @@ public sealed class PosteViewModel : Observable
     private bool lanEnabled;
     private bool searching;
     private string searchLine = string.Empty;
+    private string httpsStatus = "HTTPS automatique disponible avec Tailscale sur l'ordinateur principal.";
+    private string httpsAddress = string.Empty;
     private IReadOnlyList<string> addresses = [];
 
     public PosteViewModel(ShellViewModel shell)
@@ -41,6 +43,19 @@ public sealed class PosteViewModel : Observable
             finally { Refresh(); }
         }));
         Search = new AsyncCommand(SearchAsync);
+        EnableAutomaticHttps = new AsyncCommand(() => shell.Run(async () =>
+        {
+            if (!CanEnableAutomaticHttps) return;
+            if (!await shell.Confirm("Activer HTTPS automatiquement ?",
+                "SCOLIA demandera a Tailscale un certificat HTTPS reconnu et partagera uniquement sur votre reseau prive. "
+                + "La premiere autorisation HTTPS/MagicDNS dans Tailscale peut necessiter votre accord. "
+                + "Les anciennes adresses HTTP du Wi-Fi ne seront pas modifiees.",
+                "Activer HTTPS prive")) return;
+            var outcome = await TailscaleHttpsServe.EnableAsync(PosteAdmin.DefaultPort);
+            HttpsAddress = outcome.Ready ? outcome.Address?.ToString() ?? string.Empty : string.Empty;
+            HttpsStatus = outcome.Message;
+            shell.Notify(outcome.Message);
+        }));
         AllowBackground = new RelayCommand(() => Platform.AllowBackground?.Invoke());
         CheckMobileUpdates = new AsyncCommand(async () =>
         {
@@ -81,6 +96,10 @@ public sealed class PosteViewModel : Observable
     }
 
     public bool IsWindows => OperatingSystem.IsWindows();
+    public bool CanEnableAutomaticHttps => IsWindows && IsServerComputer && shell.Can(Perm.SettingsWrite);
+    public string HttpsStatus { get => httpsStatus; private set { Set(ref httpsStatus, value); } }
+    public string HttpsAddress { get => httpsAddress; private set { if (Set(ref httpsAddress, value)) Raise(nameof(HasHttpsAddress)); } }
+    public bool HasHttpsAddress => httpsAddress.Length > 0;
     public bool IsServerComputer => shell.IsServerComputer;
     public bool IsLinked => !shell.IsServerComputer;
     /// <summary>Un poste relié peut devenir le serveur : tout ordinateur, et le téléphone qui en a les moyens.</summary>
@@ -160,6 +179,7 @@ public sealed class PosteViewModel : Observable
 
     public AsyncCommand ToggleService { get; }
     public AsyncCommand ToggleLan { get; }
+    public AsyncCommand EnableAutomaticHttps { get; }
     public AsyncCommand Search { get; }
     public AsyncCommand UseThisComputer { get; }
     public AsyncCommand ChangeServer { get; }
@@ -202,7 +222,7 @@ public sealed class PosteViewModel : Observable
         lanEnabled = Platform.IsMobile ? shell.IsServerComputer : PosteAdmin.LanEnabled();
         addresses = lanEnabled ? PosteAdmin.Addresses() : [];
         foreach (var name in new[] { nameof(ServiceInstalled), nameof(LanEnabled), nameof(ServiceLine), nameof(LanLine), nameof(AddressLine),
-                     nameof(HasAddress), nameof(ConnectionTitle), nameof(ConnectionLine), nameof(IsServerComputer), nameof(IsLinked),
+                     nameof(HasAddress), nameof(CanEnableAutomaticHttps), nameof(ConnectionTitle), nameof(ConnectionLine), nameof(IsServerComputer), nameof(IsLinked),
                      nameof(IsPhoneServer), nameof(IsPhoneClient), nameof(CanBecomeServer), nameof(ShowBackground), nameof(BackgroundOk),
                      nameof(BackgroundBlocked), nameof(HostForegroundActive), nameof(HostApiServing),
                      nameof(BackgroundHealthy), nameof(BackgroundNeedsAttention),
