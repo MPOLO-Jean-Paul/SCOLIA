@@ -7,10 +7,9 @@ using Scolia.Domain.Students;
 namespace Scolia.Infrastructure.Documents;
 
 /// <summary>
-/// Cartes d'accès au format Word (.docx), écrit en OOXML sans logiciel tiers. Même grille et même mise en page que le PDF :
-/// A4, cartes de 92 × 63 mm sur deux colonnes, interstices de 6 mm et 7 mm, huit cartes par page, en-tête avec le sceau,
-/// identité à gauche, QR à droite, bande de promotion en pied de carte. Le rendu exact dépend du logiciel d'ouverture ;
-/// le PDF reste la version prête à imprimer.
+/// Cartes d'accès au format Word (.docx) : huit inserts ID-1 (85,60 × 53,98 mm) par A4,
+/// logo et identité de l'établissement configurés, Session en grand, QR à la place du cachet,
+/// matricule, noms et promotion. Le PDF reste conseillé pour une découpe à dimensions exactes.
 /// </summary>
 public static class CardWordWriter
 {
@@ -176,13 +175,12 @@ public static class CardWordWriter
         body.Append(Paragraph(value.Trim().ToUpperInvariant(), halfPoints, bold, false, "center", "1B2430"));
     }
 
-    /// <summary>Une ligne par champ, comme sur le PDF : le libellé, deux points, puis la valeur, « NOM : MUKENDI ».</summary>
-    private static void Field(StringBuilder body, string label, string value)
+    /// <summary>Matricule, noms complets et promotion, sans ligne prédéfinie.</summary>
+    private static void Field(StringBuilder body, string label, string value, int halfPoints)
     {
-        var size = value.Length > 24 ? 14 : 16;
-        body.Append($"<w:p><w:pPr><w:spacing w:before=\"0\" w:after=\"100\" w:line=\"{size * 13}\" w:lineRule=\"exact\"/><w:jc w:val=\"left\"/></w:pPr>")
-            .Append(Run($"{label} : ", 11, "5B6878"))
-            .Append(Run(value, size, "1B2430"))
+        body.Append($"<w:p><w:pPr><w:spacing w:before=\"0\" w:after=\"36\" w:line=\"{Math.Max(halfPoints * 13, 170)}\" w:lineRule=\"atLeast\"/><w:jc w:val=\"left\"/></w:pPr>")
+            .Append(Run(label + " : ", 12, "1B2430"))
+            .Append(Run(value.Trim().ToUpperInvariant(), halfPoints, "1B2430"))
             .Append("</w:p>");
     }
 
