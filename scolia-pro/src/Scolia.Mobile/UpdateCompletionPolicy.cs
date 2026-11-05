@@ -29,6 +29,19 @@ internal static class UpdateCompletionPolicy
     internal static bool NeedsForegroundCheck(bool foreground, long downloadId, int? status)
         => foreground && downloadId > 0 && (status is null or Successful or Failed);
 
+    /// <summary>
+    /// Une mise à jour déjà téléchargée n'empêche jamais de découvrir une
+    /// version publiée ensuite. Seule la comparaison des versions détermine
+    /// s'il faut proposer le remplacement du téléchargement en attente.
+    /// </summary>
+    internal static bool IsNewerThanPending(string latestVersion, string? pendingVersion)
+    {
+        if (!Version.TryParse(latestVersion, out var latest)) return false;
+        if (string.IsNullOrWhiteSpace(pendingVersion)) return true;
+        return !Version.TryParse(pendingVersion, out var pending)
+            || latest.CompareTo(pending) > 0;
+    }
+
     // Après une installation réussie, l'APK en cache n'est plus une nouvelle version.
     // Éviter d'afficher à tort « APK incorrect » lors du redémarrage de SCOLIA.
     internal static bool AlreadyInstalled(string? downloadedVersion, string? installedVersion)
