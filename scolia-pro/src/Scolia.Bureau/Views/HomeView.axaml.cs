@@ -17,19 +17,18 @@ public partial class HomeView : UserControl
     private void FitWelcomeActions(double available)
     {
         if (available <= 0) return;
-        // Sous 620 px les boutons se rangent verticalement, toujours à droite
-        // de la barre ; au-dessus, ils sont côte à côte dans le même panneau.
-        // La largeur réservée laisse le reste à la salutation et au rôle.
-        var rightWidth = Math.Min(286, Math.Max(102, available * 0.42));
+        // macOS 27 : colonne d'actions stable, plus fine pour éviter de
+        // comprimer le nom de l'école. Les boutons restent à droite même étroits.
+        var rightWidth = Math.Min(244, Math.Max(98, available * 0.34));
         if (Math.Abs(WelcomeQuickActions.Width - rightWidth) >= 0.5)
             WelcomeQuickActions.Width = rightWidth;
 
         // Sur une fenêtre très étroite, l'avatar disparaît avant de comprimer
         // le nom de l'utilisateur ; les boutons demeurent à droite.
-        WelcomeAvatar.IsVisible = available >= 320;
+        WelcomeAvatar.IsVisible = available >= 350;
         var compact = available < 520;
-        WelcomeAvatar.Width = compact ? 34 : 42;
-        WelcomeAvatar.Height = compact ? 34 : 42;
-        WelcomeGreeting.FontSize = compact ? 17 : 22;
+        WelcomeAvatar.Width = compact ? 30 : 36;
+        WelcomeAvatar.Height = compact ? 30 : 36;
+        WelcomeGreeting.FontSize = compact ? 16 : 20;
     }
 }
