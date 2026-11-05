@@ -231,7 +231,7 @@ public sealed record TeacherChargeDto(Guid TeacherId, string Name, int Courses, 
 
 public sealed record TeacherChoiceDto(Guid Id, string Nom, string Function);
 
-/// <summary>Signature d'entrée ou de sortie : l'heure est celle du poste, et une entrée à 08:00:00 ou après est en retard.</summary>
+/// <summary>Signature d'entrée ou de sortie : l'heure est celle du poste ; retard strictement après 08:00:00.</summary>
 public sealed record StaffMarkDto(Guid Id, string Kind, string Time, bool IsLate);
 
 public sealed record StaffJustifyRequest(DateOnly Date, string Reason);
