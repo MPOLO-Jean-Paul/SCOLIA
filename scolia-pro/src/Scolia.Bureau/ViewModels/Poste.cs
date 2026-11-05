@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using Scolia.Bureau.Infrastructure;
+using Scolia.Bureau.Ribbon;
 
 namespace Scolia.Bureau.ViewModels;
 
