@@ -91,7 +91,7 @@ public sealed class OfflineStore
             .OfType<SavedPage>()
             .Where(p => !string.IsNullOrWhiteSpace(p.Path) && p.Path != "api/etablissement/logo")
             .OrderBy(p => p.SavedAt)
-            .ThenBy(p => p.Path, StringComparer.Ordinal)
+            .ThenBy(p => p.Path!, StringComparer.Ordinal)
             .Take(Math.Min(limit, 128))
             .Select(p => p.Path!)
             .ToList();
