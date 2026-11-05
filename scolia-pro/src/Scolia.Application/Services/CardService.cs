@@ -112,20 +112,27 @@ public sealed class CardService(IAppDbContext db, IWriteGate gate, IAuditLog aud
     /// <summary>Inscriptions de l'année avec leur statut effectif (la discipline compte) et le signalement des matricules répétés.</summary>
     private async Task<List<CandidateRow>> CandidateRowsAsync(AcademicYear year, Guid? promotionId, IReadOnlyCollection<Guid>? only, CancellationToken ct)
     {
-        var items = (await (from e in db.Enrollments.AsNoTracking()
-                            join s in db.Students.AsNoTracking() on e.StudentId equals s.Id
-                            join p in db.Promotions.AsNoTracking() on e.PromotionId equals p.Id
-                            where e.AcademicYearId == year.Id && (promotionId == null || e.PromotionId == promotionId)
-                            select new { e.Id, e.Status, s.Matricule, s.LastName, s.MiddleName, s.FirstName, Promotion = p.Code })
-                           .ToListAsync(ct))
-            .Where(x => only is null || only.Contains(x.Id))
+        // Le contrôle des matricules est global sur l'année : un filtre de promotion ou
+        // une sélection d'export ne doit jamais dissimuler un doublon situé ailleurs.
+        var yearRows = await (from e in db.Enrollments.AsNoTracking()
+                              join s in db.Students.AsNoTracking() on e.StudentId equals s.Id
+                              join p in db.Promotions.AsNoTracking() on e.PromotionId equals p.Id
+                              where e.AcademicYearId == year.Id
+                              select new { e.Id, e.PromotionId, e.Status, s.Matricule, s.LastName,
+                                           s.MiddleName, s.FirstName, Promotion = p.Code })
+                             .ToListAsync(ct);
+        var repeated = yearRows.GroupBy(x => x.Matricule, StringComparer.OrdinalIgnoreCase)
+            .Where(g => g.Count() > 1).Select(g => g.Key)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var items = yearRows
+            .Where(x => (promotionId is null || x.PromotionId == promotionId)
+                        && (only is null || only.Contains(x.Id)))
             .ToList();
         var ids = items.Select(x => x.Id).ToList();
         var decisions = (await db.DisciplineDecisions.AsNoTracking()
             .Where(d => ids.Contains(d.EnrollmentId) && d.State == DecisionState.Validee).ToListAsync(ct))
             .GroupBy(d => d.EnrollmentId).ToDictionary(g => g.Key, g => g.ToList());
         var today = clock.Today;
-        var repeated = items.GroupBy(x => x.Matricule).Where(g => g.Count() > 1).Select(g => g.Key).ToHashSet(StringComparer.OrdinalIgnoreCase);
         return items.Select(x => new CandidateRow(
             x.Id, x.Matricule, x.LastName, x.MiddleName, x.FirstName, x.Promotion,
             DisciplineRules.EffectiveStatus(x.Status, decisions.TryGetValue(x.Id, out var mine) ? mine : [], today),
