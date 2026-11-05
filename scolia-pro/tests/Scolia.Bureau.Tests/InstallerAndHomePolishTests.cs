@@ -49,6 +49,7 @@ public sealed class InstallerAndHomePolishTests
         var sync = File.ReadAllText(Source("src/Scolia.Bureau/ViewModels/Sync.cs"));
         Assert.Contains("_ = HealthLoopAsync(token)", sync, StringComparison.Ordinal);
         Assert.Contains("await api.IsRunningAsync(ct)", sync, StringComparison.Ordinal);
+        Assert.Contains("_ = ReconnectLoopAsync(token)", sync, StringComparison.Ordinal);
         Assert.Contains("if (Offline) await SyncAsync(manual: false)", sync, StringComparison.Ordinal);
 
         var client = File.ReadAllText(Source("src/Scolia.Bureau/Api/ScoliaClient.cs"));
