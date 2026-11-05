@@ -230,6 +230,14 @@ public sealed class ScoliaClient : IDisposable
             if (canCache && Offline!.ReadPage(path) is { } saved) text = saved.Json;
             else throw new OfflineException("Ordinateur principal injoignable : cette rubrique n'a pas encore été chargée sur cet appareil.");
         }
+        catch (ApiException ex) when (ex.Status is 403 or 404)
+        {
+            // Les accès retirés et dossiers supprimés ne doivent pas être conservés
+            // dans le cache de l'ancien compte, même s'ils ont été préchargés.
+            if (canCache && sourceStore is not null)
+                sourceStore.RemovePageFor(sourceUser, path);
+            throw;
+        }
         return JsonSerializer.Deserialize<T>(text, Json.Options)!;
     }
 
