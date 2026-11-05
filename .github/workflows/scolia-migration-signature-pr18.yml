@@ -1,0 +1,71 @@
+name: SCOLIA - transfert protege de la signature Android PR18
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+
+permissions:
+  contents: read
+
+jobs:
+  controler-script:
+    name: Controler sans secret le script de migration
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - name: Verifier le script sans utiliser de cle
+        run: |
+          bash -n scolia-pro/scripts/migrer-signature-pr18-vers-secrets.sh
+          test -s scolia-pro/scripts/migrer-signature-pr18-vers-secrets.sh
+
+  migration-unique-pr18:
+    name: Migrer la cle verifiee vers les Secrets proteges - approbation obligatoire
+    needs: controler-script
+    if: >-
+      github.event.pull_request.number == 18 &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'release/direct-apk-scolia-pro-20261103' &&
+      github.event.pull_request.base.ref == 'feature/scolia-recovery-login-lock-20261103'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    environment:
+      name: scolia-signature-migration
+    permissions:
+      contents: read
+    steps:
+      # Uniquement le code de la branche de distribution appartenant au depot ;
+      # aucun code provenant d'un fork. L'environnement doit etre protege par review.
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+      # Cache restreint a refs/pull/18/merge par GitHub. Ne JAMAIS utiliser restore-keys
+      # ni exporter ce cache ou son contenu en artefact, commentaire ou variable de sortie.
+      - name: Restaurer uniquement le cache historique propre a la PR 18
+        id: cache_pr18
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.scolia-signature
+          key: scolia-android-signature-v1
+      - name: Migrer si et seulement si la vraie cle est verifiee
+        shell: bash
+        env:
+          SCOLIA_MIGRATION_PR18: 'true'
+          SCOLIA_CACHE_HIT: ${{ steps.cache_pr18.outputs.cache-hit }}
+          # Jeton de courte duree, scope Secrets lecture/ecriture sur CE DEPOT.
+          # Il doit etre place dans l'environnement protege scolia-signature-migration,
+          # et JAMAIS dans une variable, un artefact ou un fichier du depot.
+          SCOLIA_SIGNING_ADMIN_TOKEN: ${{ secrets.SCOLIA_SIGNING_ADMIN_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [[ "$SCOLIA_CACHE_HIT" != 'true' ]]; then
+            echo "::error::La vraie cle de la PR #18 n'est plus accessible. Migration abandonnee." >&2
+            exit 1
+          fi
+          bash scolia-pro/scripts/migrer-signature-pr18-vers-secrets.sh "$HOME/.scolia-signature"
