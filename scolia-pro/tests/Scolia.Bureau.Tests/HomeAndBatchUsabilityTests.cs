@@ -24,7 +24,7 @@ public sealed class HomeAndBatchUsabilityTests
         var doc = XDocument.Load(ViewFile("Views/HomeView.axaml"));
         var nodes = doc.Descendants().ToArray();
         var kpiGrid = nodes.FirstOrDefault(x => x.Name.LocalName == "UniformGrid"
-            && x.Attributes().Any(a => a.Name.LocalName.EndsWith("MinItemWidth", StringComparison.Ordinal) && a.Value == "260"));
+            && x.Attributes().Any(a => a.Name.LocalName.EndsWith("MinItemWidth", StringComparison.Ordinal) && a.Value == "205"));
         Assert.NotNull(kpiGrid);
         Assert.Contains(nodes, x => x.Name.LocalName == "ItemsControl"
             && x.Attributes().Any(a => a.Name.LocalName == "ItemsSource" && a.Value.Contains("QuickActions")) &&
