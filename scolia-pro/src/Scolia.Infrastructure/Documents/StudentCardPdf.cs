@@ -14,7 +14,6 @@ namespace Scolia.Infrastructure.Documents;
 /// </summary>
 internal static class StudentCardPdf
 {
-    private const string Navy = "#0B3B6F";
     private const string Ink = "#1B2430";
     private const string Muted = "#5B6878";
     private const string Frame = "#AEB8C5";
@@ -100,9 +99,9 @@ internal static class StudentCardPdf
                         .FontSize(schoolName.Length > 86 ? 4f : schoolName.Length > 54 ? 4.6f : 5.6f)
                         .SemiBold().FontColor(Ink).LineHeight(1.03f);
                     if (authority is not null)
-                        header.Item().Text(authority).FontSize(3.2f).FontColor(Ink).LineHeight(1f);
+                        header.Item().Text(authority).FontSize(authority.Length > 150 ? 2.6f : authority.Length > 95 ? 2.9f : 3.2f).FontColor(Ink).LineHeight(1f);
                     if (location is not null)
-                        header.Item().Text(location).FontSize(3.0f).FontColor(Muted).LineHeight(1f);
+                        header.Item().Text(location).FontSize(location.Length > 150 ? 2.4f : location.Length > 95 ? 2.7f : 3.0f).FontColor(Muted).LineHeight(1f);
                 });
             });
             column.Item().Height(Mm(0.22f)).Background("#BCC2CA");
