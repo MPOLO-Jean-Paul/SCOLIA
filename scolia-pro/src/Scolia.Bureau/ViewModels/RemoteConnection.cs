@@ -7,7 +7,7 @@ namespace Scolia.Bureau.ViewModels;
 public sealed class RemoteConnectionViewModel : Observable
 {
     private readonly ShellViewModel shell;
-    private string relay = string.Empty;
+    private string relay = RemoteLink.DefaultRelay;
     private string invitation = string.Empty;
     private string message = string.Empty;
     private string diagnostic = "Partage distant non encore vérifié.";
@@ -115,8 +115,17 @@ public sealed class RemoteConnectionViewModel : Observable
         if (!CanManage) { Message = "Le secrétariat configure la liaison sur l'appareil principal."; return; }
         try
         {
-            var link = RemoteConnection.Load() is { Host: true } previous
-                ? previous.Link.Renew(Relay.Trim()) : RemoteLink.Create(Relay.Trim());
+            var previous = RemoteConnection.Load();
+            // Un clic répété sur « Activer » ne doit jamais invalider les appareils
+            // déjà autorisés. Rotation seulement après expiration, changement de
+            // relais ou réactivation d'une connexion volontairement désactivée.
+            var addressText = Relay.Trim();
+            var reuse = previous is { Host: true, Enabled: true }
+                && previous.Link.ExpiresUtc > DateTime.UtcNow
+                && string.Equals(previous.Link.Relay, addressText, StringComparison.OrdinalIgnoreCase);
+            var link = reuse ? previous!.Link
+                : previous is { Host: true } ? previous.Link.Renew(addressText)
+                : RemoteLink.Create(addressText);
             // Vérifier le relais avant de remplacer une liaison encore utilisable.
             var address = new UriBuilder(link.Relay) { Scheme = new Uri(link.Relay).Scheme == "wss" ? "https" : "http", Path = "/health" }.Uri;
             using var probe = new HttpClient { Timeout = TimeSpan.FromSeconds(8) };
@@ -124,7 +133,10 @@ public sealed class RemoteConnectionViewModel : Observable
             response.EnsureSuccessStatusCode();
             RemoteConnection.Save(new RemoteConfiguration(link, true, shell.Login.SchoolName));
             RemoteConnection.StartHost(shell.Api.Server);
-            await PrepareInvitationAsync(link);
+            if (reuse)
+                Message = "Liaison Internet Render déjà active. Les appareils autorisés restent jumelés ; aucun nouveau QR n'est nécessaire.";
+            else
+                await PrepareInvitationAsync(link);
         }
         catch (Exception ex) when (ex is FormatException or HttpRequestException or TaskCanceledException or IOException)
         { Message = "Liaison non activée : vérifiez l'adresse et la disponibilité du relais sécurisé."; }
