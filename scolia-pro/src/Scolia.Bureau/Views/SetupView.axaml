@@ -329,7 +329,5 @@
         </Grid>
       </Border>
     </ScrollViewer>
-    <!-- Assistant Tailscale commun (téléchargement et installation depuis SCOLIA). -->
-    <views:TailscaleWizardView Grid.RowSpan="3" />
   </Grid>
 </UserControl>
