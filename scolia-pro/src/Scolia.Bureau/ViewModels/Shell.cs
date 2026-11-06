@@ -493,11 +493,9 @@ public sealed class ShellViewModel : Observable
             }
             Status = $"Recherche du serveur de {saved.School}…";
             var servers = await LanDiscovery.FindAsync();
-            if (servers.FirstOrDefault(s => s.SchoolId == saved.SchoolId) is { } moved)
-            {
-                await JoinAsync(moved);
-                return;
-            }
+            if (servers.Count > 0 && await TryReconnectPairedLanAsync()) return;
+            // Une annonce UDP peut usurper un nom/identifiant d'établissement.
+            // Jamais de bascule silencieuse sans preuve du jumelage historique.
             if (OfferOfflineEntry(saved.School ?? string.Empty)) return;
             ShowChooser(servers, $"Le serveur de {saved.School} (ordinateur {saved.Machine}) ne répond pas. Allumez-le ou ouvrez SCOLIA dessus, puis recherchez à nouveau.");
             return;
@@ -615,6 +613,47 @@ public sealed class ShellViewModel : Observable
         ChoosingServer = false;
         await ShowEntryAsync();
         Notify($"Ce poste est relié à SCOLIA · {server.School} (ordinateur {server.Machine}).");
+    }
+
+    /// <summary>
+    /// Retrouve automatiquement le même serveur après changement de Wi-Fi/IP.
+    /// Le poste ne transmet aucun secret à une annonce UDP non vérifiée.
+    /// Le jeton et le cache restent attachés à l'établissement déjà autorisé.
+    /// </summary>
+    public async Task<bool> TryReconnectPairedLanAsync(CancellationToken ct = default)
+    {
+        var saved = ConnectionStore.Load();
+        if (saved is not { IsRemote: true, Url: { Length: > 0 } url } ||
+            !Uri.TryCreate(url, UriKind.Absolute, out var previous)) return false;
+        var found = await TrustedLanReconnect.FindAsync(saved, ct: ct);
+        if (found is null) return false;
+        try
+        {
+            // Copier d'abord l'autorisation approuvée sous la nouvelle adresse.
+            // Aucune reliaison du compte ni perte des saisies hors ligne.
+            TrustedLanReconnect.PreserveGrant(previous, found.Address);
+            if (!ConnectionStore.TrySave(saved with
+                {
+                    Url = found.Address.ToString(), SchoolId = found.SchoolId,
+                    School = found.School, Machine = found.Machine,
+                })) return false;
+            if (api.Offline is null)
+            {
+                var old = new OfflineStore(previous);
+                if (old.HasCredential) api.Offline = old;
+            }
+            api.Retarget(found.Address, sameVerifiedSchool: true);
+            Raise(nameof(ServerLine));
+            if (!IsLoggedIn) await ShowEntryAsync();
+            return true;
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or
+            System.Security.Cryptography.CryptographicException or InvalidOperationException)
+        {
+            System.Diagnostics.Trace.WriteLine($"SCOLIA : reprise du serveur déjà jumelé impossible ({ex.GetType().Name}).");
+            return false;
+        }
     }
 
     private sealed record DevicePairResult(SessionDto Session, Guid GrantId, string DeviceSecret, DateTime ExpiresUtc);
