@@ -43,7 +43,7 @@ public sealed class ShellViewModel : Observable
         // rouvrir seul la session quand l'ordinateur principal revient après une coupure.
         Login.Authenticated += (user, secret, s) =>
         {
-            api.Offline = new OfflineStore(api.Server) { User = s.UserName };
+            api.Offline = new OfflineStore(ConnectionStore.CacheAddress(api.Server)) { User = s.UserName };
             api.Offline.SaveCredential(user, secret, s, api.SessionCookie);
             api.Offline.RememberAccount(s.UserName);
             Login.RememberAccount(s.UserName);
@@ -554,7 +554,7 @@ public sealed class ShellViewModel : Observable
     /// </summary>
     private bool OfferOfflineEntry(string school)
     {
-        var store = new OfflineStore(api.Server);
+        var store = new OfflineStore(ConnectionStore.CacheAddress(api.Server));
         if (!store.HasCredential) return false;
         api.Offline = store;
         if (school.Length > 0) Login.SchoolName = school;
@@ -634,12 +634,13 @@ public sealed class ShellViewModel : Observable
             TrustedLanReconnect.PreserveGrant(previous, found.Address);
             if (!ConnectionStore.TrySave(saved with
                 {
-                    Url = found.Address.ToString(), SchoolId = found.SchoolId,
+                    Url = found.Address.ToString(), CacheUrl = saved.CacheUrl ?? saved.Url,
+                    SchoolId = found.SchoolId,
                     School = found.School, Machine = found.Machine,
                 })) return false;
             if (api.Offline is null)
             {
-                var old = new OfflineStore(previous);
+                var old = new OfflineStore(ConnectionStore.CacheAddress(previous));
                 if (old.HasCredential) api.Offline = old;
             }
             api.Retarget(found.Address, sameVerifiedSchool: true);
@@ -839,7 +840,7 @@ public sealed class ShellViewModel : Observable
         session = s;
         knownRevision = -1;
         // Données gardées sur l'appareil, propres à ce compte ; puis le direct avec les autres postes.
-        api.Offline ??= new OfflineStore(api.Server);
+        api.Offline ??= new OfflineStore(ConnectionStore.CacheAddress(api.Server));
         api.Offline.User = s.UserName;
         api.Offline.RememberAccount(s.UserName);
         Login.RememberAccount(s.UserName);
