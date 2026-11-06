@@ -21,8 +21,9 @@ public sealed class PairingViewModel : Observable
         var machine = Platform.DeviceName ?? Environment.MachineName;
         var remote = RemoteConnection.Load();
         var invitation = remote is { Host: true, Enabled: true } && remote.Link.ExpiresUtc > DateTime.UtcNow ? remote.Link.Invitation() : null;
-        Shared = Platform.IsMobile || PosteAdmin.LanEnabled();
-        Code = PairingCode.ForThisServer(school, machine, Shared ? PosteAdmin.Addresses() : [], invitation);
+        var localAvailable = Platform.IsMobile || PosteAdmin.LanEnabled();
+        Shared = localAvailable || invitation is not null;
+        Code = PairingCode.ForThisServer(school, machine, localAvailable ? PosteAdmin.Addresses() : [], invitation);
         School = school;
         CodeText = string.Empty;
         Image = null;
