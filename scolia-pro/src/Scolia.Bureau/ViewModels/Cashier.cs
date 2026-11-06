@@ -46,6 +46,9 @@ public sealed class CashierPage : PageViewModel
     private string balanceAfter = string.Empty;
     private string? hint;
     private ReceiptDto? receipt;
+    private string? localReceiptText;
+    private Guid? localReceiptId;
+    private AccountDto? currentAccount;
     private int previewVersion;
     private bool previewing;
     private bool previewValid;
@@ -59,7 +62,9 @@ public sealed class CashierPage : PageViewModel
         Find = new AsyncCommand(() => Shell.Run(SearchAsync));
         NewPayment = new AsyncCommand(() => Shell.Run(() => { Reset(); return Task.CompletedTask; }));
         PrintReceipt = new AsyncCommand(() => Shell.Run(() => PrintAsync()));
-        OpenReceipt = new AsyncCommand(() => Shell.Run(() => Shell.Open(() => new ReceiptDetailPage(Shell, receipt!.Id))));
+        OpenReceipt = new AsyncCommand(() => Shell.Run(() =>
+            Shell.Open(() => new ReceiptDetailPage(Shell, receipt?.Id ?? localReceiptId
+                ?? throw new InvalidOperationException("Aucun versement choisi.")))));
         ConfigureCalendar = new AsyncCommand(() => Shell.Run(() => Shell.Open(() => new SettingsPage(Shell, "annees"))));
         ConfigurePromotion = new AsyncCommand(() => Shell.Run(() => Shell.Open(() => new SettingsPage(Shell, "promotions"))));
         Action("Journal des reçus", MaterialIconKind.ReceiptText, () => Shell.Open(() => new ReceiptsPage(Shell)));
@@ -183,8 +188,10 @@ public sealed class CashierPage : PageViewModel
     /// <summary>Le formulaire de versement s'affiche quand un apprenant est choisi et tant que le reçu n'est pas fait.</summary>
     public bool ShowPayment => HasStudent && !HasReceipt;
     public ReceiptDto? Receipt { get => receipt; private set { if (Set(ref receipt, value)) { Raise(nameof(HasReceipt)); Raise(nameof(ShowPayment)); } } }
-    public bool HasReceipt => receipt is not null;
-    public string ReceiptText => receipt is null ? string.Empty : $"Reçu N° {receipt.Number} enregistré pour {Money(receipt.Amount)}.";
+    public bool HasReceipt => receipt is not null || localReceiptText is not null;
+    public bool HasLocalReceipt => localReceiptText is not null;
+    public string ReceiptText => localReceiptText ?? (receipt is null ? string.Empty :
+        $"Reçu N° {receipt.Number} enregistré pour {Money(receipt.Amount)}.");
 
     /// <summary>Mois à payer : un versement partiel peut couvrir tout ou partie des mois choisis.</summary>
     public ObservableCollection<MonthRowVm> Months { get; } = [];
@@ -353,13 +360,30 @@ public sealed class CashierPage : PageViewModel
         SearchStatus = "Recherche en cours…";
         try
         {
-            var page = await Shell.Api.GetAsync<PagedResult<StudentListItem>>("api/apprenants" + ScoliaClient.Query(("q", query), ("taille", 12)));
-            // Une réponse tardive ne doit jamais remplacer les résultats d'une recherche plus récente.
+            PagedResult<StudentListItem>? page = null;
+            var local = !Shell.Api.IsOnline ? FindLocally() : null;
+            if (local is null)
+            {
+                try
+                {
+                    page = await Shell.Api.GetAsync<PagedResult<StudentListItem>>(
+                        "api/apprenants" + ScoliaClient.Query(("q", query), ("taille", 12)));
+                }
+                catch (OfflineException) { local = FindLocally(); }
+            }
+            page ??= local?.Page;
             if (version != searchVersion) return;
-            foreach (var s in page.Items)
+            if (page is null)
+            {
+                SearchStatus = "Aucun registre local disponible. Préparez le mode hors ligne lorsque le serveur est accessible.";
+                return;
+            }
+            foreach (var s in page.Items.Take(12))
                 Results.Add(new PayerRow(s.EnrollmentId, s.Id, $"{s.Matricule} · {Format.FullName(s.LastName, s.MiddleName, s.FirstName)}",
                     $"{s.PromotionCode ?? "sans promotion"} · {Labels.Status(s.Status ?? string.Empty)}"));
-            SearchStatus = page.Items.Count == 0 ? "Aucun apprenant trouvé. Vérifiez le nom ou le matricule." : null;
+            SearchStatus = page.Items.Count == 0 ? "Aucun apprenant trouvé dans les données disponibles."
+                : local is { Complete: false } ? "Recherche limitée aux dossiers téléchargés ; préparation hors ligne incomplète."
+                : null;
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
@@ -367,6 +391,11 @@ public sealed class CashierPage : PageViewModel
             throw;
         }
     }
+
+    private OfflineStudentSearch.Result? FindLocally() =>
+        Shell.Api.Offline is { } store
+            ? OfflineStudentSearch.Search(store, Search.Trim(), null, null, 1, 50)
+            : null;
 
     public async Task ChooseAsync(PayerRow row)
     {
@@ -387,6 +416,12 @@ public sealed class CashierPage : PageViewModel
         Raise(nameof(Total));
         Raise(nameof(TotalCaption));
         Receipt = null;
+        localReceiptText = null;
+        localReceiptId = null;
+        currentAccount = null;
+        Raise(nameof(HasLocalReceipt));
+        Raise(nameof(HasReceipt));
+        Raise(nameof(ReceiptText));
         StudentName = string.Empty;
         StudentInfo = string.Empty;
         Balance = string.Empty;
@@ -420,15 +455,17 @@ public sealed class CashierPage : PageViewModel
         }
         if (version != selectionVersion) return;
         previewing = false;
+        currentAccount = account;
         enrollment = new EnrollmentChoice(eid, account.Balance);
         selectedMonth = null;
         Raise(nameof(SelectedMonth));
-        // Les mois encaissés hors ligne sur cet appareil, pas encore envoyés, ne se proposent plus.
-        var pending = Shell.Api.Offline?.PendingFeeItems(eid) ?? new HashSet<Guid>();
+        // Le compte local projette déjà les versements en attente, y compris
+        // partiels : ne pas masquer entièrement un mois encore partiellement dû.
+        var pending = Shell.Api.Offline?.Outbox().Count(x => x.Path == "api/paiements") ?? 0;
         // Le calendrier vient des mensualités de la promotion dans l'année scolaire configurée.
         // Les frais d'inscription et d'examen ne sont pas proposés comme des mois.
         var configuredMonths = account.Lines.Where(l => l.Kind == "Mensualite").ToArray();
-        foreach (var line in configuredMonths.Where(l => l.Remaining > 0 && !pending.Contains(l.FeeItemId)))
+        foreach (var line in configuredMonths.Where(l => l.Remaining > 0))
             Months.Add(new MonthRowVm(line.FeeItemId, line.Label, line.Remaining, Money(line.Remaining), line.IsOverdue, MonthsChanged,
                 Deadline(line.DueDate, line.IsOverdue)));
 
@@ -459,7 +496,7 @@ public sealed class CashierPage : PageViewModel
         Raise(nameof(OverdueBrush));
         // Aucun mois : l'encadré « Mois de paiement indisponibles » le dit déjà, avec les boutons pour y remédier.
         Hint = Months.Count == 0 ? null :
-            pending.Count > 0 ? $"{pending.Count} mois déjà encaissé(s) sur cet appareil, en attente d'envoi à l'ordinateur principal." : null;
+            pending > 0 ? $"{pending} encaissement(s) local(aux) attend(ent) leur confirmation par l'ordinateur principal." : null;
         Raise(nameof(HasStudent));
         Raise(nameof(ShowPayment));
         // Seul le mode de paiement reste à choisir : la référence, le visa et le téléphone se remplissent ici.
@@ -495,9 +532,19 @@ public sealed class CashierPage : PageViewModel
             }
             catch (OfflineException)
             {
-                // Hors ligne, la répartition exacte est faite par le serveur à l'envoi : le total reste juste.
-                if (version == previewVersion) { BalanceAfter = "calculé à l'envoi"; previewValid = true; }
-                return;
+                if (currentAccount is null)
+                {
+                    if (version == previewVersion) Hint = "Compte local absent : reconnectez-vous pour préparer les données.";
+                    return;
+                }
+                // Même ordre de calcul des mensualités que lors de la
+                // confirmation : le solde est immédiatement affiché.
+                try { preview = OfflineFinance.Preview(currentAccount, SelectedIds(), PaymentAmount); }
+                catch (ArgumentException ex)
+                {
+                    if (version == previewVersion) Hint = ex.Message;
+                    return;
+                }
             }
             if (version != previewVersion) return;
             CollectionSync.Apply(Allocations, preview.Allocations.Select(a => new AllocationRowVm(a.Label, Money(a.Amount), Money(a.RemainingAfter))));
@@ -541,6 +588,7 @@ public sealed class CashierPage : PageViewModel
         }
         Hint = null;
         ReceiptDto created;
+        var paymentKey = Guid.NewGuid().ToString("N");
         using var underLock = lockKey is { } key ? ScoliaClient.UnderLock(key) : null;
         try
         {
@@ -554,15 +602,29 @@ public sealed class CashierPage : PageViewModel
             payerPhone = string.IsNullOrWhiteSpace(PayerPhone) ? null : PayerPhone,
             note = string.IsNullOrWhiteSpace(Note) ? DefaultNote : Note.Trim(),
             feeItemIds = ids,
-            idempotencyKey = Guid.NewGuid().ToString("N"),
+            idempotencyKey = paymentKey,
         });
         }
         catch (OfflineQueuedException)
         {
-            // Encaissement gardé sur l'appareil : les mois quittent la liste, le reçu sera numéroté à l'envoi.
+            // L'argent est enregistré dans le journal SQLite chiffré AVANT
+            // cette notification. Numéro temporaire unique par appareil ;
+            // le numéro officiel sera attribué par le serveur.
+            var pending = Shell.Api.Offline is { } store
+                ? OfflineFinance.Pending(store).FirstOrDefault(p => p.Key == paymentKey)
+                : null;
+            var number = pending?.TemporaryNumber ?? $"LOCAL-{paymentKey[..8].ToUpperInvariant()}";
+            var amount = PaymentAmount;
             Reference = string.Empty;
             await ChooseAsync(new PayerRow(e.Id, Guid.Empty, StudentName, string.Empty));
-            Hint = "Encaissement gardé sur cet appareil : le reçu sera numéroté par l'ordinateur principal à son retour.";
+            localReceiptId = pending?.Id;
+            localReceiptText = $"Encaissement local {number} · {Money(amount)}. " +
+                "Enregistré sur cet appareil. Validation et numéro du reçu officiel automatiques après synchronisation.";
+            Raise(nameof(HasLocalReceipt));
+            Raise(nameof(HasReceipt));
+            Raise(nameof(ShowPayment));
+            Raise(nameof(ReceiptText));
+            Hint = null;
             return;
         }
         Reference = string.Empty;
@@ -574,6 +636,12 @@ public sealed class CashierPage : PageViewModel
     private void Reset()
     {
         Receipt = null;
+        localReceiptText = null;
+        localReceiptId = null;
+        Raise(nameof(HasReceipt));
+        Raise(nameof(HasLocalReceipt));
+        Raise(nameof(ShowPayment));
+        Raise(nameof(ReceiptText));
         updatingMonthSelection = true;
         try
         {
