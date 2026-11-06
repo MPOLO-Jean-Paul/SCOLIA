@@ -42,6 +42,7 @@
           <TextBlock Text="Apprenants dans le lot :" Classes="muted" />
           <TextBlock Text="{Binding SelectedCount}" FontWeight="SemiBold" />
         </StackPanel>
+        <TextBlock Text="{Binding GeneratorStatus}" Classes="muted" TextWrapping="Wrap" />
       </StackPanel>
     </Border>
     <DataGrid Grid.Row="2" ItemsSource="{Binding Rows}" AutoGenerateColumns="False" CanUserSortColumns="True">
