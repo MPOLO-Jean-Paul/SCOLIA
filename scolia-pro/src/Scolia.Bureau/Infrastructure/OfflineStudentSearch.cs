@@ -25,11 +25,11 @@ public static class OfflineStudentSearch
         var provisional = OfflineReplica.PendingRegistrationRows(store);
         var registered = 0;
         var snapshotFound = false;
-        // 20 pages au maximum pour éviter un balayage SQLite excessif sur le téléphone.
+        // Toutes les pages de l'index préchargé ; limité aux 10 000 dossiers autorisés.
         // Les fiches non téléchargées ne sont pas synthétisées ni inventées.
-        for (var number = 1; number <= 20; number++)
+        for (var number = 1; number <= OfflinePreparation.MaximumPages; number++)
         {
-            var key = "api/apprenants" + ScoliaClient.Query(("page", number), ("taille", pageSize));
+            var key = "api/apprenants" + ScoliaClient.Query(("page", number), ("taille", OfflinePreparation.PageSize));
             if (store.ReadPage(key) is not { } cached)
             {
                 // Le cache de l'index est paginé et récupéré dans l'ordre.

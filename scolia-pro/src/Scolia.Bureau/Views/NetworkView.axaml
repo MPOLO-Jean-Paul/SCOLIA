@@ -21,6 +21,23 @@
         <StackPanel Spacing="12">
           <TextBlock Text="{Binding Sync.StatusDetail}" Classes="muted" TextWrapping="Wrap" />
 
+          <!-- Préparation facultative mais nécessaire au travail autonome complet :
+               téléchargement des seuls dossiers et comptes permis au rôle. -->
+          <Border Classes="phonegroup">
+            <StackPanel Margin="14,12" Spacing="8">
+              <TextBlock Text="Données accessibles hors ligne" FontWeight="SemiBold" />
+              <TextBlock Text="{Binding Sync.PreparationText}" Classes="muted" TextWrapping="Wrap"
+                         FontSize="{DynamicResource FsSmall}" />
+              <Button Classes="primary" Command="{Binding Sync.PrepareOffline}"
+                      IsEnabled="{Binding !Sync.Preparing}"
+                      Content="Préparer les données de ce téléphone"
+                      HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                      MinHeight="42" />
+              <TextBlock Text="La préparation se fait lorsque le serveur est disponible. Elle récupère les dossiers et comptes autorisés, et conserve les écritures locales jusqu'à leur confirmation."
+                         Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
+            </StackPanel>
+          </Border>
+
           <!-- VPN privé (sans relais WSS) : le système Android et l'utilisateur autorisent Tailscale. -->
           <Border Classes="phonegroup" IsVisible="{Binding Remote.CanManage}">
             <StackPanel Margin="14,12" Spacing="8">

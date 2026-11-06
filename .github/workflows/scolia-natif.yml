@@ -48,7 +48,7 @@ concurrency:
 
 env:
   # Cache de signature accessible uniquement via la PR interne #18.
-  # Cette exception est limitee a la distribution 1.2.28.
+  # Cette exception est limitee a la distribution 1.2.29.
   SCOLIA_RECOVERY_PR18: ${{ github.event_name == 'pull_request' && github.event.pull_request.number == 18 && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'release/direct-apk-scolia-pro-20261103' && github.event.pull_request.base.ref == 'feature/scolia-recovery-login-lock-20261103' }}
   SCOLIA_CHECKOUT_REF: ${{ (github.event_name == 'pull_request' && github.event.pull_request.number == 18 && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'release/direct-apk-scolia-pro-20261103' && github.event.pull_request.base.ref == 'feature/scolia-recovery-login-lock-20261103') && github.event.pull_request.head.sha || github.sha }}
 
@@ -151,7 +151,7 @@ jobs:
         with:
           path: ~/.scolia-signature
           key: scolia-android-signature-v1
-      - name: Authentifier la cle officielle de la PR 18 pour la 1.2.28
+      - name: Authentifier la cle officielle de la PR 18 pour la 1.2.29
         if: env.SCOLIA_RECOVERY_PR18 == 'true'
         shell: bash
         env:
@@ -356,7 +356,7 @@ jobs:
   android-publication-officielle:
     name: Publier automatiquement les versions Android et Windows sur GitHub Releases
     # Push officiel avec secrets, OU exception ponctuelle depuis la PR #18
-    # portant la vraie cle historique (version 1.2.28 exclusivement).
+    # portant la vraie cle historique (version 1.2.29 exclusivement).
     if: >-
       (github.event_name == 'push' && github.ref == 'refs/heads/release/direct-apk-scolia-pro-20261103') ||
       (github.event_name == 'pull_request' && github.event.pull_request.number == 18 &&
@@ -402,8 +402,8 @@ jobs:
           version="$(sed -n 's:.*<Version>\(.*\)</Version>.*:\1:p' Directory.Build.props | head -1)"
           [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo 'Version invalide'; exit 1; }
           if [[ "$GITHUB_EVENT_NAME" == 'pull_request' ]]; then
-            if [[ "$SCOLIA_RECOVERY_PR18" != 'true' || "$GITHUB_REF" != 'refs/pull/18/merge' || "$version" != '1.2.28' ]]; then
-              echo '::error::PR de publication non autorisee, ou version differente de 1.2.28.' >&2
+            if [[ "$SCOLIA_RECOVERY_PR18" != 'true' || "$GITHUB_REF" != 'refs/pull/18/merge' || "$version" != '1.2.29' ]]; then
+              echo '::error::PR de publication non autorisee, ou version differente de 1.2.29.' >&2
               exit 1
             fi
             # Les jobs de compilation ont utilise exclusivement la tete de la
@@ -414,7 +414,7 @@ jobs:
               echo "::error::La tete de la branche release a change pendant le build." >&2
               exit 1
             fi
-            echo '::notice::Release 1.2.28 depuis PR18, cle Android historique validee ; Windows sans Authenticode (procedure 1.2.17).'
+            echo '::notice::Release 1.2.29 depuis PR18, cle Android historique validee ; Windows sans Authenticode (procedure 1.2.17).'
           elif [[ "$GITHUB_EVENT_NAME" != 'push' || "$GITHUB_REF" != 'refs/heads/release/direct-apk-scolia-pro-20261103' ]]; then
             echo '::error::Contexte de publication non autorise.' >&2
             exit 1
@@ -437,6 +437,6 @@ jobs:
           gh release create "$tag" "$apk" "$sha" "$setup" "$setup_sha" \
             --repo "$GH_REPO" --target "$SCOLIA_CHECKOUT_REF" --latest \
             --title "SCOLIA Pro ${version} - Android et Windows" \
-            --notes "SCOLIA Pro ${version} : accueil Windows restructuré et compact dans l’esprit de macOS 27, boutons Encaisser et Inscrire à droite, cartes KPI plus lisibles et sans retours à la ligne superflus, listes et raccourcis densifiés. Cartes d’accès : disposition institutionnelle personnalisée, logo configuré et QR préservé en Word/PDF. Hors ligne Android et Windows : première couche de saisies locales visibles pour inscriptions provisoires, mises à jour d’apprenants, présences et notes, avec reprise automatique ; ne constitue pas encore une réplique serveur complète ni une comptabilité locale définitivement validée. Certificat Android historique contrôlé, fichiers SHA-256. Sauvegarder avant mise à jour."
+            --notes "SCOLIA Pro ${version} : suppression de la bannière Hors ligne redondante sur Android, avec conservation du point de connexion et de la puce de bienvenue ; centre Réseau pour préparer les données locales et consulter les conflits. Encaissements Android/Windows hors serveur : versements enregistrés en journal chiffré, soldes et mois recalculés localement, références provisoires LOCAL clairement identifiées, recherche d’apprenants et de reçus sur les copies téléchargées ; transfert automatique avec clé d’idempotence au retour du serveur. Le reçu officiel et son QR sont délivrés seulement après confirmation centrale. Une synchronisation de plusieurs appareils peut détecter des conflits de paiements à examiner. La réplication exhaustive et les opérations non encore locales nécessitent toujours le serveur. Android signé par le certificat historique vérifié ; empreintes SHA-256 fournies. Sauvegarder les données avant mise à jour."
           gh release view "$tag" --repo "$GH_REPO" --json url,assets \
             --jq '{url, fichiers: [.assets[] | select(.name | endswith(".apk") or endswith(".exe")) | {name,url,digest}]}'

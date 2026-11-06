@@ -63,6 +63,8 @@ public sealed class SyncCenter : Observable, IDisposable
     private string? userName;
     private string? password;
     private bool syncing;
+    private bool preparing;
+    private string preparationText = "Préparez ce téléphone lorsque le serveur est accessible pour copier les dossiers et les comptes autorisés.";
     private bool flushing;
     private bool pendingNoticeShown;
     private string? activity;
@@ -96,6 +98,7 @@ public sealed class SyncCenter : Observable, IDisposable
             }
         });
         SyncNow = new AsyncCommand(() => SyncAsync(manual: true));
+        PrepareOffline = new AsyncCommand(PrepareOfflineAsync);
     }
 
     /// <summary>Un autre poste a enregistré une modification : l'écran concerné se met à jour.</summary>
@@ -128,6 +131,61 @@ public sealed class SyncCenter : Observable, IDisposable
     public bool Pulse { get => pulse; private set => Set(ref pulse, value); }
 
     public AsyncCommand SyncNow { get; }
+    public AsyncCommand PrepareOffline { get; }
+    public bool Preparing => preparing;
+    public string PreparationText
+    {
+        get => preparationText;
+        private set => Set(ref preparationText, value);
+    }
+
+    /// <summary>
+    /// Sauvegarde volontairement une copie complète des dossiers et des comptes
+    /// accessibles à cette session. Elle demeure chiffrée et cloisonnée par compte.
+    /// </summary>
+    public async Task PrepareOfflineAsync()
+    {
+        if (preparing || !shell.IsLoggedIn) return;
+        if (!api.IsOnline)
+        {
+            shell.Notify("Reconnectez le téléphone au serveur pour télécharger les données nécessaires.");
+            return;
+        }
+        if (!shell.Can(Perm.StudentsRead))
+        {
+            shell.Notify("Ce compte n'a pas l'autorisation de lire le registre des apprenants.");
+            return;
+        }
+        preparing = true;
+        Raise(nameof(Preparing));
+        PreparationText = "Préparation des données locales…";
+        try
+        {
+            var token = running?.Token ?? CancellationToken.None;
+            var result = await OfflinePreparation.RunAsync(api,
+                includeFinancialAccounts: shell.Can(Perm.PaymentsRead),
+                progress: state => Dispatcher.UIThread.Post(() =>
+                    PreparationText = $"{state.Stage} · {state.Completed}/{state.Expected}"),
+                ct: token);
+            PreparationText = result.Complete
+                ? $"{result.Indexed} apprenants et {result.Accounts} comptes préparés sur cet appareil."
+                : $"Copie partielle : {result.Details} dossiers et {result.Accounts} comptes, {result.Errors} erreurs. Réessayez en ligne.";
+            shell.Notify(result.Complete
+                ? "Les données autorisées sont préparées pour une utilisation hors ligne."
+                : "Préparation partielle. Vérifiez les droits, l'espace libre et la connexion.");
+        }
+        catch (OperationCanceledException) { PreparationText = "Préparation interrompue."; }
+        catch (Exception ex) when (ex is OfflineException or ApiException or IOException or InvalidOperationException)
+        {
+            PreparationText = "Préparation interrompue : vérifiez la connexion et les permissions.";
+            System.Diagnostics.Trace.WriteLine($"Préparation hors ligne : {ex.Message}");
+        }
+        finally
+        {
+            preparing = false;
+            Raise(nameof(Preparing));
+        }
+    }
 
     /// <summary>État lisible de la connexion, pour la barre du haut et l'accueil.</summary>
     public string StatusText => Offline ? (HasPending ? $"Hors ligne · {Pending} en attente" : "Hors ligne")
