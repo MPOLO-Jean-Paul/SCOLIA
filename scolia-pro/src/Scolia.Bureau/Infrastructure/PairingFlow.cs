@@ -4,7 +4,7 @@ namespace Scolia.Bureau.Infrastructure;
 
 /// <summary>
 /// Liaison par code QR, côté appareil qui rejoint : lire le code (appareil photo du téléphone, image ou texte collé
-/// sur l'ordinateur), puis essayer les voies dans l'ordre le plus rapide : le Wi-Fi, Tailscale, puis Internet.
+/// sur l'ordinateur), puis essayer le réseau local et, si disponible, le relais Render.
 /// </summary>
 public static class PairingFlow
 {
@@ -59,57 +59,31 @@ public static class PairingFlow
     {
         if (!PairingCode.TryParse(text, out var code, out var error) || code is null) return error;
 
-        // Une adresse HTTPS verifiee par Tailscale prevaut sur HTTP : un echec
-        // ne doit jamais provoquer une retrogradation silencieuse en clair.
-        var secureAddresses = code.TailnetAddresses
-            .Where(address => address.Scheme == Uri.UriSchemeHttps).ToArray();
-        if (secureAddresses.Length > 0)
+        // Ne jamais transformer un ancien QR HTTPS privé en liaison HTTP locale.
+        // Ces QR historiques peuvent être rejumelés par Render, sinon le
+        // responsable génère un nouveau code dans la version actuelle.
+        if (code.TailnetAddresses.Any(address => address.Scheme == Uri.UriSchemeHttps))
         {
-            progress?.Invoke("Connexion HTTPS securisee via Tailscale…");
-            var secure = await CheckRoutesAsync(secureAddresses, code, tailnet: true);
-            if (secure is null)
-            {
-                // Ne jamais rétrograder HTTPS Tailscale vers HTTP local.
-                // Render WSS reste un chemin chiffré indépendant, sans VPN.
-                var internet = await TryInternetAsync(shell, code, progress);
-                return internet ?? "Le serveur HTTPS privé ne répond pas et la liaison Internet chiffrée est indisponible. Vérifiez la connexion du serveur principal.";
-            }
-            await shell.JoinAsync(new DiscoveredServer(secure.Address.Host, secure.School,
-                Machine(code, secure.Address), string.Empty, secure.Address));
-            return await ActivateAsync(shell, code, secure.School, "HTTPS prive Tailscale");
+            var secureInternet = await TryInternetAsync(shell, code, progress);
+            return secureInternet ?? "Ce code QR utilise une ancienne connexion privée. Générez un nouveau QR sur le serveur avec la connexion Internet Render active.";
         }
 
-        // Essayer toutes les adresses Wi-Fi en parallèle (certains équipements ont
-        // plusieurs cartes réseau). Préparer Tailscale simultanément pour éviter
-        // d'attendre des délais séquentiels sur des adresses obsolètes.
-        progress?.Invoke("Recherche de la liaison disponible : Wi-Fi local, puis réseau privé…");
-        var lanTask = CheckRoutesAsync(code.LanAddresses, code, tailnet: false);
-        var tailnetTask = CheckRoutesAsync(code.TailnetAddresses, code, tailnet: true);
-
-        var lan = await lanTask;
+        progress?.Invoke("Recherche sur le réseau local…");
+        var lan = await CheckRoutesAsync(code.LanAddresses, code);
         if (lan is { } local)
         {
-            progress?.Invoke($"Connexion sécurisée sur le Wi-Fi ({local.Address.Host})…");
+            progress?.Invoke("Serveur local reconnu : vérification de l'invitation…");
             await shell.JoinAsync(new DiscoveredServer(local.Address.Host, local.School,
                 Machine(code, local.Address), string.Empty, local.Address));
-            return await ActivateAsync(shell, code, local.School, "Wi-Fi local");
+            return await ActivateAsync(shell, code, local.School, "réseau local");
         }
 
-        var tailnet = await tailnetTask;
-        if (tailnet is { } privateRoute)
-        {
-            progress?.Invoke($"Connexion par Tailscale ({privateRoute.Address.Host})…");
-            await shell.JoinAsync(new DiscoveredServer(privateRoute.Address.Host, privateRoute.School,
-                Machine(code, privateRoute.Address), string.Empty, privateRoute.Address));
-            return await ActivateAsync(shell, code, privateRoute.School, "Tailscale privé");
-        }
+        var internet = await TryInternetAsync(shell, code, progress);
+        if (internet is not null) return internet;
 
-        var remoteResult = await TryInternetAsync(shell, code, progress);
-        if (remoteResult is not null) return remoteResult;
-
-        return code.TailnetAddresses.Any() || code.HasInvitation
-            ? $"{code.School} ne répond pas. Vérifiez que le serveur est allumé, que les deux appareils sont sur le même Wi-Fi, ou que Tailscale est connecté sur les deux."
-            : $"{code.School} ne répond pas sur ce Wi-Fi. Vérifiez que les deux appareils sont sur le même réseau et que le serveur est allumé.";
+        return code.HasInvitation
+            ? $"Le serveur de {code.School} ne répond pas. Vérifiez sa connexion Internet et le relais Render, ou rejoignez le même Wi-Fi."
+            : $"Le serveur de {code.School} ne répond pas sur ce réseau local. Vérifiez que les appareils sont sur le même Wi-Fi.";
     }
 
     private static async Task<string?> TryInternetAsync(
@@ -134,19 +108,12 @@ public static class PairingFlow
     private sealed record AvailableRoute(Uri Address, string School);
 
     private static async Task<AvailableRoute?> CheckRoutesAsync(
-        IEnumerable<Uri> addresses, PairingCode code, bool tailnet)
+        IEnumerable<Uri> addresses, PairingCode code)
     {
         var candidates = addresses.Take(6).ToArray();
         if (candidates.Length == 0) return null;
-        if (tailnet && Platform.ConnectTailscaleInBackground is not null)
-        {
-            try { await TailscaleCompanion.ConnectInBackgroundAsync().WaitAsync(TimeSpan.FromSeconds(7)); }
-            catch (Exception ex) when (ex is InvalidOperationException or IOException or
-                HttpRequestException or TaskCanceledException or TimeoutException) { /* Wi-Fi et Internet restent disponibles. */ }
-        }
         var probes = candidates.Select(async (address, priority) =>
         {
-            if (tailnet && !await TailscaleEndpoint.ResolvesPrivatelyAsync(address)) return (priority, route: (AvailableRoute?)null);
             var school = await RespondsAsync(address);
             // Ne jamais jumeler un autre établissement trouvé sur la même plage réseau.
             if (school is null || (code.School != "Établissement" &&
@@ -192,7 +159,7 @@ public static class PairingFlow
         }
         catch (Exception ex) when (ex is Api.OfflineException or HttpRequestException or TaskCanceledException or IOException)
         {
-            return "La liaison a été enregistrée, mais le serveur n'a pas validé l'invitation. Vérifiez le réseau privé et réessayez avec un nouveau QR.";
+            return "La liaison a été enregistrée, mais le serveur n'a pas validé l'invitation. Vérifiez la liaison locale ou Render et réessayez avec un nouveau QR.";
         }
     }
 
