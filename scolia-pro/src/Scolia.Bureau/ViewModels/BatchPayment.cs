@@ -135,7 +135,7 @@ public sealed class BatchPaymentPage : PageViewModel
     public IReadOnlyList<ChoiceItem> Modes { get; } =
     [
         new("first_late", "Premier mois en retard"),
-        new("next", "Mois suivant (2e retard)"),
+        new("next", "Mois prochain (2e retard)"),
         new("late", "Tous les mois en retard"),
         new("all", "Tous les mois ouverts"),
     ];
@@ -164,7 +164,25 @@ public sealed class BatchPaymentPage : PageViewModel
     public ChoiceItem? Promotion { get => promotion; set { if (Set(ref promotion, value) && ready) { queryVersion++; timer?.Stop(); _ = Shell.Run(RefreshAsync); } } }
 
     /// <summary>Le mode choisit un premier retard, un deuxième retard, tous les retards ou tous les mois ouverts.</summary>
-    public ChoiceItem? Mode { get => mode; set { if (Set(ref mode, value) && ready) ApplyMode(); } }
+    public ChoiceItem? Mode
+    {
+        get => mode;
+        set
+        {
+            if (!Set(ref mode, value)) return;
+            Raise(nameof(MonthModeHint));
+            if (ready) ApplyMode();
+        }
+    }
+
+    public string MonthModeHint => Mode?.Value switch
+    {
+        "first_late" => "Le premier mois en retard non soldé de chaque apprenant.",
+        "next" => "Uniquement le deuxième mois en retard, après le premier.",
+        "late" => "Tous les mois en retard non soldés, du plus ancien au plus récent.",
+        "all" => "Tous les mois à régler, y compris ceux qui ne sont pas encore en retard.",
+        _ => string.Empty,
+    };
     public ChoiceItem? Method { get => method; set => Set(ref method, value); }
     public DateTime? Day { get => day; set => Set(ref day, value); }
     public string SelectionSummary { get => selectionSummary; private set => Set(ref selectionSummary, value); }
@@ -278,7 +296,7 @@ public sealed class BatchPaymentPage : PageViewModel
     private void ApplyMode()
     {
         // La nouvelle règle de mois s'applique au lot entier, même aux lignes masquées.
-        foreach (var row in allRows.Concat(selectedRows.Values).DistinctBy(r => r.EnrollmentId).ToList())
+        foreach (var row in allRows.Concat(selectedRows.Values).Distinct().ToList())
         {
             row.ApplyMonths(PlanFor(row.Candidate), Money, LateOnly);
             if (row.FeeItemIds.Count == 0) row.Selected = false;
