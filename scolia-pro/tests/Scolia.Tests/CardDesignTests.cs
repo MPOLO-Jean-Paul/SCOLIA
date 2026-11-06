@@ -75,12 +75,17 @@ public class CardDesignTests
             "RÉPUBLIQUE DÉMOCRATIQUE DU CONGO", "MINISTÈRE DE L'ENSEIGNEMENT PUBLIC",
             "DIRECTION DE L'ENSEIGNEMENT", "DIVISION PROVINCIALE",
             "VILLE DE LUBUMBASHI", "N° 1, AVENUE DE L'EXEMPLE",
-            "+243 812 345 678", "secretariat@institut.example",
-            "https://institut.example", "Intégrité, Honnêteté et Excellence",
+            "Intégrité, Honnêteté et Excellence",
             "MATRICULE : ", "INF101", "NOMS : ", "MUKENDI KABEYA GRÂCE",
             "PROMOTION : ", "INF1"
         })
             Assert.Contains(System.Security.SecurityElement.Escape(mention), xml, StringComparison.Ordinal);
+
+        Assert.DoesNotContain("+243 812 345 678", xml, StringComparison.Ordinal);
+        Assert.DoesNotContain("secretariat@institut.example", xml, StringComparison.Ordinal);
+        Assert.Contains("<w:tcBorders><w:left w:val=\"single\"", xml, StringComparison.Ordinal);
+        Assert.Contains("<w:jc w:val=\"right\"", xml, StringComparison.Ordinal);
+        Assert.Contains("<w:sz w:val=\"26\"", xml, StringComparison.Ordinal);
 
         // La hauteur EXACTE empêchait Word de rendre les champs placés sous
         // la session lorsque le profil officiel prenait plusieurs lignes.
