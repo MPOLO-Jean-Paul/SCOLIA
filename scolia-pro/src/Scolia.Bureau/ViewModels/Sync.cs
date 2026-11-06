@@ -197,9 +197,7 @@ public sealed class SyncCenter : Observable, IDisposable
     public string StatusDetail => Offline
         ? "Serveur inaccessible : les données déjà téléchargées restent consultables. Seules les opérations autorisées sont enregistrées en attente ; les validations définitives reprennent après reconnexion."
         : HasConflicts ? "Le serveur a refusé des opérations faites hors ligne. Ouvrez la liste pour les revoir."
-        : TailscaleEndpoint.IsTailnetAddress(api.Server)
-            ? $"Réseau privé Tailscale · {PeersText}. La base reste sur l'appareil principal ; les droits SCOLIA restent appliqués."
-        : api.IsLongDistance ? $"Liaison Internet chiffrée · {PeersText}. Les opérations sont confirmées par l’appareil principal."
+        : api.IsLongDistance ? $"Internet sécurisé Render · {PeersText}. Les opérations sont confirmées par l'appareil principal."
         : $"Relié à l'ordinateur principal · {PeersText}.";
 
     public IBrush StatusBrush => ThemeBrush.Get(Offline ? "ToneOrange" : syncing ? "ToneBlue" : HasConflicts ? "ToneRed" : "ToneGreen");
