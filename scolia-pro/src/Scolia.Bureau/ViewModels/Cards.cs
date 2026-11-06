@@ -200,9 +200,9 @@ public sealed class CardsPage : PageViewModel
         // Le PDF/Word est fabrique par le serveur, pas par le client Android :
         // une application récente reliée à un ancien serveur produirait l'ancien modèle.
         var health = await Shell.Api.GetAsync<ServerHealthDto>("api/sante");
-        if (!CardServerCompatibility.HasRevisedLayout(health.Version))
+        if (!CardServerCompatibility.SupportsCurrentGenerator(health.CardGenerator))
         {
-            Shell.Notify(CardServerCompatibility.OutdatedServerMessage(health.Version));
+            Shell.Notify(CardServerCompatibility.OutdatedServerMessage(health.Version, health.CardGenerator));
             return;
         }
         var (bytes, skipped) = await Shell.Api.PostDocumentAsync("api/cartes/export", new { enrollmentIds = ids, month, year, copies, includeLeft = IncludeLeft, format });
