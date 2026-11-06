@@ -126,6 +126,71 @@ begin
     '', SW_HIDE, ewWaitUntilTerminated, CodeRetour) and (CodeRetour = 0);
 end;
 
+var
+  MaintenanceServicePresent: Boolean;
+  MaintenanceServiceRestart: Boolean;
+
+{ Avant toute copie de fichiers, arreter proprement LE service pointant vers
+  cette installation. Ne jamais modifier une base ou un service dans un autre
+  dossier par accident. Le moteur PDF/Word et le serveur sont remplaces ensemble. }
+function PrepareToInstall(var NeedsRestart: Boolean): String;
+var
+  OriginalPath: String;
+  ExpectedPath: String;
+  CodeRetour: Integer;
+begin
+  Result := '';
+  MaintenanceServicePresent := ServiceSCOLIAInstalle();
+  MaintenanceServiceRestart := False;
+  if not MaintenanceServicePresent then Exit;
+
+  if not RegQueryStringValue(HKLM, 'SYSTEM\CurrentControlSet\Services\SCOLIA', 'ImagePath', OriginalPath) then
+  begin
+    Result := 'Impossible de lire le chemin du service SCOLIA. Aucune modification effectuee. '
+      + 'Verifiez le service avant de reessayer.';
+    Exit;
+  end;
+  ExpectedPath := ExpandConstant('{app}\SCOLIA-Serveur.exe');
+  if Pos(Lowercase(ExpectedPath), Lowercase(OriginalPath)) = 0 then
+  begin
+    Result := 'Le service SCOLIA utilise un autre dossier : ' + OriginalPath
+      + #13#10 + 'Cette installation ne remplacerait pas son generateur de cartes. '
+      + 'Choisissez le dossier du service existant ou migrez-le apres une sauvegarde. '
+      + 'Les donnees restent intactes.';
+    Exit;
+  end;
+
+  { Le programme d'installation par utilisateur ne dispose pas automatiquement
+    des droits pour administrer un service Windows. Le controle UAC est explicite. }
+  if not ShellExec('runas', ExpandConstant('{sys}\WindowsPowerShell\v1.0\powershell.exe'),
+    '-NoProfile -NonInteractive -Command "Stop-Service -Name ''SCOLIA'' -Force -ErrorAction Stop; (Get-Service -Name ''SCOLIA'').WaitForStatus(''Stopped'', [TimeSpan]::FromSeconds(45))"',
+    '', SW_HIDE, ewWaitUntilTerminated, CodeRetour) or (CodeRetour <> 0) then
+  begin
+    Result := 'Impossible d''arreter et d''attendre le service SCOLIA. '
+      + 'Le generateur ancien reste en cours d''execution. '
+      + 'Autorisez l''elevation Windows ou effectuez la maintenance depuis Poste et reseau. '
+      + 'L''installation est annulee sans toucher aux donnees.';
+    Exit;
+  end;
+
+  MaintenanceServiceRestart := True;
+end;
+
+procedure CurStepChanged(CurStep: TSetupStep);
+var
+  CodeRetour: Integer;
+begin
+  if (CurStep <> ssPostInstall) or not MaintenanceServiceRestart then Exit;
+  { Redemarrer le service uniquement apres remplacement COMPLET de l'API et
+    de l'assemblage documentaire ; aucune ancienne DLL ne doit rester chargee. }
+  if not ShellExec('runas', ExpandConstant('{sys}\sc.exe'), 'start SCOLIA',
+    '', SW_HIDE, ewWaitUntilTerminated, CodeRetour) or (CodeRetour <> 0) then
+    MsgBox('SCOLIA Pro est installe, mais son service n''a pas pu redemarrer. '
+      + 'Ouvrez les Services Windows, demarrez SCOLIA et verifiez la version '
+      + 'du generateur de cartes avant tout nouvel export.',
+      mbError, MB_OK);
+end;
+
 function InitializeUninstall(): Boolean;
 begin
   Result := True;
