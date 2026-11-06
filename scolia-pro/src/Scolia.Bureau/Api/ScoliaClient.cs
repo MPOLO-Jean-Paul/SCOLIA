@@ -202,6 +202,14 @@ public sealed class ScoliaClient : IDisposable
         var sourceUser = sourceStore?.User ?? string.Empty;
         var canCache = Cacheable(path) && sourceUser.Length > 0;
 
+        // Un accusé provisoire appartient uniquement à cet appareil. Il n'a
+        // jamais été émis par l'API et ne doit pas générer un GET/404 réseau.
+        if (path.StartsWith("api/paiements/", StringComparison.Ordinal) &&
+            sourceStore is not null &&
+            Guid.TryParse(path["api/paiements/".Length..], out var localId) &&
+            Infrastructure.OfflineFinance.PendingReceipt(sourceStore, localId) is { } pendingReceipt)
+            return JsonSerializer.Deserialize<T>(JsonSerializer.Serialize(pendingReceipt, Json.Options), Json.Options)!;
+
         // CIRCUIT HORS LIGNE : une fois la coupure connue, aucun écran n'attend de
         // nouveau le DNS, un VPN ou un serveur absent. La boucle de synchronisation
         // contrôle la reprise indépendamment, toutes les 5 secondes.
