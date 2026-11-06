@@ -53,7 +53,7 @@ public sealed class SyncCenter : Observable, IDisposable
 {
     private static readonly TimeSpan HeartbeatInterval = TimeSpan.FromSeconds(15);
     private static readonly TimeSpan ProbeInterval = TimeSpan.FromSeconds(5);
-    private static readonly TimeSpan OnlineHealthInterval = TimeSpan.FromSeconds(10);
+    private static readonly TimeSpan OnlineHealthInterval = TimeSpan.FromSeconds(3);
 
     private readonly ShellViewModel shell;
     private readonly ScoliaClient api;
