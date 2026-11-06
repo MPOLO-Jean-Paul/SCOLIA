@@ -172,7 +172,13 @@ public sealed class StudentsPage : PageViewModel
             var promotionCode = Promotion?.Value is { Length: > 0 } selectedPromotion
                 ? Promotions.FirstOrDefault(x => x.Value == selectedPromotion)?.Label.Split('·')[0].Trim()
                 : null;
-            local = OfflineStudentSearch.Search(store, Search.Trim(), promotionCode, Status?.Value, page, PageSize);
+            // La reconstruction d'un index (cache froid) et les recherches
+            // sur plusieurs milliers de dossiers ne doivent jamais figer l'UI.
+            var localTerm = Search.Trim();
+            var localStatus = Status?.Value;
+            var localPage = page;
+            local = await Task.Run(() => OfflineStudentSearch.Search(
+                store, localTerm, promotionCode, localStatus, localPage, PageSize));
         }
         var result = local?.Page
             ?? await Shell.Api.GetAsync<PagedResult<StudentListItem>>("api/apprenants" + query);
@@ -215,7 +221,7 @@ public sealed class StudentsPage : PageViewModel
     private void ScheduleSearch()
     {
         debounce?.Stop();
-        debounce = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(300) };
+        debounce = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(Shell.Api.IsOnline ? 300 : 75) };
         debounce.Tick += async (_, _) =>
         {
             debounce?.Stop();
