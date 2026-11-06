@@ -5,7 +5,7 @@ namespace Scolia.Infrastructure.Documents;
 /// <summary>
 /// Les en-têtes PDF et Word lisent exactement les mêmes valeurs du paramétrage,
 /// sans adresse, logo ni organisme codés en dur dans les générateurs.
-/// Les contacts sont conservés dans le pied pour réserver une place fixe à
+/// La devise est conservée dans le pied pour réserver une place fixe à
 /// l'identité de l'apprenant au milieu de la carte.
 /// </summary>
 internal static class CardHeaderLayout
@@ -22,11 +22,20 @@ internal static class CardHeaderLayout
     public static string? Location(SchoolCardHeader header) =>
         Join(header.CityZone, header.Address);
 
+    /// <summary>Informations du panneau droit de l'en-tête, toujours issues de l'établissement configuré.</summary>
+    public static IReadOnlyList<string> AddressLines(SchoolCardHeader header)
+    {
+        var lines = new List<string>();
+        Add(lines, header.CityZone);
+        Add(lines, header.Address);
+        return lines;
+    }
+
+    /// <summary>Le pied ne doit afficher ni numéro de téléphone ni contacts : devise et année scolaire seulement.</summary>
     public static IReadOnlyList<string> ContactLines(SchoolCardHeader header)
     {
         var lines = new List<string>();
-        Add(lines, Join(header.Phone, header.Email));
-        Add(lines, Join(header.Website, header.Motto));
+        Add(lines, header.Motto);
         return lines;
     }
 
