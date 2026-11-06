@@ -89,6 +89,45 @@ public sealed class HomeAndBatchUsabilityTests
     }
 
     [Fact]
+    public void Les_modes_du_lot_ciblent_le_premier_le_deuxieme_et_tous_les_retards()
+    {
+        BatchMonthDto Month(string name, int day, bool late) =>
+            new(Guid.NewGuid(), name, new DateOnly(2026, 11, day), 5000m, late);
+
+        var oldest = Month("Septembre", 2, true);
+        var second = Month("Octobre", 6, true);
+        var third = Month("Novembre", 10, true);
+        var upcoming = Month("Décembre", 18, false);
+        // L'API peut fournir les échéances dans un ordre différent de leur date.
+        var candidate = new BatchCandidateDto(Guid.NewGuid(), "INF293", "KASONGO KABEYA",
+            "INF3", 20000m, 15000m, [upcoming, third, oldest, second]);
+
+        static Guid[] Ids(BatchCandidateDto item, string mode) =>
+            BatchPaymentPage.MonthsForMode(item, mode).Select(m => m.FeeItemId).ToArray();
+
+        Assert.Equal(new[] { oldest.FeeItemId }, Ids(candidate, "first_late"));
+        Assert.Equal(new[] { second.FeeItemId }, Ids(candidate, "next"));
+        Assert.Equal(new[] { oldest.FeeItemId, second.FeeItemId, third.FeeItemId }, Ids(candidate, "late"));
+        Assert.Equal(new[] { oldest.FeeItemId, second.FeeItemId, third.FeeItemId, upcoming.FeeItemId },
+            Ids(candidate, "all"));
+        Assert.Empty(Ids(candidate with { Months = [oldest, upcoming] }, "next"));
+        Assert.Empty(Ids(candidate with { Months = [upcoming] }, "first_late"));
+    }
+
+    [Fact]
+    public void Les_choix_de_mois_expliquent_clairement_leur_portee()
+    {
+        using var api = new ScoliaClient(new Uri("http://localhost:5080/"));
+        var page = new BatchPaymentPage(new ShellViewModel(api, new Preferences()));
+        Assert.Equal(new[] { "first_late", "next", "late", "all" },
+            page.Modes.Select(m => m.Value));
+        Assert.Contains("Premier mois en retard", page.Modes[0].Label);
+        Assert.Contains("2e retard", page.Modes[1].Label);
+        Assert.Contains("Tous les mois en retard", page.Modes[2].Label);
+        Assert.Contains("premier mois en retard", page.MonthModeHint);
+    }
+
+    [Fact]
     public void Apercu_et_paiement_du_meme_lot_partagent_une_reference_inchangee()
     {
         using var api = new ScoliaClient(new Uri("http://localhost:5080/"));
