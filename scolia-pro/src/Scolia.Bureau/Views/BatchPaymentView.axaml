@@ -63,6 +63,6 @@
       </DataGrid.Columns>
     </DataGrid>
     <TextBlock Grid.Row="3" Text="Les apprenants cochés restent dans le lot quand vous recherchez d'autres noms." Classes="muted" TextWrapping="Wrap" Margin="0,8,0,0" />
-    <c:EmptyState Grid.Row="2" Icon="FormatListChecks" Title="Aucun apprenant à encaisser" Hint="Aucune échéance correspondante. Vérifiez les retards ou choisissez « Tous les mois ouverts » dans « Échéance à encaisser »." IsVisible="{Binding Items.Count, Converter={StaticResource IsEmpty}}" />
+    <c:EmptyState Grid.Row="2" Icon="FormatListChecks" Title="Aucun apprenant à encaisser" Hint="{Binding NoMonthsHint}" IsVisible="{Binding Items.Count, Converter={StaticResource IsEmpty}}" />
   </Grid>
 </UserControl>
