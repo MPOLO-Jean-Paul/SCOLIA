@@ -59,6 +59,7 @@ public sealed class SyncCenter : Observable, IDisposable
     private readonly ScoliaClient api;
     private readonly HashSet<string> held = new(StringComparer.Ordinal);
     private readonly SemaphoreSlim offlineWarmupGate = new(1, 1);
+    private DateTime lastLanDiscoveryUtc = DateTime.MinValue;
     private CancellationTokenSource? running;
     private string? userName;
     private string? password;
@@ -256,6 +257,14 @@ public sealed class SyncCenter : Observable, IDisposable
                 bool StillAllowed() => !ct.IsCancellationRequested && api.IsOnline &&
                     shell.IsLoggedIn && ReferenceEquals(api.Offline, store) &&
                     string.Equals(store.User, user, StringComparison.Ordinal);
+
+                if (StillAllowed() && shell.Can(Perm.PilotageRead))
+                {
+                    // Le Promoteur n'a pas droit aux listes nominatives : seulement
+                    // son tableau de bord consolidé, y compris hors ligne.
+                    try { await api.GetAsync<PromoterDashboardDto>("api/pilotage/synthese", ct); }
+                    catch (Exception ex) when (ex is ApiException or HttpRequestException or TaskCanceledException) { }
+                }
 
                 if (StillAllowed() && shell.Can(Perm.ReportsRead))
                 {
@@ -551,7 +560,24 @@ public sealed class SyncCenter : Observable, IDisposable
         {
             try { await Task.Delay(ProbeInterval, ct); }
             catch (OperationCanceledException) { return; }
-            if (Offline) await SyncAsync(manual: false);
+            if (!Offline) continue;
+            // Sur un nouveau Wi-Fi, l'ancien serveur peut avoir une autre IP.
+            // Ne suivre que le serveur prouvant le secret d'un jumelage antérieur.
+            if (DateTime.UtcNow - lastLanDiscoveryUtc >= TimeSpan.FromSeconds(25))
+            {
+                lastLanDiscoveryUtc = DateTime.UtcNow;
+                try
+                {
+                    if (await shell.TryReconnectPairedLanAsync(ct))
+                    {
+                        await SyncAsync(manual: true);
+                        _ = WarmOfflinePagesAsync(ct);
+                        continue;
+                    }
+                }
+                catch (OperationCanceledException) when (ct.IsCancellationRequested) { return; }
+            }
+            await SyncAsync(manual: false);
         }
     }
 
