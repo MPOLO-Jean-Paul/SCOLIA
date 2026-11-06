@@ -150,6 +150,23 @@ public static class ScoliaEndpoints
             return Results.Ok(await SessionFactory.DescribeAsync(db, account, ct));
         }).RequireRateLimiting("connexion");
 
+        // Protocole v2 : garde la réponse historique de /session/appareil inchangée.
+        // Les nouveaux clients reçoivent aussi la date de validité actualisée.
+        api.MapPost("/session/appareil/renouveler", async Task<IResult> (DeviceLoginRequest request,
+            HttpContext http, DevicePairingRegistry registry, ScoliaDbContext db, CancellationToken ct) =>
+        {
+            if (request.DeviceId != LiveHeaders.DeviceId(http)) return Results.Unauthorized();
+            var granted = registry.AuthorizeAndRefresh(request.GrantId, request.DeviceId, request.Secret);
+            if (granted is null) return Results.Unauthorized();
+            var a = granted.Value;
+            var account = await db.Users.AsNoTracking().FirstOrDefaultAsync(
+                u => u.Id == a.Owner && u.IsActive && u.SecurityStamp == a.Stamp, ct);
+            if (account is null) return Results.Unauthorized();
+            await SessionFactory.SignInDeviceAsync(http, account, request.GrantId, request.DeviceId);
+            return Results.Ok(new DeviceRenewedSession(
+                await SessionFactory.DescribeAsync(db, account, ct), a.ExpiresUtc));
+        }).RequireRateLimiting("connexion");
+
         // Première connexion du Promoteur : mémoriser uniquement l'appareil
         // authentifié et son compte en lecture seule, sans privilèges administratifs.
         api.MapPost("/jumelage/mon-appareil", async Task<IResult> (HttpContext http,
