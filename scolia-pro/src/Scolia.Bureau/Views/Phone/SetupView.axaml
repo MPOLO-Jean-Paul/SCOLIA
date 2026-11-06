@@ -164,7 +164,5 @@
         <Button Grid.Column="1" Classes="primary" Command="{Binding Finish}" IsVisible="{Binding IsStepTwo}" IsEnabled="{Binding !Busy}" Height="46" HorizontalAlignment="Right" Content="Terminer" MinWidth="150" />
       </Grid>
     </Border>
-    <!-- Assistant Tailscale commun (téléchargement et installation depuis SCOLIA). -->
-    <views:TailscaleWizardView Grid.RowSpan="3" />
   </Grid>
 </UserControl>
