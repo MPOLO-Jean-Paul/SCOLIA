@@ -22,6 +22,21 @@ public static class OfflineReplica
     /// <summary>Retourne la dernière vue de travail à partir d'un cliché et de l'outbox.</summary>
     public static string? Project(string path, string? snapshot, OfflineStore store)
     {
+        // Un compte reste utilisable pendant la coupure : déduire de son
+        // cliché les échéances déjà encaissées localement, y compris partiellement.
+        if (path.StartsWith("api/inscriptions/", StringComparison.Ordinal) &&
+            path.EndsWith("/compte", StringComparison.Ordinal) && snapshot is not null)
+        {
+            if (JsonSerializer.Deserialize<AccountDto>(snapshot, Json.Options) is { } account)
+                return JsonSerializer.Serialize(OfflineFinance.ProjectAccount(account, store), Json.Options);
+        }
+
+        // Accusés locaux : ne créent ni numéro de reçu officiel ni code QR valide.
+        if (path.StartsWith("api/paiements/", StringComparison.Ordinal) &&
+            Guid.TryParse(path["api/paiements/".Length..], out var receiptId) &&
+            OfflineFinance.PendingReceipt(store, receiptId) is { } localReceipt)
+            return JsonSerializer.Serialize(localReceipt, Json.Options);
+
         var pending = store.Outbox();
         if (pending.Count == 0) return snapshot;
 
