@@ -29,15 +29,12 @@ public sealed class ConnectionViewModel : Observable
         Search = new AsyncCommand(SearchAsync);
         UseThisComputer = new AsyncCommand(() => shell.UseThisComputerAsync());
         ConnectAddress = new AsyncCommand(ConnectAddressAsync);
-        ConnectTailnet = new AsyncCommand(ConnectTailnetAsync);
-        PrepareTailnet = new AsyncCommand(Installer.BeginAsync);
-        Installer.Refresh();
         JoinInternet = new AsyncCommand(JoinInternetAsync);
         ScanCode = new AsyncCommand(ScanCodeAsync);
         ImportQrImage = new AsyncCommand(ImportQrImageAsync);
     }
 
-    // ---------- Code QR du serveur : la voie la plus simple, Wi-Fi, Tailscale ou Internet ----------
+    // ---------- QR du responsable : Wi-Fi local ou Internet chiffré ----------
     /// <summary>Téléphone : l'appareil photo. Ordinateur : une image du code (photo, capture d'écran).</summary>
     public AsyncCommand ScanCode { get; }
     public AsyncCommand ImportQrImage { get; }
@@ -46,7 +43,7 @@ public sealed class ConnectionViewModel : Observable
     public bool CanPasteCode => !PairingFlow.HasCamera;
     public string ScanLabel => PairingFlow.HasCamera ? "Scanner le code QR" : "Lire une image du code QR";
     public string ScanHint => PairingFlow.HasCamera
-        ? "Sur le serveur : Poste et réseau, puis Relier un appareil. Visez le code : SCOLIA choisit seul le Wi-Fi, Tailscale ou Internet."
+        ? "Sur le serveur : Relier un appareil, puis scannez son QR. SCOLIA choisit le réseau local ou Internet automatiquement."
         : "Sur le serveur : Poste et réseau, puis Relier un appareil. Ouvrez une photo du code, ou collez le code copié.";
 
     private Task ScanCodeAsync() => ReadQrAsync(fromPhoto: false);
@@ -89,63 +86,6 @@ public sealed class ConnectionViewModel : Observable
     /// <summary>Adresse saisie à la main, quand le Wi-Fi bloque la recherche automatique : 192.168.1.10, ou 192.168.1.10:5080.</summary>
     public string Address { get => address; set => Set(ref address, value); }
     public AsyncCommand ConnectAddress { get; }
-    private string tailscaleAddress = string.Empty;
-    /// <summary>IPv4 Tailscale ou nom MagicDNS complet de l'appareil qui porte la base.</summary>
-    public string TailscaleAddress { get => tailscaleAddress; set => Set(ref tailscaleAddress, value); }
-    public AsyncCommand ConnectTailnet { get; }
-    /// <summary>Installation ou ouverture du client VPN, uniquement après un clic de l'utilisateur.</summary>
-    public AsyncCommand PrepareTailnet { get; }
-    public TailscaleInstaller Installer { get; } = TailscaleInstaller.Instance;
-
-    private async Task ConnectTailnetAsync()
-    {
-        if (string.IsNullOrWhiteSpace(TailscaleAddress))
-        {
-            Message = "Commencez par installer ou ouvrir Tailscale, puis saisissez l'adresse privée du téléphone ou PC serveur.";
-            return;
-        }
-        if (!TailscaleEndpoint.TryParse(TailscaleAddress, PosteAdmin.DefaultPort, out var target) || target is null)
-        {
-            Message = "Adresse Tailscale invalide. Utilisez l'adresse 100.64–100.127.x.x ou un nom complet .ts.net, avec le port SCOLIA.";
-            return;
-        }
-
-        Searching = true;
-        Message = "Vérification de la liaison privée Tailscale…";
-        try
-        {
-            // Lors d'un choix volontaire de rejoindre le tailnet, demander sa
-            // reconnexion discrète sans présenter l'envoi comme un succès.
-            if (Platform.IsMobile && Platform.IsTailscaleInstalled?.Invoke() == false)
-            {
-                Message = "Tailscale est absent. Lancez son assistant d'installation avant de rejoindre le serveur.";
-                return;
-            }
-            if (Platform.ConnectTailscaleInBackground is not null)
-                await TailscaleCompanion.ConnectInBackgroundAsync();
-            if (!await TailscaleEndpoint.ResolvesPrivatelyAsync(target))
-            {
-                Message = "L'adresse indiquée ne correspond pas à un appareil privé Tailscale joignable. Vérifiez MagicDNS et l'état du VPN.";
-                return;
-            }
-            using var probe = new Api.ScoliaClient(target);
-            if (!await probe.IsRunningAsync())
-            {
-                Message = "SCOLIA ne répond pas sur le réseau privé. Vérifiez Tailscale sur les deux appareils, leur autorisation et le serveur SCOLIA.";
-                return;
-            }
-            var status = await probe.GetAsync<Api.SetupStatusDto>("api/installation");
-            await shell.JoinAsync(new DiscoveredServer(target.Host,
-                status.SchoolName ?? "Établissement", target.Host, string.Empty, target));
-            Message = "Connecté sur le réseau privé Tailscale. Les autorisations de connexion SCOLIA restent nécessaires.";
-        }
-        catch (Exception ex) when (ex is HttpRequestException or Api.ApiException or TaskCanceledException or IOException)
-        {
-            Message = "Connexion Tailscale impossible. Contrôlez que les deux appareils sont approuvés dans le même tailnet et que le port SCOLIA est accessible.";
-        }
-        finally { Searching = false; }
-    }
-
     /// <summary>Vérifie que SCOLIA répond à l'adresse saisie, puis relie l'appareil à ce serveur.</summary>
     private async Task ConnectAddressAsync()
     {
@@ -184,7 +124,7 @@ public sealed class ConnectionViewModel : Observable
     public AsyncCommand JoinInternet { get; }
     private async Task JoinInternetAsync()
     {
-        // Le code de liaison copié sur le serveur se colle ici aussi : il essaie le Wi-Fi et Tailscale avant Internet.
+        // Le code du responsable fonctionne aussi sur le Wi-Fi ou via Render.
         if (Invitation.Trim().StartsWith(PairingCode.Prefix, StringComparison.OrdinalIgnoreCase))
         {
             var code = Invitation;
