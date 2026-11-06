@@ -568,7 +568,8 @@ public sealed class SyncCenter : Observable, IDisposable
                 lastLanDiscoveryUtc = DateTime.UtcNow;
                 try
                 {
-                    if (await shell.TryReconnectPairedLanAsync(ct))
+                    if (await shell.TryReconnectPairedLanAsync(ct) ||
+                        await shell.TryReconnectRelayAsync(ct))
                     {
                         await SyncAsync(manual: true);
                         _ = WarmOfflinePagesAsync(ct);
