@@ -209,15 +209,9 @@
                 </Grid>
         </Button>
       </Grid>
-      <!-- Hors ligne : le travail continue, et l'utilisateur sait ce qui attend d'être envoyé -->
-      <Button Classes="livestrip offline" Command="{Binding NetworkCommand}" IsVisible="{Binding Sync.Offline}">
-        <!-- Bandeaux d'état : le texte passe à la ligne au lieu d'être coupé sur un petit écran -->
-        <Grid ColumnDefinitions="Auto,Auto,*" ColumnSpacing="8">
-          <mi:MaterialIcon Kind="CloudOffOutline" Width="16" Height="16" VerticalAlignment="Top" Margin="0,1,0,0" />
-          <TextBlock Grid.Column="1" Text="{Binding Sync.StatusText}" FontWeight="SemiBold" VerticalAlignment="Top" />
-          <TextBlock Grid.Column="2" Text="· envoi au retour de l'ordinateur principal" TextWrapping="Wrap" />
-        </Grid>
-      </Button>
+      <!-- Aucun bandeau hors ligne ici : l'état est déjà dans le point d'en-tête
+           et dans la puce discrète de la carte d'accueil. Le dialogue Réseau
+           conserve les détails et les opérations en attente. -->
       <Button Classes="livestrip conflict" Command="{Binding NetworkCommand}" IsVisible="{Binding Sync.HasConflicts}">
         <Grid ColumnDefinitions="Auto,Auto,*" ColumnSpacing="8">
           <mi:MaterialIcon Kind="AlertCircleOutline" Width="16" Height="16" VerticalAlignment="Top" Margin="0,1,0,0" />
