@@ -32,7 +32,13 @@ public sealed class RemoteHost : IDisposable
         {
             using var socket = new ClientWebSocket();
             using var session = CancellationTokenSource.CreateLinkedTokenSource(ct);
-            session.CancelAfter(link.ExpiresUtc - DateTime.UtcNow);
+            // CancelAfter ne peut pas accepter une année entière (limite des
+            // temporisations .NET). Chaque session WSS est renouvelée avant que
+            // le relais lui-même ne coupe sa connexion hôte après une heure.
+            var remaining = link.ExpiresUtc - DateTime.UtcNow;
+            if (remaining <= TimeSpan.Zero) break;
+            session.CancelAfter(remaining < TimeSpan.FromMinutes(55)
+                ? remaining : TimeSpan.FromMinutes(55));
             using var send = new SemaphoreSlim(1, 1);
             var epoch = RandomNumberGenerator.GetBytes(32);
             var seen = new HashSet<Guid>();
