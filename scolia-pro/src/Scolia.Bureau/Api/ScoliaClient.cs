@@ -165,6 +165,20 @@ public sealed class ScoliaClient : IDisposable
     }
 
     private sealed record DeviceProofReply(string Proof);
+    private sealed record SelfDeviceGrant(Guid GrantId, string DeviceSecret, DateTime ExpiresUtc);
+
+    /// <summary>Une session Promoteur authentifiée se souvient de cet appareil
+    /// pour retrouver ensuite le même serveur sans réintroduire un QR.</summary>
+    public async Task EnsurePromoterDeviceGrantAsync(string userName, CancellationToken ct = default)
+    {
+        if (Infrastructure.DevicePairingStore.Read(Server) is { } existing &&
+            string.Equals(existing.UserName, userName, StringComparison.OrdinalIgnoreCase) &&
+            existing.ExpiresUtc > DateTime.UtcNow.AddDays(7))
+            return;
+        var grant = await SendAsync<SelfDeviceGrant>(HttpMethod.Post, "api/jumelage/mon-appareil", new { }, ct);
+        Infrastructure.DevicePairingStore.Save(Server, new Infrastructure.DevicePairingStore.Credential(
+            grant.GrantId, grant.DeviceSecret, grant.ExpiresUtc, userName));
+    }
 
     /// <summary>Confirme le serveur scolaire par défi HMAC avant de suivre une nouvelle IP annoncée en UDP.</summary>
     public async Task<bool> ProvesPairedServerAsync(
