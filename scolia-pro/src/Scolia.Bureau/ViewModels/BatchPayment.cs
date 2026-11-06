@@ -134,8 +134,9 @@ public sealed class BatchPaymentPage : PageViewModel
     public IReadOnlyList<ChoiceItem> Promotions { get; private set; } = [];
     public IReadOnlyList<ChoiceItem> Modes { get; } =
     [
-        new("late", "Mois en retard"),
-        new("next", "Prochain mois"),
+        new("first_late", "Premier mois en retard"),
+        new("next", "Mois suivant (2e retard)"),
+        new("late", "Tous les mois en retard"),
         new("all", "Tous les mois ouverts"),
     ];
     public IReadOnlyList<ChoiceItem> Methods { get; } = Labels.Methods;
@@ -162,7 +163,7 @@ public sealed class BatchPaymentPage : PageViewModel
 
     public ChoiceItem? Promotion { get => promotion; set { if (Set(ref promotion, value) && ready) { queryVersion++; timer?.Stop(); _ = Shell.Run(RefreshAsync); } } }
 
-    /// <summary>Le mode choisit les mois de chaque apprenant : en retard, prochain mois ou tous les mois ouverts.</summary>
+    /// <summary>Le mode choisit un premier retard, un deuxième retard, tous les retards ou tous les mois ouverts.</summary>
     public ChoiceItem? Mode { get => mode; set { if (Set(ref mode, value) && ready) ApplyMode(); } }
     public ChoiceItem? Method { get => method; set => Set(ref method, value); }
     public DateTime? Day { get => day; set => Set(ref day, value); }
@@ -248,14 +249,31 @@ public sealed class BatchPaymentPage : PageViewModel
     /// <summary>Rien à régler dans ce mode : la page le dit au lieu de montrer une liste vide.</summary>
     public bool IsEmpty => Items.Count == 0;
 
-    private bool LateOnly => Mode?.Value == "late";
+    private bool LateOnly => Mode?.Value is "first_late" or "next" or "late";
 
-    private IReadOnlyList<BatchMonthDto> PlanFor(BatchCandidateDto candidate) => Mode?.Value switch
+    /// <summary>
+    /// Un retard correspond à une mensualité due et non soldée. Les trois
+    /// modes de retard utilisent exactement la même chronologie de date,
+    /// sans compter les mois non encore exigibles. Si un second retard
+    /// n'existe pas, la sélection est vide (ne jamais encaisser le premier deux fois).
+    /// </summary>
+    public static IReadOnlyList<BatchMonthDto> MonthsForMode(BatchCandidateDto candidate, string? mode)
     {
-        "late" => candidate.Months.Where(m => m.IsOverdue).ToList(),
-        "next" => candidate.Months.Take(1).ToList(),
-        _ => candidate.Months.ToList(),
-    };
+        var due = candidate.Months.Where(m => m.Remaining > 0)
+            .OrderBy(m => m.DueDate).ThenBy(m => m.Label, StringComparer.OrdinalIgnoreCase).ToList();
+        var late = due.Where(m => m.IsOverdue).ToList();
+        return mode switch
+        {
+            "first_late" => late.Take(1).ToList(),
+            "next" => late.Skip(1).Take(1).ToList(),
+            "late" => late,
+            "all" => due,
+            _ => late.Take(1).ToList(),
+        };
+    }
+
+    private IReadOnlyList<BatchMonthDto> PlanFor(BatchCandidateDto candidate) =>
+        MonthsForMode(candidate, Mode?.Value);
 
     private void ApplyMode()
     {
