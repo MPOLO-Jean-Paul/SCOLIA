@@ -14,6 +14,8 @@ namespace Scolia.Infrastructure.Documents;
 /// </summary>
 internal static class StudentCardPdf
 {
+    // Marqueur du code de mise en page réellement chargé par le serveur.
+    internal static readonly string LayoutId = "SCOLIA-CARTES-ID1-2026-11-V3";
     private const string Ink = "#1B2430";
     private const string Muted = "#5B6878";
     private const string Frame = "#AEB8C5";
