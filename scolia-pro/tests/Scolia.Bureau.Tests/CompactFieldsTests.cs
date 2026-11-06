@@ -8,8 +8,11 @@ public sealed class CompactFieldsTests
 {
     private static string Source(string relative)
     {
-        var root = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../../../"));
-        return File.ReadAllText(Path.Combine(root, relative));
+        var dir = new DirectoryInfo(AppContext.BaseDirectory);
+        while (dir is not null && !File.Exists(Path.Combine(dir.FullName, "Scolia.sln")))
+            dir = dir.Parent;
+        var root = dir?.FullName ?? throw new DirectoryNotFoundException("Scolia.sln");
+        return File.ReadAllText(Path.Combine(root, relative.Replace('/', Path.DirectorySeparatorChar)));
     }
 
     [Fact]
