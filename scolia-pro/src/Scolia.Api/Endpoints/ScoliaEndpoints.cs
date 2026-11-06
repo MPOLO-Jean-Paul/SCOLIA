@@ -124,6 +124,16 @@ public static class ScoliaEndpoints
                 a.GrantId, a.Secret, a.ExpiresUtc));
         }).RequireRateLimiting("connexion");
 
+        // Découverte UDP seule = non fiable ; ce défi permet de reconnaître
+        // le serveur autorisé si son adresse change, sans exposer le secret client.
+        api.MapPost("/jumelage/preuve-serveur", (DeviceProofRequest request, HttpContext http,
+            DevicePairingRegistry registry) =>
+        {
+            if (request.DeviceId != LiveHeaders.DeviceId(http)) return Results.Unauthorized();
+            var proof = registry.ProveIdentity(request.GrantId, request.DeviceId, request.Nonce);
+            return proof is null ? Results.Unauthorized() : Results.Ok(new DeviceProofReply(proof));
+        }).RequireRateLimiting("connexion");
+
         api.MapPost("/session/appareil", async Task<IResult> (DeviceLoginRequest request, HttpContext http,
             DevicePairingRegistry registry, ScoliaDbContext db, CancellationToken ct) =>
         {
