@@ -113,11 +113,12 @@ public static class OfflineReplica
     /// Inscriptions encore locales : matricule provisoire clairement distinct d'un
     /// matricule officiel, jamais de reçu ni d'inscription serveur fabriqués.
     /// </summary>
-    public static IReadOnlyList<StudentListItem> PendingRegistrationRows(OfflineStore store)
+    public static IReadOnlyList<StudentListItem> PendingRegistrationRows(OfflineStore store,
+        IReadOnlyList<OutboxItem>? pending = null)
     {
         var promotions = Promotions(store);
         var rows = new List<StudentListItem>();
-        foreach (var item in store.Outbox())
+        foreach (var item in pending ?? store.Outbox())
         {
             if (item.Method != "POST" || item.Path != "api/apprenants" ||
                 !Guid.TryParse(item.Id, out var localId)) continue;
