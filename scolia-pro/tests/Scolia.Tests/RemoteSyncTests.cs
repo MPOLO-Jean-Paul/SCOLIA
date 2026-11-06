@@ -40,7 +40,12 @@ public sealed class RemoteSyncTests : IAsyncLifetime
     private async Task WaitForHost()
     {
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(12));
-        while (!host.Connected) await Task.Delay(30, timeout.Token);
+        try { while (!host.Connected) await Task.Delay(30, timeout.Token); }
+        catch (OperationCanceledException) when (timeout.IsCancellationRequested)
+        {
+            throw new TimeoutException("Le relais local n'a pas confirmé l'hôte. Diagnostic sans secret : " +
+                (host.LastConnectionFailure ?? "aucune erreur WebSocket capturée"));
+        }
     }
 
     private ScoliaClient Phone(RemoteLink? invitation = null)
