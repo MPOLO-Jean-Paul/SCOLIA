@@ -473,8 +473,9 @@ public sealed class ShellViewModel : Observable
             if (TailscaleEndpoint.IsTailnetAddress(remembered)
                 && !await TailscaleEndpoint.ResolvesPrivatelyAsync(remembered))
             {
+                if (await TryReconnectRelayAsync()) return;
                 if (OfferOfflineEntry(saved.School ?? string.Empty)) return;
-                ShowChooser([], "Le réseau privé Tailscale ne résout pas le serveur de votre établissement. Vérifiez l'état du VPN et MagicDNS.");
+                ShowChooser([], "Tailscale ne répond pas et le relais Internet n'a pas permis une reconnexion. Vérifiez le serveur principal.");
                 return;
             }
             api.Retarget(remembered);
@@ -487,6 +488,7 @@ public sealed class ShellViewModel : Observable
             // épargner une recherche inutile et préserver l'adresse privée mémorisée.
             if (TailscaleEndpoint.IsTailnetAddress(api.Server))
             {
+                if (await TryReconnectRelayAsync()) return;
                 if (OfferOfflineEntry(saved.School ?? string.Empty)) return;
                 ShowChooser([], "Le serveur privé Tailscale de votre établissement ne répond pas. Vérifiez le VPN sur les deux appareils, l'approbation Tailscale et le service SCOLIA sur le téléphone principal. Vous pouvez saisir à nouveau son adresse Tailscale.");
                 return;
@@ -494,6 +496,7 @@ public sealed class ShellViewModel : Observable
             Status = $"Recherche du serveur de {saved.School}…";
             var servers = await LanDiscovery.FindAsync();
             if (servers.Count > 0 && await TryReconnectPairedLanAsync()) return;
+            if (await TryReconnectRelayAsync()) return;
             // Une annonce UDP peut usurper un nom/identifiant d'établissement.
             // Jamais de bascule silencieuse sans preuve du jumelage historique.
             if (OfferOfflineEntry(saved.School ?? string.Empty)) return;
@@ -657,6 +660,68 @@ public sealed class ShellViewModel : Observable
         }
     }
 
+    /// <summary>
+    /// Réseau local indisponible : utilise seulement le relais du QR officiel
+    /// déjà approuvé, jamais une simple annonce réseau ni une adresse publique
+    /// trouvée automatiquement. Préserve le cache et la file SQLite de ce poste.
+    /// </summary>
+    public async Task<bool> TryReconnectRelayAsync(CancellationToken ct = default)
+    {
+        var saved = ConnectionStore.Load();
+        var remote = RemoteConnection.Load();
+        if (saved is not { IsRemote: true } || remote is not { Host: false, Enabled: true } ||
+            remote.Link.ExpiresUtc <= DateTime.UtcNow || api.IsLongDistance ||
+            DevicePairingStore.Read(remote.Link.VirtualServer) is null ||
+            (saved.School is { Length: > 0 } && !string.Equals(
+                saved.School.Trim(), remote.School.Trim(), StringComparison.OrdinalIgnoreCase)))
+            return false;
+        try
+        {
+            // Tester d'abord la clé du dispositif sur l'hôte réel via WSS.
+            using var proof = new Api.ScoliaClient(remote.Link.VirtualServer);
+            proof.UseRemote(remote.Link);
+            if (!await proof.IsRunningAsync(ct) || await proof.RestoreDeviceSessionAsync(ct) is null)
+                return false;
+
+            // Ne jamais déplacer la sauvegarde, les brouillons et l'outbox vers
+            // l'identifiant virtuel .invalid du relais.
+            if (!ConnectionStore.TrySave(saved with { CacheUrl = saved.CacheUrl ?? saved.Url }))
+                return false;
+            var previousAddress = api.Server;
+            var previousOffline = api.Offline;
+            try
+            {
+                api.UseRemote(remote.Link);
+                api.Offline = previousOffline;
+                var restored = await api.RestoreDeviceSessionAsync(ct);
+                if (restored is null || (IsLoggedIn && session is { } current &&
+                    !string.Equals(current.UserName, restored.UserName, StringComparison.OrdinalIgnoreCase)))
+                {
+                    api.Retarget(previousAddress, sameVerifiedSchool: true);
+                    api.Offline = previousOffline;
+                    return false;
+                }
+                Raise(nameof(ServerLine));
+                if (!IsLoggedIn) await ShowEntryAsync();
+                return true;
+            }
+            catch
+            {
+                api.Retarget(previousAddress, sameVerifiedSchool: true);
+                api.Offline = previousOffline;
+                throw;
+            }
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
+        catch (Exception ex) when (ex is HttpRequestException or IOException or
+            ApiException or InvalidOperationException or UnauthorizedAccessException or
+            TaskCanceledException or System.Security.Cryptography.CryptographicException)
+        {
+            System.Diagnostics.Trace.WriteLine($"SCOLIA : reconnexion Render indisponible ({ex.GetType().Name}).");
+            return false;
+        }
+    }
+
     private sealed record DevicePairResult(SessionDto Session, Guid GrantId, string DeviceSecret, DateTime ExpiresUtc);
 
     /// <summary>Un QR approuvé ouvre directement la session du compte invité, sans exposer son mot de passe.</summary>
@@ -682,12 +747,14 @@ public sealed class ShellViewModel : Observable
         if (IsServerComputer || DevicePairingStore.Read(api.Server) is not { } saved) return false;
         try
         {
-            var session = await api.SendAsync<SessionDto>(HttpMethod.Post, "api/session/appareil", new
+            var restored = await api.RestoreDeviceSessionAsync();
+            if (restored is null)
             {
-                grantId = saved.GrantId, deviceId = DeviceIdentity.Id, secret = saved.DeviceSecret,
-            });
-            Login.RememberAccount(session.UserName);
-            await OpenSessionAsync(session);
+                Login.Notice = "L'autorisation de cet appareil est expirée ou révoquée. Demandez un nouveau QR au responsable.";
+                return false;
+            }
+            Login.RememberAccount(restored.UserName);
+            await OpenSessionAsync(restored);
             return true;
         }
         catch (ApiException ex) when (ex.Status is 401 or 403)
