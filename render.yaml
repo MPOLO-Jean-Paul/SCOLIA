@@ -1,0 +1,20 @@
+# SCOLIA Pro - relais WSS chiffre de bout en bout (sans base scolaire centralisee)
+# Blueprint Render : uniquement Scolia.Relay, pas Scolia.Api ni le frontend.
+# Branch de code actif : le tronc main ne contient pas actuellement les sources.
+services:
+  - type: web
+    name: scolia-pro-relay
+    runtime: docker
+    plan: free # Essai uniquement : sommeil apres inactivite ; production => starter ou superieur
+    region: frankfurt
+    repo: https://github.com/MPOLO-Jean-Paul/SCOLIA
+    branch: feature/scolia-local-first-mutations-20261106
+    dockerContext: ./scolia-pro
+    dockerfilePath: ./scolia-pro/deploy/relay/Dockerfile
+    healthCheckPath: /health
+    autoDeployTrigger: off # Eviter des redemarrages WSS non maitrises
+    envVars:
+      - key: ASPNETCORE_URLS
+        value: http://0.0.0.0:8080
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
