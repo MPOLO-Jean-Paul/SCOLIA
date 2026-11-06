@@ -12,7 +12,10 @@ public sealed class RemoteHost : IDisposable
     private readonly Task running;
     private int connected;
     private int disposed;
+    private string? lastConnectionFailure;
     public bool Connected => Volatile.Read(ref connected) == 1;
+    /// <summary>Diagnostic local, sans jeton ni invitation et sans journalisation distante.</summary>
+    public string? LastConnectionFailure => Volatile.Read(ref lastConnectionFailure);
 
     public RemoteHost(RemoteLink link, Uri server)
     {
@@ -47,6 +50,7 @@ public sealed class RemoteHost : IDisposable
                 var acknowledged = await RelayWire.ReceiveAsync(socket, connect.Token);
                 if (!acknowledged.AsSpan().SequenceEqual(epoch)) throw new IOException("Le relais n'a pas confirmé l'hébergement.");
                 Interlocked.Exchange(ref connected, 1);
+                Volatile.Write(ref lastConnectionFailure, null);
                 delay = 2;
                 using var http = new HttpClient(new SocketsHttpHandler { UseCookies = false, AllowAutoRedirect = false, ConnectTimeout = TimeSpan.FromSeconds(4) })
                 { BaseAddress = server, Timeout = Timeout.InfiniteTimeSpan };
@@ -84,7 +88,12 @@ public sealed class RemoteHost : IDisposable
                         TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
                 }
             }
-            catch (Exception ex) when (ex is WebSocketException or IOException or OperationCanceledException or JsonException or HttpRequestException) { }
+            catch (Exception ex) when (ex is WebSocketException or IOException or OperationCanceledException or JsonException or HttpRequestException)
+            {
+                // Ne jamais journaliser les URL complètes (salles), invitations ou secrets.
+                Volatile.Write(ref lastConnectionFailure, ex.GetType().Name + " (" +
+                    (ex is WebSocketException ws ? ws.WebSocketErrorCode.ToString() : "connexion") + ")");
+            }
             finally
             {
                 Interlocked.Exchange(ref connected, 0);
