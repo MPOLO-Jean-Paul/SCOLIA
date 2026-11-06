@@ -20,7 +20,7 @@
                   ToolTip.Tip="Appareils connectés, opérations en attente et conflits" />
         </Grid>
       </Border>
-      <!-- Contrôles existants : découverte, QR, serveur, HTTPS, Tailscale et sécurité. -->
+      <!-- Réseau local, invitations QR et liaison Internet chiffrée. -->
       <views:PosteView DataContext="{Binding Connection}" />
     </StackPanel>
   </ScrollViewer>
