@@ -71,6 +71,26 @@ public sealed class DevicePairingRegistry
         }
     }
 
+    /// <summary>Un promoteur déjà authentifié peut mémoriser SON propre appareil.
+    /// Aucun droit supplémentaire n'est accordé : le jeton reprend exactement son compte.</summary>
+    public (Guid GrantId, string Secret, DateTime ExpiresUtc)? EnrollOwnDevice(
+        Guid owner, string stamp, string? deviceId, string? name)
+    {
+        if (string.IsNullOrWhiteSpace(deviceId) || deviceId.Length > 64) return null;
+        lock (gate)
+        {
+            var id = Guid.NewGuid();
+            var secret = Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
+            var expires = DateTime.UtcNow.AddDays(30);
+            grants.RemoveAll(x => x.DeviceId == deviceId && x.Owner == owner);
+            grants.Add(new DeviceGrant(id, owner, stamp, deviceId,
+                string.IsNullOrWhiteSpace(name) ? "Appareil promoteur" : name.Trim()[..Math.Min(name.Trim().Length, 80)],
+                Hash(secret), expires));
+            Save();
+            return (id, secret, expires);
+        }
+    }
+
     public (Guid Owner, string Stamp)? Authorize(Guid grantId, string? deviceId, string? secret)
     {
         if (string.IsNullOrWhiteSpace(deviceId) || string.IsNullOrWhiteSpace(secret) || secret.Length > 128) return null;
