@@ -75,24 +75,20 @@ public static class DesktopAppUpdates
 
             var setup = await DownloadVerifiedAsync(owner, update);
             if (setup is null) return;
-            // Le service Windows maintient les autres postes connectés : jamais interrompre
-            // le serveur actif en plein travail de secrétariat ou pendant un encaissement.
-            if (PosteAdmin.ServiceInstalled())
-            {
-                await MessageAsync(owner, "Serveur SCOLIA en service",
-                    "Le service Windows SCOLIA est installé sur cet ordinateur. "
-                    + "Avant de remplacer ses exécutables, sauvegardez les données, informez les autres postes "
-                    + "et retirez temporairement le service depuis « Poste et réseau ».\n\n"
-                    + "L'installateur vérifié a été conservé dans votre dossier de mises à jour. "
-                    + "Relancez SCOLIA après la préparation de la maintenance.");
-                return;
-            }
-
+            // Le service Windows n'exige plus sa désinstallation manuelle :
+            // l'assistant contrôle son chemin, l'arrête, remplace le moteur de cartes
+            // puis le redémarre (consentement UAC explicite).
+            var serviceNotice = PosteAdmin.ServiceInstalled()
+                ? "\n\nService SCOLIA détecté : l'assistant demandera les droits Windows pour "
+                  + "l'arrêter et le redémarrer après remplacement du moteur PDF/Word. "
+                  + "Si le service utilise un autre dossier, l'installation s'arrêtera sans modifier la base."
+                : string.Empty;
             if (!await AskAsync(owner, "Installation prête",
-                "Le fichier d'installation a été téléchargé et son empreinte SHA-256 vérifiée.\n\n"
-                + "En cliquant sur « Installer », SCOLIA fermera sa fenêtre puis ouvrira "
-                + "l'assistant Windows. Ne mettez pas à jour pendant des écritures scolaires "
-                + "ou lorsqu'un autre poste dépend du serveur local.",
+                "L'intégrité du programme a été vérifiée (SHA-256). "
+                + "Sauvegardez la base scolaire et informez les autres utilisateurs avant la maintenance.\n\n"
+                + "SCOLIA fermera sa fenêtre et ouvrira l'assistant Windows. "
+                + "Le service et le générateur de cartes seront actualisés ensemble."
+                + serviceNotice,
                 "Installer")) return;
             using var started = Process.Start(new ProcessStartInfo(setup) { UseShellExecute = true })
                 ?? throw new Win32Exception("Windows n'a pas ouvert l'assistant d'installation.");

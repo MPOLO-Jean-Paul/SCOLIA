@@ -24,4 +24,13 @@ public sealed class CardServerCompatibilityTests
         Assert.Contains("serveur", message, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("téléphone", message, StringComparison.OrdinalIgnoreCase);
     }
+    [Theory]
+    [InlineData("SCOLIA-CARTES-ID1-2026-11-V3", true)]
+    [InlineData("SCOLIA-CARTES-ID1-2026-11-V2", false)]
+    [InlineData("SCOLIA-CARTES-ID1-2026-11-V1", false)]
+    [InlineData(null, false)]
+    public void Le_moteur_du_serveur_doivent_correspondre_a_la_version_des_cartes(
+        string? engineId, bool expected) =>
+        Assert.Equal(expected, CardServerCompatibility.SupportsCurrentGenerator(engineId));
+
 }

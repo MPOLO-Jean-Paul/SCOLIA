@@ -101,4 +101,21 @@ public sealed class InstallerAndHomePolishTests
         Assert.Contains(elements, e => e.Name.LocalName == "Button" &&
             e.Attributes().Any(a => a.Name.LocalName == "Command" && a.Value.Contains("ShowAllTools")));
     }
+    [Fact]
+    public void L_installateur_met_a_jour_et_redemarre_le_vrai_serveur_sans_supprimer_la_base()
+    {
+        var install = File.ReadAllText(Source("scripts/windows/SCOLIA-Pro.iss"));
+        var updater = File.ReadAllText(Source("src/Scolia.Bureau/Infrastructure/DesktopAppUpdates.cs"));
+        Assert.Contains("function PrepareToInstall(var NeedsRestart: Boolean)", install, StringComparison.Ordinal);
+        Assert.Contains("CurrentControlSet\\Services\\SCOLIA", install, StringComparison.Ordinal);
+        Assert.Contains("Pos(Lowercase(ExpectedPath), Lowercase(OriginalPath)) = 0", install, StringComparison.Ordinal);
+        Assert.Contains("Stop-Service -Name ''SCOLIA''", install, StringComparison.Ordinal);
+        Assert.Contains("WaitForStatus(''Stopped''", install, StringComparison.Ordinal);
+        Assert.Contains("procedure CurStepChanged(CurStep: TSetupStep)", install, StringComparison.Ordinal);
+        Assert.Contains("'start SCOLIA'", install, StringComparison.Ordinal);
+        Assert.Contains("uninsneveruninstall", install, StringComparison.Ordinal);
+        Assert.Contains("l'assistant demandera les droits Windows", updater, StringComparison.Ordinal);
+        Assert.DoesNotContain("retirez temporairement le service", updater, StringComparison.Ordinal);
+    }
+
 }

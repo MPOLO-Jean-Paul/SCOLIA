@@ -1,22 +1,30 @@
+using Scolia.Domain.Students;
+
 namespace Scolia.Bureau.Infrastructure;
 
 /// <summary>
-/// Les cartes sont rendues dans Scolia.Api, pas dans l'interface mobile.
-/// Ne pas promettre le nouveau modèle si l'APK est récent mais le serveur l'est moins.
+/// Les cartes sont construites sur le serveur scolaire. Seul l'identifiant
+/// du moteur en service permet d'assurer que PDF et Word ont le bon modèle.
+/// Une version applicative seule ne garantit plus le bon générateur.
 /// </summary>
 public static class CardServerCompatibility
 {
-    private static readonly Version RevisedLayout = new(1, 2, 31);
+    public static bool SupportsCurrentGenerator(string? reportedGenerator) =>
+        string.Equals(reportedGenerator, CardGeneratorManifest.Id, StringComparison.Ordinal);
 
+    /// <summary>Compatibilité historique pour les anciens contrôles de version.</summary>
     public static bool HasRevisedLayout(string? serverVersion) =>
-        Version.TryParse(serverVersion, out var installed) && installed >= RevisedLayout;
+        Version.TryParse(serverVersion, out var installed) && installed >= new Version(1, 2, 31);
 
-    public static string OutdatedServerMessage(string? serverVersion)
+    public static string OutdatedServerMessage(string? serverVersion, string? reportedGenerator = null)
     {
         var actual = string.IsNullOrWhiteSpace(serverVersion) ? "inconnue" : serverVersion.Trim();
-        return $"Le serveur SCOLIA (version {actual}) utilise un ancien générateur de cartes. " +
-            "Mettez à jour l'appareil qui héberge les données de l'établissement vers la version 1.2.31 ou ultérieure, " +
-            "redémarrez son service SCOLIA, puis exportez de nouvelles cartes PDF ou Word. " +
-            "Mettre à jour uniquement ce téléphone ne suffit pas.";
+        var generator = string.IsNullOrWhiteSpace(reportedGenerator) ? "ancien ou non déclaré" : reportedGenerator.Trim();
+        return $"Serveur SCOLIA version {actual} : générateur de cartes {generator}, " +
+            $"attendu : {CardGeneratorManifest.Id}. La version de l'interface ne met pas à jour automatiquement " +
+            "un service SCOLIA qui s'exécute sur un autre appareil. " +
+            "Mettez à jour l'ordinateur ou le téléphone qui héberge les données, " +
+            "redémarrez son service SCOLIA puis créez un nouveau PDF ou document Word. " +
+            "Aucune carte ne sera produite avec l'ancien modèle.";
     }
 }

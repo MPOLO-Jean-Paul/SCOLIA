@@ -60,6 +60,26 @@ public sealed class CardsPage : PageViewModel
     // Conserve le lot sélectionné lorsque l'on filtre ou parcourt plusieurs promotions.
     private readonly HashSet<Guid> selectedCardIds = [];
     public int SelectedCount => selectedCardIds.Count;
+    private bool generatorChecked;
+    private string generatorStatus = "Vérification du moteur de cartes de l'établissement…";
+    public string GeneratorStatus { get => generatorStatus; private set => Set(ref generatorStatus, value); }
+
+    private async Task<ServerHealthDto?> CheckGeneratorAsync()
+    {
+        try
+        {
+            var health = await Shell.Api.GetAsync<ServerHealthDto>("api/sante");
+            GeneratorStatus = CardServerCompatibility.SupportsCurrentGenerator(health.CardGenerator)
+                ? $"Moteur PDF et Word vérifié · {health.CardGenerator} · serveur {health.Version}"
+                : $"Générateur ancien sur le serveur {health.Version ?? "inconnu"} : mise à jour du poste serveur nécessaire.";
+            return health;
+        }
+        catch (Exception ex) when (ex is ApiException or HttpRequestException or TaskCanceledException)
+        {
+            GeneratorStatus = "Générateur indisponible : vérifiez la connexion au serveur avant l'export.";
+            return null;
+        }
+    }
 
     public CardsPage(ShellViewModel shell) : base(shell)
     {
@@ -133,6 +153,11 @@ public sealed class CardsPage : PageViewModel
             Raise(nameof(Promotion));
             ready = true;
         }
+        if (!generatorChecked)
+        {
+            generatorChecked = true;
+            await CheckGeneratorAsync();
+        }
         var query = ScoliaClient.Query(
             ("promotionId", Promotion?.Value is { Length: > 0 } v ? Guid.Parse(v) : (Guid?)null),
             ("recherche", string.IsNullOrWhiteSpace(Search) ? null : Search.Trim()),
@@ -199,10 +224,15 @@ public sealed class CardsPage : PageViewModel
         var format = ExportFormat?.Value ?? "pdf";
         // Le PDF/Word est fabrique par le serveur, pas par le client Android :
         // une application récente reliée à un ancien serveur produirait l'ancien modèle.
-        var health = await Shell.Api.GetAsync<ServerHealthDto>("api/sante");
-        if (!CardServerCompatibility.HasRevisedLayout(health.Version))
+        var health = await CheckGeneratorAsync();
+        if (health is null)
         {
-            Shell.Notify(CardServerCompatibility.OutdatedServerMessage(health.Version));
+            Shell.Notify("Impossible de joindre le moteur de cartes du serveur. Aucune carte n'a été générée.");
+            return;
+        }
+        if (!CardServerCompatibility.SupportsCurrentGenerator(health.CardGenerator))
+        {
+            Shell.Notify(CardServerCompatibility.OutdatedServerMessage(health.Version, health.CardGenerator));
             return;
         }
         var (bytes, skipped) = await Shell.Api.PostDocumentAsync("api/cartes/export", new { enrollmentIds = ids, month, year, copies, includeLeft = IncludeLeft, format });

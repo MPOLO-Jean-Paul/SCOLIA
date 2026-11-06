@@ -13,6 +13,8 @@ namespace Scolia.Infrastructure.Documents;
 /// </summary>
 public static class CardWordWriter
 {
+    // A incrémenter ensemble avec le générateur PDF à chaque évolution du modèle.
+    internal static readonly string LayoutId = "SCOLIA-CARTES-ID1-2026-11-V3";
     private const int CardTwip = 4853;       // 85,60 mm
     private const int GapTwip = 340;         // 6 mm
     private const int RowGapTwip = 397;      // 7 mm

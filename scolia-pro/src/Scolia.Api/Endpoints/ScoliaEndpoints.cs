@@ -10,9 +10,11 @@ using Scolia.Application.Dtos;
 using Scolia.Application.Services;
 using Scolia.Domain.Common;
 using Scolia.Domain.Security;
+using Scolia.Domain.Students;
 using Scolia.Infrastructure.Backup;
 using Scolia.Infrastructure.Import;
 using Scolia.Infrastructure.Persistence;
+using Scolia.Infrastructure.Documents;
 
 namespace Scolia.Api.Endpoints;
 
@@ -37,7 +39,7 @@ public static class ScoliaEndpoints
     public static void MapScoliaEndpoints(this IEndpointRouteBuilder app)
     {
         var api = app.MapGroup("/api");
-        api.MapGet("/sante", async (BackupService backups, CancellationToken ct) => Results.Ok(new { statut = "ok", version = typeof(ScoliaEndpoints).Assembly.GetName().Version?.ToString(), heure = DateTime.Now }));
+        api.MapGet("/sante", (CancellationToken ct) => Results.Ok(new { statut = "ok", version = typeof(ScoliaEndpoints).Assembly.GetName().Version?.ToString(), cardGenerator = DocumentService.CardGeneratorId, heure = DateTime.Now }));
 
         // ---------- Installation et session ----------
         api.MapGet("/installation", (SetupService setup, CancellationToken ct) => setup.StatusAsync(ct));

@@ -10,6 +10,10 @@ namespace Scolia.Infrastructure.Documents;
 /// <summary>Documents PDF professionnels (QuestPDF). Charte SCOLIA : bleu marine, bleu action, gris bleuté.</summary>
 public sealed class DocumentService : IDocumentService
 {
+    /// <summary>Version du générateur réellement assemblé (PDF et Word doivent coïncider).</summary>
+    public static string CardGeneratorId =>
+        string.Equals(StudentCardPdf.LayoutId, CardWordWriter.LayoutId, StringComparison.Ordinal)
+            ? StudentCardPdf.LayoutId : "INCOMPATIBLE-PDF-WORD";
     private const string Navy = "#13294B";
     private const string Blue = "#1D4ED8";
     private const string Soft = "#E8EEF7";

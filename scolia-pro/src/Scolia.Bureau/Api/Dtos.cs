@@ -13,7 +13,7 @@ public sealed record YearProposalDto(string Label);
 public sealed record RevisionDto(long Revision);
 
 /// <summary>Version de l'API réellement utilisée pour exporter les documents, distincte de celle du téléphone.</summary>
-public sealed record ServerHealthDto(string Statut, string? Version);
+public sealed record ServerHealthDto(string Statut, string? Version, string? CardGenerator = null);
 
 /// <summary>Ligne du registre disciplinaire, telle que le serveur la renvoie.</summary>
 public sealed record DisciplineRowDto(Guid Id, Guid EnrollmentId, string Matricule, string FullName, string PromotionCode, string Measure, string Reason,
