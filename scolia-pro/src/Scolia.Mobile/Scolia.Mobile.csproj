@@ -13,8 +13,8 @@
     <RootNamespace>Scolia.Mobile</RootNamespace>
     <ApplicationId>com.jpservices.scolia</ApplicationId>
     <ApplicationTitle>SCOLIA Phone</ApplicationTitle>
-    <ApplicationVersion>149</ApplicationVersion>
-    <ApplicationDisplayVersion>1.2.29</ApplicationDisplayVersion>
+    <ApplicationVersion>150</ApplicationVersion>
+    <ApplicationDisplayVersion>1.2.30</ApplicationDisplayVersion>
     <AndroidPackageFormat>apk</AndroidPackageFormat>
     <RuntimeIdentifiers>android-arm64;android-arm</RuntimeIdentifiers>
     <AvaloniaUseCompiledBindingsByDefault>false</AvaloniaUseCompiledBindingsByDefault>
