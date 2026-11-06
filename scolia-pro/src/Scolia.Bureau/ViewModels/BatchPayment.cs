@@ -171,6 +171,7 @@ public sealed class BatchPaymentPage : PageViewModel
         {
             if (!Set(ref mode, value)) return;
             Raise(nameof(MonthModeHint));
+            Raise(nameof(NoMonthsHint));
             if (ready) ApplyMode();
         }
     }
@@ -182,6 +183,14 @@ public sealed class BatchPaymentPage : PageViewModel
         "late" => "Tous les mois en retard non soldés, du plus ancien au plus récent.",
         "all" => "Tous les mois à régler, y compris ceux qui ne sont pas encore en retard.",
         _ => string.Empty,
+    };
+
+    public string NoMonthsHint => Mode?.Value switch
+    {
+        "first_late" => "Aucun premier mois en retard. Choisissez « Tous les mois ouverts » pour une avance.",
+        "next" => "Aucun deuxième mois en retard. Le premier retard doit être traité séparément.",
+        "late" => "Aucun mois en retard à encaisser. Choisissez « Tous les mois ouverts » pour une avance.",
+        _ => "Aucune mensualité ouverte dans les promotions sélectionnées.",
     };
     public ChoiceItem? Method { get => method; set => Set(ref method, value); }
     public DateTime? Day { get => day; set => Set(ref day, value); }
@@ -258,7 +267,8 @@ public sealed class BatchPaymentPage : PageViewModel
         foreach (var row in visible.OrderBy(r => r.Promotion).ThenBy(r => r.Name)) Items.Add(row);
         var due = Items.Where(r => r.FeeItemIds.Count > 0).ToList();
         subtitle = due.Count == 0
-            ? (LateOnly ? "Aucun apprenant n'a de mois en retard" : "Aucun mois à régler")
+            ? (Mode?.Value == "next" ? "Aucun deuxième mois en retard"
+                : LateOnly ? "Aucun mois en retard à régler" : "Aucun mois à régler")
             : $"{Format.Count(due.Count, "apprenant à régler", "apprenants à régler")} · {Money(due.Sum(r => r.Total))}";
         Raise(nameof(Subtitle));
         Raise(nameof(IsEmpty));
