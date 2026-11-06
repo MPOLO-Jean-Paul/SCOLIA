@@ -19,7 +19,7 @@
   <uses-permission android:name="android.permission.RECORD_AUDIO" />
   <!-- Reprise sur les appareils volontairement configurés comme serveur de l’établissement. -->
   <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
-  <!-- Installation de Tailscale téléchargé par SCOLIA : Android demande toujours l'accord de l'utilisateur. -->
+  <!-- Mises à jour APK de SCOLIA : l'installation reste confirmée par Android. -->
   <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
   <!-- Donnees de mineurs et finances scolaires : pas de copie automatique vers un compte cloud ou un autre appareil.
        La restauration doit passer par les sauvegardes SCOLIA verifiees et autorisees par l'etablissement. -->
@@ -36,8 +36,6 @@
   </application>
   <!-- Ouvrir WhatsApp, les SMS, le téléphone, l'e-mail et les documents avec les applications installées. -->
   <queries>
-    <!-- Android 11+ : autoriser uniquement la détection du VPN Tailscale officiel. -->
-    <package android:name="com.tailscale.ipn" />
     <intent><action android:name="android.intent.action.VIEW" /><data android:scheme="https" /></intent>
     <intent><action android:name="android.intent.action.VIEW" /><data android:scheme="sms" /></intent>
     <intent><action android:name="android.intent.action.VIEW" /><data android:scheme="tel" /></intent>
