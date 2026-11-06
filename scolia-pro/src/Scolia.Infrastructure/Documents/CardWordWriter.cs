@@ -17,7 +17,8 @@ public static class CardWordWriter
     private const int GapTwip = 340;         // 6 mm
     private const int RowGapTwip = 397;      // 7 mm
     private const int CardHeightTwip = 3060; // 53,98 mm
-    private const int SealTwip = 680;        // emplacement du logo
+    private const int SealTwip = 680;
+    private const int HeaderRightTwip = 1320; // panneau d'adresse a droite        // emplacement du logo
     private const int QrTwip = 1120;         // QR dans l'ancienne zone du cachet
     private const int InnerTwip = 114;       // 2 mm de marge interne
     private const int InnerWidthTwip = CardTwip - 2 * InnerTwip;
@@ -95,29 +96,34 @@ public static class CardWordWriter
         var names = StudentCardRules.FullName(card.LastName, card.MiddleName, card.FirstName);
         var schoolName = d.Header.Institute.Trim().ToUpperInvariant();
         var administration = CardHeaderLayout.AdministrativeLines(d.Header);
-        var location = CardHeaderLayout.Location(d.Header);
+        var sideInfo = CardHeaderLayout.AddressLines(d.Header);
         var contacts = CardHeaderLayout.ContactLines(d.Header);
 
-        // Les renseignements administratifs et les coordonnées de l'établissement
-        // sont injectés depuis Paramètres, sans noms ou adresses codés en dur.
-        content.Append(TableStart(new[] { SealTwip, InnerWidthTwip - SealTwip }, InnerTwip));
+        // En-tête : logo à gauche, mentions institutionnelles au centre,
+        // panneau d'adresse à droite marqué par une séparation verticale.
+        var centralTwip = InnerWidthTwip - SealTwip - HeaderRightTwip;
+        content.Append(TableStart(new[] { SealTwip, centralTwip, HeaderRightTwip }, InnerTwip));
         content.Append($"<w:tr><w:tc><w:tcPr><w:tcW w:w=\"{SealTwip}\" w:type=\"dxa\"/><w:vAlign w:val=\"center\"/></w:tcPr>")
-            .Append(Picture(logoRid, 10, 10, 1, "Logo établissement")).Append("</w:tc>");
-        content.Append($"<w:tc><w:tcPr><w:tcW w:w=\"{InnerWidthTwip - SealTwip}\" w:type=\"dxa\"/><w:vAlign w:val=\"center\"/></w:tcPr>");
+            .Append(Picture(logoRid, 10, 10, 1, "Logo établissement", "left")).Append("</w:tc>");
+        content.Append($"<w:tc><w:tcPr><w:tcW w:w=\"{centralTwip}\" w:type=\"dxa\"/><w:vAlign w:val=\"center\"/></w:tcPr>");
         foreach (var mention in administration)
-            Mention(content, mention, mention.Length > 110 ? 6 : 7, false);
+            Mention(content, mention, mention.Length > 110 ? 6 : 7, false, "left");
         Mention(content, schoolName, schoolName.Length > 86 ? 8 :
-            schoolName.Length > 54 ? 9 : 10, true);
-        if (location is not null) Mention(content, location, location.Length > 110 ? 6 : 7, false);
+            schoolName.Length > 54 ? 9 : 10, true, "left");
+        content.Append("</w:tc>");
+        content.Append($"<w:tc><w:tcPr><w:tcW w:w=\"{HeaderRightTwip}\" w:type=\"dxa\"/>" +
+            "<w:tcBorders><w:left w:val=\"single\" w:sz=\"5\" w:color=\"AEB8C5\"/></w:tcBorders>" +
+            "<w:vAlign w:val=\"center\"/></w:tcPr>");
+        foreach (var line in sideInfo)
+            Mention(content, line, line.Length > 85 ? 5 : line.Length > 55 ? 6 : 7, false, "left");
         content.Append("</w:tc></w:tr></w:tbl>");
 
-        // Titre plus discret : la session ne doit plus occuper l'espace réservé
-        // aux trois champs d'identité et à leurs éventuels retours à la ligne.
+        // Titre de session agrandi, sans compromettre les trois lignes d'identité.
         content.Append(TableStart(new[] { InnerWidthTwip - QrTwip, QrTwip }, InnerTwip));
         content.Append($"<w:tr><w:tc><w:tcPr><w:tcW w:w=\"{InnerWidthTwip - QrTwip}\" w:type=\"dxa\"/><w:vAlign w:val=\"center\"/></w:tcPr>");
-        content.Append(Paragraph("Session " + StudentCardRules.SessionYear(d.Session), 20, true, true, "center", "737982", 12));
-        content.Append(Paragraph("ACCÈS AUX EXAMENS", 9, true, false, "center", "1B2430", 8));
-        content.Append(Paragraph(d.Session, 8, false, false, "center", "5B6878", 6));
+        content.Append(Paragraph("Session " + StudentCardRules.SessionYear(d.Session), 26, true, true, "center", "616975", 9));
+        content.Append(Paragraph("ACCÈS AUX EXAMENS", 12, true, false, "center", "1B2430", 6));
+        content.Append(Paragraph(d.Session, 9, false, false, "center", "5B6878", 5));
         content.Append("</w:tc>");
         content.Append($"<w:tc><w:tcPr><w:tcW w:w=\"{QrTwip}\" w:type=\"dxa\"/><w:vAlign w:val=\"center\"/></w:tcPr>");
         content.Append(Picture(qrRid, 14.0, 14.0, 2, "QR de contrôle"));
@@ -126,21 +132,21 @@ public static class CardWordWriter
 
         // Zone nominative obligatoirement après la session, jamais dans
         // une cellule sous une autre ligne à hauteur EXACTE qui la masquerait.
-        Field(content, "MATRICULE", card.Matricule, 12);
-        Field(content, "NOMS", names, names.Length > 90 ? 8 : names.Length > 60 ? 10
-            : names.Length > 40 ? 11 : 12);
-        Field(content, "PROMOTION", card.Classe, 12);
+        Field(content, "MATRICULE", card.Matricule, 15);
+        Field(content, "NOMS", names, names.Length > 90 ? 9 : names.Length > 60 ? 11
+            : names.Length > 40 ? 13 : 16);
+        Field(content, "PROMOTION", card.Classe, 15);
 
         // Contacts, site internet et devise sont placés en bas, à côté du
         // second logo de l'école ; ils ne masquent ni identité ni QR.
         content.Append(TableStart(new[] { InnerWidthTwip - SealTwip, SealTwip }, InnerTwip));
         content.Append($"<w:tr><w:tc><w:tcPr><w:tcW w:w=\"{InnerWidthTwip - SealTwip}\" w:type=\"dxa\"/></w:tcPr>");
         foreach (var mention in contacts)
-            content.Append(Paragraph(mention, 6, false, false, "left", "5B6878"));
-        content.Append(Paragraph("Année scolaire " + d.AcademicYear, 7, false, false, "left", "5B6878"));
+            content.Append(Paragraph(mention, 8, false, false, "left", "5B6878"));
+        content.Append(Paragraph("Année scolaire " + d.AcademicYear, 8, false, false, "left", "5B6878"));
         content.Append("</w:tc>");
         content.Append($"<w:tc><w:tcPr><w:tcW w:w=\"{SealTwip}\" w:type=\"dxa\"/></w:tcPr>");
-        content.Append(Picture(logoRid, 5.5, 5.5, 3, "Logo inférieur établissement"));
+        content.Append(Picture(logoRid, 9.0, 9.0, 3, "Logo inférieur établissement", "right"));
         content.Append("</w:tc></w:tr></w:tbl>");
 
         body.Append(content).Append(TinyParagraph);
@@ -184,17 +190,17 @@ public static class CardWordWriter
     private static string Side(string side, bool on) =>
         on ? $"<w:{side} w:val=\"single\" w:sz=\"4\" w:color=\"AEB8C5\"/>" : $"<w:{side} w:val=\"nil\"/>";
 
-    private static void Mention(StringBuilder body, string? value, int halfPoints, bool bold)
+    private static void Mention(StringBuilder body, string? value, int halfPoints, bool bold, string alignment = "center")
     {
         if (string.IsNullOrWhiteSpace(value)) return;
-        body.Append(Paragraph(value.Trim().ToUpperInvariant(), halfPoints, bold, false, "center", "1B2430"));
+        body.Append(Paragraph(value.Trim().ToUpperInvariant(), halfPoints, bold, false, alignment, "1B2430", 0, 14));
     }
 
     /// <summary>Matricule, noms complets et promotion, sans ligne prédéfinie.</summary>
     private static void Field(StringBuilder body, string label, string value, int halfPoints)
     {
         body.Append($"<w:p><w:pPr><w:spacing w:before=\"0\" w:after=\"36\" w:line=\"{Math.Max(halfPoints * 13, 170)}\" w:lineRule=\"atLeast\"/><w:jc w:val=\"left\"/></w:pPr>")
-            .Append(Run(label + " : ", 12, "1B2430"))
+            .Append(Run(label + " : ", 13, "1B2430"))
             .Append(Run(value.Trim().ToUpperInvariant(), halfPoints, "1B2430"))
             .Append("</w:p>");
     }
@@ -214,11 +220,11 @@ public static class CardWordWriter
     }
 
     /// <summary>Image en ligne de taille fixe, en millimètres, centrée dans sa cellule.</summary>
-    private static string Picture(string rid, double widthMm, double heightMm, int id, string name)
+    private static string Picture(string rid, double widthMm, double heightMm, int id, string name, string alignment = "center")
     {
         var cx = (long)(widthMm * Emu);
         var cy = (long)(heightMm * Emu);
-        return "<w:p><w:pPr><w:spacing w:before=\"0\" w:after=\"0\"/><w:jc w:val=\"center\"/></w:pPr><w:r><w:drawing>" +
+        return "<w:p><w:pPr><w:spacing w:before=\"0\" w:after=\"0\"/><w:jc w:val=\"{alignment}\"/></w:pPr><w:r><w:drawing>" +
             $"<wp:inline distT=\"0\" distB=\"0\" distL=\"0\" distR=\"0\"><wp:extent cx=\"{cx}\" cy=\"{cy}\"/>" +
             $"<wp:docPr id=\"{id}\" name=\"{name}\"/><a:graphic><a:graphicData uri=\"http://schemas.openxmlformats.org/drawingml/2006/picture\">" +
             $"<pic:pic><pic:nvPicPr><pic:cNvPr id=\"{id}\" name=\"{name}.png\"/><pic:cNvPicPr/></pic:nvPicPr>" +
