@@ -849,8 +849,13 @@ public sealed class ShellViewModel : Observable
         // Code provisoire donné par le secrétariat : la personne choisit tout de suite son propre code PIN ou mot de passe.
         if (s.MustChangePassword)
         {
+            // Un nouveau compte doit pouvoir définir son mot de passe même
+            // lorsque le menu Compte Windows ne présente plus la sécurité.
+            // L'ouverture provisoire reste obligatoire et ne contourne aucun contrôle.
             OpenBackstage();
-            Backstage.Section = Backstage.Items.First(i => i.Value == "mot-de-passe");
+            Backstage.Section = Backstage.Items.FirstOrDefault(i => i.Value == "mot-de-passe")
+                ?? new BackstageItemVm("mot-de-passe", "Sécurité du compte",
+                    Material.Icons.MaterialIconKind.ShieldLockOutline, "ToneOrange");
             Backstage.AskForOwnCode();
             return;
         }
