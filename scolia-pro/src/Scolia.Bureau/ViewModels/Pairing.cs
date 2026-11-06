@@ -8,7 +8,7 @@ public sealed record PairingRouteVm(Material.Icons.MaterialIconKind Icon, string
 
 /// <summary>
 /// « Relier un appareil » sur le serveur : un grand code QR que l'autre appareil scanne. Il contient les adresses
-/// du Wi-Fi, celle de Tailscale et l'invitation Internet si elle est active ; aucun mot de passe.
+/// du Wi-Fi local et l'invitation Render si elle est active ; aucun mot de passe.
 /// </summary>
 public sealed class PairingViewModel : Observable
 {
@@ -32,8 +32,6 @@ public sealed class PairingViewModel : Observable
         var routes = new List<PairingRouteVm>();
         foreach (var lan in Code.LanAddresses)
             routes.Add(new(Material.Icons.MaterialIconKind.Wifi, "Wi-Fi de l'établissement", $"{lan.Host}:{lan.Port}"));
-        foreach (var tailnet in Code.TailnetAddresses)
-            routes.Add(new(Material.Icons.MaterialIconKind.ShieldLockOutline, "Tailscale, à distance", $"{tailnet.Host}:{tailnet.Port}"));
         if (Code.HasInvitation)
             routes.Add(new(Material.Icons.MaterialIconKind.Web, "Internet", $"Invitation valable jusqu'au {Format.Date(DateOnly.FromDateTime(remote!.Link.ExpiresUtc.ToLocalTime()))}"));
         Routes = routes;
@@ -75,39 +73,18 @@ public sealed class PairingViewModel : Observable
         {
             var invite = await shell.Api.SendAsync<InvitationReply>(HttpMethod.Post, "api/jumelage/inviter", new { });
             Code = Code with { AccessTicket = invite.Token };
-            // Apres un redemarrage, Tailscale Serve conserve le HTTPS public du
-            // tailnet ; le QR retrouve automatiquement cette adresse securisee.
-            // Aucun fichier de certificat ne passe dans le code QR.
-            var secure = shell.IsServerComputer && OperatingSystem.IsWindows()
-                ? await TailscaleHttpsServe.CurrentAddressAsync(PosteAdmin.DefaultPort) : null;
-            if (secure is not null)
-            {
-                var routes = new List<Uri> { secure };
-                routes.AddRange(Code.Addresses.Where(address => address != secure).Take(2));
-                Code = Code with { Addresses = routes };
-                Shared = true;
-                Raise(nameof(Shared));
-                Raise(nameof(NotShared));
-                if (!Routes.Any(route => route.Title == "HTTPS prive Tailscale"))
-                {
-                    Routes = [new PairingRouteVm(Material.Icons.MaterialIconKind.ShieldLockOutline,
-                        "HTTPS prive Tailscale", secure.ToString()), .. Routes];
-                    Raise(nameof(Routes));
-                    Raise(nameof(HasRoutes));
-                }
-            }
             if (Code.Addresses.Count == 0 && !Code.HasInvitation)
             {
                 // Un QR composé uniquement d'un ticket, sans adresse de serveur,
                 // paraît valable visuellement mais ne permet aucun jumelage.
-                ProgressText = "Le partage réseau est désactivé : ouvrez « Poste et réseau », activez le Wi-Fi local ou Tailscale, puis générez un nouveau QR.";
+                ProgressText = "Le partage réseau est désactivé : activez le réseau local ou la connexion Internet Render, puis générez un nouveau QR.";
                 Raise(nameof(ProgressText));
                 Raise(nameof(Ready));
                 return;
             }
             CodeText = Code.Text();
             Image = QrCodes.Render(CodeText);
-            ProgressText = "Invitation valable 5 minutes, une seule utilisation. SCOLIA choisira la liaison qui répond.";
+            ProgressText = "Code valable 5 minutes et utilisable une seule fois. Connexion locale ou Internet automatique.";
             Raise(nameof(Code));
             Raise(nameof(CodeText));
             Raise(nameof(Image));
