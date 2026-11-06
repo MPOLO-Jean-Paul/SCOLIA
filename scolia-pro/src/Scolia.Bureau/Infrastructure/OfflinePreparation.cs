@@ -15,7 +15,7 @@ public sealed record OfflinePreparationResult(int Indexed, int Details, int Acco
 public static class OfflinePreparation
 {
     public const int PageSize = 50;
-    public const int MaximumPages = 20;
+    public const int MaximumPages = 200;
     public const int MaximumStudents = PageSize * MaximumPages;
 
     /// <summary>Chemin identique à l'index utilisé par la recherche locale, sans filtre.</summary>
@@ -59,9 +59,10 @@ public static class OfflinePreparation
         foreach (var path in metadata)
         {
             Guard();
-            await client.GetAsync<System.Text.Json.JsonElement>(path, ct);
+            try { await client.GetAsync<System.Text.Json.JsonElement>(path, ct); }
+            catch (ApiException ex) when (ex.Status is 403 or 404) { }
             completed++;
-            progress?.Invoke(new OfflinePreparationProgress(completed, 4, "Configuration scolaire"));
+            progress?.Invoke(new OfflinePreparationProgress(completed, metadata.Length, "Configuration scolaire"));
         }
 
         var indexed = 0;
@@ -121,6 +122,15 @@ public static class OfflinePreparation
         }
 
         Guard();
+        // Précharger le registre financier indépendant des filtres saisis par
+        // l'utilisateur. Les écritures locales se projettent ensuite dessus.
+        if (includeFinancialAccounts)
+        {
+            var journal = "api/paiements" + ScoliaClient.Query(("page", 1), ("pageSize", 200));
+            try { await client.GetAsync<PagedResult<ReceiptRowDto>>(journal, ct); }
+            catch (ApiException ex) when (ex.Status is 403 or 404) { errors++; }
+            Guard();
+        }
         var complete = expected <= MaximumStudents && indexed >= expected && details == indexed
             && (!includeFinancialAccounts || errors == 0);
         progress?.Invoke(new OfflinePreparationProgress(planned, planned,
