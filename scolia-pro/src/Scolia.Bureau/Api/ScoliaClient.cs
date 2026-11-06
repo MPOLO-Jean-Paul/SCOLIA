@@ -77,6 +77,10 @@ public sealed class ScoliaClient : IDisposable
         cookies = new CookieContainer();
         http = Create(server);
         Server = server;
+        // L'état de la précédente connexion ne doit pas rendre le nouveau
+        // serveur artificiellement « hors ligne ». La sonde le vérifiera
+        // sans bloquer les écrans lors de la prochaine interrogation.
+        SetOnline(true);
         previous.Dispose();
     }
 
@@ -89,6 +93,7 @@ public sealed class ScoliaClient : IDisposable
         cookies = new CookieContainer();
         Server = link.VirtualServer;
         http = Create(Server);
+        SetOnline(true);
         previous.Dispose();
     }
 
