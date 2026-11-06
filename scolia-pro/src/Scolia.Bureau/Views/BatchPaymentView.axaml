@@ -14,9 +14,12 @@
           <TextBlock Text="Promotion" Classes="fieldlabel" />
           <ComboBox Width="200" ItemsSource="{Binding Promotions}" SelectedItem="{Binding Promotion}" />
         </StackPanel>
-        <StackPanel Classes="field">
-          <TextBlock Text="Mois à régler" Classes="fieldlabel" />
-          <ComboBox Width="220" ItemsSource="{Binding Modes}" SelectedItem="{Binding Mode}" />
+        <StackPanel Classes="field" Spacing="3">
+          <TextBlock Text="Échéance à encaisser" Classes="fieldlabel" />
+          <ComboBox Width="252" ItemsSource="{Binding Modes}" SelectedItem="{Binding Mode}"
+                    ToolTip.Tip="Premier retard, deuxième retard, tous les retards ou tous les mois ouverts" />
+          <TextBlock Text="{Binding MonthModeHint}" Classes="muted" FontSize="{DynamicResource FsSmall}"
+                     MaxWidth="252" TextWrapping="Wrap" />
         </StackPanel>
         <StackPanel Classes="field">
           <TextBlock Text="Mode de paiement" Classes="fieldlabel" />
@@ -60,6 +63,6 @@
       </DataGrid.Columns>
     </DataGrid>
     <TextBlock Grid.Row="3" Text="Les apprenants cochés restent dans le lot quand vous recherchez d'autres noms." Classes="muted" TextWrapping="Wrap" Margin="0,8,0,0" />
-    <c:EmptyState Grid.Row="2" Icon="FormatListChecks" Title="Aucun apprenant à encaisser" Hint="Personne n'a de mois à régler pour ce choix. Pour encaisser plus tôt, choisissez « Prochain mois » ou « Tous les mois ouverts » dans « Mois à régler »." IsVisible="{Binding Items.Count, Converter={StaticResource IsEmpty}}" />
+    <c:EmptyState Grid.Row="2" Icon="FormatListChecks" Title="Aucun apprenant à encaisser" Hint="Aucune échéance correspondante. Vérifiez les retards ou choisissez « Tous les mois ouverts » dans « Échéance à encaisser »." IsVisible="{Binding Items.Count, Converter={StaticResource IsEmpty}}" />
   </Grid>
 </UserControl>
