@@ -92,9 +92,12 @@ public sealed class ConnectionViewModel : Observable
         var text = Address.Trim();
         if (text.Length == 0) { Message = "Saisissez l'adresse de l'ordinateur principal, par exemple 192.168.1.10."; return; }
         if (!text.Contains("://", StringComparison.Ordinal)) text = "http://" + text;
-        if (!Uri.TryCreate(text, UriKind.Absolute, out var uri) || uri.Host.Length == 0)
+        if (!Uri.TryCreate(text, UriKind.Absolute, out var uri) || uri.Host.Length == 0
+            || uri.Scheme != Uri.UriSchemeHttp || !PairingCode.IsAllowed(uri.Host)
+            || TailscaleEndpoint.IsTailnetAddress(uri) || uri.AbsolutePath != "/"
+            || uri.UserInfo.Length > 0 || uri.Query.Length > 0 || uri.Fragment.Length > 0)
         {
-            Message = "Adresse invalide. Exemple : 192.168.1.10 ou 192.168.1.10:5080.";
+            Message = "Saisissez uniquement une adresse IP locale de l'établissement, par exemple 192.168.1.10:5080. Pour Internet, utilisez le QR code.";
             return;
         }
         var server = new UriBuilder(uri.Scheme, uri.Host, uri.IsDefaultPort && !text.Contains($":{uri.Port}", StringComparison.Ordinal) ? PosteAdmin.DefaultPort : uri.Port).Uri;
