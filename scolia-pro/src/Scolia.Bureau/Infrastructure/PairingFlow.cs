@@ -68,7 +68,12 @@ public static class PairingFlow
             progress?.Invoke("Connexion HTTPS securisee via Tailscale…");
             var secure = await CheckRoutesAsync(secureAddresses, code, tailnet: true);
             if (secure is null)
-                return "Le serveur HTTPS n'est pas accessible. Activez Tailscale sur les deux appareils et verifiez le certificat ; SCOLIA ne revient pas silencieusement a HTTP.";
+            {
+                // Ne jamais rétrograder HTTPS Tailscale vers HTTP local.
+                // Render WSS reste un chemin chiffré indépendant, sans VPN.
+                var internet = await TryInternetAsync(shell, code, progress);
+                return internet ?? "Le serveur HTTPS privé ne répond pas et la liaison Internet chiffrée est indisponible. Vérifiez la connexion du serveur principal.";
+            }
             await shell.JoinAsync(new DiscoveredServer(secure.Address.Host, secure.School,
                 Machine(code, secure.Address), string.Empty, secure.Address));
             return await ActivateAsync(shell, code, secure.School, "HTTPS prive Tailscale");
@@ -99,27 +104,31 @@ public static class PairingFlow
             return await ActivateAsync(shell, code, privateRoute.School, "Tailscale privé");
         }
 
-        if (code.HasInvitation)
-        {
-            progress?.Invoke("Liaison Internet sécurisée…");
-            try
-            {
-                var link = Scolia.Transport.RemoteLink.Parse(code.Invitation!);
-                using var probe = new Api.ScoliaClient(link.VirtualServer);
-                probe.UseRemote(link);
-                if (await WithinAsync(probe.IsRunningAsync()))
-                {
-                    await shell.JoinInternetAsync(link);
-                    return await ActivateAsync(shell, code, code.School, "Internet sécurisé");
-                }
-            }
-            catch (FormatException ex) { return ex.Message; }
-            catch (Exception ex) when (ex is HttpRequestException or Api.ApiException or TaskCanceledException or IOException) { }
-        }
+        var remoteResult = await TryInternetAsync(shell, code, progress);
+        if (remoteResult is not null) return remoteResult;
 
         return code.TailnetAddresses.Any() || code.HasInvitation
             ? $"{code.School} ne répond pas. Vérifiez que le serveur est allumé, que les deux appareils sont sur le même Wi-Fi, ou que Tailscale est connecté sur les deux."
             : $"{code.School} ne répond pas sur ce Wi-Fi. Vérifiez que les deux appareils sont sur le même réseau et que le serveur est allumé.";
+    }
+
+    private static async Task<string?> TryInternetAsync(
+        ShellViewModel shell, PairingCode code, Action<string>? progress)
+    {
+        if (!code.HasInvitation) return null;
+        progress?.Invoke("Connexion Internet chiffrée via Render…");
+        try
+        {
+            var link = Scolia.Transport.RemoteLink.Parse(code.Invitation!);
+            using var probe = new Api.ScoliaClient(link.VirtualServer);
+            probe.UseRemote(link);
+            if (!await WithinAsync(probe.IsRunningAsync())) return null;
+            await shell.JoinInternetAsync(link);
+            return await ActivateAsync(shell, code, code.School, "Internet sécurisé");
+        }
+        catch (FormatException ex) { return ex.Message; }
+        catch (Exception ex) when (ex is HttpRequestException or Api.ApiException or TaskCanceledException or IOException)
+        { return null; }
     }
 
     private sealed record AvailableRoute(Uri Address, string School);
@@ -157,6 +166,23 @@ public static class PairingFlow
         try
         {
             var message = await shell.AcceptDeviceInvitationAsync(code.AccessTicket);
+            // Seul le QR émis par le serveur contient la route WSS et le ticket
+            // qui vient d'être accepté. Ce même appareil peut désormais retrouver
+            // le serveur sur Render sans nouveau QR lorsqu'il quitte le Wi-Fi.
+            if (code.HasInvitation && !shell.IsServerComputer)
+            {
+                try
+                {
+                    var link = Scolia.Transport.RemoteLink.Parse(code.Invitation!);
+                    if (DevicePairingStore.CopyForTrustedRoute(shell.Api.Server, link.VirtualServer))
+                        RemoteConnection.Save(new RemoteConfiguration(link, false, school));
+                }
+                catch (Exception ex) when (ex is FormatException or IOException or UnauthorizedAccessException or
+                    System.Security.Cryptography.CryptographicException)
+                {
+                    message += " Le secours Internet n'a pas été mémorisé ; vérifiez le stockage sécurisé de cet appareil.";
+                }
+            }
             shell.Notify(message);
             return message;
         }

@@ -147,17 +147,33 @@ public sealed class ScoliaClient : IDisposable
         return linked.Session;
     }
 
-    /// <summary>Renouvelle une session reconnue sur le serveur, avec un secret propre à cet appareil.</summary>
+    public sealed record RenewedDeviceSession(SessionDto Session, DateTime ExpiresUtc);
+
+    /// <summary>Réutilise le jumelage chiffré en le prolongeant sans nouveau QR.
+    /// Compatible avec les anciens serveurs qui ne connaissent pas encore le renouvellement.</summary>
     public async Task<SessionDto?> RestoreDeviceSessionAsync(CancellationToken ct = default)
     {
         var stored = Infrastructure.DevicePairingStore.Read(Server);
         if (stored is null) return null;
+        var credentials = new { grantId = stored.GrantId, deviceId = Infrastructure.DeviceIdentity.Id, secret = stored.DeviceSecret };
         try
         {
-            return await SendAsync<SessionDto>(HttpMethod.Post, "api/session/appareil",
-                new { grantId = stored.GrantId, deviceId = Infrastructure.DeviceIdentity.Id, secret = stored.DeviceSecret }, ct);
+            RenewedDeviceSession renewed;
+            try
+            {
+                renewed = await SendAsync<RenewedDeviceSession>(HttpMethod.Post,
+                    "api/session/appareil/renouveler", credentials, ct);
+            }
+            catch (ApiException ex) when (ex.Status == 404)
+            {
+                // Ancienne version de SCOLIA, sans rotation automatique.
+                return await SendAsync<SessionDto>(HttpMethod.Post, "api/session/appareil", credentials, ct);
+            }
+            Infrastructure.DevicePairingStore.Save(Server,
+                stored with { ExpiresUtc = renewed.ExpiresUtc });
+            return renewed.Session;
         }
-        catch (ApiException ex) when (ex.Status is 401 or 403 or 404)
+        catch (ApiException ex) when (ex.Status is 401 or 403)
         {
             Infrastructure.DevicePairingStore.Forget(Server);
             return null;

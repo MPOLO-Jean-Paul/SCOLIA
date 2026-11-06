@@ -40,7 +40,12 @@ public sealed class RemoteSyncTests : IAsyncLifetime
     private async Task WaitForHost()
     {
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(12));
-        while (!host.Connected) await Task.Delay(30, timeout.Token);
+        try { while (!host.Connected) await Task.Delay(30, timeout.Token); }
+        catch (OperationCanceledException) when (timeout.IsCancellationRequested)
+        {
+            throw new TimeoutException("Le relais local n'a pas confirmé l'hôte. Diagnostic sans secret : " +
+                (host.LastConnectionFailure ?? "aucune erreur WebSocket capturée"));
+        }
     }
 
     private ScoliaClient Phone(RemoteLink? invitation = null)
@@ -70,6 +75,29 @@ public sealed class RemoteSyncTests : IAsyncLifetime
     {
         using var phone = Phone(link with { ClientToken = new string('A', 64), HostToken = null });
         Assert.False(await phone.IsRunningAsync());
+    }
+
+    [Fact]
+    public async Task Authorized_device_resumes_over_WSS_without_a_second_QR()
+    {
+        var invited = await secretary.Post("/api/jumelage/inviter", new { }).Ok();
+        var ticket = invited.GetProperty("token").GetString()!;
+        using var firstPhone = Phone();
+        var paired = await firstPhone.SendAsync<JsonElement>(HttpMethod.Post, "api/jumelage/accepter",
+            new { invitationToken = ticket, deviceId = DeviceIdentity.Id, deviceName = "Telephone test Render" });
+        var id = paired.GetProperty("grantId").GetGuid();
+        var deviceSecret = paired.GetProperty("deviceSecret").GetString()!;
+        using var secondPhone = Phone();
+        var renewed = await secondPhone.SendAsync<JsonElement>(HttpMethod.Post,
+            "api/session/appareil/renouveler",
+            new { grantId = id, deviceId = DeviceIdentity.Id, secret = deviceSecret });
+        Assert.Equal("admin", renewed.GetProperty("session").GetProperty("userName").GetString());
+        Assert.True(renewed.GetProperty("expiresUtc").GetDateTime() > DateTime.UtcNow.AddDays(170));
+        await secretary.Post($"/api/jumelage/appareils/{id}/revoquer", new { }).Ok();
+        var forbidden = await Assert.ThrowsAsync<ApiException>(() => secondPhone.SendAsync<JsonElement>(
+            HttpMethod.Post, "api/session/appareil/renouveler",
+            new { grantId = id, deviceId = DeviceIdentity.Id, secret = deviceSecret }));
+        Assert.Equal(401, forbidden.Status);
     }
 
     [Fact]
