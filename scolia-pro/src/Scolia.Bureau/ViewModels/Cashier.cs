@@ -770,7 +770,9 @@ public sealed class ReceiptsPage : PageViewModel
 
     public ObservableCollection<ReceiptRowVm> Items { get; } = [];
     public IReadOnlyList<ChoiceItem> Methods { get; } = new[] { new ChoiceItem(string.Empty, "Tous les modes") }.Concat(Labels.Methods).ToList();
-    public IReadOnlyList<ChoiceItem> Statuses { get; } = [new(string.Empty, "Tous les statuts"), new("Valide", "Validé"), new("Annule", "Annulé")];
+    public IReadOnlyList<ChoiceItem> Statuses { get; } =
+        [new(string.Empty, "Tous les statuts"), new("Valide", "Validé"),
+         new("En attente", "À synchroniser"), new("Annule", "Annulé")];
     public IReadOnlyList<ChoiceItem> Promotions { get; private set; } = [];
 
     public string Search
@@ -808,13 +810,48 @@ public sealed class ReceiptsPage : PageViewModel
             ready = true;
         }
 
-        var page = await Shell.Api.GetAsync<PagedResult<ReceiptRowDto>>("api/paiements" + Filters(PageSize));
-        CollectionSync.Apply(Items, page.Items.Select(r => new ReceiptRowVm(r.Id, r.Number, Format.Date(r.Date), r.Matricule, r.StudentName, r.PromotionCode, Money(r.Amount),
-                Labels.Method(r.Method), Labels.Status(r.Status), ThemeBrush.Get(r.Status == "Valide" ? "ToneGreen" : "ToneRed"), r.Cashier)));
-
-        var sum = page.Sum is { } s ? $" · {Money(s)}" : string.Empty;
-        // Court, pour tenir dans le bandeau : le nombre, le total, et combien sont affichés quand la liste est longue.
-        subtitle = $"{Format.Count(page.Total, "reçu", "reçus")}{sum}" + (page.Total > PageSize ? $" · {PageSize} affichés" : string.Empty);
+        PagedResult<ReceiptRowDto>? page = null;
+        try { page = await Shell.Api.GetAsync<PagedResult<ReceiptRowDto>>("api/paiements" + Filters(PageSize)); }
+        catch (OfflineException)
+        {
+            // Un filtre jamais consulté n'empêche pas de fouiller les reçus
+            // déjà enregistrés sur cet appareil.
+            var cached = Shell.Api.Offline?.ReadPage(
+                "api/paiements" + ScoliaClient.Query(("page", 1), ("pageSize", 200)));
+            if (cached is not null)
+            {
+                try { page = System.Text.Json.JsonSerializer.Deserialize<PagedResult<ReceiptRowDto>>(
+                    cached.Value.Json, Json.Options); }
+                catch (System.Text.Json.JsonException) { }
+            }
+        }
+        var provisional = Shell.Api.Offline is { } store ? OfflineFinance.PendingRows(store) : [];
+        var rows = (page?.Items ?? []).Concat(provisional)
+            .DistinctBy(r => r.Id)
+            .Where(r => string.IsNullOrWhiteSpace(Search) || string.Join(" ", r.Number,
+                r.Matricule, r.StudentName, r.PromotionCode, r.Reference ?? string.Empty)
+                    .Contains(Search.Trim(), StringComparison.OrdinalIgnoreCase))
+            .Where(r => From is null || r.Date >= ToDay(From))
+            .Where(r => To is null || r.Date <= ToDay(To))
+            .Where(r => string.IsNullOrWhiteSpace(Method?.Value) ||
+                string.Equals(r.Method, Method.Value, StringComparison.OrdinalIgnoreCase))
+            .Where(r => string.IsNullOrWhiteSpace(Status?.Value) ||
+                string.Equals(r.Status, Status.Value, StringComparison.OrdinalIgnoreCase))
+            .Where(r => string.IsNullOrWhiteSpace(Promotion?.Value) ||
+                string.Equals(r.PromotionCode,
+                    Promotions.FirstOrDefault(p => p.Value == Promotion.Value)?.Label.Split('·')[0].Trim(),
+                    StringComparison.OrdinalIgnoreCase))
+            .OrderByDescending(r => r.Date).ThenByDescending(r => r.Number).Take(PageSize).ToList();
+        CollectionSync.Apply(Items, rows.Select(r => new ReceiptRowVm(r.Id, r.Number, Format.Date(r.Date), r.Matricule, r.StudentName, r.PromotionCode, Money(r.Amount),
+                Labels.Method(r.Method), r.Status == "En attente" ? "À synchroniser" : Labels.Status(r.Status),
+                ThemeBrush.Get(r.Status == "Valide" ? "ToneGreen" : r.Status == "En attente" ? "ToneOrange" : "ToneRed"), r.Cashier)));
+        // Séparer les encaissements localement saisis des recettes officiellement
+        // acceptées : aucun double comptage dans les chiffres du serveur.
+        var localTotal = rows.Where(r => r.Status == "En attente").Sum(r => r.Amount);
+        var sum = page?.Sum is { } s ? $" · confirmés {Money(s)}" : string.Empty;
+        subtitle = $"{Format.Count(rows.Count, "versement", "versements")}{sum}"
+            + (localTotal > 0 ? $" · locaux {Money(localTotal)} à synchroniser" : string.Empty)
+            + (!Shell.Api.IsOnline ? " · copie locale" : string.Empty);
         Raise(nameof(Subtitle));
     }
 
@@ -871,9 +908,13 @@ public sealed class ReceiptDetailPage : PageViewModel
 
     public override async Task LoadAsync()
     {
-        receipt = await Shell.Api.GetAsync<ReceiptDto>($"api/paiements/{receiptId}");
-        title = $"Reçu N° {receipt.Number}";
-        subtitle = $"{receipt.StudentName} · {Labels.Status(receipt.Status)}";
+        receipt = Shell.Api.Offline is { } store
+            ? OfflineFinance.PendingReceipt(store, receiptId) : null;
+        receipt ??= await Shell.Api.GetAsync<ReceiptDto>($"api/paiements/{receiptId}");
+        title = receipt.Status == "En attente"
+            ? $"Accusé local {receipt.Number}" : $"Reçu N° {receipt.Number}";
+        subtitle = $"{receipt.StudentName} · " +
+            (receipt.Status == "En attente" ? "Versement local à synchroniser" : Labels.Status(receipt.Status));
         Raise(nameof(Title));
         Raise(nameof(Subtitle));
         Raise(nameof(IsCancelled));
@@ -887,7 +928,8 @@ public sealed class ReceiptDetailPage : PageViewModel
         Details.Add(new InfoLine("Mode", Labels.Method(receipt.Method) + (receipt.Reference is null ? string.Empty : $" · réf. {receipt.Reference}")));
         Details.Add(new InfoLine("Versé par", string.IsNullOrWhiteSpace(receipt.PayerName) ? "—" : $"{receipt.PayerName}{(receipt.PayerPhone is null ? string.Empty : $" · {receipt.PayerPhone}")}"));
         Details.Add(new InfoLine("Visé par", receipt.Cashier));
-        Details.Add(new InfoLine("Code de vérification", receipt.VerificationCode));
+        Details.Add(new InfoLine("Code de vérification",
+            receipt.Status == "En attente" ? "À obtenir après validation du serveur" : receipt.VerificationCode));
         Details.Add(new InfoLine("Observation", receipt.Note ?? "—"));
 
         Allocations.Clear();
@@ -895,10 +937,23 @@ public sealed class ReceiptDetailPage : PageViewModel
             Allocations.Add(new AllocationRowVm(a.Label, Money(a.Amount), Money(a.RemainingAfter)));
     }
 
-    public override Task PrintAsync() => Shell.Download($"api/paiements/{receiptId}/recu.pdf", $"recu-{receipt?.Number ?? receiptId.ToString()}.pdf");
+    public override Task PrintAsync()
+    {
+        if (receipt?.Status == "En attente")
+        {
+            Shell.Notify("Le versement local est enregistré. Le reçu officiel imprimable sera disponible après synchronisation.");
+            return Task.CompletedTask;
+        }
+        return Shell.Download($"api/paiements/{receiptId}/recu.pdf", $"recu-{receipt?.Number ?? receiptId.ToString()}.pdf");
+    }
 
     public async Task CancelAsync()
     {
+        if (receipt?.Status == "En attente")
+        {
+            Shell.Notify("Un encaissement local se retire depuis Réseau et activité > Opérations de cet appareil, avec confirmation.");
+            return;
+        }
         if (receipt is null || receipt.Status == "Annule")
         {
             Shell.Notify("Ce reçu est déjà annulé.");
@@ -918,6 +973,11 @@ public sealed class ReceiptDetailPage : PageViewModel
     public void OpenVerification()
     {
         if (receipt is null) return;
+        if (receipt.Status == "En attente")
+        {
+            Shell.Notify("Le code de vérification n'existe qu'après la confirmation du serveur.");
+            return;
+        }
         Files.Open(new Uri(Shell.Api.Server, $"verifier/{receipt.VerificationCode}").ToString());
     }
 }
