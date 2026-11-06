@@ -82,6 +82,26 @@ public sealed class DevicePairingRegistry
         }
     }
 
+    /// <summary>
+    /// Le serveur prouve qu'il possède le secret du jumelage, SANS recevoir
+    /// le secret ni une session du téléphone. Indispensable avant de suivre
+    /// une nouvelle adresse IP annoncée en UDP (réponse LAN non authentifiée).
+    /// </summary>
+    public string? ProveIdentity(Guid grantId, string? deviceId, string? nonce)
+    {
+        if (string.IsNullOrWhiteSpace(deviceId) ||
+            nonce is null || nonce.Length != 48 || !nonce.All(char.IsAsciiHexDigit))
+            return null;
+        lock (gate)
+        {
+            var grant = grants.FirstOrDefault(x => x.Id == grantId &&
+                x.DeviceId == deviceId && !x.Revoked && x.ExpiresUtc > DateTime.UtcNow);
+            if (grant is null) return null;
+            var key = Convert.FromHexString(grant.SecretHash);
+            return Convert.ToHexString(HMACSHA256.HashData(key, Encoding.ASCII.GetBytes(nonce)));
+        }
+    }
+
     public bool IsActive(Guid grantId, Guid owner, string? deviceId)
     {
         lock (gate) return grants.Any(x => x.Id == grantId && x.Owner == owner
