@@ -18,9 +18,6 @@ public sealed class PosteViewModel : Observable
     private bool lanEnabled;
     private bool searching;
     private string searchLine = string.Empty;
-    private string httpsStatus = "HTTPS automatique disponible avec Tailscale sur l'ordinateur principal.";
-    private string httpsAddress = string.Empty;
-    private bool httpsRefreshing;
     private IReadOnlyList<string> addresses = [];
 
     public PosteViewModel(ShellViewModel shell)
@@ -37,7 +34,7 @@ public sealed class PosteViewModel : Observable
                     "Activer le partage sur le réseau local ?",
                     "SCOLIA utilise actuellement HTTP sur le réseau local : les échanges ne sont pas chiffrés par HTTPS. "
                     + "N'activez ce partage que sur un réseau privé de confiance, jamais sur un Wi-Fi public. "
-                    + "Une connexion passant par un tunnel chiffré doit être configurée séparément.",
+                    + "Pour communiquer à distance, utilisez la liaison Internet chiffrée Render.",
                     "Activer sur ce réseau"))
                     return;
                 await shell.SetNetworkAsync(!lanEnabled);
@@ -45,20 +42,6 @@ public sealed class PosteViewModel : Observable
             finally { Refresh(); }
         }));
         Search = new AsyncCommand(SearchAsync);
-        EnableAutomaticHttps = new AsyncCommand(() => shell.Run(async () =>
-        {
-            if (!CanEnableAutomaticHttps) return;
-            if (!await shell.Confirm("Activer HTTPS automatiquement ?",
-                "SCOLIA demandera a Tailscale un certificat HTTPS reconnu et partagera uniquement sur votre reseau prive. "
-                + "La premiere autorisation HTTPS/MagicDNS dans Tailscale peut necessiter votre accord. "
-                + "Les anciennes adresses HTTP du Wi-Fi ne seront pas modifiees.",
-                "Activer HTTPS prive")) return;
-            HttpsStatus = "Verification des autorisations et du partage Tailscale…";
-            var outcome = await TailscaleHttpsServe.EnableAsync(PosteAdmin.DefaultPort);
-            HttpsAddress = outcome.Ready ? outcome.Address?.ToString() ?? string.Empty : string.Empty;
-            HttpsStatus = outcome.Message;
-            shell.Notify(outcome.Message);
-        }));
         AllowBackground = new RelayCommand(() => Platform.AllowBackground?.Invoke());
         CheckMobileUpdates = new AsyncCommand(async () =>
         {
@@ -99,10 +82,6 @@ public sealed class PosteViewModel : Observable
     }
 
     public bool IsWindows => OperatingSystem.IsWindows();
-    public bool CanEnableAutomaticHttps => IsWindows && IsServerComputer && shell.Can(Perm.SettingsWrite);
-    public string HttpsStatus { get => httpsStatus; private set { Set(ref httpsStatus, value); } }
-    public string HttpsAddress { get => httpsAddress; private set { if (Set(ref httpsAddress, value)) Raise(nameof(HasHttpsAddress)); } }
-    public bool HasHttpsAddress => httpsAddress.Length > 0;
     public bool IsServerComputer => shell.IsServerComputer;
     public bool IsLinked => !shell.IsServerComputer;
     /// <summary>Un poste relié peut devenir le serveur : tout ordinateur, et le téléphone qui en a les moyens.</summary>
@@ -143,8 +122,8 @@ public sealed class PosteViewModel : Observable
         : !HostApiServing
             ? "La notification serveur est présente, mais l'API scolaire n'écoute pas encore. Vérifiez le serveur ; ses données seront conservées."
         : !BackgroundOk
-            ? "L'API scolaire fonctionne, mais Android peut la suspendre en veille. Autorisez l'arrière-plan pour SCOLIA et, à distance, pour Tailscale."
-        : "Le service du téléphone fonctionne, mais seul un essai depuis un ordinateur confirme l'accès distant. Si la connexion PC échoue après réduction de SCOLIA, vérifiez l'adresse IP, le Wi-Fi et Tailscale.";
+            ? "L'API scolaire fonctionne, mais Android peut la suspendre en veille. Autorisez l'activité en arrière-plan de SCOLIA."
+        : "Le serveur fonctionne. Pour confirmer l'accès à distance, essayez depuis un autre appareil connecté à Internet via Render.";
     public string BackgroundHint => Platform.BackgroundHint;
     public bool HasBackgroundHint => ShowBackground && BackgroundHint.Length > 0;
 
@@ -165,7 +144,7 @@ public sealed class PosteViewModel : Observable
         : "SCOLIA démarre quand un utilisateur l'ouvre.";
 
     public string LanLine => lanEnabled
-        ? "Ouvert : découverte automatique, pare-feu et réseau privé réglés par SCOLIA."
+        ? "Ouvert : les appareils du même réseau local peuvent découvrir SCOLIA."
         : "Fermé : SCOLIA ne répond que sur cet ordinateur.";
 
     public string AddressLine => !lanEnabled || addresses.Count == 0 ? string.Empty
@@ -182,7 +161,6 @@ public sealed class PosteViewModel : Observable
 
     public AsyncCommand ToggleService { get; }
     public AsyncCommand ToggleLan { get; }
-    public AsyncCommand EnableAutomaticHttps { get; }
     public AsyncCommand Search { get; }
     public AsyncCommand UseThisComputer { get; }
     public AsyncCommand ChangeServer { get; }
@@ -192,8 +170,8 @@ public sealed class PosteViewModel : Observable
     public bool CanImportQrImage => Platform.IsMobile && Platform.PickQrImageAsync is not null;
     public string ScanLabel => PairingFlow.HasCamera ? "Scanner le code QR d'un serveur" : "Lire une image du code QR d'un serveur";
     public string ShowCodeLine => Platform.IsMobile
-        ? "Un code QR à scanner avec l'autre appareil : il contient les adresses du Wi-Fi, de Tailscale et d'Internet."
-        : "Un code QR à scanner avec un téléphone, ou à copier pour un autre ordinateur. Wi-Fi, Tailscale et Internet sont inclus.";
+        ? "Un code QR à scanner : connexion locale ou Render, sans installation supplémentaire."
+        : "Un code QR à scanner ou copier sur un autre appareil. Le réseau local et Render sont pris en charge.";
 
     private Task ScanCodeAsync() => ReadQrAsync(fromPhoto: false);
 
@@ -225,30 +203,13 @@ public sealed class PosteViewModel : Observable
         // Le téléphone serveur est toujours ouvert au Wi-Fi : c'est sa raison d'être.
         lanEnabled = Platform.IsMobile ? shell.IsServerComputer : PosteAdmin.LanEnabled();
         addresses = lanEnabled ? PosteAdmin.Addresses() : [];
-        if (CanEnableAutomaticHttps && !httpsRefreshing) _ = RefreshHttpsStateAsync();
         foreach (var name in new[] { nameof(ServiceInstalled), nameof(LanEnabled), nameof(ServiceLine), nameof(LanLine), nameof(AddressLine),
-                     nameof(HasAddress), nameof(CanEnableAutomaticHttps), nameof(ConnectionTitle), nameof(ConnectionLine), nameof(IsServerComputer), nameof(IsLinked),
+                     nameof(HasAddress), nameof(ConnectionTitle), nameof(ConnectionLine), nameof(IsServerComputer), nameof(IsLinked),
                      nameof(IsPhoneServer), nameof(IsPhoneClient), nameof(CanBecomeServer), nameof(ShowBackground), nameof(BackgroundOk),
                      nameof(BackgroundBlocked), nameof(HostForegroundActive), nameof(HostApiServing),
                      nameof(BackgroundHealthy), nameof(BackgroundNeedsAttention),
                      nameof(BackgroundTitle), nameof(BackgroundLine), nameof(MobileUpdateStatus), nameof(BackgroundDiagnostic), nameof(HasBackgroundHint), nameof(ShowAwake), nameof(AwakeLine) })
             Raise(name);
-    }
-
-    private async Task RefreshHttpsStateAsync()
-    {
-        if (httpsRefreshing || !CanEnableAutomaticHttps) return;
-        httpsRefreshing = true;
-        try
-        {
-            var address = await TailscaleHttpsServe.CurrentAddressAsync(PosteAdmin.DefaultPort);
-            if (address is not null)
-            {
-                HttpsAddress = address.ToString();
-                HttpsStatus = "HTTPS prive actif. Certificat gere et renouvele par Tailscale.";
-            }
-        }
-        finally { httpsRefreshing = false; }
     }
 
     private async Task SearchAsync()
