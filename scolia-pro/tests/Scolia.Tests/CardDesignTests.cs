@@ -51,6 +51,50 @@ public class CardDesignTests
     }
 
     [Fact]
+    public void En_tete_integral_et_identite_sont_conserves_meme_avec_de_longues_mentions()
+    {
+        var configured = Sample() with
+        {
+            Header = new SchoolCardHeader(
+                "République démocratique du Congo",
+                "Ministère de l'Enseignement public, Hygiène et Prévoyance sociale",
+                "Direction de l'Enseignement des Sciences de santé",
+                "Division provinciale du Haut-Katanga",
+                "Ville de Lubumbashi / Zone de santé de Lubumbashi",
+                "Institut Technique Médical Cœur de Dieu",
+                "N° 1, avenue de l'Exemple, Quartier Kamatete, Commune Annexe",
+                DocumentService.DefaultLogo(),
+                "+243 812 345 678", "secretariat@institut.example",
+                "https://institut.example", "Intégrité, Honnêteté et Excellence")
+        };
+        using var zip = new ZipArchive(new MemoryStream(CardWordWriter.Write(configured)));
+        using var reader = new StreamReader(zip.GetEntry("word/document.xml")!.Open(), Encoding.UTF8);
+        var xml = reader.ReadToEnd();
+        foreach (var mention in new[]
+        {
+            "RÉPUBLIQUE DÉMOCRATIQUE DU CONGO", "MINISTÈRE DE L'ENSEIGNEMENT PUBLIC",
+            "DIRECTION DE L'ENSEIGNEMENT", "DIVISION PROVINCIALE",
+            "VILLE DE LUBUMBASHI", "N° 1, AVENUE DE L'EXEMPLE",
+            "+243 812 345 678", "secretariat@institut.example",
+            "https://institut.example", "Intégrité, Honnêteté et Excellence",
+            "MATRICULE : ", "INF101", "NOMS : ", "MUKENDI KABEYA GRÂCE",
+            "PROMOTION : ", "INF1"
+        })
+            Assert.Contains(System.Security.SecurityElement.Escape(mention), xml, StringComparison.Ordinal);
+
+        // La hauteur EXACTE empêchait Word de rendre les champs placés sous
+        // la session lorsque le profil officiel prenait plusieurs lignes.
+        Assert.Contains("w:trHeight w:val=\"3060\" w:hRule=\"atLeast\"", xml, StringComparison.Ordinal);
+        var name = xml.IndexOf("MUKENDI KABEYA GRÂCE", StringComparison.Ordinal);
+        var session = xml.IndexOf("Session 2026", StringComparison.Ordinal);
+        Assert.True(name > session && session >= 0, "L'identité doit suivre la session sur la même carte.");
+
+        var pdf = new DocumentService().StudentCards(configured);
+        Assert.True(pdf.Length > 1000);
+        Assert.Equal("%PDF", Encoding.ASCII.GetString(pdf, 0, 4));
+    }
+
+    [Fact]
     public void Grille_A4_et_taille_physique_des_inserts_sont_exacts()
     {
         Assert.Equal(85.6f, Scolia.Domain.Students.StudentCardRules.CardWidthMm);
