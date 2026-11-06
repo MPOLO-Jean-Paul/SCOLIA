@@ -46,7 +46,7 @@
                 </Border>
                 <StackPanel Grid.Column="1" Spacing="3">
                   <TextBlock Text="Connexion par Internet" FontWeight="SemiBold" />
-                  <TextBlock Text="Relier des appareils sur des réseaux différents, sans configuration VPN."
+                  <TextBlock Text="Relier des appareils sur des réseaux différents, sans configuration technique supplémentaire."
                              Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
                 </StackPanel>
               </Grid>
