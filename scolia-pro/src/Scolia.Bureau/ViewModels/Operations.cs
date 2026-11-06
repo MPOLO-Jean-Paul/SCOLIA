@@ -627,17 +627,23 @@ public sealed class BackstageViewModel : Observable
     public BackstageViewModel(ShellViewModel shell)
     {
         this.shell = shell;
-        Items =
-        [
-            new BackstageItemVm("infos", "Informations", MaterialIconKind.Information, "ToneBlue"),
-            new BackstageItemVm("mot-de-passe", "Sécurité du compte", MaterialIconKind.ShieldLockOutline, "ToneOrange"),
-            new BackstageItemVm("poste", "Poste et réseau", MaterialIconKind.LanConnect, "ToneGreen"),
-            // Raccourci vers Paramètres > Cet appareil : un seul endroit pour le thème, la police et les sons.
-            new BackstageItemVm("preferences", "Apparence et confort", MaterialIconKind.TuneVariant, "TonePurple"),
-            Preferences.MobileLayout
-                ? new BackstageItemVm("aide", "Aide et gestes", MaterialIconKind.GestureTap, "ToneNeutral")
-                : new BackstageItemVm("aide", "Aide et raccourcis", MaterialIconKind.Keyboard, "ToneNeutral"),
-        ];
+        // Compte Windows : uniquement identité, information et aide.
+        // Réseau, sécurité et apparence ont des emplacements dédiés et faciles
+        // à retrouver dans la navigation principale ou Paramètres.
+        var entries = new List<BackstageItemVm>
+        {
+            new("infos", "Informations", MaterialIconKind.Information, "ToneBlue"),
+        };
+        if (Preferences.MobileLayout)
+        {
+            entries.Add(new("mot-de-passe", "Sécurité du compte", MaterialIconKind.ShieldLockOutline, "ToneOrange"));
+            entries.Add(new("poste", "Poste et réseau", MaterialIconKind.LanConnect, "ToneGreen"));
+            entries.Add(new("preferences", "Apparence et confort", MaterialIconKind.TuneVariant, "TonePurple"));
+        }
+        entries.Add(Preferences.MobileLayout
+            ? new("aide", "Aide et gestes", MaterialIconKind.GestureTap, "ToneNeutral")
+            : new("aide", "Aide et raccourcis", MaterialIconKind.Keyboard, "ToneNeutral"));
+        Items = entries;
         section = Items[0];
         Close = new RelayCommand(shell.CloseBackstage);
         Logout = new AsyncCommand(() => shell.LogoutAsync());
