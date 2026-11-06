@@ -1,4 +1,5 @@
 using Material.Icons;
+using Scolia.Bureau.Infrastructure;
 
 namespace Scolia.Bureau.ViewModels;
 
