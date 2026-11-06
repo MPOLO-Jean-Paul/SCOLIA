@@ -433,7 +433,7 @@ public sealed class SearchViewModel : Observable
             // et toutes les autres fonctions ouvrent réellement leur destination.
             var isSetting = setting.Title is "Configuration" or "Thème et couleurs"
                 or "Texte et polices" or "Fenêtres et affichage" or "Animations et fluidité"
-                or "Sons" or "Sécurité du compte" or "Poste et réseau"
+                or "Sons" or "Sécurité du compte" or "Poste et réseau" or "À propos et mises à jour"
                 or "Établissement" or "Années scolaires" or "Sections"
                 or "Promotions et frais" or "Nouvelle promotion" or "Nouvelle année"
                 or "Utilisateurs";
@@ -510,9 +510,19 @@ public sealed class SearchViewModel : Observable
         if (url is "/compte/poste" or "/compte/mot-de-passe")
         {
             shell.CloseDialog();
-            shell.OpenBackstage();
-            var section = url == "/compte/poste" ? "poste" : "mot-de-passe";
-            shell.Backstage.Section = shell.Backstage.Items.First(i => i.Value == section);
+            if (shell.Phone || Platform.IsMobile)
+            {
+                shell.OpenBackstage();
+                var section = url == "/compte/poste" ? "poste" : "mot-de-passe";
+                shell.Backstage.Section = shell.Backstage.Items.FirstOrDefault(i => i.Value == section)
+                    ?? new BackstageItemVm(section, section == "poste" ? "Poste et réseau" : "Sécurité du compte",
+                        section == "poste" ? MaterialIconKind.LanConnect : MaterialIconKind.ShieldLockOutline,
+                        section == "poste" ? "ToneGreen" : "ToneOrange");
+            }
+            else if (url == "/compte/poste")
+                await shell.Open(() => new NetworkHubPage(shell));
+            else
+                await shell.Open(() => new SettingsPage(shell, "securite"));
             return;
         }
         if (url.StartsWith("/navigation/", StringComparison.Ordinal))
