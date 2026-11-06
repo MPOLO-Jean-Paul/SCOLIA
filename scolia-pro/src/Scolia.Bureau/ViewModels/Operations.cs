@@ -433,7 +433,7 @@ public sealed class SearchViewModel : Observable
             // et toutes les autres fonctions ouvrent réellement leur destination.
             var isSetting = setting.Title is "Configuration" or "Thème et couleurs"
                 or "Texte et polices" or "Fenêtres et affichage" or "Animations et fluidité"
-                or "Sons" or "Sécurité du compte" or "Poste et réseau"
+                or "Sons" or "Sécurité du compte" or "Poste et réseau" or "À propos et mises à jour"
                 or "Établissement" or "Années scolaires" or "Sections"
                 or "Promotions et frais" or "Nouvelle promotion" or "Nouvelle année"
                 or "Utilisateurs";
@@ -510,9 +510,19 @@ public sealed class SearchViewModel : Observable
         if (url is "/compte/poste" or "/compte/mot-de-passe")
         {
             shell.CloseDialog();
-            shell.OpenBackstage();
-            var section = url == "/compte/poste" ? "poste" : "mot-de-passe";
-            shell.Backstage.Section = shell.Backstage.Items.First(i => i.Value == section);
+            if (shell.Phone || Platform.IsMobile)
+            {
+                shell.OpenBackstage();
+                var section = url == "/compte/poste" ? "poste" : "mot-de-passe";
+                shell.Backstage.Section = shell.Backstage.Items.FirstOrDefault(i => i.Value == section)
+                    ?? new BackstageItemVm(section, section == "poste" ? "Poste et réseau" : "Sécurité du compte",
+                        section == "poste" ? MaterialIconKind.LanConnect : MaterialIconKind.ShieldLockOutline,
+                        section == "poste" ? "ToneGreen" : "ToneOrange");
+            }
+            else if (url == "/compte/poste")
+                await shell.Open(() => new NetworkHubPage(shell));
+            else
+                await shell.Open(() => new SettingsPage(shell, "securite"));
             return;
         }
         if (url.StartsWith("/navigation/", StringComparison.Ordinal))
@@ -627,17 +637,23 @@ public sealed class BackstageViewModel : Observable
     public BackstageViewModel(ShellViewModel shell)
     {
         this.shell = shell;
-        Items =
-        [
-            new BackstageItemVm("infos", "Informations", MaterialIconKind.Information, "ToneBlue"),
-            new BackstageItemVm("mot-de-passe", "Sécurité du compte", MaterialIconKind.ShieldLockOutline, "ToneOrange"),
-            new BackstageItemVm("poste", "Poste et réseau", MaterialIconKind.LanConnect, "ToneGreen"),
-            // Raccourci vers Paramètres > Cet appareil : un seul endroit pour le thème, la police et les sons.
-            new BackstageItemVm("preferences", "Apparence et confort", MaterialIconKind.TuneVariant, "TonePurple"),
-            Preferences.MobileLayout
-                ? new BackstageItemVm("aide", "Aide et gestes", MaterialIconKind.GestureTap, "ToneNeutral")
-                : new BackstageItemVm("aide", "Aide et raccourcis", MaterialIconKind.Keyboard, "ToneNeutral"),
-        ];
+        // Compte Windows : uniquement identité, information et aide.
+        // Réseau, sécurité et apparence ont des emplacements dédiés et faciles
+        // à retrouver dans la navigation principale ou Paramètres.
+        var entries = new List<BackstageItemVm>
+        {
+            new("infos", "Informations", MaterialIconKind.Information, "ToneBlue"),
+        };
+        if (Preferences.MobileLayout)
+        {
+            entries.Add(new("mot-de-passe", "Sécurité du compte", MaterialIconKind.ShieldLockOutline, "ToneOrange"));
+            entries.Add(new("poste", "Poste et réseau", MaterialIconKind.LanConnect, "ToneGreen"));
+            entries.Add(new("preferences", "Apparence et confort", MaterialIconKind.TuneVariant, "TonePurple"));
+        }
+        entries.Add(Preferences.MobileLayout
+            ? new("aide", "Aide et gestes", MaterialIconKind.GestureTap, "ToneNeutral")
+            : new("aide", "Aide et raccourcis", MaterialIconKind.Keyboard, "ToneNeutral"));
+        Items = entries;
         section = Items[0];
         Close = new RelayCommand(shell.CloseBackstage);
         Logout = new AsyncCommand(() => shell.LogoutAsync());

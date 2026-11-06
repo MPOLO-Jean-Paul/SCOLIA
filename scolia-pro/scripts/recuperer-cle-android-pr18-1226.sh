@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Exception ponctuelle de récupération pour SCOLIA Pro 1.2.30 via PR interne #18.
+# Exception ponctuelle de récupération pour SCOLIA Pro 1.2.31 via PR interne #18.
 # Cache porte par refs/pull/18/merge; cette version est autorisee une fois; jamais sur un push de branche
 # ni pour une autre version. N'exporte jamais de cle ni de mot de passe en artefact.
 set -euo pipefail
@@ -10,7 +10,7 @@ cache="${1:?Dossier du cache PR18 obligatoire}"
 expected="E5:B5:F7:FA:41:54:11:EE:AC:4B:F7:34:84:90:24:FF:CF:7F:93:50:0C:60:13:83:99:31:B0:20:38:F5:89:80"
 version="$(sed -n 's:.*<Version>\(.*\)</Version>.*:\1:p' Directory.Build.props | head -1)"
 
-if [[ "$version" != "1.2.30" ||
+if [[ "$version" != "1.2.31" ||
       "${GITHUB_EVENT_NAME:-}" != "pull_request" ||
       "${GITHUB_REF:-}" != "refs/pull/18/merge" ||
       "${SCOLIA_RECOVERY_PR18:-}" != "true" ||
@@ -18,7 +18,7 @@ if [[ "$version" != "1.2.30" ||
       "${GITHUB_REPOSITORY:-}" != "MPOLO-Jean-Paul/SCOLIA" ||
       "${GITHUB_HEAD_REF:-}" != "release/direct-apk-scolia-pro-20261103" ||
       "${GITHUB_BASE_REF:-}" != "feature/scolia-recovery-login-lock-20261103" ]]; then
-  echo "::error::Source de distribution non autorisee pour SCOLIA Pro 1.2.30." >&2
+  echo "::error::Source de distribution non autorisee pour SCOLIA Pro 1.2.31." >&2
   exit 1
 fi
 
@@ -55,8 +55,8 @@ rmdir "$cache" 2>/dev/null || true
 {
   printf 'SCOLIA_KEYSTORE=%s\n' "$private/scolia.keystore"
   printf 'SCOLIA_KEYSTORE_PASS=%s\n' "$password"
-  printf 'SCOLIA_SIGNATURE_ORIGINE=cache historique PR18 valide pour SCOLIA 1.2.30\n'
+  printf 'SCOLIA_SIGNATURE_ORIGINE=cache historique PR18 valide pour SCOLIA 1.2.31\n'
   printf 'SCOLIA_SIGNATURE_EMPREINTE=%s\n' "$actual"
 } >> "$GITHUB_ENV"
 unset SCOLIA_PR18_STOREPASS password details actual
-echo "Le certificat Android original a ete verifie : la distribution SCOLIA 1.2.30 peut etre compilee."
+echo "Le certificat Android original a ete verifie : la distribution SCOLIA 1.2.31 peut etre compilee."

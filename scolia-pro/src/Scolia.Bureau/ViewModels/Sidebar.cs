@@ -128,6 +128,10 @@ public static class Sidebar
             Group("Personnel",
                 Item("Personnel et paie", MaterialIconKind.Briefcase, "ToneOrange", Perm.StaffManage, typeof(StaffPage), () => new StaffPage(shell)),
                 Item("Pointage", MaterialIconKind.ClockCheck, "ToneTeal", Perm.StaffManage, typeof(StaffAttendancePage), () => new StaffAttendancePage(shell))),
+            // Connexions : destination autonome facile à découvrir, hors du Compte.
+            Group("Réseau et postes",
+                Item("Réseau de l'établissement", MaterialIconKind.LanConnect, "ToneTeal", null,
+                    typeof(NetworkHubPage), () => new NetworkHubPage(shell))),
             Group("Paramètres",
                 Item("Configuration", MaterialIconKind.Cog, "TonePurple", null, typeof(SettingsPage), () => new SettingsPage(shell)),
                 Item("Utilisateurs", MaterialIconKind.AccountCog, "ToneBlue", Perm.UsersManage, typeof(UsersPage), () => new UsersPage(shell))),
@@ -156,6 +160,7 @@ public static class Sidebar
         Add("GESTION SCOLAIRE", "Secrétariat", "Scolarité");
         Add("GESTION FINANCIÈRE", "Finances");
         Add("ORGANISATION", "Personnel");
+        Add("CONNEXIONS", "Réseau et postes");
         Add("RÉGLAGES ET DONNÉES", "Paramètres", "Données");
         var other = groups.Where(g => !used.Contains(g)).ToArray();
         if (other.Length != 0) blocks.Add(new NavBlockVm("AUTRES OUTILS", other));

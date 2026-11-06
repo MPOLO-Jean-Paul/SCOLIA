@@ -353,19 +353,29 @@ public sealed class SettingsPage : PageViewModel
             new BackstageItemVm("animations", "Animations et fluidité", MaterialIconKind.AnimationPlay, "ToneOrange"),
             new BackstageItemVm("sons", "Sons", MaterialIconKind.VolumeHigh, "TonePink"),
         ];
-        // La sécurité du compte (mot de passe, biométrie) appartient à la personne, pas à l'appareil :
-        // elle se règle à un seul endroit, « Mon compte ». Un ancien lien vers « securite » y mène.
-        if (open == "securite")
+        // Sur Windows, la sécurité et les informations du logiciel appartiennent
+        // explicitement aux Paramètres (pas au menu Compte).
+        if (!Preferences.MobileLayout)
+            PosteSections =
+            [
+                .. PosteSections,
+                new BackstageItemVm("securite", "Sécurité du compte", MaterialIconKind.ShieldLockOutline, "ToneOrange"),
+                new BackstageItemVm("apropos", "À propos et mises à jour", MaterialIconKind.InformationOutline, "ToneIndigo"),
+            ];
+        else
         {
-            open = null;
-            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+            PosteSections = [.. PosteSections.Where(s => s.Value != "fenetres")];
+            // Conserver le parcours historique Android (mot de passe et biométrie).
+            if (open == "securite")
             {
-                Shell.OpenBackstage();
-                Shell.Backstage.Section = Shell.Backstage.Items.First(i => i.Value == "mot-de-passe");
-            });
+                open = null;
+                Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+                {
+                    Shell.OpenBackstage();
+                    Shell.Backstage.Section = Shell.Backstage.Items.First(i => i.Value == "mot-de-passe");
+                });
+            }
         }
-        // Sur le mobile, l'application occupe tout l'écran : la taille de fenêtre, le volet et le ruban n'existent pas.
-        if (Preferences.MobileLayout) PosteSections = [.. PosteSections.Where(s => s.Value != "fenetres")];
         var all = SchoolSections.Concat(PosteSections).ToList();
         section = all.FirstOrDefault(s => s.Value == open) ?? all[0];
         // Ouverture ciblée depuis une autre fonctionnalité : afficher directement la rubrique.
@@ -380,9 +390,16 @@ public sealed class SettingsPage : PageViewModel
         BackToMobileSections = new RelayCommand(() => TryBackToMobileSections());
         OpenAccountSecurity = new RelayCommand(() =>
         {
-            Shell.OpenBackstage();
-            Shell.Backstage.Section = Shell.Backstage.Items.First(item => item.Value == "mot-de-passe");
+            if (!Preferences.MobileLayout)
+                Section = PosteSections.First(item => item.Value == "securite");
+            else
+            {
+                Shell.OpenBackstage();
+                Shell.Backstage.Section = Shell.Backstage.Items.First(item => item.Value == "mot-de-passe");
+            }
         });
+        AboutModel = new AboutViewModel(shell);
+        if (section?.Value == "securite" && !Preferences.MobileLayout) ActivateSecurity();
         Swatches = Preferences.AccentSwatches.Select(a => new AccentSwatchVm(a.Key, a.Label, new SolidColorBrush(a.Color),
             new RelayCommand(() => { Prefs.Accent = a.Key; RaiseSwatches(); }), () => Prefs.Accent == a.Key)).ToList();
         ResetPrefs = new RelayCommand(() => { Prefs.Reset(); RaisePrefs(); Shell.Notify("Réglages de ce poste rétablis."); });
@@ -395,6 +412,13 @@ public sealed class SettingsPage : PageViewModel
     public IReadOnlyList<AccentSwatchVm> Swatches { get; }
     public RelayCommand ResetPrefs { get; }
     public RelayCommand OpenAccountSecurity { get; }
+    public BackstageViewModel SecurityModel => Shell.Backstage;
+    public AboutViewModel AboutModel { get; }
+    public bool CanCheckWindowsUpdates => Shell.Backstage.CanCheckWindowsUpdates;
+    public AsyncCommand CheckWindowsUpdates => Shell.Backstage.CheckWindowsUpdates;
+    private void ActivateSecurity() =>
+        Shell.Backstage.Section = new BackstageItemVm("mot-de-passe", "Sécurité du compte",
+            MaterialIconKind.ShieldLockOutline, "ToneOrange");
     public RelayCommand<string> TestSound { get; }
 
     /// <summary>Montre une bannière d'exemple : la personne voit ce qu'elle recevra d'un autre poste.</summary>
@@ -513,8 +537,9 @@ public sealed class SettingsPage : PageViewModel
         {
             if (!Set(ref section, value)) return;
             foreach (var name in new[] { nameof(IsSchool), nameof(IsYears), nameof(IsSections), nameof(IsPromotions), nameof(IsAppearance), nameof(IsText),
-                         nameof(IsWindows), nameof(IsAnimations), nameof(IsSounds), nameof(IsSecurity), nameof(IsPoste), nameof(ShowResetLink), nameof(SchoolSection), nameof(PosteSection), nameof(SectionTitle), nameof(SectionHint) })
+                         nameof(IsWindows), nameof(IsAnimations), nameof(IsSounds), nameof(IsSecurity), nameof(IsAbout), nameof(IsPoste), nameof(ShowResetLink), nameof(SchoolSection), nameof(PosteSection), nameof(SectionTitle), nameof(SectionHint) })
                 Raise(name);
+            if (value?.Value == "securite" && !Preferences.MobileLayout) ActivateSecurity();
             RebuildActions();
             if (value is not null) _ = Shell.Run(RefreshAsync);
         }
@@ -540,6 +565,7 @@ public sealed class SettingsPage : PageViewModel
     public bool IsAnimations => section?.Value == "animations";
     public bool IsSounds => section?.Value == "sons";
     public bool IsSecurity => section?.Value == "securite";
+    public bool IsAbout => section?.Value == "apropos";
     public bool IsPoste => PosteSections.Contains(section!);
     /// <summary>Lien « Rétablir » en bas de page sur le téléphone ; sur l'ordinateur, le bouton de l'en-tête suffit.</summary>
     public bool ShowResetLink => IsPoste && Platform.IsMobile;
@@ -557,7 +583,8 @@ public sealed class SettingsPage : PageViewModel
         "fenetres" => "La fenêtre au lancement et ce qui entoure les pages.",
         "animations" => "Fondus, transitions entre pages et écran d'ouverture.",
         "sons" => "Un son discret à chaque action, et les bannières des autres postes.",
-        "securite" => "Mot de passe du compte et connexion biométrique de cet appareil.",
+        "securite" => "Mot de passe, code d'accès et biométrie du compte.",
+        "apropos" => "Informations du logiciel, éditeur, assistance et recherche des mises à jour officielles.",
         _ => string.Empty,
     };
 

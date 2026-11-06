@@ -80,7 +80,7 @@ internal static class StudentCardPdf
     private static void Card(IContainer container, CardDocument d, CardItem card, byte[] schoolLogo)
     {
         var administration = CardHeaderLayout.AdministrativeLines(d.Header);
-        var location = CardHeaderLayout.Location(d.Header);
+        var sideInfo = CardHeaderLayout.AddressLines(d.Header);
         var contacts = CardHeaderLayout.ContactLines(d.Header);
         var schoolName = d.Header.Institute.Trim().ToUpperInvariant();
         var fullName = StudentCardRules.FullName(card.LastName, card.MiddleName, card.FirstName);
@@ -88,74 +88,82 @@ internal static class StudentCardPdf
         container.Border(0.45f).BorderColor(Frame).Background(Paper)
             .Padding(Mm(1.35f)).Column(column =>
         {
-            // Les champs institutionnels proviennent du paramétrage, sans mention fixe.
-            // La hauteur de l'en-tête est bornée pour ne jamais pousser l'identité
-            // au-delà du bord inférieur de la carte.
-            column.Item().Height(Mm(15.4f)).Row(row =>
+            // Logo de l'école à gauche ; mentions administratives au centre ;
+            // adresse et localisation à droite, séparées par une barre discrète.
+            column.Item().Height(Mm(15.6f)).Row(row =>
             {
                 row.ConstantItem(Mm(10.2f)).AlignMiddle().Image(schoolLogo).FitArea();
-                row.RelativeItem().PaddingLeft(Mm(1.15f)).AlignMiddle().Column(header =>
+                row.RelativeItem().PaddingLeft(Mm(1.15f)).PaddingRight(Mm(0.9f))
+                    .AlignMiddle().Column(header =>
                 {
-                    header.Spacing(0);
+                    header.Spacing(Mm(0.22f));
                     foreach (var mention in administration)
-                        header.Item().Text(mention).FontSize(mention.Length > 110 ? 2.65f :
-                            mention.Length > 75 ? 2.85f : 3.05f).FontColor(Ink).LineHeight(1f);
+                        header.Item().Text(mention).FontSize(mention.Length > 110 ? 2.45f :
+                            mention.Length > 75 ? 2.65f : 2.95f)
+                            .FontColor(Ink).LineHeight(1.12f);
+                    // Seul le nom de l'institution est en gras dans l'en-tête.
                     header.Item().Text(schoolName)
-                        .FontSize(schoolName.Length > 86 ? 3.8f :
-                            schoolName.Length > 54 ? 4.3f : 5.15f)
-                        .SemiBold().FontColor(Ink).LineHeight(1f);
-                    if (location is not null)
-                        header.Item().Text(location).FontSize(location.Length > 115 ? 2.5f :
-                            location.Length > 72 ? 2.75f : 3f).FontColor(Muted).LineHeight(1f);
+                        .FontSize(schoolName.Length > 86 ? 3.75f :
+                            schoolName.Length > 54 ? 4.15f : 5.1f)
+                        .Bold().FontColor(Ink).LineHeight(1.1f);
+                });
+                row.ConstantItem(Mm(23.4f)).BorderLeft(0.55f).BorderColor(Frame)
+                    .PaddingLeft(Mm(1.2f)).AlignMiddle().Column(address =>
+                {
+                    address.Spacing(Mm(0.45f));
+                    foreach (var line in sideInfo)
+                        address.Item().Text(line).FontSize(line.Length > 90 ? 2.5f :
+                            line.Length > 55 ? 2.8f : 3.2f)
+                            .FontColor(Muted).LineHeight(1.13f);
                 });
             });
             column.Item().Height(Mm(0.2f)).Background("#BCC2CA");
 
-            // Session moins envahissante, afin de réserver des lignes aux
-            // matricules, noms et promotions : la carte reste 85,60 x 53,98 mm.
-            column.Item().Height(Mm(14.2f)).Row(row =>
+            // Titres de session visuellement dominants, sans déborder sur l'identité.
+            column.Item().Height(Mm(14.4f)).Row(row =>
             {
-                row.RelativeItem().PaddingTop(Mm(1f)).Column(title =>
+                row.RelativeItem().PaddingTop(Mm(0.7f)).Column(title =>
                 {
                     title.Item().AlignCenter().Text("Session " + StudentCardRules.SessionYear(d.Session))
-                        .FontSize(10.5f).Bold().Underline().FontColor("#737982");
-                    title.Item().PaddingTop(Mm(0.45f)).AlignCenter()
-                        .Text("ACCÈS AUX EXAMENS").FontSize(5f).SemiBold().FontColor(Ink);
+                        .FontSize(12.8f).Bold().Underline().FontColor("#616975");
+                    title.Item().PaddingTop(Mm(0.4f)).AlignCenter()
+                        .Text("ACCÈS AUX EXAMENS").FontSize(6.1f).SemiBold().FontColor(Ink);
                     title.Item().PaddingTop(Mm(0.25f)).AlignCenter()
-                        .Text(d.Session).FontSize(3.9f).FontColor(Muted);
+                        .Text(d.Session).FontSize(4.25f).FontColor(Muted);
                 });
-                row.ConstantItem(Mm(17f)).AlignMiddle().Column(qr =>
+                row.ConstantItem(Mm(16.4f)).AlignMiddle().Column(qr =>
                 {
-                    qr.Item().Height(Mm(12.4f)).AlignCenter()
+                    qr.Item().Height(Mm(12f)).AlignCenter()
                         .Image(DocumentService.QrPng(card.QrText)).FitArea();
                     qr.Item().AlignCenter().Text("Contrôle QR")
-                        .FontSize(3.25f).FontColor(Muted);
+                        .FontSize(3.15f).FontColor(Muted);
                 });
             });
 
-            // Cette zone n'est pas facultative : l'apprenant est toujours visible.
-            column.Item().PaddingTop(Mm(0.45f)).Row(row =>
+            // Identité plus grande et grasse, avec adaptation douce aux noms longs.
+            column.Item().PaddingTop(Mm(0.5f)).Column(identity =>
             {
-                row.RelativeItem().Column(identity =>
-                {
-                    identity.Spacing(Mm(0.55f));
-                    Field(identity, "MATRICULE", card.Matricule, 6.5f);
-                    Field(identity, "NOMS", fullName, fullName.Length > 90 ? 3.9f
-                        : fullName.Length > 60 ? 4.7f : fullName.Length > 40 ? 5.4f : 6.5f);
-                    Field(identity, "PROMOTION", card.Classe, 6.5f);
-                });
-                row.ConstantItem(Mm(7.5f)).AlignRight().AlignBottom()
-                    .Width(Mm(6f)).Height(Mm(6f)).Image(schoolLogo).FitArea();
+                identity.Spacing(Mm(0.48f));
+                Field(identity, "MATRICULE", card.Matricule, 7.35f);
+                Field(identity, "NOMS", fullName, fullName.Length > 90 ? 4.4f
+                    : fullName.Length > 60 ? 5.2f : fullName.Length > 40 ? 6.2f : 7.6f);
+                Field(identity, "PROMOTION", card.Classe, 7.35f);
             });
-            // Contacts généraux, site et devise conservés dans le bas de la carte.
-            column.Item().ExtendVertical().AlignBottom().Column(footer =>
+
+            // Pied épuré : uniquement devise et année à gauche,
+            // deuxième logo strictement en bas à droite, comme celui de l'en-tête.
+            column.Item().ExtendVertical().AlignBottom().Row(row =>
             {
-                footer.Spacing(0);
-                foreach (var mention in contacts)
-                    footer.Item().Text(mention).FontSize(2.9f).FontColor(Muted)
-                        .LineHeight(1f);
-                footer.Item().Text("Année scolaire " + d.AcademicYear)
-                    .FontSize(3.8f).FontColor(Muted);
+                row.RelativeItem().AlignBottom().Column(footer =>
+                {
+                    footer.Spacing(Mm(0.22f));
+                    foreach (var mention in contacts)
+                        footer.Item().Text(mention).FontSize(3.7f).FontColor(Muted).LineHeight(1.15f);
+                    footer.Item().Text("Année scolaire " + d.AcademicYear)
+                        .FontSize(4.15f).FontColor(Muted);
+                });
+                row.ConstantItem(Mm(10.2f)).AlignRight().AlignBottom()
+                    .Width(Mm(9.4f)).Height(Mm(9.4f)).Image(schoolLogo).FitArea();
             });
         });
     }
@@ -164,7 +172,7 @@ internal static class StudentCardPdf
     {
         identity.Item().Text(text =>
         {
-            text.Span(label + " : ").FontSize(6.0f).Bold().FontColor(Ink);
+            text.Span(label + " : ").FontSize(6.45f).Bold().FontColor(Ink);
             text.Span(value.Trim().ToUpperInvariant()).FontSize(size).Bold().FontColor(Ink);
         });
     }
