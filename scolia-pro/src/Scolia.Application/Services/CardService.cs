@@ -75,7 +75,8 @@ public sealed class CardService(IAppDbContext db, IWriteGate gate, IAuditLog aud
             school.CardZone ?? school.City,
             CardHeaderDefaults.Or(school.CardInstitute, school.Name),
             CardHeaderDefaults.Or(school.CardAddress, school.Address ?? school.City ?? string.Empty),
-            school.Logo);
+            school.Logo,
+            school.Phone, school.Email, school.Website, school.Motto);
         var cards = new List<CardItem>();
         foreach (var r in selected)
         {

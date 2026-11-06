@@ -64,7 +64,7 @@ public static class CardWordWriter
             var second = right < d.Cards.Count ? d.Cards[right] : null;
 
             // Chaque ligne de la grille porte deux cartes ID-1 complètes.
-            body.Append($"<w:tr><w:trPr><w:trHeight w:val=\"{CardHeightTwip}\" w:hRule=\"exact\"/></w:trPr>");
+            body.Append($"<w:tr><w:trPr><w:trHeight w:val=\"{CardHeightTwip}\" w:hRule=\"atLeast\"/></w:trPr>");
             ContentCell(body, d, first, sealRid, images);
             body.Append(GapCell());
             ContentCell(body, d, second, sealRid, images);
@@ -94,56 +94,56 @@ public static class CardWordWriter
         var content = new StringBuilder();
         var names = StudentCardRules.FullName(card.LastName, card.MiddleName, card.FirstName);
         var schoolName = d.Header.Institute.Trim().ToUpperInvariant();
-        var authority = Join(d.Header.Ministry, d.Header.Direction, d.Header.Division);
-        var location = Join(d.Header.CityZone, d.Header.Address, d.Header.Country);
+        var administration = CardHeaderLayout.AdministrativeLines(d.Header);
+        var location = CardHeaderLayout.Location(d.Header);
+        var contacts = CardHeaderLayout.ContactLines(d.Header);
 
-        // Haut de la carte : logo et en-tête institutionnel du profil de l'école.
+        // Les renseignements administratifs et les coordonnées de l'établissement
+        // sont injectés depuis Paramètres, sans noms ou adresses codés en dur.
         content.Append(TableStart(new[] { SealTwip, InnerWidthTwip - SealTwip }, InnerTwip));
         content.Append($"<w:tr><w:tc><w:tcPr><w:tcW w:w=\"{SealTwip}\" w:type=\"dxa\"/><w:vAlign w:val=\"center\"/></w:tcPr>")
-            .Append(Picture(logoRid, 10.5, 10.5, 1, "Logo établissement")).Append("</w:tc>");
+            .Append(Picture(logoRid, 10, 10, 1, "Logo établissement")).Append("</w:tc>");
         content.Append($"<w:tc><w:tcPr><w:tcW w:w=\"{InnerWidthTwip - SealTwip}\" w:type=\"dxa\"/><w:vAlign w:val=\"center\"/></w:tcPr>");
-        Mention(content, schoolName, schoolName.Length > 86 ? 8 : schoolName.Length > 54 ? 9 : 11, true);
-        Mention(content, authority, 7, false);
-        Mention(content, location, 6, false);
+        foreach (var mention in administration)
+            Mention(content, mention, mention.Length > 110 ? 6 : 7, false);
+        Mention(content, schoolName, schoolName.Length > 86 ? 8 :
+            schoolName.Length > 54 ? 9 : 10, true);
+        if (location is not null) Mention(content, location, location.Length > 110 ? 6 : 7, false);
         content.Append("</w:tc></w:tr></w:tbl>");
 
-        // Même emplacement QR que l'ancienne carte : à droite du titre.
+        // Titre plus discret : la session ne doit plus occuper l'espace réservé
+        // aux trois champs d'identité et à leurs éventuels retours à la ligne.
         content.Append(TableStart(new[] { InnerWidthTwip - QrTwip, QrTwip }, InnerTwip));
         content.Append($"<w:tr><w:tc><w:tcPr><w:tcW w:w=\"{InnerWidthTwip - QrTwip}\" w:type=\"dxa\"/><w:vAlign w:val=\"center\"/></w:tcPr>");
-        content.Append(Paragraph("Session " + StudentCardRules.SessionYear(d.Session), 28, true, true, "center", "737982", 50));
-        content.Append(Paragraph("ACCÈS AUX EXAMENS", 10, true, false, "center", "1B2430", 20));
-        content.Append(Paragraph(d.Session, 8, false, false, "center", "5B6878", 15));
+        content.Append(Paragraph("Session " + StudentCardRules.SessionYear(d.Session), 20, true, true, "center", "737982", 12));
+        content.Append(Paragraph("ACCÈS AUX EXAMENS", 9, true, false, "center", "1B2430", 8));
+        content.Append(Paragraph(d.Session, 8, false, false, "center", "5B6878", 6));
         content.Append("</w:tc>");
         content.Append($"<w:tc><w:tcPr><w:tcW w:w=\"{QrTwip}\" w:type=\"dxa\"/><w:vAlign w:val=\"center\"/></w:tcPr>");
-        content.Append(Picture(qrRid, 16.5, 16.5, 2, "QR de contrôle"));
+        content.Append(Picture(qrRid, 14.0, 14.0, 2, "QR de contrôle"));
         content.Append(Paragraph("Contrôle QR", 7, false, false, "center", "5B6878"));
         content.Append("</w:tc></w:tr></w:tbl>");
 
-        // Trois rubriques comme le document de référence ; le nom reste complet.
-        content.Append(Paragraph(string.Empty, 4, false, false, "left", null, 25));
-        Field(content, "MATRICULE", card.Matricule, 14);
+        // Zone nominative obligatoirement après la session, jamais dans
+        // une cellule sous une autre ligne à hauteur EXACTE qui la masquerait.
+        Field(content, "MATRICULE", card.Matricule, 12);
         Field(content, "NOMS", names, names.Length > 90 ? 8 : names.Length > 60 ? 10
-            : names.Length > 40 ? 12 : 14);
-        Field(content, "PROMOTION", card.Classe, 14);
+            : names.Length > 40 ? 11 : 12);
+        Field(content, "PROMOTION", card.Classe, 12);
 
-        // Le petit logo inférieur rappelle le sceau sans occulter le QR de vérification.
+        // Contacts, site internet et devise sont placés en bas, à côté du
+        // second logo de l'école ; ils ne masquent ni identité ni QR.
         content.Append(TableStart(new[] { InnerWidthTwip - SealTwip, SealTwip }, InnerTwip));
         content.Append($"<w:tr><w:tc><w:tcPr><w:tcW w:w=\"{InnerWidthTwip - SealTwip}\" w:type=\"dxa\"/></w:tcPr>");
-        content.Append(Paragraph("Année scolaire " + d.AcademicYear, 8, false, false, "left", "5B6878", 20));
+        foreach (var mention in contacts)
+            content.Append(Paragraph(mention, 6, false, false, "left", "5B6878"));
+        content.Append(Paragraph("Année scolaire " + d.AcademicYear, 7, false, false, "left", "5B6878"));
         content.Append("</w:tc>");
         content.Append($"<w:tc><w:tcPr><w:tcW w:w=\"{SealTwip}\" w:type=\"dxa\"/></w:tcPr>");
-        content.Append(Picture(logoRid, 6.5, 6.5, 3, "Logo inférieur établissement"));
+        content.Append(Picture(logoRid, 5.5, 5.5, 3, "Logo inférieur établissement"));
         content.Append("</w:tc></w:tr></w:tbl>");
 
         body.Append(content).Append(TinyParagraph);
-    }
-
-    private static string? Join(params string?[] values)
-    {
-        var parts = values.Where(v => !string.IsNullOrWhiteSpace(v))
-            .Select(v => v!.Trim()).Distinct(StringComparer.OrdinalIgnoreCase);
-        var joined = string.Join(" · ", parts);
-        return joined.Length == 0 ? null : joined;
     }
 
     private static void ContentCell(StringBuilder body, CardDocument d, CardItem? card, string sealRid, Images images)

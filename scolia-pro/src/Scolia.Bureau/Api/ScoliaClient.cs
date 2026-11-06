@@ -77,6 +77,10 @@ public sealed class ScoliaClient : IDisposable
         cookies = new CookieContainer();
         http = Create(server);
         Server = server;
+        // L'état de la précédente connexion ne doit pas rendre le nouveau
+        // serveur artificiellement « hors ligne ». La sonde le vérifiera
+        // sans bloquer les écrans lors de la prochaine interrogation.
+        SetOnline(true);
         previous.Dispose();
     }
 
@@ -89,20 +93,21 @@ public sealed class ScoliaClient : IDisposable
         cookies = new CookieContainer();
         Server = link.VirtualServer;
         http = Create(Server);
+        SetOnline(true);
         previous.Dispose();
     }
 
     // La rapidité des écrans ne doit pas dépendre du délai global des écritures (60 s).
     // La sonde du serveur relance ensuite la connexion sans bloquer la navigation.
-    private TimeSpan ReadTimeout => IsLongDistance ? TimeSpan.FromSeconds(7) : TimeSpan.FromSeconds(4);
-    private TimeSpan ProbeTimeout => IsLongDistance ? TimeSpan.FromSeconds(6) : TimeSpan.FromSeconds(3);
+    private TimeSpan ReadTimeout => IsLongDistance ? TimeSpan.FromSeconds(6) : TimeSpan.FromMilliseconds(2500);
+    private TimeSpan ProbeTimeout => IsLongDistance ? TimeSpan.FromSeconds(4) : TimeSpan.FromMilliseconds(1800);
     private bool CanUseOfflineCache => Offline is { } store && !string.IsNullOrWhiteSpace(store.User);
 
     private HttpClient Create(Uri server)
     {
         // Délai de connexion court : un ordinateur principal éteint est détecté en quelques secondes, pas en vingt.
         HttpMessageHandler handler = remoteLink is { } link ? new RemoteHttpHandler(link, cookies)
-            : new SocketsHttpHandler { CookieContainer = cookies, UseCookies = true, ConnectTimeout = TimeSpan.FromSeconds(4) };
+            : new SocketsHttpHandler { CookieContainer = cookies, UseCookies = true, ConnectTimeout = TimeSpan.FromMilliseconds(2500) };
         var client = new HttpClient(handler) { BaseAddress = server, Timeout = TimeSpan.FromSeconds(60) };
         client.DefaultRequestHeaders.Add("X-Scolia", "1");
         client.DefaultRequestHeaders.Add("X-Scolia-Poste", Infrastructure.DeviceIdentity.Id);

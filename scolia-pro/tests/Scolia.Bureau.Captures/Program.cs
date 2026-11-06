@@ -2659,7 +2659,10 @@ sealed class LayoutServer : IDisposable
         try
         {
             var path = context.Request.Url?.AbsolutePath;
-            object? result = null;
+            // Un serveur de test disponible doit répondre à la sonde réelle.
+            // Sinon la détection accélérée signale à tort une panne réseau
+            // et empêche le chargement du compte pendant les captures.
+            object? result = path == "/api/sante" ? new { status = "ok" } : null;
             if (PaymentAccount is { } account)
             {
                 if (path == $"/api/inscriptions/{account.EnrollmentId}/compte") result = account;
