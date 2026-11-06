@@ -73,6 +73,29 @@ public sealed class RemoteSyncTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Authorized_device_resumes_over_WSS_without_a_second_QR()
+    {
+        var invited = await secretary.Post("/api/jumelage/inviter", new { }).Ok();
+        var ticket = invited.GetProperty("token").GetString()!;
+        using var firstPhone = Phone();
+        var paired = await firstPhone.SendAsync<JsonElement>(HttpMethod.Post, "api/jumelage/accepter",
+            new { invitationToken = ticket, deviceId = DeviceIdentity.Id, deviceName = "Telephone test Render" });
+        var id = paired.GetProperty("grantId").GetGuid();
+        var deviceSecret = paired.GetProperty("deviceSecret").GetString()!;
+        using var secondPhone = Phone();
+        var renewed = await secondPhone.SendAsync<JsonElement>(HttpMethod.Post,
+            "api/session/appareil/renouveler",
+            new { grantId = id, deviceId = DeviceIdentity.Id, secret = deviceSecret });
+        Assert.Equal("admin", renewed.GetProperty("session").GetProperty("userName").GetString());
+        Assert.True(renewed.GetProperty("expiresUtc").GetDateTime() > DateTime.UtcNow.AddDays(170));
+        await secretary.Post($"/api/jumelage/appareils/{id}/revoquer", new { }).Ok();
+        var forbidden = await Assert.ThrowsAsync<ApiException>(() => secondPhone.SendAsync<JsonElement>(
+            HttpMethod.Post, "api/session/appareil/renouveler",
+            new { grantId = id, deviceId = DeviceIdentity.Id, secret = deviceSecret }));
+        Assert.Equal(401, forbidden.Status);
+    }
+
+    [Fact]
     public async Task Offline_registration_survives_host_interruption_and_is_applied_once_on_reconnection()
     {
         var promotion = await secretary.Post("/api/etablissement/promotions", new { code = "DST1", name = "Première", level = 1, isActive = true, monthlyFee = 50000m, oneTimeFees = Array.Empty<object>() }).Ok();
