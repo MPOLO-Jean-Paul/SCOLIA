@@ -7,17 +7,17 @@ namespace Scolia.Bureau.Tests;
 public sealed class PairingCodeTests
 {
     [Fact]
-    public void Le_code_du_serveur_se_relit_a_l_identique_wifi_avant_tailscale()
+    public void Le_code_du_serveur_se_relit_avec_wifi_et_sans_vpn()
     {
         var code = PairingCode.ForThisServer("Complexe Scolaire Les Étoiles", "SECRETARIAT",
             ["http://100.101.2.3:5080", "http://192.168.1.10:5080", "http://8.8.8.8:5080"], invitation: null);
         Assert.True(PairingCode.TryParse(code.Text(), out var read, out _));
         Assert.Equal("Complexe Scolaire Les Étoiles", read!.School);
         Assert.Equal("SECRETARIAT", read.Machine);
-        // Le Wi-Fi d'abord, Tailscale ensuite ; l'adresse publique n'est jamais mise dans le code.
-        Assert.Equal(["192.168.1.10", "100.101.2.3"], read.Addresses.Select(a => a.Host));
+        // Un nouveau QR ne contient ni l'adresse VPN ni l'adresse publique.
+        Assert.Equal(["192.168.1.10"], read.Addresses.Select(a => a.Host));
         Assert.Single(read.LanAddresses);
-        Assert.Single(read.TailnetAddresses);
+        Assert.Empty(read.TailnetAddresses);
     }
 
     [Theory]
@@ -34,7 +34,7 @@ public sealed class PairingCodeTests
     }
 
     [Fact]
-    public void Une_invitation_de_compte_est_preservee_sur_wifi_et_tailscale()
+    public void Une_invitation_de_compte_est_preservee_sur_wifi_sans_vpn()
     {
         var ticket = new string('A', 48);
         var sent = PairingCode.ForThisServer("ITM", "SERVEUR",
@@ -42,7 +42,7 @@ public sealed class PairingCodeTests
         Assert.True(PairingCode.TryParse(sent.Text(), out var read, out _));
         Assert.Equal(ticket, read!.AccessTicket);
         Assert.Single(read.LanAddresses);
-        Assert.Single(read.TailnetAddresses);
+        Assert.Empty(read.TailnetAddresses);
     }
 
     [Fact]
@@ -61,6 +61,19 @@ public sealed class PairingCodeTests
         Assert.Equal(PosteAdmin.DefaultPort, code.Addresses[0].Port);
         Assert.Equal(5099, code.Addresses[1].Port);
         Assert.True(TailscaleEndpoint.IsTailnetAddress(code.Addresses[1]));
+    }
+
+    [Fact]
+    public void Un_ancien_QR_VPN_reste_lisible_mais_n_est_plus_genere()
+    {
+        var ancien = "scolia://relier?v=1&e=ITM&a=192.168.1.10:5080,100.101.2.3:5080";
+        Assert.True(PairingCode.TryParse(ancien, out var lu, out _));
+        Assert.Single(lu!.LanAddresses);
+        Assert.Single(lu.TailnetAddresses);
+        var nouveau = PairingCode.ForThisServer("ITM", "PC", [
+            "http://192.168.1.10:5080", "http://100.101.2.3:5080"], null);
+        Assert.Single(nouveau.LanAddresses);
+        Assert.Empty(nouveau.TailnetAddresses);
     }
 
     [Fact]
@@ -92,7 +105,7 @@ public sealed class PairingCodeTests
         Assert.Equal(code.Text(), text);
         Assert.True(PairingCode.TryParse(text, out var parsed, out _));
         Assert.Single(parsed!.LanAddresses);
-        Assert.Single(parsed.TailnetAddresses);
+        Assert.Empty(parsed.TailnetAddresses);
     }
 
     [Fact]

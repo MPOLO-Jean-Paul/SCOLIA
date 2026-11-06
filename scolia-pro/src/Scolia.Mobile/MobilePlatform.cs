@@ -38,16 +38,9 @@ public static class MobilePlatform
         Platform.OpenFile = OpenFile;
         Platform.DecodeImage = DecodeImage;
         Platform.OpenUri = OpenUri;
-        Platform.OpenTailscale = OpenTailscale;
-        Platform.IsTailscaleInstalled = IsTailscaleInstalled;
-        Platform.IsVpnActive = IsVpnActive;
-        Platform.ReadTailnetState = ReadTailnetState;
-        Platform.OpenTailscaleInstallPage = OpenTailscaleInstallPage;
-        Platform.ConnectTailscaleInBackground = ConnectTailscaleInBackgroundAsync;
-        // Tailscale se télécharge et s'installe depuis SCOLIA : APK officiel, empreinte vérifiée, confirmation Android.
-        Platform.TailscalePackageKind = "android";
-        Platform.DownloadFolder = Path.Combine(app.CacheDir?.AbsolutePath ?? Path.GetTempPath(), "tailscale");
-        Platform.InstallTailscalePackage = path => AndroidTailscaleSetup.InstallAsync(context ?? app, path);
+        // Le réseau privé externe n'est plus configuré ni démarré depuis SCOLIA.
+        // Android utilise le LAN et le relais Render WSS chiffré.
+        Platform.TailscalePackageKind = null;
         Platform.PlayWave = AndroidAudio.PlayWave;
         Platform.Haptic = Haptic;
         // Encaissement ou sauvegarde sur un autre poste : bannière du système quand SCOLIA est en arrière-plan.

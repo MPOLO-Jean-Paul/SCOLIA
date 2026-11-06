@@ -13,8 +13,8 @@
     <RootNamespace>Scolia.Mobile</RootNamespace>
     <ApplicationId>com.jpservices.scolia</ApplicationId>
     <ApplicationTitle>SCOLIA Phone</ApplicationTitle>
-    <ApplicationVersion>154</ApplicationVersion>
-    <ApplicationDisplayVersion>1.2.34</ApplicationDisplayVersion>
+    <ApplicationVersion>155</ApplicationVersion>
+    <ApplicationDisplayVersion>1.2.35</ApplicationDisplayVersion>
     <AndroidPackageFormat>apk</AndroidPackageFormat>
     <RuntimeIdentifiers>android-arm64;android-arm</RuntimeIdentifiers>
     <AvaloniaUseCompiledBindingsByDefault>false</AvaloniaUseCompiledBindingsByDefault>
@@ -39,6 +39,10 @@
 
   <!-- Le serveur de l'établissement, pour le téléphone qui en tient lieu. Le protocole de découverte vient avec lui.
        Il est en .NET pur : il se compile sans l'architecture du téléphone (android-arm64, android-arm). -->
+  <!-- Le module d'installation VPN historique n'est plus inclus dans l'APK. -->
+  <ItemGroup>
+    <Compile Remove="AndroidTailscaleSetup.cs" />
+  </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../Scolia.Api/Scolia.Api.csproj" SetTargetFramework="TargetFramework=net10.0"
                       GlobalPropertiesToRemove="RuntimeIdentifier;SelfContained" />

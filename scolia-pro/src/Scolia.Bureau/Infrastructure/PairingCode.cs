@@ -5,7 +5,7 @@ namespace Scolia.Bureau.Infrastructure;
 
 /// <summary>
 /// Code de liaison montré en QR par le serveur de l'établissement, ordinateur ou téléphone. Il dit à l'autre appareil
-/// comment le joindre : ses adresses sur le Wi-Fi, son adresse Tailscale, et l'invitation Internet si elle est active.
+/// comment le joindre : les adresses locales et, si activée, l'invitation Internet Render.
 /// Il ne contient aucun mot de passe : l'accord du serveur et la connexion au compte restent demandés.
 /// </summary>
 public sealed record PairingCode(string School, string Machine, IReadOnlyList<Uri> Addresses, string? Invitation = null, string? AccessTicket = null)
@@ -127,14 +127,12 @@ public sealed record PairingCode(string School, string Machine, IReadOnlyList<Ur
         var found = new List<Uri>();
         foreach (var text in addresses)
             if (Uri.TryCreate(text, UriKind.Absolute, out var uri)
-                && (uri.Scheme == Uri.UriSchemeHttp
-                    || (uri.Scheme == Uri.UriSchemeHttps && uri.Port == 443
-                        && TailscaleEndpoint.IsSecureTailnetDns(uri.Host)))
+                && uri.Scheme == Uri.UriSchemeHttp
+                && !TailscaleEndpoint.IsTailnetAddress(uri)
                 && IsAllowed(uri.Host) && !found.Contains(uri)) found.Add(uri);
-        // HTTPS Tailscale en premier lorsqu'il est configure ; sinon Wi-Fi et
-        // Tailscale HTTP restent dans leur ancien ordre.
-        var ordered = found.OrderBy(uri => uri.Scheme == Uri.UriSchemeHttps ? 0
-            : TailscaleEndpoint.IsTailnetAddress(uri) ? 2 : 1).Take(MaxAddresses).ToList();
+        // Les nouvelles invitations ne publient plus d'adresse de réseau VPN.
+        // La lecture des anciens QR reste prise en charge pour proposer un renouvellement.
+        var ordered = found.Take(MaxAddresses).ToList();
         return new PairingCode(school, machine, ordered, invitation);
     }
 

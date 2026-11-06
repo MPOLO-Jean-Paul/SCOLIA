@@ -67,18 +67,24 @@ public sealed class TailscaleHttpsServeTests
     }
 
     [Fact]
-    public void Le_code_qr_transporte_https_sans_le_degrader_en_http()
+    public void Nouveau_qr_sans_vpn_et_ancien_qr_https_toujours_lisible()
     {
         var code = PairingCode.ForThisServer("Ecole", "Serveur",
             ["http://192.168.1.20:5080", "https://scolia.ecole.ts.net/"], null);
         var qr = code.Text();
-        Assert.Contains("h=scolia.ecole.ts.net", qr);
-        Assert.DoesNotContain("scolia.ecole.ts.net:443", qr);
+        Assert.DoesNotContain("h=scolia.ecole.ts.net", qr);
         Assert.True(PairingCode.TryParse(qr, out var parsed, out _));
         Assert.NotNull(parsed);
-        Assert.Equal("https", parsed.TailnetAddresses.First().Scheme);
-        Assert.Equal("scolia.ecole.ts.net", parsed.TailnetAddresses.First().Host);
+        Assert.Empty(parsed.TailnetAddresses);
         Assert.Single(parsed.LanAddresses);
+
+        // Compatibilité de lecture sans relancer le VPN ni convertir HTTPS en HTTP.
+        var legacy = "scolia://relier?v=1&e=Ecole&h=scolia.ecole.ts.net&a=192.168.1.20:5080";
+        Assert.True(PairingCode.TryParse(legacy, out var old, out _));
+        Assert.NotNull(old);
+        Assert.Equal("https", old.TailnetAddresses.First().Scheme);
+        Assert.Equal("scolia.ecole.ts.net", old.TailnetAddresses.First().Host);
+        Assert.Single(old.LanAddresses);
 
         Assert.False(PairingCode.TryParse(
             "scolia://relier?v=1&e=Ecole&h=google.com&a=192.168.1.20:5080", out _, out _));

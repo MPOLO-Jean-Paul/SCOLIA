@@ -321,9 +321,7 @@ public sealed class ShellViewModel : Observable
     public string ServerLine => IsServerComputer
         ? $"Serveur de l'établissement · port {api.Server.Port}"
         : api.IsLongDistance ? "Internet chiffré · relais SCOLIA Render"
-        : ConnectionStore.Load() is { IsRemote: true } link && TailscaleEndpoint.IsTailnetAddress(api.Server)
-            ? $"Tailscale privé · {link.School ?? link.Machine} · {api.Server.Host}"
-        : ConnectionStore.Load() is { IsRemote: true } direct ? $"Relié à {direct.Machine} · {api.Server.Host}" : $"Serveur {api.Server.Host}:{api.Server.Port}";
+        : ConnectionStore.Load() is { IsRemote: true } direct ? $"Réseau local · {direct.School ?? direct.Machine}" : $"Serveur {api.Server.Host}:{api.Server.Port}";
 
     public PageViewModel? Current
     {
@@ -471,27 +469,20 @@ public sealed class ShellViewModel : Observable
                 ShowChooser([], "L'adresse de connexion mémorisée est invalide. Rejoignez de nouveau votre établissement.");
                 return;
             }
-            if (TailscaleEndpoint.IsTailnetAddress(remembered)
-                && !await TailscaleEndpoint.ResolvesPrivatelyAsync(remembered))
+            // Migration des anciens appareils enregistrés avec un VPN : pas
+            // d'ouverture de Tailscale. Seules les invitations WSS déjà vérifiées
+            // peuvent reprendre la session, sinon le responsable renouvelle le QR.
+            if (TailscaleEndpoint.IsTailnetAddress(remembered))
             {
                 if (await TryReconnectRelayAsync()) return;
                 if (OfferOfflineEntry(saved.School ?? string.Empty)) return;
-                ShowChooser([], "Tailscale ne répond pas et le relais Internet n'a pas permis une reconnexion. Vérifiez le serveur principal.");
+                ShowChooser([], "Cet appareil utilisait une ancienne adresse privée. Rejoignez de nouveau l'établissement avec son QR code local ou Render.");
                 return;
             }
             api.Retarget(remembered);
             if (await api.IsRunningAsync())
             {
                 await ShowEntryAsync();
-                return;
-            }
-            // Une adresse Tailscale n'est pas retrouvable par diffusion UDP LAN :
-            // épargner une recherche inutile et préserver l'adresse privée mémorisée.
-            if (TailscaleEndpoint.IsTailnetAddress(api.Server))
-            {
-                if (await TryReconnectRelayAsync()) return;
-                if (OfferOfflineEntry(saved.School ?? string.Empty)) return;
-                ShowChooser([], "Le serveur privé Tailscale de votre établissement ne répond pas. Vérifiez le VPN sur les deux appareils, l'approbation Tailscale et le service SCOLIA sur le téléphone principal. Vous pouvez saisir à nouveau son adresse Tailscale.");
                 return;
             }
             Status = $"Recherche du serveur de {saved.School}…";
@@ -803,7 +794,7 @@ public sealed class ShellViewModel : Observable
 
     /// <summary>
     /// Ouvre ou ferme le réseau de l'établissement et l'applique tout de suite. Windows demande l'autorisation ;
-    /// SCOLIA fait le reste : pare-feu, réseau privé, découverte des postes et relance de son serveur.
+    /// SCOLIA gère la découverte locale et la reconnexion chiffrée par Internet.
     /// </summary>
     public async Task SetNetworkAsync(bool open)
     {

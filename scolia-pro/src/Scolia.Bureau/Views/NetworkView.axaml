@@ -2,7 +2,6 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:infra="using:Scolia.Bureau.Infrastructure"
              xmlns:mi="using:Material.Icons.Avalonia"
-             xmlns:views="using:Scolia.Bureau.Views"
              x:Class="Scolia.Bureau.Views.NetworkView">
   <!-- Réseau et activité : l'état de la connexion, les autres postes, puis ce qui attend d'être envoyé -->
   <Grid>
@@ -38,42 +37,33 @@
             </StackPanel>
           </Border>
 
-          <Expander Header="Connexion Internet sécurisée · Render" IsExpanded="True" IsVisible="{Binding Remote.CanManage}">
-            <Border Classes="phonegroup">
-              <StackPanel Margin="14,12" Spacing="8">
-                <TextBlock Text="Internet sans Tailscale ni Wi-Fi commun" FontWeight="SemiBold" TextWrapping="Wrap" />
-              <TextBlock Classes="muted" TextWrapping="Wrap" Text="Render transporte les communications chiffrées entre appareils autorisés, même sur des réseaux différents. L'ordinateur principal doit rester allumé et connecté ; les données scolaires restent sur son stockage local." />
-              <TextBox Text="{Binding Remote.Relay}" PlaceholderText="wss://scolia-pro-relay.onrender.com/" />
-              <Button Content="Activer ou vérifier la liaison Render" Command="{Binding Remote.Enable}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" />
-               <TextBlock Text="Jumelage initial : une invitation privée valable 5 minutes et pour un seul appareil. Les prochaines connexions utilisent automatiquement l'autorisation sauvegardée, sans nouveau QR." Classes="muted" TextWrapping="Wrap" />
-               <Button Classes="ghost" Content="Créer une nouvelle invitation d’accès" Command="{Binding Remote.RenewAccess}" HorizontalAlignment="Stretch" />
-              <TextBox Text="{Binding Remote.Invitation}" IsReadOnly="True" TextWrapping="Wrap" MaxHeight="100" />
-              <TextBlock Text="{Binding Remote.Message}" Classes="muted" TextWrapping="Wrap" />
-                <Button Classes="ghost" Content="Désactiver Render sur cet appareil serveur" Command="{Binding Remote.Disable}" HorizontalAlignment="Stretch" />
-              </StackPanel>
-            </Border>
-          </Expander>
-
-          <!-- Tailscale reste un choix avancé : ni requis par Render, ni supprimé. -->
-          <Expander Header="Options avancées · réseau privé Tailscale" IsExpanded="False" IsVisible="{Binding Remote.CanManage}">
+          <!-- Une seule option distante ; les réglages techniques restent secondaires. -->
           <Border Classes="phonegroup" IsVisible="{Binding Remote.CanManage}">
-            <StackPanel Margin="14,12" Spacing="8">
-              <TextBlock Text="Connexion privée Tailscale (facultative)" FontWeight="SemiBold" TextWrapping="Wrap" />
-              <TextBlock Classes="muted" TextWrapping="Wrap"
-                         Text="{Binding Remote.TailnetHelp}" />
-              <Button Classes="ghost" Content="Installer le relais privé Tailscale" Command="{Binding Remote.InstallTailnet}"
-                      HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" />
-              <Button Classes="primary" Content="Partager via Tailscale" Command="{Binding Remote.ShareTailnet}"
-                      HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" />
-              <TextBlock Classes="muted" TextWrapping="Wrap" FontSize="{DynamicResource FsSmall}"
-                         Text="{Binding Remote.TailnetNote}" />
-              <Button Classes="ghost" Content="Vérifier le partage et le serveur" Command="{Binding Remote.DiagnoseTailnet}"
-                      HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" />
-              <TextBlock Text="{Binding Remote.Diagnostic}" Classes="muted" TextWrapping="Wrap" />
+            <StackPanel Margin="14,12" Spacing="9">
+              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                <Border Classes="appicon medium" Background="{DynamicResource ToneBlue}">
+                  <mi:MaterialIcon Kind="CloudCheckOutline" />
+                </Border>
+                <StackPanel Grid.Column="1" Spacing="3">
+                  <TextBlock Text="Connexion par Internet" FontWeight="SemiBold" />
+                  <TextBlock Text="Relier des appareils sur des réseaux différents, sans configuration technique supplémentaire."
+                             Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
+                </StackPanel>
+              </Grid>
+              <Button Classes="primary" Content="Activer ou vérifier Render" Command="{Binding Remote.Enable}"
+                      HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" MinHeight="42" />
               <TextBlock Text="{Binding Remote.Message}" Classes="muted" TextWrapping="Wrap" />
+              <Expander Header="Réglages avancés" IsExpanded="False">
+                <StackPanel Margin="6,8" Spacing="8">
+                  <TextBlock Text="Adresse du relais sécurisé WSS" Classes="muted" />
+                  <TextBox Classes="w11" Text="{Binding Remote.Relay}"
+                           Watermark="wss://scolia-pro-relay.onrender.com/" />
+                  <Button Classes="ghost" Content="Désactiver cette liaison Internet"
+                          Command="{Binding Remote.Disable}" HorizontalAlignment="Stretch" />
+                </StackPanel>
+              </Expander>
             </StackPanel>
           </Border>
-          </Expander>
 
           <!-- Autres postes connectés -->
           <TextBlock Text="Postes connectés" Classes="heading" Margin="0,4,0,0" />
@@ -145,7 +135,6 @@
       </Grid>
     </Grid>
   </Border>
-    <!-- Assistant Tailscale commun (téléchargement et installation depuis SCOLIA). -->
-    <views:TailscaleWizardView />
-  </Grid>
+
+</Grid>
 </UserControl>
