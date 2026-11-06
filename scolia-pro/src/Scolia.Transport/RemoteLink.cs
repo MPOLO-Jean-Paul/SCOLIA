@@ -8,6 +8,10 @@ namespace Scolia.Transport;
 public sealed record RemoteLink(string Relay, string Room, string ClientToken, string Key, DateTime ExpiresUtc, string? HostToken = null)
 {
     public const string Prefix = "scolia-link:v1:";
+    /// <summary>Relais institutionnel, configuré une seule fois. Remplaçable dans Réseau et activité.</summary>
+    public const string DefaultRelay = "wss://scolia-pro-relay.onrender.com/";
+    /// <summary>Une liaison reste valable un an, mais peut être révoquée immédiatement depuis le serveur.</summary>
+    public const int LinkValidityDays = 365;
     public Uri VirtualServer => new($"http://{Room[..32]}.{Room[32..]}.scolia.invalid/");
     public bool CanHost => HostToken is not null;
 
@@ -15,7 +19,7 @@ public sealed record RemoteLink(string Relay, string Room, string ClientToken, s
     {
         var token = Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
         return new RemoteLink(relay, Hash(token), Convert.ToHexString(RandomNumberGenerator.GetBytes(32)),
-            Convert.ToHexString(RandomNumberGenerator.GetBytes(32)), DateTime.UtcNow.AddDays(30), token).Validate();
+            Convert.ToHexString(RandomNumberGenerator.GetBytes(32)), DateTime.UtcNow.AddDays(LinkValidityDays), token).Validate();
     }
 
     public RemoteLink Renew(string relay)
@@ -24,7 +28,7 @@ public sealed record RemoteLink(string Relay, string Room, string ClientToken, s
         return (this with
         {
             Relay = relay, ClientToken = Convert.ToHexString(RandomNumberGenerator.GetBytes(32)),
-            Key = Convert.ToHexString(RandomNumberGenerator.GetBytes(32)), ExpiresUtc = DateTime.UtcNow.AddDays(30),
+            Key = Convert.ToHexString(RandomNumberGenerator.GetBytes(32)), ExpiresUtc = DateTime.UtcNow.AddDays(LinkValidityDays),
         }).Validate();
     }
 
@@ -38,7 +42,7 @@ public sealed record RemoteLink(string Relay, string Room, string ClientToken, s
             if (value is not { Length: 64 } || !value.All(Uri.IsHexDigit)) throw new FormatException("Invitation de liaison invalide.");
         if (HostToken is not null && (HostToken.Length != 64 || !HostToken.All(Uri.IsHexDigit) || Hash(HostToken) != Room))
             throw new FormatException("Identité de l'appareil principal invalide.");
-        if (ExpiresUtc <= DateTime.UtcNow || ExpiresUtc > DateTime.UtcNow.AddDays(31))
+        if (ExpiresUtc <= DateTime.UtcNow || ExpiresUtc > DateTime.UtcNow.AddDays(LinkValidityDays + 1))
             throw new FormatException("Cette invitation a expiré. Demandez une nouvelle liaison au secrétariat.");
         return this;
     }

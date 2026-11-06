@@ -35,6 +35,10 @@
     <PackageReference Include="System.Security.Cryptography.ProtectedData" />
   </ItemGroup>
   <ItemGroup>
+    <!-- Les sources Avalonia partagees utilisent les contrats de cartes de Scolia.Domain. -->
+    <ProjectReference Include="../Scolia.Domain/Scolia.Domain.csproj" />
+  </ItemGroup>
+  <ItemGroup>
     <Compile Include="../Scolia.Bureau/**/*.cs" Exclude="../Scolia.Bureau/bin/**;../Scolia.Bureau/obj/**;../Scolia.Bureau/Program.cs" Link="Bureau/%(RecursiveDir)%(Filename)%(Extension)" />
     <Compile Include="../Scolia.Transport/*.cs" Link="Transport/%(Filename)%(Extension)" />
     <Compile Include="../Scolia.Infrastructure/Network/LanProtocol.cs" Link="Bureau/Infrastructure/LanProtocol.cs" />
