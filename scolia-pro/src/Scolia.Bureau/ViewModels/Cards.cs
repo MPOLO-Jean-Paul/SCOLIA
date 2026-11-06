@@ -197,6 +197,14 @@ public sealed class CardsPage : PageViewModel
         var year = int.Parse(Year?.Value ?? DateTime.Today.Year.ToString(System.Globalization.CultureInfo.InvariantCulture), System.Globalization.CultureInfo.InvariantCulture);
         var copies = int.Parse(Copy?.Value ?? "1", System.Globalization.CultureInfo.InvariantCulture);
         var format = ExportFormat?.Value ?? "pdf";
+        // Le PDF/Word est fabrique par le serveur, pas par le client Android :
+        // une application récente reliée à un ancien serveur produirait l'ancien modèle.
+        var health = await Shell.Api.GetAsync<ServerHealthDto>("api/sante");
+        if (!CardServerCompatibility.HasRevisedLayout(health.Version))
+        {
+            Shell.Notify(CardServerCompatibility.OutdatedServerMessage(health.Version));
+            return;
+        }
         var (bytes, skipped) = await Shell.Api.PostDocumentAsync("api/cartes/export", new { enrollmentIds = ids, month, year, copies, includeLeft = IncludeLeft, format });
         Files.Open(Files.Save(bytes, $"cartes-{year}-{month:00}.{format}"));
         Shell.Notify(skipped == 0

@@ -124,6 +124,16 @@ public static class ScoliaEndpoints
                 a.GrantId, a.Secret, a.ExpiresUtc));
         }).RequireRateLimiting("connexion");
 
+        // Découverte UDP seule = non fiable ; ce défi permet de reconnaître
+        // le serveur autorisé si son adresse change, sans exposer le secret client.
+        api.MapPost("/jumelage/preuve-serveur", (DeviceProofRequest request, HttpContext http,
+            DevicePairingRegistry registry) =>
+        {
+            if (request.DeviceId != LiveHeaders.DeviceId(http)) return Results.Unauthorized();
+            var proof = registry.ProveIdentity(request.GrantId, request.DeviceId, request.Nonce);
+            return proof is null ? Results.Unauthorized() : Results.Ok(new DeviceProofReply(proof));
+        }).RequireRateLimiting("connexion");
+
         api.MapPost("/session/appareil", async Task<IResult> (DeviceLoginRequest request, HttpContext http,
             DevicePairingRegistry registry, ScoliaDbContext db, CancellationToken ct) =>
         {
@@ -137,6 +147,25 @@ public static class ScoliaEndpoints
             await SessionFactory.SignInDeviceAsync(http, account, request.GrantId, request.DeviceId);
             return Results.Ok(await SessionFactory.DescribeAsync(db, account, ct));
         }).RequireRateLimiting("connexion");
+
+        // Première connexion du Promoteur : mémoriser uniquement l'appareil
+        // authentifié et son compte en lecture seule, sans privilèges administratifs.
+        api.MapPost("/jumelage/mon-appareil", async Task<IResult> (HttpContext http,
+            ICurrentUser current, DevicePairingRegistry registry, ScoliaDbContext db,
+            CancellationToken ct) =>
+        {
+            var deviceId = LiveHeaders.DeviceId(http);
+            if (string.IsNullOrWhiteSpace(deviceId)) return Results.Unauthorized();
+            var account = await db.Users.AsNoTracking().FirstOrDefaultAsync(
+                u => u.Id == current.Id && u.IsActive, ct);
+            if (account is null) return Results.Unauthorized();
+            if (account.Role != Role.Promoteur) return Results.Forbid();
+            var issued = registry.EnrollOwnDevice(account.Id, account.SecurityStamp,
+                deviceId, LiveHeaders.Device(http));
+            return issued is null ? Results.BadRequest()
+                : Results.Ok(new DeviceSelfRegistration(issued.Value.GrantId,
+                    issued.Value.Secret, issued.Value.ExpiresUtc));
+        }).RequireAuthorization(Permissions.PilotageRead).RequireRateLimiting("connexion");
 
         api.MapGet("/jumelage/appareils", (ICurrentUser current, DevicePairingRegistry registry) =>
             Results.Ok(registry.List(current.Id!.Value))).RequireAuthorization(Permissions.UsersManage);

@@ -1,6 +1,8 @@
 using System.Globalization;
 using System.Net;
 using System.Net.Http.Json;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Scolia.Transport;
@@ -67,12 +69,13 @@ public sealed class ScoliaClient : IDisposable
     public Uri Server { get; private set; }
 
     /// <summary>Change de serveur (ce poste ou celui de l'établissement) : nouvelle connexion, sans session ouverte.</summary>
-    public void Retarget(Uri server)
+    public void Retarget(Uri server, bool sameVerifiedSchool = false)
     {
         if (server == Server && remoteLink is null) return;
         remoteLink = null;
-        // Un changement d'établissement ne doit jamais réutiliser le cache ou les opérations de l'ancien serveur.
-        Offline = null;
+        // La copie locale n'est conservée que si une preuve cryptographique
+        // a reconnu le même serveur malgré le changement d'adresse.
+        if (!sameVerifiedSchool) Offline = null;
         var previous = http;
         cookies = new CookieContainer();
         http = Create(server);
@@ -159,6 +162,42 @@ public sealed class ScoliaClient : IDisposable
             Infrastructure.DevicePairingStore.Forget(Server);
             return null;
         }
+    }
+
+    private sealed record DeviceProofReply(string Proof);
+    private sealed record SelfDeviceGrant(Guid GrantId, string DeviceSecret, DateTime ExpiresUtc);
+
+    /// <summary>Une session Promoteur authentifiée se souvient de cet appareil
+    /// pour retrouver ensuite le même serveur sans réintroduire un QR.</summary>
+    public async Task EnsurePromoterDeviceGrantAsync(string userName, CancellationToken ct = default)
+    {
+        if (Infrastructure.DevicePairingStore.Read(Server) is { } existing &&
+            string.Equals(existing.UserName, userName, StringComparison.OrdinalIgnoreCase) &&
+            existing.ExpiresUtc > DateTime.UtcNow.AddDays(7))
+            return;
+        var grant = await SendAsync<SelfDeviceGrant>(HttpMethod.Post, "api/jumelage/mon-appareil", new { }, ct);
+        Infrastructure.DevicePairingStore.Save(Server, new Infrastructure.DevicePairingStore.Credential(
+            grant.GrantId, grant.DeviceSecret, grant.ExpiresUtc, userName));
+    }
+
+    /// <summary>Confirme le serveur scolaire par défi HMAC avant de suivre une nouvelle IP annoncée en UDP.</summary>
+    public async Task<bool> ProvesPairedServerAsync(
+        Infrastructure.DevicePairingStore.Credential credential, CancellationToken ct = default)
+    {
+        var nonce = Convert.ToHexString(RandomNumberGenerator.GetBytes(24));
+        try
+        {
+            var proof = await SendAsync<DeviceProofReply>(HttpMethod.Post, "api/jumelage/preuve-serveur",
+                new { grantId = credential.GrantId, deviceId = Infrastructure.DeviceIdentity.Id, nonce }, ct);
+            if (proof.Proof is null || proof.Proof.Length != 64 || !proof.Proof.All(char.IsAsciiHexDigit))
+                return false;
+            var key = SHA256.HashData(Encoding.UTF8.GetBytes(credential.DeviceSecret));
+            var expected = HMACSHA256.HashData(key, Encoding.ASCII.GetBytes(nonce));
+            return CryptographicOperations.FixedTimeEquals(expected, Convert.FromHexString(proof.Proof));
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
+        catch (Exception ex) when (ex is ApiException or HttpRequestException or TaskCanceledException or IOException
+            or FormatException or JsonException) { return false; }
     }
 
     public async Task LogoutAsync(CancellationToken ct = default)

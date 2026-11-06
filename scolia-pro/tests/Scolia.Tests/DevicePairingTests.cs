@@ -1,4 +1,6 @@
 using System.Net;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace Scolia.Tests;
 
@@ -49,4 +51,42 @@ public sealed class DevicePairingTests
         }).Fail();
         Assert.Equal(HttpStatusCode.Unauthorized, expired.Status);
     }
+    [Fact]
+    public async Task Un_serveur_qui_change_d_adresse_prouve_son_identite_sans_recevoir_la_cle()
+    {
+        using var app = new ScoliaApp();
+        using var host = await app.InstalledAdmin();
+        var invitation = await host.Post("/api/jumelage/inviter", new { }).Ok();
+
+        using var poste = app.Client();
+        const string deviceId = "telephone-promoteur-reseau";
+        poste.DefaultRequestHeaders.Add("X-Scolia-Poste", deviceId);
+        var paired = await poste.Post("/api/jumelage/accepter", new {
+            invitationToken = invitation.GetProperty("token").GetString(),
+            deviceId, deviceName = "Téléphone promoteur"
+        }).Ok();
+        var grantId = paired.GetProperty("grantId").GetGuid();
+        var secret = paired.GetProperty("deviceSecret").GetString()!;
+        var nonce = Convert.ToHexString(RandomNumberGenerator.GetBytes(24));
+
+        // Le client envoie seulement le nonce, jamais la clé de jumelage.
+        var reply = await poste.Post("/api/jumelage/preuve-serveur",
+            new { grantId, deviceId, nonce }).Ok();
+        var received = Convert.FromHexString(reply.GetProperty("proof").GetString()!);
+        var key = SHA256.HashData(Encoding.UTF8.GetBytes(secret));
+        var expected = HMACSHA256.HashData(key, Encoding.ASCII.GetBytes(nonce));
+        Assert.True(CryptographicOperations.FixedTimeEquals(expected, received));
+
+        using var intrus = app.Client();
+        intrus.DefaultRequestHeaders.Add("X-Scolia-Poste", "telephone-different");
+        var denied = await intrus.Post("/api/jumelage/preuve-serveur",
+            new { grantId, deviceId, nonce }).Fail();
+        Assert.Equal(HttpStatusCode.Unauthorized, denied.Status);
+
+        await host.Post($"/api/jumelage/appareils/{grantId}/revoquer", new { }).Ok();
+        var revoked = await poste.Post("/api/jumelage/preuve-serveur",
+            new { grantId, deviceId, nonce }).Fail();
+        Assert.Equal(HttpStatusCode.Unauthorized, revoked.Status);
+    }
+
 }

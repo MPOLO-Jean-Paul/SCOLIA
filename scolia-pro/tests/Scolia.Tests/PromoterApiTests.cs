@@ -60,4 +60,36 @@ public sealed class PromoterApiTests : IDisposable
             (await promoteur.Post("/api/personnel/" + Guid.NewGuid() + "/signature/Entree", new { })).StatusCode);
         await admin.GetAsync("/api/pilotage/synthese").Ok();
     }
+    [Fact]
+    public async Task Une_connexion_promoteur_enregistre_son_appareil_sans_nouveau_QR()
+    {
+        using var admin = await app.InstalledAdmin();
+        await admin.Post("/api/utilisateurs", new
+        {
+            userName = "promoteur2", displayName = "Direction",
+            role = "Promoteur", password = "Provisoire1",
+        }).Ok();
+
+        using var promoter = await app.Login("promoteur2", "Provisoire1");
+        const string deviceId = "promoteur-telephone-001";
+        promoter.DefaultRequestHeaders.Add("X-Scolia-Poste", deviceId);
+        var grant = await promoter.Post("/api/jumelage/mon-appareil", new { }).Ok();
+        var grantId = grant.GetProperty("grantId").GetGuid();
+        var secret = grant.GetProperty("deviceSecret").GetString()!;
+        Assert.NotEmpty(secret);
+
+        using var returning = app.Client();
+        returning.DefaultRequestHeaders.Add("X-Scolia-Poste", deviceId);
+        var resumed = await returning.Post("/api/session/appareil", new
+            { grantId, deviceId, secret }).Ok();
+        Assert.Equal("promoteur2", resumed.GetProperty("userName").GetString());
+        Assert.Single(resumed.GetProperty("permissions").EnumerateArray());
+        Assert.Equal("pilotage.lire",
+            resumed.GetProperty("permissions")[0].GetString());
+
+        admin.DefaultRequestHeaders.Add("X-Scolia-Poste", "poste-secretariat");
+        var prohibited = await admin.Post("/api/jumelage/mon-appareil", new { }).Fail();
+        Assert.Equal(HttpStatusCode.Forbidden, prohibited.Status);
+    }
+
 }

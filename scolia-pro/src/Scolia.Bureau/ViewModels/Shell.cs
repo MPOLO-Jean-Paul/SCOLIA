@@ -43,7 +43,7 @@ public sealed class ShellViewModel : Observable
         // rouvrir seul la session quand l'ordinateur principal revient après une coupure.
         Login.Authenticated += (user, secret, s) =>
         {
-            api.Offline = new OfflineStore(api.Server) { User = s.UserName };
+            api.Offline = new OfflineStore(ConnectionStore.CacheAddress(api.Server)) { User = s.UserName };
             api.Offline.SaveCredential(user, secret, s, api.SessionCookie);
             api.Offline.RememberAccount(s.UserName);
             Login.RememberAccount(s.UserName);
@@ -493,11 +493,9 @@ public sealed class ShellViewModel : Observable
             }
             Status = $"Recherche du serveur de {saved.School}…";
             var servers = await LanDiscovery.FindAsync();
-            if (servers.FirstOrDefault(s => s.SchoolId == saved.SchoolId) is { } moved)
-            {
-                await JoinAsync(moved);
-                return;
-            }
+            if (servers.Count > 0 && await TryReconnectPairedLanAsync()) return;
+            // Une annonce UDP peut usurper un nom/identifiant d'établissement.
+            // Jamais de bascule silencieuse sans preuve du jumelage historique.
             if (OfferOfflineEntry(saved.School ?? string.Empty)) return;
             ShowChooser(servers, $"Le serveur de {saved.School} (ordinateur {saved.Machine}) ne répond pas. Allumez-le ou ouvrez SCOLIA dessus, puis recherchez à nouveau.");
             return;
@@ -556,7 +554,7 @@ public sealed class ShellViewModel : Observable
     /// </summary>
     private bool OfferOfflineEntry(string school)
     {
-        var store = new OfflineStore(api.Server);
+        var store = new OfflineStore(ConnectionStore.CacheAddress(api.Server));
         if (!store.HasCredential) return false;
         api.Offline = store;
         if (school.Length > 0) Login.SchoolName = school;
@@ -615,6 +613,48 @@ public sealed class ShellViewModel : Observable
         ChoosingServer = false;
         await ShowEntryAsync();
         Notify($"Ce poste est relié à SCOLIA · {server.School} (ordinateur {server.Machine}).");
+    }
+
+    /// <summary>
+    /// Retrouve automatiquement le même serveur après changement de Wi-Fi/IP.
+    /// Le poste ne transmet aucun secret à une annonce UDP non vérifiée.
+    /// Le jeton et le cache restent attachés à l'établissement déjà autorisé.
+    /// </summary>
+    public async Task<bool> TryReconnectPairedLanAsync(CancellationToken ct = default)
+    {
+        var saved = ConnectionStore.Load();
+        if (saved is not { IsRemote: true, Url: { Length: > 0 } url } ||
+            !Uri.TryCreate(url, UriKind.Absolute, out var previous)) return false;
+        var found = await TrustedLanReconnect.FindAsync(saved, ct: ct);
+        if (found is null) return false;
+        try
+        {
+            // Copier d'abord l'autorisation approuvée sous la nouvelle adresse.
+            // Aucune reliaison du compte ni perte des saisies hors ligne.
+            TrustedLanReconnect.PreserveGrant(previous, found.Address);
+            if (!ConnectionStore.TrySave(saved with
+                {
+                    Url = found.Address.ToString(), CacheUrl = saved.CacheUrl ?? saved.Url,
+                    SchoolId = found.SchoolId,
+                    School = found.School, Machine = found.Machine,
+                })) return false;
+            if (api.Offline is null)
+            {
+                var old = new OfflineStore(ConnectionStore.CacheAddress(previous));
+                if (old.HasCredential) api.Offline = old;
+            }
+            api.Retarget(found.Address, sameVerifiedSchool: true);
+            Raise(nameof(ServerLine));
+            if (!IsLoggedIn) await ShowEntryAsync();
+            return true;
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or
+            System.Security.Cryptography.CryptographicException or InvalidOperationException)
+        {
+            System.Diagnostics.Trace.WriteLine($"SCOLIA : reprise du serveur déjà jumelé impossible ({ex.GetType().Name}).");
+            return false;
+        }
     }
 
     private sealed record DevicePairResult(SessionDto Session, Guid GrantId, string DeviceSecret, DateTime ExpiresUtc);
@@ -800,11 +840,17 @@ public sealed class ShellViewModel : Observable
         session = s;
         knownRevision = -1;
         // Données gardées sur l'appareil, propres à ce compte ; puis le direct avec les autres postes.
-        api.Offline ??= new OfflineStore(api.Server);
+        api.Offline ??= new OfflineStore(ConnectionStore.CacheAddress(api.Server));
         api.Offline.User = s.UserName;
         api.Offline.RememberAccount(s.UserName);
         Login.RememberAccount(s.UserName);
         Sync.Start();
+        // Une première session Promoteur vérifiée mémorise son appareil :
+        // reconnexion future au même serveur, sans QR et sans privilèges ajoutés.
+        if (s.Permissions.Contains(Perm.PilotageRead) &&
+            !s.Permissions.Contains(Perm.ReportsRead) &&
+            !s.MustChangePassword && !api.Server.IsLoopback && api.IsOnline)
+            _ = RememberPromoterDeviceAsync(s.UserName);
         OpeningTitle = IsSetupRequired ? "Configuration terminée" : $"Bienvenue, {s.DisplayName}";
         OpeningProgress = 0;
         Opening = true;
@@ -860,6 +906,17 @@ public sealed class ShellViewModel : Observable
             return;
         }
         await OfferNetworkAsync();
+    }
+
+    private async Task RememberPromoterDeviceAsync(string userName)
+    {
+        try { await api.EnsurePromoterDeviceGrantAsync(userName); }
+        catch (Exception ex) when (ex is ApiException or HttpRequestException or
+            TaskCanceledException or IOException or UnauthorizedAccessException or
+            System.Security.Cryptography.CryptographicException)
+        {
+            System.Diagnostics.Trace.WriteLine($"SCOLIA : mémorisation du poste Promoteur différée ({ex.GetType().Name}).");
+        }
     }
 
     /// <summary>Écrans précédents et suivants, comme les flèches des Réglages de macOS. Chaque écran garde sa saisie.</summary>
