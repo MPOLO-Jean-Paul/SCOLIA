@@ -168,4 +168,5 @@ public sealed record PairingAccept(string InvitationToken, string DeviceId, stri
 public sealed record DeviceLoginRequest(Guid GrantId, string DeviceId, string Secret);
 public sealed record DeviceProofRequest(Guid GrantId, string DeviceId, string Nonce);
 public sealed record DeviceProofReply(string Proof);
+public sealed record DeviceSelfRegistration(Guid GrantId, string DeviceSecret, DateTime ExpiresUtc);
 public sealed record PairingAccepted(object Session, Guid GrantId, string DeviceSecret, DateTime ExpiresUtc);
