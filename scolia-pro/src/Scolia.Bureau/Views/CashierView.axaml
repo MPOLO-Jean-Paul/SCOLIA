@@ -211,11 +211,13 @@
       <!-- Reçu enregistré -->
       <Border Classes="card" IsVisible="{Binding HasReceipt}">
         <StackPanel Spacing="10">
-          <TextBlock Text="Versement enregistré" Classes="heading" Foreground="{DynamicResource ToneGreen}" />
+          <TextBlock Text="Versement enregistré sur cet appareil" Classes="heading" Foreground="{DynamicResource ToneGreen}" />
           <TextBlock Text="{Binding ReceiptText}" TextWrapping="Wrap" />
+          <TextBlock Text="Le numéro LOCAL est un accusé provisoire. Le reçu officiel et son code de vérification seront disponibles après l'acceptation du serveur."
+                     Classes="muted" TextWrapping="Wrap" IsVisible="{Binding HasLocalReceipt}" />
           <Grid ColumnDefinitions="*,*,*" infra:Adaptive.StackBelow="700" Margin="0,8,0,0" ColumnSpacing="8">
-            <Button x:Name="PrintReceiptButton" Classes="primary" Command="{Binding PrintReceipt}" HorizontalAlignment="Stretch" MinHeight="48"><TextBlock Text="Imprimer le reçu" TextWrapping="Wrap" /></Button>
-            <Button x:Name="OpenReceiptButton" Grid.Column="1" Command="{Binding OpenReceipt}" HorizontalAlignment="Stretch" MinHeight="48"><TextBlock Text="Voir le reçu" TextWrapping="Wrap" /></Button>
+            <Button x:Name="PrintReceiptButton" Classes="primary" Command="{Binding PrintReceipt}" IsVisible="{Binding !HasLocalReceipt}" HorizontalAlignment="Stretch" MinHeight="48"><TextBlock Text="Imprimer le reçu" TextWrapping="Wrap" /></Button>
+            <Button x:Name="OpenReceiptButton" Grid.Column="1" Command="{Binding OpenReceipt}" HorizontalAlignment="Stretch" MinHeight="48"><TextBlock Text="Voir le versement" TextWrapping="Wrap" /></Button>
             <Button x:Name="NewPaymentButton" Grid.Column="2" Classes="ghost" Command="{Binding NewPayment}" HorizontalAlignment="Stretch" MinHeight="48"><TextBlock Text="Nouveau versement" TextWrapping="Wrap" /></Button>
           </Grid>
         </StackPanel>
