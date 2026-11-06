@@ -69,12 +69,13 @@ public sealed class ScoliaClient : IDisposable
     public Uri Server { get; private set; }
 
     /// <summary>Change de serveur (ce poste ou celui de l'établissement) : nouvelle connexion, sans session ouverte.</summary>
-    public void Retarget(Uri server)
+    public void Retarget(Uri server, bool sameVerifiedSchool = false)
     {
         if (server == Server && remoteLink is null) return;
         remoteLink = null;
-        // Un changement d'établissement ne doit jamais réutiliser le cache ou les opérations de l'ancien serveur.
-        Offline = null;
+        // La copie locale n'est conservée que si une preuve cryptographique
+        // a reconnu le même serveur malgré le changement d'adresse.
+        if (!sameVerifiedSchool) Offline = null;
         var previous = http;
         cookies = new CookieContainer();
         http = Create(server);
