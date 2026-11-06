@@ -845,6 +845,12 @@ public sealed class ShellViewModel : Observable
         api.Offline.RememberAccount(s.UserName);
         Login.RememberAccount(s.UserName);
         Sync.Start();
+        // Une première session Promoteur vérifiée mémorise son appareil :
+        // reconnexion future au même serveur, sans QR et sans privilèges ajoutés.
+        if (s.Permissions.Contains(Perm.PilotageRead) &&
+            !s.Permissions.Contains(Perm.ReportsRead) &&
+            !s.MustChangePassword && !api.Server.IsLoopback && api.IsOnline)
+            _ = RememberPromoterDeviceAsync(s.UserName);
         OpeningTitle = IsSetupRequired ? "Configuration terminée" : $"Bienvenue, {s.DisplayName}";
         OpeningProgress = 0;
         Opening = true;
@@ -900,6 +906,17 @@ public sealed class ShellViewModel : Observable
             return;
         }
         await OfferNetworkAsync();
+    }
+
+    private async Task RememberPromoterDeviceAsync(string userName)
+    {
+        try { await api.EnsurePromoterDeviceGrantAsync(userName); }
+        catch (Exception ex) when (ex is ApiException or HttpRequestException or
+            TaskCanceledException or IOException or UnauthorizedAccessException or
+            System.Security.Cryptography.CryptographicException)
+        {
+            System.Diagnostics.Trace.WriteLine($"SCOLIA : mémorisation du poste Promoteur différée ({ex.GetType().Name}).");
+        }
     }
 
     /// <summary>Écrans précédents et suivants, comme les flèches des Réglages de macOS. Chaque écran garde sa saisie.</summary>
