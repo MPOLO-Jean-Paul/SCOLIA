@@ -10,10 +10,10 @@ public sealed class OfflinePreparationTests
     public void Preparation_uses_exact_student_pages_expected_by_offline_search()
     {
         Assert.Equal("api/apprenants?page=1&taille=50", OfflinePreparation.PagePath(1));
-        Assert.Equal("api/apprenants?page=20&taille=50", OfflinePreparation.PagePath(20));
-        Assert.Equal(1000, OfflinePreparation.MaximumStudents);
+        Assert.Equal("api/apprenants?page=200&taille=50", OfflinePreparation.PagePath(200));
+        Assert.Equal(10000, OfflinePreparation.MaximumStudents);
         Assert.Throws<ArgumentOutOfRangeException>(() => OfflinePreparation.PagePath(0));
-        Assert.Throws<ArgumentOutOfRangeException>(() => OfflinePreparation.PagePath(21));
+        Assert.Throws<ArgumentOutOfRangeException>(() => OfflinePreparation.PagePath(201));
     }
 
     [Fact]
