@@ -160,7 +160,7 @@ public static class ScoliaEndpoints
                 u => u.Id == current.Id && u.IsActive, ct);
             if (account is null) return Results.Unauthorized();
             var issued = registry.EnrollOwnDevice(account.Id, account.SecurityStamp,
-                deviceId, LiveHeaders.DeviceName(http));
+                deviceId, LiveHeaders.Device(http));
             return issued is null ? Results.BadRequest()
                 : Results.Ok(new DeviceSelfRegistration(issued.Value.GrantId,
                     issued.Value.Secret, issued.Value.ExpiresUtc));
