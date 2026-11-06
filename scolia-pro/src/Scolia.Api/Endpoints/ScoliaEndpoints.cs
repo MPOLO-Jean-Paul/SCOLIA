@@ -148,6 +148,24 @@ public static class ScoliaEndpoints
             return Results.Ok(await SessionFactory.DescribeAsync(db, account, ct));
         }).RequireRateLimiting("connexion");
 
+        // Première connexion du Promoteur : mémoriser uniquement l'appareil
+        // authentifié et son compte en lecture seule, sans privilèges administratifs.
+        api.MapPost("/jumelage/mon-appareil", async Task<IResult> (HttpContext http,
+            ICurrentUser current, DevicePairingRegistry registry, ScoliaDbContext db,
+            CancellationToken ct) =>
+        {
+            var deviceId = LiveHeaders.DeviceId(http);
+            if (string.IsNullOrWhiteSpace(deviceId)) return Results.Unauthorized();
+            var account = await db.Users.AsNoTracking().FirstOrDefaultAsync(
+                u => u.Id == current.Id && u.IsActive, ct);
+            if (account is null) return Results.Unauthorized();
+            var issued = registry.EnrollOwnDevice(account.Id, account.SecurityStamp,
+                deviceId, LiveHeaders.DeviceName(http));
+            return issued is null ? Results.BadRequest()
+                : Results.Ok(new DeviceSelfRegistration(issued.Value.GrantId,
+                    issued.Value.Secret, issued.Value.ExpiresUtc));
+        }).RequireAuthorization(Permissions.PilotageRead).RequireRateLimiting("connexion");
+
         api.MapGet("/jumelage/appareils", (ICurrentUser current, DevicePairingRegistry registry) =>
             Results.Ok(registry.List(current.Id!.Value))).RequireAuthorization(Permissions.UsersManage);
 
