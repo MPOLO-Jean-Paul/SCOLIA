@@ -148,7 +148,7 @@ public sealed class CashierPage : PageViewModel
                 : search.Trim().Length < 2 ? "Encore un caractère : nom ou matricule, deux caractères au moins."
                 : "Recherche en cours…";
             searchTimer?.Stop();
-            searchTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(300) };
+            searchTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(Shell.Api.IsOnline ? 300 : 75) };
             searchTimer.Tick += async (_, _) => { searchTimer?.Stop(); await Shell.Run(SearchAsync); };
             searchTimer.Start();
         }
@@ -274,7 +274,7 @@ public sealed class CashierPage : PageViewModel
             BalanceAfter = string.Empty;
             return;
         }
-        previewTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(150) };
+        previewTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(Shell.Api.IsOnline ? 150 : 25) };
         previewTimer.Tick += async (_, _) => { previewTimer?.Stop(); await Shell.Run(PreviewAsync); };
         previewTimer.Start();
     }
@@ -361,7 +361,7 @@ public sealed class CashierPage : PageViewModel
         try
         {
             PagedResult<StudentListItem>? page = null;
-            var local = !Shell.Api.IsOnline ? FindLocally() : null;
+            var local = !Shell.Api.IsOnline ? await FindLocallyAsync(query) : null;
             if (local is null)
             {
                 try
@@ -369,7 +369,7 @@ public sealed class CashierPage : PageViewModel
                     page = await Shell.Api.GetAsync<PagedResult<StudentListItem>>(
                         "api/apprenants" + ScoliaClient.Query(("q", query), ("taille", 12)));
                 }
-                catch (OfflineException) { local = FindLocally(); }
+                catch (OfflineException) { local = await FindLocallyAsync(query); }
             }
             page ??= local?.Page;
             if (version != searchVersion) return;
@@ -392,10 +392,15 @@ public sealed class CashierPage : PageViewModel
         }
     }
 
-    private OfflineStudentSearch.Result? FindLocally() =>
-        Shell.Api.Offline is { } store
-            ? OfflineStudentSearch.Search(store, Search.Trim(), null, null, 1, 50)
-            : null;
+    private Task<OfflineStudentSearch.Result?> FindLocallyAsync(string term)
+    {
+        var store = Shell.Api.Offline;
+        // Initialisation SQLite, déchiffrement et classement hors du thread
+        // UI : les interactions Android restent réactives pendant le cache froid.
+        return store is null
+            ? Task.FromResult<OfflineStudentSearch.Result?>(null)
+            : Task.Run(() => OfflineStudentSearch.Search(store, term, null, null, 1, 50));
+    }
 
     public async Task ChooseAsync(PayerRow row)
     {
@@ -527,24 +532,35 @@ public sealed class CashierPage : PageViewModel
             PaymentPreviewDto preview;
             try
             {
-                preview = await Shell.Api.SendAsync<PaymentPreviewDto>(HttpMethod.Post, "api/paiements/apercu",
-                    new { enrollmentId = e.Id, amount = PaymentAmount, feeItemIds = SelectedIds(), method = Method?.Value });
+                if (!Shell.Api.IsOnline && currentAccount is { } local)
+                {
+                    // Après basculement, zéro appel HTTP et zéro attente réseau.
+                    preview = OfflineFinance.Preview(local, SelectedIds(), PaymentAmount);
+                }
+                else
+                {
+                    try
+                    {
+                        preview = await Shell.Api.SendAsync<PaymentPreviewDto>(HttpMethod.Post,
+                            "api/paiements/apercu", new { enrollmentId = e.Id,
+                                amount = PaymentAmount, feeItemIds = SelectedIds(), method = Method?.Value });
+                    }
+                    catch (OfflineException)
+                    {
+                        if (currentAccount is null)
+                        {
+                            if (version == previewVersion)
+                                Hint = "Compte local absent : reconnectez-vous pour préparer les données.";
+                            return;
+                        }
+                        preview = OfflineFinance.Preview(currentAccount, SelectedIds(), PaymentAmount);
+                    }
+                }
             }
-            catch (OfflineException)
+            catch (ArgumentException ex)
             {
-                if (currentAccount is null)
-                {
-                    if (version == previewVersion) Hint = "Compte local absent : reconnectez-vous pour préparer les données.";
-                    return;
-                }
-                // Même ordre de calcul des mensualités que lors de la
-                // confirmation : le solde est immédiatement affiché.
-                try { preview = OfflineFinance.Preview(currentAccount, SelectedIds(), PaymentAmount); }
-                catch (ArgumentException ex)
-                {
-                    if (version == previewVersion) Hint = ex.Message;
-                    return;
-                }
+                if (version == previewVersion) Hint = ex.Message;
+                return;
             }
             if (version != previewVersion) return;
             CollectionSync.Apply(Allocations, preview.Allocations.Select(a => new AllocationRowVm(a.Label, Money(a.Amount), Money(a.RemainingAfter))));
