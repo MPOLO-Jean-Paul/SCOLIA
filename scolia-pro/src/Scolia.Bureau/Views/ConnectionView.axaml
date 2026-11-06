@@ -88,6 +88,7 @@
       </Border>
 
       <!-- Appareils autorisés par Tailscale : aucune découverte UDP distante, jamais d'identifiants VPN dans SCOLIA. -->
+      <Expander Header="Option avancée : Tailscale privé (facultatif)" IsExpanded="False">
       <Border Classes="card">
         <StackPanel Spacing="10">
           <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
@@ -95,7 +96,7 @@
             <StackPanel Grid.Column="1" Spacing="3">
               <TextBlock Text="Réseau privé Tailscale" FontWeight="SemiBold" />
               <TextBlock Classes="muted" TextWrapping="Wrap"
-                         Text="Installez Tailscale sur chaque appareil, connectez-les au même réseau privé et faites approuver les appareils concernés. SCOLIA conserve ses comptes et ses permissions." />
+                         Text="Tailscale est facultatif. Si Render est activé sur le serveur principal, le QR officiel permet aussi la connexion sur des réseaux Internet différents, sans VPN." />
             </StackPanel>
           </Grid>
           <TextBlock Classes="muted" TextWrapping="Wrap"
@@ -110,6 +111,7 @@
                      Text="Tailscale doit rester connecté sur les deux appareils. Le serveur du téléphone utilise une notification Android ; sa disponibilité permanente ne peut pas être garantie si Android arrête l’application." />
         </StackPanel>
       </Border>
+      </Expander>
 
       <!-- Adresse saisie : quand le Wi-Fi empêche la recherche automatique -->
       <Border Classes="card">
