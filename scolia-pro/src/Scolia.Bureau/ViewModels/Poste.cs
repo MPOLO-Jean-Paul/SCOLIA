@@ -218,7 +218,8 @@ public sealed class PosteViewModel : Observable
     public RelayCommand OpenAppSettings { get; }
     public RelayCommand OpenPowerOptions { get; }
 
-    private void Refresh()
+    /// <summary>Actualise les indicateurs lors de l'ouverture du centre Réseau.</summary>
+    public void Refresh()
     {
         serviceInstalled = OperatingSystem.IsWindows() && PosteAdmin.ServiceInstalled();
         // Le téléphone serveur est toujours ouvert au Wi-Fi : c'est sa raison d'être.
