@@ -1,6 +1,8 @@
 using System.Globalization;
 using System.Net;
 using System.Net.Http.Json;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Scolia.Transport;
@@ -159,6 +161,28 @@ public sealed class ScoliaClient : IDisposable
             Infrastructure.DevicePairingStore.Forget(Server);
             return null;
         }
+    }
+
+    private sealed record DeviceProofReply(string Proof);
+
+    /// <summary>Confirme le serveur scolaire par défi HMAC avant de suivre une nouvelle IP annoncée en UDP.</summary>
+    public async Task<bool> ProvesPairedServerAsync(
+        Infrastructure.DevicePairingStore.Credential credential, CancellationToken ct = default)
+    {
+        var nonce = Convert.ToHexString(RandomNumberGenerator.GetBytes(24));
+        try
+        {
+            var proof = await SendAsync<DeviceProofReply>(HttpMethod.Post, "api/jumelage/preuve-serveur",
+                new { grantId = credential.GrantId, deviceId = Infrastructure.DeviceIdentity.Id, nonce }, ct);
+            if (proof.Proof is null || proof.Proof.Length != 64 || !proof.Proof.All(char.IsAsciiHexDigit))
+                return false;
+            var key = SHA256.HashData(Encoding.UTF8.GetBytes(credential.DeviceSecret));
+            var expected = HMACSHA256.HashData(key, Encoding.ASCII.GetBytes(nonce));
+            return CryptographicOperations.FixedTimeEquals(expected, Convert.FromHexString(proof.Proof));
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
+        catch (Exception ex) when (ex is ApiException or HttpRequestException or TaskCanceledException or IOException
+            or FormatException or JsonException) { return false; }
     }
 
     public async Task LogoutAsync(CancellationToken ct = default)
