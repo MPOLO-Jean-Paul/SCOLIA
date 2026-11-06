@@ -159,6 +159,7 @@ public static class ScoliaEndpoints
             var account = await db.Users.AsNoTracking().FirstOrDefaultAsync(
                 u => u.Id == current.Id && u.IsActive, ct);
             if (account is null) return Results.Unauthorized();
+            if (account.Role != Role.Promoteur) return Results.Forbid();
             var issued = registry.EnrollOwnDevice(account.Id, account.SecurityStamp,
                 deviceId, LiveHeaders.Device(http));
             return issued is null ? Results.BadRequest()
