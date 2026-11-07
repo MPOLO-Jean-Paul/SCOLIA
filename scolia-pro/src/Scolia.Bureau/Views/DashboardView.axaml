@@ -12,7 +12,7 @@
         <Grid ColumnDefinitions="Auto,*,Auto">
           <mi:MaterialIcon Kind="AlertCircleOutline" Width="18" Height="18" Foreground="{DynamicResource ToneOrange}" VerticalAlignment="Center" Margin="0,0,10,0" />
           <TextBlock Grid.Column="1" Text="{Binding BackupLine}" TextWrapping="Wrap" VerticalAlignment="Center" />
-          <Button Grid.Column="2" Content="Sauvegarder maintenant" Command="{Binding BackupNow}" Margin="12,0,0,0" VerticalAlignment="Center" />
+          <Button infra:Icons.Lead="ContentSaveOutline" Grid.Column="2" Content="Sauvegarder maintenant" Command="{Binding BackupNow}" Margin="12,0,0,0" VerticalAlignment="Center" />
         </Grid>
       </Border>
 

@@ -45,7 +45,7 @@
                            Text="Aucun autre appareil ne peut le joindre : ni le Wi-Fi de l'établissement ni l'accès par Internet ne sont ouverts. Ouvrez l'un des deux, puis revenez ici." />
               </StackPanel>
             </Grid>
-            <Button Classes="primary" Content="Ouvrir les réglages de partage" Command="{Binding OpenSharing}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" />
+            <Button infra:Icons.Lead="ShareVariantOutline" Classes="primary" Content="Ouvrir les réglages de partage" Command="{Binding OpenSharing}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" />
           </StackPanel>
         </Border>
 
@@ -67,7 +67,7 @@
 
         <TextBlock Text="{Binding Footer}" Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" TextAlignment="Center" IsVisible="{Binding Shared}" />
         <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
-          <Button Grid.Column="0" Command="{Binding Renew}" Content="Nouveau code" IsEnabled="{Binding CanInvite}" IsVisible="{Binding Shared}"
+          <Button infra:Icons.Lead="QrcodePlus" Grid.Column="0" Command="{Binding Renew}" Content="Nouveau code" IsEnabled="{Binding CanInvite}" IsVisible="{Binding Shared}"
                   Classes.primary="{Binding Expired}" />
           <Button Grid.Column="1" Command="{Binding Copy}" IsEnabled="{Binding Ready}" IsVisible="{Binding Shared}" ToolTip.Tip="Code confidentiel à usage unique, à transmettre seulement à l'appareil approuvé">
             <StackPanel Orientation="Horizontal" Spacing="6">

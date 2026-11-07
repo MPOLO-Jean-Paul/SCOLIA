@@ -97,8 +97,8 @@
                         <TextBlock Text="{Binding When}" Classes="muted" FontSize="{DynamicResource FsSmall}" />
                         <TextBlock Text="{Binding Error}" Foreground="{DynamicResource ToneRed}" TextWrapping="Wrap" IsVisible="{Binding IsConflict}" />
                         <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,6,0,0" IsVisible="{Binding IsConflict}">
-                          <Button Content="Réessayer" Command="{Binding Retry}" />
-                          <Button Classes="danger" Content="Abandonner" Command="{Binding Discard}"
+                          <Button infra:Icons.Lead="Refresh" Content="Réessayer" Command="{Binding Retry}" />
+                          <Button infra:Icons.Lead="TrashCanOutline" Classes="danger" Content="Abandonner" Command="{Binding Discard}"
                                   ToolTip.Tip="Demande confirmation avant de retirer cette opération refusée de la file locale" />
                         </StackPanel>
                       </StackPanel>

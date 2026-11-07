@@ -8,15 +8,15 @@
     <DataTemplate x:Key="JoinActions">
       <StackPanel Spacing="6">
         <WrapPanel>
-          <Button Content="Rechercher SCOLIA sur le réseau" Command="{Binding Search}" IsEnabled="{Binding NotSearching}" Margin="0,0,10,6" />
+          <Button infra:Icons.Lead="Magnify" Content="Rechercher SCOLIA sur le réseau" Command="{Binding Search}" IsEnabled="{Binding NotSearching}" Margin="0,0,10,6" />
           <Button Command="{Binding ScanCode}" Margin="0,0,10,6">
             <StackPanel Orientation="Horizontal" Spacing="6">
               <mi:MaterialIcon Kind="QrcodeScan" Width="16" Height="16" />
               <TextBlock Text="{Binding ScanLabel}" VerticalAlignment="Center" />
             </StackPanel>
           </Button>
-          <Button Content="Importer une photo QR" Command="{Binding ImportQrImage}" Margin="0,0,10,6" IsVisible="{Binding CanImportQrImage}" />
-          <Button Classes="ghost" Content="Utiliser cet ordinateur comme serveur" Command="{Binding UseThisComputer}" IsVisible="{Binding CanBecomeServer}" Margin="0,0,10,6" />
+          <Button infra:Icons.Lead="ImageSearchOutline" Content="Importer une photo QR" Command="{Binding ImportQrImage}" Margin="0,0,10,6" IsVisible="{Binding CanImportQrImage}" />
+          <Button infra:Icons.Lead="ServerOutline" Classes="ghost" Content="Utiliser cet ordinateur comme serveur" Command="{Binding UseThisComputer}" IsVisible="{Binding CanBecomeServer}" Margin="0,0,10,6" />
         </WrapPanel>
         <ProgressBar IsIndeterminate="True" IsVisible="{Binding Searching}" Height="2" MinHeight="2" />
         <TextBlock Text="{Binding SearchLine}" IsVisible="{Binding HasSearchLine}" Classes="muted" TextWrapping="Wrap" FontSize="{DynamicResource FsSmall}" />
@@ -28,7 +28,7 @@
                   <TextBlock Text="{Binding School}" FontWeight="SemiBold" TextWrapping="Wrap" />
                   <TextBlock Text="{Binding Detail}" Classes="muted" TextWrapping="Wrap" FontSize="{DynamicResource FsSmall}" />
                 </StackPanel>
-                <Button Grid.Column="1" Classes="primary" Content="Rejoindre" Command="{Binding Join}" VerticalAlignment="Center" />
+                <Button infra:Icons.Lead="LoginVariant" Grid.Column="1" Classes="primary" Content="Rejoindre" Command="{Binding Join}" VerticalAlignment="Center" />
               </Grid>
             </DataTemplate>
           </ItemsControl.ItemTemplate>
@@ -162,8 +162,8 @@
             </StackPanel>
             <TextBlock Text="{Binding Remote.StatusLine}" Classes="muted" TextWrapping="Wrap" FontSize="{DynamicResource FsSmall}" />
             <WrapPanel Margin="0,8,0,0">
-              <Button Classes="primary" Content="{Binding Remote.EnableLabel}" Command="{Binding Remote.Enable}" Margin="0,0,10,6" />
-              <Button Classes="ghost" Content="Désactiver" Command="{Binding Remote.Disable}" IsVisible="{Binding Remote.IsActive}" Margin="0,0,10,6"
+              <Button infra:Icons.Lead="CloudCheckOutline" Classes="primary" Content="{Binding Remote.EnableLabel}" Command="{Binding Remote.Enable}" Margin="0,0,10,6" />
+              <Button infra:Icons.Lead="CloudOffOutline" Classes="ghost" Content="Désactiver" Command="{Binding Remote.Disable}" IsVisible="{Binding Remote.IsActive}" Margin="0,0,10,6"
                       ToolTip.Tip="Couper l'accès des appareils distants (demande confirmation)" />
             </WrapPanel>
             <TextBlock Text="{Binding Remote.Message}" TextWrapping="Wrap" FontSize="{DynamicResource FsSmall}" IsVisible="{Binding Remote.Message, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
@@ -196,13 +196,13 @@
                   <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextWrapping="Wrap" />
                   <TextBlock Text="{Binding Detail}" Classes="muted" TextWrapping="Wrap" FontSize="{DynamicResource FsSmall}" />
                 </StackPanel>
-                <Button Grid.Column="2" Classes="danger" Content="Retirer l'accès" Command="{Binding Revoke}" IsVisible="{Binding Active}"
+                <Button infra:Icons.Lead="CellphoneRemove" Grid.Column="2" Classes="danger" Content="Retirer l'accès" Command="{Binding Revoke}" IsVisible="{Binding Active}"
                         VerticalAlignment="Center" Margin="12,0,0,0" />
               </Grid>
             </DataTemplate>
           </ItemsControl.ItemTemplate>
         </ItemsControl>
-        <Button Classes="ghost" Content="Actualiser la liste" Command="{Binding LoadDevices}" HorizontalAlignment="Left" Margin="12,0,0,10" />
+        <Button infra:Icons.Lead="Refresh" Classes="ghost" Content="Actualiser la liste" Command="{Binding LoadDevices}" HorizontalAlignment="Left" Margin="12,0,0,10" />
       </StackPanel>
     </Border>
 
@@ -230,7 +230,7 @@
             <TextBlock Classes="muted" TextWrapping="Wrap" FontSize="{DynamicResource FsSmall}"
                        Text="Un portable dont on ferme le couvercle s'endort quand même : choisissez « Ne rien faire » quand il est branché." />
           </StackPanel>
-          <Button Grid.Column="2" Content="Options d'alimentation" Command="{Binding OpenPowerOptions}" VerticalAlignment="Center" Margin="12,0,0,0" />
+          <Button infra:Icons.Lead="PowerSettings" Grid.Column="2" Content="Options d'alimentation" Command="{Binding OpenPowerOptions}" VerticalAlignment="Center" Margin="12,0,0,0" />
         </Grid>
       </StackPanel>
     </Border>

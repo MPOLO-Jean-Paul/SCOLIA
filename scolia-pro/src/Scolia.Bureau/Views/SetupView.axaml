@@ -123,7 +123,7 @@
                     </Panel>
                   </Button>
                   <TextBlock Text="{Binding LogoLine}" Classes="muted" FontSize="{DynamicResource FsCaption}" TextWrapping="Wrap" TextAlignment="Center" MaxHeight="44" />
-                  <Button Classes="ghost small" Content="Retirer le logo" Command="{Binding ClearLogo}" IsVisible="{Binding HasLogo}" HorizontalAlignment="Center" />
+                  <Button infra:Icons.Lead="ImageOff" Classes="ghost small" Content="Retirer le logo" Command="{Binding ClearLogo}" IsVisible="{Binding HasLogo}" HorizontalAlignment="Center" />
                 </StackPanel>
 
                 <Grid Grid.Column="1" ColumnDefinitions="2*,*,*" RowDefinitions="Auto,Auto" ColumnSpacing="12" RowSpacing="10">

@@ -204,8 +204,8 @@
         <Button Grid.Column="3" Classes="baricon mic" Classes.listening="{Binding HeaderSearch.Listening}" Command="{Binding HeaderSearch.Listen}"
                 IsVisible="{Binding HeaderSearch.VoiceAvailable}" ToolTip.Tip="{Binding HeaderSearch.VoiceTip}">
           <Grid>
-                  <mi:MaterialIcon Kind="Microphone" IsVisible="{Binding !HeaderSearch.Listening}" />
-                  <mi:MaterialIcon Kind="Stop" IsVisible="{Binding HeaderSearch.Listening}" />
+                  <mi:MaterialIcon Kind="MicrophoneOutline" IsVisible="{Binding !HeaderSearch.Listening}" />
+                  <mi:MaterialIcon Kind="StopOutline" IsVisible="{Binding HeaderSearch.Listening}" />
                 </Grid>
         </Button>
       </Grid>
@@ -292,8 +292,8 @@
               <Button Grid.Column="3" Classes="baricon mic" Classes.listening="{Binding SettingsSearch.Listening}" Command="{Binding SettingsSearch.Listen}"
                       IsVisible="{Binding SettingsSearch.VoiceAvailable}" ToolTip.Tip="{Binding SettingsSearch.VoiceTip}">
                 <Grid>
-                  <mi:MaterialIcon Kind="Microphone" IsVisible="{Binding !SettingsSearch.Listening}" />
-                  <mi:MaterialIcon Kind="Stop" IsVisible="{Binding SettingsSearch.Listening}" />
+                  <mi:MaterialIcon Kind="MicrophoneOutline" IsVisible="{Binding !SettingsSearch.Listening}" />
+                  <mi:MaterialIcon Kind="StopOutline" IsVisible="{Binding SettingsSearch.Listening}" />
                 </Grid>
               </Button>
             </Grid>

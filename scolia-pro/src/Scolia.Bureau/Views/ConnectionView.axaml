@@ -1,12 +1,13 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:infra="using:Scolia.Bureau.Infrastructure"
              xmlns:mi="using:Material.Icons.Avalonia"
              x:Class="Scolia.Bureau.Views.ConnectionView">
   <Grid Background="{DynamicResource BgBrush}">
     <ScrollViewer HorizontalScrollBarVisibility="Disabled">
       <StackPanel MaxWidth="520" Margin="20,22,20,26" HorizontalAlignment="Center" Spacing="12">
-        <Button Classes="ghost" Command="{Binding Back}" IsVisible="{Binding CanGoBack}" HorizontalAlignment="Left"
-                Content="← Retour" />
+        <Button infra:Icons.Lead="ArrowLeft" Classes="ghost" Command="{Binding Back}" IsVisible="{Binding CanGoBack}" HorizontalAlignment="Left"
+                Content="Retour" />
         <Image Source="{DynamicResource ScoliaMark}" Width="52" Height="52" HorizontalAlignment="Center" />
         <TextBlock Text="Rejoindre votre établissement" Classes="title" FontSize="{DynamicResource FsDisplay}"
                    HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" />
@@ -59,7 +60,7 @@
                     <TextBlock Text="{Binding School}" FontWeight="SemiBold" TextWrapping="Wrap" />
                     <TextBlock Text="{Binding Detail}" Classes="muted" TextWrapping="Wrap" />
                   </StackPanel>
-                  <Button Grid.Column="2" Classes="primary" Content="Rejoindre" Command="{Binding Join}"
+                  <Button infra:Icons.Lead="LoginVariant" Grid.Column="2" Classes="primary" Content="Rejoindre" Command="{Binding Join}"
                           VerticalAlignment="Center" />
                 </Grid>
               </DataTemplate>
@@ -79,14 +80,14 @@
                            Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
               </StackPanel>
             </Grid>
-            <Button Content="Rechercher un serveur proche" Command="{Binding Search}"
+            <Button infra:Icons.Lead="Magnify" Content="Rechercher un serveur proche" Command="{Binding Search}"
                     IsEnabled="{Binding NotSearching}" HorizontalAlignment="Stretch" />
             <Expander Header="Saisir une adresse locale" IsExpanded="False">
               <StackPanel Spacing="8" Margin="6,8">
                 <TextBlock Text="{Binding AddressHint}" Classes="muted" TextWrapping="Wrap" />
                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
                   <TextBox Classes="w11" Text="{Binding Address}" PlaceholderText="192.168.1.10" />
-                  <Button Grid.Column="1" Classes="primary" Content="Rejoindre" Command="{Binding ConnectAddress}"
+                  <Button infra:Icons.Lead="LoginVariant" Grid.Column="1" Classes="primary" Content="Rejoindre" Command="{Binding ConnectAddress}"
                           IsEnabled="{Binding NotSearching}" />
                 </Grid>
               </StackPanel>
@@ -94,9 +95,9 @@
           </StackPanel>
         </Border>
 
-        <Button Classes="ghost" Content="Configurer cet ordinateur comme serveur" Command="{Binding UseThisComputer}"
+        <Button infra:Icons.Lead="ServerOutline" Classes="ghost" Content="Configurer cet ordinateur comme serveur" Command="{Binding UseThisComputer}"
                 IsVisible="{Binding DesktopCanBeServer}" HorizontalAlignment="Center" />
-        <Button Classes="ghost" Content="Configurer cet appareil comme serveur" Command="{Binding UseThisComputer}"
+        <Button infra:Icons.Lead="ServerOutline" Classes="ghost" Content="Configurer cet appareil comme serveur" Command="{Binding UseThisComputer}"
                 IsVisible="{Binding PhoneCanBeServer}" HorizontalAlignment="Center" />
         <TextBlock Classes="muted" TextAlignment="Center" TextWrapping="Wrap"
                    FontSize="{DynamicResource FsSmall}"

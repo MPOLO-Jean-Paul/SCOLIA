@@ -11,7 +11,7 @@
         <StackPanel IsVisible="{Binding HasRecent}" Spacing="4">
           <Grid ColumnDefinitions="*,Auto">
             <TextBlock Text="Recherches récentes" Classes="searchsection" />
-            <Button Grid.Column="1" Classes="ghost" Content="Effacer" Command="{Binding ClearRecent}"
+            <Button infra:Icons.Lead="Eraser" Grid.Column="1" Classes="ghost" Content="Effacer" Command="{Binding ClearRecent}"
                     Margin="0,6,8,0" MinHeight="32" VerticalAlignment="Center" />
           </Grid>
           <ItemsControl ItemsSource="{Binding Recent}">

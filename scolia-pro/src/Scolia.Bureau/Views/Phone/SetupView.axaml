@@ -159,7 +159,7 @@
     <Border Grid.Row="2" Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource LineBrush}" BorderThickness="0,1,0,0" Padding="16,10">
       <Grid ColumnDefinitions="Auto,*">
         <Button Classes="ghost" Content="Retour" Command="{Binding Back}" IsVisible="{Binding IsStepTwo}" IsEnabled="{Binding !Busy}" Height="46" />
-        <Button Classes="ghost" Content="Rejoindre un serveur" Command="{Binding JoinExisting}" IsVisible="{Binding IsStepOne}" Height="46" />
+        <Button infra:Icons.Lead="LanConnect" Classes="ghost" Content="Rejoindre un serveur" Command="{Binding JoinExisting}" IsVisible="{Binding IsStepOne}" Height="46" />
         <Button Grid.Column="1" Classes="primary" Command="{Binding Next}" IsVisible="{Binding IsStepOne}" Height="46" HorizontalAlignment="Right" MinWidth="150" Content="Suivant" />
         <Button Grid.Column="1" Classes="primary" Command="{Binding Finish}" IsVisible="{Binding IsStepTwo}" IsEnabled="{Binding !Busy}" Height="46" HorizontalAlignment="Right" Content="Terminer" MinWidth="150" />
       </Grid>

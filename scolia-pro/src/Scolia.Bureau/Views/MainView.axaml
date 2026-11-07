@@ -2,6 +2,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:Scolia.Bureau.ViewModels"
              xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:infra="using:Scolia.Bureau.Infrastructure"
              xmlns:views="using:Scolia.Bureau.Views"
              xmlns:chrome="using:Avalonia.Controls.Chrome"
              xmlns:ctl="using:Scolia.Bureau.Controls"
@@ -305,8 +306,8 @@
                       Command="{Binding HeaderFinder.Listen}" IsVisible="{Binding HeaderFinder.VoiceAvailable}" Focusable="False"
                       ToolTip.Tip="{Binding HeaderFinder.VoiceTip}" Width="40" Height="40">
                 <Grid>
-                  <mi:MaterialIcon Kind="Microphone" IsVisible="{Binding !HeaderFinder.Listening}" />
-                  <mi:MaterialIcon Kind="Stop" IsVisible="{Binding HeaderFinder.Listening}" />
+                  <mi:MaterialIcon Kind="MicrophoneOutline" IsVisible="{Binding !HeaderFinder.Listening}" />
+                  <mi:MaterialIcon Kind="StopOutline" IsVisible="{Binding HeaderFinder.Listening}" />
                 </Grid>
               </Button>
             </Grid>
@@ -328,8 +329,8 @@
               <Button Grid.Column="3" Classes="baricon mic" Classes.listening="{Binding HeaderSearch.Listening}" Command="{Binding HeaderSearch.Listen}"
                       IsVisible="{Binding HeaderSearch.VoiceAvailable}" Focusable="False" ToolTip.Tip="{Binding HeaderSearch.VoiceTip}" Width="40" Height="40">
                 <Grid>
-                  <mi:MaterialIcon Kind="Microphone" IsVisible="{Binding !HeaderSearch.Listening}" />
-                  <mi:MaterialIcon Kind="Stop" IsVisible="{Binding HeaderSearch.Listening}" />
+                  <mi:MaterialIcon Kind="MicrophoneOutline" IsVisible="{Binding !HeaderSearch.Listening}" />
+                  <mi:MaterialIcon Kind="StopOutline" IsVisible="{Binding HeaderSearch.Listening}" />
                 </Grid>
               </Button>
             </Grid>
@@ -343,7 +344,7 @@
                 <DataTemplate>
                   <Button Classes="hdr" Command="{Binding Command}" Classes.primary="{Binding IsPrimary}" Classes.danger="{Binding Danger}" ToolTip.Tip="{Binding Hint}">
                     <StackPanel Orientation="Horizontal" Spacing="6">
-                      <mi:MaterialIcon Kind="{Binding Icon}" Width="16" Height="16" />
+                      <mi:MaterialIcon Kind="{Binding Icon, Converter={x:Static infra:Icons.LineConverter}}" Width="16" Height="16" />
                       <TextBlock Text="{Binding Label}" VerticalAlignment="Center" />
                     </StackPanel>
                   </Button>
@@ -514,7 +515,7 @@
           <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="6">
             <!-- Bascule rapide du thème clair au thème sombre -->
             <Button Classes="ghost" Padding="6,0" MinHeight="0" Click="OnThemeToggle" ToolTip.Tip="Thème clair ou sombre" Margin="0,0,10,0">
-              <mi:MaterialIcon x:Name="ThemeIcon" Kind="WeatherNight" Width="15" Height="15" />
+              <mi:MaterialIcon x:Name="ThemeIcon" Kind="WeatherNightOutline" Width="15" Height="15" />
             </Button>
             <Button Classes="ghost" Padding="4,2" MinHeight="0" Click="OnZoomOut" ToolTip.Tip="Réduire (Ctrl+-)">
               <mi:MaterialIcon Kind="Minus" Width="15" Height="15" />

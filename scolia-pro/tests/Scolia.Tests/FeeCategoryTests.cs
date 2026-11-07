@@ -111,6 +111,18 @@ public sealed class FeeCategoryTests : IDisposable
     }
 
     [Fact]
+    public async Task A_category_used_by_a_closed_year_cannot_be_deleted()
+    {
+        var admin = await app.InstalledAdmin();
+        await admin.Post("/api/etablissement/promotions", Promotion("INF1", 55000m)).Ok();
+        var category = await admin.Post("/api/etablissement/categories-frais", new { name = "Frais de stage", amount = 10000m, applyToPromotions = true }).Ok();
+        var year = (await admin.GetAsync("/api/etablissement/annees").Ok())[0].GetProperty("id").GetString();
+        await admin.Post($"/api/etablissement/annees/{year}/cloture", new { }).Ok();
+        var (_, refused) = await admin.DeleteAsync($"/api/etablissement/categories-frais/{category.GetProperty("id").GetString()}").Fail();
+        Assert.Contains("année clôturée", refused.GetRawText(), StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task Sponsored_students_are_counted_apart_from_payers_and_up_to_date_students()
     {
         var admin = await app.InstalledAdmin();

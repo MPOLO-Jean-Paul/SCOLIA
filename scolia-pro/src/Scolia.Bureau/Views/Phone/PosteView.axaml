@@ -1,5 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:infra="using:Scolia.Bureau.Infrastructure"
              xmlns:mi="using:Material.Icons.Avalonia"
              x:Class="Scolia.Bureau.Views.Phone.PosteView">
   <!-- Réseau sur le mobile : le serveur auquel l'appareil est relié, ou ce téléphone lui-même quand il est le serveur -->
@@ -57,9 +58,9 @@
             <TextBlock Text="{Binding Remote.StatusLine}" Classes="muted" TextWrapping="Wrap" FontSize="{DynamicResource FsSmall}" />
           </StackPanel>
         </Grid>
-        <Button Classes="primary" Content="{Binding Remote.EnableLabel}" Command="{Binding Remote.Enable}"
+        <Button infra:Icons.Lead="CloudCheckOutline" Classes="primary" Content="{Binding Remote.EnableLabel}" Command="{Binding Remote.Enable}"
                 HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" MinHeight="46" />
-        <Button Classes="ghost" Content="Désactiver l'accès par Internet" Command="{Binding Remote.Disable}" IsVisible="{Binding Remote.IsActive}"
+        <Button infra:Icons.Lead="CloudOffOutline" Classes="ghost" Content="Désactiver l'accès par Internet" Command="{Binding Remote.Disable}" IsVisible="{Binding Remote.IsActive}"
                 HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" MinHeight="44" />
         <TextBlock Text="{Binding Remote.Message}" TextWrapping="Wrap" FontSize="{DynamicResource FsSmall}" />
         <Expander Header="Adresse du relais (avancé)" HorizontalAlignment="Stretch">
@@ -79,7 +80,7 @@
               <StackPanel Spacing="4" Margin="0,8,0,0">
                 <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextWrapping="Wrap" />
                 <TextBlock Text="{Binding Detail}" Classes="muted" TextWrapping="Wrap" FontSize="{DynamicResource FsSmall}" />
-                <Button Classes="danger" Content="Retirer l'accès" Command="{Binding Revoke}" IsVisible="{Binding Active}"
+                <Button infra:Icons.Lead="CellphoneRemove" Classes="danger" Content="Retirer l'accès" Command="{Binding Revoke}" IsVisible="{Binding Active}"
                         HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" MinHeight="42" />
               </StackPanel>
             </DataTemplate>
@@ -93,7 +94,7 @@
         <TextBlock Text="Mises à jour de SCOLIA Pro" FontWeight="SemiBold" />
         <TextBlock Text="Une nouvelle version est recherchée automatiquement à l'ouverture. Vous pouvez aussi vérifier maintenant, sans attendre le contrôle périodique." Classes="muted" TextWrapping="Wrap" />
         <TextBlock Text="{Binding MobileUpdateStatus}" Classes="muted" TextWrapping="Wrap" />
-        <Button Classes="primary" Command="{Binding CheckMobileUpdates}" Content="Vérifier les mises à jour" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" MinHeight="46" />
+        <Button infra:Icons.Lead="Update" Classes="primary" Command="{Binding CheckMobileUpdates}" Content="Vérifier les mises à jour" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" MinHeight="46" />
       </StackPanel>
     </Border>
 
@@ -104,7 +105,7 @@
       </Grid>
     </Border>
 
-    <Button Content="Rechercher SCOLIA sur le réseau" Command="{Binding Search}" IsEnabled="{Binding NotSearching}"
+    <Button infra:Icons.Lead="Magnify" Content="Rechercher SCOLIA sur le réseau" Command="{Binding Search}" IsEnabled="{Binding NotSearching}"
             HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Height="46" />
     <ProgressBar IsIndeterminate="True" IsVisible="{Binding Searching}" Height="2" MinHeight="2" />
     <TextBlock Text="{Binding SearchLine}" IsVisible="{Binding HasSearchLine}" Classes="muted" TextWrapping="Wrap" FontSize="{DynamicResource FsSmall}" />
@@ -119,7 +120,7 @@
                 <TextBlock Text="{Binding School}" FontWeight="SemiBold" TextWrapping="Wrap" />
                 <TextBlock Text="{Binding Detail}" Classes="muted" TextWrapping="Wrap" FontSize="{DynamicResource FsSmall}" />
               </StackPanel>
-              <Button Grid.Column="2" Classes="primary" Content="Rejoindre" Command="{Binding Join}" VerticalAlignment="Center" Margin="8,0,0,0" />
+              <Button infra:Icons.Lead="LoginVariant" Grid.Column="2" Classes="primary" Content="Rejoindre" Command="{Binding Join}" VerticalAlignment="Center" Margin="8,0,0,0" />
             </Grid>
           </DataTemplate>
         </ItemsControl.ItemTemplate>
@@ -139,7 +140,7 @@
         <TextBlock Text="{Binding ScanLabel}" />
       </StackPanel>
     </Button>
-    <Button Classes="ghost" Command="{Binding ImportQrImage}" Content="Lire un QR depuis une photo" Height="46"
+    <Button infra:Icons.Lead="ImageSearchOutline" Classes="ghost" Command="{Binding ImportQrImage}" Content="Lire un QR depuis une photo" Height="46"
             IsVisible="{Binding IsPhoneClient}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" />
     <Button Classes="ghost" Command="{Binding ChangeServer}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Height="46" IsVisible="{Binding IsPhoneClient}">
       <StackPanel Orientation="Horizontal" Spacing="8">

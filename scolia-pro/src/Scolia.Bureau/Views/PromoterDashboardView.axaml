@@ -18,7 +18,7 @@
               </Border>
             </StackPanel>
             <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-              <mi:MaterialIcon Kind="CheckCircle" Width="15" Height="15" Foreground="{DynamicResource ToneGreen}" IsVisible="{Binding IsSettled}" />
+              <mi:MaterialIcon Kind="CheckCircleOutline" Width="15" Height="15" Foreground="{DynamicResource ToneGreen}" IsVisible="{Binding IsSettled}" />
               <TextBlock Text="Réglé" FontWeight="SemiBold" Foreground="{DynamicResource ToneGreen}" IsVisible="{Binding IsSettled}" />
               <TextBlock Text="Reste" Classes="muted" IsVisible="{Binding !IsSettled}" />
               <TextBlock Text="{Binding Remaining}" FontWeight="SemiBold" IsVisible="{Binding !IsSettled}" />

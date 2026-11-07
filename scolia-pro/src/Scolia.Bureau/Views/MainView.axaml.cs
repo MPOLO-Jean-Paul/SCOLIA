@@ -612,7 +612,7 @@ public partial class MainView : UserControl
         menu.ShowAt(anchor);
     }
 
-    private static MaterialIcon Glyph(MaterialIconKind kind) => new() { Kind = kind, Width = 16, Height = 16 };
+    private static MaterialIcon Glyph(MaterialIconKind kind) => new() { Kind = Infrastructure.Icons.Line(kind), Width = Infrastructure.Icons.ButtonSize, Height = Infrastructure.Icons.ButtonSize };
 
     private static MaterialIconKind TabIcon(string id) => id switch
     {

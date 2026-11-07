@@ -53,9 +53,13 @@ public sealed class FeeCategoryService(IAppDbContext db, IWriteGate gate, IAudit
         category.IsActive = input.IsActive;
         if (id is null) db.FeeCategories.Add(category);
 
-        // Le libellé des rubriques suit le nom de la catégorie, y compris sur les reçus réimprimés.
+        // Le libellé des rubriques suit le nom de la catégorie dans les années ouvertes ; une année clôturée garde le sien.
         if (renamed)
-            foreach (var item in await db.FeeItems.Where(f => f.CategoryId == category.Id).ToListAsync(ct))
+            foreach (var item in await (from f in db.FeeItems
+                                        join p in db.Promotions on f.PromotionId equals p.Id
+                                        join y in db.AcademicYears on p.AcademicYearId equals y.Id
+                                        where f.CategoryId == category.Id && y.Status != AcademicYearStatus.Closed
+                                        select f).ToListAsync(ct))
                 item.Label = name;
 
         var applied = 0;
@@ -107,6 +111,13 @@ public sealed class FeeCategoryService(IAppDbContext db, IWriteGate gate, IAudit
         if (itemIds.Count > 0 && (await db.ReceiptAllocations.AnyAsync(a => itemIds.Contains(a.FeeItemId), ct)
                                   || await db.SponsorshipLines.AnyAsync(l => itemIds.Contains(l.FeeItemId), ct)))
             throw new DomainException("categorie", $"« {category.Name} » a déjà été encaissée ou prise en charge : désactivez-la au lieu de la supprimer.");
+        // Une année clôturée ne change plus : ses soldes ne doivent pas bouger après coup.
+        var promotionIds = items.Select(f => f.PromotionId).Distinct().ToList();
+        if (promotionIds.Count > 0 && await (from p in db.Promotions
+                                             join y in db.AcademicYears on p.AcademicYearId equals y.Id
+                                             where promotionIds.Contains(p.Id) && y.Status == AcademicYearStatus.Closed
+                                             select p.Id).AnyAsync(ct))
+            throw new DomainException("categorie", $"« {category.Name} » figure dans une année clôturée : désactivez-la au lieu de la supprimer.");
         db.FeeItems.RemoveRange(items);
         db.FeeCategories.Remove(category);
         audit.Record("frais.categorie.supprimee", "CategorieFrais", id.ToString(),

@@ -434,9 +434,15 @@ jobs:
             echo "::notice::La version $tag est deja publiee : aucun remplacement d'APK ou d'EXE."
             exit 0
           fi
+          # Notes de version en français, versionnées avec les sources (docs/RELEASE_<version>.md).
+          notes="docs/RELEASE_${version}.md"
+          if [[ ! -s "$notes" ]]; then
+            echo "::error::Notes de version manquantes : $notes. Publication bloquee." >&2
+            exit 1
+          fi
           gh release create "$tag" "$apk" "$sha" "$setup" "$setup_sha" \
             --repo "$GH_REPO" --target "$SCOLIA_CHECKOUT_REF" --latest \
             --title "SCOLIA Pro ${version} - Android et Windows" \
-            --notes "SCOLIA Pro ${version} : connexion distante Render WSS securisee (sans Tailscale obligatoire), reconnexion automatique des appareils autorises et QR initial a usage unique. Cartes d'acces : moteur PDF/Word V3 identifiable et controle par l'API du serveur. L'export refuse les anciens generateurs meme si la version de l'interface est recente. Windows : installateur ferme le service de son dossier, remplace ensemble serveur et moteur documentaire, redemarre le service avec consentement administrateur ; refuse une installation dans un autre dossier pour proteger la base scolaire. Interface : choix du mois, listes, dates et autres champs metier compacts a coins discrets comme les onglets Dossiers du personnel / Paie mensuelle ; connexion et recuperation du mot de passe preservees. Test de concordance du generateur et verification de signature Android historique avant publication. Ne pas installer pendant des encaissements ; sauvegarder la base scolaire."
+            --notes-file "$notes"
           gh release view "$tag" --repo "$GH_REPO" --json url,assets \
             --jq '{url, fichiers: [.assets[] | select(.name | endswith(".apk") or endswith(".exe")) | {name,url,digest}]}'

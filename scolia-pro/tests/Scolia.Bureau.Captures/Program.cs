@@ -1442,7 +1442,9 @@ if (args.Length > 3 && args[3] == "bureau")
         window.Height = desktopHeight;
         RenderDesktop();
         CheckDesktop($"Connexion {desktopWidth}×{desktopHeight} : carte et champs dans la fenêtre",
-            InsideDesktop(DesktopNamed("LoginCard")) && InsideDesktop(DesktopNamed("UserNameBox")));
+            // Compte déjà reconnu : l'identifiant est masqué, le champ visible est celui du mot de passe.
+            InsideDesktop(DesktopNamed("LoginCard"))
+                && InsideDesktop(DesktopNamed(DesktopNamed("UserNameBox").IsEffectivelyVisible ? "UserNameBox" : "PasswordBox")));
         Save(window, $"bureau-connexion-{desktopWidth}x{desktopHeight}.png");
     }
     var desktopSession = new SessionDto(Guid.NewGuid(), "desktop-test", "Amina Kabeya du secrétariat", "Lecteur", "Lecture", [], false,
