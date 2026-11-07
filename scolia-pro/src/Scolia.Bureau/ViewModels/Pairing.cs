@@ -34,7 +34,7 @@ public sealed class PairingViewModel : Observable
         foreach (var lan in Code.LanAddresses)
             routes.Add(new(Material.Icons.MaterialIconKind.Wifi, "Wi-Fi de l'établissement", $"{lan.Host}:{lan.Port}"));
         if (Code.HasInvitation)
-            routes.Add(new(Material.Icons.MaterialIconKind.Web, "Internet", $"Invitation valable jusqu'au {Format.Date(DateOnly.FromDateTime(remote!.Link.ExpiresUtc.ToLocalTime()))}"));
+            routes.Add(new(Material.Icons.MaterialIconKind.Web, "Internet", "Postes reconnus jusqu’au retrait ; nouveau QR valable 5 minutes"));
         Routes = routes;
 
         Copy = new AsyncCommand(async () =>
