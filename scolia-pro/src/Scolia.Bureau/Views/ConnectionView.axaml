@@ -183,7 +183,8 @@
 
     </Grid>
     <!-- Premier écran mobile iOS : une décision principale, des options secondaires discrètes. -->
-    <Grid x:Name="IosConnectionScreen" IsVisible="False" RequestedThemeVariant="Light" Background="#F5F7FB">
+    <ThemeVariantScope x:Name="IosConnectionThemeScope" RequestedThemeVariant="Light" IsVisible="False">
+    <Grid x:Name="IosConnectionScreen" IsVisible="False" Background="#F5F7FB">
       <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto"
                     IsVisible="{Binding !PairingInProgress}">
         <StackPanel Classes="iosconnectbody" MaxWidth="440" HorizontalAlignment="Stretch" Margin="20,24,20,32" Spacing="17">
@@ -374,5 +375,6 @@
         </Grid>
       </ScrollViewer>
     </Grid>
+    </ThemeVariantScope>
   </Grid>
 </UserControl>
