@@ -21,6 +21,27 @@ public class ThemeContrastTests
         Assert.True(ThemeContrast.Ratio(text, hovered) >= 4.5);
     }
 
+
+    [Theory]
+    [InlineData("ToneBlue", "#0040DD")]
+    [InlineData("ToneGreen", "#1F7A35")]
+    [InlineData("ToneOrange", "#B53000")]
+    [InlineData("TonePurple", "#8944AB")]
+    [InlineData("ToneRed", "#C9001A")]
+    [InlineData("ToneTeal", "#006D9E")]
+    [InlineData("ToneIndigo", "#3634A3")]
+    [InlineData("TonePink", "#C7083E")]
+    [InlineData("ToneNeutral", "#636366")]
+    public void Les_icones_gardent_leurs_teintes_et_un_pictogramme_blanc(string tone, string expected)
+    {
+        var first = Assert.IsAssignableFrom<ISolidColorBrush>(IconPalette.Get(tone));
+        var second = Assert.IsAssignableFrom<ISolidColorBrush>(IconPalette.Get(tone));
+        Assert.Same(first, second);
+        Assert.Equal(Color.Parse(expected), first.Color);
+        Assert.Equal(Colors.White, TileGlyph.GlyphFor(first.Color));
+        Assert.True(ThemeContrast.Ratio(Colors.White, first.Color) >= 4.5);
+    }
+
     [Fact]
     public void Le_contraste_noir_blanc_est_21_et_symetrique()
     {
