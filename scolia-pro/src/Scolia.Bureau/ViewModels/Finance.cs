@@ -89,7 +89,8 @@ public sealed class DebtorsPage : PageViewModel
         var rows = await Shell.Api.GetAsync<List<DebtorDto>>("api/rapports/debiteurs" + ScoliaClient.Query(
             ("promotionId", Promotion?.Value), ("minOverdueMonths", months), ("bucket", Bucket?.Value), ("search", Search.Trim())));
 
-        CollectionSync.Apply(Items, rows.Select(d => new DebtorRowVm(d.StudentId, d.Matricule, d.FullName, d.PromotionCode, Money(d.Balance), Money(d.Overdue),
+        CollectionSync.Apply(Items, rows.Select(d => new DebtorRowVm(d.StudentId, d.Matricule,
+                d.FullName + (d.Sponsorship is { Length: > 0 } ? " (prise en charge partielle)" : string.Empty), d.PromotionCode, Money(d.Balance), Money(d.Overdue),
                 $"{d.OverdueCount}", d.Periods, d.AgingBucket, d.GuardianName ?? "—", d.GuardianPhone ?? "—", d.WhatsAppLink, d.SmsLink)));
 
         subtitle = $"{Format.Count(rows.Count, "en retard", "en retard")} · {Money(rows.Sum(r => r.Overdue))} exigibles";
@@ -148,10 +149,14 @@ public sealed class SponsorshipsPage : PageViewModel
     {
         var rows = await Shell.Api.GetAsync<List<SponsorshipListItem>>("api/prises-en-charge");
         Items.Clear();
-        foreach (var s in rows)
+        // Rangées par promotion, avec le total couvert : les pris en charge ont leur propre récapitulatif.
+        foreach (var s in rows.OrderBy(r => r.Promotion, StringComparer.Ordinal).ThenByDescending(r => r.IsActive).ThenBy(r => r.FullName, StringComparer.CurrentCulture))
             Items.Add(new SponsorshipRowVm(s.Id, s.EnrollmentId, s.Matricule, s.FullName, s.Promotion, s.SponsorName, s.Reason,
                 Format.Date(s.EffectiveFrom), Money(s.Covered), s.IsActive ? "Active" : "Terminée", ThemeBrush.Get(s.IsActive ? "ToneGreen" : "ToneNeutral"), s.Type));
-        subtitle = $"{Format.Count(rows.Count, "prise en charge", "prises en charge")} · {rows.Count(r => r.IsActive)} active(s)";
+        var active = rows.Where(r => r.IsActive).ToList();
+        var byPromotion = string.Join(", ", active.GroupBy(r => r.Promotion).OrderBy(g => g.Key, StringComparer.Ordinal).Select(g => $"{g.Key} {g.Count()}"));
+        subtitle = $"{Format.Count(active.Count, "prise en charge active", "prises en charge actives")} · total couvert {Money(active.Sum(r => r.Covered))}"
+            + (byPromotion.Length > 0 ? $" · {byPromotion}" : string.Empty);
         Raise(nameof(Subtitle));
     }
 

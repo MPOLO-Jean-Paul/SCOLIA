@@ -248,6 +248,14 @@ public static class ScoliaEndpoints
         g.MapPost("/sections", (SectionUpsert input, SchoolService s, CancellationToken ct) => s.UpsertSectionAsync(null, input, ct)).RequireAuthorization(Permissions.SettingsWrite);
         g.MapPut("/sections/{id:guid}", (Guid id, SectionUpsert input, SchoolService s, CancellationToken ct) => s.UpsertSectionAsync(id, input, ct)).RequireAuthorization(Permissions.SettingsWrite);
 
+        g.MapGet("/categories-frais", (FeeCategoryService s, CancellationToken ct) => s.ListAsync(ct));
+        g.MapPost("/categories-frais", (FeeCategoryUpsert input, FeeCategoryService s, CancellationToken ct) => s.UpsertAsync(null, input, ct))
+            .RequireAuthorization(Permissions.SettingsWrite);
+        g.MapPut("/categories-frais/{id:guid}", (Guid id, FeeCategoryUpsert input, FeeCategoryService s, CancellationToken ct) => s.UpsertAsync(id, input, ct))
+            .RequireAuthorization(Permissions.SettingsWrite);
+        g.MapDelete("/categories-frais/{id:guid}", async (Guid id, FeeCategoryService s, CancellationToken ct) => { await s.DeleteAsync(id, ct); return Results.NoContent(); })
+            .RequireAuthorization(Permissions.SettingsWrite);
+
         g.MapGet("/promotions", (Guid? anneeId, SchoolService s, CancellationToken ct) => s.PromotionsAsync(anneeId, ct));
         g.MapPost("/promotions", (PromotionUpsert input, SchoolService s, CancellationToken ct) => s.UpsertPromotionAsync(null, input, ct)).RequireAuthorization(Permissions.SettingsWrite);
         g.MapPut("/promotions/{id:guid}", (Guid id, PromotionUpsert input, SchoolService s, CancellationToken ct) => s.UpsertPromotionAsync(id, input, ct)).RequireAuthorization(Permissions.SettingsWrite);

@@ -71,14 +71,18 @@ public sealed class PromoterDashboardPage : PageViewModel
 
         var allPeriods = data.Promotions.SelectMany(p => p.Periods).ToList();
         var yearShare = Share(allPeriods);
-        var latePart = data.ActiveStudents > 0 ? (double)data.StudentsOverdue / data.ActiveStudents : 0;
+        // Le retard se mesure parmi les payants : les apprenants pris en charge ont leur propre total.
+        var payers = data.PayingStudents > 0 || data.SponsoredStudents > 0 ? data.PayingStudents : data.ActiveStudents;
+        var latePart = payers > 0 ? (double)data.StudentsOverdue / payers : 0;
 
         var nextKpis = new[]
         {
             new PromoterKpiVm("Apprenants actifs", Count(data.ActiveStudents),
-                Format.Count(data.Promotions.Count, "promotion", "promotions"), MaterialIconKind.AccountGroup, ThemeBrush.Get("ToneIndigo")),
+                data.SponsoredStudents > 0
+                    ? $"{Format.Count(data.PayingStudents, "payant", "payants")} · {data.SponsoredStudents} pris en charge ({Money(data.SponsoredAmount)})"
+                    : Format.Count(data.Promotions.Count, "promotion", "promotions"), MaterialIconKind.AccountGroup, ThemeBrush.Get("ToneIndigo")),
             new PromoterKpiVm("En retard de paiement", Count(data.StudentsOverdue),
-                data.StudentsOverdue == 0 ? "Tout le monde est à jour" : $"{latePart:P0} des apprenants · {Money(data.Overdue)} exigibles",
+                data.StudentsOverdue == 0 ? "Tous les payants sont à jour" : $"{latePart:P0} des payants · {Money(data.Overdue)} exigibles",
                 MaterialIconKind.AlertCircleOutline, ThemeBrush.Get(data.StudentsOverdue == 0 ? "ToneGreen" : "ToneOrange")),
             new PromoterKpiVm("Encaissé aujourd'hui", Money(data.CollectedToday), "Reçus validés du jour",
                 MaterialIconKind.HandCoin, ThemeBrush.Get("ToneGreen")),
@@ -93,7 +97,7 @@ public sealed class PromoterDashboardPage : PageViewModel
         var nextPromotions = data.Promotions.Select(p =>
         {
             var share = Share(p.Periods);
-            return new PromoterPromotionRowVm(p.Code, p.Name, Count(p.ActiveStudents),
+            return new PromoterPromotionRowVm(p.Code, p.Name, Count(p.ActiveStudents) + (p.SponsoredStudents > 0 ? $" dont {p.SponsoredStudents} pris en charge" : string.Empty),
                 p.StudentsOverdue == 0 ? "Aucun retard" : Format.Count(p.StudentsOverdue, "en retard", "en retard"), p.StudentsOverdue > 0,
                 Money(p.CollectedToday), Money(p.CollectedThisMonth), Money(p.CollectedTotal),
                 Money(p.Outstanding), Money(p.Overdue), p.Overdue > 0, share, $"Année réglée à {share:P0}",

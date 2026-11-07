@@ -99,9 +99,12 @@ public sealed class CashierPage : PageViewModel
     {
         // Dans le résumé, « Mensualité de septembre » se lit « septembre » : la barre reste courte.
         var chosen = Months.Where(m => m.IsSelected).Select(m => ShortMonth(m.Label)).ToList();
+        // Avec des frais (inscription, examen…), on compte des « éléments » plutôt que des mois.
+        var withFees = Months.Any(m => m.IsSelected && m.Label.EndsWith(" (frais)", StringComparison.Ordinal));
+        var unit = withFees ? Format.Count(chosen.Count, "élément", "éléments") : Format.Count(chosen.Count, "mois", "mois");
         return chosen.Count <= 2
-            ? $"{Format.Count(chosen.Count, "mois", "mois")} · {string.Join(", ", chosen)}"
-            : $"{chosen.Count} mois · de {chosen[0]} à {chosen[^1]}";
+            ? $"{unit} · {string.Join(", ", chosen)}"
+            : $"{unit} · de {chosen[0]} à {chosen[^1]}";
     }
 
     /// <summary>Met la barre du bas au diapason du formulaire : total, mois choisis, ou ce qui manque encore.</summary>
@@ -241,7 +244,7 @@ public sealed class CashierPage : PageViewModel
     }
 
     public string TotalCaption => SelectedCount == 0 ? "Aucun mois choisi"
-        : HasValidAmount ? $"{SelectedCount} mois · versement {Money(PaymentAmount)} / dû {Money(SelectedTotal)}"
+        : HasValidAmount ? $"{SelectedCount} à payer · versement {Money(PaymentAmount)} / dû {Money(SelectedTotal)}"
         : $"Montant invalide : indiquez un montant entre 1 et {Money(SelectedTotal)}";
 
     /// <summary>Un mois coché ou décoché met à jour le total et l'aperçu de répartition.</summary>
@@ -467,22 +470,23 @@ public sealed class CashierPage : PageViewModel
         // Le compte local projette déjà les versements en attente, y compris
         // partiels : ne pas masquer entièrement un mois encore partiellement dû.
         var pending = Shell.Api.Offline?.Outbox().Count(x => x.Path == "api/paiements") ?? 0;
-        // Le calendrier vient des mensualités de la promotion dans l'année scolaire configurée.
-        // Les frais d'inscription et d'examen ne sont pas proposés comme des mois.
+        // Les mensualités de l'année, puis les autres frais des catégories créées (inscription, examen…),
+        // chacun avec son échéance. Les frais pris en charge ou soldés ne sont pas proposés.
         var configuredMonths = account.Lines.Where(l => l.Kind == "Mensualite").ToArray();
-        foreach (var line in configuredMonths.Where(l => l.Remaining > 0))
-            Months.Add(new MonthRowVm(line.FeeItemId, line.Label, line.Remaining, Money(line.Remaining), line.IsOverdue, MonthsChanged,
-                Deadline(line.DueDate, line.IsOverdue)));
+        var configured = account.Lines.ToArray();
+        foreach (var line in configured.Where(l => l.Remaining > 0).OrderBy(l => l.Kind == "Mensualite" ? 0 : 1).ThenBy(l => l.DueDate))
+            Months.Add(new MonthRowVm(line.FeeItemId, line.Kind == "Mensualite" ? line.Label : $"{line.Label} (frais)", line.Remaining,
+                Money(line.Remaining), line.IsOverdue, MonthsChanged, Deadline(line.DueDate, line.IsOverdue)));
 
         MonthListStatus = configuredMonths.Length == 0
             ? "Aucun mois n'est facturé pour cette promotion. Dans Configuration, vérifiez les mois de l'année et attribuez une mensualité à la promotion."
-            : configuredMonths.All(l => l.Remaining <= 0)
-                ? "Toutes les mensualités de cette année sont déjà réglées ou couvertes."
+            : configured.All(l => l.Remaining <= 0)
+                ? "Toutes les mensualités et tous les frais de cette année sont déjà réglés ou couverts."
                 : Months.Count == 0
-                    ? "Les mensualités restant à payer sont déjà en attente de synchronisation sur cet appareil."
+                    ? "Les mensualités et frais restant à payer sont déjà en attente de synchronisation sur cet appareil."
                     : Months.Any(m => m.Overdue)
-                        ? "Le mois le plus ancien en retard est coché. Cochez les autres mois payés."
-                        : "Le prochain mois à payer est coché. Cochez les autres mois payés.";
+                        ? "Le plus ancien en retard est coché. Cochez les autres mois ou frais payés."
+                        : "Le prochain à payer est coché. Cochez les autres mois ou frais payés.";
 
         // Un choix immédiat évite le formulaire vide : l'utilisateur peut toujours changer de mois
         // ou en cocher plusieurs. Les mois déjà soldés ne peuvent jamais être encaissés une deuxième fois.
@@ -594,7 +598,7 @@ public sealed class CashierPage : PageViewModel
         var ids = SelectedIds();
         if (ids.Count == 0)
         {
-            Hint = "Cochez au moins un mois à payer.";
+            Hint = "Cochez au moins un mois ou un frais à payer.";
             return;
         }
         if (IsLocked)

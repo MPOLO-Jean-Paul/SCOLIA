@@ -116,6 +116,10 @@ public static class DemoData
         var receiptNo = 0L;
         var cashier = "Démonstration";
         var assessmentsByPromotion = new Dictionary<Guid, List<Assessment>>();
+        // Démonstration : les autres frais passent par des catégories créées, comme dans un vrai établissement.
+        var registration = new FeeCategory { Name = "Frais d'inscription", NameKey = TextKey.Normalize("Frais d'inscription"), Amount = 25000, DueDate = year.StartDate.AddDays(14), Order = 1 };
+        var stateExam = new FeeCategory { Name = "Frais d'examen d'État", NameKey = TextKey.Normalize("Frais d'examen d'État"), Amount = 40000, DueDate = year.EndDate.AddDays(-45), Order = 2 };
+        db.FeeCategories.AddRange(registration, stateExam);
         foreach (var spec in specs)
         {
             var promotion = new Promotion
@@ -123,9 +127,9 @@ public static class DemoData
                 AcademicYearId = year.Id, Code = spec.Code, Name = spec.Name, SectionId = spec.Section.Id, Level = spec.Level, NextPromotionCode = spec.Next, Capacity = 40,
             };
             promotion.Fees.AddRange(SchoolService.MonthlyFees(promotion.Id, year, spec.Fee));
-            promotion.Fees.Add(new FeeItem { PromotionId = promotion.Id, Kind = FeeKind.Inscription, Label = "Frais d'inscription", Amount = 25000, DueDate = year.StartDate.AddDays(14), Order = 0 });
+            promotion.Fees.Add(new FeeItem { PromotionId = promotion.Id, Kind = FeeKind.Inscription, CategoryId = registration.Id, Label = registration.Name, Amount = registration.Amount, DueDate = registration.DueDate!.Value, Order = 0 });
             if (spec.Level == 3 || spec.Code == "ACC2")
-                promotion.Fees.Add(new FeeItem { PromotionId = promotion.Id, Kind = FeeKind.Examen, Label = "Frais d'examen d'État", Amount = 40000, DueDate = year.EndDate.AddDays(-45), Order = 101 });
+                promotion.Fees.Add(new FeeItem { PromotionId = promotion.Id, Kind = FeeKind.Examen, CategoryId = stateExam.Id, Label = stateExam.Name, Amount = stateExam.Amount, DueDate = stateExam.DueDate!.Value, Order = 101 });
             db.Promotions.Add(promotion);
 
             var course = 0;

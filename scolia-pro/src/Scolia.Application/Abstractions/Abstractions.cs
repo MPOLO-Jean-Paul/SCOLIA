@@ -17,6 +17,7 @@ public interface IAppDbContext
     DbSet<Section> Sections { get; }
     DbSet<Promotion> Promotions { get; }
     DbSet<FeeItem> FeeItems { get; }
+    DbSet<FeeCategory> FeeCategories { get; }
     DbSet<Student> Students { get; }
     DbSet<Enrollment> Enrollments { get; }
     DbSet<Sponsorship> Sponsorships { get; }

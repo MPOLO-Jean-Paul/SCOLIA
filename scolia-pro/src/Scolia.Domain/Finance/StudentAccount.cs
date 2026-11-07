@@ -84,7 +84,7 @@ public sealed class StudentAccount
 
 }
 
-/// <summary>Répartit un versement total ou partiel sur les mensualités choisies, par ancienneté.</summary>
+/// <summary>Répartit un versement total ou partiel sur les rubriques choisies (mois et autres frais), par ancienneté.</summary>
 public static class PaymentAllocator
 {
     /// <summary>
@@ -92,18 +92,19 @@ public static class PaymentAllocator
     /// Un mois déjà payé ou étranger à l'inscription est refusé. L'absence de montant signifie
     /// que chaque mois sélectionné est soldé (compatibilité avec les anciens clients).
     /// </summary>
+    /// <param name="monthsOnly">Vrai pour les encaissements par lot, limités aux mensualités.</param>
     public static IReadOnlyList<(Guid FeeItemId, decimal Amount)> Months(
-        StudentAccount account, IReadOnlyCollection<Guid> selected, decimal? amount = null)
+        StudentAccount account, IReadOnlyCollection<Guid> selected, decimal? amount = null, bool monthsOnly = false)
     {
-        if (selected.Count == 0) throw new DomainException("rubriques", "Choisissez au moins un mois à payer.");
+        if (selected.Count == 0) throw new DomainException("rubriques", "Choisissez au moins un mois ou un frais à payer.");
         if (selected.Distinct().Count() != selected.Count)
             throw new DomainException("rubriques", "Un même mois a été choisi plusieurs fois.");
         var chosen = account.Lines.Where(l => selected.Contains(l.FeeItemId))
             .OrderBy(l => l.DueDate).ThenBy(l => l.Order).ToList();
         if (chosen.Count != selected.Count)
             throw new DomainException("rubriques", "Une rubrique choisie n'appartient pas à cette inscription.");
-        if (chosen.Any(l => l.Kind != FeeKind.Mensualite))
-            throw new DomainException("rubriques", "Seuls les mois de scolarité se règlent par mois.");
+        if (monthsOnly && chosen.Any(l => l.Kind != FeeKind.Mensualite))
+            throw new DomainException("rubriques", "Seuls les mois de scolarité se règlent par lot : encaissez les autres frais un par un.");
         var settled = chosen.FirstOrDefault(l => l.Remaining <= 0);
         if (settled is not null)
             throw new DomainException("rubriques", $"« {settled.Label} » est déjà réglé : actualisez la liste des mois.");
@@ -111,7 +112,7 @@ public static class PaymentAllocator
         var maximum = chosen.Sum(l => l.Remaining);
         var toAllocate = amount ?? maximum;
         if (toAllocate <= 0 || toAllocate > maximum)
-            throw new DomainException("montant", $"Indiquez un montant positif ne dépassant pas le solde des mois choisis ({maximum}).");
+            throw new DomainException("montant", $"Indiquez un montant positif ne dépassant pas le solde des rubriques choisies ({maximum}).");
 
         var allocations = new List<(Guid FeeItemId, decimal Amount)>();
         foreach (var line in chosen)

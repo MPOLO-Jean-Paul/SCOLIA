@@ -97,10 +97,23 @@ Champs du formulaire : nom, post-nom, prénom, sexe, date et lieu de naissance, 
 Obligatoires, comme dans SCOLIA V79 : nom, post-nom, prénom, sexe, date et lieu de naissance, contact parent et promotion.
 Un seul numéro est saisi, celui du parent. Les relances WhatsApp et SMS partent vers ce numéro.
 
+## 3 bis. Mensualités et catégories de frais
+
+- **La mensualité est obligatoire** : chaque promotion en a une, répartie sur les mois de l'année scolaire.
+- Les autres frais (inscription, examen, tenue, carte…) sont des **catégories** créées dans Paramètres,
+  **Catégories de frais**, avec leur montant et, si besoin, leur échéance (à défaut : exigibles dès la rentrée).
+  Une catégorie qui n'a pas été créée n'existe pas : aucun frais n'est imposé.
+- À la création, « Appliquer à toutes les promotions de l'année courante » ajoute la catégorie partout avec son montant.
+  Dans la fiche d'une promotion, chaque catégorie a son propre montant ; vide, elle ne s'applique pas à cette promotion.
+- Une catégorie déjà encaissée ne peut plus être supprimée : la désactiver. Son nouveau nom apparaît aussi sur les reçus.
+- Les frais saisis avec une version précédente (inscription, examen) sont rattachés automatiquement à une catégorie
+  du même nom à la mise à jour, sans changer leur montant.
+
 ## 4. Encaisser
 
 1. Encaisser, puis rechercher l'apprenant par nom ou matricule.
-2. Saisir le montant reçu et le mode de paiement (espèces, mobile money, banque, chèque, autre).
+2. Cocher les mois et les frais payés (les frais sont marqués « (frais) »), saisir le montant reçu et le mode de paiement
+   (espèces, mobile money, banque, chèque, autre), puis confirmer le récapitulatif. L'encaissement par lot reste réservé aux mensualités.
 3. SCOLIA répartit le versement sur les échéances les plus anciennes, sans jamais dépasser le reste dû.
 4. Imprimer le reçu ou l'envoyer. Chaque reçu porte un numéro sans trou et un QR de vérification.
 
@@ -114,9 +127,14 @@ Un reçu erroné ne se supprime pas : ouvrir le journal des reçus, puis l'annul
 
 ## 6. Prises en charge
 
-Une bourse, un sponsor ou une exonération se crée depuis la fiche de l'apprenant.
-Elle couvre un pourcentage de chaque frais. Le net ne peut jamais descendre sous
-ce qui est déjà payé.
+Une bourse, un sponsor ou une exonération se crée depuis la fiche de l'apprenant : complète (tous les frais)
+ou partielle (un montant par mois). Le net ne peut jamais descendre sous ce qui est déjà payé.
+
+- Un apprenant **totalement pris en charge** n'est pas compté parmi les payants, ni parmi les apprenants en ordre
+  ou en retard : le tableau de bord, le pilotage et le suivi mensuel lui donnent son propre total (nombre et montant couvert).
+- Dans la liste d'une promotion, les payants viennent d'abord, puis les pris en charge, signalés avec leur organisme.
+  Les listes générales, le suivi mensuel et les débiteurs signalent aussi les prises en charge partielles.
+- La page Prises en charge les range par promotion, avec le total couvert.
 
 ## 7. Caisse et arrêté
 

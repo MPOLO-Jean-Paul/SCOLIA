@@ -48,9 +48,11 @@ public sealed class StudentService(IAppDbContext db, IWriteGate gate, IAuditLog 
         var map = await accounts.ComputeAsync(year.Id, rows.Select(r => r.e.Id).ToList(), null, ct);
         var items = rows.Select(r =>
         {
-            var account = map.TryGetValue(r.e.Id, out var a) ? a.Account : null;
+            var entry = map.GetValueOrDefault(r.e.Id);
+            var account = entry?.Account;
             return new StudentListItem(r.s.Id, r.e.Id, r.s.Matricule, r.s.LastName, r.s.MiddleName, r.s.FirstName, r.s.Gender.ToString(), r.p.Code,
-                Labels.Of(r.e.Status), r.s.GuardianPhone, account?.Balance ?? 0, account?.Overdue ?? 0);
+                Labels.Of(r.e.Status), r.s.GuardianPhone, account?.Balance ?? 0, account?.Overdue ?? 0,
+                entry is null ? null : CoverageText.Of(entry.Coverage));
         }).ToList();
         return new PagedResult<StudentListItem>(items, total, page, pageSize);
     }

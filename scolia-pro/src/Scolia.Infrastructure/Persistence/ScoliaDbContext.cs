@@ -24,6 +24,7 @@ public sealed class ScoliaDbContext(DbContextOptions<ScoliaDbContext> options, I
     public DbSet<Section> Sections => Set<Section>();
     public DbSet<Promotion> Promotions => Set<Promotion>();
     public DbSet<FeeItem> FeeItems => Set<FeeItem>();
+    public DbSet<FeeCategory> FeeCategories => Set<FeeCategory>();
     public DbSet<Student> Students => Set<Student>();
     public DbSet<Enrollment> Enrollments => Set<Enrollment>();
     public DbSet<Sponsorship> Sponsorships => Set<Sponsorship>();
@@ -86,7 +87,14 @@ public sealed class ScoliaDbContext(DbContextOptions<ScoliaDbContext> options, I
             e.HasOne(x => x.Section).WithMany().HasForeignKey(x => x.SectionId).OnDelete(DeleteBehavior.SetNull);
             e.HasMany(x => x.Fees).WithOne().HasForeignKey(f => f.PromotionId).OnDelete(DeleteBehavior.Cascade);
         });
-        b.Entity<FeeItem>(e => { e.ToTable("RubriquesFrais"); e.HasIndex(x => x.PromotionId); });
+        b.Entity<FeeItem>(e =>
+        {
+            e.ToTable("RubriquesFrais");
+            e.HasIndex(x => x.PromotionId);
+            e.HasIndex(x => x.CategoryId);
+            e.HasOne<FeeCategory>().WithMany().HasForeignKey(x => x.CategoryId).OnDelete(DeleteBehavior.Restrict);
+        });
+        b.Entity<FeeCategory>(e => { e.ToTable("CategoriesFrais"); e.HasIndex(x => x.NameKey).IsUnique(); e.Property(x => x.Name).HasMaxLength(FeeCategory.MaxNameLength); });
         b.Entity<Student>(e =>
         {
             e.ToTable("Apprenants");

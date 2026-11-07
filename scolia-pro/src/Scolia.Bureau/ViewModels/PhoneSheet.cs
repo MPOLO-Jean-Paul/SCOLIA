@@ -208,6 +208,8 @@ public sealed class PhoneSettingsSearchVm : Observable
                 "section filiere options infirmiere laboratoire", Page("sections"));
             Add("Promotions et frais", "Établissement", MaterialIconKind.School, "ToneBlue",
                 "classes promotions mensualite cout frais scolarite", Page("promotions"));
+            Add("Catégories de frais", "Établissement", MaterialIconKind.TagMultipleOutline, "ToneGreen",
+                "categorie frais inscription examen tenue carte montant", Page("frais"));
             Add("Nouvelle promotion", "Établissement", MaterialIconKind.FolderPlusOutline, "ToneBlue",
                 "ajouter creer classe promotion frais", new AsyncCommand(async () => { shell.PhoneMenuOpen = false; await shell.Run(() => SettingsPage.NewPromotionAsync(shell)); }));
             Add("Nouvelle année", "Établissement", MaterialIconKind.CalendarPlusOutline, "ToneRed",

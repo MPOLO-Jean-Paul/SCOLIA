@@ -567,7 +567,7 @@ public sealed class SearchViewModel : Observable
             "personnel" when shell.Can(Perm.StaffManage) => () => new StaffPage(shell),
             "parametres" when parts.Length > 1 && parts[1] == "utilisateurs" && shell.Can(Perm.UsersManage)
                 => () => new UsersPage(shell),
-            "parametres" when parts.Length > 1 && (new[] { "apparence", "texte", "fenetres", "animations", "sons" }.Contains(parts[1]) || (shell.Can(Perm.SettingsWrite) && new[] { "etablissement", "annees", "sections", "promotions" }.Contains(parts[1]))) => () => new SettingsPage(shell, parts[1]),
+            "parametres" when parts.Length > 1 && (new[] { "apparence", "texte", "fenetres", "animations", "sons" }.Contains(parts[1]) || (shell.Can(Perm.SettingsWrite) && new[] { "etablissement", "annees", "sections", "promotions", "frais" }.Contains(parts[1]))) => () => new SettingsPage(shell, parts[1]),
             "parametres" => () => new SettingsPage(shell),
             "utilisateurs" when shell.Can(Perm.UsersManage) => () => new UsersPage(shell),
             "donnees" when shell.Can(Perm.BackupManage) => () => new DataPage(shell),

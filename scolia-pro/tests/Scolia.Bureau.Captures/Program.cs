@@ -2223,6 +2223,7 @@ Page(() => new UsersPage(shell), "21-utilisateurs.png");
 Page(() => new DataPage(shell), "22-donnees.png");
 Page(() => new ReportsPage(shell), "22d-rapports-exports.png");
 Page(() => new DashboardPage(shell), "22e-tableau-de-bord.png");
+Page(() => new SettingsPage(shell, "frais"), "20d-parametres-categories-frais.png");
 Page(() => new CardsPage(shell), "16b-cartes-acces.png");
 Page(() => new MonthlyPage(shell), "08b-suivi-mensuel.png");
 Page(() => new MonthlyPage(shell, "nonpaye"), "08c-suivi-mensuel-non-payes.png");

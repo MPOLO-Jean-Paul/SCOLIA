@@ -286,6 +286,9 @@ public sealed record YearRowVm(Guid Id, string Label, string Period, string Stat
 /// <summary>Section d'enseignement dans la liste des paramètres.</summary>
 public sealed record SectionRowVm(Guid Id, string Code, string Name, string Active, SectionDto Source);
 
+/// <summary>Catégorie de frais du catalogue : nom, montant, échéance proposée et promotions qui l'appliquent.</summary>
+public sealed record FeeCategoryRowVm(Guid Id, string Name, string Amount, string DueDate, string Promotions, string Active, FeeCategoryDto Source);
+
 /// <summary>Promotion dans la liste des paramètres, avec ses frais.</summary>
 public sealed record PromotionRowVm(Guid Id, string Code, string Name, string Section, string Level, string Students, string Monthly, string Annual, string Active, PromotionDto Source);
 
@@ -307,6 +310,7 @@ public sealed class SettingsPage : PageViewModel
     private YearRowVm? selectedYear;
     private SectionRowVm? selectedSection;
     private PromotionRowVm? selectedPromotion;
+    private FeeCategoryRowVm? selectedCategory;
     private string subtitle = string.Empty;
     private FormViewModel? schoolForm;
     private bool mobileDetailsShown;
@@ -343,6 +347,7 @@ public sealed class SettingsPage : PageViewModel
                 new BackstageItemVm("annees", "Années scolaires", MaterialIconKind.Calendar, "ToneRed"),
                 new BackstageItemVm("sections", "Sections", MaterialIconKind.ViewGrid, "ToneIndigo"),
                 new BackstageItemVm("promotions", "Promotions et frais", MaterialIconKind.School, "ToneBlue"),
+                new BackstageItemVm("frais", "Catégories de frais", MaterialIconKind.TagMultipleOutline, "ToneGreen"),
             ]
             : [];
         PosteSections =
@@ -505,6 +510,11 @@ public sealed class SettingsPage : PageViewModel
                 Action("Modifier", MaterialIconKind.Pencil, EditSelectedAsync, open: true);
                 Action("Supprimer", MaterialIconKind.Delete, DeletePromotionAsync, row: true);
                 break;
+            case "frais":
+                Action("Nouvelle catégorie", MaterialIconKind.TagPlusOutline, () => CategoryFormAsync(Shell, null), primary: true);
+                Action("Modifier", MaterialIconKind.Pencil, EditSelectedAsync, open: true);
+                Action("Supprimer", MaterialIconKind.Delete, DeleteCategoryAsync, row: true);
+                break;
             case "etablissement":
                 Action("Changer le logo", MaterialIconKind.Image, ChangeLogoAsync);
                 break;
@@ -536,7 +546,7 @@ public sealed class SettingsPage : PageViewModel
         set
         {
             if (!Set(ref section, value)) return;
-            foreach (var name in new[] { nameof(IsSchool), nameof(IsYears), nameof(IsSections), nameof(IsPromotions), nameof(IsAppearance), nameof(IsText),
+            foreach (var name in new[] { nameof(IsSchool), nameof(IsYears), nameof(IsSections), nameof(IsPromotions), nameof(IsFees), nameof(IsAppearance), nameof(IsText),
                          nameof(IsWindows), nameof(IsAnimations), nameof(IsSounds), nameof(IsSecurity), nameof(IsAbout), nameof(IsPoste), nameof(ShowResetLink), nameof(SchoolSection), nameof(PosteSection), nameof(SectionTitle), nameof(SectionHint) })
                 Raise(name);
             if (value?.Value == "securite" && !Preferences.MobileLayout) ActivateSecurity();
@@ -550,15 +560,17 @@ public sealed class SettingsPage : PageViewModel
         "annees" => SelectedYear,
         "sections" => SelectedSection,
         "promotions" => SelectedPromotion,
+        "frais" => SelectedCategory,
         _ => null,
     };
 
-    protected override bool HasRows => section?.Value is "annees" or "sections" or "promotions";
+    protected override bool HasRows => section?.Value is "annees" or "sections" or "promotions" or "frais";
 
     public bool IsSchool => section?.Value == "etablissement";
     public bool IsYears => section?.Value == "annees";
     public bool IsSections => section?.Value == "sections";
     public bool IsPromotions => section?.Value == "promotions";
+    public bool IsFees => section?.Value == "frais";
     public bool IsAppearance => section?.Value == "apparence";
     public bool IsText => section?.Value == "texte";
     public bool IsWindows => section?.Value == "fenetres";
@@ -578,6 +590,7 @@ public sealed class SettingsPage : PageViewModel
         "annees" => "Les années scolaires, leurs mois de paiement et l'année courante.",
         "sections" => "Les filières de l'établissement, qui regroupent les promotions.",
         "promotions" => "Les classes, leur code de 4 caractères, leur mensualité et leurs frais.",
+        "frais" => "Les frais autres que la mensualité (inscription, examen, tenue…) et leur montant. Seules les catégories créées ici existent.",
         "apparence" => Platform.IsMobile ? "Clair, sombre ou selon l'appareil, et la couleur des boutons et des sélections." : "Clair, sombre ou selon Windows, et la couleur des boutons et des sélections.",
         "texte" => "La police et la taille du texte de toute l'interface.",
         "fenetres" => "La fenêtre au lancement et ce qui entoure les pages.",
@@ -604,6 +617,8 @@ public sealed class SettingsPage : PageViewModel
         : $"Année {selectedYear.Label}{(selectedYear.IsCurrent ? " · courante" : string.Empty)}";
     public SectionRowVm? SelectedSection { get => selectedSection; set => Set(ref selectedSection, value); }
     public PromotionRowVm? SelectedPromotion { get => selectedPromotion; set => Set(ref selectedPromotion, value); }
+    public ObservableCollection<FeeCategoryRowVm> Categories { get; } = [];
+    public FeeCategoryRowVm? SelectedCategory { get => selectedCategory; set => Set(ref selectedCategory, value); }
 
     public override async Task LoadAsync()
     {
@@ -624,6 +639,9 @@ public sealed class SettingsPage : PageViewModel
                 break;
             case "promotions":
                 await LoadPromotionsAsync();
+                break;
+            case "frais":
+                await LoadCategoriesAsync();
                 break;
             default:
                 await LoadSchoolAsync();
@@ -737,12 +755,73 @@ public sealed class SettingsPage : PageViewModel
         Raise(nameof(Subtitle));
     }
 
+    private async Task LoadCategoriesAsync()
+    {
+        var categories = await Shell.Api.GetAsync<List<FeeCategoryDto>>("api/etablissement/categories-frais");
+        Categories.Clear();
+        foreach (var c in categories)
+            Categories.Add(new FeeCategoryRowVm(c.Id, c.Name, Money(c.Amount), c.DueDate is { } d ? Format.Date(d) : "À la rentrée",
+                Format.Count(c.PromotionCount, "promotion", "promotions"), c.IsActive ? "Oui" : "Non", c));
+        subtitle = categories.Count == 0
+            ? "Aucune catégorie : seules les mensualités sont facturées"
+            : Format.Count(categories.Count, "catégorie de frais", "catégories de frais");
+        Raise(nameof(Subtitle));
+    }
+
+    /// <summary>Création ou modification d'une catégorie de frais, appliquée si besoin à toutes les promotions de l'année.</summary>
+    public static async Task CategoryFormAsync(ShellViewModel shell, FeeCategoryDto? existing)
+    {
+        var form = new FormViewModel(existing is null ? "Nouvelle catégorie de frais" : "Modifier la catégorie",
+            "Par exemple : frais d'inscription, frais d'examen, tenue, carte d'élève. La mensualité se règle dans chaque promotion.", async f =>
+        {
+            var body = new
+            {
+                name = f.Text("nom"),
+                amount = f.Amount("montant"),
+                dueDate = f.Day("echeance"),
+                isActive = f.Flag("actif"),
+                applyToPromotions = f.Flag("appliquer"),
+            };
+            if (existing is null) await shell.Api.SendAsync(HttpMethod.Post, "api/etablissement/categories-frais", body);
+            else await shell.Api.SendAsync(HttpMethod.Put, $"api/etablissement/categories-frais/{existing.Id}", body);
+            shell.Notify(f.Flag("appliquer") ? "Catégorie enregistrée et appliquée aux promotions de l'année." : "Catégorie enregistrée.");
+            return true;
+        });
+        form.Add("nom", "Nom de la catégorie", value: existing?.Name, required: true);
+        form.Add("montant", "Montant", FieldKind.Amount, existing?.Amount.ToString("0", CultureInfo.InvariantCulture), required: true);
+        form.AddDay("echeance", "Échéance (facultative)", existing?.DueDate);
+        form.AddFlag("actif", "Catégorie active", existing?.IsActive ?? true);
+        form.AddFlag("appliquer", existing is null ? "Appliquer à toutes les promotions de l'année courante" : "Mettre à jour le montant dans toutes les promotions de l'année courante",
+            existing is null);
+        if (await shell.Ask(form) && shell.Current is SettingsPage page) await page.RefreshAsync();
+    }
+
+    private async Task DeleteCategoryAsync()
+    {
+        if (section?.Value != "frais" || SelectedCategory is null)
+        {
+            Shell.Notify("Sélectionnez une catégorie de frais.");
+            return;
+        }
+        var c = SelectedCategory;
+        if (!await Shell.Confirm("Supprimer la catégorie",
+                $"« {c.Name} » sera retirée de toutes les promotions. Une catégorie déjà encaissée ne peut pas être supprimée : désactivez-la.",
+                "Supprimer", danger: true))
+            return;
+        await Shell.Api.SendAsync(HttpMethod.Delete, $"api/etablissement/categories-frais/{c.Id}");
+        Shell.Notify("Catégorie supprimée.");
+        await RefreshAsync();
+    }
+
     private async Task EditSelectedAsync()
     {
         switch (section?.Value)
         {
             case "promotions" when SelectedPromotion is not null:
                 await PromotionFormAsync(Shell, SelectedPromotion.Source);
+                break;
+            case "frais" when SelectedCategory is not null:
+                await CategoryFormAsync(Shell, SelectedCategory.Source);
                 break;
             case "sections" when SelectedSection is not null:
                 await EditSectionAsync(SelectedSection.Source);
@@ -994,24 +1073,26 @@ public sealed class SettingsPage : PageViewModel
     {
         var sections = await shell.Api.GetAsync<List<SectionDto>>("api/etablissement/sections");
         var sectionChoices = sections.Select(s => new ChoiceItem(s.Id.ToString(), $"{s.Code} · {s.Name}")).ToList();
-        var inscription = existing?.Fees.FirstOrDefault(f => f.Kind == "Inscription");
-        var examen = existing?.Fees.FirstOrDefault(f => f.Kind == "Examen");
+        // Les autres frais viennent du catalogue : une ligne par catégorie créée, avec son montant pour cette promotion.
+        List<FeeCategoryDto> categories;
+        try { categories = await shell.Api.GetAsync<List<FeeCategoryDto>>("api/etablissement/categories-frais"); }
+        catch (ApiException) { categories = []; }
+        var applied = existing?.Fees.Where(f => f.CategoryId is not null).ToDictionary(f => f.CategoryId!.Value) ?? [];
+        var shown = categories.Where(c => c.IsActive || applied.ContainsKey(c.Id)).ToList();
 
         var form = new FormViewModel(existing is null ? "Nouvelle promotion" : "Modifier la promotion",
-            "Les frais ponctuels sont facultatifs : indiquez un montant pour les créer.", async f =>
+            "La mensualité est obligatoire. Pour chaque catégorie de frais, laissez le montant vide si elle ne concerne pas cette promotion.", async f =>
         {
-            var fees = new List<object>();
-            foreach (var (key, kind, label, dayKey) in new[] { ("inscription", "Inscription", "Frais d'inscription", "inscriptionEcheance"), ("examen", "Examen", "Frais d'examen", "examenEcheance") })
+            if (f.Amount("mensualite") <= 0)
             {
-                var amount = f.Amount(key);
-                if (amount <= 0) continue;
-                var due = f.Day(dayKey);
-                if (due is null)
-                {
-                    f.Find(dayKey).Error = "Indiquez l'échéance de ces frais.";
-                    return false;
-                }
-                fees.Add(new { kind, label, amount, dueDate = due });
+                f.Find("mensualite").Error = "La mensualité est obligatoire.";
+                return false;
+            }
+            var fees = new List<object>();
+            foreach (var category in shown)
+            {
+                var amount = f.Amount($"categorie-{category.Id:N}");
+                if (amount > 0) fees.Add(new { categoryId = category.Id, amount });
             }
             int? capacity = Format.TryAmount(f.Text("capacite"), out var cap) ? (int?)(int)cap : null;
             var body = new
@@ -1025,6 +1106,7 @@ public sealed class SettingsPage : PageViewModel
                 nextPromotionCode = f.OptionalText("suivante"),
                 monthlyFee = f.Amount("mensualite"),
                 oneTimeFees = fees,
+                managesCategories = true,
             };
             if (existing is null) await shell.Api.SendAsync(HttpMethod.Post, "api/etablissement/promotions", body);
             else await shell.Api.SendAsync(HttpMethod.Put, $"api/etablissement/promotions/{existing.Id}", body);
@@ -1037,12 +1119,18 @@ public sealed class SettingsPage : PageViewModel
         form.Add("niveau", "Niveau", FieldKind.Amount, existing?.Level.ToString() ?? "1", required: true);
         form.Add("capacite", "Capacité", FieldKind.Amount, existing?.Capacity?.ToString());
         form.Add("suivante", "Promotion suivante", value: existing?.NextPromotionCode, hint: "Code de la promotion de l'année suivante");
-        form.Add("mensualite", "Mensualité", FieldKind.Amount, existing?.MonthlyFee.ToString("0"), required: true);
+        form.Add("mensualite", "Mensualité (obligatoire)", FieldKind.Amount, existing is { MonthlyFee: > 0 } ? existing.MonthlyFee.ToString("0") : null, required: true);
         form.AddFlag("actif", "Promotion active", existing?.IsActive ?? true);
-        form.Add("inscription", "Frais d'inscription (montant)", FieldKind.Amount, inscription?.Amount.ToString("0"));
-        form.AddDay("inscriptionEcheance", "Échéance des frais d'inscription", inscription?.DueDate);
-        form.Add("examen", "Frais d'examen (montant)", FieldKind.Amount, examen?.Amount.ToString("0"));
-        form.AddDay("examenEcheance", "Échéance des frais d'examen", examen?.DueDate);
+        form.AddHeader("Autres frais", shown.Count == 0
+            ? "Aucune catégorie de frais n'est créée : seules les mensualités seront facturées. Créez-les dans Configuration, Catégories de frais."
+            : "Montant de chaque catégorie pour cette promotion. Vide : la catégorie ne s'applique pas.");
+        foreach (var category in shown)
+        {
+            var value = applied.TryGetValue(category.Id, out var item) ? item.Amount
+                : existing is null && category.IsActive ? category.Amount : (decimal?)null;
+            form.Add($"categorie-{category.Id:N}", category.Name + (category.IsActive ? string.Empty : " (désactivée)"), FieldKind.Amount,
+                value?.ToString("0", CultureInfo.InvariantCulture), hint: $"Montant du catalogue : {Format.Money(category.Amount, shell.Session?.CurrencySymbol ?? string.Empty)}");
+        }
         await PredictPromotionAsync(shell, form, sections, existing);
 
         if (await shell.Ask(form) && shell.Current is SettingsPage page) await page.RefreshAsync();

@@ -95,7 +95,7 @@
           <TextBlock Text="2. Versement" Classes="heading" />
           <!-- Mois à encaisser : une ligne par mois, touchée n'importe où pour la cocher. Le plus ancien en retard est déjà coché. -->
           <StackPanel Spacing="6">
-            <TextBlock Text="Mois à encaisser" Classes="caption" />
+            <TextBlock Text="Mois et frais à encaisser" Classes="caption" />
             <TextBlock Text="{Binding MonthListStatus}" Classes="muted" TextWrapping="Wrap" FontSize="{DynamicResource FsSmall}" IsVisible="{Binding HasMonths}" />
             <!-- Aucune liste silencieusement vide : diagnostiquer la configuration et proposer le bon écran. -->
             <Border Background="{DynamicResource OrangeSoftBrush}" CornerRadius="12" Padding="12"

@@ -256,6 +256,10 @@ public sealed class BusinessApiTests : IDisposable
 
     private static async Task<(string PromotionId, string EnrollmentId, string StudentId)> NewStudent(HttpClient admin, decimal monthly = 55000)
     {
+        // Les frais d'inscription n'existent que si leur catégorie a été créée.
+        var categories = await admin.GetAsync("/api/etablissement/categories-frais").Ok();
+        if (!categories.EnumerateArray().Any(c => c.GetProperty("name").GetString() == "Frais d'inscription"))
+            await admin.Post("/api/etablissement/categories-frais", new { name = "Frais d'inscription", amount = 20000m }).Ok();
         var promotion = await admin.Post("/api/etablissement/promotions", new
         {
             code = "INF1", name = "Première année", level = 1, isActive = true, monthlyFee = monthly,
@@ -412,7 +416,8 @@ public sealed class BusinessApiTests : IDisposable
         var admin = await app.InstalledAdmin();
         var (_, enrollmentId, _) = await NewStudent(admin);
         var account = await admin.GetAsync($"/api/inscriptions/{enrollmentId}/compte").Ok();
-        Assert.Equal(550000m, account.GetProperty("totalNet").GetDecimal());
+        // Dix mensualités et les frais d'inscription de la catégorie créée.
+        Assert.Equal(550000m + 20000m, account.GetProperty("totalNet").GetDecimal());
 
         var receipt = await admin.PayMonths(enrollmentId, 1, key: "cle-unique-1");
         Assert.Matches(@"^RC-\d{4}-000001$", receipt.GetProperty("number").GetString());
@@ -565,7 +570,7 @@ public sealed class BusinessApiTests : IDisposable
         Assert.Equal(10, responses.Count(r => r.IsSuccessStatusCode));
         var account = await admin.GetAsync($"/api/inscriptions/{enrollmentId}/compte").Ok();
         Assert.Equal(100000m, account.GetProperty("totalPaid").GetDecimal());
-        Assert.Equal(0m, account.GetProperty("balance").GetDecimal()); // Les frais d'inscription ne font pas partie du suivi de scolarité.
+        Assert.Equal(20000m, account.GetProperty("balance").GetDecimal()); // Restent les frais d'inscription, encaissables à part.
     }
 
     [Fact]
@@ -607,7 +612,7 @@ public sealed class BusinessApiTests : IDisposable
         var account = await admin.GetAsync($"/api/inscriptions/{enrollmentId}/compte").Ok();
         Assert.Equal("ACC1", account.GetProperty("promotionCode").GetString());
         Assert.Equal(55000m, account.GetProperty("totalPaid").GetDecimal());
-        Assert.Equal(600000m - 55000m, account.GetProperty("balance").GetDecimal());
+        Assert.Equal(600000m + 20000m - 55000m, account.GetProperty("balance").GetDecimal());
     }
 
     [Fact]

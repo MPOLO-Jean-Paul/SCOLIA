@@ -191,10 +191,14 @@ public sealed class StudentsPage : PageViewModel
         CollectionSync.Apply(Items, result.Items.Select(s =>
         {
             var late = s.Overdue > 0;
+            // Un apprenant pris en charge est signalé comme tel, jamais comme « à jour » parmi les payants.
+            var sponsored = s.Sponsorship == "Pris en charge";
+            var situation = sponsored ? "Pris en charge"
+                : (late ? Money(s.Overdue) : "À jour") + (s.Sponsorship is { Length: > 0 } ? " · prise en charge partielle" : string.Empty);
             return new StudentRow(
                 s.Id, s.Matricule, Format.FullName(s.LastName, s.MiddleName, s.FirstName), Labels.Gender(s.Gender), s.PromotionCode ?? "—",
                 Labels.Status(s.Status ?? string.Empty), ThemeBrush.Get(Labels.Tone(s.Status ?? string.Empty) switch { "green" => "ToneGreen", "red" => "ToneRed", "orange" => "ToneOrange", _ => "ToneNeutral" }),
-                s.GuardianPhone ?? "—", Money(s.Balance), late ? Money(s.Overdue) : "À jour", ThemeBrush.Get(late ? "ToneRed" : "ToneGreen"));
+                s.GuardianPhone ?? "—", Money(s.Balance), situation, ThemeBrush.Get(sponsored ? "TonePurple" : late ? "ToneRed" : "ToneGreen"));
         }));
 
         subtitle = Format.Count(total, "apprenant", "apprenants") + (Promotion is { Value.Length: > 0 } ? $" · {Promotion.Label}" : string.Empty);

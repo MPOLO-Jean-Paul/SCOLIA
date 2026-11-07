@@ -17,7 +17,8 @@ public sealed record InfoLine(string Label, string Value);
 public sealed record BarVm(string Label, string Value, double Height, double Track = 0);
 
 /// <summary>Ligne du tableau des promotions, avec sa barre de recouvrement.</summary>
-public sealed record PromotionStatVm(string Code, string Name, string Students, string Expected, string Collected, string Outstanding, string Overdue, string Recovery, double RecoveryValue);
+public sealed record PromotionStatVm(string Code, string Name, string Students, string Expected, string Collected, string Outstanding, string Overdue, string Recovery, double RecoveryValue,
+    string Paying = "", string Sponsored = "");
 
 /// <summary>Reçu récent affiché sur le tableau de bord.</summary>
 public sealed record ReceiptLineVm(Guid Id, string Number, string Date, string Amount, string Method);
@@ -87,12 +88,18 @@ public sealed class DashboardPage : PageViewModel
         Raise(nameof(Subtitle));
 
         Kpis.Clear();
-        Kpis.Add(new KpiVm("Apprenants actifs", Format.Amount(d.ActiveStudents), $"{d.StudentsUpToDate} à jour · {d.StudentsLate} en retard",
+        // Les pris en charge ont leur propre total : « à jour » et « en retard » ne comptent que les payants.
+        Kpis.Add(new KpiVm("Apprenants actifs", Format.Amount(d.ActiveStudents),
+            $"{Format.Count(d.PayingStudents, "payant", "payants")} : {d.StudentsUpToDate} à jour · {d.StudentsLate} en retard",
             ThemeBrush.Get("ToneBlue"), MaterialIconKind.AccountGroupOutline));
-        Kpis.Add(new KpiVm("Recettes de l'année", Money(d.CollectedTotal), $"Aujourd'hui : {Money(d.CollectedToday)}",
+        Kpis.Add(new KpiVm("Pris en charge", Format.Amount(d.SponsoredStudents),
+            (d.PartiallySponsoredStudents > 0 ? $"+ {Format.Count(d.PartiallySponsoredStudents, "partielle", "partielles")} · " : string.Empty)
+                + $"couvert {Money(d.SponsoredAmount)}",
+            ThemeBrush.Get("TonePurple"), MaterialIconKind.HandHeartOutline));
+        // Les recettes du jour figurent dans « Aujourd'hui » : la tuile de l'année porte celles du mois et ses dépenses.
+        Kpis.Add(new KpiVm("Recettes de l'année", Money(d.CollectedTotal),
+            $"Ce mois : {Money(d.CollectedThisMonth)} · dépenses {Money(d.ExpensesThisMonth)}",
             ThemeBrush.Get("ToneGreen"), MaterialIconKind.CashMultiple));
-        Kpis.Add(new KpiVm("Recettes du mois", Money(d.CollectedThisMonth), $"Dépenses du mois : {Money(d.ExpensesThisMonth)}",
-            ThemeBrush.Get("ToneTeal"), MaterialIconKind.CalendarMonthOutline));
         Kpis.Add(new KpiVm("Reste exigible", Money(d.Overdue), Format.Count(d.StudentsLate, "apprenant en retard", "apprenants en retard"),
             ThemeBrush.Get("ToneOrange"), MaterialIconKind.AlertCircleOutline));
         Kpis.Add(new KpiVm("Reste à percevoir", Money(d.Outstanding), $"Attendu à ce jour : {Money(d.ExpectedToDate)}",
@@ -115,7 +122,8 @@ public sealed class DashboardPage : PageViewModel
         Promotions.Clear();
         foreach (var p in d.Promotions)
             Promotions.Add(new PromotionStatVm(p.Code, p.Name, Format.Amount(p.Students), Money(p.Expected), Money(p.Collected),
-                Money(p.Outstanding), Money(p.Overdue), Format.Percent(p.RecoveryRate), (double)Math.Clamp(p.RecoveryRate, 0, 100)));
+                Money(p.Outstanding), Money(p.Overdue), Format.Percent(p.RecoveryRate), (double)Math.Clamp(p.RecoveryRate, 0, 100),
+                Format.Amount(p.Paying), Format.Amount(p.Sponsored)));
 
         Latest.Clear();
         foreach (var r in d.LatestReceipts)

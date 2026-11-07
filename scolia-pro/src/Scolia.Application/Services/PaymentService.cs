@@ -80,11 +80,11 @@ public sealed class PaymentService(IAppDbContext db, IWriteGate gate, IAuditLog 
         if (year.Status == AcademicYearStatus.Closed) throw new DomainException("annee", $"L'année {year.Label} est clôturée.");
         // Paiement partiel autorisé : chaque versement est imputé aux mois choisis par ancienneté.
         if (input.FeeItemIds is not { Count: > 0 })
-            throw new DomainException("rubriques", "Sélectionnez les mois payés : un paiement se fait par mois complet.");
+            throw new DomainException("rubriques", "Sélectionnez les mois ou les frais payés.");
         var plan = PaymentAllocator.Months(data.Account, input.FeeItemIds, input.Amount);
         var total = plan.Sum(p => p.Amount);
         if (input.Amount != total)
-            throw new DomainException("montant", $"Les mois choisis valent {Money.Display(total, school.CurrencySymbol)}. La liste a changé : actualisez-la avant d'encaisser.");
+            throw new DomainException("montant", $"Les rubriques choisies valent {Money.Display(total, school.CurrencySymbol)}. La liste a changé : actualisez-la avant d'encaisser.");
         Money.EnsureValid(total, school.WholeAmountsOnly, "amount");
 
         var receipt = new Receipt

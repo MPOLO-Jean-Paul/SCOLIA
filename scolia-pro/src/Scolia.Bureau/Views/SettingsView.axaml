@@ -275,6 +275,23 @@
           </StackPanel>
         </Border>
 
+        <!-- Catégories de frais : inscription, examen, tenue… avec leur montant -->
+        <Border Classes="card" IsVisible="{Binding IsFees}">
+          <StackPanel Spacing="8">
+            <DataGrid ItemsSource="{Binding Categories}" SelectedItem="{Binding SelectedCategory}" AutoGenerateColumns="False" IsReadOnly="True" MaxHeight="420">
+              <DataGrid.Columns>
+                <DataGridTextColumn Header="Catégorie" Binding="{Binding Name}" Width="*" MinWidth="160" />
+                <DataGridTextColumn Header="Montant" Binding="{Binding Amount}" Width="Auto" MinWidth="120" />
+                <DataGridTextColumn infra:GridPriority.Level="2" Header="Échéance" Binding="{Binding DueDate}" Width="Auto" MinWidth="120" />
+                <DataGridTextColumn infra:GridPriority.Level="2" Header="Appliquée à" Binding="{Binding Promotions}" Width="Auto" MinWidth="130" />
+                <DataGridTextColumn infra:GridPriority.Level="3" Header="Active" Binding="{Binding Active}" Width="Auto" MinWidth="90" />
+              </DataGrid.Columns>
+            </DataGrid>
+            <TextBlock Classes="muted" TextWrapping="Wrap" FontSize="{DynamicResource FsSmall}"
+                       Text="La mensualité est obligatoire et se règle dans chaque promotion. Une catégorie créée ici peut être ajoutée à toutes les promotions, ou promotion par promotion avec un autre montant." />
+          </StackPanel>
+        </Border>
+
         <!-- Promotions et frais -->
         <Border Classes="card" IsVisible="{Binding IsPromotions}">
           <StackPanel Spacing="8">

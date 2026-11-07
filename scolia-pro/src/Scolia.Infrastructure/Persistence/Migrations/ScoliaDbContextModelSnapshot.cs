@@ -820,6 +820,56 @@ namespace Scolia.Infrastructure.Persistence.Migrations
                     b.ToTable("AnneesScolaires", (string)null);
                 });
 
+            modelBuilder.Entity("Scolia.Domain.School.FeeCategory", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("Amount")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateOnly?>("DueDate")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("NameKey")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Order")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("NameKey")
+                        .IsUnique();
+
+                    b.ToTable("CategoriesFrais", (string)null);
+                });
+
             modelBuilder.Entity("Scolia.Domain.School.FeeItem", b =>
                 {
                     b.Property<Guid>("Id")
@@ -827,6 +877,9 @@ namespace Scolia.Infrastructure.Persistence.Migrations
 
                     b.Property<long>("Amount")
                         .HasColumnType("INTEGER");
+
+                    b.Property<Guid?>("CategoryId")
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("TEXT");
@@ -864,6 +917,8 @@ namespace Scolia.Infrastructure.Persistence.Migrations
                         .HasColumnType("INTEGER");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("CategoryId");
 
                     b.HasIndex("PromotionId");
 
@@ -1540,10 +1595,10 @@ namespace Scolia.Infrastructure.Persistence.Migrations
                     b.Property<bool>("IsActive")
                         .HasColumnType("INTEGER");
 
-                    b.Property<long>("MonthlyAmount")
+                    b.Property<int>("Mode")
                         .HasColumnType("INTEGER");
 
-                    b.Property<int>("Mode")
+                    b.Property<long>("MonthlyAmount")
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("Reason")
@@ -1832,6 +1887,11 @@ namespace Scolia.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("Scolia.Domain.School.FeeItem", b =>
                 {
+                    b.HasOne("Scolia.Domain.School.FeeCategory", null)
+                        .WithMany()
+                        .HasForeignKey("CategoryId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("Scolia.Domain.School.Promotion", null)
                         .WithMany("Fees")
                         .HasForeignKey("PromotionId")

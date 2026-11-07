@@ -38,7 +38,13 @@ public sealed record SectionDto(Guid Id, string Code, string Name, bool IsActive
 
 public sealed record SectionUpsert(string Code, string Name, bool IsActive);
 
-public sealed record FeeItemDto(Guid Id, string Kind, string Label, decimal Amount, DateOnly DueDate, int Order, Guid? PeriodId);
+public sealed record FeeItemDto(Guid Id, string Kind, string Label, decimal Amount, DateOnly DueDate, int Order, Guid? PeriodId, Guid? CategoryId = null);
+
+/// <summary>Catégorie de frais du catalogue de l'établissement, avec le nombre de promotions de l'année courante qui l'appliquent.</summary>
+public sealed record FeeCategoryDto(Guid Id, string Name, decimal Amount, DateOnly? DueDate, bool IsActive, int Order, int PromotionCount);
+
+/// <summary>Création ou modification d'une catégorie ; ApplyToPromotions l'ajoute (ou met son montant à jour) dans les promotions actives de l'année courante.</summary>
+public sealed record FeeCategoryUpsert(string Name, decimal Amount, DateOnly? DueDate, bool IsActive = true, bool ApplyToPromotions = false);
 
 public sealed record PromotionDto(Guid Id, Guid AcademicYearId, string Code, string Name, Guid? SectionId, string? SectionName, int Level, int? Capacity,
     bool IsActive, string? NextPromotionCode, decimal MonthlyFee, decimal AnnualTotal, int StudentCount, IReadOnlyList<FeeItemDto> Fees);
@@ -46,13 +52,15 @@ public sealed record PromotionDto(Guid Id, Guid AcademicYearId, string Code, str
 /// <summary>Création ou modification d'une promotion : la mensualité génère une rubrique par mois,
 /// les frais ponctuels (inscription, examen…) sont ajoutés en plus.</summary>
 public sealed record PromotionUpsert(string Code, string Name, Guid? SectionId, int Level, int? Capacity, bool IsActive, string? NextPromotionCode,
-    decimal MonthlyFee, IReadOnlyList<OneTimeFee>? OneTimeFees);
+    decimal MonthlyFee, IReadOnlyList<OneTimeFee>? OneTimeFees, bool ManagesCategories = false);
 
-public sealed record OneTimeFee(string Kind, string Label, decimal Amount, DateOnly DueDate);
+/// <summary>Autre frais d'une promotion. CategoryId désigne la catégorie du catalogue ; les anciens clients
+/// n'envoient que la nature et le libellé, rapprochés du nom d'une catégorie existante.</summary>
+public sealed record OneTimeFee(string? Kind, string? Label, decimal Amount, DateOnly? DueDate, Guid? CategoryId = null);
 
 // ---------- Apprenants ----------
 public sealed record StudentListItem(Guid Id, Guid? EnrollmentId, string Matricule, string LastName, string MiddleName, string FirstName, string Gender,
-    string? PromotionCode, string? Status, string? GuardianPhone, decimal Balance, decimal Overdue);
+    string? PromotionCode, string? Status, string? GuardianPhone, decimal Balance, decimal Overdue, string? Sponsorship = null);
 
 public sealed record StudentDto(Guid Id, string Matricule, string LastName, string MiddleName, string FirstName, string Gender, DateOnly? BirthDate,
     string? BirthPlace, string? Nationality, string? Address, string? Phone, string? Email, string? GuardianName, string? GuardianRelation,
@@ -145,7 +153,8 @@ public sealed record CashClosingDto(Guid Id, DateOnly Date, DateOnly PeriodStart
 public sealed record DashboardDto(string AcademicYear, int ActiveStudents, int NewThisMonth, decimal CollectedTotal, decimal CollectedThisMonth,
     decimal CollectedToday, decimal ExpectedToDate, decimal Outstanding, decimal Overdue, decimal RecoveryRate, int StudentsUpToDate,
     int StudentsLate, decimal ExpensesThisMonth, IReadOnlyList<SeriesPoint> MonthlyCollections, IReadOnlyList<PromotionStat> Promotions,
-    IReadOnlyList<SeriesPoint> Aging, IReadOnlyList<ReceiptSummaryDto> LatestReceipts, int GenderMale, int GenderFemale);
+    IReadOnlyList<SeriesPoint> Aging, IReadOnlyList<ReceiptSummaryDto> LatestReceipts, int GenderMale, int GenderFemale,
+    int PayingStudents = 0, int SponsoredStudents = 0, int PartiallySponsoredStudents = 0, decimal SponsoredAmount = 0m);
 
 public sealed record SeriesPoint(string Label, decimal Value, decimal? Secondary = null);
 
@@ -155,11 +164,13 @@ public sealed record PromoterPeriodDto(Guid PeriodId, string Label, decimal Coll
 
 public sealed record PromoterPromotionDto(Guid Id, string Code, string Name, int ActiveStudents,
     int StudentsWithBalance, int StudentsOverdue, decimal CollectedToday, decimal CollectedThisMonth,
-    decimal CollectedTotal, decimal Outstanding, decimal Overdue, IReadOnlyList<PromoterPeriodDto> Periods);
+    decimal CollectedTotal, decimal Outstanding, decimal Overdue, IReadOnlyList<PromoterPeriodDto> Periods,
+    int PayingStudents = 0, int SponsoredStudents = 0, int PartiallySponsoredStudents = 0, decimal SponsoredAmount = 0m, int StudentsUpToDate = 0);
 
 public sealed record PromoterDashboardDto(string AcademicYear, DateOnly AsOf, int ActiveStudents,
     int StudentsWithBalance, int StudentsOverdue, decimal CollectedToday, decimal CollectedThisMonth,
-    decimal CollectedTotal, decimal Outstanding, decimal Overdue, IReadOnlyList<PromoterPromotionDto> Promotions);
+    decimal CollectedTotal, decimal Outstanding, decimal Overdue, IReadOnlyList<PromoterPromotionDto> Promotions,
+    int PayingStudents = 0, int SponsoredStudents = 0, int PartiallySponsoredStudents = 0, decimal SponsoredAmount = 0m, int StudentsUpToDate = 0);
 
 // ---------- Suivi des paiements par mois ----------
 /// <summary>Filtres du suivi mensuel : le mois, la promotion (toutes si absente), l'état et une recherche.</summary>
@@ -170,7 +181,7 @@ public sealed record PeriodChoiceDto(Guid Id, string Name, bool IsCurrent);
 /// <summary>Un apprenant face au mois choisi : montant du mois, payé, reste, état et dernier reçu qui l'a réglé.</summary>
 public sealed record MonthlyRowDto(Guid StudentId, Guid EnrollmentId, string Matricule, string FullName, string PromotionCode,
     decimal Amount, decimal Paid, decimal Remaining, string Status, string? ReceiptNumber, DateOnly? PaidOn, string? GuardianPhone,
-    string? WhatsAppLink, string? SmsLink);
+    string? WhatsAppLink, string? SmsLink, string? Sponsorship = null);
 
 /// <summary>Suivi d'un mois : les mois de l'année, les totaux par état et la liste filtrée.</summary>
 public sealed record MonthlyFollowUpDto(Guid PeriodId, string Period, IReadOnlyList<PeriodChoiceDto> Periods,
@@ -183,10 +194,13 @@ public sealed record TodayDto(DateOnly Date, int ReceiptsToday, decimal Collecte
 
 public sealed record TodayPersonDto(Guid StudentId, string Name, string Promotion, string Detail);
 
-public sealed record PromotionStat(Guid Id, string Code, string Name, int Students, decimal Expected, decimal Collected, decimal Outstanding, decimal Overdue, decimal RecoveryRate);
+/// <param name="Students">Effectif actif ; Paying + Sponsored = Students. UpToDate et Late ne comptent que les payants.</param>
+public sealed record PromotionStat(Guid Id, string Code, string Name, int Students, decimal Expected, decimal Collected, decimal Outstanding, decimal Overdue, decimal RecoveryRate,
+    int Paying = 0, int Sponsored = 0, int PartiallySponsored = 0, int UpToDate = 0, int Late = 0, decimal SponsoredAmount = 0m);
 
 public sealed record DebtorDto(Guid StudentId, Guid EnrollmentId, string Matricule, string FullName, string PromotionCode, decimal Balance,
-    decimal Overdue, int OverdueCount, string Periods, string AgingBucket, string? GuardianName, string? GuardianPhone, string? WhatsAppLink, string? SmsLink);
+    decimal Overdue, int OverdueCount, string Periods, string AgingBucket, string? GuardianName, string? GuardianPhone, string? WhatsAppLink, string? SmsLink,
+    string? Sponsorship = null);
 
 public sealed record DebtorQuery(Guid? PromotionId, int? MinOverdueMonths, string? Bucket, string? Search);
 

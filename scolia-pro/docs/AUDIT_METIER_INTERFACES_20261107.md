@@ -131,12 +131,36 @@ fenêtre », déjà présents sur la branche d'origine, non liés à ces changem
 
 - **Rôles** : le compte administrateur créé à l'installation a le rôle *Secrétariat*. Restreindre ce rôle bloquerait
   l'établissement. Il faut d'abord un vrai rôle Administrateur assignable et une migration des comptes existants.
-- **Droit dédié aux prises en charge** : à décider avec la séparation des rôles.
-- **Frais d'inscription et d'examen** : ils sont volontairement exclus du compte (un test l'impose). Il faut choisir entre
-  les encaisser ou les retirer du modèle.
+- **Droit dédié aux prises en charge** : à décider avec la séparation des rôles. Les pris en charge sont désormais comptés à part (section 6).
+- ~~Frais d'inscription et d'examen~~ : réglé le 7 novembre par le catalogue des catégories de frais (section 6).
 - **Reçu figé (solde et payeur au jour du paiement, « Duplicata »)** : nécessite une migration de base, à faire avec la
   prochaine version de schéma.
-- **Observation « OK » par défaut** : c'est un choix de la V79, verrouillé par un test. Il n'a pas été modifié.
+- **Observation « OK » par défaut** : conservée, à la demande du responsable.
 - **Antidatage** : le limiter refuserait les encaissements hors ligne synchronisés plusieurs jours après. Il faut une règle
   qui distingue la date de saisie et la date de synchronisation.
 - Multi-devise, rapprochement Mobile Money, billetage, pénalités, remises, échéanciers : feuille de route.
+
+## 6. Catégories de frais et prises en charge (7 novembre, suite)
+
+Demande du responsable : garder l'observation « OK », gérer des catégories de frais avec un montant chacune (rien
+n'existe tant qu'une catégorie n'est pas créée), garder la mensualité obligatoire, et compter les pris en charge à part.
+
+| Règle | Mise en œuvre |
+|---|---|
+| Mensualité obligatoire | Une promotion sans mensualité (montant 0) est refusée par le serveur et par le formulaire. |
+| Catalogue des catégories | Table `CategoriesFrais` (migration `FeeCategories`) : nom unique, montant, échéance facultative, active ou non. Paramètres, **Catégories de frais** : créer, modifier, supprimer (refusé si déjà encaissée), appliquer à toutes les promotions. |
+| Seules les catégories créées existent | Un frais de promotion doit désigner une catégorie du catalogue ; sinon : « Créez d'abord la catégorie… ». La mensualité ne peut pas être une catégorie. |
+| Montant par catégorie | Montant du catalogue, modifiable promotion par promotion (formulaire de promotion : une ligne par catégorie, vide = non appliquée). |
+| Frais encaissables | Les frais des catégories entrent dans le compte, le solde, le retard, le recouvrement et les rapports, et s'encaissent dans Encaisser comme un mois (y compris hors ligne). L'encaissement par lot reste limité aux mensualités. |
+| Anciennes bases | Au démarrage, les frais saisis avant le catalogue reçoivent une catégorie créée d'après leur libellé (montant le plus fréquent), avec une ligne dans le journal d'audit chaîné. Vérifié sur une base de démonstration de la version précédente : sauvegarde « avant mise à jour », 2 catégories créées, journal intègre. |
+| Pris en charge hors des payants | Classement par inscription : *totale* (prise en charge complète ou tous les frais couverts), *partielle*, aucune. Les totalement pris en charge ne sont comptés ni parmi les payants, ni « à jour », ni « en retard », ni dans les débiteurs. |
+| Leurs propres totaux | Tableau de bord : tuile « Pris en charge » (nombre, partielles, montant couvert) et colonnes Payants / Pris en charge par promotion ; pilotage du promoteur ; suivi mensuel (tuile dédiée, « Payés sur N payants ») ; export « Situation par promotion » (payants, en ordre, en retard, pris en charge, montant). |
+| Structurés et signalés dans les listes | Liste d'une promotion : payants d'abord puis pris en charge, colonne « Prise en charge » (totale/partielle et organisme), totaux distincts. Même colonne dans la liste générale, le suivi mensuel et les débiteurs ; liste des apprenants : « Pris en charge » en violet ; page Prises en charge rangée par promotion avec le total couvert. |
+
+**Changement visible pour les établissements existants** : les frais d'inscription ou d'examen déjà saisis dans des
+promotions comptent désormais dans le solde et le retard des apprenants (ils étaient ignorés). C'est l'effet voulu,
+mais à annoncer aux caisses avant la mise à jour.
+
+**Vérifications** : 264 tests serveur (dont 5 nouveaux sur les catégories, la reprise des anciens frais et les pris en
+charge) et 421 tests client au vert ; parcours headless `smoke` et `fluidite` sans échec, `bureau` avec les 2 échecs
+déjà présents avant ces changements (écran de connexion).

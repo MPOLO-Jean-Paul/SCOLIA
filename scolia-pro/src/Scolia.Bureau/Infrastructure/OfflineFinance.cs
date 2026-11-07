@@ -57,9 +57,9 @@ public static class OfflineFinance
     public static PaymentPreviewDto Preview(AccountDto account, IReadOnlyList<Guid> feeItemIds, decimal amount)
     {
         if (amount <= 0 || feeItemIds.Count == 0 || feeItemIds.Count != feeItemIds.Distinct().Count())
-            throw new ArgumentException("Sélectionnez des mois distincts et un montant positif.");
+            throw new ArgumentException("Sélectionnez des mois ou des frais distincts et un montant positif.");
         var selected = account.Lines
-            .Where(l => feeItemIds.Contains(l.FeeItemId) && l.Kind == "Mensualite")
+            .Where(l => feeItemIds.Contains(l.FeeItemId))
             .OrderBy(l => l.DueDate).ThenBy(l => l.Label, StringComparer.Ordinal).ToList();
         if (selected.Count != feeItemIds.Count || selected.Any(l => l.Remaining <= 0) ||
             amount > selected.Sum(l => l.Remaining))

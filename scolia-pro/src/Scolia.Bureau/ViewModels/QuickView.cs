@@ -31,6 +31,9 @@ public static class QuickView
             lines.Add($"Reste exigible : {Format.Money(account.Overdue, currency)}" + (late.Count > 0 ? $" ({string.Join(", ", late)})" : " · à jour"));
             lines.Add($"Reste sur l'année : {Format.Money(account.Balance, currency)} · déjà payé {Format.Money(account.TotalPaid, currency)}");
             lines.Add($"Mois réglés : {(paid.Count == 0 ? "aucun" : string.Join(", ", paid))}");
+            var others = account.Lines.Where(l => l.Kind != "Mensualite").ToList();
+            if (others.Count > 0)
+                lines.Add("Autres frais : " + string.Join(", ", others.Select(l => $"{l.Label} {(l.Remaining <= 0 ? "réglé" : "reste " + Format.Money(l.Remaining, currency))}")));
             if (account.Receipts.Count > 0)
             {
                 var last = account.Receipts[0];
