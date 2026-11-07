@@ -323,6 +323,8 @@ public sealed class SettingsPage : PageViewModel
     /// <summary>Actions directes, accessibles sans le menu « … » sur Android.</summary>
     public AsyncCommand CreateSection { get; }
     public RelayCommand<SectionRowVm> EditSectionOnPhone { get; }
+    public AsyncCommand CreatePromotion { get; }
+    public RelayCommand<PromotionRowVm> EditPromotionOnPhone { get; }
 
     /// <summary>Le bouton retour système Android revient d'abord aux familles de réglages.</summary>
     public bool TryBackToMobileSections()
@@ -401,6 +403,13 @@ public sealed class SettingsPage : PageViewModel
             if (row is null) return;
             SelectedSection = row;
             _ = Shell.Run(() => EditSectionAsync(row.Source));
+        });
+        CreatePromotion = new AsyncCommand(() => Shell.Run(() => NewPromotionAsync(Shell)));
+        EditPromotionOnPhone = new RelayCommand<PromotionRowVm>(row =>
+        {
+            if (row is null) return;
+            SelectedPromotion = row;
+            _ = Shell.Run(() => PromotionFormAsync(Shell, row.Source));
         });
         OpenAccountSecurity = new RelayCommand(() =>
         {
@@ -610,6 +619,8 @@ public sealed class SettingsPage : PageViewModel
     public bool HasSectionRows => SectionRows.Count > 0;
     public bool HasNoSections => SectionRows.Count == 0;
     public ObservableCollection<PromotionRowVm> Promotions { get; } = [];
+    public bool HasPromotionRows => Promotions.Count > 0;
+    public bool HasNoPromotions => Promotions.Count == 0;
     public YearRowVm? SelectedYear
     {
         get => selectedYear;
@@ -749,10 +760,14 @@ public sealed class SettingsPage : PageViewModel
     private async Task LoadPromotionsAsync()
     {
         var promotions = await Shell.Api.GetAsync<List<PromotionDto>>("api/etablissement/promotions");
+        var previouslySelectedId = SelectedPromotion?.Id;
         Promotions.Clear();
         foreach (var p in promotions)
             Promotions.Add(new PromotionRowVm(p.Id, p.Code, p.Name, p.SectionName ?? "—", $"{p.Level}", $"{p.StudentCount}",
                 Money(p.MonthlyFee), Money(p.AnnualTotal), p.IsActive ? "Oui" : "Non", p));
+        SelectedPromotion = Promotions.FirstOrDefault(p => p.Id == previouslySelectedId);
+        Raise(nameof(HasPromotionRows));
+        Raise(nameof(HasNoPromotions));
         subtitle = Format.Count(promotions.Count, "promotion", "promotions");
         Raise(nameof(Subtitle));
     }
@@ -1037,7 +1052,8 @@ public sealed class SettingsPage : PageViewModel
     public static async Task PromotionFormAsync(ShellViewModel shell, PromotionDto? existing)
     {
         var sections = await shell.Api.GetAsync<List<SectionDto>>("api/etablissement/sections");
-        var sectionChoices = sections.Select(s => new ChoiceItem(s.Id.ToString(), $"{s.Code} · {s.Name}")).ToList();
+        var sectionChoices = sections.Where(s => s.IsActive || s.Id == existing?.SectionId)
+            .Select(s => new ChoiceItem(s.Id.ToString(), $"{s.Code} · {s.Name}")).ToList();
         var inscription = existing?.Fees.FirstOrDefault(f => f.Kind == "Inscription");
         var examen = existing?.Fees.FirstOrDefault(f => f.Kind == "Examen");
 
