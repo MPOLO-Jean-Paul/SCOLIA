@@ -22,7 +22,7 @@ public sealed class RemoteHttpHandler(RemoteLink link, CookieContainer cookies,
     {
         link.Validate();
         var backup = link.EffectiveBackupRelay;
-        if (backup is null) return await SendViaAsync(link, request, cancellationToken, false);
+        if (backup is null) return await SendViaAsync(link, request, false, cancellationToken);
         var identity = link.Room + ":" + link.Relay;
         var backupFirst = PreferredBackupUntil.TryGetValue(identity, out var until) &&
             until > DateTimeOffset.UtcNow;
@@ -30,14 +30,14 @@ public sealed class RemoteHttpHandler(RemoteLink link, CookieContainer cookies,
         var second = backupFirst ? link.Via(link.Relay) : link.Via(backup);
         try
         {
-            var response = await SendViaAsync(first, request, cancellationToken, !backupFirst);
+            var response = await SendViaAsync(first, request, !backupFirst, cancellationToken);
             // Le relais peut être accessible, mais ne plus avoir de serveur hébergé :
             // HTTP 502/503/504 est aussi une panne de transport, pas un refus métier.
             if (response.StatusCode is HttpStatusCode.BadGateway or HttpStatusCode.ServiceUnavailable
                 or HttpStatusCode.GatewayTimeout)
             {
                 response.Dispose();
-                var fallback = await SendViaAsync(second, request, cancellationToken, backupFirst);
+                var fallback = await SendViaAsync(second, request, backupFirst, cancellationToken);
                 if (fallback.StatusCode is not (HttpStatusCode.BadGateway or HttpStatusCode.ServiceUnavailable
                     or HttpStatusCode.GatewayTimeout))
                 {
@@ -54,7 +54,7 @@ public sealed class RemoteHttpHandler(RemoteLink link, CookieContainer cookies,
         {
             // La requête conserve sa clé Idempotency-Key lors du changement de voie :
             // un encaissement dont l'accusé a été perdu ne doit pas être enregistré deux fois.
-            var result = await SendViaAsync(second, request, cancellationToken, backupFirst);
+            var result = await SendViaAsync(second, request, backupFirst, cancellationToken);
             if (!backupFirst)
                 PreferredBackupUntil[identity] = DateTimeOffset.UtcNow.AddSeconds(30);
             else
@@ -64,7 +64,7 @@ public sealed class RemoteHttpHandler(RemoteLink link, CookieContainer cookies,
     }
 
     private async Task<HttpResponseMessage> SendViaAsync(RemoteLink route, HttpRequestMessage request,
-        CancellationToken cancellationToken, bool shortConnect)
+        bool shortConnect, CancellationToken cancellationToken)
     {
         var socket = new ClientWebSocket();
         try
