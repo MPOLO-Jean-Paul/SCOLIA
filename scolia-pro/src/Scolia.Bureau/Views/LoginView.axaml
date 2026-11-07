@@ -400,11 +400,11 @@
           </Border>
           <TextBlock Text="SCOLIA Pro" FontSize="27" FontWeight="Bold"
                      Foreground="{DynamicResource TextBrush}" TextAlignment="Center" />
-          <TextBlock Text="{Binding TitleText}" FontSize="14" Classes="muted"
+          <TextBlock x:Name="IosSchoolHeading" Text="{Binding TitleText}" FontSize="14" Classes="muted"
                      TextWrapping="Wrap" TextAlignment="Center" MaxLines="3" />
         </StackPanel>
 
-        <Border Classes="iosauthcard">
+        <Border x:Name="IosLoginCard" Classes="iosauthcard">
           <StackPanel Spacing="15">
             <StackPanel Spacing="5" IsVisible="{Binding !RecoveryOpen}">
               <TextBlock Text="Bienvenue" FontSize="23" FontWeight="Bold"
@@ -647,7 +647,7 @@
         </Button>
         <TextBlock Text="{Binding ServerLine}" IsVisible="{Binding HasServerLine}"
                    Classes="muted" TextAlignment="Center" FontSize="11" TextWrapping="Wrap" />
-        <TextBlock Text="{Binding Footer}" Classes="muted" TextAlignment="Center"
+        <TextBlock x:Name="IosLoginFooter" Text="{Binding Footer}" Classes="muted" TextAlignment="Center"
                    FontSize="11" TextWrapping="Wrap" Margin="0,0,0,10" />
       </StackPanel>
     </ScrollViewer>
