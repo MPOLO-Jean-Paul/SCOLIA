@@ -12,6 +12,16 @@ public sealed record RemoteLink(string Relay, string Room, string ClientToken, s
     public const string DefaultRelay = "wss://scolia-pro-relay.onrender.com/";
     /// <summary>Durée historique des invitations (migration) ; les appareils restent liés jusqu'à révocation.</summary>
     public const int LinkValidityDays = 365;
+    /// <summary>Second relais optionnel ; la salle et les clés de chiffrement restent identiques.</summary>
+    public string? BackupRelay { get; init; }
+
+    /// <summary>Les liaisons Cloudflare déjà enregistrées peuvent essayer Render sans nouveau QR.</summary>
+    public string? EffectiveBackupRelay => !string.IsNullOrWhiteSpace(BackupRelay) ? BackupRelay
+        : !string.Equals(Relay, DefaultRelay, StringComparison.OrdinalIgnoreCase) &&
+          !new Uri(Relay).IsLoopback ? DefaultRelay : null;
+
+    /// <summary>Autre chemin réseau vers la MEME salle chiffrée, sans renouvellement de clé.</summary>
+    public RemoteLink Via(string relay) => (this with { Relay = relay, BackupRelay = null }).Validate();
     public Uri VirtualServer => new($"http://{Room[..32]}.{Room[32..]}.scolia.invalid/");
     public bool CanHost => HostToken is not null;
 
@@ -50,6 +60,15 @@ public sealed record RemoteLink(string Relay, string Room, string ClientToken, s
             (uri.Scheme != "wss" && !(uri.Scheme == "ws" && uri.IsLoopback)) ||
             uri.UserInfo.Length > 0 || uri.Query.Length > 0 || uri.Fragment.Length > 0 || uri.AbsolutePath != "/")
             throw new FormatException("Le relais doit être une adresse wss:// avec un certificat valide, sans chemin ni identifiants.");
+        if (!string.IsNullOrWhiteSpace(BackupRelay))
+        {
+            if (!Uri.TryCreate(BackupRelay, UriKind.Absolute, out var backup) ||
+                (backup.Scheme != "wss" && !(backup.Scheme == "ws" && backup.IsLoopback)) ||
+                backup.UserInfo.Length > 0 || backup.Query.Length > 0 ||
+                backup.Fragment.Length > 0 || backup.AbsolutePath != "/" ||
+                string.Equals(BackupRelay, Relay, StringComparison.OrdinalIgnoreCase))
+                throw new FormatException("Le relais secondaire doit être une autre adresse wss:// valide.");
+        }
         foreach (var value in new[] { Room, ClientToken, Key })
             if (value is not { Length: 64 } || !value.All(Uri.IsHexDigit)) throw new FormatException("Invitation de liaison invalide.");
         if (HostToken is not null && (HostToken.Length != 64 || !HostToken.All(Uri.IsHexDigit) || Hash(HostToken) != Room))
