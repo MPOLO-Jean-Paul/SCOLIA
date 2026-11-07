@@ -12,6 +12,12 @@
 - Sur l'ordinateur, le curseur se place directement dans l'identifiant, le mot de passe ou le code de veille ; Entrée valide, Échap revient à la session verrouillée.
 - Configuration initiale sur l'ordinateur : bandeau bleu très clair, étapes et cartes arrondies ; le bandeau se resserre et les champs s'empilent dans une fenêtre moyenne.
 
+## Faire de ce téléphone le serveur
+- Correction : après « Configurer ce téléphone comme serveur », l'application affichait la page de connexion avant même que le serveur du téléphone soit démarré ; en cas de démarrage lent ou impossible, on restait bloqué sur la connexion sans explication.
+- Désormais, l'écran reste sur le choix du serveur avec une progression (« Démarrage du serveur SCOLIA sur ce téléphone… », jusqu'à deux minutes la première fois), puis ouvre directement l'assistant de configuration de l'établissement.
+- Si le serveur ne démarre pas, un message clair indique la cause détectée et le bouton permet de réessayer.
+- Si ce téléphone était déjà serveur d'un établissement, la connexion s'affiche avec une explication : utiliser un compte créé sur ce téléphone.
+
 ## Continuité et sécurité
 - Version 1.2.43, Android versionCode 163.
 - Aucune migration SQLite, aucun changement des comptes, mots de passe, biométrie, jumelage, synchronisation ou protocole réseau : seules les vues changent.

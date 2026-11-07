@@ -367,14 +367,14 @@
                      Classes="muted" TextAlignment="Center" TextWrapping="Wrap" FontSize="12" />
 
           <Button Classes="iosconnectsecondary" Command="{Binding UseThisComputer}"
-                  IsVisible="{Binding PhoneCanBeServer}">
+                  IsVisible="{Binding PhoneCanBeServer}" IsEnabled="{Binding NotSearching}">
             <DockPanel LastChildFill="True">
               <mi:MaterialIcon DockPanel.Dock="Left" Margin="0,0,8,0" VerticalAlignment="Center" Kind="ServerOutline" Width="20" Height="20" />
               <TextBlock TextAlignment="Center" TextWrapping="Wrap" Text="Configurer ce téléphone comme serveur" VerticalAlignment="Center" />
             </DockPanel>
           </Button>
           <Button Classes="iosconnectsecondary" Command="{Binding UseThisComputer}"
-                  IsVisible="{Binding DesktopCanBeServer}">
+                  IsVisible="{Binding DesktopCanBeServer}" IsEnabled="{Binding NotSearching}">
             <DockPanel LastChildFill="True">
               <mi:MaterialIcon DockPanel.Dock="Left" Margin="0,0,8,0" VerticalAlignment="Center" Kind="ServerOutline" Width="20" Height="20" />
               <TextBlock TextAlignment="Center" TextWrapping="Wrap" Text="Configurer cet ordinateur comme serveur" VerticalAlignment="Center" />

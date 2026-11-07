@@ -115,4 +115,19 @@ public sealed class MobileIosAuthenticationViewsTests
         foreach (var button in ios)
             Assert.DoesNotContain(button.Elements(), c => c.Name.LocalName == "StackPanel" && Attribute(c, "Orientation", "Horizontal"));
     }
+
+    [Fact]
+    public void Serveur_du_telephone_la_connexion_n_apparait_qu_une_fois_le_serveur_pret()
+    {
+        var dir = new DirectoryInfo(AppContext.BaseDirectory);
+        while (dir is not null && !File.Exists(Path.Combine(dir.FullName, "Scolia.sln"))) dir = dir.Parent;
+        var shell = File.ReadAllText(Path.Combine(dir!.FullName, "src", "Scolia.Bureau", "ViewModels", "Shell.cs"));
+        var start = shell.IndexOf("public async Task UseThisComputerAsync()", StringComparison.Ordinal);
+        var body = shell[start..shell.IndexOf("public async Task SetNetworkAsync", start, StringComparison.Ordinal)];
+        // Le démarrage est suivi sur l'écran de choix ; l'échec y reste affiché avec son détail.
+        Assert.True(body.IndexOf("Connection.BeginProgress", StringComparison.Ordinal)
+            < body.IndexOf("ChoosingServer = false", StringComparison.Ordinal));
+        Assert.Contains("localServer.Diagnostic", body);
+        Assert.Contains("ChoosingServer = true", body);
+    }
 }
