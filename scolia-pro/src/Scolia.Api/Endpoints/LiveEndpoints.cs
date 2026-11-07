@@ -24,26 +24,37 @@ public static class LiveEndpoints
     {
         var g = app.MapGroup("/api/direct").RequireAuthorization();
 
-        g.MapGet("", async (HttpContext http, LiveHub hub, CancellationToken ct) =>
+        g.MapGet("", async (HttpContext http, LiveHub hub, DevicePairingRegistry devices, CancellationToken ct) =>
         {
             http.Response.Headers.ContentType = "text/event-stream";
             http.Response.Headers.CacheControl = "no-cache";
             http.Response.Headers["X-Accel-Buffering"] = "no";
             var (id, reader) = hub.Subscribe();
+            var remote = http.Request.Headers["X-Scolia-Relay-Connection"] == "1";
+            var deviceId = LiveHeaders.DeviceId(http);
+            var grantValid = Guid.TryParseExact(http.Request.Headers["X-Scolia-Grant"].ToString(),
+                "N", out var grantId);
+            // Une session SSE peut durer après le retrait de son appareil.
+            // Contrôler la révocation sur chaque événement et chaque battement.
+            bool StillAllowed() => !remote ||
+                (grantValid && devices.HasGrant(grantId, deviceId));
             try
             {
                 await Write(http, "etat", hub.Snapshot(), ct);
                 while (!ct.IsCancellationRequested)
                 {
+                    if (!StillAllowed()) { if (deviceId is not null) hub.Leave(deviceId); break; }
                     using var wait = CancellationTokenSource.CreateLinkedTokenSource(ct);
                     wait.CancelAfter(Heartbeat);
                     try
                     {
                         var live = await reader.ReadAsync(wait.Token);
+                        if (!StillAllowed()) { if (deviceId is not null) hub.Leave(deviceId); break; }
                         await Write(http, live.Kind, live, ct);
                     }
                     catch (OperationCanceledException) when (!ct.IsCancellationRequested)
                     {
+                        if (!StillAllowed()) { if (deviceId is not null) hub.Leave(deviceId); break; }
                         await http.Response.WriteAsync(": en ligne\n\n", ct);
                         await http.Response.Body.FlushAsync(ct);
                     }

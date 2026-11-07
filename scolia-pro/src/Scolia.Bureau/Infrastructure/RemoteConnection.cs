@@ -15,7 +15,16 @@ public static class RemoteConnection
     public static RemoteConfiguration? Load()
     {
         if (!File.Exists(FilePath)) return null;
-        return JsonSerializer.Deserialize<RemoteConfiguration>(SecretStore.Unprotect(File.ReadAllBytes(FilePath)));
+        var saved = JsonSerializer.Deserialize<RemoteConfiguration>(SecretStore.Unprotect(File.ReadAllBytes(FilePath)));
+        if (saved is { Host: false, Enabled: true } && saved.Link.ExpiresUtc <= DateTime.UtcNow &&
+            DevicePairingStore.Read(saved.Link.VirtualServer) is not null)
+        {
+            // L'ancien lien a une date limite, contrairement au poste déjà
+            // autorisé. Réutiliser exactement la même salle et les mêmes clés.
+            saved = saved with { Link = saved.Link with { ExpiresUtc = DateTime.MaxValue } };
+            Save(saved);
+        }
+        return saved;
     }
 
     public static void Save(RemoteConfiguration configuration) => SecretStore.Save(FilePath, JsonSerializer.SerializeToUtf8Bytes(configuration));
@@ -36,9 +45,13 @@ public static class RemoteConnection
         lock (HostGate)
         {
             if (host is not null) return;
-            if (Load() is { Host: true, Enabled: true } configuration
-                && configuration.Link.ExpiresUtc > DateTime.UtcNow)
-                host = new RemoteHost(configuration.Link, localServer);
+            if (Load() is { Host: true, Enabled: true } configuration)
+            {
+                var link = configuration.Link.ExpiresUtc <= DateTime.UtcNow
+                    ? configuration.Link.Resume() : configuration.Link;
+                if (link != configuration.Link) Save(configuration with { Link = link });
+                host = new RemoteHost(link, localServer);
+            }
         }
     }
 

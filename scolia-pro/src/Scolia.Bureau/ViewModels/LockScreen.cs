@@ -92,10 +92,10 @@ public sealed class LockScreenViewModel : Observable
     public AsyncCommand Unlock { get; }
     public AsyncCommand UnlockWithBiometrics { get; }
     public AsyncCommand UnlockWithDevice { get; }
-    public bool CanUsePairedDevice => !shell.IsServerComputer && DevicePairingStore.Read(shell.Api.Server) is { } grant
-        && string.Equals(grant.UserName, UserName, StringComparison.OrdinalIgnoreCase);
-    public bool RequireCode => !CanUsePairedDevice;
-    public string PairedDeviceText => "Continuer sur cet appareil autorisé";
+    // Le QR autorise le poste, jamais le déverrouillage d'une session personnelle.
+    public bool CanUsePairedDevice => false;
+    public bool RequireCode => true;
+    public string PairedDeviceText => "Saisissez votre mot de passe personnel";
     public AsyncCommand SwitchAccount { get; }
 
     /// <summary>La récupération passe par le secrétariat, sans ouvrir la session ni supprimer son état.</summary>
@@ -135,20 +135,11 @@ public sealed class LockScreenViewModel : Observable
         await VerifyAsync(code);
     }
 
-    private async Task UnlockWithDeviceAsync()
+    private Task UnlockWithDeviceAsync()
     {
-        if (Busy || !visible || !CanUsePairedDevice) return;
-        Busy = true;
-        Error = null;
-        try
-        {
-            if (await shell.Api.RestoreDeviceSessionAsync() is { } session
-                && string.Equals(session.UserName, UserName, StringComparison.OrdinalIgnoreCase)) Done();
-            else Error = "Autorisation de ce poste expirée ou révoquée. Demandez un nouveau QR au serveur.";
-        }
-        catch (Exception ex) when (ex is ApiException or HttpRequestException or TaskCanceledException)
-        { Error = "Impossible de vérifier ce poste auprès du serveur. Vérifiez la connexion privée."; }
-        finally { Busy = false; Raise(nameof(CanUsePairedDevice)); Raise(nameof(RequireCode)); }
+        // Aucun chemin de reprise sans mot de passe ou biométrie vérifiée.
+        Error = "Pour reprendre votre session, confirmez votre mot de passe ou votre empreinte.";
+        return Task.CompletedTask;
     }
 
     private async Task BiometricUnlockAsync()
