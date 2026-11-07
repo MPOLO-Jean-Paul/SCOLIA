@@ -98,7 +98,7 @@
             <Border Background="{DynamicResource LoginGlass}" CornerRadius="12" Padding="14,12">
               <StackPanel Spacing="7">
                 <TextBlock Text="Appareil à autoriser" FontWeight="SemiBold" Foreground="{DynamicResource LoginInk}" />
-                <TextBlock Text="Sur le serveur, générez un QR dans « Relier un appareil ». L'appareil sera relié au serveur, puis chaque utilisateur se connectera avec son propre identifiant et mot de passe."
+                <TextBlock Text="Scannez le QR « Relier un appareil » affiché sur le serveur, puis connectez-vous avec votre compte."
                            Foreground="{DynamicResource LoginInk}" FontSize="12" TextWrapping="Wrap" />
               </StackPanel>
             </Border>
@@ -109,7 +109,7 @@
               </StackPanel>
             </Button>
             <Button Classes="glasslink" Command="{Binding EnableManualLogin}" HorizontalAlignment="Center">
-              <TextBlock Text="Connexion manuelle à un compte distinct" FontSize="12" TextWrapping="Wrap" />
+              <TextBlock Text="Se connecter avec un compte" FontSize="12" TextWrapping="Wrap" />
             </Button>
           </StackPanel>
 
@@ -128,7 +128,7 @@
           <!-- Lorsque plusieurs personnes utilisent ce téléphone, choisir le compte local,
                sans partager le mot de passe ni le profil d'un collègue. -->
           <StackPanel Spacing="8" IsVisible="{Binding ShowRememberedChoices}">
-            <TextBlock Text="Comptes déjà utilisés sur cet appareil" Foreground="#E6FFFFFF"
+            <TextBlock Text="Comptes de cet appareil" Foreground="#E6FFFFFF"
                        FontSize="12" FontWeight="SemiBold" TextWrapping="Wrap" />
             <ItemsControl ItemsSource="{Binding KnownAccounts}">
               <ItemsControl.ItemsPanel>
@@ -305,7 +305,7 @@
               <TextBlock Text="Changer d'ordinateur principal" FontWeight="SemiBold" VerticalAlignment="Center" />
             </StackPanel>
           </Button>
-          <TextBlock Text="{Binding ServerLine}" Foreground="{DynamicResource LoginInk3}" FontSize="{DynamicResource FsSmall}"
+          <TextBlock Text="{Binding ServerLine}" IsVisible="{Binding HasServerLine}" Foreground="{DynamicResource LoginInk3}" FontSize="{DynamicResource FsSmall}"
                      HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" />
         </StackPanel>
 

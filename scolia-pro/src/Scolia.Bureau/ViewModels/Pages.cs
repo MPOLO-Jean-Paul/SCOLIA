@@ -44,12 +44,14 @@ public sealed class LoginViewModel : Observable
     private RelayCommand? changeServer;
     /// <summary>Ordinateur auquel ce poste est relié, rappelé en bas de la page de connexion.</summary>
     public string ServerLine => api.Server.IsLoopback
-        ? "Cet appareil est l'ordinateur principal"
-        : $"Relié à l'ordinateur principal {api.Server.Host}";
+        ? string.Empty
+        : $"Serveur : {api.Server.Host}";
+    public bool HasServerLine => !api.Server.IsLoopback;
     public void RefreshServer()
     {
         RecallLastAccount();
         Raise(nameof(ServerLine));
+        Raise(nameof(HasServerLine));
     }
 
     /// <summary>Comptes déjà ouverts sur cet appareil, et non liste des utilisateurs du serveur.</summary>
@@ -190,10 +192,10 @@ public sealed class LoginViewModel : Observable
     /// <summary>Phrase sous « Connexion » : elle rappelle qu'une session attend, verrouillée.</summary>
     public string IntroText => resumeName is null
         ? HasRememberedAccount
-            ? "Établissement reconnu. Saisissez le mot de passe de votre propre compte."
-            : "Établissement reconnu. Saisissez votre identifiant et votre mot de passe."
-        : "Connectez un autre compte. La session verrouillée reste ouverte : vous pouvez y revenir à tout moment.";
-    public string ResumeHint => resumeUser is null ? string.Empty : $"{resumeUser} · session verrouillée, rien n'est perdu";
+            ? "Saisissez votre mot de passe."
+            : "Connectez-vous à votre compte."
+        : "Connectez un autre compte. La session verrouillée reste ouverte.";
+    public string ResumeHint => resumeUser is null ? string.Empty : $"{resumeUser} · session verrouillée";
     public RelayCommand Resume => resume ??= new RelayCommand(() =>
     {
         if (Busy || !CanResume) return;
@@ -494,8 +496,8 @@ public sealed class LoginViewModel : Observable
     public string BiometricLabel => $"Déverrouiller avec {Platform.BiometricInSentence} · {BiometricAccount}";
     public string EnrollmentText => $"Activer {Platform.BiometricInSentence} après cette connexion";
     public string EnrollmentHint => Platform.BiometricInSentence == "l’empreinte"
-        ? "Réservé à un téléphone personnel : toute empreinte forte enregistrée sur cet appareil pourra ouvrir le compte associé. Aucun modèle d’empreinte n’est enregistré par SCOLIA."
-        : $"Réservé à un appareil personnel : tout visage ou empreinte enregistré dans {Platform.BiometricDisplayName} pourra ouvrir le compte associé. SCOLIA n’enregistre aucune donnée biométrique.";
+        ? "Téléphone personnel uniquement : toute empreinte enregistrée ici pourra ouvrir ce compte."
+        : $"Appareil personnel uniquement : tout visage ou empreinte de {Platform.BiometricDisplayName} pourra ouvrir ce compte.";
 
     public void RefreshBiometrics()
     {

@@ -37,8 +37,10 @@ public sealed class InstallerAndHomePolishTests
         {
             var doc = XDocument.Load(Source("src/Scolia.Bureau/" + view));
             var elements = doc.Descendants().ToArray();
+            // Ordinateur : pastille seulement hors ligne. Téléphone : ligne d'état toujours visible dans la carte d'accueil.
             Assert.Contains(elements, e => e.Name.LocalName == "Button" &&
-                e.Attributes().Any(a => a.Name.LocalName == "IsVisible" && a.Value.Contains("Sync.Offline")) &&
+                (view.Contains("Phone", StringComparison.Ordinal)
+                    || e.Attributes().Any(a => a.Name.LocalName == "IsVisible" && a.Value.Contains("Sync.Offline"))) &&
                 e.Attributes().Any(a => a.Name.LocalName == "Command" && a.Value.Contains("Network")));
             Assert.Contains(elements, e => e.Name.LocalName == "TextBlock" &&
                 e.Attributes().Any(a => a.Name.LocalName == "Text" && a.Value.Contains("Sync.StatusText")));
