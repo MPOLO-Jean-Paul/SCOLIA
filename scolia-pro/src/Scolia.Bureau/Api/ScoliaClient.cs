@@ -128,7 +128,7 @@ public sealed class ScoliaClient : IDisposable
     /// <summary>Client sans délai global, pour le flux en direct qui reste ouvert.</summary>
     public HttpClient CreateStreamClient()
     {
-        HttpMessageHandler handler = remoteLink is { } link ? new RemoteHttpHandler(link, cookies)
+        HttpMessageHandler handler = remoteLink is { } link ? new RemoteHttpHandler(link, cookies, () => LinkedAccess(link))
             : new SocketsHttpHandler { CookieContainer = cookies, UseCookies = true, ConnectTimeout = TimeSpan.FromSeconds(4) };
         var client = new HttpClient(handler) { BaseAddress = Server, Timeout = Timeout.InfiniteTimeSpan };
         client.DefaultRequestHeaders.Add("X-Scolia", "1");
