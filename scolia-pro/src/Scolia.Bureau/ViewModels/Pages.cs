@@ -102,13 +102,14 @@ public sealed class LoginViewModel : Observable
         Raise(nameof(IntroText));
     }
 
-    /// <summary>Un poste invité rejoint le compte approuvé sans demander son mot de passe.</summary>
+    /// <summary>Une invitation ne remplace plus l'authentification personnelle du compte.</summary>
     public bool LinkedClient => linkedClient;
-    public bool ShowManualCredentials => !linkedClient || manualLoginOpen;
+    public bool ShowManualCredentials => true;
     public bool ShowBiometricSignIn => ShowManualCredentials && !RecoveryOpen && CanUseBiometricSignIn;
     public bool ShowBiometricEnrollment => ShowManualCredentials && !RecoveryOpen && CanOfferEnrollment;
     public bool ShowRemoveBiometric => ShowManualCredentials && !RecoveryOpen && HasBiometricAccount;
-    public bool ShowPairingCallToAction => linkedClient && !manualLoginOpen;
+    // La saisie de l'identifiant et du mot de passe est toujours visible sur un poste invité.
+    public bool ShowPairingCallToAction => false;
     public void ConfigureClientMode(bool isClient)
     {
         if (linkedClient == isClient) return;
@@ -159,9 +160,9 @@ public sealed class LoginViewModel : Observable
     public string ResumeText => $"Revenir à la session de {resumeName}";
     /// <summary>Phrase sous « Connexion » : elle rappelle qu'une session attend, verrouillée.</summary>
     public string IntroText => resumeName is null
-        ? (linkedClient && !manualLoginOpen
-            ? "Ce poste utilise une invitation du serveur : scannez le QR pour vous connecter automatiquement."
-            : HasRememberedAccount ? "Saisissez votre mot de passe pour continuer." : "Saisissez votre identifiant et votre mot de passe.")
+        ? HasRememberedAccount
+            ? "Établissement reconnu. Saisissez le mot de passe de votre propre compte."
+            : "Établissement reconnu. Saisissez votre identifiant et votre mot de passe."
         : "Connectez un autre compte. La session verrouillée reste ouverte : vous pouvez y revenir à tout moment.";
     public string ResumeHint => resumeUser is null ? string.Empty : $"{resumeUser} · session verrouillée, rien n'est perdu";
     public RelayCommand Resume => resume ??= new RelayCommand(() =>
