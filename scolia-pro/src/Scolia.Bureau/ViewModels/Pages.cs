@@ -272,7 +272,6 @@ public sealed class LoginViewModel : Observable
     public void ShowRecoveryHelp(string account)
     {
         if (!string.IsNullOrWhiteSpace(account)) RememberAccount(account);
-        manualLoginOpen = true;
         Raise(nameof(ShowManualCredentials));
         Raise(nameof(ShowPairingCallToAction));
         Raise(nameof(ShowBiometricSignIn));
