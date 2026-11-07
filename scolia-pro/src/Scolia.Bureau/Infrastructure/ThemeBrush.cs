@@ -45,19 +45,22 @@ public static class ThemeBrush
 /// </summary>
 public static class IconPalette
 {
-    private static readonly IReadOnlyDictionary<string, IBrush> Colors =
-        new Dictionary<string, IBrush>(StringComparer.Ordinal)
+    // Les teintes restent constantes : chaque appel crée son pinceau sur le thread
+    // de l'interface, pour éviter de partager un objet Avalonia lié à un autre thread.
+    private static readonly IReadOnlyDictionary<string, Color> Colors =
+        new Dictionary<string, Color>(StringComparer.Ordinal)
         {
-            ["ToneBlue"] = new SolidColorBrush(Color.Parse("#0040DD")),
-            ["ToneGreen"] = new SolidColorBrush(Color.Parse("#1F7A35")),
-            ["ToneOrange"] = new SolidColorBrush(Color.Parse("#B53000")),
-            ["TonePurple"] = new SolidColorBrush(Color.Parse("#8944AB")),
-            ["ToneRed"] = new SolidColorBrush(Color.Parse("#C9001A")),
-            ["ToneTeal"] = new SolidColorBrush(Color.Parse("#006D9E")),
-            ["ToneIndigo"] = new SolidColorBrush(Color.Parse("#3634A3")),
-            ["TonePink"] = new SolidColorBrush(Color.Parse("#C7083E")),
-            ["ToneNeutral"] = new SolidColorBrush(Color.Parse("#636366"))
+            ["ToneBlue"] = Color.Parse("#0040DD"),
+            ["ToneGreen"] = Color.Parse("#1F7A35"),
+            ["ToneOrange"] = Color.Parse("#B53000"),
+            ["TonePurple"] = Color.Parse("#8944AB"),
+            ["ToneRed"] = Color.Parse("#C9001A"),
+            ["ToneTeal"] = Color.Parse("#006D9E"),
+            ["ToneIndigo"] = Color.Parse("#3634A3"),
+            ["TonePink"] = Color.Parse("#C7083E"),
+            ["ToneNeutral"] = Color.Parse("#636366")
         };
+
     public static IBrush Get(string tone) =>
-        Colors.TryGetValue(tone, out var brush) ? brush : Colors["ToneNeutral"];
+        new SolidColorBrush(Colors.TryGetValue(tone, out var color) ? color : Colors["ToneNeutral"]);
 }
