@@ -348,10 +348,61 @@
           </StackPanel>
         </Border>
 
-        <!-- Promotions et frais -->
+        <!-- Promotions : les sections et les mensualités sont consultables sans tableau latéral sur Android. -->
         <Border Classes="card" IsVisible="{Binding IsPromotions}">
-          <StackPanel Spacing="8">
-            <DataGrid ItemsSource="{Binding Promotions}" SelectedItem="{Binding SelectedPromotion}" AutoGenerateColumns="False" IsReadOnly="True" MaxHeight="520">
+          <StackPanel Spacing="12">
+            <StackPanel IsVisible="{Binding Phone}" Spacing="10">
+              <TextBlock Text="Associez les promotions aux sections de l'établissement."
+                         Classes="muted" TextWrapping="Wrap" />
+              <Button Classes="primary" Command="{Binding CreatePromotion}"
+                      MinHeight="48" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <mi:MaterialIcon Kind="Plus" Width="20" Height="20" />
+                  <TextBlock Text="Ajouter une promotion" FontWeight="SemiBold" VerticalAlignment="Center" />
+                </StackPanel>
+              </Button>
+              <ItemsControl ItemsSource="{Binding Promotions}" IsVisible="{Binding HasPromotionRows}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate>
+                    <Button Classes="sectionrow"
+                            Command="{Binding $parent[ItemsControl].DataContext.EditPromotionOnPhone}"
+                            CommandParameter="{Binding}">
+                      <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                        <Border Classes="appicon medium" Background="{DynamicResource ToneBlue}" VerticalAlignment="Top">
+                          <mi:MaterialIcon Kind="SchoolOutline" />
+                        </Border>
+                        <StackPanel Grid.Column="1" Spacing="6">
+                          <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                          <StackPanel Orientation="Horizontal" Spacing="7">
+                            <Border Classes="chip" Padding="7,3"><TextBlock Text="{Binding Code}" FontSize="{DynamicResource FsSmall}" /></Border>
+                            <TextBlock Text="{Binding Section}" Classes="muted" TextWrapping="Wrap"
+                                       FontSize="{DynamicResource FsSmall}" VerticalAlignment="Center" />
+                          </StackPanel>
+                          <StackPanel Orientation="Horizontal" Spacing="6">
+                            <TextBlock Text="Mensualité" Classes="muted" FontSize="{DynamicResource FsSmall}" />
+                            <TextBlock Text="{Binding Monthly}" FontWeight="SemiBold" FontSize="{DynamicResource FsSmall}" />
+                          </StackPanel>
+                        </StackPanel>
+                        <mi:MaterialIcon Grid.Column="2" Kind="PencilOutline" Width="20" Height="20"
+                                         Foreground="{DynamicResource AccentBrush}" VerticalAlignment="Center" />
+                      </Grid>
+                    </Button>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+              <Border Background="{DynamicResource Surface2Brush}" CornerRadius="14" Padding="20,24"
+                      IsVisible="{Binding HasNoPromotions}">
+                <StackPanel Spacing="8" HorizontalAlignment="Center">
+                  <mi:MaterialIcon Kind="SchoolOutline" Width="34" Height="34"
+                                   HorizontalAlignment="Center" Foreground="{DynamicResource AccentBrush}" />
+                  <TextBlock Text="Aucune promotion enregistrée" FontWeight="SemiBold" TextAlignment="Center" />
+                  <TextBlock Text="Créez une promotion et choisissez sa section."
+                             Classes="muted" TextWrapping="Wrap" TextAlignment="Center" />
+                </StackPanel>
+              </Border>
+            </StackPanel>
+            <DataGrid ItemsSource="{Binding Promotions}" SelectedItem="{Binding SelectedPromotion}"
+                      AutoGenerateColumns="False" IsReadOnly="True" MaxHeight="520" IsVisible="{Binding NotPhone}">
               <DataGrid.Columns>
                 <DataGridTextColumn Header="Code" Binding="{Binding Code}" Width="Auto" MinWidth="84" />
                 <DataGridTextColumn Header="Désignation" Binding="{Binding Name}" Width="*" MinWidth="140" />
