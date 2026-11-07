@@ -101,7 +101,7 @@ public sealed class TeachingPage : PageViewModel
             await Shell.Api.SendAsync(HttpMethod.Put, $"api/scolarite/cours/{row.Id}", new
             {
                 promotionId = c.PromotionId, number = (int)f.Amount("numero"), name = f.Text("intitule"), coefficient = f.Amount("coefficient"),
-                hours = f.Amount("heures"), maxScore = f.Amount("cotation"),
+                hours = f.Amount("heures"), maxScore = f.Amount("cotation"), semester = f.ChoiceValue("semestre"),
             });
             Shell.Notify("Cours modifié. Les charges sont actualisées.");
             return true;
@@ -111,6 +111,7 @@ public sealed class TeachingPage : PageViewModel
         form.Add("coefficient", "Coefficient", FieldKind.Amount, c.Coefficient.ToString("0.##"), required: true);
         form.Add("heures", "Volume horaire annuel", FieldKind.Amount, c.Hours.ToString("0.##"), required: true);
         form.Add("cotation", "Cotation maximale (points)", FieldKind.Amount, c.MaxScore.ToString("0.##"), required: true);
+        form.AddChoice("semestre", "Organisation (délibération)", Labels.Semesters, c.Semester, required: true);
         if (await Shell.Ask(form)) await RefreshAsync();
     }
 

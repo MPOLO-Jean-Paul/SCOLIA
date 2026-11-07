@@ -73,7 +73,16 @@ public sealed class TeachingService(IAppDbContext db, IWriteGate gate, IAuditLog
         course.Hours = hours;
         course.MaxScore = maxScore;
         course.Coefficient = coefficient;
-        audit.Record(id is null ? "cours.cree" : "cours.modifie", "Cours", course.Id.ToString(), $"Cours {number} « {name} » ({hours} h, cotation {maxScore}).");
+        if (!string.IsNullOrWhiteSpace(input.Semester))
+        {
+            var semester = DeliberationText.Semester(input.Semester);
+            if (id is not null && semester != course.Semester && await db.CourseMarks.AnyAsync(m => m.CourseId == course.Id, ct))
+                throw new ConflictException("Ce cours a déjà des cotes de délibération : son semestre ne peut plus changer.");
+            course.Semester = semester;
+        }
+        if (id is not null && await db.CourseMarks.AnyAsync(m => m.CourseId == course.Id && m.Kind != Domain.Deliberation.MarkKind.Appui && m.Value > maxScore, ct))
+            throw new DomainException("cours", "Des cotes de délibération dépassent la nouvelle cotation maximale.");
+        audit.Record(id is null ? "cours.cree" : "cours.modifie", "Cours", course.Id.ToString(), $"Cours {number} « {name} » ({hours} h, cotation {maxScore}, {DeliberationText.Semester(course.Semester)}).");
         await db.SaveChangesAsync(ct);
         return (await DescribeAsync([course], ct)).Single();
     }, ct);
@@ -225,7 +234,7 @@ public sealed class TeachingService(IAppDbContext db, IWriteGate gate, IAuditLog
         {
             Guid? teacher = current.TryGetValue(c.Id, out var t) ? t : null;
             return new CourseDto(c.Id, c.PromotionId, codes.GetValueOrDefault(c.PromotionId) ?? string.Empty, c.Number, c.Name, c.Coefficient, c.Hours, c.MaxScore,
-                teacher, teacher is { } id ? names.GetValueOrDefault(id) : null, c.IsActive, counts.GetValueOrDefault(c.Id));
+                teacher, teacher is { } id ? names.GetValueOrDefault(id) : null, c.IsActive, counts.GetValueOrDefault(c.Id), DeliberationText.Semester(c.Semester));
         }).ToList();
     }
 }

@@ -43,6 +43,16 @@ public static class Format
 /// <summary>Libellés affichés pour les codes échangés avec le serveur.</summary>
 public static class Labels
 {
+    /// <summary>Organisation d'un cours pour la délibération (ITMCD) : un semestre ou toute l'année.</summary>
+    public static readonly IReadOnlyList<ChoiceItem> Semesters =
+        [new("S1", "Premier semestre (S1)"), new("S2", "Second semestre (S2)"), new("Annuel", "Annuel (S1 et S2)")];
+
+    /// <summary>Périodes délibérées : S1, S2, puis le jury annuel.</summary>
+    public static readonly IReadOnlyList<ChoiceItem> DeliberationPeriods =
+        [new("S1", "Premier semestre"), new("S2", "Second semestre"), new("Annuel", "Jury annuel")];
+
+    public static string Semester(string code) => code switch { "S1" => "S1", "S2" => "S2", _ => "Annuel" };
+
     public static string Status(string code) => code switch
     {
         "Actif" => "Actif",

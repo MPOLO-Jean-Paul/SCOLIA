@@ -2324,6 +2324,18 @@ Page(() => new CardsPage(shell), "16b-cartes-acces.png");
 Page(() => new MonthlyPage(shell), "08b-suivi-mensuel.png");
 Page(() => new MonthlyPage(shell, "nonpaye"), "08c-suivi-mensuel-non-payes.png");
 Page(() => new TeachingPage(shell), "16c-enseignants-cours.png");
+Page(() => new AnonymousCodesPage(shell), "16d-codes-anonymes.png");
+Page(() => new MarksPage(shell), "16e-encodage-cotes.png");
+if (only.Length == 0 || only.Any(o => "16f".StartsWith(o, StringComparison.Ordinal)))
+{
+    // Feuille de cotes ouverte sur le premier cours, pour contrôler la saisie et la cote retenue.
+    var marks = new MarksPage(shell);
+    Wait(shell.Open(() => marks));
+    marks.Course = marks.Courses.FirstOrDefault();
+    Wait(Task.Delay(600));
+    Save(window, "16f-encodage-feuille.png");
+}
+Page(() => new DeliberationPage(shell), "16g-deliberation.png");
 Page(() => new StaffAttendancePage(shell), "18b-pointage.png");
 Page(() => new EraseDataPage(shell, payments: true), "22b-effacer-donnees.png");
 Page(() => new EraseDataPage(shell, payments: false), "22c-effacer-apprenants.png");

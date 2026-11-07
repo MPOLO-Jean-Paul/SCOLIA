@@ -83,7 +83,8 @@ public sealed record EnrollRequest(Guid PromotionId, DateOnly? EnrolledOn);
 
 public sealed record StatusChange(string Status, DateOnly? Date, string? Reason);
 
-public sealed record ReEnrollmentPlanItem(Guid StudentId, string Matricule, string FullName, string FromPromotion, string? ToPromotion, decimal PreviousBalance, bool Selected);
+public sealed record ReEnrollmentPlanItem(Guid StudentId, string Matricule, string FullName, string FromPromotion, string? ToPromotion, decimal PreviousBalance, bool Selected,
+    string? JuryDecision = null);
 
 public sealed record ReEnrollmentRequest(Guid TargetYearId, IReadOnlyList<ReEnrollmentChoice> Choices);
 
@@ -232,8 +233,9 @@ public sealed record SearchHit(string Type, string Title, string Subtitle, strin
 
 // ---------- Scolarité ----------
 public sealed record CourseDto(Guid Id, Guid PromotionId, string PromotionCode, int Number, string Name, decimal Coefficient, decimal Hours,
-    decimal MaxScore, Guid? TeacherId, string? TeacherName, bool IsActive, int AssessmentCount);
-public sealed record CourseUpsert(Guid PromotionId, int Number, string Name, decimal Coefficient, decimal Hours, decimal MaxScore);
+    decimal MaxScore, Guid? TeacherId, string? TeacherName, bool IsActive, int AssessmentCount, string Semester = "Annuel");
+/// <summary>Semester : « S1 », « S2 » ou « Annuel » ; vide garde l'organisation actuelle (annuel pour un nouveau cours).</summary>
+public sealed record CourseUpsert(Guid PromotionId, int Number, string Name, decimal Coefficient, decimal Hours, decimal MaxScore, string? Semester = null);
 
 /// <summary>Attribution d'un cours. La réattribution d'un cours déjà attribué demande une confirmation.</summary>
 public sealed record AssignmentRequest(Guid TeacherId, bool ConfirmReplace);

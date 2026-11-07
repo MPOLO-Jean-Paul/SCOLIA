@@ -197,6 +197,7 @@ public sealed class GradesPage : PageViewModel
                 coefficient = f.Amount("coefficient"),
                 hours = f.Amount("heures"),
                 maxScore = f.Amount("cotation"),
+                semester = f.ChoiceValue("semestre"),
             });
             shell.Notify("Cours créé. Attribuez-le à un enseignant depuis Attributions et charges.");
             return true;
@@ -207,6 +208,7 @@ public sealed class GradesPage : PageViewModel
         form.Add("coefficient", "Coefficient", FieldKind.Amount, "1", required: true);
         form.Add("heures", "Volume horaire annuel", FieldKind.Amount, "30", required: true, hint: "Peut comporter une décimale, par exemple 30,5.");
         form.Add("cotation", "Cotation maximale (points)", FieldKind.Amount, "20", required: true);
+        form.AddChoice("semestre", "Organisation (délibération)", Labels.Semesters, "Annuel", required: true);
         if (await shell.Ask(form) && shell.Current is GradesPage page) await page.RefreshAsync();
     }
 

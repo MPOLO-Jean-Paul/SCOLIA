@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Scolia.Domain.Academics;
+using Scolia.Domain.Deliberation;
 using Scolia.Domain.Discipline;
 using Scolia.Domain.Finance;
 using Scolia.Domain.School;
@@ -42,6 +43,12 @@ public interface IAppDbContext
     DbSet<PayrollEntry> Payroll { get; }
     DbSet<StaffAttendanceMark> StaffMarks { get; }
     DbSet<StaffDayJustification> StaffJustifications { get; }
+    DbSet<AnonymousCode> AnonymousCodes { get; }
+    DbSet<CourseMark> CourseMarks { get; }
+    DbSet<DeliberationSettings> DeliberationSettings { get; }
+    DbSet<DeliberationSession> DeliberationSessions { get; }
+    DbSet<JuryDecision> JuryDecisions { get; }
+    DbSet<DeliberationResult> DeliberationResults { get; }
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }
 
