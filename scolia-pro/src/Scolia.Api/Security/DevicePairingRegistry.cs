@@ -67,7 +67,7 @@ public sealed class DevicePairingRegistry
             var id = Guid.NewGuid();
             var secret = Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
             var expires = DateTime.MaxValue;
-            grants.RemoveAll(x => x.DeviceId == deviceId && x.Owner == invitation.Owner);
+            grants.RemoveAll(x => x.DeviceId == deviceId);
             grants.Add(new DeviceGrant(id, invitation.Owner, invitation.Stamp, deviceId,
                 string.IsNullOrWhiteSpace(name) ? "Appareil SCOLIA" : name.Trim()[..Math.Min(name.Trim().Length, 80)],
                 Hash(secret), expires));
@@ -87,7 +87,7 @@ public sealed class DevicePairingRegistry
             var id = Guid.NewGuid();
             var secret = Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
             var expires = DateTime.MaxValue;
-            grants.RemoveAll(x => x.DeviceId == deviceId && x.Owner == owner);
+            grants.RemoveAll(x => x.DeviceId == deviceId);
             grants.Add(new DeviceGrant(id, owner, stamp, deviceId,
                 string.IsNullOrWhiteSpace(name) ? "Appareil promoteur" : name.Trim()[..Math.Min(name.Trim().Length, 80)],
                 Hash(secret), expires));
@@ -108,9 +108,9 @@ public sealed class DevicePairingRegistry
     }
 
     /// <summary>
-    /// Renouvelle silencieusement une autorisation existante proche de son échéance.
+    /// Reconnaît une autorisation persistante et migre les anciennes échéances.
     /// Le même appareil et le même secret restent nécessaires ; une autorisation
-    /// expirée ou révoquée n'est jamais réactivée.
+    /// retirée ne peut jamais être réactivée.
     /// </summary>
     public (Guid Owner, string Stamp, DateTime ExpiresUtc)? AuthorizeAndRefresh(
         Guid grantId, string? deviceId, string? secret)
@@ -119,7 +119,6 @@ public sealed class DevicePairingRegistry
             return null;
         lock (gate)
         {
-            var now = DateTime.UtcNow;
             var index = grants.FindIndex(x => x.Id == grantId && x.DeviceId == deviceId
                 && !x.Revoked);
             if (index < 0 || !Matches(secret, grants[index].SecretHash)) return null;
@@ -212,7 +211,8 @@ public sealed class DevicePairingRegistry
         {
             var index = grants.FindIndex(x => x.Id == grantId && !x.Revoked);
             if (index < 0) return false;
-            grants.RemoveAt(index);
+            var deviceId = grants[index].DeviceId;
+            grants.RemoveAll(x => x.DeviceId == deviceId);
             Save();
             return true;
         }
