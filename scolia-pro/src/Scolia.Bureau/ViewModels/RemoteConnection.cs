@@ -24,6 +24,7 @@ public sealed class RemoteConnectionViewModel : Observable
 {
     private readonly ShellViewModel shell;
     private string relay = RemoteLink.DefaultRelay;
+    private string backupRelay = RemoteLink.DefaultRelay;
     private string invitation = string.Empty;
     private string message = string.Empty;
     /// <param name="prepareInvitation">Vrai dans « Réseau et activité » : une invitation de compte est préparée à l'ouverture.</param>
@@ -33,6 +34,7 @@ public sealed class RemoteConnectionViewModel : Observable
         if (RemoteConnection.Load() is { } current)
         {
             relay = current.Link.Relay;
+            backupRelay = current.Link.EffectiveBackupRelay ?? string.Empty;
             if (prepareInvitation && current.Host && current.Enabled) _ = PrepareInvitationAsync(current.Link);
         }
         Enable = new AsyncCommand(EnableAsync);
@@ -66,14 +68,14 @@ public sealed class RemoteConnectionViewModel : Observable
     public string RelayHost => Uri.TryCreate(RemoteConnection.Load()?.Link.Relay ?? relay, UriKind.Absolute, out var uri) ? uri.Host : relay;
 
     public string StatusTitle => !IsActive ? "Désactivé"
-        : RemoteConnection.Hosting ? "Actif · relais connecté"
+        : RemoteConnection.Hosting ? (RemoteConnection.PrimaryHosting ? "Actif · relais principal connecté" : "Actif · secours connecté")
         : RemoteConnection.HostFailure is null ? "Connexion au relais…" : "Relais injoignable · nouvel essai automatique";
 
     public string StatusLine => !IsActive || RemoteConnection.Load() is null
         ? "Les appareils hors du Wi-Fi de l'établissement ne peuvent pas joindre ce serveur. Activez l'accès pour les téléphones et ordinateurs distants."
         : RemoteConnection.Hosting
-            ? $"Les appareils autorisés joignent ce serveur depuis n'importe quel réseau, par le relais sécurisé {RelayHost}. "
-                + "Autorisation persistante jusqu'au retrait volontaire de l'appareil dans Réseau et activité."
+            ? $"Les appareils autorisés joignent ce serveur depuis n'importe quel réseau, par le relais sécurisé {(RemoteConnection.PrimaryHosting ? RelayHost : "de secours")}. "
+                + "Les deux relais utilisent la même identité et le même jumelage. Autorisation persistante jusqu'au retrait volontaire de l'appareil dans Réseau et activité."
             : $"Ce serveur n'est pas encore relié au relais {RelayHost} : les appareils distants et le jumelage par Internet attendent. "
                 + Diagnosis(RemoteConnection.HostFailure, RemoteConnection.HostAttempts);
 
@@ -102,12 +104,15 @@ public sealed class RemoteConnectionViewModel : Observable
 
     public void RefreshStatus()
     {
-        foreach (var name in new[] { nameof(IsActive), nameof(IsInactive), nameof(RelayHost), nameof(StatusTitle), nameof(StatusLine), nameof(StatusBrush), nameof(EnableLabel) })
+        foreach (var name in new[] { nameof(IsActive), nameof(IsInactive), nameof(RelayHost), nameof(StatusTitle), nameof(StatusLine), nameof(StatusBrush), nameof(EnableLabel), nameof(PrincipalState), nameof(BackupState) })
             Raise(name);
     }
     public bool CanManage => shell.IsServerComputer && shell.Can("parametres.ecrire");
 
     public string Relay { get => relay; set => Set(ref relay, value); }
+    public string BackupRelay { get => backupRelay; set => Set(ref backupRelay, value); }
+    public string PrincipalState => RemoteConnection.PrimaryHosting ? "Principal connecté" : "Principal en reconnexion";
+    public string BackupState => RemoteConnection.BackupHosting ? "Secours connecté" : "Secours en reconnexion";
     public string Invitation { get => invitation; private set => Set(ref invitation, value); }
     public string Message { get => message; private set => Set(ref message, value); }
     public ObservableCollection<RemoteAuthorizedDeviceRowVm> Devices { get; } = [];
@@ -190,28 +195,26 @@ public sealed class RemoteConnectionViewModel : Observable
         try
         {
             var previous = RemoteConnection.Load();
-            // Un clic répété sur « Activer » ne doit jamais invalider les appareils
-            // déjà autorisés. Rotation seulement après expiration, changement de
-            // relais ou réactivation d'une connexion volontairement désactivée.
-            var addressText = Relay.Trim();
-            // Désactiver Internet met le relais en pause : cela ne révoque pas les
-            // appareils et ne doit JAMAIS faire tourner la clé de la salle.
-            var reuse = previous is { Host: true } &&
-                string.Equals(previous.Link.Relay, addressText, StringComparison.OrdinalIgnoreCase);
-            var link = reuse
-                ? (previous!.Link.ExpiresUtc <= DateTime.UtcNow ? previous.Link.Resume() : previous.Link)
-                : previous is { Host: true } ? previous.Link.Renew(addressText)
-                : RemoteLink.Create(addressText);
-            // Vérifier le relais avant de remplacer une liaison encore utilisable.
-            var address = new UriBuilder(link.Relay) { Scheme = new Uri(link.Relay).Scheme == "wss" ? "https" : "http", Path = "/health" }.Uri;
-            Message = "Vérification de la connexion Internet sécurisée et du certificat HTTPS…";
-            using var probe = new HttpClient { Timeout = TimeSpan.FromSeconds(75) };
-            using var response = await probe.GetAsync(address);
-            response.EnsureSuccessStatusCode();
+            // Les fournisseurs ne sont que des chemins vers la même salle.
+            // JAMAIS de renouvellement des clés ou des droits pour changer de relais.
+            var primary = Relay.Trim();
+            var secondary = BackupRelay.Trim();
+            if (string.Equals(primary, secondary, StringComparison.OrdinalIgnoreCase))
+                secondary = string.Empty;
+            var link = previous is { Host: true } current
+                ? current.Link with { Relay = primary, BackupRelay = secondary.Length > 0 ? secondary : null,
+                    ExpiresUtc = DateTime.MaxValue }
+                : RemoteLink.Create(primary) with { BackupRelay = secondary.Length > 0 ? secondary : null };
+            link.Validate();
+            var unchanged = previous is { Host: true, Enabled: true } &&
+                string.Equals(previous.Link.Relay, link.Relay, StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(previous.Link.EffectiveBackupRelay, link.EffectiveBackupRelay, StringComparison.OrdinalIgnoreCase);
             RemoteConnection.Save(new RemoteConfiguration(link, true, shell.Login.SchoolName));
-            // « Vérifier » relance aussi une connexion bloquée : un hôte qui n'est pas relié repart de zéro.
-            if (reuse && RemoteConnection.Hosting) RemoteConnection.StartHostIfMissing(shell.Api.Server);
+            // Le serveur ouvre les deux WSS en arrière-plan, même si l'un est momentanément indisponible.
+            // Une panne ou la veille du relais Render ne doit jamais désactiver Cloudflare.
+            if (unchanged && RemoteConnection.Hosting) RemoteConnection.StartHostIfMissing(shell.Api.Server);
             else RemoteConnection.StartHost(shell.Api.Server);
+            Message = "Connexion aux relais principal et secondaire…";
             RefreshStatus();
             // Attendre le vrai résultat au lieu de laisser « en cours » sans réponse.
             Message = "Relais joignable. Connexion de ce serveur au relais…";
@@ -223,13 +226,13 @@ public sealed class RemoteConnectionViewModel : Observable
             }
             if (!RemoteConnection.Hosting)
             {
-                Message = "Le relais répond, mais ce serveur n'a pas encore pu s'y relier. "
+                Message = "Aucun relais connecté pour le moment. Les essais automatiques continuent. "
                     + Diagnosis(RemoteConnection.HostFailure, RemoteConnection.HostAttempts)
                     + " SCOLIA continue d'essayer en arrière-plan ; l'état ci-dessus se met à jour seul.";
                 return;
             }
-            if (reuse)
-                Message = "Accès par Internet actif et relais connecté. Les appareils autorisés restent jumelés ; aucun nouveau QR n'est nécessaire.";
+            if (previous is { Host: true })
+                Message = "Accès Internet actif avec relais de secours. L'identité et les appareils autorisés sont conservés sans nouveau QR.";
             else
                 await PrepareInvitationAsync(link);
         }
