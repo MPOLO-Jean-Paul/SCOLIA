@@ -60,6 +60,8 @@ public sealed class SyncCenter : Observable, IDisposable
     private readonly ScoliaClient api;
     private readonly HashSet<string> held = new(StringComparer.Ordinal);
     private readonly SemaphoreSlim offlineWarmupGate = new(1, 1);
+    private readonly SemaphoreSlim backgroundReplicaGate = new(1, 1);
+    private DateTime nextReplicaAttemptUtc;
     private DateTime lastLanDiscoveryUtc = DateTime.MinValue;
     private CancellationTokenSource? running;
     private string? userName;
@@ -245,6 +247,7 @@ public sealed class SyncCenter : Observable, IDisposable
         _ = HeartbeatLoopAsync(token);
         _ = ReconnectLoopAsync(token);
         _ = HealthLoopAsync(token);
+        _ = AutoReplicaLoopAsync(token);
         // Préparer les pages locales après le rendu de l'accueil, sans retarder l'ouverture.
         _ = WarmOfflinePagesAsync(token);
         RaiseCounts();
@@ -303,6 +306,77 @@ public sealed class SyncCenter : Observable, IDisposable
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException)
         {
             // Cache indisponible : l'application principale doit continuer à fonctionner.
+        }
+    }
+
+    /// <summary>
+    /// Réplication locale automatique : une simple révision de serveur ne transporte
+    /// aucune fiche. Les pages sont demandées uniquement lorsque la révision change,
+    /// puis chaque JSON inchangé répond en 304 grâce à son empreinte SHA-256.
+    /// Les écritures partent d'abord par l'outbox ; aucune autre machine ne devient un serveur concurrent.
+    /// </summary>
+    private async Task AutoReplicaLoopAsync(CancellationToken ct)
+    {
+        try { await Task.Delay(TimeSpan.FromSeconds(4), ct); }
+        catch (OperationCanceledException) { return; }
+        while (!ct.IsCancellationRequested)
+        {
+            await AutoReplicateAsync(ct);
+            try { await Task.Delay(TimeSpan.FromSeconds(30), ct); }
+            catch (OperationCanceledException) { return; }
+        }
+    }
+
+    private async Task AutoReplicateAsync(CancellationToken ct)
+    {
+        if (ct.IsCancellationRequested || !shell.IsLoggedIn || !api.IsOnline || api.Server.IsLoopback ||
+            !shell.Can(Perm.StudentsRead) || Syncing || preparing ||
+            DateTime.UtcNow < nextReplicaAttemptUtc || api.Offline is not { } store ||
+            string.IsNullOrWhiteSpace(store.User)) return;
+        if (!await backgroundReplicaGate.WaitAsync(0, ct)) return;
+        try
+        {
+            var user = store.User;
+            var revision = await api.GetAsync<JsonElement>("api/revision", ct);
+            var current = (revision.TryGetProperty("epoch", out var epoch) ? epoch.GetString() : "ancien")
+                + ":" + revision.GetProperty("revision").GetInt64().ToString(System.Globalization.CultureInfo.InvariantCulture);
+            if (string.Equals(store.ReadSyncCheckpointFor(user), current, StringComparison.Ordinal)) return;
+            if (api.Offline != store || store.User != user || !shell.IsLoggedIn) return;
+            preparing = true;
+            Raise(nameof(Preparing));
+            PreparationText = "Actualisation automatique des données locales…";
+            // Toujours réconcilier le journal d'opérations avant de lire la version du serveur.
+            // Une reconnexion concurrente est traitée par SyncAsync et sera reprise au prochain tour.
+            var result = await OfflinePreparation.RunAsync(api,
+                includeFinancialAccounts: shell.Can(Perm.PaymentsRead),
+                progress: stage => Dispatcher.UIThread.Post(() =>
+                    PreparationText = $"{stage.Stage} · {stage.Completed}/{stage.Expected}"),
+                ct: ct);
+            if (result.Complete && ReferenceEquals(api.Offline, store) && store.User == user &&
+                shell.IsLoggedIn && api.IsOnline)
+            {
+                store.SaveSyncCheckpointFor(user, current);
+                PreparationText = $"Copie locale à jour : {result.Indexed} dossiers autorisés.";
+                nextReplicaAttemptUtc = DateTime.UtcNow.AddSeconds(20);
+            }
+            else
+            {
+                PreparationText = "Copie locale partielle ; reprise automatique au retour du serveur.";
+                nextReplicaAttemptUtc = DateTime.UtcNow.AddMinutes(2);
+            }
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested) { }
+        catch (Exception ex) when (ex is ApiException or HttpRequestException or IOException or
+            TaskCanceledException or InvalidOperationException or JsonException or UnauthorizedAccessException)
+        {
+            nextReplicaAttemptUtc = DateTime.UtcNow.AddMinutes(2);
+            PreparationText = "La copie locale reprendra automatiquement après la prochaine connexion.";
+        }
+        finally
+        {
+            preparing = false;
+            Raise(nameof(Preparing));
+            backgroundReplicaGate.Release();
         }
     }
 
@@ -467,6 +541,7 @@ public sealed class SyncCenter : Observable, IDisposable
         {
             pendingNoticeShown = false;
             _ = SyncAsync(manual: false);
+            nextReplicaAttemptUtc = DateTime.MinValue;
         }
         else
         {
@@ -660,6 +735,9 @@ public sealed class SyncCenter : Observable, IDisposable
                 if (change.DeviceId == DeviceIdentity.Id) break;
                 Show($"{change.User} · {change.Device} : {change.Summary}");
                 RemoteChange?.Invoke(change);
+                nextReplicaAttemptUtc = DateTime.MinValue;
+                if (running is { } replicaSession && !replicaSession.IsCancellationRequested)
+                    _ = AutoReplicateAsync(replicaSession.Token);
                 break;
             case "presence" or "verrou":
                 // Une présence ou un verrou a changé ailleurs : la photographie complète remet tout d'aplomb.
