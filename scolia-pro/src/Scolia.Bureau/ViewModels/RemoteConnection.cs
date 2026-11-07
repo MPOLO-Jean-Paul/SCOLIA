@@ -72,7 +72,9 @@ public sealed class RemoteConnectionViewModel : Observable
             // déjà autorisés. Rotation seulement après expiration, changement de
             // relais ou réactivation d'une connexion volontairement désactivée.
             var addressText = Relay.Trim();
-            var reuse = previous is { Host: true, Enabled: true }
+            // Désactiver Internet met le relais en pause : cela ne révoque pas les
+            // appareils et ne doit JAMAIS faire tourner la clé de la salle.
+            var reuse = previous is { Host: true }
                 && previous.Link.ExpiresUtc > DateTime.UtcNow
                 && string.Equals(previous.Link.Relay, addressText, StringComparison.OrdinalIgnoreCase);
             var link = reuse ? previous!.Link
