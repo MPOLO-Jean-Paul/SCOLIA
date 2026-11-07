@@ -41,7 +41,7 @@ export default {
       headers.set('X-Relay-Client-Hash', await sha256Hex(token));
     }
 
-    const object = env.SCOLIA_ROOMS.getByName(route.room);
+    const object = env.SCOLIA_ROOMS.get(env.SCOLIA_ROOMS.idFromName(route.room));
     return object.fetch(new Request(request.url, { method: 'GET', headers }));
   }
 };
