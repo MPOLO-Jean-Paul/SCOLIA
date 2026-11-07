@@ -16,7 +16,7 @@ public partial class LoginView : UserControl
     {
         InitializeComponent();
         // Les écrans Android disposent de leur propre hiérarchie iOS ; la page Windows reste intacte.
-        var mobile = Platform.IsMobile || PhoneLayout.Active;
+        var mobile = Platform.IsMobile;
         LoginScroll.IsVisible = !mobile;
         IosLoginScroll.IsVisible = mobile;
         Backdrop.IsVisible = !mobile;
