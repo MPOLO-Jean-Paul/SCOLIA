@@ -689,7 +689,7 @@ public sealed class ShellViewModel : Observable
             // Tester d'abord la clé du dispositif sur l'hôte réel via WSS.
             using var proof = new Api.ScoliaClient(remote.Link.VirtualServer);
             proof.UseRemote(remote.Link);
-            if (!await proof.IsRunningAsync(ct) || await proof.RestoreDeviceSessionAsync(ct) is null)
+            if (!await proof.IsRunningAsync(ct) || !await proof.VerifyLinkedDeviceAsync(ct))
                 return false;
 
             // Ne jamais déplacer la sauvegarde, les brouillons et l'outbox vers
@@ -702,9 +702,7 @@ public sealed class ShellViewModel : Observable
             {
                 api.UseRemote(remote.Link);
                 api.Offline = previousOffline;
-                var restored = await api.RestoreDeviceSessionAsync(ct);
-                if (restored is null || (IsLoggedIn && session is { } current &&
-                    !string.Equals(current.UserName, restored.UserName, StringComparison.OrdinalIgnoreCase)))
+                if (!await api.VerifyLinkedDeviceAsync(ct))
                 {
                     api.Retarget(previousAddress, sameVerifiedSchool: true);
                     api.Offline = previousOffline;
@@ -731,52 +729,46 @@ public sealed class ShellViewModel : Observable
         }
     }
 
-    private sealed record DevicePairResult(SessionDto Session, Guid GrantId, string DeviceSecret, DateTime ExpiresUtc);
+    /// <summary>L'invitation atteste le poste, sans ouvrir le compte qui a généré le QR.</summary>
+    public bool DevicePairingSucceeded { get; private set; }
+    public void BeginDevicePairing() => DevicePairingSucceeded = false;
 
-    /// <summary>Un QR approuvé ouvre directement la session du compte invité, sans exposer son mot de passe.</summary>
     public async Task<string> AcceptDeviceInvitationAsync(string invitationToken)
     {
-        if (IsServerComputer) return "Ce poste héberge déjà SCOLIA ; il n'a pas besoin d'être invité.";
-        var accepted = await api.SendAsync<DevicePairResult>(HttpMethod.Post, "api/jumelage/accepter", new
-        {
-            invitationToken, deviceId = DeviceIdentity.Id, deviceName = DeviceIdentity.Name,
-        });
-        // L'autorisation est propre à ce serveur et protégée par DPAPI ou Android Keystore.
-        DevicePairingStore.Save(api.Server, new DevicePairingStore.Credential(
-            accepted.GrantId, accepted.DeviceSecret, accepted.ExpiresUtc, accepted.Session.UserName));
+        if (IsServerComputer)
+            return "Ce poste héberge déjà SCOLIA ; il n'a pas besoin d'être invité.";
+
+        var linked = await api.AcceptDeviceInvitationAsync(invitationToken);
         if (IsLoggedIn) CloseLocalSession();
-        Login.RememberAccount(accepted.Session.UserName);
-        await OpenSessionAsync(accepted.Session, paired: true);
-        return $"Appareil autorisé pour {accepted.Session.DisplayName} · connexion immédiate sans mot de passe.";
+
+        // Le nom vient du serveur vérifié et non du QR, qui reste une simple invitation.
+        Login.SchoolName = linked.SchoolName;
+        Login.Password = string.Empty;
+        Login.Notice = "Appareil reconnu par l'établissement. Connectez-vous avec votre propre identifiant et mot de passe.";
+        IsSetupRequired = false;
+        ChoosingServer = false;
+        MarkEntryChecked();
+        DevicePairingSucceeded = true;
+        _ = RefreshLogoAsync();
+        return $"Appareil relié à {linked.SchoolName}. Connexion individuelle requise.";
     }
 
-    /// <summary>Après un premier jumelage, le serveur vérifie la clé de ce poste à chaque nouvelle ouverture.</summary>
+    /// <summary>La clé d'appareil peut être vérifiée à la reprise, sans émettre de cookie utilisateur.</summary>
     private async Task<bool> ResumeDeviceSessionAsync()
     {
-        if (IsServerComputer || DevicePairingStore.Read(api.Server) is not { } saved) return false;
+        if (IsServerComputer || DevicePairingStore.Read(api.Server) is null)
+            return false;
         try
         {
-            var restored = await api.RestoreDeviceSessionAsync();
-            if (restored is null)
-            {
+            if (!await api.VerifyLinkedDeviceAsync())
                 Login.Notice = "L'autorisation de cet appareil est expirée ou révoquée. Demandez un nouveau QR au responsable.";
-                return false;
-            }
-            Login.RememberAccount(restored.UserName);
-            await OpenSessionAsync(restored);
-            return true;
-        }
-        catch (ApiException ex) when (ex.Status is 401 or 403)
-        {
-            DevicePairingStore.Forget(api.Server);
-            Login.Notice = "L'autorisation de ce poste est expirée ou révoquée. Demandez un nouveau QR au responsable du serveur.";
-            return false;
         }
         catch (Exception ex) when (ex is OfflineException or HttpRequestException or TaskCanceledException)
         {
-            Login.Notice = "Le serveur ne répond pas. La reprise automatique nécessitera sa connexion.";
-            return false;
+            Login.Notice = "Le serveur ne répond pas. Utilisez un compte déjà ouvert sur cet appareil pour accéder aux données hors ligne.";
         }
+        // Même avec un appareil reconnu, seul un mot de passe ouvre la session.
+        return false;
     }
 
     public async Task JoinInternetAsync(Scolia.Transport.RemoteLink link)
