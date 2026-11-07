@@ -135,6 +135,10 @@ public static class RibbonCatalog
                     Large(shell, "Présences", ClipboardCheckOutline, "Appel quotidien par promotion et taux d'assiduité.", () => shell.Open(() => new AttendancePage(shell)), Blue, perm: Perm.AcademicsRead),
                     Large(shell, "Discipline", AlertOctagonOutline, "Incidents, sanctions et suivi du comportement.", () => shell.Open(() => new DisciplinePage(shell)), Red, perm: Perm.AcademicsRead),
                     Small(shell, "Nouvel incident", AlertPlusOutline, "Signale un incident de discipline.", () => DisciplinePage.NewDecisionAsync(shell), Neutral, perm: Perm.AcademicsWrite)),
+                Group("Délibération",
+                    Large(shell, "Délibération", Gavel, "Résultats par semestre et jury annuel, décisions motivées, clôture et procès-verbal.", () => shell.Open(() => new DeliberationPage(shell)), Red, perm: Perm.AcademicsRead),
+                    Small(shell, "Encodage des cotes", Pen, "Cotes du S1, du S2 et moyennes d'appui, par feuille ou par code anonyme.", () => shell.Open(() => new MarksPage(shell)), Neutral, perm: Perm.AcademicsRead),
+                    Small(shell, "Codes anonymes", Incognito, "Importe les apprenants inscrits et leur attribue un code officiel.", () => shell.Open(() => new AnonymousCodesPage(shell)), Neutral, perm: Perm.DeliberationManage)),
             ]),
             new("personnel", "Personnel",
             [
@@ -305,4 +309,5 @@ public static class Perm
     public const string DisciplineCancel = "discipline.annuler";
     public const string AcademicsRead = "scolarite.lire";
     public const string StaffManage = "personnel.gerer";
+    public const string DeliberationManage = "deliberation.gerer";
 }

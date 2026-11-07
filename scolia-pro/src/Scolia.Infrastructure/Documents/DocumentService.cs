@@ -347,7 +347,11 @@ public sealed class DocumentService : IDocumentService
     private static float[] ColumnWidths(TableDocument d) => d.Columns.Select((title, c) =>
     {
         var longest = d.Rows.Take(300).Select(r => c < r.Count ? r[c].Length : 0).DefaultIfEmpty(0).Max();
-        return Math.Clamp(Math.Max(title.Length * 0.8f, longest), 3f, 30f);
+        // Un titre long se replie sur plusieurs lignes : seul son mot le plus long impose une largeur,
+        // pour qu'une colonne courte (rang, code, %) ne soit pas écrasée par des intitulés de cours.
+        var word = title.Split(' ', StringSplitOptions.RemoveEmptyEntries).Select(w => w.Length).DefaultIfEmpty(0).Max();
+        // Le rembourrage des cellules compte aussi : une marge fixe évite de couper « 79,94 » ou un code.
+        return Math.Clamp(Math.Max(Math.Max(title.Length * 0.5f, word * 1.1f), longest), 4f, 30f) + 2.5f;
     }).ToArray();
 
     /// <summary>Colonnes de montants, alignées à droite pour que les chiffres se lisent en colonne.</summary>

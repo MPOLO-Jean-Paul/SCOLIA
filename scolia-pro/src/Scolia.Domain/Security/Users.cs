@@ -42,11 +42,13 @@ public static class Permissions
     public const string AcademicsRead = "scolarite.lire";
     public const string StaffManage = "personnel.gerer";
     public const string DisciplineCancel = "discipline.annuler";
+    /// <summary>Jury : décisions motivées, clôture et réouverture des délibérations, codes anonymes.</summary>
+    public const string DeliberationManage = "deliberation.gerer";
 
     public static readonly IReadOnlyList<string> All =
     [
         StudentsRead, StudentsWrite, PaymentsRead, PaymentsCreate, PaymentsCancel, ExpensesWrite, CashClose,
-        ReportsRead, PilotageRead, SettingsWrite, UsersManage, AuditRead, BackupManage, AcademicsWrite, AcademicsRead, StaffManage, DisciplineCancel,
+        ReportsRead, PilotageRead, SettingsWrite, UsersManage, AuditRead, BackupManage, AcademicsWrite, AcademicsRead, StaffManage, DisciplineCancel, DeliberationManage,
     ];
 
     /// <summary>Les seuls rôles qu'on attribue.</summary>

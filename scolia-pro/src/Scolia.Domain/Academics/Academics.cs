@@ -16,6 +16,8 @@ public sealed class Course : Entity
     public decimal Hours { get; set; }
     /// <summary>Cotation maximale du cours, en points.</summary>
     public decimal MaxScore { get; set; } = 20;
+    /// <summary>Organisation du cours pour la délibération : premier semestre, second semestre ou annuel (les deux).</summary>
+    public Deliberation.CourseSemester Semester { get; set; } = Deliberation.CourseSemester.Annuel;
     /// <summary>Faux quand le cours est archivé.</summary>
     public bool IsActive { get; set; } = true;
 }

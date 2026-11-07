@@ -163,11 +163,12 @@ public sealed record CashClosingDto(
     Guid Id, DateOnly Date, DateOnly PeriodStart, decimal OpeningBalance, decimal CashReceipts, decimal CashExpenses, decimal ExpectedCash,
     decimal CountedCash, decimal Difference, string? Note, string ClosedBy, DateTime ClosedAtUtc);
 
-public sealed record ReEnrollmentItemDto(Guid StudentId, string Matricule, string FullName, string FromPromotion, string? ToPromotion, decimal PreviousBalance, bool Selected);
+public sealed record ReEnrollmentItemDto(Guid StudentId, string Matricule, string FullName, string FromPromotion, string? ToPromotion, decimal PreviousBalance, bool Selected,
+    string? JuryDecision = null);
 
 public sealed record CourseDto(
     Guid Id, Guid PromotionId, string PromotionCode, int Number, string Name, decimal Coefficient, decimal Hours, decimal MaxScore,
-    Guid? TeacherId, string? TeacherName, bool IsActive, int AssessmentCount);
+    Guid? TeacherId, string? TeacherName, bool IsActive, int AssessmentCount, string Semester = "Annuel");
 
 public sealed record AssignmentHistoryDto(Guid Id, string TeacherName, DateOnly StartedOn, DateOnly? EndedOn, string? EndReason, string AssignedBy, bool IsCurrent);
 

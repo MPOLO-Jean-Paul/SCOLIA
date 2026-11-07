@@ -528,7 +528,8 @@ public sealed class ReEnrollmentPage : PageViewModel
         {
             var target = promotions.FirstOrDefault(c => p.ToPromotion is not null
                 && c.Label.StartsWith(p.ToPromotion + " ·", StringComparison.OrdinalIgnoreCase));
-            Items.Add(new ReEnrollRowVm(p.StudentId, p.Matricule, p.FullName, p.FromPromotion,
+            // La décision du jury annuel clôturé guide la proposition : admis, promotion suivante ; ajourné, redoublement.
+            Items.Add(new ReEnrollRowVm(p.StudentId, p.Matricule, p.FullName, p.JuryDecision is { } jury ? $"{p.FromPromotion} · {jury}" : p.FromPromotion,
                 Money(p.PreviousBalance), p.Selected, target, promotions));
         }
         subtitle = $"{Format.Count(plan.Count, "apprenant à reconduire", "apprenants à reconduire")} · {Items.Count(i => i.Selected)} sélectionné(s)";
