@@ -160,7 +160,7 @@ public sealed class RemoteHost : IDisposable
     }
 
     private static readonly HashSet<string> AllowedHeaders = new(StringComparer.OrdinalIgnoreCase)
-    { "Cookie", "X-Scolia", "X-Scolia-Poste", "X-Scolia-Appareil", "X-Scolia-Verrou", "Idempotency-Key", "Content-Type", "Accept", "X-Scolia-Grant",
+    { "Cookie", "X-Scolia", "X-Scolia-Poste", "X-Scolia-Appareil", "X-Scolia-Verrou", "Idempotency-Key", "Content-Type", "Accept", "If-None-Match", "X-Scolia-Grant",
       "X-Scolia-Device-Time", "X-Scolia-Device-Nonce", "X-Scolia-Device-Proof" };
 
     private static async Task ForwardAsync(byte[] clear, Guid id, RemoteLink link, byte[] epoch, HttpClient http,
