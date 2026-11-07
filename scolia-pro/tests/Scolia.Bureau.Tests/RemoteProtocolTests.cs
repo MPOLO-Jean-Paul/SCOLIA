@@ -32,6 +32,23 @@ public sealed class RemoteProtocolTests
     }
 
     [Fact]
+    public void Reactivation_after_an_internet_outage_keeps_the_same_room_and_device_keys()
+    {
+        var linked = RemoteLink.Create("wss://relay.example/");
+        var historical = linked with { ExpiresUtc = DateTime.UtcNow.AddDays(-1) };
+        var resumed = historical.Resume();
+        Assert.Equal(linked.Room, resumed.Room);
+        Assert.Equal(linked.VirtualServer, resumed.VirtualServer);
+        Assert.Equal(linked.Key, resumed.Key);
+        Assert.Equal(linked.ClientToken, resumed.ClientToken);
+        Assert.Equal(linked.HostToken, resumed.HostToken);
+        Assert.Equal(DateTime.MaxValue, resumed.ExpiresUtc);
+        Assert.Equal(linked.Room, RemoteLink.Parse(resumed.Invitation()).Room);
+        Assert.Throws<InvalidOperationException>(() =>
+            RemoteLink.Parse(resumed.Invitation()).Resume());
+    }
+
+    [Fact]
     public void Ciphertext_is_bound_to_request_direction_sequence_epoch_and_key()
     {
         var link = RemoteLink.Create("wss://relay.example/");
