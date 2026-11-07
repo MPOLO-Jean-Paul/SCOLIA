@@ -7,10 +7,9 @@ using Material.Icons.Avalonia;
 namespace Scolia.Bureau.Infrastructure;
 
 /// <summary>
-/// Contraste élevé des tuiles d'icônes : le pictogramme est blanc quand il atteint 4,5:1 sur la teinte de la tuile,
-/// sinon il prend la couleur (blanc ou presque noir) qui contraste le plus. En clair, les teintes à contraste élevé
-/// gardent le blanc d'iOS ; en sombre, les teintes vives reçoivent un pictogramme foncé, net, au lieu d'un blanc délavé.
-/// La couleur suit les changements de thème, y compris quand le pinceau de la tuile change de couleur sur place.
+/// Contraste élevé des tuiles d'icônes : leur fond conserve la teinte du mode clair
+/// même si une ressource dynamique lui transmet la variante sombre. Les pictogrammes
+/// restent blancs sur ces couleurs foncées. Les fonds personnalisés ne sont pas affectés.
 /// </summary>
 public static class TileGlyph
 {
@@ -98,6 +97,14 @@ public static class TileGlyph
             {
                 icon.ClearValue(MaterialIcon.ForegroundProperty);
                 return;
+            }
+            // La variante sombre du pinceau Tone* ne doit jamais changer les icônes.
+            // Replacer uniquement ce fond de tuile par le ton d'origine, sans toucher
+            // à la ressource partagée (qui peut servir au texte ailleurs).
+            if (IconPalette.TryOriginalColor(solid.Color, out var original))
+            {
+                border.Background = new SolidColorBrush(original);
+                return; // L'observateur rappellera Apply() avec le nouveau fond.
             }
             icon.Foreground = new SolidColorBrush(GlyphFor(solid.Color));
         }
