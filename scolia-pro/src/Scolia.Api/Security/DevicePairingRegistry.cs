@@ -175,7 +175,8 @@ public sealed class DevicePairingRegistry
             nonce.Length != 32 || !nonce.All(char.IsAsciiHexDigit) ||
             proofText.Length != 64 || !proofText.All(char.IsAsciiHexDigit))
             return false;
-        if (Math.Abs(DateTimeOffset.UtcNow.ToUnixTimeSeconds() - seconds) > 120) return false;
+        var nowSeconds = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        if (seconds < nowSeconds - 120 || seconds > nowSeconds + 120) return false;
         lock (gate)
         {
             var grant = grants.FirstOrDefault(x => x.Id == id && x.DeviceId == deviceId && !x.Revoked);
