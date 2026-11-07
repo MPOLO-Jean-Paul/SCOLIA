@@ -8,7 +8,7 @@ namespace Scolia.Tests;
 public sealed class DevicePairingTests
 {
     [Fact]
-    public async Task Un_qr_approuve_ouvre_la_session_une_fois_et_l_appareil_peut_revenir_sans_code()
+    public async Task Un_qr_approuve_l_appareil_mais_ne_connecte_jamais_un_compte()
     {
         using var app = new ScoliaApp();
         using var host = await app.InstalledAdmin();
@@ -16,41 +16,52 @@ public sealed class DevicePairingTests
         var token = invite.GetProperty("token").GetString()!;
 
         using var guest = app.Client();
-        guest.DefaultRequestHeaders.Add("X-Scolia-Poste", "appareil-client-test-01");
+        const string deviceId = "appareil-client-test-01";
+        guest.DefaultRequestHeaders.Add("X-Scolia-Poste", deviceId);
         var joined = await guest.Post("/api/jumelage/accepter", new {
-            invitationToken = token, deviceId = "appareil-client-test-01", deviceName = "Appareil test"
+            invitationToken = token, deviceId, deviceName = "Appareil test"
         }).Ok();
-        Assert.Equal("admin", joined.GetProperty("session").GetProperty("userName").GetString());
+        Assert.Equal("Institut de test", joined.GetProperty("schoolName").GetString());
+        Assert.False(joined.TryGetProperty("session", out _));
         var grantId = joined.GetProperty("grantId").GetGuid();
         var secret = joined.GetProperty("deviceSecret").GetString()!;
-        Assert.Equal(HttpStatusCode.OK, (await guest.GetAsync("/api/session")).StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, (await guest.GetAsync("/api/session")).StatusCode);
 
         using var second = app.Client();
-        second.DefaultRequestHeaders.Add("X-Scolia-Poste", "appareil-client-test-01");
-        var renewed = await second.Post("/api/session/appareil", new {
-            grantId, deviceId = "appareil-client-test-01", secret
+        second.DefaultRequestHeaders.Add("X-Scolia-Poste", deviceId);
+        var verified = await second.Post("/api/jumelage/appareil/verifier", new {
+            grantId, deviceId, secret
         }).Ok();
-        Assert.Equal("admin", renewed.GetProperty("userName").GetString());
+        Assert.True(verified.GetProperty("expiresUtc").GetDateTime() > DateTime.UtcNow);
+        Assert.Equal(HttpStatusCode.Unauthorized, (await second.GetAsync("/api/session")).StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, (await second.Post("/api/session/appareil", new {
+            grantId, deviceId, secret
+        })).StatusCode);
+
+        // Un compte doit s'authentifier avec son PROPRE mot de passe.
+        var login = await second.Post("/api/session", new { userName = "admin", password = "Scolia2026!" }).Ok();
+        Assert.Equal("admin", login.GetProperty("userName").GetString());
 
         using var other = app.Client();
-        other.DefaultRequestHeaders.Add("X-Scolia-Poste", "autre-appareil-test-02");
-        var denied = await other.Post("/api/session/appareil", new {
-            grantId, deviceId = "autre-appareil-test-02", secret
+        const string otherId = "autre-appareil-test-02";
+        other.DefaultRequestHeaders.Add("X-Scolia-Poste", otherId);
+        var denied = await other.Post("/api/jumelage/appareil/verifier", new {
+            grantId, deviceId = otherId, secret
         }).Fail();
         Assert.Equal(HttpStatusCode.Unauthorized, denied.Status);
 
         var reused = await other.Post("/api/jumelage/accepter", new {
-            invitationToken = token, deviceId = "autre-appareil-test-02", deviceName = "Autre appareil"
+            invitationToken = token, deviceId = otherId, deviceName = "Autre appareil"
         }).Fail();
         Assert.Equal(HttpStatusCode.Unauthorized, reused.Status);
 
         await host.Post($"/api/jumelage/appareils/{grantId}/revoquer", new { }).Ok();
-        Assert.Equal(HttpStatusCode.Unauthorized, (await guest.GetAsync("/api/session")).StatusCode);
-        var expired = await second.Post("/api/session/appareil", new {
-            grantId, deviceId = "appareil-client-test-01", secret
+        var expired = await second.Post("/api/jumelage/appareil/verifier", new {
+            grantId, deviceId, secret
         }).Fail();
         Assert.Equal(HttpStatusCode.Unauthorized, expired.Status);
     }
+
     [Fact]
     public async Task Un_serveur_qui_change_d_adresse_prouve_son_identite_sans_recevoir_la_cle()
     {

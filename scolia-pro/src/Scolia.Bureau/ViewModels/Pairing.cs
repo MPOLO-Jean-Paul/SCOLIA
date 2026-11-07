@@ -108,7 +108,7 @@ public sealed class PairingViewModel : Observable
     public string Steps => Platform.IsMobile
         ? "Sur l'autre appareil : Changer d'ordinateur principal, puis Scanner le code QR."
         : "Sur l'autre appareil : Changer d'ordinateur principal, puis Scanner le code QR. Sur un ordinateur, collez le code copié.";
-    public string Footer => "Ce QR autorise temporairement un autre appareil à ouvrir ce compte avec les mêmes droits. Ne le partagez qu\u2019avec un appareil de confiance. Vous pourrez révoquer sa liaison.";
+    public string Footer => "Ce QR autorise uniquement un appareil à retrouver le serveur. Chaque personne doit ensuite ouvrir sa propre session. L'appareil reste autorisé après une coupure, jusqu'à son retrait dans Réseau et activité.";
 
     public AsyncCommand Copy { get; }
     public RelayCommand Close { get; }

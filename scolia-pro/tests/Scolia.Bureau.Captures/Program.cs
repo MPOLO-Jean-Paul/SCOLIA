@@ -301,7 +301,7 @@ int VerifyPayments(LayoutServer fixture, bool mobile)
         var scroll = (ScrollViewer)Named("PhoneScroll");
         scroll.Offset = new Vector(0, 300);
         Render();
-        var anchor = scroll.GetVisualDescendants().OfType<Border>().First(card => card.Classes.Contains("phonecard") && Bounds(card).Top >= Bounds(scroll).Top);
+        var anchor = scroll.GetVisualDescendants().OfType<Button>().First(card => card.Classes.Contains("studentcard") && Bounds(card).Top >= Bounds(scroll).Top);
         var anchorY = Bounds(anchor).Top;
         var quietBusy = 0;
         students.PropertyChanged += (_, e) => { if (e.PropertyName == nameof(PageViewModel.Busy)) quietBusy++; };

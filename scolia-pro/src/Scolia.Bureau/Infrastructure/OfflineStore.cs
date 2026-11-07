@@ -83,6 +83,9 @@ public sealed class OfflineStore
     private string ConflictFile => "conflits.json";
     private string CredentialFile => "session.json";
     private const string LastAccountKey = "dernier-compte";
+    private const string KnownAccountsKey = "comptes-connus:v1";
+    private static string CredentialKeyFor(string account) =>
+        "session:" + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(account.Trim().ToUpperInvariant())));
 
     private sealed record SavedPage(string Json, DateTime SavedAt, string? Path = null);
     private string PagePrefix => "page:" + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(User.ToUpperInvariant()))) + ":";
@@ -272,10 +275,26 @@ public sealed class OfflineStore
         return ids;
     }
 
-    /// <summary>Garde la session d'un compte après une connexion réussie, avec une empreinte salée du mot de passe.</summary>
+    /// <summary>Les empreintes des comptes restent cloisonnées par utilisateur dans le SQLite chiffré.</summary>
+    private static OfflineCredential? DecodeCredential(string? value) =>
+        string.IsNullOrEmpty(value) ? null : JsonSerializer.Deserialize<OfflineCredential>(value, Json);
+
+    private OfflineCredential? ReadCredentialFor(string account)
+    {
+        if (string.IsNullOrWhiteSpace(account)) return null;
+        var scoped = DecodeCredential(database.Read(CredentialKeyFor(account)));
+        if (scoped is not null && string.Equals(scoped.UserName, account.Trim(), StringComparison.OrdinalIgnoreCase))
+            return scoped;
+        // Anciennes installations : conserver la session historique sans écraser ni croiser les comptes.
+        var legacy = DecodeCredential(database.Read(CredentialFile));
+        return legacy is not null && string.Equals(legacy.UserName, account.Trim(), StringComparison.OrdinalIgnoreCase)
+            ? legacy : null;
+    }
+
+    /// <summary>Sauvegarde une preuve locale par compte, après connexion réussie au serveur.</summary>
     public void SaveCredential(string userName, string password, SessionDto session, string sessionCookie = "")
     {
-        if (sessionCookie.Length == 0 && SavedCredential is { } previous && previous.UserName == session.UserName)
+        if (sessionCookie.Length == 0 && ReadCredentialFor(session.UserName) is { } previous)
             sessionCookie = previous.SessionCookie;
         var salt = RandomNumberGenerator.GetBytes(16);
         var credential = new OfflineCredential
@@ -287,19 +306,23 @@ public sealed class OfflineStore
             SavedAt = DateTime.Now,
             SessionCookie = sessionCookie,
         };
-        database.Write(CredentialFile, JsonSerializer.Serialize(credential, Json));
+        var serialized = JsonSerializer.Serialize(credential, Json);
+        // Garder la clé historique pour la compatibilité, et l'empreinte propre au compte
+        // afin qu'un nouvel utilisateur ne remplace pas le cache d'un collègue.
+        database.Update([CredentialFile, CredentialKeyFor(session.UserName)], values =>
+        {
+            values[CredentialFile] = serialized;
+            values[CredentialKeyFor(session.UserName)] = serialized;
+        });
     }
 
-    /// <summary>
-    /// Connexion sans réseau : accordée seulement au dernier compte connecté sur cet appareil, avec son mot de passe.
-    /// </summary>
+    /// <summary>Hors ligne : uniquement le compte demandé avec le bon secret ; jamais une autre identité.</summary>
     public SessionDto? OfflineLogin(string userName, string password)
     {
-        if (database.Read(CredentialFile) is not { Length: > 0 } credentialJson) return null;
         try
         {
-            var credential = JsonSerializer.Deserialize<OfflineCredential>(credentialJson, Json);
-            if (credential is null || !string.Equals(credential.UserName, userName.Trim(), StringComparison.OrdinalIgnoreCase)) return null;
+            var credential = ReadCredentialFor(userName);
+            if (credential is null) return null;
             var expected = Convert.FromBase64String(credential.Hash);
             var actual = Derive(password, Convert.FromBase64String(credential.Salt));
             if (!CryptographicOperations.FixedTimeEquals(expected, actual)) return null;
@@ -308,35 +331,84 @@ public sealed class OfflineStore
         catch (Exception ex) when (ex is IOException or JsonException or FormatException) { return null; }
     }
 
-    /// <summary>Reprise différée : cookie limité à la durée de session, jamais de mot de passe stocké.</summary>
-    public OfflineCredential? SavedCredential => database.Read(CredentialFile) is { Length: > 0 } text
-        ? JsonSerializer.Deserialize<OfflineCredential>(text, Json) : null;
+    /// <summary>Dernière session de l'appareil, sans droit automatique d'entrée.</summary>
+    public OfflineCredential? SavedCredential =>
+        ReadCredentialFor(LastAccount ?? string.Empty) ?? DecodeCredential(database.Read(CredentialFile));
 
     public void ClearBackgroundSession()
     {
-        database.Update([CredentialFile], values =>
+        string[] keys = string.IsNullOrWhiteSpace(User) ? [CredentialFile] : [CredentialFile, CredentialKeyFor(User)];
+        database.Update(keys, values =>
         {
-            if (values[CredentialFile] is not { Length: > 0 } text) return;
-            var saved = JsonSerializer.Deserialize<OfflineCredential>(text, Json);
-            if (saved is null) return;
-            saved.SessionCookie = string.Empty;
-            values[CredentialFile] = JsonSerializer.Serialize(saved, Json);
+            foreach (var key in keys)
+            {
+                var saved = DecodeCredential(values[key]);
+                if (saved is null || (User.Length > 0 &&
+                    !string.Equals(saved.UserName, User, StringComparison.OrdinalIgnoreCase))) continue;
+                saved.SessionCookie = string.Empty;
+                values[key] = JsonSerializer.Serialize(saved, Json);
+            }
         });
     }
 
-    /// <summary>Mémorise l'identifiant du dernier compte utilisé sur ce serveur, jamais son mot de passe.</summary>
+    /// <summary>Le dernier identifiant utilisé, pas un jeton ni un mot de passe.</summary>
     public string? LastAccount => database.Read(LastAccountKey) is { Length: > 0 } user
-        ? user : SavedCredential?.UserName;
+        ? user : DecodeCredential(database.Read(CredentialFile))?.UserName;
+
+    /// <summary>Comptes déjà utilisés sur ce poste pour ce serveur, sans divulguer les comptes du serveur.</summary>
+    public IReadOnlyList<string> KnownAccounts
+    {
+        get
+        {
+            List<string> accounts;
+            try
+            {
+                var saved = database.Read(KnownAccountsKey);
+                accounts = string.IsNullOrWhiteSpace(saved)
+                    ? [] : JsonSerializer.Deserialize<List<string>>(saved, Json) ?? [];
+            }
+            catch (JsonException) { accounts = []; }
+            if (LastAccount is { Length: > 0 } last)
+                accounts.Insert(0, last);
+            return accounts.Where(name => !string.IsNullOrWhiteSpace(name))
+                .Distinct(StringComparer.OrdinalIgnoreCase).Take(10).ToArray();
+        }
+    }
 
     public void RememberAccount(string userName)
     {
-        if (!string.IsNullOrWhiteSpace(userName)) database.Write(LastAccountKey, userName.Trim());
+        if (string.IsNullOrWhiteSpace(userName)) return;
+        var account = userName.Trim();
+        database.Update([LastAccountKey, KnownAccountsKey], values =>
+        {
+            List<string> accounts;
+            try { accounts = JsonSerializer.Deserialize<List<string>>(values[KnownAccountsKey] ?? "[]", Json) ?? []; }
+            catch (JsonException) { accounts = []; }
+            var known = new[] { account }.Concat(accounts)
+                .Where(name => !string.IsNullOrWhiteSpace(name))
+                .Distinct(StringComparer.OrdinalIgnoreCase).Take(10).ToArray();
+            values[LastAccountKey] = account;
+            values[KnownAccountsKey] = JsonSerializer.Serialize(known, Json);
+        });
     }
 
-    /// <summary>Un ancien mot de passe ne doit pas permettre la connexion hors ligne après restauration.</summary>
-    public void ForgetCredential() => database.Write(CredentialFile, string.Empty);
+    /// <summary>Une récupération invalide uniquement l'empreinte du compte concerné, sans effacer les autres.</summary>
+    public void ForgetCredential(string? userName = null)
+    {
+        var account = string.IsNullOrWhiteSpace(userName) ? (User.Length > 0 ? User : LastAccount) : userName.Trim();
+        if (string.IsNullOrWhiteSpace(account)) return;
+        var scopedKey = CredentialKeyFor(account);
+        database.Update([CredentialFile, scopedKey], values =>
+        {
+            values[scopedKey] = string.Empty;
+            var previous = DecodeCredential(values[CredentialFile]);
+            if (previous is not null && string.Equals(previous.UserName, account, StringComparison.OrdinalIgnoreCase))
+                values[CredentialFile] = string.Empty;
+        });
+    }
 
-    public bool HasCredential => database.Read(CredentialFile) is { Length: > 0 };
+    public bool HasCredential => (database.Read(CredentialFile) is { Length: > 0 }) ||
+        database.ReadPrefix("session:", 1).Count > 0;
 
     private static byte[] Derive(string password, byte[] salt) =>
         Rfc2898DeriveBytes.Pbkdf2(Encoding.UTF8.GetBytes(password), salt, 100_000, HashAlgorithmName.SHA256, 32);

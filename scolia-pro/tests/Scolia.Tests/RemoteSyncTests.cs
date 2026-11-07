@@ -55,11 +55,19 @@ public sealed class RemoteSyncTests : IAsyncLifetime
         return client;
     }
 
+    private async Task<Guid> PairPhoneAsync(ScoliaClient phone)
+    {
+        var invited = await secretary.Post("/api/jumelage/inviter", new { }).Ok();
+        var paired = await phone.AcceptDeviceInvitationAsync(invited.GetProperty("token").GetString()!);
+        return paired.GrantId;
+    }
+
     [Fact]
     public async Task Existing_two_roles_and_server_permissions_are_preserved_through_relay()
     {
         var user = await secretary.Post("/api/utilisateurs", new { userName = "compta", displayName = "Comptabilité", role = "Comptabilite", password = "Provisoire1" }).Ok();
         using var phone = Phone();
+        await PairPhoneAsync(phone);
         var session = await phone.LoginAsync("compta", "Provisoire1");
         Assert.Equal("Comptabilite", session.Role);
         await phone.GetAsync<JsonElement>("api/paiements");
@@ -78,24 +86,28 @@ public sealed class RemoteSyncTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Authorized_device_resumes_over_WSS_without_a_second_QR()
+    public async Task Authorized_device_recognizes_server_over_WSS_without_auto_login()
     {
         var invited = await secretary.Post("/api/jumelage/inviter", new { }).Ok();
         var ticket = invited.GetProperty("token").GetString()!;
         using var firstPhone = Phone();
-        var paired = await firstPhone.SendAsync<JsonElement>(HttpMethod.Post, "api/jumelage/accepter",
-            new { invitationToken = ticket, deviceId = DeviceIdentity.Id, deviceName = "Telephone test Render" });
-        var id = paired.GetProperty("grantId").GetGuid();
-        var deviceSecret = paired.GetProperty("deviceSecret").GetString()!;
+        var paired = await firstPhone.AcceptDeviceInvitationAsync(ticket);
+        var id = paired.GrantId;
+        var deviceSecret = paired.DeviceSecret;
         using var secondPhone = Phone();
-        var renewed = await secondPhone.SendAsync<JsonElement>(HttpMethod.Post,
-            "api/session/appareil/renouveler",
+        var verified = await secondPhone.SendAsync<JsonElement>(HttpMethod.Post,
+            "api/jumelage/appareil/verifier",
             new { grantId = id, deviceId = DeviceIdentity.Id, secret = deviceSecret });
-        Assert.Equal("admin", renewed.GetProperty("session").GetProperty("userName").GetString());
-        Assert.True(renewed.GetProperty("expiresUtc").GetDateTime() > DateTime.UtcNow.AddDays(170));
+        Assert.True(verified.GetProperty("expiresUtc").GetDateTime() > DateTime.UtcNow.AddDays(170));
+        // La reconnaissance du poste n'accorde pas les droits du propriétaire de l'invitation.
+        Assert.Equal(401, (await Assert.ThrowsAsync<ApiException>(() =>
+            secondPhone.GetAsync<JsonElement>("api/etablissement"))).Status);
+        var user = await secondPhone.LoginAsync("admin", "Scolia2026!");
+        Assert.Equal("admin", user.UserName);
+        await secondPhone.GetAsync<JsonElement>("api/etablissement");
         await secretary.Post($"/api/jumelage/appareils/{id}/revoquer", new { }).Ok();
         var forbidden = await Assert.ThrowsAsync<ApiException>(() => secondPhone.SendAsync<JsonElement>(
-            HttpMethod.Post, "api/session/appareil/renouveler",
+            HttpMethod.Post, "api/jumelage/appareil/verifier",
             new { grantId = id, deviceId = DeviceIdentity.Id, secret = deviceSecret }));
         Assert.Equal(401, forbidden.Status);
     }
@@ -105,6 +117,7 @@ public sealed class RemoteSyncTests : IAsyncLifetime
     {
         var promotion = await secretary.Post("/api/etablissement/promotions", new { code = "DST1", name = "Première", level = 1, isActive = true, monthlyFee = 50000m, oneTimeFees = Array.Empty<object>() }).Ok();
         using var phone = Phone();
+        await PairPhoneAsync(phone);
         var session = await phone.LoginAsync("admin", "Scolia2026!");
         phone.Offline = new OfflineStore(phone.Server, folder) { User = session.UserName };
         await phone.GetAsync<JsonElement>("api/etablissement/promotions");
@@ -138,6 +151,7 @@ public sealed class RemoteSyncTests : IAsyncLifetime
         var enrollment = student.GetProperty("enrollments")[0].GetProperty("id").GetString()!;
         var (ids, amount) = await secretary.OpenMonths(enrollment, 1);
         using var phone = Phone();
+        await PairPhoneAsync(phone);
         await phone.LoginAsync("admin", "Scolia2026!");
         var body = new { enrollmentId = enrollment, amount, feeItemIds = ids, method = "Especes", idempotencyKey = Guid.NewGuid().ToString("N") };
         var first = await phone.SendAsync<JsonElement>(HttpMethod.Post, "api/paiements", body);
@@ -153,6 +167,7 @@ public sealed class RemoteSyncTests : IAsyncLifetime
     public async Task Live_activity_stream_crosses_the_encrypted_relay()
     {
         using var phone = Phone();
+        await PairPhoneAsync(phone);
         await phone.LoginAsync("admin", "Scolia2026!");
         using var stream = phone.CreateStreamClient();
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
@@ -162,6 +177,32 @@ public sealed class RemoteSyncTests : IAsyncLifetime
         string? line;
         do { line = await reader.ReadLineAsync(timeout.Token); } while (line is not null && !line.StartsWith("event: ", StringComparison.Ordinal));
         Assert.Equal("event: etat", line);
+    }
+
+    [Fact]
+    public async Task Internet_retabli_reconnecte_le_poste_autorise_sans_QR_et_retrait_bloque_la_session()
+    {
+        using var phone = Phone();
+        var grant = await PairPhoneAsync(phone);
+        await phone.LoginAsync("admin", "Scolia2026!");
+        await phone.GetAsync<JsonElement>("api/etablissement");
+
+        // Le serveur garde son registre, tandis que le transport est momentanément coupé.
+        host.Dispose();
+        await host.Completion.WaitAsync(TimeSpan.FromSeconds(5));
+        Assert.False(await phone.IsRunningAsync());
+        host = new RemoteHost(link, app.ClientOptions.BaseAddress);
+        await WaitForHost();
+        Assert.True(await phone.IsRunningAsync());
+        await phone.GetAsync<JsonElement>("api/etablissement");
+
+        var active = await secretary.GetAsync("/api/jumelage/appareils").Ok();
+        Assert.Contains(active.EnumerateArray(), x => x.GetProperty("id").GetGuid() == grant);
+        await secretary.Post($"/api/jumelage/appareils/{grant}/revoquer", new { }).Ok();
+        var after = await secretary.GetAsync("/api/jumelage/appareils").Ok();
+        Assert.DoesNotContain(after.EnumerateArray(), x => x.GetProperty("id").GetGuid() == grant);
+        Assert.Equal(401, (await Assert.ThrowsAsync<ApiException>(
+            () => phone.GetAsync<JsonElement>("api/etablissement"))).Status);
     }
 
     public async Task DisposeAsync()

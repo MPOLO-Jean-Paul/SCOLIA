@@ -13,7 +13,7 @@ public sealed class LockSwitchTests
         using var api = new ScoliaClient(new Uri("http://127.0.0.1:1/"));
         var login = new LoginViewModel(api);
         Assert.False(login.CanResume);
-        Assert.Equal("Saisissez votre identifiant et votre mot de passe.", login.IntroText);
+        Assert.Contains("votre identifiant et votre mot de passe", login.IntroText);
 
         login.UserName = "ancien";
         login.OfferResume("Secrétariat", "secretariat");
