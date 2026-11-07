@@ -22,6 +22,13 @@ public sealed class ConnectionViewModel : Observable
     private readonly ShellViewModel shell;
     private string message = string.Empty;
     private bool searching;
+    private bool pairingInProgress;
+    /// <summary>Le QR est reconnu : montrer une seule interface de vérification, sans les champs sous-jacents.</summary>
+    public bool PairingInProgress
+    {
+        get => pairingInProgress;
+        private set => Set(ref pairingInProgress, value);
+    }
 
     public ConnectionViewModel(ShellViewModel shell)
     {
@@ -52,23 +59,34 @@ public sealed class ConnectionViewModel : Observable
     private async Task ReadQrAsync(bool fromPhoto)
     {
         if (Searching) return;
-        var (text, problem) = await PairingFlow.CaptureAsync(shell, fromPhoto);
-        if (text is null)
+        Searching = true;
+        try
         {
-            if (problem is not null) Message = problem;
-            return;
+            var (text, problem) = await PairingFlow.CaptureAsync(shell, fromPhoto);
+            if (text is null)
+            {
+                if (problem is not null) Message = problem;
+                return;
+            }
+            await JoinCodeAsync(text);
         }
-        await JoinCodeAsync(text);
+        finally { Searching = false; }
     }
 
     private async Task JoinCodeAsync(string text)
     {
         Searching = true;
+        PairingInProgress = true;
+        Message = "Code reconnu. Vérification de l'appareil et de ses autorisations…";
         try { Message = await PairingFlow.JoinAsync(shell, text, step => Message = step); }
         catch (Exception ex) when (ex is IOException or HttpRequestException or TaskCanceledException
             or Api.ApiException or InvalidOperationException or UnauthorizedAccessException)
         { Message = $"Jumelage impossible : {ex.Message}. Le serveur précédent reste disponible."; }
-        finally { Searching = false; }
+        finally
+        {
+            PairingInProgress = false;
+            Searching = false;
+        }
     }
 
     /// <summary>Tout ordinateur peut être le serveur ; un téléphone aussi, quand l'établissement n'a pas d'ordinateur.</summary>
