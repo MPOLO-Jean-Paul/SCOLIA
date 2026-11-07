@@ -201,6 +201,7 @@ public static class ScoliaHost
             if (http.Request.Headers["X-Scolia-Relay-Connection"] == "1" &&
                 http.Request.Path.StartsWithSegments("/api") &&
                 !http.Request.Path.StartsWithSegments("/api/installation") &&
+                http.Request.Path != "/api/sante" &&
                 http.Request.Path != "/api/jumelage/accepter" &&
                 http.Request.Path != "/api/jumelage/appareil/verifier" &&
                 http.Request.Path != "/api/jumelage/preuve-serveur" &&
