@@ -11,7 +11,7 @@ public partial class LockScreenView : UserControl
     public LockScreenView()
     {
         InitializeComponent();
-        var mobile = Platform.IsMobile || PhoneLayout.Active;
+        var mobile = Platform.IsMobile;
         ClassicLockScreen.IsVisible = !mobile;
         IosLockScroll.IsVisible = mobile;
         IosLockCode.KeyDown += (_, e) =>
