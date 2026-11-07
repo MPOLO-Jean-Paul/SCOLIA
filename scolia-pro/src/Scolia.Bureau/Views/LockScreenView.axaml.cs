@@ -1,7 +1,6 @@
 using Avalonia.Controls;
 using Avalonia.Input;
 using Scolia.Bureau.Infrastructure;
-using Scolia.Bureau.Infrastructure;
 using Scolia.Bureau.ViewModels;
 
 namespace Scolia.Bureau.Views;
