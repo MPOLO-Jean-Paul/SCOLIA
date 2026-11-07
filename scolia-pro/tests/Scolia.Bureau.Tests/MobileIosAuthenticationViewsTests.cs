@@ -45,7 +45,7 @@ public sealed class MobileIosAuthenticationViewsTests
         foreach (var name in new[] { "IosPasswordBox", "IosNewPasswordBox",
             "IosConfirmPasswordBox", "IosRecoveryCodeBox" })
         {
-            var field = Assert.Single(nodes.Where(e => Attribute(e, "Name", name)));
+            var field = Assert.Single(nodes, e => Attribute(e, "Name", name));
             Assert.True(Attribute(field, "PasswordChar", "•"));
             Assert.True(Attribute(field, "IsSensitive", "True"));
         }
@@ -61,7 +61,7 @@ public sealed class MobileIosAuthenticationViewsTests
         var nodes = Elements("LockScreenView.axaml");
         foreach (var name in new[] { "ClassicLockScreen", "IosLockScroll", "LockCode", "IosLockCode" })
             Assert.Contains(nodes, e => Attribute(e, "Name", name));
-        var password = Assert.Single(nodes.Where(e => Attribute(e, "Name", "IosLockCode")));
+        var password = Assert.Single(nodes, e => Attribute(e, "Name", "IosLockCode"));
         Assert.True(Attribute(password, "PasswordChar", "•"));
         Assert.True(Attribute(password, "IsSensitive", "True"));
         foreach (var binding in new[] { "{Binding Unlock}", "{Binding UnlockWithBiometrics}",
