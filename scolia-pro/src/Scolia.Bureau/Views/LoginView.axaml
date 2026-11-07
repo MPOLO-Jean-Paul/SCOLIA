@@ -394,7 +394,8 @@
     </ScrollViewer>
 
     <!-- Parcours iOS sur mobile : une page distincte ; la vue de connexion desktop est intacte. -->
-    <ScrollViewer x:Name="IosLoginScroll" IsVisible="False" RequestedThemeVariant="Light"
+    <ThemeVariantScope x:Name="IosLoginThemeScope" RequestedThemeVariant="Light" IsVisible="False">
+    <ScrollViewer x:Name="IosLoginScroll" IsVisible="False"
                   HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
       <StackPanel Classes="iosloginbody" MaxWidth="440" HorizontalAlignment="Stretch" Margin="20,28,20,26" Spacing="18">
         <StackPanel Spacing="11" HorizontalAlignment="Stretch">
@@ -657,5 +658,6 @@
                    FontSize="11" TextWrapping="Wrap" Margin="0,0,0,10" />
       </StackPanel>
     </ScrollViewer>
+    </ThemeVariantScope>
   </Grid>
 </UserControl>
