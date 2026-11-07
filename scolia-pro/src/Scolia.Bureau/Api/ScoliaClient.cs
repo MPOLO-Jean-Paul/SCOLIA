@@ -134,7 +134,8 @@ public sealed class ScoliaClient : IDisposable
         await SendAsync<SessionDto>(HttpMethod.Post, "api/session", new { userName, password }, ct);
 
     /// <summary>Autorisation du poste et identité scolaire uniquement, sans compte utilisateur.</summary>
-    public sealed record PairedDevice(Guid GrantId, string DeviceSecret, DateTime ExpiresUtc, string SchoolName);
+    public sealed record PairedDevice(Guid GrantId, string DeviceSecret, DateTime ExpiresUtc, string SchoolName,
+        JsonElement? Session = null);
 
     public async Task<PairedDevice> AcceptDeviceInvitationAsync(string invitationToken, CancellationToken ct = default)
     {
@@ -142,6 +143,17 @@ public sealed class ScoliaClient : IDisposable
         {
             invitationToken, deviceId = Infrastructure.DeviceIdentity.Id, deviceName = Infrastructure.DeviceIdentity.Name
         }, ct);
+        // Un ancien serveur émettait directement un cookie et un compte administrateur
+        // avec le QR. Ne jamais accepter silencieusement ce format : invalider le
+        // cookie historique et imposer la mise à jour du serveur avant le jumelage.
+        if (linked.Session is not null || string.IsNullOrWhiteSpace(linked.SchoolName)
+            || linked.GrantId == Guid.Empty || string.IsNullOrWhiteSpace(linked.DeviceSecret))
+        {
+            try { await LogoutAsync(ct); }
+            catch (Exception ex) when (ex is ApiException or HttpRequestException or TaskCanceledException or IOException) { }
+            throw new InvalidOperationException(
+                "Le serveur SCOLIA utilise un ancien jumelage donnant automatiquement des droits. Mettez à jour le serveur pour utiliser la connexion individuelle sécurisée.");
+        }
         Infrastructure.DevicePairingStore.Save(Server, new Infrastructure.DevicePairingStore.Credential(
             linked.GrantId, linked.DeviceSecret, linked.ExpiresUtc, string.Empty));
         return linked;
