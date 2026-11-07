@@ -92,6 +92,12 @@
       <Setter Property="VerticalAlignment" Value="Center" />
       <Setter Property="HorizontalAlignment" Value="Right" />
     </Style>
+    <!-- Sur les petits téléphones, les espaces se réduisent sans compresser les champs ni les actions. -->
+    <Style Selector="ScrollViewer.compact StackPanel.iosloginbody"><Setter Property="Margin" Value="12,12,12,18" /><Setter Property="Spacing" Value="12" /></Style>
+    <Style Selector="ScrollViewer.compact Border.iosauthcard"><Setter Property="Padding" Value="13" /><Setter Property="CornerRadius" Value="18" /></Style>
+    <Style Selector="ScrollViewer.compact Border.ioslogotile"><Setter Property="Width" Value="70" /><Setter Property="Height" Value="70" /><Setter Property="CornerRadius" Value="22" /></Style>
+    <Style Selector="ScrollViewer.compact TextBlock.ioslogotitle"><Setter Property="FontSize" Value="23" /></Style>
+    <Style Selector="ScrollViewer.compact TextBlock.iosrecoverytitle"><Setter Property="FontSize" Value="19" /></Style>
     <Style Selector="TextBlock.iosauthlabel">
       <Setter Property="FontSize" Value="12" />
       <Setter Property="FontWeight" Value="SemiBold" />
@@ -388,17 +394,18 @@
     </ScrollViewer>
 
     <!-- Parcours iOS sur mobile : une page distincte ; la vue de connexion desktop est intacte. -->
+    <ThemeVariantScope x:Name="IosLoginThemeScope" RequestedThemeVariant="Light" IsVisible="False">
     <ScrollViewer x:Name="IosLoginScroll" IsVisible="False"
                   HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
-      <StackPanel MaxWidth="440" HorizontalAlignment="Center" Margin="20,28,20,26" Spacing="18">
+      <StackPanel Classes="iosloginbody" MaxWidth="440" HorizontalAlignment="Stretch" Margin="20,28,20,26" Spacing="18">
         <StackPanel Spacing="11" HorizontalAlignment="Stretch">
-          <Border Width="84" Height="84" CornerRadius="27" Background="White"
+          <Border Classes="ioslogotile" Width="84" Height="84" CornerRadius="27" Background="White"
                   BorderThickness="1" BorderBrush="#D6E2F5"
                   BoxShadow="0 12 26 0 #180D459B" HorizontalAlignment="Center">
             <Image Source="{DynamicResource ScoliaMark}" Width="58" Height="58"
                    HorizontalAlignment="Center" VerticalAlignment="Center" />
           </Border>
-          <TextBlock Text="SCOLIA Pro" FontSize="27" FontWeight="Bold"
+          <TextBlock Text="SCOLIA Pro" Classes="ioslogotitle" FontSize="27" FontWeight="Bold"
                      Foreground="{DynamicResource TextBrush}" TextAlignment="Center" />
           <TextBlock x:Name="IosSchoolHeading" Text="{Binding TitleText}" FontSize="14" Classes="muted"
                      TextWrapping="Wrap" TextAlignment="Center" MaxLines="3" />
@@ -521,7 +528,7 @@
                           ToolTip.Tip="Revenir à la connexion" HorizontalAlignment="Left">
                     <mi:MaterialIcon Kind="ChevronLeft" Width="22" Height="22" />
                   </Button>
-                  <TextBlock Grid.Column="1" Text="Récupérer mon accès" FontSize="22"
+                  <TextBlock Grid.Column="1" Text="Récupérer mon accès" Classes="iosrecoverytitle" FontSize="22"
                              FontWeight="Bold" VerticalAlignment="Center" />
                 </Grid>
                 <TextBlock Text="{Binding RecoveryInstructions}" Classes="muted"
@@ -651,5 +658,6 @@
                    FontSize="11" TextWrapping="Wrap" Margin="0,0,0,10" />
       </StackPanel>
     </ScrollViewer>
+    </ThemeVariantScope>
   </Grid>
 </UserControl>

@@ -12,5 +12,18 @@ public partial class ConnectionView : UserControl
         var mobile = Platform.IsMobile;
         ClassicConnectionScreen.IsVisible = !mobile;
         IosConnectionScreen.IsVisible = mobile;
+        IosConnectionThemeScope.IsVisible = mobile;
+        // Les options secondaires restent disponibles, mais ne surchargent pas un petit écran.
+        bool? previouslyCompact = null;
+        IosConnectionScreen.SizeChanged += (_, e) =>
+        {
+            var compact = e.NewSize.Width < 390;
+            IosConnectionScreen.Classes.Set("compact", compact);
+            if (previouslyCompact == compact) return;
+            IosQrOptions.IsExpanded = !compact;
+            IosWifiOptions.IsExpanded = !compact;
+            IosNearbyServers.IsExpanded = !compact;
+            previouslyCompact = compact;
+        };
     }
 }

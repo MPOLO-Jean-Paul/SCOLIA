@@ -4,6 +4,10 @@
              xmlns:mi="using:Material.Icons.Avalonia"
              x:Class="Scolia.Bureau.Views.ConnectionView">
   <UserControl.Styles>
+    <!-- Les cartes restent lisibles et les actions se replient quand la largeur utile est réduite. -->
+    <Style Selector="Grid.compact StackPanel.iosconnectbody"><Setter Property="Margin" Value="12,12,12,20" /><Setter Property="Spacing" Value="12" /></Style>
+    <Style Selector="Grid.compact Border.iosconnectcard"><Setter Property="Padding" Value="13" /><Setter Property="CornerRadius" Value="17" /></Style>
+    <Style Selector="Grid.compact TextBlock.iosconnecttitle"><Setter Property="FontSize" Value="22" /></Style>
     <Style Selector="Border.iosconnectcard">
       <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
       <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
@@ -179,10 +183,11 @@
 
     </Grid>
     <!-- Premier écran mobile iOS : une décision principale, des options secondaires discrètes. -->
+    <ThemeVariantScope x:Name="IosConnectionThemeScope" RequestedThemeVariant="Light" IsVisible="False">
     <Grid x:Name="IosConnectionScreen" IsVisible="False" Background="#F5F7FB">
       <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto"
                     IsVisible="{Binding !PairingInProgress}">
-        <StackPanel MaxWidth="440" HorizontalAlignment="Center" Margin="20,24,20,32" Spacing="17">
+        <StackPanel Classes="iosconnectbody" MaxWidth="440" HorizontalAlignment="Stretch" Margin="20,24,20,32" Spacing="17">
           <Button Classes="iosconnectsecondary" Command="{Binding Back}" IsVisible="{Binding CanGoBack}"
                   HorizontalAlignment="Left" MinWidth="95">
             <StackPanel Orientation="Horizontal" Spacing="5">
@@ -196,7 +201,7 @@
                     BoxShadow="0 10 25 0 #160F468C" HorizontalAlignment="Center">
               <Image Source="{DynamicResource ScoliaMark}" Width="60" Height="60" />
             </Border>
-            <TextBlock Text="Bienvenue sur SCOLIA" FontSize="26" FontWeight="Bold"
+            <TextBlock Classes="iosconnecttitle" Text="Bienvenue sur SCOLIA" FontSize="26" FontWeight="Bold"
                        TextAlignment="Center" Foreground="{DynamicResource TextBrush}"
                        TextWrapping="Wrap" />
             <TextBlock Text="Retrouvez votre établissement en toute sécurité."
@@ -228,6 +233,8 @@
                              FontWeight="SemiBold" VerticalAlignment="Center" />
                 </StackPanel>
               </Button>
+              <Expander x:Name="IosQrOptions" Header="Autres méthodes de jumelage" IsExpanded="True">
+                <StackPanel Spacing="9">
               <Button Classes="iosconnectsecondary" Command="{Binding ImportQrImage}"
                       IsVisible="{Binding CanImportQrImage}" IsEnabled="{Binding NotSearching}">
                 <StackPanel Orientation="Horizontal" Spacing="8">
@@ -242,10 +249,13 @@
                 <Button Classes="iosconnectsecondary" Command="{Binding JoinInternet}"
                         IsEnabled="{Binding NotSearching}" Content="Valider l'invitation" />
               </StackPanel>
+                </StackPanel>
+              </Expander>
             </StackPanel>
           </Border>
 
-          <StackPanel Spacing="8" IsVisible="{Binding HasServers}">
+          <Expander x:Name="IosNearbyServers" Header="Établissements à proximité" IsExpanded="True" IsVisible="{Binding HasServers}">
+            <StackPanel Spacing="8">
             <TextBlock Text="ÉTABLISSEMENTS À PROXIMITÉ" FontWeight="SemiBold"
                        Foreground="{DynamicResource Text2Brush}" FontSize="11" Margin="8,0,0,0" />
             <Border Classes="iosconnectcard" Padding="6">
@@ -271,7 +281,8 @@
                 </ItemsControl.ItemTemplate>
               </ItemsControl>
             </Border>
-          </StackPanel>
+            </StackPanel>
+          </Expander>
 
           <Border Classes="iosconnectcard">
             <StackPanel Spacing="11">
@@ -286,6 +297,8 @@
                              Classes="muted" FontSize="12" TextWrapping="Wrap" />
                 </StackPanel>
               </Grid>
+              <Expander x:Name="IosWifiOptions" Header="Actions du réseau local" IsExpanded="True">
+                <StackPanel Spacing="9">
               <Button Classes="iosconnectsecondary" Command="{Binding Search}"
                       IsEnabled="{Binding NotSearching}">
                 <StackPanel Orientation="Horizontal" Spacing="8">
@@ -301,6 +314,8 @@
                            PlaceholderText="192.168.1.10" />
                   <Button Classes="iosconnectsecondary" Command="{Binding ConnectAddress}"
                           IsEnabled="{Binding NotSearching}" Content="Rejoindre cette adresse" />
+                </StackPanel>
+              </Expander>
                 </StackPanel>
               </Expander>
             </StackPanel>
@@ -360,5 +375,6 @@
         </Grid>
       </ScrollViewer>
     </Grid>
+    </ThemeVariantScope>
   </Grid>
 </UserControl>

@@ -14,7 +14,7 @@ public sealed class NavItemVm : Observable
     {
         Label = label;
         Icon = icon;
-        Brush = ThemeBrush.Get(tone);
+        Brush = IconPalette.Get(tone);
         PageType = page;
         Open = new AsyncCommand(() => shell.Run(() => shell.Open(create)));
     }
@@ -46,7 +46,7 @@ public sealed class NavGroupVm : Observable
         Title = title;
         Items = items;
         Icon = FeatureVisuals.Icon(title);
-        Brush = ThemeBrush.Get(FeatureVisuals.Tone(title));
+        Brush = IconPalette.Get(FeatureVisuals.Tone(title));
         // L'accueil est accessible immédiatement ; les autres métiers sont repliés sur mobile.
         isExpanded = title.Length == 0 || expandedByDefault;
         Toggle = new RelayCommand(() =>
