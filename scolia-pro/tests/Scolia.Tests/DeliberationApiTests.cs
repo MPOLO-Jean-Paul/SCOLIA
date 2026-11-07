@@ -286,4 +286,35 @@ public sealed class DeliberationApiTests : IDisposable
         var (nothing, _) = await admin.Post($"{D}/renvoi?coursId={setup.S1Course}&nature=S1", new { reason = "Encore une fois" }).Fail();
         Assert.Equal(HttpStatusCode.NotFound, nothing);
     }
+
+    [Fact]
+    public async Task Official_codes_from_itmcd_are_previewed_then_imported()
+    {
+        var admin = await app.InstalledAdmin();
+        var setup = await SetupAsync(admin, "MUKENDI", "KASONGO", "ILUNGA");
+        const string list = "Nom;Promotion;Code\nMukendi Kabeya Grace;INF1;itm-26-ab12\nKASONGO KABEYA GRÂCE;INF1;P13W5R\nInconnu Personne;INF1;X12Y3Z\nILUNGA Kabeya Grace;INF1;??\n";
+
+        // Aperçu : rien n'est enregistré.
+        var preview = await admin.Post($"{D}/codes/import", new { text = list, promotionId = setup.PromotionId, apply = false }).Ok();
+        Assert.False(preview.GetProperty("applied").GetBoolean());
+        Assert.Equal(2, preview.GetProperty("ready").GetInt32());
+        var statuses = preview.GetProperty("lines").EnumerateArray().Select(l => l.GetProperty("status").GetString()!).ToArray();
+        Assert.Equal(["À attribuer", "À attribuer", "Introuvable", "Code invalide"], statuses);
+        Assert.All((await CodesAsync(admin, setup.PromotionId)).Values, c => Assert.Null(c));
+
+        var applied = await admin.Post($"{D}/codes/import", new { text = list, promotionId = setup.PromotionId, apply = true }).Ok();
+        Assert.Equal(2, applied.GetProperty("assigned").GetInt32());
+        var codes = await CodesAsync(admin, setup.PromotionId);
+        Assert.Equal("ITM-26-AB12", codes[setup.Enrollments[0]]);
+        Assert.Equal("P13W5R", codes[setup.Enrollments[1]]);
+        Assert.Equal(setup.Enrollments[1], (await admin.GetAsync($"{D}/codes/resolution?code=p13w5r").Ok()).GetProperty("enrollmentId").GetString());
+
+        // Relancer ne change rien ; un code déjà porté par un autre apprenant est refusé.
+        var again = await admin.Post($"{D}/codes/import", new { text = list, promotionId = setup.PromotionId, apply = true }).Ok();
+        Assert.Equal(0, again.GetProperty("assigned").GetInt32());
+        Assert.Equal(2, again.GetProperty("unchanged").GetInt32());
+        var taken = await admin.Post($"{D}/codes/import", new { text = "ILUNGA Kabeya Grace;P13W5R", promotionId = setup.PromotionId, apply = true }).Ok();
+        Assert.Equal("Code pris", taken.GetProperty("lines")[0].GetProperty("status").GetString());
+        Assert.Null((await CodesAsync(admin, setup.PromotionId))[setup.Enrollments[2]]);
+    }
 }

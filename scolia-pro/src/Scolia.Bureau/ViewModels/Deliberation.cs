@@ -26,6 +26,8 @@ public sealed class AnonymousCodesPage : PageViewModel
     public AnonymousCodesPage(ShellViewModel shell) : base(shell)
     {
         Action("Importer et attribuer les codes", MaterialIconKind.AccountArrowDown, AssignAsync, primary: true);
+        Action("Reprendre des codes officiels (fichier)", MaterialIconKind.Upload, ImportFileAsync);
+        Action("Reprendre des codes officiels (coller)", MaterialIconKind.FormatListChecks, ImportPasteAsync);
         Action("Saisir un code officiel", MaterialIconKind.Pencil, () => ChangeAsync(manual: true), row: true, open: true);
         Action("Tirer un nouveau code", MaterialIconKind.Dice5, () => ChangeAsync(manual: false), row: true);
         Action("Liste des codes (PDF)", MaterialIconKind.FilePdfBox, () => ExportAsync("pdf"));
@@ -91,6 +93,47 @@ public sealed class AnonymousCodesPage : PageViewModel
         if (manual) form.Add("code", "Code officiel", value: row.HasCode ? row.Code : null, required: true, hint: "Par exemple le code ITMCD de l'apprenant : P13W5R ou ITM-26-AB12.");
         if (row.HasCode) form.Add("motif", "Motif du remplacement", required: true);
         if (await Shell.Ask(form)) await RefreshAsync();
+    }
+
+    /// <summary>Codes déjà portés par les apprenants (export d'ITMCD, CSV) : aperçu, puis attribution des lignes reconnues.</summary>
+    private async Task ImportFileAsync()
+    {
+        if (Shell.PickFileHandler is null) return;
+        var picked = await Shell.PickFileHandler([".csv", ".txt"]);
+        if (picked is null) return;
+        // Excel enregistre souvent le CSV en Windows-1252 : on retombe sur Latin-1 si le texte n'est pas de l'UTF-8 valide.
+        var text = System.Text.Encoding.UTF8.GetString(picked.Data);
+        if (text.Contains('\uFFFD', StringComparison.Ordinal)) text = System.Text.Encoding.Latin1.GetString(picked.Data);
+        await ImportAsync(text);
+    }
+
+    private async Task ImportPasteAsync()
+    {
+        var text = string.Empty;
+        var form = new FormViewModel("Reprendre des codes officiels",
+            "Une ligne par apprenant : matricule ou nom complet, puis le code (par exemple « MUKENDI KABEYA GRACE ; P13W5R »). Ajoutez la promotion au milieu en cas d'homonymes. Les colonnes copiées depuis Excel conviennent.",
+            f => { text = f.Text("liste"); return Task.FromResult(true); });
+        form.Add("liste", "Liste des codes", FieldKind.Multiline, required: true);
+        if (await Shell.Ask(form)) await ImportAsync(text);
+    }
+
+    private async Task ImportAsync(string text)
+    {
+        var preview = await Shell.Api.SendAsync<CodeImportResult>(HttpMethod.Post, "api/deliberation/codes/import", new { text, promotionId = PromotionId, apply = false });
+        var problems = preview.Lines.Where(l => l.Status != "À attribuer" && l.Status != "Déjà attribué")
+            .Select(l => $"Ligne {l.Line} · {l.Identifier} · {l.Code} : {l.Status}").Take(12).ToList();
+        var message = $"{preview.Ready} code(s) à attribuer · {preview.Unchanged} déjà en place · {preview.Problems} ligne(s) à revoir."
+            + (problems.Count == 0 ? string.Empty : Environment.NewLine + Environment.NewLine + string.Join(Environment.NewLine, problems)
+                + (preview.Problems > problems.Count ? $"{Environment.NewLine}…" : string.Empty));
+        if (preview.Ready == 0)
+        {
+            await Shell.Confirm("Rien à attribuer", message, "Fermer");
+            return;
+        }
+        if (!await Shell.Confirm("Reprendre les codes officiels", message, "Attribuer")) return;
+        var result = await Shell.Api.SendAsync<CodeImportResult>(HttpMethod.Post, "api/deliberation/codes/import", new { text, promotionId = PromotionId, apply = true });
+        Shell.Notify($"{Format.Count(result.Assigned, "code officiel repris", "codes officiels repris")}.");
+        await RefreshAsync();
     }
 
     private Task ExportAsync(string format) =>

@@ -51,3 +51,43 @@ public static class AnonymousCodeRules
         throw new DomainException("code", "Impossible de tirer un code anonyme libre : réessayez.");
     }
 }
+
+/// <summary>
+/// Lecture d'une liste de codes officiels existants (export d'ITMCD, feuille Excel copiée, fichier CSV) :
+/// une ligne par apprenant, « identifiant ; code » ou « identifiant ; promotion ; code ».
+/// L'identifiant est le matricule SCOLIA ou le nom complet (nom, post-nom, prénom). Séparateurs : point-virgule,
+/// tabulation ou virgule. Une première ligne d'en-tête (« Nom ; Code »…) est ignorée.
+/// </summary>
+public static class CodeImportParser
+{
+    public const int MaxLines = 5000;
+
+    public sealed record Line(int Number, string Identifier, string? Promotion, string Code);
+
+    public static IReadOnlyList<Line> Parse(string? text)
+    {
+        var lines = (text ?? string.Empty).Replace("\r\n", "\n", StringComparison.Ordinal).Replace('\r', '\n').Split('\n');
+        if (lines.Count(l => !string.IsNullOrWhiteSpace(l)) > MaxLines)
+            throw new DomainException("import", $"Liste trop longue : {MaxLines} lignes au plus par import.");
+        var result = new List<Line>();
+        for (var i = 0; i < lines.Length; i++)
+        {
+            var raw = lines[i].Trim().TrimStart('﻿');
+            if (raw.Length == 0) continue;
+            var separator = raw.Contains(';', StringComparison.Ordinal) ? ';' : raw.Contains('\t', StringComparison.Ordinal) ? '\t' : ',';
+            var cells = raw.Split(separator).Select(c => c.Trim().Trim('"').Trim()).Where(c => c.Length > 0).ToList();
+            if (cells.Count < 2)
+            {
+                result.Add(new Line(i + 1, raw, null, string.Empty));
+                continue;
+            }
+            // En-tête : la dernière colonne s'appelle « code » (code, code unique, code anonyme…).
+            if (result.Count == 0 && TextKey.Normalize(cells[^1]).StartsWith("CODE", StringComparison.Ordinal)) continue;
+            result.Add(new Line(i + 1, cells[0], cells.Count >= 3 ? cells[^2] : null, cells[^1]));
+        }
+        return result;
+    }
+
+    /// <summary>Clé de comparaison d'un nom : majuscules, sans accents, espaces simples.</summary>
+    public static string NameKey(string? value) => TextKey.Normalize(value);
+}

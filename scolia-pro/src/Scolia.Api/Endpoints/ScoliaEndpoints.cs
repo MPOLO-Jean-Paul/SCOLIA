@@ -479,6 +479,8 @@ public static class ScoliaEndpoints
             .RequireAuthorization(Permissions.DeliberationManage);
         g.MapGet("/codes/liste", async (Guid? promotionId, string? format, DeliberationService s, ReportService reports, CancellationToken ct) =>
             Table(await s.CodesTableAsync(promotionId, ct), format, "codes-anonymes", reports)).RequireAuthorization(Permissions.DeliberationManage);
+        g.MapPost("/codes/import", (CodeImportRequest input, DeliberationService s, CancellationToken ct) => s.ImportCodesAsync(input, ct))
+            .RequireAuthorization(Permissions.DeliberationManage);
         g.MapGet("/codes/resolution", (string code, DeliberationService s, CancellationToken ct) => s.LookupAsync(code, ct)).RequireAuthorization(Permissions.AcademicsWrite);
 
         // Encodage : feuille par cours, ou saisie anonyme par code.

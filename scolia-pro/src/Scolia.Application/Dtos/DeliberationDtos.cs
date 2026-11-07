@@ -69,3 +69,14 @@ public sealed record EncodingProgressRowDto(Guid CourseId, Guid PromotionId, str
 
 public sealed record EncodingProgressDto(string AcademicYear, string PeriodLabel, int Sheets, int Complete, int Submitted, int Locked, int ExpectedMarks, int GradedMarks,
     decimal Percent, IReadOnlyList<EncodingProgressRowDto> Rows);
+
+/// <summary>Import de codes officiels existants (ITMCD, liste Excel) : <c>Apply</c> faux = aperçu seulement, rien n'est enregistré.</summary>
+public sealed record CodeImportRequest(string? Text, Guid? PromotionId, bool Apply);
+
+/// <summary>
+/// Ligne de l'aperçu. Statuts : « À attribuer », « Déjà attribué », « Code différent » (l'apprenant a déjà un autre code :
+/// remplacement manuel avec motif), « Introuvable », « Ambigu », « Code invalide », « Code pris », « Doublon dans la liste ».
+/// </summary>
+public sealed record CodeImportLineDto(int Line, string Identifier, string Code, string Status, Guid? EnrollmentId, string? Matricule, string? FullName, string? PromotionCode);
+
+public sealed record CodeImportResult(bool Applied, int Assigned, int Ready, int Unchanged, int Problems, IReadOnlyList<CodeImportLineDto> Lines);

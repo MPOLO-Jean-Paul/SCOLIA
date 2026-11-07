@@ -139,6 +139,60 @@ public sealed class DeliberationService(IAppDbContext db, IWriteGate gate, IAudi
         return Row(student, created);
     }, ct);
 
+    /// <summary>
+    /// Reprend les codes officiels déjà portés par les apprenants (export d'ITMCD, liste Excel) : chaque ligne est rattachée
+    /// à une inscription de l'année par le matricule SCOLIA, ou par le nom complet (avec la promotion en cas d'homonymes).
+    /// L'aperçu ne change rien ; l'application n'attribue que les lignes « À attribuer » : un code déjà différent se remplace
+    /// à la main, avec un motif, et un code déjà utilisé dans l'année n'est jamais réattribué.
+    /// </summary>
+    public Task<CodeImportResult> ImportCodesAsync(CodeImportRequest input, CancellationToken ct = default) => gate.RunAsync(async () =>
+    {
+        var year = input.Apply ? await OpenYearAsync(ct) : await YearContext.CurrentAsync(db, ct);
+        var parsed = CodeImportParser.Parse(input.Text);
+        if (parsed.Count == 0) throw new DomainException("import", "La liste est vide : une ligne par apprenant, « matricule ou nom ; code ».");
+        var students = await EnrolledAsync(year.Id, input.PromotionId, ct);
+        var byMatricule = students.GroupBy(s => TextKey.Normalize(s.Matricule)).ToDictionary(g => g.Key, g => g.ToList());
+        var byName = students.GroupBy(s => CodeImportParser.NameKey(s.FullName)).ToDictionary(g => g.Key, g => g.ToList());
+        var all = await db.AnonymousCodes.AsNoTracking().Where(c => c.AcademicYearId == year.Id).ToListAsync(ct);
+        var active = all.Where(c => c.IsActive).ToDictionary(c => c.EnrollmentId, c => c.Code);
+        var owners = all.GroupBy(c => c.Code, StringComparer.Ordinal).ToDictionary(g => g.Key, g => g.First().EnrollmentId, StringComparer.Ordinal);
+        var seenCodes = new HashSet<string>(StringComparer.Ordinal);
+        var seenStudents = new HashSet<Guid>();
+        var lines = new List<CodeImportLineDto>();
+        var toAssign = new List<(Guid EnrollmentId, string Code)>();
+        foreach (var line in parsed)
+        {
+            var code = AnonymousCodeRules.Normalize(line.Code);
+            CodeImportLineDto Result(string status, EnrolledStudent? s = null) =>
+                new(line.Number, line.Identifier, code, status, s?.EnrollmentId, s?.Matricule, s?.FullName, s?.PromotionCode);
+            if (!AnonymousCodeRules.IsValid(code)) { lines.Add(Result("Code invalide")); continue; }
+            var candidates = byMatricule.GetValueOrDefault(TextKey.Normalize(line.Identifier)) ?? byName.GetValueOrDefault(CodeImportParser.NameKey(line.Identifier)) ?? [];
+            if (candidates.Count > 1 && line.Promotion is { } promo)
+                candidates = candidates.Where(c => TextKey.Normalize(c.PromotionCode) == TextKey.Normalize(promo)).ToList();
+            if (candidates.Count == 0) { lines.Add(Result("Introuvable")); continue; }
+            if (candidates.Count > 1) { lines.Add(Result("Ambigu")); continue; }
+            var student = candidates[0];
+            if (!seenCodes.Add(code) || !seenStudents.Add(student.EnrollmentId)) { lines.Add(Result("Doublon dans la liste", student)); continue; }
+            var current = active.GetValueOrDefault(student.EnrollmentId);
+            if (current == code) { lines.Add(Result("Déjà attribué", student)); continue; }
+            if (owners.TryGetValue(code, out var owner) && owner != student.EnrollmentId) { lines.Add(Result("Code pris", student)); continue; }
+            if (current is not null) { lines.Add(Result("Code différent", student)); continue; }
+            lines.Add(Result("À attribuer", student));
+            toAssign.Add((student.EnrollmentId, code));
+        }
+        if (input.Apply && toAssign.Count > 0)
+        {
+            foreach (var (enrollmentId, code) in toAssign)
+                db.AnonymousCodes.Add(new AnonymousCode { AcademicYearId = year.Id, EnrollmentId = enrollmentId, Code = code, IsManual = true });
+            audit.Record("deliberation.codes.importes", "CodeAnonyme", input.PromotionId?.ToString(),
+                $"{toAssign.Count} code(s) officiel(s) importé(s) pour {year.Label} ; {lines.Count - toAssign.Count} ligne(s) laissée(s) de côté.",
+                lines.Where(l => l.Status != "À attribuer").Select(l => new { l.Line, l.Identifier, l.Code, l.Status }));
+            await db.SaveChangesAsync(ct);
+        }
+        var unchanged = lines.Count(l => l.Status == "Déjà attribué");
+        return new CodeImportResult(input.Apply, input.Apply ? toAssign.Count : 0, toAssign.Count, unchanged, lines.Count - toAssign.Count - unchanged, lines);
+    }, ct);
+
     /// <summary>Résout un code anonyme de l'année : la promotion seulement, jamais l'identité.</summary>
     public async Task<CodeLookupDto> LookupAsync(string code, CancellationToken ct = default)
     {
