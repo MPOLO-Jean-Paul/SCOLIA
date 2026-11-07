@@ -9,8 +9,10 @@ Sources étudiées :
   règles de calcul dans `config/db.php`) ;
 - **Item CD** : la branche `claude/item-cd-mobile-app-ulf4ju` de SCOLIA (`itmcd-pro/docs/ANALYSE_FONCTIONNEMENT_ITMCD.md`
   et `itmcd-pro/docs/CONCEPTION_ITMCD_PRO.md`) ;
-- **SCOLIA Pro** : la branche `release/scolia-pro-1-2-37-20261107` (serveur .NET, SQLite, client Avalonia
-  Windows/Android/iOS).
+- **SCOLIA Pro** : d'abord la branche `release/scolia-pro-1-2-37-20261107`, puis la version la plus récente,
+  **1.2.42** (`release/direct-apk-scolia-pro-20261103`), sur laquelle le module est porté
+  (branche `feature/deliberation-scolia-pro-1-2-42-20261107`).
+- Le dépôt `MPOLO-Jean-Paul/Deliberation` a été examiné le 7 novembre 2026 : il est encore vide (aucun commit).
 
 ---
 
@@ -74,6 +76,24 @@ du serveur, réinscriptions.
 - Contrôles : 0 à maxima (0 à 10 pour l'appui), deux décimales, semestre accepté par le cours, encodage ouvert,
   période non clôturée, apprenant inscrit dans la promotion du cours.
 
+### Remise des cotes et suivi de l'encodage (lot 2, repris d'ITMCD)
+
+- **Remise** d'une feuille (S1, S2 ou appui) : refusée tant qu'il manque une cote (l'appui est facultatif).
+  Après la remise, la feuille ne change plus que par le jury ; chaque correction est tracée « après la remise ».
+  C'est le pendant de l'interrupteur « mise à jour des cotes » d'ITMCD, mais par feuille et avec une trace.
+- **Renvoi** à l'enseignant par le jury, motif obligatoire ; impossible si la délibération est clôturée.
+- **Suivi de l'encodage** (moniteur d'ITMCD) : par cours et par cote attendue, enseignant, cotes encodées,
+  échecs, moyenne et état — à encoder, en cours, complet, remis, figé. Filtre « feuilles à relancer », export PDF/Excel.
+- **Relevé du cours** et **liste des échecs** (export enseignant d'ITMCD), en PDF ou Excel.
+
+### Reprise des codes officiels existants (lot 2)
+
+- « Reprendre des codes officiels » : une liste `matricule ou nom ; [promotion ;] code`, collée depuis Excel
+  ou lue dans un CSV (UTF-8 ou Windows-1252), est rattachée aux inscriptions de l'année.
+- Aperçu d'abord, sans rien enregistrer ; seules les lignes reconnues sont attribuées. Les autres sont
+  signalées : introuvable, ambigu (homonymes : ajouter la promotion), code invalide, code pris (jamais
+  réattribué), code différent (remplacement manuel avec motif), doublon dans la liste.
+
 ### Délibération et jury
 
 - Tableau par promotion et par période (premier semestre, second semestre, jury annuel) : rang, points,
@@ -100,8 +120,8 @@ s'affiche à côté de la promotion actuelle.
 | Domaine | `src/Scolia.Domain/Deliberation/` (entités, `DeliberationEngine`, `AnonymousCodeRules`) ; `Course.Semester` |
 | Persistance | tables `CodesAnonymes`, `CotesDeliberation`, `ReglagesDeliberation`, `SessionsDeliberation`, `DecisionsJury`, `ResultatsDeliberation` ; migration `Deliberation` |
 | Application | `DeliberationService`, `DeliberationDtos`, `DeliberationText` ; passage de classe dans `StudentService` |
-| API | `/api/deliberation/...` dans `ScoliaEndpoints.MapDeliberation` |
-| Bureau (PC et téléphone) | groupe « Délibération » : `AnonymousCodesPage`, `MarksPage`, `DeliberationPage` ; onglet Scolarité du ruban |
+| API | `/api/deliberation/...` dans `ScoliaEndpoints.MapDeliberation` ; lot 2 : `remise`, `renvoi`, `suivi`, `suivi/export`, `feuille/export`, `codes/import` |
+| Bureau (PC et téléphone) | groupe « Délibération » : `AnonymousCodesPage`, `MarksPage`, `EncodingProgressPage`, `DeliberationPage` ; onglet Scolarité du ruban |
 | Tests | `DeliberationEngineTests` (cas de référence du dossier ITMCD Pro), `DeliberationApiTests` (parcours complet) |
 
 Droits : lecture avec `scolarite.lire`, encodage avec `scolarite.ecrire`, codes, décisions, clôture,
@@ -116,7 +136,9 @@ réouverture et réglages avec le nouveau droit `deliberation.gerer` (accordé a
 
 ## 6. Prochains lots proposés
 
-1. Import de l'export MySQL d'ITMCD (cotes et codes existants rattachés aux dossiers SCOLIA par nom et promotion).
-2. Comptes enseignants : chaque enseignant encode et « remet » les cotes de ses seuls cours, depuis son téléphone.
-3. Code QR de vérification sur le bulletin de délibération.
-4. Seconde session (repêchage), si l'établissement l'organise.
+1. Comptes enseignants (portail enseignant d'ITMCD) : compte relié à la fiche du personnel, accès limité aux cours
+   qui lui sont attribués, encodage et remise depuis le téléphone, tableau de bord de ses cours.
+2. Reprise des cotes d'ITMCD (export) rattachées aux codes officiels déjà repris.
+3. Comparaison avec le dépôt `Deliberation` dès qu'il contient le code.
+4. Code QR de vérification sur le bulletin de délibération.
+5. Seconde session (repêchage), si l'établissement l'organise.
