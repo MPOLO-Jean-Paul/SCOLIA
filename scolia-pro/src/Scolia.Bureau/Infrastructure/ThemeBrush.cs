@@ -61,6 +61,35 @@ public static class IconPalette
             ["ToneNeutral"] = Color.Parse("#636366")
         };
 
+    // Teintes vives du thème sombre d'origine. Si elles arrivent dans une tuile
+    // d'icône, elles sont rétablies à la teinte du thème clair.
+    private static readonly IReadOnlyDictionary<Color, string> DarkTones =
+        new Dictionary<Color, string>
+        {
+            [Color.Parse("#409CFF")] = "ToneBlue",
+            [Color.Parse("#30D158")] = "ToneGreen",
+            [Color.Parse("#FF9F0A")] = "ToneOrange",
+            [Color.Parse("#BF5AF2")] = "TonePurple",
+            [Color.Parse("#FF453A")] = "ToneRed",
+            [Color.Parse("#40C8E0")] = "ToneTeal",
+            [Color.Parse("#8B88FF")] = "ToneIndigo",
+            [Color.Parse("#FF375F")] = "TonePink",
+            [Color.Parse("#98989D")] = "ToneNeutral"
+        };
+
     public static IBrush Get(string tone) =>
         new SolidColorBrush(Colors.TryGetValue(tone, out var color) ? color : Colors["ToneNeutral"]);
+
+    /// <summary>
+    /// Restitue la couleur d'origine d'une tuile quand un style lui attribue
+    /// la variante sombre de ToneBlue/ToneGreen/etc. Les autres fonds ne sont
+    /// pas modifiés (logos, photos, étiquettes et couleurs personnalisées).
+    /// </summary>
+    public static bool TryOriginalColor(Color current, out Color original)
+    {
+        if (DarkTones.TryGetValue(current, out var tone) && Colors.TryGetValue(tone, out original))
+            return true;
+        original = current;
+        return false;
+    }
 }
