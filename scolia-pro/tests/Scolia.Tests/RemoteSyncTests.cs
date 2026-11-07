@@ -78,7 +78,7 @@ public sealed class RemoteSyncTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Authorized_device_resumes_over_WSS_without_a_second_QR()
+    public async Task Authorized_device_recognizes_server_over_WSS_without_auto_login()
     {
         var invited = await secretary.Post("/api/jumelage/inviter", new { }).Ok();
         var ticket = invited.GetProperty("token").GetString()!;
@@ -88,14 +88,19 @@ public sealed class RemoteSyncTests : IAsyncLifetime
         var id = paired.GetProperty("grantId").GetGuid();
         var deviceSecret = paired.GetProperty("deviceSecret").GetString()!;
         using var secondPhone = Phone();
-        var renewed = await secondPhone.SendAsync<JsonElement>(HttpMethod.Post,
-            "api/session/appareil/renouveler",
+        var verified = await secondPhone.SendAsync<JsonElement>(HttpMethod.Post,
+            "api/jumelage/appareil/verifier",
             new { grantId = id, deviceId = DeviceIdentity.Id, secret = deviceSecret });
-        Assert.Equal("admin", renewed.GetProperty("session").GetProperty("userName").GetString());
-        Assert.True(renewed.GetProperty("expiresUtc").GetDateTime() > DateTime.UtcNow.AddDays(170));
+        Assert.True(verified.GetProperty("expiresUtc").GetDateTime() > DateTime.UtcNow.AddDays(170));
+        // La reconnaissance du poste n'accorde pas les droits du propriétaire de l'invitation.
+        Assert.Equal(401, (await Assert.ThrowsAsync<ApiException>(() =>
+            secondPhone.GetAsync<JsonElement>("api/etablissement"))).Status);
+        var user = await secondPhone.LoginAsync("admin", "Scolia2026!");
+        Assert.Equal("admin", user.UserName);
+        await secondPhone.GetAsync<JsonElement>("api/etablissement");
         await secretary.Post($"/api/jumelage/appareils/{id}/revoquer", new { }).Ok();
         var forbidden = await Assert.ThrowsAsync<ApiException>(() => secondPhone.SendAsync<JsonElement>(
-            HttpMethod.Post, "api/session/appareil/renouveler",
+            HttpMethod.Post, "api/jumelage/appareil/verifier",
             new { grantId = id, deviceId = DeviceIdentity.Id, secret = deviceSecret }));
         Assert.Equal(401, forbidden.Status);
     }
