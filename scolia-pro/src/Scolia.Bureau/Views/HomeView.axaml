@@ -65,59 +65,75 @@
       <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
       <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
     </Style>
+
+    <!-- Langage visuel de l'accueil mobile, réinterprété pour macOS sur grand écran. -->
+    <Style Selector="TextBlock.desktopgroupcaps">
+      <Setter Property="FontSize" Value="11" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="Foreground" Value="{DynamicResource Text2Brush}" />
+    </Style>
+    <Style Selector="Border.desktopgroup">
+      <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="19" />
+      <Setter Property="BoxShadow" Value="0 4 18 0 #10000000" />
+    </Style>
+    <Style Selector="Button.desktopentry">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="CornerRadius" Value="11" />
+      <Setter Property="Padding" Value="15,12" />
+      <Setter Property="MinHeight" Value="72" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    </Style>
+    <Style Selector="Button.desktopentry:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
+    </Style>
+    <Style Selector="Border.desktoprowsep">
+      <Setter Property="Height" Value="1" />
+      <Setter Property="Margin" Value="70,0,17,0" />
+      <Setter Property="Background" Value="{DynamicResource LineBrush}" />
+      <Setter Property="IsVisible" Value="False" />
+    </Style>
+    <Style Selector="ItemsControl.desktopgroupitems ContentPresenter:nth-child(n+2) Border.desktoprowsep">
+      <Setter Property="IsVisible" Value="True" />
+    </Style>
   </UserControl.Styles>
   <ScrollViewer>
     <StackPanel Spacing="10" Margin="0,0,4,8">
 
-      <!-- Accueil : la salutation reste TOUJOURS à gauche, les deux commandes
-           restent TOUJOURS à droite. Seules les deux commandes passent de
-           côte-à-côte à l'une au-dessus de l'autre dans leur colonne droite. -->
+      <!-- La carte de bienvenue reprend la hiérarchie iPhone : identité, connexion, caisse.
+           Les deux commandes fréquentes restent dans la colonne DROITE sur Windows. -->
       <Border Classes="desktopwelcome" Padding="0" ClipToBounds="True">
         <StackPanel Spacing="0">
           <Border Height="3" Background="{DynamicResource AccentBrush}" />
           <Grid x:Name="WelcomeLayout" ColumnDefinitions="*,Auto,Auto"
-                ColumnSpacing="0" Margin="18,16,18,16">
-            <!-- Bloc de salutation : dimension variable, jamais masqué par des boutons. -->
-            <Grid Grid.Column="0" ColumnDefinitions="Auto,*" ColumnSpacing="11"
-                  VerticalAlignment="Center">
-              <Border x:Name="WelcomeAvatar" Width="48" Height="48" CornerRadius="24"
-                      Background="{DynamicResource AccentSoftBrush}"
-                      VerticalAlignment="Top">
-                <TextBlock Text="{Binding Initials}" FontSize="17" FontWeight="Bold"
-                           Foreground="{DynamicResource AccentBrush}"
+                ColumnSpacing="0" Margin="18,17,18,17">
+            <Grid Grid.Column="0" ColumnDefinitions="Auto,*" ColumnSpacing="15" VerticalAlignment="Center">
+              <Border x:Name="WelcomeAvatar" Width="58" Height="58" CornerRadius="29" VerticalAlignment="Center">
+                <Border.Background>
+                  <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                    <GradientStop Offset="0" Color="#3A86F0" />
+                    <GradientStop Offset="1" Color="#0B4FC4" />
+                  </LinearGradientBrush>
+                </Border.Background>
+                <TextBlock Text="{Binding Initials}" FontSize="21" FontWeight="SemiBold" Foreground="White"
                            HorizontalAlignment="Center" VerticalAlignment="Center" />
               </Border>
-              <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+              <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
                 <TextBlock x:Name="WelcomeGreeting" Text="{Binding Greeting}" Classes="greeting"
                            FontWeight="SemiBold" Foreground="{DynamicResource TextBrush}"
                            TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" MaxLines="1" />
                 <TextBlock Text="{Binding AccountContextLine}" FontSize="{DynamicResource FsSmall}"
                            Foreground="{DynamicResource Text2Brush}"
                            TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" MaxLines="1" />
-                <WrapPanel Orientation="Horizontal" ItemSpacing="7" LineSpacing="3" Margin="0,2,0,0">
-                  <TextBlock Text="{Binding DateLine}" Classes="muted" FontSize="{DynamicResource FsSmall}"
-                             VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
-                  <Border Classes="desktopstatechip" IsVisible="{Binding HasCashLine}">
-                    <StackPanel Orientation="Horizontal" Spacing="5">
-                      <Ellipse Width="6" Height="6" Fill="{Binding CashBrush}" VerticalAlignment="Center" />
-                      <TextBlock Text="{Binding CashLine}" Foreground="{DynamicResource Text2Brush}"
-                                 FontSize="{DynamicResource FsSmall}" TextWrapping="NoWrap" />
-                    </StackPanel>
-                  </Border>
-                  <Button Classes="bare" Command="{Binding Network}"
-                          ToolTip.Tip="{Binding Sync.StatusDetail}">
-                    <Border Classes="desktopstatechip">
-                      <StackPanel Orientation="Horizontal" Spacing="5">
-                        <mi:MaterialIcon Kind="{Binding Sync.StatusIcon}" Width="13" Height="13" Foreground="{Binding Sync.StatusBrush}" VerticalAlignment="Center" />
-                        <TextBlock Text="{Binding Sync.StatusText}" Foreground="{DynamicResource Text2Brush}"
-                                   FontSize="{DynamicResource FsSmall}" TextWrapping="NoWrap" />
-                      </StackPanel>
-                    </Border>
-                  </Button>
-                </WrapPanel>
+                <TextBlock Text="{Binding DateLine}" Classes="muted" FontSize="{DynamicResource FsSmall}"
+                           TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" MaxLines="1" />
               </StackPanel>
             </Grid>
-            <!-- Barre verticale entre le message et la zone des actions. -->
             <Border Grid.Column="1" Width="1" Background="{DynamicResource LineBrush}"
                     Margin="9,3,9,3" VerticalAlignment="Stretch" />
             <ItemsControl x:Name="WelcomeQuickActions" Grid.Column="2"
@@ -130,93 +146,136 @@
               </ItemsControl.ItemsPanel>
               <ItemsControl.ItemTemplate>
                 <DataTemplate>
-                  <Button Classes="heroaction" Command="{Binding Open}"
-                          ToolTip.Tip="{Binding Description}"
+                  <Button Classes="heroaction" Command="{Binding Open}" ToolTip.Tip="{Binding Description}"
                           Margin="2" Padding="7,7" MinHeight="40"
                           HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
                     <Grid ColumnDefinitions="Auto,*" ColumnSpacing="5">
                       <mi:MaterialIcon Kind="{Binding Icon}" Width="16" Height="16"
-                                       Foreground="{DynamicResource AccentBrush}"
-                                       VerticalAlignment="Center" />
+                                       Foreground="{DynamicResource AccentBrush}" VerticalAlignment="Center" />
                       <TextBlock Grid.Column="1" Text="{Binding ShortTitle}" FontSize="12"
-                                 TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" MaxLines="1" TextAlignment="Center"
-                                 VerticalAlignment="Center" FontWeight="SemiBold" />
+                                 TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" MaxLines="1"
+                                 TextAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold" />
                     </Grid>
                   </Button>
                 </DataTemplate>
               </ItemsControl.ItemTemplate>
             </ItemsControl>
           </Grid>
+          <Border Height="1" Background="{DynamicResource LineBrush}" Margin="18,0,18,0" />
+          <!-- Toujours visible, même avec Internet actif, comme sur la capture Android. -->
+          <Button Classes="desktopentry" Command="{Binding Network}" ToolTip.Tip="{Binding Sync.StatusDetail}"
+                  Margin="7,2,7,2" Padding="13,11" MinHeight="67">
+            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="13">
+              <Border Classes="appicon medium" Background="{Binding Sync.StatusBrush}" VerticalAlignment="Center">
+                <mi:MaterialIcon Kind="{Binding Sync.StatusIcon}" />
+              </Border>
+              <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                <TextBlock Text="{Binding Sync.StatusText}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" MaxLines="1" />
+                <TextBlock Text="{Binding Sync.StatusHint}" Foreground="{DynamicResource Text2Brush}"
+                           FontSize="{DynamicResource FsSmall}" TextWrapping="NoWrap"
+                           TextTrimming="CharacterEllipsis" MaxLines="1" />
+              </StackPanel>
+              <mi:MaterialIcon Grid.Column="2" Kind="ChevronRight" Width="18" Height="18"
+                               Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" />
+            </Grid>
+          </Button>
+          <StackPanel IsVisible="{Binding HasCashLine}">
+            <Border Height="1" Background="{DynamicResource LineBrush}" Margin="70,0,18,0" />
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="13" Margin="20,11,20,13" MinHeight="34">
+              <Border Classes="appicon medium" Background="{Binding CashBrush}" VerticalAlignment="Center">
+                <mi:MaterialIcon Kind="CashRegister" />
+              </Border>
+              <TextBlock Grid.Column="1" Text="{Binding CashLine}" FontWeight="Medium"
+                         VerticalAlignment="Center" TextTrimming="CharacterEllipsis" MaxLines="1" />
+            </Grid>
+          </StackPanel>
         </StackPanel>
       </Border>
 
-      <!-- Indicateurs : 1 à 4 colonnes selon la largeur restante APRÈS le menu latéral ;
-           aucune largeur fixe et aucun chevauchement quand la fenêtre rétrécit. -->
-      <Grid ColumnDefinitions="*,Auto" Margin="2,0,6,-5">
-        <TextBlock Text="Indicateurs essentiels" Classes="sectiontitle" />
-        <TextBlock Grid.Column="1" Text="Vue synthétique" Classes="muted"
-                   FontSize="{DynamicResource FsSmall}" VerticalAlignment="Center" />
-      </Grid>
-      <ItemsControl ItemsSource="{Binding Kpis}" IsVisible="{Binding HasKpis}">
-        <ItemsControl.ItemsPanel>
-          <ItemsPanelTemplate><UniformGrid Columns="4" infra:Adaptive.MinItemWidth="205" /></ItemsPanelTemplate>
-        </ItemsControl.ItemsPanel>
-        <ItemsControl.ItemTemplate>
-          <DataTemplate>
-            <Button Classes="cardbutton" Command="{Binding Open}" Margin="0,0,8,7"
-                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" ToolTip.Tip="Ouvrir le détail">
-              <Border Classes="toolcard" MinHeight="88" Padding="12,10" ClipToBounds="True"
-                      Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource LineBrush}"
-                      BorderThickness="1" CornerRadius="13">
-                <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto" RowSpacing="2">
-                  <TextBlock Text="{Binding Label}" Foreground="{DynamicResource Text2Brush}"
-                             FontSize="11" FontWeight="Medium" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" MaxLines="1"
-                             VerticalAlignment="Center" />
-                  <Border Grid.Column="1" Grid.RowSpan="2" Classes="appicon" Background="{Binding Brush}"
-                          VerticalAlignment="Top" Margin="8,0,0,0"><mi:MaterialIcon Kind="{Binding Icon}" /></Border>
-                  <TextBlock Grid.Row="1" Text="{Binding Value}" FontSize="22"
-                             FontWeight="Bold" Foreground="{DynamicResource TextBrush}"
-                             TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" MaxLines="1" />
-                  <TextBlock Grid.Row="2" Grid.ColumnSpan="2" Text="{Binding Hint}" Classes="muted"
-                             FontSize="{DynamicResource FsSmall}" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" MaxLines="1" />
-                </Grid>
-              </Border>
-            </Button>
-          </DataTemplate>
-        </ItemsControl.ItemTemplate>
-      </ItemsControl>
-
-      <!-- Outils : raccourcis natifs comme sur Android, plus aérés et riches en contexte sur grand écran. -->
-      <StackPanel Spacing="5">
-        <Grid ColumnDefinitions="*,Auto" infra:Adaptive.StackBelow="410">
-          <TextBlock Text="Accès rapides" Classes="sectiontitle" VerticalAlignment="Center" />
-          <Button Grid.Column="1" Classes="link" Content="{Binding AllToolsLabel}" Command="{Binding ShowAllTools}"
-                  HorizontalAlignment="Left" MinHeight="28"
-                  ToolTip.Tip="Déployer les fonctionnalités autorisées dans cette page" />
-        </Grid>
-        <ItemsControl ItemsSource="{Binding MoreTools}">
-          <ItemsControl.ItemsPanel>
-            <ItemsPanelTemplate><UniformGrid Columns="3" infra:Adaptive.MinItemWidth="196" /></ItemsPanelTemplate>
-          </ItemsControl.ItemsPanel>
-          <ItemsControl.ItemTemplate>
-            <DataTemplate>
-              <Button Classes="tooltile" Command="{Binding Open}" Margin="0,0,8,8" MinHeight="70" ToolTip.Tip="{Binding Description}">
-                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
-                  <Border Classes="appicon medium" Background="{Binding Brush}" VerticalAlignment="Center"><mi:MaterialIcon Kind="{Binding Icon}" /></Border>
-                  <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
-                    <TextBlock Text="{Binding Title}" FontWeight="SemiBold"
-                               TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" MaxLines="1" />
-                    <TextBlock Text="{Binding Description}" Classes="muted" FontSize="{DynamicResource FsSmall}"
-                               TextWrapping="Wrap" MaxLines="2" />
+      <!-- Les raccourcis du rôle suivent exactement les QUATRE outils Android :
+           icône colorée, titre, description et chevron. Sur desktop, Aperçu est
+           placé en deuxième colonne et passe au-dessous quand la fenêtre rétrécit. -->
+      <Grid ColumnDefinitions="6*,16,5*" infra:Adaptive.StackBelow="920">
+        <StackPanel Grid.Column="0" Spacing="9">
+          <Grid ColumnDefinitions="*,Auto" infra:Adaptive.StackBelow="410" Margin="10,7,8,0">
+            <TextBlock Text="RACCOURCIS" Classes="desktopgroupcaps" VerticalAlignment="Center" />
+            <Button Grid.Column="1" Classes="link" Content="{Binding AllToolsLabel}" Command="{Binding ShowAllTools}"
+                    HorizontalAlignment="Right" MinHeight="28"
+                    ToolTip.Tip="Afficher toutes les fonctionnalités autorisées" />
+          </Grid>
+          <Border Classes="desktopgroup" Padding="0" ClipToBounds="True">
+            <ItemsControl Classes="desktopgroupitems" ItemsSource="{Binding PhoneTools}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <StackPanel>
+                    <Border Classes="desktoprowsep" />
+                    <Button Classes="desktopentry" Command="{Binding Open}" ToolTip.Tip="{Binding Description}">
+                      <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="13">
+                        <Border Classes="appicon medium" Background="{Binding Brush}" VerticalAlignment="Center">
+                          <mi:MaterialIcon Kind="{Binding Icon}" />
+                        </Border>
+                        <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
+                          <TextBlock Text="{Binding Title}" FontWeight="SemiBold"
+                                     TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" MaxLines="1" />
+                          <TextBlock Text="{Binding Description}" Classes="muted"
+                                     FontSize="{DynamicResource FsSmall}"
+                                     TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" MaxLines="1" />
+                        </StackPanel>
+                        <mi:MaterialIcon Grid.Column="2" Kind="ChevronRight" Width="18" Height="18"
+                                         Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" />
+                      </Grid>
+                    </Button>
                   </StackPanel>
-                  <mi:MaterialIcon Grid.Column="2" Kind="ChevronRight" Width="16" Height="16"
-                                   Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" />
-                </Grid>
-              </Button>
-            </DataTemplate>
-          </ItemsControl.ItemTemplate>
-        </ItemsControl>
-      </StackPanel>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </Border>
+        </StackPanel>
+
+        <StackPanel Grid.Column="2" Spacing="9" IsVisible="{Binding HasKpis}">
+          <Grid ColumnDefinitions="*,Auto" Margin="10,7,8,0">
+            <TextBlock Text="APERÇU" Classes="desktopgroupcaps" VerticalAlignment="Center" />
+            <TextBlock Grid.Column="1" Text="Établissement" Classes="muted"
+                       FontSize="{DynamicResource FsSmall}" VerticalAlignment="Center" />
+          </Grid>
+          <Border Classes="desktopgroup" Padding="0" ClipToBounds="True">
+            <ItemsControl Classes="desktopgroupitems" ItemsSource="{Binding Kpis}">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <UniformGrid Columns="1" infra:Adaptive.MinItemWidth="205" />
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <StackPanel>
+                    <Border Classes="desktoprowsep" />
+                    <Button Classes="desktopentry" Command="{Binding Open}"
+                            ToolTip.Tip="Ouvrir le détail">
+                      <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="10">
+                        <Border Classes="appicon medium" Background="{Binding Brush}" VerticalAlignment="Center">
+                          <mi:MaterialIcon Kind="{Binding Icon}" />
+                        </Border>
+                        <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
+                          <TextBlock Text="{Binding Label}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"
+                                     TextWrapping="NoWrap" MaxLines="1" />
+                          <TextBlock Text="{Binding Hint}" Classes="muted" FontSize="{DynamicResource FsSmall}"
+                                     TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" MaxLines="1" />
+                        </StackPanel>
+                        <TextBlock Grid.Column="2" Text="{Binding Value}" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource TextBrush}" VerticalAlignment="Center"
+                                   TextAlignment="Right" TextWrapping="NoWrap"
+                                   TextTrimming="CharacterEllipsis" MaxLines="1" />
+                        <mi:MaterialIcon Grid.Column="3" Kind="ChevronRight" Width="17" Height="17"
+                                         Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" />
+                      </Grid>
+                    </Button>
+                  </StackPanel>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </Border>
+        </StackPanel>
+      </Grid>
 
       <!-- Le bouton Afficher tous les outils ouvre vraiment le catalogue du rôle,
            même lorsque le volet latéral est déjà visible. -->

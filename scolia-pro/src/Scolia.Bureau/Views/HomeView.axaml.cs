@@ -27,9 +27,11 @@ public partial class HomeView : UserControl
         // le nom de l'utilisateur ; les boutons demeurent à droite.
         WelcomeAvatar.IsVisible = available >= 350;
         var compact = available < 520;
-        WelcomeAvatar.Width = compact ? 34 : 48;
-        WelcomeAvatar.Height = compact ? 34 : 48;
-        WelcomeAvatar.CornerRadius = new CornerRadius(compact ? 17 : 24);
+        // Avatar circulaire de 58 px comme sur mobile, réduit sans perdre sa forme.
+        // Les boutons rapides conservent leur colonne distincte sur petit écran.
+        WelcomeAvatar.Width = compact ? 36 : 58;
+        WelcomeAvatar.Height = compact ? 36 : 58;
+        WelcomeAvatar.CornerRadius = new CornerRadius(compact ? 18 : 29);
         WelcomeGreeting.FontSize = compact ? 16 : 20;
     }
 }
