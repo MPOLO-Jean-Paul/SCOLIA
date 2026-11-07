@@ -494,20 +494,19 @@ public sealed class SyncCenter : Observable, IDisposable
             }
             if (await api.CurrentSessionAsync() is null)
             {
-                if (userName is null || password is null)
+                if (string.IsNullOrWhiteSpace(userName) || string.IsNullOrEmpty(password))
                 {
-                    // Appareil autorisé par QR : renouvelle sa propre session sans le mot de passe du compte du serveur.
-                    if (await api.RestoreDeviceSessionAsync() is null)
-                    {
-                        shell.Notify("Le serveur est revenu mais l'autorisation de cet appareil doit être renouvelée.");
-                        return;
-                    }
+                    // Un appareil reconnu n'a jamais le droit de rétablir un compte sans preuve utilisateur.
+                    if (manual) shell.Notify("Le serveur est accessible. Reconnectez-vous avec le mot de passe de votre compte pour reprendre la synchronisation.");
+                    return;
                 }
-                else
+                var restored = await api.LoginAsync(userName, password);
+                if (!string.Equals(restored.UserName, userName, StringComparison.OrdinalIgnoreCase))
                 {
-                    var restored = await api.LoginAsync(userName, password);
-                    api.Offline?.SaveCredential(userName, password, restored, api.SessionCookie);
+                    shell.Notify("Compte serveur différent : synchronisation suspendue pour protéger vos données.");
+                    return;
                 }
+                api.Offline?.SaveCredential(userName, password, restored, api.SessionCookie);
             }
             var (sent, refused) = await api.FlushAsync();
             // Le point du réseau passe simplement au vert. Ne pas afficher une notification
