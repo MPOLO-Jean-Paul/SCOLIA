@@ -27,7 +27,10 @@ public static class DevicePairingStore
             if (!File.Exists(path)) return null;
             var plain = SecretStore.Unprotect(File.ReadAllBytes(path));
             var credentials = JsonSerializer.Deserialize<Credential>(plain);
-            return credentials is { ExpiresUtc: var expires } && expires > DateTime.UtcNow ? credentials : null;
+            // La durée historique ne doit plus déjumeler un appareil : le serveur vérifie
+            // l'autorisation persistante et son éventuelle révocation à chaque reprise.
+            return credentials is { GrantId: var grantId, DeviceSecret: { Length: > 0 } }
+                && grantId != Guid.Empty ? credentials : null;
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or
             CryptographicException or JsonException) { return null; }
