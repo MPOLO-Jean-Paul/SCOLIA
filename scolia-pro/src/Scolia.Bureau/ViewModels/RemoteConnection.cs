@@ -1,7 +1,23 @@
+using System.Collections.ObjectModel;
 using Scolia.Bureau.Infrastructure;
 using Scolia.Transport;
 
 namespace Scolia.Bureau.ViewModels;
+
+/// <summary>Poste autorisé sur le serveur, indépendamment de l'état d'Internet.</summary>
+public sealed class RemoteAuthorizedDeviceRowVm
+{
+    public RemoteAuthorizedDeviceRowVm(Guid id, string name, Func<Guid, Task> revoke)
+    {
+        Id = id;
+        Name = string.IsNullOrWhiteSpace(name) ? "Appareil SCOLIA" : name;
+        Remove = new AsyncCommand(() => revoke(Id));
+    }
+    public Guid Id { get; }
+    public string Name { get; }
+    public string Detail => "Autorisé · Reconnexion automatique après une coupure";
+    public AsyncCommand Remove { get; }
+}
 
 /// <summary>Gestion réservée au secrétariat sur l'appareil principal. La comptabilité rejoint par invitation.</summary>
 public sealed class RemoteConnectionViewModel : Observable
@@ -20,6 +36,8 @@ public sealed class RemoteConnectionViewModel : Observable
             if (prepareInvitation && current.Host && current.Enabled) _ = PrepareInvitationAsync(current.Link);
         }
         Enable = new AsyncCommand(EnableAsync);
+        RefreshDevices = new AsyncCommand(RefreshDevicesAsync);
+        if (CanManage) _ = RefreshDevicesAsync();
         RenewAccess = new AsyncCommand(async () =>
         {
             if (CanManage && RemoteConnection.Load() is { Host: true, Enabled: true } current)
@@ -31,13 +49,12 @@ public sealed class RemoteConnectionViewModel : Observable
             // Les appareils reliés par Internet perdent l'accès : demander confirmation.
             if (!await shell.Confirm("Désactiver l'accès par Internet ?",
                     "Les appareils qui ne sont pas sur le Wi-Fi de l'établissement ne pourront plus joindre ce serveur. "
-                    + "Pour les reconnecter, il faudra réactiver l'accès puis leur montrer un nouveau code QR. Le partage sur le Wi-Fi n'est pas modifié.",
+                    + "Pour les reconnecter, réactivez l'accès Internet : les appareils déjà autorisés n'ont pas besoin d'un nouveau code QR. Le partage Wi-Fi reste disponible.",
                     "Désactiver", danger: true))
                 return;
             RemoteConnection.Disable();
             Invitation = string.Empty;
-            Message = "Accès par Internet désactivé. Le partage sur le Wi-Fi reste disponible. L'ancienne invitation ne permet plus de joindre cet appareil.";
-            RefreshStatus();
+            Message = "Accès Internet temporairement désactivé. Les appareils autorisés restent mémorisés : ils se reconnecteront à la réactivation, sans nouveau QR.";
         });
     }
 
@@ -53,7 +70,7 @@ public sealed class RemoteConnectionViewModel : Observable
 
     public string StatusLine => IsActive && RemoteConnection.Load() is { } current
         ? $"Les appareils autorisés joignent ce serveur depuis n'importe quel réseau, par le relais sécurisé {RelayHost}. "
-            + $"Liaison valable jusqu'au {Format.Date(DateOnly.FromDateTime(current.Link.ExpiresUtc.ToLocalTime()))}."
+            + $"Autorisation persistante jusqu'au retrait volontaire de l'appareil dans Réseau et activité."
         : "Les appareils hors du Wi-Fi de l'établissement ne peuvent pas joindre ce serveur. Activez l'accès pour les téléphones et ordinateurs distants.";
 
     public Avalonia.Media.IBrush StatusBrush => ThemeBrush.Get(!IsActive ? "ToneNeutral" : RemoteConnection.Hosting ? "ToneGreen" : "ToneOrange");
@@ -69,6 +86,55 @@ public sealed class RemoteConnectionViewModel : Observable
     public string Relay { get => relay; set => Set(ref relay, value); }
     public string Invitation { get => invitation; private set => Set(ref invitation, value); }
     public string Message { get => message; private set => Set(ref message, value); }
+    public ObservableCollection<RemoteAuthorizedDeviceRowVm> Devices { get; } = [];
+    public bool NoDevices => Devices.Count == 0;
+    private string deviceStatus = "Liste des appareils autorisés sur ce serveur.";
+    public string DeviceStatus { get => deviceStatus; private set => Set(ref deviceStatus, value); }
+    public AsyncCommand RefreshDevices { get; }
+    private sealed record DeviceReply(Guid Id, string Name, DateTime ExpiresUtc, bool Revoked);
+
+    private async Task RefreshDevicesAsync()
+    {
+        if (!CanManage) return;
+        try
+        {
+            var devices = await shell.Api.GetAsync<List<DeviceReply>>("api/jumelage/appareils");
+            Devices.Clear();
+            foreach (var device in devices.Where(d => !d.Revoked))
+                Devices.Add(new RemoteAuthorizedDeviceRowVm(device.Id, device.Name, RemoveDeviceAsync));
+            Raise(nameof(NoDevices));
+            DeviceStatus = Devices.Count == 0
+                ? "Aucun appareil autorisé. Affichez un QR pour en relier un."
+                : $"{Devices.Count} appareil(s) autorisé(s) sur le serveur, même hors connexion.";
+        }
+        catch (Exception ex) when (ex is Api.ApiException or HttpRequestException or TaskCanceledException or IOException)
+        {
+            DeviceStatus = "Liste indisponible : vérifiez la connexion au serveur.";
+        }
+    }
+
+    private async Task RemoveDeviceAsync(Guid id)
+    {
+        if (!CanManage) return;
+        var item = Devices.FirstOrDefault(x => x.Id == id);
+        if (item is null) return;
+        if (!await shell.Confirm("Retirer cet appareil ?",
+            $"L'appareil « {item.Name} » perdra immédiatement son accès Internet au serveur. Il faudra un nouveau QR pour le réautoriser.",
+            "Retirer l'appareil")) return;
+        try
+        {
+            await shell.Api.SendAsync(HttpMethod.Post, $"api/jumelage/appareils/{id}/revoquer", new { });
+            Devices.Remove(item);
+            Raise(nameof(NoDevices));
+            DeviceStatus = $"{Devices.Count} appareil(s) toujours autorisé(s).";
+            shell.Notify("Appareil retiré : son ancienne autorisation ne fonctionne plus.");
+        }
+        catch (Exception ex) when (ex is Api.ApiException or HttpRequestException or TaskCanceledException or IOException)
+        {
+            DeviceStatus = "Retrait non confirmé : vérifiez la connexion et actualisez la liste.";
+        }
+    }
+
     public AsyncCommand Enable { get; }
     public AsyncCommand RenewAccess { get; }
     private sealed record InvitationReply(string Token, DateTime ExpiresUtc);
@@ -104,10 +170,12 @@ public sealed class RemoteConnectionViewModel : Observable
             // déjà autorisés. Rotation seulement après expiration, changement de
             // relais ou réactivation d'une connexion volontairement désactivée.
             var addressText = Relay.Trim();
-            var reuse = previous is { Host: true, Enabled: true }
-                && previous.Link.ExpiresUtc > DateTime.UtcNow
-                && string.Equals(previous.Link.Relay, addressText, StringComparison.OrdinalIgnoreCase);
-            var link = reuse ? previous!.Link
+            // Désactiver Internet met le relais en pause : cela ne révoque pas les
+            // appareils et ne doit JAMAIS faire tourner la clé de la salle.
+            var reuse = previous is { Host: true } &&
+                string.Equals(previous.Link.Relay, addressText, StringComparison.OrdinalIgnoreCase);
+            var link = reuse
+                ? (previous!.Link.ExpiresUtc <= DateTime.UtcNow ? previous.Link.Resume() : previous.Link)
                 : previous is { Host: true } ? previous.Link.Renew(addressText)
                 : RemoteLink.Create(addressText);
             // Vérifier le relais avant de remplacer une liaison encore utilisable.
@@ -120,7 +188,7 @@ public sealed class RemoteConnectionViewModel : Observable
             if (reuse) RemoteConnection.StartHostIfMissing(shell.Api.Server);
             else RemoteConnection.StartHost(shell.Api.Server);
             if (reuse)
-                Message = "Accès par Internet déjà actif. Les appareils autorisés restent jumelés ; aucun nouveau QR n'est nécessaire.";
+                Message = "Liaison Internet active ou rétablie. Les appareils autorisés restent jumelés et peuvent se synchroniser sans nouveau QR.";
             else
                 await PrepareInvitationAsync(link);
         }

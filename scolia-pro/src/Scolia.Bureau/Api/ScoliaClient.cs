@@ -106,10 +106,17 @@ public sealed class ScoliaClient : IDisposable
     private TimeSpan ProbeTimeout => IsLongDistance ? TimeSpan.FromSeconds(4) : TimeSpan.FromMilliseconds(1800);
     private bool CanUseOfflineCache => Offline is { } store && !string.IsNullOrWhiteSpace(store.User);
 
+    private static RemoteDeviceAccess? LinkedAccess(RemoteLink link)
+    {
+        var stored = Infrastructure.DevicePairingStore.Read(link.VirtualServer);
+        return stored is null ? null : new RemoteDeviceAccess(stored.GrantId,
+            Infrastructure.DeviceIdentity.Id, stored.DeviceSecret);
+    }
+
     private HttpClient Create(Uri server)
     {
         // Délai de connexion court : un ordinateur principal éteint est détecté en quelques secondes, pas en vingt.
-        HttpMessageHandler handler = remoteLink is { } link ? new RemoteHttpHandler(link, cookies)
+        HttpMessageHandler handler = remoteLink is { } link ? new RemoteHttpHandler(link, cookies, () => LinkedAccess(link))
             : new SocketsHttpHandler { CookieContainer = cookies, UseCookies = true, ConnectTimeout = TimeSpan.FromMilliseconds(2500) };
         var client = new HttpClient(handler) { BaseAddress = server, Timeout = TimeSpan.FromSeconds(60) };
         client.DefaultRequestHeaders.Add("X-Scolia", "1");
@@ -121,7 +128,7 @@ public sealed class ScoliaClient : IDisposable
     /// <summary>Client sans délai global, pour le flux en direct qui reste ouvert.</summary>
     public HttpClient CreateStreamClient()
     {
-        HttpMessageHandler handler = remoteLink is { } link ? new RemoteHttpHandler(link, cookies)
+        HttpMessageHandler handler = remoteLink is { } link ? new RemoteHttpHandler(link, cookies, () => LinkedAccess(link))
             : new SocketsHttpHandler { CookieContainer = cookies, UseCookies = true, ConnectTimeout = TimeSpan.FromSeconds(4) };
         var client = new HttpClient(handler) { BaseAddress = Server, Timeout = Timeout.InfiniteTimeSpan };
         client.DefaultRequestHeaders.Add("X-Scolia", "1");
@@ -133,50 +140,57 @@ public sealed class ScoliaClient : IDisposable
     public async Task<SessionDto> LoginAsync(string userName, string password, CancellationToken ct = default) =>
         await SendAsync<SessionDto>(HttpMethod.Post, "api/session", new { userName, password }, ct);
 
-    public sealed record PairedSession(SessionDto Session, Guid GrantId, string DeviceSecret, DateTime ExpiresUtc);
+    /// <summary>Autorisation du poste et identité scolaire uniquement, sans compte utilisateur.</summary>
+    public sealed record PairedDevice(Guid GrantId, string DeviceSecret, DateTime ExpiresUtc, string SchoolName,
+        JsonElement? Session = null);
 
-    /// <summary>Un QR explicitement créé par le serveur donne accès au compte lié, sans communiquer son mot de passe.</summary>
-    public async Task<SessionDto> AcceptDeviceInvitationAsync(string invitationToken, CancellationToken ct = default)
+    public async Task<PairedDevice> AcceptDeviceInvitationAsync(string invitationToken, CancellationToken ct = default)
     {
-        var linked = await SendAsync<PairedSession>(HttpMethod.Post, "api/jumelage/accepter", new
+        var linked = await SendAsync<PairedDevice>(HttpMethod.Post, "api/jumelage/accepter", new
         {
             invitationToken, deviceId = Infrastructure.DeviceIdentity.Id, deviceName = Infrastructure.DeviceIdentity.Name
         }, ct);
+        // Un ancien serveur émettait directement un cookie et un compte administrateur
+        // avec le QR. Ne jamais accepter silencieusement ce format : invalider le
+        // cookie historique et imposer la mise à jour du serveur avant le jumelage.
+        if (linked.Session is not null || string.IsNullOrWhiteSpace(linked.SchoolName)
+            || linked.GrantId == Guid.Empty || string.IsNullOrWhiteSpace(linked.DeviceSecret))
+        {
+            try { await LogoutAsync(ct); }
+            catch (Exception ex) when (ex is ApiException or HttpRequestException or TaskCanceledException or IOException) { }
+            throw new InvalidOperationException(
+                "Le serveur SCOLIA utilise un ancien jumelage donnant automatiquement des droits. Mettez à jour le serveur pour utiliser la connexion individuelle sécurisée.");
+        }
         Infrastructure.DevicePairingStore.Save(Server, new Infrastructure.DevicePairingStore.Credential(
-            linked.GrantId, linked.DeviceSecret, linked.ExpiresUtc, linked.Session.UserName));
-        return linked.Session;
+            linked.GrantId, linked.DeviceSecret, linked.ExpiresUtc, string.Empty));
+        return linked;
     }
 
-    public sealed record RenewedDeviceSession(SessionDto Session, DateTime ExpiresUtc);
+    private sealed record LinkedDeviceProof(DateTime ExpiresUtc);
 
-    /// <summary>Réutilise le jumelage chiffré en le prolongeant sans nouveau QR.
-    /// Compatible avec les anciens serveurs qui ne connaissent pas encore le renouvellement.</summary>
-    public async Task<SessionDto?> RestoreDeviceSessionAsync(CancellationToken ct = default)
+    /// <summary>Rétablit uniquement la preuve d'appareil ; n'accorde jamais les droits d'un compte.</summary>
+    public async Task<bool> VerifyLinkedDeviceAsync(CancellationToken ct = default)
     {
         var stored = Infrastructure.DevicePairingStore.Read(Server);
-        if (stored is null) return null;
-        var credentials = new { grantId = stored.GrantId, deviceId = Infrastructure.DeviceIdentity.Id, secret = stored.DeviceSecret };
+        if (stored is null) return false;
         try
         {
-            RenewedDeviceSession renewed;
-            try
+            var verified = await SendAsync<LinkedDeviceProof>(HttpMethod.Post, "api/jumelage/appareil/verifier", new
             {
-                renewed = await SendAsync<RenewedDeviceSession>(HttpMethod.Post,
-                    "api/session/appareil/renouveler", credentials, ct);
-            }
-            catch (ApiException ex) when (ex.Status == 404)
-            {
-                // Ancienne version de SCOLIA, sans rotation automatique.
-                return await SendAsync<SessionDto>(HttpMethod.Post, "api/session/appareil", credentials, ct);
-            }
-            Infrastructure.DevicePairingStore.Save(Server,
-                stored with { ExpiresUtc = renewed.ExpiresUtc });
-            return renewed.Session;
+                grantId = stored.GrantId, deviceId = Infrastructure.DeviceIdentity.Id, secret = stored.DeviceSecret
+            }, ct);
+            Infrastructure.DevicePairingStore.Save(Server, stored with { ExpiresUtc = verified.ExpiresUtc });
+            return true;
         }
         catch (ApiException ex) when (ex.Status is 401 or 403)
         {
             Infrastructure.DevicePairingStore.Forget(Server);
-            return null;
+            return false;
+        }
+        catch (ApiException ex) when (ex.Status == 404)
+        {
+            // Ne jamais retomber vers les anciennes routes qui ouvraient la session du secrétaire.
+            return false;
         }
     }
 
@@ -188,7 +202,8 @@ public sealed class ScoliaClient : IDisposable
     public async Task EnsurePromoterDeviceGrantAsync(string userName, CancellationToken ct = default)
     {
         if (Infrastructure.DevicePairingStore.Read(Server) is { } existing &&
-            string.Equals(existing.UserName, userName, StringComparison.OrdinalIgnoreCase) &&
+            (string.IsNullOrEmpty(existing.UserName) ||
+             string.Equals(existing.UserName, userName, StringComparison.OrdinalIgnoreCase)) &&
             existing.ExpiresUtc > DateTime.UtcNow.AddDays(7))
             return;
         var grant = await SendAsync<SelfDeviceGrant>(HttpMethod.Post, "api/jumelage/mon-appareil", new { }, ct);

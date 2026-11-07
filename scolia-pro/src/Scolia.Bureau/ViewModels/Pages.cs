@@ -16,8 +16,8 @@ public sealed class LoginViewModel : Observable
     private bool recoveryOpen;
     private bool editingAccount;
     private bool linkedClient;
-    private bool manualLoginOpen;
     private Uri? accountServer;
+    private IReadOnlyList<string> knownAccounts = [];
     private string recoveryCode = string.Empty;
     private string newPassword = string.Empty;
     private string confirmPassword = string.Empty;
@@ -30,6 +30,7 @@ public sealed class LoginViewModel : Observable
         DisableBiometrics = new AsyncCommand(DisableBiometricsAsync);
         RecoverWithBiometrics = new AsyncCommand(RecoverWithBiometricsAsync);
         RecoverWithCode = new AsyncCommand(RecoverWithCodeAsync);
+        ChooseRememberedAccount = new RelayCommand<string>(ChooseRememberedAccountAsync);
     }
 
     public event Action<SessionDto>? LoggedIn;
@@ -51,15 +52,36 @@ public sealed class LoginViewModel : Observable
         Raise(nameof(ServerLine));
     }
 
-    /// <summary>Réutilise uniquement l'identifiant du dernier compte pour ce serveur.</summary>
+    /// <summary>Comptes déjà ouverts sur cet appareil, et non liste des utilisateurs du serveur.</summary>
+    public IReadOnlyList<string> KnownAccounts
+    {
+        get => knownAccounts;
+        private set
+        {
+            if (Set(ref knownAccounts, value)) Raise(nameof(ShowRememberedChoices));
+        }
+    }
+    public bool ShowRememberedChoices => ShowAccountEntry && KnownAccounts.Count > 0;
+    public RelayCommand<string> ChooseRememberedAccount { get; }
+    private void ChooseRememberedAccountAsync(string? account)
+    {
+        if (Busy || string.IsNullOrWhiteSpace(account) ||
+            !KnownAccounts.Contains(account, StringComparer.OrdinalIgnoreCase)) return;
+        Password = string.Empty;
+        RememberAccount(account);
+    }
+
+    /// <summary>Un compte connu reste reconnu après redémarrage, sans nouvelle invitation QR.</summary>
     private void RecallLastAccount()
     {
-        // Changer de compte doit rester un choix explicite, même après un rafraîchissement graphique.
         if (accountServer == api.Server) return;
         accountServer = api.Server;
+        Password = string.Empty;
         try
         {
-            var last = new OfflineStore(api.Server).LastAccount;
+            var store = new OfflineStore(ConnectionStore.CacheAddress(api.Server));
+            KnownAccounts = store.KnownAccounts;
+            var last = store.LastAccount;
             if (string.IsNullOrWhiteSpace(last)) last = BiometricAccess.ReadAccount(api.Server);
             if (!string.IsNullOrWhiteSpace(last)) RememberAccount(last);
             else { editingAccount = true; UserName = string.Empty; RaiseAccountState(); }
@@ -67,7 +89,9 @@ public sealed class LoginViewModel : Observable
         catch (Exception ex) when (ex is System.IO.IOException or UnauthorizedAccessException
             or System.Security.Cryptography.CryptographicException or System.Text.Json.JsonException)
         {
+            KnownAccounts = [];
             editingAccount = true;
+            UserName = string.Empty;
             RaiseAccountState();
         }
     }
@@ -91,7 +115,11 @@ public sealed class LoginViewModel : Observable
     {
         if (string.IsNullOrWhiteSpace(account)) return;
         editingAccount = false;
+        Password = string.Empty;
         UserName = account.Trim();
+        try { KnownAccounts = new OfflineStore(ConnectionStore.CacheAddress(api.Server)).KnownAccounts; }
+        catch (Exception ex) when (ex is System.IO.IOException or UnauthorizedAccessException
+            or System.Security.Cryptography.CryptographicException or System.Text.Json.JsonException) { }
         RaiseAccountState();
     }
 
@@ -99,21 +127,24 @@ public sealed class LoginViewModel : Observable
     {
         Raise(nameof(HasRememberedAccount));
         Raise(nameof(ShowAccountEntry));
+        Raise(nameof(ShowRememberedChoices));
+        Raise(nameof(ShowBiometricSignIn));
+        Raise(nameof(ShowBiometricEnrollment));
         Raise(nameof(IntroText));
     }
 
-    /// <summary>Un poste invité rejoint le compte approuvé sans demander son mot de passe.</summary>
+    /// <summary>Une invitation ne remplace plus l'authentification personnelle du compte.</summary>
     public bool LinkedClient => linkedClient;
-    public bool ShowManualCredentials => !linkedClient || manualLoginOpen;
+    public bool ShowManualCredentials => true;
     public bool ShowBiometricSignIn => ShowManualCredentials && !RecoveryOpen && CanUseBiometricSignIn;
     public bool ShowBiometricEnrollment => ShowManualCredentials && !RecoveryOpen && CanOfferEnrollment;
     public bool ShowRemoveBiometric => ShowManualCredentials && !RecoveryOpen && HasBiometricAccount;
-    public bool ShowPairingCallToAction => linkedClient && !manualLoginOpen;
+    // La saisie de l'identifiant et du mot de passe est toujours visible sur un poste invité.
+    public bool ShowPairingCallToAction => false;
     public void ConfigureClientMode(bool isClient)
     {
         if (linkedClient == isClient) return;
         linkedClient = isClient;
-        manualLoginOpen = false;
         Raise(nameof(LinkedClient));
         Raise(nameof(ShowManualCredentials));
         Raise(nameof(ShowPairingCallToAction));
@@ -125,7 +156,6 @@ public sealed class LoginViewModel : Observable
 
     public RelayCommand EnableManualLogin => enableManualLogin ??= new RelayCommand(() =>
     {
-        manualLoginOpen = true;
         Raise(nameof(ShowManualCredentials));
         Raise(nameof(ShowPairingCallToAction));
         Raise(nameof(ShowBiometricSignIn));
@@ -159,9 +189,9 @@ public sealed class LoginViewModel : Observable
     public string ResumeText => $"Revenir à la session de {resumeName}";
     /// <summary>Phrase sous « Connexion » : elle rappelle qu'une session attend, verrouillée.</summary>
     public string IntroText => resumeName is null
-        ? (linkedClient && !manualLoginOpen
-            ? "Ce poste utilise une invitation du serveur : scannez le QR pour vous connecter automatiquement."
-            : HasRememberedAccount ? "Saisissez votre mot de passe pour continuer." : "Saisissez votre identifiant et votre mot de passe.")
+        ? HasRememberedAccount
+            ? "Établissement reconnu. Saisissez le mot de passe de votre propre compte."
+            : "Établissement reconnu. Saisissez votre identifiant et votre mot de passe."
         : "Connectez un autre compte. La session verrouillée reste ouverte : vous pouvez y revenir à tout moment.";
     public string ResumeHint => resumeUser is null ? string.Empty : $"{resumeUser} · session verrouillée, rien n'est perdu";
     public RelayCommand Resume => resume ??= new RelayCommand(() =>
@@ -242,7 +272,6 @@ public sealed class LoginViewModel : Observable
     public void ShowRecoveryHelp(string account)
     {
         if (!string.IsNullOrWhiteSpace(account)) RememberAccount(account);
-        manualLoginOpen = true;
         Raise(nameof(ShowManualCredentials));
         Raise(nameof(ShowPairingCallToAction));
         Raise(nameof(ShowBiometricSignIn));
@@ -343,7 +372,7 @@ public sealed class LoginViewModel : Observable
             try
             {
                 var store = api.Offline ?? new OfflineStore(api.Server);
-                store.ForgetCredential();
+                store.ForgetCredential(UserName);
                 store.RememberAccount(UserName);
             }
             catch (Exception ex) when (ex is System.IO.IOException or UnauthorizedAccessException) { }
@@ -405,7 +434,7 @@ public sealed class LoginViewModel : Observable
                 try
                 {
                     var store = api.Offline ?? new OfflineStore(api.Server);
-                    store.ForgetCredential();
+                    store.ForgetCredential(UserName);
                     store.RememberAccount(UserName);
                 }
                 catch (Exception ex) when (ex is System.IO.IOException or UnauthorizedAccessException) { }
@@ -459,7 +488,8 @@ public sealed class LoginViewModel : Observable
     // Le retrait doit rester disponible par mot de passe lorsque le capteur a été désactivé.
     public bool HasBiometricAccount => Platform.IsMobile && BiometricAccount.Length > 0
         && (Platform.HasBiometricProof?.Invoke() ?? false);
-    public bool CanUseBiometricSignIn => HasBiometricAccount && CanOfferBiometrics;
+    public bool CanUseBiometricSignIn => HasBiometricAccount && CanOfferBiometrics &&
+        (string.IsNullOrWhiteSpace(UserName) || BiometricAccess.AccountMatches(BiometricAccount, UserName));
     public bool CanOfferEnrollment => CanOfferBiometrics && !HasBiometricAccount && Platform.EnrollBiometricAsync is not null;
     public string BiometricLabel => $"Déverrouiller avec {Platform.BiometricInSentence} · {BiometricAccount}";
     public string EnrollmentText => $"Activer {Platform.BiometricInSentence} après cette connexion";

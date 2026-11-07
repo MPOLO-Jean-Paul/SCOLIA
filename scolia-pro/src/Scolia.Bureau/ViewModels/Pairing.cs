@@ -36,7 +36,7 @@ public sealed class PairingViewModel : Observable
         foreach (var lan in Code.LanAddresses)
             routes.Add(new(Material.Icons.MaterialIconKind.Wifi, "Wi-Fi de l'établissement", $"{lan.Host}:{lan.Port}"));
         if (Code.HasInvitation)
-            routes.Add(new(Material.Icons.MaterialIconKind.Web, "Internet", $"Invitation valable jusqu'au {Format.Date(DateOnly.FromDateTime(remote!.Link.ExpiresUtc.ToLocalTime()))}"));
+            routes.Add(new(Material.Icons.MaterialIconKind.Web, "Internet", "Postes reconnus jusqu’au retrait ; nouveau QR valable 5 minutes"));
         Routes = routes;
 
         Copy = new AsyncCommand(async () =>
@@ -164,7 +164,7 @@ public sealed class PairingViewModel : Observable
     public string Steps => Platform.IsMobile
         ? "Sur l'autre appareil : Changer d'ordinateur principal, puis Scanner le code QR."
         : "Sur l'autre appareil : Changer d'ordinateur principal, puis Scanner le code QR. Sur un ordinateur, collez le code copié.";
-    public string Footer => "Ce QR autorise temporairement un autre appareil à ouvrir ce compte avec les mêmes droits. Ne le partagez qu\u2019avec un appareil de confiance. Son accès se retire à tout moment dans Réseau et postes, Appareils autorisés.";
+    public string Footer => "Ce QR autorise uniquement un appareil à retrouver le serveur. Chaque personne doit ensuite ouvrir sa propre session. L'appareil reste autorisé après une coupure, jusqu'à son retrait dans Réseau et activité.";
 
     public AsyncCommand Copy { get; }
     public RelayCommand Close { get; }
