@@ -76,12 +76,13 @@ public sealed class ConnectionViewModel : Observable
     private async Task JoinCodeAsync(string text)
     {
         Searching = true;
+        shell.BeginDevicePairing();
         PairingInProgress = true;
         Message = "Code reconnu. Vérification de l'appareil et de ses autorisations…";
         try
         {
             Message = await PairingFlow.JoinAsync(shell, text, step => Message = step);
-            if (!shell.IsLoggedIn) shell.ReturnToPairingChooser(Message);
+            if (!shell.DevicePairingSucceeded) shell.ReturnToPairingChooser(Message);
         }
         catch (Exception ex) when (ex is IOException or HttpRequestException or TaskCanceledException
             or Api.ApiException or InvalidOperationException or UnauthorizedAccessException)
