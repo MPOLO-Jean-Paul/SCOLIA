@@ -22,6 +22,9 @@ public partial class LoginView : UserControl
         Backdrop.IsVisible = !mobile;
         Halo.IsVisible = !mobile;
         IosBackdrop.IsVisible = mobile;
+        // Une seule colonne, avec marges et titre adaptés aux écrans très étroits.
+        IosLoginScroll.SizeChanged += (_, e) =>
+            IosLoginScroll.Classes.Set("compact", e.NewSize.Width < 390);
         IosPasswordBox.KeyDown += (_, e) =>
         {
             if (e.Key != Key.Enter || DataContext is not LoginViewModel login || !login.CanSubmitCredentials) return;
