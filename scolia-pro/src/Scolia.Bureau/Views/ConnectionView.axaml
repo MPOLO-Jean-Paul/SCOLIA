@@ -117,7 +117,7 @@
               <mi:MaterialIcon Kind="Cellphone" Width="40" Height="40"
                                Foreground="{DynamicResource AccentBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
             </Border>
-            <TextBlock Text="Appareil reconnu" FontSize="21" FontWeight="Bold"
+            <TextBlock Text="Vérification de l’appareil" FontSize="21" FontWeight="Bold"
                        TextAlignment="Center" TextWrapping="Wrap" />
             <TextBlock Text="SCOLIA vérifie la liaison sécurisée avec votre établissement."
                        Classes="muted" TextAlignment="Center" TextWrapping="Wrap" />
