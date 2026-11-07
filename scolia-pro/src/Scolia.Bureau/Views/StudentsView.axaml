@@ -4,6 +4,22 @@
              xmlns:infra="using:Scolia.Bureau.Infrastructure"
              xmlns:mi="using:Material.Icons.Avalonia"
              x:Class="Scolia.Bureau.Views.StudentsView">
+  <UserControl.Styles>
+    <Style Selector="Button.studentcard">
+      <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="16" />
+      <Setter Property="Padding" Value="14,12" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+      <Setter Property="MinHeight" Value="102" />
+      <Setter Property="Margin" Value="0,0,0,9" />
+    </Style>
+    <Style Selector="Button.studentcard:pointerover, Button.studentcard:pressed">
+      <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
+    </Style>
+  </UserControl.Styles>
   <Grid RowDefinitions="Auto,*">
     <Border Grid.Row="0" Classes="band" Margin="0,0,0,10">
       <!-- Filtres à gauche, pagination à droite, comme l'Explorateur et Outlook -->
@@ -40,8 +56,48 @@
       </StackPanel>
       </Grid>
     </Border>
+    <!-- Android : cartes individuelles au lieu d'un tableau trop large pour un téléphone. -->
+    <ItemsControl Grid.Row="1" ItemsSource="{Binding Items}" IsVisible="{Binding Phone}" Margin="0,0,4,16">
+      <ItemsControl.ItemTemplate>
+        <DataTemplate>
+          <Button Classes="studentcard"
+                  Command="{Binding $parent[ItemsControl].DataContext.OpenStudentOnPhone}"
+                  CommandParameter="{Binding}">
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+              <StackPanel Spacing="6">
+                <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextWrapping="Wrap" FontSize="16" />
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <Border Classes="chip" Padding="8,3">
+                    <TextBlock Text="{Binding Matricule}" FontSize="{DynamicResource FsSmall}" />
+                  </Border>
+                  <TextBlock Text="{Binding Promotion}" Classes="muted" FontSize="{DynamicResource FsSmall}"
+                             TextWrapping="Wrap" VerticalAlignment="Center" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Spacing="7">
+                  <Ellipse Width="8" Height="8" Fill="{Binding StatusBrush}" VerticalAlignment="Center" />
+                  <TextBlock Text="{Binding Status}" Classes="muted" FontSize="{DynamicResource FsSmall}" VerticalAlignment="Center" />
+                </StackPanel>
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                  <StackPanel Spacing="2">
+                    <TextBlock Text="Solde" Classes="caption" />
+                    <TextBlock Text="{Binding Balance}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                  </StackPanel>
+                  <StackPanel Grid.Column="1" Spacing="2">
+                    <TextBlock Text="Retard" Classes="caption" />
+                    <TextBlock Text="{Binding Overdue}" Foreground="{Binding OverdueBrush}"
+                               FontWeight="SemiBold" TextWrapping="Wrap" />
+                  </StackPanel>
+                </Grid>
+              </StackPanel>
+              <mi:MaterialIcon Grid.Column="1" Kind="ChevronRight" Foreground="{DynamicResource AccentBrush}"
+                               Width="22" Height="22" VerticalAlignment="Center" />
+            </Grid>
+          </Button>
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
     <DataGrid Grid.Row="1" x:Name="StudentGrid" ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}"
-              AutoGenerateColumns="False" IsReadOnly="True" infra:GridPriority.Adaptive="True">
+              AutoGenerateColumns="False" IsReadOnly="True" infra:GridPriority.Adaptive="True" IsVisible="{Binding NotPhone}">
       <DataGrid.Columns>
         <DataGridTextColumn infra:GridPriority.Level="2" Header="Matricule" Binding="{Binding Matricule}" Width="Auto" MinWidth="130" />
         <DataGridTextColumn Header="Nom complet" Binding="{Binding Name}" Width="*" MinWidth="140" />
