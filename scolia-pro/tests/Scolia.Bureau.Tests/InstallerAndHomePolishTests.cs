@@ -104,6 +104,50 @@ public sealed class InstallerAndHomePolishTests
             e.Attributes().Any(a => a.Name.LocalName == "Command" && a.Value.Contains("ShowAllTools")));
     }
     [Fact]
+    public void Accueil_Windows_reprend_les_groupes_et_quatre_raccourcis_du_mobile()
+    {
+        var desktop = XDocument.Load(Source("src/Scolia.Bureau/Views/HomeView.axaml"));
+        var phone = XDocument.Load(Source("src/Scolia.Bureau/Views/Phone/HomeView.axaml"));
+        var desktopNodes = desktop.Descendants().ToArray();
+        var phoneNodes = phone.Descendants().ToArray();
+
+        // Ne jamais créer une liste de fonctionnalités Windows différente du téléphone.
+        foreach (var nodes in new[] { desktopNodes, phoneNodes })
+            Assert.Contains(nodes, e => e.Name.LocalName == "ItemsControl" &&
+                e.Attributes().Any(a => a.Name.LocalName == "ItemsSource" && a.Value == "{Binding PhoneTools}"));
+
+        // Les raccourcis sont des lignes GROUPÉES, et non des tuiles isolées sans contexte.
+        Assert.Contains(desktopNodes, e => e.Name.LocalName == "Border" &&
+            e.Attributes().Any(a => a.Name.LocalName == "Classes" && a.Value == "desktopgroup"));
+        Assert.Contains(desktopNodes, e => e.Name.LocalName == "Button" &&
+            e.Attributes().Any(a => a.Name.LocalName == "Classes" && a.Value == "desktopentry") &&
+            e.Descendants().Any(d => d.Name.LocalName == "TextBlock" &&
+                d.Attributes().Any(a => a.Name.LocalName == "Text" && a.Value == "{Binding Description}")) &&
+            e.Descendants().Any(d => d.Name.LocalName == "MaterialIcon" &&
+                d.Attributes().Any(a => a.Name.LocalName == "Kind" && a.Value == "ChevronRight")));
+        Assert.Contains(desktopNodes, e => e.Name.LocalName == "TextBlock" &&
+            e.Attributes().Any(a => a.Name.LocalName == "Text" && a.Value == "RACCOURCIS"));
+        Assert.Contains(desktopNodes, e => e.Name.LocalName == "TextBlock" &&
+            e.Attributes().Any(a => a.Name.LocalName == "Text" && a.Value == "APERÇU"));
+
+        // L'état de la connexion est un vrai raccourci permanent, avec explication.
+        Assert.Contains(desktopNodes, e => e.Name.LocalName == "Button" &&
+            e.Attributes().Any(a => a.Name.LocalName == "Command" && a.Value.Contains("Network")) &&
+            e.Descendants().Any(d => d.Name.LocalName == "TextBlock" &&
+                d.Attributes().Any(a => a.Name.LocalName == "Text" && a.Value.Contains("Sync.StatusHint"))));
+        Assert.Contains(desktopNodes, e => e.Name.LocalName == "ItemsControl" &&
+            e.Attributes().Any(a => a.Name.LocalName == "ItemsSource" && a.Value.Contains("Kpis")));
+        Assert.Contains(desktopNodes, e => e.Name.LocalName == "ItemsControl" &&
+            e.Attributes().Any(a => a.Name.LocalName == "ItemsSource" && a.Value.Contains("Receipts")));
+        Assert.Contains(desktopNodes, e => e.Name.LocalName == "ItemsControl" &&
+            e.Attributes().Any(a => a.Name.LocalName == "ItemsSource" && a.Value.Contains("Tasks")));
+
+        var home = File.ReadAllText(Source("src/Scolia.Bureau/ViewModels/Home.cs"));
+        Assert.Contains("public IReadOnlyList<ToolCardVm> PhoneTools => Tools.Take(4).ToList()", home);
+        Assert.Contains("if (perm is null || Shell.Can(perm))", home);
+    }
+
+    [Fact]
     public void L_installateur_met_a_jour_et_redemarre_le_vrai_serveur_sans_supprimer_la_base()
     {
         var install = File.ReadAllText(Source("scripts/windows/SCOLIA-Pro.iss"));
