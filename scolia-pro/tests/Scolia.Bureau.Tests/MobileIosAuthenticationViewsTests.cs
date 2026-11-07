@@ -19,7 +19,7 @@ public sealed class MobileIosAuthenticationViewsTests
         XDocument.Load(Source("Views/" + path)).Descendants().ToArray();
 
     private static bool Attribute(XElement node, string key, string value) =>
-        node.Attributes().Any(a => a.Name.LocalName == key && a.Value == value);
+        node.Attributes().Any(a => (a.Name.LocalName == key || a.Name.LocalName.EndsWith("." + key, StringComparison.Ordinal)) && a.Value == value);
 
     [Fact]
     public void La_connexion_iOS_est_distincte_de_Windows_et_exige_le_mot_de_passe()
