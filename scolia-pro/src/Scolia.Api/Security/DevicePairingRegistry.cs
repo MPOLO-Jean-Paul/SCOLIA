@@ -13,6 +13,9 @@ public sealed class DevicePairingRegistry
         string SecretHash, DateTime ExpiresUtc, bool Revoked = false);
     private readonly Dictionary<string, Invitation> invitations = new(StringComparer.Ordinal);
     private readonly List<DeviceGrant> grants;
+    // Nonces vus pendant la fenêtre de validité de deux minutes : une requête
+    // capturée ne doit jamais être acceptée une deuxième fois.
+    private readonly Dictionary<string, long> remoteNonces = new(StringComparer.Ordinal);
     private readonly object gate = new();
     private readonly string file;
     // Une autorisation est révocable à tout moment ; chaque usage valide prolonge
@@ -181,7 +184,18 @@ public sealed class DevicePairingRegistry
             var key = Convert.FromHexString(grant.SecretHash);
             var expected = HMACSHA256.HashData(key, Encoding.UTF8.GetBytes(message));
             var received = Convert.FromHexString(proofText);
-            return CryptographicOperations.FixedTimeEquals(expected, received);
+            if (!CryptographicOperations.FixedTimeEquals(expected, received)) return false;
+            var replayKey = $"{id:N}:{nonce}";
+            if (remoteNonces.ContainsKey(replayKey)) return false;
+            if (remoteNonces.Count >= 4096)
+            {
+                foreach (var expired in remoteNonces.Where(x => x.Value < seconds - 120)
+                    .Select(x => x.Key).ToArray())
+                    remoteNonces.Remove(expired);
+                if (remoteNonces.Count >= 8192) return false;
+            }
+            remoteNonces[replayKey] = seconds;
+            return true;
         }
     }
 
