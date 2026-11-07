@@ -35,6 +35,12 @@ public sealed class ShellViewModel : Observable
         Login = new LoginViewModel(api);
         Setup = new SetupViewModel(this);
         Connection = new ConnectionViewModel(this);
+        Connection.PropertyChanged += (_, args) =>
+        {
+            if (args.PropertyName != nameof(ConnectionViewModel.PairingInProgress)) return;
+            Raise(nameof(ShowConnection));
+            Raise(nameof(ShowLogin));
+        };
         Login.LoggedIn += s => _ = OpenSessionAsync(s);
         Login.ResumeRequested += ReturnToLockedSession;
         Login.ChangeServerRequested += () => _ = ChooseServerAsync();
@@ -251,7 +257,11 @@ public sealed class ShellViewModel : Observable
     public bool ShowSetup => entryChecked && IsSetupRequired && !Opening;
 
     /// <summary>La connexion s'affiche seulement quand une configuration existe et qu'aucune session n'est ouverte.</summary>
-    public bool ShowLogin => entryChecked && (!IsLoggedIn || switchingAccount) && !IsSetupRequired && !ChoosingServer && !Opening;
+    public bool ShowLogin => entryChecked && (!IsLoggedIn || switchingAccount) && !IsSetupRequired
+        && !ChoosingServer && !Connection.PairingInProgress && !Opening;
+
+    /// <summary>Conserver l'écran QR visible pendant la vérification, même après bascule vers le serveur reconnu.</summary>
+    public bool ShowConnection => ChoosingServer || (Connection.PairingInProgress && !Opening && !IsLoggedIn);
 
     /// <summary>L'application s'affiche une fois l'ouverture terminée.</summary>
     public bool ShowApp => IsLoggedIn && !Opening && !switchingAccount;
@@ -271,7 +281,7 @@ public sealed class ShellViewModel : Observable
         private set
         {
             if (!Set(ref opening, value)) return;
-            Raise(nameof(ShowLogin)); Raise(nameof(ShowSetup)); Raise(nameof(ShowStartup)); Raise(nameof(ShowApp)); Raise(nameof(CompactWindow));
+            Raise(nameof(ShowLogin)); Raise(nameof(ShowSetup)); Raise(nameof(ShowStartup)); Raise(nameof(ShowApp)); Raise(nameof(CompactWindow)); Raise(nameof(ShowConnection));
         }
     }
 
@@ -311,6 +321,7 @@ public sealed class ShellViewModel : Observable
         Raise(nameof(ShowSetup));
         Raise(nameof(ShowStartup));
         Raise(nameof(ShowApp));
+        Raise(nameof(ShowConnection));
         Raise(nameof(CompactWindow));
     }
 
@@ -563,6 +574,9 @@ public sealed class ShellViewModel : Observable
         Status = "Hors ligne : connexion avec les données de cet appareil.";
         return true;
     }
+
+    /// <summary>Si le QR n'ouvre pas une session, garder le diagnostic et permettre un nouveau scan.</summary>
+    public void ReturnToPairingChooser(string message) => ShowChooser([], message);
 
     private void ShowChooser(IReadOnlyList<DiscoveredServer> servers, string message)
     {
