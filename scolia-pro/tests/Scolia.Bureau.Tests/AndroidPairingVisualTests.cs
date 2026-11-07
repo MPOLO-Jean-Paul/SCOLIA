@@ -25,7 +25,7 @@ public sealed class AndroidPairingVisualTests
                 && a.Value.Contains("PairingInProgress", StringComparison.Ordinal)
                 && !a.Value.Contains("!", StringComparison.Ordinal)));
         Assert.Contains(view.Descendants(), element => element.Name.LocalName == "TextBlock"
-            && element.Attributes().Any(a => a.Name.LocalName == "Text" && a.Value == "Appareil reconnu"));
+            && element.Attributes().Any(a => a.Name.LocalName == "Text" && a.Value == "Vérification de l’appareil"));
         Assert.Contains(view.Descendants(), element => element.Name.LocalName == "ProgressBar"
             && element.Attributes().Any(a => a.Name.LocalName == "IsIndeterminate" && a.Value == "True"));
     }
@@ -43,6 +43,9 @@ public sealed class AndroidPairingVisualTests
             && element.Attributes().Any(a => a.Name.LocalName == "Value"
                 && a.Value.Contains("OpeningProgress", StringComparison.Ordinal)));
         Assert.Contains(host.Descendants(), element => element.Name.LocalName == "ScrollViewer");
+        Assert.Contains(view.Descendants(), element => element.Name.LocalName == "ContentControl"
+            && element.Attributes().Any(a => a.Name.LocalName == "IsVisible"
+                && a.Value.Contains("ShowConnection", StringComparison.Ordinal)));
         Assert.Contains(host.Descendants(), element => element.Name.LocalName == "Border"
             && element.Attributes().Any(a => a.Name.LocalName == "Classes"
                 && a.Value.Contains("openingcard", StringComparison.Ordinal)));
