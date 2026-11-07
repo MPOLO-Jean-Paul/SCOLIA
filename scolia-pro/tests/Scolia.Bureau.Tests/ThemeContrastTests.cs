@@ -36,7 +36,8 @@ public class ThemeContrastTests
     {
         var first = Assert.IsAssignableFrom<ISolidColorBrush>(IconPalette.Get(tone));
         var second = Assert.IsAssignableFrom<ISolidColorBrush>(IconPalette.Get(tone));
-        Assert.Same(first, second);
+        Assert.NotSame(first, second); // Aucun pinceau Avalonia n'est partagé entre threads.
+        Assert.Equal(first.Color, second.Color);
         Assert.Equal(Color.Parse(expected), first.Color);
         Assert.Equal(Colors.White, TileGlyph.GlyphFor(first.Color));
         Assert.True(ThemeContrast.Ratio(Colors.White, first.Color) >= 4.5);
