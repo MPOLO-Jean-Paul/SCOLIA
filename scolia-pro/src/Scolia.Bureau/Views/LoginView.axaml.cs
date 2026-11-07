@@ -19,6 +19,7 @@ public partial class LoginView : UserControl
         var mobile = Platform.IsMobile;
         LoginScroll.IsVisible = !mobile;
         IosLoginScroll.IsVisible = mobile;
+        IosLoginThemeScope.IsVisible = mobile;
         Backdrop.IsVisible = !mobile;
         Halo.IsVisible = !mobile;
         IosBackdrop.IsVisible = mobile;
