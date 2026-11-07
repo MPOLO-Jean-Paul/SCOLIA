@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.IO.Compression;
 using System.Net;
 using System.Security.Cryptography.X509Certificates;
+using System.Security.Cryptography;
 using Microsoft.AspNetCore.ResponseCompression;
 using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
@@ -214,6 +215,49 @@ public static class ScoliaHost
             await next();
         });
         app.UseAuthorization();
+        // Synchronisation différentielle : les postes n'échangent le JSON d'une ressource
+        // que si son contenu a réellement changé. Le serveur contrôle toujours les droits
+        // AVANT de comparer l'empreinte ; aucune donnée ni version d'un autre compte n'est révélée.
+        app.Use(async (http, next) =>
+        {
+            var path = http.Request.Path.Value ?? string.Empty;
+            var conditional = HttpMethods.IsGet(http.Request.Method) &&
+                (path is "/api/etablissement" or "/api/etablissement/annees" or
+                    "/api/etablissement/sections" or "/api/etablissement/promotions" or
+                    "/api/etablissement/categories-frais" or "/api/paiements" or
+                    "/api/rapports/tableau-de-bord" or "/api/rapports/aujourdhui" or
+                    "/api/pilotage/synthese" or "/api/apprenants" ||
+                 (path.StartsWith("/api/apprenants/", StringComparison.Ordinal) &&
+                    Guid.TryParse(path["/api/apprenants/".Length..], out _)) ||
+                 (path.StartsWith("/api/inscriptions/", StringComparison.Ordinal) &&
+                    path.EndsWith("/compte", StringComparison.Ordinal)));
+            if (!conditional) { await next(); return; }
+            var original = http.Response.Body;
+            await using var buffer = new MemoryStream();
+            http.Response.Body = buffer;
+            try
+            {
+                await next();
+                http.Response.Body = original;
+                if (http.Response.StatusCode == StatusCodes.Status200OK &&
+                    (http.Response.ContentType?.Contains("application/json", StringComparison.OrdinalIgnoreCase) ?? false))
+                {
+                    var etag = "\"" + Convert.ToHexString(SHA256.HashData(buffer.ToArray())) + "\"";
+                    http.Response.Headers.ETag = etag;
+                    if (http.Request.Headers.TryGetValue("If-None-Match", out var known) &&
+                        known.Any(k => string.Equals(k, etag, StringComparison.Ordinal)))
+                    {
+                        http.Response.StatusCode = StatusCodes.Status304NotModified;
+                        http.Response.ContentLength = null;
+                        http.Response.ContentType = null;
+                        return;
+                    }
+                }
+                buffer.Position = 0;
+                await buffer.CopyToAsync(original, http.RequestAborted);
+            }
+            finally { http.Response.Body = original; }
+        });
         // Une écriture déjà faite rend sa réponse d'origine avant tout autre contrôle.
         app.UseIdempotency();
         app.UseLiveLocks();
