@@ -284,7 +284,7 @@
               <Border Background="{DynamicResource AccentSoftBrush}" CornerRadius="14" Padding="14">
                 <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
                   <Border Classes="appicon medium" Background="{DynamicResource ToneIndigo}" VerticalAlignment="Top">
-                    <mi:MaterialIcon Kind="ViewGridOutline" />
+                    <mi:MaterialIcon Kind="ViewGrid" />
                   </Border>
                   <StackPanel Grid.Column="1" Spacing="4">
                     <TextBlock Text="Les filières de votre établissement" FontWeight="SemiBold" TextWrapping="Wrap" />
@@ -318,7 +318,7 @@
                                        FontSize="{DynamicResource FsSmall}" VerticalAlignment="Center" />
                           </StackPanel>
                         </StackPanel>
-                        <mi:MaterialIcon Grid.Column="1" Kind="PencilOutline" Width="20" Height="20"
+                        <mi:MaterialIcon Grid.Column="1" Kind="Pencil" Width="20" Height="20"
                                          Foreground="{DynamicResource AccentBrush}" VerticalAlignment="Center" />
                       </Grid>
                     </Button>
@@ -328,7 +328,7 @@
               <Border Background="{DynamicResource Surface2Brush}" CornerRadius="14" Padding="20,24"
                       IsVisible="{Binding HasNoSections}">
                 <StackPanel Spacing="8" HorizontalAlignment="Center">
-                  <mi:MaterialIcon Kind="ShapePlusOutline" Width="34" Height="34"
+                  <mi:MaterialIcon Kind="ViewGridPlus" Width="34" Height="34"
                                    HorizontalAlignment="Center" Foreground="{DynamicResource AccentBrush}" />
                   <TextBlock Text="Aucune section pour le moment" FontWeight="SemiBold" TextAlignment="Center" />
                   <TextBlock Text="Créez votre première filière avec le bouton ci-dessus."
@@ -369,7 +369,7 @@
                             CommandParameter="{Binding}">
                       <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
                         <Border Classes="appicon medium" Background="{DynamicResource ToneBlue}" VerticalAlignment="Top">
-                          <mi:MaterialIcon Kind="SchoolOutline" />
+                          <mi:MaterialIcon Kind="School" />
                         </Border>
                         <StackPanel Grid.Column="1" Spacing="6">
                           <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextWrapping="Wrap" />
@@ -383,7 +383,7 @@
                             <TextBlock Text="{Binding Monthly}" FontWeight="SemiBold" FontSize="{DynamicResource FsSmall}" />
                           </StackPanel>
                         </StackPanel>
-                        <mi:MaterialIcon Grid.Column="2" Kind="PencilOutline" Width="20" Height="20"
+                        <mi:MaterialIcon Grid.Column="2" Kind="Pencil" Width="20" Height="20"
                                          Foreground="{DynamicResource AccentBrush}" VerticalAlignment="Center" />
                       </Grid>
                     </Button>
@@ -393,7 +393,7 @@
               <Border Background="{DynamicResource Surface2Brush}" CornerRadius="14" Padding="20,24"
                       IsVisible="{Binding HasNoPromotions}">
                 <StackPanel Spacing="8" HorizontalAlignment="Center">
-                  <mi:MaterialIcon Kind="SchoolOutline" Width="34" Height="34"
+                  <mi:MaterialIcon Kind="School" Width="34" Height="34"
                                    HorizontalAlignment="Center" Foreground="{DynamicResource AccentBrush}" />
                   <TextBlock Text="Aucune promotion enregistrée" FontWeight="SemiBold" TextAlignment="Center" />
                   <TextBlock Text="Créez une promotion et choisissez sa section."
