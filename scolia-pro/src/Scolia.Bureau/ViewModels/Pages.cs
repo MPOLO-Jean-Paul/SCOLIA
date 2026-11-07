@@ -16,7 +16,6 @@ public sealed class LoginViewModel : Observable
     private bool recoveryOpen;
     private bool editingAccount;
     private bool linkedClient;
-    private bool manualLoginOpen;
     private Uri? accountServer;
     private IReadOnlyList<string> knownAccounts = [];
     private string recoveryCode = string.Empty;
@@ -146,7 +145,6 @@ public sealed class LoginViewModel : Observable
     {
         if (linkedClient == isClient) return;
         linkedClient = isClient;
-        manualLoginOpen = false;
         Raise(nameof(LinkedClient));
         Raise(nameof(ShowManualCredentials));
         Raise(nameof(ShowPairingCallToAction));
@@ -158,7 +156,6 @@ public sealed class LoginViewModel : Observable
 
     public RelayCommand EnableManualLogin => enableManualLogin ??= new RelayCommand(() =>
     {
-        manualLoginOpen = true;
         Raise(nameof(ShowManualCredentials));
         Raise(nameof(ShowPairingCallToAction));
         Raise(nameof(ShowBiometricSignIn));
