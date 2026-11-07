@@ -63,3 +63,14 @@ Documentation officielle :
 - https://developers.cloudflare.com/durable-objects/best-practices/websockets/
 - https://developers.cloudflare.com/durable-objects/platform/limits/
 - https://developers.cloudflare.com/workers/ci-cd/builds/
+
+
+## Dépannage : `Failed: root directory not found`
+
+Cette erreur survient avant l'installation npm. Vérifier sur la carte du **nouveau** build Cloudflare :
+- **Git repository :** `MPOLO-Jean-Paul/SCOLIA`.
+- **Branch :** `feature/scolia-cloudflare-relay-20261107` (et surtout pas `main`).
+- **Root directory :** `scolia-pro/deploy/cloudflare`, sans barre oblique initiale.
+- Enregistrer le formulaire Settings → Builds, puis vérifier les réglages après rechargement.
+- Un bouton « Retry build » sur un ancien build `main` peut continuer à utiliser l'ancien commit. Un **nouveau commit** sur la branche de production déclenche un nouveau build via l'intégration GitHub.
+- Ne pas modifier les jetons API, ne pas supprimer le Worker et ne pas déplacer la base SQLite.
