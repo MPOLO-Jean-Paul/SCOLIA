@@ -167,11 +167,18 @@
                       ToolTip.Tip="Couper l'accès des appareils distants (demande confirmation)" />
             </WrapPanel>
             <TextBlock Text="{Binding Remote.Message}" TextWrapping="Wrap" FontSize="{DynamicResource FsSmall}" IsVisible="{Binding Remote.Message, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
-            <Expander Header="Adresse du relais (réglage avancé)" IsExpanded="False" Margin="0,6,0,0" HorizontalAlignment="Stretch">
-              <StackPanel Margin="4,8" Spacing="6">
-                <TextBox Text="{Binding Remote.Relay}" PlaceholderText="wss://adresse-du-relais/" />
+            <Expander Header="Relais principal et secours automatique" IsExpanded="False" Margin="0,8,0,0" HorizontalAlignment="Stretch">
+              <StackPanel Margin="4,9" Spacing="10">
+                <TextBlock Text="Relais principal · Cloudflare" FontWeight="SemiBold" />
+                <TextBox Classes="w11" Text="{Binding Remote.Relay}" Watermark="wss://votre-worker.workers.dev/" />
+                <TextBlock Text="{Binding Remote.PrincipalState}" Classes="muted" FontSize="{DynamicResource FsSmall}" />
+                <TextBlock Text="Relais de secours · Render" FontWeight="SemiBold" />
+                <TextBox Classes="w11" Text="{Binding Remote.BackupRelay}" Watermark="wss://scolia-pro-relay.onrender.com/" />
+                <TextBlock Text="{Binding Remote.BackupState}" Classes="muted" FontSize="{DynamicResource FsSmall}" />
                 <TextBlock Classes="muted" TextWrapping="Wrap" FontSize="{DynamicResource FsSmall}"
-                           Text="Relais Cloudflare ou Render de l'établissement, sous la forme wss://…/. Changer de relais renouvelle la liaison : les appareils distants devront scanner un nouveau code QR." />
+                           Text="Les deux connexions sont maintenues vers le même serveur et la même base locale. Si le principal tombe, les appareils essaient automatiquement le secours, sans changer le QR ni leurs autorisations." />
+                <Button Classes="primary" Command="{Binding Remote.Enable}" Content="Enregistrer et vérifier les deux relais"
+                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" />
               </StackPanel>
             </Expander>
           </StackPanel>
