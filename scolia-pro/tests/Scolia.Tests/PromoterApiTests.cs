@@ -61,7 +61,7 @@ public sealed class PromoterApiTests : IDisposable
         await admin.GetAsync("/api/pilotage/synthese").Ok();
     }
     [Fact]
-    public async Task Une_connexion_promoteur_enregistre_son_appareil_sans_nouveau_QR()
+    public async Task Une_connexion_promoteur_memorise_le_poste_sans_transmettre_ses_droits()
     {
         using var admin = await app.InstalledAdmin();
         await admin.Post("/api/utilisateurs", new
@@ -80,12 +80,17 @@ public sealed class PromoterApiTests : IDisposable
 
         using var returning = app.Client();
         returning.DefaultRequestHeaders.Add("X-Scolia-Poste", deviceId);
-        var resumed = await returning.Post("/api/session/appareil", new
+        var verified = await returning.Post("/api/jumelage/appareil/verifier", new
             { grantId, deviceId, secret }).Ok();
+        Assert.True(verified.GetProperty("expiresUtc").GetDateTime() > DateTime.UtcNow);
+        Assert.Equal(HttpStatusCode.Unauthorized, (await returning.GetAsync("/api/session")).StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized,
+            (await returning.Post("/api/session/appareil", new { grantId, deviceId, secret })).StatusCode);
+        var resumed = await returning.Post("/api/session", new
+            { userName = "promoteur2", password = "Provisoire1" }).Ok();
         Assert.Equal("promoteur2", resumed.GetProperty("userName").GetString());
         Assert.Single(resumed.GetProperty("permissions").EnumerateArray());
-        Assert.Equal("pilotage.lire",
-            resumed.GetProperty("permissions")[0].GetString());
+        Assert.Equal("pilotage.lire", resumed.GetProperty("permissions")[0].GetString());
 
         admin.DefaultRequestHeaders.Add("X-Scolia-Poste", "poste-secretariat");
         var prohibited = await admin.Post("/api/jumelage/mon-appareil", new { }).Fail();
