@@ -2,18 +2,20 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
   <!-- Couleurs des Réglages de macOS : fenêtre blanche, volet latéral gris clair, réglages rangés dans des blocs
-       gris arrondis, bleu système, et les couleurs système d'Apple pour les icônes des outils. -->
+       gris arrondis. Contraste élevé (comme « Augmenter le contraste » d'iOS et le contraste élevé d'Android) :
+       en clair, chaque teinte d'icône porte un pictogramme blanc à 4,9:1 au moins et reste lisible en texte ;
+       les bordures des champs atteignent 3:1. -->
   <ResourceDictionary.ThemeDictionaries>
     <ResourceDictionary x:Key="Light">
       <!-- Marque SCOLIA : marine et vert sur fond clair -->
       <SolidColorBrush x:Key="LogoPrimaryBrush" Color="#0B2A6F" />
       <SolidColorBrush x:Key="LogoSecondaryBrush" Color="#16A34A" />
-      <SolidColorBrush x:Key="AccentBrush" Color="#007AFF" />
-      <SolidColorBrush x:Key="AccentHoverBrush" Color="#0066D6" />
+      <SolidColorBrush x:Key="AccentBrush" Color="#0062D1" />
+      <SolidColorBrush x:Key="AccentHoverBrush" Color="#004FAA" />
       <SolidColorBrush x:Key="AccentSoftBrush" Color="#DCEBFF" />
       <SolidColorBrush x:Key="OnAccentBrush" Color="#FFFFFF" />
       <SolidColorBrush x:Key="OnToneBrush" Color="#FFFFFF" />
-      <SolidColorBrush x:Key="DangerBrush" Color="#B3261E" />
+      <SolidColorBrush x:Key="DangerBrush" Color="#A8201A" />
       <SolidColorBrush x:Key="OnDangerBrush" Color="#FFFFFF" />
       <SolidColorBrush x:Key="BgBrush" Color="#FFFFFF" />
       <SolidColorBrush x:Key="SurfaceBrush" Color="#FFFFFF" />
@@ -24,27 +26,27 @@
       <SolidColorBrush x:Key="FieldBrush" Color="#FFFFFF" />
       <SolidColorBrush x:Key="SearchBrush" Color="#FFFFFF" />
       <SolidColorBrush x:Key="LineBrush" Color="#E3E3E6" />
-      <SolidColorBrush x:Key="LineStrongBrush" Color="#C9C9CE" />
-      <SolidColorBrush x:Key="ButtonLineBrush" Color="#C9C9CE" />
+      <SolidColorBrush x:Key="LineStrongBrush" Color="#8A8A8F" />
+      <SolidColorBrush x:Key="ButtonLineBrush" Color="#8A8A8F" />
       <SolidColorBrush x:Key="ButtonHoverBrush" Color="#DCDCE1" />
       <SolidColorBrush x:Key="TextBrush" Color="#1D1D1F" />
-      <SolidColorBrush x:Key="Text2Brush" Color="#3C3C43" />
-      <SolidColorBrush x:Key="MutedBrush" Color="#6E6E73" />
+      <SolidColorBrush x:Key="Text2Brush" Color="#2C2C30" />
+      <SolidColorBrush x:Key="MutedBrush" Color="#5C5C61" />
       <SolidColorBrush x:Key="TableHeadBrush" Color="#F4F4F6" />
       <SolidColorBrush x:Key="TableAltBrush" Color="#F4F4F6" />
       <SolidColorBrush x:Key="SidebarSelectedBrush" Color="#DFE6EE" />
       <SolidColorBrush x:Key="HoverBrush" Color="#EBEBEF" />
       <SolidColorBrush x:Key="SnackbarBrush" Color="#1D1D1F" />
       <SolidColorBrush x:Key="ScrimBrush" Color="#33000000" />
-      <SolidColorBrush x:Key="ToneBlue" Color="#007AFF" />
-      <SolidColorBrush x:Key="ToneGreen" Color="#34C759" />
-      <SolidColorBrush x:Key="ToneOrange" Color="#FF9500" />
-      <SolidColorBrush x:Key="TonePurple" Color="#AF52DE" />
-      <SolidColorBrush x:Key="ToneRed" Color="#FF3B30" />
-      <SolidColorBrush x:Key="ToneTeal" Color="#30B0C7" />
-      <SolidColorBrush x:Key="ToneIndigo" Color="#5856D6" />
-      <SolidColorBrush x:Key="TonePink" Color="#FF2D55" />
-      <SolidColorBrush x:Key="ToneNeutral" Color="#8E8E93" />
+      <SolidColorBrush x:Key="ToneBlue" Color="#0040DD" />
+      <SolidColorBrush x:Key="ToneGreen" Color="#1F7A35" />
+      <SolidColorBrush x:Key="ToneOrange" Color="#B53000" />
+      <SolidColorBrush x:Key="TonePurple" Color="#8944AB" />
+      <SolidColorBrush x:Key="ToneRed" Color="#C9001A" />
+      <SolidColorBrush x:Key="ToneTeal" Color="#006D9E" />
+      <SolidColorBrush x:Key="ToneIndigo" Color="#3634A3" />
+      <SolidColorBrush x:Key="TonePink" Color="#C7083E" />
+      <SolidColorBrush x:Key="ToneNeutral" Color="#636366" />
       <SolidColorBrush x:Key="GreenSoftBrush" Color="#E3F7E8" />
       <SolidColorBrush x:Key="OrangeSoftBrush" Color="#FFF2DF" />
       <SolidColorBrush x:Key="RedSoftBrush" Color="#FFE5E3" />
@@ -60,8 +62,8 @@
       <SolidColorBrush x:Key="HeaderControlBrush" Color="#8CFFFFFF" />
       <SolidColorBrush x:Key="HeaderHoverBrush" Color="#D9FFFFFF" />
       <SolidColorBrush x:Key="HeaderLineBrush" Color="#7FB6DD" />
-      <SolidColorBrush x:Key="FileTabBrush" Color="#007AFF" />
-      <Color x:Key="AccentColor">#007AFF</Color>
+      <SolidColorBrush x:Key="FileTabBrush" Color="#0062D1" />
+      <Color x:Key="AccentColor">#0062D1</Color>
       <Color x:Key="ShadowColor">#1F000000</Color>
     </ResourceDictionary>
 
@@ -88,8 +90,8 @@
       <SolidColorBrush x:Key="FieldBrush" Color="#2A2A30" />
       <SolidColorBrush x:Key="SearchBrush" Color="#26262B" />
       <SolidColorBrush x:Key="LineBrush" Color="#303036" />
-      <SolidColorBrush x:Key="LineStrongBrush" Color="#46464D" />
-      <SolidColorBrush x:Key="ButtonLineBrush" Color="#46464D" />
+      <SolidColorBrush x:Key="LineStrongBrush" Color="#808088" />
+      <SolidColorBrush x:Key="ButtonLineBrush" Color="#808088" />
       <SolidColorBrush x:Key="ButtonHoverBrush" Color="#3A3A41" />
       <SolidColorBrush x:Key="TextBrush" Color="#E6E6EB" />
       <SolidColorBrush x:Key="Text2Brush" Color="#C9C9CF" />

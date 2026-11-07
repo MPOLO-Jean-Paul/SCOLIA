@@ -293,7 +293,7 @@
           <Border x:Name="HeaderFinderBar" Grid.Column="3" Classes="googlebar pill" MaxWidth="460" MinWidth="220" Margin="18,0"
                   VerticalAlignment="Center" IsVisible="{Binding !HeaderSearch.IsOpen}">
             <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto">
-              <mi:MaterialIcon Kind="Magnify" Width="19" Height="19" Margin="14,0,4,0" VerticalAlignment="Center"
+              <mi:MaterialIcon Kind="Magnify" Width="20" Height="20" Margin="14,0,4,0" VerticalAlignment="Center"
                                Foreground="{DynamicResource MutedBrush}" IsHitTestVisible="False" />
               <TextBox x:Name="HeaderFinderBox" Grid.Column="1" Classes="searchfield" MinHeight="40"
                        Text="{Binding HeaderFinder.Query, Mode=TwoWay}" PlaceholderText="{Binding HeaderFinder.Placeholder}"
@@ -317,7 +317,7 @@
                   IsVisible="{Binding HeaderSearch.IsOpen}">
             <Grid ColumnDefinitions="Auto,*,Auto,Auto">
               <!-- Filtre toujours ouvert sur une liste : une loupe fixe, Échap vide le texte -->
-              <mi:MaterialIcon Kind="Magnify" Width="19" Height="19" Margin="14,0,4,0" VerticalAlignment="Center"
+              <mi:MaterialIcon Kind="Magnify" Width="20" Height="20" Margin="14,0,4,0" VerticalAlignment="Center"
                                Foreground="{DynamicResource MutedBrush}" IsHitTestVisible="False" />
               <TextBox x:Name="DesktopContextSearchBox" Grid.Column="1" Classes="searchfield"
                        Text="{Binding HeaderSearch.Query, Mode=TwoWay}" PlaceholderText="{Binding HeaderSearch.Placeholder}"
@@ -504,7 +504,7 @@
             <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="7">
               <Panel Width="15" Height="15">
               <Border Classes="livedot" Classes.pulse="{Binding Sync.Pulse}" VerticalAlignment="Center" IsVisible="{Binding Sync.Online}" />
-              <mi:MaterialIcon Kind="CloudOffOutline" Width="15" Height="15" Foreground="{DynamicResource ToneOrange}" IsVisible="{Binding Sync.Offline}" />
+              <mi:MaterialIcon Kind="CloudOffOutline" Width="16" Height="16" Foreground="{DynamicResource ToneOrange}" IsVisible="{Binding Sync.Offline}" />
               </Panel>
               <TextBlock Grid.Column="1" Text="{Binding Sync.Ticker}" IsVisible="{Binding Sync.HasTicker}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
               <TextBlock Grid.Column="1" Text="{Binding Sync.StatusText}" Foreground="{Binding Sync.StatusBrush}" IsVisible="{Binding !Sync.HasTicker}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
@@ -515,14 +515,14 @@
           <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="6">
             <!-- Bascule rapide du thème clair au thème sombre -->
             <Button Classes="ghost" Padding="6,0" MinHeight="0" Click="OnThemeToggle" ToolTip.Tip="Thème clair ou sombre" Margin="0,0,10,0">
-              <mi:MaterialIcon x:Name="ThemeIcon" Kind="WeatherNightOutline" Width="15" Height="15" />
+              <mi:MaterialIcon x:Name="ThemeIcon" Kind="WeatherNightOutline" Width="16" Height="16" />
             </Button>
             <Button Classes="ghost" Padding="4,2" MinHeight="0" Click="OnZoomOut" ToolTip.Tip="Réduire (Ctrl+-)">
-              <mi:MaterialIcon Kind="Minus" Width="15" Height="15" />
+              <mi:MaterialIcon Kind="Minus" Width="16" Height="16" />
             </Button>
             <TextBlock Text="{Binding Prefs.ZoomLabel}" Classes="muted" VerticalAlignment="Center" MinWidth="48" TextAlignment="Center" />
             <Button Classes="ghost" Padding="4,2" MinHeight="0" Click="OnZoomIn" ToolTip.Tip="Agrandir (Ctrl++)">
-              <mi:MaterialIcon Kind="Plus" Width="15" Height="15" />
+              <mi:MaterialIcon Kind="Plus" Width="16" Height="16" />
             </Button>
           </StackPanel>
         </Grid>

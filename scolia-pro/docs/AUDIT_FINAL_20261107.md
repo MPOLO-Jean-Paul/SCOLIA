@@ -77,3 +77,23 @@ La version **1.2.36** peut être publiée, avec deux précautions :
   le solde et le retard des apprenants (ils étaient ignorés). Les soldes affichés vont donc augmenter là où ces frais existent.
 - **Ne pas installer pendant des encaissements**, synchroniser les appareils avant, et laisser la sauvegarde automatique
   « avant mise à jour » se faire (elle est vérifiée au démarrage).
+
+## 5. Publication et contraste élevé (suite du 7 novembre)
+
+**Publication.** SCOLIA Pro 1.2.36 est publiée : https://github.com/MPOLO-Jean-Paul/SCOLIA/releases/tag/scolia-pro-v1.2.36
+(exécution CI n° 1340 réussie ; APK signé avec la clé historique vérifiée, installateur Windows, empreintes SHA-256).
+
+**Contraste élevé et netteté des icônes** (après la 1.2.36, pas encore publié) :
+
+| Constat mesuré | Avant | Après |
+|---|---|---|
+| Pictogramme blanc sur tuile, thème clair (vert, orange, turquoise) | 2,2 à 2,6:1 | 5,4 à 9,7:1 (teintes « contraste élevé » d'iOS) |
+| Pictogramme blanc sur tuile, thème sombre | 2,0 à 3,5:1 | 5,6 à 9,9:1 (pictogramme foncé choisi automatiquement sur les teintes vives) |
+| Texte coloré « À jour » (vert) sur bloc clair | 2,0:1 | 4,9:1 |
+| Texte du bouton principal (accent bleu) | 4,0:1 | 5,7:1 |
+| Bordure des champs (clair / sombre) | 1,6:1 / 2,0:1 | 3,4:1 / 3,6:1 |
+| Icônes de 15, 17, 19, 21 et 25 px centrées sur des demi-pixels, reflet blanc sur les tuiles | flou | tailles paires (16, 18, 20, 24) sur pixels entiers, tuiles en aplat |
+
+Contrôles : suite `contraste` étendue (chaque teinte, dans les deux thèmes, pour le pictogramme et le texte) :
+316 contrôles sur ordinateur et 404 sur téléphone, 0 échec ; 434 tests client ; parcours `bureau` (176), `fluidite`
+(189) et `smoke` (40) sans échec.

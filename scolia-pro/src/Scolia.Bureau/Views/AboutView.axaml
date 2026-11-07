@@ -72,7 +72,7 @@
       <Border Classes="card" IsVisible="{Binding CanCheckPhoneUpdates}" Margin="24,12,24,0">
         <StackPanel Spacing="9">
           <StackPanel Orientation="Horizontal" Spacing="8">
-            <mi:MaterialIcon Kind="Update" Width="21" Height="21" Foreground="{DynamicResource AccentBrush}" />
+            <mi:MaterialIcon Kind="Update" Width="20" Height="20" Foreground="{DynamicResource AccentBrush}" />
             <TextBlock Text="Mises à jour Android" FontWeight="SemiBold" VerticalAlignment="Center" />
           </StackPanel>
           <TextBlock Text="{Binding PhoneUpdateStatus}" Classes="muted" TextWrapping="Wrap" />

@@ -95,7 +95,7 @@
             </Border>
             <Button Classes="glass" Command="{Binding ChangeServer}" MinHeight="48">
               <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="8">
-                <mi:MaterialIcon Kind="QrcodeScan" Width="19" Height="19" />
+                <mi:MaterialIcon Kind="QrcodeScan" Width="20" Height="20" />
                 <TextBlock Text="Scanner ou coller une invitation" TextWrapping="Wrap" />
               </StackPanel>
             </Button>
@@ -228,7 +228,7 @@
           <Button Classes="glass" Command="{Binding SignInWithBiometrics}" IsVisible="{Binding ShowBiometricSignIn}" IsEnabled="{Binding CanType}"
                   HorizontalAlignment="Stretch" MinHeight="44">
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="8">
-              <mi:MaterialIcon Kind="Fingerprint" Width="21" Height="21" />
+              <mi:MaterialIcon Kind="Fingerprint" Width="20" Height="20" />
               <TextBlock Text="{Binding BiometricLabel}" VerticalAlignment="Center" TextWrapping="Wrap" />
             </StackPanel>
           </Button>
@@ -241,7 +241,7 @@
           </Border>
           <Border Background="#40E5484D" CornerRadius="8" Padding="12,9" IsVisible="{Binding HasError}">
             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
-              <mi:MaterialIcon Kind="AlertCircleOutline" Width="17" Height="17" Foreground="White" VerticalAlignment="Top" Margin="0,1,0,0" />
+              <mi:MaterialIcon Kind="AlertCircleOutline" Width="18" Height="18" Foreground="White" VerticalAlignment="Top" Margin="0,1,0,0" />
               <TextBlock Grid.Column="1" Text="{Binding Error}" Foreground="White" TextWrapping="Wrap" />
             </Grid>
           </Border>

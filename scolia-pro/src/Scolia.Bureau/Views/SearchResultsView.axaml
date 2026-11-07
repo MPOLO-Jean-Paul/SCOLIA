@@ -67,7 +67,7 @@
               <Button Classes="searchrow" Command="{Binding Open}" MinHeight="66">
                 <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="11">
                   <Border Width="38" Height="38" CornerRadius="11" Background="{Binding Brush}" VerticalAlignment="Center">
-                    <mi:MaterialIcon Kind="{Binding Icon}" Width="21" Height="21" Foreground="White"
+                    <mi:MaterialIcon Kind="{Binding Icon}" Width="20" Height="20" Foreground="White"
                                      HorizontalAlignment="Center" VerticalAlignment="Center" />
                   </Border>
                   <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">

@@ -1,3 +1,4 @@
+using Avalonia.Media;
 using Material.Icons;
 using Scolia.Bureau.Infrastructure;
 
@@ -19,4 +20,17 @@ public sealed class IconStyleTests
     [Fact]
     public void Une_icone_sans_variante_au_trait_reste_inchangee() =>
         Assert.Equal(MaterialIconKind.Whatsapp, Icons.Line(MaterialIconKind.Whatsapp));
+
+    [Theory]
+    [InlineData("#1F7A35", true)]   // vert à contraste élevé (clair) : pictogramme blanc
+    [InlineData("#0040DD", true)]   // bleu à contraste élevé (clair)
+    [InlineData("#30D158", false)]  // vert vif (sombre) : pictogramme foncé
+    [InlineData("#40C8E0", false)]  // turquoise vif (sombre)
+    public void Le_pictogramme_d_une_tuile_atteint_le_contraste_eleve(string tile, bool white)
+    {
+        var color = Color.Parse(tile);
+        var glyph = TileGlyph.GlyphFor(color);
+        Assert.Equal(white, glyph == Colors.White);
+        Assert.True(ThemeContrast.Ratio(glyph, color) >= TileGlyph.Minimum);
+    }
 }

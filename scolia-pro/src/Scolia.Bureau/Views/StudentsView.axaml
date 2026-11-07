@@ -24,7 +24,7 @@
         <Button Classes="ghost" Command="{Binding ClearFilters}" VerticalAlignment="Bottom" Margin="0,0,12,12"
                 ToolTip.Tip="Affiche à nouveau tous les apprenants, sans filtre">
           <StackPanel Orientation="Horizontal" Spacing="6">
-            <mi:MaterialIcon Kind="FilterRemoveOutline" Width="17" Height="17" />
+            <mi:MaterialIcon Kind="FilterRemoveOutline" Width="18" Height="18" />
             <TextBlock Text="Effacer les filtres" VerticalAlignment="Center" />
           </StackPanel>
         </Button>

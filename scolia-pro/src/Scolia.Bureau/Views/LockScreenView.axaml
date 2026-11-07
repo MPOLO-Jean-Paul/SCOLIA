@@ -49,7 +49,7 @@
           <TextBlock Text="{Binding School}" Foreground="White" FontSize="23" FontWeight="SemiBold"
                      HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" MaxWidth="380" />
           <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="8">
-            <mi:MaterialIcon Kind="LockOutline" Width="15" Height="15" Foreground="#D9FFFFFF" VerticalAlignment="Center" />
+            <mi:MaterialIcon Kind="LockOutline" Width="16" Height="16" Foreground="#D9FFFFFF" VerticalAlignment="Center" />
             <TextBlock Text="Session protégée" Foreground="#E6FFFFFF" FontSize="13" FontWeight="Medium" />
           </StackPanel>
           <!-- Horloge secondaire : elle ne prend plus la place du formulaire. -->
@@ -108,7 +108,7 @@
           <Button Classes="glass" Command="{Binding UnlockWithDevice}" IsVisible="{Binding CanUsePairedDevice}"
                   IsEnabled="{Binding NotBusy}" MinHeight="52">
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="9">
-              <mi:MaterialIcon Kind="ShieldCheckOutline" Width="21" Height="21" />
+              <mi:MaterialIcon Kind="ShieldCheckOutline" Width="20" Height="20" />
               <TextBlock Text="{Binding PairedDeviceText}" VerticalAlignment="Center" TextWrapping="Wrap" />
             </StackPanel>
           </Button>
@@ -116,7 +116,7 @@
           <Button Classes="glass" Command="{Binding UnlockWithBiometrics}"
                   IsVisible="{Binding CanUseBiometrics}" IsEnabled="{Binding NotBusy}" MinHeight="48">
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="8">
-              <mi:MaterialIcon Kind="Fingerprint" Width="21" Height="21" />
+              <mi:MaterialIcon Kind="Fingerprint" Width="20" Height="20" />
               <TextBlock Text="{Binding BiometricLabel}" VerticalAlignment="Center" TextWrapping="Wrap" />
             </StackPanel>
           </Button>

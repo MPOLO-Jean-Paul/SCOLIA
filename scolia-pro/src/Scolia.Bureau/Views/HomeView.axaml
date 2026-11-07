@@ -134,7 +134,7 @@
                           Margin="2" Padding="7,7" MinHeight="40"
                           HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
                     <Grid ColumnDefinitions="Auto,*" ColumnSpacing="5">
-                      <mi:MaterialIcon Kind="{Binding Icon}" Width="15" Height="15"
+                      <mi:MaterialIcon Kind="{Binding Icon}" Width="16" Height="16"
                                        Foreground="{DynamicResource AccentBrush}"
                                        VerticalAlignment="Center" />
                       <TextBlock Grid.Column="1" Text="{Binding ShortTitle}" FontSize="12"

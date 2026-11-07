@@ -32,8 +32,9 @@ public sealed class Preferences : Observable
     /// <summary>Couleurs d'accent : boutons principaux, sélection, liens. Une teinte pour le clair, une pour le sombre.</summary>
     private static readonly (string Key, string Label, string Light, string Dark)[] AccentTable =
     [
-        ("bleu", "Bleu", "#007AFF", "#78B9FF"), ("indigo", "Indigo", "#5856D6", "#B7B4FF"), ("violet", "Violet", "#8E44AD", "#D09BFF"),
-        ("vert", "Vert", "#248A3D", "#63E58A"), ("orange", "Orange", "#C25E00", "#FFB45E"), ("graphite", "Graphite", "#55555A", "#B8B8BE"),
+        // Contraste élevé : en clair, le texte blanc des boutons dépasse 5:1 sur chaque accent.
+        ("bleu", "Bleu", "#0062D1", "#78B9FF"), ("indigo", "Indigo", "#5856D6", "#B7B4FF"), ("violet", "Violet", "#8E44AD", "#D09BFF"),
+        ("vert", "Vert", "#1F7A35", "#63E58A"), ("orange", "Orange", "#A84E00", "#FFB45E"), ("graphite", "Graphite", "#55555A", "#B8B8BE"),
     ];
 
     public static readonly IReadOnlyList<ChoiceItem> Accents = AccentTable.Select(a => new ChoiceItem(a.Key, a.Label)).ToList();

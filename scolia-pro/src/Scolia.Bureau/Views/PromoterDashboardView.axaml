@@ -18,7 +18,7 @@
               </Border>
             </StackPanel>
             <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-              <mi:MaterialIcon Kind="CheckCircleOutline" Width="15" Height="15" Foreground="{DynamicResource ToneGreen}" IsVisible="{Binding IsSettled}" />
+              <mi:MaterialIcon Kind="CheckCircleOutline" Width="16" Height="16" Foreground="{DynamicResource ToneGreen}" IsVisible="{Binding IsSettled}" />
               <TextBlock Text="Réglé" FontWeight="SemiBold" Foreground="{DynamicResource ToneGreen}" IsVisible="{Binding IsSettled}" />
               <TextBlock Text="Reste" Classes="muted" IsVisible="{Binding !IsSettled}" />
               <TextBlock Text="{Binding Remaining}" FontWeight="SemiBold" IsVisible="{Binding !IsSettled}" />
@@ -51,7 +51,7 @@
               <TextBlock Text="Pilotage de l'établissement" FontWeight="SemiBold" FontSize="18" Margin="0,0,10,0" VerticalAlignment="Center" />
               <Border Background="{DynamicResource GroupBrush}" CornerRadius="9" Padding="8,2" VerticalAlignment="Center">
                 <StackPanel Orientation="Horizontal" Spacing="4">
-                  <mi:MaterialIcon Kind="EyeOutline" Width="13" Height="13" />
+                  <mi:MaterialIcon Kind="EyeOutline" Width="14" Height="14" />
                   <TextBlock Text="Lecture seule" FontSize="{DynamicResource FsSmall}" />
                 </StackPanel>
               </Border>
