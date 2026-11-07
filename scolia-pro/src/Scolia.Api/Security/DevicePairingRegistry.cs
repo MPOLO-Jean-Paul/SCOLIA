@@ -200,4 +200,5 @@ public sealed record DeviceProofRequest(Guid GrantId, string DeviceId, string No
 public sealed record DeviceProofReply(string Proof);
 public sealed record DeviceSelfRegistration(Guid GrantId, string DeviceSecret, DateTime ExpiresUtc);
 public sealed record DeviceRenewedSession(object Session, DateTime ExpiresUtc);
-public sealed record PairingAccepted(object Session, Guid GrantId, string DeviceSecret, DateTime ExpiresUtc);
+public sealed record PairingAccepted(Guid GrantId, string DeviceSecret, DateTime ExpiresUtc, string SchoolName);
+public sealed record DeviceLinkVerified(DateTime ExpiresUtc);
