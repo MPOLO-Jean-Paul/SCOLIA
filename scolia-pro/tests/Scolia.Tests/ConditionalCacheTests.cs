@@ -24,12 +24,11 @@ public sealed class ConditionalCacheTests
         Assert.Equal(HttpStatusCode.NotModified, unchanged.StatusCode);
         Assert.Equal(string.Empty, await unchanged.Content.ReadAsStringAsync());
 
-        using var write = await admin.PostAsync("/api/etablissement/promotions",
-            System.Net.Http.Json.JsonContent.Create(new {
-                code = "NEW1", name = "Première", level = 1, isActive = true,
-                monthlyFee = 50000m, oneTimeFees = Array.Empty<object>()
-            }));
-        Assert.Equal(HttpStatusCode.OK, write.StatusCode);
+        await admin.Post("/api/etablissement/promotions", new
+        {
+            code = "NEW1", name = "Première", level = 1, isActive = true,
+            monthlyFee = 50000m, oneTimeFees = Array.Empty<object>()
+        }).Ok();
         using var changedRequest = new HttpRequestMessage(HttpMethod.Get, path);
         changedRequest.Headers.IfNoneMatch.Add(first.Headers.ETag!);
         using var changed = await admin.SendAsync(changedRequest);
