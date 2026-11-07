@@ -36,6 +36,67 @@
     </Style>
     <Style Selector="Button.resume /template/ ContentPresenter"><Setter Property="Background" Value="{DynamicResource LoginGlass}" /></Style>
     <Style Selector="Button.resume:pointerover /template/ ContentPresenter"><Setter Property="Background" Value="{DynamicResource LoginGlassHover}" /></Style>
+
+    <!-- Sur Android uniquement : langage iOS récent, lisible et tactile, sans modifier la connexion Windows. -->
+    <Style Selector="Border.iosauthcard">
+      <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+      <Setter Property="CornerRadius" Value="25" />
+      <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="BoxShadow" Value="0 10 28 0 #140F2B6B" />
+      <Setter Property="Padding" Value="18" />
+    </Style>
+    <Style Selector="TextBox.iosauthfield">
+      <Setter Property="Background" Value="{DynamicResource Surface2Brush}" />
+      <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+      <Setter Property="CornerRadius" Value="14" />
+      <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="FontSize" Value="16" />
+      <Setter Property="Padding" Value="16,12" />
+      <Setter Property="MinHeight" Value="56" />
+    </Style>
+    <Style Selector="Button.iosauthprimary">
+      <Setter Property="Background" Value="#1769E6" />
+      <Setter Property="Foreground" Value="White" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="CornerRadius" Value="16" />
+      <Setter Property="MinHeight" Value="54" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button.iosauthsecondary">
+      <Setter Property="Background" Value="{DynamicResource Surface2Brush}" />
+      <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="15" />
+      <Setter Property="MinHeight" Value="50" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button.iosauthlink">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Foreground" Value="#1769E6" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="CornerRadius" Value="12" />
+      <Setter Property="MinHeight" Value="44" />
+    </Style>
+    <Style Selector="Button.iosautheye">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Foreground" Value="{DynamicResource Text2Brush}" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Width" Value="48" />
+      <Setter Property="Height" Value="48" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+      <Setter Property="HorizontalAlignment" Value="Right" />
+    </Style>
+    <Style Selector="TextBlock.iosauthlabel">
+      <Setter Property="FontSize" Value="12" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="Foreground" Value="{DynamicResource Text2Brush}" />
+    </Style>
   </UserControl.Styles>
 
   <Grid x:Name="Root">
@@ -56,6 +117,18 @@
           <GradientStop Offset="0.45" Color="#1FFFFFFF" />
           <GradientStop Offset="1" Color="#00FFFFFF" />
         </RadialGradientBrush>
+      </Border.Background>
+    </Border>
+
+
+    <!-- Le fond doux reste propre au téléphone ; Windows conserve sa grande page bleue. -->
+    <Border x:Name="IosBackdrop" IsVisible="False" Background="#F5F7FB">
+      <Border.Background>
+        <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+          <GradientStop Offset="0" Color="#EFF5FF" />
+          <GradientStop Offset="0.48" Color="#F8F9FD" />
+          <GradientStop Offset="1" Color="#F5F7FB" />
+        </LinearGradientBrush>
       </Border.Background>
     </Border>
 
@@ -312,6 +385,271 @@
         <TextBlock x:Name="LoginFooter" Grid.Row="2" Text="{Binding Footer}" Foreground="{DynamicResource LoginInk3}" FontSize="{DynamicResource FsSmall}"
                    HorizontalAlignment="Stretch" TextAlignment="Center" TextWrapping="Wrap" Margin="16,22,16,8" />
       </Grid>
+    </ScrollViewer>
+
+    <!-- Parcours iOS sur mobile : une page distincte ; la vue de connexion desktop est intacte. -->
+    <ScrollViewer x:Name="IosLoginScroll" IsVisible="False"
+                  HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+      <StackPanel MaxWidth="440" HorizontalAlignment="Center" Margin="20,28,20,26" Spacing="18">
+        <StackPanel Spacing="11" HorizontalAlignment="Stretch">
+          <Border Width="84" Height="84" CornerRadius="27" Background="White"
+                  BorderThickness="1" BorderBrush="#D6E2F5"
+                  BoxShadow="0 12 26 0 #180D459B" HorizontalAlignment="Center">
+            <Image Source="{DynamicResource ScoliaMark}" Width="58" Height="58"
+                   HorizontalAlignment="Center" VerticalAlignment="Center" />
+          </Border>
+          <TextBlock Text="SCOLIA Pro" FontSize="27" FontWeight="Bold"
+                     Foreground="{DynamicResource TextBrush}" TextAlignment="Center" />
+          <TextBlock Text="{Binding TitleText}" FontSize="14" Classes="muted"
+                     TextWrapping="Wrap" TextAlignment="Center" MaxLines="3" />
+        </StackPanel>
+
+        <Border Classes="iosauthcard">
+          <StackPanel Spacing="15">
+            <StackPanel Spacing="5" IsVisible="{Binding !RecoveryOpen}">
+              <TextBlock Text="Bienvenue" FontSize="23" FontWeight="Bold"
+                         Foreground="{DynamicResource TextBrush}" />
+              <TextBlock Text="{Binding IntroText}" Classes="muted"
+                         FontSize="13" TextWrapping="Wrap" />
+            </StackPanel>
+            <Button Classes="iosauthsecondary" Command="{Binding Resume}"
+                    IsVisible="{Binding CanResume}" IsEnabled="{Binding NotBusy}">
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <mi:MaterialIcon Kind="ArrowLeft" Width="18" Height="18" />
+                <TextBlock Text="{Binding ResumeText}" VerticalAlignment="Center" />
+              </StackPanel>
+            </Button>
+
+            <StackPanel Spacing="12" IsVisible="{Binding ShowPairingCallToAction}">
+              <Border Background="#E7F0FE" CornerRadius="15" Padding="13">
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                  <Border Width="44" Height="44" CornerRadius="14" Background="#D5E6FE">
+                    <mi:MaterialIcon Kind="QrcodeScan" Width="24" Height="24"
+                                     Foreground="#1769E6" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                  </Border>
+                  <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
+                    <TextBlock Text="Relier cet appareil" FontWeight="SemiBold" Foreground="#16396D" />
+                    <TextBlock Text="Scannez une invitation du serveur scolaire pour activer votre accès."
+                               FontSize="12" TextWrapping="Wrap" Foreground="#41618D" />
+                  </StackPanel>
+                </Grid>
+              </Border>
+              <Button Classes="iosauthprimary" Command="{Binding ChangeServer}" MinHeight="56">
+                <StackPanel Orientation="Horizontal" Spacing="9">
+                  <mi:MaterialIcon Kind="QrcodeScan" Width="20" Height="20" />
+                  <TextBlock Text="Scanner le code QR" FontWeight="SemiBold" VerticalAlignment="Center" />
+                </StackPanel>
+              </Button>
+              <Button Classes="iosauthlink" Command="{Binding EnableManualLogin}">
+                <TextBlock Text="Se connecter avec un compte" FontWeight="SemiBold" />
+              </Button>
+            </StackPanel>
+
+            <StackPanel Spacing="13" IsVisible="{Binding ShowManualCredentials}">
+              <StackPanel Spacing="12" IsVisible="{Binding !RecoveryOpen}">
+                <Border Background="{DynamicResource Surface2Brush}" CornerRadius="15"
+                        Padding="13" IsVisible="{Binding HasRememberedAccount}">
+                  <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                    <Border Width="40" Height="40" CornerRadius="20" Background="#DCEAFF" VerticalAlignment="Center">
+                      <mi:MaterialIcon Kind="AccountOutline" Width="21" Height="21" Foreground="#1769E6"
+                                       VerticalAlignment="Center" HorizontalAlignment="Center" />
+                    </Border>
+                    <StackPanel Grid.Column="1" Spacing="1" VerticalAlignment="Center">
+                      <TextBlock Text="Compte reconnu" Classes="iosauthlabel" />
+                      <TextBlock Text="{Binding UserName}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                    </StackPanel>
+                    <Button Grid.Column="2" Classes="iosauthlink" Content="Changer"
+                            Command="{Binding ChangeAccount}" IsEnabled="{Binding NotBusy}" />
+                  </Grid>
+                </Border>
+                <StackPanel Spacing="6" IsVisible="{Binding ShowRememberedChoices}">
+                  <TextBlock Text="COMPTES DE CET APPAREIL" Classes="iosauthlabel" />
+                  <ItemsControl ItemsSource="{Binding KnownAccounts}">
+                    <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate>
+                        <Button Classes="iosauthsecondary" MinHeight="45" Margin="0,0,7,7" Padding="12,6"
+                                Command="{Binding $parent[ItemsControl].DataContext.ChooseRememberedAccount}"
+                                CommandParameter="{Binding}">
+                          <StackPanel Orientation="Horizontal" Spacing="7">
+                            <mi:MaterialIcon Kind="AccountOutline" Width="18" Height="18" />
+                            <TextBlock Text="{Binding}" VerticalAlignment="Center" />
+                          </StackPanel>
+                        </Button>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </StackPanel>
+                <StackPanel Spacing="6" IsVisible="{Binding ShowAccountEntry}">
+                  <TextBlock Text="IDENTIFIANT" Classes="iosauthlabel" />
+                  <TextBox x:Name="IosUserNameBox" Classes="iosauthfield" Text="{Binding UserName}"
+                           PlaceholderText="Votre identifiant" MaxLength="40" IsEnabled="{Binding CanType}"
+                           AutomationProperties.Name="Identifiant de connexion" />
+                </StackPanel>
+                <StackPanel Spacing="6" IsVisible="{Binding ShowSignInPassword}">
+                  <TextBlock Text="MOT DE PASSE" Classes="iosauthlabel" />
+                  <Grid>
+                    <TextBox x:Name="IosPasswordBox" Classes="iosauthfield" Text="{Binding Password}"
+                             PasswordChar="•" RevealPassword="{Binding ShowPassword}" MaxLength="128"
+                             Padding="16,12,56,12"
+                             TextInputOptions.ContentType="Password" TextInputOptions.IsSensitive="True"
+                             PlaceholderText="Votre mot de passe" IsEnabled="{Binding CanType}"
+                             AutomationProperties.Name="Mot de passe de connexion" />
+                    <Button Classes="iosautheye" Command="{Binding ToggleEye}" IsEnabled="{Binding CanType}"
+                            ToolTip.Tip="Afficher ou masquer le mot de passe">
+                      <mi:MaterialIcon Kind="{Binding EyeIcon}" Width="22" Height="22" />
+                    </Button>
+                  </Grid>
+                </StackPanel>
+                <Button Classes="iosauthprimary" Command="{Binding Submit}"
+                        IsEnabled="{Binding CanSubmitCredentials}" MinHeight="56">
+                  <StackPanel Orientation="Horizontal" Spacing="10">
+                    <mi:MaterialIcon Kind="Loading" Classes="spin" Width="19" Height="19" IsVisible="{Binding Busy}" />
+                    <mi:MaterialIcon Kind="LockOpenCheckOutline" Width="19" Height="19" IsVisible="{Binding NotBusy}" />
+                    <TextBlock Text="Se connecter" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center" />
+                  </StackPanel>
+                </Button>
+                <Button Classes="iosauthlink" Command="{Binding ToggleRecoveryHelp}" IsEnabled="{Binding NotBusy}">
+                  <TextBlock Text="{Binding RecoveryActionLabel}" FontWeight="SemiBold" />
+                </Button>
+              </StackPanel>
+
+              <!-- Récupération : aucune session n'est créée, biométrie ou code serveur obligatoires. -->
+              <StackPanel Spacing="13" IsVisible="{Binding RecoveryOpen}">
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+                  <Button Classes="iosauthlink" Command="{Binding ToggleRecoveryHelp}" MinWidth="44"
+                          ToolTip.Tip="Revenir à la connexion" HorizontalAlignment="Left">
+                    <mi:MaterialIcon Kind="ChevronLeft" Width="22" Height="22" />
+                  </Button>
+                  <TextBlock Grid.Column="1" Text="Récupérer mon accès" FontSize="22"
+                             FontWeight="Bold" VerticalAlignment="Center" />
+                </Grid>
+                <TextBlock Text="{Binding RecoveryInstructions}" Classes="muted"
+                           FontSize="13" TextWrapping="Wrap" />
+                <StackPanel Spacing="6">
+                  <TextBlock Text="NOUVEAU MOT DE PASSE" Classes="iosauthlabel" />
+                  <Grid>
+                    <TextBox x:Name="IosNewPasswordBox" Classes="iosauthfield" Text="{Binding NewPassword}"
+                             PasswordChar="•" RevealPassword="{Binding ShowNewPassword}"
+                             Padding="16,12,56,12" MaxLength="128"
+                             TextInputOptions.ContentType="Password" TextInputOptions.IsSensitive="True"
+                             PlaceholderText="Choisir un mot de passe" IsEnabled="{Binding NotBusy}"
+                             AutomationProperties.Name="Nouveau mot de passe" />
+                    <Button Classes="iosautheye" Command="{Binding ToggleNewPasswordEye}"
+                            IsEnabled="{Binding NotBusy}" ToolTip.Tip="Afficher ou masquer le nouveau mot de passe">
+                      <mi:MaterialIcon Kind="{Binding NewPasswordEyeIcon}" Width="21" Height="21" />
+                    </Button>
+                  </Grid>
+                  <TextBlock Text="{Binding RecoveryPasswordHint}" Classes="muted"
+                             FontSize="11" TextWrapping="Wrap" IsVisible="{Binding HasRecoveryPasswordHint}" />
+                </StackPanel>
+                <StackPanel Spacing="6">
+                  <TextBlock Text="CONFIRMATION" Classes="iosauthlabel" />
+                  <Grid>
+                    <TextBox x:Name="IosConfirmPasswordBox" Classes="iosauthfield" Text="{Binding ConfirmPassword}"
+                             PasswordChar="•" RevealPassword="{Binding ShowConfirmPassword}"
+                             Padding="16,12,56,12" MaxLength="128"
+                             TextInputOptions.ContentType="Password" TextInputOptions.IsSensitive="True"
+                             PlaceholderText="Répéter le mot de passe" IsEnabled="{Binding NotBusy}"
+                             AutomationProperties.Name="Confirmation du nouveau mot de passe" />
+                    <Button Classes="iosautheye" Command="{Binding ToggleConfirmPasswordEye}"
+                            IsEnabled="{Binding NotBusy}" ToolTip.Tip="Afficher ou masquer la confirmation">
+                      <mi:MaterialIcon Kind="{Binding ConfirmPasswordEyeIcon}" Width="21" Height="21" />
+                    </Button>
+                  </Grid>
+                  <TextBlock Text="{Binding RecoveryConfirmationHint}" Classes="muted"
+                             FontSize="11" TextWrapping="Wrap" IsVisible="{Binding HasRecoveryConfirmationHint}" />
+                </StackPanel>
+                <Button Classes="iosauthsecondary" Command="{Binding RecoverWithBiometrics}"
+                        IsVisible="{Binding CanUseBiometricSignIn}"
+                        IsEnabled="{Binding CanRecoverWithBiometrics}">
+                  <StackPanel Orientation="Horizontal" Spacing="8">
+                    <mi:MaterialIcon Kind="Fingerprint" Width="21" Height="21" />
+                    <TextBlock Text="Valider avec mon empreinte" VerticalAlignment="Center" />
+                  </StackPanel>
+                </Button>
+                <StackPanel Spacing="6">
+                  <TextBlock Text="CODE DE SECOURS DU SERVEUR" Classes="iosauthlabel" />
+                  <Grid>
+                    <TextBox x:Name="IosRecoveryCodeBox" Classes="iosauthfield" Text="{Binding RecoveryCode}"
+                             PasswordChar="•" RevealPassword="{Binding ShowRecoveryCode}"
+                             Padding="16,12,56,12" MaxLength="100"
+                             TextInputOptions.ContentType="Password" TextInputOptions.IsSensitive="True"
+                             PlaceholderText="Code confidentiel" IsEnabled="{Binding NotBusy}"
+                             AutomationProperties.Name="Code de récupération confidentiel" />
+                    <Button Classes="iosautheye" Command="{Binding ToggleRecoveryCodeEye}"
+                            IsEnabled="{Binding NotBusy}" ToolTip.Tip="Afficher ou masquer le code de secours">
+                      <mi:MaterialIcon Kind="{Binding RecoveryCodeEyeIcon}" Width="21" Height="21" />
+                    </Button>
+                  </Grid>
+                </StackPanel>
+                <Button Classes="iosauthprimary" Command="{Binding RecoverWithCode}"
+                        IsEnabled="{Binding CanRecoverWithCode}">
+                  <StackPanel Orientation="Horizontal" Spacing="8">
+                    <mi:MaterialIcon Kind="ShieldCheckOutline" Width="20" Height="20" />
+                    <TextBlock Text="Restaurer le mot de passe" FontWeight="SemiBold" VerticalAlignment="Center" />
+                  </StackPanel>
+                </Button>
+              </StackPanel>
+            </StackPanel>
+
+            <StackPanel Spacing="9" IsVisible="{Binding ShowBiometricEnrollment}">
+              <CheckBox Content="{Binding EnrollmentText}" IsChecked="{Binding EnableBiometricsAfterLogin}"
+                        IsEnabled="{Binding CanType}" FontSize="13" />
+              <TextBlock Text="{Binding EnrollmentHint}" Classes="muted" FontSize="11" TextWrapping="Wrap" />
+            </StackPanel>
+            <Button Classes="iosauthsecondary" Command="{Binding SignInWithBiometrics}"
+                    IsVisible="{Binding ShowBiometricSignIn}" IsEnabled="{Binding CanType}">
+              <StackPanel Orientation="Horizontal" Spacing="9">
+                <mi:MaterialIcon Kind="Fingerprint" Width="22" Height="22" />
+                <TextBlock Text="{Binding BiometricLabel}" FontWeight="SemiBold" VerticalAlignment="Center" />
+              </StackPanel>
+            </Button>
+            <Button Classes="iosauthlink" Command="{Binding DisableBiometrics}"
+                    IsVisible="{Binding ShowRemoveBiometric}">
+              <TextBlock Text="Retirer l'empreinte de cet appareil" TextWrapping="Wrap" />
+            </Button>
+          </StackPanel>
+        </Border>
+
+        <!-- Retour d'état en dehors de la carte pour conserver les actions visibles. -->
+        <Border Background="#EAF5EC" BorderBrush="#C7E8D1" BorderThickness="1"
+                CornerRadius="14" Padding="13" IsVisible="{Binding HasNotice}">
+          <TextBlock Text="{Binding Notice}" Foreground="#20663B" TextWrapping="Wrap" />
+        </Border>
+        <Border Background="#FCEAEC" BorderBrush="#F5C6D1" BorderThickness="1"
+                CornerRadius="14" Padding="13" IsVisible="{Binding HasError}">
+          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+            <mi:MaterialIcon Kind="AlertCircleOutline" Width="20" Height="20" Foreground="#A22342" />
+            <TextBlock Grid.Column="1" Text="{Binding Error}" Foreground="#8E1D38" TextWrapping="Wrap" />
+          </Grid>
+        </Border>
+        <Border Background="#FFF2DE" BorderBrush="#F3D5A3" BorderThickness="1"
+                CornerRadius="14" Padding="14" IsVisible="{Binding Locked}">
+          <StackPanel Spacing="8">
+            <Grid ColumnDefinitions="*,Auto">
+              <TextBlock Text="Accès temporairement verrouillé" Foreground="#80520A" FontWeight="SemiBold" />
+              <TextBlock Grid.Column="1" Text="{Binding CountdownText}" Foreground="#80520A" FontWeight="Bold" />
+            </Grid>
+            <ProgressBar Value="{Binding LockProgress}" Minimum="0" Maximum="100"
+                         Height="4" MinHeight="4" />
+          </StackPanel>
+        </Border>
+        <Border Background="#EAF5EC" CornerRadius="14" Padding="13" IsVisible="{Binding Restored}">
+          <TextBlock Text="Accès rétabli. Vous pouvez vous connecter." Foreground="#20663B" />
+        </Border>
+        <Button Classes="iosauthlink" Command="{Binding ChangeServer}" IsEnabled="{Binding NotBusy}"
+                HorizontalAlignment="Center">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <mi:MaterialIcon Kind="LanConnect" Width="18" Height="18" />
+            <TextBlock Text="Changer de serveur principal" VerticalAlignment="Center" />
+          </StackPanel>
+        </Button>
+        <TextBlock Text="{Binding ServerLine}" IsVisible="{Binding HasServerLine}"
+                   Classes="muted" TextAlignment="Center" FontSize="11" TextWrapping="Wrap" />
+        <TextBlock Text="{Binding Footer}" Classes="muted" TextAlignment="Center"
+                   FontSize="11" TextWrapping="Wrap" Margin="0,0,0,10" />
+      </StackPanel>
     </ScrollViewer>
   </Grid>
 </UserControl>
