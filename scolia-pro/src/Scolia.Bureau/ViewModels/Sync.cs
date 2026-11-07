@@ -3,6 +3,7 @@ using System.Net;
 using System.Text.Json;
 using Avalonia.Media;
 using Avalonia.Threading;
+using Material.Icons;
 using Scolia.Bureau.Api;
 using Scolia.Bureau.Infrastructure;
 using Scolia.Bureau.Ribbon;
@@ -202,6 +203,17 @@ public sealed class SyncCenter : Observable, IDisposable
         : api.Server.IsLoopback ? $"Cet appareil est le serveur de l'établissement · {PeersText}. Les autres postes lui envoient leurs opérations."
         : api.IsLongDistance ? $"Par Internet, chiffré · {PeersText}. Les opérations sont confirmées par l'ordinateur principal."
         : $"Relié à l'ordinateur principal · {PeersText}.";
+
+    /// <summary>Résumé court de l'état, sur une ligne, pour la carte d'accueil du téléphone.</summary>
+    public string StatusHint => Offline ? "Les données téléchargées restent consultables."
+        : HasConflicts ? "Touchez pour revoir les opérations refusées."
+        : api.Server.IsLoopback ? $"Cet appareil est le serveur · {PeersText}"
+        : api.IsLongDistance ? $"Par Internet, chiffré · {PeersText}"
+        : $"Relié à l'ordinateur principal · {PeersText}";
+
+    /// <summary>Pictogramme de l'état, pour la carte d'accueil du téléphone.</summary>
+    public MaterialIconKind StatusIcon => Offline ? MaterialIconKind.CloudOffOutline : syncing ? MaterialIconKind.CloudSyncOutline
+        : HasConflicts ? MaterialIconKind.AlertCircleOutline : MaterialIconKind.CloudCheckOutline;
 
     public IBrush StatusBrush => ThemeBrush.Get(Offline ? "ToneOrange" : syncing ? "ToneBlue" : HasConflicts ? "ToneRed" : "ToneGreen");
 
@@ -712,6 +724,8 @@ public sealed class SyncCenter : Observable, IDisposable
         Raise(nameof(Online));
         Raise(nameof(Offline));
         Raise(nameof(StatusText));
+        Raise(nameof(StatusIcon));
+        Raise(nameof(StatusHint));
         Raise(nameof(StatusDetail));
         Raise(nameof(StatusBrush));
     }

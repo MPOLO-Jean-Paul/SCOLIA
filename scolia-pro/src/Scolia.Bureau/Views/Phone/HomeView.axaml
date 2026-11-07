@@ -7,11 +7,10 @@
   <!-- Accueil du téléphone, dans le langage de la Configuration (Réglages d'iOS) : un titre, une phrase, puis des
        groupes en capitales faits de lignes arrondies — tuile d'icône, libellé, valeur à droite, chevron. -->
   <UserControl.Styles>
-    <Style Selector="Border.statechip">
-      <Setter Property="Background" Value="{DynamicResource GroupBrush}" />
-      <Setter Property="CornerRadius" Value="14" />
-      <Setter Property="Padding" Value="10,5" />
-      <Setter Property="Margin" Value="0,0,8,6" />
+    <!-- Carte d'accueil légèrement surélevée, comme la carte du compte sur iPhone -->
+    <Style Selector="Border.welcomecard">
+      <Setter Property="BoxShadow" Value="0 4 16 0 #14000000" />
+      <Setter Property="Margin" Value="0,4,0,2" />
     </Style>
     <Style Selector="TextBlock.rowvalue">
       <Setter Property="FontWeight" Value="SemiBold" />
@@ -32,33 +31,51 @@
   </UserControl.Styles>
 
   <StackPanel x:Name="Sections" Spacing="12" Margin="0,0,0,8">
-    <!-- Titre de la page, comme « Configuration » : salutation, contexte du compte et date -->
-    <StackPanel Spacing="4" Margin="4,2,0,0">
-      <TextBlock Text="{Binding Greeting}" FontSize="{DynamicResource FsTitle}" FontWeight="SemiBold" TextWrapping="Wrap" />
-      <TextBlock Classes="muted" TextWrapping="Wrap">
-        <Run Text="{Binding AccountContextLine, Mode=OneWay}" /><Run Text=" · " /><Run Text="{Binding DateLine, Mode=OneWay}" />
-      </TextBlock>
-      <WrapPanel Margin="0,6,0,0">
-        <Border Classes="statechip" IsVisible="{Binding HasCashLine}">
-          <StackPanel Orientation="Horizontal" Spacing="7">
-            <Ellipse Width="8" Height="8" Fill="{Binding CashBrush}" VerticalAlignment="Center" />
-            <TextBlock Text="{Binding CashLine}" FontWeight="SemiBold" FontSize="{DynamicResource FsSmall}" />
-          </StackPanel>
-        </Border>
-        <!-- Point de connexion compact ; un toucher ouvre les opérations locales. -->
-        <Button Command="{Binding Network}" IsVisible="{Binding Sync.Offline}"
-                Background="Transparent" BorderThickness="0" Padding="0"
-                ToolTip.Tip="{Binding Sync.StatusDetail}">
-          <Border Classes="statechip">
-            <StackPanel Orientation="Horizontal" Spacing="7">
-              <Ellipse Width="8" Height="8" Fill="{Binding Sync.StatusBrush}" VerticalAlignment="Center" />
-              <TextBlock Text="{Binding Sync.StatusText}" FontWeight="SemiBold"
-                         FontSize="{DynamicResource FsSmall}" />
-            </StackPanel>
+    <!-- Carte d'accueil, comme la carte du compte en tête des Réglages d'iPhone : avatar rond, salutation et
+         contexte, puis l'état de la connexion et de la caisse en lignes de réglage dans la même carte. -->
+    <Border x:Name="WelcomeCard" Classes="phonegroup welcomecard">
+      <StackPanel>
+        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14" Margin="16,16,16,14">
+          <Border Width="58" Height="58" CornerRadius="29" VerticalAlignment="Center">
+            <Border.Background>
+              <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                <GradientStop Offset="0" Color="#3A86F0" />
+                <GradientStop Offset="1" Color="#0B4FC4" />
+              </LinearGradientBrush>
+            </Border.Background>
+            <TextBlock Text="{Binding Initials}" Foreground="White" FontSize="21" FontWeight="SemiBold"
+                       HorizontalAlignment="Center" VerticalAlignment="Center" />
           </Border>
+          <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+            <TextBlock Text="{Binding Greeting}" FontSize="20" FontWeight="SemiBold" TextWrapping="Wrap" MaxLines="2" />
+            <TextBlock Text="{Binding AccountContextLine}" Classes="muted" FontSize="{DynamicResource FsSmall}"
+                       TextTrimming="CharacterEllipsis" />
+            <TextBlock Text="{Binding DateLine}" Classes="muted" FontSize="{DynamicResource FsSmall}"
+                       TextTrimming="CharacterEllipsis" />
+          </StackPanel>
+        </Grid>
+        <Border Height="1" Background="{DynamicResource LineBrush}" Margin="16,0,0,0" />
+        <!-- Connexion, toujours visible : en ligne, hors ligne ou synchronisation ; un toucher ouvre Réseau. -->
+        <Button Classes="settingsentry" Command="{Binding Network}" ToolTip.Tip="{Binding Sync.StatusDetail}">
+          <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+            <Border Classes="appicon medium" Background="{Binding Sync.StatusBrush}"><mi:MaterialIcon Kind="{Binding Sync.StatusIcon}" /></Border>
+            <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="1">
+              <TextBlock Text="{Binding Sync.StatusText}" TextTrimming="CharacterEllipsis" />
+              <TextBlock Text="{Binding Sync.StatusHint}" Classes="muted" FontSize="{DynamicResource FsSmall}"
+                         TextWrapping="Wrap" MaxLines="2" />
+            </StackPanel>
+            <mi:MaterialIcon Grid.Column="2" Kind="ChevronRight" Width="18" Height="18" VerticalAlignment="Center" Foreground="{DynamicResource MutedBrush}" />
+          </Grid>
         </Button>
-      </WrapPanel>
-    </StackPanel>
+        <StackPanel IsVisible="{Binding HasCashLine}">
+          <Border Height="1" Background="{DynamicResource LineBrush}" Margin="54,0,0,0" />
+          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12" Margin="12,10,14,10" MinHeight="32">
+            <Border Classes="appicon medium" Background="{Binding CashBrush}"><mi:MaterialIcon Kind="CashRegister" /></Border>
+            <TextBlock Grid.Column="1" Text="{Binding CashLine}" VerticalAlignment="Center" TextWrapping="Wrap" MaxLines="2" />
+          </Grid>
+        </StackPanel>
+      </StackPanel>
+    </Border>
 
     <!-- Raccourcis : les outils du rôle, en lignes de réglage -->
     <StackPanel Spacing="5" IsVisible="{Binding !!PhoneTools.Count}">

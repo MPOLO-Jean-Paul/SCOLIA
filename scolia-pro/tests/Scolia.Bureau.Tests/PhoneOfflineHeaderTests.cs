@@ -44,8 +44,10 @@ public sealed class PhoneOfflineHeaderTests
         Assert.Contains(elements, e => e.Name.LocalName == "Button" &&
             e.Attributes().Any(a => a.Name.LocalName == "Command" &&
                 a.Value.Contains("Network", StringComparison.Ordinal)) &&
-            e.Attributes().Any(a => a.Name.LocalName == "IsVisible" &&
-                a.Value.Contains("Sync.Offline", StringComparison.Ordinal)));
+            e.Descendants().Any(d => d.Attributes().Any(a => a.Name.LocalName == "Text" &&
+                a.Value.Contains("Sync.StatusText", StringComparison.Ordinal))));
+        Assert.Contains(elements, e => e.Name.LocalName == "Border" &&
+            e.Attributes().Any(a => a.Name.LocalName == "Name" && a.Value == "WelcomeCard"));
         var network = XDocument.Load(Source("Views/NetworkView.axaml"));
         Assert.Contains(network.Descendants(), e => e.Name.LocalName == "Button" &&
             e.Attributes().Any(a => a.Name.LocalName == "Command" &&
