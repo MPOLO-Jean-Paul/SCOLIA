@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -151,6 +152,37 @@ public sealed class DevicePairingRegistry
             if (grant is null) return null;
             var key = Convert.FromHexString(grant.SecretHash);
             return Convert.ToHexString(HMACSHA256.HashData(key, Encoding.ASCII.GetBytes(nonce)));
+        }
+    }
+
+    /// <summary>
+    /// La liaison chiffrée n'accorde aucun accès par elle-même : chaque requête
+    /// distante doit être signée par l'appareil toujours présent dans le registre.
+    /// Une révocation bloque ainsi aussi les anciens cookies utilisateur.
+    /// </summary>
+    public bool VerifyRemoteProof(HttpContext http)
+    {
+        var grantText = http.Request.Headers["X-Scolia-Grant"].ToString();
+        var deviceId = http.Request.Headers["X-Scolia-Poste"].ToString();
+        var timestamp = http.Request.Headers["X-Scolia-Device-Time"].ToString();
+        var nonce = http.Request.Headers["X-Scolia-Device-Nonce"].ToString();
+        var proofText = http.Request.Headers["X-Scolia-Device-Proof"].ToString();
+        if (!Guid.TryParseExact(grantText, "N", out var id) ||
+            string.IsNullOrWhiteSpace(deviceId) || deviceId.Length > 64 ||
+            !long.TryParse(timestamp, NumberStyles.None, CultureInfo.InvariantCulture, out var seconds) ||
+            nonce.Length != 32 || !nonce.All(char.IsAsciiHexDigit) ||
+            proofText.Length != 64 || !proofText.All(char.IsAsciiHexDigit))
+            return false;
+        if (Math.Abs(DateTimeOffset.UtcNow.ToUnixTimeSeconds() - seconds) > 120) return false;
+        lock (gate)
+        {
+            var grant = grants.FirstOrDefault(x => x.Id == id && x.DeviceId == deviceId && !x.Revoked);
+            if (grant is null) return false;
+            var message = $"{id:N}\n{deviceId}\n{timestamp}\n{nonce}\n{http.Request.Method}\n{http.Request.Path}{http.Request.QueryString}";
+            var key = Convert.FromHexString(grant.SecretHash);
+            var expected = HMACSHA256.HashData(key, Encoding.UTF8.GetBytes(message));
+            var received = Convert.FromHexString(proofText);
+            return CryptographicOperations.FixedTimeEquals(expected, received);
         }
     }
 
