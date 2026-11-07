@@ -19,20 +19,34 @@
           <Button Grid.Column="2" Classes="closex" Command="{Binding Close}" VerticalAlignment="Top"><mi:MaterialIcon Kind="Close" /></Button>
         </Grid>
 
-        <TextBlock Text="{Binding ProgressText}" TextWrapping="Wrap" TextAlignment="Center" Classes="muted"/>
+        <TextBlock Text="{Binding ProgressText}" TextWrapping="Wrap" TextAlignment="Center" Classes="muted" IsVisible="{Binding Shared}" />
         <!-- Le code n'est affiché qu'une fois l'autorisation temporaire créée par le serveur. -->
         <Border Background="White" CornerRadius="16" Padding="14" HorizontalAlignment="Center" BorderBrush="{DynamicResource LineBrush}" BorderThickness="1"
                 IsVisible="{Binding Ready}">
           <Image x:Name="CodeImage" Source="{Binding Image}" Width="314" Height="314" RenderOptions.BitmapInterpolationMode="None" />
         </Border>
-        <TextBlock Text="{Binding Steps}" TextWrapping="Wrap" TextAlignment="Center" HorizontalAlignment="Center" />
+        <!-- Compte à rebours : le code disparaît à l'expiration. -->
+        <Border Background="{DynamicResource GroupBrush}" CornerRadius="12" Padding="10,4" HorizontalAlignment="Center" IsVisible="{Binding HasRemaining}">
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <mi:MaterialIcon Kind="TimerSandComplete" Width="14" Height="14" Foreground="{DynamicResource AccentBrush}" VerticalAlignment="Center" />
+            <TextBlock Text="{Binding RemainingText}" FontWeight="SemiBold" FontSize="{DynamicResource FsSmall}" />
+          </StackPanel>
+        </Border>
+        <TextBlock Text="{Binding Steps}" TextWrapping="Wrap" TextAlignment="Center" HorizontalAlignment="Center" IsVisible="{Binding Ready}" />
 
-        <Border Background="{DynamicResource OrangeSoftBrush}" CornerRadius="10" Padding="12,10" IsVisible="{Binding NotShared}">
-          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
-            <mi:MaterialIcon Kind="LanDisconnect" Width="18" Height="18" Foreground="{DynamicResource ToneOrange}" VerticalAlignment="Top" />
-            <TextBlock Grid.Column="1" TextWrapping="Wrap"
-                       Text="Le partage avec les autres ordinateurs est fermé. Ouvrez-le dans Poste et réseau pour que ce code fonctionne sur le Wi-Fi." />
-          </Grid>
+        <!-- Aucune voie ouverte : expliquer et mener directement au réglage, sans code inutilisable. -->
+        <Border Background="{DynamicResource OrangeSoftBrush}" CornerRadius="12" Padding="14,12" IsVisible="{Binding NotShared}">
+          <StackPanel Spacing="10">
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+              <mi:MaterialIcon Kind="LanDisconnect" Width="20" Height="20" Foreground="{DynamicResource ToneOrange}" VerticalAlignment="Top" />
+              <StackPanel Grid.Column="1" Spacing="3">
+                <TextBlock Text="Ce serveur n'est pas encore partagé" FontWeight="SemiBold" TextWrapping="Wrap" />
+                <TextBlock TextWrapping="Wrap" FontSize="{DynamicResource FsSmall}"
+                           Text="Aucun autre appareil ne peut le joindre : ni le Wi-Fi de l'établissement ni l'accès par Internet ne sont ouverts. Ouvrez l'un des deux, puis revenez ici." />
+              </StackPanel>
+            </Grid>
+            <Button Classes="primary" Content="Ouvrir les réglages de partage" Command="{Binding OpenSharing}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" />
+          </StackPanel>
         </Border>
 
         <Border Classes="phonegroup" IsVisible="{Binding HasRoutes}" Padding="0">
@@ -51,10 +65,11 @@
           </ItemsControl>
         </Border>
 
-        <TextBlock Text="{Binding Footer}" Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" TextAlignment="Center" />
+        <TextBlock Text="{Binding Footer}" Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" TextAlignment="Center" IsVisible="{Binding Shared}" />
         <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
-          <Button Grid.Column="0" Command="{Binding Renew}" Content="Nouveau code" IsEnabled="{Binding CanInvite}" />
-          <Button Grid.Column="1" Command="{Binding Copy}" IsEnabled="{Binding Ready}" ToolTip.Tip="Code confidentiel à usage unique, à transmettre seulement à l'appareil approuvé">
+          <Button Grid.Column="0" Command="{Binding Renew}" Content="Nouveau code" IsEnabled="{Binding CanInvite}" IsVisible="{Binding Shared}"
+                  Classes.primary="{Binding Expired}" />
+          <Button Grid.Column="1" Command="{Binding Copy}" IsEnabled="{Binding Ready}" IsVisible="{Binding Shared}" ToolTip.Tip="Code confidentiel à usage unique, à transmettre seulement à l'appareil approuvé">
             <StackPanel Orientation="Horizontal" Spacing="6">
               <mi:MaterialIcon Kind="ContentCopy" Width="16" Height="16" />
               <TextBlock Text="Copier le code" VerticalAlignment="Center" />

@@ -250,3 +250,6 @@ public sealed record DailyReportViewDto(bool Enabled, string Time, List<string> 
 
 /// <summary>Résultat d'un envoi demandé : le fichier, ce qui a été fait, et les chiffres du jour.</summary>
 public sealed record DailyReportResultDto(string FileName, string Status, string Summary);
+
+/// <summary>Appareil autorisé par code QR à ouvrir le compte du responsable, avec sa validité.</summary>
+public sealed record AuthorizedDeviceDto(Guid Id, string Name, DateTime ExpiresUtc, bool Revoked);

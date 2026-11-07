@@ -4,22 +4,7 @@
              xmlns:views="using:Scolia.Bureau.Views"
              x:Class="Scolia.Bureau.Views.NetworkHubView">
   <ScrollViewer HorizontalScrollBarVisibility="Disabled">
-    <StackPanel Spacing="12" MaxWidth="850" Margin="0,0,10,20">
-      <Border Classes="card" Padding="18,14">
-        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
-          <Border Classes="appicon medium" Background="{DynamicResource ToneTeal}">
-            <mi:MaterialIcon Kind="LanConnect" />
-          </Border>
-          <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
-            <TextBlock Text="Réseau de l'établissement" FontWeight="SemiBold" FontSize="17" />
-            <TextBlock Text="Voir les postes connectés, contrôler la synchronisation et relier de nouveaux appareils."
-                       Classes="muted" TextWrapping="Wrap" />
-          </StackPanel>
-          <Button Grid.Column="2" Classes="primary" Content="Postes et activité"
-                  Command="{Binding OpenActivity}" VerticalAlignment="Center"
-                  ToolTip.Tip="Appareils connectés, opérations en attente et conflits" />
-        </Grid>
-      </Border>
+    <StackPanel Spacing="12" MaxWidth="820" Margin="0,0,10,20" HorizontalAlignment="Left">
       <!-- Réseau local, invitations QR et liaison Internet chiffrée. -->
       <views:PosteView DataContext="{Binding Connection}" />
     </StackPanel>

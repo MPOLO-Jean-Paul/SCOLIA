@@ -1332,6 +1332,48 @@ if (args.Length > 3 && args[3] == "promoteur")
     return;
 }
 
+// Paramètres de partage : Réseau et postes (défilé), fenêtre Réseau et activité, puis le code QR « Relier un appareil ».
+if (args.Length > 3 && args[3] == "partage")
+{
+    window.Width = Preferences.MobileLayout ? 360 : 1280;
+    window.Height = Preferences.MobileLayout ? 760 : 820;
+    var suffix = Preferences.MobileLayout ? "mobile" : "bureau";
+    // SCOLIA_PARTAGE_OUVERT=1 : simule le partage Wi-Fi ouvert (réglage lu dans appsettings.json du poste).
+    var settings = Path.Combine(AppContext.BaseDirectory, "appsettings.json");
+    var previousSettings = File.Exists(settings) ? File.ReadAllText(settings) : null;
+    if (Environment.GetEnvironmentVariable("SCOLIA_PARTAGE_OUVERT") == "1")
+    {
+        File.WriteAllText(settings, "{\"Scolia\":{\"Reseau\":{\"AccesReseauLocal\":true}}}");
+        suffix += "-ouvert";
+    }
+    Wait(shell.OpenSessionAsync(Result(api.LoginAsync("admin", password))));
+    Wait(shell.Open(() => new NetworkHubPage(shell)));
+    Wait(Task.Delay(800));
+    Save(window, $"partage-1-reseau-{suffix}.png");
+    var scrollers = window.GetVisualDescendants().OfType<ScrollViewer>().Where(v => v.IsEffectivelyVisible && v.Extent.Height > v.Viewport.Height + 4).ToList();
+    var part = 1;
+    foreach (var offset in new[] { 0.5, 1.0 })
+    {
+        foreach (var scroller in scrollers) scroller.Offset = new Vector(0, (scroller.Extent.Height - scroller.Viewport.Height) * offset);
+        Wait(Task.Delay(200));
+        Save(window, $"partage-1-reseau-{suffix}-{++part}.png");
+    }
+    shell.ShowNetwork();
+    Wait(Task.Delay(600));
+    Save(window, $"partage-2-activite-{suffix}.png");
+    shell.CloseDialog();
+    shell.ShowPairing();
+    Wait(Task.Delay(1500));
+    Save(window, $"partage-3-code-{suffix}.png");
+    var pairing = shell.Dialog as PairingViewModel;
+    Console.WriteLine($"QR prêt : {pairing?.Ready} · {pairing?.ProgressText} · {pairing?.RemainingText}");
+    shell.CloseDialog();
+    if (previousSettings is null) File.Delete(settings); else File.WriteAllText(settings, previousSettings);
+    shell.Sync.Stop();
+    window.Close();
+    return;
+}
+
 // Assistant Tailscale : fenêtre Réseau puis assistant ouvert, sans réseau (téléchargement non lancé).
 if (args.Length > 3 && args[3] == "tailscale")
 {

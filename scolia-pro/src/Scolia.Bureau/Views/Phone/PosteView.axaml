@@ -5,7 +5,7 @@
   <!-- Réseau sur le mobile : le serveur auquel l'appareil est relié, ou ce téléphone lui-même quand il est le serveur -->
   <StackPanel Spacing="14">
     <TextBlock Classes="muted" TextWrapping="Wrap" IsVisible="{Binding IsPhoneClient}"
-               Text="Le téléphone travaille sur la base du serveur de l'établissement, par le Wi-Fi. Les dernières pages lues sont gardées pour travailler hors ligne." />
+               Text="Le téléphone travaille sur la base du serveur de l'établissement, par le Wi-Fi ou par Internet. Les dernières pages lues sont gardées pour travailler hors ligne." />
     <TextBlock Classes="muted" TextWrapping="Wrap" IsVisible="{Binding IsPhoneServer}"
                Text="Gardez ce téléphone allumé, branché et sur le Wi-Fi de l'établissement : les autres postes travaillent sur ses données. SCOLIA reste actif en arrière-plan, signalé par une notification." />
 
@@ -40,6 +40,51 @@
         <TextBlock Text="{Binding BackgroundHint}" IsVisible="{Binding HasBackgroundHint}" TextWrapping="Wrap" FontSize="{DynamicResource FsSmall}" />
         <Button Command="{Binding OpenAppSettings}" IsVisible="{Binding HasBackgroundHint}"
                 HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Height="44" Content="Ouvrir les réglages de SCOLIA" />
+      </StackPanel>
+    </Border>
+
+    <!-- Téléphone serveur : accès des appareils distants par Internet -->
+    <Border Classes="card" IsVisible="{Binding Remote.CanManage}">
+      <StackPanel Spacing="8">
+        <Grid ColumnDefinitions="Auto,*">
+          <Border Classes="appicon medium" Background="{DynamicResource ToneBlue}" Margin="0,0,12,0" VerticalAlignment="Top"><mi:MaterialIcon Kind="CloudLockOutline" /></Border>
+          <StackPanel Grid.Column="1" Spacing="2">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <TextBlock Text="Accès par Internet" FontWeight="SemiBold" />
+              <Ellipse Width="8" Height="8" Fill="{Binding Remote.StatusBrush}" VerticalAlignment="Center" />
+              <TextBlock Text="{Binding Remote.StatusTitle}" Classes="muted" FontSize="{DynamicResource FsSmall}" VerticalAlignment="Center" />
+            </StackPanel>
+            <TextBlock Text="{Binding Remote.StatusLine}" Classes="muted" TextWrapping="Wrap" FontSize="{DynamicResource FsSmall}" />
+          </StackPanel>
+        </Grid>
+        <Button Classes="primary" Content="{Binding Remote.EnableLabel}" Command="{Binding Remote.Enable}"
+                HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" MinHeight="46" />
+        <Button Classes="ghost" Content="Désactiver l'accès par Internet" Command="{Binding Remote.Disable}" IsVisible="{Binding Remote.IsActive}"
+                HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" MinHeight="44" />
+        <TextBlock Text="{Binding Remote.Message}" TextWrapping="Wrap" FontSize="{DynamicResource FsSmall}" />
+        <Expander Header="Adresse du relais (avancé)" HorizontalAlignment="Stretch">
+          <TextBox Text="{Binding Remote.Relay}" PlaceholderText="wss://adresse-du-relais/" Margin="0,6,0,0" />
+        </Expander>
+      </StackPanel>
+    </Border>
+
+    <!-- Téléphone serveur : appareils autorisés à ouvrir le compte, avec retrait de l'accès -->
+    <Border Classes="card" IsVisible="{Binding CanManageDevices}">
+      <StackPanel Spacing="6">
+        <TextBlock Text="Appareils autorisés" FontWeight="SemiBold" />
+        <TextBlock Text="{Binding DevicesLine}" Classes="muted" TextWrapping="Wrap" FontSize="{DynamicResource FsSmall}" />
+        <ItemsControl ItemsSource="{Binding Devices}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate>
+              <StackPanel Spacing="4" Margin="0,8,0,0">
+                <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                <TextBlock Text="{Binding Detail}" Classes="muted" TextWrapping="Wrap" FontSize="{DynamicResource FsSmall}" />
+                <Button Classes="danger" Content="Retirer l'accès" Command="{Binding Revoke}" IsVisible="{Binding Active}"
+                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" MinHeight="42" />
+              </StackPanel>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
       </StackPanel>
     </Border>
 

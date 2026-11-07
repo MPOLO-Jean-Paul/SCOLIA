@@ -164,3 +164,25 @@ mais à annoncer aux caisses avant la mise à jour.
 **Vérifications** : 264 tests serveur (dont 5 nouveaux sur les catégories, la reprise des anciens frais et les pris en
 charge) et 421 tests client au vert ; parcours headless `smoke` et `fluidite` sans échec, `bureau` avec les 2 échecs
 déjà présents avant ces changements (écran de connexion).
+
+## 7. Interfaces et paramètres de partage (7 novembre, suite)
+
+Constats sur captures de l'ordinateur serveur, avant correction :
+
+| Écran | Constat | Correction |
+|---|---|---|
+| Réseau et postes | Deux titres en double (carte « Réseau de l'établissement » et « Poste et réseau » sous l'en-tête) ; aucune vue d'ensemble : impossible de savoir si d'autres appareils peuvent joindre le serveur | Carte de synthèse : état (partagé ou non), pastilles Wi-Fi / Internet / appareils autorisés, bouton « Relier un appareil » ; titres en double retirés |
+| Réseau et postes | Sur le serveur, « Rechercher SCOLIA » et « Lire un QR » au premier plan, alors qu'ils servent à rejoindre un autre serveur | Regroupés dans « Rejoindre un autre serveur », replié en bas de page |
+| Réseau et postes | Accès par Internet absent : caché dans la fenêtre Réseau et activité | Section « Accès par Internet » : état coloré, relais, validité, Activer / Vérifier, Désactiver avec confirmation, adresse du relais en réglage avancé |
+| Réseau et postes | Aucune gestion des appareils autorisés (l'API existait, et la fenêtre du QR promettait « vous pourrez révoquer ») | Section « Appareils autorisés » : liste, validité, « Retirer l'accès » avec confirmation |
+| Réseau et postes | Adresse du serveur en texte simple, note pare-feu Windows affichée partout | Adresse sélectionnable avec bouton « Copier » ; note pare-feu seulement sur le serveur Windows |
+| Réseau et activité (serveur) | « Relié à l'ordinateur principal » et « Préparer les données de ce téléphone » affichés sur l'ordinateur serveur | Message « Cet appareil est le serveur de l'établissement » ; préparation hors ligne et file d'envoi réservées aux postes reliés ; lien « Ouvrir les réglages de partage » |
+| Relier un appareil | Sans partage : deux messages redondants, instructions et « Copier » grisé affichés, aucune action | Encadré « Ce serveur n'est pas encore partagé » avec « Ouvrir les réglages de partage » ; le reste est masqué |
+| Relier un appareil | Validité de 5 minutes annoncée mais invisible ; code toujours affiché après expiration | Compte à rebours ; à l'expiration le code disparaît et « Nouveau code » passe en bouton principal |
+| Partout | « Render » nommé dans les textes alors que le relais peut être Cloudflare | Libellés neutres : « accès par Internet », « relais sécurisé » |
+| Téléphone serveur | Ni accès Internet ni appareils autorisés sur l'écran du téléphone | Mêmes cartes, mises en page pour l'écran étroit (aucun débordement détecté) |
+
+Vérifications : 423 tests client (dont 2 nouveaux sur la synthèse de partage), parcours `smoke` et `fluidite` sans échec,
+`bureau` avec les 2 échecs déjà connus (écran de connexion), nouveau mode de capture `partage` (bureau et mobile).
+Limite : dans l'environnement de test, aucune carte réseau n'est vue comme active ; le code QR prêt et son compte à
+rebours n'ont donc pas pu être capturés, seulement vérifiés à la lecture du code.

@@ -172,9 +172,26 @@ calcule le net : salaire, primes, retenues et avances. Le paiement crée la dép
 Le journal liste qui a fait quoi et quand. La vérification de la chaîne confirme
 qu'aucune entrée n'a été modifiée en dehors de SCOLIA.
 
-## 13. Plusieurs postes
+## 13. Plusieurs postes et partage
 
-Voir le paquet, fichier `LIRE_MOI.txt`, section « Plusieurs postes en réseau local ».
+Tout se règle sur l'ordinateur principal, menu **Réseau et postes** :
+
+- **En haut, la synthèse** : « Ce serveur n'est pas partagé » ou « Les autres appareils peuvent joindre ce serveur »,
+  avec trois pastilles (Wi-Fi, Internet, nombre d'appareils autorisés) et le bouton **Relier un appareil**.
+- **Wi-Fi de l'établissement** : l'interrupteur ouvre le partage aux postes du réseau local (Windows demande une seule
+  autorisation pour le pare-feu). L'adresse pour un navigateur s'affiche avec un bouton **Copier**.
+- **Accès par Internet** : relie les téléphones et ordinateurs qui ne sont pas sur le Wi-Fi, par un relais chiffré
+  (Cloudflare ou Render). « Activer l'accès par Internet », puis « Vérifier la connexion ». « Désactiver » demande confirmation :
+  les appareils distants devront être reliés de nouveau. L'adresse du relais est un réglage avancé, replié.
+- **Appareils autorisés** : chaque appareil relié par code QR, avec sa validité. « Retirer l'accès » coupe un appareil
+  perdu ou qui ne doit plus servir (confirmation demandée) ; il devra scanner un nouveau code.
+- **Relier un appareil** : le code QR est valable 5 minutes et pour un seul appareil ; un compte à rebours l'indique et le
+  code disparaît à l'expiration (« Nouveau code »). Si rien n'est partagé, la fenêtre l'explique et mène aux réglages.
+- « Rejoindre un autre serveur » reste disponible, replié en bas de page.
+
+La fenêtre **Réseau et activité** montre les postes connectés et, sur un poste relié, les opérations en attente et la
+préparation hors ligne. Sur le serveur, elle renvoie aux réglages de partage. Voir aussi `LIRE_MOI.txt`, section
+« Plusieurs postes en réseau local ».
 
 ## 14. Reprendre les données de SCOLIA V79 (Excel)
 

@@ -65,7 +65,7 @@ public static class PairingFlow
         if (code.TailnetAddresses.Any(address => address.Scheme == Uri.UriSchemeHttps))
         {
             var secureInternet = await TryInternetAsync(shell, code, progress);
-            return secureInternet ?? "Ce code QR utilise une ancienne connexion privée. Générez un nouveau QR sur le serveur avec la connexion Internet Render active.";
+            return secureInternet ?? "Ce code QR utilise une ancienne connexion privée. Générez un nouveau code QR sur le serveur, avec l'accès par Internet actif.";
         }
 
         progress?.Invoke("Recherche sur le réseau local…");
@@ -82,7 +82,7 @@ public static class PairingFlow
         if (internet is not null) return internet;
 
         return code.HasInvitation
-            ? $"Le serveur de {code.School} ne répond pas. Vérifiez sa connexion Internet et le relais Render, ou rejoignez le même Wi-Fi."
+            ? $"Le serveur de {code.School} ne répond pas. Vérifiez sa connexion Internet et son accès par Internet, ou rejoignez le même Wi-Fi."
             : $"Le serveur de {code.School} ne répond pas sur ce réseau local. Vérifiez que les appareils sont sur le même Wi-Fi.";
     }
 
@@ -90,7 +90,7 @@ public static class PairingFlow
         ShellViewModel shell, PairingCode code, Action<string>? progress)
     {
         if (!code.HasInvitation) return null;
-        progress?.Invoke("Connexion Internet chiffrée via Render…");
+        progress?.Invoke("Connexion Internet chiffrée…");
         try
         {
             var link = Scolia.Transport.RemoteLink.Parse(code.Invitation!);
@@ -159,7 +159,7 @@ public static class PairingFlow
         }
         catch (Exception ex) when (ex is Api.OfflineException or HttpRequestException or TaskCanceledException or IOException)
         {
-            return "La liaison a été enregistrée, mais le serveur n'a pas validé l'invitation. Vérifiez la liaison locale ou Render et réessayez avec un nouveau QR.";
+            return "La liaison a été enregistrée, mais le serveur n'a pas validé l'invitation. Vérifiez le Wi-Fi ou l'accès par Internet et réessayez avec un nouveau QR.";
         }
     }
 

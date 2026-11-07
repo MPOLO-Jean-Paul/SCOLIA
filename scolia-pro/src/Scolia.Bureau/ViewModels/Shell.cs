@@ -320,7 +320,7 @@ public sealed class ShellViewModel : Observable
     public string AccountName => session?.DisplayName ?? string.Empty;
     public string ServerLine => IsServerComputer
         ? $"Serveur de l'établissement · port {api.Server.Port}"
-        : api.IsLongDistance ? "Internet chiffré · relais SCOLIA Render"
+        : api.IsLongDistance ? "Internet chiffré · relais SCOLIA"
         : ConnectionStore.Load() is { IsRemote: true } direct ? $"Réseau local · {direct.School ?? direct.Machine}" : $"Serveur {api.Server.Host}:{api.Server.Port}";
 
     public PageViewModel? Current
@@ -476,7 +476,7 @@ public sealed class ShellViewModel : Observable
             {
                 if (await TryReconnectRelayAsync()) return;
                 if (OfferOfflineEntry(saved.School ?? string.Empty)) return;
-                ShowChooser([], "Cet appareil utilisait une ancienne adresse privée. Rejoignez de nouveau l'établissement avec son QR code local ou Render.");
+                ShowChooser([], "Cet appareil utilisait une ancienne adresse privée. Rejoignez de nouveau l'établissement avec un nouveau code QR (Wi-Fi ou Internet).");
                 return;
             }
             api.Retarget(remembered);

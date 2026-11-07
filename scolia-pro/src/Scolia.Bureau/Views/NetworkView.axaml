@@ -20,16 +20,16 @@
         <StackPanel Spacing="12">
           <TextBlock Text="{Binding Sync.StatusDetail}" Classes="muted" TextWrapping="Wrap" />
 
-          <!-- Préparation facultative mais nécessaire au travail autonome complet :
+          <!-- Poste relié : préparation facultative mais nécessaire au travail autonome complet,
                téléchargement des seuls dossiers et comptes permis au rôle. -->
-          <Border Classes="phonegroup">
+          <Border Classes="phonegroup" IsVisible="{Binding IsLinked}">
             <StackPanel Margin="14,12" Spacing="8">
               <TextBlock Text="Données accessibles hors ligne" FontWeight="SemiBold" />
               <TextBlock Text="{Binding Sync.PreparationText}" Classes="muted" TextWrapping="Wrap"
                          FontSize="{DynamicResource FsSmall}" />
               <Button Classes="primary" Command="{Binding Sync.PrepareOffline}"
                       IsEnabled="{Binding !Sync.Preparing}"
-                      Content="Préparer les données de ce téléphone"
+                      Content="{Binding PrepareLabel}"
                       HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
                       MinHeight="42" />
               <TextBlock Text="La préparation se fait lorsque le serveur est disponible. Elle récupère les dossiers et comptes autorisés, et conserve les écritures locales jusqu'à leur confirmation."
@@ -37,32 +37,21 @@
             </StackPanel>
           </Border>
 
-          <!-- Une seule option distante ; les réglages techniques restent secondaires. -->
-          <Border Classes="phonegroup" IsVisible="{Binding Remote.CanManage}">
-            <StackPanel Margin="14,12" Spacing="9">
-              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
-                <Border Classes="appicon medium" Background="{DynamicResource ToneBlue}">
-                  <mi:MaterialIcon Kind="CloudCheckOutline" />
-                </Border>
-                <StackPanel Grid.Column="1" Spacing="3">
-                  <TextBlock Text="Connexion par Internet" FontWeight="SemiBold" />
-                  <TextBlock Text="Relier des appareils sur des réseaux différents, sans configuration technique supplémentaire."
-                             Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
-                </StackPanel>
-              </Grid>
-              <Button Classes="primary" Content="Activer ou vérifier Internet" Command="{Binding Remote.Enable}"
-                      HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" MinHeight="42" />
-              <TextBlock Text="{Binding Remote.Message}" Classes="muted" TextWrapping="Wrap" />
-              <Expander Header="Réglages avancés" IsExpanded="False">
-                <StackPanel Margin="6,8" Spacing="8">
-                  <TextBlock Text="Adresse du relais sécurisé WSS" Classes="muted" />
-                  <TextBox Classes="w11" Text="{Binding Remote.Relay}"
-                           Watermark="wss://adresse-du-relais/" />
-                  <Button Classes="ghost" Content="Désactiver cette liaison Internet"
-                          Command="{Binding Remote.Disable}" HorizontalAlignment="Stretch" />
-                </StackPanel>
-              </Expander>
-            </StackPanel>
+          <!-- Serveur : un seul endroit pour le partage, la page Réseau et postes. -->
+          <Border Classes="phonegroup" IsVisible="{Binding IsServerComputer}">
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10" Margin="14,12">
+              <Border Classes="appicon medium" Background="{DynamicResource ToneTeal}" VerticalAlignment="Top">
+                <mi:MaterialIcon Kind="ShareVariantOutline" />
+              </Border>
+              <StackPanel Grid.Column="1" Spacing="6">
+                <TextBlock Text="Partage de ce serveur" FontWeight="SemiBold" />
+                <TextBlock Text="Wi-Fi de l'établissement, accès par Internet et appareils autorisés se règlent au même endroit."
+                           Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
+                <Button Command="{Binding OpenSharing}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center">
+                  <TextBlock Text="Ouvrir les réglages de partage" TextWrapping="Wrap" TextAlignment="Center" />
+                </Button>
+              </StackPanel>
+            </Grid>
           </Border>
 
           <!-- Autres postes connectés -->
@@ -93,8 +82,8 @@
           </Border>
 
           <!-- Envois en attente et conflits -->
-          <TextBlock Text="Opérations de cet appareil" Classes="heading" Margin="0,4,0,0" />
-          <Border Classes="phonegroup">
+          <TextBlock Text="Opérations de cet appareil" Classes="heading" Margin="0,4,0,0" IsVisible="{Binding IsLinked}" />
+          <Border Classes="phonegroup" IsVisible="{Binding IsLinked}">
             <StackPanel>
               <TextBlock Text="Tout est envoyé à l'ordinateur principal." Classes="muted" Margin="14,12" IsVisible="{Binding !Sync.HasQueue}" TextWrapping="Wrap" />
               <ItemsControl ItemsSource="{Binding Sync.Queue}">
@@ -119,7 +108,7 @@
               </ItemsControl>
             </StackPanel>
           </Border>
-          <TextBlock Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap"
+          <TextBlock Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" IsVisible="{Binding IsLinked}"
                      Text="Les opérations refusées restent enregistrées sur cet appareil jusqu'à votre décision. « Réessayer » renvoie l'opération ; « Abandonner » demande confirmation et retire uniquement le conflit local, sans annuler une transaction validée par le serveur." />
         </StackPanel>
       </ScrollViewer>

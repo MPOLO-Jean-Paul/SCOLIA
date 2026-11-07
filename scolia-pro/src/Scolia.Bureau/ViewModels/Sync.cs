@@ -65,7 +65,9 @@ public sealed class SyncCenter : Observable, IDisposable
     private string? password;
     private bool syncing;
     private bool preparing;
-    private string preparationText = "Préparez ce téléphone lorsque le serveur est accessible pour copier les dossiers et les comptes autorisés.";
+    private string preparationText = Platform.IsMobile
+        ? "Préparez ce téléphone lorsque le serveur est accessible pour copier les dossiers et les comptes autorisés."
+        : "Préparez ce poste lorsque le serveur est accessible pour copier les dossiers et les comptes autorisés.";
     private bool flushing;
     private bool pendingNoticeShown;
     private string? activity;
@@ -197,7 +199,8 @@ public sealed class SyncCenter : Observable, IDisposable
     public string StatusDetail => Offline
         ? "Serveur inaccessible : les données déjà téléchargées restent consultables. Seules les opérations autorisées sont enregistrées en attente ; les validations définitives reprennent après reconnexion."
         : HasConflicts ? "Le serveur a refusé des opérations faites hors ligne. Ouvrez la liste pour les revoir."
-        : api.IsLongDistance ? $"Internet sécurisé Render · {PeersText}. Les opérations sont confirmées par l'appareil principal."
+        : api.Server.IsLoopback ? $"Cet appareil est le serveur de l'établissement · {PeersText}. Les autres postes lui envoient leurs opérations."
+        : api.IsLongDistance ? $"Par Internet, chiffré · {PeersText}. Les opérations sont confirmées par l'ordinateur principal."
         : $"Relié à l'ordinateur principal · {PeersText}.";
 
     public IBrush StatusBrush => ThemeBrush.Get(Offline ? "ToneOrange" : syncing ? "ToneBlue" : HasConflicts ? "ToneRed" : "ToneGreen");
@@ -730,7 +733,14 @@ public sealed class NetworkViewModel
     public NetworkViewModel(ShellViewModel shell)
     {
         Sync = shell.Sync;
-        Remote = new RemoteConnectionViewModel(shell);
+        IsServerComputer = shell.IsServerComputer;
+        // Sur le serveur, la gestion d'Internet se fait dans Réseau et postes : pas d'invitation préparée ici.
+        Remote = new RemoteConnectionViewModel(shell, prepareInvitation: !shell.IsServerComputer);
+        OpenSharing = new RelayCommand(() =>
+        {
+            shell.CloseDialog();
+            _ = shell.Run(() => shell.Open(() => new NetworkHubPage(shell)));
+        });
         Sync.LoadQueue();
         Close = new RelayCommand(shell.CloseDialog);
     }
@@ -738,4 +748,10 @@ public sealed class NetworkViewModel
     public SyncCenter Sync { get; }
     public RemoteConnectionViewModel Remote { get; }
     public RelayCommand Close { get; }
+    /// <summary>Sur le serveur, les données sont déjà là : pas de préparation hors ligne ni de file d'envoi à montrer.</summary>
+    public bool IsServerComputer { get; }
+    public bool IsLinked => !IsServerComputer;
+    public string PrepareLabel => Platform.IsMobile ? "Préparer les données de ce téléphone" : "Préparer les données de ce poste";
+    /// <summary>Le partage (Wi-Fi, Internet, appareils autorisés) se règle dans Réseau et postes.</summary>
+    public RelayCommand OpenSharing { get; }
 }

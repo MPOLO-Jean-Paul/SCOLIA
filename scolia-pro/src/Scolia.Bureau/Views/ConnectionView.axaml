@@ -40,7 +40,7 @@
                     IsEnabled="{Binding NotSearching}" Content="Choisir une image du code QR"
                     HorizontalAlignment="Stretch" MinHeight="40" />
             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8" IsVisible="{Binding CanPasteCode}">
-              <TextBox Classes="w11" Text="{Binding Invitation}" Watermark="Coller le code d'invitation" />
+              <TextBox Classes="w11" Text="{Binding Invitation}" PlaceholderText="Coller le code d'invitation" />
               <Button Grid.Column="1" Content="Valider" Command="{Binding JoinInternet}"
                       IsEnabled="{Binding NotSearching}" />
             </Grid>
@@ -85,7 +85,7 @@
               <StackPanel Spacing="8" Margin="6,8">
                 <TextBlock Text="{Binding AddressHint}" Classes="muted" TextWrapping="Wrap" />
                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                  <TextBox Classes="w11" Text="{Binding Address}" Watermark="192.168.1.10" />
+                  <TextBox Classes="w11" Text="{Binding Address}" PlaceholderText="192.168.1.10" />
                   <Button Grid.Column="1" Classes="primary" Content="Rejoindre" Command="{Binding ConnectAddress}"
                           IsEnabled="{Binding NotSearching}" />
                 </Grid>

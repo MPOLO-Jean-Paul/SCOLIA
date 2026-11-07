@@ -12,14 +12,14 @@ public sealed class NetworkHubPage : PageViewModel
 {
     public NetworkHubPage(ShellViewModel shell) : base(shell)
     {
-        Connection = new PosteViewModel(shell);
+        Connection = new PosteViewModel(shell) { ShowTitle = false };
         OpenActivity = new RelayCommand(shell.ShowNetwork);
         Action("Réseau et activité", MaterialIconKind.LanConnect,
             () => { shell.ShowNetwork(); return Task.CompletedTask; }, primary: true);
     }
 
     public override string Title => "Réseau et postes";
-    public override string Subtitle => "Connexions, appareils reliés et synchronisation";
+    public override string Subtitle => "Partage, appareils autorisés et synchronisation";
     public override MaterialIconKind Glyph => MaterialIconKind.LanConnect;
     public PosteViewModel Connection { get; }
     public RelayCommand OpenActivity { get; }
