@@ -31,11 +31,26 @@ public sealed class RemoteHttpHandler(RemoteLink link, CookieContainer cookies,
         try
         {
             var response = await SendViaAsync(first, request, cancellationToken, !backupFirst);
+            // Le relais peut être accessible, mais ne plus avoir de serveur hébergé :
+            // HTTP 502/503/504 est aussi une panne de transport, pas un refus métier.
+            if (response.StatusCode is HttpStatusCode.BadGateway or HttpStatusCode.ServiceUnavailable
+                or HttpStatusCode.GatewayTimeout)
+            {
+                response.Dispose();
+                var fallback = await SendViaAsync(second, request, cancellationToken, backupFirst);
+                if (fallback.StatusCode is not (HttpStatusCode.BadGateway or HttpStatusCode.ServiceUnavailable
+                    or HttpStatusCode.GatewayTimeout))
+                {
+                    if (backupFirst) PreferredBackupUntil.TryRemove(identity, out _);
+                    else PreferredBackupUntil[identity] = DateTimeOffset.UtcNow.AddSeconds(30);
+                }
+                return fallback;
+            }
             if (!backupFirst) PreferredBackupUntil.TryRemove(identity, out _);
             return response;
         }
         catch (Exception ex) when (!cancellationToken.IsCancellationRequested &&
-            ex is HttpRequestException or System.Net.WebSockets.WebSocketException or IOException or TaskCanceledException)
+            ex is HttpRequestException or System.Net.WebSockets.WebSocketException or IOException or OperationCanceledException)
         {
             // La requête conserve sa clé Idempotency-Key lors du changement de voie :
             // un encaissement dont l'accusé a été perdu ne doit pas être enregistré deux fois.
