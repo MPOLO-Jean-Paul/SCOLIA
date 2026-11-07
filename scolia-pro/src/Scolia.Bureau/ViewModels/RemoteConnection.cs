@@ -80,7 +80,7 @@ public sealed class RemoteConnectionViewModel : Observable
                 : RemoteLink.Create(addressText);
             // Vérifier le relais avant de remplacer une liaison encore utilisable.
             var address = new UriBuilder(link.Relay) { Scheme = new Uri(link.Relay).Scheme == "wss" ? "https" : "http", Path = "/health" }.Uri;
-            Message = "Vérification de Render et du certificat HTTPS… Le premier réveil d'un relais gratuit peut être plus long.";
+            Message = "Vérification de la connexion Internet sécurisée et du certificat HTTPS…";
             using var probe = new HttpClient { Timeout = TimeSpan.FromSeconds(75) };
             using var response = await probe.GetAsync(address);
             response.EnsureSuccessStatusCode();
@@ -88,11 +88,11 @@ public sealed class RemoteConnectionViewModel : Observable
             if (reuse) RemoteConnection.StartHostIfMissing(shell.Api.Server);
             else RemoteConnection.StartHost(shell.Api.Server);
             if (reuse)
-                Message = "Liaison Internet Render déjà active. Les appareils autorisés restent jumelés ; aucun nouveau QR n'est nécessaire.";
+                Message = "Liaison Internet déjà active. Les appareils autorisés restent jumelés ; aucun nouveau QR n'est nécessaire.";
             else
                 await PrepareInvitationAsync(link);
         }
         catch (Exception ex) when (ex is FormatException or HttpRequestException or TaskCanceledException or IOException)
-        { Message = "Liaison non activée : vérifiez Internet, le certificat HTTPS et l'état du service Render. La configuration précédente est conservée."; }
+        { Message = "Liaison non activée : vérifiez Internet, le certificat HTTPS et la disponibilité du relais. La configuration précédente est conservée."; }
     }
 }
