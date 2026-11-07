@@ -239,14 +239,34 @@ public sealed class CashPage : PageViewModel
     /// <summary>Compte les espèces et verrouille la période.</summary>
     public static async Task ClosingAsync(ShellViewModel shell)
     {
+        // L'arrêté de caisse se fait sur un seul poste à la fois. La situation est lue une fois le verrou pris,
+        // pour qu'aucun encaissement d'un autre poste ne s'intercale entre l'affichage et l'arrêté.
+        if (await shell.Sync.WithLockAsync("caisse:arrete", "Arrêté de caisse", () => AskClosingAsync(shell)) && shell.Current is CashPage page)
+            await page.RefreshAsync();
+    }
+
+    private static async Task<bool> AskClosingAsync(ShellViewModel shell)
+    {
         var today = DateOnly.FromDateTime(DateTime.Today);
         var situation = await shell.Api.GetAsync<CashSituationDto>("api/caisse/situation" + ScoliaClient.Query(("date", today)));
         var money = shell.Session?.CurrencySymbol ?? string.Empty;
-        var form = new FormViewModel("Arrêter la caisse", $"Espèces attendues en caisse : {Format.Money(situation.ExpectedCash, money)}", async f =>
+        DateOnly? confirmedDay = null;
+        var form = new FormViewModel("Arrêter la caisse", $"Espèces attendues en caisse au {Format.Date(today)} : {Format.Money(situation.ExpectedCash, money)}", async f =>
         {
+            var day = f.Day("date");
+            // Arrêté d'une autre date : montrer d'abord l'attendu et l'écart de cette date, puis demander un second clic.
+            if (day is { } chosen && chosen != today && confirmedDay != chosen)
+            {
+                var other = await shell.Api.GetAsync<CashSituationDto>("api/caisse/situation" + ScoliaClient.Query(("date", chosen)));
+                var counted = f.Amount("compte");
+                f.Message = $"Espèces attendues au {Format.Date(chosen)} : {Format.Money(other.ExpectedCash, money)} · " +
+                    $"écart {Format.Money(counted - other.ExpectedCash, money)}. Cliquez à nouveau pour arrêter à cette date.";
+                confirmedDay = chosen;
+                return false;
+            }
             await shell.Api.SendAsync(HttpMethod.Post, "api/caisse/arretes", new
             {
-                date = f.Day("date"),
+                date = day,
                 countedCash = f.Amount("compte"),
                 note = f.OptionalText("note"),
             });
@@ -257,8 +277,7 @@ public sealed class CashPage : PageViewModel
         form.AddDay("date", "Date de l'arrêté", today, required: true);
         form.Add("compte", "Espèces comptées", FieldKind.Amount, required: true);
         form.Add("note", "Observation (obligatoire en cas d'écart)", FieldKind.Multiline);
-        // L'arrêté de caisse se fait sur un seul poste à la fois.
-        if (await shell.Sync.WithLockAsync("caisse:arrete", "Arrêté de caisse", () => shell.Ask(form)) && shell.Current is CashPage page) await page.RefreshAsync();
+        return await shell.Ask(form);
     }
 }
 
@@ -280,7 +299,7 @@ public sealed class ExpensesPage : PageViewModel
     public ExpensesPage(ShellViewModel shell) : base(shell)
     {
         if (Shell.Can(Perm.ExpensesWrite)) Action("Nouvelle dépense", MaterialIconKind.CashMinus, () => NewExpenseAsync(Shell), primary: true);
-        if (Shell.Can(Perm.ExpensesWrite)) Action("Annuler la dépense", MaterialIconKind.CloseCircle, CancelSelectedAsync, row: true);
+        if (Shell.Can(Perm.PaymentsCancel)) Action("Annuler la dépense", MaterialIconKind.CloseCircle, CancelSelectedAsync, row: true);
         ActionRefresh();
     }
 

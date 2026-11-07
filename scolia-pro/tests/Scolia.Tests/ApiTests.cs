@@ -643,6 +643,32 @@ public sealed class BusinessApiTests : IDisposable
     }
 
     [Fact]
+    public async Task Closing_during_the_day_keeps_the_counter_open_for_later_payments()
+    {
+        var admin = await app.InstalledAdmin();
+        var (_, enrollmentId, _) = await NewStudent(admin);
+        var today = DateOnly.FromDateTime(DateTime.Today);
+        var morning = await admin.PayMonths(enrollmentId, 1);
+        await admin.Post("/api/caisse/arretes", new { date = today, countedCash = 55000m }).Ok();
+
+        // L'après-midi : l'encaissement du jour reste possible et compte pour la période suivante.
+        var afternoon = await admin.PayMonths(enrollmentId, 1);
+        var situation = await admin.GetAsync($"/api/caisse/situation?date={today:yyyy-MM-dd}").Ok();
+        Assert.Equal(55000m, situation.GetProperty("openingBalance").GetDecimal());
+        Assert.Equal(55000m, situation.GetProperty("cashReceipts").GetDecimal());
+        Assert.Equal(110000m, situation.GetProperty("expectedCash").GetDecimal());
+
+        // Le reçu du matin est compté dans l'arrêté : il ne s'annule plus. Celui de l'après-midi, si.
+        var (_, locked) = await admin.Post($"/api/paiements/{morning.GetProperty("id").GetString()}/annulation", new { reason = "Erreur de saisie" }).Fail();
+        Assert.Equal("date", locked.GetProperty("code").GetString());
+        await admin.Post($"/api/paiements/{afternoon.GetProperty("id").GetString()}/annulation", new { reason = "Erreur de saisie" }).Ok();
+
+        // Un seul arrêté par jour : la suite de la journée sera comptée dans le prochain arrêté.
+        var (_, again) = await admin.Post("/api/caisse/arretes", new { date = today, countedCash = 55000m }).Fail();
+        Assert.Equal("date", again.GetProperty("code").GetString());
+    }
+
+    [Fact]
     public async Task Audit_chain_detects_tampering()
     {
         var admin = await app.InstalledAdmin();

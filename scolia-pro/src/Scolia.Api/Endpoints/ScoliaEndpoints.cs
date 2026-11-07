@@ -339,7 +339,7 @@ public static class ScoliaEndpoints
             Table(await r.ExpensesTableAsync(du, au, ct), format, "registre-des-depenses", r));
         d.MapPost("", (ExpenseCreate input, CashService c, CancellationToken ct) => c.CreateExpenseAsync(input, ct)).RequireAuthorization(Permissions.ExpensesWrite);
         d.MapPost("/{id:guid}/annulation", (Guid id, CancelRequest input, CashService c, CancellationToken ct) => c.CancelExpenseAsync(id, input.Reason, ct))
-            .RequireAuthorization(Permissions.ExpensesWrite);
+            .RequireAuthorization(Permissions.PaymentsCancel); // Annuler n'est pas saisir : même droit que l'annulation d'un reçu.
 
         var k = api.MapGroup("/caisse").RequireAuthorization(Permissions.PaymentsRead);
         k.MapGet("/situation", (DateOnly? date, CashService c, CancellationToken ct) => c.SituationAsync(date, ct));

@@ -603,8 +603,14 @@ public sealed class CashierPage : PageViewModel
             return;
         }
         Hint = null;
+        // Récapitulatif avant l'enregistrement : un reçu ne se supprime pas, il ne s'annule qu'avec un motif.
+        var chosen = Months.Where(m => m.IsSelected).Select(m => m.Label).ToList();
+        var summary = $"{StudentName}\n{string.Join(", ", chosen)}\n\nMontant reçu : {Money(PaymentAmount)}\n" +
+            $"Mode : {Method?.Label ?? "Espèces"} · Date : {ToDay(Day):dd/MM/yyyy}" +
+            (IsCash || string.IsNullOrWhiteSpace(Reference) ? string.Empty : $"\nRéférence : {Reference.Trim()}");
+        if (!await Shell.Confirm("Confirmer l'encaissement", summary, $"Encaisser {Money(PaymentAmount)}")) return;
         ReceiptDto created;
-        var paymentKey = Guid.NewGuid().ToString("N");
+        var paymentKey = PaymentKeyFor(e.Id, ids);
         using var underLock = lockKey is { } key ? ScoliaClient.UnderLock(key) : null;
         try
         {
@@ -623,6 +629,7 @@ public sealed class CashierPage : PageViewModel
         }
         catch (OfflineQueuedException)
         {
+            ForgetPaymentKey();
             // L'argent est enregistré dans le journal SQLite chiffré AVANT
             // cette notification. Numéro temporaire unique par appareil ;
             // le numéro officiel sera attribué par le serveur.
@@ -643,10 +650,37 @@ public sealed class CashierPage : PageViewModel
             Hint = null;
             return;
         }
+        ForgetPaymentKey();
         Reference = string.Empty;
         await ChooseAsync(new PayerRow(e.Id, created.StudentId, StudentName, string.Empty));
         Receipt = created;
         Raise(nameof(ReceiptText));
+    }
+
+    private string? paymentKey;
+    private string? paymentFingerprint;
+
+    /// <summary>
+    /// Clé anti-doublon d'un versement. Elle est conservée tant que le même versement est retenté
+    /// (réponse perdue après une coupure) : le serveur rend alors le reçu déjà créé au lieu d'en créer un second.
+    /// Elle change dès que l'apprenant, les mois, le montant, le mode ou la date changent.
+    /// </summary>
+    private string PaymentKeyFor(Guid enrollmentId, IEnumerable<Guid> feeItemIds)
+    {
+        var fingerprint = string.Join('|', enrollmentId, string.Join(',', feeItemIds.OrderBy(x => x)),
+            PaymentAmount.ToString(System.Globalization.CultureInfo.InvariantCulture), Method?.Value, ToDay(Day));
+        if (paymentKey is null || paymentFingerprint != fingerprint)
+        {
+            paymentKey = Guid.NewGuid().ToString("N");
+            paymentFingerprint = fingerprint;
+        }
+        return paymentKey;
+    }
+
+    private void ForgetPaymentKey()
+    {
+        paymentKey = null;
+        paymentFingerprint = null;
     }
 
     private void Reset()

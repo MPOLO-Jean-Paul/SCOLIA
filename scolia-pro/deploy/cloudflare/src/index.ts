@@ -1,6 +1,7 @@
 import { DurableObject } from 'cloudflare:workers';
 import { parseRoute, sha256Hex, TOKEN64, HEX64, decodeEpoch } from './protocol.js';
-import { connectRoom, routeFrame, disconnectRoom } from './core.js';
+import { connectRoom, routeFrame, disconnectRoom, expireRoom } from './core.js';
+import { allowRequest } from './limits.js';
 
 interface Env {
   SCOLIA_ROOMS: DurableObjectNamespace<ScoliaRoom>;
@@ -19,11 +20,16 @@ export default {
     if (request.method !== 'GET') return textResponse('Method not allowed', 405);
     const route = parseRoute(url.pathname);
     if (!route) return textResponse('Not found', 404);
+    // Same bound as the .NET relay: 120 connection attempts per minute and per IP.
+    // Kept in the Worker isolate's memory (best effort, nothing stored).
+    if (!allowRequest(request.headers.get('CF-Connecting-IP') ?? 'unknown'))
+      return textResponse('Too many requests', 429);
     if (url.search || request.headers.get('Upgrade')?.toLowerCase() !== 'websocket')
       return textResponse('WebSocket required', 426);
 
-    // The public Worker checks capabilities before it creates/bills a DO request.
-    // Only verified hashes (never the raw tokens) are forwarded to the room.
+    // The host token is fully verified here, before any Durable Object request.
+    // A client token can only be checked by its room: the Worker checks its format,
+    // the per-IP limit above bounds guessing. Only hashes, never raw tokens, reach the room.
     // Upgrade must be forwarded to allow Cloudflare's 101 WebSocket response.
     const headers = new Headers({ 'Upgrade': 'websocket', 'X-Relay-Role': route.role });
     if (route.role === 'host') {
@@ -60,5 +66,8 @@ export class ScoliaRoom extends DurableObject<Env> {
   }
   webSocketError(socket: WebSocket, _error: unknown): void {
     disconnectRoom(this.ctx, socket);
+  }
+  async alarm(): Promise<void> {
+    await expireRoom(this.ctx);
   }
 }

@@ -104,6 +104,20 @@ public sealed class RemoteHost : IDisposable
             {
                 Interlocked.Exchange(ref connected, 0);
                 await session.CancelAsync();
+                // Fermer proprement avant le renouvellement : le relais voit tout de suite la fin
+                // de la session au lieu d'attendre la détection d'une connexion coupée.
+                if (socket.State is WebSocketState.Open or WebSocketState.CloseReceived)
+                {
+                    try
+                    {
+                        // Une seule écriture à la fois sur le socket : attendre la fin d'un envoi de réponse.
+                        using var closing = new CancellationTokenSource(TimeSpan.FromSeconds(2));
+                        await send.WaitAsync(closing.Token);
+                        try { await socket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "renouvellement", closing.Token); }
+                        finally { send.Release(); }
+                    }
+                    catch (Exception ex) when (ex is WebSocketException or OperationCanceledException or ObjectDisposedException or InvalidOperationException) { }
+                }
                 socket.Abort();
                 await Task.WhenAll(calls.Values);
                 foreach (var cancellation in cancellations.Values) cancellation.Dispose();

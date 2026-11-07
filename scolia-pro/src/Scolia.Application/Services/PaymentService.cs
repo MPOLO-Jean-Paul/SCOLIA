@@ -40,7 +40,7 @@ public sealed class PaymentService(IAppDbContext db, IWriteGate gate, IAuditLog 
     }
 
     public static async Task<DateOnly?> LastClosingAsync(IAppDbContext db, CancellationToken ct) =>
-        await db.CashClosings.AsNoTracking().OrderByDescending(c => c.Date).Select(c => (DateOnly?)c.Date).FirstOrDefaultAsync(ct);
+        (await CashLock.LastAsync(db, ct))?.Date;
 
     public static async Task<string> NextNumberAsync(IAppDbContext db, string prefix, int year, CancellationToken ct)
     {
@@ -71,9 +71,9 @@ public sealed class PaymentService(IAppDbContext db, IWriteGate gate, IAuditLog 
                 "Indiquez la référence de la transaction (Mobile Money, banque ou chèque).")
             .Require(input.Note is null || input.Note.Length <= 500, "note", "Observation trop longue.");
         v.ThrowIfInvalid();
-        var lastClosing = await LastClosingAsync(db, ct);
-        if (lastClosing is not null && date <= lastClosing)
-            throw new DomainException("date", $"La caisse est arrêtée jusqu'au {lastClosing:dd/MM/yyyy} : choisissez une date postérieure.");
+        var lastClosing = await CashLock.LastAsync(db, ct);
+        if (CashLock.RefusesNew(lastClosing, date, clock.Today))
+            throw new DomainException("date", $"La caisse est arrêtée jusqu'au {lastClosing!.Date:dd/MM/yyyy} : choisissez une date postérieure.");
 
         var data = await accounts.ForEnrollmentAsync(input.EnrollmentId, null, ct);
         var year = await db.AcademicYears.AsNoTracking().FirstAsync(y => y.Id == data.Enrollment.AcademicYearId, ct);
@@ -119,9 +119,9 @@ public sealed class PaymentService(IAppDbContext db, IWriteGate gate, IAuditLog 
         if (string.IsNullOrWhiteSpace(reason) || reason.Trim().Length < 5) throw new DomainException("reason", "Le motif d'annulation est obligatoire (5 caractères minimum).");
         var receipt = await db.Receipts.FirstOrDefaultAsync(r => r.Id == id, ct) ?? throw new NotFoundException("Reçu introuvable.");
         if (receipt.Status == OperationStatus.Annule) throw new ConflictException("Ce reçu est déjà annulé.");
-        var lastClosing = await LastClosingAsync(db, ct);
-        if (lastClosing is not null && receipt.Date <= lastClosing)
-            throw new DomainException("date", $"Ce reçu appartient à une caisse arrêtée le {lastClosing:dd/MM/yyyy}. Enregistrez une correction comptable.");
+        var lastClosing = await CashLock.LastAsync(db, ct);
+        if (CashLock.Covers(lastClosing, receipt.Date, receipt.CreatedAtUtc))
+            throw new DomainException("date", $"Ce reçu appartient à une caisse arrêtée le {lastClosing!.Date:dd/MM/yyyy}. Enregistrez une correction comptable.");
         receipt.Status = OperationStatus.Annule;
         receipt.CancelledAtUtc = clock.UtcNow;
         receipt.CancelledBy = user.Name;

@@ -73,6 +73,9 @@
     <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
     <Setter Property="BorderThickness" Value="0" />
     <Setter Property="FontWeight" Value="Medium" />
+    <!-- Lecteurs d'écran (Narrateur, TalkBack) : un bouton-icône est nommé par son info-bulle.
+         Un nom explicite ou un texte de bouton reste prioritaire. -->
+    <Setter Property="AutomationProperties.Name" Value="{Binding $self.(ToolTip.Tip)}" />
   </Style>
   <Style Selector="Button:pointerover">
     <Setter Property="Background" Value="{DynamicResource ButtonHoverBrush}" />

@@ -269,6 +269,14 @@ int VerifyPayments(LayoutServer fixture, bool mobile)
             window.MouseDown(tap, Avalonia.Input.MouseButton.Left);
             window.MouseUp(tap, Avalonia.Input.MouseButton.Left);
             Check("Caisse : le bouton reçoit réellement l'appui", !page.Pay.CanExecute(null));
+            // Le récapitulatif s'affiche avant tout envoi ; un second appui pendant la confirmation ne fait rien.
+            for (var i = 0; i < 200 && shell.Dialog is not FormViewModel; i++) Wait(Task.Delay(10));
+            Check("Caisse : récapitulatif avant l'encaissement", shell.Dialog is FormViewModel { Title: "Confirmer l'encaissement" } && fixture.PaymentCount == before);
+            if (shell.Dialog is FormViewModel confirmation)
+            {
+                confirmation.Submit.Execute(null);
+                confirmation.Submit.Execute(null);
+            }
             for (var i = 0; i < 200 && fixture.PaymentCount == before; i++) Wait(Task.Delay(10));
             window.MouseDown(tap, Avalonia.Input.MouseButton.Left);
             window.MouseUp(tap, Avalonia.Input.MouseButton.Left);
@@ -1918,7 +1926,13 @@ void Smoke(ShellViewModel shell, ScoliaClient api, Window window, string passwor
     Wait(cashier.PreviewAsync());
     Check("aperçu de répartition", cashier.Allocations.Count > 0 && cashier.Total == cashier.Months.First(m => m.IsSelected).AmountText, $"{cashier.Allocations.Count} imputation(s), {cashier.Total}");
     var before = Result(api.GetAsync<PagedResult<ReceiptRowDto>>("api/paiements?taille=1")).Total;
-    Wait(shell.Run(() => cashier.PayAsync()));
+    // L'encaissement demande d'abord une confirmation avec le récapitulatif.
+    var paying = shell.Run(() => cashier.PayAsync());
+    var confirmUntil = DateTime.UtcNow.AddSeconds(10);
+    while (shell.Dialog is not FormViewModel && !paying.IsCompleted && DateTime.UtcNow < confirmUntil) Wait(Task.Delay(50));
+    Check("confirmation avant encaissement", shell.Dialog is FormViewModel { Title: "Confirmer l'encaissement" }, shell.Dialog?.GetType().Name ?? "aucune fenêtre");
+    if (shell.Dialog is FormViewModel confirmPay) confirmPay.Submit.Execute(null);
+    Wait(paying);
     Wait(Task.Delay(200));
     var after = Result(api.GetAsync<PagedResult<ReceiptRowDto>>("api/paiements?taille=1")).Total;
     Check("encaissement crée un reçu", cashier.HasReceipt && after == before + 1, cashier.HasReceipt ? cashier.ReceiptText : Notice(shell));
@@ -2003,6 +2017,8 @@ void Smoke(ShellViewModel shell, ScoliaClient api, Window window, string passwor
     var expenseBefore = Result(api.GetAsync<PagedResult<ExpenseDto>>("api/depenses?taille=1")).Total;
     var ok = Submit(shell, ExpensesPage.NewExpenseAsync(shell), f =>
     {
+        // La catégorie est un choix obligatoire sans valeur par défaut.
+        f.Find("categorie").Choice = f.Find("categorie").Options[0];
         f.Find("beneficiaire").Text = "Smoke fournisseur";
         f.Find("description").Text = "Dépense de test du parcours";
         f.Find("montant").Text = "5000";

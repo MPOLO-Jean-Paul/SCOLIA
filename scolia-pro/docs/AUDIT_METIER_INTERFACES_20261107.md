@@ -5,6 +5,10 @@
 autorisations de l'API (`Scolia.Api/Endpoints`), écrans natifs Avalonia (`Scolia.Bureau`).
 Cet audit complète celui du 5 novembre et ne répète pas ses points.
 
+> **Mise à jour du 7 novembre (corrections).** La section « Corrections apportées » en fin de document liste
+> ce qui a été corrigé dans la branche `ccr-0ebe2fd6-veic7n`, ce qui reste à décider, et deux constats retirés après
+> vérification.
+
 **Méthode et limites.** Lecture du code source. Les 9 tests du relais Cloudflare ont été lancés (`node --test`) : ils passent.
 Les tests .NET n'ont pas pu être lancés (pas de SDK .NET dans l'environnement d'audit), et aucun écran n'a été rendu.
 Les constats d'interface viennent donc du XAML et des modèles de vue, pas d'un essai sur appareil.
@@ -70,8 +74,7 @@ Plusieurs garde-fous du relais .NET n'ont toutefois pas été reportés.
 | P | Constat | Fichier | Proposition |
 |---|---|---|---|
 | P0 | **Aucune confirmation avant un encaissement simple.** Le lot de paiements, la restauration et la clôture d'année demandent une confirmation ; un reçu unique part en un clic sur la barre du bas, alors qu'il ne peut ensuite être qu'annulé avec motif. | `Cashier.cs` (`PayAsync`) | Fenêtre récapitulative : apprenant, mois, montant en chiffres **et en lettres**, mode, référence. Raccourci Entrée pour confirmer. |
-| P1 | **Accessibilité absente.** Aucun `AutomationProperties.Name` dans les 51 écrans : les boutons-icônes (flèches, menus, cadenas) n'ont pas de nom pour un lecteur d'écran (Narrateur, TalkBack). Les retards sont signalés seulement en rouge. | `Views/*.axaml` | Nommer les boutons-icônes ; ajouter un texte ou une icône « En retard » à côté de la couleur. |
-| P1 | **Fenêtre de bureau au format téléphone.** `MainWindow` s'ouvre en 460 × 640 avec `MinWidth/MinHeight = 0`. Elle peut être réduite à rien, et sur PC l'écran Encaisser (2 colonnes, empilées sous 1000 px) s'ouvre empilé. | `MainWindow.axaml`, `MainWindow.axaml.cs` | Taille de départ selon l'écran (par ex. 1280 × 800 ou maximisée), taille minimale ≈ 360 × 560, dernière taille mémorisée. |
+| P1 | **Accessibilité absente.** Aucun `AutomationProperties.Name` dans les 51 écrans : les boutons-icônes (flèches, menus, cadenas) n'ont pas de nom pour un lecteur d'écran (Narrateur, TalkBack).  | `Views/*.axaml` | Nommer les boutons-icônes. |
 | P1 | **Libellé trompeur à l'encaissement** : « Le reste sera conservé sur le compte ». Aucun crédit n'est conservé : le montant ne peut pas dépasser les mois choisis, et « le reste » est la dette restante. | `CashierView.axaml` | « Le montant non versé reste dû sur ces mois. » |
 | P1 | **Payeur non modifiable.** Le téléphone du payeur est repris du dossier sans possibilité de modification, et le nom du payeur n'est pas demandé. Quand un oncle ou un parrain paie, le reçu porte le tuteur. | `CashierView.axaml` | Champ « Payé par » et téléphone modifiables, préremplis par le tuteur. |
 | P2 | L'observation vide est imprimée « OK » sur le reçu. | `Cashier.cs` (`DefaultNote`) | Laisser vide. |
@@ -88,3 +91,52 @@ Plusieurs garde-fous du relais .NET n'ont toutefois pas été reportés.
 4. **Feuille de route** : multi-devise, pénalités et remises, échéanciers, relances groupées.
 
 **Recette à prévoir :** coupure Wi-Fi juste après « Encaisser » (aucun second reçu), arrêté à midi puis encaissement l'après-midi, renouvellement de l'hôte à 55 min sur Cloudflare avec un client actif, compte Secrétariat qui tente d'annuler un reçu (doit être refusé après correction), lecture des écrans avec le Narrateur Windows et TalkBack.
+
+---
+
+## 5. Corrections apportées (7 novembre)
+
+Vérifications après corrections : SDK .NET 10 installé ; `dotnet build Scolia.sln` sans erreur ; **260 tests serveur**
+et **421 tests client** au vert ; **13 tests du relais Cloudflare**, vérification des types et `wrangler deploy --dry-run` au vert.
+Parcours sans affichage (Avalonia Headless) contre un serveur réel : `smoke` sans échec, `fluidite` (mobile) sans échec,
+`bureau` avec les 2 mêmes échecs qu'avant les corrections (« Connexion 460×640 / 800×600 : carte et champs dans la
+fenêtre », déjà présents sur la branche d'origine, non liés à ces changements).
+
+| Constat | Correction |
+|---|---|
+| Relais Cloudflare : reconnexion de l'hôte refusée (409) | La nouvelle session de l'hôte **remplace** l'ancienne ; la fermeture tardive de l'ancien socket ne touche plus les nouveaux clients. Côté .NET, `RemoteHost` ferme proprement le socket (`CloseOutputAsync`, sous le verrou d'envoi) avant chaque renouvellement. |
+| Relais Cloudflare : aucune durée maximale | Alarme du Durable Object : 15 s pour envoyer la requête, 15 min par client, 65 min par session hôte, comme le relais .NET. |
+| Relais Cloudflare : pas de limite de débit | 120 tentatives par minute et par IP, en mémoire de l'instance (`src/limits.js`), avant toute requête au Durable Object ; commentaire trompeur corrigé. |
+| Relais Cloudflare : `bufferedAmount` | Contrôle appliqué seulement si le moteur expose la valeur ; test ajouté. |
+| Relais Cloudflare : versions flottantes, README | `package-lock.json`, versions figées, `npm ci` dans le CI, `.gitignore` ; README mis à jour (libellé du bouton, limites, consigne de confidentialité). |
+| Double reçu après une réponse perdue | La clé anti-doublon est conservée pour le même versement (apprenant, mois, montant, mode, date) jusqu'au succès : une nouvelle tentative rend le reçu déjà créé. |
+| Pas de confirmation avant encaissement | Récapitulatif (apprenant, mois, montant, mode, date, référence) avant l'envoi ; bouton « Encaisser <montant> ». Contrôle headless du double appui adapté. |
+| Arrêté de caisse qui bloque la journée | Verrou **à l'heure de l'arrêté** (`CashLock`) : après un arrêté du jour, les encaissements et dépenses du même jour restent possibles et entrent dans le prochain arrêté ; ce qui a été compté dans un arrêté ne s'annule plus. Un seul arrêté par jour (contrainte de la base conservée). Test d'API ajouté. |
+| Arrêté : attendu affiché pour aujourd'hui seulement, lu avant le verrou | Situation lue **après** la prise du verrou multiposte ; pour une autre date, l'attendu et l'écart de cette date sont affichés et un second clic est demandé. |
+| Annulation de dépense avec le droit de saisie | Droit `paiements.annuler` exigé par l'API et par l'écran. |
+| Numéro de dépense selon l'année courante | Année scolaire de la date de la dépense. |
+| Recherche des dépenses sensible à la casse | `LIKE` insensible à la casse, jokers neutralisés. |
+| Libellé « Le reste sera conservé sur le compte » | « Un versement partiel est imputé aux mois les plus anciens ; la part non versée reste due sur ces mois. » |
+| Alignement de la 2e ligne d'Encaisser | Même espacement pour les trois champs. |
+| Accessibilité des boutons-icônes | Style global : un bouton sans nom accessible prend son info-bulle comme nom (Narrateur, TalkBack). |
+| Parcours `smoke` : « nouvelle dépense » en échec | Déjà en échec avant ces corrections (catégorie obligatoire non remplie par le test) : le test choisit maintenant une catégorie. |
+
+### Constats retirés après vérification
+
+- **Fenêtre au format téléphone** : `MainWindow` ne garde 460 × 640 que pour l'écran de connexion compact ; une fois connecté,
+  la fenêtre passe en 1280 × 820 avec un minimum de 760 × 520 (`MainWindow.axaml.cs`). Pas de correction nécessaire.
+- **Retard signalé seulement par la couleur** : chaque mois en retard affiche aussi « En retard depuis le … ». Pas de correction nécessaire.
+
+### Laissé en l'état : décision du responsable nécessaire
+
+- **Rôles** : le compte administrateur créé à l'installation a le rôle *Secrétariat*. Restreindre ce rôle bloquerait
+  l'établissement. Il faut d'abord un vrai rôle Administrateur assignable et une migration des comptes existants.
+- **Droit dédié aux prises en charge** : à décider avec la séparation des rôles.
+- **Frais d'inscription et d'examen** : ils sont volontairement exclus du compte (un test l'impose). Il faut choisir entre
+  les encaisser ou les retirer du modèle.
+- **Reçu figé (solde et payeur au jour du paiement, « Duplicata »)** : nécessite une migration de base, à faire avec la
+  prochaine version de schéma.
+- **Observation « OK » par défaut** : c'est un choix de la V79, verrouillé par un test. Il n'a pas été modifié.
+- **Antidatage** : le limiter refuserait les encaissements hors ligne synchronisés plusieurs jours après. Il faut une règle
+  qui distingue la date de saisie et la date de synchronisation.
+- Multi-devise, rapprochement Mobile Money, billetage, pénalités, remises, échéanciers : feuille de route.

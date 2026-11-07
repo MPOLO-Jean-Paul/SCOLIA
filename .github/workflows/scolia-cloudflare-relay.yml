@@ -26,7 +26,7 @@ jobs:
         with:
           node-version: '22'
       - name: Installer Wrangler sans secret Cloudflare
-        run: npm install --no-audit --no-fund
+        run: npm ci --no-audit --no-fund
       - name: Tester securite, trames et hibernation
         run: npm test
       - name: Verifier les types

@@ -7,13 +7,15 @@
 - Le relais conserve en mémoire/attachement WebSocket uniquement une empreinte de capacité et un nonce de session ; aucun déchiffrement de documents ou de données métier.
 - Le protocole est celui du relais .NET actuel : `GET /health`, `/v1/host/{room}`, `/v1/client/{room}`. La base de données, les autorisations et le journal hors ligne ne changent pas.
 - Les connexions peuvent hiberner quand elles sont inactives, sans maintenir en permanence une instance en mémoire. La durée de vie physique d'une connexion, les quotas gratuits et la disponibilité ne sont toutefois pas garantis.
+- Limites identiques au relais .NET : un client doit envoyer sa requête en 15 s et ne reste pas plus de 15 min ; une session hôte dure au plus 65 min (SCOLIA la renouvelle à 55 min) ; 16 clients par salle ; 120 tentatives de connexion par minute et par adresse IP (compteur en mémoire de chaque instance Cloudflare, sans stockage). Les délais sont appliqués par une alarme du Durable Object : c'est le seul appel de stockage.
+- Quand le serveur SCOLIA se reconnecte, sa nouvelle session **remplace** l'ancienne (même après une coupure réseau mal détectée) au lieu d'être refusée.
 
 ## 1. Créer le Worker dans son compte Cloudflare
 
 1. Se connecter à <https://dash.cloudflare.com/>.
 2. Ouvrir **Workers & Pages → Create application → Import a repository / GitHub** (l'intitulé peut varier).
 3. Autoriser Cloudflare à accéder au dépôt GitHub **MPOLO-Jean-Paul/SCOLIA**. Ne pas lui donner un accès illimité à tous les dépôts si ce n'est pas nécessaire.
-4. Sélectionner le dépôt **SCOLIA**, la branche de préparation **feature/scolia-cloudflare-relay-20261107** et le **Root directory** : `scolia-pro/deploy/cloudflare`.
+4. Sélectionner le dépôt **SCOLIA**, la branche de préparation **feature/scolia-cloudflare-relay-20261107** (puis `main` une fois la branche fusionnée) et le **Root directory** : `scolia-pro/deploy/cloudflare`.
 5. Nom du Worker : **scolia-pro-relay** (doit correspondre au champ `name` du fichier `wrangler.jsonc`).
 6. Build command : `npm run test && npm run typecheck`. Deploy command : `npx wrangler deploy`. Aucun conteneur Docker, base Postgres ou serveur Render supplémentaire n'est nécessaire.
 7. Choisir **Workers Free** et confirmer le déploiement. Le fichier Wrangler crée un Durable Object **SQLite-backed** avec la migration `v1` ; cela respecte le plan gratuit. Si Cloudflare indique qu'un plan payant est requis, ne pas souscrire et relever le message.
@@ -24,13 +26,13 @@ Si le tableau de bord ne permet pas de choisir la branche ou le répertoire, uti
 ```bash
 git clone -b feature/scolia-cloudflare-relay-20261107 https://github.com/MPOLO-Jean-Paul/SCOLIA.git
 cd SCOLIA/scolia-pro/deploy/cloudflare
-npm install
+npm ci
 npm run check
 npx wrangler login
 npx wrangler deploy
 ```
 
-**Ne pas transmettre de jetons Cloudflare, mots de passe GitHub, QR privés ou fichiers de clés dans ChatGPT.**
+**Ne jamais transmettre de jetons Cloudflare, mots de passe GitHub, QR privés ou fichiers de clés à un assistant, une messagerie ou un tiers.**
 
 ## 2. Tester le service avant de toucher à SCOLIA
 
@@ -45,7 +47,7 @@ Une réponse correcte de `/health` **ne prouve pas à elle seule** que les conne
 
 1. **Conserver Render actif.** Avant toute modification du relais, sauvegarder la base de l'établissement et vérifier les écritures hors ligne en attente.
 2. Sur **l'appareil serveur principal**, dans **Réseau et activité → Réglages avancés**, renseigner l'adresse Cloudflare sous forme WSS : `wss://scolia-pro-relay.<votre-sous-domaine>.workers.dev/` (le protocole WSS et la barre finale sont requis).
-3. Cliquer sur **Activer ou vérifier**. Le bouton peut encore afficher « Render » dans la version 1.2.35 : le code de connexion accepte une adresse de relais WSS personnalisée.
+3. Cliquer sur **Activer ou vérifier Internet** (« Activer ou vérifier Render » dans les versions 1.2.35 et antérieures). Le code de connexion accepte une adresse de relais WSS personnalisée.
 4. La modification du fournisseur **renouvelle la liaison chiffrée** : générer un **nouveau QR SCOLIA** sur l'appareil serveur pour les téléphones et PC qui doivent rejoindre ce nouveau chemin. Les anciens codes Render ne doivent pas servir à autoriser un nouvel appareil Cloudflare.
 5. Sur l'autre appareil, scanner le QR officiel une seule fois. Tester l'accès sur le même Wi-Fi, puis désactiver le Wi-Fi du téléphone pour passer sur Orange/Airtel/Vodacom. Vérifier la reconnexion automatique après fermeture/réouverture, la révocation d'un appareil et la synchronisation après une courte coupure.
 6. Tester l'ordinateur serveur arrêté : les clients doivent afficher leur état hors ligne correctement, **sans fausse confirmation d'encaissement**.
