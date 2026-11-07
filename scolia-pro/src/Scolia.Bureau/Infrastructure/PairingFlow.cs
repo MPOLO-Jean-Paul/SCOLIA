@@ -75,7 +75,7 @@ public static class PairingFlow
             progress?.Invoke("Serveur local reconnu : vérification de l'invitation…");
             await shell.JoinAsync(new DiscoveredServer(local.Address.Host, local.School,
                 Machine(code, local.Address), string.Empty, local.Address));
-            return await ActivateAsync(shell, code, local.School, "réseau local");
+            return await ActivateAsync(shell, code, local.School, "réseau local", progress);
         }
 
         var internet = await TryInternetAsync(shell, code, progress);
@@ -98,7 +98,7 @@ public static class PairingFlow
             probe.UseRemote(link);
             if (!await WithinAsync(probe.IsRunningAsync())) return null;
             await shell.JoinInternetAsync(link);
-            return await ActivateAsync(shell, code, code.School, "Internet sécurisé");
+            return await ActivateAsync(shell, code, code.School, "Internet sécurisé", progress);
         }
         catch (FormatException ex) { return ex.Message; }
         catch (Exception ex) when (ex is HttpRequestException or Api.ApiException or TaskCanceledException or IOException)
@@ -126,12 +126,13 @@ public static class PairingFlow
     }
 
     /// <summary>La connexion réseau n'accorde aucun droit : seule l'invitation émise par le compte du serveur ouvre la session.</summary>
-    private static async Task<string> ActivateAsync(ShellViewModel shell, PairingCode code, string school, string network)
+    private static async Task<string> ActivateAsync(ShellViewModel shell, PairingCode code, string school, string network, Action<string>? progress)
     {
         if (string.IsNullOrWhiteSpace(code.AccessTicket))
             return $"Relié à {school} par {network}, mais ce code ne contient aucune autorisation. Faites générer un nouveau QR depuis une session ouverte sur le serveur.";
         try
         {
+            progress?.Invoke("Vérification de l'autorisation de cet appareil…");
             var message = await shell.AcceptDeviceInvitationAsync(code.AccessTicket);
             // Seul le QR émis par le serveur contient la route WSS et le ticket
             // qui vient d'être accepté. Ce même appareil peut désormais retrouver
