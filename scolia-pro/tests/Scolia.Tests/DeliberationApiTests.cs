@@ -225,4 +225,65 @@ public sealed class DeliberationApiTests : IDisposable
         }).Ok();
         Assert.Equal(1, count.GetInt32());
     }
+
+    [Fact]
+    public async Task Submitted_sheet_is_tracked_and_only_the_jury_returns_it()
+    {
+        var admin = await app.InstalledAdmin();
+        var setup = await SetupAsync(admin, "MUKENDI", "KASONGO");
+        var (good, weak) = (setup.Enrollments[0], setup.Enrollments[1]);
+        await admin.Put($"{D}/feuille?coursId={setup.S1Course}&nature=S1", new[] { new { enrollmentId = good, value = (decimal?)80m } }).Ok();
+
+        // Feuille incomplète : la remise est refusée, comme le dépôt d'ITMCD tant qu'il manque une cote.
+        var (incomplete, body) = await admin.Post($"{D}/remise?coursId={setup.S1Course}&nature=S1", new { }).Fail();
+        Assert.Equal(HttpStatusCode.BadRequest, incomplete);
+        Assert.Contains("1 cote(s) manquante(s)", body.GetProperty("title").GetString());
+
+        await admin.Put($"{D}/feuille?coursId={setup.S1Course}&nature=S1", new[] { new { enrollmentId = weak, value = (decimal?)30m } }).Ok();
+        var submitted = await admin.Post($"{D}/remise?coursId={setup.S1Course}&nature=S1", new { }).Ok();
+        Assert.Equal(2, submitted.GetProperty("graded").GetInt32());
+        var (twice, _) = await admin.Post($"{D}/remise?coursId={setup.S1Course}&nature=S1", new { }).Fail();
+        Assert.Equal(HttpStatusCode.Conflict, twice);
+
+        var sheet = await admin.GetAsync($"{D}/feuille?coursId={setup.S1Course}&nature=S1").Ok();
+        Assert.NotEqual(JsonValueKind.Null, sheet.GetProperty("submittedAtUtc").ValueKind);
+        Assert.Equal(1, sheet.GetProperty("failed").GetInt32());
+        Assert.Equal(55m, sheet.GetProperty("average").GetDecimal());
+        var courses = (await admin.GetAsync($"{D}/cours?promotionId={setup.PromotionId}").Ok()).EnumerateArray()
+            .Single(c => c.GetProperty("id").GetString() == setup.S1Course);
+        Assert.True(courses.GetProperty("submittedS1").GetBoolean());
+
+        // Le jury (secrétariat) corrige encore une feuille remise : la correction est tracée.
+        await admin.Put($"{D}/feuille?coursId={setup.S1Course}&nature=S1", new[] { new { enrollmentId = weak, value = (decimal?)35m } }).Ok();
+
+        // Suivi de l'encodage : la feuille S1 est remise, le cours annuel reste à encoder pour S1 et S2.
+        var progress = await admin.GetAsync($"{D}/suivi?promotionId={setup.PromotionId}").Ok();
+        var rows = progress.GetProperty("rows").EnumerateArray().ToList();
+        Assert.Equal(3, rows.Count);
+        var s1Row = rows.Single(r => r.GetProperty("courseId").GetString() == setup.S1Course);
+        Assert.Equal("Remis", s1Row.GetProperty("status").GetString());
+        Assert.Equal(1, s1Row.GetProperty("failed").GetInt32());
+        Assert.All(rows.Where(r => r.GetProperty("courseId").GetString() == setup.AnnualCourse), r => Assert.Equal("À encoder", r.GetProperty("status").GetString()));
+        Assert.Equal(1, progress.GetProperty("submitted").GetInt32());
+        Assert.Equal(2, (await admin.GetAsync($"{D}/suivi?promotionId={setup.PromotionId}&periode=S1").Ok()).GetProperty("rows").GetArrayLength());
+
+        foreach (var url in new[]
+        {
+            $"{D}/suivi/export?promotionId={setup.PromotionId}&format=xlsx",
+            $"{D}/suivi/export?promotionId={setup.PromotionId}",
+            $"{D}/feuille/export?coursId={setup.S1Course}&nature=S1&format=xlsx",
+            $"{D}/feuille/export?coursId={setup.S1Course}&nature=S1&echecs=true",
+        })
+            Assert.Equal(HttpStatusCode.OK, (await admin.GetAsync(url)).StatusCode);
+
+        // Renvoi à l'enseignant : motif obligatoire, puis la feuille redevient non remise.
+        var (noReason, _) = await admin.Post($"{D}/renvoi?coursId={setup.S1Course}&nature=S1", new { reason = "" }).Fail();
+        Assert.Equal(HttpStatusCode.BadRequest, noReason);
+        var returned = await admin.Post($"{D}/renvoi?coursId={setup.S1Course}&nature=S1", new { reason = "Erreur de report sur deux copies" });
+        Assert.Equal(HttpStatusCode.NoContent, returned.StatusCode);
+        var after = await admin.GetAsync($"{D}/feuille?coursId={setup.S1Course}&nature=S1").Ok();
+        Assert.Equal(JsonValueKind.Null, after.GetProperty("submittedAtUtc").ValueKind);
+        var (nothing, _) = await admin.Post($"{D}/renvoi?coursId={setup.S1Course}&nature=S1", new { reason = "Encore une fois" }).Fail();
+        Assert.Equal(HttpStatusCode.NotFound, nothing);
+    }
 }

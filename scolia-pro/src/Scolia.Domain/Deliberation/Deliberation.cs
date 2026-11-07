@@ -48,6 +48,20 @@ public sealed class CourseMark : Entity
     public bool EnteredAnonymously { get; set; }
 }
 
+/// <summary>
+/// Remise officielle des cotes d'un cours pour une nature (S1, S2 ou appui), comme le « dépôt » des cotes d'ITMCD.
+/// Après la remise, la feuille ne change plus que par le jury (correction tracée au journal) ; le jury peut aussi
+/// renvoyer la feuille à l'enseignant, avec un motif, ce qui supprime la remise.
+/// </summary>
+public sealed class MarkSubmission : Entity
+{
+    public Guid AcademicYearId { get; set; }
+    public Guid CourseId { get; set; }
+    public MarkKind Kind { get; set; }
+    public DateTime SubmittedAtUtc { get; set; }
+    public string SubmittedByName { get; set; } = string.Empty;
+}
+
 /// <summary>Réglages de délibération d'une année : ouverture de l'encodage par semestre et moyennes d'appui (interrupteurs d'ITMCD).</summary>
 public sealed class DeliberationSettings : Entity
 {

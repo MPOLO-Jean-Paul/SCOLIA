@@ -185,10 +185,13 @@ public sealed class DeliberationService(IAppDbContext db, IWriteGate gate, IAudi
             .GroupBy(m => new { m.CourseId, m.Kind }).Select(g => new { g.Key.CourseId, g.Key.Kind, Count = g.Count() }).ToListAsync(ct);
         var closed = await ClosedPeriodsAsync(promotionId, ct);
         var teachers = await TeacherNamesAsync(courseIds, ct);
+        var submitted = (await db.MarkSubmissions.AsNoTracking().Where(m => courseIds.Contains(m.CourseId)).Select(m => new { m.CourseId, m.Kind }).ToListAsync(ct))
+            .Select(m => (m.CourseId, m.Kind)).ToHashSet();
         int Count(Guid id, MarkKind kind) => counts.FirstOrDefault(c => c.CourseId == id && c.Kind == kind)?.Count ?? 0;
         return courses.Select(c => new DeliberationCourseDto(c.Id, c.Number, c.Name, DeliberationText.Semester(c.Semester), c.MaxScore, teachers.GetValueOrDefault(c.Id),
             students.Count, Count(c.Id, MarkKind.CoteS1), Count(c.Id, MarkKind.CoteS2), Count(c.Id, MarkKind.Appui),
-            IsLocked(closed, MarkKind.CoteS1, c.Semester), IsLocked(closed, MarkKind.CoteS2, c.Semester))).ToList();
+            IsLocked(closed, MarkKind.CoteS1, c.Semester), IsLocked(closed, MarkKind.CoteS2, c.Semester),
+            submitted.Contains((c.Id, MarkKind.CoteS1)), submitted.Contains((c.Id, MarkKind.CoteS2)))).ToList();
     }
 
     /// <summary>Feuille de cotes d'un cours. En mode anonyme, la feuille est triée par code et ne montre ni nom ni matricule.</summary>
@@ -216,9 +219,12 @@ public sealed class DeliberationService(IAppDbContext db, IWriteGate gate, IAudi
             return new MarkRowDto(s.EnrollmentId, code, anonymous ? null : s.Matricule, anonymous ? null : s.FullName, Mark(kind),
                 result.Base, result.Graded ? result.Points : null, result.Failed);
         });
-        rows = anonymous ? rows.OrderBy(r => r.Code ?? "~", StringComparer.Ordinal) : rows;
+        var list = (anonymous ? rows.OrderBy(r => r.Code ?? "~", StringComparer.Ordinal) : rows).ToList();
+        var submission = await db.MarkSubmissions.AsNoTracking().FirstOrDefaultAsync(m => m.CourseId == course.Id && m.Kind == kind, ct);
+        var retained = list.Where(r => r.Retained is not null).Select(r => r.Retained!.Value).ToList();
         return new MarkSheetDto(course.Id, $"{course.Number}. {course.Name}", DeliberationText.Semester(course.Semester), course.MaxScore, DeliberationText.Kind(kind),
-            anonymous, IsLocked(closed, kind, course.Semester), EncodingOpen(settings, kind), rows.ToList());
+            anonymous, IsLocked(closed, kind, course.Semester), EncodingOpen(settings, kind), list, submission?.SubmittedAtUtc, submission?.SubmittedByName,
+            list.Count(r => r.Failed), retained.Count == 0 ? null : Math.Round(retained.Average(), 2, MidpointRounding.AwayFromZero));
     }
 
     /// <summary>Enregistre la feuille d'un cours ; une valeur vide efface la cote. Chaque changement garde l'ancienne valeur au journal.</summary>
@@ -227,7 +233,7 @@ public sealed class DeliberationService(IAppDbContext db, IWriteGate gate, IAudi
         var year = await OpenYearAsync(ct);
         var kind = DeliberationText.Kind(kindText);
         var course = await CourseInYearAsync(courseId, year.Id, ct);
-        await EnsureWritableAsync(year.Id, course, kind, ct);
+        var submitted = await EnsureWritableAsync(year.Id, course, kind, ct);
         var allowed = (await EnrolledAsync(year.Id, course.PromotionId, ct)).Select(s => s.EnrollmentId).ToHashSet();
         if (input.Select(i => i.EnrollmentId).Distinct().Count() != input.Count) throw new DomainException("cotes", "Un apprenant apparaît deux fois dans la feuille.");
         var v = new ValidationBuilder();
@@ -253,7 +259,8 @@ public sealed class DeliberationService(IAppDbContext db, IWriteGate gate, IAudi
         }
         if (changes.Count == 0) return 0;
         audit.Record("deliberation.cotes.saisies", "Cours", courseId.ToString(),
-            $"{changes.Count} cote(s) {DeliberationText.Kind(kind)} enregistrée(s) pour le cours {course.Number} « {course.Name} ».", changes);
+            $"{changes.Count} cote(s) {DeliberationText.Kind(kind)} enregistrée(s) pour le cours {course.Number} « {course.Name} »"
+            + (submitted is null ? "." : " — correction du jury après la remise."), changes);
         await db.SaveChangesAsync(ct);
         return changes.Count;
     }, ct);
@@ -264,7 +271,7 @@ public sealed class DeliberationService(IAppDbContext db, IWriteGate gate, IAudi
         var year = await OpenYearAsync(ct);
         var kind = DeliberationText.Kind(input.Kind);
         var course = await CourseInYearAsync(input.CourseId, year.Id, ct);
-        await EnsureWritableAsync(year.Id, course, kind, ct);
+        var submitted = await EnsureWritableAsync(year.Id, course, kind, ct);
         var (code, student) = await ResolveCodeAsync(year.Id, input.Code, ct);
         if (student.PromotionId != course.PromotionId)
             throw new DomainException("code", $"Le code {code.Code} n'appartient pas à la promotion de ce cours : vérifiez la copie.");
@@ -275,14 +282,19 @@ public sealed class DeliberationService(IAppDbContext db, IWriteGate gate, IAudi
         else { mark.Value = value; mark.EnteredAnonymously = true; }
         audit.Record("deliberation.cote.anonyme", "Cours", course.Id.ToString(),
             $"Cote {DeliberationText.Kind(kind)} du code {code.Code} pour le cours {course.Number} « {course.Name} » : {value:0.##}"
-            + (previous is { } p ? $" (avant {p:0.##})." : "."), new { code = code.Code, avant = previous, apres = value });
+            + (previous is { } p ? $" (avant {p:0.##})" : string.Empty) + (submitted is null ? "." : " — correction du jury après la remise."),
+            new { code = code.Code, avant = previous, apres = value });
         await db.SaveChangesAsync(ct);
         var ids = (await EnrolledAsync(year.Id, course.PromotionId, ct)).Select(s => s.EnrollmentId).ToList();
         var graded = await db.CourseMarks.CountAsync(m => m.CourseId == course.Id && m.Kind == kind && ids.Contains(m.EnrollmentId), ct);
         return new MarkByCodeResult(code.Code, $"{course.Number}. {course.Name}", DeliberationText.Kind(kind), value, previous, ids.Count - graded);
     }, ct);
 
-    private async Task EnsureWritableAsync(Guid yearId, Course course, MarkKind kind, CancellationToken ct)
+    /// <summary>
+    /// Contrôles avant d'écrire une cote : cours actif, nature acceptée, encodage ouvert, période non clôturée, feuille non remise
+    /// (seul le jury corrige une feuille remise). Rend la remise éventuelle, pour la mentionner au journal.
+    /// </summary>
+    private async Task<MarkSubmission?> EnsureWritableAsync(Guid yearId, Course course, MarkKind kind, CancellationToken ct)
     {
         if (!course.IsActive) throw new DomainException("cours", "Ce cours est archivé : réactivez-le pour encoder ses cotes.");
         if (!DeliberationEngine.Accepts(course.Semester, kind)) DeliberationEngine.ValidateMark(kind, course.Semester, 0, course.MaxScore);
@@ -294,7 +306,14 @@ public sealed class DeliberationService(IAppDbContext db, IWriteGate gate, IAudi
         var closed = await ClosedPeriodsAsync(course.PromotionId, ct);
         if (IsLocked(closed, kind, course.Semester))
             throw new ConflictException("La délibération concernée est clôturée : ces cotes sont figées. Le jury doit rouvrir la session, avec un motif, pour les corriger.");
+        var submission = await db.MarkSubmissions.AsNoTracking().FirstOrDefaultAsync(m => m.CourseId == course.Id && m.Kind == kind, ct);
+        if (submission is not null && !user.HasPermission(Permissions.DeliberationManage))
+            throw new ConflictException($"Les cotes {DeliberationText.Kind(kind)} de ce cours ont été remises le {When(submission.SubmittedAtUtc)} par {submission.SubmittedByName} : "
+                + "seul le jury peut les corriger ou renvoyer la feuille.");
+        return submission;
     }
+
+    private static string When(DateTime utc) => utc.ToLocalTime().ToString("dd/MM/yyyy 'à' HH:mm", Fr);
 
     private static bool EncodingOpen(DeliberationSettings s, MarkKind kind) => kind switch
     {
@@ -308,6 +327,153 @@ public sealed class DeliberationService(IAppDbContext db, IWriteGate gate, IAudi
 
     private async Task<List<DeliberationPeriod>> ClosedPeriodsAsync(Guid promotionId, CancellationToken ct) =>
         await db.DeliberationSessions.AsNoTracking().Where(s => s.PromotionId == promotionId && s.Status == SessionStatus.Cloturee).Select(s => s.Period).ToListAsync(ct);
+
+    // ---------- Remise des cotes et suivi de l'encodage (repris d'ITMCD) ----------
+
+    /// <summary>
+    /// Remise officielle d'une feuille de cotes (le « dépôt » d'ITMCD) : la feuille doit être complète (sauf l'appui, facultatif).
+    /// Après la remise, l'enseignant ne modifie plus la feuille ; le jury peut la corriger ou la renvoyer avec un motif.
+    /// </summary>
+    public Task<MarkSubmissionDto> SubmitAsync(Guid courseId, string kindText, CancellationToken ct = default) => gate.RunAsync(async () =>
+    {
+        var year = await OpenYearAsync(ct);
+        var kind = DeliberationText.Kind(kindText);
+        var course = await CourseInYearAsync(courseId, year.Id, ct);
+        var existing = await EnsureWritableAsync(year.Id, course, kind, ct);
+        if (existing is not null)
+            throw new ConflictException($"Ces cotes ont déjà été remises le {When(existing.SubmittedAtUtc)} par {existing.SubmittedByName}.");
+        var ids = (await EnrolledAsync(year.Id, course.PromotionId, ct)).Select(s => s.EnrollmentId).ToList();
+        if (ids.Count == 0) throw new DomainException("remise", "Aucun apprenant inscrit dans la promotion de ce cours : il n'y a rien à remettre.");
+        var graded = await db.CourseMarks.CountAsync(m => m.CourseId == courseId && m.Kind == kind && ids.Contains(m.EnrollmentId), ct);
+        if (kind != MarkKind.Appui && graded < ids.Count)
+            throw new DomainException("remise", $"Feuille incomplète : {ids.Count - graded} cote(s) manquante(s) sur {ids.Count}. Encodez toutes les cotes avant de les remettre.");
+        var name = user.Name.Length > 120 ? user.Name[..120] : user.Name;
+        var submission = new MarkSubmission { AcademicYearId = year.Id, CourseId = courseId, Kind = kind, SubmittedAtUtc = DateTime.UtcNow, SubmittedByName = name };
+        db.MarkSubmissions.Add(submission);
+        audit.Record("deliberation.cotes.remises", "Cours", courseId.ToString(),
+            $"Cotes {DeliberationText.Kind(kind)} du cours {course.Number} « {course.Name} » remises : {graded} cote(s) sur {ids.Count} apprenant(s).",
+            new { nature = DeliberationText.Kind(kind), graded, total = ids.Count });
+        await db.SaveChangesAsync(ct);
+        return new MarkSubmissionDto(courseId, $"{course.Number}. {course.Name}", DeliberationText.Kind(kind), submission.SubmittedAtUtc, name, graded, ids.Count);
+    }, ct);
+
+    /// <summary>Renvoi d'une feuille remise à l'enseignant, par le jury, avec un motif : la feuille redevient modifiable.</summary>
+    public Task ReturnAsync(Guid courseId, string kindText, MarkReturnRequest input, CancellationToken ct = default) => gate.RunAsync(async () =>
+    {
+        var year = await OpenYearAsync(ct);
+        var kind = DeliberationText.Kind(kindText);
+        var course = await CourseInYearAsync(courseId, year.Id, ct);
+        var submission = await db.MarkSubmissions.FirstOrDefaultAsync(m => m.CourseId == courseId && m.Kind == kind, ct)
+            ?? throw new NotFoundException("Ces cotes n'ont pas été remises : il n'y a rien à renvoyer.");
+        if (IsLocked(await ClosedPeriodsAsync(course.PromotionId, ct), kind, course.Semester))
+            throw new ConflictException("La délibération concernée est clôturée : rouvrez-la d'abord, avec un motif.");
+        var reason = Reason(input.Reason, "Indiquez le motif du renvoi de la feuille (5 caractères au moins).");
+        db.MarkSubmissions.Remove(submission);
+        audit.Record("deliberation.cotes.renvoyees", "Cours", courseId.ToString(),
+            $"Feuille {DeliberationText.Kind(kind)} du cours {course.Number} « {course.Name} » renvoyée à l'enseignant (remise du {When(submission.SubmittedAtUtc)} par {submission.SubmittedByName}). Motif : {reason}.",
+            new { nature = DeliberationText.Kind(kind), reason });
+        await db.SaveChangesAsync(ct);
+        return true;
+    }, ct);
+
+    /// <summary>
+    /// Suivi de l'encodage (moniteur d'ITMCD), sur les inscriptions de l'année seulement : une ligne par cours et par cote
+    /// attendue, avec l'enseignant, l'avancement, les échecs, la moyenne, la remise et l'état de la délibération.
+    /// Période vide ou jury annuel : S1 et S2 ; « S1 » ou « S2 » : ce semestre seulement.
+    /// </summary>
+    public async Task<EncodingProgressDto> ProgressAsync(Guid? promotionId, string? periodText, CancellationToken ct = default)
+    {
+        var year = await YearContext.CurrentAsync(db, ct);
+        DeliberationPeriod? period = string.IsNullOrWhiteSpace(periodText) ? null : DeliberationText.Period(periodText);
+        var promotions = await db.Promotions.AsNoTracking().Where(p => p.AcademicYearId == year.Id && (promotionId == null || p.Id == promotionId))
+            .Select(p => new { p.Id, p.Code, p.Name }).ToListAsync(ct);
+        var promotionIds = promotions.Select(p => p.Id).ToList();
+        var courses = await db.Courses.AsNoTracking().Where(c => c.AcademicYearId == year.Id && c.IsActive && promotionIds.Contains(c.PromotionId)).ToListAsync(ct);
+        var courseIds = courses.Select(c => c.Id).ToList();
+        var enrolled = (await EnrolledAsync(year.Id, promotionId, ct)).GroupBy(s => s.PromotionId).ToDictionary(g => g.Key, g => g.Select(s => s.EnrollmentId).ToHashSet());
+        var marks = (await db.CourseMarks.AsNoTracking().Where(m => courseIds.Contains(m.CourseId))
+                .Select(m => new { m.CourseId, m.EnrollmentId, m.Kind, m.Value }).ToListAsync(ct))
+            .ToDictionary(m => (m.CourseId, m.EnrollmentId, m.Kind), m => m.Value);
+        var submissions = await db.MarkSubmissions.AsNoTracking().Where(m => courseIds.Contains(m.CourseId)).ToDictionaryAsync(m => (m.CourseId, m.Kind), ct);
+        var closed = await db.DeliberationSessions.AsNoTracking().Where(x => promotionIds.Contains(x.PromotionId) && x.Status == SessionStatus.Cloturee)
+            .Select(x => new { x.PromotionId, x.Period }).ToListAsync(ct);
+        var settings = await SettingsOfAsync(year.Id, ct);
+        var teachers = await TeacherNamesAsync(courseIds, ct);
+
+        var kinds = period switch
+        {
+            DeliberationPeriod.S1 => new[] { MarkKind.CoteS1 },
+            DeliberationPeriod.S2 => new[] { MarkKind.CoteS2 },
+            _ => new[] { MarkKind.CoteS1, MarkKind.CoteS2 },
+        };
+        var rows = new List<EncodingProgressRowDto>();
+        foreach (var promotion in promotions.OrderBy(p => p.Code, StringComparer.CurrentCulture))
+        {
+            var students = enrolled.GetValueOrDefault(promotion.Id) ?? [];
+            foreach (var course in courses.Where(c => c.PromotionId == promotion.Id).OrderBy(c => c.Number))
+            foreach (var kind in kinds.Where(k => DeliberationEngine.Accepts(course.Semester, k)))
+            {
+                var semester = kind == MarkKind.CoteS1 ? DeliberationPeriod.S1 : DeliberationPeriod.S2;
+                decimal? Mark(Guid enrollment, MarkKind k) => marks.TryGetValue((course.Id, enrollment, k), out var v) ? v : null;
+                var results = students.Select(e => DeliberationEngine.Course(new DeliberationEngine.CourseInput(course.Id, course.Semester, course.MaxScore,
+                    Mark(e, MarkKind.CoteS1), Mark(e, MarkKind.CoteS2), Mark(e, MarkKind.Appui)), semester, settings.SupportEnabled)).Where(r => r.Graded).ToList();
+                var submission = submissions.GetValueOrDefault((course.Id, kind));
+                var locked = closed.Any(x => x.PromotionId == promotion.Id && DeliberationEngine.Locks(x.Period, kind, course.Semester));
+                var graded = results.Count;
+                var status = locked ? "Figé" : submission is not null ? "Remis" : students.Count > 0 && graded == students.Count ? "Complet" : graded == 0 ? "À encoder" : "En cours";
+                rows.Add(new EncodingProgressRowDto(course.Id, promotion.Id, $"{promotion.Code} — {promotion.Name}", course.Number, course.Name,
+                    DeliberationText.Semester(course.Semester), DeliberationText.Kind(kind), teachers.GetValueOrDefault(course.Id), students.Count, graded,
+                    students.Count == 0 ? 0 : Math.Round(graded * 100m / students.Count, 1, MidpointRounding.AwayFromZero), results.Count(r => r.Failed),
+                    graded == 0 ? null : Math.Round(results.Average(r => r.Points), 2, MidpointRounding.AwayFromZero), submission?.SubmittedAtUtc, submission?.SubmittedByName, locked, status));
+            }
+        }
+        var expected = rows.Sum(r => r.Students);
+        var done = rows.Sum(r => r.Graded);
+        return new EncodingProgressDto(year.Label, period is { } chosen ? DeliberationEngine.PeriodLabel(chosen) : "Toute l'année", rows.Count,
+            rows.Count(r => r.Students > 0 && r.Graded == r.Students), rows.Count(r => r.SubmittedAtUtc is not null), rows.Count(r => r.Locked), expected, done,
+            expected == 0 ? 0 : Math.Round(done * 100m / expected, 1, MidpointRounding.AwayFromZero), rows);
+    }
+
+    public async Task<TableDocument> ProgressTableAsync(Guid? promotionId, string? periodText, CancellationToken ct = default)
+    {
+        var progress = await ProgressAsync(promotionId, periodText, ct);
+        var school = await YearContext.SchoolAsync(db, ct);
+        return new TableDocument(PaymentService.Header(school), "Suivi de l'encodage des cotes",
+            $"Année {progress.AcademicYear} · {progress.PeriodLabel} · {progress.GradedMarks} cote(s) sur {progress.ExpectedMarks} ({progress.Percent:0.#} %) · "
+            + $"{progress.Submitted} feuille(s) remise(s) sur {progress.Sheets}",
+            ["Promotion", "N°", "Cours", "Cote", "Enseignant", "Encodées", "%", "Échecs", "Moyenne", "État"],
+            progress.Rows.Select(r => (IReadOnlyList<string>)[r.Promotion, r.Number.ToString(Fr), r.Course, r.Kind, r.TeacherName ?? "Non attribué",
+                $"{r.Graded} / {r.Students}", $"{r.Percent:0.#}", r.Failed.ToString(Fr), r.Average is { } a ? $"{a:0.##}" : "—",
+                r.SubmittedAtUtc is { } at ? $"{r.Status} le {When(at)}" : r.Status]).ToList(), Landscape: true);
+    }
+
+    /// <summary>
+    /// Relevé des cotes d'un cours (l'export d'ITMCD), ou seulement les échecs : cote saisie, cote retenue avec l'appui et observation.
+    /// Les codes anonymes n'y figurent que pour le jury.
+    /// </summary>
+    public async Task<TableDocument> SheetTableAsync(Guid courseId, string kindText, bool failedOnly, CancellationToken ct = default)
+    {
+        var sheet = await SheetAsync(courseId, kindText, anonymous: false, ct);
+        var school = await YearContext.SchoolAsync(db, ct);
+        var teacher = (await TeacherNamesAsync([courseId], ct)).GetValueOrDefault(courseId);
+        var withCodes = user.HasPermission(Permissions.DeliberationManage);
+        var rows = sheet.Rows.Where(r => !failedOnly || r.Failed).ToList();
+        var columns = new List<string>();
+        if (withCodes) columns.Add("Code");
+        columns.AddRange(["Matricule", "Nom complet", sheet.Kind == "Appui" ? "Appui /10" : $"Cote /{sheet.MaxScore:0.##}", "Retenue", "Observation"]);
+        return new TableDocument(PaymentService.Header(school), failedOnly ? "Liste des échecs" : "Relevé des cotes",
+            $"{sheet.Course} · {(sheet.Kind == "Appui" ? "moyenne d'appui" : $"cote du {sheet.Kind}")} · enseignant : {teacher ?? "non attribué"} · "
+            + $"{sheet.Failed} échec(s) sur {sheet.Rows.Count}" + (sheet.SubmittedAtUtc is { } at ? $" · remis le {When(at)}" : " · non remis"),
+            columns,
+            rows.Select(r =>
+            {
+                var cells = new List<string>();
+                if (withCodes) cells.Add(r.Code ?? "—");
+                cells.AddRange([r.Matricule ?? string.Empty, r.FullName ?? string.Empty, r.Value is { } v ? $"{v:0.##}" : "—",
+                    r.Retained is { } t ? $"{t:0.##}" : "INC", r.Retained is null ? "Cote manquante" : r.Failed ? "Échec" : "Réussi"]);
+                return (IReadOnlyList<string>)cells;
+            }).ToList());
+    }
 
     // ---------- Délibération ----------
 

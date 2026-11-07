@@ -138,8 +138,17 @@ public sealed class MarksPage : PageViewModel
         {
             Action("Enregistrer les cotes", MaterialIconKind.ContentSave, SaveAsync, primary: true);
             Action("Saisie par code anonyme", MaterialIconKind.Incognito, ByCodeAsync);
+            Action("Remettre les cotes", MaterialIconKind.SendOutline, SubmitAsync);
         }
-        if (Shell.Can(Perm.DeliberationManage)) Action("Réglages de l'encodage", MaterialIconKind.ToggleSwitchOutline, () => DeliberationPage.SettingsAsync(Shell));
+        if (Shell.Can(Perm.DeliberationManage))
+        {
+            Action("Renvoyer à l'enseignant", MaterialIconKind.AccountArrowRight, ReturnAsync);
+            Action("Réglages de l'encodage", MaterialIconKind.ToggleSwitchOutline, () => DeliberationPage.SettingsAsync(Shell));
+        }
+        Action("Relevé du cours (PDF)", MaterialIconKind.FileChart, () => ExportSheetAsync(failedOnly: false, "pdf"));
+        Action("Relevé du cours (Excel)", MaterialIconKind.FileExcel, () => ExportSheetAsync(failedOnly: false, "xlsx"));
+        Action("Liste des échecs (PDF)", MaterialIconKind.AlertCircleOutline, () => ExportSheetAsync(failedOnly: true, "pdf"));
+        Action("Suivi de l'encodage", MaterialIconKind.ProgressClock, () => Shell.Open(() => new EncodingProgressPage(Shell)));
         Action("Délibération", MaterialIconKind.Gavel, () => Shell.Open(() => new DeliberationPage(Shell)));
         ActionRefresh();
     }
@@ -213,7 +222,7 @@ public sealed class MarksPage : PageViewModel
                 "S1" => $"S1 {c.GradedS1}/{c.Students}",
                 "S2" => $"S2 {c.GradedS2}/{c.Students}",
                 _ => $"S1 {c.GradedS1}/{c.Students} · S2 {c.GradedS2}/{c.Students}",
-            } + (c.LockedS1 || c.LockedS2 ? " · figé" : string.Empty);
+            } + (c.LockedS1 || c.LockedS2 ? " · figé" : c.SubmittedS1 || c.SubmittedS2 ? " · remis" : string.Empty);
             Courses.Add(new DeliberationCourseRowVm(c.Id, c.Number.ToString(CultureInfo.InvariantCulture), c.Name, Labels.Semester(c.Semester), c.MaxScore.ToString("0.##"), progress, c));
         }
         subtitle = $"{Format.Count(list.Count, "cours", "cours")} · {Promotion.Label}";
@@ -232,9 +241,12 @@ public sealed class MarksPage : PageViewModel
             ("coursId", Course.Id), ("nature", Kind.Value), ("anonyme", Anonymous ? "true" : "false")));
         var scale = sheet.Kind == "Appui" ? "10" : sheet.MaxScore.ToString("0.##");
         SheetTitle = $"{sheet.Course} · {Kind.Label} · sur {scale}";
-        SheetHint = sheet.Locked ? "Délibération clôturée : ces cotes sont figées."
+        var figures = $" {sheet.Failed} échec(s)" + (sheet.Average is { } avg ? $", moyenne {avg:0.##}." : ".");
+        SheetHint = (sheet.Locked ? "Délibération clôturée : ces cotes sont figées."
             : !sheet.EncodingOpen ? "Encodage fermé dans les réglages de la délibération."
-            : "Tapez chaque cote, puis « Enregistrer les cotes ». Une case vidée efface la cote.";
+            : sheet.SubmittedAtUtc is { } at
+                ? $"Cotes remises le {at.ToLocalTime():dd/MM/yyyy à HH:mm} par {sheet.SubmittedBy} : seul le jury peut encore les corriger ou renvoyer la feuille."
+            : "Tapez chaque cote, puis « Enregistrer les cotes ». Une case vidée efface la cote. Une fois complète, « Remettre les cotes ».") + figures;
         foreach (var r in sheet.Rows)
             Rows.Add(new MarkEditRowVm(r.EnrollmentId, r.Code ?? "—", r.Matricule ?? string.Empty, r.FullName ?? "Anonyme",
                 r.Value?.ToString("0.##") ?? string.Empty, r.Retained?.ToString("0.##") ?? "—", r.Failed));
@@ -265,6 +277,57 @@ public sealed class MarksPage : PageViewModel
         await Shell.Api.SendAsync(HttpMethod.Put, "api/deliberation/feuille" + ScoliaClient.Query(("coursId", Course.Id), ("nature", Kind.Value)), changes);
         Shell.Notify($"{Format.Count(changes.Count, "cote enregistrée", "cotes enregistrées")}.");
         await RefreshAsync();
+    }
+
+    /// <summary>Remise officielle de la feuille : après elle, seul le jury corrige ou renvoie les cotes.</summary>
+    private async Task SubmitAsync()
+    {
+        if (Course is null || Kind is null)
+        {
+            Shell.Notify("Choisissez d'abord le cours et la cote à remettre.");
+            return;
+        }
+        if (Rows.Any(r => r.Value.Trim() != r.Original))
+        {
+            Shell.Notify("Enregistrez d'abord les cotes modifiées.");
+            return;
+        }
+        if (!await Shell.Confirm("Remettre les cotes", $"{Course.Number}. {Course.Name} · {Kind.Label}. Après la remise, vous ne pourrez plus modifier ces cotes : seul le jury pourra les corriger ou vous renvoyer la feuille.", "Remettre"))
+            return;
+        var result = await Shell.Api.SendAsync<MarkSubmissionDto>(HttpMethod.Post, "api/deliberation/remise" + ScoliaClient.Query(("coursId", Course.Id), ("nature", Kind.Value)), new { });
+        Shell.Notify($"Cotes remises : {result.Graded} sur {result.Students} apprenant(s).");
+        await RefreshAsync();
+    }
+
+    /// <summary>Le jury renvoie une feuille remise à l'enseignant, avec un motif : elle redevient modifiable.</summary>
+    private async Task ReturnAsync()
+    {
+        if (Course is null || Kind is null)
+        {
+            Shell.Notify("Choisissez d'abord le cours et la cote.");
+            return;
+        }
+        var (courseId, kindValue) = (Course.Id, Kind.Value);
+        var form = new FormViewModel("Renvoyer la feuille", $"{Course.Number}. {Course.Name} · {Kind.Label}. La feuille redevient modifiable par l'enseignant.", async f =>
+        {
+            await Shell.Api.SendAsync(HttpMethod.Post, "api/deliberation/renvoi" + ScoliaClient.Query(("coursId", courseId), ("nature", kindValue)), new { reason = f.Text("motif") });
+            Shell.Notify("Feuille renvoyée à l'enseignant.");
+            return true;
+        });
+        form.Add("motif", "Motif du renvoi", required: true);
+        if (await Shell.Ask(form)) await RefreshAsync();
+    }
+
+    private Task ExportSheetAsync(bool failedOnly, string format)
+    {
+        if (Course is null || Kind is null)
+        {
+            Shell.Notify("Choisissez d'abord un cours.");
+            return Task.CompletedTask;
+        }
+        var name = failedOnly ? "liste-des-echecs" : "releve-des-cotes";
+        return Shell.Download("api/deliberation/feuille/export" + ScoliaClient.Query(("coursId", Course.Id), ("nature", Kind.Value),
+            ("echecs", failedOnly ? "true" : "false"), ("format", format)), $"{name}.{format}");
     }
 
     /// <summary>Saisie en série : code de la copie, puis cote. La boîte reste ouverte pour la copie suivante.</summary>
@@ -522,4 +585,86 @@ public sealed class DeliberationPage : PageViewModel
         form.Add("seuil", "Seuil de réussite (%)", FieldKind.Amount, current.PassPercent.ToString("0.##"), required: true);
         if (await shell.Ask(form) && shell.Current is { } page) await page.RefreshAsync();
     }
+}
+
+/// <summary>Ligne du suivi de l'encodage : un cours et une cote attendue (S1 ou S2).</summary>
+public sealed record EncodingProgressRowVm(Guid CourseId, string Promotion, string Number, string Course, string Kind, string Teacher, string Progress,
+    string Percent, string Failed, string Average, string Status, IBrush StatusBrush);
+
+/// <summary>
+/// Suivi de l'encodage (moniteur d'ITMCD) : pour chaque cours de l'année, l'enseignant, les cotes encodées,
+/// les échecs, la moyenne et l'état de la feuille (à encoder, en cours, complète, remise, figée).
+/// </summary>
+public sealed class EncodingProgressPage : PageViewModel
+{
+    private static readonly IReadOnlyList<ChoiceItem> AllPeriods =
+        [new(string.Empty, "Toute l'année (S1 et S2)"), new("S1", "Premier semestre"), new("S2", "Second semestre")];
+
+    private ChoiceItem? promotion;
+    private ChoiceItem? period;
+    private bool onlyLate;
+    private bool ready;
+    private string subtitle = string.Empty;
+    private string summary = string.Empty;
+    private List<EncodingProgressRowVm> all = [];
+
+    public EncodingProgressPage(ShellViewModel shell) : base(shell)
+    {
+        Action("Suivi (PDF)", MaterialIconKind.FilePdfBox, () => ExportAsync("pdf"));
+        Action("Suivi (Excel)", MaterialIconKind.FileExcel, () => ExportAsync("xlsx"));
+        Action("Encodage des cotes", MaterialIconKind.Pen, () => Shell.Open(() => new MarksPage(Shell)));
+        ActionRefresh();
+    }
+
+    public override string Title => "Suivi de l'encodage";
+    public override string Subtitle => subtitle;
+    public override MaterialIconKind Glyph => MaterialIconKind.ProgressClock;
+
+    public ObservableCollection<EncodingProgressRowVm> Items { get; } = [];
+    public IReadOnlyList<ChoiceItem> Promotions { get; private set; } = [];
+    public IReadOnlyList<ChoiceItem> Periods { get; } = AllPeriods;
+    public string Summary { get => summary; private set => Set(ref summary, value); }
+
+    public ChoiceItem? Promotion { get => promotion; set { if (Set(ref promotion, value) && ready) _ = Shell.Run(RefreshAsync); } }
+    public ChoiceItem? Period { get => period; set { if (Set(ref period, value) && ready) _ = Shell.Run(RefreshAsync); } }
+
+    /// <summary>Feuilles qui demandent une relance : ni remises ni figées.</summary>
+    public bool OnlyLate { get => onlyLate; set { if (Set(ref onlyLate, value)) Fill(); } }
+
+    private Guid? PromotionId => Promotion?.Value is { Length: > 0 } v ? Guid.Parse(v) : null;
+
+    public override async Task LoadAsync()
+    {
+        if (!ready)
+        {
+            Promotions = await PromotionChoicesAsync(withAll: true);
+            promotion = Promotions.Count > 0 ? Promotions[0] : null;
+            period = AllPeriods[0];
+            Raise(nameof(Promotions));
+            Raise(nameof(Promotion));
+            Raise(nameof(Period));
+            ready = true;
+        }
+        var data = await Shell.Api.GetAsync<EncodingProgressDto>("api/deliberation/suivi" + ScoliaClient.Query(
+            ("promotionId", PromotionId), ("periode", Period?.Value is { Length: > 0 } p ? p : null)));
+        all = data.Rows.Select(r => new EncodingProgressRowVm(r.CourseId, r.Promotion, r.Number.ToString(CultureInfo.InvariantCulture), r.Course, r.Kind,
+            r.TeacherName ?? "Non attribué", $"{r.Graded} / {r.Students}", $"{r.Percent:0.#} %", r.Failed == 0 ? string.Empty : r.Failed.ToString(CultureInfo.InvariantCulture),
+            r.Average is { } a ? a.ToString("0.##") : "—", r.SubmittedAtUtc is { } at ? $"{r.Status} le {at.ToLocalTime():dd/MM HH:mm}" : r.Status,
+            ThemeBrush.Get(r.Status switch { "Figé" => "ToneIndigo", "Remis" => "ToneGreen", "Complet" => "ToneTeal", "En cours" => "ToneOrange", _ => "ToneRed" }))).ToList();
+        Fill();
+        Summary = $"{data.GradedMarks} cote(s) encodée(s) sur {data.ExpectedMarks} ({data.Percent:0.#} %) · {data.Complete} feuille(s) complète(s) · "
+            + $"{data.Submitted} remise(s) · {data.Locked} figée(s) sur {data.Sheets}";
+        subtitle = $"{data.PeriodLabel} · {data.AcademicYear}";
+        Raise(nameof(Subtitle));
+    }
+
+    private void Fill()
+    {
+        Items.Clear();
+        foreach (var r in onlyLate ? all.Where(r => !r.Status.StartsWith("Remis", StringComparison.Ordinal) && r.Status != "Figé") : all) Items.Add(r);
+    }
+
+    private Task ExportAsync(string format) =>
+        Shell.Download("api/deliberation/suivi/export" + ScoliaClient.Query(("promotionId", PromotionId),
+            ("periode", Period?.Value is { Length: > 0 } p ? p : null), ("format", format)), $"suivi-encodage.{format}");
 }

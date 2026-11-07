@@ -56,6 +56,7 @@ public sealed class ScoliaDbContext(DbContextOptions<ScoliaDbContext> options, I
     public DbSet<DeliberationSession> DeliberationSessions => Set<DeliberationSession>();
     public DbSet<JuryDecision> JuryDecisions => Set<JuryDecision>();
     public DbSet<DeliberationResult> DeliberationResults => Set<DeliberationResult>();
+    public DbSet<MarkSubmission> MarkSubmissions => Set<MarkSubmission>();
 
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
     {
@@ -247,6 +248,13 @@ public sealed class ScoliaDbContext(DbContextOptions<ScoliaDbContext> options, I
             e.HasIndex(x => new { x.EnrollmentId, x.CourseId, x.Kind }).IsUnique();
             e.HasIndex(x => x.CourseId);
             e.HasOne<Enrollment>().WithMany().HasForeignKey(x => x.EnrollmentId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne<Course>().WithMany().HasForeignKey(x => x.CourseId).OnDelete(DeleteBehavior.Restrict);
+        });
+        b.Entity<MarkSubmission>(e =>
+        {
+            e.ToTable("RemisesCotes");
+            e.HasIndex(x => new { x.CourseId, x.Kind }).IsUnique();
+            e.Property(x => x.SubmittedByName).HasMaxLength(120);
             e.HasOne<Course>().WithMany().HasForeignKey(x => x.CourseId).OnDelete(DeleteBehavior.Restrict);
         });
         b.Entity<DeliberationSettings>(e => { e.ToTable("ReglagesDeliberation"); e.HasIndex(x => x.AcademicYearId).IsUnique(); });

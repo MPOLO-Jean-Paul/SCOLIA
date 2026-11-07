@@ -487,6 +487,20 @@ public static class ScoliaEndpoints
         g.MapPut("/feuille", async (Guid coursId, string nature, List<MarkInput> input, DeliberationService s, CancellationToken ct) =>
             Results.Ok(new { enregistrees = await s.SaveSheetAsync(coursId, nature, input, ct) })).RequireAuthorization(Permissions.AcademicsWrite);
         g.MapPost("/cotes-par-code", (MarkByCodeRequest input, DeliberationService s, CancellationToken ct) => s.SaveByCodeAsync(input, ct)).RequireAuthorization(Permissions.AcademicsWrite);
+        // Remise officielle des cotes (ITMCD) : feuille complète, puis seul le jury la corrige ou la renvoie avec un motif.
+        g.MapPost("/remise", (Guid coursId, string nature, DeliberationService s, CancellationToken ct) => s.SubmitAsync(coursId, nature, ct))
+            .RequireAuthorization(Permissions.AcademicsWrite);
+        g.MapPost("/renvoi", async (Guid coursId, string nature, MarkReturnRequest input, DeliberationService s, CancellationToken ct) =>
+        {
+            await s.ReturnAsync(coursId, nature, input, ct);
+            return Results.NoContent();
+        }).RequireAuthorization(Permissions.DeliberationManage);
+        // Suivi de l'encodage et relevés par cours (moniteur et export d'ITMCD).
+        g.MapGet("/suivi", (Guid? promotionId, string? periode, DeliberationService s, CancellationToken ct) => s.ProgressAsync(promotionId, periode, ct));
+        g.MapGet("/suivi/export", async (Guid? promotionId, string? periode, string? format, DeliberationService s, ReportService reports, CancellationToken ct) =>
+            Table(await s.ProgressTableAsync(promotionId, periode, ct), format, "suivi-encodage", reports));
+        g.MapGet("/feuille/export", async (Guid coursId, string nature, bool? echecs, string? format, DeliberationService s, ReportService reports, CancellationToken ct) =>
+            Table(await s.SheetTableAsync(coursId, nature, echecs ?? false, ct), format, echecs == true ? "liste-des-echecs" : "releve-des-cotes", reports));
 
         // Jury.
         g.MapGet("/resultats", (Guid promotionId, string periode, DeliberationService s, CancellationToken ct) => s.BoardAsync(promotionId, periode, ct));

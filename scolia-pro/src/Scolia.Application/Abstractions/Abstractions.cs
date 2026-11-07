@@ -49,6 +49,7 @@ public interface IAppDbContext
     DbSet<DeliberationSession> DeliberationSessions { get; }
     DbSet<JuryDecision> JuryDecisions { get; }
     DbSet<DeliberationResult> DeliberationResults { get; }
+    DbSet<MarkSubmission> MarkSubmissions { get; }
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }
 

@@ -2336,6 +2336,7 @@ if (only.Length == 0 || only.Any(o => "16f".StartsWith(o, StringComparison.Ordin
     Save(window, "16f-encodage-feuille.png");
 }
 Page(() => new DeliberationPage(shell), "16g-deliberation.png");
+Page(() => new EncodingProgressPage(shell), "16h-suivi-encodage.png");
 Page(() => new StaffAttendancePage(shell), "18b-pointage.png");
 Page(() => new EraseDataPage(shell, payments: true), "22b-effacer-donnees.png");
 Page(() => new EraseDataPage(shell, payments: false), "22c-effacer-apprenants.png");

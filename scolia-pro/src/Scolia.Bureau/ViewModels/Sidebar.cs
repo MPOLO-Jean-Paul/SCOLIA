@@ -128,6 +128,7 @@ public static class Sidebar
             Group("Délibération",
                 Item("Codes anonymes", MaterialIconKind.Incognito, "ToneIndigo", Perm.DeliberationManage, typeof(AnonymousCodesPage), () => new AnonymousCodesPage(shell)),
                 Item("Encodage des cotes", MaterialIconKind.Pen, "TonePurple", Perm.AcademicsRead, typeof(MarksPage), () => new MarksPage(shell)),
+                Item("Suivi de l'encodage", MaterialIconKind.ProgressClock, "ToneTeal", Perm.AcademicsRead, typeof(EncodingProgressPage), () => new EncodingProgressPage(shell)),
                 Item("Délibération", MaterialIconKind.Gavel, "ToneRed", Perm.AcademicsRead, typeof(DeliberationPage), () => new DeliberationPage(shell))),
             // Personnel : les membres de l'établissement, leur paie et leur pointage.
             Group("Personnel",

@@ -18,13 +18,14 @@ public sealed record CodeLookupDto(string Code, Guid EnrollmentId, Guid Promotio
 
 /// <summary>Cours vu par la délibération : organisation, maxima et avancement de l'encodage.</summary>
 public sealed record DeliberationCourseDto(Guid Id, int Number, string Name, string Semester, decimal MaxScore, string? TeacherName,
-    int Students, int GradedS1, int GradedS2, int Supports, bool LockedS1, bool LockedS2);
+    int Students, int GradedS1, int GradedS2, int Supports, bool LockedS1, bool LockedS2, bool SubmittedS1 = false, bool SubmittedS2 = false);
 
 public sealed record MarkRowDto(Guid EnrollmentId, string? Code, string? Matricule, string? FullName, decimal? Value, decimal? Base, decimal? Retained, bool Failed);
 
-/// <summary>Feuille de cotes d'un cours pour une nature (S1, S2 ou Appui). En mode anonyme, noms et matricules sont masqués.</summary>
+/// <summary>Feuille de cotes d'un cours pour une nature (S1, S2 ou Appui). En mode anonyme, noms et matricules sont masqués.
+/// <c>SubmittedAtUtc</c> : date de la remise officielle ; après la remise, seul le jury corrige la feuille.</summary>
 public sealed record MarkSheetDto(Guid CourseId, string Course, string Semester, decimal MaxScore, string Kind, bool Anonymous, bool Locked, bool EncodingOpen,
-    IReadOnlyList<MarkRowDto> Rows);
+    IReadOnlyList<MarkRowDto> Rows, DateTime? SubmittedAtUtc = null, string? SubmittedBy = null, int Failed = 0, decimal? Average = null);
 
 /// <summary>Cote saisie dans la feuille. <c>Value</c> vide efface la cote.</summary>
 public sealed record MarkInput(Guid EnrollmentId, decimal? Value);
@@ -53,3 +54,18 @@ public sealed record JuryDecisionRequest(Guid PromotionId, string Period, Guid E
 
 public sealed record SessionCloseRequest(Guid PromotionId, string Period, string? Password, string? President, string? Members, string? Notes);
 public sealed record SessionReopenRequest(Guid PromotionId, string Period, string? Password, string? Reason);
+
+/// <summary>Renvoi d'une feuille remise à l'enseignant : le motif est obligatoire.</summary>
+public sealed record MarkReturnRequest(string? Reason);
+
+public sealed record MarkSubmissionDto(Guid CourseId, string Course, string Kind, DateTime SubmittedAtUtc, string SubmittedBy, int Graded, int Students);
+
+/// <summary>
+/// Suivi de l'encodage (moniteur d'ITMCD) : une ligne par cours et par cote attendue (S1 ou S2), avec l'enseignant,
+/// l'avancement, la remise et l'état de la délibération.
+/// </summary>
+public sealed record EncodingProgressRowDto(Guid CourseId, Guid PromotionId, string Promotion, int Number, string Course, string Semester, string Kind,
+    string? TeacherName, int Students, int Graded, decimal Percent, int Failed, decimal? Average, DateTime? SubmittedAtUtc, string? SubmittedBy, bool Locked, string Status);
+
+public sealed record EncodingProgressDto(string AcademicYear, string PeriodLabel, int Sheets, int Complete, int Submitted, int Locked, int ExpectedMarks, int GradedMarks,
+    decimal Percent, IReadOnlyList<EncodingProgressRowDto> Rows);
