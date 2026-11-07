@@ -106,10 +106,17 @@ public sealed class ScoliaClient : IDisposable
     private TimeSpan ProbeTimeout => IsLongDistance ? TimeSpan.FromSeconds(4) : TimeSpan.FromMilliseconds(1800);
     private bool CanUseOfflineCache => Offline is { } store && !string.IsNullOrWhiteSpace(store.User);
 
+    private static RemoteDeviceAccess? LinkedAccess(RemoteLink link)
+    {
+        var stored = Infrastructure.DevicePairingStore.Read(link.VirtualServer);
+        return stored is null ? null : new RemoteDeviceAccess(stored.GrantId,
+            Infrastructure.DeviceIdentity.Id, stored.DeviceSecret);
+    }
+
     private HttpClient Create(Uri server)
     {
         // Délai de connexion court : un ordinateur principal éteint est détecté en quelques secondes, pas en vingt.
-        HttpMessageHandler handler = remoteLink is { } link ? new RemoteHttpHandler(link, cookies)
+        HttpMessageHandler handler = remoteLink is { } link ? new RemoteHttpHandler(link, cookies, () => LinkedAccess(link))
             : new SocketsHttpHandler { CookieContainer = cookies, UseCookies = true, ConnectTimeout = TimeSpan.FromMilliseconds(2500) };
         var client = new HttpClient(handler) { BaseAddress = server, Timeout = TimeSpan.FromSeconds(60) };
         client.DefaultRequestHeaders.Add("X-Scolia", "1");
