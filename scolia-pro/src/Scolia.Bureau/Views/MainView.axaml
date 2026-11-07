@@ -245,7 +245,7 @@
     <ContentControl x:Name="LoginHost" Content="{Binding Login}" IsVisible="{Binding ShowLogin}">
       <ContentControl.RenderTransform><TranslateTransform /></ContentControl.RenderTransform>
     </ContentControl>
-    <ContentControl Content="{Binding Connection}" IsVisible="{Binding ChoosingServer}" />
+    <ContentControl Content="{Binding Connection}" IsVisible="{Binding ShowConnection}" />
 
     <!-- Ouverture : logo, trois points discrets et progression avant l'accueil -->
     <Grid x:Name="OpeningHost" IsVisible="{Binding Opening}" Background="{DynamicResource BgBrush}">
