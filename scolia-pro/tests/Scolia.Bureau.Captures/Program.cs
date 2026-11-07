@@ -1487,8 +1487,12 @@ if (args.Length > 3 && args[3] == "bureau")
         RenderDesktop();
         CheckDesktop($"Connexion {desktopWidth}×{desktopHeight} : carte et champs dans la fenêtre",
             // Compte déjà reconnu : l'identifiant est masqué, le champ visible est celui du mot de passe.
-            InsideDesktop(DesktopNamed("LoginCard"))
-                && InsideDesktop(DesktopNamed(DesktopNamed("UserNameBox").IsEffectivelyVisible ? "UserNameBox" : "PasswordBox")));
+            // Depuis 1.2.43, l'ordinateur affiche lui aussi la page iOS : la carte et le champ réellement visibles sont vérifiés.
+            AuthLayout.UseIosStyle
+                ? InsideDesktop(DesktopNamed("IosLoginCard"))
+                    && InsideDesktop(DesktopNamed(DesktopNamed("IosUserNameBox").IsEffectivelyVisible ? "IosUserNameBox" : "IosPasswordBox"))
+                : InsideDesktop(DesktopNamed("LoginCard"))
+                    && InsideDesktop(DesktopNamed(DesktopNamed("UserNameBox").IsEffectivelyVisible ? "UserNameBox" : "PasswordBox")));
         Save(window, $"bureau-connexion-{desktopWidth}x{desktopHeight}.png");
     }
     var desktopSession = new SessionDto(Guid.NewGuid(), "desktop-test", "Amina Kabeya du secrétariat", "Lecteur", "Lecture", [], false,

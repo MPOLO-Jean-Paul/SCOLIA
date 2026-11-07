@@ -4,6 +4,44 @@
              xmlns:mi="using:Material.Icons.Avalonia"
              x:Class="Scolia.Bureau.Views.Phone.SetupView">
   <UserControl.Styles>
+    <!-- Style iOS clair, comme la connexion : cartes arrondies, champs tactiles, boutons pleine largeur. -->
+    <Style Selector="Border.card">
+      <Setter Property="CornerRadius" Value="20" />
+      <Setter Property="Padding" Value="16" />
+      <Setter Property="BoxShadow" Value="0 8 22 0 #100F2B6B" />
+    </Style>
+    <Style Selector="TextBox.w11"><Setter Property="MinHeight" Value="46" /><Setter Property="CornerRadius" Value="12" /></Style>
+    <Style Selector="ComboBox"><Setter Property="MinHeight" Value="46" /><Setter Property="CornerRadius" Value="12" /></Style>
+    <Style Selector="CheckBox TextBlock"><Setter Property="TextWrapping" Value="Wrap" /></Style>
+    <Style Selector="Button.iossetupprimary">
+      <Setter Property="Background" Value="#1769E6" />
+      <Setter Property="Foreground" Value="White" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="CornerRadius" Value="15" />
+      <Setter Property="MinHeight" Value="50" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button.iossetupprimary:pointerover /template/ ContentPresenter"><Setter Property="Background" Value="#0F5BD0" /></Style>
+    <Style Selector="Button.iossetupsecondary">
+      <Setter Property="Background" Value="{DynamicResource Surface2Brush}" />
+      <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="15" />
+      <Setter Property="MinHeight" Value="50" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button.iossetupprimary TextBlock, Button.iossetupsecondary TextBlock">
+      <Setter Property="TextWrapping" Value="Wrap" />
+      <Setter Property="TextAlignment" Value="Center" />
+    </Style>
+    <!-- Petits téléphones : marges plus serrées, la carte garde toute la largeur utile. -->
+    <Style Selector="Grid.compact StackPanel.iossetupbody"><Setter Property="Margin" Value="10,12,10,10" /></Style>
+    <Style Selector="Grid.compact Border.card"><Setter Property="Padding" Value="12" /><Setter Property="CornerRadius" Value="17" /></Style>
+    <Style Selector="Grid.compact Border.iossetupfooter"><Setter Property="Padding" Value="10,8" /></Style>
     <Style Selector="StackPanel.field"><Setter Property="Spacing" Value="4" /></Style>
     <Style Selector="StackPanel.field > TextBlock">
       <Setter Property="Foreground" Value="{DynamicResource Text2Brush}" />
@@ -12,28 +50,23 @@
   </UserControl.Styles>
 
   <!-- Configuration sur le téléphone : il devient le serveur de l'établissement. Une colonne, au doigt, mêmes étapes que l'ordinateur. -->
-  <Grid Background="{DynamicResource BgBrush}" RowDefinitions="Auto,*,Auto">
-    <Border>
-      <Border.Background>
-        <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-          <GradientStop Offset="0" Color="#1565E0" />
-          <GradientStop Offset="1" Color="#0E2A5C" />
-        </LinearGradientBrush>
-      </Border.Background>
-      <Grid ColumnDefinitions="Auto,*" Margin="18,20,18,16">
-        <Border Width="46" Height="46" CornerRadius="12" Background="White" VerticalAlignment="Top">
-          <Image Source="{DynamicResource ScoliaMark}" Width="30" Height="30" />
+  <Grid x:Name="SetupRoot" Background="{DynamicResource BgBrush}" RowDefinitions="Auto,*,Auto">
+    <Border Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource LineBrush}" BorderThickness="0,0,0,1">
+      <Grid ColumnDefinitions="Auto,*" Margin="16,18,16,14">
+        <Border Width="48" Height="48" CornerRadius="15" Background="White" BorderBrush="#D6E2F5" BorderThickness="1"
+                BoxShadow="0 6 16 0 #160D459B" VerticalAlignment="Top">
+          <Image Source="{DynamicResource ScoliaMark}" Width="32" Height="32" />
         </Border>
-        <StackPanel Grid.Column="1" Margin="14,0,0,0" Spacing="3">
-          <TextBlock Text="{Binding StepLabel}" Foreground="#BFD3FF" FontSize="{DynamicResource FsSmall}" FontWeight="SemiBold" />
-          <TextBlock Text="{Binding StepTitle}" Foreground="White" FontSize="19" FontWeight="Bold" TextWrapping="Wrap" />
-          <ProgressBar Value="{Binding Progress, Mode=OneWay}" Maximum="100" Height="4" MinHeight="4" Margin="0,6,0,0" Foreground="White" Background="#40FFFFFF" />
+        <StackPanel Grid.Column="1" Margin="13,0,0,0" Spacing="3">
+          <TextBlock Text="{Binding StepLabel}" Foreground="#1769E6" FontSize="{DynamicResource FsSmall}" FontWeight="SemiBold" TextWrapping="Wrap" />
+          <TextBlock Text="{Binding StepTitle}" Foreground="{DynamicResource TextBrush}" FontSize="19" FontWeight="Bold" TextWrapping="Wrap" />
+          <ProgressBar Value="{Binding Progress, Mode=OneWay}" Maximum="100" Height="5" MinHeight="5" Margin="0,7,0,0" Foreground="#1769E6" CornerRadius="3" />
         </StackPanel>
       </Grid>
     </Border>
 
     <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled">
-      <StackPanel Margin="16,16,16,12" Spacing="14">
+      <StackPanel Classes="iossetupbody" Margin="16,16,16,12" Spacing="14">
         <!-- Étape 1 : identité de l'établissement ; le réseau est configuré ensuite. -->
         <StackPanel IsVisible="{Binding IsStepOne}" Spacing="14">
           <Border Classes="card">
@@ -47,12 +80,12 @@
                   </Panel>
                 </Button>
                 <StackPanel Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center" Spacing="2">
-                  <TextBlock Text="Logo de l'établissement" FontWeight="SemiBold" />
+                  <TextBlock Text="Logo de l'établissement" FontWeight="SemiBold" TextWrapping="Wrap" />
                   <TextBlock Text="{Binding LogoLine}" Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
                 </StackPanel>
               </Grid>
               <StackPanel Classes="field"><TextBlock Text="Nom de l'établissement" /><TextBox Classes="w11" Text="{Binding SchoolName}" PlaceholderText="Institut technique médical" /></StackPanel>
-              <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+              <Grid ColumnDefinitions="*,*" ColumnSpacing="10" infra:Adaptive.StackBelow="300">
                 <StackPanel Classes="field"><TextBlock Text="Sigle" /><TextBox Classes="w11" Text="{Binding ShortName}" PlaceholderText="ITM" /></StackPanel>
                 <StackPanel Classes="field" Grid.Column="1"><TextBlock Text="Ville" /><TextBox Classes="w11" Text="{Binding City}" PlaceholderText="Kinshasa" /></StackPanel>
               </Grid>
@@ -65,7 +98,7 @@
             <StackPanel Spacing="10">
               <TextBlock Text="Année scolaire" FontWeight="SemiBold" />
               <StackPanel Classes="field"><TextBlock Text="Année" /><TextBox Classes="w11" Text="{Binding YearLabel}" PlaceholderText="2026-2027" /></StackPanel>
-              <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+              <Grid ColumnDefinitions="*,*" ColumnSpacing="10" infra:Adaptive.StackBelow="300">
                 <StackPanel Classes="field"><TextBlock Text="Premier mois" /><ComboBox ItemsSource="{Binding StartMonths}" SelectedItem="{Binding StartMonth}" HorizontalAlignment="Stretch" /></StackPanel>
                 <StackPanel Classes="field" Grid.Column="1"><TextBlock Text="Durée" /><ComboBox ItemsSource="{Binding MonthCounts}" SelectedItem="{Binding MonthCount}" HorizontalAlignment="Stretch" /></StackPanel>
               </Grid>
@@ -113,8 +146,8 @@
                   </DataTemplate>
                 </ItemsControl.ItemTemplate>
               </ItemsControl>
-              <CheckBox IsChecked="{Binding LoadDemo}" Content="Charger des données de démonstration fictives" />
-              <TextBlock Text="{Binding CurrencyLine}" Classes="muted" FontSize="{DynamicResource FsSmall}" />
+              <CheckBox IsChecked="{Binding LoadDemo}"><TextBlock Text="Charger des données de démonstration fictives" TextWrapping="Wrap" /></CheckBox>
+              <TextBlock Text="{Binding CurrencyLine}" Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
             </StackPanel>
           </Border>
         </StackPanel>
@@ -138,7 +171,7 @@
             <StackPanel Spacing="10">
               <Grid ColumnDefinitions="Auto,*,Auto">
                 <Border Classes="appicon medium" Background="{DynamicResource ToneGreen}"><mi:MaterialIcon Kind="CashRegister" /></Border>
-                <TextBlock Grid.Column="1" Text="Comptabilité (facultatif)" FontWeight="SemiBold" VerticalAlignment="Center" Margin="10,0,0,0" />
+                <TextBlock Grid.Column="1" Text="Comptabilité (facultatif)" FontWeight="SemiBold" VerticalAlignment="Center" Margin="10,0,0,0" TextWrapping="Wrap" />
                 <ToggleSwitch Grid.Column="2" IsChecked="{Binding UseComptabilite}" OnContent="" OffContent="" />
               </Grid>
               <StackPanel Spacing="10" IsVisible="{Binding UseComptabilite}">
@@ -155,13 +188,33 @@
       </StackPanel>
     </ScrollViewer>
 
-    <!-- Boutons toujours visibles, en bas, au pouce -->
-    <Border Grid.Row="2" Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource LineBrush}" BorderThickness="0,1,0,0" Padding="16,10">
-      <Grid ColumnDefinitions="Auto,*">
-        <Button Classes="ghost" Content="Retour" Command="{Binding Back}" IsVisible="{Binding IsStepTwo}" IsEnabled="{Binding !Busy}" Height="46" />
-        <Button infra:Icons.Lead="LanConnect" Classes="ghost" Content="Rejoindre un serveur" Command="{Binding JoinExisting}" IsVisible="{Binding IsStepOne}" Height="46" />
-        <Button Grid.Column="1" Classes="primary" Command="{Binding Next}" IsVisible="{Binding IsStepOne}" Height="46" HorizontalAlignment="Right" MinWidth="150" Content="Suivant" />
-        <Button Grid.Column="1" Classes="primary" Command="{Binding Finish}" IsVisible="{Binding IsStepTwo}" IsEnabled="{Binding !Busy}" Height="46" HorizontalAlignment="Right" Content="Terminer" MinWidth="150" />
+    <!-- Boutons toujours visibles, en bas, au pouce : deux colonnes égales, aucun chevauchement sur petit écran. -->
+    <Border Grid.Row="2" Classes="iossetupfooter" Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource LineBrush}" BorderThickness="0,1,0,0" Padding="16,10">
+      <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+        <Button Classes="iossetupsecondary" Command="{Binding Back}" IsVisible="{Binding IsStepTwo}" IsEnabled="{Binding !Busy}">
+          <DockPanel>
+            <mi:MaterialIcon DockPanel.Dock="Left" Kind="ChevronLeft" Width="18" Height="18" Margin="0,0,6,0" VerticalAlignment="Center" />
+            <TextBlock Text="Retour" VerticalAlignment="Center" />
+          </DockPanel>
+        </Button>
+        <Button Classes="iossetupsecondary" Command="{Binding JoinExisting}" IsVisible="{Binding IsStepOne}">
+          <DockPanel>
+            <mi:MaterialIcon DockPanel.Dock="Left" Kind="LanConnect" Width="18" Height="18" Margin="0,0,6,0" VerticalAlignment="Center" />
+            <TextBlock Text="Rejoindre un serveur" VerticalAlignment="Center" />
+          </DockPanel>
+        </Button>
+        <Button Grid.Column="1" Classes="iossetupprimary" Command="{Binding Next}" IsVisible="{Binding IsStepOne}">
+          <DockPanel>
+            <mi:MaterialIcon DockPanel.Dock="Right" Kind="ArrowRight" Width="18" Height="18" Margin="6,0,0,0" VerticalAlignment="Center" />
+            <TextBlock Text="Suivant" VerticalAlignment="Center" />
+          </DockPanel>
+        </Button>
+        <Button Grid.Column="1" Classes="iossetupprimary" Command="{Binding Finish}" IsVisible="{Binding IsStepTwo}" IsEnabled="{Binding !Busy}">
+          <DockPanel>
+            <mi:MaterialIcon DockPanel.Dock="Left" Kind="CheckCircleOutline" Width="18" Height="18" Margin="0,0,6,0" VerticalAlignment="Center" />
+            <TextBlock Text="Terminer" VerticalAlignment="Center" />
+          </DockPanel>
+        </Button>
       </Grid>
     </Border>
   </Grid>

@@ -37,7 +37,7 @@
     <Style Selector="Button.resume /template/ ContentPresenter"><Setter Property="Background" Value="{DynamicResource LoginGlass}" /></Style>
     <Style Selector="Button.resume:pointerover /template/ ContentPresenter"><Setter Property="Background" Value="{DynamicResource LoginGlassHover}" /></Style>
 
-    <!-- Sur Android uniquement : langage iOS récent, lisible et tactile, sans modifier la connexion Windows. -->
+    <!-- Langage iOS récent, lisible et tactile, commun au téléphone et à l'ordinateur. -->
     <Style Selector="Border.iosauthcard">
       <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
       <Setter Property="CornerRadius" Value="25" />
@@ -61,7 +61,7 @@
       <Setter Property="Foreground" Value="White" />
       <Setter Property="BorderThickness" Value="0" />
       <Setter Property="CornerRadius" Value="16" />
-      <Setter Property="MinHeight" Value="54" />
+      <Setter Property="MinHeight" Value="56" />
       <Setter Property="FontWeight" Value="SemiBold" />
       <Setter Property="HorizontalAlignment" Value="Stretch" />
       <Setter Property="HorizontalContentAlignment" Value="Center" />
@@ -92,12 +92,59 @@
       <Setter Property="VerticalAlignment" Value="Center" />
       <Setter Property="HorizontalAlignment" Value="Right" />
     </Style>
-    <!-- Sur les petits téléphones, les espaces se réduisent sans compresser les champs ni les actions. -->
-    <Style Selector="ScrollViewer.compact StackPanel.iosloginbody"><Setter Property="Margin" Value="12,12,12,18" /><Setter Property="Spacing" Value="12" /></Style>
-    <Style Selector="ScrollViewer.compact Border.iosauthcard"><Setter Property="Padding" Value="13" /><Setter Property="CornerRadius" Value="18" /></Style>
+    <!-- Valeurs de base de la page : posées par style pour que les adaptations à l'écran puissent les remplacer. -->
+    <Style Selector="StackPanel.iosloginbody"><Setter Property="MaxWidth" Value="440" /><Setter Property="Margin" Value="20,28,20,26" /><Setter Property="Spacing" Value="18" /></Style>
+    <Style Selector="StackPanel.iosloginheader"><Setter Property="Spacing" Value="11" /></Style>
+    <Style Selector="Border.ioslogotile"><Setter Property="Width" Value="84" /><Setter Property="Height" Value="84" /><Setter Property="CornerRadius" Value="27" /></Style>
+    <Style Selector="Image.ioslogomark"><Setter Property="Width" Value="58" /><Setter Property="Height" Value="58" /></Style>
+    <Style Selector="TextBlock.ioslogotitle"><Setter Property="FontSize" Value="27" /></Style>
+    <Style Selector="TextBlock.ioswelcome"><Setter Property="FontSize" Value="23" /></Style>
+    <Style Selector="TextBlock.iosrecoverytitle"><Setter Property="FontSize" Value="22" /></Style>
+    <!-- Les textes des liens et boutons passent à la ligne plutôt que de sortir de l'écran. -->
+    <Style Selector="Button.iosauthlink TextBlock">
+      <Setter Property="TextWrapping" Value="Wrap" />
+      <Setter Property="TextAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button.iosauthlink:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="#EAF2FE" />
+    </Style>
+    <Style Selector="Button.iosauthprimary:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="#0F5BD0" />
+    </Style>
+    <Style Selector="Button.iosauthprimary:disabled /template/ ContentPresenter">
+      <Setter Property="Background" Value="#9DBDF0" />
+      <Setter Property="Foreground" Value="White" />
+    </Style>
+
+    <!-- Petits téléphones (moins de 390 points) : marges, logo et titres réduits, champs toujours tactiles. -->
+    <Style Selector="ScrollViewer.compact StackPanel.iosloginbody"><Setter Property="Margin" Value="14,16,14,18" /><Setter Property="Spacing" Value="13" /></Style>
+    <Style Selector="ScrollViewer.compact Border.iosauthcard"><Setter Property="Padding" Value="14" /><Setter Property="CornerRadius" Value="20" /></Style>
     <Style Selector="ScrollViewer.compact Border.ioslogotile"><Setter Property="Width" Value="70" /><Setter Property="Height" Value="70" /><Setter Property="CornerRadius" Value="22" /></Style>
+    <Style Selector="ScrollViewer.compact Image.ioslogomark"><Setter Property="Width" Value="48" /><Setter Property="Height" Value="48" /></Style>
     <Style Selector="ScrollViewer.compact TextBlock.ioslogotitle"><Setter Property="FontSize" Value="23" /></Style>
+    <Style Selector="ScrollViewer.compact TextBlock.ioswelcome"><Setter Property="FontSize" Value="21" /></Style>
     <Style Selector="ScrollViewer.compact TextBlock.iosrecoverytitle"><Setter Property="FontSize" Value="19" /></Style>
+    <Style Selector="ScrollViewer.compact TextBox.iosauthfield"><Setter Property="MinHeight" Value="52" /><Setter Property="FontSize" Value="15" /></Style>
+    <Style Selector="ScrollViewer.compact Button.iosauthprimary"><Setter Property="MinHeight" Value="52" /></Style>
+    <Style Selector="ScrollViewer.compact Button.iosauthsecondary"><Setter Property="MinHeight" Value="48" /></Style>
+    <!-- Très petits écrans (moins de 340 points) : encore un cran plus serré, sans rien masquer. -->
+    <Style Selector="ScrollViewer.tiny StackPanel.iosloginbody"><Setter Property="Margin" Value="10,12,10,14" /><Setter Property="Spacing" Value="11" /></Style>
+    <Style Selector="ScrollViewer.tiny Border.iosauthcard"><Setter Property="Padding" Value="12" /><Setter Property="CornerRadius" Value="18" /></Style>
+    <Style Selector="ScrollViewer.tiny Border.ioslogotile"><Setter Property="Width" Value="60" /><Setter Property="Height" Value="60" /><Setter Property="CornerRadius" Value="19" /></Style>
+    <Style Selector="ScrollViewer.tiny Image.ioslogomark"><Setter Property="Width" Value="42" /><Setter Property="Height" Value="42" /></Style>
+    <Style Selector="ScrollViewer.tiny TextBlock.ioslogotitle"><Setter Property="FontSize" Value="21" /></Style>
+    <Style Selector="ScrollViewer.tiny TextBlock.ioswelcome"><Setter Property="FontSize" Value="19" /></Style>
+    <Style Selector="ScrollViewer.tiny TextBox.iosauthfield"><Setter Property="MinHeight" Value="48" /><Setter Property="FontSize" Value="14" /><Setter Property="Padding" Value="12,10" /></Style>
+    <Style Selector="ScrollViewer.tiny Button.iosauthprimary"><Setter Property="MinHeight" Value="48" /></Style>
+    <Style Selector="ScrollViewer.tiny Button.iosauthsecondary"><Setter Property="MinHeight" Value="46" /></Style>
+    <!-- Écran bas (clavier ouvert, paysage) : le logo rétrécit et les espaces verticaux se resserrent. -->
+    <Style Selector="ScrollViewer.short StackPanel.iosloginbody"><Setter Property="Spacing" Value="11" /></Style>
+    <Style Selector="ScrollViewer.short StackPanel.iosloginheader"><Setter Property="Spacing" Value="6" /></Style>
+    <Style Selector="ScrollViewer.short Border.ioslogotile"><Setter Property="Width" Value="58" /><Setter Property="Height" Value="58" /><Setter Property="CornerRadius" Value="18" /></Style>
+    <Style Selector="ScrollViewer.short Image.ioslogomark"><Setter Property="Width" Value="40" /><Setter Property="Height" Value="40" /></Style>
+    <!-- Grand écran (ordinateur, tablette) : carte un peu plus large et aérée, centrée dans la fenêtre. -->
+    <Style Selector="ScrollViewer.wide StackPanel.iosloginbody"><Setter Property="MaxWidth" Value="460" /><Setter Property="Margin" Value="24,36,24,30" /></Style>
+    <Style Selector="ScrollViewer.wide Border.iosauthcard"><Setter Property="Padding" Value="26,24" /><Setter Property="CornerRadius" Value="26" /></Style>
     <Style Selector="TextBlock.iosauthlabel">
       <Setter Property="FontSize" Value="12" />
       <Setter Property="FontWeight" Value="SemiBold" />
@@ -127,7 +174,7 @@
     </Border>
 
 
-    <!-- Le fond doux reste propre au téléphone ; Windows conserve sa grande page bleue. -->
+    <!-- Fond clair et doux du style iOS, sur le téléphone comme sur l'ordinateur. -->
     <Border x:Name="IosBackdrop" IsVisible="False">
       <Border.Background>
         <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
@@ -393,20 +440,20 @@
       </Grid>
     </ScrollViewer>
 
-    <!-- Parcours iOS sur mobile : une page distincte ; la vue de connexion desktop est intacte. -->
+    <!-- Parcours iOS sur le téléphone et sur l'ordinateur ; l'ancienne page bleue ci-dessus reste en réserve. -->
     <ThemeVariantScope x:Name="IosLoginThemeScope" RequestedThemeVariant="Light" IsVisible="False">
     <ScrollViewer x:Name="IosLoginScroll" IsVisible="False"
                   HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
-      <StackPanel Classes="iosloginbody" MaxWidth="440" HorizontalAlignment="Stretch" Margin="20,28,20,26" Spacing="18">
-        <StackPanel Spacing="11" HorizontalAlignment="Stretch">
-          <Border Classes="ioslogotile" Width="84" Height="84" CornerRadius="27" Background="White"
+      <StackPanel Classes="iosloginbody" HorizontalAlignment="Stretch" VerticalAlignment="Center">
+        <StackPanel Classes="iosloginheader" HorizontalAlignment="Stretch">
+          <Border Classes="ioslogotile" Background="White"
                   BorderThickness="1" BorderBrush="#D6E2F5"
                   BoxShadow="0 12 26 0 #180D459B" HorizontalAlignment="Center">
-            <Image Source="{DynamicResource ScoliaMark}" Width="58" Height="58"
+            <Image Classes="ioslogomark" Source="{DynamicResource ScoliaMark}"
                    HorizontalAlignment="Center" VerticalAlignment="Center" />
           </Border>
-          <TextBlock Text="SCOLIA Pro" Classes="ioslogotitle" FontSize="27" FontWeight="Bold"
-                     Foreground="{DynamicResource TextBrush}" TextAlignment="Center" />
+          <TextBlock Text="SCOLIA Pro" Classes="ioslogotitle" FontWeight="Bold"
+                     Foreground="{DynamicResource TextBrush}" TextAlignment="Center" TextWrapping="Wrap" />
           <TextBlock x:Name="IosSchoolHeading" Text="{Binding TitleText}" FontSize="14" Classes="muted"
                      TextWrapping="Wrap" TextAlignment="Center" MaxLines="3" />
         </StackPanel>
@@ -414,17 +461,17 @@
         <Border x:Name="IosLoginCard" Classes="iosauthcard">
           <StackPanel Spacing="15">
             <StackPanel Spacing="5" IsVisible="{Binding !RecoveryOpen}">
-              <TextBlock Text="Bienvenue" FontSize="23" FontWeight="Bold"
-                         Foreground="{DynamicResource TextBrush}" />
+              <TextBlock Text="Bienvenue" Classes="ioswelcome" FontWeight="Bold"
+                         Foreground="{DynamicResource TextBrush}" TextWrapping="Wrap" />
               <TextBlock Text="{Binding IntroText}" Classes="muted"
                          FontSize="13" TextWrapping="Wrap" />
             </StackPanel>
             <Button Classes="iosauthsecondary" Command="{Binding Resume}"
                     IsVisible="{Binding CanResume}" IsEnabled="{Binding NotBusy}">
-              <StackPanel Orientation="Horizontal" Spacing="8">
-                <mi:MaterialIcon Kind="ArrowLeft" Width="18" Height="18" />
-                <TextBlock Text="{Binding ResumeText}" VerticalAlignment="Center" />
-              </StackPanel>
+              <DockPanel LastChildFill="True">
+                <mi:MaterialIcon DockPanel.Dock="Left" Margin="0,0,8,0" VerticalAlignment="Center" Kind="ArrowLeft" Width="18" Height="18" />
+                <TextBlock TextAlignment="Center" TextWrapping="Wrap" Text="{Binding ResumeText}" VerticalAlignment="Center" />
+              </DockPanel>
             </Button>
 
             <StackPanel Spacing="12" IsVisible="{Binding ShowPairingCallToAction}">
@@ -441,11 +488,11 @@
                   </StackPanel>
                 </Grid>
               </Border>
-              <Button Classes="iosauthprimary" Command="{Binding ChangeServer}" MinHeight="56">
-                <StackPanel Orientation="Horizontal" Spacing="9">
-                  <mi:MaterialIcon Kind="QrcodeScan" Width="20" Height="20" />
-                  <TextBlock Text="Scanner le code QR" FontWeight="SemiBold" VerticalAlignment="Center" />
-                </StackPanel>
+              <Button Classes="iosauthprimary" Command="{Binding ChangeServer}">
+                <DockPanel LastChildFill="True">
+                  <mi:MaterialIcon DockPanel.Dock="Left" Margin="0,0,9,0" VerticalAlignment="Center" Kind="QrcodeScan" Width="20" Height="20" />
+                  <TextBlock TextAlignment="Center" TextWrapping="Wrap" Text="Scanner le code QR" FontWeight="SemiBold" VerticalAlignment="Center" />
+                </DockPanel>
               </Button>
               <Button Classes="iosauthlink" Command="{Binding EnableManualLogin}">
                 <TextBlock Text="Se connecter avec un compte" FontWeight="SemiBold" />
@@ -478,10 +525,10 @@
                         <Button Classes="iosauthsecondary" MinHeight="45" Margin="0,0,7,7" Padding="12,6"
                                 Command="{Binding $parent[ItemsControl].DataContext.ChooseRememberedAccount}"
                                 CommandParameter="{Binding}">
-                          <StackPanel Orientation="Horizontal" Spacing="7">
-                            <mi:MaterialIcon Kind="AccountOutline" Width="18" Height="18" />
-                            <TextBlock Text="{Binding}" VerticalAlignment="Center" />
-                          </StackPanel>
+                          <DockPanel LastChildFill="True">
+                            <mi:MaterialIcon DockPanel.Dock="Left" Margin="0,0,7,0" VerticalAlignment="Center" Kind="AccountOutline" Width="18" Height="18" />
+                            <TextBlock TextAlignment="Center" TextWrapping="Wrap" Text="{Binding}" VerticalAlignment="Center" />
+                          </DockPanel>
                         </Button>
                       </DataTemplate>
                     </ItemsControl.ItemTemplate>
@@ -509,12 +556,12 @@
                   </Grid>
                 </StackPanel>
                 <Button Classes="iosauthprimary" Command="{Binding Submit}"
-                        IsEnabled="{Binding CanSubmitCredentials}" MinHeight="56">
-                  <StackPanel Orientation="Horizontal" Spacing="10">
-                    <mi:MaterialIcon Kind="Loading" Classes="spin" Width="19" Height="19" IsVisible="{Binding Busy}" />
-                    <mi:MaterialIcon Kind="LockOpenCheckOutline" Width="19" Height="19" IsVisible="{Binding NotBusy}" />
-                    <TextBlock Text="Se connecter" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center" />
-                  </StackPanel>
+                        IsEnabled="{Binding CanSubmitCredentials}">
+                  <DockPanel LastChildFill="True">
+                    <mi:MaterialIcon DockPanel.Dock="Left" Margin="0,0,10,0" VerticalAlignment="Center" Kind="Loading" Classes="spin" Width="19" Height="19" IsVisible="{Binding Busy}" />
+                    <mi:MaterialIcon DockPanel.Dock="Left" Margin="0,0,10,0" VerticalAlignment="Center" Kind="LockOpenCheckOutline" Width="19" Height="19" IsVisible="{Binding NotBusy}" />
+                    <TextBlock TextAlignment="Center" TextWrapping="Wrap" Text="Se connecter" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center" />
+                  </DockPanel>
                 </Button>
                 <Button Classes="iosauthlink" Command="{Binding ToggleRecoveryHelp}" IsEnabled="{Binding NotBusy}">
                   <TextBlock Text="{Binding RecoveryActionLabel}" FontWeight="SemiBold" />
@@ -528,8 +575,8 @@
                           ToolTip.Tip="Revenir à la connexion" HorizontalAlignment="Left">
                     <mi:MaterialIcon Kind="ChevronLeft" Width="22" Height="22" />
                   </Button>
-                  <TextBlock Grid.Column="1" Text="Récupérer mon accès" Classes="iosrecoverytitle" FontSize="22"
-                             FontWeight="Bold" VerticalAlignment="Center" />
+                  <TextBlock Grid.Column="1" Text="Récupérer mon accès" Classes="iosrecoverytitle"
+                             FontWeight="Bold" VerticalAlignment="Center" TextWrapping="Wrap" />
                 </Grid>
                 <TextBlock Text="{Binding RecoveryInstructions}" Classes="muted"
                            FontSize="13" TextWrapping="Wrap" />
@@ -570,10 +617,10 @@
                 <Button Classes="iosauthsecondary" Command="{Binding RecoverWithBiometrics}"
                         IsVisible="{Binding CanUseBiometricSignIn}"
                         IsEnabled="{Binding CanRecoverWithBiometrics}">
-                  <StackPanel Orientation="Horizontal" Spacing="8">
-                    <mi:MaterialIcon Kind="Fingerprint" Width="21" Height="21" />
-                    <TextBlock Text="Valider avec mon empreinte" VerticalAlignment="Center" />
-                  </StackPanel>
+                  <DockPanel LastChildFill="True">
+                    <mi:MaterialIcon DockPanel.Dock="Left" Margin="0,0,8,0" VerticalAlignment="Center" Kind="Fingerprint" Width="21" Height="21" />
+                    <TextBlock TextAlignment="Center" TextWrapping="Wrap" Text="Valider avec mon empreinte" VerticalAlignment="Center" />
+                  </DockPanel>
                 </Button>
                 <StackPanel Spacing="6">
                   <TextBlock Text="CODE DE SECOURS DU SERVEUR" Classes="iosauthlabel" />
@@ -592,25 +639,26 @@
                 </StackPanel>
                 <Button Classes="iosauthprimary" Command="{Binding RecoverWithCode}"
                         IsEnabled="{Binding CanRecoverWithCode}">
-                  <StackPanel Orientation="Horizontal" Spacing="8">
-                    <mi:MaterialIcon Kind="ShieldCheckOutline" Width="20" Height="20" />
-                    <TextBlock Text="Restaurer le mot de passe" FontWeight="SemiBold" VerticalAlignment="Center" />
-                  </StackPanel>
+                  <DockPanel LastChildFill="True">
+                    <mi:MaterialIcon DockPanel.Dock="Left" Margin="0,0,8,0" VerticalAlignment="Center" Kind="ShieldCheckOutline" Width="20" Height="20" />
+                    <TextBlock TextAlignment="Center" TextWrapping="Wrap" Text="Restaurer le mot de passe" FontWeight="SemiBold" VerticalAlignment="Center" />
+                  </DockPanel>
                 </Button>
               </StackPanel>
             </StackPanel>
 
             <StackPanel Spacing="9" IsVisible="{Binding ShowBiometricEnrollment}">
-              <CheckBox Content="{Binding EnrollmentText}" IsChecked="{Binding EnableBiometricsAfterLogin}"
-                        IsEnabled="{Binding CanType}" FontSize="13" />
+              <CheckBox IsChecked="{Binding EnableBiometricsAfterLogin}" IsEnabled="{Binding CanType}" FontSize="13">
+                <TextBlock Text="{Binding EnrollmentText}" TextWrapping="Wrap" />
+              </CheckBox>
               <TextBlock Text="{Binding EnrollmentHint}" Classes="muted" FontSize="11" TextWrapping="Wrap" />
             </StackPanel>
             <Button Classes="iosauthsecondary" Command="{Binding SignInWithBiometrics}"
                     IsVisible="{Binding ShowBiometricSignIn}" IsEnabled="{Binding CanType}">
-              <StackPanel Orientation="Horizontal" Spacing="9">
-                <mi:MaterialIcon Kind="Fingerprint" Width="22" Height="22" />
-                <TextBlock Text="{Binding BiometricLabel}" FontWeight="SemiBold" VerticalAlignment="Center" />
-              </StackPanel>
+              <DockPanel LastChildFill="True">
+                <mi:MaterialIcon DockPanel.Dock="Left" Margin="0,0,9,0" VerticalAlignment="Center" Kind="Fingerprint" Width="22" Height="22" />
+                <TextBlock TextAlignment="Center" TextWrapping="Wrap" Text="{Binding BiometricLabel}" FontWeight="SemiBold" VerticalAlignment="Center" />
+              </DockPanel>
             </Button>
             <Button Classes="iosauthlink" Command="{Binding DisableBiometrics}"
                     IsVisible="{Binding ShowRemoveBiometric}">
@@ -635,7 +683,7 @@
                 CornerRadius="14" Padding="14" IsVisible="{Binding Locked}">
           <StackPanel Spacing="8">
             <Grid ColumnDefinitions="*,Auto">
-              <TextBlock Text="Accès temporairement verrouillé" Foreground="#80520A" FontWeight="SemiBold" />
+              <TextBlock Text="Accès temporairement verrouillé" Foreground="#80520A" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,0,8,0" />
               <TextBlock Grid.Column="1" Text="{Binding CountdownText}" Foreground="#80520A" FontWeight="Bold" />
             </Grid>
             <ProgressBar Value="{Binding LockProgress, Mode=OneWay}" Minimum="0" Maximum="100"
@@ -643,14 +691,14 @@
           </StackPanel>
         </Border>
         <Border Background="#EAF5EC" CornerRadius="14" Padding="13" IsVisible="{Binding Restored}">
-          <TextBlock Text="Accès rétabli. Vous pouvez vous connecter." Foreground="#20663B" />
+          <TextBlock Text="Accès rétabli. Vous pouvez vous connecter." Foreground="#20663B" TextWrapping="Wrap" />
         </Border>
         <Button Classes="iosauthlink" Command="{Binding ChangeServer}" IsEnabled="{Binding NotBusy}"
                 HorizontalAlignment="Center">
-          <StackPanel Orientation="Horizontal" Spacing="8">
-            <mi:MaterialIcon Kind="LanConnect" Width="18" Height="18" />
-            <TextBlock Text="Changer de serveur principal" VerticalAlignment="Center" />
-          </StackPanel>
+          <DockPanel LastChildFill="True">
+            <mi:MaterialIcon DockPanel.Dock="Left" Margin="0,0,8,0" VerticalAlignment="Center" Kind="LanConnect" Width="18" Height="18" />
+            <TextBlock TextAlignment="Center" TextWrapping="Wrap" Text="Changer de serveur principal" VerticalAlignment="Center" />
+          </DockPanel>
         </Button>
         <TextBlock Text="{Binding ServerLine}" IsVisible="{Binding HasServerLine}"
                    Classes="muted" TextAlignment="Center" FontSize="11" TextWrapping="Wrap" />

@@ -184,6 +184,20 @@ public sealed class ConnectionViewModel : Observable
     public bool Searching { get => searching; private set { if (Set(ref searching, value)) Raise(nameof(NotSearching)); } }
     public bool NotSearching => !searching;
 
+    /// <summary>Opération longue (démarrage du serveur de ce téléphone) : progression visible, boutons en attente.</summary>
+    internal void BeginProgress(string text)
+    {
+        Message = text;
+        Searching = true;
+    }
+
+    /// <summary>Fin de l'opération longue ; le message explique le résultat ou l'erreur.</summary>
+    internal void EndProgress(string text)
+    {
+        Searching = false;
+        Message = text;
+    }
+
     public AsyncCommand Search { get; }
     public AsyncCommand UseThisComputer { get; }
 

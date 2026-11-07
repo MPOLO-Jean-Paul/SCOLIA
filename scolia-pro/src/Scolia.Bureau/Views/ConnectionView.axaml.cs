@@ -8,22 +8,21 @@ public partial class ConnectionView : UserControl
     public ConnectionView()
     {
         InitializeComponent();
-        // Android accueille avec ses propres groupes iOS ; la page Windows reste inchangée.
-        var mobile = Platform.IsMobile;
-        ClassicConnectionScreen.IsVisible = !mobile;
-        IosConnectionScreen.IsVisible = mobile;
-        IosConnectionThemeScope.IsVisible = mobile;
+        // Même premier écran iOS sur le téléphone et sur l'ordinateur ; l'ancienne page reste en réserve.
+        var ios = AuthLayout.UseIosStyle;
+        ClassicConnectionScreen.IsVisible = !ios;
+        IosConnectionScreen.IsVisible = ios;
+        IosConnectionThemeScope.IsVisible = ios;
         // Les options secondaires restent disponibles, mais ne surchargent pas un petit écran.
         bool? previouslyCompact = null;
-        IosConnectionScreen.SizeChanged += (_, e) =>
+        AuthLayout.Track(IosConnectionScreen, size =>
         {
-            var compact = e.NewSize.Width < 390;
-            IosConnectionScreen.Classes.Set("compact", compact);
+            var compact = size.Width < AuthLayout.CompactWidth || size.Height < AuthLayout.ShortHeight;
             if (previouslyCompact == compact) return;
             IosQrOptions.IsExpanded = !compact;
             IosWifiOptions.IsExpanded = !compact;
             IosNearbyServers.IsExpanded = !compact;
             previouslyCompact = compact;
-        };
+        });
     }
 }
