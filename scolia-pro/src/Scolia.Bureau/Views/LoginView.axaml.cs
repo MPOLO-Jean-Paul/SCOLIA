@@ -11,9 +11,33 @@ public partial class LoginView : UserControl
 {
     private LoginViewModel? subscribedLogin;
 
+    /// <summary>
+    /// Téléphone : la connexion prend le langage de la Configuration (Réglages d'iOS) — fond clair du thème, textes
+    /// du thème, champs en blocs gris arrondis et actions bleues. L'ordinateur garde son fond bleu de Windows 11.
+    /// Les pinceaux suivent le thème clair ou sombre sans recharger l'écran.
+    /// </summary>
+    private void ApplyPhoneLook()
+    {
+        Root.Classes.Add("ios");
+        Backdrop.Background = ThemeBrush.Get("BgBrush");
+        Halo.IsVisible = false;
+        Resources["LoginInk"] = ThemeBrush.Get("TextBrush");
+        Resources["LoginInk2"] = ThemeBrush.Get("MutedBrush");
+        Resources["LoginInk3"] = ThemeBrush.Get("MutedBrush");
+        Resources["LoginGlass"] = ThemeBrush.Get("GroupBrush");
+        Resources["LoginGlassHover"] = ThemeBrush.Get("HoverBrush");
+        Resources["LoginLink"] = ThemeBrush.Get("AccentBrush");
+        // Logo dans une tuile arrondie, comme une icône d'application iOS, au lieu d'un disque blanc sur fond blanc.
+        LogoTile.CornerRadius = new Avalonia.CornerRadius(24);
+        LogoTile.Background = ThemeBrush.Get("GroupBrush");
+        LogoTile.BoxShadow = Avalonia.Media.BoxShadows.Parse("0 4 14 0 #1F000000");
+        SchoolHeading.FontWeight = Avalonia.Media.FontWeight.Bold;
+    }
+
     public LoginView()
     {
         InitializeComponent();
+        if (Preferences.MobileLayout) ApplyPhoneLook();
         PasswordBox.KeyDown += (_, e) =>
         {
             if (e.Key != Key.Enter || DataContext is not LoginViewModel login || !login.CanSubmitCredentials) return;

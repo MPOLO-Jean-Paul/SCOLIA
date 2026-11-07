@@ -284,7 +284,7 @@ public sealed record YearRowVm(Guid Id, string Label, string Period, string Stat
     IBrush StatusBrush, string Deadline, AcademicYearDto Source);
 
 /// <summary>Section d'enseignement dans la liste des paramètres.</summary>
-public sealed record SectionRowVm(Guid Id, string Code, string Name, string Active, SectionDto Source);
+public sealed record SectionRowVm(Guid Id, string Code, string Name, string Active, SectionDto Source, string Promotions = "", string Students = "");
 
 /// <summary>Catégorie de frais du catalogue : nom, montant, échéance proposée et promotions qui l'appliquent.</summary>
 public sealed record FeeCategoryRowVm(Guid Id, string Name, string Amount, string DueDate, string Promotions, string Active, FeeCategoryDto Source);
@@ -504,6 +504,7 @@ public sealed class SettingsPage : PageViewModel
             case "sections":
                 Action("Nouvelle section", MaterialIconKind.ViewGridPlus, NewSectionAsync, primary: true);
                 Action("Modifier", MaterialIconKind.Pencil, EditSelectedAsync, open: true);
+                Action("Supprimer", MaterialIconKind.Delete, DeleteSectionAsync, row: true);
                 break;
             case "promotions":
                 Action("Nouvelle promotion", MaterialIconKind.FolderPlus, () => NewPromotionAsync(Shell), primary: true);
@@ -739,7 +740,8 @@ public sealed class SettingsPage : PageViewModel
         var sections = await Shell.Api.GetAsync<List<SectionDto>>("api/etablissement/sections");
         SectionRows.Clear();
         foreach (var s in sections)
-            SectionRows.Add(new SectionRowVm(s.Id, s.Code, s.Name, s.IsActive ? "Oui" : "Non", s));
+            SectionRows.Add(new SectionRowVm(s.Id, s.Code, s.Name, s.IsActive ? "Oui" : "Non", s,
+                Format.Count(s.PromotionCount, "promotion", "promotions"), Format.Count(s.StudentCount, "apprenant", "apprenants")));
         subtitle = Format.Count(sections.Count, "section", "sections");
         Raise(nameof(Subtitle));
     }
@@ -913,6 +915,23 @@ public sealed class SettingsPage : PageViewModel
         Shell.Notify("Logo mis à jour. Il figure désormais sur l'écran de connexion, les reçus, les listes et les cartes.");
     }
 
+    private async Task DeleteSectionAsync()
+    {
+        if (section?.Value != "sections" || SelectedSection is null)
+        {
+            Shell.Notify("Sélectionnez une section à supprimer.");
+            return;
+        }
+        var s = SelectedSection;
+        if (!await Shell.Confirm("Supprimer la section",
+                $"La section {s.Name} sera supprimée. Une section qui regroupe des promotions, même d'années passées, ne peut pas l'être : désactivez-la.",
+                "Supprimer", danger: true))
+            return;
+        await Shell.Api.SendAsync(HttpMethod.Delete, $"api/etablissement/sections/{s.Id}");
+        Shell.Notify($"Section {s.Name} supprimée.");
+        await RefreshAsync();
+    }
+
     private async Task NewSectionAsync()
     {
         var form = new FormViewModel("Nouvelle section", "Une section regroupe des promotions.", async f =>
@@ -1072,7 +1091,9 @@ public sealed class SettingsPage : PageViewModel
     public static async Task PromotionFormAsync(ShellViewModel shell, PromotionDto? existing)
     {
         var sections = await shell.Api.GetAsync<List<SectionDto>>("api/etablissement/sections");
-        var sectionChoices = sections.Select(s => new ChoiceItem(s.Id.ToString(), $"{s.Code} · {s.Name}")).ToList();
+        // Une section désactivée n'est plus proposée, sauf si la promotion y est déjà rattachée.
+        var sectionChoices = sections.Where(s => s.IsActive || s.Id == existing?.SectionId)
+            .Select(s => new ChoiceItem(s.Id.ToString(), s.IsActive ? $"{s.Code} · {s.Name}" : $"{s.Code} · {s.Name} (désactivée)")).ToList();
         // Les autres frais viennent du catalogue : une ligne par catégorie créée, avec son montant pour cette promotion.
         List<FeeCategoryDto> categories;
         try { categories = await shell.Api.GetAsync<List<FeeCategoryDto>>("api/etablissement/categories-frais"); }

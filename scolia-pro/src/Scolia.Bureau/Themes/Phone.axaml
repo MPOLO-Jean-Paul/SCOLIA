@@ -140,6 +140,31 @@
       <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
     </Style>
 
+    <!-- Ligne de réglage (style Configuration, comme les Réglages d'iOS) : tuile d'icône, libellé, valeur, chevron.
+         Partagée par la Configuration et l'accueil du téléphone pour un seul langage visuel. -->
+    <Style Selector="Button.settingsentry">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="CornerRadius" Value="10" />
+      <Setter Property="MinHeight" Value="56" />
+      <Setter Property="Padding" Value="12,6" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+      <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+    </Style>
+    <Style Selector="Button.settingsentry:pointerover">
+      <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
+    </Style>
+    <Style Selector="Button.settingsentry:pressed">
+      <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
+    </Style>
+    <!-- Titre de groupe en capitales, comme « ÉTABLISSEMENT » dans la Configuration -->
+    <Style Selector="TextBlock.groupcaps">
+      <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
+      <Setter Property="FontSize" Value="{DynamicResource FsCaption}" />
+      <Setter Property="Margin" Value="12,10,0,4" />
+    </Style>
+
     <!-- Menu plein écran : chaque outil sur une ligne haute, rangé par métier dans un bloc arrondi -->
     <Style Selector="Button.phonerow">
       <Setter Property="Background" Value="Transparent" />

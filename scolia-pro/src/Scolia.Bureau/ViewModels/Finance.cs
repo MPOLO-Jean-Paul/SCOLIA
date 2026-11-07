@@ -155,8 +155,9 @@ public sealed class SponsorshipsPage : PageViewModel
                 Format.Date(s.EffectiveFrom), Money(s.Covered), s.IsActive ? "Active" : "Terminée", ThemeBrush.Get(s.IsActive ? "ToneGreen" : "ToneNeutral"), s.Type));
         var active = rows.Where(r => r.IsActive).ToList();
         var byPromotion = string.Join(", ", active.GroupBy(r => r.Promotion).OrderBy(g => g.Key, StringComparer.Ordinal).Select(g => $"{g.Key} {g.Count()}"));
+        // Sur le téléphone, le sous-titre reste court ; le détail par promotion se lit dans la liste, rangée par promotion.
         subtitle = $"{Format.Count(active.Count, "prise en charge active", "prises en charge actives")} · total couvert {Money(active.Sum(r => r.Covered))}"
-            + (byPromotion.Length > 0 ? $" · {byPromotion}" : string.Empty);
+            + (byPromotion.Length > 0 && !Phone ? $" · {byPromotion}" : string.Empty);
         Raise(nameof(Subtitle));
     }
 

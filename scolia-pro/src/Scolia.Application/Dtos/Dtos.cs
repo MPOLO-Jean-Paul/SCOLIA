@@ -34,7 +34,9 @@ public sealed record AcademicYearCreate(string Label, int StartMonth, int MonthC
 /// <summary>Modification du calendrier existant, bloquée si une mensualité a été affectée ou prise en charge.</summary>
 public sealed record AcademicYearScheduleUpdate(int StartMonth, int EndMonth, int LastOnTimeDay);
 
-public sealed record SectionDto(Guid Id, string Code, string Name, bool IsActive);
+/// <param name="PromotionCount">Promotions de l'année courante rattachées à la section.</param>
+/// <param name="StudentCount">Apprenants actifs de ces promotions.</param>
+public sealed record SectionDto(Guid Id, string Code, string Name, bool IsActive, int PromotionCount = 0, int StudentCount = 0);
 
 public sealed record SectionUpsert(string Code, string Name, bool IsActive);
 

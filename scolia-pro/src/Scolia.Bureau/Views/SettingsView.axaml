@@ -269,6 +269,8 @@
               <DataGrid.Columns>
                 <DataGridTextColumn Header="Code" Binding="{Binding Code}" Width="Auto" MinWidth="120" />
                 <DataGridTextColumn Header="Nom" Binding="{Binding Name}" Width="*" MinWidth="140" />
+                <DataGridTextColumn infra:GridPriority.Level="2" Header="Promotions" Binding="{Binding Promotions}" Width="Auto" MinWidth="120" />
+                <DataGridTextColumn infra:GridPriority.Level="2" Header="Apprenants" Binding="{Binding Students}" Width="Auto" MinWidth="120" />
                 <DataGridTextColumn Header="Active" Binding="{Binding Active}" Width="Auto" MinWidth="100" />
               </DataGrid.Columns>
             </DataGrid>

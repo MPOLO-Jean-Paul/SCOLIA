@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:infra="using:Scolia.Bureau.Infrastructure"
              xmlns:views="using:Scolia.Bureau.Views"
              x:Class="Scolia.Bureau.Views.PhoneFrame">
   <UserControl.Resources>
@@ -156,7 +157,7 @@
     <!-- Barre du haut -->
     <Border Grid.Row="0" Classes="phonebar">
       <StackPanel>
-      <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto" IsVisible="{Binding !HeaderSearch.IsOpen}">
+      <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto" IsVisible="{Binding !HeaderSearch.IsOpen}">
         <Button Classes="phoneicon" Command="{Binding BackCommand}" IsVisible="{Binding CanGoBack}" ToolTip.Tip="Retour">
           <mi:MaterialIcon Kind="ChevronLeft" />
         </Button>
@@ -186,7 +187,13 @@
                 IsVisible="{Binding HeaderSearch.IsVisible}" ToolTip.Tip="{Binding HeaderSearch.SearchHint}">
           <mi:MaterialIcon Kind="Magnify" />
         </Button>
-        <Button Grid.Column="4" Classes="phoneicon" Click="OnActionsClick" IsVisible="{Binding PhonePage.HasHeaderActions}" ToolTip.Tip="Actions de la page">
+        <!-- Action principale de la page, toujours visible (style barre de navigation iOS) -->
+        <Button x:Name="PrimaryPageAction" Grid.Column="4" Classes="phoneicon primaryaction" Command="{Binding PhonePage.PrimaryAction.Command}"
+                IsVisible="{Binding PhonePage.HasPrimaryAction}" ToolTip.Tip="{Binding PhonePage.PrimaryAction.Label}"
+                AutomationProperties.Name="{Binding PhonePage.PrimaryAction.Label}">
+          <mi:MaterialIcon Kind="{Binding PhonePage.PrimaryAction.Icon, Converter={x:Static infra:Icons.LineConverter}}" Foreground="{DynamicResource AccentBrush}" />
+        </Button>
+        <Button Grid.Column="5" Classes="phoneicon" Click="OnActionsClick" IsVisible="{Binding PhonePage.HasHeaderActions}" ToolTip.Tip="Actions de la page">
           <mi:MaterialIcon Kind="DotsHorizontalCircleOutline" />
         </Button>
       </Grid>

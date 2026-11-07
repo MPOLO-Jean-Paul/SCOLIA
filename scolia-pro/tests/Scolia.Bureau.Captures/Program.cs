@@ -1332,6 +1332,50 @@ if (args.Length > 3 && args[3] == "promoteur")
     return;
 }
 
+// Sections : liste, création, modification, choix dans une promotion, sur l'ordinateur et le téléphone.
+if (args.Length > 3 && args[3] == "sections")
+{
+    window.Width = Preferences.MobileLayout ? 360 : 1280;
+    window.Height = Preferences.MobileLayout ? 760 : 820;
+    var suffix = Preferences.MobileLayout ? "mobile" : "bureau";
+    Wait(shell.OpenSessionAsync(Result(api.LoginAsync("admin", password))));
+    var page = new SettingsPage(shell, "sections");
+    Wait(shell.Open(() => page));
+    Wait(Task.Delay(600));
+    Save(window, $"sections-1-liste-{suffix}.png");
+    Console.WriteLine($"Rubrique : {page.Section?.Value} · lignes {page.SectionRows.Count} · actions {string.Join(", ", page.Actions.Select(a => a.Label))}");
+    var create = page.Actions.FirstOrDefault(a => a.Label == "Nouvelle section");
+    Console.WriteLine($"Action Nouvelle section : {(create is null ? "absente" : "présente")}");
+    if (create is not null)
+    {
+        create.Command.Execute(null);
+        for (var i = 0; i < 100 && shell.Dialog is not FormViewModel; i++) Wait(Task.Delay(20));
+        Save(window, $"sections-2-formulaire-{suffix}.png");
+        if (shell.Dialog is FormViewModel secForm)
+        {
+            secForm.Find("code").Text = "SAN" + DateTime.Now.ToString("ss");
+            secForm.Find("nom").Text = "Santé publique " + DateTime.Now.ToString("HHmmss");
+            secForm.Submit.Execute(null);
+            Wait(Task.Delay(800));
+            Console.WriteLine($"Après création : dialogue {(shell.Dialog is null ? "fermé" : "ouvert : " + (shell.Dialog as FormViewModel)?.Error)} · lignes {page.SectionRows.Count}");
+        }
+    }
+    Save(window, $"sections-3-apres-{suffix}.png");
+    if (page.SectionRows.Count > 0)
+    {
+        page.SelectedSection = page.SectionRows[^1];
+        var edit = page.Actions.FirstOrDefault(a => a.Label == "Modifier");
+        edit?.Command.Execute(null);
+        for (var i = 0; i < 100 && shell.Dialog is not FormViewModel; i++) Wait(Task.Delay(20));
+        Console.WriteLine($"Modifier : {(shell.Dialog is FormViewModel f2 ? f2.Title : "aucun dialogue")}");
+        Save(window, $"sections-4-modifier-{suffix}.png");
+        if (shell.Dialog is FormViewModel f3) f3.Cancel.Execute(null);
+    }
+    shell.Sync.Stop();
+    window.Close();
+    return;
+}
+
 // Paramètres de partage : Réseau et postes (défilé), fenêtre Réseau et activité, puis le code QR « Relier un appareil ».
 if (args.Length > 3 && args[3] == "partage")
 {

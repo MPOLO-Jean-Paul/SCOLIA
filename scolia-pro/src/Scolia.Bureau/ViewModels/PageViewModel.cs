@@ -81,6 +81,8 @@ public abstract class PageViewModel : Observable
             Raise(nameof(MoreActions));
             Raise(nameof(HasMoreActions));
             Raise(nameof(HasHeaderActions));
+            Raise(nameof(PrimaryAction));
+            Raise(nameof(HasPrimaryAction));
         };
     }
 
@@ -102,6 +104,13 @@ public abstract class PageViewModel : Observable
     /// <remarks>L'action principale vient toujours en tête : en fenêtre étroite, c'est elle qui reste visible.</remarks>
     public IReadOnlyList<ActionVm> HeaderActions => Actions.Where(a => !a.MenuOnly).OrderByDescending(a => a.IsPrimary).ToList();
     public bool HasHeaderActions => Actions.Any(a => !a.MenuOnly);
+
+    /// <summary>
+    /// Action principale de la page (« Nouvelle section », « Nouvelle inscription »…) : sur le téléphone, un bouton visible
+    /// dans la barre, comme le bouton d'ajout de la barre de navigation d'iOS, au lieu d'être caché dans « ⋯ ».
+    /// </summary>
+    public ActionVm? PrimaryAction => Actions.FirstOrDefault(a => a.IsPrimary && !a.Row && !a.MenuOnly);
+    public bool HasPrimaryAction => PrimaryAction is not null;
 
     /// <summary>Nombre de boutons affichés : la place mesurée, ou par défaut trois boutons et le menu pour les autres.</summary>
     private int Shown

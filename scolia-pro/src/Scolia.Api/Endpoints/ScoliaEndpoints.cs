@@ -247,6 +247,8 @@ public static class ScoliaEndpoints
         g.MapGet("/sections", (SchoolService s, CancellationToken ct) => s.SectionsAsync(ct));
         g.MapPost("/sections", (SectionUpsert input, SchoolService s, CancellationToken ct) => s.UpsertSectionAsync(null, input, ct)).RequireAuthorization(Permissions.SettingsWrite);
         g.MapPut("/sections/{id:guid}", (Guid id, SectionUpsert input, SchoolService s, CancellationToken ct) => s.UpsertSectionAsync(id, input, ct)).RequireAuthorization(Permissions.SettingsWrite);
+        g.MapDelete("/sections/{id:guid}", async (Guid id, SchoolService s, CancellationToken ct) => { await s.DeleteSectionAsync(id, ct); return Results.NoContent(); })
+            .RequireAuthorization(Permissions.SettingsWrite);
 
         g.MapGet("/categories-frais", (FeeCategoryService s, CancellationToken ct) => s.ListAsync(ct));
         g.MapPost("/categories-frais", (FeeCategoryUpsert input, FeeCategoryService s, CancellationToken ct) => s.UpsertAsync(null, input, ct))
@@ -266,8 +268,8 @@ public static class ScoliaEndpoints
     private static void MapStudents(RouteGroupBuilder api)
     {
         var g = api.MapGroup("/apprenants").RequireAuthorization(Permissions.StudentsRead);
-        g.MapGet("", (string? q, Guid? promotionId, string? statut, Guid? anneeId, int? page, int? taille, StudentService s, CancellationToken ct) =>
-            s.SearchAsync(q, promotionId, statut, anneeId, page ?? 1, taille ?? 50, ct));
+        g.MapGet("", (string? q, Guid? promotionId, string? statut, Guid? anneeId, int? page, int? taille, Guid? sectionId, StudentService s, CancellationToken ct) =>
+            s.SearchAsync(q, promotionId, statut, anneeId, page ?? 1, taille ?? 50, sectionId, ct));
         g.MapGet("/{id:guid}", (Guid id, StudentService s, CancellationToken ct) => s.GetAsync(id, ct));
         g.MapGet("/doublons", (string? nom, string? postNom, string? prenom, Guid? exclure, StudentService s, CancellationToken ct) =>
             s.FindDuplicatesAsync(nom ?? string.Empty, postNom ?? string.Empty, prenom ?? string.Empty, exclure, ct));

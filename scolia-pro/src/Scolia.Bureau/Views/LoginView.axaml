@@ -4,12 +4,21 @@
              x:Class="Scolia.Bureau.Views.LoginView">
   <!-- Connexion façon Windows 11 : un seul fond bleu dégradé avec un halo blanc, sans carte ni cadre ;
        au centre le logo, l'établissement, puis des champs de verre translucide avec un trait en bas. -->
+  <UserControl.Resources>
+    <!-- Ordinateur : blanc sur le fond bleu. Le téléphone remplace ces couleurs par celles du thème (LoginView.axaml.cs). -->
+    <SolidColorBrush x:Key="LoginInk" Color="White" />
+    <SolidColorBrush x:Key="LoginInk2" Color="#E6FFFFFF" />
+    <SolidColorBrush x:Key="LoginInk3" Color="#B3FFFFFF" />
+    <SolidColorBrush x:Key="LoginGlass" Color="#26FFFFFF" />
+    <SolidColorBrush x:Key="LoginGlassHover" Color="#40FFFFFF" />
+    <SolidColorBrush x:Key="LoginLink" Color="White" />
+  </UserControl.Resources>
   <UserControl.Styles>
     <Style Selector="mi|MaterialIcon.inicon">
       <Setter Property="Width" Value="19" /><Setter Property="Height" Value="19" />
       <Setter Property="Margin" Value="14,0,0,0" />
       <Setter Property="HorizontalAlignment" Value="Left" /><Setter Property="VerticalAlignment" Value="Center" />
-      <Setter Property="Foreground" Value="#D9FFFFFF" />
+      <Setter Property="Foreground" Value="{DynamicResource LoginInk2}" />
       <Setter Property="IsHitTestVisible" Value="False" />
     </Style>
     <Style Selector="TextBox.w11.onbrand.withicon"><Setter Property="Padding" Value="42,0,12,0" /></Style>
@@ -18,20 +27,75 @@
     <Style Selector="TextBox.w11.onbrand.withicon.witheye"><Setter Property="Padding" Value="42,0,52,0" /></Style>
     <Style Selector="CheckBox.onbrand"><Setter Property="Foreground" Value="White" /></Style>
     <Style Selector="Button.resume">
-      <Setter Property="Background" Value="#26FFFFFF" />
+      <Setter Property="Background" Value="{DynamicResource LoginGlass}" />
       <Setter Property="BorderThickness" Value="0" />
       <Setter Property="CornerRadius" Value="8" />
       <Setter Property="Padding" Value="12,10" />
       <Setter Property="HorizontalAlignment" Value="Stretch" />
       <Setter Property="HorizontalContentAlignment" Value="Stretch" />
     </Style>
-    <Style Selector="Button.resume /template/ ContentPresenter"><Setter Property="Background" Value="#26FFFFFF" /></Style>
-    <Style Selector="Button.resume:pointerover /template/ ContentPresenter"><Setter Property="Background" Value="#40FFFFFF" /></Style>
+    <Style Selector="Button.resume /template/ ContentPresenter"><Setter Property="Background" Value="{DynamicResource LoginGlass}" /></Style>
+    <Style Selector="Button.resume:pointerover /template/ ContentPresenter"><Setter Property="Background" Value="{DynamicResource LoginGlassHover}" /></Style>
+    <!-- Téléphone (classe « ios ») : fond clair du thème, champs en blocs arrondis, actions bleues, comme la Configuration. -->
+    <Style Selector="Grid.ios TextBox.w11.onbrand">
+      <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+      <Setter Property="CaretBrush" Value="{DynamicResource AccentBrush}" />
+      <Setter Property="SelectionBrush" Value="{DynamicResource AccentSoftBrush}" />
+      <Setter Property="PlaceholderForeground" Value="{DynamicResource MutedBrush}" />
+    </Style>
+    <Style Selector="Grid.ios TextBox.w11.onbrand:focus"><Setter Property="Foreground" Value="{DynamicResource TextBrush}" /></Style>
+    <Style Selector="Grid.ios TextBox.w11.onbrand /template/ Border#PART_BorderElement">
+      <Setter Property="Background" Value="{DynamicResource GroupBrush}" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="12" />
+    </Style>
+    <Style Selector="Grid.ios TextBox.w11.onbrand:pointerover /template/ Border#PART_BorderElement">
+      <Setter Property="Background" Value="{DynamicResource GroupBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource LineStrongBrush}" />
+    </Style>
+    <Style Selector="Grid.ios TextBox.w11.onbrand:focus /template/ Border#PART_BorderElement">
+      <Setter Property="Background" Value="{DynamicResource GroupBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+      <Setter Property="BorderThickness" Value="2" />
+    </Style>
+    <Style Selector="Grid.ios TextBox.w11.onbrand /template/ TextBlock#PART_Watermark"><Setter Property="Foreground" Value="{DynamicResource MutedBrush}" /></Style>
+    <Style Selector="Grid.ios TextBox.w11.onbrand:focus /template/ TextBlock#PART_Watermark"><Setter Property="Foreground" Value="{DynamicResource MutedBrush}" /></Style>
+    <Style Selector="Grid.ios Button.fieldicon:pointerover /template/ ContentPresenter"><Setter Property="Background" Value="{DynamicResource HoverBrush}" /></Style>
+    <Style Selector="Grid.ios Button.fieldicon /template/ ContentPresenter"><Setter Property="Foreground" Value="{DynamicResource TextBrush}" /></Style>
+    <Style Selector="Grid.ios Button.fieldicon.go /template/ ContentPresenter"><Setter Property="Background" Value="{DynamicResource AccentBrush}" /></Style>
+    <Style Selector="Grid.ios Button.fieldicon.go:pointerover /template/ ContentPresenter"><Setter Property="Background" Value="{DynamicResource AccentHoverBrush}" /></Style>
+    <Style Selector="Grid.ios Button.fieldicon.go:disabled /template/ ContentPresenter"><Setter Property="Background" Value="{DynamicResource LineStrongBrush}" /></Style>
+    <Style Selector="Grid.ios Button.glass">
+      <Setter Property="Foreground" Value="{DynamicResource OnAccentBrush}" />
+      <Setter Property="CornerRadius" Value="12" />
+    </Style>
+    <Style Selector="Grid.ios Button.glass /template/ ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource OnAccentBrush}" />
+    </Style>
+    <Style Selector="Grid.ios Button.glass:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource AccentHoverBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource OnAccentBrush}" />
+    </Style>
+    <Style Selector="Grid.ios Button.glasslink">
+      <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
+    </Style>
+    <Style Selector="Grid.ios Button.glasslink /template/ ContentPresenter">
+      <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
+    </Style>
+    <Style Selector="Grid.ios Button.glasslink:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
+    </Style>
+    <Style Selector="Grid.ios Button.glasslink TextBlock"><Setter Property="Foreground" Value="{DynamicResource AccentBrush}" /></Style>
+    <Style Selector="Grid.ios Button.glasslink mi|MaterialIcon"><Setter Property="Foreground" Value="{DynamicResource AccentBrush}" /></Style>
+    <Style Selector="Grid.ios CheckBox.onbrand"><Setter Property="Foreground" Value="{DynamicResource TextBrush}" /></Style>
   </UserControl.Styles>
 
-  <Grid>
+  <Grid x:Name="Root">
     <!-- Fond : dégradé bleu SCOLIA et halo blanc en haut, comme l'écran de connexion de Windows 11 -->
-    <Border>
+    <Border x:Name="Backdrop">
       <Border.Background>
         <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
           <GradientStop Offset="0" Color="#2F7BEA" />
@@ -40,7 +104,7 @@
         </LinearGradientBrush>
       </Border.Background>
     </Border>
-    <Border IsHitTestVisible="False">
+    <Border x:Name="Halo" IsHitTestVisible="False">
       <Border.Background>
         <RadialGradientBrush Center="50%,0%" GradientOrigin="50%,0%" RadiusX="90%" RadiusY="70%">
           <GradientStop Offset="0" Color="#66FFFFFF" />
@@ -54,13 +118,13 @@
       <Grid RowDefinitions="Auto,Auto,Auto" VerticalAlignment="Center" Margin="0,24">
         <!-- Établissement -->
         <StackPanel HorizontalAlignment="Stretch" MaxWidth="420" Margin="24,8,24,22" Spacing="12">
-          <Border Width="96" Height="96" CornerRadius="48" Background="White" HorizontalAlignment="Center" BoxShadow="0 8 24 0 #33000000">
+          <Border x:Name="LogoTile" Width="96" Height="96" CornerRadius="48" Background="White" HorizontalAlignment="Center" BoxShadow="0 8 24 0 #33000000">
             <Panel Width="72" Height="72">
               <!-- L'application porte le logo SCOLIA ; celui de l'école est réservé aux reçus, rapports et cartes -->
               <Image Source="{DynamicResource ScoliaMark}" Width="62" Height="62" />
             </Panel>
           </Border>
-          <TextBlock x:Name="SchoolHeading" Text="{Binding TitleText}" Foreground="White" FontSize="24" FontWeight="SemiBold"
+          <TextBlock x:Name="SchoolHeading" Text="{Binding TitleText}" Foreground="{DynamicResource LoginInk}" FontSize="24" FontWeight="SemiBold"
                      HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" MaxWidth="380" />
         </StackPanel>
 
@@ -74,23 +138,23 @@
                 <mi:MaterialIcon Kind="ArrowLeft" Width="20" Height="20" Foreground="#1258D0" HorizontalAlignment="Center" VerticalAlignment="Center" />
               </Border>
               <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="1">
-                <TextBlock Text="{Binding ResumeText}" Foreground="White" FontWeight="SemiBold" TextWrapping="Wrap" />
-                <TextBlock Text="{Binding ResumeHint}" Foreground="#D9FFFFFF" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
+                <TextBlock Text="{Binding ResumeText}" Foreground="{DynamicResource LoginInk}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                <TextBlock Text="{Binding ResumeHint}" Foreground="{DynamicResource LoginInk2}" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
               </StackPanel>
-              <mi:MaterialIcon Grid.Column="2" Kind="LockOutline" Width="18" Height="18" Foreground="White" VerticalAlignment="Center" />
+              <mi:MaterialIcon Grid.Column="2" Kind="LockOutline" Width="18" Height="18" Foreground="{DynamicResource LoginInk}" VerticalAlignment="Center" />
             </Grid>
           </Button>
 
-          <TextBlock Text="{Binding IntroText}" Foreground="#E6FFFFFF" TextAlignment="Center" TextWrapping="Wrap" Margin="0,0,0,4" />
+          <TextBlock Text="{Binding IntroText}" Foreground="{DynamicResource LoginInk2}" TextAlignment="Center" TextWrapping="Wrap" Margin="0,0,0,4" />
 
           <!-- Le dernier compte utilisé est reconnu sans afficher ou conserver son mot de passe. -->
           <!-- Un poste client s'autorise par invitation, pas par le mot de passe du serveur. -->
           <StackPanel Spacing="10" IsVisible="{Binding ShowPairingCallToAction}">
-            <Border Background="#26FFFFFF" CornerRadius="12" Padding="14,12">
+            <Border Background="{DynamicResource LoginGlass}" CornerRadius="12" Padding="14,12">
               <StackPanel Spacing="7">
-                <TextBlock Text="Appareil à autoriser" FontWeight="SemiBold" Foreground="White" />
+                <TextBlock Text="Appareil à autoriser" FontWeight="SemiBold" Foreground="{DynamicResource LoginInk}" />
                 <TextBlock Text="Sur le serveur, générez un QR dans « Relier un appareil ». Le compte et les droits seront accordés à ce poste sans saisir le mot de passe."
-                           Foreground="White" FontSize="12" TextWrapping="Wrap" />
+                           Foreground="{DynamicResource LoginInk}" FontSize="12" TextWrapping="Wrap" />
               </StackPanel>
             </Border>
             <Button Classes="glass" Command="{Binding ChangeServer}" MinHeight="48">
@@ -105,14 +169,14 @@
           </StackPanel>
 
           <StackPanel Spacing="12" IsVisible="{Binding ShowManualCredentials}">
-          <Border Background="#26FFFFFF" CornerRadius="10" Padding="14,10" IsVisible="{Binding HasRememberedAccount}">
+          <Border Background="{DynamicResource LoginGlass}" CornerRadius="10" Padding="14,10" IsVisible="{Binding HasRememberedAccount}">
             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
               <StackPanel Spacing="2">
-                <TextBlock Text="Compte reconnu" FontSize="11" Foreground="#D9FFFFFF" />
-                <TextBlock Text="{Binding UserName}" FontSize="17" FontWeight="SemiBold" Foreground="White" />
+                <TextBlock Text="Compte reconnu" FontSize="11" Foreground="{DynamicResource LoginInk2}" />
+                <TextBlock Text="{Binding UserName}" FontSize="17" FontWeight="SemiBold" Foreground="{DynamicResource LoginInk}" />
               </StackPanel>
               <Button Grid.Column="1" Classes="glasslink" Command="{Binding ChangeAccount}" IsEnabled="{Binding NotBusy}" MinHeight="42">
-                <TextBlock Text="Changer" Foreground="White" />
+                <TextBlock Text="Changer" Foreground="{DynamicResource LoginLink}" FontWeight="SemiBold" />
               </Button>
             </Grid>
           </Border>
@@ -128,7 +192,7 @@
             <mi:MaterialIcon Classes="inicon" Kind="LockOutline" />
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="4" Margin="0,0,5,0">
               <Button Classes="fieldicon" Command="{Binding ToggleEye}" ToolTip.Tip="Afficher ou masquer le mot de passe" IsEnabled="{Binding CanType}">
-                <mi:MaterialIcon Kind="{Binding EyeIcon}" Width="18" Height="18" Foreground="White" />
+                <mi:MaterialIcon Kind="{Binding EyeIcon}" Width="18" Height="18" Foreground="{DynamicResource LoginInk}" />
               </Button>
               <Button x:Name="SignInArrow" Classes="fieldicon go" Command="{Binding Submit}" IsEnabled="{Binding CanSubmitCredentials}" ToolTip.Tip="Se connecter (Entrée)">
                 <Panel>
@@ -150,8 +214,8 @@
           <!-- Les champs de récupération reprennent exactement les dimensions et les commandes de connexion. -->
           <StackPanel Spacing="11" IsVisible="{Binding RecoveryOpen}">
             <TextBlock Text="Restaurer mon mot de passe" FontSize="17" FontWeight="SemiBold"
-                       Foreground="White" TextWrapping="Wrap" />
-            <TextBlock Text="{Binding RecoveryInstructions}" Foreground="#E6FFFFFF" FontSize="12" TextWrapping="Wrap" />
+                       Foreground="{DynamicResource LoginInk}" TextWrapping="Wrap" />
+            <TextBlock Text="{Binding RecoveryInstructions}" Foreground="{DynamicResource LoginInk2}" FontSize="12" TextWrapping="Wrap" />
 
             <Panel>
               <TextBox x:Name="NewPasswordBox" Classes="w11 onbrand withicon witheye" Text="{Binding NewPassword}"
@@ -162,10 +226,10 @@
               <Button Classes="fieldicon" HorizontalAlignment="Right" Margin="0,0,5,0"
                       Command="{Binding ToggleNewPasswordEye}" IsEnabled="{Binding NotBusy}"
                       ToolTip.Tip="Afficher ou masquer le nouveau mot de passe">
-                <mi:MaterialIcon Kind="{Binding NewPasswordEyeIcon}" Width="18" Height="18" Foreground="White" />
+                <mi:MaterialIcon Kind="{Binding NewPasswordEyeIcon}" Width="18" Height="18" Foreground="{DynamicResource LoginInk}" />
               </Button>
             </Panel>
-            <TextBlock Text="{Binding RecoveryPasswordHint}" Foreground="#E6FFFFFF" FontSize="11"
+            <TextBlock Text="{Binding RecoveryPasswordHint}" Foreground="{DynamicResource LoginInk2}" FontSize="11"
                        TextWrapping="Wrap" Margin="3,-5,3,0" IsVisible="{Binding HasRecoveryPasswordHint}" />
 
             <Panel>
@@ -177,10 +241,10 @@
               <Button Classes="fieldicon" HorizontalAlignment="Right" Margin="0,0,5,0"
                       Command="{Binding ToggleConfirmPasswordEye}" IsEnabled="{Binding NotBusy}"
                       ToolTip.Tip="Afficher ou masquer la confirmation">
-                <mi:MaterialIcon Kind="{Binding ConfirmPasswordEyeIcon}" Width="18" Height="18" Foreground="White" />
+                <mi:MaterialIcon Kind="{Binding ConfirmPasswordEyeIcon}" Width="18" Height="18" Foreground="{DynamicResource LoginInk}" />
               </Button>
             </Panel>
-            <TextBlock Text="{Binding RecoveryConfirmationHint}" Foreground="#E6FFFFFF" FontSize="11"
+            <TextBlock Text="{Binding RecoveryConfirmationHint}" Foreground="{DynamicResource LoginInk2}" FontSize="11"
                        TextWrapping="Wrap" Margin="3,-5,3,0" IsVisible="{Binding HasRecoveryConfirmationHint}" />
 
             <Button Classes="glass" Command="{Binding RecoverWithBiometrics}"
@@ -192,7 +256,7 @@
               </StackPanel>
             </Button>
 
-            <TextBlock Text="Code de secours du serveur" Foreground="#E6FFFFFF"
+            <TextBlock Text="Code de secours du serveur" Foreground="{DynamicResource LoginInk2}"
                        FontSize="12" FontWeight="SemiBold" TextWrapping="Wrap" Margin="2,3,2,0" />
             <Panel>
               <TextBox x:Name="RecoveryCodeBox" Classes="w11 onbrand withicon witheye" Text="{Binding RecoveryCode}"
@@ -204,7 +268,7 @@
               <Button Classes="fieldicon" HorizontalAlignment="Right" Margin="0,0,5,0"
                       Command="{Binding ToggleRecoveryCodeEye}" IsEnabled="{Binding NotBusy}"
                       ToolTip.Tip="Afficher ou masquer le code de secours">
-                <mi:MaterialIcon Kind="{Binding RecoveryCodeEyeIcon}" Width="18" Height="18" Foreground="White" />
+                <mi:MaterialIcon Kind="{Binding RecoveryCodeEyeIcon}" Width="18" Height="18" Foreground="{DynamicResource LoginInk}" />
               </Button>
             </Panel>
             <Button Classes="glass" Command="{Binding RecoverWithCode}"
@@ -223,7 +287,7 @@
           <CheckBox Classes="onbrand" Content="{Binding EnrollmentText}"
                     IsVisible="{Binding ShowBiometricEnrollment}" IsChecked="{Binding EnableBiometricsAfterLogin}"
                     IsEnabled="{Binding CanType}" FontSize="13" />
-          <TextBlock IsVisible="{Binding ShowBiometricEnrollment}" Text="{Binding EnrollmentHint}" Foreground="#D9FFFFFF" FontSize="11" TextWrapping="Wrap" />
+          <TextBlock IsVisible="{Binding ShowBiometricEnrollment}" Text="{Binding EnrollmentHint}" Foreground="{DynamicResource LoginInk2}" FontSize="11" TextWrapping="Wrap" />
 
           <Button Classes="glass" Command="{Binding SignInWithBiometrics}" IsVisible="{Binding ShowBiometricSignIn}" IsEnabled="{Binding CanType}"
                   HorizontalAlignment="Stretch" MinHeight="44">
@@ -237,31 +301,31 @@
           </Button>
 
           <Border Background="#33FFB020" CornerRadius="8" Padding="12,9" IsVisible="{Binding HasNotice}">
-            <TextBlock Text="{Binding Notice}" Foreground="White" TextWrapping="Wrap" />
+            <TextBlock Text="{Binding Notice}" Foreground="{DynamicResource LoginInk}" TextWrapping="Wrap" />
           </Border>
           <Border Background="#40E5484D" CornerRadius="8" Padding="12,9" IsVisible="{Binding HasError}">
             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
-              <mi:MaterialIcon Kind="AlertCircleOutline" Width="18" Height="18" Foreground="White" VerticalAlignment="Top" Margin="0,1,0,0" />
-              <TextBlock Grid.Column="1" Text="{Binding Error}" Foreground="White" TextWrapping="Wrap" />
+              <mi:MaterialIcon Kind="AlertCircleOutline" Width="18" Height="18" Foreground="{DynamicResource LoginInk}" VerticalAlignment="Top" Margin="0,1,0,0" />
+              <TextBlock Grid.Column="1" Text="{Binding Error}" Foreground="{DynamicResource LoginInk}" TextWrapping="Wrap" />
             </Grid>
           </Border>
 
           <!-- Verrouillage : compte à rebours jusqu'à 0, puis l'accès revient seul -->
           <Border Background="#40E5484D" CornerRadius="8" Padding="14,12,14,14" IsVisible="{Binding Locked}">
             <Grid ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto">
-              <mi:MaterialIcon Kind="LockOutline" Width="20" Height="20" Foreground="White" VerticalAlignment="Center" Margin="0,0,10,0" />
+              <mi:MaterialIcon Kind="LockOutline" Width="20" Height="20" Foreground="{DynamicResource LoginInk}" VerticalAlignment="Center" Margin="0,0,10,0" />
               <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                <TextBlock Text="Accès verrouillé" FontWeight="SemiBold" Foreground="White" />
-                <TextBlock Text="5 tentatives incorrectes. Nouvel essai dans :" Foreground="#E6FFFFFF" TextWrapping="Wrap" />
+                <TextBlock Text="Accès verrouillé" FontWeight="SemiBold" Foreground="{DynamicResource LoginInk}" />
+                <TextBlock Text="5 tentatives incorrectes. Nouvel essai dans :" Foreground="{DynamicResource LoginInk2}" TextWrapping="Wrap" />
               </StackPanel>
-              <TextBlock Grid.Column="2" Text="{Binding CountdownText, Mode=OneWay}" FontSize="24" FontWeight="SemiBold" Foreground="White" VerticalAlignment="Center" Margin="10,0,0,0" />
-              <ProgressBar Grid.Row="1" Grid.ColumnSpan="3" Minimum="0" Maximum="100" Value="{Binding LockProgress, Mode=OneWay}" Height="4" MinHeight="4" Margin="0,10,0,0" Foreground="White" Background="#33FFFFFF" />
+              <TextBlock Grid.Column="2" Text="{Binding CountdownText, Mode=OneWay}" FontSize="24" FontWeight="SemiBold" Foreground="{DynamicResource LoginInk}" VerticalAlignment="Center" Margin="10,0,0,0" />
+              <ProgressBar Grid.Row="1" Grid.ColumnSpan="3" Minimum="0" Maximum="100" Value="{Binding LockProgress, Mode=OneWay}" Height="4" MinHeight="4" Margin="0,10,0,0" Foreground="{DynamicResource LoginInk}" Background="{DynamicResource LoginGlass}" />
             </Grid>
           </Border>
           <Border Background="#3322C55E" CornerRadius="8" Padding="12,9" IsVisible="{Binding Restored}">
             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
-              <mi:MaterialIcon Kind="CheckCircleOutline" Width="16" Height="16" Foreground="White" />
-              <TextBlock Grid.Column="1" Text="Accès rétabli. Vous pouvez réessayer." Foreground="White" VerticalAlignment="Center" TextWrapping="Wrap" />
+              <mi:MaterialIcon Kind="CheckCircleOutline" Width="16" Height="16" Foreground="{DynamicResource LoginInk}" />
+              <TextBlock Grid.Column="1" Text="Accès rétabli. Vous pouvez réessayer." Foreground="{DynamicResource LoginInk}" VerticalAlignment="Center" TextWrapping="Wrap" />
             </Grid>
           </Border>
 
@@ -273,11 +337,11 @@
               <TextBlock Text="Changer d'ordinateur principal" FontWeight="SemiBold" VerticalAlignment="Center" />
             </StackPanel>
           </Button>
-          <TextBlock Text="{Binding ServerLine}" Foreground="#B3FFFFFF" FontSize="{DynamicResource FsSmall}"
+          <TextBlock Text="{Binding ServerLine}" Foreground="{DynamicResource LoginInk3}" FontSize="{DynamicResource FsSmall}"
                      HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" />
         </StackPanel>
 
-        <TextBlock x:Name="LoginFooter" Grid.Row="2" Text="{Binding Footer}" Foreground="#B3FFFFFF" FontSize="{DynamicResource FsSmall}"
+        <TextBlock x:Name="LoginFooter" Grid.Row="2" Text="{Binding Footer}" Foreground="{DynamicResource LoginInk3}" FontSize="{DynamicResource FsSmall}"
                    HorizontalAlignment="Stretch" TextAlignment="Center" TextWrapping="Wrap" Margin="16,22,16,8" />
       </Grid>
     </ScrollViewer>

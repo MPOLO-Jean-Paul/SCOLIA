@@ -21,7 +21,7 @@ public sealed class StudentService(IAppDbContext db, IWriteGate gate, IAuditLog 
     private static readonly (EnrollmentStatus, string)[] StatusLabels =
         [(EnrollmentStatus.Diplome, "Diplômé"), (EnrollmentStatus.Transfere, "Transféré")];
 
-    public async Task<PagedResult<StudentListItem>> SearchAsync(string? search, Guid? promotionId, string? status, Guid? yearId, int page, int pageSize, CancellationToken ct = default)
+    public async Task<PagedResult<StudentListItem>> SearchAsync(string? search, Guid? promotionId, string? status, Guid? yearId, int page, int pageSize, Guid? sectionId = null, CancellationToken ct = default)
     {
         var year = await YearContext.GetAsync(db, yearId, ct);
         pageSize = Math.Clamp(pageSize, 1, 500);
@@ -32,6 +32,7 @@ public sealed class StudentService(IAppDbContext db, IWriteGate gate, IAuditLog 
                     where e.AcademicYearId == year.Id
                     select new { e, s, p };
         if (promotionId is not null) query = query.Where(x => x.e.PromotionId == promotionId);
+        if (sectionId is not null) query = query.Where(x => x.p.SectionId == sectionId);
         if (!string.IsNullOrWhiteSpace(status))
         {
             var st = EnumText.Parse(status, "status", StatusLabels);

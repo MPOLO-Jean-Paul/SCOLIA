@@ -17,6 +17,10 @@
           <TextBlock Text="Promotion" Classes="fieldlabel" />
           <ComboBox Width="230" ItemsSource="{Binding Promotions}" SelectedItem="{Binding Promotion}" />
         </StackPanel>
+        <StackPanel Classes="field" IsVisible="{Binding HasSections}">
+          <TextBlock Text="Section" Classes="fieldlabel" />
+          <ComboBox Width="220" ItemsSource="{Binding Sections}" SelectedItem="{Binding SectionChoice}" />
+        </StackPanel>
         <StackPanel Classes="field">
           <TextBlock Text="Statut" Classes="fieldlabel" />
           <ComboBox Width="190" ItemsSource="{Binding StatusChoices}" SelectedItem="{Binding Status}" />

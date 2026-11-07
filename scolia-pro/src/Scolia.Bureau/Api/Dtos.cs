@@ -44,7 +44,7 @@ public sealed record PeriodDto(Guid Id, int Order, string Name, int Month, int C
 
 public sealed record AcademicYearDto(Guid Id, string Label, DateOnly StartDate, DateOnly EndDate, string Status, bool IsCurrent, IReadOnlyList<PeriodDto> Periods);
 
-public sealed record SectionDto(Guid Id, string Code, string Name, bool IsActive);
+public sealed record SectionDto(Guid Id, string Code, string Name, bool IsActive, int PromotionCount = 0, int StudentCount = 0);
 
 public sealed record FeeItemDto(Guid Id, string Kind, string Label, decimal Amount, DateOnly DueDate, int Order, Guid? PeriodId, Guid? CategoryId = null);
 

@@ -277,8 +277,36 @@ public sealed class SchoolService(IAppDbContext db, IWriteGate gate, IAuditLog a
     }, ct);
 
     // ---------- Sections ----------
-    public async Task<IReadOnlyList<SectionDto>> SectionsAsync(CancellationToken ct = default) =>
-        await db.Sections.AsNoTracking().OrderBy(s => s.Name).Select(s => new SectionDto(s.Id, s.Code, s.Name, s.IsActive)).ToListAsync(ct);
+    /// <summary>Sections avec, pour l'année courante, leurs promotions et leurs apprenants actifs.</summary>
+    public async Task<IReadOnlyList<SectionDto>> SectionsAsync(CancellationToken ct = default)
+    {
+        var sections = await db.Sections.AsNoTracking().OrderBy(s => s.Name).ToListAsync(ct);
+        var year = await db.AcademicYears.AsNoTracking().Where(y => y.IsCurrent).Select(y => (Guid?)y.Id).FirstOrDefaultAsync(ct);
+        var promotions = year is null ? [] : await db.Promotions.AsNoTracking()
+            .Where(p => p.AcademicYearId == year && p.SectionId != null).Select(p => new { p.Id, p.SectionId }).ToListAsync(ct);
+        var promotionIds = promotions.Select(p => p.Id).ToList();
+        var students = promotionIds.Count == 0 ? [] : await db.Enrollments.AsNoTracking()
+            .Where(e => promotionIds.Contains(e.PromotionId) && e.Status == EnrollmentStatus.Actif)
+            .GroupBy(e => e.PromotionId).Select(g => new { g.Key, Count = g.Count() }).ToDictionaryAsync(x => x.Key, x => x.Count, ct);
+        return sections.Select(s =>
+        {
+            var mine = promotions.Where(p => p.SectionId == s.Id).Select(p => p.Id).ToList();
+            return new SectionDto(s.Id, s.Code, s.Name, s.IsActive, mine.Count, mine.Sum(id => students.GetValueOrDefault(id)));
+        }).ToList();
+    }
+
+    /// <summary>Supprime une section qu'aucune promotion, de n'importe quelle année, n'utilise ; sinon la désactiver.</summary>
+    public Task DeleteSectionAsync(Guid id, CancellationToken ct = default) => gate.RunAsync(async () =>
+    {
+        var section = await db.Sections.FirstOrDefaultAsync(s => s.Id == id, ct) ?? throw new NotFoundException("Section introuvable.");
+        var used = await db.Promotions.CountAsync(p => p.SectionId == id, ct);
+        if (used > 0)
+            throw new DomainException("section", $"La section {section.Name} regroupe {used} promotion(s), y compris des années passées : désactivez-la au lieu de la supprimer.");
+        db.Sections.Remove(section);
+        audit.Record("section.supprimee", "Section", id.ToString(), $"Section {section.Name} supprimée.");
+        await db.SaveChangesAsync(ct);
+        return true;
+    }, ct);
 
     public Task<SectionDto> UpsertSectionAsync(Guid? id, SectionUpsert input, CancellationToken ct = default) => gate.RunAsync(async () =>
     {
@@ -293,7 +321,7 @@ public sealed class SchoolService(IAppDbContext db, IWriteGate gate, IAuditLog a
         if (id is null) db.Sections.Add(section);
         audit.Record(id is null ? "section.creee" : "section.modifiee", "Section", section.Id.ToString(), $"Section {section.Name}.");
         await db.SaveChangesAsync(ct);
-        return new SectionDto(section.Id, section.Code, section.Name, section.IsActive);
+        return (await SectionsAsync(ct)).First(s => s.Id == section.Id);
     }, ct);
 
     // ---------- Promotions ----------
@@ -372,6 +400,13 @@ public sealed class SchoolService(IAppDbContext db, IWriteGate gate, IAuditLog a
                 if (used) throw new DomainException("code", "Le code d'une promotion qui a des inscrits ne peut plus changer (il figure dans les matricules).");
                 if (await db.Promotions.AnyAsync(p => p.AcademicYearId == year.Id && p.Code == code && p.Id != promotion.Id, ct)) throw new ConflictException("Ce code existe déjà.");
             }
+        }
+        // Section : elle doit exister ; une section désactivée ne reçoit plus de nouvelle promotion (l'ancienne reste).
+        if (input.SectionId is { } sectionId && sectionId != promotion.SectionId)
+        {
+            var chosen = await db.Sections.AsNoTracking().FirstOrDefaultAsync(s => s.Id == sectionId, ct)
+                ?? throw new DomainException("sectionId", "La section choisie n'existe plus : actualisez la liste.");
+            if (!chosen.IsActive) throw new DomainException("sectionId", $"La section {chosen.Name} est désactivée : réactivez-la ou choisissez-en une autre.");
         }
         promotion.Code = code; promotion.Name = input.Name.Trim(); promotion.SectionId = input.SectionId; promotion.Level = input.Level;
         promotion.Capacity = input.Capacity; promotion.IsActive = input.IsActive;

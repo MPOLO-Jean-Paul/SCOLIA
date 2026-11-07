@@ -50,11 +50,13 @@ public sealed class StudentsPage : PageViewModel
             debounce?.Stop();
             search = string.Empty;
             promotion = Promotions.Count > 0 ? Promotions[0] : null;
+            sectionChoice = Sections.Count > 0 ? Sections[0] : null;
             status = StatusChoices[0];
             page = 1;
             Selected = null;
             Raise(nameof(Search));
             Raise(nameof(Promotion));
+            Raise(nameof(SectionChoice));
             Raise(nameof(Status));
             await RefreshAsync();
         });
@@ -115,6 +117,18 @@ public sealed class StudentsPage : PageViewModel
     public IReadOnlyList<ChoiceItem> Promotions { get => promotions; private set => Set(ref promotions, value); }
     public IReadOnlyList<ChoiceItem> StatusChoices { get; } = Labels.Statuses.Prepend(new ChoiceItem(string.Empty, "Tous les statuts")).ToList();
 
+    // ---------- Filtre par section (filière) : toutes les promotions de la section ----------
+    private IReadOnlyList<ChoiceItem> sections = [new ChoiceItem(string.Empty, "Toutes les sections")];
+    private ChoiceItem? sectionChoice;
+    public IReadOnlyList<ChoiceItem> Sections { get => sections; private set { if (Set(ref sections, value)) Raise(nameof(HasSections)); } }
+    /// <summary>Le filtre n'apparaît que si l'établissement a créé des sections.</summary>
+    public bool HasSections => sections.Count > 1;
+    public ChoiceItem? SectionChoice
+    {
+        get => sectionChoice;
+        set { if (Set(ref sectionChoice, value) && ready) ApplyFilter(); }
+    }
+
     public string Search
     {
         get => search;
@@ -158,6 +172,15 @@ public sealed class StudentsPage : PageViewModel
             }
             Promotions = choices;
             promotion = choices[0];
+            try
+            {
+                var list = await Shell.Api.GetAsync<List<SectionDto>>("api/etablissement/sections");
+                Sections = [new ChoiceItem(string.Empty, "Toutes les sections"), .. list.Where(s => s.IsActive || s.PromotionCount > 0)
+                    .Select(s => new ChoiceItem(s.Id.ToString(), $"{s.Code} · {s.Name}"))];
+            }
+            catch (Exception ex) when (ex is OfflineException or ApiException or HttpRequestException) { }
+            sectionChoice = Sections[0];
+            Raise(nameof(SectionChoice));
             status = StatusChoices[0];
             Raise(nameof(Promotion));
             Raise(nameof(Status));
@@ -165,7 +188,7 @@ public sealed class StudentsPage : PageViewModel
         }
 
         var query = ScoliaClient.Query(
-            ("q", Search.Trim()), ("promotionId", Promotion?.Value), ("statut", Status?.Value), ("page", page), ("taille", PageSize));
+            ("q", Search.Trim()), ("promotionId", Promotion?.Value), ("sectionId", SectionChoice?.Value), ("statut", Status?.Value), ("page", page), ("taille", PageSize));
         OfflineStudentSearch.Result? local = null;
         if (!Shell.Api.IsOnline && Shell.Api.Offline is { } store)
         {
@@ -207,7 +230,7 @@ public sealed class StudentsPage : PageViewModel
                 ? $" · recherche locale ({local.Loaded}/{local.Registered} dossiers disponibles)"
                 : " · copie locale, non actualisée";
         // Liste vide : sans filtre, l'établissement n'a encore aucun apprenant ; avec un filtre, il faut l'élargir.
-        var filtered = Search.Trim().Length > 0 || Promotion is { Value.Length: > 0 } || Status is { Value.Length: > 0 };
+        var filtered = Search.Trim().Length > 0 || Promotion is { Value.Length: > 0 } || SectionChoice is { Value.Length: > 0 } || Status is { Value.Length: > 0 };
         EmptyTitle = filtered ? "Aucun apprenant trouvé" : "Aucun apprenant inscrit";
         EmptyHint = local is { Complete: false }
             ? "Recherche limitée aux dossiers téléchargés sur cet appareil. Reconnectez-vous pour voir le registre complet."
