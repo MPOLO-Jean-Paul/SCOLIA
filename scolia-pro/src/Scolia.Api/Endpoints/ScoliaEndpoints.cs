@@ -176,12 +176,12 @@ public static class ScoliaEndpoints
                     issued.Value.Secret, issued.Value.ExpiresUtc));
         }).RequireAuthorization(Permissions.PilotageRead).RequireRateLimiting("connexion");
 
-        api.MapGet("/jumelage/appareils", (ICurrentUser current, DevicePairingRegistry registry) =>
-            Results.Ok(registry.List(current.Id!.Value))).RequireAuthorization(Permissions.UsersManage);
+        api.MapGet("/jumelage/appareils", (DevicePairingRegistry registry) =>
+            Results.Ok(registry.ListAll())).RequireAuthorization(Permissions.UsersManage);
 
         api.MapPost("/jumelage/appareils/{grantId:guid}/revoquer", (Guid grantId,
-            ICurrentUser current, DevicePairingRegistry registry) =>
-            registry.Revoke(grantId, current.Id!.Value) ? Results.NoContent() : Results.NotFound())
+            DevicePairingRegistry registry) =>
+            registry.RevokeAny(grantId) ? Results.NoContent() : Results.NotFound())
             .RequireAuthorization(Permissions.UsersManage);
 
         // ---------- Vérification publique des reçus (QR code) ----------
