@@ -256,39 +256,30 @@ public sealed class SyncCenter : Observable, IDisposable
                     shell.IsLoggedIn && ReferenceEquals(api.Offline, store) &&
                     string.Equals(store.User, user, StringComparison.Ordinal);
 
-                if (StillAllowed() && shell.Can(Perm.PilotageRead))
+                // Aucun lot d'import à chaque ouverture : un compte retrouve immédiatement
+                // ses instantanés locaux. L'option « Préparer hors ligne » télécharge,
+                // elle seule, l'ensemble des dossiers lorsque l'utilisateur le demande.
+                async Task SeedIfMissingAsync<T>(string path)
                 {
-                    // Le Promoteur n'a pas droit aux listes nominatives : seulement
-                    // son tableau de bord consolidé, y compris hors ligne.
-                    try { await api.GetAsync<PromoterDashboardDto>("api/pilotage/synthese", ct); }
-                    catch (Exception ex) when (ex is ApiException or HttpRequestException or TaskCanceledException) { }
+                    if (!StillAllowed() || store.ReadPage(path) is not null) return;
+                    try { await api.GetAsync<T>(path, ct); }
+                    catch (Exception ex) when (ex is ApiException or HttpRequestException or TaskCanceledException or OfflineException) { }
                 }
 
-                if (StillAllowed() && shell.Can(Perm.ReportsRead))
+                if (shell.Can(Perm.PilotageRead))
+                    await SeedIfMissingAsync<PromoterDashboardDto>("api/pilotage/synthese");
+
+                if (shell.Can(Perm.ReportsRead))
                 {
-                    try { await api.GetAsync<DashboardDto>("api/rapports/tableau-de-bord", ct); }
-                    catch (Exception ex) when (ex is ApiException or HttpRequestException or TaskCanceledException) { }
-                    if (StillAllowed())
-                    {
-                        try { await api.GetAsync<TodayDto>("api/rapports/aujourdhui", ct); }
-                        catch (Exception ex) when (ex is ApiException or HttpRequestException or TaskCanceledException) { }
-                    }
+                    await SeedIfMissingAsync<DashboardDto>("api/rapports/tableau-de-bord");
+                    await SeedIfMissingAsync<TodayDto>("api/rapports/aujourdhui");
                 }
 
-                if (!StillAllowed() || !shell.Can(Perm.StudentsRead)) return;
-                try { await api.GetAsync<List<PromotionDto>>("api/etablissement/promotions", ct); }
-                catch (Exception ex) when (ex is ApiException or HttpRequestException or TaskCanceledException) { }
-                for (var page = 1; page <= 20 && StillAllowed(); page++)
+                if (shell.Can(Perm.StudentsRead))
                 {
-                    // Mêmes clés de cache que la liste Apprenants ; les 20 premières
-                    // pages couvrent jusqu'à 1 000 dossiers, sans inventer les suivants.
-                    var path = "api/apprenants" + ScoliaClient.Query(("page", page), ("taille", 50));
-                    PagedResult<StudentListItem>? result;
-                    try { result = await api.GetAsync<PagedResult<StudentListItem>>(path, ct); }
-                    catch (Exception ex) when (ex is ApiException or HttpRequestException or TaskCanceledException) { break; }
-                    if (result is null || result.Items.Count == 0 || page * 50 >= result.Total) break;
-                    // Priorité à la fluidité des écrans et à la batterie sur Android.
-                    await Task.Delay(TimeSpan.FromMilliseconds(175), ct);
+                    await SeedIfMissingAsync<List<PromotionDto>>("api/etablissement/promotions");
+                    await SeedIfMissingAsync<PagedResult<StudentListItem>>(
+                        "api/apprenants" + ScoliaClient.Query(("page", 1), ("taille", 50)));
                 }
             }
             finally { offlineWarmupGate.Release(); }
