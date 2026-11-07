@@ -85,7 +85,7 @@ public sealed class DevicePairingRegistry
         {
             var id = Guid.NewGuid();
             var secret = Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
-            var expires = DateTime.UtcNow.AddDays(DeviceValidityDays);
+            var expires = DateTime.MaxValue;
             grants.RemoveAll(x => x.DeviceId == deviceId && x.Owner == owner);
             grants.Add(new DeviceGrant(id, owner, stamp, deviceId,
                 string.IsNullOrWhiteSpace(name) ? "Appareil promoteur" : name.Trim()[..Math.Min(name.Trim().Length, 80)],
