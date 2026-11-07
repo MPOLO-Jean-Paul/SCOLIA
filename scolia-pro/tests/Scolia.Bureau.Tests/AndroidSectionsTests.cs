@@ -39,6 +39,20 @@ public sealed class AndroidSectionsTests
     }
 
     [Fact]
+    public void Android_permet_d_associer_les_promotions_avec_une_section()
+    {
+        var document = SettingsView();
+        var buttons = document.Descendants().Where(node => node.Name.LocalName == "Button").ToArray();
+        Assert.Contains(buttons, node => node.Attributes().Any(attr =>
+            attr.Name.LocalName == "Command" && attr.Value.Contains("CreatePromotion", StringComparison.Ordinal)));
+        Assert.Contains(buttons, node => node.Attributes().Any(attr =>
+            attr.Name.LocalName == "Command" && attr.Value.Contains("EditPromotionOnPhone", StringComparison.Ordinal)));
+        Assert.Contains(document.Descendants(), node => node.Name.LocalName == "TextBlock"
+            && node.Attributes().Any(attr => attr.Name.LocalName == "Text"
+                && attr.Value.Contains("Binding Section", StringComparison.Ordinal)));
+    }
+
+    [Fact]
     public void Formulaire_section_refuse_code_et_designation_trop_longs()
     {
         var form = new FormViewModel("Nouvelle section");
@@ -65,6 +79,8 @@ public sealed class AndroidSectionsTests
         var page = new SettingsPage(shell);
         Assert.NotNull(page.CreateSection);
         Assert.NotNull(page.EditSectionOnPhone);
+        Assert.NotNull(page.CreatePromotion);
+        Assert.NotNull(page.EditPromotionOnPhone);
         Assert.True(page.HasNoSections);
         Assert.False(page.HasSectionRows);
     }
