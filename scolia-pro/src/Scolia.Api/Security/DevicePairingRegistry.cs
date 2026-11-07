@@ -200,6 +200,14 @@ public sealed class DevicePairingRegistry
         }
     }
 
+    /// <summary>Contrôle les flux déjà ouverts après une révocation,
+    /// sans rejouer la preuve HMAC de la requête initiale.</summary>
+    public bool HasGrant(Guid grantId, string? deviceId)
+    {
+        lock (gate) return grants.Any(x => x.Id == grantId &&
+            x.DeviceId == deviceId && !x.Revoked);
+    }
+
     public bool IsActive(Guid grantId, Guid owner, string? deviceId)
     {
         lock (gate) return grants.Any(x => x.Id == grantId && x.Owner == owner
