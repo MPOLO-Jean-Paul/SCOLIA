@@ -16,7 +16,7 @@ public sealed class DevicePairingRegistry
     private readonly string file;
     // Une autorisation est révocable à tout moment ; chaque usage valide prolonge
     // sa durée sans copier le mot de passe du compte de l'établissement.
-    public const int DeviceValidityDays = 180;
+    public const int DeviceValidityDays = 180; // Compatibilité des anciennes versions ; l'accès n'expire plus automatiquement.
     public const int RenewalWindowDays = 30;
 
     public DevicePairingRegistry(string dataDirectory)
@@ -65,7 +65,7 @@ public sealed class DevicePairingRegistry
             invitations.Remove(key);
             var id = Guid.NewGuid();
             var secret = Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
-            var expires = DateTime.UtcNow.AddDays(DeviceValidityDays);
+            var expires = DateTime.MaxValue;
             grants.RemoveAll(x => x.DeviceId == deviceId && x.Owner == invitation.Owner);
             grants.Add(new DeviceGrant(id, invitation.Owner, invitation.Stamp, deviceId,
                 string.IsNullOrWhiteSpace(name) ? "Appareil SCOLIA" : name.Trim()[..Math.Min(name.Trim().Length, 80)],
@@ -101,7 +101,7 @@ public sealed class DevicePairingRegistry
         lock (gate)
         {
             var grant = grants.FirstOrDefault(x => x.Id == grantId && !x.Revoked
-                && x.ExpiresUtc > DateTime.UtcNow && x.DeviceId == deviceId);
+                && x.DeviceId == deviceId);
             return grant is not null && Matches(secret, grant.SecretHash) ? (grant.Owner, grant.Stamp) : null;
         }
     }
@@ -120,11 +120,13 @@ public sealed class DevicePairingRegistry
         {
             var now = DateTime.UtcNow;
             var index = grants.FindIndex(x => x.Id == grantId && x.DeviceId == deviceId
-                && !x.Revoked && x.ExpiresUtc > now);
+                && !x.Revoked);
             if (index < 0 || !Matches(secret, grants[index].SecretHash)) return null;
-            if (grants[index].ExpiresUtc <= now.AddDays(RenewalWindowDays))
+            if (grants[index].ExpiresUtc != DateTime.MaxValue)
             {
-                grants[index] = grants[index] with { ExpiresUtc = now.AddDays(DeviceValidityDays) };
+                // Migration des appareils autorisés avant la suppression de l'expiration :
+                // seule une révocation explicite peut désormais interrompre le jumelage.
+                grants[index] = grants[index] with { ExpiresUtc = DateTime.MaxValue };
                 Save();
             }
             var authorized = grants[index];
@@ -145,7 +147,7 @@ public sealed class DevicePairingRegistry
         lock (gate)
         {
             var grant = grants.FirstOrDefault(x => x.Id == grantId &&
-                x.DeviceId == deviceId && !x.Revoked && x.ExpiresUtc > DateTime.UtcNow);
+                x.DeviceId == deviceId && !x.Revoked);
             if (grant is null) return null;
             var key = Convert.FromHexString(grant.SecretHash);
             return Convert.ToHexString(HMACSHA256.HashData(key, Encoding.ASCII.GetBytes(nonce)));
@@ -155,12 +157,12 @@ public sealed class DevicePairingRegistry
     public bool IsActive(Guid grantId, Guid owner, string? deviceId)
     {
         lock (gate) return grants.Any(x => x.Id == grantId && x.Owner == owner
-            && x.DeviceId == deviceId && !x.Revoked && x.ExpiresUtc > DateTime.UtcNow);
+            && x.DeviceId == deviceId && !x.Revoked);
     }
 
     public IReadOnlyList<AuthorizedDevice> List(Guid owner)
     {
-        lock (gate) return grants.Where(x => x.Owner == owner)
+        lock (gate) return grants.Where(x => x.Owner == owner && !x.Revoked)
             .Select(x => new AuthorizedDevice(x.Id, x.DeviceName, x.ExpiresUtc, x.Revoked)).ToArray();
     }
 
@@ -170,7 +172,9 @@ public sealed class DevicePairingRegistry
         {
             var index = grants.FindIndex(x => x.Id == grantId && x.Owner == owner && !x.Revoked);
             if (index < 0) return false;
-            grants[index] = grants[index] with { Revoked = true };
+            // Suppression immédiate du registre persistant et de la liste affichée.
+            // L'ancien secret ne sera plus accepté lors d'une reprise réseau.
+            grants.RemoveAt(index);
             Save();
             return true;
         }
