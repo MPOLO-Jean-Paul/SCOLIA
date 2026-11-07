@@ -50,14 +50,14 @@
                              Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
                 </StackPanel>
               </Grid>
-              <Button Classes="primary" Content="Activer ou vérifier Render" Command="{Binding Remote.Enable}"
+              <Button Classes="primary" Content="Activer ou vérifier Internet" Command="{Binding Remote.Enable}"
                       HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" MinHeight="42" />
               <TextBlock Text="{Binding Remote.Message}" Classes="muted" TextWrapping="Wrap" />
               <Expander Header="Réglages avancés" IsExpanded="False">
                 <StackPanel Margin="6,8" Spacing="8">
                   <TextBlock Text="Adresse du relais sécurisé WSS" Classes="muted" />
                   <TextBox Classes="w11" Text="{Binding Remote.Relay}"
-                           Watermark="wss://scolia-pro-relay.onrender.com/" />
+                           Watermark="wss://adresse-du-relais/" />
                   <Button Classes="ghost" Content="Désactiver cette liaison Internet"
                           Command="{Binding Remote.Disable}" HorizontalAlignment="Stretch" />
                 </StackPanel>
