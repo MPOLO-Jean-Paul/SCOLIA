@@ -15,17 +15,16 @@ public partial class LoginView : UserControl
     public LoginView()
     {
         InitializeComponent();
-        // Les écrans Android disposent de leur propre hiérarchie iOS ; la page Windows reste intacte.
-        var mobile = Platform.IsMobile;
-        LoginScroll.IsVisible = !mobile;
-        IosLoginScroll.IsVisible = mobile;
-        IosLoginThemeScope.IsVisible = mobile;
-        Backdrop.IsVisible = !mobile;
-        Halo.IsVisible = !mobile;
-        IosBackdrop.IsVisible = mobile;
-        // Une seule colonne, avec marges et titre adaptés aux écrans très étroits.
-        IosLoginScroll.SizeChanged += (_, e) =>
-            IosLoginScroll.Classes.Set("compact", e.NewSize.Width < 390);
+        // Même page iOS claire sur le téléphone et sur l'ordinateur ; l'ancienne page bleue reste en réserve.
+        var ios = AuthLayout.UseIosStyle;
+        LoginScroll.IsVisible = !ios;
+        IosLoginScroll.IsVisible = ios;
+        IosLoginThemeScope.IsVisible = ios;
+        Backdrop.IsVisible = !ios;
+        Halo.IsVisible = !ios;
+        IosBackdrop.IsVisible = ios;
+        // Une seule colonne : marges, polices et champs suivent la largeur et la hauteur de l'écran.
+        AuthLayout.Track(IosLoginScroll);
         IosPasswordBox.KeyDown += (_, e) =>
         {
             if (e.Key != Key.Enter || DataContext is not LoginViewModel login || !login.CanSubmitCredentials) return;
@@ -129,9 +128,10 @@ public partial class LoginView : UserControl
     {
         if (Platform.IsMobile || PhoneLayout.Active || DataContext is not LoginViewModel login
             || !login.ShowManualCredentials) return;
-        if (login.RecoveryOpen) NewPasswordBox.Focus();
-        else if (login.ShowAccountEntry) UserNameBox.Focus();
-        else PasswordBox.Focus();
+        var ios = AuthLayout.UseIosStyle;
+        if (login.RecoveryOpen) (ios ? IosNewPasswordBox : NewPasswordBox).Focus();
+        else if (login.ShowAccountEntry) (ios ? IosUserNameBox : UserNameBox).Focus();
+        else (ios ? IosPasswordBox : PasswordBox).Focus();
     }
 
     private void OnUnlocked() => FocusRelevantField();

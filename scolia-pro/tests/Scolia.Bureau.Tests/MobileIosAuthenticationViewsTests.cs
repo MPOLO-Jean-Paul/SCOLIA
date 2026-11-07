@@ -3,7 +3,7 @@ using Xunit;
 
 namespace Scolia.Bureau.Tests;
 
-/// <summary>Le style iOS du téléphone ne doit ni masquer les commandes de sécurité ni remplacer les vues Windows.</summary>
+/// <summary>Le style iOS, commun au téléphone et à l'ordinateur, garde toutes les commandes de sécurité ; l'ancienne page reste en réserve.</summary>
 public sealed class MobileIosAuthenticationViewsTests
 {
     private static string Source(string relative)
@@ -50,8 +50,9 @@ public sealed class MobileIosAuthenticationViewsTests
             Assert.True(Attribute(field, "IsSensitive", "True"));
         }
         var code = File.ReadAllText(Source("Views/LoginView.axaml.cs"));
-        Assert.Contains("LoginScroll.IsVisible = !mobile", code);
-        Assert.Contains("IosLoginScroll.IsVisible = mobile", code);
+        Assert.Contains("LoginScroll.IsVisible = !ios", code);
+        Assert.Contains("IosLoginScroll.IsVisible = ios", code);
+        Assert.Contains("AuthLayout.Track(IosLoginScroll)", code);
         Assert.Contains("login.CanSubmitCredentials", code);
     }
 
@@ -68,8 +69,9 @@ public sealed class MobileIosAuthenticationViewsTests
             "{Binding ForgotCode}", "{Binding SwitchAccount}" })
             Assert.Contains(nodes, e => e.Name.LocalName == "Button" && Attribute(e, "Command", binding));
         var code = File.ReadAllText(Source("Views/LockScreenView.axaml.cs"));
-        Assert.Contains("ClassicLockScreen.IsVisible = !mobile", code);
-        Assert.Contains("IosLockScroll.IsVisible = mobile", code);
+        Assert.Contains("ClassicLockScreen.IsVisible = !ios", code);
+        Assert.Contains("IosLockScroll.IsVisible = ios", code);
+        Assert.Contains("IosLockCode", code);
     }
 
     [Fact]
@@ -85,7 +87,32 @@ public sealed class MobileIosAuthenticationViewsTests
             Attribute(e, "IsVisible", "{Binding PairingInProgress}") &&
             e.Descendants().Any(d => Attribute(d, "Text", "Vérification sécurisée")));
         var code = File.ReadAllText(Source("Views/ConnectionView.axaml.cs"));
-        Assert.Contains("ClassicConnectionScreen.IsVisible = !mobile", code);
-        Assert.Contains("IosConnectionScreen.IsVisible = mobile", code);
+        Assert.Contains("ClassicConnectionScreen.IsVisible = !ios", code);
+        Assert.Contains("IosConnectionScreen.IsVisible = ios", code);
+    }
+
+    [Fact]
+    public void Le_style_iOS_est_aussi_celui_de_l_ordinateur()
+    {
+        var layout = File.ReadAllText(Source("Infrastructure/AuthLayout.cs"));
+        Assert.Contains("UseIosStyle { get; } = true", layout);
+        // L'ordinateur garde la possibilité de devenir serveur depuis le premier écran iOS.
+        var nodes = Elements("ConnectionView.axaml");
+        Assert.Contains(nodes, e => e.Name.LocalName == "Button" && Attribute(e, "Command", "{Binding UseThisComputer}")
+            && Attribute(e, "IsVisible", "{Binding DesktopCanBeServer}") && Attribute(e, "Classes", "iosconnectsecondary"));
+    }
+
+    [Theory]
+    [InlineData("LoginView.axaml")]
+    [InlineData("ConnectionView.axaml")]
+    [InlineData("LockScreenView.axaml")]
+    public void Les_boutons_iOS_replient_leur_texte_au_lieu_de_deborder(string view)
+    {
+        // Un StackPanel horizontal donne une largeur infinie au texte : il sortirait de l'écran d'un petit téléphone.
+        var nodes = Elements(view);
+        var ios = nodes.Where(e => e.Name.LocalName == "Button" && e.Attributes().Any(a => a.Name.LocalName == "Classes" && a.Value.StartsWith("ios", StringComparison.Ordinal)));
+        Assert.NotEmpty(ios);
+        foreach (var button in ios)
+            Assert.DoesNotContain(button.Elements(), c => c.Name.LocalName == "StackPanel" && Attribute(c, "Orientation", "Horizontal"));
     }
 }
