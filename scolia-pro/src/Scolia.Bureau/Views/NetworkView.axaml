@@ -65,6 +65,41 @@
             </StackPanel>
           </Border>
 
+          <!-- Registre permanent : seuls les responsables peuvent révoquer un poste. -->
+          <Border Classes="phonegroup" IsVisible="{Binding Remote.CanManage}">
+            <StackPanel Margin="14,12" Spacing="10">
+              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                <StackPanel Spacing="3">
+                  <TextBlock Text="Appareils autorisés" FontWeight="SemiBold" />
+                  <TextBlock Text="{Binding Remote.DeviceStatus}" Classes="muted"
+                             FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
+                </StackPanel>
+                <Button Grid.Column="1" Classes="ghost" Content="Actualiser"
+                        Command="{Binding Remote.RefreshDevices}" />
+              </Grid>
+              <ItemsControl ItemsSource="{Binding Remote.Devices}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate>
+                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10" Margin="0,5">
+                      <Border Classes="appicon medium" Background="{DynamicResource ToneBlue}">
+                        <mi:MaterialIcon Kind="CellphoneLink" />
+                      </Border>
+                      <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                        <TextBlock Text="{Binding Detail}" Classes="muted"
+                                   FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
+                      </StackPanel>
+                      <Button Grid.Column="2" Content="Retirer" Classes="danger"
+                              Command="{Binding Remove}" VerticalAlignment="Center" />
+                    </Grid>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+              <TextBlock Text="Aucune autorisation active." Classes="muted"
+                         IsVisible="{Binding Remote.NoDevices}" />
+            </StackPanel>
+          </Border>
+
           <!-- Autres postes connectés -->
           <TextBlock Text="Postes connectés" Classes="heading" Margin="0,4,0,0" />
           <Border Classes="phonegroup">
