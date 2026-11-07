@@ -284,7 +284,11 @@ public sealed record YearRowVm(Guid Id, string Label, string Period, string Stat
     IBrush StatusBrush, string Deadline, AcademicYearDto Source);
 
 /// <summary>Section d'enseignement dans la liste des paramètres.</summary>
-public sealed record SectionRowVm(Guid Id, string Code, string Name, string Active, SectionDto Source, string Promotions = "", string Students = "");
+public sealed record SectionRowVm(Guid Id, string Code, string Name, string Active, SectionDto Source, string Promotions = "", string Students = "")
+{
+    public string StatusLabel => Source.IsActive ? "Active" : "Inactive";
+    public IBrush StatusBrush => ThemeBrush.Get(Source.IsActive ? "ToneGreen" : "ToneOrange");
+}
 
 /// <summary>Catégorie de frais du catalogue : nom, montant, échéance proposée et promotions qui l'appliquent.</summary>
 public sealed record FeeCategoryRowVm(Guid Id, string Name, string Amount, string DueDate, string Promotions, string Active, FeeCategoryDto Source);
@@ -320,6 +324,11 @@ public sealed class SettingsPage : PageViewModel
     public bool SettingsDetailVisible => !Phone || mobileDetailsShown;
     public RelayCommand<BackstageItemVm> OpenMobileSection { get; }
     public RelayCommand BackToMobileSections { get; }
+    /// <summary>Actions directes, accessibles sans le menu « … » sur Android.</summary>
+    public AsyncCommand CreateSection { get; }
+    public RelayCommand<SectionRowVm> EditSectionOnPhone { get; }
+    public AsyncCommand CreatePromotion { get; }
+    public RelayCommand<PromotionRowVm> EditPromotionOnPhone { get; }
 
     /// <summary>Le bouton retour système Android revient d'abord aux familles de réglages.</summary>
     public bool TryBackToMobileSections()
@@ -393,6 +402,20 @@ public sealed class SettingsPage : PageViewModel
             RefreshMobileSectionVisibility();
         });
         BackToMobileSections = new RelayCommand(() => TryBackToMobileSections());
+        CreateSection = new AsyncCommand(() => Shell.Run(NewSectionAsync));
+        EditSectionOnPhone = new RelayCommand<SectionRowVm>(row =>
+        {
+            if (row is null) return;
+            SelectedSection = row;
+            _ = Shell.Run(() => EditSectionAsync(row.Source));
+        });
+        CreatePromotion = new AsyncCommand(() => Shell.Run(() => NewPromotionAsync(Shell)));
+        EditPromotionOnPhone = new RelayCommand<PromotionRowVm>(row =>
+        {
+            if (row is null) return;
+            SelectedPromotion = row;
+            _ = Shell.Run(() => PromotionFormAsync(Shell, row.Source));
+        });
         OpenAccountSecurity = new RelayCommand(() =>
         {
             if (!Preferences.MobileLayout)
@@ -607,7 +630,11 @@ public sealed class SettingsPage : PageViewModel
     public AsyncCommand EditSelectedCalendar => editSelectedCalendar ??= new AsyncCommand(() => Shell.Run(EditYearScheduleAsync));
     private AsyncCommand? editSelectedCalendar;
     public ObservableCollection<SectionRowVm> SectionRows { get; } = [];
+    public bool HasSectionRows => SectionRows.Count > 0;
+    public bool HasNoSections => SectionRows.Count == 0;
     public ObservableCollection<PromotionRowVm> Promotions { get; } = [];
+    public bool HasPromotionRows => Promotions.Count > 0;
+    public bool HasNoPromotions => Promotions.Count == 0;
     public YearRowVm? SelectedYear
     {
         get => selectedYear;
@@ -738,10 +765,14 @@ public sealed class SettingsPage : PageViewModel
     private async Task LoadSectionsAsync()
     {
         var sections = await Shell.Api.GetAsync<List<SectionDto>>("api/etablissement/sections");
+        var previouslySelectedId = SelectedSection?.Id;
         SectionRows.Clear();
         foreach (var s in sections)
             SectionRows.Add(new SectionRowVm(s.Id, s.Code, s.Name, s.IsActive ? "Oui" : "Non", s,
                 Format.Count(s.PromotionCount, "promotion", "promotions"), Format.Count(s.StudentCount, "apprenant", "apprenants")));
+        SelectedSection = SectionRows.FirstOrDefault(s => s.Id == previouslySelectedId);
+        Raise(nameof(HasSectionRows));
+        Raise(nameof(HasNoSections));
         subtitle = Format.Count(sections.Count, "section", "sections");
         Raise(nameof(Subtitle));
     }
@@ -749,10 +780,14 @@ public sealed class SettingsPage : PageViewModel
     private async Task LoadPromotionsAsync()
     {
         var promotions = await Shell.Api.GetAsync<List<PromotionDto>>("api/etablissement/promotions");
+        var previouslySelectedId = SelectedPromotion?.Id;
         Promotions.Clear();
         foreach (var p in promotions)
             Promotions.Add(new PromotionRowVm(p.Id, p.Code, p.Name, p.SectionName ?? "—", $"{p.Level}", $"{p.StudentCount}",
                 Money(p.MonthlyFee), Money(p.AnnualTotal), p.IsActive ? "Oui" : "Non", p));
+        SelectedPromotion = Promotions.FirstOrDefault(p => p.Id == previouslySelectedId);
+        Raise(nameof(HasPromotionRows));
+        Raise(nameof(HasNoPromotions));
         subtitle = Format.Count(promotions.Count, "promotion", "promotions");
         Raise(nameof(Subtitle));
     }
@@ -836,14 +871,17 @@ public sealed class SettingsPage : PageViewModel
 
     private async Task EditSectionAsync(SectionDto s)
     {
-        var form = new FormViewModel("Modifier la section", $"Code {s.Code}", async f =>
+        var form = new FormViewModel("Modifier la section",
+            "Les promotions existantes restent liées à cette section, même si elle est désactivée.", async f =>
         {
-            await Shell.Api.SendAsync(HttpMethod.Put, $"api/etablissement/sections/{s.Id}", new { code = f.Text("code"), name = f.Text("nom"), isActive = f.Flag("actif") });
+            if (!ValidateSectionForm(f)) return false;
+            await Shell.Api.SendAsync(HttpMethod.Put, $"api/etablissement/sections/{s.Id}",
+                new { code = f.Text("code"), name = f.Text("nom"), isActive = f.Flag("actif") });
             Shell.Notify("Section enregistrée.");
             return true;
         });
-        form.Add("code", "Code", value: s.Code, required: true);
-        form.Add("nom", "Nom", value: s.Name, required: true);
+        form.Add("code", "Code de la section", value: s.Code, required: true, hint: "12 caractères maximum, par exemple INF ou ACC.");
+        form.Add("nom", "Désignation", value: s.Name, required: true, hint: "Nom complet de la filière.");
         form.AddFlag("actif", "Section active", s.IsActive);
         if (await Shell.Ask(form)) await RefreshAsync();
     }
@@ -932,16 +970,37 @@ public sealed class SettingsPage : PageViewModel
         await RefreshAsync();
     }
 
+    /// <summary>Contrôles lisibles sur mobile avant l'appel à l'API (qui vérifie aussi unicité et droits).</summary>
+    public static bool ValidateSectionForm(FormViewModel form)
+    {
+        if (form.Text("code").Length is < 1 or > 12)
+        {
+            form.Find("code").Error = "Le code doit contenir entre 1 et 12 caractères.";
+            form.Fail("Vérifiez le code de la section.");
+            return false;
+        }
+        if (form.Text("nom").Length is < 1 or > 120)
+        {
+            form.Find("nom").Error = "La désignation doit contenir entre 1 et 120 caractères.";
+            form.Fail("Vérifiez la désignation de la section.");
+            return false;
+        }
+        return true;
+    }
+
     private async Task NewSectionAsync()
     {
-        var form = new FormViewModel("Nouvelle section", "Une section regroupe des promotions.", async f =>
+        var form = new FormViewModel("Nouvelle section",
+            "Créez une filière, puis associez-y les promotions dans « Promotions et frais ».", async f =>
         {
-            await Shell.Api.SendAsync(HttpMethod.Post, "api/etablissement/sections", new { code = f.Text("code"), name = f.Text("nom"), isActive = f.Flag("actif") });
-            Shell.Notify("Section créée.");
+            if (!ValidateSectionForm(f)) return false;
+            await Shell.Api.SendAsync(HttpMethod.Post, "api/etablissement/sections",
+                new { code = f.Text("code"), name = f.Text("nom"), isActive = f.Flag("actif") });
+            Shell.Notify("Section créée. Elle est disponible pour les promotions.");
             return true;
         });
-        form.Add("code", "Code", required: true);
-        form.Add("nom", "Nom", required: true);
+        form.Add("code", "Code de la section", required: true, hint: "12 caractères maximum, par exemple INF ou ACC.");
+        form.Add("nom", "Désignation", required: true, hint: "Exemple : Sciences infirmières.");
         form.AddFlag("actif", "Section active", true);
         if (await Shell.Ask(form)) await RefreshAsync();
     }

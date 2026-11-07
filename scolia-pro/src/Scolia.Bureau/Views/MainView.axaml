@@ -232,7 +232,7 @@
     <ContentControl x:Name="LoginHost" Content="{Binding Login}" IsVisible="{Binding ShowLogin}">
       <ContentControl.RenderTransform><TranslateTransform /></ContentControl.RenderTransform>
     </ContentControl>
-    <ContentControl Content="{Binding Connection}" IsVisible="{Binding ChoosingServer}" />
+    <ContentControl Content="{Binding Connection}" IsVisible="{Binding ShowConnection}" />
 
     <!-- Ouverture : la suite de la connexion, sur le même fond bleu façon Windows 11 (« Bienvenue »), sans carte :
          logo dans son disque blanc, salutation, trois points et progression, en blanc. -->
@@ -264,6 +264,8 @@
         </Border>
         <TextBlock Text="{Binding OpeningTitle}" Foreground="White" FontSize="24" FontWeight="SemiBold"
                    HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" Margin="0,6,0,0" />
+        <TextBlock Text="{Binding OpeningContext}" Foreground="#D9FFFFFF" HorizontalAlignment="Stretch" TextAlignment="Center"
+                   TextWrapping="Wrap" MaxLines="3" />
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="6" Margin="0,2,0,2">
           <Border Classes="welcomedot onbrand first" /><Border Classes="welcomedot onbrand second" /><Border Classes="welcomedot onbrand third" />
         </StackPanel>

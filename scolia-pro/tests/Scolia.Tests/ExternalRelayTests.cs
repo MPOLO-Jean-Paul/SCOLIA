@@ -49,12 +49,12 @@ public sealed class ExternalRelayTests : IAsyncLifetime
         using (var phone = new ScoliaClient(link.VirtualServer))
         {
             phone.UseRemote(RemoteLink.Parse(link.Invitation()));
+            // Jumelage par QR d'abord (preuve d'appareil exigée sur le relais), puis compte personnel.
+            var ticket = (await secretary.Post("/api/jumelage/inviter", new { }).Ok()).GetProperty("token").GetString()!;
+            var paired = await phone.AcceptDeviceInvitationAsync(ticket);
+            Assert.NotEqual(Guid.Empty, paired.GrantId);
             var session = await phone.LoginAsync("admin", "Scolia2026!");
             Assert.Equal("admin", session.UserName);
-            var ticket = (await secretary.Post("/api/jumelage/inviter", new { }).Ok()).GetProperty("token").GetString()!;
-            var paired = await phone.SendAsync<JsonElement>(HttpMethod.Post, "api/jumelage/accepter",
-                new { invitationToken = ticket, deviceId = DeviceIdentity.Id, deviceName = "Téléphone relais réel" });
-            Assert.True(paired.TryGetProperty("grantId", out _));
         }
 
         // Coupure non détectée : l'ancienne session paraît encore ouverte quand le serveur revient.

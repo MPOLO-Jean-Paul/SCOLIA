@@ -92,13 +92,13 @@
 
           <TextBlock Text="{Binding IntroText}" Foreground="{DynamicResource LoginInk2}" TextAlignment="Center" TextWrapping="Wrap" Margin="0,0,0,4" />
 
-          <!-- Le dernier compte utilisé est reconnu sans afficher ou conserver son mot de passe. -->
-          <!-- Un poste client s'autorise par invitation, pas par le mot de passe du serveur. -->
+          <!-- Le QR reconnaît seulement le serveur. Les comptes sont reconnus LOCALement
+               après une première connexion personnelle avec identifiant et mot de passe. -->
           <StackPanel Spacing="10" IsVisible="{Binding ShowPairingCallToAction}">
             <Border Background="{DynamicResource LoginGlass}" CornerRadius="12" Padding="14,12">
               <StackPanel Spacing="7">
                 <TextBlock Text="Appareil à autoriser" FontWeight="SemiBold" Foreground="{DynamicResource LoginInk}" />
-                <TextBlock Text="Sur le serveur, générez un QR dans « Relier un appareil ». Le compte et les droits seront accordés à ce poste sans saisir le mot de passe."
+                <TextBlock Text="Sur le serveur, générez un QR dans « Relier un appareil ». L'appareil sera relié au serveur, puis chaque utilisateur se connectera avec son propre identifiant et mot de passe."
                            Foreground="{DynamicResource LoginInk}" FontSize="12" TextWrapping="Wrap" />
               </StackPanel>
             </Border>
@@ -125,6 +125,29 @@
               </Button>
             </Grid>
           </Border>
+          <!-- Lorsque plusieurs personnes utilisent ce téléphone, choisir le compte local,
+               sans partager le mot de passe ni le profil d'un collègue. -->
+          <StackPanel Spacing="8" IsVisible="{Binding ShowRememberedChoices}">
+            <TextBlock Text="Comptes déjà utilisés sur cet appareil" Foreground="#E6FFFFFF"
+                       FontSize="12" FontWeight="SemiBold" TextWrapping="Wrap" />
+            <ItemsControl ItemsSource="{Binding KnownAccounts}">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <Button Classes="glass" MinHeight="44" Margin="0,0,8,8" Padding="12,8"
+                          Command="{Binding $parent[ItemsControl].DataContext.ChooseRememberedAccount}"
+                          CommandParameter="{Binding}">
+                    <StackPanel Orientation="Horizontal" Spacing="7">
+                      <mi:MaterialIcon Kind="AccountOutline" Width="18" Height="18" />
+                      <TextBlock Text="{Binding}" Foreground="White" VerticalAlignment="Center" />
+                    </StackPanel>
+                  </Button>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
           <Panel IsVisible="{Binding ShowAccountEntry}">
             <TextBox x:Name="UserNameBox" Classes="w11 onbrand withicon" Text="{Binding UserName}" PlaceholderText="Identifiant" MaxLength="40" MinHeight="52" IsEnabled="{Binding CanType}" />
             <mi:MaterialIcon Classes="inicon" Kind="AccountOutline" />

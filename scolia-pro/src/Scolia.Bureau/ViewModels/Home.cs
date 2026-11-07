@@ -223,7 +223,7 @@ public sealed class HomePage : PageViewModel
                     { ShortTitle = shortTitle ?? title });
         }
 
-        Add(Perm.PaymentsCreate, "Encaisser", "Choisir les mois payés et imprimer le reçu numéroté.", MaterialIconKind.HandCoin, "ToneGreen",
+        Add(Perm.PaymentsCreate, "Encaisser", "Choisir les mois payés, imprimer le reçu.", MaterialIconKind.HandCoin, "ToneGreen",
             () => Shell.Open(() => new CashierPage(Shell)));
         Add(Perm.StudentsWrite, "Inscrire un apprenant", "Créer le dossier. Le matricule est attribué seul.", MaterialIconKind.AccountPlus, "ToneBlue",
             () => StudentForms.CreateAsync(Shell), "Inscrire");

@@ -147,10 +147,11 @@ public sealed class SyncWorker : Worker
             api.RestoreSessionCookie(credential.SessionCookie);
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(90));
         if (!await api.IsRunningAsync(timeout.Token)) return Result.InvokeRetry();
-        // QR déjà autorisé : rouvrir la session d'appareil sans mot de passe.
-        // En cas d'expiration/retrait, ne pas contourner les droits du serveur.
-        var active = await api.CurrentSessionAsync(timeout.Token) ??
-            await api.RestoreDeviceSessionAsync(timeout.Token);
+        // Le jumelage donne seulement accès au serveur, jamais une session de compte.
+        // Une session utilisateur encore valide peut reprendre en arrière-plan ;
+        // sinon la synchronisation attend sa prochaine authentification personnelle.
+        if (!await api.VerifyLinkedDeviceAsync(timeout.Token)) return Result.InvokeSuccess();
+        var active = await api.CurrentSessionAsync(timeout.Token);
         if (active is null) return Result.InvokeSuccess();
         store.User = active.UserName;
         api.Offline = store;

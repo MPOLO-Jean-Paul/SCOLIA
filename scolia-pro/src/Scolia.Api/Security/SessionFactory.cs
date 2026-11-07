@@ -55,14 +55,10 @@ public static class SessionFactory
         var db = context.HttpContext.RequestServices.GetRequiredService<ScoliaDbContext>();
         var current = await db.Users.AsNoTracking().Where(u => u.Id == userId).Select(u => new { u.SecurityStamp, u.IsActive }).FirstOrDefaultAsync();
         var invalid = current is null || !current.IsActive || current.SecurityStamp != stamp;
-        if (!invalid && context.Principal?.FindFirstValue("scolia:device-grant") is { } raw)
-        {
-            var expectedDevice = context.Principal.FindFirstValue("scolia:device-id");
-            var actualDevice = LiveHeaders.DeviceId(context.HttpContext);
-            var registry = context.HttpContext.RequestServices.GetRequiredService<DevicePairingRegistry>();
-            invalid = !Guid.TryParse(raw, out var grantId) || expectedDevice != actualDevice
-                || !registry.IsActive(grantId, userId, actualDevice);
-        }
+        // Révoquer les anciens cookies attribués par QR avant cette correction.
+        // Une session utilisateur n'est désormais valable qu'après authentification.
+        if (context.Principal?.HasClaim(c => c.Type == "scolia:device-grant") == true)
+            invalid = true;
         if (invalid)
         {
             context.RejectPrincipal();

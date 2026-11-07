@@ -1,4 +1,6 @@
 using System.Net;
+using System.Globalization;
+using System.Text;
 using System.Net.WebSockets;
 using System.Security.Cryptography;
 using System.Text.Json;
@@ -6,7 +8,10 @@ using System.Text.Json;
 namespace Scolia.Transport;
 
 /// <summary>Les cookies et les clés métier restent sur les appareils ; le relais ne voit que les trames chiffrées.</summary>
-public sealed class RemoteHttpHandler(RemoteLink link, CookieContainer cookies) : HttpMessageHandler
+public sealed record RemoteDeviceAccess(Guid GrantId, string DeviceId, string DeviceSecret);
+
+public sealed class RemoteHttpHandler(RemoteLink link, CookieContainer cookies,
+    Func<RemoteDeviceAccess?>? deviceAccess = null) : HttpMessageHandler
 {
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
@@ -31,6 +36,20 @@ public sealed class RemoteHttpHandler(RemoteLink link, CookieContainer cookies) 
                 foreach (var h in request.Content.Headers) headers[h.Key] = h.Value.ToArray();
             var cookie = cookies.GetCookieHeader(link.VirtualServer);
             if (cookie.Length > 0) headers["Cookie"] = [cookie];
+            // Autorisation individuelle, signée pour CETTE requête et CET appareil.
+            // La clé ne traverse jamais le réseau ; le relais ne voit que des trames chiffrées.
+            if (deviceAccess?.Invoke() is { } grant)
+            {
+                var stamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(CultureInfo.InvariantCulture);
+                var nonce = Convert.ToHexString(RandomNumberGenerator.GetBytes(16));
+                var signed = $"{grant.GrantId:N}\n{grant.DeviceId}\n{stamp}\n{nonce}\n{request.Method.Method}\n{uri.PathAndQuery}";
+                var hash = SHA256.HashData(Encoding.UTF8.GetBytes(grant.DeviceSecret));
+                var proof = HMACSHA256.HashData(hash, Encoding.UTF8.GetBytes(signed));
+                headers["X-Scolia-Grant"] = [grant.GrantId.ToString("N")];
+                headers["X-Scolia-Device-Time"] = [stamp];
+                headers["X-Scolia-Device-Nonce"] = [nonce];
+                headers["X-Scolia-Device-Proof"] = [Convert.ToHexString(proof)];
+            }
             var id = Guid.NewGuid();
             var payload = JsonSerializer.SerializeToUtf8Bytes(new RemoteRequest(request.Method.Method, uri.PathAndQuery, headers, body));
             await socket.SendAsync(RelayWire.Seal(link, epoch, id, 0, false, payload).AsMemory(), WebSocketMessageType.Binary, true, cancellationToken);

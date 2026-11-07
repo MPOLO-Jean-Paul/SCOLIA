@@ -160,7 +160,8 @@ public sealed class RemoteHost : IDisposable
     }
 
     private static readonly HashSet<string> AllowedHeaders = new(StringComparer.OrdinalIgnoreCase)
-    { "Cookie", "X-Scolia", "X-Scolia-Poste", "X-Scolia-Appareil", "X-Scolia-Verrou", "Idempotency-Key", "Content-Type", "Accept" };
+    { "Cookie", "X-Scolia", "X-Scolia-Poste", "X-Scolia-Appareil", "X-Scolia-Verrou", "Idempotency-Key", "Content-Type", "Accept", "X-Scolia-Grant",
+      "X-Scolia-Device-Time", "X-Scolia-Device-Nonce", "X-Scolia-Device-Proof" };
 
     private static async Task ForwardAsync(byte[] clear, Guid id, RemoteLink link, byte[] epoch, HttpClient http,
         ClientWebSocket socket, SemaphoreSlim send, CancellationToken ct)
@@ -181,6 +182,9 @@ public sealed class RemoteHost : IDisposable
             if (input.Method is not ("GET" or "HEAD")) request.Content = new ByteArrayContent(input.Body);
             foreach (var h in input.Headers.Where(h => AllowedHeaders.Contains(h.Key)))
                 if (!request.Headers.TryAddWithoutValidation(h.Key, h.Value)) request.Content?.Headers.TryAddWithoutValidation(h.Key, h.Value);
+            // Seul le processus hôte ajoute ce marqueur, jamais une donnée relayée :
+            // l'API contrôle ainsi chaque accès distant et sa révocation.
+            request.Headers.TryAddWithoutValidation("X-Scolia-Relay-Connection", "1");
             using var response = await http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct);
             var headers = response.Headers.Concat(response.Content.Headers)
                 .Where(h => !h.Key.Equals("Transfer-Encoding", StringComparison.OrdinalIgnoreCase) && !h.Key.Equals("Connection", StringComparison.OrdinalIgnoreCase))
