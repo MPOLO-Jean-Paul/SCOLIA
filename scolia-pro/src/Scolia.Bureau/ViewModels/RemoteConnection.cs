@@ -5,9 +5,9 @@ using Scolia.Transport;
 namespace Scolia.Bureau.ViewModels;
 
 /// <summary>Poste autorisé sur le serveur, indépendamment de l'état d'Internet.</summary>
-public sealed class AuthorizedDeviceRowVm
+public sealed class RemoteAuthorizedDeviceRowVm
 {
-    public AuthorizedDeviceRowVm(Guid id, string name, Func<Guid, Task> revoke)
+    public RemoteAuthorizedDeviceRowVm(Guid id, string name, Func<Guid, Task> revoke)
     {
         Id = id;
         Name = string.IsNullOrWhiteSpace(name) ? "Appareil SCOLIA" : name;
@@ -86,7 +86,7 @@ public sealed class RemoteConnectionViewModel : Observable
     public string Relay { get => relay; set => Set(ref relay, value); }
     public string Invitation { get => invitation; private set => Set(ref invitation, value); }
     public string Message { get => message; private set => Set(ref message, value); }
-    public ObservableCollection<AuthorizedDeviceRowVm> Devices { get; } = [];
+    public ObservableCollection<RemoteAuthorizedDeviceRowVm> Devices { get; } = [];
     public bool NoDevices => Devices.Count == 0;
     private string deviceStatus = "Liste des appareils autorisés sur ce serveur.";
     public string DeviceStatus { get => deviceStatus; private set => Set(ref deviceStatus, value); }
@@ -101,7 +101,7 @@ public sealed class RemoteConnectionViewModel : Observable
             var devices = await shell.Api.GetAsync<List<DeviceReply>>("api/jumelage/appareils");
             Devices.Clear();
             foreach (var device in devices.Where(d => !d.Revoked))
-                Devices.Add(new AuthorizedDeviceRowVm(device.Id, device.Name, RemoveDeviceAsync));
+                Devices.Add(new RemoteAuthorizedDeviceRowVm(device.Id, device.Name, RemoveDeviceAsync));
             Raise(nameof(NoDevices));
             DeviceStatus = Devices.Count == 0
                 ? "Aucun appareil autorisé. Affichez un QR pour en relier un."
