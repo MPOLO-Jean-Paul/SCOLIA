@@ -25,9 +25,23 @@ public sealed record RemoteLink(string Relay, string Room, string ClientToken, s
     public RemoteLink Renew(string relay)
     {
         if (!CanHost) throw new InvalidOperationException("Seul l'appareil principal renouvelle sa liaison.");
-        // Garder la salle et sa clé lors du rétablissement d'Internet : les
-        // autorisations individuelles restent indépendamment révocables.
-        return (this with { Relay = relay, ExpiresUtc = DateTime.MaxValue }).Validate();
+        // Rotation EXPLICITE de sécurité : l'ancienne clé partagée est révoquée.
+        // Ne jamais appeler Renew() pour une simple coupure ou réactivation.
+        return (this with
+        {
+            Relay = relay,
+            ClientToken = Convert.ToHexString(RandomNumberGenerator.GetBytes(32)),
+            Key = Convert.ToHexString(RandomNumberGenerator.GetBytes(32)),
+            ExpiresUtc = DateTime.MaxValue,
+        }).Validate();
+    }
+
+    /// <summary>Reprise ordinaire après une coupure ou migration d'une ancienne date limite.
+    /// Aucune clé n'est remplacée ; la liste des appareils reste la source d'autorisation.</summary>
+    public RemoteLink Resume()
+    {
+        if (!CanHost) throw new InvalidOperationException("Seul l'appareil principal restaure sa salle.");
+        return (this with { ExpiresUtc = DateTime.MaxValue }).Validate();
     }
 
     public RemoteLink Validate()
