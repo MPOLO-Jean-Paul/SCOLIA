@@ -32,4 +32,40 @@ public sealed class RenderRemoteLinkTests
         Assert.Throws<FormatException>(() => (link with { Relay = "ws://example.com/" }).Validate());
         Assert.Throws<FormatException>(() => (link with { Relay = "https://example.com/" }).Validate());
     }
+    [Fact]
+    public void Deux_relais_pour_une_salle_ne_changent_ni_les_cles_ni_les_appareils()
+    {
+        var primary = "wss://scolia-pro-relay.example.workers.dev/";
+        var host = RemoteLink.Create(primary) with { BackupRelay = RemoteLink.DefaultRelay };
+        host.Validate();
+        var cloudflarePhone = RemoteLink.Parse(host.Invitation());
+        var renderPhone = cloudflarePhone.Via(RemoteLink.DefaultRelay);
+
+        Assert.Equal(RemoteLink.DefaultRelay, cloudflarePhone.EffectiveBackupRelay);
+        Assert.Equal(host.Room, renderPhone.Room);
+        Assert.Equal(host.ClientToken, renderPhone.ClientToken);
+        Assert.Equal(host.Key, renderPhone.Key);
+        Assert.Equal(host.VirtualServer, renderPhone.VirtualServer);
+        Assert.Null(renderPhone.HostToken);
+        Assert.Equal(primary, host.Relay);
+    }
+
+    [Fact]
+    public void Ancien_jumelage_Cloudflare_peut_utiliser_Render_sans_rotation()
+    {
+        var oldCloudflare = RemoteLink.Create("wss://ancien-relay.example.workers.dev/");
+        Assert.Equal(RemoteLink.DefaultRelay, RemoteLink.Parse(oldCloudflare.Invitation()).EffectiveBackupRelay);
+        var backup = oldCloudflare.Via(RemoteLink.DefaultRelay);
+        Assert.Equal(oldCloudflare.Room, backup.Room);
+        Assert.Equal(oldCloudflare.Key, backup.Key);
+    }
+
+    [Fact]
+    public void Un_secours_non_chiffre_ou_identique_au_principal_est_refuse()
+    {
+        var host = RemoteLink.Create(RemoteLink.DefaultRelay);
+        Assert.Throws<FormatException>(() => (host with { BackupRelay = "ws://example.com/" }).Validate());
+        Assert.Throws<FormatException>(() => (host with { BackupRelay = host.Relay }).Validate());
+    }
+
 }

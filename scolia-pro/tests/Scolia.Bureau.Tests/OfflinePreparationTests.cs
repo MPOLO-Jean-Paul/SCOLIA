@@ -194,4 +194,38 @@ public sealed class OfflinePreparationTests
             if (Directory.Exists(folder)) Directory.Delete(folder, recursive: true);
         }
     }
+
+    [Fact]
+    public void La_revision_et_les_pages_locales_restent_separees_par_compte()
+    {
+        var folder = Path.Combine(Path.GetTempPath(), "scolia-incremental-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            var store = new OfflineStore(new Uri("https://school.example:5080/"), folder)
+            {
+                User = "secretariat"
+            };
+            var path = OfflinePreparation.PagePath(1);
+            store.SavePage(path, "{\"total\":1}");
+            var before = store.SearchRevision;
+            store.TouchPageFor("secretariat", path, "{\"total\":1}");
+            Assert.Equal(before, store.SearchRevision);
+            store.SaveSyncCheckpointFor("secretariat", "epochA:123");
+            Assert.Equal("epochA:123", store.ReadSyncCheckpointFor("secretariat"));
+
+            store.User = "comptabilite";
+            Assert.Null(store.ReadSyncCheckpointFor("comptabilite"));
+            Assert.Null(store.ReadPage(path));
+            store.SaveSyncCheckpointFor("comptabilite", "epochB:999");
+
+            store.User = "secretariat";
+            Assert.Equal("epochA:123", store.ReadSyncCheckpointFor("secretariat"));
+            Assert.Contains("\"total\":1", store.ReadPage(path)!.Value.Json);
+        }
+        finally
+        {
+            Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
+            if (Directory.Exists(folder)) Directory.Delete(folder, recursive: true);
+        }
+    }
 }

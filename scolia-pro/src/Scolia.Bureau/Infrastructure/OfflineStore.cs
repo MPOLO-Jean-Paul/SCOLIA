@@ -88,6 +88,26 @@ public sealed class OfflineStore
         "session:" + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(account.Trim().ToUpperInvariant())));
 
     private sealed record SavedPage(string Json, DateTime SavedAt, string? Path = null);
+
+    // Point de reprise propre au compte et à cet établissement, conservé dans SQLite chiffré.
+    // L'époque change au redémarrage du serveur : aucune révision ne peut être confondue.
+    private static string SyncKeyFor(string user) =>
+        "sync:revision:" + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(user.ToUpperInvariant())));
+    public string? ReadSyncCheckpointFor(string user) =>
+        string.IsNullOrWhiteSpace(user) ? null : database.Read(SyncKeyFor(user));
+    public void SaveSyncCheckpointFor(string user, string checkpoint)
+    {
+        if (string.IsNullOrWhiteSpace(user)) return;
+        database.Write(SyncKeyFor(user), checkpoint);
+    }
+
+    /// <summary>Une réponse HTTP 304 confirme la fraîcheur, sans réécrire l'index ni re-télécharger.</summary>
+    public void TouchPageFor(string user, string path, string json)
+    {
+        if (string.IsNullOrWhiteSpace(user)) return;
+        database.Write(PageKeyFor(user, path),
+            JsonSerializer.Serialize(new SavedPage(json, DateTime.Now, path), Json));
+    }
     private string PagePrefix => "page:" + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(User.ToUpperInvariant()))) + ":";
     private string PageKey(string path) => PageKeyFor(User, path);
     private static string PageKeyFor(string user, string path) =>

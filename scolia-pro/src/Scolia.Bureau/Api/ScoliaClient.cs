@@ -102,9 +102,9 @@ public sealed class ScoliaClient : IDisposable
 
     // La rapidité des écrans ne doit pas dépendre du délai global des écritures (60 s).
     // La sonde du serveur relance ensuite la connexion sans bloquer la navigation.
-    private TimeSpan ReadTimeout => IsLongDistance ? TimeSpan.FromSeconds(6) : TimeSpan.FromMilliseconds(2500);
+    private TimeSpan ReadTimeout => IsLongDistance ? TimeSpan.FromSeconds(remoteLink?.EffectiveBackupRelay is null ? 6 : 38) : TimeSpan.FromMilliseconds(2500);
     // Par Internet, une sonde traverse le relais puis le serveur : 15 s couvrent un réseau mobile et un relais lent.
-    private TimeSpan ProbeTimeout => IsLongDistance ? TimeSpan.FromSeconds(15) : TimeSpan.FromMilliseconds(1800);
+    private TimeSpan ProbeTimeout => IsLongDistance ? TimeSpan.FromSeconds(remoteLink?.EffectiveBackupRelay is null ? 15 : 38) : TimeSpan.FromMilliseconds(1800);
     private bool CanUseOfflineCache => Offline is { } store && !string.IsNullOrWhiteSpace(store.User);
 
     private static RemoteDeviceAccess? LinkedAccess(RemoteLink link)
@@ -304,12 +304,31 @@ public sealed class ScoliaClient : IDisposable
         {
             using var deadline = CancellationTokenSource.CreateLinkedTokenSource(ct);
             deadline.CancelAfter(ReadTimeout);
-            using var response = await SendRawAsync(HttpMethod.Get, path, null, deadline.Token);
+            var snapshot = canCache ? sourceStore?.ReadPage(path) : null;
+            var etag = snapshot is { } old
+                ? "\"" + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(old.Json))) + "\""
+                : null;
+            using var response = await ReadRawAsync(path, etag, deadline.Token);
             if (response.StatusCode == HttpStatusCode.NoContent) return default!;
-            text = await response.Content.ReadAsStringAsync(deadline.Token);
-            // Une lecture réussie reste réutilisable au prochain démarrage hors ligne.
-            if (canCache && sourceStore is not null)
-                await Task.Run(() => sourceStore.SavePageFor(sourceUser, path, text), ct);
+            if (response.StatusCode == HttpStatusCode.NotModified && snapshot is { } unchanged)
+            {
+                text = unchanged.Json;
+                // HTTP 304 : aucune donnée métier n'a traversé le relais.
+                if (canCache && sourceStore is not null)
+                    sourceStore.TouchPageFor(sourceUser, path, text);
+            }
+            else
+            {
+                text = await response.Content.ReadAsStringAsync(deadline.Token);
+                if (canCache && sourceStore is not null)
+                {
+                    var previous = snapshot?.Json;
+                    if (string.Equals(previous, text, StringComparison.Ordinal))
+                        sourceStore.TouchPageFor(sourceUser, path, text);
+                    else
+                        await Task.Run(() => sourceStore.SavePageFor(sourceUser, path, text), ct);
+                }
+            }
         }
         catch (Exception ex) when (IsDisconnected(ex, ct))
         {
@@ -624,6 +643,22 @@ public sealed class ScoliaClient : IDisposable
             if (!string.IsNullOrWhiteSpace(text)) parts.Add($"{Uri.EscapeDataString(key)}={Uri.EscapeDataString(text)}");
         }
         return parts.Count == 0 ? string.Empty : "?" + string.Join('&', parts);
+    }
+
+    private async Task<HttpResponseMessage> ReadRawAsync(string path, string? etag, CancellationToken ct)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Get, path);
+        if (etag is not null)
+            request.Headers.TryAddWithoutValidation("If-None-Match", etag);
+        var response = await http.SendAsync(request, ct);
+        if (response.IsSuccessStatusCode || response.StatusCode == HttpStatusCode.NotModified)
+        {
+            SetOnline(true);
+            return response;
+        }
+        var error = await ToException(response);
+        response.Dispose();
+        throw error;
     }
 
     private async Task<HttpResponseMessage> SendRawAsync(HttpMethod method, string path, object? body, CancellationToken ct, string? key = null)

@@ -10,12 +10,15 @@ public static class RemoteConnection
 {
     private static readonly string FilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "SCOLIA", "liaison-distante.enc");
     private static RemoteHost? host;
+    private static RemoteHost? backupHost;
     private static readonly object HostGate = new();
-    public static bool Hosting { get { lock (HostGate) return host?.Connected == true; } }
+    public static bool Hosting { get { lock (HostGate) return host?.Connected == true || backupHost?.Connected == true; } }
+    public static bool PrimaryHosting { get { lock (HostGate) return host?.Connected == true; } }
+    public static bool BackupHosting { get { lock (HostGate) return backupHost?.Connected == true; } }
     /// <summary>Hôte lancé (connecté ou en reprise).</summary>
     public static bool HostRunning { get { lock (HostGate) return host is not null; } }
     /// <summary>Dernière raison d'échec de la connexion au relais, sans secret.</summary>
-    public static string? HostFailure { get { lock (HostGate) return host?.LastConnectionFailure; } }
+    public static string? HostFailure { get { lock (HostGate) return Hosting ? null : host?.LastConnectionFailure ?? backupHost?.LastConnectionFailure; } }
     public static int HostAttempts { get { lock (HostGate) return host?.Attempts ?? 0; } }
     /// <summary>Connexion au relais établie ou perdue (appelé hors du fil de l'interface).</summary>
     public static event Action? HostStateChanged;
@@ -59,6 +62,12 @@ public static class RemoteConnection
                 if (link != configuration.Link) Save(configuration with { Link = link });
                 host = new RemoteHost(link, localServer);
                 host.StateChanged += () => HostStateChanged?.Invoke();
+                if (link.EffectiveBackupRelay is { } backup)
+                {
+                    // Deux connexions sortantes indépendantes : aucun second serveur ni base distante.
+                    backupHost = new RemoteHost(link.Via(backup), localServer);
+                    backupHost.StateChanged += () => HostStateChanged?.Invoke();
+                }
             }
         }
     }
@@ -68,7 +77,9 @@ public static class RemoteConnection
         lock (HostGate)
         {
             host?.Dispose();
+            backupHost?.Dispose();
             host = null;
+            backupHost = null;
         }
     }
     public static void Disable()
