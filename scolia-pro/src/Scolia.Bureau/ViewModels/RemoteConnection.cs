@@ -47,7 +47,7 @@ public sealed class RemoteConnectionViewModel : Observable
             if (!CanManage) return;
             RemoteConnection.Disable();
             Invitation = string.Empty;
-            Message = "Liaison Internet désactivée. Le partage local reste disponible. L'ancienne invitation ne permet plus de joindre cet appareil.";
+            Message = "Accès Internet temporairement désactivé. Les appareils autorisés restent mémorisés : ils se reconnecteront à la réactivation, sans nouveau QR.";
         });
     }
     public bool CanManage => shell.IsServerComputer && shell.Can("parametres.ecrire");
@@ -157,7 +157,7 @@ public sealed class RemoteConnectionViewModel : Observable
             if (reuse) RemoteConnection.StartHostIfMissing(shell.Api.Server);
             else RemoteConnection.StartHost(shell.Api.Server);
             if (reuse)
-                Message = "Liaison Internet déjà active. Les appareils autorisés restent jumelés ; aucun nouveau QR n'est nécessaire.";
+                Message = "Liaison Internet active ou rétablie. Les appareils autorisés restent jumelés et peuvent se synchroniser sans nouveau QR.";
             else
                 await PrepareInvitationAsync(link);
         }
