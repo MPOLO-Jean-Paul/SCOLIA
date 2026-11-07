@@ -23,7 +23,7 @@ public sealed class AndroidPairingVisualTests
         Assert.Contains(view.Descendants(), element => element.Name.LocalName == "ScrollViewer"
             && element.Attributes().Any(a => a.Name.LocalName == "IsVisible"
                 && a.Value.Contains("PairingInProgress", StringComparison.Ordinal)
-                && !a.Value.Contains("!", StringComparison.Ordinal)));
+                && !a.Value.Contains('!')));
         Assert.Contains(view.Descendants(), element => element.Name.LocalName == "TextBlock"
             && element.Attributes().Any(a => a.Name.LocalName == "Text" && a.Value == "Vérification de l’appareil"));
         Assert.Contains(view.Descendants(), element => element.Name.LocalName == "ProgressBar"
