@@ -27,8 +27,9 @@ public partial class HomeView : UserControl
         // le nom de l'utilisateur ; les boutons demeurent à droite.
         WelcomeAvatar.IsVisible = available >= 350;
         var compact = available < 520;
-        WelcomeAvatar.Width = compact ? 30 : 36;
-        WelcomeAvatar.Height = compact ? 30 : 36;
+        WelcomeAvatar.Width = compact ? 34 : 48;
+        WelcomeAvatar.Height = compact ? 34 : 48;
+        WelcomeAvatar.CornerRadius = new CornerRadius(compact ? 17 : 24);
         WelcomeGreeting.FontSize = compact ? 16 : 20;
     }
 }
