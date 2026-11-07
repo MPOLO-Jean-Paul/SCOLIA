@@ -7,17 +7,17 @@ namespace Scolia.Bureau.ViewModels;
 public sealed class RemoteConnectionViewModel : Observable
 {
     private readonly ShellViewModel shell;
-    private string relay = string.Empty;
+    private string relay = RemoteLink.DefaultRelay;
     private string invitation = string.Empty;
     private string message = string.Empty;
-    private string diagnostic = "Partage distant non encore vérifié.";
-    public RemoteConnectionViewModel(ShellViewModel shell)
+    /// <param name="prepareInvitation">Vrai dans « Réseau et activité » : une invitation de compte est préparée à l'ouverture.</param>
+    public RemoteConnectionViewModel(ShellViewModel shell, bool prepareInvitation = true)
     {
         this.shell = shell;
         if (RemoteConnection.Load() is { } current)
         {
             relay = current.Link.Relay;
-            if (current.Host && current.Enabled) _ = PrepareInvitationAsync(current.Link);
+            if (prepareInvitation && current.Host && current.Enabled) _ = PrepareInvitationAsync(current.Link);
         }
         Enable = new AsyncCommand(EnableAsync);
         RenewAccess = new AsyncCommand(async () =>
@@ -25,31 +25,47 @@ public sealed class RemoteConnectionViewModel : Observable
             if (CanManage && RemoteConnection.Load() is { Host: true, Enabled: true } current)
                 await PrepareInvitationAsync(current.Link);
         });
-        ShareTailnet = new AsyncCommand(ShareTailnetNowAsync);
-        InstallTailnet = new AsyncCommand(Installer.BeginAsync);
-        DiagnoseTailnet = new AsyncCommand(DiagnoseTailnetAsync);
-        Disable = new RelayCommand(() =>
+        Disable = new AsyncCommand(async () =>
         {
-            if (!CanManage) return;
+            if (!CanManage || !IsActive) return;
+            // Les appareils reliés par Internet perdent l'accès : demander confirmation.
+            if (!await shell.Confirm("Désactiver l'accès par Internet ?",
+                    "Les appareils qui ne sont pas sur le Wi-Fi de l'établissement ne pourront plus joindre ce serveur. "
+                    + "Pour les reconnecter, il faudra réactiver l'accès puis leur montrer un nouveau code QR. Le partage sur le Wi-Fi n'est pas modifié.",
+                    "Désactiver", danger: true))
+                return;
             RemoteConnection.Disable();
             Invitation = string.Empty;
-            Message = "Liaison Internet désactivée. Le partage local reste disponible. L'ancienne invitation ne permet plus de joindre cet appareil.";
+            Message = "Accès par Internet désactivé. Le partage sur le Wi-Fi reste disponible. L'ancienne invitation ne permet plus de joindre cet appareil.";
+            RefreshStatus();
         });
+    }
+
+    /// <summary>Accès par Internet actif sur ce serveur : liaison activée et non expirée.</summary>
+    public bool IsActive => RemoteConnection.Load() is { Host: true, Enabled: true } current && current.Link.ExpiresUtc > DateTime.UtcNow;
+    public bool IsInactive => !IsActive;
+
+    /// <summary>Nom du relais sans le protocole, pour l'afficher sans jargon technique.</summary>
+    public string RelayHost => Uri.TryCreate(RemoteConnection.Load()?.Link.Relay ?? relay, UriKind.Absolute, out var uri) ? uri.Host : relay;
+
+    public string StatusTitle => !IsActive ? "Désactivé"
+        : RemoteConnection.Hosting ? "Actif" : "Actif · connexion au relais en cours";
+
+    public string StatusLine => IsActive && RemoteConnection.Load() is { } current
+        ? $"Les appareils autorisés joignent ce serveur depuis n'importe quel réseau, par le relais sécurisé {RelayHost}. "
+            + $"Liaison valable jusqu'au {Format.Date(DateOnly.FromDateTime(current.Link.ExpiresUtc.ToLocalTime()))}."
+        : "Les appareils hors du Wi-Fi de l'établissement ne peuvent pas joindre ce serveur. Activez l'accès pour les téléphones et ordinateurs distants.";
+
+    public Avalonia.Media.IBrush StatusBrush => ThemeBrush.Get(!IsActive ? "ToneNeutral" : RemoteConnection.Hosting ? "ToneGreen" : "ToneOrange");
+    public string EnableLabel => IsActive ? "Vérifier la connexion" : "Activer l'accès par Internet";
+
+    public void RefreshStatus()
+    {
+        foreach (var name in new[] { nameof(IsActive), nameof(IsInactive), nameof(RelayHost), nameof(StatusTitle), nameof(StatusLine), nameof(StatusBrush), nameof(EnableLabel) })
+            Raise(name);
     }
     public bool CanManage => shell.IsServerComputer && shell.Can("parametres.ecrire");
 
-    /// <summary>Explication propre à l'appareil : Android, iPhone ou ordinateur n'activent pas Tailscale de la même façon.</summary>
-    public string TailnetHelp =>
-        OperatingSystem.IsAndroid()
-            ? "Après la première configuration de Tailscale et l'autorisation VPN d'Android, ce bouton demande la connexion en arrière-plan sans ouvrir Tailscale. Les données restent sur cet appareil."
-            : OperatingSystem.IsIOS()
-                ? "Sur iPhone et iPad, Tailscale s'active dans son application. Activez « VPN à la demande » une fois : l'appareil reste relié au réseau de l'établissement."
-                : "Une fois Tailscale installé et connecté au compte de l'établissement, cet ordinateur est joignable par son adresse privée. Les données restent sur cet ordinateur.";
-
-    public string TailnetNote =>
-        OperatingSystem.IsAndroid()
-            ? "L'envoi de la commande n'est pas une confirmation de connexion. Testez le partage depuis un appareil client autorisé. Android conserve son indicateur VPN."
-            : "Testez le partage depuis un appareil client autorisé : c'est la seule preuve que la liaison fonctionne.";
     public string Relay { get => relay; set => Set(ref relay, value); }
     public string Invitation { get => invitation; private set => Set(ref invitation, value); }
     public string Message { get => message; private set => Set(ref message, value); }
@@ -76,57 +92,40 @@ public sealed class RemoteConnectionViewModel : Observable
         }
     }
 
-    /// <summary>Demande Tailscale en arrière-plan ; la connexion doit être testée par un client.</summary>
-    public AsyncCommand ShareTailnet { get; }
-    public AsyncCommand InstallTailnet { get; }
-    public AsyncCommand DiagnoseTailnet { get; }
-    public string Diagnostic { get => diagnostic; private set => Set(ref diagnostic, value); }
-    public TailscaleInstaller Installer { get; } = TailscaleInstaller.Instance;
-
-    private async Task ShareTailnetNowAsync()
-    {
-        if (!CanManage)
-        {
-            Message = "Seul un responsable autorisé peut partager cet établissement.";
-            return;
-        }
-        Message = "Demande d'activation du réseau privé en arrière-plan…";
-        Message = await TailscaleCompanion.ConnectInBackgroundAsync();
-        await DiagnoseTailnetAsync();
-    }
-
-    private async Task DiagnoseTailnetAsync()
-    {
-        if (!CanManage) return;
-        Diagnostic = "Diagnostic du réseau privé en cours…";
-        bool installed = TailscaleCompanion.IsInstalled();
-        bool? vpn = Platform.IsVpnActive?.Invoke();
-        bool localReady;
-        try { localReady = await shell.Api.IsRunningAsync(); }
-        catch (Exception ex) when (ex is HttpRequestException or IOException or TaskCanceledException)
-        { localReady = false; }
-        Diagnostic = TailnetDiagnostics.DescribeServer(installed, vpn, localReady);
-    }
-
-    public RelayCommand Disable { get; }
+    public AsyncCommand Disable { get; }
 
     private async Task EnableAsync()
     {
         if (!CanManage) { Message = "Le secrétariat configure la liaison sur l'appareil principal."; return; }
         try
         {
-            var link = RemoteConnection.Load() is { Host: true } previous
-                ? previous.Link.Renew(Relay.Trim()) : RemoteLink.Create(Relay.Trim());
+            var previous = RemoteConnection.Load();
+            // Un clic répété sur « Activer » ne doit jamais invalider les appareils
+            // déjà autorisés. Rotation seulement après expiration, changement de
+            // relais ou réactivation d'une connexion volontairement désactivée.
+            var addressText = Relay.Trim();
+            var reuse = previous is { Host: true, Enabled: true }
+                && previous.Link.ExpiresUtc > DateTime.UtcNow
+                && string.Equals(previous.Link.Relay, addressText, StringComparison.OrdinalIgnoreCase);
+            var link = reuse ? previous!.Link
+                : previous is { Host: true } ? previous.Link.Renew(addressText)
+                : RemoteLink.Create(addressText);
             // Vérifier le relais avant de remplacer une liaison encore utilisable.
             var address = new UriBuilder(link.Relay) { Scheme = new Uri(link.Relay).Scheme == "wss" ? "https" : "http", Path = "/health" }.Uri;
-            using var probe = new HttpClient { Timeout = TimeSpan.FromSeconds(8) };
+            Message = "Vérification de la connexion Internet sécurisée et du certificat HTTPS…";
+            using var probe = new HttpClient { Timeout = TimeSpan.FromSeconds(75) };
             using var response = await probe.GetAsync(address);
             response.EnsureSuccessStatusCode();
             RemoteConnection.Save(new RemoteConfiguration(link, true, shell.Login.SchoolName));
-            RemoteConnection.StartHost(shell.Api.Server);
-            await PrepareInvitationAsync(link);
+            if (reuse) RemoteConnection.StartHostIfMissing(shell.Api.Server);
+            else RemoteConnection.StartHost(shell.Api.Server);
+            if (reuse)
+                Message = "Accès par Internet déjà actif. Les appareils autorisés restent jumelés ; aucun nouveau QR n'est nécessaire.";
+            else
+                await PrepareInvitationAsync(link);
         }
         catch (Exception ex) when (ex is FormatException or HttpRequestException or TaskCanceledException or IOException)
-        { Message = "Liaison non activée : vérifiez l'adresse et la disponibilité du relais sécurisé."; }
+        { Message = "Accès non activé : vérifiez Internet, le certificat HTTPS et la disponibilité du relais. La configuration précédente est conservée."; }
+        finally { RefreshStatus(); }
     }
 }

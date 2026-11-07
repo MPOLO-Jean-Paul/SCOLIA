@@ -12,7 +12,10 @@ public sealed class RemoteHost : IDisposable
     private readonly Task running;
     private int connected;
     private int disposed;
+    private string? lastConnectionFailure;
     public bool Connected => Volatile.Read(ref connected) == 1;
+    /// <summary>Diagnostic local, sans jeton ni invitation et sans journalisation distante.</summary>
+    public string? LastConnectionFailure => Volatile.Read(ref lastConnectionFailure);
 
     public RemoteHost(RemoteLink link, Uri server)
     {
@@ -29,7 +32,13 @@ public sealed class RemoteHost : IDisposable
         {
             using var socket = new ClientWebSocket();
             using var session = CancellationTokenSource.CreateLinkedTokenSource(ct);
-            session.CancelAfter(link.ExpiresUtc - DateTime.UtcNow);
+            // CancelAfter ne peut pas accepter une année entière (limite des
+            // temporisations .NET). Chaque session WSS est renouvelée avant que
+            // le relais lui-même ne coupe sa connexion hôte après une heure.
+            var remaining = link.ExpiresUtc - DateTime.UtcNow;
+            if (remaining <= TimeSpan.Zero) break;
+            session.CancelAfter(remaining < TimeSpan.FromMinutes(55)
+                ? remaining : TimeSpan.FromMinutes(55));
             using var send = new SemaphoreSlim(1, 1);
             var epoch = RandomNumberGenerator.GetBytes(32);
             var seen = new HashSet<Guid>();
@@ -47,6 +56,7 @@ public sealed class RemoteHost : IDisposable
                 var acknowledged = await RelayWire.ReceiveAsync(socket, connect.Token);
                 if (!acknowledged.AsSpan().SequenceEqual(epoch)) throw new IOException("Le relais n'a pas confirmé l'hébergement.");
                 Interlocked.Exchange(ref connected, 1);
+                Volatile.Write(ref lastConnectionFailure, null);
                 delay = 2;
                 using var http = new HttpClient(new SocketsHttpHandler { UseCookies = false, AllowAutoRedirect = false, ConnectTimeout = TimeSpan.FromSeconds(4) })
                 { BaseAddress = server, Timeout = Timeout.InfiniteTimeSpan };
@@ -84,11 +94,30 @@ public sealed class RemoteHost : IDisposable
                         TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
                 }
             }
-            catch (Exception ex) when (ex is WebSocketException or IOException or OperationCanceledException or JsonException or HttpRequestException) { }
+            catch (Exception ex) when (ex is WebSocketException or IOException or OperationCanceledException or JsonException or HttpRequestException)
+            {
+                // Ne jamais journaliser les URL complètes (salles), invitations ou secrets.
+                Volatile.Write(ref lastConnectionFailure, ex.GetType().Name + " (" +
+                    (ex is WebSocketException ws ? ws.WebSocketErrorCode.ToString() : "connexion") + ")");
+            }
             finally
             {
                 Interlocked.Exchange(ref connected, 0);
                 await session.CancelAsync();
+                // Fermer proprement avant le renouvellement : le relais voit tout de suite la fin
+                // de la session au lieu d'attendre la détection d'une connexion coupée.
+                if (socket.State is WebSocketState.Open or WebSocketState.CloseReceived)
+                {
+                    try
+                    {
+                        // Une seule écriture à la fois sur le socket : attendre la fin d'un envoi de réponse.
+                        using var closing = new CancellationTokenSource(TimeSpan.FromSeconds(2));
+                        await send.WaitAsync(closing.Token);
+                        try { await socket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "renouvellement", closing.Token); }
+                        finally { send.Release(); }
+                    }
+                    catch (Exception ex) when (ex is WebSocketException or OperationCanceledException or ObjectDisposedException or InvalidOperationException) { }
+                }
                 socket.Abort();
                 await Task.WhenAll(calls.Values);
                 foreach (var cancellation in cancellations.Values) cancellation.Dispose();

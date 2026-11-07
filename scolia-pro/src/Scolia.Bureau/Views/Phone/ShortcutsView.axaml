@@ -57,7 +57,7 @@
 
           <TextBlock Text="Où trouver les outils" Classes="heading" Margin="0,12,0,2" />
           <Grid Classes="gesture" ColumnDefinitions="Auto,*">
-            <Border Background="{DynamicResource ToneBlue}"><mi:MaterialIcon Kind="Home" /></Border>
+            <Border Background="{DynamicResource ToneBlue}"><mi:MaterialIcon Kind="HomeOutline" /></Border>
             <StackPanel Grid.Column="1"><TextBlock Text="Onglets du bas" FontWeight="SemiBold" /><TextBlock Text="Accueil, apprenants, encaissement, reçus : les outils du quotidien, à un appui." Classes="muted" TextWrapping="Wrap" /></StackPanel>
           </Grid>
           <Grid Classes="gesture" ColumnDefinitions="Auto,*">

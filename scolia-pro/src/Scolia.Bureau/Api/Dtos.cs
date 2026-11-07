@@ -12,6 +12,9 @@ public sealed record YearProposalDto(string Label);
 /// <summary>Révision des données du serveur : elle change à chaque écriture, d'un poste quelconque.</summary>
 public sealed record RevisionDto(long Revision);
 
+/// <summary>Version de l'API réellement utilisée pour exporter les documents, distincte de celle du téléphone.</summary>
+public sealed record ServerHealthDto(string Statut, string? Version, string? CardGenerator = null);
+
 /// <summary>Ligne du registre disciplinaire, telle que le serveur la renvoie.</summary>
 public sealed record DisciplineRowDto(Guid Id, Guid EnrollmentId, string Matricule, string FullName, string PromotionCode, string Measure, string Reason,
     DateOnly DecisionDate, DateOnly? FirstDay, DateOnly? LastDay, int? Days, DateOnly? ReturnFrom, DateTime? AppointmentAt, bool IsAutomatic,
@@ -43,7 +46,10 @@ public sealed record AcademicYearDto(Guid Id, string Label, DateOnly StartDate, 
 
 public sealed record SectionDto(Guid Id, string Code, string Name, bool IsActive);
 
-public sealed record FeeItemDto(Guid Id, string Kind, string Label, decimal Amount, DateOnly DueDate, int Order, Guid? PeriodId);
+public sealed record FeeItemDto(Guid Id, string Kind, string Label, decimal Amount, DateOnly DueDate, int Order, Guid? PeriodId, Guid? CategoryId = null);
+
+/// <summary>Catégorie de frais du catalogue de l'établissement (inscription, examen, tenue…), avec son montant.</summary>
+public sealed record FeeCategoryDto(Guid Id, string Name, decimal Amount, DateOnly? DueDate, bool IsActive, int Order, int PromotionCount);
 
 public sealed record PromotionDto(
     Guid Id, Guid AcademicYearId, string Code, string Name, Guid? SectionId, string? SectionName, int Level, int? Capacity, bool IsActive,
@@ -53,7 +59,8 @@ public sealed record DashboardDto(
     string AcademicYear, int ActiveStudents, int NewThisMonth, decimal CollectedTotal, decimal CollectedThisMonth, decimal CollectedToday,
     decimal ExpectedToDate, decimal Outstanding, decimal Overdue, decimal RecoveryRate, int StudentsUpToDate, int StudentsLate,
     decimal ExpensesThisMonth, IReadOnlyList<SeriesPoint> MonthlyCollections, IReadOnlyList<PromotionStat> Promotions,
-    IReadOnlyList<SeriesPoint> Aging, IReadOnlyList<ReceiptSummaryDto> LatestReceipts, int GenderMale, int GenderFemale);
+    IReadOnlyList<SeriesPoint> Aging, IReadOnlyList<ReceiptSummaryDto> LatestReceipts, int GenderMale, int GenderFemale,
+    int PayingStudents = 0, int SponsoredStudents = 0, int PartiallySponsoredStudents = 0, decimal SponsoredAmount = 0m);
 
 public sealed record SeriesPoint(string Label, decimal Value, decimal? Secondary);
 
@@ -61,16 +68,21 @@ public sealed record PromoterPeriodDto(Guid PeriodId, string Label, decimal Coll
     decimal DueNet, decimal PaidAgainstDue, decimal RemainingDue);
 public sealed record PromoterPromotionDto(Guid Id, string Code, string Name, int ActiveStudents,
     int StudentsWithBalance, int StudentsOverdue, decimal CollectedToday, decimal CollectedThisMonth,
-    decimal CollectedTotal, decimal Outstanding, decimal Overdue, IReadOnlyList<PromoterPeriodDto> Periods);
+    decimal CollectedTotal, decimal Outstanding, decimal Overdue, IReadOnlyList<PromoterPeriodDto> Periods,
+    int PayingStudents = 0, int SponsoredStudents = 0, int PartiallySponsoredStudents = 0, decimal SponsoredAmount = 0m, int StudentsUpToDate = 0);
 public sealed record PromoterDashboardDto(string AcademicYear, DateOnly AsOf, int ActiveStudents,
     int StudentsWithBalance, int StudentsOverdue, decimal CollectedToday, decimal CollectedThisMonth,
-    decimal CollectedTotal, decimal Outstanding, decimal Overdue, IReadOnlyList<PromoterPromotionDto> Promotions);
+    decimal CollectedTotal, decimal Outstanding, decimal Overdue, IReadOnlyList<PromoterPromotionDto> Promotions,
+    int PayingStudents = 0, int SponsoredStudents = 0, int PartiallySponsoredStudents = 0, decimal SponsoredAmount = 0m, int StudentsUpToDate = 0);
 
 public sealed record PeriodChoiceDto(Guid Id, string Name, bool IsCurrent);
 
 public sealed record MonthlyRowDto(Guid StudentId, Guid EnrollmentId, string Matricule, string FullName, string PromotionCode,
     decimal Amount, decimal Paid, decimal Remaining, string Status, string? ReceiptNumber, DateOnly? PaidOn, string? GuardianPhone,
-    string? WhatsAppLink, string? SmsLink);
+    string? WhatsAppLink, string? SmsLink, string? Sponsorship = null)
+{
+    public bool HasSponsorship => !string.IsNullOrEmpty(Sponsorship);
+}
 
 public sealed record MonthlyFollowUpDto(Guid PeriodId, string Period, IReadOnlyList<PeriodChoiceDto> Periods,
     int PaidCount, int UnpaidCount, int LateCount, int CoveredCount, decimal Expected, decimal Collected, decimal Remaining,
@@ -81,11 +93,12 @@ public sealed record TodayDto(DateOnly Date, int ReceiptsToday, decimal Collecte
 
 public sealed record TodayPersonDto(Guid StudentId, string Name, string Promotion, string Detail);
 
-public sealed record PromotionStat(Guid Id, string Code, string Name, int Students, decimal Expected, decimal Collected, decimal Outstanding, decimal Overdue, decimal RecoveryRate);
+public sealed record PromotionStat(Guid Id, string Code, string Name, int Students, decimal Expected, decimal Collected, decimal Outstanding, decimal Overdue, decimal RecoveryRate,
+    int Paying = 0, int Sponsored = 0, int PartiallySponsored = 0, int UpToDate = 0, int Late = 0, decimal SponsoredAmount = 0m);
 
 public sealed record StudentListItem(
     Guid Id, Guid? EnrollmentId, string Matricule, string LastName, string MiddleName, string FirstName, string Gender,
-    string? PromotionCode, string? Status, string? GuardianPhone, decimal Balance, decimal Overdue);
+    string? PromotionCode, string? Status, string? GuardianPhone, decimal Balance, decimal Overdue, string? Sponsorship = null);
 
 public sealed record StudentDto(
     Guid Id, string Matricule, string LastName, string MiddleName, string FirstName, string Gender, DateOnly? BirthDate, string? BirthPlace,
@@ -126,15 +139,15 @@ public sealed record PagedResult<T>(IReadOnlyList<T> Items, int Total, int Page,
 
 public sealed record SponsorshipLineDto(Guid FeeItemId, string Label, decimal Percent, decimal Amount);
 
-public sealed record SponsorshipDto(Guid Id, Guid EnrollmentId, string SponsorName, string Reason, DateOnly EffectiveFrom, bool IsActive, IReadOnlyList<SponsorshipLineDto> Lines, decimal CoveredTotal);
+public sealed record SponsorshipDto(Guid Id, Guid EnrollmentId, string SponsorName, string Reason, DateOnly EffectiveFrom, bool IsActive, IReadOnlyList<SponsorshipLineDto> Lines, decimal CoveredTotal, string Type = "Historique", decimal MonthlyAmount = 0m);
 
 public sealed record SponsorshipListItem(
     Guid Id, Guid EnrollmentId, string Matricule, string FullName, string Promotion, string SponsorName, string Reason, DateOnly EffectiveFrom,
-    bool IsActive, decimal Covered);
+    bool IsActive, decimal Covered, string Type = "Historique", decimal MonthlyAmount = 0m);
 
 public sealed record DebtorDto(
     Guid StudentId, Guid EnrollmentId, string Matricule, string FullName, string PromotionCode, decimal Balance, decimal Overdue, int OverdueCount,
-    string Periods, string AgingBucket, string? GuardianName, string? GuardianPhone, string? WhatsAppLink, string? SmsLink);
+    string Periods, string AgingBucket, string? GuardianName, string? GuardianPhone, string? WhatsAppLink, string? SmsLink, string? Sponsorship = null);
 
 public sealed record ExpenseDto(
     Guid Id, string Number, DateOnly Date, string Category, string Beneficiary, string Description, decimal Amount, string Method,
@@ -237,3 +250,6 @@ public sealed record DailyReportViewDto(bool Enabled, string Time, List<string> 
 
 /// <summary>Résultat d'un envoi demandé : le fichier, ce qui a été fait, et les chiffres du jour.</summary>
 public sealed record DailyReportResultDto(string FileName, string Status, string Summary);
+
+/// <summary>Appareil autorisé par code QR à ouvrir le compte du responsable, avec sa validité.</summary>
+public sealed record AuthorizedDeviceDto(Guid Id, string Name, DateTime ExpiresUtc, bool Revoked);

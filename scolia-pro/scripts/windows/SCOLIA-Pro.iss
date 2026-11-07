@@ -2,13 +2,14 @@
 ; Compile les fichiers publies dans artifacts/SCOLIA via Inno Setup 6+.
 ; L'installeur est autonome ; il ne depend ni de .NET installe ni d'Excel.
 #ifndef AppVersion
-  #define AppVersion "1.2.3"
+  #define AppVersion "1.2.24"
 #endif
 
 #define AppName "SCOLIA Pro"
 #define AppPublisher "JP-Services"
 #define AppExe "SCOLIA.exe"
-#define AppWeb "https://github.com/MPOLO-Jean-Paul/SCOLIA"
+#define AppContactEmail "jeanpaulmpolo242@gmail.com"
+#define AppSupportLink "mailto:jeanpaulmpolo242@gmail.com"
 
 [Setup]
 AppId=JP-Services.SCOLIA-Pro.Desktop
@@ -16,11 +17,13 @@ AppName={#AppName}
 AppVersion={#AppVersion}
 AppVerName={#AppName} {#AppVersion}
 AppPublisher={#AppPublisher}
-AppPublisherURL={#AppWeb}
-AppSupportURL={#AppWeb}/issues
-AppUpdatesURL={#AppWeb}
+AppContact={#AppContactEmail}
+AppPublisherURL={#AppSupportLink}
+AppSupportURL={#AppSupportLink}
+; Les mises à jour restent détectées et téléchargées par SCOLIA Pro,
+; sans afficher de lien GitHub dans l'assistant d'installation Windows.
 AppCopyright=Copyright 2026 JP-Services
-AppComments=Gestion scolaire : apprenants, paiements, scolarite, rapports et partage prive.
+AppComments=Gestion scolaire : apprenants, paiements, scolarite, rapports et partage prive. Assistance : jeanpaulmpolo242@gmail.com
 VersionInfoVersion={#AppVersion}
 VersionInfoCompany={#AppPublisher}
 VersionInfoDescription=Installation de SCOLIA Pro pour Windows 64 bits
@@ -78,6 +81,41 @@ Name: "{autodesktop}\SCOLIA Pro"; Filename: "{app}\{#AppExe}"; WorkingDir: "{app
 Filename: "{app}\{#AppExe}"; Description: "Lancer SCOLIA Pro maintenant"; Flags: nowait postinstall skipifsilent
 
 [Code]
+// L'adresse d'assistance est un véritable lien dans toutes les étapes.
+// Les zones InfoBeforeFile / InfoAfterFile sont des lecteurs de texte :
+// y afficher l'adresse ne suffit pas à la rendre cliquable.
+procedure OuvrirAssistance(Sender: TObject);
+var
+  CodeRetour: Integer;
+begin
+  if not ShellExecAsOriginalUser('open', '{#AppSupportLink}', '', '',
+      SW_SHOWNORMAL, ewNoWait, CodeRetour) then
+    MsgBox('Aucune application de messagerie n''est configurée sur ce poste.' + #13#10 +
+      'Vous pouvez écrire à : {#AppContactEmail}', mbInformation, MB_OK);
+end;
+
+procedure InitializeWizard;
+var
+  LienAssistance: TNewStaticText;
+begin
+  if WizardSilent then Exit;
+  // Lien permanent dans le pied de l'assistant, pas dans un fichier texte statique.
+  LienAssistance := TNewStaticText.Create(WizardForm);
+  LienAssistance.Parent := WizardForm;
+  LienAssistance.Caption := '{#AppContactEmail}';
+  LienAssistance.Hint := 'Assistance JP-Services : ouvrir la messagerie pour écrire un e-mail';
+  LienAssistance.ShowHint := True;
+  LienAssistance.Cursor := crHand;
+  LienAssistance.OnClick := @OuvrirAssistance;
+  LienAssistance.Font.Style := LienAssistance.Font.Style + [fsUnderline];
+  LienAssistance.Font.Color := clHotLight;
+  LienAssistance.AutoSize := True;
+  LienAssistance.Left := ScaleX(18);
+  LienAssistance.Top := WizardForm.CancelButton.Top +
+    (WizardForm.CancelButton.Height - LienAssistance.Height) div 2;
+  LienAssistance.Anchors := [akLeft, akBottom];
+end;
+
 function ServiceSCOLIAInstalle(): Boolean;
 var
   CodeRetour: Integer;
@@ -86,6 +124,71 @@ begin
   // Un desinstallateur utilisateur ne doit pas effacer ses executables.
   Result := Exec(ExpandConstant('{sys}\sc.exe'), 'query SCOLIA',
     '', SW_HIDE, ewWaitUntilTerminated, CodeRetour) and (CodeRetour = 0);
+end;
+
+var
+  MaintenanceServicePresent: Boolean;
+  MaintenanceServiceRestart: Boolean;
+
+{ Avant toute copie de fichiers, arreter proprement LE service pointant vers
+  cette installation. Ne jamais modifier une base ou un service dans un autre
+  dossier par accident. Le moteur PDF/Word et le serveur sont remplaces ensemble. }
+function PrepareToInstall(var NeedsRestart: Boolean): String;
+var
+  OriginalPath: String;
+  ExpectedPath: String;
+  CodeRetour: Integer;
+begin
+  Result := '';
+  MaintenanceServicePresent := ServiceSCOLIAInstalle();
+  MaintenanceServiceRestart := False;
+  if not MaintenanceServicePresent then Exit;
+
+  if not RegQueryStringValue(HKLM, 'SYSTEM\CurrentControlSet\Services\SCOLIA', 'ImagePath', OriginalPath) then
+  begin
+    Result := 'Impossible de lire le chemin du service SCOLIA. Aucune modification effectuee. '
+      + 'Verifiez le service avant de reessayer.';
+    Exit;
+  end;
+  ExpectedPath := ExpandConstant('{app}\SCOLIA-Serveur.exe');
+  if Pos(Lowercase(ExpectedPath), Lowercase(OriginalPath)) = 0 then
+  begin
+    Result := 'Le service SCOLIA utilise un autre dossier : ' + OriginalPath
+      + #13#10 + 'Cette installation ne remplacerait pas son generateur de cartes. '
+      + 'Choisissez le dossier du service existant ou migrez-le apres une sauvegarde. '
+      + 'Les donnees restent intactes.';
+    Exit;
+  end;
+
+  { Le programme d'installation par utilisateur ne dispose pas automatiquement
+    des droits pour administrer un service Windows. Le controle UAC est explicite. }
+  if not ShellExec('runas', ExpandConstant('{sys}\WindowsPowerShell\v1.0\powershell.exe'),
+    '-NoProfile -NonInteractive -Command "Stop-Service -Name ''SCOLIA'' -Force -ErrorAction Stop; (Get-Service -Name ''SCOLIA'').WaitForStatus(''Stopped'', [TimeSpan]::FromSeconds(45))"',
+    '', SW_HIDE, ewWaitUntilTerminated, CodeRetour) or (CodeRetour <> 0) then
+  begin
+    Result := 'Impossible d''arreter et d''attendre le service SCOLIA. '
+      + 'Le generateur ancien reste en cours d''execution. '
+      + 'Autorisez l''elevation Windows ou effectuez la maintenance depuis Poste et reseau. '
+      + 'L''installation est annulee sans toucher aux donnees.';
+    Exit;
+  end;
+
+  MaintenanceServiceRestart := True;
+end;
+
+procedure CurStepChanged(CurStep: TSetupStep);
+var
+  CodeRetour: Integer;
+begin
+  if (CurStep <> ssPostInstall) or not MaintenanceServiceRestart then Exit;
+  { Redemarrer le service uniquement apres remplacement COMPLET de l'API et
+    de l'assemblage documentaire ; aucune ancienne DLL ne doit rester chargee. }
+  if not ShellExec('runas', ExpandConstant('{sys}\sc.exe'), 'start SCOLIA',
+    '', SW_HIDE, ewWaitUntilTerminated, CodeRetour) or (CodeRetour <> 0) then
+    MsgBox('SCOLIA Pro est installe, mais son service n''a pas pu redemarrer. '
+      + 'Ouvrez les Services Windows, demarrez SCOLIA et verifiez la version '
+      + 'du generateur de cartes avant tout nouvel export.',
+      mbError, MB_OK);
 end;
 
 function InitializeUninstall(): Boolean;

@@ -146,12 +146,34 @@ public sealed class Promotion : Entity
 
 public enum FeeKind { Mensualite = 0, Inscription = 1, Examen = 2, Autre = 3 }
 
+/// <summary>
+/// Catégorie de frais créée par l'établissement (inscription, examen, tenue, carte…), avec son montant.
+/// Seules les catégories créées existent : aucune n'est imposée. La mensualité n'est pas une catégorie :
+/// elle est obligatoire pour chaque promotion et suit les mois de l'année scolaire.
+/// </summary>
+public sealed class FeeCategory : Entity
+{
+    public string Name { get; set; } = string.Empty;
+    /// <summary>Montant de la catégorie, repris dans chaque promotion où elle s'applique (modifiable par promotion).</summary>
+    public decimal Amount { get; set; }
+    /// <summary>Échéance proposée ; à défaut, les frais sont exigibles dès la rentrée.</summary>
+    public DateOnly? DueDate { get; set; }
+    public bool IsActive { get; set; } = true;
+    public int Order { get; set; }
+    /// <summary>Clé normalisée du nom, pour refuser les doublons.</summary>
+    public string NameKey { get; set; } = string.Empty;
+
+    public const int MaxNameLength = 80;
+}
+
 /// <summary>Rubrique de frais exigible pour une promotion (mensualité, inscription, examen…).</summary>
 public sealed class FeeItem : Entity
 {
     public Guid PromotionId { get; set; }
     public Guid? PeriodId { get; set; }
     public FeeKind Kind { get; set; }
+    /// <summary>Catégorie d'origine d'un frais autre que la mensualité.</summary>
+    public Guid? CategoryId { get; set; }
     public string Label { get; set; } = string.Empty;
     public decimal Amount { get; set; }
     public DateOnly DueDate { get; set; }

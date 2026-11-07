@@ -68,14 +68,15 @@ public sealed class CardService(IAppDbContext db, IWriteGate gate, IAuditLog aud
                 "Le logo de votre établissement n'est pas configuré. Ajoutez-le dans Paramètres > Établissement avant d'imprimer les cartes d'accès.");
         // Les cartes reprennent l'identité propre à l'établissement actif, jamais un nom ou un sceau ITM imposé.
         var header = new SchoolCardHeader(
-            CardHeaderDefaults.Or(school.Country, CardHeaderDefaults.Country),
-            CardHeaderDefaults.Or(school.CardMinistry, CardHeaderDefaults.Ministry),
-            CardHeaderDefaults.Or(school.CardDirection, CardHeaderDefaults.Direction),
-            CardHeaderDefaults.Or(school.CardDivision, CardHeaderDefaults.Division),
-            CardHeaderDefaults.Or(school.CardZone, CardHeaderDefaults.CityZone),
+            school.Country ?? string.Empty,
+            school.CardMinistry,
+            school.CardDirection,
+            school.CardDivision,
+            school.CardZone ?? school.City,
             CardHeaderDefaults.Or(school.CardInstitute, school.Name),
-            CardHeaderDefaults.Or(school.CardAddress, school.Address ?? string.Empty),
-            school.Logo);
+            CardHeaderDefaults.Or(school.CardAddress, school.Address ?? school.City ?? string.Empty),
+            school.Logo,
+            school.Phone, school.Email, school.Website, school.Motto);
         var cards = new List<CardItem>();
         foreach (var r in selected)
         {
@@ -112,20 +113,25 @@ public sealed class CardService(IAppDbContext db, IWriteGate gate, IAuditLog aud
     /// <summary>Inscriptions de l'année avec leur statut effectif (la discipline compte) et le signalement des matricules répétés.</summary>
     private async Task<List<CandidateRow>> CandidateRowsAsync(AcademicYear year, Guid? promotionId, IReadOnlyCollection<Guid>? only, CancellationToken ct)
     {
-        var items = (await (from e in db.Enrollments.AsNoTracking()
-                            join s in db.Students.AsNoTracking() on e.StudentId equals s.Id
-                            join p in db.Promotions.AsNoTracking() on e.PromotionId equals p.Id
-                            where e.AcademicYearId == year.Id && (promotionId == null || e.PromotionId == promotionId)
-                            select new { e.Id, e.Status, s.Matricule, s.LastName, s.MiddleName, s.FirstName, Promotion = p.Code })
-                           .ToListAsync(ct))
-            .Where(x => only is null || only.Contains(x.Id))
+        // Le contrôle des matricules est global sur l'année : un filtre de promotion ou
+        // une sélection d'export ne doit jamais dissimuler un doublon situé ailleurs.
+        var yearRows = await (from e in db.Enrollments.AsNoTracking()
+                              join s in db.Students.AsNoTracking() on e.StudentId equals s.Id
+                              join p in db.Promotions.AsNoTracking() on e.PromotionId equals p.Id
+                              where e.AcademicYearId == year.Id
+                              select new { e.Id, e.PromotionId, e.Status, s.Matricule, s.LastName,
+                                           s.MiddleName, s.FirstName, Promotion = p.Code })
+                             .ToListAsync(ct);
+        var repeated = StudentCardRules.DuplicateMatricules(yearRows.Select(x => x.Matricule));
+        var items = yearRows
+            .Where(x => (promotionId is null || x.PromotionId == promotionId)
+                        && (only is null || only.Contains(x.Id)))
             .ToList();
         var ids = items.Select(x => x.Id).ToList();
         var decisions = (await db.DisciplineDecisions.AsNoTracking()
             .Where(d => ids.Contains(d.EnrollmentId) && d.State == DecisionState.Validee).ToListAsync(ct))
             .GroupBy(d => d.EnrollmentId).ToDictionary(g => g.Key, g => g.ToList());
         var today = clock.Today;
-        var repeated = items.GroupBy(x => x.Matricule).Where(g => g.Count() > 1).Select(g => g.Key).ToHashSet(StringComparer.OrdinalIgnoreCase);
         return items.Select(x => new CandidateRow(
             x.Id, x.Matricule, x.LastName, x.MiddleName, x.FirstName, x.Promotion,
             DisciplineRules.EffectiveStatus(x.Status, decisions.TryGetValue(x.Id, out var mine) ? mine : [], today),

@@ -150,9 +150,23 @@ public sealed class PhoneSettingsSearchVm : Observable
             shell.Run(() => shell.Open(() => new SettingsPage(shell, section))));
         ICommand Account(string key) => new RelayCommand(() =>
         {
-            shell.OpenBackstage();
             shell.PhoneMenuOpen = false;
-            shell.Backstage.Section = shell.Backstage.Items.First(i => i.Value == key);
+            if (shell.Phone || Platform.IsMobile)
+            {
+                // Les vues Android gardent leur fenêtre de compte existante.
+                // Le shell peut être simulé en mode téléphone sur desktop dans
+                // les tests : l'entrée est alors créée à la demande.
+                shell.OpenBackstage();
+                shell.Backstage.Section = shell.Backstage.Items.FirstOrDefault(i => i.Value == key)
+                    ?? new BackstageItemVm(key, key == "poste" ? "Poste et réseau" : "Sécurité du compte",
+                        key == "poste" ? MaterialIconKind.LanConnect : MaterialIconKind.ShieldLockOutline,
+                        key == "poste" ? "ToneGreen" : "ToneOrange");
+                return;
+            }
+            if (key == "poste")
+                _ = shell.Run(() => shell.Open(() => new NetworkHubPage(shell)));
+            else
+                _ = shell.Run(() => shell.Open(() => new SettingsPage(shell, "securite")));
         });
         ICommand OpenPage(Func<PageViewModel> page) => new AsyncCommand(() =>
             shell.Run(() => shell.Open(page)));
@@ -170,12 +184,19 @@ public sealed class PhoneSettingsSearchVm : Observable
             "transition mouvement vitesse rapidite animation performance", Page("animations"));
         Add("Sons", "Cet appareil", MaterialIconKind.VolumeHigh, "TonePink",
             "audio musique notifications notification banniere bannieres alerte alertes encaissement sauvegarde volume silence activation son", Page("sons"));
-        Add("Sécurité du compte", "Mon compte", MaterialIconKind.ShieldLockOutline, "ToneTeal",
+        Add("Sécurité du compte", shell.Phone || Platform.IsMobile ? "Mon compte" : "Paramètres",
+            MaterialIconKind.ShieldLockOutline, "ToneTeal",
             "biometrie empreinte digitale identification connexion authentification code secret mot de passe veille mise en veille verrouillage verrouiller ecran inactivite",
             Account("mot-de-passe"));
-        Add("Poste et réseau", "Mon compte", MaterialIconKind.LanConnect, "ToneGreen",
+        Add("Poste et réseau", shell.Phone || Platform.IsMobile ? "Mon compte" : "Réseau et postes",
+            MaterialIconKind.LanConnect, "ToneGreen",
             "tailscale vpn wifi internet serveur partage reseaux connexion poste magicdns",
             Account("poste"));
+
+        if (!shell.Phone && !Platform.IsMobile)
+            Add("À propos et mises à jour", "Paramètres", MaterialIconKind.InformationOutline, "ToneIndigo",
+                "version application logiciel developpeur editeur mise a jour actualisation telecharger",
+                Page("apropos"));
 
         if (shell.Can(Perm.SettingsWrite))
         {
@@ -187,6 +208,8 @@ public sealed class PhoneSettingsSearchVm : Observable
                 "section filiere options infirmiere laboratoire", Page("sections"));
             Add("Promotions et frais", "Établissement", MaterialIconKind.School, "ToneBlue",
                 "classes promotions mensualite cout frais scolarite", Page("promotions"));
+            Add("Catégories de frais", "Établissement", MaterialIconKind.TagMultipleOutline, "ToneGreen",
+                "categorie frais inscription examen tenue carte montant", Page("frais"));
             Add("Nouvelle promotion", "Établissement", MaterialIconKind.FolderPlusOutline, "ToneBlue",
                 "ajouter creer classe promotion frais", new AsyncCommand(async () => { shell.PhoneMenuOpen = false; await shell.Run(() => SettingsPage.NewPromotionAsync(shell)); }));
             Add("Nouvelle année", "Établissement", MaterialIconKind.CalendarPlusOutline, "ToneRed",

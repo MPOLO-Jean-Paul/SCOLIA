@@ -14,6 +14,10 @@ public sealed class DevicePairingRegistry
     private readonly List<DeviceGrant> grants;
     private readonly object gate = new();
     private readonly string file;
+    // Une autorisation est révocable à tout moment ; chaque usage valide prolonge
+    // sa durée sans copier le mot de passe du compte de l'établissement.
+    public const int DeviceValidityDays = 180;
+    public const int RenewalWindowDays = 30;
 
     public DevicePairingRegistry(string dataDirectory)
     {
@@ -61,13 +65,33 @@ public sealed class DevicePairingRegistry
             invitations.Remove(key);
             var id = Guid.NewGuid();
             var secret = Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
-            var expires = DateTime.UtcNow.AddDays(30);
+            var expires = DateTime.UtcNow.AddDays(DeviceValidityDays);
             grants.RemoveAll(x => x.DeviceId == deviceId && x.Owner == invitation.Owner);
             grants.Add(new DeviceGrant(id, invitation.Owner, invitation.Stamp, deviceId,
                 string.IsNullOrWhiteSpace(name) ? "Appareil SCOLIA" : name.Trim()[..Math.Min(name.Trim().Length, 80)],
                 Hash(secret), expires));
             Save();
             return (invitation.Owner, invitation.Stamp, id, secret, expires);
+        }
+    }
+
+    /// <summary>Un promoteur déjà authentifié peut mémoriser SON propre appareil.
+    /// Aucun droit supplémentaire n'est accordé : le jeton reprend exactement son compte.</summary>
+    public (Guid GrantId, string Secret, DateTime ExpiresUtc)? EnrollOwnDevice(
+        Guid owner, string stamp, string? deviceId, string? name)
+    {
+        if (string.IsNullOrWhiteSpace(deviceId) || deviceId.Length > 64) return null;
+        lock (gate)
+        {
+            var id = Guid.NewGuid();
+            var secret = Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
+            var expires = DateTime.UtcNow.AddDays(DeviceValidityDays);
+            grants.RemoveAll(x => x.DeviceId == deviceId && x.Owner == owner);
+            grants.Add(new DeviceGrant(id, owner, stamp, deviceId,
+                string.IsNullOrWhiteSpace(name) ? "Appareil promoteur" : name.Trim()[..Math.Min(name.Trim().Length, 80)],
+                Hash(secret), expires));
+            Save();
+            return (id, secret, expires);
         }
     }
 
@@ -79,6 +103,52 @@ public sealed class DevicePairingRegistry
             var grant = grants.FirstOrDefault(x => x.Id == grantId && !x.Revoked
                 && x.ExpiresUtc > DateTime.UtcNow && x.DeviceId == deviceId);
             return grant is not null && Matches(secret, grant.SecretHash) ? (grant.Owner, grant.Stamp) : null;
+        }
+    }
+
+    /// <summary>
+    /// Renouvelle silencieusement une autorisation existante proche de son échéance.
+    /// Le même appareil et le même secret restent nécessaires ; une autorisation
+    /// expirée ou révoquée n'est jamais réactivée.
+    /// </summary>
+    public (Guid Owner, string Stamp, DateTime ExpiresUtc)? AuthorizeAndRefresh(
+        Guid grantId, string? deviceId, string? secret)
+    {
+        if (string.IsNullOrWhiteSpace(deviceId) || string.IsNullOrWhiteSpace(secret) || secret.Length > 128)
+            return null;
+        lock (gate)
+        {
+            var now = DateTime.UtcNow;
+            var index = grants.FindIndex(x => x.Id == grantId && x.DeviceId == deviceId
+                && !x.Revoked && x.ExpiresUtc > now);
+            if (index < 0 || !Matches(secret, grants[index].SecretHash)) return null;
+            if (grants[index].ExpiresUtc <= now.AddDays(RenewalWindowDays))
+            {
+                grants[index] = grants[index] with { ExpiresUtc = now.AddDays(DeviceValidityDays) };
+                Save();
+            }
+            var authorized = grants[index];
+            return (authorized.Owner, authorized.Stamp, authorized.ExpiresUtc);
+        }
+    }
+
+    /// <summary>
+    /// Le serveur prouve qu'il possède le secret du jumelage, SANS recevoir
+    /// le secret ni une session du téléphone. Indispensable avant de suivre
+    /// une nouvelle adresse IP annoncée en UDP (réponse LAN non authentifiée).
+    /// </summary>
+    public string? ProveIdentity(Guid grantId, string? deviceId, string? nonce)
+    {
+        if (string.IsNullOrWhiteSpace(deviceId) ||
+            nonce is null || nonce.Length != 48 || !nonce.All(char.IsAsciiHexDigit))
+            return null;
+        lock (gate)
+        {
+            var grant = grants.FirstOrDefault(x => x.Id == grantId &&
+                x.DeviceId == deviceId && !x.Revoked && x.ExpiresUtc > DateTime.UtcNow);
+            if (grant is null) return null;
+            var key = Convert.FromHexString(grant.SecretHash);
+            return Convert.ToHexString(HMACSHA256.HashData(key, Encoding.ASCII.GetBytes(nonce)));
         }
     }
 
@@ -126,4 +196,8 @@ public sealed record AuthorizedDevice(Guid Id, string Name, DateTime ExpiresUtc,
 public sealed record PairingInvitation(string Token, DateTime ExpiresUtc);
 public sealed record PairingAccept(string InvitationToken, string DeviceId, string DeviceName);
 public sealed record DeviceLoginRequest(Guid GrantId, string DeviceId, string Secret);
+public sealed record DeviceProofRequest(Guid GrantId, string DeviceId, string Nonce);
+public sealed record DeviceProofReply(string Proof);
+public sealed record DeviceSelfRegistration(Guid GrantId, string DeviceSecret, DateTime ExpiresUtc);
+public sealed record DeviceRenewedSession(object Session, DateTime ExpiresUtc);
 public sealed record PairingAccepted(object Session, Guid GrantId, string DeviceSecret, DateTime ExpiresUtc);

@@ -10,9 +10,11 @@ using Scolia.Application.Dtos;
 using Scolia.Application.Services;
 using Scolia.Domain.Common;
 using Scolia.Domain.Security;
+using Scolia.Domain.Students;
 using Scolia.Infrastructure.Backup;
 using Scolia.Infrastructure.Import;
 using Scolia.Infrastructure.Persistence;
+using Scolia.Infrastructure.Documents;
 
 namespace Scolia.Api.Endpoints;
 
@@ -26,13 +28,18 @@ public static class ScoliaEndpoints
             ? Results.File(reports.Excel(table), Xlsx, $"{baseName}.xlsx")
             : new InlineFileResult(reports.Pdf(table), Pdf, $"{baseName}.pdf");
 
+    // Les mots de passe des archives et les bases téléchargées ne doivent jamais
+    // transiter en clair depuis un autre appareil du réseau local.
+    private static bool TrustedBackupTransport(HttpContext http) =>
+        http.Request.IsHttps || IPAddress.IsLoopback(http.Connection.RemoteIpAddress ?? IPAddress.None);
+
     private static string PublicBase(HttpContext http, IConfiguration config) =>
         config["Scolia:UrlPublique"] is { Length: > 0 } configured ? configured : $"{http.Request.Scheme}://{http.Request.Host}";
 
     public static void MapScoliaEndpoints(this IEndpointRouteBuilder app)
     {
         var api = app.MapGroup("/api");
-        api.MapGet("/sante", async (BackupService backups, CancellationToken ct) => Results.Ok(new { statut = "ok", version = typeof(ScoliaEndpoints).Assembly.GetName().Version?.ToString(), heure = DateTime.Now }));
+        api.MapGet("/sante", (CancellationToken ct) => Results.Ok(new { statut = "ok", version = typeof(ScoliaEndpoints).Assembly.GetName().Version?.ToString(), cardGenerator = DocumentService.CardGeneratorId, heure = DateTime.Now }));
 
         // ---------- Installation et session ----------
         api.MapGet("/installation", (SetupService setup, CancellationToken ct) => setup.StatusAsync(ct));
@@ -119,6 +126,16 @@ public static class ScoliaEndpoints
                 a.GrantId, a.Secret, a.ExpiresUtc));
         }).RequireRateLimiting("connexion");
 
+        // Découverte UDP seule = non fiable ; ce défi permet de reconnaître
+        // le serveur autorisé si son adresse change, sans exposer le secret client.
+        api.MapPost("/jumelage/preuve-serveur", (DeviceProofRequest request, HttpContext http,
+            DevicePairingRegistry registry) =>
+        {
+            if (request.DeviceId != LiveHeaders.DeviceId(http)) return Results.Unauthorized();
+            var proof = registry.ProveIdentity(request.GrantId, request.DeviceId, request.Nonce);
+            return proof is null ? Results.Unauthorized() : Results.Ok(new DeviceProofReply(proof));
+        }).RequireRateLimiting("connexion");
+
         api.MapPost("/session/appareil", async Task<IResult> (DeviceLoginRequest request, HttpContext http,
             DevicePairingRegistry registry, ScoliaDbContext db, CancellationToken ct) =>
         {
@@ -132,6 +149,42 @@ public static class ScoliaEndpoints
             await SessionFactory.SignInDeviceAsync(http, account, request.GrantId, request.DeviceId);
             return Results.Ok(await SessionFactory.DescribeAsync(db, account, ct));
         }).RequireRateLimiting("connexion");
+
+        // Protocole v2 : garde la réponse historique de /session/appareil inchangée.
+        // Les nouveaux clients reçoivent aussi la date de validité actualisée.
+        api.MapPost("/session/appareil/renouveler", async Task<IResult> (DeviceLoginRequest request,
+            HttpContext http, DevicePairingRegistry registry, ScoliaDbContext db, CancellationToken ct) =>
+        {
+            if (request.DeviceId != LiveHeaders.DeviceId(http)) return Results.Unauthorized();
+            var granted = registry.AuthorizeAndRefresh(request.GrantId, request.DeviceId, request.Secret);
+            if (granted is null) return Results.Unauthorized();
+            var a = granted.Value;
+            var account = await db.Users.AsNoTracking().FirstOrDefaultAsync(
+                u => u.Id == a.Owner && u.IsActive && u.SecurityStamp == a.Stamp, ct);
+            if (account is null) return Results.Unauthorized();
+            await SessionFactory.SignInDeviceAsync(http, account, request.GrantId, request.DeviceId);
+            return Results.Ok(new DeviceRenewedSession(
+                await SessionFactory.DescribeAsync(db, account, ct), a.ExpiresUtc));
+        }).RequireRateLimiting("connexion");
+
+        // Première connexion du Promoteur : mémoriser uniquement l'appareil
+        // authentifié et son compte en lecture seule, sans privilèges administratifs.
+        api.MapPost("/jumelage/mon-appareil", async Task<IResult> (HttpContext http,
+            ICurrentUser current, DevicePairingRegistry registry, ScoliaDbContext db,
+            CancellationToken ct) =>
+        {
+            var deviceId = LiveHeaders.DeviceId(http);
+            if (string.IsNullOrWhiteSpace(deviceId)) return Results.Unauthorized();
+            var account = await db.Users.AsNoTracking().FirstOrDefaultAsync(
+                u => u.Id == current.Id && u.IsActive, ct);
+            if (account is null) return Results.Unauthorized();
+            if (account.Role != Role.Promoteur) return Results.Forbid();
+            var issued = registry.EnrollOwnDevice(account.Id, account.SecurityStamp,
+                deviceId, LiveHeaders.Device(http));
+            return issued is null ? Results.BadRequest()
+                : Results.Ok(new DeviceSelfRegistration(issued.Value.GrantId,
+                    issued.Value.Secret, issued.Value.ExpiresUtc));
+        }).RequireAuthorization(Permissions.PilotageRead).RequireRateLimiting("connexion");
 
         api.MapGet("/jumelage/appareils", (ICurrentUser current, DevicePairingRegistry registry) =>
             Results.Ok(registry.List(current.Id!.Value))).RequireAuthorization(Permissions.UsersManage);
@@ -194,6 +247,14 @@ public static class ScoliaEndpoints
         g.MapGet("/sections", (SchoolService s, CancellationToken ct) => s.SectionsAsync(ct));
         g.MapPost("/sections", (SectionUpsert input, SchoolService s, CancellationToken ct) => s.UpsertSectionAsync(null, input, ct)).RequireAuthorization(Permissions.SettingsWrite);
         g.MapPut("/sections/{id:guid}", (Guid id, SectionUpsert input, SchoolService s, CancellationToken ct) => s.UpsertSectionAsync(id, input, ct)).RequireAuthorization(Permissions.SettingsWrite);
+
+        g.MapGet("/categories-frais", (FeeCategoryService s, CancellationToken ct) => s.ListAsync(ct));
+        g.MapPost("/categories-frais", (FeeCategoryUpsert input, FeeCategoryService s, CancellationToken ct) => s.UpsertAsync(null, input, ct))
+            .RequireAuthorization(Permissions.SettingsWrite);
+        g.MapPut("/categories-frais/{id:guid}", (Guid id, FeeCategoryUpsert input, FeeCategoryService s, CancellationToken ct) => s.UpsertAsync(id, input, ct))
+            .RequireAuthorization(Permissions.SettingsWrite);
+        g.MapDelete("/categories-frais/{id:guid}", async (Guid id, FeeCategoryService s, CancellationToken ct) => { await s.DeleteAsync(id, ct); return Results.NoContent(); })
+            .RequireAuthorization(Permissions.SettingsWrite);
 
         g.MapGet("/promotions", (Guid? anneeId, SchoolService s, CancellationToken ct) => s.PromotionsAsync(anneeId, ct));
         g.MapPost("/promotions", (PromotionUpsert input, SchoolService s, CancellationToken ct) => s.UpsertPromotionAsync(null, input, ct)).RequireAuthorization(Permissions.SettingsWrite);
@@ -263,7 +324,7 @@ public static class ScoliaEndpoints
         g.MapGet("", ([AsParameters] ReceiptQuery q, PaymentService p, CancellationToken ct) => p.ListAsync(q, ct));
         g.MapGet("/export", async ([AsParameters] ReceiptQuery q, string? format, PaymentService p, ReportService r, CancellationToken ct) =>
             Table(await r.ReceiptsTableAsync(p, q, ct), format, "journal-encaissements", r));
-        g.MapPost("/apercu", (PaymentRequest input, PaymentService p, CancellationToken ct) => p.PreviewAsync(input.EnrollmentId, input.FeeItemIds, ct))
+        g.MapPost("/apercu", (PaymentRequest input, PaymentService p, CancellationToken ct) => p.PreviewAsync(input.EnrollmentId, input.FeeItemIds, input.Amount == 0m ? null : input.Amount, ct))
             .RequireAuthorization(Permissions.PaymentsCreate);
         g.MapPost("", (PaymentRequest input, PaymentService p, CancellationToken ct) => p.CreateAsync(input, ct)).RequireAuthorization(Permissions.PaymentsCreate);
         // Encaissement par lot : un reçu par apprenant, contrôle avant écriture, résultat ligne par ligne.
@@ -286,7 +347,7 @@ public static class ScoliaEndpoints
             Table(await r.ExpensesTableAsync(du, au, ct), format, "registre-des-depenses", r));
         d.MapPost("", (ExpenseCreate input, CashService c, CancellationToken ct) => c.CreateExpenseAsync(input, ct)).RequireAuthorization(Permissions.ExpensesWrite);
         d.MapPost("/{id:guid}/annulation", (Guid id, CancelRequest input, CashService c, CancellationToken ct) => c.CancelExpenseAsync(id, input.Reason, ct))
-            .RequireAuthorization(Permissions.ExpensesWrite);
+            .RequireAuthorization(Permissions.PaymentsCancel); // Annuler n'est pas saisir : même droit que l'annulation d'un reçu.
 
         var k = api.MapGroup("/caisse").RequireAuthorization(Permissions.PaymentsRead);
         k.MapGet("/situation", (DateOnly? date, CashService c, CancellationToken ct) => c.SituationAsync(date, ct));
@@ -521,6 +582,36 @@ public static class ScoliaEndpoints
             return info;
         });
         backups.MapGet("/{name}", (string name, BackupService b) => Results.File(b.PathOf(name), "application/vnd.sqlite3", name));
+        // Export portable chiffré, réservé à une liaison HTTPS vérifiée ou au serveur lui-même.
+        backups.MapPost("/{name}/export-chiffre", async Task<IResult> (
+            string name, EncryptedBackupRequest input, BackupService b, HttpContext http,
+            IAuditLog log, ScoliaDbContext db, CancellationToken ct) =>
+        {
+            if (!TrustedBackupTransport(http)) return Results.StatusCode(StatusCodes.Status403Forbidden);
+            var data = await b.ExportEncryptedAsync(name, input.Passphrase, ct);
+            log.Record("sauvegarde.export-chiffre", "Sauvegarde", name, $"Export protégé de {name}.");
+            await db.SaveChangesAsync(ct);
+            return Results.File(data, "application/octet-stream", name + ".scolia-enc");
+        });
+        // Déchiffrement dans une NOUVELLE copie contrôlée : aucune restauration immédiate.
+        backups.MapPost("/import-chiffre", async Task<IResult> (
+            HttpContext http, BackupService b, IAuditLog log, ScoliaDbContext db, CancellationToken ct) =>
+        {
+            if (!TrustedBackupTransport(http)) return Results.StatusCode(StatusCodes.Status403Forbidden);
+            if (!http.Request.HasFormContentType)
+                throw new DomainException("sauvegardes", "Envoyez un formulaire avec archive et passphrase.");
+            var form = await http.Request.ReadFormAsync(ct);
+            var upload = form.Files.GetFile("archive");
+            if (upload is null || upload.Length is 0 or > BackupProtection.MaximumPlainBytes + 256)
+                throw new DomainException("sauvegardes", "Archive absente ou supérieure à 48 Mio.");
+            await using var data = new MemoryStream();
+            await upload.CopyToAsync(data, ct);
+            var info = await b.ImportEncryptedAsync(data.ToArray(), form["passphrase"].ToString(), ct);
+            log.Record("sauvegarde.import-chiffre", "Sauvegarde", info.Name,
+                $"Archive chiffrée importée sous {info.Name} après vérification d'intégrité.");
+            await db.SaveChangesAsync(ct);
+            return Results.Ok(info);
+        }).DisableAntiforgery();
         backups.MapPost("/{name}/restauration", async (string name, BackupService b, IAuditLog log, ScoliaDbContext db, CancellationToken ct) =>
         {
             await b.RestoreAsync(name, ct);
@@ -585,6 +676,9 @@ public static class ScoliaEndpoints
         }).RequireAuthorization(Permissions.SettingsWrite).DisableAntiforgery();
     }
 }
+
+/// <summary>Phrase secrète jamais persistée et non acceptée sur une liaison HTTP distante.</summary>
+public sealed record EncryptedBackupRequest(string Passphrase);
 
 /// <summary>Fichier affiché dans le navigateur (PDF) avec un nom proposé à l'enregistrement.</summary>
 public sealed class InlineFileResult(byte[] content, string contentType, string fileName) : IResult

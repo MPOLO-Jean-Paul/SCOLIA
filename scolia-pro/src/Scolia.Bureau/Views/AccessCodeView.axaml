@@ -97,7 +97,7 @@
             <DataTemplate>
               <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8" Margin="0,2">
                 <Panel Width="18" Height="18" VerticalAlignment="Center">
-                  <mi:MaterialIcon Kind="CheckCircle" Foreground="{DynamicResource ToneGreen}" IsVisible="{Binding Met}" />
+                  <mi:MaterialIcon Kind="CheckCircleOutline" Foreground="{DynamicResource ToneGreen}" IsVisible="{Binding Met}" />
                   <mi:MaterialIcon Kind="CircleOutline" Foreground="{DynamicResource MutedBrush}" IsVisible="{Binding !Met}" />
                 </Panel>
                 <TextBlock Grid.Column="1" Text="{Binding Text}" TextWrapping="Wrap" FontSize="{DynamicResource FsSmall}" VerticalAlignment="Center" />
@@ -114,7 +114,7 @@
                TextInputOptions.ContentType="Password" TextInputOptions.IsSensitive="True" MaxLength="128" PlaceholderText="Le même mot de passe" />
       <StackPanel Orientation="Horizontal" Spacing="6" IsVisible="{Binding ShowMatch}">
         <Panel Width="16" Height="16">
-          <mi:MaterialIcon Kind="CheckCircle" Foreground="{DynamicResource ToneGreen}" IsVisible="{Binding CodesMatch}" />
+          <mi:MaterialIcon Kind="CheckCircleOutline" Foreground="{DynamicResource ToneGreen}" IsVisible="{Binding CodesMatch}" />
           <mi:MaterialIcon Kind="AlertCircleOutline" Foreground="{DynamicResource ToneOrange}" IsVisible="{Binding !CodesMatch}" />
         </Panel>
         <TextBlock Text="{Binding MatchText}" FontSize="{DynamicResource FsSmall}" VerticalAlignment="Center" />

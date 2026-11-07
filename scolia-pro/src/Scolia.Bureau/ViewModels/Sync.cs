@@ -5,6 +5,7 @@ using Avalonia.Media;
 using Avalonia.Threading;
 using Scolia.Bureau.Api;
 using Scolia.Bureau.Infrastructure;
+using Scolia.Bureau.Ribbon;
 
 namespace Scolia.Bureau.ViewModels;
 
@@ -38,7 +39,7 @@ public sealed class OutboxRowVm(OutboxItem item, bool conflict, SyncCenter sync)
     public string? Error { get; } = item.Error;
     public bool IsConflict { get; } = conflict;
     public RelayCommand Retry { get; } = new(() => sync.Retry(item.Id));
-    public RelayCommand Discard { get; } = new(() => sync.Discard(item.Id));
+    public AsyncCommand Discard { get; } = new(() => sync.DiscardAsync(item.Id, item.Label));
 }
 
 /// <summary>
@@ -52,15 +53,23 @@ public sealed class SyncCenter : Observable, IDisposable
 {
     private static readonly TimeSpan HeartbeatInterval = TimeSpan.FromSeconds(15);
     private static readonly TimeSpan ProbeInterval = TimeSpan.FromSeconds(5);
+    private static readonly TimeSpan OnlineHealthInterval = TimeSpan.FromSeconds(3);
 
     private readonly ShellViewModel shell;
     private readonly ScoliaClient api;
     private readonly HashSet<string> held = new(StringComparer.Ordinal);
+    private readonly SemaphoreSlim offlineWarmupGate = new(1, 1);
+    private DateTime lastLanDiscoveryUtc = DateTime.MinValue;
     private CancellationTokenSource? running;
     private string? userName;
     private string? password;
     private bool syncing;
+    private bool preparing;
+    private string preparationText = Platform.IsMobile
+        ? "Préparez ce téléphone lorsque le serveur est accessible pour copier les dossiers et les comptes autorisés."
+        : "Préparez ce poste lorsque le serveur est accessible pour copier les dossiers et les comptes autorisés.";
     private bool flushing;
+    private bool pendingNoticeShown;
     private string? activity;
     private string ticker = string.Empty;
     private bool pulse;
@@ -75,9 +84,24 @@ public sealed class SyncCenter : Observable, IDisposable
         api.Queued += item => Dispatcher.UIThread.Post(() =>
         {
             RaiseCounts();
-            shell.Notify($"{item.Label} : gardé sur cet appareil. Il sera envoyé à l'ordinateur principal dès son retour.");
+            // Ne dépend pas du maintien de cette fenêtre au premier plan : Android
+            // prépare une reprise réseau durable pour les opérations de la file.
+            // Une erreur système de planification ne doit jamais perdre l'écriture locale.
+            try { Platform.RequestBackgroundSync?.Invoke(); }
+            catch (Exception ex) when (ex is InvalidOperationException or System.Security.SecurityException)
+            {
+                System.Diagnostics.Trace.WriteLine($"SCOLIA : reprise différée non programmée ({ex.GetType().Name}).");
+            }
+            // Un seul accusé de réception local par épisode hors ligne.
+            // Les autres opérations restent consultables par le petit point du titre.
+            if (!pendingNoticeShown)
+            {
+                pendingNoticeShown = true;
+                shell.Notify("Modifications enregistrées localement · envoi automatique à la reconnexion.");
+            }
         });
         SyncNow = new AsyncCommand(() => SyncAsync(manual: true));
+        PrepareOffline = new AsyncCommand(PrepareOfflineAsync);
     }
 
     /// <summary>Un autre poste a enregistré une modification : l'écran concerné se met à jour.</summary>
@@ -110,22 +134,76 @@ public sealed class SyncCenter : Observable, IDisposable
     public bool Pulse { get => pulse; private set => Set(ref pulse, value); }
 
     public AsyncCommand SyncNow { get; }
+    public AsyncCommand PrepareOffline { get; }
+    public bool Preparing => preparing;
+    public string PreparationText
+    {
+        get => preparationText;
+        private set => Set(ref preparationText, value);
+    }
+
+    /// <summary>
+    /// Sauvegarde volontairement une copie complète des dossiers et des comptes
+    /// accessibles à cette session. Elle demeure chiffrée et cloisonnée par compte.
+    /// </summary>
+    public async Task PrepareOfflineAsync()
+    {
+        if (preparing || !shell.IsLoggedIn) return;
+        if (!api.IsOnline)
+        {
+            shell.Notify("Reconnectez le téléphone au serveur pour télécharger les données nécessaires.");
+            return;
+        }
+        if (!shell.Can(Perm.StudentsRead))
+        {
+            shell.Notify("Ce compte n'a pas l'autorisation de lire le registre des apprenants.");
+            return;
+        }
+        preparing = true;
+        Raise(nameof(Preparing));
+        PreparationText = "Préparation des données locales…";
+        try
+        {
+            var token = running?.Token ?? CancellationToken.None;
+            var result = await OfflinePreparation.RunAsync(api,
+                includeFinancialAccounts: shell.Can(Perm.PaymentsRead),
+                progress: state => Dispatcher.UIThread.Post(() =>
+                    PreparationText = $"{state.Stage} · {state.Completed}/{state.Expected}"),
+                ct: token);
+            PreparationText = result.Complete
+                ? $"{result.Indexed} apprenants et {result.Accounts} comptes préparés sur cet appareil."
+                : $"Copie partielle : {result.Details} dossiers et {result.Accounts} comptes, {result.Errors} erreurs. Réessayez en ligne.";
+            shell.Notify(result.Complete
+                ? "Les données autorisées sont préparées pour une utilisation hors ligne."
+                : "Préparation partielle. Vérifiez les droits, l'espace libre et la connexion.");
+        }
+        catch (OperationCanceledException) { PreparationText = "Préparation interrompue."; }
+        catch (Exception ex) when (ex is OfflineException or ApiException or IOException or InvalidOperationException)
+        {
+            PreparationText = "Préparation interrompue : vérifiez la connexion et les permissions.";
+            System.Diagnostics.Trace.WriteLine($"Préparation hors ligne : {ex.Message}");
+        }
+        finally
+        {
+            preparing = false;
+            Raise(nameof(Preparing));
+        }
+    }
 
     /// <summary>État lisible de la connexion, pour la barre du haut et l'accueil.</summary>
-    public string StatusText => syncing ? "Synchronisation…"
-        : Offline ? (HasPending ? $"Hors ligne · {Pending} en attente" : "Hors ligne")
+    public string StatusText => Offline ? (HasPending ? $"Hors ligne · {Pending} en attente" : "Hors ligne")
+        : syncing ? "Synchronisation…"
         : HasConflicts ? $"{Conflicts} opération(s) refusée(s)"
         : "En ligne";
 
     public string StatusDetail => Offline
-        ? "L'ordinateur principal ne répond pas. Vous travaillez sur les données gardées sur cet appareil ; vos opérations seront envoyées à son retour."
+        ? "Serveur inaccessible : les données déjà téléchargées restent consultables. Seules les opérations autorisées sont enregistrées en attente ; les validations définitives reprennent après reconnexion."
         : HasConflicts ? "Le serveur a refusé des opérations faites hors ligne. Ouvrez la liste pour les revoir."
-        : TailscaleEndpoint.IsTailnetAddress(api.Server)
-            ? $"Réseau privé Tailscale · {PeersText}. La base reste sur l'appareil principal ; les droits SCOLIA restent appliqués."
-        : api.IsLongDistance ? $"Liaison Internet chiffrée · {PeersText}. Les opérations sont confirmées par l’appareil principal."
+        : api.Server.IsLoopback ? $"Cet appareil est le serveur de l'établissement · {PeersText}. Les autres postes lui envoient leurs opérations."
+        : api.IsLongDistance ? $"Par Internet, chiffré · {PeersText}. Les opérations sont confirmées par l'ordinateur principal."
         : $"Relié à l'ordinateur principal · {PeersText}.";
 
-    public IBrush StatusBrush => ThemeBrush.Get(syncing ? "ToneBlue" : Offline ? "ToneOrange" : HasConflicts ? "ToneRed" : "ToneGreen");
+    public IBrush StatusBrush => ThemeBrush.Get(Offline ? "ToneOrange" : syncing ? "ToneBlue" : HasConflicts ? "ToneRed" : "ToneGreen");
 
     /// <summary>Action en cours sur ce poste, annoncée aux autres : « Encaissement de MUKENDI ».</summary>
     public string? Activity
@@ -153,7 +231,76 @@ public sealed class SyncCenter : Observable, IDisposable
         var token = running.Token;
         _ = StreamLoopAsync(token);
         _ = HeartbeatLoopAsync(token);
+        _ = ReconnectLoopAsync(token);
+        _ = HealthLoopAsync(token);
+        // Préparer les pages locales après le rendu de l'accueil, sans retarder l'ouverture.
+        _ = WarmOfflinePagesAsync(token);
         RaiseCounts();
+    }
+
+    /// <summary>
+    /// Précharge en arrière-plan les ressources autorisées dont les utilisateurs ont
+    /// besoin sans connexion. La navigation reste prioritaire ; le réseau et les
+    /// permissions sont toujours contrôlés par l'API réelle.
+    /// </summary>
+    private async Task WarmOfflinePagesAsync(CancellationToken ct)
+    {
+        try
+        {
+            // Ne surtout pas ralentir l'accueil ni la page de connexion.
+            await Task.Delay(TimeSpan.FromSeconds(2), ct);
+            if (!api.IsOnline || !shell.IsLoggedIn || api.Offline is not { } store ||
+                string.IsNullOrWhiteSpace(store.User)) return;
+            if (!await offlineWarmupGate.WaitAsync(0, ct)) return;
+            try
+            {
+                var user = store.User;
+                bool StillAllowed() => !ct.IsCancellationRequested && api.IsOnline &&
+                    shell.IsLoggedIn && ReferenceEquals(api.Offline, store) &&
+                    string.Equals(store.User, user, StringComparison.Ordinal);
+
+                if (StillAllowed() && shell.Can(Perm.PilotageRead))
+                {
+                    // Le Promoteur n'a pas droit aux listes nominatives : seulement
+                    // son tableau de bord consolidé, y compris hors ligne.
+                    try { await api.GetAsync<PromoterDashboardDto>("api/pilotage/synthese", ct); }
+                    catch (Exception ex) when (ex is ApiException or HttpRequestException or TaskCanceledException) { }
+                }
+
+                if (StillAllowed() && shell.Can(Perm.ReportsRead))
+                {
+                    try { await api.GetAsync<DashboardDto>("api/rapports/tableau-de-bord", ct); }
+                    catch (Exception ex) when (ex is ApiException or HttpRequestException or TaskCanceledException) { }
+                    if (StillAllowed())
+                    {
+                        try { await api.GetAsync<TodayDto>("api/rapports/aujourdhui", ct); }
+                        catch (Exception ex) when (ex is ApiException or HttpRequestException or TaskCanceledException) { }
+                    }
+                }
+
+                if (!StillAllowed() || !shell.Can(Perm.StudentsRead)) return;
+                try { await api.GetAsync<List<PromotionDto>>("api/etablissement/promotions", ct); }
+                catch (Exception ex) when (ex is ApiException or HttpRequestException or TaskCanceledException) { }
+                for (var page = 1; page <= 20 && StillAllowed(); page++)
+                {
+                    // Mêmes clés de cache que la liste Apprenants ; les 20 premières
+                    // pages couvrent jusqu'à 1 000 dossiers, sans inventer les suivants.
+                    var path = "api/apprenants" + ScoliaClient.Query(("page", page), ("taille", 50));
+                    PagedResult<StudentListItem>? result;
+                    try { result = await api.GetAsync<PagedResult<StudentListItem>>(path, ct); }
+                    catch (Exception ex) when (ex is ApiException or HttpRequestException or TaskCanceledException) { break; }
+                    if (result is null || result.Items.Count == 0 || page * 50 >= result.Total) break;
+                    // Priorité à la fluidité des écrans et à la batterie sur Android.
+                    await Task.Delay(TimeSpan.FromMilliseconds(175), ct);
+                }
+            }
+            finally { offlineWarmupGate.Release(); }
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException)
+        {
+            // Cache indisponible : l'application principale doit continuer à fonctionner.
+        }
     }
 
     public void Stop()
@@ -255,10 +402,57 @@ public sealed class SyncCenter : Observable, IDisposable
         _ = SyncAsync(manual: true);
     }
 
-    public void Discard(string id)
+    /// <summary>Ne jamais supprimer un conflit hors ligne sans confirmation explicite.</summary>
+    public async Task DiscardAsync(string id, string label)
     {
-        api.Offline?.Discard(id);
+        if (flushing || Syncing)
+        {
+            shell.Notify("Synchronisation en cours : vérifiez le résultat avant d'abandonner cette opération.");
+            return;
+        }
+
+        var store = api.Offline;
+        if (store is null || !store.Conflicts().Any(x => x.Id == id))
+        {
+            LoadQueue();
+            shell.Notify("Cette opération n'est plus en attente de décision.");
+            return;
+        }
+
+        // Le centre réseau est lui-même un dialogue : le restaurer après la confirmation,
+        // qu'elle soit acceptée ou annulée, pour ne pas perdre le contexte de la file.
+        var networkDialog = shell.Dialog is NetworkViewModel ? shell.Dialog : null;
+        bool confirmed;
+        try
+        {
+            confirmed = await shell.Confirm(
+                "Abandonner cette opération hors ligne ?",
+                $"Opération : {label}.\n\nCette modification refusée sera retirée de cet appareil et ne sera plus réessayée. Cela ne supprime ni n'annule aucune opération déjà validée sur le serveur.",
+                "Abandonner définitivement", danger: true);
+        }
+        finally
+        {
+            if (networkDialog is not null && shell.Dialog is null) shell.ShowNetwork();
+        }
+
+        if (!confirmed) return;
+        if (flushing || Syncing || !ReferenceEquals(store, api.Offline))
+        {
+            LoadQueue();
+            shell.Notify("L'état de la synchronisation a changé. Vérifiez de nouveau l'opération.");
+            return;
+        }
+
+        if (!store.Conflicts().Any(x => x.Id == id))
+        {
+            LoadQueue();
+            shell.Notify("Cette opération n'est plus dans les conflits.");
+            return;
+        }
+
+        store.Discard(id);
         LoadQueue();
+        shell.Notify("Opération refusée retirée localement. Aucune transaction du serveur n'a été annulée.");
     }
 
     // ---------------- Connexion, reconnexion et envoi ----------------
@@ -266,7 +460,11 @@ public sealed class SyncCenter : Observable, IDisposable
     private void OnConnectivity(bool online)
     {
         RaiseStatus();
-        if (online) _ = SyncAsync(manual: false);
+        if (online)
+        {
+            pendingNoticeShown = false;
+            _ = SyncAsync(manual: false);
+        }
         else
         {
             // Sans serveur, la présence des autres postes n'est plus connue : elle reviendra avec lui.
@@ -274,7 +472,7 @@ public sealed class SyncCenter : Observable, IDisposable
             locks = [];
             Ticker = string.Empty;
             RaisePeers();
-            shell.Notify("Ordinateur principal injoignable : vous continuez sur les données de cet appareil.", SoundKind.Error);
+            // L'icône orange du titre suffit ; ne jamais interrompre la saisie.
         }
     }
 
@@ -287,6 +485,9 @@ public sealed class SyncCenter : Observable, IDisposable
         if (flushing || !shell.IsLoggedIn) return;
         flushing = true;
         Syncing = true;
+        // Une reprise réseau doit recharger les données locales même si aucune
+        // opération n'attend dans le journal.
+        var wasOffline = Offline;
         try
         {
             if (!await api.IsRunningAsync())
@@ -312,9 +513,12 @@ public sealed class SyncCenter : Observable, IDisposable
                 }
             }
             var (sent, refused) = await api.FlushAsync();
-            if (sent > 0) shell.Notify($"{sent} opération(s) envoyée(s) à l'ordinateur principal.");
+            // Le point du réseau passe simplement au vert. Ne pas afficher une notification
+            // à chaque reconnexion réussie : seules les opérations refusées demandent une action.
             if (refused > 0) shell.Notify($"{refused} opération(s) refusée(s) par le serveur : ouvrez « Envois » pour les revoir.", SoundKind.Error);
-            if (sent > 0 || refused > 0 || manual) await shell.RefreshQuietlyAsync();
+            if (wasOffline || sent > 0 || refused > 0 || manual) await shell.RefreshQuietlyAsync();
+            if (wasOffline && running is { } session && !session.IsCancellationRequested)
+                _ = WarmOfflinePagesAsync(session.Token);
         }
         catch (Exception ex) when (ex is ApiException or HttpRequestException or TaskCanceledException) { }
         finally
@@ -326,17 +530,70 @@ public sealed class SyncCenter : Observable, IDisposable
     }
 
     /// <summary>
-    /// Annonce ce poste toutes les 15 secondes : sa page, son activité et les verrous qu'il tient encore.
-    /// Hors ligne, la même boucle cherche le serveur toutes les 5 secondes.
+    /// Contrôle la disponibilité du serveur même lorsque personne ne navigue et
+    /// que le flux temps réel a été interrompu. Les deux interfaces Avalonia (PC
+    /// et Android) utilisent le même état ; aucune notification répétée.
+    /// La boucle de reprise existante prend le relais dès le premier échec.
+    /// </summary>
+    private async Task HealthLoopAsync(CancellationToken ct)
+    {
+        while (!ct.IsCancellationRequested)
+        {
+            try { await Task.Delay(OnlineHealthInterval, ct); }
+            catch (OperationCanceledException) { return; }
+
+            if (!shell.IsLoggedIn || Offline) continue;
+            try { await api.IsRunningAsync(ct); }
+            catch (OperationCanceledException) when (ct.IsCancellationRequested) { return; }
+            catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or IOException)
+            {
+                // IsRunningAsync annonce déjà une coupure HTTP ; une erreur
+                // inattendue de transport ne doit pas tuer la surveillance.
+                System.Diagnostics.Trace.WriteLine($"SCOLIA : sonde de liaison interrompue ({ex.GetType().Name}).");
+            }
+        }
+    }
+
+    /// <summary>Recherche le serveur toutes les cinq secondes pendant une coupure.</summary>
+    private async Task ReconnectLoopAsync(CancellationToken ct)
+    {
+        while (!ct.IsCancellationRequested)
+        {
+            try { await Task.Delay(ProbeInterval, ct); }
+            catch (OperationCanceledException) { return; }
+            if (!Offline) continue;
+            // Sur un nouveau Wi-Fi, l'ancien serveur peut avoir une autre IP.
+            // Ne suivre que le serveur prouvant le secret d'un jumelage antérieur.
+            if (DateTime.UtcNow - lastLanDiscoveryUtc >= TimeSpan.FromSeconds(25))
+            {
+                lastLanDiscoveryUtc = DateTime.UtcNow;
+                try
+                {
+                    if (await shell.TryReconnectPairedLanAsync(ct) ||
+                        await shell.TryReconnectRelayAsync(ct))
+                    {
+                        await SyncAsync(manual: true);
+                        _ = WarmOfflinePagesAsync(ct);
+                        continue;
+                    }
+                }
+                catch (OperationCanceledException) when (ct.IsCancellationRequested) { return; }
+            }
+            await SyncAsync(manual: false);
+        }
+    }
+
+    /// <summary>
+    /// Annonce l'activité du poste toutes les quinze secondes, sans retarder
+    /// la reprise d'une liaison perdue pendant cette attente.
     /// </summary>
     private async Task HeartbeatLoopAsync(CancellationToken ct)
     {
         while (!ct.IsCancellationRequested)
         {
-            try { await Task.Delay(Offline ? ProbeInterval : HeartbeatInterval, ct); }
+            try { await Task.Delay(HeartbeatInterval, ct); }
             catch (OperationCanceledException) { return; }
-            if (Offline) await SyncAsync(manual: false);
-            else await AnnounceAsync();
+            if (!Offline) await AnnounceAsync();
         }
     }
 
@@ -476,7 +733,14 @@ public sealed class NetworkViewModel
     public NetworkViewModel(ShellViewModel shell)
     {
         Sync = shell.Sync;
-        Remote = new RemoteConnectionViewModel(shell);
+        IsServerComputer = shell.IsServerComputer;
+        // Sur le serveur, la gestion d'Internet se fait dans Réseau et postes : pas d'invitation préparée ici.
+        Remote = new RemoteConnectionViewModel(shell, prepareInvitation: !shell.IsServerComputer);
+        OpenSharing = new RelayCommand(() =>
+        {
+            shell.CloseDialog();
+            _ = shell.Run(() => shell.Open(() => new NetworkHubPage(shell)));
+        });
         Sync.LoadQueue();
         Close = new RelayCommand(shell.CloseDialog);
     }
@@ -484,4 +748,10 @@ public sealed class NetworkViewModel
     public SyncCenter Sync { get; }
     public RemoteConnectionViewModel Remote { get; }
     public RelayCommand Close { get; }
+    /// <summary>Sur le serveur, les données sont déjà là : pas de préparation hors ligne ni de file d'envoi à montrer.</summary>
+    public bool IsServerComputer { get; }
+    public bool IsLinked => !IsServerComputer;
+    public string PrepareLabel => Platform.IsMobile ? "Préparer les données de ce téléphone" : "Préparer les données de ce poste";
+    /// <summary>Le partage (Wi-Fi, Internet, appareils autorisés) se règle dans Réseau et postes.</summary>
+    public RelayCommand OpenSharing { get; }
 }

@@ -46,6 +46,33 @@ internal sealed class OfflineDatabase
         return result;
     }
 
+    /// <summary>
+    /// Lit une série de clichés en UNE requête SQLite au lieu d'ouvrir une
+    /// connexion et de reconfigurer le journal WAL à chaque page.
+    /// Les blobs restent chiffrés sur disque ; le déchiffrement n'a lieu
+    /// qu'après l'accès autorisé au fichier local.
+    /// </summary>
+    public IReadOnlyDictionary<string, string> ReadMany(IReadOnlyList<string> keys)
+    {
+        if (keys.Count == 0) return new Dictionary<string, string>(StringComparer.Ordinal);
+        if (keys.Count > 500) throw new ArgumentOutOfRangeException(nameof(keys));
+        using var db = Open();
+        using var command = db.CreateCommand();
+        var parameters = new string[keys.Count];
+        for (var i = 0; i < keys.Count; i++)
+        {
+            var name = "$key" + i.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            parameters[i] = name;
+            command.Parameters.AddWithValue(name, keys[i]);
+        }
+        command.CommandText = "SELECT key,value FROM state WHERE key IN (" + string.Join(",", parameters) + ")";
+        using var reader = command.ExecuteReader();
+        var result = new Dictionary<string, string>(keys.Count, StringComparer.Ordinal);
+        while (reader.Read())
+            result.Add(reader.GetString(0), Encoding.UTF8.GetString(SecretStore.Unprotect((byte[])reader[1])));
+        return result;
+    }
+
     private static string? Read(SqliteConnection db, SqliteTransaction? transaction, string key)
     {
         using var command = db.CreateCommand();
@@ -53,6 +80,16 @@ internal sealed class OfflineDatabase
         command.CommandText = "SELECT value FROM state WHERE key=$key";
         command.Parameters.AddWithValue("$key", key);
         return command.ExecuteScalar() is byte[] bytes ? Encoding.UTF8.GetString(SecretStore.Unprotect(bytes)) : null;
+    }
+
+    /// <summary>Supprime une seule entrée chiffrée du compte concerné, sans toucher aux journaux.</summary>
+    public void Delete(string key)
+    {
+        using var db = Open();
+        using var command = db.CreateCommand();
+        command.CommandText = "DELETE FROM state WHERE key = $key";
+        command.Parameters.AddWithValue("$key", key);
+        command.ExecuteNonQuery();
     }
 
     public void Write(string key, string value) => Update([key], values => values[key] = value);

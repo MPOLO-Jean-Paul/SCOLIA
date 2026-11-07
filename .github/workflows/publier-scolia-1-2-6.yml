@@ -1,0 +1,65 @@
+name: SCOLIA Pro 1.2.6 - Distribution des executables directs
+
+on:
+  push:
+    branches:
+      - release/direct-apk-scolia-pro-20261103
+    paths:
+      - '.github/workflows/publier-scolia-1-2-6.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+
+jobs:
+  publier:
+    name: Verification et publication Android Windows
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - name: Recuperer les compilations officielles validees
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          mkdir -p dist/android dist/windows
+          gh run download 41772188714 --repo "$GH_REPO" --name SCOLIA_Natif_Android_APK --dir dist/android
+          gh run download 41772188714 --repo "$GH_REPO" --name SCOLIA_Pro_Windows_Installateur_EXE --dir dist/windows
+          (
+            cd dist/android
+            test -s SCOLIA_Pro_1.2.6_Android.apk
+            test -s SCOLIA_Pro_1.2.6_Android.apk.sha256
+            sha256sum -c SCOLIA_Pro_1.2.6_Android.apk.sha256
+          )
+          (
+            cd dist/windows
+            test -s SCOLIA_Pro_Installation_1.2.6_Windows_x64.exe
+            test -s SCOLIA_Pro_Installation_1.2.6_Windows_x64.exe.sha256
+            sha256sum -c SCOLIA_Pro_Installation_1.2.6_Windows_x64.exe.sha256
+          )
+      - name: Publier les fichiers directs GitHub Releases
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          tag="scolia-pro-v1.2.6"
+          apk=dist/android/SCOLIA_Pro_1.2.6_Android.apk
+          setup=dist/windows/SCOLIA_Pro_Installation_1.2.6_Windows_x64.exe
+          if gh release view "$tag" --repo "$GH_REPO" >/dev/null 2>&1; then
+            gh release upload "$tag" "$apk" "$apk.sha256" "$setup" "$setup.sha256" --repo "$GH_REPO" --clobber
+            gh release edit "$tag" --repo "$GH_REPO" --latest
+          else
+            gh release create "$tag" "$apk" "$apk.sha256" "$setup" "$setup.sha256" \
+              --repo "$GH_REPO" --target "$GITHUB_SHA" --latest \
+              --title "SCOLIA Pro 1.2.6 — serveur Android/Windows en arrière-plan" \
+              --notes "Mise à jour du serveur en mode réduit, service Android au premier plan, diagnostic et reprise. APK et EXE vérifiés SHA-256. Installation à confirmer sur Android ou Windows. Sauvegarder la base scolaire avant mise à niveau du poste serveur. La veille forcée, la coupure réseau et les restrictions constructeur restent indépendantes de SCOLIA."
+          fi
+          gh release view "$tag" --repo "$GH_REPO" --json url,assets

@@ -17,6 +17,7 @@ public interface IAppDbContext
     DbSet<Section> Sections { get; }
     DbSet<Promotion> Promotions { get; }
     DbSet<FeeItem> FeeItems { get; }
+    DbSet<FeeCategory> FeeCategories { get; }
     DbSet<Student> Students { get; }
     DbSet<Enrollment> Enrollments { get; }
     DbSet<Sponsorship> Sponsorships { get; }
@@ -109,7 +110,10 @@ public sealed record StatementDocument(
     decimal TotalNet, decimal TotalPaid, decimal Balance, decimal Overdue);
 
 /// <summary>En-tête des cartes d'accès : les mentions officielles de l'établissement.</summary>
-public sealed record SchoolCardHeader(string Country, string? Ministry, string? Direction, string? Division, string? CityZone, string Institute, string? Address, byte[]? Logo);
+public sealed record SchoolCardHeader(
+    string Country, string? Ministry, string? Direction, string? Division, string? CityZone,
+    string Institute, string? Address, byte[]? Logo,
+    string? Phone = null, string? Email = null, string? Website = null, string? Motto = null);
 
 /// <summary>Une carte à imprimer. La couleur est celle de la promotion ; le QR contient l'identité, la classe, l'établissement, la session et l'année.</summary>
 public sealed record CardItem(string LastName, string MiddleName, string FirstName, string Classe, string Color, string QrText, string Matricule = "");

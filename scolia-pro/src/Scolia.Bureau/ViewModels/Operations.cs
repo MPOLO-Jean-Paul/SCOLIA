@@ -24,6 +24,8 @@ public sealed class DataPage : PageViewModel
     {
         Action("Sauvegarder", MaterialIconKind.ContentSave, () => BackupNowAsync(Shell), primary: true);
         Action("Télécharger", MaterialIconKind.Download, DownloadAsync, row: true);
+        Action("Exporter chiffré", MaterialIconKind.LockOutline, ExportEncryptedAsync, row: true);
+        Action("Importer chiffré", MaterialIconKind.Upload, ImportEncryptedAsync);
         Action("Restaurer", MaterialIconKind.BackupRestore, RestoreAsync, row: true);
         Action("Importation du classeur", MaterialIconKind.Upload, () => ImportAsync(Shell));
         Action("Modèle d'import", MaterialIconKind.FileExcel, () => TemplateAsync(Shell));
@@ -66,6 +68,62 @@ public sealed class DataPage : PageViewModel
         }
         var name = Selected.Name;
         await Shell.Download($"api/sauvegardes/{Uri.EscapeDataString(name)}", name);
+    }
+
+    private async Task ExportEncryptedAsync()
+    {
+        if (Selected is null)
+        {
+            Shell.Notify("Choisissez d'abord une sauvegarde à protéger.");
+            return;
+        }
+        var name = Selected.Name;
+        var form = new FormViewModel("Exporter une sauvegarde chiffrée",
+            "Une phrase secrète de 12 caractères minimum protégera l'archive portable. Elle ne sera pas enregistrée dans SCOLIA.",
+            async f =>
+            {
+                var passphrase = f.Text("passphrase");
+                if (passphrase.Length < 12)
+                {
+                    f.Find("passphrase").Error = "Indiquez au moins 12 caractères.";
+                    return false;
+                }
+                var (data, _) = await Shell.Api.PostDocumentAsync(
+                    $"api/sauvegardes/{Uri.EscapeDataString(name)}/export-chiffre", new { passphrase });
+                var location = Files.Save(data, name + ".scolia-enc");
+                Shell.Notify($"Archive chiffrée enregistrée : {location}");
+                return true;
+            }) { SubmitText = "Exporter chiffré" };
+        form.Add("passphrase", "Phrase secrète de l'archive", FieldKind.Secret, required: true,
+            hint: "Conservez cette phrase secrète séparément du fichier ; sans elle, l'archive ne pourra pas être restaurée.");
+        await Shell.Ask(form);
+    }
+
+    private async Task ImportEncryptedAsync()
+    {
+        if (Shell.PickFileHandler is null) return;
+        var picked = await Shell.PickFileHandler([".scolia-enc"]);
+        if (picked is null) return;
+        var form = new FormViewModel("Importer une sauvegarde chiffrée",
+            "L'archive sera déchiffrée et vérifiée dans une nouvelle copie. La base actuelle restera inchangée.",
+            async f =>
+            {
+                var passphrase = f.Text("passphrase");
+                if (passphrase.Length < 12)
+                {
+                    f.Find("passphrase").Error = "Indiquez au moins 12 caractères.";
+                    return false;
+                }
+                var result = await Shell.Api.UploadWithFieldsAsync<BackupDto>(HttpMethod.Post,
+                    "api/sauvegardes/import-chiffre",
+                    [new UploadedFile("archive", picked.Name, picked.Data)],
+                    new Dictionary<string, string> { ["passphrase"] = passphrase });
+                Shell.Notify($"Archive validée et importée : {result.Name}. Vous pourrez la restaurer après vérification.");
+                await RefreshAsync();
+                return true;
+            }) { SubmitText = "Importer et vérifier" };
+        form.Add("passphrase", "Phrase secrète de l'archive", FieldKind.Secret, required: true);
+        await Shell.Ask(form);
     }
 
     private async Task RestoreAsync()
@@ -269,15 +327,15 @@ public sealed class SearchViewModel : Observable
 
     // ---------- Voix : le micro du champ, comme dans Google ----------
     public bool VoiceAvailable => VoiceInput.Available;
+    private readonly VoiceCaptureSession voiceSession = new();
     private bool listening;
-    public bool Listening { get => listening; private set { if (Set(ref listening, value)) Raise(nameof(Placeholder)); } }
-    public AsyncCommand Listen => listen ??= new AsyncCommand(async () =>
-    {
-        Listening = true;
-        try { if (await VoiceInput.ListenAsync() is { } text) Query = text; }
-        finally { Listening = false; }
-    });
-    private AsyncCommand? listen;
+    public bool Listening { get => listening; private set { if (Set(ref listening, value)) { Raise(nameof(Placeholder)); Raise(nameof(VoiceTip)); } } }
+    public string VoiceTip => Listening ? "Arrêter l'écoute vocale" : "Rechercher à la voix";
+    public ToggleVoiceCommand Listen => listen ??= new ToggleVoiceCommand(() =>
+        voiceSession.ToggleAsync(text => Query = text, active => Listening = active));
+    private ToggleVoiceCommand? listen;
+    /// <summary>Fermer la recherche interrompt l'écoute et ignore toute ancienne transcription.</summary>
+    public void StopListening() => voiceSession.Cancel(active => Listening = active);
     public ObservableCollection<RecentSearchRow> Recent { get; } = [];
     public bool HasRecent => Recent.Count > 0;
     public IReadOnlyList<SearchShortcutRow> Shortcuts { get; }
@@ -375,7 +433,7 @@ public sealed class SearchViewModel : Observable
             // et toutes les autres fonctions ouvrent réellement leur destination.
             var isSetting = setting.Title is "Configuration" or "Thème et couleurs"
                 or "Texte et polices" or "Fenêtres et affichage" or "Animations et fluidité"
-                or "Sons" or "Sécurité du compte" or "Poste et réseau"
+                or "Sons" or "Sécurité du compte" or "Poste et réseau" or "À propos et mises à jour"
                 or "Établissement" or "Années scolaires" or "Sections"
                 or "Promotions et frais" or "Nouvelle promotion" or "Nouvelle année"
                 or "Utilisateurs";
@@ -452,9 +510,19 @@ public sealed class SearchViewModel : Observable
         if (url is "/compte/poste" or "/compte/mot-de-passe")
         {
             shell.CloseDialog();
-            shell.OpenBackstage();
-            var section = url == "/compte/poste" ? "poste" : "mot-de-passe";
-            shell.Backstage.Section = shell.Backstage.Items.First(i => i.Value == section);
+            if (shell.Phone || Platform.IsMobile)
+            {
+                shell.OpenBackstage();
+                var section = url == "/compte/poste" ? "poste" : "mot-de-passe";
+                shell.Backstage.Section = shell.Backstage.Items.FirstOrDefault(i => i.Value == section)
+                    ?? new BackstageItemVm(section, section == "poste" ? "Poste et réseau" : "Sécurité du compte",
+                        section == "poste" ? MaterialIconKind.LanConnect : MaterialIconKind.ShieldLockOutline,
+                        section == "poste" ? "ToneGreen" : "ToneOrange");
+            }
+            else if (url == "/compte/poste")
+                await shell.Open(() => new NetworkHubPage(shell));
+            else
+                await shell.Open(() => new SettingsPage(shell, "securite"));
             return;
         }
         if (url.StartsWith("/navigation/", StringComparison.Ordinal))
@@ -499,7 +567,7 @@ public sealed class SearchViewModel : Observable
             "personnel" when shell.Can(Perm.StaffManage) => () => new StaffPage(shell),
             "parametres" when parts.Length > 1 && parts[1] == "utilisateurs" && shell.Can(Perm.UsersManage)
                 => () => new UsersPage(shell),
-            "parametres" when parts.Length > 1 && (new[] { "apparence", "texte", "fenetres", "animations", "sons" }.Contains(parts[1]) || (shell.Can(Perm.SettingsWrite) && new[] { "etablissement", "annees", "sections", "promotions" }.Contains(parts[1]))) => () => new SettingsPage(shell, parts[1]),
+            "parametres" when parts.Length > 1 && (new[] { "apparence", "texte", "fenetres", "animations", "sons" }.Contains(parts[1]) || (shell.Can(Perm.SettingsWrite) && new[] { "etablissement", "annees", "sections", "promotions", "frais" }.Contains(parts[1]))) => () => new SettingsPage(shell, parts[1]),
             "parametres" => () => new SettingsPage(shell),
             "utilisateurs" when shell.Can(Perm.UsersManage) => () => new UsersPage(shell),
             "donnees" when shell.Can(Perm.BackupManage) => () => new DataPage(shell),
@@ -569,17 +637,23 @@ public sealed class BackstageViewModel : Observable
     public BackstageViewModel(ShellViewModel shell)
     {
         this.shell = shell;
-        Items =
-        [
-            new BackstageItemVm("infos", "Informations", MaterialIconKind.Information, "ToneBlue"),
-            new BackstageItemVm("mot-de-passe", "Sécurité du compte", MaterialIconKind.ShieldLockOutline, "ToneOrange"),
-            new BackstageItemVm("poste", "Poste et réseau", MaterialIconKind.LanConnect, "ToneGreen"),
-            // Raccourci vers Paramètres > Cet appareil : un seul endroit pour le thème, la police et les sons.
-            new BackstageItemVm("preferences", "Apparence et confort", MaterialIconKind.TuneVariant, "TonePurple"),
-            Preferences.MobileLayout
-                ? new BackstageItemVm("aide", "Aide et gestes", MaterialIconKind.GestureTap, "ToneNeutral")
-                : new BackstageItemVm("aide", "Aide et raccourcis", MaterialIconKind.Keyboard, "ToneNeutral"),
-        ];
+        // Compte Windows : uniquement identité, information et aide.
+        // Réseau, sécurité et apparence ont des emplacements dédiés et faciles
+        // à retrouver dans la navigation principale ou Paramètres.
+        var entries = new List<BackstageItemVm>
+        {
+            new("infos", "Informations", MaterialIconKind.Information, "ToneBlue"),
+        };
+        if (Preferences.MobileLayout)
+        {
+            entries.Add(new("mot-de-passe", "Sécurité du compte", MaterialIconKind.ShieldLockOutline, "ToneOrange"));
+            entries.Add(new("poste", "Poste et réseau", MaterialIconKind.LanConnect, "ToneGreen"));
+            entries.Add(new("preferences", "Apparence et confort", MaterialIconKind.TuneVariant, "TonePurple"));
+        }
+        entries.Add(Preferences.MobileLayout
+            ? new("aide", "Aide et gestes", MaterialIconKind.GestureTap, "ToneNeutral")
+            : new("aide", "Aide et raccourcis", MaterialIconKind.Keyboard, "ToneNeutral"));
+        Items = entries;
         section = Items[0];
         Close = new RelayCommand(shell.CloseBackstage);
         Logout = new AsyncCommand(() => shell.LogoutAsync());
@@ -631,6 +705,29 @@ public sealed class BackstageViewModel : Observable
             }
         }
     }
+
+    public bool CanCheckWindowsUpdates => OperatingSystem.IsWindows();
+
+    /// <summary>Contrôle manuel complémentaire au contrôle automatique Windows à l'ouverture.</summary>
+    public AsyncCommand CheckWindowsUpdates => checkWindowsUpdates ??= new AsyncCommand(async () =>
+    {
+        if (Avalonia.Application.Current?.ApplicationLifetime is
+            Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime
+            { MainWindow: { } window })
+            await DesktopAppUpdates.CheckAsync(window, manual: true);
+    });
+    private AsyncCommand? checkWindowsUpdates;
+
+    /// <summary>Visible sur Android dans Mon compte : même contrôle forcé que Poste et réseau.</summary>
+    public bool CanCheckPhoneUpdates => Platform.IsMobile && Platform.CheckAppUpdatesAsync is not null;
+    public string PhoneUpdateStatus => Platform.AppUpdateStatus?.Invoke() ?? "Aucune recherche effectuée.";
+    public AsyncCommand CheckPhoneUpdates => checkPhoneUpdates ??= new AsyncCommand(async () =>
+    {
+        if (Platform.CheckAppUpdatesAsync is not { } check) return;
+        await check();
+        Raise(nameof(PhoneUpdateStatus));
+    });
+    private AsyncCommand? checkPhoneUpdates;
 
     public bool IsInfos => section?.Value == "infos";
     /// <summary>Mobile : la liste des rubriques s'affiche tant qu'aucune rubrique à page propre n'est ouverte.</summary>
@@ -1171,6 +1268,16 @@ public sealed class AboutViewModel : Observable
         OpenWhatsApp = new RelayCommand(() => Files.Open($"https://wa.me/{AboutInfo.PhoneDigits}"));
         CopyContacts = new AsyncCommand(CopyAsync);
     }
+
+    public bool CanCheckPhoneUpdates => Platform.IsMobile && Platform.CheckAppUpdatesAsync is not null;
+    public string PhoneUpdateStatus => Platform.AppUpdateStatus?.Invoke() ?? "Aucune recherche effectuée.";
+    public AsyncCommand CheckPhoneUpdates => checkPhoneUpdates ??= new AsyncCommand(async () =>
+    {
+        if (Platform.CheckAppUpdatesAsync is not { } check) return;
+        await check();
+        Raise(nameof(PhoneUpdateStatus));
+    });
+    private AsyncCommand? checkPhoneUpdates;
 
     public string Title => "SCOLIA Pro";
     public string Tagline => AboutInfo.Tagline;

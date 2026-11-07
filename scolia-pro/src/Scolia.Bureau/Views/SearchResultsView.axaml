@@ -1,91 +1,95 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:infra="using:Scolia.Bureau.Infrastructure"
              x:Class="Scolia.Bureau.Views.SearchResultsView">
-  <!-- Corps de la recherche générale : récentes et accès rapides champ vide, puis une ligne par résultat.
-       Le même dans la fenêtre de recherche et sous la barre du haut de l'ordinateur. -->
-  <ScrollViewer x:Name="Scroller" MaxHeight="480" HorizontalScrollBarVisibility="Disabled">
-    <StackPanel Margin="0,0,0,16">
-      <!-- Rien de saisi : recherches récentes et accès rapides -->
-      <StackPanel IsVisible="{Binding IsIdle}">
-        <StackPanel IsVisible="{Binding HasRecent}">
+  <!-- Résultats accessibles au clavier, identiques dans la recherche desktop et mobile.
+       Deux colonnes seulement si chaque raccourci a réellement la place nécessaire. -->
+  <ScrollViewer x:Name="Scroller" MaxHeight="440" HorizontalScrollBarVisibility="Disabled">
+    <StackPanel Margin="8,4,8,12" Spacing="8">
+      <StackPanel IsVisible="{Binding IsIdle}" Spacing="10">
+        <StackPanel IsVisible="{Binding HasRecent}" Spacing="4">
           <Grid ColumnDefinitions="*,Auto">
             <TextBlock Text="Recherches récentes" Classes="searchsection" />
-            <Button Grid.Column="1" Classes="ghost" Content="Effacer" Command="{Binding ClearRecent}" Margin="0,10,12,0" VerticalAlignment="Center" />
+            <Button infra:Icons.Lead="Eraser" Grid.Column="1" Classes="ghost" Content="Effacer" Command="{Binding ClearRecent}"
+                    Margin="0,6,8,0" MinHeight="32" VerticalAlignment="Center" />
           </Grid>
           <ItemsControl ItemsSource="{Binding Recent}">
             <ItemsControl.ItemTemplate>
               <DataTemplate>
-                <Button Classes="searchrow" Command="{Binding Use}">
-                  <Grid ColumnDefinitions="Auto,*,Auto">
-                    <Border Width="40" Height="40" CornerRadius="20" Background="{DynamicResource GroupBrush}" Margin="0,0,18,0">
-                      <mi:MaterialIcon Kind="History" Width="22" Height="22" Foreground="{DynamicResource MutedBrush}"
-                                       HorizontalAlignment="Center" VerticalAlignment="Center" />
+                <Button Classes="searchrow" Command="{Binding Use}" ToolTip.Tip="Reprendre cette recherche">
+                  <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                    <Border Width="34" Height="34" CornerRadius="10" Background="{DynamicResource GroupBrush}" VerticalAlignment="Center">
+                      <mi:MaterialIcon Kind="History" Width="18" Height="18"
+                                       Foreground="{DynamicResource MutedBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
                     </Border>
-                    <TextBlock Grid.Column="1" Text="{Binding Text}" FontSize="16" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
-                    <mi:MaterialIcon Grid.Column="2" Kind="ArrowTopLeft" Width="22" Height="22" Foreground="{DynamicResource MutedBrush}" />
+                    <TextBlock Grid.Column="1" Text="{Binding Text}" FontSize="14" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                    <mi:MaterialIcon Grid.Column="2" Kind="ArrowTopLeft" Width="16" Height="16"
+                                     Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" />
                   </Grid>
                 </Button>
               </DataTemplate>
             </ItemsControl.ItemTemplate>
           </ItemsControl>
         </StackPanel>
-
-        <StackPanel IsVisible="{Binding HasShortcuts}">
+        <StackPanel IsVisible="{Binding HasShortcuts}" Spacing="4">
           <TextBlock Text="Accès rapides" Classes="searchsection" />
-          <ItemsControl ItemsSource="{Binding Shortcuts}" Margin="12,0">
+          <ItemsControl ItemsSource="{Binding Shortcuts}">
             <ItemsControl.ItemsPanel>
-              <ItemsPanelTemplate><UniformGrid Columns="3" /></ItemsPanelTemplate>
+              <ItemsPanelTemplate><UniformGrid Columns="2" infra:Adaptive.MinItemWidth="230" /></ItemsPanelTemplate>
             </ItemsControl.ItemsPanel>
             <ItemsControl.ItemTemplate>
               <DataTemplate>
-                <Button Classes="searchtile" Command="{Binding Open}">
-                  <Grid ColumnDefinitions="*,Auto">
-                    <TextBlock Text="{Binding Label}" FontSize="14" FontWeight="Medium" VerticalAlignment="Center"
-                               TextWrapping="WrapWithOverflow" MaxLines="2" TextTrimming="CharacterEllipsis" />
-                    <Border Grid.Column="1" Width="38" Height="38" CornerRadius="12" Background="{Binding Brush}" Margin="6,0,0,0">
-                      <mi:MaterialIcon Kind="{Binding Icon}" Width="22" Height="22" Foreground="White"
-                                       HorizontalAlignment="Center" VerticalAlignment="Center" />
+                <Button Classes="searchtile" Command="{Binding Open}" ToolTip.Tip="{Binding Label}">
+                  <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                    <Border Width="36" Height="36" CornerRadius="11" Background="{Binding Brush}" VerticalAlignment="Center">
+                      <mi:MaterialIcon Kind="{Binding Icon}" Width="20" Height="20"
+                                       Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
                     </Border>
+                    <TextBlock Grid.Column="1" Text="{Binding Label}" FontSize="13" FontWeight="SemiBold"
+                               VerticalAlignment="Center" TextWrapping="Wrap" MaxLines="2" />
+                    <mi:MaterialIcon Grid.Column="2" Kind="ChevronRight" Width="16" Height="16"
+                                     Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" />
                   </Grid>
                 </Button>
               </DataTemplate>
             </ItemsControl.ItemTemplate>
           </ItemsControl>
         </StackPanel>
-
-        <TextBlock Text="{Binding Message}" Classes="muted" TextWrapping="Wrap" Margin="20,18,20,0" />
+        <TextBlock Text="{Binding Message}" Classes="muted" TextWrapping="Wrap" Margin="12,4" />
       </StackPanel>
 
-      <!-- Résultats : une ligne par apprenant, reçu ou fonctionnalité -->
-      <StackPanel IsVisible="{Binding HasResults}">
-        <TextBlock Text="{Binding Message}" Classes="muted" Margin="20,14,20,6" TextWrapping="Wrap" IsVisible="{Binding !IsEmptyResult}" />
+      <StackPanel IsVisible="{Binding HasResults}" Spacing="6">
+        <TextBlock Text="{Binding Message}" Classes="searchsection" TextWrapping="Wrap" IsVisible="{Binding !IsEmptyResult}" />
         <ItemsControl ItemsSource="{Binding Results}">
           <ItemsControl.ItemTemplate>
             <DataTemplate>
-              <Button Classes="searchrow" Command="{Binding Open}" MinHeight="72">
-                <Grid ColumnDefinitions="Auto,*">
-                  <Border Width="52" Height="52" CornerRadius="14" Background="{Binding Brush}" Margin="0,0,16,0">
-                    <mi:MaterialIcon Kind="{Binding Icon}" Width="28" Height="28" Foreground="White"
+              <Button Classes="searchrow" Command="{Binding Open}" MinHeight="66">
+                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="11">
+                  <Border Width="38" Height="38" CornerRadius="11" Background="{Binding Brush}" VerticalAlignment="Center">
+                    <mi:MaterialIcon Kind="{Binding Icon}" Width="21" Height="21" Foreground="White"
                                      HorizontalAlignment="Center" VerticalAlignment="Center" />
                   </Border>
-                  <StackPanel Grid.Column="1" Spacing="4" VerticalAlignment="Center">
-                    <TextBlock Text="{Binding Title}" FontSize="16" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                      <Border Classes="typepill"><TextBlock Text="{Binding Type}" FontSize="12" FontWeight="Medium" /></Border>
-                      <TextBlock Text="{Binding Subtitle}" Classes="muted" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" MaxWidth="380" />
-                    </StackPanel>
+                  <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding Title}" FontSize="14" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="7">
+                      <Border Classes="typepill" VerticalAlignment="Top">
+                        <TextBlock Text="{Binding Type}" FontSize="11" FontWeight="Medium" />
+                      </Border>
+                      <TextBlock Grid.Column="1" Text="{Binding Subtitle}" Classes="muted" FontSize="12"
+                                 TextWrapping="Wrap" MaxLines="2" VerticalAlignment="Center" />
+                    </Grid>
                   </StackPanel>
+                  <mi:MaterialIcon Grid.Column="2" Kind="ChevronRight" Width="16" Height="16"
+                                   Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" />
                 </Grid>
               </Button>
             </DataTemplate>
           </ItemsControl.ItemTemplate>
         </ItemsControl>
-
-        <!-- Rien trouvé -->
-        <StackPanel IsVisible="{Binding IsEmptyResult}" HorizontalAlignment="Center" Spacing="10" Margin="28,40,28,0">
-          <mi:MaterialIcon Kind="Magnify" Width="40" Height="40" Foreground="{DynamicResource MutedBrush}" HorizontalAlignment="Center" />
-          <TextBlock Text="Aucun résultat" FontSize="17" FontWeight="SemiBold" TextAlignment="Center" />
+        <StackPanel IsVisible="{Binding IsEmptyResult}" HorizontalAlignment="Center" Spacing="8" Margin="20,32,20,12">
+          <mi:MaterialIcon Kind="Magnify" Width="32" Height="32" Foreground="{DynamicResource MutedBrush}" HorizontalAlignment="Center" />
+          <TextBlock Text="Aucun résultat" FontSize="16" FontWeight="SemiBold" TextAlignment="Center" />
           <TextBlock Text="{Binding Message}" Classes="muted" TextWrapping="Wrap" TextAlignment="Center" />
         </StackPanel>
       </StackPanel>

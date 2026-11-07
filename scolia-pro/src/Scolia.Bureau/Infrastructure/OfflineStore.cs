@@ -59,7 +59,24 @@ public sealed class OfflineStore
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "SCOLIA", "hors-ligne");
 
     /// <summary>Utilisateur dont les pages sont gardées : chaque compte ne relit que ce qu'il a lui-même consulté.</summary>
-    public string User { get; set; } = string.Empty;
+    private string currentUser = string.Empty;
+    private long searchRevision;
+    public string User
+    {
+        get => System.Threading.Volatile.Read(ref currentUser);
+        set
+        {
+            var previous = System.Threading.Interlocked.Exchange(ref currentUser, value ?? string.Empty);
+            if (!string.Equals(previous, value, StringComparison.Ordinal))
+                System.Threading.Interlocked.Increment(ref searchRevision);
+        }
+    }
+
+    /// <summary>
+    /// Révision locale du registre, utilisée pour ne pas reparcourir 10 000
+    /// apprenants à chaque frappe. Tout changement de compte invalide l'index.
+    /// </summary>
+    public long SearchRevision => System.Threading.Interlocked.Read(ref searchRevision);
 
     private string CacheFolder => Path.Combine(root, "pages", Safe(User));
     private string OutboxFile => "envois.json";
@@ -69,16 +86,84 @@ public sealed class OfflineStore
 
     private sealed record SavedPage(string Json, DateTime SavedAt, string? Path = null);
     private string PagePrefix => "page:" + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(User.ToUpperInvariant()))) + ":";
-    private string PageKey(string path) => PagePrefix + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(path)));
-    public IReadOnlyList<string> CachedPaths() => User.Length == 0 ? [] : database.ReadPrefix(PagePrefix, 32)
-        .Select(text => JsonSerializer.Deserialize<SavedPage>(text, Json)?.Path)
-        .OfType<string>().Where(path => path != "api/etablissement/logo").ToList();
+    private string PageKey(string path) => PageKeyFor(User, path);
+    private static string PageKeyFor(string user, string path) =>
+        "page:" + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(user.ToUpperInvariant()))) +
+        ":" + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(path)));
+    /// <summary>
+    /// Pages locales à réactualiser, les plus anciennes d'abord. Un classement par hash SQLite
+    /// retraitait toujours les mêmes 32 pages et laissait les autres périmées indéfiniment.
+    /// La lecture reste bornée aux 2048 chemins du compte courant ; le travail réseau est
+    /// limité séparément (24 pages par exécution WorkManager).
+    /// </summary>
+    public IReadOnlyList<string> CachedPaths(int limit = 32)
+    {
+        if (string.IsNullOrWhiteSpace(User) || limit <= 0) return [];
+        return database.ReadPrefix(PagePrefix, 2048)
+            .Select(text =>
+            {
+                try { return JsonSerializer.Deserialize<SavedPage>(text, Json); }
+                catch (JsonException) { return null; }
+            })
+            .OfType<SavedPage>()
+            .Where(p => !string.IsNullOrWhiteSpace(p.Path) && p.Path != "api/etablissement/logo")
+            .OrderBy(p => p.SavedAt)
+            .ThenBy(p => p.Path!, StringComparer.Ordinal)
+            .Take(Math.Min(limit, 128))
+            .Select(p => p.Path!)
+            .ToList();
+    }
 
     /// <summary>Pages chiffrées dans SQLite ; les anciennes pages sont migrées à leur première lecture.</summary>
-    public void SavePage(string path, string json)
+    public void SavePage(string path, string json) => SavePageFor(User, path, json);
+
+    /// <summary>
+    /// Récupère des pages de registre en une requête SQLite puis reconstitue
+    /// uniquement les clés du compte courant. Compatible avec l'ancien cache
+    /// JSON individuel encore présent après une migration non destructive.
+    /// </summary>
+    public IReadOnlyDictionary<string, string> ReadPages(IReadOnlyList<string> paths)
     {
-        if (User.Length == 0) return;
-        database.Write(PageKey(path), JsonSerializer.Serialize(new SavedPage(json, DateTime.Now, path), Json));
+        var account = User;
+        var result = new Dictionary<string, string>(StringComparer.Ordinal);
+        if (account.Length == 0 || paths.Count == 0) return result;
+        var keys = paths.Select(path => (Path: path, Key: PageKeyFor(account, path))).ToArray();
+        var saved = database.ReadMany(keys.Select(x => x.Key).ToArray());
+        foreach (var item in keys)
+        {
+            if (!string.Equals(account, User, StringComparison.Ordinal)) break;
+            if (saved.TryGetValue(item.Key, out var stored))
+            {
+                var page = JsonSerializer.Deserialize<SavedPage>(stored, Json)
+                    ?? throw new InvalidDataException("Cache local invalide.");
+                result[item.Path] = page.Json;
+                continue;
+            }
+            // Migration à la demande, uniquement si la page existait réellement.
+            var file = Path.Combine(root, "pages", Safe(account),
+                Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(item.Path)))[..32] + ".json");
+            if (!File.Exists(file)) continue;
+            var json = File.ReadAllText(file);
+            SavePageFor(account, item.Path, json);
+            ArchiveLegacy(file);
+            result[item.Path] = json;
+        }
+        return result;
+    }
+
+    /// <summary>
+    /// Écrit sous le compte qui a déclenché la requête HTTP. Une connexion à
+    /// un autre compte pendant l'attente réseau ne peut pas transférer ses données.
+    /// </summary>
+    public void SavePageFor(string user, string path, string json)
+    {
+        if (string.IsNullOrWhiteSpace(user)) return;
+        database.Write(PageKeyFor(user, path),
+            JsonSerializer.Serialize(new SavedPage(json, DateTime.Now, path), Json));
+        if (string.Equals(user, User, StringComparison.Ordinal) &&
+            (path.StartsWith("api/apprenants", StringComparison.Ordinal) ||
+             path == "api/etablissement/promotions"))
+            System.Threading.Interlocked.Increment(ref searchRevision);
     }
 
     public (string Json, DateTime SavedAt)? ReadPage(string path)
@@ -98,6 +183,24 @@ public sealed class OfflineStore
         return (json, savedAt);
     }
 
+    /// <summary>
+    /// Un 403/404 du serveur invalide la copie locale de cette ressource :
+    /// la conservation hors ligne ne doit pas contourner une révocation explicite.
+    /// Le compte d'origine est conservé pour éviter d'effacer la copie d'un autre utilisateur.
+    /// </summary>
+    public void RemovePageFor(string user, string path)
+    {
+        if (string.IsNullOrWhiteSpace(user) || string.IsNullOrWhiteSpace(path)) return;
+        database.Delete(PageKeyFor(user, path));
+        if (string.Equals(user, User, StringComparison.Ordinal) &&
+            path.StartsWith("api/apprenants", StringComparison.Ordinal))
+            System.Threading.Interlocked.Increment(ref searchRevision);
+        // Éviter la réimportation de l'ancien cache JSON après une suppression serveur.
+        var legacy = Path.Combine(root, "pages", Safe(user),
+            Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(path)))[..32] + ".json");
+        if (File.Exists(legacy)) File.Delete(legacy);
+    }
+
     public IReadOnlyList<OutboxItem> Outbox() => Load(OutboxFile).Where(i => i.User == User).ToList();
     public IReadOnlyList<OutboxItem> Conflicts() => Load(ConflictFile).Where(i => i.User == User).ToList();
 
@@ -107,11 +210,16 @@ public sealed class OfflineStore
         Change((pending, _) => { if (pending.All(i => i.Id != item.Id)) pending.Add(item); });
     }
 
-    public void Sent(string id) => Change((pending, _) => pending.RemoveAll(i => i.Id == id && i.User == User));
+    public void Sent(string id) => SentFor(User, id);
 
-    public void Refused(string id, string error) => Change((pending, conflicts) =>
+    /// <summary>Ne jamais solder la file du compte B lorsque l'envoi appartenait au compte A.</summary>
+    public void SentFor(string user, string id) =>
+        Change((pending, _) => pending.RemoveAll(i => i.Id == id && i.User == user));
+
+    public void Refused(string id, string error) => RefusedFor(User, id, error);
+    public void RefusedFor(string user, string id, string error) => Change((pending, conflicts) =>
     {
-        var item = pending.FirstOrDefault(i => i.Id == id && i.User == User);
+        var item = pending.FirstOrDefault(i => i.Id == id && i.User == user);
         if (item is null) return;
         item.Error = error;
         pending.Remove(item);
@@ -140,6 +248,7 @@ public sealed class OfflineStore
             values[OutboxFile] = JsonSerializer.Serialize(pending, Json);
             values[ConflictFile] = JsonSerializer.Serialize(conflicts, Json);
         });
+        System.Threading.Interlocked.Increment(ref searchRevision);
     }
 
     /// <summary>

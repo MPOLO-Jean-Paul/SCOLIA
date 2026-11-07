@@ -142,7 +142,7 @@ public static class RowMenu
     private static MenuItem Item(string label, MaterialIconKind icon, Func<Task> run) =>
         new() { Header = label, Icon = Icon(icon), Command = new AsyncCommand(run) };
 
-    private static MaterialIcon Icon(MaterialIconKind kind) => new() { Kind = kind, Width = 16, Height = 16 };
+    private static MaterialIcon Icon(MaterialIconKind kind) => new() { Kind = Icons.Line(kind), Width = Icons.ButtonSize, Height = Icons.ButtonSize };
 
     private static PageViewModel? PageOf(Control grid) =>
         grid.DataContext as PageViewModel ?? grid.GetVisualAncestors().OfType<Control>().Select(c => c.DataContext).OfType<PageViewModel>().FirstOrDefault();

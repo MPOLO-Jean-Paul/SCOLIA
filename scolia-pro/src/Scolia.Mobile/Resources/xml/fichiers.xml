@@ -3,4 +3,6 @@
 <paths>
   <external-files-path name="documents" path="Documents/" />
   <files-path name="interne" path="." />
+  <!-- APK téléchargé par DownloadManager : accès temporaire au seul installateur Android. -->
+  <external-files-path name="mises-a-jour" path="Download/" />
 </paths>

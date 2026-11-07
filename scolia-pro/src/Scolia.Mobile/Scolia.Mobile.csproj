@@ -13,8 +13,8 @@
     <RootNamespace>Scolia.Mobile</RootNamespace>
     <ApplicationId>com.jpservices.scolia</ApplicationId>
     <ApplicationTitle>SCOLIA Phone</ApplicationTitle>
-    <ApplicationVersion>123</ApplicationVersion>
-    <ApplicationDisplayVersion>1.2.3</ApplicationDisplayVersion>
+    <ApplicationVersion>156</ApplicationVersion>
+    <ApplicationDisplayVersion>1.2.36</ApplicationDisplayVersion>
     <AndroidPackageFormat>apk</AndroidPackageFormat>
     <RuntimeIdentifiers>android-arm64;android-arm</RuntimeIdentifiers>
     <AvaloniaUseCompiledBindingsByDefault>false</AvaloniaUseCompiledBindingsByDefault>
@@ -39,6 +39,10 @@
 
   <!-- Le serveur de l'établissement, pour le téléphone qui en tient lieu. Le protocole de découverte vient avec lui.
        Il est en .NET pur : il se compile sans l'architecture du téléphone (android-arm64, android-arm). -->
+  <!-- Le module d'installation VPN historique n'est plus inclus dans l'APK. -->
+  <ItemGroup>
+    <Compile Remove="AndroidTailscaleSetup.cs" />
+  </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../Scolia.Api/Scolia.Api.csproj" SetTargetFramework="TargetFramework=net10.0"
                       GlobalPropertiesToRemove="RuntimeIdentifier;SelfContained" />
@@ -59,6 +63,8 @@
     <!-- Relier un appareil : le serveur affiche un code QR, l'autre appareil le lit. -->
     <PackageReference Include="QRCoder" />
     <PackageReference Include="ZXing.Net" />
+    <PackageReference Include="Xamarin.GooglePlayServices.Code.Scanner" />
+    <PackageReference Include="Xamarin.AndroidX.Tracing.Tracing.Ktx" />
   </ItemGroup>
 
   <!-- Les espaces de noms d'Android ne sont pas ajoutés d'office : ils entreraient en conflit avec ceux d'Avalonia

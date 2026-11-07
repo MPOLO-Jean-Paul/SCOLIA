@@ -1,0 +1,35 @@
+name: SCOLIA Cloudflare relais - tests sans deploiement
+on:
+  push:
+    paths:
+      - 'scolia-pro/deploy/cloudflare/**'
+      - '.github/workflows/scolia-cloudflare-relay.yml'
+  pull_request:
+    paths:
+      - 'scolia-pro/deploy/cloudflare/**'
+      - '.github/workflows/scolia-cloudflare-relay.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  relay:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: scolia-pro/deploy/cloudflare
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Installer Wrangler sans secret Cloudflare
+        run: npm ci --no-audit --no-fund
+      - name: Tester securite, trames et hibernation
+        run: npm test
+      - name: Verifier les types
+        run: npm run typecheck
+      - name: Verifier le bundle sans mettre le relais en ligne
+        run: npx wrangler deploy --dry-run --outdir /tmp/scolia-cloudflare-check

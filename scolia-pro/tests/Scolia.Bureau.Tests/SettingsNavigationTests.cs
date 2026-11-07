@@ -45,6 +45,40 @@ public class SettingsNavigationTests
     }
 
     [Fact]
+    public void Compte_desktop_ne_contient_plus_reseau_apparence_ou_securite()
+    {
+        using var api = new ScoliaClient(new Uri("http://localhost:5080/"));
+        var shell = new ShellViewModel(api, new Preferences()) { Phone = false };
+        Assert.Equal(new[] { "infos", "aide" }, shell.Backstage.Items.Select(i => i.Value));
+
+        var groups = Sidebar.Build(shell);
+        var network = Assert.Single(groups, g => g.Title == "Réseau et postes");
+        Assert.Equal(typeof(NetworkHubPage), Assert.Single(network.Items).PageType);
+        var blocks = Sidebar.Blocks(groups);
+        Assert.Contains(blocks, b => b.Title == "CONNEXIONS" &&
+            b.Groups.Any(g => g.Title == "Réseau et postes"));
+    }
+
+    [Fact]
+    public void Securite_et_a_propos_sont_des_rubriques_des_parametres_desktop()
+    {
+        using var api = new ScoliaClient(new Uri("http://localhost:5080/"));
+        var shell = new ShellViewModel(api, new Preferences()) { Phone = false };
+        var settings = new SettingsPage(shell, "securite");
+
+        Assert.True(settings.IsSecurity);
+        Assert.True(settings.SettingsDetailVisible);
+        Assert.True(settings.SecurityModel.IsPassword);
+        Assert.Contains(settings.PosteSections, s => s.Value == "securite");
+        Assert.Contains(settings.PosteSections, s => s.Value == "apropos");
+
+        var about = new SettingsPage(shell, "apropos");
+        Assert.True(about.IsAbout);
+        Assert.StartsWith("Version ", about.AboutModel.VersionLine, StringComparison.Ordinal);
+        Assert.NotNull(about.CheckWindowsUpdates);
+    }
+
+    [Fact]
     public void Sur_ordinateur_les_reglages_restent_directement_disponibles()
     {
         var shell = new ShellViewModel(new ScoliaClient(new Uri("http://localhost:5080/")), new Preferences());

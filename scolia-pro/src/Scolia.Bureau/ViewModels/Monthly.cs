@@ -102,14 +102,16 @@ public sealed class MonthlyPage : PageViewModel
         }
 
         CollectionSync.Apply(Totals, new[] {
-            new KpiVm("Payés", Format.Amount(d.PaidCount), $"sur {Format.Count(d.PaidCount + d.UnpaidCount + d.CoveredCount, "apprenant", "apprenants")}", ThemeBrush.Get("ToneGreen")),
+            // Les pris en charge ne sont pas des payants : ils ont leur propre total.
+            new KpiVm("Payés", Format.Amount(d.PaidCount), $"sur {Format.Count(d.PaidCount + d.UnpaidCount, "payant", "payants")}", ThemeBrush.Get("ToneGreen")),
             new KpiVm("Non payés", Format.Amount(d.UnpaidCount), Format.Count(d.LateCount, "en retard", "en retard"), ThemeBrush.Get("ToneOrange")),
             new KpiVm("Encaissé sur le mois", Money(d.Collected), $"Attendu : {Money(d.Expected)}", ThemeBrush.Get("ToneGreen")),
-            new KpiVm("Reste à percevoir", Money(d.Remaining), d.CoveredCount > 0 ? Format.Count(d.CoveredCount, "pris en charge", "pris en charge") : "Aucun pris en charge", ThemeBrush.Get("ToneRed")),
+            new KpiVm("Reste à percevoir", Money(d.Remaining), "Sur les payants de ce mois", ThemeBrush.Get("ToneRed")),
+            new KpiVm("Pris en charge", Format.Amount(d.CoveredCount), "Hors payants pour ce mois", ThemeBrush.Get("TonePurple")),
         });
 
         CollectionSync.Apply(Items, d.Rows.Select(r => new MonthlyRowVm(r.StudentId, r.Matricule, r.FullName, r.PromotionCode, Money(r.Amount), Money(r.Paid), Money(r.Remaining),
-                r.Status, ThemeBrush.Get(Tone(r.Status)), r.ReceiptNumber ?? "—", r.PaidOn is { } on ? Format.Date(on) : "—", r.WhatsAppLink, r.SmsLink)));
+                r.Status + (r.Sponsorship == "Prise en charge partielle" ? " · PEC partielle" : string.Empty), ThemeBrush.Get(Tone(r.Status)), r.ReceiptNumber ?? "—", r.PaidOn is { } on ? Format.Date(on) : "—", r.WhatsAppLink, r.SmsLink)));
 
         // Sous-titre court, lisible sur deux lignes d'un téléphone : la promotion n'est citée que si elle est choisie.
         var scope = Promotion is { Value.Length: > 0 } p ? $" · {p.Label}" : string.Empty;

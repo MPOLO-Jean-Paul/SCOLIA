@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android 12+ : les sauvegardes automatiques et transferts de téléphone n'exportent pas les dossiers scolaires.
+     Utiliser les fonctions de sauvegarde/restauration SCOLIA avec approbation et intégrité vérifiée. -->
+<data-extraction-rules xmlns:android="http://schemas.android.com/apk/res/android">
+  <cloud-backup>
+    <exclude domain="root" path="." />
+    <exclude domain="external" path="." />
+  </cloud-backup>
+  <device-transfer>
+    <exclude domain="root" path="." />
+    <exclude domain="external" path="." />
+  </device-transfer>
+</data-extraction-rules>

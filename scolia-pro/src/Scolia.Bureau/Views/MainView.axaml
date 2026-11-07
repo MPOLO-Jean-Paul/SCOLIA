@@ -2,6 +2,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:Scolia.Bureau.ViewModels"
              xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:infra="using:Scolia.Bureau.Infrastructure"
              xmlns:views="using:Scolia.Bureau.Views"
              xmlns:chrome="using:Avalonia.Controls.Chrome"
              xmlns:ctl="using:Scolia.Bureau.Controls"
@@ -302,9 +303,12 @@
                 <mi:MaterialIcon Kind="Close" />
               </Button>
               <Button x:Name="HeaderFinderMic" Grid.Column="4" Classes="baricon mic" Classes.listening="{Binding HeaderFinder.Listening}"
-                      Command="{Binding HeaderFinder.Listen}" IsVisible="{Binding HeaderFinder.VoiceAvailable}" Click="OnHeaderFinderMic"
-                      ToolTip.Tip="Rechercher à la voix" Width="40" Height="40">
-                <mi:MaterialIcon Kind="Microphone" />
+                      Command="{Binding HeaderFinder.Listen}" IsVisible="{Binding HeaderFinder.VoiceAvailable}" Focusable="False"
+                      ToolTip.Tip="{Binding HeaderFinder.VoiceTip}" Width="40" Height="40">
+                <Grid>
+                  <mi:MaterialIcon Kind="MicrophoneOutline" IsVisible="{Binding !HeaderFinder.Listening}" />
+                  <mi:MaterialIcon Kind="StopOutline" IsVisible="{Binding HeaderFinder.Listening}" />
+                </Grid>
               </Button>
             </Grid>
           </Border>
@@ -323,8 +327,11 @@
                 <mi:MaterialIcon Kind="Close" />
               </Button>
               <Button Grid.Column="3" Classes="baricon mic" Classes.listening="{Binding HeaderSearch.Listening}" Command="{Binding HeaderSearch.Listen}"
-                      IsVisible="{Binding HeaderSearch.VoiceAvailable}" ToolTip.Tip="Filtrer à la voix" Width="40" Height="40">
-                <mi:MaterialIcon Kind="Microphone" />
+                      IsVisible="{Binding HeaderSearch.VoiceAvailable}" Focusable="False" ToolTip.Tip="{Binding HeaderSearch.VoiceTip}" Width="40" Height="40">
+                <Grid>
+                  <mi:MaterialIcon Kind="MicrophoneOutline" IsVisible="{Binding !HeaderSearch.Listening}" />
+                  <mi:MaterialIcon Kind="StopOutline" IsVisible="{Binding HeaderSearch.Listening}" />
+                </Grid>
               </Button>
             </Grid>
           </Border>
@@ -337,7 +344,7 @@
                 <DataTemplate>
                   <Button Classes="hdr" Command="{Binding Command}" Classes.primary="{Binding IsPrimary}" Classes.danger="{Binding Danger}" ToolTip.Tip="{Binding Hint}">
                     <StackPanel Orientation="Horizontal" Spacing="6">
-                      <mi:MaterialIcon Kind="{Binding Icon}" Width="16" Height="16" />
+                      <mi:MaterialIcon Kind="{Binding Icon, Converter={x:Static infra:Icons.LineConverter}}" Width="16" Height="16" />
                       <TextBlock Text="{Binding Label}" VerticalAlignment="Center" />
                     </StackPanel>
                   </Button>
@@ -364,7 +371,7 @@
             <Button Classes="toolicon" Command="{Binding NetworkCommand}" ToolTip.Tip="{Binding Sync.StatusText}">
               <Panel Width="18" Height="18">
                 <mi:MaterialIcon Kind="LanConnect" Width="18" Height="18" IsVisible="{Binding Sync.Online}" />
-                <mi:MaterialIcon Kind="CloudOffOutline" Width="18" Height="18" Foreground="{DynamicResource ToneOrange}" IsVisible="{Binding Sync.Offline}" />
+                <Ellipse Width="10" Height="10" Fill="{DynamicResource ToneOrange}" IsVisible="{Binding Sync.Offline}" HorizontalAlignment="Center" VerticalAlignment="Center" />
                 <Border Classes="livedot" Classes.pulse="{Binding Sync.Pulse}" IsVisible="{Binding Sync.Online}" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,-3,-3" />
               </Panel>
             </Button>
@@ -508,7 +515,7 @@
           <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="6">
             <!-- Bascule rapide du thème clair au thème sombre -->
             <Button Classes="ghost" Padding="6,0" MinHeight="0" Click="OnThemeToggle" ToolTip.Tip="Thème clair ou sombre" Margin="0,0,10,0">
-              <mi:MaterialIcon x:Name="ThemeIcon" Kind="WeatherNight" Width="15" Height="15" />
+              <mi:MaterialIcon x:Name="ThemeIcon" Kind="WeatherNightOutline" Width="15" Height="15" />
             </Button>
             <Button Classes="ghost" Padding="4,2" MinHeight="0" Click="OnZoomOut" ToolTip.Tip="Réduire (Ctrl+-)">
               <mi:MaterialIcon Kind="Minus" Width="15" Height="15" />

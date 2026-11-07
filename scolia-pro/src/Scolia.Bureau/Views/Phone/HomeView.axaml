@@ -83,12 +83,15 @@
               <TextBlock Text="{Binding CashLine}" FontWeight="SemiBold" FontSize="{DynamicResource FsSmall}" />
             </StackPanel>
           </Border>
-          <Button Classes="ghost" Padding="0" Command="{Binding Network}">
-            <Border Classes="statechip" Margin="0,0,0,8">
+          <!-- Point de connexion compact ; un toucher ouvre les opérations locales. -->
+          <Button Command="{Binding Network}" IsVisible="{Binding Sync.Offline}"
+                  Background="Transparent" BorderThickness="0" Padding="0"
+                  ToolTip.Tip="{Binding Sync.StatusDetail}">
+            <Border Classes="statechip">
               <StackPanel Orientation="Horizontal" Spacing="7">
                 <Ellipse Width="8" Height="8" Fill="{Binding Sync.StatusBrush}" VerticalAlignment="Center" />
-                <TextBlock Text="{Binding Sync.StatusText}" FontWeight="SemiBold" FontSize="{DynamicResource FsSmall}" />
-                <TextBlock Text="{Binding Sync.PeersText}" Classes="muted" FontSize="{DynamicResource FsSmall}" IsVisible="{Binding Sync.Online}" />
+                <TextBlock Text="{Binding Sync.StatusText}" FontWeight="SemiBold"
+                           FontSize="{DynamicResource FsSmall}" />
               </StackPanel>
             </Border>
           </Button>
@@ -99,7 +102,7 @@
     <!-- Actions rapides -->
     <ItemsControl ItemsSource="{Binding PhoneTools}">
       <ItemsControl.ItemsPanel>
-        <ItemsPanelTemplate><UniformGrid Columns="4" /></ItemsPanelTemplate>
+        <ItemsPanelTemplate><UniformGrid Columns="4" infra:Adaptive.MinItemWidth="78" /></ItemsPanelTemplate>
       </ItemsControl.ItemsPanel>
       <ItemsControl.ItemTemplate>
         <DataTemplate>

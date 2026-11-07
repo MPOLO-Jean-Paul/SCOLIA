@@ -20,9 +20,9 @@ public sealed class SchoolService(IAppDbContext db, IWriteGate gate, IAuditLog a
 
     public static SchoolDto ToDto(SchoolProfile s) => new(s.Name, s.ShortName, s.Motto, s.Address, s.City, s.Country, s.Phone, s.Email, s.Website,
         s.CurrencyCode, s.CurrencySymbol, s.WholeAmountsOnly, s.ReceiptFooter, s.Logo is { Length: > 0 }, s.PhoneCountryCode,
-        CardHeaderDefaults.Or(s.CardMinistry, CardHeaderDefaults.Ministry), CardHeaderDefaults.Or(s.CardDirection, CardHeaderDefaults.Direction),
-        CardHeaderDefaults.Or(s.CardDivision, CardHeaderDefaults.Division), CardHeaderDefaults.Or(s.CardZone, CardHeaderDefaults.CityZone),
-        CardHeaderDefaults.Or(s.CardInstitute, CardHeaderDefaults.Institute), CardHeaderDefaults.Or(s.CardAddress, CardHeaderDefaults.Address));
+        s.CardMinistry, s.CardDirection, s.CardDivision, s.CardZone ?? s.City,
+        CardHeaderDefaults.Or(s.CardInstitute, s.Name),
+        CardHeaderDefaults.Or(s.CardAddress, s.Address ?? s.City ?? string.Empty));
 
     public Task<SchoolDto> UpdateSchoolAsync(SchoolUpdate input, CancellationToken ct = default) => gate.RunAsync(async () =>
     {
@@ -108,7 +108,7 @@ public sealed class SchoolService(IAppDbContext db, IWriteGate gate, IAuditLog a
                 var shift = year.FirstCalendarYear - previous.FirstCalendarYear;
                 var order = 100;
                 foreach (var f in old.Fees.Where(f => f.Kind != FeeKind.Mensualite).OrderBy(f => f.Order))
-                    copy.Fees.Add(new FeeItem { PromotionId = copy.Id, Kind = f.Kind, Label = f.Label, Amount = f.Amount, DueDate = f.DueDate.AddYears(shift), Order = order++ });
+                    copy.Fees.Add(new FeeItem { PromotionId = copy.Id, Kind = f.Kind, CategoryId = f.CategoryId, Label = f.Label, Amount = f.Amount, DueDate = f.DueDate.AddYears(shift), Order = order++ });
                 db.Promotions.Add(copy);
             }
         }
@@ -311,7 +311,7 @@ public sealed class SchoolService(IAppDbContext db, IWriteGate gate, IAuditLog a
         p.IsActive, p.NextPromotionCode,
         p.Fees.Where(f => f.Kind == FeeKind.Mensualite).Select(f => f.Amount).DefaultIfEmpty(0).Max(),
         p.Fees.Sum(f => f.Amount), count,
-        p.Fees.OrderBy(f => f.DueDate).ThenBy(f => f.Order).Select(f => new FeeItemDto(f.Id, f.Kind.ToString(), f.Label, f.Amount, f.DueDate, f.Order, f.PeriodId)).ToList());
+        p.Fees.OrderBy(f => f.DueDate).ThenBy(f => f.Order).Select(f => new FeeItemDto(f.Id, f.Kind.ToString(), f.Label, f.Amount, f.DueDate, f.Order, f.PeriodId, f.CategoryId)).ToList());
 
     public static IEnumerable<FeeItem> MonthlyFees(Guid promotionId, AcademicYear year, decimal monthly) =>
         year.Periods.OrderBy(p => p.Order).Select(p => new FeeItem
@@ -327,15 +327,31 @@ public sealed class SchoolService(IAppDbContext db, IWriteGate gate, IAuditLog a
         var v = new ValidationBuilder()
             .Require(code.Length == 4 && code.All(char.IsAsciiLetterOrDigit), "code", "Le code doit compter 4 lettres ou chiffres (ex. INF1) : il préfixe les matricules.")
             .Require(!string.IsNullOrWhiteSpace(input.Name) && input.Name.Trim().Length <= 120, "name", "Désignation obligatoire.")
-            .Require(input.MonthlyFee >= 0, "monthlyFee", "La mensualité ne peut pas être négative.")
+            .Require(input.MonthlyFee > 0, "monthlyFee", "La mensualité est obligatoire : indiquez son montant (supérieur à zéro).")
             .Require(!school.WholeAmountsOnly || input.MonthlyFee == decimal.Truncate(input.MonthlyFee), "monthlyFee", "La mensualité doit être un nombre entier.")
             .Require(input.Capacity is null or > 0, "capacity", "La capacité doit être positive.");
         foreach (var fee in input.OneTimeFees ?? [])
         {
-            v.Require(!string.IsNullOrWhiteSpace(fee.Label), "oneTimeFees", "Chaque frais ponctuel doit avoir un libellé.");
-            v.Require(fee.Amount > 0, "oneTimeFees", $"Montant invalide pour {fee.Label}.");
+            v.Require(fee.CategoryId is not null || !string.IsNullOrWhiteSpace(fee.Label), "oneTimeFees", "Chaque frais doit désigner une catégorie.");
+            v.Require(fee.Amount > 0, "oneTimeFees", $"Montant invalide pour {fee.Label ?? "une catégorie"}.");
+            v.Require(!school.WholeAmountsOnly || fee.Amount == decimal.Truncate(fee.Amount), "oneTimeFees", "Les montants doivent être des nombres entiers.");
         }
         v.ThrowIfInvalid();
+        // Seules les catégories créées dans le catalogue peuvent figurer dans une promotion.
+        var categories = await db.FeeCategories.AsNoTracking().ToListAsync(ct);
+        var wanted = new List<(FeeCategory Category, FeeKind Kind, decimal Amount, DateOnly? DueDate)>();
+        foreach (var fee in input.OneTimeFees ?? [])
+        {
+            var category = fee.CategoryId is { } categoryId
+                ? categories.FirstOrDefault(c => c.Id == categoryId)
+                    ?? throw new DomainException("oneTimeFees", "Une catégorie de frais choisie n'existe plus : actualisez la liste.")
+                : categories.FirstOrDefault(c => c.NameKey == TextKey.Normalize(fee.Label))
+                    ?? throw new DomainException("oneTimeFees", $"Créez d'abord la catégorie « {fee.Label!.Trim()} » dans Paramètres, Catégories de frais.");
+            if (wanted.Any(w => w.Category.Id == category.Id))
+                throw new DomainException("oneTimeFees", $"« {category.Name} » est indiquée deux fois.");
+            var kind = fee.Kind is { Length: > 0 } k && EnumText.Parse<FeeKind>(k, "oneTimeFees") is var parsed && parsed != FeeKind.Mensualite ? parsed : FeeKind.Autre;
+            wanted.Add((category, kind, fee.Amount, fee.DueDate));
+        }
 
         Promotion promotion;
         AcademicYear year;
@@ -382,27 +398,40 @@ public sealed class SchoolService(IAppDbContext db, IWriteGate gate, IAuditLog a
             existing.Amount = input.MonthlyFee;
         }
 
-        // Frais ponctuels : remplacés par la nouvelle liste (rapprochement par nature + libellé).
-        var wanted = (input.OneTimeFees ?? []).Select(f => (Kind: EnumText.Parse<FeeKind>(f.Kind, "oneTimeFees"), Label: f.Label.Trim(), f.Amount, f.DueDate)).ToList();
-        var oneTime = promotion.Fees.Where(f => f.Kind != FeeKind.Mensualite).ToList();
-        foreach (var old in oneTime)
+        // Autres frais : une rubrique par catégorie choisie. Un client récent envoie la liste complète des catégories
+        // (ManagesCategories) ; un ancien client ne connaît que l'inscription et l'examen : les autres catégories restent.
+        var managed = promotion.Fees.Where(f => f.Kind != FeeKind.Mensualite
+            && (input.ManagesCategories || f.Kind is FeeKind.Inscription or FeeKind.Examen)).ToList();
+        foreach (var old in managed)
         {
-            var match = wanted.FirstOrDefault(w => w.Kind == old.Kind && TextKey.Normalize(w.Label) == TextKey.Normalize(old.Label));
-            if (match.Label is null)
+            var match = wanted.FirstOrDefault(w => old.CategoryId == w.Category.Id
+                || (old.CategoryId is null && TextKey.Normalize(old.Label) == w.Category.NameKey));
+            if (match.Category is null)
             {
-                if (paidByItem.GetValueOrDefault(old.Id) > 0) throw new DomainException("oneTimeFees", $"« {old.Label} » a déjà été encaissé et ne peut pas être supprimé.");
+                if (paidByItem.GetValueOrDefault(old.Id) > 0) throw new DomainException("oneTimeFees", $"« {old.Label} » a déjà été encaissé et ne peut pas être retiré.");
+                if (await db.SponsorshipLines.AnyAsync(l => l.FeeItemId == old.Id, ct))
+                    throw new DomainException("oneTimeFees", $"« {old.Label} » figure dans une prise en charge et ne peut pas être retiré.");
                 promotion.Fees.Remove(old);
                 db.FeeItems.Remove(old);
                 continue;
             }
             EnsureNotBelowPaid(old, match.Amount, paidByItem);
-            old.Amount = match.Amount; old.DueDate = match.DueDate;
+            old.Amount = match.Amount;
+            old.CategoryId = match.Category.Id;
+            old.Label = match.Category.Name;
+            old.DueDate = match.DueDate ?? FeeCategoryService.DueDateIn(match.Category, year);
             wanted.Remove(match);
         }
+        // Une catégorie déjà présente (laissée de côté par un ancien client) n'est pas ajoutée deux fois.
+        wanted.RemoveAll(w => promotion.Fees.Any(f => f.CategoryId == w.Category.Id));
         var order = 100 + promotion.Fees.Count;
         foreach (var fee in wanted)
         {
-            var item = new FeeItem { PromotionId = promotion.Id, Kind = fee.Kind, Label = fee.Label, Amount = fee.Amount, DueDate = fee.DueDate, Order = order++ };
+            var item = new FeeItem
+            {
+                PromotionId = promotion.Id, Kind = fee.Kind, CategoryId = fee.Category.Id, Label = fee.Category.Name, Amount = fee.Amount,
+                DueDate = fee.DueDate ?? FeeCategoryService.DueDateIn(fee.Category, year), Order = order++,
+            };
             promotion.Fees.Add(item);
             db.FeeItems.Add(item);
         }

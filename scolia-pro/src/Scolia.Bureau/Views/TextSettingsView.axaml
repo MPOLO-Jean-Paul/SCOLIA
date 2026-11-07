@@ -119,7 +119,7 @@
       </ScrollViewer>
 
       <Grid Grid.Row="2" ColumnDefinitions="*,Auto" Margin="18,8,18,18">
-        <Button Content="Rétablir" Command="{Binding Reset}" HorizontalAlignment="Left" Height="40" />
+        <Button infra:Icons.Lead="Restore" Content="Rétablir" Command="{Binding Reset}" HorizontalAlignment="Left" Height="40" />
         <Button Grid.Column="1" Classes="primary" Content="Terminé" Command="{Binding Close}" Height="40" MinWidth="110" />
       </Grid>
     </Grid>

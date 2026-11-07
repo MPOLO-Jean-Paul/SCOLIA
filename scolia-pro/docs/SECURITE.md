@@ -106,8 +106,14 @@ la cause sans révéler de détail technique interne : la pile d'appel reste dan
 - Par défaut, SCOLIA n'écoute que sur ce poste (`localhost`).
 - L'accès réseau est une action explicite (onglet Fichier, rubrique « Poste et réseau », avec l'autorisation administrateur Windows).
   Il ouvre le port uniquement sur les profils réseau privé et de domaine.
-- Le trafic est en HTTP sur le réseau local de l'établissement. Pour un accès depuis l'extérieur,
-  placez SCOLIA derrière un reverse proxy HTTPS ou un tunnel VPN : ne l'exposez jamais directement sur Internet.
+- Le trafic est en HTTP sur le réseau local de l'établissement : **il n'est pas chiffré par HTTPS**.
+  L'interface le rappelle avant l'activation. Ne partagez que sur un réseau privé de confiance,
+  jamais sur un Wi-Fi public. Le pare-feu Windows et les permissions SCOLIA ne remplacent pas
+  le chiffrement du transport.
+- Pour un accès depuis l'extérieur, placez SCOLIA derrière un reverse proxy HTTPS authentifié
+  ou un tunnel VPN (par exemple Tailscale) : ne l'exposez jamais directement sur Internet.
+- La migration vers un TLS local authentifié, sans rompre les installations existantes,
+  reste un chantier distinct (issue GitHub n° 37). Ces avertissements n'en sont pas un substitut.
 
 ## Signalement d'une faille
 

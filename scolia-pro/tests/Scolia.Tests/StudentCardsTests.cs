@@ -50,6 +50,17 @@ public sealed class StudentCardRulesTests
     }
 
     [Fact]
+    public void Matricule_repeté_dans_une_autre_promotion_reste_bloqué_après_filtrage()
+    {
+        // Le filtrage ne doit jamais masquer un dossier ayant le même matricule.
+        var yearMatricules = new[] { "INF293", "ACC102", "inf293", "INF294" };
+        var repeats = StudentCardRules.DuplicateMatricules(yearMatricules);
+        Assert.Contains("INF293", repeats);
+        Assert.DoesNotContain("ACC102", repeats);
+        Assert.Single(repeats);
+    }
+
+    [Fact]
     public void A_name_too_long_for_the_card_is_refused_not_truncated()
     {
         Assert.Throws<DomainException>(() => StudentCardRules.EnsureFits(new string('A', 61), "nom"));
@@ -171,8 +182,15 @@ public sealed class StudentCardsApiTests : IDisposable
         using (var stream = document.Open())
         {
             var xml = System.Xml.Linq.XDocument.Load(stream);
-            // Trois exemplaires : un sceau et un QR par carte.
-            Assert.Equal(6, xml.Descendants().Count(e => e.Name.LocalName == "drawing"));
+            // Trois cartes : logo configuré en haut et en bas, et QR par exemplaire.
+            Assert.Equal(9, xml.Descendants().Count(e => e.Name.LocalName == "drawing"));
+            var printed = string.Join(" ", xml.Descendants()
+                .Where(e => e.Name.LocalName == "t").Select(e => e.Value));
+            Assert.Contains("INSTITUT DE TEST", printed, StringComparison.Ordinal);
+            Assert.Contains("MUKENDI KABEYA GRACE", printed, StringComparison.Ordinal);
+            Assert.Contains("MATRICULE : ", printed, StringComparison.Ordinal);
+            Assert.Contains("PROMOTION : ", printed, StringComparison.Ordinal);
+            Assert.DoesNotContain("INSTITUT TECHNIQUE MÉDICAL CŒUR DE DIEU", printed, StringComparison.Ordinal);
         }
         Assert.NotNull(zip.GetEntry("word/_rels/document.xml.rels"));
         Assert.Contains(zip.Entries, e => e.FullName.StartsWith("word/media/", StringComparison.Ordinal));

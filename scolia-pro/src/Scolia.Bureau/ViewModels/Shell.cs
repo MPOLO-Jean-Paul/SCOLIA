@@ -43,7 +43,7 @@ public sealed class ShellViewModel : Observable
         // rouvrir seul la session quand l'ordinateur principal revient après une coupure.
         Login.Authenticated += (user, secret, s) =>
         {
-            api.Offline = new OfflineStore(api.Server) { User = s.UserName };
+            api.Offline = new OfflineStore(ConnectionStore.CacheAddress(api.Server)) { User = s.UserName };
             api.Offline.SaveCredential(user, secret, s, api.SessionCookie);
             api.Offline.RememberAccount(s.UserName);
             Login.RememberAccount(s.UserName);
@@ -276,7 +276,7 @@ public sealed class ShellViewModel : Observable
     }
 
     /// <summary>La petite fenêtre de connexion reste petite pendant l'ouverture qui suit la connexion.</summary>
-    public bool CompactWindow => ShowLogin || (Opening && openingCompact);
+    public bool CompactWindow => ShowStartup || ShowLogin || (Opening && openingCompact);
     public string OpeningStep { get => openingStep; private set => Set(ref openingStep, value); }
     public double OpeningProgress { get => openingProgress; private set => Set(ref openingProgress, value); }
     private string openingTitle = string.Empty;
@@ -320,9 +320,8 @@ public sealed class ShellViewModel : Observable
     public string AccountName => session?.DisplayName ?? string.Empty;
     public string ServerLine => IsServerComputer
         ? $"Serveur de l'établissement · port {api.Server.Port}"
-        : ConnectionStore.Load() is { IsRemote: true } link && TailscaleEndpoint.IsTailnetAddress(api.Server)
-            ? $"Tailscale privé · {link.School ?? link.Machine} · {api.Server.Host}"
-        : ConnectionStore.Load() is { IsRemote: true } direct ? $"Relié à {direct.Machine} · {api.Server.Host}" : $"Serveur {api.Server.Host}:{api.Server.Port}";
+        : api.IsLongDistance ? "Internet chiffré · relais SCOLIA"
+        : ConnectionStore.Load() is { IsRemote: true } direct ? $"Réseau local · {direct.School ?? direct.Machine}" : $"Serveur {api.Server.Host}:{api.Server.Port}";
 
     public PageViewModel? Current
     {
@@ -358,7 +357,10 @@ public sealed class ShellViewModel : Observable
         get => dialog;
         private set
         {
+            var previousDialog = dialog;
             if (!Set(ref dialog, value)) return;
+            if (previousDialog is SearchViewModel oldSearch)
+                oldSearch.StopListening();
             Raise(nameof(HasDialog));
             Raise(nameof(CenteredDialog));
             Raise(nameof(FullScreenDialog));
@@ -467,11 +469,14 @@ public sealed class ShellViewModel : Observable
                 ShowChooser([], "L'adresse de connexion mémorisée est invalide. Rejoignez de nouveau votre établissement.");
                 return;
             }
-            if (TailscaleEndpoint.IsTailnetAddress(remembered)
-                && !await TailscaleEndpoint.ResolvesPrivatelyAsync(remembered))
+            // Migration des anciens appareils enregistrés avec un VPN : pas
+            // d'ouverture de Tailscale. Seules les invitations WSS déjà vérifiées
+            // peuvent reprendre la session, sinon le responsable renouvelle le QR.
+            if (TailscaleEndpoint.IsTailnetAddress(remembered))
             {
+                if (await TryReconnectRelayAsync()) return;
                 if (OfferOfflineEntry(saved.School ?? string.Empty)) return;
-                ShowChooser([], "Le réseau privé Tailscale ne résout pas le serveur de votre établissement. Vérifiez l'état du VPN et MagicDNS.");
+                ShowChooser([], "Cet appareil utilisait une ancienne adresse privée. Rejoignez de nouveau l'établissement avec un nouveau code QR (Wi-Fi ou Internet).");
                 return;
             }
             api.Retarget(remembered);
@@ -480,21 +485,12 @@ public sealed class ShellViewModel : Observable
                 await ShowEntryAsync();
                 return;
             }
-            // Une adresse Tailscale n'est pas retrouvable par diffusion UDP LAN :
-            // épargner une recherche inutile et préserver l'adresse privée mémorisée.
-            if (TailscaleEndpoint.IsTailnetAddress(api.Server))
-            {
-                if (OfferOfflineEntry(saved.School ?? string.Empty)) return;
-                ShowChooser([], "Le serveur privé Tailscale de votre établissement ne répond pas. Vérifiez le VPN sur les deux appareils, l'approbation Tailscale et le service SCOLIA sur le téléphone principal. Vous pouvez saisir à nouveau son adresse Tailscale.");
-                return;
-            }
             Status = $"Recherche du serveur de {saved.School}…";
             var servers = await LanDiscovery.FindAsync();
-            if (servers.FirstOrDefault(s => s.SchoolId == saved.SchoolId) is { } moved)
-            {
-                await JoinAsync(moved);
-                return;
-            }
+            if (servers.Count > 0 && await TryReconnectPairedLanAsync()) return;
+            if (await TryReconnectRelayAsync()) return;
+            // Une annonce UDP peut usurper un nom/identifiant d'établissement.
+            // Jamais de bascule silencieuse sans preuve du jumelage historique.
             if (OfferOfflineEntry(saved.School ?? string.Empty)) return;
             ShowChooser(servers, $"Le serveur de {saved.School} (ordinateur {saved.Machine}) ne répond pas. Allumez-le ou ouvrez SCOLIA dessus, puis recherchez à nouveau.");
             return;
@@ -553,7 +549,7 @@ public sealed class ShellViewModel : Observable
     /// </summary>
     private bool OfferOfflineEntry(string school)
     {
-        var store = new OfflineStore(api.Server);
+        var store = new OfflineStore(ConnectionStore.CacheAddress(api.Server));
         if (!store.HasCredential) return false;
         api.Offline = store;
         if (school.Length > 0) Login.SchoolName = school;
@@ -614,6 +610,110 @@ public sealed class ShellViewModel : Observable
         Notify($"Ce poste est relié à SCOLIA · {server.School} (ordinateur {server.Machine}).");
     }
 
+    /// <summary>
+    /// Retrouve automatiquement le même serveur après changement de Wi-Fi/IP.
+    /// Le poste ne transmet aucun secret à une annonce UDP non vérifiée.
+    /// Le jeton et le cache restent attachés à l'établissement déjà autorisé.
+    /// </summary>
+    public async Task<bool> TryReconnectPairedLanAsync(CancellationToken ct = default)
+    {
+        var saved = ConnectionStore.Load();
+        if (saved is not { IsRemote: true, Url: { Length: > 0 } url } ||
+            !Uri.TryCreate(url, UriKind.Absolute, out var previous)) return false;
+        var found = await TrustedLanReconnect.FindAsync(saved, ct: ct);
+        if (found is null) return false;
+        try
+        {
+            // Copier d'abord l'autorisation approuvée sous la nouvelle adresse.
+            // Aucune reliaison du compte ni perte des saisies hors ligne.
+            TrustedLanReconnect.PreserveGrant(previous, found.Address);
+            if (!ConnectionStore.TrySave(saved with
+                {
+                    Url = found.Address.ToString(), CacheUrl = saved.CacheUrl ?? saved.Url,
+                    SchoolId = found.SchoolId,
+                    School = found.School, Machine = found.Machine,
+                })) return false;
+            if (api.Offline is null)
+            {
+                var old = new OfflineStore(ConnectionStore.CacheAddress(previous));
+                if (old.HasCredential) api.Offline = old;
+            }
+            api.Retarget(found.Address, sameVerifiedSchool: true);
+            Raise(nameof(ServerLine));
+            if (!IsLoggedIn) await ShowEntryAsync();
+            return true;
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or
+            System.Security.Cryptography.CryptographicException or InvalidOperationException)
+        {
+            System.Diagnostics.Trace.WriteLine($"SCOLIA : reprise du serveur déjà jumelé impossible ({ex.GetType().Name}).");
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Réseau local indisponible : utilise seulement le relais du QR officiel
+    /// déjà approuvé, jamais une simple annonce réseau ni une adresse publique
+    /// trouvée automatiquement. Préserve le cache et la file SQLite de ce poste.
+    /// </summary>
+    public async Task<bool> TryReconnectRelayAsync(CancellationToken ct = default)
+    {
+        var saved = ConnectionStore.Load();
+        var remote = RemoteConnection.Load();
+        if (saved is not { IsRemote: true } || remote is not { Host: false, Enabled: true } ||
+            remote.Link.ExpiresUtc <= DateTime.UtcNow || api.IsLongDistance ||
+            DevicePairingStore.Read(remote.Link.VirtualServer) is null ||
+            (saved.School is { Length: > 0 } && !string.Equals(
+                saved.School.Trim(), remote.School.Trim(), StringComparison.OrdinalIgnoreCase)))
+            return false;
+        try
+        {
+            // Tester d'abord la clé du dispositif sur l'hôte réel via WSS.
+            using var proof = new Api.ScoliaClient(remote.Link.VirtualServer);
+            proof.UseRemote(remote.Link);
+            if (!await proof.IsRunningAsync(ct) || await proof.RestoreDeviceSessionAsync(ct) is null)
+                return false;
+
+            // Ne jamais déplacer la sauvegarde, les brouillons et l'outbox vers
+            // l'identifiant virtuel .invalid du relais.
+            if (!ConnectionStore.TrySave(saved with { CacheUrl = saved.CacheUrl ?? saved.Url }))
+                return false;
+            var previousAddress = api.Server;
+            var previousOffline = api.Offline;
+            try
+            {
+                api.UseRemote(remote.Link);
+                api.Offline = previousOffline;
+                var restored = await api.RestoreDeviceSessionAsync(ct);
+                if (restored is null || (IsLoggedIn && session is { } current &&
+                    !string.Equals(current.UserName, restored.UserName, StringComparison.OrdinalIgnoreCase)))
+                {
+                    api.Retarget(previousAddress, sameVerifiedSchool: true);
+                    api.Offline = previousOffline;
+                    return false;
+                }
+                Raise(nameof(ServerLine));
+                if (!IsLoggedIn) await ShowEntryAsync();
+                return true;
+            }
+            catch
+            {
+                api.Retarget(previousAddress, sameVerifiedSchool: true);
+                api.Offline = previousOffline;
+                throw;
+            }
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
+        catch (Exception ex) when (ex is HttpRequestException or IOException or
+            ApiException or InvalidOperationException or UnauthorizedAccessException or
+            TaskCanceledException or System.Security.Cryptography.CryptographicException)
+        {
+            System.Diagnostics.Trace.WriteLine($"SCOLIA : reconnexion Render indisponible ({ex.GetType().Name}).");
+            return false;
+        }
+    }
+
     private sealed record DevicePairResult(SessionDto Session, Guid GrantId, string DeviceSecret, DateTime ExpiresUtc);
 
     /// <summary>Un QR approuvé ouvre directement la session du compte invité, sans exposer son mot de passe.</summary>
@@ -639,12 +739,14 @@ public sealed class ShellViewModel : Observable
         if (IsServerComputer || DevicePairingStore.Read(api.Server) is not { } saved) return false;
         try
         {
-            var session = await api.SendAsync<SessionDto>(HttpMethod.Post, "api/session/appareil", new
+            var restored = await api.RestoreDeviceSessionAsync();
+            if (restored is null)
             {
-                grantId = saved.GrantId, deviceId = DeviceIdentity.Id, secret = saved.DeviceSecret,
-            });
-            Login.RememberAccount(session.UserName);
-            await OpenSessionAsync(session);
+                Login.Notice = "L'autorisation de cet appareil est expirée ou révoquée. Demandez un nouveau QR au responsable.";
+                return false;
+            }
+            Login.RememberAccount(restored.UserName);
+            await OpenSessionAsync(restored);
             return true;
         }
         catch (ApiException ex) when (ex.Status is 401 or 403)
@@ -692,7 +794,7 @@ public sealed class ShellViewModel : Observable
 
     /// <summary>
     /// Ouvre ou ferme le réseau de l'établissement et l'applique tout de suite. Windows demande l'autorisation ;
-    /// SCOLIA fait le reste : pare-feu, réseau privé, découverte des postes et relance de son serveur.
+    /// SCOLIA gère la découverte locale et la reconnexion chiffrée par Internet.
     /// </summary>
     public async Task SetNetworkAsync(bool open)
     {
@@ -724,8 +826,9 @@ public sealed class ShellViewModel : Observable
         ConnectionStore.Save(saved with { LanPromptDone = true });
         var accepted = await Confirm("Partager SCOLIA avec les autres ordinateurs",
             "Les autres ordinateurs de l'établissement qui ont SCOLIA s'y connecteront automatiquement, sans aucun réglage. "
-            + "Windows va vous demander l'autorisation : SCOLIA ouvre alors son port dans le pare-feu et déclare ce réseau comme privé. "
-            + "Vous pourrez changer d'avis dans Fichier > Poste et réseau.",
+            + "Attention : sur le réseau local, SCOLIA utilise HTTP sans chiffrement HTTPS. "
+            + "N'activez le partage que sur un Wi-Fi privé de confiance, jamais sur un réseau public. "
+            + "Windows demandera l'autorisation du pare-feu ; vous pourrez désactiver ce partage dans Fichier > Poste et réseau.",
             "Autoriser");
         if (accepted) await Run(() => SetNetworkAsync(true));
     }
@@ -783,7 +886,10 @@ public sealed class ShellViewModel : Observable
         var watch = System.Diagnostics.Stopwatch.StartNew();
         // Durée choisie dans Paramètres, Animations et fluidité ; l'outil de captures peut la fixer à part.
         // Après la création du premier compte, éviter la séquence d’attente de connexion.
-        var minimum = IsSetupRequired ? TimeSpan.FromMilliseconds(320)
+        // Hors ligne : conserver la transition sans ajouter une animation de
+        // deux secondes à un chargement déjà local et quasi immédiat.
+        var minimum = !api.IsOnline ? TimeSpan.FromMilliseconds(120)
+            : IsSetupRequired ? TimeSpan.FromMilliseconds(320)
             : MinimumOpening == TimeSpan.FromSeconds(2) ? TimeSpan.FromSeconds(Prefs.OpeningSeconds) : MinimumOpening;
         var pace = minimum / 4;
         // Une autre personne vient de se connecter depuis l'écran de veille : la session verrouillée se ferme ici.
@@ -793,11 +899,17 @@ public sealed class ShellViewModel : Observable
         session = s;
         knownRevision = -1;
         // Données gardées sur l'appareil, propres à ce compte ; puis le direct avec les autres postes.
-        api.Offline ??= new OfflineStore(api.Server);
+        api.Offline ??= new OfflineStore(ConnectionStore.CacheAddress(api.Server));
         api.Offline.User = s.UserName;
         api.Offline.RememberAccount(s.UserName);
         Login.RememberAccount(s.UserName);
         Sync.Start();
+        // Une première session Promoteur vérifiée mémorise son appareil :
+        // reconnexion future au même serveur, sans QR et sans privilèges ajoutés.
+        if (s.Permissions.Contains(Perm.PilotageRead) &&
+            !s.Permissions.Contains(Perm.ReportsRead) &&
+            !s.MustChangePassword && !api.Server.IsLoopback && api.IsOnline)
+            _ = RememberPromoterDeviceAsync(s.UserName);
         OpeningTitle = IsSetupRequired ? "Configuration terminée" : $"Bienvenue, {s.DisplayName}";
         OpeningProgress = 0;
         Opening = true;
@@ -815,7 +927,9 @@ public sealed class ShellViewModel : Observable
             Raise(nameof(UserLine));
             Raise(nameof(UserInitials));
             Raise(nameof(AccountName));
-            Status = $"Connecté : {s.DisplayName} · {s.SchoolName}";
+            Status = api.IsOnline
+                ? $"Connecté : {s.DisplayName} · {s.SchoolName}"
+                : $"Hors ligne · {s.DisplayName} · données locales de {s.SchoolName}";
             Login.Reset();
             await OpeningStepAsync("Préparation des menus", 70, pace);
             RebuildRibbon();
@@ -840,12 +954,28 @@ public sealed class ShellViewModel : Observable
         // Code provisoire donné par le secrétariat : la personne choisit tout de suite son propre code PIN ou mot de passe.
         if (s.MustChangePassword)
         {
+            // Un nouveau compte doit pouvoir définir son mot de passe même
+            // lorsque le menu Compte Windows ne présente plus la sécurité.
+            // L'ouverture provisoire reste obligatoire et ne contourne aucun contrôle.
             OpenBackstage();
-            Backstage.Section = Backstage.Items.First(i => i.Value == "mot-de-passe");
+            Backstage.Section = Backstage.Items.FirstOrDefault(i => i.Value == "mot-de-passe")
+                ?? new BackstageItemVm("mot-de-passe", "Sécurité du compte",
+                    Material.Icons.MaterialIconKind.ShieldLockOutline, "ToneOrange");
             Backstage.AskForOwnCode();
             return;
         }
         await OfferNetworkAsync();
+    }
+
+    private async Task RememberPromoterDeviceAsync(string userName)
+    {
+        try { await api.EnsurePromoterDeviceGrantAsync(userName); }
+        catch (Exception ex) when (ex is ApiException or HttpRequestException or
+            TaskCanceledException or IOException or UnauthorizedAccessException or
+            System.Security.Cryptography.CryptographicException)
+        {
+            System.Diagnostics.Trace.WriteLine($"SCOLIA : mémorisation du poste Promoteur différée ({ex.GetType().Name}).");
+        }
     }
 
     /// <summary>Écrans précédents et suivants, comme les flèches des Réglages de macOS. Chaque écran garde sa saisie.</summary>
@@ -1103,7 +1233,9 @@ public sealed class ShellViewModel : Observable
     /// </summary>
     public void FreshHeaderFinder()
     {
-        if (headerFinder is { HasQuery: true }) return;
+        // Conserver la même commande et le même jeton pendant la dictée, sans
+        // reconstruire le champ au premier ou au deuxième clic sur le micro.
+        if (headerFinder is { HasQuery: true } or { Listening: true }) return;
         if (headerFinder is not null) headerFinder.PropertyChanged -= OnHeaderFinderChanged;
         headerFinder = NewHeaderFinder();
         Raise(nameof(HeaderFinder));
@@ -1112,6 +1244,7 @@ public sealed class ShellViewModel : Observable
     /// <summary>Résultat ouvert, page changée : la liste se referme et la barre se vide.</summary>
     public void CloseHeaderFinder()
     {
+        headerFinder?.StopListening();
         HeaderFinderOpen = false;
         if (headerFinder is { HasQuery: true }) headerFinder.Query = string.Empty;
     }

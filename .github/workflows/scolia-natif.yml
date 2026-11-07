@@ -5,6 +5,8 @@ on:
     paths:
       - 'scolia-pro/scripts/publier-android.sh'
       - 'scolia-pro/scripts/cle-android.sh'
+      - 'scolia-pro/scripts/recuperer-cle-android-pr18-1226.sh'
+      - 'scolia-pro/scripts/install-android-sdk-retry.sh'
       - 'scolia-pro/scripts/windows/**'
       - 'scolia-pro/src/Scolia.Bureau/**'
       - 'scolia-pro/src/Scolia.Mobile/**'
@@ -14,12 +16,15 @@ on:
       - 'scolia-pro/src/Scolia.Domain/**'
       - 'scolia-pro/src/Scolia.Infrastructure/**'
       - 'scolia-pro/tests/Scolia.Bureau.Tests/**'
+      - 'scolia-pro/tests/Scolia.Mobile.Tests/**'
       - 'scolia-pro/tests/Scolia.Tests/**'
       - '.github/workflows/scolia-natif.yml'
   pull_request:
     paths:
       - 'scolia-pro/scripts/publier-android.sh'
       - 'scolia-pro/scripts/cle-android.sh'
+      - 'scolia-pro/scripts/recuperer-cle-android-pr18-1226.sh'
+      - 'scolia-pro/scripts/install-android-sdk-retry.sh'
       - 'scolia-pro/scripts/windows/**'
       - 'scolia-pro/src/Scolia.Bureau/**'
       - 'scolia-pro/src/Scolia.Mobile/**'
@@ -29,6 +34,7 @@ on:
       - 'scolia-pro/src/Scolia.Domain/**'
       - 'scolia-pro/src/Scolia.Infrastructure/**'
       - 'scolia-pro/tests/Scolia.Bureau.Tests/**'
+      - 'scolia-pro/tests/Scolia.Mobile.Tests/**'
       - 'scolia-pro/tests/Scolia.Tests/**'
       - '.github/workflows/scolia-natif.yml'
   workflow_dispatch:
@@ -39,6 +45,12 @@ permissions:
 concurrency:
   group: scolia-native-ux-${{ github.ref }}
   cancel-in-progress: true
+
+env:
+  # Cache de signature accessible uniquement via la PR interne #18.
+  # Cette exception est limitee a la distribution 1.2.36.
+  SCOLIA_RECOVERY_PR18: ${{ github.event_name == 'pull_request' && github.event.pull_request.number == 18 && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'release/direct-apk-scolia-pro-20261103' && github.event.pull_request.base.ref == 'feature/scolia-recovery-login-lock-20261103' }}
+  SCOLIA_CHECKOUT_REF: ${{ (github.event_name == 'pull_request' && github.event.pull_request.number == 18 && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'release/direct-apk-scolia-pro-20261103' && github.event.pull_request.base.ref == 'feature/scolia-recovery-login-lock-20261103') && github.event.pull_request.head.sha || github.sha }}
 
 defaults:
   run:
@@ -53,11 +65,27 @@ jobs:
       - uses: actions/checkout@v5
         with:
           persist-credentials: false
+          ref: ${{ env.SCOLIA_RECOVERY_PR18 == 'true' && env.SCOLIA_CHECKOUT_REF || '' }}
       - uses: actions/setup-dotnet@v5
         with:
           global-json-file: scolia-pro/global.json
+      - name: Controler la source de recuperation PR18 sans secret
+        shell: bash
+        run: |
+          bash -n scripts/recuperer-cle-android-pr18-1226.sh
+          if bash scripts/recuperer-cle-android-pr18-1226.sh "$RUNNER_TEMP/aucune-cle" >/dev/null 2>&1; then
+            echo "::error::Le script de signature a accepte un contexte sans autorisation." >&2
+            exit 1
+          fi
+      - name: Bloquer les donnees de l'etablissement et les cles privees dans Git
+        shell: bash
+        run: |
+          bash scripts/audit-tracked-files.sh --self-test
+          bash scripts/audit-tracked-files.sh
       - name: Compiler le client Avalonia (vues partagees Windows Android iOS)
         run: dotnet build src/Scolia.Bureau/Scolia.Bureau.csproj -c Release
+      - name: Tester les mises a jour Android (fin de telechargement, arriere-plan, erreurs)
+        run: dotnet test tests/Scolia.Mobile.Tests/Scolia.Mobile.Tests.csproj -c Release --filter "FullyQualifiedName~UpdateCompletionPolicyTests|FullyQualifiedName~AndroidPrivacyManifestTests" --logger "trx;LogFileName=android-updates.trx"
       - name: Verifier les resultats du menu, les recherches contextuelles et la securite
         run: dotnet test tests/Scolia.Bureau.Tests/Scolia.Bureau.Tests.csproj -c Release --logger "trx;LogFileName=natif.trx"
       - name: Compiler les services de l'annee scolaire et des paiements
@@ -80,6 +108,7 @@ jobs:
       - uses: actions/checkout@v5
         with:
           persist-credentials: false
+          ref: ${{ env.SCOLIA_RECOVERY_PR18 == 'true' && env.SCOLIA_CHECKOUT_REF || '' }}
       - uses: actions/setup-dotnet@v5
         with:
           global-json-file: scolia-pro/global.json
@@ -87,45 +116,102 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
-      - name: Installer le workload et SDK Android
+      - name: Installer le workload et SDK Android avec reprises limitees
+        run: |
+          bash scripts/install-android-sdk-retry.sh --self-test
+          bash scripts/install-android-sdk-retry.sh
+      # Seule la branche de publication doit voir les secrets de signature officiels.
+      # Une PR compile avec une cle EPHEMERE : le cache Actions ne doit jamais
+      # faire varier le certificat publie ni exposer la cle de l'etablissement.
+      - name: Preparer la cle de validation (jamais publiable)
+        if: (github.event_name != 'push' || github.ref != 'refs/heads/release/direct-apk-scolia-pro-20261103') && env.SCOLIA_RECOVERY_PR18 != 'true'
+        shell: bash
+        run: bash scripts/cle-android.sh "$RUNNER_TEMP/scolia-validation-signature"
+      # Une release officielle utilise exclusivement les secrets GitHub Actions.
+      # Aucun cache de signature, aucune cle generee sur le runner en production.
+      - name: Charger la cle officielle depuis les secrets GitHub Actions
+        if: github.event_name == 'push' && github.ref == 'refs/heads/release/direct-apk-scolia-pro-20261103'
+        shell: bash
+        env:
+          SCOLIA_ANDROID_KEYSTORE: ${{ secrets.SCOLIA_ANDROID_KEYSTORE }}
+          SCOLIA_ANDROID_KEYSTORE_PASS: ${{ secrets.SCOLIA_ANDROID_KEYSTORE_PASS }}
         run: |
           set -euo pipefail
-          dotnet workload install android
-          dotnet build src/Scolia.Mobile -t:InstallAndroidDependencies -f net10.0-android \
-            -p:AndroidSdkDirectory="$ANDROID_HOME" -p:JavaSdkDirectory="$JAVA_HOME" -p:AcceptAndroidSDKLicenses=True
-      # Même clé à chaque compilation : un nouvel APK s'installe comme une MISE À JOUR de l'ancien, sans conflit.
-      - name: Retrouver la clé de signature SCOLIA
-        id: cle-cache
+          if [[ -z "${SCOLIA_ANDROID_KEYSTORE:-}" || -z "${SCOLIA_ANDROID_KEYSTORE_PASS:-}" ]]; then
+            echo "::error::Les secrets SCOLIA_ANDROID_KEYSTORE et SCOLIA_ANDROID_KEYSTORE_PASS sont obligatoires en production. Publication bloquee." >&2
+            exit 1
+          fi
+          bash scripts/cle-android.sh "$RUNNER_TEMP/scolia-official-signature"
+      # La PR #18 est la seule ref permettant d'acceder au cache original.
+      # Le script verifie le certificat AVANT toute compilation distribuable.
+      - name: Restaurer le cache historique de la PR 18 uniquement
+        if: env.SCOLIA_RECOVERY_PR18 == 'true'
+        id: cache_pr18_1226
         uses: actions/cache/restore@v4
         with:
           path: ~/.scolia-signature
           key: scolia-android-signature-v1
-      - name: Préparer la clé de signature
+      - name: Authentifier la cle officielle de la PR 18 pour la 1.2.36
+        if: env.SCOLIA_RECOVERY_PR18 == 'true'
+        shell: bash
         env:
-          SCOLIA_ANDROID_KEYSTORE: ${{ secrets.SCOLIA_ANDROID_KEYSTORE }}
-          SCOLIA_ANDROID_KEYSTORE_PASS: ${{ secrets.SCOLIA_ANDROID_KEYSTORE_PASS }}
-        run: bash scripts/cle-android.sh ~/.scolia-signature
-      - name: Garder la clé pour les compilations suivantes
-        if: steps.cle-cache.outputs.cache-hit != 'true' && github.event_name != 'pull_request'
-        uses: actions/cache/save@v4
-        with:
-          path: ~/.scolia-signature
-          key: scolia-android-signature-v1
+          SCOLIA_CACHE_HIT: ${{ steps.cache_pr18_1226.outputs.cache-hit }}
+        run: bash scripts/recuperer-cle-android-pr18-1226.sh "$HOME/.scolia-signature"
+      - name: Refuser un certificat different de la version Android deja installee
+        shell: bash
+        run: |
+          set -euo pipefail
+          attendu="E5:B5:F7:FA:41:54:11:EE:AC:4B:F7:34:84:90:24:FF:CF:7F:93:50:0C:60:13:83:99:31:B0:20:38:F5:89:80"
+          if [[ ("$GITHUB_EVENT_NAME" == "push" && "$GITHUB_REF" == "refs/heads/release/direct-apk-scolia-pro-20261103") || ("$SCOLIA_RECOVERY_PR18" == "true" && "$GITHUB_REF" == "refs/pull/18/merge") ]]; then
+            if [[ "$SCOLIA_SIGNATURE_EMPREINTE" != "$attendu" ]]; then
+              echo "::error::Empreinte officielle Android incorrecte. Ne pas changer la signature: les telephones ne pourraient plus mettre SCOLIA a jour." >&2
+              exit 1
+            fi
+            echo "Certificat de distribution confirme."
+          else
+            echo "::notice::Compilation de validation : cette signature n'est pas destinee aux mises a jour officielles."
+          fi
       - name: Compiler APK natif
         run: |
           set -euo pipefail
           export JavaSdkDirectory="$JAVA_HOME"
           bash scripts/publier-android.sh
-          test -s artifacts/android/SCOLIA_Pro_*_Android.apk
-          {
-            echo "Signature : $SCOLIA_SIGNATURE_ORIGINE"
-            echo "Empreinte SHA-256 du certificat : $SCOLIA_SIGNATURE_EMPREINTE"
-            echo ""
-            echo "Toutes les compilations SCOLIA sont signées avec cette même clé et portent un numéro de version"
-            echo "croissant : installez le nouvel APK par-dessus l'ancien, Android propose une MISE À JOUR et garde"
-            echo "les données du téléphone. Seul le passage depuis une ancienne version signée par une autre clé"
-            echo "demande de désinstaller une dernière fois."
-          } > artifacts/android/IMPORTANT-SIGNATURE.txt
+          shopt -s nullglob
+          apks=(artifacts/android/SCOLIA_Pro_*_Android.apk)
+          if [[ "${#apks[@]}" -ne 1 || ! -s "${apks[0]:-}" ]]; then
+            echo "::error::APK signe introuvable ou ambigu." >&2
+            exit 1
+          fi
+          # Inspecter le paquet reel, pas seulement la cle declaree avant compilation.
+          mapfile -t signers < <(find "$ANDROID_HOME/build-tools" -maxdepth 2 -type f -name apksigner | sort -V)
+          if [[ "${#signers[@]}" -eq 0 ]]; then
+            echo "::error::apksigner est introuvable dans le SDK Android." >&2
+            exit 1
+          fi
+          certificate_details="$("${signers[-1]}" verify --print-certs "${apks[0]}")"
+          # apksigner v36: "Signer #1 certificate SHA-256 digest: ..."
+          # apksigner v37: "V2 Signer: ..." ou "V3.0 Signer: ..."
+          # Refuser plusieurs certificats differents, et ne jamais utiliser le hash de la cle publique.
+          mapfile -t apk_digests < <(printf '%s\n' "$certificate_details" |
+            awk -F 'certificate SHA-256 digest:[[:space:]]*' '/Signer/ && NF == 2 {
+              v = $2
+              gsub(/[[:space:]:]/, "", v)
+              print toupper(v)
+            }' | sort -u)
+          expected="$(printf '%s' "$SCOLIA_SIGNATURE_EMPREINTE" | tr '[:lower:]' '[:upper:]' | tr -d '[:space:]:')"
+          echo "::notice::Certificats detectes dans l'APK : ${apk_digests[*]:-aucun}"
+          echo "::notice::Certificat attendu depuis la cle : $expected"
+          if [[ "${#apk_digests[@]}" -ne 1 || "${apk_digests[0]:-}" != "$expected" ]]; then
+            echo "::error::Signature de l'APK incoherente avec celle de la cle utilisee." >&2
+            exit 1
+          fi
+          if [[ ("$GITHUB_EVENT_NAME" == "push" && "$GITHUB_REF" == "refs/heads/release/direct-apk-scolia-pro-20261103") || ("$SCOLIA_RECOVERY_PR18" == "true" && "$GITHUB_REF" == "refs/pull/18/merge") ]]; then
+            echo "Signature de l'APK officiel verifiee."
+            printf 'Signature : cle officielle de distribution SCOLIA\nEmpreinte certificat SHA-256 : %s\nCompatible avec les mises a jour des versions signees avec le meme certificat.\n' "$SCOLIA_SIGNATURE_EMPREINTE" > artifacts/android/IMPORTANT-SIGNATURE.txt
+          else
+            echo "Signature de l'APK de validation verifiee."
+            printf 'APK de validation uniquement : certificat ephemere, NON compatible avec les installations officielles.\nNe pas installer ce paquet pour mettre a jour un poste scolaire en production.\nEmpreinte certificat SHA-256 : %s\n' "$SCOLIA_SIGNATURE_EMPREINTE" > artifacts/android/IMPORTANT-SIGNATURE.txt
+          fi
       - uses: actions/upload-artifact@v4
         with:
           name: SCOLIA_Natif_Android_APK
@@ -142,9 +228,18 @@ jobs:
       - uses: actions/checkout@v5
         with:
           persist-credentials: false
+          ref: ${{ env.SCOLIA_RECOVERY_PR18 == 'true' && env.SCOLIA_CHECKOUT_REF || '' }}
       - uses: actions/setup-dotnet@v5
         with:
           global-json-file: scolia-pro/global.json
+      - name: Vérifier la syntaxe du script de signature Windows
+        shell: pwsh
+        run: |
+          $tokens = $null
+          $errors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile(
+            (Resolve-Path scripts/windows/signer-windows.ps1).Path, [ref]$tokens, [ref]$errors) | Out-Null
+          if ($errors.Count -gt 0) { throw "Script Authenticode invalide : $($errors[0].Message)" }
       - name: Publier l'application de bureau et le serveur local sans React
         shell: pwsh
         run: |
@@ -168,6 +263,22 @@ jobs:
           Compress-Archive -Path artifacts/SCOLIA -DestinationPath artifacts/SCOLIA_Natif_Windows_x64.zip -CompressionLevel Optimal
           (Get-FileHash artifacts/SCOLIA_Natif_Windows_x64.zip -Algorithm SHA256).Hash.ToLower() +
             '  SCOLIA_Natif_Windows_x64.zip' | Out-File artifacts/SCOLIA_Natif_Windows_x64.zip.sha256 -Encoding ascii
+      - name: Signer les exécutables Windows officiels
+        if: github.event_name == 'push' && github.ref == 'refs/heads/release/direct-apk-scolia-pro-20261103'
+        shell: pwsh
+        env:
+          SCOLIA_WINDOWS_SIGNING_PFX: ${{ secrets.SCOLIA_WINDOWS_SIGNING_PFX }}
+          SCOLIA_WINDOWS_SIGNING_PASSWORD: ${{ secrets.SCOLIA_WINDOWS_SIGNING_PASSWORD }}
+          SCOLIA_WINDOWS_CERT_THUMBPRINT: ${{ vars.SCOLIA_WINDOWS_CERT_THUMBPRINT }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          & ./scripts/windows/signer-windows.ps1 -Files @('artifacts/SCOLIA/SCOLIA.exe','artifacts/SCOLIA/SCOLIA-Serveur.exe')
+          if ($LASTEXITCODE -ne 0) { throw 'Échec de la signature Windows' }
+          Remove-Item artifacts/SCOLIA_Natif_Windows_x64.zip -Force
+          Compress-Archive -Path artifacts/SCOLIA -DestinationPath artifacts/SCOLIA_Natif_Windows_x64.zip -CompressionLevel Optimal
+          (Get-FileHash artifacts/SCOLIA_Natif_Windows_x64.zip -Algorithm SHA256).Hash.ToLower() +
+            '  SCOLIA_Natif_Windows_x64.zip' |
+            Out-File artifacts/SCOLIA_Natif_Windows_x64.zip.sha256 -Encoding ascii
       - name: Compiler l'assistant d'installation EXE Windows (Inno Setup)
         shell: pwsh
         run: |
@@ -206,6 +317,22 @@ jobs:
             "  SCOLIA_Pro_Installation_${version}_Windows_x64.exe" |
             Out-File "$setup.sha256" -Encoding ascii
           Write-Host "Installateur autonome : $setup"
+      - name: Signer et vérifier l'installateur Windows officiel
+        if: github.event_name == 'push' && github.ref == 'refs/heads/release/direct-apk-scolia-pro-20261103'
+        shell: pwsh
+        env:
+          SCOLIA_WINDOWS_SIGNING_PFX: ${{ secrets.SCOLIA_WINDOWS_SIGNING_PFX }}
+          SCOLIA_WINDOWS_SIGNING_PASSWORD: ${{ secrets.SCOLIA_WINDOWS_SIGNING_PASSWORD }}
+          SCOLIA_WINDOWS_CERT_THUMBPRINT: ${{ vars.SCOLIA_WINDOWS_CERT_THUMBPRINT }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $version = ([xml](Get-Content Directory.Build.props)).Project.PropertyGroup.Version
+          $setup = "artifacts/installer/SCOLIA_Pro_Installation_${version}_Windows_x64.exe"
+          & ./scripts/windows/signer-windows.ps1 -Files @($setup)
+          if ($LASTEXITCODE -ne 0) { throw 'Échec de la signature de l installateur Windows' }
+          (Get-FileHash $setup -Algorithm SHA256).Hash.ToLower() +
+            "  SCOLIA_Pro_Installation_${version}_Windows_x64.exe" |
+            Out-File "$setup.sha256" -Encoding ascii
       - uses: actions/upload-artifact@v4
         with:
           name: SCOLIA_Pro_Windows_Installateur_EXE
@@ -222,3 +349,100 @@ jobs:
             scolia-pro/artifacts/SCOLIA_Natif_Windows_x64.zip.sha256
           retention-days: 30
           if-no-files-found: error
+
+  # Les paquets historiques 1.2.3 sont déjà publiés ; les nouvelles versions sont
+  # distribuées uniquement après les compilations actuelles Android et Windows.
+
+  android-publication-officielle:
+    name: Publier automatiquement les versions Android et Windows sur GitHub Releases
+    # Push officiel avec secrets, OU exception ponctuelle depuis la PR #18
+    # portant la vraie cle historique (version 1.2.36 exclusivement).
+    if: >-
+      (github.event_name == 'push' && github.ref == 'refs/heads/release/direct-apk-scolia-pro-20261103') ||
+      (github.event_name == 'pull_request' && github.event.pull_request.number == 18 &&
+       github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'release/direct-apk-scolia-pro-20261103' &&
+       github.event.pull_request.base.ref == 'feature/scolia-recovery-login-lock-20261103')
+    needs: [android-natif, windows-natif]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+          ref: ${{ env.SCOLIA_RECOVERY_PR18 == 'true' && env.SCOLIA_CHECKOUT_REF || '' }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: SCOLIA_Natif_Android_APK
+          path: scolia-pro/artifacts/ota-apk
+      - uses: actions/download-artifact@v4
+        with:
+          name: SCOLIA_Pro_Windows_Installateur_EXE
+          path: scolia-pro/artifacts/ota-setup
+      - name: Afficher l'evenement et l'origine de la publication
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          REF_NAME: ${{ github.ref }}
+          HEAD_REF: ${{ github.head_ref }}
+        run: |
+          echo "Événement : $EVENT_NAME"
+          echo "Référence : $REF_NAME"
+          echo "Branche PR : $HEAD_REF"
+      - name: Verifier les empreintes et publier les programmes officiels
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          version="$(sed -n 's:.*<Version>\(.*\)</Version>.*:\1:p' Directory.Build.props | head -1)"
+          [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo 'Version invalide'; exit 1; }
+          if [[ "$GITHUB_EVENT_NAME" == 'pull_request' ]]; then
+            if [[ "$SCOLIA_RECOVERY_PR18" != 'true' || "$GITHUB_REF" != 'refs/pull/18/merge' || "$version" != '1.2.36' ]]; then
+              echo '::error::PR de publication non autorisee, ou version differente de 1.2.36.' >&2
+              exit 1
+            fi
+            # Les jobs de compilation ont utilise exclusivement la tete de la
+            # branche officielle. Un nouveau commit pendant le build annule la
+            # publication pour eviter toute fuite d'artefacts perimes.
+            current="$(git ls-remote "https://github.com/${GH_REPO}.git" refs/heads/release/direct-apk-scolia-pro-20261103 | cut -f1)"
+            if [[ -z "$current" || "$current" != "$SCOLIA_CHECKOUT_REF" || "$(git rev-parse HEAD)" != "$current" ]]; then
+              echo "::error::La tete de la branche release a change pendant le build." >&2
+              exit 1
+            fi
+            echo '::notice::Release 1.2.36 depuis PR18, cle Android historique validee ; Windows sans Authenticode (procedure 1.2.17).'
+          elif [[ "$GITHUB_EVENT_NAME" != 'push' || "$GITHUB_REF" != 'refs/heads/release/direct-apk-scolia-pro-20261103' ]]; then
+            echo '::error::Contexte de publication non autorise.' >&2
+            exit 1
+          fi
+          apk="artifacts/ota-apk/SCOLIA_Pro_${version}_Android.apk"
+          sha="$apk.sha256"
+          test -s "$apk" && test -s "$sha"
+          (cd artifacts/ota-apk && sha256sum -c "SCOLIA_Pro_${version}_Android.apk.sha256")
+          setup="artifacts/ota-setup/SCOLIA_Pro_Installation_${version}_Windows_x64.exe"
+          setup_sha="$setup.sha256"
+          test -s "$setup" && test -s "$setup_sha"
+          (cd artifacts/ota-setup && sha256sum -c "SCOLIA_Pro_Installation_${version}_Windows_x64.exe.sha256")
+          tag="scolia-pro-v${version}"
+          # Une version publiée est IMMUTABLE : ne jamais remplacer un APK/EXE sous le meme tag.
+          # Incrementez Version et AndroidVersionCode dans les sources avant une nouvelle release.
+          if gh release view "$tag" --repo "$GH_REPO" >/dev/null 2>&1; then
+            echo "::notice::La version $tag est deja publiee : aucun remplacement d'APK ou d'EXE."
+            exit 0
+          fi
+          # Notes de version en français, versionnées avec les sources (docs/RELEASE_<version>.md).
+          notes="docs/RELEASE_${version}.md"
+          if [[ ! -s "$notes" ]]; then
+            echo "::error::Notes de version manquantes : $notes. Publication bloquee." >&2
+            exit 1
+          fi
+          gh release create "$tag" "$apk" "$sha" "$setup" "$setup_sha" \
+            --repo "$GH_REPO" --target "$SCOLIA_CHECKOUT_REF" --latest \
+            --title "SCOLIA Pro ${version} - Android et Windows" \
+            --notes-file "$notes"
+          gh release view "$tag" --repo "$GH_REPO" --json url,assets \
+            --jq '{url, fichiers: [.assets[] | select(.name | endswith(".apk") or endswith(".exe")) | {name,url,digest}]}'
