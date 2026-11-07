@@ -114,7 +114,7 @@
           <StackPanel Spacing="16">
             <Border Width="80" Height="80" CornerRadius="22" Background="{DynamicResource AccentSoftBrush}"
                     HorizontalAlignment="Center">
-              <mi:MaterialIcon Kind="CellphoneCheck" Width="40" Height="40"
+              <mi:MaterialIcon Kind="Cellphone" Width="40" Height="40"
                                Foreground="{DynamicResource AccentBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
             </Border>
             <TextBlock Text="Appareil reconnu" FontSize="21" FontWeight="Bold"
