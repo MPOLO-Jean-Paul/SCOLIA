@@ -30,6 +30,12 @@ public sealed class StudentsPage : PageViewModel
 
     public StudentsPage(ShellViewModel shell) : base(shell)
     {
+        OpenStudentOnPhone = new RelayCommand<StudentRow>(row =>
+        {
+            if (row is null) return;
+            Selected = row;
+            _ = Shell.Run(OpenSelectedAsync);
+        });
         if (Shell.Can(Perm.StudentsWrite)) Action("Nouvelle inscription", MaterialIconKind.AccountPlus, () => StudentForms.CreateAsync(Shell), primary: true);
         Action("Ouvrir la fiche", MaterialIconKind.Account, OpenSelectedAsync, open: true);
         if (Shell.Can(Perm.ReportsRead)) Action("Suivi par mois", MaterialIconKind.CalendarCheck, () => Shell.Open(() => new MonthlyPage(Shell)));
@@ -112,6 +118,8 @@ public sealed class StudentsPage : PageViewModel
     public override MaterialIconKind Glyph => MaterialIconKind.AccountGroupOutline;
 
     public ObservableCollection<StudentRow> Items { get; } = [];
+    /// <summary>Chaque fiche Android ouvre directement le dossier, sans sélection invisible ni double-clic.</summary>
+    public RelayCommand<StudentRow> OpenStudentOnPhone { get; }
     public IReadOnlyList<ChoiceItem> Promotions { get => promotions; private set => Set(ref promotions, value); }
     public IReadOnlyList<ChoiceItem> StatusChoices { get; } = Labels.Statuses.Prepend(new ChoiceItem(string.Empty, "Tous les statuts")).ToList();
 
