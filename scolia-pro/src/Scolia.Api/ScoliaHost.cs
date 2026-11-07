@@ -194,6 +194,24 @@ public static class ScoliaHost
         });
         app.UseRateLimiter();
         app.UseAuthentication();
+        // Le transport Render a une clé de salle partagée. Elle ne remplace pas
+        // l'autorisation individuelle : un appareil retiré est refusé dès l'appel suivant.
+        app.Use(async (http, next) =>
+        {
+            if (http.Request.Headers["X-Scolia-Relay-Connection"] == "1" &&
+                http.Request.Path.StartsWithSegments("/api") &&
+                !http.Request.Path.StartsWithSegments("/api/installation") &&
+                http.Request.Path != "/api/jumelage/accepter" &&
+                http.Request.Path != "/api/jumelage/appareil/verifier" &&
+                http.Request.Path != "/api/jumelage/preuve-serveur" &&
+                !http.RequestServices.GetRequiredService<DevicePairingRegistry>().VerifyRemoteProof(http))
+            {
+                http.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                await http.Response.WriteAsJsonAsync(new { title = "Cet appareil n'est plus autorisé sur le serveur. Un nouveau jumelage est nécessaire." });
+                return;
+            }
+            await next();
+        });
         app.UseAuthorization();
         // Une écriture déjà faite rend sa réponse d'origine avant tout autre contrôle.
         app.UseIdempotency();
