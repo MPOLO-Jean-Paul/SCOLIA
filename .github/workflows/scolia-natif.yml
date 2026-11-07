@@ -48,7 +48,8 @@ concurrency:
 
 env:
   # Cache de signature accessible uniquement via la PR interne #18.
-  # Cette exception est limitee a la distribution 1.2.36.
+  # Reprise de la cle historique via PR18 pour les versions officielles >= 1.2.36.
+  # Jamais exposee aux autres PR (et exclusivement apres verification du certificat).
   SCOLIA_RECOVERY_PR18: ${{ github.event_name == 'pull_request' && github.event.pull_request.number == 18 && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'release/direct-apk-scolia-pro-20261103' && github.event.pull_request.base.ref == 'feature/scolia-recovery-login-lock-20261103' }}
   SCOLIA_CHECKOUT_REF: ${{ (github.event_name == 'pull_request' && github.event.pull_request.number == 18 && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'release/direct-apk-scolia-pro-20261103' && github.event.pull_request.base.ref == 'feature/scolia-recovery-login-lock-20261103') && github.event.pull_request.head.sha || github.sha }}
 
@@ -151,7 +152,7 @@ jobs:
         with:
           path: ~/.scolia-signature
           key: scolia-android-signature-v1
-      - name: Authentifier la cle officielle de la PR 18 pour la 1.2.36
+      - name: Authentifier la cle historique depuis la PR 18 (version courante)
         if: env.SCOLIA_RECOVERY_PR18 == 'true'
         shell: bash
         env:
@@ -356,7 +357,7 @@ jobs:
   android-publication-officielle:
     name: Publier automatiquement les versions Android et Windows sur GitHub Releases
     # Push officiel avec secrets, OU exception ponctuelle depuis la PR #18
-    # portant la vraie cle historique (version 1.2.36 exclusivement).
+    # portant la cle historique (version actuelle autorisee, empreinte SHA-256 invariable).
     if: >-
       (github.event_name == 'push' && github.ref == 'refs/heads/release/direct-apk-scolia-pro-20261103') ||
       (github.event_name == 'pull_request' && github.event.pull_request.number == 18 &&
@@ -402,8 +403,9 @@ jobs:
           version="$(sed -n 's:.*<Version>\(.*\)</Version>.*:\1:p' Directory.Build.props | head -1)"
           [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo 'Version invalide'; exit 1; }
           if [[ "$GITHUB_EVENT_NAME" == 'pull_request' ]]; then
-            if [[ "$SCOLIA_RECOVERY_PR18" != 'true' || "$GITHUB_REF" != 'refs/pull/18/merge' || "$version" != '1.2.36' ]]; then
-              echo '::error::PR de publication non autorisee, ou version differente de 1.2.36.' >&2
+            if [[ "$SCOLIA_RECOVERY_PR18" != 'true' || "$GITHUB_REF" != 'refs/pull/18/merge' ]] ||
+               [[ "$(printf '%s\n' "1.2.36" "$version" | sort -V | head -n 1)" != "1.2.36" ]]; then
+              echo '::error::PR de publication non autorisee, ou version anterieure a 1.2.36.' >&2
               exit 1
             fi
             # Les jobs de compilation ont utilise exclusivement la tete de la
@@ -414,7 +416,7 @@ jobs:
               echo "::error::La tete de la branche release a change pendant le build." >&2
               exit 1
             fi
-            echo '::notice::Release 1.2.36 depuis PR18, cle Android historique validee ; Windows sans Authenticode (procedure 1.2.17).'
+            echo "::notice::Release $version depuis PR18, cle Android historique validee ; Windows sans Authenticode (procedure 1.2.17)."
           elif [[ "$GITHUB_EVENT_NAME" != 'push' || "$GITHUB_REF" != 'refs/heads/release/direct-apk-scolia-pro-20261103' ]]; then
             echo '::error::Contexte de publication non autorise.' >&2
             exit 1
