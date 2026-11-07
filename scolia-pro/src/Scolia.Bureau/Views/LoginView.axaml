@@ -122,7 +122,7 @@
 
 
     <!-- Le fond doux reste propre au téléphone ; Windows conserve sa grande page bleue. -->
-    <Border x:Name="IosBackdrop" IsVisible="False" Background="#F5F7FB">
+    <Border x:Name="IosBackdrop" IsVisible="False">
       <Border.Background>
         <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
           <GradientStop Offset="0" Color="#EFF5FF" />
