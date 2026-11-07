@@ -198,6 +198,26 @@ public sealed class DevicePairingRegistry
             .Select(x => new AuthorizedDevice(x.Id, x.DeviceName, x.ExpiresUtc, x.Revoked)).ToArray();
     }
 
+    /// <summary>La gestion des appareils est commune à tous les administrateurs
+    /// autorisés de l'établissement, pas seulement à l'auteur du QR.</summary>
+    public IReadOnlyList<AuthorizedDevice> ListAll()
+    {
+        lock (gate) return grants.Where(x => !x.Revoked)
+            .Select(x => new AuthorizedDevice(x.Id, x.DeviceName, x.ExpiresUtc, false)).ToArray();
+    }
+
+    public bool RevokeAny(Guid grantId)
+    {
+        lock (gate)
+        {
+            var index = grants.FindIndex(x => x.Id == grantId && !x.Revoked);
+            if (index < 0) return false;
+            grants.RemoveAt(index);
+            Save();
+            return true;
+        }
+    }
+
     public bool Revoke(Guid grantId, Guid owner)
     {
         lock (gate)
