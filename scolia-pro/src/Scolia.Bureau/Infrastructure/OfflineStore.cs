@@ -337,7 +337,7 @@ public sealed class OfflineStore
 
     public void ClearBackgroundSession()
     {
-        var keys = string.IsNullOrWhiteSpace(User) ? [CredentialFile] : new[] { CredentialFile, CredentialKeyFor(User) };
+        string[] keys = string.IsNullOrWhiteSpace(User) ? [CredentialFile] : [CredentialFile, CredentialKeyFor(User)];
         database.Update(keys, values =>
         {
             foreach (var key in keys)
