@@ -96,7 +96,9 @@ public static class PairingFlow
             var link = Scolia.Transport.RemoteLink.Parse(code.Invitation!);
             using var probe = new Api.ScoliaClient(link.VirtualServer);
             probe.UseRemote(link);
-            if (!await WithinAsync(probe.IsRunningAsync())) return null;
+            // Un relais gratuit endormi et un réseau mobile lent demandent bien plus que quelques secondes :
+            // jusqu'à une minute d'essais, en disant ce qui se passe.
+            if (!await ReachInternetAsync(probe, progress)) return null;
             await shell.JoinInternetAsync(link);
             return await ActivateAsync(shell, code, code.School, "Internet sécurisé");
         }
@@ -174,6 +176,22 @@ public static class PairingFlow
             return status.SchoolName ?? "Établissement";
         }
         catch (Exception ex) when (ex is HttpRequestException or Api.ApiException or TaskCanceledException or IOException or TimeoutException) { return null; }
+    }
+
+    public static readonly TimeSpan InternetWait = TimeSpan.FromSeconds(60);
+
+    private static async Task<bool> ReachInternetAsync(Api.ScoliaClient probe, Action<string>? progress)
+    {
+        var started = DateTime.UtcNow;
+        for (var attempt = 1; DateTime.UtcNow - started < InternetWait; attempt++)
+        {
+            if (await probe.IsRunningAsync()) return true;
+            progress?.Invoke(attempt == 1
+                ? "Réveil du relais Internet et recherche du serveur… (jusqu'à une minute)"
+                : $"Le serveur ne répond pas encore par Internet, nouvel essai ({attempt})…");
+            await Task.Delay(TimeSpan.FromSeconds(3));
+        }
+        return false;
     }
 
     private static async Task<bool> WithinAsync(Task<bool> check)

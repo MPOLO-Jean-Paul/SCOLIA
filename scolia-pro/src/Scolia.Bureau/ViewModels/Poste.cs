@@ -12,7 +12,7 @@ public sealed record AuthorizedDeviceRowVm(string Name, string Detail, bool Acti
 /// Poste et réseau : à quel serveur ce poste est relié, et sur l'ordinateur principal, le partage avec les autres
 /// ordinateurs et le démarrage avec Windows. Tout s'applique tout de suite, sans adresse à saisir.
 /// </summary>
-public sealed class PosteViewModel : Observable
+public sealed class PosteViewModel : Observable, ILiveRefresh
 {
     private readonly ShellViewModel shell;
     /// <summary>Une seule page à relire au retour des réglages : pas d'abonnement qui retiendrait les anciennes.</summary>
@@ -272,6 +272,14 @@ public sealed class PosteViewModel : Observable
             shell.Notify($"Accès retiré pour « {device.Name} ».");
             await LoadDevicesAsync();
         });
+    }
+
+    /// <summary>État du relais rafraîchi en direct pendant l'affichage (connexion établie, perdue, nouvel essai).</summary>
+    public void RefreshLive()
+    {
+        Remote.RefreshStatus();
+        foreach (var name in new[] { nameof(AccessSummary), nameof(AccessTitle), nameof(AccessBrush), nameof(InternetState), nameof(InternetBrush) })
+            Raise(name);
     }
 
     private void RaiseDevices()

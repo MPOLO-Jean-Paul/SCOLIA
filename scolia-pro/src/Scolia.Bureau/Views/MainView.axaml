@@ -94,6 +94,7 @@
       <Setter Property="CornerRadius" Value="3" /><Setter Property="Opacity" Value="0.3" />
       <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
     </Style>
+    <Style Selector="Border.welcomedot.onbrand"><Setter Property="Background" Value="White" /></Style>
     <Style Selector="LayoutTransformControl.anim Grid#OpeningHost[IsVisible=True] Border.welcomedot.first">
       <Style.Animations>
         <Animation Duration="0:0:1.2" Delay="0:0:0.00" IterationCount="Infinite">
@@ -233,24 +234,43 @@
     </ContentControl>
     <ContentControl Content="{Binding Connection}" IsVisible="{Binding ChoosingServer}" />
 
-    <!-- Ouverture : logo, trois points discrets et progression avant l'accueil -->
-    <Grid x:Name="OpeningHost" IsVisible="{Binding Opening}" Background="{DynamicResource BgBrush}">
+    <!-- Ouverture : la suite de la connexion, sur le même fond bleu façon Windows 11 (« Bienvenue »), sans carte :
+         logo dans son disque blanc, salutation, trois points et progression, en blanc. -->
+    <Grid x:Name="OpeningHost" IsVisible="{Binding Opening}">
       <Grid.RenderTransform><TranslateTransform /></Grid.RenderTransform>
+      <Border>
+        <Border.Background>
+          <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+            <GradientStop Offset="0" Color="#2F7BEA" />
+            <GradientStop Offset="0.5" Color="#1258D0" />
+            <GradientStop Offset="1" Color="#0B2F6E" />
+          </LinearGradientBrush>
+        </Border.Background>
+      </Border>
+      <Border IsHitTestVisible="False">
+        <Border.Background>
+          <RadialGradientBrush Center="50%,0%" GradientOrigin="50%,0%" RadiusX="90%" RadiusY="70%">
+            <GradientStop Offset="0" Color="#66FFFFFF" />
+            <GradientStop Offset="0.45" Color="#1FFFFFFF" />
+            <GradientStop Offset="1" Color="#00FFFFFF" />
+          </RadialGradientBrush>
+        </Border.Background>
+      </Border>
       <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" VerticalAlignment="Center">
-      <StackPanel x:Name="WelcomeContent" MaxWidth="320" Margin="24" HorizontalAlignment="Stretch" Spacing="12">
-        <Border Width="92" Height="92" CornerRadius="24" Background="{DynamicResource Surface2Brush}"
-                BorderBrush="{DynamicResource LineBrush}" BorderThickness="1" HorizontalAlignment="Center">
-          <ctl:LogoAssembly x:Name="OpeningLogo" Width="68" Height="68" HorizontalAlignment="Center" VerticalAlignment="Center"
-                            Primary="{DynamicResource LogoPrimaryBrush}" Secondary="{DynamicResource LogoSecondaryBrush}" />
+      <StackPanel x:Name="WelcomeContent" MaxWidth="340" Margin="24" HorizontalAlignment="Stretch" Spacing="12">
+        <Border Width="96" Height="96" CornerRadius="48" Background="White" HorizontalAlignment="Center" BoxShadow="0 8 24 0 #33000000">
+          <ctl:LogoAssembly x:Name="OpeningLogo" Width="66" Height="66" HorizontalAlignment="Center" VerticalAlignment="Center"
+                            Primary="#0B2A6F" Secondary="#16A34A" />
         </Border>
-        <TextBlock Text="SCOLIA Pro" FontSize="22" FontWeight="SemiBold" HorizontalAlignment="Center" />
-        <TextBlock Text="{Binding OpeningTitle}" Classes="muted"
-                   HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" />
+        <TextBlock Text="{Binding OpeningTitle}" Foreground="White" FontSize="24" FontWeight="SemiBold"
+                   HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" Margin="0,6,0,0" />
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="6" Margin="0,2,0,2">
-          <Border Classes="welcomedot first" /><Border Classes="welcomedot second" /><Border Classes="welcomedot third" />
+          <Border Classes="welcomedot onbrand first" /><Border Classes="welcomedot onbrand second" /><Border Classes="welcomedot onbrand third" />
         </StackPanel>
-        <TextBlock Text="{Binding OpeningStep}" Classes="muted" HorizontalAlignment="Stretch" TextAlignment="Center" TextWrapping="Wrap" />
-        <ProgressBar Minimum="0" Maximum="100" Value="{Binding OpeningProgress, Mode=OneWay}" Height="4" MinHeight="4" Margin="24,2,24,0" />
+        <TextBlock Text="{Binding OpeningStep}" Foreground="#E6FFFFFF" HorizontalAlignment="Stretch" TextAlignment="Center" TextWrapping="Wrap" />
+        <ProgressBar Minimum="0" Maximum="100" Value="{Binding OpeningProgress, Mode=OneWay}" Height="4" MinHeight="4" Margin="24,2,24,0"
+                     Foreground="White" Background="#33FFFFFF" />
+        <TextBlock Text="SCOLIA Pro" Foreground="#B3FFFFFF" FontSize="{DynamicResource FsSmall}" HorizontalAlignment="Center" Margin="0,10,0,0" />
       </StackPanel>
       </ScrollViewer>
     </Grid>

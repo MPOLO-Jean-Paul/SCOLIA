@@ -49,7 +49,7 @@
       <Setter Property="Margin" Value="2,6,0,-6" />
     </Style>
   </UserControl.Styles>
-  <StackPanel Spacing="14" MaxWidth="820" HorizontalAlignment="Left">
+  <StackPanel Spacing="14" MaxWidth="820" HorizontalAlignment="Left" infra:LiveRefresh.Enabled="True">
     <StackPanel Spacing="4" IsVisible="{Binding ShowTitle}">
       <TextBlock Text="Poste et réseau" Classes="title" />
       <TextBlock Classes="muted" TextWrapping="Wrap"

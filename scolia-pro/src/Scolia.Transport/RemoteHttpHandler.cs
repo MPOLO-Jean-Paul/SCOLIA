@@ -15,9 +15,11 @@ public sealed class RemoteHttpHandler(RemoteLink link, CookieContainer cookies) 
         try
         {
             socket.Options.SetRequestHeader("X-Scolia-Client", link.ClientToken);
-            socket.Options.KeepAliveInterval = TimeSpan.FromSeconds(20);
+            socket.Options.KeepAliveInterval = TimeSpan.FromSeconds(15);
+            socket.Options.KeepAliveTimeout = RemoteHost.KeepAliveTimeout;
             using var connect = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-            connect.CancelAfter(TimeSpan.FromSeconds(8));
+            // Le relais peut se réveiller (relais gratuit) : laisser le temps de la poignée de main sur un réseau mobile.
+            connect.CancelAfter(TimeSpan.FromSeconds(25));
             await socket.ConnectAsync(link.Endpoint("client"), connect.Token);
             var epoch = await RelayWire.ReceiveAsync(socket, connect.Token);
             if (epoch.Length != 32) throw new IOException("Relais incompatible.");

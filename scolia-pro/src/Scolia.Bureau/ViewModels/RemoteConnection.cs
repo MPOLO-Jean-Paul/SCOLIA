@@ -49,14 +49,38 @@ public sealed class RemoteConnectionViewModel : Observable
     public string RelayHost => Uri.TryCreate(RemoteConnection.Load()?.Link.Relay ?? relay, UriKind.Absolute, out var uri) ? uri.Host : relay;
 
     public string StatusTitle => !IsActive ? "Désactivé"
-        : RemoteConnection.Hosting ? "Actif" : "Actif · connexion au relais en cours";
+        : RemoteConnection.Hosting ? "Actif · relais connecté"
+        : RemoteConnection.HostFailure is null ? "Connexion au relais…" : "Relais injoignable · nouvel essai automatique";
 
-    public string StatusLine => IsActive && RemoteConnection.Load() is { } current
-        ? $"Les appareils autorisés joignent ce serveur depuis n'importe quel réseau, par le relais sécurisé {RelayHost}. "
-            + $"Liaison valable jusqu'au {Format.Date(DateOnly.FromDateTime(current.Link.ExpiresUtc.ToLocalTime()))}."
-        : "Les appareils hors du Wi-Fi de l'établissement ne peuvent pas joindre ce serveur. Activez l'accès pour les téléphones et ordinateurs distants.";
+    public string StatusLine => !IsActive || RemoteConnection.Load() is not { } current
+        ? "Les appareils hors du Wi-Fi de l'établissement ne peuvent pas joindre ce serveur. Activez l'accès pour les téléphones et ordinateurs distants."
+        : RemoteConnection.Hosting
+            ? $"Les appareils autorisés joignent ce serveur depuis n'importe quel réseau, par le relais sécurisé {RelayHost}. "
+                + $"Liaison valable jusqu'au {Format.Date(DateOnly.FromDateTime(current.Link.ExpiresUtc.ToLocalTime()))}."
+            : $"Ce serveur n'est pas encore relié au relais {RelayHost} : les appareils distants et le jumelage par Internet attendent. "
+                + Diagnosis(RemoteConnection.HostFailure, RemoteConnection.HostAttempts);
 
-    public Avalonia.Media.IBrush StatusBrush => ThemeBrush.Get(!IsActive ? "ToneNeutral" : RemoteConnection.Hosting ? "ToneGreen" : "ToneOrange");
+    /// <summary>Raison d'un échec de connexion au relais, en clair, avec la conduite à tenir.</summary>
+    public static string Diagnosis(string? failure, int attempts)
+    {
+        var tries = attempts > 1 ? $" ({attempts} essais)" : string.Empty;
+        return failure switch
+        {
+            null => "Connexion en cours…",
+            "HTTP 409" => $"Le relais garde encore une ancienne session de ce serveur{tries}. Le relais Cloudflare corrigé la remplace aussitôt ; sinon elle se libère en quelques minutes.",
+            "HTTP 403" => $"Le relais refuse l'identité de ce serveur{tries}. Désactivez puis réactivez l'accès par Internet pour renouveler la liaison.",
+            "HTTP 404" => $"Adresse du relais incorrecte{tries} : vérifiez l'adresse wss://…/ dans le réglage avancé.",
+            "HTTP 426" or "HTTP 400" or "HTTP 405" => $"Cette adresse ne correspond pas à un relais SCOLIA{tries} : vérifiez le réglage avancé.",
+            "HTTP 429" => $"Trop de tentatives vers le relais{tries} : nouvel essai automatique dans quelques secondes.",
+            "HTTP 502" or "HTTP 503" or "HTTP 504" => $"Le relais est indisponible ou se réveille{tries} : nouvel essai automatique.",
+            "délai dépassé" => $"Le relais met du temps à répondre (réveil d'un relais gratuit ou réseau lent){tries} : nouvel essai automatique.",
+            "réseau indisponible" => $"Pas d'accès Internet depuis ce serveur, ou adresse du relais introuvable{tries}.",
+            _ => $"Échec : {failure}{tries}. Nouvel essai automatique.",
+        };
+    }
+
+    public Avalonia.Media.IBrush StatusBrush => ThemeBrush.Get(!IsActive ? "ToneNeutral" : RemoteConnection.Hosting ? "ToneGreen"
+        : RemoteConnection.HostFailure is null ? "ToneBlue" : "ToneOrange");
     public string EnableLabel => IsActive ? "Vérifier la connexion" : "Activer l'accès par Internet";
 
     public void RefreshStatus()
@@ -117,15 +141,40 @@ public sealed class RemoteConnectionViewModel : Observable
             using var response = await probe.GetAsync(address);
             response.EnsureSuccessStatusCode();
             RemoteConnection.Save(new RemoteConfiguration(link, true, shell.Login.SchoolName));
-            if (reuse) RemoteConnection.StartHostIfMissing(shell.Api.Server);
+            // « Vérifier » relance aussi une connexion bloquée : un hôte qui n'est pas relié repart de zéro.
+            if (reuse && RemoteConnection.Hosting) RemoteConnection.StartHostIfMissing(shell.Api.Server);
             else RemoteConnection.StartHost(shell.Api.Server);
+            RefreshStatus();
+            // Attendre le vrai résultat au lieu de laisser « en cours » sans réponse.
+            Message = "Relais joignable. Connexion de ce serveur au relais…";
+            var started = DateTime.UtcNow;
+            while (!RemoteConnection.Hosting && DateTime.UtcNow - started < TimeSpan.FromSeconds(45))
+            {
+                await Task.Delay(1000);
+                RefreshStatus();
+            }
+            if (!RemoteConnection.Hosting)
+            {
+                Message = "Le relais répond, mais ce serveur n'a pas encore pu s'y relier. "
+                    + Diagnosis(RemoteConnection.HostFailure, RemoteConnection.HostAttempts)
+                    + " SCOLIA continue d'essayer en arrière-plan ; l'état ci-dessus se met à jour seul.";
+                return;
+            }
             if (reuse)
-                Message = "Accès par Internet déjà actif. Les appareils autorisés restent jumelés ; aucun nouveau QR n'est nécessaire.";
+                Message = "Accès par Internet actif et relais connecté. Les appareils autorisés restent jumelés ; aucun nouveau QR n'est nécessaire.";
             else
                 await PrepareInvitationAsync(link);
         }
         catch (Exception ex) when (ex is FormatException or HttpRequestException or TaskCanceledException or IOException)
-        { Message = "Accès non activé : vérifiez Internet, le certificat HTTPS et la disponibilité du relais. La configuration précédente est conservée."; }
+        {
+            Message = ex is FormatException
+                ? $"Adresse du relais invalide : {ex.Message}"
+                : ex is TaskCanceledException
+                    ? "Le relais n'a pas répondu en 75 secondes (relais endormi, hors service ou réseau trop lent). La configuration précédente est conservée."
+                    : ex is HttpRequestException { StatusCode: { } code }
+                        ? $"Le relais a répondu « HTTP {(int)code} » : vérifiez son adresse et son déploiement. La configuration précédente est conservée."
+                        : "Accès non activé : pas d'accès Internet depuis ce serveur, ou adresse du relais introuvable. La configuration précédente est conservée.";
+        }
         finally { RefreshStatus(); }
     }
 }

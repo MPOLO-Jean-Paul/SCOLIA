@@ -5,7 +5,7 @@
   <!-- Connexion façon Windows 11 : un seul fond bleu dégradé avec un halo blanc, sans carte ni cadre ;
        au centre le logo, l'établissement, puis des champs de verre translucide avec un trait en bas. -->
   <UserControl.Resources>
-    <!-- Ordinateur : blanc sur le fond bleu. Le téléphone remplace ces couleurs par celles du thème (LoginView.axaml.cs). -->
+    <!-- Connexion façon Windows 11 sur l'ordinateur comme sur le téléphone : blanc sur le fond bleu, champs de verre. -->
     <SolidColorBrush x:Key="LoginInk" Color="White" />
     <SolidColorBrush x:Key="LoginInk2" Color="#E6FFFFFF" />
     <SolidColorBrush x:Key="LoginInk3" Color="#B3FFFFFF" />
@@ -36,61 +36,6 @@
     </Style>
     <Style Selector="Button.resume /template/ ContentPresenter"><Setter Property="Background" Value="{DynamicResource LoginGlass}" /></Style>
     <Style Selector="Button.resume:pointerover /template/ ContentPresenter"><Setter Property="Background" Value="{DynamicResource LoginGlassHover}" /></Style>
-    <!-- Téléphone (classe « ios ») : fond clair du thème, champs en blocs arrondis, actions bleues, comme la Configuration. -->
-    <Style Selector="Grid.ios TextBox.w11.onbrand">
-      <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
-      <Setter Property="CaretBrush" Value="{DynamicResource AccentBrush}" />
-      <Setter Property="SelectionBrush" Value="{DynamicResource AccentSoftBrush}" />
-      <Setter Property="PlaceholderForeground" Value="{DynamicResource MutedBrush}" />
-    </Style>
-    <Style Selector="Grid.ios TextBox.w11.onbrand:focus"><Setter Property="Foreground" Value="{DynamicResource TextBrush}" /></Style>
-    <Style Selector="Grid.ios TextBox.w11.onbrand /template/ Border#PART_BorderElement">
-      <Setter Property="Background" Value="{DynamicResource GroupBrush}" />
-      <Setter Property="BorderBrush" Value="Transparent" />
-      <Setter Property="BorderThickness" Value="1" />
-      <Setter Property="CornerRadius" Value="12" />
-    </Style>
-    <Style Selector="Grid.ios TextBox.w11.onbrand:pointerover /template/ Border#PART_BorderElement">
-      <Setter Property="Background" Value="{DynamicResource GroupBrush}" />
-      <Setter Property="BorderBrush" Value="{DynamicResource LineStrongBrush}" />
-    </Style>
-    <Style Selector="Grid.ios TextBox.w11.onbrand:focus /template/ Border#PART_BorderElement">
-      <Setter Property="Background" Value="{DynamicResource GroupBrush}" />
-      <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
-      <Setter Property="BorderThickness" Value="2" />
-    </Style>
-    <Style Selector="Grid.ios TextBox.w11.onbrand /template/ TextBlock#PART_Watermark"><Setter Property="Foreground" Value="{DynamicResource MutedBrush}" /></Style>
-    <Style Selector="Grid.ios TextBox.w11.onbrand:focus /template/ TextBlock#PART_Watermark"><Setter Property="Foreground" Value="{DynamicResource MutedBrush}" /></Style>
-    <Style Selector="Grid.ios Button.fieldicon:pointerover /template/ ContentPresenter"><Setter Property="Background" Value="{DynamicResource HoverBrush}" /></Style>
-    <Style Selector="Grid.ios Button.fieldicon /template/ ContentPresenter"><Setter Property="Foreground" Value="{DynamicResource TextBrush}" /></Style>
-    <Style Selector="Grid.ios Button.fieldicon.go /template/ ContentPresenter"><Setter Property="Background" Value="{DynamicResource AccentBrush}" /></Style>
-    <Style Selector="Grid.ios Button.fieldicon.go:pointerover /template/ ContentPresenter"><Setter Property="Background" Value="{DynamicResource AccentHoverBrush}" /></Style>
-    <Style Selector="Grid.ios Button.fieldicon.go:disabled /template/ ContentPresenter"><Setter Property="Background" Value="{DynamicResource LineStrongBrush}" /></Style>
-    <Style Selector="Grid.ios Button.glass">
-      <Setter Property="Foreground" Value="{DynamicResource OnAccentBrush}" />
-      <Setter Property="CornerRadius" Value="12" />
-    </Style>
-    <Style Selector="Grid.ios Button.glass /template/ ContentPresenter">
-      <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
-      <Setter Property="Foreground" Value="{DynamicResource OnAccentBrush}" />
-    </Style>
-    <Style Selector="Grid.ios Button.glass:pointerover /template/ ContentPresenter">
-      <Setter Property="Background" Value="{DynamicResource AccentHoverBrush}" />
-      <Setter Property="Foreground" Value="{DynamicResource OnAccentBrush}" />
-    </Style>
-    <Style Selector="Grid.ios Button.glasslink">
-      <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
-    </Style>
-    <Style Selector="Grid.ios Button.glasslink /template/ ContentPresenter">
-      <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
-    </Style>
-    <Style Selector="Grid.ios Button.glasslink:pointerover /template/ ContentPresenter">
-      <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
-      <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
-    </Style>
-    <Style Selector="Grid.ios Button.glasslink TextBlock"><Setter Property="Foreground" Value="{DynamicResource AccentBrush}" /></Style>
-    <Style Selector="Grid.ios Button.glasslink mi|MaterialIcon"><Setter Property="Foreground" Value="{DynamicResource AccentBrush}" /></Style>
-    <Style Selector="Grid.ios CheckBox.onbrand"><Setter Property="Foreground" Value="{DynamicResource TextBrush}" /></Style>
   </UserControl.Styles>
 
   <Grid x:Name="Root">

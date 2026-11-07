@@ -13,9 +13,36 @@ public sealed class RemoteHost : IDisposable
     private int connected;
     private int disposed;
     private string? lastConnectionFailure;
+    private int attempts;
     public bool Connected => Volatile.Read(ref connected) == 1;
     /// <summary>Diagnostic local, sans jeton ni invitation et sans journalisation distante.</summary>
     public string? LastConnectionFailure => Volatile.Read(ref lastConnectionFailure);
+    /// <summary>Nombre d'essais de connexion au relais depuis le démarrage (affiché pendant une reprise).</summary>
+    public int Attempts => Volatile.Read(ref attempts);
+    /// <summary>Connexion établie ou perdue : l'écran se met à jour sans attendre d'être rouvert.</summary>
+    public event Action? StateChanged;
+
+    /// <summary>Délai laissé au relais pour accepter l'hôte : un relais gratuit endormi peut mettre 30 à 60 s à se réveiller.</summary>
+    public static readonly TimeSpan ConnectTimeout = TimeSpan.FromSeconds(30);
+    /// <summary>Sans réponse aux pings pendant ce délai, la connexion est tenue pour coupée et reprise aussitôt.</summary>
+    public static readonly TimeSpan KeepAliveTimeout = TimeSpan.FromSeconds(25);
+
+    private void SetConnected(bool value)
+    {
+        if (Interlocked.Exchange(ref connected, value ? 1 : 0) == (value ? 1 : 0)) return;
+        try { StateChanged?.Invoke(); } catch (Exception ex) when (ex is not OutOfMemoryException) { }
+    }
+
+    /// <summary>Raison lisible d'un échec, sans adresse de salle ni jeton.</summary>
+    public static string Describe(Exception ex, ClientWebSocket? socket = null)
+    {
+        var status = socket is not null && socket.HttpStatusCode != 0 ? (int)socket.HttpStatusCode : 0;
+        return status != 0 ? $"HTTP {status}"
+            : ex is OperationCanceledException ? "délai dépassé"
+            : ex is WebSocketException ws ? $"WebSocket {ws.WebSocketErrorCode}"
+            : ex is HttpRequestException ? "réseau indisponible"
+            : ex.GetType().Name;
+    }
 
     public RemoteHost(RemoteLink link, Uri server)
     {
@@ -41,6 +68,7 @@ public sealed class RemoteHost : IDisposable
                 ? remaining : TimeSpan.FromMinutes(55));
             using var send = new SemaphoreSlim(1, 1);
             var epoch = RandomNumberGenerator.GetBytes(32);
+            Interlocked.Increment(ref attempts);
             var seen = new HashSet<Guid>();
             var calls = new ConcurrentDictionary<Guid, Task>();
             var cancellations = new ConcurrentDictionary<Guid, CancellationTokenSource>();
@@ -49,13 +77,15 @@ public sealed class RemoteHost : IDisposable
                 socket.Options.SetRequestHeader("X-Scolia-Host", link.HostToken!);
                 socket.Options.SetRequestHeader("X-Scolia-Pair", RemoteLink.Hash(link.ClientToken));
                 socket.Options.SetRequestHeader("X-Scolia-Epoch", Convert.ToBase64String(epoch));
-                socket.Options.KeepAliveInterval = TimeSpan.FromSeconds(20);
+                socket.Options.KeepAliveInterval = TimeSpan.FromSeconds(15);
+                socket.Options.KeepAliveTimeout = KeepAliveTimeout;
+                socket.Options.CollectHttpResponseDetails = true;
                 using var connect = CancellationTokenSource.CreateLinkedTokenSource(ct);
-                connect.CancelAfter(TimeSpan.FromSeconds(8));
+                connect.CancelAfter(ConnectTimeout);
                 await socket.ConnectAsync(link.Endpoint("host"), connect.Token);
                 var acknowledged = await RelayWire.ReceiveAsync(socket, connect.Token);
                 if (!acknowledged.AsSpan().SequenceEqual(epoch)) throw new IOException("Le relais n'a pas confirmé l'hébergement.");
-                Interlocked.Exchange(ref connected, 1);
+                SetConnected(true);
                 Volatile.Write(ref lastConnectionFailure, null);
                 delay = 2;
                 using var http = new HttpClient(new SocketsHttpHandler { UseCookies = false, AllowAutoRedirect = false, ConnectTimeout = TimeSpan.FromSeconds(4) })
@@ -97,12 +127,11 @@ public sealed class RemoteHost : IDisposable
             catch (Exception ex) when (ex is WebSocketException or IOException or OperationCanceledException or JsonException or HttpRequestException)
             {
                 // Ne jamais journaliser les URL complètes (salles), invitations ou secrets.
-                Volatile.Write(ref lastConnectionFailure, ex.GetType().Name + " (" +
-                    (ex is WebSocketException ws ? ws.WebSocketErrorCode.ToString() : "connexion") + ")");
+                if (!ct.IsCancellationRequested) Volatile.Write(ref lastConnectionFailure, Describe(ex, socket));
             }
             finally
             {
-                Interlocked.Exchange(ref connected, 0);
+                SetConnected(false);
                 await session.CancelAsync();
                 // Fermer proprement avant le renouvellement : le relais voit tout de suite la fin
                 // de la session au lieu d'attendre la détection d'une connexion coupée.
@@ -125,7 +154,8 @@ public sealed class RemoteHost : IDisposable
             if (ct.IsCancellationRequested) return;
             try { await Task.Delay(TimeSpan.FromSeconds(delay + Random.Shared.NextDouble()), ct); }
             catch (OperationCanceledException) { return; }
-            delay = Math.Min(delay * 2, 60);
+            // Reprise rapide : un relais qui se réveille ou une ancienne session qui se ferme doivent être retentés vite.
+            delay = Math.Min(delay * 2, 20);
         }
     }
 

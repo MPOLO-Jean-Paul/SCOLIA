@@ -4,7 +4,7 @@
              xmlns:mi="using:Material.Icons.Avalonia"
              x:Class="Scolia.Bureau.Views.Phone.PosteView">
   <!-- Réseau sur le mobile : le serveur auquel l'appareil est relié, ou ce téléphone lui-même quand il est le serveur -->
-  <StackPanel Spacing="14">
+  <StackPanel Spacing="14" infra:LiveRefresh.Enabled="True">
     <TextBlock Classes="muted" TextWrapping="Wrap" IsVisible="{Binding IsPhoneClient}"
                Text="Le téléphone travaille sur la base du serveur de l'établissement, par le Wi-Fi ou par Internet. Les dernières pages lues sont gardées pour travailler hors ligne." />
     <TextBlock Classes="muted" TextWrapping="Wrap" IsVisible="{Binding IsPhoneServer}"

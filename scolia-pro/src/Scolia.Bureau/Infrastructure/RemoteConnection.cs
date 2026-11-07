@@ -12,6 +12,13 @@ public static class RemoteConnection
     private static RemoteHost? host;
     private static readonly object HostGate = new();
     public static bool Hosting { get { lock (HostGate) return host?.Connected == true; } }
+    /// <summary>Hôte lancé (connecté ou en reprise).</summary>
+    public static bool HostRunning { get { lock (HostGate) return host is not null; } }
+    /// <summary>Dernière raison d'échec de la connexion au relais, sans secret.</summary>
+    public static string? HostFailure { get { lock (HostGate) return host?.LastConnectionFailure; } }
+    public static int HostAttempts { get { lock (HostGate) return host?.Attempts ?? 0; } }
+    /// <summary>Connexion au relais établie ou perdue (appelé hors du fil de l'interface).</summary>
+    public static event Action? HostStateChanged;
     public static RemoteConfiguration? Load()
     {
         if (!File.Exists(FilePath)) return null;
@@ -38,7 +45,10 @@ public static class RemoteConnection
             if (host is not null) return;
             if (Load() is { Host: true, Enabled: true } configuration
                 && configuration.Link.ExpiresUtc > DateTime.UtcNow)
+            {
                 host = new RemoteHost(configuration.Link, localServer);
+                host.StateChanged += () => HostStateChanged?.Invoke();
+            }
         }
     }
 

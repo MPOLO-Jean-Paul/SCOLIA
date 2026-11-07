@@ -71,6 +71,23 @@ public sealed class RemoteSyncTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task A_new_host_session_replaces_a_stale_one_immediately()
+    {
+        // L'ancienne session est encore ouverte (coupure non détectée) : la nouvelle doit être acceptée tout de suite.
+        var replacement = new RemoteHost(link, app.ClientOptions.BaseAddress);
+        try
+        {
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+            while (!replacement.Connected) await Task.Delay(30, timeout.Token);
+            host.Dispose();
+            host = replacement;
+            using var phone = Phone();
+            Assert.True(await phone.IsRunningAsync());
+        }
+        catch { replacement.Dispose(); throw; }
+    }
+
+    [Fact]
     public async Task Wrong_pairing_secret_cannot_open_a_school_session()
     {
         using var phone = Phone(link with { ClientToken = new string('A', 64), HostToken = null });
