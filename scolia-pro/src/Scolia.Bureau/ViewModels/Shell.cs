@@ -281,6 +281,9 @@ public sealed class ShellViewModel : Observable
     public double OpeningProgress { get => openingProgress; private set => Set(ref openingProgress, value); }
     private string openingTitle = string.Empty;
     public string OpeningTitle { get => openingTitle; private set => Set(ref openingTitle, value); }
+    private string openingContext = string.Empty;
+    /// <summary>Contexte clair entre la reconnaissance du QR et l'arrivée à l'accueil.</summary>
+    public string OpeningContext { get => openingContext; private set => Set(ref openingContext, value); }
 
     private async Task OpeningStepAsync(string step, double progress, TimeSpan shown)
     {
@@ -729,7 +732,7 @@ public sealed class ShellViewModel : Observable
             accepted.GrantId, accepted.DeviceSecret, accepted.ExpiresUtc, accepted.Session.UserName));
         if (IsLoggedIn) CloseLocalSession();
         Login.RememberAccount(accepted.Session.UserName);
-        await OpenSessionAsync(accepted.Session);
+        await OpenSessionAsync(accepted.Session, paired: true);
         return $"Appareil autorisé pour {accepted.Session.DisplayName} · connexion immédiate sans mot de passe.";
     }
 
@@ -881,7 +884,7 @@ public sealed class ShellViewModel : Observable
     /// Ouvre la session : l'écran d'ouverture montre une roue et les étapes, au moins deux secondes,
     /// pendant que le ruban et l'accueil se préparent ; l'accueil apparaît ensuite d'un seul geste.
     /// </summary>
-    public async Task OpenSessionAsync(SessionDto s, bool compact = true)
+    public async Task OpenSessionAsync(SessionDto s, bool compact = true, bool paired = false)
     {
         var watch = System.Diagnostics.Stopwatch.StartNew();
         // Durée choisie dans Paramètres, Animations et fluidité ; l'outil de captures peut la fixer à part.
@@ -910,14 +913,19 @@ public sealed class ShellViewModel : Observable
             !s.Permissions.Contains(Perm.ReportsRead) &&
             !s.MustChangePassword && !api.Server.IsLoopback && api.IsOnline)
             _ = RememberPromoterDeviceAsync(s.UserName);
-        OpeningTitle = IsSetupRequired ? "Configuration terminée" : $"Bienvenue, {s.DisplayName}";
+        OpeningTitle = paired ? "Appareil reconnu"
+            : IsSetupRequired ? "Configuration terminée" : $"Bienvenue, {s.DisplayName}";
+        OpeningContext = paired
+            ? $"Connexion sécurisée à {s.SchoolName} pour {s.DisplayName}."
+            : api.IsOnline ? $"Accès à {s.SchoolName}." : $"Données locales de {s.SchoolName}.";
+        OpeningStep = paired ? "Validation de la liaison…" : "Préparation de votre espace…";
         OpeningProgress = 0;
         Opening = true;
         IsSetupRequired = false;
         RaiseLogin();
         try
         {
-            await OpeningStepAsync("Vérification du compte", 20, pace);
+            await OpeningStepAsync(paired ? "Autorisation confirmée" : "Vérification du compte", 20, pace);
             Raise(nameof(SchoolTitle));
             Raise(nameof(SchoolHeaderTitle));
             Raise(nameof(SchoolYearLine));
@@ -931,7 +939,7 @@ public sealed class ShellViewModel : Observable
                 ? $"Connecté : {s.DisplayName} · {s.SchoolName}"
                 : $"Hors ligne · {s.DisplayName} · données locales de {s.SchoolName}";
             Login.Reset();
-            await OpeningStepAsync("Préparation des menus", 70, pace);
+            await OpeningStepAsync(paired ? "Actualisation de votre espace" : "Préparation des menus", 70, pace);
             RebuildRibbon();
             current = null;
             ClearHistory();
