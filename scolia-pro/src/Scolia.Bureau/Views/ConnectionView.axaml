@@ -3,7 +3,7 @@
              xmlns:mi="using:Material.Icons.Avalonia"
              x:Class="Scolia.Bureau.Views.ConnectionView">
   <Grid Background="{DynamicResource BgBrush}">
-    <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+    <ScrollViewer HorizontalScrollBarVisibility="Disabled" IsVisible="{Binding !PairingInProgress}">
       <StackPanel MaxWidth="520" Margin="20,22,20,26" HorizontalAlignment="Center" Spacing="12">
         <Button Classes="ghost" Command="{Binding Back}" IsVisible="{Binding CanGoBack}" HorizontalAlignment="Left"
                 Content="← Retour" />
@@ -102,6 +102,38 @@
                    FontSize="{DynamicResource FsSmall}"
                    Text="Le serveur principal doit rester allumé et connecté pour les opérations à distance." />
       </StackPanel>
+    </ScrollViewer>
+
+    <!-- Une fois le QR lu : état plein écran, sans formulaires ni boutons qui se chevauchent. -->
+    <ScrollViewer IsVisible="{Binding PairingInProgress}" HorizontalScrollBarVisibility="Disabled"
+                  VerticalScrollBarVisibility="Auto">
+      <Grid RowDefinitions="*,Auto,*" MinHeight="530" Margin="0,12">
+        <Border Grid.Row="1" Classes="card" Background="{DynamicResource SurfaceBrush}"
+                BorderBrush="{DynamicResource LineBrush}" BorderThickness="1"
+                Margin="18,12" MaxWidth="420" HorizontalAlignment="Stretch" CornerRadius="20" Padding="20,26">
+          <StackPanel Spacing="16">
+            <Border Width="80" Height="80" CornerRadius="22" Background="{DynamicResource AccentSoftBrush}"
+                    HorizontalAlignment="Center">
+              <mi:MaterialIcon Kind="CellphoneCheck" Width="40" Height="40"
+                               Foreground="{DynamicResource AccentBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+            </Border>
+            <TextBlock Text="Appareil reconnu" FontSize="21" FontWeight="Bold"
+                       TextAlignment="Center" TextWrapping="Wrap" />
+            <TextBlock Text="SCOLIA vérifie la liaison sécurisée avec votre établissement."
+                       Classes="muted" TextAlignment="Center" TextWrapping="Wrap" />
+            <Border Background="{DynamicResource Surface2Brush}" CornerRadius="12" Padding="14">
+              <StackPanel Spacing="12">
+                <TextBlock Text="{Binding Message}" FontWeight="SemiBold"
+                           TextWrapping="Wrap" TextAlignment="Center" />
+                <ProgressBar IsIndeterminate="True" Height="5" MinHeight="5" />
+              </StackPanel>
+            </Border>
+            <TextBlock Text="L'accueil s'ouvrira automatiquement lorsque la connexion sera autorisée."
+                       Classes="muted" FontSize="{DynamicResource FsSmall}"
+                       TextWrapping="Wrap" TextAlignment="Center" />
+          </StackPanel>
+        </Border>
+      </Grid>
     </ScrollViewer>
   </Grid>
 </UserControl>
