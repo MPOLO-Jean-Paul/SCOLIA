@@ -48,7 +48,7 @@ public static class RemoteConnection
             if (Load() is { Host: true, Enabled: true } configuration)
             {
                 var link = configuration.Link.ExpiresUtc <= DateTime.UtcNow
-                    ? configuration.Link.Renew(configuration.Link.Relay) : configuration.Link;
+                    ? configuration.Link.Resume() : configuration.Link;
                 if (link != configuration.Link) Save(configuration with { Link = link });
                 host = new RemoteHost(link, localServer);
             }
