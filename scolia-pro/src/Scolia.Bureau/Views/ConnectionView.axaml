@@ -3,7 +3,47 @@
              xmlns:infra="using:Scolia.Bureau.Infrastructure"
              xmlns:mi="using:Material.Icons.Avalonia"
              x:Class="Scolia.Bureau.Views.ConnectionView">
+  <UserControl.Styles>
+    <Style Selector="Border.iosconnectcard">
+      <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="24" />
+      <Setter Property="Padding" Value="18" />
+      <Setter Property="BoxShadow" Value="0 9 26 0 #120F2B6B" />
+    </Style>
+    <Style Selector="Button.iosconnectprimary">
+      <Setter Property="Background" Value="#1769E6" />
+      <Setter Property="Foreground" Value="White" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="CornerRadius" Value="16" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="MinHeight" Value="55" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+    <Style Selector="Button.iosconnectsecondary">
+      <Setter Property="Background" Value="{DynamicResource Surface2Brush}" />
+      <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="14" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="MinHeight" Value="49" />
+    </Style>
+    <Style Selector="TextBox.iosconnectfield">
+      <Setter Property="Background" Value="{DynamicResource Surface2Brush}" />
+      <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="14" />
+      <Setter Property="Padding" Value="14,12" />
+      <Setter Property="MinHeight" Value="52" />
+    </Style>
+  </UserControl.Styles>
   <Grid Background="{DynamicResource BgBrush}">
+    <Grid x:Name="ClassicConnectionScreen">
     <ScrollViewer HorizontalScrollBarVisibility="Disabled" IsVisible="{Binding !PairingInProgress}">
       <StackPanel MaxWidth="520" Margin="20,22,20,26" HorizontalAlignment="Center" Spacing="12">
         <Button infra:Icons.Lead="ArrowLeft" Classes="ghost" Command="{Binding Back}" IsVisible="{Binding CanGoBack}" HorizontalAlignment="Left"
@@ -136,5 +176,189 @@
         </Border>
       </Grid>
     </ScrollViewer>
+
+    </Grid>
+    <!-- Premier écran mobile iOS : une décision principale, des options secondaires discrètes. -->
+    <Grid x:Name="IosConnectionScreen" IsVisible="False" Background="#F5F7FB">
+      <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto"
+                    IsVisible="{Binding !PairingInProgress}">
+        <StackPanel MaxWidth="440" HorizontalAlignment="Center" Margin="20,24,20,32" Spacing="17">
+          <Button Classes="iosconnectsecondary" Command="{Binding Back}" IsVisible="{Binding CanGoBack}"
+                  HorizontalAlignment="Left" MinWidth="95">
+            <StackPanel Orientation="Horizontal" Spacing="5">
+              <mi:MaterialIcon Kind="ChevronLeft" Width="18" Height="18" />
+              <TextBlock Text="Retour" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
+          <StackPanel Spacing="12">
+            <Border Width="86" Height="86" CornerRadius="27" Background="White"
+                    BorderBrush="#D7E3F3" BorderThickness="1"
+                    BoxShadow="0 10 25 0 #160F468C" HorizontalAlignment="Center">
+              <Image Source="{DynamicResource ScoliaMark}" Width="60" Height="60" />
+            </Border>
+            <TextBlock Text="Bienvenue sur SCOLIA" FontSize="26" FontWeight="Bold"
+                       TextAlignment="Center" Foreground="{DynamicResource TextBrush}"
+                       TextWrapping="Wrap" />
+            <TextBlock Text="Retrouvez votre établissement en toute sécurité."
+                       Classes="muted" FontSize="14" TextAlignment="Center" TextWrapping="Wrap" />
+          </StackPanel>
+
+          <Border Classes="iosconnectcard">
+            <StackPanel Spacing="13">
+              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="13">
+                <Border Width="49" Height="49" CornerRadius="16" Background="#DCEAFF" VerticalAlignment="Center">
+                  <mi:MaterialIcon Kind="QrcodeScan" Width="25" Height="25" Foreground="#1769E6"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Border>
+                <StackPanel Grid.Column="1" Spacing="4" VerticalAlignment="Center">
+                  <TextBlock Text="Relier mon appareil" FontSize="18" FontWeight="SemiBold" />
+                  <TextBlock Text="Un QR code, un appareil reconnu. Aucun réglage réseau compliqué."
+                             Classes="muted" FontSize="12" TextWrapping="Wrap" />
+                </StackPanel>
+              </Grid>
+              <Border Background="#E8F2FF" CornerRadius="13" Padding="12">
+                <TextBlock Text="{Binding ScanHint}" Foreground="#365C8F"
+                           FontSize="12" TextWrapping="Wrap" />
+              </Border>
+              <Button Classes="iosconnectprimary" Command="{Binding ScanCode}"
+                      IsEnabled="{Binding NotSearching}" MinHeight="57">
+                <StackPanel Orientation="Horizontal" Spacing="9">
+                  <mi:MaterialIcon Kind="QrcodeScan" Width="21" Height="21" />
+                  <TextBlock Text="{Binding ScanLabel}" FontSize="15"
+                             FontWeight="SemiBold" VerticalAlignment="Center" />
+                </StackPanel>
+              </Button>
+              <Button Classes="iosconnectsecondary" Command="{Binding ImportQrImage}"
+                      IsVisible="{Binding CanImportQrImage}" IsEnabled="{Binding NotSearching}">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <mi:MaterialIcon Kind="ImageSearchOutline" Width="20" Height="20" />
+                  <TextBlock Text="Importer une image du QR code" VerticalAlignment="Center" />
+                </StackPanel>
+              </Button>
+              <StackPanel Spacing="8" IsVisible="{Binding CanPasteCode}">
+                <TextBox Classes="iosconnectfield" Text="{Binding Invitation}"
+                         PlaceholderText="Code d'invitation" MaxLength="2048"
+                         AutomationProperties.Name="Invitation du serveur" />
+                <Button Classes="iosconnectsecondary" Command="{Binding JoinInternet}"
+                        IsEnabled="{Binding NotSearching}" Content="Valider l'invitation" />
+              </StackPanel>
+            </StackPanel>
+          </Border>
+
+          <StackPanel Spacing="8" IsVisible="{Binding HasServers}">
+            <TextBlock Text="ÉTABLISSEMENTS À PROXIMITÉ" FontWeight="SemiBold"
+                       Foreground="{DynamicResource Text2Brush}" FontSize="11" Margin="8,0,0,0" />
+            <Border Classes="iosconnectcard" Padding="6">
+              <ItemsControl ItemsSource="{Binding Servers}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate>
+                    <Button Classes="iosconnectsecondary" Command="{Binding Join}" Margin="4,3" Padding="12,9">
+                      <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="11">
+                        <Border Width="40" Height="40" CornerRadius="13" Background="#DCEAFF">
+                          <mi:MaterialIcon Kind="{Binding Icon}" Foreground="#1769E6"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
+                          <TextBlock Text="{Binding School}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                          <TextBlock Text="{Binding Detail}" Classes="muted" FontSize="12"
+                                     TextWrapping="Wrap" MaxLines="2" />
+                        </StackPanel>
+                        <mi:MaterialIcon Grid.Column="2" Kind="ChevronRight" Width="18" Height="18"
+                                         Foreground="{DynamicResource Text2Brush}" VerticalAlignment="Center" />
+                      </Grid>
+                    </Button>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </Border>
+          </StackPanel>
+
+          <Border Classes="iosconnectcard">
+            <StackPanel Spacing="11">
+              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="11">
+                <Border Width="41" Height="41" CornerRadius="14" Background="#E1F4E7">
+                  <mi:MaterialIcon Kind="Wifi" Width="22" Height="22" Foreground="#197C49"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Border>
+                <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
+                  <TextBlock Text="Réseau local" FontWeight="SemiBold" />
+                  <TextBlock Text="Rechercher le serveur sur le Wi-Fi de l'établissement."
+                             Classes="muted" FontSize="12" TextWrapping="Wrap" />
+                </StackPanel>
+              </Grid>
+              <Button Classes="iosconnectsecondary" Command="{Binding Search}"
+                      IsEnabled="{Binding NotSearching}">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <mi:MaterialIcon Kind="Magnify" Width="19" Height="19" />
+                  <TextBlock Text="Rechercher un serveur proche" VerticalAlignment="Center" />
+                </StackPanel>
+              </Button>
+              <Expander Header="Saisir une adresse réseau" IsExpanded="False">
+                <StackPanel Margin="4,8" Spacing="9">
+                  <TextBlock Text="{Binding AddressHint}" Classes="muted"
+                             FontSize="12" TextWrapping="Wrap" />
+                  <TextBox Classes="iosconnectfield" Text="{Binding Address}"
+                           PlaceholderText="192.168.1.10" />
+                  <Button Classes="iosconnectsecondary" Command="{Binding ConnectAddress}"
+                          IsEnabled="{Binding NotSearching}" Content="Rejoindre cette adresse" />
+                </StackPanel>
+              </Expander>
+            </StackPanel>
+          </Border>
+
+          <Border Background="#E8F2FF" CornerRadius="13" Padding="12"
+                  IsVisible="{Binding Searching}">
+            <StackPanel Spacing="8">
+              <ProgressBar IsIndeterminate="True" Height="4" MinHeight="4" />
+              <TextBlock Text="{Binding Message}" Foreground="#365C8F"
+                         FontSize="12" TextWrapping="Wrap" />
+            </StackPanel>
+          </Border>
+          <TextBlock Text="{Binding Message}" IsVisible="{Binding !Searching}"
+                     Classes="muted" TextAlignment="Center" TextWrapping="Wrap" FontSize="12" />
+
+          <Button Classes="iosconnectsecondary" Command="{Binding UseThisComputer}"
+                  IsVisible="{Binding PhoneCanBeServer}" MinHeight="50">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <mi:MaterialIcon Kind="ServerOutline" Width="20" Height="20" />
+              <TextBlock Text="Configurer ce téléphone comme serveur" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
+          <TextBlock Text="Une connexion au serveur principal est nécessaire pour valider les nouveaux accès."
+                     Classes="muted" FontSize="11" TextWrapping="Wrap" TextAlignment="Center" />
+        </StackPanel>
+      </ScrollViewer>
+
+      <!-- Vérification après lecture du QR : progression compréhensible, sans demander un mot de passe serveur. -->
+      <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto"
+                    IsVisible="{Binding PairingInProgress}">
+        <Grid RowDefinitions="*,Auto,*" MinHeight="540" Margin="20,24">
+          <Border Grid.Row="1" Classes="iosconnectcard" MaxWidth="410"
+                  HorizontalAlignment="Stretch" Padding="23">
+            <StackPanel Spacing="15">
+              <Border Width="78" Height="78" CornerRadius="26"
+                      Background="#DCEAFF" HorizontalAlignment="Center">
+                <mi:MaterialIcon Kind="ShieldCheckOutline" Width="39" Height="39"
+                                 Foreground="#1769E6" VerticalAlignment="Center" HorizontalAlignment="Center" />
+              </Border>
+              <TextBlock Text="Vérification sécurisée" FontSize="23" FontWeight="Bold"
+                         TextAlignment="Center" TextWrapping="Wrap" />
+              <TextBlock Text="Nous validons cet appareil et ses autorisations auprès de votre établissement."
+                         Classes="muted" FontSize="13" TextAlignment="Center" TextWrapping="Wrap" />
+              <Border Background="#E8F2FF" CornerRadius="14" Padding="14">
+                <StackPanel Spacing="12">
+                  <ProgressBar IsIndeterminate="True" Height="5" MinHeight="5"
+                               Foreground="#1769E6" />
+                  <TextBlock Text="{Binding Message}" Foreground="#284F85" FontWeight="SemiBold"
+                             FontSize="13" TextAlignment="Center" TextWrapping="Wrap" />
+                </StackPanel>
+              </Border>
+              <TextBlock Text="La connexion sera ouverte automatiquement après validation."
+                         Classes="muted" TextAlignment="Center" FontSize="12" TextWrapping="Wrap" />
+            </StackPanel>
+          </Border>
+        </Grid>
+      </ScrollViewer>
+    </Grid>
   </Grid>
 </UserControl>

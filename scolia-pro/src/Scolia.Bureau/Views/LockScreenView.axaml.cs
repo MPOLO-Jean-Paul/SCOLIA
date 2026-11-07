@@ -11,6 +11,15 @@ public partial class LockScreenView : UserControl
     public LockScreenView()
     {
         InitializeComponent();
+        var mobile = Platform.IsMobile;
+        ClassicLockScreen.IsVisible = !mobile;
+        IosLockScroll.IsVisible = mobile;
+        IosLockCode.KeyDown += (_, e) =>
+        {
+            if (e.Key != Key.Enter || DataContext is not LockScreenViewModel vm) return;
+            if (vm.Unlock.CanExecute(null)) vm.Unlock.Execute(null);
+            e.Handled = true;
+        };
         LockCode.KeyDown += (_, e) =>
         {
             if (e.Key != Key.Enter || DataContext is not LockScreenViewModel lockScreen) return;

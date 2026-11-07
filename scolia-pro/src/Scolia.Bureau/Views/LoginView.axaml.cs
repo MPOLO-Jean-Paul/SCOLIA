@@ -15,6 +15,33 @@ public partial class LoginView : UserControl
     public LoginView()
     {
         InitializeComponent();
+        // Les écrans Android disposent de leur propre hiérarchie iOS ; la page Windows reste intacte.
+        var mobile = Platform.IsMobile;
+        LoginScroll.IsVisible = !mobile;
+        IosLoginScroll.IsVisible = mobile;
+        Backdrop.IsVisible = !mobile;
+        Halo.IsVisible = !mobile;
+        IosBackdrop.IsVisible = mobile;
+        IosPasswordBox.KeyDown += (_, e) =>
+        {
+            if (e.Key != Key.Enter || DataContext is not LoginViewModel login || !login.CanSubmitCredentials) return;
+            login.Submit.Execute(null);
+            e.Handled = true;
+        };
+        IosNewPasswordBox.KeyDown += (_, e) =>
+        {
+            if (e.Key == Key.Enter) { IosConfirmPasswordBox.Focus(); e.Handled = true; }
+        };
+        IosConfirmPasswordBox.KeyDown += (_, e) =>
+        {
+            if (e.Key == Key.Enter) { IosRecoveryCodeBox.Focus(); e.Handled = true; }
+        };
+        IosRecoveryCodeBox.KeyDown += (_, e) =>
+        {
+            if (e.Key != Key.Enter || DataContext is not LoginViewModel login || !login.CanRecoverWithCode) return;
+            login.RecoverWithCode.Execute(null);
+            e.Handled = true;
+        };
         PasswordBox.KeyDown += (_, e) =>
         {
             if (e.Key != Key.Enter || DataContext is not LoginViewModel login || !login.CanSubmitCredentials) return;

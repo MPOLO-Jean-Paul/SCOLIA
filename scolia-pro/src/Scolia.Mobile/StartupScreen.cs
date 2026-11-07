@@ -33,16 +33,16 @@ internal sealed class StartupScreen : FrameLayout
     private bool active = true;
 
     /// <summary>Temps où les trois points battent seuls avant le fondu, puis durée du fondu vers la page.</summary>
-    private const int DotsHold = 900;
-    private const int FadeOut = 320;
+    private const int DotsHold = 550;
+    private const int FadeOut = 260;
 
     public StartupScreen(Activity activity) : base(activity)
     {
         this.activity = activity;
         animationScale = ReadAnimationScale(activity);
-        // Le lancement reste toujours blanc avec le logo, même quand le téléphone ou SCOLIA sont en mode sombre :
-        // c'est la première image de l'application, la même pour tout le monde.
-        SetBackgroundColor(Color.White);
+        // Palette claire inspirée des interfaces iOS récentes, sans supposer un moteur Liquid Glass natif.
+        // Le contenu n'est jamais affiché avant la première image Avalonia prête.
+        SetBackgroundColor(Color.Rgb(246, 248, 252));
         Clickable = true;
         Focusable = true;
 
@@ -58,34 +58,63 @@ internal sealed class StartupScreen : FrameLayout
         // Il n'appartient à aucun établissement et ne remplace jamais son logo configuré.
         var markBackground = new GradientDrawable();
         markBackground.SetShape(ShapeType.Rectangle);
-        markBackground.SetCornerRadius(Dp(26));
-        markBackground.SetColor(Color.Rgb(241, 246, 252));
+        markBackground.SetCornerRadius(Dp(30));
+        markBackground.SetColor(Color.White);
+        markBackground.SetStroke(Dp(1), Color.Rgb(216, 228, 246));
         // Le logo est dessiné en quatre pièces qui s'assemblent en tournant au lancement.
         logo = new LogoAssemblyView(activity, dark: false) { Background = markBackground };
-        logo.SetPadding(Dp(14), Dp(14), Dp(14), Dp(14));
-        content.AddView(logo, new LinearLayout.LayoutParams(Dp(112), Dp(112))
+        logo.SetPadding(Dp(17), Dp(17), Dp(17), Dp(17));
+        content.AddView(logo, new LinearLayout.LayoutParams(Dp(114), Dp(114))
         {
             BottomMargin = Dp(20),
             Gravity = GravityFlags.CenterHorizontal,
         });
 
-        var title = new TextView(activity) { Text = "SCOLIA Pro", TextSize = 23, Gravity = GravityFlags.Center };
+        var eyebrow = new TextView(activity)
+        {
+            Text = "ESPACE SCOLAIRE",
+            TextSize = 11,
+            Gravity = GravityFlags.Center,
+            LetterSpacing = 0.12f,
+        };
+        eyebrow.SetTextColor(Color.Rgb(47, 103, 192));
+        eyebrow.SetTypeface(null, TypefaceStyle.Bold);
+        content.AddView(eyebrow, new LinearLayout.LayoutParams(LayoutParams.MatchParent, LayoutParams.WrapContent)
+        {
+            BottomMargin = Dp(6),
+        });
+        intro.Add(eyebrow);
+
+        var title = new TextView(activity) { Text = "SCOLIA Pro", TextSize = 26, Gravity = GravityFlags.Center };
         title.SetTextColor(Color.Rgb(15, 43, 107));
         title.SetTypeface(null, TypefaceStyle.Bold);
         content.AddView(title, new LinearLayout.LayoutParams(LayoutParams.MatchParent, LayoutParams.WrapContent));
         intro.Add(title);
 
+        var subtitle = new TextView(activity)
+        {
+            Text = "Votre établissement, en toute sécurité",
+            TextSize = 13,
+            Gravity = GravityFlags.Center,
+        };
+        subtitle.SetTextColor(Color.Rgb(91, 105, 126));
+        content.AddView(subtitle, new LinearLayout.LayoutParams(LayoutParams.MatchParent, LayoutParams.WrapContent)
+        {
+            TopMargin = Dp(5),
+        });
+        intro.Add(subtitle);
+
         status = new TextView(activity)
         {
-            Text = "Préparation de votre espace…",
-            TextSize = 13,
+            Text = "Ouverture de votre espace…",
+            TextSize = 12,
             Gravity = GravityFlags.Center,
             AccessibilityLiveRegion = AccessibilityLiveRegion.Polite,
         };
         status.SetTextColor(Color.Rgb(91, 105, 126));
         content.AddView(status, new LinearLayout.LayoutParams(LayoutParams.MatchParent, LayoutParams.WrapContent)
         {
-            TopMargin = Dp(8),
+            TopMargin = Dp(15),
         });
         intro.Add(status);
 
@@ -97,12 +126,12 @@ internal sealed class StartupScreen : FrameLayout
         {
             var shape = new GradientDrawable();
             shape.SetShape(ShapeType.Oval);
-            shape.SetColor(i == 1 ? Color.Rgb(20, 159, 72) : Color.Rgb(15, 43, 107));
+            shape.SetColor(i == 1 ? Color.Rgb(38, 120, 227) : Color.Rgb(159, 187, 229));
             var dot = new AndroidView(activity) { Background = shape, Alpha = animationScale > 0 ? 0.25f : 1f };
             dots.AddView(dot, new LinearLayout.LayoutParams(Dp(6), Dp(6)) { LeftMargin = Dp(4), RightMargin = Dp(4) });
             if (animationScale <= 0) continue;
             var pulse = ObjectAnimator.OfFloat(dot, "alpha", 0.25f, 1f, 0.25f)!;
-            pulse.SetDuration(900);
+            pulse.SetDuration(800);
             pulse.StartDelay = i * 150;
             pulse.RepeatCount = ValueAnimator.Infinite;
             pulse.RepeatMode = ValueAnimatorRepeatMode.Restart;
@@ -110,7 +139,12 @@ internal sealed class StartupScreen : FrameLayout
         }
 
         retry = new Button(activity) { Text = "Réessayer", Visibility = ViewStates.Gone };
-        retry.SetMinHeight(Dp(48));
+        retry.SetMinHeight(Dp(52));
+        retry.SetTextColor(Color.White);
+        var retrySurface = new GradientDrawable();
+        retrySurface.SetColor(Color.Rgb(23, 105, 230));
+        retrySurface.SetCornerRadius(Dp(16));
+        retry.Background = retrySurface;
         content.AddView(retry, new LinearLayout.LayoutParams(LayoutParams.WrapContent, LayoutParams.WrapContent) { TopMargin = Dp(16) });
         retry.Click += (_, _) =>
         {
@@ -118,7 +152,7 @@ internal sealed class StartupScreen : FrameLayout
             if (Platform.RetryStartup is not { } restart) { activity.Finish(); return; }
             retry.Visibility = ViewStates.Gone;
             dots.Visibility = ViewStates.Visible;
-            status.Text = "Préparation de votre espace…";
+            status.Text = "Ouverture de votre espace…";
             Begin(restart(), TimeSpan.Zero);
         };
     }
@@ -153,14 +187,14 @@ internal sealed class StartupScreen : FrameLayout
             view.TranslationY = Dp(10);
         }
         var assemble = ValueAnimator.OfFloat(0f, 1f)!;
-        assemble.SetDuration(1100);
+        assemble.SetDuration(800);
         assemble.SetInterpolator(new Android.Views.Animations.LinearInterpolator());
         assemble.Update += (_, e) => logo.Progress = (float)(e.Animation.AnimatedValue ?? 1f);
         assemble.AnimationEnd += (_, _) =>
         {
             if (closed) return;
             // Le logo descend à sa place, en douceur.
-            logo.Animate()?.TranslationY(0f)?.ScaleX(1f)?.ScaleY(1f)?.SetDuration(380)
+            logo.Animate()?.TranslationY(0f)?.ScaleX(1f)?.ScaleY(1f)?.SetDuration(300)
                 ?.SetInterpolator(new Android.Views.Animations.DecelerateInterpolator(1.6f))?.Start();
             // Le nom, le message et les trois points apparaissent l'un après l'autre.
             for (var i = 0; i < intro.Count; i++)
