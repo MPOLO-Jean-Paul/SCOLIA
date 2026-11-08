@@ -282,8 +282,10 @@ public sealed class StudentService(IAppDbContext db, IWriteGate gate, IAuditLog 
         var enrollments = await db.Enrollments.Where(e => e.StudentId == id).ToListAsync(ct);
         var enrollmentIds = enrollments.Select(e => e.Id).ToList();
         if (await db.Grades.AnyAsync(g => enrollmentIds.Contains(g.EnrollmentId), ct) || await db.Attendance.AnyAsync(a => enrollmentIds.Contains(a.EnrollmentId), ct)
-            || await db.CourseMarks.AnyAsync(m => enrollmentIds.Contains(m.EnrollmentId), ct) || await db.JuryDecisions.AnyAsync(d => enrollmentIds.Contains(d.EnrollmentId), ct))
-            throw new DomainException("apprenant", "Ce dossier a des notes ou des présences : changez son statut au lieu de le supprimer.");
+            || await db.CourseMarks.AnyAsync(m => enrollmentIds.Contains(m.EnrollmentId), ct)
+            || await db.JuryDecisions.AnyAsync(d => enrollmentIds.Contains(d.EnrollmentId), ct)
+            || await db.DeliberationResults.AnyAsync(d => enrollmentIds.Contains(d.EnrollmentId), ct))
+            throw new DomainException("apprenant", "Ce dossier possède des notes, des présences ou des résultats officiels de délibération : changez son statut au lieu de le supprimer.");
         // Un code anonyme sans cote ne retient pas le dossier : il part avec lui.
         db.AnonymousCodes.RemoveRange(await db.AnonymousCodes.Where(c => enrollmentIds.Contains(c.EnrollmentId)).ToListAsync(ct));
         var sponsorships = await db.Sponsorships.Include(s => s.Lines).Where(s => enrollmentIds.Contains(s.EnrollmentId)).ToListAsync(ct);
