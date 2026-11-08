@@ -212,7 +212,6 @@ internal static class DeliberationWorkbook
         sheet.SheetView.FreezeRows(MaximaRow);
         sheet.SheetView.FreezeColumns(3);
         sheet.PageSetup.PageOrientation = XLPageOrientation.Landscape;
-        sheet.PageSetup.PaperSize = XLPaperSize.A3;
         sheet.PageSetup.PagesWide = 1;
         sheet.PageSetup.PagesTall = 0;
         sheet.PageSetup.SetRowsToRepeatAtTop(1, MaximaRow);
