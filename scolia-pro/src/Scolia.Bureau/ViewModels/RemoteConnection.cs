@@ -56,7 +56,20 @@ public sealed class RemoteConnectionViewModel : Observable
                 return;
             RemoteConnection.Disable();
             Invitation = string.Empty;
-            Message = "Accès Internet temporairement désactivé. Les appareils autorisés restent mémorisés : ils se reconnecteront à la réactivation, sans nouveau QR.";
+            Message = "Accès Internet désactivé sur ce serveur. Le réseau Wi-Fi local et le suivi de licence restent indépendants.";
+            try
+            {
+                if ((await shell.Api.GetAsync<SchoolLicenseStatus>("api/licence")).Managed)
+                    await shell.Api.SendAsync(HttpMethod.Post,
+                        "api/licence/relais/consentement",
+                        new { Enabled = false, DisclosedToSchoolAdmin = true });
+            }
+            catch (Exception ex) when (ex is Api.ApiException or HttpRequestException
+                or IOException or TaskCanceledException)
+            {
+                // La désactivation locale est immédiate, même sans Internet central.
+                Message = "Accès Internet désactivé localement ; l'état commercial sera régularisé au retour du service JP-Services.";
+            }
         });
     }
 
@@ -218,11 +231,37 @@ public sealed class RemoteConnectionViewModel : Observable
             if (commercialLicense.Managed)
             {
                 var settings = await shell.Api.GetAsync<CommercialRelaySettings>("api/licence/relais");
-                if (!settings.RemoteRelayAllowed || !settings.RemoteRelayEnabled ||
-                    settings.ApprovalRequired || settings.Relay is null)
+                if (settings.Relay is null)
                 {
-                    Message = "L'accès distant est désactivé ou son fournisseur n'a pas encore été approuvé par le responsable du serveur. "
-                        + "Le Wi-Fi et les consultations scolaires restent disponibles.";
+                    Message = "Le fournisseur de relais n'est pas encore configuré dans la console JP-Services. "
+                        + "Le Wi-Fi local fonctionne sans lui.";
+                    return;
+                }
+                if (!settings.RemoteRelayEnabled)
+                {
+                    // Un seul choix explicite sur l'appareil scolaire : Activer / Désactiver.
+                    // Les adresses et secrets restent non modifiables depuis cet écran.
+                    if (!await shell.Confirm("Activer l'accès Internet distant ?",
+                        $"SCOLIA utilisera le relais sécurisé « {settings.Relay.Label} » administré par JP-Services. "
+                        + "Seuls les appareils déjà autorisés pourront accéder aux données scolaires. "
+                        + "Le propriétaire ne reçoit aucun dossier, paiement ni utilisateur interne.",
+                        "Activer")) return;
+                    if (!settings.RemoteRelayAllowed)
+                        await shell.Api.SendAsync(HttpMethod.Post, "api/licence/relais/consentement",
+                            new { Enabled = true, DisclosedToSchoolAdmin = true });
+                    settings = await shell.Api.GetAsync<CommercialRelaySettings>("api/licence/relais");
+                    if (settings is { ApprovalRequired: true, Relay: not null })
+                    {
+                        await shell.Api.SendAsync(HttpMethod.Post, "api/licence/relais/approuver",
+                            new { Revision = settings.Relay.Revision,
+                                Confirm = true, DisclosedToSchoolAdmin = true });
+                        settings = await shell.Api.GetAsync<CommercialRelaySettings>("api/licence/relais");
+                    }
+                }
+                if (!settings.RemoteRelayEnabled || settings.Relay is null)
+                {
+                    Message = "Le fournisseur de relais attend la validation du serveur. "
+                        + "La connexion scolaire locale n'est pas interrompue.";
                     return;
                 }
                 primary = settings.Relay.EndpointWss;
