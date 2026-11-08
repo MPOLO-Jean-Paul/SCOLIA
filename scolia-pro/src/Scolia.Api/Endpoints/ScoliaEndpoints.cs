@@ -537,9 +537,9 @@ public static class ScoliaEndpoints
         g.MapGet("/palmares", async (Guid promotionId, string periode, string? format, DeliberationService s, ReportService reports, CancellationToken ct) =>
             Table(await s.RankingAsync(promotionId, periode, ct), format, "palmares", reports));
         g.MapGet("/bulletin.pdf", async (Guid promotionId, string periode, Guid inscriptionId, HttpContext http, IConfiguration config, DeliberationService s, CancellationToken ct) =>
-            new InlineFileResult(await s.BulletinPdfAsync(promotionId, periode, inscriptionId, ct, PublicBase(http, config)), Pdf, "bulletin-deliberation.pdf"));
+            new InlineFileResult(await s.BulletinPdfAsync(promotionId, periode, inscriptionId, PublicBase(http, config), ct), Pdf, "bulletin-deliberation.pdf"));
         g.MapGet("/bulletins.pdf", async (Guid promotionId, string periode, HttpContext http, IConfiguration config, DeliberationService s, CancellationToken ct) =>
-            new InlineFileResult(await s.BulletinsPdfAsync(promotionId, periode, ct, PublicBase(http, config)), Pdf, "bulletins-deliberation.pdf"));
+            new InlineFileResult(await s.BulletinsPdfAsync(promotionId, periode, PublicBase(http, config), ct), Pdf, "bulletins-deliberation.pdf"));
     }
 
     private static void MapAcademics(RouteGroupBuilder api)

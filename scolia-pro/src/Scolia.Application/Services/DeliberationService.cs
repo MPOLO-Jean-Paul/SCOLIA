@@ -1031,7 +1031,7 @@ public sealed class DeliberationService(IAppDbContext db, IWriteGate gate, IAudi
     }
 
     /// <summary>Bulletin de délibération d'un apprenant : cours, cote de base, appui, points retenus, total, mention et décision.</summary>
-    public async Task<byte[]> BulletinPdfAsync(Guid promotionId, string periodText, Guid enrollmentId, CancellationToken ct = default, string? verificationBaseUrl = null)
+    public async Task<byte[]> BulletinPdfAsync(Guid promotionId, string periodText, Guid enrollmentId, string? verificationBaseUrl = null, CancellationToken ct = default)
     {
         // Un seul calcul de la délibération pour la fiche et le rang (auparavant deux).
         var (computation, school, authorities) = await BulletinContextAsync(promotionId, periodText, ct);
@@ -1040,7 +1040,7 @@ public sealed class DeliberationService(IAppDbContext db, IWriteGate gate, IAudi
     }
 
     /// <summary>Bulletins de toute la promotion dans un seul PDF, un apprenant par page, dans l'ordre du rang (bulletins d'ITMCD).</summary>
-    public async Task<byte[]> BulletinsPdfAsync(Guid promotionId, string periodText, CancellationToken ct = default, string? verificationBaseUrl = null)
+    public async Task<byte[]> BulletinsPdfAsync(Guid promotionId, string periodText, string? verificationBaseUrl = null, CancellationToken ct = default)
     {
         var (computation, school, authorities) = await BulletinContextAsync(promotionId, periodText, ct);
         if (computation.Board.Rows.Count == 0) throw new DomainException("bulletins", "Aucun apprenant dans cette délibération : aucun bulletin à produire.");
