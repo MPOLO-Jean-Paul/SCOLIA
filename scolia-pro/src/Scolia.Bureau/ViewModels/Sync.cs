@@ -338,8 +338,7 @@ public sealed class SyncCenter : Observable, IDisposable
         {
             var user = store.User;
             var revision = await api.GetAsync<JsonElement>("api/revision", ct);
-            var current = (revision.TryGetProperty("epoch", out var epoch) ? epoch.GetString() : "ancien")
-                + ":" + revision.GetProperty("revision").GetInt64().ToString(System.Globalization.CultureInfo.InvariantCulture);
+            var current = OfflinePreparation.RevisionLabel(revision);
             if (string.Equals(store.ReadSyncCheckpointFor(user), current, StringComparison.Ordinal)) return;
             if (api.Offline != store || store.User != user || !shell.IsLoggedIn) return;
             preparing = true;
@@ -351,7 +350,7 @@ public sealed class SyncCenter : Observable, IDisposable
                 includeFinancialAccounts: shell.Can(Perm.PaymentsRead),
                 progress: stage => Dispatcher.UIThread.Post(() =>
                     PreparationText = $"{stage.Stage} · {stage.Completed}/{stage.Expected}"),
-                ct: ct);
+                ct: ct, snapshotRevision: current);
             if (result.Complete && ReferenceEquals(api.Offline, store) && store.User == user &&
                 shell.IsLoggedIn && api.IsOnline)
             {
@@ -545,6 +544,18 @@ public sealed class SyncCenter : Observable, IDisposable
         }
         else
         {
+            // Sur Android, enregistrer une tâche de reprise réseau dès la coupure
+            // même si aucune écriture n'attend : les pages interrompues doivent
+            // être récupérées dès que WorkManager reçoit une fenêtre réseau.
+            if (Platform.IsMobile && !shell.IsServerComputer && shell.IsLoggedIn)
+            {
+                try { Platform.RequestBackgroundSync?.Invoke(); }
+                catch (Exception ex) when (ex is InvalidOperationException or
+                    System.Security.SecurityException)
+                {
+                    System.Diagnostics.Trace.WriteLine($"SCOLIA : reprise de copie non programmée ({ex.GetType().Name}).");
+                }
+            }
             // Sans serveur, la présence des autres postes n'est plus connue : elle reviendra avec lui.
             Peers.Clear();
             locks = [];
@@ -603,6 +614,14 @@ public sealed class SyncCenter : Observable, IDisposable
             flushing = false;
             Syncing = false;
             RaiseCounts();
+            // Après l'envoi de l'outbox, reprendre automatiquement les ressources
+            // manquantes sans redemander le bouton « Préparer cet appareil ».
+            if (api.IsOnline && shell.IsLoggedIn &&
+                running is { IsCancellationRequested: false } session)
+            {
+                nextReplicaAttemptUtc = DateTime.MinValue;
+                _ = AutoReplicateAsync(session.Token);
+            }
         }
     }
 

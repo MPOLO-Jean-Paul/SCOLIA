@@ -3,6 +3,7 @@ using AndroidX.Work;
 using System.Text.Json;
 using Scolia.Bureau.Api;
 using Scolia.Bureau.Infrastructure;
+using Scolia.Bureau.Ribbon;
 
 namespace Scolia.Mobile.Synchronization;
 
@@ -156,6 +157,32 @@ public sealed class SyncWorker : Worker
         store.User = active.UserName;
         api.Offline = store;
         await api.FlushAsync(timeout.Token);
+        // Sans interface, reprendre les ressources déjà reçues plutôt que repartir
+        // depuis la première fiche. Le curseur est chiffré et propre au compte.
+        // Aucun droit scolaire n'est inventé : seuls les droits de la session
+        // réellement rétablie sont utilisés par ce travail différé.
+        if (active.Permissions.Contains(Perm.StudentsRead, StringComparer.OrdinalIgnoreCase))
+        {
+            try
+            {
+                var prepared = await OfflinePreparation.RunAsync(api,
+                    includeFinancialAccounts: active.Permissions.Contains(
+                        Perm.PaymentsRead, StringComparer.OrdinalIgnoreCase),
+                    ct: timeout.Token);
+                if (!prepared.Complete && prepared.Expected <= OfflinePreparation.MaximumStudents)
+                    return Result.InvokeRetry();
+            }
+            catch (ApiException ex) when (ex.Status is 401 or 403)
+            {
+                // Session ou permission révoquée : rien n'est effacé localement ;
+                // la prochaine reconnexion personnelle sera nécessaire.
+                return Result.InvokeSuccess();
+            }
+            catch (OperationCanceledException) when (timeout.IsCancellationRequested)
+            {
+                return Result.InvokeRetry();
+            }
+        }
         // Faire tourner les copies locales les plus anciennes, en paquets bornés :
         // actualiser indéfiniment les mêmes 32 entrées empêchait les autres
         // dossiers préchargés d'être remis à jour.
