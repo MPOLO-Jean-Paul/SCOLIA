@@ -157,6 +157,7 @@ public static class Sidebar
             // Données : protéger, contrôler et, si besoin, effacer.
             Group("Données",
                 Item("Sauvegardes", MaterialIconKind.DatabaseExport, "ToneGreen", Perm.BackupManage, typeof(DataPage), () => new DataPage(shell)),
+                Item("Sauvegarde en ligne", MaterialIconKind.CloudLock, "ToneTeal", Perm.BackupManage, typeof(CloudBackupPage), () => new CloudBackupPage(shell)),
                 Item("Journal d'audit", MaterialIconKind.ShieldCheck, "ToneIndigo", Perm.AuditRead, typeof(AuditPage), () => new AuditPage(shell)),
                 Item("Effacement des données", MaterialIconKind.DeleteSweep, "ToneRed", Perm.BackupManage, typeof(EraseDataPage), () => new EraseDataPage(shell, payments: true)))
         };

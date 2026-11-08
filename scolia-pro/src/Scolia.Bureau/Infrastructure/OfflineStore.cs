@@ -19,6 +19,8 @@ public sealed class OutboxItem
     public DateTime CreatedAt { get; set; } = DateTime.Now;
     /// <summary>Motif du refus du serveur, pour une opération passée en conflit.</summary>
     public string? Error { get; set; }
+    /// <summary>Copie chiffrée déposée en ligne : le serveur l'appliquera même si cet appareil ne le revoit pas.</summary>
+    public bool Deposited { get; set; }
 }
 
 /// <summary>Session gardée pour se connecter sans réseau : le compte, ses droits et l'empreinte du mot de passe.</summary>
@@ -291,6 +293,25 @@ public sealed class OfflineStore
     }
 
     public IReadOnlyList<OutboxItem> Outbox() => Load(OutboxFile).Where(i => i.User == User).ToList();
+    public IReadOnlyList<OutboxItem> OutboxFor(string user) => Load(OutboxFile).Where(i => i.User == user).ToList();
+
+    /// <summary>L'opération est en sécurité en ligne : elle reste dans la file jusqu'à son issue.</summary>
+    public void MarkDepositedFor(string user, string id) => Change((pending, _) =>
+    {
+        foreach (var item in pending.Where(i => i.Id == id && i.User == user)) item.Deposited = true;
+    });
+
+    // Accès de dépôt en ligne remis par le serveur au compte (jeton, clé de dépôt, délégation signée),
+    // gardé dans la base locale chiffrée et propre à chaque compte.
+    private static string CloudKeyFor(string user) =>
+        "nuage:depot:" + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(user.Trim().ToUpperInvariant())));
+    public string? ReadCloudAccessFor(string user) =>
+        string.IsNullOrWhiteSpace(user) ? null : database.Read(CloudKeyFor(user));
+    public void SaveCloudAccessFor(string user, string json)
+    {
+        if (string.IsNullOrWhiteSpace(user)) return;
+        database.Write(CloudKeyFor(user), json);
+    }
     public IReadOnlyList<OutboxItem> Conflicts() => Load(ConflictFile).Where(i => i.User == User).ToList();
 
     public void Enqueue(OutboxItem item)

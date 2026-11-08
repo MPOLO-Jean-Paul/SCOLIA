@@ -1,5 +1,7 @@
 // SCOLIA Pro: metadata-only licensing. Never accept names of pupils,
-// internal school users, grades, payments, document bodies or backup files.
+// internal school users, grades, payments or document bodies in clear text.
+// Online continuity (cloud.mjs) stores only blobs encrypted by the school,
+// with a key JP-Services never receives.
 export const CONSENT_VERSION = "2026-11-08";
 export const STATES = new Set(["trial", "active", "suspended", "expired"]);
 export const EVENTS = new Set(["install", "login", "online", "logout"]);

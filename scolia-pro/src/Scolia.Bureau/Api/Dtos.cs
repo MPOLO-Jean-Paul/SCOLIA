@@ -255,3 +255,14 @@ public sealed record DailyReportResultDto(string FileName, string Status, string
 
 /// <summary>Appareil autorisé par code QR à ouvrir le compte du responsable, avec sa validité.</summary>
 public sealed record AuthorizedDeviceDto(Guid Id, string Name, DateTime ExpiresUtc, bool Revoked);
+
+// Sauvegarde et relève en ligne : mêmes formes que le serveur (jamais de clé).
+public sealed record CloudRefusalDto(DateTimeOffset At, string Label, string Path, string User, string Reason);
+
+public sealed record CloudStatusDto(bool Registered, bool Enabled, bool RecoveryConfirmed, string? KeyFingerprint, DateTimeOffset? ActivatedAt,
+    DateTimeOffset? LastBackupAt, long LastBackupBytes, DateTimeOffset? LastDrainAt, int Applied, int Refused,
+    string? LastError, DateTimeOffset? LastErrorAt, IReadOnlyList<CloudRefusalDto> Refusals, bool ActivatedByOwner = false);
+
+public sealed record CloudBackupDto(Guid Id, DateTimeOffset CreatedAt, long SizeBytes, string KeyFingerprint, bool SameKey);
+
+public sealed record CloudRecoveryCodeDto(string Code, string? KeyFingerprint);

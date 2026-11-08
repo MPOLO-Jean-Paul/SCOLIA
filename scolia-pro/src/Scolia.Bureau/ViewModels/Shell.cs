@@ -961,6 +961,9 @@ public sealed class ShellViewModel : Observable
         api.LicenseReadOnly = api.Offline.IsLicenseReadOnlyFor(s.UserName);
         Login.RememberAccount(s.UserName);
         Sync.Start();
+        // Accès de dépôt en ligne du compte, pour les opérations faites pendant une coupure du serveur.
+        if (api.IsOnline) _ = api.RefreshCloudAccessAsync();
+        if (api.IsOnline && s.Permissions.Contains(Perm.BackupManage)) _ = RemindRecoveryCodeAsync();
         nextLicenseCheckUtc = DateTime.MinValue;
         _ = License.RefreshAsync();
         // Une première session Promoteur vérifiée mémorise son appareil :
@@ -1023,6 +1026,24 @@ public sealed class ShellViewModel : Observable
             return;
         }
         await OfferNetworkAsync();
+    }
+
+    /// <summary>
+    /// Sauvegarde en ligne active (par l'école ou à la demande de JP-Services) mais code de secours pas encore noté :
+    /// le responsable est prévenu à chaque connexion, sans bloquer son travail.
+    /// </summary>
+    private async Task RemindRecoveryCodeAsync()
+    {
+        try
+        {
+            var cloud = await api.GetAsync<CloudStatusDto>("api/nuage");
+            if (cloud.Enabled && !cloud.RecoveryConfirmed)
+                Notify("Sauvegarde en ligne active : notez le code de secours (Données › Sauvegarde en ligne › Code de secours).");
+        }
+        catch (Exception ex) when (ex is ApiException or HttpRequestException or TaskCanceledException or System.Text.Json.JsonException)
+        {
+            System.Diagnostics.Trace.WriteLine($"SCOLIA : état de la sauvegarde en ligne non lu ({ex.GetType().Name}).");
+        }
     }
 
     private async Task RememberPromoterDeviceAsync(string userName)

@@ -111,6 +111,8 @@ public static class AppCatalog
             "Rien ne se perd : copies vérifiées, traces de chaque opération.",
             [
                 new("Sauvegardes", "Copie automatique régulière et copie manuelle à la demande, chacune vérifiée par son empreinte ; restauration en un clic, la base actuelle étant d'abord conservée."),
+                new("Sauvegarde en ligne", "Activée une fois, elle tourne seule : toutes les heures si des données ont changé (au moins une fois par jour), une copie compressée et chiffrée ici avec la clé de l'école part vers la console JP-Services, qui n'en voit que la date et la taille. Code de secours à noter pour restaurer sur un autre ordinateur."),
+                new("Relève en ligne", "Ordinateur principal éteint ou injoignable : chaque appareil continue et dépose ses opérations, chiffrées, en ligne. Au retour du serveur, il les applique avec ses règles et les droits de leur auteur, une seule fois ; une opération refusée reste visible avec son motif."),
                 new("Journal d'audit", "Chaque opération : qui, quand, quoi, depuis quel poste, dans une chaîne d'empreintes vérifiable."),
                 new("Effacement des données", "Effacer les paiements ou les apprenants d'essai, toujours après une sauvegarde qui permet de revenir en arrière."),
                 new("Import et clôture", "Import du classeur Excel de SCOLIA, modèle d'import, et clôture de l'année scolaire."),

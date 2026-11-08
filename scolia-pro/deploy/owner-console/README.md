@@ -5,6 +5,28 @@ Service commercial séparé du serveur de chaque établissement. Il **ne reçoit
 
 Le responsable est informé de cette finalité lors de la **première inscription volontaire**, par invitation à usage unique. Le Wi-Fi scolaire et l'accès distant sont distincts du suivi des licences ; une coupure Internet ne transmet rien jusqu'au rétablissement. Les événements commerciaux du serveur sont mis dans une file locale chiffrée, renvoyés à la connexion et dédupliqués par identifiant.
 
+## Continuité en ligne (0.2.0) : sauvegarde et relève
+
+Activée **une fois** par le responsable de l'école sur son ordinateur principal (Données › Sauvegarde en ligne), elle tourne ensuite **sans intervention** :
+
+- **Sauvegarde automatique** : toutes les heures si des données ont changé, et au moins une fois par jour, le serveur scolaire fait une copie cohérente de sa base, la compresse, la **chiffre avec la clé de l'école** (AES-256-GCM) et l'envoie ici (`PUT /api/v1/server/cloud/backups`, empreinte SHA-256 vérifiée à la réception). Les fichiers vont dans le bucket R2 privé `scolia-pro-backups` ; D1 ne garde que la date, la taille et les empreintes. Rétention : 24 copies sur 48 h, une par jour sur 30 jours, une par mois sur 12 mois, 1 Gio maximum par école.
+- **Relève** : quand l'ordinateur principal est injoignable, chaque téléphone ou poste continue de travailler et dépose ses opérations, chiffrées pour le serveur, dans la boîte de l'école (`POST /api/v1/device/mailbox`, jeton de dépôt : dépôt seulement, aucune lecture). Toutes les 2 minutes, le serveur relève la boîte, applique chaque opération **avec ses propres règles et les droits de son auteur** (délégation signée par le serveur, 30 jours), puis publie l'issue (`applied` / `refused`, gardée 180 jours). L'appareil l'apprend et ne renvoie pas l'opération ; s'il la renvoie quand même, la clé d'idempotence empêche tout doublon.
+- **Reprise après sinistre** : la console crée une **invitation de reprise** pour un nouvel ordinateur ; son usage révoque l'ancien serveur (jamais deux serveurs principaux). Le nouveau serveur liste les copies et les déchiffre avec le **code de secours** de l'école (14 groupes de 4 caractères), seul moyen de lire une copie ailleurs.
+- **Ce que voit JP-Services** : par école, état (active, en retard > 26 h), date et taille des copies, présence du serveur, nombre d'opérations en attente. Jamais leur contenu, ni la clé, ni un lien de téléchargement.
+
+Limites du plan gratuit Cloudflare à surveiller : R2 10 Go, D1 5 Go et 100 000 lignes écrites par jour, Workers 100 000 requêtes par jour et 100 Mo par requête (une copie compressée de plus de 90 Mo est refusée et signalée sur le serveur).
+
+### Tout se règle ensuite dans la console
+
+Panneau **« Sauvegarde en ligne des écoles — stockage Cloudflare R2 »** :
+
+1. **Stockage** : deux possibilités, détectées automatiquement.
+   - Liaison R2 créée par le workflow de déploiement (si le jeton GitHub `CLOUDFLARE_API_TOKEN` a « Workers R2 Storage : Edit ») : rien à saisir.
+   - Sinon, **champs de la console** : identifiant du compte Cloudflare, nom du bucket, Access Key ID et Secret Access Key d'un **jeton API R2** (Cloudflare › R2 › Gérer les jetons API › « Object Read & Write » limité au bucket). « Tester et enregistrer » écrit, relit et supprime un fichier témoin ; rien n'est gardé si le test échoue. La clé secrète est chiffrée dans D1 (AES-256-GCM, clé dérivée du jeton propriétaire) et n'est jamais réaffichée ; après un changement du jeton propriétaire, ressaisissez-la.
+2. **Activer les écoles** : « Activer la sauvegarde en ligne pour toutes les écoles », ou école par école dans sa fiche (« Activer » / « Retirer »). Au contrôle de licence suivant (15 minutes au plus), le serveur de l'école active seul la sauvegarde avec **sa propre clé**, envoie une première copie, puis continue sans intervention. Son responsable est invité, à chaque connexion, à noter le code de secours. Un arrêt décidé par l'école n'est jamais annulé depuis la console.
+
+Seule la **première mise en ligne de la console** passe par GitHub (secrets de l'environnement `scolia-owner-production`), car la console n'existe pas encore pour les recevoir.
+
 ## Gestion des licences
 Tableau de bord dans la console JP‑Services :
 - Facturation **désactivée par défaut** : aucune école existante ne peut être verrouillée lors de l'installation.
@@ -75,6 +97,11 @@ Après configuration, lancer manuellement le workflow et cocher `confirm_product
 - `GET /api/v1/owner/summary`, `/schools`, `/schools/{id}` : synthèse et activité.
 - `PATCH /api/v1/owner/schools/{id}/license` : essai, abonnement, dérogation et verrouillage.
 - `GET|POST /api/v1/owner/relays` et `PATCH /api/v1/owner/relays/{id}` : configuration des fournisseurs sécurisés.
+- `POST /api/v1/owner/schools/{id}/recovery-invitation` : invitation de reprise (nouveau serveur, 3 jours, usage unique).
+- `GET|PUT|DELETE /api/v1/owner/settings/storage` : stockage R2 (état, test et enregistrement chiffré des identifiants).
+- `PATCH /api/v1/owner/schools/{id}/cloud`, `POST /api/v1/owner/cloud/request-all` : sauvegarde en ligne proposée à une école ou à toutes.
+- `POST /api/v1/server/cloud/enable`, `PUT|GET /api/v1/server/cloud/backups[/{id}]`, `GET /api/v1/server/cloud/mailbox`, `POST /api/v1/server/cloud/mailbox/ack`, `POST /api/v1/server/cloud/deposit-token` : continuité, jeton du serveur scolaire.
+- `POST /api/v1/device/mailbox`, `POST /api/v1/device/mailbox/outcomes`, `GET /api/v1/device/status` : dépôt par les appareils, jeton de dépôt.
 - `GET /api/v1/server/relay-settings`, `POST /api/v1/server/relay-consent`, `POST /api/v1/server/relay-approve` : décisions du serveur scolaire, protégé par son jeton.
 
 ## Restrictions

@@ -12,7 +12,7 @@ function setup() {
   const sqlite = new DatabaseSync(":memory:");
   sqlite.exec("PRAGMA foreign_keys=ON");
   for (const name of ["0001_init.sql", "0002_relays.sql",
-    "0003_activity_idempotence.sql", "0004_license_controls.sql"]) {
+    "0003_activity_idempotence.sql", "0004_license_controls.sql", "0005_cloud_continuity.sql", "0006_owner_settings_cloud_policy.sql"]) {
     sqlite.exec(readFileSync(new URL("../migrations/" + name, import.meta.url), "utf8"));
   }
   function statement(sql, params = []) {

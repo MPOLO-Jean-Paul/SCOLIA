@@ -41,18 +41,7 @@ public sealed class BackupService(IOptions<ScoliaStorageOptions> options, ILogge
             var safeReason = new string(reason.Where(char.IsAsciiLetterOrDigit).ToArray());
             var name = $"scolia-{DateTime.Now.ToString("yyyyMMdd-HHmmss", CultureInfo.InvariantCulture)}-{(safeReason.Length == 0 ? "manuelle" : safeReason)}.db";
             var target = Path.Combine(settings.BackupDirectory, name);
-            await using (var source = new SqliteConnection(settings.ConnectionString))
-            await using (var destination = new SqliteConnection(new SqliteConnectionStringBuilder { DataSource = target, Pooling = false }.ToString()))
-            {
-                await source.OpenAsync(ct);
-                await destination.OpenAsync(ct);
-                source.BackupDatabase(destination);
-                // La copie hérite du mode WAL : on la ramène à un fichier unique, autonome et transportable.
-                await using var mode = destination.CreateCommand();
-                mode.CommandText = "PRAGMA journal_mode=DELETE;";
-                await mode.ExecuteNonQueryAsync(ct);
-            }
-            if (!await IsIntactAsync(target, ct)) throw new IOException("La sauvegarde créée n'a pas passé le contrôle d'intégrité.");
+            await CopyLiveDatabaseAsync(target, ct);
             if (!OperatingSystem.IsWindows())
                 File.SetUnixFileMode(target, UnixFileMode.UserRead | UnixFileMode.UserWrite);
             var hash = await Sha256Async(target, ct);
@@ -63,6 +52,92 @@ public sealed class BackupService(IOptions<ScoliaStorageOptions> options, ILogge
         }
         finally
         {
+            Lock.Release();
+        }
+    }
+
+    /// <summary>Copie à chaud cohérente de la base en service vers <paramref name="target"/>, vérifiée.</summary>
+    private async Task CopyLiveDatabaseAsync(string target, CancellationToken ct)
+    {
+        await using (var source = new SqliteConnection(settings.ConnectionString))
+        await using (var destination = new SqliteConnection(new SqliteConnectionStringBuilder { DataSource = target, Pooling = false }.ToString()))
+        {
+            await source.OpenAsync(ct);
+            await destination.OpenAsync(ct);
+            source.BackupDatabase(destination);
+            // La copie hérite du mode WAL : on la ramène à un fichier unique, autonome et transportable.
+            await using var mode = destination.CreateCommand();
+            mode.CommandText = "PRAGMA journal_mode=DELETE;";
+            await mode.ExecuteNonQueryAsync(ct);
+        }
+        if (!await IsIntactAsync(target, ct)) throw new IOException("La sauvegarde créée n'a pas passé le contrôle d'intégrité.");
+    }
+
+    /// <summary>
+    /// Instantané pour la sauvegarde en ligne : une copie cohérente et vérifiée, écrite hors du dossier
+    /// des sauvegardes locales (elle est chiffrée puis envoyée, et le fichier temporaire est supprimé).
+    /// </summary>
+    public async Task<string> SnapshotAsync(CancellationToken ct = default)
+    {
+        await Lock.WaitAsync(ct);
+        try
+        {
+            var folder = Path.Combine(settings.DataDirectory, "nuage-temp");
+            Directory.CreateDirectory(folder);
+            if (!OperatingSystem.IsWindows())
+                File.SetUnixFileMode(folder, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+            foreach (var stale in Directory.EnumerateFiles(folder, "*.db"))
+                try { File.Delete(stale); } catch (IOException) { }
+            var target = Path.Combine(folder, $"instantane-{Guid.NewGuid():N}.db");
+            try { await CopyLiveDatabaseAsync(target, ct); }
+            catch
+            {
+                if (File.Exists(target)) File.Delete(target);
+                throw;
+            }
+            return target;
+        }
+        finally { Lock.Release(); }
+    }
+
+    /// <summary>
+    /// Range une base reçue en clair (copie en ligne déchiffrée) parmi les sauvegardes locales, après contrôle
+    /// d'intégrité et du schéma SCOLIA. Elle n'est jamais restaurée automatiquement.
+    /// </summary>
+    public async Task<BackupInfo> ImportPlainAsync(byte[] clear, string origin, CancellationToken ct = default)
+    {
+        if (clear.Length == 0) throw new DomainException("sauvegardes", "Copie vide : récupération refusée.");
+        var safeOrigin = new string(origin.Where(char.IsAsciiLetterOrDigit).ToArray());
+        string? target = null;
+        await Lock.WaitAsync(ct);
+        try
+        {
+            EnsureBackupDirectory();
+            var name = $"scolia-{DateTime.UtcNow:yyyyMMdd-HHmmss}-{(safeOrigin.Length == 0 ? "importee" : safeOrigin)}-{Guid.NewGuid():N}.db";
+            target = Path.Combine(settings.BackupDirectory, name);
+            await File.WriteAllBytesAsync(target, clear, ct);
+            if (!OperatingSystem.IsWindows())
+                File.SetUnixFileMode(target, UnixFileMode.UserRead | UnixFileMode.UserWrite);
+            if (!await IsIntactAsync(target, ct) || !await IsScoliaDatabaseAsync(target, ct))
+                throw new DomainException("sauvegardes", "La copie déchiffrée est endommagée ou ne contient pas le schéma SCOLIA attendu : récupération refusée.");
+            var sha = await Sha256Async(target, ct);
+            await File.WriteAllTextAsync(target + FingerprintExtension, $"{sha}  {name}\n", ct);
+            var info = new FileInfo(target);
+            logger.LogInformation("Copie en ligne récupérée et vérifiée : {Name}", name);
+            target = null;
+            return new BackupInfo(name, info.LastWriteTimeUtc, info.Length, sha);
+        }
+        finally
+        {
+            if (target is not null)
+            {
+                try
+                {
+                    if (File.Exists(target)) File.Delete(target);
+                    if (File.Exists(target + FingerprintExtension)) File.Delete(target + FingerprintExtension);
+                }
+                catch (IOException) { }
+            }
             Lock.Release();
         }
     }

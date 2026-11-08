@@ -18,7 +18,9 @@ public static class Idempotency
     public const string Header = "Idempotency-Key";
     private const string Prefix = "SCOLIA-IDEMPOTENCE-V2:";
     private const int MaxBody = 1024 * 1024;
-    private static readonly TimeSpan Retention = TimeSpan.FromDays(7);
+    // Une opération faite hors ligne peut revenir longtemps après (téléphone resté loin du serveur,
+    // ou déjà appliquée depuis la boîte de dépôt en ligne) : la preuve d'exécution reste 90 jours.
+    private static readonly TimeSpan Retention = TimeSpan.FromDays(90);
     private static readonly SemaphoreSlim[] Gates = [.. Enumerable.Range(0, 64).Select(_ => new SemaphoreSlim(1, 1))];
     private static int cleaned;
 

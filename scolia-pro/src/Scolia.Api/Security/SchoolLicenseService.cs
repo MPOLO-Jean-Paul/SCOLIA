@@ -45,7 +45,8 @@ public sealed class SchoolLicenseService : BackgroundService
         [property: JsonPropertyName("issued_at")] long IssuedAt,
         [property: JsonPropertyName("reason")] string Reason,
         [property: JsonPropertyName("offline_grace_seconds")] int OfflineGraceSeconds,
-        [property: JsonPropertyName("next_check_seconds")] int NextCheckSeconds);
+        [property: JsonPropertyName("next_check_seconds")] int NextCheckSeconds,
+        [property: JsonPropertyName("cloud_requested")] bool CloudRequested = false);
     public sealed record Status(bool Managed, bool OwnerConfigured, bool ReadOnly,
         string LicenseStatus, int? DaysRemaining, long? ExpiresAt,
         string Reason, bool BillingEnabled, DateTimeOffset? LastVerifiedAt);
@@ -136,11 +137,34 @@ public sealed class SchoolLicenseService : BackgroundService
         finally { if (File.Exists(temp)) File.Delete(temp); }
     }
 
-    private static HttpClient Http(string url, string? token = null)
+    /// <summary>Transport HTTP vers la console (remplacé par un faux service dans les tests d'intégration).</summary>
+    public HttpMessageHandler? OwnerHandler { get; set; }
+
+    /// <summary>JP-Services propose la sauvegarde en ligne à cette école (console) : le serveur l'active seul.</summary>
+    public bool CloudRequested => !corrupted && state.Policy?.CloudRequested == true;
+
+    /// <summary>Serveur inscrit auprès de JP-Services : condition de la sauvegarde en ligne.</summary>
+    public bool IsRegistered => !corrupted && state.Registration is not null;
+
+    /// <summary>Client authentifié par le jeton de l'établissement, pour la continuité en ligne.</summary>
+    public HttpClient OwnerClient(TimeSpan timeout)
+    {
+        var registration = state.Registration ?? throw new InvalidOperationException("Inscription auprès de JP-Services requise.");
+        var client = Http(registration.ServiceUrl, registration.Token);
+        client.Timeout = timeout;
+        return client;
+    }
+
+    /// <summary>Adresse publique de la console, transmise aux appareils pour le dépôt en ligne.</summary>
+    public string? OwnerServiceUrl => state.Registration?.ServiceUrl;
+
+    private HttpClient Http(string url, string? token = null)
     {
         if (!IsSecureServiceUrl(url)) throw new InvalidOperationException("Fournisseur HTTPS invalide.");
-        var client = new HttpClient(new HttpClientHandler { AllowAutoRedirect = false })
-            { BaseAddress = new Uri(url), Timeout = TimeSpan.FromSeconds(12) };
+        var client = OwnerHandler is { } handler ? new HttpClient(handler, disposeHandler: false)
+            : new HttpClient(new HttpClientHandler { AllowAutoRedirect = false });
+        client.BaseAddress = new Uri(url);
+        client.Timeout = TimeSpan.FromSeconds(12);
         if (!string.IsNullOrWhiteSpace(token))
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
         return client;
@@ -303,6 +327,9 @@ public static class LicenseMutationPolicy
             !path.AsSpan(backupPrefix.Length,
                 path.Length - backupPrefix.Length - backupSuffix.Length).Contains('/'))
             return true;
+        // Sauvegarde et relève en ligne : jamais bloquées par la licence (protéger les données
+        // n'est pas les modifier). Les permissions BackupManage restent obligatoires.
+        if (method == "POST" && path.StartsWith("/api/nuage/", StringComparison.Ordinal)) return true;
         // La gestion de la licence possède ses propres permissions SettingsWrite.
         return path == "/api/licence" ||
                path.StartsWith("/api/licence/", StringComparison.Ordinal);

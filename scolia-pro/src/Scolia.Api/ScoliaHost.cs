@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Extensions.Options;
 using Scolia.Api;
+using Scolia.Api.Cloud;
 using Scolia.Api.Endpoints;
 using Scolia.Api.Security;
 using Scolia.Application.Abstractions;
@@ -116,6 +117,10 @@ public static class ScoliaHost
         builder.Services.AddDataProtection();
         builder.Services.AddSingleton<SchoolLicenseService>();
         builder.Services.AddHostedService(sp => sp.GetRequiredService<SchoolLicenseService>());
+        // Continuité en ligne : sauvegardes chiffrées par l'école et relève des opérations faites pendant une coupure.
+        builder.Services.AddSingleton<Scolia.Api.Cloud.CloudDispatcher>();
+        builder.Services.AddSingleton<Scolia.Api.Cloud.CloudContinuityService>();
+        builder.Services.AddHostedService(sp => sp.GetRequiredService<Scolia.Api.Cloud.CloudContinuityService>());
         builder.Services.AddSingleton(sp => new RecoveryKeyStore(sp.GetRequiredService<IOptions<ScoliaStorageOptions>>().Value.DataDirectory));
         builder.Services.AddSingleton(sp => new DevicePairingRegistry(sp.GetRequiredService<IOptions<ScoliaStorageOptions>>().Value.DataDirectory));
         if (embedded is not null)
@@ -200,6 +205,8 @@ public static class ScoliaHost
         });
         app.UseRateLimiter();
         app.UseAuthentication();
+        // Opérations relevées en ligne et rejouées par ce serveur lui-même, au nom de leur auteur.
+        app.UseCloudDispatch();
         // Le transport Render a une clé de salle partagée. Elle ne remplace pas
         // l'autorisation individuelle : un appareil retiré est refusé dès l'appel suivant.
         app.Use(async (http, next) =>
@@ -295,6 +302,7 @@ public static class ScoliaHost
         app.MapScoliaEndpoints();
         app.MapLicenseEndpoints();
         app.MapLiveEndpoints();
+        app.MapCloudEndpoints();
         // Demande d'un second lancement : seule une requête venant de ce poste est acceptée.
         if (desktop)
             app.MapGet("/api/bureau/afficher", (HttpContext http) =>
