@@ -162,7 +162,7 @@
             </StackPanel>
             <TextBlock Text="{Binding Remote.StatusLine}" Classes="muted" TextWrapping="Wrap" FontSize="{DynamicResource FsSmall}" />
             <WrapPanel Margin="0,8,0,0">
-              <Button infra:Icons.Lead="CloudCheckOutline" Classes="primary" Content="{Binding Remote.EnableLabel}" Command="{Binding Remote.Enable}" Margin="0,0,10,6" />
+              <Button infra:Icons.Lead="CloudCheckOutline" Classes="primary" Content="Activer l’accès Internet" Command="{Binding Remote.Enable}" IsVisible="{Binding Remote.IsInactive}" Margin="0,0,10,6" />
               <Button infra:Icons.Lead="CloudOffOutline" Classes="ghost" Content="Désactiver" Command="{Binding Remote.Disable}" IsVisible="{Binding Remote.IsActive}" Margin="0,0,10,6"
                       ToolTip.Tip="Couper l'accès des appareils distants (demande confirmation)" />
             </WrapPanel>
