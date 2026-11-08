@@ -37,6 +37,19 @@ public sealed class AndroidPreloginNoScrollTests
     }
 
     [Fact]
+    public void Navigation_automatique_seulement_sur_petit_ecran()
+    {
+        var code = File.ReadAllText(Path.Combine(Root(), "Views", "Phone", "ConnectionCompactView.axaml.cs"));
+        Assert.Contains("size.Width < 390 || size.Height < 700", code);
+        Assert.Contains("CompactFooter.IsVisible = compactNavigation", code);
+        Assert.Contains("InlineMethods.IsVisible = !compactNavigation", code);
+        var view = View("Phone/ConnectionCompactView.axaml");
+        foreach (var name in new[] { "CompactNavbar", "InlineMethods",
+            "InlineCodeButton", "InlineWifiButton", "ReturnToQrFromCode", "ReturnToQrFromWifi" })
+            Assert.Contains(view.Descendants(), e => Attr(e, "Name", name));
+    }
+
+    [Fact]
     public void Toutes_les_methodes_de_jumelage_restent_accessibles()
     {
         var view = View("Phone/ConnectionCompactView.axaml");

@@ -3,7 +3,10 @@
 ## Correction structurelle
 - Le premier écran AVANT la connexion a été entièrement remplacé **sur Android**.
 - L'ancienne vue empilait QR, adresses réseau, recherche Wi-Fi et serveurs détectés dans un `ScrollViewer`. Replier les sections ne résolvait pas la hauteur excessive.
-- Une interface native **sans ScrollViewer** affiche une seule étape à la fois, avec navigation fixe en bas :
+- Une interface native **sans ScrollViewer** affiche une seule étape à la fois. La barre QR / Code / Wi-Fi ne s'affiche que si la largeur utile est inférieure à 390 points ou la hauteur inférieure à 700 points ; sur les autres écrans, les commandes sont dans la carte elle-même :
+  - Retour au QR intégré aux pages Code et Wi-Fi sur grands écrans ; accès au serveur depuis la carte sans barre fixe.
+  - Les dimensions sont évaluées au redimensionnement, y compris lorsque le clavier est visible.
+  - Étapes disponibles :
   - **QR** : scanne directement le code du serveur ;
   - **Code** : importe une image ou permet de coller une invitation, avec validation inchangée ;
   - **Wi-Fi** : recherche un serveur, puis ouvre le choix des établissements ou l'adresse locale sur une page distincte.

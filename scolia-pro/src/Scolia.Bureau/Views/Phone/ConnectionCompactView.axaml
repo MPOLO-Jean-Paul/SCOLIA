@@ -131,6 +131,16 @@
                          VerticalAlignment="Center" />
             </DockPanel>
           </Button>
+          <!-- Sur écran spacieux, les choix sont dans la carte, sans barre inférieure. -->
+          <Grid x:Name="InlineMethods" ColumnDefinitions="*,*" ColumnSpacing="8" IsVisible="False">
+            <Button x:Name="InlineCodeButton" Classes="connectsecondary"
+                    Content="Code d’invitation" />
+            <Button x:Name="InlineWifiButton" Grid.Column="1" Classes="connectsecondary"
+                    Content="Wi-Fi" />
+          </Grid>
+          <Button x:Name="HostServerLarge" Classes="connectnav" IsVisible="False"
+                  Command="{Binding UseThisComputer}" IsEnabled="{Binding NotSearching}"
+                  Content="Configurer ce téléphone comme serveur" />
           <TextBlock Classes="connecthint connectverbose" Text="{Binding ScanHint}"
                      MaxLines="3" TextAlignment="Center" />
           <ProgressBar IsIndeterminate="True" IsVisible="{Binding Searching}" Height="4" MinHeight="4" />
@@ -162,6 +172,7 @@
             <Button Classes="connectmain" Command="{Binding JoinInternet}" IsEnabled="{Binding NotSearching}"
                     Content="Valider le code" />
           </StackPanel>
+          <Button x:Name="ReturnToQrFromCode" Classes="connectnav" IsVisible="False" Content="Retour au QR" />
           <Button x:Name="CodeDetails" Classes="connectnav" Content="Voir les détails de connexion"
                   MinHeight="36" />
         </StackPanel>
@@ -178,6 +189,7 @@
                   Content="Choisir un serveur trouvé" IsVisible="{Binding HasServers}" />
           <Button x:Name="ManualAddressButton" Classes="connectsecondary"
                   Content="Saisir une adresse réseau" />
+          <Button x:Name="ReturnToQrFromWifi" Classes="connectnav" IsVisible="False" Content="Retour au QR" />
           <Button x:Name="WifiDetails" Classes="connectnav" Content="Voir le résultat de la recherche"
                   MinHeight="36" />
         </StackPanel>
@@ -245,7 +257,7 @@
     <!-- Navigation en bas : trois destinations fixes et un accès direct au mode serveur. -->
     <Grid x:Name="CompactFooter" Grid.Row="2" RowDefinitions="Auto,Auto"
           Margin="13,3,13,10" RowSpacing="6" IsVisible="{Binding !PairingInProgress}">
-      <Grid Classes="connectnavbar" Grid.Row="0" ColumnDefinitions="*,*,*" ColumnSpacing="4">
+      <Grid x:Name="CompactNavbar" Classes="connectnavbar" Grid.Row="0" ColumnDefinitions="*,*,*" ColumnSpacing="4">
         <Button x:Name="TabQr" Classes="connectnav selected" Content="QR" />
         <Button x:Name="TabCode" Classes="connectnav" Grid.Column="1" Content="Code" />
         <Button x:Name="TabWifi" Classes="connectnav" Grid.Column="2" Content="Wi-Fi" />

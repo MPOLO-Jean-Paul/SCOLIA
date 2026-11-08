@@ -1646,16 +1646,24 @@ if (args.Length > 3 && args[3] == "connexion-compacte")
             button.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
             RenderCompact();
         }
+        // La barre est réservée aux petits écrans ; au-delà, boutons intégrés à la carte.
+        var smallScreen = width < 390 || height < 700;
+        var navbar = NamedCompact("CompactNavbar");
+        CheckCompact("Navigation adaptative " + width + "×" + height,
+            navbar.IsEffectivelyVisible == smallScreen);
+
         ClickCompact("TabQr");
         CheckCompact("QR " + width + "×" + height + " : carte entière visible", Fits(NamedCompact("QrPage")));
-        CheckCompact("QR " + width + "×" + height + " : navigation visible", Fits(NamedCompact("TabQr")));
+        CheckCompact("QR " + width + "×" + height + " : accès aux méthodes",
+            smallScreen ? Fits(NamedCompact("TabQr")) : Fits(NamedCompact("InlineCodeButton")));
         if (height == 568) Save(window, "preconnexion-qr-" + width + "x" + height + ".png");
 
-        ClickCompact("TabCode");
+        ClickCompact(smallScreen ? "TabCode" : "InlineCodeButton");
         CheckCompact("Code " + width + "×" + height + " : champs et actions dans l'écran", Fits(NamedCompact("CodePage")));
         if (height == 568) Save(window, "preconnexion-code-" + width + "x" + height + ".png");
 
-        ClickCompact("TabWifi");
+        if (!smallScreen) ClickCompact("ReturnToQrFromCode");
+        ClickCompact(smallScreen ? "TabWifi" : "InlineWifiButton");
         CheckCompact("Wi-Fi " + width + "×" + height + " : actions dans l'écran", Fits(NamedCompact("WifiPage")));
         if (height == 568) Save(window, "preconnexion-wifi-" + width + "x" + height + ".png");
         ClickCompact("ManualAddressButton");
