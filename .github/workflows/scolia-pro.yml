@@ -88,6 +88,20 @@ jobs:
           SCOLIA_ASTUCES: '0'
         run: dotnet run --no-build --project tests/Scolia.Bureau.Captures -c Release -- artifacts/fluidite http://127.0.0.1:5293/ Scolia2026! fluidite
 
+      - name: Ecrans AVANT connexion Android — aucun defilement, positions mesurees
+        env:
+          SCOLIA_MOBILE: '1'
+          SCOLIA_ASTUCES: '0'
+        run: dotnet run --no-build --project tests/Scolia.Bureau.Captures -c Release -- artifacts/preconnexion http://127.0.0.1:5293/ Scolia2026! connexion-compacte
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: SCOLIA_Pro_Android_Preconnexion
+          path: scolia-pro/artifacts/preconnexion/
+          if-no-files-found: ignore
+          retention-days: 7
+
       - uses: actions/upload-artifact@v4
         if: always()
         with:

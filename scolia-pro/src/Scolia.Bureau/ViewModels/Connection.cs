@@ -47,7 +47,7 @@ public sealed class ConnectionViewModel : Observable
     public AsyncCommand ImportQrImage { get; }
     public bool CanImportQrImage => Platform.IsMobile && Platform.PickQrImageAsync is not null;
     /// <summary>Ordinateur : le code copié sur le serveur (ou une invitation) se colle sous le bouton.</summary>
-    public bool CanPasteCode => !PairingFlow.HasCamera;
+    public bool CanPasteCode => Platform.IsMobile || !PairingFlow.HasCamera;
     public string ScanLabel => PairingFlow.HasCamera ? "Scanner le code QR" : "Lire une image du code QR";
     public string ScanHint => PairingFlow.HasCamera
         ? "Sur le serveur : Relier un appareil, puis scannez son QR. SCOLIA choisit le réseau local ou Internet automatiquement."
@@ -180,7 +180,27 @@ public sealed class ConnectionViewModel : Observable
 
     public ObservableCollection<ServerRowVm> Servers { get; } = [];
     public bool HasServers => Servers.Count > 0;
-    public string Message { get => message; private set => Set(ref message, value); }
+
+    private ServerRowVm? selectedServer;
+    public ServerRowVm? SelectedServer
+    {
+        get => selectedServer;
+        set
+        {
+            if (Set(ref selectedServer, value)) Raise(nameof(HasSelectedServer));
+        }
+    }
+    public bool HasSelectedServer => selectedServer is not null;
+
+    public bool HasMessage => !string.IsNullOrWhiteSpace(message);
+    public string Message
+    {
+        get => message;
+        private set
+        {
+            if (Set(ref message, value)) Raise(nameof(HasMessage));
+        }
+    }
     public bool Searching { get => searching; private set { if (Set(ref searching, value)) Raise(nameof(NotSearching)); } }
     public bool NotSearching => !searching;
 
@@ -214,6 +234,7 @@ public sealed class ConnectionViewModel : Observable
     {
         Servers.Clear();
         foreach (var server in servers) Servers.Add(new ServerRowVm(server, shell.JoinAsync));
+        SelectedServer = Servers.FirstOrDefault();
         Raise(nameof(HasServers));
         Message = text;
     }

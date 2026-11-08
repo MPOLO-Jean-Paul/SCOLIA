@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:infra="using:Scolia.Bureau.Infrastructure"
+             xmlns:phone="using:Scolia.Bureau.Views.Phone"
              xmlns:mi="using:Material.Icons.Avalonia"
              x:Class="Scolia.Bureau.Views.ConnectionView">
   <UserControl.Styles>
@@ -423,6 +424,11 @@
         </Grid>
       </ScrollViewer>
     </Grid>
+    </ThemeVariantScope>
+    <!-- Sur Android, seule cette vue fixe est rendue : jamais de page entière défilante. -->
+    <ThemeVariantScope x:Name="CompactConnectionThemeScope" RequestedThemeVariant="Light"
+                       IsVisible="False">
+      <phone:ConnectionCompactView x:Name="CompactConnectionScreen" />
     </ThemeVariantScope>
   </Grid>
 </UserControl>

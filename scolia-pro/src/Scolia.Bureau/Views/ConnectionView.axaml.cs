@@ -13,6 +13,14 @@ public partial class ConnectionView : UserControl
         ClassicConnectionScreen.IsVisible = !ios;
         IosConnectionScreen.IsVisible = ios;
         IosConnectionThemeScope.IsVisible = ios;
+        // Une vraie interface distincte sur Android : les anciens ScrollViewer
+        // restent sur Windows uniquement et ne sont pas présents dans la page mobile.
+        if (Platform.IsMobile)
+        {
+            IosConnectionScreen.IsVisible = false;
+            IosConnectionThemeScope.IsVisible = false;
+            CompactConnectionThemeScope.IsVisible = true;
+        }
         // Les options secondaires restent disponibles, mais ne surchargent pas un petit écran.
         bool? previouslyCompact = null;
         AuthLayout.Track(IosConnectionScreen, size =>

@@ -1587,6 +1587,85 @@ if (args.Length > 3 && args[3] == "bureau")
     return;
 }
 
+// Contrôle mesuré des vues AVANT la connexion Android : une page à la fois, zéro scroll.
+// Inclut le cas extrême 320×420 représentant une hauteur réduite par Android.
+if (args.Length > 3 && args[3] == "connexion-compacte")
+{
+    if (!Preferences.MobileLayout) throw new InvalidOperationException("SCOLIA_MOBILE=1 est requis");
+    var failures = 0;
+    void CheckCompact(string label, bool passed)
+    {
+        Console.WriteLine((passed ? "OK  " : "ECHEC ") + label);
+        if (!passed) failures++;
+    }
+    void RenderCompact()
+    {
+        for (var i = 0; i < 6; i++)
+        {
+            Dispatcher.UIThread.RunJobs();
+            window.UpdateLayout();
+            AvaloniaHeadlessPlatform.ForceRenderTimerTick();
+        }
+    }
+    shell.ReturnToPairingChooser("Aucun appareil relié. Scannez le code du serveur.");
+    RenderCompact();
+    foreach (var (width, height) in new[] { (320, 420), (320, 568), (360, 640), (412, 892) })
+    {
+        window.Width = width;
+        window.Height = height;
+        RenderCompact();
+        var view = window.GetVisualDescendants()
+            .OfType<Scolia.Bureau.Views.Phone.ConnectionCompactView>()
+            .FirstOrDefault(control => control.IsEffectivelyVisible);
+        CheckCompact("Avant connexion " + width + "×" + height + " : vue mobile active", view is not null);
+        if (view is null) continue;
+
+        var scrolls = view.GetVisualDescendants().OfType<ScrollViewer>().ToList();
+        CheckCompact("Avant connexion " + width + "×" + height + " : aucun défilement de page", scrolls.Count == 0);
+
+        Control NamedCompact(string name) =>
+            view.GetVisualDescendants().OfType<Control>().First(control => control.Name == name);
+
+        bool Fits(Control control)
+        {
+            if (!control.IsEffectivelyVisible || control.TransformToVisual(window) is not { } transform)
+                return false;
+            var rect = new Rect(control.Bounds.Size).TransformToAABB(transform);
+            return rect.Width > 0 && rect.Height > 0
+                && rect.Left >= -1 && rect.Right <= width + 1
+                && rect.Top >= -1 && rect.Bottom <= height + 1;
+        }
+
+        void ClickCompact(string name)
+        {
+            var button = (Button)NamedCompact(name);
+            button.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+            RenderCompact();
+        }
+        ClickCompact("TabQr");
+        CheckCompact("QR " + width + "×" + height + " : carte entière visible", Fits(NamedCompact("QrPage")));
+        CheckCompact("QR " + width + "×" + height + " : navigation visible", Fits(NamedCompact("TabQr")));
+        if (height == 568) Save(window, "preconnexion-qr-" + width + "x" + height + ".png");
+
+        ClickCompact("TabCode");
+        CheckCompact("Code " + width + "×" + height + " : champs et actions dans l'écran", Fits(NamedCompact("CodePage")));
+        if (height == 568) Save(window, "preconnexion-code-" + width + "x" + height + ".png");
+
+        ClickCompact("TabWifi");
+        CheckCompact("Wi-Fi " + width + "×" + height + " : actions dans l'écran", Fits(NamedCompact("WifiPage")));
+        if (height == 568) Save(window, "preconnexion-wifi-" + width + "x" + height + ".png");
+        ClickCompact("ManualAddressButton");
+        CheckCompact("Adresse " + width + "×" + height + " : saisie dans l'écran", Fits(NamedCompact("AddressPage")));
+        ClickCompact("TabQr");
+        ClickCompact("QrDetails");
+        CheckCompact("État " + width + "×" + height + " : diagnostic dans l'écran", Fits(NamedCompact("DetailsPage")));
+    }
+    shell.Sync.Stop();
+    window.Close();
+    Environment.ExitCode = failures == 0 ? 0 : 1;
+    return;
+}
+
 // Vérification du parcours mobile sur petit écran et quand le clavier réduit la hauteur.
 // SCOLIA_MOBILE=1 dotnet run -- <sortie> http://localhost:1/ inutilise fluidite
 // Les appels accessoires (logo, direct) vont au serveur HTTP fictif local, jamais à un établissement.
