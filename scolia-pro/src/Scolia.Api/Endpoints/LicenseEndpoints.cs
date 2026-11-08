@@ -11,8 +11,13 @@ namespace Scolia.Api.Endpoints;
 /// </summary>
 public static class LicenseEndpoints
 {
-    private static bool LocalServer(HttpContext http) =>
-        IPAddress.IsLoopback(http.Connection.RemoteIpAddress ?? IPAddress.None);
+    /// <summary>Seule l'application du serveur principal peut enregistrer
+    /// la licence ou approuver un relais, jamais un appel du réseau ou du tunnel.</summary>
+    public static bool IsServerLocal(HttpContext http) =>
+        IPAddress.IsLoopback(http.Connection.RemoteIpAddress ?? IPAddress.None)
+        && http.Request.Headers["X-Scolia-Relay-Connection"] != "1"
+        && !http.Request.Headers.ContainsKey("X-Forwarded-For")
+        && !http.Request.Headers.ContainsKey("Forwarded");
 
     private sealed record EnrollRequest(string SchoolName, string InviteCode, bool Consent);
     private sealed record RelayConsentRequest(bool Enabled, bool DisclosedToSchoolAdmin);
@@ -27,7 +32,7 @@ public static class LicenseEndpoints
         api.MapPost("/enregistrer", async Task<IResult> (EnrollRequest input,
             HttpContext http, SchoolLicenseService licenses, CancellationToken ct) =>
         {
-            if (!LocalServer(http)) return Results.StatusCode(StatusCodes.Status403Forbidden);
+            if (!IsServerLocal(http)) return Results.StatusCode(StatusCodes.Status403Forbidden);
             if (!input.Consent) return Results.BadRequest(new { title = "Consentement du responsable requis." });
             try
             {
@@ -48,7 +53,7 @@ public static class LicenseEndpoints
         api.MapPost("/actualiser", async Task<IResult> (HttpContext http,
             SchoolLicenseService licenses, CancellationToken ct) =>
         {
-            if (!LocalServer(http)) return Results.StatusCode(StatusCodes.Status403Forbidden);
+            if (!IsServerLocal(http)) return Results.StatusCode(StatusCodes.Status403Forbidden);
             await licenses.RefreshAsync(ct);
             return Results.Ok(licenses.Current);
         }).RequireAuthorization(Permissions.SettingsWrite);
@@ -71,7 +76,7 @@ public static class LicenseEndpoints
         api.MapPost("/relais/consentement", async Task<IResult> (RelayConsentRequest input,
             HttpContext http, SchoolLicenseService licenses, CancellationToken ct) =>
         {
-            if (!LocalServer(http)) return Results.StatusCode(StatusCodes.Status403Forbidden);
+            if (!IsServerLocal(http)) return Results.StatusCode(StatusCodes.Status403Forbidden);
             if (!input.DisclosedToSchoolAdmin)
                 return Results.BadRequest(new { title = "Information explicite du responsable requise." });
             try { return Results.Ok(await licenses.RelayConsentAsync(input.Enabled, ct)); }
@@ -86,7 +91,7 @@ public static class LicenseEndpoints
         api.MapPost("/relais/approuver", async Task<IResult> (RelayApproveRequest input,
             HttpContext http, SchoolLicenseService licenses, CancellationToken ct) =>
         {
-            if (!LocalServer(http)) return Results.StatusCode(StatusCodes.Status403Forbidden);
+            if (!IsServerLocal(http)) return Results.StatusCode(StatusCodes.Status403Forbidden);
             if (!input.Confirm || !input.DisclosedToSchoolAdmin || input.Revision < 1)
                 return Results.BadRequest(new { title = "Validation du relais requise." });
             try { return Results.Ok(await licenses.RelayApproveAsync(input.Revision, ct)); }
