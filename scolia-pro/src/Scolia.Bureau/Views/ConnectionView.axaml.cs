@@ -8,22 +8,30 @@ public partial class ConnectionView : UserControl
     public ConnectionView()
     {
         InitializeComponent();
-        // Android accueille avec ses propres groupes iOS ; la page Windows reste inchangée.
-        var mobile = Platform.IsMobile;
-        ClassicConnectionScreen.IsVisible = !mobile;
-        IosConnectionScreen.IsVisible = mobile;
-        IosConnectionThemeScope.IsVisible = mobile;
+        // Même premier écran iOS sur le téléphone et sur l'ordinateur ; l'ancienne page reste en réserve.
+        var ios = AuthLayout.UseIosStyle;
+        ClassicConnectionScreen.IsVisible = !ios;
+        IosConnectionScreen.IsVisible = ios;
+        IosConnectionThemeScope.IsVisible = ios;
+        // Une vraie interface distincte sur Android : les anciens ScrollViewer
+        // restent sur Windows uniquement et ne sont pas présents dans la page mobile.
+        if (Platform.IsMobile)
+        {
+            IosConnectionScreen.IsVisible = false;
+            IosConnectionThemeScope.IsVisible = false;
+            CompactConnectionThemeScope.IsVisible = true;
+        }
         // Les options secondaires restent disponibles, mais ne surchargent pas un petit écran.
         bool? previouslyCompact = null;
-        IosConnectionScreen.SizeChanged += (_, e) =>
+        AuthLayout.Track(IosConnectionScreen, size =>
         {
-            var compact = e.NewSize.Width < 390;
-            IosConnectionScreen.Classes.Set("compact", compact);
+            // Sur Android, garder les actions facultatives repliées : le QR demeure immédiatement visible.
+            var compact = Platform.IsMobile || size.Width < 480 || size.Height < 800;
             if (previouslyCompact == compact) return;
             IosQrOptions.IsExpanded = !compact;
             IosWifiOptions.IsExpanded = !compact;
             IosNearbyServers.IsExpanded = !compact;
             previouslyCompact = compact;
-        };
+        });
     }
 }

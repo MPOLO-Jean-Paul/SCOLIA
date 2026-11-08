@@ -1,0 +1,39 @@
+name: SCOLIA Pro - console proprietaire (tests)
+
+on:
+  push:
+    branches:
+      - release/direct-apk-scolia-pro-20261103
+      - feature/resumable-offline-replica-owner-console-20261108
+    paths:
+      - "scolia-pro/deploy/owner-console/**"
+      - ".github/workflows/scolia-owner-console.yml"
+  pull_request:
+    paths:
+      - "scolia-pro/deploy/owner-console/**"
+      - ".github/workflows/scolia-owner-console.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Tester les licences et relais
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: scolia-pro/deploy/owner-console
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Tests, syntaxe et cas limites de licence
+        run: npm test
+      - name: Aucun secret dans le répertoire
+        run: |
+          if find . -type f \( -name '*.pem' -o -name '*.key' -o -name '.env' -o -name '*.db' -o -name '*.sqlite' \) | grep -q .; then
+            echo "Le dépôt contient un fichier secret ou base de données" >&2
+            exit 1
+          fi

@@ -18,6 +18,7 @@ public sealed class ShellViewModel : Observable
     private readonly DispatcherTimer revisionTimer;
     private readonly List<(string Label, Func<PageViewModel> Open)> recents = [];
     private long knownRevision = -1;
+    private DateTime nextLicenseCheckUtc = DateTime.MinValue;
     private SessionDto? session;
     private PageViewModel? current;
     private object? dialog;
@@ -45,11 +46,13 @@ public sealed class ShellViewModel : Observable
         Login.ResumeRequested += ReturnToLockedSession;
         Login.ChangeServerRequested += () => _ = ChooseServerAsync();
         Sync = new SyncCenter(this, api);
+        License = new SchoolLicenseViewModel(this);
         // Connexion réussie : le compte est gardé sur l'appareil pour une connexion hors ligne, et en mémoire pour
         // rouvrir seul la session quand l'ordinateur principal revient après une coupure.
         Login.Authenticated += (user, secret, s) =>
         {
             api.Offline = new OfflineStore(ConnectionStore.CacheAddress(api.Server)) { User = s.UserName };
+            api.LicenseReadOnly = api.Offline.IsLicenseReadOnlyFor(s.UserName);
             api.Offline.SaveCredential(user, secret, s, api.SessionCookie);
             api.Offline.RememberAccount(s.UserName);
             Login.RememberAccount(s.UserName);
@@ -120,6 +123,7 @@ public sealed class ShellViewModel : Observable
     /// <summary>Logo de l'établissement, servi par le serveur : il figure sur l'écran de connexion et en tête du volet.</summary>
     /// <summary>Travail à plusieurs postes et hors ligne : direct, présence, verrous, envois en attente.</summary>
     public SyncCenter Sync { get; }
+    public SchoolLicenseViewModel License { get; }
 
     /// <summary>La vue dit si l'utilisateur est en train d'écrire : une mise à jour venue d'ailleurs attend alors.</summary>
     public Func<bool>? IsTyping { get; set; }
@@ -790,6 +794,9 @@ public sealed class ShellViewModel : Observable
         Notify("Liaison Internet sécurisée prête. Connectez-vous avec votre compte habituel.");
     }
 
+    /// <summary>Attente maximale du démarrage du serveur de ce poste ; les tests la raccourcissent.</summary>
+    public static TimeSpan? LocalServerStartLimit { get; set; }
+
     /// <summary>Cet ordinateur, ou ce téléphone, devient (ou redevient) le serveur de l'établissement.</summary>
     public async Task UseThisComputerAsync()
     {
@@ -800,8 +807,37 @@ public sealed class ShellViewModel : Observable
         if (IsLoggedIn) await LogoutAsync();
         api.Retarget(ConnectionStore.LocalAddress);
         RemoteConnection.StartHost(ConnectionStore.LocalAddress);
+        // L'écran de choix reste affiché pendant le démarrage : la connexion ne doit pas apparaître avant
+        // que le serveur de ce poste réponde (sinon l'utilisateur croit être renvoyé à la connexion).
+        if (localServer is not null && !await api.IsRunningAsync())
+        {
+            Connection.BeginProgress(Platform.IsMobile
+                ? "Démarrage du serveur SCOLIA sur ce téléphone… La première fois, la préparation de la base peut prendre jusqu'à deux minutes."
+                : "Démarrage du serveur SCOLIA sur cet ordinateur…");
+            Status = Connection.Message;
+            localServer.Start();
+            var limit = DateTime.UtcNow + (LocalServerStartLimit ?? (Platform.IsMobile ? TimeSpan.FromMinutes(2) : TimeSpan.FromSeconds(40)));
+            var ready = false;
+            while (!(ready = await api.IsRunningAsync()) && DateTime.UtcNow < limit) await Task.Delay(400);
+            if (!ready)
+            {
+                var detail = localServer.Diagnostic is { Length: > 0 } d ? $" Détail : {d}" : string.Empty;
+                Connection.EndProgress((Platform.IsMobile
+                    ? "Le serveur de ce téléphone n'a pas démarré. Vérifiez l'espace de stockage et autorisez les notifications de SCOLIA, puis touchez à nouveau « Configurer ce téléphone comme serveur »."
+                    : "Le serveur de cet ordinateur n'a pas démarré. Réessayez ou redémarrez SCOLIA.") + detail);
+                Status = "Le serveur SCOLIA ne répond pas.";
+                ChoosingServer = true;
+                return;
+            }
+            Connection.EndProgress("Serveur prêt. Ouverture de la configuration de l'établissement…");
+        }
         ChoosingServer = false;
         await ShowEntryAsync();
+        // Déjà configuré (ce poste a déjà été le serveur) : la connexion s'affiche, avec une explication claire.
+        if (!ChoosingServer && !IsSetupRequired && IsServerComputer)
+            Login.Notice = Platform.IsMobile
+                ? $"Ce téléphone est déjà le serveur de « {Login.SchoolName} ». Connectez-vous avec un compte créé sur ce téléphone (par exemple le compte secrétariat)."
+                : $"Cet ordinateur est déjà le serveur de « {Login.SchoolName} ». Connectez-vous avec un compte de cet établissement.";
     }
 
     /// <summary>
@@ -862,7 +898,15 @@ public sealed class ShellViewModel : Observable
         Status = ready ? $"Serveur prêt : {api.Server}" : "Le serveur SCOLIA ne répond pas.";
         if (!ready)
         {
-            if (!IsServerComputer && !OfferOfflineEntry(Login.SchoolName))
+            if (IsServerComputer)
+            {
+                // Jamais une page de connexion muette : le choix du serveur explique l'échec et permet de réessayer.
+                var detail = localServer?.Diagnostic is { Length: > 0 } d ? $" Détail : {d}" : string.Empty;
+                ShowChooser([], (Platform.IsMobile
+                    ? "Le serveur SCOLIA de ce téléphone ne répond pas. Touchez « Configurer ce téléphone comme serveur » pour le relancer."
+                    : "Le serveur SCOLIA de cet ordinateur ne répond pas. Touchez « Configurer cet ordinateur comme serveur » pour le relancer.") + detail);
+            }
+            else if (!OfferOfflineEntry(Login.SchoolName))
                 ShowChooser([], "Le serveur de l'établissement ne répond pas. Vérifiez que l'ordinateur principal est allumé, puis recherchez à nouveau.");
             return;
         }
@@ -914,8 +958,11 @@ public sealed class ShellViewModel : Observable
         api.Offline ??= new OfflineStore(ConnectionStore.CacheAddress(api.Server));
         api.Offline.User = s.UserName;
         api.Offline.RememberAccount(s.UserName);
+        api.LicenseReadOnly = api.Offline.IsLicenseReadOnlyFor(s.UserName);
         Login.RememberAccount(s.UserName);
         Sync.Start();
+        nextLicenseCheckUtc = DateTime.MinValue;
+        _ = License.RefreshAsync();
         // Une première session Promoteur vérifiée mémorise son appareil :
         // reconnexion future au même serveur, sans QR et sans privilèges ajoutés.
         if (s.Permissions.Contains(Perm.PilotageRead) &&
@@ -1175,6 +1222,11 @@ public sealed class ShellViewModel : Observable
     private async Task CheckRevisionAsync()
     {
         if (!IsLoggedIn || checkingRevision) return;
+        if (DateTime.UtcNow >= nextLicenseCheckUtc)
+        {
+            nextLicenseCheckUtc = DateTime.UtcNow.AddMinutes(5);
+            _ = License.RefreshAsync();
+        }
         checkingRevision = true;
         try
         {

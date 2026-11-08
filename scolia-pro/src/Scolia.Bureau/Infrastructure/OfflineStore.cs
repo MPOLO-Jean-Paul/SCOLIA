@@ -76,6 +76,20 @@ public sealed class OfflineStore
     /// Révision locale du registre, utilisée pour ne pas reparcourir 10 000
     /// apprenants à chaque frappe. Tout changement de compte invalide l'index.
     /// </summary>
+    // Dernière décision de lecture seule reçue du serveur de l'établissement.
+    // Un poste hors ligne ne peut pas contourner une restriction déjà connue.
+    private static string LicenceKeyFor(string account) =>
+        "license:read-only:" + Convert.ToHexString(SHA256.HashData(
+            Encoding.UTF8.GetBytes(account.Trim().ToUpperInvariant())));
+    public bool IsLicenseReadOnlyFor(string account) =>
+        !string.IsNullOrWhiteSpace(account) &&
+        database.Read(LicenceKeyFor(account)) == "1";
+    public void SaveLicenseReadOnlyFor(string account, bool restricted)
+    {
+        if (string.IsNullOrWhiteSpace(account)) return;
+        database.Write(LicenceKeyFor(account), restricted ? "1" : "0");
+    }
+
     public long SearchRevision => System.Threading.Interlocked.Read(ref searchRevision);
 
     private string CacheFolder => Path.Combine(root, "pages", Safe(User));
@@ -99,6 +113,58 @@ public sealed class OfflineStore
     {
         if (string.IsNullOrWhiteSpace(user)) return;
         database.Write(SyncKeyFor(user), checkpoint);
+    }
+
+    // Curseur de préparation indépendant du flux "api/revision" et de l'outbox.
+    // Portée : emplacement du serveur (root), compte (haché), révision et droits.
+    // Seules les ressources obtenues intégralement sont marquées, APRÈS la
+    // sauvegarde réussie dans SQLite chiffré. Aucune liste d'élèves n'est exportée.
+    private static string PreparedPrefixFor(string user) =>
+        "preparation:v3:" + Convert.ToHexString(
+            SHA256.HashData(Encoding.UTF8.GetBytes(user.Trim().ToUpperInvariant()))) + ":";
+    private static string PreparedRevisionKeyFor(string user) => PreparedPrefixFor(user) + "revision";
+    private static string PreparedResourceKeyFor(string user, string path) =>
+        PreparedPrefixFor(user) + "done:" + Convert.ToHexString(
+            SHA256.HashData(Encoding.UTF8.GetBytes(path)));
+
+    /// <summary>
+    /// Lorsqu'un nouvel état serveur arrive, repartir sur une validation complète
+    /// mais uniquement pour cette révision. Ne pas modifier le contenu du cache :
+    /// les GET/304 ne récupèrent pas à nouveau les JSON identiques.
+    /// </summary>
+    public void BeginPreparationFor(string user, string revision)
+    {
+        if (string.IsNullOrWhiteSpace(user) || string.IsNullOrWhiteSpace(revision))
+            throw new ArgumentException("Compte et révision de préparation requis.");
+        lock (gate)
+        {
+            if (database.Read(PreparedRevisionKeyFor(user)) == revision) return;
+            database.DeletePrefix(PreparedPrefixFor(user));
+            database.Write(PreparedRevisionKeyFor(user), revision);
+        }
+    }
+
+    /// <summary>Vrai seulement si cette ressource a déjà été vérifiée pour cette
+    /// révision ET demeure physiquement dans le cache du compte.</summary>
+    public bool WasPreparedFor(string user, string revision, string path)
+    {
+        if (string.IsNullOrWhiteSpace(user) || string.IsNullOrWhiteSpace(path) ||
+            string.IsNullOrWhiteSpace(revision)) return false;
+        return database.Read(PreparedRevisionKeyFor(user)) == revision
+            && database.Read(PreparedResourceKeyFor(user, path)) == "ok";
+    }
+
+    /// <summary>Écriture durable après réception complète ; l'arrêt du programme,
+    /// une perte réseau ou un nouveau login conservent cette marque.</summary>
+    public void MarkPreparedFor(string user, string revision, string path)
+    {
+        if (string.IsNullOrWhiteSpace(user) || string.IsNullOrWhiteSpace(revision) ||
+            string.IsNullOrWhiteSpace(path)) return;
+        lock (gate)
+        {
+            if (database.Read(PreparedRevisionKeyFor(user)) == revision)
+                database.Write(PreparedResourceKeyFor(user, path), "ok");
+        }
     }
 
     /// <summary>Une réponse HTTP 304 confirme la fraîcheur, sans réécrire l'index ni re-télécharger.</summary>

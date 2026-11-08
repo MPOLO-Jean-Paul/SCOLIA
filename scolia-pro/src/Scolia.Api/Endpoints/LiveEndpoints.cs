@@ -94,10 +94,14 @@ public static class LiveEndpoints
             return Results.Ok(Restricted(http.User) ? snapshot with { Presence = [], Locks = [] } : snapshot);
         });
 
-        g.MapPost("/presence", (PresenceInput input, HttpContext http, LiveHub hub) =>
+        g.MapPost("/presence", (PresenceInput input, HttpContext http, LiveHub hub,
+            SchoolLicenseService license) =>
         {
             if (!Identify(http, out var deviceId, out var device, out var user)) return Results.BadRequest(new { title = "Poste non identifié." });
-            return Results.Ok(hub.Touch(deviceId, device, user, Clip(input.Page), Clip(input.Activity), input.Locks ?? []));
+            // Un poste en lecture seule reste visible dans le direct, mais
+            // ne peut publier de verrous d'édition pouvant bloquer les autres.
+            List<string> locks = license.Current.ReadOnly ? [] : input.Locks ?? [];
+            return Results.Ok(hub.Touch(deviceId, device, user, Clip(input.Page), Clip(input.Activity), locks));
         });
 
         g.MapDelete("/presence", (HttpContext http, LiveHub hub) =>

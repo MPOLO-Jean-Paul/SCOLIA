@@ -1,0 +1,271 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mi="using:Material.Icons.Avalonia"
+             x:Class="Scolia.Bureau.Views.Phone.ConnectionCompactView">
+  <!-- Parcours pré-connexion Android : plusieurs pages courtes, jamais une page verticale à faire défiler. -->
+  <UserControl.Styles>
+    <Style Selector="Border.connectcard">
+      <Setter Property="Background" Value="White" />
+      <Setter Property="CornerRadius" Value="24" />
+      <Setter Property="BorderBrush" Value="#E2E8F1" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="Padding" Value="17" />
+      <Setter Property="BoxShadow" Value="0 5 16 0 #120A2850" />
+      <Setter Property="MaxWidth" Value="460" />
+    </Style>
+    <Style Selector="Button.connectmain">
+      <Setter Property="Background" Value="#1769E6" />
+      <Setter Property="Foreground" Value="White" />
+      <Setter Property="CornerRadius" Value="16" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="MinHeight" Value="51" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+    <Style Selector="Button.connectsecondary">
+      <Setter Property="Background" Value="#EDF3FC" />
+      <Setter Property="Foreground" Value="#17457E" />
+      <Setter Property="CornerRadius" Value="15" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="MinHeight" Value="46" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button.connectnav">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Foreground" Value="#52708E" />
+      <Setter Property="CornerRadius" Value="14" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="MinHeight" Value="45" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button.connectnav.selected">
+      <Setter Property="Background" Value="#E0ECFF" />
+      <Setter Property="Foreground" Value="#145CC8" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+    <Style Selector="TextBlock.connecttitle">
+      <Setter Property="FontSize" Value="21" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="Foreground" Value="#173554" />
+      <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+    <Style Selector="TextBlock.connecthint">
+      <Setter Property="Foreground" Value="#60738A" />
+      <Setter Property="FontSize" Value="12" />
+      <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+    <Style Selector="TextBox.connectfield">
+      <Setter Property="Background" Value="#F5F8FC" />
+      <Setter Property="Foreground" Value="#173554" />
+      <Setter Property="BorderBrush" Value="#D5E1F0" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="13" />
+      <Setter Property="MinHeight" Value="48" />
+      <Setter Property="FontSize" Value="15" />
+      <Setter Property="Padding" Value="13,10" />
+    </Style>
+    <Style Selector="ComboBox.connectselect">
+      <Setter Property="Background" Value="#F5F8FC" />
+      <Setter Property="CornerRadius" Value="13" />
+      <Setter Property="MinHeight" Value="46" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+    </Style>
+    <!-- En cas de très petite hauteur, supprimer les ornements, jamais les commandes. -->
+    <Style Selector="Grid.micro Border.connectcard"><Setter Property="Padding" Value="12" /><Setter Property="CornerRadius" Value="18" /></Style>
+    <Style Selector="Grid.micro StackPanel.connectfields"><Setter Property="Spacing" Value="8" /></Style>
+    <Style Selector="Grid.micro TextBlock.connecttitle"><Setter Property="FontSize" Value="19" /></Style>
+    <Style Selector="Grid.micro Border.connectqrdeco"><Setter Property="IsVisible" Value="False" /></Style>
+    <Style Selector="Grid.micro TextBlock.connectverbose"><Setter Property="IsVisible" Value="False" /></Style>
+    <Style Selector="Grid.micro Button.connectmain"><Setter Property="MinHeight" Value="48" /></Style>
+    <Style Selector="Grid.micro Button.connectsecondary"><Setter Property="MinHeight" Value="43" /></Style>
+    <Style Selector="Grid.keyboard Grid.connectheader"><Setter Property="IsVisible" Value="False" /></Style>
+    <Style Selector="Grid.keyboard Button.connecthost"><Setter Property="IsVisible" Value="False" /></Style>
+    <Style Selector="Grid.keyboard TextBlock.connectoptional"><Setter Property="IsVisible" Value="False" /></Style>
+    <Style Selector="Grid.keyboard TextBlock.connectdetailtext"><Setter Property="MaxLines" Value="5" /></Style>
+    <Style Selector="Grid.keyboard Grid.connectnavbar"><Setter Property="Margin" Value="0" /></Style>
+    <Style Selector="Grid.keyboard Border.connectcard"><Setter Property="Padding" Value="10" /></Style>
+    <Style Selector="Grid.keyboard StackPanel.connectfields"><Setter Property="Spacing" Value="6" /></Style>
+    <Style Selector="Grid.micro Button.connectnav"><Setter Property="MinHeight" Value="40" /></Style>
+  </UserControl.Styles>
+
+  <Grid x:Name="CompactRoot" Background="#F5F7FB" RowDefinitions="Auto,*,Auto"
+        ClipToBounds="True">
+    <Grid x:Name="CompactHeader" Classes="connectheader" Grid.Row="0"
+          ColumnDefinitions="Auto,Auto,*" ColumnSpacing="9" Margin="12,13,12,4">
+      <Button Classes="connectnav" Command="{Binding Back}" IsVisible="{Binding CanGoBack}"
+              Width="40" Height="40" Padding="0" ToolTip.Tip="Retour à la connexion">
+        <mi:MaterialIcon Kind="ChevronLeft" Width="21" Height="21" />
+      </Button>
+      <Border Grid.Column="1" Width="42" Height="42" CornerRadius="13" Background="White"
+              BorderBrush="#DDE7F4" BorderThickness="1">
+        <Image Source="{DynamicResource ScoliaMark}" Width="30" Height="30" />
+      </Border>
+      <StackPanel Grid.Column="2" Spacing="1" VerticalAlignment="Center">
+        <TextBlock Text="SCOLIA Pro" FontSize="20" FontWeight="Bold" Foreground="#173554" />
+        <TextBlock Text="Connexion à votre établissement" FontSize="12" Foreground="#697F98"
+                   TextWrapping="Wrap" />
+      </StackPanel>
+    </Grid>
+
+    <!-- Une seule page est visible à la fois : aucune ScrollViewer dans ce parcours. -->
+    <Grid x:Name="CompactPages" Grid.Row="1" Margin="13,3,13,3" IsVisible="{Binding !PairingInProgress}">
+      <Border x:Name="QrPage" Classes="connectcard" HorizontalAlignment="Stretch"
+              VerticalAlignment="Center">
+        <StackPanel Classes="connectfields" Spacing="13">
+          <Border Classes="connectqrdeco" Background="#E7F0FE" Width="54" Height="54"
+                  CornerRadius="17" HorizontalAlignment="Center">
+            <mi:MaterialIcon Kind="QrcodeScan" Width="28" Height="28" Foreground="#1769E6"
+                             HorizontalAlignment="Center" VerticalAlignment="Center" />
+          </Border>
+          <TextBlock Text="Relier mon appareil" Classes="connecttitle"
+                     TextAlignment="Center" />
+          <TextBlock Text="Scannez l'invitation affichée sur le serveur de l'établissement."
+                     Classes="connecthint connectoptional" TextAlignment="Center" />
+          <Button Classes="connectmain" Command="{Binding ScanCode}" IsEnabled="{Binding NotSearching}">
+            <DockPanel LastChildFill="True">
+              <mi:MaterialIcon Kind="QrcodeScan" DockPanel.Dock="Left" Margin="0,0,8,0"
+                               Width="19" Height="19" VerticalAlignment="Center" />
+              <TextBlock Text="{Binding ScanLabel}" TextWrapping="Wrap" TextAlignment="Center"
+                         VerticalAlignment="Center" />
+            </DockPanel>
+          </Button>
+          <!-- Sur écran spacieux, les choix sont dans la carte, sans barre inférieure. -->
+          <Grid x:Name="InlineMethods" ColumnDefinitions="*,*" ColumnSpacing="8" IsVisible="False">
+            <Button x:Name="InlineCodeButton" Classes="connectsecondary"
+                    Content="Code d’invitation" />
+            <Button x:Name="InlineWifiButton" Grid.Column="1" Classes="connectsecondary"
+                    Content="Wi-Fi" />
+          </Grid>
+          <Button x:Name="HostServerLarge" Classes="connectnav" IsVisible="False"
+                  Command="{Binding UseThisComputer}" IsEnabled="{Binding NotSearching}"
+                  Content="Configurer ce téléphone comme serveur" />
+          <TextBlock Classes="connecthint connectverbose" Text="{Binding ScanHint}"
+                     MaxLines="3" TextAlignment="Center" />
+          <ProgressBar IsIndeterminate="True" IsVisible="{Binding Searching}" Height="4" MinHeight="4" />
+          <TextBlock Text="{Binding Message}" Classes="connecthint"
+                     TextWrapping="Wrap" MaxLines="2" TextAlignment="Center"
+                     IsVisible="{Binding !Searching}" />
+          <Button x:Name="QrDetails" Classes="connectnav" Content="Voir le message complet" MinHeight="36" />
+        </StackPanel>
+      </Border>
+
+      <Border x:Name="CodePage" Classes="connectcard" IsVisible="False"
+              HorizontalAlignment="Stretch" VerticalAlignment="Center">
+        <StackPanel Classes="connectfields" Spacing="13">
+          <TextBlock Classes="connecttitle" Text="Autres méthodes" />
+          <TextBlock Classes="connecthint connectoptional" Text="Utilisez une image du QR ou un code d'invitation." />
+          <Button x:Name="ImportQrButton" Classes="connectsecondary" Command="{Binding ImportQrImage}"
+                  IsEnabled="{Binding NotSearching}">
+            <DockPanel LastChildFill="True">
+              <mi:MaterialIcon Kind="ImageOutline" Width="19" Height="19"
+                               DockPanel.Dock="Left" Margin="0,0,8,0" VerticalAlignment="Center" />
+              <TextBlock Text="Importer une image QR" TextWrapping="Wrap" TextAlignment="Center" />
+            </DockPanel>
+          </Button>
+          <StackPanel Classes="connectfields" Spacing="8" IsVisible="{Binding CanPasteCode}">
+            <TextBlock Text="CODE D’INVITATION" Foreground="#31516F" FontSize="11" FontWeight="SemiBold" />
+            <TextBox Classes="connectfield" Text="{Binding Invitation}"
+                     PlaceholderText="Coller le code du serveur" MaxLength="2048"
+                     AutomationProperties.Name="Code d'invitation du serveur" />
+            <Button Classes="connectmain" Command="{Binding JoinInternet}" IsEnabled="{Binding NotSearching}"
+                    Content="Valider le code" />
+          </StackPanel>
+          <Button x:Name="ReturnToQrFromCode" Classes="connectnav" IsVisible="False" Content="Retour au QR" />
+          <Button x:Name="CodeDetails" Classes="connectnav" Content="Voir les détails de connexion"
+                  MinHeight="36" />
+        </StackPanel>
+      </Border>
+
+      <Border x:Name="WifiPage" Classes="connectcard" IsVisible="False"
+              HorizontalAlignment="Stretch" VerticalAlignment="Center">
+        <StackPanel Classes="connectfields" Spacing="12">
+          <TextBlock Classes="connecttitle" Text="Réseau local" />
+          <TextBlock Classes="connecthint connectoptional" Text="Cherchez le serveur sur le même Wi-Fi." />
+          <Button Classes="connectmain" Command="{Binding Search}" IsEnabled="{Binding NotSearching}"
+                  Content="Rechercher le serveur" />
+          <Button x:Name="ChooseServerButton" Classes="connectsecondary"
+                  Content="Choisir un serveur trouvé" IsVisible="{Binding HasServers}" />
+          <Button x:Name="ManualAddressButton" Classes="connectsecondary"
+                  Content="Saisir une adresse réseau" />
+          <Button x:Name="ReturnToQrFromWifi" Classes="connectnav" IsVisible="False" Content="Retour au QR" />
+          <Button x:Name="WifiDetails" Classes="connectnav" Content="Voir le résultat de la recherche"
+                  MinHeight="36" />
+        </StackPanel>
+      </Border>
+
+      <Border x:Name="ServerPage" Classes="connectcard" IsVisible="False"
+              HorizontalAlignment="Stretch" VerticalAlignment="Center">
+        <StackPanel Classes="connectfields" Spacing="12">
+          <TextBlock Classes="connecttitle" Text="Serveurs disponibles" />
+          <TextBlock Classes="connecthint connectoptional" Text="Choisissez votre établissement sur ce réseau." />
+          <ComboBox Classes="connectselect" ItemsSource="{Binding Servers}"
+                    SelectedItem="{Binding SelectedServer, Mode=TwoWay}">
+            <ComboBox.ItemTemplate>
+              <DataTemplate>
+                <TextBlock Text="{Binding School}" TextWrapping="Wrap" MaxLines="2" />
+              </DataTemplate>
+            </ComboBox.ItemTemplate>
+          </ComboBox>
+          <Button Classes="connectmain" Command="{Binding SelectedServer.Join}"
+                  IsEnabled="{Binding HasSelectedServer}" Content="Rejoindre cet établissement" />
+          <Button x:Name="ReturnToWifiFromServers" Classes="connectsecondary" Content="Retour au Wi-Fi" />
+        </StackPanel>
+      </Border>
+
+      <Border x:Name="AddressPage" Classes="connectcard" IsVisible="False"
+              HorizontalAlignment="Stretch" VerticalAlignment="Center">
+        <StackPanel Classes="connectfields" Spacing="12">
+          <TextBlock Classes="connecttitle" Text="Adresse du serveur" />
+          <TextBlock Classes="connecthint connectoptional" Text="{Binding AddressHint}" MaxLines="3" />
+          <TextBox Classes="connectfield" Text="{Binding Address}"
+                   PlaceholderText="192.168.1.10:5080"
+                   AutomationProperties.Name="Adresse locale du serveur" />
+          <Button Classes="connectmain" Command="{Binding ConnectAddress}" IsEnabled="{Binding NotSearching}"
+                  Content="Se connecter à cette adresse" />
+          <Button x:Name="ReturnToWifi" Classes="connectsecondary" Content="Retour au réseau local" />
+        </StackPanel>
+      </Border>
+
+      <Border x:Name="DetailsPage" Classes="connectcard" IsVisible="False"
+              HorizontalAlignment="Stretch" VerticalAlignment="Center">
+        <StackPanel Classes="connectfields" Spacing="12">
+          <TextBlock Classes="connecttitle" Text="État de la connexion" />
+          <TextBlock Text="{Binding Message}" Classes="connecthint connectdetailtext" FontSize="14" MaxLines="7"
+                     TextWrapping="Wrap" />
+          <Button x:Name="ReturnFromDetails" Classes="connectsecondary" Content="Retour" />
+        </StackPanel>
+      </Border>
+    </Grid>
+
+    <!-- La vérification occupe l'écran sans conserver la page de choix en dessous. -->
+    <Border Grid.Row="1" Classes="connectcard" Margin="13" IsVisible="{Binding PairingInProgress}"
+            VerticalAlignment="Center" HorizontalAlignment="Stretch">
+      <StackPanel Classes="connectfields" Spacing="12">
+        <mi:MaterialIcon Kind="ShieldCheckOutline" Width="44" Height="44"
+                         Foreground="#1769E6" HorizontalAlignment="Center" />
+        <TextBlock Classes="connecttitle" Text="Vérification sécurisée"
+                   TextAlignment="Center" />
+        <TextBlock Classes="connecthint" Text="SCOLIA vérifie l'autorisation de cet appareil."
+                   TextAlignment="Center" />
+        <ProgressBar IsIndeterminate="True" Height="5" MinHeight="5" />
+        <TextBlock Classes="connecthint" Text="{Binding Message}" TextAlignment="Center" MaxLines="5" />
+      </StackPanel>
+    </Border>
+
+    <!-- Navigation en bas : trois destinations fixes et un accès direct au mode serveur. -->
+    <Grid x:Name="CompactFooter" Grid.Row="2" RowDefinitions="Auto,Auto"
+          Margin="13,3,13,10" RowSpacing="6" IsVisible="{Binding !PairingInProgress}">
+      <Grid x:Name="CompactNavbar" Classes="connectnavbar" Grid.Row="0" ColumnDefinitions="*,*,*" ColumnSpacing="4">
+        <Button x:Name="TabQr" Classes="connectnav selected" Content="QR" />
+        <Button x:Name="TabCode" Classes="connectnav" Grid.Column="1" Content="Code" />
+        <Button x:Name="TabWifi" Classes="connectnav" Grid.Column="2" Content="Wi-Fi" />
+      </Grid>
+      <Button x:Name="HostServer" Classes="connectsecondary connecthost" Grid.Row="1"
+              Content="Ce téléphone comme serveur" ToolTip.Tip="Configurer ce téléphone comme serveur de l’établissement" Command="{Binding UseThisComputer}"
+              IsEnabled="{Binding NotSearching}"
+              MinHeight="44" />
+    </Grid>
+  </Grid>
+</UserControl>

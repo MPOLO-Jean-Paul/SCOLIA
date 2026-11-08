@@ -359,6 +359,10 @@ public sealed class SettingsPage : PageViewModel
                 new BackstageItemVm("frais", "Catégories de frais", MaterialIconKind.TagMultipleOutline, "ToneGreen"),
             ]
             : [];
+        if (Shell.IsServerComputer && Shell.Can(Perm.SettingsWrite))
+            SchoolSections = [.. SchoolSections,
+                new BackstageItemVm("licence", "Licence SCOLIA Pro",
+                    MaterialIconKind.ShieldLockOutline, "ToneBlue")];
         PosteSections =
         [
             new BackstageItemVm("apparence", "Thème et couleurs", MaterialIconKind.Palette, "TonePurple"),
@@ -442,6 +446,7 @@ public sealed class SettingsPage : PageViewModel
     public RelayCommand OpenAccountSecurity { get; }
     public BackstageViewModel SecurityModel => Shell.Backstage;
     public AboutViewModel AboutModel { get; }
+    public SchoolLicenseViewModel License => Shell.License;
     public bool CanCheckWindowsUpdates => Shell.Backstage.CanCheckWindowsUpdates;
     public AsyncCommand CheckWindowsUpdates => Shell.Backstage.CheckWindowsUpdates;
     private void ActivateSecurity() =>
@@ -539,6 +544,8 @@ public sealed class SettingsPage : PageViewModel
                 Action("Modifier", MaterialIconKind.Pencil, EditSelectedAsync, open: true);
                 Action("Supprimer", MaterialIconKind.Delete, DeleteCategoryAsync, row: true);
                 break;
+            case "licence":
+                return; // Les actions de licence restent dans sa propre fiche.
             case "etablissement":
                 Action("Changer le logo", MaterialIconKind.Image, ChangeLogoAsync);
                 break;
@@ -571,9 +578,10 @@ public sealed class SettingsPage : PageViewModel
         {
             if (!Set(ref section, value)) return;
             foreach (var name in new[] { nameof(IsSchool), nameof(IsYears), nameof(IsSections), nameof(IsPromotions), nameof(IsFees), nameof(IsAppearance), nameof(IsText),
-                         nameof(IsWindows), nameof(IsAnimations), nameof(IsSounds), nameof(IsSecurity), nameof(IsAbout), nameof(IsPoste), nameof(ShowResetLink), nameof(SchoolSection), nameof(PosteSection), nameof(SectionTitle), nameof(SectionHint) })
+                         nameof(IsWindows), nameof(IsAnimations), nameof(IsSounds), nameof(IsSecurity), nameof(IsAbout), nameof(IsLicense), nameof(IsPoste), nameof(ShowResetLink), nameof(SchoolSection), nameof(PosteSection), nameof(SectionTitle), nameof(SectionHint) })
                 Raise(name);
             if (value?.Value == "securite" && !Preferences.MobileLayout) ActivateSecurity();
+            if (value?.Value == "licence") _ = License.RefreshAsync();
             RebuildActions();
             if (value is not null) _ = Shell.Run(RefreshAsync);
         }
@@ -591,6 +599,7 @@ public sealed class SettingsPage : PageViewModel
     protected override bool HasRows => section?.Value is "annees" or "sections" or "promotions" or "frais";
 
     public bool IsSchool => section?.Value == "etablissement";
+    public bool IsLicense => section?.Value == "licence";
     public bool IsYears => section?.Value == "annees";
     public bool IsSections => section?.Value == "sections";
     public bool IsPromotions => section?.Value == "promotions";
@@ -611,6 +620,7 @@ public sealed class SettingsPage : PageViewModel
     public string SectionHint => section?.Value switch
     {
         "etablissement" => "Ce qui figure sur les reçus, les listes et les cartes d'accès.",
+        "licence" => "Échéance, jours restants et statut du serveur SCOLIA. Aucun dossier scolaire n'est envoyé à JP-Services.",
         "annees" => "Les années scolaires, leurs mois de paiement et l'année courante.",
         "sections" => "Les filières de l'établissement, qui regroupent les promotions.",
         "promotions" => "Les classes, leur code de 4 caractères, leur mensualité et leurs frais.",

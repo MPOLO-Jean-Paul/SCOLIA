@@ -58,14 +58,13 @@
             <TextBlock Text="{Binding Remote.StatusLine}" Classes="muted" TextWrapping="Wrap" FontSize="{DynamicResource FsSmall}" />
           </StackPanel>
         </Grid>
-        <Button infra:Icons.Lead="CloudCheckOutline" Classes="primary" Content="{Binding Remote.EnableLabel}" Command="{Binding Remote.Enable}"
+        <Button infra:Icons.Lead="CloudCheckOutline" Classes="primary" Content="Activer l’accès Internet" Command="{Binding Remote.Enable}" IsVisible="{Binding Remote.IsInactive}"
                 HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" MinHeight="46" />
         <Button infra:Icons.Lead="CloudOffOutline" Classes="ghost" Content="Désactiver l'accès par Internet" Command="{Binding Remote.Disable}" IsVisible="{Binding Remote.IsActive}"
                 HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" MinHeight="44" />
         <TextBlock Text="{Binding Remote.Message}" TextWrapping="Wrap" FontSize="{DynamicResource FsSmall}" />
-        <Expander Header="Adresse du relais (avancé)" HorizontalAlignment="Stretch">
-          <TextBox Text="{Binding Remote.Relay}" PlaceholderText="wss://adresse-du-relais/" Margin="0,6,0,0" />
-        </Expander>
+        <TextBlock Text="Fournisseur de relais sécurisé administré par JP-Services. Le Wi-Fi local fonctionne indépendamment."
+                   Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
       </StackPanel>
     </Border>
 

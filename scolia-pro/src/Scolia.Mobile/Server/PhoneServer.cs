@@ -46,6 +46,9 @@ public sealed class PhoneServer(Context context) : ILocalServer
         get { lock (gate) return lastDiagnostic; }
     }
 
+    /// <summary>Montré sur l'écran « Faire de ce téléphone le serveur » si l'API ne démarre pas.</summary>
+    public string? Diagnostic => LastDiagnostic;
+
     private void SetDiagnostic(string message)
     {
         lock (gate) lastDiagnostic = $"{DateTime.Now:HH:mm:ss} · {message}";
@@ -344,6 +347,7 @@ public sealed class PhoneServer(Context context) : ILocalServer
         catch (Exception ex)
         {
             Android.Util.Log.Error("SCOLIA", $"Démarrage serveur impossible : {ex}");
+            SetDiagnostic($"Démarrage du serveur impossible : {ex.GetBaseException().Message}");
             try { await created.StopAsync().ConfigureAwait(false); }
             catch (Exception cleanup) { Android.Util.Log.Warn("SCOLIA", $"Nettoyage serveur : {cleanup.Message}"); }
             bool stopNotification;

@@ -11,9 +11,11 @@ public partial class LockScreenView : UserControl
     public LockScreenView()
     {
         InitializeComponent();
-        var mobile = Platform.IsMobile;
-        ClassicLockScreen.IsVisible = !mobile;
-        IosLockScroll.IsVisible = mobile;
+        // Même reprise de session iOS sur le téléphone et sur l'ordinateur.
+        var ios = AuthLayout.UseIosStyle;
+        ClassicLockScreen.IsVisible = !ios;
+        IosLockScroll.IsVisible = ios;
+        AuthLayout.Track(IosLockScroll);
         IosLockCode.KeyDown += (_, e) =>
         {
             if (e.Key != Key.Enter || DataContext is not LockScreenViewModel vm) return;
@@ -31,6 +33,6 @@ public partial class LockScreenView : UserControl
     /// <summary>Sur l'ordinateur, le curseur va dans le champ du code dès que l'écran de veille apparaît.</summary>
     public void FocusCode()
     {
-        if (!Platform.IsMobile) LockCode.Focus();
+        if (!Platform.IsMobile) (AuthLayout.UseIosStyle ? IosLockCode : LockCode).Focus();
     }
 }

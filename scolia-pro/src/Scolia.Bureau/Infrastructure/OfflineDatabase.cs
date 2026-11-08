@@ -92,6 +92,18 @@ internal sealed class OfflineDatabase
         command.ExecuteNonQuery();
     }
 
+    /// <summary>Supprime seulement les marques de préparation d'une ancienne révision :
+    /// aucune page, transaction hors ligne ou session n'est affectée.</summary>
+    public void DeletePrefix(string prefix)
+    {
+        if (string.IsNullOrWhiteSpace(prefix)) throw new ArgumentException("Préfixe requis.", nameof(prefix));
+        using var db = Open();
+        using var command = db.CreateCommand();
+        command.CommandText = "DELETE FROM state WHERE substr(key,1,length($prefix)) = $prefix";
+        command.Parameters.AddWithValue("$prefix", prefix);
+        command.ExecuteNonQuery();
+    }
+
     public void Write(string key, string value) => Update([key], values => values[key] = value);
 
     /// <summary>Verrou d'écriture SQLite commun aux instances : lecture et changements font une seule transaction.</summary>
