@@ -1609,7 +1609,7 @@ if (args.Length > 3 && args[3] == "connexion-compacte")
     }
     shell.ReturnToPairingChooser("Aucun appareil relié. Scannez le code du serveur.");
     RenderCompact();
-    foreach (var (width, height) in new[] { (320, 420), (320, 568), (360, 640), (412, 892) })
+    foreach (var (width, height) in new[] { (320, 300), (320, 420), (320, 568), (360, 640), (412, 892) })
     {
         window.Width = width;
         window.Height = height;
@@ -1620,7 +1620,11 @@ if (args.Length > 3 && args[3] == "connexion-compacte")
         CheckCompact("Avant connexion " + width + "×" + height + " : vue mobile active", view is not null);
         if (view is null) continue;
 
-        var scrolls = view.GetVisualDescendants().OfType<ScrollViewer>().ToList();
+        // TextBox et ComboBox possèdent des ScrollViewer internes dans leurs templates.
+        // On interdit le défilement de la PAGE, pas le caret d'un champ ou la liste d'un menu.
+        var scrolls = view.GetVisualDescendants().OfType<ScrollViewer>()
+            .Where(s => s.IsEffectivelyVisible && !s.GetVisualAncestors()
+                .Any(a => a is TextBox or ComboBox or Button)).ToList();
         CheckCompact("Avant connexion " + width + "×" + height + " : aucun défilement de page", scrolls.Count == 0);
 
         Control NamedCompact(string name) =>
