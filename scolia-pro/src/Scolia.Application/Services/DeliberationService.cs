@@ -1009,6 +1009,36 @@ public sealed class DeliberationService(IAppDbContext db, IWriteGate gate, IAudi
             Signatures(await AuthoritiesAsync(ct))));
     }
 
+    /// <summary>
+    /// Un classeur pour toutes les promotions réellement configurées dans l'année courante :
+    /// les codes et cotes viennent du même calcul que la grille officielle, jamais d'un modèle ancien.
+    /// Aucun code n'est attribué silencieusement pendant un GET : le jury doit utiliser
+    /// « Attribuer les codes » avant d'exporter si un apprenant n'a pas encore de code.
+    /// </summary>
+    public async Task<IReadOnlyList<(string SheetName, TableDocument Document)>> GridsAsync(
+        string periodText, CancellationToken ct = default)
+    {
+        _ = DeliberationText.Period(periodText);
+        var year = await YearContext.CurrentAsync(db, ct);
+        var promotions = await db.Promotions.AsNoTracking()
+            .Where(p => p.AcademicYearId == year.Id)
+            .OrderBy(p => p.Code)
+            .Select(p => new { p.Id, p.Code })
+            .ToListAsync(ct);
+        if (promotions.Count == 0)
+            throw new DomainException("promotions", "Aucune promotion configurée dans l'année scolaire courante.");
+
+        var grids = new List<(string SheetName, TableDocument Document)>(promotions.Count);
+        foreach (var promotion in promotions)
+        {
+            var grid = await GridAsync(promotion.Id, periodText, ct);
+            if (grid.Rows.Any(row => row.Count < 2 || string.IsNullOrWhiteSpace(row[1]) || row[1] == "—"))
+                throw new ConflictException($"Codes anonymes incomplets pour {promotion.Code} : attribuez les codes avant l'export de toutes les promotions.");
+            grids.Add((promotion.Code, grid));
+        }
+        return grids;
+    }
+
     /// <summary>Grille des cotes : une colonne par cours (points retenus), total, pourcentage et décision.</summary>
     public async Task<TableDocument> GridAsync(Guid promotionId, string periodText, CancellationToken ct = default)
     {
