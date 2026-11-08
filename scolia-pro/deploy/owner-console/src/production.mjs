@@ -8,7 +8,8 @@ const DOMAIN = /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/i;
 export function buildProductionConfig({databaseId, domain, audience}) {
   if (!UUID.test(databaseId ?? "") || /^0+$/.test(databaseId.replace(/-/g, "")))
     throw new Error("Identifiant Cloudflare D1 réel requis.");
-  if (!DOMAIN.test(domain ?? "") || /\.(?:test|example|invalid|local|localhost)$/i.test(domain))
+  if (!DOMAIN.test(domain ?? "") ||
+      /(?:^|\.)example\.(?:com|net|org)$|\.(?:test|invalid|local|localhost)$/i.test(domain))
     throw new Error("Domaine HTTPS Cloudflare réel requis.");
   if (typeof audience !== "string" || !/^[a-zA-Z0-9_-]{20,128}$/.test(audience))
     throw new Error("Cloudflare Access AUD valide requis.");
