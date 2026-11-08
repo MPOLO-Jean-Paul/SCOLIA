@@ -75,6 +75,12 @@ async function serveOwner(request, env, url) {
       return result({ schools: schools?.n ?? 0, server_devices: devices?.n ?? 0,
         active_schools_30d: active?.n ?? 0, suspended });
     }
+    if (url.pathname === "/api/v1/owner/audit") {
+      const rows = await db.prepare(`SELECT a.action,a.school_id,s.name AS school_name,a.created_at
+        FROM owner_audit a LEFT JOIN schools s ON s.id=a.school_id
+        ORDER BY a.created_at DESC,a.id DESC LIMIT 100`).all();
+      return result({ history: rows.results });
+    }
     if (url.pathname === "/api/v1/owner/schools") {
       const rows = await db.prepare(`SELECT s.id,s.name,s.state,s.created_at,s.last_seen,
         s.license_expires_at,s.billing_enabled,s.trial_days,s.paid_until,s.grace_until,
@@ -275,6 +281,11 @@ Le suivi des licences utilise HTTPS directement, même depuis un Wi-Fi disposant
 <th>Fournisseur</th><th>URL WSS</th><th>État</th><th>Révision</th><th>Action</th>
 </tr></thead><tbody id="relayRows"></tbody></table></div>
 </section>
+<section class="panel"><h2>Journal des interventions</h2>
+<p class="info">100 dernières opérations commerciales, sans données scolaires.</p>
+<div style="overflow-x:auto"><table><thead><tr>
+<th>Date</th><th>Établissement</th><th>Action</th>
+</tr></thead><tbody id="auditRows"></tbody></table></div></section>
 <section class="panel" id="detailsPanel" hidden><h2>Fiche établissement</h2><pre id="details"></pre>
 <p class="info" id="licenseSummary">Statut de licence</p>
 <div class="toolbar">
@@ -306,15 +317,23 @@ const request=async (path,method="GET",body)=>{
 };
 function textCell(tr,v){const td=document.createElement("td");td.textContent=String(v??"—");tr.appendChild(td);return td;}
 async function reload(){
- const [stats,listing,relays]=await Promise.all([
+ const [stats,listing,relays,history]=await Promise.all([
    request("/api/v1/owner/summary"),
    request("/api/v1/owner/schools"),
-   request("/api/v1/owner/relays")
+   request("/api/v1/owner/relays"),
+   request("/api/v1/owner/audit")
  ]);
  $("schools").textContent=stats.schools;$("devices").textContent=stats.server_devices;
  $("active").textContent=stats.active_schools_30d;$("suspended").textContent=stats.suspended;
  $("rows").replaceChildren();
  $("relayRows").replaceChildren();
+ $("auditRows").replaceChildren();
+ for(const event of history.history){
+   const tr=document.createElement("tr");
+   textCell(tr,new Date(event.created_at).toLocaleString("fr"));
+   textCell(tr,event.school_name??"JP-Services");
+   textCell(tr,event.action);$("auditRows").appendChild(tr);
+ }
  for(const relay of relays.relays){
    const row=document.createElement("tr");
    textCell(row,relay.label);textCell(row,relay.url);
@@ -362,6 +381,7 @@ $("refresh").onclick=()=>reload().catch(e=>alert(e.message));
    // Oubli explicite du secret en mémoire et fermeture de l'interface.
    secret="";selected=null;$("token").value="";$("detailsPanel").hidden=true;
    $("rows").replaceChildren();$("relayRows").replaceChildren();
+   $("auditRows").replaceChildren();$("details").textContent="";
    $("workspace").hidden=true;$("auth").hidden=false;
  };
 $("relayCreate").onclick=async()=>{
