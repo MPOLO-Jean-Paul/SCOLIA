@@ -82,7 +82,7 @@ public static class CloudDispatchAuthentication
 {
     public static IApplicationBuilder UseCloudDispatch(this IApplicationBuilder app) => app.Use(async (HttpContext http, RequestDelegate next) =>
     {
-        if (!http.Request.Headers.ContainsKey(CloudDispatcher.SecretHeader))
+        if (!http.Request.Headers.TryGetValue(CloudDispatcher.SecretHeader, out var given))
         {
             await next(http);
             return;
@@ -90,7 +90,7 @@ public static class CloudDispatchAuthentication
         var dispatcher = http.RequestServices.GetRequiredService<CloudDispatcher>();
         var remote = http.Connection.RemoteIpAddress;
         var local = remote is null || IPAddress.IsLoopback(remote);
-        if (!local || !dispatcher.Verify(http.Request.Headers[CloudDispatcher.SecretHeader].ToString())
+        if (!local || !dispatcher.Verify(given.ToString())
             || http.Request.Headers.ContainsKey("X-Scolia-Relay-Connection")
             || !Guid.TryParse(http.Request.Headers[CloudDispatcher.UserHeader].ToString(), out var userId))
         {
