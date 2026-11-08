@@ -177,7 +177,8 @@ internal static class DeliberationWorkbook
         bordered.Style.Border.InsideBorder = XLBorderStyleValues.Thin;
         bordered.Style.Border.OutsideBorder = XLBorderStyleValues.Medium;
         bordered.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
-        sheet.Range(FirstStudentRow, 1, bodyEnd, 2).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+        if (document.Rows.Count > 0)
+            sheet.Range(FirstStudentRow, 1, bodyEnd, 2).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
 
         if (document.Rows.Count == 0)
         {
