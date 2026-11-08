@@ -91,12 +91,16 @@
   <Grid x:Name="CompactRoot" Background="#F5F7FB" RowDefinitions="Auto,*,Auto"
         ClipToBounds="True">
     <Grid x:Name="CompactHeader" Classes="connectheader" Grid.Row="0"
-          ColumnDefinitions="Auto,*" ColumnSpacing="11" Margin="16,13,16,4">
-      <Border Width="42" Height="42" CornerRadius="13" Background="White"
+          ColumnDefinitions="Auto,Auto,*" ColumnSpacing="9" Margin="12,13,12,4">
+      <Button Classes="connectnav" Command="{Binding Back}" IsVisible="{Binding CanGoBack}"
+              Width="40" Height="40" Padding="0" ToolTip.Tip="Retour à la connexion">
+        <mi:MaterialIcon Kind="ChevronLeft" Width="21" Height="21" />
+      </Button>
+      <Border Grid.Column="1" Width="42" Height="42" CornerRadius="13" Background="White"
               BorderBrush="#DDE7F4" BorderThickness="1">
         <Image Source="{DynamicResource ScoliaMark}" Width="30" Height="30" />
       </Border>
-      <StackPanel Grid.Column="1" Spacing="1" VerticalAlignment="Center">
+      <StackPanel Grid.Column="2" Spacing="1" VerticalAlignment="Center">
         <TextBlock Text="SCOLIA Pro" FontSize="20" FontWeight="Bold" Foreground="#173554" />
         <TextBlock Text="Connexion à votre établissement" FontSize="12" Foreground="#697F98"
                    TextWrapping="Wrap" />
