@@ -19,6 +19,7 @@ namespace Scolia.Tests;
 /// </summary>
 public sealed class CloudContinuityTests : IDisposable
 {
+    private static readonly JsonSerializerOptions Web = new(JsonSerializerDefaults.Web);
     private readonly ScoliaApp app = new();
 
     public CloudContinuityTests() => app.Settings["Scolia:Licence:ServiceUrl"] = "https://console.example.org/";
@@ -172,7 +173,7 @@ public sealed class CloudContinuityTests : IDisposable
         {
             var key = Guid.NewGuid().ToString("N");
             var operation = new CloudOperation(key, "POST", path, body, "Pointage", proof, DateTime.UtcNow, "telephone-de-test");
-            var sealedBytes = CloudSeal.Seal(JsonSerializer.SerializeToUtf8Bytes(operation, new JsonSerializerOptions(JsonSerializerDefaults.Web)),
+            var sealedBytes = CloudSeal.Seal(JsonSerializer.SerializeToUtf8Bytes(operation, Web),
                 depositKey, CloudSeal.OperationContext);
             console.Mailbox.Add((key, Base64Url.EncodeToString(sealedBytes)));
             return key;
