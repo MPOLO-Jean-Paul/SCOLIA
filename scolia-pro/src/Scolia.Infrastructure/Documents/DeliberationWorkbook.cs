@@ -84,6 +84,19 @@ internal static class DeliberationWorkbook
 
         Band(sheet, 1, 1, count, document.School.Name, "#152E4A");
         sheet.Cell(1, 1).Style.Font.FontSize = 17;
+        // Le logo provient de l'établissement configuré, jamais d'une école figée.
+        if (document.School.Logo is { Length: > 0 } officialLogo)
+        {
+            try
+            {
+                using var image = new MemoryStream(officialLogo);
+                sheet.AddPicture(image).MoveTo(sheet.Cell(1, 1), 4, 3).WithSize(45, 45);
+            }
+            catch (Exception ex) when (ex is ArgumentException or InvalidOperationException or NotSupportedException)
+            {
+                // Un logo invalide ne doit pas empêcher la récupération des cotes.
+            }
+        }
         Band(sheet, 2, 1, count, "GRILLE DE DÉLIBÉRATION — " + promotionCode, "#254766");
         sheet.Cell(2, 1).Style.Font.FontSize = 13;
         sheet.Range(3, 1, 3, count).Merge();
