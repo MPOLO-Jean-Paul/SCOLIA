@@ -284,6 +284,9 @@ public static class LicenseMutationPolicy
                 "/api/session/appareil" or "/api/session/appareil/renouveler" or
                 "/api/jumelage/appareil/verifier" or "/api/jumelage/preuve-serveur")
             return true;
+        // La présence des appareils reste disponible en lecture seule ;
+        // aucun verrou d'édition ne peut être obtenu avec ce mode.
+        if (path == "/api/direct/presence" && method is "POST" or "DELETE") return true;
         // La gestion de la licence possède ses propres permissions SettingsWrite.
         return path == "/api/licence" ||
                path.StartsWith("/api/licence/", StringComparison.Ordinal);

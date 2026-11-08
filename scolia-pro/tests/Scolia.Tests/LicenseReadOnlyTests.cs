@@ -21,6 +21,8 @@ public sealed class LicenseReadOnlyTests
     [Theory]
     [InlineData("POST", "/api/session")]
     [InlineData("DELETE", "/api/session")]
+    [InlineData("POST", "/api/direct/presence")]
+    [InlineData("DELETE", "/api/direct/presence")]
     [InlineData("POST", "/api/session/recuperation")]
     [InlineData("POST", "/api/session/mot-de-passe")]
     [InlineData("POST", "/api/jumelage/appareil/verifier")]
