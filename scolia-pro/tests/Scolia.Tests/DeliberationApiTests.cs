@@ -599,4 +599,47 @@ public sealed class DeliberationApiTests : IDisposable
         Assert.Equal(1, preview.GetProperty("ready").GetInt32());
         Assert.Null((await CodesAsync(admin, setup.PromotionId))[setup.Enrollments[0]]);
     }
+
+    [Fact]
+    public async Task Teacher_parameters_govern_updates_and_downloads()
+    {
+        var admin = await app.InstalledAdmin();
+        var setup = await SetupAsync(admin, "MUKENDI", "KASONGO");
+        await admin.Post($"{D}/codes/attribution", new { promotionId = setup.PromotionId }).Ok();
+        var codes = await CodesAsync(admin, setup.PromotionId);
+        var staff = await admin.Post("/api/personnel", new
+        {
+            lastName = "NGOIE", middleName = "", firstName = "Marc", gender = "M", function = "Enseignant", phone = "0812345678", email = (string?)null,
+            hireDate = new DateOnly(2020, 1, 1), exitDate = (DateOnly?)null, baseSalary = 300000m, isActive = true,
+        }).Ok();
+        var staffId = staff.GetProperty("id").GetString()!;
+        await admin.Put($"/api/scolarite/cours/{setup.S1Course}/attribution", new { teacherId = staffId, confirmReplace = false }).Ok();
+        await admin.Post("/api/utilisateurs", new { userName = "prof.ngoie", displayName = "Pr NGOIE", role = "Enseignant", password = "Provisoire1", staffMemberId = staffId }).Ok();
+        var teacher = await app.Login("prof.ngoie", "Provisoire1");
+
+        // L'enseignant lit les règles en vigueur : mise à jour fermée, téléchargements ouverts (projet Délibération).
+        var rules = await teacher.GetAsync($"{D}/reglages").Ok();
+        Assert.False(rules.GetProperty("teacherUpdates").GetBoolean());
+        Assert.True(rules.GetProperty("teacherDownloads").GetBoolean());
+
+        var a = codes[setup.Enrollments[0]];
+        await teacher.Post($"{D}/cotes-par-code", new { code = a, courseId = setup.S1Course, kind = "S1", value = 50m }).Ok();
+        var (closed, _) = await teacher.Post($"{D}/cotes-par-code", new { code = a, courseId = setup.S1Course, kind = "S1", value = 60m }).Fail();
+        Assert.Equal(HttpStatusCode.Conflict, closed);
+        var (cleared, _) = await teacher.Put($"{D}/feuille?coursId={setup.S1Course}&nature=S1", new[] { new { enrollmentId = setup.Enrollments[0], value = (decimal?)null } }).Fail();
+        Assert.Equal(HttpStatusCode.Conflict, cleared);
+        var preview = await teacher.Post($"{D}/cotes/import", new { courseId = setup.S1Course, kind = "S1", text = $"{a};70", apply = false }).Ok();
+        Assert.Equal("Déjà encodée (mise à jour fermée)", preview.GetProperty("lines")[0].GetProperty("status").GetString());
+        // Le secrétariat corrige toujours.
+        await admin.Post($"{D}/cotes-par-code", new { code = a, courseId = setup.S1Course, kind = "S1", value = 55m }).Ok();
+
+        // Mise à jour ouverte, téléchargements fermés.
+        await admin.Put($"{D}/reglages", new { encodingS1Open = true, encodingS2Open = true, supportEnabled = true, passPercent = 60m, teacherUpdates = true, teacherDownloads = false }).Ok();
+        await teacher.Post($"{D}/cotes-par-code", new { code = a, courseId = setup.S1Course, kind = "S1", value = 60m }).Ok();
+        Assert.Equal(HttpStatusCode.Forbidden, (await teacher.GetAsync($"{D}/feuille/export?coursId={setup.S1Course}&nature=S1&format=xlsx")).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await admin.GetAsync($"{D}/feuille/export?coursId={setup.S1Course}&nature=S1&format=xlsx")).StatusCode);
+        var saved = await admin.GetAsync($"{D}/reglages").Ok();
+        Assert.True(saved.GetProperty("teacherUpdates").GetBoolean());
+        Assert.False(saved.GetProperty("teacherDownloads").GetBoolean());
+    }
 }

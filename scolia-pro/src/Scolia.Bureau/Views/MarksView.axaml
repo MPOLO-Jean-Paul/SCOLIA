@@ -14,6 +14,7 @@
           <TextBlock Text="Cote à encoder" Classes="fieldlabel" />
           <ComboBox Width="230" ItemsSource="{Binding Kinds}" SelectedItem="{Binding Kind}" />
         </StackPanel>
+        <TextBlock Text="{Binding EncodingRules}" Classes="muted" TextWrapping="Wrap" MaxWidth="560" VerticalAlignment="Center" Margin="8,0,0,8" />
         <TextBlock Text="{Binding Notice}" IsVisible="{Binding HasNotice}" Classes="muted" TextWrapping="Wrap" MaxWidth="560" VerticalAlignment="Center" Margin="8,0,0,8" />
         <CheckBox Content="Feuille anonyme (codes seulement)" IsChecked="{Binding Anonymous}" IsVisible="{Binding CanChooseAnonymous}" VerticalAlignment="Bottom" Margin="0,0,12,12" />
       </WrapPanel>

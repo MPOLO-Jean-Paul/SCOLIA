@@ -139,6 +139,7 @@ public static class RibbonCatalog
                     Large(shell, "Délibération", Gavel, "Résultats par semestre et jury annuel, décisions motivées, clôture et procès-verbal.", () => shell.Open(() => new DeliberationPage(shell)), Red, perm: Perm.AcademicsRead),
                     Small(shell, "Encodage des cotes", Pen, "Cotes du S1, du S2 et moyennes d'appui, par feuille ou par code anonyme.", () => shell.Open(() => new MarksPage(shell)), Neutral, perm: Perm.AcademicsRead),
                     Small(shell, "Suivi de l'encodage", ProgressClock, "Avancement par cours et par enseignant, feuilles remises et à relancer.", () => shell.Open(() => new EncodingProgressPage(shell)), Neutral, perm: Perm.AcademicsRead),
+                    Small(shell, "Paramètres de délibération", Tune, "Encodage des enseignants, règles, autorités et épreuves du jury, rangés par blocs.", () => shell.Open(() => new DeliberationSettingsPage(shell)), Neutral, perm: Perm.DeliberationManage),
                     Small(shell, "Codes anonymes", Incognito, "Importe les apprenants inscrits et leur attribue un code officiel.", () => shell.Open(() => new AnonymousCodesPage(shell)), Neutral, perm: Perm.DeliberationManage)),
             ]),
             new("personnel", "Personnel",

@@ -2,7 +2,12 @@ namespace Scolia.Application.Dtos;
 
 // ---------- Délibération (fusion d'ITMCD) ----------
 
-public sealed record DeliberationSettingsDto(bool EncodingS1Open, bool EncodingS2Open, bool SupportEnabled, decimal PassPercent);
+/// <summary>
+/// Paramètres de délibération de l'année (projet Délibération, « Paramètres profs ») : encodage par semestre, moyennes
+/// d'appui, mise à jour des cotes déjà enregistrées et téléchargements des enseignants, seuil de réussite.
+/// </summary>
+public sealed record DeliberationSettingsDto(bool EncodingS1Open, bool EncodingS2Open, bool SupportEnabled, decimal PassPercent,
+    bool TeacherUpdates = false, bool TeacherDownloads = true);
 
 /// <summary>Code anonyme d'un apprenant inscrit. <c>Code</c> vide : aucun code encore attribué.</summary>
 public sealed record AnonymousCodeRowDto(Guid EnrollmentId, string Matricule, string FullName, string PromotionCode, string? Code, bool IsManual, DateTime? AssignedAtUtc);

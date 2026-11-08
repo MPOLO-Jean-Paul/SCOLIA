@@ -192,7 +192,7 @@ public sealed class MarksPage : PageViewModel
         if (Shell.Can(Perm.DeliberationManage))
         {
             Action("Renvoyer à l'enseignant", MaterialIconKind.AccountArrowRight, ReturnAsync);
-            Action("Réglages de l'encodage", MaterialIconKind.ToggleSwitchOutline, () => DeliberationPage.SettingsAsync(Shell));
+            Action("Paramètres de délibération", MaterialIconKind.Tune, () => DeliberationPage.SettingsAsync(Shell));
         }
         Action("Relevé du cours (PDF)", MaterialIconKind.FileChart, () => ExportSheetAsync(failedOnly: false, "pdf"));
         Action("Relevé du cours (Excel)", MaterialIconKind.FileExcel, () => ExportSheetAsync(failedOnly: false, "xlsx"));
@@ -213,6 +213,13 @@ public sealed class MarksPage : PageViewModel
 
     /// <summary>Espace enseignant : seulement ses cours attribués, en feuille anonyme.</summary>
     public bool IsTeacher => teacher;
+
+    private string rules = string.Empty;
+
+    /// <summary>
+    /// Règles de l'encodage en vigueur (« Paramètres profs ») : l'enseignant voit d'un coup d'œil ce qui lui est permis.
+    /// </summary>
+    public string EncodingRules { get => rules; private set => Set(ref rules, value); }
 
     /// <summary>Dernières annonces de la délibération (ouverture de l'encodage, remise, renvoi), pour l'enseignant.</summary>
     public string Notice { get => notice; private set { if (Set(ref notice, value)) Raise(nameof(HasNotice)); } }
@@ -287,6 +294,11 @@ public sealed class MarksPage : PageViewModel
         var keep = course?.Id;
         Courses.Clear();
         Rows.Clear();
+        var settings = await Shell.Api.GetAsync<DeliberationSettingsDto>("api/deliberation/reglages");
+        EncodingRules = "Règles de l'encodage : S1 " + (settings.EncodingS1Open ? "ouvert" : "fermé") + " · S2 " + (settings.EncodingS2Open ? "ouvert" : "fermé")
+            + " · moyennes d'appui " + (settings.SupportEnabled ? "actives" : "désactivées")
+            + " · mise à jour des cotes enregistrées " + (settings.TeacherUpdates ? "autorisée" : "fermée (le secrétariat corrige)")
+            + " · téléchargements " + (settings.TeacherDownloads ? "autorisés" : "fermés") + $" · seuil {settings.PassPercent:0.##} %.";
         if (Promotion is null) { subtitle = teacher ? "Aucun cours ne vous est attribué cette année" : "Aucune promotion"; Raise(nameof(Subtitle)); return; }
         List<DeliberationCourseDto> list;
         if (teacher)
@@ -523,8 +535,7 @@ public sealed class DeliberationPage : PageViewModel
             Action("Décision du jury", MaterialIconKind.Gavel, DecideAsync, row: true);
             Action("Clôturer la délibération", MaterialIconKind.LockCheck, CloseAsync, primary: true);
             Action("Rouvrir", MaterialIconKind.LockOpenVariant, ReopenAsync, danger: true);
-            Action("Réglages de l'encodage", MaterialIconKind.ToggleSwitchOutline, () => SettingsAsync(Shell));
-            Action("Autorités et jury", MaterialIconKind.AccountCheck, () => AuthoritiesAsync(Shell));
+            Action("Paramètres de délibération", MaterialIconKind.Tune, () => SettingsAsync(Shell));
             Action("Créer les épreuves du jury", MaterialIconKind.FormatListChecks, CreateJuryEvaluationsAsync);
         }
         Action("Procès-verbal (PDF)", MaterialIconKind.FileSign, () => DownloadAsync("proces-verbal.pdf", null, "proces-verbal.pdf"));
@@ -708,30 +719,8 @@ public sealed class DeliberationPage : PageViewModel
             ? Shell.Download("api/deliberation/bulletin.pdf" + ScoliaClient.Query(("promotionId", pid), ("periode", PeriodValue), ("inscriptionId", row.EnrollmentId)), $"bulletin-{row.Matricule}.pdf")
             : Task.CompletedTask;
 
-    /// <summary>Interrupteurs d'ITMCD : encodage S1, encodage S2, moyennes d'appui, et seuil de réussite.</summary>
     /// <summary>Autorités de l'année (projet Délibération) : elles signent le bulletin, la grille et le procès-verbal.</summary>
-    public static async Task AuthoritiesAsync(ShellViewModel shell)
-    {
-        var current = await shell.Api.GetAsync<AuthoritiesDto>("api/deliberation/autorites");
-        var form = new FormViewModel("Autorités et jury", "Ces noms figurent sur le bulletin (préfet, proviseur), la grille et le procès-verbal (jury).", async f =>
-        {
-            var members = f.OptionalText("membres")?.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries) ?? [];
-            await shell.Api.SendAsync(HttpMethod.Put, "api/deliberation/autorites", new
-            {
-                prefect = f.OptionalText("prefet"), principal = f.OptionalText("proviseur"), juryPresident = f.OptionalText("president"),
-                jurySecretary = f.OptionalText("secretaire"), juryMembers = members,
-            });
-            shell.Notify("Autorités enregistrées.");
-            return true;
-        });
-        form.Add("prefet", "Préfet", value: current.Prefect);
-        form.Add("proviseur", "Proviseur", value: current.Principal);
-        form.Add("president", "Président du jury", value: current.JuryPresident);
-        form.Add("secretaire", "Secrétaire du jury", value: current.JurySecretary);
-        form.Add("membres", "Membres du jury (un par ligne, quatre au plus)", FieldKind.Multiline,
-            current.JuryMembers is { Count: > 0 } m ? string.Join(Environment.NewLine, m) : null);
-        await shell.Ask(form);
-    }
+    public static Task AuthoritiesAsync(ShellViewModel shell) => shell.Open(() => new DeliberationSettingsPage(shell));
 
     /// <summary>Crée les épreuves du jury standard (stage, situation, dossier, épreuve d'intégration, blocs) dans la promotion.</summary>
     private async Task CreateJuryEvaluationsAsync()
@@ -745,24 +734,8 @@ public sealed class DeliberationPage : PageViewModel
         await RefreshAsync();
     }
 
-    public static async Task SettingsAsync(ShellViewModel shell)
-    {
-        var current = await shell.Api.GetAsync<DeliberationSettingsDto>("api/deliberation/reglages");
-        var form = new FormViewModel("Réglages de l'encodage", "S'appliquent à toute l'année scolaire courante.", async f =>
-        {
-            await shell.Api.SendAsync(HttpMethod.Put, "api/deliberation/reglages", new
-            {
-                encodingS1Open = f.Flag("s1"), encodingS2Open = f.Flag("s2"), supportEnabled = f.Flag("appui"), passPercent = f.Amount("seuil"),
-            });
-            shell.Notify("Réglages de la délibération enregistrés.");
-            return true;
-        });
-        form.AddFlag("s1", "Encodage du premier semestre ouvert", current.EncodingS1Open);
-        form.AddFlag("s2", "Encodage du second semestre ouvert", current.EncodingS2Open);
-        form.AddFlag("appui", "Moyennes d'appui actives", current.SupportEnabled);
-        form.Add("seuil", "Seuil de réussite (%)", FieldKind.Amount, current.PassPercent.ToString("0.##"), required: true);
-        if (await shell.Ask(form) && shell.Current is { } page) await page.RefreshAsync();
-    }
+    /// <summary>Les réglages se trouvent dans la page « Paramètres de délibération », rangés par blocs.</summary>
+    public static Task SettingsAsync(ShellViewModel shell) => shell.Open(() => new DeliberationSettingsPage(shell));
 }
 
 /// <summary>Ligne du suivi de l'encodage : un cours et une cote attendue (S1 ou S2).</summary>
@@ -845,4 +818,131 @@ public sealed class EncodingProgressPage : PageViewModel
     private Task ExportAsync(string format) =>
         Shell.Download("api/deliberation/suivi/export" + ScoliaClient.Query(("promotionId", PromotionId),
             ("periode", Period?.Value is { Length: > 0 } p ? p : null), ("format", format)), $"suivi-encodage.{format}");
+}
+
+/// <summary>
+/// Paramètres de délibération, rangés en blocs comme dans le projet Délibération : encodage des cotes par les enseignants
+/// (« Paramètres profs »), règles de la délibération, autorités (administration et jury) et épreuves du jury.
+/// Le secrétariat y trouve en un seul endroit tout ce qui gouverne la gestion des cotes.
+/// </summary>
+public sealed class DeliberationSettingsPage : PageViewModel
+{
+    private bool s1 = true, s2 = true, support = true, updates, downloads = true;
+    private string pass = "60", prefect = string.Empty, principal = string.Empty, president = string.Empty, secretary = string.Empty;
+    private string member1 = string.Empty, member2 = string.Empty, member3 = string.Empty, member4 = string.Empty;
+    private ChoiceItem? promotion;
+    private string subtitle = string.Empty;
+
+    public DeliberationSettingsPage(ShellViewModel shell) : base(shell)
+    {
+        Action("Enregistrer les paramètres", MaterialIconKind.ContentSave, SaveSettingsAsync, primary: true);
+        Action("Enregistrer les autorités", MaterialIconKind.AccountCheck, SaveAuthoritiesAsync);
+        Action("Encodage des cotes", MaterialIconKind.Pen, () => Shell.Open(() => new MarksPage(Shell)));
+        Action("Délibération", MaterialIconKind.Gavel, () => Shell.Open(() => new DeliberationPage(Shell)));
+        ActionRefresh();
+    }
+
+    public override string Title => "Paramètres de délibération";
+    public override string Subtitle => subtitle;
+    public override MaterialIconKind Glyph => MaterialIconKind.Tune;
+
+    // Bloc 1 — Encodage des cotes par les enseignants (« Paramètres profs »).
+    public bool EncodingS1Open { get => s1; set => Set(ref s1, value); }
+    public bool EncodingS2Open { get => s2; set => Set(ref s2, value); }
+    public bool SupportEnabled { get => support; set => Set(ref support, value); }
+    public bool TeacherUpdates { get => updates; set => Set(ref updates, value); }
+    public bool TeacherDownloads { get => downloads; set => Set(ref downloads, value); }
+
+    // Bloc 2 — Règles de la délibération.
+    public string PassPercent { get => pass; set => Set(ref pass, value); }
+    public string Rules =>
+        "Cote d'un cours de 0 au maxima ; échec sous la moitié du maxima. Moyenne d'appui sur 10 : si la cote ne dépasse pas 75 % du maxima, "
+        + "elle ajoute jusqu'à 25 % du maxima. Cours annuel : moyenne du S1 et du S2. Admis au seuil sans cote manquante ; mentions A (90 %), "
+        + "B (80 %), C (70 %), D (60 %), E. Jury annuel : codes P (réussite partout), A (cours en échec), E (sous le seuil).";
+
+    // Bloc 3 — Autorités : administration.
+    public string Prefect { get => prefect; set => Set(ref prefect, value); }
+    public string Principal { get => principal; set => Set(ref principal, value); }
+
+    // Bloc 4 — Autorités : jury.
+    public string JuryPresident { get => president; set => Set(ref president, value); }
+    public string JurySecretary { get => secretary; set => Set(ref secretary, value); }
+    public string Member1 { get => member1; set => Set(ref member1, value); }
+    public string Member2 { get => member2; set => Set(ref member2, value); }
+    public string Member3 { get => member3; set => Set(ref member3, value); }
+    public string Member4 { get => member4; set => Set(ref member4, value); }
+
+    // Bloc 5 — Épreuves du jury.
+    public IReadOnlyList<ChoiceItem> Promotions { get; private set; } = [];
+    public ChoiceItem? Promotion { get => promotion; set => Set(ref promotion, value); }
+    public AsyncCommand CreateJuryCommand => new(() => Shell.Run(CreateJuryEvaluationsAsync));
+
+    public override async Task LoadAsync()
+    {
+        var settings = await Shell.Api.GetAsync<DeliberationSettingsDto>("api/deliberation/reglages");
+        var authorities = await Shell.Api.GetAsync<AuthoritiesDto>("api/deliberation/autorites");
+        EncodingS1Open = settings.EncodingS1Open;
+        EncodingS2Open = settings.EncodingS2Open;
+        SupportEnabled = settings.SupportEnabled;
+        TeacherUpdates = settings.TeacherUpdates;
+        TeacherDownloads = settings.TeacherDownloads;
+        PassPercent = settings.PassPercent.ToString("0.##", CultureInfo.CurrentCulture);
+        Prefect = authorities.Prefect ?? string.Empty;
+        Principal = authorities.Principal ?? string.Empty;
+        JuryPresident = authorities.JuryPresident ?? string.Empty;
+        JurySecretary = authorities.JurySecretary ?? string.Empty;
+        var members = authorities.JuryMembers ?? [];
+        Member1 = members.Count > 0 ? members[0] : string.Empty;
+        Member2 = members.Count > 1 ? members[1] : string.Empty;
+        Member3 = members.Count > 2 ? members[2] : string.Empty;
+        Member4 = members.Count > 3 ? members[3] : string.Empty;
+        if (Promotions.Count == 0)
+        {
+            Promotions = await PromotionChoicesAsync(withAll: false);
+            Raise(nameof(Promotions));
+            Promotion = Promotions.Count > 0 ? Promotions[0] : null;
+        }
+        var open = new[] { EncodingS1Open ? "S1" : null, EncodingS2Open ? "S2" : null }.OfType<string>().ToList();
+        subtitle = $"Encodage {(open.Count == 0 ? "fermé" : "ouvert : " + string.Join(" et ", open))} · seuil {PassPercent} %";
+        Raise(nameof(Subtitle));
+    }
+
+    private async Task SaveSettingsAsync()
+    {
+        if (!Format.TryAmount(PassPercent, out var threshold))
+        {
+            Shell.Notify("Seuil de réussite : tapez un pourcentage, par exemple 60.");
+            return;
+        }
+        await Shell.Api.SendAsync(HttpMethod.Put, "api/deliberation/reglages", new
+        {
+            encodingS1Open = EncodingS1Open, encodingS2Open = EncodingS2Open, supportEnabled = SupportEnabled, passPercent = threshold,
+            teacherUpdates = TeacherUpdates, teacherDownloads = TeacherDownloads,
+        });
+        Shell.Notify("Paramètres enregistrés. Les enseignants sont prévenus des changements d'encodage.");
+        await RefreshAsync();
+    }
+
+    private async Task SaveAuthoritiesAsync()
+    {
+        await Shell.Api.SendAsync(HttpMethod.Put, "api/deliberation/autorites", new
+        {
+            prefect = Optional(Prefect), principal = Optional(Principal), juryPresident = Optional(JuryPresident), jurySecretary = Optional(JurySecretary),
+            juryMembers = new[] { Member1, Member2, Member3, Member4 }.Where(m => !string.IsNullOrWhiteSpace(m)).Select(m => m.Trim()).ToArray(),
+        });
+        Shell.Notify("Autorités enregistrées : elles figurent sur le bulletin, la grille et le procès-verbal.");
+        await RefreshAsync();
+    }
+
+    private static string? Optional(string value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+
+    private async Task CreateJuryEvaluationsAsync()
+    {
+        if (Promotion is not { } p) { Shell.Notify("Choisissez une promotion."); return; }
+        if (!await Shell.Confirm("Épreuves du jury", $"{p.Label} : stage (150), situation d'intégration (50), dossier d'évaluation (90), épreuve d'intégration (225), "
+            + "blocs prévention (60), diagnostic (50) et gestion (50). Elles ne comptent qu'au jury annuel et restent modifiables dans « Cours et notes ».", "Créer"))
+            return;
+        var result = await Shell.Api.SendAsync<JuryEvaluationsResult>(HttpMethod.Post, "api/deliberation/epreuves-jury" + ScoliaClient.Query(("promotionId", Guid.Parse(p.Value))), new { });
+        Shell.Notify(result.Created == 0 ? "Les épreuves du jury existaient déjà." : $"{Format.Count(result.Created, "épreuve créée", "épreuves créées")} pour {p.Label}.");
+    }
 }

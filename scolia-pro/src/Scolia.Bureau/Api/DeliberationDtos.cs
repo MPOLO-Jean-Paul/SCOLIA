@@ -2,7 +2,8 @@ namespace Scolia.Bureau.Api;
 
 // Délibération (fusion d'ITMCD) : mêmes formes que le serveur.
 
-public sealed record DeliberationSettingsDto(bool EncodingS1Open, bool EncodingS2Open, bool SupportEnabled, decimal PassPercent);
+public sealed record DeliberationSettingsDto(bool EncodingS1Open, bool EncodingS2Open, bool SupportEnabled, decimal PassPercent,
+    bool TeacherUpdates = false, bool TeacherDownloads = true);
 
 public sealed record AnonymousCodeRowDto(Guid EnrollmentId, string Matricule, string FullName, string PromotionCode, string? Code, bool IsManual, DateTime? AssignedAtUtc);
 

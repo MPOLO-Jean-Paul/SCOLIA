@@ -128,6 +128,7 @@ public static class Sidebar
             // Délibération (fusion d'ITMCD) : codes anonymes, encodage des cotes par semestre, jury et documents officiels.
             Group("Délibération",
                 shell.TeacherOnly ? Item("Mes cours", MaterialIconKind.Pen, "TonePurple", Perm.MarksEncode, typeof(MarksPage), () => new MarksPage(shell)) : null,
+                Item("Paramètres de délibération", MaterialIconKind.Tune, "ToneOrange", Perm.DeliberationManage, typeof(DeliberationSettingsPage), () => new DeliberationSettingsPage(shell)),
                 Item("Codes anonymes", MaterialIconKind.Incognito, "ToneIndigo", Perm.DeliberationManage, typeof(AnonymousCodesPage), () => new AnonymousCodesPage(shell)),
                 Item("Encodage des cotes", MaterialIconKind.Pen, "TonePurple", Perm.AcademicsRead, typeof(MarksPage), () => new MarksPage(shell)),
                 Item("Suivi de l'encodage", MaterialIconKind.ProgressClock, "ToneTeal", Perm.AcademicsRead, typeof(EncodingProgressPage), () => new EncodingProgressPage(shell)),
