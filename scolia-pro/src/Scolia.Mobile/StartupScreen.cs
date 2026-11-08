@@ -46,7 +46,7 @@ internal sealed class StartupScreen : FrameLayout
         Clickable = true;
         Focusable = true;
 
-        // Le paysage et les grands caractères gardent un contenu accessible, sans débordement coupé.
+        // Le paysage et les grands caractères gardent le logo et les trois points visibles, sans débordement.
         var scroll = new ScrollView(activity) { FillViewport = true };
         AddView(scroll, new FrameLayout.LayoutParams(LayoutParams.MatchParent, LayoutParams.MatchParent));
         var content = new LinearLayout(activity) { Orientation = Orientation.Vertical };
@@ -66,24 +66,9 @@ internal sealed class StartupScreen : FrameLayout
         logo.SetPadding(Dp(17), Dp(17), Dp(17), Dp(17));
         content.AddView(logo, new LinearLayout.LayoutParams(Dp(114), Dp(114))
         {
-            BottomMargin = Dp(20),
+            BottomMargin = Dp(16),
             Gravity = GravityFlags.CenterHorizontal,
         });
-
-        var eyebrow = new TextView(activity)
-        {
-            Text = "ESPACE SCOLAIRE",
-            TextSize = 11,
-            Gravity = GravityFlags.Center,
-            LetterSpacing = 0.12f,
-        };
-        eyebrow.SetTextColor(Color.Rgb(47, 103, 192));
-        eyebrow.SetTypeface(null, TypefaceStyle.Bold);
-        content.AddView(eyebrow, new LinearLayout.LayoutParams(LayoutParams.MatchParent, LayoutParams.WrapContent)
-        {
-            BottomMargin = Dp(6),
-        });
-        intro.Add(eyebrow);
 
         var title = new TextView(activity) { Text = "SCOLIA Pro", TextSize = 26, Gravity = GravityFlags.Center };
         title.SetTextColor(Color.Rgb(15, 43, 107));
@@ -91,22 +76,10 @@ internal sealed class StartupScreen : FrameLayout
         content.AddView(title, new LinearLayout.LayoutParams(LayoutParams.MatchParent, LayoutParams.WrapContent));
         intro.Add(title);
 
-        var subtitle = new TextView(activity)
-        {
-            Text = "Votre établissement, en toute sécurité",
-            TextSize = 13,
-            Gravity = GravityFlags.Center,
-        };
-        subtitle.SetTextColor(Color.Rgb(91, 105, 126));
-        content.AddView(subtitle, new LinearLayout.LayoutParams(LayoutParams.MatchParent, LayoutParams.WrapContent)
-        {
-            TopMargin = Dp(5),
-        });
-        intro.Add(subtitle);
-
         status = new TextView(activity)
         {
-            Text = "Ouverture de votre espace…",
+            Text = string.Empty,
+            Visibility = ViewStates.Gone,
             TextSize = 12,
             Gravity = GravityFlags.Center,
             AccessibilityLiveRegion = AccessibilityLiveRegion.Polite,
@@ -116,11 +89,10 @@ internal sealed class StartupScreen : FrameLayout
         {
             TopMargin = Dp(15),
         });
-        intro.Add(status);
 
         dots = new LinearLayout(activity) { Orientation = Orientation.Horizontal, ImportantForAccessibility = ImportantForAccessibility.No };
         dots.SetGravity(GravityFlags.Center);
-        content.AddView(dots, new LinearLayout.LayoutParams(LayoutParams.WrapContent, Dp(24)) { TopMargin = Dp(18) });
+        content.AddView(dots, new LinearLayout.LayoutParams(LayoutParams.WrapContent, Dp(24)) { TopMargin = Dp(14) });
         intro.Add(dots);
         for (var i = 0; i < 3; i++)
         {
@@ -152,7 +124,8 @@ internal sealed class StartupScreen : FrameLayout
             if (Platform.RetryStartup is not { } restart) { activity.Finish(); return; }
             retry.Visibility = ViewStates.Gone;
             dots.Visibility = ViewStates.Visible;
-            status.Text = "Ouverture de votre espace…";
+            status.Text = string.Empty;
+            status.Visibility = ViewStates.Gone;
             Begin(restart(), TimeSpan.Zero);
         };
     }
@@ -196,7 +169,7 @@ internal sealed class StartupScreen : FrameLayout
             // Le logo descend à sa place, en douceur.
             logo.Animate()?.TranslationY(0f)?.ScaleX(1f)?.ScaleY(1f)?.SetDuration(300)
                 ?.SetInterpolator(new Android.Views.Animations.DecelerateInterpolator(1.6f))?.Start();
-            // Le nom, le message et les trois points apparaissent l'un après l'autre.
+            // Seuls le nom SCOLIA Pro et les trois points apparaissent successivement.
             for (var i = 0; i < intro.Count; i++)
                 intro[i].Animate()?.Alpha(1f)?.TranslationY(0f)?.SetStartDelay(200 + i * 90)?.SetDuration(260)
                     ?.SetInterpolator(new Android.Views.Animations.DecelerateInterpolator())?.Start();
@@ -236,7 +209,7 @@ internal sealed class StartupScreen : FrameLayout
         var token = lifetime.Token;
         try
         {
-            // Une première préparation de serveur peut durer : le logo reste visible, l'attente est expliquée.
+            // Une préparation de serveur peut durer : aucun texte supplémentaire ne surcharge le logo.
             // Ce délai ne relance pas un second serveur pendant que le premier démarre.
             var ready = StartupReadiness.WaitAsync(startup, minimum, WaitForPageFrameAsync, token);
             var patience = Task.Delay(TimeSpan.FromSeconds(12), token);
@@ -271,6 +244,7 @@ internal sealed class StartupScreen : FrameLayout
                 foreach (var pulse in pulses) pulse.Cancel();
                 dots.Visibility = ViewStates.Gone;
                 Alpha = 1;
+                status.Visibility = ViewStates.Visible;
                 status.Text = Platform.RetryStartup is null
                     ? "SCOLIA n'a pas pu démarrer. Fermez puis rouvrez l'application."
                     : "SCOLIA n'a pas pu ouvrir votre espace. Vous pouvez réessayer.";
