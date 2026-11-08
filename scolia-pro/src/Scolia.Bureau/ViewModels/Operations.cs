@@ -1290,7 +1290,7 @@ public sealed class AboutViewModel : Observable
     public string Phone => AboutInfo.Phone;
     public string Email => AboutInfo.Email;
     public string Copyright => AboutInfo.Copyright;
-    public string Accounts => "Trois espaces : Secrétariat, Comptabilité et Promoteur (consultation des indicateurs uniquement).";
+    public string Accounts => "Quatre espaces : Secrétariat, Comptabilité, Promoteur (consultation des indicateurs uniquement) et Enseignant (encodage de ses cours, par code anonyme).";
 
     public RelayCommand Close { get; }
     public RelayCommand WriteEmail { get; }

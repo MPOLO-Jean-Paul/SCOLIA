@@ -71,6 +71,7 @@ public static class DependencyInjection
         services.AddScoped<AcademicService>();
         services.AddScoped<DisciplineService>();
         services.AddScoped<TeachingService>();
+        services.AddScoped<DeliberationService>();
         services.AddScoped<StaffAttendanceService>();
         services.AddScoped<CardService>();
         services.AddScoped<StaffService>();
@@ -140,7 +141,9 @@ public static class DependencyInjection
     {
         await db.Users.Where(u => u.Role == Role.Administrateur || u.Role == Role.Direction)
             .ExecuteUpdateAsync(x => x.SetProperty(u => u.Role, Role.Secretariat), ct);
-        await db.Users.Where(u => u.Role == Role.Enseignant && u.IsActive)
+        // Les anciens comptes enseignants sans fiche du personnel restent désactivés ; un compte enseignant relié
+        // à sa fiche (encodage des cotes de ses cours) est le rôle actuel.
+        await db.Users.Where(u => u.Role == Role.Enseignant && u.IsActive && u.StaffMemberId == null)
             .ExecuteUpdateAsync(x => x.SetProperty(u => u.IsActive, false).SetProperty(u => u.SecurityStamp, Guid.NewGuid().ToString("N")), ct);
     }
 }

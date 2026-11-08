@@ -186,6 +186,8 @@ public static class ScoliaEndpoints
 
         // ---------- Vérification publique des reçus (QR code) ----------
         api.MapGet("/verifier/{code}", (string code, PaymentService payments, CancellationToken ct) => payments.VerifyAsync(code, ct)).RequireRateLimiting("connexion");
+        // Vérification publique des bulletins de délibération officiels (QR code) : nom masqué, résultat figé.
+        api.MapGet("/verifier-bulletin/{code}", (string code, DeliberationService s, CancellationToken ct) => s.VerifyBulletinAsync(code, ct)).RequireRateLimiting("connexion");
 
         var secured = api.MapGroup("").RequireAuthorization();
         secured.MapGet("/recherche", (string? q, SearchService search, CancellationToken ct) => search.SearchAsync(q, ct)).RequireAuthorization(Permissions.StudentsRead);
@@ -201,6 +203,7 @@ public static class ScoliaEndpoints
         secured.MapGet("/pilotage/synthese", (ReportService reports, CancellationToken ct) =>
             reports.PromoterDashboardAsync(ct)).RequireAuthorization(Permissions.PilotageRead);
         MapAcademics(secured);
+        MapDeliberation(secured);
         MapStaff(secured);
         MapAdministration(secured);
     }
@@ -460,6 +463,83 @@ public static class ScoliaEndpoints
             return Results.File(result.Bytes, word ? "application/vnd.openxmlformats-officedocument.wordprocessingml.document" : "application/pdf", result.FileName);
         }).RequireAuthorization(Permissions.StudentsWrite);
         g.MapGet("/lots", (CardService s, CancellationToken ct) => s.BatchesAsync(ct));
+    }
+
+    /// <summary>Délibération (fusion d'ITMCD) : codes anonymes, encodage des cotes, jury, clôture et documents officiels.</summary>
+    private static void MapDeliberation(RouteGroupBuilder api)
+    {
+        var g = api.MapGroup("/deliberation").RequireAuthorization(Permissions.AcademicsRead);
+        g.MapGet("/reglages", (DeliberationService s, CancellationToken ct) => s.SettingsAsync(ct));
+        g.MapPut("/reglages", (DeliberationSettingsDto input, DeliberationService s, CancellationToken ct) => s.UpdateSettingsAsync(input, ct))
+            .RequireAuthorization(Permissions.DeliberationManage);
+
+        // Autorités et épreuves du jury (projet Délibération).
+        g.MapGet("/autorites", (DeliberationService s, CancellationToken ct) => s.AuthoritiesAsync(ct));
+        g.MapPut("/autorites", (AuthoritiesDto input, DeliberationService s, CancellationToken ct) => s.UpdateAuthoritiesAsync(input, ct))
+            .RequireAuthorization(Permissions.DeliberationManage);
+        g.MapPost("/epreuves-jury", (Guid promotionId, DeliberationService s, CancellationToken ct) => s.CreateJuryEvaluationsAsync(promotionId, ct))
+            .RequireAuthorization(Permissions.DeliberationManage);
+
+        // Codes anonymes : les apprenants déjà inscrits reçoivent un code officiel reconnu par la délibération.
+        g.MapGet("/codes", (Guid? promotionId, DeliberationService s, CancellationToken ct) => s.CodesAsync(promotionId, ct)).RequireAuthorization(Permissions.DeliberationManage);
+        g.MapPost("/codes/attribution", (CodeAssignmentRequest input, DeliberationService s, CancellationToken ct) => s.AssignCodesAsync(input, ct))
+            .RequireAuthorization(Permissions.DeliberationManage);
+        g.MapPut("/codes/{enrollmentId:guid}", (Guid enrollmentId, CodeChangeRequest input, DeliberationService s, CancellationToken ct) => s.SetCodeAsync(enrollmentId, input, ct))
+            .RequireAuthorization(Permissions.DeliberationManage);
+        g.MapGet("/codes/liste", async (Guid? promotionId, string? format, DeliberationService s, ReportService reports, CancellationToken ct) =>
+            Table(await s.CodesTableAsync(promotionId, ct), format, "codes-anonymes", reports)).RequireAuthorization(Permissions.DeliberationManage);
+        g.MapPost("/codes/import", (CodeImportRequest input, DeliberationService s, CancellationToken ct) => s.ImportCodesAsync(input, ct))
+            .RequireAuthorization(Permissions.DeliberationManage);
+        g.MapGet("/codes/resolution", (string code, DeliberationService s, CancellationToken ct) => s.LookupAsync(code, ct)).RequireAuthorization(Permissions.AcademicsWrite);
+
+        // Encodage : feuille par cours, ou saisie anonyme par code.
+        g.MapGet("/cours", (Guid promotionId, DeliberationService s, CancellationToken ct) => s.CoursesAsync(promotionId, ct));
+        // Remise officielle des cotes (ITMCD) : feuille complète, puis seul le jury la corrige ou la renvoie avec un motif.
+        g.MapPost("/renvoi", async (Guid coursId, string nature, MarkReturnRequest input, DeliberationService s, CancellationToken ct) =>
+        {
+            await s.ReturnAsync(coursId, nature, input, ct);
+            return Results.NoContent();
+        }).RequireAuthorization(Permissions.DeliberationManage);
+        // Suivi de l'encodage et relevés par cours (moniteur et export d'ITMCD).
+        g.MapGet("/suivi", (Guid? promotionId, string? periode, DeliberationService s, CancellationToken ct) => s.ProgressAsync(promotionId, periode, ct));
+        g.MapGet("/suivi/export", async (Guid? promotionId, string? periode, string? format, DeliberationService s, ReportService reports, CancellationToken ct) =>
+            Table(await s.ProgressTableAsync(promotionId, periode, ct), format, "suivi-encodage", reports));
+
+        // Jury.
+        g.MapGet("/resultats", (Guid promotionId, string periode, DeliberationService s, CancellationToken ct) => s.BoardAsync(promotionId, periode, ct));
+        g.MapGet("/resultats/{enrollmentId:guid}", (Guid enrollmentId, Guid promotionId, string periode, DeliberationService s, CancellationToken ct) =>
+            s.StudentAsync(promotionId, periode, enrollmentId, ct));
+        g.MapPut("/decisions", (JuryDecisionRequest input, DeliberationService s, CancellationToken ct) => s.DecideAsync(input, ct)).RequireAuthorization(Permissions.DeliberationManage);
+        g.MapPost("/cloture", (SessionCloseRequest input, DeliberationService s, CancellationToken ct) => s.CloseAsync(input, ct))
+            .RequireAuthorization(Permissions.DeliberationManage).RequireRateLimiting("connexion");
+        g.MapPost("/reouverture", (SessionReopenRequest input, DeliberationService s, CancellationToken ct) => s.ReopenAsync(input, ct))
+            .RequireAuthorization(Permissions.DeliberationManage).RequireRateLimiting("connexion");
+
+        // Feuilles de cotes : le secrétariat (scolarite.lire / scolarite.ecrire) ou l'enseignant sur ses seuls cours
+        // attribués (cotes.encoder) ; le service vérifie l'attribution à chaque appel et masque les noms à l'enseignant.
+        var sheets = api.MapGroup("/deliberation");
+        sheets.MapGet("/annonces", (DeliberationService s, CancellationToken ct) => s.AnnouncementsAsync(ct));
+        sheets.MapGet("/mes-cours", (DeliberationService s, CancellationToken ct) => s.MyCoursesAsync(ct)).RequireAuthorization(Permissions.MarksEncode);
+        sheets.MapGet("/feuille", (Guid coursId, string nature, bool? anonyme, DeliberationService s, CancellationToken ct) => s.SheetAsync(coursId, nature, anonyme ?? false, ct));
+        sheets.MapPut("/feuille", async (Guid coursId, string nature, List<MarkInput> input, DeliberationService s, CancellationToken ct) =>
+            Results.Ok(new { enregistrees = await s.SaveSheetAsync(coursId, nature, input, ct) }));
+        sheets.MapPost("/cotes-par-code", (MarkByCodeRequest input, DeliberationService s, CancellationToken ct) => s.SaveByCodeAsync(input, ct));
+        sheets.MapPost("/cotes/import", (MarkImportRequest input, DeliberationService s, CancellationToken ct) => s.ImportMarksAsync(input, ct));
+        sheets.MapPost("/remise", (Guid coursId, string nature, DeliberationService s, CancellationToken ct) => s.SubmitAsync(coursId, nature, ct));
+        sheets.MapGet("/feuille/export", async (Guid coursId, string nature, bool? echecs, string? format, DeliberationService s, ReportService reports, CancellationToken ct) =>
+            Table(await s.SheetTableAsync(coursId, nature, echecs ?? false, ct), format, echecs == true ? "liste-des-echecs" : "releve-des-cotes", reports));
+
+        // Documents officiels.
+        g.MapGet("/proces-verbal.pdf", async (Guid promotionId, string periode, DeliberationService s, CancellationToken ct) =>
+            new InlineFileResult(await s.MinutesPdfAsync(promotionId, periode, ct), Pdf, "proces-verbal.pdf"));
+        g.MapGet("/grille", async (Guid promotionId, string periode, string? format, DeliberationService s, ReportService reports, CancellationToken ct) =>
+            Table(await s.GridAsync(promotionId, periode, ct), format, "grille-des-cotes", reports));
+        g.MapGet("/palmares", async (Guid promotionId, string periode, string? format, DeliberationService s, ReportService reports, CancellationToken ct) =>
+            Table(await s.RankingAsync(promotionId, periode, ct), format, "palmares", reports));
+        g.MapGet("/bulletin.pdf", async (Guid promotionId, string periode, Guid inscriptionId, HttpContext http, IConfiguration config, DeliberationService s, CancellationToken ct) =>
+            new InlineFileResult(await s.BulletinPdfAsync(promotionId, periode, inscriptionId, PublicBase(http, config), ct), Pdf, "bulletin-deliberation.pdf"));
+        g.MapGet("/bulletins.pdf", async (Guid promotionId, string periode, HttpContext http, IConfiguration config, DeliberationService s, CancellationToken ct) =>
+            new InlineFileResult(await s.BulletinsPdfAsync(promotionId, periode, PublicBase(http, config), ct), Pdf, "bulletins-deliberation.pdf"));
     }
 
     private static void MapAcademics(RouteGroupBuilder api)

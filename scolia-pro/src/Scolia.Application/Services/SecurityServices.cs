@@ -52,10 +52,25 @@ public sealed class UserService(IAppDbContext db, IWriteGate gate, IAuditLog aud
     };
 
     private static readonly (Role, string)[] RoleLabels =
-        [(Role.Secretariat, "Secrétariat"), (Role.Comptabilite, "Comptabilité"), (Role.Promoteur, "Promoteur / Responsable")];
+        [(Role.Secretariat, "Secrétariat"), (Role.Comptabilite, "Comptabilité"), (Role.Promoteur, "Promoteur / Responsable"), (Role.Enseignant, "Enseignant")];
 
-    public static UserDto ToDto(AppUser u, DateTime now) => new(u.Id, u.UserName, u.DisplayName, u.Role.ToString(), Permissions.Label(u.Role), u.IsActive,
-        u.MustChangePassword, u.LastLoginUtc, u.LockoutEndUtc is not null && u.LockoutEndUtc > now);
+    public static UserDto ToDto(AppUser u, DateTime now) => new(u.Id, u.UserName, u.DisplayName, u.Role.ToString(), Permissions.Label(u), u.IsActive,
+        u.MustChangePassword, u.LastLoginUtc, u.LockoutEndUtc is not null && u.LockoutEndUtc > now, u.StaffMemberId, u.JuryAccess);
+
+    /// <summary>
+    /// Un compte enseignant est relié à une fiche du personnel en fonction, et une fiche n'a qu'un compte actif :
+    /// l'enseignant n'encode que les cours attribués à cette fiche. Les autres rôles n'ont pas de fiche.
+    /// </summary>
+    private async Task<Guid?> TeacherLinkAsync(Role role, Guid? staffMemberId, Guid? userId, CancellationToken ct)
+    {
+        if (role != Role.Enseignant) return null;
+        if (staffMemberId is not { } id) throw new DomainException("staffMemberId", "Choisissez la fiche du personnel de l'enseignant : il n'encodera que les cours qui lui sont attribués.");
+        var staff = await db.Staff.AsNoTracking().FirstOrDefaultAsync(s => s.Id == id, ct) ?? throw new NotFoundException("Fiche du personnel introuvable.");
+        if (!staff.IsActive) throw new DomainException("staffMemberId", $"{staff.FullName} n'est plus en fonction : réactivez sa fiche avant de lui ouvrir un compte.");
+        if (await db.Users.AnyAsync(u => u.StaffMemberId == id && u.IsActive && u.Id != userId, ct))
+            throw new ConflictException($"{staff.FullName} a déjà un compte enseignant actif.");
+        return id;
+    }
 
     /// <summary>Authentifie un utilisateur. Message identique pour un identifiant inconnu ou un mot de passe faux.
     /// Les échecs sont enregistrés (transaction validée) avant le refus : le verrouillage est donc effectif.
@@ -110,7 +125,7 @@ public sealed class UserService(IAppDbContext db, IWriteGate gate, IAuditLog aud
     private static Role AssignableRole(string? value)
     {
         var role = EnumText.Parse(value, "role", RoleLabels);
-        return Permissions.Assignable.Contains(role) ? role : throw new DomainException("role", "Rôle : secrétariat, comptabilité ou promoteur uniquement.");
+        return Permissions.Assignable.Contains(role) ? role : throw new DomainException("role", "Rôle : secrétariat, comptabilité, promoteur ou enseignant uniquement.");
     }
 
     public async Task<IReadOnlyList<UserDto>> ListAsync(CancellationToken ct = default) =>
@@ -128,13 +143,15 @@ public sealed class UserService(IAppDbContext db, IWriteGate gate, IAuditLog aud
         var role = AssignableRole(input.Role);
         var normalized = TextKey.Normalize(name);
         if (await db.Users.AnyAsync(u => u.NormalizedUserName == normalized, ct)) throw new ConflictException("Cet identifiant existe déjà.");
+        var staffMemberId = await TeacherLinkAsync(role, input.StaffMemberId, null, ct);
         var user = new AppUser
         {
             UserName = name, NormalizedUserName = normalized, DisplayName = input.DisplayName.Trim(), Role = role,
-            PasswordHash = passwords.Hash(input.Password), MustChangePassword = true,
+            PasswordHash = passwords.Hash(input.Password), MustChangePassword = true, StaffMemberId = staffMemberId,
+            JuryAccess = role == Role.Enseignant && input.JuryAccess,
         };
         db.Users.Add(user);
-        audit.Record("utilisateur.cree", "Utilisateur", user.Id.ToString(), $"Compte {name} ({Permissions.Label(role)}) créé.");
+        audit.Record("utilisateur.cree", "Utilisateur", user.Id.ToString(), $"Compte {name} ({Permissions.Label(user)}) créé.");
         await db.SaveChangesAsync(ct);
         return ToDto(user, clock.UtcNow);
     }, ct);
@@ -151,12 +168,20 @@ public sealed class UserService(IAppDbContext db, IWriteGate gate, IAuditLog aud
             if (others == 0) throw new DomainException("role", "Au moins un compte secrétariat actif doit être conservé : c'est lui qui administre SCOLIA.");
         }
         if (id == current.Id && !input.IsActive) throw new DomainException("isActive", "Vous ne pouvez pas désactiver votre propre compte.");
-        var changedSecurity = user.Role != role || user.IsActive != input.IsActive;
+        var staffMemberId = input.IsActive || role != Role.Enseignant ? await TeacherLinkAsync(role, input.StaffMemberId, id, ct) : input.StaffMemberId ?? user.StaffMemberId;
+        var juryAccess = role == Role.Enseignant && input.JuryAccess;
+        // Le privilège jury s'accorde ou se retire à tout moment ; les cotes déjà encodées restent dans la base.
+        if (juryAccess != user.JuryAccess)
+            audit.Record(juryAccess ? "utilisateur.jury.accorde" : "utilisateur.jury.retire", "Utilisateur", id.ToString(),
+                $"Privilège jury {(juryAccess ? "accordé à" : "retiré à")} {user.UserName}.");
+        var changedSecurity = user.Role != role || user.IsActive != input.IsActive || user.StaffMemberId != staffMemberId || user.JuryAccess != juryAccess;
         user.DisplayName = input.DisplayName.Trim();
         user.Role = role;
         user.IsActive = input.IsActive;
+        user.StaffMemberId = staffMemberId;
+        user.JuryAccess = juryAccess;
         if (changedSecurity) user.SecurityStamp = Guid.NewGuid().ToString("N");
-        audit.Record("utilisateur.modifie", "Utilisateur", id.ToString(), $"Compte {user.UserName} : {Permissions.Label(role)}, {(input.IsActive ? "actif" : "désactivé")}.");
+        audit.Record("utilisateur.modifie", "Utilisateur", id.ToString(), $"Compte {user.UserName} : {Permissions.Label(user)}, {(input.IsActive ? "actif" : "désactivé")}.");
         await db.SaveChangesAsync(ct);
         return ToDto(user, clock.UtcNow);
     }, ct);

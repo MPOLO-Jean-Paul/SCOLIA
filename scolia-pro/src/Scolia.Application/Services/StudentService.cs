@@ -281,8 +281,11 @@ public sealed class StudentService(IAppDbContext db, IWriteGate gate, IAuditLog 
             throw new DomainException("apprenant", "Ce dossier a des reçus : il ne peut pas être supprimé. Changez son statut en « Sorti ».");
         var enrollments = await db.Enrollments.Where(e => e.StudentId == id).ToListAsync(ct);
         var enrollmentIds = enrollments.Select(e => e.Id).ToList();
-        if (await db.Grades.AnyAsync(g => enrollmentIds.Contains(g.EnrollmentId), ct) || await db.Attendance.AnyAsync(a => enrollmentIds.Contains(a.EnrollmentId), ct))
+        if (await db.Grades.AnyAsync(g => enrollmentIds.Contains(g.EnrollmentId), ct) || await db.Attendance.AnyAsync(a => enrollmentIds.Contains(a.EnrollmentId), ct)
+            || await db.CourseMarks.AnyAsync(m => enrollmentIds.Contains(m.EnrollmentId), ct) || await db.JuryDecisions.AnyAsync(d => enrollmentIds.Contains(d.EnrollmentId), ct))
             throw new DomainException("apprenant", "Ce dossier a des notes ou des présences : changez son statut au lieu de le supprimer.");
+        // Un code anonyme sans cote ne retient pas le dossier : il part avec lui.
+        db.AnonymousCodes.RemoveRange(await db.AnonymousCodes.Where(c => enrollmentIds.Contains(c.EnrollmentId)).ToListAsync(ct));
         var sponsorships = await db.Sponsorships.Include(s => s.Lines).Where(s => enrollmentIds.Contains(s.EnrollmentId)).ToListAsync(ct);
         db.Sponsorships.RemoveRange(sponsorships);
         db.Enrollments.RemoveRange(enrollments);
@@ -326,15 +329,23 @@ public sealed class StudentService(IAppDbContext db, IWriteGate gate, IAuditLog 
         var already = (await db.Enrollments.AsNoTracking().Where(e => e.AcademicYearId == target.Id)
             .Select(e => e.StudentId).ToListAsync(ct)).ToHashSet();
         var map = await accounts.ComputeAsync(source.Id, null, null, ct);
+        // Passage de classe d'ITMCD : un jury annuel clôturé décide ; ajourné, l'apprenant reste dans sa promotion (redoublement).
+        var jury = await (from r in db.DeliberationResults.AsNoTracking()
+                          join session in db.DeliberationSessions.AsNoTracking() on r.SessionId equals session.Id
+                          where session.AcademicYearId == source.Id && session.Period == Domain.Deliberation.DeliberationPeriod.Annuel
+                              && session.Status == Domain.Deliberation.SessionStatus.Cloturee
+                          select new { r.EnrollmentId, r.Final }).ToDictionaryAsync(x => x.EnrollmentId, x => x.Final, ct);
         return map.Values.Where(x => x.Enrollment.Status == EnrollmentStatus.Actif && !already.Contains(x.Enrollment.StudentId))
             .OrderBy(x => x.Promotion.Code).ThenBy(x => x.Enrollment.Student!.LastName)
             .Select(x =>
             {
-                var next = ExpectedPromotionCode(x.Promotion);
+                var decided = jury.TryGetValue(x.Enrollment.Id, out var final) ? final : (Domain.Deliberation.Outcome?)null;
+                var next = decided == Domain.Deliberation.Outcome.Ajourne ? x.Promotion.Code : ExpectedPromotionCode(x.Promotion);
                 // Une classe existante mais désactivée exige une décision du secrétariat.
                 bool available = !targetPromotions.Any(p => p.Code == next && !p.IsActive);
                 return new ReEnrollmentPlanItem(x.Enrollment.StudentId, x.Enrollment.Student!.Matricule,
-                    x.Enrollment.Student.FullName, x.Promotion.Code, next, x.Account.Balance, available);
+                    x.Enrollment.Student.FullName, x.Promotion.Code, next, x.Account.Balance, available,
+                    decided is { } outcome ? Domain.Deliberation.DeliberationEngine.Label(outcome) : null);
             }).ToList();
     }
 
@@ -432,7 +443,8 @@ public sealed class StudentService(IAppDbContext db, IWriteGate gate, IAuditLog 
             else
             {
                 var code = Promotion.NormalizeCode(choice.PromotionCode);
-                if (code.Length == 0 || code != ExpectedPromotionCode(sourcePromotion))
+                // Progression normale, ou redoublement décidé par le jury (même code de promotion).
+                if (code.Length == 0 || (code != ExpectedPromotionCode(sourcePromotion) && code != sourcePromotion.Code))
                     throw new DomainException("choices", "La promotion à créer ne correspond pas à la progression scolaire configurée.");
                 promotion = destinations.FirstOrDefault(p => p.Code == code)!;
                 if (promotion is null)

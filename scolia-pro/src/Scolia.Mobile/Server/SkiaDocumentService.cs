@@ -233,6 +233,26 @@ public sealed class SkiaDocumentService : IDocumentService
 
     // ---------- Rapport à plusieurs parties (rapport journalier) ----------
 
+    /// <summary>
+    /// Serveur du téléphone : les rapports se suivent dans un seul document, chacun sous son propre titre
+    /// (le rendu de l'ordinateur principal, lui, met chaque bulletin sur sa page).
+    /// </summary>
+    public byte[] Reports(IReadOnlyList<ReportDocument> documents)
+    {
+        if (documents.Count == 0) throw new ArgumentException("Aucun rapport à produire.", nameof(documents));
+        var first = documents[0];
+        var sections = new List<ReportSection>();
+        foreach (var d in documents)
+        {
+            var figures = d.Figures.Select(f => (IReadOnlyList<string>)new[] { f.Label, f.Value }).ToList();
+            sections.Add(new ReportSection($"{d.Title} — {d.Subtitle}", new[] { "Rubrique", "Valeur" }, figures));
+            sections.AddRange(d.Sections);
+            if (d.Note is { Length: > 0 } note)
+                sections.Add(new ReportSection("Observations", new[] { "Note" }, new List<IReadOnlyList<string>> { new[] { note } }));
+        }
+        return Report(new ReportDocument(first.School, first.Title, $"{documents.Count} document(s)", [], sections));
+    }
+
     public byte[] Report(ReportDocument d) => PdfFlow.Create(PdfFlow.A4Width, PdfFlow.A4Height, 28, f =>
     {
         f.Y += 10;
@@ -281,6 +301,15 @@ public sealed class SkiaDocumentService : IDocumentService
         {
             f.Y += 8;
             f.Paragraph(note, S(7.5f, color: "#64748B", italic: true));
+        }
+        if (d.VerificationUrl is { Length: > 0 } url)
+        {
+            f.Y += 8;
+            f.Ensure(64);
+            f.Image(DocumentService.QrPng(url), f.Left, f.Y, 60, 60, sharp: true);
+            f.DrawText("Vérifier ce document", S(8, true, Navy), f.Left + 70, f.Y + 18, f.ContentWidth - 70);
+            f.DrawText(url, S(7, color: "#64748B"), f.Left + 70, f.Y + 32, f.ContentWidth - 70);
+            f.Y += 64;
         }
     },
     Header(d.School, d.Title, d.Subtitle), Footer(null), 22);

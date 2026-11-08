@@ -21,7 +21,7 @@ public static class AppCatalog
                 new("Postes et téléphones", "Les autres ordinateurs, les téléphones Android et les iPhone se connectent à l'ordinateur principal, sur le Wi-Fi de l'établissement ou à distance avec Tailscale."),
                 new("Travail en direct", "Ce qui est enregistré sur un poste apparaît aussitôt sur les autres. Deux personnes ne peuvent pas encaisser le même apprenant en même temps."),
                 new("Hors ligne", "Si l'ordinateur principal est injoignable, le dernier compte connecté continue sur les données gardées de l'appareil ; les opérations partent au retour du réseau."),
-                new("Comptes", "Secrétariat (administration complète), Comptabilité (finances) et Promoteur (consultation des indicateurs seulement). Chaque compte ne voit que ce que son rôle permet."),
+                new("Comptes", "Secrétariat (administration complète), Comptabilité (finances), Promoteur (consultation des indicateurs seulement) et Enseignant (encodage et remise des cotes de ses cours). Chaque compte ne voit que ce que son rôle permet."),
             ]),
         new("Installation et connexion", "LoginVariant", "ToneIndigo",
             "La première ouverture guide la configuration, puis chaque personne se connecte avec son propre code.",

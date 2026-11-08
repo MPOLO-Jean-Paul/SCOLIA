@@ -142,7 +142,7 @@ public sealed class ShellViewModel : Observable
     /// </summary>
     private void OnRemoteChange(LiveEventDto change)
     {
-        if (Infrastructure.Alerts.From(change, Prefs) is { } alert) ShowAlert(alert);
+        if (Infrastructure.Alerts.From(change, Prefs, Can) is { } alert) ShowAlert(alert);
         knownRevision = Math.Max(knownRevision, change.Revision);
         if (MustWait) RemoteWaiting = true;
         else _ = RefreshQuietlyAsync();
@@ -425,6 +425,9 @@ public sealed class ShellViewModel : Observable
     public Func<string, Task>? CopyHandler { get; set; }
 
     public bool Can(string permission) => session?.Permissions.Contains(permission) == true;
+
+    /// <summary>Compte enseignant : son espace se limite à ses cours (encodage et remise des cotes).</summary>
+    public bool TeacherOnly => (Can(Perm.MarksEncode) || Can(Perm.JuryEncode)) && !Can(Perm.AcademicsRead);
 
     /// <summary>Plein écran : la fenêtre gère l'affichage réel, le shell garde l'état pour le ruban.</summary>
     public bool IsFullscreen { get; private set; }
@@ -998,8 +1001,9 @@ public sealed class ShellViewModel : Observable
             ClearHistory();
             OpeningStep = "Ouverture de l'accueil";
             OpeningProgress = 90;
-            await Open(() => s.Permissions.Contains(Perm.PilotageRead) &&
-                !s.Permissions.Contains(Perm.ReportsRead)
+            await Open(() => s.Permissions.Contains(Perm.MarksEncode) && !s.Permissions.Contains(Perm.AcademicsRead)
+                ? new MarksPage(this)
+                : s.Permissions.Contains(Perm.PilotageRead) && !s.Permissions.Contains(Perm.ReportsRead)
                 ? new PromoterDashboardPage(this) : new HomePage(this));
             var rest = minimum - watch.Elapsed;
             if (rest > TimeSpan.Zero) await Task.Delay(rest);

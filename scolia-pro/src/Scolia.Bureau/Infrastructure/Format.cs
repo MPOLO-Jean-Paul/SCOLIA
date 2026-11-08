@@ -43,6 +43,27 @@ public static class Format
 /// <summary>Libellés affichés pour les codes échangés avec le serveur.</summary>
 public static class Labels
 {
+    /// <summary>Organisation d'un cours pour la délibération (ITMCD) : un semestre ou toute l'année.</summary>
+    public static readonly IReadOnlyList<ChoiceItem> Semesters =
+        [new("S1", "Premier semestre (S1)"), new("S2", "Second semestre (S2)"), new("Annuel", "Annuel (S1 et S2)"),
+         new("JuryEpreuve", "Épreuve du jury (TOTAL 1)"), new("JuryBloc", "Bloc du jury (SOUS-TOTAL 2)")];
+
+    /// <summary>Périodes délibérées : S1, S2, puis le jury annuel.</summary>
+    public static readonly IReadOnlyList<ChoiceItem> DeliberationPeriods =
+        [new("S1", "Premier semestre"), new("S2", "Second semestre"), new("Annuel", "Jury annuel")];
+
+    // Cours : deux nombres distincts, à ne jamais confondre (fusion ITMCD / projet Délibération).
+    public const string WeightLabel = "Pondération (coefficient)";
+    public const string WeightHint = "Poids du cours dans la moyenne sur 20 des bulletins de « Cours et notes ». La délibération ne l'utilise pas.";
+    public const string MaxScoreLabel = "Maxima du cours (points)";
+    public const string MaxScoreHint = "Total de points du cours pour la délibération : cotes de 0 à ce maxima, échec sous la moitié. Vide : pondération × 10 (convention ITM).";
+
+    /// <summary>Maxima saisi, ou à défaut la convention ITM : pondération × 10.</summary>
+    public static decimal MaxScore(ViewModels.FormViewModel f) =>
+        string.IsNullOrWhiteSpace(f.Text("cotation")) ? f.Amount("coefficient") * 10 : f.Amount("cotation");
+
+    public static string Semester(string code) => code switch { "S1" => "S1", "S2" => "S2", "JuryEpreuve" => "Épreuve jury", "JuryBloc" => "Bloc jury", _ => "Annuel" };
+
     public static string Status(string code) => code switch
     {
         "Actif" => "Actif",
@@ -165,6 +186,7 @@ public static class Labels
         // Rôle de direction : consultation des statistiques, sans droit de modifier les données.
         new("Secretariat", "Secrétariat"), new("Comptabilite", "Comptabilité"),
         new("Promoteur", "Promoteur / Responsable"),
+        new("Enseignant", "Enseignant (encodage de ses cours)"),
     ];
 
     public static readonly IReadOnlyList<ChoiceItem> PayrollModes =

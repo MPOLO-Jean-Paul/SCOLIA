@@ -1346,10 +1346,18 @@ public sealed class UsersPage : PageViewModel
         Raise(nameof(Subtitle));
     }
 
+    /// <summary>Fiches des enseignants en activité, pour relier un compte enseignant à ses cours attribués.</summary>
+    private static async Task<IReadOnlyList<ChoiceItem>> TeacherChoicesAsync(ShellViewModel shell) =>
+        (await shell.Api.GetAsync<List<TeacherDto>>("api/enseignants")).Select(t => new ChoiceItem(t.Id.ToString(), $"{t.Nom} · {t.Function}")).ToList();
+
+    private static Guid? TeacherLink(FormViewModel f) =>
+        f.ChoiceValue("role") == "Enseignant" && f.ChoiceValue("enseignant") is { Length: > 0 } id ? Guid.Parse(id) : null;
+
     /// <summary>Formulaire de création d'un compte nominatif.</summary>
     public static async Task NewUserAsync(ShellViewModel shell)
     {
-        var form = new FormViewModel("Nouvel utilisateur", "Secrétariat : administration. Comptabilité : encaissements et caisse. Promoteur : consultation d'indicateurs agrégés, sans modification. Le mot de passe provisoire devra être changé à la première connexion.", async f =>
+        var teachers = await TeacherChoicesAsync(shell);
+        var form = new FormViewModel("Nouvel utilisateur", "Secrétariat : administration. Comptabilité : encaissements et caisse. Promoteur : consultation d'indicateurs agrégés, sans modification. Enseignant : encodage et remise des cotes de ses seuls cours, par code anonyme. Le mot de passe provisoire devra être changé à la première connexion.", async f =>
         {
             await shell.Api.SendAsync(HttpMethod.Post, "api/utilisateurs", new
             {
@@ -1357,6 +1365,8 @@ public sealed class UsersPage : PageViewModel
                 displayName = f.Text("nom"),
                 role = f.ChoiceValue("role"),
                 password = f.Text("motDePasse"),
+                staffMemberId = TeacherLink(f),
+                juryAccess = f.ChoiceValue("role") == "Enseignant" && f.Flag("jury"),
             });
             shell.Notify("Compte créé.");
             return true;
@@ -1364,6 +1374,8 @@ public sealed class UsersPage : PageViewModel
         form.Add("identifiant", "Identifiant", required: true);
         form.Add("nom", "Nom complet", required: true);
         form.AddChoice("role", "Rôle", Labels.Roles, "Secretariat", required: true);
+        form.AddChoice("enseignant", "Fiche enseignant (rôle Enseignant seulement)", teachers);
+        form.AddFlag("jury", "Membre du jury : encode aussi les épreuves du jury (rôle Enseignant)", false);
         form.Add("motDePasse", "Code provisoire", FieldKind.Secret, required: true,
             hint: AccessCode.Hint + " La personne choisira le sien à sa première connexion.");
         if (await shell.Ask(form) && shell.Current is UsersPage page) await page.RefreshAsync();
@@ -1384,12 +1396,18 @@ public sealed class UsersPage : PageViewModel
                 displayName = f.Text("nom"),
                 role = f.ChoiceValue("role"),
                 isActive = f.Flag("actif"),
+                staffMemberId = TeacherLink(f),
+                juryAccess = f.ChoiceValue("role") == "Enseignant" && f.Flag("jury"),
             });
             Shell.Notify("Compte enregistré.");
             return true;
         });
+        var teachers = await TeacherChoicesAsync(Shell);
         form.Add("nom", "Nom complet", value: u.DisplayName, required: true);
         form.AddChoice("role", "Rôle", Labels.Roles, u.Role, required: true);
+        form.AddChoice("enseignant", "Fiche enseignant (rôle Enseignant seulement)", teachers, u.StaffMemberId?.ToString());
+        // Privilège, pas un compte : le retirer laisse en place les cotes du jury déjà encodées.
+        form.AddFlag("jury", "Membre du jury : encode aussi les épreuves du jury (rôle Enseignant)", u.JuryAccess);
         form.AddFlag("actif", "Compte actif", u.IsActive);
         if (await Shell.Ask(form)) await RefreshAsync();
     }

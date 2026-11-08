@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Scolia.Domain.Academics;
+using Scolia.Domain.Deliberation;
 using Scolia.Domain.Discipline;
 using Scolia.Domain.Finance;
 using Scolia.Domain.School;
@@ -42,6 +43,13 @@ public interface IAppDbContext
     DbSet<PayrollEntry> Payroll { get; }
     DbSet<StaffAttendanceMark> StaffMarks { get; }
     DbSet<StaffDayJustification> StaffJustifications { get; }
+    DbSet<AnonymousCode> AnonymousCodes { get; }
+    DbSet<CourseMark> CourseMarks { get; }
+    DbSet<DeliberationSettings> DeliberationSettings { get; }
+    DbSet<DeliberationSession> DeliberationSessions { get; }
+    DbSet<JuryDecision> JuryDecisions { get; }
+    DbSet<DeliberationResult> DeliberationResults { get; }
+    DbSet<MarkSubmission> MarkSubmissions { get; }
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }
 
@@ -87,6 +95,8 @@ public interface IDocumentService
     byte[] Table(TableDocument document);
     /// <summary>Rapport à plusieurs parties : chiffres clés, puis un tableau par partie (rapport journalier).</summary>
     byte[] Report(ReportDocument document);
+    /// <summary>Plusieurs rapports dans un seul PDF, chacun commençant sur une nouvelle page (bulletins d'une promotion).</summary>
+    byte[] Reports(IReadOnlyList<ReportDocument> documents);
     byte[] ReportCard(ReportCardDocument document);
     byte[] StudentCards(CardDocument document);
     byte[] StudentCardsWord(CardDocument document);
@@ -125,8 +135,9 @@ public sealed record ReportSection(string Title, IReadOnlyList<string> Columns, 
     IReadOnlyList<string>? Totals = null, string? Empty = null);
 
 /// <summary>Rapport à plusieurs parties : en-tête de l'établissement, chiffres clés en tuiles, puis les parties.</summary>
+/// <summary><c>OnePage</c> : le contenu est réduit pour tenir sur une seule page (bulletin), jamais coupé sur deux.</summary>
 public sealed record ReportDocument(SchoolHeader School, string Title, string? Subtitle, IReadOnlyList<(string Label, string Value)> Figures,
-    IReadOnlyList<ReportSection> Sections, string? Note = null);
+    IReadOnlyList<ReportSection> Sections, string? Note = null, bool OnePage = false, string? VerificationUrl = null);
 
 public sealed record TableDocument(SchoolHeader School, string Title, string? Subtitle, IReadOnlyList<string> Columns, IReadOnlyList<IReadOnlyList<string>> Rows, IReadOnlyList<string>? Totals = null, bool Landscape = false);
 

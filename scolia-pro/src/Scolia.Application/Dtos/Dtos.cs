@@ -83,7 +83,8 @@ public sealed record EnrollRequest(Guid PromotionId, DateOnly? EnrolledOn);
 
 public sealed record StatusChange(string Status, DateOnly? Date, string? Reason);
 
-public sealed record ReEnrollmentPlanItem(Guid StudentId, string Matricule, string FullName, string FromPromotion, string? ToPromotion, decimal PreviousBalance, bool Selected);
+public sealed record ReEnrollmentPlanItem(Guid StudentId, string Matricule, string FullName, string FromPromotion, string? ToPromotion, decimal PreviousBalance, bool Selected,
+    string? JuryDecision = null);
 
 public sealed record ReEnrollmentRequest(Guid TargetYearId, IReadOnlyList<ReEnrollmentChoice> Choices);
 
@@ -207,12 +208,14 @@ public sealed record DebtorDto(Guid StudentId, Guid EnrollmentId, string Matricu
 public sealed record DebtorQuery(Guid? PromotionId, int? MinOverdueMonths, string? Bucket, string? Search);
 
 // ---------- Utilisateurs et audit ----------
+/// <summary><c>StaffMemberId</c> : fiche du personnel d'un compte enseignant (il n'encode que les cours attribués à cette fiche).</summary>
 public sealed record UserDto(Guid Id, string UserName, string DisplayName, string Role, string RoleLabel, bool IsActive, bool MustChangePassword,
-    DateTime? LastLoginUtc, bool IsLocked);
+    DateTime? LastLoginUtc, bool IsLocked, Guid? StaffMemberId = null, bool JuryAccess = false);
 
-public sealed record UserCreate(string UserName, string DisplayName, string Role, string Password);
+/// <summary><c>JuryAccess</c> : privilège jury d'un compte enseignant (ignoré pour les autres rôles).</summary>
+public sealed record UserCreate(string UserName, string DisplayName, string Role, string Password, Guid? StaffMemberId = null, bool JuryAccess = false);
 
-public sealed record UserUpdate(string DisplayName, string Role, bool IsActive);
+public sealed record UserUpdate(string DisplayName, string Role, bool IsActive, Guid? StaffMemberId = null, bool JuryAccess = false);
 
 public sealed record PasswordReset(string NewPassword);
 
@@ -232,8 +235,9 @@ public sealed record SearchHit(string Type, string Title, string Subtitle, strin
 
 // ---------- Scolarité ----------
 public sealed record CourseDto(Guid Id, Guid PromotionId, string PromotionCode, int Number, string Name, decimal Coefficient, decimal Hours,
-    decimal MaxScore, Guid? TeacherId, string? TeacherName, bool IsActive, int AssessmentCount);
-public sealed record CourseUpsert(Guid PromotionId, int Number, string Name, decimal Coefficient, decimal Hours, decimal MaxScore);
+    decimal MaxScore, Guid? TeacherId, string? TeacherName, bool IsActive, int AssessmentCount, string Semester = "Annuel");
+/// <summary>Semester : « S1 », « S2 » ou « Annuel » ; vide garde l'organisation actuelle (annuel pour un nouveau cours).</summary>
+public sealed record CourseUpsert(Guid PromotionId, int Number, string Name, decimal Coefficient, decimal Hours, decimal MaxScore, string? Semester = null);
 
 /// <summary>Attribution d'un cours. La réattribution d'un cours déjà attribué demande une confirmation.</summary>
 public sealed record AssignmentRequest(Guid TeacherId, bool ConfirmReplace);

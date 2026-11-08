@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using System.Text.Json;
 using Scolia.Api.Security;
+using Scolia.Domain.Security;
 using Scolia.Infrastructure.Live;
 
 namespace Scolia.Api.Endpoints;
@@ -20,6 +21,25 @@ public static class LiveEndpoints
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
     private static readonly TimeSpan Heartbeat = TimeSpan.FromSeconds(15);
 
+    /// <summary>Sujets de la délibération qu'un compte enseignant reçoit en clair : ouverture de l'encodage, remise et renvoi.</summary>
+    public static readonly IReadOnlyList<string> TeacherTopics = ["ReglagesDeliberation", "RemiseCotes"];
+
+    /// <summary>
+    /// Compte enseignant (sans accès aux dossiers) : il ne doit lire ni les encaissements, ni les codes anonymes rattachés
+    /// aux matricules, ni l'activité des autres postes. Il reçoit les annonces de la délibération et, pour le reste,
+    /// un simple signal de rafraîchissement sans résumé.
+    /// </summary>
+    public static bool Restricted(ClaimsPrincipal user) =>
+        !user.HasClaim(ScoliaClaims.Permission, Permissions.StudentsRead) && !user.HasClaim(ScoliaClaims.Permission, Permissions.AcademicsRead)
+        && (user.HasClaim(ScoliaClaims.Permission, Permissions.MarksEncode) || user.HasClaim(ScoliaClaims.Permission, Permissions.JuryEncode));
+
+    public static LiveEvent? ForRestricted(LiveEvent live) => live.Kind switch
+    {
+        "donnees" when live.Topics.Any(t => TeacherTopics.Contains(t)) => live with { DeviceId = null, Device = null },
+        "donnees" => live with { DeviceId = null, Device = null, User = null, Summary = null, Topics = [] },
+        _ => null,
+    };
+
     public static void MapLiveEndpoints(this IEndpointRouteBuilder app)
     {
         var g = app.MapGroup("/api/direct").RequireAuthorization();
@@ -30,6 +50,7 @@ public static class LiveEndpoints
             http.Response.Headers.CacheControl = "no-cache";
             http.Response.Headers["X-Accel-Buffering"] = "no";
             var (id, reader) = hub.Subscribe();
+            var restricted = Restricted(http.User);
             var remote = http.Request.Headers["X-Scolia-Relay-Connection"] == "1";
             var deviceId = LiveHeaders.DeviceId(http);
             var grantValid = Guid.TryParseExact(http.Request.Headers["X-Scolia-Grant"].ToString(),
@@ -40,7 +61,8 @@ public static class LiveEndpoints
                 (grantValid && devices.HasGrant(grantId, deviceId));
             try
             {
-                await Write(http, "etat", hub.Snapshot(), ct);
+                var snapshot = hub.Snapshot();
+                await Write(http, "etat", restricted ? snapshot with { Presence = [], Locks = [] } : snapshot, ct);
                 while (!ct.IsCancellationRequested)
                 {
                     if (!StillAllowed()) { if (deviceId is not null) hub.Leave(deviceId); break; }
@@ -50,7 +72,8 @@ public static class LiveEndpoints
                     {
                         var live = await reader.ReadAsync(wait.Token);
                         if (!StillAllowed()) { if (deviceId is not null) hub.Leave(deviceId); break; }
-                        await Write(http, live.Kind, live, ct);
+                        if (!restricted) await Write(http, live.Kind, live, ct);
+                        else if (ForRestricted(live) is { } visible) await Write(http, visible.Kind, visible, ct);
                     }
                     catch (OperationCanceledException) when (!ct.IsCancellationRequested)
                     {
@@ -65,7 +88,11 @@ public static class LiveEndpoints
             finally { hub.Unsubscribe(id); }
         });
 
-        g.MapGet("/etat", (LiveHub hub) => Results.Ok(hub.Snapshot()));
+        g.MapGet("/etat", (HttpContext http, LiveHub hub) =>
+        {
+            var snapshot = hub.Snapshot();
+            return Results.Ok(Restricted(http.User) ? snapshot with { Presence = [], Locks = [] } : snapshot);
+        });
 
         g.MapPost("/presence", (PresenceInput input, HttpContext http, LiveHub hub,
             SchoolLicenseService license) =>

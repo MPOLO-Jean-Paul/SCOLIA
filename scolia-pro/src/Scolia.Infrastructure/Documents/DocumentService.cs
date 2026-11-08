@@ -256,9 +256,18 @@ public sealed class DocumentService : IDocumentService
 
     public byte[] Table(TableDocument d) => Document.Create(doc => doc.Page(page =>
     {
+        // Tableau large (grille de délibération) : police et marges des cellules resserrées pour que toutes les colonnes
+        // tiennent dans la largeur de la page, l'en-tête étant répété sur chaque page.
+        var (size, headSize, padding) = d.Columns.Count switch
+        {
+            > 22 => (5.5f, 5.5f, 1.5f),
+            > 16 => (6.5f, 6.5f, 2f),
+            > 11 => (7.5f, 7.5f, 3f),
+            _ => (8.5f, 8f, 4f),
+        };
         page.Size(d.Landscape ? PageSizes.A4.Landscape() : PageSizes.A4);
-        page.Margin(28);
-        page.DefaultTextStyle(s => s.FontFamily(Font).FontSize(8.5f).FontColor("#1E293B"));
+        page.Margin(d.Columns.Count > 16 ? 18 : 28);
+        page.DefaultTextStyle(s => s.FontFamily(Font).FontSize(size).FontColor("#1E293B"));
         page.Header().Element(c => Header(c, d.School, d.Title, d.Subtitle));
         var widths = ColumnWidths(d);
         var amounts = AmountColumns(d);
@@ -268,13 +277,13 @@ public sealed class DocumentService : IDocumentService
             t.Header(h =>
             {
                 for (var c = 0; c < d.Columns.Count; c++)
-                    Align(h.Cell().Background(Navy).Padding(4), amounts[c]).Text(d.Columns[c]).FontColor(Colors.White).Bold().FontSize(8);
+                    Align(h.Cell().Background(Navy).Padding(padding), amounts[c]).Text(d.Columns[c]).FontColor(Colors.White).Bold().FontSize(headSize);
             });
             var i = 0;
             foreach (var row in d.Rows)
             {
                 var bg = i++ % 2 == 0 ? "#FFFFFF" : "#F7F9FD";
-                for (var c = 0; c < row.Count; c++) Align(t.Cell().Background(bg).Padding(4), c < amounts.Length && amounts[c]).Text(row[c]);
+                for (var c = 0; c < row.Count; c++) Align(t.Cell().Background(bg).Padding(padding), c < amounts.Length && amounts[c]).Text(row[c]);
             }
             if (d.Totals is not null)
                 for (var c = 0; c < d.Totals.Count; c++)
@@ -287,13 +296,23 @@ public sealed class DocumentService : IDocumentService
     /// Rapport à plusieurs parties : les chiffres clés en tuiles de quatre par ligne, puis chaque partie avec son titre
     /// et son tableau ; une partie vide dit simplement qu'il n'y a rien ce jour-là.
     /// </summary>
-    public byte[] Report(ReportDocument d) => Document.Create(doc => doc.Page(page =>
+    public byte[] Report(ReportDocument d) => Document.Create(doc => doc.Page(page => ComposeReport(page, d))).GeneratePdf();
+
+    public byte[] Reports(IReadOnlyList<ReportDocument> documents) => Document.Create(doc =>
+    {
+        foreach (var d in documents) doc.Page(page => ComposeReport(page, d));
+    }).GeneratePdf();
+
+    private void ComposeReport(PageDescriptor page, ReportDocument d)
     {
         page.Size(PageSizes.A4);
         page.Margin(28);
         page.DefaultTextStyle(s => s.FontFamily(Font).FontSize(8.5f).FontColor("#1E293B"));
         page.Header().Element(c => Header(c, d.School, d.Title, d.Subtitle));
-        page.Content().PaddingTop(10).Column(col =>
+        // Un bulletin tient toujours sur une page : s'il a beaucoup de cours, le contenu est réduit, jamais coupé.
+        var content = page.Content().PaddingTop(10);
+        if (d.OnePage) content = content.ScaleToFit();
+        content.Column(col =>
         {
             col.Spacing(12);
             foreach (var chunk in d.Figures.Chunk(4))
@@ -339,15 +358,29 @@ public sealed class DocumentService : IDocumentService
                 });
             }
             if (d.Note is { Length: > 0 } note) col.Item().PaddingTop(6).Text(note).FontSize(7.5f).Italic().FontColor(Muted);
+            if (d.VerificationUrl is { Length: > 0 } url)
+                col.Item().PaddingTop(6).Row(row =>
+                {
+                    row.ConstantItem(62).Height(62).Image(Qr(url)).FitArea();
+                    row.RelativeItem().PaddingLeft(8).AlignMiddle().Column(c =>
+                    {
+                        c.Item().Text("Vérifier ce document").FontSize(8).Bold().FontColor(Navy);
+                        c.Item().Text(url).FontSize(7).FontColor(Muted);
+                    });
+                });
         });
         page.Footer().Element(c => Footer(c, null));
-    })).GeneratePdf();
+    }
 
     /// <summary>Largeur de chaque colonne selon son contenu : un nom complet a plus de place qu'un code de promotion.</summary>
     private static float[] ColumnWidths(TableDocument d) => d.Columns.Select((title, c) =>
     {
         var longest = d.Rows.Take(300).Select(r => c < r.Count ? r[c].Length : 0).DefaultIfEmpty(0).Max();
-        return Math.Clamp(Math.Max(title.Length * 0.8f, longest), 3f, 30f);
+        // Un titre long se replie sur plusieurs lignes : seul son mot le plus long impose une largeur,
+        // pour qu'une colonne courte (rang, code, %) ne soit pas écrasée par des intitulés de cours.
+        var word = title.Split(' ', StringSplitOptions.RemoveEmptyEntries).Select(w => w.Length).DefaultIfEmpty(0).Max();
+        // Le rembourrage des cellules compte aussi : une marge fixe évite de couper « 79,94 » ou un code.
+        return Math.Clamp(Math.Max(Math.Max(title.Length * 0.5f, word * 1.1f), longest), 4f, 30f) + 2.5f;
     }).ToArray();
 
     /// <summary>Colonnes de montants, alignées à droite pour que les chiffres se lisent en colonne.</summary>

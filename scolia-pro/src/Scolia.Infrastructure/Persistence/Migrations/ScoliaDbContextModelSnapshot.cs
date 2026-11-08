@@ -144,6 +144,9 @@ namespace Scolia.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("PromotionId")
                         .HasColumnType("TEXT");
 
+                    b.Property<int>("Semester")
+                        .HasColumnType("INTEGER");
+
                     b.Property<DateTime?>("UpdatedAtUtc")
                         .HasColumnType("TEXT");
 
@@ -342,6 +345,409 @@ namespace Scolia.Infrastructure.Persistence.Migrations
                         .IsUnique();
 
                     b.ToTable("Notes", (string)null);
+                });
+
+            modelBuilder.Entity("Scolia.Domain.Deliberation.AnonymousCode", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("AcademicYearId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("EnrollmentId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsManual")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("ReplacedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ReplacedReason")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EnrollmentId")
+                        .IsUnique()
+                        .HasFilter("\"IsActive\" = 1");
+
+                    b.HasIndex("AcademicYearId", "Code")
+                        .IsUnique();
+
+                    b.ToTable("CodesAnonymes", (string)null);
+                });
+
+            modelBuilder.Entity("Scolia.Domain.Deliberation.CourseMark", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("CourseId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("EnrollmentId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("EnteredAnonymously")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Kind")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("Value")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CourseId");
+
+                    b.HasIndex("EnrollmentId", "CourseId", "Kind")
+                        .IsUnique();
+
+                    b.ToTable("CotesDeliberation", (string)null);
+                });
+
+            modelBuilder.Entity("Scolia.Domain.Deliberation.DeliberationResult", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Computed")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("EnrollmentId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("FailedCourses")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Final")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Matricule")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("MaxPoints")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Mention")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Missing")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("Percent")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("Points")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("Rank")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Reason")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("SessionId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("StudentName")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("VerificationCode")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SessionId", "EnrollmentId")
+                        .IsUnique();
+
+                    b.HasIndex("VerificationCode");
+
+                    b.ToTable("ResultatsDeliberation", (string)null);
+                });
+
+            modelBuilder.Entity("Scolia.Domain.Deliberation.DeliberationSession", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("AcademicYearId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("ClosedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ClosedByName")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("LastReopenReason")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Members")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Period")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("President")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("PromotionId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("ReopenCount")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PromotionId", "Period")
+                        .IsUnique();
+
+                    b.ToTable("SessionsDeliberation", (string)null);
+                });
+
+            modelBuilder.Entity("Scolia.Domain.Deliberation.DeliberationSettings", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("AcademicYearId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("EncodingS1Open")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("EncodingS2Open")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("JuryMembers")
+                        .HasMaxLength(600)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("JuryPresident")
+                        .HasMaxLength(120)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("JurySecretary")
+                        .HasMaxLength(120)
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("PassPercent")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Prefect")
+                        .HasMaxLength(120)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Principal")
+                        .HasMaxLength(120)
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("SupportEnabled")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AcademicYearId")
+                        .IsUnique();
+
+                    b.ToTable("ReglagesDeliberation", (string)null);
+                });
+
+            modelBuilder.Entity("Scolia.Domain.Deliberation.JuryDecision", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("EnrollmentId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Outcome")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("SessionId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EnrollmentId");
+
+                    b.HasIndex("SessionId", "EnrollmentId")
+                        .IsUnique();
+
+                    b.ToTable("DecisionsJury", (string)null);
+                });
+
+            modelBuilder.Entity("Scolia.Domain.Deliberation.MarkSubmission", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("AcademicYearId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("CourseId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Kind")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("SubmittedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SubmittedByName")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CourseId", "Kind")
+                        .IsUnique();
+
+                    b.ToTable("RemisesCotes", (string)null);
                 });
 
             modelBuilder.Entity("Scolia.Domain.Discipline.DisciplineDecision", b =>
@@ -1141,6 +1547,9 @@ namespace Scolia.Infrastructure.Persistence.Migrations
                     b.Property<bool>("IsActive")
                         .HasColumnType("INTEGER");
 
+                    b.Property<bool>("JuryAccess")
+                        .HasColumnType("INTEGER");
+
                     b.Property<DateTime?>("LastLoginUtc")
                         .HasColumnType("TEXT");
 
@@ -1165,6 +1574,9 @@ namespace Scolia.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<Guid?>("StaffMemberId")
+                        .HasColumnType("TEXT");
+
                     b.Property<DateTime?>("UpdatedAtUtc")
                         .HasColumnType("TEXT");
 
@@ -1183,6 +1595,8 @@ namespace Scolia.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("NormalizedUserName")
                         .IsUnique();
+
+                    b.HasIndex("StaffMemberId");
 
                     b.ToTable("Utilisateurs", (string)null);
                 });
@@ -1837,6 +2251,72 @@ namespace Scolia.Infrastructure.Persistence.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("Scolia.Domain.Deliberation.AnonymousCode", b =>
+                {
+                    b.HasOne("Scolia.Domain.Students.Enrollment", null)
+                        .WithMany()
+                        .HasForeignKey("EnrollmentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Scolia.Domain.Deliberation.CourseMark", b =>
+                {
+                    b.HasOne("Scolia.Domain.Academics.Course", null)
+                        .WithMany()
+                        .HasForeignKey("CourseId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Scolia.Domain.Students.Enrollment", null)
+                        .WithMany()
+                        .HasForeignKey("EnrollmentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Scolia.Domain.Deliberation.DeliberationResult", b =>
+                {
+                    b.HasOne("Scolia.Domain.Deliberation.DeliberationSession", null)
+                        .WithMany()
+                        .HasForeignKey("SessionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Scolia.Domain.Deliberation.DeliberationSession", b =>
+                {
+                    b.HasOne("Scolia.Domain.School.Promotion", null)
+                        .WithMany()
+                        .HasForeignKey("PromotionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Scolia.Domain.Deliberation.JuryDecision", b =>
+                {
+                    b.HasOne("Scolia.Domain.Students.Enrollment", null)
+                        .WithMany()
+                        .HasForeignKey("EnrollmentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Scolia.Domain.Deliberation.DeliberationSession", null)
+                        .WithMany()
+                        .HasForeignKey("SessionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Scolia.Domain.Deliberation.MarkSubmission", b =>
+                {
+                    b.HasOne("Scolia.Domain.Academics.Course", null)
+                        .WithMany()
+                        .HasForeignKey("CourseId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("Scolia.Domain.Discipline.DisciplineDecision", b =>
                 {
                     b.HasOne("Scolia.Domain.Students.Enrollment", null)
@@ -1913,6 +2393,14 @@ namespace Scolia.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.SetNull);
 
                     b.Navigation("Section");
+                });
+
+            modelBuilder.Entity("Scolia.Domain.Security.AppUser", b =>
+                {
+                    b.HasOne("Scolia.Domain.Staff.StaffMember", null)
+                        .WithMany()
+                        .HasForeignKey("StaffMemberId")
+                        .OnDelete(DeleteBehavior.SetNull);
                 });
 
             modelBuilder.Entity("Scolia.Domain.Staff.PayrollEntry", b =>
