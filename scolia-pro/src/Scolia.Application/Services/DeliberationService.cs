@@ -1031,7 +1031,7 @@ public sealed class DeliberationService(IAppDbContext db, IWriteGate gate, IAudi
         var grids = new List<(string SheetName, TableDocument Document)>(promotions.Count);
         foreach (var promotion in promotions)
         {
-            var grid = await GridAsync(promotion.Id, periodText, ct);
+            var grid = await GridAsync(promotion.Id, periodText, ct, detailedHeaders: true);
             if (grid.Rows.Any(row => row.Count < 2 || string.IsNullOrWhiteSpace(row[1]) || row[1] == "—"))
                 throw new ConflictException($"Codes anonymes incomplets pour {promotion.Code} : attribuez les codes avant l'export de toutes les promotions.");
             grids.Add((promotion.Code, grid));
@@ -1040,7 +1040,7 @@ public sealed class DeliberationService(IAppDbContext db, IWriteGate gate, IAudi
     }
 
     /// <summary>Grille des cotes : une colonne par cours (points retenus), total, pourcentage et décision.</summary>
-    public async Task<TableDocument> GridAsync(Guid promotionId, string periodText, CancellationToken ct = default)
+    public async Task<TableDocument> GridAsync(Guid promotionId, string periodText, CancellationToken ct = default, bool detailedHeaders = false)
     {
         var year = await YearContext.CurrentAsync(db, ct);
         var period = DeliberationText.Period(periodText);
@@ -1066,7 +1066,7 @@ public sealed class DeliberationService(IAppDbContext db, IWriteGate gate, IAudi
         else blocks.AddRange(courses.Select(c => ("cours", (CourseStatDto?)c)));
         // La grille officielle compte beaucoup de colonnes : en-têtes courts (numéro du cours, sigles des totaux) et légende en sous-titre.
         string Header((string Kind, CourseStatDto? Course) b, JuryTotalsDto? max) => b.Course is { } c
-            ? official ? $"{c.Number} /{c.Max:0.##}" : $"{c.Number}. {c.Course} (/{c.Max:0.##})"
+            ? official && !detailedHeaders ? $"{c.Number} /{c.Max:0.##}" : $"{c.Number}. {c.Course} (/{c.Max:0.##})"
             : b.Kind switch
             {
                 "TOTAL 1" => $"T1 /{max?.Total1Max:0.##}",
