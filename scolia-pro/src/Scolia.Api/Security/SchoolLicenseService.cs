@@ -21,6 +21,7 @@ public sealed class SchoolLicenseService : BackgroundService
     private readonly IDataProtector protector;
     private readonly ILogger<SchoolLicenseService> logger;
     private readonly string path;
+    private readonly string deviceName;
     private readonly string? configuredOwnerUrl;
     private StoredLicense state;
     private bool corrupted;
@@ -58,6 +59,10 @@ public sealed class SchoolLicenseService : BackgroundService
         var directory = options.Value.DataDirectory;
         Directory.CreateDirectory(directory);
         path = Path.Combine(directory, "proprietaire-licence.sec");
+        // Sur les serveurs Android, le nom annoncé par la configuration de l'appareil
+        // est plus utile que le nom système générique ("localhost").
+        deviceName = configuration["Scolia:Reseau:NomPoste"] is { Length: > 0 } schoolServerName
+            ? schoolServerName.Trim() : Environment.MachineName;
         var configured = configuration["Scolia:Licence:ServiceUrl"]?.Trim();
         configuredOwnerUrl = IsSecureServiceUrl(configured) ? new Uri(configured!).ToString() : null;
         try
@@ -160,7 +165,7 @@ public sealed class SchoolLicenseService : BackgroundService
             var payload = new
             {
                 consent = true, consent_version = ConsentVersion,
-                school_name = schoolName.Trim(), server_device_name = Environment.MachineName,
+                school_name = schoolName.Trim(), server_device_name = deviceName,
                 installation_id = state.InstallationId, invite_code = invitation.Trim()
             };
             using var response = await client.PostAsJsonAsync("api/v1/register", payload, ct);
@@ -170,7 +175,7 @@ public sealed class SchoolLicenseService : BackgroundService
                 throw new InvalidDataException("Réponse d'inscription du propriétaire invalide.");
             state = state with { Registration = new Registration(configuredOwnerUrl,
                 body.SchoolId, body.SchoolToken, schoolName.Trim(),
-                Environment.MachineName, DateTimeOffset.UtcNow) };
+                deviceName, DateTimeOffset.UtcNow) };
             Save(); // Le token reste chiffré sur le serveur scolaire ; jamais côté client.
         }
         finally { gate.Release(); }
