@@ -94,6 +94,17 @@ du serveur, réinscriptions.
   signalées : introuvable, ambigu (homonymes : ajouter la promotion), code invalide, code pris (jamais
   réattribué), code différent (remplacement manuel avec motif), doublon dans la liste.
 
+### Comptes enseignants (lot 3, portail enseignant d'ITMCD)
+
+- Rôle **Enseignant** dans « Utilisateurs » : le compte est relié à une fiche du personnel en fonction
+  (une fiche = un compte actif). Droit unique `cotes.encoder` : ni dossiers, ni finances, ni résultats du jury.
+- « Mes cours » s'ouvre à la connexion : les promotions et les cours attribués aujourd'hui à sa fiche,
+  avec l'avancement et la remise de chaque feuille. Le retrait de l'attribution coupe l'accès.
+- Feuille **toujours anonyme** pour l'enseignant (codes, jamais les noms), saisie par code, remise,
+  relevé et liste des échecs de ses cours. Après la remise, seul le jury corrige ou renvoie la feuille.
+- Le serveur vérifie l'attribution à chaque appel (refus 403) ; les anciens comptes enseignants sans fiche
+  restent désactivés.
+
 ### Délibération et jury
 
 - Tableau par promotion et par période (premier semestre, second semestre, jury annuel) : rang, points,
@@ -125,7 +136,8 @@ s'affiche à côté de la promotion actuelle.
 | Tests | `DeliberationEngineTests` (cas de référence du dossier ITMCD Pro), `DeliberationApiTests` (parcours complet) |
 
 Droits : lecture avec `scolarite.lire`, encodage avec `scolarite.ecrire`, codes, décisions, clôture,
-réouverture et réglages avec le nouveau droit `deliberation.gerer` (accordé au secrétariat).
+réouverture et réglages avec le nouveau droit `deliberation.gerer` (accordé au secrétariat) ; l'enseignant
+encode ses seuls cours avec `cotes.encoder`.
 
 ## 5. Décisions prises (modifiables)
 
@@ -136,8 +148,7 @@ réouverture et réglages avec le nouveau droit `deliberation.gerer` (accordé a
 
 ## 6. Prochains lots proposés
 
-1. Comptes enseignants (portail enseignant d'ITMCD) : compte relié à la fiche du personnel, accès limité aux cours
-   qui lui sont attribués, encodage et remise depuis le téléphone, tableau de bord de ses cours.
+1. Notifications (ITMCD) : avertir les enseignants à l'ouverture ou la fermeture de l'encodage, et le jury à chaque remise.
 2. Reprise des cotes d'ITMCD (export) rattachées aux codes officiels déjà repris.
 3. Comparaison avec le dépôt `Deliberation` dès qu'il contient le code.
 4. Code QR de vérification sur le bulletin de délibération.
