@@ -149,7 +149,7 @@ async function serveOwner(request, env, url) {
   }
   // L'ancien endpoint modifiait un statut historique sans changer la restriction réelle.
   // Refus explicite plutôt qu'une confirmation trompeuse de suspension/réactivation.
-  if (request.method === "PATCH" && /^\\/api\\/v1\\/owner\\/schools\\/[a-f0-9-]{36}$/.test(url.pathname))
+  if (request.method === "PATCH" && /^\/api\/v1\/owner\/schools\/[a-f0-9-]{36}$/.test(url.pathname))
     return fail("Ancienne commande retirée : utiliser /api/v1/owner/schools/{id}/license.", 410);
   return fail("Ressource propriétaire inconnue.", 404);
 }
