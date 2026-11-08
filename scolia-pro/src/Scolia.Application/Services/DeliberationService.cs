@@ -41,6 +41,12 @@ public sealed class DeliberationService(IAppDbContext db, IWriteGate gate, IAudi
             settings = new DeliberationSettings { AcademicYearId = year.Id };
             db.DeliberationSettings.Add(settings);
         }
+        // Une décision officielle clôturée doit rester conforme au règlement appliqué lors du jury.
+        // Les autorisations d'encodage et de téléchargement restent ajustables sans altérer le calcul.
+        if ((settings.PassPercent != input.PassPercent || settings.SupportEnabled != input.SupportEnabled)
+            && await db.DeliberationSessions.AsNoTracking().AnyAsync(
+                x => x.AcademicYearId == year.Id && x.Status == SessionStatus.Cloturee, ct))
+            throw new ConflictException("Une délibération est déjà clôturée pour cette année : le seuil de réussite et les règles d'appui ne peuvent plus être modifiés. Réouvrez d'abord les sessions concernées, avec un motif.");
         settings.EncodingS1Open = input.EncodingS1Open;
         settings.EncodingS2Open = input.EncodingS2Open;
         settings.SupportEnabled = input.SupportEnabled;
@@ -278,7 +284,8 @@ public sealed class DeliberationService(IAppDbContext db, IWriteGate gate, IAudi
             if (!seenCodes.Add(code) || !seenStudents.Add(student.EnrollmentId)) { lines.Add(Result("Doublon dans la liste", student)); continue; }
             var current = active.GetValueOrDefault(student.EnrollmentId);
             if (current == code) { lines.Add(Result("Déjà attribué", student)); continue; }
-            if (owners.TryGetValue(code, out var owner) && owner != student.EnrollmentId) { lines.Add(Result("Code pris", student)); continue; }
+            // Les anciens codes restent définitivement réservés, même s'ils appartenaient à cet apprenant.
+            if (owners.ContainsKey(code)) { lines.Add(Result("Code pris", student)); continue; }
             if (current is not null) { lines.Add(Result("Code différent", student)); continue; }
             lines.Add(Result("À attribuer", student));
             toAssign.Add((student.EnrollmentId, code));
@@ -914,6 +921,7 @@ public sealed class DeliberationService(IAppDbContext db, IWriteGate gate, IAudi
 
         var computation = await ComputeAsync(year, input.PromotionId, period, closing: true, ct);
         if (computation.Board.Rows.Count == 0) throw new DomainException("deliberation", "Aucun apprenant inscrit dans cette promotion : rien à délibérer.");
+        if (computation.Board.Courses.Count == 0) throw new DomainException("deliberation", "Aucun cours actif pour cette période : ajoutez les cours avant de clôturer la délibération.");
         foreach (var r in computation.Board.Rows)
             db.DeliberationResults.Add(new DeliberationResult
             {
@@ -1174,6 +1182,16 @@ public sealed class DeliberationService(IAppDbContext db, IWriteGate gate, IAudi
         Dictionary<Guid, DeliberationResult> frozen = session is { IsClosed: true } && !closing
             ? await db.DeliberationResults.AsNoTracking().Where(r => r.SessionId == session.Id).ToDictionaryAsync(r => r.EnrollmentId, ct)
             : [];
+        // Une session clôturée utilise exclusivement la liste figée du jury : un diplômé,
+        // un transféré ou un élève sorti après la clôture reste au procès-verbal officiel.
+        // Les inscrits ajoutés après la clôture n'y figurent pas.
+        if (session is { IsClosed: true } && !closing)
+        {
+            if (frozen.Count == 0)
+                throw new ConflictException("Cette délibération est clôturée, mais aucun résultat officiel figé n'a été retrouvé. Vérifiez la base avant de générer les documents.");
+            students = frozen.Values.Select(f => new EnrolledStudent(
+                f.EnrollmentId, promotionId, promotion.Code, f.Matricule, f.StudentName)).ToList();
+        }
         var courseIds = courses.Select(c => c.Id).ToList();
         var ids = students.Select(s => s.EnrollmentId).ToList();
         var marks = (await db.CourseMarks.AsNoTracking().Where(m => courseIds.Contains(m.CourseId) && ids.Contains(m.EnrollmentId)).ToListAsync(ct))
