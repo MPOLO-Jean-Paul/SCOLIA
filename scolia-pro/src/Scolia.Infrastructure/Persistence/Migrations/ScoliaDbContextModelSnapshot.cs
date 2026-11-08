@@ -1540,6 +1540,9 @@ namespace Scolia.Infrastructure.Persistence.Migrations
                     b.Property<bool>("IsActive")
                         .HasColumnType("INTEGER");
 
+                    b.Property<bool>("JuryAccess")
+                        .HasColumnType("INTEGER");
+
                     b.Property<DateTime?>("LastLoginUtc")
                         .HasColumnType("TEXT");
 

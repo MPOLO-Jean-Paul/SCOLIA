@@ -423,7 +423,7 @@ public sealed class ShellViewModel : Observable
     public bool Can(string permission) => session?.Permissions.Contains(permission) == true;
 
     /// <summary>Compte enseignant : son espace se limite à ses cours (encodage et remise des cotes).</summary>
-    public bool TeacherOnly => Can(Perm.MarksEncode) && !Can(Perm.AcademicsRead);
+    public bool TeacherOnly => (Can(Perm.MarksEncode) || Can(Perm.JuryEncode)) && !Can(Perm.AcademicsRead);
 
     /// <summary>Plein écran : la fenêtre gère l'affichage réel, le shell garde l'état pour le ruban.</summary>
     public bool IsFullscreen { get; private set; }

@@ -20,7 +20,7 @@ public static class SessionFactory
             new(ScoliaClaims.Role, user.Role.ToString()),
             new(ScoliaClaims.Stamp, user.SecurityStamp),
         };
-        claims.AddRange(Permissions.For(user.Role).Select(p => new Claim(ScoliaClaims.Permission, p)));
+        claims.AddRange(Permissions.For(user).Select(p => new Claim(ScoliaClaims.Permission, p)));
         return new ClaimsPrincipal(new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme));
     }
 
@@ -41,7 +41,7 @@ public static class SessionFactory
     {
         var school = await db.Schools.AsNoTracking().OrderBy(s => s.CreatedAtUtc).FirstOrDefaultAsync(ct);
         var year = await db.AcademicYears.AsNoTracking().Where(y => y.IsCurrent).Select(y => y.Label).FirstOrDefaultAsync(ct);
-        return new SessionDto(user.Id, user.UserName, user.DisplayName, user.Role.ToString(), Permissions.Label(user.Role), Permissions.For(user.Role),
+        return new SessionDto(user.Id, user.UserName, user.DisplayName, user.Role.ToString(), Permissions.Label(user), Permissions.For(user),
             user.MustChangePassword, school?.Name ?? "SCOLIA", school?.ShortName, year, school?.CurrencySymbol ?? "FC", school?.PhoneCountryCode ?? "243");
     }
 

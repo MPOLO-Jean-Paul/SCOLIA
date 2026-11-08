@@ -54,8 +54,8 @@ public sealed class UserService(IAppDbContext db, IWriteGate gate, IAuditLog aud
     private static readonly (Role, string)[] RoleLabels =
         [(Role.Secretariat, "Secrétariat"), (Role.Comptabilite, "Comptabilité"), (Role.Promoteur, "Promoteur / Responsable"), (Role.Enseignant, "Enseignant")];
 
-    public static UserDto ToDto(AppUser u, DateTime now) => new(u.Id, u.UserName, u.DisplayName, u.Role.ToString(), Permissions.Label(u.Role), u.IsActive,
-        u.MustChangePassword, u.LastLoginUtc, u.LockoutEndUtc is not null && u.LockoutEndUtc > now, u.StaffMemberId);
+    public static UserDto ToDto(AppUser u, DateTime now) => new(u.Id, u.UserName, u.DisplayName, u.Role.ToString(), Permissions.Label(u), u.IsActive,
+        u.MustChangePassword, u.LastLoginUtc, u.LockoutEndUtc is not null && u.LockoutEndUtc > now, u.StaffMemberId, u.JuryAccess);
 
     /// <summary>
     /// Un compte enseignant est relié à une fiche du personnel en fonction, et une fiche n'a qu'un compte actif :
@@ -148,9 +148,10 @@ public sealed class UserService(IAppDbContext db, IWriteGate gate, IAuditLog aud
         {
             UserName = name, NormalizedUserName = normalized, DisplayName = input.DisplayName.Trim(), Role = role,
             PasswordHash = passwords.Hash(input.Password), MustChangePassword = true, StaffMemberId = staffMemberId,
+            JuryAccess = role == Role.Enseignant && input.JuryAccess,
         };
         db.Users.Add(user);
-        audit.Record("utilisateur.cree", "Utilisateur", user.Id.ToString(), $"Compte {name} ({Permissions.Label(role)}) créé.");
+        audit.Record("utilisateur.cree", "Utilisateur", user.Id.ToString(), $"Compte {name} ({Permissions.Label(user)}) créé.");
         await db.SaveChangesAsync(ct);
         return ToDto(user, clock.UtcNow);
     }, ct);
@@ -168,13 +169,19 @@ public sealed class UserService(IAppDbContext db, IWriteGate gate, IAuditLog aud
         }
         if (id == current.Id && !input.IsActive) throw new DomainException("isActive", "Vous ne pouvez pas désactiver votre propre compte.");
         var staffMemberId = input.IsActive || role != Role.Enseignant ? await TeacherLinkAsync(role, input.StaffMemberId, id, ct) : input.StaffMemberId ?? user.StaffMemberId;
-        var changedSecurity = user.Role != role || user.IsActive != input.IsActive || user.StaffMemberId != staffMemberId;
+        var juryAccess = role == Role.Enseignant && input.JuryAccess;
+        // Le privilège jury s'accorde ou se retire à tout moment ; les cotes déjà encodées restent dans la base.
+        if (juryAccess != user.JuryAccess)
+            audit.Record(juryAccess ? "utilisateur.jury.accorde" : "utilisateur.jury.retire", "Utilisateur", id.ToString(),
+                $"Privilège jury {(juryAccess ? "accordé à" : "retiré à")} {user.UserName}.");
+        var changedSecurity = user.Role != role || user.IsActive != input.IsActive || user.StaffMemberId != staffMemberId || user.JuryAccess != juryAccess;
         user.DisplayName = input.DisplayName.Trim();
         user.Role = role;
         user.IsActive = input.IsActive;
         user.StaffMemberId = staffMemberId;
+        user.JuryAccess = juryAccess;
         if (changedSecurity) user.SecurityStamp = Guid.NewGuid().ToString("N");
-        audit.Record("utilisateur.modifie", "Utilisateur", id.ToString(), $"Compte {user.UserName} : {Permissions.Label(role)}, {(input.IsActive ? "actif" : "désactivé")}.");
+        audit.Record("utilisateur.modifie", "Utilisateur", id.ToString(), $"Compte {user.UserName} : {Permissions.Label(user)}, {(input.IsActive ? "actif" : "désactivé")}.");
         await db.SaveChangesAsync(ct);
         return ToDto(user, clock.UtcNow);
     }, ct);

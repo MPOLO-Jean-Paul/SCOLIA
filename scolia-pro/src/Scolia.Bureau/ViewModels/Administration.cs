@@ -1356,6 +1356,7 @@ public sealed class UsersPage : PageViewModel
                 role = f.ChoiceValue("role"),
                 password = f.Text("motDePasse"),
                 staffMemberId = TeacherLink(f),
+                juryAccess = f.ChoiceValue("role") == "Enseignant" && f.Flag("jury"),
             });
             shell.Notify("Compte créé.");
             return true;
@@ -1364,6 +1365,7 @@ public sealed class UsersPage : PageViewModel
         form.Add("nom", "Nom complet", required: true);
         form.AddChoice("role", "Rôle", Labels.Roles, "Secretariat", required: true);
         form.AddChoice("enseignant", "Fiche enseignant (rôle Enseignant seulement)", teachers);
+        form.AddFlag("jury", "Membre du jury : encode aussi les épreuves du jury (rôle Enseignant)", false);
         form.Add("motDePasse", "Code provisoire", FieldKind.Secret, required: true,
             hint: AccessCode.Hint + " La personne choisira le sien à sa première connexion.");
         if (await shell.Ask(form) && shell.Current is UsersPage page) await page.RefreshAsync();
@@ -1385,6 +1387,7 @@ public sealed class UsersPage : PageViewModel
                 role = f.ChoiceValue("role"),
                 isActive = f.Flag("actif"),
                 staffMemberId = TeacherLink(f),
+                juryAccess = f.ChoiceValue("role") == "Enseignant" && f.Flag("jury"),
             });
             Shell.Notify("Compte enregistré.");
             return true;
@@ -1393,6 +1396,8 @@ public sealed class UsersPage : PageViewModel
         form.Add("nom", "Nom complet", value: u.DisplayName, required: true);
         form.AddChoice("role", "Rôle", Labels.Roles, u.Role, required: true);
         form.AddChoice("enseignant", "Fiche enseignant (rôle Enseignant seulement)", teachers, u.StaffMemberId?.ToString());
+        // Privilège, pas un compte : le retirer laisse en place les cotes du jury déjà encodées.
+        form.AddFlag("jury", "Membre du jury : encode aussi les épreuves du jury (rôle Enseignant)", u.JuryAccess);
         form.AddFlag("actif", "Compte actif", u.IsActive);
         if (await Shell.Ask(form)) await RefreshAsync();
     }

@@ -637,7 +637,8 @@ public sealed class DeliberationService(IAppDbContext db, IWriteGate gate, IAudi
     // ---------- Portail enseignant (repris d'ITMCD) ----------
 
     /// <summary>Compte enseignant : il encode ses cours sans accès au reste de la scolarité.</summary>
-    private bool TeacherOnly => !user.HasPermission(Permissions.AcademicsRead) && user.HasPermission(Permissions.MarksEncode);
+    private bool TeacherOnly => !user.HasPermission(Permissions.AcademicsRead)
+        && (user.HasPermission(Permissions.MarksEncode) || user.HasPermission(Permissions.JuryEncode));
 
     /// <summary>Fiche du personnel reliée au compte connecté, pour un compte enseignant.</summary>
     private async Task<Guid> MyStaffIdAsync(CancellationToken ct)
@@ -653,9 +654,13 @@ public sealed class DeliberationService(IAppDbContext db, IWriteGate gate, IAudi
     /// </summary>
     private async Task EnsureCourseAccessAsync(Course course, bool write, CancellationToken ct)
     {
-        // Les épreuves du jury (projet Délibération) sont cotées par le jury seul.
-        if (write && DeliberationEngine.IsJury(course.Semester) && !user.HasPermission(Permissions.DeliberationManage))
-            throw new ForbiddenException($"« {course.Name} » est une épreuve du jury : seul le jury en encode les cotes.");
+        // Les épreuves du jury (projet Délibération) sont cotées par le jury : le secrétariat (deliberation.gerer) ou un
+        // enseignant qui a reçu le privilège jury (jury.encoder). Le privilège ne rend pas titulaire de l'épreuve.
+        if (DeliberationEngine.IsJury(course.Semester))
+        {
+            if (user.HasPermission(Permissions.DeliberationManage) || user.HasPermission(Permissions.JuryEncode)) return;
+            if (write) throw new ForbiddenException($"« {course.Name} » est une épreuve du jury : seuls les membres du jury en encodent les cotes.");
+        }
         if (user.HasPermission(write ? Permissions.AcademicsWrite : Permissions.AcademicsRead)) return;
         if (!user.HasPermission(Permissions.MarksEncode)) throw new ForbiddenException("Ce compte n'a pas accès à l'encodage des cotes.");
         var staffId = await MyStaffIdAsync(ct);
@@ -663,7 +668,10 @@ public sealed class DeliberationService(IAppDbContext db, IWriteGate gate, IAudi
             throw new ForbiddenException($"Le cours {course.Number} « {course.Name} » ne vous est pas attribué : vous ne pouvez pas en encoder les cotes.");
     }
 
-    /// <summary>Cours attribués à l'enseignant connecté pour l'année courante, avec l'avancement et la remise de chaque feuille.</summary>
+    /// <summary>
+    /// Cours attribués à l'enseignant connecté pour l'année courante, avec l'avancement et la remise de chaque feuille ;
+    /// pour un membre du jury, en plus, les épreuves du jury de toutes les promotions.
+    /// </summary>
     public async Task<IReadOnlyList<TeacherCourseDto>> MyCoursesAsync(CancellationToken ct = default)
     {
         var year = await YearContext.CurrentAsync(db, ct);
@@ -673,6 +681,15 @@ public sealed class DeliberationService(IAppDbContext db, IWriteGate gate, IAudi
                           join p in db.Promotions.AsNoTracking() on c.PromotionId equals p.Id
                           where a.TeacherId == staffId && a.EndedOn == null && c.AcademicYearId == year.Id && c.IsActive
                           select new { c.Id, c.PromotionId, p.Code, p.Name }).ToListAsync(ct);
+        if (user.HasPermission(Permissions.JuryEncode))
+        {
+            var jury = await (from c in db.Courses.AsNoTracking()
+                              join p in db.Promotions.AsNoTracking() on c.PromotionId equals p.Id
+                              where c.AcademicYearId == year.Id && c.IsActive
+                                  && (c.Semester == CourseSemester.JuryEpreuve || c.Semester == CourseSemester.JuryBloc)
+                              select new { c.Id, c.PromotionId, p.Code, p.Name }).ToListAsync(ct);
+            mine = mine.Concat(jury).DistinctBy(m => m.Id).ToList();
+        }
         var result = new List<TeacherCourseDto>();
         foreach (var promotion in mine.GroupBy(m => new { m.PromotionId, m.Code, m.Name }).OrderBy(g => g.Key.Code, StringComparer.CurrentCulture))
         {

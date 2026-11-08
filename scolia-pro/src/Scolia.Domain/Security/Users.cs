@@ -19,6 +19,11 @@ public sealed class AppUser : Entity
     public DateTime? LastLoginUtc { get; set; }
     /// <summary>Compte enseignant : fiche du personnel dont il encode les cours attribués (délibération).</summary>
     public Guid? StaffMemberId { get; set; }
+    /// <summary>
+    /// Privilège jury d'un compte enseignant : il encode aussi les épreuves du jury (le jury est un comité).
+    /// Ce n'est pas un compte à part ; le retirer ne touche à aucune cote déjà encodée.
+    /// </summary>
+    public bool JuryAccess { get; set; }
     /// <summary>Change à chaque modification de sécurité : invalide les sessions ouvertes.</summary>
     public string SecurityStamp { get; set; } = Guid.NewGuid().ToString("N");
 }
@@ -48,12 +53,14 @@ public static class Permissions
     public const string DeliberationManage = "deliberation.gerer";
     /// <summary>Enseignant : encode et remet les cotes de ses seuls cours attribués, par code anonyme, sans voir les noms.</summary>
     public const string MarksEncode = "cotes.encoder";
+    /// <summary>Membre du jury : encode les épreuves du jury de toutes les promotions, sans en devenir titulaire.</summary>
+    public const string JuryEncode = "jury.encoder";
 
     public static readonly IReadOnlyList<string> All =
     [
         StudentsRead, StudentsWrite, PaymentsRead, PaymentsCreate, PaymentsCancel, ExpensesWrite, CashClose,
         ReportsRead, PilotageRead, SettingsWrite, UsersManage, AuditRead, BackupManage, AcademicsWrite, AcademicsRead, StaffManage, DisciplineCancel, DeliberationManage,
-        MarksEncode,
+        MarksEncode, JuryEncode,
     ];
 
     /// <summary>Les seuls rôles qu'on attribue.</summary>
@@ -72,6 +79,12 @@ public static class Permissions
         Role.Enseignant => [MarksEncode],
         _ => [],
     };
+
+    /// <summary>Droits effectifs d'un compte : ceux de son rôle, plus le privilège jury accordé à un enseignant.</summary>
+    public static IReadOnlyCollection<string> For(AppUser user) =>
+        user.Role == Role.Enseignant && user.JuryAccess ? [.. For(user.Role), JuryEncode] : For(user.Role);
+
+    public static string Label(AppUser user) => user.Role == Role.Enseignant && user.JuryAccess ? "Enseignant · membre du jury" : Label(user.Role);
 
     public static string Label(Role role) => role switch
     {

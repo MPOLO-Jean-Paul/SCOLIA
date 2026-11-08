@@ -448,4 +448,58 @@ public sealed class DeliberationApiTests : IDisposable
         var (lockedJury, _) = await admin.Put($"{D}/feuille?coursId={stage}&nature=Jury", new[] { new { enrollmentId = student, value = (decimal?)100m } }).Fail();
         Assert.Equal(HttpStatusCode.Conflict, lockedJury);
     }
+
+    [Fact]
+    public async Task Jury_privilege_lets_a_teacher_encode_jury_evaluations_and_can_be_withdrawn()
+    {
+        var admin = await app.InstalledAdmin();
+        var setup = await SetupAsync(admin, "MUKENDI", "KASONGO");
+        await admin.Post($"{D}/codes/attribution", new { promotionId = setup.PromotionId }).Ok();
+        var codes = await CodesAsync(admin, setup.PromotionId);
+        await admin.Post($"{D}/epreuves-jury?promotionId={setup.PromotionId}", new { }).Ok();
+        var stage = (await admin.GetAsync($"{D}/cours?promotionId={setup.PromotionId}").Ok()).EnumerateArray()
+            .Single(c => c.GetProperty("name").GetString() == "Stage").GetProperty("id").GetString()!;
+        var staff = await admin.Post("/api/personnel", new
+        {
+            lastName = "KAPEND", middleName = "", firstName = "Rose", gender = "F", function = "Enseignante", phone = "0812345678", email = (string?)null,
+            hireDate = new DateOnly(2020, 1, 1), exitDate = (DateOnly?)null, baseSalary = 300000m, isActive = true,
+        }).Ok();
+        var staffId = staff.GetProperty("id").GetString()!;
+        var account = await admin.Post("/api/utilisateurs", new { userName = "prof.kapend", displayName = "Pr KAPEND", role = "Enseignant", password = "Provisoire1", staffMemberId = staffId }).Ok();
+        var userId = account.GetProperty("id").GetString()!;
+        Assert.False(account.GetProperty("juryAccess").GetBoolean());
+
+        // Sans le privilège : aucune épreuve du jury.
+        var teacher = await app.Login("prof.kapend", "Provisoire1");
+        Assert.Empty((await teacher.GetAsync($"{D}/mes-cours").Ok()).EnumerateArray());
+        var (denied, _) = await teacher.Post($"{D}/cotes-par-code", new { code = codes[setup.Enrollments[0]], courseId = stage, kind = "Jury", value = 100m }).Fail();
+        Assert.Equal(HttpStatusCode.Forbidden, denied);
+
+        // Le secrétariat accorde le privilège : c'est le même compte, la session est simplement renouvelée.
+        var granted = await admin.Put($"/api/utilisateurs/{userId}", new { displayName = "Pr KAPEND", role = "Enseignant", isActive = true, staffMemberId = staffId, juryAccess = true }).Ok();
+        Assert.True(granted.GetProperty("juryAccess").GetBoolean());
+        Assert.Equal("Enseignant · membre du jury", granted.GetProperty("roleLabel").GetString());
+        teacher = await app.Login("prof.kapend", "Provisoire1");
+        Assert.Contains("jury.encoder", (await teacher.GetAsync("/api/session").Ok()).GetProperty("permissions").EnumerateArray().Select(p => p.GetString()));
+        var mine = (await teacher.GetAsync($"{D}/mes-cours").Ok()).EnumerateArray().ToList();
+        Assert.Equal(7, mine.Count);
+        Assert.All(mine, m => Assert.StartsWith("Jury", m.GetProperty("course").GetProperty("semester").GetString(), StringComparison.Ordinal));
+
+        // Encodage anonyme des épreuves, sans devenir titulaire ni toucher aux cours ordinaires.
+        await teacher.Post($"{D}/cotes-par-code", new { code = codes[setup.Enrollments[0]], courseId = stage, kind = "Jury", value = 120m }).Ok();
+        var sheet = await teacher.GetAsync($"{D}/feuille?coursId={stage}&nature=Jury").Ok();
+        Assert.True(sheet.GetProperty("anonymous").GetBoolean());
+        Assert.Equal(HttpStatusCode.Forbidden, (await teacher.GetAsync($"{D}/feuille?coursId={setup.S1Course}&nature=S1")).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await teacher.GetAsync($"{D}/resultats?promotionId={setup.PromotionId}&periode=Annuel")).StatusCode);
+        var history = (await admin.GetAsync($"/api/scolarite/cours/{stage}/attributions").Ok()).EnumerateArray();
+        Assert.Empty(history);
+
+        // Retrait du privilège : la cote encodée reste, l'enseignant ne peut plus encoder.
+        await admin.Put($"/api/utilisateurs/{userId}", new { displayName = "Pr KAPEND", role = "Enseignant", isActive = true, staffMemberId = staffId, juryAccess = false }).Ok();
+        teacher = await app.Login("prof.kapend", "Provisoire1");
+        var (withdrawn, _) = await teacher.Post($"{D}/cotes-par-code", new { code = codes[setup.Enrollments[1]], courseId = stage, kind = "Jury", value = 100m }).Fail();
+        Assert.Equal(HttpStatusCode.Forbidden, withdrawn);
+        var kept = await admin.GetAsync($"{D}/feuille?coursId={stage}&nature=Jury").Ok();
+        Assert.Equal(120m, kept.GetProperty("rows").EnumerateArray().Single(r => r.GetProperty("enrollmentId").GetString() == setup.Enrollments[0]).GetProperty("value").GetDecimal());
+    }
 }

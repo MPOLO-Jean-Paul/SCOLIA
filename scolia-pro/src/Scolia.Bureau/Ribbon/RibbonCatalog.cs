@@ -313,4 +313,6 @@ public static class Perm
     public const string DeliberationManage = "deliberation.gerer";
     /// <summary>Compte enseignant : encodage et remise des cotes de ses seuls cours, par code anonyme.</summary>
     public const string MarksEncode = "cotes.encoder";
+    /// <summary>Privilège jury : encodage des épreuves du jury de toutes les promotions.</summary>
+    public const string JuryEncode = "jury.encoder";
 }
