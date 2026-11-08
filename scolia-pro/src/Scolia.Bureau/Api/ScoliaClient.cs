@@ -279,9 +279,6 @@ public sealed class ScoliaClient : IDisposable
     public async Task<T> GetAsync<T>(string path, CancellationToken ct = default)
     {
         ct.ThrowIfCancellationRequested();
-        if (LicenseReadOnly && Queueable(method, path))
-            throw new ApiException("Licence SCOLIA en lecture seule : cette modification est suspendue.", 423)
-            { Code = "licence_lecture_seule" };
         var sourceStore = Offline;
         var sourceUser = sourceStore?.User ?? string.Empty;
         var canCache = Cacheable(path) && sourceUser.Length > 0;
@@ -391,6 +388,9 @@ public sealed class ScoliaClient : IDisposable
             payload["idempotencyKey"] = key;
             body = payload;
         }
+        if (LicenseReadOnly && Queueable(method, path))
+            throw new ApiException("Licence SCOLIA en lecture seule : cette modification est suspendue.", 423)
+            { Code = "licence_lecture_seule" };
         var sourceStore = Offline;
         var sourceUser = sourceStore?.User ?? string.Empty;
         Infrastructure.OutboxItem? durable = null;
