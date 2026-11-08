@@ -1,1 +1,15 @@
-{"name":"scolia-pro-owner-console","version":"0.1.1","type":"module","private":true,"scripts":{"test":"node --check src/index.mjs && node --check src/relays.mjs && node --check src/licenses.mjs && node --test tests/*.test.mjs","dev":"wrangler dev","deploy":"wrangler deploy"},"devDependencies":{"wrangler":"^4.44.0"}}
+{
+  "name": "scolia-pro-owner-console",
+  "version": "0.1.2",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "test": "node --check src/index.mjs && node --check src/relays.mjs && node --check src/licenses.mjs && node --check src/production.mjs && node --check scripts/prepare-production.mjs && node --test tests/*.test.mjs",
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "prepare:production": "node scripts/prepare-production.mjs"
+  },
+  "devDependencies": {
+    "wrangler": "^4.44.0"
+  }
+}

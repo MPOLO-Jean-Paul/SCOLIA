@@ -39,6 +39,13 @@ async function jsonBody(request) {
 }
 const bearer = request => /^Bearer (.+)$/i.exec(request.headers.get("Authorization") || "")?.[1] || "";
 const nowMs = () => Date.now();
+// Cloudflare Access sets ctx.access only after authenticating the request.
+// An HTTP header with the same name cannot forge this platform context.
+function ownerAccessAllowed(env, ctx) {
+  return typeof env.OWNER_ACCESS_AUD === "string" &&
+    env.OWNER_ACCESS_AUD.length >= 20 &&
+    ctx?.access?.aud === env.OWNER_ACCESS_AUD;
+}
 function allowedOrigin(request) {
   const origin = request.headers.get("Origin");
   return !origin || origin === new URL(request.url).origin;
@@ -461,12 +468,23 @@ export default {
         .bind(now - 120 * 86400_000).run();
     })());
   },
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     if (!env.OWNER_DB) return fail("Base de licences non configurée.", 503);
     const url = new URL(request.url);
+    // Les serveurs d'établissements accèdent uniquement aux routes publiques
+    // et aux routes protégées par leur propre jeton. Le propriétaire requiert
+    // Cloudflare Access *et* son jeton commercial, jamais l'un sans l'autre.
+    if (url.pathname === "/console" || url.pathname.startsWith("/api/v1/owner/")) {
+      if (!env.OWNER_ACCESS_AUD)
+        return fail("Accès propriétaire non configuré : console indisponible.", 503);
+      if (!ownerAccessAllowed(env, ctx))
+        return fail("Authentification Cloudflare Access obligatoire.", 403);
+    }
     if (request.method === "GET" && url.pathname === "/health")
       return result({ service: "SCOLIA Pro Owner", mode: "metadata-only", consent_version: CONSENT_VERSION });
     if (request.method === "GET" && url.pathname === "/")
+      return Response.redirect(new URL("/console", url).toString(), 302);
+    if (request.method === "GET" && url.pathname === "/console")
       return new Response(htmlDashboard(), { headers: {
         "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store",
         "X-Content-Type-Options": "nosniff", "Referrer-Policy": "no-referrer",

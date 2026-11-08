@@ -23,18 +23,50 @@ Tableau de bord dans la console JP‑Services :
 ## Configuration et sécurité des relais
 La console gère les adresses de fournisseurs WSS (jamais les clés dans le dépôt). Les établissements voient uniquement Activer/Désactiver l'accès Internet. Un changement de fournisseur requiert l'approbation du responsable scolaire, avec révision. La liaison Wi-Fi locale demeure utilisable, et la licence est suivie indépendamment de ce bouton.
 
-## Déploiement (actions explicites de JP‑Services)
-1. Dans `scolia-pro/deploy/owner-console`, exécuter `npm test`. Les tests d'intégration emploient SQLite embarqué sous Node.js 22 (sans base distante).
-2. Créer Cloudflare D1 `scolia-pro-owner` et copier **son identifiant réel** dans `wrangler.jsonc` (placeholder actuel non déployable).
-3. `npx wrangler d1 migrations apply scolia-pro-owner --remote`.
-4. Stocker le secret administrateur avec `npx wrangler secret put OWNER_ADMIN_TOKEN`, jamais dans Git.
-5. Configurer Cloudflare Access + MFA, règles anti-bruteforce et un domaine HTTPS de la console.
-6. `npm run deploy`. Configurer dans l'installation de l'API scolaire `Scolia:Licence:ServiceUrl` avec l'URL HTTPS **publique du service** ; aucun secret propriétaire dans l'APK.
-7. Enregistrer et consentir depuis Paramètres → Licence sur le seul serveur de l'établissement. Les clients liés héritent automatiquement de l'état du serveur.
+## Déploiement de production sécurisé
 
-La console ne sera **pas opérationnelle** tant que D1, l'URL du service et les secrets n'auront pas été configurés, les flux de connexion validés et la distribution officielle signée.
+La console **0.1.2** ne doit pas être mise en ligne avec le `wrangler.jsonc` de développement : son identifiant D1 est volontairement fictif. Le déploiement se fait uniquement par GitHub Actions :
 
-**Contrôle avant mise en production :** l'identifiant D1 dans `wrangler.jsonc` est volontairement un placeholder. Ne jamais publier la console directement avec ce fichier inchangé ; créer la base, configurer Cloudflare Access + MFA, protéger `OWNER_ADMIN_TOKEN` et vérifier l'URL HTTPS réelle. L'ancien endpoint `PATCH /owner/schools/{id}` renvoie 410 pour éviter une confirmation de suspension trompeuse : utiliser uniquement `PATCH /owner/schools/{id}/license`.
+- Workflow : **SCOLIA Pro - publier console JP-Services (production)**.
+- Branche autorisée : `release/direct-apk-scolia-pro-20261103`, déclenchement manuel par le propriétaire du dépôt.
+- Environnement GitHub : `scolia-owner-production`. Configurer l'approbation d'un responsable, la limitation aux branches de distribution et les secrets suivants.
+
+| GitHub, environnement `scolia-owner-production` | Utilité |
+| --- | --- |
+| Secret `CLOUDFLARE_API_TOKEN` | API Cloudflare (Workers Edit, D1 Read/Write, routes/domaines nécessaires). Jamais dans Git. |
+| Secret `CLOUDFLARE_ACCOUNT_ID` | Identifiant de compte Cloudflare (32 caractères hexadécimaux). |
+| Secret `SCOLIA_OWNER_ADMIN_TOKEN` | Jeton propriétaire aléatoire de 32 caractères minimum. Ne jamais le partager dans la conversation. |
+| Variable `SCOLIA_OWNER_DOMAIN` | Nom DNS réel du domaine Cloudflare, ex. `licences.jpservices.cd` (exemple seulement, non réservé). |
+| Variable `SCOLIA_OWNER_ACCESS_AUD` | Audience (AUD) de l'application Cloudflare Access. |
+
+### Cloudflare Access : première configuration obligatoire
+
+1. Dans Cloudflare Zero Trust, créer **une application Access** (avec la même audience AUD) protégeant uniquement les deux chemins `https://VOTRE_DOMAINE/console` et `https://VOTRE_DOMAINE/api/v1/owner/*`. Autoriser uniquement les administrateurs JP-Services nominativement, activer la MFA et les protections anti-force-brute.
+2. **Ne jamais protéger tout le domaine par Access**, car les serveurs scolaires doivent communiquer par HTTPS avec `POST /api/v1/register`, `POST /api/v1/heartbeat` et `/api/v1/server/relay-*`, eux-mêmes protégés par invitation/jeton propres à chaque école.
+3. Copier le vrai AUD dans `SCOLIA_OWNER_ACCESS_AUD`. La console vérifie `ctx.access.aud` **côté Worker**, en complément du jeton propriétaire. Si Access n'est pas configuré, la page et les routes propriétaire restent **fermées** (503/403).
+4. Confirmer l'appartenance du domaine au compte Cloudflare ; le workflow désactive `workers.dev` et publie un domaine personnalisé HTTPS, jamais un nom d'hôte inventé.
+
+### Publication reproductible
+
+Après configuration, lancer manuellement le workflow et cocher `confirm_production`. Il exécute ces étapes dans cet ordre :
+
+1. Vérifier secrets, domaine, AUD, identité du déclencheur et approbation de l'environnement GitHub.
+2. Exécuter les tests d'intégration, dont l'absence d'accès propriétaire sans Cloudflare Access.
+3. Rechercher la base D1 `scolia-pro-owner` ; la **réutiliser** si elle existe ou la créer si elle est absente. Ne supprimer ni écraser aucune base existante.
+4. Générer temporairement `wrangler.production.json` (**ignoré par Git**) avec son vrai UUID, le domaine et l'AUD.
+5. Appliquer uniquement les migrations D1 manquantes (sauvegarde automatique par Cloudflare), déployer le Worker et provisionner le jeton propriétaire par secret chiffré.
+6. Contrôler `/health`, `/api/v1/notice` et l'interdiction des API propriétaire sans Access. Une erreur arrête le pipeline.
+
+### Utilisation, supervision et retour arrière
+
+- Accéder à `https://VOTRE_DOMAINE/console` uniquement après la connexion Cloudflare Access, puis saisir le jeton JP-Services. Utiliser **Verrouiller la console** à la sortie.
+- Les changements commerciaux concernent le **serveur** de chaque établissement et sont récupérés au prochain contrôle HTTPS (habituellement sous 15 minutes). Ne pas annoncer un blocage instantané sur les appareils hors ligne.
+- Suivre les erreurs Cloudflare Workers, l'activité D1, les échecs de connexion et les changements de licence depuis le journal. Avant toute migration non additive, réaliser une sauvegarde D1 et un test sur une base de préproduction.
+- En cas d'incident, revenir à la version Worker précédente et restaurer la configuration antérieure ; ne pas restaurer aveuglément une ancienne base sans examiner les écritures postérieures.
+- Si le domaine public n'a pas encore été communiqué au serveur SCOLIA, `Scolia:Licence:ServiceUrl` reste absent et aucune licence automatique ne démarre. Configurer cette URL HTTPS dans la distribution officielle **après** validation de la console, sans jamais intégrer le jeton propriétaire dans l'APK.
+- La console ne traite pas les paiements en ligne : l'administrateur confirme manuellement un renouvellement. Ne pas représenter ce mécanisme comme un encaissement certifié automatique.
+
+**État :** ce dépôt fournit le code et le pipeline de déploiement, mais ne prouve pas qu'une infrastructure Cloudflare de production ou ses secrets existent. La console n'est publique qu'après réussite du workflow et contrôle de l'URL réelle.
 
 ## API
 - `GET /health`, `GET /api/v1/notice` : publics, description des informations et du consentement.

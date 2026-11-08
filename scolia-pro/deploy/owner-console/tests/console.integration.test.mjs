@@ -45,7 +45,10 @@ function setup() {
       return work;
     },
   };
-  const env = { OWNER_DB: db, OWNER_ADMIN_TOKEN: "proprietaire-secret-de-test" };
+  const env = {
+    OWNER_DB: db, OWNER_ADMIN_TOKEN: "proprietaire-secret-de-test",
+    OWNER_ACCESS_AUD: "test-application-owner-audience-2026"
+  };
   async function request(path, method = "GET", body = null, auth = null) {
     const response = await worker.fetch(new Request(HOST + path, {
       method,
@@ -54,7 +57,8 @@ function setup() {
         ...(body ? { "Content-Type": "application/json" } : {}),
       },
       body: body ? JSON.stringify(body) : undefined,
-    }), env);
+    }), env, auth === env.OWNER_ADMIN_TOKEN
+      ? { access: { aud: env.OWNER_ACCESS_AUD } } : undefined);
     return { status: response.status, body: await response.json() };
   }
   const owner = (path, method = "GET", body = null) =>
@@ -194,9 +198,20 @@ test("Désactiver un relais inactif ne coupe jamais le relais actif", async t =>
 test("Accès propriétaire refusé sans secret et origine tierce bloquée", async t => {
   const app = setup();
   t.after(() => app.sqlite.close());
-  assert.equal((await app.request("/api/v1/owner/summary")).status, 401);
+  assert.equal((await app.request("/api/v1/owner/summary")).status, 403);
+  const noToken = await worker.fetch(new Request(HOST + "/api/v1/owner/summary"),
+    app.env, { access: { aud: app.env.OWNER_ACCESS_AUD } });
+  assert.equal(noToken.status, 401);
+  const wrongAudience = await worker.fetch(new Request(HOST + "/console"), app.env,
+    { access: { aud: "different-cloudflare-access-aud" } });
+  assert.equal(wrongAudience.status, 403);
+  const adminConsole = await worker.fetch(new Request(HOST + "/console"), app.env,
+    { access: { aud: app.env.OWNER_ACCESS_AUD } });
+  assert.equal(adminConsole.status, 200);
+  const publicApi = await app.request("/api/v1/notice");
+  assert.equal(publicApi.status, 200);
   const forbidden = await worker.fetch(new Request(HOST + "/api/v1/owner/summary", {
     headers: { Origin: "https://attacker.example", Authorization: "Bearer " + app.env.OWNER_ADMIN_TOKEN },
-  }), app.env);
+  }), app.env, { access: { aud: app.env.OWNER_ACCESS_AUD } });
   assert.equal(forbidden.status, 403);
 });

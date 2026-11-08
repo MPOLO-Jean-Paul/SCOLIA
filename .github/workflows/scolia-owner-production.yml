@@ -1,0 +1,90 @@
+name: SCOLIA Pro - publier console JP-Services (production)
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_production:
+        description: "J'ai verifie l'application Cloudflare Access avec MFA et les secrets GitHub. Publier ?"
+        type: boolean
+        required: true
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: scolia-owner-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Console proprietaire - deploiement protege
+    if: ${{ github.ref == 'refs/heads/release/direct-apk-scolia-pro-20261103' && github.actor == 'MPOLO-Jean-Paul' && inputs.confirm_production }}
+    runs-on: ubuntu-latest
+    environment: scolia-owner-production
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: scolia-pro/deploy/owner-console
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      OWNER_ADMIN_TOKEN: ${{ secrets.SCOLIA_OWNER_ADMIN_TOKEN }}
+      CF_OWNER_DOMAIN: ${{ vars.SCOLIA_OWNER_DOMAIN }}
+      OWNER_ACCESS_AUD: ${{ vars.SCOLIA_OWNER_ACCESS_AUD }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Bloquer un deploiement sans configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          for name in CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID OWNER_ADMIN_TOKEN CF_OWNER_DOMAIN OWNER_ACCESS_AUD; do
+            if [[ -z "${!name:-}" ]]; then
+              echo "::error::Parametre de production absent : $name. Ajouter dans l'environnement protege scolia-owner-production."
+              exit 1
+            fi
+          done
+          if [[ "${#OWNER_ADMIN_TOKEN}" -lt 32 ]]; then
+            echo "::error::Jeton administrateur insuffisamment long."
+            exit 1
+          fi
+      - name: Dependances Wrangler et tests d'integration
+        run: |
+          npm install --no-audit --no-fund
+          npm test
+      - name: Preparation automatique D1 et domaine personnalise
+        run: node scripts/prepare-production.mjs
+      - name: Appliquer uniquement les migrations D1 manquantes (backup Cloudflare)
+        run: npx wrangler d1 migrations apply OWNER_DB --remote --config wrangler.production.json
+      - name: Publier le Worker sans adresse workers.dev
+        run: npx wrangler deploy --config wrangler.production.json
+      - name: Installer le jeton administrateur sans exposer sa valeur
+        shell: bash
+        run: |
+          set -euo pipefail
+          printf '%s' "$OWNER_ADMIN_TOKEN" | npx wrangler secret put OWNER_ADMIN_TOKEN --config wrangler.production.json
+      - name: Verification HTTPS et segregation des routes proprietaire/scolaire
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="https://$CF_OWNER_DOMAIN"
+          curl --fail --silent --show-error --max-time 25 "$base/health" -o /tmp/scolia-owner-health.json
+          node -e 'const fs=require("fs"); const h=JSON.parse(fs.readFileSync("/tmp/scolia-owner-health.json")); if(h.service!=="SCOLIA Pro Owner")process.exit(1)'
+          curl --fail --silent --show-error --max-time 25 "$base/api/v1/notice" -o /tmp/scolia-owner-notice.json
+          # Sans une vraie session Cloudflare Access, une API proprietaire NE DOIT pas renvoyer 200.
+          status="$(curl --silent --show-error --max-time 25 --output /dev/null --write-out '%{http_code}' "$base/api/v1/owner/summary")"
+          if [[ "$status" == "200" || "$status" == "000" ]]; then
+            echo "::error::Controle d'acces absent ou verification HTTP en echec (code $status)."
+            exit 1
+          fi
+          echo "Controle de sante et separation des interfaces reussis."
+      - name: Resume du deploiement
+        if: success()
+        run: |
+          echo "## Console SCOLIA Pro" >> "$GITHUB_STEP_SUMMARY"
+          echo "Deploiement HTTPS effectue sur le domaine configure." >> "$GITHUB_STEP_SUMMARY"
+          echo "Protection proprietaire : Cloudflare Access AUD + jeton, aucune base scolaire centralisee." >> "$GITHUB_STEP_SUMMARY"
+          echo "Migrations D1 sauvegardees automatiquement par Cloudflare." >> "$GITHUB_STEP_SUMMARY"
