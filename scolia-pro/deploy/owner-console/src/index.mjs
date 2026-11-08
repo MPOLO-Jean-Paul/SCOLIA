@@ -3,7 +3,7 @@ import {
   parseHeartbeat, normalizeIp
 } from "./policy.mjs";
 import { ownerRelayRequest, schoolRelayRequest } from "./relays.mjs";
-import { evaluateLicense, validateLicensePatch } from "./licenses.mjs";
+import { evaluateLicense, validateLicensePatch, MAX_GRACE_DAYS, DAY_MS } from "./licenses.mjs";
 
 const headers = {
   "Content-Type": "application/json; charset=utf-8",
@@ -116,8 +116,15 @@ async function serveOwner(request, env, url) {
     if (advanced) {
       const patch = validateLicensePatch(await jsonBody(request));
       if (!patch) return fail("Paramètres de licence invalides.", 400);
-      if (patch.manual_override === "read_only" && !patch.reason)
-        return fail("Justification du blocage manuel requise.", 400);
+      if (patch.manual_override === "read_only" && (!patch.reason || patch.reason.length < 5))
+        return fail("Motif du blocage manuel requis (5 caractères minimum).", 400);
+      if (patch.manual_override === "allow") {
+        if (!patch.reason || patch.reason.length < 5 ||
+            !Number.isSafeInteger(patch.override_until) ||
+            patch.override_until <= now ||
+            patch.override_until > now + MAX_GRACE_DAYS * DAY_MS)
+          return fail("La dérogation exige un motif et une échéance future limitée à 120 jours.", 400);
+      }
       const dbPatch = {};
       for (const [key, value] of Object.entries(patch))
         dbPatch[key === "reason" ? "override_reason" : key] = value;
