@@ -20,7 +20,7 @@
         <DataGrid Grid.Row="1" ItemsSource="{Binding Courses}" SelectedItem="{Binding Course}" AutoGenerateColumns="False" IsReadOnly="True" BorderThickness="0" CornerRadius="0">
           <DataGrid.Columns>
             <DataGridTextColumn Header="Cours" Binding="{Binding Name}" Width="*" MinWidth="140" />
-            <DataGridTextColumn Header="Coef." Binding="{Binding Coefficient}" Width="Auto" MinWidth="92" />
+            <DataGridTextColumn Header="Pondér." Binding="{Binding Coefficient}" Width="Auto" MinWidth="92" />
             <DataGridTextColumn Header="Évals" Binding="{Binding Assessments}" Width="Auto" MinWidth="92" />
           </DataGrid.Columns>
         </DataGrid>

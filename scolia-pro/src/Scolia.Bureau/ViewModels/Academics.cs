@@ -196,7 +196,7 @@ public sealed class GradesPage : PageViewModel
                 name = f.Text("intitule"),
                 coefficient = f.Amount("coefficient"),
                 hours = f.Amount("heures"),
-                maxScore = f.Amount("cotation"),
+                maxScore = Labels.MaxScore(f),
                 semester = f.ChoiceValue("semestre"),
             });
             shell.Notify("Cours créé. Attribuez-le à un enseignant depuis Attributions et charges.");
@@ -205,9 +205,9 @@ public sealed class GradesPage : PageViewModel
         form.AddChoice("promotion", "Promotion", promotions, promotionId?.ToString(), required: true);
         form.Add("numero", "Numéro du cours", FieldKind.Amount, next.ToString(System.Globalization.CultureInfo.InvariantCulture), required: true, hint: "De 1 à 9999, unique dans la promotion.");
         form.Add("intitule", "Intitulé", required: true);
-        form.Add("coefficient", "Coefficient", FieldKind.Amount, "1", required: true);
-        form.Add("heures", "Volume horaire annuel", FieldKind.Amount, "30", required: true, hint: "Peut comporter une décimale, par exemple 30,5.");
-        form.Add("cotation", "Cotation maximale (points)", FieldKind.Amount, "20", required: true);
+        form.Add("coefficient", Labels.WeightLabel, FieldKind.Amount, "1", required: true, hint: Labels.WeightHint);
+        form.Add("heures", "Volume horaire annuel", FieldKind.Amount, "30", required: true, hint: "Peut comporter une décimale, par exemple 30,5. Épreuve du jury : 1.");
+        form.Add("cotation", Labels.MaxScoreLabel, FieldKind.Amount, null, hint: Labels.MaxScoreHint);
         form.AddChoice("semestre", "Organisation (délibération)", Labels.Semesters, "Annuel", required: true);
         if (await shell.Ask(form) && shell.Current is GradesPage page) await page.RefreshAsync();
     }

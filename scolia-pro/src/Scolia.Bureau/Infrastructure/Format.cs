@@ -52,6 +52,16 @@ public static class Labels
     public static readonly IReadOnlyList<ChoiceItem> DeliberationPeriods =
         [new("S1", "Premier semestre"), new("S2", "Second semestre"), new("Annuel", "Jury annuel")];
 
+    // Cours : deux nombres distincts, à ne jamais confondre (fusion ITMCD / projet Délibération).
+    public const string WeightLabel = "Pondération (coefficient)";
+    public const string WeightHint = "Poids du cours dans la moyenne sur 20 des bulletins de « Cours et notes ». La délibération ne l'utilise pas.";
+    public const string MaxScoreLabel = "Maxima du cours (points)";
+    public const string MaxScoreHint = "Total de points du cours pour la délibération : cotes de 0 à ce maxima, échec sous la moitié. Vide : pondération × 10 (convention ITM).";
+
+    /// <summary>Maxima saisi, ou à défaut la convention ITM : pondération × 10.</summary>
+    public static decimal MaxScore(ViewModels.FormViewModel f) =>
+        string.IsNullOrWhiteSpace(f.Text("cotation")) ? f.Amount("coefficient") * 10 : f.Amount("cotation");
+
     public static string Semester(string code) => code switch { "S1" => "S1", "S2" => "S2", "JuryEpreuve" => "Épreuve jury", "JuryBloc" => "Bloc jury", _ => "Annuel" };
 
     public static string Status(string code) => code switch

@@ -48,7 +48,7 @@ public sealed class TeachingService(IAppDbContext db, IWriteGate gate, IAuditLog
         var number = TeachingRules.Number(input.Number);
         var name = TeachingRules.Name(input.Name);
         var hours = TeachingRules.Positive(input.Hours, "Le volume horaire");
-        var maxScore = TeachingRules.Positive(input.MaxScore, "La cotation maximale");
+        var maxScore = TeachingRules.MaxScore(input.MaxScore);
         var coefficient = TeachingRules.Coefficient(input.Coefficient);
 
         Course course;
@@ -81,8 +81,9 @@ public sealed class TeachingService(IAppDbContext db, IWriteGate gate, IAuditLog
             course.Semester = semester;
         }
         if (id is not null && await db.CourseMarks.AnyAsync(m => m.CourseId == course.Id && m.Kind != Domain.Deliberation.MarkKind.Appui && m.Value > maxScore, ct))
-            throw new DomainException("cours", "Des cotes de délibération dépassent la nouvelle cotation maximale.");
-        audit.Record(id is null ? "cours.cree" : "cours.modifie", "Cours", course.Id.ToString(), $"Cours {number} « {name} » ({hours} h, cotation {maxScore}, {DeliberationText.Semester(course.Semester)}).");
+            throw new DomainException("cours", "Des cotes de délibération dépassent le nouveau maxima : corrigez-les d'abord.");
+        audit.Record(id is null ? "cours.cree" : "cours.modifie", "Cours", course.Id.ToString(),
+            $"Cours {number} « {name} » ({hours} h, pondération {coefficient:0.##}, maxima {maxScore:0.##}, {DeliberationText.Semester(course.Semester)})."),
         await db.SaveChangesAsync(ct);
         return (await DescribeAsync([course], ct)).Single();
     }, ct);
