@@ -22,7 +22,8 @@ const config = buildProductionConfig({databaseId,domain,audience});
 writeFileSync("wrangler.production.json", JSON.stringify(config,null,2)+"\n", {
   encoding:"utf8", mode:0o600
 });
-console.log("Configuration de production générée, D1 identifié, workers.dev désactivé.");
+console.log("Configuration de déploiement générée, base D1 identifiée ; adresse : " +
+  (domain.endsWith(".workers.dev") ? "workers.dev (pilote)" : "domaine personnalisé") + ".");
 console.log("Domaine :",domain);
 console.log("Stockage des sauvegardes chiffrées (R2) :",bucket);
 console.log("Le contrôle Cloudflare Access est obligatoire avant toute commande propriétaire.");
