@@ -73,7 +73,7 @@ public static class LiveEndpoints
             if (!Identify(http, out var deviceId, out var device, out var user)) return Results.BadRequest(new { title = "Poste non identifié." });
             // Un poste en lecture seule reste visible dans le direct, mais
             // ne peut publier de verrous d'édition pouvant bloquer les autres.
-            var locks = license.Current.ReadOnly ? [] : input.Locks ?? [];
+            List<string> locks = license.Current.ReadOnly ? [] : input.Locks ?? [];
             return Results.Ok(hub.Touch(deviceId, device, user, Clip(input.Page), Clip(input.Activity), locks));
         });
 
