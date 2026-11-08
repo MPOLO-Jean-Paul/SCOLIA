@@ -159,6 +159,15 @@ async function registerSchool(request, env) {
   if (!body.ok) return fail(body.error, 400);
   const db = env.OWNER_DB, now = nowMs();
   const codeHash = await sha(body.code);
+  const invited = await db.prepare(`SELECT school_name FROM owner_invites
+    WHERE code_hash=? AND used_at IS NULL AND expires_at>?`)
+    .bind(codeHash, now).first();
+  if (!invited) return fail("Invitation invalide, utilisée ou expirée.", 403);
+  // Interdire qu'une invitation pour l'école A soit employée par un serveur B.
+  const identity = value => cleanLabel(value,140).normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g,"").toLowerCase();
+  if (identity(invited.school_name) !== identity(body.school))
+    return fail("Le nom de l'établissement ne correspond pas à l'invitation JP-Services.", 409);
   const id = crypto.randomUUID(), token = randomToken();
   const tokenHash = await sha(token);
   // Le nom enregistré est celui de l'invitation, non celui librement fourni par le client.
@@ -382,6 +391,9 @@ $("refresh").onclick=()=>reload().catch(e=>alert(e.message));
    secret="";selected=null;$("token").value="";$("detailsPanel").hidden=true;
    $("rows").replaceChildren();$("relayRows").replaceChildren();
    $("auditRows").replaceChildren();$("details").textContent="";
+   $("inviteResult").textContent="";$("relayNotice").textContent="";
+   $("licenseSummary").textContent="";$("newschool").value="";
+   $("trialDays").value=30;$("paidTo").value="";
    $("workspace").hidden=true;$("auth").hidden=false;
  };
 $("relayCreate").onclick=async()=>{
