@@ -249,7 +249,7 @@ Il n'est ni stocké dans le navigateur ni transmis à une autre origine.</p>
 <article class="card"><small>Écoles actives (30 j)</small><div class="metric" id="active">—</div></article>
 <article class="card"><small>Licences suspendues</small><div class="metric" id="suspended">—</div></article></div>
 <section class="panel"><h2>Établissements</h2>
-<div class="toolbar"><button id="refresh">Actualiser</button><input id="newschool" placeholder="Nom d'un nouvel établissement">
+<div class="toolbar"><button id="refresh">Actualiser</button><button id="logout" class="secondary">Verrouiller la console</button><input id="newschool" placeholder="Nom d'un nouvel établissement">
 <button id="invite" class="secondary">Créer une invitation</button></div>
 <p class="info" id="inviteResult"></p><div style="overflow-x:auto"><table><thead><tr>
 <th>Établissement</th><th>Licence</th><th>Serveurs</th><th>Dernière activité</th><th>Gestion</th></tr></thead>
@@ -283,7 +283,7 @@ Le suivi des licences utilise HTTPS directement, même depuis un Wi-Fi disposant
 <div class="toolbar">
   <button id="grace7" class="secondary">Dérogation 7 jours</button>
   <button id="grace30" class="secondary">Dérogation 30 jours</button>
-  <button id="manualReadOnly" class="secondary">Lecture seule immédiate</button>
+  <button id="manualReadOnly" class="secondary">Programmer le blocage manuel</button>
   <button id="removeOverride" class="secondary">Lever la mesure manuelle</button>
 </div>
 <p class="info">Un blocage concerne les écritures de l'établissement et de tous ses postes.
@@ -351,6 +351,12 @@ $("connect").onclick=async()=>{secret=$("token").value;$("token").value="";
  try{await reload();$("auth").hidden=true;$("workspace").hidden=false;$("error").textContent="";}
  catch(e){secret="";$("error").textContent=e.message;}};
 $("refresh").onclick=()=>reload().catch(e=>alert(e.message));
+ $("logout").onclick=()=>{
+   // Oubli explicite du secret en mémoire et fermeture de l'interface.
+   secret="";selected=null;$("token").value="";$("detailsPanel").hidden=true;
+   $("rows").replaceChildren();$("relayRows").replaceChildren();
+   $("workspace").hidden=true;$("auth").hidden=false;
+ };
 $("relayCreate").onclick=async()=>{
  try {
    const created=await request("/api/v1/owner/relays","POST",{
@@ -396,7 +402,7 @@ $("grace30").onclick=()=>updateLicense({manual_override:"allow",
  "Accorder 30 jours d'accès complet à titre exceptionnel ?");
 $("manualReadOnly").onclick=()=>updateLicense({manual_override:"read_only",
  override_until:null,reason:"Blocage manuel de licence"},
- "Passer tous les postes de cet établissement en lecture seule ? La consultation restera possible.");
+ "Demander la lecture seule pour cet établissement ? Elle s'appliquera à la prochaine vérification en ligne du serveur (normalement sous 15 minutes). Les consultations resteront possibles.");
 $("removeOverride").onclick=()=>updateLicense({manual_override:"none",
  override_until:null,reason:"Mesure manuelle levee"},
  "Annuler la mesure manuelle et revenir au calcul automatique ?");
