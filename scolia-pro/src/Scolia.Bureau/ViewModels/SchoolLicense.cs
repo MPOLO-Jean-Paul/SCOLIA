@@ -49,7 +49,7 @@ public sealed class SchoolLicenseViewModel : Observable
         { Managed: false } => "Votre établissement n'a pas encore été enregistré pour la gestion des licences JP-Services.",
         { BillingEnabled: false } => "SCOLIA Pro : facturation désactivée par JP-Services.",
         { DaysRemaining: { } days } => $"{days} jour(s) restant(s) · {current.LicenseStatus}. Les données restent sur le serveur scolaire.",
-        _ => $"Licence {current.LicenseStatus}."
+        _ => $"Licence {current?.LicenseStatus ?? "non déterminée"}."
     };
     public bool IsReadOnly => current?.ReadOnly == true;
     public bool IsManaged => current?.Managed == true;
