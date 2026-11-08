@@ -45,9 +45,49 @@ Tableau de bord dans la console JP‑Services :
 ## Configuration et sécurité des relais
 La console gère les adresses de fournisseurs WSS (jamais les clés dans le dépôt). Les établissements voient uniquement Activer/Désactiver l'accès Internet. Un changement de fournisseur requiert l'approbation du responsable scolaire, avec révision. La liaison Wi-Fi locale demeure utilisable, et la licence est suivie indépendamment de ce bouton.
 
+## Première mise en ligne sans domaine payant — workers.dev (pilote)
+
+L'application Cloudflare Zero Trust `licence` peut protéger les deux chemins
+`/console` et `/api/v1/owner/*` du Worker
+`https://scolia-pro-owner.jeanpaulmpolo242.workers.dev`, sans bloquer les
+API publiques (`/health`, `/api/v1/notice`, `/api/v1/register`,
+`/api/v1/heartbeat`) ni les API scolaires authentifiées.
+
+Le workflow de publication prend maintenant **par défaut** cette adresse et
+l'**AUD Cloudflare Access transmis par le propriétaire** (identifiant d'application
+non secret). Les variables facultatives de l'environnement GitHub
+`SCOLIA_OWNER_DOMAIN` et `SCOLIA_OWNER_ACCESS_AUD` peuvent remplacer ces valeurs.
+Aucune variable supplémentaire n'est nécessaire pour choisir l'adresse gratuite.
+
+L'environnement GitHub `scolia-owner-production` doit toujours disposer de trois
+**secrets** : `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` et
+`SCOLIA_OWNER_ADMIN_TOKEN` (minimum 32 caractères). Ne jamais copier ces secrets
+dans Git, une issue ou une discussion. Le jeton API doit disposer des permissions
+Workers, D1 et R2 nécessaires. La configuration de la base D1 et du bucket R2
+reste automatisée au premier lancement du workflow manuel.
+
+1. Vérifier dans Zero Trust la présence de l'application Access avec **la même
+   audience**, uniquement les chemins `/console` et `/api/v1/owner/*`,
+   la politique e-mail administrateur et la MFA réellement appliquée.
+2. Vérifier les trois secrets de l'environnement GitHub et limiter la branche
+   autorisée à `release/direct-apk-scolia-pro-20261103`.
+3. Lancer manuellement « SCOLIA Pro - publier console JP-Services (production) »
+   depuis cette branche en cochant `confirm_production`.
+4. Vérifier que `/health` et `/api/v1/notice` répondent en HTTPS sans Access,
+   tandis que `/console` demande une connexion Cloudflare, puis le jeton
+   propriétaire. Tester aussi que les routes propriétaire ne sont jamais ouvertes
+   anonymement. Ne déduire **aucune mise en ligne** de la seule présence du code.
+5. Une fois le test accepté, configurer l'URL HTTPS du service de licences sur les
+   serveurs SCOLIA concernés ; ne jamais intégrer le jeton propriétaire dans l'APK.
+
+Cloudflare considère `workers.dev` comme un **environnement de démarrage et de
+test**, pas une recommandation pour une exploitation commerciale critique.
+Préférer un domaine personnalisé ultérieurement. Le workflow conserve ce mode
+en définissant la variable `SCOLIA_OWNER_DOMAIN` à un domaine Cloudflare réel.
+
 ## Déploiement de production sécurisé
 
-La console **0.1.2** ne doit pas être mise en ligne avec le `wrangler.jsonc` de développement : son identifiant D1 est volontairement fictif. Le déploiement se fait uniquement par GitHub Actions :
+La console ne doit pas être mise en ligne avec le `wrangler.jsonc` de développement : son identifiant D1 est volontairement fictif. Le déploiement sécurisé (domaine gratuit ou personnalisé) se fait uniquement par GitHub Actions :
 
 - Workflow : **SCOLIA Pro - publier console JP-Services (production)**.
 - Branche autorisée : `release/direct-apk-scolia-pro-20261103`, déclenchement manuel par le propriétaire du dépôt.
@@ -58,15 +98,15 @@ La console **0.1.2** ne doit pas être mise en ligne avec le `wrangler.jsonc` de
 | Secret `CLOUDFLARE_API_TOKEN` | API Cloudflare (Workers Edit, D1 Read/Write, routes/domaines nécessaires). Jamais dans Git. |
 | Secret `CLOUDFLARE_ACCOUNT_ID` | Identifiant de compte Cloudflare (32 caractères hexadécimaux). |
 | Secret `SCOLIA_OWNER_ADMIN_TOKEN` | Jeton propriétaire aléatoire de 32 caractères minimum. Ne jamais le partager dans la conversation. |
-| Variable `SCOLIA_OWNER_DOMAIN` | Nom DNS réel du domaine Cloudflare, ex. `licences.jpservices.cd` (exemple seulement, non réservé). |
-| Variable `SCOLIA_OWNER_ACCESS_AUD` | Audience (AUD) de l'application Cloudflare Access. |
+| Variable facultative `SCOLIA_OWNER_DOMAIN` | Adresse du domaine personnalisé ; valeur par défaut : `scolia-pro-owner.jeanpaulmpolo242.workers.dev`. |
+| Variable facultative `SCOLIA_OWNER_ACCESS_AUD` | Audience (AUD) de Cloudflare Access, valeur initiale déjà configurée dans le workflow. |
 
 ### Cloudflare Access : première configuration obligatoire
 
 1. Dans Cloudflare Zero Trust, créer **une application Access** (avec la même audience AUD) protégeant uniquement les deux chemins `https://VOTRE_DOMAINE/console` et `https://VOTRE_DOMAINE/api/v1/owner/*`. Autoriser uniquement les administrateurs JP-Services nominativement, activer la MFA et les protections anti-force-brute.
 2. **Ne jamais protéger tout le domaine par Access**, car les serveurs scolaires doivent communiquer par HTTPS avec `POST /api/v1/register`, `POST /api/v1/heartbeat` et `/api/v1/server/relay-*`, eux-mêmes protégés par invitation/jeton propres à chaque école.
 3. Copier le vrai AUD dans `SCOLIA_OWNER_ACCESS_AUD`. La console vérifie `ctx.access.aud` **côté Worker**, en complément du jeton propriétaire. Si Access n'est pas configuré, la page et les routes propriétaire restent **fermées** (503/403).
-4. Confirmer l'appartenance du domaine au compte Cloudflare ; le workflow désactive `workers.dev` et publie un domaine personnalisé HTTPS, jamais un nom d'hôte inventé.
+4. Confirmer l’appartenance du domaine Cloudflare ; le workflow utilise `workers.dev` pour le pilote, ou un domaine personnalisé HTTPS si `SCOLIA_OWNER_DOMAIN` est défini.
 
 ### Publication reproductible
 
@@ -75,7 +115,7 @@ Après configuration, lancer manuellement le workflow et cocher `confirm_product
 1. Vérifier secrets, domaine, AUD, identité du déclencheur et approbation de l'environnement GitHub.
 2. Exécuter les tests d'intégration, dont l'absence d'accès propriétaire sans Cloudflare Access.
 3. Rechercher la base D1 `scolia-pro-owner` ; la **réutiliser** si elle existe ou la créer si elle est absente. Ne supprimer ni écraser aucune base existante.
-4. Générer temporairement `wrangler.production.json` (**ignoré par Git**) avec son vrai UUID, le domaine et l'AUD.
+4. Générer temporairement `wrangler.production.json` (**ignoré par Git**) avec son vrai UUID, l’adresse HTTPS, le bon routage et l’AUD.
 5. Appliquer uniquement les migrations D1 manquantes (sauvegarde automatique par Cloudflare), déployer le Worker et provisionner le jeton propriétaire par secret chiffré.
 6. Contrôler `/health`, `/api/v1/notice` et l'interdiction des API propriétaire sans Access. Une erreur arrête le pipeline.
 
