@@ -207,6 +207,7 @@ public sealed class MarksPage : PageViewModel
 
     private readonly bool teacher;
     private List<TeacherCourseDto> mine = [];
+    private bool fresh;
 
     private string notice = string.Empty;
 
@@ -272,6 +273,7 @@ public sealed class MarksPage : PageViewModel
             {
                 // Les promotions proposées sont celles des cours attribués à l'enseignant.
                 mine = await Shell.Api.GetAsync<List<TeacherCourseDto>>("api/deliberation/mes-cours");
+                fresh = true;
                 Promotions = mine.GroupBy(m => m.PromotionId).Select(g => new ChoiceItem(g.Key.ToString(), g.First().Promotion)).ToList();
             }
             else Promotions = await PromotionChoicesAsync(withAll: false);
@@ -289,7 +291,9 @@ public sealed class MarksPage : PageViewModel
         List<DeliberationCourseDto> list;
         if (teacher)
         {
-            mine = await Shell.Api.GetAsync<List<TeacherCourseDto>>("api/deliberation/mes-cours");
+            // Première ouverture : la liste vient d'être lue pour les promotions, inutile de la relire.
+            if (!fresh) mine = await Shell.Api.GetAsync<List<TeacherCourseDto>>("api/deliberation/mes-cours");
+            fresh = false;
             list = mine.Where(m => m.PromotionId.ToString() == Promotion.Value).Select(m => m.Course).ToList();
             var notices = await Shell.Api.GetAsync<List<AnnouncementDto>>("api/deliberation/annonces");
             Notice = string.Join(Environment.NewLine, notices.Take(3).Select(n => $"{n.AtUtc.ToLocalTime():dd/MM HH:mm} · {n.Title} : {n.Text}"));

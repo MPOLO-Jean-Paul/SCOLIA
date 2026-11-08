@@ -578,4 +578,25 @@ public sealed class DeliberationApiTests : IDisposable
         await admin.Post($"{D}/reouverture", new { promotionId = setup.PromotionId, period = "S1", password = "Scolia2026!", reason = "Erreur de report sur une copie" }).Ok();
         Assert.False((await anonymous.GetAsync($"/api/verifier-bulletin/{code}").Ok()).GetProperty("found").GetBoolean());
     }
+
+    [Fact]
+    public async Task A_promotion_with_courses_is_kept_and_code_previews_write_nothing()
+    {
+        var admin = await app.InstalledAdmin();
+        var promotion = await admin.Post("/api/etablissement/promotions", new
+        {
+            code = "INF3", name = "Troisième année", level = 3, isActive = true, monthlyFee = 55000m, oneTimeFees = Array.Empty<object>(),
+        }).Ok();
+        var promotionId = promotion.GetProperty("id").GetString()!;
+        await admin.Post("/api/scolarite/cours", new { promotionId, number = 1, name = "Pharmacologie", coefficient = 2m, hours = 30m, maxScore = 20m, semester = "S1" }).Ok();
+        // Auparavant une erreur interne (clé étrangère) ; désormais un refus clair.
+        var (status, body) = await admin.DeleteAsync($"/api/etablissement/promotions/{promotionId}").Fail();
+        Assert.Equal(HttpStatusCode.BadRequest, status);
+        Assert.Equal("promotion", body.GetProperty("code").GetString());
+
+        var setup = await SetupAsync(admin, "MUKENDI");
+        var preview = await admin.Post($"{D}/codes/import", new { text = "MUKENDI Kabeya Grace;P13W5R", promotionId = setup.PromotionId, apply = false }).Ok();
+        Assert.Equal(1, preview.GetProperty("ready").GetInt32());
+        Assert.Null((await CodesAsync(admin, setup.PromotionId))[setup.Enrollments[0]]);
+    }
 }

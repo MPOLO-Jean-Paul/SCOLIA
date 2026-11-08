@@ -232,7 +232,11 @@ public sealed class DeliberationService(IAppDbContext db, IWriteGate gate, IAudi
     /// L'aperçu ne change rien ; l'application n'attribue que les lignes « À attribuer » : un code déjà différent se remplace
     /// à la main, avec un motif, et un code déjà utilisé dans l'année n'est jamais réattribué.
     /// </summary>
-    public Task<CodeImportResult> ImportCodesAsync(CodeImportRequest input, CancellationToken ct = default) => gate.RunAsync(async () =>
+    public Task<CodeImportResult> ImportCodesAsync(CodeImportRequest input, CancellationToken ct = default) =>
+        // L'aperçu ne retient pas la file d'écriture des autres postes : seule l'application y passe.
+        input.Apply ? gate.RunAsync(() => ImportCodesCoreAsync(input, ct), ct) : ImportCodesCoreAsync(input, ct);
+
+    private async Task<CodeImportResult> ImportCodesCoreAsync(CodeImportRequest input, CancellationToken ct)
     {
         var year = input.Apply ? await OpenYearAsync(ct) : await YearContext.CurrentAsync(db, ct);
         var parsed = CodeImportParser.Parse(input.Text);
@@ -278,7 +282,7 @@ public sealed class DeliberationService(IAppDbContext db, IWriteGate gate, IAudi
         }
         var unchanged = lines.Count(l => l.Status == "Déjà attribué");
         return new CodeImportResult(input.Apply, input.Apply ? toAssign.Count : 0, toAssign.Count, unchanged, lines.Count - toAssign.Count - unchanged, lines);
-    }, ct);
+    }
 
     /// <summary>Résout un code anonyme de l'année : la promotion seulement, jamais l'identité.</summary>
     public async Task<CodeLookupDto> LookupAsync(string code, CancellationToken ct = default)
@@ -424,7 +428,11 @@ public sealed class DeliberationService(IAppDbContext db, IWriteGate gate, IAudi
     /// anonyme officiel (ou, pour le secrétariat, par le matricule). Aperçu d'abord ; l'application suit exactement les
     /// règles de la feuille (droits, encodage ouvert, période non clôturée, remise, 0 à maxima) et garde chaque ancienne valeur au journal.
     /// </summary>
-    public Task<MarkImportResult> ImportMarksAsync(MarkImportRequest input, CancellationToken ct = default) => gate.RunAsync(async () =>
+    public Task<MarkImportResult> ImportMarksAsync(MarkImportRequest input, CancellationToken ct = default) =>
+        // L'aperçu ne retient pas la file d'écriture des autres postes : seule l'application y passe.
+        input.Apply ? gate.RunAsync(() => ImportMarksCoreAsync(input, ct), ct) : ImportMarksCoreAsync(input, ct);
+
+    private async Task<MarkImportResult> ImportMarksCoreAsync(MarkImportRequest input, CancellationToken ct)
     {
         var year = input.Apply ? await OpenYearAsync(ct) : await YearContext.CurrentAsync(db, ct);
         var kind = DeliberationText.Kind(input.Kind);
@@ -477,7 +485,7 @@ public sealed class DeliberationService(IAppDbContext db, IWriteGate gate, IAudi
         }
         var unchanged = lines.Count(l => l.Status == "Inchangée");
         return new MarkImportResult(input.Apply, input.Apply ? ready.Count : 0, ready.Count, unchanged, lines.Count - ready.Count - unchanged, lines);
-    }, ct);
+    }
 
     /// <summary>Encodage anonyme : la copie porte le code, l'encodeur tape le code et la cote sans connaître le nom.</summary>
     public Task<MarkByCodeResult> SaveByCodeAsync(MarkByCodeRequest input, CancellationToken ct = default) => gate.RunAsync(async () =>
@@ -500,9 +508,12 @@ public sealed class DeliberationService(IAppDbContext db, IWriteGate gate, IAudi
             + (previous is { } p ? $" (avant {p:0.##})" : string.Empty) + (submitted is null ? "." : " — correction du jury après la remise."),
             new { code = code.Code, avant = previous, apres = value });
         await db.SaveChangesAsync(ct);
-        var ids = (await EnrolledAsync(year.Id, course.PromotionId, ct)).Select(s => s.EnrollmentId).ToList();
-        var graded = await db.CourseMarks.CountAsync(m => m.CourseId == course.Id && m.Kind == kind && ids.Contains(m.EnrollmentId), ct);
-        return new MarkByCodeResult(code.Code, $"{course.Number}. {course.Name}", DeliberationText.Kind(kind), value, previous, ids.Count - graded);
+        // Copies restantes : deux comptages en base, sans recharger les dossiers de la promotion à chaque copie.
+        var enrolled = db.Enrollments.AsNoTracking().Where(e => e.AcademicYearId == year.Id && e.PromotionId == course.PromotionId
+            && (e.Status == EnrollmentStatus.Actif || e.Status == EnrollmentStatus.Suspendu)).Select(e => e.Id);
+        var total = await enrolled.CountAsync(ct);
+        var graded = await db.CourseMarks.CountAsync(m => m.CourseId == course.Id && m.Kind == kind && enrolled.Contains(m.EnrollmentId), ct);
+        return new MarkByCodeResult(code.Code, $"{course.Number}. {course.Name}", DeliberationText.Kind(kind), value, previous, total - graded);
     }, ct);
 
     /// <summary>
@@ -746,7 +757,7 @@ public sealed class DeliberationService(IAppDbContext db, IWriteGate gate, IAudi
         {
             if (!user.HasPermission(Permissions.MarksEncode) && !user.HasPermission(Permissions.JuryEncode))
                 throw new ForbiddenException("Ce compte n'a pas accès aux annonces de la délibération.");
-            mine = (await MyCoursesAsync(ct)).Select(c => c.Course.Id.ToString()).ToHashSet(StringComparer.Ordinal);
+            mine = (await MyCourseIdsAsync(ct)).Select(id => id.ToString()).ToHashSet(StringComparer.Ordinal);
         }
         return entries
             .Where(e => e.Action == "deliberation.reglages" || mine is null || (e.EntityId is not null && mine.Contains(e.EntityId)))
@@ -763,6 +774,19 @@ public sealed class DeliberationService(IAppDbContext db, IWriteGate gate, IAudi
     /// Cours attribués à l'enseignant connecté pour l'année courante, avec l'avancement et la remise de chaque feuille ;
     /// pour un membre du jury, en plus, les épreuves du jury de toutes les promotions.
     /// </summary>
+    /// <summary>Identifiants des cours de l'enseignant connecté (attribués, et épreuves du jury pour un membre du jury), sans calcul d'avancement.</summary>
+    private async Task<List<Guid>> MyCourseIdsAsync(CancellationToken ct)
+    {
+        var year = await YearContext.CurrentAsync(db, ct);
+        var staffId = await MyStaffIdAsync(ct);
+        var jury = user.HasPermission(Permissions.JuryEncode);
+        var assigned = db.CourseAssignments.AsNoTracking().Where(a => a.TeacherId == staffId && a.EndedOn == null).Select(a => a.CourseId);
+        return await db.Courses.AsNoTracking()
+            .Where(c => c.AcademicYearId == year.Id && c.IsActive
+                && (assigned.Contains(c.Id) || (jury && (c.Semester == CourseSemester.JuryEpreuve || c.Semester == CourseSemester.JuryBloc))))
+            .Select(c => c.Id).ToListAsync(ct);
+    }
+
     public async Task<IReadOnlyList<TeacherCourseDto>> MyCoursesAsync(CancellationToken ct = default)
     {
         var year = await YearContext.CurrentAsync(db, ct);
@@ -1024,7 +1048,8 @@ public sealed class DeliberationService(IAppDbContext db, IWriteGate gate, IAudi
         var board = await BoardAsync(promotionId, periodText, ct);
         var school = await YearContext.SchoolAsync(db, ct);
         var rows = board.Rows.OrderBy(r => r.Decision.StartsWith("Admis", StringComparison.Ordinal) ? 0 : 1).ThenBy(r => r.Rank ?? int.MaxValue).ThenBy(r => r.FullName)
-            .Select(r => (IReadOnlyList<string>)[r.Rank?.ToString(Fr) ?? "—", r.Matricule, r.FullName, $"{r.Percent:0.##} %", r.Mention, r.Decision]).ToList();
+            .Select(r => (IReadOnlyList<string>)[r.Rank?.ToString(Fr) ?? "—", r.Matricule, r.FullName, $"{r.Percent:0.##} %", r.Mention,
+                r.Grade is { } g ? $"{r.Decision} ({g})" : r.Decision]).ToList();
         return new TableDocument(PaymentService.Header(school), "Palmarès",
             $"{board.Promotion} · {board.PeriodLabel} · {board.AcademicYear} · {board.Admitted} admis sur {board.Students}",
             ["Rang", "Matricule", "Nom complet", "Pourcentage", "Mention", "Décision"], rows);
@@ -1190,14 +1215,16 @@ public sealed class DeliberationService(IAppDbContext db, IWriteGate gate, IAudi
         // Ordre officiel de la grille (projet Délibération) : épreuves intégratives, cours, puis blocs.
         static int Order(CourseSemester semester) => semester switch { CourseSemester.JuryEpreuve => 0, CourseSemester.JuryBloc => 2, _ => 1 };
         courses = courses.OrderBy(c => Order(c.Semester)).ThenBy(c => c.Number).ToList();
+        // Accès direct par cours (au lieu de recherches linéaires) : le calcul reste rapide pour une grande promotion.
+        var byCourse = results.ToDictionary(r => r.Key, r => r.Value.Courses.ToDictionary(c => c.CourseId));
         var details = students.ToDictionary(s => s.EnrollmentId, s => courses.Select(course =>
         {
-            var c = results[s.EnrollmentId].Courses.First(x => x.CourseId == course.Id);
+            var c = byCourse[s.EnrollmentId][course.Id];
             return new CourseOutcomeDto(c.CourseId, course.Number, course.Name, DeliberationText.Semester(course.Semester), c.Max, c.Base, c.Bonus, c.Points, c.Graded, c.Failed);
         }).ToList());
         var courseStats = courses.Select(c =>
         {
-            var lines = results.Values.Select(r => r.Courses.First(x => x.CourseId == c.Id)).ToList();
+            var lines = byCourse.Values.Select(r => r[c.Id]).ToList();
             var graded = lines.Where(l => l.Graded).ToList();
             return new CourseStatDto(c.Id, c.Number, c.Name, DeliberationText.Semester(c.Semester), c.MaxScore, graded.Count(l => !l.Failed), graded.Count(l => l.Failed),
                 lines.Count - graded.Count, graded.Count == 0 ? null : Math.Round(graded.Average(l => l.Points), 2, MidpointRounding.AwayFromZero));
