@@ -134,13 +134,29 @@ public static class RibbonCatalog
                 Group("Vie de classe",
                     Large(shell, "Présences", ClipboardCheckOutline, "Appel quotidien par promotion et taux d'assiduité.", () => shell.Open(() => new AttendancePage(shell)), Blue, perm: Perm.AcademicsRead),
                     Large(shell, "Discipline", AlertOctagonOutline, "Incidents, sanctions et suivi du comportement.", () => shell.Open(() => new DisciplinePage(shell)), Red, perm: Perm.AcademicsRead),
-                    Small(shell, "Nouvel incident", AlertPlusOutline, "Signale un incident de discipline.", () => DisciplinePage.NewDecisionAsync(shell), Neutral, perm: Perm.AcademicsWrite)),
-                Group("Délibération",
-                    Large(shell, "Délibération", Gavel, "Résultats par semestre et jury annuel, décisions motivées, clôture et procès-verbal.", () => shell.Open(() => new DeliberationPage(shell)), Red, perm: Perm.AcademicsRead),
-                    Small(shell, "Encodage des cotes", Pen, "Cotes du S1, du S2 et moyennes d'appui, par feuille ou par code anonyme.", () => shell.Open(() => new MarksPage(shell)), Neutral, perm: Perm.AcademicsRead),
-                    Small(shell, "Suivi de l'encodage", ProgressClock, "Avancement par cours et par enseignant, feuilles remises et à relancer.", () => shell.Open(() => new EncodingProgressPage(shell)), Neutral, perm: Perm.AcademicsRead),
-                    Small(shell, "Paramètres de délibération", Tune, "Encodage des enseignants, règles, autorités et épreuves du jury, rangés par blocs.", () => shell.Open(() => new DeliberationSettingsPage(shell)), Neutral, perm: Perm.DeliberationManage),
+                    Small(shell, "Nouvel incident", AlertPlusOutline, "Signale un incident de discipline.", () => DisciplinePage.NewDecisionAsync(shell), Neutral, perm: Perm.AcademicsWrite))
+            ]),
+            // Gestion des délibérations : tout ce qui va avec, dans l'ordre du travail.
+            new("deliberation", "Délibérations",
+            [
+                Group("Enseignants et cours",
+                    Large(shell, "Attribution des cours", AccountSchoolOutline, "Cours de chaque promotion (maxima, pondération, semestre) et leur enseignant.", () => shell.Open(() => new TeachingPage(shell)), Orange, perm: Perm.AcademicsRead),
+                    Large(shell, "Comptes enseignants", AccountKeyOutline, "Crée l'enseignant, son identifiant et son code provisoire ; privilège jury.", () => shell.Open(() => new TeacherAccountsPage(shell)), Blue, perm: Perm.UsersManage)),
+                Group("Préparation",
+                    Large(shell, "Paramètres de délibération", Tune, "Encodage des enseignants, règles, autorités et épreuves du jury, rangés par blocs.", () => shell.Open(() => new DeliberationSettingsPage(shell)), Orange, perm: Perm.DeliberationManage),
                     Small(shell, "Codes anonymes", Incognito, "Importe les apprenants inscrits et leur attribue un code officiel.", () => shell.Open(() => new AnonymousCodesPage(shell)), Neutral, perm: Perm.DeliberationManage)),
+                Group("Encodage",
+                    Large(shell, "Encodage des cotes", Pen, "Cotes du S1, du S2 et moyennes d'appui, par feuille ou par code anonyme.", () => shell.Open(() => new MarksPage(shell)), Purple, perm: Perm.AcademicsRead),
+                    Small(shell, "Suivi de l'encodage", ProgressClock, "Avancement par cours et par enseignant, feuilles remises et à relancer.", () => shell.Open(() => new EncodingProgressPage(shell)), Neutral, perm: Perm.AcademicsRead)),
+                Group("Jury",
+                    Large(shell, "Délibération", Gavel, "Résultats par semestre et jury annuel, décisions motivées, clôture et procès-verbal.", () => shell.Open(() => new DeliberationPage(shell)), Red, perm: Perm.AcademicsRead)),
+            ]),
+            // Espace enseignant : son accueil et ses feuilles, rien d'autre.
+            new("enseignant", "Mon espace",
+            [
+                Group("Espace enseignant",
+                    Large(shell, "Mon espace", AccountSchoolOutline, "Mes cours, leur avancement, les annonces et les règles de l'encodage.", () => shell.Open(() => new TeacherHomePage(shell)), Purple, perm: Perm.MarksEncode),
+                    Large(shell, "Mes cours et cotes", Pen, "Feuilles anonymes de mes cours : encoder, reprendre un fichier, remettre.", () => shell.Open(() => new MarksPage(shell)), Purple, perm: Perm.MarksEncode)),
             ]),
             new("personnel", "Personnel",
             [
@@ -221,7 +237,12 @@ public static class RibbonCatalog
         if (shell.Current is ReceiptDetailPage receipt) tabs.Add(ReceiptContext(shell, receipt));
         if (shell.Current is StudentDetailPage student) tabs.Add(StudentContext(shell, student));
 
-        return tabs.Where(t => t.Id == "fichier" || t.Groups.Count > 0).ToList();
+        // Un groupe dont aucune commande n'est permise disparaît ; un onglet sans groupe aussi
+        // (l'onglet « Délibérations » pour un enseignant, « Mon espace » pour le secrétariat).
+        return tabs
+            .Select(t => t.IsFile || t.IsContext || t.Groups.All(g => g.Commands.Count > 0)
+                ? t : new RibbonTabVm(t.Id, t.Title, t.Groups.Where(g => g.Commands.Count > 0).ToList()))
+            .Where(t => t.Id == "fichier" || t.Groups.Count > 0).ToList();
     }
 
     private static RibbonGroupVm Group(string title, params RibbonCommandVm?[] commands) =>

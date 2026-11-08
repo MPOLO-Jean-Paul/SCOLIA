@@ -72,6 +72,7 @@ public static class DependencyInjection
         services.AddScoped<DisciplineService>();
         services.AddScoped<TeachingService>();
         services.AddScoped<DeliberationService>();
+        services.AddScoped<TeacherAccountService>();
         services.AddScoped<StaffAttendanceService>();
         services.AddScoped<CardService>();
         services.AddScoped<StaffService>();

@@ -158,6 +158,18 @@ du serveur, réinscriptions.
   et Excel), palmarès, bulletin de délibération par apprenant.
 - Réglages de l'année : encodage S1, encodage S2, moyennes d'appui, seuil de réussite (60 % par défaut).
 
+### Gestion des délibérations rangée par nature et espace enseignant (1.2.53)
+
+- Menu **GESTION DES DÉLIBÉRATIONS** : « Enseignants et cours » (attribution des cours, comptes enseignants) puis
+  « Délibération » (paramètres, codes anonymes, encodage, suivi, jury). Onglet **Délibérations** du ruban, même ordre.
+- **Comptes enseignants** : le secrétariat crée l'enseignant (fiche + compte en une étape), avec un identifiant
+  « prénom.nom » proposé et un code provisoire généré, montré une seule fois. Nouveau code, privilège jury,
+  désactivation et réactivation sur la même page.
+- Le **code provisoire doit être remplacé** avant toute ouverture de cours ou tout encodage (contrôle du serveur) :
+  personne d'autre que l'enseignant ne peut encoder en son nom.
+- **Mon espace** (accueil de l'enseignant) : ses chiffres, une carte par cours avec avancement et état, les annonces
+  et les règles de l'encodage ; un clic ouvre la feuille du cours.
+
 ### Passage de classe
 
 Les réinscriptions lisent le jury annuel clôturé de l'année précédente : un admis est proposé dans la promotion
@@ -171,8 +183,8 @@ s'affiche à côté de la promotion actuelle.
 | Domaine | `src/Scolia.Domain/Deliberation/` (entités, `DeliberationEngine`, `AnonymousCodeRules`) ; `Course.Semester` |
 | Persistance | tables `CodesAnonymes`, `CotesDeliberation`, `ReglagesDeliberation`, `SessionsDeliberation`, `DecisionsJury`, `ResultatsDeliberation` ; migration `Deliberation` |
 | Application | `DeliberationService`, `DeliberationDtos`, `DeliberationText` ; passage de classe dans `StudentService` |
-| API | `/api/deliberation/...` dans `ScoliaEndpoints.MapDeliberation` ; lot 2 : `remise`, `renvoi`, `suivi`, `suivi/export`, `feuille/export`, `codes/import` |
-| Bureau (PC et téléphone) | groupe « Délibération » : `AnonymousCodesPage`, `MarksPage`, `EncodingProgressPage`, `DeliberationPage` ; onglet Scolarité du ruban |
+| API | `/api/comptes-enseignants` (`TeacherAccountService`) ; `/api/deliberation/...` dans `ScoliaEndpoints.MapDeliberation` ; lot 2 : `remise`, `renvoi`, `suivi`, `suivi/export`, `feuille/export`, `codes/import` |
+| Bureau (PC et téléphone) | bloc « Gestion des délibérations » : `TeachingPage`, `TeacherAccountsPage`, `DeliberationSettingsPage`, `AnonymousCodesPage`, `MarksPage`, `EncodingProgressPage`, `DeliberationPage` ; espace enseignant : `TeacherHomePage` ; onglet Délibérations du ruban |
 | Tests | `DeliberationEngineTests` (cas de référence du dossier ITMCD Pro), `DeliberationApiTests` (parcours complet) |
 
 Droits : lecture avec `scolarite.lire`, encodage avec `scolarite.ecrire`, codes, décisions, clôture,

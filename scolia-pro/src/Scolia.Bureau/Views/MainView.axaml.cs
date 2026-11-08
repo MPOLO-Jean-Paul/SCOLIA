@@ -620,6 +620,8 @@ public partial class MainView : UserControl
         "secretariat" => MaterialIconKind.AccountGroupOutline,
         "finances" => MaterialIconKind.CashMultiple,
         "scolarite" => MaterialIconKind.SchoolOutline,
+        "deliberation" => MaterialIconKind.Gavel,
+        "enseignant" => MaterialIconKind.AccountSchoolOutline,
         "personnel" => MaterialIconKind.BriefcaseOutline,
         "pilotage" => MaterialIconKind.ViewDashboardOutline,
         "parametres" => MaterialIconKind.CogOutline,

@@ -62,3 +62,12 @@ public sealed record EncodingProgressDto(string AcademicYear, string PeriodLabel
 public sealed record CodeImportLineDto(int Line, string Identifier, string Code, string Status, Guid? EnrollmentId, string? Matricule, string? FullName, string? PromotionCode);
 
 public sealed record CodeImportResult(bool Applied, int Assigned, int Ready, int Unchanged, int Problems, IReadOnlyList<CodeImportLineDto> Lines);
+
+/// <summary>Enseignant et état de son compte (page « Comptes enseignants » du secrétariat).</summary>
+public sealed record TeacherAccountDto(Guid StaffMemberId, string Number, string FullName, string Function, string? Phone, bool StaffActive, int Courses,
+    Guid? UserId, string? UserName, bool HasAccount, bool AccountActive, bool MustChangePassword, DateTime? LastLoginUtc, bool IsLocked, bool JuryAccess);
+
+/// <summary>Identifiants à remettre à l'enseignant ; le code provisoire n'est montré qu'une fois.</summary>
+public sealed record TeacherCredentialsDto(Guid StaffMemberId, Guid UserId, string FullName, string UserName, string ProvisionalCode);
+
+public sealed record NewTeacherResult(Guid StaffMemberId, string Number, string FullName, TeacherCredentialsDto? Account);

@@ -340,7 +340,7 @@ public sealed class DeliberationApiTests : IDisposable
         Assert.Equal(staffId, created.GetProperty("staffMemberId").GetString());
         var (second, _) = await admin.Post("/api/utilisateurs", new { userName = "prof.bis", displayName = "Bis", role = "Enseignant", password = "Provisoire1", staffMemberId = staffId }).Fail();
         Assert.Equal(HttpStatusCode.Conflict, second);
-        var teacher = await app.Login("prof.lumbala", "Provisoire1");
+        var teacher = await app.FirstLogin("prof.lumbala", "Provisoire1", "Lumbala2026");
 
         // Mes cours : seulement le cours attribué, rien d'autre de la scolarité.
         var mine = (await teacher.GetAsync($"{D}/mes-cours").Ok()).EnumerateArray().ToList();
@@ -481,7 +481,7 @@ public sealed class DeliberationApiTests : IDisposable
         Assert.False(account.GetProperty("juryAccess").GetBoolean());
 
         // Sans le privilège : aucune épreuve du jury.
-        var teacher = await app.Login("prof.kapend", "Provisoire1");
+        var teacher = await app.FirstLogin("prof.kapend", "Provisoire1", "Kapend2026");
         Assert.Empty((await teacher.GetAsync($"{D}/mes-cours").Ok()).EnumerateArray());
         var (denied, _) = await teacher.Post($"{D}/cotes-par-code", new { code = codes[setup.Enrollments[0]], courseId = stage, kind = "Jury", value = 100m }).Fail();
         Assert.Equal(HttpStatusCode.Forbidden, denied);
@@ -490,7 +490,7 @@ public sealed class DeliberationApiTests : IDisposable
         var granted = await admin.Put($"/api/utilisateurs/{userId}", new { displayName = "Pr KAPEND", role = "Enseignant", isActive = true, staffMemberId = staffId, juryAccess = true }).Ok();
         Assert.True(granted.GetProperty("juryAccess").GetBoolean());
         Assert.Equal("Enseignant · membre du jury", granted.GetProperty("roleLabel").GetString());
-        teacher = await app.Login("prof.kapend", "Provisoire1");
+        teacher = await app.Login("prof.kapend", "Kapend2026");
         Assert.Contains("jury.encoder", (await teacher.GetAsync("/api/session").Ok()).GetProperty("permissions").EnumerateArray().Select(p => p.GetString()));
         var mine = (await teacher.GetAsync($"{D}/mes-cours").Ok()).EnumerateArray().ToList();
         Assert.Equal(7, mine.Count);
@@ -507,7 +507,7 @@ public sealed class DeliberationApiTests : IDisposable
 
         // Retrait du privilège : la cote encodée reste, l'enseignant ne peut plus encoder.
         await admin.Put($"/api/utilisateurs/{userId}", new { displayName = "Pr KAPEND", role = "Enseignant", isActive = true, staffMemberId = staffId, juryAccess = false }).Ok();
-        teacher = await app.Login("prof.kapend", "Provisoire1");
+        teacher = await app.Login("prof.kapend", "Kapend2026");
         var (withdrawn, _) = await teacher.Post($"{D}/cotes-par-code", new { code = codes[setup.Enrollments[1]], courseId = stage, kind = "Jury", value = 100m }).Fail();
         Assert.Equal(HttpStatusCode.Forbidden, withdrawn);
         var kept = await admin.GetAsync($"{D}/feuille?coursId={stage}&nature=Jury").Ok();
@@ -616,7 +616,7 @@ public sealed class DeliberationApiTests : IDisposable
         var staffId = staff.GetProperty("id").GetString()!;
         await admin.Put($"/api/scolarite/cours/{setup.S1Course}/attribution", new { teacherId = staffId, confirmReplace = false }).Ok();
         await admin.Post("/api/utilisateurs", new { userName = "prof.ngoie", displayName = "Pr NGOIE", role = "Enseignant", password = "Provisoire1", staffMemberId = staffId }).Ok();
-        var teacher = await app.Login("prof.ngoie", "Provisoire1");
+        var teacher = await app.FirstLogin("prof.ngoie", "Provisoire1", "Ngoie2026");
 
         // L'enseignant lit les règles en vigueur : mise à jour fermée, téléchargements ouverts (projet Délibération).
         var rules = await teacher.GetAsync($"{D}/reglages").Ok();

@@ -338,7 +338,9 @@ public sealed record PhoneMenuBlockVm(string Title, IReadOnlyList<NavGroupVm> Na
 
         // Mêmes blocs que le volet de l'ordinateur, dans le même ordre.
         Add("VUE D’ENSEMBLE", ["", "Pilotage"], ["Pilotage", "Exports", "Export", "Rapports"]);
+        Add("ESPACE ENSEIGNANT", ["Espace enseignant"], ["Mon espace"]);
         Add("GESTION SCOLAIRE", ["Secrétariat", "Scolarité"], ["Secrétariat", "Scolarité", "Apprenants"]);
+        Add("GESTION DES DÉLIBÉRATIONS", ["Enseignants et cours", "Délibération"], ["Délibérations"]);
         Add("GESTION FINANCIÈRE", ["Finances"], ["Finances", "Paiements"]);
         Add("ORGANISATION", ["Personnel"], ["Personnel"]);
         Add("RÉGLAGES ET DONNÉES", ["Paramètres", "Données"], ["Paramètres", "Affichage", "Sécurité", "Données", "Sauvegardes", "Contrôle", "Effacement"]);
@@ -381,7 +383,9 @@ public sealed record PhoneToolBlockVm(string Title, IReadOnlyList<PhoneToolGroup
             blocks.Add(new PhoneToolBlockVm(title, entries));
         }
         Add("VUE D’ENSEMBLE", "Pilotage", "Rapports", "Export", "Exports");
+        Add("ESPACE ENSEIGNANT", "Mon espace");
         Add("GESTION SCOLAIRE", "Secrétariat", "Scolarité", "Apprenants");
+        Add("GESTION DES DÉLIBÉRATIONS", "Délibérations");
         Add("GESTION FINANCIÈRE", "Finances", "Paiements");
         Add("ORGANISATION", "Personnel");
         Add("RÉGLAGES ET DONNÉES", "Paramètres", "Affichage", "Sécurité", "Données", "Sauvegardes", "Contrôle", "Effacement");

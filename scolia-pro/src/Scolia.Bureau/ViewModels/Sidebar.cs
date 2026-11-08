@@ -95,11 +95,18 @@ public static class Sidebar
         var groups = new[]
         {
             Group(string.Empty,
-                // L'enseignant n'a pas d'accueil chiffré : son espace est « Mes cours ».
-                shell.TeacherOnly ? null : Item("Accueil", MaterialIconKind.Home, "ToneBlue", null,
-                    shell.Can(Perm.PilotageRead) && !shell.Can(Perm.ReportsRead) ? typeof(PromoterDashboardPage) : typeof(HomePage),
-                    () => shell.Can(Perm.PilotageRead) && !shell.Can(Perm.ReportsRead)
-                        ? new PromoterDashboardPage(shell) : new HomePage(shell))),
+                // L'enseignant a son propre accueil : ses cours, ses annonces et les règles de l'encodage.
+                shell.TeacherOnly
+                    ? Item("Mon espace", MaterialIconKind.AccountSchool, "TonePurple", null, typeof(TeacherHomePage), () => new TeacherHomePage(shell))
+                    : Item("Accueil", MaterialIconKind.Home, "ToneBlue", null,
+                        shell.Can(Perm.PilotageRead) && !shell.Can(Perm.ReportsRead) ? typeof(PromoterDashboardPage) : typeof(HomePage),
+                        () => shell.Can(Perm.PilotageRead) && !shell.Can(Perm.ReportsRead)
+                            ? new PromoterDashboardPage(shell) : new HomePage(shell))),
+            // Espace enseignant : seulement ce qui relève de son métier (encodage anonyme de ses cours).
+            shell.TeacherOnly
+                ? Group("Espace enseignant",
+                    Item("Mes cours et cotes", MaterialIconKind.Pen, "TonePurple", null, typeof(MarksPage), () => new MarksPage(shell)))
+                : Group("Espace enseignant"),
             // Pilotage : regarder et exporter les chiffres.
             Group("Pilotage",
                 Item("Tableau de bord", MaterialIconKind.ViewDashboard, "ToneBlue", Perm.ReportsRead, typeof(DashboardPage), () => new DashboardPage(shell)),
@@ -118,16 +125,19 @@ public static class Sidebar
                 Item("Caisse", MaterialIconKind.CashMultiple, "ToneGreen", Perm.PaymentsRead, typeof(CashPage), () => new CashPage(shell)),
                 Item("Dépenses", MaterialIconKind.Wallet, "ToneRed", Perm.PaymentsRead, typeof(ExpensesPage), () => new ExpensesPage(shell)),
                 Item("Prises en charge", MaterialIconKind.HandHeart, "TonePink", Perm.PaymentsRead, typeof(SponsorshipsPage), () => new SponsorshipsPage(shell))),
-            // Scolarité : l'enseignement, de l'appel aux résultats.
+            // Scolarité : la vie de classe (notes du cycle ordinaire, appel, discipline).
             Group("Scolarité",
                 Item("Cours et notes", MaterialIconKind.BookOpenVariant, "TonePurple", Perm.AcademicsRead, typeof(GradesPage), () => new GradesPage(shell)),
                 Item("Résultats", MaterialIconKind.Certificate, "ToneIndigo", Perm.AcademicsRead, typeof(ResultsPage), () => new ResultsPage(shell)),
                 Item("Présences", MaterialIconKind.ClipboardCheck, "ToneTeal", Perm.AcademicsRead, typeof(AttendancePage), () => new AttendancePage(shell)),
-                Item("Discipline", MaterialIconKind.AlertOctagon, "ToneRed", Perm.AcademicsRead, typeof(DisciplinePage), () => new DisciplinePage(shell)),
-                Item("Enseignants et cours", MaterialIconKind.AccountSchool, "ToneOrange", Perm.AcademicsRead, typeof(TeachingPage), () => new TeachingPage(shell))),
-            // Délibération (fusion d'ITMCD) : codes anonymes, encodage des cotes par semestre, jury et documents officiels.
+                Item("Discipline", MaterialIconKind.AlertOctagon, "ToneRed", Perm.AcademicsRead, typeof(DisciplinePage), () => new DisciplinePage(shell))),
+            // Gestion des délibérations (fusion d'ITMCD), dans l'ordre du travail :
+            // 1. les enseignants, leurs comptes et l'attribution des cours ;
+            Group("Enseignants et cours",
+                Item("Attribution des cours", MaterialIconKind.AccountSchool, "ToneOrange", Perm.AcademicsRead, typeof(TeachingPage), () => new TeachingPage(shell)),
+                Item("Comptes enseignants", MaterialIconKind.AccountKey, "ToneBlue", Perm.UsersManage, typeof(TeacherAccountsPage), () => new TeacherAccountsPage(shell))),
+            // 2. la préparation (paramètres, codes anonymes), l'encodage et son suivi, puis le jury.
             Group("Délibération",
-                shell.TeacherOnly ? Item("Mes cours", MaterialIconKind.Pen, "TonePurple", Perm.MarksEncode, typeof(MarksPage), () => new MarksPage(shell)) : null,
                 Item("Paramètres de délibération", MaterialIconKind.Tune, "ToneOrange", Perm.DeliberationManage, typeof(DeliberationSettingsPage), () => new DeliberationSettingsPage(shell)),
                 Item("Codes anonymes", MaterialIconKind.Incognito, "ToneIndigo", Perm.DeliberationManage, typeof(AnonymousCodesPage), () => new AnonymousCodesPage(shell)),
                 Item("Encodage des cotes", MaterialIconKind.Pen, "TonePurple", Perm.AcademicsRead, typeof(MarksPage), () => new MarksPage(shell)),
@@ -166,7 +176,9 @@ public static class Sidebar
             blocks.Add(new NavBlockVm(title, entries));
         }
         Add("VUE D’ENSEMBLE", "", "Pilotage");
-        Add("GESTION SCOLAIRE", "Secrétariat", "Scolarité", "Délibération");
+        Add("ESPACE ENSEIGNANT", "Espace enseignant");
+        Add("GESTION SCOLAIRE", "Secrétariat", "Scolarité");
+        Add("GESTION DES DÉLIBÉRATIONS", "Enseignants et cours", "Délibération");
         Add("GESTION FINANCIÈRE", "Finances");
         Add("ORGANISATION", "Personnel");
         Add("CONNEXIONS", "Réseau et postes");
