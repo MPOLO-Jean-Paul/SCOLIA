@@ -292,6 +292,17 @@ public static class LicenseMutationPolicy
         // La présence des appareils reste disponible en lecture seule ;
         // aucun verrou d'édition ne peut être obtenu avec ce mode.
         if (path == "/api/direct/presence" && method is "POST" or "DELETE") return true;
+        // Export d'une sauvegarde déjà créée : lecture chiffrée, jamais restauration,
+        // import, nettoyage ou effacement. Les permissions BackupManage et
+        // TrustedBackupTransport du endpoint restent obligatoires.
+        const string backupPrefix = "/api/sauvegardes/";
+        const string backupSuffix = "/export-chiffre";
+        if (method == "POST" && path.StartsWith(backupPrefix, StringComparison.Ordinal) &&
+            path.EndsWith(backupSuffix, StringComparison.Ordinal) &&
+            path.Length > backupPrefix.Length + backupSuffix.Length &&
+            !path.AsSpan(backupPrefix.Length,
+                path.Length - backupPrefix.Length - backupSuffix.Length).Contains('/'))
+            return true;
         // La gestion de la licence possède ses propres permissions SettingsWrite.
         return path == "/api/licence" ||
                path.StartsWith("/api/licence/", StringComparison.Ordinal);

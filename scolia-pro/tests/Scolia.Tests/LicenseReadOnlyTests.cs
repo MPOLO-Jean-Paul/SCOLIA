@@ -28,6 +28,7 @@ public sealed class LicenseReadOnlyTests
     [InlineData("POST", "/api/jumelage/appareil/verifier")]
     [InlineData("POST", "/api/licence/enregistrer")]
     [InlineData("POST", "/api/licence/actualiser")]
+    [InlineData("POST", "/api/sauvegardes/SCOLIA_2026_11_08/export-chiffre")]
     public void Connexion_et_gestion_de_licence_restent_accessibles_en_lecture_seule(
         string method, string path)
     {
@@ -41,6 +42,12 @@ public sealed class LicenseReadOnlyTests
     [InlineData("POST", "/api/licence-fausse")]
     [InlineData("DELETE", "/api/apprenants/abc")]
     [InlineData("DELETE", "/api/session/recuperation")]
+    [InlineData("POST", "/api/sauvegardes/SCOLIA_2026_11_08/restauration")]
+    [InlineData("POST", "/api/sauvegardes/import-chiffre")]
+    [InlineData("POST", "/api/sauvegardes/nettoyage")]
+    [InlineData("POST", "/api/sauvegardes//export-chiffre")]
+    [InlineData("POST", "/api/sauvegardes/test/subpath/export-chiffre")]
+    [InlineData("DELETE", "/api/sauvegardes/SCOLIA_2026_11_08/export-chiffre")]
     public void Aucun_endpoint_de_modification_ne_contourne_le_blocage(string method, string path)
     {
         Assert.True(LicenseMutationPolicy.IsWrite(method));
