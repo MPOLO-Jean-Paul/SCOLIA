@@ -58,7 +58,7 @@ public sealed class DeliberationApiTests : IDisposable
         // Cette promotion non prévue dans un modèle Excel démontre que les onglets sont dynamiques.
         var newPromotion = await admin.Post("/api/etablissement/promotions", new
         {
-            code = "NOUV4", name = "Promotion créée après installation", level = 4, isActive = true,
+            code = "NUV4", name = "Promotion créée après installation", level = 4, isActive = true,
             monthlyFee = 55000m, oneTimeFees = Array.Empty<object>(),
         }).Ok();
         var promotionId = newPromotion.GetProperty("id").GetString()!;
@@ -96,7 +96,7 @@ public sealed class DeliberationApiTests : IDisposable
         using var workbook = new XLWorkbook(bytes);
         Assert.Equal(2, workbook.Worksheets.Count);
         Assert.Contains(workbook.Worksheets, sheet => sheet.Name == "INF1");
-        var dynamicSheet = workbook.Worksheet("NOUV4");
+        var dynamicSheet = workbook.Worksheet("NUV4");
         Assert.Contains("Promotion créée après installation", dynamicSheet.Cell(3, 1).GetString());
         Assert.Contains("Cours créé par l'établissement", dynamicSheet.Cell(7, 4).GetString());
         Assert.Equal(60d, dynamicSheet.Cell(8, 4).GetDouble());
