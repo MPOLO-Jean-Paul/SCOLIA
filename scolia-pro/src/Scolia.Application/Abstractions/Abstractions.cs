@@ -105,6 +105,9 @@ public interface IDocumentService
 public interface ISpreadsheetService
 {
     byte[] Export(TableDocument document);
+
+    /// <summary>Un seul classeur Excel avec une feuille par promotion, sans export intermédiaire de données scolaires.</summary>
+    byte[] ExportGrids(IReadOnlyList<(string SheetName, TableDocument Document)> grids);
 }
 
 public sealed record SchoolHeader(string Name, string? Motto, string? Address, string? Phone, string? Email, byte[]? Logo, string CurrencySymbol, string? ReceiptFooter);
