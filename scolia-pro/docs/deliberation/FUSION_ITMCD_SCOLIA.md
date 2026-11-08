@@ -121,6 +121,21 @@ du serveur, réinscriptions.
 - Le serveur vérifie l'attribution à chaque appel (refus 403) ; les anciens comptes enseignants sans fiche
   restent désactivés.
 
+### Privilège jury, notifications et documents (lot 5)
+
+- **Le jury est un comité, pas un compte** : le secrétariat coche « Membre du jury » sur le compte d'un enseignant
+  (droit `jury.encoder`). Il encode alors les épreuves du jury de toutes les promotions, en feuille anonyme ou par code,
+  sans en devenir titulaire et sans voir les résultats. Le privilège se retire à tout moment ; les cotes déjà encodées restent.
+- **Notifications (ITMCD)** : bannière (et notification du téléphone) aux enseignants à l'ouverture ou la fermeture de
+  l'encodage et au renvoi d'une feuille ; au jury à chaque remise. Les trois dernières annonces s'affichent dans « Mes cours ».
+- **Confidentialité du direct** : un compte enseignant ne reçoit ni les encaissements, ni les codes rattachés aux
+  matricules, ni la présence des autres postes ; seulement les annonces de la délibération.
+- **Bulletin** : toujours sur une seule page (contenu réduit, jamais coupé) ; « Tous les bulletins » produit la promotion
+  entière, un apprenant par page, dans l'ordre du rang.
+- **Grille** : police et marges resserrées selon le nombre de colonnes, en-tête répété sur chaque page.
+- **Cours** : pondération (coefficient, moyenne sur 20 de « Cours et notes ») et maxima (points de la délibération,
+  1 à 2000, vide = pondération × 10) sont distincts, bornés et expliqués dans tous les formulaires.
+
 ### Délibération et jury
 
 - Tableau par promotion et par période (premier semestre, second semestre, jury annuel) : rang, points,
@@ -153,7 +168,7 @@ s'affiche à côté de la promotion actuelle.
 
 Droits : lecture avec `scolarite.lire`, encodage avec `scolarite.ecrire`, codes, décisions, clôture,
 réouverture et réglages avec le nouveau droit `deliberation.gerer` (accordé au secrétariat) ; l'enseignant
-encode ses seuls cours avec `cotes.encoder`.
+encode ses seuls cours avec `cotes.encoder` ; un membre du jury encode les épreuves du jury avec `jury.encoder`.
 
 ## 5. Décisions prises (modifiables)
 
@@ -164,7 +179,6 @@ encode ses seuls cours avec `cotes.encoder`.
 
 ## 6. Prochains lots proposés
 
-1. Notifications (ITMCD) : avertir les enseignants à l'ouverture ou la fermeture de l'encodage, et le jury à chaque remise.
-2. Reprise des cotes d'ITMCD (export) rattachées aux codes officiels déjà repris.
-3. Code QR de vérification sur le bulletin de délibération.
-4. Seconde session (repêchage), si l'établissement l'organise.
+1. Reprise des cotes d'ITMCD (export) rattachées aux codes officiels déjà repris.
+2. Code QR de vérification sur le bulletin de délibération.
+3. Seconde session (repêchage), si l'établissement l'organise.
