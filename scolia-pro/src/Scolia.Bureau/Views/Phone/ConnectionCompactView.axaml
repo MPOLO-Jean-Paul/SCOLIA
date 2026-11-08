@@ -162,7 +162,7 @@
             <Button Classes="connectmain" Command="{Binding JoinInternet}" IsEnabled="{Binding NotSearching}"
                     Content="Valider le code" />
           </StackPanel>
-          <Button x:Name="CodeDetails" Classes="connectnav" Content="Voir les informations de connexion"
+          <Button x:Name="CodeDetails" Classes="connectnav" Content="Voir les détails de connexion"
                   MinHeight="36" />
         </StackPanel>
       </Border>
@@ -251,7 +251,7 @@
         <Button x:Name="TabWifi" Classes="connectnav" Grid.Column="2" Content="Wi-Fi" />
       </Grid>
       <Button x:Name="HostServer" Classes="connectsecondary connecthost" Grid.Row="1"
-              Content="Configurer ce téléphone comme serveur" Command="{Binding UseThisComputer}"
+              Content="Ce téléphone comme serveur" ToolTip.Tip="Configurer ce téléphone comme serveur de l’établissement" Command="{Binding UseThisComputer}"
               IsEnabled="{Binding NotSearching}"
               MinHeight="44" />
     </Grid>

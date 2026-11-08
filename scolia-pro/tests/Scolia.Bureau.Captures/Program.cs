@@ -1664,6 +1664,15 @@ if (args.Length > 3 && args[3] == "connexion-compacte")
         ClickCompact("QrDetails");
         CheckCompact("État " + width + "×" + height + " : diagnostic dans l'écran", Fits(NamedCompact("DetailsPage")));
     }
+    // Les captures doivent aussi garantir que les libellés des boutons ne sont pas coupés.
+    var overflowReport = Path.Combine(output, "debordements.txt");
+    if (File.Exists(overflowReport))
+    {
+        var diagnostics = File.ReadAllText(overflowReport);
+        CheckCompact("Avant connexion : aucun bouton ou texte coupé",
+            !diagnostics.Contains("texte coupé", StringComparison.Ordinal)
+            && !diagnostics.Contains("sort de l'écran", StringComparison.Ordinal));
+    }
     shell.Sync.Stop();
     window.Close();
     Environment.ExitCode = failures == 0 ? 0 : 1;
