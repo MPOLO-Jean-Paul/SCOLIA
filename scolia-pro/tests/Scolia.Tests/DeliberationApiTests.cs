@@ -103,7 +103,7 @@ public sealed class DeliberationApiTests : IDisposable
         Assert.Equal(code, dynamicSheet.Cell(9, 2).GetString());
         Assert.Contains("DYNAMIQUE", dynamicSheet.Cell(9, 3).GetString());
         Assert.Equal(44d, dynamicSheet.Cell(9, 4).GetDouble());
-        Assert.Contains("AVERAGE", dynamicSheet.Cell(12, 4).FormulaA1.ToUpperInvariant());
+        Assert.Contains("AVERAGE", dynamicSheet.Cell(11, 4).FormulaA1.ToUpperInvariant());
     }
 
     [Fact]
