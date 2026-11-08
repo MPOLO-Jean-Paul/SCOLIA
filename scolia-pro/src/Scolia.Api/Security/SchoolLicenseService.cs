@@ -6,7 +6,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.Extensions.Options;
-using Scolia.Infrastructure;
+using Scolia.Infrastructure.Backup;
 
 namespace Scolia.Api.Security;
 
