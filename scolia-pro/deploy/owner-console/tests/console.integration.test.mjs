@@ -23,19 +23,26 @@ function setup() {
       run: async () => ({ meta: sqlite.prepare(sql).run(...params) }),
     };
   }
+  let queue = Promise.resolve();
   const db = {
     prepare: sql => statement(sql),
-    batch: async statements => {
-      sqlite.exec("BEGIN IMMEDIATE");
-      try {
-        const results = [];
-        for (const stmt of statements) results.push(await stmt.run());
-        sqlite.exec("COMMIT");
-        return results;
-      } catch (error) {
-        sqlite.exec("ROLLBACK");
-        throw error;
-      }
+    batch: statements => {
+      // SQLite utilise une connexion mémoire commune dans ce test.
+      // Sérialiser les transactions simule l'arbitre D1 réel.
+      const work = queue.then(async () => {
+        sqlite.exec("BEGIN IMMEDIATE");
+        try {
+          const results = [];
+          for (const stmt of statements) results.push(await stmt.run());
+          sqlite.exec("COMMIT");
+          return results;
+        } catch (error) {
+          sqlite.exec("ROLLBACK");
+          throw error;
+        }
+      });
+      queue = work.catch(() => {});
+      return work;
     },
   };
   const env = { OWNER_DB: db, OWNER_ADMIN_TOKEN: "proprietaire-secret-de-test" };
