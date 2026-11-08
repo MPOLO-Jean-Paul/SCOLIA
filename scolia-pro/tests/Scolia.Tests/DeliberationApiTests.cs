@@ -443,6 +443,8 @@ public sealed class DeliberationApiTests : IDisposable
             $"{D}/grille?promotionId={setup.PromotionId}&periode=Annuel",
             $"{D}/bulletin.pdf?promotionId={setup.PromotionId}&periode=Annuel&inscriptionId={student}",
             $"{D}/proces-verbal.pdf?promotionId={setup.PromotionId}&periode=Annuel",
+            $"{D}/bulletins.pdf?promotionId={setup.PromotionId}&periode=Annuel",
+            $"{D}/bulletins.pdf?promotionId={setup.PromotionId}&periode=S1",
         })
             Assert.Equal(HttpStatusCode.OK, (await admin.GetAsync(url)).StatusCode);
 

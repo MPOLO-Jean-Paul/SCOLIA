@@ -480,6 +480,7 @@ public sealed class DeliberationPage : PageViewModel
         Action("Grille des cotes (Excel)", MaterialIconKind.FileExcel, () => DownloadAsync("grille", "xlsx", "grille-des-cotes.xlsx"));
         Action("Palmarès (PDF)", MaterialIconKind.Podium, () => DownloadAsync("palmares", "pdf", "palmares.pdf"));
         Action("Bulletin (PDF)", MaterialIconKind.FilePdfBox, BulletinAsync, row: true);
+        Action("Tous les bulletins (PDF)", MaterialIconKind.FileMultiple, () => DownloadAsync("bulletins.pdf", null, "bulletins-deliberation.pdf"));
         Action("Encodage des cotes", MaterialIconKind.Pen, () => Shell.Open(() => new MarksPage(Shell)));
         ActionRefresh();
     }

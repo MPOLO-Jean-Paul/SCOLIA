@@ -193,7 +193,7 @@ public sealed class DeliberationService(IAppDbContext db, IWriteGate gate, IAudi
     public Task<AnonymousCodeRowDto> SetCodeAsync(Guid enrollmentId, CodeChangeRequest input, CancellationToken ct = default) => gate.RunAsync(async () =>
     {
         var year = await OpenYearAsync(ct);
-        var student = (await EnrolledAsync(year.Id, null, ct)).FirstOrDefault(s => s.EnrollmentId == enrollmentId)
+        var student = await EnrolledOneAsync(year.Id, enrollmentId, ct)
             ?? throw new NotFoundException("Cet apprenant n'est pas inscrit (actif) dans l'année courante.");
         var all = await db.AnonymousCodes.Where(c => c.AcademicYearId == year.Id).ToListAsync(ct);
         var current = all.FirstOrDefault(c => c.EnrollmentId == enrollmentId && c.IsActive);
@@ -308,7 +308,7 @@ public sealed class DeliberationService(IAppDbContext db, IWriteGate gate, IAudi
         var found = await db.AnonymousCodes.AsNoTracking().FirstOrDefaultAsync(c => c.AcademicYearId == yearId && c.Code == code, ct)
             ?? throw new NotFoundException($"Code anonyme inconnu : {code}.");
         if (!found.IsActive) throw new DomainException("code", $"Le code {code} a été remplacé : utilisez le code actuel de l'apprenant.");
-        var student = (await EnrolledAsync(yearId, null, ct)).FirstOrDefault(s => s.EnrollmentId == found.EnrollmentId)
+        var student = await EnrolledOneAsync(yearId, found.EnrollmentId, ct)
             ?? throw new DomainException("code", $"Le code {code} appartient à un apprenant qui n'est plus inscrit.");
         return (found, student);
     }
@@ -356,14 +356,15 @@ public sealed class DeliberationService(IAppDbContext db, IWriteGate gate, IAudi
         var students = await EnrolledAsync(year.Id, course.PromotionId, ct);
         var codes = await ActiveCodesAsync(year.Id, ct);
         var ids = students.Select(s => s.EnrollmentId).ToList();
-        var marks = await db.CourseMarks.AsNoTracking().Where(m => m.CourseId == courseId && ids.Contains(m.EnrollmentId)).ToListAsync(ct);
+        var marks = (await db.CourseMarks.AsNoTracking().Where(m => m.CourseId == courseId && ids.Contains(m.EnrollmentId)).ToListAsync(ct))
+            .ToDictionary(m => (m.EnrollmentId, m.Kind), m => m.Value);
         var closed = await ClosedPeriodsAsync(course.PromotionId, ct);
         var period = kind == MarkKind.CoteS2 ? DeliberationPeriod.S2 : kind == MarkKind.CoteS1 ? DeliberationPeriod.S1
             : course.Semester == CourseSemester.S2 ? DeliberationPeriod.S2 : course.Semester == CourseSemester.S1 ? DeliberationPeriod.S1 : DeliberationPeriod.Annuel;
         if (kind == MarkKind.Jury) period = DeliberationPeriod.Annuel;
         var rows = students.Select(s =>
         {
-            decimal? Mark(MarkKind k) => marks.FirstOrDefault(m => m.EnrollmentId == s.EnrollmentId && m.Kind == k)?.Value;
+            decimal? Mark(MarkKind k) => marks.TryGetValue((s.EnrollmentId, k), out var v) ? v : null;
             var result = DeliberationEngine.Course(new DeliberationEngine.CourseInput(course.Id, course.Semester, course.MaxScore,
                 Mark(MarkKind.CoteS1), Mark(MarkKind.CoteS2), Mark(MarkKind.Appui), Mark(MarkKind.Jury)), period, settings.SupportEnabled);
             // La correspondance code ↔ nom est confidentielle : elle n'est montrée qu'au jury.
@@ -971,19 +972,42 @@ public sealed class DeliberationService(IAppDbContext db, IWriteGate gate, IAudi
     /// <summary>Bulletin de délibération d'un apprenant : cours, cote de base, appui, points retenus, total, mention et décision.</summary>
     public async Task<byte[]> BulletinPdfAsync(Guid promotionId, string periodText, Guid enrollmentId, CancellationToken ct = default)
     {
-        var student = await StudentAsync(promotionId, periodText, enrollmentId, ct);
-        var board = await BoardAsync(promotionId, periodText, ct);
-        var school = await YearContext.SchoolAsync(db, ct);
-        var r = student.Result;
+        // Un seul calcul de la délibération pour la fiche et le rang (auparavant deux).
+        var (computation, school, authorities) = await BulletinContextAsync(promotionId, periodText, ct);
+        var row = computation.Board.Rows.FirstOrDefault(r => r.EnrollmentId == enrollmentId) ?? throw new NotFoundException("Apprenant absent de cette délibération.");
+        return documents.Report(Bulletin(computation, row, school, authorities));
+    }
+
+    /// <summary>Bulletins de toute la promotion dans un seul PDF, un apprenant par page, dans l'ordre du rang (bulletins d'ITMCD).</summary>
+    public async Task<byte[]> BulletinsPdfAsync(Guid promotionId, string periodText, CancellationToken ct = default)
+    {
+        var (computation, school, authorities) = await BulletinContextAsync(promotionId, periodText, ct);
+        if (computation.Board.Rows.Count == 0) throw new DomainException("bulletins", "Aucun apprenant dans cette délibération : aucun bulletin à produire.");
+        return documents.Reports(computation.Board.Rows.Select(r => Bulletin(computation, r, school, authorities)).ToList());
+    }
+
+    private async Task<(Computation Computation, Domain.School.SchoolProfile School, AuthoritiesDto Authorities)> BulletinContextAsync(Guid promotionId, string periodText, CancellationToken ct)
+    {
+        var year = await YearContext.CurrentAsync(db, ct);
+        var computation = await ComputeAsync(year, promotionId, DeliberationText.Period(periodText), closing: false, ct);
+        return (computation, await YearContext.SchoolAsync(db, ct), Authorities(await SettingsOfAsync(year.Id, ct)));
+    }
+
+    /// <summary>Bulletin de délibération d'un apprenant : tient toujours sur une seule page.</summary>
+    private static ReportDocument Bulletin(Computation computation, DeliberationRowDto r, Domain.School.SchoolProfile school, AuthoritiesDto authorities)
+    {
+        var board = computation.Board;
+        var courses = computation.Details.GetValueOrDefault(r.EnrollmentId) ?? [];
         var section = new ReportSection("Cours",
             ["N°", "Cours", "Maxima", "Cote", "Appui", "Points retenus", "Observation"],
-            student.Courses.Select(c => (IReadOnlyList<string>)[c.Number.ToString(Fr), c.Course, $"{c.Max:0.##}", c.Base is { } b ? $"{b:0.##}" : "INC",
+            courses.Select(c => (IReadOnlyList<string>)[c.Number.ToString(Fr), c.Course, $"{c.Max:0.##}", c.Base is { } b ? $"{b:0.##}" : "INC",
                 c.Bonus > 0 ? $"+{c.Bonus:0.##}" : string.Empty, c.Graded ? $"{c.Points:0.##}" : "INC", !c.Graded ? "Cote manquante" : c.Failed ? "Échec" : "Réussi"]).ToList(),
             [string.Empty, "Total", $"{r.Max:0.##}", string.Empty, string.Empty, $"{r.Points:0.##}", string.Empty], "Aucun cours pour cette période.");
-        return documents.Report(new ReportDocument(PaymentService.Header(school), "Bulletin de délibération",
-            $"{r.FullName} · matricule {r.Matricule} · {student.Promotion} · {student.Period} · {board.AcademicYear}{(board.Status == "Clôturée" ? string.Empty : " · PROVISOIRE")}",
-            [("Pourcentage", $"{r.Percent:0.##} %"), ("Mention", r.Mention), ("Décision", r.Decision), ("Rang", r.Rank is { } rank ? $"{rank} / {board.Students}" : "—")],
-            [section], BulletinFooter(r, await AuthoritiesAsync(ct))));
+        return new ReportDocument(PaymentService.Header(school), "Bulletin de délibération",
+            $"{r.FullName} · matricule {r.Matricule} · {board.Promotion} · {board.PeriodLabel} · {board.AcademicYear}{(board.Status == "Clôturée" ? string.Empty : " · PROVISOIRE")}",
+            [("Pourcentage", $"{r.Percent:0.##} %"), ("Mention", r.Mention), ("Décision", r.Grade is { } g ? $"{r.Decision} ({g})" : r.Decision),
+                ("Rang", r.Rank is { } rank ? $"{rank} / {board.Students}" : "—")],
+            [section], BulletinFooter(r, authorities), OnePage: true);
     }
 
     private static string BulletinFooter(DeliberationRowDto r, AuthoritiesDto a)
@@ -1112,6 +1136,17 @@ public sealed class DeliberationService(IAppDbContext db, IWriteGate gate, IAudi
                 select new { e.Id, e.PromotionId, p.Code, s.Matricule, s.LastName, s.MiddleName, s.FirstName }).ToListAsync(ct))
         .Select(x => new EnrolledStudent(x.Id, x.PromotionId, x.Code, x.Matricule,
             string.Join(' ', new[] { x.LastName, x.MiddleName, x.FirstName }.Where(n => !string.IsNullOrWhiteSpace(n))))).ToList();
+
+    /// <summary>Une seule inscription (saisie par code, changement de code) : sans charger toute l'année.</summary>
+    private async Task<EnrolledStudent?> EnrolledOneAsync(Guid yearId, Guid enrollmentId, CancellationToken ct) =>
+        (await (from e in db.Enrollments.AsNoTracking()
+                join s in db.Students.AsNoTracking() on e.StudentId equals s.Id
+                join p in db.Promotions.AsNoTracking() on e.PromotionId equals p.Id
+                where e.Id == enrollmentId && e.AcademicYearId == yearId
+                    && (e.Status == EnrollmentStatus.Actif || e.Status == EnrollmentStatus.Suspendu)
+                select new { e.Id, e.PromotionId, p.Code, s.Matricule, s.LastName, s.MiddleName, s.FirstName }).ToListAsync(ct))
+        .Select(x => new EnrolledStudent(x.Id, x.PromotionId, x.Code, x.Matricule,
+            string.Join(' ', new[] { x.LastName, x.MiddleName, x.FirstName }.Where(n => !string.IsNullOrWhiteSpace(n))))).FirstOrDefault();
 
     private async Task<Dictionary<Guid, string>> ActiveCodesAsync(Guid yearId, CancellationToken ct) =>
         await db.AnonymousCodes.AsNoTracking().Where(c => c.AcademicYearId == yearId && c.IsActive).ToDictionaryAsync(c => c.EnrollmentId, c => c.Code, ct);

@@ -535,6 +535,8 @@ public static class ScoliaEndpoints
             Table(await s.RankingAsync(promotionId, periode, ct), format, "palmares", reports));
         g.MapGet("/bulletin.pdf", async (Guid promotionId, string periode, Guid inscriptionId, DeliberationService s, CancellationToken ct) =>
             new InlineFileResult(await s.BulletinPdfAsync(promotionId, periode, inscriptionId, ct), Pdf, "bulletin-deliberation.pdf"));
+        g.MapGet("/bulletins.pdf", async (Guid promotionId, string periode, DeliberationService s, CancellationToken ct) =>
+            new InlineFileResult(await s.BulletinsPdfAsync(promotionId, periode, ct), Pdf, "bulletins-deliberation.pdf"));
     }
 
     private static void MapAcademics(RouteGroupBuilder api)
