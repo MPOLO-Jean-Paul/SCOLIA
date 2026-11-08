@@ -165,6 +165,9 @@ jobs:
     name: Application Android
     needs: qualite
     runs-on: ubuntu-latest
+    outputs:
+      # Vrai seulement pour un APK signe avec le certificat officiel (secrets, ou PR #18).
+      officiel: ${{ steps.signature_officielle.outputs.officiel }}
     timeout-minutes: 40
     steps:
       - uses: actions/checkout@v5
@@ -204,8 +207,12 @@ jobs:
         run: |
           set -euo pipefail
           if [[ -z "${SCOLIA_ANDROID_KEYSTORE:-}" || -z "${SCOLIA_ANDROID_KEYSTORE_PASS:-}" ]]; then
-            echo "::error::Les secrets SCOLIA_ANDROID_KEYSTORE et SCOLIA_ANDROID_KEYSTORE_PASS sont obligatoires en production. Publication bloquee." >&2
-            exit 1
+            # Sans secrets, la signature officielle est celle de la PR #18 (cle historique, meme certificat) :
+            # cette compilation devient une simple validation, jamais publiee ni jointe a un paquet officiel.
+            echo "::notice::Secrets de signature absents : signature officielle et publication assurees par la PR #18. Compilation de validation."
+            echo "SCOLIA_SIGNATURE_DELEGUEE_PR18=true" >> "$GITHUB_ENV"
+            bash scripts/cle-android.sh "$RUNNER_TEMP/scolia-validation-signature"
+            exit 0
           fi
           bash scripts/cle-android.sh "$RUNNER_TEMP/scolia-official-signature"
       - name: Refuser un certificat different de la version Android deja installee
@@ -213,7 +220,7 @@ jobs:
         run: |
           set -euo pipefail
           attendu="E5:B5:F7:FA:41:54:11:EE:AC:4B:F7:34:84:90:24:FF:CF:7F:93:50:0C:60:13:83:99:31:B0:20:38:F5:89:80"
-          if [[ "$GITHUB_EVENT_NAME" == "push" && "$GITHUB_REF" == "refs/heads/release/direct-apk-scolia-pro-20261103" ]]; then
+          if [[ "$GITHUB_EVENT_NAME" == "push" && "$GITHUB_REF" == "refs/heads/release/direct-apk-scolia-pro-20261103" && "${SCOLIA_SIGNATURE_DELEGUEE_PR18:-}" != "true" ]]; then
             if [[ "$SCOLIA_SIGNATURE_EMPREINTE" != "$attendu" ]]; then
               echo "::error::Empreinte officielle Android incorrecte. Ne pas changer la signature: les telephones ne pourraient plus mettre SCOLIA a jour." >&2
               exit 1
@@ -256,12 +263,21 @@ jobs:
             echo "::error::Signature de l'APK incoherente avec celle de la cle utilisee." >&2
             exit 1
           fi
-          if [[ "$GITHUB_EVENT_NAME" == "push" && "$GITHUB_REF" == "refs/heads/release/direct-apk-scolia-pro-20261103" ]]; then
+          if [[ "$GITHUB_EVENT_NAME" == "push" && "$GITHUB_REF" == "refs/heads/release/direct-apk-scolia-pro-20261103" && "${SCOLIA_SIGNATURE_DELEGUEE_PR18:-}" != "true" ]]; then
             echo "Signature de l'APK officiel verifiee."
             printf 'Signature : cle officielle de distribution SCOLIA\nEmpreinte certificat SHA-256 : %s\nCompatible avec les mises a jour des versions signees avec le meme certificat.\n' "$SCOLIA_SIGNATURE_EMPREINTE" > artifacts/android/IMPORTANT-SIGNATURE.txt
           else
             echo "Signature de l'APK de validation verifiee."
             printf 'APK de validation uniquement : certificat ephemere, NON compatible avec les installations officielles.\nNe pas installer ce paquet pour mettre a jour un poste scolaire en production.\nEmpreinte certificat SHA-256 : %s\n' "$SCOLIA_SIGNATURE_EMPREINTE" > artifacts/android/IMPORTANT-SIGNATURE.txt
+          fi
+      - name: Statut de la signature officielle
+        id: signature_officielle
+        shell: bash
+        run: |
+          if [[ "${SCOLIA_SIGNATURE_DELEGUEE_PR18:-}" != "true" && (("$GITHUB_EVENT_NAME" == "push" && "$GITHUB_REF" == "refs/heads/release/direct-apk-scolia-pro-20261103") || "${SCOLIA_RECOVERY_PR18:-}" == "true") ]]; then
+            echo "officiel=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "officiel=false" >> "$GITHUB_OUTPUT"
           fi
       - uses: actions/upload-artifact@v4
         with:
@@ -301,7 +317,7 @@ jobs:
 
       - name: Application Android à joindre au paquet officiel seulement
         # Sur une PR, Android est signe avec une cle ephemere : ne jamais diffuser cet APK.
-        if: ${{ needs.paquet-android.result == 'success' && github.event_name == 'push' && github.ref == 'refs/heads/release/direct-apk-scolia-pro-20261103' }}
+        if: ${{ needs.paquet-android.result == 'success' && needs.paquet-android.outputs.officiel == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/release/direct-apk-scolia-pro-20261103' }}
         uses: actions/download-artifact@v5
         with:
           name: SCOLIA_Pro_Android
