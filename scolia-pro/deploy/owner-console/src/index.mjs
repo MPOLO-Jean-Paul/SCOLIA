@@ -1,9 +1,9 @@
 import {
-  CONSENT_VERSION, STATES, cleanLabel, parseRegistration,
-  parseHeartbeat, licenseState, normalizeIp, clientPolicy
+  CONSENT_VERSION, cleanLabel, parseRegistration,
+  parseHeartbeat, normalizeIp
 } from "./policy.mjs";
 import { ownerRelayRequest, schoolRelayRequest } from "./relays.mjs";
-import { evaluateLicense, validateLicensePatch } from "./licenses.mjs";
+import { evaluateLicense, validateLicensePatch, MAX_GRACE_DAYS, DAY_MS } from "./licenses.mjs";
 
 const headers = {
   "Content-Type": "application/json; charset=utf-8",
@@ -62,15 +62,24 @@ async function serveOwner(request, env, url) {
   if (request.method === "GET") {
     await prune(db, now);
     if (url.pathname === "/api/v1/owner/summary") {
-      const [schools, devices, active, suspended] = await Promise.all([
+      const [schools, devices, active, policies] = await Promise.all([
         db.prepare("SELECT count(*) AS n FROM schools").first(),
         db.prepare("SELECT count(*) AS n FROM server_devices").first(),
         db.prepare("SELECT count(*) AS n FROM schools WHERE last_seen >= ?")
           .bind(now - 30 * 86400_000).first(),
-        db.prepare("SELECT count(*) AS n FROM schools WHERE state = 'suspended'").first()
+        // Ne pas confondre l'ancien champ « state » avec la licence effective.
+        db.prepare(`SELECT created_at,billing_enabled,trial_days,paid_until,grace_until,
+          manual_override,override_until FROM schools`).all()
       ]);
+      const suspended = policies.results.filter(s => evaluateLicense(s, now).readonly).length;
       return result({ schools: schools?.n ?? 0, server_devices: devices?.n ?? 0,
-        active_schools_30d: active?.n ?? 0, suspended: suspended?.n ?? 0 });
+        active_schools_30d: active?.n ?? 0, suspended });
+    }
+    if (url.pathname === "/api/v1/owner/audit") {
+      const rows = await db.prepare(`SELECT a.action,a.school_id,s.name AS school_name,a.created_at
+        FROM owner_audit a LEFT JOIN schools s ON s.id=a.school_id
+        ORDER BY a.created_at DESC,a.id DESC LIMIT 100`).all();
+      return result({ history: rows.results });
     }
     if (url.pathname === "/api/v1/owner/schools") {
       const rows = await db.prepare(`SELECT s.id,s.name,s.state,s.created_at,s.last_seen,
@@ -113,8 +122,15 @@ async function serveOwner(request, env, url) {
     if (advanced) {
       const patch = validateLicensePatch(await jsonBody(request));
       if (!patch) return fail("Paramètres de licence invalides.", 400);
-      if (patch.manual_override === "read_only" && !patch.reason)
-        return fail("Justification du blocage manuel requise.", 400);
+      if (patch.manual_override === "read_only" && (!patch.reason || patch.reason.length < 5))
+        return fail("Motif du blocage manuel requis (5 caractères minimum).", 400);
+      if (patch.manual_override === "allow") {
+        if (!patch.reason || patch.reason.length < 5 ||
+            !Number.isSafeInteger(patch.override_until) ||
+            patch.override_until <= now ||
+            patch.override_until > now + MAX_GRACE_DAYS * DAY_MS)
+          return fail("La dérogation exige un motif et une échéance future limitée à 120 jours.", 400);
+      }
       const dbPatch = {};
       for (const [key, value] of Object.entries(patch))
         dbPatch[key === "reason" ? "override_reason" : key] = value;
@@ -131,24 +147,10 @@ async function serveOwner(request, env, url) {
         notice: "Les données, les connexions et les lectures restent accessibles ; les écritures dépendent du statut." });
     }
   }
-  if (request.method === "PATCH") {
-    const match = /^\/api\/v1\/owner\/schools\/([a-f0-9-]{36})$/.exec(url.pathname);
-    if (match) {
-      const body = await jsonBody(request);
-      const state = cleanLabel(body?.state, 20);
-      if (!STATES.has(state)) return fail("Statut de licence invalide.", 400);
-      const expires = body?.license_expires_at === null ? null :
-        Number.isSafeInteger(body?.license_expires_at) ? body.license_expires_at : undefined;
-      if (expires === undefined) return fail("Date d'expiration requise (timestamp ou null).", 400);
-      const updated = await db.prepare(
-        "UPDATE schools SET state=?,license_expires_at=? WHERE id=?"
-      ).bind(state, expires, match[1]).run();
-      if (!updated.meta?.changes) return fail("Établissement inconnu.", 404);
-      await audit(db, "license_" + state, match[1], now);
-      return result({ id: match[1], license_status: licenseState(state, expires, now),
-        notice: "La licence n'efface jamais les données scolaires déjà enregistrées." });
-    }
-  }
+  // L'ancien endpoint modifiait un statut historique sans changer la restriction réelle.
+  // Refus explicite plutôt qu'une confirmation trompeuse de suspension/réactivation.
+  if (request.method === "PATCH" && /^\/api\/v1\/owner\/schools\/[a-f0-9-]{36}$/.test(url.pathname))
+    return fail("Ancienne commande retirée : utiliser /api/v1/owner/schools/{id}/license.", 410);
   return fail("Ressource propriétaire inconnue.", 404);
 }
 
@@ -157,22 +159,37 @@ async function registerSchool(request, env) {
   if (!body.ok) return fail(body.error, 400);
   const db = env.OWNER_DB, now = nowMs();
   const codeHash = await sha(body.code);
-  // Une invitation ne peut servir qu'une seule fois, même si deux requêtes arrivent ensemble.
-  const claimed = await db.prepare(`UPDATE owner_invites SET used_at=?
-    WHERE code_hash=? AND used_at IS NULL AND expires_at>? RETURNING school_name`)
-    .bind(now, codeHash, now).first();
-  if (!claimed) return fail("Invitation invalide, utilisée ou expirée.", 403);
+  const invited = await db.prepare(`SELECT school_name FROM owner_invites
+    WHERE code_hash=? AND used_at IS NULL AND expires_at>?`)
+    .bind(codeHash, now).first();
+  if (!invited) return fail("Invitation invalide, utilisée ou expirée.", 403);
+  // Interdire qu'une invitation pour l'école A soit employée par un serveur B.
+  const identity = value => cleanLabel(value,140).normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g,"").toLowerCase();
+  if (identity(invited.school_name) !== identity(body.school))
+    return fail("Le nom de l'établissement ne correspond pas à l'invitation JP-Services.", 409);
   const id = crypto.randomUUID(), token = randomToken();
   const tokenHash = await sha(token);
-  await db.batch([
+  // Le nom enregistré est celui de l'invitation, non celui librement fourni par le client.
+  // Les quatre écritures forment UNE transaction D1 : si l'une échoue,
+  // l'invitation reste disponible et aucun compte incomplet n'est créé.
+  const results = await db.batch([
     db.prepare(`INSERT INTO schools(id,name,state,created_at,last_seen,consent_version)
-      VALUES(?,?,'trial',?,?,?)`).bind(id, body.school, now, now, CONSENT_VERSION),
+      SELECT ?,school_name,'trial',?,?,? FROM owner_invites
+      WHERE code_hash=? AND used_at IS NULL AND expires_at>?`)
+      .bind(id, now, now, CONSENT_VERSION, codeHash, now),
     db.prepare(`INSERT INTO school_tokens(token_hash,school_id,created_at)
-      VALUES(?,?,?)`).bind(tokenHash, id, now),
+      SELECT ?,id,? FROM schools WHERE id=?`).bind(tokenHash, now, id),
     db.prepare(`INSERT INTO server_devices(school_id,installation_hash,device_name,first_seen,last_seen,last_ip,ip_seen_at)
-      VALUES(?,?,?,?,?,?,?)`).bind(id, await sha(body.deviceId), body.device, now, now,
-      normalizeIp(request.headers.get("CF-Connecting-IP")), now)
+      SELECT id,?,?,?,?,?,? FROM schools WHERE id=?`)
+      .bind(await sha(body.deviceId), body.device, now, now,
+        normalizeIp(request.headers.get("CF-Connecting-IP")), now, id),
+    db.prepare(`UPDATE owner_invites SET used_at=?
+      WHERE code_hash=? AND used_at IS NULL AND expires_at>?`)
+      .bind(now, codeHash, now)
   ]);
+  if (results[0].meta?.changes !== 1 || results[3].meta?.changes !== 1)
+    return fail("Invitation invalide, utilisée ou expirée.", 403);
   return result({ school_id: id, school_token: token, license_status: "free",
     notice: "Conservez le jeton dans le coffre sécurisé du serveur scolaire, jamais dans Git." }, 201);
 }
@@ -192,14 +209,23 @@ async function heartbeat(request, env) {
   if (validated.occurredAt > now + 5 * 60000 ||
       validated.occurredAt < now - 90 * 86400_000)
     return fail("Date d'activité hors de la fenêtre de reprise.", 400);
-  const inserted = await db.prepare(`INSERT OR IGNORE INTO school_activity_events
-    (school_id,event_id,activity_day,created_at)
-    VALUES(?,?,?,?)`).bind(school.id, validated.eventId,
-      new Date(validated.occurredAt).toISOString().slice(0, 10), now).run();
-  const fresh = inserted.meta?.changes > 0;
-  // Les métadonnées d'un serveur peuvent être rafraîchies sans divulguer
-  // les comptes individuels, même si l'événement a déjà été reçu.
-  const operations = [
+  const activityDay = new Date(validated.occurredAt).toISOString().slice(0, 10);
+  // Compteur, marqueur d'idempotence et présence sont atomiques.
+  // Le compteur est incrémenté AVANT d'insérer le marqueur, seulement si absent.
+  // Une panne/reprise n'entraîne donc ni double comptage ni événement perdu.
+  await db.batch([
+    db.prepare(`INSERT INTO school_activity
+      (school_id,activity_day,login_count,heartbeat_count)
+      SELECT ?,?,?,1 WHERE NOT EXISTS (
+        SELECT 1 FROM school_activity_events WHERE school_id=? AND event_id=?)
+      ON CONFLICT(school_id,activity_day) DO UPDATE SET
+        login_count=login_count+excluded.login_count,
+        heartbeat_count=heartbeat_count+1`)
+      .bind(school.id, activityDay, validated.event === "login" ? 1 : 0,
+        school.id, validated.eventId),
+    db.prepare(`INSERT OR IGNORE INTO school_activity_events
+      (school_id,event_id,activity_day,created_at) VALUES(?,?,?,?)`)
+      .bind(school.id, validated.eventId, activityDay, now),
     db.prepare("UPDATE schools SET last_seen=? WHERE id=?").bind(now, school.id),
     db.prepare(`INSERT INTO server_devices
       (school_id,installation_hash,device_name,first_seen,last_seen,last_ip,ip_seen_at)
@@ -209,16 +235,7 @@ async function heartbeat(request, env) {
         last_ip=excluded.last_ip,ip_seen_at=excluded.ip_seen_at`)
       .bind(school.id, await sha(validated.deviceId), validated.device, now, now,
         normalizeIp(request.headers.get("CF-Connecting-IP")), now)
-  ];
-  if (fresh)
-    operations.push(db.prepare(`INSERT INTO school_activity
-      (school_id,activity_day,login_count,heartbeat_count)
-      VALUES(?,?,?,1) ON CONFLICT(school_id,activity_day)
-      DO UPDATE SET login_count=login_count+excluded.login_count,
-      heartbeat_count=heartbeat_count+1`).bind(school.id,
-      new Date(validated.occurredAt).toISOString().slice(0, 10),
-      validated.event === "login" ? 1 : 0));
-  await db.batch(operations);
+  ]);
   return result({ school_id: school.id, ...evaluateLicense(school, now),
     local_data_access: "always_readable" });
 }
@@ -254,7 +271,7 @@ Il n'est ni stocké dans le navigateur ni transmis à une autre origine.</p>
 <article class="card"><small>Écoles actives (30 j)</small><div class="metric" id="active">—</div></article>
 <article class="card"><small>Licences suspendues</small><div class="metric" id="suspended">—</div></article></div>
 <section class="panel"><h2>Établissements</h2>
-<div class="toolbar"><button id="refresh">Actualiser</button><input id="newschool" placeholder="Nom d'un nouvel établissement">
+<div class="toolbar"><button id="refresh">Actualiser</button><button id="logout" class="secondary">Verrouiller la console</button><input id="newschool" placeholder="Nom d'un nouvel établissement">
 <button id="invite" class="secondary">Créer une invitation</button></div>
 <p class="info" id="inviteResult"></p><div style="overflow-x:auto"><table><thead><tr>
 <th>Établissement</th><th>Licence</th><th>Serveurs</th><th>Dernière activité</th><th>Gestion</th></tr></thead>
@@ -273,6 +290,11 @@ Le suivi des licences utilise HTTPS directement, même depuis un Wi-Fi disposant
 <th>Fournisseur</th><th>URL WSS</th><th>État</th><th>Révision</th><th>Action</th>
 </tr></thead><tbody id="relayRows"></tbody></table></div>
 </section>
+<section class="panel"><h2>Journal des interventions</h2>
+<p class="info">100 dernières opérations commerciales, sans données scolaires.</p>
+<div style="overflow-x:auto"><table><thead><tr>
+<th>Date</th><th>Établissement</th><th>Action</th>
+</tr></thead><tbody id="auditRows"></tbody></table></div></section>
 <section class="panel" id="detailsPanel" hidden><h2>Fiche établissement</h2><pre id="details"></pre>
 <p class="info" id="licenseSummary">Statut de licence</p>
 <div class="toolbar">
@@ -288,7 +310,7 @@ Le suivi des licences utilise HTTPS directement, même depuis un Wi-Fi disposant
 <div class="toolbar">
   <button id="grace7" class="secondary">Dérogation 7 jours</button>
   <button id="grace30" class="secondary">Dérogation 30 jours</button>
-  <button id="manualReadOnly" class="secondary">Lecture seule immédiate</button>
+  <button id="manualReadOnly" class="secondary">Programmer le blocage manuel</button>
   <button id="removeOverride" class="secondary">Lever la mesure manuelle</button>
 </div>
 <p class="info">Un blocage concerne les écritures de l'établissement et de tous ses postes.
@@ -304,15 +326,23 @@ const request=async (path,method="GET",body)=>{
 };
 function textCell(tr,v){const td=document.createElement("td");td.textContent=String(v??"—");tr.appendChild(td);return td;}
 async function reload(){
- const [stats,listing,relays]=await Promise.all([
+ const [stats,listing,relays,history]=await Promise.all([
    request("/api/v1/owner/summary"),
    request("/api/v1/owner/schools"),
-   request("/api/v1/owner/relays")
+   request("/api/v1/owner/relays"),
+   request("/api/v1/owner/audit")
  ]);
  $("schools").textContent=stats.schools;$("devices").textContent=stats.server_devices;
  $("active").textContent=stats.active_schools_30d;$("suspended").textContent=stats.suspended;
  $("rows").replaceChildren();
  $("relayRows").replaceChildren();
+ $("auditRows").replaceChildren();
+ for(const event of history.history){
+   const tr=document.createElement("tr");
+   textCell(tr,new Date(event.created_at).toLocaleString("fr"));
+   textCell(tr,event.school_name??"JP-Services");
+   textCell(tr,event.action);$("auditRows").appendChild(tr);
+ }
  for(const relay of relays.relays){
    const row=document.createElement("tr");
    textCell(row,relay.label);textCell(row,relay.url);
@@ -333,7 +363,7 @@ async function reload(){
    td.appendChild(btn);row.appendChild(td);$("relayRows").appendChild(row);
  }
  for(const s of listing.schools){
-   const tr=document.createElement("tr");textCell(tr,s.name);textCell(tr,s.state);
+   const tr=document.createElement("tr");textCell(tr,s.name);textCell(tr,s.license.license_status+(s.license.readonly?" · lecture seule":""));
    textCell(tr,s.device_count);textCell(tr,s.last_seen?new Date(s.last_seen).toLocaleDateString("fr"):"Jamais");
    const td=document.createElement("td"),btn=document.createElement("button");
    btn.textContent="Consulter";btn.className="secondary";btn.onclick=()=>openSchool(s.id);
@@ -356,6 +386,16 @@ $("connect").onclick=async()=>{secret=$("token").value;$("token").value="";
  try{await reload();$("auth").hidden=true;$("workspace").hidden=false;$("error").textContent="";}
  catch(e){secret="";$("error").textContent=e.message;}};
 $("refresh").onclick=()=>reload().catch(e=>alert(e.message));
+ $("logout").onclick=()=>{
+   // Oubli explicite du secret en mémoire et fermeture de l'interface.
+   secret="";selected=null;$("token").value="";$("detailsPanel").hidden=true;
+   $("rows").replaceChildren();$("relayRows").replaceChildren();
+   $("auditRows").replaceChildren();$("details").textContent="";
+   $("inviteResult").textContent="";$("relayNotice").textContent="";
+   $("licenseSummary").textContent="";$("newschool").value="";
+   $("trialDays").value=30;$("paidTo").value="";
+   $("workspace").hidden=true;$("auth").hidden=false;
+ };
 $("relayCreate").onclick=async()=>{
  try {
    const created=await request("/api/v1/owner/relays","POST",{
@@ -401,7 +441,7 @@ $("grace30").onclick=()=>updateLicense({manual_override:"allow",
  "Accorder 30 jours d'accès complet à titre exceptionnel ?");
 $("manualReadOnly").onclick=()=>updateLicense({manual_override:"read_only",
  override_until:null,reason:"Blocage manuel de licence"},
- "Passer tous les postes de cet établissement en lecture seule ? La consultation restera possible.");
+ "Demander la lecture seule pour cet établissement ? Elle s'appliquera à la prochaine vérification en ligne du serveur (normalement sous 15 minutes). Les consultations resteront possibles.");
 $("removeOverride").onclick=()=>updateLicense({manual_override:"none",
  override_until:null,reason:"Mesure manuelle levee"},
  "Annuler la mesure manuelle et revenir au calcul automatique ?");
