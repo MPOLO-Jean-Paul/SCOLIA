@@ -500,6 +500,11 @@ public sealed class SchoolService(IAppDbContext db, IWriteGate gate, IAuditLog a
     {
         var promotion = await db.Promotions.Include(p => p.Fees).FirstOrDefaultAsync(p => p.Id == id, ct) ?? throw new NotFoundException("Promotion introuvable.");
         if (await db.Enrollments.AnyAsync(e => e.PromotionId == id, ct)) throw new DomainException("promotion", "Cette promotion a des inscrits : désactivez-la au lieu de la supprimer.");
+        // Une délibération tenue (procès-verbal, décisions) ou des cours enregistrés font partie de l'historique officiel.
+        if (await db.DeliberationSessions.AnyAsync(x => x.PromotionId == id, ct))
+            throw new DomainException("promotion", "Cette promotion a une délibération enregistrée : désactivez-la au lieu de la supprimer.");
+        if (await db.Courses.AnyAsync(c => c.PromotionId == id, ct))
+            throw new DomainException("promotion", "Cette promotion a des cours : archivez-les ou désactivez la promotion au lieu de la supprimer.");
         db.FeeItems.RemoveRange(promotion.Fees);
         db.Promotions.Remove(promotion);
         audit.Record("promotion.supprimee", "Promotion", id.ToString(), $"Promotion {promotion.Code} supprimée.");
