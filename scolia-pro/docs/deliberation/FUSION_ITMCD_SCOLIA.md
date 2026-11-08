@@ -12,7 +12,10 @@ Sources étudiées :
 - **SCOLIA Pro** : d'abord la branche `release/scolia-pro-1-2-37-20261107`, puis la version la plus récente,
   **1.2.42** (`release/direct-apk-scolia-pro-20261103`), sur laquelle le module est porté
   (branche `feature/deliberation-scolia-pro-1-2-42-20261107`).
-- Le dépôt `MPOLO-Jean-Paul/Deliberation` a été examiné le 7 novembre 2026 : il est encore vide (aucun commit).
+- **Projet Délibération** (`ITM_Deliberation.zip`, le dépôt `MPOLO-Jean-Paul/Deliberation` étant vide) : variante
+  d'ITMCD (même base PHP/MySQL) qui ajoute les autorités, les épreuves du jury, les totaux officiels, les codes P/A/E,
+  la grille de délibération officielle et son PDF. Les sauvegardes SQL du zip contiennent des données réelles :
+  elles n'ont servi qu'à lire le schéma et n'ont été copiées nulle part.
 
 ---
 
@@ -94,6 +97,19 @@ du serveur, réinscriptions.
   signalées : introuvable, ambigu (homonymes : ajouter la promotion), code invalide, code pris (jamais
   réattribué), code différent (remplacement manuel avec motif), doublon dans la liste.
 
+### Apports du projet Délibération (lot 4)
+
+| Projet Délibération | Dans SCOLIA |
+|---|---|
+| Cours « jury » STAGE, SITUATION D'INTÉGRATION, DOSSIER D'ÉVALUATION, ÉPREUVE D'INTÉGRATION (TOTAL 1) et BLOCS PRÉVENTION, DIAGNOSTIC, GESTION (SOUS-TOTAL 2), créés d'office par promotion avec un faux compte enseignant « JURY » | Organisations « Épreuve du jury » et « Bloc du jury » ; « Créer les épreuves du jury » ajoute les sept épreuves standard (maxima 150, 50, 90, 225, 60, 50, 50), modifiables ; cote « Jury » réservée au droit `deliberation.gerer`, sans compte fictif |
+| Points officiels = coefficient × 10 | Le maxima est saisi directement (même résultat, sans conversion) |
+| TOTAL 1, SUBTOTAL 1, SUBTOTAL 2, TOTAL 2, TOTAL GÉNÉRAL | Mêmes totaux au tableau du jury, sur la fiche, le bulletin et la grille |
+| Décision finale P / A / E | Code du jury annuel : P (réussite partout), A (moyenne atteinte, cours en échec), E (sous le seuil) ; la décision Admis/Ajourné et la décision motivée du jury restent la référence |
+| Cote manquante comptée comme échec (code A possible) | Gardé plus strict : dossier « Incomplet », ajourné à la clôture sauf décision motivée du jury |
+| Table des autorités (préfet, proviseur, président, secrétaire, 4 membres) | « Autorités et jury » par année ; signatures du bulletin (préfet, proviseur), de la grille et du procès-verbal ; la clôture reprend le jury enregistré |
+| Grille de délibération (en-têtes verticaux, signatures) | Grille officielle PDF/Excel dans le même ordre, en-têtes courts et légende |
+| Grille de référence INF1 (pondérations codées en dur pour une promotion) | Non reprise : propre à un établissement ; les maxima se règlent dans « Cours et notes » |
+
 ### Comptes enseignants (lot 3, portail enseignant d'ITMCD)
 
 - Rôle **Enseignant** dans « Utilisateurs » : le compte est relié à une fiche du personnel en fonction
@@ -150,6 +166,5 @@ encode ses seuls cours avec `cotes.encoder`.
 
 1. Notifications (ITMCD) : avertir les enseignants à l'ouverture ou la fermeture de l'encodage, et le jury à chaque remise.
 2. Reprise des cotes d'ITMCD (export) rattachées aux codes officiels déjà repris.
-3. Comparaison avec le dépôt `Deliberation` dès qu'il contient le code.
-4. Code QR de vérification sur le bulletin de délibération.
-5. Seconde session (repêchage), si l'établissement l'organise.
+3. Code QR de vérification sur le bulletin de délibération.
+4. Seconde session (repêchage), si l'établissement l'organise.
