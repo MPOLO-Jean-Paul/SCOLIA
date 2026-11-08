@@ -976,6 +976,7 @@ public sealed class BackstageViewModel : Observable
             currentCode = newCode = confirmCode = string.Empty;
             Raise(nameof(CurrentCode)); Raise(nameof(NewCode)); Raise(nameof(ConfirmCode));
             RaiseCode();
+            var wasProvisional = codeProvisional;
             codeProvisional = false;
             CodeEditorOpen = false;
             CodeNotice = $"{kind} enregistré. Il sert dès maintenant à vous connecter.";
@@ -986,6 +987,8 @@ public sealed class BackstageViewModel : Observable
                 shell.Sync.Remember(current.UserName, saved);
                 await ResealBiometricsAsync(current.UserName, saved);
             }
+            // L'écran ouvert avant le choix du code (refusé avec le code provisoire) se recharge aussitôt.
+            if (wasProvisional && shell.Current is { } page) await page.RefreshAsync();
         }
         catch (ApiException ex)
         {

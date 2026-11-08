@@ -741,7 +741,11 @@ public sealed class DeliberationService(IAppDbContext db, IWriteGate gate, IAudi
     private async Task<Guid> MyStaffIdAsync(CancellationToken ct)
     {
         var id = user.Id ?? throw new DomainException("session", "Session expirée : reconnectez-vous.");
-        return await db.Users.AsNoTracking().Where(u => u.Id == id).Select(u => u.StaffMemberId).FirstOrDefaultAsync(ct)
+        var account = await db.Users.AsNoTracking().Where(u => u.Id == id).Select(u => new { u.StaffMemberId, u.MustChangePassword }).FirstOrDefaultAsync(ct);
+        // Le code provisoire est connu du secrétariat : tant qu'il n'est pas remplacé, personne ne peut encoder au nom de l'enseignant.
+        if (account is { MustChangePassword: true })
+            throw new ForbiddenException("Votre code d'accès est provisoire : choisissez votre propre code PIN ou mot de passe (Compte › Sécurité du compte) avant d'ouvrir vos cours.");
+        return account?.StaffMemberId
             ?? throw new ForbiddenException("Ce compte enseignant n'est relié à aucune fiche du personnel : demandez au secrétariat de le compléter.");
     }
 
@@ -751,6 +755,8 @@ public sealed class DeliberationService(IAppDbContext db, IWriteGate gate, IAudi
     /// </summary>
     private async Task EnsureCourseAccessAsync(Course course, bool write, CancellationToken ct)
     {
+        // Compte enseignant (y compris membre du jury) : jamais avec le code provisoire remis par le secrétariat.
+        if (TeacherOnly) await MyStaffIdAsync(ct);
         // Les épreuves du jury (projet Délibération) sont cotées par le jury : le secrétariat (deliberation.gerer) ou un
         // enseignant qui a reçu le privilège jury (jury.encoder). Le privilège ne rend pas titulaire de l'épreuve.
         if (DeliberationEngine.IsJury(course.Semester))

@@ -628,6 +628,15 @@ public static class ScoliaEndpoints
         users.MapPut("/{id:guid}", (Guid id, UserUpdate input, UserService u, CancellationToken ct) => u.UpdateAsync(id, input, ct));
         users.MapPost("/{id:guid}/mot-de-passe", async (Guid id, PasswordReset input, UserService u, CancellationToken ct) => { await u.ResetPasswordAsync(id, input.NewPassword, ct); return Results.NoContent(); });
 
+        // Comptes enseignants (gestion des délibérations) : identifiants et codes provisoires générés par le secrétariat.
+        var teachers = api.MapGroup("/comptes-enseignants").RequireAuthorization(Permissions.UsersManage);
+        teachers.MapGet("", (TeacherAccountService t, CancellationToken ct) => t.ListAsync(ct));
+        teachers.MapPost("", (TeacherAccountRequest input, TeacherAccountService t, CancellationToken ct) => t.IssueAsync(input, ct));
+        teachers.MapPost("/nouvel-enseignant", (NewTeacherRequest input, TeacherAccountService t, CancellationToken ct) => t.CreateTeacherAsync(input, ct))
+            .RequireAuthorization(Permissions.StaffManage);
+        teachers.MapPost("/{id:guid}/code-provisoire", (Guid id, TeacherAccountService t, CancellationToken ct) => t.ResetAsync(id, ct));
+        teachers.MapPut("/{id:guid}", (Guid id, TeacherAccountUpdate input, TeacherAccountService t, CancellationToken ct) => t.UpdateAsync(id, input, ct));
+
         var audit = api.MapGroup("/audit").RequireAuthorization(Permissions.AuditRead);
         audit.MapGet("", (string? q, string? type, DateOnly? du, DateOnly? au, int? page, int? taille, AuditService a, CancellationToken ct) => a.ListAsync(q, type, du, au, page ?? 1, taille ?? 100, ct));
         audit.MapGet("/verification", (AuditService a, CancellationToken ct) => a.VerifyAsync(ct));

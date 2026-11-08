@@ -176,8 +176,11 @@ public sealed class MarksPage : PageViewModel
     private string sheetTitle = "Choisissez un cours";
     private string sheetHint = string.Empty;
 
-    public MarksPage(ShellViewModel shell) : base(shell)
+    /// <summary>Ouvre l'encodage, au besoin directement sur un cours (depuis l'espace enseignant ou le suivi).</summary>
+    public MarksPage(ShellViewModel shell, Guid? promotionId = null, Guid? courseId = null) : base(shell)
     {
+        wantedPromotion = promotionId;
+        wantedCourse = courseId;
         teacher = Shell.TeacherOnly;
         // L'enseignant corrige des copies anonymes : sa feuille montre les codes, jamais les noms.
         anonymous = teacher;
@@ -197,6 +200,7 @@ public sealed class MarksPage : PageViewModel
         Action("Relevé du cours (PDF)", MaterialIconKind.FileChart, () => ExportSheetAsync(failedOnly: false, "pdf"));
         Action("Relevé du cours (Excel)", MaterialIconKind.FileExcel, () => ExportSheetAsync(failedOnly: false, "xlsx"));
         Action("Liste des échecs (PDF)", MaterialIconKind.AlertCircleOutline, () => ExportSheetAsync(failedOnly: true, "pdf"));
+        if (teacher) Action("Mon espace", MaterialIconKind.AccountSchool, () => Shell.Open(() => new TeacherHomePage(Shell)));
         if (!teacher)
         {
             Action("Suivi de l'encodage", MaterialIconKind.ProgressClock, () => Shell.Open(() => new EncodingProgressPage(Shell)));
@@ -206,6 +210,8 @@ public sealed class MarksPage : PageViewModel
     }
 
     private readonly bool teacher;
+    private readonly Guid? wantedPromotion;
+    private Guid? wantedCourse;
     private List<TeacherCourseDto> mine = [];
     private bool fresh;
 
@@ -284,14 +290,16 @@ public sealed class MarksPage : PageViewModel
                 Promotions = mine.GroupBy(m => m.PromotionId).Select(g => new ChoiceItem(g.Key.ToString(), g.First().Promotion)).ToList();
             }
             else Promotions = await PromotionChoicesAsync(withAll: false);
-            promotion = Promotions.Count > 0 ? Promotions[0] : null;
+            promotion = Promotions.FirstOrDefault(p => wantedPromotion is { } wanted && p.Value == wanted.ToString())
+                ?? (Promotions.Count > 0 ? Promotions[0] : null);
             kind = AllKinds[0];
             Raise(nameof(Promotions));
             Raise(nameof(Promotion));
             Raise(nameof(Kind));
             ready = true;
         }
-        var keep = course?.Id;
+        var keep = course?.Id ?? wantedCourse;
+        wantedCourse = null;
         Courses.Clear();
         Rows.Clear();
         var settings = await Shell.Api.GetAsync<DeliberationSettingsDto>("api/deliberation/reglages");

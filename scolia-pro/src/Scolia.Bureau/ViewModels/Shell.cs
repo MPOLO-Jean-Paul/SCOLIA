@@ -1001,8 +1001,8 @@ public sealed class ShellViewModel : Observable
             ClearHistory();
             OpeningStep = "Ouverture de l'accueil";
             OpeningProgress = 90;
-            await Open(() => s.Permissions.Contains(Perm.MarksEncode) && !s.Permissions.Contains(Perm.AcademicsRead)
-                ? new MarksPage(this)
+            await Open(() => (s.Permissions.Contains(Perm.MarksEncode) || s.Permissions.Contains(Perm.JuryEncode)) && !s.Permissions.Contains(Perm.AcademicsRead)
+                ? new TeacherHomePage(this)
                 : s.Permissions.Contains(Perm.PilotageRead) && !s.Permissions.Contains(Perm.ReportsRead)
                 ? new PromoterDashboardPage(this) : new HomePage(this));
             var rest = minimum - watch.Elapsed;
@@ -1019,14 +1019,7 @@ public sealed class ShellViewModel : Observable
         // Code provisoire donné par le secrétariat : la personne choisit tout de suite son propre code PIN ou mot de passe.
         if (s.MustChangePassword)
         {
-            // Un nouveau compte doit pouvoir définir son mot de passe même
-            // lorsque le menu Compte Windows ne présente plus la sécurité.
-            // L'ouverture provisoire reste obligatoire et ne contourne aucun contrôle.
-            OpenBackstage();
-            Backstage.Section = Backstage.Items.FirstOrDefault(i => i.Value == "mot-de-passe")
-                ?? new BackstageItemVm("mot-de-passe", "Sécurité du compte",
-                    Material.Icons.MaterialIconKind.ShieldLockOutline, "ToneOrange");
-            Backstage.AskForOwnCode();
+            AskForOwnCode();
             return;
         }
         await OfferNetworkAsync();
@@ -1354,6 +1347,20 @@ public sealed class ShellViewModel : Observable
     private RelayCommand? networkCommand;
 
     public void OpenBackstage() => BackstageOpen = true;
+
+    /// <summary>
+    /// Code provisoire remis par le secrétariat : ouvre « Sécurité du compte » pour choisir son propre code.
+    /// Un nouveau compte doit pouvoir le faire même lorsque le menu Compte ne présente plus la sécurité ;
+    /// l'ouverture provisoire reste obligatoire et ne contourne aucun contrôle (le serveur refuse l'encodage avant).
+    /// </summary>
+    public void AskForOwnCode()
+    {
+        OpenBackstage();
+        Backstage.Section = Backstage.Items.FirstOrDefault(i => i.Value == "mot-de-passe")
+            ?? new BackstageItemVm("mot-de-passe", "Sécurité du compte",
+                Material.Icons.MaterialIconKind.ShieldLockOutline, "ToneOrange");
+        Backstage.AskForOwnCode();
+    }
 
     public void CloseBackstage() => BackstageOpen = false;
 

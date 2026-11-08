@@ -119,3 +119,21 @@ public sealed record MarkImportResult(bool Applied, int Saved, int Ready, int Un
 /// <summary>Vérification publique d'un bulletin officiel (QR code) : nom masqué, résultat figé à la clôture.</summary>
 public sealed record BulletinVerification(bool Found, string? School, string? AcademicYear, string? Promotion, string? Period, string? Student,
     decimal? Percent, string? Decision, string? Grade, DateTime? ClosedAtUtc);
+
+/// <summary>Enseignant et état de son compte, pour la page « Comptes enseignants » du secrétariat.</summary>
+public sealed record TeacherAccountDto(Guid StaffMemberId, string Number, string FullName, string Function, string? Phone, bool StaffActive, int Courses,
+    Guid? UserId, string? UserName, bool HasAccount, bool AccountActive, bool MustChangePassword, DateTime? LastLoginUtc, bool IsLocked, bool JuryAccess);
+
+/// <summary>Ouverture du compte d'un enseignant ; <c>UserName</c> vide : identifiant « prénom.nom » proposé.</summary>
+public sealed record TeacherAccountRequest(Guid StaffMemberId, string? UserName = null, bool JuryAccess = false);
+
+/// <summary>Nouvel enseignant : fiche du personnel et, si demandé, son compte avec un code provisoire.</summary>
+public sealed record NewTeacherRequest(string LastName, string? MiddleName, string FirstName, string? Gender, string? Phone, string? Email,
+    string? Function = null, bool CreateAccount = true, string? UserName = null, bool JuryAccess = false);
+
+/// <summary>Identifiants à remettre à l'enseignant. Le code provisoire n'est montré qu'ici, une seule fois.</summary>
+public sealed record TeacherCredentialsDto(Guid StaffMemberId, Guid UserId, string FullName, string UserName, string ProvisionalCode);
+
+public sealed record NewTeacherResult(Guid StaffMemberId, string Number, string FullName, TeacherCredentialsDto? Account);
+
+public sealed record TeacherAccountUpdate(bool IsActive, bool JuryAccess);
