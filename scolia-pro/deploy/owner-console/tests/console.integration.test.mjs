@@ -132,6 +132,15 @@ test("Statistiques fondées sur la licence effective et ancien endpoint refusé"
   assert.equal(overview.body.suspended, 1);
   const listing = await app.owner("/api/v1/owner/schools");
   assert.equal(listing.body.schools[0].license.license_status, "expired");
+  const audit = await app.owner("/api/v1/owner/audit");
+  assert.equal(audit.status, 200);
+  assert.ok(audit.body.history.some(x => x.action === "license_policy_changed"));
+  const noReason = await app.owner(path + "/license", "PATCH",
+    { manual_override: "allow", override_until: Date.now() + 7*86400_000 });
+  assert.equal(noReason.status, 400);
+  const infinite = await app.owner(path + "/license", "PATCH",
+    { manual_override: "allow", override_until: null, reason: "Dérogation" });
+  assert.equal(infinite.status, 400);
   const old = await app.owner(path, "PATCH", {state:"active",license_expires_at:null});
   assert.equal(old.status, 410);
   const blocked = await app.owner(path + "/license", "PATCH",
