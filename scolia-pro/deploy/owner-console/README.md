@@ -16,7 +16,16 @@ Activée **une fois** par le responsable de l'école sur son ordinateur principa
 
 Limites du plan gratuit Cloudflare à surveiller : R2 10 Go, D1 5 Go et 100 000 lignes écrites par jour, Workers 100 000 requêtes par jour et 100 Mo par requête (une copie compressée de plus de 90 Mo est refusée et signalée sur le serveur).
 
-Le jeton API Cloudflare du déploiement doit aussi avoir **Workers R2 Storage : Edit** ; le workflow crée le bucket s'il n'existe pas, sans jamais le vider.
+### Tout se règle ensuite dans la console
+
+Panneau **« Sauvegarde en ligne des écoles — stockage Cloudflare R2 »** :
+
+1. **Stockage** : deux possibilités, détectées automatiquement.
+   - Liaison R2 créée par le workflow de déploiement (si le jeton GitHub `CLOUDFLARE_API_TOKEN` a « Workers R2 Storage : Edit ») : rien à saisir.
+   - Sinon, **champs de la console** : identifiant du compte Cloudflare, nom du bucket, Access Key ID et Secret Access Key d'un **jeton API R2** (Cloudflare › R2 › Gérer les jetons API › « Object Read & Write » limité au bucket). « Tester et enregistrer » écrit, relit et supprime un fichier témoin ; rien n'est gardé si le test échoue. La clé secrète est chiffrée dans D1 (AES-256-GCM, clé dérivée du jeton propriétaire) et n'est jamais réaffichée ; après un changement du jeton propriétaire, ressaisissez-la.
+2. **Activer les écoles** : « Activer la sauvegarde en ligne pour toutes les écoles », ou école par école dans sa fiche (« Activer » / « Retirer »). Au contrôle de licence suivant (15 minutes au plus), le serveur de l'école active seul la sauvegarde avec **sa propre clé**, envoie une première copie, puis continue sans intervention. Son responsable est invité, à chaque connexion, à noter le code de secours. Un arrêt décidé par l'école n'est jamais annulé depuis la console.
+
+Seule la **première mise en ligne de la console** passe par GitHub (secrets de l'environnement `scolia-owner-production`), car la console n'existe pas encore pour les recevoir.
 
 ## Gestion des licences
 Tableau de bord dans la console JP‑Services :
@@ -89,6 +98,8 @@ Après configuration, lancer manuellement le workflow et cocher `confirm_product
 - `PATCH /api/v1/owner/schools/{id}/license` : essai, abonnement, dérogation et verrouillage.
 - `GET|POST /api/v1/owner/relays` et `PATCH /api/v1/owner/relays/{id}` : configuration des fournisseurs sécurisés.
 - `POST /api/v1/owner/schools/{id}/recovery-invitation` : invitation de reprise (nouveau serveur, 3 jours, usage unique).
+- `GET|PUT|DELETE /api/v1/owner/settings/storage` : stockage R2 (état, test et enregistrement chiffré des identifiants).
+- `PATCH /api/v1/owner/schools/{id}/cloud`, `POST /api/v1/owner/cloud/request-all` : sauvegarde en ligne proposée à une école ou à toutes.
 - `POST /api/v1/server/cloud/enable`, `PUT|GET /api/v1/server/cloud/backups[/{id}]`, `GET /api/v1/server/cloud/mailbox`, `POST /api/v1/server/cloud/mailbox/ack`, `POST /api/v1/server/cloud/deposit-token` : continuité, jeton du serveur scolaire.
 - `POST /api/v1/device/mailbox`, `POST /api/v1/device/mailbox/outcomes`, `GET /api/v1/device/status` : dépôt par les appareils, jeton de dépôt.
 - `GET /api/v1/server/relay-settings`, `POST /api/v1/server/relay-consent`, `POST /api/v1/server/relay-approve` : décisions du serveur scolaire, protégé par son jeton.

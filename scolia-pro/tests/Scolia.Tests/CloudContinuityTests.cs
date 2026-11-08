@@ -33,6 +33,8 @@ public sealed class CloudContinuityTests : IDisposable
         public string DepositToken { get; } = Convert.ToHexString(RandomNumberGenerator.GetBytes(24));
         public string? KeyFingerprint { get; private set; }
         public bool Enabled { get; private set; }
+        /// <summary>Case « Activer la sauvegarde en ligne pour cette école » de la console.</summary>
+        public bool CloudRequested { get; set; }
         public List<(Guid Id, byte[] Bytes, string Sha, string Key, long At)> Backups { get; } = [];
         public List<(string OpId, string Payload)> Mailbox { get; } = [];
         public Dictionary<string, string> Outcomes { get; } = [];
@@ -51,7 +53,7 @@ public sealed class CloudContinuityTests : IDisposable
                 {
                     license_status = "free", access_mode = "full", @readonly = false, billing_enabled = false, days_remaining = (int?)null,
                     expires_at = (long?)null, issued_at = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(), reason = "facturation_desactivee",
-                    offline_grace_seconds = 0, next_check_seconds = 900,
+                    offline_grace_seconds = 0, next_check_seconds = 900, cloud_requested = CloudRequested,
                 });
             if (path == "/api/v1/server/cloud/enable")
             {
@@ -210,6 +212,46 @@ public sealed class CloudContinuityTests : IDisposable
         guess.Headers.Add(CloudDispatcher.SecretHeader, "devine");
         guess.Headers.Add(CloudDispatcher.UserHeader, Guid.NewGuid().ToString());
         Assert.Equal(HttpStatusCode.Unauthorized, (await app.Client().SendAsync(guess)).StatusCode);
+    }
+
+    [Fact]
+    public async Task Activation_requested_from_the_console_runs_without_anyone_but_never_overrides_the_school()
+    {
+        var (admin, console) = await ConnectedAsync();
+        var license = app.Services.GetRequiredService<SchoolLicenseService>();
+        var cloud = app.Services.GetRequiredService<CloudContinuityService>();
+
+        // Rien n'est demandé : rien n'est activé.
+        await cloud.RunOnceAsync(CancellationToken.None);
+        Assert.False(cloud.Status.Enabled);
+
+        // JP-Services coche l'école dans sa console : au contrôle suivant, le serveur active seul,
+        // génère la clé de l'école et envoie aussitôt une première copie.
+        console.CloudRequested = true;
+        await license.RefreshAsync();
+        Assert.True(license.CloudRequested);
+        await cloud.RunOnceAsync(CancellationToken.None);
+        Assert.True(cloud.Status.Enabled);
+        Assert.True(cloud.Status.ActivatedByOwner);
+        Assert.False(cloud.Status.RecoveryConfirmed);
+        Assert.Single(console.Backups);
+        Assert.Equal(console.KeyFingerprint, cloud.Status.KeyFingerprint);
+        // Pas de nouvelle copie tant que rien ne change dans l'heure.
+        await cloud.RunOnceAsync(CancellationToken.None);
+        Assert.Single(console.Backups);
+
+        // Le responsable de l'école arrête : la console ne peut pas la relancer contre son avis.
+        await admin.Post("/api/nuage/activation", new { enabled = false, confirm = true }).Ok();
+        await cloud.RunOnceAsync(CancellationToken.None);
+        Assert.False(cloud.Status.Enabled);
+
+        // Il la réactive lui-même ; si JP-Services retire ensuite sa proposition, le choix de l'école demeure.
+        await admin.Post("/api/nuage/activation", new { enabled = true, confirm = true }).Ok();
+        console.CloudRequested = false;
+        await license.RefreshAsync();
+        await cloud.RunOnceAsync(CancellationToken.None);
+        Assert.True(cloud.Status.Enabled);
+        Assert.False(cloud.Status.ActivatedByOwner);
     }
 
     [Fact]

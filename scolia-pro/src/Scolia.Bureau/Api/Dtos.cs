@@ -261,7 +261,7 @@ public sealed record CloudRefusalDto(DateTimeOffset At, string Label, string Pat
 
 public sealed record CloudStatusDto(bool Registered, bool Enabled, bool RecoveryConfirmed, string? KeyFingerprint, DateTimeOffset? ActivatedAt,
     DateTimeOffset? LastBackupAt, long LastBackupBytes, DateTimeOffset? LastDrainAt, int Applied, int Refused,
-    string? LastError, DateTimeOffset? LastErrorAt, IReadOnlyList<CloudRefusalDto> Refusals);
+    string? LastError, DateTimeOffset? LastErrorAt, IReadOnlyList<CloudRefusalDto> Refusals, bool ActivatedByOwner = false);
 
 public sealed record CloudBackupDto(Guid Id, DateTimeOffset CreatedAt, long SizeBytes, string KeyFingerprint, bool SameKey);
 

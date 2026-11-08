@@ -14,7 +14,7 @@ function setup() {
   const sqlite = new DatabaseSync(":memory:");
   sqlite.exec("PRAGMA foreign_keys=ON");
   for (const name of ["0001_init.sql", "0002_relays.sql", "0003_activity_idempotence.sql",
-    "0004_license_controls.sql", "0005_cloud_continuity.sql"])
+    "0004_license_controls.sql", "0005_cloud_continuity.sql", "0006_owner_settings_cloud_policy.sql"])
     sqlite.exec(readFileSync(new URL("../migrations/" + name, import.meta.url), "utf8"));
   const statement = (sql, params = []) => ({
     bind: (...values) => statement(sql, values),
@@ -199,4 +199,118 @@ test("Rétention : 24 copies récentes, une par jour sur 30 jours, une par mois 
   const left = big.filter(r => !new Set(retentionPlan(big, now).map(x => x.id)).has(r.id));
   assert.ok(left.reduce((s, r) => s + r.size_bytes, 0) <= MAX_SCHOOL_BACKUP_BYTES);
   assert.deepEqual(left.slice(0, 3).map(r => r.id), ["b0", "b1", "b2"]);
+});
+
+// R2 simulé derrière l'API S3 : vérifie aussi que chaque requête est signée SigV4.
+function fakeS3() {
+  const objects = new Map();
+  const calls = [];
+  const fetcher = async (url, init) => {
+    calls.push(init.method);
+    assert.match(init.headers.authorization, /^AWS4-HMAC-SHA256 Credential=AKIA0123456789ABCDEF\/\d{8}\/auto\/s3\/aws4_request/);
+    const key = new URL(url).pathname;
+    if (init.method === "PUT") { objects.set(key, new Uint8Array(init.body)); return new Response(null, { status: 200 }); }
+    if (init.method === "GET") return objects.has(key) ? new Response(objects.get(key)) : new Response(null, { status: 404 });
+    if (init.method === "DELETE") { objects.delete(key); return new Response(null, { status: 204 }); }
+    return new Response(null, { status: 405 });
+  };
+  return { objects, calls, fetcher };
+}
+
+const r2 = { account_id: "0123456789abcdef0123456789abcdef", bucket: "scolia-pro-backups",
+  access_key_id: "AKIA0123456789ABCDEF", secret_access_key: "s".repeat(40) };
+
+test("Console : identifiants R2 saisis, testés, chiffrés, puis utilisés pour les sauvegardes des écoles", async t => {
+  const app = setup();
+  t.after(() => app.sqlite.close());
+  delete app.env.BACKUPS; // pas de liaison de déploiement : tout passe par les champs de la console
+  const s3 = fakeS3();
+  app.env.STORAGE_FETCH = s3.fetcher;
+
+  let st = await app.owner("/api/v1/owner/settings/storage");
+  assert.equal(st.body.mode, "none");
+  assert.equal(st.body.ready, false);
+  assert.equal((await app.owner("/api/v1/owner/settings/storage", "PUT", { ...r2, account_id: "court" })).status, 400);
+  // Sans le jeton propriétaire, ni lecture ni écriture des réglages.
+  assert.equal((await app.call("/api/v1/owner/settings/storage", "PUT", r2)).status, 403);
+
+  const saved = await app.owner("/api/v1/owner/settings/storage", "PUT", r2);
+  assert.equal(saved.status, 200);
+  assert.deepEqual(s3.calls.slice(0, 3), ["PUT", "GET", "DELETE"]); // fichier témoin
+  assert.equal(s3.objects.size, 0);
+  const stored = app.sqlite.prepare("SELECT value FROM owner_settings").get().value;
+  assert.ok(!stored.includes(r2.secret_access_key) && !stored.includes(r2.access_key_id));
+  st = await app.owner("/api/v1/owner/settings/storage");
+  assert.equal(st.body.mode, "credentials");
+  assert.equal(st.body.ready, true);
+  assert.ok(!JSON.stringify(st.body).includes(r2.secret_access_key));
+  assert.equal(st.body.access_key_id, "AKIA…CDEF");
+
+  // Une école envoie sa copie : elle arrive dans le bucket par l'API S3.
+  const school = (await app.register()).body;
+  await app.call("/api/v1/server/cloud/enable", "POST",
+    { enabled: true, disclosed_to_school_admin: true, key_fingerprint: "0123456789abcdef" }, school.school_token);
+  const file = randomBytes(3000);
+  const sent = await app.call("/api/v1/server/cloud/backups?sha256=" + sha256(file) + "&key=0123456789abcdef", "PUT", file, school.school_token);
+  assert.equal(sent.status, 201);
+  assert.equal(s3.objects.size, 1);
+  const back = await app.call("/api/v1/server/cloud/backups/" + sent.body.id, "GET", null, school.school_token, true);
+  assert.equal(sha256(new Uint8Array(await back.arrayBuffer())), sha256(file));
+
+  // Identifiants supprimés : plus d'envoi possible, les copies restent dans le bucket.
+  await app.owner("/api/v1/owner/settings/storage", "DELETE");
+  const refused = await app.call("/api/v1/server/cloud/backups?sha256=" + sha256(file) + "&key=0123456789abcdef", "PUT", file, school.school_token);
+  assert.equal(refused.status, 503);
+  assert.equal(s3.objects.size, 1);
+});
+
+test("Console : un test de stockage échoué n'enregistre rien", async t => {
+  const app = setup();
+  t.after(() => app.sqlite.close());
+  delete app.env.BACKUPS;
+  app.env.STORAGE_FETCH = async () => new Response("AccessDenied", { status: 403 });
+  const saved = await app.owner("/api/v1/owner/settings/storage", "PUT", r2);
+  assert.equal(saved.status, 422);
+  assert.match(saved.body.error, /refusé \(403\)/);
+  assert.equal(app.sqlite.prepare("SELECT count(*) AS n FROM owner_settings").get().n, 0);
+});
+
+test("Console : JP-Services active la sauvegarde en ligne d'une école ou de toutes ; le serveur l'apprend au contrôle", async t => {
+  const app = setup();
+  t.after(() => app.sqlite.close());
+  const school = (await app.register()).body;
+  const beat = () => app.call("/api/v1/heartbeat", "POST", {
+    event_id: crypto.randomUUID(), event: "online", installation_id: "server_2026_cloud_hk_123456",
+    server_device_name: "PC SECRETARIAT", occurred_at: new Date().toISOString() }, school.school_token);
+  assert.equal((await beat()).body.cloud_requested, false);
+
+  // Stockage absent : la demande est refusée plutôt que de promettre une sauvegarde impossible.
+  const env = app.env.BACKUPS;
+  delete app.env.BACKUPS;
+  assert.equal((await app.owner("/api/v1/owner/schools/" + school.school_id + "/cloud", "PATCH", { requested: true })).status, 409);
+  app.env.BACKUPS = env;
+
+  const one = await app.owner("/api/v1/owner/schools/" + school.school_id + "/cloud", "PATCH", { requested: true });
+  assert.equal(one.status, 200);
+  assert.equal((await beat()).body.cloud_requested, true);
+  const listing = await app.owner("/api/v1/owner/schools");
+  assert.equal(listing.body.schools[0].cloud_requested, 1);
+  await app.owner("/api/v1/owner/schools/" + school.school_id + "/cloud", "PATCH", { requested: false });
+  assert.equal((await beat()).body.cloud_requested, false);
+
+  const second = (await app.register("server_2026_other_hk_654321")).body;
+  const all = await app.owner("/api/v1/owner/cloud/request-all", "POST", {});
+  assert.equal(all.body.updated, 2);
+  assert.equal(app.sqlite.prepare("SELECT count(*) AS n FROM schools WHERE cloud_requested=1").get().n, 2);
+  assert.ok(second.school_id);
+  assert.ok((await app.owner("/api/v1/owner/audit")).body.history.some(h => h.action === "cloud_requested_all"));
+});
+
+test("Signature S3 conforme à l'exemple officiel AWS (SigV4)", async () => {
+  const { signS3 } = await import("../src/storage.mjs");
+  const headers = await signS3({ method: "GET", host: "examplebucket.s3.amazonaws.com", path: "/test.txt",
+    headers: { range: "bytes=0-9" }, payloadHash: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    accessKeyId: "AKIAIOSFODNN7EXAMPLE", secretAccessKey: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+    region: "us-east-1", amzDate: "20130524T000000Z" });
+  assert.match(headers.authorization, /Signature=f0e8bdb87c964420e857bd35b5d6ed310bd44f0170aba48dd91039c6036bdb41$/);
 });

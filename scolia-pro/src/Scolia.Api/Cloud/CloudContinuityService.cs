@@ -23,7 +23,7 @@ public sealed record CloudRefusal(DateTimeOffset At, string Label, string Path, 
 /// <summary>État de la continuité en ligne, sans aucune clé.</summary>
 public sealed record CloudStatus(bool Registered, bool Enabled, bool RecoveryConfirmed, string? KeyFingerprint, DateTimeOffset? ActivatedAt,
     DateTimeOffset? LastBackupAt, long LastBackupBytes, DateTimeOffset? LastDrainAt, int Applied, int Refused,
-    string? LastError, DateTimeOffset? LastErrorAt, IReadOnlyList<CloudRefusal> Refusals);
+    string? LastError, DateTimeOffset? LastErrorAt, IReadOnlyList<CloudRefusal> Refusals, bool ActivatedByOwner = false);
 
 /// <summary>Copie en ligne vue par le serveur ; <c>SameKey</c> faux : il faut le code de secours de l'école.</summary>
 public sealed record CloudBackupDto(Guid Id, DateTimeOffset CreatedAt, long SizeBytes, string KeyFingerprint, bool SameKey);
@@ -52,7 +52,8 @@ public sealed class CloudContinuityService : BackgroundService
 
     private sealed record State(bool Enabled, string? DataKey, string? DepositKey, string? DepositToken, DateTimeOffset? ActivatedAt,
         bool RecoveryConfirmed, DateTimeOffset? LastBackupAt, long LastBackupRevision, string? LastBackupEpoch, long LastBackupBytes,
-        DateTimeOffset? LastDrainAt, int Applied, int Refused, string? LastError, DateTimeOffset? LastErrorAt, List<CloudRefusal> Refusals);
+        DateTimeOffset? LastDrainAt, int Applied, int Refused, string? LastError, DateTimeOffset? LastErrorAt, List<CloudRefusal> Refusals,
+        bool ActivatedByOwner = false, bool DeclinedBySchool = false);
 
     private sealed record Delegation(Guid U, string S, long E);
 
@@ -106,7 +107,8 @@ public sealed class CloudContinuityService : BackgroundService
             var s = state;
             return new CloudStatus(license.IsRegistered, s.Enabled && !corrupted, s.RecoveryConfirmed,
                 s.DataKey is { } key ? CloudSeal.Fingerprint(Convert.FromBase64String(key)) : null, s.ActivatedAt,
-                s.LastBackupAt, s.LastBackupBytes, s.LastDrainAt, s.Applied, s.Refused, s.LastError, s.LastErrorAt, s.Refusals);
+                s.LastBackupAt, s.LastBackupBytes, s.LastDrainAt, s.Applied, s.Refused, s.LastError, s.LastErrorAt, s.Refusals,
+                s.ActivatedByOwner);
         }
     }
 
@@ -133,7 +135,9 @@ public sealed class CloudContinuityService : BackgroundService
 
     // ---------- Activation par le responsable (une seule fois) ----------
 
-    public async Task<CloudStatus> EnableAsync(bool enabled, CancellationToken ct)
+    /// <param name="byOwner">Vrai : décision de JP-Services reçue au contrôle de licence ; faux : décision du responsable de l'école,
+    /// qui prime toujours (un arrêt par l'école n'est jamais annulé par la console).</param>
+    public async Task<CloudStatus> EnableAsync(bool enabled, bool byOwner, CancellationToken ct)
     {
         if (!license.IsRegistered)
             throw new DomainException("nuage", "Inscrivez d'abord ce serveur auprès de JP-Services (Licence) : la sauvegarde en ligne passe par sa console.");
@@ -145,7 +149,11 @@ public sealed class CloudContinuityService : BackgroundService
                 using var off = license.OwnerClient(TimeSpan.FromSeconds(30));
                 using var stopped = await off.PostAsJsonAsync("api/v1/server/cloud/enable", new { enabled = false, disclosed_to_school_admin = true }, ct);
                 await EnsureSuccessAsync(stopped, ct);
-                Save(state with { Enabled = false, DepositToken = null });
+                Save(state with
+                {
+                    Enabled = false, DepositToken = null, ActivatedByOwner = false,
+                    DeclinedBySchool = !byOwner || state.DeclinedBySchool,
+                });
                 return Status;
             }
             // Une réactivation garde la clé : les anciennes copies restent lisibles avec le même code de secours.
@@ -165,6 +173,7 @@ public sealed class CloudContinuityService : BackgroundService
             {
                 Enabled = true, DataKey = dataKey, DepositKey = depositKey, DepositToken = token,
                 ActivatedAt = state.ActivatedAt ?? DateTimeOffset.UtcNow, LastError = null, LastErrorAt = null,
+                ActivatedByOwner = byOwner, DeclinedBySchool = false,
             });
             backupRequested = true;
             return Status;
@@ -420,6 +429,47 @@ public sealed class CloudContinuityService : BackgroundService
 
     // ---------- Boucle automatique ----------
 
+    /// <summary>
+    /// Un cycle complet, sans intervention : suit la décision de JP-Services (activation proposée depuis la console,
+    /// jamais contre un arrêt décidé par l'école), relève les opérations en ligne, puis sauvegarde si c'est l'heure.
+    /// </summary>
+    public async Task RunOnceAsync(CancellationToken ct)
+    {
+        if (!license.IsRegistered || corrupted) return;
+        var current = state;
+        try
+        {
+            if (license.CloudRequested && !current.Enabled && !current.DeclinedBySchool)
+            {
+                await EnableAsync(true, byOwner: true, ct);
+                logger.LogInformation("Sauvegarde en ligne activée à la demande de JP-Services (clé de l'école générée sur ce serveur).");
+            }
+            else if (!license.CloudRequested && current.Enabled && current.ActivatedByOwner)
+                await EnableAsync(false, byOwner: true, ct);
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or DomainException or JsonException or IOException or InvalidOperationException)
+        {
+            if (ct.IsCancellationRequested) return;
+            Fail("activation différée (" + Describe(ex) + ").");
+            return;
+        }
+        if (!state.Enabled) return;
+        try { await DrainAsync(ct); }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or DomainException or JsonException or IOException or InvalidOperationException)
+        {
+            if (ct.IsCancellationRequested) return;
+            Fail("relève différée (" + Describe(ex) + ").");
+        }
+        if (!BackupDue(DateTimeOffset.UtcNow)) return;
+        try { await BackupNowAsync(ct); }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or DomainException or JsonException or IOException or InvalidOperationException
+            or Microsoft.Data.Sqlite.SqliteException)
+        {
+            if (ct.IsCancellationRequested) return;
+            Fail("sauvegarde différée (" + Describe(ex) + "), nouvel essai automatique.");
+        }
+    }
+
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         try { await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken); }
@@ -427,21 +477,8 @@ public sealed class CloudContinuityService : BackgroundService
         using var timer = new PeriodicTimer(Cycle);
         do
         {
-            if (!license.IsRegistered || !state.Enabled || corrupted) continue;
-            try { await DrainAsync(stoppingToken); }
-            catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or DomainException or JsonException or IOException or InvalidOperationException)
-            {
-                if (stoppingToken.IsCancellationRequested) return;
-                Fail("relève différée (" + Describe(ex) + ").");
-            }
-            if (!BackupDue(DateTimeOffset.UtcNow)) continue;
-            try { await BackupNowAsync(stoppingToken); }
-            catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or DomainException or JsonException or IOException or InvalidOperationException
-                or Microsoft.Data.Sqlite.SqliteException)
-            {
-                if (stoppingToken.IsCancellationRequested) return;
-                Fail("sauvegarde différée (" + Describe(ex) + "), nouvel essai automatique.");
-            }
+            try { await RunOnceAsync(stoppingToken); }
+            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested) { return; }
         }
         while (await WaitAsync(timer, stoppingToken));
     }

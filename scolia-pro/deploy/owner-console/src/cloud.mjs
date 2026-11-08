@@ -8,6 +8,8 @@
 //    les reprend, les applique avec ses propres règles, puis publie leur issue ; l'appareil
 //    l'apprend et ne les renvoie pas une seconde fois.
 
+import { backupStore } from "./storage.mjs";
+
 export const MAX_BACKUP_BYTES = 90 * 1024 * 1024;          // limite d'une requête Worker gratuite : 100 Mo
 export const MAX_SCHOOL_BACKUP_BYTES = 1024 * 1024 * 1024;  // 1 Gio par établissement
 export const MAX_OPERATION_BYTES = 256 * 1024;
@@ -75,14 +77,17 @@ async function readJson(request, limit) {
   try { return JSON.parse(raw); } catch { return null; }
 }
 
-export async function applyRetention(env, schoolId, now) {
+export async function applyRetention(env, schoolId, now, store = null) {
   const db = env.OWNER_DB;
+  store ??= await backupStore(env).catch(() => null);
+  // Sans stockage joignable, rien n'est supprimé : jamais de ligne sans fichier ni l'inverse.
+  if (!store) return 0;
   const rows = (await db.prepare(`SELECT id,object_key,size_bytes,created_at FROM school_backups
     WHERE school_id=? ORDER BY created_at DESC`).bind(schoolId).all()).results;
   const expired = retentionPlan(rows, now);
   for (const row of expired) {
     // L'objet d'abord : une ligne D1 ne désigne jamais un fichier absent.
-    if (env.BACKUPS) await env.BACKUPS.delete(row.object_key);
+    if (store) await store.delete(row.object_key);
     await db.prepare("DELETE FROM school_backups WHERE id=? AND school_id=?").bind(row.id, schoolId).run();
   }
   return expired.length;
@@ -128,7 +133,8 @@ export async function serverCloudRequest(request, env, url, { bearer, sha, fail,
     return fail("Sauvegarde en ligne non activée pour cet établissement.", 409);
 
   if (request.method === "PUT" && path === "/api/v1/server/cloud/backups") {
-    if (!env.BACKUPS) return fail("Stockage des sauvegardes non configuré.", 503);
+    const store = await backupStore(env);
+    if (!store) return fail("Stockage des sauvegardes non configuré par JP-Services.", 503);
     const expected = url.searchParams.get("sha256") ?? "";
     const fingerprint = url.searchParams.get("key") ?? "";
     if (!HEX64.test(expected) || !FINGERPRINT.test(fingerprint))
@@ -142,7 +148,7 @@ export async function serverCloudRequest(request, env, url, { bearer, sha, fail,
     if (await hex(bytes) !== expected) return fail("Fichier altéré pendant l'envoi : renvoyer la sauvegarde.", 422);
     const id = crypto.randomUUID();
     const key = `schools/${school.id}/backups/${new Date(now).toISOString().replace(/[:.]/g, "-")}-${id}.scb`;
-    await env.BACKUPS.put(key, bytes, { sha256: expected,
+    await store.put(key, bytes, { sha256: expected,
       httpMetadata: { contentType: "application/octet-stream" },
       customMetadata: { school: school.id, key: fingerprint } });
     await db.batch([
@@ -150,7 +156,7 @@ export async function serverCloudRequest(request, env, url, { bearer, sha, fail,
         VALUES(?,?,?,?,?,?,?)`).bind(id, school.id, key, bytes.byteLength, expected, fingerprint, now),
       db.prepare("UPDATE school_cloud SET last_backup_at=?,server_seen_at=? WHERE school_id=?").bind(now, now, school.id),
     ]);
-    const removed = await applyRetention(env, school.id, now);
+    const removed = await applyRetention(env, school.id, now, store);
     return result({ id, created_at: now, size_bytes: bytes.byteLength, removed }, 201);
   }
 
@@ -162,10 +168,11 @@ export async function serverCloudRequest(request, env, url, { bearer, sha, fail,
 
   const download = /^\/api\/v1\/server\/cloud\/backups\/([a-f0-9-]{36})$/.exec(path);
   if (request.method === "GET" && download) {
-    if (!env.BACKUPS) return fail("Stockage des sauvegardes non configuré.", 503);
+    const store = await backupStore(env);
+    if (!store) return fail("Stockage des sauvegardes non configuré par JP-Services.", 503);
     const row = await db.prepare("SELECT * FROM school_backups WHERE id=? AND school_id=?").bind(download[1], school.id).first();
     if (!row) return fail("Sauvegarde inconnue.", 404);
-    const object = await env.BACKUPS.get(row.object_key);
+    const object = await store.get(row.object_key);
     if (!object) return fail("Sauvegarde introuvable dans le stockage.", 404);
     return new Response(object.body, { headers: {
       "Content-Type": "application/octet-stream", "Cache-Control": "no-store",
@@ -299,7 +306,9 @@ export async function ownerCloudOverview(db, schoolId, now) {
 /** Nettoyage quotidien : rétention des copies et issues anciennes. */
 export async function cloudMaintenance(env, now) {
   const db = env.OWNER_DB;
+  const store = await backupStore(env).catch(() => null);
+  if (!store) return;
   const schools = (await db.prepare("SELECT DISTINCT school_id FROM school_backups").all()).results;
-  for (const s of schools) await applyRetention(env, s.school_id, now);
+  for (const s of schools) await applyRetention(env, s.school_id, now, store);
   await db.prepare("DELETE FROM school_mailbox_outcomes WHERE done_at < ?").bind(now - OUTCOME_RETENTION_MS).run();
 }

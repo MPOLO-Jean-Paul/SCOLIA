@@ -45,7 +45,8 @@ public sealed class SchoolLicenseService : BackgroundService
         [property: JsonPropertyName("issued_at")] long IssuedAt,
         [property: JsonPropertyName("reason")] string Reason,
         [property: JsonPropertyName("offline_grace_seconds")] int OfflineGraceSeconds,
-        [property: JsonPropertyName("next_check_seconds")] int NextCheckSeconds);
+        [property: JsonPropertyName("next_check_seconds")] int NextCheckSeconds,
+        [property: JsonPropertyName("cloud_requested")] bool CloudRequested = false);
     public sealed record Status(bool Managed, bool OwnerConfigured, bool ReadOnly,
         string LicenseStatus, int? DaysRemaining, long? ExpiresAt,
         string Reason, bool BillingEnabled, DateTimeOffset? LastVerifiedAt);
@@ -138,6 +139,9 @@ public sealed class SchoolLicenseService : BackgroundService
 
     /// <summary>Transport HTTP vers la console (remplacé par un faux service dans les tests d'intégration).</summary>
     public HttpMessageHandler? OwnerHandler { get; set; }
+
+    /// <summary>JP-Services propose la sauvegarde en ligne à cette école (console) : le serveur l'active seul.</summary>
+    public bool CloudRequested => !corrupted && state.Policy?.CloudRequested == true;
 
     /// <summary>Serveur inscrit auprès de JP-Services : condition de la sauvegarde en ligne.</summary>
     public bool IsRegistered => !corrupted && state.Registration is not null;

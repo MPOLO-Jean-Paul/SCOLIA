@@ -8,7 +8,11 @@
 - **Opérations refusées** (mois déjà payé ailleurs, compte désactivé…) : listées avec leur motif sur la page, jamais perdues en silence.
 - **Nouvel ordinateur après une panne ou un vol** : JP-Services crée une invitation de reprise ; le nouveau serveur récupère une copie en ligne avec le code de secours (elle arrive dans « Sauvegardes », prête à être restaurée). L'ancien serveur est révoqué.
 
-## Console JP-Services 0.2.0
+## Console JP-Services 0.2.0 : tout se configure depuis la console
+- **Champs du stockage R2** : identifiant du compte, bucket, Access Key ID, Secret Access Key ; bouton « Tester et enregistrer » (écriture, lecture et suppression d'un fichier témoin), « Vérifier », « Supprimer ». Secret chiffré dans la base de la console, jamais réaffiché.
+- **Activation des écoles** : « Activer la sauvegarde en ligne pour toutes les écoles », ou dans la fiche de chaque école. Le serveur de l'école la reconnaît au contrôle suivant (15 min au plus), crée sa clé, envoie une première copie et continue seul ; le responsable est invité à noter le code de secours. Un arrêt décidé par l'école prime toujours.
+- Seule la toute première mise en ligne de la console passe par GitHub (elle n'existe pas encore pour recevoir des réglages).
+
 - Sur le même déploiement Cloudflare (même base D1) : nombre d'écoles protégées, copies en retard (> 26 h), volume stocké, opérations en attente ; par école, état, dernière copie, présence du serveur et invitation de reprise.
 - Le contenu reste illisible pour JP-Services : ni clé, ni lien de téléchargement.
 
@@ -20,8 +24,8 @@
 - La licence en lecture seule ne bloque jamais la sauvegarde ; les opérations en attente restent dans la boîte jusqu'à la réactivation.
 
 ## Contrôles
-- Console : 4 nouveaux tests (activation, envoi vérifié, cloisonnement entre écoles, dépôt/relevé/issue, reprise concurrente, rétention).
-- Serveur : 3 nouveaux tests d'intégration avec une fausse console (chiffrement et récupération, application unique au nom de l'auteur, refus des opérations frauduleuses, code de secours).
+- Console : 8 nouveaux tests — activation, envoi vérifié, cloisonnement entre écoles, dépôt/relevé/issue, reprise concurrente, rétention, identifiants R2 testés et chiffrés, signature S3 conforme à l'exemple officiel AWS, activation par école et pour toutes.
+- Serveur : 4 tests d'intégration avec une fausse console — chiffrement et récupération, application unique au nom de l'auteur, refus des opérations frauduleuses, activation demandée par la console sans jamais passer outre l'école, code de secours.
 
 ## Distribution
 - Android : **1.2.56**, **versionCode 176** ; signature officielle inchangée.

@@ -60,7 +60,7 @@ public sealed class CloudBackupPage : PageViewModel
         Items.Clear();
         Refusals.Clear();
         Stats.Add(new KpiVm("Sauvegarde en ligne", !status.Registered ? "Non inscrite" : status.Enabled ? "Active" : "Arrêtée",
-            status.Enabled ? "automatique, chiffrée par l'école" : "rien n'est envoyé", ThemeBrush.Get(status.Enabled ? "ToneGreen" : "ToneNeutral"), MaterialIconKind.CloudLock));
+            status.Enabled ? (status.ActivatedByOwner ? "activée par JP-Services, chiffrée par l'école" : "automatique, chiffrée par l'école") : "rien n'est envoyé", ThemeBrush.Get(status.Enabled ? "ToneGreen" : "ToneNeutral"), MaterialIconKind.CloudLock));
         Stats.Add(new KpiVm("Dernière copie", status.LastBackupAt is { } at ? Format.DateTime(at.UtcDateTime) : "—",
             status.LastBackupAt is null ? "pas encore envoyée" : Size(status.LastBackupBytes) + " chiffrés", ThemeBrush.Get("ToneBlue"), MaterialIconKind.CloudUpload));
         Stats.Add(new KpiVm("Opérations reprises", status.Applied.ToString("N0", CultureInfo.CurrentCulture),
@@ -77,7 +77,8 @@ public sealed class CloudBackupPage : PageViewModel
             : !status.Enabled
                 ? "Activez la sauvegarde en ligne une fois : ensuite, tout se fait seul. La copie est chiffrée ici avec la clé de l'école ; JP-Services ne peut pas la lire."
                 : !status.RecoveryConfirmed
-                    ? "Notez le code de secours (« Code de secours ») et rangez-le hors de cet ordinateur : sans lui, une copie en ligne ne peut pas être restaurée sur un autre poste."
+                    ? (status.ActivatedByOwner ? "Activée par JP-Services pour protéger vos données (clé créée sur ce serveur). " : string.Empty)
+                      + "Notez le code de secours (« Code de secours ») et rangez-le hors de cet ordinateur : sans lui, une copie en ligne ne peut pas être restaurée sur un autre poste."
                     : status.LastError is { Length: > 0 } error
                         ? $"Dernier incident ({(status.LastErrorAt is { } e ? Format.DateTime(e.UtcDateTime) : "—")}) : {error}"
                         : string.Empty;

@@ -37,7 +37,7 @@ public static class CloudEndpoints
         {
             if (!ServerLocal(http)) return LocalOnly();
             if (!input.Confirm) return Results.BadRequest(new { title = "Confirmation du responsable de l'établissement requise." });
-            var status = await cloud.EnableAsync(input.Enabled, ct);
+            var status = await cloud.EnableAsync(input.Enabled, byOwner: false, ct);
             audit.Record(input.Enabled ? "nuage.active" : "nuage.arrete", "Nuage", null,
                 input.Enabled ? "Sauvegarde et relève en ligne activées (chiffrées par l'école)." : "Sauvegarde et relève en ligne arrêtées.");
             await db.SaveChangesAsync(ct);

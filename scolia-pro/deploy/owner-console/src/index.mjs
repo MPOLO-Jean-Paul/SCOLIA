@@ -5,6 +5,13 @@ import {
 import { ownerRelayRequest, schoolRelayRequest } from "./relays.mjs";
 import { evaluateLicense, validateLicensePatch, MAX_GRACE_DAYS, DAY_MS } from "./licenses.mjs";
 import { serverCloudRequest, deviceCloudRequest, ownerCloudOverview, cloudMaintenance } from "./cloud.mjs";
+import { ownerStorageRequest } from "./storage.mjs";
+
+// Stockage prêt : liaison R2 du déploiement, ou identifiants saisis dans la console.
+async function storageConfigured(env) {
+  if (env.BACKUPS) return true;
+  return !!(await env.OWNER_DB.prepare("SELECT 1 AS ok FROM owner_settings WHERE key='storage.r2'").first());
+}
 
 const headers = {
   "Content-Type": "application/json; charset=utf-8",
@@ -66,7 +73,30 @@ async function serveOwner(request, env, url) {
     return fail("Accès propriétaire refusé.", 401);
   if (url.pathname.startsWith("/api/v1/owner/relays"))
     return ownerRelayRequest(request, env, url, { jsonBody, fail, result, audit, nowMs });
+  if (url.pathname === "/api/v1/owner/settings/storage")
+    return ownerStorageRequest(request, env, { jsonBody, fail, result, audit, nowMs, fetcher: env.STORAGE_FETCH });
   const db = env.OWNER_DB, now = nowMs();
+  // Sauvegarde en ligne proposée par JP-Services : le serveur de l'école l'active seul au prochain contrôle.
+  const cloudPolicy = /^\/api\/v1\/owner\/schools\/([a-f0-9-]{36})\/cloud$/.exec(url.pathname);
+  if (request.method === "PATCH" && cloudPolicy) {
+    const body = await jsonBody(request);
+    if (typeof body?.requested !== "boolean") return fail("Choix « requested » (vrai ou faux) requis.", 400);
+    if (body.requested && !(await storageConfigured(env)))
+      return fail("Configurez d'abord le stockage des sauvegardes (Cloudflare R2).", 409);
+    const update = await db.prepare("UPDATE schools SET cloud_requested=? WHERE id=?").bind(body.requested ? 1 : 0, cloudPolicy[1]).run();
+    if (!update.meta?.changes) return fail("Établissement inconnu.", 404);
+    await audit(db, body.requested ? "cloud_requested" : "cloud_withdrawn", cloudPolicy[1], now);
+    return result({ id: cloudPolicy[1], requested: body.requested,
+      notice: body.requested ? "Le serveur de l'école activera la sauvegarde en ligne à son prochain contrôle (15 minutes au plus)."
+        : "Proposition retirée : le serveur de l'école arrêtera la sauvegarde en ligne à son prochain contrôle." });
+  }
+  if (request.method === "POST" && url.pathname === "/api/v1/owner/cloud/request-all") {
+    if (!(await storageConfigured(env))) return fail("Configurez d'abord le stockage des sauvegardes (Cloudflare R2).", 409);
+    const update = await db.prepare("UPDATE schools SET cloud_requested=1 WHERE cloud_requested=0").run();
+    await audit(db, "cloud_requested_all", null, now);
+    return result({ updated: update.meta?.changes ?? 0,
+      notice: "Toutes les écoles activeront la sauvegarde en ligne à leur prochain contrôle." });
+  }
   if (request.method === "GET") {
     await prune(db, now);
     if (url.pathname === "/api/v1/owner/summary") {
@@ -88,6 +118,7 @@ async function serveOwner(request, env, url) {
       return result({ schools: schools?.n ?? 0, server_devices: devices?.n ?? 0,
         active_schools_30d: active?.n ?? 0, suspended,
         cloud_enabled: cloud?.enabled ?? 0, cloud_backup_late: cloud?.late ?? 0,
+        storage_configured: await storageConfigured(env),
         cloud_backup_bytes: cloud?.bytes ?? 0, cloud_pending_operations: cloud?.pending ?? 0 });
     }
     if (url.pathname === "/api/v1/owner/audit") {
@@ -99,7 +130,7 @@ async function serveOwner(request, env, url) {
     if (url.pathname === "/api/v1/owner/schools") {
       const rows = await db.prepare(`SELECT s.id,s.name,s.state,s.created_at,s.last_seen,
         s.license_expires_at,s.billing_enabled,s.trial_days,s.paid_until,s.grace_until,
-        s.manual_override,s.override_until,
+        s.manual_override,s.override_until,s.cloud_requested,
         (SELECT count(*) FROM server_devices d WHERE d.school_id=s.id) AS device_count,
         coalesce(c.enabled,0) AS cloud_enabled, c.last_backup_at, c.server_seen_at,
         (SELECT count(*) FROM school_mailbox m WHERE m.school_id=s.id) AS pending_operations
@@ -301,7 +332,9 @@ async function heartbeat(request, env) {
         normalizeIp(request.headers.get("CF-Connecting-IP")), now)
   ]);
   return result({ school_id: school.id, ...evaluateLicense(school, now),
-    local_data_access: "always_readable" });
+    local_data_access: "always_readable",
+    // Proposition de JP-Services : le serveur active seul la sauvegarde en ligne (clé de l'école).
+    cloud_requested: !!school.cloud_requested && await storageConfigured(env) });
 }
 
 function htmlDashboard() {
@@ -336,6 +369,22 @@ Il n'est ni stocké dans le navigateur ni transmis à une autre origine.</p>
 <article class="card"><small>Licences suspendues</small><div class="metric" id="suspended">—</div></article>
 <article class="card"><small>Sauvegarde en ligne active</small><div class="metric" id="cloudOn">—</div><small id="cloudLate"></small></article>
 <article class="card"><small>Copies chiffrées stockées</small><div class="metric" id="cloudBytes">—</div><small id="cloudPending"></small></article></div>
+<section class="panel" id="storagePanel"><h2>Sauvegarde en ligne des écoles — stockage Cloudflare R2</h2>
+<p class="info" id="storageStatus">État du stockage…</p>
+<p class="info">Une seule fois : dans Cloudflare › R2, créez le bucket (ex. <b>scolia-pro-backups</b>), puis « Gérer les jetons API R2 » ›
+jeton « Object Read &amp; Write » limité à ce bucket. Collez ici l'identifiant du compte, le nom du bucket, l'Access Key ID et la Secret Access Key.
+La console écrit, relit et supprime un fichier témoin avant d'enregistrer ; la clé secrète est gardée chiffrée et n'est jamais réaffichée.</p>
+<div class="toolbar">
+<input id="r2Account" placeholder="Identifiant du compte Cloudflare (32 caractères)" autocomplete="off">
+<input id="r2Bucket" placeholder="Nom du bucket R2" value="scolia-pro-backups" autocomplete="off">
+<input id="r2Key" placeholder="Access Key ID" autocomplete="off">
+<input id="r2Secret" type="password" placeholder="Secret Access Key" autocomplete="new-password">
+</div>
+<div class="toolbar"><button id="r2Save">Tester et enregistrer</button>
+<button id="r2Test" class="secondary">Vérifier le stockage</button>
+<button id="r2Remove" class="secondary">Supprimer les identifiants</button>
+<button id="cloudAll" class="secondary">Activer la sauvegarde en ligne pour toutes les écoles</button></div>
+<p class="info" id="storageNotice"></p></section>
 <section class="panel"><h2>Établissements</h2>
 <div class="toolbar"><button id="refresh">Actualiser</button><button id="logout" class="secondary">Verrouiller la console</button><input id="newschool" placeholder="Nom d'un nouvel établissement">
 <button id="invite" class="secondary">Créer une invitation</button></div>
@@ -364,7 +413,9 @@ Le suivi des licences utilise HTTPS directement, même depuis un Wi-Fi disposant
 <section class="panel" id="detailsPanel" hidden><h2>Fiche établissement</h2>
 <div class="cards" id="cloudCards"></div>
 <p class="info">Copies et opérations chiffrées par l'école : JP-Services voit leur date et leur taille, jamais leur contenu.</p>
-<div class="toolbar"><button id="recoveryInvite" class="secondary">Invitation de reprise (nouveau serveur)</button></div>
+<div class="toolbar"><button id="cloudOn">Activer la sauvegarde en ligne pour cette école</button>
+<button id="cloudOff" class="secondary">Retirer la sauvegarde en ligne</button>
+<button id="recoveryInvite" class="secondary">Invitation de reprise (nouveau serveur)</button></div>
 <p class="info" id="recoveryResult"></p>
 <details><summary class="info">Détails techniques</summary><pre id="details"></pre></details>
 <p class="info" id="licenseSummary">Statut de licence</p>
@@ -444,7 +495,7 @@ async function reload(){
  for(const s of listing.schools){
    const tr=document.createElement("tr");textCell(tr,s.name);textCell(tr,s.license.license_status+(s.license.readonly?" · lecture seule":""));
    textCell(tr,s.device_count);textCell(tr,s.last_seen?new Date(s.last_seen).toLocaleDateString("fr"):"Jamais");
-   textCell(tr,!s.cloud_enabled?"Inactive":(s.cloud_backup_late?"EN RETARD":"À jour")+
+   textCell(tr,!s.cloud_enabled?(s.cloud_requested?"Activation demandée":"Inactive"):(s.cloud_backup_late?"EN RETARD":"À jour")+
      (s.last_backup_at?" · "+new Date(s.last_backup_at).toLocaleString("fr"):"")+
      (s.pending_operations?" · "+s.pending_operations+" en attente":""));
    const td=document.createElement("td"),btn=document.createElement("button");
@@ -452,13 +503,21 @@ async function reload(){
    td.appendChild(btn);tr.appendChild(td);$("rows").appendChild(tr);
  }
 }
+async function storage(){
+ try{const st=await request("/api/v1/owner/settings/storage");
+ $("storageStatus").textContent=(st.ready?"Stockage prêt":"Stockage non prêt")+" · "+
+   (st.mode==="binding"?"liaison R2 du déploiement":st.mode==="credentials"?"identifiants saisis ("+st.bucket+", clé "+st.access_key_id+")":"aucun stockage configuré")+
+   (st.error?" · "+st.error:"")+(st.unreadable?" · identifiants illisibles (jeton propriétaire changé) : ressaisissez-les":"");
+ if(st.account_id)$("r2Account").value=st.account_id;if(st.bucket)$("r2Bucket").value=st.bucket;
+ }catch(e){$("storageStatus").textContent=e.message;}
+}
 async function openSchool(id){
  selected=id;const value=await request("/api/v1/owner/schools/"+id);
  $("detailsPanel").hidden=false;
  $("details").textContent=JSON.stringify(value,null,2);
  const c=value.cloud;$("recoveryResult").textContent="";
  $("cloudCards").replaceChildren(
-   card("Sauvegarde en ligne",c.enabled?(c.backup_late?"En retard":"Active"):"Inactive",c.consented_at?"activée le "+new Date(c.consented_at).toLocaleDateString("fr"):"non activée par l'école"),
+   card("Sauvegarde en ligne",c.enabled?(c.backup_late?"En retard":"Active"):(value.school.cloud_requested?"Activation demandée":"Inactive"),c.consented_at?"activée le "+new Date(c.consented_at).toLocaleDateString("fr"):"non activée par l'école"),
    card("Dernière copie",c.last_backup_at?new Date(c.last_backup_at).toLocaleString("fr"):"—",c.backups.length+" copie(s) · "+size(c.backup_bytes)),
    card("Serveur de l'école",c.server_online?"En ligne":"Hors ligne",c.server_seen_at?"vu le "+new Date(c.server_seen_at).toLocaleString("fr"):"jamais vu"),
    card("Opérations en attente",String(c.pending_operations),c.oldest_pending_at?"depuis le "+new Date(c.oldest_pending_at).toLocaleString("fr"):"rien à reprendre"));
@@ -471,7 +530,7 @@ async function openSchool(id){
  $("detailsPanel").scrollIntoView({behavior:"smooth"});
 }
 $("connect").onclick=async()=>{secret=$("token").value;$("token").value="";
- try{await reload();$("auth").hidden=true;$("workspace").hidden=false;$("error").textContent="";}
+ try{await reload();storage();$("auth").hidden=true;$("workspace").hidden=false;$("error").textContent="";}
  catch(e){secret="";$("error").textContent=e.message;}};
 $("refresh").onclick=()=>reload().catch(e=>alert(e.message));
  $("logout").onclick=()=>{
@@ -482,6 +541,7 @@ $("refresh").onclick=()=>reload().catch(e=>alert(e.message));
    $("inviteResult").textContent="";$("relayNotice").textContent="";
    $("licenseSummary").textContent="";$("newschool").value="";
    $("trialDays").value=30;$("paidTo").value="";
+   $("r2Secret").value="";$("r2Key").value="";$("storageNotice").textContent="";$("storageStatus").textContent="";
    $("workspace").hidden=true;$("auth").hidden=false;
  };
 $("relayCreate").onclick=async()=>{
@@ -507,6 +567,31 @@ async function updateLicense(patch,explanation){
    await reload();await openSchool(selected);
  }catch(e){alert(e.message);}
 }
+$("r2Save").onclick=async()=>{
+ try{const r=await request("/api/v1/owner/settings/storage","PUT",{account_id:$("r2Account").value,bucket:$("r2Bucket").value,
+   access_key_id:$("r2Key").value,secret_access_key:$("r2Secret").value});
+ $("r2Secret").value="";$("r2Key").value="";$("storageNotice").textContent=r.notice;await storage();}
+ catch(e){$("storageNotice").textContent=e.message;}
+};
+$("r2Test").onclick=()=>storage();
+$("r2Remove").onclick=async()=>{
+ if(!confirm("Supprimer les identifiants R2 ? Les envois des écoles s'arrêteront jusqu'à une nouvelle saisie (les copies existantes restent)."))return;
+ try{const r=await request("/api/v1/owner/settings/storage","DELETE");$("storageNotice").textContent=r.notice;await storage();}
+ catch(e){alert(e.message);}
+};
+$("cloudAll").onclick=async()=>{
+ if(!confirm("Activer la sauvegarde en ligne pour toutes les écoles ? Chaque serveur l'activera seul avec sa propre clé ; son responsable devra noter le code de secours."))return;
+ try{const r=await request("/api/v1/owner/cloud/request-all","POST",{});$("storageNotice").textContent=r.updated+" école(s) : "+r.notice;await reload();}
+ catch(e){alert(e.message);}
+};
+async function cloudPolicy(requested){
+ if(!selected)return;
+ try{const r=await request("/api/v1/owner/schools/"+selected+"/cloud","PATCH",{requested});
+ $("recoveryResult").textContent=r.notice;await reload();await openSchool(selected);}
+ catch(e){alert(e.message);}
+}
+$("cloudOn").onclick=()=>cloudPolicy(true);
+$("cloudOff").onclick=()=>{if(confirm("Retirer la sauvegarde en ligne de cette école ? Les copies existantes restent récupérables."))cloudPolicy(false);};
 $("recoveryInvite").onclick=async()=>{
  if(!selected)return;
  if(!confirm("Créer une invitation de reprise ? Son usage sur un nouveau serveur révoquera l'ancien serveur de cet établissement."))return;
