@@ -869,17 +869,20 @@ public sealed class DeliberationService(IAppDbContext db, IWriteGate gate, IAudi
             blocks.Add(("TOTAL GÉNÉRAL", null));
         }
         else blocks.AddRange(courses.Select(c => ("cours", (CourseStatDto?)c)));
-        string Header((string Kind, CourseStatDto? Course) b, JuryTotalsDto? max) => b.Course is { } c ? $"{c.Number}. {c.Course} (/{c.Max:0.##})" : b.Kind switch
-        {
-            "TOTAL 1" => $"TOTAL 1 (/{max?.Total1Max:0.##})",
-            "SOUS-TOTAL 1" => $"SOUS-TOTAL 1 (/{max?.Subtotal1Max:0.##})",
-            "SOUS-TOTAL 2" => $"SOUS-TOTAL 2 (/{max?.Subtotal2Max:0.##})",
-            "TOTAL 2" => $"TOTAL 2 (/{max?.Total2Max:0.##})",
-            _ => $"TOTAL GÉNÉRAL (/{max?.GeneralMax:0.##})",
-        };
+        // La grille officielle compte beaucoup de colonnes : en-têtes courts (numéro du cours, sigles des totaux) et légende en sous-titre.
+        string Header((string Kind, CourseStatDto? Course) b, JuryTotalsDto? max) => b.Course is { } c
+            ? official ? $"{c.Number} /{c.Max:0.##}" : $"{c.Number}. {c.Course} (/{c.Max:0.##})"
+            : b.Kind switch
+            {
+                "TOTAL 1" => $"T1 /{max?.Total1Max:0.##}",
+                "SOUS-TOTAL 1" => $"ST1 /{max?.Subtotal1Max:0.##}",
+                "SOUS-TOTAL 2" => $"ST2 /{max?.Subtotal2Max:0.##}",
+                "TOTAL 2" => $"T2 /{max?.Total2Max:0.##}",
+                _ => $"TG /{max?.GeneralMax:0.##}",
+            };
         var reference = board.Rows.Select(r => r.Totals).FirstOrDefault(t => t is not null);
         columns.AddRange(blocks.Select(b => Header(b, reference)));
-        columns.AddRange(official ? new[] { "%", "Décision", "Code" } : new[] { "Total", "%", "Décision" });
+        columns.AddRange(official ? new[] { "%", "Décision", "Code jury" } : new[] { "Total", "%", "Décision" });
         var rows = board.Rows.Select(r =>
         {
             var details = computation.Details.GetValueOrDefault(r.EnrollmentId) ?? [];
@@ -899,7 +902,10 @@ public sealed class DeliberationService(IAppDbContext db, IWriteGate gate, IAudi
         }).ToList();
         var authorities = await AuthoritiesAsync(ct);
         return new TableDocument(PaymentService.Header(school), official ? "Grille de délibération" : "Grille des cotes",
-            $"{board.Promotion} · {board.PeriodLabel} · {board.AcademicYear}{(board.Status == "Clôturée" ? string.Empty : " · provisoire")} · {Signatures(authorities)}",
+            $"{board.Promotion} · {board.PeriodLabel} · {board.AcademicYear}{(board.Status == "Clôturée" ? string.Empty : " · provisoire")}"
+            + (official ? " · " + string.Join(" · ", courses.Select(c => $"{c.Number} : {c.Course}"))
+                + " · T1 : épreuves intégratives · ST1 : cours · ST2 : blocs · T2 = ST1 + ST2 · TG = T1 + T2 · P : réussite totale, A : un cours en échec, E : sous le seuil" : string.Empty)
+            + $" · {Signatures(authorities)}",
             columns, rows, Landscape: true);
     }
 
