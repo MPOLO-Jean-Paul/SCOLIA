@@ -515,6 +515,11 @@ namespace Scolia.Infrastructure.Persistence.Migrations
                     b.Property<string>("UpdatedBy")
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("VerificationCode")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("TEXT");
+
                     b.Property<long>("Version")
                         .IsConcurrencyToken()
                         .HasColumnType("INTEGER");
@@ -523,6 +528,8 @@ namespace Scolia.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("SessionId", "EnrollmentId")
                         .IsUnique();
+
+                    b.HasIndex("VerificationCode");
 
                     b.ToTable("ResultatsDeliberation", (string)null);
                 });

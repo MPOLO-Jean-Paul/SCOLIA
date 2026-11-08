@@ -186,6 +186,8 @@ public static class ScoliaEndpoints
 
         // ---------- Vérification publique des reçus (QR code) ----------
         api.MapGet("/verifier/{code}", (string code, PaymentService payments, CancellationToken ct) => payments.VerifyAsync(code, ct)).RequireRateLimiting("connexion");
+        // Vérification publique des bulletins de délibération officiels (QR code) : nom masqué, résultat figé.
+        api.MapGet("/verifier-bulletin/{code}", (string code, DeliberationService s, CancellationToken ct) => s.VerifyBulletinAsync(code, ct)).RequireRateLimiting("connexion");
 
         var secured = api.MapGroup("").RequireAuthorization();
         secured.MapGet("/recherche", (string? q, SearchService search, CancellationToken ct) => search.SearchAsync(q, ct)).RequireAuthorization(Permissions.StudentsRead);
@@ -522,6 +524,7 @@ public static class ScoliaEndpoints
         sheets.MapPut("/feuille", async (Guid coursId, string nature, List<MarkInput> input, DeliberationService s, CancellationToken ct) =>
             Results.Ok(new { enregistrees = await s.SaveSheetAsync(coursId, nature, input, ct) }));
         sheets.MapPost("/cotes-par-code", (MarkByCodeRequest input, DeliberationService s, CancellationToken ct) => s.SaveByCodeAsync(input, ct));
+        sheets.MapPost("/cotes/import", (MarkImportRequest input, DeliberationService s, CancellationToken ct) => s.ImportMarksAsync(input, ct));
         sheets.MapPost("/remise", (Guid coursId, string nature, DeliberationService s, CancellationToken ct) => s.SubmitAsync(coursId, nature, ct));
         sheets.MapGet("/feuille/export", async (Guid coursId, string nature, bool? echecs, string? format, DeliberationService s, ReportService reports, CancellationToken ct) =>
             Table(await s.SheetTableAsync(coursId, nature, echecs ?? false, ct), format, echecs == true ? "liste-des-echecs" : "releve-des-cotes", reports));
@@ -533,10 +536,10 @@ public static class ScoliaEndpoints
             Table(await s.GridAsync(promotionId, periode, ct), format, "grille-des-cotes", reports));
         g.MapGet("/palmares", async (Guid promotionId, string periode, string? format, DeliberationService s, ReportService reports, CancellationToken ct) =>
             Table(await s.RankingAsync(promotionId, periode, ct), format, "palmares", reports));
-        g.MapGet("/bulletin.pdf", async (Guid promotionId, string periode, Guid inscriptionId, DeliberationService s, CancellationToken ct) =>
-            new InlineFileResult(await s.BulletinPdfAsync(promotionId, periode, inscriptionId, ct), Pdf, "bulletin-deliberation.pdf"));
-        g.MapGet("/bulletins.pdf", async (Guid promotionId, string periode, DeliberationService s, CancellationToken ct) =>
-            new InlineFileResult(await s.BulletinsPdfAsync(promotionId, periode, ct), Pdf, "bulletins-deliberation.pdf"));
+        g.MapGet("/bulletin.pdf", async (Guid promotionId, string periode, Guid inscriptionId, HttpContext http, IConfiguration config, DeliberationService s, CancellationToken ct) =>
+            new InlineFileResult(await s.BulletinPdfAsync(promotionId, periode, inscriptionId, ct, PublicBase(http, config)), Pdf, "bulletin-deliberation.pdf"));
+        g.MapGet("/bulletins.pdf", async (Guid promotionId, string periode, HttpContext http, IConfiguration config, DeliberationService s, CancellationToken ct) =>
+            new InlineFileResult(await s.BulletinsPdfAsync(promotionId, periode, ct, PublicBase(http, config)), Pdf, "bulletins-deliberation.pdf"));
     }
 
     private static void MapAcademics(RouteGroupBuilder api)

@@ -291,6 +291,8 @@ public sealed class ScoliaDbContext(DbContextOptions<ScoliaDbContext> options, I
         {
             e.ToTable("ResultatsDeliberation");
             e.HasIndex(x => new { x.SessionId, x.EnrollmentId }).IsUnique();
+            e.HasIndex(x => x.VerificationCode);
+            e.Property(x => x.VerificationCode).HasMaxLength(16);
             e.HasOne<DeliberationSession>().WithMany().HasForeignKey(x => x.SessionId).OnDelete(DeleteBehavior.Cascade);
         });
     }

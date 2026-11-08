@@ -186,6 +186,8 @@ public sealed class MarksPage : PageViewModel
             Action("Enregistrer les cotes", MaterialIconKind.ContentSave, SaveAsync, primary: true);
             Action("Saisie par code anonyme", MaterialIconKind.Incognito, ByCodeAsync);
             Action("Remettre les cotes", MaterialIconKind.SendOutline, SubmitAsync);
+            Action("Reprendre des cotes (fichier)", MaterialIconKind.Upload, ImportMarksFileAsync);
+            Action("Reprendre des cotes (coller)", MaterialIconKind.FormatListChecks, ImportMarksPasteAsync);
         }
         if (Shell.Can(Perm.DeliberationManage))
         {
@@ -355,6 +357,52 @@ public sealed class MarksPage : PageViewModel
         }
         await Shell.Api.SendAsync(HttpMethod.Put, "api/deliberation/feuille" + ScoliaClient.Query(("coursId", Course.Id), ("nature", Kind.Value)), changes);
         Shell.Notify($"{Format.Count(changes.Count, "cote enregistrée", "cotes enregistrées")}.");
+        await RefreshAsync();
+    }
+
+    /// <summary>Cotes déjà tenues ailleurs (export d'ITMCD, Excel, CSV) : aperçu, puis enregistrement des lignes reconnues.</summary>
+    private async Task ImportMarksFileAsync()
+    {
+        if (Course is null || Kind is null) { Shell.Notify("Choisissez d'abord le cours et la cote à reprendre."); return; }
+        if (Shell.PickFileHandler is null) return;
+        var picked = await Shell.PickFileHandler([".csv", ".txt"]);
+        if (picked is null) return;
+        var text = System.Text.Encoding.UTF8.GetString(picked.Data);
+        if (text.Contains('\uFFFD', StringComparison.Ordinal)) text = System.Text.Encoding.Latin1.GetString(picked.Data);
+        await ImportMarksAsync(text);
+    }
+
+    private async Task ImportMarksPasteAsync()
+    {
+        if (Course is null || Kind is null) { Shell.Notify("Choisissez d'abord le cours et la cote à reprendre."); return; }
+        var text = string.Empty;
+        var form = new FormViewModel("Reprendre des cotes", $"{Course.Number}. {Course.Name} · {Kind.Label}. Une ligne par copie : "
+            + (teacher ? "code anonyme ; cote." : "code anonyme (ou matricule) ; cote.") + " Les colonnes copiées depuis Excel conviennent.",
+            f => { text = f.Text("liste"); return Task.FromResult(true); });
+        form.Add("liste", "Liste des cotes", FieldKind.Multiline, required: true);
+        if (await Shell.Ask(form)) await ImportMarksAsync(text);
+    }
+
+    private async Task ImportMarksAsync(string text)
+    {
+        if (Course is null || Kind is null) return;
+        var body = new { courseId = Course.Id, kind = Kind.Value, text, apply = false };
+        var preview = await Shell.Api.SendAsync<MarkImportResult>(HttpMethod.Post, "api/deliberation/cotes/import", body);
+        var problems = preview.Lines.Where(l => l.Status is not ("À enregistrer" or "Remplace" or "Inchangée"))
+            .Select(l => $"Ligne {l.Line} · {l.Identifier} · {l.Value} : {l.Status}").Take(12).ToList();
+        var replaced = preview.Lines.Count(l => l.Status == "Remplace");
+        var message = $"{preview.Ready} cote(s) à enregistrer{(replaced > 0 ? $" dont {replaced} remplaçant une cote existante" : string.Empty)} · "
+            + $"{preview.Unchanged} inchangée(s) · {preview.Problems} ligne(s) à revoir."
+            + (problems.Count == 0 ? string.Empty : Environment.NewLine + Environment.NewLine + string.Join(Environment.NewLine, problems)
+                + (preview.Problems > problems.Count ? $"{Environment.NewLine}…" : string.Empty));
+        if (preview.Ready == 0)
+        {
+            await Shell.Confirm("Rien à enregistrer", message, "Fermer");
+            return;
+        }
+        if (!await Shell.Confirm("Reprendre les cotes", message, "Enregistrer")) return;
+        var result = await Shell.Api.SendAsync<MarkImportResult>(HttpMethod.Post, "api/deliberation/cotes/import", body with { apply = true });
+        Shell.Notify($"{Format.Count(result.Saved, "cote reprise", "cotes reprises")}.");
         await RefreshAsync();
     }
 

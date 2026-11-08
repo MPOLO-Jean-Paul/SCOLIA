@@ -419,6 +419,66 @@ public sealed class DeliberationService(IAppDbContext db, IWriteGate gate, IAudi
         return changes.Count;
     }, ct);
 
+    /// <summary>
+    /// Reprise d'une liste de cotes pour un cours (export d'ITMCD, feuille Excel) : chaque ligne est rattachée par le code
+    /// anonyme officiel (ou, pour le secrétariat, par le matricule). Aperçu d'abord ; l'application suit exactement les
+    /// règles de la feuille (droits, encodage ouvert, période non clôturée, remise, 0 à maxima) et garde chaque ancienne valeur au journal.
+    /// </summary>
+    public Task<MarkImportResult> ImportMarksAsync(MarkImportRequest input, CancellationToken ct = default) => gate.RunAsync(async () =>
+    {
+        var year = input.Apply ? await OpenYearAsync(ct) : await YearContext.CurrentAsync(db, ct);
+        var kind = DeliberationText.Kind(input.Kind);
+        var course = await CourseInYearAsync(input.CourseId, year.Id, ct);
+        await EnsureCourseAccessAsync(course, write: true, ct);
+        var submitted = await EnsureWritableAsync(year.Id, course, kind, ct);
+        var parsed = MarkImportParser.Parse(input.Text);
+        if (parsed.Count == 0) throw new DomainException("import", "La liste est vide : une ligne par copie, « code anonyme ; cote ».");
+        var students = (await EnrolledAsync(year.Id, course.PromotionId, ct)).ToDictionary(x => x.EnrollmentId);
+        var codes = await db.AnonymousCodes.AsNoTracking().Where(c => c.AcademicYearId == year.Id && c.IsActive)
+            .ToDictionaryAsync(c => c.Code, c => c.EnrollmentId, StringComparer.Ordinal, ct);
+        // Un enseignant corrige des copies anonymes : il identifie par code seulement, jamais par matricule.
+        var byMatricule = TeacherOnly ? new Dictionary<string, Guid>(StringComparer.Ordinal)
+            : students.Values.ToDictionary(x => TextKey.Normalize(x.Matricule), x => x.EnrollmentId, StringComparer.Ordinal);
+        var existing = await db.CourseMarks.Where(m => m.CourseId == course.Id && m.Kind == kind).ToDictionaryAsync(m => m.EnrollmentId, ct);
+        var seen = new HashSet<Guid>();
+        var lines = new List<MarkImportLineDto>();
+        var ready = new List<(Guid EnrollmentId, decimal Value, bool ByCode)>();
+        foreach (var line in parsed)
+        {
+            var code = AnonymousCodeRules.Normalize(line.Identifier);
+            Guid? enrollment = codes.TryGetValue(code, out var byCode) ? byCode
+                : byMatricule.TryGetValue(TextKey.Normalize(line.Identifier), out var byMat) ? byMat : null;
+            var previous = enrollment is { } e && existing.TryGetValue(e, out var mark) ? mark.Value : (decimal?)null;
+            MarkImportLineDto Result(string status) => new(line.Number, line.Identifier, line.RawValue, status, previous);
+            if (enrollment is not { } id) { lines.Add(Result(TeacherOnly ? "Code inconnu" : "Code ou matricule inconnu")); continue; }
+            if (!students.ContainsKey(id)) { lines.Add(Result("Hors promotion")); continue; }
+            if (line.Value is not { } value) { lines.Add(Result("Cote invalide")); continue; }
+            try { DeliberationEngine.ValidateMark(kind, course.Semester, value, course.MaxScore); }
+            catch (DomainException) { lines.Add(Result("Cote invalide")); continue; }
+            if (!seen.Add(id)) { lines.Add(Result("Doublon dans la liste")); continue; }
+            if (previous == value) { lines.Add(Result("Inchangée")); continue; }
+            lines.Add(Result(previous is null ? "À enregistrer" : "Remplace"));
+            ready.Add((id, value, codes.ContainsKey(code)));
+        }
+        if (input.Apply && ready.Count > 0)
+        {
+            var changes = new List<object>();
+            foreach (var (id, value, byCodeEntry) in ready)
+            {
+                var mark = existing.GetValueOrDefault(id);
+                changes.Add(new { inscription = id, avant = mark?.Value, apres = value });
+                if (mark is null) db.CourseMarks.Add(new CourseMark { EnrollmentId = id, CourseId = course.Id, Kind = kind, Value = value, EnteredAnonymously = byCodeEntry });
+                else { mark.Value = value; mark.EnteredAnonymously = byCodeEntry; }
+            }
+            audit.Record("deliberation.cotes.importees", "Cours", course.Id.ToString(),
+                $"{ready.Count} cote(s) {DeliberationText.Kind(kind)} reprise(s) d'une liste pour le cours {course.Number} « {course.Name} »"
+                + (submitted is null ? "." : " — correction du jury après la remise."), changes);
+            await db.SaveChangesAsync(ct);
+        }
+        var unchanged = lines.Count(l => l.Status == "Inchangée");
+        return new MarkImportResult(input.Apply, input.Apply ? ready.Count : 0, ready.Count, unchanged, lines.Count - ready.Count - unchanged, lines);
+    }, ct);
+
     /// <summary>Encodage anonyme : la copie porte le code, l'encodeur tape le code et la cote sans connaître le nom.</summary>
     public Task<MarkByCodeResult> SaveByCodeAsync(MarkByCodeRequest input, CancellationToken ct = default) => gate.RunAsync(async () =>
     {
@@ -818,6 +878,7 @@ public sealed class DeliberationService(IAppDbContext db, IWriteGate gate, IAudi
                 SessionId = session.Id, EnrollmentId = r.EnrollmentId, Code = r.Code ?? string.Empty, Matricule = r.Matricule, StudentName = r.FullName,
                 Points = r.Points, MaxPoints = r.Max, Percent = r.Percent, Missing = r.Missing, FailedCourses = r.Failed,
                 Computed = computation.Computed[r.EnrollmentId], Final = computation.Finals[r.EnrollmentId], Mention = r.Mention, Rank = r.Rank, Reason = r.JuryReason,
+                VerificationCode = Domain.Finance.DocumentNumbers.NewVerificationCode(12),
             });
         session.Status = SessionStatus.Cloturee;
         session.President = president;
@@ -970,20 +1031,45 @@ public sealed class DeliberationService(IAppDbContext db, IWriteGate gate, IAudi
     }
 
     /// <summary>Bulletin de délibération d'un apprenant : cours, cote de base, appui, points retenus, total, mention et décision.</summary>
-    public async Task<byte[]> BulletinPdfAsync(Guid promotionId, string periodText, Guid enrollmentId, CancellationToken ct = default)
+    public async Task<byte[]> BulletinPdfAsync(Guid promotionId, string periodText, Guid enrollmentId, CancellationToken ct = default, string? verificationBaseUrl = null)
     {
         // Un seul calcul de la délibération pour la fiche et le rang (auparavant deux).
         var (computation, school, authorities) = await BulletinContextAsync(promotionId, periodText, ct);
         var row = computation.Board.Rows.FirstOrDefault(r => r.EnrollmentId == enrollmentId) ?? throw new NotFoundException("Apprenant absent de cette délibération.");
-        return documents.Report(Bulletin(computation, row, school, authorities));
+        return documents.Report(Bulletin(computation, row, school, authorities, verificationBaseUrl));
     }
 
     /// <summary>Bulletins de toute la promotion dans un seul PDF, un apprenant par page, dans l'ordre du rang (bulletins d'ITMCD).</summary>
-    public async Task<byte[]> BulletinsPdfAsync(Guid promotionId, string periodText, CancellationToken ct = default)
+    public async Task<byte[]> BulletinsPdfAsync(Guid promotionId, string periodText, CancellationToken ct = default, string? verificationBaseUrl = null)
     {
         var (computation, school, authorities) = await BulletinContextAsync(promotionId, periodText, ct);
         if (computation.Board.Rows.Count == 0) throw new DomainException("bulletins", "Aucun apprenant dans cette délibération : aucun bulletin à produire.");
-        return documents.Reports(computation.Board.Rows.Select(r => Bulletin(computation, r, school, authorities)).ToList());
+        return documents.Reports(computation.Board.Rows.Select(r => Bulletin(computation, r, school, authorities, verificationBaseUrl)).ToList());
+    }
+
+    /// <summary>
+    /// Vérification publique d'un bulletin officiel (QR code), comme pour les reçus : le résultat figé à la clôture,
+    /// avec un nom masqué. Un bulletin provisoire ou d'une session rouverte n'est pas vérifiable.
+    /// </summary>
+    public async Task<BulletinVerification> VerifyBulletinAsync(string code, CancellationToken ct = default)
+    {
+        var normalized = TextKey.Normalize(code);
+        var none = new BulletinVerification(false, null, null, null, null, null, null, null, null, null);
+        if (normalized.Length is < 8 or > 16) return none;
+        var found = await (from r in db.DeliberationResults.AsNoTracking()
+                           join x in db.DeliberationSessions.AsNoTracking() on r.SessionId equals x.Id
+                           join p in db.Promotions.AsNoTracking() on x.PromotionId equals p.Id
+                           join y in db.AcademicYears.AsNoTracking() on x.AcademicYearId equals y.Id
+                           where r.VerificationCode == normalized && x.Status == SessionStatus.Cloturee
+                           select new { r.StudentName, r.Percent, r.Final, r.FailedCourses, r.Mention, x.Period, x.ClosedAtUtc, x.AcademicYearId, p.Code, Year = y.Label }).FirstOrDefaultAsync(ct);
+        if (found is null) return none;
+        var school = await YearContext.SchoolAsync(db, ct);
+        var words = found.StudentName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        var masked = words.Length == 0 ? "—" : words.Length == 1 ? words[0] : $"{words[0]} {string.Join(' ', words.Skip(1).Select(w => w[0] + "."))}";
+        var pass = (await SettingsOfAsync(found.AcademicYearId, ct)).PassPercent;
+        var grade = found.Period == DeliberationPeriod.Annuel ? DeliberationEngine.Grade(found.Final, found.Percent, found.FailedCourses, pass) : string.Empty;
+        return new BulletinVerification(true, school.Name, found.Year, found.Code, DeliberationEngine.PeriodLabel(found.Period), masked, found.Percent,
+            DeliberationEngine.Label(found.Final), grade.Length == 0 ? null : grade, found.ClosedAtUtc);
     }
 
     private async Task<(Computation Computation, Domain.School.SchoolProfile School, AuthoritiesDto Authorities)> BulletinContextAsync(Guid promotionId, string periodText, CancellationToken ct)
@@ -994,8 +1080,12 @@ public sealed class DeliberationService(IAppDbContext db, IWriteGate gate, IAudi
     }
 
     /// <summary>Bulletin de délibération d'un apprenant : tient toujours sur une seule page.</summary>
-    private static ReportDocument Bulletin(Computation computation, DeliberationRowDto r, Domain.School.SchoolProfile school, AuthoritiesDto authorities)
+    private static ReportDocument Bulletin(Computation computation, DeliberationRowDto r, Domain.School.SchoolProfile school, AuthoritiesDto authorities,
+        string? verificationBaseUrl = null)
     {
+        // Bulletin officiel (session clôturée) : code de vérification et QR, comme les reçus.
+        var code = computation.Verification.GetValueOrDefault(r.EnrollmentId);
+        var url = code is null || string.IsNullOrWhiteSpace(verificationBaseUrl) ? null : $"{verificationBaseUrl.TrimEnd('/')}/api/verifier-bulletin/{code}";
         var board = computation.Board;
         var courses = computation.Details.GetValueOrDefault(r.EnrollmentId) ?? [];
         var section = new ReportSection("Cours",
@@ -1007,7 +1097,7 @@ public sealed class DeliberationService(IAppDbContext db, IWriteGate gate, IAudi
             $"{r.FullName} · matricule {r.Matricule} · {board.Promotion} · {board.PeriodLabel} · {board.AcademicYear}{(board.Status == "Clôturée" ? string.Empty : " · PROVISOIRE")}",
             [("Pourcentage", $"{r.Percent:0.##} %"), ("Mention", r.Mention), ("Décision", r.Grade is { } g ? $"{r.Decision} ({g})" : r.Decision),
                 ("Rang", r.Rank is { } rank ? $"{rank} / {board.Students}" : "—")],
-            [section], BulletinFooter(r, authorities), OnePage: true);
+            [section], BulletinFooter(r, authorities) + (code is null ? string.Empty : $" — Code de vérification : {code}"), OnePage: true, VerificationUrl: url);
     }
 
     private static string BulletinFooter(DeliberationRowDto r, AuthoritiesDto a)
@@ -1024,8 +1114,9 @@ public sealed class DeliberationService(IAppDbContext db, IWriteGate gate, IAudi
 
     // ---------- Calcul ----------
 
+    /// <param name="Verification">Codes de vérification des bulletins officiels (session clôturée seulement).</param>
     private sealed record Computation(DeliberationBoardDto Board, IReadOnlyDictionary<Guid, List<CourseOutcomeDto>> Details,
-        IReadOnlyDictionary<Guid, Outcome> Computed, IReadOnlyDictionary<Guid, Outcome> Finals);
+        IReadOnlyDictionary<Guid, Outcome> Computed, IReadOnlyDictionary<Guid, Outcome> Finals, IReadOnlyDictionary<Guid, string> Verification);
 
     private async Task<Computation> ComputeAsync(AcademicYear year, Guid promotionId, DeliberationPeriod period, bool closing, CancellationToken ct)
     {
@@ -1118,7 +1209,8 @@ public sealed class DeliberationService(IAppDbContext db, IWriteGate gate, IAudi
             session is { IsClosed: true } ? "Clôturée" : "Ouverte", session?.ClosedAtUtc, session?.ClosedByName, session?.President, session?.Members,
             session?.ReopenCount ?? 0, session?.LastReopenReason, rows.Count, admitted, finalOutcomes.Count(o => o == Outcome.Ajourne), finalOutcomes.Count(o => o == Outcome.Incomplet),
             rows.Count == 0 ? 0 : Math.Round(admitted * 100m / rows.Count, 2, MidpointRounding.AwayFromZero), settings.PassPercent, courseStats, rows);
-        return new Computation(board, details, computed, finals);
+        return new Computation(board, details, computed, finals,
+            frozen.Where(f => f.Value.VerificationCode.Length > 0).ToDictionary(f => f.Key, f => f.Value.VerificationCode));
     }
 
     // ---------- Accès aux données ----------

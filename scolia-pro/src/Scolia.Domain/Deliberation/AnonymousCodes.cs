@@ -91,3 +91,47 @@ public static class CodeImportParser
     /// <summary>Clé de comparaison d'un nom : majuscules, sans accents, espaces simples.</summary>
     public static string NameKey(string? value) => TextKey.Normalize(value);
 }
+
+/// <summary>
+/// Lecture d'une liste de cotes (export d'ITMCD, feuille Excel copiée, CSV) : « code ou matricule ; cote » par ligne.
+/// La cote est la dernière colonne ; virgule ou point décimal. Séparateurs : point-virgule ou tabulation (la virgule
+/// n'est admise comme séparateur que pour des cotes entières). Une première ligne d'en-tête est ignorée.
+/// </summary>
+public static class MarkImportParser
+{
+    public const int MaxLines = 5000;
+
+    public sealed record Line(int Number, string Identifier, string RawValue, decimal? Value);
+
+    public static IReadOnlyList<Line> Parse(string? text)
+    {
+        var lines = (text ?? string.Empty).Replace("\r\n", "\n", StringComparison.Ordinal).Replace('\r', '\n').Split('\n');
+        if (lines.Count(l => !string.IsNullOrWhiteSpace(l)) > MaxLines)
+            throw new DomainException("import", $"Liste trop longue : {MaxLines} lignes au plus par import.");
+        var result = new List<Line>();
+        var first = true;
+        for (var i = 0; i < lines.Length; i++)
+        {
+            var raw = lines[i].Trim().TrimStart('﻿');
+            if (raw.Length == 0) continue;
+            var separator = raw.Contains(';', StringComparison.Ordinal) ? ';' : raw.Contains('\t', StringComparison.Ordinal) ? '\t' : ',';
+            var cells = raw.Split(separator).Select(c => c.Trim().Trim('"').Trim()).Where(c => c.Length > 0).ToList();
+            var value = cells.Count >= 2 ? Value(cells[^1]) : null;
+            // En-tête : première ligne dont la dernière colonne n'est pas un nombre (« Code ; Cote »).
+            if (first && cells.Count >= 2 && value is null && !string.IsNullOrWhiteSpace(cells[^1]))
+            {
+                first = false;
+                continue;
+            }
+            first = false;
+            result.Add(new Line(i + 1, cells.Count > 0 ? cells[0] : raw, cells.Count >= 2 ? cells[^1] : string.Empty, value));
+        }
+        return result;
+    }
+
+    public static decimal? Value(string? text)
+    {
+        var digits = new string((text ?? string.Empty).Where(c => !char.IsWhiteSpace(c)).ToArray()).Replace(',', '.');
+        return decimal.TryParse(digits, System.Globalization.NumberStyles.Number, System.Globalization.CultureInfo.InvariantCulture, out var v) ? v : null;
+    }
+}

@@ -99,3 +99,18 @@ public sealed record TeacherCourseDto(Guid PromotionId, string Promotion, Delibe
 
 /// <summary>Annonce de la délibération : ouverture ou fermeture de l'encodage, remise ou renvoi d'une feuille.</summary>
 public sealed record AnnouncementDto(DateTime AtUtc, string Title, string Text, string By);
+
+/// <summary>Reprise d'une liste de cotes pour un cours (export d'ITMCD, Excel) : <c>Apply</c> faux = aperçu sans écriture.</summary>
+public sealed record MarkImportRequest(Guid CourseId, string Kind, string? Text, bool Apply);
+
+/// <summary>
+/// Statuts : « À enregistrer », « Remplace », « Inchangée », « Code inconnu », « Hors promotion », « Cote invalide »,
+/// « Doublon dans la liste ». Un enseignant identifie les copies par le code anonyme seulement.
+/// </summary>
+public sealed record MarkImportLineDto(int Line, string Identifier, string Value, string Status, decimal? Previous);
+
+public sealed record MarkImportResult(bool Applied, int Saved, int Ready, int Unchanged, int Problems, IReadOnlyList<MarkImportLineDto> Lines);
+
+/// <summary>Vérification publique d'un bulletin officiel (QR code) : nom masqué, résultat figé à la clôture.</summary>
+public sealed record BulletinVerification(bool Found, string? School, string? AcademicYear, string? Promotion, string? Period, string? Student,
+    decimal? Percent, string? Decision, string? Grade, DateTime? ClosedAtUtc);

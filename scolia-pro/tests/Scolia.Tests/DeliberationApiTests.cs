@@ -1,5 +1,7 @@
 using System.Net;
 using System.Text.Json;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Scolia.Tests;
 
@@ -525,5 +527,55 @@ public sealed class DeliberationApiTests : IDisposable
         var opened = payment with { Summary = "Délibération : encodage S1 ouvert.", Topics = ["ReglagesDeliberation"] };
         Assert.Equal(opened.Summary, Scolia.Api.Endpoints.LiveEndpoints.ForRestricted(opened)!.Summary);
         Assert.Null(Scolia.Api.Endpoints.LiveEndpoints.ForRestricted(payment with { Kind = "presence" }));
+    }
+
+    [Fact]
+    public async Task Itmcd_marks_are_imported_by_code_and_official_bulletins_are_verifiable()
+    {
+        var admin = await app.InstalledAdmin();
+        var setup = await SetupAsync(admin, "MUKENDI", "KASONGO", "ILUNGA");
+        await admin.Post($"{D}/codes/attribution", new { promotionId = setup.PromotionId }).Ok();
+        var codes = await CodesAsync(admin, setup.PromotionId);
+        var (a, b, c) = (setup.Enrollments[0], setup.Enrollments[1], setup.Enrollments[2]);
+        await admin.Put($"{D}/feuille?coursId={setup.S1Course}&nature=S1", new[] { new { enrollmentId = c, value = (decimal?)50m } }).Ok();
+        var matricule = (await admin.GetAsync($"{D}/codes?promotionId={setup.PromotionId}").Ok()).EnumerateArray()
+            .Single(r => r.GetProperty("enrollmentId").GetString() == c).GetProperty("matricule").GetString();
+
+        // Export d'ITMCD : code ; cote (virgule décimale), en-tête, une cote hors maxima, un code inconnu, un doublon.
+        var text = $"Code;Cote\n{codes[a].ToLowerInvariant()};72,5\n{codes[b]};101\n{matricule};55\nZ99Z9Z;10\n{codes[a]};70\n";
+        var preview = await admin.Post($"{D}/cotes/import", new { courseId = setup.S1Course, kind = "S1", text, apply = false }).Ok();
+        var statuses = preview.GetProperty("lines").EnumerateArray().Select(l => l.GetProperty("status").GetString()!).ToArray();
+        Assert.Equal(["À enregistrer", "Cote invalide", "Remplace", "Code ou matricule inconnu", "Doublon dans la liste"], statuses);
+        Assert.Equal(2, preview.GetProperty("ready").GetInt32());
+        var applied = await admin.Post($"{D}/cotes/import", new { courseId = setup.S1Course, kind = "S1", text, apply = true }).Ok();
+        Assert.Equal(2, applied.GetProperty("saved").GetInt32());
+        var sheet = await admin.GetAsync($"{D}/feuille?coursId={setup.S1Course}&nature=S1").Ok();
+        decimal? Value(string id) => sheet.GetProperty("rows").EnumerateArray().Single(r => r.GetProperty("enrollmentId").GetString() == id)
+            .GetProperty("value") is { ValueKind: JsonValueKind.Number } v ? v.GetDecimal() : null;
+        Assert.Equal(72.5m, Value(a));
+        Assert.Null(Value(b));
+        Assert.Equal(55m, Value(c));
+
+        // Bulletin officiel après clôture : code de vérification public, nom masqué ; invalide après réouverture.
+        await admin.Put($"{D}/feuille?coursId={setup.S1Course}&nature=S1", new[] { new { enrollmentId = b, value = (decimal?)40m } }).Ok();
+        foreach (var e in setup.Enrollments)
+            await admin.Put($"{D}/feuille?coursId={setup.AnnualCourse}&nature=S1", new[] { new { enrollmentId = e, value = (decimal?)30m } }).Ok();
+        await admin.Post($"{D}/cloture", new { promotionId = setup.PromotionId, period = "S1", password = "Scolia2026!", president = "Dr MUKENGE", members = "", notes = "" }).Ok();
+        string code;
+        using (var scope = app.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<Scolia.Infrastructure.Persistence.ScoliaDbContext>();
+            code = (await db.DeliberationResults.SingleAsync(r => r.EnrollmentId == Guid.Parse(a))).VerificationCode;
+        }
+        Assert.Equal(12, code.Length);
+        Assert.Equal(HttpStatusCode.OK, (await admin.GetAsync($"{D}/bulletin.pdf?promotionId={setup.PromotionId}&periode=S1&inscriptionId={a}")).StatusCode);
+        var anonymous = app.Client();
+        var verified = await anonymous.GetAsync($"/api/verifier-bulletin/{code}").Ok();
+        Assert.True(verified.GetProperty("found").GetBoolean());
+        Assert.Equal("MUKENDI K. G.", verified.GetProperty("student").GetString());
+        Assert.Equal("Premier semestre", verified.GetProperty("period").GetString());
+        Assert.False((await anonymous.GetAsync("/api/verifier-bulletin/ZZZZZZZZZZZZ").Ok()).GetProperty("found").GetBoolean());
+        await admin.Post($"{D}/reouverture", new { promotionId = setup.PromotionId, period = "S1", password = "Scolia2026!", reason = "Erreur de report sur une copie" }).Ok();
+        Assert.False((await anonymous.GetAsync($"/api/verifier-bulletin/{code}").Ok()).GetProperty("found").GetBoolean());
     }
 }

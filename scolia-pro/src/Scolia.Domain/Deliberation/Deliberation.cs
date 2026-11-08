@@ -139,6 +139,8 @@ public sealed class DeliberationResult : Entity
     public string Mention { get; set; } = string.Empty;
     public int? Rank { get; set; }
     public string? Reason { get; set; }
+    /// <summary>Code imprimé (et en QR) sur le bulletin officiel : il permet de vérifier le résultat ; il change à chaque clôture.</summary>
+    public string VerificationCode { get; set; } = string.Empty;
 }
 
 /// <summary>Résultat d'un apprenant. Incomplet : il manque au moins une cote (pendant l'encodage).</summary>

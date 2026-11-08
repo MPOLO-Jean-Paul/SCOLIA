@@ -137,7 +137,7 @@ public sealed record ReportSection(string Title, IReadOnlyList<string> Columns, 
 /// <summary>Rapport à plusieurs parties : en-tête de l'établissement, chiffres clés en tuiles, puis les parties.</summary>
 /// <summary><c>OnePage</c> : le contenu est réduit pour tenir sur une seule page (bulletin), jamais coupé sur deux.</summary>
 public sealed record ReportDocument(SchoolHeader School, string Title, string? Subtitle, IReadOnlyList<(string Label, string Value)> Figures,
-    IReadOnlyList<ReportSection> Sections, string? Note = null, bool OnePage = false);
+    IReadOnlyList<ReportSection> Sections, string? Note = null, bool OnePage = false, string? VerificationUrl = null);
 
 public sealed record TableDocument(SchoolHeader School, string Title, string? Subtitle, IReadOnlyList<string> Columns, IReadOnlyList<IReadOnlyList<string>> Rows, IReadOnlyList<string>? Totals = null, bool Landscape = false);
 

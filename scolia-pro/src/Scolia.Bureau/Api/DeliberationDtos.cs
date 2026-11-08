@@ -44,6 +44,10 @@ public sealed record StudentDeliberationDto(DeliberationRowDto Result, string Pr
 /// <summary>Cours attribué à l'enseignant connecté (portail enseignant).</summary>
 public sealed record TeacherCourseDto(Guid PromotionId, string Promotion, DeliberationCourseDto Course);
 
+public sealed record MarkImportLineDto(int Line, string Identifier, string Value, string Status, decimal? Previous);
+
+public sealed record MarkImportResult(bool Applied, int Saved, int Ready, int Unchanged, int Problems, IReadOnlyList<MarkImportLineDto> Lines);
+
 public sealed record AnnouncementDto(DateTime AtUtc, string Title, string Text, string By);
 
 public sealed record MarkSubmissionDto(Guid CourseId, string Course, string Kind, DateTime SubmittedAtUtc, string SubmittedBy, int Graded, int Students);

@@ -302,6 +302,15 @@ public sealed class SkiaDocumentService : IDocumentService
             f.Y += 8;
             f.Paragraph(note, S(7.5f, color: "#64748B", italic: true));
         }
+        if (d.VerificationUrl is { Length: > 0 } url)
+        {
+            f.Y += 8;
+            f.Ensure(64);
+            f.Image(DocumentService.QrPng(url), f.Left, f.Y, 60, 60, sharp: true);
+            f.DrawText("Vérifier ce document", S(8, true, Navy), f.Left + 70, f.Y + 18, f.ContentWidth - 70);
+            f.DrawText(url, S(7, color: "#64748B"), f.Left + 70, f.Y + 32, f.ContentWidth - 70);
+            f.Y += 64;
+        }
     },
     Header(d.School, d.Title, d.Subtitle), Footer(null), 22);
 

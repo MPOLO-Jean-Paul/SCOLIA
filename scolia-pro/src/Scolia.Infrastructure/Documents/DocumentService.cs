@@ -358,6 +358,16 @@ public sealed class DocumentService : IDocumentService
                 });
             }
             if (d.Note is { Length: > 0 } note) col.Item().PaddingTop(6).Text(note).FontSize(7.5f).Italic().FontColor(Muted);
+            if (d.VerificationUrl is { Length: > 0 } url)
+                col.Item().PaddingTop(6).Row(row =>
+                {
+                    row.ConstantItem(62).Height(62).Image(Qr(url)).FitArea();
+                    row.RelativeItem().PaddingLeft(8).AlignMiddle().Column(c =>
+                    {
+                        c.Item().Text("Vérifier ce document").FontSize(8).Bold().FontColor(Navy);
+                        c.Item().Text(url).FontSize(7).FontColor(Muted);
+                    });
+                });
         });
         page.Footer().Element(c => Footer(c, null));
     }
