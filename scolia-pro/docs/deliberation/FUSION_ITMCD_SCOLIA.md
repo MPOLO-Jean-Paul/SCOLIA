@@ -136,6 +136,15 @@ du serveur, réinscriptions.
 - **Cours** : pondération (coefficient, moyenne sur 20 de « Cours et notes ») et maxima (points de la délibération,
   1 à 2000, vide = pondération × 10) sont distincts, bornés et expliqués dans tous les formulaires.
 
+### Reprise des cotes et vérification des bulletins (lot 6)
+
+- **Reprise des cotes** (« Encodage des cotes » → « Reprendre des cotes ») : liste `code anonyme ; cote` venant de l'export
+  d'ITMCD, d'Excel ou d'un CSV (le secrétariat peut aussi utiliser le matricule ; l'enseignant, le code seulement).
+  Aperçu puis enregistrement des lignes reconnues, avec les mêmes contrôles que la feuille et l'ancienne valeur au journal.
+- **Bulletin vérifiable** : à la clôture, chaque résultat reçoit un code de 12 caractères, imprimé avec un QR code sur le
+  bulletin officiel. `/api/verifier-bulletin/{code}` (public, limité en fréquence) rend l'établissement, l'année, la
+  promotion, la période, le nom masqué, le pourcentage, la décision et le code P/A/E. Une réouverture invalide les codes.
+
 ### Délibération et jury
 
 - Tableau par promotion et par période (premier semestre, second semestre, jury annuel) : rang, points,
@@ -179,6 +188,4 @@ encode ses seuls cours avec `cotes.encoder` ; un membre du jury encode les épre
 
 ## 6. Prochains lots proposés
 
-1. Reprise des cotes d'ITMCD (export) rattachées aux codes officiels déjà repris.
-2. Code QR de vérification sur le bulletin de délibération.
-3. Seconde session (repêchage), si l'établissement l'organise.
+1. Seconde session (repêchage), si l'établissement l'organise : règles à préciser (cours concernés, plafond de la cote, effet sur la mention).
