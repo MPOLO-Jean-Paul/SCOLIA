@@ -111,6 +111,11 @@ public static class ScoliaHost
         });
 
         builder.Services.AddScolia(builder.Configuration, defaultData);
+        // Licence commerciale : contrôle effectué sur le serveur scolaire, et
+        // répliqué à tous les clients via la même API. Secrets protégés localement.
+        builder.Services.AddDataProtection();
+        builder.Services.AddSingleton<SchoolLicenseService>();
+        builder.Services.AddHostedService(sp => sp.GetRequiredService<SchoolLicenseService>());
         builder.Services.AddSingleton(sp => new RecoveryKeyStore(sp.GetRequiredService<IOptions<ScoliaStorageOptions>>().Value.DataDirectory));
         builder.Services.AddSingleton(sp => new DevicePairingRegistry(sp.GetRequiredService<IOptions<ScoliaStorageOptions>>().Value.DataDirectory));
         if (embedded is not null)
@@ -215,6 +220,30 @@ public static class ScoliaHost
             await next();
         });
         app.UseAuthorization();
+        // Lecture seule de licence : toutes les requêtes d'écriture de tous les
+        // appareils sont refusées côté serveur (pas simplement boutons grisés).
+        // Cette protection passe AVANT l'idempotence, les verrous et les endpoints.
+        app.Use(async (http, next) =>
+        {
+            var path = http.Request.Path.Value ?? string.Empty;
+            if (http.Request.Path.StartsWithSegments("/api") &&
+                LicenseMutationPolicy.IsWrite(http.Request.Method) &&
+                !LicenseMutationPolicy.AllowedWhenReadOnly(path, http.Request.Method) &&
+                http.RequestServices.GetRequiredService<SchoolLicenseService>().Current.ReadOnly)
+            {
+                http.Response.StatusCode = StatusCodes.Status423Locked;
+                http.Response.Headers["X-Scolia-License"] = "read-only";
+                await http.Response.WriteAsJsonAsync(new
+                {
+                    title = "Licence SCOLIA Pro en lecture seule.",
+                    code = "licence_lecture_seule",
+                    detail = "Consultation et connexion maintenues. Les modifications sont suspendues jusqu'au renouvellement ou à une dérogation.",
+                    operation = "retenter_apres_reactivation"
+                });
+                return;
+            }
+            await next();
+        });
         // Synchronisation différentielle : les postes n'échangent le JSON d'une ressource
         // que si son contenu a réellement changé. Le serveur contrôle toujours les droits
         // AVANT de comparer l'empreinte ; aucune donnée ni version d'un autre compte n'est révélée.
@@ -264,6 +293,7 @@ public static class ScoliaHost
 
         if (app.Environment.IsDevelopment()) app.MapOpenApi();
         app.MapScoliaEndpoints();
+        app.MapLicenseEndpoints();
         app.MapLiveEndpoints();
         // Demande d'un second lancement : seule une requête venant de ce poste est acceptée.
         if (desktop)

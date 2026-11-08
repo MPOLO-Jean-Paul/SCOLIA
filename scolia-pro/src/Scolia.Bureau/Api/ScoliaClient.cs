@@ -34,6 +34,9 @@ public sealed class ScoliaClient : IDisposable
 
     /// <summary>L'ordinateur principal répond : faux après une coupure, jusqu'à la prochaine réponse.</summary>
     public bool IsOnline => online;
+    /// <summary>Dernière décision vérifiée du serveur. Le serveur reste autorité
+    /// pour tout poste ; le cache évite seulement les écritures hors ligne interdites.</summary>
+    public bool LicenseReadOnly { get; set; }
 
     public event Action<bool>? ConnectivityChanged;
 
@@ -73,6 +76,7 @@ public sealed class ScoliaClient : IDisposable
     {
         if (server == Server && remoteLink is null) return;
         remoteLink = null;
+        LicenseReadOnly = false;
         // La copie locale n'est conservée que si une preuve cryptographique
         // a reconnu le même serveur malgré le changement d'adresse.
         if (!sameVerifiedSchool) Offline = null;
@@ -92,6 +96,7 @@ public sealed class ScoliaClient : IDisposable
         link.Validate();
         var previous = http;
         remoteLink = link;
+        LicenseReadOnly = false;
         Offline = null;
         cookies = new CookieContainer();
         Server = link.VirtualServer;
@@ -274,6 +279,9 @@ public sealed class ScoliaClient : IDisposable
     public async Task<T> GetAsync<T>(string path, CancellationToken ct = default)
     {
         ct.ThrowIfCancellationRequested();
+        if (LicenseReadOnly && Queueable(method, path))
+            throw new ApiException("Licence SCOLIA en lecture seule : cette modification est suspendue.", 423)
+            { Code = "licence_lecture_seule" };
         var sourceStore = Offline;
         var sourceUser = sourceStore?.User ?? string.Empty;
         var canCache = Cacheable(path) && sourceUser.Length > 0;
@@ -424,8 +432,18 @@ public sealed class ScoliaClient : IDisposable
         }
         catch (ApiException ex)
         {
-            if (durable is not null && sourceStore is not null && ex.Status != 401)
-                sourceStore.RefusedFor(sourceUser, durable.Id, ex.Message);
+            if (durable is not null && sourceStore is not null)
+            {
+                if (ex.Status == 423)
+                {
+                    // Action NOUVELLE refusée pour licence : ne pas créer un
+                    // faux conflit ni une écriture que l'école n'a pas le droit de faire.
+                    sourceStore.SentFor(sourceUser, durable.Id);
+                    LicenseReadOnly = true;
+                }
+                else if (ex.Status != 401)
+                    sourceStore.RefusedFor(sourceUser, durable.Id, ex.Message);
+            }
             throw;
         }
     }
@@ -466,7 +484,7 @@ public sealed class ScoliaClient : IDisposable
                 if ((int)response.StatusCode >= 500) break;
                 var error = await ToException(response);
                 // Session expirée : l'opération attend la reconnexion, elle n'est pas en conflit.
-                if (error.Status == 401) break;
+                if (error.Status is 401 or 423) break; // Licence bloquée : garder les anciennes écritures intactes.
                 flushingStore.RefusedFor(flushingUser, item.Id, error.Message);
                 refused++;
             }

@@ -218,6 +218,50 @@
           </Border>
         </StackPanel>
 
+        <!-- Licence du serveur scolaire. La console JP-Services seule décide
+             du paiement, de l'essai, du délai de grâce ou de la lecture seule. -->
+        <Border Classes="card" IsVisible="{Binding IsLicense}" Padding="18">
+          <StackPanel Spacing="12">
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+              <Border Classes="appicon medium" Background="{DynamicResource ToneBlue}">
+                <mi:MaterialIcon Kind="ShieldLockOutline" />
+              </Border>
+              <StackPanel Grid.Column="1" Spacing="4">
+                <TextBlock Text="Licence de l'établissement" FontWeight="SemiBold" FontSize="17" />
+                <TextBlock Text="{Binding License.Badge}" FontWeight="SemiBold"
+                           Foreground="{DynamicResource AccentBrush}" />
+                <TextBlock Text="{Binding License.Details}" Classes="muted" TextWrapping="Wrap" />
+              </StackPanel>
+            </Grid>
+            <Border Background="{DynamicResource AccentSoftBrush}" CornerRadius="12" Padding="12">
+              <StackPanel Spacing="6">
+                <TextBlock Text="Gestion JP-Services" FontWeight="SemiBold" />
+                <TextBlock Text="La console propriétaire suit uniquement le nom de l'établissement,
+l'appareil serveur, son IP de connexion et les jours d'activité. Aucun compte interne, paiement, dossier ou cote scolaire n'est transmis."
+                           Classes="muted" TextWrapping="Wrap" />
+                <TextBlock Text="Une licence expirée ou bloquée conserve l'accès à la connexion,
+aux dossiers en lecture et aux exports ; les modifications sont suspendues sur tous les postes."
+                           Classes="muted" TextWrapping="Wrap" />
+              </StackPanel>
+            </Border>
+            <StackPanel Spacing="10" IsVisible="{Binding License.CanEnroll}">
+              <TextBlock Text="Inscrire le serveur auprès de JP-Services" FontWeight="SemiBold" />
+              <TextBlock Text="Code d'invitation de l'établissement" Classes="caption" />
+              <TextBox Text="{Binding License.Invitation, Mode=TwoWay}"
+                       PasswordChar="●" Watermark="Invitation fournie par JP-Services"
+                       MaxLength="140" />
+              <CheckBox IsChecked="{Binding License.Consent, Mode=TwoWay}"
+                        Content="J'autorise ce serveur à déclarer les seules métadonnées commerciales annoncées." />
+              <Button Classes="primary" Command="{Binding License.Enroll}"
+                      Content="Enregistrer la licence" HorizontalAlignment="Stretch" MinHeight="45" />
+            </StackPanel>
+            <TextBlock Text="{Binding License.Message}" Classes="muted" TextWrapping="Wrap" />
+            <Button Classes="ghost" Command="{Binding License.Refresh}"
+                    Content="Actualiser le statut de la licence"
+                    HorizontalAlignment="Stretch" MinHeight="44" />
+          </StackPanel>
+        </Border>
+
         <!-- Établissement : formulaire intégré, rangé en groupes -->
         <ContentControl Content="{Binding SchoolForm}" IsVisible="{Binding IsSchool}" HorizontalAlignment="Left" />
 

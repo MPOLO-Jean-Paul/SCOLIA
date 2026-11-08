@@ -164,6 +164,17 @@ public sealed class RemoteConnectionViewModel : Observable
         }
     }
 
+    private sealed record CommercialRelayInfo(
+        string Id, string Label,
+        [property: System.Text.Json.Serialization.JsonPropertyName("endpoint_wss")]
+        string EndpointWss, long Revision);
+    private sealed record CommercialRelaySettings(
+        [property: System.Text.Json.Serialization.JsonPropertyName("remote_relay_allowed")]
+        bool RemoteRelayAllowed,
+        [property: System.Text.Json.Serialization.JsonPropertyName("remote_relay_enabled")]
+        bool RemoteRelayEnabled,
+        [property: System.Text.Json.Serialization.JsonPropertyName("approval_required")]
+        bool ApprovalRequired, CommercialRelayInfo? Relay);
     public AsyncCommand Enable { get; }
     public AsyncCommand RenewAccess { get; }
     private sealed record InvitationReply(string Token, DateTime ExpiresUtc);
@@ -199,6 +210,24 @@ public sealed class RemoteConnectionViewModel : Observable
             // JAMAIS de renouvellement des clés ou des droits pour changer de relais.
             var primary = Relay.Trim();
             var secondary = BackupRelay.Trim();
+            // Si un établissement possède déjà une licence centrale,
+            // la liste des fournisseurs vient EXCLUSIVEMENT de la console.
+            // L'état est demandé au serveur scolaire : les postes internes
+            // n'ont jamais accès au jeton propriétaire ni aux secrets WSS.
+            var commercialLicense = await shell.Api.GetAsync<SchoolLicenseStatus>("api/licence");
+            if (commercialLicense.Managed)
+            {
+                var settings = await shell.Api.GetAsync<CommercialRelaySettings>("api/licence/relais");
+                if (!settings.RemoteRelayAllowed || !settings.RemoteRelayEnabled ||
+                    settings.ApprovalRequired || settings.Relay is null)
+                {
+                    Message = "L'accès distant est désactivé ou son fournisseur n'a pas encore été approuvé par le responsable du serveur. "
+                        + "Le Wi-Fi et les consultations scolaires restent disponibles.";
+                    return;
+                }
+                primary = settings.Relay.EndpointWss;
+                secondary = string.Empty;
+            }
             if (string.Equals(primary, secondary, StringComparison.OrdinalIgnoreCase))
                 secondary = string.Empty;
             var link = previous is { Host: true } current

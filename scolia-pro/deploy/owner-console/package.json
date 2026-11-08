@@ -1,0 +1,1 @@
+{"name":"scolia-pro-owner-console","version":"0.1.0","type":"module","private":true,"scripts":{"test":"node --check src/index.mjs && node --check src/relays.mjs && node --check src/licenses.mjs && node --test tests/*.test.mjs","dev":"wrangler dev","deploy":"wrangler deploy"},"devDependencies":{"wrangler":"^4.44.0"}}

@@ -1,0 +1,5 @@
+import test from "node:test";import assert from "node:assert/strict";import {CONSENT_VERSION,parseRegistration,parseHeartbeat,normalizeIp} from "../src/policy.mjs";
+const data={consent:true,consent_version:CONSENT_VERSION,school_name:"Institut Technique Médical",server_device_name:"Serveur SCOLIA",installation_id:"server_installation_2026_x1",invite_code:"ownerInvitationVeryLongSecret"};
+test("Inscription explicite seulement",()=>{assert.equal(parseRegistration(data).ok,true);assert.equal(parseRegistration({...data,consent:false}).ok,false);});
+test("Identité d'un utilisateur scolaire non suivie",()=>{const a={event:"online",installation_id:data.installation_id,server_device_name:data.server_device_name,event_id:"3e6d0617-9386-4b5a-984c-5f6de2e41dc9",occurred_at:new Date().toISOString()};assert.ok(parseHeartbeat(a));assert.equal(parseHeartbeat({...a,event:"student_login"}),null);});
+test("Adresse réseau filtrée",()=>{assert.equal(normalizeIp("192.168.1.10"),"192.168.1.10");assert.equal(normalizeIp("192.168.1.10;DROP TABLE"),null);});

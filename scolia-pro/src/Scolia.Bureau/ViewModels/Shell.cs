@@ -18,6 +18,7 @@ public sealed class ShellViewModel : Observable
     private readonly DispatcherTimer revisionTimer;
     private readonly List<(string Label, Func<PageViewModel> Open)> recents = [];
     private long knownRevision = -1;
+    private DateTime nextLicenseCheckUtc = DateTime.MinValue;
     private SessionDto? session;
     private PageViewModel? current;
     private object? dialog;
@@ -45,11 +46,13 @@ public sealed class ShellViewModel : Observable
         Login.ResumeRequested += ReturnToLockedSession;
         Login.ChangeServerRequested += () => _ = ChooseServerAsync();
         Sync = new SyncCenter(this, api);
+        License = new SchoolLicenseViewModel(this);
         // Connexion réussie : le compte est gardé sur l'appareil pour une connexion hors ligne, et en mémoire pour
         // rouvrir seul la session quand l'ordinateur principal revient après une coupure.
         Login.Authenticated += (user, secret, s) =>
         {
             api.Offline = new OfflineStore(ConnectionStore.CacheAddress(api.Server)) { User = s.UserName };
+            api.LicenseReadOnly = api.Offline.IsLicenseReadOnlyFor(s.UserName);
             api.Offline.SaveCredential(user, secret, s, api.SessionCookie);
             api.Offline.RememberAccount(s.UserName);
             Login.RememberAccount(s.UserName);
@@ -120,6 +123,7 @@ public sealed class ShellViewModel : Observable
     /// <summary>Logo de l'établissement, servi par le serveur : il figure sur l'écran de connexion et en tête du volet.</summary>
     /// <summary>Travail à plusieurs postes et hors ligne : direct, présence, verrous, envois en attente.</summary>
     public SyncCenter Sync { get; }
+    public SchoolLicenseViewModel License { get; }
 
     /// <summary>La vue dit si l'utilisateur est en train d'écrire : une mise à jour venue d'ailleurs attend alors.</summary>
     public Func<bool>? IsTyping { get; set; }
@@ -951,8 +955,11 @@ public sealed class ShellViewModel : Observable
         api.Offline ??= new OfflineStore(ConnectionStore.CacheAddress(api.Server));
         api.Offline.User = s.UserName;
         api.Offline.RememberAccount(s.UserName);
+        api.LicenseReadOnly = api.Offline.IsLicenseReadOnlyFor(s.UserName);
         Login.RememberAccount(s.UserName);
         Sync.Start();
+        nextLicenseCheckUtc = DateTime.MinValue;
+        _ = License.RefreshAsync();
         // Une première session Promoteur vérifiée mémorise son appareil :
         // reconnexion future au même serveur, sans QR et sans privilèges ajoutés.
         if (s.Permissions.Contains(Perm.PilotageRead) &&
@@ -1211,6 +1218,11 @@ public sealed class ShellViewModel : Observable
     private async Task CheckRevisionAsync()
     {
         if (!IsLoggedIn || checkingRevision) return;
+        if (DateTime.UtcNow >= nextLicenseCheckUtc)
+        {
+            nextLicenseCheckUtc = DateTime.UtcNow.AddMinutes(5);
+            _ = License.RefreshAsync();
+        }
         checkingRevision = true;
         try
         {
