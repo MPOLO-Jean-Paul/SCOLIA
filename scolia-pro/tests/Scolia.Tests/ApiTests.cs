@@ -128,12 +128,16 @@ public sealed class SecurityApiTests : IDisposable
     public async Task Only_secretariat_and_accounting_roles_can_be_given()
     {
         var admin = await app.InstalledAdmin();
-        foreach (var legacy in new[] { "Administrateur", "Direction", "Enseignant" })
+        foreach (var legacy in new[] { "Administrateur", "Direction" })
         {
             var (status, body) = await admin.Post("/api/utilisateurs", new { userName = $"x{legacy.ToLowerInvariant()}", displayName = "X", role = legacy, password = "Provisoire1" }).Fail();
             Assert.Equal(HttpStatusCode.BadRequest, status);
             Assert.Equal("role", body.GetProperty("code").GetString());
         }
+        // Le compte enseignant existe de nouveau, mais seulement relié à une fiche du personnel (délibération).
+        var (teacher, teacherBody) = await admin.Post("/api/utilisateurs", new { userName = "xenseignant", displayName = "X", role = "Enseignant", password = "Provisoire1" }).Fail();
+        Assert.Equal(HttpStatusCode.BadRequest, teacher);
+        Assert.Equal("staffMemberId", teacherBody.GetProperty("code").GetString());
     }
 
     [Fact]

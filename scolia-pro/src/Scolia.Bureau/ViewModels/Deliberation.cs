@@ -177,7 +177,10 @@ public sealed class MarksPage : PageViewModel
 
     public MarksPage(ShellViewModel shell) : base(shell)
     {
-        if (Shell.Can(Perm.AcademicsWrite))
+        teacher = Shell.TeacherOnly;
+        // L'enseignant corrige des copies anonymes : sa feuille montre les codes, jamais les noms.
+        anonymous = teacher;
+        if (Shell.Can(Perm.AcademicsWrite) || teacher)
         {
             Action("Enregistrer les cotes", MaterialIconKind.ContentSave, SaveAsync, primary: true);
             Action("Saisie par code anonyme", MaterialIconKind.Incognito, ByCodeAsync);
@@ -191,12 +194,22 @@ public sealed class MarksPage : PageViewModel
         Action("Relevé du cours (PDF)", MaterialIconKind.FileChart, () => ExportSheetAsync(failedOnly: false, "pdf"));
         Action("Relevé du cours (Excel)", MaterialIconKind.FileExcel, () => ExportSheetAsync(failedOnly: false, "xlsx"));
         Action("Liste des échecs (PDF)", MaterialIconKind.AlertCircleOutline, () => ExportSheetAsync(failedOnly: true, "pdf"));
-        Action("Suivi de l'encodage", MaterialIconKind.ProgressClock, () => Shell.Open(() => new EncodingProgressPage(Shell)));
-        Action("Délibération", MaterialIconKind.Gavel, () => Shell.Open(() => new DeliberationPage(Shell)));
+        if (!teacher)
+        {
+            Action("Suivi de l'encodage", MaterialIconKind.ProgressClock, () => Shell.Open(() => new EncodingProgressPage(Shell)));
+            Action("Délibération", MaterialIconKind.Gavel, () => Shell.Open(() => new DeliberationPage(Shell)));
+        }
         ActionRefresh();
     }
 
-    public override string Title => "Encodage des cotes";
+    private readonly bool teacher;
+    private List<TeacherCourseDto> mine = [];
+
+    /// <summary>Espace enseignant : seulement ses cours attribués, en feuille anonyme.</summary>
+    public bool IsTeacher => teacher;
+    public bool CanChooseAnonymous => !teacher;
+
+    public override string Title => teacher ? "Mes cours" : "Encodage des cotes";
     public override string Subtitle => subtitle;
     public override MaterialIconKind Glyph => MaterialIconKind.Pen;
 
@@ -245,7 +258,13 @@ public sealed class MarksPage : PageViewModel
     {
         if (!ready)
         {
-            Promotions = await PromotionChoicesAsync(withAll: false);
+            if (teacher)
+            {
+                // Les promotions proposées sont celles des cours attribués à l'enseignant.
+                mine = await Shell.Api.GetAsync<List<TeacherCourseDto>>("api/deliberation/mes-cours");
+                Promotions = mine.GroupBy(m => m.PromotionId).Select(g => new ChoiceItem(g.Key.ToString(), g.First().Promotion)).ToList();
+            }
+            else Promotions = await PromotionChoicesAsync(withAll: false);
             promotion = Promotions.Count > 0 ? Promotions[0] : null;
             kind = AllKinds[0];
             Raise(nameof(Promotions));
@@ -256,8 +275,14 @@ public sealed class MarksPage : PageViewModel
         var keep = course?.Id;
         Courses.Clear();
         Rows.Clear();
-        if (Promotion is null) { subtitle = "Aucune promotion"; Raise(nameof(Subtitle)); return; }
-        var list = await Shell.Api.GetAsync<List<DeliberationCourseDto>>("api/deliberation/cours" + ScoliaClient.Query(("promotionId", Guid.Parse(Promotion.Value))));
+        if (Promotion is null) { subtitle = teacher ? "Aucun cours ne vous est attribué cette année" : "Aucune promotion"; Raise(nameof(Subtitle)); return; }
+        List<DeliberationCourseDto> list;
+        if (teacher)
+        {
+            mine = await Shell.Api.GetAsync<List<TeacherCourseDto>>("api/deliberation/mes-cours");
+            list = mine.Where(m => m.PromotionId.ToString() == Promotion.Value).Select(m => m.Course).ToList();
+        }
+        else list = await Shell.Api.GetAsync<List<DeliberationCourseDto>>("api/deliberation/cours" + ScoliaClient.Query(("promotionId", Guid.Parse(Promotion.Value))));
         foreach (var c in list)
         {
             var progress = c.Semester switch

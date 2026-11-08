@@ -1544,6 +1544,9 @@ namespace Scolia.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<Guid?>("StaffMemberId")
+                        .HasColumnType("TEXT");
+
                     b.Property<DateTime?>("UpdatedAtUtc")
                         .HasColumnType("TEXT");
 
@@ -1562,6 +1565,8 @@ namespace Scolia.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("NormalizedUserName")
                         .IsUnique();
+
+                    b.HasIndex("StaffMemberId");
 
                     b.ToTable("Utilisateurs", (string)null);
                 });
@@ -2358,6 +2363,14 @@ namespace Scolia.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.SetNull);
 
                     b.Navigation("Section");
+                });
+
+            modelBuilder.Entity("Scolia.Domain.Security.AppUser", b =>
+                {
+                    b.HasOne("Scolia.Domain.Staff.StaffMember", null)
+                        .WithMany()
+                        .HasForeignKey("StaffMemberId")
+                        .OnDelete(DeleteBehavior.SetNull);
                 });
 
             modelBuilder.Entity("Scolia.Domain.Staff.PayrollEntry", b =>

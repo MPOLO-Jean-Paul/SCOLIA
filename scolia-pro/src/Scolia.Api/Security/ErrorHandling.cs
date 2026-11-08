@@ -14,6 +14,7 @@ public sealed class ProblemHandler(IProblemDetailsService problems, ILogger<Prob
         {
             NotFoundException => (StatusCodes.Status404NotFound, exception.Message, "introuvable"),
             ConflictException => (StatusCodes.Status409Conflict, exception.Message, "conflit"),
+            ForbiddenException => (StatusCodes.Status403Forbidden, exception.Message, "droits"),
             DuplicateStudentException d => (StatusCodes.Status409Conflict, d.Message, d.Code),
             DomainException d => (StatusCodes.Status400BadRequest, d.Message, d.Code),
             FileNotFoundException => (StatusCodes.Status404NotFound, exception.Message, "introuvable"),

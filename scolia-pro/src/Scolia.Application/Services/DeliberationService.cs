@@ -231,8 +231,13 @@ public sealed class DeliberationService(IAppDbContext db, IWriteGate gate, IAudi
     public async Task<IReadOnlyList<DeliberationCourseDto>> CoursesAsync(Guid promotionId, CancellationToken ct = default)
     {
         var year = await YearContext.CurrentAsync(db, ct);
-        var courses = await CoursesOfAsync(year.Id, promotionId, ct);
-        var students = await EnrolledAsync(year.Id, promotionId, ct);
+        return await CoursesCoreAsync(year.Id, promotionId, ct);
+    }
+
+    private async Task<IReadOnlyList<DeliberationCourseDto>> CoursesCoreAsync(Guid yearId, Guid promotionId, CancellationToken ct)
+    {
+        var courses = await CoursesOfAsync(yearId, promotionId, ct);
+        var students = await EnrolledAsync(yearId, promotionId, ct);
         var ids = students.Select(s => s.EnrollmentId).ToList();
         var courseIds = courses.Select(c => c.Id).ToList();
         var counts = await db.CourseMarks.AsNoTracking().Where(m => courseIds.Contains(m.CourseId) && ids.Contains(m.EnrollmentId))
@@ -254,6 +259,9 @@ public sealed class DeliberationService(IAppDbContext db, IWriteGate gate, IAudi
         var year = await YearContext.CurrentAsync(db, ct);
         var kind = DeliberationText.Kind(kindText);
         var course = await CourseInYearAsync(courseId, year.Id, ct);
+        await EnsureCourseAccessAsync(course, write: false, ct);
+        // L'enseignant corrige des copies anonymes : sa feuille ne montre jamais les noms (portail enseignant d'ITMCD).
+        anonymous |= TeacherOnly;
         if (!DeliberationEngine.Accepts(course.Semester, kind)) DeliberationEngine.ValidateMark(kind, course.Semester, 0, course.MaxScore);
         var settings = await SettingsOfAsync(year.Id, ct);
         var students = await EnrolledAsync(year.Id, course.PromotionId, ct);
@@ -287,6 +295,7 @@ public sealed class DeliberationService(IAppDbContext db, IWriteGate gate, IAudi
         var year = await OpenYearAsync(ct);
         var kind = DeliberationText.Kind(kindText);
         var course = await CourseInYearAsync(courseId, year.Id, ct);
+        await EnsureCourseAccessAsync(course, write: true, ct);
         var submitted = await EnsureWritableAsync(year.Id, course, kind, ct);
         var allowed = (await EnrolledAsync(year.Id, course.PromotionId, ct)).Select(s => s.EnrollmentId).ToHashSet();
         if (input.Select(i => i.EnrollmentId).Distinct().Count() != input.Count) throw new DomainException("cotes", "Un apprenant apparaît deux fois dans la feuille.");
@@ -325,6 +334,7 @@ public sealed class DeliberationService(IAppDbContext db, IWriteGate gate, IAudi
         var year = await OpenYearAsync(ct);
         var kind = DeliberationText.Kind(input.Kind);
         var course = await CourseInYearAsync(input.CourseId, year.Id, ct);
+        await EnsureCourseAccessAsync(course, write: true, ct);
         var submitted = await EnsureWritableAsync(year.Id, course, kind, ct);
         var (code, student) = await ResolveCodeAsync(year.Id, input.Code, ct);
         if (student.PromotionId != course.PromotionId)
@@ -393,6 +403,7 @@ public sealed class DeliberationService(IAppDbContext db, IWriteGate gate, IAudi
         var year = await OpenYearAsync(ct);
         var kind = DeliberationText.Kind(kindText);
         var course = await CourseInYearAsync(courseId, year.Id, ct);
+        await EnsureCourseAccessAsync(course, write: true, ct);
         var existing = await EnsureWritableAsync(year.Id, course, kind, ct);
         if (existing is not null)
             throw new ConflictException($"Ces cotes ont déjà été remises le {When(existing.SubmittedAtUtc)} par {existing.SubmittedByName}.");
@@ -510,11 +521,13 @@ public sealed class DeliberationService(IAppDbContext db, IWriteGate gate, IAudi
         var sheet = await SheetAsync(courseId, kindText, anonymous: false, ct);
         var school = await YearContext.SchoolAsync(db, ct);
         var teacher = (await TeacherNamesAsync([courseId], ct)).GetValueOrDefault(courseId);
-        var withCodes = user.HasPermission(Permissions.DeliberationManage);
+        var withCodes = user.HasPermission(Permissions.DeliberationManage) || sheet.Anonymous;
+        var withNames = !sheet.Anonymous;
         var rows = sheet.Rows.Where(r => !failedOnly || r.Failed).ToList();
         var columns = new List<string>();
         if (withCodes) columns.Add("Code");
-        columns.AddRange(["Matricule", "Nom complet", sheet.Kind == "Appui" ? "Appui /10" : $"Cote /{sheet.MaxScore:0.##}", "Retenue", "Observation"]);
+        if (withNames) columns.AddRange(["Matricule", "Nom complet"]);
+        columns.AddRange([sheet.Kind == "Appui" ? "Appui /10" : $"Cote /{sheet.MaxScore:0.##}", "Retenue", "Observation"]);
         return new TableDocument(PaymentService.Header(school), failedOnly ? "Liste des échecs" : "Relevé des cotes",
             $"{sheet.Course} · {(sheet.Kind == "Appui" ? "moyenne d'appui" : $"cote du {sheet.Kind}")} · enseignant : {teacher ?? "non attribué"} · "
             + $"{sheet.Failed} échec(s) sur {sheet.Rows.Count}" + (sheet.SubmittedAtUtc is { } at ? $" · remis le {When(at)}" : " · non remis"),
@@ -523,10 +536,57 @@ public sealed class DeliberationService(IAppDbContext db, IWriteGate gate, IAudi
             {
                 var cells = new List<string>();
                 if (withCodes) cells.Add(r.Code ?? "—");
-                cells.AddRange([r.Matricule ?? string.Empty, r.FullName ?? string.Empty, r.Value is { } v ? $"{v:0.##}" : "—",
+                if (withNames) cells.AddRange([r.Matricule ?? string.Empty, r.FullName ?? string.Empty]);
+                cells.AddRange([r.Value is { } v ? $"{v:0.##}" : "—",
                     r.Retained is { } t ? $"{t:0.##}" : "INC", r.Retained is null ? "Cote manquante" : r.Failed ? "Échec" : "Réussi"]);
                 return (IReadOnlyList<string>)cells;
             }).ToList());
+    }
+
+    // ---------- Portail enseignant (repris d'ITMCD) ----------
+
+    /// <summary>Compte enseignant : il encode ses cours sans accès au reste de la scolarité.</summary>
+    private bool TeacherOnly => !user.HasPermission(Permissions.AcademicsRead) && user.HasPermission(Permissions.MarksEncode);
+
+    /// <summary>Fiche du personnel reliée au compte connecté, pour un compte enseignant.</summary>
+    private async Task<Guid> MyStaffIdAsync(CancellationToken ct)
+    {
+        var id = user.Id ?? throw new DomainException("session", "Session expirée : reconnectez-vous.");
+        return await db.Users.AsNoTracking().Where(u => u.Id == id).Select(u => u.StaffMemberId).FirstOrDefaultAsync(ct)
+            ?? throw new ForbiddenException("Ce compte enseignant n'est relié à aucune fiche du personnel : demandez au secrétariat de le compléter.");
+    }
+
+    /// <summary>
+    /// Le secrétariat lit (scolarite.lire) et encode (scolarite.ecrire) tous les cours ; un enseignant (cotes.encoder)
+    /// seulement les cours qui lui sont attribués aujourd'hui, comme dans le portail enseignant d'ITMCD.
+    /// </summary>
+    private async Task EnsureCourseAccessAsync(Course course, bool write, CancellationToken ct)
+    {
+        if (user.HasPermission(write ? Permissions.AcademicsWrite : Permissions.AcademicsRead)) return;
+        if (!user.HasPermission(Permissions.MarksEncode)) throw new ForbiddenException("Ce compte n'a pas accès à l'encodage des cotes.");
+        var staffId = await MyStaffIdAsync(ct);
+        if (!await db.CourseAssignments.AsNoTracking().AnyAsync(a => a.CourseId == course.Id && a.TeacherId == staffId && a.EndedOn == null, ct))
+            throw new ForbiddenException($"Le cours {course.Number} « {course.Name} » ne vous est pas attribué : vous ne pouvez pas en encoder les cotes.");
+    }
+
+    /// <summary>Cours attribués à l'enseignant connecté pour l'année courante, avec l'avancement et la remise de chaque feuille.</summary>
+    public async Task<IReadOnlyList<TeacherCourseDto>> MyCoursesAsync(CancellationToken ct = default)
+    {
+        var year = await YearContext.CurrentAsync(db, ct);
+        var staffId = await MyStaffIdAsync(ct);
+        var mine = await (from a in db.CourseAssignments.AsNoTracking()
+                          join c in db.Courses.AsNoTracking() on a.CourseId equals c.Id
+                          join p in db.Promotions.AsNoTracking() on c.PromotionId equals p.Id
+                          where a.TeacherId == staffId && a.EndedOn == null && c.AcademicYearId == year.Id && c.IsActive
+                          select new { c.Id, c.PromotionId, p.Code, p.Name }).ToListAsync(ct);
+        var result = new List<TeacherCourseDto>();
+        foreach (var promotion in mine.GroupBy(m => new { m.PromotionId, m.Code, m.Name }).OrderBy(g => g.Key.Code, StringComparer.CurrentCulture))
+        {
+            var ids = promotion.Select(m => m.Id).ToHashSet();
+            foreach (var course in (await CoursesCoreAsync(year.Id, promotion.Key.PromotionId, ct)).Where(c => ids.Contains(c.Id)))
+                result.Add(new TeacherCourseDto(promotion.Key.PromotionId, $"{promotion.Key.Code} — {promotion.Key.Name}", course));
+        }
+        return result;
     }
 
     // ---------- Délibération ----------

@@ -311,4 +311,6 @@ public static class Perm
     public const string AcademicsRead = "scolarite.lire";
     public const string StaffManage = "personnel.gerer";
     public const string DeliberationManage = "deliberation.gerer";
+    /// <summary>Compte enseignant : encodage et remise des cotes de ses seuls cours, par code anonyme.</summary>
+    public const string MarksEncode = "cotes.encoder";
 }

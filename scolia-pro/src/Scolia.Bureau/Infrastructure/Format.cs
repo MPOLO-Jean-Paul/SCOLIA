@@ -175,6 +175,7 @@ public static class Labels
         // Rôle de direction : consultation des statistiques, sans droit de modifier les données.
         new("Secretariat", "Secrétariat"), new("Comptabilite", "Comptabilité"),
         new("Promoteur", "Promoteur / Responsable"),
+        new("Enseignant", "Enseignant (encodage de ses cours)"),
     ];
 
     public static readonly IReadOnlyList<ChoiceItem> PayrollModes =

@@ -14,7 +14,7 @@
           <TextBlock Text="Cote à encoder" Classes="fieldlabel" />
           <ComboBox Width="230" ItemsSource="{Binding Kinds}" SelectedItem="{Binding Kind}" />
         </StackPanel>
-        <CheckBox Content="Feuille anonyme (codes seulement)" IsChecked="{Binding Anonymous}" VerticalAlignment="Bottom" Margin="0,0,12,12" />
+        <CheckBox Content="Feuille anonyme (codes seulement)" IsChecked="{Binding Anonymous}" IsVisible="{Binding CanChooseAnonymous}" VerticalAlignment="Bottom" Margin="0,0,12,12" />
       </WrapPanel>
     </Border>
 

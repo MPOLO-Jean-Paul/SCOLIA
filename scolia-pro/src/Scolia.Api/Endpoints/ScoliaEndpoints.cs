@@ -485,13 +485,7 @@ public static class ScoliaEndpoints
 
         // Encodage : feuille par cours, ou saisie anonyme par code.
         g.MapGet("/cours", (Guid promotionId, DeliberationService s, CancellationToken ct) => s.CoursesAsync(promotionId, ct));
-        g.MapGet("/feuille", (Guid coursId, string nature, bool? anonyme, DeliberationService s, CancellationToken ct) => s.SheetAsync(coursId, nature, anonyme ?? false, ct));
-        g.MapPut("/feuille", async (Guid coursId, string nature, List<MarkInput> input, DeliberationService s, CancellationToken ct) =>
-            Results.Ok(new { enregistrees = await s.SaveSheetAsync(coursId, nature, input, ct) })).RequireAuthorization(Permissions.AcademicsWrite);
-        g.MapPost("/cotes-par-code", (MarkByCodeRequest input, DeliberationService s, CancellationToken ct) => s.SaveByCodeAsync(input, ct)).RequireAuthorization(Permissions.AcademicsWrite);
         // Remise officielle des cotes (ITMCD) : feuille complète, puis seul le jury la corrige ou la renvoie avec un motif.
-        g.MapPost("/remise", (Guid coursId, string nature, DeliberationService s, CancellationToken ct) => s.SubmitAsync(coursId, nature, ct))
-            .RequireAuthorization(Permissions.AcademicsWrite);
         g.MapPost("/renvoi", async (Guid coursId, string nature, MarkReturnRequest input, DeliberationService s, CancellationToken ct) =>
         {
             await s.ReturnAsync(coursId, nature, input, ct);
@@ -501,8 +495,6 @@ public static class ScoliaEndpoints
         g.MapGet("/suivi", (Guid? promotionId, string? periode, DeliberationService s, CancellationToken ct) => s.ProgressAsync(promotionId, periode, ct));
         g.MapGet("/suivi/export", async (Guid? promotionId, string? periode, string? format, DeliberationService s, ReportService reports, CancellationToken ct) =>
             Table(await s.ProgressTableAsync(promotionId, periode, ct), format, "suivi-encodage", reports));
-        g.MapGet("/feuille/export", async (Guid coursId, string nature, bool? echecs, string? format, DeliberationService s, ReportService reports, CancellationToken ct) =>
-            Table(await s.SheetTableAsync(coursId, nature, echecs ?? false, ct), format, echecs == true ? "liste-des-echecs" : "releve-des-cotes", reports));
 
         // Jury.
         g.MapGet("/resultats", (Guid promotionId, string periode, DeliberationService s, CancellationToken ct) => s.BoardAsync(promotionId, periode, ct));
@@ -513,6 +505,18 @@ public static class ScoliaEndpoints
             .RequireAuthorization(Permissions.DeliberationManage).RequireRateLimiting("connexion");
         g.MapPost("/reouverture", (SessionReopenRequest input, DeliberationService s, CancellationToken ct) => s.ReopenAsync(input, ct))
             .RequireAuthorization(Permissions.DeliberationManage).RequireRateLimiting("connexion");
+
+        // Feuilles de cotes : le secrétariat (scolarite.lire / scolarite.ecrire) ou l'enseignant sur ses seuls cours
+        // attribués (cotes.encoder) ; le service vérifie l'attribution à chaque appel et masque les noms à l'enseignant.
+        var sheets = api.MapGroup("/deliberation");
+        sheets.MapGet("/mes-cours", (DeliberationService s, CancellationToken ct) => s.MyCoursesAsync(ct)).RequireAuthorization(Permissions.MarksEncode);
+        sheets.MapGet("/feuille", (Guid coursId, string nature, bool? anonyme, DeliberationService s, CancellationToken ct) => s.SheetAsync(coursId, nature, anonyme ?? false, ct));
+        sheets.MapPut("/feuille", async (Guid coursId, string nature, List<MarkInput> input, DeliberationService s, CancellationToken ct) =>
+            Results.Ok(new { enregistrees = await s.SaveSheetAsync(coursId, nature, input, ct) }));
+        sheets.MapPost("/cotes-par-code", (MarkByCodeRequest input, DeliberationService s, CancellationToken ct) => s.SaveByCodeAsync(input, ct));
+        sheets.MapPost("/remise", (Guid coursId, string nature, DeliberationService s, CancellationToken ct) => s.SubmitAsync(coursId, nature, ct));
+        sheets.MapGet("/feuille/export", async (Guid coursId, string nature, bool? echecs, string? format, DeliberationService s, ReportService reports, CancellationToken ct) =>
+            Table(await s.SheetTableAsync(coursId, nature, echecs ?? false, ct), format, echecs == true ? "liste-des-echecs" : "releve-des-cotes", reports));
 
         // Documents officiels.
         g.MapGet("/proces-verbal.pdf", async (Guid promotionId, string periode, DeliberationService s, CancellationToken ct) =>

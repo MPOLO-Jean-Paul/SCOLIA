@@ -215,7 +215,8 @@ public sealed record BackupDto(string Name, DateTime CreatedUtc, long SizeBytes)
 
 public sealed record ImportReportDto(bool Applied, int Promotions, int Students, int Receipts, int Allocations, IReadOnlyList<string> Warnings, IReadOnlyList<string> Errors);
 
-public sealed record UserDto(Guid Id, string UserName, string DisplayName, string Role, string RoleLabel, bool IsActive, bool MustChangePassword, DateTime? LastLoginUtc, bool IsLocked);
+public sealed record UserDto(Guid Id, string UserName, string DisplayName, string Role, string RoleLabel, bool IsActive, bool MustChangePassword, DateTime? LastLoginUtc, bool IsLocked,
+    Guid? StaffMemberId = null);
 
 public sealed record AuditDto(long Id, DateTime AtUtc, string UserName, string Action, string EntityType, string? EntityId, string Summary, string? IpAddress);
 

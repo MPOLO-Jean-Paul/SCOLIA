@@ -317,4 +317,60 @@ public sealed class DeliberationApiTests : IDisposable
         Assert.Equal("Code pris", taken.GetProperty("lines")[0].GetProperty("status").GetString());
         Assert.Null((await CodesAsync(admin, setup.PromotionId))[setup.Enrollments[2]]);
     }
+
+    [Fact]
+    public async Task Teacher_account_encodes_only_assigned_courses_anonymously()
+    {
+        var admin = await app.InstalledAdmin();
+        var setup = await SetupAsync(admin, "MUKENDI", "KASONGO");
+        await admin.Post($"{D}/codes/attribution", new { promotionId = setup.PromotionId }).Ok();
+        var codes = await CodesAsync(admin, setup.PromotionId);
+        var staff = await admin.Post("/api/personnel", new
+        {
+            lastName = "LUMBALA", middleName = "", firstName = "Paul", gender = "M", function = "Enseignant", phone = "0812345678", email = (string?)null,
+            hireDate = new DateOnly(2020, 1, 1), exitDate = (DateOnly?)null, baseSalary = 300000m, isActive = true,
+        }).Ok();
+        var staffId = staff.GetProperty("id").GetString()!;
+        await admin.Put($"/api/scolarite/cours/{setup.S1Course}/attribution", new { teacherId = staffId, confirmReplace = false }).Ok();
+
+        var created = await admin.Post("/api/utilisateurs", new { userName = "prof.lumbala", displayName = "Pr LUMBALA", role = "Enseignant", password = "Provisoire1", staffMemberId = staffId }).Ok();
+        Assert.Equal(staffId, created.GetProperty("staffMemberId").GetString());
+        var (second, _) = await admin.Post("/api/utilisateurs", new { userName = "prof.bis", displayName = "Bis", role = "Enseignant", password = "Provisoire1", staffMemberId = staffId }).Fail();
+        Assert.Equal(HttpStatusCode.Conflict, second);
+        var teacher = await app.Login("prof.lumbala", "Provisoire1");
+
+        // Mes cours : seulement le cours attribué, rien d'autre de la scolarité.
+        var mine = (await teacher.GetAsync($"{D}/mes-cours").Ok()).EnumerateArray().ToList();
+        Assert.Equal(setup.S1Course, Assert.Single(mine).GetProperty("course").GetProperty("id").GetString());
+        Assert.Equal(HttpStatusCode.Forbidden, (await teacher.GetAsync($"{D}/resultats?promotionId={setup.PromotionId}&periode=S1")).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await teacher.GetAsync($"{D}/codes?promotionId={setup.PromotionId}")).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await teacher.GetAsync($"/api/apprenants")).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await teacher.GetAsync($"{D}/feuille?coursId={setup.AnnualCourse}&nature=S1")).StatusCode);
+        var (other, _) = await teacher.Post($"{D}/cotes-par-code", new { code = codes[setup.Enrollments[0]], courseId = setup.AnnualCourse, kind = "S1", value = 10m }).Fail();
+        Assert.Equal(HttpStatusCode.Forbidden, other);
+
+        // Sa feuille est toujours anonyme : les codes, jamais les noms, même s'il demande la feuille nominative.
+        var sheet = await teacher.GetAsync($"{D}/feuille?coursId={setup.S1Course}&nature=S1&anonyme=false").Ok();
+        Assert.True(sheet.GetProperty("anonymous").GetBoolean());
+        Assert.All(sheet.GetProperty("rows").EnumerateArray(), r =>
+        {
+            Assert.Equal(JsonValueKind.Null, r.GetProperty("fullName").ValueKind);
+            Assert.Equal(JsonValueKind.String, r.GetProperty("code").ValueKind);
+        });
+
+        // Encodage par code et par feuille, puis remise : l'enseignant ne peut plus modifier, le jury si.
+        await teacher.Post($"{D}/cotes-par-code", new { code = codes[setup.Enrollments[0]], courseId = setup.S1Course, kind = "S1", value = 75m }).Ok();
+        await teacher.Put($"{D}/feuille?coursId={setup.S1Course}&nature=S1", new[] { new { enrollmentId = setup.Enrollments[1], value = (decimal?)45m } }).Ok();
+        await teacher.Post($"{D}/remise?coursId={setup.S1Course}&nature=S1", new { }).Ok();
+        var (locked, _) = await teacher.Put($"{D}/feuille?coursId={setup.S1Course}&nature=S1", new[] { new { enrollmentId = setup.Enrollments[1], value = (decimal?)50m } }).Fail();
+        Assert.Equal(HttpStatusCode.Conflict, locked);
+        await admin.Put($"{D}/feuille?coursId={setup.S1Course}&nature=S1", new[] { new { enrollmentId = setup.Enrollments[1], value = (decimal?)50m } }).Ok();
+        Assert.Equal(HttpStatusCode.OK, (await teacher.GetAsync($"{D}/feuille/export?coursId={setup.S1Course}&nature=S1&format=xlsx")).StatusCode);
+        Assert.True((await teacher.GetAsync($"{D}/mes-cours").Ok())[0].GetProperty("course").GetProperty("submittedS1").GetBoolean());
+
+        // Cours retiré : l'enseignant n'y a plus accès.
+        await admin.Post($"/api/scolarite/cours/{setup.S1Course}/retrait-attribution", new { reason = "Fin de la charge du semestre" }).Ok();
+        Assert.Empty((await teacher.GetAsync($"{D}/mes-cours").Ok()).EnumerateArray());
+        Assert.Equal(HttpStatusCode.Forbidden, (await teacher.GetAsync($"{D}/feuille?coursId={setup.S1Course}&nature=S1")).StatusCode);
+    }
 }

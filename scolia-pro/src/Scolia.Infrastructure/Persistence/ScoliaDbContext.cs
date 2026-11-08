@@ -152,7 +152,13 @@ public sealed class ScoliaDbContext(DbContextOptions<ScoliaDbContext> options, I
         b.Entity<Expense>(e => { e.ToTable("Depenses"); e.HasIndex(x => x.Number).IsUnique(); e.HasIndex(x => x.Date); });
         b.Entity<CashClosing>(e => { e.ToTable("ArretesCaisse"); e.HasIndex(x => x.Date).IsUnique(); });
         b.Entity<Counter>(e => { e.ToTable("Compteurs"); e.HasKey(x => x.Name); e.Property(x => x.Value).IsConcurrencyToken(); });
-        b.Entity<AppUser>(e => { e.ToTable("Utilisateurs"); e.HasIndex(x => x.NormalizedUserName).IsUnique(); });
+        b.Entity<AppUser>(e =>
+        {
+            e.ToTable("Utilisateurs");
+            e.HasIndex(x => x.NormalizedUserName).IsUnique();
+            e.HasIndex(x => x.StaffMemberId);
+            e.HasOne<StaffMember>().WithMany().HasForeignKey(x => x.StaffMemberId).OnDelete(DeleteBehavior.SetNull);
+        });
         b.Entity<AuditEntry>(e =>
         {
             e.ToTable("JournalAudit");

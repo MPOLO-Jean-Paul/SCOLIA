@@ -80,3 +80,6 @@ public sealed record CodeImportRequest(string? Text, Guid? PromotionId, bool App
 public sealed record CodeImportLineDto(int Line, string Identifier, string Code, string Status, Guid? EnrollmentId, string? Matricule, string? FullName, string? PromotionCode);
 
 public sealed record CodeImportResult(bool Applied, int Assigned, int Ready, int Unchanged, int Problems, IReadOnlyList<CodeImportLineDto> Lines);
+
+/// <summary>Cours attribué à l'enseignant connecté, avec sa promotion (portail enseignant).</summary>
+public sealed record TeacherCourseDto(Guid PromotionId, string Promotion, DeliberationCourseDto Course);

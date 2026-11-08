@@ -95,7 +95,8 @@ public static class Sidebar
         var groups = new[]
         {
             Group(string.Empty,
-                Item("Accueil", MaterialIconKind.Home, "ToneBlue", null,
+                // L'enseignant n'a pas d'accueil chiffré : son espace est « Mes cours ».
+                shell.TeacherOnly ? null : Item("Accueil", MaterialIconKind.Home, "ToneBlue", null,
                     shell.Can(Perm.PilotageRead) && !shell.Can(Perm.ReportsRead) ? typeof(PromoterDashboardPage) : typeof(HomePage),
                     () => shell.Can(Perm.PilotageRead) && !shell.Can(Perm.ReportsRead)
                         ? new PromoterDashboardPage(shell) : new HomePage(shell))),
@@ -126,6 +127,7 @@ public static class Sidebar
                 Item("Enseignants et cours", MaterialIconKind.AccountSchool, "ToneOrange", Perm.AcademicsRead, typeof(TeachingPage), () => new TeachingPage(shell))),
             // Délibération (fusion d'ITMCD) : codes anonymes, encodage des cotes par semestre, jury et documents officiels.
             Group("Délibération",
+                shell.TeacherOnly ? Item("Mes cours", MaterialIconKind.Pen, "TonePurple", Perm.MarksEncode, typeof(MarksPage), () => new MarksPage(shell)) : null,
                 Item("Codes anonymes", MaterialIconKind.Incognito, "ToneIndigo", Perm.DeliberationManage, typeof(AnonymousCodesPage), () => new AnonymousCodesPage(shell)),
                 Item("Encodage des cotes", MaterialIconKind.Pen, "TonePurple", Perm.AcademicsRead, typeof(MarksPage), () => new MarksPage(shell)),
                 Item("Suivi de l'encodage", MaterialIconKind.ProgressClock, "ToneTeal", Perm.AcademicsRead, typeof(EncodingProgressPage), () => new EncodingProgressPage(shell)),

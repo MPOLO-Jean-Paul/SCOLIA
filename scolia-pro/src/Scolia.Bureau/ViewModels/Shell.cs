@@ -422,6 +422,9 @@ public sealed class ShellViewModel : Observable
 
     public bool Can(string permission) => session?.Permissions.Contains(permission) == true;
 
+    /// <summary>Compte enseignant : son espace se limite à ses cours (encodage et remise des cotes).</summary>
+    public bool TeacherOnly => Can(Perm.MarksEncode) && !Can(Perm.AcademicsRead);
+
     /// <summary>Plein écran : la fenêtre gère l'affichage réel, le shell garde l'état pour le ruban.</summary>
     public bool IsFullscreen { get; private set; }
 
@@ -951,8 +954,9 @@ public sealed class ShellViewModel : Observable
             ClearHistory();
             OpeningStep = "Ouverture de l'accueil";
             OpeningProgress = 90;
-            await Open(() => s.Permissions.Contains(Perm.PilotageRead) &&
-                !s.Permissions.Contains(Perm.ReportsRead)
+            await Open(() => s.Permissions.Contains(Perm.MarksEncode) && !s.Permissions.Contains(Perm.AcademicsRead)
+                ? new MarksPage(this)
+                : s.Permissions.Contains(Perm.PilotageRead) && !s.Permissions.Contains(Perm.ReportsRead)
                 ? new PromoterDashboardPage(this) : new HomePage(this));
             var rest = minimum - watch.Elapsed;
             if (rest > TimeSpan.Zero) await Task.Delay(rest);

@@ -208,12 +208,13 @@ public sealed record DebtorDto(Guid StudentId, Guid EnrollmentId, string Matricu
 public sealed record DebtorQuery(Guid? PromotionId, int? MinOverdueMonths, string? Bucket, string? Search);
 
 // ---------- Utilisateurs et audit ----------
+/// <summary><c>StaffMemberId</c> : fiche du personnel d'un compte enseignant (il n'encode que les cours attribués à cette fiche).</summary>
 public sealed record UserDto(Guid Id, string UserName, string DisplayName, string Role, string RoleLabel, bool IsActive, bool MustChangePassword,
-    DateTime? LastLoginUtc, bool IsLocked);
+    DateTime? LastLoginUtc, bool IsLocked, Guid? StaffMemberId = null);
 
-public sealed record UserCreate(string UserName, string DisplayName, string Role, string Password);
+public sealed record UserCreate(string UserName, string DisplayName, string Role, string Password, Guid? StaffMemberId = null);
 
-public sealed record UserUpdate(string DisplayName, string Role, bool IsActive);
+public sealed record UserUpdate(string DisplayName, string Role, bool IsActive, Guid? StaffMemberId = null);
 
 public sealed record PasswordReset(string NewPassword);
 
