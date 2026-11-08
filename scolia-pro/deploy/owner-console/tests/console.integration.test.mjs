@@ -85,6 +85,10 @@ test("Invitation à usage unique et compte créé sans enregistrement partiel", 
     server_device_name: "SCOLIA SERVEUR", installation_id: "server_2026_pro_hk_xyz123",
     invite_code: invitation.body.invite_code,
   };
+  const wrongSchool = await app.request("/api/v1/register", "POST",
+    {...input, school_name: "Ecole non invitée"});
+  assert.equal(wrongSchool.status, 409);
+  // La tentative refusée ne doit pas consommer l'invitation officielle.
   const [first, second] = await Promise.all([
     app.request("/api/v1/register", "POST", input),
     app.request("/api/v1/register", "POST", input),
