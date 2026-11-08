@@ -45,9 +45,12 @@ public sealed class DeliberationService(IAppDbContext db, IWriteGate gate, IAudi
         settings.EncodingS2Open = input.EncodingS2Open;
         settings.SupportEnabled = input.SupportEnabled;
         settings.PassPercent = input.PassPercent;
+        settings.TeacherUpdates = input.TeacherUpdates;
+        settings.TeacherDownloads = input.TeacherDownloads;
         audit.Record("deliberation.reglages", "ReglagesDeliberation", settings.Id.ToString(),
             $"Délibération {year.Label} : encodage S1 {(input.EncodingS1Open ? "ouvert" : "fermé")}, S2 {(input.EncodingS2Open ? "ouvert" : "fermé")}, "
-            + $"moyennes d'appui {(input.SupportEnabled ? "actives" : "désactivées")}, seuil {input.PassPercent:0.##} %.", input);
+            + $"moyennes d'appui {(input.SupportEnabled ? "actives" : "désactivées")}, mise à jour des cotes par les enseignants "
+            + $"{(input.TeacherUpdates ? "autorisée" : "fermée")}, téléchargements {(input.TeacherDownloads ? "autorisés" : "fermés")}, seuil {input.PassPercent:0.##} %.", input);
         await db.SaveChangesAsync(ct);
         return ToDto(settings);
     }, ct);
@@ -139,7 +142,16 @@ public sealed class DeliberationService(IAppDbContext db, IWriteGate gate, IAudi
         return new JuryEvaluationsResult(created.Count, DeliberationEngine.StandardJuryEvaluations.Count - created.Count);
     }, ct);
 
-    private static DeliberationSettingsDto ToDto(DeliberationSettings s) => new(s.EncodingS1Open, s.EncodingS2Open, s.SupportEnabled, s.PassPercent);
+    private static DeliberationSettingsDto ToDto(DeliberationSettings s) =>
+        new(s.EncodingS1Open, s.EncodingS2Open, s.SupportEnabled, s.PassPercent, s.TeacherUpdates, s.TeacherDownloads);
+
+    /// <summary>« Mise à jour des cotes » fermée : un enseignant n'ajoute que des cotes nouvelles ; le secrétariat et le jury corrigent.</summary>
+    private async Task EnsureTeacherMayReplaceAsync(Guid yearId, CancellationToken ct)
+    {
+        if (!TeacherOnly) return;
+        if (!(await SettingsOfAsync(yearId, ct)).TeacherUpdates)
+            throw new ConflictException("La mise à jour des cotes déjà enregistrées est fermée par le secrétariat : demandez-lui la correction.");
+    }
 
     private async Task<DeliberationSettings> SettingsOfAsync(Guid yearId, CancellationToken ct) =>
         await db.DeliberationSettings.AsNoTracking().FirstOrDefaultAsync(s => s.AcademicYearId == yearId, ct) ?? new DeliberationSettings { AcademicYearId = yearId };
@@ -405,6 +417,7 @@ public sealed class DeliberationService(IAppDbContext db, IWriteGate gate, IAudi
         v.ThrowIfInvalid("Certaines cotes sont incorrectes.");
         var ids = input.Select(i => i.EnrollmentId).ToList();
         var existing = await db.CourseMarks.Where(m => m.CourseId == courseId && m.Kind == kind && ids.Contains(m.EnrollmentId)).ToDictionaryAsync(m => m.EnrollmentId, ct);
+        if (input.Any(i => existing.TryGetValue(i.EnrollmentId, out var m) && m.Value != i.Value)) await EnsureTeacherMayReplaceAsync(year.Id, ct);
         var changes = new List<object>();
         foreach (var i in input)
         {
@@ -448,6 +461,7 @@ public sealed class DeliberationService(IAppDbContext db, IWriteGate gate, IAudi
         var byMatricule = TeacherOnly ? new Dictionary<string, Guid>(StringComparer.Ordinal)
             : students.Values.ToDictionary(x => TextKey.Normalize(x.Matricule), x => x.EnrollmentId, StringComparer.Ordinal);
         var existing = await db.CourseMarks.Where(m => m.CourseId == course.Id && m.Kind == kind).ToDictionaryAsync(m => m.EnrollmentId, ct);
+        var mayReplace = !TeacherOnly || (await SettingsOfAsync(year.Id, ct)).TeacherUpdates;
         var seen = new HashSet<Guid>();
         var lines = new List<MarkImportLineDto>();
         var ready = new List<(Guid EnrollmentId, decimal Value, bool ByCode)>();
@@ -465,6 +479,7 @@ public sealed class DeliberationService(IAppDbContext db, IWriteGate gate, IAudi
             catch (DomainException) { lines.Add(Result("Cote invalide")); continue; }
             if (!seen.Add(id)) { lines.Add(Result("Doublon dans la liste")); continue; }
             if (previous == value) { lines.Add(Result("Inchangée")); continue; }
+            if (previous is not null && !mayReplace) { lines.Add(Result("Déjà encodée (mise à jour fermée)")); continue; }
             lines.Add(Result(previous is null ? "À enregistrer" : "Remplace"));
             ready.Add((id, value, codes.ContainsKey(code)));
         }
@@ -501,6 +516,7 @@ public sealed class DeliberationService(IAppDbContext db, IWriteGate gate, IAudi
         var value = DeliberationEngine.ValidateMark(kind, course.Semester, input.Value, course.MaxScore);
         var mark = await db.CourseMarks.FirstOrDefaultAsync(m => m.EnrollmentId == student.EnrollmentId && m.CourseId == course.Id && m.Kind == kind, ct);
         var previous = mark?.Value;
+        if (previous is { } old && old != value) await EnsureTeacherMayReplaceAsync(year.Id, ct);
         if (mark is null) db.CourseMarks.Add(new CourseMark { EnrollmentId = student.EnrollmentId, CourseId = course.Id, Kind = kind, Value = value, EnteredAnonymously = true });
         else { mark.Value = value; mark.EnteredAnonymously = true; }
         audit.Record("deliberation.cote.anonyme", "Cours", course.Id.ToString(),
@@ -681,6 +697,8 @@ public sealed class DeliberationService(IAppDbContext db, IWriteGate gate, IAudi
     /// </summary>
     public async Task<TableDocument> SheetTableAsync(Guid courseId, string kindText, bool failedOnly, CancellationToken ct = default)
     {
+        if (TeacherOnly && !(await SettingsOfAsync((await YearContext.CurrentAsync(db, ct)).Id, ct)).TeacherDownloads)
+            throw new ForbiddenException("Les téléchargements des relevés sont fermés par le secrétariat.");
         var sheet = await SheetAsync(courseId, kindText, anonymous: false, ct);
         var school = await YearContext.SchoolAsync(db, ct);
         var teacher = (await TeacherNamesAsync([courseId], ct)).GetValueOrDefault(courseId);

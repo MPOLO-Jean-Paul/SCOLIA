@@ -79,6 +79,13 @@ public sealed class DeliberationSettings : Entity
     public bool SupportEnabled { get; set; } = true;
     /// <summary>Seuil de réussite en pourcentage (60 dans ITMCD).</summary>
     public decimal PassPercent { get; set; } = DeliberationEngine.DefaultPassPercent;
+    /// <summary>
+    /// « Mise à jour des cotes » du projet Délibération : un enseignant peut remplacer ou effacer une cote déjà enregistrée.
+    /// Fermé par défaut : l'enseignant ajoute ses cotes, le secrétariat corrige.
+    /// </summary>
+    public bool TeacherUpdates { get; set; }
+    /// <summary>« Téléchargements » du projet Délibération : l'enseignant exporte le relevé et la liste des échecs de ses cours.</summary>
+    public bool TeacherDownloads { get; set; } = true;
 
     // Autorités (projet Délibération) : elles signent le bulletin, la grille et le procès-verbal.
     public string? Prefect { get; set; }

@@ -469,7 +469,6 @@ public static class ScoliaEndpoints
     private static void MapDeliberation(RouteGroupBuilder api)
     {
         var g = api.MapGroup("/deliberation").RequireAuthorization(Permissions.AcademicsRead);
-        g.MapGet("/reglages", (DeliberationService s, CancellationToken ct) => s.SettingsAsync(ct));
         g.MapPut("/reglages", (DeliberationSettingsDto input, DeliberationService s, CancellationToken ct) => s.UpdateSettingsAsync(input, ct))
             .RequireAuthorization(Permissions.DeliberationManage);
 
@@ -518,6 +517,8 @@ public static class ScoliaEndpoints
         // Feuilles de cotes : le secrétariat (scolarite.lire / scolarite.ecrire) ou l'enseignant sur ses seuls cours
         // attribués (cotes.encoder) ; le service vérifie l'attribution à chaque appel et masque les noms à l'enseignant.
         var sheets = api.MapGroup("/deliberation");
+        // Les règles de l'encodage sont lisibles par tout compte qui encode : l'enseignant sait ce qui lui est permis.
+        sheets.MapGet("/reglages", (DeliberationService s, CancellationToken ct) => s.SettingsAsync(ct));
         sheets.MapGet("/annonces", (DeliberationService s, CancellationToken ct) => s.AnnouncementsAsync(ct));
         sheets.MapGet("/mes-cours", (DeliberationService s, CancellationToken ct) => s.MyCoursesAsync(ct)).RequireAuthorization(Permissions.MarksEncode);
         sheets.MapGet("/feuille", (Guid coursId, string nature, bool? anonyme, DeliberationService s, CancellationToken ct) => s.SheetAsync(coursId, nature, anonyme ?? false, ct));

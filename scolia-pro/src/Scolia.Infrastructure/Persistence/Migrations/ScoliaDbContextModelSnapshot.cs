@@ -642,6 +642,12 @@ namespace Scolia.Infrastructure.Persistence.Migrations
                     b.Property<bool>("SupportEnabled")
                         .HasColumnType("INTEGER");
 
+                    b.Property<bool>("TeacherDownloads")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("TeacherUpdates")
+                        .HasColumnType("INTEGER");
+
                     b.Property<DateTime?>("UpdatedAtUtc")
                         .HasColumnType("TEXT");
 

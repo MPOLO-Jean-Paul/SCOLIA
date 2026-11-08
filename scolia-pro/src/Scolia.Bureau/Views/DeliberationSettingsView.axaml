@@ -1,0 +1,131 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mi="using:Material.Icons.Avalonia"
+             x:Class="Scolia.Bureau.Views.DeliberationSettingsView">
+  <UserControl.Styles>
+    <!-- Un bloc par sujet, comme les « Paramètres profs » et les « Autorités » du projet Délibération. -->
+    <Style Selector="Border.settingsblock"><Setter Property="Margin" Value="0,0,0,12" /><Setter Property="Padding" Value="18,14" /></Style>
+    <Style Selector="Grid.prefrow"><Setter Property="Margin" Value="0,8" /><Setter Property="MinHeight" Value="40" /></Style>
+    <Style Selector="Border.prefsep"><Setter Property="Height" Value="1" /><Setter Property="Background" Value="{DynamicResource LineBrush}" /></Style>
+    <Style Selector="TextBlock.blocktitle"><Setter Property="FontSize" Value="16" /><Setter Property="FontWeight" Value="SemiBold" /></Style>
+    <Style Selector="TextBlock.rowtitle"><Setter Property="FontWeight" Value="SemiBold" /></Style>
+    <Style Selector="TextBox.authority"><Setter Property="MinWidth" Value="240" /><Setter Property="Margin" Value="0,0,12,10" /></Style>
+  </UserControl.Styles>
+  <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+    <StackPanel MaxWidth="980" HorizontalAlignment="Stretch">
+
+      <!-- Bloc 1 : encodage des cotes par les enseignants -->
+      <Border Classes="card settingsblock">
+        <StackPanel>
+          <StackPanel Orientation="Horizontal" Spacing="10">
+            <mi:MaterialIcon Kind="Pen" Width="20" Height="20" VerticalAlignment="Center" />
+            <TextBlock Text="Encodage des cotes par les enseignants" Classes="blocktitle" VerticalAlignment="Center" />
+          </StackPanel>
+          <TextBlock Classes="muted" TextWrapping="Wrap" Margin="0,4,0,6"
+                     Text="Ce que les enseignants peuvent faire dans « Mes cours ». Chaque ouverture ou fermeture de l'encodage leur est annoncée." />
+          <Grid Classes="prefrow" ColumnDefinitions="*,Auto">
+            <StackPanel><TextBlock Text="Encodage du premier semestre (S1)" Classes="rowtitle" />
+              <TextBlock Text="Autorise la saisie des cotes du S1 (cours du S1 et cours annuels)." Classes="muted" TextWrapping="Wrap" /></StackPanel>
+            <ToggleSwitch Grid.Column="1" VerticalAlignment="Center" OnContent="Ouvert" OffContent="Fermé" IsChecked="{Binding EncodingS1Open}" />
+          </Grid>
+          <Border Classes="prefsep" />
+          <Grid Classes="prefrow" ColumnDefinitions="*,Auto">
+            <StackPanel><TextBlock Text="Encodage du second semestre (S2)" Classes="rowtitle" />
+              <TextBlock Text="Autorise la saisie des cotes du S2 (cours du S2 et cours annuels)." Classes="muted" TextWrapping="Wrap" /></StackPanel>
+            <ToggleSwitch Grid.Column="1" VerticalAlignment="Center" OnContent="Ouvert" OffContent="Fermé" IsChecked="{Binding EncodingS2Open}" />
+          </Grid>
+          <Border Classes="prefsep" />
+          <Grid Classes="prefrow" ColumnDefinitions="*,Auto">
+            <StackPanel><TextBlock Text="Moyennes d'appui (secours)" Classes="rowtitle" />
+              <TextBlock Text="Saisie de la moyenne sur 10 qui soutient une cote faible, et sa prise en compte dans le calcul." Classes="muted" TextWrapping="Wrap" /></StackPanel>
+            <ToggleSwitch Grid.Column="1" VerticalAlignment="Center" OnContent="Actives" OffContent="Désactivées" IsChecked="{Binding SupportEnabled}" />
+          </Grid>
+          <Border Classes="prefsep" />
+          <Grid Classes="prefrow" ColumnDefinitions="*,Auto">
+            <StackPanel><TextBlock Text="Mise à jour des cotes déjà enregistrées" Classes="rowtitle" />
+              <TextBlock Text="Fermée : l'enseignant ajoute ses cotes, le secrétariat corrige. Ouverte : il peut remplacer ou effacer une cote tant que sa feuille n'est pas remise." Classes="muted" TextWrapping="Wrap" /></StackPanel>
+            <ToggleSwitch Grid.Column="1" VerticalAlignment="Center" OnContent="Autorisée" OffContent="Fermée" IsChecked="{Binding TeacherUpdates}" />
+          </Grid>
+          <Border Classes="prefsep" />
+          <Grid Classes="prefrow" ColumnDefinitions="*,Auto">
+            <StackPanel><TextBlock Text="Téléchargements" Classes="rowtitle" />
+              <TextBlock Text="Relevé des cotes et liste des échecs de ses cours, en PDF ou Excel (codes anonymes seulement)." Classes="muted" TextWrapping="Wrap" /></StackPanel>
+            <ToggleSwitch Grid.Column="1" VerticalAlignment="Center" OnContent="Autorisés" OffContent="Fermés" IsChecked="{Binding TeacherDownloads}" />
+          </Grid>
+        </StackPanel>
+      </Border>
+
+      <!-- Bloc 2 : règles de la délibération -->
+      <Border Classes="card settingsblock">
+        <StackPanel>
+          <StackPanel Orientation="Horizontal" Spacing="10">
+            <mi:MaterialIcon Kind="ShieldCheckOutline" Width="20" Height="20" VerticalAlignment="Center" />
+            <TextBlock Text="Règles de la délibération" Classes="blocktitle" VerticalAlignment="Center" />
+          </StackPanel>
+          <Grid Classes="prefrow" ColumnDefinitions="*,Auto">
+            <StackPanel><TextBlock Text="Seuil de réussite (%)" Classes="rowtitle" />
+              <TextBlock Text="Pourcentage du total des maxima à atteindre, sans cote manquante (60 dans ITMCD)." Classes="muted" TextWrapping="Wrap" /></StackPanel>
+            <TextBox Grid.Column="1" Width="110" VerticalAlignment="Center" Text="{Binding PassPercent}" />
+          </Grid>
+          <TextBlock Text="{Binding Rules}" Classes="muted" TextWrapping="Wrap" Margin="0,6,0,0" />
+          <TextBlock Classes="muted" TextWrapping="Wrap" Margin="0,8,0,0"
+                     Text="« Enregistrer les paramètres » (en haut) enregistre les blocs Encodage et Règles." />
+        </StackPanel>
+      </Border>
+
+      <!-- Bloc 3 : autorités de l'administration -->
+      <Border Classes="card settingsblock">
+        <StackPanel>
+          <StackPanel Orientation="Horizontal" Spacing="10">
+            <mi:MaterialIcon Kind="OfficeBuilding" Width="20" Height="20" VerticalAlignment="Center" />
+            <TextBlock Text="Autorités — Administration" Classes="blocktitle" VerticalAlignment="Center" />
+          </StackPanel>
+          <TextBlock Classes="muted" TextWrapping="Wrap" Margin="0,4,0,10" Text="Préfet et proviseur de l'établissement : ils signent le bulletin de délibération." />
+          <WrapPanel>
+            <StackPanel><TextBlock Text="Préfet" Classes="fieldlabel" /><TextBox Classes="authority" Text="{Binding Prefect}" /></StackPanel>
+            <StackPanel><TextBlock Text="Proviseur" Classes="fieldlabel" /><TextBox Classes="authority" Text="{Binding Principal}" /></StackPanel>
+          </WrapPanel>
+        </StackPanel>
+      </Border>
+
+      <!-- Bloc 4 : autorités du jury -->
+      <Border Classes="card settingsblock">
+        <StackPanel>
+          <StackPanel Orientation="Horizontal" Spacing="10">
+            <mi:MaterialIcon Kind="Gavel" Width="20" Height="20" VerticalAlignment="Center" />
+            <TextBlock Text="Autorités — Jury" Classes="blocktitle" VerticalAlignment="Center" />
+          </StackPanel>
+          <TextBlock Classes="muted" TextWrapping="Wrap" Margin="0,4,0,10"
+                     Text="Président, secrétaire et jusqu'à quatre membres : ils signent la grille et le procès-verbal ; la clôture reprend ce jury. Les enseignants qui encodent les épreuves reçoivent le privilège « Membre du jury » dans Utilisateurs." />
+          <WrapPanel>
+            <StackPanel><TextBlock Text="Président du jury" Classes="fieldlabel" /><TextBox Classes="authority" Text="{Binding JuryPresident}" /></StackPanel>
+            <StackPanel><TextBlock Text="Secrétaire du jury" Classes="fieldlabel" /><TextBox Classes="authority" Text="{Binding JurySecretary}" /></StackPanel>
+          </WrapPanel>
+          <WrapPanel>
+            <StackPanel><TextBlock Text="Membre 1" Classes="fieldlabel" /><TextBox Classes="authority" Text="{Binding Member1}" /></StackPanel>
+            <StackPanel><TextBlock Text="Membre 2" Classes="fieldlabel" /><TextBox Classes="authority" Text="{Binding Member2}" /></StackPanel>
+            <StackPanel><TextBlock Text="Membre 3" Classes="fieldlabel" /><TextBox Classes="authority" Text="{Binding Member3}" /></StackPanel>
+            <StackPanel><TextBlock Text="Membre 4" Classes="fieldlabel" /><TextBox Classes="authority" Text="{Binding Member4}" /></StackPanel>
+          </WrapPanel>
+          <TextBlock Classes="muted" TextWrapping="Wrap" Text="« Enregistrer les autorités » (en haut) enregistre les blocs Administration et Jury." />
+        </StackPanel>
+      </Border>
+
+      <!-- Bloc 5 : épreuves du jury -->
+      <Border Classes="card settingsblock">
+        <StackPanel>
+          <StackPanel Orientation="Horizontal" Spacing="10">
+            <mi:MaterialIcon Kind="FormatListChecks" Width="20" Height="20" VerticalAlignment="Center" />
+            <TextBlock Text="Épreuves du jury" Classes="blocktitle" VerticalAlignment="Center" />
+          </StackPanel>
+          <TextBlock Classes="muted" TextWrapping="Wrap" Margin="0,4,0,10"
+                     Text="TOTAL 1 : stage, situation d'intégration, dossier d'évaluation, épreuve d'intégration. SOUS-TOTAL 2 : blocs prévention, diagnostic et gestion. Elles ne comptent qu'au jury annuel et sont cotées par le jury." />
+          <WrapPanel>
+            <ComboBox Width="260" Margin="0,0,12,0" ItemsSource="{Binding Promotions}" SelectedItem="{Binding Promotion}" />
+            <Button Content="Créer les épreuves du jury" Command="{Binding CreateJuryCommand}" />
+          </WrapPanel>
+        </StackPanel>
+      </Border>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>
