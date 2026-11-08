@@ -4,6 +4,7 @@ using Scolia.Application.Common;
 using Scolia.Application.Dtos;
 using Scolia.Domain.Academics;
 using Scolia.Domain.Common;
+using Scolia.Domain.Deliberation;
 using Scolia.Domain.School;
 using Scolia.Domain.Security;
 using Scolia.Domain.Staff;
@@ -67,6 +68,18 @@ public sealed class TeachingService(IAppDbContext db, IWriteGate gate, IAuditLog
                 throw new DomainException("cours", "La promotion d'un cours enregistré est fixe : créez le cours dans une autre classe si nécessaire.");
         }
 
+        var targetSemester = string.IsNullOrWhiteSpace(input.Semester) ? course.Semester : DeliberationText.Semester(input.Semester);
+        var closedPeriods = await db.DeliberationSessions.AsNoTracking()
+            .Where(s => s.PromotionId == course.PromotionId && s.Status == SessionStatus.Cloturee)
+            .Select(s => s.Period).ToListAsync(ct);
+        var affectsClosedPeriod = closedPeriods.Any(period =>
+            (id is not null && DeliberationEngine.Includes(course.Semester, period))
+            || DeliberationEngine.Includes(targetSemester, period));
+        if (affectsClosedPeriod
+            && (id is null || course.Number != number || course.Name != name || course.MaxScore != maxScore
+                || course.Coefficient != coefficient || course.Semester != targetSemester))
+            throw new ConflictException("Ce cours participe à une délibération clôturée : son numéro, son nom, ses maxima, son coefficient et son semestre sont figés. Le jury doit rouvrir la période avec un motif avant toute modification.");
+
         await EnsureUniqueAsync(course, number, name, ct);
         course.Number = number;
         course.Name = name;
@@ -75,10 +88,9 @@ public sealed class TeachingService(IAppDbContext db, IWriteGate gate, IAuditLog
         course.Coefficient = coefficient;
         if (!string.IsNullOrWhiteSpace(input.Semester))
         {
-            var semester = DeliberationText.Semester(input.Semester);
-            if (id is not null && semester != course.Semester && await db.CourseMarks.AnyAsync(m => m.CourseId == course.Id, ct))
+            if (id is not null && targetSemester != course.Semester && await db.CourseMarks.AnyAsync(m => m.CourseId == course.Id, ct))
                 throw new ConflictException("Ce cours a déjà des cotes de délibération : son semestre ne peut plus changer.");
-            course.Semester = semester;
+            course.Semester = targetSemester;
         }
         if (id is not null && await db.CourseMarks.AnyAsync(m => m.CourseId == course.Id && m.Kind != Domain.Deliberation.MarkKind.Appui && m.Value > maxScore, ct))
             throw new DomainException("cours", "Des cotes de délibération dépassent le nouveau maxima : corrigez-les d'abord.");
@@ -93,6 +105,14 @@ public sealed class TeachingService(IAppDbContext db, IWriteGate gate, IAuditLog
     {
         var year = await OpenYearAsync(ct);
         var course = await CourseInYearAsync(id, year, ct);
+        if (course.IsActive == archived)
+        {
+            var closedPeriods = await db.DeliberationSessions.AsNoTracking()
+                .Where(s => s.PromotionId == course.PromotionId && s.Status == SessionStatus.Cloturee)
+                .Select(s => s.Period).ToListAsync(ct);
+            if (closedPeriods.Any(period => DeliberationEngine.Includes(course.Semester, period)))
+                throw new ConflictException("Ce cours appartient à une délibération clôturée : impossible de l'archiver ou de le réactiver sans réouverture motivée de la période.");
+        }
         if (archived)
         {
             if (await db.CourseAssignments.AnyAsync(a => a.CourseId == id && a.EndedOn == null, ct))
