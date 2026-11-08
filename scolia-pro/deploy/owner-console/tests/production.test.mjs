@@ -16,6 +16,15 @@ test("Configuration production : D1 réel, domaine Cloudflare, Access, workers.d
   assert.equal(cfg.vars.OWNER_ACCESS_AUD, valid.audience);
 });
 
+test("Pilote : chemin public workers.dev activé seulement pour le Worker de la console", () => {
+  const free = buildProductionConfig({...valid,
+    domain:"scolia-pro-owner.jeanpaulmpolo242.workers.dev"});
+  assert.equal(free.workers_dev, true);
+  assert.equal(free.name, "scolia-pro-owner");
+  assert.equal(free.routes, undefined);
+  assert.equal(free.vars.OWNER_ACCESS_AUD, valid.audience);
+});
+
 test("Aucune URL de test ni D1 factice ne peut être déployé", () => {
   for (const invalid of [
     {...valid, databaseId: "00000000-0000-0000-0000-000000000000"},
@@ -23,6 +32,8 @@ test("Aucune URL de test ni D1 factice ne peut être déployé", () => {
     {...valid, domain: "console.example.org"},
     {...valid, domain: "localhost"},
     {...valid, domain: "https://licences.jpservices.cd"},
+    {...valid, domain: "licence.jeanpaulmpolo242.workers.dev"},
+    {...valid, domain: "scolia-pro-owner.workers.dev"},
     {...valid, audience: ""},
   ]) assert.throws(() => buildProductionConfig(invalid));
 });
