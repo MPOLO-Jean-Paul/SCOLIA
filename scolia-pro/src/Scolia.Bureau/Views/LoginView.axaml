@@ -143,6 +143,17 @@
     <Style Selector="ScrollViewer.short Border.ioslogotile"><Setter Property="Width" Value="58" /><Setter Property="Height" Value="58" /><Setter Property="CornerRadius" Value="18" /></Style>
     <Style Selector="ScrollViewer.short Image.ioslogomark"><Setter Property="Width" Value="40" /><Setter Property="Height" Value="40" /></Style>
     <!-- Grand écran (ordinateur, tablette) : carte un peu plus large et aérée, centrée dans la fenêtre. -->
+    <!-- La hauteur visible change aussi quand le clavier Android apparaît. -->
+    <Style Selector="ScrollViewer.micro StackPanel.iosloginbody"><Setter Property="Margin" Value="9,7,9,9" /><Setter Property="Spacing" Value="7" /></Style>
+    <Style Selector="ScrollViewer.micro StackPanel.iosloginheader"><Setter Property="Spacing" Value="3" /></Style>
+    <Style Selector="ScrollViewer.micro Border.ioslogotile"><Setter Property="IsVisible" Value="False" /></Style>
+    <Style Selector="ScrollViewer.micro Border.iosauthcard"><Setter Property="Padding" Value="11" /></Style>
+    <Style Selector="ScrollViewer.micro TextBlock.ioslogotitle"><Setter Property="FontSize" Value="20" /></Style>
+    <Style Selector="ScrollViewer.micro TextBlock.ioswelcome"><Setter Property="FontSize" Value="19" /></Style>
+    <Style Selector="ScrollViewer.short StackPanel.iosloginfields"><Setter Property="Spacing" Value="11" /></Style>
+    <Style Selector="ScrollViewer.micro StackPanel.iosloginfields"><Setter Property="Spacing" Value="8" /></Style>
+    <Style Selector="ScrollViewer.micro TextBox.iosauthfield"><Setter Property="MinHeight" Value="48" /></Style>
+    <Style Selector="ScrollViewer.micro Button.iosauthprimary"><Setter Property="MinHeight" Value="48" /></Style>
     <Style Selector="ScrollViewer.wide StackPanel.iosloginbody"><Setter Property="MaxWidth" Value="460" /><Setter Property="Margin" Value="24,36,24,30" /></Style>
     <Style Selector="ScrollViewer.wide Border.iosauthcard"><Setter Property="Padding" Value="26,24" /><Setter Property="CornerRadius" Value="26" /></Style>
     <Style Selector="TextBlock.iosauthlabel">
@@ -459,7 +470,7 @@
         </StackPanel>
 
         <Border x:Name="IosLoginCard" Classes="iosauthcard">
-          <StackPanel Spacing="15">
+          <StackPanel Classes="iosloginfields" Spacing="15">
             <StackPanel Spacing="5" IsVisible="{Binding !RecoveryOpen}">
               <TextBlock Text="Bienvenue" Classes="ioswelcome" FontWeight="Bold"
                          Foreground="{DynamicResource TextBrush}" TextWrapping="Wrap" />
@@ -693,6 +704,9 @@
         <Border Background="#EAF5EC" CornerRadius="14" Padding="13" IsVisible="{Binding Restored}">
           <TextBlock Text="Accès rétabli. Vous pouvez vous connecter." Foreground="#20663B" TextWrapping="Wrap" />
         </Border>
+        <!-- Boutons secondaires disponibles sans encombrer la connexion au quotidien. -->
+        <Expander x:Name="IosLoginMore" Header="Autres options de connexion" IsExpanded="False">
+          <StackPanel Spacing="5">
         <Button Classes="iosauthlink" Command="{Binding ChangeServer}" IsEnabled="{Binding NotBusy}"
                 HorizontalAlignment="Center">
           <DockPanel LastChildFill="True">
@@ -704,6 +718,8 @@
                    Classes="muted" TextAlignment="Center" FontSize="11" TextWrapping="Wrap" />
         <TextBlock x:Name="IosLoginFooter" Text="{Binding Footer}" Classes="muted" TextAlignment="Center"
                    FontSize="11" TextWrapping="Wrap" Margin="0,0,0,10" />
+          </StackPanel>
+        </Expander>
       </StackPanel>
     </ScrollViewer>
     </ThemeVariantScope>

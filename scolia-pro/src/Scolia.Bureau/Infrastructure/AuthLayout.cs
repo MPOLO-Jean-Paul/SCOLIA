@@ -24,7 +24,10 @@ public static class AuthLayout
     public const double TinyWidth = 340;
 
     /// <summary>Hauteur sous laquelle les espaces verticaux se resserrent (clavier ouvert, petit écran, paysage).</summary>
-    public const double ShortHeight = 680;
+    public const double ShortHeight = 720;
+
+    /// <summary>Hauteur utile très réduite, par exemple lorsque le clavier est ouvert.</summary>
+    public const double MicroHeight = 570;
 
     /// <summary>Largeur à partir de laquelle la page dispose d'un grand écran (ordinateur, tablette).</summary>
     public const double WideWidth = 720;
@@ -48,6 +51,7 @@ public static class AuthLayout
         classes.Set("compact", size.Width < CompactWidth);
         classes.Set("tiny", size.Width < TinyWidth);
         classes.Set("short", size.Height < ShortHeight);
+        classes.Set("micro", size.Height < MicroHeight);
         classes.Set("wide", size.Width >= WideWidth);
     }
 }

@@ -17,7 +17,8 @@ public partial class ConnectionView : UserControl
         bool? previouslyCompact = null;
         AuthLayout.Track(IosConnectionScreen, size =>
         {
-            var compact = size.Width < AuthLayout.CompactWidth || size.Height < AuthLayout.ShortHeight;
+            // Sur Android, garder les actions facultatives repliées : le QR demeure immédiatement visible.
+            var compact = Platform.IsMobile || size.Width < 480 || size.Height < 800;
             if (previouslyCompact == compact) return;
             IosQrOptions.IsExpanded = !compact;
             IosWifiOptions.IsExpanded = !compact;

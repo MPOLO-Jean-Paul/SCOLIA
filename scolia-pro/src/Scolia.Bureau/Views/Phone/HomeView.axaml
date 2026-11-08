@@ -18,6 +18,13 @@
       <Setter Property="TextAlignment" Value="Right" />
       <Setter Property="Margin" Value="8,0,0,0" />
     </Style>
+    <Style Selector="Border.homeavatar"><Setter Property="Width" Value="58" /><Setter Property="Height" Value="58" /><Setter Property="CornerRadius" Value="29" /></Style>
+    <Style Selector="TextBlock.homegreeting"><Setter Property="FontSize" Value="20" /></Style>
+    <!-- Carte d'accueil qui respecte la largeur, sans réduire la taille du texte utile. -->
+    <Style Selector="StackPanel.compact Grid.homeintro"><Setter Property="Margin" Value="11,12,11,10" /><Setter Property="ColumnSpacing" Value="9" /></Style>
+    <Style Selector="StackPanel.compact Border.homeavatar"><Setter Property="Width" Value="46" /><Setter Property="Height" Value="46" /><Setter Property="CornerRadius" Value="23" /></Style>
+    <Style Selector="StackPanel.compact TextBlock.homegreeting"><Setter Property="FontSize" Value="18" /></Style>
+    <Style Selector="StackPanel.tiny Border.homeavatar"><Setter Property="Width" Value="42" /><Setter Property="Height" Value="42" /><Setter Property="CornerRadius" Value="21" /></Style>
     <!-- Séparateur discret entre deux lignes d'un même groupe, aligné sur le texte comme sur iOS -->
     <Style Selector="Border.rowsep">
       <Setter Property="Height" Value="1" />
@@ -35,8 +42,8 @@
          contexte, puis l'état de la connexion et de la caisse en lignes de réglage dans la même carte. -->
     <Border x:Name="WelcomeCard" Classes="phonegroup welcomecard">
       <StackPanel>
-        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14" Margin="16,16,16,14">
-          <Border Width="58" Height="58" CornerRadius="29" VerticalAlignment="Center">
+        <Grid Classes="homeintro" ColumnDefinitions="Auto,*" ColumnSpacing="14" Margin="16,16,16,14">
+          <Border Classes="homeavatar" VerticalAlignment="Center">
             <Border.Background>
               <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
                 <GradientStop Offset="0" Color="#3A86F0" />
@@ -47,7 +54,7 @@
                        HorizontalAlignment="Center" VerticalAlignment="Center" />
           </Border>
           <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
-            <TextBlock Text="{Binding Greeting}" FontSize="20" FontWeight="SemiBold" TextWrapping="Wrap" MaxLines="2" />
+            <TextBlock Classes="homegreeting" Text="{Binding Greeting}" FontWeight="SemiBold" TextWrapping="Wrap" MaxLines="2" />
             <TextBlock Text="{Binding AccountContextLine}" Classes="muted" FontSize="{DynamicResource FsSmall}"
                        TextTrimming="CharacterEllipsis" />
             <TextBlock Text="{Binding DateLine}" Classes="muted" FontSize="{DynamicResource FsSmall}"

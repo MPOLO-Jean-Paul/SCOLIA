@@ -39,6 +39,13 @@
     <Style Selector="Grid.short StackPanel.iosconnectheader"><Setter Property="Spacing" Value="7" /></Style>
     <Style Selector="Grid.short Border.iosconnectlogo"><Setter Property="Width" Value="58" /><Setter Property="Height" Value="58" /><Setter Property="CornerRadius" Value="18" /></Style>
     <Style Selector="Grid.short Image.iosconnectmark"><Setter Property="Width" Value="40" /><Setter Property="Height" Value="40" /></Style>
+    <!-- Sur un écran très bas, seuls les ornements disparaissent ; le QR reste présent. -->
+    <Style Selector="Grid.micro StackPanel.iosconnectbody"><Setter Property="Margin" Value="9,8,9,12" /><Setter Property="Spacing" Value="8" /></Style>
+    <Style Selector="Grid.micro StackPanel.iosconnectheader"><Setter Property="Spacing" Value="4" /></Style>
+    <Style Selector="Grid.micro Border.iosconnectlogo"><Setter Property="IsVisible" Value="False" /></Style>
+    <Style Selector="Grid.micro TextBlock.iosconnecttitle"><Setter Property="FontSize" Value="19" /></Style>
+    <Style Selector="Grid.micro TextBlock.iosconnecthint"><Setter Property="IsVisible" Value="False" /></Style>
+    <Style Selector="Grid.micro Border.iosconnectcard"><Setter Property="Padding" Value="11" /></Style>
     <!-- Grand écran (ordinateur) : colonne un peu plus large, centrée, cartes aérées. -->
     <Style Selector="Grid.wide StackPanel.iosconnectbody"><Setter Property="MaxWidth" Value="480" /><Setter Property="Margin" Value="24,36,24,32" /></Style>
     <Style Selector="Grid.wide Border.iosconnectcard"><Setter Property="Padding" Value="22" /></Style>
@@ -239,7 +246,7 @@
                        TextAlignment="Center" Foreground="{DynamicResource TextBrush}"
                        TextWrapping="Wrap" />
             <TextBlock Text="Retrouvez votre établissement en toute sécurité."
-                       Classes="muted" FontSize="14" TextAlignment="Center" TextWrapping="Wrap" />
+                       Classes="muted iosconnecthint" FontSize="14" TextAlignment="Center" TextWrapping="Wrap" />
           </StackPanel>
 
           <Border Classes="iosconnectcard">
@@ -267,7 +274,7 @@
                              FontWeight="SemiBold" VerticalAlignment="Center" />
                 </DockPanel>
               </Button>
-              <Expander x:Name="IosQrOptions" Header="Autres méthodes de jumelage" IsExpanded="True">
+              <Expander x:Name="IosQrOptions" Header="Autres méthodes de jumelage" IsExpanded="False">
                 <StackPanel Spacing="9">
               <Button Classes="iosconnectsecondary" Command="{Binding ImportQrImage}"
                       IsVisible="{Binding CanImportQrImage}" IsEnabled="{Binding NotSearching}">
@@ -288,7 +295,7 @@
             </StackPanel>
           </Border>
 
-          <Expander x:Name="IosNearbyServers" Header="Établissements à proximité" IsExpanded="True" IsVisible="{Binding HasServers}">
+          <Expander x:Name="IosNearbyServers" Header="Établissements à proximité" IsExpanded="False" IsVisible="{Binding HasServers}">
             <StackPanel Spacing="8">
             <TextBlock Text="ÉTABLISSEMENTS À PROXIMITÉ" FontWeight="SemiBold"
                        Foreground="{DynamicResource Text2Brush}" FontSize="11" Margin="8,0,0,0" />
@@ -331,7 +338,7 @@
                              Classes="muted" FontSize="12" TextWrapping="Wrap" />
                 </StackPanel>
               </Grid>
-              <Expander x:Name="IosWifiOptions" Header="Actions du réseau local" IsExpanded="True">
+              <Expander x:Name="IosWifiOptions" Header="Actions du réseau local" IsExpanded="False">
                 <StackPanel Spacing="9">
               <Button Classes="iosconnectsecondary" Command="{Binding Search}"
                       IsEnabled="{Binding NotSearching}">

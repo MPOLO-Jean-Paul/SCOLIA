@@ -40,6 +40,13 @@
     <Style Selector="ScrollViewer.short StackPanel.ioslockheader"><Setter Property="Spacing" Value="6" /></Style>
     <Style Selector="ScrollViewer.short Border.ioslocklogo"><Setter Property="Width" Value="54" /><Setter Property="Height" Value="54" /><Setter Property="CornerRadius" Value="17" /></Style>
     <Style Selector="ScrollViewer.short Image.ioslockmark"><Setter Property="Width" Value="38" /><Setter Property="Height" Value="38" /></Style>
+    <!-- Clavier présent ou petite hauteur : réduire seulement l'ornement. -->
+    <Style Selector="ScrollViewer.micro StackPanel.ioslockbody"><Setter Property="Margin" Value="9,8,9,10" /><Setter Property="Spacing" Value="8" /></Style>
+    <Style Selector="ScrollViewer.micro StackPanel.ioslockheader"><Setter Property="Spacing" Value="4" /></Style>
+    <Style Selector="ScrollViewer.micro Border.ioslocklogo"><Setter Property="IsVisible" Value="False" /></Style>
+    <Style Selector="ScrollViewer.micro TextBlock.ioslocktitle"><Setter Property="FontSize" Value="19" /></Style>
+    <Style Selector="ScrollViewer.micro Border.ioslockcard"><Setter Property="Padding" Value="11" /></Style>
+    <Style Selector="ScrollViewer.micro WrapPanel.ioslockclock"><Setter Property="IsVisible" Value="False" /></Style>
     <Style Selector="ScrollViewer.wide StackPanel.ioslockbody"><Setter Property="MaxWidth" Value="460" /><Setter Property="Margin" Value="24,36,24,30" /></Style>
     <Style Selector="ScrollViewer.wide Border.ioslockcard"><Setter Property="Padding" Value="24" /><Setter Property="CornerRadius" Value="26" /></Style>
     <Style Selector="Border.ioslockcard">
@@ -245,7 +252,7 @@
                      TextAlignment="Center" Foreground="{DynamicResource TextBrush}" />
           <TextBlock Text="{Binding School}" FontSize="13" Classes="muted"
                      TextAlignment="Center" TextWrapping="Wrap" MaxLines="2" />
-          <WrapPanel HorizontalAlignment="Center">
+          <WrapPanel Classes="ioslockclock" HorizontalAlignment="Center">
             <TextBlock Text="{Binding Time}" FontSize="16" FontWeight="SemiBold" Margin="0,0,9,0"
                        Foreground="{DynamicResource Text2Brush}" />
             <TextBlock Text="{Binding DateText}" FontSize="13" Classes="muted" VerticalAlignment="Center" />
