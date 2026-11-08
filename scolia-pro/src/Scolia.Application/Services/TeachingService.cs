@@ -83,7 +83,7 @@ public sealed class TeachingService(IAppDbContext db, IWriteGate gate, IAuditLog
         if (id is not null && await db.CourseMarks.AnyAsync(m => m.CourseId == course.Id && m.Kind != Domain.Deliberation.MarkKind.Appui && m.Value > maxScore, ct))
             throw new DomainException("cours", "Des cotes de délibération dépassent le nouveau maxima : corrigez-les d'abord.");
         audit.Record(id is null ? "cours.cree" : "cours.modifie", "Cours", course.Id.ToString(),
-            $"Cours {number} « {name} » ({hours} h, pondération {coefficient:0.##}, maxima {maxScore:0.##}, {DeliberationText.Semester(course.Semester)})."),
+            $"Cours {number} « {name} » ({hours} h, pondération {coefficient:0.##}, maxima {maxScore:0.##}, {DeliberationText.Semester(course.Semester)}).");
         await db.SaveChangesAsync(ct);
         return (await DescribeAsync([course], ct)).Single();
     }, ct);
