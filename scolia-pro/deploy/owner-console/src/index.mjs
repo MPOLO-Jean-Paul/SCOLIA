@@ -1,6 +1,6 @@
 import {
-  CONSENT_VERSION, STATES, cleanLabel, parseRegistration,
-  parseHeartbeat, licenseState, normalizeIp, clientPolicy
+  CONSENT_VERSION, cleanLabel, parseRegistration,
+  parseHeartbeat, normalizeIp
 } from "./policy.mjs";
 import { ownerRelayRequest, schoolRelayRequest } from "./relays.mjs";
 import { evaluateLicense, validateLicensePatch } from "./licenses.mjs";
@@ -62,15 +62,18 @@ async function serveOwner(request, env, url) {
   if (request.method === "GET") {
     await prune(db, now);
     if (url.pathname === "/api/v1/owner/summary") {
-      const [schools, devices, active, suspended] = await Promise.all([
+      const [schools, devices, active, policies] = await Promise.all([
         db.prepare("SELECT count(*) AS n FROM schools").first(),
         db.prepare("SELECT count(*) AS n FROM server_devices").first(),
         db.prepare("SELECT count(*) AS n FROM schools WHERE last_seen >= ?")
           .bind(now - 30 * 86400_000).first(),
-        db.prepare("SELECT count(*) AS n FROM schools WHERE state = 'suspended'").first()
+        // Ne pas confondre l'ancien champ « state » avec la licence effective.
+        db.prepare(`SELECT created_at,billing_enabled,trial_days,paid_until,grace_until,
+          manual_override,override_until FROM schools`).all()
       ]);
+      const suspended = policies.results.filter(s => evaluateLicense(s, now).readonly).length;
       return result({ schools: schools?.n ?? 0, server_devices: devices?.n ?? 0,
-        active_schools_30d: active?.n ?? 0, suspended: suspended?.n ?? 0 });
+        active_schools_30d: active?.n ?? 0, suspended });
     }
     if (url.pathname === "/api/v1/owner/schools") {
       const rows = await db.prepare(`SELECT s.id,s.name,s.state,s.created_at,s.last_seen,
@@ -131,24 +134,10 @@ async function serveOwner(request, env, url) {
         notice: "Les données, les connexions et les lectures restent accessibles ; les écritures dépendent du statut." });
     }
   }
-  if (request.method === "PATCH") {
-    const match = /^\/api\/v1\/owner\/schools\/([a-f0-9-]{36})$/.exec(url.pathname);
-    if (match) {
-      const body = await jsonBody(request);
-      const state = cleanLabel(body?.state, 20);
-      if (!STATES.has(state)) return fail("Statut de licence invalide.", 400);
-      const expires = body?.license_expires_at === null ? null :
-        Number.isSafeInteger(body?.license_expires_at) ? body.license_expires_at : undefined;
-      if (expires === undefined) return fail("Date d'expiration requise (timestamp ou null).", 400);
-      const updated = await db.prepare(
-        "UPDATE schools SET state=?,license_expires_at=? WHERE id=?"
-      ).bind(state, expires, match[1]).run();
-      if (!updated.meta?.changes) return fail("Établissement inconnu.", 404);
-      await audit(db, "license_" + state, match[1], now);
-      return result({ id: match[1], license_status: licenseState(state, expires, now),
-        notice: "La licence n'efface jamais les données scolaires déjà enregistrées." });
-    }
-  }
+  // L'ancien endpoint modifiait un statut historique sans changer la restriction réelle.
+  // Refus explicite plutôt qu'une confirmation trompeuse de suspension/réactivation.
+  if (request.method === "PATCH" && /^\\/api\\/v1\\/owner\\/schools\\/[a-f0-9-]{36}$/.test(url.pathname))
+    return fail("Ancienne commande retirée : utiliser /api/v1/owner/schools/{id}/license.", 410);
   return fail("Ressource propriétaire inconnue.", 404);
 }
 
@@ -157,22 +146,28 @@ async function registerSchool(request, env) {
   if (!body.ok) return fail(body.error, 400);
   const db = env.OWNER_DB, now = nowMs();
   const codeHash = await sha(body.code);
-  // Une invitation ne peut servir qu'une seule fois, même si deux requêtes arrivent ensemble.
-  const claimed = await db.prepare(`UPDATE owner_invites SET used_at=?
-    WHERE code_hash=? AND used_at IS NULL AND expires_at>? RETURNING school_name`)
-    .bind(now, codeHash, now).first();
-  if (!claimed) return fail("Invitation invalide, utilisée ou expirée.", 403);
   const id = crypto.randomUUID(), token = randomToken();
   const tokenHash = await sha(token);
-  await db.batch([
+  // Le nom enregistré est celui de l'invitation, non celui librement fourni par le client.
+  // Les quatre écritures forment UNE transaction D1 : si l'une échoue,
+  // l'invitation reste disponible et aucun compte incomplet n'est créé.
+  const results = await db.batch([
     db.prepare(`INSERT INTO schools(id,name,state,created_at,last_seen,consent_version)
-      VALUES(?,?,'trial',?,?,?)`).bind(id, body.school, now, now, CONSENT_VERSION),
+      SELECT ?,school_name,'trial',?,?,? FROM owner_invites
+      WHERE code_hash=? AND used_at IS NULL AND expires_at>?`)
+      .bind(id, now, now, CONSENT_VERSION, codeHash, now),
     db.prepare(`INSERT INTO school_tokens(token_hash,school_id,created_at)
-      VALUES(?,?,?)`).bind(tokenHash, id, now),
+      SELECT ?,id,? FROM schools WHERE id=?`).bind(tokenHash, now, id),
     db.prepare(`INSERT INTO server_devices(school_id,installation_hash,device_name,first_seen,last_seen,last_ip,ip_seen_at)
-      VALUES(?,?,?,?,?,?,?)`).bind(id, await sha(body.deviceId), body.device, now, now,
-      normalizeIp(request.headers.get("CF-Connecting-IP")), now)
+      SELECT id,?,?,?,?,?,? FROM schools WHERE id=?`)
+      .bind(await sha(body.deviceId), body.device, now, now,
+        normalizeIp(request.headers.get("CF-Connecting-IP")), now, id),
+    db.prepare(`UPDATE owner_invites SET used_at=?
+      WHERE code_hash=? AND used_at IS NULL AND expires_at>?`)
+      .bind(now, codeHash, now)
   ]);
+  if (results[0].meta?.changes !== 1 || results[3].meta?.changes !== 1)
+    return fail("Invitation invalide, utilisée ou expirée.", 403);
   return result({ school_id: id, school_token: token, license_status: "free",
     notice: "Conservez le jeton dans le coffre sécurisé du serveur scolaire, jamais dans Git." }, 201);
 }
@@ -192,14 +187,23 @@ async function heartbeat(request, env) {
   if (validated.occurredAt > now + 5 * 60000 ||
       validated.occurredAt < now - 90 * 86400_000)
     return fail("Date d'activité hors de la fenêtre de reprise.", 400);
-  const inserted = await db.prepare(`INSERT OR IGNORE INTO school_activity_events
-    (school_id,event_id,activity_day,created_at)
-    VALUES(?,?,?,?)`).bind(school.id, validated.eventId,
-      new Date(validated.occurredAt).toISOString().slice(0, 10), now).run();
-  const fresh = inserted.meta?.changes > 0;
-  // Les métadonnées d'un serveur peuvent être rafraîchies sans divulguer
-  // les comptes individuels, même si l'événement a déjà été reçu.
-  const operations = [
+  const activityDay = new Date(validated.occurredAt).toISOString().slice(0, 10);
+  // Compteur, marqueur d'idempotence et présence sont atomiques.
+  // Le compteur est incrémenté AVANT d'insérer le marqueur, seulement si absent.
+  // Une panne/reprise n'entraîne donc ni double comptage ni événement perdu.
+  await db.batch([
+    db.prepare(`INSERT INTO school_activity
+      (school_id,activity_day,login_count,heartbeat_count)
+      SELECT ?,?,?,1 WHERE NOT EXISTS (
+        SELECT 1 FROM school_activity_events WHERE school_id=? AND event_id=?)
+      ON CONFLICT(school_id,activity_day) DO UPDATE SET
+        login_count=login_count+excluded.login_count,
+        heartbeat_count=heartbeat_count+1`)
+      .bind(school.id, activityDay, validated.event === "login" ? 1 : 0,
+        school.id, validated.eventId),
+    db.prepare(`INSERT OR IGNORE INTO school_activity_events
+      (school_id,event_id,activity_day,created_at) VALUES(?,?,?,?)`)
+      .bind(school.id, validated.eventId, activityDay, now),
     db.prepare("UPDATE schools SET last_seen=? WHERE id=?").bind(now, school.id),
     db.prepare(`INSERT INTO server_devices
       (school_id,installation_hash,device_name,first_seen,last_seen,last_ip,ip_seen_at)
@@ -209,16 +213,7 @@ async function heartbeat(request, env) {
         last_ip=excluded.last_ip,ip_seen_at=excluded.ip_seen_at`)
       .bind(school.id, await sha(validated.deviceId), validated.device, now, now,
         normalizeIp(request.headers.get("CF-Connecting-IP")), now)
-  ];
-  if (fresh)
-    operations.push(db.prepare(`INSERT INTO school_activity
-      (school_id,activity_day,login_count,heartbeat_count)
-      VALUES(?,?,?,1) ON CONFLICT(school_id,activity_day)
-      DO UPDATE SET login_count=login_count+excluded.login_count,
-      heartbeat_count=heartbeat_count+1`).bind(school.id,
-      new Date(validated.occurredAt).toISOString().slice(0, 10),
-      validated.event === "login" ? 1 : 0));
-  await db.batch(operations);
+  ]);
   return result({ school_id: school.id, ...evaluateLicense(school, now),
     local_data_access: "always_readable" });
 }
@@ -333,7 +328,7 @@ async function reload(){
    td.appendChild(btn);row.appendChild(td);$("relayRows").appendChild(row);
  }
  for(const s of listing.schools){
-   const tr=document.createElement("tr");textCell(tr,s.name);textCell(tr,s.state);
+   const tr=document.createElement("tr");textCell(tr,s.name);textCell(tr,s.license.license_status+(s.license.readonly?" · lecture seule":""));
    textCell(tr,s.device_count);textCell(tr,s.last_seen?new Date(s.last_seen).toLocaleDateString("fr"):"Jamais");
    const td=document.createElement("td"),btn=document.createElement("button");
    btn.textContent="Consulter";btn.className="secondary";btn.onclick=()=>openSchool(s.id);
