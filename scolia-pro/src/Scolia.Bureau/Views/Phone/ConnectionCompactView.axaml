@@ -82,10 +82,12 @@
     <Style Selector="Grid.micro Button.connectsecondary"><Setter Property="MinHeight" Value="43" /></Style>
     <Style Selector="Grid.keyboard Grid.connectheader"><Setter Property="IsVisible" Value="False" /></Style>
     <Style Selector="Grid.keyboard Button.connecthost"><Setter Property="IsVisible" Value="False" /></Style>
-    <Style Selector="Grid.keyboard TextBlock.connecthint"><Setter Property="IsVisible" Value="False" /></Style>
+    <Style Selector="Grid.keyboard TextBlock.connectoptional"><Setter Property="IsVisible" Value="False" /></Style>
+    <Style Selector="Grid.keyboard TextBlock.connectdetailtext"><Setter Property="MaxLines" Value="5" /></Style>
     <Style Selector="Grid.keyboard Grid.connectnavbar"><Setter Property="Margin" Value="0" /></Style>
     <Style Selector="Grid.keyboard Border.connectcard"><Setter Property="Padding" Value="10" /></Style>
     <Style Selector="Grid.keyboard StackPanel.connectfields"><Setter Property="Spacing" Value="6" /></Style>
+    <Style Selector="Grid.micro Button.connectnav"><Setter Property="MinHeight" Value="40" /></Style>
   </UserControl.Styles>
 
   <Grid x:Name="CompactRoot" Background="#F5F7FB" RowDefinitions="Auto,*,Auto"
@@ -120,7 +122,7 @@
           <TextBlock Text="Relier mon appareil" Classes="connecttitle"
                      TextAlignment="Center" />
           <TextBlock Text="Scannez l'invitation affichée sur le serveur de l'établissement."
-                     Classes="connecthint" TextAlignment="Center" />
+                     Classes="connecthint connectoptional" TextAlignment="Center" />
           <Button Classes="connectmain" Command="{Binding ScanCode}" IsEnabled="{Binding NotSearching}">
             <DockPanel LastChildFill="True">
               <mi:MaterialIcon Kind="QrcodeScan" DockPanel.Dock="Left" Margin="0,0,8,0"
@@ -135,7 +137,7 @@
           <TextBlock Text="{Binding Message}" Classes="connecthint"
                      TextWrapping="Wrap" MaxLines="2" TextAlignment="Center"
                      IsVisible="{Binding !Searching}" />
-          <Button x:Name="QrDetails" Classes="connectnav" Content="Voir le message complet" IsVisible="{Binding HasMessage}" MinHeight="36" />
+          <Button x:Name="QrDetails" Classes="connectnav" Content="Voir le message complet" MinHeight="36" />
         </StackPanel>
       </Border>
 
@@ -143,9 +145,9 @@
               HorizontalAlignment="Stretch" VerticalAlignment="Center">
         <StackPanel Classes="connectfields" Spacing="13">
           <TextBlock Classes="connecttitle" Text="Autres méthodes" />
-          <TextBlock Classes="connecthint" Text="Utilisez une image du QR ou un code d'invitation." />
-          <Button Classes="connectsecondary" Command="{Binding ImportQrImage}"
-                  IsVisible="{Binding CanImportQrImage}" IsEnabled="{Binding NotSearching}">
+          <TextBlock Classes="connecthint connectoptional" Text="Utilisez une image du QR ou un code d'invitation." />
+          <Button x:Name="ImportQrButton" Classes="connectsecondary" Command="{Binding ImportQrImage}"
+                  IsEnabled="{Binding NotSearching}">
             <DockPanel LastChildFill="True">
               <mi:MaterialIcon Kind="ImageOutline" Width="19" Height="19"
                                DockPanel.Dock="Left" Margin="0,0,8,0" VerticalAlignment="Center" />
@@ -161,7 +163,7 @@
                     Content="Valider le code" />
           </StackPanel>
           <Button x:Name="CodeDetails" Classes="connectnav" Content="Voir les informations de connexion"
-                  MinHeight="36" IsVisible="{Binding HasMessage}" />
+                  MinHeight="36" />
         </StackPanel>
       </Border>
 
@@ -169,7 +171,7 @@
               HorizontalAlignment="Stretch" VerticalAlignment="Center">
         <StackPanel Classes="connectfields" Spacing="12">
           <TextBlock Classes="connecttitle" Text="Réseau local" />
-          <TextBlock Classes="connecthint" Text="Cherchez le serveur sur le même Wi-Fi." />
+          <TextBlock Classes="connecthint connectoptional" Text="Cherchez le serveur sur le même Wi-Fi." />
           <Button Classes="connectmain" Command="{Binding Search}" IsEnabled="{Binding NotSearching}"
                   Content="Rechercher le serveur" />
           <Button x:Name="ChooseServerButton" Classes="connectsecondary"
@@ -177,7 +179,7 @@
           <Button x:Name="ManualAddressButton" Classes="connectsecondary"
                   Content="Saisir une adresse réseau" />
           <Button x:Name="WifiDetails" Classes="connectnav" Content="Voir le résultat de la recherche"
-                  IsVisible="{Binding HasMessage}" MinHeight="36" />
+                  MinHeight="36" />
         </StackPanel>
       </Border>
 
@@ -185,7 +187,7 @@
               HorizontalAlignment="Stretch" VerticalAlignment="Center">
         <StackPanel Classes="connectfields" Spacing="12">
           <TextBlock Classes="connecttitle" Text="Serveurs disponibles" />
-          <TextBlock Classes="connecthint" Text="Choisissez votre établissement sur ce réseau." />
+          <TextBlock Classes="connecthint connectoptional" Text="Choisissez votre établissement sur ce réseau." />
           <ComboBox Classes="connectselect" ItemsSource="{Binding Servers}"
                     SelectedItem="{Binding SelectedServer, Mode=TwoWay}">
             <ComboBox.ItemTemplate>
@@ -204,7 +206,7 @@
               HorizontalAlignment="Stretch" VerticalAlignment="Center">
         <StackPanel Classes="connectfields" Spacing="12">
           <TextBlock Classes="connecttitle" Text="Adresse du serveur" />
-          <TextBlock Classes="connecthint" Text="{Binding AddressHint}" MaxLines="3" />
+          <TextBlock Classes="connecthint connectoptional" Text="{Binding AddressHint}" MaxLines="3" />
           <TextBox Classes="connectfield" Text="{Binding Address}"
                    PlaceholderText="192.168.1.10:5080"
                    AutomationProperties.Name="Adresse locale du serveur" />
@@ -218,7 +220,7 @@
               HorizontalAlignment="Stretch" VerticalAlignment="Center">
         <StackPanel Classes="connectfields" Spacing="12">
           <TextBlock Classes="connecttitle" Text="État de la connexion" />
-          <TextBlock Text="{Binding Message}" Classes="connecthint" FontSize="14" MaxLines="12"
+          <TextBlock Text="{Binding Message}" Classes="connecthint connectdetailtext" FontSize="14" MaxLines="7"
                      TextWrapping="Wrap" />
           <Button x:Name="ReturnFromDetails" Classes="connectsecondary" Content="Retour" />
         </StackPanel>
@@ -250,7 +252,7 @@
       </Grid>
       <Button x:Name="HostServer" Classes="connectsecondary connecthost" Grid.Row="1"
               Content="Configurer ce téléphone comme serveur" Command="{Binding UseThisComputer}"
-              IsVisible="{Binding PhoneCanBeServer}" IsEnabled="{Binding NotSearching}"
+              IsEnabled="{Binding NotSearching}"
               MinHeight="44" />
     </Grid>
   </Grid>

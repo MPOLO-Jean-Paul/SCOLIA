@@ -1,5 +1,7 @@
+using System.ComponentModel;
 using Avalonia.Controls;
 using Scolia.Bureau.Infrastructure;
+using Scolia.Bureau.ViewModels;
 
 namespace Scolia.Bureau.Views.Phone;
 
@@ -12,6 +14,8 @@ public partial class ConnectionCompactView : UserControl
     private enum Page { Qr, Code, Wifi, Servers, Address, Details }
     private Page current = Page.Qr;
     private Page beforeDetails = Page.Qr;
+    private ConnectionViewModel? subscribed;
+    private bool keyboard;
 
     public ConnectionCompactView()
     {
@@ -19,7 +23,9 @@ public partial class ConnectionCompactView : UserControl
         AuthLayout.Track(CompactRoot, size =>
         {
             // La hauteur réellement disponible réagit aussi à l'ouverture du clavier Android.
-            CompactRoot.Classes.Set("keyboard", size.Height < 470);
+            keyboard = size.Height < 470;
+            CompactRoot.Classes.Set("keyboard", keyboard);
+            RefreshVisibleOptions();
         });
 
         TabQr.Click += (_, _) => Show(Page.Qr);
@@ -34,7 +40,41 @@ public partial class ConnectionCompactView : UserControl
         WifiDetails.Click += (_, _) => ShowDetails();
         ReturnFromDetails.Click += (_, _) => Show(beforeDetails);
 
+        DataContextChanged += (_, _) => Subscribe();
+        AttachedToVisualTree += (_, _) => Subscribe();
+        DetachedFromVisualTree += (_, _) => Release();
         Show(Page.Qr);
+    }
+
+    private void Subscribe()
+    {
+        Release();
+        subscribed = DataContext as ConnectionViewModel;
+        if (subscribed is not null) subscribed.PropertyChanged += OnConnectionChanged;
+        RefreshVisibleOptions();
+    }
+
+    private void Release()
+    {
+        if (subscribed is not null) subscribed.PropertyChanged -= OnConnectionChanged;
+        subscribed = null;
+    }
+
+    private void OnConnectionChanged(object? sender, PropertyChangedEventArgs args)
+    {
+        if (args.PropertyName is nameof(ConnectionViewModel.Message)
+            or nameof(ConnectionViewModel.HasMessage)) RefreshVisibleOptions();
+    }
+
+    private void RefreshVisibleOptions()
+    {
+        var vm = subscribed;
+        var showDetails = !keyboard && vm?.HasMessage == true;
+        QrDetails.IsVisible = showDetails;
+        CodeDetails.IsVisible = showDetails;
+        WifiDetails.IsVisible = showDetails;
+        ImportQrButton.IsVisible = !keyboard && vm?.CanImportQrImage == true;
+        HostServer.IsVisible = !keyboard && vm?.PhoneCanBeServer == true;
     }
 
     private void ShowDetails()
