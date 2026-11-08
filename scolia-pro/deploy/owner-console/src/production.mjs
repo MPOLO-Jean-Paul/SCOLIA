@@ -6,6 +6,8 @@ export const DB_NAME = "scolia-pro-owner";
 export const BUCKET_NAME = "scolia-pro-backups";
 const UUID = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
 const DOMAIN = /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/i;
+// Le seul hostname workers.dev supporté est celui de CE Worker. Aucun routage global du compte.
+const FREE_WORKER_HOST = /^scolia-pro-owner\.[a-z0-9-]+\.workers\.dev$/i;
 
 export function buildProductionConfig({databaseId, domain, audience}) {
   if (!UUID.test(databaseId ?? "") || /^0+$/.test(databaseId.replace(/-/g, "")))
@@ -13,15 +15,19 @@ export function buildProductionConfig({databaseId, domain, audience}) {
   if (!DOMAIN.test(domain ?? "") ||
       /(?:^|\.)example\.(?:com|net|org)$|\.(?:test|invalid|local|localhost)$/i.test(domain))
     throw new Error("Domaine HTTPS Cloudflare réel requis.");
+  if (domain?.toLowerCase().endsWith(".workers.dev") && !FREE_WORKER_HOST.test(domain))
+    throw new Error("Le hostname workers.dev doit correspondre exactement au Worker scolia-pro-owner.");
   if (typeof audience !== "string" || !/^[a-zA-Z0-9_-]{20,128}$/.test(audience))
     throw new Error("Cloudflare Access AUD valide requis.");
+  const freeWorkersDev = FREE_WORKER_HOST.test(domain);
   return {
     $schema: "node_modules/wrangler/config-schema.json",
     name: "scolia-pro-owner",
     main: "src/index.mjs",
     compatibility_date: "2026-11-08",
-    workers_dev: false,
-    routes: [{ pattern: domain, custom_domain: true }],
+    // workers.dev = mise en service pilote. Un domaine propriétaire reste préférable en production.
+    workers_dev: freeWorkersDev,
+    ...(freeWorkersDev ? {} : { routes: [{ pattern: domain, custom_domain: true }] }),
     triggers: { crons: ["0 3 * * *"] },
     vars: { OWNER_ACCESS_AUD: audience },
     observability: { enabled: true },
