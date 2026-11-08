@@ -1031,7 +1031,7 @@ public sealed class DeliberationService(IAppDbContext db, IWriteGate gate, IAudi
         var grids = new List<(string SheetName, TableDocument Document)>(promotions.Count);
         foreach (var promotion in promotions)
         {
-            var grid = await GridAsync(promotion.Id, periodText, detailedHeaders: true, ct);
+            var grid = await GridAsync(promotion.Id, periodText, detailedHeaders: true, ct: ct);
             if (grid.Rows.Any(row => row.Count < 2 || string.IsNullOrWhiteSpace(row[1]) || row[1] == "—"))
                 throw new ConflictException($"Codes anonymes incomplets pour {promotion.Code} : attribuez les codes avant l'export de toutes les promotions.");
             grids.Add((promotion.Code, grid));
@@ -1041,7 +1041,7 @@ public sealed class DeliberationService(IAppDbContext db, IWriteGate gate, IAudi
 
     /// <summary>Grille des cotes : une colonne par cours (points retenus), total, pourcentage et décision.</summary>
     public Task<TableDocument> GridAsync(Guid promotionId, string periodText, CancellationToken ct = default) =>
-        GridAsync(promotionId, periodText, detailedHeaders: false, ct);
+        GridAsync(promotionId, periodText, detailedHeaders: false, ct: ct);
 
     private async Task<TableDocument> GridAsync(Guid promotionId, string periodText, bool detailedHeaders, CancellationToken ct)
     {
