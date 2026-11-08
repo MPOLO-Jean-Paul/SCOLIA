@@ -206,8 +206,14 @@ public sealed class MarksPage : PageViewModel
     private readonly bool teacher;
     private List<TeacherCourseDto> mine = [];
 
+    private string notice = string.Empty;
+
     /// <summary>Espace enseignant : seulement ses cours attribués, en feuille anonyme.</summary>
     public bool IsTeacher => teacher;
+
+    /// <summary>Dernières annonces de la délibération (ouverture de l'encodage, remise, renvoi), pour l'enseignant.</summary>
+    public string Notice { get => notice; private set { if (Set(ref notice, value)) Raise(nameof(HasNotice)); } }
+    public bool HasNotice => notice.Length > 0;
     public bool CanChooseAnonymous => !teacher;
 
     public override string Title => teacher ? "Mes cours" : "Encodage des cotes";
@@ -283,6 +289,8 @@ public sealed class MarksPage : PageViewModel
         {
             mine = await Shell.Api.GetAsync<List<TeacherCourseDto>>("api/deliberation/mes-cours");
             list = mine.Where(m => m.PromotionId.ToString() == Promotion.Value).Select(m => m.Course).ToList();
+            var notices = await Shell.Api.GetAsync<List<AnnouncementDto>>("api/deliberation/annonces");
+            Notice = string.Join(Environment.NewLine, notices.Take(3).Select(n => $"{n.AtUtc.ToLocalTime():dd/MM HH:mm} · {n.Title} : {n.Text}"));
         }
         else list = await Shell.Api.GetAsync<List<DeliberationCourseDto>>("api/deliberation/cours" + ScoliaClient.Query(("promotionId", Guid.Parse(Promotion.Value))));
         foreach (var c in list)

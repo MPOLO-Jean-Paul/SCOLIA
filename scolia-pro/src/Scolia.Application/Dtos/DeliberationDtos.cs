@@ -96,3 +96,6 @@ public sealed record CodeImportResult(bool Applied, int Assigned, int Ready, int
 
 /// <summary>Cours attribué à l'enseignant connecté, avec sa promotion (portail enseignant).</summary>
 public sealed record TeacherCourseDto(Guid PromotionId, string Promotion, DeliberationCourseDto Course);
+
+/// <summary>Annonce de la délibération : ouverture ou fermeture de l'encodage, remise ou renvoi d'une feuille.</summary>
+public sealed record AnnouncementDto(DateTime AtUtc, string Title, string Text, string By);

@@ -138,7 +138,7 @@ public sealed class ShellViewModel : Observable
     /// </summary>
     private void OnRemoteChange(LiveEventDto change)
     {
-        if (Infrastructure.Alerts.From(change, Prefs) is { } alert) ShowAlert(alert);
+        if (Infrastructure.Alerts.From(change, Prefs, Can) is { } alert) ShowAlert(alert);
         knownRevision = Math.Max(knownRevision, change.Revision);
         if (MustWait) RemoteWaiting = true;
         else _ = RefreshQuietlyAsync();

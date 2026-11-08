@@ -506,7 +506,7 @@ public sealed class DeliberationService(IAppDbContext db, IWriteGate gate, IAudi
         var name = user.Name.Length > 120 ? user.Name[..120] : user.Name;
         var submission = new MarkSubmission { AcademicYearId = year.Id, CourseId = courseId, Kind = kind, SubmittedAtUtc = DateTime.UtcNow, SubmittedByName = name };
         db.MarkSubmissions.Add(submission);
-        audit.Record("deliberation.cotes.remises", "Cours", courseId.ToString(),
+        audit.Record("deliberation.cotes.remises", "RemiseCotes", courseId.ToString(),
             $"Cotes {DeliberationText.Kind(kind)} du cours {course.Number} « {course.Name} » remises : {graded} cote(s) sur {ids.Count} apprenant(s).",
             new { nature = DeliberationText.Kind(kind), graded, total = ids.Count });
         await db.SaveChangesAsync(ct);
@@ -525,7 +525,7 @@ public sealed class DeliberationService(IAppDbContext db, IWriteGate gate, IAudi
             throw new ConflictException("La délibération concernée est clôturée : rouvrez-la d'abord, avec un motif.");
         var reason = Reason(input.Reason, "Indiquez le motif du renvoi de la feuille (5 caractères au moins).");
         db.MarkSubmissions.Remove(submission);
-        audit.Record("deliberation.cotes.renvoyees", "Cours", courseId.ToString(),
+        audit.Record("deliberation.cotes.renvoyees", "RemiseCotes", courseId.ToString(),
             $"Feuille {DeliberationText.Kind(kind)} du cours {course.Number} « {course.Name} » renvoyée à l'enseignant (remise du {When(submission.SubmittedAtUtc)} par {submission.SubmittedByName}). Motif : {reason}.",
             new { nature = DeliberationText.Kind(kind), reason });
         await db.SaveChangesAsync(ct);
@@ -666,6 +666,36 @@ public sealed class DeliberationService(IAppDbContext db, IWriteGate gate, IAudi
         var staffId = await MyStaffIdAsync(ct);
         if (!await db.CourseAssignments.AsNoTracking().AnyAsync(a => a.CourseId == course.Id && a.TeacherId == staffId && a.EndedOn == null, ct))
             throw new ForbiddenException($"Le cours {course.Number} « {course.Name} » ne vous est pas attribué : vous ne pouvez pas en encoder les cotes.");
+    }
+
+    /// <summary>
+    /// Annonces de la délibération (notifications d'ITMCD), tirées du journal d'audit : ouverture ou fermeture de l'encodage,
+    /// remises et renvois. Un enseignant ne voit que les remises et renvois de ses cours ; le secrétariat voit tout.
+    /// </summary>
+    public async Task<IReadOnlyList<AnnouncementDto>> AnnouncementsAsync(CancellationToken ct = default)
+    {
+        var since = DateTime.UtcNow.AddDays(-45);
+        string[] actions = ["deliberation.reglages", "deliberation.cotes.remises", "deliberation.cotes.renvoyees"];
+        var entries = await db.AuditEntries.AsNoTracking()
+            .Where(a => a.AtUtc >= since && actions.Contains(a.Action))
+            .OrderByDescending(a => a.Id).Take(200)
+            .Select(a => new { a.AtUtc, a.Action, a.EntityId, a.Summary, a.UserName }).ToListAsync(ct);
+        HashSet<string>? mine = null;
+        if (!user.HasPermission(Permissions.AcademicsRead))
+        {
+            if (!user.HasPermission(Permissions.MarksEncode) && !user.HasPermission(Permissions.JuryEncode))
+                throw new ForbiddenException("Ce compte n'a pas accès aux annonces de la délibération.");
+            mine = (await MyCoursesAsync(ct)).Select(c => c.Course.Id.ToString()).ToHashSet(StringComparer.Ordinal);
+        }
+        return entries
+            .Where(e => e.Action == "deliberation.reglages" || mine is null || (e.EntityId is not null && mine.Contains(e.EntityId)))
+            .Take(20)
+            .Select(e => new AnnouncementDto(e.AtUtc, e.Action switch
+            {
+                "deliberation.reglages" => "Encodage des cotes",
+                "deliberation.cotes.remises" => "Cotes remises",
+                _ => "Feuille renvoyée",
+            }, e.Summary, e.UserName)).ToList();
     }
 
     /// <summary>

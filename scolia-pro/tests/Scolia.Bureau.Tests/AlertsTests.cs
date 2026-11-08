@@ -46,4 +46,22 @@ public sealed class AlertsTests
         prefs.Alerts = false;
         Assert.Null(Alerts.From(Change("Sauvegarde faite.", "Sauvegarde"), prefs));
     }
+
+    [Fact]
+    public void La_deliberation_previent_les_enseignants_et_le_jury()
+    {
+        static bool Teacher(string p) => p == "cotes.encoder";
+        static bool Jury(string p) => p == "deliberation.gerer";
+        var opened = Change("Délibération 2026-2027 : encodage S1 ouvert, S2 fermé.", "ReglagesDeliberation");
+        Assert.Equal(AlertKind.Deliberation, Alerts.From(opened, Prefs(), Teacher)?.Kind);
+        Assert.Null(Alerts.From(opened, Prefs(), _ => false));
+
+        var submitted = Change("Cotes S1 du cours 1 « Anatomie » remises : 30 cote(s).", "RemiseCotes");
+        Assert.Equal("Cotes remises", Alerts.From(submitted, Prefs(), Jury)?.Title);
+        Assert.Null(Alerts.From(submitted, Prefs(), Teacher));
+
+        var returned = Change("Feuille S1 du cours 1 « Anatomie » renvoyée à l'enseignant.", "RemiseCotes");
+        Assert.Equal("Feuille de cotes renvoyée", Alerts.From(returned, Prefs(), Teacher)?.Title);
+        Assert.Null(Alerts.From(returned, Prefs(), Jury));
+    }
 }

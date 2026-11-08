@@ -44,6 +44,8 @@ public sealed record StudentDeliberationDto(DeliberationRowDto Result, string Pr
 /// <summary>Cours attribué à l'enseignant connecté (portail enseignant).</summary>
 public sealed record TeacherCourseDto(Guid PromotionId, string Promotion, DeliberationCourseDto Course);
 
+public sealed record AnnouncementDto(DateTime AtUtc, string Title, string Text, string By);
+
 public sealed record MarkSubmissionDto(Guid CourseId, string Course, string Kind, DateTime SubmittedAtUtc, string SubmittedBy, int Graded, int Students);
 
 public sealed record EncodingProgressRowDto(Guid CourseId, Guid PromotionId, string Promotion, int Number, string Course, string Semester, string Kind,

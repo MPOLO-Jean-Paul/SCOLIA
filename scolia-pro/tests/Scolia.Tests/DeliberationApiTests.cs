@@ -368,6 +368,12 @@ public sealed class DeliberationApiTests : IDisposable
         Assert.Equal(HttpStatusCode.OK, (await teacher.GetAsync($"{D}/feuille/export?coursId={setup.S1Course}&nature=S1&format=xlsx")).StatusCode);
         Assert.True((await teacher.GetAsync($"{D}/mes-cours").Ok())[0].GetProperty("course").GetProperty("submittedS1").GetBoolean());
 
+        // Annonces (notifications d'ITMCD) : la remise de son cours, et l'ouverture ou la fermeture de l'encodage.
+        await admin.Put($"{D}/reglages", new { encodingS1Open = true, encodingS2Open = false, supportEnabled = true, passPercent = 60m }).Ok();
+        var notices = (await teacher.GetAsync($"{D}/annonces").Ok()).EnumerateArray().Select(n => n.GetProperty("title").GetString()).ToList();
+        Assert.Contains("Cotes remises", notices);
+        Assert.Contains("Encodage des cotes", notices);
+
         // Cours retiré : l'enseignant n'y a plus accès.
         await admin.Post($"/api/scolarite/cours/{setup.S1Course}/retrait-attribution", new { reason = "Fin de la charge du semestre" }).Ok();
         Assert.Empty((await teacher.GetAsync($"{D}/mes-cours").Ok()).EnumerateArray());
@@ -501,5 +507,21 @@ public sealed class DeliberationApiTests : IDisposable
         Assert.Equal(HttpStatusCode.Forbidden, withdrawn);
         var kept = await admin.GetAsync($"{D}/feuille?coursId={stage}&nature=Jury").Ok();
         Assert.Equal(120m, kept.GetProperty("rows").EnumerateArray().Single(r => r.GetProperty("enrollmentId").GetString() == setup.Enrollments[0]).GetProperty("value").GetDecimal());
+    }
+
+    [Fact]
+    public void Live_feed_hides_payments_and_codes_from_teacher_accounts()
+    {
+        var teacher = new System.Security.Claims.ClaimsPrincipal(new System.Security.Claims.ClaimsIdentity(
+            new[] { new System.Security.Claims.Claim(Scolia.Api.Security.ScoliaClaims.Permission, "cotes.encoder") }, "test"));
+        Assert.True(Scolia.Api.Endpoints.LiveEndpoints.Restricted(teacher));
+        var payment = new Scolia.Infrastructure.Live.LiveEvent("donnees", 5, "pc", "PC-SECRETARIAT", "Caissier", "Reçu R-1 : 50 000 FC pour MUKENDI.", ["Recu"], DateTime.UtcNow);
+        var hidden = Scolia.Api.Endpoints.LiveEndpoints.ForRestricted(payment)!;
+        Assert.Null(hidden.Summary);
+        Assert.Null(hidden.User);
+        Assert.Empty(hidden.Topics);
+        var opened = payment with { Summary = "Délibération : encodage S1 ouvert.", Topics = ["ReglagesDeliberation"] };
+        Assert.Equal(opened.Summary, Scolia.Api.Endpoints.LiveEndpoints.ForRestricted(opened)!.Summary);
+        Assert.Null(Scolia.Api.Endpoints.LiveEndpoints.ForRestricted(payment with { Kind = "presence" }));
     }
 }
