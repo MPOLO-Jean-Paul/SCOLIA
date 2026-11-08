@@ -1,4 +1,5 @@
 using System.Net;
+using System.Net.Http.Json;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -641,5 +642,120 @@ public sealed class DeliberationApiTests : IDisposable
         var saved = await admin.GetAsync($"{D}/reglages").Ok();
         Assert.True(saved.GetProperty("teacherUpdates").GetBoolean());
         Assert.False(saved.GetProperty("teacherDownloads").GetBoolean());
+    }
+
+    [Fact]
+    public async Task A_closed_jury_keeps_its_official_roster_after_a_student_leaves()
+    {
+        var admin = await app.InstalledAdmin();
+        var setup = await SetupAsync(admin, "MUKENDI", "KASONGO");
+        var learner = setup.Enrollments[0];
+        await admin.Put($"{D}/feuille?coursId={setup.S1Course}&nature=S1", new[]
+        {
+            new { enrollmentId = learner, value = (decimal?)80m },
+        }).Ok();
+        await admin.Post($"{D}/cloture", new
+        {
+            promotionId = setup.PromotionId, period = "S1", password = "Scolia2026!",
+            president = "Dr MUKENGE", members = "", notes = "",
+        }).Ok();
+        var before = await admin.GetAsync($"{D}/resultats?promotionId={setup.PromotionId}&periode=S1").Ok();
+        Assert.Equal(2, before.GetProperty("students").GetInt32());
+
+        // Le dossier peut devenir diplômé sans perdre sa place dans le procès-verbal signé.
+        var status = await admin.PutAsync($"/api/inscriptions/{learner}/statut",
+            JsonContent.Create(new { status = "Diplômé", reason = "Fin de cursus après jury" }));
+        Assert.Equal(HttpStatusCode.NoContent, status.StatusCode);
+        var after = await admin.GetAsync($"{D}/resultats?promotionId={setup.PromotionId}&periode=S1").Ok();
+        Assert.Equal("Clôturée", after.GetProperty("status").GetString());
+        Assert.Equal(2, after.GetProperty("students").GetInt32());
+        Assert.Equal(Row(before, learner).GetProperty("percent").GetDecimal(), Row(after, learner).GetProperty("percent").GetDecimal());
+        Assert.Equal(Row(before, learner).GetProperty("decision").GetString(), Row(after, learner).GetProperty("decision").GetString());
+        Assert.Equal(HttpStatusCode.OK,
+            (await admin.GetAsync($"{D}/bulletin.pdf?promotionId={setup.PromotionId}&periode=S1&inscriptionId={learner}")).StatusCode);
+    }
+
+    [Fact]
+    public async Task A_closed_jury_protects_course_definitions_archives_and_academic_rules()
+    {
+        var admin = await app.InstalledAdmin();
+        var setup = await SetupAsync(admin, "MUKENDI");
+        await admin.Post($"{D}/cloture", new
+        {
+            promotionId = setup.PromotionId, period = "S1", password = "Scolia2026!",
+            president = "Dr MUKENGE", members = "", notes = "",
+        }).Ok();
+
+        var (ruleStatus, _) = await admin.Put($"{D}/reglages", new
+        {
+            encodingS1Open = true, encodingS2Open = true, supportEnabled = true, passPercent = 65m,
+            teacherUpdates = false, teacherDownloads = true,
+        }).Fail();
+        Assert.Equal(HttpStatusCode.Conflict, ruleStatus);
+
+        var (editedStatus, _) = await admin.Put($"/api/scolarite/cours/{setup.S1Course}", new
+        {
+            promotionId = setup.PromotionId, number = 1, name = "Anatomie modifiée",
+            coefficient = 1m, hours = 30m, maxScore = 110m, semester = "S1",
+        }).Fail();
+        Assert.Equal(HttpStatusCode.Conflict, editedStatus);
+
+        var (archiveStatus, _) = await admin.Post($"/api/scolarite/cours/{setup.S1Course}/archivage", new { }).Fail();
+        Assert.Equal(HttpStatusCode.Conflict, archiveStatus);
+
+        var (newS1Status, _) = await admin.Post("/api/scolarite/cours", new
+        {
+            promotionId = setup.PromotionId, number = 15, name = "Biologie nouvelle",
+            coefficient = 1m, hours = 30m, maxScore = 20m, semester = "S1",
+        }).Fail();
+        Assert.Equal(HttpStatusCode.Conflict, newS1Status);
+
+        // Une épreuve S2 n'altère pas le procès-verbal du S1 clôturé.
+        await admin.Post("/api/scolarite/cours", new
+        {
+            promotionId = setup.PromotionId, number = 16, name = "Biologie S2",
+            coefficient = 1m, hours = 30m, maxScore = 20m, semester = "S2",
+        }).Ok();
+    }
+
+    [Fact]
+    public async Task Frozen_jury_results_prevent_deletion_even_without_grades()
+    {
+        var admin = await app.InstalledAdmin();
+        var setup = await SetupAsync(admin, "MUKENDI");
+        await admin.Post($"{D}/cloture", new
+        {
+            promotionId = setup.PromotionId, period = "S1", password = "Scolia2026!",
+            president = "Dr MUKENGE", members = "", notes = "",
+        }).Ok();
+
+        Guid studentId;
+        using (var scope = app.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<Scolia.Infrastructure.Persistence.ScoliaDbContext>();
+            studentId = await db.Enrollments.Where(e => e.Id == Guid.Parse(setup.Enrollments[0]))
+                .Select(e => e.StudentId).SingleAsync();
+        }
+        var (status, error) = await admin.DeleteAsync($"/api/apprenants/{studentId}").Fail();
+        Assert.Equal(HttpStatusCode.BadRequest, status);
+        Assert.Equal("apprenant", error.GetProperty("code").GetString());
+    }
+
+    [Fact]
+    public async Task Historic_anonymous_code_is_never_reassigned_even_to_its_previous_owner()
+    {
+        var admin = await app.InstalledAdmin();
+        var setup = await SetupAsync(admin, "MUKENDI");
+        await admin.Post($"{D}/codes/attribution", new { promotionId = setup.PromotionId }).Ok();
+        var former = (await CodesAsync(admin, setup.PromotionId))[setup.Enrollments[0]];
+        await admin.Put($"{D}/codes/{setup.Enrollments[0]}",
+            new { code = "ITM-26-AB12", reason = "Reprise du code officiel" }).Ok();
+
+        var preview = await admin.Post($"{D}/codes/import", new
+        {
+            promotionId = setup.PromotionId, text = $"MUKENDI Kabeya Grace;{former}", apply = false,
+        }).Ok();
+        Assert.Equal("Code pris", preview.GetProperty("lines")[0].GetProperty("status").GetString());
+        Assert.Equal(0, preview.GetProperty("ready").GetInt32());
     }
 }
