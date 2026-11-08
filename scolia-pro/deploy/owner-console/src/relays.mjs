@@ -10,10 +10,14 @@ export function safeRelayUrl(value) {
   if (typeof value !== "string" || value.length > 260) return null;
   try {
     const uri = new URL(value);
+    // Nom DNS public obligatoire : pas d'IP privées, IPv6 locales, noms
+    // intranet, formes numériques alternatives ou suffixes locaux.
+    const host = uri.hostname.toLowerCase();
+    const publicDns = /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z](?:[a-z0-9-]{0,61}[a-z0-9])$/i.test(host)
+      && !/\.(?:local|localhost|internal|lan|home|test|invalid)$/i.test(host);
     if (uri.protocol !== "wss:" || uri.username || uri.password ||
         uri.search || uri.hash || uri.pathname !== "/" ||
-        uri.hostname.length < 4 ||
-        /^(localhost|127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/i.test(uri.hostname))
+        uri.hostname.length < 4 || !publicDns)
       return null;
     return uri.toString();
   } catch { return null; }
@@ -125,20 +129,33 @@ export async function ownerRelayRequest(request, env, url,
   if (request.method === "PATCH" && match) {
     const data = await jsonBody(request), state = cleanLabel(data?.state, 20);
     if (!ALLOWED.has(state)) return fail("État inconnu (active ou disabled).", 400);
-    const current = await db.prepare("SELECT id FROM owner_relays WHERE id=?")
+    const current = await db.prepare("SELECT id,state,revision FROM owner_relays WHERE id=?")
       .bind(match[1]).first();
     if (!current) return fail("Relais inconnu.",404);
-    const revision = now;
-    // Invalider toutes les approbations de l'ancien relais en incrémentant sa révision.
-    const rows = await db.batch([
-      db.prepare("UPDATE owner_relays SET state='disabled',revision=?,updated_at=? WHERE state='active'")
-        .bind(revision,now),
-      db.prepare("UPDATE owner_relays SET state=?,revision=?,updated_at=? WHERE id=?")
-        .bind(state,revision,now,match[1])
-    ]);
-    if (!rows[1].meta?.changes) return fail("Relais inconnu.",404);
+    if (current.state === state)
+      return result({ id: match[1], state, revision: current.revision,
+        notice: "État inchangé : aucune approbation d'établissement n'est invalidée." });
+    // Une désactivation ne touche JAMAIS un autre relais actif.
+    // Une activation désactive l'ancien dans la même transaction D1,
+    // en attribuant une révision strictement croissante (pas Date.now seul).
+    if (state === "active") {
+      await db.batch([
+        db.prepare(`UPDATE owner_relays SET state='disabled',
+          revision=(SELECT MAX(revision)+1 FROM owner_relays), updated_at=?
+          WHERE state='active'`).bind(now),
+        db.prepare(`UPDATE owner_relays SET state='active',
+          revision=(SELECT MAX(revision)+1 FROM owner_relays), updated_at=?
+          WHERE id=?`).bind(now, match[1])
+      ]);
+    } else {
+      await db.prepare(`UPDATE owner_relays SET state='disabled',
+        revision=(SELECT MAX(revision)+1 FROM owner_relays),updated_at=?
+        WHERE id=?`).bind(now, match[1]).run();
+    }
+    const updated = await db.prepare("SELECT revision FROM owner_relays WHERE id=?")
+      .bind(match[1]).first();
     await audit(db,"relay_"+state,null,now);
-    return result({ id:match[1],state,revision,
+    return result({ id:match[1],state,revision:updated.revision,
       notice:"Chaque serveur doit accepter explicitement cette nouvelle révision." });
   }
   return fail("Commande de relais propriétaire inconnue.",404);
