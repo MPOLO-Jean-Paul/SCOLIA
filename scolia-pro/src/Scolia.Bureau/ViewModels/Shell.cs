@@ -961,6 +961,8 @@ public sealed class ShellViewModel : Observable
         api.LicenseReadOnly = api.Offline.IsLicenseReadOnlyFor(s.UserName);
         Login.RememberAccount(s.UserName);
         Sync.Start();
+        // Accès de dépôt en ligne du compte, pour les opérations faites pendant une coupure du serveur.
+        if (api.IsOnline) _ = api.RefreshCloudAccessAsync();
         nextLicenseCheckUtc = DateTime.MinValue;
         _ = License.RefreshAsync();
         // Une première session Promoteur vérifiée mémorise son appareil :

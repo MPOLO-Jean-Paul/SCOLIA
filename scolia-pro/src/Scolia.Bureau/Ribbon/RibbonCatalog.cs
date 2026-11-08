@@ -182,6 +182,7 @@ public static class RibbonCatalog
             [
                 Group("Sauvegardes",
                     Large(shell, "Sauvegardes", DatabaseExportOutline, "Sauvegardes vérifiées, téléchargement et restauration.", () => shell.Open(() => new DataPage(shell)), Green, perm: Perm.BackupManage),
+                    Large(shell, "Sauvegarde en ligne", CloudLockOutline, "Copie chiffrée automatique vers la console JP-Services et reprise des opérations faites pendant une coupure.", () => shell.Open(() => new CloudBackupPage(shell)), Blue, perm: Perm.BackupManage),
                     Small(shell, "Sauvegarder", ContentSaveOutline, "Crée tout de suite une sauvegarde vérifiée.", () => DataPage.BackupNowAsync(shell), Neutral, perm: Perm.BackupManage),
                     Small(shell, "Importation du classeur", Upload, "Importe les listes nominatives, promotions et, s’ils existent, les paiements d’un classeur Excel.", () => DataPage.ImportAsync(shell), Neutral, perm: Perm.BackupManage),
                     Small(shell, "Modèle d'import", FileExcelOutline, "Classeur vide à remplir pour reprendre des données tenues dans un autre fichier Excel.", () => DataPage.TemplateAsync(shell), Neutral, perm: Perm.BackupManage)),

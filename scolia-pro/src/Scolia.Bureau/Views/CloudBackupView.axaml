@@ -1,0 +1,63 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:infra="using:Scolia.Bureau.Infrastructure"
+             xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:c="using:Scolia.Bureau.Controls"
+             x:Class="Scolia.Bureau.Views.CloudBackupView">
+  <Grid RowDefinitions="Auto,Auto,Auto,*,Auto">
+    <!-- L'état en quatre chiffres -->
+    <ItemsControl Grid.Row="0" ItemsSource="{Binding Stats}" ItemTemplate="{StaticResource KpiTile}" Margin="0,0,-12,0">
+      <ItemsControl.ItemsPanel>
+        <ItemsPanelTemplate><UniformGrid Columns="4" infra:Adaptive.MinItemWidth="170" /></ItemsPanelTemplate>
+      </ItemsControl.ItemsPanel>
+    </ItemsControl>
+
+    <!-- Ce qu'il faut faire maintenant -->
+    <Border Grid.Row="1" Background="{DynamicResource OrangeSoftBrush}" BorderBrush="{DynamicResource LineBrush}" BorderThickness="1"
+            CornerRadius="{StaticResource RadiusSmall}" Padding="16,12" Margin="0,0,0,12" IsVisible="{Binding HasNotice}">
+      <Grid ColumnDefinitions="Auto,*">
+        <mi:MaterialIcon Kind="InformationOutline" Width="20" Height="20" Foreground="{DynamicResource ToneOrange}" VerticalAlignment="Top" Margin="0,1,10,0" />
+        <TextBlock Grid.Column="1" Text="{Binding Notice}" TextWrapping="Wrap" />
+      </Grid>
+    </Border>
+
+    <Grid Grid.Row="2" ColumnDefinitions="Auto,*" ColumnSpacing="8" Margin="2,0,0,10">
+      <mi:MaterialIcon Kind="ShieldLockOutline" Width="16" Height="16" Foreground="{DynamicResource ToneGreen}" VerticalAlignment="Top" Margin="0,2,0,0" />
+      <TextBlock Grid.Column="1" Classes="muted" TextWrapping="Wrap"
+                 Text="Copies chiffrées ici avec la clé de l'école (AES-256), gardées en ligne 24 h en détail, puis une par jour sur 30 jours et une par mois sur 12 mois. JP-Services n'en voit que la date et la taille." />
+    </Grid>
+
+    <DataGrid Grid.Row="3" ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}" AutoGenerateColumns="False" IsReadOnly="True">
+      <DataGrid.Columns>
+        <DataGridTextColumn Header="Copie du" Binding="{Binding Created}" Width="*" MinWidth="170" />
+        <DataGridTextColumn Header="Taille chiffrée" Binding="{Binding Size}" Width="Auto" MinWidth="120" />
+        <DataGridTextColumn Header="Clé" Binding="{Binding Key}" Width="Auto" MinWidth="190" infra:GridPriority.Level="2" />
+      </DataGrid.Columns>
+    </DataGrid>
+    <c:EmptyState Grid.Row="3" Icon="CloudOutline" Title="Aucune copie en ligne"
+                  Hint="Une fois la sauvegarde en ligne activée, la première copie part dans les minutes qui suivent, puis tout se fait seul."
+                  IsVisible="{Binding Items.Count, Converter={StaticResource IsEmpty}}" />
+
+    <!-- Opérations reçues en ligne mais refusées : rien n'est perdu en silence -->
+    <Border Grid.Row="4" Classes="card" Margin="0,12,0,0" IsVisible="{Binding HasRefusals}">
+      <StackPanel Spacing="8">
+        <TextBlock Text="Opérations en ligne refusées" Classes="heading" />
+        <TextBlock Classes="muted" TextWrapping="Wrap" Text="Déposées par un appareil pendant une coupure, puis refusées par les règles du serveur. L'appareil les retrouvera dans « Envois » avec le même motif." />
+        <ItemsControl ItemsSource="{Binding Refusals}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate>
+              <StackPanel Spacing="1" Margin="0,0,0,8">
+                <TextBlock TextWrapping="Wrap">
+                  <Run Text="{Binding Label, Mode=OneWay}" FontWeight="SemiBold" />
+                  <Run Text="{Binding When, StringFormat=' · {0}', Mode=OneWay}" Foreground="{DynamicResource MutedBrush}" />
+                  <Run Text="{Binding User, StringFormat=' · {0}', Mode=OneWay}" Foreground="{DynamicResource MutedBrush}" />
+                </TextBlock>
+                <TextBlock Text="{Binding Reason}" Classes="muted" TextWrapping="Wrap" />
+              </StackPanel>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </StackPanel>
+    </Border>
+  </Grid>
+</UserControl>

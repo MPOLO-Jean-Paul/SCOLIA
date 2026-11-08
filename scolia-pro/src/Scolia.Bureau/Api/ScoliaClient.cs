@@ -15,7 +15,7 @@ namespace Scolia.Bureau.Api;
 /// Hors ligne, les pages déjà lues sont rendues depuis l'appareil et les écritures sont mises en file,
 /// puis envoyées dans l'ordre au retour de l'ordinateur principal.
 /// </summary>
-public sealed class ScoliaClient : IDisposable
+public sealed partial class ScoliaClient : IDisposable
 {
     private CookieContainer cookies = new();
     private HttpClient http;
@@ -414,6 +414,7 @@ public sealed class ScoliaClient : IDisposable
             if (durable is null)
                 throw new OfflineException("Cette action nécessite l'ordinateur principal. Reconnectez-vous pour la terminer.");
             Queued?.Invoke(durable);
+            DepositSoon();
             throw new OfflineQueuedException($"{durable.Label} : enregistré sur cet appareil. Envoi automatique au retour de l'appareil principal.");
         }
         try
@@ -428,6 +429,7 @@ public sealed class ScoliaClient : IDisposable
             SetOnline(false);
             if (durable is null) throw new OfflineException("Appareil principal injoignable : cette action demande la connexion. Elle sera possible dès son retour.");
             Queued?.Invoke(durable);
+            DepositSoon();
             throw new OfflineQueuedException($"{durable.Label} : enregistré sur cet appareil. Envoi automatique au retour de l'appareil principal.");
         }
         catch (ApiException ex)
@@ -518,26 +520,16 @@ public sealed class ScoliaClient : IDisposable
         && !path.StartsWith("api/direct", StringComparison.Ordinal)
         && !path.StartsWith("api/revision", StringComparison.Ordinal)
         && !path.StartsWith("api/sante", StringComparison.Ordinal)
-        && !path.StartsWith("api/session", StringComparison.Ordinal);
+        && !path.StartsWith("api/session", StringComparison.Ordinal)
+        // État et code de secours de la sauvegarde en ligne : jamais gardés sur l'appareil.
+        && !path.StartsWith("api/nuage", StringComparison.Ordinal);
 
     /// <summary>
     /// Écritures du quotidien qui peuvent attendre le retour du serveur. Les aperçus, les exports, les sauvegardes,
     /// les effacements et les réglages de l'établissement demandent le serveur, tout de suite.
     /// </summary>
-    public static bool Queueable(HttpMethod method, string path)
-    {
-        if (method != HttpMethod.Post && method != HttpMethod.Put && method.Method != "PATCH") return false;
-        // Les annulations de reçus, effacements et opérations irréversibles restent
-        // à confirmer auprès du serveur : pas de validation fictive hors ligne.
-        if (new[] { "annulation", "effacement", "supprimer", "revoquer", "export", "apercu" }
-            .Any(term => path.Contains(term, StringComparison.OrdinalIgnoreCase))) return false;
-        string[] daily =
-        [
-            "api/apprenants", "api/inscriptions", "api/paiements", "api/depenses", "api/scolarite/presences",
-            "api/scolarite/discipline", "api/scolarite/evaluations", "api/personnel",
-        ];
-        return daily.Any(prefix => path.StartsWith(prefix, StringComparison.Ordinal));
-    }
+    public static bool Queueable(HttpMethod method, string path) =>
+        Scolia.Domain.Cloud.CloudOperationRules.Queueable(method.Method, path);
 
     private static string Describe(HttpMethod method, string path) => path switch
     {

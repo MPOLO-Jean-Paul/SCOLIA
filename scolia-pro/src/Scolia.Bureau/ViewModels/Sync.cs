@@ -194,7 +194,9 @@ public sealed class SyncCenter : Observable, IDisposable
     }
 
     /// <summary>État lisible de la connexion, pour la barre du haut et l'accueil.</summary>
-    public string StatusText => Offline ? (HasPending ? $"Hors ligne · {Pending} en attente" : "Hors ligne")
+    public string StatusText => Offline ? (HasPending
+            ? (api.DepositedCount is > 0 and var safe ? $"Hors ligne · {Pending} en attente, {safe} en sécurité en ligne" : $"Hors ligne · {Pending} en attente")
+            : "Hors ligne")
         : syncing ? "Synchronisation…"
         : HasConflicts ? $"{Conflicts} opération(s) refusée(s)"
         : "En ligne";
@@ -581,7 +583,14 @@ public sealed class SyncCenter : Observable, IDisposable
         {
             if (!await api.IsRunningAsync())
             {
-                if (manual) shell.Notify("L'ordinateur principal ne répond toujours pas. Vérifiez qu'il est allumé et que la liaison Wi-Fi ou Internet est disponible.");
+                // Relève en ligne : les opérations gardées partent aussi, chiffrées, vers la boîte de
+                // l'établissement ; celles que le serveur a déjà appliquées quittent la file.
+                var reconciled = await api.ReconcileCloudAsync();
+                var deposited = await api.DepositPendingAsync();
+                if (reconciled > 0 || deposited > 0) RaiseCounts();
+                if (manual) shell.Notify(api.DepositedCount > 0
+                    ? $"L'ordinateur principal ne répond pas. {api.DepositedCount} opération(s) sont en sécurité en ligne : il les appliquera dès son retour."
+                    : "L'ordinateur principal ne répond toujours pas. Vérifiez qu'il est allumé et que la liaison Wi-Fi ou Internet est disponible.");
                 return;
             }
             if (await api.CurrentSessionAsync() is null)
@@ -601,6 +610,8 @@ public sealed class SyncCenter : Observable, IDisposable
                 api.Offline?.SaveCredential(userName, password, restored, api.SessionCookie);
             }
             var (sent, refused) = await api.FlushAsync();
+            // Serveur joint : l'accès de dépôt en ligne du compte est renouvelé (30 jours).
+            _ = api.RefreshCloudAccessAsync();
             // Le point du réseau passe simplement au vert. Ne pas afficher une notification
             // à chaque reconnexion réussie : seules les opérations refusées demandent une action.
             if (refused > 0) shell.Notify($"{refused} opération(s) refusée(s) par le serveur : ouvrez « Envois » pour les revoir.", SoundKind.Error);

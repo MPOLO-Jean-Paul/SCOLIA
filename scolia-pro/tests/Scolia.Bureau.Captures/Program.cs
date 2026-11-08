@@ -2443,6 +2443,7 @@ Page(() => new DeliberationPage(shell), "16g-deliberation.png");
 Page(() => new EncodingProgressPage(shell), "16h-suivi-encodage.png");
 Page(() => new DeliberationSettingsPage(shell), "16i-parametres-deliberation.png");
 Page(() => new TeacherAccountsPage(shell), "16j-comptes-enseignants.png");
+Page(() => new CloudBackupPage(shell), "21b-sauvegarde-en-ligne.png");
 Page(() => new StaffAttendancePage(shell), "18b-pointage.png");
 Page(() => new EraseDataPage(shell, payments: true), "22b-effacer-donnees.png");
 Page(() => new EraseDataPage(shell, payments: false), "22c-effacer-apprenants.png");

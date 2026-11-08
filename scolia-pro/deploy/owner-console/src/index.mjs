@@ -4,6 +4,7 @@ import {
 } from "./policy.mjs";
 import { ownerRelayRequest, schoolRelayRequest } from "./relays.mjs";
 import { evaluateLicense, validateLicensePatch, MAX_GRACE_DAYS, DAY_MS } from "./licenses.mjs";
+import { serverCloudRequest, deviceCloudRequest, ownerCloudOverview, cloudMaintenance } from "./cloud.mjs";
 
 const headers = {
   "Content-Type": "application/json; charset=utf-8",
@@ -79,8 +80,15 @@ async function serveOwner(request, env, url) {
           manual_override,override_until FROM schools`).all()
       ]);
       const suspended = policies.results.filter(s => evaluateLicense(s, now).readonly).length;
+      const cloud = await db.prepare(`SELECT
+          (SELECT count(*) FROM school_cloud WHERE enabled=1) AS enabled,
+          (SELECT count(*) FROM school_cloud WHERE enabled=1 AND (last_backup_at IS NULL OR last_backup_at < ?)) AS late,
+          (SELECT coalesce(sum(size_bytes),0) FROM school_backups) AS bytes,
+          (SELECT count(*) FROM school_mailbox) AS pending`).bind(now - 26 * 3_600_000).first();
       return result({ schools: schools?.n ?? 0, server_devices: devices?.n ?? 0,
-        active_schools_30d: active?.n ?? 0, suspended });
+        active_schools_30d: active?.n ?? 0, suspended,
+        cloud_enabled: cloud?.enabled ?? 0, cloud_backup_late: cloud?.late ?? 0,
+        cloud_backup_bytes: cloud?.bytes ?? 0, cloud_pending_operations: cloud?.pending ?? 0 });
     }
     if (url.pathname === "/api/v1/owner/audit") {
       const rows = await db.prepare(`SELECT a.action,a.school_id,s.name AS school_name,a.created_at
@@ -92,10 +100,13 @@ async function serveOwner(request, env, url) {
       const rows = await db.prepare(`SELECT s.id,s.name,s.state,s.created_at,s.last_seen,
         s.license_expires_at,s.billing_enabled,s.trial_days,s.paid_until,s.grace_until,
         s.manual_override,s.override_until,
-        count(d.installation_hash) AS device_count
-        FROM schools s LEFT JOIN server_devices d ON s.id=d.school_id
-        GROUP BY s.id ORDER BY s.last_seen DESC LIMIT 500`).all();
-      return result({ schools: rows.results.map(s => ({...s, license: evaluateLicense(s, now)})) });
+        (SELECT count(*) FROM server_devices d WHERE d.school_id=s.id) AS device_count,
+        coalesce(c.enabled,0) AS cloud_enabled, c.last_backup_at, c.server_seen_at,
+        (SELECT count(*) FROM school_mailbox m WHERE m.school_id=s.id) AS pending_operations
+        FROM schools s LEFT JOIN school_cloud c ON c.school_id=s.id
+        ORDER BY s.last_seen DESC LIMIT 500`).all();
+      return result({ schools: rows.results.map(s => ({...s, license: evaluateLicense(s, now),
+        cloud_backup_late: !!s.cloud_enabled && (!s.last_backup_at || now - s.last_backup_at > 26 * 3_600_000)})) });
     }
     const match = /^\/api\/v1\/owner\/schools\/([a-f0-9-]{36})$/.exec(url.pathname);
     if (match) {
@@ -108,7 +119,8 @@ async function serveOwner(request, env, url) {
         FROM school_activity WHERE school_id=? ORDER BY activity_day DESC LIMIT 90`)
         .bind(match[1]).all();
       return result({ school, license: evaluateLicense(school, now),
-        devices: devices.results, activity: history.results });
+        devices: devices.results, activity: history.results,
+        cloud: await ownerCloudOverview(db, match[1], now) });
     }
   }
 
@@ -123,6 +135,20 @@ async function serveOwner(request, env, url) {
     await audit(db, "invitation_created", null, now);
     return result({ invite_code: invite, school_name: name, expires_at: expires,
       notice: "Transmettre ce code uniquement au responsable du serveur SCOLIA." }, 201);
+  }
+  // Reprise après sinistre : relier un NOUVEAU serveur à cet établissement. À l'usage,
+  // les jetons de l'ancien serveur sont révoqués : il n'y a jamais deux serveurs principaux.
+  const recovery = /^\/api\/v1\/owner\/schools\/([a-f0-9-]{36})\/recovery-invitation$/.exec(url.pathname);
+  if (request.method === "POST" && recovery) {
+    const school = await db.prepare("SELECT id,name FROM schools WHERE id=?").bind(recovery[1]).first();
+    if (!school) return fail("Établissement inconnu.", 404);
+    const invite = randomToken();
+    const expires = now + 3 * 86400_000;
+    await db.prepare(`INSERT INTO owner_invites(code_hash,school_name,created_at,expires_at,recover_school_id)
+      VALUES(?,?,?,?,?)`).bind(await sha(invite), school.name, now, expires, school.id).run();
+    await audit(db, "recovery_invitation_created", school.id, now);
+    return result({ invite_code: invite, school_name: school.name, expires_at: expires,
+      notice: "Invitation de reprise : à saisir sur le NOUVEAU serveur, puis restaurer une copie en ligne avec le code de secours de l'école." }, 201);
   }
   if (request.method === "PATCH") {
     const advanced = /^\/api\/v1\/owner\/schools\/([a-f0-9-]{36})\/license$/.exec(url.pathname);
@@ -166,7 +192,7 @@ async function registerSchool(request, env) {
   if (!body.ok) return fail(body.error, 400);
   const db = env.OWNER_DB, now = nowMs();
   const codeHash = await sha(body.code);
-  const invited = await db.prepare(`SELECT school_name FROM owner_invites
+  const invited = await db.prepare(`SELECT school_name,recover_school_id FROM owner_invites
     WHERE code_hash=? AND used_at IS NULL AND expires_at>?`)
     .bind(codeHash, now).first();
   if (!invited) return fail("Invitation invalide, utilisée ou expirée.", 403);
@@ -175,6 +201,7 @@ async function registerSchool(request, env) {
     .replace(/[\u0300-\u036f]/g,"").toLowerCase();
   if (identity(invited.school_name) !== identity(body.school))
     return fail("Le nom de l'établissement ne correspond pas à l'invitation JP-Services.", 409);
+  if (invited.recover_school_id) return recoverSchool(request, db, body, codeHash, invited.recover_school_id, now);
   const id = crypto.randomUUID(), token = randomToken();
   const tokenHash = await sha(token);
   // Le nom enregistré est celui de l'invitation, non celui librement fourni par le client.
@@ -199,6 +226,35 @@ async function registerSchool(request, env) {
     return fail("Invitation invalide, utilisée ou expirée.", 403);
   return result({ school_id: id, school_token: token, license_status: "free",
     notice: "Conservez le jeton dans le coffre sécurisé du serveur scolaire, jamais dans Git." }, 201);
+}
+
+// Nouveau serveur d'un établissement existant (machine remplacée, volée ou détruite).
+// Une seule transaction : invitation consommée, anciens jetons révoqués, nouveau jeton,
+// sauvegarde en ligne suspendue jusqu'à ce que le nouveau serveur l'active avec sa clé.
+async function recoverSchool(request, db, body, codeHash, schoolId, now) {
+  const token = randomToken();
+  const claim = await sha(token);
+  // Chaque écriture n'agit que si CETTE requête a réservé l'invitation (claim unique) :
+  // deux usages simultanés ne peuvent jamais produire deux serveurs ni révoquer à tort.
+  const owned = "EXISTS (SELECT 1 FROM owner_invites WHERE code_hash=? AND recover_claim=?)";
+  const results = await db.batch([
+    db.prepare(`UPDATE owner_invites SET used_at=?,recover_claim=? WHERE code_hash=? AND used_at IS NULL AND expires_at>?`)
+      .bind(now, claim, codeHash, now),
+    db.prepare(`UPDATE school_tokens SET revoked_at=? WHERE school_id=? AND revoked_at IS NULL AND ${owned}`)
+      .bind(now, schoolId, codeHash, claim),
+    db.prepare(`INSERT INTO school_tokens(token_hash,school_id,created_at) SELECT ?,?,? WHERE ${owned}`)
+      .bind(claim, schoolId, now, codeHash, claim),
+    db.prepare(`INSERT INTO server_devices(school_id,installation_hash,device_name,first_seen,last_seen,last_ip,ip_seen_at)
+      SELECT ?,?,?,?,?,?,? WHERE ${owned} ON CONFLICT(school_id,installation_hash) DO UPDATE SET
+      device_name=excluded.device_name,last_seen=excluded.last_seen,last_ip=excluded.last_ip,ip_seen_at=excluded.ip_seen_at`)
+      .bind(schoolId, await sha(body.deviceId), body.device, now, now, normalizeIp(request.headers.get("CF-Connecting-IP")), now, codeHash, claim),
+    db.prepare(`UPDATE school_cloud SET enabled=0,deposit_token_hash=NULL,changed_at=? WHERE school_id=? AND ${owned}`)
+      .bind(now, schoolId, codeHash, claim),
+  ]);
+  if (results[0].meta?.changes !== 1) return fail("Invitation invalide, utilisée ou expirée.", 403);
+  await audit(db, "school_server_recovered", schoolId, now);
+  return result({ school_id: schoolId, school_token: token, license_status: "free", recovered: true,
+    notice: "Serveur de reprise relié. Restaurez une copie en ligne avec le code de secours, puis réactivez la sauvegarde en ligne." }, 201);
 }
 
 async function heartbeat(request, env) {
@@ -234,6 +290,7 @@ async function heartbeat(request, env) {
       (school_id,event_id,activity_day,created_at) VALUES(?,?,?,?)`)
       .bind(school.id, validated.eventId, activityDay, now),
     db.prepare("UPDATE schools SET last_seen=? WHERE id=?").bind(now, school.id),
+    db.prepare("UPDATE school_cloud SET server_seen_at=? WHERE school_id=?").bind(now, school.id),
     db.prepare(`INSERT INTO server_devices
       (school_id,installation_hash,device_name,first_seen,last_seen,last_ip,ip_seen_at)
       VALUES(?,?,?,?,?,?,?)
@@ -276,12 +333,14 @@ Il n'est ni stocké dans le navigateur ni transmis à une autre origine.</p>
 <div class="cards"><article class="card"><small>Établissements</small><div class="metric" id="schools">—</div></article>
 <article class="card"><small>Serveurs enregistrés</small><div class="metric" id="devices">—</div></article>
 <article class="card"><small>Écoles actives (30 j)</small><div class="metric" id="active">—</div></article>
-<article class="card"><small>Licences suspendues</small><div class="metric" id="suspended">—</div></article></div>
+<article class="card"><small>Licences suspendues</small><div class="metric" id="suspended">—</div></article>
+<article class="card"><small>Sauvegarde en ligne active</small><div class="metric" id="cloudOn">—</div><small id="cloudLate"></small></article>
+<article class="card"><small>Copies chiffrées stockées</small><div class="metric" id="cloudBytes">—</div><small id="cloudPending"></small></article></div>
 <section class="panel"><h2>Établissements</h2>
 <div class="toolbar"><button id="refresh">Actualiser</button><button id="logout" class="secondary">Verrouiller la console</button><input id="newschool" placeholder="Nom d'un nouvel établissement">
 <button id="invite" class="secondary">Créer une invitation</button></div>
 <p class="info" id="inviteResult"></p><div style="overflow-x:auto"><table><thead><tr>
-<th>Établissement</th><th>Licence</th><th>Serveurs</th><th>Dernière activité</th><th>Gestion</th></tr></thead>
+<th>Établissement</th><th>Licence</th><th>Serveurs</th><th>Dernière activité</th><th>Sauvegarde en ligne</th><th>Gestion</th></tr></thead>
 <tbody id="rows"></tbody></table></div></section>
 <section class="panel"><h2>Fournisseurs de relais Internet</h2>
 <p class="info">Configurer des adresses WSS publiques sans publier de clés sur GitHub.
@@ -302,7 +361,12 @@ Le suivi des licences utilise HTTPS directement, même depuis un Wi-Fi disposant
 <div style="overflow-x:auto"><table><thead><tr>
 <th>Date</th><th>Établissement</th><th>Action</th>
 </tr></thead><tbody id="auditRows"></tbody></table></div></section>
-<section class="panel" id="detailsPanel" hidden><h2>Fiche établissement</h2><pre id="details"></pre>
+<section class="panel" id="detailsPanel" hidden><h2>Fiche établissement</h2>
+<div class="cards" id="cloudCards"></div>
+<p class="info">Copies et opérations chiffrées par l'école : JP-Services voit leur date et leur taille, jamais leur contenu.</p>
+<div class="toolbar"><button id="recoveryInvite" class="secondary">Invitation de reprise (nouveau serveur)</button></div>
+<p class="info" id="recoveryResult"></p>
+<details><summary class="info">Détails techniques</summary><pre id="details"></pre></details>
 <p class="info" id="licenseSummary">Statut de licence</p>
 <div class="toolbar">
   <button id="billingOn">Activer la facturation</button>
@@ -331,6 +395,10 @@ const request=async (path,method="GET",body)=>{
  "Content-Type":"application/json"},body:body?JSON.stringify(body):undefined});
  const value=await r.json();if(!r.ok)throw Error(value.error||"Opération refusée");return value;
 };
+function size(n){n=Number(n||0);return n>=1073741824?(n/1073741824).toFixed(2)+" Gio":n>=1048576?(n/1048576).toFixed(1)+" Mio":Math.round(n/1024)+" Kio";}
+function card(label,value,hint){const a=document.createElement("article");a.className="card";
+ const s1=document.createElement("small");s1.textContent=label;const m=document.createElement("div");m.className="metric";m.textContent=value;
+ const s2=document.createElement("small");s2.textContent=hint||"";a.append(s1,m,s2);return a;}
 function textCell(tr,v){const td=document.createElement("td");td.textContent=String(v??"—");tr.appendChild(td);return td;}
 async function reload(){
  const [stats,listing,relays,history]=await Promise.all([
@@ -341,6 +409,10 @@ async function reload(){
  ]);
  $("schools").textContent=stats.schools;$("devices").textContent=stats.server_devices;
  $("active").textContent=stats.active_schools_30d;$("suspended").textContent=stats.suspended;
+ $("cloudOn").textContent=stats.cloud_enabled;
+ $("cloudLate").textContent=stats.cloud_backup_late?stats.cloud_backup_late+" en retard (> 26 h)":"aucune en retard";
+ $("cloudBytes").textContent=size(stats.cloud_backup_bytes);
+ $("cloudPending").textContent=stats.cloud_pending_operations+" opération(s) en attente de serveur";
  $("rows").replaceChildren();
  $("relayRows").replaceChildren();
  $("auditRows").replaceChildren();
@@ -372,6 +444,9 @@ async function reload(){
  for(const s of listing.schools){
    const tr=document.createElement("tr");textCell(tr,s.name);textCell(tr,s.license.license_status+(s.license.readonly?" · lecture seule":""));
    textCell(tr,s.device_count);textCell(tr,s.last_seen?new Date(s.last_seen).toLocaleDateString("fr"):"Jamais");
+   textCell(tr,!s.cloud_enabled?"Inactive":(s.cloud_backup_late?"EN RETARD":"À jour")+
+     (s.last_backup_at?" · "+new Date(s.last_backup_at).toLocaleString("fr"):"")+
+     (s.pending_operations?" · "+s.pending_operations+" en attente":""));
    const td=document.createElement("td"),btn=document.createElement("button");
    btn.textContent="Consulter";btn.className="secondary";btn.onclick=()=>openSchool(s.id);
    td.appendChild(btn);tr.appendChild(td);$("rows").appendChild(tr);
@@ -381,6 +456,12 @@ async function openSchool(id){
  selected=id;const value=await request("/api/v1/owner/schools/"+id);
  $("detailsPanel").hidden=false;
  $("details").textContent=JSON.stringify(value,null,2);
+ const c=value.cloud;$("recoveryResult").textContent="";
+ $("cloudCards").replaceChildren(
+   card("Sauvegarde en ligne",c.enabled?(c.backup_late?"En retard":"Active"):"Inactive",c.consented_at?"activée le "+new Date(c.consented_at).toLocaleDateString("fr"):"non activée par l'école"),
+   card("Dernière copie",c.last_backup_at?new Date(c.last_backup_at).toLocaleString("fr"):"—",c.backups.length+" copie(s) · "+size(c.backup_bytes)),
+   card("Serveur de l'école",c.server_online?"En ligne":"Hors ligne",c.server_seen_at?"vu le "+new Date(c.server_seen_at).toLocaleString("fr"):"jamais vu"),
+   card("Opérations en attente",String(c.pending_operations),c.oldest_pending_at?"depuis le "+new Date(c.oldest_pending_at).toLocaleString("fr"):"rien à reprendre"));
  const lic=value.license;
  $("licenseSummary").textContent="Licence : "+lic.license_status+
    (lic.days_remaining===null?"":(" · "+lic.days_remaining+" jour(s) restant(s)"))+
@@ -426,6 +507,13 @@ async function updateLicense(patch,explanation){
    await reload();await openSchool(selected);
  }catch(e){alert(e.message);}
 }
+$("recoveryInvite").onclick=async()=>{
+ if(!selected)return;
+ if(!confirm("Créer une invitation de reprise ? Son usage sur un nouveau serveur révoquera l'ancien serveur de cet établissement."))return;
+ try{const r=await request("/api/v1/owner/schools/"+selected+"/recovery-invitation","POST",{});
+ $("recoveryResult").textContent="Invitation de reprise (affichée une seule fois, valable 3 jours) : "+r.invite_code;}
+ catch(e){alert(e.message);}
+};
 $("billingOn").onclick=()=>updateLicense({billing_enabled:true},
  "Activer le calendrier de paiement pour cet établissement ? Les restrictions automatiques seront déterminées par les dates enregistrées.");
 $("billingOff").onclick=()=>updateLicense({billing_enabled:false},
@@ -466,6 +554,7 @@ export default {
       await prune(env.OWNER_DB, now);
       await env.OWNER_DB.prepare("DELETE FROM school_activity_events WHERE created_at < ?")
         .bind(now - 120 * 86400_000).run();
+      await cloudMaintenance(env, now);
     })());
   },
   async fetch(request, env, ctx) {
@@ -481,7 +570,8 @@ export default {
         return fail("Authentification Cloudflare Access obligatoire.", 403);
     }
     if (request.method === "GET" && url.pathname === "/health")
-      return result({ service: "SCOLIA Pro Owner", mode: "metadata-only", consent_version: CONSENT_VERSION });
+      return result({ service: "SCOLIA Pro Owner", mode: "metadata-only", consent_version: CONSENT_VERSION,
+        continuity: "encrypted-by-school" });
     if (request.method === "GET" && url.pathname === "/")
       return Response.redirect(new URL("/console", url).toString(), 302);
     if (request.method === "GET" && url.pathname === "/console")
@@ -493,15 +583,21 @@ export default {
     if (!allowedOrigin(request)) return fail("Origine interdite.", 403);
     if (request.method === "GET" && url.pathname === "/api/v1/notice")
       return result({ version: CONSENT_VERSION,
-        purpose: "Gestion des licences, disponibilité déclarée des serveurs scolaires et choix des relais Internet à la demande.",
+        purpose: "Gestion des licences, disponibilité déclarée des serveurs scolaires, choix des relais Internet à la demande et, sur activation par l'école, continuité en ligne (sauvegardes et opérations chiffrées par l'école, illisibles par JP-Services).",
         collected: ["nom d'établissement", "nom de l'appareil serveur", "identifiant d'installation pseudonyme", "adresse IP réseau (30 jours)", "dates d'activité et statut de licence"],
-        excluded: ["élèves", "enseignants", "utilisateurs internes", "paiements", "documents", "mots de passe"],
+        excluded: ["élèves", "enseignants", "utilisateurs internes", "paiements", "documents", "mots de passe", "clé de chiffrement des sauvegardes"],
+        encrypted_by_school: ["copies de la base (sauvegarde en ligne)", "opérations faites pendant une coupure du serveur"],
         activation: "accord explicite du responsable du serveur et invitation JP-Services ; une seconde approbation est exigée pour activer ou changer le relais",
         data_retention: "IP 30 jours ; autres métadonnées tant que la licence est suivie" });
     if (request.method === "POST" && url.pathname === "/api/v1/register")
       return registerSchool(request, env);
     if (request.method === "POST" && url.pathname === "/api/v1/heartbeat")
       return heartbeat(request, env);
+    if (url.pathname.startsWith("/api/v1/server/cloud/"))
+      return serverCloudRequest(request, env, url,
+        { bearer, sha, fail, result, nowMs, randomToken });
+    if (url.pathname.startsWith("/api/v1/device/"))
+      return deviceCloudRequest(request, env, url, { bearer, sha, fail, result, nowMs });
     if (url.pathname.startsWith("/api/v1/server/relay-"))
       return schoolRelayRequest(request, env, url,
         { bearer, sha, jsonBody, fail, result, nowMs });
