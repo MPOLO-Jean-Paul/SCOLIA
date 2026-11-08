@@ -609,8 +609,28 @@ namespace Scolia.Infrastructure.Persistence.Migrations
                     b.Property<bool>("EncodingS2Open")
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("JuryMembers")
+                        .HasMaxLength(600)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("JuryPresident")
+                        .HasMaxLength(120)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("JurySecretary")
+                        .HasMaxLength(120)
+                        .HasColumnType("TEXT");
+
                     b.Property<long>("PassPercent")
                         .HasColumnType("INTEGER");
+
+                    b.Property<string>("Prefect")
+                        .HasMaxLength(120)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Principal")
+                        .HasMaxLength(120)
+                        .HasColumnType("TEXT");
 
                     b.Property<bool>("SupportEnabled")
                         .HasColumnType("INTEGER");

@@ -164,7 +164,8 @@ public sealed class MarkEditRowVm(Guid enrollmentId, string code, string matricu
 /// </summary>
 public sealed class MarksPage : PageViewModel
 {
-    private static readonly IReadOnlyList<ChoiceItem> AllKinds = [new("S1", "Cote du S1"), new("S2", "Cote du S2"), new("Appui", "Moyenne d'appui (sur 10)")];
+    private static readonly IReadOnlyList<ChoiceItem> AllKinds =
+        [new("S1", "Cote du S1"), new("S2", "Cote du S2"), new("Appui", "Moyenne d'appui (sur 10)"), new("Jury", "Cote du jury (épreuve)")];
 
     private ChoiceItem? promotion;
     private DeliberationCourseRowVm? course;
@@ -251,7 +252,8 @@ public sealed class MarksPage : PageViewModel
     {
         "S1" => semester is "S1" or "Annuel",
         "S2" => semester is "S2" or "Annuel",
-        _ => true,
+        "Jury" => semester is "JuryEpreuve" or "JuryBloc",
+        _ => semester is not ("JuryEpreuve" or "JuryBloc"),
     };
 
     public override async Task LoadAsync()
@@ -287,6 +289,7 @@ public sealed class MarksPage : PageViewModel
         {
             var progress = c.Semester switch
             {
+                "JuryEpreuve" or "JuryBloc" => $"Jury {c.GradedJury}/{c.Students}",
                 "S1" => $"S1 {c.GradedS1}/{c.Students}",
                 "S2" => $"S2 {c.GradedS2}/{c.Students}",
                 _ => $"S1 {c.GradedS1}/{c.Students} · S2 {c.GradedS2}/{c.Students}",
@@ -461,6 +464,8 @@ public sealed class DeliberationPage : PageViewModel
             Action("Clôturer la délibération", MaterialIconKind.LockCheck, CloseAsync, primary: true);
             Action("Rouvrir", MaterialIconKind.LockOpenVariant, ReopenAsync, danger: true);
             Action("Réglages de l'encodage", MaterialIconKind.ToggleSwitchOutline, () => SettingsAsync(Shell));
+            Action("Autorités et jury", MaterialIconKind.AccountCheck, () => AuthoritiesAsync(Shell));
+            Action("Créer les épreuves du jury", MaterialIconKind.FormatListChecks, CreateJuryEvaluationsAsync);
         }
         Action("Procès-verbal (PDF)", MaterialIconKind.FileSign, () => DownloadAsync("proces-verbal.pdf", null, "proces-verbal.pdf"));
         Action("Grille des cotes (PDF)", MaterialIconKind.Grid, () => DownloadAsync("grille", "pdf", "grille-des-cotes.pdf"));
@@ -510,7 +515,8 @@ public sealed class DeliberationPage : PageViewModel
         IsClosed = board.Status == "Clôturée";
         all = board.Rows.Select(r => new DeliberationRowVm(r.EnrollmentId, r.Rank?.ToString(CultureInfo.InvariantCulture) ?? "—", r.Code ?? "—", r.Matricule, r.FullName,
             $"{r.Points:0.##} / {r.Max:0.##}", $"{r.Percent:0.##} %", r.Missing == 0 ? string.Empty : r.Missing.ToString(CultureInfo.InvariantCulture),
-            r.Failed == 0 ? string.Empty : r.Failed.ToString(CultureInfo.InvariantCulture), r.Computed, r.Decision, ThemeBrush.Get(Tone(r.Decision)), r.Mention,
+            r.Failed == 0 ? string.Empty : r.Failed.ToString(CultureInfo.InvariantCulture), r.Computed, r.Grade is { } g ? $"{r.Decision} ({g})" : r.Decision,
+            ThemeBrush.Get(Tone(r.Decision)), r.Mention,
             r.JuryReason ?? (r.NearThreshold ? "À examiner" : string.Empty), r.NearThreshold, r)).ToList();
         Fill();
         CourseStats.Clear();
@@ -544,6 +550,10 @@ public sealed class DeliberationPage : PageViewModel
         var lines = detail.Courses.Select(c => $"{c.Number}. {c.Course} ({c.Semester}) : "
             + (c.Graded ? $"{c.Points:0.##} / {c.Max:0.##}" + (c.Bonus > 0 ? $" dont appui +{c.Bonus:0.##}" : string.Empty) + (c.Failed ? " · ÉCHEC" : string.Empty) : "COTE MANQUANTE"));
         var r = detail.Result;
+        if (r.Totals is { } t)
+            lines = lines.Append(string.Empty).Append($"TOTAL 1 (épreuves) {t.Total1:0.##}/{t.Total1Max:0.##} · SOUS-TOTAL 1 (cours) {t.Subtotal1:0.##}/{t.Subtotal1Max:0.##} · "
+                + $"SOUS-TOTAL 2 (blocs) {t.Subtotal2:0.##}/{t.Subtotal2Max:0.##} · TOTAL 2 {t.Total2:0.##}/{t.Total2Max:0.##} · TOTAL GÉNÉRAL {t.General:0.##}/{t.GeneralMax:0.##}"
+                + (r.Grade is { } g ? $" · code {g}" : string.Empty));
         var form = new FormViewModel($"{r.FullName} · {r.Matricule}", $"{detail.Promotion} · {detail.Period} · {r.Percent:0.##} % · mention {r.Mention} · {r.Decision}", _ => Task.FromResult(true))
         {
             Message = string.Join(Environment.NewLine, lines) + (r.JuryReason is null ? string.Empty : $"{Environment.NewLine}{Environment.NewLine}Décision du jury : {r.JuryReason}"),
@@ -598,8 +608,11 @@ public sealed class DeliberationPage : PageViewModel
             Message = incomplete == 0 ? "Tous les dossiers sont complets." : $"Attention : {incomplete} dossier(s) incomplet(s) sans décision du jury seront ajournés.",
             SubmitText = "Clôturer",
         };
-        form.Add("president", "Président du jury", required: true);
-        form.Add("membres", "Membres présents", FieldKind.Multiline);
+        var authorities = await Shell.Api.GetAsync<AuthoritiesDto>("api/deliberation/autorites");
+        form.Add("president", "Président du jury", value: authorities.JuryPresident, required: true);
+        form.Add("membres", "Membres présents", FieldKind.Multiline,
+            value: authorities.JuryMembers is { Count: > 0 } m ? string.Join(Environment.NewLine, m) : null,
+            hint: "Vide : les membres enregistrés dans « Autorités et jury »."); 
         form.Add("notes", "Observations", FieldKind.Multiline);
         form.Add("motdepasse", "Votre mot de passe (confirmation)", FieldKind.Secret, required: true);
         if (await Shell.Ask(form)) await RefreshAsync();
@@ -635,6 +648,42 @@ public sealed class DeliberationPage : PageViewModel
             : Task.CompletedTask;
 
     /// <summary>Interrupteurs d'ITMCD : encodage S1, encodage S2, moyennes d'appui, et seuil de réussite.</summary>
+    /// <summary>Autorités de l'année (projet Délibération) : elles signent le bulletin, la grille et le procès-verbal.</summary>
+    public static async Task AuthoritiesAsync(ShellViewModel shell)
+    {
+        var current = await shell.Api.GetAsync<AuthoritiesDto>("api/deliberation/autorites");
+        var form = new FormViewModel("Autorités et jury", "Ces noms figurent sur le bulletin (préfet, proviseur), la grille et le procès-verbal (jury).", async f =>
+        {
+            var members = f.OptionalText("membres")?.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries) ?? [];
+            await shell.Api.SendAsync(HttpMethod.Put, "api/deliberation/autorites", new
+            {
+                prefect = f.OptionalText("prefet"), principal = f.OptionalText("proviseur"), juryPresident = f.OptionalText("president"),
+                jurySecretary = f.OptionalText("secretaire"), juryMembers = members,
+            });
+            shell.Notify("Autorités enregistrées.");
+            return true;
+        });
+        form.Add("prefet", "Préfet", value: current.Prefect);
+        form.Add("proviseur", "Proviseur", value: current.Principal);
+        form.Add("president", "Président du jury", value: current.JuryPresident);
+        form.Add("secretaire", "Secrétaire du jury", value: current.JurySecretary);
+        form.Add("membres", "Membres du jury (un par ligne, quatre au plus)", FieldKind.Multiline,
+            current.JuryMembers is { Count: > 0 } m ? string.Join(Environment.NewLine, m) : null);
+        await shell.Ask(form);
+    }
+
+    /// <summary>Crée les épreuves du jury standard (stage, situation, dossier, épreuve d'intégration, blocs) dans la promotion.</summary>
+    private async Task CreateJuryEvaluationsAsync()
+    {
+        if (PromotionId is not { } pid) return;
+        if (!await Shell.Confirm("Épreuves du jury", $"{Promotion?.Label} : création du stage (150), de la situation d'intégration (50), du dossier d'évaluation (90), "
+            + "de l'épreuve d'intégration (225) et des blocs prévention (60), diagnostic (50) et gestion (50). Elles ne comptent qu'au jury annuel et restent modifiables dans « Cours et notes ».", "Créer"))
+            return;
+        var result = await Shell.Api.SendAsync<JuryEvaluationsResult>(HttpMethod.Post, "api/deliberation/epreuves-jury" + ScoliaClient.Query(("promotionId", pid)), new { });
+        Shell.Notify(result.Created == 0 ? "Les épreuves du jury existaient déjà." : $"{Format.Count(result.Created, "épreuve créée", "épreuves créées")}.");
+        await RefreshAsync();
+    }
+
     public static async Task SettingsAsync(ShellViewModel shell)
     {
         var current = await shell.Api.GetAsync<DeliberationSettingsDto>("api/deliberation/reglages");

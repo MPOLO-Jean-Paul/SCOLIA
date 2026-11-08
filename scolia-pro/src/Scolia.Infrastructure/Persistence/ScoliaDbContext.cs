@@ -263,7 +263,16 @@ public sealed class ScoliaDbContext(DbContextOptions<ScoliaDbContext> options, I
             e.Property(x => x.SubmittedByName).HasMaxLength(120);
             e.HasOne<Course>().WithMany().HasForeignKey(x => x.CourseId).OnDelete(DeleteBehavior.Restrict);
         });
-        b.Entity<DeliberationSettings>(e => { e.ToTable("ReglagesDeliberation"); e.HasIndex(x => x.AcademicYearId).IsUnique(); });
+        b.Entity<DeliberationSettings>(e =>
+        {
+            e.ToTable("ReglagesDeliberation");
+            e.HasIndex(x => x.AcademicYearId).IsUnique();
+            e.Property(x => x.Prefect).HasMaxLength(120);
+            e.Property(x => x.Principal).HasMaxLength(120);
+            e.Property(x => x.JuryPresident).HasMaxLength(120);
+            e.Property(x => x.JurySecretary).HasMaxLength(120);
+            e.Property(x => x.JuryMembers).HasMaxLength(600);
+        });
         b.Entity<DeliberationSession>(e =>
         {
             e.ToTable("SessionsDeliberation");

@@ -373,4 +373,79 @@ public sealed class DeliberationApiTests : IDisposable
         Assert.Empty((await teacher.GetAsync($"{D}/mes-cours").Ok()).EnumerateArray());
         Assert.Equal(HttpStatusCode.Forbidden, (await teacher.GetAsync($"{D}/feuille?coursId={setup.S1Course}&nature=S1")).StatusCode);
     }
+
+    [Fact]
+    public async Task Jury_evaluations_authorities_and_official_grid_from_the_deliberation_project()
+    {
+        var admin = await app.InstalledAdmin();
+        var setup = await SetupAsync(admin, "MUKENDI");
+        var student = setup.Enrollments[0];
+
+        // Autorités : quatre membres au plus ; elles signent les documents.
+        var (tooMany, _) = await admin.Put($"{D}/autorites", new { prefect = "P", principal = "Q", juryPresident = "R", jurySecretary = "S", juryMembers = new[] { "a", "b", "c", "d", "e" } }).Fail();
+        Assert.Equal(HttpStatusCode.BadRequest, tooMany);
+        var authorities = await admin.Put($"{D}/autorites", new
+        {
+            prefect = "Abbé KALALA", principal = "Mme NGOY", juryPresident = "Dr MUKENGE", jurySecretary = "M. KABONGO", juryMembers = new[] { "Mme ILUNGA", "M. TSHIBANDA" },
+        }).Ok();
+        Assert.Equal(2, authorities.GetProperty("juryMembers").GetArrayLength());
+        Assert.Equal("Dr MUKENGE", (await admin.GetAsync($"{D}/autorites").Ok()).GetProperty("juryPresident").GetString());
+
+        // Épreuves du jury standard : créées une fois, au jury annuel seulement.
+        var created = await admin.Post($"{D}/epreuves-jury?promotionId={setup.PromotionId}", new { }).Ok();
+        Assert.Equal(7, created.GetProperty("created").GetInt32());
+        Assert.Equal(0, (await admin.Post($"{D}/epreuves-jury?promotionId={setup.PromotionId}", new { }).Ok()).GetProperty("created").GetInt32());
+        var courses = (await admin.GetAsync($"{D}/cours?promotionId={setup.PromotionId}").Ok()).EnumerateArray().ToList();
+        Assert.Equal(9, courses.Count);
+        var jury = courses.Where(c => c.GetProperty("semester").GetString()!.StartsWith("Jury", StringComparison.Ordinal)).ToList();
+        Assert.Equal(7, jury.Count);
+        var s1Board = await admin.GetAsync($"{D}/resultats?promotionId={setup.PromotionId}&periode=S1").Ok();
+        Assert.Equal(2, s1Board.GetProperty("courses").GetArrayLength());
+
+        // Cotes : cours ordinaires et épreuves du jury (jamais une cote S1 sur une épreuve).
+        await admin.Put($"{D}/feuille?coursId={setup.S1Course}&nature=S1", new[] { new { enrollmentId = student, value = (decimal?)70m } }).Ok();
+        foreach (var kind in new[] { "S1", "S2" })
+            await admin.Put($"{D}/feuille?coursId={setup.AnnualCourse}&nature={kind}", new[] { new { enrollmentId = student, value = (decimal?)40m } }).Ok();
+        var stage = jury.Single(c => c.GetProperty("name").GetString() == "Stage").GetProperty("id").GetString();
+        var (wrongKind, _) = await admin.Put($"{D}/feuille?coursId={stage}&nature=S1", new[] { new { enrollmentId = student, value = (decimal?)10m } }).Fail();
+        Assert.Equal(HttpStatusCode.BadRequest, wrongKind);
+        foreach (var c in jury)
+        {
+            var max = c.GetProperty("maxScore").GetDecimal();
+            var value = c.GetProperty("name").GetString() == "Bloc gestion" ? max / 5 : max * 0.8m;
+            await admin.Put($"{D}/feuille?coursId={c.GetProperty("id").GetString()}&nature=Jury", new[] { new { enrollmentId = student, value = (decimal?)value } }).Ok();
+        }
+
+        // Jury annuel : TOTAL 1 = 0,8 × 515, SOUS-TOTAL 1 = 70 + 40, SOUS-TOTAL 2 = 48 + 40 + 10 (bloc gestion en échec) → code A.
+        var final = await admin.GetAsync($"{D}/resultats?promotionId={setup.PromotionId}&periode=Annuel").Ok();
+        var row = Row(final, student);
+        Assert.Equal("Admis", row.GetProperty("decision").GetString());
+        Assert.Equal("A", row.GetProperty("grade").GetString());
+        var totals = row.GetProperty("totals");
+        Assert.Equal(412m, totals.GetProperty("total1").GetDecimal());
+        Assert.Equal(515m, totals.GetProperty("total1Max").GetDecimal());
+        Assert.Equal(110m, totals.GetProperty("subtotal1").GetDecimal());
+        Assert.Equal(150m, totals.GetProperty("subtotal1Max").GetDecimal());
+        Assert.Equal(98m, totals.GetProperty("subtotal2").GetDecimal());
+        Assert.Equal(160m, totals.GetProperty("subtotal2Max").GetDecimal());
+        Assert.Equal(620m, totals.GetProperty("general").GetDecimal());
+        Assert.Equal(totals.GetProperty("general").GetDecimal(), row.GetProperty("points").GetDecimal());
+
+        foreach (var url in new[]
+        {
+            $"{D}/grille?promotionId={setup.PromotionId}&periode=Annuel&format=xlsx",
+            $"{D}/grille?promotionId={setup.PromotionId}&periode=Annuel",
+            $"{D}/bulletin.pdf?promotionId={setup.PromotionId}&periode=Annuel&inscriptionId={student}",
+            $"{D}/proces-verbal.pdf?promotionId={setup.PromotionId}&periode=Annuel",
+        })
+            Assert.Equal(HttpStatusCode.OK, (await admin.GetAsync(url)).StatusCode);
+
+        // Clôture sans président saisi : le président enregistré dans les autorités.
+        var closed = await admin.Post($"{D}/cloture", new { promotionId = setup.PromotionId, period = "Annuel", password = "Scolia2026!", president = "", members = "", notes = "" }).Ok();
+        Assert.Equal("Dr MUKENGE", closed.GetProperty("president").GetString());
+        Assert.Contains("Mme ILUNGA", closed.GetProperty("members").GetString());
+        Assert.Equal("A", Row(closed, student).GetProperty("grade").GetString());
+        var (lockedJury, _) = await admin.Put($"{D}/feuille?coursId={stage}&nature=Jury", new[] { new { enrollmentId = student, value = (decimal?)100m } }).Fail();
+        Assert.Equal(HttpStatusCode.Conflict, lockedJury);
+    }
 }

@@ -52,6 +52,93 @@ public sealed class DeliberationService(IAppDbContext db, IWriteGate gate, IAudi
         return ToDto(settings);
     }, ct);
 
+    // ---------- Autorités (projet Délibération) ----------
+
+    public const int MaxJuryMembers = 4;
+
+    public async Task<AuthoritiesDto> AuthoritiesAsync(CancellationToken ct = default)
+    {
+        var year = await YearContext.CurrentAsync(db, ct);
+        return Authorities(await SettingsOfAsync(year.Id, ct));
+    }
+
+    /// <summary>Préfet, proviseur, président, secrétaire et membres du jury (quatre au plus) : ils signent les documents officiels.</summary>
+    public Task<AuthoritiesDto> UpdateAuthoritiesAsync(AuthoritiesDto input, CancellationToken ct = default) => gate.RunAsync(async () =>
+    {
+        var year = await OpenYearAsync(ct);
+        static string? Name(string? value, string field, string label)
+        {
+            var text = value?.Trim();
+            if (string.IsNullOrEmpty(text)) return null;
+            if (text.Length > 120) throw new DomainException(field, $"{label} : 120 caractères au plus.");
+            return text;
+        }
+        var members = (input.JuryMembers ?? []).Select(m => m?.Trim() ?? string.Empty).Where(m => m.Length > 0).ToList();
+        if (members.Count > MaxJuryMembers) throw new DomainException("juryMembers", $"Le jury compte au plus {MaxJuryMembers} membres en plus du président et du secrétaire.");
+        if (members.Any(m => m.Length > 120)) throw new DomainException("juryMembers", "Nom d'un membre du jury : 120 caractères au plus.");
+        var settings = await db.DeliberationSettings.FirstOrDefaultAsync(x => x.AcademicYearId == year.Id, ct);
+        if (settings is null)
+        {
+            settings = new DeliberationSettings { AcademicYearId = year.Id };
+            db.DeliberationSettings.Add(settings);
+        }
+        settings.Prefect = Name(input.Prefect, "prefect", "Préfet");
+        settings.Principal = Name(input.Principal, "principal", "Proviseur");
+        settings.JuryPresident = Name(input.JuryPresident, "juryPresident", "Président du jury");
+        settings.JurySecretary = Name(input.JurySecretary, "jurySecretary", "Secrétaire du jury");
+        settings.JuryMembers = members.Count == 0 ? null : string.Join('\n', members);
+        var result = Authorities(settings);
+        audit.Record("deliberation.autorites", "ReglagesDeliberation", settings.Id.ToString(),
+            $"Autorités {year.Label} : préfet {result.Prefect ?? "—"}, proviseur {result.Principal ?? "—"}, président du jury {result.JuryPresident ?? "—"}, "
+            + $"secrétaire {result.JurySecretary ?? "—"}, {members.Count} membre(s).", result);
+        await db.SaveChangesAsync(ct);
+        return result;
+    }, ct);
+
+    private static AuthoritiesDto Authorities(DeliberationSettings s) => new(s.Prefect, s.Principal, s.JuryPresident, s.JurySecretary,
+        (s.JuryMembers ?? string.Empty).Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
+
+    private static string Signatures(AuthoritiesDto a) =>
+        $"Le secrétaire du jury : {a.JurySecretary ?? "……………………"} · Le président du jury : {a.JuryPresident ?? "……………………"}"
+        + (a.JuryMembers is { Count: > 0 } m ? $" · Membres du jury : {string.Join(", ", m)}" : " · Les membres du jury");
+
+    // ---------- Épreuves du jury (projet Délibération) ----------
+
+    /// <summary>
+    /// Crée dans la promotion les épreuves du jury standard du projet Délibération (stage, situation d'intégration, dossier,
+    /// épreuve d'intégration ; blocs prévention, diagnostic et gestion), avec leur maxima. Une épreuve déjà présente
+    /// (même nom) n'est pas recréée ; toutes restent modifiables dans « Cours et notes ».
+    /// </summary>
+    public Task<JuryEvaluationsResult> CreateJuryEvaluationsAsync(Guid promotionId, CancellationToken ct = default) => gate.RunAsync(async () =>
+    {
+        var year = await OpenYearAsync(ct);
+        var promotion = await db.Promotions.AsNoTracking().FirstOrDefaultAsync(p => p.Id == promotionId && p.AcademicYearId == year.Id, ct)
+            ?? throw new NotFoundException("Promotion introuvable dans l'année courante.");
+        var existing = await db.Courses.Where(c => c.PromotionId == promotionId && c.AcademicYearId == year.Id).ToListAsync(ct);
+        var names = existing.Select(c => TextKey.Normalize(c.Name)).ToHashSet(StringComparer.Ordinal);
+        var numbers = existing.Select(c => c.Number).ToHashSet();
+        var next = 100;
+        var created = new List<string>();
+        foreach (var (name, max, coefficient, semester) in DeliberationEngine.StandardJuryEvaluations)
+        {
+            if (names.Contains(TextKey.Normalize(name))) continue;
+            while (numbers.Contains(next)) next++;
+            numbers.Add(next);
+            db.Courses.Add(new Course
+            {
+                AcademicYearId = year.Id, PromotionId = promotionId, Number = next, Name = name, Coefficient = coefficient, Hours = 1, MaxScore = max, Semester = semester,
+            });
+            created.Add($"{next}. {name}");
+        }
+        if (created.Count > 0)
+        {
+            audit.Record("deliberation.epreuves.creees", "Promotion", promotionId.ToString(),
+                $"Épreuves du jury créées pour {promotion.Code} : {string.Join(", ", created)}.", created);
+            await db.SaveChangesAsync(ct);
+        }
+        return new JuryEvaluationsResult(created.Count, DeliberationEngine.StandardJuryEvaluations.Count - created.Count);
+    }, ct);
+
     private static DeliberationSettingsDto ToDto(DeliberationSettings s) => new(s.EncodingS1Open, s.EncodingS2Open, s.SupportEnabled, s.PassPercent);
 
     private async Task<DeliberationSettings> SettingsOfAsync(Guid yearId, CancellationToken ct) =>
@@ -249,8 +336,10 @@ public sealed class DeliberationService(IAppDbContext db, IWriteGate gate, IAudi
         int Count(Guid id, MarkKind kind) => counts.FirstOrDefault(c => c.CourseId == id && c.Kind == kind)?.Count ?? 0;
         return courses.Select(c => new DeliberationCourseDto(c.Id, c.Number, c.Name, DeliberationText.Semester(c.Semester), c.MaxScore, teachers.GetValueOrDefault(c.Id),
             students.Count, Count(c.Id, MarkKind.CoteS1), Count(c.Id, MarkKind.CoteS2), Count(c.Id, MarkKind.Appui),
-            IsLocked(closed, MarkKind.CoteS1, c.Semester), IsLocked(closed, MarkKind.CoteS2, c.Semester),
-            submitted.Contains((c.Id, MarkKind.CoteS1)), submitted.Contains((c.Id, MarkKind.CoteS2)))).ToList();
+            IsLocked(closed, DeliberationEngine.IsJury(c.Semester) ? MarkKind.Jury : MarkKind.CoteS1, c.Semester),
+            IsLocked(closed, DeliberationEngine.IsJury(c.Semester) ? MarkKind.Jury : MarkKind.CoteS2, c.Semester),
+            submitted.Contains((c.Id, MarkKind.CoteS1)) || submitted.Contains((c.Id, MarkKind.Jury)), submitted.Contains((c.Id, MarkKind.CoteS2)),
+            Count(c.Id, MarkKind.Jury))).ToList();
     }
 
     /// <summary>Feuille de cotes d'un cours. En mode anonyme, la feuille est triée par code et ne montre ni nom ni matricule.</summary>
@@ -271,11 +360,12 @@ public sealed class DeliberationService(IAppDbContext db, IWriteGate gate, IAudi
         var closed = await ClosedPeriodsAsync(course.PromotionId, ct);
         var period = kind == MarkKind.CoteS2 ? DeliberationPeriod.S2 : kind == MarkKind.CoteS1 ? DeliberationPeriod.S1
             : course.Semester == CourseSemester.S2 ? DeliberationPeriod.S2 : course.Semester == CourseSemester.S1 ? DeliberationPeriod.S1 : DeliberationPeriod.Annuel;
+        if (kind == MarkKind.Jury) period = DeliberationPeriod.Annuel;
         var rows = students.Select(s =>
         {
             decimal? Mark(MarkKind k) => marks.FirstOrDefault(m => m.EnrollmentId == s.EnrollmentId && m.Kind == k)?.Value;
             var result = DeliberationEngine.Course(new DeliberationEngine.CourseInput(course.Id, course.Semester, course.MaxScore,
-                Mark(MarkKind.CoteS1), Mark(MarkKind.CoteS2), Mark(MarkKind.Appui)), period, settings.SupportEnabled);
+                Mark(MarkKind.CoteS1), Mark(MarkKind.CoteS2), Mark(MarkKind.Appui), Mark(MarkKind.Jury)), period, settings.SupportEnabled);
             // La correspondance code ↔ nom est confidentielle : elle n'est montrée qu'au jury.
             var code = anonymous || user.HasPermission(Permissions.DeliberationManage) ? codes.GetValueOrDefault(s.EnrollmentId) : null;
             return new MarkRowDto(s.EnrollmentId, code, anonymous ? null : s.Matricule, anonymous ? null : s.FullName, Mark(kind),
@@ -383,6 +473,7 @@ public sealed class DeliberationService(IAppDbContext db, IWriteGate gate, IAudi
     {
         MarkKind.CoteS1 => s.EncodingS1Open,
         MarkKind.CoteS2 => s.EncodingS2Open,
+        MarkKind.Jury => true,
         _ => s.SupportEnabled,
     };
 
@@ -469,7 +560,7 @@ public sealed class DeliberationService(IAppDbContext db, IWriteGate gate, IAudi
         {
             DeliberationPeriod.S1 => new[] { MarkKind.CoteS1 },
             DeliberationPeriod.S2 => new[] { MarkKind.CoteS2 },
-            _ => new[] { MarkKind.CoteS1, MarkKind.CoteS2 },
+            _ => new[] { MarkKind.CoteS1, MarkKind.CoteS2, MarkKind.Jury },
         };
         var rows = new List<EncodingProgressRowDto>();
         foreach (var promotion in promotions.OrderBy(p => p.Code, StringComparer.CurrentCulture))
@@ -478,10 +569,10 @@ public sealed class DeliberationService(IAppDbContext db, IWriteGate gate, IAudi
             foreach (var course in courses.Where(c => c.PromotionId == promotion.Id).OrderBy(c => c.Number))
             foreach (var kind in kinds.Where(k => DeliberationEngine.Accepts(course.Semester, k)))
             {
-                var semester = kind == MarkKind.CoteS1 ? DeliberationPeriod.S1 : DeliberationPeriod.S2;
+                var semester = kind switch { MarkKind.CoteS1 => DeliberationPeriod.S1, MarkKind.CoteS2 => DeliberationPeriod.S2, _ => DeliberationPeriod.Annuel };
                 decimal? Mark(Guid enrollment, MarkKind k) => marks.TryGetValue((course.Id, enrollment, k), out var v) ? v : null;
                 var results = students.Select(e => DeliberationEngine.Course(new DeliberationEngine.CourseInput(course.Id, course.Semester, course.MaxScore,
-                    Mark(e, MarkKind.CoteS1), Mark(e, MarkKind.CoteS2), Mark(e, MarkKind.Appui)), semester, settings.SupportEnabled)).Where(r => r.Graded).ToList();
+                    Mark(e, MarkKind.CoteS1), Mark(e, MarkKind.CoteS2), Mark(e, MarkKind.Appui), Mark(e, MarkKind.Jury)), semester, settings.SupportEnabled)).Where(r => r.Graded).ToList();
                 var submission = submissions.GetValueOrDefault((course.Id, kind));
                 var locked = closed.Any(x => x.PromotionId == promotion.Id && DeliberationEngine.Locks(x.Period, kind, course.Semester));
                 var graded = results.Count;
@@ -562,6 +653,9 @@ public sealed class DeliberationService(IAppDbContext db, IWriteGate gate, IAudi
     /// </summary>
     private async Task EnsureCourseAccessAsync(Course course, bool write, CancellationToken ct)
     {
+        // Les épreuves du jury (projet Délibération) sont cotées par le jury seul.
+        if (write && DeliberationEngine.IsJury(course.Semester) && !user.HasPermission(Permissions.DeliberationManage))
+            throw new ForbiddenException($"« {course.Name} » est une épreuve du jury : seul le jury en encode les cotes.");
         if (user.HasPermission(write ? Permissions.AcademicsWrite : Permissions.AcademicsRead)) return;
         if (!user.HasPermission(Permissions.MarksEncode)) throw new ForbiddenException("Ce compte n'a pas accès à l'encodage des cotes.");
         var staffId = await MyStaffIdAsync(ct);
@@ -656,9 +750,14 @@ public sealed class DeliberationService(IAppDbContext db, IWriteGate gate, IAudi
         var year = await OpenYearAsync(ct);
         var period = DeliberationText.Period(input.Period);
         await VerifyPasswordAsync(input.Password, ct);
-        var president = input.President?.Trim() ?? string.Empty;
+        // Par défaut, le jury enregistré dans les autorités de l'année (projet Délibération).
+        var authorities = Authorities(await SettingsOfAsync(year.Id, ct));
+        var president = (string.IsNullOrWhiteSpace(input.President) ? authorities.JuryPresident : input.President)?.Trim() ?? string.Empty;
+        var members = string.IsNullOrWhiteSpace(input.Members) && authorities.JuryMembers is { Count: > 0 } known
+            ? string.Join(", ", new[] { authorities.JurySecretary is { } sec ? $"{sec} (secrétaire)" : null }.Concat(known).OfType<string>())
+            : input.Members;
         if (president.Length is < 3 or > 120) throw new DomainException("president", "Indiquez le président du jury (3 à 120 caractères).");
-        if (input.Members?.Length > 1000 || input.Notes?.Length > 2000) throw new DomainException("membres", "Liste des membres ou observations trop longue.");
+        if (members?.Length > 1000 || input.Notes?.Length > 2000) throw new DomainException("membres", "Liste des membres ou observations trop longue.");
         var session = await SessionAsync(year.Id, input.PromotionId, period, create: true, ct);
         if (session.IsClosed) throw new ConflictException("Cette délibération est déjà clôturée.");
         await db.SaveChangesAsync(ct);
@@ -674,7 +773,7 @@ public sealed class DeliberationService(IAppDbContext db, IWriteGate gate, IAudi
             });
         session.Status = SessionStatus.Cloturee;
         session.President = president;
-        session.Members = string.IsNullOrWhiteSpace(input.Members) ? null : input.Members.Trim();
+        session.Members = string.IsNullOrWhiteSpace(members) ? null : members.Trim();
         session.Notes = string.IsNullOrWhiteSpace(input.Notes) ? null : input.Notes.Trim();
         session.ClosedAtUtc = DateTime.UtcNow;
         session.ClosedByName = user.Name;
@@ -732,7 +831,7 @@ public sealed class DeliberationService(IAppDbContext db, IWriteGate gate, IAudi
             // Le procès-verbal circule : il ne porte jamais les codes anonymes, qui restent au jury.
             ["Rang", "Matricule", "Nom complet", "Points", "%", "Mention", "Décision", "Motif du jury"],
             board.Rows.Select(r => (IReadOnlyList<string>)[r.Rank?.ToString(Fr) ?? "—", r.Matricule, r.FullName,
-                $"{r.Points:0.##} / {r.Max:0.##}", $"{r.Percent:0.##}", r.Mention, r.Decision, r.JuryReason ?? string.Empty]).ToList(),
+                $"{r.Points:0.##} / {r.Max:0.##}", $"{r.Percent:0.##}", r.Mention, r.Grade is { } g ? $"{r.Decision} ({g})" : r.Decision, r.JuryReason ?? string.Empty]).ToList(),
             Empty: "Aucun apprenant.");
         var courses = new ReportSection("Statistiques par cours",
             ["N°", "Cours", "Semestre", "Maxima", "Réussites", "Échecs", "Cotes manquantes", "Moyenne"],
@@ -742,7 +841,7 @@ public sealed class DeliberationService(IAppDbContext db, IWriteGate gate, IAudi
         return documents.Report(new ReportDocument(PaymentService.Header(school), "Procès-verbal de délibération",
             $"{board.Promotion} · {board.PeriodLabel} · année {board.AcademicYear}{(closed ? string.Empty : " · PROVISOIRE")}",
             figures, [jury, decisions, courses],
-            "Signatures : le président du jury, les membres du jury et le secrétaire académique."));
+            Signatures(await AuthoritiesAsync(ct))));
     }
 
     /// <summary>Grille des cotes : une colonne par cours (points retenus), total, pourcentage et décision.</summary>
@@ -754,19 +853,53 @@ public sealed class DeliberationService(IAppDbContext db, IWriteGate gate, IAudi
         var board = computation.Board;
         var school = await YearContext.SchoolAsync(db, ct);
         var courses = board.Courses;
+        var official = board.Rows.Any(r => r.Totals is not null);
+        // Grille officielle du projet Délibération : épreuves → TOTAL 1, cours → SOUS-TOTAL 1, blocs → SOUS-TOTAL 2, TOTAL 2, TOTAL GÉNÉRAL.
         var columns = new List<string> { "Rang", "Code", "Nom complet" };
-        columns.AddRange(courses.Select(c => $"{c.Number}. {c.Course} (/{c.Max:0.##})"));
-        columns.AddRange(["Total", "%", "Décision"]);
+        var blocks = new List<(string Kind, CourseStatDto? Course)>();
+        if (official)
+        {
+            foreach (var c in courses.Where(c => c.Semester == nameof(CourseSemester.JuryEpreuve))) blocks.Add(("cours", c));
+            blocks.Add(("TOTAL 1", null));
+            foreach (var c in courses.Where(c => !c.Semester.StartsWith("Jury", StringComparison.Ordinal))) blocks.Add(("cours", c));
+            blocks.Add(("SOUS-TOTAL 1", null));
+            foreach (var c in courses.Where(c => c.Semester == nameof(CourseSemester.JuryBloc))) blocks.Add(("cours", c));
+            blocks.Add(("SOUS-TOTAL 2", null));
+            blocks.Add(("TOTAL 2", null));
+            blocks.Add(("TOTAL GÉNÉRAL", null));
+        }
+        else blocks.AddRange(courses.Select(c => ("cours", (CourseStatDto?)c)));
+        string Header((string Kind, CourseStatDto? Course) b, JuryTotalsDto? max) => b.Course is { } c ? $"{c.Number}. {c.Course} (/{c.Max:0.##})" : b.Kind switch
+        {
+            "TOTAL 1" => $"TOTAL 1 (/{max?.Total1Max:0.##})",
+            "SOUS-TOTAL 1" => $"SOUS-TOTAL 1 (/{max?.Subtotal1Max:0.##})",
+            "SOUS-TOTAL 2" => $"SOUS-TOTAL 2 (/{max?.Subtotal2Max:0.##})",
+            "TOTAL 2" => $"TOTAL 2 (/{max?.Total2Max:0.##})",
+            _ => $"TOTAL GÉNÉRAL (/{max?.GeneralMax:0.##})",
+        };
+        var reference = board.Rows.Select(r => r.Totals).FirstOrDefault(t => t is not null);
+        columns.AddRange(blocks.Select(b => Header(b, reference)));
+        columns.AddRange(official ? new[] { "%", "Décision", "Code" } : new[] { "Total", "%", "Décision" });
         var rows = board.Rows.Select(r =>
         {
             var details = computation.Details.GetValueOrDefault(r.EnrollmentId) ?? [];
             var cells = new List<string> { r.Rank?.ToString(Fr) ?? "—", r.Code ?? "—", r.FullName };
-            cells.AddRange(courses.Select(c => details.FirstOrDefault(d => d.CourseId == c.CourseId) is { Graded: true } d ? $"{d.Points:0.##}" : "INC"));
-            cells.AddRange([$"{r.Points:0.##} / {r.Max:0.##}", $"{r.Percent:0.##}", r.Decision]);
+            cells.AddRange(blocks.Select(b => b.Course is { } c
+                ? details.FirstOrDefault(d => d.CourseId == c.CourseId) is { Graded: true } d ? $"{d.Points:0.##}" : "INC"
+                : b.Kind switch
+                {
+                    "TOTAL 1" => $"{r.Totals?.Total1:0.##}",
+                    "SOUS-TOTAL 1" => $"{r.Totals?.Subtotal1:0.##}",
+                    "SOUS-TOTAL 2" => $"{r.Totals?.Subtotal2:0.##}",
+                    "TOTAL 2" => $"{r.Totals?.Total2:0.##}",
+                    _ => $"{r.Totals?.General:0.##}",
+                }));
+            cells.AddRange(official ? new[] { $"{r.Percent:0.##}", r.Decision, r.Grade ?? "—" } : new[] { $"{r.Points:0.##} / {r.Max:0.##}", $"{r.Percent:0.##}", r.Decision });
             return (IReadOnlyList<string>)cells;
         }).ToList();
-        return new TableDocument(PaymentService.Header(school), "Grille des cotes",
-            $"{board.Promotion} · {board.PeriodLabel} · {board.AcademicYear}{(board.Status == "Clôturée" ? string.Empty : " · provisoire")}",
+        var authorities = await AuthoritiesAsync(ct);
+        return new TableDocument(PaymentService.Header(school), official ? "Grille de délibération" : "Grille des cotes",
+            $"{board.Promotion} · {board.PeriodLabel} · {board.AcademicYear}{(board.Status == "Clôturée" ? string.Empty : " · provisoire")} · {Signatures(authorities)}",
             columns, rows, Landscape: true);
     }
 
@@ -797,7 +930,19 @@ public sealed class DeliberationService(IAppDbContext db, IWriteGate gate, IAudi
         return documents.Report(new ReportDocument(PaymentService.Header(school), "Bulletin de délibération",
             $"{r.FullName} · matricule {r.Matricule} · {student.Promotion} · {student.Period} · {board.AcademicYear}{(board.Status == "Clôturée" ? string.Empty : " · PROVISOIRE")}",
             [("Pourcentage", $"{r.Percent:0.##} %"), ("Mention", r.Mention), ("Décision", r.Decision), ("Rang", r.Rank is { } rank ? $"{rank} / {board.Students}" : "—")],
-            [section], r.JuryReason is null ? null : $"Décision du jury : {r.JuryReason}"));
+            [section], BulletinFooter(r, await AuthoritiesAsync(ct))));
+    }
+
+    private static string BulletinFooter(DeliberationRowDto r, AuthoritiesDto a)
+    {
+        var lines = new List<string>();
+        if (r.Totals is { } t)
+            lines.Add($"TOTAL 1 (épreuves) : {t.Total1:0.##} / {t.Total1Max:0.##} · SOUS-TOTAL 1 (cours) : {t.Subtotal1:0.##} / {t.Subtotal1Max:0.##} · "
+                + $"SOUS-TOTAL 2 (blocs) : {t.Subtotal2:0.##} / {t.Subtotal2Max:0.##} · TOTAL 2 : {t.Total2:0.##} / {t.Total2Max:0.##} · TOTAL GÉNÉRAL : {t.General:0.##} / {t.GeneralMax:0.##}");
+        if (r.Grade is { } g) lines.Add($"Code du jury : {DeliberationEngine.GradeLabel(g)}");
+        if (r.JuryReason is not null) lines.Add($"Décision du jury : {r.JuryReason}");
+        lines.Add($"Le Préfet : {a.Prefect ?? "……………………"} · Le Proviseur : {a.Principal ?? "……………………"}");
+        return string.Join(" — ", lines);
     }
 
     // ---------- Calcul ----------
@@ -826,7 +971,18 @@ public sealed class DeliberationService(IAppDbContext db, IWriteGate gate, IAudi
         var results = students.ToDictionary(s => s.EnrollmentId, s => DeliberationEngine.Student(courses.Select(c => new DeliberationEngine.CourseInput(c.Id, c.Semester, c.MaxScore,
             marks.TryGetValue((s.EnrollmentId, c.Id, MarkKind.CoteS1), out var s1) ? s1 : null,
             marks.TryGetValue((s.EnrollmentId, c.Id, MarkKind.CoteS2), out var s2) ? s2 : null,
-            marks.TryGetValue((s.EnrollmentId, c.Id, MarkKind.Appui), out var ap) ? ap : null)), period, settings.SupportEnabled, settings.PassPercent));
+            marks.TryGetValue((s.EnrollmentId, c.Id, MarkKind.Appui), out var ap) ? ap : null,
+            marks.TryGetValue((s.EnrollmentId, c.Id, MarkKind.Jury), out var jy) ? jy : null)), period, settings.SupportEnabled, settings.PassPercent));
+        var semesters = courses.ToDictionary(c => c.Id, c => c.Semester);
+        var hasJury = courses.Any(c => DeliberationEngine.IsJury(c.Semester));
+        JuryTotalsDto? TotalsOf(Guid enrollmentId)
+        {
+            if (!hasJury) return null;
+            var t = DeliberationEngine.Totals(results[enrollmentId].Courses.Select(r => (semesters[r.CourseId], r)));
+            return new JuryTotalsDto(t.Total1, t.Total1Max, t.Subtotal1, t.Subtotal1Max, t.Subtotal2, t.Subtotal2Max, t.Total2, t.Total2Max, t.General, t.GeneralMax);
+        }
+        string? GradeOf(Outcome final, decimal percent, int failed) =>
+            period == DeliberationPeriod.Annuel ? DeliberationEngine.Grade(final, percent, failed, settings.PassPercent) is { Length: > 0 } g ? g : null : null;
         var ranks = DeliberationEngine.Ranks(results.Select(r => (r.Key, r.Value.Percent, r.Value.Missing == 0 && r.Value.Max > 0)));
 
         var computed = new Dictionary<Guid, Outcome>();
@@ -841,7 +997,7 @@ public sealed class DeliberationService(IAppDbContext db, IWriteGate gate, IAudi
             {
                 row = new DeliberationRowDto(s.EnrollmentId, f.Code.Length == 0 || !user.HasPermission(Permissions.DeliberationManage) ? null : f.Code, f.Matricule, f.StudentName, f.Points, f.MaxPoints, f.Percent, f.Missing, f.FailedCourses,
                     DeliberationEngine.Label(f.Computed), DeliberationEngine.DecisionLabel(f.Computed, f.Final, f.Reason is not null), jury is null ? null : DeliberationEngine.Label(jury.Outcome),
-                    f.Reason, f.Mention, f.Rank, false);
+                    f.Reason, f.Mention, f.Rank, false, GradeOf(f.Final, f.Percent, f.FailedCourses), TotalsOf(s.EnrollmentId));
                 computed[s.EnrollmentId] = f.Computed;
                 finals[s.EnrollmentId] = f.Final;
             }
@@ -852,7 +1008,8 @@ public sealed class DeliberationService(IAppDbContext db, IWriteGate gate, IAudi
                     && (result.Missing == 1 || (result.Missing == 0 && result.Percent >= settings.PassPercent - 5));
                 row = new DeliberationRowDto(s.EnrollmentId, codes.GetValueOrDefault(s.EnrollmentId), s.Matricule, s.FullName, result.Points, result.Max, result.Percent,
                     result.Missing, result.Failed, DeliberationEngine.Label(result.Outcome), DeliberationEngine.DecisionLabel(result.Outcome, final, jury is not null),
-                    jury is null ? null : DeliberationEngine.Label(jury.Outcome), jury?.Reason, result.Mention, ranks.TryGetValue(s.EnrollmentId, out var rank) ? rank : null, near);
+                    jury is null ? null : DeliberationEngine.Label(jury.Outcome), jury?.Reason, result.Mention, ranks.TryGetValue(s.EnrollmentId, out var rank) ? rank : null, near,
+                    GradeOf(final, result.Percent, result.Failed), TotalsOf(s.EnrollmentId));
                 computed[s.EnrollmentId] = result.Outcome;
                 finals[s.EnrollmentId] = final;
             }
@@ -862,9 +1019,12 @@ public sealed class DeliberationService(IAppDbContext db, IWriteGate gate, IAudi
         if (frozen.Count > 0) rows = rows.Where(r => frozen.ContainsKey(r.EnrollmentId)).ToList();
         rows = rows.OrderBy(r => r.Rank ?? int.MaxValue).ThenBy(r => r.FullName, StringComparer.CurrentCulture).ToList();
 
-        var details = students.ToDictionary(s => s.EnrollmentId, s => results[s.EnrollmentId].Courses.Select(c =>
+        // Ordre officiel de la grille (projet Délibération) : épreuves intégratives, cours, puis blocs.
+        static int Order(CourseSemester semester) => semester switch { CourseSemester.JuryEpreuve => 0, CourseSemester.JuryBloc => 2, _ => 1 };
+        courses = courses.OrderBy(c => Order(c.Semester)).ThenBy(c => c.Number).ToList();
+        var details = students.ToDictionary(s => s.EnrollmentId, s => courses.Select(course =>
         {
-            var course = courses.First(x => x.Id == c.CourseId);
+            var c = results[s.EnrollmentId].Courses.First(x => x.CourseId == course.Id);
             return new CourseOutcomeDto(c.CourseId, course.Number, course.Name, DeliberationText.Semester(course.Semester), c.Max, c.Base, c.Bonus, c.Points, c.Graded, c.Failed);
         }).ToList());
         var courseStats = courses.Select(c =>

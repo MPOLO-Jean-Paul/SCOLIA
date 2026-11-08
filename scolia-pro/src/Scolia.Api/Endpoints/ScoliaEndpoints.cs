@@ -471,6 +471,13 @@ public static class ScoliaEndpoints
         g.MapPut("/reglages", (DeliberationSettingsDto input, DeliberationService s, CancellationToken ct) => s.UpdateSettingsAsync(input, ct))
             .RequireAuthorization(Permissions.DeliberationManage);
 
+        // Autorités et épreuves du jury (projet Délibération).
+        g.MapGet("/autorites", (DeliberationService s, CancellationToken ct) => s.AuthoritiesAsync(ct));
+        g.MapPut("/autorites", (AuthoritiesDto input, DeliberationService s, CancellationToken ct) => s.UpdateAuthoritiesAsync(input, ct))
+            .RequireAuthorization(Permissions.DeliberationManage);
+        g.MapPost("/epreuves-jury", (Guid promotionId, DeliberationService s, CancellationToken ct) => s.CreateJuryEvaluationsAsync(promotionId, ct))
+            .RequireAuthorization(Permissions.DeliberationManage);
+
         // Codes anonymes : les apprenants déjà inscrits reçoivent un code officiel reconnu par la délibération.
         g.MapGet("/codes", (Guid? promotionId, DeliberationService s, CancellationToken ct) => s.CodesAsync(promotionId, ct)).RequireAuthorization(Permissions.DeliberationManage);
         g.MapPost("/codes/attribution", (CodeAssignmentRequest input, DeliberationService s, CancellationToken ct) => s.AssignCodesAsync(input, ct))

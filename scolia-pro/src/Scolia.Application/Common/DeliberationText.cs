@@ -6,11 +6,12 @@ namespace Scolia.Application.Common;
 public static class DeliberationText
 {
     private static readonly (CourseSemester, string)[] SemesterLabels =
-        [(CourseSemester.S1, "Semestre 1"), (CourseSemester.S2, "Semestre 2"), (CourseSemester.Annuel, "Annual"), (CourseSemester.Annuel, "Annuelle")];
+        [(CourseSemester.S1, "Semestre 1"), (CourseSemester.S2, "Semestre 2"), (CourseSemester.Annuel, "Annual"), (CourseSemester.Annuel, "Annuelle"),
+         (CourseSemester.JuryEpreuve, "Épreuve du jury"), (CourseSemester.JuryEpreuve, "Jury"), (CourseSemester.JuryBloc, "Bloc du jury"), (CourseSemester.JuryBloc, "Bloc")];
     private static readonly (DeliberationPeriod, string)[] PeriodLabels =
         [(DeliberationPeriod.S1, "Semestre 1"), (DeliberationPeriod.S2, "Semestre 2"), (DeliberationPeriod.Annuel, "Jury"), (DeliberationPeriod.Annuel, "Final"), (DeliberationPeriod.Annuel, "Jury annuel")];
     private static readonly (MarkKind, string)[] KindLabels =
-        [(MarkKind.CoteS1, "S1"), (MarkKind.CoteS2, "S2"), (MarkKind.Appui, "Moyenne d'appui"), (MarkKind.Appui, "Moyenne")];
+        [(MarkKind.CoteS1, "S1"), (MarkKind.CoteS2, "S2"), (MarkKind.Appui, "Moyenne d'appui"), (MarkKind.Appui, "Moyenne"), (MarkKind.Jury, "Cote du jury")];
     private static readonly (Domain.Deliberation.Outcome, string)[] OutcomeLabels = [(Domain.Deliberation.Outcome.Ajourne, "Échec"), (Domain.Deliberation.Outcome.Ajourne, "Ajourné")];
 
     public static CourseSemester Semester(string? value) => EnumText.Parse(value, "semestre", SemesterLabels);
@@ -18,6 +19,6 @@ public static class DeliberationText
     public static DeliberationPeriod Period(string? value) => EnumText.Parse(value, "periode", PeriodLabels);
     public static string Period(DeliberationPeriod value) => value.ToString();
     public static MarkKind Kind(string? value) => EnumText.Parse(value, "nature", KindLabels);
-    public static string Kind(MarkKind value) => value switch { MarkKind.CoteS1 => "S1", MarkKind.CoteS2 => "S2", _ => "Appui" };
+    public static string Kind(MarkKind value) => value switch { MarkKind.CoteS1 => "S1", MarkKind.CoteS2 => "S2", MarkKind.Jury => "Jury", _ => "Appui" };
     public static Domain.Deliberation.Outcome Outcome(string? value) => EnumText.Parse(value, "decision", OutcomeLabels);
 }

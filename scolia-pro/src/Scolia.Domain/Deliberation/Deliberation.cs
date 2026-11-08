@@ -2,8 +2,13 @@ using Scolia.Domain.Common;
 
 namespace Scolia.Domain.Deliberation;
 
-/// <summary>Organisation d'un cours dans l'année (repris d'ITMCD : S1, S2 ou ANNUEL). Valeurs persistées : ne pas renuméroter.</summary>
-public enum CourseSemester { Annuel = 0, S1 = 1, S2 = 2 }
+/// <summary>
+/// Organisation d'un cours dans l'année (repris d'ITMCD : S1, S2 ou ANNUEL), et épreuves du jury reprises du projet
+/// Délibération : elles ne comptent qu'au jury annuel et sont cotées par le jury seul. Les épreuves intégratives
+/// (stage, situation d'intégration, dossier, épreuve d'intégration) forment le TOTAL 1 ; les blocs (prévention,
+/// diagnostic, gestion) le SOUS-TOTAL 2. Valeurs persistées : ne pas renuméroter.
+/// </summary>
+public enum CourseSemester { Annuel = 0, S1 = 1, S2 = 2, JuryEpreuve = 3, JuryBloc = 4 }
 
 /// <summary>Période délibérée : un semestre, ou le jury annuel (résultat final de l'année). Valeurs persistées.</summary>
 public enum DeliberationPeriod { S1 = 1, S2 = 2, Annuel = 3 }
@@ -17,6 +22,8 @@ public enum MarkKind
     CoteS2 = 2,
     /// <summary>Moyenne d'appui des travaux, sur 10, qui soutient une cote faible.</summary>
     Appui = 3,
+    /// <summary>Cote d'une épreuve du jury (projet Délibération), sur le maxima de l'épreuve.</summary>
+    Jury = 4,
 }
 
 /// <summary>
@@ -72,6 +79,14 @@ public sealed class DeliberationSettings : Entity
     public bool SupportEnabled { get; set; } = true;
     /// <summary>Seuil de réussite en pourcentage (60 dans ITMCD).</summary>
     public decimal PassPercent { get; set; } = DeliberationEngine.DefaultPassPercent;
+
+    // Autorités (projet Délibération) : elles signent le bulletin, la grille et le procès-verbal.
+    public string? Prefect { get; set; }
+    public string? Principal { get; set; }
+    public string? JuryPresident { get; set; }
+    public string? JurySecretary { get; set; }
+    /// <summary>Membres du jury, un par ligne (quatre au plus).</summary>
+    public string? JuryMembers { get; set; }
 }
 
 public enum SessionStatus { Ouverte = 0, Cloturee = 1 }

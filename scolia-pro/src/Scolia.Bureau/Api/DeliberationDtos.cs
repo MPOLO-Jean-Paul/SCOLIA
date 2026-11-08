@@ -9,7 +9,7 @@ public sealed record AnonymousCodeRowDto(Guid EnrollmentId, string Matricule, st
 public sealed record CodeAssignmentResult(int Assigned, int AlreadyCoded, int Total);
 
 public sealed record DeliberationCourseDto(Guid Id, int Number, string Name, string Semester, decimal MaxScore, string? TeacherName,
-    int Students, int GradedS1, int GradedS2, int Supports, bool LockedS1, bool LockedS2, bool SubmittedS1 = false, bool SubmittedS2 = false);
+    int Students, int GradedS1, int GradedS2, int Supports, bool LockedS1, bool LockedS2, bool SubmittedS1 = false, bool SubmittedS2 = false, int GradedJury = 0);
 
 public sealed record MarkRowDto(Guid EnrollmentId, string? Code, string? Matricule, string? FullName, decimal? Value, decimal? Base, decimal? Retained, bool Failed);
 
@@ -22,7 +22,15 @@ public sealed record CourseOutcomeDto(Guid CourseId, int Number, string Course, 
     bool Graded, bool Failed);
 
 public sealed record DeliberationRowDto(Guid EnrollmentId, string? Code, string Matricule, string FullName, decimal Points, decimal Max, decimal Percent,
-    int Missing, int Failed, string Computed, string Decision, string? JuryOutcome, string? JuryReason, string Mention, int? Rank, bool NearThreshold);
+    int Missing, int Failed, string Computed, string Decision, string? JuryOutcome, string? JuryReason, string Mention, int? Rank, bool NearThreshold,
+    string? Grade = null, JuryTotalsDto? Totals = null);
+
+public sealed record JuryTotalsDto(decimal Total1, decimal Total1Max, decimal Subtotal1, decimal Subtotal1Max, decimal Subtotal2, decimal Subtotal2Max,
+    decimal Total2, decimal Total2Max, decimal General, decimal GeneralMax);
+
+public sealed record AuthoritiesDto(string? Prefect, string? Principal, string? JuryPresident, string? JurySecretary, IReadOnlyList<string>? JuryMembers);
+
+public sealed record JuryEvaluationsResult(int Created, int Existing);
 
 public sealed record CourseStatDto(Guid CourseId, int Number, string Course, string Semester, decimal Max, int Passed, int Failed, int Missing, decimal? Average);
 

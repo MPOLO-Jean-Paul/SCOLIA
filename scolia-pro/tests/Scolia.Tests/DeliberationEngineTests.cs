@@ -118,4 +118,48 @@ public sealed class DeliberationEngineTests
         Assert.Throws<DomainException>(() => AnonymousCodeRules.Official("AB_12"));
         Assert.Throws<DomainException>(() => AnonymousCodeRules.Official("-AB12"));
     }
+
+    [Fact]
+    public void Jury_evaluations_count_only_at_the_annual_jury_with_official_totals()
+    {
+        var stage = new CourseInput(Guid.NewGuid(), CourseSemester.JuryEpreuve, 150, null, null, null, Jury: 120);
+        var bloc = new CourseInput(Guid.NewGuid(), CourseSemester.JuryBloc, 60, null, null, 10, Jury: 20);
+        var course = C(CourseSemester.S1, 100, s1: 70);
+
+        // Au S1, les épreuves du jury ne comptent pas ; au jury annuel, elles comptent, sans appui.
+        Assert.Equal(100m, Student([stage, bloc, course], DeliberationPeriod.S1).Max);
+        var final = Student([stage, bloc, course], DeliberationPeriod.Annuel);
+        Assert.Equal(310m, final.Max);
+        Assert.Equal(210m, final.Points);
+        Assert.Equal(1, final.Failed); // le bloc : 20 < 30, l'appui ne s'applique pas aux épreuves du jury
+        Assert.Equal(Outcome.Admis, final.Outcome);
+        Assert.Equal("A", Grade(final.Outcome, final.Percent, final.Failed));
+
+        var semesters = new Dictionary<Guid, CourseSemester> { [stage.CourseId] = stage.Semester, [bloc.CourseId] = bloc.Semester, [course.CourseId] = course.Semester };
+        var totals = Totals(final.Courses.Select(r => (semesters[r.CourseId], r)));
+        Assert.Equal((120m, 150m), (totals.Total1, totals.Total1Max));
+        Assert.Equal((70m, 100m), (totals.Subtotal1, totals.Subtotal1Max));
+        Assert.Equal((20m, 60m), (totals.Subtotal2, totals.Subtotal2Max));
+        Assert.Equal((90m, 160m), (totals.Total2, totals.Total2Max));
+        Assert.Equal((210m, 310m), (totals.General, totals.GeneralMax));
+
+        // Cotes : une épreuve ne reçoit que la cote du jury, un cours jamais.
+        Assert.True(Accepts(CourseSemester.JuryEpreuve, MarkKind.Jury));
+        Assert.False(Accepts(CourseSemester.JuryEpreuve, MarkKind.CoteS1));
+        Assert.False(Accepts(CourseSemester.JuryBloc, MarkKind.Appui));
+        Assert.False(Accepts(CourseSemester.Annuel, MarkKind.Jury));
+        Assert.Throws<DomainException>(() => ValidateMark(MarkKind.Jury, CourseSemester.JuryEpreuve, 151, 150));
+        Assert.True(Locks(DeliberationPeriod.Annuel, MarkKind.Jury, CourseSemester.JuryEpreuve));
+        Assert.False(Locks(DeliberationPeriod.S1, MarkKind.Jury, CourseSemester.JuryEpreuve));
+    }
+
+    [Fact]
+    public void Official_codes_follow_the_deliberation_project()
+    {
+        Assert.Equal("P", Grade(Outcome.Admis, 75, 0));
+        Assert.Equal("A", Grade(Outcome.Admis, 62, 2));
+        Assert.Equal("E", Grade(Outcome.Ajourne, 59.99m, 0));
+        Assert.Equal("E", Grade(Outcome.Incomplet, 40, 1));
+        Assert.Equal(string.Empty, Grade(Outcome.Incomplet, 70, 0));
+    }
 }
