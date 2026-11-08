@@ -1,4 +1,5 @@
 using System.Net;
+using ClosedXML.Excel;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
@@ -48,6 +49,62 @@ public sealed class DeliberationApiTests : IDisposable
 
     private static JsonElement Row(JsonElement board, string enrollmentId) =>
         board.GetProperty("rows").EnumerateArray().Single(r => r.GetProperty("enrollmentId").GetString() == enrollmentId);
+
+    [Fact]
+    public async Task Grille_excel_ajoute_toutes_les_promotions_configurees_avec_leurs_codes_et_cotes()
+    {
+        var admin = await app.InstalledAdmin();
+        var setup = await SetupAsync(admin, "MUKENDI", "KASONGO");
+        // Cette promotion non prévue dans un modèle Excel démontre que les onglets sont dynamiques.
+        var newPromotion = await admin.Post("/api/etablissement/promotions", new
+        {
+            code = "NUV4", name = "Promotion créée après installation", level = 4, isActive = true,
+            monthlyFee = 55000m, oneTimeFees = Array.Empty<object>(),
+        }).Ok();
+        var promotionId = newPromotion.GetProperty("id").GetString()!;
+        var student = await admin.Post("/api/apprenants", new
+        {
+            identity = new { lastName = "DYNAMIQUE", middleName = "KABO", firstName = "Marie",
+                birthPlace = "Lubumbashi", birthDate = new DateOnly(2007, 3, 14),
+                gender = "F", guardianPhone = "0812345678", guardianName = "Parent" },
+            promotionId, confirmDuplicate = false,
+        }).Ok();
+        var enrollmentId = student.GetProperty("enrollments")[0].GetProperty("id").GetString()!;
+        var course = await admin.Post("/api/scolarite/cours", new
+        {
+            promotionId, number = 99, name = "Cours créé par l'établissement",
+            coefficient = 2m, hours = 20m, maxScore = 60m, semester = "S1",
+        }).Ok();
+
+        // Jamais de code inventé dans le classeur : exiger d'abord l'attribution officielle.
+        using (var refused = await admin.GetAsync($"{D}/grilles.xlsx?periode=S1"))
+            Assert.Equal(HttpStatusCode.Conflict, refused.StatusCode);
+
+        await admin.Post($"{D}/codes/attribution", new { }).Ok();
+        var codes = await CodesAsync(admin, promotionId);
+        Assert.True(codes.TryGetValue(enrollmentId, out var code));
+        await admin.Post($"{D}/cotes-par-code", new
+        {
+            code, courseId = course.GetProperty("id").GetString(), kind = "S1", value = 44m,
+        }).Ok();
+
+        using var response = await admin.GetAsync($"{D}/grilles.xlsx?periode=S1");
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            response.Content.Headers.ContentType?.MediaType);
+        using var bytes = new MemoryStream(await response.Content.ReadAsByteArrayAsync());
+        using var workbook = new XLWorkbook(bytes);
+        Assert.Equal(2, workbook.Worksheets.Count);
+        Assert.Contains(workbook.Worksheets, sheet => sheet.Name == "INF1");
+        var dynamicSheet = workbook.Worksheet("NUV4");
+        Assert.Contains("Promotion créée après installation", dynamicSheet.Cell(3, 1).GetString());
+        Assert.Contains("Cours créé par l'établissement", dynamicSheet.Cell(7, 4).GetString());
+        Assert.Equal(60d, dynamicSheet.Cell(8, 4).GetDouble());
+        Assert.Equal(code, dynamicSheet.Cell(9, 2).GetString());
+        Assert.Contains("DYNAMIQUE", dynamicSheet.Cell(9, 3).GetString());
+        Assert.Equal(44d, dynamicSheet.Cell(9, 4).GetDouble());
+        Assert.Contains("AVERAGE", dynamicSheet.Cell(11, 4).FormulaA1.ToUpperInvariant());
+    }
 
     [Fact]
     public async Task Existing_students_receive_unique_official_codes_once()

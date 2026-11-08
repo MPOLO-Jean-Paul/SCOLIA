@@ -545,6 +545,9 @@ public sealed class DeliberationPage : PageViewModel
             Action("Rouvrir", MaterialIconKind.LockOpenVariant, ReopenAsync, danger: true);
             Action("Paramètres de délibération", MaterialIconKind.Tune, () => SettingsAsync(Shell));
             Action("Créer les épreuves du jury", MaterialIconKind.FormatListChecks, CreateJuryEvaluationsAsync);
+            Action("Grilles de toutes les promotions (Excel)", MaterialIconKind.FileExcel, () =>
+                Shell.Download("api/deliberation/grilles.xlsx" + ScoliaClient.Query(("periode", PeriodValue)),
+                    "grilles-deliberation-toutes-promotions.xlsx"));
         }
         Action("Procès-verbal (PDF)", MaterialIconKind.FileSign, () => DownloadAsync("proces-verbal.pdf", null, "proces-verbal.pdf"));
         Action("Grille des cotes (PDF)", MaterialIconKind.Grid, () => DownloadAsync("grille", "pdf", "grille-des-cotes.pdf"));

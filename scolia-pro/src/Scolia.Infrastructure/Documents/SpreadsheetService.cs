@@ -61,6 +61,10 @@ public sealed class SpreadsheetService : ISpreadsheetService
         return stream.ToArray();
     }
 
+    /// <summary>Les onglets et toutes leurs colonnes sont construits depuis l'année scolaire et ses promotions.</summary>
+    public byte[] ExportGrids(IReadOnlyList<(string SheetName, TableDocument Document)> grids) =>
+        DeliberationWorkbook.Build(grids);
+
     /// <summary>
     /// Nom d'onglet lisible dans la limite Excel de 31 caractères : « Suivi des paiements · Octobre 2026 » donne
     /// « Octobre 2026 », « Liste d'enregistrement — ACC1 » donne « ACC1 ». La coupe se fait entre deux mots.

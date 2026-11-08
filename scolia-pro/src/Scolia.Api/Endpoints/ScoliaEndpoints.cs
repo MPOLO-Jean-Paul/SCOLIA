@@ -535,6 +535,12 @@ public static class ScoliaEndpoints
             new InlineFileResult(await s.MinutesPdfAsync(promotionId, periode, ct), Pdf, "proces-verbal.pdf"));
         g.MapGet("/grille", async (Guid promotionId, string periode, string? format, DeliberationService s, ReportService reports, CancellationToken ct) =>
             Table(await s.GridAsync(promotionId, periode, ct), format, "grille-des-cotes", reports));
+        // Export global : un onglet par promotion réellement configurée dans l'année courante.
+        // Les codes et identités ne sont visibles qu'aux responsables de la délibération.
+        g.MapGet("/grilles.xlsx", async (string periode, DeliberationService s, ISpreadsheetService excel, CancellationToken ct) =>
+            Results.File(excel.ExportGrids(await s.GridsAsync(periode, ct)), Xlsx, "grilles-deliberation-toutes-promotions.xlsx"))
+            .RequireAuthorization(Permissions.DeliberationManage);
+
         g.MapGet("/palmares", async (Guid promotionId, string periode, string? format, DeliberationService s, ReportService reports, CancellationToken ct) =>
             Table(await s.RankingAsync(promotionId, periode, ct), format, "palmares", reports));
         g.MapGet("/bulletin.pdf", async (Guid promotionId, string periode, Guid inscriptionId, HttpContext http, IConfiguration config, DeliberationService s, CancellationToken ct) =>
