@@ -69,6 +69,9 @@ jobs:
               sleep 7
             done
           done
+          # Parcours métier réels du secrétariat (inscription, encaissement, reçu, dépense…), contre le même serveur.
+          SCOLIA_MOBILE=0 dotnet run --no-build --project tests/Scolia.Bureau.Captures -c Release -- artifacts/roles/parcours http://127.0.0.1:5293/ Scolia2026! smoke \
+            > artifacts/roles/parcours-secretariat.txt 2>&1 || echo "ECHEC parcours secretariat" >> artifacts/roles/echecs.txt
           cp /tmp/serveur.log artifacts/roles/serveur.log || true
           grep -iE "error|exception" /tmp/serveur.log | grep -v "Microsoft.AspNetCore.Diagnostics" > artifacts/roles/serveur-erreurs.txt || true
 

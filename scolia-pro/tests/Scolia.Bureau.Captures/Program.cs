@@ -2065,6 +2065,25 @@ if (args.Length > 3 && args[3] == "roles")
             catch (InvalidOperationException ex) { report.Add($"   capture impossible : {ex.Message}"); }
             index++;
         }
+    // Enseignant : un vrai parcours d'encodage (feuille ouverte, cotes tapées, enregistrement) sur sa feuille anonyme.
+    if (roleSession.Permissions.Contains(Scolia.Bureau.Ribbon.Perm.MarksEncode) && !roleSession.Permissions.Contains(Scolia.Bureau.Ribbon.Perm.AcademicsRead))
+    {
+        var marks = new MarksPage(shell);
+        Wait(shell.Open(() => marks));
+        Settle(1200);
+        marks.Course = marks.Courses.FirstOrDefault();
+        Settle(1500);
+        var typed = 0;
+        foreach (var row in marks.Rows.Where(r => r.Value.Length == 0).Take(3)) { row.Value = (12 + typed).ToString(System.Globalization.CultureInfo.InvariantCulture); typed++; }
+        var noticeBefore = shell.Notice;
+        var saveAction = marks.Actions.First(a => a.Label == "Enregistrer les cotes");
+        saveAction.Command.Execute(null);
+        Settle(2500);
+        var anonymous = marks.Rows.All(r => r.FullName == "Anonyme" && r.Code != "—");
+        report.Add($"Parcours d'encodage : {typed} cote(s) tapée(s) · feuille {(anonymous ? "anonyme (codes seulement)" : "NOMINATIVE")} · {marks.SheetHint}"
+            + (shell.Notice is { Length: > 0 } saved && saved != noticeBefore ? $" · NOTIFICATION : {saved}" : string.Empty));
+        Save(window, $"{account}-{layout}-90-feuille-encodee.png");
+    }
     if (Preferences.MobileLayout)
     {
         shell.PhoneMenuOpen = true;

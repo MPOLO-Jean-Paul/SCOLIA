@@ -65,10 +65,20 @@ public sealed class TeacherAccountService(IAppDbContext db, IWriteGate gate, IAu
             {
                 // Le compte actif prime ; sinon le dernier compte désactivé, que l'on peut réactiver.
                 var account = accounts.Where(a => a.StaffMemberId == m.Id).OrderByDescending(a => a.IsActive).ThenByDescending(a => a.CreatedAtUtc).FirstOrDefault();
-                return new TeacherAccountDto(m.Id, m.Number, m.FullName, m.Function, m.Phone, m.IsActive, courses.GetValueOrDefault(m.Id),
+                var courseCount = courses.GetValueOrDefault(m.Id);
+                return new TeacherAccountDto(m.Id, m.Number, m.FullName, m.Function, m.Phone, m.IsActive, courseCount,
                     account?.Id, account?.UserName, account is not null, account?.IsActive ?? false, account?.MustChangePassword ?? false,
-                    account?.LastLoginUtc, account?.LockoutEndUtc is { } end && end > now, account?.JuryAccess ?? false);
+                    account?.LastLoginUtc, account?.LockoutEndUtc is { } end && end > now, account?.JuryAccess ?? false,
+                    courseCount > 0 || account is not null || TeachingFunction(m.Function));
             }).ToList();
+    }
+
+    /// <summary>Fonction d'enseignement (enseignant, professeur, formateur, encadreur, chargé de cours…).</summary>
+    public static bool TeachingFunction(string? function)
+    {
+        var key = TextKey.Normalize(function);
+        return new[] { "ENSEIGN", "PROFESS", "FORMAT", "ENCADR", "CHARGE DE COURS", "TITULAIRE", "MONITEUR", "INSTRUCT" }
+            .Any(k => key.Contains(k, StringComparison.Ordinal));
     }
 
     /// <summary>

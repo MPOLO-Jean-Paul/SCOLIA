@@ -26,15 +26,18 @@ public sealed class DataPage : PageViewModel
         Action("Télécharger", MaterialIconKind.Download, DownloadAsync, row: true);
         Action("Exporter chiffré", MaterialIconKind.LockOutline, ExportEncryptedAsync, row: true);
         Action("Importer chiffré", MaterialIconKind.Upload, ImportEncryptedAsync);
-        Action("Restaurer", MaterialIconKind.BackupRestore, RestoreAsync, row: true);
-        Action("Importation du classeur", MaterialIconKind.Upload, () => ImportAsync(Shell));
-        Action("Modèle d'import", MaterialIconKind.FileExcel, () => TemplateAsync(Shell));
-        Action("Vérifier la base", MaterialIconKind.DatabaseCheck, () => CheckDatabaseAsync(Shell));
-        if (Shell.Can(Perm.BackupManage))
+        if (Shell.Can(Perm.SettingsWrite)) Action("Restaurer", MaterialIconKind.BackupRestore, RestoreAsync, row: true);
+        // Importer des listes et restaurer modifient l'établissement : réservé au paramétrage (secrétariat).
+        if (Shell.Can(Perm.SettingsWrite))
         {
-            Action("Effacer des paiements", MaterialIconKind.DeleteSweep, () => Shell.Open(() => new EraseDataPage(Shell, payments: true)));
-            Action("Effacer des dossiers", MaterialIconKind.AccountRemove, () => Shell.Open(() => new EraseDataPage(Shell, payments: false)));
+            Action("Importation du classeur", MaterialIconKind.Upload, () => ImportAsync(Shell));
+            Action("Modèle d'import", MaterialIconKind.FileExcel, () => TemplateAsync(Shell));
         }
+        Action("Vérifier la base", MaterialIconKind.DatabaseCheck, () => CheckDatabaseAsync(Shell));
+        if (Shell.Can(Perm.BackupManage) && Shell.Can(Perm.PaymentsCancel))
+            Action("Effacer des paiements", MaterialIconKind.DeleteSweep, () => Shell.Open(() => new EraseDataPage(Shell, payments: true)));
+        if (Shell.Can(Perm.BackupManage) && Shell.Can(Perm.StudentsWrite))
+            Action("Effacer des dossiers", MaterialIconKind.AccountRemove, () => Shell.Open(() => new EraseDataPage(Shell, payments: false)));
         ActionRefresh();
     }
 

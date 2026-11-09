@@ -1702,7 +1702,8 @@ public sealed class ShellViewModel : Observable
     public IReadOnlyList<NavItemVm> PhoneTabs { get; private set; } = [];
 
     private static readonly Type[] PhoneTabOrder =
-        [typeof(HomePage), typeof(PromoterDashboardPage), typeof(StudentsPage), typeof(CashierPage), typeof(ReceiptsPage), typeof(MonthlyPage), typeof(DebtorsPage), typeof(CashPage)];
+        [typeof(HomePage), typeof(PromoterDashboardPage), typeof(TeacherHomePage), typeof(StudentsPage), typeof(CashierPage), typeof(ReceiptsPage),
+            typeof(MonthlyPage), typeof(DebtorsPage), typeof(CashPage), typeof(MarksPage)];
 
     private void RebuildPhoneTabs()
     {
