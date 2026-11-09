@@ -38,7 +38,7 @@ jobs:
           npm test
       - name: Eviter les fichiers sensibles dans le projet
         run: |
-          if find . -type f \( -name '*.pem' -o -name '*.key' -o -name '.env' -o -name '*.db' -o -name '*.sqlite' \) | grep -q .; then
+          if find . -path './node_modules' -prune -o -type f \( -name '*.pem' -o -name '*.key' -o -name '.env' -o -name '*.db' -o -name '*.sqlite' \) -print | grep -q .; then
             echo "::error::Fichier sensible dans les sources."
             exit 1
           fi
