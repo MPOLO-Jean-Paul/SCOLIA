@@ -4,7 +4,7 @@
   <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
   <application android:allowBackup="false" android:fullBackupContent="false"
       android:usesCleartextTraffic="false" android:supportsRtl="true"
-      android:label="SCOLIA Admin" android:theme="@android:style/Theme.Material.Light.NoActionBar">
+      android:label="SCOLIA Admin" android:icon="@drawable/owner_icon" android:roundIcon="@drawable/owner_icon" android:theme="@android:style/Theme.Material.Light.NoActionBar">
     <activity android:name=".MainActivity" android:exported="true"
         android:screenOrientation="unspecified">
       <intent-filter>
