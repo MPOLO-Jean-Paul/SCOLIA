@@ -4,6 +4,7 @@
 import { cleanLabel } from "./policy.mjs";
 import { evaluateLicense } from "./licenses.mjs";
 import { discoverCloudflareTurn } from "./cloudflare-turn.mjs";
+import { netlifyProviderRequest } from "./netlify-provider.mjs";
 
 const ALLOWED = new Set(["active", "disabled"]);
 
@@ -102,6 +103,8 @@ export async function schoolRelayRequest(request, env, url,
 
 export async function ownerRelayRequest(request, env, url,
   { jsonBody, fail, result, audit, nowMs }) {
+  if (url.pathname.startsWith("/api/v1/owner/relays/netlify"))
+    return netlifyProviderRequest(request, env, url, { jsonBody, fail, result, audit, nowMs });
   const db = env.OWNER_DB, now = nowMs();
   // Interrogation Cloudflare API en lecture seule, limitée au compte configuré.
   // Toujours APRES authentification Cloudflare Access + jeton propriétaire.

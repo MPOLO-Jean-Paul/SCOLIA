@@ -437,6 +437,16 @@ Le suivi des licences utilise HTTPS directement, même depuis un Wi-Fi disposant
 <div style="overflow-x:auto"><table><thead><tr>
 <th>Fournisseur</th><th>URL WSS</th><th>État</th><th>Révision</th><th>Action</th>
 </tr></thead><tbody id="relayRows"></tbody></table></div>
+<h3>Netlify — troisième canal HTTPS (pilote, inactif)</h3>
+<p class="info">Netlify Functions peut servir de canal HTTPS de secours pour de petites trames chiffrées.
+Ce n'est ni un serveur WSS, ni TURN, et le transport SCOLIA natif n'est pas encore raccordé.
+Le service doit rester désactivé jusqu'aux essais Android/Windows et à l'accord des établissements.</p>
+<div class="toolbar">
+<input id="netlifyBase" type="url" placeholder="https://mon-projet.netlify.app/" autocomplete="off">
+<button id="netlifySave" class="secondary">Enregistrer (inactif)</button>
+<button id="netlifyTest" class="secondary">Tester HTTPS</button>
+</div>
+<p class="info" id="netlifyNotice">Aucune adresse Netlify enregistrée. Le relais WSS reste inchangé.</p>
 </section>
 <section class="panel" id="auditPanel"><h2>Journal des interventions</h2>
 <p class="info">100 dernières opérations commerciales, sans données scolaires.</p>
@@ -513,8 +523,19 @@ async function loadCloudflareRelays(force=false){
  }
 }
 
+async function loadNetlifyProvider(){
+ if(!secret)return;
+ try{
+  const info=await request("/api/v1/owner/relays/netlify");
+  $("netlifyBase").value=info.base_url||"";
+  $("netlifyNotice").textContent=info.notice;
+ }catch{
+  $("netlifyNotice").textContent="Catalogue Netlify temporairement indisponible. Les relais WSS restent actifs.";
+ }
+}
 async function reload(){
  void loadCloudflareRelays();
+ void loadNetlifyProvider();
  const [stats,listing,servers,relays,history]=await Promise.all([
    request("/api/v1/owner/summary"),
    request("/api/v1/owner/schools"),
@@ -613,12 +634,29 @@ $("connect").onclick=async()=>{secret=$("token").value;$("token").value="";
  catch(e){secret="";$("error").textContent=e.message;}};
 $("refresh").onclick=()=>reload().catch(e=>alert(e.message));
 $("turnRefresh").onclick=()=>loadCloudflareRelays(true);
+$("netlifySave").onclick=async()=>{
+ if(!confirm("Enregistrer Netlify comme pilote HTTPS désactivé ? Aucun client scolaire ne sera redirigé."))return;
+ try{
+  const info=await request("/api/v1/owner/relays/netlify","PUT",{
+   base_url:$("netlifyBase").value,label:"Netlify — secours HTTPS",
+   enabled:false,confirm_experimental:true
+  });
+  $("netlifyNotice").textContent=info.notice;
+ }catch(e){$("netlifyNotice").textContent=e.message;}
+};
+$("netlifyTest").onclick=async()=>{
+ $("netlifyNotice").textContent="Test HTTPS Netlify…";
+ try{
+  const info=await request("/api/v1/owner/relays/netlify/test","POST",{});
+  $("netlifyNotice").textContent=info.notice;
+ }catch(e){$("netlifyNotice").textContent=e.message;}
+};
  $("logout").onclick=()=>{
    // Oubli explicite du secret en mémoire et fermeture de l'interface.
    secret="";selected=null;$("token").value="";$("detailsPanel").hidden=true;
    $("rows").replaceChildren();$("relayRows").replaceChildren();$("turnRows").replaceChildren();
    $("auditRows").replaceChildren();$("details").textContent="";
-   $("inviteResult").textContent="";$("relayNotice").textContent="";$("turnNotice").textContent="";turnCatalogCheckedAt=0;
+   $("inviteResult").textContent="";$("relayNotice").textContent="";$("turnNotice").textContent="";turnCatalogCheckedAt=0;$("netlifyBase").value="";$("netlifyNotice").textContent="";
    $("licenseSummary").textContent="";$("newschool").value="";
    $("trialDays").value=30;$("paidTo").value="";
    $("r2Secret").value="";$("r2Key").value="";$("storageNotice").textContent="";$("storageStatus").textContent="";

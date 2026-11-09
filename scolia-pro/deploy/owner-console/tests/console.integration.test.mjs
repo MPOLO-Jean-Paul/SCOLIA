@@ -12,7 +12,8 @@ function setup() {
   const sqlite = new DatabaseSync(":memory:");
   sqlite.exec("PRAGMA foreign_keys=ON");
   for (const name of ["0001_init.sql", "0002_relays.sql",
-    "0003_activity_idempotence.sql", "0004_license_controls.sql", "0005_cloud_continuity.sql", "0006_owner_settings_cloud_policy.sql"]) {
+    "0003_activity_idempotence.sql", "0004_license_controls.sql", "0005_cloud_continuity.sql", "0006_owner_settings_cloud_policy.sql",
+    "0007_netlify_backup.sql"]) {
     sqlite.exec(readFileSync(new URL("../migrations/" + name, import.meta.url), "utf8"));
   }
   function statement(sql, params = []) {
@@ -263,4 +264,60 @@ test("Catalogue TURN Cloudflare : authentification obligatoire, découverte et s
   assert.equal(discovered.body.relays[0].transport, "webrtc_ice");
   assert.ok(!JSON.stringify(discovered.body).includes("SECRET_NE_JAMAIS_AFFICHER"));
   assert.ok(!JSON.stringify(discovered.body).includes(token));
+});
+
+
+test("Netlify troisième canal HTTPS : privé, désactivé et sans activation implicite",async t=>{
+ const app=setup();t.after(()=>app.sqlite.close());
+ const path="/api/v1/owner/relays/netlify";
+ assert.equal((await app.request(path)).status,403);
+ let info=await app.owner(path);
+ assert.equal(info.status,200);assert.equal(info.body.configured,false);
+ assert.equal(info.body.can_activate,false);
+ for(const url of [
+  "http://scolia-backup.netlify.app/",
+  "https://192.168.1.12/",
+  "https://example.org/",
+  "https://scolia-backup.netlify.app/private",
+  "https://scolia-backup.netlify.app/?secret=yes"
+ ]) {
+  const bad=await app.owner(path,"PUT",{base_url:url,enabled:false,confirm_experimental:true});
+  assert.equal(bad.status,400);
+ }
+ const denied=await app.owner(path,"PUT",{
+   base_url:"https://scolia-backup.netlify.app/",enabled:true,confirm_experimental:true
+ });
+ assert.equal(denied.status,400);
+ const saved=await app.owner(path,"PUT",{
+   base_url:"https://scolia-backup.netlify.app/",enabled:false,
+   confirm_experimental:true,label:"Netlify secours HTTPS"
+ });
+ assert.equal(saved.status,200);
+ assert.equal(saved.body.state,"disabled");
+ assert.equal(saved.body.can_activate,false);
+ assert.equal(saved.body.base_url,"https://scolia-backup.netlify.app");
+ const next=await app.owner(path);
+ assert.equal(next.body.base_url,"https://scolia-backup.netlify.app");
+ assert.equal(next.body.school_clients_connected,0);
+ let requests=0;
+ app.env.NETLIFY_HEALTH_FETCH=async(url,opts)=>{
+   requests++;
+   assert.equal(url,"https://scolia-backup.netlify.app/api/scolia-backup/health");
+   assert.equal(opts.redirect,"manual");
+   assert.equal(opts.method,"GET");
+   return Response.json({service:"SCOLIA Netlify HTTPS Backup",
+      protocol:"scolia-https-mailbox-v1",transport:"https",enabled:false});
+ };
+ const tested=await app.owner(path+"/test","POST",{});
+ assert.equal(tested.status,200);
+ assert.equal(tested.body.reachable,true);
+ assert.equal(tested.body.can_activate,false);
+ assert.equal(requests,1);
+ app.env.NETLIFY_HEALTH_FETCH=async()=>new Response(null,{
+    status:302,headers:{Location:"https://example.org/"}
+ });
+ const redirect=await app.owner(path+"/test","POST",{});
+ assert.equal(redirect.body.reachable,false);
+ const cleared=await app.owner(path,"DELETE");
+ assert.equal(cleared.body.configured,false);
 });
