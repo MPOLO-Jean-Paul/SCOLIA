@@ -1,0 +1,8 @@
+# Jean Promoteur — promoteur (Promoteur / Responsable) — mobile
+Permissions : pilotage.lire
+Écran d'ouverture : Vue d'ensemble · Année 2026-2027
+Menu : (accueil) [Accueil] | Réseau et postes [Réseau de l'établissement] | Paramètres [Configuration]
+Ruban : Fichier [] | Accueil [Rechercher, Actualiser, Imprimer] | Pilotage [Tableau de bord, Rapports et exports] | Paramètres [Configuration, Thème, Couleur d'accent, Police et taille du texte, Préférences, Quadrillage, Info-bulles, Animations, Barre latérale, Réduire le ruban, Zoom arrière, Zoom avant, Zoom 100 %] | Aide [Raccourcis clavier, À propos, Info sur l'application]
+01 (accueil) › Accueil → ouvert : Vue d'ensemble · Année 2026-2027 · actions : Actualiser
+02 Réseau et postes › Réseau de l'établissement → ouvert : Réseau et postes · Partage, appareils autorisés et synchronisation · actions : Réseau et activité
+03 Paramètres › Configuration → ouvert : Configuration · Réglages de ce poste · actions : Rétablir les réglages
