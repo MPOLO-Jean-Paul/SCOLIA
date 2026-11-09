@@ -240,3 +240,27 @@ test("Découverte des serveurs : école, nom et IP observée sans accès anonyme
   assert.equal(listing.body.servers[0].local_ip, null);
   assert.equal(listing.body.servers[0].location, payload.school_name);
 });
+
+test("Catalogue TURN Cloudflare : authentification obligatoire, découverte et secrets non exposés", async t => {
+  const app = setup();
+  t.after(() => app.sqlite.close());
+  const url = "/api/v1/owner/relays/cloudflare";
+  const unauthenticated = await app.request(url);
+  assert.equal(unauthenticated.status, 403);
+  const id = "1".repeat(32), token = "token_de_test_calls_read_au_moins_32_caracteres";
+  app.env.CLOUDFLARE_TURN_ACCOUNT_ID = "a".repeat(32);
+  app.env.CLOUDFLARE_TURN_DISCOVERY_TOKEN = token;
+  app.env.TURN_DISCOVERY_FETCH = async (_url, options) => {
+    assert.equal(options.headers.Authorization, "Bearer " + token);
+    return Response.json({ success: true,
+      result: [{ uid:id, name:"Relais TURN SCOLIA", key:"SECRET_NE_JAMAIS_AFFICHER" }] });
+  };
+  const discovered = await app.owner(url);
+  assert.equal(discovered.status, 200);
+  assert.equal(discovered.body.status, "available");
+  assert.equal(discovered.body.relays[0].label, "Relais TURN SCOLIA");
+  assert.equal(discovered.body.relays[0].configured_for_school, false);
+  assert.equal(discovered.body.relays[0].transport, "webrtc_ice");
+  assert.ok(!JSON.stringify(discovered.body).includes("SECRET_NE_JAMAIS_AFFICHER"));
+  assert.ok(!JSON.stringify(discovered.body).includes(token));
+});
