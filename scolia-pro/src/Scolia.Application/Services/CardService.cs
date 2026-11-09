@@ -17,8 +17,7 @@ public sealed record CardExportResult(byte[] Bytes, string FileName, int Cards, 
 /// Cartes d'accès aux examens (version 79) : sélection des apprenants, diagnostic des identités, export PDF
 /// et historique des lots. Les sortis et suspendus sont exclus par défaut.
 /// </summary>
-public sealed class CardService(IAppDbContext db, IWriteGate gate, IAuditLog audit, IClock clock, ICurrentUser user, IDocumentService documents,
-    AccountService accounts)
+public sealed class CardService(IAppDbContext db, IWriteGate gate, IAuditLog audit, IClock clock, ICurrentUser user, IDocumentService documents)
 {
     private sealed record CandidateRow(Guid EnrollmentId, string Matricule, string LastName, string MiddleName, string FirstName, string Promotion,
         EnrollmentStatus Effective, bool Duplicate);
@@ -64,10 +63,8 @@ public sealed class CardService(IAppDbContext db, IWriteGate gate, IAuditLog aud
         }
 
         var school = await db.Schools.AsNoTracking().OrderBy(x => x.CreatedAtUtc).FirstAsync(ct);
-        if (school.Logo is not { Length: > 0 })
-            throw new DomainException("cartes",
-                "Le logo de votre établissement n'est pas configuré. Ajoutez-le dans Paramètres > Établissement avant d'imprimer les cartes d'accès.");
-        // Les cartes reprennent l'identité propre à l'établissement actif, jamais un nom ou un sceau ITM imposé.
+        // Les cartes reprennent l'identité propre à l'établissement actif. Le logo et le cachet ne sont pas imprimés :
+        // l'établissement les appose à la main sur la carte imprimée.
         var header = new SchoolCardHeader(
             school.Country ?? string.Empty,
             school.CardMinistry,
@@ -77,16 +74,13 @@ public sealed class CardService(IAppDbContext db, IWriteGate gate, IAuditLog aud
             CardHeaderDefaults.Or(school.CardInstitute, school.Name),
             CardHeaderDefaults.Or(school.CardAddress, school.Address ?? school.City ?? string.Empty),
             school.Logo,
-            school.Phone, school.Email, school.Website, school.Motto, school.ShortName);
-        // Le cachet porte « PAYÉ » seulement pour l'apprenant qui n'a rien d'exigible en retard aujourd'hui.
-        var standing = await accounts.ComputeAsync(year.Id, selected.Select(r => r.EnrollmentId).ToList(), null, ct);
+            school.Phone, school.Email, school.Website, school.Motto);
         var cards = new List<CardItem>();
         foreach (var r in selected)
         {
             var qr = $"{school.Name} | {session} | {year.Label} | {r.Matricule} | {Name(r)} | {r.Promotion}";
-            var paid = standing.TryGetValue(r.EnrollmentId, out var account) && account.Account.Overdue <= 0;
             for (var i = 0; i < copies; i++)
-                cards.Add(new CardItem(r.LastName, r.MiddleName, r.FirstName, r.Promotion, StudentCardRules.ColorOf(r.Promotion), qr, r.Matricule, paid));
+                cards.Add(new CardItem(r.LastName, r.MiddleName, r.FirstName, r.Promotion, StudentCardRules.ColorOf(r.Promotion), qr, r.Matricule));
         }
 
         var word = string.Equals(input.Format, "docx", StringComparison.OrdinalIgnoreCase);

@@ -369,7 +369,8 @@ public sealed class SkiaDocumentService : IDocumentService
     Header(d.School, "BULLETIN DE NOTES", $"Année scolaire {d.AcademicYear}"), Footer(null), 22);
 
     // ---------- Cartes d'accès ----------
-    // Même dessin que l'ordinateur (CardDesign) : en-tête centré, « Session AAAA » souligné, identité, cachet « PAYÉ », QR.
+    // Même dessin que l'ordinateur (CardDesign) : en-tête centré, « Session AAAA » souligné, identité, QR.
+    // Ni logo ni cachet : ils sont apposés à la main après l'impression.
 
     private const string Guide = "#8A96A6";
     private static float Mm(float v) => v * 72f / 25.4f;
@@ -397,8 +398,6 @@ public sealed class SkiaDocumentService : IDocumentService
     /// <summary>Huit cartes ID-1 par A4, sur la même grille que les cartes de l'ordinateur, avec les repères de découpe.</summary>
     public byte[] StudentCards(CardDocument d)
     {
-        var logo = d.Header.Logo is { Length: > 0 } own ? own :
-            throw new InvalidOperationException("Le logo de l'établissement est nécessaire pour créer ses cartes d'accès.");
         var pages = Enumerable.Range(0, StudentCardRules.PagesFor(d.Cards.Count))
             .Select(p => d.Cards.Skip(p * StudentCardRules.CardsPerPage).Take(StudentCardRules.CardsPerPage).ToList()).ToList();
         var page = 0;
@@ -413,14 +412,14 @@ public sealed class SkiaDocumentService : IDocumentService
                     var (row, col) = (i / 2, i % 2);
                     var x = Mm(StudentCardRules.MarginMm + col * (StudentCardRules.CardWidthMm + StudentCardRules.ColumnGapMm));
                     var y = Mm(StudentCardRules.MarginMm + row * (StudentCardRules.CardHeightMm + StudentCardRules.RowGapMm));
-                    Card(f, d, cards[i], logo, x, y);
+                    Card(f, d, cards[i], x, y);
                 }
                 CutLines(f);
             }
         });
     }
 
-    private static void Card(PdfFlow f, CardDocument d, CardItem card, byte[] logo, float x, float y)
+    private static void Card(PdfFlow f, CardDocument d, CardItem card, float x, float y)
     {
         var canvas = f.Canvas;
         var w = Mm(StudentCardRules.CardWidthMm);
@@ -428,10 +427,8 @@ public sealed class SkiaDocumentService : IDocumentService
         f.Fill(x, y, w, h, CardDesign.Paper);
         f.Stroke(x, y, w, h, CardDesign.Frame, 0.4f);
 
-        // En-tête centré : logo, nom, service, filet, contacts ; le bloc de texte est centré sur le logo.
+        // En-tête centré : place libre du logo (apposé à la main), puis nom, service, filet, contacts.
         var header = d.Header;
-        f.Image(logo, x + Mm(CardDesign.HeaderLeftMm), y + Mm(CardDesign.HeaderTopMm + (CardDesign.HeaderHeightMm - CardDesign.LogoMm) / 2),
-            Mm(CardDesign.LogoMm), Mm(CardDesign.LogoMm));
         var textX = x + Mm(CardDesign.HeaderTextLeftMm);
         var textW = Mm(CardDesign.HeaderTextMm);
         var name = CardDesign.SchoolName(header);
@@ -505,9 +502,6 @@ public sealed class SkiaDocumentService : IDocumentService
                 Draw(canvas, lines[i].Label + " : " + lines[i].Value, x + Mm(CardDesign.IdentityLeftMm), baseline, identityFont, color, CardDesign.IdentityTracking);
             }
         }
-
-        // Cachet en bas à droite, par-dessus comme un tampon.
-        Stamp(canvas, x + Mm(CardDesign.StampLeftMm), y + Mm(CardDesign.StampTopMm), header, logo, card.Paid);
     }
 
     /// <summary>Texte sur une ligne, avec un espacement entre les lettres (en cadratins).</summary>
@@ -542,80 +536,6 @@ public sealed class SkiaDocumentService : IDocumentService
         return lines;
     }
 
-    /// <summary>Cachet rond : double filet, nom en couronne, sigle, logo au centre, « PAYÉ » en travers pour l'apprenant en ordre.</summary>
-    private static void Stamp(SkiaSharp.SKCanvas canvas, float left, float top, SchoolCardHeader header, byte[] logo, bool paid)
-    {
-        var d = Mm(CardDesign.StampMm);
-        var cx = left + d / 2;
-        var cy = top + d / 2;
-        var ink = PdfFlow.Color(CardDesign.StampInk);
-        using (var ring = new SkiaSharp.SKPaint { Color = ink.WithAlpha(0xD9), Style = SkiaSharp.SKPaintStyle.Stroke, IsAntialias = true })
-        {
-            ring.StrokeWidth = Mm(0.36f);
-            canvas.DrawCircle(cx, cy, d / 2 - Mm(CardDesign.StampOuterInsetMm), ring);
-            ring.StrokeWidth = Mm(0.13f);
-            canvas.DrawCircle(cx, cy, d / 2 - Mm(CardDesign.StampSecondInsetMm), ring);
-            ring.StrokeWidth = Mm(0.24f);
-            canvas.DrawCircle(cx, cy, d / 2 - Mm(CardDesign.StampInnerInsetMm), ring);
-        }
-        var (ringPt, glyphs) = CardDesign.StampRingLayout(header);
-        var radius = d / 2 - Mm(CardDesign.StampTextInsetMm);
-        using (var font = CardText("Montserrat-Bold.ttf", ringPt))
-        using (var paint = new SkiaSharp.SKPaint { Color = ink.WithAlpha(CardDesign.StampAlpha), IsAntialias = true })
-        {
-            foreach (var glyph in glyphs)
-            {
-                if (glyph.Glyph == " ") continue;
-                canvas.Save();
-                canvas.Translate(cx, cy);
-                // En haut, le caractère regarde vers l'extérieur ; en bas, il est retourné pour se lire à l'endroit.
-                canvas.RotateDegrees(glyph.Bottom ? glyph.AngleDeg - 180f : glyph.AngleDeg);
-                var baseline = (glyph.Bottom ? radius : -radius) + ringPt * 0.36f;
-                canvas.DrawText(glyph.Glyph, -font.MeasureText(glyph.Glyph) / 2, baseline, SkiaSharp.SKTextAlign.Left, font, paint);
-                canvas.Restore();
-            }
-        }
-        if (CardDesign.StampAcronym(header) is { } acronym)
-        {
-            using var font = CardText("Montserrat-Bold.ttf", CardDesign.StampAcronymPt);
-            var width = font.MeasureText(acronym) + acronym.Length * 0.08f * font.Size;
-            Draw(canvas, acronym, cx - width / 2, top + Mm(CardDesign.StampInnerInsetMm + 0.8f) + font.Size * 0.95f, font, ink.WithAlpha(CardDesign.StampAlpha), 0.08f);
-        }
-        var logoD = Mm(CardDesign.StampLogoMm);
-        using (var image = SkiaSharp.SKImage.FromEncodedData(logo))
-        {
-            if (image is not null)
-            {
-                var scale = Math.Min(logoD / image.Width, logoD / image.Height);
-                var iw = image.Width * scale;
-                var ih = image.Height * scale;
-                canvas.DrawImage(image, SkiaSharp.SKRect.Create(cx - iw / 2, cy + Mm(CardDesign.StampLogoOffsetMm) - ih / 2, iw, ih),
-                    new SkiaSharp.SKSamplingOptions(SkiaSharp.SKFilterMode.Linear, SkiaSharp.SKMipmapMode.Linear));
-            }
-        }
-        if (!paid) return;
-        using var mark = CardText("Montserrat-ExtraBold.ttf", CardDesign.PaidPt);
-        var markW = mark.MeasureText(CardDesign.PaidMark) + CardDesign.PaidMark.Length * 0.03f * mark.Size;
-        Draw(canvas, CardDesign.PaidMark, cx - markW / 2, cy + Mm(CardDesign.PaidOffsetMm) + mark.Size * 0.36f, mark,
-            PdfFlow.Color(CardDesign.PaidInk).WithAlpha(CardDesign.PaidAlpha), 0.03f);
-    }
-
-    /// <summary>Le cachet seul en PNG transparent à 600 ppp : pour les cartes Word du téléphone.</summary>
-    private static byte[] StampPng(SchoolCardHeader header, bool paid)
-    {
-        const float dpi = 600f;
-        var px = (int)Math.Ceiling(CardDesign.StampMm / 25.4f * dpi);
-        using var bitmap = new SkiaSharp.SKBitmap(px, px, SkiaSharp.SKColorType.Rgba8888, SkiaSharp.SKAlphaType.Premul);
-        using (var canvas = new SkiaSharp.SKCanvas(bitmap))
-        {
-            canvas.Clear(SkiaSharp.SKColors.Transparent);
-            canvas.Scale(dpi / 72f);
-            Stamp(canvas, 0, 0, header, header.Logo ?? [], paid);
-        }
-        using var data = bitmap.Encode(SkiaSharp.SKEncodedImageFormat.Png, 100);
-        return data.ToArray();
-    }
-
     /// <summary>Repères de découpe en pointillés, au milieu des interstices : la coupe passe entre deux cartes.</summary>
     private static void CutLines(PdfFlow f)
     {
@@ -636,5 +556,5 @@ public sealed class SkiaDocumentService : IDocumentService
     }
 
     /// <summary>Cartes au format Word : le même fichier que sur l'ordinateur, écrit sans PDF.</summary>
-    public byte[] StudentCardsWord(CardDocument d) => CardWordWriter.Write(d, paid => StampPng(d.Header, paid));
+    public byte[] StudentCardsWord(CardDocument d) => CardWordWriter.Write(d);
 }

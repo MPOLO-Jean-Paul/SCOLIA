@@ -133,15 +133,15 @@ public sealed class StudentCardsApiTests : IDisposable
     }
 
     [Fact]
-    public async Task Export_sans_logo_de_l_ecole_est_refuse_plutot_que_d_imprimer_un_sceau_etranger()
+    public async Task Export_sans_logo_configure_reste_possible_le_cachet_se_pose_a_la_main()
     {
         var admin = await app.InstalledAdmin();
         var promotion = await PromotionAsync(admin);
         var student = await StudentAsync(admin, promotion, "MUKENDI");
-        var invalid = await admin.Post("/api/cartes/export",
-            new { enrollmentIds = new[] { student }, month = 9, year = 2026, copies = 1, includeLeft = false }).Fail();
-        Assert.Equal(HttpStatusCode.BadRequest, invalid.Status);
-        Assert.Contains("logo", invalid.Body.ToString(), StringComparison.OrdinalIgnoreCase);
+        var response = await admin.Post("/api/cartes/export",
+            new { enrollmentIds = new[] { student }, month = 9, year = 2026, copies = 1, includeLeft = false });
+        Assert.True(response.IsSuccessStatusCode, await response.Content.ReadAsStringAsync());
+        Assert.StartsWith("%PDF", System.Text.Encoding.ASCII.GetString(await response.Content.ReadAsByteArrayAsync())[..4], StringComparison.Ordinal);
     }
 
     [Fact]
@@ -182,8 +182,8 @@ public sealed class StudentCardsApiTests : IDisposable
         using (var stream = document.Open())
         {
             var xml = System.Xml.Linq.XDocument.Load(stream);
-            // Trois cartes : logo configuré, cachet et QR par exemplaire.
-            Assert.Equal(9, xml.Descendants().Count(e => e.Name.LocalName == "drawing"));
+            // Trois cartes : seulement le QR de chaque exemplaire, ni logo ni cachet.
+            Assert.Equal(3, xml.Descendants().Count(e => e.Name.LocalName == "drawing"));
             var printed = string.Join(" ", xml.Descendants()
                 .Where(e => e.Name.LocalName == "t").Select(e => e.Value));
             Assert.Contains("INSTITUT DE TEST", printed, StringComparison.Ordinal);
