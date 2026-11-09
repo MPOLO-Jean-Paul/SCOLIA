@@ -61,7 +61,7 @@ jobs:
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       OWNER_ADMIN_TOKEN: ${{ secrets.SCOLIA_OWNER_ADMIN_TOKEN }}
       CF_OWNER_DOMAIN: ${{ vars.SCOLIA_OWNER_DOMAIN || 'scolia-pro-owner.jeanpaulmpolo242.workers.dev' }}
-      OWNER_ACCESS_AUD: ${{ vars.SCOLIA_OWNER_ACCESS_AUD }}
+      OWNER_ACCESS_AUD: ${{ vars.SCOLIA_OWNER_ACCESS_AUD || 'beb99695d040319e7fc39607b996f925a4a98ece22c17be1cfdce050eb70ba19' }}
     steps:
       - uses: actions/checkout@v4
         with:
