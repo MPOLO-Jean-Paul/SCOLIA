@@ -9,7 +9,7 @@ const DOMAIN = /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/i;
 // Le seul hostname workers.dev supporté est celui de CE Worker. Aucun routage global du compte.
 const FREE_WORKER_HOST = /^scolia-pro-owner\.[a-z0-9-]+\.workers\.dev$/i;
 
-export function buildProductionConfig({databaseId, domain, audience}) {
+export function buildProductionConfig({databaseId, domain, audience, turnAccountId}) {
   if (!UUID.test(databaseId ?? "") || /^0+$/.test(databaseId.replace(/-/g, "")))
     throw new Error("Identifiant Cloudflare D1 réel requis.");
   if (!DOMAIN.test(domain ?? "") ||
@@ -19,6 +19,8 @@ export function buildProductionConfig({databaseId, domain, audience}) {
     throw new Error("Le hostname workers.dev doit correspondre exactement au Worker scolia-pro-owner.");
   if (typeof audience !== "string" || !/^[a-zA-Z0-9_-]{20,128}$/.test(audience))
     throw new Error("Cloudflare Access AUD valide requis.");
+  if (turnAccountId !== undefined && !/^[a-f0-9]{32}$/i.test(turnAccountId))
+    throw new Error("Identifiant de compte Cloudflare Realtime invalide.");
   const freeWorkersDev = FREE_WORKER_HOST.test(domain);
   return {
     $schema: "node_modules/wrangler/config-schema.json",
@@ -29,7 +31,8 @@ export function buildProductionConfig({databaseId, domain, audience}) {
     workers_dev: freeWorkersDev,
     ...(freeWorkersDev ? {} : { routes: [{ pattern: domain, custom_domain: true }] }),
     triggers: { crons: ["0 3 * * *"] },
-    vars: { OWNER_ACCESS_AUD: audience },
+    vars: { OWNER_ACCESS_AUD: audience,
+      ...(turnAccountId ? { CLOUDFLARE_TURN_ACCOUNT_ID: turnAccountId } : {}) },
     observability: { enabled: true },
     d1_databases: [{
       binding: "OWNER_DB", database_name: DB_NAME,
