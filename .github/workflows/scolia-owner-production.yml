@@ -49,13 +49,7 @@ jobs:
   deploy:
     name: Publier sur Cloudflare
     needs: verify
-    if: >-
-      github.ref == 'refs/heads/main' &&
-      github.actor == 'MPOLO-Jean-Paul' &&
-      (
-        (github.event_name == 'workflow_dispatch' && inputs.confirm_production == true) ||
-        (github.event_name == 'push' && github.event.head_commit.message == 'release(owner-ui): livrer charte admin responsive 1.0.0')
-      )
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && github.actor == 'MPOLO-Jean-Paul' && inputs.confirm_production == true
     runs-on: ubuntu-latest
     environment: scolia-owner-production
     timeout-minutes: 25
