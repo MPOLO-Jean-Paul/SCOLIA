@@ -3,6 +3,7 @@
 // JP-Services a modifié sa liste : accord explicite et approbation de révision.
 import { cleanLabel } from "./policy.mjs";
 import { evaluateLicense } from "./licenses.mjs";
+import { discoverCloudflareTurn } from "./cloudflare-turn.mjs";
 
 const ALLOWED = new Set(["active", "disabled"]);
 
@@ -102,10 +103,17 @@ export async function schoolRelayRequest(request, env, url,
 export async function ownerRelayRequest(request, env, url,
   { jsonBody, fail, result, audit, nowMs }) {
   const db = env.OWNER_DB, now = nowMs();
+  // Interrogation Cloudflare API en lecture seule, limitée au compte configuré.
+  // Toujours APRES authentification Cloudflare Access + jeton propriétaire.
+  if (request.method === "GET" && url.pathname === "/api/v1/owner/relays/cloudflare") {
+    return result(await discoverCloudflareTurn(env, env.TURN_DISCOVERY_FETCH || fetch));
+  }
   if (request.method === "GET" && url.pathname === "/api/v1/owner/relays") {
     const list = await db.prepare(`SELECT id,label,url,state,revision,created_at,updated_at
       FROM owner_relays ORDER BY updated_at DESC LIMIT 100`).all();
-    return result({ relays: list.results });
+    return result({ source: "cloudflare_d1", protocol: "wss", relays: list.results,
+      fetched_at: now, automatic_sync: true,
+      notice: "Catalogue WSS configuré par JP-Services : récupération automatique. Les ajouts manuels restent disponibles." });
   }
 
   if (request.method === "POST" && url.pathname === "/api/v1/owner/relays") {
