@@ -151,6 +151,10 @@ jobs:
                 echo "Reponse JSON attendue sur $route."
                 ;;
               302|401|403)
+                if [[ "$route" == "/api/v1/notice" ]]; then
+                  echo "::error::L'API publique $route est inaccessible (HTTP $status). Les clients SCOLIA risquent d'etre bloques par Cloudflare Access. Verifier une exception limitee a cette route ; jamais aux routes proprietaires."
+                  exit 1
+                fi
                 echo "::warning::$route est protege par Cloudflare Access (HTTP $status). Verification anonyme du contenu impossible ; aucune protection desactivee."
                 ;;
               *)
