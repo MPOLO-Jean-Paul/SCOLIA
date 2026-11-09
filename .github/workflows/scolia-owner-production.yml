@@ -61,6 +61,8 @@ jobs:
         run: node scripts/prepare-production.mjs
       - name: Appliquer uniquement les migrations D1 manquantes (backup Cloudflare)
         run: npx wrangler d1 migrations apply OWNER_DB --remote --config wrangler.production.json
+      - name: Appliquer les migrations D1 scolaires separees (seulement si consentement au jumelage)
+        run: npx wrangler d1 migrations apply SCHOOL_DB --remote --config wrangler.production.json
       - name: Publier le Worker (workers.dev pilote ou domaine personnalise)
         run: npx wrangler deploy --config wrangler.production.json
       - name: Installer le jeton administrateur sans exposer sa valeur
