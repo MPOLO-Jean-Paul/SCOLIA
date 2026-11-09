@@ -144,10 +144,25 @@ public sealed class SyncWorker : Worker
         using var api = new ScoliaClient(server);
         if (relay is not null) api.UseRemote(relay);
         var store = new OfflineStore(ConnectionStore.CacheAddress(api.Server));
+        // Une boîte aux lettres chiffrée existe indépendamment du serveur principal.
+        // Garder la même copie de travail et le même magasin, y compris hors connexion.
+        api.Offline = store;
         if (store.SavedCredential is { SessionCookie.Length: > 0 } credential)
             api.RestoreSessionCookie(credential.SessionCookie);
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(90));
-        if (!await api.IsRunningAsync(timeout.Token)) return Result.InvokeRetry();
+        if (!await api.IsRunningAsync(timeout.Token))
+        {
+            // Même lorsque le PC serveur est éteint, déposer les opérations déjà
+            // autorisées auprès de la console HTTPS. L'outbox locale n'est jamais
+            // soldée sur simple accusé de stockage ; seul le serveur la valide.
+            foreach (var account in store.AccountsAwaitingCloudDeposit())
+            {
+                if (IsStopped || timeout.IsCancellationRequested) break;
+                store.User = account;
+                await api.DepositPendingAsync(timeout.Token);
+            }
+            return Result.InvokeRetry();
+        }
         // Le jumelage donne seulement accès au serveur, jamais une session de compte.
         // Une session utilisateur encore valide peut reprendre en arrière-plan ;
         // sinon la synchronisation attend sa prochaine authentification personnelle.
@@ -155,7 +170,10 @@ public sealed class SyncWorker : Worker
         var active = await api.CurrentSessionAsync(timeout.Token);
         if (active is null) return Result.InvokeSuccess();
         store.User = active.UserName;
-        api.Offline = store;
+        // Une opération que le serveur a déjà appliquée depuis la boîte cloud
+        // doit disparaître de l'outbox avant la reprise directe. Aucun paiement
+        // ne reçoit de reçu définitif lors d'un simple dépôt cloud.
+        await api.ReconcileCloudAsync(timeout.Token);
         await api.FlushAsync(timeout.Token);
         // Sans interface, reprendre les ressources déjà reçues plutôt que repartir
         // depuis la première fiche. Le curseur est chiffré et propre au compte.
