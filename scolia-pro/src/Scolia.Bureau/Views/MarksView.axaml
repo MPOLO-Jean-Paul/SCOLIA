@@ -25,8 +25,8 @@
         <TextBlock Text="1. Choisissez un cours" Classes="heading" Margin="16,12,16,4" />
         <DataGrid Grid.Row="1" ItemsSource="{Binding Courses}" SelectedItem="{Binding Course}" AutoGenerateColumns="False" IsReadOnly="True" BorderThickness="0" CornerRadius="0">
           <DataGrid.Columns>
-            <!-- L'avancement compte plus que l'organisation : sur un écran moyen, Maxima puis Org. s'effacent d'abord. -->
-            <DataGridTextColumn Header="N°" Binding="{Binding Number}" Width="Auto" MinWidth="74" />
+            <!-- L'avancement compte le plus : sur un écran moyen, Maxima, Org. puis N° s'effacent d'abord. -->
+            <DataGridTextColumn Header="N°" Binding="{Binding Number}" Width="Auto" MinWidth="74" infra:GridPriority.Level="3" />
             <DataGridTextColumn Header="Cours" Binding="{Binding Name}" Width="*" MinWidth="176" />
             <DataGridTextColumn Header="Org." Binding="{Binding Semester}" Width="Auto" MinWidth="92" infra:GridPriority.Level="3" />
             <DataGridTextColumn Header="Maxima" Binding="{Binding Max}" Width="Auto" MinWidth="110" infra:GridPriority.Level="4" />
