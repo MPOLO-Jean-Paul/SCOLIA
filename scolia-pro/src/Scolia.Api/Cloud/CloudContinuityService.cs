@@ -211,25 +211,30 @@ public sealed partial class CloudContinuityService : BackgroundService
     /// </summary>
     public async Task<CloudMirrorPairStatus> PairD1Async(CancellationToken ct)
     {
-        var current = state;
-        if (!license.IsRegistered || corrupted || !current.Enabled || current.DataKey is null)
-            throw new DomainException("nuage", "Activez d'abord la continuité chiffrée de cet établissement.");
-        if (!current.RecoveryConfirmed)
-            throw new DomainException("nuage", "Confirmez d'abord la conservation du code de secours de l'école.");
-        using var client = license.OwnerClient(TimeSpan.FromSeconds(30));
-        using var response = await client.PostAsJsonAsync("api/v1/server/cloud/mirror/pair", new
+        await gate.WaitAsync(ct);
+        try
         {
-            installation_hash = license.InstallationFingerprint,
-            key_fingerprint = CloudSeal.Fingerprint(Convert.FromBase64String(current.DataKey)),
-            consent_confirmed = true,
-        }, ct);
-        await EnsureSuccessAsync(response, ct);
-        var body = await response.Content.ReadFromJsonAsync<JsonElement>(Json, ct);
-        if (!body.TryGetProperty("paired", out var paired) || paired.ValueKind != JsonValueKind.True)
-            throw new DomainException("nuage", "Jumelage D1 non confirmé par Cloudflare.");
-        Save(state with { MirrorPaired = true });
-        backupRequested = true;
-        return new CloudMirrorPairStatus(true, false);
+            var current = state;
+            if (!license.IsRegistered || corrupted || !current.Enabled || current.DataKey is null)
+                throw new DomainException("nuage", "Activez d'abord la continuité chiffrée de cet établissement.");
+            if (!current.RecoveryConfirmed)
+                throw new DomainException("nuage", "Confirmez d'abord la conservation du code de secours de l'école.");
+            using var client = license.OwnerClient(TimeSpan.FromSeconds(30));
+            using var response = await client.PostAsJsonAsync("api/v1/server/cloud/mirror/pair", new
+            {
+                installation_hash = license.InstallationFingerprint,
+                key_fingerprint = CloudSeal.Fingerprint(Convert.FromBase64String(current.DataKey)),
+                consent_confirmed = true,
+            }, ct);
+            await EnsureSuccessAsync(response, ct);
+            var body = await response.Content.ReadFromJsonAsync<JsonElement>(Json, ct);
+            if (!body.TryGetProperty("paired", out var paired) || paired.ValueKind != JsonValueKind.True)
+                throw new DomainException("nuage", "Jumelage D1 non confirmé par Cloudflare.");
+            Save(state with { MirrorPaired = true });
+            backupRequested = true;
+            return new CloudMirrorPairStatus(true, false);
+        }
+        finally { gate.Release(); }
     }
 
     // ---------- Sauvegarde ----------
