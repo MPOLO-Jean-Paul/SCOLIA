@@ -4,7 +4,7 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "test": "node --check src/index.mjs && node --check src/relays.mjs && node --check src/licenses.mjs && node --check src/cloud.mjs && node --check src/production.mjs && node --check scripts/prepare-production.mjs && node --test tests/*.test.mjs",
+    "test": "node --check src/index.mjs && node --check src/relays.mjs && node --check src/licenses.mjs && node --check src/cloud.mjs && node --check src/school-mirror.mjs && node --check src/production.mjs && node --check scripts/prepare-production.mjs && node --test tests/*.test.mjs",
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
     "prepare:production": "node scripts/prepare-production.mjs"
