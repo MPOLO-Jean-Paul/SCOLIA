@@ -9,14 +9,14 @@ namespace Scolia.Infrastructure.Documents;
 
 /// <summary>
 /// Cartes d'accès en PDF (ordinateur), dessinées d'après <see cref="CardDesign"/> : en-tête centré de l'établissement
-/// configuré, « Session AAAA » souligné, identité en capitales espacées, QR de contrôle discret en haut à droite.
-/// Ni logo ni cachet : ils sont apposés à la main après l'impression, aux deux places laissées libres.
+/// configuré avec son logo, « Session AAAA » souligné, identité en capitales espacées, second logo en bas à droite,
+/// bande de couleur de la filière, QR de contrôle discret en haut à droite. Le cachet est apposé à la main.
 /// Huit cartes ISO ID-1 par A4, avec repères de découpe entre les cartes.
 /// </summary>
 internal static class StudentCardPdf
 {
     // Marqueur du code de mise en page réellement chargé par le serveur.
-    internal static readonly string LayoutId = "SCOLIA-CARTES-ID1-2026-11-V5";
+    internal static readonly string LayoutId = "SCOLIA-CARTES-ID1-2026-11-V6";
     private const string Guide = "#8A96A6";
 
     private static readonly float MmPt = 72f / 25.4f;
@@ -33,6 +33,8 @@ internal static class StudentCardPdf
 
     public static byte[] Build(CardDocument d)
     {
+        var schoolLogo = d.Header.Logo is { Length: > 0 } logo ? logo :
+            throw new InvalidOperationException("Le logo de l'établissement est nécessaire pour créer ses cartes d'accès.");
         var pages = new List<IReadOnlyList<CardItem>>();
         for (var start = 0; start < d.Cards.Count; start += StudentCardRules.CardsPerPage)
             pages.Add(d.Cards.Skip(start).Take(StudentCardRules.CardsPerPage).ToList());
@@ -59,7 +61,7 @@ internal static class StudentCardPdf
                                     if (col > 0) line.ConstantItem(Mm(ColumnGap)).Column(gutter => CutLineDown(gutter));
                                     var index = row * 2 + col;
                                     var cell = line.ConstantItem(Mm(CardWidth)).Height(Mm(CardHeight));
-                                    if (index < cards.Count) cell.Element(c => Card(c, d, cards[index]));
+                                    if (index < cards.Count) cell.Element(c => Card(c, d, cards[index], schoolLogo));
                                 }
                             });
                         }
@@ -73,7 +75,7 @@ internal static class StudentCardPdf
     private static IContainer At(LayersDescriptor layers, float xMm, float yMm, float widthMm, float heightMm) =>
         layers.Layer().PaddingLeft(Mm(xMm)).PaddingTop(Mm(yMm)).AlignLeft().AlignTop().Width(Mm(widthMm)).Height(Mm(heightMm));
 
-    private static void Card(IContainer container, CardDocument d, CardItem card)
+    private static void Card(IContainer container, CardDocument d, CardItem card, byte[] schoolLogo)
     {
         var header = d.Header;
         container.Layers(layers =>
@@ -81,11 +83,11 @@ internal static class StudentCardPdf
             // Le cadre fin sert de repère de découpe ; le fond reste blanc comme la carte modèle.
             layers.PrimaryLayer().Border(0.4f).BorderColor(CardDesign.Frame).Background(CardDesign.Paper);
 
-            // En-tête centré : place libre du logo (apposé à la main), puis nom, service, filet et contacts.
+            // En-tête centré : logo, puis nom, service, filet et contacts de l'établissement configuré.
             At(layers, CardDesign.HeaderLeftMm, CardDesign.HeaderTopMm, CardDesign.LogoMm + CardDesign.HeaderGapMm + CardDesign.HeaderTextMm,
                 CardDesign.HeaderHeightMm).Row(row =>
             {
-                row.ConstantItem(Mm(CardDesign.LogoMm));
+                row.ConstantItem(Mm(CardDesign.LogoMm)).AlignMiddle().Height(Mm(CardDesign.LogoMm)).Image(schoolLogo).FitArea();
                 row.ConstantItem(Mm(CardDesign.HeaderGapMm));
                 row.RelativeItem().AlignMiddle().ScaleToFit().Column(text => HeaderText(text, header));
             });
@@ -115,8 +117,15 @@ internal static class StudentCardPdf
                         text.Span(value).Style(Identity(size));
                     });
             }
+
+            // Second logo en bas à droite, et bande de couleur de la filière tout en bas.
+            At(layers, CardDesign.BottomLogoLeftMm, CardDesign.BottomLogoTopMm, CardDesign.BottomLogoMm, CardDesign.BottomLogoMm)
+                .Image(schoolLogo).FitArea();
+            At(layers, 0, CardDesign.BandTopMm, CardWidth, CardDesign.BandMm).Background(Band(card.Color));
         });
     }
+
+    private static string Band(string color) => color.StartsWith('#') ? color : "#" + color;
 
     private static TextStyle Identity(float size) => TextStyle.Default.FontFamily(CardDesign.SansFamily).Medium().FontSize(size)
         .LetterSpacing(CardDesign.IdentityTracking).FontColor(CardDesign.IdentityInk);

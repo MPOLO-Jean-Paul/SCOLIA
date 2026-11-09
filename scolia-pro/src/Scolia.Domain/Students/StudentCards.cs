@@ -1,4 +1,5 @@
 using Scolia.Domain.Common;
+using Scolia.Domain.School;
 
 namespace Scolia.Domain.Students;
 
@@ -59,18 +60,36 @@ public static class StudentCardRules
         return $"{FrenchMonths[month - 1]} {year}";
     }
 
-    /// <summary>Couleur de la bande de promotion. Une autre promotion utilise une bande neutre.</summary>
-    public static string ColorOf(string promotionCode) => promotionCode.Trim().ToUpperInvariant() switch
+    /// <summary>
+    /// Couleurs des bandes de filière, en bas des cartes : franches, distinctes entre elles et lisibles à l'impression.
+    /// </summary>
+    public static readonly IReadOnlyList<string> BandPalette =
+    [
+        "#1D4ED8", "#D97706", "#059669", "#7C3AED", "#DC2626", "#0891B2",
+        "#DB2777", "#65A30D", "#B45309", "#4F46E5", "#0F766E", "#9F1239",
+    ];
+
+    /// <summary>
+    /// Filière d'une promotion : sa section quand elle en a une, sinon son code sans les chiffres
+    /// (ACC1, ACC2 et ACC3 forment la filière ACC). Une même filière a une même bande.
+    /// </summary>
+    public static string FiliereKey(string? sectionCode, string promotionCode)
     {
-        "TLM1" or "TML1" => "#2563EB",
-        "ACC1" => "#FACC15",
-        "ACC2" => "#7C3AED",
-        "ACC3" => "#86EFAC",
-        "INF1" => "#7DD3FC",
-        "INF2" => "#F9A8D4",
-        "INF3" => "#22C55E",
-        _ => "#CBD5E1",
-    };
+        if (!string.IsNullOrWhiteSpace(sectionCode)) return "S:" + sectionCode.Trim().ToUpperInvariant();
+        var code = Promotion.NormalizeCode(promotionCode);
+        var letters = new string(code.Where(c => !char.IsDigit(c)).ToArray());
+        return "P:" + (letters.Length == 0 ? code : letters);
+    }
+
+    /// <summary>
+    /// Couleur de bande de chaque filière de l'établissement : les filières sont rangées par ordre alphabétique et
+    /// reçoivent chacune une couleur de la palette, si bien que deux filières n'ont jamais la même tant qu'il y en a
+    /// douze au plus, et qu'une filière garde sa couleur d'une impression à l'autre.
+    /// </summary>
+    public static IReadOnlyDictionary<string, string> BandColors(IEnumerable<string> filiereKeys) =>
+        filiereKeys.Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal)
+            .Select((key, index) => (key, color: BandPalette[index % BandPalette.Count]))
+            .ToDictionary(x => x.key, x => x.color, StringComparer.Ordinal);
 
     /// <summary>Détecte les matricules doublés de l'année avant tout filtrage.</summary>
     public static HashSet<string> DuplicateMatricules(IEnumerable<string> matricules) =>

@@ -8,8 +8,8 @@ namespace Scolia.Domain.Students;
 /// </summary>
 public static class CardGeneratorManifest
 {
-    public const string Id = "SCOLIA-CARTES-ID1-2026-11-V5";
-    public const int Revision = 5;
+    public const string Id = "SCOLIA-CARTES-ID1-2026-11-V6";
+    public const int Revision = 6;
     public const int CardsPerA4 = 8;
     public const string ExportFormats = "pdf,docx";
 }

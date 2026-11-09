@@ -2,6 +2,7 @@ using System.Text;
 using Scolia.Application.Abstractions;
 using Scolia.Application.Dtos;
 using Scolia.Infrastructure.Documents;
+using Scolia.Domain.Students;
 using Scolia.Mobile.Server;
 
 namespace Scolia.Mobile.Tests;
@@ -104,8 +105,10 @@ public sealed class DocumentTests
             "Lubumbashi", "Institut Supérieur de Démonstration", "Avenue de la Paix 12", DocumentService.DefaultLogo(),
             "+243 810 000 000", "contact@isd.example", "www.isd.example", "Servir et réussir");
         string[] names = ["MUKENDI", "KALOMBO WA NKONGOLO", "TSHIBANDA", "NGOY", "BANZA", "ILUNGA", "KASONGO", "MBUYI", "LUKUSA", "NSIMBA"];
-        var cards = Enumerable.Range(1, 10).Select(i => new CardItem(names[i - 1], i == 2 ? "MUTOMBO KABEYA" : "TSHIDIBI", i == 2 ? "Jean-Pierre Emmanuel" : "DANNY", "L3 MSI",
-            "#2563EB", $"SCOLIA|ACC{i:000}", $"23MT{350 + i}SI")).ToList();
+        string[] promotions = ["L3 MSI", "L3 MSI", "G2 INF", "G2 INF", "L1 COM", "L3 MSI", "G2 INF", "L1 COM", "L3 MSI", "G2 INF"];
+        var bands = StudentCardRules.BandColors(promotions.Select(p => StudentCardRules.FiliereKey(null, p)));
+        var cards = Enumerable.Range(1, 10).Select(i => new CardItem(names[i - 1], i == 2 ? "MUTOMBO KABEYA" : "TSHIDIBI", i == 2 ? "Jean-Pierre Emmanuel" : "DANNY",
+            promotions[i - 1], bands[StudentCardRules.FiliereKey(null, promotions[i - 1])], $"SCOLIA|ACC{i:000}", $"23MT{350 + i}SI")).ToList();
         var doc = new CardDocument(header, "OCTOBRE 2026", "2026-2027", cards);
         var pdf = phone.StudentCards(doc);
         AssertPdf(pdf, 2);
