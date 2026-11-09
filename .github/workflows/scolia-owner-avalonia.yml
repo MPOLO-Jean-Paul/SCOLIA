@@ -5,6 +5,7 @@ on:
     branches: [feature/jp-services-admin-server-discovery-20261109]
     paths:
       - 'scolia-pro/owner-app/avalonia/**'
+      - 'scolia-pro/deploy/owner-console/**'
       - '.github/workflows/scolia-owner-avalonia.yml'
   workflow_dispatch:
 
