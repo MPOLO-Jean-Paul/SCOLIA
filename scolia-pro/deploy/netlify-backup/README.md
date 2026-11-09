@@ -1,5 +1,30 @@
 # SCOLIA · Netlify HTTPS de secours (préparation technique)
 
+## Etat du déploiement initial (9 novembre 2026)
+
+Le premier déploiement Netlify est volontairement limité au point de santé
+`GET /api/scolia-backup/health` et à la page publique technique.
+
+Motif : le build npm demandait une version non publiée de `@netlify/otel`
+(via les dépendances Netlify Blobs), entraînant `ETARGET`. Le pilote
+de boîte aux lettres ne possède pas encore d'adaptateur Android/Windows validé.
+Les fonctions actives n'importent donc plus `@netlify/blobs`, et le manifeste
+n'a plus de dépendances npm externes. Le code du protocole expérimental et
+ses tests restent présents dans `src/` et `tests/`, mais le transport reste
+toujours désactivé, même si une variable d'environnement est renseignée.
+Le service ne doit pas être annoncé comme troisième relais de production.
+
+Pour déployer : branche `feature/scolia-netlify-https-backup-20261109`,
+base `scolia-pro/deploy/netlify-backup`, commande
+`npm run check && npm test`, publication `public` et fonctions
+`netlify/functions`. Une fois la compilation publiée, vérifier la réponse
+de `/api/scolia-backup/health` : `enabled: false`,
+`production_ready: false`, `websocket: false`, `turn: false`.
+
+La réactivation du pilote exigera une revue indépendante des dépendances,
+des protections anti-abus et des tests de bout en bout ; il ne suffit pas
+de positionner `SCOLIA_NETLIFY_MAILBOX_ENABLED=true`.
+
 **Ne pas confondre avec un troisième relais WSS ni un service TURN.** L'application
 SCOLIA actuelle utilise WebSocket pour **transporter des requêtes et réponses
 chiffrées**, et non seulement pour la signalisation. Une URL Netlify ne peut pas
