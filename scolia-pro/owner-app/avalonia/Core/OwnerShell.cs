@@ -25,13 +25,14 @@ public sealed class OwnerShell : UserControl
     private const string Version = "1.1.1";
     private static readonly HttpClient Client = NewClient();
 
-    private enum Page { Home, Schools, Licenses, Servers, Activity, Backups, Account }
+    private enum Page { Home, Schools, Licenses, Servers, Relays, Activity, Backups, Account }
     private static readonly (Page Page, string Icon, string Name)[] Sections =
     [
         (Page.Home, "⌂", "Accueil"),
         (Page.Schools, "É", "Établissements"),
         (Page.Licenses, "L", "Licences"),
         (Page.Servers, "S", "Serveurs"),
+        (Page.Relays, "◉", "Relais"),
         (Page.Activity, "≋", "Activité"),
         (Page.Backups, "↺", "Sauvegardes"),
         (Page.Account, "⚙", "Compte")
@@ -338,6 +339,13 @@ public sealed class OwnerShell : UserControl
                 [("Disponibilité", "Dernier signal reçu et état réseau."),
                 ("Relais Internet", "Fournisseurs approuvés par les établissements."),
                 ("Sécurité réseau", "Contrôler les jumelages et la continuité.")]),
+            Page.Relays => DetailsPage("Relais Cloudflare et connexions",
+                "Découverte des relais du compte Cloudflare et solutions WSS de secours.",
+                "Relais configurés", "Ouvrez la console sécurisée pour actualiser la liste des relais autorisés.",
+                [("Cloudflare Realtime TURN", "Récupérer les noms TURN avec une permission Calls Read."),
+                 ("Relais WSS", "Synchronisation automatique du catalogue Cloudflare D1."),
+                 ("Secours manuel", "Ajouter un relais WSS lorsque nécessaire."),
+                 ("Approbation de l'établissement", "Aucune bascule de relais imposée à l'école.")]),
             Page.Activity => DetailsPage("Journal d’activité",
                 "Historique des opérations commerciales autorisées.",
                 "Événements récents", "Aucune donnée n'est inventée ou téléchargée sans autorisation.",
@@ -409,6 +417,8 @@ public sealed class OwnerShell : UserControl
             "Créer des invitations et consulter la liste", Page.Schools));
         tools.Children.Add(CompactAction("Licences et renouvellements",
             "Facturation, essais et suspension sous contrôle", Page.Licenses));
+        tools.Children.Add(CompactAction("Relais Cloudflare et secours",
+            "Découverte automatique et configuration WSS manuelle", Page.Relays));
         tools.Children.Add(CompactAction("Sauvegardes Cloudflare",
             "Contrôler les métadonnées et la disponibilité R2", Page.Backups));
         stack.Children.Add(tools);
@@ -473,7 +483,8 @@ public sealed class OwnerShell : UserControl
             stack.Children.Add(Box(row, corner: 15));
         }
         var go = Button("Ouvrir cette fonction dans la console sécurisée  ↗",
-            () => _ = OpenConsoleAsync(_page == Page.Servers ? "serversPanel" : null), primary: true);
+            () => _ = OpenConsoleAsync(_page == Page.Servers ? "serversPanel" :
+                _page == Page.Relays ? "relaysPanel" : null), primary: true);
         go.HorizontalAlignment = HorizontalAlignment.Stretch;
         stack.Children.Add(go);
         stack.Children.Add(SafetyNotice());
