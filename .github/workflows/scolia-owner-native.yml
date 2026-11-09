@@ -6,6 +6,8 @@ on:
       - feature/jp-services-admin-app-20261109
     paths:
       - 'scolia-pro/owner-app/**'
+      - 'scolia-pro/deploy/owner-console/src/index.mjs'
+      - 'scolia-pro/deploy/owner-console/src/owner-theme.mjs'
       - '.github/workflows/scolia-owner-native.yml'
   workflow_dispatch:
     inputs:
@@ -27,6 +29,32 @@ env:
   RELEASE_TAG: 'scolia-owner-v1.0.0'
 
 jobs:
+  console-ui:
+    name: Tests console responsive et securite
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    defaults:
+      run:
+        working-directory: scolia-pro/deploy/owner-console
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Tester code et migrations de la console
+        run: npm test
+      - name: Verifier theme et correction des cartes du tableau de bord
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check src/owner-theme.mjs
+          grep -Fq 'id="cloudOnCount"' src/index.mjs
+          grep -Fq 'id="cloudOn"' src/index.mjs
+          grep -Fq 'ownerThemeCss' src/index.mjs
+          grep -Fq 'owner-navigation' src/index.mjs
+
   windows:
     name: SCOLIA Admin Windows - EXE et installateur
     runs-on: windows-latest
@@ -164,7 +192,7 @@ jobs:
   release:
     name: Publier les deux plateformes sur le canal Admin
     if: github.event_name == 'workflow_dispatch' && inputs.publish_release == true && needs.android.outputs.official == 'true'
-    needs: [windows, android]
+    needs: [windows, android, console-ui]
     runs-on: ubuntu-latest
     permissions:
       contents: write
