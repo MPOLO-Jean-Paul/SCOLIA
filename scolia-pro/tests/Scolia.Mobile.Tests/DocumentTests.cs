@@ -102,10 +102,10 @@ public sealed class DocumentTests
     {
         var header = new SchoolCardHeader("République démocratique du Congo", "Ministère de l'Enseignement", "Direction des études", "Administration du budget",
             "Lubumbashi", "Institut Supérieur de Démonstration", "Avenue de la Paix 12", DocumentService.DefaultLogo(),
-            "+243 810 000 000", "contact@isd.example", "www.isd.example", "Servir et réussir", "ISD");
+            "+243 810 000 000", "contact@isd.example", "www.isd.example", "Servir et réussir");
         string[] names = ["MUKENDI", "KALOMBO WA NKONGOLO", "TSHIBANDA", "NGOY", "BANZA", "ILUNGA", "KASONGO", "MBUYI", "LUKUSA", "NSIMBA"];
         var cards = Enumerable.Range(1, 10).Select(i => new CardItem(names[i - 1], i == 2 ? "MUTOMBO KABEYA" : "TSHIDIBI", i == 2 ? "Jean-Pierre Emmanuel" : "DANNY", "L3 MSI",
-            "#2563EB", $"SCOLIA|ACC{i:000}", $"23MT{350 + i}SI", Paid: i % 3 != 0)).ToList();
+            "#2563EB", $"SCOLIA|ACC{i:000}", $"23MT{350 + i}SI")).ToList();
         var doc = new CardDocument(header, "OCTOBRE 2026", "2026-2027", cards);
         var pdf = phone.StudentCards(doc);
         AssertPdf(pdf, 2);

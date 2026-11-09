@@ -29,9 +29,9 @@ public class CardDesignTests
         var xml = WordXml(Sample());
         foreach (var label in new[] { "Session 2026", "MATRICULE : INF101", "NOMS : MUKENDI KABEYA Grâce", "PROMOTION : INF1", "ÉCOLE DE DÉMONSTRATION" })
             Assert.Contains(Esc(label), xml, StringComparison.Ordinal);
-        // Session soulignée ; cachet et QR posés à leur place exacte dans chaque carte.
+        // Session soulignée ; seul le QR est posé dans chaque carte : ni logo ni cachet imprimés.
         Assert.Contains("<w:u w:val=\"single\"", xml, StringComparison.Ordinal);
-        Assert.Equal(2 * Sample().Cards.Count, System.Text.RegularExpressions.Regex.Count(xml, "<wp:anchor "));
+        Assert.Equal(Sample().Cards.Count, System.Text.RegularExpressions.Regex.Count(xml, "<w:drawing>"));
         Assert.DoesNotContain("INSTITUT TECHNIQUE MÉDICAL CŒUR DE DIEU", xml, StringComparison.Ordinal);
     }
 
@@ -43,7 +43,7 @@ public class CardDesignTests
             Header = new SchoolCardHeader(
                 "République démocratique du Congo", "Ministère de l'Enseignement", "Direction des études", "Division du budget",
                 "Lubumbashi", "Université de démonstration", "Avenue de l'Exemple 12", DocumentService.DefaultLogo(),
-                "+243 812 345 678", "secretariat@ecole.example", "www.ecole.example", "Servir et soigner", "UDD")
+                "+243 812 345 678", "secretariat@ecole.example", "www.ecole.example", "Servir et soigner")
         };
         var xml = WordXml(configured);
         foreach (var item in new[] { "UNIVERSITÉ DE DÉMONSTRATION", "DIRECTION DES ÉTUDES · DIVISION DU BUDGET",
@@ -53,9 +53,6 @@ public class CardDesignTests
         // Le ministère ne sert que si aucun service n'est configuré.
         Assert.DoesNotContain("MINISTÈRE DE L'ENSEIGNEMENT", xml, StringComparison.Ordinal);
         Assert.Equal("MINISTÈRE DE L'ENSEIGNEMENT", CardDesign.Department(configured.Header with { Direction = null, Division = null }));
-        Assert.Equal("UDD", CardDesign.StampAcronym(configured.Header));
-        Assert.Equal("UNIVERSITÉ DE DÉMONSTRATION", CardDesign.StampTop(configured.Header));
-        Assert.Equal("LUBUMBASHI", CardDesign.StampBottom(configured.Header));
 
         var pdf = new DocumentService().StudentCards(configured);
         Assert.Equal("%PDF", Encoding.ASCII.GetString(pdf, 0, 4));
@@ -70,38 +67,6 @@ public class CardDesignTests
         var longName = card with { LastName = "KALOMBO WA NKONGOLO", MiddleName = "MUTOMBO KABEYA", FirstName = "Jean-Pierre Emmanuel" };
         Assert.True(CardDesign.IdentityPt(longName) < CardDesign.IdentityMaxPt);
         Assert.True(CardDesign.IdentityPt(longName) >= CardDesign.IdentityMinPt);
-    }
-
-    [Theory]
-    [InlineData("ITM", "Lubumbashi")]
-    [InlineData("Institut Technique Médical de Démonstration", "Lubumbashi")]
-    [InlineData("Institut Supérieur des Techniques Appliquées et des Sciences de la Santé du Haut-Katanga", "Lubumbashi")]
-    [InlineData("Université de Lubumbashi", "Lubumbashi")]
-    public void Le_pourtour_du_cachet_tient_dans_un_tour(string name, string city)
-    {
-        var header = new SchoolCardHeader("RDC", null, null, null, city, name, null, DocumentService.DefaultLogo());
-        var (size, glyphs) = CardDesign.StampRingLayout(header);
-        Assert.InRange(size, 3.0f, 5.8f);
-        var top = glyphs.Where(g => !g.Bottom && g.Glyph != "•").ToList();
-        Assert.Equal(CardDesign.StampTop(header).Length, top.Count);
-        Assert.True(top.Zip(top.Skip(1)).All(p => p.Second.AngleDeg > p.First.AngleDeg));
-        Assert.True(top[^1].AngleDeg - top[0].AngleDeg < 320f);
-        var bottom = glyphs.Where(g => g.Bottom).ToList();
-        // La ville est en bas, lisible de gauche à droite ; absente si le nom la contient déjà.
-        Assert.Equal(CardDesign.StampBottom(header)?.Length ?? 0, bottom.Count);
-        Assert.True(bottom.All(g => g.AngleDeg is > 120f and < 240f));
-    }
-
-    [Fact]
-    public void Le_cachet_porte_PAYE_seulement_pour_l_apprenant_en_ordre()
-    {
-        var mixed = Sample() with { Cards = [Sample().Cards[0] with { Paid = true }, Sample().Cards[1] with { Paid = false }] };
-        using var zip = new ZipArchive(new MemoryStream(CardWordWriter.Write(mixed)));
-        // Logo, deux QR et deux cachets différents : avec et sans « PAYÉ ».
-        var images = zip.Entries.Where(e => e.FullName.StartsWith("word/media/", StringComparison.Ordinal)).ToList();
-        Assert.Equal(5, images.Count);
-        var pdf = new DocumentService().StudentCards(mixed);
-        Assert.Equal("%PDF", Encoding.ASCII.GetString(pdf, 0, 4));
     }
 
     [Fact]
@@ -131,23 +96,23 @@ public class CardDesignTests
     }
 
     [Fact]
-    public void Les_cartes_ne_substituent_jamais_un_logo_generique_a_celui_de_l_ecole()
+    public void Ni_logo_ni_cachet_ne_sont_imprimes_ils_sont_apposes_a_la_main()
     {
+        // Sans logo configuré, les cartes se font quand même : le logo et le cachet sont apposés après l'impression.
         var doc = Sample() with { Header = Sample().Header with { Logo = null } };
-        Assert.Throws<InvalidOperationException>(() => new DocumentService().StudentCards(doc));
-        Assert.Throws<InvalidOperationException>(() => CardWordWriter.Write(doc));
-    }
-
-    [Fact]
-    public void Le_logo_configure_est_embarque_dans_les_cartes_word()
-    {
-        var logo = DocumentService.DefaultLogo(); // Uniquement une image de test, pas un fallback de production.
-        var bytes = CardWordWriter.Write(Sample());
-        using var zip = new ZipArchive(new MemoryStream(bytes));
-        using var image = zip.GetEntry("word/media/rImg1.png")!.Open();
-        using var memory = new MemoryStream();
-        image.CopyTo(memory);
-        Assert.Equal(logo, memory.ToArray());
+        Assert.Equal("%PDF", Encoding.ASCII.GetString(new DocumentService().StudentCards(doc), 0, 4));
+        using var zip = new ZipArchive(new MemoryStream(CardWordWriter.Write(Sample())));
+        // Seules images : un QR par carte, jamais le logo de l'établissement.
+        var logo = DocumentService.DefaultLogo();
+        var media = zip.Entries.Where(e => e.FullName.StartsWith("word/media/", StringComparison.Ordinal)).ToList();
+        Assert.Equal(Sample().Cards.Count, media.Count);
+        foreach (var entry in media)
+        {
+            using var image = entry.Open();
+            using var memory = new MemoryStream();
+            image.CopyTo(memory);
+            Assert.NotEqual(logo, memory.ToArray());
+        }
     }
 
     [Fact]

@@ -12,8 +12,8 @@ public sealed class CardGeneratorContractTests
     public void Le_moteur_charge_et_le_contrat_partage_ont_le_meme_identifiant()
     {
         Assert.Equal(CardGeneratorManifest.Id, DocumentService.CardGeneratorId);
-        Assert.Equal("SCOLIA-CARTES-ID1-2026-11-V4", CardGeneratorManifest.Id);
-        Assert.Equal(4, CardGeneratorManifest.Revision);
+        Assert.Equal("SCOLIA-CARTES-ID1-2026-11-V5", CardGeneratorManifest.Id);
+        Assert.Equal(5, CardGeneratorManifest.Revision);
         Assert.Equal(8, CardGeneratorManifest.CardsPerA4);
         Assert.Equal("pdf,docx", CardGeneratorManifest.ExportFormats);
     }

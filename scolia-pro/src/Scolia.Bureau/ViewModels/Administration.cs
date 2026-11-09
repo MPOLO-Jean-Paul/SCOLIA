@@ -960,7 +960,7 @@ public sealed class SettingsPage : PageViewModel
         await Shell.Api.UploadAsync<object>(HttpMethod.Put, "api/etablissement/logo",
             [new UploadedFile("fichier", Path.ChangeExtension(picked.Name, ".png"), png)]);
         await Shell.RefreshLogoAsync();
-        Shell.Notify("Logo mis à jour. Il figure désormais sur l'écran de connexion, les reçus, les listes et les cartes.");
+        Shell.Notify("Logo mis à jour. Il figure désormais sur l'écran de connexion, les reçus et les listes.");
     }
 
     private async Task DeleteSectionAsync()

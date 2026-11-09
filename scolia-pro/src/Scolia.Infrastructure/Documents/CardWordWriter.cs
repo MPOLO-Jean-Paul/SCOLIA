@@ -8,14 +8,14 @@ namespace Scolia.Infrastructure.Documents;
 
 /// <summary>
 /// Cartes d'accès au format Word (.docx) : huit inserts ID-1 (85,60 × 53,98 mm) par A4, sur le dessin commun
-/// <see cref="CardDesign"/> : en-tête centré de l'établissement, « Session AAAA » souligné, identité, cachet rond
-/// (image) en bas à droite et QR de contrôle, posés à leur place exacte dans la carte.
+/// <see cref="CardDesign"/> : en-tête centré de l'établissement, « Session AAAA » souligné, identité et QR de contrôle.
+/// Ni logo ni cachet : ils sont apposés à la main après l'impression, aux deux places laissées libres.
 /// Le PDF reste conseillé pour une découpe à dimensions exactes.
 /// </summary>
 public static class CardWordWriter
 {
     // A incrémenter ensemble avec le générateur PDF à chaque évolution du modèle.
-    internal static readonly string LayoutId = "SCOLIA-CARTES-ID1-2026-11-V4";
+    internal static readonly string LayoutId = "SCOLIA-CARTES-ID1-2026-11-V5";
     private const int CardTwip = 4853;       // 85,60 mm
     private const int GapTwip = 340;         // 6 mm
     private const int RowGapTwip = 397;      // 7 mm
@@ -46,19 +46,9 @@ public static class CardWordWriter
         }
     }
 
-    /// <summary>Cartes Word avec le cachet dessiné par le moteur PDF de l'ordinateur.</summary>
-    public static byte[] Write(CardDocument d) =>
-        Write(d, paid => StudentCardPdf.StampPng(d.Header, d.Header.Logo ?? [], paid));
-
-    /// <summary>Cartes Word ; <paramref name="stamp"/> rend l'image PNG transparente du cachet, avec ou sans « PAYÉ ».</summary>
-    public static byte[] Write(CardDocument d, Func<bool, byte[]> stamp)
+    public static byte[] Write(CardDocument d)
     {
         var images = new Images();
-        var schoolLogo = d.Header.Logo is { Length: > 0 } logo ? logo :
-            throw new InvalidOperationException("Le logo de l'établissement est nécessaire pour créer ses cartes d'accès.");
-        if (!IsSupportedImage(schoolLogo))
-            throw new InvalidOperationException("Le logo des cartes doit être au format PNG ou JPEG.");
-        var logoRid = images.Add("school-logo", () => schoolLogo);
         var body = new StringBuilder();
         var rowsPerPage = StudentCardRules.CardsPerPage / 2;
         var cardRows = (d.Cards.Count + 1) / 2;
@@ -75,9 +65,9 @@ public static class CardWordWriter
 
             // Chaque ligne de la grille porte deux cartes ID-1 complètes.
             body.Append($"<w:tr><w:trPr><w:trHeight w:val=\"{CardHeightTwip}\" w:hRule=\"atLeast\"/><w:cantSplit/></w:trPr>");
-            ContentCell(body, d, first, logoRid, images, stamp, ref drawing);
+            ContentCell(body, d, first, images, ref drawing);
             body.Append(GapCell());
-            ContentCell(body, d, second, logoRid, images, stamp, ref drawing);
+            ContentCell(body, d, second, images, ref drawing);
             body.Append("</w:tr>");
         }
         body.Append("</w:tbl>");
@@ -99,28 +89,23 @@ public static class CardWordWriter
         return stream.ToArray();
     }
 
-    private static void AppendCard(StringBuilder body, CardDocument d, CardItem card, string logoRid, Images images,
-        Func<bool, byte[]> stamp, ref int drawing)
+    private static void AppendCard(StringBuilder body, CardDocument d, CardItem card, Images images, ref int drawing)
     {
         var qrRid = images.Add("qr:" + card.QrText, () => DocumentService.QrPng(card.QrText));
-        var stampRid = images.Add(card.Paid ? "stamp:paid" : "stamp", () => stamp(card.Paid));
         var header = d.Header;
 
-        // Ancrages : le cachet et le QR sont posés à leur place exacte dans la carte ; le cachet passe derrière le texte,
-        // qui reste lisible même si un traitement de texte ne garde pas la transparence de l'image.
+        // Ancrage : le QR est posé à sa place exacte dans la carte.
         body.Append("<w:p><w:pPr><w:spacing w:before=\"0\" w:after=\"0\" w:line=\"20\" w:lineRule=\"exact\"/></w:pPr>")
-            .Append(Floating(stampRid, CardDesign.StampLeftMm, CardDesign.StampTopMm, CardDesign.StampMm, CardDesign.StampMm, ++drawing, "Cachet", behind: true))
             .Append(Floating(qrRid, CardDesign.QrLeftMm, CardDesign.QrMarginMm, CardDesign.QrMm, CardDesign.QrMm, ++drawing, "QR de contrôle"))
             .Append("</w:p>");
         body.Append(Spacer(CardDesign.HeaderTopMm - 0.35f));
 
-        // En-tête centré : logo, puis nom, service, filet et contacts.
+        // En-tête centré : place libre du logo (apposé à la main), puis nom, service, filet et contacts.
         var textTwip = Twip(CardDesign.HeaderTextMm);
         var logoTwip = Twip(CardDesign.LogoMm + CardDesign.HeaderGapMm);
         body.Append(TableStart([logoTwip, textTwip], Twip(CardDesign.HeaderLeftMm)));
         body.Append($"<w:tr><w:trPr><w:trHeight w:val=\"{Twip(CardDesign.HeaderHeightMm)}\" w:hRule=\"exact\"/></w:trPr>");
-        body.Append($"<w:tc><w:tcPr><w:tcW w:w=\"{logoTwip}\" w:type=\"dxa\"/><w:vAlign w:val=\"center\"/></w:tcPr>")
-            .Append(Picture(logoRid, CardDesign.LogoMm, CardDesign.LogoMm, ++drawing, "Logo de l'établissement", "left")).Append("</w:tc>");
+        body.Append($"<w:tc><w:tcPr><w:tcW w:w=\"{logoTwip}\" w:type=\"dxa\"/></w:tcPr>{TinyParagraph}</w:tc>");
         body.Append($"<w:tc><w:tcPr><w:tcW w:w=\"{textTwip}\" w:type=\"dxa\"/><w:vAlign w:val=\"center\"/></w:tcPr>");
         var name = CardDesign.SchoolName(header);
         body.Append(Paragraph(name, SerifFont, HalfPoints(CardDesign.SchoolNamePt(name)), false, false, "left", CardDesign.HeaderInk, after: 20));
@@ -151,12 +136,11 @@ public static class CardWordWriter
     private static string Spacer(float mm) =>
         $"<w:p><w:pPr><w:spacing w:before=\"0\" w:after=\"0\" w:line=\"{Math.Max(20, Twip(mm))}\" w:lineRule=\"exact\"/></w:pPr></w:p>";
 
-    private static void ContentCell(StringBuilder body, CardDocument d, CardItem? card, string logoRid, Images images,
-        Func<bool, byte[]> stamp, ref int drawing)
+    private static void ContentCell(StringBuilder body, CardDocument d, CardItem? card, Images images, ref int drawing)
     {
         body.Append($"<w:tc><w:tcPr><w:tcW w:w=\"{CardTwip}\" w:type=\"dxa\"/>{Sides(card is not null, top: true, bottom: true)}</w:tcPr>");
         if (card is null) body.Append(TinyParagraph);
-        else AppendCard(body, d, card, logoRid, images, stamp, ref drawing);
+        else AppendCard(body, d, card, images, ref drawing);
         body.Append("</w:tc>");
     }
 
@@ -203,12 +187,12 @@ public static class CardWordWriter
     }
 
     /// <summary>Image flottante posée à une position exacte de la carte (en millimètres depuis son coin supérieur gauche).</summary>
-    private static string Floating(string rid, float xMm, float yMm, float widthMm, float heightMm, int id, string name, bool behind = false)
+    private static string Floating(string rid, float xMm, float yMm, float widthMm, float heightMm, int id, string name)
     {
         var cx = (long)(widthMm * Emu);
         var cy = (long)(heightMm * Emu);
         return "<w:r><w:drawing>" +
-            $"<wp:anchor distT=\"0\" distB=\"0\" distL=\"0\" distR=\"0\" simplePos=\"0\" relativeHeight=\"{251658240 + id}\" behindDoc=\"{(behind ? 1 : 0)}\" locked=\"1\" layoutInCell=\"1\" allowOverlap=\"1\">" +
+            $"<wp:anchor distT=\"0\" distB=\"0\" distL=\"0\" distR=\"0\" simplePos=\"0\" relativeHeight=\"{251658240 + id}\" behindDoc=\"0\" locked=\"1\" layoutInCell=\"1\" allowOverlap=\"1\">" +
             "<wp:simplePos x=\"0\" y=\"0\"/>" +
             $"<wp:positionH relativeFrom=\"column\"><wp:posOffset>{(long)(xMm * Emu)}</wp:posOffset></wp:positionH>" +
             $"<wp:positionV relativeFrom=\"paragraph\"><wp:posOffset>{(long)(yMm * Emu)}</wp:posOffset></wp:positionV>" +
@@ -229,23 +213,6 @@ public static class CardWordWriter
         "<w:font w:name=\"Times New Roman\"><w:family w:val=\"roman\"/><w:pitch w:val=\"variable\"/></w:font>" +
         "<w:font w:name=\"Roboto\"><w:altName w:val=\"Arial\"/><w:family w:val=\"swiss\"/><w:pitch w:val=\"variable\"/></w:font>" +
         "</w:fonts>";
-
-    /// <summary>Image en ligne de taille fixe, en millimètres, centrée dans sa cellule.</summary>
-    private static string Picture(string rid, double widthMm, double heightMm, int id, string name, string alignment = "center")
-    {
-        var cx = (long)(widthMm * Emu);
-        var cy = (long)(heightMm * Emu);
-        return $"<w:p><w:pPr><w:spacing w:before=\"0\" w:after=\"0\"/><w:jc w:val=\"{alignment}\"/></w:pPr><w:r><w:drawing>" +
-            $"<wp:inline distT=\"0\" distB=\"0\" distL=\"0\" distR=\"0\"><wp:extent cx=\"{cx}\" cy=\"{cy}\"/>" +
-            $"<wp:docPr id=\"{id}\" name=\"{name}\"/><a:graphic><a:graphicData uri=\"http://schemas.openxmlformats.org/drawingml/2006/picture\">" +
-            $"<pic:pic><pic:nvPicPr><pic:cNvPr id=\"{id}\" name=\"{name}.png\"/><pic:cNvPicPr/></pic:nvPicPr>" +
-            $"<pic:blipFill><a:blip r:embed=\"{rid}\"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill>" +
-            $"<pic:spPr><a:xfrm><a:off x=\"0\" y=\"0\"/><a:ext cx=\"{cx}\" cy=\"{cy}\"/></a:xfrm><a:prstGeom prst=\"rect\"><a:avLst/></a:prstGeom></pic:spPr>" +
-            "</pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r></w:p>";
-    }
-
-    private static bool IsSupportedImage(byte[] bytes) =>
-        bytes.Length > 8 && ((bytes[0] == 0x89 && bytes[1] == 'P' && bytes[2] == 'N' && bytes[3] == 'G') || (bytes[0] == 0xFF && bytes[1] == 0xD8));
 
     private static string Document(string body) =>
         "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>" +
