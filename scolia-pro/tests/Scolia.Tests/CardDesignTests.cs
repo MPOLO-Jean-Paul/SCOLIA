@@ -54,7 +54,8 @@ public class CardDesignTests
         Assert.DoesNotContain("MINISTÈRE DE L'ENSEIGNEMENT", xml, StringComparison.Ordinal);
         Assert.Equal("MINISTÈRE DE L'ENSEIGNEMENT", CardDesign.Department(configured.Header with { Direction = null, Division = null }));
         Assert.Equal("UDD", CardDesign.StampAcronym(configured.Header));
-        Assert.Equal("UNIVERSITÉ DE DÉMONSTRATION • LUBUMBASHI • ", CardDesign.StampRing(configured.Header));
+        Assert.Equal("UNIVERSITÉ DE DÉMONSTRATION", CardDesign.StampTop(configured.Header));
+        Assert.Equal("LUBUMBASHI", CardDesign.StampBottom(configured.Header));
 
         var pdf = new DocumentService().StudentCards(configured);
         Assert.Equal("%PDF", Encoding.ASCII.GetString(pdf, 0, 4));
@@ -72,16 +73,23 @@ public class CardDesignTests
     }
 
     [Theory]
-    [InlineData("ITM • ")]
-    [InlineData("INSTITUT TECHNIQUE MÉDICAL DE DÉMONSTRATION • LUBUMBASHI • ")]
-    [InlineData("INSTITUT SUPÉRIEUR DES TECHNIQUES APPLIQUÉES ET DES SCIENCES DE LA SANTÉ DU HAUT-KATANGA • LUBUMBASHI • ")]
-    public void Le_texte_du_cachet_tient_dans_un_tour(string ring)
+    [InlineData("ITM", "Lubumbashi")]
+    [InlineData("Institut Technique Médical de Démonstration", "Lubumbashi")]
+    [InlineData("Institut Supérieur des Techniques Appliquées et des Sciences de la Santé du Haut-Katanga", "Lubumbashi")]
+    [InlineData("Université de Lubumbashi", "Lubumbashi")]
+    public void Le_pourtour_du_cachet_tient_dans_un_tour(string name, string city)
     {
-        var (size, glyphs) = CardDesign.StampRingLayout(ring);
-        Assert.InRange(size, 3.3f, 6.0f);
-        Assert.Equal(ring.Length, glyphs.Count);
-        Assert.True(glyphs[^1].AngleDeg - glyphs[0].AngleDeg < 360f);
-        Assert.True(glyphs.Zip(glyphs.Skip(1)).All(p => p.Second.AngleDeg > p.First.AngleDeg));
+        var header = new SchoolCardHeader("RDC", null, null, null, city, name, null, DocumentService.DefaultLogo());
+        var (size, glyphs) = CardDesign.StampRingLayout(header);
+        Assert.InRange(size, 3.0f, 5.8f);
+        var top = glyphs.Where(g => !g.Bottom && g.Glyph != "•").ToList();
+        Assert.Equal(CardDesign.StampTop(header).Length, top.Count);
+        Assert.True(top.Zip(top.Skip(1)).All(p => p.Second.AngleDeg > p.First.AngleDeg));
+        Assert.True(top[^1].AngleDeg - top[0].AngleDeg < 320f);
+        var bottom = glyphs.Where(g => g.Bottom).ToList();
+        // La ville est en bas, lisible de gauche à droite ; absente si le nom la contient déjà.
+        Assert.Equal(CardDesign.StampBottom(header)?.Length ?? 0, bottom.Count);
+        Assert.True(bottom.All(g => g.AngleDeg is > 120f and < 240f));
     }
 
     [Fact]

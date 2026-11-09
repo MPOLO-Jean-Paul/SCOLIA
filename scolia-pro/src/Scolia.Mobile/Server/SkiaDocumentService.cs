@@ -488,9 +488,16 @@ public sealed class SkiaDocumentService : IDocumentService
         }
 
         // Identité : trois lignes de même corps, capitales espacées.
-        using (var identityFont = CardText("Montserrat-Medium.ttf", CardDesign.IdentityPt(card)))
+        var lines = CardDesign.Identity(card);
+        var identityPt = CardDesign.IdentityPt(card);
+        using (var probe = CardText("Montserrat-Medium.ttf", identityPt))
         {
-            var lines = CardDesign.Identity(card);
+            // Mesure réelle : la ligne la plus longue tient dans la largeur, sans renvoi à la ligne.
+            var widest = lines.Max(l => probe.MeasureText(l.Label + " : " + l.Value) + (l.Label.Length + 3 + l.Value.Length) * CardDesign.IdentityTracking * identityPt);
+            if (widest > Mm(CardDesign.IdentityWidthMm)) identityPt *= Mm(CardDesign.IdentityWidthMm) / widest;
+        }
+        using (var identityFont = CardText("Montserrat-Medium.ttf", identityPt))
+        {
             var color = PdfFlow.Color(CardDesign.IdentityInk);
             for (var i = 0; i < lines.Count; i++)
             {
@@ -551,29 +558,30 @@ public sealed class SkiaDocumentService : IDocumentService
             ring.StrokeWidth = Mm(0.24f);
             canvas.DrawCircle(cx, cy, d / 2 - Mm(CardDesign.StampInnerInsetMm), ring);
         }
-        var (ringPt, glyphs) = CardDesign.StampRingLayout(CardDesign.StampRing(header));
+        var (ringPt, glyphs) = CardDesign.StampRingLayout(header);
         var radius = d / 2 - Mm(CardDesign.StampTextInsetMm);
         using (var font = CardText("Montserrat-Bold.ttf", ringPt))
         using (var paint = new SkiaSharp.SKPaint { Color = ink.WithAlpha(CardDesign.StampAlpha), IsAntialias = true })
         {
-            foreach (var (glyph, angle) in glyphs)
+            foreach (var glyph in glyphs)
             {
-                if (glyph == " ") continue;
+                if (glyph.Glyph == " ") continue;
                 canvas.Save();
                 canvas.Translate(cx, cy);
-                canvas.RotateDegrees(angle);
-                canvas.DrawText(glyph, -font.MeasureText(glyph) / 2, -radius + ringPt * 0.36f, SkiaSharp.SKTextAlign.Left, font, paint);
+                // En haut, le caractère regarde vers l'extérieur ; en bas, il est retourné pour se lire à l'endroit.
+                canvas.RotateDegrees(glyph.Bottom ? glyph.AngleDeg - 180f : glyph.AngleDeg);
+                var baseline = (glyph.Bottom ? radius : -radius) + ringPt * 0.36f;
+                canvas.DrawText(glyph.Glyph, -font.MeasureText(glyph.Glyph) / 2, baseline, SkiaSharp.SKTextAlign.Left, font, paint);
                 canvas.Restore();
             }
         }
-        var inner = d - 2 * Mm(CardDesign.StampInnerInsetMm);
         if (CardDesign.StampAcronym(header) is { } acronym)
         {
-            using var font = CardText("Montserrat-Bold.ttf", 4.3f);
+            using var font = CardText("Montserrat-Bold.ttf", CardDesign.StampAcronymPt);
             var width = font.MeasureText(acronym) + acronym.Length * 0.08f * font.Size;
-            Draw(canvas, acronym, cx - width / 2, top + Mm(CardDesign.StampInnerInsetMm + 0.9f) + font.Size, font, ink.WithAlpha(CardDesign.StampAlpha), 0.08f);
+            Draw(canvas, acronym, cx - width / 2, top + Mm(CardDesign.StampInnerInsetMm + 0.8f) + font.Size * 0.95f, font, ink.WithAlpha(CardDesign.StampAlpha), 0.08f);
         }
-        var logoD = inner * CardDesign.StampLogoRatio;
+        var logoD = Mm(CardDesign.StampLogoMm);
         using (var image = SkiaSharp.SKImage.FromEncodedData(logo))
         {
             if (image is not null)
@@ -581,14 +589,14 @@ public sealed class SkiaDocumentService : IDocumentService
                 var scale = Math.Min(logoD / image.Width, logoD / image.Height);
                 var iw = image.Width * scale;
                 var ih = image.Height * scale;
-                canvas.DrawImage(image, SkiaSharp.SKRect.Create(cx - iw / 2, cy + Mm(0.6f) - ih / 2, iw, ih),
+                canvas.DrawImage(image, SkiaSharp.SKRect.Create(cx - iw / 2, cy + Mm(CardDesign.StampLogoOffsetMm) - ih / 2, iw, ih),
                     new SkiaSharp.SKSamplingOptions(SkiaSharp.SKFilterMode.Linear, SkiaSharp.SKMipmapMode.Linear));
             }
         }
         if (!paid) return;
         using var mark = CardText("Montserrat-ExtraBold.ttf", CardDesign.PaidPt);
         var markW = mark.MeasureText(CardDesign.PaidMark) + CardDesign.PaidMark.Length * 0.03f * mark.Size;
-        Draw(canvas, CardDesign.PaidMark, cx - markW / 2, cy + Mm(1.3f) + mark.Size * 0.36f, mark,
+        Draw(canvas, CardDesign.PaidMark, cx - markW / 2, cy + Mm(CardDesign.PaidOffsetMm) + mark.Size * 0.36f, mark,
             PdfFlow.Color(CardDesign.PaidInk).WithAlpha(CardDesign.PaidAlpha), 0.03f);
     }
 

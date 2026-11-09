@@ -56,7 +56,9 @@ public static class CardDesign
     public const float IdentityTopMm = 28.3f;
     public const float IdentityStepMm = 4.75f;
     public const float IdentityMaxPt = 7.3f;
-    public const float IdentityMinPt = 5.2f;
+    public const float IdentityMinPt = 4.2f;
+    /// <summary>Hauteur d'une ligne d'identité : une seule ligne y tient, un texte trop long est réduit, jamais renvoyé à la ligne.</summary>
+    public const float IdentityLineMm = 3.4f;
     public const float IdentityTracking = 0.06f;
     public static float IdentityWidthMm => StudentCardRules.CardWidthMm - IdentityLeftMm - 2.2f;
 
@@ -72,7 +74,11 @@ public static class CardDesign
     public const float StampInnerInsetMm = 4.25f;
     /// <summary>Rayon de la ligne de base du texte circulaire, depuis le bord.</summary>
     public const float StampTextInsetMm = 3.45f;
-    public const float StampLogoRatio = 0.58f;
+    public const float StampLogoMm = 8.4f;
+    /// <summary>Décalages verticaux depuis le centre du cachet : logo un peu au-dessus, « PAYÉ » en dessous.</summary>
+    public const float StampLogoOffsetMm = -1.5f;
+    public const float PaidOffsetMm = 4.5f;
+    public const float StampAcronymPt = 4.3f;
     public const float PaidPt = 17.5f;
     public const string PaidMark = "PAYÉ";
 
@@ -136,49 +142,76 @@ public static class CardDesign
     /// </summary>
     public static float IdentityPt(CardItem card)
     {
-        var widest = Identity(card).Max(line => Ems(line.Label + " : " + line.Value, IdentityTracking));
+        var widest = Identity(card).Max(line => Ems(line.Label + " : " + line.Value, IdentityTracking)) * 1.08f;
         var fit = IdentityWidthMm / (widest * PtToMm);
         return Math.Clamp(fit, IdentityMinPt, IdentityMaxPt);
     }
 
-    /// <summary>Texte du pourtour du cachet : « NOM DE L'ÉTABLISSEMENT • VILLE • ».</summary>
-    public static string StampRing(SchoolCardHeader header)
+    /// <summary>Haut du pourtour du cachet : le nom de l'établissement.</summary>
+    public static string StampTop(SchoolCardHeader header) => SchoolName(header);
+
+    /// <summary>Bas du pourtour du cachet, lisible à l'endroit : la ville (« LUBUMBASHI »), si elle n'est pas déjà dans le nom.</summary>
+    public static string? StampBottom(SchoolCardHeader header)
     {
-        var name = SchoolName(header);
         var city = Clean(header.CityZone)?.ToUpper(Fr);
-        var withCity = city is null || name.Contains(city, StringComparison.Ordinal) ? name : name + " • " + city;
-        return withCity + " • ";
+        return city is null || SchoolName(header).Contains(city, StringComparison.Ordinal) ? null : city;
     }
 
     /// <summary>Sigle au sommet de l'intérieur du cachet (« UDBL », « ITM »).</summary>
     public static string? StampAcronym(SchoolCardHeader header) => Clean(header.ShortName)?.ToUpper(Fr);
 
+    /// <summary>Un caractère du pourtour : angle en degrés depuis le sommet (sens horaire) ; en bas, il est retourné pour se lire à l'endroit.</summary>
+    public readonly record struct StampGlyph(string Glyph, float AngleDeg, bool Bottom);
+
     /// <summary>
-    /// Disposition du texte circulaire : corps (pt), et pour chaque caractère son angle en degrés (0 = sommet, sens horaire).
-    /// Le texte fait le tour complet quand il est assez long, sinon il est centré au sommet.
+    /// Pourtour du cachet comme un tampon officiel : le nom en arc au sommet, la ville en arc en bas lisible à l'endroit,
+    /// séparés de chaque côté par un point. Rend le corps (pt) et la place de chaque caractère.
     /// </summary>
-    public static (float SizePt, IReadOnlyList<(string Glyph, float AngleDeg)> Glyphs) StampRingLayout(string ring)
+    public static (float SizePt, IReadOnlyList<StampGlyph> Glyphs) StampRingLayout(SchoolCardHeader header)
     {
-        const float spacing = 0.10f;
+        const float spacing = 0.12f;
+        var top = StampTop(header);
+        var bottom = StampBottom(header);
         var radiusMm = StampMm / 2f - StampTextInsetMm;
-        var circumference = 2f * MathF.PI * radiusMm;
-        var weights = ring.Select(Weight).ToList();
-        var ems = weights.Sum() * (1 + spacing);
-        // Corps qui fait faire au texte le tour complet, borné pour rester lisible et tenir dans la couronne.
-        var sizePt = Math.Clamp(circumference / (ems * PtToMm), 3.3f, 6.0f);
-        var unitDeg = sizePt * PtToMm * (1 + spacing) / circumference * 360f;
-        var span = ems * unitDeg;
-        if (span > 360f) { unitDeg *= 360f / span; span = 360f; }
-        // Texte court : centré au sommet ; texte long : il commence au sommet et fait le tour.
-        var angle = span >= 359.5f ? 0f : -span / 2f;
-        var glyphs = new List<(string Glyph, float AngleDeg)>();
-        for (var i = 0; i < ring.Length; i++)
+        var degPerMm = 360f / (2f * MathF.PI * radiusMm);
+        float EmsOf(string text) => text.Sum(Weight) * (1 + spacing);
+        var topMax = bottom is null ? 310f : 232f;
+        const float bottomMax = 96f;
+        var size = topMax / degPerMm / (EmsOf(top) * PtToMm);
+        if (bottom is not null) size = Math.Min(size, bottomMax / degPerMm / (EmsOf(bottom) * PtToMm));
+        size = Math.Clamp(size, 3.0f, 5.8f);
+        var unit = size * PtToMm * degPerMm * (1 + spacing);
+
+        var glyphs = new List<StampGlyph>();
+        var topSpan = top.Sum(Weight) * unit;
+        var topScale = topSpan > topMax ? topMax / topSpan : 1f;
+        var angle = -Math.Min(topSpan, topMax) / 2f;
+        foreach (var c in top)
         {
-            var advance = weights[i] * (1 + spacing) * unitDeg;
-            glyphs.Add((ring[i].ToString(), angle + advance / 2f));
+            var advance = Weight(c) * unit * topScale;
+            glyphs.Add(new StampGlyph(c.ToString(), angle + advance / 2f, false));
             angle += advance;
         }
-        return (sizePt, glyphs);
+        var topEnd = angle;
+        if (bottom is not null)
+        {
+            var bottomSpan = bottom.Sum(Weight) * unit;
+            var bottomScale = bottomSpan > bottomMax ? bottomMax / bottomSpan : 1f;
+            bottomSpan *= bottomScale;
+            // De gauche à droite en bas, l'angle décroît (le bas-gauche est vers 200°, le bas-droit vers 160°).
+            var at = 180f + bottomSpan / 2f;
+            foreach (var c in bottom)
+            {
+                var advance = Weight(c) * unit * bottomScale;
+                glyphs.Add(new StampGlyph(c.ToString(), at - advance / 2f, true));
+                at -= advance;
+            }
+            var bottomStart = 180f - bottomSpan / 2f;
+            var side = (topEnd + bottomStart) / 2f;
+            glyphs.Add(new StampGlyph("•", side, false));
+            glyphs.Add(new StampGlyph("•", -side, false));
+        }
+        return (size, glyphs);
     }
 
     /// <summary>Un point typographique en millimètres.</summary>

@@ -110,7 +110,7 @@ internal static class StudentCardPdf
             for (var i = 0; i < lines.Count; i++)
             {
                 var (label, value) = lines[i];
-                At(layers, CardDesign.IdentityLeftMm, CardDesign.IdentityTopMm + i * CardDesign.IdentityStepMm, CardDesign.IdentityWidthMm, 4.4f)
+                At(layers, CardDesign.IdentityLeftMm, CardDesign.IdentityTopMm + i * CardDesign.IdentityStepMm, CardDesign.IdentityWidthMm, CardDesign.IdentityLineMm)
                     .ScaleToFit().Text(text =>
                     {
                         text.Span(label + " : ").Style(Identity(size));
@@ -151,30 +151,33 @@ internal static class StudentCardPdf
     {
         const float d = CardDesign.StampMm;
         var ink = CardDesign.WithAlpha(CardDesign.StampInk, CardDesign.StampAlpha);
-        var (ringPt, glyphs) = CardDesign.StampRingLayout(CardDesign.StampRing(header));
+        var (ringPt, glyphs) = CardDesign.StampRingLayout(header);
         var radius = d / 2f - CardDesign.StampTextInsetMm;
         var glyphW = ringPt * CardDesign.PtToMm * 1.6f;
         var glyphH = ringPt * CardDesign.PtToMm * 1.7f;
-        var innerD = d - 2 * CardDesign.StampInnerInsetMm;
-        var logoD = innerD * CardDesign.StampLogoRatio;
 
         container.Width(Mm(d)).Height(Mm(d)).Layers(layers =>
         {
             layers.PrimaryLayer().Svg(RingsSvg(d));
-            foreach (var (glyph, angle) in glyphs)
+            foreach (var glyph in glyphs)
             {
-                if (glyph == " ") continue;
-                layers.Layer().OffsetX(Mm(d / 2f)).OffsetY(Mm(d / 2f)).Rotate(angle)
-                    .OffsetX(-Mm(glyphW / 2f)).OffsetY(-Mm(radius + glyphH / 2f))
-                    .Unconstrained().Width(Mm(glyphW)).Height(Mm(glyphH)).AlignCenter().AlignMiddle()
-                    .Text(glyph).FontFamily(CardDesign.SansFamily).Bold().FontSize(ringPt).FontColor(ink);
+                if (glyph.Glyph == " ") continue;
+                // En haut, le caractère regarde vers l'extérieur ; en bas, il est retourné pour se lire à l'endroit.
+                var turned = layers.Layer().OffsetX(Mm(d / 2f)).OffsetY(Mm(d / 2f))
+                    .Rotate(glyph.Bottom ? glyph.AngleDeg - 180f : glyph.AngleDeg)
+                    .OffsetX(-Mm(glyphW / 2f))
+                    .OffsetY(glyph.Bottom ? Mm(radius - glyphH / 2f) : -Mm(radius + glyphH / 2f));
+                turned.Unconstrained().Width(Mm(glyphW)).Height(Mm(glyphH)).AlignCenter().AlignMiddle()
+                    .Text(glyph.Glyph).FontFamily(CardDesign.SansFamily).Bold().FontSize(ringPt).FontColor(ink);
             }
             if (CardDesign.StampAcronym(header) is { } acronym)
-                layers.Layer().PaddingTop(Mm(CardDesign.StampInnerInsetMm + 0.9f)).AlignCenter().AlignTop()
-                    .Text(acronym).FontFamily(CardDesign.SansFamily).Bold().FontSize(4.3f).LetterSpacing(0.08f).FontColor(ink);
-            layers.Layer().PaddingTop(Mm(1.2f)).AlignCenter().AlignMiddle().Width(Mm(logoD)).Height(Mm(logoD)).Image(logo).FitArea();
+                layers.Layer().PaddingTop(Mm(CardDesign.StampInnerInsetMm + 0.8f)).AlignCenter().AlignTop()
+                    .Text(acronym).FontFamily(CardDesign.SansFamily).Bold().FontSize(CardDesign.StampAcronymPt).LetterSpacing(0.08f).FontColor(ink);
+            // Décaler un élément centré : la marge du côté opposé vaut deux fois le décalage.
+            layers.Layer().PaddingBottom(Mm(-2 * CardDesign.StampLogoOffsetMm)).AlignCenter().AlignMiddle()
+                .Width(Mm(CardDesign.StampLogoMm)).Height(Mm(CardDesign.StampLogoMm)).Image(logo).FitArea();
             if (paid)
-                layers.Layer().PaddingTop(Mm(2.6f)).AlignCenter().AlignMiddle().Text(CardDesign.PaidMark)
+                layers.Layer().PaddingTop(Mm(2 * CardDesign.PaidOffsetMm)).AlignCenter().AlignMiddle().Text(CardDesign.PaidMark)
                     .FontFamily(CardDesign.SansFamily).ExtraBold().FontSize(CardDesign.PaidPt).LetterSpacing(0.03f)
                     .FontColor(CardDesign.WithAlpha(CardDesign.PaidInk, CardDesign.PaidAlpha));
         });

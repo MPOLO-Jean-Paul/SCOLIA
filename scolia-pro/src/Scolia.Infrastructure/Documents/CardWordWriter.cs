@@ -106,9 +106,10 @@ public static class CardWordWriter
         var stampRid = images.Add(card.Paid ? "stamp:paid" : "stamp", () => stamp(card.Paid));
         var header = d.Header;
 
-        // Ancrages : le cachet et le QR sont posés à leur place exacte dans la carte, par-dessus le texte comme un tampon.
+        // Ancrages : le cachet et le QR sont posés à leur place exacte dans la carte ; le cachet passe derrière le texte,
+        // qui reste lisible même si un traitement de texte ne garde pas la transparence de l'image.
         body.Append("<w:p><w:pPr><w:spacing w:before=\"0\" w:after=\"0\" w:line=\"20\" w:lineRule=\"exact\"/></w:pPr>")
-            .Append(Floating(stampRid, CardDesign.StampLeftMm, CardDesign.StampTopMm, CardDesign.StampMm, CardDesign.StampMm, ++drawing, "Cachet"))
+            .Append(Floating(stampRid, CardDesign.StampLeftMm, CardDesign.StampTopMm, CardDesign.StampMm, CardDesign.StampMm, ++drawing, "Cachet", behind: true))
             .Append(Floating(qrRid, CardDesign.QrLeftMm, CardDesign.QrMarginMm, CardDesign.QrMm, CardDesign.QrMm, ++drawing, "QR de contrôle"))
             .Append("</w:p>");
         body.Append(Spacer(CardDesign.HeaderTopMm - 0.35f));
@@ -132,8 +133,10 @@ public static class CardWordWriter
 
         // « Session 2026 » : grand, gras, souligné, centré.
         body.Append(Spacer(CardDesign.SessionTopMm - CardDesign.HeaderTopMm - CardDesign.HeaderHeightMm));
+        const float sessionLineMm = 7.4f;
         body.Append(Paragraph(CardDesign.SessionTitle(d.Session), SansFont, HalfPoints(CardDesign.SessionPt), true, true, "center",
-            CardDesign.SessionInk, lineTwip: Twip(CardDesign.IdentityTopMm - CardDesign.SessionTopMm)));
+            CardDesign.SessionInk, lineTwip: Twip(sessionLineMm)));
+        body.Append(Spacer(CardDesign.IdentityTopMm - CardDesign.SessionTopMm - sessionLineMm));
 
         // Identité : trois lignes de même corps, capitales espacées.
         var size = HalfPoints(CardDesign.IdentityPt(card));
@@ -200,12 +203,12 @@ public static class CardWordWriter
     }
 
     /// <summary>Image flottante posée à une position exacte de la carte (en millimètres depuis son coin supérieur gauche).</summary>
-    private static string Floating(string rid, float xMm, float yMm, float widthMm, float heightMm, int id, string name)
+    private static string Floating(string rid, float xMm, float yMm, float widthMm, float heightMm, int id, string name, bool behind = false)
     {
         var cx = (long)(widthMm * Emu);
         var cy = (long)(heightMm * Emu);
         return "<w:r><w:drawing>" +
-            $"<wp:anchor distT=\"0\" distB=\"0\" distL=\"0\" distR=\"0\" simplePos=\"0\" relativeHeight=\"{251658240 + id}\" behindDoc=\"0\" locked=\"1\" layoutInCell=\"1\" allowOverlap=\"1\">" +
+            $"<wp:anchor distT=\"0\" distB=\"0\" distL=\"0\" distR=\"0\" simplePos=\"0\" relativeHeight=\"{251658240 + id}\" behindDoc=\"{(behind ? 1 : 0)}\" locked=\"1\" layoutInCell=\"1\" allowOverlap=\"1\">" +
             "<wp:simplePos x=\"0\" y=\"0\"/>" +
             $"<wp:positionH relativeFrom=\"column\"><wp:posOffset>{(long)(xMm * Emu)}</wp:posOffset></wp:positionH>" +
             $"<wp:positionV relativeFrom=\"paragraph\"><wp:posOffset>{(long)(yMm * Emu)}</wp:posOffset></wp:positionV>" +
