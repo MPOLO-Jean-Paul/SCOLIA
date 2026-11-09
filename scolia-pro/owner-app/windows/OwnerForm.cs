@@ -305,7 +305,10 @@ public sealed class OwnerForm : Form
                     "Mise à jour JP-Services", MessageBoxButtons.YesNo, MessageBoxIcon.Information)
                     == DialogResult.Yes) OpenExternal(releases.Url);
             }
-            else if (interactive) MessageBox.Show("SCOLIA Admin " + AppVersion + " est à jour sur le canal JP-Services.",
+            else if (interactive) MessageBox.Show(
+                string.IsNullOrWhiteSpace(releases.Version)
+                    ? "Aucune version officielle JP-Services Admin n'est publiée. Cette installation est une prévisualisation."
+                    : "SCOLIA Admin " + AppVersion + " est à jour sur le canal JP-Services.",
                 "Mises à jour", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
         catch
