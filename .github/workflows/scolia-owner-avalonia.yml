@@ -1,0 +1,156 @@
+name: SCOLIA Admin natif Avalonia - Android et Windows
+
+on:
+  push:
+    branches: [feature/jp-services-admin-avalonia-20261109]
+    paths:
+      - 'scolia-pro/owner-app/avalonia/**'
+      - '.github/workflows/scolia-owner-avalonia.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: scolia-owner-avalonia-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  OWNER_VERSION: '1.1.0'
+
+jobs:
+  windows:
+    name: Windows - Executable et installateur Avalonia
+    runs-on: windows-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Compiler la vraie fenetre native Windows
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          dotnet publish 'scolia-pro/owner-app/avalonia/Desktop/Scolia.Owner.Desktop.csproj' -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=None -o "$env:RUNNER_TEMP/owner-avalonia-publish"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          if (-not (Test-Path "$env:RUNNER_TEMP/owner-avalonia-publish/SCOLIA-JPServices-Admin.exe")) { throw "Fichier EXE Avalonia absent" }
+      - name: Installer Inno Setup si necessaire
+        shell: pwsh
+        run: |
+          $iscc = 'C:\Program Files (x86)\Inno Setup 6\ISCC.exe'
+          if (-not (Test-Path $iscc)) {
+            choco install innosetup -y --no-progress
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
+          if (-not (Test-Path $iscc)) { throw "Inno Setup introuvable" }
+      - name: Produire le programme d'installation
+        shell: pwsh
+        working-directory: scolia-pro/owner-app/avalonia/Desktop
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $env:OWNER_PUBLISH_DIR = "$env:RUNNER_TEMP/owner-avalonia-publish"
+          & 'C:\Program Files (x86)\Inno Setup 6\ISCC.exe' 'Installer.Avalonia.iss'
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $file = Get-ChildItem 'installer-output/*.exe' | Select-Object -First 1
+          if (-not $file -or $file.Length -lt 100000) { throw "Installateur invalide" }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SCOLIA-Admin-Avalonia-Windows-PREVIEW
+          path: scolia-pro/owner-app/avalonia/Desktop/installer-output/*.exe
+          if-no-files-found: error
+          retention-days: 30
+
+  android:
+    name: Android - APK Avalonia natif
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Installer le workload officiel .NET Android
+        shell: bash
+        run: |
+          set -euo pipefail
+          dotnet workload install android --skip-manifest-update
+      - name: Installer les dependances Android
+        shell: bash
+        run: |
+          set -euo pipefail
+          project='scolia-pro/owner-app/avalonia/Android/Scolia.Owner.Android.csproj'
+          dotnet build "$project" -t:InstallAndroidDependencies -f net10.0-android \
+            -p:AcceptAndroidSDKLicenses=True \
+            "-p:AndroidSdkDirectory=$ANDROID_HOME" "-p:JavaSdkDirectory=$JAVA_HOME"
+      - name: Compiler l'APK natif signe pour test
+        shell: bash
+        run: |
+          set -euo pipefail
+          project='scolia-pro/owner-app/avalonia/Android/Scolia.Owner.Android.csproj'
+          dotnet publish "$project" -c Debug -f net10.0-android -r android-arm64 \
+            -p:AndroidPackageFormat=apk \
+            "-p:AndroidSdkDirectory=$ANDROID_HOME" "-p:JavaSdkDirectory=$JAVA_HOME"
+          mkdir -p "$RUNNER_TEMP/scolia-avalonia-apk"
+          mapfile -t apks < <(find scolia-pro/owner-app/avalonia/Android/bin/Debug -type f -name '*.apk' | sort)
+          if [[ "${#apks[@]}" -eq 0 ]]; then
+            echo '::error::Aucun APK Avalonia genere'
+            exit 1
+          fi
+          cp "${apks[0]}" "$RUNNER_TEMP/scolia-avalonia-apk/SCOLIA_Admin_Avalonia_1.1.0_Android_PREVIEW.apk"
+          test -s "$RUNNER_TEMP/scolia-avalonia-apk/SCOLIA_Admin_Avalonia_1.1.0_Android_PREVIEW.apk"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SCOLIA-Admin-Avalonia-Android-PREVIEW
+          path: ${{ runner.temp }}/scolia-avalonia-apk/*.apk
+          if-no-files-found: error
+          retention-days: 30
+
+  preview:
+    name: Publier pilote Avalonia Android + Windows
+    needs: [android, windows]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: SCOLIA-Admin-Avalonia-Windows-PREVIEW
+          path: distribution/windows
+      - uses: actions/download-artifact@v4
+        with:
+          name: SCOLIA-Admin-Avalonia-Android-PREVIEW
+          path: distribution/android
+      - name: Publication en preversion distincte
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          installers=(distribution/windows/*.exe)
+          apks=(distribution/android/*.apk)
+          if [[ "${#installers[@]}" -ne 1 || "${#apks[@]}" -ne 1 ]]; then
+            echo "::error::Executables incomplets"
+            exit 1
+          fi
+          test -s "${installers[0]}"
+          test -s "${apks[0]}"
+          tag="scolia-owner-avalonia-preview-v1.1.0-${GITHUB_SHA:0:8}"
+          if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo 'Cette preversion est deja publiee.'
+            exit 0
+          fi
+          gh release create "$tag" "${installers[0]}" "${apks[0]}" \
+            --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
+            --title 'SCOLIA Admin 1.1.0 - Avalonia natif Android et Windows (PREVIEW)' \
+            --prerelease \
+            --notes "Pilote natif Avalonia 12 partage entre Android et Windows, sans WebView. Les fonctions sensibles ouvrent pour l'instant la console Cloudflare Access dans le navigateur systeme afin de respecter la MFA. APK signe par certificat de test : il ne remplace pas une version de production. L'EXE Windows n'est pas signe Authenticode. Canal JP-Services independant des clients."
