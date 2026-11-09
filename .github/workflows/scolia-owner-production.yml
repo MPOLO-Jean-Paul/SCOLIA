@@ -29,10 +29,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: 038e872e111609d8a759ff83c8bb4ab117357967
+          ref: 742c81fce48f34a26cf0d42a766c1c65d689b66b
           persist-credentials: false
       - name: Verifier la revision
-        run: test "$(git rev-parse HEAD)" = '038e872e111609d8a759ff83c8bb4ab117357967'
+        run: test "$(git rev-parse HEAD)" = '742c81fce48f34a26cf0d42a766c1c65d689b66b'
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -66,10 +66,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: 038e872e111609d8a759ff83c8bb4ab117357967
+          ref: 742c81fce48f34a26cf0d42a766c1c65d689b66b
           persist-credentials: false
       - name: Verifier la revision
-        run: test "$(git rev-parse HEAD)" = '038e872e111609d8a759ff83c8bb4ab117357967'
+        run: test "$(git rev-parse HEAD)" = '742c81fce48f34a26cf0d42a766c1c65d689b66b'
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -190,4 +190,4 @@ jobs:
         if: success()
         run: |
           echo "Console SCOLIA deployee sur https://$CF_OWNER_DOMAIN" >> "$GITHUB_STEP_SUMMARY"
-          echo "Source epinglee : 038e872e111609d8a759ff83c8bb4ab117357967" >> "$GITHUB_STEP_SUMMARY"
+          echo "Source epinglee : 742c81fce48f34a26cf0d42a766c1c65d689b66b" >> "$GITHUB_STEP_SUMMARY"
