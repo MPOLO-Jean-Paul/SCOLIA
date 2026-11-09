@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { buildProductionConfig, provisionDatabase, DB_NAME } from "../src/production.mjs";
+import { buildProductionConfig, provisionDatabase, DB_NAME, SCHOOL_DB_NAME } from "../src/production.mjs";
 
 const uuid = "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee";
 const accountId = "0123456789abcdef0123456789abcdef";
@@ -77,4 +77,30 @@ test("Provision D1 : refuser un compte ou une réponse non autorisée", async ()
     accountId,apiToken:"token_de_test_au_moins_32_caracteres",
     fetcher:async () => Response.json({success:false}, {status:403})
   }));
+});
+
+test("D1 scolaire est séparée de la D1 commerciale et les deux migrations sont isolées", () => {
+  const secondary = "bbbbbbbb-cccc-4ddd-8eee-ffffffffffff";
+  const cfg = buildProductionConfig({ ...valid, schoolDatabaseId: secondary });
+  assert.equal(cfg.d1_databases.length, 2);
+  assert.equal(cfg.d1_databases[0].binding, "OWNER_DB");
+  assert.equal(cfg.d1_databases[1].binding, "SCHOOL_DB");
+  assert.equal(cfg.d1_databases[1].database_name, SCHOOL_DB_NAME);
+  assert.equal(cfg.d1_databases[1].migrations_dir, "school-migrations");
+  assert.equal(cfg.d1_databases[1].database_id, secondary);
+  assert.throws(() => buildProductionConfig({...valid,schoolDatabaseId:uuid}));
+  assert.throws(() => buildProductionConfig({...valid,schoolDatabaseId:"00000000-0000-0000-0000-000000000000"}));
+});
+
+test("Provision D1 scolaire gratuite : réutiliser sa base dédiée sans modifier les licences", async () => {
+  const secondary = "bbbbbbbb-cccc-4ddd-8eee-ffffffffffff";
+  const calls = [];
+  const fetcher = async (url, init) => {
+    calls.push({url,method:init.method});
+    return Response.json({ success:true, result:[{name:SCHOOL_DB_NAME,uuid:secondary}] });
+  };
+  assert.equal(await provisionDatabase({accountId,
+    apiToken:"token_de_test_au_moins_32_caracteres",name:SCHOOL_DB_NAME,fetcher}),secondary);
+  assert.deepEqual(calls.map(x=>x.method),["GET"]);
+  assert.ok(calls[0].url.includes(encodeURIComponent(SCHOOL_DB_NAME)));
 });
