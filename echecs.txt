@@ -1,0 +1,8 @@
+ECHEC admin mobile=0
+ECHEC admin mobile=1
+ECHEC comptable mobile=0
+ECHEC comptable mobile=1
+ECHEC promoteur mobile=0
+ECHEC promoteur mobile=1
+ECHEC enseignant mobile=0
+ECHEC enseignant mobile=1
