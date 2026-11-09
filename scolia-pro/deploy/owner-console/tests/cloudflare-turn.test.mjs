@@ -24,7 +24,7 @@ test("Découverte uniquement via Cloudflare API et jeton Calls Read serveur", as
     capturedUrl = url;
     capturedAuth = options.headers.Authorization;
     assert.equal(options.method, "GET");
-    assert.equal(options.redirect, "error");
+    assert.equal(options.redirect, "manual");
     return new Response(JSON.stringify({
       success: true,
       result: [{ uid: keyId, name: "SCOLIA RDC Principal",
@@ -70,4 +70,23 @@ test("Réponse contaminée filtrée et URLs TURN distinctes de WSS", async () =>
   assert.equal(result.relays.length, 1);
   assert.equal(result.relays[0].label, "Relais Sécurisé");
   assert.ok(result.relays[0].available_urls.every(u => !u.startsWith("wss://")));
+});
+
+test("Redirection Cloudflare ne transfère jamais le Bearer vers une autre origine", async () => {
+  let hops = 0;
+  const outcome = await discoverCloudflareTurn({
+    CLOUDFLARE_TURN_ACCOUNT_ID: account,
+    CLOUDFLARE_TURN_DISCOVERY_TOKEN: token
+  }, async (_url, options) => {
+    hops++;
+    assert.equal(options.redirect, "manual");
+    return new Response(null, {
+      status: 302,
+      headers: { Location: "https://example.org/collect" }
+    });
+  });
+  assert.equal(hops, 1);
+  assert.equal(outcome.status, "unexpected_redirect");
+  assert.deepEqual(outcome.relays, []);
+  assert.ok(!JSON.stringify(outcome).includes(token));
 });
