@@ -94,6 +94,22 @@ jobs:
         run: |
           npm install --no-audit --no-fund
           npm test
+      - name: Verifier les droits R2 avant toute creation Cloudflare
+        shell: bash
+        run: |
+          set -euo pipefail
+          response="$(curl --silent --show-error --max-time 30 \
+            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+            --output /dev/null --write-out '%{http_code}' \
+            "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/r2/buckets?name_contains=scolia-pro-backups")"
+          if [[ "$response" == "403" ]]; then
+            echo "::error::Cloudflare R2 refuse le jeton (403). Verifier Account > Workers R2 Storage > Edit sur le bon compte, et activer R2 si necessaire. Mettre a jour le secret CLOUDFLARE_API_TOKEN sans le communiquer."
+            exit 1
+          fi
+          if [[ "$response" != "200" ]]; then
+            echo "::error::Controle Cloudflare R2 impossible (HTTP $response). Verifier le compte, son stockage R2 et son jeton API."
+            exit 1
+          fi
       - name: Preparer la base D1 et les sauvegardes R2
         run: node scripts/prepare-production.mjs
       - name: Appliquer les migrations D1 non appliquees
