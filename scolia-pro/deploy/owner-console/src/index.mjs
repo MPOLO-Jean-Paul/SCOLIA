@@ -414,7 +414,17 @@ elle ne donne pas une adresse physique. « Signal récent » signifie moins de 4
 Les IP enregistrées sont effacées au bout de 30 jours.</p>
 <div style="overflow-x:auto"><table><thead><tr><th>Établissement</th><th>Serveur</th><th>IP publique observée</th><th>État</th><th>Dernier signal</th>
 </tr></thead><tbody id="serverRows"></tbody></table></div></section>
-<section class="panel" id="relaysPanel"><h2>Fournisseurs de relais Internet</h2>
+<section class="panel" id="relaysPanel"><h2>Relais Internet — découverte automatique et secours manuel</h2>
+<h3>Relais TURN Cloudflare Realtime</h3>
+<p class="info">Récupération des noms de relais configurés dans le compte Cloudflare par une API en lecture seule.
+Les services TURN/TURNS servent à WebRTC et ne sont pas interchangeables avec un relais WSS.
+Aucune clé ni identifiant temporaire n'est communiqué à la console ; aucune connexion n'est activée sans accord de l'établissement.</p>
+<div class="toolbar"><button id="turnRefresh" class="secondary">Actualiser les relais Cloudflare</button></div>
+<p class="info" id="turnNotice">Catalogue Cloudflare non chargé.</p>
+<div style="overflow-x:auto"><table><thead><tr><th>Nom</th><th>Fournisseur</th><th>Adresse TURN</th><th>Préparation</th></tr></thead>
+<tbody id="turnRows"></tbody></table></div>
+<h3>Relais WSS SCOLIA (synchronisés depuis Cloudflare D1)</h3>
+<p class="info">Les relais enregistrés se chargent automatiquement. Un ajout manuel est toujours possible si nécessaire.</p>
 <p class="info">Configurer des adresses WSS publiques sans publier de clés sur GitHub.
 Un nouveau relais reste désactivé ; chaque école doit approuver le changement.
 Le suivi des licences utilise HTTPS directement, même depuis un Wi-Fi disposant d'Internet.</p>
@@ -474,7 +484,37 @@ function card(label,value,hint){const a=document.createElement("article");a.clas
  const s1=document.createElement("small");s1.textContent=label;const m=document.createElement("div");m.className="metric";m.textContent=value;
  const s2=document.createElement("small");s2.textContent=hint||"";a.append(s1,m,s2);return a;}
 function textCell(tr,v){const td=document.createElement("td");td.textContent=String(v??"—");tr.appendChild(td);return td;}
+let turnCatalogCheckedAt=0;
+async function loadCloudflareRelays(force=false){
+ if(!secret || (!force && Date.now()-turnCatalogCheckedAt<60000))return;
+ const currentSecret=secret;turnCatalogCheckedAt=Date.now();
+ $("turnNotice").textContent="Consultation sécurisée de Cloudflare…";
+ try{
+  const found=await request("/api/v1/owner/relays/cloudflare");
+  if(secret!==currentSecret)return;
+  $("turnRows").replaceChildren();
+  for(const item of found.relays||[]){
+   const tr=document.createElement("tr");
+   textCell(tr,item.label);textCell(tr,item.provider);
+   textCell(tr,"turns:turn.cloudflare.com:5349");
+   textCell(tr,"Identifiants temporaires requis");
+   $("turnRows").appendChild(tr);
+  }
+  if(!found.relays?.length){
+   const tr=document.createElement("tr"),td=document.createElement("td");
+   td.colSpan=4;td.textContent=found.explanation||"Aucun relais TURN découvert.";
+   tr.appendChild(td);$("turnRows").appendChild(tr);
+  }
+  $("turnNotice").textContent=found.explanation||"Catalogue Cloudflare consulté.";
+ }catch(e){
+  if(secret!==currentSecret)return;
+  turnCatalogCheckedAt=0;
+  $("turnNotice").textContent="Découverte TURN momentanément indisponible. Les relais WSS manuels restent utilisables.";
+ }
+}
+
 async function reload(){
+ void loadCloudflareRelays();
  const [stats,listing,servers,relays,history]=await Promise.all([
    request("/api/v1/owner/summary"),
    request("/api/v1/owner/schools"),
@@ -572,12 +612,13 @@ $("connect").onclick=async()=>{secret=$("token").value;$("token").value="";
  try{await reload();storage();$("auth").hidden=true;$("workspace").hidden=false;$("error").textContent="";}
  catch(e){secret="";$("error").textContent=e.message;}};
 $("refresh").onclick=()=>reload().catch(e=>alert(e.message));
+$("turnRefresh").onclick=()=>loadCloudflareRelays(true);
  $("logout").onclick=()=>{
    // Oubli explicite du secret en mémoire et fermeture de l'interface.
    secret="";selected=null;$("token").value="";$("detailsPanel").hidden=true;
-   $("rows").replaceChildren();$("relayRows").replaceChildren();
+   $("rows").replaceChildren();$("relayRows").replaceChildren();$("turnRows").replaceChildren();
    $("auditRows").replaceChildren();$("details").textContent="";
-   $("inviteResult").textContent="";$("relayNotice").textContent="";
+   $("inviteResult").textContent="";$("relayNotice").textContent="";$("turnNotice").textContent="";turnCatalogCheckedAt=0;
    $("licenseSummary").textContent="";$("newschool").value="";
    $("trialDays").value=30;$("paidTo").value="";
    $("r2Secret").value="";$("r2Key").value="";$("storageNotice").textContent="";$("storageStatus").textContent="";
