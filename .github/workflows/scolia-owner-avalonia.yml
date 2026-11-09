@@ -106,7 +106,7 @@ jobs:
             exit 1
           fi
           cp "${apks[0]}" "$RUNNER_TEMP/scolia-avalonia-apk/SCOLIA_Console_Avalonia_1.1.1_Android_PREVIEW.apk"
-          test -s "$RUNNER_TEMP/scolia-avalonia-apk/SCOLIA_Admin_Avalonia_1.1.1_Android_PREVIEW.apk"
+          test -s "$RUNNER_TEMP/scolia-avalonia-apk/SCOLIA_Console_Avalonia_1.1.1_Android_PREVIEW.apk"
       - uses: actions/upload-artifact@v4
         with:
           name: SCOLIA-Admin-Avalonia-Android-PREVIEW
@@ -114,9 +114,89 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
+  console-tests:
+    name: Tests de sécurité et du répertoire des serveurs
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: scolia-pro/deploy/owner-console
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Exécuter les tests du Worker
+        run: npm test
+
+  smoke-android:
+    name: Vérifier que SCOLIA Console reste ouverte sur émulateur Android
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Préparer .NET Android et le SDK
+        shell: bash
+        run: |
+          set -euo pipefail
+          dotnet workload install android --skip-manifest-update
+          project='scolia-pro/owner-app/avalonia/Android/Scolia.Owner.Android.csproj'
+          dotnet build "$project" -t:InstallAndroidDependencies -f net10.0-android \
+            -p:AcceptAndroidSDKLicenses=True \
+            "-p:AndroidSdkDirectory=$ANDROID_HOME" "-p:JavaSdkDirectory=$JAVA_HOME"
+      - name: Compiler l'APK x64 pour l'émulateur
+        shell: bash
+        run: |
+          set -euo pipefail
+          project='scolia-pro/owner-app/avalonia/Android/Scolia.Owner.Android.csproj'
+          dotnet publish "$project" -c Debug -f net10.0-android -r android-x64 \
+            -p:AndroidPackageFormat=apk \
+            "-p:AndroidSdkDirectory=$ANDROID_HOME" "-p:JavaSdkDirectory=$JAVA_HOME"
+          mkdir -p "$RUNNER_TEMP/smoke"
+          mapfile -t apks < <(find scolia-pro/owner-app/avalonia/Android/bin/Debug \
+            -type f -name '*Signed.apk' | sort)
+          if [[ "${#apks[@]}" -eq 0 ]]; then
+            echo '::error::Aucun APK de test signé x64 disponible.'
+            exit 1
+          fi
+          cp "${apks[0]}" "$RUNNER_TEMP/smoke/SCOLIA-Console-android-x64.apk"
+      - name: Démarrer réellement l'application Android
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_3a
+          disable-animations: true
+          script: |
+            set -euo pipefail
+            adb install -r "$RUNNER_TEMP/smoke/SCOLIA-Console-android-x64.apk"
+            adb logcat -c
+            adb shell monkey -p com.jpservices.scolia.owner.preview \
+              -c android.intent.category.LAUNCHER 1
+            sleep 12
+            pid="$(adb shell pidof com.jpservices.scolia.owner.preview | tr -d '\r')"
+            if [[ -z "$pid" ]]; then
+              adb logcat -d -t 1500 | grep -E 'AndroidRuntime|FATAL EXCEPTION|scolia.owner' | tail -100 || true
+              echo '::error::SCOLIA Console se ferme après le lancement.'
+              exit 1
+            fi
+            echo "SCOLIA Console ouverte sur émulateur Android (PID: $pid)."
+
   preview:
     name: Publier pilote Avalonia Android + Windows
-    needs: [android, windows]
+    needs: [android, windows, smoke-android, console-tests]
     runs-on: ubuntu-latest
     permissions:
       contents: write
