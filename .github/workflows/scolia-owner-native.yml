@@ -16,6 +16,14 @@ on:
         type: boolean
         required: true
         default: false
+  workflow_call:
+    inputs:
+      publish_release:
+        type: boolean
+        required: true
+      source_sha:
+        type: string
+        required: true
 
 permissions:
   contents: read
@@ -39,6 +47,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: ${{ inputs.source_sha || github.sha }}
           persist-credentials: false
       - uses: actions/setup-node@v4
         with:
@@ -62,6 +71,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: ${{ inputs.source_sha || github.sha }}
           persist-credentials: false
       - uses: actions/setup-dotnet@v4
         with:
@@ -114,6 +124,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: ${{ inputs.source_sha || github.sha }}
           persist-credentials: false
       - uses: actions/setup-java@v4
         with:
@@ -191,12 +202,21 @@ jobs:
 
   release:
     name: Publier les deux plateformes sur le canal Admin
-    if: github.event_name == 'workflow_dispatch' && inputs.publish_release == true && needs.android.outputs.official == 'true'
+    if: inputs.publish_release == true
     needs: [windows, android, console-ui]
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
+      - name: Refuser une release Admin sans certificat Android permanent
+        shell: bash
+        env:
+          ANDROID_SIGNATURE_OFFICIELLE: ${{ needs.android.outputs.official }}
+        run: |
+          if [[ "$ANDROID_SIGNATURE_OFFICIELLE" != 'true' ]]; then
+            echo "::error::Signature Android Admin absente. Configurer les 4 secrets OWNER_ADMIN_* avant toute version officielle."
+            exit 1
+          fi
       - uses: actions/download-artifact@v4
         with:
           name: SCOLIA-JPServices-Admin-Windows-EXE
@@ -222,7 +242,7 @@ jobs:
             exit 1
           fi
           gh release create "$RELEASE_TAG" "distribution/android/SCOLIA_JPServices_Admin_${OWNER_VERSION}_Android.apk" "${setups[0]}" \
-            --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
+            --repo "$GITHUB_REPOSITORY" --target "${{ inputs.source_sha || github.sha }}" \
             --title "SCOLIA Pro - Console JP-Services Admin ${OWNER_VERSION}" \
             --notes "Canal autonome JP-Services. Android package com.jpservices.scolia.owner distinct de SCOLIA Phone. Windows installateur indépendant. Authentification Cloudflare Access et jeton propriétaire obligatoire. La mise à jour exige le maintien du certificat Android Admin. Programme Windows non signé Authenticode : contrôle SmartScreen possible."
           gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json url,assets
