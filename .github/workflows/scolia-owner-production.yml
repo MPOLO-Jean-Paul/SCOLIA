@@ -30,6 +30,7 @@ jobs:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       OWNER_ADMIN_TOKEN: ${{ secrets.SCOLIA_OWNER_ADMIN_TOKEN }}
+      CLOUDFLARE_TURN_DISCOVERY_TOKEN: ${{ secrets.SCOLIA_TURN_DISCOVERY_TOKEN }}
       CF_OWNER_DOMAIN: ${{ vars.SCOLIA_OWNER_DOMAIN || 'scolia-pro-owner.jeanpaulmpolo242.workers.dev' }}
       # AUD Cloudflare Access non secret, fourni par le propriétaire. La variable d'environnement a priorité.
       OWNER_ACCESS_AUD: ${{ vars.SCOLIA_OWNER_ACCESS_AUD || 'beb99695d040319e7fc39607b996f925a4a98ece22c17be1cfdce050eb70ba19' }}
@@ -67,6 +68,16 @@ jobs:
         run: |
           set -euo pipefail
           printf '%s' "$OWNER_ADMIN_TOKEN" | npx wrangler secret put OWNER_ADMIN_TOKEN --config wrangler.production.json
+      - name: Configurer la découverte Cloudflare Realtime TURN si autorisée
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -n "${CLOUDFLARE_TURN_DISCOVERY_TOKEN:-}" ]]; then
+            printf '%s' "$CLOUDFLARE_TURN_DISCOVERY_TOKEN" | npx wrangler secret put CLOUDFLARE_TURN_DISCOVERY_TOKEN --config wrangler.production.json
+            echo "Catalogue TURN (lecture seule) activé pour le compte Cloudflare configuré."
+          else
+            echo "::notice::Catalogue Cloudflare TURN désactivé : ajouter SCOLIA_TURN_DISCOVERY_TOKEN (permission Calls Read) dans l'environnement de production. Les relais WSS restent utilisables."
+          fi
       - name: Verification HTTPS et segregation des routes proprietaire/scolaire
         shell: bash
         run: |
