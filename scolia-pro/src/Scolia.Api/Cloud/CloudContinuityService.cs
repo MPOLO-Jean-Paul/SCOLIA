@@ -43,7 +43,7 @@ public sealed record CloudMirrorPairStatus(bool Paired, bool CloudAuthoritative)
 /// </list>
 /// La clé ne quitte jamais l'école ; le code de secours permet de restaurer sur un nouvel ordinateur.
 /// </summary>
-public sealed class CloudContinuityService : BackgroundService
+public sealed partial class CloudContinuityService : BackgroundService
 {
     public static readonly TimeSpan Cycle = TimeSpan.FromMinutes(2);
     public static readonly TimeSpan BackupEvery = TimeSpan.FromHours(1);
@@ -58,7 +58,11 @@ public sealed class CloudContinuityService : BackgroundService
     private sealed record State(bool Enabled, string? DataKey, string? DepositKey, string? DepositToken, DateTimeOffset? ActivatedAt,
         bool RecoveryConfirmed, DateTimeOffset? LastBackupAt, long LastBackupRevision, string? LastBackupEpoch, long LastBackupBytes,
         DateTimeOffset? LastDrainAt, int Applied, int Refused, string? LastError, DateTimeOffset? LastErrorAt, List<CloudRefusal> Refusals,
-        bool ActivatedByOwner = false, bool DeclinedBySchool = false);
+        bool ActivatedByOwner = false, bool DeclinedBySchool = false,
+        bool MirrorPaired = false, string? LastCloudBackupId = null,
+        string? LastCloudBackupSha256 = null, string? MirroredCloudBackupId = null,
+        string? PendingMirrorBackupId = null, string? PendingMirrorPayload = null,
+        long LastRemoteMirrorCursor = 0);
 
     private sealed record Delegation(Guid U, string S, long E);
 
@@ -223,6 +227,8 @@ public sealed class CloudContinuityService : BackgroundService
         var body = await response.Content.ReadFromJsonAsync<JsonElement>(Json, ct);
         if (!body.TryGetProperty("paired", out var paired) || paired.ValueKind != JsonValueKind.True)
             throw new DomainException("nuage", "Jumelage D1 non confirmé par Cloudflare.");
+        Save(state with { MirrorPaired = true });
+        backupRequested = true;
         return new CloudMirrorPairStatus(true, false);
     }
 
@@ -266,13 +272,19 @@ public sealed class CloudContinuityService : BackgroundService
             using var client = license.OwnerClient(TimeSpan.FromMinutes(10));
             using var content = new ByteArrayContent(sealedBytes);
             content.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
-            using var response = await client.PutAsync($"api/v1/server/cloud/backups?sha256={Hex(sealedBytes)}&key={fingerprint}", content, ct);
+            var checksum = Hex(sealedBytes);
+            using var response = await client.PutAsync($"api/v1/server/cloud/backups?sha256={checksum}&key={fingerprint}", content, ct);
             await EnsureSuccessAsync(response, ct);
+            var confirmation = await response.Content.ReadFromJsonAsync<JsonElement>(Json, ct);
+            if (!confirmation.TryGetProperty("id", out var id) ||
+                id.ValueKind != JsonValueKind.String || !Guid.TryParse(id.GetString(), out var backupId))
+                throw new DomainException("nuage", "Sauvegarde R2 reçue, mais identité de sauvegarde absente.");
             backupRequested = false;
             Save(state with
             {
                 LastBackupAt = DateTimeOffset.UtcNow, LastBackupRevision = markRevision, LastBackupEpoch = markEpoch,
                 LastBackupBytes = sealedBytes.Length, LastError = null, LastErrorAt = null,
+                LastCloudBackupId = backupId.ToString("D"), LastCloudBackupSha256 = checksum,
             });
             logger.LogInformation("Sauvegarde en ligne envoyée ({Size} octets chiffrés).", sealedBytes.Length);
             return Status;
@@ -491,13 +503,26 @@ public sealed class CloudContinuityService : BackgroundService
             if (ct.IsCancellationRequested) return;
             Fail("relève différée (" + Describe(ex) + ").");
         }
-        if (!BackupDue(DateTimeOffset.UtcNow)) return;
-        try { await BackupNowAsync(ct); }
-        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or DomainException or JsonException or IOException or InvalidOperationException
-            or Microsoft.Data.Sqlite.SqliteException)
+        if (BackupDue(DateTimeOffset.UtcNow))
         {
-            if (ct.IsCancellationRequested) return;
-            Fail("sauvegarde différée (" + Describe(ex) + "), nouvel essai automatique.");
+            try { await BackupNowAsync(ct); }
+            catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or DomainException or JsonException or IOException or InvalidOperationException
+                or Microsoft.Data.Sqlite.SqliteException)
+            {
+                if (ct.IsCancellationRequested) return;
+                Fail("sauvegarde différée (" + Describe(ex) + "), nouvel essai automatique.");
+            }
+        }
+        // D1 conserve un journal chiffré des versions de la base sauvegardées dans R2.
+        // La relève des écritures hors ligne vers SQLite est réalisée ci-dessus.
+        if (state.MirrorPaired)
+        {
+            try { await SyncMirrorAsync(ct); }
+            catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or DomainException or JsonException or IOException or InvalidOperationException or CryptographicException)
+            {
+                if (ct.IsCancellationRequested) return;
+                Fail("journal D1 différé (" + Describe(ex) + "), nouvel essai automatique.");
+            }
         }
     }
 
