@@ -140,6 +140,21 @@ async function serveOwner(request, env, url) {
       return result({ schools: rows.results.map(s => ({...s, license: evaluateLicense(s, now),
         cloud_backup_late: !!s.cloud_enabled && (!s.last_backup_at || now - s.last_backup_at > 26 * 3_600_000)})) });
     }
+    if (url.pathname === "/api/v1/owner/servers") {
+      // Registered school servers only, no unauthenticated local-network scanning.
+      const rows = await db.prepare(`SELECT s.id AS school_id,s.name AS school_name,
+        d.device_name,d.first_seen,d.last_seen,d.last_ip,d.ip_seen_at
+        FROM server_devices d JOIN schools s ON s.id=d.school_id
+        ORDER BY d.last_seen DESC LIMIT 500`).all();
+      return result({ servers: rows.results.map(d => ({
+        school_id: d.school_id, school_name: d.school_name,
+        device_name: d.device_name, first_seen: d.first_seen,
+        last_seen: d.last_seen,
+        status: d.last_seen >= now - 45 * 60000 ? "recent" : "not_recent",
+        public_ip: d.last_ip ?? null, public_ip_seen_at: d.ip_seen_at ?? null,
+        local_ip: null, location: d.school_name
+      })) });
+    }
     const match = /^\/api\/v1\/owner\/schools\/([a-f0-9-]{36})$/.exec(url.pathname);
     if (match) {
       const school = await db.prepare("SELECT * FROM schools WHERE id=?").bind(match[1]).first();
@@ -363,7 +378,7 @@ table{width:100%;border-collapse:collapse}th,td{border-bottom:1px solid #edf1f6;
 Il n'est ni stocké dans le navigateur ni transmis à une autre origine.</p>
 <div class="toolbar"><input id="token" type="password" placeholder="Jeton propriétaire" autocomplete="off">
 <button id="connect">Ouvrir la console</button></div><p class="error" id="error"></p></section>
-<section id="workspace" hidden><nav class="owner-navigation" aria-label="Navigation de la console"><a href="#metrics">Vue d’ensemble</a><a href="#schoolsPanel">Établissements</a><a href="#storagePanel">Sauvegardes</a><a href="#relaysPanel">Relais Internet</a><a href="#auditPanel">Historique</a></nav>
+<section id="workspace" hidden><nav class="owner-navigation" aria-label="Navigation de la console"><a href="#metrics">Vue d’ensemble</a><a href="#schoolsPanel">Établissements</a><a href="#serversPanel">Serveurs</a><a href="#storagePanel">Sauvegardes</a><a href="#relaysPanel">Relais Internet</a><a href="#auditPanel">Historique</a></nav>
 <div class="cards" id="metrics"><article class="card"><small>Établissements</small><div class="metric" id="schools">—</div></article>
 <article class="card"><small>Serveurs enregistrés</small><div class="metric" id="devices">—</div></article>
 <article class="card"><small>Écoles actives (30 j)</small><div class="metric" id="active">—</div></article>
@@ -392,6 +407,13 @@ La console écrit, relit et supprime un fichier témoin avant d'enregistrer ; la
 <p class="info" id="inviteResult"></p><div style="overflow-x:auto"><table><thead><tr>
 <th>Établissement</th><th>Licence</th><th>Serveurs</th><th>Dernière activité</th><th>Sauvegarde en ligne</th><th>Gestion</th></tr></thead>
 <tbody id="rows"></tbody></table></div></section>
+<section class="panel" id="serversPanel"><h2>Serveurs détectés automatiquement</h2>
+<p class="info">Nom du serveur et établissement issus de l'inscription autorisée et des signaux périodiques.
+L'IP publique observée par Cloudflare peut être celle d'une box, d'un VPN ou d'un opérateur :
+elle ne donne pas une adresse physique. « Signal récent » signifie moins de 45 minutes.
+Les IP enregistrées sont effacées au bout de 30 jours.</p>
+<div style="overflow-x:auto"><table><thead><tr><th>Établissement</th><th>Serveur</th><th>IP publique observée</th><th>État</th><th>Dernier signal</th>
+</tr></thead><tbody id="serverRows"></tbody></table></div></section>
 <section class="panel" id="relaysPanel"><h2>Fournisseurs de relais Internet</h2>
 <p class="info">Configurer des adresses WSS publiques sans publier de clés sur GitHub.
 Un nouveau relais reste désactivé ; chaque école doit approuver le changement.
@@ -453,9 +475,10 @@ function card(label,value,hint){const a=document.createElement("article");a.clas
  const s2=document.createElement("small");s2.textContent=hint||"";a.append(s1,m,s2);return a;}
 function textCell(tr,v){const td=document.createElement("td");td.textContent=String(v??"—");tr.appendChild(td);return td;}
 async function reload(){
- const [stats,listing,relays,history]=await Promise.all([
+ const [stats,listing,servers,relays,history]=await Promise.all([
    request("/api/v1/owner/summary"),
    request("/api/v1/owner/schools"),
+   request("/api/v1/owner/servers"),
    request("/api/v1/owner/relays"),
    request("/api/v1/owner/audit")
  ]);
@@ -473,6 +496,21 @@ async function reload(){
    textCell(tr,new Date(event.created_at).toLocaleString("fr"));
    textCell(tr,event.school_name??"JP-Services");
    textCell(tr,event.action);$("auditRows").appendChild(tr);
+ }
+ $("serverRows").replaceChildren();
+ for(const device of servers.servers){
+   const tr=document.createElement("tr");
+   textCell(tr,device.school_name);
+   textCell(tr,device.device_name);
+   textCell(tr,device.public_ip??"Non communiquée");
+   textCell(tr,device.status==="recent"?"Signal récent":"Pas de signal récent");
+   textCell(tr,device.last_seen?new Date(device.last_seen).toLocaleString("fr"):"Jamais");
+   $("serverRows").appendChild(tr);
+ }
+ if(!servers.servers.length){
+   const tr=document.createElement("tr"),td=document.createElement("td");
+   td.colSpan=5;td.textContent="Aucun serveur enregistré : l'établissement apparaîtra après son inscription et son premier signal.";
+   tr.appendChild(td);$("serverRows").appendChild(tr);
  }
  for(const relay of relays.relays){
    const row=document.createElement("tr");

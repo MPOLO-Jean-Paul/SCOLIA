@@ -49,12 +49,13 @@ function setup() {
     OWNER_DB: db, OWNER_ADMIN_TOKEN: "proprietaire-secret-de-test",
     OWNER_ACCESS_AUD: "test-application-owner-audience-2026"
   };
-  async function request(path, method = "GET", body = null, auth = null) {
+  async function request(path, method = "GET", body = null, auth = null, extraHeaders = {}) {
     const response = await worker.fetch(new Request(HOST + path, {
       method,
       headers: {
         ...(auth ? { Authorization: "Bearer " + auth } : {}),
         ...(body ? { "Content-Type": "application/json" } : {}),
+        ...extraHeaders,
       },
       body: body ? JSON.stringify(body) : undefined,
     }), env, auth === env.OWNER_ADMIN_TOKEN
@@ -214,4 +215,28 @@ test("Accès propriétaire refusé sans secret et origine tierce bloquée", asyn
     headers: { Origin: "https://attacker.example", Authorization: "Bearer " + app.env.OWNER_ADMIN_TOKEN },
   }), app.env, { access: { aud: app.env.OWNER_ACCESS_AUD } });
   assert.equal(forbidden.status, 403);
+});
+
+test("Découverte des serveurs : école, nom et IP observée sans accès anonyme", async t => {
+  const app = setup();
+  t.after(() => app.sqlite.close());
+  const { school, payload } = await app.register();
+  assert.equal((await app.request("/api/v1/owner/servers")).status, 403);
+  let listing = await app.owner("/api/v1/owner/servers");
+  assert.equal(listing.status, 200);
+  assert.equal(listing.body.servers[0].school_name, payload.school_name);
+  assert.equal(listing.body.servers[0].device_name, payload.server_device_name);
+  assert.equal(listing.body.servers[0].public_ip, null);
+  const ping = await app.request("/api/v1/heartbeat", "POST", {
+    event_id: crypto.randomUUID(), event: "online",
+    installation_id: payload.installation_id,
+    server_device_name: payload.server_device_name,
+    occurred_at: new Date().toISOString()
+  }, school.body.school_token, { "CF-Connecting-IP": "198.51.100.42" });
+  assert.equal(ping.status, 200);
+  listing = await app.owner("/api/v1/owner/servers");
+  assert.equal(listing.body.servers[0].public_ip, "198.51.100.42");
+  assert.equal(listing.body.servers[0].status, "recent");
+  assert.equal(listing.body.servers[0].local_ip, null);
+  assert.equal(listing.body.servers[0].location, payload.school_name);
 });

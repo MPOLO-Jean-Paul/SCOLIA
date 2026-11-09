@@ -473,7 +473,7 @@ public sealed class OwnerShell : UserControl
             stack.Children.Add(Box(row, corner: 15));
         }
         var go = Button("Ouvrir cette fonction dans la console sécurisée  ↗",
-            () => _ = OpenConsoleAsync(), primary: true);
+            () => _ = OpenConsoleAsync(_page == Page.Servers ? "serversPanel" : null), primary: true);
         go.HorizontalAlignment = HorizontalAlignment.Stretch;
         stack.Children.Add(go);
         stack.Children.Add(SafetyNotice());
@@ -519,12 +519,13 @@ public sealed class OwnerShell : UserControl
         return Box(text, OwnerPalette.BlueWash, 15);
     }
 
-    private async Task OpenConsoleAsync()
+    private async Task OpenConsoleAsync(string? section = null)
     {
         try
         {
             var launcher = TopLevel.GetTopLevel(this)?.Launcher;
-            if (launcher is null || !await launcher.LaunchUriAsync(new Uri(ConsoleUrl)))
+            if (launcher is null || !await launcher.LaunchUriAsync(new Uri(
+                ConsoleUrl + (section is null ? "" : "#" + section))))
                 _message.Text = "Impossible d’ouvrir le navigateur sur cet appareil.";
         }
         catch (Exception)
