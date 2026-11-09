@@ -18,7 +18,7 @@ buildProductionConfig({
 const databaseId = await provisionDatabase({accountId,apiToken});
 // Le jeton API doit aussi permettre « Workers R2 Storage : Edit ».
 const bucket = await provisionBucket({accountId,apiToken});
-const config = buildProductionConfig({databaseId,domain,audience});
+const config = buildProductionConfig({databaseId,domain,audience,turnAccountId: accountId});
 writeFileSync("wrangler.production.json", JSON.stringify(config,null,2)+"\n", {
   encoding:"utf8", mode:0o600
 });
