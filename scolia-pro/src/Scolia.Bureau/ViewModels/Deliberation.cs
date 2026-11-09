@@ -810,7 +810,7 @@ public sealed class EncodingProgressPage : PageViewModel
         var data = await Shell.Api.GetAsync<EncodingProgressDto>("api/deliberation/suivi" + ScoliaClient.Query(
             ("promotionId", PromotionId), ("periode", Period?.Value is { Length: > 0 } p ? p : null)));
         all = data.Rows.Select(r => new EncodingProgressRowVm(r.CourseId, r.Promotion, r.Number.ToString(CultureInfo.InvariantCulture), r.Course, r.Kind,
-            r.TeacherName ?? "Non attribué", $"{r.Graded} / {r.Students}", $"{r.Percent:0.#} %", r.Failed == 0 ? string.Empty : r.Failed.ToString(CultureInfo.InvariantCulture),
+            r.TeacherName ?? "Non attribué", $"{r.Graded} / {r.Students} · {r.Percent:0.#} %", $"{r.Percent:0.#} %", r.Failed == 0 ? string.Empty : r.Failed.ToString(CultureInfo.InvariantCulture),
             r.Average is { } a ? a.ToString("0.##") : "—", r.SubmittedAtUtc is { } at ? $"{r.Status} le {at.ToLocalTime():dd/MM HH:mm}" : r.Status,
             ThemeBrush.Get(r.Status switch { "Figé" => "ToneIndigo", "Remis" => "ToneGreen", "Complet" => "ToneTeal", "En cours" => "ToneOrange", _ => "ToneRed" }))).ToList();
         Fill();

@@ -728,13 +728,13 @@ public static class ScoliaEndpoints
             if (!await s.ConfirmAsync(input.Password, "paiements", ct)) throw new DomainException("motDePasse", motDePasseRefuse);
             await backups.CreateAsync("avant-effacement-paiements", ct);
             return await s.ErasePaymentsAsync(input, ct);
-        });
+        }).RequireAuthorization(Permissions.PaymentsCancel);
         erase.MapPost("/apprenants", async (ErasureRequest input, DataErasureService s, BackupService backups, CancellationToken ct) =>
         {
             if (!await s.ConfirmAsync(input.Password, "apprenants", ct)) throw new DomainException("motDePasse", motDePasseRefuse);
             await backups.CreateAsync("avant-effacement-apprenants", ct);
             return await s.EraseStudentsAsync(input, ct);
-        });
+        }).RequireAuthorization(Permissions.StudentsWrite);
 
         api.MapGet("/import/modele", () => Results.File(LegacyImportService.Template(), Xlsx, "modele-import-scolia.xlsx"))
             .RequireAuthorization(Permissions.SettingsWrite);

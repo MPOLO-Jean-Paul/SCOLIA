@@ -93,9 +93,10 @@ public sealed class CloudBackupPage : PageViewModel
             }
             catch (ApiException) { /* Console injoignable : l'état local reste affiché. */ }
         }
-        subtitle = status.Enabled
-            ? $"{Format.Count(Items.Count, "copie en ligne", "copies en ligne")} · toutes les heures si les données changent"
-            : "Arrêtée";
+        subtitle = !status.Registered ? "Serveur pas encore inscrit auprès de JP-Services"
+            : status.Enabled
+                ? $"{Format.Count(Items.Count, "copie en ligne", "copies en ligne")} · toutes les heures si les données changent"
+                : "Arrêtée";
         Raise(nameof(Subtitle));
     }
 

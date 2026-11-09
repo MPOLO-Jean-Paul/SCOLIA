@@ -73,6 +73,8 @@ public static class LiveEndpoints
                         var live = await reader.ReadAsync(wait.Token);
                         if (!StillAllowed()) { if (deviceId is not null) hub.Leave(deviceId); break; }
                         if (!restricted) await Write(http, live.Kind, live, ct);
+                        // Son propre enregistrement revient tel quel : le poste le reconnaît et ne l'annonce pas comme venu d'ailleurs.
+                        else if (live.Kind == "donnees" && deviceId is not null && live.DeviceId == deviceId) await Write(http, live.Kind, live, ct);
                         else if (ForRestricted(live) is { } visible) await Write(http, visible.Kind, visible, ct);
                     }
                     catch (OperationCanceledException) when (!ct.IsCancellationRequested)

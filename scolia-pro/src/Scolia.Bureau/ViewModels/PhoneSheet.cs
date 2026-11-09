@@ -343,6 +343,7 @@ public sealed record PhoneMenuBlockVm(string Title, IReadOnlyList<NavGroupVm> Na
         Add("GESTION DES DÉLIBÉRATIONS", ["Enseignants et cours", "Délibération"], ["Délibérations"]);
         Add("GESTION FINANCIÈRE", ["Finances"], ["Finances", "Paiements"]);
         Add("ORGANISATION", ["Personnel"], ["Personnel"]);
+        Add("CONNEXIONS", ["Réseau et postes"], []);
         Add("RÉGLAGES ET DONNÉES", ["Paramètres", "Données"], ["Paramètres", "Affichage", "Sécurité", "Données", "Sauvegardes", "Contrôle", "Effacement"]);
         Add("AIDE", [], ["Aide"]);
 

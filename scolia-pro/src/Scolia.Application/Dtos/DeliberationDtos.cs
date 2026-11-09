@@ -122,7 +122,8 @@ public sealed record BulletinVerification(bool Found, string? School, string? Ac
 
 /// <summary>Enseignant et état de son compte, pour la page « Comptes enseignants » du secrétariat.</summary>
 public sealed record TeacherAccountDto(Guid StaffMemberId, string Number, string FullName, string Function, string? Phone, bool StaffActive, int Courses,
-    Guid? UserId, string? UserName, bool HasAccount, bool AccountActive, bool MustChangePassword, DateTime? LastLoginUtc, bool IsLocked, bool JuryAccess);
+    Guid? UserId, string? UserName, bool HasAccount, bool AccountActive, bool MustChangePassword, DateTime? LastLoginUtc, bool IsLocked, bool JuryAccess,
+    bool Teaching = true);
 
 /// <summary>Ouverture du compte d'un enseignant ; <c>UserName</c> vide : identifiant « prénom.nom » proposé.</summary>
 public sealed record TeacherAccountRequest(Guid StaffMemberId, string? UserName = null, bool JuryAccess = false);

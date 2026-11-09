@@ -1210,6 +1210,7 @@ public sealed class ShellViewModel : Observable
                 Raise(nameof(Working));
             }
             // Nos propres écritures ne doivent pas déclencher un rechargement : on mémorise la révision après l'action.
+            lastOwnActionUtc = DateTime.UtcNow;
             if (IsLoggedIn) _ = RememberRevisionAsync();
         }
     }
@@ -1221,6 +1222,9 @@ public sealed class ShellViewModel : Observable
         workingDue = true;
         Raise(nameof(Working));
     }
+
+    private DateTime lastOwnActionUtc = DateTime.MinValue;
+    private static readonly TimeSpan OwnWriteWindow = TimeSpan.FromSeconds(3);
 
     private async Task RememberRevisionAsync()
     {
@@ -1246,7 +1250,9 @@ public sealed class ShellViewModel : Observable
         {
             if (await ReadRevisionAsync() is not { } latest) return;
             if (latest <= knownRevision) return;
-            if (knownRevision < 0)
+            // Révision lue pendant ou juste après une action de ce poste : c'est notre propre écriture
+            // (les changements des autres postes arrivent aussi par le direct, filtré par appareil).
+            if (knownRevision < 0 || running > 0 || DateTime.UtcNow - lastOwnActionUtc < OwnWriteWindow)
             {
                 knownRevision = latest;
                 return;
@@ -1702,7 +1708,8 @@ public sealed class ShellViewModel : Observable
     public IReadOnlyList<NavItemVm> PhoneTabs { get; private set; } = [];
 
     private static readonly Type[] PhoneTabOrder =
-        [typeof(HomePage), typeof(PromoterDashboardPage), typeof(StudentsPage), typeof(CashierPage), typeof(ReceiptsPage), typeof(MonthlyPage), typeof(DebtorsPage), typeof(CashPage)];
+        [typeof(HomePage), typeof(PromoterDashboardPage), typeof(TeacherHomePage), typeof(StudentsPage), typeof(CashierPage), typeof(ReceiptsPage),
+            typeof(MonthlyPage), typeof(DebtorsPage), typeof(CashPage), typeof(MarksPage)];
 
     private void RebuildPhoneTabs()
     {
