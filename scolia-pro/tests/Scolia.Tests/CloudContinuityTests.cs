@@ -38,6 +38,10 @@ public sealed class CloudContinuityTests : IDisposable
         public List<(Guid Id, byte[] Bytes, string Sha, string Key, long At)> Backups { get; } = [];
         public List<(string OpId, string Payload)> Mailbox { get; } = [];
         public Dictionary<string, string> Outcomes { get; } = [];
+        public bool MirrorPaired { get; private set; }
+        public bool DropNextMirrorAck { get; set; }
+        public List<(string FrameId, string StreamId, long Revision, string Payload, string Sha)> Mirrors { get; } = [];
+
 
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
         {
@@ -62,6 +66,53 @@ public sealed class CloudContinuityTests : IDisposable
                 if (!Enabled) return Json(new { enabled = false });
                 KeyFingerprint = body.GetProperty("key_fingerprint").GetString();
                 return Json(new { enabled = true, deposit_token = DepositToken }, HttpStatusCode.Created);
+            }
+            if (path == "/api/v1/server/cloud/mirror/pair" && request.Method == HttpMethod.Post)
+            {
+                var body = await request.Content!.ReadFromJsonAsync<JsonElement>(ct);
+                if (!Enabled || body.GetProperty("consent_confirmed").ValueKind != JsonValueKind.True ||
+                    body.GetProperty("key_fingerprint").GetString() != KeyFingerprint)
+                    return Json(new { error = "non autorise" }, HttpStatusCode.Conflict);
+                MirrorPaired = true;
+                return Json(new { paired = true, cloud_authoritative = false });
+            }
+            if (path == "/api/v1/server/cloud/mirror/frames")
+            {
+                if (!MirrorPaired) return Json(new { error = "non jumele" }, HttpStatusCode.Conflict);
+                if (request.Method == HttpMethod.Get)
+                {
+                    var after = long.Parse(System.Web.HttpUtility.ParseQueryString(request.RequestUri.Query)["after"] ?? "0",
+                        System.Globalization.CultureInfo.InvariantCulture);
+                    return Json(new { frames = Mirrors.Select((m, i) => new {
+                        seq = i + 1, frame_id = m.FrameId, stream_id = m.StreamId,
+                        revision = m.Revision, ciphertext = m.Payload, cipher_sha256 = m.Sha,
+                    }).Where(m => m.seq > after).Take(20) });
+                }
+                if (request.Method == HttpMethod.Post)
+                {
+                    var frame = await request.Content!.ReadFromJsonAsync<JsonElement>(ct);
+                    var id = frame.GetProperty("frame_id").GetString()!;
+                    var stream = frame.GetProperty("stream_id").GetString()!;
+                    var revision = frame.GetProperty("revision").GetInt64();
+                    var payload = frame.GetProperty("ciphertext").GetString()!;
+                    var sha = frame.GetProperty("cipher_sha256").GetString()!;
+                    var bytes = Base64Url.DecodeFromChars(payload);
+                    if (Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant() != sha)
+                        return Json(new { error = "hachage incorrect" }, HttpStatusCode.UnprocessableEntity);
+                    var found = Mirrors.FirstOrDefault(m => m.FrameId == id ||
+                        (m.StreamId == stream && m.Revision == revision));
+                    if (found.FrameId is not null && (found.Payload != payload ||
+                        found.Sha != sha || found.StreamId != stream || found.Revision != revision))
+                        return Json(new { error = "conflit" }, HttpStatusCode.Conflict);
+                    if (found.FrameId is null) Mirrors.Add((id, stream, revision, payload, sha));
+                    if (DropNextMirrorAck)
+                    {
+                        DropNextMirrorAck = false;
+                        throw new HttpRequestException("Simulation : coupure après insertion D1");
+                    }
+                    return Json(new { stored = true, duplicate = found.FrameId is not null },
+                        found.FrameId is null ? HttpStatusCode.Created : HttpStatusCode.OK);
+                }
             }
             if (request.Method == HttpMethod.Put && path == "/api/v1/server/cloud/backups")
             {
@@ -252,6 +303,51 @@ public sealed class CloudContinuityTests : IDisposable
         await cloud.RunOnceAsync(CancellationToken.None);
         Assert.True(cloud.Status.Enabled);
         Assert.False(cloud.Status.ActivatedByOwner);
+    }
+
+    [Fact]
+    public async Task Automatic_D1_sync_retries_the_same_encrypted_manifest_after_a_lost_ack()
+    {
+        var (admin, console) = await ConnectedAsync();
+        await admin.Post("/api/nuage/activation", new { enabled = true, confirm = true }).Ok();
+        await admin.Post("/api/nuage/code-secours/confirmation", new { }).Ok();
+
+        var paired = await admin.Post("/api/nuage/jumelage-d1", new { confirm = true }).Ok();
+        Assert.True(paired.GetProperty("paired").GetBoolean());
+        Assert.False(paired.GetProperty("cloudAuthoritative").GetBoolean());
+
+        var cloud = app.Services.GetRequiredService<CloudContinuityService>();
+        console.DropNextMirrorAck = true;
+        await cloud.RunOnceAsync(CancellationToken.None);
+        Assert.Single(console.Backups);
+        Assert.Single(console.Mirrors);
+        var firstEnvelope = console.Mirrors[0].Payload;
+        var pending = await admin.GetAsync("/api/nuage/jumelage-d1").Ok();
+        Assert.True(pending.GetProperty("pendingUpload").GetBoolean());
+
+        await cloud.RunOnceAsync(CancellationToken.None);
+        Assert.Single(console.Backups);
+        Assert.Single(console.Mirrors); // D1 received the same frame again, without duplicate.
+        Assert.Equal(firstEnvelope, console.Mirrors[0].Payload);
+        var status = await admin.GetAsync("/api/nuage/jumelage-d1").Ok();
+        Assert.True(status.GetProperty("paired").GetBoolean());
+        Assert.False(status.GetProperty("pendingUpload").GetBoolean());
+        Assert.Equal(1, status.GetProperty("remoteCursor").GetInt64());
+
+        // The mirror is a version index, not a new writable school database.
+        var latestBackup = console.Backups.Single();
+        var keyText = (await admin.GetAsync("/api/nuage/code-secours").Ok()).GetProperty("code").GetString()!;
+        var key = CloudSeal.ParseRecoveryCode(keyText);
+        var encrypted = Base64Url.DecodeFromChars(firstEnvelope);
+        var clear = CloudSeal.Open(encrypted, key, CloudSeal.MirrorContext);
+        try
+        {
+            using var json = JsonDocument.Parse(clear);
+            Assert.Equal(latestBackup.Id.ToString("D"), json.RootElement.GetProperty("backupId").GetString());
+            Assert.Equal(latestBackup.Sha, json.RootElement.GetProperty("snapshotSha256").GetString());
+        }
+        finally { CryptographicOperations.ZeroMemory(clear); }
+        Assert.Throws<DomainException>(() => CloudSeal.Open(encrypted, key, CloudSeal.OperationContext));
     }
 
     [Fact]
