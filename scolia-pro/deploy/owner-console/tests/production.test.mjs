@@ -17,6 +17,13 @@ test("Configuration production : D1 réel, domaine Cloudflare, Access, workers.d
   assert.equal(cfg.vars.CLOUDFLARE_TURN_ACCOUNT_ID, undefined);
 });
 
+test("Compte Cloudflare TURN injecté comme variable non secrète sans token", () => {
+  const cfg = buildProductionConfig({...valid, turnAccountId: accountId});
+  assert.equal(cfg.vars.CLOUDFLARE_TURN_ACCOUNT_ID, accountId);
+  assert.ok(!Object.keys(cfg.vars).some(key => key.includes("TOKEN")));
+  assert.throws(() => buildProductionConfig({...valid, turnAccountId: "mauvais"}));
+});
+
 test("Pilote : chemin public workers.dev activé seulement pour le Worker de la console", () => {
   const free = buildProductionConfig({...valid,
     domain:"scolia-pro-owner.jeanpaulmpolo242.workers.dev"});
