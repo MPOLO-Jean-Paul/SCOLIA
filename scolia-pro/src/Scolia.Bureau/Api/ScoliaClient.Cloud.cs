@@ -41,14 +41,24 @@ public sealed partial class ScoliaClient
     }
 
     /// <summary>Dépôt en arrière-plan juste après la mise en file : la saisie n'attend jamais Internet.</summary>
-    private void DepositSoon() => _ = Task.Run(async () =>
+    private void DepositSoon()
     {
-        try { await DepositPendingAsync(); }
-        catch (Exception ex) when (ex is not OutOfMemoryException)
+        // Ne pas démarrer de travail de fond lorsque ce compte ne possède
+        // pas d'autorisation cloud utilisable. Cela évite les lectures différées
+        // d'une base locale qui pourrait déjà avoir été fermée et accélère
+        // les opérations hors ligne sans liaison cloud activée.
+        var store = Offline;
+        var user = store?.User ?? string.Empty;
+        if (store is null || user.Length == 0 || !Usable(ReadAccess(store, user))) return;
+        _ = Task.Run(async () =>
         {
-            System.Diagnostics.Trace.WriteLine($"SCOLIA : dépôt en ligne différé ({ex.GetType().Name}).");
-        }
-    });
+            try { await DepositPendingAsync(); }
+            catch (Exception ex) when (ex is not OutOfMemoryException)
+            {
+                System.Diagnostics.Trace.WriteLine($"SCOLIA : dépôt en ligne différé ({ex.GetType().Name}).");
+            }
+        });
+    }
 
     /// <summary>Nombre d'opérations de ce compte déjà en sécurité en ligne.</summary>
     public int DepositedCount => Offline is { } store && store.User.Length > 0 ? store.Outbox().Count(i => i.Deposited) : 0;
