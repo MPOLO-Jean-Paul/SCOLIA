@@ -96,12 +96,23 @@ jobs:
           gradle-version: '8.11.1'
       # Ubuntu GitHub runner already includes Android SDK and sdkmanager.
       # Avoid setup-android's obsolete 'tools' package installation.
-      - name: Installer SDK Android
+      - name: Installer le SDK Android autonome
         shell: bash
         run: |
           set -euo pipefail
-          yes | sdkmanager --licenses >/dev/null || true
-          sdkmanager 'platform-tools' 'platforms;android-35' 'build-tools;35.0.0'
+          sdk="$RUNNER_TEMP/jpservices-android-sdk"
+          mkdir -p "$sdk/cmdline-tools/latest"
+          curl --fail --location --silent --show-error --retry 3 --retry-delay 5 \
+            'https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip' \
+            -o "$RUNNER_TEMP/android-commandline-tools.zip"
+          unzip -q "$RUNNER_TEMP/android-commandline-tools.zip" -d "$RUNNER_TEMP/android-tools-extracted"
+          mv "$RUNNER_TEMP/android-tools-extracted/cmdline-tools/"* "$sdk/cmdline-tools/latest/"
+          echo "ANDROID_HOME=$sdk" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=$sdk" >> "$GITHUB_ENV"
+          echo "$sdk/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
+          yes | "$sdk/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$sdk" --licenses >/dev/null || true
+          "$sdk/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$sdk" \
+            'platform-tools' 'platforms;android-35' 'build-tools;35.0.0'
       - name: Tester et assembler APK de previsualisation
         shell: bash
         run: |
