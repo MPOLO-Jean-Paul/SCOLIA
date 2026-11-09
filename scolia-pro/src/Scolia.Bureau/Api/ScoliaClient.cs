@@ -258,10 +258,24 @@ public sealed partial class ScoliaClient : IDisposable
             // Une sonde négative doit être annoncée à la synchronisation :
             // autrement le poste reste affiché « en ligne » après une coupure VPN.
             SetOnline(response.IsSuccessStatusCode);
+            if (!response.IsSuccessStatusCode) RetryCloudDepositWhileHostUnavailable();
             return response.IsSuccessStatusCode;
         }
-        catch (HttpRequestException) { SetOnline(false); return false; }
-        catch (TaskCanceledException) { if (!ct.IsCancellationRequested) SetOnline(false); return false; }
+        catch (HttpRequestException)
+        {
+            SetOnline(false);
+            RetryCloudDepositWhileHostUnavailable();
+            return false;
+        }
+        catch (TaskCanceledException)
+        {
+            if (!ct.IsCancellationRequested)
+            {
+                SetOnline(false);
+                RetryCloudDepositWhileHostUnavailable();
+            }
+            return false;
+        }
     }
 
     public async Task<SessionDto?> CurrentSessionAsync(CancellationToken ct = default)
