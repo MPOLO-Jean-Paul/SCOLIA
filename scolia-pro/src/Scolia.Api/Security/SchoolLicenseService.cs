@@ -146,6 +146,13 @@ public sealed class SchoolLicenseService : BackgroundService
     /// <summary>Serveur inscrit auprès de JP-Services : condition de la sauvegarde en ligne.</summary>
     public bool IsRegistered => !corrupted && state.Registration is not null;
 
+    /// <summary>Empreinte stable du PC serveur, sans transmettre l'identifiant local
+    /// d'installation ni les secrets de licence. Un autre PC ne peut pas remplacer
+    /// silencieusement le jumelage D1 de l'établissement.</summary>
+    public string InstallationFingerprint => Convert.ToHexString(
+        SHA256.HashData(Encoding.UTF8.GetBytes(state.InstallationId))).ToLowerInvariant();
+
+
     /// <summary>Client authentifié par le jeton de l'établissement, pour la continuité en ligne.</summary>
     public HttpClient OwnerClient(TimeSpan timeout)
     {

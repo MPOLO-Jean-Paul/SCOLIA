@@ -28,6 +28,11 @@ public sealed record CloudStatus(bool Registered, bool Enabled, bool RecoveryCon
 /// <summary>Copie en ligne vue par le serveur ; <c>SameKey</c> faux : il faut le code de secours de l'école.</summary>
 public sealed record CloudBackupDto(Guid Id, DateTimeOffset CreatedAt, long SizeBytes, string KeyFingerprint, bool SameKey);
 
+/// <summary>Jumelage de l'ordinateur principal avec le D1 scolaire : seulement un état
+/// technique. Les paiements et les comptes ne sont jamais validés dans D1.</summary>
+public sealed record CloudMirrorPairStatus(bool Paired, bool CloudAuthoritative);
+
+
 /// <summary>
 /// Continuité en ligne du serveur scolaire, entièrement automatique une fois activée par le responsable :
 /// <list type="bullet">
@@ -193,6 +198,32 @@ public sealed class CloudContinuityService : BackgroundService
         if (state.DataKey is null) throw new DomainException("nuage", "Activez d'abord la sauvegarde en ligne.");
         Save(state with { RecoveryConfirmed = true });
         return Status;
+    }
+
+    /// <summary>
+    /// Appairage opt-in du serveur physique au journal D1 scolaire séparé.
+    /// Le serveur garde la clé de l'école ; seule son empreinte est transmise.
+    /// Cette étape ne copie aucune table ni aucune identité personnelle.
+    /// </summary>
+    public async Task<CloudMirrorPairStatus> PairD1Async(CancellationToken ct)
+    {
+        var current = state;
+        if (!license.IsRegistered || corrupted || !current.Enabled || current.DataKey is null)
+            throw new DomainException("nuage", "Activez d'abord la continuité chiffrée de cet établissement.");
+        if (!current.RecoveryConfirmed)
+            throw new DomainException("nuage", "Confirmez d'abord la conservation du code de secours de l'école.");
+        using var client = license.OwnerClient(TimeSpan.FromSeconds(30));
+        using var response = await client.PostAsJsonAsync("api/v1/server/cloud/mirror/pair", new
+        {
+            installation_hash = license.InstallationFingerprint,
+            key_fingerprint = CloudSeal.Fingerprint(Convert.FromBase64String(current.DataKey)),
+            consent_confirmed = true,
+        }, ct);
+        await EnsureSuccessAsync(response, ct);
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>(Json, ct);
+        if (!body.TryGetProperty("paired", out var paired) || paired.ValueKind != JsonValueKind.True)
+            throw new DomainException("nuage", "Jumelage D1 non confirmé par Cloudflare.");
+        return new CloudMirrorPairStatus(true, false);
     }
 
     // ---------- Sauvegarde ----------
