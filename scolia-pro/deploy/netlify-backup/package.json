@@ -11,6 +11,9 @@
     "check": "node --check src/mailbox.mjs && node --check netlify/functions/scolia-backup.mjs && node --check netlify/functions/scolia-backup-cleanup.mjs"
   },
   "dependencies": {
-    "@netlify/blobs": "^11.1.8"
+    "@netlify/blobs": "11.1.8"
+  },
+  "overrides": {
+    "@netlify/otel": "7.0.7"
   }
 }
