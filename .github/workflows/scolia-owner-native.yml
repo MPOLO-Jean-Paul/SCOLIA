@@ -200,6 +200,53 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
+  preview-release:
+    name: Publier une preversion clairement identifiee (Android + Windows)
+    if: github.event_name == 'push' && github.ref == 'refs/heads/feature/jp-services-admin-app-20261109'
+    needs: [windows, android, console-ui]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: SCOLIA-JPServices-Admin-Windows-EXE
+          path: distribution/windows
+      - uses: actions/download-artifact@v4
+        with:
+          name: SCOLIA-JPServices-Admin-Android-PREVIEW
+          path: distribution/android
+      - name: Verifier les binaires et publier le canal PREVIEW
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test -s distribution/android/app-debug.apk
+          shopt -s nullglob
+          installers=(distribution/windows/SCOLIA_JPServices_Admin_Setup_*_Windows_x64.exe)
+          if [[ "${#installers[@]}" -ne 1 ]] || [[ ! -s "${installers[0]}" ]]; then
+            echo "::error::Installateur Windows introuvable ou ambigu."
+            exit 1
+          fi
+          mv distribution/android/app-debug.apk \
+            "distribution/android/SCOLIA_JPServices_Admin_${OWNER_VERSION}_Android_PREVIEW.apk"
+          tag="scolia-owner-preview-v${OWNER_VERSION}-${GITHUB_SHA:0:8}"
+          if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "::error::Cette preversion a deja ete publiee."
+            exit 1
+          fi
+          gh release create "$tag" \
+            "distribution/android/SCOLIA_JPServices_Admin_${OWNER_VERSION}_Android_PREVIEW.apk" \
+            "${installers[0]}" \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --title "SCOLIA Admin ${OWNER_VERSION} - PREVIEW Android et Windows" \
+            --prerelease \
+            --notes "PREVERSION DE TEST UNIQUEMENT. Android: APK de developpement com.jpservices.scolia.owner.preview, signe avec une cle de test non permanente; ne recoit PAS les futures mises a jour officielles. Windows: installateur EXE autonome non signe Authenticode (avertissement SmartScreen possible). La console exige Cloudflare Access/MFA puis le jeton proprietaire, qui ne sont pas integres dans ces binaires. Cette application administrateur est independante des versions SCOLIA des etablissements. Ne pas utiliser comme version de production. Les releases du depot public sont accessibles a tous, mais aucune cle confidentielle n'est distribuee."
+          gh release view "$tag" --repo "$GITHUB_REPOSITORY" --json url,assets,isPrerelease
+
   release:
     name: Publier les deux plateformes sur le canal Admin
     if: inputs.publish_release == true
