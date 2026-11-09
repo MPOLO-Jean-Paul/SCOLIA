@@ -27,7 +27,7 @@
           <DataGrid.Columns>
             <!-- L'avancement compte plus que l'organisation : sur un écran moyen, Maxima puis Org. s'effacent d'abord. -->
             <DataGridTextColumn Header="N°" Binding="{Binding Number}" Width="Auto" MinWidth="74" />
-            <DataGridTextColumn Header="Cours" Binding="{Binding Name}" Width="*" MinWidth="190" />
+            <DataGridTextColumn Header="Cours" Binding="{Binding Name}" Width="*" MinWidth="176" />
             <DataGridTextColumn Header="Org." Binding="{Binding Semester}" Width="Auto" MinWidth="92" infra:GridPriority.Level="3" />
             <DataGridTextColumn Header="Maxima" Binding="{Binding Max}" Width="Auto" MinWidth="110" infra:GridPriority.Level="4" />
             <DataGridTextColumn Header="Avancement" Binding="{Binding Progress}" Width="Auto" MinWidth="160" infra:GridPriority.Level="2" />
