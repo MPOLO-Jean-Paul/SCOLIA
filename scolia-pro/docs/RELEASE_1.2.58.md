@@ -24,4 +24,3 @@ Deuxième passage sur toutes les pages, ordinateur et téléphone, avec les quat
 
 ## Distribution
 - Android : **1.2.58**, **versionCode 178** ; signature officielle inchangée.
-- Rétablit aussi sur la branche de publication les changements de la 1.2.57, retirés par une mise à jour ultérieure de la branche.
