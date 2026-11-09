@@ -8,19 +8,16 @@ using Scolia.Domain.Students;
 namespace Scolia.Infrastructure.Documents;
 
 /// <summary>
-/// Modèle officiel type porte-badge : logo + nom dynamiques, Session en grand,
-/// QR à la place du sceau, matricule / noms / promotion alignés.
- /// Huit cartes ISO ID-1 par A4, avec repères de découpe entre les cartes.
+/// Cartes d'accès en PDF (ordinateur), dessinées d'après <see cref="CardDesign"/> : en-tête centré de l'établissement
+/// configuré, « Session AAAA » souligné, identité en capitales espacées, cachet rond en bas à droite marqué « PAYÉ »
+/// pour l'apprenant en ordre, QR de contrôle discret en haut à droite.
+/// Huit cartes ISO ID-1 par A4, avec repères de découpe entre les cartes.
 /// </summary>
 internal static class StudentCardPdf
 {
     // Marqueur du code de mise en page réellement chargé par le serveur.
-    internal static readonly string LayoutId = "SCOLIA-CARTES-ID1-2026-11-V3";
-    private const string Ink = "#1B2430";
-    private const string Muted = "#5B6878";
-    private const string Frame = "#AEB8C5";
+    internal static readonly string LayoutId = "SCOLIA-CARTES-ID1-2026-11-V4";
     private const string Guide = "#8A96A6";
-    private const string Paper = "#FFFFFF";
 
     private static readonly float MmPt = 72f / 25.4f;
     private static float Mm(float value) => value * MmPt;
@@ -51,7 +48,7 @@ internal static class StudentCardPdf
                     page.Size(PageSizes.A4);
                     // Pas de marge native : la grille est placée à la main, les repères peuvent ainsi sortir de la zone utile.
                     page.Margin(0);
-                    page.DefaultTextStyle(s => s.FontFamily("Roboto").FontSize(7).FontColor(Ink));
+                    page.DefaultTextStyle(s => s.FontFamily("Roboto").FontSize(7).FontColor(CardDesign.HeaderInk));
                     page.Content().PaddingLeft(Mm(PageMargin)).PaddingTop(Mm(PageMargin)).Column(column =>
                     {
                         for (var row = 0; row < 4; row++)
@@ -74,110 +71,142 @@ internal static class StudentCardPdf
         }).GeneratePdf();
     }
 
-    /// <summary>
-    /// Modèle institutionnel : en-tête compact configuré, session centrée et
-    /// soulignée, identité à gauche, QR dans sa zone supérieure droite.
-    /// Le petit logo inférieur rappelle le cachet du modèle sans masquer le QR.
-    /// </summary>
+    /// <summary>Place un élément à une position absolue de la carte, en millimètres.</summary>
+    private static IContainer At(LayersDescriptor layers, float xMm, float yMm, float widthMm, float heightMm) =>
+        layers.Layer().PaddingLeft(Mm(xMm)).PaddingTop(Mm(yMm)).AlignLeft().AlignTop().Width(Mm(widthMm)).Height(Mm(heightMm));
+
     private static void Card(IContainer container, CardDocument d, CardItem card, byte[] schoolLogo)
     {
-        var administration = CardHeaderLayout.AdministrativeLines(d.Header);
-        var sideInfo = CardHeaderLayout.AddressLines(d.Header);
-        var contacts = CardHeaderLayout.ContactLines(d.Header);
-        var schoolName = d.Header.Institute.Trim().ToUpperInvariant();
-        var fullName = StudentCardRules.FullName(card.LastName, card.MiddleName, card.FirstName);
-
-        container.Border(0.45f).BorderColor(Frame).Background(Paper)
-            .Padding(Mm(1.35f)).Column(column =>
+        var header = d.Header;
+        container.Layers(layers =>
         {
-            // Logo de l'école à gauche ; mentions administratives au centre ;
-            // adresse et localisation à droite, séparées par une barre discrète.
-            column.Item().Height(Mm(15.6f)).Row(row =>
-            {
-                row.ConstantItem(Mm(10.2f)).AlignMiddle().Image(schoolLogo).FitArea();
-                row.RelativeItem().PaddingLeft(Mm(1.15f)).PaddingRight(Mm(0.9f))
-                    .AlignMiddle().Column(header =>
-                {
-                    header.Spacing(Mm(0.22f));
-                    foreach (var mention in administration)
-                        header.Item().Text(mention).FontSize(mention.Length > 110 ? 2.45f :
-                            mention.Length > 75 ? 2.65f : 2.95f)
-                            .FontColor(Ink).LineHeight(1.12f);
-                    // Seul le nom de l'institution est en gras dans l'en-tête.
-                    header.Item().Text(schoolName)
-                        .FontSize(schoolName.Length > 86 ? 3.75f :
-                            schoolName.Length > 54 ? 4.15f : 5.1f)
-                        .Bold().FontColor(Ink).LineHeight(1.1f);
-                });
-                row.ConstantItem(Mm(23.4f)).BorderLeft(0.55f).BorderColor(Frame)
-                    .PaddingLeft(Mm(1.2f)).AlignMiddle().Column(address =>
-                {
-                    address.Spacing(Mm(0.45f));
-                    foreach (var line in sideInfo)
-                        address.Item().Text(line).FontSize(line.Length > 90 ? 2.5f :
-                            line.Length > 55 ? 2.8f : 3.2f)
-                            .FontColor(Muted).LineHeight(1.13f);
-                });
-            });
-            column.Item().Height(Mm(0.2f)).Background("#BCC2CA");
+            // Le cadre fin sert de repère de découpe ; le fond reste blanc comme la carte modèle.
+            layers.PrimaryLayer().Border(0.4f).BorderColor(CardDesign.Frame).Background(CardDesign.Paper);
 
-            // Titres de session visuellement dominants, sans déborder sur l'identité.
-            column.Item().Height(Mm(14.4f)).Row(row =>
+            // En-tête centré : logo, puis nom, service, filet et contacts de l'établissement configuré.
+            At(layers, CardDesign.HeaderLeftMm, CardDesign.HeaderTopMm, CardDesign.LogoMm + CardDesign.HeaderGapMm + CardDesign.HeaderTextMm,
+                CardDesign.HeaderHeightMm).Row(row =>
             {
-                row.RelativeItem().PaddingTop(Mm(0.7f)).Column(title =>
-                {
-                    title.Item().AlignCenter().Text("Session " + StudentCardRules.SessionYear(d.Session))
-                        .FontSize(12.8f).Bold().Underline().FontColor("#616975");
-                    title.Item().PaddingTop(Mm(0.4f)).AlignCenter()
-                        .Text("ACCÈS AUX EXAMENS").FontSize(6.1f).SemiBold().FontColor(Ink);
-                    title.Item().PaddingTop(Mm(0.25f)).AlignCenter()
-                        .Text(d.Session).FontSize(4.25f).FontColor(Muted);
-                });
-                row.ConstantItem(Mm(16.4f)).AlignMiddle().Column(qr =>
-                {
-                    qr.Item().Height(Mm(12f)).AlignCenter()
-                        .Image(DocumentService.QrPng(card.QrText)).FitArea();
-                    qr.Item().AlignCenter().Text("Contrôle QR")
-                        .FontSize(3.15f).FontColor(Muted);
-                });
+                row.ConstantItem(Mm(CardDesign.LogoMm)).AlignMiddle().Height(Mm(CardDesign.LogoMm)).Image(schoolLogo).FitArea();
+                row.ConstantItem(Mm(CardDesign.HeaderGapMm));
+                row.RelativeItem().AlignMiddle().ScaleToFit().Column(text => HeaderText(text, header));
             });
 
-            // Identité plus grande et grasse, avec adaptation douce aux noms longs.
-            column.Item().PaddingTop(Mm(0.5f)).Column(identity =>
+            // QR de contrôle, discret dans le coin libre.
+            At(layers, CardDesign.QrLeftMm, CardDesign.QrMarginMm, CardDesign.QrMm, CardDesign.QrMm)
+                .Image(DocumentService.QrPng(card.QrText)).FitArea();
+
+            // « Session 2026 » : grand, gras, souligné, centré.
+            At(layers, 0, CardDesign.SessionTopMm, CardWidth, 9f).AlignCenter().Text(text =>
             {
-                identity.Spacing(Mm(0.48f));
-                Field(identity, "MATRICULE", card.Matricule, 7.35f);
-                Field(identity, "NOMS", fullName, fullName.Length > 90 ? 4.4f
-                    : fullName.Length > 60 ? 5.2f : fullName.Length > 40 ? 6.2f : 7.6f);
-                Field(identity, "PROMOTION", card.Classe, 7.35f);
+                text.Span(CardDesign.SessionTitle(d.Session)).FontFamily(CardDesign.SansFamily).Bold()
+                    .FontSize(CardDesign.SessionPt).FontColor(CardDesign.SessionInk)
+                    .Underline().DecorationColor(CardDesign.SessionInk).DecorationThickness(1.1f);
             });
 
-            // Pied épuré : uniquement devise et année à gauche,
-            // deuxième logo strictement en bas à droite, comme celui de l'en-tête.
-            column.Item().ExtendVertical().AlignBottom().Row(row =>
+            // Identité : trois lignes de même corps, capitales espacées, gris.
+            var size = CardDesign.IdentityPt(card);
+            var lines = CardDesign.Identity(card);
+            for (var i = 0; i < lines.Count; i++)
             {
-                row.RelativeItem().AlignBottom().Column(footer =>
-                {
-                    footer.Spacing(Mm(0.22f));
-                    foreach (var mention in contacts)
-                        footer.Item().Text(mention).FontSize(3.7f).FontColor(Muted).LineHeight(1.15f);
-                    footer.Item().Text("Année scolaire " + d.AcademicYear)
-                        .FontSize(4.15f).FontColor(Muted);
-                });
-                row.ConstantItem(Mm(10.2f)).AlignRight().AlignBottom()
-                    .Width(Mm(9.4f)).Height(Mm(9.4f)).Image(schoolLogo).FitArea();
-            });
+                var (label, value) = lines[i];
+                At(layers, CardDesign.IdentityLeftMm, CardDesign.IdentityTopMm + i * CardDesign.IdentityStepMm, CardDesign.IdentityWidthMm, CardDesign.IdentityLineMm)
+                    .ScaleToFit().Text(text =>
+                    {
+                        text.Span(label + " : ").Style(Identity(size));
+                        text.Span(value).Style(Identity(size));
+                    });
+            }
+
+            // Cachet en bas à droite, par-dessus comme un tampon.
+            At(layers, CardDesign.StampLeftMm, CardDesign.StampTopMm, CardDesign.StampMm, CardDesign.StampMm)
+                .Element(c => Stamp(c, header, schoolLogo, card.Paid));
         });
     }
 
-    private static void Field(ColumnDescriptor identity, string label, string value, float size)
+    private static TextStyle Identity(float size) => TextStyle.Default.FontFamily(CardDesign.SansFamily).Medium().FontSize(size)
+        .LetterSpacing(CardDesign.IdentityTracking).FontColor(CardDesign.IdentityInk);
+
+    private static void HeaderText(ColumnDescriptor text, SchoolCardHeader header)
     {
-        identity.Item().Text(text =>
+        var name = CardDesign.SchoolName(header);
+        text.Spacing(Mm(0.35f));
+        text.Item().Text(name).FontFamily(CardDesign.SerifFamily).FontSize(CardDesign.SchoolNamePt(name))
+            .LetterSpacing(0.02f).LineHeight(1.02f).FontColor(CardDesign.HeaderInk);
+        if (CardDesign.Department(header) is { } department)
+            text.Item().Text(department).FontFamily(CardDesign.SerifFamily).FontSize(CardDesign.DepartmentPt)
+                .LetterSpacing(0.08f).FontColor(CardDesign.HeaderInk);
+        var contacts = CardDesign.Contacts(header);
+        if (contacts.Count == 0) return;
+        text.Item().PaddingTop(Mm(0.25f)).LineHorizontal(0.45f).LineColor(CardDesign.HeaderMuted);
+        foreach (var line in contacts)
+            text.Item().Text(line).FontFamily("Roboto").FontSize(CardDesign.ContactPt).LineHeight(1.05f).FontColor(CardDesign.HeaderMuted);
+    }
+
+    /// <summary>
+    /// Cachet rond de l'établissement : double filet, nom en couronne, sigle, logo au centre, et « PAYÉ » en travers
+    /// pour l'apprenant en ordre. Couleur d'encre de tampon, un peu transparente.
+    /// </summary>
+    internal static void Stamp(IContainer container, SchoolCardHeader header, byte[] logo, bool paid)
+    {
+        const float d = CardDesign.StampMm;
+        var ink = CardDesign.WithAlpha(CardDesign.StampInk, CardDesign.StampAlpha);
+        var (ringPt, glyphs) = CardDesign.StampRingLayout(header);
+        var radius = d / 2f - CardDesign.StampTextInsetMm;
+        var glyphW = ringPt * CardDesign.PtToMm * 1.6f;
+        var glyphH = ringPt * CardDesign.PtToMm * 1.7f;
+
+        container.Width(Mm(d)).Height(Mm(d)).Layers(layers =>
         {
-            text.Span(label + " : ").FontSize(6.45f).Bold().FontColor(Ink);
-            text.Span(value.Trim().ToUpperInvariant()).FontSize(size).Bold().FontColor(Ink);
+            layers.PrimaryLayer().Svg(RingsSvg(d));
+            foreach (var glyph in glyphs)
+            {
+                if (glyph.Glyph == " ") continue;
+                // En haut, le caractère regarde vers l'extérieur ; en bas, il est retourné pour se lire à l'endroit.
+                var turned = layers.Layer().OffsetX(Mm(d / 2f)).OffsetY(Mm(d / 2f))
+                    .Rotate(glyph.Bottom ? glyph.AngleDeg - 180f : glyph.AngleDeg)
+                    .OffsetX(-Mm(glyphW / 2f))
+                    .OffsetY(glyph.Bottom ? Mm(radius - glyphH / 2f) : -Mm(radius + glyphH / 2f));
+                turned.Unconstrained().Width(Mm(glyphW)).Height(Mm(glyphH)).AlignCenter().AlignMiddle()
+                    .Text(glyph.Glyph).FontFamily(CardDesign.SansFamily).Bold().FontSize(ringPt).FontColor(ink);
+            }
+            if (CardDesign.StampAcronym(header) is { } acronym)
+                layers.Layer().PaddingTop(Mm(CardDesign.StampInnerInsetMm + 0.8f)).AlignCenter().AlignTop()
+                    .Text(acronym).FontFamily(CardDesign.SansFamily).Bold().FontSize(CardDesign.StampAcronymPt).LetterSpacing(0.08f).FontColor(ink);
+            // Décaler un élément centré : la marge du côté opposé vaut deux fois le décalage.
+            layers.Layer().PaddingBottom(Mm(-2 * CardDesign.StampLogoOffsetMm)).AlignCenter().AlignMiddle()
+                .Width(Mm(CardDesign.StampLogoMm)).Height(Mm(CardDesign.StampLogoMm)).Image(logo).FitArea();
+            if (paid)
+                layers.Layer().PaddingTop(Mm(2 * CardDesign.PaidOffsetMm)).AlignCenter().AlignMiddle().Text(CardDesign.PaidMark)
+                    .FontFamily(CardDesign.SansFamily).ExtraBold().FontSize(CardDesign.PaidPt).LetterSpacing(0.03f)
+                    .FontColor(CardDesign.WithAlpha(CardDesign.PaidInk, CardDesign.PaidAlpha));
         });
     }
+
+    /// <summary>Filets du cachet en SVG, en millimètres.</summary>
+    private static string RingsSvg(float d)
+    {
+        var c = (d / 2f).ToString("0.###", System.Globalization.CultureInfo.InvariantCulture);
+        string R(float inset) => (d / 2f - inset).ToString("0.###", System.Globalization.CultureInfo.InvariantCulture);
+        var size = d.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture);
+        var color = CardDesign.StampInk;
+        return $"<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"{size}mm\" height=\"{size}mm\" viewBox=\"0 0 {size} {size}\">" +
+            $"<g fill=\"none\" stroke=\"{color}\" stroke-opacity=\"0.85\">" +
+            $"<circle cx=\"{c}\" cy=\"{c}\" r=\"{R(CardDesign.StampOuterInsetMm)}\" stroke-width=\"0.36\"/>" +
+            $"<circle cx=\"{c}\" cy=\"{c}\" r=\"{R(CardDesign.StampSecondInsetMm)}\" stroke-width=\"0.13\"/>" +
+            $"<circle cx=\"{c}\" cy=\"{c}\" r=\"{R(CardDesign.StampInnerInsetMm)}\" stroke-width=\"0.24\"/>" +
+            "</g></svg>";
+    }
+
+    /// <summary>Le cachet seul, en image PNG transparente à 600 ppp : pour les cartes Word.</summary>
+    internal static byte[] StampPng(SchoolCardHeader header, byte[] logo, bool paid) =>
+        Document.Create(doc => doc.Page(page =>
+        {
+            page.Size(Mm(CardDesign.StampMm), Mm(CardDesign.StampMm));
+            page.Margin(0);
+            page.PageColor(Colors.Transparent);
+            page.Content().Element(c => Stamp(c, header, logo, paid));
+        })).GenerateImages(new ImageGenerationSettings { ImageFormat = ImageFormat.Png, RasterDpi = 600 }).First();
 
     /// <summary>
     /// Repère de découpe vertical : pointillés au centre de l'interstice horizontal, sur toute la hauteur de la rangée.

@@ -100,13 +100,22 @@ public sealed class DocumentTests
     [Fact]
     public void Dix_cartes_donnent_deux_pages_de_huit_cartes()
     {
-        var header = new SchoolCardHeader("République démocratique du Congo", "Ministère de l'Enseignement", "Direction provinciale", "Division Kinshasa",
-            "Ville de Kinshasa", "Complexe Scolaire Les Étoiles", "Avenue de la Paix 12", DocumentService.DefaultLogo());
-        var cards = Enumerable.Range(1, 10).Select(i => new CardItem($"MUKENDI{i}", "KAZADI", "Josué", "ACC1", i % 2 == 0 ? "#2563EB" : "#16A34A", $"SCOLIA|ACC{i:000}", $"ACC{i:000}")).ToList();
+        var header = new SchoolCardHeader("République démocratique du Congo", "Ministère de l'Enseignement", "Direction des études", "Administration du budget",
+            "Lubumbashi", "Institut Supérieur de Démonstration", "Avenue de la Paix 12", DocumentService.DefaultLogo(),
+            "+243 810 000 000", "contact@isd.example", "www.isd.example", "Servir et réussir", "ISD");
+        string[] names = ["MUKENDI", "KALOMBO WA NKONGOLO", "TSHIBANDA", "NGOY", "BANZA", "ILUNGA", "KASONGO", "MBUYI", "LUKUSA", "NSIMBA"];
+        var cards = Enumerable.Range(1, 10).Select(i => new CardItem(names[i - 1], i == 2 ? "MUTOMBO KABEYA" : "TSHIDIBI", i == 2 ? "Jean-Pierre Emmanuel" : "DANNY", "L3 MSI",
+            "#2563EB", $"SCOLIA|ACC{i:000}", $"23MT{350 + i}SI", Paid: i % 3 != 0)).ToList();
         var doc = new CardDocument(header, "OCTOBRE 2026", "2026-2027", cards);
         var pdf = phone.StudentCards(doc);
         AssertPdf(pdf, 2);
         Keep("cartes", pdf, () => new DocumentService().StudentCards(doc));
-        Assert.True(phone.StudentCardsWord(doc).Length > 1000);
+        var word = phone.StudentCardsWord(doc);
+        Assert.True(word.Length > 1000);
+        if (Environment.GetEnvironmentVariable("SCOLIA_PDF_DIR") is { Length: > 0 } dir)
+        {
+            File.WriteAllBytes(Path.Combine(dir, "cartes-telephone.docx"), word);
+            File.WriteAllBytes(Path.Combine(dir, "cartes-ordinateur.docx"), new DocumentService().StudentCardsWord(doc));
+        }
     }
 }
