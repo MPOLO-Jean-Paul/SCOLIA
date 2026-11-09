@@ -270,7 +270,9 @@ public final class MainActivity extends Activity {
                     .setNegativeButton("Plus tard",null)
                     .setPositiveButton("Voir la mise à jour",(d,w)->openExternal(url)).show();
                 else if(interactive) new AlertDialog.Builder(this)
-                    .setMessage("SCOLIA Admin " + VERSION + " est à jour sur le canal JP-Services.")
+                    .setMessage(latest==null
+                        ? "Aucune version officielle JP-Services Admin n'est encore publiée. Cette installation est une version de prévisualisation."
+                        : "SCOLIA Admin " + VERSION + " est à jour sur le canal JP-Services.")
                     .setPositiveButton("Fermer",null).show();
             });
         }, "scolia-admin-update").start();
