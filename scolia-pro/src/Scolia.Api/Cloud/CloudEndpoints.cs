@@ -47,6 +47,8 @@ public static class CloudEndpoints
 
         // Uniquement sur le PC principal : consentement explicite et vérification
         // de la clé scolaire avant d'activer le jumelage de la base D1 distante.
+        api.MapGet("/jumelage-d1", (CloudContinuityService cloud) => Results.Ok(cloud.MirrorStatus));
+
         api.MapPost("/jumelage-d1", async Task<IResult> (D1PairRequest input, HttpContext http,
             CloudContinuityService cloud, IAuditLog audit, ScoliaDbContext db, CancellationToken ct) =>
         {
