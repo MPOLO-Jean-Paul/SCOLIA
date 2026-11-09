@@ -43,8 +43,8 @@
       <DataGrid.Columns>
         <DataGridTextColumn Header="Enseignant" Binding="{Binding FullName}" Width="*" MinWidth="180" infra:GridPriority.Level="1" />
         <DataGridTextColumn Header="N°" Binding="{Binding Number}" Width="Auto" MinWidth="86" infra:GridPriority.Level="3" />
-        <DataGridTextColumn Header="Fonction" Binding="{Binding Function}" Width="Auto" MinWidth="110" infra:GridPriority.Level="3" />
-        <DataGridTextColumn Header="Cours" Binding="{Binding Courses}" Width="Auto" MinWidth="96" infra:GridPriority.Level="2" />
+        <DataGridTextColumn Header="Fonction" Binding="{Binding Function}" Width="Auto" MinWidth="118" infra:GridPriority.Level="3" />
+        <DataGridTextColumn Header="Cours" Binding="{Binding Courses}" Width="Auto" MinWidth="110" infra:GridPriority.Level="2" />
         <DataGridTextColumn Header="Identifiant" Binding="{Binding UserName}" Width="Auto" MinWidth="150" infra:GridPriority.Level="1" />
         <DataGridTemplateColumn Header="Compte" Width="Auto" MinWidth="150">
           <DataGridTemplateColumn.CellTemplate>

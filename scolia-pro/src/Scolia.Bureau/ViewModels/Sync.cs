@@ -763,7 +763,11 @@ public sealed class SyncCenter : Observable, IDisposable
                 break;
             case "donnees" when JsonSerializer.Deserialize<LiveEventDto>(json, Json.Options) is { } change:
                 if (change.DeviceId == DeviceIdentity.Id) break;
-                Show($"{change.User} · {change.Device} : {change.Summary}");
+                // Un compte restreint (enseignant) reçoit des avis anonymisés : pas de ligne « · : » vide.
+                if (!string.IsNullOrWhiteSpace(change.Summary))
+                    Show(string.IsNullOrWhiteSpace(change.User)
+                        ? change.Summary!
+                        : $"{change.User} · {change.Device} : {change.Summary}");
                 RemoteChange?.Invoke(change);
                 nextReplicaAttemptUtc = DateTime.MinValue;
                 if (running is { } replicaSession && !replicaSession.IsCancellationRequested)

@@ -20,16 +20,16 @@
     <TextBlock Grid.Row="1" Text="{Binding Summary}" Classes="muted" TextWrapping="Wrap" Margin="4,0,4,8" />
     <DataGrid Grid.Row="2" ItemsSource="{Binding Items}" AutoGenerateColumns="False" IsReadOnly="True">
       <DataGrid.Columns>
-        <DataGridTextColumn Header="Promotion" Binding="{Binding Promotion}" Width="170" infra:GridPriority.Level="2" />
-        <DataGridTextColumn Header="N°" Binding="{Binding Number}" Width="62" infra:GridPriority.Level="3" />
+        <DataGridTextColumn Header="Promotion" Binding="{Binding Promotion}" Width="Auto" MinWidth="150" infra:GridPriority.Level="2" />
+        <DataGridTextColumn Header="N°" Binding="{Binding Number}" Width="Auto" MinWidth="74" infra:GridPriority.Level="3" />
         <DataGridTextColumn Header="Cours" Binding="{Binding Course}" Width="*" MinWidth="190" infra:GridPriority.Level="1" />
-        <DataGridTextColumn Header="Cote" Binding="{Binding Kind}" Width="78" infra:GridPriority.Level="1" />
-        <DataGridTextColumn Header="Enseignant" Binding="{Binding Teacher}" Width="160" infra:GridPriority.Level="2" />
-        <DataGridTextColumn Header="Encodées" Binding="{Binding Progress}" Width="108" infra:GridPriority.Level="1" />
-        <DataGridTextColumn Header="%" Binding="{Binding Percent}" Width="76" infra:GridPriority.Level="3" />
-        <DataGridTextColumn Header="Échecs" Binding="{Binding Failed}" Width="84" infra:GridPriority.Level="4" />
-        <DataGridTextColumn Header="Moyenne" Binding="{Binding Average}" Width="96" infra:GridPriority.Level="4" />
-        <DataGridTemplateColumn Header="État" Width="150">
+        <DataGridTextColumn Header="Cote" Binding="{Binding Kind}" Width="Auto" MinWidth="90" infra:GridPriority.Level="1" />
+        <DataGridTextColumn Header="Enseignant" Binding="{Binding Teacher}" Width="Auto" MinWidth="150" infra:GridPriority.Level="2" />
+        <DataGridTextColumn Header="Encodées" Binding="{Binding Progress}" Width="Auto" MinWidth="122" infra:GridPriority.Level="1" />
+        <DataGridTextColumn Header="%" Binding="{Binding Percent}" Width="Auto" MinWidth="70" infra:GridPriority.Level="3" />
+        <DataGridTextColumn Header="Échecs" Binding="{Binding Failed}" Width="Auto" MinWidth="106" infra:GridPriority.Level="4" />
+        <DataGridTextColumn Header="Moyenne" Binding="{Binding Average}" Width="Auto" MinWidth="114" infra:GridPriority.Level="4" />
+        <DataGridTemplateColumn Header="État" Width="Auto" MinWidth="132">
           <DataGridTemplateColumn.CellTemplate>
             <DataTemplate>
               <TextBlock Text="{Binding Status}" Foreground="{Binding StatusBrush}" FontWeight="SemiBold" VerticalAlignment="Center" Margin="12,0" />

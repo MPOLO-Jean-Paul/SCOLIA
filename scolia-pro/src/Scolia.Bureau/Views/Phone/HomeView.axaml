@@ -55,8 +55,9 @@
           </Border>
           <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
             <TextBlock Classes="homegreeting" Text="{Binding Greeting}" FontWeight="SemiBold" TextWrapping="Wrap" MaxLines="2" />
+            <!-- Rôle et nom complet de l'établissement : sur deux lignes plutôt que coupés. -->
             <TextBlock Text="{Binding AccountContextLine}" Classes="muted" FontSize="{DynamicResource FsSmall}"
-                       TextTrimming="CharacterEllipsis" />
+                       TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis" />
             <TextBlock Text="{Binding DateLine}" Classes="muted" FontSize="{DynamicResource FsSmall}"
                        TextTrimming="CharacterEllipsis" />
           </StackPanel>
