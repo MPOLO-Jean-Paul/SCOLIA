@@ -2022,6 +2022,62 @@ if (args.Length > 3 && args[3] == "smoke")
     return;
 }
 
+// Audit par rôle (SCOLIA_COMPTE=admin|comptable|promoteur|enseignant) : chaque écran du menu de ce compte,
+// une image par écran, et un rapport (droits, menus, ruban, actions, notifications d'erreur).
+if (args.Length > 3 && args[3] == "roles")
+{
+    var account = Environment.GetEnvironmentVariable("SCOLIA_COMPTE") ?? "admin";
+    var layout = Preferences.MobileLayout ? "mobile" : "bureau";
+    var report = new List<string>();
+    static string Slug(string text) => new string(text.Normalize(System.Text.NormalizationForm.FormD)
+        .Where(c => System.Globalization.CharUnicodeInfo.GetUnicodeCategory(c) != System.Globalization.UnicodeCategory.NonSpacingMark)
+        .Select(c => char.IsAsciiLetterOrDigit(c) ? char.ToLowerInvariant(c) : '-').ToArray()).Trim('-');
+    void Settle(int milliseconds)
+    {
+        var until = DateTime.UtcNow.AddMilliseconds(milliseconds);
+        while (DateTime.UtcNow < until) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(15); }
+    }
+    var roleSession = Result(api.LoginAsync(account, password));
+    Wait(shell.OpenSessionAsync(roleSession));
+    Settle(1500);
+    report.Add($"# {roleSession.DisplayName} — {account} ({roleSession.RoleLabel}) — {layout}");
+    report.Add("Permissions : " + string.Join(", ", roleSession.Permissions));
+    report.Add($"Écran d'ouverture : {shell.Current?.Title} · {shell.Current?.Subtitle}");
+    if (shell.Notice is { Length: > 0 } openingNotice) report.Add("Notification à l'ouverture : " + openingNotice);
+    report.Add("Menu : " + string.Join(" | ", shell.Navigation.Select(g => (g.Title.Length == 0 ? "(accueil)" : g.Title) + " [" + string.Join(", ", g.Items.Select(i => i.Label)) + "]")));
+    report.Add("Ruban : " + string.Join(" | ", shell.Tabs.Select(t => t.Title + " [" + string.Join(", ", t.Groups.SelectMany(g => g.Commands).Select(c => c.Label)) + "]")));
+    Save(window, $"{account}-{layout}-00-ouverture.png");
+    var index = 1;
+    foreach (var group in shell.Navigation.ToList())
+        foreach (var item in group.Items.ToList())
+        {
+            var before = shell.Notice;
+            item.Open.Execute(null);
+            var limit = DateTime.UtcNow.AddSeconds(20);
+            while (shell.Current?.GetType() != item.PageType && DateTime.UtcNow < limit) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(15); }
+            Settle(1800);
+            var page = shell.Current;
+            var notice = shell.Notice is { Length: > 0 } n && n != before ? n : null;
+            report.Add($"{index:00} {(group.Title.Length == 0 ? "(accueil)" : group.Title)} › {item.Label} → {(page?.GetType() == item.PageType ? "ouvert" : "NON OUVERT")} : {page?.Title} · {page?.Subtitle}"
+                + $" · actions : {string.Join(", ", page?.Actions.Select(a => a.Label) ?? [])}"
+                + (notice is null ? string.Empty : $" · NOTIFICATION : {notice}"));
+            try { Save(window, $"{account}-{layout}-{index:00}-{Slug(item.Label)}.png"); }
+            catch (InvalidOperationException ex) { report.Add($"   capture impossible : {ex.Message}"); }
+            index++;
+        }
+    if (Preferences.MobileLayout)
+    {
+        shell.PhoneMenuOpen = true;
+        Settle(800);
+        Save(window, $"{account}-{layout}-99-menu.png");
+        shell.PhoneMenuOpen = false;
+    }
+    File.WriteAllLines(Path.Combine(output, $"rapport-{account}-{layout}.txt"), report);
+    Console.WriteLine(string.Join(Environment.NewLine, report));
+    window.Close();
+    return;
+}
+
 var session = Result(api.LoginAsync(Environment.GetEnvironmentVariable("SCOLIA_COMPTE") ?? "admin", password));
 // Ouverture : la roue et les étapes, capturées en cours de route, puis l'accueil.
 var openingTask = shell.OpenSessionAsync(session);

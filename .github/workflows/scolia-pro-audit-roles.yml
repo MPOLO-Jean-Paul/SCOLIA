@@ -1,0 +1,82 @@
+name: SCOLIA Pro - audit visuel par role
+
+# Parcourt chaque écran de l'application pour chaque rôle (secrétariat, comptabilité, promoteur,
+# enseignant membre du jury), sur ordinateur et sur téléphone, avec un établissement de démonstration
+# (données fictives). Les images et les rapports sont publiés sur une branche audit/captures-<run>.
+on:
+  push:
+    branches: ['audit/roles-*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: scolia-audit-roles-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  roles:
+    name: Captures et rapports par role
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    defaults:
+      run:
+        working-directory: scolia-pro
+    env:
+      DOTNET_NOLOGO: 'true'
+      DOTNET_CLI_TELEMETRY_OPTOUT: 'true'
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-dotnet@v5
+        id: dotnet
+        continue-on-error: true
+        with:
+          global-json-file: scolia-pro/global.json
+      - name: .NET de secours
+        if: steps.dotnet.outcome == 'failure'
+        run: bash scripts/installer-dotnet.sh
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+
+      - name: Compilation du serveur et de l'outil de captures
+        run: |
+          dotnet build src/Scolia.Api -c Release
+          dotnet build tests/Scolia.Bureau.Captures -c Release
+
+      - name: Serveur de demonstration et comptes par role
+        run: |
+          mkdir -p /tmp/scolia-audit artifacts/roles
+          Scolia__Stockage__DataDirectory=/tmp/scolia-audit Scolia__OuvrirNavigateur=false Scolia__Icone=false \
+            nohup dotnet run --no-build --project src/Scolia.Api -c Release -- --urls http://127.0.0.1:5293 > /tmp/serveur.log 2>&1 &
+          node scripts/audit/preparer-roles.mjs http://127.0.0.1:5293/ | tee artifacts/roles/preparation.json
+
+      - name: Parcours de chaque ecran, par role, ordinateur et telephone
+        env:
+          SCOLIA_ASTUCES: '0'
+        run: |
+          for compte in admin comptable promoteur enseignant; do
+            for mobile in 0 1; do
+              taille=1366x860
+              if [ "$mobile" = "1" ]; then taille=412x892; fi
+              SCOLIA_COMPTE=$compte SCOLIA_MOBILE=$mobile SCOLIA_TAILLE=$taille \
+                dotnet run --no-build --project tests/Scolia.Bureau.Captures -c Release -- artifacts/roles http://127.0.0.1:5293/ Scolia2026! roles \
+                || echo "ECHEC $compte mobile=$mobile" >> artifacts/roles/echecs.txt
+              sleep 7
+            done
+          done
+          grep -iE "error|exception" /tmp/serveur.log | grep -v "Microsoft.AspNetCore.Diagnostics" > artifacts/roles/serveur-erreurs.txt || true
+
+      - name: Publier les captures sur une branche d'audit
+        if: always()
+        run: |
+          cd artifacts/roles
+          git init -q
+          git checkout -q -b captures
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git add -A
+          git commit -qm "Captures d'audit par role (${GITHUB_SHA})"
+          git push -q -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" captures:refs/heads/audit/captures-${{ github.run_id }}
+          echo "Branche : audit/captures-${{ github.run_id }}" >> "$GITHUB_STEP_SUMMARY"
