@@ -38,7 +38,7 @@
       <StackPanel Spacing="3">
         <TextBlock Text="Porte-badge standard : 85,60 × 53,98 mm · 8 cartes par A4" FontWeight="SemiBold" TextWrapping="Wrap" />
         <TextBlock Text="Imprimer à 100 % (taille réelle), sans ajustement ni mise à l'échelle. Vérifiez le porte-badge avec une première carte." Classes="muted" TextWrapping="Wrap" />
-        <TextBlock Text="Le logo et le cachet de l'établissement ne sont pas imprimés : apposez-les à la main sur chaque carte, en haut à gauche et en bas à droite." Classes="muted" TextWrapping="Wrap" />
+        <TextBlock Text="Le cachet de l'établissement n'est pas imprimé : apposez votre cachet original à la main sur chaque carte. La bande du bas porte la couleur de la filière." Classes="muted" TextWrapping="Wrap" />
         <StackPanel Orientation="Horizontal" Spacing="6">
           <TextBlock Text="Apprenants dans le lot :" Classes="muted" />
           <TextBlock Text="{Binding SelectedCount}" FontWeight="SemiBold" />

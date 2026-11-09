@@ -369,8 +369,8 @@ public sealed class SkiaDocumentService : IDocumentService
     Header(d.School, "BULLETIN DE NOTES", $"Année scolaire {d.AcademicYear}"), Footer(null), 22);
 
     // ---------- Cartes d'accès ----------
-    // Même dessin que l'ordinateur (CardDesign) : en-tête centré, « Session AAAA » souligné, identité, QR.
-    // Ni logo ni cachet : ils sont apposés à la main après l'impression.
+    // Même dessin que l'ordinateur (CardDesign) : en-tête centré et logo, « Session AAAA » souligné, identité,
+    // second logo, bande de filière, QR. Le cachet est apposé à la main.
 
     private const string Guide = "#8A96A6";
     private static float Mm(float v) => v * 72f / 25.4f;
@@ -398,6 +398,8 @@ public sealed class SkiaDocumentService : IDocumentService
     /// <summary>Huit cartes ID-1 par A4, sur la même grille que les cartes de l'ordinateur, avec les repères de découpe.</summary>
     public byte[] StudentCards(CardDocument d)
     {
+        var logo = d.Header.Logo is { Length: > 0 } own ? own :
+            throw new InvalidOperationException("Le logo de l'établissement est nécessaire pour créer ses cartes d'accès.");
         var pages = Enumerable.Range(0, StudentCardRules.PagesFor(d.Cards.Count))
             .Select(p => d.Cards.Skip(p * StudentCardRules.CardsPerPage).Take(StudentCardRules.CardsPerPage).ToList()).ToList();
         var page = 0;
@@ -412,14 +414,14 @@ public sealed class SkiaDocumentService : IDocumentService
                     var (row, col) = (i / 2, i % 2);
                     var x = Mm(StudentCardRules.MarginMm + col * (StudentCardRules.CardWidthMm + StudentCardRules.ColumnGapMm));
                     var y = Mm(StudentCardRules.MarginMm + row * (StudentCardRules.CardHeightMm + StudentCardRules.RowGapMm));
-                    Card(f, d, cards[i], x, y);
+                    Card(f, d, cards[i], logo, x, y);
                 }
                 CutLines(f);
             }
         });
     }
 
-    private static void Card(PdfFlow f, CardDocument d, CardItem card, float x, float y)
+    private static void Card(PdfFlow f, CardDocument d, CardItem card, byte[] logo, float x, float y)
     {
         var canvas = f.Canvas;
         var w = Mm(StudentCardRules.CardWidthMm);
@@ -427,8 +429,10 @@ public sealed class SkiaDocumentService : IDocumentService
         f.Fill(x, y, w, h, CardDesign.Paper);
         f.Stroke(x, y, w, h, CardDesign.Frame, 0.4f);
 
-        // En-tête centré : place libre du logo (apposé à la main), puis nom, service, filet, contacts.
+        // En-tête centré : logo, nom, service, filet, contacts ; le bloc de texte est centré sur le logo.
         var header = d.Header;
+        f.Image(logo, x + Mm(CardDesign.HeaderLeftMm), y + Mm(CardDesign.HeaderTopMm + (CardDesign.HeaderHeightMm - CardDesign.LogoMm) / 2),
+            Mm(CardDesign.LogoMm), Mm(CardDesign.LogoMm));
         var textX = x + Mm(CardDesign.HeaderTextLeftMm);
         var textW = Mm(CardDesign.HeaderTextMm);
         var name = CardDesign.SchoolName(header);
@@ -502,6 +506,10 @@ public sealed class SkiaDocumentService : IDocumentService
                 Draw(canvas, lines[i].Label + " : " + lines[i].Value, x + Mm(CardDesign.IdentityLeftMm), baseline, identityFont, color, CardDesign.IdentityTracking);
             }
         }
+
+        // Second logo en bas à droite, et bande de couleur de la filière tout en bas.
+        f.Image(logo, x + Mm(CardDesign.BottomLogoLeftMm), y + Mm(CardDesign.BottomLogoTopMm), Mm(CardDesign.BottomLogoMm), Mm(CardDesign.BottomLogoMm));
+        f.Fill(x, y + Mm(CardDesign.BandTopMm), w, Mm(CardDesign.BandMm), card.Color.StartsWith('#') ? card.Color : "#" + card.Color);
     }
 
     /// <summary>Texte sur une ligne, avec un espacement entre les lettres (en cadratins).</summary>

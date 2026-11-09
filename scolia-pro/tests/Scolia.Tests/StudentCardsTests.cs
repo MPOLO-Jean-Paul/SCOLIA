@@ -35,9 +35,15 @@ public sealed class StudentCardRulesTests
     [Fact]
     public void Promotion_colours_match_the_v79_band_and_others_are_neutral()
     {
-        Assert.Equal(StudentCardRules.ColorOf("TLM1"), StudentCardRules.ColorOf("TML1"));
-        Assert.Equal("#FACC15", StudentCardRules.ColorOf("ACC1"));
-        Assert.Equal("#CBD5E1", StudentCardRules.ColorOf("XYZ9"));
+        // Une même filière, une même bande : ACC1, ACC2 et ACC3 ensemble, INF à part ; la section prime sur le code.
+        Assert.Equal(StudentCardRules.FiliereKey(null, "ACC1"), StudentCardRules.FiliereKey(null, "ACC3"));
+        Assert.NotEqual(StudentCardRules.FiliereKey(null, "ACC1"), StudentCardRules.FiliereKey(null, "INF1"));
+        Assert.Equal(StudentCardRules.FiliereKey("SI", "INF1"), StudentCardRules.FiliereKey("si", "L3 MSI"));
+        var keys = new[] { "ACC1", "ACC2", "ACC3", "INF1", "INF2", "INF3", "TLM1" }.Select(c => StudentCardRules.FiliereKey(null, c)).ToList();
+        var bands = StudentCardRules.BandColors(keys);
+        Assert.Equal(3, bands.Count);
+        Assert.Equal(3, bands.Values.Distinct().Count());
+        Assert.Equal(bands, StudentCardRules.BandColors(keys.AsEnumerable().Reverse()));
     }
 
     [Fact]
@@ -133,15 +139,15 @@ public sealed class StudentCardsApiTests : IDisposable
     }
 
     [Fact]
-    public async Task Export_sans_logo_configure_reste_possible_le_cachet_se_pose_a_la_main()
+    public async Task Export_sans_logo_de_l_ecole_est_refuse_plutot_que_d_imprimer_un_logo_etranger()
     {
         var admin = await app.InstalledAdmin();
         var promotion = await PromotionAsync(admin);
         var student = await StudentAsync(admin, promotion, "MUKENDI");
-        var response = await admin.Post("/api/cartes/export",
-            new { enrollmentIds = new[] { student }, month = 9, year = 2026, copies = 1, includeLeft = false });
-        Assert.True(response.IsSuccessStatusCode, await response.Content.ReadAsStringAsync());
-        Assert.StartsWith("%PDF", System.Text.Encoding.ASCII.GetString(await response.Content.ReadAsByteArrayAsync())[..4], StringComparison.Ordinal);
+        var invalid = await admin.Post("/api/cartes/export",
+            new { enrollmentIds = new[] { student }, month = 9, year = 2026, copies = 1, includeLeft = false }).Fail();
+        Assert.Equal(HttpStatusCode.BadRequest, invalid.Status);
+        Assert.Contains("logo", invalid.Body.ToString(), StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -182,8 +188,8 @@ public sealed class StudentCardsApiTests : IDisposable
         using (var stream = document.Open())
         {
             var xml = System.Xml.Linq.XDocument.Load(stream);
-            // Trois cartes : seulement le QR de chaque exemplaire, ni logo ni cachet.
-            Assert.Equal(3, xml.Descendants().Count(e => e.Name.LocalName == "drawing"));
+            // Trois cartes : logo en haut, QR, second logo et bande de filière par exemplaire ; aucun cachet.
+            Assert.Equal(12, xml.Descendants().Count(e => e.Name.LocalName == "drawing"));
             var printed = string.Join(" ", xml.Descendants()
                 .Where(e => e.Name.LocalName == "t").Select(e => e.Value));
             Assert.Contains("INSTITUT DE TEST", printed, StringComparison.Ordinal);

@@ -25,7 +25,8 @@ public sealed class CardServerCompatibilityTests
         Assert.Contains("téléphone", message, StringComparison.OrdinalIgnoreCase);
     }
     [Theory]
-    [InlineData("SCOLIA-CARTES-ID1-2026-11-V5", true)]
+    [InlineData("SCOLIA-CARTES-ID1-2026-11-V6", true)]
+    [InlineData("SCOLIA-CARTES-ID1-2026-11-V5", false)]
     [InlineData("SCOLIA-CARTES-ID1-2026-11-V4", false)]
     [InlineData("SCOLIA-CARTES-ID1-2026-11-V3", false)]
     [InlineData("SCOLIA-CARTES-ID1-2026-11-V2", false)]

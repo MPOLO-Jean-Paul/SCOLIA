@@ -8,8 +8,9 @@ namespace Scolia.Infrastructure.Documents;
 /// Dessin commun des cartes d'accès (PDF de l'ordinateur, PDF du téléphone, Word) : mêmes mesures, mêmes couleurs,
 /// mêmes textes. Modèle « porte-badge universitaire » : en-tête centré (logo, nom de l'établissement en capitales
 /// à empattements, service, filet, contacts), « Session AAAA » en grand, souligné, matricule, noms et promotion
-/// en capitales espacées. Le logo et le cachet de l'établissement ne sont pas imprimés : ils sont apposés à la main
-/// après l'impression, à gauche de l'en-tête et en bas à droite. Toutes les mentions viennent de l'établissement configuré.
+/// en capitales espacées, logo de l'établissement en haut à gauche et en bas à droite, bande de couleur de la filière
+/// en bas. Le cachet n'est pas imprimé : l'établissement appose son cachet original à la main après l'impression.
+/// Toutes les mentions viennent de l'établissement configuré.
 /// Les mesures sont en millimètres depuis le coin supérieur gauche de la carte (85,60 × 53,98 mm).
 /// </summary>
 public static class CardDesign
@@ -27,7 +28,6 @@ public static class CardDesign
     public const string SansFamily = "Montserrat";
 
     // ---------- En-tête ----------
-    /// <summary>Place libre à gauche du nom, pour le logo apposé à la main.</summary>
     public const float LogoMm = 11f;
     public const float HeaderGapMm = 1.8f;
     public const float HeaderTextMm = 41f;
@@ -58,14 +58,16 @@ public static class CardDesign
     public const float IdentityTracking = 0.06f;
     public static float IdentityWidthMm => StudentCardRules.CardWidthMm - IdentityLeftMm - 2.2f;
 
-    // ---------- Places laissées libres pour le cachet à la main ----------
-    /// <summary>
-    /// Le logo et le cachet de l'établissement ne sont pas imprimés : ils sont apposés à la main sur la carte imprimée,
-    /// qui devient alors valable. Deux places restent libres : à gauche de l'en-tête et en bas à droite.
-    /// </summary>
-    public const float SealMm = 27.4f;
-    public const float SealCenterXMm = 69.4f;
-    public const float SealCenterYMm = 39.2f;
+    // ---------- Pied : second logo et bande de filière ----------
+    /// <summary>Bande de couleur en bas de la carte : une couleur par filière.</summary>
+    public const float BandMm = 3.4f;
+    /// <summary>Second logo de l'établissement, en bas à droite, au-dessus de la bande.</summary>
+    public const float BottomLogoMm = 10f;
+    public const float BottomLogoRightMm = 2.6f;
+    public const float BottomLogoGapMm = 1.3f;
+    public static float BottomLogoLeftMm => StudentCardRules.CardWidthMm - BottomLogoRightMm - BottomLogoMm;
+    public static float BottomLogoTopMm => StudentCardRules.CardHeightMm - BandMm - BottomLogoGapMm - BottomLogoMm;
+    public static float BandTopMm => StudentCardRules.CardHeightMm - BandMm;
 
     private static readonly CultureInfo Fr = CultureInfo.GetCultureInfo("fr-FR");
 

@@ -20,7 +20,7 @@ public sealed record CardExportResult(byte[] Bytes, string FileName, int Cards, 
 public sealed class CardService(IAppDbContext db, IWriteGate gate, IAuditLog audit, IClock clock, ICurrentUser user, IDocumentService documents)
 {
     private sealed record CandidateRow(Guid EnrollmentId, string Matricule, string LastName, string MiddleName, string FirstName, string Promotion,
-        EnrollmentStatus Effective, bool Duplicate);
+        EnrollmentStatus Effective, bool Duplicate, string Filiere = "");
 
     public async Task<IReadOnlyList<CardCandidateDto>> CandidatesAsync(Guid? promotionId, string? search, bool includeLeft, CancellationToken ct = default)
     {
@@ -63,8 +63,16 @@ public sealed class CardService(IAppDbContext db, IWriteGate gate, IAuditLog aud
         }
 
         var school = await db.Schools.AsNoTracking().OrderBy(x => x.CreatedAtUtc).FirstAsync(ct);
-        // Les cartes reprennent l'identité propre à l'établissement actif. Le logo et le cachet ne sont pas imprimés :
-        // l'établissement les appose à la main sur la carte imprimée.
+        if (school.Logo is not { Length: > 0 })
+            throw new DomainException("cartes",
+                "Le logo de votre établissement n'est pas configuré. Ajoutez-le dans Paramètres > Établissement avant d'imprimer les cartes d'accès.");
+        // Bande de couleur par filière : toutes les filières de l'année reçoivent leur couleur, même celles qui ne sont pas imprimées.
+        var filieres = await (from p in db.Promotions.AsNoTracking()
+                              where p.AcademicYearId == year.Id
+                              select new { p.Code, Section = p.Section != null ? p.Section.Code : null }).ToListAsync(ct);
+        var bands = StudentCardRules.BandColors(filieres.Select(f => StudentCardRules.FiliereKey(f.Section, f.Code)));
+        // Les cartes reprennent l'identité et le logo propres à l'établissement actif. Le cachet n'est pas imprimé :
+        // l'établissement appose son cachet original à la main sur la carte imprimée.
         var header = new SchoolCardHeader(
             school.Country ?? string.Empty,
             school.CardMinistry,
@@ -80,7 +88,7 @@ public sealed class CardService(IAppDbContext db, IWriteGate gate, IAuditLog aud
         {
             var qr = $"{school.Name} | {session} | {year.Label} | {r.Matricule} | {Name(r)} | {r.Promotion}";
             for (var i = 0; i < copies; i++)
-                cards.Add(new CardItem(r.LastName, r.MiddleName, r.FirstName, r.Promotion, StudentCardRules.ColorOf(r.Promotion), qr, r.Matricule));
+                cards.Add(new CardItem(r.LastName, r.MiddleName, r.FirstName, r.Promotion, bands.GetValueOrDefault(r.Filiere, StudentCardRules.BandPalette[0]), qr, r.Matricule));
         }
 
         var word = string.Equals(input.Format, "docx", StringComparison.OrdinalIgnoreCase);
@@ -118,7 +126,7 @@ public sealed class CardService(IAppDbContext db, IWriteGate gate, IAuditLog aud
                               join p in db.Promotions.AsNoTracking() on e.PromotionId equals p.Id
                               where e.AcademicYearId == year.Id
                               select new { e.Id, e.PromotionId, e.Status, s.Matricule, s.LastName,
-                                           s.MiddleName, s.FirstName, Promotion = p.Code })
+                                           s.MiddleName, s.FirstName, Promotion = p.Code, Section = p.Section != null ? p.Section.Code : null })
                              .ToListAsync(ct);
         var repeated = StudentCardRules.DuplicateMatricules(yearRows.Select(x => x.Matricule));
         var items = yearRows
@@ -133,7 +141,7 @@ public sealed class CardService(IAppDbContext db, IWriteGate gate, IAuditLog aud
         return items.Select(x => new CandidateRow(
             x.Id, x.Matricule, x.LastName, x.MiddleName, x.FirstName, x.Promotion,
             DisciplineRules.EffectiveStatus(x.Status, decisions.TryGetValue(x.Id, out var mine) ? mine : [], today),
-            repeated.Contains(x.Matricule))).ToList();
+            repeated.Contains(x.Matricule), StudentCardRules.FiliereKey(x.Section, x.Promotion))).ToList();
     }
 
     private static string Name(CandidateRow r) => string.Join(' ', new[] { r.LastName, r.MiddleName, r.FirstName }.Where(x => !string.IsNullOrWhiteSpace(x)));

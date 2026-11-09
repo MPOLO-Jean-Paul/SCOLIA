@@ -29,9 +29,9 @@ public class CardDesignTests
         var xml = WordXml(Sample());
         foreach (var label in new[] { "Session 2026", "MATRICULE : INF101", "NOMS : MUKENDI KABEYA Grâce", "PROMOTION : INF1", "ÉCOLE DE DÉMONSTRATION" })
             Assert.Contains(Esc(label), xml, StringComparison.Ordinal);
-        // Session soulignée ; seul le QR est posé dans chaque carte : ni logo ni cachet imprimés.
+        // Session soulignée ; par carte : logo en haut, QR, second logo et bande de filière. Aucun cachet imprimé.
         Assert.Contains("<w:u w:val=\"single\"", xml, StringComparison.Ordinal);
-        Assert.Equal(Sample().Cards.Count, System.Text.RegularExpressions.Regex.Count(xml, "<w:drawing>"));
+        Assert.Equal(4 * Sample().Cards.Count, System.Text.RegularExpressions.Regex.Count(xml, "<w:drawing>"));
         Assert.DoesNotContain("INSTITUT TECHNIQUE MÉDICAL CŒUR DE DIEU", xml, StringComparison.Ordinal);
     }
 
@@ -96,23 +96,35 @@ public class CardDesignTests
     }
 
     [Fact]
-    public void Ni_logo_ni_cachet_ne_sont_imprimes_ils_sont_apposes_a_la_main()
+    public void Les_cartes_ne_substituent_jamais_un_logo_generique_a_celui_de_l_ecole()
     {
-        // Sans logo configuré, les cartes se font quand même : le logo et le cachet sont apposés après l'impression.
         var doc = Sample() with { Header = Sample().Header with { Logo = null } };
-        Assert.Equal("%PDF", Encoding.ASCII.GetString(new DocumentService().StudentCards(doc), 0, 4));
+        Assert.Throws<InvalidOperationException>(() => new DocumentService().StudentCards(doc));
+        Assert.Throws<InvalidOperationException>(() => CardWordWriter.Write(doc));
+    }
+
+    [Fact]
+    public void Le_logo_configure_et_la_bande_de_filiere_sont_dans_les_cartes_word()
+    {
+        var logo = DocumentService.DefaultLogo(); // Uniquement une image de test, pas un fallback de production.
         using var zip = new ZipArchive(new MemoryStream(CardWordWriter.Write(Sample())));
-        // Seules images : un QR par carte, jamais le logo de l'établissement.
-        var logo = DocumentService.DefaultLogo();
-        var media = zip.Entries.Where(e => e.FullName.StartsWith("word/media/", StringComparison.Ordinal)).ToList();
-        Assert.Equal(Sample().Cards.Count, media.Count);
-        foreach (var entry in media)
+        using (var image = zip.GetEntry("word/media/rImg1.png")!.Open())
         {
-            using var image = entry.Open();
             using var memory = new MemoryStream();
             image.CopyTo(memory);
-            Assert.NotEqual(logo, memory.ToArray());
+            Assert.Equal(logo, memory.ToArray());
         }
+        // Une bande par couleur de filière : deux cartes de filières différentes, deux bandes.
+        Assert.Equal(CardWordWriter.SolidPng("F5C518"), Read(zip, "word/media/rImg3.png"));
+        Assert.Equal(CardWordWriter.SolidPng("1D4ED8"), Read(zip, "word/media/rImg5.png"));
+    }
+
+    private static byte[] Read(ZipArchive zip, string name)
+    {
+        using var stream = zip.GetEntry(name)!.Open();
+        using var memory = new MemoryStream();
+        stream.CopyTo(memory);
+        return memory.ToArray();
     }
 
     [Fact]
