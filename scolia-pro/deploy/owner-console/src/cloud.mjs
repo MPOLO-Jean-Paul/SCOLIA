@@ -9,6 +9,7 @@
 //    l'apprend et ne les renvoie pas une seconde fois.
 
 import { backupStore } from "./storage.mjs";
+import { schoolMirrorRequest } from "./school-mirror.mjs";
 
 export const MAX_BACKUP_BYTES = 90 * 1024 * 1024;          // limite d'une requête Worker gratuite : 100 Mo
 export const MAX_SCHOOL_BACKUP_BYTES = 1024 * 1024 * 1024;  // 1 Gio par établissement
@@ -126,6 +127,12 @@ export async function serverCloudRequest(request, env, url, { bearer, sha, fail,
   }
 
   const cloud = await cloudOf(db, school.id);
+  // Separate SCHOOL_DB: opaque frames ONLY. The same existing, revoked-aware
+  // school bearer authentication is checked above before touching D1.
+  if (path.startsWith("/api/v1/server/cloud/mirror/"))
+    return schoolMirrorRequest(request, env, url,
+      { school, cloud, fail, result, now: nowMs });
+
   // Lecture des copies : possible même après arrêt ou reprise sur un nouveau serveur
   // (elles restent chiffrées par la clé de l'école). Envoi et dépôt : seulement si active.
   const readOnlyRoute = request.method === "GET" && path.startsWith("/api/v1/server/cloud/backups");
