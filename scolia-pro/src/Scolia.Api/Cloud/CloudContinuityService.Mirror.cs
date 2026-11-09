@@ -8,6 +8,9 @@ using Scolia.Domain.Common;
 
 namespace Scolia.Api.Cloud;
 
+public sealed record CloudMirrorSyncStatus(bool Paired, string? LastMirroredBackupId,
+    string? LastLocalBackupId, long RemoteCursor, bool PendingUpload);
+
 /// <summary>
 /// Automatic SQLite to Cloudflare replication INDEX. The full consistent SQLite
 /// snapshot is encrypted and stored in R2 by BackupNowAsync. D1 holds only a
@@ -17,6 +20,18 @@ namespace Scolia.Api.Cloud;
 /// </summary>
 public sealed partial class CloudContinuityService
 {
+    /// <summary>Safe monitoring only; never exposes encryption or bearer secrets.</summary>
+    public CloudMirrorSyncStatus MirrorStatus
+    {
+        get
+        {
+            var s = state;
+            return new CloudMirrorSyncStatus(s.MirrorPaired && s.Enabled,
+                s.MirroredCloudBackupId, s.LastCloudBackupId,
+                s.LastRemoteMirrorCursor, s.PendingMirrorPayload is not null);
+        }
+    }
+
     private sealed record MirrorManifest(int Version, string BackupId, string SnapshotSha256,
         string? RevisionEpoch, long Revision, long EncryptedBytes, DateTimeOffset PublishedAt);
 
