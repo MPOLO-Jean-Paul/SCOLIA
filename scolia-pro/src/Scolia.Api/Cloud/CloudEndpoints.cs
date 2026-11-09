@@ -15,6 +15,7 @@ public static class CloudEndpoints
 {
     private sealed record ActivationRequest(bool Enabled, bool Confirm);
     private sealed record RecoverRequest(string? RecoveryCode);
+    private sealed record D1PairRequest(bool Confirm);
 
     private static bool ServerLocal(HttpContext http) =>
         LicenseEndpoints.IsServerLocal(http)
@@ -42,6 +43,21 @@ public static class CloudEndpoints
                 input.Enabled ? "Sauvegarde et relève en ligne activées (chiffrées par l'école)." : "Sauvegarde et relève en ligne arrêtées.");
             await db.SaveChangesAsync(ct);
             return Results.Ok(status);
+        });
+
+        // Uniquement sur le PC principal : consentement explicite et vérification
+        // de la clé scolaire avant d'activer le jumelage de la base D1 distante.
+        api.MapPost("/jumelage-d1", async Task<IResult> (D1PairRequest input, HttpContext http,
+            CloudContinuityService cloud, IAuditLog audit, ScoliaDbContext db, CancellationToken ct) =>
+        {
+            if (!ServerLocal(http)) return LocalOnly();
+            if (!input.Confirm)
+                return Results.BadRequest(new { title = "Accord du responsable requis avant le jumelage D1." });
+            var result = await cloud.PairD1Async(ct);
+            audit.Record("nuage.d1.jumele", "Nuage", null,
+                "Serveur physique lié à la base D1 chiffrée de l'établissement ; aucune donnée métier transférée.");
+            await db.SaveChangesAsync(ct);
+            return Results.Ok(result);
         });
 
         api.MapGet("/code-secours", async Task<IResult> (HttpContext http, CloudContinuityService cloud, IAuditLog audit,
