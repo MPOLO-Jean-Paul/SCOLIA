@@ -17,7 +17,7 @@ public sealed class MainApplication : AvaloniaAndroidApplication<JPServices.Owne
     ConfigurationChanges = ConfigChanges.Orientation | ConfigChanges.ScreenSize |
         ConfigChanges.UiMode | ConfigChanges.ScreenLayout | ConfigChanges.SmallestScreenSize |
         ConfigChanges.Keyboard | ConfigChanges.KeyboardHidden,
-    WindowSoftInputMode = Android.Views.SoftInput.AdjustResize)]
+    WindowSoftInputMode = global::Android.Views.SoftInput.AdjustResize)]
 public sealed class MainActivity : AvaloniaMainActivity
 {
 }
