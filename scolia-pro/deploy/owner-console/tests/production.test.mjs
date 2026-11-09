@@ -14,6 +14,7 @@ test("Configuration production : D1 réel, domaine Cloudflare, Access, workers.d
   assert.equal(cfg.routes[0].custom_domain, true);
   assert.equal(cfg.d1_databases[0].database_id, uuid);
   assert.equal(cfg.vars.OWNER_ACCESS_AUD, valid.audience);
+  assert.equal(cfg.vars.CLOUDFLARE_TURN_ACCOUNT_ID, undefined);
 });
 
 test("Pilote : chemin public workers.dev activé seulement pour le Worker de la console", () => {
