@@ -1,0 +1,70 @@
+name: SCOLIA Pro - apercu des cartes d'acces
+
+# Produit les cartes d'accès d'un établissement fictif avec les trois moteurs (PDF de l'ordinateur,
+# PDF du téléphone, Word), les convertit en images et les publie sur une branche cartes/apercu-<run>
+# pour vérifier le dessin à l'œil.
+on:
+  push:
+    branches: ['cartes/**']
+    paths:
+      - 'scolia-pro/src/Scolia.Infrastructure/Documents/**'
+      - 'scolia-pro/src/Scolia.Mobile/Server/**'
+      - 'scolia-pro/tests/Scolia.Mobile.Tests/DocumentTests.cs'
+      - '.github/workflows/scolia-pro-cartes-apercu.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: scolia-cartes-apercu-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  apercu:
+    name: Cartes en images
+    if: ${{ !startsWith(github.ref_name, 'cartes/apercu-') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    defaults:
+      run:
+        working-directory: scolia-pro
+    env:
+      DOTNET_NOLOGO: 'true'
+      DOTNET_CLI_TELEMETRY_OPTOUT: 'true'
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-dotnet@v5
+        id: dotnet
+        continue-on-error: true
+        with:
+          global-json-file: scolia-pro/global.json
+      - name: .NET de secours
+        if: steps.dotnet.outcome == 'failure'
+        run: bash scripts/installer-dotnet.sh
+
+      - name: Cartes des trois moteurs
+        env:
+          SCOLIA_PDF_DIR: ${{ github.workspace }}/scolia-pro/artifacts/cartes
+        run: dotnet test tests/Scolia.Mobile.Tests/Scolia.Mobile.Tests.csproj -c Release --filter "FullyQualifiedName~Dix_cartes_donnent_deux_pages_de_huit_cartes"
+
+      - name: Conversion en images
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq poppler-utils libreoffice-writer-nogui > /dev/null
+          cd artifacts/cartes
+          for docx in *.docx; do soffice --headless --convert-to pdf --outdir word "$docx" > /dev/null 2>&1 || true; done
+          for pdf in *.pdf word/*.pdf; do [ -f "$pdf" ] && pdftoppm -r 220 -png -f 1 -l 1 "$pdf" "${pdf%.pdf}"; done
+          ls -R
+
+      - name: Publier l'apercu
+        run: |
+          cd artifacts/cartes
+          git init -q
+          git checkout -q -b apercu
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git add -A
+          git commit -qm "Apercu des cartes (${GITHUB_SHA})"
+          git push -q -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" apercu:refs/heads/cartes/apercu-${{ github.run_id }}
+          echo "Branche : cartes/apercu-${{ github.run_id }}" >> "$GITHUB_STEP_SUMMARY"

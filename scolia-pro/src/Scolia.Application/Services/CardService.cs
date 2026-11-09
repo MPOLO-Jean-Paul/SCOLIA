@@ -17,7 +17,8 @@ public sealed record CardExportResult(byte[] Bytes, string FileName, int Cards, 
 /// Cartes d'accès aux examens (version 79) : sélection des apprenants, diagnostic des identités, export PDF
 /// et historique des lots. Les sortis et suspendus sont exclus par défaut.
 /// </summary>
-public sealed class CardService(IAppDbContext db, IWriteGate gate, IAuditLog audit, IClock clock, ICurrentUser user, IDocumentService documents)
+public sealed class CardService(IAppDbContext db, IWriteGate gate, IAuditLog audit, IClock clock, ICurrentUser user, IDocumentService documents,
+    AccountService accounts)
 {
     private sealed record CandidateRow(Guid EnrollmentId, string Matricule, string LastName, string MiddleName, string FirstName, string Promotion,
         EnrollmentStatus Effective, bool Duplicate);
@@ -76,13 +77,16 @@ public sealed class CardService(IAppDbContext db, IWriteGate gate, IAuditLog aud
             CardHeaderDefaults.Or(school.CardInstitute, school.Name),
             CardHeaderDefaults.Or(school.CardAddress, school.Address ?? school.City ?? string.Empty),
             school.Logo,
-            school.Phone, school.Email, school.Website, school.Motto);
+            school.Phone, school.Email, school.Website, school.Motto, school.ShortName);
+        // Le cachet porte « PAYÉ » seulement pour l'apprenant qui n'a rien d'exigible en retard aujourd'hui.
+        var standing = await accounts.ComputeAsync(year.Id, selected.Select(r => r.EnrollmentId).ToList(), null, ct);
         var cards = new List<CardItem>();
         foreach (var r in selected)
         {
             var qr = $"{school.Name} | {session} | {year.Label} | {r.Matricule} | {Name(r)} | {r.Promotion}";
+            var paid = standing.TryGetValue(r.EnrollmentId, out var account) && account.Account.Overdue <= 0;
             for (var i = 0; i < copies; i++)
-                cards.Add(new CardItem(r.LastName, r.MiddleName, r.FirstName, r.Promotion, StudentCardRules.ColorOf(r.Promotion), qr, r.Matricule));
+                cards.Add(new CardItem(r.LastName, r.MiddleName, r.FirstName, r.Promotion, StudentCardRules.ColorOf(r.Promotion), qr, r.Matricule, paid));
         }
 
         var word = string.Equals(input.Format, "docx", StringComparison.OrdinalIgnoreCase);
