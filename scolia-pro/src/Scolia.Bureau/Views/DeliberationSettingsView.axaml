@@ -26,31 +26,31 @@
           <Grid Classes="prefrow" ColumnDefinitions="*,Auto">
             <StackPanel><TextBlock Text="Encodage du premier semestre (S1)" Classes="rowtitle" />
               <TextBlock Text="Autorise la saisie des cotes du S1 (cours du S1 et cours annuels)." Classes="muted" TextWrapping="Wrap" /></StackPanel>
-            <ToggleSwitch Grid.Column="1" VerticalAlignment="Center" OnContent="Ouvert" OffContent="Fermé" IsChecked="{Binding EncodingS1Open}" />
+            <ToggleSwitch Grid.Column="1" VerticalAlignment="Center" MinWidth="150" OnContent="Ouvert" OffContent="Fermé" IsChecked="{Binding EncodingS1Open}" />
           </Grid>
           <Border Classes="prefsep" />
           <Grid Classes="prefrow" ColumnDefinitions="*,Auto">
             <StackPanel><TextBlock Text="Encodage du second semestre (S2)" Classes="rowtitle" />
               <TextBlock Text="Autorise la saisie des cotes du S2 (cours du S2 et cours annuels)." Classes="muted" TextWrapping="Wrap" /></StackPanel>
-            <ToggleSwitch Grid.Column="1" VerticalAlignment="Center" OnContent="Ouvert" OffContent="Fermé" IsChecked="{Binding EncodingS2Open}" />
+            <ToggleSwitch Grid.Column="1" VerticalAlignment="Center" MinWidth="150" OnContent="Ouvert" OffContent="Fermé" IsChecked="{Binding EncodingS2Open}" />
           </Grid>
           <Border Classes="prefsep" />
           <Grid Classes="prefrow" ColumnDefinitions="*,Auto">
             <StackPanel><TextBlock Text="Moyennes d'appui (secours)" Classes="rowtitle" />
               <TextBlock Text="Saisie de la moyenne sur 10 qui soutient une cote faible, et sa prise en compte dans le calcul." Classes="muted" TextWrapping="Wrap" /></StackPanel>
-            <ToggleSwitch Grid.Column="1" VerticalAlignment="Center" OnContent="Actives" OffContent="Désactivées" IsChecked="{Binding SupportEnabled}" />
+            <ToggleSwitch Grid.Column="1" VerticalAlignment="Center" MinWidth="150" OnContent="Actives" OffContent="Désactivées" IsChecked="{Binding SupportEnabled}" />
           </Grid>
           <Border Classes="prefsep" />
           <Grid Classes="prefrow" ColumnDefinitions="*,Auto">
             <StackPanel><TextBlock Text="Mise à jour des cotes déjà enregistrées" Classes="rowtitle" />
               <TextBlock Text="Fermée : l'enseignant ajoute ses cotes, le secrétariat corrige. Ouverte : il peut remplacer ou effacer une cote tant que sa feuille n'est pas remise." Classes="muted" TextWrapping="Wrap" /></StackPanel>
-            <ToggleSwitch Grid.Column="1" VerticalAlignment="Center" OnContent="Autorisée" OffContent="Fermée" IsChecked="{Binding TeacherUpdates}" />
+            <ToggleSwitch Grid.Column="1" VerticalAlignment="Center" MinWidth="150" OnContent="Autorisée" OffContent="Fermée" IsChecked="{Binding TeacherUpdates}" />
           </Grid>
           <Border Classes="prefsep" />
           <Grid Classes="prefrow" ColumnDefinitions="*,Auto">
             <StackPanel><TextBlock Text="Téléchargements" Classes="rowtitle" />
               <TextBlock Text="Relevé des cotes et liste des échecs de ses cours, en PDF ou Excel (codes anonymes seulement)." Classes="muted" TextWrapping="Wrap" /></StackPanel>
-            <ToggleSwitch Grid.Column="1" VerticalAlignment="Center" OnContent="Autorisés" OffContent="Fermés" IsChecked="{Binding TeacherDownloads}" />
+            <ToggleSwitch Grid.Column="1" VerticalAlignment="Center" MinWidth="150" OnContent="Autorisés" OffContent="Fermés" IsChecked="{Binding TeacherDownloads}" />
           </Grid>
         </StackPanel>
       </Border>

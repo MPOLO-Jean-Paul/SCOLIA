@@ -9,10 +9,14 @@
       <!-- Rappel de sauvegarde : barre d'information de Windows, seulement s'il y a lieu -->
       <Border Background="{DynamicResource OrangeSoftBrush}" BorderBrush="{DynamicResource LineBrush}" BorderThickness="1"
               CornerRadius="{StaticResource RadiusSmall}" Padding="14,8" IsVisible="{Binding HasBackupLine}">
-        <Grid ColumnDefinitions="Auto,*,Auto">
+        <Grid ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto">
           <mi:MaterialIcon Kind="AlertCircleOutline" Width="18" Height="18" Foreground="{DynamicResource ToneOrange}" VerticalAlignment="Center" Margin="0,0,10,0" />
           <TextBlock Grid.Column="1" Text="{Binding BackupLine}" TextWrapping="Wrap" VerticalAlignment="Center" />
-          <Button infra:Icons.Lead="ContentSaveOutline" Grid.Column="2" Content="Sauvegarder maintenant" Command="{Binding BackupNow}" Margin="12,0,0,0" VerticalAlignment="Center" />
+          <Button infra:Icons.Lead="ContentSaveOutline" Grid.Column="2" Content="Sauvegarder maintenant" Command="{Binding BackupNow}" Margin="12,0,0,0" VerticalAlignment="Center"
+                  IsVisible="{Binding NotPhone}" />
+          <!-- Téléphone : le bouton passe sous le message, qui garde toute la largeur. -->
+          <Button infra:Icons.Lead="ContentSaveOutline" Grid.Row="1" Grid.Column="1" Content="Sauvegarder maintenant" Command="{Binding BackupNow}"
+                  HorizontalAlignment="Left" Margin="0,8,0,2" IsVisible="{Binding Phone}" />
         </Grid>
       </Border>
 
@@ -105,7 +109,8 @@
             </Grid>
             <ItemsControl ItemsSource="{Binding Months}" Height="200" IsVisible="{Binding NotPhone}">
               <ItemsControl.ItemsPanel>
-                <ItemsPanelTemplate><UniformGrid Rows="1" infra:Adaptive.MinItemWidth="150" /></ItemsPanelTemplate>
+                <!-- Un graphique reste sur une ligne : les mois se resserrent au lieu de passer à la ligne. -->
+                <ItemsPanelTemplate><UniformGrid Rows="1" /></ItemsPanelTemplate>
               </ItemsControl.ItemsPanel>
               <ItemsControl.ItemTemplate>
                 <DataTemplate>

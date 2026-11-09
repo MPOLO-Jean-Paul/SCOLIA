@@ -532,7 +532,7 @@ aux dossiers en lecture et aux exports ; les modifications sont suspendues sur t
                   <ItemsControl.ItemTemplate>
                     <DataTemplate>
                       <Button Classes="swatch" Command="{Binding Choose}" ToolTip.Tip="{Binding Label}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Padding="0,4">
-                        <StackPanel Spacing="6">
+                        <StackPanel Spacing="6" Margin="6,0">
                           <Panel Width="34" Height="34" HorizontalAlignment="Center">
                             <Ellipse Fill="{Binding Brush}" />
                             <Ellipse Stroke="{DynamicResource TextBrush}" StrokeThickness="2" Margin="-4" IsVisible="{Binding IsSelected}" />
