@@ -130,19 +130,47 @@ jobs:
         run: |
           set -euo pipefail
           printf '%s' "$OWNER_ADMIN_TOKEN" | npx wrangler secret put OWNER_ADMIN_TOKEN --config wrangler.production.json
-      - name: Verifier HTTPS et le refus des visiteurs anonymes
+      - name: Verifier HTTPS sans contourner Cloudflare Access
         shell: bash
         run: |
           set -euo pipefail
           base="https://$CF_OWNER_DOMAIN"
-          curl --fail --silent --show-error --max-time 25 "$base/health" -o /tmp/scolia-owner-health.json
-          node -e 'const fs=require("fs");const h=JSON.parse(fs.readFileSync("/tmp/scolia-owner-health.json"));if(h.service!=="SCOLIA Pro Owner")process.exit(1)'
-          curl --fail --silent --show-error --max-time 25 "$base/api/v1/notice" -o /tmp/scolia-owner-notice.json
-          status="$(curl --silent --show-error --max-time 25 -o /dev/null -w '%{http_code}' "$base/api/v1/owner/summary")"
-          if [[ "$status" == "200" || "$status" == "000" ]]; then
-            echo "::error::Route proprietaire ouverte ou verification impossible."
-            exit 1
-          fi
+          # Cloudflare Access peut bloquer les requetes anonymes AVANT le Worker,
+          # y compris /health lorsque le compte est protege par defaut.
+          for route in /health /api/v1/notice; do
+            status="$(curl --silent --show-error --max-time 25 \
+              -o /tmp/scolia-probe.json -w '%{http_code}' "$base$route")"
+            case "$status" in
+              200)
+                ROUTE="$route" node -e '
+                  const fs=require("node:fs");
+                  const value=JSON.parse(fs.readFileSync("/tmp/scolia-probe.json","utf8"));
+                  if(process.env.ROUTE==="/health" && value.service!=="SCOLIA Pro Owner") process.exit(1);
+                  if(process.env.ROUTE==="/api/v1/notice" && typeof value.purpose!=="string") process.exit(1);
+                '
+                echo "Reponse JSON attendue sur $route."
+                ;;
+              302|401|403)
+                echo "::warning::$route est protege par Cloudflare Access (HTTP $status). Verification anonyme du contenu impossible ; aucune protection desactivee."
+                ;;
+              *)
+                echo "::error::Echec du controle HTTPS $route (HTTP $status)."
+                exit 1
+                ;;
+            esac
+          done
+          owner_status="$(curl --silent --show-error --max-time 25 \
+            -o /dev/null -w '%{http_code}' "$base/api/v1/owner/summary")"
+          case "$owner_status" in
+            301|302|303|307|308|401|403)
+              echo "Acces anonyme a la route proprietaire refuse ou redirige (HTTP $owner_status)."
+              ;;
+            *)
+              echo "::error::Statut inattendu sur la route proprietaire (HTTP $owner_status)."
+              exit 1
+              ;;
+          esac
+          echo "::notice::Ce test ne prouve pas la validite du jeton proprietaire ; celle-ci doit etre verifiee apres connexion Cloudflare Access."
       - name: Resume du succes
         if: success()
         run: |
