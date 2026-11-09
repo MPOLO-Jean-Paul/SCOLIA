@@ -41,7 +41,6 @@ internal static class StudentCardPdf
 
         return Document.Create(doc =>
         {
-            doc.WithMetadata(new DocumentMetadata { Title = "Cartes d'accès · " + d.Session, Creator = "SCOLIA", Producer = "SCOLIA" });
             foreach (var cards in pages)
             {
                 doc.Page(page =>
@@ -165,8 +164,8 @@ internal static class StudentCardPdf
             foreach (var (glyph, angle) in glyphs)
             {
                 if (glyph == " ") continue;
-                layers.Layer().TranslateX(Mm(d / 2f)).TranslateY(Mm(d / 2f)).Rotate(angle)
-                    .TranslateX(-Mm(glyphW / 2f)).TranslateY(-Mm(radius + glyphH / 2f))
+                layers.Layer().OffsetX(Mm(d / 2f)).OffsetY(Mm(d / 2f)).Rotate(angle)
+                    .OffsetX(-Mm(glyphW / 2f)).OffsetY(-Mm(radius + glyphH / 2f))
                     .Unconstrained().Width(Mm(glyphW)).Height(Mm(glyphH)).AlignCenter().AlignMiddle()
                     .Text(glyph).FontFamily(CardDesign.SansFamily).Bold().FontSize(ringPt).FontColor(ink);
             }
