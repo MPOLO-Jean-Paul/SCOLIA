@@ -1,0 +1,10 @@
+# LUMBALA Paul — enseignant (Enseignant · membre du jury) — bureau
+Permissions : cotes.encoder, jury.encoder
+Écran d'ouverture : Mon espace · 4 cours · 7 % encodé
+Menu : (accueil) [Mon espace] | Espace enseignant [Mes cours et cotes] | Réseau et postes [Réseau de l'établissement] | Paramètres [Configuration]
+Ruban : Fichier [] | Accueil [Rechercher, Actualiser, Imprimer, Plein écran] | Mon espace [Mon espace, Mes cours et cotes] | Paramètres [Configuration, Mode sombre, Taille du texte, Densité compacte, Barre d'état, Préférences, Quadrillage, Info-bulles, Animations, Barre latérale, Réduire le ruban, Zoom arrière, Zoom avant, Zoom 100 %] | Aide [Raccourcis clavier, À propos, Info sur l'application]
+01 (accueil) › Mon espace → ouvert : Mon espace · 4 cours · 7 % encodé · actions : Encoder mes cotes, Choisir mon code d'accès, Actualiser
+02 Espace enseignant › Mes cours et cotes → ouvert : Mes cours · 2 cours · ACC1 — Première année · actions : Enregistrer les cotes, Saisie par code anonyme, Remettre les cotes, Reprendre des cotes (fichier), Reprendre des cotes (coller), Relevé du cours (PDF), Relevé du cours (Excel), Liste des échecs (PDF), Mon espace, Actualiser
+03 Réseau et postes › Réseau de l'établissement → ouvert : Réseau et postes · Partage, appareils autorisés et synchronisation · actions : Réseau et activité
+04 Paramètres › Configuration → ouvert : Configuration · Réglages de ce poste · actions : Rétablir les réglages
+Parcours d'encodage : 3 cote(s) tapée(s) · feuille anonyme (codes seulement) · Tapez chaque cote, puis « Enregistrer les cotes ». Une case vidée efface la cote. Une fois complète, « Remettre les cotes ». 2 échec(s), moyenne 13. · NOTIFICATION : 3 cotes enregistrées.
