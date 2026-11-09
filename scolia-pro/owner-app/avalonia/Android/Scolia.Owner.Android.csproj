@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0-android</TargetFramework>
+    <SupportedOSPlatformVersion>26</SupportedOSPlatformVersion>
+    <OutputType>Exe</OutputType>
+    <ApplicationId Condition="'$(Configuration)' != 'Release'">com.jpservices.scolia.owner.preview</ApplicationId>
+    <ApplicationId Condition="'$(Configuration)' == 'Release'">com.jpservices.scolia.owner</ApplicationId>
+    <ApplicationTitle>SCOLIA Admin</ApplicationTitle>
+    <ApplicationVersion>2</ApplicationVersion>
+    <ApplicationDisplayVersion>1.1.0</ApplicationDisplayVersion>
+    <AndroidPackageFormat>apk</AndroidPackageFormat>
+    <RuntimeIdentifiers>android-arm64;android-arm</RuntimeIdentifiers>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AvaloniaUseCompiledBindingsByDefault>false</AvaloniaUseCompiledBindingsByDefault>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <EmbedAssembliesIntoApk>true</EmbedAssembliesIntoApk>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <AndroidKeyStore Condition="'$(OWNER_ADMIN_KEYSTORE_FILE)' != ''">true</AndroidKeyStore>
+    <AndroidSigningKeyStore Condition="'$(OWNER_ADMIN_KEYSTORE_FILE)' != ''">$(OWNER_ADMIN_KEYSTORE_FILE)</AndroidSigningKeyStore>
+    <AndroidSigningStorePass Condition="'$(OWNER_ADMIN_KEYSTORE_FILE)' != ''">env:OWNER_ADMIN_KEYSTORE_PASSWORD</AndroidSigningStorePass>
+    <AndroidSigningKeyAlias Condition="'$(OWNER_ADMIN_KEYSTORE_FILE)' != ''">$(OWNER_ADMIN_KEY_ALIAS)</AndroidSigningKeyAlias>
+    <AndroidSigningKeyPass Condition="'$(OWNER_ADMIN_KEYSTORE_FILE)' != ''">env:OWNER_ADMIN_KEY_PASSWORD</AndroidSigningKeyPass>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Avalonia"/>
+    <PackageReference Include="Avalonia.Android"/>
+    <PackageReference Include="Avalonia.Themes.Fluent"/>
+    <ProjectReference Include="../Core/Scolia.Owner.Core.csproj" />
+  </ItemGroup>
+</Project>

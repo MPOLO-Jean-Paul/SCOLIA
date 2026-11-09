@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>SCOLIA-JPServices-Admin</AssemblyName>
+    <Version>1.1.0</Version>
+    <AvaloniaUseCompiledBindingsByDefault>false</AvaloniaUseCompiledBindingsByDefault>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Avalonia.Desktop"/>
+    <PackageReference Include="Avalonia.Themes.Fluent"/>
+    <ProjectReference Include="../Core/Scolia.Owner.Core.csproj"/>
+  </ItemGroup>
+</Project>
