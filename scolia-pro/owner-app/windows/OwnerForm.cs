@@ -258,12 +258,12 @@ public sealed class OwnerForm : Form
         if (ready) web.CoreWebView2.Navigate(url);
     }
 
-    private async void LockSession()
+    private void LockSession()
     {
         if (!ready) return;
         if (MessageBox.Show("Effacer les cookies Cloudflare de cette application et verrouiller la session ?",
             "Verrouiller la console", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
-        await web.CoreWebView2.CookieManager.DeleteAllCookiesAsync();
+        web.CoreWebView2.CookieManager.DeleteAllCookies();
         Navigate(ConsoleUrl);
     }
 
