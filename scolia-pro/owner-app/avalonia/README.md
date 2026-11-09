@@ -1,4 +1,6 @@
-# SCOLIA Admin — Avalonia 12 (.NET 10)
+# SCOLIA Console — Avalonia 12 (.NET 10)
+
+Nom commercial : **SCOLIA Console** ; éditeur : **JP-Services**.
 
 Version native distincte des applications SCOLIA Client. Une seule base UI `Core/OwnerShell.cs`
 et une seule palette `Core/OwnerPalette.cs` pour Windows et Android.

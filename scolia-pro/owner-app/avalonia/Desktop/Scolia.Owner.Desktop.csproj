@@ -4,8 +4,8 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <AssemblyName>SCOLIA-JPServices-Admin</AssemblyName>
-    <Version>1.1.0</Version>
+    <AssemblyName>SCOLIA-Console</AssemblyName>
+    <Version>1.1.1</Version>
     <AvaloniaUseCompiledBindingsByDefault>false</AvaloniaUseCompiledBindingsByDefault>
   </PropertyGroup>
   <ItemGroup>
@@ -13,4 +13,7 @@
     <PackageReference Include="Avalonia.Themes.Fluent"/>
     <ProjectReference Include="../Core/Scolia.Owner.Core.csproj"/>
   </ItemGroup>
+  <PropertyGroup>
+    <ApplicationIcon>Assets/scolia.ico</ApplicationIcon>
+  </PropertyGroup>
 </Project>

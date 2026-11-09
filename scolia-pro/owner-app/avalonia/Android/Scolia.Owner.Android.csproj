@@ -5,9 +5,9 @@
     <OutputType>Exe</OutputType>
     <ApplicationId Condition="'$(Configuration)' != 'Release'">com.jpservices.scolia.owner.preview</ApplicationId>
     <ApplicationId Condition="'$(Configuration)' == 'Release'">com.jpservices.scolia.owner</ApplicationId>
-    <ApplicationTitle>SCOLIA Admin</ApplicationTitle>
-    <ApplicationVersion>2</ApplicationVersion>
-    <ApplicationDisplayVersion>1.1.0</ApplicationDisplayVersion>
+    <ApplicationTitle>SCOLIA Console</ApplicationTitle>
+    <ApplicationVersion>3</ApplicationVersion>
+    <ApplicationDisplayVersion>1.1.1</ApplicationDisplayVersion>
     <AndroidPackageFormat>apk</AndroidPackageFormat>
     <RuntimeIdentifiers>android-arm64;android-arm</RuntimeIdentifiers>
     <Nullable>enable</Nullable>

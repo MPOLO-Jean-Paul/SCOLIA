@@ -9,4 +9,7 @@
     <PackageReference Include="Avalonia"/>
     <PackageReference Include="Avalonia.Themes.Fluent"/>
   </ItemGroup>
+  <ItemGroup>
+    <AvaloniaResource Include="Assets/scolia.png" />
+  </ItemGroup>
 </Project>

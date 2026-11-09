@@ -1,8 +1,8 @@
-name: SCOLIA Admin natif Avalonia - Android et Windows
+name: SCOLIA Console natif Avalonia - Android et Windows
 
 on:
   push:
-    branches: [feature/jp-services-admin-avalonia-20261109]
+    branches: [feature/jp-services-admin-server-discovery-20261109]
     paths:
       - 'scolia-pro/owner-app/avalonia/**'
       - '.github/workflows/scolia-owner-avalonia.yml'
@@ -16,7 +16,7 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  OWNER_VERSION: '1.1.0'
+  OWNER_VERSION: '1.1.1'
 
 jobs:
   windows:
@@ -36,7 +36,7 @@ jobs:
           $ErrorActionPreference = 'Stop'
           dotnet publish 'scolia-pro/owner-app/avalonia/Desktop/Scolia.Owner.Desktop.csproj' -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=None -o "$env:RUNNER_TEMP/owner-avalonia-publish"
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          if (-not (Test-Path "$env:RUNNER_TEMP/owner-avalonia-publish/SCOLIA-JPServices-Admin.exe")) { throw "Fichier EXE Avalonia absent" }
+          if (-not (Test-Path "$env:RUNNER_TEMP/owner-avalonia-publish/SCOLIA-Console.exe")) { throw "Fichier EXE Avalonia absent" }
       - name: Installer Inno Setup si necessaire
         shell: pwsh
         run: |
@@ -105,8 +105,8 @@ jobs:
             echo '::error::Aucun APK Avalonia genere'
             exit 1
           fi
-          cp "${apks[0]}" "$RUNNER_TEMP/scolia-avalonia-apk/SCOLIA_Admin_Avalonia_1.1.0_Android_PREVIEW.apk"
-          test -s "$RUNNER_TEMP/scolia-avalonia-apk/SCOLIA_Admin_Avalonia_1.1.0_Android_PREVIEW.apk"
+          cp "${apks[0]}" "$RUNNER_TEMP/scolia-avalonia-apk/SCOLIA_Console_Avalonia_1.1.1_Android_PREVIEW.apk"
+          test -s "$RUNNER_TEMP/scolia-avalonia-apk/SCOLIA_Admin_Avalonia_1.1.1_Android_PREVIEW.apk"
       - uses: actions/upload-artifact@v4
         with:
           name: SCOLIA-Admin-Avalonia-Android-PREVIEW
@@ -144,13 +144,13 @@ jobs:
           fi
           test -s "${installers[0]}"
           test -s "${apks[0]}"
-          tag="scolia-owner-avalonia-preview-v1.1.0-${GITHUB_SHA:0:8}"
+          tag="scolia-console-avalonia-preview-v1.1.1-${GITHUB_SHA:0:8}"
           if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             echo 'Cette preversion est deja publiee.'
             exit 0
           fi
           gh release create "$tag" "${installers[0]}" "${apks[0]}" \
             --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
-            --title 'SCOLIA Admin 1.1.0 - Avalonia natif Android et Windows (PREVIEW)' \
+            --title 'SCOLIA Console 1.1.1 - Avalonia natif Android et Windows (PREVIEW)' \
             --prerelease \
             --notes "Pilote natif Avalonia 12 partage entre Android et Windows, sans WebView. Les fonctions sensibles ouvrent pour l'instant la console Cloudflare Access dans le navigateur systeme afin de respecter la MFA. APK signe par certificat de test : il ne remplace pas une version de production. L'EXE Windows n'est pas signe Authenticode. Canal JP-Services independant des clients."

@@ -3,6 +3,8 @@ using System.Text.Json;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
+using Avalonia.Media.Imaging;
+using Avalonia.Platform;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Threading;
@@ -20,7 +22,7 @@ public sealed class OwnerShell : UserControl
     private const string ReleasesApi =
         "https://api.github.com/repos/MPOLO-Jean-Paul/SCOLIA/releases?per_page=50";
     private const string Channel = "scolia-owner-v";
-    private const string Version = "1.1.0";
+    private const string Version = "1.1.1";
     private static readonly HttpClient Client = NewClient();
 
     private enum Page { Home, Schools, Licenses, Servers, Activity, Backups, Account }
@@ -115,7 +117,7 @@ public sealed class OwnerShell : UserControl
     private static HttpClient NewClient()
     {
         var client = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
-        client.DefaultRequestHeaders.UserAgent.ParseAdd("SCOLIA-Admin-Avalonia/1.1");
+        client.DefaultRequestHeaders.UserAgent.ParseAdd("SCOLIA-Console/1.1");
         client.DefaultRequestHeaders.Accept.ParseAdd("application/vnd.github+json");
         return client;
     }
@@ -163,6 +165,26 @@ public sealed class OwnerShell : UserControl
         return button;
     }
 
+    private static Control BrandMark()
+    {
+        try
+        {
+            using var stream = AssetLoader.Open(
+                new Uri("avares://Scolia.Owner.Core/Assets/scolia.png"));
+            return new Image
+            {
+                Source = new Bitmap(stream),
+                Stretch = Stretch.Uniform,
+                Width = 42,
+                Height = 42
+            };
+        }
+        catch (Exception)
+        {
+            return Text("S", 26, true, OwnerPalette.Paper);
+        }
+    }
+
     private Control BuildSidebar()
     {
         var stack = new StackPanel
@@ -176,11 +198,11 @@ public sealed class OwnerShell : UserControl
             CornerRadius = new CornerRadius(13),
             Width = 46,
             Height = 46,
-            Child = Text("S", 26, true, OwnerPalette.Paper)
+            Child = BrandMark()
         };
         var brand = new StackPanel { Spacing = 4 };
-        brand.Children.Add(Text("JP-SERVICES", 16, true, OwnerPalette.Paper));
-        brand.Children.Add(Text("SCOLIA · ADMINISTRATION", 10, false, OwnerPalette.BlueWash));
+        brand.Children.Add(Text("SCOLIA CONSOLE", 16, true, OwnerPalette.Paper));
+        brand.Children.Add(Text("JP-SERVICES · ADMINISTRATION", 10, false, OwnerPalette.BlueWash));
 
         var heading = new StackPanel
         {
@@ -225,7 +247,7 @@ public sealed class OwnerShell : UserControl
             VerticalAlignment = VerticalAlignment.Center,
             Margin = new Thickness(19, 7)
         };
-        left.Children.Add(Text("SCOLIA PRO • JP-SERVICES", 10, true, OwnerPalette.Blue));
+        left.Children.Add(Text("SCOLIA CONSOLE • JP-SERVICES", 10, true, OwnerPalette.Blue));
         left.Children.Add(_heading);
         row.Children.Add(left);
 

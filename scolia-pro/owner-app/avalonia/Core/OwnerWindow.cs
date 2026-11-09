@@ -7,7 +7,7 @@ public sealed class OwnerWindow : Window
 {
     public OwnerWindow()
     {
-        Title = "SCOLIA Pro — Administration JP-Services";
+        Title = "SCOLIA Console";
         Background = OwnerPalette.Background;
         Width = 1220;
         Height = 800;
