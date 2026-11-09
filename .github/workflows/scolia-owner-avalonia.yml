@@ -174,7 +174,7 @@ jobs:
       - name: Démarrer réellement l'application Android
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 35
+          api-level: 33
           target: google_apis
           arch: x86_64
           profile: pixel_3a
@@ -183,8 +183,9 @@ jobs:
             set -euo pipefail
             adb install -r "$RUNNER_TEMP/smoke/SCOLIA-Console-android-x64.apk"
             adb logcat -c
-            adb shell monkey -p com.jpservices.scolia.owner.preview \
-              -c android.intent.category.LAUNCHER 1
+            # Exécuter la commande de lancement EN UNE SEULE LIGNE :
+            # la version précédente échouait sur « Count not specified ».
+            adb shell monkey -p com.jpservices.scolia.owner.preview -c android.intent.category.LAUNCHER 1
             sleep 12
             pid="$(adb shell pidof com.jpservices.scolia.owner.preview | tr -d '\r')"
             if [[ -z "$pid" ]]; then
