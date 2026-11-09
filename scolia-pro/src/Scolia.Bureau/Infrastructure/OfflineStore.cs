@@ -295,6 +295,23 @@ public sealed class OfflineStore
     public IReadOnlyList<OutboxItem> Outbox() => Load(OutboxFile).Where(i => i.User == User).ToList();
     public IReadOnlyList<OutboxItem> OutboxFor(string user) => Load(OutboxFile).Where(i => i.User == user).ToList();
 
+    /// <summary>
+    /// Comptes possédant des opérations non déposées ET un accès de dépôt
+    /// déjà remis par le serveur. Une seule lecture du journal partagé évite
+    /// de manquer les opérations d'un collègue lorsque l'écran est fermé.
+    /// Ce résultat n'accorde aucun droit supplémentaire : le dépôt valide
+    /// encore la délégation existante et le serveur revalide les permissions.
+    /// </summary>
+    public IReadOnlyList<string> AccountsAwaitingCloudDeposit()
+    {
+        return Load(OutboxFile)
+            .Where(item => !item.Deposited && !string.IsNullOrWhiteSpace(item.User))
+            .Select(item => item.User)
+            .Distinct(StringComparer.Ordinal)
+            .Where(account => !string.IsNullOrWhiteSpace(ReadCloudAccessFor(account)))
+            .ToArray();
+    }
+
     /// <summary>L'opération est en sécurité en ligne : elle reste dans la file jusqu'à son issue.</summary>
     public void MarkDepositedFor(string user, string id) => Change((pending, _) =>
     {

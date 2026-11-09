@@ -23,6 +23,23 @@ public sealed partial class ScoliaClient
 
     private readonly SemaphoreSlim depositGate = new(1, 1);
 
+    // La sonde d'un poste Windows peut rester active alors que son ordinateur
+    // principal est éteint. Retenter le dépôt cloud sans monopoliser le réseau,
+    // ni déclencher un dépôt à chaque battement de l'interface.
+    private long lastCloudProbeDepositTicks;
+
+    private void RetryCloudDepositWhileHostUnavailable()
+    {
+        if (Offline is not { User.Length: > 0 } store) return;
+        var now = DateTime.UtcNow.Ticks;
+        var previous = Interlocked.Read(ref lastCloudProbeDepositTicks);
+        if (now - previous < TimeSpan.FromMinutes(2).Ticks ||
+            Interlocked.CompareExchange(ref lastCloudProbeDepositTicks, now, previous) != previous)
+            return;
+        if (store.Outbox().Any(item => !item.Deposited))
+            DepositSoon();
+    }
+
     /// <summary>Dépôt en arrière-plan juste après la mise en file : la saisie n'attend jamais Internet.</summary>
     private void DepositSoon() => _ = Task.Run(async () =>
     {
