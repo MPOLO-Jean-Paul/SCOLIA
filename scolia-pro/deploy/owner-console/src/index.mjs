@@ -6,6 +6,7 @@ import { ownerRelayRequest, schoolRelayRequest } from "./relays.mjs";
 import { evaluateLicense, validateLicensePatch, MAX_GRACE_DAYS, DAY_MS } from "./licenses.mjs";
 import { serverCloudRequest, deviceCloudRequest, ownerCloudOverview, cloudMaintenance } from "./cloud.mjs";
 import { ownerStorageRequest } from "./storage.mjs";
+import { ownerThemeCss } from "./owner-theme.mjs";
 
 // Stockage prêt : liaison R2 du déploiement, ou identifiants saisis dans la console.
 async function storageConfigured(env) {
@@ -354,7 +355,7 @@ button.secondary{background:#eaf1fb;color:#204a80}input{width:100%;max-width:320
 table{width:100%;border-collapse:collapse}th,td{border-bottom:1px solid #edf1f6;text-align:left;padding:14px 8px}th{font-size:12px;color:#637792}
 .info{font-size:13px;color:#688099}.error{color:#ac2844;font-size:13px}#details{white-space:pre-wrap;font-size:13px;overflow:auto}
 @media(max-width:640px){.wrap{margin:15px auto}table{display:block;overflow-x:auto}h1{font-size:21px}}
-</style></head><body><header><small>JP-SERVICES · ADMINISTRATION COMMERCIALE</small>
+</style><style>${ownerThemeCss}</style></head><body><header><div class="owner-brandline"><span class="owner-mark" aria-hidden="true">S</span><small>JP-SERVICES · ADMINISTRATION COMMERCIALE</small><small class="owner-tag">● Espace sécurisé</small></div>
 <h1>SCOLIA Pro — Console propriétaire</h1>
 <small>Établissements serveurs, licences et activité. Aucun dossier d'apprenant n'est accessible.</small></header>
 <main class="wrap"><section class="panel" id="auth">
@@ -362,12 +363,12 @@ table{width:100%;border-collapse:collapse}th,td{border-bottom:1px solid #edf1f6;
 Il n'est ni stocké dans le navigateur ni transmis à une autre origine.</p>
 <div class="toolbar"><input id="token" type="password" placeholder="Jeton propriétaire" autocomplete="off">
 <button id="connect">Ouvrir la console</button></div><p class="error" id="error"></p></section>
-<section id="workspace" hidden>
-<div class="cards"><article class="card"><small>Établissements</small><div class="metric" id="schools">—</div></article>
+<section id="workspace" hidden><nav class="owner-navigation" aria-label="Navigation de la console"><a href="#metrics">Vue d’ensemble</a><a href="#schoolsPanel">Établissements</a><a href="#storagePanel">Sauvegardes</a><a href="#relaysPanel">Relais Internet</a><a href="#auditPanel">Historique</a></nav>
+<div class="cards" id="metrics"><article class="card"><small>Établissements</small><div class="metric" id="schools">—</div></article>
 <article class="card"><small>Serveurs enregistrés</small><div class="metric" id="devices">—</div></article>
 <article class="card"><small>Écoles actives (30 j)</small><div class="metric" id="active">—</div></article>
 <article class="card"><small>Licences suspendues</small><div class="metric" id="suspended">—</div></article>
-<article class="card"><small>Sauvegarde en ligne active</small><div class="metric" id="cloudOn">—</div><small id="cloudLate"></small></article>
+<article class="card"><small>Sauvegarde en ligne active</small><div class="metric" id="cloudOnCount">—</div><small id="cloudLate"></small></article>
 <article class="card"><small>Copies chiffrées stockées</small><div class="metric" id="cloudBytes">—</div><small id="cloudPending"></small></article></div>
 <section class="panel" id="storagePanel"><h2>Sauvegarde en ligne des écoles — stockage Cloudflare R2</h2>
 <p class="info" id="storageStatus">État du stockage…</p>
@@ -385,13 +386,13 @@ La console écrit, relit et supprime un fichier témoin avant d'enregistrer ; la
 <button id="r2Remove" class="secondary">Supprimer les identifiants</button>
 <button id="cloudAll" class="secondary">Activer la sauvegarde en ligne pour toutes les écoles</button></div>
 <p class="info" id="storageNotice"></p></section>
-<section class="panel"><h2>Établissements</h2>
+<section class="panel" id="schoolsPanel"><h2>Établissements</h2>
 <div class="toolbar"><button id="refresh">Actualiser</button><button id="logout" class="secondary">Verrouiller la console</button><input id="newschool" placeholder="Nom d'un nouvel établissement">
 <button id="invite" class="secondary">Créer une invitation</button></div>
 <p class="info" id="inviteResult"></p><div style="overflow-x:auto"><table><thead><tr>
 <th>Établissement</th><th>Licence</th><th>Serveurs</th><th>Dernière activité</th><th>Sauvegarde en ligne</th><th>Gestion</th></tr></thead>
 <tbody id="rows"></tbody></table></div></section>
-<section class="panel"><h2>Fournisseurs de relais Internet</h2>
+<section class="panel" id="relaysPanel"><h2>Fournisseurs de relais Internet</h2>
 <p class="info">Configurer des adresses WSS publiques sans publier de clés sur GitHub.
 Un nouveau relais reste désactivé ; chaque école doit approuver le changement.
 Le suivi des licences utilise HTTPS directement, même depuis un Wi-Fi disposant d'Internet.</p>
@@ -405,7 +406,7 @@ Le suivi des licences utilise HTTPS directement, même depuis un Wi-Fi disposant
 <th>Fournisseur</th><th>URL WSS</th><th>État</th><th>Révision</th><th>Action</th>
 </tr></thead><tbody id="relayRows"></tbody></table></div>
 </section>
-<section class="panel"><h2>Journal des interventions</h2>
+<section class="panel" id="auditPanel"><h2>Journal des interventions</h2>
 <p class="info">100 dernières opérations commerciales, sans données scolaires.</p>
 <div style="overflow-x:auto"><table><thead><tr>
 <th>Date</th><th>Établissement</th><th>Action</th>
@@ -460,7 +461,7 @@ async function reload(){
  ]);
  $("schools").textContent=stats.schools;$("devices").textContent=stats.server_devices;
  $("active").textContent=stats.active_schools_30d;$("suspended").textContent=stats.suspended;
- $("cloudOn").textContent=stats.cloud_enabled;
+ $("cloudOnCount").textContent=stats.cloud_enabled;
  $("cloudLate").textContent=stats.cloud_backup_late?stats.cloud_backup_late+" en retard (> 26 h)":"aucune en retard";
  $("cloudBytes").textContent=size(stats.cloud_backup_bytes);
  $("cloudPending").textContent=stats.cloud_pending_operations+" opération(s) en attente de serveur";
