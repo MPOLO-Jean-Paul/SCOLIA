@@ -94,22 +94,31 @@ jobs:
         run: |
           npm install --no-audit --no-fund
           npm test
-      - name: Verifier les droits R2 avant toute creation Cloudflare
+      - name: Diagnostiquer R2 sans exposer le jeton
         shell: bash
         run: |
           set -euo pipefail
-          response="$(curl --silent --show-error --max-time 30 \
+          status="$(curl --silent --show-error --max-time 30 \
             -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
-            --output /dev/null --write-out '%{http_code}' \
+            -o /tmp/scolia-r2-check.json -w '%{http_code}' \
             "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/r2/buckets?name_contains=scolia-pro-backups")"
-          if [[ "$response" == "403" ]]; then
-            echo "::error::Cloudflare R2 refuse le jeton (403). Verifier Account > Workers R2 Storage > Edit sur le bon compte, et activer R2 si necessaire. Mettre a jour le secret CLOUDFLARE_API_TOKEN sans le communiquer."
+          if [[ "$status" != "200" ]]; then
+            echo "::error::Le controle Cloudflare R2 a echoue (HTTP $status)."
+            node -e '
+              const fs=require("node:fs");
+              try {
+                const data=JSON.parse(fs.readFileSync("/tmp/scolia-r2-check.json","utf8"));
+                for(const entry of (Array.isArray(data.errors)?data.errors:[])){
+                  if(Number.isInteger(entry.code)) console.log("Cloudflare error code:",entry.code);
+                }
+              } catch {}
+            '
+            if [[ "$status" == "403" ]]; then
+              echo "::error::Verifier la portee Account Resources du jeton, le compte CLOUDFLARE_ACCOUNT_ID et activation R2. Ne jamais publier le jeton."
+            fi
             exit 1
           fi
-          if [[ "$response" != "200" ]]; then
-            echo "::error::Controle Cloudflare R2 impossible (HTTP $response). Verifier le compte, son stockage R2 et son jeton API."
-            exit 1
-          fi
+          echo "Acces au stockage R2 autorise par Cloudflare."
       - name: Preparer la base D1 et les sauvegardes R2
         run: node scripts/prepare-production.mjs
       - name: Appliquer les migrations D1 non appliquees
