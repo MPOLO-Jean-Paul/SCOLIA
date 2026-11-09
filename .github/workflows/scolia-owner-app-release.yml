@@ -1,0 +1,24 @@
+# Canal de distribution strictement reserve aux administrateurs JP-Services.
+# Les sources et le workflow reutilisable sont epingles a une revision testee.
+name: JP-Services Admin - publication Android et Windows
+
+on:
+  workflow_dispatch:
+    inputs:
+      publish_release:
+        description: "Publier les APK et EXE de la console proprietaire (signature Admin requise)"
+        type: boolean
+        required: true
+        default: false
+
+permissions:
+  contents: write
+
+jobs:
+  publication:
+    if: github.ref == 'refs/heads/main' && github.actor == 'MPOLO-Jean-Paul' && inputs.publish_release == true
+    uses: MPOLO-Jean-Paul/SCOLIA/.github/workflows/scolia-owner-native.yml@c742af09aadd24766aa34d0bbff321c542df09d0
+    with:
+      publish_release: true
+      source_sha: c742af09aadd24766aa34d0bbff321c542df09d0
+    secrets: inherit
