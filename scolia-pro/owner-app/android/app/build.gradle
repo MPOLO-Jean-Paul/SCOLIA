@@ -53,4 +53,6 @@ tasks.register('verifyOwnerSigning') {
         if (!signedRelease) throw new GradleException('Signature Admin permanente absente : publication officielle refusee.')
     }
 }
-tasks.named('assembleRelease') { dependsOn tasks.named('verifyOwnerSigning') }
+tasks.matching { it.name == 'assembleRelease' }.configureEach {
+    dependsOn(tasks.named('verifyOwnerSigning'))
+}
