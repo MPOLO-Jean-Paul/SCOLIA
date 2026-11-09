@@ -24,7 +24,7 @@
         </StackPanel>
         <StackPanel Classes="field">
           <TextBlock Text="Statut" Classes="fieldlabel" />
-          <ComboBox Width="150" ItemsSource="{Binding Statuses}" SelectedItem="{Binding Status}" />
+          <ComboBox Width="180" ItemsSource="{Binding Statuses}" SelectedItem="{Binding Status}" />
         </StackPanel>
         <StackPanel Classes="field">
           <TextBlock Text="Promotion" Classes="fieldlabel" />

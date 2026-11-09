@@ -103,9 +103,9 @@
     <DataGrid Grid.Row="1" x:Name="StudentGrid" ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}"
               AutoGenerateColumns="False" IsReadOnly="True" infra:GridPriority.Adaptive="True" IsVisible="{Binding NotPhone}">
       <DataGrid.Columns>
-        <DataGridTextColumn infra:GridPriority.Level="2" Header="Matricule" Binding="{Binding Matricule}" Width="Auto" MinWidth="130" />
-        <DataGridTextColumn Header="Nom complet" Binding="{Binding Name}" Width="*" MinWidth="140" />
-        <DataGridTextColumn infra:GridPriority.Level="3" Header="Sexe" Binding="{Binding Gender}" Width="Auto" MinWidth="110" />
+        <DataGridTextColumn infra:GridPriority.Level="2" Header="Matricule" Binding="{Binding Matricule}" Width="Auto" MinWidth="120" />
+        <DataGridTextColumn Header="Nom complet" Binding="{Binding Name}" Width="*" MinWidth="210" />
+        <DataGridTextColumn infra:GridPriority.Level="3" Header="Sexe" Binding="{Binding Gender}" Width="Auto" MinWidth="100" />
         <DataGridTextColumn infra:GridPriority.Level="2" Header="Promotion" Binding="{Binding Promotion}" Width="Auto" MinWidth="130" />
         <DataGridTemplateColumn infra:GridPriority.Level="1" Header="Statut" Width="Auto" MinWidth="120">
           <DataGridTemplateColumn.CellTemplate>
@@ -119,7 +119,7 @@
         </DataGridTemplateColumn>
         <DataGridTextColumn infra:GridPriority.Level="3" Header="Téléphone" Binding="{Binding Phone}" Width="Auto" MinWidth="160" />
         <DataGridTextColumn infra:GridPriority.Level="2" Header="Solde" Binding="{Binding Balance}" Width="Auto" MinWidth="150" />
-        <DataGridTemplateColumn infra:GridPriority.Level="2" Header="Retard" Width="Auto" MinWidth="130">
+        <DataGridTemplateColumn infra:GridPriority.Level="2" Header="Retard" Width="Auto" MinWidth="190">
           <DataGridTemplateColumn.CellTemplate>
             <DataTemplate>
               <TextBlock Text="{Binding Overdue}" Foreground="{Binding OverdueBrush}" VerticalAlignment="Center" />

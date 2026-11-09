@@ -29,7 +29,7 @@
         <DataGridTextColumn Header="Date (locale)" Binding="{Binding At}" Width="Auto" MinWidth="165" />
         <DataGridTextColumn Header="Utilisateur" Binding="{Binding User}" Width="Auto" MinWidth="137" />
         <DataGridTextColumn Header="Action" Binding="{Binding Action}" Width="Auto" MinWidth="160" />
-        <DataGridTextColumn Header="Objet" Binding="{Binding Entity}" Width="Auto" MinWidth="130" />
+        <DataGridTextColumn Header="Objet" Binding="{Binding Entity}" Width="Auto" MinWidth="150" />
         <DataGridTextColumn Header="Résumé" Binding="{Binding Summary}" Width="*" MinWidth="140" />
         <DataGridTextColumn infra:GridPriority.Level="2" Header="Adresse" Binding="{Binding Ip}" Width="Auto" MinWidth="130" />
       </DataGrid.Columns>

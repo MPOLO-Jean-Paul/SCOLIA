@@ -262,7 +262,7 @@ public sealed class AuditPage : PageViewModel
         var page = await Shell.Api.GetAsync<PagedResult<AuditDto>>("api/audit" + Filters(1, 100));
         Items.Clear();
         foreach (var a in page.Items)
-            Items.Add(new AuditRowVm(Format.DateTime(a.AtUtc), a.UserName, Labels.AuditAction(a.Action), a.EntityType, a.Summary, a.IpAddress ?? "—"));
+            Items.Add(new AuditRowVm(Format.DateTime(a.AtUtc), a.UserName, Labels.AuditAction(a.Action), Labels.AuditEntity(a.EntityType), a.Summary, a.IpAddress ?? "—"));
         subtitle = $"{Format.Count(page.Total, "événement", "événements")}" + (page.Total > 100 ? " · 100 affichés" : string.Empty);
         Raise(nameof(Subtitle));
     }
