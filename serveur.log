@@ -1,0 +1,18 @@
+Using launch settings from src/Scolia.Api/Properties/launchSettings.json...
+[15:55:28 WRN] The migration operation 'PRAGMA foreign_keys = 0;
+' from migration 'TeachingRegistry' cannot be executed in a transaction. If the app is terminated or an unrecoverable error occurs while this operation is being executed then the migration will be left in a partially applied state and would need to be reverted manually before it can be applied again. Create a separate migration that contains just this operation.
+[15:55:29 WRN] The migration operation 'PRAGMA foreign_keys = 0;
+' from migration 'FeeCategories' cannot be executed in a transaction. If the app is terminated or an unrecoverable error occurs while this operation is being executed then the migration will be left in a partially applied state and would need to be reverted manually before it can be applied again. Create a separate migration that contains just this operation.
+[15:55:29 WRN] The migration operation 'PRAGMA foreign_keys = 0;
+' from migration 'ComptesEnseignants' cannot be executed in a transaction. If the app is terminated or an unrecoverable error occurs while this operation is being executed then the migration will be left in a partially applied state and would need to be reverted manually before it can be applied again. Create a separate migration that contains just this operation.
+[15:55:29 WRN] The WebRootPath was not found: /home/runner/work/SCOLIA/SCOLIA/scolia-pro/src/Scolia.Api/bin/Release/net10.0/wwwroot. Static files may be unavailable.
+[15:55:29 WRN] No XML encryptor configured. Key {70773c8f-eb99-4971-8c21-baf353594558} may be persisted to storage in unencrypted form.
+[15:55:30 WRN] The WebRootPath was not found: /home/runner/work/SCOLIA/SCOLIA/scolia-pro/src/Scolia.Api/bin/Release/net10.0/wwwroot. Static files may be unavailable.
+[15:55:30 INF] Now listening on: http://127.0.0.1:5293
+[15:55:30 INF] Application started. Press Ctrl+C to shut down.
+[15:55:30 INF] Hosting environment: Development
+[15:55:30 INF] Content root path: /home/runner/work/SCOLIA/SCOLIA/scolia-pro/src/Scolia.Api/bin/Release/net10.0/
+[15:55:30 INF] SCOLIA est prêt : http://127.0.0.1:5293 · données : /tmp/scolia-audit · accès réseau local : False
+[15:57:29 INF] Sauvegarde créée : scolia-20261109-155729-automatique.db (1536000 octets)
+[16:02:18 INF] Sauvegarde créée : scolia-20261109-160218-manuelle.db (1540096 octets)
+[16:02:22 INF] Sauvegarde créée : scolia-20261109-160222-manuelle.db (1560576 octets)
