@@ -518,7 +518,7 @@ public sealed class OwnerShell : UserControl
             response.EnsureSuccessStatusCode();
             using var document = JsonDocument.Parse(
                 await response.Content.ReadAsStringAsync());
-            Version? best = null;
+            System.Version? best = null;
             string? link = null;
             foreach (var entry in document.RootElement.EnumerateArray())
             {
