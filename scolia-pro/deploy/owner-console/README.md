@@ -146,3 +146,24 @@ Après configuration, lancer manuellement le workflow et cocher `confirm_product
 
 ## Restrictions
 Aucune surveillance cachée des appareils ni récupération de leurs fichiers. Les mises à jour GitHub Actions vérifient les sources, mais **ne contiennent pas de secrets de licence ou de relais**. Les changements de fournisseur peuvent être publiés dans la console sans reconstruire l'APK, sous réserve d'acceptation de l'établissement.
+
+
+## Découverte automatique des relais Cloudflare Realtime TURN
+
+La console utilise **deux catalogues distincts**.
+
+- **WSS / signalisation :** les relais déjà configurés dans Cloudflare D1 apparaissent automatiquement dans l'interface. L'administrateur peut ajouter un secours manuel `wss://`. Toute activation nouvelle demande l'approbation de l'établissement.
+- **TURN / STUN WebRTC :** la page `Relais Internet` peut interroger en lecture seule l'API officielle Cloudflare Realtime TURN (`GET /accounts/{account_id}/calls/turn_keys`) et récupérer automatiquement **les noms** des relais TURN du compte. Les noms sont disponibles depuis `GET /api/v1/owner/relays/cloudflare` uniquement après Cloudflare Access + jeton propriétaire. Le moteur de l'école ne reçoit aucune nouvelle configuration sans approbation.
+
+### Configuration unique, sans afficher de secrets
+
+1. Dans Cloudflare, créer un jeton API dédié à **Calls Read** limité au compte JP-Services (pas de droits Write nécessaires).
+2. Ajouter sa valeur comme secret d'environnement GitHub `SCOLIA_TURN_DISCOVERY_TOKEN` dans `scolia-owner-production` ; ne jamais la mettre en clair dans les fichiers ou la conversation.
+3. Le workflow protégé de publication utilise le secret facultatif pour installer `CLOUDFLARE_TURN_DISCOVERY_TOKEN` dans le Worker. L'Account ID GitHub existant est utilisé pour la variable Worker `CLOUDFLARE_TURN_ACCOUNT_ID`.
+4. Si le jeton est absent ou l'API indisponible, la console affiche « configuration requise » ou « service indisponible », **sans casser le catalogue WSS manuel**.
+
+Important : récupérer une clé TURN (nom et UID) ne fournit **pas** les identifiants temporaires de connexion. Cloudflare exige un appel serveur séparé pour les générer à durée limitée. TURN/TURNS (`turns:turn.cloudflare.com:5349`) et relais de signalisation WSS (`wss://...`) ne sont pas interchangeables. La découverte de noms **n'active ni ne facture aucun nouveau relais**. Voir la documentation officielle Cloudflare Realtime TURN pour les conditions de service et de facturation.
+
+### Vérifications
+
+`npm test` vérifie le catalogue, les données non exposées, la protection propriétaire, la confidentialité des tokens, les erreurs de permission et l'indépendance du secours WSS.
