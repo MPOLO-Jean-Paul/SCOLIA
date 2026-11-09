@@ -47,10 +47,13 @@ jobs:
 
       - name: Serveur de demonstration et comptes par role
         run: |
+          set -o pipefail
           mkdir -p /tmp/scolia-audit artifacts/roles
           Scolia__Stockage__DataDirectory=/tmp/scolia-audit Scolia__OuvrirNavigateur=false Scolia__Icone=false \
-            nohup dotnet run --no-build --project src/Scolia.Api -c Release -- --urls http://127.0.0.1:5293 > /tmp/serveur.log 2>&1 &
-          node scripts/audit/preparer-roles.mjs http://127.0.0.1:5293/ | tee artifacts/roles/preparation.json
+            nohup dotnet run --no-build --project src/Scolia.Api -c Release --framework net10.0 -- --urls http://127.0.0.1:5293 > /tmp/serveur.log 2>&1 &
+          if ! node scripts/audit/preparer-roles.mjs http://127.0.0.1:5293/ | tee artifacts/roles/preparation.json; then
+            echo "::error::Préparation impossible, journal du serveur :"; tail -80 /tmp/serveur.log; exit 1
+          fi
 
       - name: Parcours de chaque ecran, par role, ordinateur et telephone
         env:
@@ -66,6 +69,7 @@ jobs:
               sleep 7
             done
           done
+          cp /tmp/serveur.log artifacts/roles/serveur.log || true
           grep -iE "error|exception" /tmp/serveur.log | grep -v "Microsoft.AspNetCore.Diagnostics" > artifacts/roles/serveur-erreurs.txt || true
 
       - name: Publier les captures sur une branche d'audit
