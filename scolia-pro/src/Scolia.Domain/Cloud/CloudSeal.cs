@@ -15,6 +15,7 @@ public static class CloudSeal
 {
     public const string BackupContext = "sauvegarde";
     public const string OperationContext = "operation";
+    public const string MirrorContext = "replica-manifest";
     public const int KeySize = 32;
     private static readonly byte[] Magic = Encoding.ASCII.GetBytes("SCOLIA-NUAGE-1");
     private const int NonceSize = 12;
