@@ -40,13 +40,18 @@ export async function discoverCloudflareTurn(env, fetcher = fetch) {
         method: "GET",
         headers: { "Authorization": `Bearer ${token}`, "Accept": "application/json" },
         signal: AbortSignal.timeout(8000),
-        redirect: "error"
+        redirect: "manual"
       }
     );
   } catch {
     return { ...base, configured: true, status: "network_unavailable",
       explanation: "Impossible de consulter Cloudflare pour le moment. Les relais manuels restent disponibles." };
   }
+  // Cloudflare Workers ne prend pas en charge redirect: "error".
+  // redirect: "manual" interdit de suivre un 3xx avec le Bearer token.
+  if (response.status >= 300 && response.status < 400)
+    return { ...base, configured: true, status: "unexpected_redirect",
+      explanation: "L'API Cloudflare a redirigé la requête. Aucun jeton n'a été transmis à cette destination." };
   if (!response.ok)
     return { ...base, configured: true, status: response.status === 403 || response.status === 401
       ? "read_permission_required" : "cloudflare_unavailable",
