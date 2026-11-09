@@ -242,7 +242,7 @@ public static class CardWordWriter
         bytes.Length > 8 && ((bytes[0] == 0x89 && bytes[1] == 'P' && bytes[2] == 'N' && bytes[3] == 'G') || (bytes[0] == 0xFF && bytes[1] == 0xD8));
 
     /// <summary>Image PNG d'un pixel de la couleur donnée (RRGGBB), étirée pour dessiner la bande de filière.</summary>
-    internal static byte[] SolidPng(string rrggbb)
+    public static byte[] SolidPng(string rrggbb)
     {
         var rgb = Convert.FromHexString(rrggbb.Length == 6 ? rrggbb : "1D4ED8");
         using var png = new MemoryStream();
