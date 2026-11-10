@@ -32,8 +32,8 @@ jobs:
           sudo apt-get install -y -qq ffmpeg > /dev/null
           pip install --quiet torch --index-url https://download.pytorch.org/whl/cpu
           pip install --quiet "moshi==0.2.11" sphn huggingface_hub openai-whisper
-          git fetch -q origin video/voix-42767301756 && mkdir -p sortie && git --work-tree=sortie checkout FETCH_HEAD -- .
-          python -u scolia-pro/scripts/video/voix_unique.py sortie
+          git fetch -q origin video/voix-42782015252 && mkdir -p sortie && git --work-tree=sortie checkout FETCH_HEAD -- .
+          python -u scolia-pro/scripts/video/voix_unique.py sortie 02,10
       - name: Publier les voix
         run: |
           cd sortie

@@ -29,13 +29,37 @@ def speak(text):
     return pcm if len(loud) == 0 else pcm[max(0, loud[0] - int(0.05 * sr)):loud[-1] + int(0.12 * sr)]
 
 
+def words(t):
+    return set(re.sub(r"[^a-zàâçéèêëîïôûùüÿœ ]", " ", t.lower().replace("-", " ").replace("'", " ")).split())
+
+
+def checked(phrase):
+    """Une phrase, refaite jusqu'à quatre fois tant que la transcription n'en retrouve pas presque tous les mots."""
+    best, best_score = None, -1.0
+    for attempt in range(4):
+        pcm = speak(phrase)
+        sphn.write_wav("/tmp/essai.wav", pcm, sr)
+        heard = words(asr.transcribe("/tmp/essai.wav", language="fr", fp16=False)["text"])
+        expected = words(phrase.replace("SCOLIA", "scolia"))
+        score = len(expected & heard) / max(1, len(expected))
+        print(f"   essai {attempt + 1} : {score:.2f} · {phrase[:60]}", flush=True)
+        if score > best_score:
+            best, best_score = pcm, score
+        if score >= 0.9:
+            break
+    return best
+
+
+only = set(sys.argv[2].split(",")) if len(sys.argv) > 2 else None
 gap = np.zeros(int(0.32 * sr), dtype=np.float32)
 for line in narration:
-    if line["voix"] == "elle":
+    if only is not None and line["id"] not in only:
+        continue
+    if only is None and line["voix"] == "elle":
         continue
     parts = []
     for phrase in [p for p in re.split(r"(?<=[.!?:])\s+", line.get("tts", line["texte"])) if p.strip()]:
-        parts += [speak(phrase), gap]
+        parts += [checked(phrase), gap]
     (out / f"{line['id']}-lui.wav").unlink(missing_ok=True)
     target = out / f"{line['id']}-elle.wav"
     sphn.write_wav(str(target), np.concatenate(parts[:-1]), sr)
