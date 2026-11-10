@@ -9,6 +9,10 @@ on:
       - 'scolia-pro/scripts/video/**'
       - '.github/workflows/scolia-video-voix.yml'
   workflow_dispatch:
+    inputs:
+      moteur:
+        description: 'piper ou kyutai'
+        default: 'kyutai'
 
 permissions:
   contents: write
@@ -16,24 +20,18 @@ permissions:
 jobs:
   voix:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 330
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: Piper et voix françaises
+      - name: Voix naturelles (Kyutai TTS, CC BY 4.0)
+        timeout-minutes: 300
         run: |
-          pip install --quiet piper-tts
-          base=https://huggingface.co/rhasspy/piper-voices/resolve/main/fr/fr_FR
-          mkdir -p voix
-          for m in siwis/medium/fr_FR-siwis-medium tom/medium/fr_FR-tom-medium; do
-            curl -sSfL -o voix/$(basename $m).onnx "$base/$m.onnx"
-            curl -sSfL -o voix/$(basename $m).onnx.json "$base/$m.onnx.json"
-          done
-          ls -la voix
-      - name: Lecture de la narration
-        run: python scolia-pro/scripts/video/voix.py voix/fr_FR-siwis-medium.onnx voix/fr_FR-tom-medium.onnx sortie
+          pip install --quiet torch --index-url https://download.pytorch.org/whl/cpu
+          pip install --quiet "moshi==0.2.11" sphn huggingface_hub
+          python -u scolia-pro/scripts/video/voix_kyutai.py sortie
       - name: Publier les voix
         run: |
           cd sortie
