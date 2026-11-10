@@ -2,11 +2,9 @@ name: SCOLIA - controle des voix de la video
 
 # Transcrit les voix d'une branche video/voix-<run> (Whisper) pour vérifier que chaque réplique est dite en entier.
 on:
-  workflow_dispatch:
-    inputs:
-      branche:
-        description: 'branche des voix'
-        required: true
+  push:
+    branches: ['video/presentation-*']
+    paths: ['scolia-pro/scripts/video/controle.txt']
 
 permissions:
   contents: read
@@ -17,9 +15,8 @@ jobs:
     timeout-minutes: 40
     steps:
       - uses: actions/checkout@v5
-        with:
-          ref: ${{ inputs.branche }}
-          path: voix
+      - name: Voix à contrôler
+        run: git fetch -q origin "$(cat scolia-pro/scripts/video/controle.txt)" && mkdir voix && git --work-tree=voix checkout FETCH_HEAD -- .
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
