@@ -1,0 +1,128 @@
+[
+ {
+  "voix": "cml-tts/fr/2154_2576_000020-0003_enhanced.wav",
+  "erreurs": 0.0,
+  "debit": 15.2,
+  "f0": 208.7,
+  "intonation": 0.15,
+  "transcription": " Bonjour et bienvenue, je vous présente Scolia Pro, le logiciel de gestion scolaire conçu pour les écoles.",
+  "score": 0.105
+ },
+ {
+  "voix": "cml-tts/fr/5207_3078_000031-0002_enhanced.wav",
+  "erreurs": 0.0,
+  "debit": 15.3,
+  "f0": 189.0,
+  "intonation": 0.15,
+  "transcription": " Bonjour et bienvenue. Je vous présente Scolia Pro, le logiciel de gestion scolaire conçu pour les écoles.",
+  "score": 0.12
+ },
+ {
+  "voix": "cml-tts/fr/6318_7016_000027-0002_enhanced.wav",
+  "erreurs": 0.0,
+  "debit": 15.4,
+  "f0": 214.3,
+  "intonation": 0.254,
+  "transcription": " Bonjour et bienvenue, je vous présente Scolia Pro, le logiciel de gestion scolaire conçu pour les écoles.",
+  "score": 0.135
+ },
+ {
+  "voix": "cml-tts/fr/3267_1902_000075-0001_enhanced.wav",
+  "erreurs": 0.0,
+  "debit": 15.9,
+  "f0": 258.1,
+  "intonation": 0.163,
+  "transcription": " Bonjour et bienvenue, je vous présente Scolia Pro, le logiciel de gestion scolaire conçu pour les écoles.",
+  "score": 0.21
+ },
+ {
+  "voix": "cml-tts/fr/579_2548_000015-0001_enhanced.wav",
+  "erreurs": 0.0,
+  "debit": 15.9,
+  "f0": 196.7,
+  "intonation": 0.207,
+  "transcription": " Bonjour et bienvenue. Je vous présente Scolia Pro, le logiciel de gestion scolaire conçu pour les écoles.",
+  "score": 0.21
+ },
+ {
+  "voix": "cml-tts/fr/10087_11650_000028-0002_enhanced.wav",
+  "erreurs": 0.0,
+  "debit": 16.0,
+  "f0": 200.0,
+  "intonation": 0.177,
+  "transcription": " Bonjour et bienvenue. Je vous présente Scolia Pro, le logiciel de gestion scolaire conçu pour les écoles.",
+  "score": 0.225
+ },
+ {
+  "voix": "cml-tts/fr/5476_3103_000072-0001_enhanced.wav",
+  "erreurs": 0.0,
+  "debit": 17.0,
+  "f0": 190.5,
+  "intonation": 0.137,
+  "transcription": " Bonjour et bienvenue. Je vous présente Scolia Pro, le logiciel de gestion scolaire conçu pour les écoles.",
+  "score": 0.39
+ },
+ {
+  "voix": "cml-tts/fr/12080_11650_000047-0001_enhanced.wav",
+  "erreurs": 0.0,
+  "debit": 17.3,
+  "f0": 226.4,
+  "intonation": 0.196,
+  "transcription": " Bonjour et bienvenue. Je vous présente Scolia Pro, le logiciel de gestion scolaire conçu pour les écoles.",
+  "score": 0.42
+ },
+ {
+  "voix": "cml-tts/fr/577_394_000070-0001_enhanced.wav",
+  "erreurs": 0.0,
+  "debit": 16.7,
+  "f0": 235.3,
+  "intonation": 0.118,
+  "transcription": " Bonjour et bienvenue. Je vous présente Scolia Pro, le logiciel de gestion scolaire conçu pour les écoles.",
+  "score": 0.44
+ },
+ {
+  "voix": "cml-tts/fr/1591_1028_000108-0004_enhanced.wav",
+  "erreurs": 0.0,
+  "debit": 18.8,
+  "f0": 220.2,
+  "intonation": 0.172,
+  "transcription": " Bonjour et bienvenue. Je vous présente Scolia Pro, le logiciel de gestion scolaire conçu pour les écoles.",
+  "score": 0.645
+ },
+ {
+  "voix": "cml-tts/fr/2465_1943_000152-0002_enhanced.wav",
+  "erreurs": 0.0,
+  "debit": 19.9,
+  "f0": 224.3,
+  "intonation": 0.162,
+  "transcription": " Bonjour et bienvenue, je vous présente Scolia Pro, le logiciel de gestion scolaire conçu pour les écoles.",
+  "score": 0.81
+ },
+ {
+  "voix": "cml-tts/fr/5830_4703_000037-0001_enhanced.wav",
+  "erreurs": 0.059,
+  "debit": 16.4,
+  "f0": 214.3,
+  "intonation": 0.252,
+  "transcription": " Bonjour et bienvenue, je vous présente Scholia Pro, le logiciel de gestion scolaire conçu pour les écoles.",
+  "score": 0.875
+ },
+ {
+  "voix": "cml-tts/fr/10177_10625_000134-0003_enhanced.wav",
+  "erreurs": 0.0,
+  "debit": 21.5,
+  "f0": 192.0,
+  "intonation": 0.218,
+  "transcription": " Bonjour et bienvenue, je vous présente Scolia Pro, le logiciel de gestion scolaire conçu pour les écoles.",
+  "score": 1.05
+ },
+ {
+  "voix": "cml-tts/fr/12977_10625_000037-0001_enhanced.wav",
+  "erreurs": 0.059,
+  "debit": 18.5,
+  "f0": 214.3,
+  "intonation": 0.245,
+  "transcription": " Bonjour et bienvenue. Je vous présente Skolia Pro, le logiciel de gestion scolaire conçu pour les écoles.",
+  "score": 1.19
+ }
+]
