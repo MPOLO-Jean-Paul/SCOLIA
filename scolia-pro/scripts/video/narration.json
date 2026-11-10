@@ -1,0 +1,14 @@
+[
+  {"id": "01", "voix": "elle", "texte": "Bonjour et bienvenue. Je vous présente SCOLIA Pro, le logiciel de gestion scolaire conçu pour les écoles, les instituts et les universités de la République démocratique du Congo."},
+  {"id": "02", "voix": "lui", "texte": "Cahiers égarés, reçus introuvables, fichiers Excel éparpillés : SCOLIA met fin à tout cela. Inscriptions, paiements, notes, délibération et personnel sont réunis en un seul endroit, sur ordinateur comme sur téléphone."},
+  {"id": "03", "voix": "elle", "texte": "Dès l'accueil, chacun voit l'essentiel de sa journée. Le tableau de bord montre en direct les encaissements, les dépenses, les apprenants en retard et le taux de recouvrement de l'établissement."},
+  {"id": "04", "voix": "lui", "texte": "Le secrétariat inscrit un apprenant en quelques secondes. Le matricule est attribué automatiquement, le dossier est complet, et les cartes d'accès aux examens s'impriment à huit par page, avec la couleur de chaque filière."},
+  {"id": "05", "voix": "elle", "texte": "Côté finances, la caisse encaisse les frais mois par mois et imprime un reçu numéroté, vérifiable par code QR. Le suivi mensuel et le recouvrement montrent qui doit payer, et les parents peuvent être relancés par WhatsApp."},
+  {"id": "06", "voix": "lui", "texte": "La caisse se clôture chaque jour. Les dépenses, les prises en charge et la paie du personnel sont suivies au franc près, et chaque opération reste inscrite dans le journal d'audit."},
+  {"id": "07", "voix": "elle", "texte": "Pour la scolarité, SCOLIA gère les cours, les notes, les présences et la discipline. Les résultats et les bulletins se produisent en PDF, prêts à être imprimés."},
+  {"id": "08", "voix": "lui", "texte": "La délibération est entièrement intégrée. Chaque enseignant encode les cotes de ses cours depuis son propre compte, sur des feuilles anonymes. Le secrétariat suit l'avancement, puis le jury délibère et arrête les décisions."},
+  {"id": "09", "voix": "elle", "texte": "Chacun travaille avec ses propres droits. La secrétaire, le comptable, le promoteur et l'enseignant ne voient que ce qui les concerne, et le promoteur suit son établissement en lecture seule."},
+  {"id": "10", "voix": "lui", "texte": "SCOLIA fonctionne sur le réseau de l'école, même sans connexion internet. Les téléphones Android et les ordinateurs se relient au serveur de l'établissement, et continuent de travailler hors ligne."},
+  {"id": "11", "voix": "elle", "texte": "Vos données sont protégées. Une sauvegarde automatique est faite chaque jour, et une copie chiffrée est envoyée en ligne. Si le serveur tombe en panne, le relais en ligne prend le relais, puis tout se resynchronise."},
+  {"id": "12", "voix": "lui", "texte": "SCOLIA Pro. Votre établissement, bien géré, en toute confiance. Demandez dès aujourd'hui votre démonstration à JP-Services."}
+]

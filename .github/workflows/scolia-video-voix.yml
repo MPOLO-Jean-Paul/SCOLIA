@@ -1,0 +1,43 @@
+name: SCOLIA - voix de la video de presentation
+
+# Lit la narration de la vidéo de présentation avec deux voix françaises Piper (licences libres)
+# et publie les fichiers WAV sur une branche video/voix-<run>.
+on:
+  push:
+    branches: ['video/presentation-*']
+    paths:
+      - 'scolia-pro/scripts/video/**'
+      - '.github/workflows/scolia-video-voix.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  voix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Piper et voix françaises
+        run: |
+          pip install --quiet piper-tts
+          base=https://huggingface.co/rhasspy/piper-voices/resolve/main/fr/fr_FR
+          mkdir -p voix
+          for m in siwis/medium/fr_FR-siwis-medium tom/medium/fr_FR-tom-medium; do
+            curl -sSfL -o voix/$(basename $m).onnx "$base/$m.onnx"
+            curl -sSfL -o voix/$(basename $m).onnx.json "$base/$m.onnx.json"
+          done
+          ls -la voix
+      - name: Lecture de la narration
+        run: python scolia-pro/scripts/video/voix.py voix/fr_FR-siwis-medium.onnx voix/fr_FR-tom-medium.onnx sortie
+      - name: Publier les voix
+        run: |
+          cd sortie
+          git init -q && git checkout -q -b voix
+          git config user.name "github-actions" && git config user.email "github-actions@users.noreply.github.com"
+          git add -A && git commit -qm "Voix de la video (${GITHUB_SHA})"
+          git push -q -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" voix:refs/heads/video/voix-${{ github.run_id }}
