@@ -1,0 +1,31 @@
+name: SCOLIA - controle des voix de la video
+
+# Transcrit les voix d'une branche video/voix-<run> (Whisper) pour vérifier que chaque réplique est dite en entier.
+on:
+  workflow_dispatch:
+    inputs:
+      branche:
+        description: 'branche des voix'
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  controle:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.branche }}
+          path: voix
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Transcription
+        run: |
+          sudo apt-get install -y -qq ffmpeg > /dev/null
+          pip install --quiet torch --index-url https://download.pytorch.org/whl/cpu
+          pip install --quiet openai-whisper
+          for f in voix/*.wav; do echo "== $f"; whisper "$f" --model small --language fr --fp16 False --output_format txt --output_dir /tmp/t > /dev/null 2>&1; cat "/tmp/t/$(basename "${f%.wav}").txt"; done
