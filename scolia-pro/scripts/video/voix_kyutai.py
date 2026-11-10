@@ -51,6 +51,8 @@ print(json.dumps(mesures, indent=1))
 femmes = sorted([m for m in mesures if 175 <= m["f0"] <= 250], key=lambda m: -m["duree"])
 hommes = sorted([m for m in mesures if 90 <= m["f0"] <= 140], key=lambda m: -m["duree"])
 choix = {"elle": femmes[0]["voix"], "lui": hommes[0]["voix"]}
+# Même voix, version débruitée quand elle existe : un son plus propre.
+choix = {k: (v[:-4] + "_enhanced.wav" if v[:-4] + "_enhanced.wav" in files else v) for k, v in choix.items()}
 print("Choix :", choix)
 (out / "voix-choisies.json").write_text(json.dumps({"choix": choix, "mesures": mesures}, indent=1, ensure_ascii=False))
 
@@ -61,13 +63,34 @@ model = TTSModel.from_checkpoint_info(CheckpointInfo.from_hf_repo(DEFAULT_DSM_TT
 voices = {k: model.make_condition_attributes([model.get_voice_path(v)], cfg_coef=2.0) for k, v in choix.items()}
 
 narration = json.loads(Path(__file__).with_name("narration.json").read_text(encoding="utf-8"))
+def speak(text, voice):
+    entries = model.prepare_script([text], padding_between=1)
+    result = model.generate([entries], [voice])
+    with model.mimi.streaming(1), torch.no_grad():
+        return np.concatenate([np.clip(model.mimi.decode(fr[:, 1:, :]).cpu().numpy()[0, 0], -1, 1)
+                               for fr in result.frames[model.delay_steps:]], axis=-1)
+
+
+def trim(pcm, sr):
+    """Retire le silence de début et de fin, en gardant un léger souffle."""
+    loud = np.where(np.abs(pcm) > 0.02)[0]
+    if len(loud) == 0:
+        return pcm
+    return pcm[max(0, loud[0] - int(0.05 * sr)):loud[-1] + int(0.12 * sr)]
+
+
+import re
+
 for line in narration:
     start = time.time()
-    entries = model.prepare_script([line["texte"]], padding_between=1)
-    result = model.generate([entries], [voices[line["voix"]]])
-    with model.mimi.streaming(1), torch.no_grad():
-        pcm = np.concatenate([np.clip(model.mimi.decode(fr[:, 1:, :]).cpu().numpy()[0, 0], -1, 1)
-                              for fr in result.frames[model.delay_steps:]], axis=-1)
+    sr = model.mimi.sample_rate
+    # Une phrase à la fois : le modèle ne saute ni ne coupe la fin d'une réplique longue.
+    phrases = [p for p in re.split(r"(?<=[.!?:])\s+", line.get("tts", line["texte"])) if p.strip()]
+    gap = np.zeros(int(0.32 * sr), dtype=np.float32)
+    parts = []
+    for phrase in phrases:
+        parts += [trim(speak(phrase, voices[line["voix"]]), sr), gap]
+    pcm = np.concatenate(parts[:-1])
     target = out / f"{line['id']}-{line['voix']}.wav"
     sphn.write_wav(str(target), pcm, model.mimi.sample_rate)
     print(target, f"{len(pcm) / model.mimi.sample_rate:.1f} s en {time.time() - start:.0f} s", flush=True)

@@ -32,6 +32,12 @@ jobs:
           pip install --quiet torch --index-url https://download.pytorch.org/whl/cpu
           pip install --quiet "moshi==0.2.11" sphn huggingface_hub
           python -u scolia-pro/scripts/video/voix_kyutai.py sortie
+      - name: Contrôle par transcription (Whisper)
+        continue-on-error: true
+        run: |
+          sudo apt-get install -y -qq ffmpeg > /dev/null
+          pip install --quiet openai-whisper
+          for f in sortie/*.wav; do echo "== $f"; whisper "$f" --model small --language fr --fp16 False --output_format txt --output_dir /tmp/t > /dev/null 2>&1; cat "/tmp/t/$(basename "${f%.wav}").txt"; done
       - name: Publier les voix
         run: |
           cd sortie
