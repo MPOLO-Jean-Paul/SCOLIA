@@ -1,3 +1,10 @@
+# SCOLIA Console (JP-Services) : application native Avalonia 12, Android et Windows.
+# - push : artefacts PREVIEW et preversion GitHub clairement identifiee.
+# - dispatch sans option : compilation, tests Worker et emulateur seulement (rien de publie) ;
+#   avec publish_preview=true : preversion GitHub en plus.
+# - dispatch ou workflow_call avec publish_release=true : version officielle signee sur le canal
+#   scolia-owner-vX.Y.Z (le seul lu par la verification de mise a jour integree a l'application).
+# Aucun secret n'est ecrit dans les binaires ; la console Cloudflare Access reste hors de l'APK/EXE.
 name: SCOLIA Console natif Avalonia - Android et Windows
 
 on:
@@ -8,16 +15,39 @@ on:
       - 'scolia-pro/deploy/owner-console/**'
       - '.github/workflows/scolia-owner-avalonia.yml'
   workflow_dispatch:
+    inputs:
+      publish_release:
+        description: 'Publier la version officielle SCOLIA Console (signature Android Admin permanente requise)'
+        type: boolean
+        required: true
+        default: false
+      publish_preview:
+        description: 'Publier aussi une preversion GitHub (sinon : compilation et tests seulement, rien de publie)'
+        type: boolean
+        required: false
+        default: false
+  workflow_call:
+    inputs:
+      publish_release:
+        type: boolean
+        required: true
+      source_sha:
+        type: string
+        required: true
 
 permissions:
   contents: read
 
 concurrency:
   group: scolia-owner-avalonia-${{ github.ref }}
-  cancel-in-progress: true
+  # Une publication officielle n'est jamais annulee par un nouvel essai.
+  cancel-in-progress: ${{ inputs.publish_release != true }}
 
 env:
   OWNER_VERSION: '1.1.1'
+  RELEASE_TAG: 'scolia-owner-v1.1.1'
+  ANDROID_PACKAGE: 'com.jpservices.scolia.owner'
+  ANDROID_PREVIEW_PACKAGE: 'com.jpservices.scolia.owner.preview'
 
 jobs:
   windows:
@@ -27,10 +57,23 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: ${{ inputs.source_sha || github.sha }}
           persist-credentials: false
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0.x'
+      - name: Verifier la coherence des numeros de version
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $csproj = [xml](Get-Content 'scolia-pro/owner-app/avalonia/Desktop/Scolia.Owner.Desktop.csproj')
+          $desktop = ($csproj.Project.PropertyGroup | ForEach-Object { $_.Version } | Where-Object { $_ }) | Select-Object -First 1
+          $iss = (Select-String -Path 'scolia-pro/owner-app/avalonia/Desktop/Installer.Avalonia.iss' -Pattern '#define AdminVersion "([^"]+)"').Matches[0].Groups[1].Value
+          $shell = (Select-String -Path 'scolia-pro/owner-app/avalonia/Core/OwnerShell.cs' -Pattern 'private const string Version = "([^"]+)"').Matches[0].Groups[1].Value
+          foreach ($pair in @(@('Desktop csproj', $desktop), @('Installer.Avalonia.iss', $iss), @('OwnerShell.cs', $shell))) {
+            if ($pair[1] -ne $env:OWNER_VERSION) { throw "Version $($pair[0]) = $($pair[1]) differente de OWNER_VERSION = $env:OWNER_VERSION" }
+          }
+          Write-Host "Version SCOLIA Console coherente : $env:OWNER_VERSION"
       - name: Compiler la vraie fenetre native Windows
         shell: pwsh
         run: |
@@ -38,6 +81,21 @@ jobs:
           dotnet publish 'scolia-pro/owner-app/avalonia/Desktop/Scolia.Owner.Desktop.csproj' -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=None -o "$env:RUNNER_TEMP/owner-avalonia-publish"
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           if (-not (Test-Path "$env:RUNNER_TEMP/owner-avalonia-publish/SCOLIA-Console.exe")) { throw "Fichier EXE Avalonia absent" }
+      - name: Signer l'executable (Authenticode, uniquement si le certificat est configure)
+        shell: pwsh
+        working-directory: scolia-pro
+        env:
+          SCOLIA_WINDOWS_SIGNING_PFX: ${{ secrets.SCOLIA_WINDOWS_SIGNING_PFX }}
+          SCOLIA_WINDOWS_SIGNING_PASSWORD: ${{ secrets.SCOLIA_WINDOWS_SIGNING_PASSWORD }}
+          SCOLIA_WINDOWS_CERT_THUMBPRINT: ${{ vars.SCOLIA_WINDOWS_CERT_THUMBPRINT }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if (-not $env:SCOLIA_WINDOWS_SIGNING_PFX -or -not $env:SCOLIA_WINDOWS_SIGNING_PASSWORD) {
+            Write-Host '::notice::Certificat Authenticode absent : SCOLIA-Console.exe reste non signe (avertissement SmartScreen possible).'
+            exit 0
+          }
+          & ./scripts/windows/signer-windows.ps1 -Files @("$env:RUNNER_TEMP/owner-avalonia-publish/SCOLIA-Console.exe")
+          if ($LASTEXITCODE -ne 0) { throw 'Echec de la signature Authenticode' }
       - name: Installer Inno Setup si necessaire
         shell: pwsh
         run: |
@@ -55,22 +113,48 @@ jobs:
           $env:OWNER_PUBLISH_DIR = "$env:RUNNER_TEMP/owner-avalonia-publish"
           & 'C:\Program Files (x86)\Inno Setup 6\ISCC.exe' 'Installer.Avalonia.iss'
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          $file = Get-ChildItem 'installer-output/*.exe' | Select-Object -First 1
-          if (-not $file -or $file.Length -lt 100000) { throw "Installateur invalide" }
+          $expected = "SCOLIA_Console_Setup_$($env:OWNER_VERSION)_Windows_x64.exe"
+          $file = Get-Item "installer-output/$expected"
+          if (-not $file -or $file.Length -lt 100000) { throw "Installateur invalide : $expected" }
+      - name: Signer l'installateur (Authenticode, uniquement si le certificat est configure)
+        shell: pwsh
+        working-directory: scolia-pro
+        env:
+          SCOLIA_WINDOWS_SIGNING_PFX: ${{ secrets.SCOLIA_WINDOWS_SIGNING_PFX }}
+          SCOLIA_WINDOWS_SIGNING_PASSWORD: ${{ secrets.SCOLIA_WINDOWS_SIGNING_PASSWORD }}
+          SCOLIA_WINDOWS_CERT_THUMBPRINT: ${{ vars.SCOLIA_WINDOWS_CERT_THUMBPRINT }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if (-not $env:SCOLIA_WINDOWS_SIGNING_PFX -or -not $env:SCOLIA_WINDOWS_SIGNING_PASSWORD) { exit 0 }
+          & ./scripts/windows/signer-windows.ps1 -Files @("owner-app/avalonia/Desktop/installer-output/SCOLIA_Console_Setup_$($env:OWNER_VERSION)_Windows_x64.exe")
+          if ($LASTEXITCODE -ne 0) { throw 'Echec de la signature de l installateur' }
+      - name: Empreinte SHA-256 de l'installateur
+        shell: pwsh
+        working-directory: scolia-pro/owner-app/avalonia/Desktop/installer-output
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $name = "SCOLIA_Console_Setup_$($env:OWNER_VERSION)_Windows_x64.exe"
+          $hash = (Get-FileHash $name -Algorithm SHA256).Hash.ToLower()
+          # Fin de ligne LF et sans BOM : le fichier est relu par sha256sum -c sous Linux.
+          [IO.File]::WriteAllText((Join-Path (Get-Location) "$name.sha256"), "$hash  $name`n", [Text.UTF8Encoding]::new($false))
+          Get-Content "$name.sha256"
       - uses: actions/upload-artifact@v4
         with:
-          name: SCOLIA-Admin-Avalonia-Windows-PREVIEW
-          path: scolia-pro/owner-app/avalonia/Desktop/installer-output/*.exe
+          name: SCOLIA-Console-Windows
+          path: |
+            scolia-pro/owner-app/avalonia/Desktop/installer-output/*.exe
+            scolia-pro/owner-app/avalonia/Desktop/installer-output/*.sha256
           if-no-files-found: error
           retention-days: 30
 
   android:
-    name: Android - APK Avalonia natif
+    name: Android - APK Avalonia natif (PREVIEW, certificat de test)
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: ${{ inputs.source_sha || github.sha }}
           persist-credentials: false
       - uses: actions/setup-dotnet@v4
         with:
@@ -92,26 +176,140 @@ jobs:
           dotnet build "$project" -t:InstallAndroidDependencies -f net10.0-android \
             -p:AcceptAndroidSDKLicenses=True \
             "-p:AndroidSdkDirectory=$ANDROID_HOME" "-p:JavaSdkDirectory=$JAVA_HOME"
-      - name: Compiler l'APK natif signe pour test
+      - name: Compiler l'APK de previsualisation (arm64 + arm, certificat de test)
         shell: bash
         run: |
           set -euo pipefail
           project='scolia-pro/owner-app/avalonia/Android/Scolia.Owner.Android.csproj'
+          # "-r" fixe RuntimeIdentifier (sinon dotnet publish prend l'hote linux-x64 : NU1102) ;
+          # l'empaquetage suit RuntimeIdentifiers du .csproj (android-arm64;android-arm) : un APK, deux ABI.
           dotnet publish "$project" -c Debug -f net10.0-android -r android-arm64 \
             -p:AndroidPackageFormat=apk \
             "-p:AndroidSdkDirectory=$ANDROID_HOME" "-p:JavaSdkDirectory=$JAVA_HOME"
           mkdir -p "$RUNNER_TEMP/scolia-avalonia-apk"
-          mapfile -t apks < <(find scolia-pro/owner-app/avalonia/Android/bin/Debug -type f -name '*.apk' | sort)
+          mapfile -t apks < <(find scolia-pro/owner-app/avalonia/Android/bin/Debug -type f -name '*-Signed.apk' | sort)
           if [[ "${#apks[@]}" -eq 0 ]]; then
             echo '::error::Aucun APK Avalonia genere'
             exit 1
           fi
-          cp "${apks[0]}" "$RUNNER_TEMP/scolia-avalonia-apk/SCOLIA_Console_Avalonia_1.1.1_Android_PREVIEW.apk"
-          test -s "$RUNNER_TEMP/scolia-avalonia-apk/SCOLIA_Console_Avalonia_1.1.1_Android_PREVIEW.apk"
+          target="$RUNNER_TEMP/scolia-avalonia-apk/SCOLIA_Console_${OWNER_VERSION}_Android_PREVIEW.apk"
+          cp "${apks[0]}" "$target"
+          test -s "$target"
+          aapt="$(find "$ANDROID_HOME/build-tools" -name aapt -type f | sort -V | tail -1)"
+          "$aapt" dump badging "$target" | grep -E "^package: name='$ANDROID_PREVIEW_PACKAGE'"
+          "$aapt" dump badging "$target" | grep -E "versionName='$OWNER_VERSION'"
+          "$aapt" dump badging "$target" | grep -E "^native-code:.*'arm64-v8a'"
       - uses: actions/upload-artifact@v4
         with:
-          name: SCOLIA-Admin-Avalonia-Android-PREVIEW
+          name: SCOLIA-Console-Android-PREVIEW
           path: ${{ runner.temp }}/scolia-avalonia-apk/*.apk
+          if-no-files-found: error
+          retention-days: 30
+
+  android-release:
+    name: Android - APK officiel signe (certificat Admin permanent)
+    if: inputs.publish_release == true
+    runs-on: ubuntu-latest
+    timeout-minutes: 70
+    outputs:
+      official: ${{ steps.signer.outputs.official }}
+    env:
+      OWNER_ADMIN_KEYSTORE_B64: ${{ secrets.OWNER_ADMIN_KEYSTORE_B64 }}
+      OWNER_ADMIN_KEYSTORE_PASSWORD: ${{ secrets.OWNER_ADMIN_KEYSTORE_PASSWORD }}
+      OWNER_ADMIN_KEY_ALIAS: ${{ secrets.OWNER_ADMIN_KEY_ALIAS }}
+      OWNER_ADMIN_KEY_PASSWORD: ${{ secrets.OWNER_ADMIN_KEY_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.source_sha || github.sha }}
+          persist-credentials: false
+      - name: Verifier la presence du certificat Android Admin permanent
+        id: signer
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -n "${OWNER_ADMIN_KEYSTORE_B64:-}" && -n "${OWNER_ADMIN_KEYSTORE_PASSWORD:-}" && -n "${OWNER_ADMIN_KEY_ALIAS:-}" && -n "${OWNER_ADMIN_KEY_PASSWORD:-}" ]]; then
+            printf 'official=true\n' >> "$GITHUB_OUTPUT"
+            echo 'Certificat Android Admin permanent disponible.'
+          else
+            printf 'official=false\n' >> "$GITHUB_OUTPUT"
+            echo '::error::Les 4 secrets OWNER_ADMIN_KEYSTORE_B64, OWNER_ADMIN_KEYSTORE_PASSWORD, OWNER_ADMIN_KEY_ALIAS et OWNER_ADMIN_KEY_PASSWORD sont requis pour une version officielle. Aucun APK de test ne sera publie comme officiel.'
+            exit 1
+          fi
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Installer le workload officiel .NET Android
+        shell: bash
+        run: |
+          set -euo pipefail
+          dotnet workload install android --skip-manifest-update
+      - name: Installer les dependances Android
+        shell: bash
+        run: |
+          set -euo pipefail
+          project='scolia-pro/owner-app/avalonia/Android/Scolia.Owner.Android.csproj'
+          dotnet build "$project" -t:InstallAndroidDependencies -f net10.0-android \
+            -p:AcceptAndroidSDKLicenses=True \
+            "-p:AndroidSdkDirectory=$ANDROID_HOME" "-p:JavaSdkDirectory=$JAVA_HOME"
+      - name: Charger le keystore sans l'afficher
+        shell: bash
+        run: |
+          set -euo pipefail
+          printf '%s' "$OWNER_ADMIN_KEYSTORE_B64" | base64 --decode > "$RUNNER_TEMP/owner-admin-signing.jks"
+          chmod 600 "$RUNNER_TEMP/owner-admin-signing.jks"
+          echo "OWNER_ADMIN_KEYSTORE_FILE=$RUNNER_TEMP/owner-admin-signing.jks" >> "$GITHUB_ENV"
+      - name: Compiler et signer l'APK officiel (Release, arm64 + arm)
+        shell: bash
+        run: |
+          set -euo pipefail
+          project='scolia-pro/owner-app/avalonia/Android/Scolia.Owner.Android.csproj'
+          # Le .csproj lit OWNER_ADMIN_KEYSTORE_FILE / OWNER_ADMIN_KEY_ALIAS (proprietes) et les
+          # mots de passe via env:OWNER_ADMIN_KEYSTORE_PASSWORD / env:OWNER_ADMIN_KEY_PASSWORD.
+          # "-r" fixe RuntimeIdentifier ; RuntimeIdentifiers du .csproj (android-arm64;android-arm) => un APK, deux ABI.
+          dotnet publish "$project" -c Release -f net10.0-android -r android-arm64 \
+            -p:AndroidPackageFormat=apk \
+            "-p:OWNER_ADMIN_KEYSTORE_FILE=$OWNER_ADMIN_KEYSTORE_FILE" \
+            "-p:OWNER_ADMIN_KEY_ALIAS=$OWNER_ADMIN_KEY_ALIAS" \
+            "-p:AndroidSdkDirectory=$ANDROID_HOME" "-p:JavaSdkDirectory=$JAVA_HOME"
+          mkdir -p "$RUNNER_TEMP/scolia-console-release"
+          mapfile -t apks < <(find scolia-pro/owner-app/avalonia/Android/bin/Release -type f -name "${ANDROID_PACKAGE}-Signed.apk" | sort)
+          if [[ "${#apks[@]}" -eq 0 ]]; then
+            echo '::error::Aucun APK Release signe genere'
+            exit 1
+          fi
+          target="$RUNNER_TEMP/scolia-console-release/SCOLIA_Console_${OWNER_VERSION}_Android.apk"
+          cp "${apks[0]}" "$target"
+          test -s "$target"
+      - name: Verifier paquet, version, ABI et certificat (jamais la cle de debogage)
+        shell: bash
+        run: |
+          set -euo pipefail
+          target="$RUNNER_TEMP/scolia-console-release/SCOLIA_Console_${OWNER_VERSION}_Android.apk"
+          tools="$(find "$ANDROID_HOME/build-tools" -maxdepth 1 -mindepth 1 -type d | sort -V | tail -1)"
+          "$tools/aapt" dump badging "$target" | grep -E "^package: name='$ANDROID_PACKAGE'"
+          "$tools/aapt" dump badging "$target" | grep -E "versionName='$OWNER_VERSION'"
+          "$tools/aapt" dump badging "$target" | grep -E "^native-code:.*'arm64-v8a'"
+          "$tools/apksigner" verify --verbose "$target"
+          certs="$("$tools/apksigner" verify --print-certs "$target")"
+          if grep -qi 'Android Debug' <<<"$certs"; then
+            echo '::error::APK signe avec un certificat de debogage : publication refusee.'
+            exit 1
+          fi
+          # Seul le SHA-256 du certificat est affiche : il est public par nature et permet
+          # de controler que chaque future version provient de la meme cle.
+          grep -i 'certificate SHA-256' <<<"$certs" || true
+          (cd "$RUNNER_TEMP/scolia-console-release" && sha256sum "SCOLIA_Console_${OWNER_VERSION}_Android.apk" > "SCOLIA_Console_${OWNER_VERSION}_Android.apk.sha256" && cat "SCOLIA_Console_${OWNER_VERSION}_Android.apk.sha256")
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SCOLIA-Console-Android-SIGNE
+          path: |
+            ${{ runner.temp }}/scolia-console-release/*.apk
+            ${{ runner.temp }}/scolia-console-release/*.sha256
           if-no-files-found: error
           retention-days: 30
 
@@ -125,20 +323,28 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: ${{ inputs.source_sha || github.sha }}
           persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
       - name: Exécuter les tests du Worker
         run: npm test
+      - name: Aucun secret ni base dans le repertoire
+        run: |
+          if find . -path './node_modules' -prune -o -type f \( -name '*.pem' -o -name '*.key' -o -name '.env' -o -name '*.db' -o -name '*.sqlite' -o -name '*.jks' -o -name '*.keystore' -o -name '*.pfx' \) -print | grep -q .; then
+            echo "::error::Le repertoire contient un fichier secret ou une base de donnees."
+            exit 1
+          fi
 
   smoke-android:
     name: Vérifier que SCOLIA Console reste ouverte sur émulateur Android
     runs-on: ubuntu-latest
-    timeout-minutes: 55
+    timeout-minutes: 75
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: ${{ inputs.source_sha || github.sha }}
           persist-credentials: false
       - uses: actions/setup-dotnet@v4
         with:
@@ -156,22 +362,44 @@ jobs:
           dotnet build "$project" -t:InstallAndroidDependencies -f net10.0-android \
             -p:AcceptAndroidSDKLicenses=True \
             "-p:AndroidSdkDirectory=$ANDROID_HOME" "-p:JavaSdkDirectory=$JAVA_HOME"
-      - name: Compiler l'APK x64 pour l'émulateur
+      - name: Compiler l'APK x86_64 (configuration Release, certificat de test) pour l'émulateur
         shell: bash
         run: |
           set -euo pipefail
           project='scolia-pro/owner-app/avalonia/Android/Scolia.Owner.Android.csproj'
-          dotnet publish "$project" -c Debug -f net10.0-android -r android-x64 \
+          # Correctif INSTALL_FAILED_NO_MATCHING_ABIS : avec "-r android-x64" seul, l'empaquetage
+          # Android continuait d'utiliser RuntimeIdentifiers du .csproj (arm64;arm) et livrait un APK
+          # sans bibliotheques x86_64. Il faut les deux : "-r" pour la restauration (sans lui, dotnet
+          # publish prend l'hote linux-x64 : NU1102) et RuntimeIdentifiers pour l'empaquetage.
+          # La configuration Release (trimming/AOT) est celle de l'APK officiel : c'est elle qui est testee.
+          dotnet publish "$project" -c Release -f net10.0-android -r android-x64 \
+            -p:RuntimeIdentifiers=android-x64 \
             -p:AndroidPackageFormat=apk \
             "-p:AndroidSdkDirectory=$ANDROID_HOME" "-p:JavaSdkDirectory=$JAVA_HOME"
           mkdir -p "$RUNNER_TEMP/smoke"
-          mapfile -t apks < <(find scolia-pro/owner-app/avalonia/Android/bin/Debug \
-            -type f -name '*Signed.apk' | sort)
+          mapfile -t apks < <(find scolia-pro/owner-app/avalonia/Android/bin/Release \
+            -type f -name "${ANDROID_PACKAGE}-Signed.apk" | sort)
           if [[ "${#apks[@]}" -eq 0 ]]; then
-            echo '::error::Aucun APK de test signé x64 disponible.'
+            echo '::error::Aucun APK Release x64 signe (certificat de test) disponible.'
             exit 1
           fi
           cp "${apks[0]}" "$RUNNER_TEMP/smoke/SCOLIA-Console-android-x64.apk"
+          aapt="$(find "$ANDROID_HOME/build-tools" -name aapt -type f | sort -V | tail -1)"
+          badging="$("$aapt" dump badging "$RUNNER_TEMP/smoke/SCOLIA-Console-android-x64.apk")"
+          grep -E "^package: name='$ANDROID_PACKAGE'" <<<"$badging"
+          if ! grep -E "^native-code:.*'x86_64'" <<<"$badging"; then
+            echo '::error::L APK de test ne contient pas de bibliotheques x86_64 : il ne pourra pas s installer sur l emulateur.'
+            grep -E '^native-code' <<<"$badging" || true
+            exit 1
+          fi
+      - name: Activer KVM pour l'émulateur (sans KVM, le démarrage dépasse 10 minutes et échoue)
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+          ls -l /dev/kvm
       - name: Démarrer réellement l'application Android
         uses: reactivecircus/android-emulator-runner@v2
         with:
@@ -180,36 +408,26 @@ jobs:
           arch: x86_64
           profile: pixel_3a
           disable-animations: true
-          script: |
-            set -euo pipefail
-            adb install -r "$RUNNER_TEMP/smoke/SCOLIA-Console-android-x64.apk"
-            adb logcat -c
-            # Exécuter la commande de lancement EN UNE SEULE LIGNE :
-            # la version précédente échouait sur « Count not specified ».
-            adb shell monkey -p com.jpservices.scolia.owner.preview -c android.intent.category.LAUNCHER 1
-            sleep 12
-            pid="$(adb shell pidof com.jpservices.scolia.owner.preview | tr -d '\r')"
-            if [[ -z "$pid" ]]; then
-              adb logcat -d -t 1500 | grep -E 'AndroidRuntime|FATAL EXCEPTION|scolia.owner' | tail -100 || true
-              echo '::error::SCOLIA Console se ferme après le lancement.'
-              exit 1
-            fi
-            echo "SCOLIA Console ouverte sur émulateur Android (PID: $pid)."
+          # L'action execute chaque ligne separement avec sh : une seule ligne, tout est dans le script.
+          script: bash scolia-pro/owner-app/avalonia/Android/scripts/smoke-emulateur.sh "$ANDROID_PACKAGE" "$RUNNER_TEMP/smoke/SCOLIA-Console-android-x64.apk"
 
   preview:
-    name: Publier pilote Avalonia Android + Windows
+    name: Publier pilote Avalonia Android + Windows (PREVIEW)
+    # Push sur la branche surveillee : preversion automatique. Lancement manuel : seulement si demande.
+    if: inputs.publish_release != true && (github.event_name == 'push' || inputs.publish_preview == true)
     needs: [android, windows, smoke-android, console-tests]
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
       contents: write
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: SCOLIA-Admin-Avalonia-Windows-PREVIEW
+          name: SCOLIA-Console-Windows
           path: distribution/windows
       - uses: actions/download-artifact@v4
         with:
-          name: SCOLIA-Admin-Avalonia-Android-PREVIEW
+          name: SCOLIA-Console-Android-PREVIEW
           path: distribution/android
       - name: Publication en preversion distincte
         shell: bash
@@ -226,13 +444,71 @@ jobs:
           fi
           test -s "${installers[0]}"
           test -s "${apks[0]}"
-          tag="scolia-console-avalonia-preview-v1.1.1-${GITHUB_SHA:0:8}"
+          (cd distribution/windows && sha256sum -c ./*.sha256)
+          tag="scolia-console-avalonia-preview-v${OWNER_VERSION}-${GITHUB_SHA:0:8}"
           if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             echo 'Cette preversion est deja publiee.'
             exit 0
           fi
-          gh release create "$tag" "${installers[0]}" "${apks[0]}" \
+          gh release create "$tag" "${installers[0]}" "${apks[0]}" distribution/windows/*.sha256 \
             --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
-            --title 'SCOLIA Console 1.1.1 - Avalonia natif Android et Windows (PREVIEW)' \
+            --title "SCOLIA Console ${OWNER_VERSION} - Avalonia natif Android et Windows (PREVIEW)" \
             --prerelease \
-            --notes "Pilote natif Avalonia 12 partage entre Android et Windows, sans WebView. Les fonctions sensibles ouvrent pour l'instant la console Cloudflare Access dans le navigateur systeme afin de respecter la MFA. APK signe par certificat de test : il ne remplace pas une version de production. L'EXE Windows n'est pas signe Authenticode. Canal JP-Services independant des clients."
+            --notes "PREVERSION DE TEST UNIQUEMENT. Pilote natif Avalonia 12 partage entre Android et Windows, sans WebView. Les fonctions sensibles ouvrent la console Cloudflare Access dans le navigateur systeme afin de respecter la MFA. APK Android : paquet ${ANDROID_PREVIEW_PACKAGE} signe par un certificat de test ; il ne recoit PAS les mises a jour officielles. EXE Windows : non signe Authenticode sauf certificat configure. Canal JP-Services independant des versions SCOLIA des etablissements."
+
+  release:
+    name: Publier la version officielle SCOLIA Console (Android signe + Windows)
+    if: inputs.publish_release == true
+    needs: [windows, android-release, smoke-android, console-tests]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - name: Refuser une version officielle sans certificat Android permanent
+        shell: bash
+        env:
+          ANDROID_SIGNATURE_OFFICIELLE: ${{ needs.android-release.outputs.official }}
+        run: |
+          if [[ "$ANDROID_SIGNATURE_OFFICIELLE" != 'true' ]]; then
+            echo "::error::Signature Android Admin absente. Configurer les 4 secrets OWNER_ADMIN_* avant toute version officielle."
+            exit 1
+          fi
+      - uses: actions/download-artifact@v4
+        with:
+          name: SCOLIA-Console-Windows
+          path: distribution/windows
+      - uses: actions/download-artifact@v4
+        with:
+          name: SCOLIA-Console-Android-SIGNE
+          path: distribution/android
+      - name: Publier la release officielle sur le canal scolia-owner-v
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_SHA: ${{ inputs.source_sha || github.sha }}
+        run: |
+          set -euo pipefail
+          apk="distribution/android/SCOLIA_Console_${OWNER_VERSION}_Android.apk"
+          setup="distribution/windows/SCOLIA_Console_Setup_${OWNER_VERSION}_Windows_x64.exe"
+          test -s "$apk" && test -s "$apk.sha256"
+          test -s "$setup" && test -s "$setup.sha256"
+          (cd distribution/android && sha256sum -c "SCOLIA_Console_${OWNER_VERSION}_Android.apk.sha256")
+          (cd distribution/windows && sha256sum -c "SCOLIA_Console_Setup_${OWNER_VERSION}_Windows_x64.exe.sha256")
+          # Une version publiee est IMMUTABLE : incrementer OWNER_VERSION, ApplicationVersion,
+          # Installer.Avalonia.iss et OwnerShell.Version avant toute nouvelle publication.
+          if gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "::error::La version $RELEASE_TAG existe deja. Augmenter les numeros de version."
+            exit 1
+          fi
+          gh release create "$RELEASE_TAG" "$apk" "$apk.sha256" "$setup" "$setup.sha256" \
+            --repo "$GITHUB_REPOSITORY" --target "$SOURCE_SHA" \
+            --title "SCOLIA Console ${OWNER_VERSION} - JP-Services Admin (Android et Windows)" \
+            --notes "Console administrateur JP-Services, canal autonome scolia-owner-v (independant des versions SCOLIA Pro des etablissements). Android : paquet ${ANDROID_PACKAGE}, signe avec le certificat Admin permanent ; les mises a jour futures exigent la meme cle. Windows : installateur SCOLIA Console autonome (x64). Authentification Cloudflare Access + MFA puis jeton proprietaire obligatoires : aucun secret n'est integre aux binaires. Verifier les empreintes .sha256 avant installation."
+          gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json url,assets
+      - name: Resume
+        shell: bash
+        run: |
+          echo "## SCOLIA Console ${OWNER_VERSION} publiee" >> "$GITHUB_STEP_SUMMARY"
+          echo "Release : ${RELEASE_TAG} (source ${{ inputs.source_sha || github.sha }})" >> "$GITHUB_STEP_SUMMARY"
+          echo "Le controle de mise a jour integre a l'application detecte desormais cette version." >> "$GITHUB_STEP_SUMMARY"
