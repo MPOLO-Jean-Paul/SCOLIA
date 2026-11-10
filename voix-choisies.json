@@ -1,0 +1,308 @@
+{
+ "choix": {
+  "elle": "cml-tts/fr/6318_7016_000027-0002_enhanced.wav",
+  "lui": "cml-tts/fr/2114_1656_000053-0001_enhanced.wav"
+ },
+ "mesures": [
+  {
+   "voix": "cml-tts/fr/10087_11650_000028-0002.wav",
+   "f0": 196.7,
+   "duree": 7.2
+  },
+  {
+   "voix": "cml-tts/fr/10087_11650_000028-0002_enhanced.wav",
+   "f0": 196.3,
+   "duree": 7.2
+  },
+  {
+   "voix": "cml-tts/fr/10177_10625_000134-0003.wav",
+   "f0": 201.7,
+   "duree": 7.6
+  },
+  {
+   "voix": "cml-tts/fr/10177_10625_000134-0003_enhanced.wav",
+   "f0": 201.3,
+   "duree": 7.6
+  },
+  {
+   "voix": "cml-tts/fr/10179_11051_000005-0001.wav",
+   "f0": 282.4,
+   "duree": 8.0
+  },
+  {
+   "voix": "cml-tts/fr/10179_11051_000005-0001_enhanced.wav",
+   "f0": 280.7,
+   "duree": 8.0
+  },
+  {
+   "voix": "cml-tts/fr/12080_11650_000047-0001.wav",
+   "f0": 230.8,
+   "duree": 8.7
+  },
+  {
+   "voix": "cml-tts/fr/12080_11650_000047-0001_enhanced.wav",
+   "f0": 227.0,
+   "duree": 8.7
+  },
+  {
+   "voix": "cml-tts/fr/12205_11650_000004-0002.wav",
+   "f0": 180.5,
+   "duree": 6.7
+  },
+  {
+   "voix": "cml-tts/fr/12205_11650_000004-0002_enhanced.wav",
+   "f0": 179.8,
+   "duree": 6.7
+  },
+  {
+   "voix": "cml-tts/fr/12977_10625_000037-0001.wav",
+   "f0": 203.4,
+   "duree": 6.7
+  },
+  {
+   "voix": "cml-tts/fr/12977_10625_000037-0001_enhanced.wav",
+   "f0": 202.5,
+   "duree": 6.7
+  },
+  {
+   "voix": "cml-tts/fr/1406_1028_000009-0003.wav",
+   "f0": 98.8,
+   "duree": 6.6
+  },
+  {
+   "voix": "cml-tts/fr/1406_1028_000009-0003_enhanced.wav",
+   "f0": 99.2,
+   "duree": 6.6
+  },
+  {
+   "voix": "cml-tts/fr/1591_1028_000108-0004.wav",
+   "f0": 218.2,
+   "duree": 7.0
+  },
+  {
+   "voix": "cml-tts/fr/1591_1028_000108-0004_enhanced.wav",
+   "f0": 213.3,
+   "duree": 7.0
+  },
+  {
+   "voix": "cml-tts/fr/1770_1028_000036-0002.wav",
+   "f0": 124.7,
+   "duree": 7.8
+  },
+  {
+   "voix": "cml-tts/fr/1770_1028_000036-0002_enhanced.wav",
+   "f0": 124.0,
+   "duree": 7.8
+  },
+  {
+   "voix": "cml-tts/fr/2114_1656_000053-0001.wav",
+   "f0": 118.2,
+   "duree": 8.9
+  },
+  {
+   "voix": "cml-tts/fr/2114_1656_000053-0001_enhanced.wav",
+   "f0": 117.2,
+   "duree": 8.9
+  },
+  {
+   "voix": "cml-tts/fr/2154_2576_000020-0003.wav",
+   "f0": 186.0,
+   "duree": 8.5
+  },
+  {
+   "voix": "cml-tts/fr/2154_2576_000020-0003_enhanced.wav",
+   "f0": 181.8,
+   "duree": 8.5
+  },
+  {
+   "voix": "cml-tts/fr/2216_1745_000007-0001.wav",
+   "f0": 123.7,
+   "duree": 7.6
+  },
+  {
+   "voix": "cml-tts/fr/2216_1745_000007-0001_enhanced.wav",
+   "f0": 121.2,
+   "duree": 7.6
+  },
+  {
+   "voix": "cml-tts/fr/2223_1745_000009-0002.wav",
+   "f0": 123.1,
+   "duree": 7.3
+  },
+  {
+   "voix": "cml-tts/fr/2223_1745_000009-0002_enhanced.wav",
+   "f0": 121.2,
+   "duree": 7.3
+  },
+  {
+   "voix": "cml-tts/fr/2465_1943_000152-0002.wav",
+   "f0": 210.5,
+   "duree": 7.7
+  },
+  {
+   "voix": "cml-tts/fr/2465_1943_000152-0002_enhanced.wav",
+   "f0": 210.5,
+   "duree": 7.7
+  },
+  {
+   "voix": "cml-tts/fr/296_1028_000022-0001.wav",
+   "f0": 124.4,
+   "duree": 8.5
+  },
+  {
+   "voix": "cml-tts/fr/296_1028_000022-0001_enhanced.wav",
+   "f0": 123.3,
+   "duree": 8.5
+  },
+  {
+   "voix": "cml-tts/fr/3267_1902_000075-0001.wav",
+   "f0": 235.3,
+   "duree": 8.6
+  },
+  {
+   "voix": "cml-tts/fr/3267_1902_000075-0001_enhanced.wav",
+   "f0": 231.9,
+   "duree": 8.6
+  },
+  {
+   "voix": "cml-tts/fr/4193_3103_000004-0001.wav",
+   "f0": 87.1,
+   "duree": 6.5
+  },
+  {
+   "voix": "cml-tts/fr/4193_3103_000004-0001_enhanced.wav",
+   "f0": 85.1,
+   "duree": 6.5
+  },
+  {
+   "voix": "cml-tts/fr/4482_3103_000063-0001.wav",
+   "f0": 115.9,
+   "duree": 6.5
+  },
+  {
+   "voix": "cml-tts/fr/4482_3103_000063-0001_enhanced.wav",
+   "f0": 113.5,
+   "duree": 6.5
+  },
+  {
+   "voix": "cml-tts/fr/4724_3731_000031-0001.wav",
+   "f0": 134.1,
+   "duree": 8.7
+  },
+  {
+   "voix": "cml-tts/fr/4724_3731_000031-0001_enhanced.wav",
+   "f0": 132.8,
+   "duree": 8.7
+  },
+  {
+   "voix": "cml-tts/fr/4937_3731_000004-0001.wav",
+   "f0": 136.4,
+   "duree": 6.6
+  },
+  {
+   "voix": "cml-tts/fr/4937_3731_000004-0001_enhanced.wav",
+   "f0": 135.6,
+   "duree": 6.6
+  },
+  {
+   "voix": "cml-tts/fr/5207_3078_000031-0002.wav",
+   "f0": 201.7,
+   "duree": 7.4
+  },
+  {
+   "voix": "cml-tts/fr/5207_3078_000031-0002_enhanced.wav",
+   "f0": 198.8,
+   "duree": 7.4
+  },
+  {
+   "voix": "cml-tts/fr/5476_3103_000072-0001.wav",
+   "f0": 187.5,
+   "duree": 7.8
+  },
+  {
+   "voix": "cml-tts/fr/5476_3103_000072-0001_enhanced.wav",
+   "f0": 186.0,
+   "duree": 7.8
+  },
+  {
+   "voix": "cml-tts/fr/577_394_000070-0001.wav",
+   "f0": 222.2,
+   "duree": 7.7
+  },
+  {
+   "voix": "cml-tts/fr/577_394_000070-0001_enhanced.wav",
+   "f0": 222.2,
+   "duree": 7.7
+  },
+  {
+   "voix": "cml-tts/fr/5790_4893_000052-0001.wav",
+   "f0": 116.5,
+   "duree": 7.4
+  },
+  {
+   "voix": "cml-tts/fr/5790_4893_000052-0001_enhanced.wav",
+   "f0": 115.9,
+   "duree": 7.4
+  },
+  {
+   "voix": "cml-tts/fr/579_2548_000015-0001.wav",
+   "f0": 200.0,
+   "duree": 6.8
+  },
+  {
+   "voix": "cml-tts/fr/579_2548_000015-0001_enhanced.wav",
+   "f0": 198.8,
+   "duree": 6.8
+  },
+  {
+   "voix": "cml-tts/fr/5830_4703_000037-0001.wav",
+   "f0": 221.2,
+   "duree": 7.3
+  },
+  {
+   "voix": "cml-tts/fr/5830_4703_000037-0001_enhanced.wav",
+   "f0": 213.3,
+   "duree": 7.3
+  },
+  {
+   "voix": "cml-tts/fr/6318_7016_000027-0002.wav",
+   "f0": 201.7,
+   "duree": 8.8
+  },
+  {
+   "voix": "cml-tts/fr/6318_7016_000027-0002_enhanced.wav",
+   "f0": 202.5,
+   "duree": 8.8
+  },
+  {
+   "voix": "cml-tts/fr/7142_2432_000124-0003.wav",
+   "f0": 132.6,
+   "duree": 7.0
+  },
+  {
+   "voix": "cml-tts/fr/7142_2432_000124-0003_enhanced.wav",
+   "f0": 132.2,
+   "duree": 7.0
+  },
+  {
+   "voix": "cml-tts/fr/7400_2928_000100-0001.wav",
+   "f0": 200.0,
+   "duree": 6.8
+  },
+  {
+   "voix": "cml-tts/fr/7400_2928_000100-0001_enhanced.wav",
+   "f0": 196.3,
+   "duree": 6.8
+  },
+  {
+   "voix": "cml-tts/fr/7591_6742_000149-0002.wav",
+   "f0": 193.5,
+   "duree": 6.6
+  },
+  {
+   "voix": "cml-tts/fr/7591_6742_000149-0002_enhanced.wav",
+   "f0": 192.8,
+   "duree": 6.6
+  }
+ ]
+}
