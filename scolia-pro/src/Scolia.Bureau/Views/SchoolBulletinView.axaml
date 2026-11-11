@@ -21,7 +21,35 @@
         </Grid>
       </Border>
 
-      <ItemsControl ItemsSource="{Binding Terms}">
+      <!-- Grille par matière, conservant les évaluations distinctes et toutes les
+           périodes, y compris lorsqu'aucune cote n'a encore été saisie. -->
+      <TextBlock Text="BRANCHES ET PÉRIODES" Classes="groupcaps"
+                 IsVisible="{Binding HasSubjectGrid}" />
+      <ItemsControl ItemsSource="{Binding Subjects}" IsVisible="{Binding HasSubjectGrid}">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate>
+            <Border Classes="phonegroup" Padding="14,12" Margin="0,0,0,8">
+              <StackPanel Spacing="8">
+                <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                <TextBlock Text="{Binding Details}" Classes="muted" TextWrapping="Wrap" />
+                <ItemsControl ItemsSource="{Binding Periods}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                      <StackPanel Spacing="3" Margin="0,0,0,8">
+                        <TextBlock Text="{Binding PeriodLabel}" Classes="muted"
+                                   TextWrapping="Wrap" />
+                        <TextBlock Text="{Binding Value}" TextWrapping="Wrap" />
+                      </StackPanel>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </StackPanel>
+            </Border>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+
+      <ItemsControl ItemsSource="{Binding Terms}" IsVisible="{Binding ShowPeriods}">
         <ItemsControl.ItemTemplate>
           <DataTemplate>
             <StackPanel Spacing="10" Margin="0,0,0,12">
@@ -33,7 +61,7 @@
                       <StackPanel Spacing="9">
                         <TextBlock Text="{Binding Title}" FontWeight="SemiBold"
                                    TextWrapping="Wrap" />
-<TextBlock Text="Aucune donnée pédagogique saisie pour cette période."
+                        <TextBlock Text="Aucune donnée pédagogique saisie pour cette période."
                                    Classes="muted" IsVisible="{Binding !HasLines}" />
                         <TextBlock Text="{Binding EntryHeading}" Classes="groupcaps"
                                    IsVisible="{Binding HasLines}" />
