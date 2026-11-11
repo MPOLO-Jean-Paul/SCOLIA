@@ -313,12 +313,12 @@ public sealed class CashierPage : PageViewModel
         }
     }
     public string ReferenceText => string.IsNullOrEmpty(reference)
-        ? (NeedsExternalReference ? "Référence de l'opérateur obligatoire" : "Choisissez un apprenant") : reference;
+        ? (NeedsExternalReference ? "Référence de l'opérateur obligatoire" : $"Choisissez un {Shell.StudentTerms.Singular}") : reference;
     /// <summary>Visé par : la personne connectée, qui reçoit l'argent. Le serveur l'inscrit aussi sur le reçu.</summary>
     public string ReviewedBy => Shell.AccountName;
     /// <summary>Téléphone du payeur : celui du tuteur, repris du dossier de l'apprenant choisi.</summary>
     public string PayerPhone { get => payerPhone; private set { if (Set(ref payerPhone, value)) Raise(nameof(PayerPhoneText)); } }
-    public string PayerPhoneText => HasStudent ? (string.IsNullOrEmpty(payerPhone) ? "Aucun numéro au dossier" : payerPhone) : "Choisissez un apprenant";
+    public string PayerPhoneText => HasStudent ? (string.IsNullOrEmpty(payerPhone) ? "Aucun numéro au dossier" : payerPhone) : $"Choisissez un {Shell.StudentTerms.Singular}";
     /// <summary>Observation facultative : laissée vide, le reçu porte « OK ».</summary>
     public string Note { get => note; set => Set(ref note, value); }
 
@@ -384,7 +384,7 @@ public sealed class CashierPage : PageViewModel
             foreach (var s in page.Items.Take(12))
                 Results.Add(new PayerRow(s.EnrollmentId, s.Id, $"{s.Matricule} · {Format.FullName(s.LastName, s.MiddleName, s.FirstName)}",
                     $"{s.PromotionCode ?? "sans promotion"} · {Labels.Status(s.Status ?? string.Empty)}"));
-            SearchStatus = page.Items.Count == 0 ? "Aucun apprenant trouvé dans les données disponibles."
+            SearchStatus = page.Items.Count == 0 ? $"Aucun {Shell.StudentTerms.Singular} trouvé dans les données disponibles."
                 : local is { Complete: false } ? "Recherche limitée aux dossiers téléchargés ; préparation hors ligne incomplète."
                 : null;
         }
@@ -435,7 +435,7 @@ public sealed class CashierPage : PageViewModel
         Balance = string.Empty;
         Overdue = string.Empty;
         Reference = string.Empty;
-        Hint = "Chargement du compte de l'apprenant…";
+        Hint = $"Chargement du compte de {Shell.StudentTerms.Elided}…";
         Raise(nameof(HasStudent));
         Raise(nameof(ShowPayment));
         Raise(nameof(HasMonths));
@@ -444,7 +444,7 @@ public sealed class CashierPage : PageViewModel
         Raise(nameof(CanPay));
         if (row.EnrollmentId is not { } eid)
         {
-            Hint = "Cet apprenant n'a pas d'inscription active : encaissement impossible.";
+            Hint = $"Cet {Shell.StudentTerms.Singular} n'a pas d'inscription active : encaissement impossible.";
             previewing = false;
             Raise(nameof(CanPay));
             return;
@@ -455,7 +455,7 @@ public sealed class CashierPage : PageViewModel
         {
             if (version == selectionVersion)
             {
-                Hint = "Compte indisponible. Vérifiez la connexion et sélectionnez à nouveau l'apprenant.";
+                Hint = $"Compte indisponible. Vérifiez la connexion et sélectionnez à nouveau {Shell.StudentTerms.Elided}.";
                 previewing = false;
                 Raise(nameof(CanPay));
             }
@@ -592,7 +592,7 @@ public sealed class CashierPage : PageViewModel
     {
         if (enrollment is not { } e)
         {
-            Hint = "Choisissez d'abord un apprenant.";
+            Hint = $"Choisissez d'abord un {Shell.StudentTerms.Singular}.";
             return;
         }
         var ids = SelectedIds();
@@ -976,7 +976,7 @@ public sealed class ReceiptDetailPage : PageViewModel
 
         Details.Clear();
         Details.Add(new InfoLine("Date", Format.Date(receipt.Date)));
-        Details.Add(new InfoLine("Apprenant", $"{receipt.StudentName} · {receipt.Matricule}"));
+        Details.Add(new InfoLine(Shell.StudentTerms.SingularTitle, $"{receipt.StudentName} · {receipt.Matricule}"));
         Details.Add(new InfoLine("Promotion", $"{receipt.PromotionCode} · {receipt.AcademicYear}"));
         Details.Add(new InfoLine("Montant", Money(receipt.Amount)));
         Details.Add(new InfoLine("Mode", Labels.Method(receipt.Method) + (receipt.Reference is null ? string.Empty : $" · réf. {receipt.Reference}")));
