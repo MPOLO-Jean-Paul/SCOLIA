@@ -123,6 +123,18 @@ public static class CurriculumStructureRules
         }
     }
 
+    /// <summary>Le complexe est validé classe par classe et cycle par cycle.</summary>
+    public static void ValidateForSchoolCycle(SchoolProfile school, SchoolCycle cycle,
+        AcademicYear year, IReadOnlyCollection<CurriculumItem> items)
+    {
+        if (cycle.SchoolId != school.Id || !cycle.IsActive)
+            throw new DomainException("programmePedagogique", "Cycle absent ou inactif dans cet établissement.");
+        if (school.InstitutionType != InstitutionProfiles.ComplexeScolaire &&
+            school.InstitutionType != cycle.Kind.ToString())
+            throw new DomainException("programmePedagogique", "Le cycle ne correspond pas au profil de l’établissement.");
+        ValidateCurriculum(cycle.Kind.ToString(), year, items, Array.Empty<AcademicStructureUnit>());
+    }
+
     private static bool HasActiveAncestors(AcademicStructureUnit node,
         IReadOnlyDictionary<Guid, AcademicStructureUnit> byId)
     {
@@ -151,7 +163,9 @@ public static class CurriculumStructureRules
             return;
         }
 
-        Require(items.Count > 0, "Le programme doit contenir au moins une matière.");
+        Require(institutionType != InstitutionProfiles.ComplexeScolaire,
+            "Chaque programme du complexe scolaire doit être validé selon son cycle, jamais selon un profil global.");
+        Require(items.Count > 0, "Le programme doit contenir au moins une matière ou activité.");
         var byId = items.ToDictionary(i => i.Id);
         var nodeById = nodes.ToDictionary(n => n.Id);
         var pathIds = nodes.Where(n => n.Kind is AcademicUnitKind.Filiere
@@ -170,12 +184,12 @@ public static class CurriculumStructureRules
                 "Le volume horaire doit être positif ou nul, et le coefficient strictement positif.");
             Require(codes.Add((item.PromotionId, item.AcademicUnitId, item.Semester, item.Code.ToUpperInvariant())),
                 "Deux matières du même semestre et de la même promotion ne peuvent partager un code.");
-            if (institutionType is InstitutionProfiles.Primaire or InstitutionProfiles.Secondaire)
+            if (institutionType is InstitutionProfiles.Maternelle or InstitutionProfiles.Primaire or InstitutionProfiles.Secondaire)
             {
                 Require(item.Kind == CurriculumItemKind.AnnualSubject &&
                         item.Semester == CourseSemester.Annuel && item.ParentItemId is null &&
                         item.AcademicUnitId is null && item.Credits == 0,
-                    "Le primaire et le secondaire utilisent exclusivement des matières annuelles, sans crédits LMD.");
+                    "La maternelle, le primaire et le secondaire utilisent exclusivement des activités ou matières annuelles, sans crédits LMD.");
                 continue;
             }
 
