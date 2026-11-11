@@ -253,6 +253,15 @@ public static class ScoliaEndpoints
         g.MapPost("/cycles/evaluations/{enrollmentId:guid}",
             (Guid enrollmentId, SchoolCycleAssessmentInput input, SchoolCycleAssessmentService s, CancellationToken ct) =>
                 s.SaveAsync(enrollmentId, input, ct)).RequireAuthorization(Permissions.AcademicsWrite);
+        // Document de consultation distinct du bulletin officiel et des
+        // délibérations ITM. Les droits sont ceux de la lecture pédagogique.
+        g.MapGet("/cycles/evaluations/{enrollmentId:guid}/apercu.pdf",
+            async (Guid enrollmentId, SchoolCycleAssessmentService s, CancellationToken ct) =>
+                new InlineFileResult(
+                    SchoolCycleBulletinPdf.Build(await s.PrintPreviewAsync(enrollmentId, ct)),
+                    Pdf, "apercu-pedagogique-non-officiel.pdf"))
+            .RequireAuthorization(Permissions.AcademicsRead);
+
 
         g.MapGet("/sections", (SchoolService s, CancellationToken ct) => s.SectionsAsync(ct));
         g.MapPost("/sections", (SectionUpsert input, SchoolService s, CancellationToken ct) => s.UpsertSectionAsync(null, input, ct)).RequireAuthorization(Permissions.SettingsWrite);
