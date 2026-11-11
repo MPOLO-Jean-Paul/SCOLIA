@@ -62,7 +62,11 @@ public sealed record SchoolBulletinTermDto(
 public sealed record SchoolBulletinPreviewDto(
     Guid EnrollmentId, Guid SchoolCycleId, string Cycle, string Promotion,
     string AcademicYear, IReadOnlyList<SchoolBulletinEntryDto> Entries,
-    bool IsOfficial, string Notice, IReadOnlyList<SchoolBulletinTermDto>? Terms);
+    bool IsOfficial, string Notice, IReadOnlyList<SchoolBulletinTermDto>? Terms,
+    string TemplateCode = "CYCLE_PROVISOIRE",
+    string DocumentTitle = "Aperçu pédagogique",
+    string EntryHeading = "Activités ou branches",
+    string PeriodHeading = "Période");
 
 /// <summary>Apprenant proposé pour les cartes d'accès, avec son diagnostic.</summary>
 public sealed record CardCandidateDto(Guid EnrollmentId, string Matricule, string FullName, string PromotionCode, string Status, bool Eligible,
