@@ -30,6 +30,7 @@ public sealed class StudentsPage : PageViewModel
 
     public StudentsPage(ShellViewModel shell) : base(shell)
     {
+        EmptyTitle = $"Aucun {Shell.Learners.Singular} trouvé";
         OpenStudentOnPhone = new RelayCommand<StudentRow>(row =>
         {
             if (row is null) return;
