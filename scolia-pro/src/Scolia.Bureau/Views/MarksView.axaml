@@ -2,8 +2,10 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:infra="using:Scolia.Bureau.Infrastructure"
              xmlns:c="using:Scolia.Bureau.Controls"
+             xmlns:mi="using:Material.Icons.Avalonia"
              x:Class="Scolia.Bureau.Views.MarksView">
-  <Grid ColumnDefinitions="2.5*,3.5*" RowDefinitions="Auto,*" infra:Adaptive.StackBelow="760">
+  <Grid>
+  <Grid IsVisible="{Binding UseClassicMarksLayout}" ColumnDefinitions="2.5*,3.5*" RowDefinitions="Auto,*" infra:Adaptive.StackBelow="760">
     <Border Grid.ColumnSpan="2" Classes="band" Margin="0,0,0,10">
       <WrapPanel>
         <StackPanel Classes="field">
@@ -60,5 +62,108 @@
         </DataGrid>
       </Grid>
     </Border>
+  </Grid>
+
+  <!-- Android enseignants : classes existantes de l'accueil Secretariat/Administrateur. -->
+  <StackPanel IsVisible="{Binding IsTeacherPhone}" Spacing="12" Margin="0,0,4,12">
+    <StackPanel Spacing="5">
+      <TextBlock Text="SÉLECTION DE LA FEUILLE" Classes="groupcaps" />
+      <Border Classes="phonegroup" Padding="12,12">
+        <StackPanel Spacing="10">
+          <StackPanel Classes="field" Margin="0">
+            <TextBlock Text="Promotion" Classes="fieldlabel" />
+            <ComboBox ItemsSource="{Binding Promotions}" SelectedItem="{Binding Promotion}"
+                      HorizontalAlignment="Stretch" MinHeight="44" />
+          </StackPanel>
+          <StackPanel Classes="field" Margin="0">
+            <TextBlock Text="Cote à encoder" Classes="fieldlabel" />
+            <ComboBox ItemsSource="{Binding Kinds}" SelectedItem="{Binding Kind}"
+                      HorizontalAlignment="Stretch" MinHeight="44" />
+          </StackPanel>
+        </StackPanel>
+      </Border>
+    </StackPanel>
+
+    <StackPanel Spacing="5">
+      <TextBlock Text="RÈGLES D'ENCODAGE" Classes="groupcaps" />
+      <Border Classes="phonegroup" Padding="12,12">
+        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+          <Border Classes="appicon medium" Background="{DynamicResource ToneBlue}">
+            <mi:MaterialIcon Kind="ShieldCheckOutline" />
+          </Border>
+          <TextBlock Grid.Column="1" Text="{Binding EncodingRules}" Classes="muted"
+                     TextWrapping="Wrap" />
+        </Grid>
+      </Border>
+      <Border Classes="phonegroup" Padding="12,10" IsVisible="{Binding HasNotice}">
+        <TextBlock Text="{Binding Notice}" Classes="muted" TextWrapping="Wrap" />
+      </Border>
+    </StackPanel>
+
+    <StackPanel Spacing="5">
+      <TextBlock Text="MES COURS" Classes="groupcaps" />
+      <Border Classes="phonegroup">
+        <StackPanel>
+          <!-- Même ListBox, sélection et couleurs que les choix du secrétariat. -->
+          <ListBox ItemsSource="{Binding Courses}" SelectedItem="{Binding Course}"
+                   BorderThickness="0" Background="Transparent" Padding="6,6">
+            <ListBox.ItemTemplate>
+              <DataTemplate>
+                <StackPanel Spacing="4" Margin="4,6">
+                  <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
+                    <TextBlock Text="{Binding Number}" Classes="muted" VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="1" Text="{Binding Name}" FontWeight="SemiBold"
+                               TextWrapping="Wrap" VerticalAlignment="Center" />
+                    <mi:MaterialIcon Grid.Column="2" Kind="ChevronRight" Width="18" Height="18"
+                                     Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" />
+                  </Grid>
+                  <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                    <TextBlock Text="{Binding Semester}" Classes="muted" />
+                    <TextBlock Grid.Column="1" Text="{Binding Max, StringFormat='Maxima : {0}'}" Classes="muted" />
+                  </Grid>
+                  <TextBlock Text="{Binding Progress}" Classes="muted" FontSize="{DynamicResource FsSmall}"
+                             TextWrapping="Wrap" />
+                </StackPanel>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+          <c:EmptyState Icon="BookOpenVariant" Title="Aucun cours attribué"
+                        Hint="Contactez le secrétariat pour vérifier les attributions."
+                        IsVisible="{Binding Courses.Count, Converter={StaticResource IsEmpty}}" />
+        </StackPanel>
+      </Border>
+    </StackPanel>
+
+    <StackPanel Spacing="5">
+      <TextBlock Text="FEUILLE DE COTES" Classes="groupcaps" />
+      <Border Classes="phonegroup">
+        <StackPanel>
+          <StackPanel Spacing="4" Margin="12,12,12,8" IsVisible="{Binding !NoCourse}">
+            <TextBlock Text="{Binding SheetTitle}" FontWeight="SemiBold" TextWrapping="Wrap" />
+            <TextBlock Text="{Binding SheetHint}" Classes="muted" TextWrapping="Wrap" />
+          </StackPanel>
+          <c:EmptyState Icon="Pen" Title="Choisissez un cours"
+                        Hint="Sélectionnez un cours pour ouvrir la feuille anonyme."
+                        IsVisible="{Binding NoCourse}" />
+          <!-- L'éditeur et les commandes de sauvegarde restent ceux de SCOLIA. -->
+          <DataGrid ItemsSource="{Binding Rows}" AutoGenerateColumns="False" IsReadOnly="False"
+                    IsVisible="{Binding !NoCourse}" BorderThickness="0" CornerRadius="0" MaxHeight="460">
+            <DataGrid.Columns>
+              <DataGridTextColumn Header="Code" Binding="{Binding Code}" IsReadOnly="True" Width="*" MinWidth="105" />
+              <DataGridTextColumn Header="Cote" Binding="{Binding Value}" Width="Auto" MinWidth="85" />
+              <DataGridTemplateColumn Header="Retenue" Width="Auto" MinWidth="95">
+                <DataGridTemplateColumn.CellTemplate>
+                  <DataTemplate>
+                    <TextBlock Text="{Binding Retained}" Foreground="{Binding RetainedBrush}"
+                               VerticalAlignment="Center" Margin="8,0" />
+                  </DataTemplate>
+                </DataGridTemplateColumn.CellTemplate>
+              </DataGridTemplateColumn>
+            </DataGrid.Columns>
+          </DataGrid>
+        </StackPanel>
+      </Border>
+    </StackPanel>
+  </StackPanel>
   </Grid>
 </UserControl>
