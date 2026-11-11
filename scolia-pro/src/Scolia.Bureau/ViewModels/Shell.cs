@@ -1792,7 +1792,7 @@ public sealed class ShellViewModel : Observable
         if (name is "Nouveau membre" or "Pointage")
             return "Personnel";
 
-        if (name is "Nouvelle inscription" or "Modifier" or "Liste des apprenants")
+        if (name is "Nouvelle inscription" or "Modifier" or "Liste des apprenants" or "Liste des élèves" or "Liste des étudiants")
             return "Secrétariat";
         if (name is "Nouveau cours" or "Nouvelle évaluation" or "Nouvel incident")
             return "Scolarité";
@@ -1807,7 +1807,7 @@ public sealed class ShellViewModel : Observable
 
         return originalTab switch
         {
-            "Apprenant" => "Secrétariat",
+            "Apprenant" or "Élève" or "Étudiant" => "Secrétariat",
             "Reçu" => "Finances",
             "Affichage" => "Paramètres",
             "Administration" => "Personnel",
