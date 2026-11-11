@@ -23,6 +23,7 @@ public sealed class ScoliaDbContext(DbContextOptions<ScoliaDbContext> options, I
     public DbSet<SchoolCycle> SchoolCycles => Set<SchoolCycle>();
     public DbSet<SchoolCycleFeePolicy> SchoolCycleFeePolicies => Set<SchoolCycleFeePolicy>();
     public DbSet<SchoolCyclePeriod> SchoolCyclePeriods => Set<SchoolCyclePeriod>();
+    public DbSet<SchoolCycleAssessment> SchoolCycleAssessments => Set<SchoolCycleAssessment>();
     public DbSet<AcademicYear> AcademicYears => Set<AcademicYear>();
     public DbSet<AcademicPeriod> Periods => Set<AcademicPeriod>();
     public DbSet<PedagogicalPeriod> PedagogicalPeriods => Set<PedagogicalPeriod>();
@@ -137,6 +138,24 @@ public sealed class ScoliaDbContext(DbContextOptions<ScoliaDbContext> options, I
             e.HasIndex(x => new { x.AcademicYearId, x.Order }).IsUnique();
             e.HasIndex(x => new { x.AcademicYearId, x.Code }).IsUnique();
             e.HasOne<AcademicYear>().WithMany().HasForeignKey(x => x.AcademicYearId).OnDelete(DeleteBehavior.Restrict);
+        });
+        // Registre séparé des évaluations scolaires : aucune réutilisation des
+        // notes ITM/IM, aucune conversion automatique des observations en scores.
+        b.Entity<SchoolCycleAssessment>(e =>
+        {
+            e.ToTable("EvaluationsCyclesScolaires");
+            e.Property(x => x.EvaluationCode).HasMaxLength(24);
+            e.Property(x => x.Title).HasMaxLength(160);
+            e.Property(x => x.Observation).HasMaxLength(800);
+            e.Property(x => x.Comment).HasMaxLength(800);
+            e.HasIndex(x => new { x.EnrollmentId, x.SchoolCyclePeriodId, x.EvaluationCode }).IsUnique();
+            e.HasIndex(x => new { x.SchoolCycleId, x.AcademicYearId, x.PromotionId });
+            e.HasOne<AcademicYear>().WithMany().HasForeignKey(x => x.AcademicYearId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne<SchoolCycle>().WithMany().HasForeignKey(x => x.SchoolCycleId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne<SchoolCyclePeriod>().WithMany().HasForeignKey(x => x.SchoolCyclePeriodId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne<Promotion>().WithMany().HasForeignKey(x => x.PromotionId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne<Enrollment>().WithMany().HasForeignKey(x => x.EnrollmentId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne<CurriculumItem>().WithMany().HasForeignKey(x => x.CurriculumItemId).OnDelete(DeleteBehavior.Restrict);
         });
         // Référentiels nouveaux profils : isolés des promotions et des cours ITM existants.
         b.Entity<AcademicStructureUnit>(e =>
