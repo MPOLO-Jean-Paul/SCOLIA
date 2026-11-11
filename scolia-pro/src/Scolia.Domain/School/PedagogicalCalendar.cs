@@ -37,7 +37,7 @@ public static class PedagogicalCalendarRules
         {
             InstitutionProfiles.ItmIm or InstitutionProfiles.ItmIem => semester is CourseSemester.Annuel or CourseSemester.S1 or CourseSemester.S2
                 or CourseSemester.JuryEpreuve or CourseSemester.JuryBloc,
-            InstitutionProfiles.Primaire or InstitutionProfiles.Secondaire => semester == CourseSemester.Annuel,
+            InstitutionProfiles.Maternelle or InstitutionProfiles.Primaire or InstitutionProfiles.Secondaire => semester == CourseSemester.Annuel,
             InstitutionProfiles.SuperieurLmd => semester is CourseSemester.S1 or CourseSemester.S2,
             _ => false,
         };
@@ -63,6 +63,12 @@ public static class PedagogicalCalendarRules
                 throw new DomainException("profilPedagogique", "Le calendrier ITM existant ne doit pas être remplacé.");
             return;
         }
+
+        // La maternelle et les complexes multi-cycles sont modélisés avec
+        // SchoolCyclePeriod (cycle + année) : aucune collision P1/P2 entre niveaux.
+        if (institutionType is InstitutionProfiles.Maternelle or InstitutionProfiles.ComplexeScolaire)
+            throw new DomainException("periodePedagogique",
+                "Définissez les périodes sur chaque cycle scolaire, avec le mode observation pour la maternelle.");
 
         if (periods.Count == 0)
             throw new DomainException("periodePedagogique", "Définissez les périodes pédagogiques de l'année.");
