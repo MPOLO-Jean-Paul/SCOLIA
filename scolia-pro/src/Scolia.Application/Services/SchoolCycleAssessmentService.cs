@@ -134,6 +134,30 @@ public sealed class SchoolCycleAssessmentService(IAppDbContext db, IWriteGate ga
             SubjectRows: subjectRows);
     }
 
+    /// <summary>
+    /// Enveloppe nominative d'un aperçu pédagogique, sans modifier les notes
+    /// ni délivrer de résultat de délibération. La validation du cycle reste
+    /// identique à celle de l'API de consultation.
+    /// </summary>
+    public async Task<SchoolCycleBulletinPrintDto> PrintPreviewAsync(
+        Guid enrollmentId, CancellationToken ct = default)
+    {
+        var context = await ResolveAsync(enrollmentId, ct);
+        var preview = await PreviewAsync(enrollmentId, ct);
+        if (preview.IsOfficial)
+            throw new DomainException("bulletinCycle", "L'impression provisoire ne peut pas devenir un bulletin officiel.");
+        var student = await db.Students.AsNoTracking()
+            .FirstOrDefaultAsync(s => s.Id == context.Enrollment.StudentId, ct)
+            ?? throw new NotFoundException("Dossier de l'élève introuvable.");
+        return new SchoolCycleBulletinPrintDto(
+            context.School.Name,
+            context.School.Address,
+            context.School.City,
+            student.FullName,
+            student.Matricule,
+            preview);
+    }
+
     public Task<SchoolCycleAssessmentItemDto> SaveAsync(
         Guid enrollmentId, SchoolCycleAssessmentInput input,
         CancellationToken ct = default) => gate.RunAsync(async () =>
