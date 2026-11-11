@@ -86,14 +86,17 @@ public sealed class SchoolCycleAssessmentService(IAppDbContext db, IWriteGate ga
                                item.Kind == CurriculumItemKind.AnnualSubject &&
                                (item.IsActive || referencedIds.Contains(item.Id)))
                 .OrderBy(item => item.Code).ThenBy(item => item.Name).ToListAsync(ct);
+            // Index partagé pour éviter de reparcourir toutes les évaluations
+            // pour chaque combinaison matière/période (important hors ligne).
+            var bySubjectPeriod = list.Where(entry => entry.CurriculumItemId.HasValue)
+                .ToLookup(entry => (entry.CurriculumItemId!.Value, entry.SchoolCyclePeriodId));
             subjectRows = subjects.Select(subject =>
                 new SchoolCycleBulletinSubjectDto(
                     subject.Id, subject.Code, subject.Name,
                     subject.Coefficient, subject.IsActive,
                     periods.Select(period => new SchoolCycleBulletinSubjectPeriodDto(
                         period.Id, period.Code, period.Name,
-                        list.Where(e => e.CurriculumItemId == subject.Id &&
-                                        e.SchoolCyclePeriodId == period.Id).ToArray()))
+                        bySubjectPeriod[(subject.Id, period.Id)].ToArray()))
                         .ToArray())).ToArray();
         }
 
