@@ -1,17 +1,17 @@
 # SCOLIA Pro — profils pédagogiques : phase 1 (socle sécurisé)
 
 ## Objectif
-Préparer les profils ITM/IM, primaire, secondaire/technique et supérieur LMD sans changer
-les règles actuellement utilisées dans les ITM/IM.
+Préparer les profils ITM/IEM, primaire, secondaire/technique et supérieur LMD sans changer
+les règles actuellement utilisées dans les ITM/IEM.
 
 ## Périmètre livré dans cette branche
-- Ajout de `SchoolProfile.InstitutionType` (valeur initiale `ItmIm`).
+- Ajout de `SchoolProfile.InstitutionType` (valeur initiale `ItmIem`).
 - Migration SQLite additive `20261111060000_InstitutionProfiles`: nouvelle colonne texte
-  `Etablissement.InstitutionType` non nulle, valeur par défaut `ItmIm`.
+  `Etablissement.InstitutionType` non nulle, valeur par défaut `ItmIem`.
 - Contrat API rétrocompatible : les anciens clients qui n'envoient pas de profil
-  restent ITM/IM ; la consultation de l'établissement restitue `institutionType`.
+  restent ITM/IEM ; la consultation de l'établissement restitue `institutionType`.
 - Assistant Windows : liste des quatre catégories avec disponibilité clairement indiquée.
-- Sécurité métier : seule `ItmIm` peut être activée au cours de cette phase.
+- Sécurité métier : seule `ItmIem` peut être activée au cours de cette phase.
   Une tentative de création primaire/secondaire/LMD est refusée par le serveur,
   même si elle contourne l'interface.
 - Le profil n'est pas modifiable par l'API classique des paramètres d'établissement.
@@ -20,7 +20,7 @@ les règles actuellement utilisées dans les ITM/IM.
 ## Invariants de non-régression
 1. Aucune table de notes, de paiements, de délibérations, de promotions ou de
    synchronisation n'est modifiée par cette migration.
-2. Les écoles existantes héritent automatiquement de `ItmIm`.
+2. Les écoles existantes héritent automatiquement de `ItmIem`.
 3. Les formules de délibération, les règles financières, les cartes et les
    inscriptions ITM restent inchangées.
 4. Aucune modification automatique du profil d'une école déjà configurée.
