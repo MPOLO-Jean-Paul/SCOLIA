@@ -41,6 +41,10 @@ public sealed class SchoolBulletinPage : PageViewModel
     public SchoolBulletinPage(ShellViewModel shell, Guid enrollmentId) : base(shell)
     {
         this.enrollmentId = enrollmentId;
+        Action("Exporter l'aperçu PDF", MaterialIconKind.FilePdfBox,
+            () => Shell.Download(
+                $"api/etablissement/cycles/evaluations/{enrollmentId}/apercu.pdf",
+                $"apercu-pedagogique-{enrollmentId:N}.pdf"), primary: true);
         ActionRefresh();
     }
 
