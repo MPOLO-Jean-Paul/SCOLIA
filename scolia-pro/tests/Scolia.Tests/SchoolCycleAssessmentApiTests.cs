@@ -44,6 +44,107 @@ public sealed class SchoolCycleAssessmentApiTests : IDisposable
         Assert.Empty(await db.SchoolCycleAssessments.ToListAsync());
     }
 
+    [Theory]
+    [InlineData(SchoolCycleKind.Primaire, "Trimestre", "T1", "T2")]
+    [InlineData(SchoolCycleKind.Secondaire, "Semestre", "S1", "S2")]
+    public async Task Primary_and_secondary_previews_keep_separate_terms_and_ungraded_periods(
+        SchoolCycleKind kind, string prefix, string firstTerm, string secondTerm)
+    {
+        var admin = await app.InstalledAdmin();
+        Guid enrollmentId;
+        using (var scope = app.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<ScoliaDbContext>();
+            var school = await db.Schools.SingleAsync();
+            var year = await db.AcademicYears.SingleAsync(y => y.IsCurrent);
+            school.InstitutionType = InstitutionProfiles.ComplexeScolaire;
+            var nursery = new SchoolCycle
+            {
+                SchoolId = school.Id, Kind = SchoolCycleKind.Maternelle, Name = "Maternelle",
+            };
+            var cycle = new SchoolCycle
+            {
+                SchoolId = school.Id, Kind = kind, Name = kind.ToString(),
+            };
+            var classroom = new Promotion
+            {
+                AcademicYearId = year.Id, SchoolCycleId = cycle.Id,
+                Code = kind == SchoolCycleKind.Primaire ? "PRI1" : "SEC1",
+                Name = "Première année", Level = 1,
+            };
+            var pupil = new Student
+            {
+                Matricule = kind == SchoolCycleKind.Primaire ? "PRV901" : "SEV901",
+                LastName = "KALALA", MiddleName = "MULUMBA", FirstName = "Ada",
+            };
+            pupil.RefreshKeys();
+            var enrollment = new Enrollment
+            {
+                StudentId = pupil.Id, AcademicYearId = year.Id,
+                PromotionId = classroom.Id, EnrolledOn = year.StartDate,
+            };
+            enrollmentId = enrollment.Id;
+            var period1 = new SchoolCyclePeriod
+            {
+                SchoolCycleId = cycle.Id, AcademicYearId = year.Id,
+                Code = "P1", Name = "Première période", TermCode = firstTerm,
+                Mode = SchoolCycleAssessmentMode.Evaluation, Order = 1,
+                StartDate = year.StartDate, EndDate = year.StartDate.AddDays(20),
+            };
+            var period2 = new SchoolCyclePeriod
+            {
+                SchoolCycleId = cycle.Id, AcademicYearId = year.Id,
+                Code = "P2", Name = "Deuxième période", TermCode = secondTerm,
+                Mode = SchoolCycleAssessmentMode.Evaluation, Order = 2,
+                StartDate = year.StartDate.AddDays(21), EndDate = year.StartDate.AddDays(41),
+            };
+            var subject = new CurriculumItem
+            {
+                AcademicYearId = year.Id, PromotionId = classroom.Id,
+                Kind = CurriculumItemKind.AnnualSubject, Name = "Français",
+                Code = "FRANC", Coefficient = 1,
+            };
+            var grade = new SchoolCycleAssessment
+            {
+                AcademicYearId = year.Id, SchoolCycleId = cycle.Id,
+                PromotionId = classroom.Id, EnrollmentId = enrollment.Id,
+                SchoolCyclePeriodId = period1.Id, EvaluationCode = "FR01",
+                CurriculumItemId = subject.Id, Title = "Français",
+                Mode = SchoolCycleAssessmentMode.Evaluation,
+                Score = 12m, MaxScore = 20m,
+            };
+            db.SchoolCycles.AddRange(nursery, cycle);
+            db.Promotions.Add(classroom);
+            db.Students.Add(pupil);
+            db.Enrollments.Add(enrollment);
+            db.SchoolCyclePeriods.AddRange(period1, period2);
+            db.CurriculumItems.Add(subject);
+            db.SchoolCycleAssessments.Add(grade);
+            scope.ServiceProvider.GetRequiredService<IAuditLog>().Record(
+                "tests.bulletins.cycles", "EvaluationCycle", grade.Id.ToString(),
+                "Contrôle des termes scolaires dans une base isolée.");
+            await db.SaveChangesAsync();
+        }
+
+        var json = await admin.GetAsync(
+            $"/api/etablissement/cycles/evaluations/{enrollmentId}/apercu").Ok();
+        Assert.False(json.GetProperty("isOfficial").GetBoolean());
+        var terms = json.GetProperty("terms").EnumerateArray().ToArray();
+        Assert.Equal(2, terms.Length);
+        Assert.Equal(firstTerm, terms[0].GetProperty("code").GetString());
+        Assert.Equal(secondTerm, terms[1].GetProperty("code").GetString());
+        Assert.StartsWith(prefix, terms[0].GetProperty("label").GetString());
+        var firstPeriod = Assert.Single(terms[0].GetProperty("periods").EnumerateArray());
+        var score = Assert.Single(firstPeriod.GetProperty("entries").EnumerateArray());
+        Assert.Equal(12m, score.GetProperty("score").GetDecimal());
+        Assert.Equal(20m, score.GetProperty("maxScore").GetDecimal());
+        var secondPeriod = Assert.Single(terms[1].GetProperty("periods").EnumerateArray());
+        Assert.Equal("P2", secondPeriod.GetProperty("code").GetString());
+        Assert.Empty(secondPeriod.GetProperty("entries").EnumerateArray());
+        Assert.DoesNotContain("moyenne", json.GetRawText(), StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(1, json.GetProperty("entries").GetArrayLength());
+    }
+
     [Fact]
     public async Task Nursery_preview_keeps_observations_without_a_grade_or_pass_mark()
     {
