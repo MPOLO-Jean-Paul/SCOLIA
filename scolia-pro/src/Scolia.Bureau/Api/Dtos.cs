@@ -41,6 +41,29 @@ public sealed record SchoolCycleConfigurationItemDto(Guid Id, string Kind, strin
 public sealed record SchoolCycleConfigurationDto(string InstitutionType, string Governance,
     Guid? AcademicYearId, IReadOnlyList<SchoolCycleConfigurationItemDto> Cycles);
 
+/// <summary>
+/// Lecture seule des carnets / bulletins provisoires par cycle. Ces
+/// contrats correspondent aux DTO servis par l'API et ne remplacent pas
+/// les bulletins ITM ni les délibérations du jury.
+/// </summary>
+public sealed record SchoolBulletinEntryDto(
+    Guid Id, Guid SchoolCyclePeriodId, string PeriodCode,
+    string EvaluationCode, string Title, string Mode, Guid? CurriculumItemId,
+    string? Observation, decimal? Score, decimal? MaxScore,
+    string? Comment, long Version);
+
+public sealed record SchoolBulletinPeriodDto(
+    Guid Id, string Code, string Name, string TermCode, DateOnly StartDate,
+    DateOnly EndDate, string Mode, IReadOnlyList<SchoolBulletinEntryDto> Entries);
+
+public sealed record SchoolBulletinTermDto(
+    string Code, string Label, IReadOnlyList<SchoolBulletinPeriodDto> Periods);
+
+public sealed record SchoolBulletinPreviewDto(
+    Guid EnrollmentId, Guid SchoolCycleId, string Cycle, string Promotion,
+    string AcademicYear, IReadOnlyList<SchoolBulletinEntryDto> Entries,
+    bool IsOfficial, string Notice, IReadOnlyList<SchoolBulletinTermDto>? Terms);
+
 /// <summary>Apprenant proposé pour les cartes d'accès, avec son diagnostic.</summary>
 public sealed record CardCandidateDto(Guid EnrollmentId, string Matricule, string FullName, string PromotionCode, string Status, bool Eligible,
     bool IdentityComplete, bool DuplicateMatricule);
