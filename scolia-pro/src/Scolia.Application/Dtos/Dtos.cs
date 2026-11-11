@@ -223,7 +223,8 @@ public sealed record PasswordReset(string NewPassword);
 public sealed record PasswordChange(string CurrentPassword, string NewPassword);
 
 public sealed record SessionDto(Guid Id, string UserName, string DisplayName, string Role, string RoleLabel, IReadOnlyCollection<string> Permissions,
-    bool MustChangePassword, string SchoolName, string? SchoolShortName, string? CurrentYear, string CurrencySymbol, string PhoneCountryCode);
+    bool MustChangePassword, string SchoolName, string? SchoolShortName, string? CurrentYear, string CurrencySymbol, string PhoneCountryCode,
+    string InstitutionType = "ItmIem");
 
 public sealed record LoginRequest(string UserName, string Password);
 

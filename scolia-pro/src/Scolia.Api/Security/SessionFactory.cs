@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
 using Scolia.Application.Dtos;
 using Scolia.Domain.Security;
+using Scolia.Domain.School;
 using Scolia.Infrastructure.Persistence;
 
 namespace Scolia.Api.Security;
@@ -42,7 +43,7 @@ public static class SessionFactory
         var school = await db.Schools.AsNoTracking().OrderBy(s => s.CreatedAtUtc).FirstOrDefaultAsync(ct);
         var year = await db.AcademicYears.AsNoTracking().Where(y => y.IsCurrent).Select(y => y.Label).FirstOrDefaultAsync(ct);
         return new SessionDto(user.Id, user.UserName, user.DisplayName, user.Role.ToString(), Permissions.Label(user), Permissions.For(user),
-            user.MustChangePassword, school?.Name ?? "SCOLIA", school?.ShortName, year, school?.CurrencySymbol ?? "FC", school?.PhoneCountryCode ?? "243");
+            user.MustChangePassword, school?.Name ?? "SCOLIA", school?.ShortName, year, school?.CurrencySymbol ?? "FC", school?.PhoneCountryCode ?? "243", InstitutionProfiles.Canonicalize(school?.InstitutionType));
     }
 
     /// <summary>Chaque requête vérifie que le compte est actif et que son empreinte de sécurité n'a pas changé

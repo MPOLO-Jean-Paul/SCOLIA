@@ -15,6 +15,7 @@ public interface IAppDbContext
     DbSet<SchoolProfile> Schools { get; }
     DbSet<AcademicYear> AcademicYears { get; }
     DbSet<AcademicPeriod> Periods { get; }
+    DbSet<PedagogicalPeriod> PedagogicalPeriods { get; }
     DbSet<Section> Sections { get; }
     DbSet<Promotion> Promotions { get; }
     DbSet<FeeItem> FeeItems { get; }
