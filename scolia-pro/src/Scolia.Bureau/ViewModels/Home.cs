@@ -147,10 +147,10 @@ public sealed class HomePage : PageViewModel
             Go(() => new ReceiptsPage(Shell))));
         nextKpis.Add(new HomeKpiVm("Encaissé ce mois", Money(d.CollectedThisMonth), $"{Money(d.CollectedTotal)} depuis la rentrée", MaterialIconKind.CalendarMonth, ThemeBrush.Get("ToneBlue"),
             Go(() => new DashboardPage(Shell))));
-        nextKpis.Add(new HomeKpiVm("Apprenants actifs", d.ActiveStudents.ToString("N0", System.Globalization.CultureInfo.GetCultureInfo("fr-FR")),
+        nextKpis.Add(new HomeKpiVm($"{Shell.Learners.PluralTitle} actifs", d.ActiveStudents.ToString("N0", System.Globalization.CultureInfo.GetCultureInfo("fr-FR")),
             d.NewThisMonth > 0 ? $"{Format.Count(d.NewThisMonth, "inscrit", "inscrits")} ce mois" : "Aucune inscription ce mois", MaterialIconKind.AccountGroup, ThemeBrush.Get("ToneIndigo"),
             Go(() => new StudentsPage(Shell))));
-        nextKpis.Add(new HomeKpiVm("Recouvrement", $"{d.RecoveryRate:0} %", d.StudentsLate > 0 ? $"{Format.Count(d.StudentsLate, "apprenant en retard", "apprenants en retard")}" : "Tout le monde est à jour",
+        nextKpis.Add(new HomeKpiVm("Recouvrement", $"{d.RecoveryRate:0} %", d.StudentsLate > 0 ? $"{Format.Count(d.StudentsLate, $"{Shell.Learners.Singular} en retard", $"{Shell.Learners.Plural} en retard")}" : "Tout le monde est à jour",
             MaterialIconKind.ChartBar, ThemeBrush.Get(d.StudentsLate > 0 ? "ToneOrange" : "ToneGreen"), Go(() => new DebtorsPage(Shell))));
 
         // Établissement tout neuf : les premiers pas, dans l'ordre, avant les tâches du quotidien.
@@ -161,10 +161,10 @@ public sealed class HomePage : PageViewModel
         {
             var promotions = Shell.Can(Perm.SettingsWrite) ? await PromotionsAsync() : [];
             if (Shell.Can(Perm.SettingsWrite) && promotions.Count == 0)
-                nextTasks.Add(new HomeTaskVm("1. Créer les promotions et leurs frais", "Chaque apprenant est inscrit dans une promotion, avec sa mensualité",
+                nextTasks.Add(new HomeTaskVm("1. Créer les promotions et leurs frais", $"Chaque {Shell.Learners.Singular} est inscrit dans une promotion, avec sa mensualité",
                     MaterialIconKind.School, ThemeBrush.Get("ToneIndigo"), new AsyncCommand(() => Shell.Run(() => SettingsPage.NewPromotionAsync(Shell)))));
             if (Shell.Can(Perm.StudentsWrite))
-                nextTasks.Add(new HomeTaskVm($"{(nextTasks.Count + 1)}. Inscrire le premier apprenant", "Son matricule est donné automatiquement",
+                nextTasks.Add(new HomeTaskVm($"{(nextTasks.Count + 1)}. Inscrire le premier {Shell.Learners.Singular}", "Son matricule est donné automatiquement",
                     MaterialIconKind.AccountPlus, ThemeBrush.Get("ToneBlue"), new AsyncCommand(() => Shell.Run(() => StudentForms.CreateAsync(Shell)))));
             if (Shell.Can(Perm.PaymentsCreate))
                 nextTasks.Add(new HomeTaskVm($"{(nextTasks.Count + 1)}. Encaisser une mensualité", "Le reçu numéroté s'imprime aussitôt",
@@ -179,7 +179,7 @@ public sealed class HomePage : PageViewModel
                 nextTasks.Add(new HomeTaskVm("Arrêter la caisse", $"{Format.Count(t.ReceiptsToday, "reçu", "reçus")} pour {Money(t.CollectedToday)}", MaterialIconKind.CashRegister,
                     ThemeBrush.Get("ToneOrange"), Go(() => new CashPage(Shell))));
             if (!starting && t.AttendanceMarked == 0 && Shell.Can(Perm.AcademicsWrite))
-                nextTasks.Add(new HomeTaskVm("Faire l'appel", "Aucun apprenant pointé aujourd'hui", MaterialIconKind.ClipboardCheck, ThemeBrush.Get("ToneTeal"),
+                nextTasks.Add(new HomeTaskVm("Faire l'appel", $"Aucun {Shell.Learners.Singular} pointé aujourd'hui", MaterialIconKind.ClipboardCheck, ThemeBrush.Get("ToneTeal"),
                     Go(() => new AttendancePage(Shell))));
             foreach (var a in t.Appointments.Take(3))
                 nextTasks.Add(new HomeTaskVm($"Parent convoqué : {a.Name}", $"{a.Promotion} · {a.Detail}", MaterialIconKind.AccountClock, ThemeBrush.Get("ToneRed"),
@@ -225,7 +225,7 @@ public sealed class HomePage : PageViewModel
 
         Add(Perm.PaymentsCreate, "Encaisser", "Choisir les mois payés, imprimer le reçu.", MaterialIconKind.HandCoin, "ToneGreen",
             () => Shell.Open(() => new CashierPage(Shell)));
-        Add(Perm.StudentsWrite, "Inscrire un apprenant", "Créer le dossier. Le matricule est attribué seul.", MaterialIconKind.AccountPlus, "ToneBlue",
+        Add(Perm.StudentsWrite, $"Inscrire un {Shell.Learners.Singular}", "Créer le dossier. Le matricule est attribué seul.", MaterialIconKind.AccountPlus, "ToneBlue",
             () => StudentForms.CreateAsync(Shell), "Inscrire");
         Add(Perm.ReportsRead, "Recouvrement", "Voir les retards et relancer les parents.", MaterialIconKind.ChartBar, "ToneOrange",
             () => Shell.Open(() => new DebtorsPage(Shell)), "Retards");
@@ -237,7 +237,7 @@ public sealed class HomePage : PageViewModel
             () => Shell.Open(() => new AttendancePage(Shell)));
         Add(Perm.ReportsRead, "Tableau de bord", "Recettes, retards et indicateurs de l'année.", MaterialIconKind.ViewDashboard, "ToneIndigo",
             () => Shell.Open(() => new DashboardPage(Shell)), "Indicateurs");
-        Add(Perm.StudentsRead, "Apprenants", "Rechercher un dossier et ouvrir sa fiche.", MaterialIconKind.AccountGroup, "ToneBlue",
+        Add(Perm.StudentsRead, Shell.Learners.PluralTitle, "Rechercher un dossier et ouvrir sa fiche.", MaterialIconKind.AccountGroup, "ToneBlue",
             () => Shell.Open(() => new StudentsPage(Shell)));
         while (Tools.Count > 6) Tools.RemoveAt(Tools.Count - 1);
     }
