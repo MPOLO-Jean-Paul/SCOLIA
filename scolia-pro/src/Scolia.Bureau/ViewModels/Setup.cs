@@ -178,7 +178,7 @@ public sealed class SetupViewModel : Observable
     // validation de leur moteur pédagogique et de leurs documents officiels.
     public IReadOnlyList<ChoiceItem> InstitutionTypes { get; } =
     [
-        new("ItmIm", "ITM / IM — disponible"),
+        new("ItmIem", "ITM / IEM — disponible"),
         new("Primaire", "École primaire — à venir"),
         new("Secondaire", "École secondaire / technique — à venir"),
         new("SuperieurLmd", "Université / supérieur LMD — à venir"),
@@ -383,8 +383,8 @@ public sealed class SetupViewModel : Observable
     /// <summary>Contrôles de l'étape 1, avant de passer aux comptes. Renvoie le premier problème, ou null.</summary>
     public string? ValidateStepOne()
     {
-        if (InstitutionType is null || InstitutionType.Value != "ItmIm")
-            return "Ce profil pédagogique est en préparation. Seul ITM / IM peut être activé dans cette première étape.";
+        if (InstitutionType is null || InstitutionType.Value != "ItmIem")
+            return "Ce profil pédagogique est en préparation. Seul ITM / IEM peut être activé dans cette première étape.";
         if (string.IsNullOrWhiteSpace(SchoolName)) return "Indiquez le nom de l'établissement.";
         if (string.IsNullOrWhiteSpace(ShortName)) return "Indiquez le sigle de l'établissement.";
         if (Phone.Length > 0 && !(Phone.Length == PhoneInput.Length && Phone[0] == '0')) return "Le téléphone compte 10 chiffres commençant par 0, par exemple 0812345678.";
