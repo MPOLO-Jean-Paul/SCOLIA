@@ -23,6 +23,8 @@ public sealed class ScoliaDbContext(DbContextOptions<ScoliaDbContext> options, I
     public DbSet<AcademicYear> AcademicYears => Set<AcademicYear>();
     public DbSet<AcademicPeriod> Periods => Set<AcademicPeriod>();
     public DbSet<PedagogicalPeriod> PedagogicalPeriods => Set<PedagogicalPeriod>();
+    public DbSet<AcademicStructureUnit> AcademicStructureUnits => Set<AcademicStructureUnit>();
+    public DbSet<CurriculumItem> CurriculumItems => Set<CurriculumItem>();
     public DbSet<Section> Sections => Set<Section>();
     public DbSet<Promotion> Promotions => Set<Promotion>();
     public DbSet<FeeItem> FeeItems => Set<FeeItem>();
@@ -96,6 +98,28 @@ public sealed class ScoliaDbContext(DbContextOptions<ScoliaDbContext> options, I
             e.HasIndex(x => new { x.AcademicYearId, x.Order }).IsUnique();
             e.HasIndex(x => new { x.AcademicYearId, x.Code }).IsUnique();
             e.HasOne<AcademicYear>().WithMany().HasForeignKey(x => x.AcademicYearId).OnDelete(DeleteBehavior.Restrict);
+        });
+        // Référentiels nouveaux profils : isolés des promotions et des cours ITM existants.
+        b.Entity<AcademicStructureUnit>(e =>
+        {
+            e.ToTable("StructuresAcademiques");
+            e.Property(x => x.Code).HasMaxLength(24);
+            e.Property(x => x.Name).HasMaxLength(160);
+            e.HasIndex(x => new { x.ParentId, x.Kind, x.Code });
+            e.HasOne<AcademicStructureUnit>().WithMany().HasForeignKey(x => x.ParentId).OnDelete(DeleteBehavior.Restrict);
+        });
+        b.Entity<CurriculumItem>(e =>
+        {
+            e.ToTable("ProgrammesPedagogiques");
+            e.Property(x => x.Code).HasMaxLength(24);
+            e.Property(x => x.Name).HasMaxLength(160);
+            e.HasIndex(x => new { x.AcademicYearId, x.PromotionId, x.Semester });
+            e.HasIndex(x => x.AcademicUnitId);
+            e.HasIndex(x => x.ParentItemId);
+            e.HasOne<AcademicYear>().WithMany().HasForeignKey(x => x.AcademicYearId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne<Promotion>().WithMany().HasForeignKey(x => x.PromotionId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne<AcademicStructureUnit>().WithMany().HasForeignKey(x => x.AcademicUnitId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne<CurriculumItem>().WithMany().HasForeignKey(x => x.ParentItemId).OnDelete(DeleteBehavior.Restrict);
         });
         b.Entity<Section>(e => { e.ToTable("Sections"); e.HasIndex(x => x.Code).IsUnique(); });
         b.Entity<Promotion>(e =>
