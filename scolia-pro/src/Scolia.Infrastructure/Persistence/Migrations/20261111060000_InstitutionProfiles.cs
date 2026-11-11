@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace Scolia.Infrastructure.Persistence.Migrations;
 
 /// <summary>
-/// Migration additive : toutes les bases ITM/IM existantes héritent de ItmIm.
+/// Migration additive : toutes les bases ITM/IEM existantes héritent de ItmIm.
 /// Aucune note, inscription, année, promotion ou donnée financière n'est modifiée.
 /// </summary>
 [DbContext(typeof(ScoliaDbContext))]
@@ -21,7 +21,7 @@ public partial class InstitutionProfilesMigration : Migration
             type: "TEXT",
             maxLength: 32,
             nullable: false,
-            defaultValue: "ItmIm");
+            defaultValue: "ItmIem");
     }
 
     protected override void Down(MigrationBuilder migrationBuilder)
