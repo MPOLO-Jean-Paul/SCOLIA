@@ -39,11 +39,11 @@ public sealed class SetupService(IAppDbContext db, IWriteGate gate, IAuditLog au
             .Require(!string.IsNullOrWhiteSpace(input.AdminDisplayName), "adminDisplayName", "Nom du compte secrétariat obligatoire.")
             .ThrowIfInvalid();
         PasswordPolicy.Validate(input.AdminPassword);
-        var institutionType = string.IsNullOrWhiteSpace(input.InstitutionType) ? InstitutionProfiles.ItmIm : input.InstitutionType.Trim();
+        var institutionType = InstitutionProfiles.Canonicalize(string.IsNullOrWhiteSpace(input.InstitutionType) ? null : input.InstitutionType.Trim());
         if (!InstitutionProfiles.IsKnown(institutionType))
             throw new DomainException("typeEtablissement", "Type d'établissement inconnu.");
         if (!InstitutionProfiles.IsEnabled(institutionType))
-            throw new DomainException("typeEtablissement", "Le profil choisi n'est pas encore activé. Sélectionnez ITM / IM pour conserver les règles actuelles.");
+            throw new DomainException("typeEtablissement", "Le profil choisi n'est pas encore activé. Sélectionnez ITM / IEM pour conserver les règles actuelles.");
         var school = new SchoolProfile
         {
             InstitutionType = institutionType,
