@@ -28,8 +28,6 @@ public static class RibbonCatalog
         ["Imprimer"] = "Ctrl+P",
         ["Plein écran"] = "F11",
         ["Apprenants"] = "Ctrl+Shift+A",
-        ["Élèves"] = "Ctrl+Shift+A",
-        ["Étudiants"] = "Ctrl+Shift+A",
         ["Nouvelle inscription"] = "Ctrl+N",
         ["Réinscriptions"] = "Ctrl+Shift+R",
         ["Encaisser"] = "F2",
@@ -63,8 +61,6 @@ public static class RibbonCatalog
         ["Rapports et exports"] = "Ctrl+Shift+X",
         ["Situation (PDF)"] = "Alt+Y",
         ["Apprenants (Excel)"] = "Alt+W",
-        ["Élèves (Excel)"] = "Alt+W",
-        ["Étudiants (Excel)"] = "Alt+W",
         ["Journal d'audit"] = "Ctrl+Shift+J",
         ["Sauvegarder"] = "Alt+S",
         ["Importer SCOLIA V79"] = "Alt+L",
@@ -89,8 +85,6 @@ public static class RibbonCatalog
         ["Modifier"] = "F4",
         ["Relevé de compte"] = "Alt+R",
         ["Liste des apprenants"] = "Ctrl+Shift+F",
-        ["Liste des élèves"] = "Ctrl+Shift+F",
-        ["Liste des étudiants"] = "Ctrl+Shift+F",
     };
 
     public static List<RibbonTabVm> Build(ShellViewModel shell)
@@ -110,7 +104,7 @@ public static class RibbonCatalog
             new("secretariat", "Secrétariat",
             [
                 Group(shell.StudentTerms.PluralTitle,
-                    Large(shell, shell.StudentTerms.PluralTitle, AccountGroupOutline, $"Liste, recherche et fiches des {shell.StudentTerms.Plural}.", () => shell.Open(() => new StudentsPage(shell)), Blue, perm: Perm.StudentsRead),
+                    Large(shell, shell.StudentTerms.PluralTitle, AccountGroupOutline, $"Liste, recherche et fiches des {shell.StudentTerms.Plural}.", () => shell.Open(() => new StudentsPage(shell)), Blue, perm: Perm.StudentsRead, shortcut: Shortcuts["Apprenants"]),
                     Large(shell, "Nouvelle inscription", AccountPlusOutline, $"Inscrit {shell.StudentTerms.Indefinite}. Le matricule est attribué automatiquement.", () => StudentForms.CreateAsync(shell), Green, perm: Perm.StudentsWrite),
                     Small(shell, "Réinscriptions", SchoolOutline, $"Reconduit les {shell.StudentTerms.Plural} vers la promotion suivante.", () => shell.Open(() => new ReEnrollmentPage(shell)), Neutral, perm: Perm.StudentsWrite)),
             ]),
@@ -178,7 +172,7 @@ public static class RibbonCatalog
                     Large(shell, "Rapports et exports", FileChartOutline, "Tous les documents de SCOLIA en PDF ou en Excel, au même endroit.", () => shell.Open(() => new ReportsPage(shell)), Blue)),
                 Group("Exports rapides",
                     Small(shell, "Situation (PDF)", FilePdfBox, "Situation financière de chaque promotion, en PDF.", () => shell.Download("api/rapports/promotions/export?format=pdf", "situation-par-promotion.pdf"), Neutral, perm: Perm.ReportsRead),
-                    Small(shell, $"{shell.StudentTerms.PluralTitle} (Excel)", AccountGroupOutline, $"Liste générale des {shell.StudentTerms.Plural} de l'année avec leur solde.", () => shell.Download("api/rapports/apprenants/export?format=xlsx", "liste-generale-apprenants.xlsx"), Neutral, perm: Perm.ReportsRead),
+                    Small(shell, $"{shell.StudentTerms.PluralTitle} (Excel)", AccountGroupOutline, $"Liste générale des {shell.StudentTerms.Plural} de l'année avec leur solde.", () => shell.Download("api/rapports/apprenants/export?format=xlsx", "liste-generale-apprenants.xlsx"), Neutral, perm: Perm.ReportsRead, shortcut: Shortcuts["Apprenants (Excel)"]),
                     Small(shell, "Reçus (Excel)", ReceiptTextOutline, "Exporte tous les reçus dans un classeur Excel.", () => shell.Download("api/paiements/export?format=xlsx", "recus.xlsx"), Neutral, perm: Perm.PaymentsRead),
                     Small(shell, "Reçus (PDF)", ReceiptText, "Exporte la liste des reçus au format PDF.", () => shell.Download("api/paiements/export?format=pdf", "recus.pdf"), Neutral, perm: Perm.PaymentsRead),
                     Small(shell, "Débiteurs (Excel)", ChartBar, "Exporte la liste des retards de paiement dans Excel.", () => shell.Download("api/rapports/debiteurs/export?format=xlsx", "debiteurs.xlsx"), Neutral, perm: Perm.ReportsRead),
@@ -306,7 +300,7 @@ public static class RibbonCatalog
             Group("Dossier",
                 Large(shell, "Modifier", Pencil, $"Modifie l'identité de {shell.StudentTerms.Elided}.", () => student.EditAsync(), Blue, perm: Perm.StudentsWrite),
                 Small(shell, "Relevé de compte", FileDocumentOutline, "Relevé PDF des frais et des paiements.", () => student.StatementAsync(), Neutral, perm: Perm.PaymentsRead),
-                Small(shell, $"Liste des {shell.StudentTerms.Plural}", AccountGroupOutline, "Retour à la liste.", () => shell.Open(() => new StudentsPage(shell)), Neutral)),
+                Small(shell, $"Liste des {shell.StudentTerms.Plural}", AccountGroupOutline, "Retour à la liste.", () => shell.Open(() => new StudentsPage(shell)), Neutral, shortcut: Shortcuts["Liste des apprenants"])),
         };
         return new RibbonTabVm("outils-apprenant", shell.StudentTerms.SingularTitle, groups, $"Outils de {shell.StudentTerms.Elided}", Purple);
     }
