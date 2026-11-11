@@ -28,6 +28,8 @@ public static class RibbonCatalog
         ["Imprimer"] = "Ctrl+P",
         ["Plein écran"] = "F11",
         ["Apprenants"] = "Ctrl+Shift+A",
+        ["Élèves"] = "Ctrl+Shift+A",
+        ["Étudiants"] = "Ctrl+Shift+A",
         ["Nouvelle inscription"] = "Ctrl+N",
         ["Réinscriptions"] = "Ctrl+Shift+R",
         ["Encaisser"] = "F2",
@@ -61,6 +63,8 @@ public static class RibbonCatalog
         ["Rapports et exports"] = "Ctrl+Shift+X",
         ["Situation (PDF)"] = "Alt+Y",
         ["Apprenants (Excel)"] = "Alt+W",
+        ["Élèves (Excel)"] = "Alt+W",
+        ["Étudiants (Excel)"] = "Alt+W",
         ["Journal d'audit"] = "Ctrl+Shift+J",
         ["Sauvegarder"] = "Alt+S",
         ["Importer SCOLIA V79"] = "Alt+L",
@@ -85,6 +89,8 @@ public static class RibbonCatalog
         ["Modifier"] = "F4",
         ["Relevé de compte"] = "Alt+R",
         ["Liste des apprenants"] = "Ctrl+Shift+F",
+        ["Liste des élèves"] = "Ctrl+Shift+F",
+        ["Liste des étudiants"] = "Ctrl+Shift+F",
     };
 
     public static List<RibbonTabVm> Build(ShellViewModel shell)
@@ -94,7 +100,7 @@ public static class RibbonCatalog
             new("accueil", "Accueil",
             [
                 Group("Rechercher",
-                    Large(shell, "Rechercher", Magnify, "Recherche globale : apprenants, reçus, pages et commandes.", () => { shell.FindInHeader(); return Task.CompletedTask; }, Blue)),
+                    Large(shell, "Rechercher", Magnify, $"Recherche globale : {shell.StudentTerms.Plural}, reçus, pages et commandes.", () => { shell.FindInHeader(); return Task.CompletedTask; }, Blue)),
                 Group("Page",
                     Large(shell, "Actualiser", Refresh, "Recharge les données affichées depuis le serveur.", () => shell.Reload(), Blue),
                     Large(shell, "Imprimer", Printer, "Imprime le document de la page affichée.", () => shell.Current?.PrintAsync() ?? Task.CompletedTask, Blue),
@@ -103,16 +109,16 @@ public static class RibbonCatalog
             ]),
             new("secretariat", "Secrétariat",
             [
-                Group("Apprenants",
-                    Large(shell, "Apprenants", AccountGroupOutline, "Liste, recherche et fiches des apprenants.", () => shell.Open(() => new StudentsPage(shell)), Blue, perm: Perm.StudentsRead),
-                    Large(shell, "Nouvelle inscription", AccountPlusOutline, "Inscrit un apprenant. Le matricule est attribué automatiquement.", () => StudentForms.CreateAsync(shell), Green, perm: Perm.StudentsWrite),
-                    Small(shell, "Réinscriptions", SchoolOutline, "Reconduit les apprenants vers la promotion suivante.", () => shell.Open(() => new ReEnrollmentPage(shell)), Neutral, perm: Perm.StudentsWrite)),
+                Group(shell.StudentTerms.PluralTitle,
+                    Large(shell, shell.StudentTerms.PluralTitle, AccountGroupOutline, $"Liste, recherche et fiches des {shell.StudentTerms.Plural}.", () => shell.Open(() => new StudentsPage(shell)), Blue, perm: Perm.StudentsRead),
+                    Large(shell, "Nouvelle inscription", AccountPlusOutline, $"Inscrit {shell.StudentTerms.Indefinite}. Le matricule est attribué automatiquement.", () => StudentForms.CreateAsync(shell), Green, perm: Perm.StudentsWrite),
+                    Small(shell, "Réinscriptions", SchoolOutline, $"Reconduit les {shell.StudentTerms.Plural} vers la promotion suivante.", () => shell.Open(() => new ReEnrollmentPage(shell)), Neutral, perm: Perm.StudentsWrite)),
             ]),
             new("finances", "Finances",
             [
                 Group("Encaissement",
                     Large(shell, "Encaisser", HandCoin, "Encaisse un versement : il est réparti sur les échéances et numéroté.", () => shell.Open(() => new CashierPage(shell)), Green, perm: Perm.PaymentsCreate),
-                    Large(shell, "Encaissement par lot", FormatListChecks, "Plusieurs apprenants et plusieurs mois en une opération : un reçu numéroté par apprenant.", () => shell.Open(() => new BatchPaymentPage(shell)), Green, perm: Perm.PaymentsCreate),
+                    Large(shell, "Encaissement par lot", FormatListChecks, $"Plusieurs {shell.StudentTerms.Plural} et plusieurs mois en une opération : un reçu numéroté par {shell.StudentTerms.Singular}.", () => shell.Open(() => new BatchPaymentPage(shell)), Green, perm: Perm.PaymentsCreate),
                     Large(shell, "Journal des reçus", ReceiptTextOutline, "Tous les reçus, leur statut et les annulations motivées.", () => shell.Open(() => new ReceiptsPage(shell)), Neutral, perm: Perm.PaymentsRead)),
                 Group("Suivi",
                     Large(shell, "Suivi mensuel", CalendarCheck, "Qui a payé le mois choisi, par promotion ou pour tout l'établissement.", () => shell.Open(() => new MonthlyPage(shell)), Blue, perm: Perm.ReportsRead),
@@ -144,7 +150,7 @@ public static class RibbonCatalog
                     Large(shell, "Comptes enseignants", AccountKeyOutline, "Crée l'enseignant, son identifiant et son code provisoire ; privilège jury.", () => shell.Open(() => new TeacherAccountsPage(shell)), Blue, perm: Perm.UsersManage)),
                 Group("Préparation",
                     Large(shell, "Paramètres de délibération", Tune, "Encodage des enseignants, règles, autorités et épreuves du jury, rangés par blocs.", () => shell.Open(() => new DeliberationSettingsPage(shell)), Orange, perm: Perm.DeliberationManage),
-                    Small(shell, "Codes anonymes", Incognito, "Importe les apprenants inscrits et leur attribue un code officiel.", () => shell.Open(() => new AnonymousCodesPage(shell)), Neutral, perm: Perm.DeliberationManage)),
+                    Small(shell, "Codes anonymes", Incognito, $"Importe les {shell.StudentTerms.Plural} inscrits et leur attribue un code officiel.", () => shell.Open(() => new AnonymousCodesPage(shell)), Neutral, perm: Perm.DeliberationManage)),
                 Group("Encodage",
                     Large(shell, "Encodage des cotes", Pen, "Cotes du S1, du S2 et moyennes d'appui, par feuille ou par code anonyme.", () => shell.Open(() => new MarksPage(shell)), Purple, perm: Perm.AcademicsRead),
                     Small(shell, "Suivi de l'encodage", ProgressClock, "Avancement par cours et par enseignant, feuilles remises et à relancer.", () => shell.Open(() => new EncodingProgressPage(shell)), Neutral, perm: Perm.AcademicsRead)),
@@ -172,7 +178,7 @@ public static class RibbonCatalog
                     Large(shell, "Rapports et exports", FileChartOutline, "Tous les documents de SCOLIA en PDF ou en Excel, au même endroit.", () => shell.Open(() => new ReportsPage(shell)), Blue)),
                 Group("Exports rapides",
                     Small(shell, "Situation (PDF)", FilePdfBox, "Situation financière de chaque promotion, en PDF.", () => shell.Download("api/rapports/promotions/export?format=pdf", "situation-par-promotion.pdf"), Neutral, perm: Perm.ReportsRead),
-                    Small(shell, "Apprenants (Excel)", AccountGroupOutline, "Liste générale des apprenants de l'année avec leur solde.", () => shell.Download("api/rapports/apprenants/export?format=xlsx", "liste-generale-apprenants.xlsx"), Neutral, perm: Perm.ReportsRead),
+                    Small(shell, $"{shell.StudentTerms.PluralTitle} (Excel)", AccountGroupOutline, $"Liste générale des {shell.StudentTerms.Plural} de l'année avec leur solde.", () => shell.Download("api/rapports/apprenants/export?format=xlsx", "liste-generale-apprenants.xlsx"), Neutral, perm: Perm.ReportsRead),
                     Small(shell, "Reçus (Excel)", ReceiptTextOutline, "Exporte tous les reçus dans un classeur Excel.", () => shell.Download("api/paiements/export?format=xlsx", "recus.xlsx"), Neutral, perm: Perm.PaymentsRead),
                     Small(shell, "Reçus (PDF)", ReceiptText, "Exporte la liste des reçus au format PDF.", () => shell.Download("api/paiements/export?format=pdf", "recus.pdf"), Neutral, perm: Perm.PaymentsRead),
                     Small(shell, "Débiteurs (Excel)", ChartBar, "Exporte la liste des retards de paiement dans Excel.", () => shell.Download("api/rapports/debiteurs/export?format=xlsx", "debiteurs.xlsx"), Neutral, perm: Perm.ReportsRead),
@@ -191,8 +197,8 @@ public static class RibbonCatalog
                     Small(shell, "Vérifier la base", DatabaseCheckOutline, "Contrôle d'intégrité de la base de données.", () => DataPage.CheckDatabaseAsync(shell), Neutral, perm: Perm.BackupManage),
                     Small(shell, "Vérifier le journal", ShieldCheckOutline, "Contrôle de la chaîne d'empreintes du journal d'audit.", () => AuditPage.VerifyAsync(shell), Neutral, perm: Perm.AuditRead)),
                 Group("Effacement",
-                    Small(shell, "Effacer des paiements", DeleteSweepOutline, "Efface les reçus et paiements des apprenants cochés ou de tous. Les dossiers restent. Mot de passe, récapitulatif et sauvegarde automatique avant.", () => shell.Open(() => new EraseDataPage(shell, payments: true)), Red, perm: Perm.BackupManage),
-                    Small(shell, "Effacer des dossiers", AccountRemoveOutline, "Efface les dossiers des apprenants cochés ou de tous, avec leur historique. Mot de passe, récapitulatif et sauvegarde automatique avant.", () => shell.Open(() => new EraseDataPage(shell, payments: false)), Red, perm: Perm.BackupManage)),
+                    Small(shell, "Effacer des paiements", DeleteSweepOutline, ($"Efface les reçus et paiements des {shell.StudentTerms.Plural} cochés ou de tous. Les dossiers restent. Mot de passe, récapitulatif et sauvegarde automatique avant.", () => shell.Open(() => new EraseDataPage(shell, payments: true)), Red, perm: Perm.BackupManage),
+                    Small(shell, "Effacer des dossiers", AccountRemoveOutline, ($"Efface les dossiers des {shell.StudentTerms.Plural} cochés ou de tous, avec leur historique. Mot de passe, récapitulatif et sauvegarde automatique avant.", () => shell.Open(() => new EraseDataPage(shell, payments: false)), Red, perm: Perm.BackupManage)),
             ]),
             new("parametres", "Paramètres",
             [
@@ -296,13 +302,13 @@ public static class RibbonCatalog
         var groups = new List<RibbonGroupVm>
         {
             Group("Encaissement",
-                Large(shell, "Encaisser", HandCoin, "Encaisse un versement pour cet apprenant.", () => shell.Open(() => new CashierPage(shell, student.StudentId)), Green, perm: Perm.PaymentsCreate)),
+                Large(shell, "Encaisser", HandCoin, $"Encaisse un versement pour cet {shell.StudentTerms.Singular}.", () => shell.Open(() => new CashierPage(shell, student.StudentId)), Green, perm: Perm.PaymentsCreate)),
             Group("Dossier",
-                Large(shell, "Modifier", Pencil, "Modifie l'identité de l'apprenant.", () => student.EditAsync(), Blue, perm: Perm.StudentsWrite),
+                Large(shell, "Modifier", Pencil, $"Modifie l'identité de {shell.StudentTerms.Elided}.", () => student.EditAsync(), Blue, perm: Perm.StudentsWrite),
                 Small(shell, "Relevé de compte", FileDocumentOutline, "Relevé PDF des frais et des paiements.", () => student.StatementAsync(), Neutral, perm: Perm.PaymentsRead),
-                Small(shell, "Liste des apprenants", AccountGroupOutline, "Retour à la liste.", () => shell.Open(() => new StudentsPage(shell)), Neutral)),
+                Small(shell, $"Liste des {shell.StudentTerms.Plural}", AccountGroupOutline, "Retour à la liste.", () => shell.Open(() => new StudentsPage(shell)), Neutral)),
         };
-        return new RibbonTabVm("outils-apprenant", "Apprenant", groups, "Outils de l'apprenant", Purple);
+        return new RibbonTabVm("outils-apprenant", shell.StudentTerms.SingularTitle, groups, $"Outils de {shell.StudentTerms.Elided}", Purple);
     }
 
     private static void CycleTextSize(ShellViewModel shell)
