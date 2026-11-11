@@ -24,8 +24,10 @@ public sealed class InstitutionProfilesTests
 
     [Theory]
     [InlineData("ItmIm", true)]
+    [InlineData("Maternelle", false)]
     [InlineData("Primaire", false)]
     [InlineData("Secondaire", false)]
+    [InlineData("ComplexeScolaire", false)]
     [InlineData("SuperieurLmd", false)]
     public void Profiles_are_known_but_only_itm_is_enabled_in_phase_one(string profile, bool enabled)
     {
