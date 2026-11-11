@@ -237,6 +237,14 @@ public static class ScoliaEndpoints
         })
             .RequireAuthorization(Permissions.SettingsWrite);
 
+        // Même administration / établissement : les cycles sont un sous-module
+        // de configuration protégé, sans accès à la caisse ou aux données ITM.
+        g.MapGet("/cycles", (SchoolCycleConfigurationService s, CancellationToken ct) =>
+            s.GetAsync(ct)).RequireAuthorization(Permissions.SettingsWrite);
+        g.MapPut("/cycles", (SchoolCycleConfigurationInput input, SchoolCycleConfigurationService s,
+            CancellationToken ct) => s.ConfigureAsync(input, ct))
+            .RequireAuthorization(Permissions.SettingsWrite);
+
         g.MapGet("/sections", (SchoolService s, CancellationToken ct) => s.SectionsAsync(ct));
         g.MapPost("/sections", (SectionUpsert input, SchoolService s, CancellationToken ct) => s.UpsertSectionAsync(null, input, ct)).RequireAuthorization(Permissions.SettingsWrite);
         g.MapPut("/sections/{id:guid}", (Guid id, SectionUpsert input, SchoolService s, CancellationToken ct) => s.UpsertSectionAsync(id, input, ct)).RequireAuthorization(Permissions.SettingsWrite);
