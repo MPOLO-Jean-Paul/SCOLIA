@@ -5,6 +5,8 @@ namespace Scolia.Domain.School;
 /// <summary>Établissement (une seule instance par base).</summary>
 public sealed class SchoolProfile : Entity
 {
+    /// <summary>Profil pédagogique immuable après installation ; les anciennes écoles restent ITM/IM.</summary>
+    public string InstitutionType { get; set; } = InstitutionProfiles.ItmIm;
     public string Name { get; set; } = string.Empty;
     public string ShortName { get; set; } = string.Empty;
     public string? Motto { get; set; }
