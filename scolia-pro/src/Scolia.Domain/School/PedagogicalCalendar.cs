@@ -35,7 +35,7 @@ public static class PedagogicalCalendarRules
     public static bool AllowsCourse(string institutionType, CourseSemester semester) =>
         institutionType switch
         {
-            InstitutionProfiles.ItmIm => semester is CourseSemester.Annuel or CourseSemester.S1 or CourseSemester.S2
+            InstitutionProfiles.ItmIm or InstitutionProfiles.ItmIem => semester is CourseSemester.Annuel or CourseSemester.S1 or CourseSemester.S2
                 or CourseSemester.JuryEpreuve or CourseSemester.JuryBloc,
             InstitutionProfiles.Primaire or InstitutionProfiles.Secondaire => semester == CourseSemester.Annuel,
             InstitutionProfiles.SuperieurLmd => semester is CourseSemester.S1 or CourseSemester.S2,
@@ -57,7 +57,7 @@ public static class PedagogicalCalendarRules
     {
         if (!InstitutionProfiles.IsKnown(institutionType))
             throw new DomainException("profilPedagogique", "Type d'établissement inconnu.");
-        if (institutionType == InstitutionProfiles.ItmIm)
+        if (InstitutionProfiles.Canonicalize(institutionType) == InstitutionProfiles.ItmIm)
         {
             if (periods.Count != 0)
                 throw new DomainException("profilPedagogique", "Le calendrier ITM existant ne doit pas être remplacé.");
@@ -98,8 +98,9 @@ public static class PedagogicalCalendarRules
         }
         else
         {
-            // Nombre de périodes volontairement configurable selon les prescriptions
-            // de l'année scolaire. Les cours restent annuels.
+            // Nombre et bornes à renseigner selon le calendrier officiel de l'année.
+            // En 2026-2027 : primaire = 6 périodes / 3 trimestres ;
+            // secondaire = 4 périodes / 2 semestres. Les cours restent annuels.
             if (sorted.Length > 12 || sorted.Any(p => p.Kind != PedagogicalPeriodKind.Evaluation))
                 throw new DomainException("periodePedagogique", "Le primaire et le secondaire utilisent des périodes d'évaluation, sans cours semestriels.");
         }
