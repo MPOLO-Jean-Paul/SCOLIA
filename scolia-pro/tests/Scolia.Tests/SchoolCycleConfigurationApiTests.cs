@@ -1,6 +1,7 @@
 using System.Net;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Scolia.Application.Abstractions;
 using Scolia.Domain.School;
 using Scolia.Infrastructure.Persistence;
 
@@ -42,6 +43,62 @@ public sealed class SchoolCycleConfigurationApiTests : IDisposable
         Assert.Empty(await db.SchoolCycles.ToArrayAsync());
         Assert.Empty(await db.SchoolCycleFeePolicies.ToArrayAsync());
         Assert.Equal(10, await db.Periods.CountAsync());
+    }
+
+    [Fact]
+    public async Task School_profile_can_assign_primary_class_without_monthly_fee_while_itm_rules_remain_intact()
+    {
+        var admin = await app.InstalledAdmin();
+
+        // Une installation ITM garde strictement sa mensualité obligatoire.
+        var (itmStatus, _) = await admin.Post("/api/etablissement/promotions", new
+        {
+            code = "IT01", name = "ITM", sectionId = (Guid?)null,
+            level = 1, capacity = (int?)null, isActive = true,
+            nextPromotionCode = (string?)null, monthlyFee = 0m,
+            oneTimeFees = Array.Empty<object>(),
+        }).Fail();
+        Assert.Equal(HttpStatusCode.BadRequest, itmStatus);
+
+        // Simulation isolée d'un futur profil scolaire : le parcours
+        // d'installation reste verrouillé en production tant que non validé.
+        Guid primaryId;
+        using (var scope = app.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<ScoliaDbContext>();
+            var school = await db.Schools.SingleAsync();
+            school.InstitutionType = InstitutionProfiles.ComplexeScolaire;
+            var nursery = new SchoolCycle
+            {
+                SchoolId = school.Id, Kind = SchoolCycleKind.Maternelle, Name = "Maternelle",
+            };
+            var primary = new SchoolCycle
+            {
+                SchoolId = school.Id, Kind = SchoolCycleKind.Primaire, Name = "Primaire",
+            };
+            primaryId = primary.Id;
+            db.SchoolCycles.AddRange(nursery, primary);
+            scope.ServiceProvider.GetRequiredService<IAuditLog>()
+                .Record("test.profil.scolaire", "Etablissement", school.Id.ToString(),
+                    "Profil de complexe scolaire simulé en base de test.");
+            await db.SaveChangesAsync();
+        }
+
+        var created = await admin.Post("/api/etablissement/promotions", new
+        {
+            code = "PR01", name = "Première primaire", sectionId = (Guid?)null,
+            level = 1, capacity = (int?)null, isActive = true,
+            nextPromotionCode = (string?)null, monthlyFee = 0m,
+            oneTimeFees = Array.Empty<object>(), schoolCycleId = primaryId,
+        }).Ok();
+        Assert.Equal(primaryId, created.GetProperty("schoolCycleId").GetGuid());
+        Assert.Equal(0, created.GetProperty("monthlyFee").GetDecimal());
+
+        using var checkScope = app.Services.CreateScope();
+        var check = checkScope.ServiceProvider.GetRequiredService<ScoliaDbContext>();
+        Assert.Equal(primaryId, (await check.Promotions.SingleAsync(p => p.Code == "PR01")).SchoolCycleId);
+        Assert.Empty(await check.FeeItems.Where(f => f.PromotionId ==
+            check.Promotions.Single(p => p.Code == "PR01").Id).ToArrayAsync());
     }
 
     [Fact]
