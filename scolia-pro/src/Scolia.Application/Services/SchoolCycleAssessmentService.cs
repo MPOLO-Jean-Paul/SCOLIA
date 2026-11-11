@@ -66,9 +66,31 @@ public sealed class SchoolCycleAssessmentService(IAppDbContext db, IWriteGate ga
         var list = rows.OrderBy(x => periodById[x.SchoolCyclePeriodId].Order)
             .ThenBy(x => x.Title, StringComparer.CurrentCultureIgnoreCase)
             .Select(x => ToDto(x, periodById[x.SchoolCyclePeriodId].Code)).ToArray();
+        // Les regroupements sont ceux du calendrier de CE cycle et de CETTE
+        // année : jamais les mensualités de la caisse ni les sessions ITM.
+        // Conserver aussi les périodes sans notes et les cotes non encodées.
+        var byPeriodEntries = list.GroupBy(x => x.SchoolCyclePeriodId)
+            .ToDictionary(g => g.Key, g => (IReadOnlyList<SchoolCycleAssessmentItemDto>)g.ToArray());
+        var termPrefix = context.Cycle.Kind switch
+        {
+            SchoolCycleKind.Primaire => "Trimestre",
+            SchoolCycleKind.Secondaire => "Semestre",
+            _ => "Période d'observation",
+        };
+        var terms = periods.OrderBy(p => p.Order)
+            .GroupBy(p => p.TermCode, StringComparer.OrdinalIgnoreCase)
+            .Select(group => new SchoolCycleBulletinTermDto(
+                group.Key, $"{termPrefix} {group.Key}",
+                group.Select(period => new SchoolCycleBulletinPeriodDto(
+                    period.Id, period.Code, period.Name, period.TermCode,
+                    period.StartDate, period.EndDate, period.Mode.ToString(),
+                    byPeriodEntries.GetValueOrDefault(period.Id)
+                        ?? Array.Empty<SchoolCycleAssessmentItemDto>())).ToArray()))
+            .ToArray();
+
         return new SchoolCycleBulletinPreviewDto(enrollmentId,
             context.Cycle.Id, context.Cycle.Name, context.Promotion.Name,
-            context.Year.Label, list);
+            context.Year.Label, list, Terms: terms);
     }
 
     public Task<SchoolCycleAssessmentItemDto> SaveAsync(
