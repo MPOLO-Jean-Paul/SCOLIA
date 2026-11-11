@@ -67,14 +67,6 @@ public partial class ComplexesScolairesPrives : Migration
             table: "Promotions",
             column: "SchoolCycleId");
 
-        migrationBuilder.AddForeignKey(
-            name: "FK_Promotions_CyclesScolaires_SchoolCycleId",
-            table: "Promotions",
-            column: "SchoolCycleId",
-            principalTable: "CyclesScolaires",
-            principalColumn: "Id",
-            onDelete: ReferentialAction.Restrict);
-
         migrationBuilder.CreateTable(
             name: "TarifsCyclesScolaires",
             columns: table => new
@@ -176,9 +168,6 @@ public partial class ComplexesScolairesPrives : Migration
         migrationBuilder.DropTable(name: "PeriodesCyclesScolaires");
         migrationBuilder.DropTable(name: "TarifsCyclesScolaires");
 
-        migrationBuilder.DropForeignKey(
-            name: "FK_Promotions_CyclesScolaires_SchoolCycleId",
-            table: "Promotions");
         migrationBuilder.DropIndex(
             name: "IX_Promotions_SchoolCycleId",
             table: "Promotions");
