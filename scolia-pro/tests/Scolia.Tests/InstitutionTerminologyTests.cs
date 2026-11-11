@@ -6,8 +6,10 @@ public sealed class InstitutionTerminologyTests
 {
     [Theory]
     [InlineData("ItmIm", "apprenant", "apprenants")]
+    [InlineData("Maternelle", "élève", "élèves")]
     [InlineData("Primaire", "élève", "élèves")]
     [InlineData("Secondaire", "élève", "élèves")]
+    [InlineData("ComplexeScolaire", "élève", "élèves")]
     [InlineData("SuperieurLmd", "étudiant", "étudiants")]
     public void Vocabulary_follows_the_institution_not_the_program(string profile, string singular, string plural)
     {

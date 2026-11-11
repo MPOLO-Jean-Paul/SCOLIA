@@ -1,0 +1,62 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mi="using:Material.Icons.Avalonia"
+             x:Class="Scolia.Bureau.Views.SchoolBulletinView">
+  <!-- Classes, polices et brosses du secrétariat Avalonia ; aucun autre thème. -->
+  <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+    <StackPanel Spacing="12" MaxWidth="960" Margin="0,0,6,12">
+      <TextBlock Text="DOCUMENT PÉDAGOGIQUE NON OFFICIEL" Classes="groupcaps" />
+      <Border Classes="phonegroup" Padding="14,12">
+        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+          <Border Classes="appicon medium" Background="{DynamicResource ToneOrange}"
+                  VerticalAlignment="Center">
+            <mi:MaterialIcon Kind="FileDocumentOutline" />
+          </Border>
+          <StackPanel Grid.Column="1" Spacing="5">
+            <TextBlock Text="Aperçu pédagogique" FontWeight="SemiBold"
+                       FontSize="{DynamicResource FsHeading}" TextWrapping="Wrap" />
+            <TextBlock Text="{Binding Subtitle}" Classes="muted" TextWrapping="Wrap" />
+            <TextBlock Text="{Binding Notice}" TextWrapping="Wrap" />
+          </StackPanel>
+        </Grid>
+      </Border>
+
+      <ItemsControl ItemsSource="{Binding Terms}">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate>
+            <StackPanel Spacing="10" Margin="0,0,0,12">
+              <TextBlock Text="{Binding Label}" Classes="groupcaps" />
+              <ItemsControl ItemsSource="{Binding Periods}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate>
+                    <Border Classes="phonegroup" Padding="14,12" Margin="0,0,0,8">
+                      <StackPanel Spacing="9">
+                        <TextBlock Text="{Binding Title}" FontWeight="SemiBold"
+                                   TextWrapping="Wrap" />
+                        <TextBlock Text="Aucune évaluation saisie pour cette période."
+                                   Classes="muted" IsVisible="{Binding !HasLines}" />
+                        <ItemsControl ItemsSource="{Binding Lines}">
+                          <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                              <StackPanel Spacing="4" Margin="0,0,0,10">
+                                <TextBlock Text="{Binding Title}" FontWeight="SemiBold"
+                                           TextWrapping="Wrap" />
+                                <TextBlock Text="{Binding Value}" TextWrapping="Wrap" />
+                                <TextBlock Text="{Binding Comment}" Classes="muted"
+                                           IsVisible="{Binding HasComment}" TextWrapping="Wrap" />
+                              </StackPanel>
+                            </DataTemplate>
+                          </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                      </StackPanel>
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </StackPanel>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

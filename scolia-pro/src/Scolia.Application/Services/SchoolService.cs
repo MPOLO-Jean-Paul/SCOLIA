@@ -22,7 +22,8 @@ public sealed class SchoolService(IAppDbContext db, IWriteGate gate, IAuditLog a
         s.CurrencyCode, s.CurrencySymbol, s.WholeAmountsOnly, s.ReceiptFooter, s.Logo is { Length: > 0 }, s.PhoneCountryCode,
         s.CardMinistry, s.CardDirection, s.CardDivision, s.CardZone ?? s.City,
         CardHeaderDefaults.Or(s.CardInstitute, s.Name),
-        CardHeaderDefaults.Or(s.CardAddress, s.Address ?? s.City ?? string.Empty), InstitutionProfiles.Canonicalize(s.InstitutionType));
+        CardHeaderDefaults.Or(s.CardAddress, s.Address ?? s.City ?? string.Empty), InstitutionProfiles.Canonicalize(s.InstitutionType),
+        s.Governance.ToString());
 
     public Task<SchoolDto> UpdateSchoolAsync(SchoolUpdate input, CancellationToken ct = default) => gate.RunAsync(async () =>
     {
@@ -101,10 +102,13 @@ public sealed class SchoolService(IAppDbContext db, IWriteGate gate, IAuditLog a
                 var monthly = old.Fees.Where(f => f.Kind == FeeKind.Mensualite).Select(f => f.Amount).DefaultIfEmpty(0).Max();
                 var copy = new Promotion
                 {
-                    AcademicYearId = year.Id, Code = old.Code, Name = old.Name, SectionId = old.SectionId, Level = old.Level, Capacity = old.Capacity,
+                    AcademicYearId = year.Id, Code = old.Code, Name = old.Name, SectionId = old.SectionId, SchoolCycleId = old.SchoolCycleId,
+                    Level = old.Level, Capacity = old.Capacity,
                     IsActive = old.IsActive, NextPromotionCode = old.NextPromotionCode,
                 };
-                copy.Fees.AddRange(MonthlyFees(copy.Id, year, monthly));
+                // Un cycle privé peut opter pour une facturation non mensuelle.
+                // Ne pas créer de dix échéances à zéro dans ce cas.
+                if (monthly > 0) copy.Fees.AddRange(MonthlyFees(copy.Id, year, monthly));
                 var shift = year.FirstCalendarYear - previous.FirstCalendarYear;
                 var order = 100;
                 foreach (var f in old.Fees.Where(f => f.Kind != FeeKind.Mensualite).OrderBy(f => f.Order))
@@ -339,7 +343,8 @@ public sealed class SchoolService(IAppDbContext db, IWriteGate gate, IAuditLog a
         p.IsActive, p.NextPromotionCode,
         p.Fees.Where(f => f.Kind == FeeKind.Mensualite).Select(f => f.Amount).DefaultIfEmpty(0).Max(),
         p.Fees.Sum(f => f.Amount), count,
-        p.Fees.OrderBy(f => f.DueDate).ThenBy(f => f.Order).Select(f => new FeeItemDto(f.Id, f.Kind.ToString(), f.Label, f.Amount, f.DueDate, f.Order, f.PeriodId, f.CategoryId)).ToList());
+        p.Fees.OrderBy(f => f.DueDate).ThenBy(f => f.Order).Select(f => new FeeItemDto(f.Id, f.Kind.ToString(), f.Label, f.Amount, f.DueDate, f.Order, f.PeriodId, f.CategoryId)).ToList(),
+        p.SchoolCycleId);
 
     public static IEnumerable<FeeItem> MonthlyFees(Guid promotionId, AcademicYear year, decimal monthly) =>
         year.Periods.OrderBy(p => p.Order).Select(p => new FeeItem
@@ -352,10 +357,18 @@ public sealed class SchoolService(IAppDbContext db, IWriteGate gate, IAuditLog a
     {
         var school = await YearContext.SchoolAsync(db, ct);
         var code = Promotion.NormalizeCode(input.Code);
+        if (InstitutionProfiles.Canonicalize(school.InstitutionType) == InstitutionProfiles.ItmIm && input.SchoolCycleId is not null)
+            throw new DomainException("schoolCycleId", "Les classes ITM/IM restent indépendantes des nouveaux cycles scolaires.");
+        if (input.SchoolCycleId is { } selectedCycle && !await db.SchoolCycles.AnyAsync(c => c.Id == selectedCycle && c.SchoolId == school.Id && c.IsActive, ct))
+            throw new DomainException("schoolCycleId", "Le cycle choisi est introuvable ou inactif dans cet établissement.");
         var v = new ValidationBuilder()
             .Require(code.Length == 4 && code.All(char.IsAsciiLetterOrDigit), "code", "Le code doit compter 4 lettres ou chiffres (ex. INF1) : il préfixe les matricules.")
             .Require(!string.IsNullOrWhiteSpace(input.Name) && input.Name.Trim().Length <= 120, "name", "Désignation obligatoire.")
-            .Require(input.MonthlyFee > 0, "monthlyFee", "La mensualité est obligatoire : indiquez son montant (supérieur à zéro).")
+            .Require(InstitutionProfiles.Canonicalize(school.InstitutionType) == InstitutionProfiles.ItmIm
+                ? input.MonthlyFee > 0 : input.MonthlyFee >= 0,
+                "monthlyFee", InstitutionProfiles.Canonicalize(school.InstitutionType) == InstitutionProfiles.ItmIm
+                    ? "La mensualité est obligatoire : indiquez son montant (supérieur à zéro)."
+                    : "La mensualité peut être désactivée pour ce cycle, mais ne peut pas être négative.")
             .Require(!school.WholeAmountsOnly || input.MonthlyFee == decimal.Truncate(input.MonthlyFee), "monthlyFee", "La mensualité doit être un nombre entier.")
             .Require(input.Capacity is null or > 0, "capacity", "La capacité doit être positive.");
         foreach (var fee in input.OneTimeFees ?? [])
@@ -408,7 +421,38 @@ public sealed class SchoolService(IAppDbContext db, IWriteGate gate, IAuditLog a
                 ?? throw new DomainException("sectionId", "La section choisie n'existe plus : actualisez la liste.");
             if (!chosen.IsActive) throw new DomainException("sectionId", $"La section {chosen.Name} est désactivée : réactivez-la ou choisissez-en une autre.");
         }
+        // Les nouveaux établissements scolaires ne sont pas encore activables.
+        // Ce contrôle prépare leur ouverture sans affecter l'ancien moteur ITM.
+        if (school.InstitutionType is InstitutionProfiles.Maternelle or InstitutionProfiles.Primaire
+            or InstitutionProfiles.Secondaire or InstitutionProfiles.ComplexeScolaire)
+        {
+            if (school.Governance == SchoolGovernanceKind.Public)
+                throw new DomainException("governance",
+                    "Les tarifs d'un établissement public exigent une configuration réglementaire distincte, non encore activée.");
+            var cycleId = input.SchoolCycleId ?? promotion.SchoolCycleId;
+            if (cycleId is null)
+                throw new DomainException("schoolCycleId",
+                    "Indiquez le cycle de la classe : maternelle, primaire ou secondaire.");
+            var cycle = await db.SchoolCycles.AsNoTracking().FirstOrDefaultAsync(
+                x => x.Id == cycleId && x.SchoolId == school.Id && x.IsActive, ct)
+                ?? throw new DomainException("schoolCycleId",
+                    "Le cycle de la classe n'existe pas ou est inactif.");
+            if (school.InstitutionType != InstitutionProfiles.ComplexeScolaire &&
+                school.InstitutionType != cycle.Kind.ToString())
+                throw new DomainException("schoolCycleId",
+                    "Le cycle de la classe ne correspond pas au type d'établissement.");
+            // La modification du cycle d'une classe déjà utilisée peut
+            // déplacer des inscriptions, des relevés et des paiements entre
+            // deux niveaux scolaires : elle exige une procédure spécifique.
+            if (id is not null && promotion.SchoolCycleId is { } previousCycleId &&
+                previousCycleId != cycle.Id &&
+                await db.Enrollments.AnyAsync(e => e.PromotionId == promotion.Id, ct))
+                throw new DomainException("schoolCycleId",
+                    "Cette classe possède déjà des inscriptions : son cycle ne peut plus être modifié. Créez une nouvelle classe dans le cycle souhaité.");
+            promotion.SchoolCycleId = cycle.Id;
+        }
         promotion.Code = code; promotion.Name = input.Name.Trim(); promotion.SectionId = input.SectionId; promotion.Level = input.Level;
+        if (input.SchoolCycleId is not null) promotion.SchoolCycleId = input.SchoolCycleId;
         promotion.Capacity = input.Capacity; promotion.IsActive = input.IsActive;
         promotion.NextPromotionCode = string.IsNullOrWhiteSpace(input.NextPromotionCode) ? null : Promotion.NormalizeCode(input.NextPromotionCode);
 

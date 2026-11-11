@@ -179,8 +179,10 @@ public sealed class SetupViewModel : Observable
     public IReadOnlyList<ChoiceItem> InstitutionTypes { get; } =
     [
         new("ItmIm", "ITM / IM — disponible"),
+        new("Maternelle", "École maternelle — à venir"),
         new("Primaire", "École primaire — à venir"),
         new("Secondaire", "École secondaire / technique — à venir"),
+        new("ComplexeScolaire", "Complexe scolaire maternelle / primaire / secondaire — à venir"),
         new("SuperieurLmd", "Université / supérieur LMD — à venir"),
     ];
     private ChoiceItem institutionType = null!;

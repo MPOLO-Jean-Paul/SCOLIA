@@ -11,6 +11,9 @@ public sealed class PedagogicalCalendarTests
     [InlineData("ItmIm", CourseSemester.S1, true)]
     [InlineData("ItmIm", CourseSemester.S2, true)]
     [InlineData("ItmIm", CourseSemester.JuryEpreuve, true)]
+    [InlineData("Maternelle", CourseSemester.Annuel, true)]
+    [InlineData("Maternelle", CourseSemester.S1, false)]
+    [InlineData("ComplexeScolaire", CourseSemester.Annuel, false)]
     [InlineData("Primaire", CourseSemester.Annuel, true)]
     [InlineData("Primaire", CourseSemester.S1, false)]
     [InlineData("Secondaire", CourseSemester.Annuel, true)]
@@ -57,6 +60,19 @@ public sealed class PedagogicalCalendarTests
         PedagogicalCalendarRules.Validate(InstitutionProfiles.Secondaire, year, periods);
         Assert.Throws<DomainException>(() =>
             PedagogicalCalendarRules.RequireCourse(InstitutionProfiles.Primaire, CourseSemester.S1));
+    }
+
+    [Fact]
+    public void Nursery_and_mixed_complex_use_periods_specific_to_each_cycle()
+    {
+        var year = ExampleYear();
+        var period = NewPeriod(year, "P1", 1, PedagogicalPeriodKind.Evaluation, 9, 10);
+        Assert.Throws<DomainException>(() => PedagogicalCalendarRules.Validate(
+            InstitutionProfiles.Maternelle, year, new[] { period }));
+        Assert.Throws<DomainException>(() => PedagogicalCalendarRules.Validate(
+            InstitutionProfiles.ComplexeScolaire, year, new[] { period }));
+        Assert.False(PedagogicalCalendarRules.AllowsCourse(
+            InstitutionProfiles.ComplexeScolaire, CourseSemester.Annuel));
     }
 
     [Fact]
