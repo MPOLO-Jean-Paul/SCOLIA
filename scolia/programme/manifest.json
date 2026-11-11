@@ -1,0 +1,247 @@
+[
+  {
+    "name": "Apprenant",
+    "before": "ee9b40f25e2cd275c4c149f736fb6b800e44f41233e3dbbe285cab133411067e",
+    "after": "32d5e43cb70d4292367195480540a834758fb0409b1c14465f7a56cc02e348f4",
+    "file": "Apprenant.txt",
+    "compatible": [
+      "91c77347218dc433955e2953cd6ed4b9efed228772952c95aafa4829a6c35127",
+      "bc426b3d7a8a7a547e7371ea45cca2f9380359f395461614efe4d181c35e2620",
+      "ef28a633b0b27492abc38900d3dc85a85df0d94ac4bd51637ec651486b695dfc",
+      "aaa43a76efa0b2a741960d9493d49afbe111536c6a643b72553d642dfddcc395",
+      "22d4bb8787127730b841ecc4216bc63fdec4d61538fcbeb284d4ea06baf14b95"
+    ],
+    "compatibilityFile": "Compatibilite/Apprenant_AvantCorrectif.txt",
+    "compatibilityFiles": [
+      "Compatibilite/Apprenant_AvantGestion.txt",
+      "Compatibilite/Apprenant_AvantDatesAutomatiques.txt",
+      "Compatibilite/Apprenant_AvantIdentite.txt"
+    ]
+  },
+  {
+    "name": "Paiement",
+    "before": "d55eebd49b017477e5ef26bc60ced53afb3fe970ad7b63c536b545215ca2524f",
+    "after": "964d60c2f4c528c5836354568305b420045c59610f9c91b2a13f49cc342cd897",
+    "file": "Paiement.txt",
+    "compatible": [
+      "8dcf1a3a8b788b0c0f99c4bc5f5c147018a830c2231e468c2a2f3c73b90e206f",
+      "36091ee6b1a70560878fe53c3a6a45ef95de9bc76060d5b3a68bdcdc759f0535",
+      "a536dd2a57037835ca0dac217dbb7834c8ff1ab70cba75d263c38948e82c0836"
+    ],
+    "compatibilityFiles": [
+      "Compatibilite/Paiement_AvantGestion.txt",
+      "Compatibilite/Paiement_AvantPriseEnCharge.txt"
+    ]
+  },
+  {
+    "name": "GestionApprenant",
+    "before": "99c68a0f94e108f01b978256a5cf710124da2827d62a404a91e2351497161d1a",
+    "after": "e03a7dfd636e124aed0b8f6ba928f0da810c67e706f4bf7d5f6932e939f5f1a2",
+    "file": "GestionApprenant.txt",
+    "compatible": [
+      "38ff666659e0afd68f1a58cccefc3511a42d126633812cd11b6c895caf948e08",
+      "c064b69eefd5b5c21d3f7b1161497124991f160c313933615d5cd744f906bfc4",
+      "4d74acecb44370de1788bd8553bb1a60344c47deb81976bee574405214af5fdb",
+      "ddddd25376af872a8f2e86672b1de8d17f01e464584343a8455356a665d896ab"
+    ],
+    "compatibilityFile": "Compatibilite/GestionApprenant_AvantCorrectif.txt",
+    "compatibilityFiles": [
+      "Compatibilite/GestionApprenant_AvantAdresse.txt",
+      "Compatibilite/GestionApprenant_AvantGestion.txt"
+    ]
+  },
+  {
+    "name": "ModuleProfessionnel",
+    "before": "7d99d350c53834f8d7dec6507abf17fe72e1b2384312aac9558b7084d9fef572",
+    "after": "f528c9f37cb9ea77c5f2370fc0359bebf662a237f4d345360f098927cd2262b8",
+    "file": "ModuleProfessionnel.txt",
+    "compatible": [
+      "797e9c766f9660189d2a3d10afa13dc0ae990f75a1709923ae077d5e026d8b28",
+      "1c8a91dfd6eae34c1959b5d9e8903035f34a39ce88bb6d7474bf0d428bbf0073",
+      "984340fdbb8c9f2e07cd856faee5befe44e6b1fd9af9ac94c1e8b983d3b85ae5",
+      "d6530c7d710d316101bff4c9e54ad2a770b8f33a1d23e034b260493932f41e2f",
+      "7d050e795d34ff606690ae9da6d6ec7487f6c30e4d4e778fef4318b9f74c4b9e"
+    ],
+    "compatibilityFile": "Compatibilite/ModuleProfessionnel.txt",
+    "compatibilityFiles": [
+      "Compatibilite/ModuleProfessionnel_AvantAdresse.txt",
+      "Compatibilite/ModuleProfessionnel_AvantRapports.txt",
+      "Compatibilite/ModuleProfessionnel_AvantDesignListes.txt"
+    ]
+  },
+  {
+    "name": "ModuleExportsGroupes",
+    "before": "1dda449fd716f266ceb62e1399d6f454575241e65713a3ff6c1ae2bee8e5304d",
+    "after": "8a7bab83b4020f68c3a52c7800d023cd41beddd11d9f823faf2dee000924472b",
+    "file": "ModuleExportsGroupes.txt",
+    "compatible": [
+      "e7c1b58ac78e7bf4a432dc428b77ad0b2396f28ed6c7e4da0fe43446610f5f1b"
+    ]
+  },
+  {
+    "name": "Module1",
+    "before": "369b3cb49c590bcd68be852d651ddeb51a3cf811415dcaa85648c100cd8a70dd",
+    "after": "2a34a2b9ced8225f1a2935a0c4011edb5a19d41b61b9dbd65e3b1d5ddc65ffc9",
+    "file": "Module1.txt"
+  },
+  {
+    "name": "Feuil1",
+    "before": "766dd5ce9cb34f792be60e0834b48bb61a8dcc6cc42974deb0c0f55312d45420",
+    "after": "2a34a2b9ced8225f1a2935a0c4011edb5a19d41b61b9dbd65e3b1d5ddc65ffc9",
+    "file": "Feuil1.txt"
+  },
+  {
+    "name": "ThisWorkbook",
+    "before": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "after": "e46d98621e53d74a2114d1c651a44b528ac0800d606bbef269929ff5e1254951",
+    "file": "ThisWorkbook.txt",
+    "compatible": [
+      "7417634653adbade30676389acca45b9a92176e04dd34f3e56239da57194eef0"
+    ],
+    "compatibilityFiles": [
+      "Compatibilite/ThisWorkbook_AvantGestion.txt"
+    ]
+  },
+  {
+    "name": "ModuleFiabilite",
+    "before": null,
+    "after": "5481b346d5092e64012d67a2aad60e442210c893e481d492da9a53b93072ac52",
+    "file": "ModuleFiabilite.txt",
+    "compatible": [
+      "8007407876430b203a6d9b121ec0cba55ea64d5dd3186af72308a13914c73399",
+      "68d87442fa9dc5f716bb2289a34940b43e45e78d1ecb50891227504eecf4265b",
+      "4975ff23c903b0ca20a1e667f4b3034cfee36a64b4b3cda702a070a6a66af532",
+      "6883e0a0a426aed99eaeddd317b281620dd947a8f572c2a54a20275e2b240781",
+      "38fb3c6d0c63570763682ce75930bf4db6b1b88da11020a05dd5d58c574575ea",
+      "4e8fd089678fee3c7e0c1a6b169bcff988d512774e184cb0270daa807740c34d"
+    ],
+    "compatibilityFile": "Compatibilite/ModuleFiabilite_AvantCorrectif.txt",
+    "compatibilityFiles": [
+      "Compatibilite/ModuleFiabilite_AvantGestion.txt",
+      "Compatibilite/ModuleFiabilite_AvantControleLignes.txt",
+      "Compatibilite/ModuleFiabilite_AvantPerformance.txt",
+      "Compatibilite/ModuleFiabilite_AvantPerformanceV78.txt"
+    ]
+  },
+  {
+    "name": "CExportMensuel",
+    "before": "76bfca746585ac103f1b3d5a3737fc560565a9509f1f4ac2eedbbecc19dca6a3",
+    "file": "CExportMensuel.txt",
+    "after": "43b5e49332bfd2c50de2fd6a687963aa994efd5b49aee2256fa5939235c6fa6a"
+  },
+  {
+    "name": "TableauDeBord",
+    "before": "4980f9a94f004d6bc79f982330add0ec7b59d86c000a001d3cf992d6fecf3f29",
+    "file": "TableauDeBord.txt",
+    "after": "b7b8ed061424f6e7842c80a145f5c1e6332e7c1901d20c31d0fa78ef91f24c40"
+  },
+  {
+    "name": "ModuleExportsFiables",
+    "before": null,
+    "file": "ModuleExportsFiables.txt",
+    "after": "ec7e2ec5ba6e17128656707bf9a19c5e4d9e0a8edfd326e16aa07bf7ffe9866d",
+    "compatible": [
+      "2acf24ea4299d53a8f4db7f84ca7cf00fdbbfef24a86cac843b43b6478bb57cb",
+      "3a6ba99979b828a6846fc823e87e0828508514c895fc48e47ef1083584bda200",
+      "586277fd2266ef714f71165951d3d598734fb2176696c59eb6657ccd52d15d98",
+      "0ba97fb638a19f6611abeb3ccdde4a791facf939bc50f69f4c5ec7335252ec14",
+      "b6f7318d8f0f582e10018d2e272f2f17b8c6d7fddd08c0942d332ec0c358499d",
+      "90ad1aeb656cc6ebd0c2e61c140b2f7c33bb4ca5fa5cb27af15cac4c83458b8c",
+      "e0c19e7b632f48c1ceb92651232b81b05772464926e13eedf2055fda22d09b16"
+    ],
+    "compatibilityFile": "Compatibilite/ModuleExportsFiables.txt",
+    "compatibilityFiles": [
+      "Compatibilite/ModuleExportsFiables_AvantRapports.txt",
+      "Compatibilite/ModuleExportsFiables_AvantStockage.txt",
+      "Compatibilite/ModuleExportsFiables_AvantPriseEnCharge.txt",
+      "Compatibilite/ModuleExportsFiables_AvantDesignListes.txt"
+    ]
+  },
+  {
+    "name": "ModuleInterfacePremium",
+    "before": null,
+    "file": "ModuleInterfacePremium.txt",
+    "after": "beb49560e585d49deaa432a18f93c784226b13b04f388ccbd63beb38ca91a6b8",
+    "compatible": [
+      "a93e77d6a350721bf492281ed06b64539dd073782f4575ac6347a0e046d7f6ad",
+      "5b2af51ab4a437d2c890b2d3ac96b838d7424f4609f6b16b207e7db1fc0a137c",
+      "de33f7385d42cce6b9d4214cb7d8fcd28598283cd113cc45e8c513d31a9696be"
+    ],
+    "compatibilityFile": "Compatibilite/ModuleInterfacePremium_AvantCorrectif.txt",
+    "compatibilityFiles": [
+      "Compatibilite/ModuleInterfacePremium_AvantAdresse.txt",
+      "Compatibilite/ModuleInterfacePremium_AvantRecherche.txt"
+    ]
+  },
+  {
+    "name": "ModuleApplicationITM",
+    "before": null,
+    "file": "ModuleApplicationITM.txt",
+    "after": "5ded72e22bc8286db2b5dc99edef86af902bdc15790ed463bb3102aca9464642",
+    "compatible": [
+      "9686b89623e536ec381ef918f1731da68a62d166af54cc7ce0baed81d7e39133",
+      "79130fa418ca0250e39e1039f3e6a36febfc2c888152cfd1184e4ded746da378",
+      "028159f6806fe84db4e999cbbebf8b4218c463603c4e090fa4999ff688993811",
+      "cd5f1f27c73d4c95914363349c3750184bb9d999061635f93d68d1b54b427808",
+      "0433c28c5dfed0d9cd2151efd18a2991c036304e4e25abe5880b239478ad5a01",
+      "70f932b9eae6acd1b73086786c5c67de3e67b9b7cb9bb8e7216f827fb01dc680",
+      "f0df1c55d066a9833213a4e5af7cdab34253a06c4e560a26607fa66faea601e6",
+      "379841310b7ebba82a0c015ef1327182220c7121c7448933dcd99f2cbed4a305",
+      "3924712f7a6f965a60327adeaff14b8296d0172c6dabef5221a693d0b2d809b6",
+      "05eacd9d39630593eac20877fe17f06f2789d8b773822ce571cf67fbf199547f",
+      "e40df640b534d9b71ecd5b82e4d44c3f9d8f6b03378bc4d12121e0b64e403c70",
+      "eb534beebbbf924e4b9ccc98ab37557422684bf24ac729dab5197534b0a6450b",
+      "22ea253543f80f6cefefac5abb55eb1efc021fcb9af5f2c8e58c3e09d51463ea",
+      "3cecb39b0fb85132d544b36892a3a135440267da6e187fb74dd0ea1e9b5e3c57",
+      "dbbc9b13827f9dde606124fa2708a0f6c24b718cc3b4956a9c95c69441957272",
+      "7b950e44213e26e0507ebd47889cacb768d28676962e77d1915dd21f42f6f578"
+    ],
+    "compatibilityFile": "Compatibilite/ModuleApplicationITM_AvantCorrectif.txt",
+    "compatibilityFiles": [
+      "Compatibilite/ModuleApplicationITM_AvantGestion.txt",
+      "Compatibilite/ModuleApplicationITM_AvantRapports.txt",
+      "Compatibilite/ModuleApplicationITM_AvantDatesRecus.txt",
+      "Compatibilite/ModuleApplicationITM_AvantStockage.txt",
+      "Compatibilite/ModuleApplicationITM_AvantIdentite.txt",
+      "Compatibilite/ModuleApplicationITM_AvantSuppression.txt",
+      "Compatibilite/ModuleApplicationITM_AvantPriseEnCharge.txt",
+      "Compatibilite/ModuleApplicationITM_AvantPerformance.txt",
+      "Compatibilite/ModuleApplicationITM_AvantFinance2.txt",
+      "Compatibilite/ModuleApplicationITM_AvantPerformanceV76.txt",
+      "Compatibilite/ModuleApplicationITM_AvantPerformanceV78.txt",
+      "Compatibilite/ModuleApplicationITM_AvantPerformanceV80.txt"
+    ]
+  },
+  {
+    "name": "ModuleGestionAvancee",
+    "before": null,
+    "after": "2820242bdcba85a3ee4435da380a9ed994fbedb60ee4db4d0da4a7cbe4420605",
+    "file": "ModuleGestionAvancee.txt",
+    "compatible": [
+      "b6e7ebe87c12743c0d152bc24c51d1157042463062b1b182769eee4cb81ea34e",
+      "d80ad1a27b361251a6eb19afbc5e25c351d981301216d891becb851a8b116f06",
+      "9fcff12e7917496472c66ac1edcc38aa771b39dbceb5a65c7efa2009df60a401",
+      "68a531decda887f36bf4d2d9daad3c566c8c392cae66003c4f90631b2e1015ef",
+      "7a3914307891b3d5f5beea95c0e1f87a5ae8dac4c33449e443eb1861500005ea"
+    ],
+    "compatibilityFiles": [
+      "Compatibilite/ModuleGestionAvancee_AvantControleLignes.txt",
+      "Compatibilite/ModuleGestionAvancee_AvantDatesRecus.txt",
+      "Compatibilite/ModuleGestionAvancee_AvantStockage.txt",
+      "Compatibilite/ModuleGestionAvancee_AvantDiagnosticPromotion.txt",
+      "Compatibilite/ModuleGestionAvancee_AvantPriseEnCharge.txt"
+    ]
+  },
+  {
+    "name": "ModuleStockageITM",
+    "before": null,
+    "after": "ccf228abb953f8a7816e9d9ab45b5ed3570c8d864c75ff59526e01f631359239",
+    "file": "ModuleStockageITM.txt",
+    "compatible": [
+      "abad84edc935a9090e31692f8689b779978cb42d7528b4c8254825e15c6c516e"
+    ],
+    "compatibilityFiles": [
+      "Compatibilite/ModuleStockageITM_AvantIdentite.txt"
+    ]
+  }
+]

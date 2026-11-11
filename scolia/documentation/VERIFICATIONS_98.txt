@@ -1,0 +1,29 @@
+﻿SCOLIA 98 — contrôles exécutés
+
+PASS analyse syntaxique des 90 scripts PowerShell.
+PASS paramètres : copie de travail indépendante à chaque tentative ; une erreur sur
+     la protection du second compte ne retire pas celle du premier au prochain essai.
+PASS tarifs, nombre de mois et premier mois protégés pour l'année ayant des écritures,
+     même lorsque seuls les espaces du libellé d'année diffèrent.
+PASS protection des tarifs lorsqu'une prise en charge est déjà comptabilisée.
+PASS comptes : cinq erreurs bloquent uniquement le compte concerné ; connexion de
+     l'autre compte libre possible ; expiration des cinq minutes conservée en UTC.
+PASS partage manquant, profil absent ou d'une autre institution : lecture refusée
+     au lieu de produire un journal ou un répertoire vide ; lecture asynchrone refusée.
+PASS un journal initial vide avec profil valide reste accepté.
+PASS publication d'un répertoire d'une autre année refusée ; ancien classeur non
+     envoyé au répertoire courant dans le test d'orchestration.
+PASS tests de régression : années de transferts, reprise d'import, reçus distincts,
+     journal, intégrité, doublons, surpaiement, concurrence, permissions, raccourcis,
+     démarrage, retards et rapprochement des cotes.
+PASS compilation C#5 et exécution du journal sous Mono (.NET4) : partage absent,
+     journal initial vide, publication/lecture du répertoire et échec asynchrone.
+PASS archive : six classeurs XLSM, lanceurs et modules VBA inchangés ; aucune
+     suppression de fichier ; empreintes attendues VBA cohérentes avec les sources.
+
+Limites : PowerShell 7 utilisé pour les tests de logique et syntaxe. Compilation
+C#5 et exécution Mono effectuées. Ces contrôles ne remplacent pas un essai du
+logiciel complet sous Windows PowerShell 5.1 avec Excel et un réseau SMB réel.
+Les tests d'import Excel simulent la passerelle ; les nouveaux scénarios de
+configuration utilisent des contrôles de formulaire simulés. Le rendu des
+formulaires sous Windows n'a pas été vérifié dans cet environnement.

@@ -1,0 +1,74 @@
+﻿ITM CD — ERGONOMIE ET ORGANISATION DES FICHIERS
+Édition du 7 octobre 2026
+
+SAISIE DES DATES
+La date de naissance dans l'application de bureau utilise un champ masqué
+jj/mm/aaaa : les deux / sont déjà visibles, et huit chiffres suffisent.
+Le collage avec ou sans les / est pris en charge. Le curseur retrouve le
+premier emplacement vide ; une date remplie peut être sélectionnée et remplacée.
+Les validations distinguent une saisie incomplète, une date impossible, une
+date future et une naissance antérieure à 1900.
+La date du reçu conserve son calendrier et son affichage jj/mm/aaaa.
+Les formulaires Excel préparés par cette édition disposent également d'un
+formatage automatique de TextDateNaissance ; leurs dates et montants restent
+validés par les règles métier existantes. Les classeurs déjà préparés ne sont
+pas modifiés automatiquement pour une simple mise à jour de l'interface.
+
+INSCRIPTION GUIDÉE
+Les onglets Identité, Contacts, Scolarité sont conservés avec Précédent et
+Suivant. Suivant vérifie les champs de l'étape avant d'avancer. Une indication
+explique chaque étape. Enregistrer reste disponible et vérifie tous les champs.
+L'erreur est placée près du champ et le premier champ à corriger reçoit le focus.
+Les noms, contacts et dates sont contrôlés avant l'envoi au classeur.
+L'année d'une nouvelle inscription suit la promotion. Si des paiements existent,
+la promotion et l'année d'un dossier sont verrouillées dans le formulaire,
+conformément aux restrictions métier existantes.
+Une fermeture après modification demande confirmation pour éviter la perte
+accidentelle de la saisie. Un enregistrement réussi ne demande pas cette
+confirmation. Les coordonnées et autres valeurs du dossier restent conservées.
+
+AIDE ET CLAVIER
+Aide / guide est disponible dans le ruban même avant l'ouverture des données.
+Les indications expliquent l'inscription, les reçus validés à la caisse, les
+rapports, les sauvegardes et le rôle de chaque dossier.
+Les champs proposent des indications au survol et des noms accessibles.
+Tabulation et Maj+Tabulation naviguent entre les champs.
+Entrée avance à l'étape suivante puis enregistre à la dernière étape.
+Dans l'adresse, Entrée insère une nouvelle ligne.
+Ctrl+S enregistre ; Échap annule, avec confirmation si la saisie a changé.
+Sur les fenêtres étroites, les boutons de navigation et de validation se
+placent sur deux rangées. Les sections conservent leur défilement.
+
+ORGANISATION
+La racine contient uniquement APPLICATION.vbs, INSTALLER.vbs et DEMARRER_ICI.txt.
+Les scripts, sources d'interface, images techniques et correctifs sont sous
+programme. Les guides et aperçus sont sous documentation. Les fichiers Excel
+fournis et anciennes installations sont sous ressources et archives.
+Aucun classeur existant fourni dans le ZIP n'a été effacé ou réécrit.
+Les nouvelles bases utilisent data à la racine, et non programme/data.
+Les nouvelles préparations vont dans data/installations.
+Les fenêtres d'export proposent exports comme dossier de destination, mais
+vous restez libre de choisir un autre emplacement.
+Les journaux des lanceurs vont dans journaux ; si ce dossier n'est pas
+accessible, le dossier temporaire de Windows sert de secours.
+L'installateur ne présélectionne plus le fichier de départ historique :
+l'utilisateur choisit explicitement ses données actuelles.
+
+MISE À JOUR
+Cette nouvelle organisation change le chemin des fichiers techniques.
+Extrayez le ZIP entier ; ne copiez pas uniquement les lanceurs ou les scripts.
+Si vous utilisez déjà data, conservez-en une copie complète et reconnectez
+la base depuis son nouvel emplacement. Ne réinstallez pas un segment isolé.
+Quand un ancien emplacement mémorisé est absent, l'application peut retrouver
+le même identifiant de base dans le nouveau data. Si l'ancien emplacement
+existe encore, elle le conserve : utilisez Ouvrir données pour choisir
+explicitement votre nouvelle copie.
+Les anciens raccourcis doivent être recréés depuis la nouvelle application.
+Les paramètres de sécurité restent dans le profil Windows de l'utilisateur.
+
+VÉRIFICATION
+Contrôles statiques des scripts, chemins, correctifs et conservation des
+classeurs réalisés lors de la préparation. Le test de saisie masquée des dates
+est ajouté aux contrôles natifs de l'installateur.
+Exécution Windows/Excel et essais réels de clavier/clics non disponibles dans
+l'environnement de préparation ; le contrôle natif s'exécute sur votre PC.

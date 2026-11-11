@@ -1,0 +1,16 @@
+<Project>
+  <!-- ASP.NET Core n'existe pas en framework partagé pour Android : le serveur SCOLIA du téléphone emporte ses
+       assemblages, pris dans le paquet d'exécution (du code géré, le même pour tous les systèmes). Les références
+       de framework des projets du serveur ne sont pas reprises : l'application les remplace par ces fichiers.
+       Utilisé par l'application Android et par les tests qui la reproduisent sur l'ordinateur. -->
+  <PropertyGroup>
+    <ScoliaAspNetVersion>10.0.13</ScoliaAspNetVersion>
+    <ScoliaAspNetPack>$(NuGetPackageRoot)microsoft.aspnetcore.app.runtime.linux-x64/$(ScoliaAspNetVersion)/runtimes/linux-x64/lib/net10.0/</ScoliaAspNetPack>
+    <DisableTransitiveFrameworkReferences>true</DisableTransitiveFrameworkReferences>
+    <ValidateExecutableReferencesMatchSelfContained>false</ValidateExecutableReferencesMatchSelfContained>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageDownload Include="Microsoft.AspNetCore.App.Runtime.linux-x64" Version="[$(ScoliaAspNetVersion)]" />
+    <Reference Include="$(ScoliaAspNetPack)*.dll" Private="true" />
+  </ItemGroup>
+</Project>

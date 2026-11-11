@@ -1,0 +1,112 @@
+﻿REVUE FONCTIONNELLE — ÉDITION 101
+
+Corrections appliquées après la revue de l'édition 100 :
+- Une reprise de caisse compare maintenant le contenu de l'opération, même si
+  l'ancienne empreinte est conservée. Un montant ou une référence modifiés sont
+  refusés ; une reprise réellement identique reste sans doublon.
+- Les lignes supplémentaires d'une grille personnalisée agrandie sont reconnues
+  lors de sa relecture si leur numérotation continue la séquence des apprenants.
+  La lecture s'arrête sur un vide ou une numérotation différente, avant les totaux.
+- Les intitulés peuvent se trouver sur la première ligne sans demander à Excel
+  une cellule de ligne zéro. La ligne de cours peut dépasser 200 ; cette limite
+  concerne les colonnes, tandis que les lignes restent limitées à 50 000.
+- Vérifier opération en attente refuse de s'ouvrir pendant un encaissement actif.
+  Son message parle d'opération, ce qui convient aussi aux dépenses.
+
+Ces corrections ne modifient pas les classeurs de référence ni les données.
+Les instructions de conservation de data et configuration restent applicables.
+Les vérifications Windows/Excel et réseau entre deux postes restent nécessaires.
+
+
+SCOLIA — ÉDITION 101
+Corrections de fiabilité et suivi des opérations
+
+INSTALLATION ET CONSERVATION DES DONNÉES
+Fermez SCOLIA et Excel. Extrayez le ZIP entier dans un nouveau dossier.
+Conservez votre ancienne copie et sauvegardez data, configuration, votre logo
+et votre sceau. Recopiez vos dossiers data et configuration dans la nouvelle
+copie, sans remplacer votre base remplie par un modèle de ressources.
+Un partage comptable existant reste à son emplacement : les deux postes doivent
+utiliser le même profil-scolia.json. Mettez à jour les deux postes.
+Démarrez 00_Demarrage\APPLICATION.vbs. Il n'est pas nécessaire de recréer vos journaux.
+Les six classeurs de référence et les corrections VBA sont conservés.
+
+1. RÉSEAU ET ACTUALISATION
+Données > Configurer le réseau reste l'assistant d'hébergement et de connexion.
+Le contrôle d'accès du poste qui rejoint s'exécute dans un processus distinct,
+avec un délai de 15 secondes, puis un délai de fermeture pouvant ajouter 2 secondes.
+Ce délai concerne la vérification d'accès, pas toutes les opérations Windows.
+L'autorisation administrateur et les identifiants Windows restent gérés par Windows.
+Les deux fichiers temporaires de l'assistant sont correctement nettoyés.
+
+La surveillance ne désérialise plus tout le journal à chaque cycle : elle réutilise
+les écritures vérifiées et relit les fichiers nouveaux ou modifiés. Une vérification
+complète est faite toutes les cinq minutes. Les métadonnées sont toujours parcourues.
+Les lectures faisant autorité lors d'un encaissement restent complètes.
+Une erreur réseau conserve le dernier affichage ; elle ne transforme pas la caisse
+en caisse vide. Une écriture qui disparaît du journal est signalée.
+
+2. SYNCHRONISATION ET RAPPROCHEMENT — Ctrl+Alt+F6
+Données > Synchronisation affiche l'état, la dernière réception réussie, le dossier,
+la dernière erreur et les paiements encaissés / reçus / restant à recevoir.
+Le rapprochement concerne les paiements du journal SCOLIA de l'année active.
+Il n'inclut pas les anciens paiements saisis manuellement hors de ce journal.
+Un paiement est reçu quand son identifiant est publié par le secrétariat.
+Un import local terminé mais non publié est signalé comme publication en attente.
+Le tableau montre les références, apprenants, promotions, montants et opérateurs.
+Actualiser le réseau lance une lecture ; Exporter le rapprochement crée un CSV.
+Les droits d'export restent nécessaires. Les archives ne sont pas fusionnées avec
+l'année active. La commande est aussi accessible dans l'espace Comptabilité.
+
+3. COMPTES NOMINATIFS
+Première configuration : saisissez le nom de la personne pour chaque compte.
+Administration > Paramètres SCOLIA permet de modifier ce nom.
+La connexion affiche « Nom · Secrétariat », « Nom · Comptabilité » ou « Nom · Mixte ».
+Les droits restent attachés au rôle et la protection par mot de passe est facultative.
+Les comptes antérieurs sans nom continuent à fonctionner avec leur libellé de rôle.
+Les nouvelles écritures mémorisent le nom et l'identité du compte utilisé.
+Les anciens journaux ne sont pas réécrits pour leur inventer un opérateur.
+Cette édition conserve un compte par rôle ; elle ne crée pas plusieurs caissiers
+indépendants ayant le même rôle. Mixte reste une alternative aux comptes séparés.
+
+4. BROUILLONS DE CAISSE — Ctrl+Alt+F7
+Dans Encaisser / Nouvelle dépense, Conserver en brouillon enregistre localement
+la saisie sans produire de recette, de transfert ni de reçu définitif.
+Une session déjà ouverte peut ainsi conserver une saisie pendant une coupure.
+Le démarrage et la connexion au compte nécessitent toujours le profil disponible ;
+cette fonction ne constitue pas une connexion entièrement hors réseau.
+
+Comptabilité > Brouillons de caisse : sélectionnez une ligne puis Valider le brouillon
+sélectionné lorsque le partage est accessible. Le système contrôle le compte,
+l'année, la promotion, le tarif, le solde, la référence et les paramètres actuels.
+La validation est volontaire ; les brouillons ne sont pas envoyés automatiquement.
+Le même identifiant technique est conservé pour éviter une seconde écriture en cas
+de reprise. Une erreur conserve le brouillon. Après une coupure au moment de
+l'enregistrement, utilisez Vérifier opération en attente avant de réessayer.
+Un autre compte ne peut pas valider ou annuler ce brouillon depuis l'interface.
+Annuler le brouillon supprime seulement la saisie locale non comptabilisée après
+confirmation. Les écritures définitives du journal restent immuables.
+Sauvegardez également configuration : les brouillons locaux y sont conservés.
+
+5. GRILLES PARAMÉTRABLES
+Scolarité > Cotes et délibération : choisissez la promotion et votre grille XLSX,
+puis Paramétrer la grille. Indiquez le nom exact de la feuille, la ligne d'entête
+des noms, la première et dernière ligne disponibles, la colonne du nom complet,
+les lignes d'intitulés et de barèmes et la colonne de décision.
+Les colonnes sont indiquées par leur numéro (A=1, B=2, etc.).
+La colonne de numérotation précède celle du nom. Les cours se trouvent entre
+la colonne du nom et celle de décision ; un barème positif identifie un cours,
+une formule identifie une colonne de calcul à préserver.
+La commande vérifie la grille en lecture seule avant de mémoriser ses repères.
+Les modèles INF1, INF2, ACC1, ACC2 restent reconnus sans paramétrage supplémentaire.
+Les autres promotions et mises en page compatibles utilisent ces repères.
+Une disposition arbitraire sans ces repères n'est pas reconnue automatiquement.
+Le paramétrage est local à ce poste et à cette institution : configurez aussi
+l'autre poste si vous y utilisez les cotes. Vérifiez l'aperçu avant validation.
+Les apprenants restent classés alphabétiquement ; les homonymes, noms non reconnus
+et notes hors barème sont signalés. Les décisions P, A, AA et D sont conservées.
+
+VÉRIFICATIONS
+Lire VERIFICATIONS_101.txt. Tests de logique, de fichiers et de compatibilité
+réalisés ; validation de l'ensemble sur Windows PowerShell 5.1, Excel réel et
+deux postes Windows encore nécessaire. Aucune promesse de latence nulle.

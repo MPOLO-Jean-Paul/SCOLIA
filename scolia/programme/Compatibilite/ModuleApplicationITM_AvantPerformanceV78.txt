@@ -1,0 +1,1048 @@
+﻿Option Explicit
+Private mDerniereErreur As String
+' Passerelle de l'application Windows vers le classeur actif ITM CD.
+Public Function ITMAppPerformanceVersion() As String
+    ITMAppPerformanceVersion = "SCOLIA-PERF-5"
+End Function
+
+Public Function ITMAppVersion() As String
+    ITMAppVersion = "ITM-DESKTOP-4"
+End Function
+
+Private Function AJ(ByVal valeur As Variant) As String
+    Dim s As String, i As Long, c As String, code As Long
+    If IsError(valeur) Or IsNull(valeur) Or IsEmpty(valeur) Then AJ = "null": Exit Function
+    If VarType(valeur) = vbBoolean Then
+        AJ = IIf(valeur, "true", "false"): Exit Function
+    End If
+    If VarType(valeur) <> vbString And IsNumeric(valeur) Then
+        AJ = Trim$(Str$(valeur))
+        If Left$(AJ, 1) = "." Then AJ = "0" & AJ
+        If Left$(AJ, 2) = "-." Then AJ = "-0" & Mid$(AJ, 2)
+        Exit Function
+    End If
+    s = CStr(valeur)
+    AJ = Chr$(34)
+    For i = 1 To Len(s)
+        c = Mid$(s, i, 1): code = AscW(c)
+        Select Case code
+            Case 34: AJ = AJ & "\" & Chr$(34)
+            Case 92: AJ = AJ & "\\"
+            Case 0 To 31: AJ = AJ & "\u" & Right$("0000" & Hex$(code), 4)
+            Case Else: AJ = AJ & c
+        End Select
+    Next i
+    AJ = AJ & Chr$(34)
+End Function
+
+Private Function ADate(ByVal valeur As Variant) As String
+    If IsDate(valeur) Then ADate = Format$(CDate(valeur), "dd/mm/yyyy")
+End Function
+
+Public Function ITMAppSnapshot() As String
+    Dim livres As Collection, livre As Workbook
+    Dim d As Object, w As Worksheet, r As Long, i As Long, data As Variant
+    Dim s As String, first As Boolean, mat As String, eligible As Boolean, noms As Variant
+    Dim k As Variant, part As Variant, v As Variant, vus As Object
+    Dim dates As Variant, last As Long, hasValues As Boolean
+    Set d = ITMChargerDonnees()
+    s = "{""learners"":[": first = True
+    Set livres = ITMClasseurs()
+    For Each livre In livres
+    Set w = livre.Worksheets("APPRENANTS")
+    noms = Split("Matricule|Nom|PostNom|Prenom|Sexe|Naissance|Lieu|Promotion|Tuteur|Contact1|Contact2|Inscription|Annee|Statut|Adresse", "|")
+    last = ITMDerniereLigne(w)
+    If last >= 5 Then
+    data = w.Range(w.Cells(5, 1), w.Cells(last, 15)).Value2
+    dates = w.Range(w.Cells(5, 1), w.Cells(last, 15)).Value
+    For r = 1 To UBound(data, 1)
+        hasValues = False
+        For i = 1 To 15
+            If Not IsEmpty(data(r, i)) Then hasValues = True: Exit For
+        Next i
+        If hasValues Then
+            If Not first Then s = s & ","
+            first = False: mat = ITMCleTexte(data(r, 1))
+            eligible = d("personnes").Exists(mat)
+            s = s & "{""Source"":" & AJ(livre.Name) & ",""Row"":" & (r + 4) & ",""Eligible"":" & AJ(eligible)
+            For i = 1 To 15
+                v = data(r, i)
+                If i = 6 Or i = 12 Then v = ADate(dates(r, i))
+                s = s & "," & AJ(noms(i - 1)) & ":" & AJ(v)
+            Next i
+            s = s & "}"
+        End If
+    Next r
+    End If
+    Next livre
+    s = s & "],""payments"":[": first = True
+    For Each livre In livres
+    Set w = livre.Worksheets("PAIEMENTS")
+    noms = Split("ID|Date|Numero|Matricule|NomComplet|Promotion|Mois|Du|Verse|Reste|Statut|TotalPaye|TotalAnnuel|ResteAnnuel", "|")
+    last = ITMDerniereLigne(w)
+    If last >= 5 Then
+    data = w.Range(w.Cells(5, 1), w.Cells(last, 14)).Value2
+    dates = w.Range(w.Cells(5, 1), w.Cells(last, 14)).Value
+    For r = 1 To UBound(data, 1)
+        hasValues = False
+        For i = 1 To 14
+            If Not IsEmpty(data(r, i)) Then hasValues = True: Exit For
+        Next i
+        If hasValues Then
+            If Not first Then s = s & ","
+            first = False: s = s & "{""Source"":" & AJ(livre.Name) & ",""Row"":" & (r + 4)
+            For i = 1 To 14
+                v = data(r, i)
+                If i = 2 Then v = ADate(dates(r, i))
+                s = s & "," & AJ(noms(i - 1)) & ":" & AJ(v)
+            Next i
+            s = s & "}"
+        End If
+    Next r
+    End If
+    Next livre
+    s = s & "],""promotions"":[": first = True
+    Set vus = CreateObject("Scripting.Dictionary")
+    Set w = ThisWorkbook.Worksheets("PROMOTIONS")
+    For r = 5 To w.Cells(w.Rows.Count, 1).End(xlUp).Row
+        mat = ITMPromotion(w.Cells(r, 1).Value2)
+        If d("promotions").Exists(mat) And Not vus.Exists(mat) Then
+            vus(mat) = True
+            If Not first Then s = s & ","
+            first = False
+            s = s & "{""Code"":" & AJ(mat) & ",""Designation"":" & AJ(w.Cells(r, 2).Value2) & ",""Annee"":" & AJ(w.Cells(r, 5).Value2) & ",""Mensuel"":" & AJ(w.Cells(r, 6).Value2) & ",""Annuel"":" & AJ(w.Cells(r, 7).Value2) & ",""Active"":" & AJ(ITMCleTexte(w.Cells(r, 8).Value2) = "ACTIVE") & "}"
+        End If
+    Next r
+    s = s & "],""months"":[": first = True
+    For Each k In d("mois").Keys
+        If Not first Then s = s & ","
+        first = False: s = s & AJ(d("mois")(k))
+    Next k
+    s = s & "],""balances"":[": first = True
+    For Each k In d("sommes").Keys
+        If Not first Then s = s & ","
+        first = False: part = Split(CStr(k), "|")
+        s = s & "{""Matricule"":" & AJ(part(0)) & ",""Mois"":" & AJ(part(1)) & ",""Verse"":" & AJ(d("sommes")(k)) & "}"
+    Next k
+    s = s & "],""issues"":[": first = True
+    For Each v In d("issues")
+        If Not first Then s = s & ","
+        first = False
+        s = s & "{""Feuille"":" & AJ(v(0)) & ",""Ligne"":" & AJ(v(1)) & ",""Matricule"":" & AJ(v(2)) & ",""Numero"":" & AJ(v(3)) & ",""Observation"":" & AJ(v(4)) & "}"
+    Next v
+    ITMAppSnapshot = s & "],""closed"":" & AJ(ITMAnneeFermee()) & "}"
+End Function
+
+Public Function ITMAppEtatApprenant(ByVal matricule As String) As String
+    Dim livres As Collection, livre As Workbook, w As Worksheet
+    Dim data As Variant, dates As Variant, noms As Variant, v As Variant
+    Dim r As Long, i As Long, last As Long, nbDossiers As Long
+    Dim learnerJson As String, payJson As String, balanceJson As String
+    Dim first As Boolean, mois As String, cle As String, erreur As String
+    Dim sommes As Object, libelles As Object, k As Variant
+    On Error GoTo EH
+    matricule = ITMCleTexte(matricule)
+    If matricule = "" Then Err.Raise vbObjectError + 1240, , "Matricule obligatoire pour l'actualisation ciblée."
+    Set livres = ITMClasseurs()
+
+    noms = Split("Matricule|Nom|PostNom|Prenom|Sexe|Naissance|Lieu|Promotion|Tuteur|Contact1|Contact2|Inscription|Annee|Statut|Adresse", "|")
+    For Each livre In livres
+        Set w = livre.Worksheets("APPRENANTS")
+        last = ITMDerniereLigne(w)
+        If last >= 5 Then
+            data = w.Range(w.Cells(5, 1), w.Cells(last, 15)).Value2
+            dates = w.Range(w.Cells(5, 1), w.Cells(last, 15)).Value
+            For r = 1 To UBound(data, 1)
+                If ITMCleTexte(data(r, 1)) = matricule Then
+                    nbDossiers = nbDossiers + 1
+                    learnerJson = "{""Source"":" & AJ(livre.Name) & ",""Row"":" & CStr(r + 4) & ",""Eligible"":true"
+                    For i = 1 To 15
+                        v = data(r, i)
+                        If i = 6 Or i = 12 Then v = ADate(dates(r, i))
+                        learnerJson = learnerJson & "," & AJ(noms(i - 1)) & ":" & AJ(v)
+                    Next i
+                    learnerJson = learnerJson & "}"
+                End If
+            Next r
+        End If
+    Next livre
+    If nbDossiers <> 1 Then Err.Raise vbObjectError + 1241, , "Dossier absent ou matricule en double pendant l'actualisation ciblée."
+
+    Set sommes = CreateObject("Scripting.Dictionary")
+    Set libelles = CreateObject("Scripting.Dictionary")
+    noms = Split("ID|Date|Numero|Matricule|NomComplet|Promotion|Mois|Du|Verse|Reste|Statut|TotalPaye|TotalAnnuel|ResteAnnuel", "|")
+    payJson = "": first = True
+    For Each livre In livres
+        Set w = livre.Worksheets("PAIEMENTS")
+        last = ITMDerniereLigne(w)
+        If last >= 5 Then
+            data = w.Range(w.Cells(5, 1), w.Cells(last, 14)).Value2
+            dates = w.Range(w.Cells(5, 1), w.Cells(last, 14)).Value
+            For r = 1 To UBound(data, 1)
+                If ITMCleTexte(data(r, 4)) = matricule Then
+                    If Not first Then payJson = payJson & ","
+                    first = False
+                    payJson = payJson & "{""Source"":" & AJ(livre.Name) & ",""Row"":" & CStr(r + 4)
+                    For i = 1 To 14
+                        v = data(r, i)
+                        If i = 2 Then v = ADate(dates(r, i))
+                        payJson = payJson & "," & AJ(noms(i - 1)) & ":" & AJ(v)
+                    Next i
+                    payJson = payJson & "}"
+                    mois = ITMCleTexte(data(r, 7))
+                    If mois <> "" And IsNumeric(data(r, 9)) And CStr(data(r, 9)) <> "" Then
+                        cle = mois
+                        If Not sommes.Exists(cle) Then sommes(cle) = CCur(0): libelles(cle) = CStr(data(r, 7))
+                        sommes(cle) = CCur(sommes(cle)) + CCur(data(r, 9))
+                    End If
+                End If
+            Next r
+        End If
+    Next livre
+
+    balanceJson = "": first = True
+    For Each k In sommes.Keys
+        If Not first Then balanceJson = balanceJson & ","
+        first = False
+        balanceJson = balanceJson & "{""Matricule"":" & AJ(matricule) & ",""Mois"":" & AJ(libelles(k)) & ",""Verse"":" & AJ(sommes(k)) & "}"
+    Next k
+    ITMAppEtatApprenant = "{""ok"":true,""matricule"":" & AJ(matricule) & ",""learner"":" & learnerJson & ",""payments"":" & "[" & payJson & "],""balances"":" & "[" & balanceJson & "]}"
+    Exit Function
+EH:
+    erreur = Err.Description
+    ITMAppEtatApprenant = "{""ok"":false,""error"":" & AJ(erreur) & "}"
+End Function
+
+Private Sub AValiderIdentite(ByVal nom As String, ByVal post As String, ByVal prenom As String, ByVal sexe As String, ByVal naissance As String, ByVal lieu As String, ByVal tuteur As String, ByVal contact1 As String, ByVal contact2 As String, ByVal promo As String, ByVal annee As String, ByVal statut As String, Optional ByVal requireActive As Boolean = True)
+    Dim d As Date, expression As Object, w As Worksheet, r As Long, trouve As Boolean
+    Set expression = CreateObject("VBScript.RegExp")
+    expression.Pattern = "^[A-Za-zÀ-ÖØ-öø-ÿ '’-]+$"
+    If Trim$(nom) = "" Or Not expression.Test(Trim$(nom)) Then Err.Raise vbObjectError + 1000, , "Nom obligatoire : lettres uniquement."
+    If Trim$(post) = "" Or Not expression.Test(Trim$(post)) Then Err.Raise vbObjectError + 1001, , "Post-nom obligatoire : lettres uniquement."
+    If Trim$(prenom) = "" Or Not expression.Test(Trim$(prenom)) Then Err.Raise vbObjectError + 1002, , "Prénom obligatoire : lettres uniquement."
+    If sexe <> "M" And sexe <> "F" Then Err.Raise vbObjectError + 1003, , "Choisissez le sexe."
+    If Not ITMLireDate(naissance, d) Then Err.Raise vbObjectError + 1004, , "Date de naissance incorrecte (jj/mm/aaaa)."
+    If Trim$(lieu) = "" Then Err.Raise vbObjectError + 1005, , "Lieu de naissance obligatoire."
+    If Not ContactValide(contact1, True) Or Not ContactValide(contact2, False) Then Err.Raise vbObjectError + 1006, , "Contacts : 10 chiffres, le second peut rester vide."
+    If statut <> "Actif" And statut <> "Suspendu" And statut <> "Sorti" Then Err.Raise vbObjectError + 1007, , "Statut non reconnu."
+    Set w = ThisWorkbook.Worksheets("PROMOTIONS")
+    For r = 5 To w.Cells(w.Rows.Count, 1).End(xlUp).Row
+        If ITMPromotion(w.Cells(r, 1).Value2) = ITMPromotion(promo) And (Not requireActive Or ITMCleTexte(w.Cells(r, 8).Value2) = "ACTIVE") Then
+            If Replace(CStr(w.Cells(r, 5).Value2), " ", "") = Replace(annee, " ", "") Then trouve = True
+        End If
+    Next r
+    If Not trouve Or ITMFraisMensuels(promo) <= 0 Or ITMFraisAnnuels(promo) < ITMFraisMensuels(promo) Then Err.Raise vbObjectError + 1008, , "Promotion active et année scolaire compatibles obligatoires."
+End Sub
+
+Private Function AMatricule(ByVal promo As String) As String
+    Dim alphabet As String, a As Long, b As Long, n As Long, code As String, w As Worksheet, nom As Variant, col As Long, r As Long, pris As Object
+    Dim livres As Collection, livre As Workbook
+    Dim bloc As Variant, dernier As Long
+    Set livres = ITMClasseurs()
+    promo = ITMPromotion(promo)
+    If Len(promo) <> 4 Then Err.Raise vbObjectError + 1009, , "Le code promotion doit avoir 4 caractères."
+    Set pris = CreateObject("Scripting.Dictionary")
+    For Each livre In livres
+    For Each nom In Array("APPRENANTS", "PAIEMENTS")
+        Set w = livre.Worksheets(CStr(nom)): col = IIf(nom = "APPRENANTS", 1, 4)
+        dernier = ITMDerniereLigne(w)
+        If dernier >= 5 Then
+            bloc = w.Range(w.Cells(5, col), w.Cells(dernier, col + 1)).Value2
+            For r = 1 To UBound(bloc, 1)
+                code = ITMCleTexte(bloc(r, 1))
+                If code <> "" Then pris(code) = True
+            Next r
+        End If
+    Next nom
+    Next livre
+    For n = 1 To 99
+        code = promo & Format$(n, "00")
+        If Not pris.Exists(code) Then AMatricule = code: Exit Function
+    Next n
+    alphabet = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    For a = 1 To 36
+        For b = 1 To 36
+            code = Mid$(alphabet, a, 1) & Mid$(alphabet, b, 1)
+            If Not code Like "##" Then
+                code = promo & code
+                If Not pris.Exists(code) Then AMatricule = code: Exit Function
+            End If
+        Next b
+    Next a
+    Err.Raise vbObjectError + 1010, , "Les matricules de cette promotion sont épuisés."
+End Function
+
+Private Function AIdentiteCle(ByVal valeur As Variant) As String
+    Dim texte As String
+    If IsError(valeur) Or IsNull(valeur) Or IsEmpty(valeur) Then Exit Function
+    texte = Replace(Replace(Replace(Replace(CStr(valeur), vbTab, " "), vbCr, " "), vbLf, " "), ChrW(8239), " ")
+    AIdentiteCle = ITMCleTexte(texte)
+End Function
+
+Public Function ITMAppDossier(ByVal matricule As String, ByVal nom As String, ByVal post As String, ByVal prenom As String, ByVal sexe As String, ByVal naissance As String, ByVal lieu As String, ByVal tuteur As String, ByVal contact1 As String, ByVal contact2 As String, ByVal promo As String, ByVal annee As String, ByVal statut As String, ByVal adresse As String) As String
+    Dim w As Worksheet, r As Long, i As Long, row As Long, d As Date, vieux As Variant
+    Dim actif As Boolean, nouveau As Boolean, erreur As String, doublon As Long
+    Dim avant As String, oldPayments As Variant, pw As Worksheet, paymentLast As Long, nr As Long
+    Dim livres As Collection, livre As Workbook
+    Dim controle As Worksheet, globalData As Object, globalKey As Variant
+    Dim bloc As Variant, dernier As Long
+    Dim cleMat As String, cleNom As String, clePost As String, clePrenom As String, clePromo As String
+    On Error GoTo EH
+    contact1 = Trim$(contact1): contact2 = Trim$(contact2)
+    AValiderIdentite nom, post, prenom, sexe, naissance, lieu, tuteur, contact1, contact2, promo, annee, statut, (Trim$(matricule) = "")
+    ITMLireDate naissance, d
+    Set w = ThisWorkbook.Worksheets("APPRENANTS")
+    nouveau = Trim$(matricule) = ""
+    Set livres = ITMClasseurs()
+    cleMat = ITMCleTexte(matricule): cleNom = AIdentiteCle(nom)
+    clePost = AIdentiteCle(post): clePrenom = AIdentiteCle(prenom): clePromo = ITMPromotion(promo)
+    For Each livre In livres
+        Set controle = livre.Worksheets("APPRENANTS")
+        dernier = ITMDerniereLigne(controle)
+        If dernier >= 5 Then
+            bloc = controle.Range(controle.Cells(5, 1), controle.Cells(dernier, 8)).Value2
+            For i = 1 To UBound(bloc, 1)
+                If nouveau Or ITMCleTexte(bloc(i, 1)) <> cleMat Then
+                    If AIdentiteCle(bloc(i, 2)) = cleNom And AIdentiteCle(bloc(i, 3)) = clePost And AIdentiteCle(bloc(i, 4)) = clePrenom And ITMPromotion(bloc(i, 8)) = clePromo Then
+                        Err.Raise vbObjectError + 1011, , "Cet apprenant existe deja dans cette promotion. Matricule : " & CStr(bloc(i, 1)) & ". Consultez et modifiez son dossier existant."
+                    End If
+                End If
+            Next i
+        End If
+    Next livre
+    If nouveau Then
+        matricule = AMatricule(promo)
+    Else
+        dernier = ITMDerniereLigne(w)
+        If dernier >= 5 Then
+            bloc = w.Range(w.Cells(5, 1), w.Cells(dernier, 2)).Value2
+            For i = 1 To UBound(bloc, 1)
+                If ITMCleTexte(bloc(i, 1)) = cleMat Then row = i + 4: doublon = doublon + 1
+            Next i
+        End If
+        If doublon <> 1 Then Err.Raise vbObjectError + 1012, , "Dossier absent ou matricule en double : modification bloquée."
+        ITMPECInitialiser
+        If ITMPECExiste(matricule, CStr(w.Cells(row, 13).Value2)) Then
+            If ITMPromotion(w.Cells(row, 8).Value2) <> ITMPromotion(promo) Or ITMPECAnnee(CStr(w.Cells(row, 13).Value2)) <> ITMPECAnnee(annee) Then Err.Raise vbObjectError + 1197, , "Prise en charge enregistrée : année et promotion conservées. Utilisez la clôture pour changer d'année."
+        End If
+        vieux = w.Range(w.Cells(row, 1), w.Cells(row, 15)).Formula
+        Set pw = ThisWorkbook.Worksheets("PAIEMENTS"): paymentLast = ITMDerniereLigne(pw)
+        If paymentLast >= 5 Then oldPayments = pw.Range(pw.Cells(5, 1), pw.Cells(paymentLast, 14)).Formula
+        If paymentLast >= 5 Then
+            bloc = pw.Range(pw.Cells(5, 4), pw.Cells(paymentLast, 5)).Value2
+            For nr = 1 To UBound(bloc, 1)
+                If ITMCleTexte(bloc(nr, 1)) = cleMat Then
+                    If clePromo <> ITMPromotion(w.Cells(row, 8).Value2) Or annee <> CStr(w.Cells(row, 13).Value2) Then Err.Raise vbObjectError + 1030, , "Des paiements existent : promotion et annee conservees dans ce dossier."
+                    Exit For
+                End If
+            Next nr
+        End If
+        Set globalData = ITMChargerDonnees()
+        For Each globalKey In globalData("sommes").Keys
+            If Split(CStr(globalKey), "|")(0) = ITMCleTexte(matricule) Then
+                If ITMPromotion(promo) <> ITMPromotion(w.Cells(row, 8).Value2) Or annee <> CStr(w.Cells(row, 13).Value2) Then Err.Raise vbObjectError + 1030, , "Des paiements existent dans le dossier de donnees : promotion et annee conservees."
+            End If
+        Next globalKey
+        avant = ITMJsonLigne(w, row, 15)
+    End If
+    ITMDebutSaisie w: actif = True: ITMJournalDebut
+    If nouveau Then row = ITMReserverLigne(w)
+    w.Range(w.Cells(row, 1), w.Cells(row, 15)).NumberFormat = "@"
+    w.Cells(row, 1).Value2 = matricule
+    w.Cells(row, 2).Value2 = UCase$(Trim$(nom)): w.Cells(row, 3).Value2 = UCase$(Trim$(post)): w.Cells(row, 4).Value2 = UCase$(Trim$(prenom))
+    w.Cells(row, 5).Value2 = sexe: w.Cells(row, 6).NumberFormat = "dd/mm/yyyy": w.Cells(row, 6).Value = d
+    w.Cells(row, 7).Value2 = Trim$(lieu): w.Cells(row, 8).Value2 = ITMPromotion(promo): w.Cells(row, 9).Value2 = Trim$(tuteur)
+    w.Cells(row, 10).Value2 = contact1: w.Cells(row, 11).Value2 = contact2
+    If nouveau Then w.Cells(row, 12).Value = Date
+    w.Cells(row, 12).NumberFormat = "dd/mm/yyyy"
+    w.Cells(row, 13).Value2 = annee: w.Cells(row, 14).Value2 = statut: w.Cells(row, 15).Value2 = Left$(Trim$(adresse), 250)
+    If Not nouveau And paymentLast >= 5 Then
+        For nr = 5 To paymentLast
+            If ITMCleTexte(pw.Cells(nr, 4).Value2) = ITMCleTexte(matricule) Then
+                pw.Cells(nr, 5).NumberFormat = "@"
+                pw.Cells(nr, 5).Value2 = UCase$(Trim$(nom) & " " & Trim$(post) & " " & Trim$(prenom))
+            End If
+        Next nr
+    End If
+    ITMJournalEcrire IIf(nouveau, "INSCRIPTION", "MODIFICATION_DOSSIER"), matricule, "", avant, ITMJsonLigne(w, row, 15), "Identite, contacts, adresse et statut"
+    ITMValiderSaisie: actif = False: ITMJournalConfirmer
+    mDerniereErreur = ""
+    ITMAppDossier = "{""ok"":true,""matricule"":" & AJ(matricule) & ",""nouveau"":" & AJ(nouveau) & "}"
+    Exit Function
+EH:
+    erreur = Err.Description
+    Err.Clear
+    On Error Resume Next
+    If actif Then
+        If Not nouveau And row > 0 Then w.Range(w.Cells(row, 1), w.Cells(row, 15)).Formula = vieux
+        If Not nouveau And paymentLast >= 5 Then pw.Range(pw.Cells(5, 1), pw.Cells(paymentLast, 14)).Formula = oldPayments
+        ITMCollecterErreurAnnulation erreur
+        ITMJournalAnnuler
+        ITMCollecterErreurAnnulation erreur
+        ITMAnnulerSaisie
+        ITMCollecterErreurAnnulation erreur
+    End If
+    On Error GoTo 0
+    mDerniereErreur = erreur
+    ITMAppDossier = "{""ok"":false,""error"":" & AJ(erreur) & "}"
+End Function
+
+Public Function ITMAppSupprimerApprenant(ByVal matricule As String, ByVal motif As String) As String
+    Dim livres As Collection, livre As Workbook, w As Worksheet, pw As Worksheet
+    Dim i As Long, row As Long, n As Long, last As Long, ancien As Variant
+    Dim avant As String, erreur As String, actif As Boolean, nbPaiements As Long
+    On Error GoTo EH
+    ITMVerifierAnneeOuverte
+    matricule = ITMCleTexte(matricule): motif = Trim$(motif)
+    If matricule = "" Then Err.Raise vbObjectError + 1040, , "Selectionnez un apprenant."
+    If Len(motif) < 5 Then Err.Raise vbObjectError + 1043, , "Le motif de suppression est obligatoire (5 caracteres minimum)."
+    Set livres = ITMClasseurs()
+    For Each livre In livres
+        Set pw = livre.Worksheets("APPRENANTS")
+        For i = 5 To ITMDerniereLigne(pw)
+            If ITMCleTexte(pw.Cells(i, 1).Value2) = matricule Then
+                ITMPECInitialiser
+                If ITMPECExiste(matricule, CStr(pw.Cells(i, 13).Value2)) Then Err.Raise vbObjectError + 1198, , "Historique de prise en charge : suppression interdite. Utilisez Sorti ou Suspendu."
+                n = n + 1
+                If livre Is ThisWorkbook Then Set w = pw: row = i
+            End If
+        Next i
+        Set pw = livre.Worksheets("PAIEMENTS")
+        For i = 5 To ITMDerniereLigne(pw)
+            If ITMCleTexte(pw.Cells(i, 4).Value2) = matricule Then nbPaiements = nbPaiements + 1
+        Next i
+    Next livre
+    If n <> 1 Or row < 5 Then Err.Raise vbObjectError + 1042, , "Dossier absent, en double ou situe dans un autre classeur."
+    last = ITMDerniereLigne(w)
+    ancien = w.Range(w.Cells(5, 1), w.Cells(last, 15)).Formula
+    avant = ITMJsonLigne(w, row, 15)
+    ITMDebutSaisie w: actif = True: ITMJournalDebut
+    If row < last Then w.Range(w.Cells(row, 1), w.Cells(last - 1, 15)).Formula = w.Range(w.Cells(row + 1, 1), w.Cells(last, 15)).Formula
+    w.Range(w.Cells(last, 1), w.Cells(last, 15)).ClearContents
+    w.ListObjects(1).Resize w.Range(w.Cells(4, 1), w.Cells(Application.Max(5, last - 1), 15))
+    If nbPaiements > 0 Then motif = motif & " | " & CStr(nbPaiements) & " paiement(s) conserve(s) dans l'historique comptable."
+    ITMJournalEcrire "SUPPRESSION_APPRENANT", matricule, "", avant, "", motif
+    ITMValiderSaisie: actif = False: ITMJournalConfirmer
+    ITMAppSupprimerApprenant = "{""ok"":true,""matricule"":" & AJ(matricule) & ",""paiementsConserves"":" & CStr(nbPaiements) & "}"
+    Exit Function
+EH:
+    erreur = Err.Description
+    On Error Resume Next
+    If actif Then
+        w.Range(w.Cells(5, 1), w.Cells(last, 15)).Formula = ancien
+        w.ListObjects(1).Resize w.Range(w.Cells(4, 1), w.Cells(Application.Max(5, last), 15))
+        ITMCollecterErreurAnnulation erreur
+        ITMJournalAnnuler
+    End If
+    On Error GoTo 0
+    ITMAppSupprimerApprenant = "{""ok"":false,""error"":" & AJ(erreur) & "}"
+End Function
+
+Public Function ITMAppFusionnerApprenants(ByVal matriculeConserver As String, ByVal matriculeFusion As String, ByVal motif As String) As String
+    Dim livres As Collection, livre As Workbook, w As Worksheet, pw As Worksheet
+    Dim keepW As Worksheet, mergeW As Worksheet, keepRow As Long, mergeRow As Long, keepCount As Long, mergeCount As Long
+    Dim keepBook As Workbook, mergeBook As Workbook, i As Long, r As Long, lastL As Long, lastP As Long
+    Dim books As Collection, oldLearners As Collection, oldPayments As Collection, learnerLasts As Collection, paymentLasts As Collection
+    Dim avant As String, apres As String, erreur As String, savedCount As Long, j As Long, nbPaiements As Long
+    Dim oldEvents As Boolean, oldScreen As Boolean, oldCalc As XlCalculation, started As Boolean, stateCaptured As Boolean
+    On Error GoTo EH
+    ITMVerifierAnneeOuverte
+    matriculeConserver = ITMCleTexte(matriculeConserver): matriculeFusion = ITMCleTexte(matriculeFusion): motif = Trim$(motif)
+    If matriculeConserver = "" Or matriculeFusion = "" Or matriculeConserver = matriculeFusion Then Err.Raise vbObjectError + 1210, , "Selectionnez deux matricules differents."
+    If Len(motif) < 5 Then Err.Raise vbObjectError + 1211, , "Le motif de fusion est obligatoire (5 caracteres minimum)."
+    Set livres = ITMClasseurs()
+    For Each livre In livres
+        Set w = livre.Worksheets("APPRENANTS")
+        For i = 5 To ITMDerniereLigne(w)
+            If ITMCleTexte(w.Cells(i, 1).Value2) = matriculeConserver Then keepCount = keepCount + 1: Set keepW = w: keepRow = i: Set keepBook = livre
+            If ITMCleTexte(w.Cells(i, 1).Value2) = matriculeFusion Then mergeCount = mergeCount + 1: Set mergeW = w: mergeRow = i: Set mergeBook = livre
+        Next i
+    Next livre
+    If keepCount <> 1 Or mergeCount <> 1 Then Err.Raise vbObjectError + 1212, , "Un dossier est absent ou un matricule n'est pas unique."
+    If ITMCleTexte(keepW.Cells(keepRow, 2).Value2) <> ITMCleTexte(mergeW.Cells(mergeRow, 2).Value2) _
+       Or ITMCleTexte(keepW.Cells(keepRow, 3).Value2) <> ITMCleTexte(mergeW.Cells(mergeRow, 3).Value2) _
+       Or ITMCleTexte(keepW.Cells(keepRow, 4).Value2) <> ITMCleTexte(mergeW.Cells(mergeRow, 4).Value2) _
+       Or ITMCleTexte(keepW.Cells(keepRow, 8).Value2) <> ITMCleTexte(mergeW.Cells(mergeRow, 8).Value2) Then
+        Err.Raise vbObjectError + 1213, , "Fusion refusee : l'identite ou la promotion des deux dossiers differe."
+    End If
+    ITMPECInitialiser
+    If ITMPECExiste(matriculeFusion, CStr(mergeW.Cells(mergeRow, 13).Value2)) Then Err.Raise vbObjectError + 1214, , "Le dossier a fusionner possede un historique de prise en charge. Traitez-le avant la fusion."
+    avant = ITMJsonLigne(keepW, keepRow, 15) & vbCrLf & ITMJsonLigne(mergeW, mergeRow, 15)
+    Set books = New Collection: Set oldLearners = New Collection: Set oldPayments = New Collection
+    Set learnerLasts = New Collection: Set paymentLasts = New Collection
+    oldEvents = Application.EnableEvents: oldScreen = Application.ScreenUpdating: oldCalc = Application.Calculation: stateCaptured = True
+    Application.EnableEvents = False: Application.ScreenUpdating = False: Application.Calculation = xlCalculationManual
+    For Each livre In livres
+        Set w = livre.Worksheets("APPRENANTS"): Set pw = livre.Worksheets("PAIEMENTS")
+        lastL = ITMDerniereLigne(w): lastP = ITMDerniereLigne(pw)
+        books.Add livre: learnerLasts.Add lastL: paymentLasts.Add lastP
+        If lastL >= 5 Then oldLearners.Add w.Range(w.Cells(5, 1), w.Cells(lastL, 15)).Formula Else oldLearners.Add Empty
+        If lastP >= 5 Then oldPayments.Add pw.Range(pw.Cells(5, 1), pw.Cells(lastP, 14)).Formula Else oldPayments.Add Empty
+    Next livre
+    ITMJournalDebut: started = True
+    ' Rattacher les paiements du dossier fusionne au matricule conserve dans tous les segments.
+    For Each livre In livres
+        Set pw = livre.Worksheets("PAIEMENTS")
+        For r = 5 To ITMDerniereLigne(pw)
+            If ITMCleTexte(pw.Cells(r, 4).Value2) = matriculeFusion Then
+                pw.Cells(r, 4).Value2 = matriculeConserver
+                pw.Cells(r, 5).Value2 = CStr(keepW.Cells(keepRow, 2).Value2) & " " & CStr(keepW.Cells(keepRow, 3).Value2) & " " & CStr(keepW.Cells(keepRow, 4).Value2)
+                pw.Cells(r, 6).Value2 = CStr(keepW.Cells(keepRow, 8).Value2)
+                nbPaiements = nbPaiements + 1
+            End If
+        Next r
+    Next livre
+    ' Retirer uniquement la fiche en doublon; le dossier conserve et son matricule restent inchanges.
+    lastL = ITMDerniereLigne(mergeW)
+    If mergeRow < lastL Then mergeW.Range(mergeW.Cells(mergeRow, 1), mergeW.Cells(lastL - 1, 15)).Formula = mergeW.Range(mergeW.Cells(mergeRow + 1, 1), mergeW.Cells(lastL, 15)).Formula
+    mergeW.Range(mergeW.Cells(lastL, 1), mergeW.Cells(lastL, 15)).ClearContents
+    mergeW.ListObjects(1).Resize mergeW.Range(mergeW.Cells(4, 1), mergeW.Cells(Application.Max(5, lastL - 1), 15))
+    If keepW Is mergeW And mergeRow < keepRow Then keepRow = keepRow - 1
+    apres = ITMJsonLigne(keepW, keepRow, 15)
+    ITMJournalEcrire "FUSION_APPRENANTS", matriculeConserver, matriculeFusion, avant, apres, motif & " | " & CStr(nbPaiements) & " paiement(s) rattache(s) au matricule conserve."
+    ' Save every touched segment. If a save fails, restore snapshots and attempt to save the rollback.
+    For j = 1 To books.Count
+        books(j).Save
+        savedCount = j
+    Next j
+    ITMJournalConfirmer: started = False
+    ITMAppFusionnerApprenants = "{""ok"":true,""matriculeConserve"":" & AJ(matriculeConserver) & ",""matriculeFusionne"":" & AJ(matriculeFusion) & ",""paiementsRattaches"":" & CStr(nbPaiements) & "}"
+    GoTo Finally
+EH:
+    erreur = Err.Description
+    On Error Resume Next
+    If Not books Is Nothing Then
+        For j = 1 To books.Count
+            Set livre = books(j): Set w = livre.Worksheets("APPRENANTS"): Set pw = livre.Worksheets("PAIEMENTS")
+            lastL = CLng(learnerLasts(j)): lastP = CLng(paymentLasts(j))
+            If lastL >= 5 Then w.Range(w.Cells(5, 1), w.Cells(lastL, 15)).Formula = oldLearners(j)
+            If ITMDerniereLigne(w) > lastL Then w.Range(w.Cells(lastL + 1, 1), w.Cells(ITMDerniereLigne(w), 15)).ClearContents
+            w.ListObjects(1).Resize w.Range(w.Cells(4, 1), w.Cells(Application.Max(5, lastL), 15))
+            If lastP >= 5 Then pw.Range(pw.Cells(5, 1), pw.Cells(lastP, 14)).Formula = oldPayments(j)
+            If ITMDerniereLigne(pw) > lastP Then pw.Range(pw.Cells(lastP + 1, 1), pw.Cells(ITMDerniereLigne(pw), 14)).ClearContents
+            pw.ListObjects(1).Resize pw.Range(pw.Cells(4, 1), pw.Cells(Application.Max(5, lastP), 14))
+            livre.Save
+        Next j
+    End If
+    If started Then ITMJournalAnnuler
+    ITMAppFusionnerApprenants = "{""ok"":false,""error"":" & AJ(erreur) & "}"
+Finally:
+    On Error Resume Next
+    If stateCaptured Then
+        Application.EnableEvents = oldEvents
+        Application.ScreenUpdating = oldScreen
+        Application.Calculation = oldCalc
+    End If
+    On Error GoTo 0
+End Function
+
+Private Function ANumero(ByVal w As Worksheet) As String
+    Dim n As Long, j As Long, alphabet As String, code As String
+    Dim livres As Collection, livre As Workbook, disponible As Boolean
+    Set livres = ITMClasseurs()
+    alphabet = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ": Randomize
+    For n = 1 To 1000
+        code = ""
+        For j = 1 To 5: code = code & Mid$(alphabet, 1 + Int(Rnd() * 36), 1): Next j
+        disponible = True
+        For Each livre In livres
+            If Application.WorksheetFunction.CountIf(livre.Worksheets("PAIEMENTS").Columns(3), code) > 0 Then disponible = False
+        Next livre
+        If disponible Then ANumero = code: Exit Function
+    Next n
+    Err.Raise vbObjectError + 1014, , "Impossible de générer le numéro d'enregistrement."
+End Function
+
+Public Function ITMAppPaiement(ByVal matricule As String, ByVal montant As Double, Optional ByVal dateISO As String = "") As String
+    Dim d As Object, p As Variant, f As Variant, w As Worksheet, r As Long, i As Long
+    Dim numero As String, mensuel As Currency, annuel As Currency, paye As Currency, restant As Currency
+    Dim disponible As Currency, verse As Currency, du As Currency, cumule As Currency, nb As Long, id As Long
+    Dim m As Variant, cle As String, actif As Boolean, erreur As String, dateRecu As Date
+    Dim livres As Collection, livre As Workbook
+    Dim bloc As Variant, dernier As Long
+    On Error GoTo EH
+    dateRecu = APaymentDate(dateISO)
+    matricule = ITMCleTexte(matricule)
+    Set d = ITMChargerDonnees()
+    If Not d("personnes").Exists(matricule) Then Err.Raise vbObjectError + 1015, , "Apprenant invalide ou en double : vérifiez son dossier."
+    p = d("personnes")(matricule): f = d("promotions")(p(3)): mensuel = CCur(f(0)): annuel = ITMPECAnnuelPayant(matricule, CStr(p(6)), mensuel, CCur(f(1)))
+    If montant <= 0 Or montant <> Fix(montant) Then Err.Raise vbObjectError + 1016, , "Le montant doit être un nombre entier de FC supérieur à zéro."
+    Set livres = ITMClasseurs()
+    For Each livre In livres
+    Set w = livre.Worksheets("PAIEMENTS")
+    dernier = ITMDerniereLigne(w)
+    If dernier >= 5 Then
+    bloc = w.Range(w.Cells(5, 1), w.Cells(dernier, 9)).Value2
+    For i = 1 To UBound(bloc, 1)
+        If ITMCleTexte(bloc(i, 4)) = matricule Then
+            If Not d("mois").Exists(ITMCleTexte(bloc(i, 7))) Or Not IsNumeric(bloc(i, 9)) Or CStr(bloc(i, 9)) = "" Then Err.Raise vbObjectError + 1017, , "Un paiement incomplet existe pour cet apprenant. Rapprochez le reçu avant un nouveau versement."
+            If CCur(bloc(i, 9)) < 0 Then Err.Raise vbObjectError + 1018, , "Un montant négatif doit être vérifié pour cet apprenant."
+        End If
+        If IsNumeric(bloc(i, 1)) Then If CLng(bloc(i, 1)) > id Then id = CLng(bloc(i, 1))
+    Next i
+    End If
+    Next livre
+    Set w = ThisWorkbook.Worksheets("PAIEMENTS")
+    For Each m In d("mois").Keys
+        cle = matricule & "|" & CStr(m)
+        If d("sommes").Exists(cle) Then paye = paye + CCur(d("sommes")(cle))
+    Next m
+    If montant > annuel - paye Then Err.Raise vbObjectError + 1019, , "Le montant dépasse le reste annuel (" & Format$(annuel - paye, "#,##0") & " FC)."
+    numero = ANumero(w): disponible = CCur(montant): cumule = paye
+    ITMDebutSaisie w: actif = True: ITMJournalDebut
+    For Each m In ITMPECMois(matricule, CStr(p(6)))
+        If disponible <= 0 Then Exit For
+        If Not d("mois").Exists(ITMCleTexte(m)) Then Err.Raise vbObjectError + 1020, , "Mois scolaire manquant dans PARAMETRES."
+        cle = matricule & "|" & ITMCleTexte(m): du = mensuel - ITMPECMontant(matricule, CStr(p(6)), CStr(m), mensuel)
+        If d("sommes").Exists(cle) Then du = du - CCur(d("sommes")(cle))
+        If du > 0 Then
+            verse = disponible: If verse > du Then verse = du
+            restant = du - verse: cumule = cumule + verse
+            r = ITMReserverLigne(w): id = id + 1
+            w.Cells(r, 1).Value2 = id: w.Cells(r, 2).Value = dateRecu: w.Cells(r, 2).NumberFormat = "dd/mm/yyyy"
+            w.Cells(r, 3).NumberFormat = "@": w.Cells(r, 3).Value2 = numero
+            w.Cells(r, 4).NumberFormat = "@": w.Cells(r, 4).Value2 = matricule
+            w.Cells(r, 5).NumberFormat = "@": w.Cells(r, 5).Value2 = p(0) & " " & p(1) & " " & p(2)
+            w.Cells(r, 6).NumberFormat = "@": w.Cells(r, 6).Value2 = p(3)
+            w.Cells(r, 7).Value2 = CStr(m): w.Cells(r, 8).Value2 = mensuel: w.Cells(r, 9).Value2 = verse
+            w.Cells(r, 10).Value2 = restant: w.Cells(r, 11).Value2 = IIf(restant = 0, "PAYE", "LITIGE")
+            w.Cells(r, 12).Value2 = cumule: w.Cells(r, 13).Value2 = annuel: w.Cells(r, 14).Value2 = Application.Max(0, annuel - cumule)
+            w.Range(w.Cells(r, 8), w.Cells(r, 14)).NumberFormat = "#,##0"
+            disponible = disponible - verse: nb = nb + 1
+        End If
+    Next m
+    If disponible <> 0 Or nb = 0 Then Err.Raise vbObjectError + 1021, , "Le versement ne peut pas être entièrement réparti : enregistrement annulé."
+    ITMJournalEcrire "PAIEMENT", matricule, numero, "", CStr(montant), "Recu valide a la caisse du " & Format$(dateRecu, "dd/mm/yyyy")
+    ITMValiderSaisie: actif = False: ITMJournalConfirmer
+    ITMAppPaiement = "{""ok"":true,""numero"":" & AJ(numero) & ",""montant"":" & AJ(CCur(montant)) & ",""mois"":" & AJ(nb) & "}"
+    Exit Function
+EH:
+    erreur = Err.Description
+    Err.Clear
+    On Error Resume Next
+    If actif Then
+        ITMCollecterErreurAnnulation erreur
+        ITMJournalAnnuler
+        ITMCollecterErreurAnnulation erreur
+        ITMAnnulerSaisie
+        ITMCollecterErreurAnnulation erreur
+    End If
+    On Error GoTo 0
+    ITMAppPaiement = "{""ok"":false,""error"":" & AJ(erreur) & "}"
+End Function
+
+Public Function ITMAppExporter(ByVal mois As String, ByVal promotion As String, ByVal pdf As Boolean, ByVal mode As Long, ByVal chemin As String) As String
+    ITMAppExporter = ModuleExportsFiables.ITMAppRapport(chemin, mois, promotion, pdf, mode)
+End Function
+
+Public Function ITMAppEncoder(ByVal valeur As Variant) As String
+    ITMAppEncoder = AJ(valeur)
+End Function
+
+Public Function ITMAppDerniereErreur() As String
+    ITMAppDerniereErreur = mDerniereErreur
+End Function
+Public Function ITMAppAdministration() As String
+    ITMAppAdministration = "{""journal"":" & ITMJournalLire() & ",""backups"":" & ITMSauvegardesLire() & ",""duplicates"":" & ITMDoublonsLire() & "}"
+End Function
+Public Function ITMAppDoublonsPaiement(ByVal matricule As String, ByVal montant As Double, Optional ByVal dateISO As String = "") As String
+    ITMAppDoublonsPaiement = ITMPaiementsSimilaires(matricule, montant, APaymentDate(dateISO))
+End Function
+Public Function ITMAppCorrectionPaiement(ByVal numero As String, ByVal montant As Double, ByVal motif As String, ByVal appliquer As Boolean) As String
+    ITMAppCorrectionPaiement = ITMCorrigerPaiement(numero, montant, motif, appliquer)
+End Function
+Public Function ITMAppPromotion(ByVal code As String, ByVal designation As String, ByVal annee As String, ByVal mensuel As Double, ByVal annuel As Double, ByVal active As Boolean) As String
+    ITMAppPromotion = ITMPromotionEnregistrer(code, designation, annee, mensuel, annuel, active)
+End Function
+Public Function ITMAppSauvegarde() As String
+    ITMAppSauvegarde = ITMBackupManuel()
+End Function
+Public Function ITMAppRestaurer(ByVal source As String, ByVal cible As String) As String
+    ITMAppRestaurer = ITMRestaurerCopie(source, cible)
+End Function
+Public Function ITMAppCloture(ByVal annee As String, ByVal cible As String) As String
+    ITMAppCloture = ITMCloturerAnnee(annee, cible)
+End Function
+
+Public Function ITMAppVerifierRapport(ByVal mois As String, ByVal promotion As String, ByVal mode As Long) As String
+    ITMAppVerifierRapport = ModuleExportsFiables.ITMAppApercuRapport(mois, promotion, mode)
+End Function
+
+Private Function APaymentDate(ByVal valeur As String) As Date
+    Dim d As Date
+    If valeur = "" Then
+        APaymentDate = Date
+        Exit Function
+    End If
+    If Not valeur Like "####-##-##" Then Err.Raise vbObjectError + 1090, , "Date du reçu invalide."
+    d = DateSerial(CInt(Left$(valeur, 4)), CInt(Mid$(valeur, 6, 2)), CInt(Right$(valeur, 2)))
+    If Format$(d, "yyyy-mm-dd") <> valeur Then Err.Raise vbObjectError + 1091, , "Date du reçu invalide."
+    If d < DateSerial(1900, 1, 1) Or d > Date Then Err.Raise vbObjectError + 1092, , "La date du reçu doit être antérieure ou égale à aujourd'hui."
+    APaymentDate = d
+End Function
+
+Public Function ITMAppPriseEnChargeVersion() As String
+    ITMAppPriseEnChargeVersion = "ITM-PEC-1"
+End Function
+
+Public Function ITMAppScoliaImport(ByVal reference As String, ByVal identite As String, ByVal moisTexte As String, ByVal montantsTexte As String, ByVal dateISO As String, ByVal creer As Boolean, Optional ByVal revision As Long = 0, Optional ByVal referenceCommune As String = "") As String
+    Dim livres As Collection, livre As Workbook, w As Worksheet, a As Worksheet, log As Worksheet
+    Dim champs As Variant, mois As Variant, valeurs As Variant, p As Variant, f As Variant, d As Object
+    Dim mat As String, numero As String, erreur As String, m As String, cle As String
+    Dim i As Long, j As Long, r As Long, ar As Long, ancienDernier As Long, id As Long, nb As Long, actif As Boolean, ajoute As Boolean
+    Dim montant As Currency, total As Currency, paye As Currency, annuel As Currency, cumule As Currency, dateRecu As Date, naissance As Date
+    On Error GoTo EH
+    If Len(reference) <> 32 Or reference Like "*[!a-f0-9]*" Then Err.Raise vbObjectError + 1300, , "Reference de transfert invalide."
+    Set livres = ITMClasseurs()
+    For Each livre In livres
+        Set log = Nothing
+        On Error Resume Next: Set log = livre.Worksheets("JOURNAL_ITM"): On Error GoTo EH
+        If Not log Is Nothing Then
+            For i = 2 To log.Cells(log.Rows.Count, 1).End(xlUp).Row
+                If CStr(log.Cells(i, 3).Value2) = "SCOLIA_TRANSFERT" And CStr(log.Cells(i, 5).Value2) = reference Then
+                    ITMAppScoliaImport = "{""ok"":true,""already"":true,""matricule"":" & AJ(log.Cells(i, 4).Value2) & "}": Exit Function
+                End If
+            Next i
+        End If
+    Next livre
+    champs = Split(identite, vbTab): mois = Split(moisTexte, "|"): valeurs = Split(montantsTexte, "|")
+    If UBound(champs) <> 12 Or UBound(mois) <> UBound(valeurs) Or UBound(mois) > 11 Then Err.Raise vbObjectError + 1301, , "Contenu du transfert incomplet."
+    If Trim$(champs(1)) = "" Or Trim$(champs(2)) = "" Or Trim$(champs(3)) = "" Or Trim$(champs(4)) = "" Then Err.Raise vbObjectError + 1302, , "Nom, post-nom, prenom et promotion obligatoires."
+    If Replace(champs(5), " ", "") <> Replace(GAnneeScolia(), " ", "") Then Err.Raise vbObjectError + 1303, , "Le transfert concerne une autre annee scolaire. Connectez sa base."
+    dateRecu = APaymentDate(dateISO): Set d = ITMChargerDonnees()
+    If Not d("promotions").Exists(ITMPromotion(champs(4))) Then Err.Raise vbObjectError + 1304, , "Promotion inconnue dans ce classeur. Appliquez la configuration SCOLIA."
+    mat = ITMCleTexte(champs(0)): nb = 0
+    For Each livre In livres
+        Set a = livre.Worksheets("APPRENANTS")
+        For i = 5 To ITMDerniereLigne(a)
+            If AIdentiteCle(a.Cells(i, 2).Value2) = AIdentiteCle(champs(1)) And AIdentiteCle(a.Cells(i, 3).Value2) = AIdentiteCle(champs(2)) And AIdentiteCle(a.Cells(i, 4).Value2) = AIdentiteCle(champs(3)) And ITMPromotion(a.Cells(i, 8).Value2) = ITMPromotion(champs(4)) And Replace(CStr(a.Cells(i, 13).Value2), " ", "") = Replace(champs(5), " ", "") Then
+                If mat <> "" And mat <> ITMCleTexte(a.Cells(i, 1).Value2) Then Err.Raise vbObjectError + 1305, , "Matricule et identite du transfert ne correspondent pas."
+                mat = ITMCleTexte(a.Cells(i, 1).Value2): nb = nb + 1
+            End If
+        Next i
+    Next livre
+    If nb > 1 Then Err.Raise vbObjectError + 1306, , "Plusieurs apprenants correspondent : rapprochez les doublons."
+    If nb = 0 And Not creer Then Err.Raise vbObjectError + 1307, , "Apprenant inconnu : transfert a conserver en brouillon."
+    If nb = 0 Then
+        If mat <> "" Then Err.Raise vbObjectError + 1308, , "Matricule inconnu : rapprochez le dossier avant import."
+        mat = AMatricule(champs(4))
+    End If
+    f = d("promotions")(ITMPromotion(champs(4))): annuel = CCur(f(1))
+    For j = 0 To UBound(mois)
+        m = ITMCleTexte(mois(j)): cle = mat & "|" & m
+        If Not d("mois").Exists(m) Or valeurs(j) Like "*[!0-9]*" Or valeurs(j) = "" Then Err.Raise vbObjectError + 1309, , "Mois ou montant invalide."
+        For i = 0 To j - 1
+            If ITMCleTexte(mois(i)) = m Then Err.Raise vbObjectError + 1310, , "Mois duplique dans le transfert."
+        Next i
+        montant = CCur(valeurs(j)): paye = 0
+        If d("sommes").Exists(cle) Then paye = CCur(d("sommes")(cle))
+        If montant <= 0 Or montant > CCur(f(0)) - paye - ITMPECMontant(mat, champs(5), m, CCur(f(0))) Then Err.Raise vbObjectError + 1311, , "Mensualite deja soldee ou montant superieur au reste."
+        total = total + montant
+    Next j
+    paye = 0
+    For Each p In d("sommes").Keys
+        If Split(CStr(p), "|")(0) = mat Then paye = paye + CCur(d("sommes")(p))
+    Next p
+    If total > annuel - paye Then Err.Raise vbObjectError + 1312, , "Transfert superieur au reste annuel."
+    Set w = ThisWorkbook.Worksheets("PAIEMENTS"): Set a = ThisWorkbook.Worksheets("APPRENANTS")
+    For Each livre In livres
+        For i = 5 To ITMDerniereLigne(livre.Worksheets("PAIEMENTS"))
+            If IsNumeric(livre.Worksheets("PAIEMENTS").Cells(i, 1).Value2) Then If CLng(livre.Worksheets("PAIEMENTS").Cells(i, 1).Value2) > id Then id = CLng(livre.Worksheets("PAIEMENTS").Cells(i, 1).Value2)
+        Next i
+    Next livre
+    numero = Trim$(referenceCommune)
+    If numero <> "" Then
+        If Len(numero) > 250 Then Err.Raise vbObjectError + 1334, , "Reference commune trop longue."
+        For Each livre In livres
+            For i = 5 To ITMDerniereLigne(livre.Worksheets("PAIEMENTS"))
+                If ITMCleTexte(livre.Worksheets("PAIEMENTS").Cells(i, 3).Value2) = ITMCleTexte(numero) Then Err.Raise vbObjectError + 1335, , "Cette reference existe deja dans les paiements locaux. Rapprochement necessaire."
+            Next i
+        Next livre
+    Else
+        numero = ANumero(w)
+    End If
+    ITMDebutSaisie w: actif = True: ITMJournalDebut
+    If nb = 0 Then
+        ancienDernier = ITMDerniereLigne(a): ar = Application.Max(5, ancienDernier + 1)
+        If Application.CountA(a.Range(a.Cells(ar, 1), a.Cells(ar, 15))) <> 0 Then Err.Raise vbObjectError + 1313, , "Ligne apprenant non vide."
+        a.ListObjects(1).Resize a.Range(a.Cells(4, 1), a.Cells(ar, 15)): ajoute = True
+        a.Range(a.Cells(ar, 1), a.Cells(ar, 15)).NumberFormat = "@"
+        a.Cells(ar, 1).Value2 = mat: a.Cells(ar, 2).Value2 = UCase$(champs(1)): a.Cells(ar, 3).Value2 = UCase$(champs(2)): a.Cells(ar, 4).Value2 = UCase$(champs(3))
+        a.Cells(ar, 5).Value2 = champs(6)
+        If champs(7) <> "" Then
+            If Not ITMLireDate(champs(7), naissance) Then Err.Raise vbObjectError + 1331, , "Date de naissance incorrecte."
+            a.Cells(ar, 6).Value = naissance: a.Cells(ar, 6).NumberFormat = "dd/mm/yyyy"
+        End If
+        a.Cells(ar, 7).Value2 = champs(8): a.Cells(ar, 8).Value2 = ITMPromotion(champs(4)): a.Cells(ar, 10).Value2 = champs(9): a.Cells(ar, 11).Value2 = champs(10)
+        a.Cells(ar, 12).Value = Date: a.Cells(ar, 12).NumberFormat = "dd/mm/yyyy": a.Cells(ar, 13).Value2 = champs(5): a.Cells(ar, 14).Value2 = "ACTIF": a.Cells(ar, 15).Value2 = champs(11)
+    End If
+    cumule = paye
+    For j = 0 To UBound(mois)
+        montant = CCur(valeurs(j)): cumule = cumule + montant: id = id + 1: r = ITMReserverLigne(w)
+        w.Cells(r, 1).Value2 = id: w.Cells(r, 2).Value = dateRecu: w.Cells(r, 2).NumberFormat = "dd/mm/yyyy"
+        w.Cells(r, 3).NumberFormat = "@": w.Cells(r, 3).Value2 = numero: w.Cells(r, 4).NumberFormat = "@": w.Cells(r, 4).Value2 = mat
+        w.Cells(r, 5).Value2 = champs(1) & " " & champs(2) & " " & champs(3): w.Cells(r, 6).Value2 = ITMPromotion(champs(4)): w.Cells(r, 7).Value2 = mois(j)
+        w.Cells(r, 8).Value2 = CCur(f(0)): w.Cells(r, 9).Value2 = montant
+        cle = mat & "|" & ITMCleTexte(mois(j)): paye = 0: If d("sommes").Exists(cle) Then paye = CCur(d("sommes")(cle))
+        w.Cells(r, 10).Value2 = CCur(f(0)) - paye - montant - ITMPECMontant(mat, champs(5), CStr(mois(j)), CCur(f(0)))
+        w.Cells(r, 11).Value2 = IIf(w.Cells(r, 10).Value2 = 0, "PAYE", "LITIGE"): w.Cells(r, 12).Value2 = cumule: w.Cells(r, 13).Value2 = annuel: w.Cells(r, 14).Value2 = annuel - cumule
+    Next j
+    ITMJournalEcrire "SCOLIA_TRANSFERT", mat, reference, numero, CStr(total), "Caisse : " & champs(12) & ". Paiement comptable importe une seule fois."
+    If revision > 0 Then ITMJournalEcrire "SCOLIA_REVISION", mat, reference, "0", CStr(revision), "Revision recue avant le premier import. " & champs(12)
+    ITMValiderSaisie: actif = False: ITMJournalConfirmer
+    ITMAppScoliaImport = "{""ok"":true,""matricule"":" & AJ(mat) & ",""numero"":" & AJ(numero) & "}": Exit Function
+EH:
+    erreur = Err.Description: Err.Clear: On Error Resume Next
+    If actif Then
+        If ajoute Then a.Range(a.Cells(ar, 1), a.Cells(ar, 15)).ClearContents: a.ListObjects(1).Resize a.Range(a.Cells(4, 1), a.Cells(Application.Max(5, ancienDernier), 15))
+        ITMJournalAnnuler: ITMCollecterErreurAnnulation erreur: ITMAnnulerSaisie: ITMCollecterErreurAnnulation erreur
+    End If
+    On Error GoTo 0
+    ITMAppScoliaImport = "{""ok"":false,""error"":" & AJ(erreur) & "}"
+End Function
+
+Private Function GAnneeScolia() As String
+    Dim w As Worksheet
+    Set w = ThisWorkbook.Worksheets("PROMOTIONS")
+    GAnneeScolia = CStr(w.Cells(5, 5).Value2)
+End Function
+
+Public Function ITMAppScoliaConfiguration(ByVal schoolId As String, ByVal annee As String, ByVal moisTexte As String, ByVal codesTexte As String, ByVal fraisTexte As String, ByVal confirmer As Boolean) As String
+    Dim livre As Workbook, livres As Collection, w As Worksheet, p As Worksheet, mois As Variant, codes As Variant, frais As Variant, i As Long, j As Long, r As Long, trouve As Boolean
+    Dim erreur As String
+    On Error GoTo EH
+    If Not confirmer Then Err.Raise vbObjectError + 1320, , "Confirmation necessaire."
+    Set livres = ITMClasseurs()
+    For Each livre In livres
+        If ITMDerniereLigne(livre.Worksheets("PAIEMENTS")) >= 5 Then
+            If Application.CountA(livre.Worksheets("PAIEMENTS").Range("A5:N" & ITMDerniereLigne(livre.Worksheets("PAIEMENTS")))) > 0 Then Err.Raise vbObjectError + 1321, , "Des paiements existent : calendrier et tarifs proteges. Utilisez une nouvelle base annuelle."
+        End If
+    Next livre
+    mois = Split(moisTexte, "|"): codes = Split(codesTexte, "|"): frais = Split(fraisTexte, "|")
+    If UBound(mois) > 11 Or UBound(codes) <> UBound(frais) Then Err.Raise vbObjectError + 1322, , "Configuration incomplete."
+    For i = 0 To UBound(frais)
+        If frais(i) Like "*[!0-9]*" Or frais(i) = "" Then Err.Raise vbObjectError + 1323, , "Tarif invalide."
+        If CCur(frais(i)) <= 0 Then Err.Raise vbObjectError + 1324, , "Tarif positif obligatoire."
+    Next i
+    For Each livre In livres
+        Set p = livre.Worksheets("APPRENANTS")
+        For i = 5 To ITMDerniereLigne(p)
+            If CStr(p.Cells(i, 1).Value2) <> "" Then
+                If Replace(CStr(p.Cells(i, 13).Value2), " ", "") <> Replace(annee, " ", "") Then Err.Raise vbObjectError + 1332, , "Des apprenants d'une autre annee existent : utilisez la cloture annuelle."
+                trouve = False
+                For j = 0 To UBound(codes)
+                    If ITMPromotion(p.Cells(i, 8).Value2) = ITMPromotion(codes(j)) Then trouve = True
+                Next j
+                If Not trouve Then Err.Raise vbObjectError + 1333, , "Une classe contient des apprenants : conservez-la dans la configuration."
+            End If
+        Next i
+    Next livre
+    For Each livre In livres
+        Set w = livre.Worksheets("PARAMETRES"): w.Range("A5:A" & Application.Max(5, w.Cells(w.Rows.Count, 1).End(xlUp).Row)).ClearContents
+        For i = 0 To UBound(mois): w.Cells(5 + i, 1).Value2 = mois(i): Next i
+        Set p = livre.Worksheets("PROMOTIONS")
+        p.Range("A5:H" & Application.Max(5, p.Cells(p.Rows.Count, 1).End(xlUp).Row)).ClearContents
+        For i = 0 To UBound(codes)
+            r = 5 + i
+            p.Cells(r, 1).Value2 = ITMPromotion(codes(i)): p.Cells(r, 2).Value2 = codes(i): p.Cells(r, 5).Value2 = annee
+            p.Cells(r, 6).Value2 = CCur(frais(i)): p.Cells(r, 7).Value2 = CCur(frais(i)) * (UBound(mois) + 1): p.Cells(r, 8).Value2 = "ACTIVE"
+        Next i
+        If p.ListObjects.Count = 1 Then p.ListObjects(1).Resize p.Range(p.Cells(4, 1), p.Cells(Application.Max(5, p.Cells(p.Rows.Count, 1).End(xlUp).Row), 8))
+        On Error Resume Next
+        livre.CustomDocumentProperties("ScoliaInstitutionId").Delete
+        On Error GoTo EH
+        livre.CustomDocumentProperties.Add "ScoliaInstitutionId", False, 4, schoolId
+        livre.Save
+    Next livre
+    ITMAppScoliaConfiguration = "{""ok"":true}": Exit Function
+EH:
+    erreur = Err.Description: ITMAppScoliaConfiguration = "{""ok"":false,""error"":" & AJ(erreur) & "}"
+End Function
+
+Public Function ITMAppScoliaReferences() As String
+    Dim livres As Collection, livre As Workbook, w As Worksheet, i As Long, resultat As String, first As Boolean
+    first = True: resultat = "[": Set livres = ITMClasseurs()
+    For Each livre In livres
+        Set w = Nothing
+        On Error Resume Next: Set w = livre.Worksheets("JOURNAL_ITM"): On Error GoTo 0
+        If Not w Is Nothing Then
+            For i = 2 To w.Cells(w.Rows.Count, 1).End(xlUp).Row
+                If CStr(w.Cells(i, 3).Value2) = "SCOLIA_TRANSFERT" Then
+                    If Not first Then resultat = resultat & ","
+                    first = False: resultat = resultat & AJ(w.Cells(i, 5).Value2)
+                End If
+            Next i
+        End If
+    Next livre
+    ITMAppScoliaReferences = resultat & "]"
+End Function
+
+Public Function ITMAppScoliaRecuProtege(ByVal numero As String) As String
+    Dim livre As Workbook, livres As Collection, w As Worksheet, i As Long, erreur As String
+    On Error GoTo EH
+    Set livres = ITMClasseurs()
+    For Each livre In livres
+        Set w = Nothing
+        On Error Resume Next
+        Set w = livre.Worksheets("JOURNAL_ITM")
+        On Error GoTo EH
+        If Not w Is Nothing Then
+            For i = 2 To w.Cells(w.Rows.Count, 1).End(xlUp).Row
+                If CStr(w.Cells(i, 3).Value2) = "SCOLIA_TRANSFERT" And CStr(w.Cells(i, 6).Value2) = numero Then
+                    ITMAppScoliaRecuProtege = "{""ok"":true,""protected"":true}": Exit Function
+                End If
+            Next i
+        End If
+    Next livre
+    ITMAppScoliaRecuProtege = "{""ok"":true,""protected"":false}": Exit Function
+EH:
+    erreur = Err.Description: ITMAppScoliaRecuProtege = "{""ok"":false,""error"":" & AJ(erreur) & "}"
+End Function
+
+Public Function ITMAppScoliaFinanceVersion() As String
+    ITMAppScoliaFinanceVersion = "SCOLIA-FINANCE-2"
+End Function
+
+' Replace only one receipt, preserving all other receipts and monthly allocations.
+' The caller also backs up all segments before this operation.
+Public Function ITMAppScoliaSynchroniser(ByVal reference As String, ByVal numero As String, ByVal mat As String, ByVal moisTexte As String, ByVal montantsTexte As String, ByVal dateISO As String, ByVal version As Long, ByVal motif As String, ByVal ancienneDate As String, ByVal anciensMois As String, ByVal anciensMontants As String) As String
+    Dim livres As Collection, livre As Workbook, w As Worksheet, log As Worksheet, target As Worksheet
+    Dim snapshots As Collection, sheets As Collection, lasts As Collection, tables As Collection
+    Dim before As Object, expected As Object, desired As Object, used As Object, data As Object
+    Dim arr As Variant, months As Variant, amounts As Variant, k As Variant, f As Variant, values As Variant
+    Dim i As Long, j As Long, r As Long, n As Long, outRow As Long, maxId As Long, last As Long, revisionLocal As Long
+    Dim actual As Currency, total As Currency, fee As Currency, annual As Currency, paid As Currency, running As Currency
+    Dim m As String, errorText As String, year As String, promotion As String, fullName As String
+    Dim changed As Boolean, active As Boolean, found As Boolean, receiptDate As Date, oldDate As Date
+    On Error GoTo EH
+    ITMVerifierAnneeOuverte
+    If Len(reference) <> 32 Or reference Like "*[!a-f0-9]*" Or version < 1 Or Len(Trim$(motif)) < 5 Then Err.Raise vbObjectError + 1390, , "Correction incomplete."
+    receiptDate = APaymentDate(dateISO): oldDate = APaymentDate(ancienneDate)
+    Set livres = ITMClasseurs(): Set snapshots = New Collection: Set sheets = New Collection: Set lasts = New Collection: Set tables = New Collection
+    Set before = CreateObject("Scripting.Dictionary"): Set expected = CreateObject("Scripting.Dictionary"): Set desired = CreateObject("Scripting.Dictionary"): Set used = CreateObject("Scripting.Dictionary")
+    For Each livre In livres
+        Set log = Nothing
+        On Error Resume Next: Set log = livre.Worksheets("JOURNAL_ITM"): On Error GoTo EH
+        If Not log Is Nothing Then
+            For i = 2 To log.Cells(log.Rows.Count, 1).End(xlUp).Row
+                If CStr(log.Cells(i, 3).Value2) = "SCOLIA_REVISION" And CStr(log.Cells(i, 5).Value2) = reference Then
+                    If CLng(Val(CStr(log.Cells(i, 7).Value2))) > revisionLocal Then revisionLocal = CLng(Val(CStr(log.Cells(i, 7).Value2)))
+                End If
+            Next i
+        End If
+    Next livre
+    If revisionLocal > version Then Err.Raise vbObjectError + 1391, , "Revision plus recente deja appliquee. Actualisez."
+    If revisionLocal = version Then ITMAppScoliaSynchroniser = "{""ok"":true,""already"":true,""matricule"":" & AJ(mat) & "}": Exit Function
+    If anciensMois <> "" Then
+        months = Split(anciensMois, "|"): amounts = Split(anciensMontants, "|")
+        If UBound(months) <> UBound(amounts) Then Err.Raise vbObjectError + 1392, , "Ancienne affectation invalide."
+        For i = 0 To UBound(months): expected.Add ITMCleTexte(months(i)), CCur(amounts(i)): Next i
+    End If
+    Set data = ITMChargerDonnees()
+    For Each livre In livres
+        Set w = livre.Worksheets("PAIEMENTS")
+        If w.ProtectContents Then Err.Raise vbObjectError + 1393, , "Feuille paiements protegee."
+        last = Application.Max(5, ITMDerniereLigne(w)): sheets.Add w: snapshots.Add w.Range("A5:N" & last).Formula: lasts.Add last: tables.Add w.ListObjects(1).Range.Rows.Count + 3
+        For r = 5 To last
+            If IsNumeric(w.Cells(r, 1).Value2) Then If CLng(Val(CStr(w.Cells(r, 1).Value2))) > maxId Then maxId = CLng(Val(CStr(w.Cells(r, 1).Value2)))
+            If ITMCleTexte(w.Cells(r, 4).Value2) = ITMCleTexte(mat) Then
+                m = ITMCleTexte(w.Cells(r, 7).Value2): actual = CCur(Val(CStr(w.Cells(r, 9).Value2)))
+                If ITMCleTexte(w.Cells(r, 3).Value2) = ITMCleTexte(numero) Then
+                    found = True: If target Is Nothing Then Set target = w
+                    If Not IsDate(w.Cells(r, 2).Value) Then Err.Raise vbObjectError + 1394, , "Date locale invalide."
+                    If CDate(w.Cells(r, 2).Value) <> oldDate Then Err.Raise vbObjectError + 1394, , "Le recu a ete modifie localement. Rapprochement requis."
+                    If Not before.Exists(m) Then before.Add m, CCur(0)
+                    before(m) = CCur(before(m)) + actual
+                    promotion = ITMPromotion(w.Cells(r, 6).Value2): fullName = CStr(w.Cells(r, 5).Value2)
+                Else
+                    If Not used.Exists(m) Then used.Add m, CCur(0)
+                    used(m) = CCur(used(m)) + actual
+                End If
+            End If
+        Next r
+    Next livre
+    If Not found Then Err.Raise vbObjectError + 1395, , "Recu local introuvable. Actualisez les paiements."
+    If before.Count <> expected.Count Then Err.Raise vbObjectError + 1396, , "Affectation locale modifiee : rapprochement requis."
+    For Each k In expected.Keys
+        If Not before.Exists(k) Then Err.Raise vbObjectError + 1396, , "Affectation locale modifiee : rapprochement requis."
+        If CCur(before(k)) <> CCur(expected(k)) Then Err.Raise vbObjectError + 1396, , "Montant local modifie : rapprochement requis."
+    Next k
+    f = data("promotions")(promotion): fee = CCur(f(0)): annual = CCur(f(1)): year = GAnneeScolia()
+    If moisTexte <> "" Then
+        months = Split(moisTexte, "|"): amounts = Split(montantsTexte, "|")
+        If UBound(months) <> UBound(amounts) Or UBound(months) > 11 Then Err.Raise vbObjectError + 1397, , "Nouvelle affectation invalide."
+        For i = 0 To UBound(months)
+            m = ITMCleTexte(months(i)): actual = CCur(amounts(i)): paid = 0
+            If Not data("mois").Exists(m) Or actual <= 0 Or desired.Exists(m) Then Err.Raise vbObjectError + 1397, , "Nouvelle mensualite invalide."
+            If used.Exists(m) Then paid = CCur(used(m))
+            If actual > fee - paid - ITMPECMontant(mat, year, m, fee) Then Err.Raise vbObjectError + 1398, , "Montant superieur au reste local. Importez les autres paiements puis reessayez."
+            desired.Add m, actual: total = total + actual
+        Next i
+    End If
+    ITMDebutSaisie target: active = True: ITMJournalDebut: changed = True
+    ' Compact affected rows in every segment; no blank gaps are left in the tables.
+    For n = 1 To sheets.Count
+        Set w = sheets(n): arr = snapshots(n): outRow = 5
+        w.Range("A5:N" & CLng(lasts(n))).ClearContents
+        For i = 1 To UBound(arr, 1)
+            If CStr(arr(i, 1)) <> "" Then
+                If Not (ITMCleTexte(arr(i, 3)) = ITMCleTexte(numero) And ITMCleTexte(arr(i, 4)) = ITMCleTexte(mat)) Then
+                    For j = 1 To 14: w.Cells(outRow, j).Formula = arr(i, j): Next j
+                    outRow = outRow + 1
+                End If
+            End If
+        Next i
+        w.ListObjects(1).Resize w.Range(w.Cells(4, 1), w.Cells(Application.Max(5, outRow - 1), 14))
+    Next n
+    Set w = target
+    If moisTexte <> "" Then
+        For i = 0 To UBound(months)
+            r = Application.Max(5, ITMDerniereLigne(w) + 1): maxId = maxId + 1
+            w.ListObjects(1).Resize w.Range(w.Cells(4, 1), w.Cells(r, 14))
+            w.Cells(r, 1).Value2 = maxId: w.Cells(r, 2).Value = receiptDate: w.Cells(r, 2).NumberFormat = "dd/mm/yyyy"
+            w.Range(w.Cells(r, 3), w.Cells(r, 7)).NumberFormat = "@"
+            w.Cells(r, 3).Value2 = numero: w.Cells(r, 4).Value2 = mat: w.Cells(r, 5).Value2 = fullName: w.Cells(r, 6).Value2 = promotion: w.Cells(r, 7).Value2 = months(i)
+            w.Cells(r, 8).Value2 = fee: w.Cells(r, 9).Value2 = CCur(amounts(i)): w.Cells(r, 13).Value2 = annual
+        Next i
+    End If
+    paid = 0
+    For Each k In used.Keys: paid = paid + CCur(used(k)): Next k
+    paid = paid + total
+    For n = 1 To sheets.Count
+        Set w = sheets(n)
+        For r = 5 To ITMDerniereLigne(w)
+            If ITMCleTexte(w.Cells(r, 4).Value2) = ITMCleTexte(mat) Then
+                m = ITMCleTexte(w.Cells(r, 7).Value2): actual = 0
+                If used.Exists(m) Then actual = CCur(used(m))
+                If desired.Exists(m) Then actual = actual + CCur(desired(m))
+                w.Cells(r, 10).Value2 = Application.Max(0, fee - actual - ITMPECMontant(mat, year, m, fee))
+                w.Cells(r, 11).Value2 = IIf(w.Cells(r, 10).Value2 = 0, "PAYE", "LITIGE")
+                w.Cells(r, 12).Value2 = paid: w.Cells(r, 13).Value2 = annual: w.Cells(r, 14).Value2 = Application.Max(0, annual - paid)
+            End If
+        Next r
+    Next n
+    ITMJournalEcrire "SCOLIA_TRANSFERT", mat, reference, numero, CStr(total), "Reference commune. " & motif
+    ITMJournalEcrire "SCOLIA_REVISION", mat, reference, CStr(revisionLocal), CStr(version), motif
+    ITMValiderSaisie: active = False
+    For Each livre In livres: livre.Save: Next livre
+    ITMJournalConfirmer
+    ITMAppScoliaSynchroniser = "{""ok"":true,""matricule"":" & AJ(mat) & ",""numero"":" & AJ(numero) & "}": Exit Function
+EH:
+    errorText = Err.Description: Err.Clear: On Error Resume Next
+    If changed Then
+        For n = 1 To sheets.Count
+            Set w = sheets(n)
+            w.Range(w.Cells(5, 1), w.Cells(Application.Max(CLng(lasts(n)), ITMDerniereLigne(w)), 14)).ClearContents
+            w.ListObjects(1).Resize w.Range(w.Cells(4, 1), w.Cells(CLng(tables(n)), 14))
+            w.Range("A5:N" & CLng(lasts(n))).Formula = snapshots(n)
+            ITMCollecterErreurAnnulation errorText
+        Next n
+    End If
+    If changed Then ITMJournalAnnuler: ITMCollecterErreurAnnulation errorText
+    If active Then ITMAnnulerSaisie: ITMCollecterErreurAnnulation errorText
+    If changed Then
+        For Each livre In livres: livre.Save: ITMCollecterErreurAnnulation errorText: Next livre
+    End If
+    On Error GoTo 0
+    ITMAppScoliaSynchroniser = "{""ok"":false,""error"":" & AJ(errorText) & "}"
+End Function

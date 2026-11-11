@@ -1,0 +1,26 @@
+﻿CONNEXION AU CLASSEUR — VERSION 80
+
+La connexion distingue désormais l'ouverture Excel, le contrôle de la base,
+la passerelle, la lecture des données et l'affichage des formulaires.
+Les objets Excel et classeur sont accédés dans leur portée propre pour éviter
+qu'une variable du formulaire appelant les remplace par inadvertance.
+Une ouverture sans classeur actif ou une réponse vide/incomplète est refusée
+avec une explication précise. Le cache d'affichage est initialisé s'il manque.
+
+Après une lecture complète vérifiée, une erreur de contrôle ou de tableau
+ne ferme plus la base. Le choix du classeur reste mémorisé. Le statut signale
+l'affichage incomplet ; utilisez Actualiser. Les données ne sont pas recréées.
+Le nettoyage des objets COM préserve l'erreur initiale si Excel refuse de fermer.
+
+En cas de nouvel échec, le message précise l'étape et le chemin d'un fichier
+unique dans journaux/connexions. Ce journal contient l'exception et sa pile,
+pas les listes d'apprenants ou de paiements. Transmettez ce fichier pour
+identifier la ligne exacte si l'erreur persiste sur votre PC.
+
+Installation : fermer l'application et Excel, remplacer programme, conserver
+le dossier data complet, puis lancer APPLICATION.vbs. Ne pas recréer le classeur.
+
+La capture seule ne permet pas d'établir la ligne à l'origine de l'exception.
+Les corrections sécurisent les accès et isolent les erreurs d'affichage.
+Syntaxe et intégrité contrôlées ici ; TestsConnexionObjet.ps1 fournit les cas
+simulés pour Windows. Une connexion réelle avec Excel reste à vérifier sur PC.

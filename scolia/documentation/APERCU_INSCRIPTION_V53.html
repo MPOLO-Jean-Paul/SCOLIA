@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="fr">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SCOLIA V53 — Aperçu du formulaire</title>
+<style>
+*{box-sizing:border-box} :root{--workspace:#f2f4f7;--surface:#fff;--ink:#1f2937;--muted:#5b697a;--divider:#dbe0e7;--input:#fff;--field-border:#8794a6;--readonly:#f4f6f8;--primary:#265b9b;--focus:#265b9b}
+[data-theme=dark]{--workspace:#1f242c;--surface:#272d36;--ink:#edf0f4;--muted:#bdc7d3;--divider:#4b5461;--input:#20262f;--field-border:#69778b;--readonly:#2b313a;--primary:#2f527f;--focus:#a6c6ed}
+body{margin:0;padding:18px;background:var(--workspace);color:var(--ink);font:14px 'Segoe UI',Arial,sans-serif}
+.review{max-width:1040px;margin:0 auto 14px;display:flex;align-items:center;justify-content:space-between;gap:16px;font-size:12px;color:var(--muted)}
+.review select{width:auto;min-width:90px;height:32px} .window{max-width:1040px;max-height:calc(100vh - 80px);margin:auto;border:1px solid var(--divider);border-radius:8px;background:var(--surface);display:flex;flex-direction:column;overflow:hidden}
+header{padding:22px 24px 20px;background:var(--surface)}h1{font-size:26px;margin:0 0 8px;font-weight:650;letter-spacing:-.4px}header p{font-size:13px;margin:0;color:var(--muted);line-height:1.55}
+.body{container-type:inline-size;container-name:formbody;padding:18px 24px 24px;background:var(--workspace);overflow:auto;min-height:0;scrollbar-gutter:stable}
+.section{padding:18px 20px 21px;margin-bottom:16px;background:var(--surface);border:1px solid var(--divider);border-radius:6px;container-type:inline-size;container-name:card}
+.section:last-child{margin:0}.pair .section:first-child{margin-bottom:16px}
+@container formbody (min-width:880px){.pair{display:grid;grid-template-columns:minmax(0,.38fr) minmax(0,.62fr);gap:16px}.pair .section:first-child{margin-bottom:0}}.section h2{margin:0 0 16px;font-size:16px;font-weight:650}.grid{display:grid;grid-template-columns:1fr;gap:19px 16px}
+@container card (min-width:470px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@container card (min-width:780px){.grid{grid-template-columns:repeat(3,minmax(0,1fr))}.contacts{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.field{min-width:0}.field label{display:block;font-size:13px;line-height:1.5;margin-bottom:5px;font-weight:400}.optional{color:var(--muted)}
+input,select,textarea{font:14px 'Segoe UI',Arial,sans-serif;color:var(--ink);background:var(--input);border:1px solid var(--field-border);border-radius:5px;width:100%;padding:9px 12px;outline:none;min-height:40px}
+input:focus,select:focus,textarea:focus{border-color:var(--focus);box-shadow:0 0 0 1px var(--focus)}input:disabled,select:disabled{opacity:1;color:var(--muted);background:var(--readonly)}textarea{height:66px;resize:vertical}.address{margin-top:19px}
+footer{padding:14px 24px;display:flex;align-items:center;gap:16px;border-top:1px solid var(--divider);background:var(--surface)}button{font:14px 'Segoe UI',Arial,sans-serif;border-radius:6px;border:1px solid var(--divider);min-height:42px;padding:9px 20px;color:var(--ink);background:var(--surface);cursor:pointer}.save{margin-left:auto;min-width:230px;background:var(--primary);color:#fff;border-color:var(--primary);font-weight:600}.hint{font-size:12px;color:var(--muted)}
+@media(max-width:600px){body{padding:10px}.review{align-items:flex-start}.window{max-height:calc(100vh - 88px)}h1{font-size:23px}.body{container-type:inline-size;container-name:formbody;padding:16px}.section{padding:16px}footer{padding:14px 16px;gap:10px}.hint{display:none}.save{min-width:0;padding:9px 14px}header{padding:20px 16px}}
+</style>
+<div class="review"><span>Maquette de présentation du formulaire V53 · La saisie réelle se fait dans SCOLIA.</span><label>Thème <select id="theme" aria-label="Thème de la maquette"><option value="light">Clair</option><option value="dark">Sombre</option></select></label></div>
+<main class="window" aria-label="Aperçu du formulaire d'inscription">
+<header><h1>Nouvelle inscription</h1><p>Matricule attribué automatiquement · Les champs marqués * sont obligatoires.</p></header>
+<div class="body">
+<section class="section"><h2>Identité de l'apprenant</h2><div class="grid">
+<div class="field"><label for="nom">Nom *</label><input id="nom" value="NSEYA"></div>
+<div class="field"><label for="postnom">Post-nom *</label><input id="postnom"></div>
+<div class="field"><label for="prenom">Prénom *</label><input id="prenom"></div>
+<div class="field"><label for="sexe">Sexe *</label><select id="sexe"><option value=""></option><option>M</option><option>F</option></select></div>
+<div class="field"><label for="naissance">Date de naissance · jj/mm/aaaa *</label><input id="naissance" placeholder="__/__/____"></div>
+<div class="field"><label for="lieu">Lieu de naissance *</label><input id="lieu"></div>
+</div></section>
+<div class="pair"><section class="section"><h2>Scolarité</h2><div class="grid">
+<div class="field"><label for="promotion">Promotion *</label><select id="promotion"><option value=""></option><option>INF1</option></select></div>
+<div class="field"><label for="annee">Année scolaire *</label><input id="annee" value="2026-2027" disabled></div>
+<div class="field"><label for="statut">Statut *</label><select id="statut"><option>Actif</option><option>Suspendu</option><option>Sorti</option></select></div>
+</div></section>
+<section class="section"><h2>Contacts et résidence</h2><div class="grid contacts">
+<div class="field"><label for="parent1">Téléphone du parent · 10 chiffres *</label><input id="parent1" inputmode="tel" maxlength="10"></div>
+<div class="field"><label for="parent2">Autre téléphone <span class="optional">· facultatif</span></label><input id="parent2" inputmode="tel" maxlength="10"></div>
+</div><div class="field address"><label for="adresse">Adresse de résidence <span class="optional">· facultatif</span></label><textarea id="adresse"></textarea></div></section></div>
+</div>
+<footer><button type="button">Annuler</button><span class="hint">Ctrl+S : enregistrer</span><button type="button" class="save">Enregistrer le dossier</button></footer>
+</main>
+<script>document.querySelector('#theme').addEventListener('change',e=>document.documentElement.dataset.theme=e.target.value)</script>
+</html>

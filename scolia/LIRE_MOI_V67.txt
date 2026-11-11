@@ -1,0 +1,25 @@
+SCOLIA V67 — Interfaces directes depuis le ruban
+
+Extraire entièrement le ZIP et lancer 00_Demarrage/APPLICATION.vbs.
+
+Le ruban sert à choisir les fonctionnalités. Les boutons déjà présents
+dans le ruban ne sont plus répétés comme boutons dans les pages.
+Les champs, filtres, tableaux et messages de travail restent disponibles.
+
+Scolarité : la recherche globale est active par défaut après connexion
+des données. Le ruban affiche directement les présences, la réinscription,
+les cours, les attributions, les charges, la discipline, les enseignants,
+les salaires et les cotes dans la zone centrale de l’application.
+La commande active est mise en évidence. Les filtres sont conservés
+pendant les changements de fonctionnalité. Un changement de données,
+d’année ou de compte reconstruit les interfaces dans le nouveau contexte.
+
+Exports : Rapports est actif par défaut. Choisir Rapports ou Cartes d’examen
+dans le ruban, sans une seconde rangée d’onglets dans la page.
+Les exports et cartes restent dans Exports.
+
+Les confirmations, les sélections et les formulaires secondaires de saisie
+restent des boîtes de dialogue. Les permissions restent contrôlées.
+
+Contrôles Windows : 00_Demarrage/VERIFIER_V67.cmd.
+Le rendu WinForms et les opérations Office restent à vérifier sur Windows.

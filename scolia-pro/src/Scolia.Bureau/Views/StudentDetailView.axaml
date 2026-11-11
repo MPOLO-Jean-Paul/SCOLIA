@@ -1,0 +1,132 @@
+<UserControl xmlns:infra="using:Scolia.Bureau.Infrastructure"
+             xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Scolia.Bureau.Views.StudentDetailView">
+  <ScrollViewer>
+    <StackPanel Spacing="16">
+
+      <!-- Indicateurs du compte -->
+      <ItemsControl ItemsSource="{Binding Totals}" ItemTemplate="{StaticResource KpiTile}" Margin="0,0,-12,0">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate><UniformGrid Rows="1" infra:Adaptive.MinItemWidth="150" /></ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+      </ItemsControl>
+
+      <Grid ColumnDefinitions="*,*" infra:Adaptive.StackBelow="760">
+        <!-- Identité et contacts -->
+        <Border Classes="card" Grid.Column="0" Margin="0,0,12,0">
+          <StackPanel Spacing="8">
+            <TextBlock Text="Identité" Classes="heading" />
+            <ItemsControl ItemsSource="{Binding Details}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <Grid ColumnDefinitions="180,*" Margin="0,3">
+                    <TextBlock Text="{Binding Label}" Classes="muted" />
+                    <TextBlock Grid.Column="1" Text="{Binding Value}" TextWrapping="Wrap" />
+                  </Grid>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </Border>
+
+        <!-- Inscriptions -->
+        <Border Classes="card" Grid.Column="1">
+          <StackPanel Spacing="8">
+            <TextBlock Text="Inscriptions" Classes="heading" />
+            <DataGrid ItemsSource="{Binding Enrollments}" AutoGenerateColumns="False" IsReadOnly="True" MaxHeight="220">
+              <DataGrid.Columns>
+                <DataGridTextColumn Header="Année" Binding="{Binding Year}" Width="Auto" MinWidth="110" />
+                <DataGridTextColumn Header="Promotion" Binding="{Binding Promotion}" Width="Auto" MinWidth="170" />
+                <DataGridTextColumn infra:GridPriority.Level="2" Header="Inscrit le" Binding="{Binding EnrolledOn}" Width="Auto" MinWidth="130" />
+                <DataGridTemplateColumn Header="Statut" Width="Auto" MinWidth="110">
+                  <DataGridTemplateColumn.CellTemplate>
+                    <DataTemplate>
+                      <StackPanel Classes="status">
+                <Ellipse Width="8" Height="8" Fill="{Binding StatusBrush}" VerticalAlignment="Center" />
+                <TextBlock Text="{Binding Status}" VerticalAlignment="Center" />
+              </StackPanel>
+                    </DataTemplate>
+                  </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTextColumn infra:GridPriority.Level="3" Header="Sortie" Binding="{Binding Exit}" Width="Auto" MinWidth="170" />
+              </DataGrid.Columns>
+            </DataGrid>
+          </StackPanel>
+        </Border>
+      </Grid>
+
+      <Grid ColumnDefinitions="3*,2*" infra:Adaptive.StackBelow="760">
+        <!-- Compte : échéances, montants, reste à payer -->
+        <Border Classes="card" Grid.Column="0" Margin="0,0,12,0">
+          <StackPanel Spacing="8">
+            <TextBlock Text="Compte de l'année" Classes="heading" />
+            <DataGrid ItemsSource="{Binding Lines}" AutoGenerateColumns="False" IsReadOnly="True" MaxHeight="360">
+              <DataGrid.Columns>
+                <DataGridTextColumn Header="Échéance" Binding="{Binding Label}" Width="*" MinWidth="140" />
+                <DataGridTextColumn infra:GridPriority.Level="3" Header="Date" Binding="{Binding DueDate}" Width="Auto" MinWidth="105" />
+                <DataGridTextColumn infra:GridPriority.Level="2" Header="Montant" Binding="{Binding Amount}" Width="Auto" MinWidth="120" />
+                <DataGridTextColumn infra:GridPriority.Level="3" Header="Pris en charge" Binding="{Binding Covered}" Width="Auto" MinWidth="160" />
+                <DataGridTextColumn Header="Payé" Binding="{Binding Paid}" Width="Auto" MinWidth="120" />
+                <DataGridTextColumn Header="Reste" Binding="{Binding Remaining}" Width="Auto" MinWidth="120" />
+                <DataGridTemplateColumn Header="Statut" Width="Auto" MinWidth="110">
+                  <DataGridTemplateColumn.CellTemplate>
+                    <DataTemplate>
+                      <StackPanel Classes="status">
+                <Ellipse Width="8" Height="8" Fill="{Binding StatusBrush}" VerticalAlignment="Center" />
+                <TextBlock Text="{Binding Status}" VerticalAlignment="Center" />
+              </StackPanel>
+                    </DataTemplate>
+                  </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+              </DataGrid.Columns>
+            </DataGrid>
+          </StackPanel>
+        </Border>
+
+        <!-- Derniers reçus -->
+        <Border Classes="card" Grid.Column="1">
+          <StackPanel Spacing="8">
+            <TextBlock Text="Reçus" Classes="heading" />
+            <ItemsControl ItemsSource="{Binding Receipts}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <Grid ColumnDefinitions="*,Auto" Margin="0,4">
+                    <StackPanel>
+                      <TextBlock Text="{Binding Number}" FontWeight="SemiBold" />
+                      <TextBlock Text="{Binding Date}" Classes="muted" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" HorizontalAlignment="Right">
+                      <TextBlock Text="{Binding Amount}" FontWeight="SemiBold" HorizontalAlignment="Right" />
+                      <TextBlock Text="{Binding Method}" Classes="muted" HorizontalAlignment="Right" />
+                    </StackPanel>
+                  </Grid>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </Border>
+      </Grid>
+
+      <!-- Prises en charge -->
+      <Border Classes="card">
+        <StackPanel Spacing="8">
+          <Grid ColumnDefinitions="*,Auto">
+            <TextBlock Text="Prises en charge" Classes="heading" VerticalAlignment="Center" />
+            <Button Grid.Column="1" Classes="ghost" Content="Terminer la sélection" Command="{Binding EndSponsorship}" />
+          </Grid>
+          <DataGrid ItemsSource="{Binding Sponsorships}" SelectedItem="{Binding SelectedSponsorship}"
+                    AutoGenerateColumns="False" IsReadOnly="True" MaxHeight="220">
+            <DataGrid.Columns>
+              <DataGridTextColumn Header="Garant ou organisme" Binding="{Binding Sponsor}" Width="*" MinWidth="198" />
+              <DataGridTextColumn Header="Motif" Binding="{Binding Reason}" Width="*" MinWidth="140" />
+              <DataGridTextColumn Header="Effet" Binding="{Binding Since}" Width="Auto" MinWidth="110" />
+              <DataGridTextColumn Header="Couvert" Binding="{Binding Covered}" Width="Auto" MinWidth="130" />
+              <DataGridTextColumn Header="État" Binding="{Binding Status}" Width="Auto" MinWidth="110" />
+            </DataGrid.Columns>
+          </DataGrid>
+        </StackPanel>
+      </Border>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

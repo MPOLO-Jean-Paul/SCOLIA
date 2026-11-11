@@ -1,0 +1,73 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Scolia.Bureau.Controls"
+             xmlns:infra="using:Scolia.Bureau.Infrastructure"
+             xmlns:mi="using:Material.Icons.Avalonia"
+             x:Class="Scolia.Bureau.Views.StudentsView">
+  <Grid RowDefinitions="Auto,*">
+    <Border Grid.Row="0" Classes="band" Margin="0,0,0,10">
+      <!-- Filtres à gauche, pagination à droite, comme l'Explorateur et Outlook -->
+      <Grid ColumnDefinitions="*,Auto" infra:Adaptive.StackBelow="640">
+      <WrapPanel>
+        <StackPanel Classes="field pagesearch">
+          <TextBlock Text="Rechercher" Classes="fieldlabel" />
+          <TextBox Classes="search clearButton" Width="300" Text="{Binding Search}" PlaceholderText="Rechercher un nom ou un matricule" />
+        </StackPanel>
+        <StackPanel Classes="field">
+          <TextBlock Text="Promotion" Classes="fieldlabel" />
+          <ComboBox Width="230" ItemsSource="{Binding Promotions}" SelectedItem="{Binding Promotion}" />
+        </StackPanel>
+        <StackPanel Classes="field">
+          <TextBlock Text="Statut" Classes="fieldlabel" />
+          <ComboBox Width="190" ItemsSource="{Binding StatusChoices}" SelectedItem="{Binding Status}" />
+        </StackPanel>
+        <Button Classes="ghost" Command="{Binding ClearFilters}" VerticalAlignment="Bottom" Margin="0,0,12,12"
+                ToolTip.Tip="Affiche à nouveau tous les apprenants, sans filtre">
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <mi:MaterialIcon Kind="FilterRemoveOutline" Width="17" Height="17" />
+            <TextBlock Text="Effacer les filtres" VerticalAlignment="Center" />
+          </StackPanel>
+        </Button>
+      </WrapPanel>
+      <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" VerticalAlignment="Bottom" Margin="0,0,0,12">
+        <TextBlock Text="{Binding PageText}" Classes="muted" VerticalAlignment="Center" Margin="0,0,8,0" />
+        <Button Classes="toolicon" Command="{Binding PreviousPage}" IsEnabled="{Binding CanPrevious}" ToolTip.Tip="Page précédente">
+          <mi:MaterialIcon Kind="ChevronLeft" Width="20" Height="20" />
+        </Button>
+        <Button Classes="toolicon" Command="{Binding NextPage}" IsEnabled="{Binding CanNext}" ToolTip.Tip="Page suivante">
+          <mi:MaterialIcon Kind="ChevronRight" Width="20" Height="20" />
+        </Button>
+      </StackPanel>
+      </Grid>
+    </Border>
+    <DataGrid Grid.Row="1" x:Name="StudentGrid" ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}"
+              AutoGenerateColumns="False" IsReadOnly="True">
+      <DataGrid.Columns>
+        <DataGridTextColumn Header="Matricule" Binding="{Binding Matricule}" Width="Auto" MinWidth="130" />
+        <DataGridTextColumn Header="Nom complet" Binding="{Binding Name}" Width="*" MinWidth="140" />
+        <DataGridTextColumn infra:GridPriority.Level="3" Header="Sexe" Binding="{Binding Gender}" Width="Auto" MinWidth="110" />
+        <DataGridTextColumn infra:GridPriority.Level="2" Header="Promotion" Binding="{Binding Promotion}" Width="Auto" MinWidth="130" />
+        <DataGridTemplateColumn infra:GridPriority.Level="1" Header="Statut" Width="Auto" MinWidth="120">
+          <DataGridTemplateColumn.CellTemplate>
+            <DataTemplate>
+              <StackPanel Classes="status">
+                <Ellipse Width="8" Height="8" Fill="{Binding StatusBrush}" VerticalAlignment="Center" />
+                <TextBlock Text="{Binding Status}" VerticalAlignment="Center" />
+              </StackPanel>
+            </DataTemplate>
+          </DataGridTemplateColumn.CellTemplate>
+        </DataGridTemplateColumn>
+        <DataGridTextColumn infra:GridPriority.Level="3" Header="Téléphone" Binding="{Binding Phone}" Width="Auto" MinWidth="160" />
+        <DataGridTextColumn infra:GridPriority.Level="2" Header="Solde" Binding="{Binding Balance}" Width="Auto" MinWidth="150" />
+        <DataGridTemplateColumn infra:GridPriority.Level="2" Header="Retard" Width="Auto" MinWidth="130">
+          <DataGridTemplateColumn.CellTemplate>
+            <DataTemplate>
+              <TextBlock Text="{Binding Overdue}" Foreground="{Binding OverdueBrush}" VerticalAlignment="Center" />
+            </DataTemplate>
+          </DataGridTemplateColumn.CellTemplate>
+        </DataGridTemplateColumn>
+      </DataGrid.Columns>
+    </DataGrid>
+    <c:EmptyState Grid.Row="1" Icon="AccountSearchOutline" Title="{Binding EmptyTitle}" Hint="{Binding EmptyHint}" IsVisible="{Binding Items.Count, Converter={StaticResource IsEmpty}}" />
+  </Grid>
+</UserControl>

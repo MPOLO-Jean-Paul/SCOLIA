@@ -1,0 +1,4 @@
+﻿SCOLIA V22 — Version de présentation améliorée. Voir NOTES_DESIGN_V22.txt. Faire une sauvegarde avant installation et tester sur une copie des données.
+
+
+V23 : optimisations de réactivité documentées dans documentation/OPTIMISATION_REACTIVITE_V23.txt.

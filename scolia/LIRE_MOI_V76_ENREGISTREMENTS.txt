@@ -1,0 +1,53 @@
+SCOLIA V76 — ENREGISTREMENT DES DOSSIERS ET PAIEMENTS
+Cette version complète conserve les optimisations de V75.
+
+MISE EN SERVICE
+Fermez SCOLIA, extrayez le ZIP dans un nouveau dossier et lancez
+00_Demarrage/APPLICATION.vbs. Ouvrez votre classeur/dossier data actuel.
+Ne remplacez pas vos données récentes par les copies incluses dans l'archive.
+
+Le moteur Excel connu de V75 est mis à jour automatiquement à la connexion
+au dossier data, avec une sauvegarde préalable et une vérification du code.
+Cette première mise à jour peut prendre plus de temps qu'une ouverture normale.
+Un projet VBA verrouillé, un accès refusé ou du code personnalisé empêche la
+mise à jour automatique : le programme conserve les données et affiche une note.
+Dans ce cas, les optimisations du programme s'appliquent, mais celles du module
+Excel ne sont pas installées. Conservez le message pour déterminer la suite.
+
+OPTIMISATIONS
+1. Lecture Excel par blocs pour contrôler les doublons d'identité, retrouver
+   le matricule, générer un matricule disponible et contrôler les anciens
+   paiements. Les vérifications sont conservées ; les appels cellule par cellule
+   sont remplacés par des tableaux en mémoire.
+2. Lors de la validation d'une transaction, un classeur déjà sauvegardé n'est
+   plus réécrit si SCOLIA détient le verrou du dossier, utilise sa session privée
+   et retrouve le fichier au chemin attendu. Toute incertitude provoque une
+   sauvegarde normale. Les copies de récupération restent créées avant écriture.
+3. Après un paiement sans changement d'identité, remplacement ciblé de l'entrée
+   de recherche au lieu d'un tri complet de tous les apprenants. Les changements
+   de nom/promotion et les ajouts continuent à reconstruire l'index.
+4. La mise à jour des boutons est regroupée en fin d'action ou de lot.
+5. Une erreur d'affichage après une lecture réussie ne déclenche plus une nouvelle
+   lecture complète d'Excel. Le repli complet reste prévu si les données ciblées
+   sont absentes ou invalides.
+
+CONTRÔLES CONSERVÉS
+Montants, mois, doublons, références, prises en charge, discipline, clôture,
+permissions, sauvegarde avant transaction et marqueurs de récupération.
+Chaque paiement du lot reste une écriture distincte. Aucun succès anticipé.
+
+DIAGNOSTIC DE DURÉE
+Après fermeture normale :
+%LOCALAPPDATA%\ITMCD\diagnostics\performance-v76.csv
+Les mesures distinguent la copie de récupération, l'écriture Excel, la validation
+transactionnelle et l'actualisation. Le journal est borné aux 1000 dernières
+étapes, sans noms ni montants d'apprenants. Les durées peuvent être imbriquées.
+
+VALIDATION
+Les tests ciblés utilisent PowerShell 7.4.6 sous Linux, des fichiers temporaires
+et des objets Excel simulés. Les sources VBA ont été contrôlées statiquement.
+Windows PowerShell 5.1, Excel/VBA, WinForms et le réseau de production ne sont pas
+exécutables ici : le gain réel de bout en bout doit être mesuré sur votre poste.
+Les opérations d'enregistrement restent synchrones et séquentielles pour
+conserver la durabilité ; aucun délai universel en millisecondes n'est garanti.
+Lancer 00_Demarrage/VERIFIER_ENREGISTREMENTS_V76.cmd pour les contrôles ciblés.

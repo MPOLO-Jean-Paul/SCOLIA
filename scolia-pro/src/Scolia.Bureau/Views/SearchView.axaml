@@ -1,0 +1,33 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:infra="using:Scolia.Bureau.Infrastructure"
+             xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:views="using:Scolia.Bureau.Views"
+             x:Class="Scolia.Bureau.Views.SearchView">
+  <!-- Recherche de l'ordinateur : la recherche de l'accueil du téléphone, façon Google, dans une fenêtre.
+       Même barre, mêmes récentes, mêmes accès rapides, mêmes lignes de résultats. Entrée ouvre le premier résultat. -->
+  <Border Classes="card" infra:Adaptive.FitDialog="True" Width="680" Padding="0" CornerRadius="18" Background="{DynamicResource BgBrush}"
+          BoxShadow="0 12 40 0 #33000000" ClipToBounds="True">
+    <Grid RowDefinitions="Auto,*">
+      <!-- Barre : retour, saisie, effacer, micro -->
+      <Border Classes="googlebar">
+        <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+          <Button Classes="baricon" Command="{Binding Close}" ToolTip.Tip="Fermer la recherche (Échap)">
+            <mi:MaterialIcon Kind="ArrowLeft" />
+          </Button>
+          <TextBox x:Name="QueryBox" Grid.Column="1" Classes="searchfield" Text="{Binding Query}" PlaceholderText="{Binding Placeholder}"
+                   TextInputOptions.ReturnKeyType="Search" />
+          <Button Grid.Column="2" Classes="baricon" Command="{Binding ClearQuery}" IsVisible="{Binding HasQuery}" ToolTip.Tip="Effacer">
+            <mi:MaterialIcon Kind="Close" />
+          </Button>
+          <Button x:Name="MicButton" Grid.Column="3" Classes="baricon mic" Classes.listening="{Binding Listening}" Command="{Binding Listen}"
+                  IsVisible="{Binding VoiceAvailable}" ToolTip.Tip="Rechercher à la voix">
+            <mi:MaterialIcon Kind="Microphone" />
+          </Button>
+        </Grid>
+      </Border>
+
+      <views:SearchResultsView Grid.Row="1" />
+    </Grid>
+  </Border>
+</UserControl>

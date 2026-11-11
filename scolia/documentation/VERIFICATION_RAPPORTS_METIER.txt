@@ -1,0 +1,24 @@
+﻿CONTROLES RAPPORTS ET PROCESSUS
+
+Contrôles statiques : calcul effectué sur Worksheet, aperçu sans création
+de fichier ni écriture de données, mois normalisé, verrou d'export conservé
+si un autre export le possède, destination et fichier non vide contrôlés.
+Contrôle de la présence des états de connexion/saisie dans l'interface.
+
+Modèle de référence : 1501 apprenants, 1500 soldes, 1 partiel, 500 soldes
+dans une promotion ; aucun plafond artificiel, mois en casse variable,
+et aucun dossier soldé lorsque les versements sont absents.
+
+Lecture du classeur source fourni (modèle de référence, septembre) :
+{"1": 54, "2": 54, "3": 57, "4": 3}
+Modes : 1 = soldés ; 2 = ayant versé ; 3 = inscrits valides ; 4 = restes de septembre.
+
+Ce modèle ne constitue pas une exécution du VBA. La construction des feuilles,
+les styles Windows, les exports PDF/Excel et l'ouverture du fichier restent
+à vérifier sur le PC avec Excel. Le message photographié ne précise pas l'étape
+de son échec : le défaut Workbook.Calculate est corrigé, sans exclure une
+autre cause sur ce PC. Les nouveaux messages fourniront l'étape et le numéro.
+
+Parcours graphique renforcé : contrôle statique de l’ordre lecture/aperçu/
+destination/génération ; branches sans résultat et diagnostic seul présentes ;
+fenêtre et curseur restaurés en sortie. Aucun test Windows exécuté ici.

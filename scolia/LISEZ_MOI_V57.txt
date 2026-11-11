@@ -1,0 +1,33 @@
+﻿SCOLIA V57 — Configuration, présences et salaires
+
+INSTALLER LA MISE À JOUR SUR VOTRE LOGICIEL ACTUEL
+1. Fermez SCOLIA et Excel.
+2. Extrayez entièrement ce ZIP dans un nouveau dossier.
+3. Depuis ce nouveau dossier, lancez 00_Demarrage/METTRE_A_JOUR_V57.cmd.
+4. Sélectionnez APPLICATION.vbs dans le dossier 00_Demarrage de votre ancienne installation.
+
+La mise à jour contrôle les empreintes et la syntaxe PowerShell avant de remplacer le programme. Elle sauvegarde les fichiers remplacés et les restaure si la validation échoue. Vos données scolaires et votre configuration sont conservées.
+Pour une nouvelle installation : 00_Demarrage/APPLICATION.vbs.
+
+CONFIGURATION INITIALE
+Présentation sobre, sections structurées, champs alignés et adaptation à la largeur disponible. Sur un petit écran ou avec un fort zoom Windows, le contenu peut défiler sans masquer les actions de navigation.
+
+RÈGLES ENSEIGNANTS
+Les cases Entrée et Sortie enregistrent l'heure locale automatiquement, uniquement le jour même. Une signature enregistrée ne peut plus être décochée.
+Une entrée à 08:00:00 ou plus tard est en retard. Les cases restent accessibles après 08:00. Une attente d'entrée après 08:00 est signalée mais ne devient pas une absence avant la clôture de la journée.
+Une journée ouvrable passée avec zéro ou une seule signature est une absence. Une absence justifiée est comptée, conserve son motif, et ne réduit jamais le salaire avec les règles V57.
+Trois retards dans la même semaine du lundi au dimanche donnent une absence équivalente ; six donnent deux. Le compteur repart chaque lundi. La retenue appartient au mois du troisième retard, même lorsque la semaine traverse deux mois. Un jour déjà retenu pour absence ne subit pas une deuxième retenue.
+Les retards d'une absence physique justifiée sont exclus de la conversion. Pour justifier l'absence équivalente, enregistrez un motif sur la date du troisième retard : elle reste comptée, sans retenue.
+
+SALAIRES
+Déclarez les jours ouvrables réels pour chaque mois et renseignez le salaire mensuel en FC. Les jours non ouvrables, futurs ou hors période d'activité sont exclus des absences automatiques.
+Net = brut − (brut / nombre total de jours ouvrables × nombre de jours déductibles), arrondi une seule fois au FC. La retenue vaut brut − net.
+Le relevé reste provisoire pendant le mois. Finalisez après la fin du mois et la vérification des motifs. Lorsqu'une semaine commence dans le mois précédent, confirmez aussi le calendrier de ce mois, même s'il ne contient aucun jour ouvrable.
+Les anciennes paies finalisées V56 conservent leurs montants et leurs règles historiques ; elles ne sont pas recalculées.
+
+APPRENANTS
+L'appel se signe une seule fois par jour, à la fin de la journée. L'heure ne provoque aucun retard : elle sert uniquement à tracer la saisie. Les bilans et les alertes d'absence suivent le calendrier mensuel de la promotion et restent internes au logiciel.
+
+GUIDE : documentation/GUIDE_CONFIGURATION_PRESENCES_V57.md
+VÉRIFICATIONS WINDOWS : 00_Demarrage/VERIFIER_V57.cmd
+Les contrôles statiques et l'intégrité du ZIP ont été vérifiés ici. Les tests Windows PowerShell, le rendu WinForms et les échanges Excel restent à exécuter sur Windows, indisponible dans cet environnement Linux.

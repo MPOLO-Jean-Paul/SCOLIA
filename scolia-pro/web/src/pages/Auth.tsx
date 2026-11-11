@@ -1,0 +1,219 @@
+import { useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { ArrowRight, CheckCircle2, Eye, EyeOff, LoaderCircle, Lock } from 'lucide-react';
+import { ApiError, api } from '../api/client';
+import type { Session } from '../api/types';
+import { useSession } from '../lib/session';
+import { ScoliaMark } from '../components/ScoliaMark';
+import { StartupScreen } from '../components/StartupScreen';
+import { Button, ErrorAlert, SectionTitle, SelectField, TextField, errorText } from '../components/ui';
+
+// Verrouillage après 5 erreurs : l'échéance est gardée pour qu'un rechargement de la page reprenne le compte à rebours.
+const LOCK_KEY = 'scolia.connexion.verrou';
+interface Lock { until: number; total: number }
+
+function readLock(): Lock | null {
+  try {
+    const lock = JSON.parse(localStorage.getItem(LOCK_KEY) ?? 'null') as Lock | null;
+    return lock && lock.until > Date.now() ? lock : null;
+  } catch { return null; }
+}
+
+function writeLock(lock: Lock | null) {
+  try { if (lock) localStorage.setItem(LOCK_KEY, JSON.stringify(lock)); else localStorage.removeItem(LOCK_KEY); } catch { /* stockage indisponible */ }
+}
+
+function countdown(seconds: number) {
+  return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
+}
+
+/** Compte à rebours jusqu'à 0 seconde, puis l'accès est rendu. */
+function useLockout(onUnlock: () => void) {
+  const [lock, setLock] = useState<Lock | null>(readLock);
+  const [now, setNow] = useState(Date.now());
+  const unlock = useRef(onUnlock);
+  unlock.current = onUnlock;
+  useEffect(() => {
+    if (!lock) return;
+    const tick = () => {
+      const t = Date.now();
+      setNow(t);
+      if (t >= lock.until) { writeLock(null); setLock(null); unlock.current(); }
+    };
+    tick();
+    const timer = setInterval(tick, 250);
+    return () => clearInterval(timer);
+  }, [lock]);
+  const start = (seconds: number) => {
+    const next = { until: Date.now() + seconds * 1000, total: Math.max(seconds, 1) };
+    writeLock(next);
+    setNow(Date.now());
+    setLock(next);
+  };
+  const left = lock ? Math.max(0, Math.ceil((lock.until - now) / 1000)) : 0;
+  return { locked: lock !== null, left, total: lock?.total ?? 1, start };
+}
+
+export function LoginPage() {
+  const { setSession } = useSession();
+  const navigate = useNavigate();
+  const [userName, setUserName] = useState('');
+  const [password, setPassword] = useState('');
+  const [show, setShow] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<unknown>();
+  const [restored, setRestored] = useState(false);
+  const [welcome, setWelcome] = useState<Session | null>(null);
+  const submitting = useRef(false);
+  const passwordRef = useRef<HTMLInputElement>(null);
+  const lockout = useLockout(() => {
+    setError(undefined);
+    setPassword('');
+    setRestored(true);
+    setTimeout(() => passwordRef.current?.focus(), 0);
+  });
+  useEffect(() => {
+    document.title = lockout.locked ? `Verrouillé ${countdown(lockout.left)} · SCOLIA` : 'Connexion · SCOLIA';
+  }, [lockout.locked, lockout.left]);
+  useEffect(() => {
+    if (!welcome) return;
+    document.title = 'Bienvenue · SCOLIA';
+    // Une seule courte transition, jamais rejouée lors d'une actualisation des données.
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches || document.documentElement.dataset.motion === 'reduced';
+    const timer = window.setTimeout(() => {
+      setSession(welcome);
+      navigate(welcome.mustChangePassword ? '/profil' : '/', { replace: true });
+    }, reduced ? 0 : 420);
+    return () => window.clearTimeout(timer);
+  }, [welcome, setSession, navigate]);
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (lockout.locked || submitting.current) return;
+    submitting.current = true;
+    setBusy(true); setError(undefined); setRestored(false);
+    try {
+      const s = await api.post<Session>('/api/session', { userName, password });
+      setPassword('');
+      setWelcome(s);
+    } catch (err) {
+      const seconds = err instanceof ApiError && err.code === 'verrouille' ? Number(err.data?.retryAfterSeconds) : NaN;
+      if (seconds > 0) { setPassword(''); lockout.start(seconds); } else setError(err);
+      submitting.current = false;
+    } finally { setBusy(false); }
+  };
+  if (welcome) return <StartupScreen welcome={welcome.displayName || welcome.userName} />;
+  return (
+    <div className="signin-screen">
+      <main className="signin">
+        <ScoliaMark className="signin-avatar" size={64} />
+        <h1 className="signin-title">SCOLIA</h1>
+        <p className="signin-sub">Connectez-vous pour continuer</p>
+        <form className="signin-form" onSubmit={submit} aria-busy={busy}>
+          <label className="sr-only" htmlFor="login-user">Identifiant</label>
+          <input id="login-user" className="signin-input" placeholder="Identifiant" autoComplete="username" autoCapitalize="none" spellCheck={false} disabled={busy || lockout.locked} value={userName} onChange={(e) => setUserName(e.target.value)} required />
+          <label className="sr-only" htmlFor="login-pwd">Mot de passe</label>
+          <div className="signin-pass">
+            <input id="login-pwd" ref={passwordRef} disabled={busy || lockout.locked} className="signin-input" type={show ? 'text' : 'password'} placeholder="Mot de passe" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+            <button type="button" className="signin-icon" onClick={() => setShow((v) => !v)} aria-label={show ? 'Masquer la saisie' : 'Afficher la saisie'} title={show ? 'Masquer la saisie' : 'Afficher la saisie'}>
+              {show ? <EyeOff /> : <Eye />}
+            </button>
+            <button type="submit" className="signin-go" aria-label="Se connecter" title="Se connecter" disabled={busy || lockout.locked}>
+              {busy ? <LoaderCircle className="spin" /> : <ArrowRight />}
+            </button>
+          </div>
+          {lockout.locked ? (
+            <div className="signin-lock" role="alert">
+              <Lock className="signin-lock-icon" />
+              <div className="signin-lock-text">
+                <strong>Accès verrouillé</strong>
+                <span>5 tentatives incorrectes. Nouvel essai dans :</span>
+              </div>
+              <span className="signin-count" aria-label={`${lockout.left} secondes`}>{countdown(lockout.left)}</span>
+              <div className="signin-bar" aria-hidden="true"><span style={{ width: `${(lockout.left / lockout.total) * 100}%` }} /></div>
+            </div>
+          ) : error ? <p className="signin-error" role="alert">{errorText(error)}</p>
+            : restored ? <p className="signin-ok" role="status"><CheckCircle2 />Accès rétabli. Vous pouvez réessayer.</p> : null}
+        </form>
+        <p className="signin-help">Après 5 erreurs, l’accès est verrouillé 2 minutes. Mot de passe oublié : contactez le secrétariat.</p>
+      </main>
+      <footer className="signin-foot">SCOLIA Pro 1.1.0</footer>
+    </div>
+  );
+}
+
+export function SetupPage() {
+  const { setSession, refresh } = useSession();
+  const navigate = useNavigate();
+  const [form, setForm] = useState({
+    schoolName: '', shortName: '', motto: 'Intégrité · Honnêteté · Excellence', city: 'Kinshasa', phone: '', currencyCode: 'CDF', currencySymbol: 'FC',
+    yearLabel: '', startMonth: 9, monthCount: 10, adminUserName: 'secretariat', adminDisplayName: '', adminPassword: '', confirm: '', loadDemoData: false,
+  });
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<unknown>();
+  useEffect(() => {
+    document.title = 'Installation · SCOLIA';
+    api.get<{ label: string }>('/api/installation/annee-proposee').then((r) => setForm((f) => ({ ...f, yearLabel: f.yearLabel || r.label }))).catch(() => undefined);
+  }, []);
+  const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
+    setForm((f) => ({ ...f, [k]: e.target.type === 'checkbox' ? (e.target as HTMLInputElement).checked : e.target.type === 'number' || k === 'startMonth' ? Number(e.target.value) : e.target.value }));
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (form.adminPassword !== form.confirm) { setError(new Error('Les deux mots de passe ne correspondent pas.')); return; }
+    setBusy(true); setError(undefined);
+    try {
+      const { confirm: _confirm, ...payload } = form;
+      void _confirm;
+      const s = await api.post<Session>('/api/installation', payload);
+      setSession(s);
+      await refresh();
+      navigate('/', { replace: true });
+    } catch (err) { setError(err); } finally { setBusy(false); }
+  };
+  const months = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
+  return (
+    <div className="signin-screen signin-setup">
+      <div className="signin-wide">
+        <form className="auth-card" onSubmit={submit}>
+          <div className="row"><ScoliaMark size={32} /><strong>Première installation</strong></div>
+          <h2 style={{ fontSize: 26 }}>Configurer SCOLIA</h2>
+          <p className="muted" style={{ marginTop: 0 }}>Ces informations figurent sur les reçus et les documents. Elles restent modifiables dans Paramètres.</p>
+          <SectionTitle num="01">Établissement</SectionTitle>
+          <div className="grid cols-2">
+            <TextField className="span-2" label="Nom de l'établissement" value={form.schoolName} onChange={set('schoolName')} required />
+            <TextField label="Sigle" value={form.shortName} onChange={set('shortName')} required help="Ex. ITM CD" />
+            <TextField label="Devise" value={form.motto} onChange={set('motto')} />
+            <TextField label="Ville" value={form.city} onChange={set('city')} />
+            <TextField label="Téléphone" value={form.phone} onChange={set('phone')} />
+            <TextField label="Monnaie (code ISO)" value={form.currencyCode} onChange={set('currencyCode')} maxLength={3} />
+            <TextField label="Symbole affiché" value={form.currencySymbol} onChange={set('currencySymbol')} maxLength={6} />
+          </div>
+          <div className="divider" />
+          <SectionTitle num="02">Année scolaire</SectionTitle>
+          <div className="grid cols-3">
+            <TextField label="Année" value={form.yearLabel} onChange={set('yearLabel')} required help="Format 2026-2027" />
+            <SelectField label="Mois de rentrée" value={form.startMonth} onChange={set('startMonth')}>
+              {months.map((m, i) => <option key={m} value={i + 1}>{m}</option>)}
+            </SelectField>
+            <TextField label="Mois facturés" type="number" min={1} max={12} value={form.monthCount} onChange={set('monthCount')} />
+          </div>
+          <div className="divider" />
+          <SectionTitle num="03">Compte secrétariat</SectionTitle>
+          <p className="muted" style={{ margin: '0 0 12px' }}>C’est le compte administrateur : apprenants, encaissements, scolarité, et aussi tout le paramétrage, les utilisateurs et les sauvegardes. Le compte comptabilité se crée ensuite dans Utilisateurs.</p>
+          <div className="grid cols-2">
+            <TextField label="Nom complet" value={form.adminDisplayName} onChange={set('adminDisplayName')} required />
+            <TextField label="Identifiant" value={form.adminUserName} onChange={set('adminUserName')} required autoComplete="username" />
+            <TextField label="Mot de passe" type="password" value={form.adminPassword} onChange={set('adminPassword')} required autoComplete="new-password" help="8 caractères minimum, lettres et chiffres" />
+            <TextField label="Confirmer le mot de passe" type="password" value={form.confirm} onChange={set('confirm')} required autoComplete="new-password" />
+          </div>
+          <label className="check" style={{ marginTop: 16 }}>
+            <input type="checkbox" checked={form.loadDemoData} onChange={set('loadDemoData')} />
+            Ajouter des données de démonstration (apprenants et paiements fictifs) pour découvrir le logiciel
+          </label>
+          <div style={{ marginTop: 16 }}><ErrorAlert error={error} /></div>
+          <Button type="submit" variant="primary" loading={busy} style={{ marginTop: 16, width: '100%', height: 46 }}>Installer SCOLIA</Button>
+        </form>
+      </div>
+      <footer className="signin-foot">SCOLIA Pro 1.1.0</footer>
+    </div>
+  );
+}

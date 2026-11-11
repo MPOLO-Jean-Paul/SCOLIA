@@ -1,0 +1,18 @@
+﻿ÉDITION 89 — 8 octobre 2026
+Word : correction OOXML (ordre des propriétés/marges et clés de polices intégrées).
+Les exports de 1, 8 et 9 cartes passent la validation Open XML. Réexporter les cartes
+pour remplacer les anciens fichiers défectueux.
+Personnalisation centralisée de l’institution, du logo et de l’en-tête ; classes/frais
+via la base connectée. Réglages persistants des sons : activation, volume, 3 tonalités.
+Import de cotes adapté aux feuilles INF1/INF2/ACC1/ACC2 du modèle transmis.
+Préparation d’une copie par promotion, reconnaissance des cours/compétences et barèmes,
+conversion des points, contrôle des noms, recalcul des totaux, validation manuelle du jury.
+Les grilles et les décisions sont enregistrées sur des copies avec journal de traçabilité.
+Vérifications : syntaxe PowerShell, compilation C#5, correspondances limites/erreurs,
+repères et barèmes des quatre feuilles réelles, trois sons, logo et fenêtres de connexion.
+Excel COM réel et Microsoft Word sous Windows ne sont pas disponibles ici : l’import,
+le recalcul natif et le rendu Word doivent encore être vérifiés sur le poste Windows.
+Le modèle original et les six XLSM de l’archive sont inchangés.
+Installation : fermer application/Excel, remplacer programme et documentation.
+CONSERVER configuration, data, sources, exports, scolarite et sauvegardes existants.
+Ouvrir APPLICATION.vbs. INSTALLER.vbs reste l’installateur graphique sans CMD.

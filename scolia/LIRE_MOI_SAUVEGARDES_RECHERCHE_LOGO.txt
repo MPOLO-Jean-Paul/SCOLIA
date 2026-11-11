@@ -1,0 +1,48 @@
+﻿SCOLIA — SAUVEGARDES, RECHERCHE ET LOGO DE L’ÉTABLISSEMENT
+13 OCTOBRE 2026
+
+SAUVEGARDES
+Deux réglages séparés avec saisie numérique :
+- Maximum de sauvegardes par jour : de 1 à 24.
+- Copies automatiques à conserver : de 1 à 10 000.
+Pour une nouvelle configuration, les deux réglages commencent à 1.
+Les choix déjà enregistrés sont conservés ; les anciennes valeurs 7/14/30/60 restent valides.
+Les sauvegardes sont espacées sur la journée, pendant que SCOLIA est ouvert et la base connectée.
+Le quota quotidien reste indépendant du nombre de copies conservées.
+Les copies sont vérifiées avant publication. Les sauvegardes manuelles ne sont pas supprimées.
+
+RECHERCHE
+- Filtres présentés dans des champs bordés avec leurs libellés.
+- Deux colonnes sur grande fenêtre, champs empilés sur petite fenêtre.
+- Actions séparées des filtres et des résultats.
+- En-tête et messages adaptatifs ; champs visibles ; défilement à l’intérieur du tableau.
+- Recherche multi-termes, accents, filtrage et ouverture de la sélection conservés.
+- Ctrl+F remet le focus dans la recherche.
+
+LOGO DE L’INSTITUTION
+Le logo configuré de l’établissement sert désormais aux icônes des fenêtres et de la barre des tâches.
+Le logo SCOLIA ne remplace plus celui de l’établissement lors de l’ouverture de l’espace.
+Les raccourcis existants qui pointent vers cette installation sont actualisés.
+La génération des icônes comprend six tailles pour les différentes résolutions.
+
+MISE À JOUR
+1. Fermer SCOLIA et Excel.
+2. Extraire tout ce ZIP dans un nouveau dossier.
+3. Lancer 00_Demarrage/METTRE_A_JOUR_V57.cmd depuis ce nouveau dossier.
+4. Sélectionner APPLICATION.vbs de l’installation habituelle.
+5. Relancer ce lanceur habituel.
+Les listes PDF, cartes et améliorations de présentation précédentes sont incluses.
+Vos données, configuration existante et classeur source sont conservés.
+
+VÉRIFICATIONS
+- Tests du réglage à partir de 1, anciennes préférences, espacement, quota, rétention, verrou et erreurs.
+- Tests des rôles, copies manuelles et empreintes de sauvegarde.
+- Tests de recherche : accents, filtrage, cache, plafond de résultats, permissions et ouverture.
+- Compilation C# 5 des composants modifiés.
+- Rendu et géométrie des champs de recherche à 320, 360, 640 et 1 000 pixels.
+- Décodage des six tailles d’icône, ouverture native et transparence.
+- 173 scripts PowerShell analysés sans erreur de syntaxe.
+- Manifestes de mise à jour, empreintes et ZIP contrôlés.
+
+La vérification complète de l’interface PowerShell/WinForms et de la barre des tâches sur votre poste Windows reste nécessaire.
+Tests Windows fournis : 00_Demarrage/VERIFIER_RECHERCHE_SAUVEGARDES.cmd.

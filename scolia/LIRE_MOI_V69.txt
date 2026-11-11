@@ -1,0 +1,20 @@
+SCOLIA V69 — Référence automatique et encaissement compact
+
+Extraire entièrement le ZIP et lancer 00_Demarrage/APPLICATION.vbs.
+
+À l’ouverture d’un nouveau paiement, SCOLIA génère sa référence commune.
+Elle est visible et copiable, mais sa saisie manuelle n’est plus demandée.
+Chaque opération utilise un identifiant UUID complet pour distinguer les
+reçus créés sur plusieurs postes. La référence reste identique lors d’une
+validation, d’une reprise et dans le brouillon, le journal et les imports.
+Les références des paiements déjà enregistrés sont conservées.
+
+La fenêtre Encaisser un paiement est réduite à l’essentiel : apprenant,
+résumé du dossier, référence automatique, motif, date et montant.
+Les coordonnées et informations complémentaires sont récupérées depuis
+le dossier de l’apprenant, sans multiplier les champs sur cette fenêtre.
+La disposition compacte utilise une seule page pour les écrans courants.
+
+La référence des dépenses conserve son fonctionnement existant.
+Tests : 00_Demarrage/VERIFIER_V69.cmd.
+Le rendu de la fenêtre doit encore être vérifié sur Windows.

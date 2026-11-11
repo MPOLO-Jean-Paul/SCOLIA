@@ -1,0 +1,28 @@
+﻿SCOLIA 97 — contrôles exécutés
+
+PASS analyse syntaxique des 89 scripts PowerShell.
+PASS isolation des transferts par année du classeur, années archivées consultables,
+     sélecteur d'années, absence de réception pour un classeur ambigu ou sans données.
+PASS sélection des pièces par année et type : dépense et paiement de même référence
+     distingués ; références ambiguës bloquées.
+PASS états Erreur et Importé conservés sans nouvelle tentative automatique.
+PASS import : année incorrecte refusée avant écriture ; reprise avec même identifiant,
+     accusé interrompu sans rollback de données déjà validées, échec macro annulé.
+     La passerelle Excel est simulée pour ces tests d'orchestration.
+PASS comptes, mots de passe PBKDF2, permissions, configuration mémorisée,
+     révisions absentes, nulles, négatives, décimales ou excessives refusées.
+PASS journal : répartition, soldes antérieurs, prévention des doublons et surpaiements,
+     concurrence, session périmée, intégrité des fichiers.
+PASS catalogue, rubans séparés, raccourcis et contrôle du lancement rapide.
+PASS retards à partir du 6, paiements partiels et rapprochement des cotes.
+PASS ZIP : six XLSM et sources VBA/C# conservés à l'identique ; aucune suppression
+     de fichier par rapport à l'édition 96 ; intégrité de l'archive contrôlée.
+
+La lecture réseau des brouillons est asynchrone ; les contrôles et imports Excel
+conservent leur fonctionnement transactionnel. Aucune promesse de temps de réponse
+sur un partage SMB réel n'est formulée.
+
+Limites : PowerShell 5.1/Excel natifs sous Windows, rendu de la nouvelle fenêtre
+et synchronisation entre deux postes SMB n'ont pas été exécutés dans cet environnement.
+Les tests PowerShell ont utilisé PowerShell 7 ; aucun nouveau mécanisme spécifique
+à PowerShell 7 n'a été introduit dans les fonctions modifiées.

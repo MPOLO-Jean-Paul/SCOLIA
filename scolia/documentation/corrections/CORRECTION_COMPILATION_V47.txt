@@ -1,0 +1,22 @@
+SCOLIA V47 - correction compilation C# sous Windows PowerShell 5.1
+
+Probleme observe
+- Le lancement s'arretait sur NotificationsModernes.cs avec :
+  "Avertissement en tant qu'erreur : le champ ITMNotificationButton.pressed est assigne, mais sa valeur n'est jamais utilisee."
+
+Cause
+- Windows PowerShell 5.1 Add-Type traite par defaut certains avertissements du compilateur C# comme des erreurs.
+- NotificationsModernes.cs contenait un etat 'pressed' redondant : l'animation utilisait deja pressBlend.
+
+Corrections V47
+1. Suppression des champs/affectations redondants 'pressed' dans les composants ou ils n'etaient jamais lus.
+2. Suppression du champ inutilise iconPath dans ActivityIndicator.cs.
+3. CompilationCache.ps1 utilise maintenant Add-Type avec IgnoreWarnings=$true.
+   Les avertissements ne bloquent plus le lancement ; les vraies erreurs restent bloquantes via ErrorAction=Stop.
+4. Les compilations directes de l'installateur et du module reseau utilisent aussi -IgnoreWarnings -ErrorAction Stop.
+5. TestsCompilation.ps1 a ete harmonise.
+6. Ajout de TestsCompilationV47.ps1 pour controler les trois composants graphiques critiques sur Windows PowerShell 5.1.
+
+Securite
+- Aucun fichier de donnees apprenants/paiements n'a ete modifie.
+- Aucun module VBA n'a ete modifie.

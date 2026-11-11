@@ -1,0 +1,21 @@
+﻿Option Explicit
+Private Sub Workbook_BeforeSave(ByVal SaveAsUI As Boolean, Cancel As Boolean)
+    Dim eventsAvant As Boolean, descriptionErreur As String
+    If ITMAnneeFermee() Then
+        Cancel = True
+        MsgBox "Annee cloturee : ouvrez le classeur de la nouvelle annee pour modifier les dossiers.", vbExclamation
+        Exit Sub
+    End If
+    If Me.Path = "" Then Exit Sub
+    eventsAvant = Application.EnableEvents
+    On Error GoTo EH
+    Application.EnableEvents = False
+    Call ITMSauvegarde
+    Application.EnableEvents = eventsAvant
+    Exit Sub
+EH:
+    descriptionErreur = Err.Description
+    Application.EnableEvents = eventsAvant
+    Cancel = True
+    MsgBox "Sauvegarde de securite impossible : " & descriptionErreur & vbCrLf & "L'enregistrement a ete annule. Corrigez l'acces au dossier Sauvegardes.", vbCritical
+End Sub

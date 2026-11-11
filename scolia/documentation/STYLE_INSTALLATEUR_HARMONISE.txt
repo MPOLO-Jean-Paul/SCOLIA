@@ -1,0 +1,20 @@
+﻿STYLE DE L'INSTALLATEUR APPLIQUÉ AUX AUTRES PAGES — 6 octobre 2026
+
+Référence : la fenêtre « ITM CD | Installation des corrections » fournie.
+Le style retenu utilise son fond clair (245,247,251), ses titres bleu foncé
+(24,64,120), des boutons rectangulaires à bordure fine et des champs natifs.
+Les pages, ruban, formulaires de dossier, fiche, sécurité et aperçus reprennent
+ces couleurs et ces boutons. La fiche et la vérification de rapport ont
+également un en-tête clair. Le tableau de bord conserve ses indicateurs.
+Les grilles gardent un fond blanc pour distinguer les lignes de données.
+
+L'organisation en onglets, les espaces de travail, l'adaptation des dimensions,
+le logo ITM, les validations et les opérations sur les données sont conservés.
+La fenêtre d'installation servant de référence n'a pas été redessinée.
+
+Fermer ITM CD, extraire tout le ZIP dans un nouveau dossier,
+puis lancer APPLICATION.vbs. Recréer les raccourcis si nécessaire.
+Pas de nouvelle préparation du classeur requise pour ce changement visuel.
+Les classeurs du paquet restent inchangés.
+
+Contrôles statiques effectués. Le rendu natif est à vérifier sur Windows.

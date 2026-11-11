@@ -1,0 +1,8 @@
+{$RELAY_DOMAIN} {
+    # Aucun journal d'accès : pas de jeton, chemin ou métadonnée d'appareil sur disque.
+    reverse_proxy relay:8080
+    header {
+        X-Content-Type-Options nosniff
+        Referrer-Policy no-referrer
+    }
+}

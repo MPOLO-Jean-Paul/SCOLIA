@@ -1,0 +1,38 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:infra="using:Scolia.Bureau.Infrastructure"
+             x:Class="Scolia.Bureau.Views.TeachingView">
+  <Grid RowDefinitions="Auto,2*,Auto,*">
+    <Border Grid.Row="0" Classes="band" Margin="0,0,0,10">
+      <WrapPanel>
+        <StackPanel Classes="field">
+          <TextBlock Text="Promotion" Classes="fieldlabel" />
+          <ComboBox Width="240" ItemsSource="{Binding Promotions}" SelectedItem="{Binding Promotion}" />
+        </StackPanel>
+        <CheckBox Content="Afficher les cours archivés" IsChecked="{Binding ShowArchived}" VerticalAlignment="Bottom" Margin="0,0,12,12" />
+      </WrapPanel>
+    </Border>
+
+    <DataGrid Grid.Row="1" ItemsSource="{Binding Courses}" SelectedItem="{Binding Selected}" AutoGenerateColumns="False" IsReadOnly="True">
+      <DataGrid.Columns>
+        <DataGridTextColumn Header="Promotion" Binding="{Binding Promotion}" Width="Auto" MinWidth="122" infra:GridPriority.Level="2" />
+        <DataGridTextColumn Header="N°" Binding="{Binding Number}" Width="Auto" MinWidth="69" infra:GridPriority.Level="1" />
+        <DataGridTextColumn Header="Cours" Binding="{Binding Name}" Width="*" MinWidth="200" infra:GridPriority.Level="1" />
+        <DataGridTextColumn Header="Volume" Binding="{Binding Hours}" Width="Auto" MinWidth="99" infra:GridPriority.Level="2" />
+        <DataGridTextColumn Header="Cotation" Binding="{Binding MaxScore}" Width="Auto" MinWidth="114" infra:GridPriority.Level="3" />
+        <DataGridTextColumn Header="Enseignant" Binding="{Binding Teacher}" Width="Auto" MinWidth="200" infra:GridPriority.Level="1" />
+        <DataGridTextColumn Header="État" Binding="{Binding Status}" Width="Auto" MinWidth="90" infra:GridPriority.Level="2" />
+      </DataGrid.Columns>
+    </DataGrid>
+
+    <TextBlock Grid.Row="2" Text="Charges des enseignants (charge pédagogique annuelle prévue)" Classes="section" Margin="0,14,0,6" />
+    <DataGrid Grid.Row="3" ItemsSource="{Binding Charges}" AutoGenerateColumns="False" IsReadOnly="True">
+      <DataGrid.Columns>
+        <DataGridTextColumn Header="Enseignant" Binding="{Binding Name}" Width="*" MinWidth="220" infra:GridPriority.Level="1" />
+        <DataGridTextColumn Header="Cours" Binding="{Binding Courses}" Width="Auto" MinWidth="92" infra:GridPriority.Level="1" />
+        <DataGridTextColumn Header="Promotions" Binding="{Binding Promotions}" Width="Auto" MinWidth="130" infra:GridPriority.Level="2" />
+        <DataGridTextColumn Header="Total d'heures" Binding="{Binding Hours}" Width="Auto" MinWidth="160" infra:GridPriority.Level="1" />
+      </DataGrid.Columns>
+    </DataGrid>
+  </Grid>
+</UserControl>

@@ -1,0 +1,57 @@
+﻿24 — PRISES EN CHARGE
+
+PRÉPARATION
+Fermez Excel et l’application puis lancez INSTALLER.vbs pour installer la nouvelle
+passerelle dans votre classeur. Connectez ensuite les données corrigées avec
+APPLICATION.vbs. Les six classeurs sources du paquet sont conservés sans modification.
+Cette fonction utilise le dossier data géré par l’application.
+
+ENREGISTRER ET CONSULTER
+Dans Paiements, cliquez sur Prises en charge (Ctrl+Alt+K). Choisissez une promotion.
+Cochez Afficher aussi les payants pour les inscrire, sélectionnez un apprenant,
+puis Nouvelle prise en charge. Précisez la période de couverture, le mois d’effet,
+un motif et, éventuellement, le garant. La période complète va de septembre à juin.
+Le bouton Détail des mois couverts présente les dix mois et l’historique des changements.
+Exporter les prises en charge produit un CSV avec les dix montants mensuels.
+Les comptes de consultation peuvent lire la liste ; seuls les comptes autorisés
+à la saisie peuvent la modifier, et les comptes autorisés à exporter peuvent exporter.
+
+CALCUL
+Chaque mois couvert utilise la même mensualité que les autres apprenants de la
+promotion. Dix mois couverts à 25 000 FC donnent 250 000 FC de prise en charge.
+Le tableau de bord montre séparément le total couvert et la part couverte de la
+période sélectionnée. Aucun reçu fictif ni versement en caisse n’est créé.
+Le reste payant déduit les mois couverts et les paiements réellement enregistrés.
+La fiche complète distingue versement, prise en charge et reste pour chaque mois.
+Un mois ayant déjà un paiement ne peut pas être transformé en mois pris en charge.
+Les tarifs ordinaires déjà enregistrés ne sont pas réécrits : les dossiers avec
+prise en charge utilisent les dix mensualités pour l’année concernée.
+
+MODIFIER ET TERMINER
+Modifier la prise en charge permet de changer les mois futurs et le garant.
+Les mois antérieurs au mois d’effet conservent leur couverture et leur historique.
+Déclarer payant retire la couverture à partir du mois choisi ; les mois précédents
+restent couverts. Les prochains reçus s’affectent aux mois non couverts uniquement.
+Pour une prise en charge antérieure, vous ne pouvez pas modifier les mois passés.
+Le motif est obligatoire. Une autre fenêtre ayant modifié le registre entraîne
+un refus d’enregistrement : rouvrez la liste pour récupérer les données actuelles.
+La suppression du bénéficiaire et le changement de sa promotion/année sont bloqués
+pour conserver la cohérence de cet historique.
+
+SAUVEGARDES
+Les fichiers prises-en-charge.xml, sa version .precedent lorsqu’elle existe et
+prises-en-charge.presence sont conservés avec le registre et les classeurs dans data.
+Utilisez la sauvegarde et la restauration complètes du logiciel. Copier seulement
+un classeur ne conserve pas les prises en charge. Un registre illisible ou manquant
+après création de ces fichiers bloque les opérations et demande une restauration.
+La version .precedent représente la sauvegarde technique précédente, pas une copie
+à rétablir automatiquement : utilisez votre sauvegarde complète.
+
+VÉRIFICATIONS
+Les huit composants C# compilent en C# 5. Les 21 scénarios du moteur couvrent
+les montants, périodes, paiements existants, historique, persistance, concurrence,
+identité du dossier et refus de XML dangereux. Les scripts sont contrôlés
+pour Windows PowerShell 5.1. Les signatures et structures des corrections VBA
+sont contrôlées. Les six sources XLSM sont conservées byte pour byte.
+L’interface et l’exécution Excel/Windows restent à vérifier sur un poste Windows.
+Le test natif TestsPrisesEnCharge.ps1 ne modifie pas les données scolaires.

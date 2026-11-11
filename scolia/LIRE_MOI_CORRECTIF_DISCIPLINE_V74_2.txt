@@ -1,0 +1,8 @@
+﻿SCOLIA V74.2 — CORRECTIF DISCIPLINE
+
+Correction apportée :
+- Scolarité > Discipline > Nouvelle décision : suppression de l'erreur de conversion System.Int32 lors de l'ouverture de la liste des apprenants.
+- Le compteur "X apprenant(s) trouvé(s)." est désormais formaté explicitement comme du texte.
+- La recherche, la sélection de l'apprenant, les règles de renvoi temporaire/définitif et les convocations ne sont pas modifiées.
+
+Cause corrigée : PowerShell tentait d'additionner un entier ($Rows.Count) et une chaîne de caractères, ce qui provoquait la conversion impossible de "apprenant(s) trouvé(s)." en System.Int32.

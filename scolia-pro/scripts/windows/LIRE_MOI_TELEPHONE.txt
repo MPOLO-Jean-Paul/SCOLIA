@@ -1,0 +1,76 @@
+SCOLIA SUR LE TÉLÉPHONE (ANDROID)
+
+L'application du téléphone a le même design que SCOLIA sur l'ordinateur, avec une mise en
+page faite pour le téléphone et la tablette. Elle travaille avec les données de
+l'ordinateur principal de l'établissement, sur le même Wi-Fi. Elle garde aussi une copie
+des pages consultées, pour continuer à travailler quand l'ordinateur principal est éteint.
+
+INSTALLER L'APPLICATION
+1. Copier le fichier SCOLIA-Android.apk sur le téléphone : câble USB, WhatsApp à soi-même,
+   clé USB ou Bluetooth.
+2. Ouvrir le fichier sur le téléphone. Android demande d'autoriser l'installation
+   depuis cette source : accepter, puis Installer. Android 7 ou plus récent.
+3. L'icône SCOLIA apparaît avec les autres applications.
+
+SE CONNECTER À L'ORDINATEUR PRINCIPAL
+1. Sur l'ordinateur principal, SCOLIA doit être ouvert et partagé : SCOLIA le propose à
+   la première connexion, ou dans Fichier > Poste et réseau.
+2. Le téléphone doit être sur le même Wi-Fi que l'ordinateur principal.
+3. Ouvrir SCOLIA sur le téléphone : il trouve seul l'ordinateur principal et s'y relie.
+   S'il ne le trouve pas, certains Wi-Fi bloquent la recherche : saisir l'adresse de
+   l'ordinateur principal, affichée dans Fichier > Poste et réseau, par exemple
+   192.168.1.10, puis Se connecter.
+4. Se connecter avec son identifiant et son mot de passe, comme sur l'ordinateur.
+
+UTILISER SCOLIA SUR LE TÉLÉPHONE
+- Les onglets du bas ouvrent les outils du quotidien. L'onglet Menu donne tous les
+  outils et toutes les commandes : nouvelle inscription, dépense, exports, sauvegardes.
+- Chaque ligne d'une liste est une carte. Le bouton « … » de la carte, ou un appui long,
+  ouvre ses actions. Double appui : l'ouvrir.
+- Le bouton « … » en haut à droite donne les actions de la page.
+- Le bouton Retour du téléphone ferme la fenêtre ouverte, puis revient à la page précédente.
+- Les PDF et les classeurs s'ouvrent dans le lecteur du téléphone et se partagent, par
+  exemple par WhatsApp. Les relances WhatsApp et SMS ouvrent directement l'application.
+- Les réglages de ce poste, thème, taille du texte, sons, se règlent dans Paramètres.
+
+TRAVAILLER À PLUSIEURS
+- Chaque poste voit les autres : l'icône des personnes en haut indique combien d'autres
+  postes sont connectés, et son point vert bat quand l'un d'eux enregistre quelque chose.
+- Les écrans se mettent à jour seuls. Pendant une saisie, rien ne bouge : une pastille
+  « Nouvelles données » propose la mise à jour.
+- Un encaissement en cours sur un autre poste est bloqué ici, avec le nom de ce poste.
+  Même chose pour la modification d'un dossier et l'arrêté de caisse.
+
+TRAVAILLER SANS L'ORDINATEUR PRINCIPAL
+- Si l'ordinateur principal s'éteint, un bandeau orange « Hors ligne » s'affiche. Le
+  travail continue sur les pages déjà consultées sur le téléphone.
+- Les inscriptions, encaissements, dépenses, présences, notes et décisions de discipline
+  faits hors ligne sont gardés sur le téléphone, dans l'ordre.
+- Au retour de l'ordinateur principal, tout part seul, une seule fois. Le reçu est alors
+  numéroté par l'ordinateur principal.
+- Une opération refusée, par exemple un mois payé entre-temps sur un autre poste, attend
+  votre décision dans « Réseau et activité » : Réessayer ou Abandonner.
+- Sans réseau, seul le dernier compte connecté sur le téléphone peut s'ouvrir.
+
+MISE À JOUR
+Installer le nouveau fichier par-dessus l'ancien avec la même clé de signature.
+Si Android refuse la mise à jour, NE PAS DÉSINSTALLER une application contenant des
+données : ce téléphone peut être l'appareil principal et conserver des opérations
+hors ligne. Effectuer d'abord une sauvegarde dans SCOLIA et demander une version
+signée avec la clé d'origine. Une désinstallation supprime aussi les clés Android.
+
+SE CONNECTER À DISTANCE PAR INTERNET
+Les seuls comptes restent Secrétariat et Comptabilité. L'appareil principal peut
+être un téléphone ou un PC ; sa base reste sur cet appareil.
+1. Le secrétariat configure un relais sécurisé dans Réseau et activité puis crée
+   une invitation privée. Le relais transmet les messages chiffrés, sans stocker
+   de dossiers scolaires.
+2. Sur l'autre appareil : Rejoindre à distance, coller l'invitation, puis se
+   connecter avec le compte habituel.
+3. Garder l'appareil principal allumé, SCOLIA actif et les deux appareils connectés
+   à Internet. Il n'est pas nécessaire d'utiliser le même opérateur ou Wi-Fi.
+Le partage local reste disponible. Sans réseau, les pages déjà ouvertes restent
+consultables et les opérations éligibles attendent leur confirmation.
+La reprise Android en arrière-plan dépend du système et de la durée de session ;
+elle n'est pas garantie quand le téléphone est arrêté de force ou éteint.
+Voir docs/LIAISON_DISTANTE.md dans les sources pour installer le relais.

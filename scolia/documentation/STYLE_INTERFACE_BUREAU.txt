@@ -1,0 +1,4 @@
+Style de bureau inspiré de la référence fournie (fenêtre d’impression Adobe Reader).
+Boutons de formulaire dessinés par le rendu Windows natif : rectangles, contour discret, état de survol, focus et désactivation standards. Formulaire de connexion direct, boutons standards. Groupes des formulaires délimités par des lignes fines et des titres simples. Aucun cadre décoratif arrondi autour des pages de paiement et d’export. En-tête et navigation plus compacts, fonds neutres. Ruban à icônes et roue de traitement locale conservés.
+Mise à jour : fermer l’application et l’installateur, remplacer programme, conserver data, puis relancer APPLICATION.vbs. Les classeurs ne nécessitent aucune réinstallation pour ce changement.
+Validation : syntaxe et intégrité des fichiers ; données, modules VBA et traitement métier inchangés. Aucun essai d’affichage Windows disponible dans l’environnement de préparation.

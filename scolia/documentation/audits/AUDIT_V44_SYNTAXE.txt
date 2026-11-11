@@ -1,0 +1,12 @@
+SCOLIA V44 - AUDIT STATIQUE
+
+Contrôles réalisés dans l'environnement de préparation :
+- Application.ps1 : structure d'accolades, parenthèses et crochets équilibrée.
+- Fichiers PowerShell modifiés : UTF-8 avec BOM et fins de ligne CRLF.
+- Les anciennes formes navIcons[$name+'|'+$active] et navIcons[$key+'|'+$active] ne sont plus présentes.
+- Les concaténations similaires à risque ont été supprimées des scripts de données concernés.
+- Les 3 fichiers JSON sont valides.
+- Les 16 entrées du manifeste VBA correspondent aux empreintes normalisées attendues par Installer.ps1.
+- Aucun fichier isolé n'est placé à la racine du dossier SCOLIA.
+
+Limite : l'environnement de préparation ne contient pas Windows PowerShell 5.1 ni Excel COM. Le contrôle définitif est donc effectué au lancement sur le PC Windows par Lancer.ps1, puis peut être confirmé manuellement avec TestsCorrectionSyntaxeV44.ps1.

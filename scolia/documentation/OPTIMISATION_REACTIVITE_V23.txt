@@ -1,0 +1,13 @@
+SCOLIA V23 — OPTIMISATION DE LA RÉACTIVITÉ
+
+Optimisations incluses :
+- Validation syntaxique PowerShell en cache local par empreinte SHA-256. Tout script modifié est reparsé ; les scripts inchangés et déjà validés ne sont plus analysés intégralement à chaque lancement.
+- Suppression d’une collecte complète de mémoire .NET forcée dans un chemin interactif de nettoyage, susceptible de suspendre brièvement l’interface.
+- Les opérations Excel qui écrivent des données conservent leurs contrôles et sauvegardes ; aucun appel COM d’écriture n’a été supprimé ni exécuté en parallèle.
+
+À savoir :
+- Le premier démarrage après cette mise à jour revalide les scripts et peut donc rester aussi long. Les lancements suivants bénéficient du cache de syntaxe.
+- L’ouverture/lecture des classeurs Excel, les contrôles d’intégrité et les sauvegardes peuvent rester les principales sources de latence. Ils dépendent du volume des données et de la vitesse de l’ordinateur.
+- Aucun gain chiffré n’est annoncé : l’application n’a pas pu être exécutée ici sous Windows PowerShell 5.1 avec Excel.
+
+Installation : extraire l’archive V23 dans un nouveau dossier et lancer APPLICATION.vbs. Conserver le dossier data et le classeur actuel ; ne pas réinitialiser la base. Tester sur une copie avant usage en production.

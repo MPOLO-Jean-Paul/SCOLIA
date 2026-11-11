@@ -1,0 +1,90 @@
+﻿{
+  "Apprenant": {
+    "title": "Inscription d'un apprenant",
+    "subtitle": "Identité, coordonnées et affectation à une promotion.",
+    "sections": [
+      [
+        "IDENTITÉ",
+        "TextMatricule|TextNomApprenant|TextPostNom|TextPrenom|ListSexe|TextDateNaissance|TextLieuNaissance"
+      ],
+      [
+        "CONTACTS DES PARENTS",
+        "TextParent1|TextParent2|TextAdresse"
+      ],
+      [
+        "INSCRIPTION",
+        "ListPromotion|ListAnnee|ListStatut|TextDateInscription"
+      ]
+    ]
+  },
+  "Paiement": {
+    "title": "Enregistrement des paiements",
+    "subtitle": "Rechercher un apprenant et enregistrer son reçu validé à la caisse.",
+    "sections": [
+      [
+        "RECHERCHER UN APPRENANT",
+        "TextRecherche|ListResultats"
+      ],
+      [
+        "APPRENANT SÉLECTIONNÉ",
+        "TextMatricule|TextNomApprenant|TextPostNom|TextPrenom|TextPromotion"
+      ],
+      [
+        "REÇU ET VERSEMENT",
+        "TextDatePaiement|TextNumeroEnregistrement|TextMoisConcerne|TextMontantDu|TextDettesAnterieures|TextMontantPaye"
+      ],
+      [
+        "SITUATION ANNUELLE",
+        "TextTotalPaye|TextTotalAnnuel|TextResteAnnuel|TextStatut"
+      ]
+    ]
+  },
+  "GestionApprenant": {
+    "title": "Gestion des apprenants",
+    "subtitle": "Retrouver un dossier, mettre à jour les informations et consulter les paiements.",
+    "sections": [
+      [
+        "RECHERCHE ET FILTRES",
+        "TextRecherche|ListPromotion|ListAnnee|ListStatutApprenant|ListMois|ListNombreMoisLitige|ListApprenants~ListApprenant"
+      ],
+      [
+        "IDENTITÉ ET CONTACTS",
+        "TextMatricule|TextNomApprenant|TextPostNom|TextPrenom|TextSexe|TextDateNaissance|TextLieuNaissance|TextContact1|TextContact2|TextAdresse"
+      ],
+      [
+        "INSCRIPTION",
+        "ListPromotionApprenant|ListStatut|TextDateInscription"
+      ],
+      [
+        "SITUATION DE PAIEMENT",
+        "TextSituation|TextMoisPaye|TextMoisLitige|TextMoisNonPayes|TextResteAnnuel|ListHistoriquePaiements"
+      ],
+      [
+        "INDICATEURS DU FILTRE",
+        "TextTotalApprenants|TextApprenantsPromotion|TextRevenuTotal|TextRevenuMois|TextNombreLitiges|TextMontantLitige|TextTauxPaiement|TextTauxAjour"
+      ]
+    ]
+  },
+  "TableauDeBord": {
+    "title": "Tableau de bord",
+    "subtitle": "Effectifs, recettes et suivi des litiges selon les filtres sélectionnés.",
+    "sections": [
+      [
+        "FILTRES",
+        "ComboPromotionDashboard~ListPromotionDashboard|ComboMoisDashboard~ListMoisDashboard|ComboNombreMoisLitige~ListNombreMoisLitige"
+      ],
+      [
+        "EFFECTIFS ET RECETTES",
+        "TextTotalAp~TextTotalApprenants|TextApprenantsPromotion|TextRevenuTotal|TextRevenuMois"
+      ],
+      [
+        "LITIGES ET TAUX DE PAIEMENT",
+        "TextNombreLitiges|TextMontantLitige|TextTauxPaiement|TextTauxAjour"
+      ],
+      [
+        "APPRENANTS EN LITIGE",
+        "ListApprenantsLitige"
+      ]
+    ]
+  }
+}

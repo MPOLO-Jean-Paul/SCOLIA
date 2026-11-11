@@ -1,0 +1,80 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:infra="using:Scolia.Bureau.Infrastructure"
+             xmlns:mi="using:Material.Icons.Avalonia"
+             x:Class="Scolia.Bureau.Views.AboutView">
+  <!-- À propos : présentation de SCOLIA, puis l'éditeur et le développeur, comme dans la version 79 -->
+  <Border Classes="card" infra:Adaptive.FitDialog="True" Width="560" Padding="0" CornerRadius="14" Background="{DynamicResource SurfaceBrush}" ClipToBounds="True" BoxShadow="0 12 40 0 #33000000">
+    <!-- Sur un écran bas, la fiche défile au lieu d'être coupée -->
+    <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+    <StackPanel>
+      <Grid>
+        <StackPanel HorizontalAlignment="Center" Spacing="6" Margin="28,20,28,6">
+          <Image Source="{DynamicResource ScoliaMark}" Width="64" Height="64" HorizontalAlignment="Center" />
+          <TextBlock Text="{Binding Title}" FontSize="24" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,6,0,0" />
+          <TextBlock Text="{Binding Tagline}" Foreground="{DynamicResource Text2Brush}" HorizontalAlignment="Center" />
+          <Border Classes="chip" HorizontalAlignment="Center" Padding="10,3" Margin="0,4,0,0"><TextBlock Text="{Binding VersionLine}" /></Border>
+        </StackPanel>
+        <Button Classes="closex" Command="{Binding Close}" HorizontalAlignment="Right" Margin="0,14,14,0"><mi:MaterialIcon Kind="Close" /></Button>
+      </Grid>
+
+      <TextBlock Text="{Binding Description}" TextWrapping="Wrap" TextAlignment="Center" Classes="muted" Margin="32,10,32,12" />
+      <ItemsControl ItemsSource="{Binding Modules}" Margin="28,0,28,6" HorizontalAlignment="Center">
+        <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel HorizontalAlignment="Center" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate>
+            <Border Classes="chip" Padding="9,3" Margin="3"><TextBlock Text="{Binding}" FontSize="{DynamicResource FsSmall}" /></Border>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+      <TextBlock Text="{Binding Accounts}" Classes="muted" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" Margin="32,4,32,16" />
+
+      <!-- Éditeur et développeur -->
+      <Border Classes="card" Margin="24,0,24,0" Padding="16,6">
+        <StackPanel>
+          <Grid ColumnDefinitions="Auto,*" Margin="0,10">
+            <Border Classes="appicon medium" Background="{DynamicResource ToneIndigo}" Margin="0,0,12,0"><mi:MaterialIcon Kind="OfficeBuildingOutline" /></Border>
+            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+              <TextBlock Text="Éditeur" Classes="muted" />
+              <TextBlock Text="{Binding Publisher}" FontWeight="SemiBold" />
+            </StackPanel>
+          </Grid>
+          <Border Height="1" Background="{DynamicResource LineBrush}" />
+          <Grid ColumnDefinitions="Auto,*" Margin="0,10">
+            <Border Classes="appicon medium" Background="{DynamicResource ToneBlue}" Margin="0,0,12,0"><mi:MaterialIcon Kind="AccountTie" /></Border>
+            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+              <TextBlock Text="{Binding Role}" Classes="muted" />
+              <TextBlock Text="{Binding Developer}" FontWeight="SemiBold" />
+            </StackPanel>
+          </Grid>
+          <Border Height="1" Background="{DynamicResource LineBrush}" />
+          <Grid ColumnDefinitions="Auto,*,Auto" Margin="0,10">
+            <Border Classes="appicon medium" Background="{DynamicResource ToneGreen}" Margin="0,0,12,0"><mi:MaterialIcon Kind="Whatsapp" /></Border>
+            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+              <TextBlock Text="Téléphone et WhatsApp" Classes="muted" />
+              <TextBlock Text="{Binding Phone}" FontWeight="SemiBold" />
+            </StackPanel>
+            <Button Grid.Column="2" Classes="small" Content="Écrire" ToolTip.Tip="Écrire sur WhatsApp" Command="{Binding OpenWhatsApp}" VerticalAlignment="Center" />
+          </Grid>
+          <Border Height="1" Background="{DynamicResource LineBrush}" />
+          <Grid ColumnDefinitions="Auto,*,Auto" Margin="0,10">
+            <Border Classes="appicon medium" Background="{DynamicResource ToneOrange}" Margin="0,0,12,0"><mi:MaterialIcon Kind="EmailOutline" /></Border>
+            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+              <TextBlock Text="E-mail" Classes="muted" />
+              <TextBlock Text="{Binding Email}" FontWeight="SemiBold" />
+            </StackPanel>
+            <Button Grid.Column="2" Classes="small" Content="Écrire" ToolTip.Tip="Écrire un e-mail" Command="{Binding WriteEmail}" VerticalAlignment="Center" />
+          </Grid>
+        </StackPanel>
+      </Border>
+
+      <!-- Sur le téléphone, le copyright passe au-dessus des boutons -->
+      <Grid ColumnDefinitions="*,Auto,Auto" Margin="24,16,24,22" infra:Adaptive.StackBelow="440">
+        <TextBlock Text="{Binding Copyright}" Classes="muted" VerticalAlignment="Center" TextWrapping="Wrap" />
+        <Button Grid.Column="1" Content="Copier les coordonnées" Command="{Binding CopyContacts}" Margin="0,0,8,0" />
+        <Button Grid.Column="2" Classes="primary" Content="Fermer" Command="{Binding Close}" />
+      </Grid>
+    </StackPanel>
+    </ScrollViewer>
+  </Border>
+</UserControl>

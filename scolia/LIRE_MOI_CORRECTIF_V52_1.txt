@@ -1,0 +1,41 @@
+﻿SCOLIA - CORRECTIF V52.1 : ERREUR DE SYNTAXE AU LANCEMENT
+
+Ce correctif remplace les apostrophes typographiques qui interrompaient
+les chaines de caracteres PowerShell dans EtatEspace.ps1 et trois autres
+scripts. Il conserve les ameliorations de la V52.
+
+INSTALLATION SUR VOTRE VERSION V52
+1. Fermez SCOLIA.
+2. Extrayez le contenu de ce correctif dans le dossier SCOLIA existant,
+   celui qui contient programme et 00_Demarrage.
+3. Acceptez le remplacement des fichiers inclus.
+4. Lancez 00_Demarrage/VERIFIER_SYNTAXE_V52.cmd.
+   Le resultat attendu est : OK : syntaxe de 122 scripts verifiee.
+5. Lancez 00_Demarrage/APPLICATION.vbs.
+
+Ne relancez pas l'installation des corrections Excel pour ce correctif.
+Le correctif ne contient aucun fichier de donnees, de configuration
+ou d'archives scolaires.
+
+VERIFICATIONS EFFECTUEES
+- Controle lexical adapte aux apostrophes reconnues par PowerShell.
+- Controle negatif : l'ancien EtatEspace.ps1 est rejete, le fichier
+  corrige passe ce controle.
+- Integrite des donnees et autres fichiers proteges de la V51 preservee.
+- Controle des archives ZIP et du contenu des fichiers livres.
+
+Le controle lexical ne remplace pas le parseur natif PowerShell.
+Le lancement sous Windows, l'interface et Excel COM ne peuvent pas etre
+executes dans l'environnement Linux de preparation. Le fichier
+VERIFIER_SYNTAXE_V52.cmd utilise le vrai parseur PowerShell sur votre PC,
+sans executer les modules de l'application ni ouvrir Excel.
+
+FICHIERS CORRIGES
+programme/EtatEspace.ps1
+programme/StockageClasseurs.ps1
+programme/TestsSoldesEtRechercheV52.ps1
+programme/TestsTransitionRuntimeV52.ps1
+
+FICHIERS AJOUTES
+programme/TestsSyntaxeV52.ps1
+00_Demarrage/VERIFIER_SYNTAXE_V52.cmd

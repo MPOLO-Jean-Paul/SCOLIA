@@ -1,0 +1,670 @@
+﻿Option Explicit
+Private mMajuscule As Boolean
+Public Sub MajusculeChamp(ByVal champ As Object)
+    Dim pos As Long, valeur As String
+    If mMajuscule Then Exit Sub
+    On Error GoTo Fin
+    valeur = CStr(champ.Value)
+    If valeur = UCase$(valeur) Then Exit Sub
+    mMajuscule = True
+    pos = champ.SelStart
+    champ.Value = UCase$(valeur)
+    champ.SelStart = pos
+Fin:
+    mMajuscule = False
+End Sub
+Public Function ValeurFiltre(ByVal f As Object, ByVal nom1 As String, ByVal nom2 As String) As String
+    On Error Resume Next
+    ValeurFiltre = CStr(f.Controls(nom1).Value)
+    If Err.Number <> 0 Then
+        Err.Clear
+        ValeurFiltre = CStr(f.Controls(nom2).Value)
+    End If
+    On Error GoTo 0
+End Function
+Public Function ConfigurerFormulairePro(ByVal f As Object) As CExportMensuel
+    Dim c As Object, actions As CExportMensuel, b As Object
+    f.BackColor = RGB(246, 246, 248)
+    f.Font.Name = "Segoe UI"
+    f.Font.Size = 10
+    f.StartUpPosition = 1
+    AjouterEnteteFormulaire f
+    If f.Name = "Apprenant" Then AjouterChampAdresse f
+    If f.Name = "Paiement" Then AjouterChampDettes f
+    StyliserControles f
+    If f.Name = "Apprenant" Then
+        f.ScrollBars = fmScrollBarsVertical
+        f.ScrollHeight = f.Controls("TextAdresse").Top + f.Controls("TextAdresse").Height + 15
+        If f.Height > 680 Then f.Height = 680
+    End If
+    Set actions = New CExportMensuel
+    Set actions.Formulaire = f
+    If f.Name = "TableauDeBord" Or f.Name = "GestionApprenant" Or f.Name = "Paiement" Then
+        Set actions.Bouton = AjouterBoutonRapport(f, "CommandExporterPaiementsMois", "Exporter les paiements - Excel", RGB(0, 112, 235))
+        Set actions.BoutonPDF = AjouterBoutonRapport(f, "CommandExporterEnOrdrePDF", "Apprenants en ordre - PDF", RGB(21, 101, 82))
+        Set actions.BoutonPaiementsPDF = AjouterBoutonRapport(f, "CommandExportPaiementsPDF", "Export paiement PDF", RGB(0, 112, 235))
+        Set actions.BoutonLitigesPDF = AjouterBoutonRapport(f, "CommandExportLitigesPDF", "Export litiges et retards PDF", RGB(153, 64, 32))
+    End If
+    If f.Name = "TableauDeBord" Or f.Name = "GestionApprenant" Then
+        Set actions.BoutonListe = AjouterBoutonRapport(f, "CommandListeInscritsPDF", "Liste des inscrits - PDF", RGB(21, 101, 82))
+    End If
+    If f.Name = "TableauDeBord" Or f.Name = "GestionApprenant" Then
+        Set actions.BoutonReset = AjouterBoutonRapport(f, "CommandReinitialiser", "Reinitialiser les filtres", RGB(100, 116, 139))
+    End If
+    If f.Name = "Paiement" Then
+        Set actions.BoutonEffacer = AjouterBoutonRapport(f, "CommandEffacerSaisie", "Effacer la saisie", RGB(100, 116, 139))
+    End If
+    If f.Name = "GestionApprenant" Then
+        Set actions.BoutonNouveau = AjouterBoutonRapport(f, "CommandNouvelleInscription", "Nouvelle inscription", RGB(0, 112, 235))
+    End If
+    ReorganiserFormulaire f
+    FinaliserChampsPro f
+    Set ConfigurerFormulairePro = actions
+End Function
+Private Sub AjouterEnteteFormulaire(ByVal f As Object)
+    Dim c As Object, titre As Object, sousTitre As Object, texte As String
+    Select Case f.Name
+        Case "Apprenant": texte = "Inscription des apprenants"
+        Case "GestionApprenant": texte = "Gestion des apprenants"
+        Case "Paiement": texte = "Enregistrement des paiements"
+        Case "TableauDeBord": texte = "Tableau de bord des paiements"
+        Case Else: texte = f.Caption
+    End Select
+    For Each c In f.Controls
+        c.Top = c.Top + 54
+    Next c
+    f.Height = f.Height + 54
+    Set titre = f.Controls.Add("Forms.Label.1", "LabelTitrePro", True)
+    With titre
+        .Caption = texte: .Left = 12: .Top = 9
+        .Width = f.InsideWidth - 24: .Height = 23
+        .Font.Name = "Segoe UI": .Font.Size = 15: .Font.Bold = True
+        .ForeColor = RGB(35, 37, 42): .BackStyle = fmBackStyleTransparent
+    End With
+    Set sousTitre = f.Controls.Add("Forms.Label.1", "LabelInstitutionPro", True)
+    With sousTitre
+        .Caption = "ITM COEUR DE DIEU  |  Secretariat scolaire"
+        .Left = 12: .Top = 34: .Width = f.InsideWidth - 24: .Height = 16
+        .Font.Name = "Segoe UI": .Font.Size = 9
+        .ForeColor = RGB(100, 116, 139): .BackStyle = fmBackStyleTransparent
+    End With
+    f.Caption = "ITM CD - " & texte
+End Sub
+Private Sub AjouterChampAdresse(ByVal f As Object)
+    Dim c As Object, champ As Object, libelle As Object, bas As Single
+    On Error Resume Next
+    Set champ = f.Controls("TextAdresse")
+    On Error GoTo 0
+    If Not champ Is Nothing Then Exit Sub
+    bas = 12
+    For Each c In f.Controls
+        If c.Visible Then
+            If c.Top + c.Height + 12 > bas Then bas = c.Top + c.Height + 12
+        End If
+    Next c
+    Set libelle = f.Controls.Add("Forms.Label.1", "LabelAdresse", True)
+    With libelle
+        .Caption = "Adresse de residence"
+        .Left = 12: .Top = bas: .Width = 180: .Height = 18
+    End With
+    Set champ = f.Controls.Add("Forms.TextBox.1", "TextAdresse", True)
+    With champ
+        .Left = 12: .Top = bas + 22: .Width = 300: .Height = 36
+        .MultiLine = True: .MaxLength = 250
+        .TabIndex = f.Controls.Count - 1
+    End With
+    f.ScrollBars = fmScrollBarsVertical
+    f.ScrollHeight = bas + 75
+    If f.Height < bas + 105 Then f.Height = bas + 105
+    If f.Height > 680 Then f.Height = 680
+End Sub
+Private Sub StyliserControles(ByVal parent As Object)
+    Dim c As Object
+    For Each c In parent.Controls
+        Select Case TypeName(c)
+            Case "TextBox"
+                c.Font.Name = "Segoe UI": c.Font.Size = 10
+                c.ForeColor = RGB(30, 41, 59)
+                c.SpecialEffect = fmSpecialEffectFlat
+                c.BorderStyle = fmBorderStyleSingle
+                c.BorderColor = RGB(211, 213, 219)
+                If c.Locked Then
+                    c.BackColor = RGB(232, 237, 243): c.TabStop = False
+                Else
+                    c.BackColor = vbWhite
+                End If
+            Case "ComboBox", "ListBox"
+                c.Font.Name = "Segoe UI": c.Font.Size = 10
+                c.BackColor = vbWhite: c.ForeColor = RGB(30, 41, 59)
+                c.SpecialEffect = fmSpecialEffectFlat
+                c.BorderStyle = fmBorderStyleSingle
+                c.BorderColor = RGB(211, 213, 219)
+            Case "CommandButton"
+                c.Font.Name = "Segoe UI": c.Font.Size = 10
+                c.BackColor = RGB(0, 112, 235): c.ForeColor = vbWhite
+                c.Font.Bold = True
+                EtiqueterBoutonPro c
+            ColorerBoutonPro c
+            Case "Label"
+                If c.Name <> "LabelTitrePro" And c.Name <> "LabelInstitutionPro" Then c.Font.Size = 9
+                c.BackStyle = fmBackStyleTransparent
+                c.Font.Name = "Segoe UI"
+                c.ForeColor = RGB(30, 41, 59)
+            Case "Frame"
+                c.BackColor = RGB(246, 246, 248)
+                StyliserControles c
+        End Select
+    Next c
+End Sub
+Public Function MensualitePromotion(ByVal promotion As String) As Currency
+    MensualitePromotion = ITMFraisMensuels(promotion)
+End Function
+Public Function AnnuelPromotion(ByVal promotion As String) As Currency
+    AnnuelPromotion = ITMFraisAnnuels(promotion)
+End Function
+Private Function cle(ByVal v As Variant) As String
+    If Not IsError(v) And Not IsNull(v) Then cle = UCase$(Trim$(CStr(v)))
+End Function
+Public Sub ExporterPaiementsMois(Optional ByVal mois As String = "", Optional ByVal promotion As String = "", Optional ByVal exporterPDF As Boolean = False)
+    ITMExporterRapport mois, promotion, exporterPDF, IIf(exporterPDF, 1, 2)
+End Sub
+Public Function ContactValide(ByVal valeur As String, ByVal obligatoire As Boolean) As Boolean
+    Dim i As Long
+    valeur = Trim$(valeur)
+    If valeur = "" Then ContactValide = Not obligatoire: Exit Function
+    If Len(valeur) <> 10 Then Exit Function
+    For i = 1 To 10
+        If Mid$(valeur, i, 1) < "0" Or Mid$(valeur, i, 1) > "9" Then Exit Function
+    Next i
+    ContactValide = True
+End Function
+
+Private Function AjouterBoutonRapport(ByVal f As Object, ByVal nom As String, ByVal titre As String, ByVal couleur As Long) As MSForms.CommandButton
+    Dim b As MSForms.CommandButton
+    Set b = ITMControle(f, nom)
+    If b Is Nothing Then Set b = f.Controls.Add("Forms.CommandButton.1", nom, True)
+    b.Left = 12: b.Top = Application.Max(f.InsideHeight, f.ScrollHeight) + 6
+    b.Width = 270: b.Height = 32: b.Caption = titre
+    b.Font.Name = "Segoe UI": b.Font.Size = 10
+    b.BackColor = couleur: b.ForeColor = vbWhite: b.Font.Bold = True
+    f.Height = f.Height + 44
+    f.ScrollBars = fmScrollBarsVertical
+    f.ScrollHeight = b.Top + b.Height + 12
+    If f.Height > 680 Then f.Height = 680
+    Set AjouterBoutonRapport = b
+End Function
+
+Public Sub HabillerRapportPDF(ByVal w As Worksheet, ByVal entete As Long, ByVal Total As Long, ByVal colonnes As Long)
+    Dim i As Long, zone As Range
+    Set zone = w.Range(w.Cells(1, 1), w.Cells(Total, colonnes))
+    With zone
+        .Font.Name = "Calibri": .Font.Size = 10
+        .Font.Color = RGB(30, 41, 59): .VerticalAlignment = xlCenter
+    End With
+    With w.Range(w.Cells(1, 1), w.Cells(1, colonnes))
+        .Interior.Color = RGB(35, 37, 42): .Font.Color = vbWhite
+        .Font.Size = 15: .Font.Bold = True: .RowHeight = 34
+    End With
+    With w.Range(w.Cells(2, 1), w.Cells(2, colonnes))
+        .Font.Size = 12: .Font.Bold = True: .Font.Color = RGB(35, 37, 42)
+        .RowHeight = 27
+    End With
+    w.Rows(3).RowHeight = 22
+    w.Rows(3).Font.Size = 9
+    w.Rows(3).Font.Color = RGB(100, 116, 139)
+    With w.Range(w.Cells(entete, 1), w.Cells(entete, colonnes))
+        .Interior.Color = RGB(0, 112, 235): .Font.Color = vbWhite
+        .Font.Bold = True: .WrapText = True: .RowHeight = 32
+    End With
+    For i = entete + 1 To Total - 1
+        With w.Range(w.Cells(i, 1), w.Cells(i, colonnes))
+            If i Mod 2 = 0 Then .Interior.Color = RGB(241, 245, 249)
+            .Borders(xlEdgeBottom).LineStyle = xlContinuous
+            .Borders(xlEdgeBottom).Color = RGB(226, 232, 240)
+            .Borders(xlEdgeBottom).Weight = xlHairline
+        End With
+        If w.Rows(i).RowHeight < 25 Then w.Rows(i).RowHeight = 25
+        With w.Cells(i, colonnes)
+            .Font.Bold = True
+            Select Case UCase$(CStr(.Value))
+                Case "PAYE": .Font.Color = RGB(21, 101, 82)
+                Case "PARTIEL", "LITIGE": .Font.Color = RGB(153, 90, 20)
+                Case "RETARD", "LITIGE ET RETARD": .Font.Color = RGB(153, 64, 32)
+            End Select
+        End With
+    Next i
+    With w.Range(w.Cells(Total, 1), w.Cells(Total, colonnes))
+        .Interior.Color = RGB(235, 236, 240): .Font.Bold = True
+        .Font.Color = RGB(35, 37, 42): .RowHeight = 30
+        .Borders(xlEdgeTop).LineStyle = xlContinuous
+        .Borders(xlEdgeTop).Color = RGB(0, 112, 235)
+    End With
+    With w.PageSetup
+        .CenterHorizontally = True
+        .TopMargin = Application.CentimetersToPoints(1.4)
+        .BottomMargin = Application.CentimetersToPoints(1.4)
+        .HeaderMargin = Application.CentimetersToPoints(0.5)
+        .FooterMargin = Application.CentimetersToPoints(0.6)
+        .PrintGridlines = False: .PrintHeadings = False
+    End With
+End Sub
+
+Private Sub ReorganiserFormulaire(ByVal f As Object)
+    Dim ordre As Variant, noms As Variant, nom As Variant, c As Object
+    Dim utilises As Object, i As Long, y As Single, colonnes As Long
+    Dim largeur As Single, hauteur As Single
+    If f.Name = "Apprenant" Then
+        DisposerInscription f
+        Exit Sub
+    End If
+    largeur = Application.Min(820, Application.Width - 48)
+    If largeur < 240 Then largeur = 240
+    f.Width = largeur + 24
+    f.Controls("LabelTitrePro").Width = largeur - 24
+    f.Controls("LabelInstitutionPro").Width = largeur - 24
+    Set utilises = CreateObject("Scripting.Dictionary")
+    Select Case f.Name
+        Case "Apprenant": ordre = PlanApprenant()
+        Case "Paiement": ordre = PlanPaiement()
+        Case "TableauDeBord": ordre = PlanTableauDeBord()
+        Case "GestionApprenant": ordre = PlanGestionApprenant()
+        Case Else: Exit Sub
+    End Select
+    ' Les anciens libelles sont remplaces par des libelles attaches a chaque champ.
+    For Each c In f.Controls
+        If TypeName(c) = "Label" Then
+            If c.Name <> "LabelTitrePro" And c.Name <> "LabelInstitutionPro" Then c.Visible = False
+        End If
+    Next c
+    y = 54: i = 0: colonnes = 4
+    If largeur < 700 Then colonnes = 3
+    If largeur < 480 Then colonnes = 2
+    If (f.Name = "GestionApprenant" Or f.Name = "Paiement") And largeur >= 700 Then colonnes = 4
+    For Each nom In ordre
+        If Left$(CStr(nom), 1) = "@" Then
+            If i > 0 Then y = y + 40: i = 0
+            AjouterSectionPro f, Mid$(CStr(nom), 2), largeur, y
+        Else
+            Set c = ControleDisposition(f, CStr(nom))
+            If Not c Is Nothing Then
+                If c.Visible Then
+                    PlacerChampPro f, c, largeur, y, i, colonnes
+                    utilises(c.Name) = True
+                End If
+            End If
+        End If
+    Next nom
+    ' Ne pas exposer de controles anciens ou inconnus hors de la liste du formulaire.
+    For Each c In f.Controls
+        If Not utilises.Exists(c.Name) Then
+            Select Case TypeName(c)
+                Case "TextBox", "ComboBox", "ListBox", "Frame", "MultiPage"
+                    c.Visible = False
+            End Select
+        End If
+    Next c
+    If i > 0 Then y = y + 40
+    y = y + 6: i = 0
+    For Each c In f.Controls
+        If TypeName(c) = "CommandButton" And c.Visible Then
+            c.Left = 12 + (i Mod colonnes) * (largeur / colonnes)
+            c.Top = y + (i \ colonnes) * 30
+            c.Width = largeur / colonnes - 12: c.Height = 26
+            c.Font.Size = 9: c.WordWrap = True
+            EtiqueterBoutonPro c
+            ColorerBoutonPro c
+            i = i + 1
+        End If
+    Next c
+    y = y + ((i + colonnes - 1) \ colonnes) * 30 + 12
+    hauteur = Application.Height - 48
+    If hauteur > 760 Then hauteur = 760
+    f.Height = Application.Min(y + 36, hauteur)
+    AdapterHauteurSansDefilement f, y
+    f.ScrollTop = 0
+End Sub
+Private Function ControleDisposition(ByVal f As Object, ByVal nom As String) As Object
+    On Error Resume Next
+    Set ControleDisposition = f.Controls(nom)
+    On Error GoTo 0
+End Function
+Private Sub PlacerChampPro(ByVal f As Object, ByVal c As Object, ByVal largeur As Single, ByRef y As Single, ByRef i As Long, ByVal colonnes As Long)
+    Dim libelle As Object, x As Single, titre As String, grand As Boolean
+    grand = TypeName(c) = "ListBox" Or TypeName(c) = "Frame" Or TypeName(c) = "MultiPage" Or c.Name = "TextAffectation"
+    If grand And i > 0 Then y = y + 40: i = 0
+    x = 12 + i * (largeur / colonnes)
+    c.Left = x: c.Top = y + 16
+    c.Width = largeur / colonnes - 12: c.Height = 22
+    If grand Then
+        c.Left = 12: c.Width = largeur - 24: c.Height = 64
+        If TypeName(c) = "Frame" Or TypeName(c) = "MultiPage" Then c.Height = 160
+    End If
+    Set libelle = ControleDisposition(f, "ProLibelle_" & c.Name)
+    If libelle Is Nothing Then Set libelle = f.Controls.Add("Forms.Label.1", "ProLibelle_" & c.Name, True)
+    titre = LibelleChampPro(c.Name)
+    If f.Name = "GestionApprenant" Then
+        If c.Name = "ListStatutApprenant" Then titre = "Filtrer par statut"
+        If c.Name = "ListStatut" Then titre = "Nouveau statut de l'apprenant"
+    End If
+    If f.Name = "Apprenant" And c.Name = "ListPromotion" Then titre = "Promotion"
+    If f.Name = "Apprenant" And c.Name = "ListStatut" Then titre = "Statut de l'apprenant"
+    With libelle
+        .Caption = titre: .Left = c.Left: .Top = y
+        .Width = c.Width: .Height = 16
+        .Font.Name = "Segoe UI": .Font.Size = 9: .Font.Bold = True
+        .ForeColor = RGB(71, 85, 105): .BackStyle = fmBackStyleTransparent
+        .Visible = True
+    End With
+    If c.Name = "TextAdresse" Then c.MultiLine = False
+    If c.Name = "TextAffectation" Then c.Height = 48: c.MultiLine = True
+    If grand Then
+        y = y + c.Height + 23: i = 0
+    Else
+        i = i + 1
+        If i = colonnes Then y = y + 40: i = 0
+    End If
+End Sub
+
+Private Sub ColorerBoutonPro(ByVal c As Object)
+    Dim action As String
+    action = LCase$(c.Name & " " & c.Caption)
+    c.BackColor = RGB(0, 112, 235): c.ForeColor = vbWhite
+    If InStr(action, "enregistrer") > 0 Or InStr(action, "actualiser") > 0 Then
+        c.BackColor = RGB(74, 190, 112): c.ForeColor = vbBlack
+    End If
+    If InStr(action, "fermer") > 0 Or InStr(action, "femer") > 0 Or InStr(action, "ferme") > 0 Then
+        c.BackColor = RGB(192, 48, 48): c.ForeColor = vbWhite
+    End If
+    If c.Name = "CommandButton2" Then
+        c.BackColor = RGB(192, 48, 48): c.ForeColor = vbWhite
+    End If
+End Sub
+
+Private Function LibelleChampPro(ByVal nom As String) As String
+    Select Case LCase$(nom)
+        Case "textmatricule": LibelleChampPro = "Matricule"
+        Case "textnomapprenant": LibelleChampPro = "Nom"
+        Case "textpostnom": LibelleChampPro = "Post-nom"
+        Case "textprenom": LibelleChampPro = "Prenom"
+        Case "listsexe": LibelleChampPro = "Sexe"
+        Case "textsexe": LibelleChampPro = "Sexe"
+        Case "textdatenaissance": LibelleChampPro = "Date de naissance (jj/mm/aaaa)"
+        Case "textlieunaissance": LibelleChampPro = "Lieu de naissance"
+        Case "textadresse": LibelleChampPro = "Adresse de residence"
+        Case "texttuteur": LibelleChampPro = "Parent ou tuteur"
+        Case "textparent1": LibelleChampPro = "Contact parent 1"
+        Case "textcontact1": LibelleChampPro = "Contact parent 1"
+        Case "textparent2": LibelleChampPro = "Contact parent 2"
+        Case "textcontact2": LibelleChampPro = "Contact parent 2"
+        Case "listpromotion": LibelleChampPro = "Promotion (filtre)"
+        Case "combopromotiondashboard": LibelleChampPro = "Promotion (filtre)"
+        Case "listpromotionapprenant": LibelleChampPro = "Promotion de l'apprenant"
+        Case "textpromotion": LibelleChampPro = "Promotion"
+        Case "listannee": LibelleChampPro = "Annee scolaire"
+        Case "liststatut": LibelleChampPro = "Statut (filtre)"
+        Case "liststatutapprenant": LibelleChampPro = "Statut de l'apprenant"
+        Case "textdateinscription": LibelleChampPro = "Date d'inscription"
+        Case "textrecherche": LibelleChampPro = "Recherche : matricule ou nom"
+        Case "listapprenant": LibelleChampPro = "Apprenants trouves"
+        Case "listapprenants": LibelleChampPro = "Apprenants trouves"
+        Case "listresultats": LibelleChampPro = "Apprenants trouves"
+        Case "listmois": LibelleChampPro = "Mois (filtre)"
+        Case "combomoisdashboard": LibelleChampPro = "Mois (filtre)"
+        Case "listnombremoislitige": LibelleChampPro = "Nombre de mois en litige"
+        Case "combonombremoislitige": LibelleChampPro = "Nombre de mois en litige"
+        Case "textdatepaiement": LibelleChampPro = "Date de paiement"
+        Case "textnumeroenregistrement": LibelleChampPro = "Numero d'enregistrement"
+        Case "textmoisconcerne": LibelleChampPro = "Mois concerne"
+        Case "textdettesanterieures": LibelleChampPro = "Dettes anterieures (FC)"
+        Case "textmontantdu": LibelleChampPro = "Montant a payer (FC)"
+        Case "textmontantpaye": LibelleChampPro = "Montant verse (FC)"
+        Case "texttotalpaye": LibelleChampPro = "Total annuel verse (FC)"
+        Case "texttotalannuel": LibelleChampPro = "Total annuel attendu (FC)"
+        Case "textresteannuel": LibelleChampPro = "Reste annuel (FC)"
+        Case "textstatut": LibelleChampPro = "Situation du paiement"
+        Case "textaffectation": LibelleChampPro = "Repartition du paiement"
+        Case "textsituation": LibelleChampPro = "Situation de l'apprenant"
+        Case "textmoispaye": LibelleChampPro = "Mois payes"
+        Case "textmoislitige": LibelleChampPro = "Mois partiellement payes"
+        Case "textmoisnonpayes": LibelleChampPro = "Mois impayes"
+        Case "texttotalap": LibelleChampPro = "Effectif total"
+        Case "texttotalapprenants": LibelleChampPro = "Effectif total"
+        Case "textapprenantspromotion": LibelleChampPro = "Effectif de la promotion"
+        Case "textrevenutotal": LibelleChampPro = "Total des paiements (FC)"
+        Case "textrevenumois": LibelleChampPro = "Paiements du mois (FC)"
+        Case "textnombrelitiges": LibelleChampPro = "Apprenants en litige"
+        Case "textmontantlitige": LibelleChampPro = "Montant en litige (FC)"
+        Case "texttauxpaiement": LibelleChampPro = "Taux de paiement (%)"
+        Case "texttauxajour": LibelleChampPro = "Taux des apprenants a jour (%)"
+        Case "listapprenantslitige": LibelleChampPro = "Liste des apprenants en litige"
+        Case "listhistoriquepaiements": LibelleChampPro = "Historique des paiements"
+        Case Else: LibelleChampPro = "Information"
+    End Select
+End Function
+
+Private Sub EtiqueterBoutonPro(ByVal c As Object)
+    Select Case LCase$(c.Name)
+        Case "commandbutton1": c.Caption = "Nouveau"
+        Case "commandbutton2", "commandfermerpaiement", "commandfermerdashboard", "commandfemerdashboard": c.Caption = "Fermer"
+        Case "commandenregistrer", "commandenregistrerpaiement": c.Caption = "Enregistrer"
+        Case "commandactualiser", "commandactualiserdashboard": c.Caption = "Actualiser"
+        Case "commandeffacer", "commandeffacerpaiement": c.Caption = "Effacer la saisie"
+        Case "commandnouveaupaiement": c.Caption = "Nouveau paiement"
+        Case "commandmodifier": c.Caption = "Enregistrer les modifications"
+        Case "commandchangestatut": c.Caption = "Changer le statut"
+        Case "commandchangerpromotion": c.Caption = "Changer la promotion"
+        Case "commandficheapprenant": c.Caption = "Fiche de l'apprenant"
+        Case "commandimrpimerliste": c.Caption = "Imprimer la liste"
+        Case "commandreinitialiser": c.Caption = "Reinitialiser les filtres"
+        Case "commandexporterpaiementsmois": c.Caption = "Paiements - Excel"
+        Case "commandexporterenordrepdf": c.Caption = "Mois solde - PDF"
+        Case "commandlisteinscritspdf": c.Caption = "Inscrits - PDF"
+        Case "commandeffacersaisie": c.Caption = "Effacer la saisie"
+        Case "commandnouvelleinscription": c.Caption = "Nouvelle inscription"
+        Case "commandexportpaiementspdf": c.Caption = "Paiements - PDF"
+        Case "commandexportlitigespdf": c.Caption = "Litiges et retards - PDF"
+    End Select
+End Sub
+
+Private Function PlanApprenant() As Variant
+    PlanApprenant = Split("@Identite|TextMatricule|TextNomApprenant|TextPostNom|TextPrenom|ListSexe|TextDateNaissance|@Residence et contacts|TextLieuNaissance|TextAdresse|TextTuteur|TextParent1|TextParent2|@Inscription|ListPromotion|ListAnnee|TextDateInscription|ListStatut", "|")
+End Function
+Private Function PlanPaiement() As Variant
+    PlanPaiement = Split("@Rechercher un apprenant|TextRecherche|ListResultats|@Apprenant selectionne|TextMatricule|TextNomApprenant|TextPostNom|TextPrenom|TextPromotion|@Enregistrer le paiement|TextDatePaiement|TextNumeroEnregistrement|TextMoisConcerne|TextMontantDu|TextDettesAnterieures|TextMontantPaye|TextAffectation|@Situation annuelle|TextTotalPaye|TextTotalAnnuel|TextResteAnnuel|TextStatut", "|")
+End Function
+Private Function PlanTableauDeBord() As Variant
+    PlanTableauDeBord = Split("@Filtres du tableau de bord|ComboPromotionDashboard|ComboMoisDashboard|ComboNombreMoisLitige|@Effectifs et recettes|TextTotalAp|TextApprenantsPromotion|TextRevenuTotal|TextRevenuMois|@Litiges et taux de paiement|TextNombreLitiges|TextMontantLitige|TextTauxPaiement|TextTauxAJour|@Liste des litiges|ListApprenantsLitige", "|")
+End Function
+Private Function PlanGestionApprenant() As Variant
+    PlanGestionApprenant = Split("@Rechercher et filtrer|TextRecherche|ListPromotion|ListMois|ListNombreMoisLitige|ListStatutApprenant|ListAnnee|ListApprenant|ListApprenants|@Identite et contacts|TextMatricule|TextNomApprenant|TextPostNom|TextPrenom|TextSexe|TextDateNaissance|TextLieuNaissance|TextTuteur|TextContact1|TextContact2|@Inscription de l apprenant|ListPromotionApprenant|ListStatut|TextDateInscription|@Situation de paiement|TextSituation|TextMoisPaye|TextMoisLitige|TextMoisNonPayes|TextResteAnnuel|@Historique des paiements|ListHistoriquePaiements", "|")
+End Function
+
+Private Sub AjouterSectionPro(ByVal f As Object, ByVal titre As String, ByVal largeur As Single, ByRef y As Single)
+    Dim c As Object, nom As String
+    nom = "ProSection_" & Replace(titre, " ", "_")
+    Set c = ControleDisposition(f, nom)
+    If c Is Nothing Then Set c = f.Controls.Add("Forms.Label.1", nom, True)
+    With c
+        .Caption = titre: .Left = 12: .Top = y + 4
+        .Width = largeur - 24: .Height = 17
+        .BackColor = RGB(235, 236, 240): .BackStyle = fmBackStyleOpaque
+        .ForeColor = RGB(35, 37, 42): .Font.Name = "Segoe UI"
+        .Font.Size = 10: .Font.Bold = True: .Visible = True
+    End With
+    y = y + 23
+End Sub
+
+Private Sub AdapterHauteurSansDefilement(ByVal f As Object, ByVal bas As Single)
+    Dim c As Object, n As Long, i As Long, nbColonnes As Long, lignes As Long
+    Dim debutBoutons As Single, sommet As Single, basContenu As Single, hauteurTotale As Single
+    debutBoutons = bas
+    For Each c In f.Controls
+        If c.Visible And TypeName(c) = "CommandButton" Then
+            n = n + 1
+            If c.Top < debutBoutons Then debutBoutons = c.Top
+        End If
+    Next c
+    ' Aucune compression verticale des champs ou de leurs textes.
+    For Each c In f.Controls
+        If c.Visible And TypeName(c) <> "CommandButton" Then
+            If c.Top + c.Height > basContenu Then basContenu = c.Top + c.Height
+        End If
+    Next c
+    nbColonnes = 3
+    If f.InsideWidth < 480 Then nbColonnes = 2
+    lignes = (n + nbColonnes - 1) \ nbColonnes
+    sommet = basContenu + 12
+    For Each c In f.Controls
+        If c.Visible And TypeName(c) = "CommandButton" Then
+            c.Top = sommet + (i \ nbColonnes) * 30
+            c.Left = 12 + (i Mod nbColonnes) * ((f.InsideWidth - 24) / nbColonnes)
+            c.Width = (f.InsideWidth - 24) / nbColonnes - 8
+            c.Height = 26: c.Font.Size = 9
+            c.WordWrap = True: c.AutoSize = False
+            c.ControlTipText = c.Caption
+            i = i + 1
+        End If
+    Next c
+    hauteurTotale = sommet + lignes * 30 + 12
+    f.Height = Application.Min(hauteurTotale + (f.Height - f.InsideHeight), Application.Height - 48)
+    f.ScrollHeight = hauteurTotale
+    If hauteurTotale > f.InsideHeight Then
+        f.ScrollBars = fmScrollBarsVertical
+    Else
+        f.ScrollBars = fmScrollBarsNone
+    End If
+    f.StartUpPosition = 0
+    f.Left = Application.Left + (Application.Width - f.Width) / 2
+    f.Top = Application.Top + (Application.Height - f.Height) / 2
+End Sub
+
+Private Sub AjouterChampDettes(ByVal f As Object)
+    Dim c As Object
+    Set c = ControleDisposition(f, "TextDettesAnterieures")
+    If c Is Nothing Then Set c = f.Controls.Add("Forms.TextBox.1", "TextDettesAnterieures", True)
+    c.Locked = True: c.TabStop = False: c.Value = "0 FC"
+    c.ControlTipText = "Impayes de septembre jusqu'au mois precedent la date du paiement; hors mois futurs."
+End Sub
+Public Sub ChargerPromotionsValides(ByVal liste As Object, Optional ByVal toutes As Boolean = False)
+    Dim ws As Worksheet, i As Long, code As String, d As Object
+    Set ws = ThisWorkbook.Worksheets("PROMOTIONS")
+    Set d = CreateObject("Scripting.Dictionary")
+    liste.Clear
+    If toutes Then liste.AddItem "Toutes les promotions"
+    For i = 5 To ws.Cells(ws.Rows.Count, 1).End(xlUp).Row
+        code = UCase$(Trim$(CStr(ws.Cells(i, 1).Value)))
+        If code <> "" And Not d.Exists(code) Then
+            d.Add code, True: liste.AddItem code
+        End If
+    Next i
+End Sub
+
+Private Sub FinaliserChampsPro(ByVal f As Object)
+    Dim c As Object, cle As String
+    For Each c In f.Controls
+        If c.Visible Then
+            cle = LCase$(c.Name)
+            Select Case TypeName(c)
+                Case "TextBox"
+                    c.SpecialEffect = fmSpecialEffectFlat
+                    c.BorderStyle = fmBorderStyleSingle
+                    c.BorderColor = RGB(210, 213, 220)
+                    c.ForeColor = RGB(35, 37, 42)
+                    c.Font.Name = "Segoe UI"
+                    c.TextAlign = fmTextAlignLeft
+                    If c.Locked Then
+                        c.BackColor = RGB(239, 241, 245)
+                        c.Font.Bold = True
+                    Else
+                        c.BackColor = vbWhite
+                        c.Font.Bold = False
+                    End If
+                    If InStr(cle, "montant") > 0 Or InStr(cle, "revenu") > 0 Or InStr(cle, "total") > 0 Or InStr(cle, "reste") > 0 Or InStr(cle, "dettes") > 0 Or InStr(cle, "taux") > 0 Then c.TextAlign = fmTextAlignRight
+                    If InStr(cle, "date") > 0 Or cle = "textmatricule" Then c.TextAlign = fmTextAlignCenter
+                    If cle = "textrecherche" Then
+                        c.BorderColor = RGB(0, 112, 235)
+                        c.ControlTipText = "Saisissez le matricule ou le nom pour rechercher un apprenant."
+                    ElseIf Len(c.ControlTipText) = 0 Then
+                        c.ControlTipText = LibelleChampPro(c.Name)
+                    End If
+                Case "ComboBox"
+                    c.SpecialEffect = fmSpecialEffectFlat
+                    c.BackColor = vbWhite: c.BorderColor = RGB(210, 213, 220)
+                    c.Font.Name = "Segoe UI"
+                    c.ControlTipText = LibelleChampPro(c.Name)
+                Case "ListBox"
+                    c.IntegralHeight = False
+                    c.SpecialEffect = fmSpecialEffectFlat
+                    c.BorderStyle = fmBorderStyleSingle
+                    c.BorderColor = RGB(210, 213, 220)
+                    c.BackColor = vbWhite: c.ForeColor = RGB(35, 37, 42)
+                    c.Font.Name = "Segoe UI"
+                    c.ControlTipText = LibelleChampPro(c.Name)
+            End Select
+        End If
+    Next c
+End Sub
+
+Private Sub DisposerInscription(ByVal f As Object)
+    Dim champs As Variant, nom As Variant, c As Object, l As Object
+    Dim largeur As Single, col As Single, x As Single, y As Single
+    Dim i As Long, n As Long, bas As Single
+    largeur = Application.Min(720, Application.Width - 48)
+    f.Width = largeur + 18
+    largeur = f.InsideWidth - 24: col = (largeur - 24) / 4
+    For Each c In f.Controls
+        If TypeName(c) = "Label" Then c.Visible = False
+    Next c
+    With f.Controls("LabelTitrePro")
+        .Visible = True: .Left = 12: .Top = 10: .Width = largeur: .Height = 24
+        .Caption = "Inscription d'un apprenant": .Font.Size = 15
+    End With
+    With f.Controls("LabelInstitutionPro")
+        .Visible = True: .Left = 12: .Top = 35: .Width = largeur: .Height = 17
+    End With
+    champs = Array("TextMatricule", "TextNomApprenant", "TextPostNom", "TextPrenom", "ListSexe", "TextDateNaissance", "TextLieuNaissance", "TextAdresse", "TextTuteur", "TextParent1", "TextParent2", "ListStatut", "ListPromotion", "ListAnnee", "TextDateInscription")
+    For Each nom In champs
+        Set c = ControleDisposition(f, CStr(nom))
+        If Not c Is Nothing Then
+            x = 12 + (i Mod 4) * (col + 8)
+            y = 64 + (i \ 4) * 54
+            c.Visible = True: c.Left = x: c.Top = y + 20
+            c.Width = col: c.Height = 26: c.Font.Size = 10
+            If c.Name = "TextAdresse" Then c.MultiLine = False
+            Set l = ControleDisposition(f, "ProLibelle_" & c.Name)
+            If l Is Nothing Then Set l = f.Controls.Add("Forms.Label.1", "ProLibelle_" & c.Name, True)
+            With l
+                .Visible = True: .Caption = LibelleChampPro(c.Name)
+                If c.Name = "ListPromotion" Then .Caption = "Promotion"
+                If c.Name = "ListStatut" Then .Caption = "Statut de l'apprenant"
+                If c.Name = "TextDateNaissance" Then .Caption = "Naissance (jj/mm/aaaa)"
+                .Left = x: .Top = y: .Width = col: .Height = 18
+                .Font.Name = "Segoe UI": .Font.Size = 9: .Font.Bold = True
+                .BackStyle = fmBackStyleTransparent: .ForeColor = RGB(71, 85, 105)
+            End With
+            If c.Top + c.Height > bas Then bas = c.Top + c.Height
+            i = i + 1
+        End If
+    Next nom
+    For Each c In f.Controls
+        If c.Visible And TypeName(c) = "CommandButton" Then
+            c.Left = 12 + (n Mod 4) * (col + 8)
+            c.Top = bas + 18 + (n \ 4) * 34
+            c.Width = col: c.Height = 26
+            c.Font.Size = 9: c.WordWrap = True
+            EtiqueterBoutonPro c: ColorerBoutonPro c
+            n = n + 1
+        End If
+    Next c
+    bas = bas + 18 + ((n + 3) \ 4) * 34 + 10
+    f.Height = Application.Min(bas + (f.Height - f.InsideHeight), Application.Height - 48)
+    f.ScrollHeight = bas
+    If bas > f.InsideHeight Then
+        f.ScrollBars = fmScrollBarsVertical
+    Else
+        f.ScrollBars = fmScrollBarsNone
+    End If
+    f.ScrollTop = 0: f.StartUpPosition = 0
+    f.Left = Application.Left + (Application.Width - f.Width) / 2
+    f.Top = Application.Top + (Application.Height - f.Height) / 2
+End Sub

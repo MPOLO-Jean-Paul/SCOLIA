@@ -1,0 +1,11 @@
+﻿ITM CŒUR DE DIEU — ÉDITION 86
+
+Cette édition conserve la correction d’initialisation data de l’édition 85.
+
+Icônes : les lettres P, W et C dessinées avec TextRenderer dans un contexte graphique déplacé sont supprimées. Les exports PDF, Word et CSV utilisent des tracés vectoriels distincts, sans lettres. Le dessin est limité à la zone réservée à l’icône. Les raccourcis « icône seule » n’affichent aucun libellé. Les noms complets et les descriptions des commandes restent accessibles.
+
+Mode sombre : vérification du contraste après application des couleurs sémantiques ; cases à cocher avec texte lisible même désactivé ; liens désactivés et sous-menus adaptés au thème. Les cases conservent leur état activé/désactivé, leurs événements et leur fonctionnement clavier. Les liens et les menus retrouvent leur apparence claire lorsque le thème revient au clair.
+
+Validation exécutée : compilation C# 5, contrôles WinForms sous Mono/Xvfb ; confinement des pixels des icônes PDF/Word/CSV à 96, 144 et 192 DPI, clair et sombre ; contraste du texte des cases activées/désactivées et comportement CheckedChanged ; contrôles de connexion, aide, fenêtres d’erreur et ruban ; syntaxe/encodage PowerShell ; intégrité des six XLSM et des procédures VBA. Excel COM reste à vérifier sous Windows.
+
+Installation : fermer ITM et Excel, extraire le ZIP dans le dossier de l’application, conserver le dossier data et lancer APPLICATION.vbs. Aucune nouvelle préparation du classeur n’est demandée pour cette correction graphique.

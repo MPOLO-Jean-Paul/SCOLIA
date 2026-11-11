@@ -1,0 +1,7 @@
+﻿FORMULAIRE DE CONNEXION
+
+La hauteur de la fenêtre suit maintenant le dernier texte « Accès réservé au secrétariat », avec une petite marge inférieure de 12 pixels de référence adaptée à la mise à l’échelle. La grande zone vide issue de la hauteur initiale est supprimée.
+
+Si un message de connexion apparaît ou si la largeur change, les textes sont mesurés à nouveau et la hauteur s’ajuste. Sur un écran trop petit, la fenêtre reste limitée à la zone de travail et le contenu est accessible par défilement. Les contrôles de connexion et les données sont inchangés.
+
+Compilation C# contrôlée. Rendu du formulaire à confirmer sur Windows. Mise à jour : remplacer le dossier programme puis relancer APPLICATION.vbs ; aucune réinstallation des corrections du classeur n’est nécessaire.

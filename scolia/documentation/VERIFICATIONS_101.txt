@@ -1,0 +1,45 @@
+﻿SCOLIA 101 — revue et vérifications réalisées
+
+Corrections vérifiées par des tests de régression :
+PASS montant et référence modifiés avec l'ancienne empreinte refusés ; copie
+     inchangée et reprise d'un brouillon déjà validé sans deuxième écriture.
+PASS grille personnalisée INF3 agrandie relue jusqu'aux apprenants ajoutés,
+     arrêt avant la ligne Total et maintien des barèmes / formules.
+PASS intitulés de cours en ligne 1 sans accès à une ligne 0.
+PASS ligne de cours 400 admise, ligne 50 001 refusée par le contrôle de saisie.
+PASS vérification d'une opération bloquée pendant son enregistrement actif,
+     contrôle sans opération disponible une fois la tâche terminée.
+PASS syntaxe des 99 scripts PowerShell.
+PASS compilation C#5/.NET4 des modules caisse et réseau (Mono).
+PASS lecture et reprise d'un journal antérieur avec vérification de checksum.
+
+Autres fonctionnalités revérifiées :
+PASS caisse : calendrier, soldes, tarifs, références uniques, surpaiement,
+     concurrence, état durable, intégrité et session périmée.
+PASS brouillons non comptabilisés, cache incrémental isolé en mémoire et
+     rapprochement des montants encaissés / reçus / restant à recevoir.
+PASS comptes libres / protégés / nominatifs, permissions et mode mixte.
+PASS réception et reprise des transferts, années isolées et erreurs conservées
+     (Excel simulé pour les appels d'import).
+PASS doublons nom + postnom + prénom + promotion, casse, accents et espaces.
+PASS retards au 6, paiements partiels et mois couverts par une prise en charge.
+PASS prise en charge de dix mois, retour au statut payant, historique et persistance.
+PASS cache de préparation de 24 h, expiration, horloge, segments et identité XLSM.
+PASS cotes : noms normalisés, homonymes, doublons, notes invalides et zéros ;
+     lecture des quatre grilles originales par leurs contenus XML.
+PASS décisions P/A/AA/D, frontière à 50 %, vides et classement alphabétique.
+PASS catalogue de rubans, aides, raccourcis et droits des commandes.
+PASS exports de cartes Word : validation du schéma Open XML pour 1, 8 et 9 cartes.
+     Ce contrôle ne constitue pas une ouverture dans Microsoft Word réel.
+PASS réseau : protocole UDP local, contrôle des annonces, fichiers de contrôle
+     et remplacement atomique, exécutés avec C#5/.NET4.
+PASS ZIP : aucun fichier supprimé, six XLSM, corrections VBA, manifeste et
+     lanceurs identiques à l'édition 100 ; BOM PowerShell conservés.
+
+Limites de la vérification :
+Les tests sont réalisés sous PowerShell 7/Linux et Mono avec références .NET4.
+Certains appels Excel sont simulés ; les exports DOCX sont validés par le SDK
+Open XML. L'affichage WinForms, Microsoft Word/Excel réel, Windows PowerShell 5.1
+et le partage SMB entre deux postes doivent encore être validés sur Windows.
+Les opérations Windows UAC/NTFS/pare-feu et le délai du worker réseau réel ne
+peuvent pas être déclarés validés depuis cet environnement.

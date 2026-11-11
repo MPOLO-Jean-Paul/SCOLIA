@@ -1,0 +1,1089 @@
+﻿ITM CŒUR DE DIEU — GUIDE D’UTILISATION COMPLET
+
+Ce logiciel sert au secrétariat : inscrire les apprenants, enregistrer les reçus déjà validés à la caisse, suivre les soldes et produire les listes. Les montants sont exprimés en francs congolais (FC).
+
+SOMMAIRE
+01 — Installation et mise à jour
+02 — Démarrage et connexion au logiciel
+03 — Navigation et commandes communes
+04 — Données : connecter et mémoriser un classeur
+05 — Données : créer un nouveau classeur
+06 — Tableau de bord
+07 — Apprenants : inscrire
+08 — Apprenants : rechercher, modifier et imprimer
+09 — Paiements : enregistrer un reçu
+10 — Paiements : historique et correction
+11 — Exports : listes, PDF, Excel et CSV
+12 — Diagnostic et doublons
+13 — Administration : promotions et frais
+14 — Administration : capacité et classeurs suivants
+15 — Administration : sauvegardes et restauration
+16 — Administration : année scolaire et journal
+17 — Sécurité et mot de passe
+18 — Préférences, thèmes et affichage
+19 — Organisation des fichiers et déplacement
+20 — Messages, incidents et reprise
+21 — Raccourcis clavier
+22 — Routine de travail conseillée
+23 — Scolarité : cartes d’examen
+24 — Prises en charge
+
+01 — INSTALLATION ET MISE À JOUR
+
+Prérequis : un ordinateur Windows avec Excel de bureau installé. Lancez les fichiers .vbs depuis le dossier extrait ; ne travaillez pas directement dans le ZIP.
+
+Première préparation du classeur ou mise à jour de ses fonctions Excel :
+1. Conservez une copie de votre classeur actuel contenant les dernières inscriptions et les derniers paiements. Fermez Excel et l’application.
+2. Extrayez entièrement le ZIP. Double-cliquez sur 00_Demarrage\INSTALLER.vbs : l’installateur graphique s’ouvre directement.
+3. Vérifiez le chemin détecté. S’il ne correspond pas à votre classeur actuel, utilisez Choisir. Ne sélectionnez pas un ancien fichier source à la place de vos données récentes.
+4. Cliquez sur Installer les corrections. L’original est conservé ; le travail s’effectue sur une copie.
+5. Attendez le message de réussite. Utilisez Voir le fichier corrigé ou le chemin indiqué pour retrouver le résultat.
+6. Lancez 00_Demarrage\APPLICATION.vbs et connectez la copie corrigée.
+
+La vérification approfondie ajoute des contrôles de basculement, sauvegarde et restauration sur des copies de test. Elle prend plus de temps. Les contrôles ordinaires de l’installation restent exécutés sans cette option.
+
+Une simple mise à jour de l’interface ne nécessite pas de recommencer la préparation Excel si celle-ci est déjà compatible. Remplacez les fichiers programme et documentation de l’édition précédente, en conservant data, sources et vos autres fichiers personnels. Si l’application demande une nouvelle préparation, utilisez votre classeur actuel.
+
+02 — DÉMARRAGE ET CONNEXION AU LOGICIEL
+
+Double-cliquez sur 00_Demarrage\APPLICATION.vbs. Si la protection est activée, saisissez votre mot de passe puis choisissez Se connecter. L’option d’affichage du mot de passe permet de vérifier la saisie ; désactivez-la après vérification. Quitter ferme l’application.
+
+Quand la reconnexion automatique est activée, le classeur mémorisé est recherché après l’authentification. Sinon, connectez-le depuis Données. Vérifiez le chemin affiché et l’année scolaire avant de saisir.
+
+COMPTE : le bouton à côté de Masquer/Afficher les commandes permet d’utiliser l’identité de la session Windows ouverte ou de créer un compte local de l’application. Créer mon compte demande identifiant, nom, mot de passe et confirmation ; conservez le code affiché. Connexion au compte vérifie ses identifiants ; Récupérer mon compte remplace le mot de passe avec son code. Le choix est mémorisé, mais le mot de passe d’un compte d’application reste demandé au démarrage. Déconnecter le compte ferme l’application. Les comptes sont propres au profil Windows actuel et partagent les mêmes données. Le premier compte local est Administrateur, les nouveaux suivants commencent en Consultation. Un administrateur attribue ensuite le rôle Secrétariat ou Administrateur depuis Compte > Gérer les rôles. La protection Sécurité existante reste vérifiée avant ce choix. Ctrl+Alt+U ouvre Compte. Voir COMPTES_UTILISATEURS.txt.
+
+Le mot de passe du logiciel et la connexion au classeur sont deux choses distinctes : le premier protège l’accès à l’interface ; la seconde choisit les données utilisées.
+
+03 — NAVIGATION ET COMMANDES COMMUNES
+
+Cliquez sur un onglet pour ouvrir sa page. Le ruban rassemble les commandes par groupe. Survolez une commande pour lire sa description et son raccourci, si les aides sont activées dans Préférences.
+
+Uniquement dans l’onglet Données :
+Ouvrir données / Changer les données : choisir et connecter un classeur existant.
+Préparer : ouvrir l’installateur pour préparer ou mettre à jour un classeur.
+Fermer données : fermer la connexion sans effacer le classeur mémorisé. Le même classeur reste disponible au prochain démarrage.
+Dans tous les onglets, le groupe Outils propose :
+Actualiser : relire les données et recalculer les listes et indicateurs.
+Aide / guide : ouvrir ce document, également accessible par F1.
+
+Une commande grisée exige une condition : connexion à des données, année non clôturée, sélection d’un dossier, montant valide ou fin du traitement en cours. La roue animée indique qu’une opération travaille. Attendez sa fin avant de relancer la même action.
+
+Dans les formulaires, Tab passe au champ suivant et Maj+Tab revient. Utilisez les barres de défilement pour voir les champs ou listes situés plus bas. Fermer l’application conserve les opérations dont l’enregistrement a été confirmé.
+
+04 — DONNÉES : CONNECTER ET MÉMORISER UN CLASSEUR
+
+Connecter un fichier existant :
+1. Ouvrez Données, puis Classeur existant, ou utilisez Ouvrir données.
+2. Choisissez le classeur préparé contenant les données attendues.
+3. Attendez la connexion et vérifiez le chemin affiché.
+
+Avec la gestion data de cette édition, la première connexion importe le classeur dans une base gérée. Les nouvelles saisies sont ensuite enregistrées dans data, et non dans l’ancien fichier choisi pour l’import. Reconnecter le même fichier d’origine retrouve la base déjà gérée. Les anciens formats compatibles peuvent rester en mode fichier unique ; préparez-les pour bénéficier de la gestion data.
+
+Mémoriser ce classeur : enregistre son chemin pour ce compte Windows et active la reconnexion au démarrage, même si elle était désactivée. Pour interrompre volontairement la reconnexion, décochez ensuite Reconnecter le classeur mémorisé au démarrage. Un fichier indisponible reste mémorisé : rebranchez son support ou connectez puis mémorisez son nouvel emplacement.
+Reconnecter le classeur mémorisé au démarrage : cochez pour l’ouverture automatique ou décochez pour une ouverture manuelle. Une connexion manuelle respecte ce choix.
+Ouvrir le classeur mémorisé : reconnecte volontairement ce fichier, même si l’ouverture automatique est désactivée.
+Actualiser les feuilles : affiche les feuilles de la base, la dernière ligne renseignée et les colonnes présentes. Cette liste est un contrôle de structure, pas un éditeur de feuilles.
+Dossier sources : ouvre le dossier des classeurs générés.
+
+Ne connectez pas un segment data isolé comme une nouvelle base. Conservez tous les fichiers de la base ensemble.
+
+05 — DONNÉES : CRÉER UN NOUVEAU CLASSEUR
+
+1. Dans Données, saisissez un nom dans Nouveau classeur dans le dossier sources.
+2. Utilisez un nom de fichier Windows valide, sans slash, antislash ni caractères interdits. Un fichier existant n’est pas écrasé.
+3. Cliquez sur Générer et connecter.
+4. Le logiciel crée un .xlsm dans sources à partir du modèle disponible, avec les feuilles et colonnes prévues. Les apprenants, paiements et anciennes opérations du journal sont vidés dans cette nouvelle copie ; les promotions et les frais du modèle sont conservés.
+5. Si la copie est déjà préparée, elle est connectée. Sinon, l’installateur s’ouvre : terminez la préparation puis connectez son résultat corrigé.
+
+Les données des feuilles APPRENANTS et PAIEMENTS commencent en ligne 5, après les titres en ligne 4.
+
+Ouvrir le dernier créé (Ctrl+Alt+O) reprend l’ouverture ou la préparation du dernier classeur généré, sans le créer de nouveau. Si ce fichier a été déplacé, utilisez Classeur existant pour choisir son nouvel emplacement. Après une préparation séparée, connectez la copie corrigée indiquée par l’installateur.
+
+Un classeur vide est une nouvelle base. Pour continuer la même base arrivée à sa capacité, utilisez le basculement décrit au point 14. Pour changer d’année en conservant les dossiers, utilisez le point 16.
+
+06 — TABLEAU DE BORD
+
+Le tableau de bord présente les effectifs, versements, restes et retards calculés sur les données connectées. Un mois impayé devient en retard le 6 du mois suivant : septembre à partir du 6 octobre, décembre à partir du 6 janvier. Un paiement partiel laisse uniquement son solde en retard ; un mois entièrement payé ou couvert par une prise en charge est exclu de la liste. Utilisez les filtres disponibles de promotion, de mois et de nombre de mois en retard pour examiner la situation recherchée.
+
+1. Connectez la bonne base et vérifiez son année.
+2. Choisissez les filtres ; lisez les indicateurs et la liste correspondante.
+3. Après une nouvelle saisie ou pour relire les données, cliquez sur Actualiser.
+4. Retards en CSV exporte les lignes de retard actuellement préparées, avec les contacts disponibles.
+5. Inscrire ouvre l’inscription ; Paiements et Rapports ouvrent les pages correspondantes.
+
+Consultez Diagnostic avant de faire des relances si des anomalies sont signalées. Les dettes d’une année archivée se consultent dans cette année ; elles ne sont pas automatiquement ajoutées aux soldes de la nouvelle année.
+
+07 — APPRENANTS : INSCRIRE
+
+1. Ouvrez Apprenants, puis Inscrire (Ctrl+N).
+2. Identité : renseignez nom, post-nom, prénom, sexe, date et lieu de naissance. Les champs marqués d’un astérisque sont obligatoires.
+3. Pour la naissance, tapez huit chiffres : 01092006 devient 01/09/2006. Les slashs s’ajoutent. Vérifiez la date complète ; une date impossible est refusée.
+4. Contacts : renseignez le contact parent 1 sur dix chiffres. Le second contact est facultatif ; s’il est renseigné, utilisez également dix chiffres. L’adresse est facultative.
+5. Scolarité : choisissez la promotion, l’année et le statut appropriés : Actif, Suspendu ou Sorti.
+6. Tous les champs se trouvent sur la même page. Utilisez Tabulation pour passer au champ suivant, vérifiez l’ensemble puis cliquez sur Enregistrer le dossier (Ctrl+S).
+7. Attendez la confirmation et notez le matricule automatique du dossier.
+
+Un message de validation indique les informations à corriger. Un nom, post-nom, prénom et une promotion identiques bloquent une nouvelle inscription, même si la date de naissance diffère : recherchez le dossier existant. Annuler quitte sans valider ; une confirmation peut apparaître si vous avez modifié les champs.
+
+08 — APPRENANTS : RECHERCHER, MODIFIER ET IMPRIMER
+
+Rechercher : tapez le nom ou le matricule ; la liste se filtre automatiquement. Le filtre Promotion limite aussi les résultats. Effacer les filtres rétablit la liste complète. Le compteur indique les dossiers affichés.
+
+Modifier : sélectionnez une ligne puis choisissez Modifier. Corrigez les champs autorisés et enregistrez. Le matricule et les informations conservées par le logiciel ne sont pas recréés. Lorsqu’un historique de paiement existe, la promotion et l’année ne peuvent pas être changées par cette modification.
+
+Fiche complète : affiche l’identité, les contacts, la situation et l’historique. Aperçu avant impression ouvre la préparation de l’impression ; choisissez ensuite une imprimante Windows, éventuellement une imprimante PDF. Modifier ce dossier et Enregistrer un paiement ouvrent leurs parcours respectifs.
+
+Supprimer l’apprenant (Ctrl+Maj+D) : sélectionnez son dossier, puis confirmez son identité et son matricule. La suppression est refusée dès qu’un paiement existe dans les classeurs connectés ; utilisez le statut Sorti ou Suspendu. Un dossier sans paiement est supprimé après sauvegarde, avec une trace au journal. La nouvelle commande nécessite l’installation des corrections avec 00_Demarrage\INSTALLER.vbs.
+
+Dernier dossier : rouvre le dernier dossier consulté pendant la session. Liste visible CSV exporte les lignes actuellement affichées avec leurs filtres. Paiement charge le dossier sélectionné dans la page Paiements.
+
+Une actualisation conserve le dossier sélectionné si son identité reste unique et visible. Si le filtre le masque ou si l’identité est ambiguë, sélectionnez à nouveau le bon dossier.
+
+09 — PAIEMENTS : ENREGISTRER UN REÇU
+
+Le reçu doit avoir été validé à la caisse. Le logiciel enregistre le suivi du secrétariat.
+
+1. Dans Paiements, recherchez le matricule ou le nom.
+2. Sélectionnez la bonne ligne puis Sélectionner cet apprenant. Un double-clic ou Entrée sur une ligne permet aussi la sélection.
+3. Vérifiez l’identité, la promotion, la mensualité, le total déjà versé et le reste annuel.
+4. Saisissez le montant TOTAL du reçu, en FC. Il doit être positif et ne pas dépasser le reste annuel.
+5. Renseignez la date réelle du reçu : aujourd’hui ou une date antérieure. Une date future est refusée. Les anciennes passerelles peuvent demander une mise à jour pour la gestion de cette date.
+6. Cliquez sur Enregistrer le paiement. Vérifiez le matricule, le montant et la date dans la confirmation.
+7. Si un versement semblable existe, comparez les reçus avant de confirmer un second versement réel.
+8. Attendez le message de réussite indiquant le numéro d’enregistrement et les mois concernés. Ce numéro automatique sert au suivi dans le logiciel ; conservez votre reçu de caisse.
+
+L’affectation aux mois est calculée automatiquement de septembre à mai, en couvrant les restes précédents. Ne répartissez pas vous-même les montants en modifiant les cellules. Un reçu peut donc apparaître sur plusieurs lignes mensuelles ; cela ne signifie pas qu’il a été encaissé plusieurs fois.
+
+10 — PAIEMENTS : HISTORIQUE ET CORRECTION
+
+L’historique montre les affectations du dossier sélectionné et du filtre mensuel choisi. Tous les paiements revient à l’historique général ; Effacer recherche vide la recherche et la sélection. Historique CSV exporte les lignes visibles.
+
+Corriger un reçu :
+1. Sélectionnez une ligne du reçu concerné dans l’historique.
+2. Cliquez sur Corriger le reçu / Corriger le paiement sélectionné.
+3. Saisissez le nouveau montant TOTAL du reçu, pas le montant d’une seule affectation.
+4. Indiquez un motif explicite de 5 à 250 caractères.
+5. Vérifiez l’aperçu de l’ancien montant, du nouveau montant et de la nouvelle répartition.
+6. Confirmez uniquement après comparaison avec le reçu. Annuler ou refuser la confirmation conserve les données.
+
+La correction recalcule l’historique de cet apprenant et inscrit les changements au journal. Elle porte sur le montant : elle ne change pas le matricule ou la date et ne supprime pas le reçu. Un historique ambigu ou incomplet peut bloquer la correction ; consultez Diagnostic et rapprochez les reçus avant de continuer.
+
+11 — EXPORTS : LISTES, PDF, EXCEL ET CSV
+
+1. Ouvrez Exports.
+2. Choisissez une promotion ou Toutes les promotions.
+3. Choisissez le type de rapport et, si nécessaire, un mois précis.
+4. Utilisez Vérifier la liste pour contrôler les effectifs et observations avant production.
+5. Choisissez Exporter PDF ou Exporter Excel, confirmez le contrôle puis choisissez le nom et le dossier du document. Le dossier exports est proposé par défaut.
+6. Vérifiez le nombre de dossiers et de promotions indiqué après réussite.
+7. Dernier rapport ouvre le dernier document produit pendant cette session.
+
+Rapports disponibles :
+- Liste des inscrits : dossiers valides de l’année scolaire, triés par identité. Le mois n’est pas utilisé.
+- Apprenants ayant soldé le mois : cumul affecté au mois au moins égal à la mensualité ; un dossier par apprenant.
+- Apprenants ayant versé dans le mois : cumul positif affecté au mois, y compris les versements partiels. Le mois est celui de l’affectation ; ce rapport ne remplace pas le registre des reçus par date.
+- Litiges et retards : soldes des seuls mois impayés devenus en retard le 6 du mois suivant, jusqu’au mois sélectionné. La période indique uniquement les mois concernés.
+
+Pour les trois derniers rapports, choisissez un mois précis ; Tous les mois n’est pas accepté. Si l’effectif est nul ou inattendu, vérifiez promotion, année, type de rapport, mois et observations du diagnostic avant d’exporter.
+
+La commande Toutes promotions enlève seulement le filtre de promotion ; elle ne lance pas l’export. Le CSV des pages Apprenants, Paiements, Diagnostic ou Journal reprend les données de la commande correspondante. Un export est un document de consultation, pas une sauvegarde de la base.
+
+12 — DIAGNOSTIC ET DOUBLONS
+
+Diagnostic affiche les feuilles, lignes, matricules, numéros et observations des données à vérifier. Actualiser relance la lecture. Anomalies CSV enregistre les observations pour leur examen.
+
+Doublons ouvre Administration > Doublons : même identité et même date de naissance. Comparez les dossiers et les pièces d’origine. Aucun dossier n’est fusionné automatiquement.
+
+Corrigez une identité depuis Apprenants ou un montant depuis la correction de reçu, si le parcours convient. Une anomalie exigeant une autre intervention doit être examinée sur une copie de sauvegarde ; n’inventez ni coordonnées ni paiements pour faire disparaître une alerte. Des dossiers invalides peuvent être exclus de certaines synthèses et signalés dans les contrôles.
+
+COMPATIBILITÉ : Diagnostic > Compatibilité et sauvegardes fonctionne même avant la connexion d’un classeur. Il indique Windows, PowerShell, .NET, l’enregistrement d’Excel, la version d’Excel connecté, le classeur mémorisé, les fichiers data, l’écriture dans ce dossier, l’espace disponible et la dernière copie automatique vérifiée. Exporter le diagnostic crée un texte sans mots de passe ni noms d’apprenants. Ce rapport aide au dépannage ; il ne remplace pas un test réel d’installation et de restauration sur le poste.
+
+13 — ADMINISTRATION : PROMOTIONS ET FRAIS
+
+Ouvrez Administration > Promotions.
+- Nouvelle promotion : renseignez son code de quatre caractères, sa désignation, l’année, la mensualité et les autres champs du formulaire.
+- Modifier : sélectionnez la promotion, ouvrez son formulaire et enregistrez les champs autorisés.
+- Le total annuel correspond à neuf mensualités.
+
+Les restrictions empêchent de modifier rétroactivement les frais, l’année ou l’activation d’une promotion ayant des paiements. Une promotion contenant déjà des apprenants conserve son année. Préparez la nouvelle année pour ajuster sa configuration avant les premiers nouveaux paiements.
+
+14 — ADMINISTRATION : CAPACITÉ ET CLASSEURS SUIVANTS
+
+Administration > Classeurs et données affiche les segments de la base gérée, leurs effectifs et leurs tailles.
+Ouvrir le dossier data : localiser la base.
+Contrôler les classeurs : vérifier leur structure.
+Enregistrer les seuils : définir les capacités pratiques par fichier, dans les limites proposées.
+Créer le classeur suivant : préparer volontairement le segment suivant de la même base.
+
+Les seuils initiaux sont 10 000 apprenants ou 50 000 lignes de paiement par classeur. Un reçu peut nécessiter plusieurs lignes : le logiciel réserve la place nécessaire et crée automatiquement un nouveau segment quand le seuil serait dépassé.
+
+Ce basculement garde la même année et les soldes. Les anciens segments restent dans la base ; les recherches, historiques et exports consultent l’ensemble. Ne supprimez ni ne renommez les segments ou registre.json. Un segment manquant peut bloquer la lecture afin d’éviter une synthèse partielle.
+
+15 — ADMINISTRATION : SAUVEGARDES ET RESTAURATION
+
+Créer une sauvegarde :
+1. Ouvrez Administration > Sauvegardes.
+2. Cliquez sur Créer une sauvegarde / Sauvegarder tout.
+3. Attendez la confirmation et vérifiez le chemin affiché.
+4. Conservez régulièrement une copie complète sur un autre support.
+
+En mode data, la sauvegarde couvre tous les segments de la base et ses informations de gestion. Un fichier segment copié seul ne suffit pas.
+
+Restaurer : sélectionnez une sauvegarde puis Restaurer copie. La restauration vérifie les fichiers, crée un nouveau dossier et connecte la copie restaurée en mode data ; la base actuelle est conservée. En mode fichier unique, la copie est restaurée sous un nouveau nom. Vérifiez les effectifs, les derniers reçus et l’année avant de reprendre la saisie. Une ancienne copie peut nécessiter une préparation avec 00_Demarrage\INSTALLER.vbs.
+
+Une sauvegarde antérieure ne contient pas les saisies effectuées après sa création. Les copies de protection produites par certaines opérations ne remplacent pas votre sauvegarde régulière sur un autre support.
+
+SAUVEGARDES QUOTIDIENNES : une copie complète par jour est créée après environ une minute lorsque l’application est ouverte et le dossier data connecté avec un rôle Administrateur ou Secrétariat. Le contrôle recommence chaque minute ; les formulaires ouverts et traitements en cours le reportent. Sauvegardes automatiques règle l’activation et le nombre de copies (7, 14, 30 ou 60). Seules les anciennes copies automatiques sont supprimées après une nouvelle sauvegarde vérifiée ; les copies manuelles restent conservées. Une erreur est affichée dans la barre d’état et le diagnostic ; la prochaine tentative a lieu après 15 minutes. Vérifier la sauvegarde contrôle les empreintes de la copie sélectionnée sans restaurer ni modifier vos données. Cette vérification ne prouve pas le fonctionnement des macros après restauration. Les copies restent sur le même disque : conservez aussi régulièrement une sauvegarde sur un autre support.
+
+16 — ADMINISTRATION : ANNÉE SCOLAIRE ET JOURNAL
+
+Clôturer et préparer l’année suivante :
+1. Ouvrez Administration > Année scolaire.
+2. Vérifiez l’année actuelle et créez une sauvegarde complète.
+3. Renseignez l’année suivante au format proposé, par exemple 2027-2028 après 2026-2027.
+4. Lancez Archiver et préparer la nouvelle année, puis lisez et confirmez les informations affichées.
+5. Attendez la réussite. Vérifiez le nouveau classeur, les promotions, les statuts et les tarifs avant de commencer les nouveaux paiements.
+
+L’ancienne année et ses paiements sont conservés et clôturés. Les dossiers et statuts sont reconduits ; les paiements sont remis à zéro uniquement dans la nouvelle année. Les dettes précédentes restent dans l’archive. Les promotions et statuts ne changent pas automatiquement. Ne confondez pas cette clôture avec le basculement de capacité.
+
+Journal : consultez les opérations, dates, utilisateurs, matricules, reçus et motifs. Un double-clic sur une ligne ouvre les détails avant/après ; l’export CSV permet de conserver les lignes consultables. Le journal suit les opérations prévues par le logiciel ; il ne reconstitue pas les anciennes modifications ni les changements faits directement dans Excel.
+
+Raccourci Bureau : crée les accès au logiciel. Si son dossier est déplacé, recréez les raccourcis depuis la nouvelle copie. Pour l’épingler à la barre des tâches, utilisez les options Windows du raccourci ou du menu Démarrer.
+
+17 — SÉCURITÉ ET MOT DE PASSE
+
+Il n’y a pas de mot de passe prédéfini. Dans Sécurité, Mot de passe / Activer le mot de passe permet d’activer la protection. Saisissez et confirmez un mot de passe de 4 à 128 caractères. Conservez séparément le code de récupération affiché une seule fois.
+
+Modifier le mot de passe demande l’ancien mot de passe et la confirmation du nouveau. Le code de récupération est renouvelé : conservez le nouveau code.
+Verrouiller masque l’application et demande le mot de passe pour reprendre ; le classeur reste connecté.
+Désactiver retire la protection après authentification.
+Enregistrer valide les préférences de sécurité : délai d’inactivité et verrouillage lors de la réduction, selon les options affichées.
+Événements CSV exporte l’historique des événements de sécurité.
+
+Le délai d’inactivité proposé peut être désactivé ou réglé à 5, 15 ou 30 minutes. Un traitement ou une fenêtre de saisie peut retarder le verrouillage automatique ; verrouillez volontairement avant de quitter le poste.
+
+Après cinq essais incorrects, attendez cinq minutes. Mot de passe oublié demande le code de récupération et un nouveau mot de passe confirmé. Sans le mot de passe ou le code, aucun mot de passe de secours n’est fourni.
+
+Les réglages appartiennent au compte Windows utilisé. Cette protection concerne l’interface ; elle ne chiffre pas les classeurs Excel et ne remplace pas les permissions d’accès aux fichiers.
+
+RÔLES : Administrateur dispose des commandes de gestion, corrections, promotions, restauration et clôture. Secrétariat peut consulter, inscrire, modifier les dossiers, enregistrer les paiements, exporter et sauvegarder ; il ne peut pas modifier les rôles ou restaurer. Consultation accède aux données et au diagnostic, sans saisie ni export scolaire. Compte > Gérer les rôles permet d’attribuer les droits. Le dernier administrateur local ne peut pas être rétrogradé. Les anciens comptes sont conservés : le premier est migré en Administrateur, les autres en Secrétariat. Les nouveaux comptes supplémentaires commencent en Consultation.
+Retour à la session Windows depuis un compte restreint : renseignez un identifiant administrateur et son mot de passe, puis utilisez le bouton de session Windows. Le démarrage redemande le compte local mémorisé. La session Windows principale reste une identité de confiance du profil Windows. Les rôles protègent les commandes du logiciel ; les fichiers et l’installateur direct restent soumis aux autorisations Windows.
+Journal nominatif, dans Administration > Journal, montre les 200 dernières opérations avec compte et rôle. Le journal scolaire Excel existant reste conservé. Les fichiers de journal ne constituent pas une preuve inviolable contre une personne pouvant modifier les fichiers Windows.
+
+18 — PRÉFÉRENCES, THÈMES ET AFFICHAGE
+
+Dans Préférences, choisissez :
+- Affichage du ruban : Onglets et commandes ou Onglets seuls. Le second mode masque les groupes et libère la place pour la page. Un clic sur l’onglet actif ouvre ou referme temporairement ses commandes ; changer d’onglet les referme. Le bouton Afficher les commandes / Masquer les commandes et Ctrl+F1 changent le mode mémorisé, sans masquer les onglets.
+- Réduire la fenêtre réorganise les contenus et adapte les textes sans modifier vos préférences. Les champs des préférences passent sur une colonne et les textes reviennent à la ligne. Dans une très petite fenêtre, faites défiler la zone de navigation ou le contenu. Les grandes listes disposent aussi du défilement horizontal.
+- Thème Clair, Sombre ou Système. Système suit le réglage de Windows. Le thème sombre distingue le fond, le ruban, les contenus et les champs par des nuances bleu ardoise ; les formes et les alignements restent identiques.
+- Taille du texte dans les listes : 9, 10, 11, 12 ou 14 points.
+- Espacement des lignes : Compact, Confortable ou Aéré.
+- Affichage des aides au survol.
+- Alternance de couleur des lignes.
+- Maximisation immédiate de la fenêtre et conservation du choix au prochain démarrage.
+
+Chaque sélection et chaque case cochée ou décochée sont appliquées et enregistrées immédiatement. Aucun bouton Appliquer n’est nécessaire. Si Windows refuse l’enregistrement, le choix précédent est rétabli. Valeurs par défaut rétablit les réglages initiaux. La taille et l’espacement concernent les listes et historiques. Les lignes déjà affichées sont recalculées immédiatement ; les réglages restent conservés lors d’une actualisation ou d’un redimensionnement. Les raccourcis clavier restent utilisables si les aides au survol sont désactivées.
+
+19 — ORGANISATION DES FICHIERS ET DÉPLACEMENT
+
+00_Demarrage\APPLICATION.vbs : lance l’application.
+00_Demarrage\INSTALLER.vbs : lance la préparation graphique d’un classeur.
+programme : scripts et composants nécessaires au logiciel.
+data : bases gérées, segments et copies de protection ; gardez chaque base entière.
+sources : classeurs nouvellement générés.
+exports : documents et listes produits, selon le dossier choisi à l’enregistrement.
+journaux : traces utiles pour une installation ou un incident.
+documentation : guides et notices ; GUIDE_UTILISATION_COMPLET.txt contient cette aide.
+ressources : modèle et ressources de départ.
+archives : fichiers historiques fournis ; vérifiez leur date avant toute utilisation.
+
+Pour déplacer le logiciel : fermez-le et fermez Excel, copiez son dossier complet, lancez 00_Demarrage\APPLICATION.vbs depuis le nouvel emplacement et vérifiez la connexion. Si la détection échoue, sélectionnez le classeur de la base déplacée depuis Données. Recréez les raccourcis. Les préférences mémorisées sont propres au compte Windows ; elles ne sont pas transférées par la seule copie du dossier sur un autre ordinateur.
+
+20 — MESSAGES, INCIDENTS ET REPRISE
+
+Classeur introuvable : vérifiez le disque ou le dossier déplacé. Choisissez le fichier actuel avec Classeur existant ; ne repartez pas d’un ancien modèle pour retrouver des saisies récentes.
+Classeur non préparé ou passerelle incompatible : fermez Excel, préparez votre fichier actuel avec 00_Demarrage\INSTALLER.vbs, puis connectez le résultat corrigé.
+Erreur liée à Row ou à une propriété : vérifiez que les fichiers programme ont tous été remplacés par ceux de cette édition. Conservez le message et utilisez le diagnostic ; ne recréez pas les dossiers pour contourner l’erreur.
+Commande grisée : vérifiez connexion, sélection, année clôturée et fin du traitement. Pour un paiement, contrôlez aussi le montant et le reste annuel.
+Rapport vide : revérifiez année, promotion, mois et type de rapport, puis les anomalies. Un versement réparti sur un autre mois ne figure pas nécessairement dans le mois attendu.
+Enregistrement réussi mais actualisation interrompue : ne saisissez pas l’opération une seconde fois. Actualisez et recherchez le matricule ou le numéro indiqué ; vérifiez l’historique avant toute nouvelle saisie.
+Classeur créé mais connexion interrompue : son chemin est affiché. Utilisez Ouvrir le dernier créé pour reprendre ; il est inutile de le générer de nouveau.
+Mémorisation refusée par Windows : le réglage n’a pas été confirmé. Vérifiez le choix affiché et reconnectez manuellement au prochain démarrage si nécessaire.
+Base déjà utilisée : fermez l’autre session avant de connecter la même base. Ne supprimez pas les verrous pendant qu’une application travaille.
+Segment manquant : retrouvez la base complète ou utilisez une sauvegarde complète ; un segment isolé ne remplace pas les fichiers manquants.
+Installation longue : lisez l’étape et le journal. La vérification approfondie est plus longue. Pour interrompre, utilisez Arrêter dans l’installateur et attendez son message ; n’utilisez pas une copie sans confirmation de réussite.
+Installation échouée : gardez le classeur original, le message complet et le journal indiqué. Corrigez la cause avant de relancer. Un arrêt forcé d’Excel peut interrompre une sauvegarde.
+
+21 — RACCOURCIS CLAVIER
+
+Au survol des commandes, une aide décrit l’action et indique son raccourci. Les aides peuvent être activées ou désactivées dans Préférences. Les raccourcis restent disponibles quand les aides sont désactivées.
+
+Nouvelles commandes : Ctrl+Alt+T compatibilité, Ctrl+Alt+X export du diagnostic, Ctrl+Alt+B sauvegardes automatiques, Ctrl+Alt+V vérifier une sauvegarde, Ctrl+Alt+J journal nominatif, Ctrl+Alt+R gérer les rôles (fenêtre Compte ou onglet Administration). Ces commandes restent soumises au rôle et à leur présence dans l’onglet actif.
+
+Commun à tous les onglets : Ctrl+F1 afficher/masquer les commandes, F5 actualiser, F1 guide. Ctrl+O ouvrir un classeur, Ctrl+Shift+I préparer et Ctrl+Shift+W déconnecter ouvrent d’abord l’onglet Données puis lancent sa commande. Alt+1 à Alt+9 ouvrent les onglets dans leur ordre d’affichage.
+
+Tableau de bord : Ctrl+N inscrire, Ctrl+P paiements, Ctrl+R rapports, Ctrl+Shift+E retards CSV.
+Diagnostic : Ctrl+Shift+E anomalies CSV, Ctrl+D doublons.
+Classeurs et données (Administration) : Ctrl+Alt+D dossier data, Ctrl+Alt+C contrôler les classeurs, Ctrl+Alt+S enregistrer les seuils.
+
+Apprenants : Ctrl+N inscrire, Ctrl+E modifier, Ctrl+D fiche complète, Ctrl+L dernier dossier, Ctrl+F rechercher, Ctrl+Shift+F effacer les filtres, Ctrl+Shift+E export CSV, Ctrl+P paiement.
+Paiements : Ctrl+D sélectionner, Ctrl+S enregistrer, Ctrl+E corriger, Ctrl+L tous les paiements, Ctrl+Shift+E historique CSV, Ctrl+Shift+F effacer la recherche.
+Exports : Ctrl+P PDF, Ctrl+E Excel, Ctrl+L dernier rapport, Ctrl+D vérifier, Ctrl+T toutes promotions.
+Administration : Ctrl+G classeurs, Ctrl+Shift+N segment suivant, Ctrl+B sauvegarder, Ctrl+R restaurer, Ctrl+P promotions, Ctrl+J journal, Ctrl+Shift+Y clôture annuelle, Ctrl+Shift+D raccourci Bureau. Sur la page Promotions : Ctrl+N créer, Ctrl+E modifier.
+Préférences : Ctrl+Shift+R valeurs par défaut.
+Données : Ctrl+O classeur existant, Ctrl+M mémoriser, Ctrl+L ouvrir mémorisé, Ctrl+N nouveau classeur, Ctrl+Shift+F5 actualiser les feuilles, Ctrl+D dossier sources, Ctrl+Alt+O ouvrir le dernier créé.
+Sécurité : Ctrl+M mot de passe, Ctrl+L verrouiller, Ctrl+Shift+D désactiver, Ctrl+S enregistrer, Ctrl+Shift+E événements CSV.
+
+Formulaires : Ctrl+S enregistrer, Escape annuler/fermer si ce bouton est présent, Alt+Left précédent et Alt+Right suivant pour l’inscription. La fiche utilise Ctrl+P pour l’aperçu et Ctrl+Shift+P pour un paiement. Ctrl+Enter valide les confirmations de correction ou d’export.
+Installateur : Ctrl+O choisir, Ctrl+Enter installer, Ctrl+L fichier corrigé ou journal, Ctrl+D dossier source, Alt+V vérification approfondie, Escape demander l’arrêt pendant l’installation.
+
+Les raccourcis suivent les contrôles et validations de la commande cliquée. Une commande désactivée n’est pas exécutée. Ctrl+C, Ctrl+V, Ctrl+X et Ctrl+A restent disponibles dans les champs. Les commandes de confirmation et d’annulation restent utilisables dans une boîte ouverte par un traitement.
+
+Autres commandes : les raccourcis du tableau de bord, du Diagnostic et des contrôles de stockage figurent également dans les aides au survol. Le même raccourci peut avoir une fonction différente selon l’onglet actif ; vérifiez toujours son nom.
+
+22 — ROUTINE DE TRAVAIL CONSEILLÉE
+
+Début de journée : ouvrir le logiciel, vérifier la base et l’année, consulter le diagnostic et préparer une sauvegarde si nécessaire.
+Inscription : rechercher avant de créer, vérifier les coordonnées et conserver le matricule après confirmation.
+Reçu : comparer l’identité, le montant et la date avec le reçu de caisse ; attendre la confirmation puis vérifier l’historique.
+Liste : contrôler les filtres et effectifs avant d’exporter ; vérifier le document produit.
+Fin de journée : créer une sauvegarde complète, en conserver une copie sur un autre support, puis fermer normalement le logiciel. Garder le compte Windows et le code de récupération sous contrôle.
+
+AFFICHAGE ET FENÊTRES RÉDUITES
+Les textes, champs et boutons sont mesurés et repositionnés après un changement de taille. Les pages utilisent les mêmes marges et espacements. Les longues listes gardent leurs propres barres de défilement ; les pages longues peuvent défiler verticalement pour conserver une police lisible.
+Si le ruban complet laisserait trop peu de place à la page, ses commandes se replient temporairement. Votre préférence d’affichage reste mémorisée. Cliquez sur Afficher les commandes pour maximiser la fenêtre. Les commandes de la page et leurs raccourcis restent disponibles. Agrandir la fenêtre rétablit le ruban selon votre préférence.
+Le diagnostic des doublons utilise la même règle que l’inscription : nom, post-nom, prénom et promotion. Aucune fusion ni suppression automatique n’est effectuée.
+
+
+23 — SCOLARITÉ ET CARTES D’EXAMEN
+
+Connectez votre classeur habituel dans Données, puis ouvrez Scolarité (Alt+0).
+Choisissez une promotion ou Toutes les promotions. La recherche porte sur
+le nom, le post-nom, le prénom et le matricule. La case Carte choisit les
+apprenants à imprimer. Cocher/Décocher les cartes concerne seulement les
+lignes visibles ; les choix des autres promotions sont conservés pendant
+la session. Un export contient uniquement les lignes visibles cochées.
+Les sortis et suspendus sont exclus par défaut ; une case permet de les inclure.
+Les identités incomplètes et les matricules répétés sont écartés : consultez
+Diagnostic pour les corriger, puis utilisez Actualiser. Aucun critère de
+paiement n’est supposé : le secrétariat décide des cartes à délivrer.
+
+SESSION ET EN-TÊTE
+Le mois et l’année actuels sont proposés au démarrage. Pour la deuxième
+session, choisissez le mois et l’année souhaités. Session actuelle rétablit
+la date du jour. Le titre imprimé est SESSION MOIS ANNÉE. L’année scolaire
+est distincte : elle reprend les promotions si elles ont une année commune
+et reste modifiable. Les exemplaires vont de 1 à 5 par apprenant.
+En-tête des cartes permet de vérifier puis mémoriser sept mentions : pays,
+ministère, direction, division provinciale, ville et zone de santé,
+institut, adresse. Vérifiez en particulier le libellé du ministère et
+l’adresse, peu lisibles sur la photographie fournie. Le logo livré avec
+le logiciel est utilisé. Le drapeau de la RDC n’est jamais ajouté.
+
+APERÇU, IMPRESSION ET EXPORTS
+Aperçu des cartes montre les pages préparées ; Imprimer les cartes ouvre
+le choix d’imprimante. Utilisez A4 portrait, taille réelle/100 %.
+Chaque carte mesure 92 × 63 mm. Une page contient 2 colonnes × 4 rangées,
+avec 6 mm entre les colonnes et 7 mm entre les rangées ; marges 10 mm.
+Une dernière page peut contenir moins de huit cartes. Les repères de découpe
+s’appliquent au PDF et à l’impression. Le Word conserve les espaces de découpe.
+Les exports PDF et Word (.docx) ne nécessitent ni Word ni Adobe pour leur
+création. Le Word reste modifiable. Ses changements manuels peuvent modifier
+sa mise en page : le PDF constitue la version prête à imprimer.
+Nom, post-nom, prénom, classe et session figurent sur la carte. Le matricule
+et le nom de promotion dans la bande ne sont plus imprimés. La bande mesure
+7 mm. Roboto est fourni et intégré aux PDF/Word. Un QR à droite contient
+l’identité, la classe, l’établissement, la session et l’année scolaire.
+Après modification manuelle du Word, régénérez les cartes depuis le logiciel
+pour mettre aussi à jour le QR. Les noms longs passent sur deux lignes ou sont réduits ; un
+texte qui ne tient pas provoque un message, sans écrasement du fichier existant.
+
+COULEURS
+TLM1 (et TML1) : bleu ; ACC1 : jaune ; ACC2 : violet ; ACC3 : vert clair ;
+INF1 : bleu ciel ; INF2 : rose ; INF3 : vert. Une autre promotion utilise
+une bande neutre. La couleur ne constitue pas une preuve de paiement.
+
+GESTION DES LOTS
+Les sorties sont proposées dans exports/cartes. Chaque export réussi est
+référencé par date, session, promotion, nombre de cartes/pages et format.
+Historique des cartes permet d’ouvrir le fichier par double-clic. Dossier
+des cartes ouvre le dossier de sortie. Conservez aussi ce dossier lorsque
+vous déplacez l’application. Un fichier supprimé ou déplacé est signalé.
+En cas de problème d’écriture de l’historique après un export réussi, le
+logiciel précise que l’export est créé : ne relancez pas inutilement.
+Les fichiers d’historique ne contiennent pas la liste nominative.
+
+RACCOURCIS DANS SCOLARITÉ
+Ctrl+Maj+P : aperçu ; Ctrl+Maj+E : PDF ; Ctrl+Maj+W : Word ;
+Ctrl+Maj+I : imprimer ; Ctrl+Maj+A : cocher ; Ctrl+Maj+U : décocher ;
+Ctrl+Maj+H : en-tête ; Ctrl+Maj+M : session actuelle ;
+Ctrl+Maj+J : historique ; Ctrl+Maj+K : dossier des cartes.
+Les descriptions et raccourcis apparaissent au-dessus des commandes.
+L’export, l’aperçu imprimable et l’impression sont réservés aux comptes
+autorisés à exporter (Secrétariat et Administrateur).
+
+
+24 — PRISES EN CHARGE
+
+PRÉPARATION
+Fermez Excel et l’application puis lancez 00_Demarrage\INSTALLER.vbs pour installer la nouvelle
+passerelle dans votre classeur. Connectez ensuite les données corrigées avec
+00_Demarrage\APPLICATION.vbs. Les six classeurs sources du paquet sont conservés sans modification.
+Cette fonction utilise le dossier data géré par l’application.
+
+ENREGISTRER ET CONSULTER
+Dans Paiements, cliquez sur Prises en charge (Ctrl+Alt+K). Choisissez une promotion.
+Cochez Afficher aussi les payants pour les inscrire, sélectionnez un apprenant,
+puis Nouvelle prise en charge. Précisez la période de couverture, le mois d’effet,
+un motif et, éventuellement, le garant. La période complète va de septembre à juin.
+Le bouton Détail des mois couverts présente les dix mois et l’historique des changements.
+Exporter les prises en charge produit un CSV avec les dix montants mensuels.
+Les comptes de consultation peuvent lire la liste ; seuls les comptes autorisés
+à la saisie peuvent la modifier, et les comptes autorisés à exporter peuvent exporter.
+
+CALCUL
+Chaque mois couvert utilise la même mensualité que les autres apprenants de la
+promotion. Dix mois couverts à 25 000 FC donnent 250 000 FC de prise en charge.
+Le tableau de bord montre séparément le total couvert et la part couverte de la
+période sélectionnée. Aucun reçu fictif ni versement en caisse n’est créé.
+Le reste payant déduit les mois couverts et les paiements réellement enregistrés.
+La fiche complète distingue versement, prise en charge et reste pour chaque mois.
+La liste des apprenants en ordre inclut les mois couverts avec la mention PRIS EN CHARGE ;
+la liste des versements conserve uniquement les encaissements réels.
+Un mois ayant déjà un paiement ne peut pas être transformé en mois pris en charge.
+Les tarifs ordinaires déjà enregistrés ne sont pas réécrits : les dossiers avec
+prise en charge utilisent les dix mensualités pour l’année concernée.
+
+MODIFIER ET TERMINER
+Modifier la prise en charge permet de changer les mois futurs et le garant.
+Les mois antérieurs au mois d’effet conservent leur couverture et leur historique.
+Déclarer payant retire la couverture à partir du mois choisi ; les mois précédents
+restent couverts. Les prochains reçus s’affectent aux mois non couverts uniquement.
+Pour une prise en charge antérieure, vous ne pouvez pas modifier les mois passés.
+Le motif est obligatoire. Une autre fenêtre ayant modifié le registre entraîne
+un refus d’enregistrement : rouvrez la liste pour récupérer les données actuelles.
+La suppression du bénéficiaire et le changement de sa promotion/année sont bloqués
+pour conserver la cohérence de cet historique.
+
+SAUVEGARDES
+Les fichiers prises-en-charge.xml, sa version .precedent lorsqu’elle existe et
+prises-en-charge.presence sont conservés avec le registre et les classeurs dans data.
+Utilisez la sauvegarde et la restauration complètes du logiciel. Copier seulement
+un classeur ne conserve pas les prises en charge. Un registre illisible ou manquant
+après création de ces fichiers bloque les opérations et demande une restauration.
+La version .precedent représente la sauvegarde technique précédente, pas une copie
+à rétablir automatiquement : utilisez votre sauvegarde complète.
+
+
+RECONNEXION ET PREPARATION SUR 24 HEURES
+Après une première préparation et une connexion réussies, le logiciel mémorise
+le classeur actif dans data. Fermer APPLICATION ne supprime ni ce choix ni les
+apprenants, paiements et prises en charge. Au lancement suivant, la base complète
+se reconnecte, si la reconnexion automatique est activée dans Données.
+
+Le contrôle de structure est valable 24 heures. Après expiration, il se renouvelle
+automatiquement au prochain lancement. Il ne recrée pas le classeur, ne réinstalle
+pas les macros chaque jour et ne réinitialise aucune feuille. Une modification de
+version ou de la liste des segments déclenche aussi ce contrôle. Les identités,
+fichiers manquants et passerelles sont contrôlés même pendant les 24 heures.
+
+L'identité data est écrite directement dans les propriétés Excel, sauvegardée,
+puis relue dans le fichier XLSM sur disque. Si une ancienne base enregistrée a
+perdu cette identité, le logiciel contrôle TOUS ses segments, conserve une copie
+de récupération de chacun dans transaction-..., puis rétablit l'identité issue
+du registre. Une identité appartenant à une autre base ne sera jamais remplacée.
+Une interruption conserve le journal permettant la restauration au lancement suivant.
+
+
+
+ACTUALISATION APRES ENREGISTREMENT
+
+Après une modification, seule la page affichée est reconstruite. L'administration,
+le journal complet, les listes de sauvegardes et les cartes d'examens ne sont plus
+rechargés à chaque inscription ou paiement. Ils affichent la dernière version des
+données à leur prochaine ouverture. La recherche utilise les données fraîches.
+
+La lecture Excel des apprenants et des paiements se fait par blocs, avec conservation
+des dates, matricules, numéros de reçus, sources, lignes et contrôles de qualité.
+Un recalcul normal des cellules modifiées remplace le recalcul intégral systématique.
+La sauvegarde avant saisie, le journal, les contrôles des doublons et les soldes restent.
+La confirmation d'un paiement apparaît après l'actualisation.
+
+Le verrou de l'interface est libéré dans tous les chemins de sortie, même si la
+préparation de l'affichage ou la fermeture de la roue rencontre une erreur.
+Les verrous Excel terminés sont libérés entre deux appels synchrones, uniquement
+si le classeur est déjà sauvegardé et qu'aucune transaction data n'est en attente.
+Une opération non sauvegardée n'est pas débloquée aveuglément. Aucune saisie n'est
+relancée automatiquement et aucun paiement n'est rejoué.
+Un succès durable reste signalé comme enregistré si l'affichage échoue ensuite.
+
+00_Demarrage\APPLICATION.vbs peut mettre à jour les deux modules de performance de votre base
+existante au lancement. Tous les segments et leurs modules sont vérifiés avant
+la moindre modification. Seules les versions connues immédiatement précédentes
+sont remplacées. Une sauvegarde complète de récupération est créée avant l'édition
+et le code relu est contrôlé. Les modules personnalisés et les projets verrouillés
+sont conservés. Une interruption conserve le journal pour restaurer la base.
+La mise à jour ne se répète pas aux lancements suivants.
+
+Si Excel refuse l'accès au projet VBA, l'optimisation de l'interface reste active
+et la connexion est conservée. Le logiciel affiche une indication explicite.
+Dans Excel : Fichier > Options > Centre de gestion de la confidentialité >
+Paramètres du Centre > Paramètres des macros > Accès approuvé au modèle d'objet
+du projet VBA. Fermer Excel puis relancer 00_Demarrage\APPLICATION.vbs. Le logiciel ne change
+pas lui-même les paramètres de sécurité Excel.
+
+Pour appliquer : fermer l'application et Excel, remplacer le dossier programme,
+conserver data, sources et les sauvegardes, puis ouvrir 00_Demarrage\APPLICATION.vbs.
+Ne pas réinstaller ni recréer les classeurs existants. Le premier lancement peut
+prendre davantage de temps pour conserver la sauvegarde et appliquer ces deux modules.
+La reconnexion sur 24 heures, les cartes, les thèmes et les prises en charge restent.
+Les six fichiers XLSM d'origine de l'archive sont inchangés.
+
+
+
+COMPTE — INTERFACE VERSION 78
+Ouvrez Compte pour afficher la session et son rôle. Connexion Windows utilise
+la session déjà ouverte sur le PC. Se connecter utilise votre identifiant ITM
+et votre mot de passe. Le bouton œil affiche ou masque chaque mot de passe.
+Créer un compte demande un nom affiché, un identifiant et deux saisies identiques
+du mot de passe (8 à 128 caractères). Conservez le code de récupération fourni.
+Récupérer un compte demande ce code, puis le nouveau mot de passe confirmé.
+Gérer les rôles reste réservé aux administrateurs. Déconnecter ferme la session
+et l'application ; Fermer laisse la session active. Entrée valide les champs
+complets ; Échap ferme le formulaire. Les messages s'affichent près des champs.
+Pendant le traitement, la roue se trouve au centre de la commande déclenchée.
+
+FIABILITÉ DES COMPTES — VERSION 79
+La page Compte actualise les rôles après leur modification. Les formulaires
+contrôlent les identifiants, les noms affichés et la confirmation des mots
+de passe. Pendant une connexion ou une création, attendez la fin avant de
+fermer le formulaire. Si la fenêtre du code personnel rencontre une erreur
+après l'enregistrement, copiez le code affiché dans le champ en lecture seule
+puis choisissez Continuer ; le compte est déjà enregistré. En hauteur très
+réduite, les commandes restent accessibles par défilement vertical.
+
+
+25 — PERSONNALISATION DE L’ÉTABLISSEMENT
+Administration > Personnalisation > Identité, logo et en-tête : renseignez le nom,
+la description, l’adresse et les cinq mentions administratives. Les deux dernières
+mentions reprennent automatiquement le nom et l’adresse. Choisissez un logo PNG/JPG.
+Enregistrer et appliquer actualise la fenêtre, la connexion, le compte, les cartes,
+leurs QR codes, les fiches et le logo des fenêtres de notification. Le profil est
+conservé dans configuration. Les documents déjà exportés ne sont pas modifiés :
+réexportez-les. Les anciens formulaires Excel/VBA conservent leur présentation.
+Les classes et montants sont propres à la base connectée : utilisez Ajouter une
+classe et ses frais ou Gérer les classes et les montants. Les paiements enregistrés
+restent historiques ; une nouvelle configuration ne modifie pas les reçus passés.
+
+26 — SON DE L’APPLICATION
+Préférences > Son de l’application : activer/désactiver, volume de 0 à 100 %, tonalité
+Douce, Discrète ou Cloche. Écouter la tonalité teste le réglage. Les modifications
+s’appliquent immédiatement et sont conservées pour votre compte Windows. Le volume
+Windows ou celui des haut-parleurs continue de limiter le volume audible.
+
+27 — COTES ET DÉLIBÉRATION
+Scolarité > Cotes et délibération. Ces opérations sont réservées aux administrateurs.
+1. Choisissez la promotion et double-cliquez dans Grille XLSX pour joindre le modèle.
+   Le modèle fourni est reconnu pour INF1, INF2, ACC1 et ACC2. Le programme identifie
+   la feuille, les cours, les compétences, les colonnes de calcul et les maxima.
+2. Pour une nouvelle promotion/année, cliquez Préparer pour la promotion : une COPIE
+   ne contenant que cette feuille reçoit tous les apprenants actifs, classés par nom,
+   postnom et prénom. Les anciennes cotes et décisions sont supprimées de cette copie.
+   Les totaux saisis en dur deviennent des formules dérivées des totaux du modèle.
+   Si nécessaire, des lignes sont ajoutées avec la présentation de la grille.
+   Ne préparez pas à nouveau une grille dont vous venez d’importer les cours !
+3. Choisissez le cours dans la liste. Pour les compétences, le groupe et la composante
+   figurent dans l’intitulé pour distinguer les colonnes C1, C2, etc.
+4. Joignez un fichier XLSX : première feuille, colonne A nom complet, colonne B cote,
+   ligne 1 en-têtes, saisie à partir de la ligne 2 par défaut. Les repères du fichier
+   sont modifiables. Un nom complet contient nom, postnom et prénom dans cet ordre.
+5. Indiquez le barème SOURCE : par défaut 20. Une cote de 15/20 est convertie en 30/40
+   pour un cours sur 40. Indiquez 40 si les cotes sont déjà sur 40. Les maxima du modèle
+   représentent les points pondérés ; aucune règle de jury n’est inventée.
+6. Analyser et prévisualiser affiche la correspondance de chaque cote. Accents, casse,
+   espaces et tirets sont normalisés. Noms inconnus, homonymes, doublons, cote absente
+   ou hors barème bloquent l’import. Zéro est une cote valable ; une cellule vide ne
+   devient pas zéro. Aucun rapprochement approximatif des noms n’est effectué.
+7. Autoriser le remplacement doit être coché pour remplacer une cote existante.
+   Remplir une copie enregistre une nouvelle grille, vérifie chaque cote enregistrée
+   et recalcule les sous-totaux, totaux et pourcentages avec Excel. La grille sélectionnée
+   devient cette nouvelle copie pour poursuivre avec le prochain cours. Les décisions
+   des apprenants dont les cotes changent sont effacées et doivent être revalidées.
+8. Vérifier la délibération affiche total, pourcentage, cotes manquantes, échecs et
+   décision calculée. Enregistrer une copie délibérée actualise les formules de totaux
+   et de décision, conserve la grille précédente et journalise les résultats.
+9. Les copies et journaux sont rangés dans scolarite/deliberations. Grilles remplies
+   ouvre ce dossier. Le modèle original et la base des apprenants restent intacts.
+Une grille existante peut être importée directement si sa liste correspond exactement
+aux apprenants actifs de la promotion. Tout changement des fichiers entre aperçu et
+écriture exige une nouvelle analyse. Fermez les fichiers dans Excel avant l’import.
+Les autres promotions devront disposer d’un modèle adapté avant leur activation.
+Les anciens exports Word défectueux doivent être régénérés après cette mise à jour.
+
+
+28 — DÉCISIONS AUTOMATIQUES
+A : ajourné — aucun vide, mais au moins un cours en échec.
+AA : assimilé aux ajournés — au moins un vide et pourcentage global >= 50 %.
+D : double — au moins un vide et pourcentage global < 50 %.
+P : passe — aucun vide et aucun cours en échec.
+Hypothèse appliquée : une cote sous 50 % du maximum du cours est un échec.
+Une cote exactement à 50 % n’est donc pas un échec. Le cas global exactement à
+50 %, avec un vide, est classé AA. Ce cas limite n’était pas explicitement défini
+et suit le seuil retenu. La présence d’un vide prime sur les échecs individuels.
+Zéro est une cote valable et un échec, pas un vide. Une cote absente reste absente.
+Le pourcentage pondéré utilise tous les maxima, y compris ceux des cours absents ;
+les notes manquantes n’enlèvent pas leurs maxima du dénominateur. La décision utilise
+le pourcentage non arrondi. Les totaux et décisions sont actualisés après chaque
+import, puis contrôlés avant l’enregistrement de la copie. Les décisions sont aussi
+stockées en formules Excel, pour se recalculer avec les notes dans Excel.
+Une nouvelle grille entièrement vide donne D selon ces règles : il s’agit d’un
+résultat provisoire tant que les cotes n’ont pas toutes été importées.
+Une cote non numérique, négative ou supérieure au maximum bloque la délibération.
+Les nombres enregistrés comme texte sont convertis en valeurs numériques dans la
+copie ; les formules de cours qui renvoient du texte demandent une correction.
+La vue est en lecture seule : les décisions automatiques ne sont pas remplacées
+par du texte libre. Après une modification des notes, relancez la vérification.
+
+
+29 — SCOLIA ET COMPTABILITÉ
+
+SCOLIA — GESTION SCOLAIRE ET COMPTABLE
+Édition 98
+
+1. INSTALLATION ET PREMIÈRE CONNEXION
+Décompressez entièrement SCOLIA.zip. Lancez 00_Demarrage\APPLICATION.vbs : aucune fenêtre
+CMD à ouvrir. Windows PowerShell 5.1, .NET Framework 4 et Microsoft Excel
+avec macros sont nécessaires aux fonctions utilisant les classeurs.
+La caisse et la configuration utilisent un journal de fichiers indépendant.
+
+Au premier démarrage, le logiciel ouvre la configuration sans demander de mot
+de passe. Étape 1 : nom de l'école, année scolaire, nombre de mensualités
+(1 à 12), premier mois, classes et tarif mensuel en FC. Une ligne par classe :
+INF1;50000
+ACC1;45000
+Utilisez un code unique de quatre lettres/chiffres, compatible avec les
+matricules existants. Les montants sont des FC entiers positifs.
+Le total annuel payant est le tarif mensuel multiplié par le nombre de mois.
+Ces exemples expliquent la saisie ; aucun tarif n'est imposé à votre école.
+
+Étape 2 : deux comptes séparés, compte Mixte, Secrétariat seul ou Comptabilité
+seule. Pour chaque compte, choisissez libre ou protégé. Un compte protégé
+exige un mot de passe d'au moins huit caractères et sa confirmation.
+Les champs inutiles à l'organisation choisie sont masqués.
+
+Après configuration : sélectionnez le compte. Le champ Mot de passe apparaît
+uniquement pour un compte protégé. Cliquez sur Se connecter pour ouvrir son
+espace. Cinq erreurs successives suspendent les tentatives pendant cinq
+minutes sur ce poste. Le bouton Compte permet de changer d'espace.
+
+2. RÔLES ET ESPACES
+Secrétariat : apprenants, suivi des paiements reçus, exports, diagnostic,
+scolarité, administration, préférences et données.
+Comptabilité : tableau des opérations, encaissements, dépenses, journal,
+reçus, diagnostic, administration, préférences et données.
+Mixte : les deux espaces dans une seule interface ; les paiements passent
+par le même mécanisme de réception interne, sans saisie scolaire en double.
+
+Dans SCOLIA, les nouveaux paiements se saisissent dans Comptabilité > Encaisser.
+Le formulaire scolaire de paiement manuel ne crée plus de versements.
+Les anciennes fonctionnalités de consultation restent disponibles.
+Les reçus importés sont protégés contre la correction locale au secrétariat,
+pour conserver leur concordance avec le journal partagé. Les écritures de
+caisse validées sont conservées ; cette édition ne propose pas encore leur
+annulation comptable. Vérifiez donc identité, classe, montant et référence
+avant l'enregistrement. Les corrections des anciens reçus restent possibles.
+
+3. CLASSEUR DU SECRÉTARIAT
+Fermez Excel. Pour conserver vos données, préparez VOTRE classeur actuel avec
+00_Demarrage\INSTALLER.vbs, puis connectez sa copie corrigée depuis Données. Ne remplacez
+jamais une base remplie par le modèle de ressources.
+Une nouvelle base vide, générée et préparée depuis Données, reçoit les classes
+et mensualités SCOLIA automatiquement lors de sa connexion si elles diffèrent.
+Configuration SCOLIA permet également de les appliquer explicitement.
+Une base contenant des paiements n'est pas réécrite : alignez les paramètres
+SCOLIA sur ses tarifs/calendrier existants, ou préparez une nouvelle année.
+Les classes contenant déjà des apprenants doivent être conservées.
+Le nom et le logo de l'école sont personnalisables dans Administration ; le
+logo de l'école reste distinct de l'icône de l'application SCOLIA.
+
+La mémorisation/reconnexion du classeur et les sauvegardes existantes sont
+conservées. Le poste de comptabilité peut tenir sa caisse sans ouvrir Excel ;
+le secrétariat doit connecter sa base pour intégrer les paiements reçus.
+Connectez d'abord la base actuelle du secrétariat afin de publier les identités
+et les soldes antérieurs avant d'encaisser pour des apprenants déjà inscrits.
+
+4. DEUX ORDINATEURS SUR LE MÊME RÉSEAU
+Sur le poste principal, créez un dossier, par exemple D:\SCOLIA_PARTAGE.
+Dans Windows, partagez ce dossier avec les utilisateurs autorisés et accordez
+les droits de lecture/écriture au partage ET aux fichiers. Sélectionnez cet
+emplacement lors de la première configuration. Un chemin réseau UNC est
+conseillé, par exemple \\POSTE_PRINCIPAL\SCOLIA_PARTAGE.
+
+Sur le deuxième poste, installez la même édition. À la première configuration,
+cliquez Rejoindre une configuration SCOLIA existante puis sélectionnez
+profil-scolia.json dans ce même dossier partagé. Ne créez pas une deuxième
+configuration pour la même école. Les deux postes utilisent la même identité,
+les mêmes comptes, tarifs et calendrier. Chaque poste conserve ses réglages
+locaux d'affichage et de récupération automatique.
+
+Le secrétariat garde son dossier de classeurs Excel. Le partage SCOLIA contient
+la configuration, le journal de caisse et le répertoire des identités/soldes.
+Ne faites pas ouvrir simultanément le même classeur Excel par deux postes.
+Gardez le poste qui héberge le partage disponible ; le même réseau ne suffit
+pas si Windows refuse l'accès au dossier ou si ce poste est éteint.
+
+Le logiciel vérifie le partage en arrière-plan toutes les deux secondes ;
+la réception dépend aussi du temps de lecture réseau et du traitement Excel.
+Ce fonctionnement actualise les paiements régulièrement, sans promettre une
+latence nulle. En cas de réseau indisponible, les écritures déjà validées sont
+conservées ; l'import attend le retour du partage et de la base scolaire.
+
+5. ENCAISSEMENTS ET DÉPENSES
+Dans Comptabilité > Encaisser, sélectionnez un apprenant du répertoire, ou
+saisissez nom, post-nom, prénom et classe. Ces quatre informations sont
+obligatoires. Les autres champs du dossier sont facultatifs à ce stade.
+Entrez date, référence de caisse unique et montant en FC.
+Le logiciel affecte le paiement aux mensualités restantes dans l'ordre scolaire,
+en déduisant les versements antérieurs et les mensualités prises en charge
+connues. Un dépassement du reste annuel ou une référence déjà utilisée pour
+le même type d'opération et la même année est refusé.
+
+Chaque opération possède aussi un identifiant technique unique. Les accès
+simultanés sont sérialisés par un verrou du journal ; si un autre poste écrit,
+la commande peut demander de réessayer après libération du journal.
+Un fichier d'opération est publié seulement après son écriture complète.
+
+Nouvelle dépense : date, référence, montant et objet/catégorie obligatoire.
+Le tableau de bord de comptabilité présente recettes, dépenses et solde des
+opérations du journal SCOLIA. Les anciens paiements servent aux soldes élèves,
+mais ne sont pas inventés comme nouvelles recettes dans ce journal.
+Journal CSV exporte les écritures de l'année. Reçu / imprimer affiche la pièce
+sélectionnée ; choisissez Microsoft Print to PDF pour un exemplaire PDF.
+
+Cette édition assure une caisse scolaire et ses transferts, pas une comptabilité
+légale complète en partie double : plan comptable, bilan et états réglementaires
+ne sont pas inclus dans cette évolution.
+
+6. RÉCEPTION ET BROUILLONS
+Un paiement d'un apprenant reconnu par nom, post-nom, prénom, classe et année
+est reçu automatiquement quand la base du secrétariat est connectée et ouverte.
+Si le dossier n'existe pas, le transfert reste dans Données > Transférés en
+brouillon. Sélectionnez un transfert puis Importer la sélection pour créer le
+dossier et intégrer le paiement. Aucun nouveau paiement manuel n'est requis.
+
+Préférences > Récupération automatique permet de créer aussi les dossiers
+absents sans sélection individuelle. Les informations manquantes sont
+signalées dans Diagnostic et complétables dans Apprenants > Modifier.
+Les identités ambiguës ou les erreurs de rapprochement ne sont pas forcées :
+elles restent à vérifier dans les brouillons.
+Le numéro unique est inscrit dans le journal du classeur avec les paiements,
+puis l'accusé de réception est conservé localement. La reprise d'un transfert
+validé ne doit donc pas créer une deuxième écriture.
+Les prises en charge existantes restent gérées sur leurs dix mois historiques
+(septembre à juin) ; un calendrier différent n'étend pas automatiquement cette
+couverture aux autres mois. Les soldes payants suivent le calendrier configuré.
+
+7. INTERRUPTION ET REPRISE
+Si le réseau se coupe pendant un enregistrement, ne ressaisissez pas ce paiement.
+La caisse conserve une opération en attente. Cliquez Vérifier opération en
+attente. Le logiciel relit le journal : s'il retrouve l'identifiant, il confirme
+l'enregistrement ; sinon, après une lecture réussie, vous pouvez lever le
+blocage et saisir de nouveau. Si le partage reste inaccessible, le blocage
+est conservé. Le même contrôle est disponible après un redémarrage.
+Les fichiers temporaires incomplets ne sont pas utilisés comme reçus.
+
+8. PARAMÈTRES ET SÉCURITÉ
+Administration > Paramètres SCOLIA permet de modifier nom de l'école, année,
+classes, mensualités et protection des comptes existants. Pour modifier ou
+désactiver la protection d'un compte déjà verrouillé, fournissez son mot de
+passe actuel. Un changement sur l'autre poste rend la session précédente
+périmée : utilisez Compte pour vous reconnecter.
+Les tarifs/calendriers d'une année ayant des écritures de caisse sont protégés.
+Utilisez une nouvelle année et une base correspondante pour un autre tarif.
+
+Les mots de passe sont conservés sous forme de dérivés PBKDF2, jamais en clair.
+Les droits SCOLIA s'appliquent dans l'interface. Les autorisations Windows du
+dossier partagé protègent les fichiers eux-mêmes : limitez-les aux personnes
+habilitées. Le contrôle d'intégrité détecte une altération accidentelle ; il
+ne constitue pas une signature contre une personne pouvant réécrire tous les
+fichiers du partage. La configuration initiale définit les comptes métier ;
+les paramètres courants permettent de changer leur protection, pas de convertir
+une organisation séparée en Mixte à la volée.
+
+9. SAUVEGARDES ET MISE À JOUR
+Conservez la totalité des dossiers data et configuration, votre logo personnalisé,
+les sources utiles et le dossier partagé SCOLIA. Une sauvegarde des seuls
+classeurs Excel n'inclut pas le journal de caisse indépendant.
+Pour une copie cohérente du partage, fermez SCOLIA sur les deux postes avant
+la sauvegarde. Copiez aussi les états de réception conservés avec la base.
+Lors d'une mise à jour, extrayez dans un nouveau dossier et recopiez vos données
+et configuration existantes sans effacer la version précédente. Le profil
+partagé existant est conservé : utilisez son emplacement, ne le recréez pas.
+
+10. RACCOURCIS
+Encaisser : Ctrl+Alt+P. Dépense : Ctrl+Alt+E. Journal CSV : Ctrl+Alt+J.
+Reçu : Ctrl+Alt+R. Brouillons : Ctrl+Alt+B. Paramètres : Ctrl+Alt+F2.
+Configuration du classeur : Ctrl+Alt+F3. À propos : Ctrl+Alt+A.
+Vérifier une opération en attente : Ctrl+Alt+V.
+Les infobulles des commandes du ruban indiquent leur fonction et raccourci.
+
+11. VÉRIFICATIONS DE CETTE ÉDITION
+Tests exécutés : syntaxe PowerShell, comptes libres/protégés avec vraie
+vérification de mot de passe, droits métier, persistance, calendrier, reports
+de soldes antérieurs, références uniques, surpaiement, concurrence, session
+périmée, intégrité du journal, orchestration d'import avec Excel simulé,
+catalogue des commandes et compilation C#5/.NET4 des nouveaux contrôles.
+Le champ mot de passe est testé pour masquage, révélation et effacement.
+Les classeurs sources sont conservés à l'identique.
+L'exécution complète avec Microsoft Excel sous Windows et deux vrais postes
+sur un partage SMB n'a pas été réalisée dans cet environnement de préparation.
+Un contrôle sur ces postes reste nécessaire avant usage en production.
+
+À PROPOS
+SCOLIA — Gestion scolaire et comptable.
+Apprenants, promotions, suivi financier, prises en charge, cartes d'accès aux
+examens, notes, délibération, exports, diagnostics et sauvegardes.
+Programmeur : Jean Paul MPOLO LONO
+Phone : +243 977 152 825
+Email : jeanpaulmpolo242@gmail.com
+
+13. TRANSFERTS, ANNÉES ET REPRISE APRÈS ERREUR — ÉDITION 97
+Dans Données > Transférés en brouillon, le sélecteur d'année permet de
+consulter les transferts de chaque année, y compris ceux des années antérieures.
+À l'ouverture, le journal partagé est relu en arrière-plan. Le bouton
+Actualiser le partage effectue une nouvelle lecture réseau : il ne se limite
+plus aux données déjà affichées. En cas de coupure, la liste précédente est
+conservée ; reconnectez le réseau puis cliquez à nouveau sur Actualiser.
+
+La réception automatique concerne seulement l'année du classeur connecté.
+Les transferts des autres années restent dans le journal, sans être tentés
+ni déclarés en erreur. Un classeur fermé ou dont les promotions définissent
+plusieurs années bloque cette réception. Vérifiez sa configuration.
+
+Pour reprendre un transfert en erreur : corrigez la cause indiquée, connectez
+le classeur de son année, sélectionnez la ligne puis cliquez sur
+Importer / réessayer la sélection. Confirmez l'import. La référence technique
+d'origine est conservée : la passerelle reconnaît un paiement déjà intégré,
+même après interruption de l'accusé de réception. Ne ressaisissez pas le
+paiement à la caisse pour le débloquer. Les erreurs ne sont pas réessayées
+en boucle automatiquement.
+
+Dans Comptabilité, la pièce imprimée correspond au type d'opération et à
+l'année de la ligne sélectionnée. Un paiement et une dépense portant la même
+référence sont distingués. Une pièce ambiguë est bloquée : actualisez le
+journal avant de sélectionner à nouveau. Le titre précise PAIEMENT ou DÉPENSE.
+
+14. FIABILITÉ DES PARAMÈTRES ET CONNEXIONS — ÉDITION 98
+La période de blocage après cinq mots de passe incorrects concerne seulement
+le compte choisi et l'établissement courant. Le secrétariat reste accessible
+si le compte comptabilité est temporairement bloqué, et inversement.
+Le délai de cinq minutes est enregistré en UTC pour éviter les décalages.
+Lorsqu'un compte est laissé libre, aucun ancien blocage par mot de passe
+n'empêche sa connexion. La protection choisie dans les paramètres prend
+également effet pour le verrouillage de la session courante.
+
+Le formulaire de connexion relit la configuration partagée à son ouverture.
+Si la protection d'un compte a changé sur un autre poste, les champs de
+connexion sont actualisés après la tentative. Les comptes et leurs mots de
+passe restent ceux du dossier SCOLIA configuré.
+
+Chaque tentative d'enregistrement des paramètres utilise une copie
+indépendante du profil initial. Une erreur de saisie ou de mot de passe
+ne modifie pas le profil en mémoire utilisé pour la tentative suivante.
+Le mot de passe actuel reste nécessaire pour modifier la protection d'un
+compte protégé, même après une tentative précédente incomplète.
+
+Les tarifs, le nombre de mensualités et le premier mois scolaire restent
+protégés lorsqu'il existe des écritures ou des mensualités prises en charge.
+Changer seulement les espaces dans « 2026 - 2027 » ne crée pas une nouvelle
+année et ne permet pas de modifier ces éléments. Le changement de nom de
+l'établissement reste possible ; les changements de tarifs se font pour
+une nouvelle année sans réécrire les obligations de l'année précédente.
+
+Un dossier réseau manquant, une configuration inaccessible ou celle d'une
+autre institution provoquent une erreur de lecture. Ils ne sont pas
+interprétés comme une caisse ou un répertoire vide. En cas d'opération
+en attente, le blocage est conservé tant que le journal n'a pas pu être
+vérifié. Reconnectez le réseau puis utilisez Vérifier opération en attente.
+
+Après changement d'année dans Administration, connectez le classeur de
+l'année courante. Le répertoire partagé est publié uniquement depuis une
+base dont l'année correspond à la configuration actuelle. L'ancien classeur
+ne peut pas remplacer ce répertoire par des données de l'année passée.
+
+15. ASSISTANT RÉSEAU AUTOMATIQUE — ÉDITION 99
+
+Sur le poste qui conserve les données :
+1. Ouvrez Données > Configurer le réseau (Ctrl+Alt+F5).
+   Au premier lancement, utilisez Assistant réseau automatique dans Configuration.
+2. Choisissez Héberger. Le dossier SCOLIA déjà configuré est repris sans déplacer
+   ni recréer vos données. Lors de la configuration initiale, choisissez un dossier
+   local réservé aux données SCOLIA, puis terminez aussi les étapes Établissement
+   et Comptes dans l'assistant initial.
+3. Le compte Windows proposé est celui de la session actuelle. Vous pouvez indiquer
+   un autre compte Windows existant sur ce poste ou dans votre domaine.
+4. Sélectionnez le réseau de l'école. S'il est Public, cochez la confirmation
+   uniquement s'il s'agit du réseau privé de l'établissement.
+5. Cliquez Configurer le partage automatiquement et acceptez la demande Windows.
+   Le partage accorde l'écriture au compte Windows choisi ; SCOLIA ajoute son droit
+   NTFS Modifier et ouvre uniquement SMB TCP 445 et la découverte UDP 48629 pour
+   les réseaux privés/domaine et les ordinateurs du sous-réseau local.
+6. L'adresse apparaît, par exemple \\POSTE-ECOLE\SCOLIA_ABC12345.
+   Aucun CMD à lancer, aucun mot de passe Windows conservé par SCOLIA.
+
+Sur l'autre poste :
+1. Ouvrez Assistant réseau automatique ou Données > Configurer le réseau.
+2. Choisissez Rejoindre, puis Rechercher les établissements. SCOLIA doit être ouvert
+   sur le poste hôte. La recherche dure environ trois secondes et ne bloque pas
+   les commandes Windows. Choisissez l'école trouvée.
+3. Cliquez Vérifier et mémoriser la connexion. SCOLIA lit le profil et vérifie
+   l'écriture ainsi que le remplacement atomique des fichiers de ce partage.
+4. Si Windows refuse l'accès, cliquez Autoriser l'accès Windows et authentifiez-vous
+   avec le compte Windows autorisé sur le poste hôte, puis réessayez. Le mot de passe
+   du compte SCOLIA est distinct de celui du compte Windows. Windows peut refuser
+   l'accès réseau aux comptes locaux sans mot de passe ; utilisez un compte Windows
+   pouvant s'authentifier à distance. SCOLIA ne modifie pas cette sécurité Windows.
+5. Si la découverte est bloquée, saisissez l'adresse affichée sur le poste hôte.
+   Cela fonctionne aussi lorsque SCOLIA est fermé sur l'hôte, à condition que ce
+   poste soit allumé et que son partage soit accessible.
+
+Après connexion, le dossier reste mémorisé et est repris au lancement suivant.
+Le nom Windows du poste hôte est utilisé par la découverte pour supporter les
+changements d'adresse IP. La réception reprend après une coupure réseau grâce
+au contrôle périodique existant ; aucune base vide ne remplace les données.
+Si le poste hôte est éteint au démarrage, un écran permet de réessayer ou rechercher
+le même établissement. Un profil d'une autre école est refusé, sans effacer la
+configuration. Attendez la fin d'une publication et vérifiez toute écriture de
+caisse en attente avant de changer l'adresse de connexion.
+
+Le partage Windows persiste après fermeture de SCOLIA ; la découverte automatique
+est active uniquement lorsqu'une session SCOLIA est ouverte sur l'hôte. Les postes
+clients n'ont pas à créer de partage ni à demander les droits administrateur.
+La recherche concerne les réseaux IPv4 privés/domaine connectés. Un réseau Wi-Fi
+isolant ses clients, un pare-feu d'entreprise, des identifiants Windows refusés ou
+un poste hôte éteint peuvent empêcher l'accès ; SCOLIA conserve la configuration
+et affiche l'erreur au lieu de recréer la base. Il ne désactive pas le pare-feu,
+ne permet pas les accès invités et n'active pas SMB1.
+
+En cas d'échec pendant la configuration Windows, le helper tente de retirer le
+partage et les règles qu'il vient de créer, de restaurer les droits NTFS et la
+catégorie réseau antérieure. Les partages tiers et les données existantes ne sont
+pas supprimés. Un nom de partage déjà utilisé pour un autre dossier est refusé.
+
+
+16. FIABILITÉ, SYNCHRONISATION ET GRILLES — ÉDITION 100
+
+SCOLIA — ÉDITION 100
+Corrections de fiabilité et suivi des opérations
+
+INSTALLATION ET CONSERVATION DES DONNÉES
+Fermez SCOLIA et Excel. Extrayez le ZIP entier dans un nouveau dossier.
+Conservez votre ancienne copie et sauvegardez data, configuration, votre logo
+et votre sceau. Recopiez vos dossiers data et configuration dans la nouvelle
+copie, sans remplacer votre base remplie par un modèle de ressources.
+Un partage comptable existant reste à son emplacement : les deux postes doivent
+utiliser le même profil-scolia.json. Mettez à jour les deux postes.
+Démarrez 00_Demarrage\APPLICATION.vbs. Il n'est pas nécessaire de recréer vos journaux.
+Les six classeurs de référence et les corrections VBA sont conservés.
+
+1. RÉSEAU ET ACTUALISATION
+Données > Configurer le réseau reste l'assistant d'hébergement et de connexion.
+Le contrôle d'accès du poste qui rejoint s'exécute dans un processus distinct,
+avec un délai de 15 secondes, puis un délai de fermeture pouvant ajouter 2 secondes.
+Ce délai concerne la vérification d'accès, pas toutes les opérations Windows.
+L'autorisation administrateur et les identifiants Windows restent gérés par Windows.
+Les deux fichiers temporaires de l'assistant sont correctement nettoyés.
+
+La surveillance ne désérialise plus tout le journal à chaque cycle : elle réutilise
+les écritures vérifiées et relit les fichiers nouveaux ou modifiés. Une vérification
+complète est faite toutes les cinq minutes. Les métadonnées sont toujours parcourues.
+Les lectures faisant autorité lors d'un encaissement restent complètes.
+Une erreur réseau conserve le dernier affichage ; elle ne transforme pas la caisse
+en caisse vide. Une écriture qui disparaît du journal est signalée.
+
+2. SYNCHRONISATION ET RAPPROCHEMENT — Ctrl+Alt+F6
+Données > Synchronisation affiche l'état, la dernière réception réussie, le dossier,
+la dernière erreur et les paiements encaissés / reçus / restant à recevoir.
+Le rapprochement concerne les paiements du journal SCOLIA de l'année active.
+Il n'inclut pas les anciens paiements saisis manuellement hors de ce journal.
+Un paiement est reçu quand son identifiant est publié par le secrétariat.
+Un import local terminé mais non publié est signalé comme publication en attente.
+Le tableau montre les références, apprenants, promotions, montants et opérateurs.
+Actualiser le réseau lance une lecture ; Exporter le rapprochement crée un CSV.
+Les droits d'export restent nécessaires. Les archives ne sont pas fusionnées avec
+l'année active. La commande est aussi accessible dans l'espace Comptabilité.
+
+3. COMPTES NOMINATIFS
+Première configuration : saisissez le nom de la personne pour chaque compte.
+Administration > Paramètres SCOLIA permet de modifier ce nom.
+La connexion affiche « Nom · Secrétariat », « Nom · Comptabilité » ou « Nom · Mixte ».
+Les droits restent attachés au rôle et la protection par mot de passe est facultative.
+Les comptes antérieurs sans nom continuent à fonctionner avec leur libellé de rôle.
+Les nouvelles écritures mémorisent le nom et l'identité du compte utilisé.
+Les anciens journaux ne sont pas réécrits pour leur inventer un opérateur.
+Cette édition conserve un compte par rôle ; elle ne crée pas plusieurs caissiers
+indépendants ayant le même rôle. Mixte reste une alternative aux comptes séparés.
+
+4. BROUILLONS DE CAISSE — Ctrl+Alt+F7
+Dans Encaisser / Nouvelle dépense, Conserver en brouillon enregistre localement
+la saisie sans produire de recette, de transfert ni de reçu définitif.
+Une session déjà ouverte peut ainsi conserver une saisie pendant une coupure.
+Le démarrage et la connexion au compte nécessitent toujours le profil disponible ;
+cette fonction ne constitue pas une connexion entièrement hors réseau.
+
+Comptabilité > Brouillons de caisse : sélectionnez une ligne puis Valider le brouillon
+sélectionné lorsque le partage est accessible. Le système contrôle le compte,
+l'année, la promotion, le tarif, le solde, la référence et les paramètres actuels.
+La validation est volontaire ; les brouillons ne sont pas envoyés automatiquement.
+Le même identifiant technique est conservé pour éviter une seconde écriture en cas
+ de reprise. Une erreur conserve le brouillon. Après une coupure au moment de
+l'enregistrement, utilisez Vérifier opération en attente avant de réessayer.
+Un autre compte ne peut pas valider ou annuler ce brouillon depuis l'interface.
+Annuler le brouillon supprime seulement la saisie locale non comptabilisée après
+confirmation. Les écritures définitives du journal restent immuables.
+Sauvegardez également configuration : les brouillons locaux y sont conservés.
+
+5. GRILLES PARAMÉTRABLES
+Scolarité > Cotes et délibération : choisissez la promotion et votre grille XLSX,
+puis Paramétrer la grille. Indiquez le nom exact de la feuille, la ligne d'entête
+des noms, la première et dernière ligne disponibles, la colonne du nom complet,
+les lignes d'intitulés et de barèmes et la colonne de décision.
+Les colonnes sont indiquées par leur numéro (A=1, B=2, etc.).
+La colonne de numérotation précède celle du nom. Les cours se trouvent entre
+la colonne du nom et celle de décision ; un barème positif identifie un cours,
+une formule identifie une colonne de calcul à préserver.
+La commande vérifie la grille en lecture seule avant de mémoriser ses repères.
+Les modèles INF1, INF2, ACC1, ACC2 restent reconnus sans paramétrage supplémentaire.
+Les autres promotions et mises en page compatibles utilisent ces repères.
+Une disposition arbitraire sans ces repères n'est pas reconnue automatiquement.
+Le paramétrage est local à ce poste et à cette institution : configurez aussi
+l'autre poste si vous y utilisez les cotes. Vérifiez l'aperçu avant validation.
+Les apprenants restent classés alphabétiquement ; les homonymes, noms non reconnus
+et notes hors barème sont signalés. Les décisions P, A, AA et D sont conservées.
+
+VÉRIFICATIONS
+Lire VERIFICATIONS_100.txt. Tests de logique, de fichiers et de compatibilité
+réalisés ; validation de l'ensemble sur Windows PowerShell 5.1, Excel réel et
+deux postes Windows encore nécessaire. Aucune promesse de latence nulle.
+
+
+17. REVUE FONCTIONNELLE — ÉDITION 101
+
+REVUE FONCTIONNELLE — ÉDITION 101
+
+Corrections appliquées après la revue de l'édition 100 :
+- Une reprise de caisse compare maintenant le contenu de l'opération, même si
+  l'ancienne empreinte est conservée. Un montant ou une référence modifiés sont
+  refusés ; une reprise réellement identique reste sans doublon.
+- Les lignes supplémentaires d'une grille personnalisée agrandie sont reconnues
+  lors de sa relecture si leur numérotation continue la séquence des apprenants.
+  La lecture s'arrête sur un vide ou une numérotation différente, avant les totaux.
+- Les intitulés peuvent se trouver sur la première ligne sans demander à Excel
+  une cellule de ligne zéro. La ligne de cours peut dépasser 200 ; cette limite
+  concerne les colonnes, tandis que les lignes restent limitées à 50 000.
+- Vérifier opération en attente refuse de s'ouvrir pendant un encaissement actif.
+  Son message parle d'opération, ce qui convient aussi aux dépenses.
+
+Ces corrections ne modifient pas les classeurs de référence ni les données.
+Les instructions de conservation de data et configuration restent applicables.
+Les vérifications Windows/Excel et réseau entre deux postes restent nécessaires.

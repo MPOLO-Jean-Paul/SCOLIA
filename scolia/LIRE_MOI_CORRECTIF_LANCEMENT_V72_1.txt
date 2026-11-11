@@ -1,0 +1,10 @@
+﻿SCOLIA V72.1 - Correctif de lancement
+
+Correction apportée :
+- NotificationsModernes.cs utilisait ITMToastButton alors que ce type n'existe pas.
+- Le bouton de dialogue utilise désormais ITMNotificationButton, le contrôle réellement déclaré dans le même fichier.
+- Le diagnostic du lanceur affiche maintenant V72.1 au lieu de l'ancien libellé V57.
+
+Contrôle :
+Lancez 00_Demarrage\VERIFIER_CORRECTIF_LANCEMENT_V72_1.cmd sur Windows.
+Le contrôle compile NotificationsModernes.cs avec Windows PowerShell 5.1 et vérifie que l'ancienne référence a disparu.

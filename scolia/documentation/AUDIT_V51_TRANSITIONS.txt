@@ -1,0 +1,23 @@
+SCOLIA V51 - AUDIT DES TRANSITIONS
+
+Corrections mises en pratique
+- Installation -> étape suivante : indicateur visible AVANT la fermeture de l'installateur.
+- Configuration -> connexion : indicateur visible AVANT la fermeture de la configuration.
+- Rejoindre/importer une configuration -> connexion : même continuité visuelle.
+- Connexion -> accueil : indicateur visible AVANT la fermeture du login.
+- La transition reste affichée jusqu'à l'événement Shown de la fenêtre cible.
+- L'indicateur ITMActivity tourne sur un thread UI séparé ; la construction PowerShell de l'écran suivant ne fige pas son animation.
+- Aucun Start-Sleep ni délai artificiel n'a été ajouté.
+- L'indicateur suit le thème SCOLIA/Windows (clair ou sombre) quand cette préférence est disponible.
+- En cas d'annulation, d'erreur ou de fermeture de l'application, l'indicateur est libéré dans les chemins de sortie.
+
+Contrôles statiques effectués
+- 3 fichiers JSON valides.
+- 16/16 modules VBA conformes au manifeste.
+- Aucun fichier isolé à la racine du dossier SCOLIA.
+- 14 sources C# : accolades équilibrées.
+- Fichiers PowerShell critiques modifiés : accolades, parenthèses et crochets équilibrés.
+- Aucune apostrophe typographique ambiguë dans les scripts PowerShell racine.
+
+Limite de validation
+Le rendu et l'exécution finale de WinForms/Windows PowerShell 5.1 restent à confirmer sur un poste Windows réel.

@@ -1,0 +1,11 @@
+Thèmes : Clair, Sombre et Système dans Préférences. Le choix est enregistré pour le compte Windows. Le mode Système suit le réglage Windows clair/sombre pendant l’utilisation de l’application. Pages, formulaires, listes, graphiques, commandes et roue adaptés. L’installateur lit le choix au lancement. Les boîtes de dialogue système conservent leur rendu Windows.
+
+Onglet Données : Classeur existant, Mémoriser, Ouvrir mémorisé, Nouveau classeur, Actualiser feuilles, Dossier sources, gestion des classeurs et sauvegardes. La mémorisation rétablit la connexion au prochain démarrage ; elle ne laisse pas Excel ouvert après la fermeture. La case de reconnexion permet de conserver le chemin sans reconnecter automatiquement.
+
+Création : nommer le fichier puis Générer et connecter. Travail sur une copie neuve, aucune suppression dans le classeur actuel. En-têtes et toutes les colonnes du modèle conservés, feuilles attendues présentes, journal neuf, apprenants et paiements vides. Première ligne de saisie 5. Promotions et tarifs du modèle conservés et modifiables dans Administration. Fichier source créé dans sources sans écrasement. Le logiciel utilise ensuite sa base de travail dans data. Si aucun classeur préparé n’est connecté, un modèle source est créé et l’installateur est ouvert pour terminer sa préparation.
+
+Les feuilles sont consultées dans une liste ; cette page ne supprime ni ne renomme les feuilles requises. Les classeurs volumineux continuent à basculer automatiquement dans data.
+
+Mise à jour : fermer l’application et l’installateur, remplacer programme, conserver data et sources existants, relancer APPLICATION.vbs.
+
+Contrôles locaux : syntaxe, contrastes des palettes, connexion des onglets/actions, publication de nouveaux fichiers sans écrasement et conservation byte pour byte des six classeurs et modules VBA fournis. Exécution native Windows/Excel non disponible. TestsCreationSource.ps1 fournit un test natif isolé de création de source ; il n’a pas été exécuté ici.

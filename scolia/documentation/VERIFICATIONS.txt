@@ -1,0 +1,22 @@
+﻿VERIFICATIONS DE CETTE REVISION
+
+- Les 14 fichiers VBA et leurs empreintes du manifeste sont vérifiés.
+- Le classeur de reference est conserve sans modification.
+- Le lanceur INSTALLER.vbs ouvre PowerShell en mode graphique, sans CMD.
+- Le controle de code distingue les modifications de mise en forme des
+  modifications d'instructions, de valeurs et de textes affiches.
+- Les verifications des valeurs, des nombres de lignes, du total des paiements,
+  des boutons et des exports de la version precedente restent actives.
+- Les modules sont controles apres insertion et apres reouverture du classeur.
+- La copie incomplete est supprimee en cas d'echec, l'original est conserve.
+
+Limite : pas d'execution Windows/Excel dans l'environnement de preparation.
+Les verifications Excel s'executent lors de l'installation sur le PC utilisateur.
+
+Interface : treizième module ModuleInterfacePremium, utilisé à l'initialisation
+par ConfigurerFormulairePro. La version précédente de ModuleProfessionnel
+reste reconnue par le contrôle de compatibilité. Les routines métier ne sont
+pas modifiées. Les contrôles d'interface et de conservation des données sont
+exécutés par Excel pendant l'installation.
+
+Application Windows : lire VERIFICATION_APPLICATION.txt et DEMARRER_ICI.txt.

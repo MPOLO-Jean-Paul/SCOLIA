@@ -1,0 +1,33 @@
+﻿SCOLIA V52 — Contrôles locaux exécutés
+
+OK : comparaison des 43 fichiers protégés avec le ZIP original.
+OK : JSON lisibles et références locales sélectionnées présentes.
+OK : équilibre lexical des fichiers modifiés, cohérence des clés de solde et d’icône.
+Le contrôle lexical ne constitue pas une validation par le parseur natif.
+Inventaire : 433 fonctions PowerShell dans 41 modules.
+
+NON EXÉCUTÉS : tests Windows PowerShell, compilation C#, rendu Windows Forms, intégration Excel, exports et restauration réels.
+Lancer 00_Demarrage\VERIFIER_V52.cmd sur Windows ; consulter aussi les scénarios du rapport d’audit.
+
+Fichiers originaux modifiés :
+SCOLIA/programme/ActivityIndicator.cs
+SCOLIA/programme/Application.ps1
+SCOLIA/programme/FonctionsGestion.ps1
+SCOLIA/programme/Installer.ps1
+SCOLIA/programme/Lancer.ps1
+SCOLIA/programme/PerformanceInterface.ps1
+SCOLIA/programme/ScoliaConfiguration.ps1
+SCOLIA/programme/ScoliaIntegration.ps1
+SCOLIA/programme/ScoliaReseau.ps1
+SCOLIA/programme/StockageClasseurs.ps1
+SCOLIA/programme/TransitionExperience.ps1
+
+Fichiers ajoutés :
+SCOLIA/00_Demarrage/VERIFIER_V52.cmd
+SCOLIA/LISEZ_MOI_V52.txt
+SCOLIA/documentation/AUDIT_ET_NOUVEAUTES_V52.md
+SCOLIA/documentation/INVENTAIRE_FONCTIONS_V52.csv
+SCOLIA/programme/EtatEspace.ps1
+SCOLIA/programme/TestsSoldesEtRechercheV52.ps1
+SCOLIA/programme/TestsTransitionRuntimeV52.ps1
+SCOLIA/programme/VerifierV52.ps1

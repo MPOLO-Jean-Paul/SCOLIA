@@ -1,0 +1,10 @@
+Vérification métier ciblée — V18
+
+- L'inscription d'un nouvel apprenant appelle ITMAppDossier avec un matricule vide ; la passerelle métier attribue le matricule final et traite l'opération comme une création.
+- Les contrôles d'identité, de promotion, de doublon et de contacts restent en place.
+- Le début de transaction crée une sauvegarde avant toute écriture.
+- Si le calcul ou l'enregistrement Excel échoue, ITMValiderSaisie ne libère plus prématurément le verrou : la procédure appelante peut annuler le journal et la ligne réservée.
+- À l'entrée d'une nouvelle opération, un verrou résiduel déclenche une récupération transactionnelle, au lieu d'être refusé uniquement parce que ThisWorkbook.Saved vaut False.
+- Si la récupération elle-même échoue, la nouvelle saisie est interrompue et le message demande de consulter la sauvegarde.
+
+Tests disponibles : TestsTransactionApprenant.ps1 (contrôles statiques). Ce test ne remplace pas un test d'exécution avec Excel installé.

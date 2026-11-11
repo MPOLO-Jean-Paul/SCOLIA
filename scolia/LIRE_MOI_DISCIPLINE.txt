@@ -1,0 +1,95 @@
+﻿SCOLIA — DISCIPLINE DES APPRENANTS — 13 OCTOBRE 2026
+
+ACCÈS
+Scolarité > Discipline, ou Outils scolaires > Discipline.
+Raccourci : Ctrl+Alt+Shift+S. Disponible dans l’espace scolaire du secrétariat.
+Connecter les données scolaires préparées ; droit Saisie pour enregistrer une décision.
+Le registre est consultable sans modification lorsque l’année est clôturée.
+Les autres années sont accessibles dans le sélecteur d’archives, en consultation.
+
+NOUVELLE DÉCISION
+Cliquer Nouvelle décision. Rechercher l’apprenant par nom ou matricule,
+filtrer éventuellement par promotion, sélectionner une seule ligne puis choisir :
+- Renvoi temporaire : motif, date de décision, premier et dernier jours de renvoi.
+- Renvoi définitif : motif et date de décision, confirmation explicite.
+- Convocation des parents : motif, date de décision et rendez-vous avec date et heure.
+Le motif est obligatoire (5 à 2000 caractères). Les décisions futures sont refusées.
+Les dates des renvois appartiennent à l’année scolaire ; la fin suit ou égale le début.
+La durée compte les jours calendaires, premier et dernier jours inclus.
+Le retour est autorisé à partir du lendemain de la fin, selon les jours de cours de la classe.
+Les convocations gardent l’identité et les contacts du parent connus au moment de la décision.
+
+RÈGLE DES DEUX RENVOIS
+Deux renvois TEMPORAIRES demandés et validés dans une même année scolaire entraînent
+un RENVOI DÉFINITIF automatique lors de la deuxième validation.
+L’avertissement apparaît avant enregistrement, avec une case de confirmation et une boîte
+qui demande de confirmer explicitement le renvoi définitif.
+Une convocation ne compte jamais comme renvoi. Une décision annulée ne compte plus.
+Un doublon exact ou une répétition de validation ne crée pas une deuxième sanction.
+Un renvoi saisi avant un autre renvoi déjà enregistré est refusé pour conserver la chronologie.
+Le compteur des renvois est propre à l’année scolaire.
+Un renvoi définitif déjà validé reste applicable dans les années suivantes du même dossier data.
+Aucune nouvelle sanction n’est ajoutée pour un apprenant déjà renvoyé définitivement ;
+une convocation reste possible pour recevoir son parent.
+
+REGISTRE ET SUIVI
+Le tableau présente l’apprenant, sa promotion, la mesure, le motif, la date,
+la période ou le rendez-vous, la durée, le retour autorisé et la situation.
+Rechercher par nom, matricule, promotion ou motif ; filtrer par mesure et année.
+Le menu Actions permet de consulter l’historique, enregistrer Parent reçu / Parent absent,
+annuler une décision, imprimer une convocation et exporter les lignes affichées en CSV.
+Parent absent n’est possible qu’après l’heure du rendez-vous.
+Un compte rendu ou motif accompagne toute réception, absence ou annulation.
+Les identifiants de décisions conservent la sélection même si un apprenant a plusieurs dossiers.
+
+ANNULATION
+Réservée au droit Administrer, avec un motif obligatoire et un historique conservé.
+Les décisions existantes ne sont jamais effacées ni réécrites : pour corriger le motif,
+annuler la décision puis enregistrer une décision corrigée.
+Annuler un premier renvoi ne supprime pas une autre décision de renvoi définitif déjà validée.
+Pour retirer cette dernière, il faut également l’annuler explicitement.
+Les archives des autres années et les années clôturées restent consultables uniquement.
+
+EFFETS DANS SCOLIA
+Pendant sa période de renvoi temporaire, l’apprenant apparaît Suspendu ; à la fin,
+son statut administratif initial revient, sauf si une autre mesure l’en empêche.
+Un renvoi définitif valide apparaît Sorti et bloque l’admission/réinscription active et les cartes.
+La signature de présence vérifie aussi les décisions avant d’accepter l’apprenant.
+Les journées exclues par la discipline ne créent pas d’absences automatiques supplémentaires.
+Les présences et signatures déjà enregistrées restent intactes.
+Le champ Statut administratif du dossier ne remplace pas une décision disciplinaire.
+Les paiements, dossiers et classeurs ne sont pas supprimés par la discipline.
+Les effets de la discipline sont calculés dans SCOLIA à partir du registre ;
+les listes externes ouvertes directement dans Excel ne remplacent pas ce registre.
+
+CONVOCATION À IMPRIMER
+Choisir une convocation valide puis Actions > Convocation à imprimer.
+Enregistrer le document HTML proposé ; il s’ouvre avec le logo et le nom de l’institution,
+le nom de l’apprenant, la promotion, le motif, le rendez-vous et les zones de signature.
+Utiliser le bouton Imprimer / enregistrer en PDF dans le document.
+Le document est destiné à être remis au parent ; cette commande n’envoie aucun message.
+L’export nécessite le droit Exporter. Les textes sont échappés dans le document imprimable.
+
+CONSERVATION ET FIABILITÉ
+Registre isolé par base et année, inclus dans les sauvegardes et les restaurations.
+Écritures atomiques, verrou de maintenance et révision pour les validations concurrentes.
+Le contenu et l’historique d’une ancienne décision ne peuvent pas être modifiés ou supprimés.
+Une erreur de lecture n’efface pas le registre et ne réautorise pas silencieusement une admission.
+Aucune décision réelle n’a été saisie dans vos données lors de cette mise à jour.
+
+VÉRIFICATIONS
+45 suites métier passées ; 46 contrôles ciblés : récidive, durée inclusive, retour,
+doublons, chronologie, convocation, réception/absence, confirmation de statut, archives,
+annulation, droits, admission, cartes, présences, verrou, révision et sauvegarde/restauration.
+Les tests utilisent des données isolées ; les appels Excel concernés sont simulés.
+Le moteur de vérification adapte les références .NET Framework et les dates JSON à Linux.
+187 scripts PowerShell analysés sans erreur ; empreintes, manifeste et ZIP vérifiés.
+Les nouvelles fenêtres Windows et le parcours complet avec Excel restent à vérifier sur votre poste.
+Test fourni : 00_Demarrage/VERIFIER_DISCIPLINE.cmd (métier puis vraies fenêtres Windows).
+
+MISE À JOUR LÉGÈRE
+Cette archive met à jour votre installation actuelle ; elle ne contient pas vos classeurs.
+Fermer SCOLIA et Excel. Extraire TOUTE l’archive dans un nouveau dossier.
+Lancer 00_Demarrage/METTRE_A_JOUR_V57.cmd depuis ce dossier.
+Choisir APPLICATION.vbs dans 00_Demarrage de votre installation habituelle et relancer ce lanceur.
+Toutes les améliorations précédentes, y compris cours et attributions, sont incluses.

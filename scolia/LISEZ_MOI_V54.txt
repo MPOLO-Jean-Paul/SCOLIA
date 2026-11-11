@@ -1,0 +1,12 @@
+﻿SCOLIA V54 — Connexion et progression
+
+1. Fermez SCOLIA et extrayez entièrement ce ZIP dans un nouveau dossier.
+2. Pour conserver votre installation actuelle, lancez 00_Demarrage/METTRE_A_JOUR_V54.cmd depuis le nouveau dossier.
+3. Sélectionnez le fichier APPLICATION.vbs de votre ancienne installation.
+La mise à jour vérifie les fichiers, sauvegarde les originaux et remplace uniquement les fichiers de programme indiqués dans le manifeste. Les données et configurations existantes sont conservées.
+Pour une nouvelle installation, utilisez 00_Demarrage/APPLICATION.vbs du dossier extrait.
+
+Nouveautés : connexion verticale compacte, champs alignés, bouton principal lisible, messages d'erreur distincts, progression horizontale animée unique sans cadrans ni lueurs. Les améliorations d'inscription V53 et les corrections de syntaxe sont incluses.
+
+Vérification Windows : 00_Demarrage/VERIFIER_V54.cmd (tests isolés sans Excel).
+Les vérifications statiques et l'intégrité du ZIP ont été contrôlées ici. L'affichage et les tests WinForms doivent encore être vérifiés sur Windows ; ils ne peuvent pas être exécutés dans cet environnement Linux.

@@ -1,0 +1,9 @@
+Trois raccourcis fréquents
+
+Trois icônes apparaissent entre le nom de l’établissement et les commandes du bandeau. Au premier démarrage : Inscrire, Paiements, Exporter PDF. Elles sont remplacées et classées selon le nombre d’utilisations des commandes. En cas d’égalité, l’ordre reste stable. Sur une fenêtre étroite, les icônes prennent une ligne entre le titre et les boutons du bandeau.
+
+Les utilisations depuis les boutons, le ruban, les raccourcis clavier et ces icônes sont comptées sans double comptage. Le classement est mémorisé pour le profil Windows et partagé entre ses fenêtres. Les descriptions et les raccourcis clavier restent accessibles au survol ; aucun libellé n’est affiché dans le bandeau.
+
+Les icônes conservent les droits, les exigences de connexion et les protections des commandes d’origine. Une commande momentanément indisponible reste désactivée ; une commande interdite au rôle connecté est exclue du classement affiché. Le comptage ne contient ni noms d’apprenants, ni paiements, ni mots de passe.
+
+Vérifications : syntaxe PowerShell, compilation C#, ZIP et conservation des six classeurs. TestsRaccourcisFrequents.ps1 vérifie le classement avec un registre simulé ; TestsNavigation.ps1 couvre le positionnement. Leur exécution et le rendu graphique restent à confirmer sous Windows.

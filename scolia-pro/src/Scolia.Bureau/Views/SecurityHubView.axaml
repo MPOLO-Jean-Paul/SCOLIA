@@ -1,0 +1,272 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:views="using:Scolia.Bureau.Views"
+             x:Class="Scolia.Bureau.Views.SecurityHubView">
+  <!-- Sécurité du compte, comme les réglages d'Android 16 : l'état du compte en tête, puis des lignes groupées
+       qui s'ouvrent sur place (code d'accès, empreinte), et quelques repères. Téléphone et ordinateur. -->
+  <UserControl.Styles>
+    <!-- Même gris que les groupes des réglages du téléphone : visible sur fond blanc comme en sombre -->
+    <Style Selector="Border.hubgroup">
+      <Setter Property="Background" Value="{DynamicResource GroupBrush}" />
+      <Setter Property="CornerRadius" Value="24" />
+      <Setter Property="ClipToBounds" Value="True" />
+    </Style>
+    <Style Selector="Button.hubrow">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="CornerRadius" Value="0" />
+      <Setter Property="Padding" Value="16,14" />
+      <Setter Property="MinHeight" Value="68" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button.hubrow /template/ ContentPresenter">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+    </Style>
+    <Style Selector="Button.hubrow:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
+    </Style>
+    <Style Selector="Border.hubicon">
+      <Setter Property="Width" Value="40" />
+      <Setter Property="Height" Value="40" />
+      <Setter Property="CornerRadius" Value="20" />
+      <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
+      <Setter Property="Margin" Value="0,0,16,0" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Border.hubicon > mi|MaterialIcon">
+      <Setter Property="Width" Value="22" />
+      <Setter Property="Height" Value="22" />
+      <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
+      <Setter Property="HorizontalAlignment" Value="Center" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <Style Selector="TextBlock.hubtitle">
+      <Setter Property="FontSize" Value="16" />
+      <Setter Property="FontWeight" Value="Medium" />
+      <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+    <Style Selector="TextBlock.hubsub">
+      <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
+      <Setter Property="FontSize" Value="{DynamicResource FsSmall}" />
+      <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+    <!-- Titre de groupe : petit, en couleur d'accent, aligné sur le texte des lignes -->
+    <Style Selector="TextBlock.hubsection">
+      <Setter Property="FontSize" Value="13" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
+      <Setter Property="Margin" Value="20,10,0,2" />
+    </Style>
+    <Style Selector="Border.hubdivider">
+      <Setter Property="Height" Value="1" />
+      <Setter Property="Background" Value="{DynamicResource LineBrush}" />
+      <Setter Property="Margin" Value="72,0,16,0" />
+    </Style>
+    <Style Selector="Button.lockoption.chosen /template/ ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
+    </Style>
+    <Style Selector="Border.pill">
+      <Setter Property="CornerRadius" Value="12" />
+      <Setter Property="Padding" Value="10,4" />
+      <Setter Property="Background" Value="{DynamicResource NeutralSoftBrush}" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Border.pill.on">
+      <Setter Property="Background" Value="{DynamicResource GreenSoftBrush}" />
+    </Style>
+    <Style Selector="Border.hero">
+      <Setter Property="Width" Value="96" />
+      <Setter Property="Height" Value="96" />
+      <Setter Property="CornerRadius" Value="48" />
+      <Setter Property="Background" Value="{DynamicResource GreenSoftBrush}" />
+      <Setter Property="HorizontalAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Border.hero.alert">
+      <Setter Property="Background" Value="{DynamicResource OrangeSoftBrush}" />
+    </Style>
+    <Style Selector="Border.hero > mi|MaterialIcon">
+      <Setter Property="Width" Value="50" />
+      <Setter Property="Height" Value="50" />
+      <Setter Property="Foreground" Value="{DynamicResource ToneGreen}" />
+      <Setter Property="HorizontalAlignment" Value="Center" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Border.hero.alert > mi|MaterialIcon">
+      <Setter Property="Foreground" Value="{DynamicResource ToneOrange}" />
+    </Style>
+    <Style Selector="mi|MaterialIcon.tip">
+      <Setter Property="Width" Value="20" />
+      <Setter Property="Height" Value="20" />
+      <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
+      <Setter Property="VerticalAlignment" Value="Top" />
+      <Setter Property="Margin" Value="0,1,14,0" />
+    </Style>
+  </UserControl.Styles>
+
+  <StackPanel Spacing="8">
+    <!-- État du compte -->
+    <StackPanel Spacing="8" Margin="0,10,0,14" HorizontalAlignment="Center" MaxWidth="440">
+      <Border x:Name="SecurityHero" Classes="hero" Classes.alert="{Binding SecurityNeedsAction}">
+        <mi:MaterialIcon Kind="{Binding SecurityIcon}" />
+      </Border>
+      <TextBlock Text="{Binding SecurityHeadline}" FontSize="22" FontWeight="SemiBold" TextAlignment="Center" TextWrapping="Wrap" Margin="0,6,0,0" />
+      <TextBlock Text="{Binding SecuritySubline}" Classes="hubsub" TextAlignment="Center" />
+      <Border Classes="pill" HorizontalAlignment="Center" Margin="0,4,0,0" Padding="6,4,12,4" CornerRadius="16">
+        <StackPanel Orientation="Horizontal" Spacing="8">
+          <Border Width="24" Height="24" CornerRadius="12" Background="{DynamicResource AccentBrush}">
+            <TextBlock Text="{Binding Initials}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource OnAccentBrush}"
+                       HorizontalAlignment="Center" VerticalAlignment="Center" />
+          </Border>
+          <TextBlock Text="{Binding UserName}" FontWeight="Medium" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" MaxWidth="200" />
+          <TextBlock Text="{Binding Role}" Classes="hubsub" VerticalAlignment="Center" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" MaxWidth="120" />
+        </StackPanel>
+      </Border>
+    </StackPanel>
+
+    <!-- Message du dernier changement (code enregistré, code provisoire) -->
+    <Border Background="{DynamicResource AccentSoftBrush}" CornerRadius="18" Padding="16,12" IsVisible="{Binding HasCodeNotice}">
+      <Grid ColumnDefinitions="Auto,*">
+        <mi:MaterialIcon Kind="InformationOutline" Width="20" Height="20" Foreground="{DynamicResource AccentBrush}" VerticalAlignment="Top" Margin="0,0,12,0" />
+        <TextBlock Grid.Column="1" Text="{Binding CodeNotice}" TextWrapping="Wrap" />
+      </Grid>
+    </Border>
+
+    <TextBlock Text="Déverrouillage" Classes="hubsection" />
+    <Border Classes="hubgroup">
+      <StackPanel>
+        <Button x:Name="CodeRow" Classes="hubrow" Command="{Binding ToggleCodeEditor}">
+          <Grid ColumnDefinitions="Auto,*,Auto">
+            <Border Classes="hubicon"><mi:MaterialIcon Kind="LockOutline" /></Border>
+            <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+              <TextBlock Text="Code d'accès" Classes="hubtitle" />
+              <TextBlock Text="{Binding CodeSummary}" Classes="hubsub" />
+            </StackPanel>
+            <mi:MaterialIcon Grid.Column="2" Kind="{Binding CodeChevron}" Width="22" Height="22" Margin="8,0,0,0"
+                             Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" />
+          </Grid>
+        </Button>
+        <Border IsVisible="{Binding CodeEditorOpen}" Padding="16,0,16,18">
+          <views:AccessCodeView />
+        </Border>
+
+        <Border Classes="hubdivider" IsVisible="{Binding ShowBiometricSecurity}" />
+        <Button x:Name="BiometricRow" Classes="hubrow" Command="{Binding ToggleBiometricPanel}" IsVisible="{Binding ShowBiometricSecurity}">
+          <Grid ColumnDefinitions="Auto,*,Auto">
+            <Border Classes="hubicon"><mi:MaterialIcon Kind="Fingerprint" /></Border>
+            <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+              <TextBlock Text="{Binding BiometricTitle}" Classes="hubtitle" />
+              <!-- L'état en tête du résumé, comme « Verrouillage automatique » : rien ne serre le titre. -->
+              <TextBlock Classes="hubsub">
+                <Run Text="{Binding BiometricStateLabel, Mode=OneWay}" FontWeight="SemiBold" /><Run Text=" · " /><Run Text="{Binding BiometricSummary, Mode=OneWay}" />
+              </TextBlock>
+            </StackPanel>
+            <mi:MaterialIcon Grid.Column="2" Kind="{Binding BiometricChevron}" Width="22" Height="22" Margin="6,0,0,0"
+                             Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" />
+          </Grid>
+        </Button>
+        <Border Padding="16,0,16,18">
+          <Border.IsVisible>
+            <MultiBinding Converter="{x:Static BoolConverters.And}">
+              <Binding Path="ShowBiometricSecurity" />
+              <Binding Path="BiometricPanelOpen" />
+            </MultiBinding>
+          </Border.IsVisible>
+          <StackPanel Spacing="12">
+            <TextBlock Text="{Binding BiometricSecurityStatus}" Classes="hubsub" />
+            <TextBlock Text="Confirmez avec votre code actuel" FontWeight="SemiBold" Margin="2,2,0,0" />
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
+              <TextBox Classes="w11" x:Name="BiometricCodeBox" Text="{Binding SecurityPassword}" PasswordChar="{Binding SecurityPasswordMask}"
+                       TextInputOptions.ContentType="Password" TextInputOptions.IsSensitive="True"
+                       PlaceholderText="Code PIN ou mot de passe" MinHeight="52" CornerRadius="14" FontSize="16" />
+              <Button Grid.Column="1" Classes="quiet" Command="{Binding ToggleSecurityPassword}"
+                      ToolTip.Tip="Afficher ou masquer le code" MinWidth="48" MinHeight="48">
+                <mi:MaterialIcon Kind="{Binding SecurityEyeIcon}" Width="22" Height="22" />
+              </Button>
+            </Grid>
+            <Button x:Name="BiometricButton" Classes="primary" Command="{Binding ManageBiometrics}" IsEnabled="{Binding BiometricSecurityAllowed}"
+                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" MinHeight="52" CornerRadius="26">
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <mi:MaterialIcon Kind="Fingerprint" Width="20" Height="20" />
+                <TextBlock Text="{Binding BiometricActionLabel}" FontWeight="SemiBold" VerticalAlignment="Center" />
+              </StackPanel>
+            </Button>
+            <Border Background="{DynamicResource AccentSoftBrush}" CornerRadius="14" Padding="14,10" IsVisible="{Binding HasSecurityNotice}">
+              <TextBlock Text="{Binding SecurityNotice}" TextWrapping="Wrap" FontSize="{DynamicResource FsSmall}" />
+            </Border>
+          </StackPanel>
+        </Border>
+      </StackPanel>
+    </Border>
+
+    <TextBlock Text="Mise en veille" Classes="hubsection" />
+    <Border Classes="hubgroup">
+      <StackPanel>
+        <!-- Même présentation que « Code d'accès » : la ligne s'ouvre sur place, les délais se cochent. -->
+        <Button x:Name="LockDelayRow" Classes="hubrow" Command="{Binding ToggleLockPanel}">
+          <Grid ColumnDefinitions="Auto,*,Auto">
+            <Border Classes="hubicon"><mi:MaterialIcon Kind="LockClock" /></Border>
+            <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+              <TextBlock Text="Verrouillage automatique" Classes="hubtitle" />
+              <TextBlock Text="{Binding LockSummary}" Classes="hubsub" />
+            </StackPanel>
+            <mi:MaterialIcon Grid.Column="2" Kind="{Binding LockChevron}" Width="22" Height="22" Margin="6,0,0,0"
+                             Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" />
+          </Grid>
+        </Button>
+        <Border IsVisible="{Binding LockPanelOpen}" Padding="16,0,16,16">
+          <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="18" ClipToBounds="True">
+            <ItemsControl x:Name="LockDelays" ItemsSource="{Binding LockOptions}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <Button Classes="hubrow lockoption" Classes.chosen="{Binding IsSelected}" Command="{Binding Choose}" MinHeight="52" Padding="16,10">
+                    <Grid ColumnDefinitions="*,Auto">
+                      <TextBlock Text="{Binding Label}" FontWeight="Medium" VerticalAlignment="Center" />
+                      <Panel Grid.Column="1" Width="22" Height="22">
+                        <mi:MaterialIcon Kind="RadioboxMarked" Foreground="{DynamicResource AccentBrush}" IsVisible="{Binding IsSelected}" />
+                        <mi:MaterialIcon Kind="RadioboxBlank" Foreground="{DynamicResource MutedBrush}" IsVisible="{Binding !IsSelected}" />
+                      </Panel>
+                    </Grid>
+                  </Button>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </Border>
+        </Border>
+        <Border Classes="hubdivider" />
+        <Button x:Name="LockNowRow" Classes="hubrow" Command="{Binding LockNow}">
+          <Grid ColumnDefinitions="Auto,*,Auto">
+            <Border Classes="hubicon"><mi:MaterialIcon Kind="LockOutline" /></Border>
+            <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+              <TextBlock Text="Verrouiller maintenant" Classes="hubtitle" />
+              <TextBlock Text="Avant de laisser l'appareil : le code sera redemandé" Classes="hubsub" />
+            </StackPanel>
+            <mi:MaterialIcon Grid.Column="2" Kind="ChevronRight" Width="22" Height="22" Margin="8,0,0,0"
+                             Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" />
+          </Grid>
+        </Button>
+      </StackPanel>
+    </Border>
+
+    <TextBlock Text="Bon à savoir" Classes="hubsection" />
+    <Border Classes="hubgroup" Padding="18,16">
+      <StackPanel Spacing="14">
+        <Grid ColumnDefinitions="Auto,*">
+          <mi:MaterialIcon Classes="tip" Kind="EyeOffOutline" />
+          <TextBlock Grid.Column="1" Classes="hubsub" Text="Personne ne voit votre code, pas même le secrétariat. En cas d'oubli, il vous en donne un provisoire." />
+        </Grid>
+        <Grid ColumnDefinitions="Auto,*" IsVisible="{Binding ShowBiometricSecurity}">
+          <mi:MaterialIcon Classes="tip" Kind="CellphoneLock" />
+          <TextBlock Grid.Column="1" Classes="hubsub" Text="Le téléphone vérifie lui-même votre empreinte : SCOLIA ne la voit jamais. Une nouvelle empreinte ajoutée au téléphone désactive l'accès." />
+        </Grid>
+        <Grid ColumnDefinitions="Auto,*">
+          <mi:MaterialIcon Classes="tip" Kind="TimerSandEmpty" />
+          <TextBlock Grid.Column="1" Classes="hubsub" Text="Après cinq erreurs de code, la connexion se bloque deux minutes, puis revient seule." />
+        </Grid>
+      </StackPanel>
+    </Border>
+  </StackPanel>
+</UserControl>

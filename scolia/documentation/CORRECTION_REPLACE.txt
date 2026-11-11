@@ -1,0 +1,20 @@
+﻿CORRECTION DE L’ÉCRITURE DU SUIVI — 7 OCTOBRE 2026
+
+Erreur signalée : appel de Replace avec 3 arguments, chemin non conforme.
+Le suivi utilisait une valeur null comme chemin du fichier de sauvegarde.
+Sous Windows PowerShell 5.1, cet argument string peut être converti en chaîne
+vide ; la méthode .NET rejette alors le chemin lors d'un remplacement.
+
+Le remplacement utilise désormais un chemin réel terminé par .precedent,
+avec la même surcharge à quatre arguments que le registre de stockage.
+L'état précédent reste disponible pour le diagnostic. Les écritures sur les
+systèmes de fichiers ne prenant pas en charge le remplacement gardent leur
+solution de repli existante, réservée aux fichiers de suivi de l'installateur.
+
+Le test natif contrôle deux remplacements successifs et les états précédents,
+dans un dossier temporaire avec espaces et caractère accentué.
+Les classeurs fournis ne sont pas modifiés. Ce défaut survient dans le test
+de suivi, exécuté avant la copie du classeur et l'ouverture d'Excel.
+
+Analyse statique et intégrité du ZIP contrôlées ici. Les essais natifs
+Windows PowerShell 5.1 / Excel restent à effectuer sur le PC Windows.

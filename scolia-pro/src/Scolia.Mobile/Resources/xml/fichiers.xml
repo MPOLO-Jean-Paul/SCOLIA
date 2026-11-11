@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Dossiers partagés avec le lecteur de documents du téléphone : seulement les documents de SCOLIA. -->
+<paths>
+  <external-files-path name="documents" path="Documents/" />
+  <files-path name="interne" path="." />
+</paths>

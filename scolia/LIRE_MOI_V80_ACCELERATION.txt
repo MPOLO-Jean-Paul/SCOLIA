@@ -1,0 +1,51 @@
+SCOLIA V80 — NOYAU ACCÉLÉRÉ ET CHARGEMENT LINÉAIRE
+
+Extraire cette édition dans un NOUVEAU dossier puis lancer APPLICATION comme
+habituellement. Reconnecter ensuite le dossier de données de l'établissement.
+Ne remplacez jamais les données réelles par les classeurs d'exemple du paquet.
+Le design, les écrans, les droits et les fonctionnalités de la V79 sont inchangés.
+
+CAUSE PRINCIPALE DE LENTEUR CORRIGÉE (EXCEL)
+La macro ITMAppSnapshot, qui transmet toute la base à l'application à la
+connexion et à chaque actualisation complète, assemblait son texte par
+« s = s & ... ». À chaque ajout, Excel recopiait tout le texte déjà produit :
+le temps augmentait avec le CARRÉ du nombre d'apprenants et de paiements.
+Ordre de grandeur théorique (modèle de recopie mémoire, 4 Go/s) :
+  79 apprenants / 300 paiements     : environ 1 s     -> négligeable en V80
+  200 apprenants / 1 000 paiements  : environ 14 s    -> négligeable en V80
+  400 apprenants / 3 600 paiements  : environ 2 min   -> négligeable en V80
+La V80 assemble le texte en une seule passe (tampon + Join). Le contenu transmis
+est identique octet pour octet. L'échappement des textes utilise désormais des
+remplacements natifs au lieu d'une boucle caractère par caractère.
+
+Mise à jour du classeur : automatique à la première connexion (sauvegarde de
+récupération préalable, module ModuleApplicationITM seul, version SCOLIA-PERF-7).
+Si Excel refuse l'accès au projet VBA, l'application l'indique et reste utilisable.
+
+NOYAU D'ACCÉLÉRATION COMPILÉ (AccelerationScolia.cs)
+Les traitements exécutés à chaque frappe ou à chaque actualisation de tableau
+passent du PowerShell interprété au C# compilé :
+- normalisation des textes de recherche (accents, majuscules) ;
+- construction des tableaux affichés ;
+- rapprochement d'un tableau déjà affiché (mesuré : 1 500 lignes, 476 ms -> 7 ms) ;
+- réselection du dossier après une actualisation ;
+- filtre des apprenants pendant la saisie d'une recherche.
+Si le noyau ne peut pas être compilé sur un poste, SCOLIA reprend
+automatiquement le code PowerShell de la V79 : aucune fonction n'est perdue.
+
+FLUIDITÉ GÉNÉRALE
+- Le contrôle des fenêtres à mettre aux couleurs du thème ne s'exécute plus en
+  PowerShell après chaque mouvement de souris ou frappe : il est fait en C#.
+- 134 vérifications « Get-Command » remplacées par une lecture directe de la
+  table des fonctions (plus de parcours du disque ni du PATH Windows à chaque
+  clic, ouverture de page, tableau ou opération).
+
+DIAGNOSTIC
+Les durées sont consignées dans :
+%LOCALAPPDATA%\ITMCD\diagnostics\performance-v80.csv
+Comparez avec performance-v79.csv pour mesurer le gain sur votre propre base.
+
+VALIDATION LOCALE WINDOWS
+Lancer : 00_Demarrage\VERIFIER_PERFORMANCES_V80.cmd
+Le rapport complet d'audit, les propositions et les questions ouvertes sont dans :
+documentation\AUDIT_V80_MODERNISATION.md

@@ -1,0 +1,80 @@
+﻿SECURITE ET CONNEXION — ITM CD
+
+PREMIERE ACTIVATION
+Extraire ce ZIP dans un nouveau dossier, puis lancer APPLICATION.vbs.
+Ouvrir le nouvel onglet principal Sécurité, même sans classeur connecté.
+Cliquer sur Activer le mot de passe, saisir un mot de passe d’au moins
+4 caractères, puis le confirmer. Les espaces et caractères Unicode sont
+acceptés ; 128 caractères maximum. Conserver le code de récupération affiché
+une seule fois, séparément de cet ordinateur, puis fermer la fenêtre du code.
+La protection est désactivée au départ : aucun mot de passe prédéfini.
+
+ACCES QUOTIDIEN
+Quand la protection est active, la page de connexion apparaît avant l’accueil
+et avant la reconnexion au classeur mémorisé. Saisir le mot de passe puis
+Se connecter. Afficher le mot de passe est facultatif et désactivé au départ.
+Quitter ou fermer la page de connexion ferme l’application sans ouvrir le classeur.
+La préférence de connexion au classeur reste conservée entre les lancements.
+
+GESTION
+Modifier le mot de passe exige le mot de passe actuel et une confirmation
+du nouveau. Chaque changement renouvelle aussi le code de récupération.
+Désactiver la protection ou modifier ses préférences exige une authentification
+si elle est active. Un code de récupération valide peut servir à la réinitialisation.
+La fermeture de l’application ne désactive pas la protection.
+
+VERROUILLAGE
+Verrouiller maintenant masque l’accueil et demande le mot de passe pour reprendre.
+Le classeur reste connecté pendant ce verrouillage. Quitter l’écran verrouillé
+ferme l’application et libère Excel, en conservant le classeur mémorisé.
+Réglages disponibles : inactivité du PC de 5, 15 ou 30 minutes, ou 0 pour
+désactiver le délai ; verrouillage quand la fenêtre est réduite, facultatif.
+Le délai par défaut est de 15 minutes. Le verrouillage automatique attend la fin
+d’un traitement et la fermeture des fenêtres de saisie pour ne pas interrompre
+une opération. Une fenêtre laissée ouverte peut donc retarder ce verrouillage ;
+utiliser Verrouiller maintenant avant de quitter le poste.
+
+TENTATIVES ET RECUPERATION
+Après cinq essais incorrects, les vérifications sont bloquées pendant cinq minutes.
+Le compteur et le délai sont conservés après fermeture. Mot de passe oublié
+ouvre un formulaire demandant le code de récupération puis un nouveau mot
+de passe confirmé. Le code précédent devient invalide après remplacement.
+Sans mot de passe ni code de récupération, il n’existe pas de mot de passe
+de secours fourni dans le paquet. Conserver soigneusement ce code.
+
+HISTORIQUE
+L’onglet affiche les 30 derniers événements : authentifications réussies/refusées,
+verrouillages et changements de réglages. Aucun mot de passe ni code de
+récupération n’est inscrit dans cet historique. Ce journal local n’est pas inviolable.
+
+STOCKAGE ET LIMITES
+Les mots de passe et codes sont représentés par une empreinte PBKDF2-HMAC-SHA256
+à 600 000 itérations et un sel aléatoire de 32 octets. Les paramètres persistants
+sont protégés par Windows DPAPI pour le compte Windows courant et écrits par
+remplacement du fichier. Le changement de dossier de l’application conserve
+ces réglages. Un fichier existant illisible bloque le démarrage ; il n’est pas
+remplacé automatiquement par une configuration désactivée.
+
+Il s’agit d’une protection locale de l’interface. Elle ne chiffre pas le classeur
+Excel et ne remplace pas les permissions Windows. Quelqu’un disposant du compte
+Windows, d’un accès aux scripts ou pouvant supprimer les paramètres peut la
+contourner. Chaque compte Windows possède ses propres réglages ; activer la
+protection sur chaque compte utilisé. Pour protéger le classeur hors application,
+prévoir également les permissions du dossier et une stratégie de chiffrement
+compatible avec son ouverture automatisée. Ce paquet ne modifie pas ce point.
+
+SOURCES TECHNIQUES
+https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html
+https://learn.microsoft.com/en-us/dotnet/api/system.security.cryptography.dataprotectionscope
+
+VALIDATION
+Les contrôles du paquet portent sur la structure des scripts, la place de
+l’authentification avant l’accueil, la navigation et les modèles de référence.
+La compilation du composant C#, DPAPI, les fenêtres et les scénarios de connexion
+doivent être testés sous Windows. Cet environnement ne dispose pas de Windows,
+d’Excel, de PowerShell ou d’un compilateur C#.
+
+Avant d’activer sur le poste réel : tester sur une copie du classeur et conserver
+le code. Vérifier activation, réouverture, mauvais mot de passe, récupération,
+verrouillage/reprise et désactivation. Aucune réinstallation VBA supplémentaire
+n’est nécessaire si le classeur contient déjà les corrections de l’édition précédente.

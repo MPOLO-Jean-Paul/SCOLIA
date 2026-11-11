@@ -1,0 +1,44 @@
+ÉDITION 91 — VÉRIFICATION DES FONCTIONNALITÉS — 9 octobre 2026
+
+CORRECTIONS
+- Import des cotes : les conversions de barème produisant une fraction
+  (exemple : 1/3 de 20 points) ne provoquent plus un faux échec de contrôle.
+  Les cotes absentes, invalides ou différentes restent refusées.
+- Promotion et cours : les anciennes sélections sont effacées lors d'un
+  changement de grille ou de promotion. Le moteur vérifie aussi que la feuille,
+  le cours et sa colonne correspondent au choix effectué.
+- Le fichier de cotes ne peut pas utiliser la même colonne pour le nom et la cote.
+- Les contrôles de fichiers détectent une modification pendant l'analyse
+  et vérifient la copie avant toute écriture des cotes ou des décisions.
+- Analyse et enregistrement : les commandes et le remplacement des cotes sont
+  verrouillés pendant le traitement puis réactivés même si le lancement,
+  Excel ou la fermeture de l'indicateur échoue. Une écriture échouée peut être
+  retentée sans laisser le formulaire bloqué.
+- Les barèmes sont additionnés en décimal pour les formules de décision.
+
+CONTRÔLES EFFECTUÉS
+- Syntaxe des 76 scripts PowerShell.
+- Tests des décisions P/A/AA/D : seuil de 50 %, zéro distinct du vide,
+  cotes manquantes et échecs simultanés, barèmes pondérés, valeurs invalides.
+- Repères et cours des quatre feuilles de la grille fournie.
+- Correspondances : accents, séparateurs, noms inconnus, doublons,
+  homonymes et cotes hors barème.
+- Exécution des gestionnaires réels des boutons Analyser, Remplir et Préparer
+  avec erreurs simulées au lancement, à l'écriture et à la fermeture.
+- Parcours d'enregistrement avec Excel simulé : fraction, décision,
+  conservation des sources, rejet d'une mauvaise valeur et nettoyage de la copie.
+- Compilation C# 5 des composants d'interface ; adaptateur COM avec arguments
+  enveloppés ; libellés des cases à cocher clairs/sombres, actifs/inactifs.
+- Validation du schéma OpenXML des exports Word de 1, 8 et 9 cartes.
+- Intégrité du ZIP et conservation des six classeurs XLSM et des lanceurs VBS.
+
+LIMITES
+Ces vérifications n'équivalent pas à un essai de bout en bout avec Office sous
+Windows. La connexion réelle Excel, l'impression, le rendu dans Microsoft Word
+et les tests de tous les formulaires sur le poste de l'école restent à confirmer.
+Aucune donnée scolaire réelle n'a été écrite pendant cet audit.
+
+MISE À JOUR
+Lancer APPLICATION.vbs comme auparavant. Conserver tout le dossier data et
+les paramètres existants selon DEMARRER_ICI.txt. Les corrections de cette
+édition portent sur l'application : ne recréez pas votre base pour les appliquer.

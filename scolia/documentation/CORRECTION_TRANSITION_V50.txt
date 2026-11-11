@@ -1,0 +1,7 @@
+﻿SCOLIA V50 - Correction de la transition après installation
+
+Cause trouvée : dans V49, le Timer utilisé pour fermer la fenêtre après une installation réussie était une variable locale capturée dans un gestionnaire Tick. Au moment de l'événement, cette variable pouvait être nulle sous Windows PowerShell 5.1, d'où la boîte .NET « Impossible d'appeler une méthode dans une expression Null. ».
+
+Correction : suppression complète de ce Timer intermédiaire. Une fois le résultat d'installation confirmé, la fenêtre d'installation reçoit DialogResult=OK et se ferme directement sur le thread UI. Lancer.ps1 reprend alors le parcours normal vers configuration puis connexion.
+
+Aucune donnée Excel n'est modifiée par cette correction ; elle concerne uniquement la transition d'interface après succès.

@@ -1,0 +1,10 @@
+SCOLIA V20 — Confirmation d'inscription et lisibilité de la connexion
+
+1. Après une inscription validée, le formulaire reste ouvert. Un message vert confirme le succès et affiche le matricule attribué.
+2. Pour une nouvelle inscription, les champs personnels sont réinitialisés afin de pouvoir saisir immédiatement l'apprenant suivant. La promotion choisie est conservée ; le statut revient à Actif. Le champ Nom reprend le focus.
+3. Lors de la modification d'un dossier existant, le formulaire reste également ouvert et conserve les valeurs modifiées avec une confirmation visible.
+4. Le point de référence du formulaire est réinitialisé après une sauvegarde réussie afin qu'une fermeture ultérieure ne signale pas à tort les données déjà enregistrées comme non sauvegardées.
+5. Les champs de mot de passe du formulaire de connexion et des formulaires de compte utilisent une hauteur explicite, désactivent l'AutoSize natif qui peut ignorer les dimensions assignées et réservent une zone distincte au bouton Afficher/Masquer.
+6. Le test TestsConfirmationInscription.ps1 vérifie la syntaxe PowerShell, le maintien du formulaire, les messages de succès et les protections de mise en page.
+
+Limite de validation : les contrôles statiques peuvent être effectués dans l'archive, mais la validation visuelle finale doit être exécutée sur Windows avec PowerShell 5.1 et Excel, dans l'environnement SCOLIA réel.

@@ -1,0 +1,11 @@
+SCOLIA V35 — RÉSULTAT DES CONTRÔLES DISPONIBLES
+
+[OK] Archive source V34 ouverte et structure des fichiers inspectée.
+[OK] Corrections de l'écriture JSON atomique appliquées dans ScoliaConfiguration.ps1 et StockageClasseurs.ps1.
+[OK] Gestion des anciens fichiers de secours .bak et .precedent renforcée.
+[OK] Handles de verrouillage de l'enregistrement des paramètres initialisés et libérés de façon défensive.
+[OK] Contrôle d'intégrité ZIP final effectué après génération.
+[À EXÉCUTER SUR WINDOWS] Analyse syntaxique native Windows PowerShell 5.1 au lancement.
+[À EXÉCUTER SUR WINDOWS + EXCEL] Tests d'inscription, fermeture/reconnexion, paiements, configuration, restauration transactionnelle et macros VBA.
+
+Aucune certification d'exécution Windows/Excel n'est revendiquée : l'environnement de préparation ne dispose pas de Windows PowerShell 5.1 ni d'Excel COM.

@@ -1,0 +1,9 @@
+﻿REVUE DE COHERENCE
+
+- La connexion manuelle respecte le choix de reconnexion automatique.
+- Les messages acceptent une erreur technique ou un texte explicatif.
+- Une liste actualisée conserve le dossier sélectionné si son identité est unique et encore visible, ainsi que la position de lecture.
+- Données : Ouvrir le dernier créé (Ctrl+Alt+O) reprend la connexion ou la préparation du fichier généré, sans le créer à nouveau. Le chemin est mémorisé pour les prochains lancements.
+- Les échecs de mémorisation Windows sont signalés ; la case de reconnexion revient au réglage réellement enregistré.
+
+Les fichiers Excel existants sont conservés sans modification par cette mise à jour. Les essais avec Excel et les formulaires Windows doivent être exécutés sur Windows.

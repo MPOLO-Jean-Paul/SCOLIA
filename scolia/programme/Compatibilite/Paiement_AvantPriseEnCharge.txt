@@ -1,0 +1,924 @@
+﻿Option Explicit ' ==
+Private mActionsPro As CExportMensuel
+
+' ============================================================
+' ITM COEUR DE DIEU
+' USERFORM : UF_Paiement
+'
+' Mensualité : 55 000 FC
+' Période : Septembre à Mai
+' Total annuel : 495 000 FC
+'
+' CONTROLES :
+' TextRecherche
+' ListResultats
+'
+' TextMatricule
+' TextNomApprenant
+' TextPostNom
+' TextPrenom
+' TextPromotion
+'
+' TextDatePaiement
+' TextNumeroEnregistrement
+' TextMontantPaye
+'
+' TextMoisConcerne
+' TextMontantDu
+' TextAffectation
+' TextTotalPaye
+' TextTotalAnnuel
+' TextResteAnnuel
+' TextStatut
+'
+' BOUTONS :
+' CommandEnregistrerPaiement
+' CommandNouveauPaiement
+' CommandEffacerPaiement
+' CommandFermerPaiement
+'
+' PAIEMENTS :
+' A ID
+' B Date paiement
+' C N° Enregistrement
+' D Matricule
+' E Nom complet
+' F Promotion
+' G Mois
+' H Montant dû avant affectation
+' I Montant affecté
+' J Reste du mois
+' K Statut
+' L Total payé année
+' M Total annuel dû
+' N Reste annuel
+' ============================================================
+Private Property Get MONTANT_MENSUEL() As Currency
+    MONTANT_MENSUEL = MensualitePromotion(CStr(TextPromotion.Value))
+End Property
+Private Property Get TOTAL_ANNUEL() As Currency
+    TOTAL_ANNUEL = AnnuelPromotion(CStr(TextPromotion.Value))
+End Property
+
+' ============================================================
+' INITIALISATION
+' ============================================================
+Private Sub UserForm_Initialize()
+    With ListResultats
+        .Clear
+        .ColumnCount = 5
+        .ColumnWidths = "70 pt;90 pt;90 pt;90 pt;65 pt"
+    End With
+    TextMatricule.Locked = True
+    TextNomApprenant.Locked = True
+    TextPostNom.Locked = True
+    TextPrenom.Locked = True
+    TextPromotion.Locked = True
+    TextDatePaiement.Locked = True
+    TextNumeroEnregistrement.Locked = True
+    TextMoisConcerne.Locked = True
+    TextMontantDu.Locked = True
+    TextAffectation.Locked = True
+    TextTotalPaye.Locked = True
+    TextTotalAnnuel.Locked = True
+    TextResteAnnuel.Locked = True
+    TextStatut.Locked = True
+
+    ' Empêcher la navigation TAB dans les champs automatiques
+    TextMatricule.TabStop = False
+    TextNomApprenant.TabStop = False
+    TextPostNom.TabStop = False
+    TextPrenom.TabStop = False
+    TextPromotion.TabStop = False
+    TextDatePaiement.TabStop = False
+    TextNumeroEnregistrement.TabStop = False
+    TextMoisConcerne.TabStop = False
+    TextMontantDu.TabStop = False
+    TextAffectation.TabStop = False
+    TextTotalPaye.TabStop = False
+    TextTotalAnnuel.TabStop = False
+    TextResteAnnuel.TabStop = False
+    TextStatut.TabStop = False
+
+    TextAffectation.MultiLine = True
+    TextAffectation.ScrollBars = fmScrollBarsVertical
+    TextMontantPaye.MaxLength = 12
+    TextDatePaiement.Value = Format(Date, "dd/mm/yyyy")
+    TextNumeroEnregistrement.Value = _
+    GenererNumeroEnregistrement()
+    TextTotalAnnuel.Value = Format(TOTAL_ANNUEL, "#,##0") & " FC"
+    ViderApprenant
+
+    Set mActionsPro = ConfigurerFormulairePro(Me)
+    ActualiserDettesAnterieures
+End Sub
+' ============================================================
+' RECHERCHE INSTANTANEE
+' ============================================================
+Private Sub TextRecherche_Change()
+    MajusculeChamp Me.Controls("TextRecherche")
+    RechercherApprenants TextRecherche.Value
+End Sub
+Private Sub RechercherApprenants(ByVal recherche As String)
+    Dim ws As Worksheet
+    Dim derniereLigne As Long
+    Dim i As Long
+    Dim texte As String
+    Dim n As Long
+    Set ws = ThisWorkbook.Worksheets("APPRENANTS")
+    ListResultats.Clear
+    recherche = LCase$(Trim$(recherche))
+    If recherche = "" Then Exit Sub
+    derniereLigne = _
+        ws.Cells(ws.Rows.Count, "A").End(xlUp).Row
+    If derniereLigne < 5 Then Exit Sub
+    For i = 5 To derniereLigne
+        texte = LCase$( _
+            UCase$(CStr(ws.Cells(i, "A").Value)) & " " & _
+            UCase$(CStr(ws.Cells(i, "B").Value)) & " " & _
+            UCase$(CStr(ws.Cells(i, "C").Value)) & " " & _
+            UCase$(CStr(ws.Cells(i, "D").Value)))
+        If InStr(1, texte, recherche, _
+                   vbTextCompare) > 0 Then
+            ListResultats.AddItem _
+                UCase$(CStr(ws.Cells(i, "A").Value))
+            n = ListResultats.ListCount - 1
+            ListResultats.List(n, 1) = _
+                UCase$(CStr(ws.Cells(i, "B").Value))
+            ListResultats.List(n, 2) = _
+                UCase$(CStr(ws.Cells(i, "C").Value))
+            ListResultats.List(n, 3) = _
+                UCase$(CStr(ws.Cells(i, "D").Value))
+            ListResultats.List(n, 4) = _
+                CStr(ws.Cells(i, "H").Value)
+        End If
+    Next i
+End Sub
+' ============================================================
+' SELECTION DE L'APPRENANT
+' ============================================================
+Private Sub ListResultats_Click()
+    Dim ws As Worksheet
+    Dim ligne As Variant
+    Dim matricule As String
+    If ListResultats.ListIndex = -1 Then Exit Sub
+    matricule = CStr( _
+        ListResultats.List( _
+        ListResultats.ListIndex, 0))
+    Set ws = ThisWorkbook.Worksheets("APPRENANTS")
+    ligne = Application.Match( _
+        matricule, ws.Columns("A"), 0)
+    If IsError(ligne) Then
+        MsgBox _
+            "Cet apprenant est introuvable.", _
+            vbExclamation, _
+            "Apprenant introuvable"
+        Exit Sub
+    End If
+    TextMatricule.Value = _
+        UCase$(CStr(ws.Cells(ligne, "A").Value))
+    TextNomApprenant.Value = _
+        UCase$(CStr(ws.Cells(ligne, "B").Value))
+    TextPostNom.Value = _
+        UCase$(CStr(ws.Cells(ligne, "C").Value))
+    TextPrenom.Value = _
+        UCase$(CStr(ws.Cells(ligne, "D").Value))
+    TextPromotion.Value = _
+        CStr(ws.Cells(ligne, "H").Value)
+    TextMontantPaye.Value = ""
+    TextAffectation.Value = ""
+    ActualiserSituation
+End Sub
+' ============================================================
+' GENERER UN N° D'ENREGISTREMENT UNIQUE
+' ============================================================
+Private Function GenererNumeroEnregistrement() As String
+    Dim caracteres As String
+    Dim numero As String
+    Dim i As Integer
+    caracteres = _
+        "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+    Randomize
+    Do
+        numero = ""
+        For i = 1 To 5
+            numero = numero & _
+                Mid$(caracteres, _
+                Int(Rnd() * Len(caracteres)) + 1, 1)
+        Next i
+    Loop While NumeroEnregistrementExiste(numero)
+    GenererNumeroEnregistrement = numero
+End Function
+' ============================================================
+' VERIFIER L'UNICITE DU NUMERO
+' ============================================================
+Private Function NumeroEnregistrementExiste( _
+    ByVal numero As String) As Boolean
+    Dim ws As Worksheet
+    Dim derniereLigne As Long
+    Dim i As Long
+    Set ws = _
+        ThisWorkbook.Worksheets("PAIEMENTS")
+    derniereLigne = _
+        ws.Cells(ws.Rows.Count, "C").End(xlUp).Row
+    If derniereLigne < 5 Then Exit Function
+    For i = 5 To derniereLigne
+        If StrComp( _
+            Trim$(UCase$(CStr(ws.Cells(i, "C").Value))), _
+            Trim$(numero), _
+            vbTextCompare) = 0 Then
+            NumeroEnregistrementExiste = True
+            Exit Function
+        End If
+    Next i
+End Function
+' ============================================================
+' SITUATION FINANCIERE
+' ============================================================
+Private Sub ActualiserSituation()
+    Dim totalPaye As Currency
+    Dim resteAnnuel As Currency
+    Dim premierMois As String
+    Dim detteMois As Currency
+    If UCase$(Trim$(TextMatricule.Value)) = "" Then Exit Sub
+    totalPaye = _
+        TotalPayeEnregistre(TextMatricule.Value)
+    resteAnnuel = _
+        TOTAL_ANNUEL - totalPaye
+    If resteAnnuel < 0 Then _
+        resteAnnuel = 0
+    TextTotalPaye.Value = Format(totalPaye, "#,##0") & " FC"
+    TextTotalAnnuel.Value = Format(TOTAL_ANNUEL, "#,##0") & " FC"
+    TextResteAnnuel.Value = Format(resteAnnuel, "#,##0") & " FC"
+    ' Montant dû = mensualité normale du mois concerné
+    TextMontantDu.Value = Format(MONTANT_MENSUEL, "#,##0") & " FC"
+    premierMois = _
+        PremierMoisNonSolde(TextMatricule.Value)
+    If premierMois = "" Then
+        TextMoisConcerne.Value = _
+            "Tous les mois soldés"
+        TextStatut.Value = _
+            "SOLDE ANNUEL"
+    Else
+        detteMois = _
+            RestePourMois( _
+            TextMatricule.Value, premierMois)
+        TextMoisConcerne.Value = premierMois
+        If detteMois < MONTANT_MENSUEL Then
+            TextStatut.Value = _
+                "LITIGE " & premierMois
+        Else
+            TextStatut.Value = _
+                "A PAYER " & premierMois
+        End If
+    End If
+    ActualiserDettesAnterieures
+End Sub
+' ============================================================
+' MODIFICATION DU MONTANT
+' ============================================================
+Private Sub TextMontantPaye_Change()
+    If UCase$(Trim$(TextMatricule.Value)) = "" Then _
+        Exit Sub
+    If Trim$(TextMontantPaye.Value) = "" Then
+        TextAffectation.Value = ""
+        ActualiserSituation
+        Exit Sub
+    End If
+    If Not IsNumeric(TextMontantPaye.Value) Then
+        TextAffectation.Value = ""
+        Exit Sub
+    End If
+    AfficherApercuAffectation _
+        CCur(TextMontantPaye.Value)
+End Sub
+' ============================================================
+' APERCU DE L'AFFECTATION AUTOMATIQUE
+' ============================================================
+Private Sub AfficherApercuAffectation( _
+    ByVal montant As Currency)
+    Dim mois As Variant
+    Dim m As Variant
+    Dim disponible As Currency
+    Dim resteMois As Currency
+    Dim affecte As Currency
+    Dim apercu As String
+    Dim resteAnnuel As Currency
+    Dim totalActuel As Currency
+    Dim totalApres As Currency
+    Dim resteAnnuelApres As Currency
+    mois = TableauMois()
+    disponible = montant
+    apercu = ""
+    If montant <= 0 Then
+        TextAffectation.Value = ""
+        Exit Sub
+    End If
+    For Each m In mois
+        resteMois = _
+            RestePourMois( _
+            TextMatricule.Value, CStr(m))
+        If resteMois > 0 _
+           And disponible > 0 Then
+            If disponible >= resteMois Then
+                affecte = resteMois
+            Else
+                affecte = disponible
+            End If
+            apercu = apercu & _
+                CStr(m) & " : " & _
+                Format(affecte, "#,##0") & _
+                " FC"
+            If resteMois - affecte = 0 Then
+                apercu = apercu & _
+                    " -> PAYE"
+            Else
+                apercu = apercu & _
+                    " -> reste " & _
+                    Format( _
+                    resteMois - affecte, _
+                    "#,##0") & _
+                    " FC"
+            End If
+            apercu = apercu & vbCrLf
+            disponible = _
+                disponible - affecte
+        End If
+        If disponible <= 0 Then Exit For
+    Next m
+    If disponible > 0 Then
+        apercu = apercu & _
+            vbCrLf & _
+            "EXCEDENT NON AFFECTE : " & _
+            Format(disponible, "#,##0") & _
+            " FC"
+    End If
+    TextAffectation.Value = apercu
+    totalActuel = _
+        TotalPayeEnregistre( _
+        TextMatricule.Value)
+    totalApres = totalActuel + montant
+    If totalApres > TOTAL_ANNUEL Then
+        totalApres = TOTAL_ANNUEL
+    End If
+    resteAnnuelApres = _
+        TOTAL_ANNUEL - totalApres
+    If resteAnnuelApres < 0 Then _
+        resteAnnuelApres = 0
+    TextTotalPaye.Value = Format(totalApres, "#,##0") & " FC"
+    TextResteAnnuel.Value = Format(resteAnnuelApres, "#,##0") & " FC"
+End Sub
+' ============================================================
+' BOUTON ENREGISTRER
+' ============================================================
+Private Sub CommandEnregistrerPaiement_Click()
+    Dim saisieOuverte As Boolean, saisieValidee As Boolean
+    Dim descriptionErreur As String
+    Dim ws As Worksheet
+    Dim mois As Variant
+    Dim m As Variant
+    Dim numeroEnregistrement As String
+    Dim montantRecu As Currency
+    Dim disponible As Currency
+    Dim resteMoisAvant As Currency
+    Dim affecte As Currency
+    Dim resteMoisApres As Currency
+    Dim totalCumule As Currency
+    Dim resteAnnuel As Currency
+    Dim ligne As Long
+    Dim prochainID As Long
+    Dim statutMois As String
+    Dim nomComplet As String
+    Dim nbAffectations As Long
+    If MONTANT_MENSUEL <= 0 Or TOTAL_ANNUEL <= 0 Then
+        MsgBox "Les frais de cette promotion ne sont pas configures dans PROMOTIONS.", vbExclamation
+        Exit Sub
+    End If
+    On Error GoTo ITM_Erreur
+    Set ws = _
+        ThisWorkbook.Worksheets("PAIEMENTS")
+    ' --------------------------------
+    ' APPRENANT
+    ' --------------------------------
+    If UCase$(Trim$(TextMatricule.Value)) = "" Then
+        MsgBox _
+            "Recherchez et sélectionnez d'abord un apprenant.", _
+            vbExclamation, _
+            "Apprenant obligatoire"
+        TextRecherche.SetFocus
+        Exit Sub
+    End If
+    ' --------------------------------
+    ' NUMERO AUTOMATIQUE
+    ' --------------------------------
+    numeroEnregistrement = _
+        Trim$(TextNumeroEnregistrement.Value)
+    If numeroEnregistrement = "" Then
+        numeroEnregistrement = _
+            GenererNumeroEnregistrement()
+        TextNumeroEnregistrement.Value = _
+            numeroEnregistrement
+    End If
+    If NumeroEnregistrementExiste( _
+        numeroEnregistrement) Then
+        numeroEnregistrement = _
+            GenererNumeroEnregistrement()
+        TextNumeroEnregistrement.Value = _
+            numeroEnregistrement
+    End If
+    ' --------------------------------
+    ' MONTANT
+    ' --------------------------------
+    If Trim$(TextMontantPaye.Value) = "" Then
+        MsgBox _
+            "Veuillez saisir le montant payé.", _
+            vbExclamation, _
+            "Montant obligatoire"
+        TextMontantPaye.SetFocus
+        Exit Sub
+    End If
+    If Not IsNumeric(TextMontantPaye.Value) Then
+        MsgBox _
+            "Le montant payé doit contenir uniquement des chiffres.", _
+            vbExclamation, _
+            "Montant incorrect"
+        TextMontantPaye.SetFocus
+        Exit Sub
+    End If
+    montantRecu = _
+        CCur(TextMontantPaye.Value)
+    If montantRecu <= 0 Then
+        MsgBox _
+            "Le montant payé doit être supérieur à zéro.", _
+            vbExclamation, _
+            "Montant incorrect"
+        Exit Sub
+    End If
+    ' --------------------------------
+    ' VERIFIER LA DETTE
+    ' --------------------------------
+    If montantRecu > _
+       ResteAnnuelActuel(TextMatricule.Value) Then
+        MsgBox _
+            "Le montant payé dépasse la dette restante." & _
+            vbCrLf & vbCrLf & _
+            "Dette restante : " & _
+            Format( _
+            ResteAnnuelActuel( _
+            TextMatricule.Value), _
+            "#,##0") & _
+            " FC.", _
+            vbExclamation, _
+            "Montant supérieur à la dette"
+        Exit Sub
+    End If
+    ' --------------------------------
+    ' IDENTITE
+    ' --------------------------------
+    nomComplet = Trim$( _
+        TextNomApprenant.Value & " " & _
+        TextPostNom.Value & " " & _
+        TextPrenom.Value)
+    disponible = montantRecu
+    totalCumule = _
+        TotalPayeEnregistre( _
+        TextMatricule.Value)
+    nbAffectations = 0
+    mois = TableauMois()
+    ' ========================================================
+    ' REPARTITION AUTOMATIQUE FIFO
+    ' ========================================================
+    If ITMPaiementsSimilaires(CStr(TextMatricule.Value), CDbl(montantRecu)) <> "[]" Then
+        If MsgBox("Un paiement du meme montant existe aujourd'hui. Verifiez le recu. Enregistrer un autre versement ?", vbYesNo + vbExclamation, "Doublon possible") <> vbYes Then Exit Sub
+    End If
+    ITMDebutSaisie ws
+    saisieOuverte = True
+    ITMJournalDebut
+    For Each m In mois
+        If disponible <= 0 Then Exit For
+        resteMoisAvant = _
+            RestePourMois( _
+            TextMatricule.Value, CStr(m))
+        If resteMoisAvant > 0 Then
+            If disponible >= resteMoisAvant Then
+                affecte = resteMoisAvant
+            Else
+                affecte = disponible
+            End If
+            resteMoisApres = _
+                resteMoisAvant - affecte
+            If resteMoisApres = 0 Then
+                statutMois = "PAYE"
+            Else
+                statutMois = "LITIGE"
+            End If
+            totalCumule = _
+                totalCumule + affecte
+            resteAnnuel = _
+                TOTAL_ANNUEL - totalCumule
+            If resteAnnuel < 0 Then _
+                resteAnnuel = 0
+            ' --------------------------------
+            ' PROCHAINE LIGNE
+            ' --------------------------------
+            ligne = ITMReserverLigne(ws)
+            If ligne < 5 Then ligne = 5
+            prochainID = ProchainIDPaiement()
+            ' --------------------------------
+            ' FORMAT TEXTE
+            ' --------------------------------
+            ws.Cells(ligne, "C").NumberFormat = "@"
+            ws.Cells(ligne, "D").NumberFormat = "@"
+            ' --------------------------------
+            ' ENREGISTREMENT
+            ' --------------------------------
+            ws.Cells(ligne, "A").Value = _
+                prochainID
+            ws.Cells(ligne, "B").Value = Date
+            ws.Cells(ligne, "B").NumberFormat = _
+                "dd/mm/yyyy"
+            ' Même numéro pour toutes les lignes
+            ' provenant du même paiement.
+            ws.Cells(ligne, "C").Value = _
+                numeroEnregistrement
+            ws.Cells(ligne, "D").Value = _
+                TextMatricule.Value
+            ws.Cells(ligne, "E").Value = _
+                nomComplet
+            ws.Cells(ligne, "F").Value = _
+                TextPromotion.Value
+            ws.Cells(ligne, "G").Value = _
+                CStr(m)
+            ' Mensualite de la promotion, meme en cas de versement partiel
+            ws.Cells(ligne, "H").Value = _
+                MONTANT_MENSUEL
+            ' Montant affecté à ce mois
+            ws.Cells(ligne, "I").Value = _
+                affecte
+            ' Reste après affectation
+            ws.Cells(ligne, "J").Value = _
+                resteMoisApres
+            ws.Cells(ligne, "K").Value = _
+                statutMois
+            ws.Cells(ligne, "L").Value = _
+                totalCumule
+            ws.Cells(ligne, "M").Value = _
+                TOTAL_ANNUEL
+            ws.Cells(ligne, "N").Value = _
+                resteAnnuel
+            ws.Range( _
+                "H" & ligne & _
+                ":N" & ligne).NumberFormat = _
+                "#,##0"
+            disponible = _
+                disponible - affecte
+            nbAffectations = _
+                nbAffectations + 1
+        End If
+    Next m
+    ' --------------------------------
+    ' SECURITE
+    ' --------------------------------
+    If disponible <> 0 Then Err.Raise vbObjectError + 921, , "Le paiement ne peut pas etre entierement affecte. Aucune ligne ne sera conservee."
+    If nbAffectations = 0 Then
+        ITMJournalAnnuler
+        ITMAnnulerSaisie
+        saisieOuverte = False
+        MsgBox _
+            "Aucune dette n'a été trouvée pour cet apprenant.", _
+            vbInformation, _
+            "Aucune affectation"
+        Exit Sub
+    End If
+    ' --------------------------------
+    ' CONFIRMATION
+    ' --------------------------------
+    ITMJournalEcrire "PAIEMENT", CStr(TextMatricule.Value), numeroEnregistrement, "", CStr(montantRecu), "Recu valide a la caisse"
+    ITMValiderSaisie
+    ITMJournalConfirmer
+    saisieOuverte = False
+    saisieValidee = True
+    MsgBox _
+        "Paiement enregistré avec succès." & _
+        vbCrLf & vbCrLf & _
+        "N° d'enregistrement : " & _
+        numeroEnregistrement & vbCrLf & _
+        "Apprenant : " & _
+        nomComplet & vbCrLf & _
+        "Montant payé : " & _
+        Format(montantRecu, "#,##0") & _
+        " FC" & vbCrLf & _
+        "Mois concernés : " & _
+        nbAffectations & vbCrLf & _
+        "Reste annuel : " & _
+        Format(resteAnnuel, "#,##0") & _
+        " FC", _
+        vbInformation, _
+        "ITM Coeur de Dieu"
+    ' ========================================================
+    ' PREPARER LE PROCHAIN PAIEMENT
+    ' ========================================================
+    TextMontantPaye.Value = ""
+    TextAffectation.Value = ""
+    ' Nouveau numéro uniquement après
+    ' l'enregistrement complet du paiement.
+    TextNumeroEnregistrement.Value = _
+        GenererNumeroEnregistrement()
+    TextDatePaiement.Value = _
+        Format(Date, "dd/mm/yyyy")
+    ActualiserSituation
+    TextMontantPaye.SetFocus
+    Exit Sub
+ITM_Erreur:
+    descriptionErreur = Err.Description
+    If saisieOuverte Then
+        On Error Resume Next
+        ITMJournalAnnuler
+        ITMAnnulerSaisie
+        If Err.Number <> 0 Then descriptionErreur = descriptionErreur & vbCrLf & Err.Description
+        On Error GoTo 0
+    End If
+    If saisieValidee Then
+        MsgBox "Les donnees sont enregistrees. Le formulaire n'a pas pu etre actualise : " & descriptionErreur, vbExclamation
+    Else
+        MsgBox "Enregistrement interrompu : " & descriptionErreur & vbCrLf & "Vos champs sont conserves. Consultez la sauvegarde si necessaire.", vbCritical
+    End If
+End Sub
+' ============================================================
+' LISTE DES MOIS
+' ============================================================
+Private Function TableauMois() As Variant
+    TableauMois = Array( _
+        "Septembre", _
+        "Octobre", _
+        "Novembre", _
+        "Décembre", _
+        "Janvier", _
+        "Février", _
+        "Mars", _
+        "Avril", _
+        "Mai")
+End Function
+' ============================================================
+' TOTAL PAYE POUR UN MOIS
+' ============================================================
+Private Function TotalPayePourMois( _
+    ByVal matricule As String, _
+    ByVal mois As String) As Currency
+    Dim ws As Worksheet
+    Dim derniereLigne As Long
+    Dim i As Long
+    Dim Total As Currency
+    Set ws = _
+        ThisWorkbook.Worksheets("PAIEMENTS")
+    derniereLigne = _
+        ws.Cells(ws.Rows.Count, "A").End(xlUp).Row
+    Total = 0
+    If derniereLigne >= 5 Then
+        For i = 5 To derniereLigne
+            If StrComp( _
+                Trim$(UCase$(CStr(ws.Cells(i, "D").Value))), _
+                Trim$(matricule), _
+                vbTextCompare) = 0 _
+            And _
+               StrComp( _
+                Trim$(CStr(ws.Cells(i, "G").Value)), _
+                Trim$(mois), _
+                vbTextCompare) = 0 Then
+                If IsNumeric( _
+                    ws.Cells(i, "I").Value) Then
+                    Total = Total + _
+                        CCur(ws.Cells(i, "I").Value)
+                End If
+            End If
+        Next i
+    End If
+    TotalPayePourMois = Total
+End Function
+' ============================================================
+' RESTE POUR UN MOIS
+' ============================================================
+Private Function RestePourMois( _
+    ByVal matricule As String, _
+    ByVal mois As String) As Currency
+    Dim totalMois As Currency
+    Dim reste As Currency
+    totalMois = _
+        TotalPayePourMois(matricule, mois)
+    reste = _
+        MONTANT_MENSUEL - totalMois
+    If reste < 0 Then reste = 0
+    RestePourMois = reste
+End Function
+' ============================================================
+' PREMIER MOIS NON SOLDE
+' ============================================================
+Private Function PremierMoisNonSolde( _
+    ByVal matricule As String) As String
+    Dim mois As Variant
+    Dim m As Variant
+    mois = TableauMois()
+    For Each m In mois
+        If RestePourMois( _
+            matricule, CStr(m)) > 0 Then
+            PremierMoisNonSolde = CStr(m)
+            Exit Function
+        End If
+    Next m
+    PremierMoisNonSolde = ""
+End Function
+' ============================================================
+' TOTAL ANNUEL PAYE
+' ============================================================
+Private Function TotalPayeEnregistre( _
+    ByVal matricule As String) As Currency
+    Dim ws As Worksheet
+    Dim derniereLigne As Long
+    Dim i As Long
+    Dim Total As Currency
+    Set ws = _
+        ThisWorkbook.Worksheets("PAIEMENTS")
+    derniereLigne = _
+        ws.Cells(ws.Rows.Count, "A").End(xlUp).Row
+    Total = 0
+    If derniereLigne >= 5 Then
+        For i = 5 To derniereLigne
+            If StrComp( _
+                Trim$(UCase$(CStr(ws.Cells(i, "D").Value))), _
+                Trim$(matricule), _
+                vbTextCompare) = 0 Then
+                If IsNumeric( _
+                    ws.Cells(i, "I").Value) Then
+                    Total = Total + _
+                        CCur(ws.Cells(i, "I").Value)
+                End If
+            End If
+        Next i
+    End If
+    TotalPayeEnregistre = Total
+End Function
+' ============================================================
+' RESTE ANNUEL
+' ============================================================
+Private Function ResteAnnuelActuel( _
+    ByVal matricule As String) As Currency
+    Dim reste As Currency
+    reste = _
+        TOTAL_ANNUEL - _
+        TotalPayeEnregistre(matricule)
+    If reste < 0 Then reste = 0
+    ResteAnnuelActuel = reste
+End Function
+' ============================================================
+' PROCHAIN ID INTERNE
+' ============================================================
+Private Function ProchainIDPaiement() As Long
+    Dim ws As Worksheet
+    Dim derniereLigne As Long
+    Set ws = _
+        ThisWorkbook.Worksheets("PAIEMENTS")
+    derniereLigne = _
+        ws.Cells(ws.Rows.Count, "A").End(xlUp).Row
+    If derniereLigne < 5 Then
+        ProchainIDPaiement = 1
+        Exit Function
+    End If
+    If Application.WorksheetFunction.Count( _
+        ws.Range( _
+        "A5:A" & derniereLigne)) = 0 Then
+        ProchainIDPaiement = 1
+    Else
+        ProchainIDPaiement = _
+            Application.WorksheetFunction.Max( _
+            ws.Range( _
+            "A5:A" & derniereLigne)) + 1
+    End If
+End Function
+' ============================================================
+' NOUVEAU
+' ============================================================
+Private Sub CommandNouveauPaiement_Click()
+    TextRecherche.Value = ""
+    ListResultats.Clear
+    ViderApprenant
+    TextDatePaiement.Value = _
+        Format(Date, "dd/mm/yyyy")
+    TextNumeroEnregistrement.Value = _
+        GenererNumeroEnregistrement()
+    TextRecherche.SetFocus
+End Sub
+' ============================================================
+' EFFACER LA SAISIE EN COURS
+' ============================================================
+Private Sub CommandEffacerPaiement_Click()
+    Dim reponse As VbMsgBoxResult
+    reponse = MsgBox( _
+        "Voulez-vous effacer la saisie en cours ?" & _
+        vbCrLf & _
+        "Aucun paiement enregistré ne sera supprimé.", _
+        vbYesNo + vbQuestion + vbDefaultButton2, _
+        "ITM Coeur de Dieu")
+    If reponse <> vbYes Then Exit Sub
+    TextMontantPaye.Value = ""
+    TextAffectation.Value = ""
+    ActualiserSituation
+    TextMontantPaye.SetFocus
+End Sub
+' ============================================================
+' FERMER
+' ============================================================
+Private Sub CommandFermerPaiement_Click()
+    Unload Me
+End Sub
+' ============================================================
+' VIDER L'APPRENANT
+' ============================================================
+Private Sub ViderApprenant()
+    TextMatricule.Value = ""
+    TextNomApprenant.Value = ""
+    TextPostNom.Value = ""
+    TextPrenom.Value = ""
+    TextPromotion.Value = ""
+    TextMontantPaye.Value = ""
+    TextMoisConcerne.Value = ""
+    TextMontantDu.Value = ""
+    TextAffectation.Value = ""
+    TextTotalPaye.Value = ""
+    TextTotalAnnuel.Value = Format(TOTAL_ANNUEL, "#,##0") & " FC"
+    TextResteAnnuel.Value = ""
+    TextStatut.Value = ""
+    ActualiserDettesAnterieures
+End Sub
+' ============================================================
+' MONTANT : CHIFFRES UNIQUEMENT
+' ============================================================
+Private Sub TextMontantPaye_KeyPress( _
+    ByVal KeyAscii As MSForms.ReturnInteger)
+    If Not ( _
+        (KeyAscii >= 48 And KeyAscii <= 57) _
+        Or KeyAscii = 8) Then
+        KeyAscii = 0
+    End If
+End Sub
+
+
+
+
+Private Sub TextMatricule_Change()
+    MajusculeChamp Me.Controls("TextMatricule")
+End Sub
+
+Private Sub TextNomApprenant_Change()
+    MajusculeChamp Me.Controls("TextNomApprenant")
+End Sub
+
+Private Sub TextPostNom_Change()
+    MajusculeChamp Me.Controls("TextPostNom")
+End Sub
+
+Private Sub TextPrenom_Change()
+    MajusculeChamp Me.Controls("TextPrenom")
+End Sub
+
+Private Sub UserForm_QueryClose(Cancel As Integer, CloseMode As Integer)
+    If Not mActionsPro Is Nothing Then
+        Set mActionsPro.BoutonPaiementsPDF = Nothing
+        Set mActionsPro.BoutonLitigesPDF = Nothing
+        Set mActionsPro.BoutonPDF = Nothing
+        Set mActionsPro.Bouton = Nothing
+        Set mActionsPro.BoutonListe = Nothing
+        Set mActionsPro.BoutonReset = Nothing
+        Set mActionsPro.BoutonEffacer = Nothing
+        Set mActionsPro.BoutonNouveau = Nothing
+        Set mActionsPro.Formulaire = Nothing
+        Set mActionsPro = Nothing
+    End If
+End Sub
+
+Private Sub ActualiserDettesAnterieures()
+    Dim champ As Object, mois As Variant, j As Long, limite As Long
+    Dim dette As Currency, dateReference As Date
+    On Error Resume Next
+    Set champ = Me.Controls("TextDettesAnterieures")
+    On Error GoTo 0
+    If champ Is Nothing Then Exit Sub
+    champ.Value = "0 FC"
+    If Trim$(CStr(TextMatricule.Value)) = "" Then Exit Sub
+    dateReference = Date
+    If IsDate(TextDatePaiement.Value) Then dateReference = CDate(TextDatePaiement.Value)
+    Select Case Month(dateReference)
+        Case 9 To 12: limite = Month(dateReference) - 9
+        Case 1 To 5: limite = Month(dateReference) + 3
+        Case Else: limite = 9
+    End Select
+    mois = TableauMois()
+    For j = LBound(mois) To UBound(mois)
+        If j - LBound(mois) >= limite Then Exit For
+        dette = dette + RestePourMois(CStr(TextMatricule.Value), CStr(mois(j)))
+    Next j
+    champ.Value = Format(dette, "#,##0") & " FC"
+End Sub
+
+Public Sub ITMEffacerSaisie()
+    CommandEffacerPaiement_Click
+End Sub

@@ -1,0 +1,99 @@
+﻿CADRE METIER ET RAPPORTS — ITM COEUR DE DIEU
+
+MISE A JOUR
+Extraire cette édition dans un nouveau dossier. Fermer Excel et l'application.
+Lancer INSTALLER.vbs sur votre classeur ACTUEL, attendre Installation réussie,
+puis connecter la copie SYSTEME_SECRETARIAT_CORRIGE.xlsm créée cette fois-ci.
+FICHIER_SOURCE.xlsm contient les dernières données fournies : 57 apprenants
+et 59 lignes de paiement. Son contenu original est conservé à l'identique.
+
+CORRECTION DU RAPPORT
+Deux appels de calcul sur un objet Workbook ont été remplacés par une boucle
+sur les feuilles Worksheet.Calculate. C'est un défaut concret du code pouvant
+provoquer « Propriété ou méthode non gérée par cet objet ».
+Documentation Microsoft :
+https://learn.microsoft.com/en-us/office/vba/api/excel.worksheet.calculate(method)
+Le mois est maintenant transmis sous sa clé normalisée (SEPTEMBRE, par exemple).
+Un échec précise son étape et son numéro : construction, calcul ou génération.
+L'export vérifie aussi le dossier de destination et l'existence d'un fichier non vide.
+Une réussite ne signifie pas que toutes les observations du diagnostic sont résolues.
+
+PROCESSUS DE TRAVAIL
+Connexion : préparer le classeur, connecter la copie corrigée, contrôler les
+effectifs et le Diagnostic. Sans connexion, les actions de données sont désactivées.
+Excel ne doit pas ouvrir simultanément le même fichier.
+
+Inscription : vérifier identité, naissance, contacts et promotion ; contrôler
+les doublons ; sauvegarder ; vérifier la dernière ligne et la ligne libre ;
+attribuer le matricule, enregistrer et journaliser ; actualiser l'affichage.
+Le rôle du secrétariat consiste à enregistrer les informations du dossier.
+
+Modification : retrouver le matricule unique, ouvrir la fiche, corriger
+les champs souhaités puis enregistrer. Adresse et contacts restent visibles.
+Matricule et date d'inscription conservés. Avec paiements, promotion et année
+conservées. Le nom est actualisé dans les paiements du même dossier.
+
+Paiement : sélectionner l'apprenant, vérifier le reçu validé par la caisse,
+saisir son montant total et confirmer. Le secrétariat enregistre le versement ;
+l'application ne valide pas la caisse et ne constitue pas une caisse comptable.
+Vérification des incohérences, doublons possibles et plafond annuel ; sauvegarde ;
+affectation aux mois antérieurs impayés ; vérification de chaque ligne à ajouter ;
+validation commune, journal et actualisation. Un échec d'actualisation après
+réussite bloque une nouvelle saisie jusqu'au rafraîchissement des données.
+
+Correction : sélectionner le reçu, saisir montant corrigé et motif, examiner
+la répartition de TOUS les reçus de cet apprenant puis confirmer. Les montants
+des autres reçus, leurs dates et numéros restent conservés. Un historique ambigu
+doit être rapproché manuellement des reçus. Pas de fusion ou de suppression automatique.
+
+Rapport : choisir type, promotion et mois, examiner le récapitulatif
+graphique par promotion, confirmer puis choisir la destination. Les données sont relues au moment
+de la génération. Le rapport est trié par nom, post-nom et prénom.
+« Inscrits » = fiches valides ; « mois soldé » = cumul du mois au moins égal
+à la mensualité ; « ayant versé » = cumul positif par apprenant/mois, incluant
+les paiements partiels ; « retards » = restes des mois jusqu'au mois choisi.
+Les lignes de paiement sont des affectations : elles ne représentent pas chacune
+un reçu distinct. Le rapport des versements est une synthèse par apprenant,
+pas un registre de chaque reçu. Les statuts existants restent conservés.
+Les fiches invalides/doublons ne sont pas assimilés à des dossiers valides ;
+les anomalies accompagnent le rapport dans Diagnostic.
+« Ouvrir le dernier rapport » ouvre le fichier généré dans son application Windows.
+Si l'échec concerne la génération PDF, essayer le format Excel et communiquer
+le message avec l'étape et le numéro d'erreur pour vérifier la configuration du PC.
+
+Frais : modifier les promotions dans Administration. Les frais d'une promotion
+avec paiements sont conservés ; adapter les frais avant les premiers versements
+de la prochaine année, pour ne pas réécrire l'historique.
+
+Sauvegarde/restauration : sauvegarde avant opération et copie manuelle disponible.
+Restaurer sous un nouveau nom, puis vérifier le classeur avant de le connecter.
+Ne jamais reprendre une ancienne copie comme base si elle omet les dernières saisies.
+
+Clôture : confirmer l'année suivante, conserver l'archive et préparer une nouvelle
+copie. Ses paiements sont remis à zéro ; les dossiers/statuts sont reconduits.
+Les dettes anciennes restent dans l'archive, sans report automatique. Vérifier
+promotions et statuts avant la reprise. L'année clôturée reste consultable.
+
+Journal : consulter date, action, auteur Windows/Excel, avant/après et motif.
+Les edits directs dans Excel ne sont pas tracés ; le journal n'est pas inviolable.
+
+PRESENTATION
+Boutons avec états de survol, tableaux espacés et colonnes minimales lisibles,
+défilement horizontal pour les tableaux larges, textes sur plusieurs lignes.
+Rapports en Segoe UI, en-têtes bleu foncé/bleu, lignes alternées et totaux visibles.
+Les contrôles sont communs aux fenêtres de saisie, fiche, correction et administration.
+
+VALIDATION
+Contrôles statiques du code, compatibilité des modules et conservation binaire
+du dernier fichier source. Scénarios d'un modèle de référence pour sélections
+des rapports et insertions. Ces vérifications ne remplacent pas l'exécution
+sur Windows avec Excel : le correctif est à essayer sur une copie avant usage réel.
+
+PARCOURS RAPPORT RENFORCE
+Les trois étapes sont visibles dans Exports. Le type choisi explique sa règle
+et désactive le mois pour les inscrits. Sans dossier ni anomalie, l’export
+est arrêté avant de choisir un fichier. Avec uniquement des anomalies,
+l’aperçu précise que seul le diagnostic sera exporté. Annuler à l’aperçu
+ou à la destination ne crée aucun fichier. Le nom proposé contient le type,
+la promotion, le mois applicable et l’horodatage. Le fichier produit doit
+être contrôlé avant transmission.
