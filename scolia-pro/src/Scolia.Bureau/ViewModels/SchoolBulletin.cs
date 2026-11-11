@@ -21,6 +21,11 @@ public sealed record SchoolBulletinPeriodVm(
 public sealed record SchoolBulletinTermVm(
     string Label, IReadOnlyList<SchoolBulletinPeriodVm> Periods);
 
+public sealed record SchoolBulletinSubjectCellVm(string PeriodLabel, string Value);
+
+public sealed record SchoolBulletinSubjectVm(
+    string Title, string Details, IReadOnlyList<SchoolBulletinSubjectCellVm> Periods);
+
 /// <summary>
 /// Consultation seulement : aucun PDF officiel, aucune délibération inventée.
 /// Cette page est réservée aux profils scolaires une fois activés ; le
@@ -46,6 +51,9 @@ public sealed class SchoolBulletinPage : PageViewModel
     public string Notice { get => notice; private set => Set(ref notice, value); }
     public string DocumentTitle { get => documentTitle; private set => Set(ref documentTitle, value); }
     public ObservableCollection<SchoolBulletinTermVm> Terms { get; } = [];
+    public ObservableCollection<SchoolBulletinSubjectVm> Subjects { get; } = [];
+    public bool HasSubjectGrid => Subjects.Count > 0;
+    public bool ShowPeriods => Subjects.Count == 0;
 
     public override async Task LoadAsync()
     {
@@ -55,12 +63,47 @@ public sealed class SchoolBulletinPage : PageViewModel
             throw new InvalidOperationException(
                 "Cette page n'affiche que des aperçus non officiels. Utilisez le document validé pour les bulletins définitifs.");
 
-        subtitle = $"{preview.Cycle} · {preview.Promotion} · {preview.AcademicYear}";
+        var grade = string.IsNullOrWhiteSpace(preview.GradeBand) ||
+                    preview.GradeBand == "Cycle non précisé"
+            ? string.Empty : $" · {preview.GradeBand}";
+        var option = string.IsNullOrWhiteSpace(preview.OptionLabel)
+            ? string.Empty : $" · {preview.OptionLabel}";
+        subtitle = $"{preview.Cycle} · {preview.Promotion} · {preview.AcademicYear}{grade}{option}";
         Raise(nameof(Subtitle));
         Notice = preview.Notice;
         DocumentTitle = string.IsNullOrWhiteSpace(preview.DocumentTitle)
             ? "Aperçu pédagogique" : preview.DocumentTitle;
         Terms.Clear();
+        Subjects.Clear();
+
+        // Grille scolaire par matière : aucune cellule vide ne devient zéro et
+        // aucune somme / moyenne ne s'improvise à partir d'évaluations multiples.
+        foreach (var subject in preview.SubjectRows ?? [])
+        {
+            var cells = subject.Periods.Select(period =>
+            {
+                var value = period.Entries.Count == 0
+                    ? "Aucune évaluation saisie"
+                    : string.Join(" ; ", period.Entries.Select(entry =>
+                    {
+                        var cote = entry.Score is { } score && entry.MaxScore is { } max
+                            ? $"{score.ToString("0.##", CultureInfo.CurrentCulture)} / {max.ToString("0.##", CultureInfo.CurrentCulture)}"
+                            : "Non coté";
+                        return $"{entry.Title} : {cote}";
+                    }));
+                return new SchoolBulletinSubjectCellVm(
+                    $"{period.PeriodCode} · {period.PeriodName}", value);
+            }).ToArray();
+            var details = string.IsNullOrWhiteSpace(subject.SubjectCode)
+                ? string.Empty : subject.SubjectCode;
+            if (!subject.IsActive)
+                details = string.IsNullOrEmpty(details)
+                    ? "Matière archivée" : $"{details} · Matière archivée";
+            Subjects.Add(new SchoolBulletinSubjectVm(
+                subject.SubjectName, details, cells));
+        }
+        Raise(nameof(HasSubjectGrid));
+        Raise(nameof(ShowPeriods));
 
         foreach (var term in preview.Terms ?? [])
         {
