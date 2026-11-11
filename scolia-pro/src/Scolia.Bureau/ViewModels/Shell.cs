@@ -5,6 +5,7 @@ using Avalonia.Threading;
 using Scolia.Bureau.Api;
 using Scolia.Bureau.Ribbon;
 using Scolia.Bureau.Infrastructure;
+using Scolia.Domain.School;
 
 namespace Scolia.Bureau.ViewModels;
 
@@ -117,6 +118,9 @@ public sealed class ShellViewModel : Observable
     public PhoneHeaderSearchVm HeaderSearch { get; }
     public RelayCommand ToggleSidebarCommand { get; private set; } = null!;
     public SessionDto? Session => session;
+
+    /// <summary>Terminologie déterminée par la session, même en mode hors ligne.</summary>
+    public StudentTerminology Learners => InstitutionTerminology.Students(session?.InstitutionType);
 
     private Avalonia.Media.Imaging.Bitmap? schoolLogo;
 
