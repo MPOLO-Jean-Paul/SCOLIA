@@ -155,7 +155,8 @@ public sealed class SchoolCycleAssessmentService(IAppDbContext db, IWriteGate ga
             context.School.City,
             student.FullName,
             student.Matricule,
-            preview);
+            preview,
+            context.School.Logo);
     }
 
     public Task<SchoolCycleAssessmentItemDto> SaveAsync(
