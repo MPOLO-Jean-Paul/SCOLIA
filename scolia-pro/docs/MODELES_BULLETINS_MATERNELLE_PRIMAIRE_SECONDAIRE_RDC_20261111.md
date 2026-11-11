@@ -48,6 +48,20 @@
 
 Rappel : les imprimés officiels 2025-2026 ont été annoncés rose (préscolaire), vert (primaire), bleu (secondaire) et blanc (terminal). Cette information de **2025-2026** ne préjuge pas des fichiers modèles ou des couleurs de l'année **2026-2027**. Source ACP : https://acp.cd/nation/rdc-les-bulletins-scolaires-delivres-a-la-cloture-de-lannee-scolaire-2025-2026-ministere-de-leducation-nationale/
 
+## Aperçu PDF A4 — troisième lot de développement
+
+- Endpoint protégé : `GET /api/etablissement/cycles/evaluations/{inscriptionId}/apercu.pdf` avec `AcademicsRead`. Le même contrôle de cycle et d'inscription que l'aperçu JSON est appliqué.
+- Export depuis la page Avalonia existante via l'action **Exporter l'aperçu PDF** ; le client emploie le téléchargement de fichiers SCOLIA.
+- Génération avec **QuestPDF et Roboto intégrée**, sans nouveau paquet ni thème d'interface.
+- En-tête dynamique : nom/adresse/ville de l'établissement, nom et matricule de l'élève, année scolaire et classe/option.
+- **Maternelle** : périodes et observations rédigées. **Primaire/secondaire** : tableaux de branches, quatre périodes maximum par bloc A4 pour la lisibilité.
+- `—` dans les cellules signifie **aucune évaluation saisie**, jamais zéro. Plusieurs évaluations d'une même branche restent distinctes.
+- Mention **DOCUMENT PÉDAGOGIQUE NON OFFICIEL** en en-tête et rappel dans le pied de chaque page. Pas de sceau, de QR gouvernemental, de verdict, de classement ni de pourcentage inventé.
+- Le PDF est généré **par le serveur scolaire** : l'aperçu JSON déjà mis en cache ne garantit pas, à ce stade, la production du fichier en l'absence d'accès au serveur. Aucune promesse d'export hors connexion.
+- Tests : PDF maternelle et primaire (cellules sans cotation), rejet explicite d'un document marqué officiel, refus du PDF pour un ITM historique.
+
+**Attention :** cette sortie sert à vérifier la mise en page et les données pédagogiques. Les imprimés, grilles, maxima et circuits de certification ministériels de l'année applicable restent à authentifier avant une version de bulletin officielle.
+
 ## Code préparatoire
 
 `SchoolBulletinLayouts.For(SchoolCycleKind)` permet aux API et interfaces de distinguer les présentations provisoires par cycle, degré et niveau sans saisir de faux maxima ni de barèmes. Les profils restent désactivés à l'installation. **Aucun bulletin définitif n'est généré ou publié par ce lot.**
