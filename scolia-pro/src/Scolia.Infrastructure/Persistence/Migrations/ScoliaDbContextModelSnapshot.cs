@@ -1577,6 +1577,90 @@ namespace Scolia.Infrastructure.Persistence.Migrations
                     b.ToTable("PeriodesPedagogiques", (string)null);
                 });
 
+            modelBuilder.Entity("Scolia.Domain.School.SchoolCycleAssessment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("AcademicYearId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Comment")
+                        .HasMaxLength(800)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid?>("CurriculumItemId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("EnrollmentId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("EvaluationCode")
+                        .IsRequired()
+                        .HasMaxLength(24)
+                        .HasColumnType("TEXT");
+
+                    b.Property<long?>("MaxScore")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Mode")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Observation")
+                        .HasMaxLength(800)
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("PromotionId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("SchoolCycleId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("SchoolCyclePeriodId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<long?>("Score")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(160)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AcademicYearId");
+
+                    b.HasIndex("CurriculumItemId");
+
+                    b.HasIndex("PromotionId");
+
+                    b.HasIndex("SchoolCyclePeriodId");
+
+                    b.HasIndex("EnrollmentId", "SchoolCyclePeriodId", "EvaluationCode")
+                        .IsUnique();
+
+                    b.HasIndex("SchoolCycleId", "AcademicYearId", "PromotionId");
+
+                    b.ToTable("EvaluationsCyclesScolaires", (string)null);
+                });
+
             modelBuilder.Entity("Scolia.Domain.School.SchoolCycle", b =>
                 {
                     b.Property<Guid>("Id")
@@ -2754,6 +2838,44 @@ namespace Scolia.Infrastructure.Persistence.Migrations
                     b.HasOne("Scolia.Domain.School.Promotion", null)
                         .WithMany()
                         .HasForeignKey("PromotionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Scolia.Domain.School.SchoolCycleAssessment", b =>
+                {
+                    b.HasOne("Scolia.Domain.School.AcademicYear", null)
+                        .WithMany()
+                        .HasForeignKey("AcademicYearId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Scolia.Domain.School.CurriculumItem", null)
+                        .WithMany()
+                        .HasForeignKey("CurriculumItemId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Scolia.Domain.Students.Enrollment", null)
+                        .WithMany()
+                        .HasForeignKey("EnrollmentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Scolia.Domain.School.Promotion", null)
+                        .WithMany()
+                        .HasForeignKey("PromotionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Scolia.Domain.School.SchoolCycle", null)
+                        .WithMany()
+                        .HasForeignKey("SchoolCycleId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Scolia.Domain.School.SchoolCyclePeriod", null)
+                        .WithMany()
+                        .HasForeignKey("SchoolCyclePeriodId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });
