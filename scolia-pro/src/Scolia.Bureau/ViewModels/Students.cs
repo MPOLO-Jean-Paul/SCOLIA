@@ -115,7 +115,7 @@ public sealed class StudentsPage : PageViewModel
         await Shell.Ask(form);
     }
 
-    public override string Title => "Apprenants";
+    public override string Title => Shell.StudentTerms.PluralTitle;
     public override string Subtitle => subtitle;
     public override MaterialIconKind Glyph => MaterialIconKind.AccountGroupOutline;
 
@@ -156,7 +156,7 @@ public sealed class StudentsPage : PageViewModel
     }
 
     public StudentRow? Selected { get => selected; set => Set(ref selected, value); }
-    public string EmptyTitle { get; private set; } = "Aucun apprenant trouvé";
+    public string EmptyTitle { get; private set; } = string.Empty;
     public string EmptyHint { get; private set; } = string.Empty;
     public string PageText => $"Page {page} sur {pageCount}";
     public bool CanPrevious => page > 1;
@@ -232,14 +232,14 @@ public sealed class StudentsPage : PageViewModel
                 s.GuardianPhone ?? "—", Money(s.Balance), situation, ThemeBrush.Get(sponsored ? "TonePurple" : late ? "ToneRed" : "ToneGreen"));
         }));
 
-        subtitle = Format.Count(total, "apprenant", "apprenants") + (Promotion is { Value.Length: > 0 } ? $" · {Promotion.Label}" : string.Empty);
+        subtitle = Format.Count(total, Shell.StudentTerms.Singular, Shell.StudentTerms.Plural) + (Promotion is { Value.Length: > 0 } ? $" · {Promotion.Label}" : string.Empty);
         if (!Shell.Api.IsOnline)
             subtitle += local is { Complete: false }
                 ? $" · recherche locale ({local.Loaded}/{local.Registered} dossiers disponibles)"
                 : " · copie locale, non actualisée";
         // Liste vide : sans filtre, l'établissement n'a encore aucun apprenant ; avec un filtre, il faut l'élargir.
         var filtered = Search.Trim().Length > 0 || Promotion is { Value.Length: > 0 } || SectionChoice is { Value.Length: > 0 } || Status is { Value.Length: > 0 };
-        EmptyTitle = filtered ? "Aucun apprenant trouvé" : "Aucun apprenant inscrit";
+        EmptyTitle = filtered ? $"Aucun {Shell.StudentTerms.Singular} trouvé" : $"Aucun {Shell.StudentTerms.Singular} inscrit";
         EmptyHint = local is { Complete: false }
             ? "Recherche limitée aux dossiers téléchargés sur cet appareil. Reconnectez-vous pour voir le registre complet."
             : filtered ? "Modifiez la recherche, ou choisissez « Toutes les promotions » et « Tous les statuts »."
@@ -279,7 +279,7 @@ public sealed class StudentsPage : PageViewModel
     {
         if (Selected is null)
         {
-            Shell.Notify("Sélectionnez un apprenant dans la liste.");
+            Shell.Notify($"Sélectionnez un {Shell.StudentTerms.Singular} dans la liste.");
             return Task.CompletedTask;
         }
         return work(Selected.Id);
@@ -290,7 +290,7 @@ public sealed class StudentsPage : PageViewModel
     {
         if (Selected is null)
         {
-            Shell.Notify("Sélectionnez un apprenant dans la liste.");
+            Shell.Notify($"Sélectionnez un {Shell.StudentTerms.Singular} dans la liste.");
             return;
         }
         var id = Selected.Id;
@@ -311,7 +311,7 @@ public sealed record SponsorshipRow(Guid Id, string Sponsor, string Reason, stri
 public sealed class StudentDetailPage : PageViewModel
 {
     private readonly Guid studentId;
-    private string title = "Fiche apprenant";
+    private string title = string.Empty;
     private string subtitle = string.Empty;
     private StudentDto? student;
     private EnrollmentDto? enrollment;
@@ -320,6 +320,7 @@ public sealed class StudentDetailPage : PageViewModel
     public StudentDetailPage(ShellViewModel shell, Guid studentId) : base(shell)
     {
         this.studentId = studentId;
+        title = $"Fiche {Shell.StudentTerms.Singular}";
         EndSponsorship = new AsyncCommand(() => Shell.Run(EndSelectedSponsorshipAsync));
         if (Shell.Can(Perm.PaymentsCreate)) Action("Encaisser", MaterialIconKind.HandCoin, () => Shell.Open(() => new CashierPage(Shell, studentId)), primary: true);
         if (Shell.Can(Perm.StudentsWrite)) Action("Modifier", MaterialIconKind.Pencil, EditAsync);
@@ -402,7 +403,7 @@ public sealed class StudentDetailPage : PageViewModel
         Totals.Clear();
         if (enrollment is null)
         {
-            Totals.Add(new KpiVm("Compte", "Sans inscription", "Inscrivez l'apprenant pour ouvrir son compte.", ThemeBrush.Get("ToneNeutral"), MaterialIconKind.AccountOffOutline));
+            Totals.Add(new KpiVm("Compte", "Sans inscription", "Inscrivez " + Shell.StudentTerms.Elided + " pour ouvrir son compte.", ThemeBrush.Get("ToneNeutral"), MaterialIconKind.AccountOffOutline));
             return;
         }
 
@@ -439,7 +440,7 @@ public sealed class StudentDetailPage : PageViewModel
     {
         if (enrollment is null)
         {
-            Shell.Notify("Cet apprenant n'a pas d'inscription : aucun relevé à produire.");
+            Shell.Notify($"Cet {Shell.StudentTerms.Singular} n'a pas d'inscription : aucun relevé à produire.");
             return;
         }
         await Shell.Download($"api/inscriptions/{enrollment.Id}/releve.pdf", $"releve-{student?.Matricule ?? "apprenant"}.pdf");
@@ -594,7 +595,7 @@ public static class StudentForms
                 await shell.Confirm("Aucune promotion", "Aucune promotion n'est ouverte. Demandez au secrétariat d'en créer une dans Paramètres, Promotions et frais.", "Fermer");
                 return;
             }
-            if (!await shell.Confirm("Aucune promotion", "L'apprenant doit être inscrit dans une promotion, et aucune n'existe encore. Créer une promotion maintenant ?", "Créer une promotion"))
+            if (!await shell.Confirm("Aucune promotion", $"{shell.StudentTerms.ElidedTitle} doit être inscrit dans une promotion, et aucune n'existe encore. Créer une promotion maintenant ?", "Créer une promotion"))
                 return;
             await SettingsPage.NewPromotionAsync(shell);
             promotions = (await shell.Api.GetAsync<List<PromotionDto>>("api/etablissement/promotions")).Where(p => p.IsActive).ToList();
@@ -636,7 +637,7 @@ public static class StudentForms
                     enrolledOn = f.Day("inscription"),
                     confirmDuplicate = doubles.Count > 0 && confirmedIdentity == identityKey,
                 });
-                shell.Notify("Apprenant inscrit.");
+                shell.Notify($"{shell.StudentTerms.SingularTitle} inscrit.");
             }
             catch (OfflineQueuedException)
             {
