@@ -22,7 +22,7 @@ public sealed class SchoolService(IAppDbContext db, IWriteGate gate, IAuditLog a
         s.CurrencyCode, s.CurrencySymbol, s.WholeAmountsOnly, s.ReceiptFooter, s.Logo is { Length: > 0 }, s.PhoneCountryCode,
         s.CardMinistry, s.CardDirection, s.CardDivision, s.CardZone ?? s.City,
         CardHeaderDefaults.Or(s.CardInstitute, s.Name),
-        CardHeaderDefaults.Or(s.CardAddress, s.Address ?? s.City ?? string.Empty));
+        CardHeaderDefaults.Or(s.CardAddress, s.Address ?? s.City ?? string.Empty), s.InstitutionType);
 
     public Task<SchoolDto> UpdateSchoolAsync(SchoolUpdate input, CancellationToken ct = default) => gate.RunAsync(async () =>
     {
