@@ -455,7 +455,7 @@ public sealed class StudentDetailPage : PageViewModel
             var reason = f.OptionalText("motif");
             if (status != "Actif" && reason is null)
             {
-                f.Find("motif").Error = "Le motif est obligatoire pour sortir l'apprenant de la promotion.";
+                f.Find("motif").Error = $"Le motif est obligatoire pour sortir {Shell.StudentTerms.Elided} de la promotion.";
                 return Task.FromResult(false);
             }
             return SaveAsync(HttpMethod.Put, $"api/inscriptions/{enrollment.Id}/statut",
@@ -463,7 +463,7 @@ public sealed class StudentDetailPage : PageViewModel
         });
         form.AddChoice("statut", "Nouveau statut", Labels.Statuses, enrollment.Status, required: true);
         form.AddDay("date", "Date d'effet", DateOnly.FromDateTime(DateTime.Today));
-        form.Add("motif", "Motif", hint: "Obligatoire si l'apprenant quitte la promotion");
+        form.Add("motif", "Motif", hint: $"Obligatoire si {Shell.StudentTerms.Elided} quitte la promotion");
         if (await Shell.Ask(form)) await RefreshAsync();
     }
 
@@ -652,7 +652,7 @@ public static class StudentForms
         // Pour une nouvelle inscription, ne pas affecter implicitement la première promotion :
         // l'utilisateur choisit le niveau scolaire. S'il n'en existe qu'une, il n'y a rien à choisir.
         if (promotions.Count > 1) form.Find("promotion").Choice = null;
-        AddIdentityFields(form, null);
+        AddIdentityFields(shell, form, null);
         form.AddDay("inscription", "Date d'inscription", DateOnly.FromDateTime(DateTime.Today));
 
         if (await shell.Ask(form) && shell.Current is StudentsPage page) await page.RefreshAsync();
@@ -682,7 +682,7 @@ public static class StudentForms
 
     public static async Task<bool> EditAsync(ShellViewModel shell, StudentDto s)
     {
-        var form = new FormViewModel("Modifier l'apprenant", $"Matricule {s.Matricule}", async f =>
+        var form = new FormViewModel($"Modifier {shell.StudentTerms.Elided}", $"Matricule {s.Matricule}", async f =>
         {
             try
             {
@@ -695,7 +695,7 @@ public static class StudentForms
             }
             return true;
         });
-        AddIdentityFields(form, s);
+        AddIdentityFields(shell, form, s);
         // Un seul poste modifie un dossier à la fois : les autres voient qui le fait.
         return await shell.Sync.WithLockAsync($"dossier:{s.Id}", $"Modification du dossier {s.Matricule}", () => shell.Ask(form));
     }
@@ -709,7 +709,7 @@ public static class StudentForms
         var s = await shell.Api.GetAsync<StudentDto>($"api/apprenants/{id}");
         var before = Format.FullName(s.LastName, s.MiddleName, s.FirstName);
         string? confirmedIdentity = null;
-        var form = new FormViewModel("Renommer l'apprenant", $"{before} · matricule {s.Matricule}", async f =>
+        var form = new FormViewModel($"Renommer {shell.StudentTerms.Elided}", $"{before} · matricule {s.Matricule}", async f =>
         {
             var (last, middle, first) = (f.Text("nom"), f.Text("postNom"), f.Text("prenom"));
             var after = Format.FullName(last, middle, first);
@@ -786,9 +786,9 @@ public static class StudentForms
     /// Champs de la fiche : identité, naissance, parent, son contact et l'adresse. Un seul numéro est saisi,
     /// celui du parent : c'est lui que visent les relances WhatsApp et SMS.
     /// </summary>
-    private static void AddIdentityFields(FormViewModel form, StudentDto? s)
+    private static void AddIdentityFields(ShellViewModel shell, FormViewModel form, StudentDto? s)
     {
-        form.AddHeader("Identité de l'apprenant", "Renseignez les noms tels qu'ils apparaissent sur le dossier scolaire.");
+        form.AddHeader($"Identité de {shell.StudentTerms.Elided}", "Renseignez les noms tels qu'ils apparaissent sur le dossier scolaire.");
         form.Add("nom", "Nom", value: s?.LastName, required: true);
         form.Add("postNom", "Post-nom", value: s?.MiddleName, required: true);
         form.Add("prenom", "Prénom", value: s?.FirstName, required: true);
