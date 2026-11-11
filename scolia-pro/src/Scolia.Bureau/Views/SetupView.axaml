@@ -172,7 +172,7 @@
               <StackPanel Classes="field" Spacing="4">
                 <TextBlock Text="Type d'établissement" />
                 <ComboBox ItemsSource="{Binding InstitutionTypes}" SelectedItem="{Binding InstitutionType}" HorizontalAlignment="Stretch" />
-                <TextBlock Text="Pour protéger vos données, les profils primaire, secondaire et supérieur seront activés après validation de leurs règles pédagogiques."
+                <TextBlock Text="ITM/IM reste disponible. Les écoles privées (maternelle, primaire, secondaire, complexes scolaires) disposeront de tarifs par cycle ; le régime public est prévu séparément. Ces profils seront activés après validation métier."
                            Classes="muted" TextWrapping="Wrap" FontSize="{DynamicResource FsSmall}" />
               </StackPanel>
 
