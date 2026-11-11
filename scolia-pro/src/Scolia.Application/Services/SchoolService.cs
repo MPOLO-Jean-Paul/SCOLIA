@@ -22,7 +22,8 @@ public sealed class SchoolService(IAppDbContext db, IWriteGate gate, IAuditLog a
         s.CurrencyCode, s.CurrencySymbol, s.WholeAmountsOnly, s.ReceiptFooter, s.Logo is { Length: > 0 }, s.PhoneCountryCode,
         s.CardMinistry, s.CardDirection, s.CardDivision, s.CardZone ?? s.City,
         CardHeaderDefaults.Or(s.CardInstitute, s.Name),
-        CardHeaderDefaults.Or(s.CardAddress, s.Address ?? s.City ?? string.Empty), InstitutionProfiles.Canonicalize(s.InstitutionType));
+        CardHeaderDefaults.Or(s.CardAddress, s.Address ?? s.City ?? string.Empty), InstitutionProfiles.Canonicalize(s.InstitutionType),
+        s.Governance.ToString());
 
     public Task<SchoolDto> UpdateSchoolAsync(SchoolUpdate input, CancellationToken ct = default) => gate.RunAsync(async () =>
     {
@@ -101,7 +102,8 @@ public sealed class SchoolService(IAppDbContext db, IWriteGate gate, IAuditLog a
                 var monthly = old.Fees.Where(f => f.Kind == FeeKind.Mensualite).Select(f => f.Amount).DefaultIfEmpty(0).Max();
                 var copy = new Promotion
                 {
-                    AcademicYearId = year.Id, Code = old.Code, Name = old.Name, SectionId = old.SectionId, Level = old.Level, Capacity = old.Capacity,
+                    AcademicYearId = year.Id, Code = old.Code, Name = old.Name, SectionId = old.SectionId, SchoolCycleId = old.SchoolCycleId,
+                    Level = old.Level, Capacity = old.Capacity,
                     IsActive = old.IsActive, NextPromotionCode = old.NextPromotionCode,
                 };
                 copy.Fees.AddRange(MonthlyFees(copy.Id, year, monthly));
@@ -339,7 +341,8 @@ public sealed class SchoolService(IAppDbContext db, IWriteGate gate, IAuditLog a
         p.IsActive, p.NextPromotionCode,
         p.Fees.Where(f => f.Kind == FeeKind.Mensualite).Select(f => f.Amount).DefaultIfEmpty(0).Max(),
         p.Fees.Sum(f => f.Amount), count,
-        p.Fees.OrderBy(f => f.DueDate).ThenBy(f => f.Order).Select(f => new FeeItemDto(f.Id, f.Kind.ToString(), f.Label, f.Amount, f.DueDate, f.Order, f.PeriodId, f.CategoryId)).ToList());
+        p.Fees.OrderBy(f => f.DueDate).ThenBy(f => f.Order).Select(f => new FeeItemDto(f.Id, f.Kind.ToString(), f.Label, f.Amount, f.DueDate, f.Order, f.PeriodId, f.CategoryId)).ToList(),
+        p.SchoolCycleId);
 
     public static IEnumerable<FeeItem> MonthlyFees(Guid promotionId, AcademicYear year, decimal monthly) =>
         year.Periods.OrderBy(p => p.Order).Select(p => new FeeItem
@@ -352,6 +355,10 @@ public sealed class SchoolService(IAppDbContext db, IWriteGate gate, IAuditLog a
     {
         var school = await YearContext.SchoolAsync(db, ct);
         var code = Promotion.NormalizeCode(input.Code);
+        if (InstitutionProfiles.Canonicalize(school.InstitutionType) == InstitutionProfiles.ItmIm && input.SchoolCycleId is not null)
+            throw new DomainException("schoolCycleId", "Les classes ITM/IM restent indépendantes des nouveaux cycles scolaires.");
+        if (input.SchoolCycleId is { } selectedCycle && !await db.SchoolCycles.AnyAsync(c => c.Id == selectedCycle && c.SchoolId == school.Id && c.IsActive, ct))
+            throw new DomainException("schoolCycleId", "Le cycle choisi est introuvable ou inactif dans cet établissement.");
         var v = new ValidationBuilder()
             .Require(code.Length == 4 && code.All(char.IsAsciiLetterOrDigit), "code", "Le code doit compter 4 lettres ou chiffres (ex. INF1) : il préfixe les matricules.")
             .Require(!string.IsNullOrWhiteSpace(input.Name) && input.Name.Trim().Length <= 120, "name", "Désignation obligatoire.")
@@ -409,6 +416,7 @@ public sealed class SchoolService(IAppDbContext db, IWriteGate gate, IAuditLog a
             if (!chosen.IsActive) throw new DomainException("sectionId", $"La section {chosen.Name} est désactivée : réactivez-la ou choisissez-en une autre.");
         }
         promotion.Code = code; promotion.Name = input.Name.Trim(); promotion.SectionId = input.SectionId; promotion.Level = input.Level;
+        if (input.SchoolCycleId is not null) promotion.SchoolCycleId = input.SchoolCycleId;
         promotion.Capacity = input.Capacity; promotion.IsActive = input.IsActive;
         promotion.NextPromotionCode = string.IsNullOrWhiteSpace(input.NextPromotionCode) ? null : Promotion.NormalizeCode(input.NextPromotionCode);
 
