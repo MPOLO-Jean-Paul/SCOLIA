@@ -43,6 +43,20 @@ public sealed record SchoolCycleBulletinTermDto(
 /// Aperçu non officiel. Aucune moyenne, décision de réussite ou classement
 /// n'est induit tant que le règlement pédagogique propre au cycle n'est pas validé.
 /// </summary>
+/// <summary>
+/// Grille annuelle de matières pour un relevé provisoire primaire/secondaire.
+/// Une cellule peut contenir plusieurs évaluations distinctes : aucun total
+/// ou examen n'est calculé sans barème validé. Une matière non cotée reste visible.
+/// </summary>
+public sealed record SchoolCycleBulletinSubjectPeriodDto(
+    Guid SchoolCyclePeriodId, string PeriodCode, string PeriodName,
+    IReadOnlyList<SchoolCycleAssessmentItemDto> Entries);
+
+public sealed record SchoolCycleBulletinSubjectDto(
+    Guid CurriculumItemId, string SubjectCode, string SubjectName,
+    decimal Coefficient, bool IsActive,
+    IReadOnlyList<SchoolCycleBulletinSubjectPeriodDto> Periods);
+
 public sealed record SchoolCycleBulletinPreviewDto(
     Guid EnrollmentId, Guid SchoolCycleId, string Cycle, string Promotion,
     string AcademicYear, IReadOnlyList<SchoolCycleAssessmentItemDto> Entries,
@@ -52,4 +66,8 @@ public sealed record SchoolCycleBulletinPreviewDto(
     string TemplateCode = "CYCLE_PROVISOIRE",
     string DocumentTitle = "Aperçu pédagogique",
     string EntryHeading = "Activités ou branches",
-    string PeriodHeading = "Période");
+    string PeriodHeading = "Période",
+    int ClassLevel = 0,
+    string GradeBand = "Cycle non précisé",
+    string? OptionLabel = null,
+    IReadOnlyList<SchoolCycleBulletinSubjectDto>? SubjectRows = null);
