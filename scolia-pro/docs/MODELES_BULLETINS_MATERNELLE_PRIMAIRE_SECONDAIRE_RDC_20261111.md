@@ -35,6 +35,19 @@
 7. **Conserver l'existant** : anciennes migrations ITM/IM, paiements, délibérations et données ne changent pas. Interface Avalonia conserve les composants administrateur/secrétariat.
 8. **Contrôles** : tests par cycle, classe, période, année et droit d'accès ; validation du PDF sur exemplaire approuvé avant activation ou distribution.
 
+## Avancement technique — deuxième lot
+
+- **Variantes par degré et niveau** : maternelle (1re–3e), primaire (élémentaire 1re–2e, moyen 3e–4e, terminal 5e–6e), secondaire (CTEB 7e–8e et humanités). Ces appellations sont des **repères de présentation**, non des tableaux officiels reproduits.
+- **Matières sans cote** : la grille primaire/secondaire inclut toutes les branches actives du programme annuel même lorsque personne n'a encore encodé de note. Une cellule non évaluée reste vide / « Aucune évaluation saisie », jamais zéro.
+- **Archives** : une matière devenue inactive mais comportant d'anciennes évaluations reste consultable, sans réécriture des notes.
+- **Évaluations multiples** : affichées individuellement dans une cellule matière × période ; pas de total, de moyenne ou de décision calculé tant que le règlement exact n'est pas vérifié.
+- **Options** : le libellé de section/option existante de la classe est conservé dans l'aperçu ; aucune option technique ne reçoit un règlement inventé.
+- **Avalonia** : prévisualisation responsive réutilisant les styles administrateur/secrétariat (`phonegroup`, `groupcaps`, `muted`).
+- **Compatibilité** : les contrats API sont enrichis de champs facultatifs ; aucune migration, aucun changement des bulletins ITM/IM et aucune activation automatique des nouveaux profils.
+- **Publication** : PR de développement seulement. Les validations CI sur chaque nouveau commit ne prouvent ni homologation du bulletin ni autorisation d'imprimer un document officiel.
+
+Rappel : les imprimés officiels 2025-2026 ont été annoncés rose (préscolaire), vert (primaire), bleu (secondaire) et blanc (terminal). Cette information de **2025-2026** ne préjuge pas des fichiers modèles ou des couleurs de l'année **2026-2027**. Source ACP : https://acp.cd/nation/rdc-les-bulletins-scolaires-delivres-a-la-cloture-de-lannee-scolaire-2025-2026-ministere-de-leducation-nationale/
+
 ## Code préparatoire
 
-`SchoolBulletinLayouts.For(SchoolCycleKind)` permet aux API et interfaces de distinguer les trois présentations provisoires sans saisir de faux maxima ni de barèmes. Les profils restent désactivés à l'installation. **Aucun bulletin définitif n'est généré ou publié par ce lot.**
+`SchoolBulletinLayouts.For(SchoolCycleKind)` permet aux API et interfaces de distinguer les présentations provisoires par cycle, degré et niveau sans saisir de faux maxima ni de barèmes. Les profils restent désactivés à l'installation. **Aucun bulletin définitif n'est généré ou publié par ce lot.**
