@@ -38,12 +38,22 @@ public static class SchoolCycleBulletinPdf
             {
                 header.Item().Text("DOCUMENT PÉDAGOGIQUE NON OFFICIEL")
                     .Bold().FontSize(10).FontColor(Alert);
-                header.Item().PaddingTop(7).Text(document.SchoolName)
-                    .Bold().FontSize(13).FontColor(Ink);
-                var address = string.Join(" · ", new[] { document.SchoolAddress, document.SchoolCity }
-                    .Where(value => !string.IsNullOrWhiteSpace(value)));
-                if (!string.IsNullOrWhiteSpace(address))
-                    header.Item().Text(address).FontSize(8).FontColor(Muted);
+                header.Item().PaddingTop(7).Row(row =>
+                {
+                    if (document.SchoolLogo is { Length: > 0 } logo)
+                        row.ConstantItem(42).Height(42).Image(logo).FitArea();
+                    row.RelativeItem().PaddingLeft(document.SchoolLogo is { Length: > 0 } ? 9 : 0)
+                        .Column(identity =>
+                        {
+                            identity.Item().Text(document.SchoolName)
+                                .Bold().FontSize(13).FontColor(Ink);
+                            var address = string.Join(" · ",
+                                new[] { document.SchoolAddress, document.SchoolCity }
+                                    .Where(value => !string.IsNullOrWhiteSpace(value)));
+                            if (!string.IsNullOrWhiteSpace(address))
+                                identity.Item().Text(address).FontSize(8).FontColor(Muted);
+                        });
+                });
                 header.Item().PaddingTop(8).BorderBottom(1).BorderColor(Border);
             });
 
