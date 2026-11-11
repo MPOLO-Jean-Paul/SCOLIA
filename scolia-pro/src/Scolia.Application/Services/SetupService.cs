@@ -43,7 +43,7 @@ public sealed class SetupService(IAppDbContext db, IWriteGate gate, IAuditLog au
         if (!InstitutionProfiles.IsKnown(institutionType))
             throw new DomainException("typeEtablissement", "Type d'établissement inconnu.");
         if (!InstitutionProfiles.IsEnabled(institutionType))
-            throw new DomainException("typeEtablissement", "Le profil choisi n'est pas encore activé. Sélectionnez ITM / IEM pour conserver les règles actuelles.");
+            throw new DomainException("typeEtablissement", "Le profil choisi n'est pas encore activé. Sélectionnez ITM / IM pour conserver les règles actuelles.");
         var school = new SchoolProfile
         {
             InstitutionType = institutionType,
