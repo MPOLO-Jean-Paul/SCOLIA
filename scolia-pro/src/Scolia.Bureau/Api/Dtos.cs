@@ -55,7 +55,8 @@ public sealed record FeeCategoryDto(Guid Id, string Name, decimal Amount, DateOn
 
 public sealed record PromotionDto(
     Guid Id, Guid AcademicYearId, string Code, string Name, Guid? SectionId, string? SectionName, int Level, int? Capacity, bool IsActive,
-    string? NextPromotionCode, decimal MonthlyFee, decimal AnnualTotal, int StudentCount, IReadOnlyList<FeeItemDto> Fees);
+    string? NextPromotionCode, decimal MonthlyFee, decimal AnnualTotal, int StudentCount, IReadOnlyList<FeeItemDto> Fees,
+    Guid? SchoolCycleId = null);
 
 public sealed record DashboardDto(
     string AcademicYear, int ActiveStudents, int NewThisMonth, decimal CollectedTotal, decimal CollectedThisMonth, decimal CollectedToday,
