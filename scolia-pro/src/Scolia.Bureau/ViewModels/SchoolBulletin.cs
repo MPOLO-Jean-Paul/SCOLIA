@@ -7,13 +7,13 @@ using Scolia.Bureau.Infrastructure;
 namespace Scolia.Bureau.ViewModels;
 
 /// <summary>Ligne d'observation maternelle ou de cote scolaire, toujours distincte.</summary>
-public sealed record SchoolBulletinLineVm(string Title, string Value, string? Comment)
+public sealed record SchoolBulletinLineVm(string Title, string Value, string? Comment, bool IsObservation)
 {
     public bool HasComment => !string.IsNullOrWhiteSpace(Comment);
 }
 
 public sealed record SchoolBulletinPeriodVm(
-    string Title, IReadOnlyList<SchoolBulletinLineVm> Lines)
+    string Title, string EntryHeading, IReadOnlyList<SchoolBulletinLineVm> Lines)
 {
     public bool HasLines => Lines.Count > 0;
 }
@@ -31,6 +31,7 @@ public sealed class SchoolBulletinPage : PageViewModel
     private readonly Guid enrollmentId;
     private string subtitle = string.Empty;
     private string notice = string.Empty;
+    private string documentTitle = "Aperçu pédagogique";
 
     public SchoolBulletinPage(ShellViewModel shell, Guid enrollmentId) : base(shell)
     {
@@ -43,6 +44,7 @@ public sealed class SchoolBulletinPage : PageViewModel
     public override MaterialIconKind Glyph => MaterialIconKind.FileDocumentOutline;
 
     public string Notice { get => notice; private set => Set(ref notice, value); }
+    public string DocumentTitle { get => documentTitle; private set => Set(ref documentTitle, value); }
     public ObservableCollection<SchoolBulletinTermVm> Terms { get; } = [];
 
     public override async Task LoadAsync()
@@ -56,6 +58,8 @@ public sealed class SchoolBulletinPage : PageViewModel
         subtitle = $"{preview.Cycle} · {preview.Promotion} · {preview.AcademicYear}";
         Raise(nameof(Subtitle));
         Notice = preview.Notice;
+        DocumentTitle = string.IsNullOrWhiteSpace(preview.DocumentTitle)
+            ? "Aperçu pédagogique" : preview.DocumentTitle;
         Terms.Clear();
 
         foreach (var term in preview.Terms ?? [])
@@ -69,10 +73,11 @@ public sealed class SchoolBulletinPage : PageViewModel
                         : e.Score is { } score && e.MaxScore is { } max
                             ? $"{score.ToString("0.##", CultureInfo.CurrentCulture)} / {max.ToString("0.##", CultureInfo.CurrentCulture)}"
                             : "Non coté";
-                    return new SchoolBulletinLineVm(e.Title, value, e.Comment);
+                    return new SchoolBulletinLineVm(e.Title, value, e.Comment,
+                        e.Mode == "Observation");
                 }).ToArray();
                 return new SchoolBulletinPeriodVm(
-                    $"{period.Code} · {period.Name}", lines);
+                    $"{period.Code} · {period.Name}", preview.EntryHeading, lines);
             }).ToArray();
             Terms.Add(new SchoolBulletinTermVm(term.Label, periods));
         }
