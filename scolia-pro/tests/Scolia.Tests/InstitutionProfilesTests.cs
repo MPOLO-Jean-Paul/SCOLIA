@@ -33,6 +33,15 @@ public sealed class InstitutionProfilesTests
         Assert.Equal(enabled, InstitutionProfiles.IsEnabled(profile));
     }
 
+    [Fact]
+    public void Itm_Iem_alias_is_accepted_but_saved_under_historical_ITM_code()
+    {
+        Assert.True(InstitutionProfiles.IsKnown("ItmIem"));
+        Assert.True(InstitutionProfiles.IsEnabled("ItmIem"));
+        Assert.Equal("ItmIm", InstitutionProfiles.Canonicalize("ItmIem"));
+        Assert.Equal("ItmIm", InstitutionProfiles.Canonicalize(null));
+    }
+
     [Theory]
     [InlineData("Unknown")]
     [InlineData("")]
