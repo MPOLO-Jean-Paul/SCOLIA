@@ -166,7 +166,9 @@ public sealed class ScoliaDbContext(DbContextOptions<ScoliaDbContext> options, I
             e.ToTable("Promotions");
             e.HasIndex(x => new { x.AcademicYearId, x.Code }).IsUnique();
             e.HasOne<AcademicYear>().WithMany().HasForeignKey(x => x.AcademicYearId).OnDelete(DeleteBehavior.Restrict);
-            e.HasOne<SchoolCycle>().WithMany().HasForeignKey(x => x.SchoolCycleId).OnDelete(DeleteBehavior.Restrict);
+            // SQLite ne peut pas ajouter une clé étrangère sur Promotions sans reconstruire la table.
+            // Le rattachement est validé par le service et indexé ; pas de migration destructive.
+            e.HasIndex(x => x.SchoolCycleId);
             e.HasOne(x => x.Section).WithMany().HasForeignKey(x => x.SectionId).OnDelete(DeleteBehavior.SetNull);
             e.HasMany(x => x.Fees).WithOne().HasForeignKey(f => f.PromotionId).OnDelete(DeleteBehavior.Cascade);
         });
