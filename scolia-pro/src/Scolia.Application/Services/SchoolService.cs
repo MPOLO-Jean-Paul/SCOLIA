@@ -415,6 +415,28 @@ public sealed class SchoolService(IAppDbContext db, IWriteGate gate, IAuditLog a
                 ?? throw new DomainException("sectionId", "La section choisie n'existe plus : actualisez la liste.");
             if (!chosen.IsActive) throw new DomainException("sectionId", $"La section {chosen.Name} est désactivée : réactivez-la ou choisissez-en une autre.");
         }
+        // Les nouveaux établissements scolaires ne sont pas encore activables.
+        // Ce contrôle prépare leur ouverture sans affecter l'ancien moteur ITM.
+        if (school.InstitutionType is InstitutionProfiles.Maternelle or InstitutionProfiles.Primaire
+            or InstitutionProfiles.Secondaire or InstitutionProfiles.ComplexeScolaire)
+        {
+            if (school.Governance == SchoolGovernanceKind.Public)
+                throw new DomainException("governance",
+                    "Les tarifs d'un établissement public exigent une configuration réglementaire distincte, non encore activée.");
+            var cycleId = input.SchoolCycleId ?? promotion.SchoolCycleId;
+            if (cycleId is null)
+                throw new DomainException("schoolCycleId",
+                    "Indiquez le cycle de la classe : maternelle, primaire ou secondaire.");
+            var cycle = await db.SchoolCycles.AsNoTracking().FirstOrDefaultAsync(
+                x => x.Id == cycleId && x.SchoolId == school.Id && x.IsActive, ct)
+                ?? throw new DomainException("schoolCycleId",
+                    "Le cycle de la classe n'existe pas ou est inactif.");
+            if (school.InstitutionType != InstitutionProfiles.ComplexeScolaire &&
+                school.InstitutionType != cycle.Kind.ToString())
+                throw new DomainException("schoolCycleId",
+                    "Le cycle de la classe ne correspond pas au type d'établissement.");
+            promotion.SchoolCycleId = cycle.Id;
+        }
         promotion.Code = code; promotion.Name = input.Name.Trim(); promotion.SectionId = input.SectionId; promotion.Level = input.Level;
         if (input.SchoolCycleId is not null) promotion.SchoolCycleId = input.SchoolCycleId;
         promotion.Capacity = input.Capacity; promotion.IsActive = input.IsActive;
