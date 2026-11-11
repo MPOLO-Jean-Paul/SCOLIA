@@ -168,7 +168,7 @@
                 </Grid>
               </Grid>
 
-              <!-- Profil pédagogique : préparation additive, seul ITM/IM reste activable en phase 1. -->
+              <!-- Profil pédagogique : préparation additive, seul ITM/IEM reste activable en phase 1. -->
               <StackPanel Classes="field" Spacing="4">
                 <TextBlock Text="Type d'établissement" />
                 <ComboBox ItemsSource="{Binding InstitutionTypes}" SelectedItem="{Binding InstitutionType}" HorizontalAlignment="Stretch" />
