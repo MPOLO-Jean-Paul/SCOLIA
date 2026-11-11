@@ -8,12 +8,14 @@ public static class InstitutionProfiles
 {
     public const string ItmIm = "ItmIm";
     public const string ItmIem = "ItmIem";
+    public const string Maternelle = "Maternelle";
     public const string Primaire = "Primaire";
     public const string Secondaire = "Secondaire";
+    public const string ComplexeScolaire = "ComplexeScolaire";
     public const string SuperieurLmd = "SuperieurLmd";
 
     public static bool IsKnown(string? value) =>
-        value is ItmIm or ItmIem or Primaire or Secondaire or SuperieurLmd;
+        value is ItmIm or ItmIem or Maternelle or Primaire or Secondaire or ComplexeScolaire or SuperieurLmd;
 
     /// <summary>Normalise les anciennes appellations vers la valeur persistée historique.</summary>
     public static string Canonicalize(string? value) =>
