@@ -120,8 +120,9 @@ public static class SchoolCycleRules
             return;
         }
 
-        Require(cycle is not null && cycle.SchoolId == school.Id && cycle.IsActive &&
-                promotion.SchoolCycleId == cycle.Id,
+        if (cycle is null)
+            throw new DomainException("cycleScolaire", "Choisissez le cycle de cette classe.");
+        Require(cycle.SchoolId == school.Id && cycle.IsActive && promotion.SchoolCycleId == cycle.Id,
             "Chaque classe maternelle, primaire ou secondaire doit appartenir à un cycle actif.");
         Require(profile == InstitutionProfiles.ComplexeScolaire ||
                 profile == cycle.Kind.ToString(),
