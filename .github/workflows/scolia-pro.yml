@@ -25,7 +25,10 @@ env:
 jobs:
   qualite:
     name: Compilation et tests
-    runs-on: ubuntu-latest
+    # Ubuntu 26.04 (ubuntu-latest au 11/11/2026) a échoué sur les miroirs
+    # APT lors de l'installation des dépendances Playwright. Fixer un LTS
+    # stabilise les tests E2E sans les désactiver.
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v5
