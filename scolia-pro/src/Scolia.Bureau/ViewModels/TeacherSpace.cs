@@ -234,6 +234,9 @@ public sealed record TeacherCourseCardVm(string Promotion, string Title, string 
 
 public sealed record TeacherNoticeVm(string When, string Title, string Text);
 
+/// <summary>Règle affichée sur Android dans les mêmes lignes que l'accueil du secrétariat.</summary>
+public sealed record TeacherRuleRowVm(MaterialIconKind Icon, IBrush Brush, string Text);
+
 /// <summary>
 /// Espace enseignant : un accueil à lui, aussi clair que celui du secrétariat. Ses cours et leur avancement,
 /// les annonces de la délibération, les règles de l'encodage en vigueur et les actions de son métier ;
@@ -262,6 +265,7 @@ public sealed class TeacherHomePage : PageViewModel
     public ObservableCollection<KpiVm> Stats { get; } = [];
     public ObservableCollection<TeacherCourseCardVm> Courses { get; } = [];
     public ObservableCollection<TeacherNoticeVm> Notices { get; } = [];
+    public ObservableCollection<TeacherRuleRowVm> RuleItems { get; } = [];
 
     /// <summary>Règles de l'encodage décidées par le secrétariat (« Paramètres profs »).</summary>
     public string Rules { get => rules; private set => Set(ref rules, value); }
@@ -281,6 +285,7 @@ public sealed class TeacherHomePage : PageViewModel
         Courses.Clear();
         Notices.Clear();
         Stats.Clear();
+        RuleItems.Clear();
         var settings = await Shell.Api.GetAsync<DeliberationSettingsDto>("api/deliberation/reglages");
         Rules = string.Join(Environment.NewLine,
             $"• Encodage du S1 : {(settings.EncodingS1Open ? "ouvert" : "fermé")} — du S2 : {(settings.EncodingS2Open ? "ouvert" : "fermé")}.",
@@ -289,6 +294,20 @@ public sealed class TeacherHomePage : PageViewModel
             $"• Téléchargement des relevés de vos cours : {(settings.TeacherDownloads ? "autorisé" : "fermé")}.",
             $"• Seuil de réussite : {settings.PassPercent:0.##} % ; échec sous la moitié du maxima d'un cours.",
             "• Vos feuilles montrent les codes anonymes des copies, jamais les noms.");
+        // Le mobile reprend la liste de réglages partagée avec l'accueil
+        // administrateur : une ligne courte, une icône du thème, sans nouvelles couleurs.
+        RuleItems.Add(new TeacherRuleRowVm(MaterialIconKind.CalendarCheck, ThemeBrush.Get("ToneBlue"),
+            $"S1 : {(settings.EncodingS1Open ? "ouvert" : "fermé")} · S2 : {(settings.EncodingS2Open ? "ouvert" : "fermé")}"));
+        RuleItems.Add(new TeacherRuleRowVm(MaterialIconKind.ChartBar, ThemeBrush.Get("TonePurple"),
+            $"Moyennes d'appui (sur 10) : {(settings.SupportEnabled ? "actives" : "désactivées")}"));
+        RuleItems.Add(new TeacherRuleRowVm(MaterialIconKind.Pen, ThemeBrush.Get("ToneOrange"),
+            settings.TeacherUpdates ? "Cotes enregistrées : modification autorisée avant remise" : "Cotes enregistrées : correction par le secrétariat"));
+        RuleItems.Add(new TeacherRuleRowVm(MaterialIconKind.FileChart, ThemeBrush.Get("ToneGreen"),
+            $"Téléchargement des relevés : {(settings.TeacherDownloads ? "autorisé" : "fermé")}"));
+        RuleItems.Add(new TeacherRuleRowVm(MaterialIconKind.ShieldCheckOutline, ThemeBrush.Get("ToneTeal"),
+            $"Seuil de réussite : {settings.PassPercent:0.##} % · échec sous la moitié du maxima"));
+        RuleItems.Add(new TeacherRuleRowVm(MaterialIconKind.Incognito, ThemeBrush.Get("ToneIndigo"),
+            "Feuilles anonymes : codes des copies, jamais les noms"));
         List<TeacherCourseDto> mine;
         try
         {
