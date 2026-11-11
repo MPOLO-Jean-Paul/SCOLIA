@@ -1446,7 +1446,7 @@ namespace Scolia.Infrastructure.Persistence.Migrations
                     b.Property<string>("InstitutionType")
                         .IsRequired()
                         .HasMaxLength(32)
-                        .HasDefaultValue("ItmIm")
+                        .HasDefaultValue("ItmIem")
                         .HasColumnType("TEXT");
 
                     b.Property<byte[]>("Logo")
