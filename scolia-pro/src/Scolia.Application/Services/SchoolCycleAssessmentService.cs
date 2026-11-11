@@ -72,12 +72,8 @@ public sealed class SchoolCycleAssessmentService(IAppDbContext db, IWriteGate ga
         // Conserver aussi les périodes sans notes et les cotes non encodées.
         var byPeriodEntries = list.GroupBy(x => x.SchoolCyclePeriodId)
             .ToDictionary(g => g.Key, g => (IReadOnlyList<SchoolCycleAssessmentItemDto>)g.ToArray());
-        var termPrefix = context.Cycle.Kind switch
-        {
-            SchoolCycleKind.Primaire => "Trimestre",
-            SchoolCycleKind.Secondaire => "Semestre",
-            _ => "Période d'observation",
-        };
+        var presentation = SchoolBulletinLayouts.For(context.Cycle.Kind);
+        var termPrefix = presentation.PeriodHeading;
         var terms = periods.OrderBy(p => p.Order)
             .GroupBy(p => p.TermCode, StringComparer.OrdinalIgnoreCase)
             .Select(group => new SchoolCycleBulletinTermDto(
@@ -91,7 +87,13 @@ public sealed class SchoolCycleAssessmentService(IAppDbContext db, IWriteGate ga
 
         return new SchoolCycleBulletinPreviewDto(enrollmentId,
             context.Cycle.Id, context.Cycle.Name, context.Promotion.Name,
-            context.Year.Label, list, Terms: terms);
+            context.Year.Label, list,
+            Notice: $"Aperçu pédagogique provisoire, non officiel. {presentation.StatusNote}",
+            Terms: terms,
+            TemplateCode: presentation.Code,
+            DocumentTitle: presentation.PreviewTitle,
+            EntryHeading: presentation.EntryHeading,
+            PeriodHeading: presentation.PeriodHeading);
     }
 
     public Task<SchoolCycleAssessmentItemDto> SaveAsync(
