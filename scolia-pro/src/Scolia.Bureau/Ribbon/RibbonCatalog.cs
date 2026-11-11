@@ -197,8 +197,8 @@ public static class RibbonCatalog
                     Small(shell, "Vérifier la base", DatabaseCheckOutline, "Contrôle d'intégrité de la base de données.", () => DataPage.CheckDatabaseAsync(shell), Neutral, perm: Perm.BackupManage),
                     Small(shell, "Vérifier le journal", ShieldCheckOutline, "Contrôle de la chaîne d'empreintes du journal d'audit.", () => AuditPage.VerifyAsync(shell), Neutral, perm: Perm.AuditRead)),
                 Group("Effacement",
-                    Small(shell, "Effacer des paiements", DeleteSweepOutline, ($"Efface les reçus et paiements des {shell.StudentTerms.Plural} cochés ou de tous. Les dossiers restent. Mot de passe, récapitulatif et sauvegarde automatique avant.", () => shell.Open(() => new EraseDataPage(shell, payments: true)), Red, perm: Perm.BackupManage),
-                    Small(shell, "Effacer des dossiers", AccountRemoveOutline, ($"Efface les dossiers des {shell.StudentTerms.Plural} cochés ou de tous, avec leur historique. Mot de passe, récapitulatif et sauvegarde automatique avant.", () => shell.Open(() => new EraseDataPage(shell, payments: false)), Red, perm: Perm.BackupManage)),
+                    Small(shell, "Effacer des paiements", DeleteSweepOutline, $"Efface les reçus et paiements des {shell.StudentTerms.Plural} cochés ou de tous. Les dossiers restent. Mot de passe, récapitulatif et sauvegarde automatique avant.", () => shell.Open(() => new EraseDataPage(shell, payments: true)), Red, perm: Perm.BackupManage),
+                    Small(shell, "Effacer des dossiers", AccountRemoveOutline, $"Efface les dossiers des {shell.StudentTerms.Plural} cochés ou de tous, avec leur historique. Mot de passe, récapitulatif et sauvegarde automatique avant.", () => shell.Open(() => new EraseDataPage(shell, payments: false)), Red, perm: Perm.BackupManage)),
             ]),
             new("parametres", "Paramètres",
             [
