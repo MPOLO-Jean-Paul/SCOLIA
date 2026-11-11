@@ -87,6 +87,7 @@ public sealed class SetupViewModel : Observable
     public SetupViewModel(ShellViewModel shell)
     {
         this.shell = shell;
+        InstitutionType = InstitutionTypes[0];
         StartMonths = Months;
         EndMonths = Months;
         MonthCounts = [.. Enumerable.Range(1, 12).Select(n => new ChoiceItem(n.ToString(System.Globalization.CultureInfo.InvariantCulture), $"{n} mois"))];
@@ -172,6 +173,18 @@ public sealed class SetupViewModel : Observable
         }
         Raise(nameof(LogoLine));
     }
+
+    // Le choix est préparé, mais les profils hors ITM ne seront activés qu'après
+    // validation de leur moteur pédagogique et de leurs documents officiels.
+    public IReadOnlyList<ChoiceItem> InstitutionTypes { get; } =
+    [
+        new("ItmIem", "ITM / IEM — disponible"),
+        new("Primaire", "École primaire — à venir"),
+        new("Secondaire", "École secondaire / technique — à venir"),
+        new("SuperieurLmd", "Université / supérieur LMD — à venir"),
+    ];
+    private ChoiceItem institutionType = null!;
+    public ChoiceItem InstitutionType { get => institutionType; set => Set(ref institutionType, value); }
 
     public IReadOnlyList<ChoiceItem> StartMonths { get; }
     public IReadOnlyList<ChoiceItem> EndMonths { get; }
@@ -370,6 +383,8 @@ public sealed class SetupViewModel : Observable
     /// <summary>Contrôles de l'étape 1, avant de passer aux comptes. Renvoie le premier problème, ou null.</summary>
     public string? ValidateStepOne()
     {
+        if (InstitutionType is null || InstitutionType.Value != "ItmIem")
+            return "Ce profil pédagogique est en préparation. Seul ITM / IEM peut être activé dans cette première étape.";
         if (string.IsNullOrWhiteSpace(SchoolName)) return "Indiquez le nom de l'établissement.";
         if (string.IsNullOrWhiteSpace(ShortName)) return "Indiquez le sigle de l'établissement.";
         if (Phone.Length > 0 && !(Phone.Length == PhoneInput.Length && Phone[0] == '0')) return "Le téléphone compte 10 chiffres commençant par 0, par exemple 0812345678.";
@@ -470,6 +485,7 @@ public sealed class SetupViewModel : Observable
         if (UseComptabilite) accounts.Add(new { role = "Comptabilite", userName = ComptabiliteUserName.Trim(), displayName = ComptabiliteDisplayName.Trim(), password = ComptabilitePassword });
         return new
         {
+            institutionType = InstitutionType.Value,
             schoolName = SchoolName.Trim(),
             shortName = ShortName.Trim(),
             motto = Motto.Trim() is { Length: > 0 } motto ? motto : null,

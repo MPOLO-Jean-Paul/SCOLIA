@@ -1443,6 +1443,12 @@ namespace Scolia.Infrastructure.Persistence.Migrations
                     b.Property<string>("Email")
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("InstitutionType")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasDefaultValue("ItmIem")
+                        .HasColumnType("TEXT");
+
                     b.Property<byte[]>("Logo")
                         .HasColumnType("BLOB");
 

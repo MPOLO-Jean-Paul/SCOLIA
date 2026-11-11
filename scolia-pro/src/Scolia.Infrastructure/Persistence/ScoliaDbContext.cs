@@ -77,7 +77,7 @@ public sealed class ScoliaDbContext(DbContextOptions<ScoliaDbContext> options, I
             b.Entity(type.ClrType).Property(nameof(Entity.Id)).ValueGeneratedNever();
         }
 
-        b.Entity<SchoolProfile>(e => { e.ToTable("Etablissement"); e.Property(x => x.Name).HasMaxLength(160); });
+        b.Entity<SchoolProfile>(e => { e.ToTable("Etablissement"); e.Property(x => x.Name).HasMaxLength(160); e.Property(x => x.InstitutionType).HasMaxLength(32).HasDefaultValue(InstitutionProfiles.ItmIem); });
         b.Entity<AcademicYear>(e =>
         {
             e.ToTable("AnneesScolaires");
