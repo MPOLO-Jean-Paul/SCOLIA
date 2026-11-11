@@ -112,21 +112,20 @@ public static class SchoolCycleRules
 
     public static void ValidatePromotionCycle(SchoolProfile school, SchoolCycle? cycle, Promotion promotion)
     {
-        var multi = school.InstitutionType == InstitutionProfiles.ComplexeScolaire;
-        if (multi)
+        var profile = InstitutionProfiles.Canonicalize(school.InstitutionType);
+        if (profile is InstitutionProfiles.ItmIm or InstitutionProfiles.SuperieurLmd)
         {
-            Require(cycle is not null && cycle.SchoolId == school.Id && cycle.IsActive &&
-                    promotion.SchoolCycleId == cycle.Id,
-                "Chaque classe d'un complexe doit appartenir à un cycle actif.");
+            Require(cycle is null && promotion.SchoolCycleId is null,
+                "Les promotions ITM/IM et LMD conservent leur modèle existant.");
+            return;
         }
-        else if (cycle is not null)
-        {
-            Require(promotion.SchoolCycleId == cycle.Id && cycle.SchoolId == school.Id,
-                "La classe doit être rattachée au cycle de l'établissement.");
-        }
-        else
-            Require(promotion.SchoolCycleId is null,
-                "Une classe ne peut pas référencer un cycle non déclaré.");
+
+        Require(cycle is not null && cycle.SchoolId == school.Id && cycle.IsActive &&
+                promotion.SchoolCycleId == cycle.Id,
+            "Chaque classe maternelle, primaire ou secondaire doit appartenir à un cycle actif.");
+        Require(profile == InstitutionProfiles.ComplexeScolaire ||
+                profile == cycle.Kind.ToString(),
+            "La classe ne correspond pas au profil de l'établissement.");
     }
 
     public static void ValidateFeePolicy(
