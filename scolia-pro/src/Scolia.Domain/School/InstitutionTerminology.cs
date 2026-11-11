@@ -19,7 +19,7 @@ public sealed record InstitutionTerminology(string Singular, string Plural)
     public static InstitutionTerminology For(string? institutionType) =>
         institutionType switch
         {
-            InstitutionProfiles.Primaire or InstitutionProfiles.Secondaire => new("élève", "élèves"),
+            InstitutionProfiles.Maternelle or InstitutionProfiles.Primaire or InstitutionProfiles.Secondaire or InstitutionProfiles.ComplexeScolaire => new("élève", "élèves"),
             InstitutionProfiles.SuperieurLmd => new("étudiant", "étudiants"),
             _ => new("apprenant", "apprenants"),
         };
