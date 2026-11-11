@@ -61,7 +61,8 @@ public sealed class SchoolCycleAssessmentService(IAppDbContext db, IWriteGate ga
                         a.SchoolCycleId == context.Cycle.Id).ToListAsync(ct);
 
         // L'aperçu refuse toute collision ou donnée venant d'un autre cycle.
-        _ = SchoolCycleAssessmentRules.Preview(context.Cycle, enrollmentId, periods, rows);
+        _ = SchoolCycleAssessmentRules.Preview(context.Cycle, enrollmentId, periods, rows,
+            context.Promotion.Id, context.Year.Id);
         var periodById = periods.ToDictionary(p => p.Id);
         var list = rows.OrderBy(x => periodById[x.SchoolCyclePeriodId].Order)
             .ThenBy(x => x.Title, StringComparer.CurrentCultureIgnoreCase)
