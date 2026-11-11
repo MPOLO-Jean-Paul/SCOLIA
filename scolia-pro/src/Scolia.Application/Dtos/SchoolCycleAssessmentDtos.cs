@@ -84,4 +84,5 @@ public sealed record SchoolCycleBulletinPrintDto(
     string? SchoolCity,
     string StudentName,
     string Matricule,
-    SchoolCycleBulletinPreviewDto Preview);
+    SchoolCycleBulletinPreviewDto Preview,
+    byte[]? SchoolLogo = null);
