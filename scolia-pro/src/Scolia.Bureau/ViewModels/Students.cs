@@ -6,6 +6,7 @@ using Material.Icons;
 using Scolia.Bureau.Api;
 using Scolia.Bureau.Infrastructure;
 using Scolia.Bureau.Ribbon;
+using Scolia.Domain.School;
 
 namespace Scolia.Bureau.ViewModels;
 
@@ -280,7 +281,7 @@ public sealed class StudentsPage : PageViewModel
     {
         if (Selected is null)
         {
-            Shell.Notify("Sélectionnez un apprenant dans la liste.");
+            Shell.Notify($"Sélectionnez un {Shell.Learners.Singular} dans la liste.");
             return Task.CompletedTask;
         }
         return work(Selected.Id);
@@ -291,7 +292,7 @@ public sealed class StudentsPage : PageViewModel
     {
         if (Selected is null)
         {
-            Shell.Notify("Sélectionnez un apprenant dans la liste.");
+            Shell.Notify($"Sélectionnez un {Shell.Learners.Singular} dans la liste.");
             return;
         }
         var id = Selected.Id;
@@ -320,6 +321,7 @@ public sealed class StudentDetailPage : PageViewModel
 
     public StudentDetailPage(ShellViewModel shell, Guid studentId) : base(shell)
     {
+        title = $"Fiche {shell.Learners.Singular}";
         this.studentId = studentId;
         EndSponsorship = new AsyncCommand(() => Shell.Run(EndSelectedSponsorshipAsync));
         if (Shell.Can(Perm.PaymentsCreate)) Action("Encaisser", MaterialIconKind.HandCoin, () => Shell.Open(() => new CashierPage(Shell, studentId)), primary: true);
@@ -403,7 +405,7 @@ public sealed class StudentDetailPage : PageViewModel
         Totals.Clear();
         if (enrollment is null)
         {
-            Totals.Add(new KpiVm("Compte", "Sans inscription", "Inscrivez l'apprenant pour ouvrir son compte.", ThemeBrush.Get("ToneNeutral"), MaterialIconKind.AccountOffOutline));
+            Totals.Add(new KpiVm("Compte", "Sans inscription", $"Inscrivez l'{Shell.Learners.Singular} pour ouvrir son compte.", ThemeBrush.Get("ToneNeutral"), MaterialIconKind.AccountOffOutline));
             return;
         }
 
@@ -440,7 +442,7 @@ public sealed class StudentDetailPage : PageViewModel
     {
         if (enrollment is null)
         {
-            Shell.Notify("Cet apprenant n'a pas d'inscription : aucun relevé à produire.");
+            Shell.Notify($"Cet {Shell.Learners.Singular} n'a pas d'inscription : aucun relevé à produire.");
             return;
         }
         await Shell.Download($"api/inscriptions/{enrollment.Id}/releve.pdf", $"releve-{student?.Matricule ?? "apprenant"}.pdf");
@@ -455,7 +457,7 @@ public sealed class StudentDetailPage : PageViewModel
             var reason = f.OptionalText("motif");
             if (status != "Actif" && reason is null)
             {
-                f.Find("motif").Error = "Le motif est obligatoire pour sortir l'apprenant de la promotion.";
+                f.Find("motif").Error = $"Le motif est obligatoire pour sortir l'{Shell.Learners.Singular} de la promotion.";
                 return Task.FromResult(false);
             }
             return SaveAsync(HttpMethod.Put, $"api/inscriptions/{enrollment.Id}/statut",
@@ -463,7 +465,7 @@ public sealed class StudentDetailPage : PageViewModel
         });
         form.AddChoice("statut", "Nouveau statut", Labels.Statuses, enrollment.Status, required: true);
         form.AddDay("date", "Date d'effet", DateOnly.FromDateTime(DateTime.Today));
-        form.Add("motif", "Motif", hint: "Obligatoire si l'apprenant quitte la promotion");
+        form.Add("motif", "Motif", hint: $"Obligatoire si l'{Shell.Learners.Singular} quitte la promotion");
         if (await Shell.Ask(form)) await RefreshAsync();
     }
 
@@ -595,7 +597,7 @@ public static class StudentForms
                 await shell.Confirm("Aucune promotion", "Aucune promotion n'est ouverte. Demandez au secrétariat d'en créer une dans Paramètres, Promotions et frais.", "Fermer");
                 return;
             }
-            if (!await shell.Confirm("Aucune promotion", "L'apprenant doit être inscrit dans une promotion, et aucune n'existe encore. Créer une promotion maintenant ?", "Créer une promotion"))
+            if (!await shell.Confirm("Aucune promotion", $"L'{shell.Learners.Singular} doit être inscrit dans une promotion, et aucune n'existe encore. Créer une promotion maintenant ?", "Créer une promotion"))
                 return;
             await SettingsPage.NewPromotionAsync(shell);
             promotions = (await shell.Api.GetAsync<List<PromotionDto>>("api/etablissement/promotions")).Where(p => p.IsActive).ToList();
@@ -637,7 +639,7 @@ public static class StudentForms
                     enrolledOn = f.Day("inscription"),
                     confirmDuplicate = doubles.Count > 0 && confirmedIdentity == identityKey,
                 });
-                shell.Notify("Apprenant inscrit.");
+                shell.Notify($"{shell.Learners.SingularTitle} inscrit.");
             }
             catch (OfflineQueuedException)
             {
@@ -652,7 +654,7 @@ public static class StudentForms
         // Pour une nouvelle inscription, ne pas affecter implicitement la première promotion :
         // l'utilisateur choisit le niveau scolaire. S'il n'en existe qu'une, il n'y a rien à choisir.
         if (promotions.Count > 1) form.Find("promotion").Choice = null;
-        AddIdentityFields(form, null);
+        AddIdentityFields(form, null, shell.Learners);
         form.AddDay("inscription", "Date d'inscription", DateOnly.FromDateTime(DateTime.Today));
 
         if (await shell.Ask(form) && shell.Current is StudentsPage page) await page.RefreshAsync();
@@ -682,7 +684,7 @@ public static class StudentForms
 
     public static async Task<bool> EditAsync(ShellViewModel shell, StudentDto s)
     {
-        var form = new FormViewModel("Modifier l'apprenant", $"Matricule {s.Matricule}", async f =>
+        var form = new FormViewModel($"Modifier l'{shell.Learners.Singular}", $"Matricule {s.Matricule}", async f =>
         {
             try
             {
@@ -695,7 +697,7 @@ public static class StudentForms
             }
             return true;
         });
-        AddIdentityFields(form, s);
+        AddIdentityFields(form, s, shell.Learners);
         // Un seul poste modifie un dossier à la fois : les autres voient qui le fait.
         return await shell.Sync.WithLockAsync($"dossier:{s.Id}", $"Modification du dossier {s.Matricule}", () => shell.Ask(form));
     }
@@ -709,7 +711,7 @@ public static class StudentForms
         var s = await shell.Api.GetAsync<StudentDto>($"api/apprenants/{id}");
         var before = Format.FullName(s.LastName, s.MiddleName, s.FirstName);
         string? confirmedIdentity = null;
-        var form = new FormViewModel("Renommer l'apprenant", $"{before} · matricule {s.Matricule}", async f =>
+        var form = new FormViewModel($"Renommer l'{shell.Learners.Singular}", $"{before} · matricule {s.Matricule}", async f =>
         {
             var (last, middle, first) = (f.Text("nom"), f.Text("postNom"), f.Text("prenom"));
             var after = Format.FullName(last, middle, first);
@@ -786,9 +788,9 @@ public static class StudentForms
     /// Champs de la fiche : identité, naissance, parent, son contact et l'adresse. Un seul numéro est saisi,
     /// celui du parent : c'est lui que visent les relances WhatsApp et SMS.
     /// </summary>
-    private static void AddIdentityFields(FormViewModel form, StudentDto? s)
+    private static void AddIdentityFields(FormViewModel form, StudentDto? s, StudentTerminology terms)
     {
-        form.AddHeader("Identité de l'apprenant", "Renseignez les noms tels qu'ils apparaissent sur le dossier scolaire.");
+        form.AddHeader($"Identité de l'{terms.Singular}", "Renseignez les noms tels qu'ils apparaissent sur le dossier scolaire.");
         form.Add("nom", "Nom", value: s?.LastName, required: true);
         form.Add("postNom", "Post-nom", value: s?.MiddleName, required: true);
         form.Add("prenom", "Prénom", value: s?.FirstName, required: true);
