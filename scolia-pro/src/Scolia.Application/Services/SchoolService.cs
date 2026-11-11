@@ -367,7 +367,7 @@ public sealed class SchoolService(IAppDbContext db, IWriteGate gate, IAuditLog a
             .Require(InstitutionProfiles.Canonicalize(school.InstitutionType) == InstitutionProfiles.ItmIm
                 ? input.MonthlyFee > 0 : input.MonthlyFee >= 0,
                 "monthlyFee", InstitutionProfiles.Canonicalize(school.InstitutionType) == InstitutionProfiles.ItmIm
-                    ? "La mensualité ITM/IM est obligatoire : indiquez un montant supérieur à zéro."
+                    ? "La mensualité est obligatoire : indiquez son montant (supérieur à zéro)."
                     : "La mensualité peut être désactivée pour ce cycle, mais ne peut pas être négative.")
             .Require(!school.WholeAmountsOnly || input.MonthlyFee == decimal.Truncate(input.MonthlyFee), "monthlyFee", "La mensualité doit être un nombre entier.")
             .Require(input.Capacity is null or > 0, "capacity", "La capacité doit être positive.");
