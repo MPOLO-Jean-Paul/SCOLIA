@@ -103,10 +103,10 @@
                 <StackPanel Spacing="4">
                   <StackPanel Orientation="Horizontal" Spacing="8">
                     <mi:MaterialIcon Kind="InformationOutline" Width="16" Height="16" Foreground="#1769E6" />
-                    <TextBlock Text="Rien n'est définitif" Foreground="#16396D" FontWeight="SemiBold" />
+                    <TextBlock Text="Paramètres modifiables" Foreground="#16396D" FontWeight="SemiBold" />
                   </StackPanel>
                   <TextBlock Foreground="#41618D" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap"
-                             Text="Tout se modifie ensuite dans Paramètres, depuis le compte secrétariat." />
+                             Text="Le profil pédagogique est fixé lors de l’installation. Les autres paramètres restent modifiables ensuite." />
                 </StackPanel>
               </Border>
             </Grid>
@@ -167,6 +167,14 @@
                   </StackPanel>
                 </Grid>
               </Grid>
+
+              <!-- Profil pédagogique : préparation additive, seul ITM/IM reste activable en phase 1. -->
+              <StackPanel Classes="field" Spacing="4">
+                <TextBlock Text="Type d'établissement" />
+                <ComboBox ItemsSource="{Binding InstitutionTypes}" SelectedItem="{Binding InstitutionType}" HorizontalAlignment="Stretch" />
+                <TextBlock Text="Pour protéger vos données, les profils primaire, secondaire et supérieur seront activés après validation de leurs règles pédagogiques."
+                           Classes="muted" TextWrapping="Wrap" FontSize="{DynamicResource FsSmall}" />
+              </StackPanel>
 
               <!-- Calendrier scolaire : choix explicites du début, de la fin et du dernier jour autorisé. -->
               <StackPanel Spacing="10">
