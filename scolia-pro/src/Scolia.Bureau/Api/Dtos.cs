@@ -25,7 +25,8 @@ public sealed record DisciplineRowDto(Guid Id, Guid EnrollmentId, string Matricu
 
 public sealed record SessionDto(
     Guid Id, string UserName, string DisplayName, string Role, string RoleLabel, string[] Permissions, bool MustChangePassword,
-    string SchoolName, string? SchoolShortName, string? CurrentYear, string CurrencySymbol, string PhoneCountryCode);
+    string SchoolName, string? SchoolShortName, string? CurrentYear, string CurrencySymbol, string PhoneCountryCode,
+    string InstitutionType = "ItmIem");
 
 public sealed record SchoolDto(
     string Name, string ShortName, string? Motto, string? Address, string? City, string? Country, string? Phone, string? Email,
