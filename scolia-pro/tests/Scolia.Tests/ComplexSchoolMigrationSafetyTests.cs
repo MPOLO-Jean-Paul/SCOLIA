@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Scolia.Application.Abstractions;
 using Scolia.Domain.School;
 using Scolia.Infrastructure.Persistence;
 
@@ -62,9 +63,15 @@ public sealed class ComplexSchoolMigrationSafetyTests : IDisposable
                 TermCode = "T1", Mode = SchoolCycleAssessmentMode.Evaluation, Order = 1,
                 StartDate = year.StartDate, EndDate = year.StartDate.AddDays(8),
             });
+        // Écriture de test réaliste : la règle globale impose un audit pour
+        // toute insertion métier. Ne jamais contourner cette protection.
+        var audit = scope.ServiceProvider.GetRequiredService<IAuditLog>();
+        audit.Record("cycles.test.crees", "CyclesScolaires", school.Id.ToString(),
+            "Création de deux cycles et de leurs grilles annuelles en base de test.");
         await db.SaveChangesAsync();
 
         Assert.Equal(2, await db.SchoolCycles.CountAsync());
+        Assert.True(await db.AuditEntries.AnyAsync(a => a.Action == "cycles.test.crees"));
         Assert.Equal(2, await db.SchoolCycleFeePolicies.CountAsync());
         Assert.Equal(2, await db.SchoolCyclePeriods.CountAsync(p => p.Code == "P1"));
         Assert.Equal(10, await db.Periods.CountAsync());
