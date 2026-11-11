@@ -35,6 +35,12 @@ public sealed record SchoolDto(
     string? CardInstitute = null, string? CardAddress = null, string InstitutionType = "ItmIm",
     string Governance = "Prive");
 
+/// <summary>Configuration distincte de chaque cycle d'un complexe scolaire.</summary>
+public sealed record SchoolCycleConfigurationItemDto(Guid Id, string Kind, string Name,
+    string? AuthorizationNumber, bool IsActive, bool ChargeMonthlyTuition, decimal MonthlyAmount, int ClassCount);
+public sealed record SchoolCycleConfigurationDto(string InstitutionType, string Governance,
+    Guid? AcademicYearId, IReadOnlyList<SchoolCycleConfigurationItemDto> Cycles);
+
 /// <summary>Apprenant proposé pour les cartes d'accès, avec son diagnostic.</summary>
 public sealed record CardCandidateDto(Guid EnrollmentId, string Matricule, string FullName, string PromotionCode, string Status, bool Eligible,
     bool IdentityComplete, bool DuplicateMatricule);
