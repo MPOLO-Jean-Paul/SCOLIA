@@ -71,3 +71,17 @@ public sealed record SchoolCycleBulletinPreviewDto(
     string GradeBand = "Cycle non précisé",
     string? OptionLabel = null,
     IReadOnlyList<SchoolCycleBulletinSubjectDto>? SubjectRows = null);
+
+    
+/// <summary>
+/// Données minimales pour le PDF pédagogique NON OFFICIEL. Le nom de l'élève
+/// est lu côté serveur après vérification de l'inscription et des droits.
+/// Aucun cache nominatif public, sceau ou décision officielle n'est créé.
+/// </summary>
+public sealed record SchoolCycleBulletinPrintDto(
+    string SchoolName,
+    string? SchoolAddress,
+    string? SchoolCity,
+    string StudentName,
+    string Matricule,
+    SchoolCycleBulletinPreviewDto Preview);
