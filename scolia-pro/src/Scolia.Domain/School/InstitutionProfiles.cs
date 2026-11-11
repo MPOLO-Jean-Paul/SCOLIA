@@ -2,11 +2,11 @@ namespace Scolia.Domain.School;
 
 /// <summary>
 /// Identifiants stables des profils pédagogiques. Ne pas renuméroter ni traduire
-/// ces valeurs persistées : les versions anciennes restent sur ItmIm.
+/// ces valeurs persistées : les versions anciennes restent reconnues, mais la valeur canonique est ItmIem.
 /// </summary>
 public static class InstitutionProfiles
 {
-    public const string ItmIm = "ItmIm";
+    public const string ItmIm = "ItmIem";
     public const string Primaire = "Primaire";
     public const string Secondaire = "Secondaire";
     public const string SuperieurLmd = "SuperieurLmd";
@@ -14,8 +14,11 @@ public static class InstitutionProfiles
     public static bool IsKnown(string? value) =>
         value is ItmIm or Primaire or Secondaire or SuperieurLmd;
 
-    // Déploiement progressif : seul le moteur ITM/IM dispose actuellement
+    // Déploiement progressif : seul le moteur ITM/IEM dispose actuellement
     // de ses règles pédagogiques complètes. Les autres profils sont bloqués
     // à l'installation jusqu'à validation de leurs propres moteurs.
+    public static string Canonicalize(string? value) =>
+        value is null or LegacyItmIm ? ItmIem : value;
+
     public static bool IsEnabled(string? value) => value == ItmIm;
 }
