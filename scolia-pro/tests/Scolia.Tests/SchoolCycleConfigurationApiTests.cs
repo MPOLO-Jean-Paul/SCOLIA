@@ -96,9 +96,9 @@ public sealed class SchoolCycleConfigurationApiTests : IDisposable
 
         using var checkScope = app.Services.CreateScope();
         var check = checkScope.ServiceProvider.GetRequiredService<ScoliaDbContext>();
-        Assert.Equal(primaryId, (await check.Promotions.SingleAsync(p => p.Code == "PR01")).SchoolCycleId);
-        Assert.Empty(await check.FeeItems.Where(f => f.PromotionId ==
-            check.Promotions.Single(p => p.Code == "PR01").Id).ToArrayAsync());
+        var classRow = await check.Promotions.SingleAsync(p => p.Code == "PR01");
+        Assert.Equal(primaryId, classRow.SchoolCycleId);
+        Assert.Empty(await check.FeeItems.Where(f => f.PromotionId == classRow.Id).ToArrayAsync());
     }
 
     [Fact]
