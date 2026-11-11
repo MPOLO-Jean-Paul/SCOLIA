@@ -160,6 +160,7 @@ public sealed class StudentsPage : PageViewModel
     public StudentRow? Selected { get => selected; set => Set(ref selected, value); }
     public string EmptyTitle { get; private set; } = string.Empty;
     public string EmptyHint { get; private set; } = string.Empty;
+    public string ClearFiltersHint => $"Afficher tous les {Shell.Learners.Plural} sans filtre";
     public string PageText => $"Page {page} sur {pageCount}";
     public bool CanPrevious => page > 1;
     public bool CanNext => page < pageCount;
