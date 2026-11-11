@@ -127,7 +127,8 @@ public static class SchoolCycleAssessmentRules
     public static IReadOnlyList<SchoolCycleAssessmentPreviewLine> Preview(
         SchoolCycle cycle, Guid enrollmentId,
         IReadOnlyCollection<SchoolCyclePeriod> periods,
-        IReadOnlyCollection<SchoolCycleAssessment> assessments)
+        IReadOnlyCollection<SchoolCycleAssessment> assessments,
+        Guid? expectedPromotionId = null, Guid? expectedAcademicYearId = null)
     {
         var byPeriod = periods.ToDictionary(p => p.Id);
         var unique = new HashSet<(Guid PeriodId, string Code)>();
@@ -136,6 +137,9 @@ public static class SchoolCycleAssessmentRules
         {
             Require(entry.EnrollmentId == enrollmentId && entry.SchoolCycleId == cycle.Id,
                 "Le bulletin ne doit contenir que les évaluations de cet élève et de son cycle.");
+            Require((expectedPromotionId is null || entry.PromotionId == expectedPromotionId) &&
+                    (expectedAcademicYearId is null || entry.AcademicYearId == expectedAcademicYearId),
+                "Une évaluation d'une autre classe ou année ne peut pas figurer au bulletin.");
             Require(byPeriod.TryGetValue(entry.SchoolCyclePeriodId, out var period) &&
                     period.SchoolCycleId == cycle.Id && period.AcademicYearId == entry.AcademicYearId,
                 "Période étrangère dans l'aperçu du bulletin.");
@@ -145,11 +149,14 @@ public static class SchoolCycleAssessmentRules
             // Ne jamais transformer une observation maternelle conservée en
             // base en note numérique, même dans un aperçu ancien.
             if (cycle.Kind == SchoolCycleKind.Maternelle)
-                Require(entry.Observation is { Length: > 0 } &&
+                Require(period.Mode == SchoolCycleAssessmentMode.Observation &&
+                        entry.Observation is { Length: > 0 } &&
                         entry.Score is null && entry.MaxScore is null,
-                    "Une observation maternelle ne peut pas contenir de cote numérique.");
+                    "Une observation maternelle ne peut pas être traitée comme une cote numérique.");
             else
-                Require(string.IsNullOrWhiteSpace(entry.Observation) &&
+                Require(cycle.Kind is SchoolCycleKind.Primaire or SchoolCycleKind.Secondaire &&
+                        period.Mode == SchoolCycleAssessmentMode.Evaluation &&
+                        string.IsNullOrWhiteSpace(entry.Observation) &&
                         entry.MaxScore is > 0,
                     "Un relevé de notes doit rester distinct du carnet d'observations maternelles.");
             entries.Add((period.Order,
