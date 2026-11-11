@@ -239,7 +239,7 @@ public sealed class CardsPage : PageViewModel
         Files.Open(Files.Save(bytes, $"cartes-{year}-{month:00}.{format}"));
         Shell.Notify(skipped == 0
             ? "Cartes générées et enregistrées dans Téléchargements."
-            : $"Cartes générées. {skipped} {Shell.StudentTerms.Plural} écartés : sortis, suspendus, identité incomplète ou matricule répété.");
+            : $"Cartes générées. {skipped} {(skipped == 1 ? Shell.StudentTerms.Singular : Shell.StudentTerms.Plural)} écarté{(skipped == 1 ? "" : "s")} : sortis, suspendus, identité incomplète ou matricule répété.");
         selectedCardIds.Clear();
         Raise(nameof(SelectedCount));
         await RefreshAsync();
