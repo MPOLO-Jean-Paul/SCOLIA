@@ -1,29 +1,10 @@
-name: SCOLIA Phone iPhone - compilation de verification
+name: SCOLIA Phone iPhone - compilation manuelle (reportée)
 
-# Validation sans certificat : chaque changement du code natif est compile par GitHub sur macOS.
+# Priorité actuelle de SCOLIA : Windows et Android.
+# Ne pas consommer de runners macOS ni produire d'IPA lors des push/PR.
+# La validation iOS reste possible uniquement par déclenchement manuel lorsque
+# le développement iOS sera expressément réactivé.
 on:
-  push:
-    paths:
-      - 'scolia-pro/src/Scolia.Phone.iOS/**'
-      - 'scolia-pro/src/Scolia.Bureau/**'
-      - 'scolia-pro/src/Scolia.Transport/**'
-      - 'scolia-pro/Directory.Packages.props'
-      - 'scolia-pro/global.json'
-      - 'scolia-pro/scripts/ios_signing.py'
-      - 'scolia-pro/scripts/test_ios_signing.py'
-      - '.github/workflows/scolia-phone-ios.yml'
-      - '.github/workflows/scolia-phone-ipa.yml'
-  pull_request:
-    paths:
-      - 'scolia-pro/src/Scolia.Phone.iOS/**'
-      - 'scolia-pro/src/Scolia.Bureau/**'
-      - 'scolia-pro/src/Scolia.Transport/**'
-      - 'scolia-pro/Directory.Packages.props'
-      - 'scolia-pro/global.json'
-      - 'scolia-pro/scripts/ios_signing.py'
-      - 'scolia-pro/scripts/test_ios_signing.py'
-      - '.github/workflows/scolia-phone-ios.yml'
-      - '.github/workflows/scolia-phone-ipa.yml'
   workflow_dispatch:
 
 permissions:
