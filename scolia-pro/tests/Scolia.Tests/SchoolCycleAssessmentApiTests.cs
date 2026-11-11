@@ -159,10 +159,10 @@ public sealed class SchoolCycleAssessmentApiTests : IDisposable
         Assert.Equal(presentation.GradeBand, json.GetProperty("gradeBand").GetString());
         var rows = json.GetProperty("subjectRows").EnumerateArray().ToArray();
         Assert.Equal(2, rows.Length);
-        var subjectRow = Assert.Single(rows.Where(item =>
-            item.GetProperty("subjectName").GetString() == "Français"));
-        var ungraded = Assert.Single(rows.Where(item =>
-            item.GetProperty("subjectName").GetString() == "Mathématiques"));
+        var subjectRow = Assert.Single(rows, item =>
+            item.GetProperty("subjectName").GetString() == "Français");
+        var ungraded = Assert.Single(rows, item =>
+            item.GetProperty("subjectName").GetString() == "Mathématiques");
         Assert.False(subjectRow.GetProperty("isActive").GetBoolean());
         Assert.True(ungraded.GetProperty("isActive").GetBoolean());
         Assert.All(ungraded.GetProperty("periods").EnumerateArray().ToArray(), period =>
