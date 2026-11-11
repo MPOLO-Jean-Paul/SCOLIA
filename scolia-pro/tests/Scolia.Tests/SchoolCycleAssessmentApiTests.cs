@@ -32,6 +32,10 @@ public sealed class SchoolCycleAssessmentApiTests : IDisposable
         Assert.Equal(HttpStatusCode.BadRequest, status);
         Assert.Equal("evaluationCycle", problem.GetProperty("code").GetString());
 
+        var (pdfStatus, _) = await admin.GetAsync(
+            $"/api/etablissement/cycles/evaluations/{enrollmentId}/apercu.pdf").Fail();
+        Assert.Equal(HttpStatusCode.BadRequest, pdfStatus);
+
         var (writeStatus, _) = await admin.Post(
             $"/api/etablissement/cycles/evaluations/{enrollmentId}", new
             {
