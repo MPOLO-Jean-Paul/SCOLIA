@@ -89,6 +89,13 @@ public sealed class SchoolCycleAssessmentApiTests : IDisposable
                 Mode = SchoolCycleAssessmentMode.Observation, Order = 1,
                 StartDate = year.StartDate, EndDate = year.StartDate.AddDays(12),
             };
+            var secondPeriod = new SchoolCyclePeriod
+            {
+                SchoolCycleId = nursery.Id, AcademicYearId = year.Id,
+                Code = "P2", Name = "Observation suivante", TermCode = "T1",
+                Mode = SchoolCycleAssessmentMode.Observation, Order = 2,
+                StartDate = year.StartDate.AddDays(13), EndDate = year.StartDate.AddDays(24),
+            };
             var record = new SchoolCycleAssessment
             {
                 AcademicYearId = year.Id, SchoolCycleId = nursery.Id,
@@ -101,7 +108,7 @@ public sealed class SchoolCycleAssessmentApiTests : IDisposable
             db.Promotions.Add(classroom);
             db.Students.Add(pupil);
             db.Enrollments.Add(enrollment);
-            db.SchoolCyclePeriods.Add(period);
+            db.SchoolCyclePeriods.AddRange(period, secondPeriod);
             db.SchoolCycleAssessments.Add(record);
             scope.ServiceProvider.GetRequiredService<IAuditLog>().Record(
                 "tests.evaluations.cycles", "EvaluationCycle", record.Id.ToString(),
@@ -119,6 +126,15 @@ public sealed class SchoolCycleAssessmentApiTests : IDisposable
         Assert.Equal(System.Text.Json.JsonValueKind.Null, row.GetProperty("score").ValueKind);
         Assert.Equal(System.Text.Json.JsonValueKind.Null, row.GetProperty("maxScore").ValueKind);
         Assert.Contains("Participe", row.GetProperty("observation").GetString() ?? string.Empty);
+        var term = Assert.Single(json.GetProperty("terms").EnumerateArray());
+        Assert.Equal("T1", term.GetProperty("code").GetString());
+        Assert.Equal(2, term.GetProperty("periods").GetArrayLength());
+        var tperiods = term.GetProperty("periods").EnumerateArray().ToArray();
+        Assert.Equal("P1", tperiods[0].GetProperty("code").GetString());
+        Assert.Equal("P2", tperiods[1].GetProperty("code").GetString());
+        Assert.Equal(1, tperiods[0].GetProperty("entries").GetArrayLength());
+        Assert.Empty(tperiods[1].GetProperty("entries").EnumerateArray());
+        Assert.DoesNotContain("moyenne", json.GetRawText(), StringComparison.OrdinalIgnoreCase);
 
         // Même si un profil de test est préparé, aucune écriture API n'est
         // possible avant l'activation officielle des nouveaux moteurs.
