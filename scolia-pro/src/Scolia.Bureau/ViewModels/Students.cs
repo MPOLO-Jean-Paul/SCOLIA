@@ -6,6 +6,7 @@ using Material.Icons;
 using Scolia.Bureau.Api;
 using Scolia.Bureau.Infrastructure;
 using Scolia.Bureau.Ribbon;
+using Scolia.Domain.School;
 
 namespace Scolia.Bureau.ViewModels;
 
@@ -327,12 +328,32 @@ public sealed class StudentDetailPage : PageViewModel
         if (Shell.Can(Perm.StudentsWrite)) Action("Modifier", MaterialIconKind.Pencil, EditAsync);
         if (Shell.Can(Perm.StudentsWrite)) Action("Renommer", MaterialIconKind.Rename, RenameAsync);
         if (Shell.Can(Perm.PaymentsRead)) Action("Relevé de compte", MaterialIconKind.FileDocument, StatementAsync);
+        // Les anciens établissements ITM conservent leurs bulletins existants.
+        // L'action n'apparaît que pour les nouveaux profils scolaires APRÈS
+        // leur activation officielle ; elle n'écrit aucune note.
+        var profile = Shell.Session?.InstitutionType;
+        if (InstitutionProfiles.IsEnabled(profile) &&
+            profile is (InstitutionProfiles.Maternelle or InstitutionProfiles.Primaire
+                or InstitutionProfiles.Secondaire or InstitutionProfiles.ComplexeScolaire) &&
+            Shell.Can(Perm.AcademicsRead))
+            Action("Carnet / bulletin provisoire", MaterialIconKind.FileDocumentOutline,
+                OpenSchoolBulletinAsync);
         if (Shell.Can(Perm.StudentsWrite)) Action("Changer le statut", MaterialIconKind.AccountSwitch, ChangeStatusAsync);
         if (Shell.Can(Perm.StudentsWrite)) Action("Changer de promotion", MaterialIconKind.SwapHorizontal, ChangePromotionAsync);
         if (Shell.Can(Perm.StudentsWrite)) Action("Prise en charge", MaterialIconKind.ShieldAccount, NewSponsorshipAsync);
         if (Shell.Can(Perm.PaymentsRead)) Action("Relancer par WhatsApp", MaterialIconKind.Whatsapp, RemindAsync);
         if (StudentsPage.CanDelete(Shell)) Action("Supprimer le dossier", MaterialIconKind.Delete, DeleteAsync, danger: true);
         ActionRefresh();
+    }
+
+    private async Task OpenSchoolBulletinAsync()
+    {
+        if (enrollment is null)
+        {
+            Shell.Notify("Aucune inscription disponible pour afficher ce carnet.");
+            return;
+        }
+        await Shell.Open(() => new SchoolBulletinPage(Shell, enrollment.Id));
     }
 
     private async Task RenameAsync()
