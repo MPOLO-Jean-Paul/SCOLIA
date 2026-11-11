@@ -120,6 +120,7 @@ public sealed class ShellViewModel : Observable
     public SessionDto? Session => session;
     /// <summary>Vocabulaire partagé par Windows et Android, conservé hors ligne dans la session.</summary>
     public InstitutionTerminology StudentTerms => InstitutionTerminology.For(session?.InstitutionType);
+    public string GlobalSearchTip => $"Dossiers des {StudentTerms.Plural}, reçus, pages et réglages";
 
     private Avalonia.Media.Imaging.Bitmap? schoolLogo;
 
@@ -994,6 +995,7 @@ public sealed class ShellViewModel : Observable
             await OpeningStepAsync($"Chargement de {s.SchoolName}", 45, pace);
             if (SchoolLogo is null) await RefreshLogoAsync();
             Raise(nameof(SchoolLine));
+            Raise(nameof(GlobalSearchTip));
             Raise(nameof(UserLine));
             Raise(nameof(UserInitials));
             Raise(nameof(AccountName));
@@ -1791,7 +1793,7 @@ public sealed class ShellViewModel : Observable
         if (name is "Nouveau membre" or "Pointage")
             return "Personnel";
 
-        if (name is "Nouvelle inscription" or "Modifier" or "Liste des apprenants")
+        if (name is "Nouvelle inscription" or "Modifier" or "Liste des apprenants" or "Liste des élèves" or "Liste des étudiants")
             return "Secrétariat";
         if (name is "Nouveau cours" or "Nouvelle évaluation" or "Nouvel incident")
             return "Scolarité";
@@ -1806,7 +1808,7 @@ public sealed class ShellViewModel : Observable
 
         return originalTab switch
         {
-            "Apprenant" => "Secrétariat",
+            "Apprenant" or "Élève" or "Étudiant" => "Secrétariat",
             "Reçu" => "Finances",
             "Affichage" => "Paramètres",
             "Administration" => "Personnel",
