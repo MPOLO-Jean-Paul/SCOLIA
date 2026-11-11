@@ -93,8 +93,9 @@ public static class SchoolCycleAssessmentRules
                 Require(entry.CurriculumItemId == subject.Id &&
                         subject.PromotionId == promotion.Id &&
                         subject.AcademicYearId == entry.AcademicYearId &&
-                        subject.Kind == CurriculumItemKind.AnnualSubject,
-                    "L'activité maternelle doit appartenir au programme de cette classe.");
+                        subject.Kind == CurriculumItemKind.AnnualSubject &&
+                        subject.IsActive,
+                    "L'activité maternelle doit appartenir au programme actif de cette classe.");
             else
                 Require(entry.CurriculumItemId is null, "Activité pédagogique introuvable.");
             return;
@@ -141,6 +142,16 @@ public static class SchoolCycleAssessmentRules
             Require(unique.Add((period!.Id, entry.EvaluationCode.ToUpperInvariant())),
                 "Deux évaluations portant le même code ne peuvent figurer dans la même période.");
             Require(entry.Mode == period.Mode, "Évaluation incohérente avec la période.");
+            // Ne jamais transformer une observation maternelle conservée en
+            // base en note numérique, même dans un aperçu ancien.
+            if (cycle.Kind == SchoolCycleKind.Maternelle)
+                Require(entry.Observation is { Length: > 0 } &&
+                        entry.Score is null && entry.MaxScore is null,
+                    "Une observation maternelle ne peut pas contenir de cote numérique.");
+            else
+                Require(string.IsNullOrWhiteSpace(entry.Observation) &&
+                        entry.MaxScore is > 0,
+                    "Un relevé de notes doit rester distinct du carnet d'observations maternelles.");
             entries.Add((period.Order,
                 new(period.Code, entry.EvaluationCode, entry.Title,
                     entry.Observation, entry.Score, entry.MaxScore, entry.Comment)));
