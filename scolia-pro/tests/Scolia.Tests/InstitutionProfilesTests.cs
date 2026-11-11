@@ -9,7 +9,7 @@ public sealed class InstitutionProfilesTests
     public void Legacy_school_without_profile_is_still_itm()
     {
         var school = new SchoolProfile();
-        Assert.Equal(InstitutionProfiles.ItmIm, school.InstitutionType);
+        Assert.Equal(InstitutionProfiles.ItmIem, school.InstitutionType);
         Assert.True(InstitutionProfiles.IsEnabled(school.InstitutionType));
     }
 
@@ -19,10 +19,11 @@ public sealed class InstitutionProfilesTests
         var request = new SetupRequest(
             "Institut existant", "ITM", null, null, null, "CDF", "FC",
             "2026-2027", 9, 10, "admin", "Administration", "Scolia2026!", false);
-        Assert.Equal(InstitutionProfiles.ItmIm, request.InstitutionType);
+        Assert.Equal(InstitutionProfiles.ItmIem, request.InstitutionType);
     }
 
     [Theory]
+    [InlineData("ItmIem", true)]
     [InlineData("ItmIm", true)]
     [InlineData("Primaire", false)]
     [InlineData("Secondaire", false)]
@@ -32,6 +33,10 @@ public sealed class InstitutionProfilesTests
         Assert.True(InstitutionProfiles.IsKnown(profile));
         Assert.Equal(enabled, InstitutionProfiles.IsEnabled(profile));
     }
+
+    [Fact]
+    public void Legacy_internal_identifier_is_presented_as_itm_iem() =>
+        Assert.Equal(InstitutionProfiles.ItmIem, InstitutionProfiles.Canonicalize(InstitutionProfiles.LegacyItmIm));
 
     [Theory]
     [InlineData("Unknown")]
