@@ -48,4 +48,8 @@ public sealed record SchoolCycleBulletinPreviewDto(
     string AcademicYear, IReadOnlyList<SchoolCycleAssessmentItemDto> Entries,
     bool IsOfficial = false,
     string Notice = "Aperçu pédagogique provisoire : ni bulletin officiel ni décision de réussite.",
-    IReadOnlyList<SchoolCycleBulletinTermDto>? Terms = null);
+    IReadOnlyList<SchoolCycleBulletinTermDto>? Terms = null,
+    string TemplateCode = "CYCLE_PROVISOIRE",
+    string DocumentTitle = "Aperçu pédagogique",
+    string EntryHeading = "Activités ou branches",
+    string PeriodHeading = "Période");
