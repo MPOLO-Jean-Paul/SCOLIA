@@ -87,6 +87,37 @@ public sealed class SchoolCycleRulesTests
     }
 
     [Fact]
+    public void Private_cycle_can_have_no_monthly_tuition_when_it_bills_by_other_categories()
+    {
+        var school = School(governance: SchoolGovernanceKind.Prive);
+        var primary = Cycle(school, SchoolCycleKind.Primaire);
+        var year = Year();
+        var policy = new SchoolCycleFeePolicy
+        {
+            SchoolCycleId = primary.Id, AcademicYearId = year.Id,
+            ChargeMonthlyTuition = false, MonthlyAmount = 0,
+        };
+        SchoolCycleRules.ValidateFeePolicy(school, primary, year, policy);
+        Assert.False(policy.ChargeMonthlyTuition);
+        Assert.Equal(0, policy.MonthlyAmount);
+    }
+
+    [Fact]
+    public void Negative_school_cycle_monthly_tuition_is_rejected()
+    {
+        var school = School();
+        var primary = Cycle(school, SchoolCycleKind.Primaire);
+        var year = Year();
+        var policy = new SchoolCycleFeePolicy
+        {
+            SchoolCycleId = primary.Id, AcademicYearId = year.Id,
+            ChargeMonthlyTuition = true, MonthlyAmount = -1,
+        };
+        Assert.Throws<DomainException>(() =>
+            SchoolCycleRules.ValidateFeePolicy(school, primary, year, policy));
+    }
+
+    [Fact]
     public void Public_school_fee_collection_requires_a_separate_regulatory_workflow()
     {
         var school = School(InstitutionProfiles.Primaire, SchoolGovernanceKind.Public);
