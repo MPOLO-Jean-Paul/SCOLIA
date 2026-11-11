@@ -304,11 +304,11 @@ public static class RibbonCatalog
             Group("Encaissement",
                 Large(shell, "Encaisser", HandCoin, $"Encaisse un versement pour cet {shell.Learners.Singular}.", () => shell.Open(() => new CashierPage(shell, student.StudentId)), Green, perm: Perm.PaymentsCreate)),
             Group("Dossier",
-                Large(shell, "Modifier", Pencil, $"Modifie l'identité de {shell.Learners.Singular}.", () => student.EditAsync(), Blue, perm: Perm.StudentsWrite),
+                Large(shell, "Modifier", Pencil, $"Modifie l'identité de l'{shell.Learners.Singular}.", () => student.EditAsync(), Blue, perm: Perm.StudentsWrite),
                 Small(shell, "Relevé de compte", FileDocumentOutline, "Relevé PDF des frais et des paiements.", () => student.StatementAsync(), Neutral, perm: Perm.PaymentsRead),
                 Small(shell, $"Liste des {shell.Learners.Plural}", AccountGroupOutline, "Retour à la liste.", () => shell.Open(() => new StudentsPage(shell)), Neutral)),
         };
-        return new RibbonTabVm("outils-apprenant", shell.Learners.SingularTitle, groups, $"Outils de {shell.Learners.Singular}", Purple);
+        return new RibbonTabVm("outils-apprenant", shell.Learners.SingularTitle, groups, $"Outils de l'{shell.Learners.Singular}", Purple);
     }
 
     private static void CycleTextSize(ShellViewModel shell)
