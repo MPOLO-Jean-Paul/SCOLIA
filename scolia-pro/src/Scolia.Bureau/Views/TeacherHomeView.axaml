@@ -4,7 +4,183 @@
              xmlns:mi="using:Material.Icons.Avalonia"
              x:Class="Scolia.Bureau.Views.TeacherHomeView">
   <ScrollViewer HorizontalScrollBarVisibility="Disabled">
-    <StackPanel Spacing="16" Margin="0,0,6,8" MaxWidth="1180">
+    <StackPanel Spacing="0" Margin="0,0,6,8">
+
+    <!-- Android : exactement les composants de l'accueil administrateur/secrétariat :
+         phonegroup, groupcaps, settingsentry, appicon et les ressources du thème. -->
+    <StackPanel Spacing="12" Margin="0,0,0,10" IsVisible="{Binding Phone}">
+
+      <Border Classes="phonegroup">
+        <StackPanel Spacing="0">
+          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12" Margin="14,14,14,12">
+            <Border Classes="appicon large" Background="{DynamicResource TonePurple}">
+              <mi:MaterialIcon Kind="AccountSchool" />
+            </Border>
+            <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3">
+              <TextBlock Text="{Binding Greeting}" FontSize="{DynamicResource FsHeading}" FontWeight="SemiBold"
+                         TextWrapping="Wrap" MaxLines="3" />
+              <TextBlock Text="{Binding Role}" Classes="muted" TextWrapping="Wrap" />
+            </StackPanel>
+          </Grid>
+          <Border Height="1" Background="{DynamicResource LineBrush}" Margin="14,0,0,0" />
+          <Button Classes="settingsentry" Command="{Binding EncodeByCode}" IsVisible="{Binding !IsBlocked}">
+            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+              <Border Classes="appicon medium" Background="{DynamicResource ToneBlue}">
+                <mi:MaterialIcon Kind="Pen" />
+              </Border>
+              <TextBlock Grid.Column="1" Text="Encoder mes cotes" FontWeight="SemiBold" VerticalAlignment="Center" />
+              <mi:MaterialIcon Grid.Column="2" Kind="ChevronRight" Foreground="{DynamicResource MutedBrush}"
+                               VerticalAlignment="Center" Width="18" Height="18" />
+            </Grid>
+          </Button>
+          <Border Height="1" Background="{DynamicResource LineBrush}" Margin="54,0,0,0" />
+          <Button Classes="settingsentry" Command="{Binding ChooseCode}">
+            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+              <Border Classes="appicon medium" Background="{DynamicResource ToneIndigo}">
+                <mi:MaterialIcon Kind="ShieldLockOutline" />
+              </Border>
+              <TextBlock Grid.Column="1" Text="Mon code d'accès" VerticalAlignment="Center" />
+              <mi:MaterialIcon Grid.Column="2" Kind="ChevronRight" Foreground="{DynamicResource MutedBrush}"
+                               VerticalAlignment="Center" Width="18" Height="18" />
+            </Grid>
+          </Button>
+        </StackPanel>
+      </Border>
+
+      <!-- L'accès provisoire est traité comme les alertes du secrétariat. -->
+      <Border Classes="phonegroup" IsVisible="{Binding IsBlocked}">
+        <StackPanel Spacing="10" Margin="14,12">
+          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+            <Border Classes="appicon medium" Background="{DynamicResource ToneOrange}">
+              <mi:MaterialIcon Kind="KeyChange" />
+            </Border>
+            <TextBlock Grid.Column="1" Text="{Binding Blocked}" TextWrapping="Wrap" VerticalAlignment="Center" />
+          </Grid>
+          <Button Classes="primary" Content="Choisir mon code" Command="{Binding ChooseCode}"
+                  HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" />
+        </StackPanel>
+      </Border>
+
+      <StackPanel Spacing="5" IsVisible="{Binding !IsBlocked}">
+        <TextBlock Text="APERÇU DE MON ACTIVITÉ" Classes="groupcaps" />
+        <Border Classes="phonegroup">
+          <ItemsControl ItemsSource="{Binding Stats}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate>
+                <StackPanel>
+                  <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12" MinHeight="58" Margin="12,7">
+                    <Border Classes="appicon medium" Background="{Binding Brush}">
+                      <mi:MaterialIcon Kind="{Binding Icon}" />
+                    </Border>
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="1">
+                      <TextBlock Text="{Binding Label}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                      <TextBlock Text="{Binding Hint}" Classes="muted" FontSize="{DynamicResource FsSmall}"
+                                 TextWrapping="Wrap" />
+                    </StackPanel>
+                    <TextBlock Grid.Column="2" Text="{Binding Value}" FontWeight="SemiBold" VerticalAlignment="Center"
+                               TextAlignment="Right" Margin="6,0,0,0" TextWrapping="Wrap" />
+                  </Grid>
+                  <Border Height="1" Background="{DynamicResource LineBrush}" Margin="54,0,0,0" />
+                </StackPanel>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </Border>
+      </StackPanel>
+
+      <StackPanel Spacing="5" IsVisible="{Binding !IsBlocked}">
+        <TextBlock Text="MES COURS" Classes="groupcaps" />
+        <Border Classes="phonegroup">
+          <StackPanel Spacing="0">
+            <TextBlock Classes="muted" TextWrapping="Wrap" Margin="14,16"
+                       Text="Aucun cours ne vous est attribué cette année. Contactez le secrétariat."
+                       IsVisible="{Binding NoCourses}" />
+            <ItemsControl ItemsSource="{Binding Courses}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <StackPanel>
+                    <Button Classes="settingsentry" Command="{Binding Open}"
+                            ToolTip.Tip="Ouvrir la feuille de ce cours">
+                      <StackPanel Spacing="5">
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                          <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextWrapping="Wrap"
+                                     VerticalAlignment="Center" />
+                          <mi:MaterialIcon Grid.Column="1" Kind="ChevronRight"
+                                           Width="18" Height="18" Foreground="{DynamicResource MutedBrush}"
+                                           VerticalAlignment="Center" />
+                        </Grid>
+                        <TextBlock Text="{Binding Promotion}" Classes="muted" TextWrapping="Wrap" />
+                        <TextBlock Text="{Binding Details}" Classes="muted" FontSize="{DynamicResource FsSmall}"
+                                   TextWrapping="Wrap" />
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10" Margin="0,3,0,0">
+                          <TextBlock Text="{Binding State}" Foreground="{Binding StateBrush}"
+                                     FontWeight="SemiBold" VerticalAlignment="Center" />
+                          <TextBlock Grid.Column="1" Text="{Binding Progress}" Classes="muted"
+                                     FontSize="{DynamicResource FsSmall}" VerticalAlignment="Center" />
+                        </Grid>
+                        <ProgressBar Classes="slim" Value="{Binding Percent}" Maximum="100" />
+                      </StackPanel>
+                    </Button>
+                    <Border Height="1" Background="{DynamicResource LineBrush}" Margin="12,0,0,0" />
+                  </StackPanel>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </Border>
+      </StackPanel>
+
+      <StackPanel Spacing="5" IsVisible="{Binding !IsBlocked}">
+        <TextBlock Text="ANNONCES" Classes="groupcaps" />
+        <Border Classes="phonegroup">
+          <StackPanel>
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12" Margin="12,12"
+                  IsVisible="{Binding !HasNotices}">
+              <Border Classes="appicon medium" Background="{DynamicResource ToneOrange}">
+                <mi:MaterialIcon Kind="BellOutline" />
+              </Border>
+              <TextBlock Grid.Column="1" Text="Aucune annonce récente." Classes="muted"
+                         VerticalAlignment="Center" />
+            </Grid>
+            <ItemsControl ItemsSource="{Binding Notices}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <StackPanel Spacing="3" Margin="14,10">
+                    <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                    <TextBlock Text="{Binding When}" Classes="muted" FontSize="{DynamicResource FsSmall}" />
+                    <TextBlock Text="{Binding Text}" TextWrapping="Wrap" />
+                  </StackPanel>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </Border>
+      </StackPanel>
+
+      <StackPanel Spacing="5">
+        <TextBlock Text="RÈGLES DE L'ENCODAGE" Classes="groupcaps" />
+        <Border Classes="phonegroup">
+          <ItemsControl ItemsSource="{Binding RuleItems}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate>
+                <StackPanel>
+                  <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12" Margin="12,10" MinHeight="40">
+                    <Border Classes="appicon medium" Background="{Binding Brush}">
+                      <mi:MaterialIcon Kind="{Binding Icon}" />
+                    </Border>
+                    <TextBlock Grid.Column="1" Text="{Binding Text}" TextWrapping="Wrap"
+                               VerticalAlignment="Center" />
+                  </Grid>
+                  <Border Height="1" Background="{DynamicResource LineBrush}" Margin="54,0,0,0" />
+                </StackPanel>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </Border>
+      </StackPanel>
+    </StackPanel>
+
+    <StackPanel Spacing="16" MaxWidth="1180" IsVisible="{Binding NotPhone}">
 
       <!-- Accueil personnel : qui est connecté et à quel titre -->
       <Border Classes="card" Padding="20,16">
@@ -121,6 +297,7 @@
           <TextBlock Text="{Binding Rules}" TextWrapping="Wrap" LineHeight="22" />
         </StackPanel>
       </Border>
+    </StackPanel>
     </StackPanel>
   </ScrollViewer>
 </UserControl>
