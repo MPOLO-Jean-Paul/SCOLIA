@@ -72,7 +72,38 @@ public sealed class SchoolCycleAssessmentService(IAppDbContext db, IWriteGate ga
         // Conserver aussi les périodes sans notes et les cotes non encodées.
         var byPeriodEntries = list.GroupBy(x => x.SchoolCyclePeriodId)
             .ToDictionary(g => g.Key, g => (IReadOnlyList<SchoolCycleAssessmentItemDto>)g.ToArray());
-        var presentation = SchoolBulletinLayouts.For(context.Cycle.Kind);
+        // Les branches du programme doivent figurer dans le relevé même en l'absence
+        // de toute note. Inclure aussi les matières archivées lorsqu'elles portent
+        // des évaluations historiques ; ne jamais les requalifier en zéro.
+        var subjectRows = Array.Empty<SchoolCycleBulletinSubjectDto>();
+        if (context.Cycle.Kind is SchoolCycleKind.Primaire or SchoolCycleKind.Secondaire)
+        {
+            var referencedIds = rows.Where(r => r.CurriculumItemId.HasValue)
+                .Select(r => r.CurriculumItemId!.Value).Distinct().ToArray();
+            var subjects = await db.CurriculumItems.AsNoTracking()
+                .Where(item => item.AcademicYearId == context.Year.Id &&
+                               item.PromotionId == context.Promotion.Id &&
+                               item.Kind == CurriculumItemKind.AnnualSubject &&
+                               (item.IsActive || referencedIds.Contains(item.Id)))
+                .OrderBy(item => item.Code).ThenBy(item => item.Name).ToListAsync(ct);
+            subjectRows = subjects.Select(subject =>
+                new SchoolCycleBulletinSubjectDto(
+                    subject.Id, subject.Code, subject.Name,
+                    subject.Coefficient, subject.IsActive,
+                    periods.Select(period => new SchoolCycleBulletinSubjectPeriodDto(
+                        period.Id, period.Code, period.Name,
+                        list.Where(e => e.CurriculumItemId == subject.Id &&
+                                        e.SchoolCyclePeriodId == period.Id).ToArray()))
+                        .ToArray())).ToArray();
+        }
+
+        var optionLabel = context.Promotion.SectionId is { } sectionId
+            ? await db.Sections.AsNoTracking()
+                .Where(section => section.Id == sectionId)
+                .Select(section => section.Name).FirstOrDefaultAsync(ct)
+            : null;
+        var presentation = SchoolBulletinLayouts.For(
+            context.Cycle.Kind, context.Promotion.Level);
         var termPrefix = presentation.PeriodHeading;
         var terms = periods.OrderBy(p => p.Order)
             .GroupBy(p => p.TermCode, StringComparer.OrdinalIgnoreCase)
@@ -93,7 +124,11 @@ public sealed class SchoolCycleAssessmentService(IAppDbContext db, IWriteGate ga
             TemplateCode: presentation.Code,
             DocumentTitle: presentation.PreviewTitle,
             EntryHeading: presentation.EntryHeading,
-            PeriodHeading: presentation.PeriodHeading);
+            PeriodHeading: presentation.PeriodHeading,
+            ClassLevel: context.Promotion.Level,
+            GradeBand: presentation.GradeBand,
+            OptionLabel: optionLabel,
+            SubjectRows: subjectRows);
     }
 
     public Task<SchoolCycleAssessmentItemDto> SaveAsync(
