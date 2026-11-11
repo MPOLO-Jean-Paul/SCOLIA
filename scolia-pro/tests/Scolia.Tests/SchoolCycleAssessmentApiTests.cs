@@ -104,6 +104,14 @@ public sealed class SchoolCycleAssessmentApiTests : IDisposable
                 Kind = CurriculumItemKind.AnnualSubject, Name = "Français",
                 Code = "FRANC", Coefficient = 1,
             };
+            var ungradedSubject = new CurriculumItem
+            {
+                AcademicYearId = year.Id, PromotionId = classroom.Id,
+                Kind = CurriculumItemKind.AnnualSubject,
+                Name = "Mathématiques", Code = "MATH", Coefficient = 1,
+            };
+            // Une ancienne branche archivée avec cote reste consultable.
+            subject.IsActive = false;
             var grade = new SchoolCycleAssessment
             {
                 AcademicYearId = year.Id, SchoolCycleId = cycle.Id,
@@ -118,7 +126,7 @@ public sealed class SchoolCycleAssessmentApiTests : IDisposable
             db.Students.Add(pupil);
             db.Enrollments.Add(enrollment);
             db.SchoolCyclePeriods.AddRange(period1, period2);
-            db.CurriculumItems.Add(subject);
+            db.CurriculumItems.AddRange(subject, ungradedSubject);
             db.SchoolCycleAssessments.Add(grade);
             scope.ServiceProvider.GetRequiredService<IAuditLog>().Record(
                 "tests.bulletins.cycles", "EvaluationCycle", grade.Id.ToString(),
@@ -149,8 +157,16 @@ public sealed class SchoolCycleAssessmentApiTests : IDisposable
         Assert.Equal(1, json.GetProperty("entries").GetArrayLength());
         Assert.Equal(1, json.GetProperty("classLevel").GetInt32());
         Assert.Equal(presentation.GradeBand, json.GetProperty("gradeBand").GetString());
-        var subjectRow = Assert.Single(json.GetProperty("subjectRows").EnumerateArray());
-        Assert.Equal("Français", subjectRow.GetProperty("subjectName").GetString());
+        var rows = json.GetProperty("subjectRows").EnumerateArray().ToArray();
+        Assert.Equal(2, rows.Length);
+        var subjectRow = Assert.Single(rows.Where(item =>
+            item.GetProperty("subjectName").GetString() == "Français"));
+        var ungraded = Assert.Single(rows.Where(item =>
+            item.GetProperty("subjectName").GetString() == "Mathématiques"));
+        Assert.False(subjectRow.GetProperty("isActive").GetBoolean());
+        Assert.True(ungraded.GetProperty("isActive").GetBoolean());
+        Assert.All(ungraded.GetProperty("periods").EnumerateArray().ToArray(), period =>
+            Assert.Empty(period.GetProperty("entries").EnumerateArray()));
         var subjectPeriods = subjectRow.GetProperty("periods").EnumerateArray().ToArray();
         Assert.Equal(2, subjectPeriods.Length);
         var firstSubjectScore = Assert.Single(subjectPeriods[0].GetProperty("entries").EnumerateArray());
