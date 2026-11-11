@@ -23,7 +23,7 @@ public sealed class SchoolCycleConfigurationService(IAppDbContext db, IWriteGate
             .Select(y => (Guid?)y.Id).FirstOrDefaultAsync(ct);
         var cycles = await db.SchoolCycles.AsNoTracking().Where(c => c.SchoolId == school.Id)
             .OrderBy(c => c.Kind).ToListAsync(ct);
-        var fees = yearId is { } id
+        List<SchoolCycleFeePolicy> fees = yearId is { } id
             ? await db.SchoolCycleFeePolicies.AsNoTracking()
                 .Where(f => f.AcademicYearId == id).ToListAsync(ct)
             : [];
