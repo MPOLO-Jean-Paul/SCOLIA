@@ -2,6 +2,7 @@ using Avalonia.Media;
 using Material.Icons;
 using Scolia.Bureau.Infrastructure;
 using Scolia.Bureau.Ribbon;
+using Scolia.Domain.School;
 
 namespace Scolia.Bureau.ViewModels;
 
@@ -92,6 +93,13 @@ public static class Sidebar
         NavGroupVm Group(string title, params NavItemVm?[] items) =>
             new(title, items.OfType<NavItemVm>().ToList(), toggleGroup: shell.ToggleNavGroup);
 
+        // Aucune entrée n'apparaît sur les anciens ITM/IM. Le module est
+        // visible seulement lorsqu'un profil scolaire est officiellement activé.
+        var type = shell.Session?.InstitutionType;
+        var cyclesAvailable = InstitutionProfiles.IsEnabled(type) &&
+            type is InstitutionProfiles.Maternelle or InstitutionProfiles.Primaire
+                or InstitutionProfiles.Secondaire or InstitutionProfiles.ComplexeScolaire;
+
         var groups = new[]
         {
             Group(string.Empty,
@@ -153,6 +161,8 @@ public static class Sidebar
                     typeof(NetworkHubPage), () => new NetworkHubPage(shell))),
             Group("Paramètres",
                 Item("Configuration", MaterialIconKind.Cog, "TonePurple", null, typeof(SettingsPage), () => new SettingsPage(shell)),
+                cyclesAvailable ? Item("Cycles scolaires", MaterialIconKind.SchoolOutline, "ToneTeal", Perm.SettingsWrite,
+                    typeof(SchoolCyclesPage), () => new SchoolCyclesPage(shell)) : null,
                 Item("Utilisateurs", MaterialIconKind.AccountCog, "ToneBlue", Perm.UsersManage, typeof(UsersPage), () => new UsersPage(shell))),
             // Données : protéger, contrôler et, si besoin, effacer.
             Group("Données",
