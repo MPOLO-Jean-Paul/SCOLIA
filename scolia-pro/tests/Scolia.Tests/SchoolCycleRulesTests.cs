@@ -144,6 +144,30 @@ public sealed class SchoolCycleRulesTests
         Assert.NotEqual(p1.SchoolCycleId, p2.SchoolCycleId);
     }
 
+    [Fact]
+    public void Nursery_activities_are_annual_without_lmd_credits_and_cycles_cannot_be_mixed()
+    {
+        var school = School();
+        var year = Year();
+        var nursery = Cycle(school, SchoolCycleKind.Maternelle);
+        var primary = Cycle(school, SchoolCycleKind.Primaire);
+        var promotionId = Guid.NewGuid();
+        var activity = new CurriculumItem
+        {
+            AcademicYearId = year.Id, PromotionId = promotionId,
+            Code = "ACT1", Name = "Langage et motricité", Kind = CurriculumItemKind.AnnualSubject,
+            Semester = Scolia.Domain.Deliberation.CourseSemester.Annuel, Credits = 0,
+            Coefficient = 1, Hours = 30,
+        };
+
+        CurriculumStructureRules.ValidateForSchoolCycle(school, nursery, year, new[] { activity });
+        CurriculumStructureRules.ValidateForSchoolCycle(school, primary, year, new[] { activity });
+
+        Assert.Throws<DomainException>(() => CurriculumStructureRules.ValidateCurriculum(
+            InstitutionProfiles.ComplexeScolaire, year, new[] { activity },
+            Array.Empty<AcademicStructureUnit>()));
+    }
+
     private static SchoolCyclePeriod Period(
         SchoolCycle cycle, AcademicYear year, SchoolCycleAssessmentMode mode) =>
         new()
