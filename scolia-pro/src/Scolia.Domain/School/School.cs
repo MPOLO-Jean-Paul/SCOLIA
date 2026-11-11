@@ -7,6 +7,8 @@ public sealed class SchoolProfile : Entity
 {
     /// <summary>Profil pédagogique immuable après installation ; les anciennes écoles restent ITM/IM.</summary>
     public string InstitutionType { get; set; } = InstitutionProfiles.ItmIm;
+    /// <summary>Statut administratif, distinct des cycles et des tarifs ; privé par défaut.</summary>
+    public SchoolGovernanceKind Governance { get; set; } = SchoolGovernanceKind.Prive;
     public string Name { get; set; } = string.Empty;
     public string ShortName { get; set; } = string.Empty;
     public string? Motto { get; set; }
@@ -126,6 +128,8 @@ public sealed class Section : Entity
 public sealed class Promotion : Entity
 {
     public Guid AcademicYearId { get; set; }
+    /// <summary>Cycle du complexe scolaire, absent des promotions ITM historiques.</summary>
+    public Guid? SchoolCycleId { get; set; }
     public Guid? SectionId { get; set; }
     public Section? Section { get; set; }
     /// <summary>Code court utilisé dans les matricules (4 caractères, ex. INF1).</summary>
