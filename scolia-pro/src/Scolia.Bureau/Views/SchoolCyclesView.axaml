@@ -37,20 +37,18 @@
       </Border>
 
       <TextBlock Text="CYCLES PROPOSÉS" Classes="groupcaps" />
-      <ItemsControl ItemsSource="{Binding Cycles}">
+      <ItemsControl ItemsSource="{Binding Cycles}" IsEnabled="{Binding CanConfigure}">
         <ItemsControl.ItemTemplate>
           <DataTemplate>
             <Border Classes="phonegroup" Padding="14,12" Margin="0,0,0,10">
               <StackPanel Spacing="10">
                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
                   <CheckBox Content="{Binding Label}" IsChecked="{Binding Included}"
-                            FontWeight="SemiBold" VerticalAlignment="Center"
-                            IsEnabled="{Binding $parent[UserControl].DataContext.CanConfigure}" />
+                            FontWeight="SemiBold" VerticalAlignment="Center" />
                   <TextBlock Grid.Column="1" Text="{Binding ClassCount, StringFormat='Classes : {0}'}"
                              Classes="muted" VerticalAlignment="Center" />
                 </Grid>
-                <StackPanel Spacing="8" IsVisible="{Binding Included}"
-                            IsEnabled="{Binding $parent[UserControl].DataContext.CanConfigure}">
+                <StackPanel Spacing="8" IsVisible="{Binding Included}">
                   <StackPanel Classes="field" Margin="0">
                     <TextBlock Text="Nom du cycle" Classes="fieldlabel" />
                     <TextBox Classes="w11" Text="{Binding Name}" HorizontalAlignment="Stretch"
