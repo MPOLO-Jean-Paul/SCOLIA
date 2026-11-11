@@ -156,6 +156,38 @@ public sealed class SchoolCycleAssessmentRulesTests
             .GetProperties().Select(p => p.Name)), StringComparison.OrdinalIgnoreCase);
     }
 
+    [Theory]
+    [InlineData(SchoolCycleKind.Maternelle)]
+    [InlineData(SchoolCycleKind.Primaire)]
+    [InlineData(SchoolCycleKind.Secondaire)]
+    public void A_bulletin_preview_rejects_entries_from_a_different_class_or_year(SchoolCycleKind kind)
+    {
+        var x = Build(kind);
+        SchoolCycleAssessmentRules.Preview(
+            x.Cycle, x.Student.Id, new[] { x.Period }, new[] { x.Entry },
+            x.Class.Id, x.Student.AcademicYearId);
+        x.Entry.PromotionId = Guid.NewGuid();
+        Assert.Throws<DomainException>(() => SchoolCycleAssessmentRules.Preview(
+            x.Cycle, x.Student.Id, new[] { x.Period }, new[] { x.Entry },
+            x.Class.Id, x.Student.AcademicYearId));
+        x.Entry.PromotionId = x.Class.Id;
+        x.Entry.AcademicYearId = Guid.NewGuid();
+        Assert.Throws<DomainException>(() => SchoolCycleAssessmentRules.Preview(
+            x.Cycle, x.Student.Id, new[] { x.Period }, new[] { x.Entry },
+            x.Class.Id, x.Student.AcademicYearId));
+    }
+
+    [Fact]
+    public void Nursery_preview_rejects_assessment_mode_even_when_corrupted_record_matches_period()
+    {
+        var x = Build(SchoolCycleKind.Maternelle);
+        x.Period.Mode = SchoolCycleAssessmentMode.Evaluation;
+        x.Entry.Mode = SchoolCycleAssessmentMode.Evaluation;
+        Assert.Throws<DomainException>(() => SchoolCycleAssessmentRules.Preview(
+            x.Cycle, x.Student.Id, new[] { x.Period }, new[] { x.Entry },
+            x.Class.Id, x.Student.AcademicYearId));
+    }
+
     [Fact]
     public void A_bulletin_preview_rejects_another_student_and_duplicate_activity()
     {
