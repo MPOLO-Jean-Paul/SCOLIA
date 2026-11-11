@@ -205,7 +205,7 @@ public sealed class DataPage : PageViewModel
                 + string.Join('\n', applied.Errors.Take(8)), "Fermer");
             return;
         }
-        shell.Notify($"Import terminé : {applied.Students} {shell.StudentTerms.Plural}, {applied.Receipts} reçu(s).");
+        shell.Notify($"Import terminé : {applied.Students} {(applied.Students == 1 ? shell.StudentTerms.Singular : shell.StudentTerms.Plural)}, {applied.Receipts} reçu(s).");
         if (shell.Current is DataPage page) await page.RefreshAsync();
     }
 }
