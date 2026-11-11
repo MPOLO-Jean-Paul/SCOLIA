@@ -219,6 +219,10 @@ public sealed class MarksPage : PageViewModel
 
     /// <summary>Espace enseignant : seulement ses cours attribués, en feuille anonyme.</summary>
     public bool IsTeacher => teacher;
+    /// <summary>Android enseignant : les mêmes listes et champs Avalonia que le secrétariat.</summary>
+    public bool IsTeacherPhone => teacher && Phone;
+    /// <summary>Préserve strictement l'écran de saisie historique sur Windows et les comptes du secrétariat.</summary>
+    public bool UseClassicMarksLayout => !IsTeacherPhone;
 
     private string rules = string.Empty;
 
