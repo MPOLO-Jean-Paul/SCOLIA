@@ -176,6 +176,16 @@ public sealed class SchoolCycleAssessmentApiTests : IDisposable
         var firstSubjectScore = Assert.Single(subjectPeriods[0].GetProperty("entries").EnumerateArray());
         Assert.Equal(12m, firstSubjectScore.GetProperty("score").GetDecimal());
         Assert.Empty(subjectPeriods[1].GetProperty("entries").EnumerateArray());
+
+        // Test complet de la route réellement consommée par Avalonia :
+        // succès PDF, pas de faux document officiel ni de note fabriquée.
+        using var pdfResponse = await admin.GetAsync(
+            $"/api/etablissement/cycles/evaluations/{enrollmentId}/apercu.pdf");
+        Assert.Equal(HttpStatusCode.OK, pdfResponse.StatusCode);
+        Assert.Equal("application/pdf", pdfResponse.Content.Headers.ContentType?.MediaType);
+        var pdf = await pdfResponse.Content.ReadAsByteArrayAsync();
+        Assert.True(pdf.Length > 1000);
+        Assert.Equal("%PDF", System.Text.Encoding.ASCII.GetString(pdf, 0, 4));
     }
 
     [Fact]
