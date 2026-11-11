@@ -35,8 +35,8 @@ public sealed class LmdFirstSessionSummaryTests
         };
         var result = LmdFirstSessionCalculator.FirstSession(marks);
         Assert.True(result.IsComplete);
-        Assert.Equal(12m, result.S1.AverageOutOf20!.Value == 13.33m
-            ? result.S2.AverageOutOf20!.Value : 0m);
+        Assert.Equal(13.33m, result.S1.AverageOutOf20);
+        Assert.Equal(12m, result.S2.AverageOutOf20);
         Assert.Equal(12.67m, result.AnnualAverageOutOf20);
     }
 
