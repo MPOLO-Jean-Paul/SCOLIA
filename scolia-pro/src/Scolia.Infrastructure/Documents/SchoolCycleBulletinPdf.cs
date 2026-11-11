@@ -63,8 +63,14 @@ public static class SchoolCycleBulletinPdf
                 column.Item().PaddingVertical(7).BorderBottom(0.7f).BorderColor(Border)
                     .Text(preview.Notice).FontSize(8).FontColor(Alert);
 
-                if (preview.SubjectRows is { Count: > 0 } subjects)
-                    WriteSubjectTables(column, subjects, preview.Terms ?? []);
+                // Un cycle primaire/secondaire sans matière configurée ne doit
+                // jamais être rendu comme un carnet d'observations maternelles.
+                var numeric = preview.TemplateCode.StartsWith("PRIMAIRE", StringComparison.Ordinal) ||
+                              preview.TemplateCode.StartsWith("SECONDAIRE", StringComparison.Ordinal) ||
+                              (preview.Terms?.Any(term => term.Periods.Any(period =>
+                                  string.Equals(period.Mode, "Evaluation", StringComparison.OrdinalIgnoreCase))) ?? false);
+                if (numeric)
+                    WriteSubjectTables(column, preview.SubjectRows ?? [], preview.Terms ?? []);
                 else
                     WriteObservations(column, preview.Terms ?? []);
             });
@@ -131,6 +137,12 @@ public static class SchoolCycleBulletinPdf
         if (periods.Length == 0)
         {
             content.Item().Text("Aucune période pédagogique configurée.").FontColor(Muted);
+            return;
+        }
+        if (subjects.Count == 0)
+        {
+            content.Item().Text("Aucune branche annuelle configurée pour cette classe.")
+                .FontColor(Muted);
             return;
         }
 
