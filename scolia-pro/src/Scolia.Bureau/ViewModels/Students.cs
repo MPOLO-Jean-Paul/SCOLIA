@@ -115,7 +115,7 @@ public sealed class StudentsPage : PageViewModel
         await Shell.Ask(form);
     }
 
-    public override string Title => "Apprenants";
+    public override string Title => Shell.Learners.PluralTitle;
     public override string Subtitle => subtitle;
     public override MaterialIconKind Glyph => MaterialIconKind.AccountGroupOutline;
 
@@ -156,7 +156,7 @@ public sealed class StudentsPage : PageViewModel
     }
 
     public StudentRow? Selected { get => selected; set => Set(ref selected, value); }
-    public string EmptyTitle { get; private set; } = "Aucun apprenant trouvé";
+    public string EmptyTitle { get; private set; } = string.Empty;
     public string EmptyHint { get; private set; } = string.Empty;
     public string PageText => $"Page {page} sur {pageCount}";
     public bool CanPrevious => page > 1;
@@ -232,14 +232,14 @@ public sealed class StudentsPage : PageViewModel
                 s.GuardianPhone ?? "—", Money(s.Balance), situation, ThemeBrush.Get(sponsored ? "TonePurple" : late ? "ToneRed" : "ToneGreen"));
         }));
 
-        subtitle = Format.Count(total, "apprenant", "apprenants") + (Promotion is { Value.Length: > 0 } ? $" · {Promotion.Label}" : string.Empty);
+        subtitle = Format.Count(total, Shell.Learners.Singular, Shell.Learners.Plural) + (Promotion is { Value.Length: > 0 } ? $" · {Promotion.Label}" : string.Empty);
         if (!Shell.Api.IsOnline)
             subtitle += local is { Complete: false }
                 ? $" · recherche locale ({local.Loaded}/{local.Registered} dossiers disponibles)"
                 : " · copie locale, non actualisée";
         // Liste vide : sans filtre, l'établissement n'a encore aucun apprenant ; avec un filtre, il faut l'élargir.
         var filtered = Search.Trim().Length > 0 || Promotion is { Value.Length: > 0 } || SectionChoice is { Value.Length: > 0 } || Status is { Value.Length: > 0 };
-        EmptyTitle = filtered ? "Aucun apprenant trouvé" : "Aucun apprenant inscrit";
+        EmptyTitle = filtered ? $"Aucun {Shell.Learners.Singular} trouvé" : $"Aucun {Shell.Learners.Singular} inscrit";
         EmptyHint = local is { Complete: false }
             ? "Recherche limitée aux dossiers téléchargés sur cet appareil. Reconnectez-vous pour voir le registre complet."
             : filtered ? "Modifiez la recherche, ou choisissez « Toutes les promotions » et « Tous les statuts »."
