@@ -129,6 +129,10 @@ public sealed class SchoolCycleAssessmentApiTests : IDisposable
         var json = await admin.GetAsync(
             $"/api/etablissement/cycles/evaluations/{enrollmentId}/apercu").Ok();
         Assert.False(json.GetProperty("isOfficial").GetBoolean());
+        var presentation = SchoolBulletinLayouts.For(kind);
+        Assert.Equal(presentation.Code, json.GetProperty("templateCode").GetString());
+        Assert.Equal(presentation.PreviewTitle, json.GetProperty("documentTitle").GetString());
+        Assert.Equal(presentation.EntryHeading, json.GetProperty("entryHeading").GetString());
         var terms = json.GetProperty("terms").EnumerateArray().ToArray();
         Assert.Equal(2, terms.Length);
         Assert.Equal(firstTerm, terms[0].GetProperty("code").GetString());
@@ -220,6 +224,9 @@ public sealed class SchoolCycleAssessmentApiTests : IDisposable
         var json = await admin.GetAsync(
             $"/api/etablissement/cycles/evaluations/{enrollmentId}/apercu").Ok();
         Assert.False(json.GetProperty("isOfficial").GetBoolean());
+        var presentation = SchoolBulletinLayouts.For(SchoolCycleKind.Maternelle);
+        Assert.Equal(presentation.Code, json.GetProperty("templateCode").GetString());
+        Assert.Equal(presentation.PreviewTitle, json.GetProperty("documentTitle").GetString());
         Assert.Equal("Maternelle", json.GetProperty("cycle").GetString());
         var row = Assert.Single(json.GetProperty("entries").EnumerateArray());
         Assert.Equal("Observation", row.GetProperty("mode").GetString());
