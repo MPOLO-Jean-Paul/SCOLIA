@@ -245,6 +245,15 @@ public static class ScoliaEndpoints
             CancellationToken ct) => s.ConfigureAsync(input, ct))
             .RequireAuthorization(Permissions.SettingsWrite);
 
+        // Registre scolaire distinct de l'ITM : aucun seuil, moyenne ou décision
+        // inventés dans un aperçu. L'écriture est interdite aux profils non activés.
+        g.MapGet("/cycles/evaluations/{enrollmentId:guid}/apercu",
+            (Guid enrollmentId, SchoolCycleAssessmentService s, CancellationToken ct) =>
+                s.PreviewAsync(enrollmentId, ct)).RequireAuthorization(Permissions.AcademicsRead);
+        g.MapPost("/cycles/evaluations/{enrollmentId:guid}",
+            (Guid enrollmentId, SchoolCycleAssessmentInput input, SchoolCycleAssessmentService s, CancellationToken ct) =>
+                s.SaveAsync(enrollmentId, input, ct)).RequireAuthorization(Permissions.AcademicsWrite);
+
         g.MapGet("/sections", (SchoolService s, CancellationToken ct) => s.SectionsAsync(ct));
         g.MapPost("/sections", (SectionUpsert input, SchoolService s, CancellationToken ct) => s.UpsertSectionAsync(null, input, ct)).RequireAuthorization(Permissions.SettingsWrite);
         g.MapPut("/sections/{id:guid}", (Guid id, SectionUpsert input, SchoolService s, CancellationToken ct) => s.UpsertSectionAsync(id, input, ct)).RequireAuthorization(Permissions.SettingsWrite);
