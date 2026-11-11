@@ -129,7 +129,7 @@ public sealed class SchoolCycleAssessmentApiTests : IDisposable
         var json = await admin.GetAsync(
             $"/api/etablissement/cycles/evaluations/{enrollmentId}/apercu").Ok();
         Assert.False(json.GetProperty("isOfficial").GetBoolean());
-        var presentation = SchoolBulletinLayouts.For(kind);
+        var presentation = SchoolBulletinLayouts.For(kind, 1);
         Assert.Equal(presentation.Code, json.GetProperty("templateCode").GetString());
         Assert.Equal(presentation.PreviewTitle, json.GetProperty("documentTitle").GetString());
         Assert.Equal(presentation.EntryHeading, json.GetProperty("entryHeading").GetString());
@@ -147,6 +147,15 @@ public sealed class SchoolCycleAssessmentApiTests : IDisposable
         Assert.Empty(secondPeriod.GetProperty("entries").EnumerateArray());
         Assert.DoesNotContain("moyenne", json.GetRawText(), StringComparison.OrdinalIgnoreCase);
         Assert.Equal(1, json.GetProperty("entries").GetArrayLength());
+        Assert.Equal(1, json.GetProperty("classLevel").GetInt32());
+        Assert.Equal(presentation.GradeBand, json.GetProperty("gradeBand").GetString());
+        var subjectRow = Assert.Single(json.GetProperty("subjectRows").EnumerateArray());
+        Assert.Equal("Français", subjectRow.GetProperty("subjectName").GetString());
+        var subjectPeriods = subjectRow.GetProperty("periods").EnumerateArray().ToArray();
+        Assert.Equal(2, subjectPeriods.Length);
+        var firstSubjectScore = Assert.Single(subjectPeriods[0].GetProperty("entries").EnumerateArray());
+        Assert.Equal(12m, firstSubjectScore.GetProperty("score").GetDecimal());
+        Assert.Empty(subjectPeriods[1].GetProperty("entries").EnumerateArray());
     }
 
     [Fact]
@@ -224,10 +233,12 @@ public sealed class SchoolCycleAssessmentApiTests : IDisposable
         var json = await admin.GetAsync(
             $"/api/etablissement/cycles/evaluations/{enrollmentId}/apercu").Ok();
         Assert.False(json.GetProperty("isOfficial").GetBoolean());
-        var presentation = SchoolBulletinLayouts.For(SchoolCycleKind.Maternelle);
+        var presentation = SchoolBulletinLayouts.For(SchoolCycleKind.Maternelle, 1);
         Assert.Equal(presentation.Code, json.GetProperty("templateCode").GetString());
         Assert.Equal(presentation.PreviewTitle, json.GetProperty("documentTitle").GetString());
         Assert.Equal("Maternelle", json.GetProperty("cycle").GetString());
+        Assert.Empty(json.GetProperty("subjectRows").EnumerateArray());
+        Assert.Equal(1, json.GetProperty("classLevel").GetInt32());
         var row = Assert.Single(json.GetProperty("entries").EnumerateArray());
         Assert.Equal("Observation", row.GetProperty("mode").GetString());
         Assert.Equal("P1", row.GetProperty("periodCode").GetString());
