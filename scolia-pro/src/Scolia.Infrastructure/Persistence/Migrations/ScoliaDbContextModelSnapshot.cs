@@ -2828,11 +2828,6 @@ namespace Scolia.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("Scolia.Domain.School.SchoolCycle", null)
-                        .WithMany()
-                        .HasForeignKey("SchoolCycleId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
                     b.HasOne("Scolia.Domain.School.Section", "Section")
                         .WithMany()
                         .HasForeignKey("SectionId")
