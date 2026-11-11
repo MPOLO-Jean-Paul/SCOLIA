@@ -28,8 +28,6 @@ public static class RibbonCatalog
         ["Imprimer"] = "Ctrl+P",
         ["Plein écran"] = "F11",
         ["Apprenants"] = "Ctrl+Shift+A",
-        ["Élèves"] = "Ctrl+Shift+A",
-        ["Étudiants"] = "Ctrl+Shift+A",
         ["Nouvelle inscription"] = "Ctrl+N",
         ["Réinscriptions"] = "Ctrl+Shift+R",
         ["Encaisser"] = "F2",
@@ -63,8 +61,6 @@ public static class RibbonCatalog
         ["Rapports et exports"] = "Ctrl+Shift+X",
         ["Situation (PDF)"] = "Alt+Y",
         ["Apprenants (Excel)"] = "Alt+W",
-        ["Élèves (Excel)"] = "Alt+W",
-        ["Étudiants (Excel)"] = "Alt+W",
         ["Journal d'audit"] = "Ctrl+Shift+J",
         ["Sauvegarder"] = "Alt+S",
         ["Importer SCOLIA V79"] = "Alt+L",
@@ -89,9 +85,20 @@ public static class RibbonCatalog
         ["Modifier"] = "F4",
         ["Relevé de compte"] = "Alt+R",
         ["Liste des apprenants"] = "Ctrl+Shift+F",
-        ["Liste des élèves"] = "Ctrl+Shift+F",
-        ["Liste des étudiants"] = "Ctrl+Shift+F",
     };
+
+    /// <summary>Un raccourci unique est associé à la commande, indépendamment de son libellé.</summary>
+    private static string? ShortcutFor(string label)
+    {
+        var canonical = label switch
+        {
+            "Élèves" or "Étudiants" => "Apprenants",
+            "Élèves (Excel)" or "Étudiants (Excel)" => "Apprenants (Excel)",
+            "Liste des élèves" or "Liste des étudiants" => "Liste des apprenants",
+            _ => label,
+        };
+        return Shortcuts.GetValueOrDefault(canonical);
+    }
 
     public static List<RibbonTabVm> Build(ShellViewModel shell)
     {
@@ -279,7 +286,7 @@ public static class RibbonCatalog
     {
         if (perm is not null && !shell.Can(perm)) return null;
         var command = new AsyncCommand(() => shell.Run(action));
-        var vm = new RibbonCommandVm(label, icon, shell.Prefs.Tips ? tip : string.Empty, command, large, FeatureVisuals.CommandTone(label, tone), toggle, shortcut ?? Shortcuts.GetValueOrDefault(label));
+        var vm = new RibbonCommandVm(label, icon, shell.Prefs.Tips ? tip : string.Empty, command, large, FeatureVisuals.CommandTone(label, tone), toggle, shortcut ?? ShortcutFor(label));
         if (isOn is not null) vm.IsOn = isOn();
         return vm;
     }
