@@ -22,6 +22,7 @@ public sealed class ScoliaDbContext(DbContextOptions<ScoliaDbContext> options, I
     public DbSet<SchoolProfile> Schools => Set<SchoolProfile>();
     public DbSet<AcademicYear> AcademicYears => Set<AcademicYear>();
     public DbSet<AcademicPeriod> Periods => Set<AcademicPeriod>();
+    public DbSet<PedagogicalPeriod> PedagogicalPeriods => Set<PedagogicalPeriod>();
     public DbSet<Section> Sections => Set<Section>();
     public DbSet<Promotion> Promotions => Set<Promotion>();
     public DbSet<FeeItem> FeeItems => Set<FeeItem>();
@@ -86,6 +87,16 @@ public sealed class ScoliaDbContext(DbContextOptions<ScoliaDbContext> options, I
             e.Ignore(x => x.FirstCalendarYear);
         });
         b.Entity<AcademicPeriod>(e => { e.ToTable("Periodes"); e.HasIndex(x => new { x.AcademicYearId, x.Order }).IsUnique(); });
+        // Les périodes pédagogiques ne sont PAS les échéances financières.
+        b.Entity<PedagogicalPeriod>(e =>
+        {
+            e.ToTable("PeriodesPedagogiques");
+            e.Property(x => x.Code).HasMaxLength(16);
+            e.Property(x => x.Name).HasMaxLength(80);
+            e.HasIndex(x => new { x.AcademicYearId, x.Order }).IsUnique();
+            e.HasIndex(x => new { x.AcademicYearId, x.Code }).IsUnique();
+            e.HasOne<AcademicYear>().WithMany().HasForeignKey(x => x.AcademicYearId).OnDelete(DeleteBehavior.Restrict);
+        });
         b.Entity<Section>(e => { e.ToTable("Sections"); e.HasIndex(x => x.Code).IsUnique(); });
         b.Entity<Promotion>(e =>
         {

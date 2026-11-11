@@ -113,7 +113,7 @@ public static class Sidebar
                 Item("Rapports et exports", MaterialIconKind.FileChart, "ToneIndigo", Perm.ReportsRead, typeof(ReportsPage), () => new ReportsPage(shell))),
             // Secrétariat : les dossiers des apprenants et ce qui en sort (cartes d'accès).
             Group("Secrétariat",
-                Item("Apprenants", MaterialIconKind.AccountGroup, "ToneBlue", Perm.StudentsRead, typeof(StudentsPage), () => new StudentsPage(shell)),
+                Item(shell.StudentTerms.PluralTitle, MaterialIconKind.AccountGroup, "ToneBlue", Perm.StudentsRead, typeof(StudentsPage), () => new StudentsPage(shell)),
                 Item("Réinscriptions", MaterialIconKind.School, "ToneIndigo", Perm.StudentsWrite, typeof(ReEnrollmentPage), () => new ReEnrollmentPage(shell)),
                 Item("Cartes d'accès", MaterialIconKind.CardAccountDetails, "ToneBlue", Perm.AcademicsRead, typeof(CardsPage), () => new CardsPage(shell))),
             Group("Finances",

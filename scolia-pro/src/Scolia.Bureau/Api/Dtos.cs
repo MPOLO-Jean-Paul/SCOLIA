@@ -25,13 +25,14 @@ public sealed record DisciplineRowDto(Guid Id, Guid EnrollmentId, string Matricu
 
 public sealed record SessionDto(
     Guid Id, string UserName, string DisplayName, string Role, string RoleLabel, string[] Permissions, bool MustChangePassword,
-    string SchoolName, string? SchoolShortName, string? CurrentYear, string CurrencySymbol, string PhoneCountryCode);
+    string SchoolName, string? SchoolShortName, string? CurrentYear, string CurrencySymbol, string PhoneCountryCode,
+    string InstitutionType = "ItmIm");
 
 public sealed record SchoolDto(
     string Name, string ShortName, string? Motto, string? Address, string? City, string? Country, string? Phone, string? Email,
     string? Website, string CurrencyCode, string CurrencySymbol, bool WholeAmountsOnly, string? ReceiptFooter, bool HasLogo, string PhoneCountryCode,
     string? CardMinistry = null, string? CardDirection = null, string? CardDivision = null, string? CardZone = null,
-    string? CardInstitute = null, string? CardAddress = null);
+    string? CardInstitute = null, string? CardAddress = null, string InstitutionType = "ItmIm");
 
 /// <summary>Apprenant proposé pour les cartes d'accès, avec son diagnostic.</summary>
 public sealed record CardCandidateDto(Guid EnrollmentId, string Matricule, string FullName, string PromotionCode, string Status, bool Eligible,
