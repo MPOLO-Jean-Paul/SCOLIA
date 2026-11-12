@@ -37,6 +37,12 @@
       <Setter Property="CornerRadius" Value="15" />
       <Setter Property="HorizontalAlignment" Value="Center" />
       <Setter Property="Background" Value="Transparent" />
+      <!-- Indicateur de navigation Material : couleur animée, sans modifier sa géométrie. -->
+      <Setter Property="Transitions">
+        <Transitions>
+          <BrushTransition Property="Background" Duration="0:0:0.16" Easing="CubicEaseOut" />
+        </Transitions>
+      </Setter>
     </Style>
     <Style Selector="Border.tabicon.selected">
       <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
@@ -76,6 +82,12 @@
       <Setter Property="Padding" Value="2,4" />
       <Setter Property="MinHeight" Value="54" />
       <Setter Property="CornerRadius" Value="12" />
+      <Setter Property="Transitions">
+        <Transitions>
+          <BrushTransition Property="Foreground" Duration="0:0:0.16" Easing="CubicEaseOut" />
+          <BrushTransition Property="Background" Duration="0:0:0.12" Easing="CubicEaseOut" />
+        </Transitions>
+      </Setter>
     </Style>
     <Style Selector="Button.phonetab:pointerover">
       <Setter Property="Background" Value="Transparent" />

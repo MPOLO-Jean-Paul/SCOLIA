@@ -1,4 +1,4 @@
-name: SCOLIA Natif - recherche, navigation et securite (Windows Android iOS)
+name: SCOLIA Natif - recherche, navigation et securite (Windows Android)
 
 on:
   push:
@@ -83,7 +83,7 @@ jobs:
         run: |
           bash scripts/audit-tracked-files.sh --self-test
           bash scripts/audit-tracked-files.sh
-      - name: Compiler le client Avalonia (vues partagees Windows Android iOS)
+      - name: Compiler le client Avalonia partage Windows et Android
         run: dotnet build src/Scolia.Bureau/Scolia.Bureau.csproj -c Release
       - name: Tester les mises a jour Android (fin de telechargement, arriere-plan, erreurs)
         run: dotnet test tests/Scolia.Mobile.Tests/Scolia.Mobile.Tests.csproj -c Release --filter "FullyQualifiedName~UpdateCompletionPolicyTests|FullyQualifiedName~AndroidPrivacyManifestTests" --logger "trx;LogFileName=android-updates.trx"

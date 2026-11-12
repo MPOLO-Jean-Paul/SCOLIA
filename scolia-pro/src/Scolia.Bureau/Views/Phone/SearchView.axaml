@@ -63,7 +63,7 @@
                   <Button Classes="searchtile" Command="{Binding Open}">
                     <Grid ColumnDefinitions="*,Auto">
                       <TextBlock Text="{Binding Label}" FontSize="14" FontWeight="Medium" VerticalAlignment="Center"
-                                 TextWrapping="WrapWithOverflow" MaxLines="2" TextTrimming="CharacterEllipsis" />
+                                 TextWrapping="Wrap" />
                       <Border Grid.Column="1" Width="38" Height="38" CornerRadius="12" Background="{Binding Brush}" Margin="6,0,0,0">
                         <mi:MaterialIcon Kind="{Binding Icon}" Width="22" Height="22" Foreground="White"
                                          HorizontalAlignment="Center" VerticalAlignment="Center" />

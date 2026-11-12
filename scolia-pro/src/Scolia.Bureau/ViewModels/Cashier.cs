@@ -102,6 +102,11 @@ public sealed class CashierPage : PageViewModel
         // Avec des frais (inscription, examen…), on compte des « éléments » plutôt que des mois.
         var withFees = Months.Any(m => m.IsSelected && m.Label.EndsWith(" (frais)", StringComparison.Ordinal));
         var unit = withFees ? Format.Count(chosen.Count, "élément", "éléments") : Format.Count(chosen.Count, "mois", "mois");
+        // La barre d'action Android est compacte : les intitulés configurables
+        // peuvent contenir des périodes de rattrapage très longues. Les noms
+        // complets restent dans la liste cochée, pas dans la barre fixe.
+        if (Phone)
+            return $"{unit} sélectionné{(chosen.Count > 1 ? "s" : "")}";
         return chosen.Count <= 2
             ? $"{unit} · {string.Join(", ", chosen)}"
             : $"{unit} · de {chosen[0]} à {chosen[^1]}";
