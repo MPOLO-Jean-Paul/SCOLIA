@@ -637,7 +637,29 @@
     <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
   </Style>
 
-  <!-- Blocs de réglages macOS : gris clair, coins de 12 px, sans trait ni ombre -->
+  <!-- Accueil partagé : le secrétariat et le compte enseignant utilisent désormais
+       les mêmes composants natifs. HomeView peut garder ses styles de proximité. -->
+  <Style Selector="Border.desktopwelcome">
+    <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="20" />
+    <Setter Property="BoxShadow" Value="0 5 24 0 #12000000" />
+  </Style>
+  <Style Selector="Button.heroaction">
+    <Setter Property="Background" Value="{DynamicResource GroupBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="13" />
+    <Setter Property="Padding" Value="12,9" />
+    <Setter Property="MinHeight" Value="44" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+  </Style>
+  <Style Selector="Button.heroaction:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
+  </Style>
+    <!-- Blocs de réglages macOS : gris clair, coins de 12 px, sans trait ni ombre -->
   <Style Selector="Border.card">
     <Setter Property="Background" Value="{DynamicResource GroupBrush}" />
     <Setter Property="BorderThickness" Value="0" />

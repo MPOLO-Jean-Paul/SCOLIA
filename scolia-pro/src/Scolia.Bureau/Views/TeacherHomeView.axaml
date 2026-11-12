@@ -6,21 +6,33 @@
   <ScrollViewer HorizontalScrollBarVisibility="Disabled">
     <StackPanel Spacing="16" Margin="0,0,6,8" MaxWidth="1180">
 
-      <!-- Accueil personnel : qui est connecté et à quel titre -->
-      <Border Classes="card" Padding="20,16">
-        <Grid ColumnDefinitions="Auto,*,Auto" infra:Adaptive.StackBelow="560">
-          <Border Width="48" Height="48" CornerRadius="24" Background="{DynamicResource PurpleSoftBrush}" VerticalAlignment="Center" Margin="0,0,14,0">
-            <mi:MaterialIcon Kind="AccountSchool" Width="26" Height="26" Foreground="{DynamicResource TonePurple}" />
-          </Border>
-          <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
-            <TextBlock Text="{Binding Greeting}" FontSize="{DynamicResource FsHeading}" FontWeight="SemiBold" TextWrapping="Wrap" />
-            <TextBlock Text="{Binding Role}" Classes="muted" />
-          </StackPanel>
-          <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-            <Button Classes="primary" infra:Icons.Lead="Pen" Content="Encoder mes cotes" Command="{Binding EncodeByCode}" />
-            <Button infra:Icons.Lead="ShieldLockOutline" Content="Mon code d'accès" Command="{Binding ChooseCode}" />
-          </StackPanel>
-        </Grid>
+      <!-- Même accueil natif que secrétariat et administration : bande d'accent,
+           icône du kit SCOLIA, identité et actions alignées, sans style parallèle. -->
+      <Border Classes="desktopwelcome" Padding="0" ClipToBounds="True">
+        <StackPanel Spacing="0">
+          <Border Height="3" Background="{DynamicResource AccentBrush}" />
+          <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12"
+                Margin="18,17,18,17" infra:Adaptive.StackBelow="560">
+            <Border Classes="appicon large" Background="{DynamicResource TonePurple}"
+                    VerticalAlignment="Center" Margin="0,0,4,0">
+              <mi:MaterialIcon Kind="AccountSchool" />
+            </Border>
+            <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="4">
+              <TextBlock Text="{Binding Greeting}" FontSize="{DynamicResource FsHeading}"
+                         FontWeight="SemiBold" TextWrapping="Wrap"
+                         Foreground="{DynamicResource TextBrush}" />
+              <TextBlock Text="{Binding Role}" Classes="muted" TextWrapping="Wrap" />
+            </StackPanel>
+            <WrapPanel Grid.Column="2" VerticalAlignment="Center">
+              <Button Classes="heroaction" infra:Icons.Lead="Pen"
+                      Content="Encoder mes cotes" Command="{Binding EncodeByCode}"
+                      Margin="0,0,8,6" />
+              <Button Classes="heroaction" infra:Icons.Lead="ShieldLockOutline"
+                      Content="Mon code d'accès" Command="{Binding ChooseCode}"
+                      Margin="0,0,0,6" />
+            </WrapPanel>
+          </Grid>
+        </StackPanel>
       </Border>
 
       <!-- Code provisoire : rien ne s'ouvre avant le choix de son propre code -->

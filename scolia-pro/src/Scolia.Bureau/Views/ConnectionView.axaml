@@ -14,7 +14,7 @@
     <Style Selector="TextBlock.iosconnectsubtitle"><Setter Property="FontSize" Value="18" /></Style>
     <Style Selector="Expander"><Setter Property="HorizontalAlignment" Value="Stretch" /></Style>
     <Style Selector="Expander TextBlock"><Setter Property="TextWrapping" Value="Wrap" /></Style>
-    <Style Selector="Button.iosconnectprimary:pointerover /template/ ContentPresenter"><Setter Property="Background" Value="#0F5BD0" /></Style>
+    <Style Selector="Button.iosconnectprimary:pointerover /template/ ContentPresenter"><Setter Property="Background" Value="{DynamicResource AccentHoverBrush}" /></Style>
     <Style Selector="Button.iosconnectprimary:disabled /template/ ContentPresenter"><Setter Property="Background" Value="#9DBDF0" /><Setter Property="Foreground" Value="White" /></Style>
     <!-- Les boutons du jumelage gardent leurs tailles, même pendant l'appui. -->
     <Style Selector="Button.iosconnectprimary:pressed">
@@ -22,15 +22,15 @@
       <Setter Property="Opacity" Value="0.94" />
     </Style>
     <Style Selector="Button.iosconnectsecondary:pressed">
-      <Setter Property="Background" Value="#DCEAFF" />
+      <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
     </Style>
     <Style Selector="TextBox.iosconnectfield:focus">
-      <Setter Property="BorderBrush" Value="#1769E6" />
+      <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
       <Setter Property="BorderThickness" Value="2" />
     </Style>
     <!-- Petits téléphones : marges, logo et titres réduits ; les options secondaires se replient. -->
     <Style Selector="Grid.compact StackPanel.iosconnectbody"><Setter Property="Margin" Value="14,16,14,20" /><Setter Property="Spacing" Value="13" /></Style>
-    <Style Selector="Grid.compact Border.iosconnectcard"><Setter Property="Padding" Value="14" /><Setter Property="CornerRadius" Value="19" /></Style>
+    <Style Selector="Grid.compact Border.iosconnectcard"><Setter Property="Padding" Value="0" /><Setter Property="CornerRadius" Value="0" /></Style>
     <Style Selector="Grid.compact Border.iosconnectlogo"><Setter Property="Width" Value="70" /><Setter Property="Height" Value="70" /><Setter Property="CornerRadius" Value="22" /></Style>
     <Style Selector="Grid.compact Image.iosconnectmark"><Setter Property="Width" Value="48" /><Setter Property="Height" Value="48" /></Style>
     <Style Selector="Grid.compact TextBlock.iosconnecttitle"><Setter Property="FontSize" Value="22" /></Style>
@@ -40,7 +40,7 @@
     <Style Selector="Grid.compact TextBox.iosconnectfield"><Setter Property="MinHeight" Value="48" /></Style>
     <!-- Très petits écrans : encore un cran plus serré. -->
     <Style Selector="Grid.tiny StackPanel.iosconnectbody"><Setter Property="Margin" Value="10,12,10,16" /><Setter Property="Spacing" Value="11" /></Style>
-    <Style Selector="Grid.tiny Border.iosconnectcard"><Setter Property="Padding" Value="12" /><Setter Property="CornerRadius" Value="17" /></Style>
+    <Style Selector="Grid.tiny Border.iosconnectcard"><Setter Property="Padding" Value="0" /><Setter Property="CornerRadius" Value="0" /></Style>
     <Style Selector="Grid.tiny Border.iosconnectlogo"><Setter Property="Width" Value="60" /><Setter Property="Height" Value="60" /><Setter Property="CornerRadius" Value="19" /></Style>
     <Style Selector="Grid.tiny Image.iosconnectmark"><Setter Property="Width" Value="42" /><Setter Property="Height" Value="42" /></Style>
     <Style Selector="Grid.tiny TextBlock.iosconnecttitle"><Setter Property="FontSize" Value="20" /></Style>
@@ -58,21 +58,20 @@
     <Style Selector="Grid.micro Border.iosconnectlogo"><Setter Property="IsVisible" Value="False" /></Style>
     <Style Selector="Grid.micro TextBlock.iosconnecttitle"><Setter Property="FontSize" Value="19" /></Style>
     <Style Selector="Grid.micro TextBlock.iosconnecthint"><Setter Property="IsVisible" Value="False" /></Style>
-    <Style Selector="Grid.micro Border.iosconnectcard"><Setter Property="Padding" Value="11" /></Style>
-    <!-- Grand écran (ordinateur) : colonne un peu plus large, centrée, cartes aérées. -->
+    <Style Selector="Grid.micro Border.iosconnectcard"><Setter Property="Padding" Value="0" /></Style>
+    <!-- Grand écran : parcours de jumelage natif à plat. -->
     <Style Selector="Grid.wide StackPanel.iosconnectbody"><Setter Property="MaxWidth" Value="490" /><Setter Property="Margin" Value="28,44,28,32" /></Style>
-    <Style Selector="Grid.wide Border.iosconnectcard"><Setter Property="Padding" Value="22" /></Style>
+    <Style Selector="Grid.wide Border.iosconnectcard"><Setter Property="Padding" Value="0" /></Style>
     <Style Selector="Border.iosconnectcard">
-      <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
-      <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
-      <Setter Property="BorderThickness" Value="1" />
-      <Setter Property="CornerRadius" Value="20" />
-      <Setter Property="Padding" Value="20" />
-      <Setter Property="BoxShadow" Value="0 9 26 0 #120F2B6B" />
+      <!-- Parcours de jumelage natif : les sections ne sont plus des cartes. -->
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="CornerRadius" Value="0" />
+      <Setter Property="Padding" Value="0" />
     </Style>
     <Style Selector="Button.iosconnectprimary">
-      <Setter Property="Background" Value="#1769E6" />
-      <Setter Property="Foreground" Value="White" />
+      <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource OnAccentBrush}" />
       <Setter Property="BorderThickness" Value="0" />
       <Setter Property="CornerRadius" Value="12" />
       <Setter Property="HorizontalAlignment" Value="Stretch" />
@@ -237,8 +236,8 @@
 
     </Grid>
     <!-- Premier écran iOS, sur le téléphone comme sur l'ordinateur : une décision principale, des options secondaires discrètes. -->
-    <ThemeVariantScope x:Name="IosConnectionThemeScope" RequestedThemeVariant="Light" IsVisible="False">
-    <Grid x:Name="IosConnectionScreen" IsVisible="False" Background="#F1F5FA">
+    <ThemeVariantScope x:Name="IosConnectionThemeScope" IsVisible="False">
+    <Grid x:Name="IosConnectionScreen" IsVisible="False" Background="{DynamicResource BgBrush}">
       <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto"
                     IsVisible="{Binding !PairingInProgress}">
         <StackPanel Classes="iosconnectbody" HorizontalAlignment="Stretch" VerticalAlignment="Center">
@@ -250,9 +249,8 @@
             </DockPanel>
           </Button>
           <StackPanel Classes="iosconnectheader">
-            <Border Classes="iosconnectlogo" Background="White"
-                    BorderBrush="#D7E3F3" BorderThickness="1"
-                    BoxShadow="0 10 25 0 #160F468C" HorizontalAlignment="Center">
+            <Border Classes="iosconnectlogo" Background="Transparent"
+                    BorderThickness="0" HorizontalAlignment="Center">
               <Image Classes="iosconnectmark" Source="{DynamicResource ScoliaMark}" />
             </Border>
             <TextBlock Classes="iosconnecttitle" Text="Bienvenue sur SCOLIA" FontWeight="Bold"
@@ -275,8 +273,8 @@
                              Classes="muted" FontSize="12" TextWrapping="Wrap" />
                 </StackPanel>
               </Grid>
-              <Border Background="#E8F2FF" CornerRadius="13" Padding="12">
-                <TextBlock Text="{Binding ScanHint}" Foreground="#365C8F"
+              <Border Background="Transparent" BorderThickness="0" CornerRadius="0" Padding="0">
+                <TextBlock Text="{Binding ScanHint}" Foreground="{DynamicResource MutedBrush}"
                            FontSize="12" TextWrapping="Wrap" />
               </Border>
               <Button Classes="iosconnectprimary" Command="{Binding ScanCode}"
@@ -312,7 +310,7 @@
             <StackPanel Spacing="8">
             <TextBlock Text="ÉTABLISSEMENTS À PROXIMITÉ" FontWeight="SemiBold"
                        Foreground="{DynamicResource Text2Brush}" FontSize="11" Margin="8,0,0,0" />
-            <Border Classes="iosconnectcard" Padding="6">
+            <Border Classes="iosconnectcard" Padding="0">
               <ItemsControl ItemsSource="{Binding Servers}">
                 <ItemsControl.ItemTemplate>
                   <DataTemplate>
@@ -410,7 +408,7 @@
                     IsVisible="{Binding PairingInProgress}">
         <Grid RowDefinitions="*,Auto,*" Margin="16,20">
           <Border Grid.Row="1" Classes="iosconnectcard" MaxWidth="410"
-                  HorizontalAlignment="Stretch" Padding="23">
+                  HorizontalAlignment="Stretch" Padding="0">
             <StackPanel Spacing="15">
               <Border Width="78" Height="78" CornerRadius="26"
                       Background="#DCEAFF" HorizontalAlignment="Center">
@@ -438,7 +436,7 @@
     </Grid>
     </ThemeVariantScope>
     <!-- Sur Android, seule cette vue fixe est rendue : jamais de page entière défilante. -->
-    <ThemeVariantScope x:Name="CompactConnectionThemeScope" RequestedThemeVariant="Light"
+    <ThemeVariantScope x:Name="CompactConnectionThemeScope"
                        IsVisible="False">
       <phone:ConnectionCompactView x:Name="CompactConnectionScreen" />
     </ThemeVariantScope>

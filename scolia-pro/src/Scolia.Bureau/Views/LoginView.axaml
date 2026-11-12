@@ -39,12 +39,11 @@
 
     <!-- Langage iOS récent, lisible et tactile, commun au téléphone et à l'ordinateur. -->
     <Style Selector="Border.iosauthcard">
-      <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
-      <Setter Property="CornerRadius" Value="20" />
-      <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
-      <Setter Property="BorderThickness" Value="1" />
-      <Setter Property="BoxShadow" Value="0 12 30 0 #140F2B6B" />
-      <Setter Property="Padding" Value="20" />
+      <!-- Le formulaire est intégré au fond natif, sans carte, ombre ni bordure. -->
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="CornerRadius" Value="0" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Padding" Value="0" />
     </Style>
     <Style Selector="TextBox.iosauthfield">
       <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
@@ -57,8 +56,8 @@
       <Setter Property="MinHeight" Value="50" />
     </Style>
     <Style Selector="Button.iosauthprimary">
-      <Setter Property="Background" Value="#1769E6" />
-      <Setter Property="Foreground" Value="White" />
+      <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource OnAccentBrush}" />
       <Setter Property="BorderThickness" Value="0" />
       <Setter Property="CornerRadius" Value="12" />
       <Setter Property="MinHeight" Value="50" />
@@ -78,7 +77,7 @@
     </Style>
     <Style Selector="Button.iosauthlink">
       <Setter Property="Background" Value="Transparent" />
-      <Setter Property="Foreground" Value="#1769E6" />
+      <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
       <Setter Property="BorderThickness" Value="0" />
       <Setter Property="CornerRadius" Value="12" />
       <Setter Property="MinHeight" Value="44" />
@@ -94,15 +93,15 @@
     </Style>
     <!-- Réponse tactile discrète, semblable aux composants Material, sans animation de déplacement. -->
     <Style Selector="Button.iosauthprimary:pressed">
-      <Setter Property="Background" Value="#0F5BD0" />
+      <Setter Property="Background" Value="{DynamicResource AccentHoverBrush}" />
       <Setter Property="Opacity" Value="0.94" />
     </Style>
     <Style Selector="Button.iosauthsecondary:pressed">
-      <Setter Property="Background" Value="#DBE8FA" />
+      <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
     </Style>
     <!-- État de saisie clair sur desktop (clavier) et Android (toucher). -->
     <Style Selector="TextBox.iosauthfield:focus">
-      <Setter Property="BorderBrush" Value="#1769E6" />
+      <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
       <Setter Property="BorderThickness" Value="2" />
     </Style>
         <!-- Valeurs de base de la page : posées par style pour que les adaptations à l'écran puissent les remplacer. -->
@@ -120,7 +119,7 @@
       <Setter Property="TextAlignment" Value="Center" />
     </Style>
     <Style Selector="Button.iosauthlink:pointerover /template/ ContentPresenter">
-      <Setter Property="Background" Value="#EAF2FE" />
+      <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
     </Style>
     <Style Selector="Button.iosauthprimary:pointerover /template/ ContentPresenter">
       <Setter Property="Background" Value="#0F5BD0" />
@@ -132,7 +131,7 @@
 
     <!-- Petits téléphones (moins de 390 points) : marges, logo et titres réduits, champs toujours tactiles. -->
     <Style Selector="ScrollViewer.compact StackPanel.iosloginbody"><Setter Property="Margin" Value="14,12,14,14" /><Setter Property="Spacing" Value="11" /></Style>
-    <Style Selector="ScrollViewer.compact Border.iosauthcard"><Setter Property="Padding" Value="14" /><Setter Property="CornerRadius" Value="17" /></Style>
+    <Style Selector="ScrollViewer.compact Border.iosauthcard"><Setter Property="Padding" Value="0" /><Setter Property="CornerRadius" Value="0" /></Style>
     <Style Selector="ScrollViewer.compact Border.ioslogotile"><Setter Property="Width" Value="70" /><Setter Property="Height" Value="70" /><Setter Property="CornerRadius" Value="22" /></Style>
     <Style Selector="ScrollViewer.compact Image.ioslogomark"><Setter Property="Width" Value="48" /><Setter Property="Height" Value="48" /></Style>
     <Style Selector="ScrollViewer.compact TextBlock.ioslogotitle"><Setter Property="FontSize" Value="23" /></Style>
@@ -143,7 +142,7 @@
     <Style Selector="ScrollViewer.compact Button.iosauthsecondary"><Setter Property="MinHeight" Value="48" /></Style>
     <!-- Très petits écrans (moins de 340 points) : encore un cran plus serré, sans rien masquer. -->
     <Style Selector="ScrollViewer.tiny StackPanel.iosloginbody"><Setter Property="Margin" Value="10,10,10,12" /><Setter Property="Spacing" Value="10" /></Style>
-    <Style Selector="ScrollViewer.tiny Border.iosauthcard"><Setter Property="Padding" Value="12" /><Setter Property="CornerRadius" Value="15" /></Style>
+    <Style Selector="ScrollViewer.tiny Border.iosauthcard"><Setter Property="Padding" Value="0" /><Setter Property="CornerRadius" Value="0" /></Style>
     <Style Selector="ScrollViewer.tiny Border.ioslogotile"><Setter Property="Width" Value="60" /><Setter Property="Height" Value="60" /><Setter Property="CornerRadius" Value="19" /></Style>
     <Style Selector="ScrollViewer.tiny Image.ioslogomark"><Setter Property="Width" Value="42" /><Setter Property="Height" Value="42" /></Style>
     <Style Selector="ScrollViewer.tiny TextBlock.ioslogotitle"><Setter Property="FontSize" Value="21" /></Style>
@@ -156,12 +155,12 @@
     <Style Selector="ScrollViewer.short StackPanel.iosloginheader"><Setter Property="Spacing" Value="6" /></Style>
     <Style Selector="ScrollViewer.short Border.ioslogotile"><Setter Property="Width" Value="58" /><Setter Property="Height" Value="58" /><Setter Property="CornerRadius" Value="18" /></Style>
     <Style Selector="ScrollViewer.short Image.ioslogomark"><Setter Property="Width" Value="40" /><Setter Property="Height" Value="40" /></Style>
-    <!-- Grand écran (ordinateur, tablette) : carte un peu plus large et aérée, centrée dans la fenêtre. -->
+    <!-- Grand écran : le formulaire reste intégré à la fenêtre, sans carte. -->
     <!-- La hauteur visible change aussi quand le clavier Android apparaît. -->
     <Style Selector="ScrollViewer.micro StackPanel.iosloginbody"><Setter Property="Margin" Value="9,7,9,9" /><Setter Property="Spacing" Value="10" /></Style>
     <Style Selector="ScrollViewer.micro StackPanel.iosloginheader"><Setter Property="Spacing" Value="3" /></Style>
     <Style Selector="ScrollViewer.micro Border.ioslogotile"><Setter Property="IsVisible" Value="False" /></Style>
-    <Style Selector="ScrollViewer.micro Border.iosauthcard"><Setter Property="Padding" Value="11" /></Style>
+    <Style Selector="ScrollViewer.micro Border.iosauthcard"><Setter Property="Padding" Value="0" /></Style>
     <Style Selector="ScrollViewer.micro TextBlock.ioslogotitle"><Setter Property="FontSize" Value="20" /></Style>
     <Style Selector="ScrollViewer.micro TextBlock.ioswelcome"><Setter Property="FontSize" Value="19" /></Style>
     <Style Selector="ScrollViewer.short StackPanel.iosloginfields"><Setter Property="Spacing" Value="9" /></Style>
@@ -169,7 +168,7 @@
     <Style Selector="ScrollViewer.micro TextBox.iosauthfield"><Setter Property="MinHeight" Value="48" /></Style>
     <Style Selector="ScrollViewer.micro Button.iosauthprimary"><Setter Property="MinHeight" Value="48" /></Style>
     <Style Selector="ScrollViewer.wide StackPanel.iosloginbody"><Setter Property="MaxWidth" Value="480" /><Setter Property="Margin" Value="28,46,28,36" /></Style>
-    <Style Selector="ScrollViewer.wide Border.iosauthcard"><Setter Property="Padding" Value="26,24" /><Setter Property="CornerRadius" Value="20" /></Style>
+    <Style Selector="ScrollViewer.wide Border.iosauthcard"><Setter Property="Padding" Value="0" /><Setter Property="CornerRadius" Value="0" /></Style>
     <Style Selector="TextBlock.iosauthlabel">
       <Setter Property="FontSize" Value="12" />
       <Setter Property="FontWeight" Value="SemiBold" />
@@ -200,15 +199,7 @@
 
 
     <!-- Fond clair et doux du style iOS, sur le téléphone comme sur l'ordinateur. -->
-    <Border x:Name="IosBackdrop" IsVisible="False">
-      <Border.Background>
-        <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-          <GradientStop Offset="0" Color="#F1F5FA" />
-          <GradientStop Offset="0.48" Color="#F8FAFD" />
-          <GradientStop Offset="1" Color="#EEF3F9" />
-        </LinearGradientBrush>
-      </Border.Background>
-    </Border>
+    <Border x:Name="IosBackdrop" IsVisible="False" Background="{DynamicResource BgBrush}" />
 
     <ScrollViewer x:Name="LoginScroll" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
       <Grid RowDefinitions="Auto,Auto,Auto" VerticalAlignment="Center" Margin="0,24">
@@ -465,15 +456,14 @@
       </Grid>
     </ScrollViewer>
 
-    <!-- Parcours iOS sur le téléphone et sur l'ordinateur ; l'ancienne page bleue ci-dessus reste en réserve. -->
-    <ThemeVariantScope x:Name="IosLoginThemeScope" RequestedThemeVariant="Light" IsVisible="False">
+    <!-- Connexion Avalonia native Windows/Android, sans fond de carte. -->
+    <ThemeVariantScope x:Name="IosLoginThemeScope" IsVisible="False">
     <ScrollViewer x:Name="IosLoginScroll" IsVisible="False"
                   HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
       <StackPanel Classes="iosloginbody" HorizontalAlignment="Stretch" VerticalAlignment="Center">
         <StackPanel Classes="iosloginheader" HorizontalAlignment="Stretch">
-          <Border Classes="ioslogotile" Background="White"
-                  BorderThickness="1" BorderBrush="#D6E2F5"
-                  BoxShadow="0 12 26 0 #180D459B" HorizontalAlignment="Center">
+          <Border Classes="ioslogotile" Background="Transparent"
+                  BorderThickness="0" HorizontalAlignment="Center">
             <Image Classes="ioslogomark" Source="{DynamicResource ScoliaMark}"
                    HorizontalAlignment="Center" VerticalAlignment="Center" />
           </Border>
@@ -500,16 +490,16 @@
             </Button>
 
             <StackPanel Spacing="12" IsVisible="{Binding ShowPairingCallToAction}">
-              <Border Background="#E7F0FE" CornerRadius="15" Padding="13">
+              <Border Background="Transparent" BorderThickness="0" CornerRadius="0" Padding="0">
                 <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
                   <Border Width="44" Height="44" CornerRadius="14" Background="#D5E6FE">
                     <mi:MaterialIcon Kind="QrcodeScan" Width="24" Height="24"
                                      Foreground="#1769E6" HorizontalAlignment="Center" VerticalAlignment="Center" />
                   </Border>
                   <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
-                    <TextBlock Text="Relier cet appareil" FontWeight="SemiBold" Foreground="#16396D" />
+                    <TextBlock Text="Relier cet appareil" FontWeight="SemiBold" Foreground="{DynamicResource TextBrush}" />
                     <TextBlock Text="Scannez une invitation du serveur scolaire pour activer votre accès."
-                               FontSize="12" TextWrapping="Wrap" Foreground="#41618D" />
+                               FontSize="12" TextWrapping="Wrap" Foreground="{DynamicResource Text2Brush}" />
                   </StackPanel>
                 </Grid>
               </Border>
@@ -526,8 +516,8 @@
 
             <StackPanel Spacing="9" IsVisible="{Binding ShowManualCredentials}">
               <StackPanel Spacing="9" IsVisible="{Binding !RecoveryOpen}">
-                <Border Background="{DynamicResource Surface2Brush}" CornerRadius="17"
-                        Padding="12,9" IsVisible="{Binding HasRememberedAccount}">
+                <Border Background="Transparent" BorderThickness="0" CornerRadius="0"
+                        Padding="0,6" IsVisible="{Binding HasRememberedAccount}">
                   <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
                     <Border Width="34" Height="34" CornerRadius="17" Background="#DCEAFF" VerticalAlignment="Center">
                       <mi:MaterialIcon Kind="AccountOutline" Width="21" Height="21" Foreground="#1769E6"

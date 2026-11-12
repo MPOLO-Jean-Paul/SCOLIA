@@ -109,6 +109,6 @@ public sealed class PremiumMotionViewsTests
         Assert.Contains(field.Descendants(), x =>
             x.Name.LocalName == "Setter" &&
             x.Attribute("Property")?.Value == "BorderBrush" &&
-            x.Attribute("Value")?.Value == "#1769E6");
+            x.Attribute("Value")?.Value == "{DynamicResource AccentBrush}");
     }
 }
