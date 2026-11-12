@@ -73,6 +73,14 @@
     <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
     <Setter Property="BorderThickness" Value="0" />
     <Setter Property="FontWeight" Value="Medium" />
+    <!-- Mouvement façon Material : seulement la couleur et l'opacité, sans déplacer
+         les contrôles ni différer la prise en compte du clic. -->
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="Background" Duration="0:0:0.14" Easing="CubicEaseOut" />
+        <DoubleTransition Property="Opacity" Duration="0:0:0.14" Easing="CubicEaseOut" />
+      </Transitions>
+    </Setter>
     <!-- Lecteurs d'écran (Narrateur, TalkBack) : un bouton-icône est nommé par son info-bulle.
          Un nom explicite ou un texte de bouton reste prioritaire. -->
     <Setter Property="AutomationProperties.Name" Value="{Binding $self.(ToolTip.Tip)}" />
@@ -188,6 +196,12 @@
     <Setter Property="BorderThickness" Value="1" />
     <Setter Property="Padding" Value="14,8" />
     <Setter Property="VerticalContentAlignment" Value="Center" />
+    <!-- Indication de focus animée en 120 ms : aucune largeur de champ ne change. -->
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="BorderBrush" Duration="0:0:0.12" Easing="CubicEaseOut" />
+      </Transitions>
+    </Setter>
   </Style>
   <Style Selector="TextBox:pointerover">
     <Setter Property="BorderBrush" Value="{DynamicResource LineStrongBrush}" />
