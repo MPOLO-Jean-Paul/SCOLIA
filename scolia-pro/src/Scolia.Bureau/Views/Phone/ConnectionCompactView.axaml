@@ -13,7 +13,7 @@
       <Setter Property="MaxWidth" Value="460" />
     </Style>
     <Style Selector="Button.connectmain">
-      <Setter Property="Background" Value="#1769E6" />
+      <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
       <Setter Property="Foreground" Value="White" />
       <Setter Property="CornerRadius" Value="12" />
       <Setter Property="BorderThickness" Value="0" />
@@ -73,14 +73,14 @@
     </Style>
     <!-- Composants tactiles : retour immédiat, sans décaler la page. -->
     <Style Selector="Button.connectmain:pressed">
-      <Setter Property="Background" Value="#0F5BD0" />
+      <Setter Property="Background" Value="{DynamicResource AccentHoverBrush}" />
       <Setter Property="Opacity" Value="0.94" />
     </Style>
     <Style Selector="Button.connectsecondary:pressed">
-      <Setter Property="Background" Value="#DCEAFF" />
+      <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
     </Style>
     <Style Selector="TextBox.connectfield:focus">
-      <Setter Property="BorderBrush" Value="#1769E6" />
+      <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
       <Setter Property="BorderThickness" Value="2" />
     </Style>
     <!-- En cas de très petite hauteur, supprimer les ornements, jamais les commandes. -->
