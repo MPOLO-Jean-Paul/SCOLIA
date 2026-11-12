@@ -43,7 +43,10 @@ public sealed class SetupService(IAppDbContext db, IWriteGate gate, IAuditLog au
         if (!InstitutionProfiles.IsKnown(institutionType))
             throw new DomainException("typeEtablissement", "Type d'établissement inconnu.");
         if (!InstitutionProfiles.IsEnabled(institutionType))
-            throw new DomainException("typeEtablissement", "Le profil choisi n'est pas encore activé. Sélectionnez ITM / IM pour conserver les règles actuelles.");
+            throw new DomainException("typeEtablissement", "Ce profil n'est pas encore activé. Les écoles privées maternelles, primaires, secondaires et les complexes scolaires sont disponibles.");
+        // Les jeux d'essai ITM ne correspondent pas aux classes maternelles, primaires ou secondaires.
+        if (input.LoadDemoData && institutionType != InstitutionProfiles.ItmIm)
+            throw new DomainException("loadDemoData", "Les données de démonstration ITM ne peuvent pas être importées dans une autre catégorie d'établissement.");
         var school = new SchoolProfile
         {
             InstitutionType = institutionType,
@@ -60,6 +63,27 @@ public sealed class SetupService(IAppDbContext db, IWriteGate gate, IAuditLog au
         var year = SchoolService.BuildYear(input.YearLabel, input.StartMonth, count, input.LastOnTimeDay + 1);
         year.IsCurrent = true;
         db.AcademicYears.Add(year);
+        // Les écoles à cycle unique disposent de leur cycle dès la première installation.
+        // Pour les complexes, les deux ou trois cycles sont choisis dans Paramètres > Cycles scolaires :
+        // aucun cycle supposé et aucun tarif imposé ni mensualité facturée.
+        SchoolCycleKind? initialCycle = institutionType switch
+        {
+            InstitutionProfiles.Maternelle => SchoolCycleKind.Maternelle,
+            InstitutionProfiles.Primaire => SchoolCycleKind.Primaire,
+            InstitutionProfiles.Secondaire => SchoolCycleKind.Secondaire,
+            _ => null,
+        };
+        if (initialCycle is { } kind)
+        {
+            var cycle = new SchoolCycle { SchoolId = school.Id, Kind = kind, Name = kind.ToString() };
+            SchoolCycleRules.ValidateOffering(school, [cycle]);
+            db.SchoolCycles.Add(cycle);
+            db.SchoolCycleFeePolicies.Add(new SchoolCycleFeePolicy
+            {
+                SchoolCycleId = cycle.Id, AcademicYearId = year.Id,
+                ChargeMonthlyTuition = false, MonthlyAmount = 0,
+            });
+        }
         var admin = new AppUser
         {
             UserName = userName, NormalizedUserName = TextKey.Normalize(userName), DisplayName = input.AdminDisplayName.Trim(),

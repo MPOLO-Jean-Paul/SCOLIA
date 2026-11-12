@@ -21,7 +21,11 @@ public static class InstitutionProfiles
     public static string Canonicalize(string? value) =>
         string.IsNullOrWhiteSpace(value) || value is ItmIm or ItmIem ? ItmIm : value;
 
-    // Phase 1/2 : moteur ITM opérationnel. Autres moteurs non encore activés.
+    // Les cycles privés sont utilisables sur les nouvelles installations.
+    // LMD et régime public nécessitent encore des modules pédagogiques certifiés.
     public static bool IsEnabled(string? value) =>
-        IsKnown(value) && Canonicalize(value) == ItmIm;
+        Canonicalize(value) is ItmIm or Maternelle or Primaire or Secondaire or ComplexeScolaire;
+
+    public static bool UsesSchoolCycles(string? value) =>
+        Canonicalize(value) is Maternelle or Primaire or Secondaire or ComplexeScolaire;
 }
