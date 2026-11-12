@@ -686,9 +686,16 @@
         </Border>
 
         <!-- Retour d'état en dehors de la carte pour conserver les actions visibles. -->
-        <Border Background="#EAF5EC" BorderBrush="#C7E8D1" BorderThickness="1"
-                CornerRadius="14" Padding="13" IsVisible="{Binding HasNotice}">
-          <TextBlock Text="{Binding Notice}" Foreground="#20663B" TextWrapping="Wrap" />
+        <Border Background="{DynamicResource GreenSoftBrush}" BorderBrush="{DynamicResource LineBrush}"
+                BorderThickness="1" CornerRadius="10" Padding="10,7"
+                IsVisible="{Binding HasNotice}" ToolTip.Tip="{Binding Notice}">
+          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+            <mi:MaterialIcon Kind="InformationOutline" Width="16" Height="16"
+                             Foreground="{DynamicResource ToneGreen}" VerticalAlignment="Center" />
+            <TextBlock Grid.Column="1" Text="{Binding Notice}" FontSize="12"
+                       Foreground="{DynamicResource TextBrush}" TextWrapping="Wrap"
+                       VerticalAlignment="Center" AutomationProperties.Name="{Binding Notice}" />
+          </Grid>
         </Border>
         <Border Background="#FCEAEC" BorderBrush="#F5C6D1" BorderThickness="1"
                 CornerRadius="14" Padding="13" IsVisible="{Binding HasError}">
