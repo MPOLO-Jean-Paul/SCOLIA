@@ -269,7 +269,7 @@
                                        FontWeight="SemiBold" FontSize="{DynamicResource FsSmall}" />
                           </Border>
                           <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10" Margin="0,3,0,0">
-                            <ProgressBar Classes="slim" Value="{Binding Percent}" Maximum="100"
+                            <ProgressBar Classes="slim" Value="{Binding Percent, Mode=OneWay}" Maximum="100"
                                          VerticalAlignment="Center" />
                             <TextBlock Grid.Column="1" Text="{Binding Progress}"
                                        Classes="muted" FontSize="{DynamicResource FsSmall}"
