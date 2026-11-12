@@ -32,9 +32,9 @@
 
     <!-- Onglets du bas : icône et libellé, l'onglet actif en couleur -->
     <Style Selector="Border.tabicon">
-      <Setter Property="Width" Value="56" />
-      <Setter Property="Height" Value="30" />
-      <Setter Property="CornerRadius" Value="15" />
+      <Setter Property="Width" Value="52" />
+      <Setter Property="Height" Value="28" />
+      <Setter Property="CornerRadius" Value="14" />
       <Setter Property="HorizontalAlignment" Value="Center" />
       <Setter Property="Background" Value="Transparent" />
       <!-- Indicateur de navigation Material : couleur animée, sans modifier sa géométrie. -->
@@ -71,7 +71,7 @@
       <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
       <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
       <Setter Property="BorderThickness" Value="0,1,0,0" />
-      <Setter Property="Padding" Value="0,6,0,6" />
+      <Setter Property="Padding" Value="0,4,0,4" />
     </Style>
     <Style Selector="Button.phonetab">
       <Setter Property="Background" Value="Transparent" />
@@ -79,8 +79,8 @@
       <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
       <Setter Property="HorizontalAlignment" Value="Stretch" />
       <Setter Property="HorizontalContentAlignment" Value="Center" />
-      <Setter Property="Padding" Value="2,4" />
-      <Setter Property="MinHeight" Value="54" />
+      <Setter Property="Padding" Value="0,3" />
+      <Setter Property="MinHeight" Value="58" />
       <Setter Property="CornerRadius" Value="12" />
       <Setter Property="Transitions">
         <Transitions>
@@ -98,10 +98,21 @@
     <Style Selector="Button.phonetab TextBlock">
       <Setter Property="FontSize" Value="11" />
       <Setter Property="HorizontalAlignment" Value="Center" />
+      <Setter Property="TextAlignment" Value="Center" />
+      <Setter Property="TextWrapping" Value="NoWrap" />
+      <Setter Property="MaxLines" Value="1" />
       <Setter Property="TextTrimming" Value="CharacterEllipsis" />
     </Style>
     <Style Selector="Button.phonetab.selected TextBlock">
       <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+    <!-- Les pictogrammes suivent le même état que leur libellé, plutôt que
+         de garder la couleur de leur rubrique une fois l'onglet inactif. -->
+    <Style Selector="Button.phonetab mi|MaterialIcon">
+      <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
+    </Style>
+    <Style Selector="Button.phonetab.selected mi|MaterialIcon">
+      <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
     </Style>
 
     <!-- Un bloc dessine une seule surface continue : aucun trait entre son titre et ses outils. -->

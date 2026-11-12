@@ -27,6 +27,7 @@ public sealed class NavItemVm : Observable
         "Suivi mensuel" => "Suivi",
         "Recouvrement" => "Retards",
         "Encaissement par lot" => "Par lot",
+        "Mes cours et cotes" => "Cours & cotes",
         _ => Label,
     };
     public MaterialIconKind Icon { get; }
