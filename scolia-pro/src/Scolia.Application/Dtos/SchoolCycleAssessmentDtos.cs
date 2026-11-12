@@ -71,7 +71,7 @@ public sealed record SchoolCycleBulletinPreviewDto(
     string GradeBand = "Cycle non précisé",
     string? OptionLabel = null,
     IReadOnlyList<SchoolCycleBulletinSubjectDto>? SubjectRows = null,
-    /// <summary>Évaluations conservées mais non rattachées à une matière annuelle de cette classe.</summary>
+    // Évaluations conservées sans branche annuelle associée à cette classe.
     IReadOnlyList<SchoolCycleAssessmentItemDto>? UnassignedEntries = null);
 
 
