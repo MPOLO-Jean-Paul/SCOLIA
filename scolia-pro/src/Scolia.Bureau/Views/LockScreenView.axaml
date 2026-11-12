@@ -22,7 +22,7 @@
     <Style Selector="TextBlock.ioslocktitle"><Setter Property="FontSize" Value="25" /></Style>
     <Style Selector="Button.ioslocklink TextBlock"><Setter Property="TextWrapping" Value="Wrap" /><Setter Property="TextAlignment" Value="Center" /></Style>
     <Style Selector="Button.ioslocksecondary TextBlock"><Setter Property="TextWrapping" Value="Wrap" /><Setter Property="TextAlignment" Value="Center" /></Style>
-    <Style Selector="Button.ioslockprimary:pointerover /template/ ContentPresenter"><Setter Property="Background" Value="#0F5BD0" /></Style>
+    <Style Selector="Button.ioslockprimary:pointerover /template/ ContentPresenter"><Setter Property="Background" Value="{DynamicResource AccentHoverBrush}" /></Style>
     <Style Selector="Button.ioslockprimary:disabled /template/ ContentPresenter"><Setter Property="Background" Value="#9DBDF0" /><Setter Property="Foreground" Value="White" /></Style>
     <Style Selector="ScrollViewer.compact StackPanel.ioslockbody"><Setter Property="Margin" Value="14,16,14,20" /><Setter Property="Spacing" Value="13" /></Style>
     <Style Selector="ScrollViewer.compact Border.ioslockcard"><Setter Property="Padding" Value="0" /><Setter Property="CornerRadius" Value="0" /></Style>
@@ -57,7 +57,7 @@
       <Setter Property="Padding" Value="0" />
     </Style>
     <Style Selector="TextBox.ioslockfield">
-      <Setter Property="Background" Value="{DynamicResource Surface2Brush}" />
+      <Setter Property="Background" Value="{DynamicResource FieldBrush}" />
       <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
       <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
       <Setter Property="BorderThickness" Value="1" />
@@ -67,7 +67,7 @@
       <Setter Property="FontSize" Value="16" />
     </Style>
     <Style Selector="Button.ioslockprimary">
-      <Setter Property="Background" Value="#1769E6" />
+      <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
       <Setter Property="Foreground" Value="White" />
       <Setter Property="BorderThickness" Value="0" />
       <Setter Property="CornerRadius" Value="16" />
@@ -88,7 +88,7 @@
     </Style>
     <Style Selector="Button.ioslocklink">
       <Setter Property="Background" Value="Transparent" />
-      <Setter Property="Foreground" Value="#1769E6" />
+      <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
       <Setter Property="BorderThickness" Value="0" />
       <Setter Property="MinHeight" Value="44" />
       <Setter Property="CornerRadius" Value="12" />
