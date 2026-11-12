@@ -119,6 +119,14 @@ public sealed class SchoolCycleAssessmentService(IAppDbContext db, IWriteGate ga
                         ?? Array.Empty<SchoolCycleAssessmentItemDto>())).ToArray()))
             .ToArray();
 
+        // Ne pas faire disparaître une cote historique simplement parce que
+        // sa matière a été supprimée, déplacée ou appartient à un autre référentiel.
+        // Les lignes non classées sont affichées séparément, sans totalisation.
+        var subjectIds = subjectRows.Select(row => row.CurriculumItemId).ToHashSet();
+        var unassigned = context.Cycle.Kind is SchoolCycleKind.Primaire or SchoolCycleKind.Secondaire
+            ? list.Where(entry =>
+                entry.CurriculumItemId is not { } id || !subjectIds.Contains(id)).ToArray()
+            : [];
         return new SchoolCycleBulletinPreviewDto(enrollmentId,
             context.Cycle.Id, context.Cycle.Name, context.Promotion.Name,
             context.Year.Label, list,
@@ -131,7 +139,8 @@ public sealed class SchoolCycleAssessmentService(IAppDbContext db, IWriteGate ga
             ClassLevel: context.Promotion.Level,
             GradeBand: presentation.GradeBand,
             OptionLabel: optionLabel,
-            SubjectRows: subjectRows);
+            SubjectRows: subjectRows,
+            UnassignedEntries: unassigned);
     }
 
     /// <summary>
