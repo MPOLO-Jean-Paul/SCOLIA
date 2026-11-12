@@ -186,7 +186,7 @@ public sealed class SchoolCycleAssessmentApiTests : IDisposable
         var pdf = await pdfResponse.Content.ReadAsByteArrayAsync();
         Assert.True(pdf.Length > 1000);
         Assert.Equal("%PDF", System.Text.Encoding.ASCII.GetString(pdf, 0, 4));
-        Assert.Contains("no-store", pdfResponse.Headers.CacheControl?.ToString());
+        Assert.True(pdfResponse.Headers.CacheControl?.NoStore == true);
 
         // Une cote historique reliée à un élément non annuel ne doit pas
         // disparaître de la consultation, ni être attachée à une autre branche.
