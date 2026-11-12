@@ -83,6 +83,9 @@ public static class SchoolCycleBulletinPdf
                     WriteSubjectTables(column, preview.SubjectRows ?? [], preview.Terms ?? []);
                 else
                     WriteObservations(column, preview.Terms ?? []);
+
+                if (preview.UnassignedEntries is { Count: > 0 } unassigned)
+                    WriteUnassigned(column, unassigned);
             });
 
             page.Footer().BorderTop(0.6f).BorderColor(Border).PaddingTop(6)
@@ -203,6 +206,28 @@ public static class SchoolCycleBulletinPdf
 
         content.Item().PaddingTop(6).Text("— : aucune évaluation saisie. Les évaluations multiples ne sont pas additionnées.")
             .FontSize(7.5f).FontColor(Muted);
+    }
+
+    /// <summary>Ne jamais perdre une cote dont la matière historique ne se retrouve plus.</summary>
+    private static void WriteUnassigned(
+        ColumnDescriptor content, IReadOnlyList<SchoolCycleAssessmentItemDto> entries)
+    {
+        content.Item().PaddingTop(12)
+            .Text("ÉVALUATIONS HISTORIQUES SANS BRANCHE ASSOCIÉE")
+            .FontSize(9.5f).Bold().FontColor(Alert);
+        content.Item().Text("Ces résultats sont conservés à titre de trace et ne sont associés à aucune autre matière.")
+            .FontSize(8).FontColor(Muted);
+        foreach (var entry in entries)
+        {
+            var result = entry.Score is { } score && entry.MaxScore is { } max
+                ? $"{score.ToString("0.##", Fr)} / {max.ToString("0.##", Fr)}"
+                : "Non coté";
+            content.Item().Border(0.5f).BorderColor(Border).Padding(7).Row(row =>
+            {
+                row.RelativeItem().Text($"{entry.PeriodCode} · {entry.Title}").SemiBold();
+                row.ConstantItem(95).AlignRight().Text(result);
+            });
+        }
     }
 
     private static IContainer HeaderCell(IContainer cell) =>
