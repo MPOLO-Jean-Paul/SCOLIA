@@ -72,6 +72,18 @@
       <Setter Property="MinHeight" Value="46" />
       <Setter Property="HorizontalAlignment" Value="Stretch" />
     </Style>
+    <!-- Composants tactiles : retour immédiat, sans décaler la page. -->
+    <Style Selector="Button.connectmain:pressed">
+      <Setter Property="Background" Value="#0F5BD0" />
+      <Setter Property="Opacity" Value="0.94" />
+    </Style>
+    <Style Selector="Button.connectsecondary:pressed">
+      <Setter Property="Background" Value="#DCEAFF" />
+    </Style>
+    <Style Selector="TextBox.connectfield:focus">
+      <Setter Property="BorderBrush" Value="#1769E6" />
+      <Setter Property="BorderThickness" Value="2" />
+    </Style>
     <!-- En cas de très petite hauteur, supprimer les ornements, jamais les commandes. -->
     <Style Selector="Grid.micro Border.connectcard"><Setter Property="Padding" Value="12" /><Setter Property="CornerRadius" Value="14" /></Style>
     <Style Selector="Grid.micro StackPanel.connectfields"><Setter Property="Spacing" Value="8" /></Style>
