@@ -60,6 +60,32 @@ public sealed class PremiumMotionViewsTests
                 .Attribute("Duration")?.Value);
     }
 
+    [Fact]
+    public void Les_raccourcis_de_recherche_affichent_leur_nom_sans_coupure_sur_telephone()
+    {
+        var view = Load("Views/Phone/SearchView.axaml");
+        var shortcut = Assert.Single(view.Descendants(), node =>
+            node.Name.LocalName == "TextBlock" &&
+            node.Attribute("Text")?.Value == "{Binding Label}");
+        Assert.Equal("Wrap", shortcut.Attribute("TextWrapping")?.Value);
+        Assert.Null(shortcut.Attribute("MaxLines"));
+        Assert.Null(shortcut.Attribute("TextTrimming"));
+    }
+
+    [Fact]
+    public void Les_intitules_de_mois_de_rattrapage_restent_dans_la_liste_et_pas_dans_la_barre_fixe()
+    {
+        var dir = new DirectoryInfo(AppContext.BaseDirectory);
+        while (dir is not null && !File.Exists(Path.Combine(dir.FullName, "Scolia.sln")))
+            dir = dir.Parent;
+        var source = File.ReadAllText(Path.Combine(dir?.FullName
+            ?? throw new DirectoryNotFoundException(), "src", "Scolia.Bureau",
+            "ViewModels", "Cashier.cs"));
+        Assert.Contains("if (Phone)", source, StringComparison.Ordinal);
+        Assert.Contains("sélectionné", source, StringComparison.Ordinal);
+        Assert.Contains("SelectedMonthsSummary()", source, StringComparison.Ordinal);
+    }
+
     [Theory]
     [InlineData("Views/LoginView.axaml", "Button.iosauthprimary:pressed",
         "TextBox.iosauthfield:focus")]
