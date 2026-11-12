@@ -11,6 +11,19 @@ Cette version ne modifie pas le métier scolaire : connexion, jumelage, récupé
 - Écran de jumelage sur ordinateur : boutons, champs, espacements et carte alignés sur la connexion SCOLIA.
 - Jumelage Android : même langage graphique, navigation compacte sans défilement, QR immédiatement disponible.
 
+## Finitions d'interface inspirées de Flutter (sans moteur Flutter)
+
+La version utilise toujours **Avalonia/C#**, pas Dart ou le moteur Flutter. Les techniques transposables sont :
+
+- **Material 3 / Cupertino :** composants et palette SCOLIA homogènes, avec les contrôles Avalonia existants (pas de deuxième bibliothèque visuelle).
+- **AnimatedContainer / InkWell :** transitions de couleurs et opacité (120–160 ms, `CubicEaseOut`) sur les boutons, les champs et la navigation mobile ; retour immédiat au toucher.
+- **Widgets réutilisables :** styles `Controls.axaml` pour les formulaires métiers et `Phone.axaml` pour les onglets Android ; aucun clonage du code d'authentification.
+- **MediaQuery / écrans adaptatifs :** classes `compact`, `tiny`, `short` et `micro` déjà pilotées par `AuthLayout`. Le jumelage Android reste organisé en pages courtes sans défilement.
+- **Accessibilité :** état de focus visible, boutons tactiles préservés et étiquettes d'automatisation. Aucune animation permanente ni transition de largeur/hauteur qui provoquerait un débordement.
+- **Performances :** aucune dépendance Dart, WebView ou Flutter ajoutée. Avalonia conserve son moteur de rendu. Impeller ne peut pas être activé comme s'il s'agissait d'un simple thème Avalonia.
+
+Tests supplémentaires : `PremiumMotionViewsTests`, vérifiant transitions globales, onglets Android et focus des trois écrans d'accès. Le rendu réel (écrans compacts, sombre/clair, souris et clavier) doit toujours être vérifié lors de la capture CI avant publication.
+
 ## Compatibilité
 
 - Moteur d'interface : **Avalonia** sur Windows et Android ; aucun moteur Flutter ajouté.
