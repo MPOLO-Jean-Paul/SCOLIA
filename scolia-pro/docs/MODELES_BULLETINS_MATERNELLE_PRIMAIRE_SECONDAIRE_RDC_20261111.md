@@ -62,6 +62,16 @@ Rappel : les imprimés officiels 2025-2026 ont été annoncés rose (préscolair
 
 **Attention :** cette sortie sert à vérifier la mise en page et les données pédagogiques. Les imprimés, grilles, maxima et circuits de certification ministériels de l'année applicable restent à authentifier avant une version de bulletin officielle.
 
+## Conformité, confidentialité et conservation des archives
+
+- **Certification :** dans son communiqué du **10 juillet 2025**, le ministère rappelle être la seule autorité habilitée à certifier et valider les bulletins scolaires et autres titres scolaires. Un export scolaire SCOLIA ne doit donc jamais être annoncé comme bulletin ministériel authentifié. Source primaire : https://edu-nc.gouv.cd/communiques/clarifications-et-assurances-du-ministere-de-leducation-nationale-et-nouvelle-citoyennete-concernant-la-production-des-bulletins-scolaires
+- **Aperçus de l'année applicable :** les couleurs diffusées pour **2025-2026** ne fournissent ni le barème ni le spécimen ministériel de **2026-2027** ; ne pas utiliser une couleur pour suggérer une homologation.
+- **Cotes historiques hors maquette :** une évaluation liée à une matière absente du programme annuel courant est conservée séparément dans l'API, dans Avalonia et dans le PDF, sans l'attribuer à une autre branche ni la sommer. Les colonnes annuelles ne changent pas.
+- **Données sensibles :** la réponse PDF porte `Cache-Control: private, no-store, max-age=0` et `Pragma: no-cache`; accès `AcademicsRead` inchangé.
+- **Lecture SQL :** le service d'export partage le contexte scolaire déjà résolu, sans recharger la même inscription deux fois.
+- **Contrôles :** tests d'API pour les évaluations historiques non classées, le PDF et son en-tête de cache ; tests de format pour la maternelle et le primaire.
+- **Limites :** l'API et le client utilisent toujours une connexion au serveur pour l'impression. Aucun export hors connexion ni certification ministérielle n'est annoncé.
+
 ## Code préparatoire
 
 `SchoolBulletinLayouts.For(SchoolCycleKind)` permet aux API et interfaces de distinguer les présentations provisoires par cycle, degré et niveau sans saisir de faux maxima ni de barèmes. Les profils restent désactivés à l'installation. **Aucun bulletin définitif n'est généré ou publié par ce lot.**
