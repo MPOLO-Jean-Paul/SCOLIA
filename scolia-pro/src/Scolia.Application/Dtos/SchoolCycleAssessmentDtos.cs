@@ -70,9 +70,11 @@ public sealed record SchoolCycleBulletinPreviewDto(
     int ClassLevel = 0,
     string GradeBand = "Cycle non précisé",
     string? OptionLabel = null,
-    IReadOnlyList<SchoolCycleBulletinSubjectDto>? SubjectRows = null);
+    IReadOnlyList<SchoolCycleBulletinSubjectDto>? SubjectRows = null,
+    /// <summary>Évaluations conservées mais non rattachées à une matière annuelle de cette classe.</summary>
+    IReadOnlyList<SchoolCycleAssessmentItemDto>? UnassignedEntries = null);
 
-    
+
 /// <summary>
 /// Données minimales pour le PDF pédagogique NON OFFICIEL. Le nom de l'élève
 /// est lu côté serveur après vérification de l'inscription et des droits.
