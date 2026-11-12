@@ -21,18 +21,18 @@ public sealed class PremiumMotionViewsTests
     }
 
     private static XElement Style(string file, string selector) =>
-        Assert.Single(Load(file).Descendants().Where(node =>
+        Assert.Single(Load(file).Descendants(), node =>
             node.Name.LocalName == "Style" &&
             node.Attributes().Any(attribute =>
                 attribute.Name.LocalName == "Selector" &&
-                attribute.Value == selector)));
+                attribute.Value == selector));
 
     private static XElement Transition(XElement style, string property) =>
-        Assert.Single(style.Descendants().Where(node =>
+        Assert.Single(style.Descendants(), node =>
             node.Name.LocalName.EndsWith("Transition", StringComparison.Ordinal) &&
             node.Attributes().Any(attribute =>
                 attribute.Name.LocalName == "Property" &&
-                attribute.Value == property)));
+                attribute.Value == property));
 
     [Fact]
     public void Les_boutons_et_champs_communs_animent_couleurs_sans_recalcul_de_taille()
