@@ -39,8 +39,13 @@ public sealed class PremiumMotionViewsTests
     {
         var theme = "Themes/Controls.axaml";
         var button = Style(theme, "Button");
-        var background = Transition(button, "Background");
-        Assert.Equal("0:0:0.14", background.Attribute("Duration")?.Value);
+        var opacity = Transition(button, "Opacity");
+        Assert.Equal("0:0:0.14", opacity.Attribute("Duration")?.Value);
+        // Un BrushTransition général ferait tomber le contraste des boutons
+        // à moins de 4,5:1 pendant le basculement clair/sombre.
+        Assert.DoesNotContain(button.Descendants(), node =>
+            node.Name.LocalName == "BrushTransition" &&
+            node.Attribute("Property")?.Value == "Background");
         Assert.DoesNotContain(button.Descendants(), n =>
             n.Name.LocalName.EndsWith("Transition", StringComparison.Ordinal) &&
             n.Attribute("Property")?.Value is "Width" or "Height" or "Margin");
