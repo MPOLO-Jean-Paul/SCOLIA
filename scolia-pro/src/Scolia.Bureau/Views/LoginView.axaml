@@ -497,9 +497,9 @@
                                      Foreground="#1769E6" HorizontalAlignment="Center" VerticalAlignment="Center" />
                   </Border>
                   <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
-                    <TextBlock Text="Relier cet appareil" FontWeight="SemiBold" Foreground="#16396D" />
+                    <TextBlock Text="Relier cet appareil" FontWeight="SemiBold" Foreground="{DynamicResource TextBrush}" />
                     <TextBlock Text="Scannez une invitation du serveur scolaire pour activer votre accès."
-                               FontSize="12" TextWrapping="Wrap" Foreground="#41618D" />
+                               FontSize="12" TextWrapping="Wrap" Foreground="{DynamicResource Text2Brush}" />
                   </StackPanel>
                 </Grid>
               </Border>
