@@ -79,7 +79,8 @@ public sealed record SchoolBulletinPreviewDto(
     int ClassLevel = 0,
     string GradeBand = "Cycle non précisé",
     string? OptionLabel = null,
-    IReadOnlyList<SchoolBulletinSubjectDto>? SubjectRows = null);
+    IReadOnlyList<SchoolBulletinSubjectDto>? SubjectRows = null,
+    IReadOnlyList<SchoolBulletinEntryDto>? UnassignedEntries = null);
 
 /// <summary>Apprenant proposé pour les cartes d'accès, avec son diagnostic.</summary>
 public sealed record CardCandidateDto(Guid EnrollmentId, string Matricule, string FullName, string PromotionCode, string Status, bool Eligible,
