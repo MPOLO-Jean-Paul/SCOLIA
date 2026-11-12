@@ -220,6 +220,9 @@ public sealed class SchoolCycleAssessmentApiTests : IDisposable
                 Score = 8m,
                 MaxScore = 20m,
             });
+            scope.ServiceProvider.GetRequiredService<IAuditLog>().Record(
+                "tests.bulletins.archives", "EvaluationCycle", enrollmentId.ToString(),
+                "Contrôle des cotes historiques hors maquette scolaire.");
             await db.SaveChangesAsync();
         }
         var updated = await admin.GetAsync(
