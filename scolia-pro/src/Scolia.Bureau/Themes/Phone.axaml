@@ -106,6 +106,14 @@
     <Style Selector="Button.phonetab.selected TextBlock">
       <Setter Property="FontWeight" Value="SemiBold" />
     </Style>
+    <!-- Les pictogrammes suivent le même état que leur libellé, plutôt que
+         de garder la couleur de leur rubrique une fois l'onglet inactif. -->
+    <Style Selector="Button.phonetab mi|MaterialIcon">
+      <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
+    </Style>
+    <Style Selector="Button.phonetab.selected mi|MaterialIcon">
+      <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
+    </Style>
 
     <!-- Un bloc dessine une seule surface continue : aucun trait entre son titre et ses outils. -->
     <Style Selector="TextBlock.phoneblocktitle">
