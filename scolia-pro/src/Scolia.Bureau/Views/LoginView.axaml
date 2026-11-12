@@ -92,7 +92,20 @@
       <Setter Property="VerticalAlignment" Value="Center" />
       <Setter Property="HorizontalAlignment" Value="Right" />
     </Style>
-    <!-- Valeurs de base de la page : posées par style pour que les adaptations à l'écran puissent les remplacer. -->
+    <!-- Réponse tactile discrète, semblable aux composants Material, sans animation de déplacement. -->
+    <Style Selector="Button.iosauthprimary:pressed">
+      <Setter Property="Background" Value="#0F5BD0" />
+      <Setter Property="Opacity" Value="0.94" />
+    </Style>
+    <Style Selector="Button.iosauthsecondary:pressed">
+      <Setter Property="Background" Value="#DBE8FA" />
+    </Style>
+    <!-- État de saisie clair sur desktop (clavier) et Android (toucher). -->
+    <Style Selector="TextBox.iosauthfield:focus">
+      <Setter Property="BorderBrush" Value="#1769E6" />
+      <Setter Property="BorderThickness" Value="2" />
+    </Style>
+        <!-- Valeurs de base de la page : posées par style pour que les adaptations à l'écran puissent les remplacer. -->
     <Style Selector="StackPanel.iosloginbody"><Setter Property="MaxWidth" Value="440" /><Setter Property="Margin" Value="16,20,16,18" /><Setter Property="Spacing" Value="14" /></Style>
     <Style Selector="StackPanel.iosloginheader"><Setter Property="Spacing" Value="7" /></Style>
     <Style Selector="StackPanel.iosloginfields"><Setter Property="Spacing" Value="10" /></Style>
