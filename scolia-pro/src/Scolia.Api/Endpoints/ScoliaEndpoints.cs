@@ -256,10 +256,17 @@ public static class ScoliaEndpoints
         // Document de consultation distinct du bulletin officiel et des
         // délibérations ITM. Les droits sont ceux de la lecture pédagogique.
         g.MapGet("/cycles/evaluations/{enrollmentId:guid}/apercu.pdf",
-            async (Guid enrollmentId, SchoolCycleAssessmentService s, CancellationToken ct) =>
-                new InlineFileResult(
-                    SchoolCycleBulletinPdf.Build(await s.PrintPreviewAsync(enrollmentId, ct)),
-                    Pdf, "apercu-pedagogique-non-officiel.pdf"))
+            async (Guid enrollmentId, SchoolCycleAssessmentService s,
+                HttpContext http, CancellationToken ct) =>
+            {
+                // Document nominatif d'un mineur : interdit aux caches partagés.
+                http.Response.Headers.CacheControl = "private, no-store, max-age=0";
+                http.Response.Headers.Pragma = "no-cache";
+                var preview = await s.PrintPreviewAsync(enrollmentId, ct);
+                return new InlineFileResult(
+                    SchoolCycleBulletinPdf.Build(preview),
+                    Pdf, "apercu-pedagogique-non-officiel.pdf");
+            })
             .RequireAuthorization(Permissions.AcademicsRead);
 
 
