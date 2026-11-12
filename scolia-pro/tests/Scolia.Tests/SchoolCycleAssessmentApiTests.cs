@@ -186,6 +186,53 @@ public sealed class SchoolCycleAssessmentApiTests : IDisposable
         var pdf = await pdfResponse.Content.ReadAsByteArrayAsync();
         Assert.True(pdf.Length > 1000);
         Assert.Equal("%PDF", System.Text.Encoding.ASCII.GetString(pdf, 0, 4));
+        Assert.Contains("no-store", pdfResponse.Headers.CacheControl?.ToString());
+
+        // Une cote historique reliée à un élément non annuel ne doit pas
+        // disparaître de la consultation, ni être attachée à une autre branche.
+        using (var scope = app.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<ScoliaDbContext>();
+            var enrollment = await db.Enrollments.SingleAsync(e => e.Id == enrollmentId);
+            var classroom = await db.Promotions.SingleAsync(p => p.Id == enrollment.PromotionId);
+            var period = await db.SchoolCyclePeriods.SingleAsync(p =>
+                p.SchoolCycleId == classroom.SchoolCycleId && p.Code == "P1");
+            var legacySubject = new CurriculumItem
+            {
+                AcademicYearId = enrollment.AcademicYearId,
+                PromotionId = classroom.Id,
+                Kind = CurriculumItemKind.TeachingUnit,
+                Code = "HIST",
+                Name = "Ancienne matière",
+            };
+            db.CurriculumItems.Add(legacySubject);
+            db.SchoolCycleAssessments.Add(new SchoolCycleAssessment
+            {
+                AcademicYearId = enrollment.AcademicYearId,
+                SchoolCycleId = period.SchoolCycleId,
+                PromotionId = classroom.Id,
+                EnrollmentId = enrollmentId,
+                SchoolCyclePeriodId = period.Id,
+                CurriculumItemId = legacySubject.Id,
+                EvaluationCode = "HIST1",
+                Title = "Ancienne évaluation",
+                Mode = SchoolCycleAssessmentMode.Evaluation,
+                Score = 8m,
+                MaxScore = 20m,
+            });
+            await db.SaveChangesAsync();
+        }
+        var updated = await admin.GetAsync(
+            $"/api/etablissement/cycles/evaluations/{enrollmentId}/apercu").Ok();
+        var outside = Assert.Single(updated.GetProperty("unassignedEntries").EnumerateArray());
+        Assert.Equal("Ancienne évaluation", outside.GetProperty("title").GetString());
+        Assert.Equal(8m, outside.GetProperty("score").GetDecimal());
+        Assert.Equal(2, updated.GetProperty("subjectRows").GetArrayLength());
+        using var updatedPdf = await admin.GetAsync(
+            $"/api/etablissement/cycles/evaluations/{enrollmentId}/apercu.pdf");
+        Assert.Equal(HttpStatusCode.OK, updatedPdf.StatusCode);
+        var bytes = await updatedPdf.Content.ReadAsByteArrayAsync();
+        Assert.Equal("%PDF", System.Text.Encoding.ASCII.GetString(bytes, 0, 4));
     }
 
     [Fact]
