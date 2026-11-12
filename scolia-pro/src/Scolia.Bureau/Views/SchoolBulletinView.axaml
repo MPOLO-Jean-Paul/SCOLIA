@@ -49,6 +49,26 @@
         </ItemsControl.ItemTemplate>
       </ItemsControl>
 
+      <!-- Les cotes historiques non rattachées à une branche sont visibles
+           sans apparaître dans les résultats d'une autre matière. -->
+      <TextBlock Text="ÉVALUATIONS HISTORIQUES SANS BRANCHE ASSOCIÉE"
+                 Classes="groupcaps" IsVisible="{Binding HasUnassigned}" />
+      <ItemsControl ItemsSource="{Binding Unassigned}"
+                    IsVisible="{Binding HasUnassigned}">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate>
+            <Border Classes="phonegroup" Padding="14,12" Margin="0,0,0,8">
+              <StackPanel Spacing="5">
+                <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                <TextBlock Text="{Binding Value}" TextWrapping="Wrap" />
+                <TextBlock Text="{Binding Comment}" Classes="muted"
+                           IsVisible="{Binding HasComment}" TextWrapping="Wrap" />
+              </StackPanel>
+            </Border>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+
       <ItemsControl ItemsSource="{Binding Terms}" IsVisible="{Binding ShowPeriods}">
         <ItemsControl.ItemTemplate>
           <DataTemplate>
