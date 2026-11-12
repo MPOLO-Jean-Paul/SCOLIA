@@ -51,6 +51,12 @@ public sealed class SchoolCycleAssessmentService(IAppDbContext db, IWriteGate ga
         Guid enrollmentId, CancellationToken ct = default)
     {
         var context = await ResolveAsync(enrollmentId, ct);
+        return await PreviewForContextAsync(context, enrollmentId, ct);
+    }
+
+    private async Task<SchoolCycleBulletinPreviewDto> PreviewForContextAsync(
+        Context context, Guid enrollmentId, CancellationToken ct)
+    {
         var periods = await db.SchoolCyclePeriods.AsNoTracking()
             .Where(p => p.AcademicYearId == context.Year.Id &&
                         p.SchoolCycleId == context.Cycle.Id)
@@ -153,7 +159,7 @@ public sealed class SchoolCycleAssessmentService(IAppDbContext db, IWriteGate ga
         Guid enrollmentId, CancellationToken ct = default)
     {
         var context = await ResolveAsync(enrollmentId, ct);
-        var preview = await PreviewAsync(enrollmentId, ct);
+        var preview = await PreviewForContextAsync(context, enrollmentId, ct);
         if (preview.IsOfficial)
             throw new DomainException("bulletinCycle", "L'impression provisoire ne peut pas devenir un bulletin officiel.");
         var student = await db.Students.AsNoTracking()
