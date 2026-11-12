@@ -128,7 +128,7 @@ public sealed class SchoolCycleAssessmentApiTests : IDisposable
 
         var preview = await admin.GetAsync(
             $"/api/etablissement/cycles/evaluations/{enrollmentId}/apercu").Ok();
-        var subjects = preview.GetProperty("subjects").EnumerateArray().ToArray();
+        var subjects = preview.GetProperty("subjectRows").EnumerateArray().ToArray();
         Assert.Equal(2, subjects.Length);
         Assert.All(subjects, subject =>
             Assert.Equal(1, subject.GetProperty("periods").EnumerateArray()
