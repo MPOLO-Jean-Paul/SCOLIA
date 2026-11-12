@@ -383,9 +383,9 @@
           <ItemsControl.ItemTemplate>
             <DataTemplate>
               <Button Classes="phonetab" Classes.selected="{Binding IsSelected}" Command="{Binding Open}">
-                <StackPanel Spacing="2" HorizontalAlignment="Center">
+                <StackPanel Spacing="3" HorizontalAlignment="Center">
                   <Border Classes="tabicon" Classes.selected="{Binding IsSelected}">
-                    <mi:MaterialIcon Kind="{Binding Icon}" Width="22" Height="22" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{Binding Brush}" />
+                    <mi:MaterialIcon Kind="{Binding Icon}" Width="21" Height="21" HorizontalAlignment="Center" VerticalAlignment="Center" />
                   </Border>
                   <TextBlock Text="{Binding TabLabel}" ToolTip.Tip="{Binding Label}" />
                 </StackPanel>
@@ -393,10 +393,15 @@
             </DataTemplate>
           </ItemsControl.ItemTemplate>
         </ItemsControl>
-        <Button Grid.Column="1" x:Name="MenuTab" Classes="phonetab" Classes.selected="{Binding PhoneMenuSelected}" Click="OnMenuClick" MinWidth="56">
-          <StackPanel Spacing="2">
-            <mi:MaterialIcon Kind="Menu" Width="24" Height="24" HorizontalAlignment="Center" />
-            <TextBlock Text="Menu" />
+        <Button Grid.Column="1" x:Name="MenuTab" Classes="phonetab"
+                Classes.selected="{Binding PhoneMenuSelected}" Click="OnMenuClick"
+                MinWidth="0" AutomationProperties.Name="Menu">
+          <StackPanel Spacing="3" HorizontalAlignment="Center">
+            <Border Classes="tabicon" Classes.selected="{Binding PhoneMenuSelected}">
+              <mi:MaterialIcon Kind="Menu" Width="21" Height="21"
+                               HorizontalAlignment="Center" VerticalAlignment="Center" />
+            </Border>
+            <TextBlock Text="Menu" TextAlignment="Center" />
           </StackPanel>
         </Button>
       </Grid>
