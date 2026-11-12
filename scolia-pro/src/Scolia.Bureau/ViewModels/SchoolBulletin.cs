@@ -56,6 +56,8 @@ public sealed class SchoolBulletinPage : PageViewModel
     public string DocumentTitle { get => documentTitle; private set => Set(ref documentTitle, value); }
     public ObservableCollection<SchoolBulletinTermVm> Terms { get; } = [];
     public ObservableCollection<SchoolBulletinSubjectVm> Subjects { get; } = [];
+    public ObservableCollection<SchoolBulletinLineVm> Unassigned { get; } = [];
+    public bool HasUnassigned => Subjects.Count > 0 && Unassigned.Count > 0;
     public bool HasSubjectGrid => Subjects.Count > 0;
     public bool ShowPeriods => Subjects.Count == 0;
 
@@ -79,6 +81,19 @@ public sealed class SchoolBulletinPage : PageViewModel
             ? "Aperçu pédagogique" : preview.DocumentTitle;
         Terms.Clear();
         Subjects.Clear();
+        Unassigned.Clear();
+
+        // Séparer les cotes dont la matière d'origine n'appartient plus
+        // à la maquette annuelle ; surtout ne pas les perdre dans la grille.
+        foreach (var entry in preview.UnassignedEntries ?? [])
+        {
+            var value = entry.Score is { } score && entry.MaxScore is { } maximum
+                ? $"{score.ToString("0.##", CultureInfo.CurrentCulture)} / {maximum.ToString("0.##", CultureInfo.CurrentCulture)}"
+                : "Non coté";
+            Unassigned.Add(new SchoolBulletinLineVm(
+                $"{entry.PeriodCode} · {entry.Title}", value,
+                entry.Comment, false));
+        }
 
         // Grille scolaire par matière : aucune cellule vide ne devient zéro et
         // aucune somme / moyenne ne s'improvise à partir d'évaluations multiples.
@@ -107,6 +122,7 @@ public sealed class SchoolBulletinPage : PageViewModel
                 subject.SubjectName, details, cells));
         }
         Raise(nameof(HasSubjectGrid));
+        Raise(nameof(HasUnassigned));
         Raise(nameof(ShowPeriods));
 
         foreach (var term in preview.Terms ?? [])
