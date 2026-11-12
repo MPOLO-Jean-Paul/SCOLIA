@@ -666,6 +666,16 @@
     <Setter Property="CornerRadius" Value="{StaticResource RadiusCard}" />
     <Setter Property="Padding" Value="16" />
   </Style>
+  <!-- Les mêmes blocs de contenu sont utilisés par l'accueil du secrétariat
+       et l'espace enseignant, sans variation de surface ou de rayon. -->
+  <Style Selector="Border.desktopgroup">
+    <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="19" />
+    <Setter Property="BoxShadow" Value="0 4 18 0 #10000000" />
+    <Setter Property="Padding" Value="16" />
+  </Style>
   <Style Selector="Border.tile">
     <Setter Property="Background" Value="{DynamicResource GroupBrush}" />
     <Setter Property="BorderThickness" Value="0" />

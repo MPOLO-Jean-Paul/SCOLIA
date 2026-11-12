@@ -15,23 +15,23 @@
     <Style Selector="TextBox.w11.onbrand.codefield"><Setter Property="Padding" Value="42,0,86,0" /></Style>
 
     <!-- Écran de reprise iOS, sur le téléphone comme sur l'ordinateur : surfaces claires et actions à portée du pouce. -->
-    <Style Selector="StackPanel.ioslockbody"><Setter Property="MaxWidth" Value="440" /><Setter Property="Margin" Value="20,25,20,28" /><Setter Property="Spacing" Value="17" /></Style>
-    <Style Selector="StackPanel.ioslockheader"><Setter Property="Spacing" Value="11" /></Style>
-    <Style Selector="Border.ioslocklogo"><Setter Property="Width" Value="78" /><Setter Property="Height" Value="78" /><Setter Property="CornerRadius" Value="25" /></Style>
-    <Style Selector="Image.ioslockmark"><Setter Property="Width" Value="55" /><Setter Property="Height" Value="55" /></Style>
-    <Style Selector="TextBlock.ioslocktitle"><Setter Property="FontSize" Value="25" /></Style>
+    <Style Selector="StackPanel.ioslockbody"><Setter Property="MaxWidth" Value="420" /><Setter Property="Margin" Value="20,22,20,20" /><Setter Property="Spacing" Value="16" /></Style>
+    <Style Selector="StackPanel.ioslockheader"><Setter Property="Spacing" Value="6" /></Style>
+    <Style Selector="Border.ioslocklogo"><Setter Property="Width" Value="66" /><Setter Property="Height" Value="66" /><Setter Property="CornerRadius" Value="18" /></Style>
+    <Style Selector="Image.ioslockmark"><Setter Property="Width" Value="46" /><Setter Property="Height" Value="46" /></Style>
+    <Style Selector="TextBlock.ioslocktitle"><Setter Property="FontSize" Value="23" /></Style>
     <Style Selector="Button.ioslocklink TextBlock"><Setter Property="TextWrapping" Value="Wrap" /><Setter Property="TextAlignment" Value="Center" /></Style>
     <Style Selector="Button.ioslocksecondary TextBlock"><Setter Property="TextWrapping" Value="Wrap" /><Setter Property="TextAlignment" Value="Center" /></Style>
     <Style Selector="Button.ioslockprimary:pointerover /template/ ContentPresenter"><Setter Property="Background" Value="{DynamicResource AccentHoverBrush}" /></Style>
     <Style Selector="Button.ioslockprimary:disabled /template/ ContentPresenter"><Setter Property="Background" Value="#9DBDF0" /><Setter Property="Foreground" Value="White" /></Style>
-    <Style Selector="ScrollViewer.compact StackPanel.ioslockbody"><Setter Property="Margin" Value="14,16,14,20" /><Setter Property="Spacing" Value="13" /></Style>
+    <Style Selector="ScrollViewer.compact StackPanel.ioslockbody"><Setter Property="Margin" Value="16,12,16,14" /><Setter Property="Spacing" Value="12" /></Style>
     <Style Selector="ScrollViewer.compact Border.ioslockcard"><Setter Property="Padding" Value="0" /><Setter Property="CornerRadius" Value="0" /></Style>
-    <Style Selector="ScrollViewer.compact Border.ioslocklogo"><Setter Property="Width" Value="64" /><Setter Property="Height" Value="64" /><Setter Property="CornerRadius" Value="20" /></Style>
-    <Style Selector="ScrollViewer.compact Image.ioslockmark"><Setter Property="Width" Value="45" /><Setter Property="Height" Value="45" /></Style>
+    <Style Selector="ScrollViewer.compact Border.ioslocklogo"><Setter Property="Width" Value="60" /><Setter Property="Height" Value="60" /><Setter Property="CornerRadius" Value="17" /></Style>
+    <Style Selector="ScrollViewer.compact Image.ioslockmark"><Setter Property="Width" Value="43" /><Setter Property="Height" Value="43" /></Style>
     <Style Selector="ScrollViewer.compact TextBlock.ioslocktitle"><Setter Property="FontSize" Value="22" /></Style>
     <Style Selector="ScrollViewer.compact TextBox.ioslockfield"><Setter Property="MinHeight" Value="52" /><Setter Property="FontSize" Value="15" /></Style>
     <Style Selector="ScrollViewer.compact Button.ioslockprimary"><Setter Property="MinHeight" Value="52" /></Style>
-    <Style Selector="ScrollViewer.tiny StackPanel.ioslockbody"><Setter Property="Margin" Value="10,12,10,16" /><Setter Property="Spacing" Value="11" /></Style>
+    <Style Selector="ScrollViewer.tiny StackPanel.ioslockbody"><Setter Property="Margin" Value="12,10,12,12" /><Setter Property="Spacing" Value="10" /></Style>
     <Style Selector="ScrollViewer.tiny Border.ioslockcard"><Setter Property="Padding" Value="0" /><Setter Property="CornerRadius" Value="0" /></Style>
     <Style Selector="ScrollViewer.tiny TextBlock.ioslocktitle"><Setter Property="FontSize" Value="20" /></Style>
     <Style Selector="ScrollViewer.tiny TextBox.ioslockfield"><Setter Property="MinHeight" Value="48" /><Setter Property="FontSize" Value="14" /></Style>
@@ -47,7 +47,7 @@
     <Style Selector="ScrollViewer.micro TextBlock.ioslocktitle"><Setter Property="FontSize" Value="19" /></Style>
     <Style Selector="ScrollViewer.micro Border.ioslockcard"><Setter Property="Padding" Value="0" /></Style>
     <Style Selector="ScrollViewer.micro WrapPanel.ioslockclock"><Setter Property="IsVisible" Value="False" /></Style>
-    <Style Selector="ScrollViewer.wide StackPanel.ioslockbody"><Setter Property="MaxWidth" Value="460" /><Setter Property="Margin" Value="24,36,24,30" /></Style>
+    <Style Selector="ScrollViewer.wide StackPanel.ioslockbody"><Setter Property="MaxWidth" Value="440" /><Setter Property="Margin" Value="26,30,26,24" /></Style>
     <Style Selector="ScrollViewer.wide Border.ioslockcard"><Setter Property="Padding" Value="0" /><Setter Property="CornerRadius" Value="0" /></Style>
     <Style Selector="Border.ioslockcard">
       <!-- Aucun panneau web : la session est affichée à même l'écran natif. -->
@@ -61,17 +61,17 @@
       <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
       <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
       <Setter Property="BorderThickness" Value="1" />
-      <Setter Property="CornerRadius" Value="15" />
-      <Setter Property="Padding" Value="15,12" />
-      <Setter Property="MinHeight" Value="56" />
-      <Setter Property="FontSize" Value="16" />
+      <Setter Property="CornerRadius" Value="12" />
+      <Setter Property="Padding" Value="14,10" />
+      <Setter Property="MinHeight" Value="52" />
+      <Setter Property="FontSize" Value="15" />
     </Style>
     <Style Selector="Button.ioslockprimary">
       <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
       <Setter Property="Foreground" Value="{DynamicResource OnAccentBrush}" />
       <Setter Property="BorderThickness" Value="0" />
-      <Setter Property="CornerRadius" Value="16" />
-      <Setter Property="MinHeight" Value="56" />
+      <Setter Property="CornerRadius" Value="12" />
+      <Setter Property="MinHeight" Value="52" />
       <Setter Property="HorizontalAlignment" Value="Stretch" />
       <Setter Property="HorizontalContentAlignment" Value="Center" />
       <Setter Property="FontWeight" Value="SemiBold" />
@@ -81,8 +81,8 @@
       <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
       <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
       <Setter Property="BorderThickness" Value="1" />
-      <Setter Property="CornerRadius" Value="15" />
-      <Setter Property="MinHeight" Value="50" />
+      <Setter Property="CornerRadius" Value="12" />
+      <Setter Property="MinHeight" Value="48" />
       <Setter Property="HorizontalAlignment" Value="Stretch" />
       <Setter Property="HorizontalContentAlignment" Value="Center" />
     </Style>
@@ -260,8 +260,8 @@
 
         <Border Classes="ioslockcard">
           <StackPanel Spacing="16">
-            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="13">
-              <Border Width="54" Height="54" CornerRadius="27" VerticalAlignment="Center">
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+              <Border Width="48" Height="48" CornerRadius="24" VerticalAlignment="Center">
                 <Border.Background>
                   <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
                     <GradientStop Offset="0" Color="#3A86F0" />
@@ -273,7 +273,7 @@
               </Border>
               <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
                 <TextBlock Text="{Binding DisplayName}" FontSize="18" FontWeight="SemiBold"
-                           TextTrimming="CharacterEllipsis" MaxLines="1" />
+                           TextWrapping="Wrap" MaxLines="2" />
                 <TextBlock Text="{Binding AccountLine}" Classes="muted" FontSize="12"
                            TextWrapping="Wrap" MaxLines="2" />
                 <TextBlock Text="{Binding LockedSince}" Classes="muted" FontSize="11" TextWrapping="Wrap" />
@@ -288,7 +288,7 @@
               <Grid>
                 <TextBox x:Name="IosLockCode" Classes="ioslockfield" Text="{Binding Code}"
                          PasswordChar="•" RevealPassword="{Binding ShowCode}"
-                         Padding="15,12,56,12" MaxLength="128"
+                         Padding="14,10,52,10" MaxLength="128"
                          TextInputOptions.ContentType="Password" TextInputOptions.IsSensitive="True"
                          PlaceholderText="Mot de passe de la session"
                          IsEnabled="{Binding NotBusy}" AutomationProperties.Name="Code de déverrouillage" />
@@ -346,7 +346,7 @@
                      Classes="muted" FontSize="11" TextAlignment="Center" TextWrapping="Wrap" />
         </StackPanel>
         <TextBlock Text="{Binding Footer}" Classes="muted" FontSize="11"
-                   TextWrapping="Wrap" TextAlignment="Center" />
+                   HorizontalAlignment="Stretch" TextWrapping="Wrap" TextAlignment="Center" />
       </StackPanel>
     </ScrollViewer>
     </ThemeVariantScope>

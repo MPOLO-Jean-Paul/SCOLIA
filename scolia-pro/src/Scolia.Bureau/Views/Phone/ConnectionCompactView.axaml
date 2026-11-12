@@ -17,7 +17,7 @@
       <Setter Property="Foreground" Value="{DynamicResource OnAccentBrush}" />
       <Setter Property="CornerRadius" Value="12" />
       <Setter Property="BorderThickness" Value="0" />
-      <Setter Property="MinHeight" Value="51" />
+      <Setter Property="MinHeight" Value="52" />
       <Setter Property="HorizontalAlignment" Value="Stretch" />
       <Setter Property="HorizontalContentAlignment" Value="Center" />
       <Setter Property="FontWeight" Value="SemiBold" />
@@ -27,7 +27,7 @@
       <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
       <Setter Property="CornerRadius" Value="12" />
       <Setter Property="BorderThickness" Value="0" />
-      <Setter Property="MinHeight" Value="46" />
+      <Setter Property="MinHeight" Value="48" />
       <Setter Property="HorizontalAlignment" Value="Stretch" />
       <Setter Property="HorizontalContentAlignment" Value="Center" />
     </Style>
@@ -45,7 +45,7 @@
       <Setter Property="FontWeight" Value="SemiBold" />
     </Style>
     <Style Selector="TextBlock.connecttitle">
-      <Setter Property="FontSize" Value="21" />
+      <Setter Property="FontSize" Value="22" />
       <Setter Property="FontWeight" Value="SemiBold" />
       <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
       <Setter Property="TextWrapping" Value="Wrap" />
@@ -57,13 +57,13 @@
     </Style>
     <Style Selector="TextBox.connectfield">
       <Setter Property="Background" Value="{DynamicResource FieldBrush}" />
-      <Setter Property="Foreground" Value="#173554" />
+      <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
       <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
       <Setter Property="BorderThickness" Value="1" />
-      <Setter Property="CornerRadius" Value="11" />
-      <Setter Property="MinHeight" Value="48" />
+      <Setter Property="CornerRadius" Value="12" />
+      <Setter Property="MinHeight" Value="52" />
       <Setter Property="FontSize" Value="15" />
-      <Setter Property="Padding" Value="13,10" />
+      <Setter Property="Padding" Value="14,10" />
     </Style>
     <Style Selector="ComboBox.connectselect">
       <Setter Property="Background" Value="{DynamicResource FieldBrush}" />
@@ -104,30 +104,30 @@
   <Grid x:Name="CompactRoot" Background="{DynamicResource BgBrush}" RowDefinitions="Auto,*,Auto"
         ClipToBounds="True">
     <Grid x:Name="CompactHeader" Classes="connectheader" Grid.Row="0"
-          ColumnDefinitions="Auto,Auto,*" ColumnSpacing="9" Margin="12,13,12,4">
+          ColumnDefinitions="Auto,Auto,*" ColumnSpacing="10" Margin="14,12,14,6">
       <Button Classes="connectnav" Command="{Binding Back}" IsVisible="{Binding CanGoBack}"
               Width="40" Height="40" Padding="0" ToolTip.Tip="Retour à la connexion">
         <mi:MaterialIcon Kind="ChevronLeft" Width="21" Height="21" />
       </Button>
-      <Border Grid.Column="1" Width="42" Height="42" CornerRadius="13" Background="White"
-              BorderBrush="#DDE7F4" BorderThickness="1">
+      <Border Grid.Column="1" Width="42" Height="42" CornerRadius="12" Background="Transparent"
+              BorderThickness="0">
         <Image Source="{DynamicResource ScoliaMark}" Width="30" Height="30" />
       </Border>
       <StackPanel Grid.Column="2" Spacing="1" VerticalAlignment="Center">
         <TextBlock Text="SCOLIA Pro" FontSize="20" FontWeight="SemiBold" Foreground="{DynamicResource TextBrush}" />
-        <TextBlock Text="Connexion à votre établissement" FontSize="12" Foreground="#697F98"
+        <TextBlock Text="Connexion à votre établissement" FontSize="12" Foreground="{DynamicResource Text2Brush}"
                    TextWrapping="Wrap" />
       </StackPanel>
     </Grid>
 
     <!-- Une seule page est visible à la fois : aucune ScrollViewer dans ce parcours. -->
-    <Grid x:Name="CompactPages" Grid.Row="1" Margin="13,3,13,3" IsVisible="{Binding !PairingInProgress}">
+    <Grid x:Name="CompactPages" Grid.Row="1" Margin="14,4,14,4" IsVisible="{Binding !PairingInProgress}">
       <Border x:Name="QrPage" Classes="connectcard" HorizontalAlignment="Stretch"
               VerticalAlignment="Center">
         <StackPanel Classes="connectfields" Spacing="13">
-          <Border Classes="connectqrdeco" Background="#E7F0FE" Width="54" Height="54"
+          <Border Classes="connectqrdeco" Background="{DynamicResource AccentSoftBrush}" Width="52" Height="52"
                   CornerRadius="17" HorizontalAlignment="Center">
-            <mi:MaterialIcon Kind="QrcodeScan" Width="28" Height="28" Foreground="#1769E6"
+            <mi:MaterialIcon Kind="QrcodeScan" Width="26" Height="26" Foreground="{DynamicResource AccentBrush}"
                              HorizontalAlignment="Center" VerticalAlignment="Center" />
           </Border>
           <TextBlock Text="Relier mon appareil" Classes="connecttitle"
@@ -177,7 +177,7 @@
             </DockPanel>
           </Button>
           <StackPanel Classes="connectfields" Spacing="8" IsVisible="{Binding CanPasteCode}">
-            <TextBlock Text="CODE D’INVITATION" Foreground="#31516F" FontSize="11" FontWeight="SemiBold" />
+            <TextBlock Text="CODE D’INVITATION" Foreground="{DynamicResource Text2Brush}" FontSize="12" FontWeight="SemiBold" />
             <TextBox Classes="connectfield" Text="{Binding Invitation}"
                      PlaceholderText="Coller le code du serveur" MaxLength="2048"
                      AutomationProperties.Name="Code d'invitation du serveur" />
@@ -256,7 +256,7 @@
             VerticalAlignment="Center" HorizontalAlignment="Stretch">
       <StackPanel Classes="connectfields" Spacing="12">
         <mi:MaterialIcon Kind="ShieldCheckOutline" Width="44" Height="44"
-                         Foreground="#1769E6" HorizontalAlignment="Center" />
+                         Foreground="{DynamicResource AccentBrush}" HorizontalAlignment="Center" />
         <TextBlock Classes="connecttitle" Text="Vérification sécurisée"
                    TextAlignment="Center" />
         <TextBlock Classes="connecthint" Text="SCOLIA vérifie l'autorisation de cet appareil."
@@ -268,7 +268,7 @@
 
     <!-- Navigation en bas : trois destinations fixes et un accès direct au mode serveur. -->
     <Grid x:Name="CompactFooter" Grid.Row="2" RowDefinitions="Auto,Auto"
-          Margin="13,3,13,10" RowSpacing="6" IsVisible="{Binding !PairingInProgress}">
+          Margin="14,4,14,10" RowSpacing="8" IsVisible="{Binding !PairingInProgress}">
       <Grid x:Name="CompactNavbar" Classes="connectnavbar" Grid.Row="0" ColumnDefinitions="*,*,*" ColumnSpacing="4">
         <Button x:Name="TabQr" Classes="connectnav selected" Content="QR" />
         <Button x:Name="TabCode" Classes="connectnav" Grid.Column="1" Content="Code" />

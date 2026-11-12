@@ -4,32 +4,38 @@
              xmlns:mi="using:Material.Icons.Avalonia"
              x:Class="Scolia.Bureau.Views.TeacherHomeView">
   <ScrollViewer HorizontalScrollBarVisibility="Disabled">
-    <StackPanel Spacing="16" Margin="0,0,6,8" MaxWidth="1180">
+    <StackPanel Spacing="10" Margin="0,0,4,8">
 
       <!-- Même accueil natif que secrétariat et administration : bande d'accent,
            icône du kit SCOLIA, identité et actions alignées, sans style parallèle. -->
       <Border Classes="desktopwelcome" Padding="0" ClipToBounds="True">
         <StackPanel Spacing="0">
           <Border Height="3" Background="{DynamicResource AccentBrush}" />
-          <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12"
-                Margin="18,17,18,17" infra:Adaptive.StackBelow="560">
+          <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="15"
+                Margin="18,17,18,17" infra:Adaptive.StackBelow="760">
             <Border Classes="appicon large" Background="{DynamicResource TonePurple}"
-                    VerticalAlignment="Center" Margin="0,0,4,0">
+                    VerticalAlignment="Center" Margin="0,0,0,0">
               <mi:MaterialIcon Kind="AccountSchool" />
             </Border>
-            <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="4">
-              <TextBlock Text="{Binding Greeting}" FontSize="{DynamicResource FsHeading}"
+            <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3">
+              <TextBlock Text="{Binding Greeting}" FontSize="20"
                          FontWeight="SemiBold" TextWrapping="Wrap"
                          Foreground="{DynamicResource TextBrush}" />
-              <TextBlock Text="{Binding Role}" Classes="muted" TextWrapping="Wrap" />
+              <TextBlock Text="{Binding Role}" Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
             </StackPanel>
-            <WrapPanel Grid.Column="2" VerticalAlignment="Center">
+            <WrapPanel Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Stretch">
               <Button Classes="heroaction" infra:Icons.Lead="Pen"
-                      Content="Encoder mes cotes" Command="{Binding EncodeByCode}"
-                      Margin="0,0,8,6" />
+                      Command="{Binding EncodeByCode}" Margin="0,0,8,6"
+                      MinHeight="46" Padding="11,8">
+                <TextBlock Text="Encoder mes cotes" TextWrapping="Wrap" MaxLines="2"
+                           TextAlignment="Center" FontSize="12" FontWeight="SemiBold" />
+              </Button>
               <Button Classes="heroaction" infra:Icons.Lead="ShieldLockOutline"
-                      Content="Mon code d'accès" Command="{Binding ChooseCode}"
-                      Margin="0,0,0,6" />
+                      Command="{Binding ChooseCode}" Margin="0,0,0,6"
+                      MinHeight="46" Padding="11,8">
+                <TextBlock Text="Mon code d'accès" TextWrapping="Wrap" MaxLines="2"
+                           TextAlignment="Center" FontSize="12" FontWeight="SemiBold" />
+              </Button>
             </WrapPanel>
           </Grid>
         </StackPanel>
@@ -54,7 +60,7 @@
 
       <Grid ColumnDefinitions="3*,2*" infra:Adaptive.StackBelow="820" IsVisible="{Binding !IsBlocked}">
         <!-- Mes cours : une carte par cours, ouverte d'un clic sur sa feuille -->
-        <Border Classes="card" Grid.Column="0" Margin="0,0,12,12">
+        <Border Classes="desktopgroup" Grid.Column="0" Margin="0,0,12,12">
           <StackPanel Spacing="10">
             <StackPanel Orientation="Horizontal" Spacing="8">
               <mi:MaterialIcon Kind="BookOpenVariant" Width="20" Height="20" Foreground="{DynamicResource TonePurple}" VerticalAlignment="Center" />
@@ -90,7 +96,7 @@
 
         <StackPanel Grid.Column="1" Spacing="12">
           <!-- Annonces de la délibération -->
-          <Border Classes="card">
+          <Border Classes="desktopgroup">
             <StackPanel Spacing="8">
               <StackPanel Orientation="Horizontal" Spacing="8">
                 <mi:MaterialIcon Kind="BellOutline" Width="20" Height="20" Foreground="{DynamicResource ToneOrange}" VerticalAlignment="Center" />
@@ -114,7 +120,7 @@
           </Border>
 
           <!-- Règles de l'encodage décidées par le secrétariat -->
-          <Border Classes="card">
+          <Border Classes="desktopgroup">
             <StackPanel Spacing="8">
               <StackPanel Orientation="Horizontal" Spacing="8">
                 <mi:MaterialIcon Kind="ShieldCheckOutline" Width="20" Height="20" Foreground="{DynamicResource ToneTeal}" VerticalAlignment="Center" />
@@ -127,7 +133,7 @@
       </Grid>
 
       <!-- Règles visibles même avec le code provisoire -->
-      <Border Classes="card" IsVisible="{Binding IsBlocked}">
+      <Border Classes="desktopgroup" IsVisible="{Binding IsBlocked}">
         <StackPanel Spacing="8">
           <TextBlock Text="Règles de l'encodage" Classes="heading" />
           <TextBlock Text="{Binding Rules}" TextWrapping="Wrap" LineHeight="22" />
