@@ -574,7 +574,7 @@ public sealed class ShellViewModel : Observable
         if (!store.HasCredential) return false;
         api.Offline = store;
         if (school.Length > 0) Login.SchoolName = school;
-        Login.Notice = "L'ordinateur principal ne répond pas. Connectez-vous avec le dernier compte utilisé sur cet appareil pour travailler hors ligne : tout sera envoyé à son retour.";
+        Login.Notice = "Hors ligne · Connectez-vous localement";
         IsSetupRequired = false;
         ChoosingServer = false;
         MarkEntryChecked();
@@ -772,7 +772,7 @@ public sealed class ShellViewModel : Observable
         }
         catch (Exception ex) when (ex is OfflineException or HttpRequestException or TaskCanceledException)
         {
-            Login.Notice = "Le serveur ne répond pas. Utilisez un compte déjà ouvert sur cet appareil pour accéder aux données hors ligne.";
+            Login.Notice = "Hors ligne · Connectez-vous localement";
         }
         // Même avec un appareil reconnu, seul un mot de passe ouvre la session.
         return false;
