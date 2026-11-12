@@ -48,6 +48,93 @@ public sealed class SchoolCycleAssessmentApiTests : IDisposable
         Assert.Empty(await db.SchoolCycleAssessments.ToListAsync());
     }
 
+
+    [Theory]
+    [InlineData(SchoolCycleKind.Primaire)]
+    [InlineData(SchoolCycleKind.Secondaire)]
+    public async Task Distinct_subjects_can_share_interrogation_code_in_database_and_bulletin(
+        SchoolCycleKind kind)
+    {
+        var admin = await app.InstalledAdmin();
+        Guid enrollmentId;
+        using (var scope = app.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<ScoliaDbContext>();
+            var school = await db.Schools.SingleAsync();
+            var year = await db.AcademicYears.SingleAsync(y => y.IsCurrent);
+            school.InstitutionType = kind.ToString();
+            var cycle = new SchoolCycle
+            {
+                SchoolId = school.Id, Kind = kind, Name = kind.ToString(),
+            };
+            var classroom = new Promotion
+            {
+                AcademicYearId = year.Id, SchoolCycleId = cycle.Id,
+                Code = "TEST", Name = "Classe test", Level = 1,
+            };
+            var pupil = new Student
+            {
+                Matricule = "TEST01", LastName = "NGOY",
+                MiddleName = "KABILA", FirstName = "Elie",
+            };
+            pupil.RefreshKeys();
+            var enrollment = new Enrollment
+            {
+                StudentId = pupil.Id, AcademicYearId = year.Id,
+                PromotionId = classroom.Id, EnrolledOn = year.StartDate,
+            };
+            enrollmentId = enrollment.Id;
+            var period = new SchoolCyclePeriod
+            {
+                SchoolCycleId = cycle.Id, AcademicYearId = year.Id,
+                Code = "P1", Name = "Première période", TermCode = "T1",
+                Mode = SchoolCycleAssessmentMode.Evaluation, Order = 1,
+                StartDate = year.StartDate, EndDate = year.StartDate.AddDays(20),
+            };
+            var french = new CurriculumItem
+            {
+                AcademicYearId = year.Id, PromotionId = classroom.Id,
+                Kind = CurriculumItemKind.AnnualSubject, Name = "Français",
+                Code = "FRANC", Coefficient = 1,
+            };
+            var math = new CurriculumItem
+            {
+                AcademicYearId = year.Id, PromotionId = classroom.Id,
+                Kind = CurriculumItemKind.AnnualSubject, Name = "Mathématiques",
+                Code = "MATH", Coefficient = 1,
+            };
+            SchoolCycleAssessment Entry(CurriculumItem subject, decimal score) => new()
+            {
+                AcademicYearId = year.Id, SchoolCycleId = cycle.Id,
+                PromotionId = classroom.Id, EnrollmentId = enrollment.Id,
+                SchoolCyclePeriodId = period.Id, CurriculumItemId = subject.Id,
+                EvaluationCode = "INTERRO1", Title = subject.Name,
+                Mode = SchoolCycleAssessmentMode.Evaluation,
+                Score = score, MaxScore = 20m,
+            };
+            db.SchoolCycles.Add(cycle);
+            db.Promotions.Add(classroom);
+            db.Students.Add(pupil);
+            db.Enrollments.Add(enrollment);
+            db.SchoolCyclePeriods.Add(period);
+            db.CurriculumItems.AddRange(french, math);
+            db.SchoolCycleAssessments.AddRange(Entry(french, 11m), Entry(math, 17m));
+            scope.ServiceProvider.GetRequiredService<IAuditLog>().Record(
+                "tests.codes.evaluations", "EvaluationCycle", enrollment.Id.ToString(),
+                "Vérification de deux matières portant le même code.");
+            await db.SaveChangesAsync();
+            Assert.Equal(2, await db.SchoolCycleAssessments.CountAsync());
+        }
+
+        var preview = await admin.GetAsync(
+            $"/api/etablissement/cycles/evaluations/{enrollmentId}/apercu").Ok();
+        var subjects = preview.GetProperty("subjects").EnumerateArray().ToArray();
+        Assert.Equal(2, subjects.Length);
+        Assert.All(subjects, subject =>
+            Assert.Equal(1, subject.GetProperty("periods").EnumerateArray()
+                .Sum(period => period.GetProperty("entries").GetArrayLength())));
+    }
+
     [Theory]
     [InlineData(SchoolCycleKind.Primaire, "Trimestre", "T1", "T2")]
     [InlineData(SchoolCycleKind.Secondaire, "Semestre", "S1", "S2")]

@@ -1654,7 +1654,12 @@ namespace Scolia.Infrastructure.Persistence.Migrations
                     b.HasIndex("SchoolCyclePeriodId");
 
                     b.HasIndex("EnrollmentId", "SchoolCyclePeriodId", "EvaluationCode")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasFilter("\"CurriculumItemId\" IS NULL");
+
+                    b.HasIndex("EnrollmentId", "SchoolCyclePeriodId", "CurriculumItemId", "EvaluationCode")
+                        .IsUnique()
+                        .HasFilter("\"CurriculumItemId\" IS NOT NULL");
 
                     b.HasIndex("SchoolCycleId", "AcademicYearId", "PromotionId");
 

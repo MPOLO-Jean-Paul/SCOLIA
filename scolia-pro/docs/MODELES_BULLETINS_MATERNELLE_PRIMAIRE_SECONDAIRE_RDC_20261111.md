@@ -75,3 +75,23 @@ Rappel : les imprimés officiels 2025-2026 ont été annoncés rose (préscolair
 ## Code préparatoire
 
 `SchoolBulletinLayouts.For(SchoolCycleKind)` permet aux API et interfaces de distinguer les présentations provisoires par cycle, degré et niveau sans saisir de faux maxima ni de barèmes. Les profils restent désactivés à l'installation. **Aucun bulletin définitif n'est généré ou publié par ce lot.**
+
+
+## Correction métier — codes d'évaluation par matière (12 novembre 2026)
+
+Une école peut saisir « INTERRO1 » en français et « INTERRO1 » en mathématiques
+pour un même élève durant la même période. L'identité technique devient
+**élève inscrit + période du cycle + matière/activité + code**.
+Deux enregistrements avec ce même quadruplet restent interdits.
+Les activités maternelles sans matière conservent une unicité spécifique
+(élève + période + code) par index filtré.
+
+La migration `20261112190000_AssessmentCodesPerSubject` modifie uniquement
+les index des nouvelles évaluations scolaires : ni notes historiques ni
+mensualités ITM ne sont converties ou supprimées. Le retour à l'ancien index
+peut être bloqué si des codes sont réutilisés sur plusieurs matières ;
+aucune donnée n'est effacée pour forcer le retour arrière.
+
+Tests de régression : aperçus primaire/secondaire et persistance SQLite
+avec deux matières partageant le code « INTERRO1 ». Ce correctif **n'active
+pas** les profils scolaires et ne rend pas un bulletin officiel.

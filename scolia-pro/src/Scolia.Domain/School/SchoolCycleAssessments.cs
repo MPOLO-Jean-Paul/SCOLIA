@@ -131,7 +131,9 @@ public static class SchoolCycleAssessmentRules
         Guid? expectedPromotionId = null, Guid? expectedAcademicYearId = null)
     {
         var byPeriod = periods.ToDictionary(p => p.Id);
-        var unique = new HashSet<(Guid PeriodId, string Code)>();
+        // Le même code d'interrogation est réutilisable dans plusieurs matières ;
+        // l'unicité est définie par élève (paramètre), période, matière et code.
+        var unique = new HashSet<(Guid PeriodId, Guid? SubjectId, string Code)>();
         var entries = new List<(int Order, SchoolCycleAssessmentPreviewLine Line)>();
         foreach (var entry in assessments)
         {
@@ -143,8 +145,8 @@ public static class SchoolCycleAssessmentRules
             Require(byPeriod.TryGetValue(entry.SchoolCyclePeriodId, out var period) &&
                     period.SchoolCycleId == cycle.Id && period.AcademicYearId == entry.AcademicYearId,
                 "Période étrangère dans l'aperçu du bulletin.");
-            Require(unique.Add((period!.Id, entry.EvaluationCode.ToUpperInvariant())),
-                "Deux évaluations portant le même code ne peuvent figurer dans la même période.");
+            Require(unique.Add((period!.Id, entry.CurriculumItemId, entry.EvaluationCode.ToUpperInvariant())),
+                "Deux évaluations de la même matière portant le même code ne peuvent figurer dans la même période.");
             Require(entry.Mode == period.Mode, "Évaluation incohérente avec la période.");
             // Ne jamais transformer une observation maternelle conservée en
             // base en note numérique, même dans un aperçu ancien.

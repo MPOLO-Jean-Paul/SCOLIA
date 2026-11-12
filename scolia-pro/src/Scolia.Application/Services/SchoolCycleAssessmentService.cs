@@ -222,7 +222,9 @@ public sealed class SchoolCycleAssessmentService(IAppDbContext db, IWriteGate ga
 
         var existing = await db.SchoolCycleAssessments.FirstOrDefaultAsync(
             a => a.EnrollmentId == enrollmentId &&
-                 a.SchoolCyclePeriodId == period.Id && a.EvaluationCode == code, ct);
+                 a.SchoolCyclePeriodId == period.Id &&
+                 a.CurriculumItemId == candidate.CurriculumItemId &&
+                 a.EvaluationCode == code, ct);
         SchoolCycleAssessment saved;
         if (existing is null)
         {
