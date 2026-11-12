@@ -25,13 +25,62 @@ public sealed record DisciplineRowDto(Guid Id, Guid EnrollmentId, string Matricu
 
 public sealed record SessionDto(
     Guid Id, string UserName, string DisplayName, string Role, string RoleLabel, string[] Permissions, bool MustChangePassword,
-    string SchoolName, string? SchoolShortName, string? CurrentYear, string CurrencySymbol, string PhoneCountryCode);
+    string SchoolName, string? SchoolShortName, string? CurrentYear, string CurrencySymbol, string PhoneCountryCode,
+    string InstitutionType = "ItmIm");
 
 public sealed record SchoolDto(
     string Name, string ShortName, string? Motto, string? Address, string? City, string? Country, string? Phone, string? Email,
     string? Website, string CurrencyCode, string CurrencySymbol, bool WholeAmountsOnly, string? ReceiptFooter, bool HasLogo, string PhoneCountryCode,
     string? CardMinistry = null, string? CardDirection = null, string? CardDivision = null, string? CardZone = null,
-    string? CardInstitute = null, string? CardAddress = null);
+    string? CardInstitute = null, string? CardAddress = null, string InstitutionType = "ItmIm",
+    string Governance = "Prive");
+
+/// <summary>Configuration distincte de chaque cycle d'un complexe scolaire.</summary>
+public sealed record SchoolCycleConfigurationItemDto(Guid Id, string Kind, string Name,
+    string? AuthorizationNumber, bool IsActive, bool ChargeMonthlyTuition, decimal MonthlyAmount, int ClassCount);
+public sealed record SchoolCycleConfigurationDto(string InstitutionType, string Governance,
+    Guid? AcademicYearId, IReadOnlyList<SchoolCycleConfigurationItemDto> Cycles);
+
+/// <summary>
+/// Lecture seule des carnets / bulletins provisoires par cycle. Ces
+/// contrats correspondent aux DTO servis par l'API et ne remplacent pas
+/// les bulletins ITM ni les délibérations du jury.
+/// </summary>
+public sealed record SchoolBulletinEntryDto(
+    Guid Id, Guid SchoolCyclePeriodId, string PeriodCode,
+    string EvaluationCode, string Title, string Mode, Guid? CurriculumItemId,
+    string? Observation, decimal? Score, decimal? MaxScore,
+    string? Comment, long Version);
+
+public sealed record SchoolBulletinPeriodDto(
+    Guid Id, string Code, string Name, string TermCode, DateOnly StartDate,
+    DateOnly EndDate, string Mode, IReadOnlyList<SchoolBulletinEntryDto> Entries);
+
+public sealed record SchoolBulletinTermDto(
+    string Code, string Label, IReadOnlyList<SchoolBulletinPeriodDto> Periods);
+
+public sealed record SchoolBulletinSubjectPeriodDto(
+    Guid SchoolCyclePeriodId, string PeriodCode, string PeriodName,
+    IReadOnlyList<SchoolBulletinEntryDto> Entries);
+
+public sealed record SchoolBulletinSubjectDto(
+    Guid CurriculumItemId, string SubjectCode, string SubjectName,
+    decimal Coefficient, bool IsActive,
+    IReadOnlyList<SchoolBulletinSubjectPeriodDto> Periods);
+
+public sealed record SchoolBulletinPreviewDto(
+    Guid EnrollmentId, Guid SchoolCycleId, string Cycle, string Promotion,
+    string AcademicYear, IReadOnlyList<SchoolBulletinEntryDto> Entries,
+    bool IsOfficial, string Notice, IReadOnlyList<SchoolBulletinTermDto>? Terms,
+    string TemplateCode = "CYCLE_PROVISOIRE",
+    string DocumentTitle = "Aperçu pédagogique",
+    string EntryHeading = "Activités ou branches",
+    string PeriodHeading = "Période",
+    int ClassLevel = 0,
+    string GradeBand = "Cycle non précisé",
+    string? OptionLabel = null,
+    IReadOnlyList<SchoolBulletinSubjectDto>? SubjectRows = null,
+    IReadOnlyList<SchoolBulletinEntryDto>? UnassignedEntries = null);
 
 /// <summary>Apprenant proposé pour les cartes d'accès, avec son diagnostic.</summary>
 public sealed record CardCandidateDto(Guid EnrollmentId, string Matricule, string FullName, string PromotionCode, string Status, bool Eligible,
@@ -53,7 +102,8 @@ public sealed record FeeCategoryDto(Guid Id, string Name, decimal Amount, DateOn
 
 public sealed record PromotionDto(
     Guid Id, Guid AcademicYearId, string Code, string Name, Guid? SectionId, string? SectionName, int Level, int? Capacity, bool IsActive,
-    string? NextPromotionCode, decimal MonthlyFee, decimal AnnualTotal, int StudentCount, IReadOnlyList<FeeItemDto> Fees);
+    string? NextPromotionCode, decimal MonthlyFee, decimal AnnualTotal, int StudentCount, IReadOnlyList<FeeItemDto> Fees,
+    Guid? SchoolCycleId = null);
 
 public sealed record DashboardDto(
     string AcademicYear, int ActiveStudents, int NewThisMonth, decimal CollectedTotal, decimal CollectedThisMonth, decimal CollectedToday,

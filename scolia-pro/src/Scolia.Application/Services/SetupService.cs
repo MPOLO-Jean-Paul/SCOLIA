@@ -39,8 +39,14 @@ public sealed class SetupService(IAppDbContext db, IWriteGate gate, IAuditLog au
             .Require(!string.IsNullOrWhiteSpace(input.AdminDisplayName), "adminDisplayName", "Nom du compte secrétariat obligatoire.")
             .ThrowIfInvalid();
         PasswordPolicy.Validate(input.AdminPassword);
+        var institutionType = InstitutionProfiles.Canonicalize(string.IsNullOrWhiteSpace(input.InstitutionType) ? null : input.InstitutionType.Trim());
+        if (!InstitutionProfiles.IsKnown(institutionType))
+            throw new DomainException("typeEtablissement", "Type d'établissement inconnu.");
+        if (!InstitutionProfiles.IsEnabled(institutionType))
+            throw new DomainException("typeEtablissement", "Le profil choisi n'est pas encore activé. Sélectionnez ITM / IM pour conserver les règles actuelles.");
         var school = new SchoolProfile
         {
+            InstitutionType = institutionType,
             Name = input.SchoolName.Trim(), ShortName = input.ShortName.Trim(), Motto = string.IsNullOrWhiteSpace(input.Motto) ? null : input.Motto.Trim(),
             City = input.City, Phone = IdentityRules.NormalizePhone(input.Phone), CurrencyCode = input.CurrencyCode.ToUpperInvariant(), CurrencySymbol = input.CurrencySymbol.Trim(),
             ReceiptFooter = "Conservez ce reçu. Son authenticité peut être vérifiée en scannant le code QR.",

@@ -7,7 +7,8 @@ namespace Scolia.Application.Dtos;
 // ---------- Établissement et configuration ----------
 public sealed record SchoolDto(string Name, string ShortName, string? Motto, string? Address, string? City, string? Country, string? Phone,
     string? Email, string? Website, string CurrencyCode, string CurrencySymbol, bool WholeAmountsOnly, string? ReceiptFooter, bool HasLogo, string PhoneCountryCode,
-    string? CardMinistry = null, string? CardDirection = null, string? CardDivision = null, string? CardZone = null, string? CardInstitute = null, string? CardAddress = null);
+    string? CardMinistry = null, string? CardDirection = null, string? CardDivision = null, string? CardZone = null, string? CardInstitute = null, string? CardAddress = null, string InstitutionType = "ItmIm",
+    string Governance = "Prive");
 
 public sealed record SchoolUpdate(string Name, string ShortName, string? Motto, string? Address, string? City, string? Country, string? Phone,
     string? Email, string? Website, string CurrencyCode, string CurrencySymbol, bool WholeAmountsOnly, string? ReceiptFooter, string PhoneCountryCode,
@@ -15,7 +16,8 @@ public sealed record SchoolUpdate(string Name, string ShortName, string? Motto, 
 
 public sealed record SetupRequest(string SchoolName, string ShortName, string? Motto, string? City, string? Phone, string CurrencyCode, string CurrencySymbol,
     string YearLabel, int StartMonth, int MonthCount, string AdminUserName, string AdminDisplayName, string AdminPassword, bool LoadDemoData,
-    IReadOnlyList<SetupAccount>? Accounts = null, int LastOnTimeDay = 5, int? EndMonth = null);
+    IReadOnlyList<SetupAccount>? Accounts = null, int LastOnTimeDay = 5, int? EndMonth = null,
+    string InstitutionType = "ItmIm");
 
 /// <summary>Compte métier créé pendant l'installation. Rôle : Secretariat ou Comptabilite.</summary>
 public sealed record SetupAccount(string Role, string UserName, string DisplayName, string Password);
@@ -49,12 +51,14 @@ public sealed record FeeCategoryDto(Guid Id, string Name, decimal Amount, DateOn
 public sealed record FeeCategoryUpsert(string Name, decimal Amount, DateOnly? DueDate, bool IsActive = true, bool ApplyToPromotions = false);
 
 public sealed record PromotionDto(Guid Id, Guid AcademicYearId, string Code, string Name, Guid? SectionId, string? SectionName, int Level, int? Capacity,
-    bool IsActive, string? NextPromotionCode, decimal MonthlyFee, decimal AnnualTotal, int StudentCount, IReadOnlyList<FeeItemDto> Fees);
+    bool IsActive, string? NextPromotionCode, decimal MonthlyFee, decimal AnnualTotal, int StudentCount, IReadOnlyList<FeeItemDto> Fees,
+    Guid? SchoolCycleId = null);
 
 /// <summary>Création ou modification d'une promotion : la mensualité génère une rubrique par mois,
 /// les frais ponctuels (inscription, examen…) sont ajoutés en plus.</summary>
 public sealed record PromotionUpsert(string Code, string Name, Guid? SectionId, int Level, int? Capacity, bool IsActive, string? NextPromotionCode,
-    decimal MonthlyFee, IReadOnlyList<OneTimeFee>? OneTimeFees, bool ManagesCategories = false);
+    decimal MonthlyFee, IReadOnlyList<OneTimeFee>? OneTimeFees, bool ManagesCategories = false,
+    Guid? SchoolCycleId = null);
 
 /// <summary>Autre frais d'une promotion. CategoryId désigne la catégorie du catalogue ; les anciens clients
 /// n'envoient que la nature et le libellé, rapprochés du nom d'une catégorie existante.</summary>
@@ -222,7 +226,8 @@ public sealed record PasswordReset(string NewPassword);
 public sealed record PasswordChange(string CurrentPassword, string NewPassword);
 
 public sealed record SessionDto(Guid Id, string UserName, string DisplayName, string Role, string RoleLabel, IReadOnlyCollection<string> Permissions,
-    bool MustChangePassword, string SchoolName, string? SchoolShortName, string? CurrentYear, string CurrencySymbol, string PhoneCountryCode);
+    bool MustChangePassword, string SchoolName, string? SchoolShortName, string? CurrentYear, string CurrencySymbol, string PhoneCountryCode,
+    string InstitutionType = "ItmIm");
 
 public sealed record LoginRequest(string UserName, string Password);
 
