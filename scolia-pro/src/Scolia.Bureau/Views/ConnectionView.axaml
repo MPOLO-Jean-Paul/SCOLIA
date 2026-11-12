@@ -71,7 +71,7 @@
     </Style>
     <Style Selector="Button.iosconnectprimary">
       <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
-      <Setter Property="Foreground" Value="White" />
+      <Setter Property="Foreground" Value="{DynamicResource OnAccentBrush}" />
       <Setter Property="BorderThickness" Value="0" />
       <Setter Property="CornerRadius" Value="12" />
       <Setter Property="HorizontalAlignment" Value="Stretch" />
