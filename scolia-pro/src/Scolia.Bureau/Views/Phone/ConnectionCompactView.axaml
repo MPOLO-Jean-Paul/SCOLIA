@@ -96,7 +96,7 @@
     <Style Selector="Grid.keyboard TextBlock.connectoptional"><Setter Property="IsVisible" Value="False" /></Style>
     <Style Selector="Grid.keyboard TextBlock.connectdetailtext"><Setter Property="MaxLines" Value="5" /></Style>
     <Style Selector="Grid.keyboard Grid.connectnavbar"><Setter Property="Margin" Value="0" /></Style>
-    <Style Selector="Grid.keyboard Border.connectcard"><Setter Property="Padding" Value="10" /></Style>
+    <Style Selector="Grid.keyboard Border.connectcard"><Setter Property="Padding" Value="0" /></Style>
     <Style Selector="Grid.keyboard StackPanel.connectfields"><Setter Property="Spacing" Value="6" /></Style>
     <Style Selector="Grid.micro Button.connectnav"><Setter Property="MinHeight" Value="40" /></Style>
   </UserControl.Styles>
@@ -114,7 +114,7 @@
         <Image Source="{DynamicResource ScoliaMark}" Width="30" Height="30" />
       </Border>
       <StackPanel Grid.Column="2" Spacing="1" VerticalAlignment="Center">
-        <TextBlock Text="SCOLIA Pro" FontSize="20" FontWeight="SemiBold" Foreground="#173554" />
+        <TextBlock Text="SCOLIA Pro" FontSize="20" FontWeight="SemiBold" Foreground="{DynamicResource TextBrush}" />
         <TextBlock Text="Connexion à votre établissement" FontSize="12" Foreground="#697F98"
                    TextWrapping="Wrap" />
       </StackPanel>
