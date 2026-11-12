@@ -73,11 +73,11 @@
     <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
     <Setter Property="BorderThickness" Value="0" />
     <Setter Property="FontWeight" Value="Medium" />
-    <!-- Mouvement façon Material : seulement la couleur et l'opacité, sans déplacer
-         les contrôles ni différer la prise en compte du clic. -->
+    <!-- Pas de BrushTransition globale : au changement de thème, les couleurs
+         doivent basculer immédiatement pour conserver le contraste WCAG.
+         Seule l'opacité peut être animée sans interférence avec la palette. -->
     <Setter Property="Transitions">
       <Transitions>
-        <BrushTransition Property="Background" Duration="0:0:0.14" Easing="CubicEaseOut" />
         <DoubleTransition Property="Opacity" Duration="0:0:0.14" Easing="CubicEaseOut" />
       </Transitions>
     </Setter>
