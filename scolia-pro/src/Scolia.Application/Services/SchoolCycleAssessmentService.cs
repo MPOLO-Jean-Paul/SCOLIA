@@ -51,6 +51,12 @@ public sealed class SchoolCycleAssessmentService(IAppDbContext db, IWriteGate ga
         Guid enrollmentId, CancellationToken ct = default)
     {
         var context = await ResolveAsync(enrollmentId, ct);
+        return await PreviewForContextAsync(context, enrollmentId, ct);
+    }
+
+    private async Task<SchoolCycleBulletinPreviewDto> PreviewForContextAsync(
+        Context context, Guid enrollmentId, CancellationToken ct)
+    {
         var periods = await db.SchoolCyclePeriods.AsNoTracking()
             .Where(p => p.AcademicYearId == context.Year.Id &&
                         p.SchoolCycleId == context.Cycle.Id)
@@ -72,12 +78,42 @@ public sealed class SchoolCycleAssessmentService(IAppDbContext db, IWriteGate ga
         // Conserver aussi les périodes sans notes et les cotes non encodées.
         var byPeriodEntries = list.GroupBy(x => x.SchoolCyclePeriodId)
             .ToDictionary(g => g.Key, g => (IReadOnlyList<SchoolCycleAssessmentItemDto>)g.ToArray());
-        var termPrefix = context.Cycle.Kind switch
+        // Les branches du programme doivent figurer dans le relevé même en l'absence
+        // de toute note. Inclure aussi les matières archivées lorsqu'elles portent
+        // des évaluations historiques ; ne jamais les requalifier en zéro.
+        var subjectRows = Array.Empty<SchoolCycleBulletinSubjectDto>();
+        if (context.Cycle.Kind is SchoolCycleKind.Primaire or SchoolCycleKind.Secondaire)
         {
-            SchoolCycleKind.Primaire => "Trimestre",
-            SchoolCycleKind.Secondaire => "Semestre",
-            _ => "Période d'observation",
-        };
+            var referencedIds = rows.Where(r => r.CurriculumItemId.HasValue)
+                .Select(r => r.CurriculumItemId!.Value).Distinct().ToArray();
+            var subjects = await db.CurriculumItems.AsNoTracking()
+                .Where(item => item.AcademicYearId == context.Year.Id &&
+                               item.PromotionId == context.Promotion.Id &&
+                               item.Kind == CurriculumItemKind.AnnualSubject &&
+                               (item.IsActive || referencedIds.Contains(item.Id)))
+                .OrderBy(item => item.Code).ThenBy(item => item.Name).ToListAsync(ct);
+            // Index partagé pour éviter de reparcourir toutes les évaluations
+            // pour chaque combinaison matière/période (important hors ligne).
+            var bySubjectPeriod = list.Where(entry => entry.CurriculumItemId.HasValue)
+                .ToLookup(entry => (entry.CurriculumItemId!.Value, entry.SchoolCyclePeriodId));
+            subjectRows = subjects.Select(subject =>
+                new SchoolCycleBulletinSubjectDto(
+                    subject.Id, subject.Code, subject.Name,
+                    subject.Coefficient, subject.IsActive,
+                    periods.Select(period => new SchoolCycleBulletinSubjectPeriodDto(
+                        period.Id, period.Code, period.Name,
+                        bySubjectPeriod[(subject.Id, period.Id)].ToArray()))
+                        .ToArray())).ToArray();
+        }
+
+        var optionLabel = context.Promotion.SectionId is { } sectionId
+            ? await db.Sections.AsNoTracking()
+                .Where(section => section.Id == sectionId)
+                .Select(section => section.Name).FirstOrDefaultAsync(ct)
+            : null;
+        var presentation = SchoolBulletinLayouts.For(
+            context.Cycle.Kind, context.Promotion.Level);
+        var termPrefix = presentation.PeriodHeading;
         var terms = periods.OrderBy(p => p.Order)
             .GroupBy(p => p.TermCode, StringComparer.OrdinalIgnoreCase)
             .Select(group => new SchoolCycleBulletinTermDto(
@@ -89,9 +125,54 @@ public sealed class SchoolCycleAssessmentService(IAppDbContext db, IWriteGate ga
                         ?? Array.Empty<SchoolCycleAssessmentItemDto>())).ToArray()))
             .ToArray();
 
+        // Ne pas faire disparaître une cote historique simplement parce que
+        // sa matière a été supprimée, déplacée ou appartient à un autre référentiel.
+        // Les lignes non classées sont affichées séparément, sans totalisation.
+        var subjectIds = subjectRows.Select(row => row.CurriculumItemId).ToHashSet();
+        SchoolCycleAssessmentItemDto[] unassigned =
+            context.Cycle.Kind is SchoolCycleKind.Primaire or SchoolCycleKind.Secondaire
+            ? list.Where(entry =>
+                entry.CurriculumItemId is not { } id || !subjectIds.Contains(id)).ToArray()
+            : [];
         return new SchoolCycleBulletinPreviewDto(enrollmentId,
             context.Cycle.Id, context.Cycle.Name, context.Promotion.Name,
-            context.Year.Label, list, Terms: terms);
+            context.Year.Label, list,
+            Notice: $"Aperçu pédagogique provisoire, non officiel. {presentation.StatusNote}",
+            Terms: terms,
+            TemplateCode: presentation.Code,
+            DocumentTitle: presentation.PreviewTitle,
+            EntryHeading: presentation.EntryHeading,
+            PeriodHeading: presentation.PeriodHeading,
+            ClassLevel: context.Promotion.Level,
+            GradeBand: presentation.GradeBand,
+            OptionLabel: optionLabel,
+            SubjectRows: subjectRows,
+            UnassignedEntries: unassigned);
+    }
+
+    /// <summary>
+    /// Enveloppe nominative d'un aperçu pédagogique, sans modifier les notes
+    /// ni délivrer de résultat de délibération. La validation du cycle reste
+    /// identique à celle de l'API de consultation.
+    /// </summary>
+    public async Task<SchoolCycleBulletinPrintDto> PrintPreviewAsync(
+        Guid enrollmentId, CancellationToken ct = default)
+    {
+        var context = await ResolveAsync(enrollmentId, ct);
+        var preview = await PreviewForContextAsync(context, enrollmentId, ct);
+        if (preview.IsOfficial)
+            throw new DomainException("bulletinCycle", "L'impression provisoire ne peut pas devenir un bulletin officiel.");
+        var student = await db.Students.AsNoTracking()
+            .FirstOrDefaultAsync(s => s.Id == context.Enrollment.StudentId, ct)
+            ?? throw new NotFoundException("Dossier de l'élève introuvable.");
+        return new SchoolCycleBulletinPrintDto(
+            context.School.Name,
+            context.School.Address,
+            context.School.City,
+            student.FullName,
+            student.Matricule,
+            preview,
+            context.School.Logo);
     }
 
     public Task<SchoolCycleAssessmentItemDto> SaveAsync(
@@ -141,7 +222,9 @@ public sealed class SchoolCycleAssessmentService(IAppDbContext db, IWriteGate ga
 
         var existing = await db.SchoolCycleAssessments.FirstOrDefaultAsync(
             a => a.EnrollmentId == enrollmentId &&
-                 a.SchoolCyclePeriodId == period.Id && a.EvaluationCode == code, ct);
+                 a.SchoolCyclePeriodId == period.Id &&
+                 a.CurriculumItemId == candidate.CurriculumItemId &&
+                 a.EvaluationCode == code, ct);
         SchoolCycleAssessment saved;
         if (existing is null)
         {

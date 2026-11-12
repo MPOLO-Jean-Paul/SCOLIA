@@ -43,9 +43,48 @@ public sealed record SchoolCycleBulletinTermDto(
 /// Aperçu non officiel. Aucune moyenne, décision de réussite ou classement
 /// n'est induit tant que le règlement pédagogique propre au cycle n'est pas validé.
 /// </summary>
+/// <summary>
+/// Grille annuelle de matières pour un relevé provisoire primaire/secondaire.
+/// Une cellule peut contenir plusieurs évaluations distinctes : aucun total
+/// ou examen n'est calculé sans barème validé. Une matière non cotée reste visible.
+/// </summary>
+public sealed record SchoolCycleBulletinSubjectPeriodDto(
+    Guid SchoolCyclePeriodId, string PeriodCode, string PeriodName,
+    IReadOnlyList<SchoolCycleAssessmentItemDto> Entries);
+
+public sealed record SchoolCycleBulletinSubjectDto(
+    Guid CurriculumItemId, string SubjectCode, string SubjectName,
+    decimal Coefficient, bool IsActive,
+    IReadOnlyList<SchoolCycleBulletinSubjectPeriodDto> Periods);
+
 public sealed record SchoolCycleBulletinPreviewDto(
     Guid EnrollmentId, Guid SchoolCycleId, string Cycle, string Promotion,
     string AcademicYear, IReadOnlyList<SchoolCycleAssessmentItemDto> Entries,
     bool IsOfficial = false,
     string Notice = "Aperçu pédagogique provisoire : ni bulletin officiel ni décision de réussite.",
-    IReadOnlyList<SchoolCycleBulletinTermDto>? Terms = null);
+    IReadOnlyList<SchoolCycleBulletinTermDto>? Terms = null,
+    string TemplateCode = "CYCLE_PROVISOIRE",
+    string DocumentTitle = "Aperçu pédagogique",
+    string EntryHeading = "Activités ou branches",
+    string PeriodHeading = "Période",
+    int ClassLevel = 0,
+    string GradeBand = "Cycle non précisé",
+    string? OptionLabel = null,
+    IReadOnlyList<SchoolCycleBulletinSubjectDto>? SubjectRows = null,
+    // Évaluations conservées sans branche annuelle associée à cette classe.
+    IReadOnlyList<SchoolCycleAssessmentItemDto>? UnassignedEntries = null);
+
+
+/// <summary>
+/// Données minimales pour le PDF pédagogique NON OFFICIEL. Le nom de l'élève
+/// est lu côté serveur après vérification de l'inscription et des droits.
+/// Aucun cache nominatif public, sceau ou décision officielle n'est créé.
+/// </summary>
+public sealed record SchoolCycleBulletinPrintDto(
+    string SchoolName,
+    string? SchoolAddress,
+    string? SchoolCity,
+    string StudentName,
+    string Matricule,
+    SchoolCycleBulletinPreviewDto Preview,
+    byte[]? SchoolLogo = null);

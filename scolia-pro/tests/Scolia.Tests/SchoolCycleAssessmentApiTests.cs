@@ -32,6 +32,10 @@ public sealed class SchoolCycleAssessmentApiTests : IDisposable
         Assert.Equal(HttpStatusCode.BadRequest, status);
         Assert.Equal("evaluationCycle", problem.GetProperty("code").GetString());
 
+        var (pdfStatus, _) = await admin.GetAsync(
+            $"/api/etablissement/cycles/evaluations/{enrollmentId}/apercu.pdf").Fail();
+        Assert.Equal(HttpStatusCode.BadRequest, pdfStatus);
+
         var (writeStatus, _) = await admin.Post(
             $"/api/etablissement/cycles/evaluations/{enrollmentId}", new
             {
@@ -42,6 +46,93 @@ public sealed class SchoolCycleAssessmentApiTests : IDisposable
             }).Fail();
         Assert.Equal(HttpStatusCode.BadRequest, writeStatus);
         Assert.Empty(await db.SchoolCycleAssessments.ToListAsync());
+    }
+
+
+    [Theory]
+    [InlineData(SchoolCycleKind.Primaire)]
+    [InlineData(SchoolCycleKind.Secondaire)]
+    public async Task Distinct_subjects_can_share_interrogation_code_in_database_and_bulletin(
+        SchoolCycleKind kind)
+    {
+        var admin = await app.InstalledAdmin();
+        Guid enrollmentId;
+        using (var scope = app.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<ScoliaDbContext>();
+            var school = await db.Schools.SingleAsync();
+            var year = await db.AcademicYears.SingleAsync(y => y.IsCurrent);
+            school.InstitutionType = kind.ToString();
+            var cycle = new SchoolCycle
+            {
+                SchoolId = school.Id, Kind = kind, Name = kind.ToString(),
+            };
+            var classroom = new Promotion
+            {
+                AcademicYearId = year.Id, SchoolCycleId = cycle.Id,
+                Code = "TEST", Name = "Classe test", Level = 1,
+            };
+            var pupil = new Student
+            {
+                Matricule = "TEST01", LastName = "NGOY",
+                MiddleName = "KABILA", FirstName = "Elie",
+            };
+            pupil.RefreshKeys();
+            var enrollment = new Enrollment
+            {
+                StudentId = pupil.Id, AcademicYearId = year.Id,
+                PromotionId = classroom.Id, EnrolledOn = year.StartDate,
+            };
+            enrollmentId = enrollment.Id;
+            var period = new SchoolCyclePeriod
+            {
+                SchoolCycleId = cycle.Id, AcademicYearId = year.Id,
+                Code = "P1", Name = "Première période", TermCode = "T1",
+                Mode = SchoolCycleAssessmentMode.Evaluation, Order = 1,
+                StartDate = year.StartDate, EndDate = year.StartDate.AddDays(20),
+            };
+            var french = new CurriculumItem
+            {
+                AcademicYearId = year.Id, PromotionId = classroom.Id,
+                Kind = CurriculumItemKind.AnnualSubject, Name = "Français",
+                Code = "FRANC", Coefficient = 1,
+            };
+            var math = new CurriculumItem
+            {
+                AcademicYearId = year.Id, PromotionId = classroom.Id,
+                Kind = CurriculumItemKind.AnnualSubject, Name = "Mathématiques",
+                Code = "MATH", Coefficient = 1,
+            };
+            SchoolCycleAssessment Entry(CurriculumItem subject, decimal score) => new()
+            {
+                AcademicYearId = year.Id, SchoolCycleId = cycle.Id,
+                PromotionId = classroom.Id, EnrollmentId = enrollment.Id,
+                SchoolCyclePeriodId = period.Id, CurriculumItemId = subject.Id,
+                EvaluationCode = "INTERRO1", Title = subject.Name,
+                Mode = SchoolCycleAssessmentMode.Evaluation,
+                Score = score, MaxScore = 20m,
+            };
+            db.SchoolCycles.Add(cycle);
+            db.Promotions.Add(classroom);
+            db.Students.Add(pupil);
+            db.Enrollments.Add(enrollment);
+            db.SchoolCyclePeriods.Add(period);
+            db.CurriculumItems.AddRange(french, math);
+            db.SchoolCycleAssessments.AddRange(Entry(french, 11m), Entry(math, 17m));
+            scope.ServiceProvider.GetRequiredService<IAuditLog>().Record(
+                "tests.codes.evaluations", "EvaluationCycle", enrollment.Id.ToString(),
+                "Vérification de deux matières portant le même code.");
+            await db.SaveChangesAsync();
+            Assert.Equal(2, await db.SchoolCycleAssessments.CountAsync());
+        }
+
+        var preview = await admin.GetAsync(
+            $"/api/etablissement/cycles/evaluations/{enrollmentId}/apercu").Ok();
+        var subjects = preview.GetProperty("subjectRows").EnumerateArray().ToArray();
+        Assert.Equal(2, subjects.Length);
+        Assert.All(subjects, subject =>
+            Assert.Equal(1, subject.GetProperty("periods").EnumerateArray()
+                .Sum(period => period.GetProperty("entries").GetArrayLength())));
     }
 
     [Theory]
@@ -104,6 +195,14 @@ public sealed class SchoolCycleAssessmentApiTests : IDisposable
                 Kind = CurriculumItemKind.AnnualSubject, Name = "Français",
                 Code = "FRANC", Coefficient = 1,
             };
+            var ungradedSubject = new CurriculumItem
+            {
+                AcademicYearId = year.Id, PromotionId = classroom.Id,
+                Kind = CurriculumItemKind.AnnualSubject,
+                Name = "Mathématiques", Code = "MATH", Coefficient = 1,
+            };
+            // Une ancienne branche archivée avec cote reste consultable.
+            subject.IsActive = false;
             var grade = new SchoolCycleAssessment
             {
                 AcademicYearId = year.Id, SchoolCycleId = cycle.Id,
@@ -118,7 +217,7 @@ public sealed class SchoolCycleAssessmentApiTests : IDisposable
             db.Students.Add(pupil);
             db.Enrollments.Add(enrollment);
             db.SchoolCyclePeriods.AddRange(period1, period2);
-            db.CurriculumItems.Add(subject);
+            db.CurriculumItems.AddRange(subject, ungradedSubject);
             db.SchoolCycleAssessments.Add(grade);
             scope.ServiceProvider.GetRequiredService<IAuditLog>().Record(
                 "tests.bulletins.cycles", "EvaluationCycle", grade.Id.ToString(),
@@ -129,6 +228,10 @@ public sealed class SchoolCycleAssessmentApiTests : IDisposable
         var json = await admin.GetAsync(
             $"/api/etablissement/cycles/evaluations/{enrollmentId}/apercu").Ok();
         Assert.False(json.GetProperty("isOfficial").GetBoolean());
+        var presentation = SchoolBulletinLayouts.For(kind, 1);
+        Assert.Equal(presentation.Code, json.GetProperty("templateCode").GetString());
+        Assert.Equal(presentation.PreviewTitle, json.GetProperty("documentTitle").GetString());
+        Assert.Equal(presentation.EntryHeading, json.GetProperty("entryHeading").GetString());
         var terms = json.GetProperty("terms").EnumerateArray().ToArray();
         Assert.Equal(2, terms.Length);
         Assert.Equal(firstTerm, terms[0].GetProperty("code").GetString());
@@ -143,6 +246,83 @@ public sealed class SchoolCycleAssessmentApiTests : IDisposable
         Assert.Empty(secondPeriod.GetProperty("entries").EnumerateArray());
         Assert.DoesNotContain("moyenne", json.GetRawText(), StringComparison.OrdinalIgnoreCase);
         Assert.Equal(1, json.GetProperty("entries").GetArrayLength());
+        Assert.Equal(1, json.GetProperty("classLevel").GetInt32());
+        Assert.Equal(presentation.GradeBand, json.GetProperty("gradeBand").GetString());
+        var rows = json.GetProperty("subjectRows").EnumerateArray().ToArray();
+        Assert.Equal(2, rows.Length);
+        var subjectRow = Assert.Single(rows, item =>
+            item.GetProperty("subjectName").GetString() == "Français");
+        var ungraded = Assert.Single(rows, item =>
+            item.GetProperty("subjectName").GetString() == "Mathématiques");
+        Assert.False(subjectRow.GetProperty("isActive").GetBoolean());
+        Assert.True(ungraded.GetProperty("isActive").GetBoolean());
+        Assert.All(ungraded.GetProperty("periods").EnumerateArray().ToArray(), period =>
+            Assert.Empty(period.GetProperty("entries").EnumerateArray()));
+        var subjectPeriods = subjectRow.GetProperty("periods").EnumerateArray().ToArray();
+        Assert.Equal(2, subjectPeriods.Length);
+        var firstSubjectScore = Assert.Single(subjectPeriods[0].GetProperty("entries").EnumerateArray());
+        Assert.Equal(12m, firstSubjectScore.GetProperty("score").GetDecimal());
+        Assert.Empty(subjectPeriods[1].GetProperty("entries").EnumerateArray());
+
+        // Test complet de la route réellement consommée par Avalonia :
+        // succès PDF, pas de faux document officiel ni de note fabriquée.
+        using var pdfResponse = await admin.GetAsync(
+            $"/api/etablissement/cycles/evaluations/{enrollmentId}/apercu.pdf");
+        Assert.Equal(HttpStatusCode.OK, pdfResponse.StatusCode);
+        Assert.Equal("application/pdf", pdfResponse.Content.Headers.ContentType?.MediaType);
+        var pdf = await pdfResponse.Content.ReadAsByteArrayAsync();
+        Assert.True(pdf.Length > 1000);
+        Assert.Equal("%PDF", System.Text.Encoding.ASCII.GetString(pdf, 0, 4));
+        Assert.True(pdfResponse.Headers.CacheControl?.NoStore == true);
+
+        // Une cote historique reliée à un élément non annuel ne doit pas
+        // disparaître de la consultation, ni être attachée à une autre branche.
+        using (var scope = app.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<ScoliaDbContext>();
+            var enrollment = await db.Enrollments.SingleAsync(e => e.Id == enrollmentId);
+            var classroom = await db.Promotions.SingleAsync(p => p.Id == enrollment.PromotionId);
+            var period = await db.SchoolCyclePeriods.SingleAsync(p =>
+                p.SchoolCycleId == classroom.SchoolCycleId && p.Code == "P1");
+            var legacySubject = new CurriculumItem
+            {
+                AcademicYearId = enrollment.AcademicYearId,
+                PromotionId = classroom.Id,
+                Kind = CurriculumItemKind.TeachingUnit,
+                Code = "HIST",
+                Name = "Ancienne matière",
+            };
+            db.CurriculumItems.Add(legacySubject);
+            db.SchoolCycleAssessments.Add(new SchoolCycleAssessment
+            {
+                AcademicYearId = enrollment.AcademicYearId,
+                SchoolCycleId = period.SchoolCycleId,
+                PromotionId = classroom.Id,
+                EnrollmentId = enrollmentId,
+                SchoolCyclePeriodId = period.Id,
+                CurriculumItemId = legacySubject.Id,
+                EvaluationCode = "HIST1",
+                Title = "Ancienne évaluation",
+                Mode = SchoolCycleAssessmentMode.Evaluation,
+                Score = 8m,
+                MaxScore = 20m,
+            });
+            scope.ServiceProvider.GetRequiredService<IAuditLog>().Record(
+                "tests.bulletins.archives", "EvaluationCycle", enrollmentId.ToString(),
+                "Contrôle des cotes historiques hors maquette scolaire.");
+            await db.SaveChangesAsync();
+        }
+        var updated = await admin.GetAsync(
+            $"/api/etablissement/cycles/evaluations/{enrollmentId}/apercu").Ok();
+        var outside = Assert.Single(updated.GetProperty("unassignedEntries").EnumerateArray());
+        Assert.Equal("Ancienne évaluation", outside.GetProperty("title").GetString());
+        Assert.Equal(8m, outside.GetProperty("score").GetDecimal());
+        Assert.Equal(2, updated.GetProperty("subjectRows").GetArrayLength());
+        using var updatedPdf = await admin.GetAsync(
+            $"/api/etablissement/cycles/evaluations/{enrollmentId}/apercu.pdf");
+        Assert.Equal(HttpStatusCode.OK, updatedPdf.StatusCode);
+        var bytes = await updatedPdf.Content.ReadAsByteArrayAsync();
+        Assert.Equal("%PDF", System.Text.Encoding.ASCII.GetString(bytes, 0, 4));
     }
 
     [Fact]
@@ -220,7 +400,12 @@ public sealed class SchoolCycleAssessmentApiTests : IDisposable
         var json = await admin.GetAsync(
             $"/api/etablissement/cycles/evaluations/{enrollmentId}/apercu").Ok();
         Assert.False(json.GetProperty("isOfficial").GetBoolean());
+        var presentation = SchoolBulletinLayouts.For(SchoolCycleKind.Maternelle, 1);
+        Assert.Equal(presentation.Code, json.GetProperty("templateCode").GetString());
+        Assert.Equal(presentation.PreviewTitle, json.GetProperty("documentTitle").GetString());
         Assert.Equal("Maternelle", json.GetProperty("cycle").GetString());
+        Assert.Empty(json.GetProperty("subjectRows").EnumerateArray());
+        Assert.Equal(1, json.GetProperty("classLevel").GetInt32());
         var row = Assert.Single(json.GetProperty("entries").EnumerateArray());
         Assert.Equal("Observation", row.GetProperty("mode").GetString());
         Assert.Equal("P1", row.GetProperty("periodCode").GetString());

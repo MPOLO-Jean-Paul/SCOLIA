@@ -188,6 +188,37 @@ public sealed class SchoolCycleAssessmentRulesTests
             x.Class.Id, x.Student.AcademicYearId));
     }
 
+
+    [Theory]
+    [InlineData(SchoolCycleKind.Primaire)]
+    [InlineData(SchoolCycleKind.Secondaire)]
+    public void Same_interrogation_code_is_valid_for_different_subjects_but_not_twice_in_one_subject(
+        SchoolCycleKind kind)
+    {
+        var data = Build(kind);
+        var other = new SchoolCycleAssessment
+        {
+            AcademicYearId = data.Entry.AcademicYearId,
+            SchoolCycleId = data.Cycle.Id,
+            PromotionId = data.Class.Id,
+            EnrollmentId = data.Student.Id,
+            SchoolCyclePeriodId = data.Period.Id,
+            CurriculumItemId = Guid.NewGuid(),
+            EvaluationCode = data.Entry.EvaluationCode.ToLowerInvariant(),
+            Title = "Mathématiques", Mode = SchoolCycleAssessmentMode.Evaluation,
+            Score = 14m, MaxScore = 20m,
+        };
+        var result = SchoolCycleAssessmentRules.Preview(
+            data.Cycle, data.Student.Id, new[] { data.Period },
+            new[] { data.Entry, other }, data.Class.Id, data.Entry.AcademicYearId);
+        Assert.Equal(2, result.Count);
+
+        other.CurriculumItemId = data.Subject.Id;
+        Assert.Throws<DomainException>(() => SchoolCycleAssessmentRules.Preview(
+            data.Cycle, data.Student.Id, new[] { data.Period },
+            new[] { data.Entry, other }, data.Class.Id, data.Entry.AcademicYearId));
+    }
+
     [Fact]
     public void A_bulletin_preview_rejects_another_student_and_duplicate_activity()
     {
@@ -198,6 +229,7 @@ public sealed class SchoolCycleAssessmentRulesTests
         {
             SchoolCycleId = x.Cycle.Id, AcademicYearId = x.Entry.AcademicYearId,
             EnrollmentId = x.Student.Id, SchoolCyclePeriodId = x.Period.Id,
+            CurriculumItemId = x.Entry.CurriculumItemId,
             EvaluationCode = x.Entry.EvaluationCode.ToLowerInvariant(),
             Mode = SchoolCycleAssessmentMode.Observation,
         };

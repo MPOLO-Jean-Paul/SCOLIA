@@ -7,19 +7,24 @@ using Scolia.Bureau.Infrastructure;
 namespace Scolia.Bureau.ViewModels;
 
 /// <summary>Ligne d'observation maternelle ou de cote scolaire, toujours distincte.</summary>
-public sealed record SchoolBulletinLineVm(string Title, string Value, string? Comment)
+public sealed record SchoolBulletinLineVm(string Title, string Value, string? Comment, bool IsObservation)
 {
     public bool HasComment => !string.IsNullOrWhiteSpace(Comment);
 }
 
 public sealed record SchoolBulletinPeriodVm(
-    string Title, IReadOnlyList<SchoolBulletinLineVm> Lines)
+    string Title, string EntryHeading, IReadOnlyList<SchoolBulletinLineVm> Lines)
 {
     public bool HasLines => Lines.Count > 0;
 }
 
 public sealed record SchoolBulletinTermVm(
     string Label, IReadOnlyList<SchoolBulletinPeriodVm> Periods);
+
+public sealed record SchoolBulletinSubjectCellVm(string PeriodLabel, string Value);
+
+public sealed record SchoolBulletinSubjectVm(
+    string Title, string Details, IReadOnlyList<SchoolBulletinSubjectCellVm> Periods);
 
 /// <summary>
 /// Consultation seulement : aucun PDF officiel, aucune délibération inventée.
@@ -31,10 +36,15 @@ public sealed class SchoolBulletinPage : PageViewModel
     private readonly Guid enrollmentId;
     private string subtitle = string.Empty;
     private string notice = string.Empty;
+    private string documentTitle = "Aperçu pédagogique";
 
     public SchoolBulletinPage(ShellViewModel shell, Guid enrollmentId) : base(shell)
     {
         this.enrollmentId = enrollmentId;
+        Action("Exporter l'aperçu PDF", MaterialIconKind.FilePdfBox,
+            () => Shell.Download(
+                $"api/etablissement/cycles/evaluations/{enrollmentId}/apercu.pdf",
+                $"apercu-pedagogique-{enrollmentId:N}.pdf"), primary: true);
         ActionRefresh();
     }
 
@@ -43,7 +53,13 @@ public sealed class SchoolBulletinPage : PageViewModel
     public override MaterialIconKind Glyph => MaterialIconKind.FileDocumentOutline;
 
     public string Notice { get => notice; private set => Set(ref notice, value); }
+    public string DocumentTitle { get => documentTitle; private set => Set(ref documentTitle, value); }
     public ObservableCollection<SchoolBulletinTermVm> Terms { get; } = [];
+    public ObservableCollection<SchoolBulletinSubjectVm> Subjects { get; } = [];
+    public ObservableCollection<SchoolBulletinLineVm> Unassigned { get; } = [];
+    public bool HasUnassigned => Subjects.Count > 0 && Unassigned.Count > 0;
+    public bool HasSubjectGrid => Subjects.Count > 0;
+    public bool ShowPeriods => Subjects.Count == 0;
 
     public override async Task LoadAsync()
     {
@@ -53,10 +69,61 @@ public sealed class SchoolBulletinPage : PageViewModel
             throw new InvalidOperationException(
                 "Cette page n'affiche que des aperçus non officiels. Utilisez le document validé pour les bulletins définitifs.");
 
-        subtitle = $"{preview.Cycle} · {preview.Promotion} · {preview.AcademicYear}";
+        var grade = string.IsNullOrWhiteSpace(preview.GradeBand) ||
+                    preview.GradeBand == "Cycle non précisé"
+            ? string.Empty : $" · {preview.GradeBand}";
+        var option = string.IsNullOrWhiteSpace(preview.OptionLabel)
+            ? string.Empty : $" · {preview.OptionLabel}";
+        subtitle = $"{preview.Cycle} · {preview.Promotion} · {preview.AcademicYear}{grade}{option}";
         Raise(nameof(Subtitle));
         Notice = preview.Notice;
+        DocumentTitle = string.IsNullOrWhiteSpace(preview.DocumentTitle)
+            ? "Aperçu pédagogique" : preview.DocumentTitle;
         Terms.Clear();
+        Subjects.Clear();
+        Unassigned.Clear();
+
+        // Séparer les cotes dont la matière d'origine n'appartient plus
+        // à la maquette annuelle ; surtout ne pas les perdre dans la grille.
+        foreach (var entry in preview.UnassignedEntries ?? [])
+        {
+            var value = entry.Score is { } score && entry.MaxScore is { } maximum
+                ? $"{score.ToString("0.##", CultureInfo.CurrentCulture)} / {maximum.ToString("0.##", CultureInfo.CurrentCulture)}"
+                : "Non coté";
+            Unassigned.Add(new SchoolBulletinLineVm(
+                $"{entry.PeriodCode} · {entry.Title}", value,
+                entry.Comment, false));
+        }
+
+        // Grille scolaire par matière : aucune cellule vide ne devient zéro et
+        // aucune somme / moyenne ne s'improvise à partir d'évaluations multiples.
+        foreach (var subject in preview.SubjectRows ?? [])
+        {
+            var cells = subject.Periods.Select(period =>
+            {
+                var value = period.Entries.Count == 0
+                    ? "Aucune évaluation saisie"
+                    : string.Join(" ; ", period.Entries.Select(entry =>
+                    {
+                        var cote = entry.Score is { } score && entry.MaxScore is { } max
+                            ? $"{score.ToString("0.##", CultureInfo.CurrentCulture)} / {max.ToString("0.##", CultureInfo.CurrentCulture)}"
+                            : "Non coté";
+                        return $"{entry.Title} : {cote}";
+                    }));
+                return new SchoolBulletinSubjectCellVm(
+                    $"{period.PeriodCode} · {period.PeriodName}", value);
+            }).ToArray();
+            var details = string.IsNullOrWhiteSpace(subject.SubjectCode)
+                ? string.Empty : subject.SubjectCode;
+            if (!subject.IsActive)
+                details = string.IsNullOrEmpty(details)
+                    ? "Matière archivée" : $"{details} · Matière archivée";
+            Subjects.Add(new SchoolBulletinSubjectVm(
+                subject.SubjectName, details, cells));
+        }
+        Raise(nameof(HasSubjectGrid));
+        Raise(nameof(HasUnassigned));
+        Raise(nameof(ShowPeriods));
 
         foreach (var term in preview.Terms ?? [])
         {
@@ -69,10 +136,11 @@ public sealed class SchoolBulletinPage : PageViewModel
                         : e.Score is { } score && e.MaxScore is { } max
                             ? $"{score.ToString("0.##", CultureInfo.CurrentCulture)} / {max.ToString("0.##", CultureInfo.CurrentCulture)}"
                             : "Non coté";
-                    return new SchoolBulletinLineVm(e.Title, value, e.Comment);
+                    return new SchoolBulletinLineVm(e.Title, value, e.Comment,
+                        e.Mode == "Observation");
                 }).ToArray();
                 return new SchoolBulletinPeriodVm(
-                    $"{period.Code} · {period.Name}", lines);
+                    $"{period.Code} · {period.Name}", preview.EntryHeading, lines);
             }).ToArray();
             Terms.Add(new SchoolBulletinTermVm(term.Label, periods));
         }

@@ -148,7 +148,12 @@ public sealed class ScoliaDbContext(DbContextOptions<ScoliaDbContext> options, I
             e.Property(x => x.Title).HasMaxLength(160);
             e.Property(x => x.Observation).HasMaxLength(800);
             e.Property(x => x.Comment).HasMaxLength(800);
-            e.HasIndex(x => new { x.EnrollmentId, x.SchoolCyclePeriodId, x.EvaluationCode }).IsUnique();
+            // Les codes d'interrogation (ex. INTERRO1) peuvent se répéter entre matières.
+            // Deux index partiels garantissent aussi l'unicité des activités sans matière en maternelle.
+            e.HasIndex(x => new { x.EnrollmentId, x.SchoolCyclePeriodId, x.EvaluationCode })
+                .IsUnique().HasFilter("\"CurriculumItemId\" IS NULL");
+            e.HasIndex(x => new { x.EnrollmentId, x.SchoolCyclePeriodId, x.CurriculumItemId, x.EvaluationCode })
+                .IsUnique().HasFilter("\"CurriculumItemId\" IS NOT NULL");
             e.HasIndex(x => new { x.SchoolCycleId, x.AcademicYearId, x.PromotionId });
             e.HasOne<AcademicYear>().WithMany().HasForeignKey(x => x.AcademicYearId).OnDelete(DeleteBehavior.Restrict);
             e.HasOne<SchoolCycle>().WithMany().HasForeignKey(x => x.SchoolCycleId).OnDelete(DeleteBehavior.Restrict);
