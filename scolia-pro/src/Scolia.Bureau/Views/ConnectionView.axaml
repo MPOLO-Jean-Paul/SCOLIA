@@ -6,7 +6,7 @@
              x:Class="Scolia.Bureau.Views.ConnectionView">
   <UserControl.Styles>
     <!-- Valeurs de base posées par style : les adaptations à l'écran ci-dessous peuvent les remplacer. -->
-    <Style Selector="StackPanel.iosconnectbody"><Setter Property="MaxWidth" Value="440" /><Setter Property="Margin" Value="20,24,20,32" /><Setter Property="Spacing" Value="17" /></Style>
+    <Style Selector="StackPanel.iosconnectbody"><Setter Property="MaxWidth" Value="440" /><Setter Property="Margin" Value="18,24,18,28" /><Setter Property="Spacing" Value="15" /></Style>
     <Style Selector="StackPanel.iosconnectheader"><Setter Property="Spacing" Value="12" /></Style>
     <Style Selector="Border.iosconnectlogo"><Setter Property="Width" Value="86" /><Setter Property="Height" Value="86" /><Setter Property="CornerRadius" Value="27" /></Style>
     <Style Selector="Image.iosconnectmark"><Setter Property="Width" Value="60" /><Setter Property="Height" Value="60" /></Style>
@@ -48,24 +48,24 @@
     <Style Selector="Grid.micro TextBlock.iosconnecthint"><Setter Property="IsVisible" Value="False" /></Style>
     <Style Selector="Grid.micro Border.iosconnectcard"><Setter Property="Padding" Value="11" /></Style>
     <!-- Grand écran (ordinateur) : colonne un peu plus large, centrée, cartes aérées. -->
-    <Style Selector="Grid.wide StackPanel.iosconnectbody"><Setter Property="MaxWidth" Value="480" /><Setter Property="Margin" Value="24,36,24,32" /></Style>
+    <Style Selector="Grid.wide StackPanel.iosconnectbody"><Setter Property="MaxWidth" Value="490" /><Setter Property="Margin" Value="28,44,28,32" /></Style>
     <Style Selector="Grid.wide Border.iosconnectcard"><Setter Property="Padding" Value="22" /></Style>
     <Style Selector="Border.iosconnectcard">
       <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
       <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
       <Setter Property="BorderThickness" Value="1" />
-      <Setter Property="CornerRadius" Value="24" />
-      <Setter Property="Padding" Value="18" />
+      <Setter Property="CornerRadius" Value="20" />
+      <Setter Property="Padding" Value="20" />
       <Setter Property="BoxShadow" Value="0 9 26 0 #120F2B6B" />
     </Style>
     <Style Selector="Button.iosconnectprimary">
       <Setter Property="Background" Value="#1769E6" />
       <Setter Property="Foreground" Value="White" />
       <Setter Property="BorderThickness" Value="0" />
-      <Setter Property="CornerRadius" Value="16" />
+      <Setter Property="CornerRadius" Value="12" />
       <Setter Property="HorizontalAlignment" Value="Stretch" />
       <Setter Property="HorizontalContentAlignment" Value="Center" />
-      <Setter Property="MinHeight" Value="55" />
+      <Setter Property="MinHeight" Value="51" />
       <Setter Property="FontWeight" Value="SemiBold" />
     </Style>
     <Style Selector="Button.iosconnectsecondary">
@@ -73,7 +73,7 @@
       <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
       <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
       <Setter Property="BorderThickness" Value="1" />
-      <Setter Property="CornerRadius" Value="14" />
+      <Setter Property="CornerRadius" Value="12" />
       <Setter Property="HorizontalAlignment" Value="Stretch" />
       <Setter Property="HorizontalContentAlignment" Value="Center" />
       <Setter Property="MinHeight" Value="49" />
@@ -83,8 +83,8 @@
       <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
       <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
       <Setter Property="BorderThickness" Value="1" />
-      <Setter Property="CornerRadius" Value="14" />
-      <Setter Property="Padding" Value="14,12" />
+      <Setter Property="CornerRadius" Value="12" />
+      <Setter Property="Padding" Value="14,10" />
       <Setter Property="MinHeight" Value="52" />
     </Style>
   </UserControl.Styles>
@@ -226,7 +226,7 @@
     </Grid>
     <!-- Premier écran iOS, sur le téléphone comme sur l'ordinateur : une décision principale, des options secondaires discrètes. -->
     <ThemeVariantScope x:Name="IosConnectionThemeScope" RequestedThemeVariant="Light" IsVisible="False">
-    <Grid x:Name="IosConnectionScreen" IsVisible="False" Background="#F5F7FB">
+    <Grid x:Name="IosConnectionScreen" IsVisible="False" Background="#F1F5FA">
       <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto"
                     IsVisible="{Binding !PairingInProgress}">
         <StackPanel Classes="iosconnectbody" HorizontalAlignment="Stretch" VerticalAlignment="Center">
