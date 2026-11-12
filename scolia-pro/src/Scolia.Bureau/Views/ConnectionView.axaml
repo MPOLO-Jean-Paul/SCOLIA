@@ -14,7 +14,7 @@
     <Style Selector="TextBlock.iosconnectsubtitle"><Setter Property="FontSize" Value="18" /></Style>
     <Style Selector="Expander"><Setter Property="HorizontalAlignment" Value="Stretch" /></Style>
     <Style Selector="Expander TextBlock"><Setter Property="TextWrapping" Value="Wrap" /></Style>
-    <Style Selector="Button.iosconnectprimary:pointerover /template/ ContentPresenter"><Setter Property="Background" Value="#0F5BD0" /></Style>
+    <Style Selector="Button.iosconnectprimary:pointerover /template/ ContentPresenter"><Setter Property="Background" Value="{DynamicResource AccentHoverBrush}" /></Style>
     <Style Selector="Button.iosconnectprimary:disabled /template/ ContentPresenter"><Setter Property="Background" Value="#9DBDF0" /><Setter Property="Foreground" Value="White" /></Style>
     <!-- Les boutons du jumelage gardent leurs tailles, même pendant l'appui. -->
     <Style Selector="Button.iosconnectprimary:pressed">
@@ -22,10 +22,10 @@
       <Setter Property="Opacity" Value="0.94" />
     </Style>
     <Style Selector="Button.iosconnectsecondary:pressed">
-      <Setter Property="Background" Value="#DCEAFF" />
+      <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
     </Style>
     <Style Selector="TextBox.iosconnectfield:focus">
-      <Setter Property="BorderBrush" Value="#1769E6" />
+      <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
       <Setter Property="BorderThickness" Value="2" />
     </Style>
     <!-- Petits téléphones : marges, logo et titres réduits ; les options secondaires se replient. -->
@@ -70,7 +70,7 @@
       <Setter Property="Padding" Value="0" />
     </Style>
     <Style Selector="Button.iosconnectprimary">
-      <Setter Property="Background" Value="#1769E6" />
+      <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
       <Setter Property="Foreground" Value="White" />
       <Setter Property="BorderThickness" Value="0" />
       <Setter Property="CornerRadius" Value="12" />
