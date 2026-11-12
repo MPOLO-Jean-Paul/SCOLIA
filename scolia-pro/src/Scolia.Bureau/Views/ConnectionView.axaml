@@ -6,19 +6,19 @@
              x:Class="Scolia.Bureau.Views.ConnectionView">
   <UserControl.Styles>
     <!-- Valeurs de base posées par style : les adaptations à l'écran ci-dessous peuvent les remplacer. -->
-    <Style Selector="StackPanel.iosconnectbody"><Setter Property="MaxWidth" Value="440" /><Setter Property="Margin" Value="18,24,18,28" /><Setter Property="Spacing" Value="15" /></Style>
-    <Style Selector="StackPanel.iosconnectheader"><Setter Property="Spacing" Value="12" /></Style>
-    <Style Selector="Border.iosconnectlogo"><Setter Property="Width" Value="86" /><Setter Property="Height" Value="86" /><Setter Property="CornerRadius" Value="27" /></Style>
-    <Style Selector="Image.iosconnectmark"><Setter Property="Width" Value="60" /><Setter Property="Height" Value="60" /></Style>
-    <Style Selector="TextBlock.iosconnecttitle"><Setter Property="FontSize" Value="26" /></Style>
-    <Style Selector="TextBlock.iosconnectsubtitle"><Setter Property="FontSize" Value="18" /></Style>
+    <Style Selector="StackPanel.iosconnectbody"><Setter Property="MaxWidth" Value="420" /><Setter Property="Margin" Value="20,22,20,20" /><Setter Property="Spacing" Value="16" /></Style>
+    <Style Selector="StackPanel.iosconnectheader"><Setter Property="Spacing" Value="6" /></Style>
+    <Style Selector="Border.iosconnectlogo"><Setter Property="Width" Value="66" /><Setter Property="Height" Value="66" /><Setter Property="CornerRadius" Value="18" /></Style>
+    <Style Selector="Image.iosconnectmark"><Setter Property="Width" Value="46" /><Setter Property="Height" Value="46" /></Style>
+    <Style Selector="TextBlock.iosconnecttitle"><Setter Property="FontSize" Value="23" /></Style>
+    <Style Selector="TextBlock.iosconnectsubtitle"><Setter Property="FontSize" Value="17" /></Style>
     <Style Selector="Expander"><Setter Property="HorizontalAlignment" Value="Stretch" /></Style>
     <Style Selector="Expander TextBlock"><Setter Property="TextWrapping" Value="Wrap" /></Style>
     <Style Selector="Button.iosconnectprimary:pointerover /template/ ContentPresenter"><Setter Property="Background" Value="{DynamicResource AccentHoverBrush}" /></Style>
     <Style Selector="Button.iosconnectprimary:disabled /template/ ContentPresenter"><Setter Property="Background" Value="#9DBDF0" /><Setter Property="Foreground" Value="White" /></Style>
     <!-- Les boutons du jumelage gardent leurs tailles, même pendant l'appui. -->
     <Style Selector="Button.iosconnectprimary:pressed">
-      <Setter Property="Background" Value="#0F5BD0" />
+      <Setter Property="Background" Value="{DynamicResource AccentHoverBrush}" />
       <Setter Property="Opacity" Value="0.94" />
     </Style>
     <Style Selector="Button.iosconnectsecondary:pressed">
@@ -29,19 +29,19 @@
       <Setter Property="BorderThickness" Value="2" />
     </Style>
     <!-- Petits téléphones : marges, logo et titres réduits ; les options secondaires se replient. -->
-    <Style Selector="Grid.compact StackPanel.iosconnectbody"><Setter Property="Margin" Value="14,16,14,20" /><Setter Property="Spacing" Value="13" /></Style>
+    <Style Selector="Grid.compact StackPanel.iosconnectbody"><Setter Property="Margin" Value="16,12,16,14" /><Setter Property="Spacing" Value="12" /></Style>
     <Style Selector="Grid.compact Border.iosconnectcard"><Setter Property="Padding" Value="0" /><Setter Property="CornerRadius" Value="0" /></Style>
-    <Style Selector="Grid.compact Border.iosconnectlogo"><Setter Property="Width" Value="70" /><Setter Property="Height" Value="70" /><Setter Property="CornerRadius" Value="22" /></Style>
-    <Style Selector="Grid.compact Image.iosconnectmark"><Setter Property="Width" Value="48" /><Setter Property="Height" Value="48" /></Style>
+    <Style Selector="Grid.compact Border.iosconnectlogo"><Setter Property="Width" Value="60" /><Setter Property="Height" Value="60" /><Setter Property="CornerRadius" Value="17" /></Style>
+    <Style Selector="Grid.compact Image.iosconnectmark"><Setter Property="Width" Value="43" /><Setter Property="Height" Value="43" /></Style>
     <Style Selector="Grid.compact TextBlock.iosconnecttitle"><Setter Property="FontSize" Value="22" /></Style>
     <Style Selector="Grid.compact TextBlock.iosconnectsubtitle"><Setter Property="FontSize" Value="16" /></Style>
     <Style Selector="Grid.compact Button.iosconnectprimary"><Setter Property="MinHeight" Value="52" /></Style>
     <Style Selector="Grid.compact Button.iosconnectsecondary"><Setter Property="MinHeight" Value="47" /></Style>
     <Style Selector="Grid.compact TextBox.iosconnectfield"><Setter Property="MinHeight" Value="48" /></Style>
     <!-- Très petits écrans : encore un cran plus serré. -->
-    <Style Selector="Grid.tiny StackPanel.iosconnectbody"><Setter Property="Margin" Value="10,12,10,16" /><Setter Property="Spacing" Value="11" /></Style>
+    <Style Selector="Grid.tiny StackPanel.iosconnectbody"><Setter Property="Margin" Value="12,10,12,12" /><Setter Property="Spacing" Value="10" /></Style>
     <Style Selector="Grid.tiny Border.iosconnectcard"><Setter Property="Padding" Value="0" /><Setter Property="CornerRadius" Value="0" /></Style>
-    <Style Selector="Grid.tiny Border.iosconnectlogo"><Setter Property="Width" Value="60" /><Setter Property="Height" Value="60" /><Setter Property="CornerRadius" Value="19" /></Style>
+    <Style Selector="Grid.tiny Border.iosconnectlogo"><Setter Property="Width" Value="54" /><Setter Property="Height" Value="54" /><Setter Property="CornerRadius" Value="16" /></Style>
     <Style Selector="Grid.tiny Image.iosconnectmark"><Setter Property="Width" Value="42" /><Setter Property="Height" Value="42" /></Style>
     <Style Selector="Grid.tiny TextBlock.iosconnecttitle"><Setter Property="FontSize" Value="20" /></Style>
     <Style Selector="Grid.tiny TextBlock.iosconnectsubtitle"><Setter Property="FontSize" Value="15" /></Style>
@@ -60,7 +60,7 @@
     <Style Selector="Grid.micro TextBlock.iosconnecthint"><Setter Property="IsVisible" Value="False" /></Style>
     <Style Selector="Grid.micro Border.iosconnectcard"><Setter Property="Padding" Value="0" /></Style>
     <!-- Grand écran : parcours de jumelage natif à plat. -->
-    <Style Selector="Grid.wide StackPanel.iosconnectbody"><Setter Property="MaxWidth" Value="490" /><Setter Property="Margin" Value="28,44,28,32" /></Style>
+    <Style Selector="Grid.wide StackPanel.iosconnectbody"><Setter Property="MaxWidth" Value="440" /><Setter Property="Margin" Value="26,30,26,24" /></Style>
     <Style Selector="Grid.wide Border.iosconnectcard"><Setter Property="Padding" Value="0" /></Style>
     <Style Selector="Border.iosconnectcard">
       <!-- Parcours de jumelage natif : les sections ne sont plus des cartes. -->
@@ -76,7 +76,7 @@
       <Setter Property="CornerRadius" Value="12" />
       <Setter Property="HorizontalAlignment" Value="Stretch" />
       <Setter Property="HorizontalContentAlignment" Value="Center" />
-      <Setter Property="MinHeight" Value="51" />
+      <Setter Property="MinHeight" Value="52" />
       <Setter Property="FontWeight" Value="SemiBold" />
     </Style>
     <Style Selector="Button.iosconnectsecondary">
@@ -87,10 +87,10 @@
       <Setter Property="CornerRadius" Value="12" />
       <Setter Property="HorizontalAlignment" Value="Stretch" />
       <Setter Property="HorizontalContentAlignment" Value="Center" />
-      <Setter Property="MinHeight" Value="49" />
+      <Setter Property="MinHeight" Value="48" />
     </Style>
     <Style Selector="TextBox.iosconnectfield">
-      <Setter Property="Background" Value="{DynamicResource Surface2Brush}" />
+      <Setter Property="Background" Value="{DynamicResource FieldBrush}" />
       <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
       <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
       <Setter Property="BorderThickness" Value="1" />
@@ -263,8 +263,8 @@
           <Border Classes="iosconnectcard">
             <StackPanel Spacing="13">
               <Grid ColumnDefinitions="Auto,*" ColumnSpacing="13">
-                <Border Width="49" Height="49" CornerRadius="16" Background="#DCEAFF" VerticalAlignment="Center">
-                  <mi:MaterialIcon Kind="QrcodeScan" Width="25" Height="25" Foreground="#1769E6"
+                <Border Width="44" Height="44" CornerRadius="13" Background="{DynamicResource AccentSoftBrush}" VerticalAlignment="Center">
+                  <mi:MaterialIcon Kind="QrcodeScan" Width="25" Height="25" Foreground="{DynamicResource AccentBrush}"
                                    HorizontalAlignment="Center" VerticalAlignment="Center" />
                 </Border>
                 <StackPanel Grid.Column="1" Spacing="4" VerticalAlignment="Center">
@@ -316,8 +316,8 @@
                   <DataTemplate>
                     <Button Classes="iosconnectsecondary" Command="{Binding Join}" Margin="4,3" Padding="12,9">
                       <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="11">
-                        <Border Width="40" Height="40" CornerRadius="13" Background="#DCEAFF">
-                          <mi:MaterialIcon Kind="{Binding Icon}" Foreground="#1769E6"
+                        <Border Width="40" Height="40" CornerRadius="13" Background="{DynamicResource AccentSoftBrush}">
+                          <mi:MaterialIcon Kind="{Binding Icon}" Foreground="{DynamicResource AccentBrush}"
                                            HorizontalAlignment="Center" VerticalAlignment="Center" />
                         </Border>
                         <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
@@ -339,8 +339,8 @@
           <Border Classes="iosconnectcard">
             <StackPanel Spacing="11">
               <Grid ColumnDefinitions="Auto,*" ColumnSpacing="11">
-                <Border Width="41" Height="41" CornerRadius="14" Background="#E1F4E7">
-                  <mi:MaterialIcon Kind="Wifi" Width="22" Height="22" Foreground="#197C49"
+                <Border Width="44" Height="44" CornerRadius="13" Background="{DynamicResource GreenSoftBrush}">
+                  <mi:MaterialIcon Kind="Wifi" Width="22" Height="22" Foreground="{DynamicResource ToneGreen}"
                                    HorizontalAlignment="Center" VerticalAlignment="Center" />
                 </Border>
                 <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
@@ -373,11 +373,11 @@
             </StackPanel>
           </Border>
 
-          <Border Background="#E8F2FF" CornerRadius="13" Padding="12"
+          <Border Background="{DynamicResource Surface2Brush}" CornerRadius="13" Padding="12"
                   IsVisible="{Binding Searching}">
             <StackPanel Spacing="8">
               <ProgressBar IsIndeterminate="True" Height="4" MinHeight="4" />
-              <TextBlock Text="{Binding Message}" Foreground="#365C8F"
+              <TextBlock Text="{Binding Message}" Foreground="{DynamicResource Text2Brush}"
                          FontSize="12" TextWrapping="Wrap" />
             </StackPanel>
           </Border>
@@ -411,19 +411,19 @@
                   HorizontalAlignment="Stretch" Padding="0">
             <StackPanel Spacing="15">
               <Border Width="78" Height="78" CornerRadius="26"
-                      Background="#DCEAFF" HorizontalAlignment="Center">
+                      Background="{DynamicResource AccentSoftBrush}" HorizontalAlignment="Center">
                 <mi:MaterialIcon Kind="ShieldCheckOutline" Width="39" Height="39"
-                                 Foreground="#1769E6" VerticalAlignment="Center" HorizontalAlignment="Center" />
+                                 Foreground="{DynamicResource AccentBrush}" VerticalAlignment="Center" HorizontalAlignment="Center" />
               </Border>
               <TextBlock Text="Vérification sécurisée" Classes="iosconnecttitle" FontWeight="Bold"
                          TextAlignment="Center" TextWrapping="Wrap" />
               <TextBlock Text="Nous validons cet appareil et ses autorisations auprès de votre établissement."
                          Classes="muted" FontSize="13" TextAlignment="Center" TextWrapping="Wrap" />
-              <Border Background="#E8F2FF" CornerRadius="14" Padding="14">
+              <Border Background="{DynamicResource Surface2Brush}" CornerRadius="14" Padding="14">
                 <StackPanel Spacing="12">
                   <ProgressBar IsIndeterminate="True" Height="5" MinHeight="5"
-                               Foreground="#1769E6" />
-                  <TextBlock Text="{Binding Message}" Foreground="#284F85" FontWeight="SemiBold"
+                               Foreground="{DynamicResource AccentBrush}" />
+                  <TextBlock Text="{Binding Message}" Foreground="{DynamicResource TextBrush}" FontWeight="SemiBold"
                              FontSize="13" TextAlignment="Center" TextWrapping="Wrap" />
                 </StackPanel>
               </Border>
