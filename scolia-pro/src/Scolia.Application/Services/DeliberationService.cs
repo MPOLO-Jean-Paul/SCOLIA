@@ -509,6 +509,31 @@ public sealed class DeliberationService(IAppDbContext db, IWriteGate gate, IAudi
         return new MarkImportResult(input.Apply, input.Apply ? ready.Count : 0, ready.Count, unchanged, lines.Count - ready.Count - unchanged, lines);
     }
 
+    /// <summary>
+    /// Contrôle préalable du code pour un cours accessible à l'enseignant. Ne transmet ni identité
+    /// ni matricule ; une vérification ne crée et ne modifie aucune cote.
+    /// </summary>
+    public async Task<AnonymousCodeCheckDto> CheckCodeForCourseAsync(Guid courseId, string? input,
+        CancellationToken ct = default)
+    {
+        var year = await YearContext.CurrentAsync(db, ct);
+        var course = await CourseInYearAsync(courseId, year.Id, ct);
+        await EnsureCourseAccessAsync(course, write: false, ct);
+        var code = AnonymousCodeRules.Normalize(input);
+        AnonymousCodeCheckDto Answer(bool valid, string message) => new(code, valid, message, course.MaxScore);
+        if (!AnonymousCodeRules.IsValid(code))
+            return Answer(false, "Code anonyme incomplet ou invalide.");
+        var assigned = await db.AnonymousCodes.AsNoTracking().FirstOrDefaultAsync(
+            c => c.AcademicYearId == year.Id && c.Code == code, ct);
+        if (assigned is null) return Answer(false, "Code anonyme introuvable.");
+        if (!assigned.IsActive) return Answer(false, "Ce code anonyme a été remplacé.");
+        var student = await EnrolledOneAsync(year.Id, assigned.EnrollmentId, ct);
+        if (student is null) return Answer(false, "Ce code ne correspond plus à une inscription active.");
+        if (student.PromotionId != course.PromotionId)
+            return Answer(false, "Apprenant hors promotion.");
+        return Answer(true, "Code anonyme validé.");
+    }
+
     /// <summary>Encodage anonyme : la copie porte le code, l'encodeur tape le code et la cote sans connaître le nom.</summary>
     public Task<MarkByCodeResult> SaveByCodeAsync(MarkByCodeRequest input, CancellationToken ct = default) => gate.RunAsync(async () =>
     {
