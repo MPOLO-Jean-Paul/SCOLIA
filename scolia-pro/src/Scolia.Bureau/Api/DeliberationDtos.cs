@@ -19,6 +19,9 @@ public sealed record MarkSheetDto(Guid CourseId, string Course, string Semester,
 
 public sealed record MarkByCodeResult(string Code, string Course, string Kind, decimal Value, decimal? Previous, int Remaining);
 
+/// <summary>Résultat sans données personnelles de la validation préalable du code.</summary>
+public sealed record AnonymousCodeCheckDto(string Code, bool Valid, string Message, decimal MaxScore);
+
 public sealed record CourseOutcomeDto(Guid CourseId, int Number, string Course, string Semester, decimal Max, decimal? Base, decimal Bonus, decimal Points,
     bool Graded, bool Failed);
 

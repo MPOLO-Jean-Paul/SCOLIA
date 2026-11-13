@@ -1357,6 +1357,8 @@ public sealed class UsersPage : PageViewModel
         Action("Nouvel utilisateur", MaterialIconKind.AccountPlus, () => NewUserAsync(Shell), primary: true);
         Action("Modifier", MaterialIconKind.AccountEdit, EditAsync, open: true);
         Action("Réinitialiser le mot de passe", MaterialIconKind.KeyChange, ResetPasswordAsync, row: true);
+        if (Shell.IsServerComputer && Shell.Can(Perm.UsersManage))
+            Action("Retirer l'accès au serveur", MaterialIconKind.AccountCancel, RevokeServerAccountAsync, row: true);
         ActionRefresh();
     }
 
@@ -1378,6 +1380,42 @@ public sealed class UsersPage : PageViewModel
                 u.IsLocked ? "Verrouillé" : "—", u));
         subtitle = $"{Format.Count(users.Count(u => u.IsActive), "compte actif", "comptes actifs")} sur {users.Count}";
         Raise(nameof(Subtitle));
+    }
+
+    /// <summary>
+    /// Retrait du droit de connexion côté serveur : désactivation réversible et auditée,
+    /// sans supprimer l'utilisateur, ses cotes, ses opérations ni les autres comptes.
+    /// </summary>
+    private async Task RevokeServerAccountAsync()
+    {
+        if (!Shell.IsServerComputer || !Shell.Can(Perm.UsersManage))
+        {
+            Shell.Notify("Cette opération est réservée à l'administrateur sur la machine principale.");
+            return;
+        }
+        if (Selected?.Source is not { } user) { Shell.Notify("Choisissez un compte utilisateur."); return; }
+        if (!user.IsActive) { Shell.Notify("Ce compte n'a déjà plus accès au serveur."); return; }
+        if (string.Equals(Shell.Session?.UserName, user.UserName, StringComparison.OrdinalIgnoreCase))
+        {
+            Shell.Notify("Vous ne pouvez pas retirer votre propre accès au serveur.");
+            return;
+        }
+        if (!await Shell.Confirm("Retirer l'accès au serveur ?",
+            $"Le compte « {user.UserName} » sera désactivé sur le serveur principal. "
+            + "Sa prochaine authentification sera refusée et ses sessions existantes seront invalidées. "
+            + "Les données scolaires, notes, paiements et traces d'audit resteront conservés. "
+            + "Un administrateur pourra réactiver le compte depuis « Modifier ».",
+            "Désactiver l'accès", danger: true)) return;
+        await Shell.Api.SendAsync(HttpMethod.Put, $"api/utilisateurs/{user.Id}", new
+        {
+            displayName = user.DisplayName,
+            role = user.Role,
+            isActive = false,
+            staffMemberId = user.StaffMemberId,
+            juryAccess = false,
+        });
+        Shell.Notify($"Accès au serveur retiré pour « {user.UserName} ».");
+        await RefreshAsync();
     }
 
     /// <summary>Fiches des enseignants en activité, pour relier un compte enseignant à ses cours attribués.</summary>

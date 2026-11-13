@@ -39,6 +39,19 @@ public static class RemoteConnection
 
     public static void Save(RemoteConfiguration configuration) => SecretStore.Save(FilePath, JsonSerializer.SerializeToUtf8Bytes(configuration));
 
+    /// <summary>Retire une invitation distante mémorisée, jamais la configuration du serveur hôte.</summary>
+    public static bool TryForgetClient()
+    {
+        try
+        {
+            if (Load() is { Host: true }) return false;
+            if (File.Exists(FilePath)) File.Delete(FilePath);
+            return !File.Exists(FilePath);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException
+            or System.Security.Cryptography.CryptographicException or JsonException) { return false; }
+    }
+
     public static void StartHost(Uri localServer)
     {
         lock (HostGate)

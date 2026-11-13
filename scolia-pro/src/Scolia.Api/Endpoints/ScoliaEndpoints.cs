@@ -589,6 +589,10 @@ public static class ScoliaEndpoints
         sheets.MapGet("/feuille", (Guid coursId, string nature, bool? anonyme, DeliberationService s, CancellationToken ct) => s.SheetAsync(coursId, nature, anonyme ?? false, ct));
         sheets.MapPut("/feuille", async (Guid coursId, string nature, List<MarkInput> input, DeliberationService s, CancellationToken ct) =>
             Results.Ok(new { enregistrees = await s.SaveSheetAsync(coursId, nature, input, ct) }));
+        // Vérification préalable sans révéler le nom, la promotion d'origine ni le matricule.
+        // Le service vérifie aussi que le cours appartient réellement à l'enseignant.
+        sheets.MapGet("/codes/verification", (Guid coursId, string code, DeliberationService s, CancellationToken ct) =>
+            s.CheckCodeForCourseAsync(coursId, code, ct)).RequireAuthorization(Permissions.MarksEncode);
         sheets.MapPost("/cotes-par-code", (MarkByCodeRequest input, DeliberationService s, CancellationToken ct) => s.SaveByCodeAsync(input, ct));
         sheets.MapPost("/cotes/import", (MarkImportRequest input, DeliberationService s, CancellationToken ct) => s.ImportMarksAsync(input, ct));
         sheets.MapPost("/remise", (Guid coursId, string nature, DeliberationService s, CancellationToken ct) => s.SubmitAsync(coursId, nature, ct));
