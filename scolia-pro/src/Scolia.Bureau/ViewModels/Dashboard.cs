@@ -89,7 +89,7 @@ public sealed class DashboardPage : PageViewModel
 
         Kpis.Clear();
         // Les pris en charge ont leur propre total : « à jour » et « en retard » ne comptent que les payants.
-        Kpis.Add(new KpiVm("Apprenants actifs", Format.Amount(d.ActiveStudents),
+        Kpis.Add(new KpiVm($"{Shell.StudentTerms.PluralTitle} actifs", Format.Amount(d.ActiveStudents),
             $"{Format.Count(d.PayingStudents, "payant", "payants")} : {d.StudentsUpToDate} à jour · {d.StudentsLate} en retard",
             ThemeBrush.Get("ToneBlue"), MaterialIconKind.AccountGroupOutline));
         Kpis.Add(new KpiVm("Pris en charge", Format.Amount(d.SponsoredStudents),
@@ -100,7 +100,7 @@ public sealed class DashboardPage : PageViewModel
         Kpis.Add(new KpiVm("Recettes de l'année", Money(d.CollectedTotal),
             $"Ce mois : {Money(d.CollectedThisMonth)} · dépenses {Money(d.ExpensesThisMonth)}",
             ThemeBrush.Get("ToneGreen"), MaterialIconKind.CashMultiple));
-        Kpis.Add(new KpiVm("Reste exigible", Money(d.Overdue), Format.Count(d.StudentsLate, "apprenant en retard", "apprenants en retard"),
+        Kpis.Add(new KpiVm("Reste exigible", Money(d.Overdue), Format.Count(d.StudentsLate, $"{Shell.StudentTerms.Singular} en retard", $"{Shell.StudentTerms.Plural} en retard"),
             ThemeBrush.Get("ToneOrange"), MaterialIconKind.AlertCircleOutline));
         Kpis.Add(new KpiVm("Reste à percevoir", Money(d.Outstanding), $"Attendu à ce jour : {Money(d.ExpectedToDate)}",
             ThemeBrush.Get("ToneIndigo"), MaterialIconKind.ProgressClock));
@@ -169,8 +169,8 @@ public sealed class DashboardPage : PageViewModel
             ? new TodayStatVm("Caisse", "Arrêtée", "L'arrêté du jour est enregistré", MaterialIconKind.LockCheckOutline, ThemeBrush.Get("ToneTeal"))
             : new TodayStatVm("Caisse", t.ReceiptsToday == 0 ? "Ouverte" : "À arrêter", t.ReceiptsToday == 0 ? "Aucune opération pour l'instant" : "Pensez à l'arrêté de fin de journée",
                 MaterialIconKind.CashRegister, ThemeBrush.Get("ToneOrange")));
-        TodayStats.Add(new TodayStatVm("Appel", t.AttendanceMarked == 0 ? "Non saisi" : Format.Count(t.AttendanceMarked, "apprenant pointé", "apprenants pointés"),
-            t.SuspendedToday == 0 ? "Aucun renvoi en cours" : Format.Count(t.SuspendedToday, "apprenant renvoyé ce jour", "apprenants renvoyés ce jour"),
+        TodayStats.Add(new TodayStatVm("Appel", t.AttendanceMarked == 0 ? "Non saisi" : Format.Count(t.AttendanceMarked, $"{Shell.StudentTerms.Singular} pointé", $"{Shell.StudentTerms.Plural} pointés"),
+            t.SuspendedToday == 0 ? "Aucun renvoi en cours" : Format.Count(t.SuspendedToday, $"{Shell.StudentTerms.Singular} renvoyé ce jour", $"{Shell.StudentTerms.Plural} renvoyés ce jour"),
             MaterialIconKind.ClipboardCheckOutline, ThemeBrush.Get("ToneBlue")));
 
         foreach (var a in t.Appointments) Appointments.Add(Person(a));

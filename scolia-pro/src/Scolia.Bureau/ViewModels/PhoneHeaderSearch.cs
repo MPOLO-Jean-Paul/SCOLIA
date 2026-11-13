@@ -64,13 +64,13 @@ public sealed class PhoneHeaderSearchVm : Observable
     };
     public string Placeholder => listening ? "Parlez maintenant…" : Scope(shell.Current) switch
     {
-        "apprenants" => "Nom ou matricule de l'apprenant",
+        "apprenants" => $"Nom ou matricule de {shell.StudentTerms.Elided}",
         "recus" => "Reçu, matricule ou nom",
-        "mensualites" => "Apprenant ou matricule",
-        "debiteurs" => "Apprenant en dette",
-        "encaissement" => "Apprenant à encaisser",
-        "encaissement_lot" => "Apprenants du lot",
-        "cartes" => "Apprenant ou matricule de la carte",
+        "mensualites" => $"{shell.StudentTerms.SingularTitle} ou matricule",
+        "debiteurs" => $"{shell.StudentTerms.SingularTitle} en dette",
+        "encaissement" => $"{shell.StudentTerms.SingularTitle} à encaisser",
+        "encaissement_lot" => $"{shell.StudentTerms.PluralTitle} du lot",
+        "cartes" => $"{shell.StudentTerms.SingularTitle} ou matricule de la carte",
         "audit" => "Événement du journal d'audit",
         "depenses" => "Dépense ou référence",
         _ => shell.Current is SettingsPage ? "Rechercher un réglage ou une option" : "Rechercher dans SCOLIA",

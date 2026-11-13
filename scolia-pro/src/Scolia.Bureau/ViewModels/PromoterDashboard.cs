@@ -77,7 +77,7 @@ public sealed class PromoterDashboardPage : PageViewModel
 
         var nextKpis = new[]
         {
-            new PromoterKpiVm("Apprenants actifs", Count(data.ActiveStudents),
+            new PromoterKpiVm($"{Shell.StudentTerms.PluralTitle} actifs", Count(data.ActiveStudents),
                 data.SponsoredStudents > 0
                     ? $"{Format.Count(data.PayingStudents, "payant", "payants")} · {data.SponsoredStudents} pris en charge ({Money(data.SponsoredAmount)})"
                     : Format.Count(data.Promotions.Count, "promotion", "promotions"), MaterialIconKind.AccountGroup, ThemeBrush.Get("ToneIndigo")),

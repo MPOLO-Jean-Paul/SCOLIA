@@ -1,6 +1,7 @@
 using System.Text.RegularExpressions;
 using Scolia.Bureau.Api;
 using Scolia.Bureau.Infrastructure;
+using Scolia.Domain.School;
 
 namespace Scolia.Bureau.ViewModels;
 
@@ -87,6 +88,7 @@ public sealed class SetupViewModel : Observable
     public SetupViewModel(ShellViewModel shell)
     {
         this.shell = shell;
+        InstitutionType = InstitutionTypes[0];
         StartMonths = Months;
         EndMonths = Months;
         MonthCounts = [.. Enumerable.Range(1, 12).Select(n => new ChoiceItem(n.ToString(System.Globalization.CultureInfo.InvariantCulture), $"{n} mois"))];
@@ -172,6 +174,20 @@ public sealed class SetupViewModel : Observable
         }
         Raise(nameof(LogoLine));
     }
+
+    // Les écoles privées sont disponibles avec un aperçu pédagogique non officiel ;
+    // le supérieur LMD et les établissements publics attendent validation métier.
+    public IReadOnlyList<ChoiceItem> InstitutionTypes { get; } =
+    [
+        new("ItmIm", "ITM / IM"),
+        new("Maternelle", "École maternelle privée"),
+        new("Primaire", "École primaire privée"),
+        new("Secondaire", "École secondaire / technique privée"),
+        new("ComplexeScolaire", "Complexe scolaire privé — cycles à définir ensuite"),
+        new("SuperieurLmd", "Université / supérieur LMD — en préparation"),
+    ];
+    private ChoiceItem institutionType = null!;
+    public ChoiceItem InstitutionType { get => institutionType; set => Set(ref institutionType, value); }
 
     public IReadOnlyList<ChoiceItem> StartMonths { get; }
     public IReadOnlyList<ChoiceItem> EndMonths { get; }
@@ -370,6 +386,10 @@ public sealed class SetupViewModel : Observable
     /// <summary>Contrôles de l'étape 1, avant de passer aux comptes. Renvoie le premier problème, ou null.</summary>
     public string? ValidateStepOne()
     {
+        if (InstitutionType is null || !InstitutionProfiles.IsEnabled(InstitutionType.Value))
+            return "Ce profil pédagogique n'est pas encore activé ; choisissez ITM / IM ou une école privée.";
+        if (LoadDemo && InstitutionType.Value != InstitutionProfiles.ItmIm)
+            return "Les données fictives ITM sont réservées au profil ITM / IM : désactivez les exemples.";
         if (string.IsNullOrWhiteSpace(SchoolName)) return "Indiquez le nom de l'établissement.";
         if (string.IsNullOrWhiteSpace(ShortName)) return "Indiquez le sigle de l'établissement.";
         if (Phone.Length > 0 && !(Phone.Length == PhoneInput.Length && Phone[0] == '0')) return "Le téléphone compte 10 chiffres commençant par 0, par exemple 0812345678.";
@@ -386,6 +406,9 @@ public sealed class SetupViewModel : Observable
     {
         var seen = new HashSet<string>(StringComparer.Ordinal);
         var rank = 0;
+        if (InstitutionType.Value == InstitutionProfiles.ComplexeScolaire &&
+            Promotions.Any(p => !p.IsBlank))
+            return "Pour un complexe scolaire, installez d'abord l'établissement, choisissez ses cycles dans Paramètres > Cycles scolaires, puis créez les classes dans le cycle correspondant.";
         foreach (var p in Promotions)
         {
             rank++;
@@ -396,8 +419,9 @@ public sealed class SetupViewModel : Observable
             if (!seen.Add(code)) return $"Promotion {rank} : le code {code} est déjà utilisé.";
             if (string.IsNullOrWhiteSpace(p.Name)) return $"Promotion {rank} : indiquez la désignation, par exemple « Première année ».";
             if (!decimal.TryParse(p.Fee.Replace(" ", string.Empty, StringComparison.Ordinal), System.Globalization.NumberStyles.Number, System.Globalization.CultureInfo.InvariantCulture, out var fee)
-                || fee <= 0 || fee != decimal.Truncate(fee))
-                return $"Promotion {rank} : la mensualité est un montant entier en francs, par exemple 55000.";
+                || (InstitutionType.Value == InstitutionProfiles.ItmIm ? fee <= 0 : fee < 0)
+                || fee != decimal.Truncate(fee))
+                return $"Promotion {rank} : indiquez un montant entier en francs (supérieur à zéro pour ITM/IM ; zéro autorisé si aucune mensualité n'est appliquée au cycle privé).";
         }
         return null;
     }
@@ -444,6 +468,25 @@ public sealed class SetupViewModel : Observable
             try { await shell.Api.UploadAsync<object>(HttpMethod.Put, "api/etablissement/logo", [new UploadedFile("fichier", Path.ChangeExtension(logoName ?? "logo", ".png"), logoData)]); }
             catch (ApiException ex) { problems.Add($"Logo non enregistré : {ex.Message}"); }
         }
+        // Sur une école à cycle unique, toutes les classes appartiennent à ce cycle.
+        // Un complexe scolaire exige d'abord un choix explicite des cycles : aucun
+        // rattachement de classe n'est inventé ou déduit d'un code ambigu.
+        Guid? schoolCycleId = null;
+        if (InstitutionType.Value is InstitutionProfiles.Maternelle or InstitutionProfiles.Primaire
+            or InstitutionProfiles.Secondaire)
+        {
+            try
+            {
+                var configured = await shell.Api.GetAsync<SchoolCycleConfigurationDto>("api/etablissement/cycles");
+                schoolCycleId = configured.Cycles.Single(c =>
+                    c.Kind == InstitutionType.Value && c.IsActive).Id;
+            }
+            catch (Exception ex) when (ex is ApiException or InvalidOperationException)
+            {
+                problems.Add("Impossible de retrouver le cycle scolaire de l'établissement. Configurez les classes dans Paramètres : " + ex.Message);
+                return problems;
+            }
+        }
         foreach (var p in Promotions.Where(p => !p.IsBlank))
         {
             var code = p.Code.Trim();
@@ -454,6 +497,7 @@ public sealed class SetupViewModel : Observable
                 {
                     code, name = p.Name.Trim(), sectionId = (Guid?)null, level = Math.Max(level, 1), capacity = (int?)null, isActive = true,
                     nextPromotionCode = (string?)null,
+                    schoolCycleId,
                     monthlyFee = decimal.Parse(p.Fee.Replace(" ", string.Empty, StringComparison.Ordinal), System.Globalization.CultureInfo.InvariantCulture),
                     oneTimeFees = Array.Empty<object>(),
                 });
@@ -470,6 +514,7 @@ public sealed class SetupViewModel : Observable
         if (UseComptabilite) accounts.Add(new { role = "Comptabilite", userName = ComptabiliteUserName.Trim(), displayName = ComptabiliteDisplayName.Trim(), password = ComptabilitePassword });
         return new
         {
+            institutionType = InstitutionType.Value,
             schoolName = SchoolName.Trim(),
             shortName = ShortName.Trim(),
             motto = Motto.Trim() is { Length: > 0 } motto ? motto : null,

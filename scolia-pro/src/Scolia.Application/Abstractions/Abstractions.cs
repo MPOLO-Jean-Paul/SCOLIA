@@ -13,8 +13,15 @@ namespace Scolia.Application.Abstractions;
 public interface IAppDbContext
 {
     DbSet<SchoolProfile> Schools { get; }
+    DbSet<SchoolCycle> SchoolCycles { get; }
+    DbSet<SchoolCycleFeePolicy> SchoolCycleFeePolicies { get; }
+    DbSet<SchoolCyclePeriod> SchoolCyclePeriods { get; }
+    DbSet<SchoolCycleAssessment> SchoolCycleAssessments { get; }
     DbSet<AcademicYear> AcademicYears { get; }
     DbSet<AcademicPeriod> Periods { get; }
+    DbSet<PedagogicalPeriod> PedagogicalPeriods { get; }
+    DbSet<AcademicStructureUnit> AcademicStructureUnits { get; }
+    DbSet<CurriculumItem> CurriculumItems { get; }
     DbSet<Section> Sections { get; }
     DbSet<Promotion> Promotions { get; }
     DbSet<FeeItem> FeeItems { get; }

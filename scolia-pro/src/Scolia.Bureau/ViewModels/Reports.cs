@@ -85,13 +85,13 @@ public sealed class ReportsPage : PageViewModel
                 MaterialIconKind.CalendarCheck, "ToneIndigo", "la promotion",
                 Pdf(() => "api/rapports/suivi-mensuel/export" + ScoliaClient.Query(("promotionId", PromotionId())), "suivi-mensuel-paiements"),
                 Excel(() => "api/rapports/suivi-mensuel/export" + ScoliaClient.Query(("promotionId", PromotionId())), "suivi-mensuel-paiements")),
-            Card(Perm.ReportsRead, "Retards de paiement", "Apprenants en retard, périodes dues, ancienneté et contact du parent.",
+            Card(Perm.ReportsRead, "Retards de paiement", $"{Shell.StudentTerms.PluralTitle} en retard, périodes dues, ancienneté et contact du parent.",
                 MaterialIconKind.AlertCircle, "ToneOrange", "", Pdf(() => "api/rapports/debiteurs/export", "retards-de-paiement"), Excel(() => "api/rapports/debiteurs/export", "retards-de-paiement")),
             Card(Perm.PaymentsRead, "Registre des dépenses", "Sorties de caisse et de banque de la période, numérotées, avec leur motif.",
                 MaterialIconKind.Wallet, "ToneRed", "la période", Pdf(() => "api/depenses/export" + Period("du", "au"), "registre-des-depenses"), Excel(() => "api/depenses/export" + Period("du", "au"), "registre-des-depenses")));
 
         Section("Secrétariat",
-            Card(Perm.ReportsRead, "Liste générale des apprenants", "Toutes les promotions de l'année, avec statut, contact du parent et solde.",
+            Card(Perm.ReportsRead, $"Liste générale des {Shell.StudentTerms.Plural}", "Toutes les promotions de l'année, avec statut, contact du parent et solde.",
                 MaterialIconKind.AccountGroup, "ToneIndigo", "", Pdf(() => "api/rapports/apprenants/export", "liste-generale-apprenants"), Excel(() => "api/rapports/apprenants/export", "liste-generale-apprenants")),
             Card(Perm.ReportsRead, "Liste de classe", "Liste nominative d'enregistrement de la promotion choisie.",
                 MaterialIconKind.FormatListNumbered, "TonePurple", "la promotion", Pdf(ClassList, "liste-de-classe"), Excel(ClassList, "liste-de-classe")));

@@ -237,6 +237,39 @@ public static class ScoliaEndpoints
         })
             .RequireAuthorization(Permissions.SettingsWrite);
 
+        // Même administration / établissement : les cycles sont un sous-module
+        // de configuration protégé, sans accès à la caisse ou aux données ITM.
+        g.MapGet("/cycles", (SchoolCycleConfigurationService s, CancellationToken ct) =>
+            s.GetAsync(ct)).RequireAuthorization(Permissions.SettingsWrite);
+        g.MapPut("/cycles", (SchoolCycleConfigurationInput input, SchoolCycleConfigurationService s,
+            CancellationToken ct) => s.ConfigureAsync(input, ct))
+            .RequireAuthorization(Permissions.SettingsWrite);
+
+        // Registre scolaire distinct de l'ITM : aucun seuil, moyenne ou décision
+        // inventés dans un aperçu. L'écriture est interdite aux profils non activés.
+        g.MapGet("/cycles/evaluations/{enrollmentId:guid}/apercu",
+            (Guid enrollmentId, SchoolCycleAssessmentService s, CancellationToken ct) =>
+                s.PreviewAsync(enrollmentId, ct)).RequireAuthorization(Permissions.AcademicsRead);
+        g.MapPost("/cycles/evaluations/{enrollmentId:guid}",
+            (Guid enrollmentId, SchoolCycleAssessmentInput input, SchoolCycleAssessmentService s, CancellationToken ct) =>
+                s.SaveAsync(enrollmentId, input, ct)).RequireAuthorization(Permissions.AcademicsWrite);
+        // Document de consultation distinct du bulletin officiel et des
+        // délibérations ITM. Les droits sont ceux de la lecture pédagogique.
+        g.MapGet("/cycles/evaluations/{enrollmentId:guid}/apercu.pdf",
+            async (Guid enrollmentId, SchoolCycleAssessmentService s,
+                HttpContext http, CancellationToken ct) =>
+            {
+                // Document nominatif d'un mineur : interdit aux caches partagés.
+                http.Response.Headers.CacheControl = "private, no-store, max-age=0";
+                http.Response.Headers.Pragma = "no-cache";
+                var preview = await s.PrintPreviewAsync(enrollmentId, ct);
+                return new InlineFileResult(
+                    SchoolCycleBulletinPdf.Build(preview),
+                    Pdf, "apercu-pedagogique-non-officiel.pdf");
+            })
+            .RequireAuthorization(Permissions.AcademicsRead);
+
+
         g.MapGet("/sections", (SchoolService s, CancellationToken ct) => s.SectionsAsync(ct));
         g.MapPost("/sections", (SectionUpsert input, SchoolService s, CancellationToken ct) => s.UpsertSectionAsync(null, input, ct)).RequireAuthorization(Permissions.SettingsWrite);
         g.MapPut("/sections/{id:guid}", (Guid id, SectionUpsert input, SchoolService s, CancellationToken ct) => s.UpsertSectionAsync(id, input, ct)).RequireAuthorization(Permissions.SettingsWrite);

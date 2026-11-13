@@ -324,7 +324,7 @@
                                Foreground="{DynamicResource MutedBrush}" IsHitTestVisible="False" />
               <TextBox x:Name="HeaderFinderBox" Grid.Column="1" Classes="searchfield" MinHeight="40"
                        Text="{Binding HeaderFinder.Query, Mode=TwoWay}" PlaceholderText="{Binding HeaderFinder.Placeholder}"
-                       GotFocus="OnHeaderFinderFocus" KeyDown="OnHeaderFinderKeyDown" ToolTip.Tip="Apprenants, reçus, pages et réglages" />
+                       GotFocus="OnHeaderFinderFocus" KeyDown="OnHeaderFinderKeyDown" ToolTip.Tip="{Binding GlobalSearchTip}" />
               <Button Grid.Column="3" Classes="baricon" Command="{Binding HeaderFinder.ClearQuery}" IsVisible="{Binding HeaderFinder.HasQuery}"
                       ToolTip.Tip="Effacer" Width="40" Height="40">
                 <mi:MaterialIcon Kind="Close" />
