@@ -538,7 +538,7 @@ public sealed class DeliberationService(IAppDbContext db, IWriteGate gate, IAudi
         var submitted = await EnsureWritableAsync(year.Id, course, kind, ct);
         var (code, student) = await ResolveCodeAsync(year.Id, input.Code, ct);
         if (student.PromotionId != course.PromotionId)
-            throw new DomainException("code", $"Le code {code.Code} n'appartient pas à la promotion de ce cours : vérifiez la copie.");
+            throw new DomainException("code", $"Apprenant hors promotion : le code {code.Code} n'appartient pas à la promotion du cours sélectionné.");
         var value = DeliberationEngine.ValidateMark(kind, course.Semester, input.Value, course.MaxScore);
         var mark = await db.CourseMarks.FirstOrDefaultAsync(m => m.EnrollmentId == student.EnrollmentId && m.CourseId == course.Id && m.Kind == kind, ct);
         var previous = mark?.Value;
