@@ -589,6 +589,8 @@ public static class ScoliaEndpoints
         sheets.MapGet("/feuille", (Guid coursId, string nature, bool? anonyme, DeliberationService s, CancellationToken ct) => s.SheetAsync(coursId, nature, anonyme ?? false, ct));
         sheets.MapPut("/feuille", async (Guid coursId, string nature, List<MarkInput> input, DeliberationService s, CancellationToken ct) =>
             Results.Ok(new { enregistrees = await s.SaveSheetAsync(coursId, nature, input, ct) }));
+        sheets.MapGet("/codes/verifier-promotion", (Guid coursId, string code, DeliberationService s, CancellationToken ct) =>
+            s.CheckCodeInCourseAsync(coursId, code, ct)).RequireAuthorization(Permissions.MarksEncode).RequireRateLimiting("connexion");
         sheets.MapPost("/cotes-par-code", (MarkByCodeRequest input, DeliberationService s, CancellationToken ct) => s.SaveByCodeAsync(input, ct));
         sheets.MapPost("/cotes/import", (MarkImportRequest input, DeliberationService s, CancellationToken ct) => s.ImportMarksAsync(input, ct));
         sheets.MapPost("/remise", (Guid coursId, string nature, DeliberationService s, CancellationToken ct) => s.SubmitAsync(coursId, nature, ct));
