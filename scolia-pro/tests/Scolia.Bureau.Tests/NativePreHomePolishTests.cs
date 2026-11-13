@@ -29,10 +29,6 @@ public sealed class NativePreHomePolishTests
             (string?)x.Attribute("Property") == property)?.Attribute("Value")?.Value;
 
     [Theory]
-    [InlineData("Views/LoginView.axaml", "StackPanel.iosloginbody",
-        "TextBox.iosauthfield", "Button.iosauthprimary")]
-    [InlineData("Views/LockScreenView.axaml", "StackPanel.ioslockbody",
-        "TextBox.ioslockfield", "Button.ioslockprimary")]
     [InlineData("Views/ConnectionView.axaml", "StackPanel.iosconnectbody",
         "TextBox.iosconnectfield", "Button.iosconnectprimary")]
     public void Meme_largeur_de_formulaire_et_hauteur_tactile(
@@ -43,6 +39,19 @@ public sealed class NativePreHomePolishTests
         Assert.Equal("52", Setter(Style(path, primary), "MinHeight"));
         Assert.Equal("{DynamicResource TextBrush}", Setter(Style(path, field), "Foreground"));
         Assert.Equal("{DynamicResource OnAccentBrush}", Setter(Style(path, primary), "Foreground"));
+    }
+
+    [Theory]
+    [InlineData("Views/LoginView.axaml", "StackPanel.iosloginbody", "TextBox.iosauthfield", "Button.iosauthprimary")]
+    [InlineData("Views/LockScreenView.axaml", "StackPanel.ioslockbody", "TextBox.ioslockfield", "Button.ioslockprimary")]
+    public void Le_nouveau_panneau_bleu_ciel_conserve_un_formulaire_tactile_et_lisible(
+        string path, string body, string field, string primary)
+    {
+        Assert.Equal("640", Setter(Style(path, body), "MaxWidth"));
+        Assert.Equal("50", Setter(Style(path, field), "MinHeight"));
+        Assert.Equal("50", Setter(Style(path, primary), "MinHeight"));
+        Assert.Equal("White", Setter(Style(path, field), "Foreground"));
+        Assert.Equal("#1948AE", Setter(Style(path, primary), "Foreground"));
     }
 
     [Fact]
@@ -69,8 +78,6 @@ public sealed class NativePreHomePolishTests
     }
 
     [Theory]
-    [InlineData("Views/LoginView.axaml", "TextBox.iosauthfield")]
-    [InlineData("Views/LockScreenView.axaml", "TextBox.ioslockfield")]
     [InlineData("Views/ConnectionView.axaml", "TextBox.iosconnectfield")]
     [InlineData("Views/Phone/ConnectionCompactView.axaml", "TextBox.connectfield")]
     [InlineData("Views/Phone/SetupView.axaml", "TextBox.w11")]
@@ -79,6 +86,17 @@ public sealed class NativePreHomePolishTests
         var style = Style(path, selector);
         Assert.Equal("{DynamicResource AccentBrush}", Setter(style, "CaretBrush"));
         Assert.Equal("{DynamicResource AccentSoftBrush}", Setter(style, "SelectionBrush"));
+    }
+
+    [Theory]
+    [InlineData("Views/LoginView.axaml", "TextBox.iosauthfield", "#6EA4FF")]
+    [InlineData("Views/LockScreenView.axaml", "TextBox.ioslockfield", "#72A4FF")]
+    public void Le_curseur_blanc_reste_visible_sur_les_champs_bleus(
+        string path, string selector, string selection)
+    {
+        var style = Style(path, selector);
+        Assert.Equal("White", Setter(style, "CaretBrush"));
+        Assert.Equal(selection, Setter(style, "SelectionBrush"));
     }
 
     [Fact]
