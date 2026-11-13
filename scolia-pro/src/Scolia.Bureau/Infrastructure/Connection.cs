@@ -34,6 +34,22 @@ public static class ConnectionStore
     public static void Save(ConnectionSettings settings) => _ = TrySave(settings);
 
     /// <summary>
+    /// Oublie uniquement le serveur distant enregistré sur cet appareil. La base de
+    /// l'ordinateur principal et les données hors ligne ne sont jamais supprimées.
+    /// </summary>
+    public static bool TryForgetRemote()
+    {
+        var saved = Load();
+        if (saved is null || saved.Mode == ConnectionSettings.Local || HasLocalData()) return false;
+        try
+        {
+            if (File.Exists(FilePath)) File.Delete(FilePath);
+            return !File.Exists(FilePath);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { return false; }
+    }
+
+    /// <summary>
     /// Écriture atomique du serveur mémorisé : éviter qu'une coupure pendant l'écriture
     /// tronque le fichier et fasse perdre la connexion de l'établissement au redémarrage.
     /// La connexion Tailscale avertit l'utilisateur si la sauvegarde n'a pas abouti.
