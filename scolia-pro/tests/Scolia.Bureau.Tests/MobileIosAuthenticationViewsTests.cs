@@ -1,4 +1,6 @@
 using System.Xml.Linq;
+using Avalonia.Media;
+using Scolia.Bureau.Infrastructure;
 using Xunit;
 
 namespace Scolia.Bureau.Tests;
@@ -54,6 +56,45 @@ public sealed class MobileIosAuthenticationViewsTests
         Assert.Contains("IosLoginScroll.IsVisible = ios", code);
         Assert.Contains("AuthLayout.Track(IosLoginScroll)", code);
         Assert.Contains("login.CanSubmitCredentials", code);
+    }
+
+    [Fact]
+    public void Champs_login_lisibles_sur_fond_cobalt_en_themes_clair_et_sombre()
+    {
+        var nodes = Elements("LoginView.axaml");
+        var fields = new[] { "IosUserNameBox", "IosPasswordBox", "IosNewPasswordBox",
+            "IosConfirmPasswordBox", "IosRecoveryCodeBox" };
+        foreach (var name in fields)
+        {
+            var input = Assert.Single(nodes, e => e.Name.LocalName == "TextBox" && Attribute(e, "Name", name));
+            var classes = input.Attribute("Classes")?.Value.Split(' ', StringSplitOptions.RemoveEmptyEntries) ?? [];
+            Assert.Contains("iosauthfield", classes);
+            Assert.Contains("onbrand", classes); // évite les styles métiers fond clair.
+            Assert.NotNull(input.Attribute("PlaceholderText"));
+        }
+
+        var loginStyle = Assert.Single(nodes, e => e.Name.LocalName == "Style" &&
+            Attribute(e, "Selector", "TextBox.iosauthfield"));
+        static string? Setting(XElement style, string property) =>
+            style.Elements().FirstOrDefault(e => e.Name.LocalName == "Setter" &&
+                Attribute(e, "Property", property))?.Attribute("Value")?.Value;
+        var bg = Color.Parse(Setting(loginStyle, "Background")!);
+        var text = Color.Parse(Setting(loginStyle, "Foreground")!);
+        var placeholder = Color.Parse(Setting(loginStyle, "PlaceholderForeground")!);
+        Assert.True(ThemeContrast.Ratio(text, bg) >= 7); // texte réellement tapé + points du mot de passe
+        Assert.True(ThemeContrast.Ratio(placeholder, bg) >= 4.5); // texte indicatif
+        Assert.Equal("White", Setting(loginStyle, "CaretBrush"));
+        Assert.Equal("White", Setting(loginStyle, "SelectionForegroundBrush"));
+        Assert.Contains(nodes, e => e.Name.LocalName == "Style" &&
+            Attribute(e, "Selector", "TextBox.iosauthfield /template/ TextBlock#PART_Watermark"));
+
+        var global = XDocument.Load(Source("Themes/Controls.axaml")).Descendants().ToArray();
+        Assert.Contains(global, e => e.Name.LocalName == "Style" &&
+            (e.Attribute("Selector")?.Value.Contains(":not(.iosauthfield)", StringComparison.Ordinal) ?? false));
+        // Ne pas retomber sur les marges minuscules qui cachaient l'identifiant derrière l'icône.
+        var tiny = Assert.Single(nodes, e => e.Name.LocalName == "Style" &&
+            Attribute(e, "Selector", "ScrollViewer.tiny TextBox.iosauthfield"));
+        Assert.Equal("42,10,52,10", Setting(tiny, "Padding"));
     }
 
     [Fact]
