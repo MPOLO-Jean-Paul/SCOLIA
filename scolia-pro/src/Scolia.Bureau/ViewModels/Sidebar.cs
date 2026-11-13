@@ -164,6 +164,9 @@ public static class Sidebar
                 Item("Configuration", MaterialIconKind.Cog, "TonePurple", null, typeof(SettingsPage), () => new SettingsPage(shell)),
                 cyclesAvailable ? Item("Cycles scolaires", MaterialIconKind.SchoolOutline, "ToneTeal", Perm.SettingsWrite,
                     typeof(SchoolCyclesPage), () => new SchoolCyclesPage(shell)) : null,
+                type == InstitutionProfiles.SuperieurLmd
+                    ? Item("Organisation LMD", MaterialIconKind.BookEducationOutline, "ToneTeal", Perm.SettingsWrite,
+                        typeof(LmdPlanningPage), () => new LmdPlanningPage(shell)) : null,
                 Item("Utilisateurs", MaterialIconKind.AccountCog, "ToneBlue", Perm.UsersManage, typeof(UsersPage), () => new UsersPage(shell))),
             // Données : protéger, contrôler et, si besoin, effacer.
             Group("Données",

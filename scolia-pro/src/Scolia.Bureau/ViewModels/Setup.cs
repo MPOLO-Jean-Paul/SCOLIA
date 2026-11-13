@@ -89,6 +89,7 @@ public sealed class SetupViewModel : Observable
     {
         this.shell = shell;
         InstitutionType = InstitutionTypes[0];
+        Governance = GovernanceTypes[0];
         StartMonths = Months;
         EndMonths = Months;
         MonthCounts = [.. Enumerable.Range(1, 12).Select(n => new ChoiceItem(n.ToString(System.Globalization.CultureInfo.InvariantCulture), $"{n} mois"))];
@@ -175,8 +176,8 @@ public sealed class SetupViewModel : Observable
         Raise(nameof(LogoLine));
     }
 
-    // Les écoles privées sont disponibles avec un aperçu pédagogique non officiel ;
-    // le supérieur LMD et les établissements publics attendent validation métier.
+    // Tous les profils administratifs sont disponibles ; les documents imprimés
+    // n'acquièrent pas une valeur officielle par cette simple configuration.
     public IReadOnlyList<ChoiceItem> InstitutionTypes { get; } =
     [
         new("ItmIm", "ITM / IM"),
@@ -184,10 +185,18 @@ public sealed class SetupViewModel : Observable
         new("Primaire", "École primaire privée"),
         new("Secondaire", "École secondaire / technique privée"),
         new("ComplexeScolaire", "Complexe scolaire privé — cycles à définir ensuite"),
-        new("SuperieurLmd", "Université / supérieur LMD — en préparation"),
+        new("SuperieurLmd", "Université / institut supérieur LMD"),
     ];
     private ChoiceItem institutionType = null!;
     public ChoiceItem InstitutionType { get => institutionType; set => Set(ref institutionType, value); }
+
+    public IReadOnlyList<ChoiceItem> GovernanceTypes { get; } =
+    [
+        new("Prive", "Établissement privé"),
+        new("Public", "Établissement public (sans perception automatique)"),
+    ];
+    private ChoiceItem governance = null!;
+    public ChoiceItem Governance { get => governance; set => Set(ref governance, value); }
 
     public IReadOnlyList<ChoiceItem> StartMonths { get; }
     public IReadOnlyList<ChoiceItem> EndMonths { get; }
@@ -387,9 +396,11 @@ public sealed class SetupViewModel : Observable
     public string? ValidateStepOne()
     {
         if (InstitutionType is null || !InstitutionProfiles.IsEnabled(InstitutionType.Value))
-            return "Ce profil pédagogique n'est pas encore activé ; choisissez ITM / IM ou une école privée.";
-        if (LoadDemo && InstitutionType.Value != InstitutionProfiles.ItmIm)
-            return "Les données fictives ITM sont réservées au profil ITM / IM : désactivez les exemples.";
+            return "Choisissez un type d'établissement reconnu.";
+        if (Governance?.Value is not ("Prive" or "Public"))
+            return "Choisissez le régime privé ou public de l'établissement.";
+        if (LoadDemo && (InstitutionType.Value != InstitutionProfiles.ItmIm || Governance.Value != "Prive"))
+            return "Les exemples fictifs ITM sont réservés aux ITM/IM privés : désactivez-les.";
         if (string.IsNullOrWhiteSpace(SchoolName)) return "Indiquez le nom de l'établissement.";
         if (string.IsNullOrWhiteSpace(ShortName)) return "Indiquez le sigle de l'établissement.";
         if (Phone.Length > 0 && !(Phone.Length == PhoneInput.Length && Phone[0] == '0')) return "Le téléphone compte 10 chiffres commençant par 0, par exemple 0812345678.";
@@ -419,9 +430,10 @@ public sealed class SetupViewModel : Observable
             if (!seen.Add(code)) return $"Promotion {rank} : le code {code} est déjà utilisé.";
             if (string.IsNullOrWhiteSpace(p.Name)) return $"Promotion {rank} : indiquez la désignation, par exemple « Première année ».";
             if (!decimal.TryParse(p.Fee.Replace(" ", string.Empty, StringComparison.Ordinal), System.Globalization.NumberStyles.Number, System.Globalization.CultureInfo.InvariantCulture, out var fee)
-                || (InstitutionType.Value == InstitutionProfiles.ItmIm ? fee <= 0 : fee < 0)
+                || (Governance.Value == "Public" ? fee != 0
+                    : InstitutionType.Value == InstitutionProfiles.ItmIm ? fee <= 0 : fee < 0)
                 || fee != decimal.Truncate(fee))
-                return $"Promotion {rank} : indiquez un montant entier en francs (supérieur à zéro pour ITM/IM ; zéro autorisé si aucune mensualité n'est appliquée au cycle privé).";
+                return $"Promotion {rank} : mensualité entière valide (zéro obligatoire au public ; montant positif pour ITM/IM privé).";
         }
         return null;
     }
@@ -515,6 +527,7 @@ public sealed class SetupViewModel : Observable
         return new
         {
             institutionType = InstitutionType.Value,
+            governance = Governance.Value,
             schoolName = SchoolName.Trim(),
             shortName = ShortName.Trim(),
             motto = Motto.Trim() is { Length: > 0 } motto ? motto : null,

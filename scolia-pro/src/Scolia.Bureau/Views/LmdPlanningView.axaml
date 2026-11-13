@@ -1,0 +1,87 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mi="using:Material.Icons.Avalonia"
+             x:Class="Scolia.Bureau.Views.LmdPlanningView">
+  <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+    <StackPanel Spacing="12" MaxWidth="980" Margin="0,0,6,14">
+      <TextBlock Text="ORGANISATION DE L'ENSEIGNEMENT SUPÉRIEUR" Classes="groupcaps" />
+      <Border Classes="phonegroup" Padding="14,12">
+        <StackPanel Spacing="4">
+          <TextBlock Text="Référentiel LMD" FontWeight="SemiBold" FontSize="{DynamicResource FsHeading}" />
+          <TextBlock Text="Configurez séparément la hiérarchie académique, les semestres et la maquette UE/EC. Les documents officiels et les décisions de jury requièrent une validation distincte."
+                     Classes="muted" TextWrapping="Wrap" />
+        </StackPanel>
+      </Border>
+      <TextBlock Text="STRUCTURES ACADÉMIQUES" Classes="groupcaps" />
+      <ItemsControl ItemsSource="{Binding Structures}">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate>
+            <Border Classes="phonegroup" Padding="12,10" Margin="0,0,0,6">
+              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                <mi:MaterialIcon Kind="SitemapOutline" Width="20" Height="20" />
+                <StackPanel Grid.Column="1" Spacing="2">
+                  <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                  <StackPanel Orientation="Horizontal" Spacing="8">
+                    <TextBlock Text="{Binding Kind}" Classes="muted" />
+                    <TextBlock Text="{Binding Code}" Classes="muted" />
+                  </StackPanel>
+                </StackPanel>
+              </Grid>
+            </Border>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+      <Button Content="Ajouter une faculté, filière ou structure" Command="{Binding AddStructure}"
+              HorizontalAlignment="Stretch" MinHeight="42" />
+      <TextBlock Text="CALENDRIER ACADÉMIQUE" Classes="groupcaps" />
+      <ItemsControl ItemsSource="{Binding Semesters}">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate>
+            <Border Classes="phonegroup" Padding="12,10" Margin="0,0,0,6">
+              <StackPanel Spacing="3">
+                <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                  <TextBlock Text="{Binding StartDate, StringFormat='Du {0}'}" Classes="muted" />
+                  <TextBlock Grid.Column="1" Text="{Binding EndDate, StringFormat='Au {0}'}" Classes="muted" />
+                </Grid>
+              </StackPanel>
+            </Border>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+      <Button Content="Définir les semestres S1 et S2" Command="{Binding ConfigureSemesters}"
+              HorizontalAlignment="Stretch" MinHeight="42" />
+      <TextBlock Text="MAQUETTE DES ENSEIGNEMENTS" Classes="groupcaps" />
+      <Border Classes="phonegroup" Padding="12,10">
+        <StackPanel Spacing="5">
+          <TextBlock Text="Promotion / année d'étude" Classes="fieldlabel" />
+          <ComboBox ItemsSource="{Binding PromotionChoices}"
+                    SelectedItem="{Binding SelectedPromotion}" HorizontalAlignment="Stretch" />
+        </StackPanel>
+      </Border>
+      <ItemsControl ItemsSource="{Binding Program}">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate>
+            <Border Classes="phonegroup" Padding="12,10" Margin="0,0,0,6">
+              <StackPanel Spacing="4">
+                <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <TextBlock Text="{Binding Code}" Classes="muted" />
+                  <TextBlock Text="{Binding Kind}" Classes="muted" />
+                  <TextBlock Text="{Binding Semester}" Classes="muted" />
+                  <TextBlock Text="{Binding Credits, StringFormat='Crédits : {0}'}" Classes="muted" />
+                </StackPanel>
+              </StackPanel>
+            </Border>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+      <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+        <Button Grid.Column="0" Content="Ajouter une UE" Command="{Binding AddUnit}" MinHeight="42" />
+        <Button Grid.Column="1" Content="Ajouter un EC" Command="{Binding AddElement}" MinHeight="42" />
+      </Grid>
+      <TextBlock Text="La maquette est un outil de préparation académique. Aucun relevé, diplôme ou bulletin officiel n'est créé automatiquement."
+                 Classes="muted" TextWrapping="Wrap" />
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

@@ -88,21 +88,22 @@ public sealed class PrivateSchoolSetupWorkflowTests : IDisposable
     }
 
     [Fact]
-    public async Task Lmd_is_not_enabled_before_higher_education_modules_are_ready()
+    public async Task Lmd_institution_can_open_without_ITM_school_cycles_or_fees()
     {
-        var client = app.Client();
-        var (status, _) = await client.Post("/api/installation", new
+        var admin = await InstallAsync("SuperieurLmd");
+        var school = await admin.GetAsync("/api/etablissement").Ok();
+        Assert.Equal("SuperieurLmd", school.GetProperty("institutionType").GetString());
+        await admin.Post("/api/etablissement/promotions", new
         {
-            institutionType = "SuperieurLmd", schoolName = "Université",
-            shortName = "UNI", currencyCode = "CDF", currencySymbol = "FC",
-            yearLabel = Http.Year(DateOnly.FromDateTime(DateTime.Now)),
-            startMonth = 9, monthCount = 10, adminUserName = "admin",
-            adminDisplayName = "Administrateur", adminPassword = "Scolia2026!",
-            loadDemoData = false,
-        }).Fail();
-        Assert.Equal(System.Net.HttpStatusCode.BadRequest, status);
+            code = "LMD1", name = "Licence 1", sectionId = (Guid?)null,
+            schoolCycleId = (Guid?)null, level = 1, capacity = (int?)null,
+            isActive = true, nextPromotionCode = (string?)null,
+            monthlyFee = 0m, oneTimeFees = Array.Empty<object>(),
+        }).Ok();
         using var scope = app.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ScoliaDbContext>();
-        Assert.Empty(await db.Schools.ToListAsync());
+        Assert.Empty(await db.SchoolCycles.ToListAsync());
+        Assert.Equal("SuperieurLmd", (await db.Schools.SingleAsync()).InstitutionType);
+        Assert.Empty(await db.FeeItems.ToListAsync());
     }
 }

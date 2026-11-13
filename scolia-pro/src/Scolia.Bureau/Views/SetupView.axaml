@@ -168,13 +168,19 @@
                 </Grid>
               </Grid>
 
-              <!-- Profil pédagogique : préparation additive, seul ITM/IEM reste activable en phase 1. -->
-              <StackPanel Classes="field" Spacing="4">
-                <TextBlock Text="Type d'établissement" />
-                <ComboBox ItemsSource="{Binding InstitutionTypes}" SelectedItem="{Binding InstitutionType}" HorizontalAlignment="Stretch" />
-                <TextBlock Text="ITM/IM reste disponible. Les écoles privées (maternelle, primaire, secondaire, complexes scolaires) disposeront de tarifs par cycle ; le régime public est prévu séparément. Ces profils seront activés après validation métier."
-                           Classes="muted" TextWrapping="Wrap" FontSize="{DynamicResource FsSmall}" />
-              </StackPanel>
+              <!-- Profil pédagogique et régime juridique : deux choix indépendants. -->
+              <Grid ColumnDefinitions="*,*" ColumnSpacing="12" infra:Adaptive.StackBelow="640">
+                <StackPanel Classes="field" Spacing="4">
+                  <TextBlock Text="Type d'établissement" />
+                  <ComboBox ItemsSource="{Binding InstitutionTypes}" SelectedItem="{Binding InstitutionType}" HorizontalAlignment="Stretch" />
+                </StackPanel>
+                <StackPanel Grid.Column="1" Classes="field" Spacing="4">
+                  <TextBlock Text="Régime de l'établissement" />
+                  <ComboBox ItemsSource="{Binding GovernanceTypes}" SelectedItem="{Binding Governance}" HorizontalAlignment="Stretch" />
+                </StackPanel>
+              </Grid>
+              <TextBlock Text="Public : les frais ne sont pas activés sans base réglementaire vérifiée. Les bulletins pédagogiques demeurent non officiels jusqu'à validation des modèles applicables."
+                         Classes="muted" TextWrapping="Wrap" FontSize="{DynamicResource FsSmall}" />
 
               <!-- Calendrier scolaire : choix explicites du début, de la fin et du dernier jour autorisé. -->
               <StackPanel Spacing="10">

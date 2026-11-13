@@ -37,7 +37,8 @@ public static class PedagogicalCalendarRules
         {
             InstitutionProfiles.ItmIm or InstitutionProfiles.ItmIem => semester is CourseSemester.Annuel or CourseSemester.S1 or CourseSemester.S2
                 or CourseSemester.JuryEpreuve or CourseSemester.JuryBloc,
-            InstitutionProfiles.Maternelle or InstitutionProfiles.Primaire or InstitutionProfiles.Secondaire => semester == CourseSemester.Annuel,
+            InstitutionProfiles.Maternelle or InstitutionProfiles.Primaire or InstitutionProfiles.Secondaire
+                or InstitutionProfiles.ComplexeScolaire => semester == CourseSemester.Annuel,
             InstitutionProfiles.SuperieurLmd => semester is CourseSemester.S1 or CourseSemester.S2,
             _ => false,
         };

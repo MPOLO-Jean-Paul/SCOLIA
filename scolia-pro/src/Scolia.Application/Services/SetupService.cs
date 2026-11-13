@@ -43,13 +43,17 @@ public sealed class SetupService(IAppDbContext db, IWriteGate gate, IAuditLog au
         if (!InstitutionProfiles.IsKnown(institutionType))
             throw new DomainException("typeEtablissement", "Type d'établissement inconnu.");
         if (!InstitutionProfiles.IsEnabled(institutionType))
-            throw new DomainException("typeEtablissement", "Ce profil n'est pas encore activé. Les écoles privées maternelles, primaires, secondaires et les complexes scolaires sont disponibles.");
-        // Les jeux d'essai ITM ne correspondent pas aux classes maternelles, primaires ou secondaires.
-        if (input.LoadDemoData && institutionType != InstitutionProfiles.ItmIm)
-            throw new DomainException("loadDemoData", "Les données de démonstration ITM ne peuvent pas être importées dans une autre catégorie d'établissement.");
+            throw new DomainException("typeEtablissement", "Le type d'établissement demandé n'est pas activable.");
+        if (!Enum.TryParse<SchoolGovernanceKind>(input.Governance, true, out var governance)
+            || !Enum.IsDefined(governance))
+            throw new DomainException("governance", "Choisissez un régime privé ou public reconnu.");
+        // Les jeux d'essai ITM ne doivent jamais contaminer une école publique ou un cursus LMD.
+        if (input.LoadDemoData && (institutionType != InstitutionProfiles.ItmIm
+                                   || governance != SchoolGovernanceKind.Prive))
+            throw new DomainException("loadDemoData", "Les données de démonstration sont réservées à un ITM/IM privé.");
         var school = new SchoolProfile
         {
-            InstitutionType = institutionType,
+            InstitutionType = institutionType, Governance = governance,
             Name = input.SchoolName.Trim(), ShortName = input.ShortName.Trim(), Motto = string.IsNullOrWhiteSpace(input.Motto) ? null : input.Motto.Trim(),
             City = input.City, Phone = IdentityRules.NormalizePhone(input.Phone), CurrencyCode = input.CurrencyCode.ToUpperInvariant(), CurrencySymbol = input.CurrencySymbol.Trim(),
             ReceiptFooter = "Conservez ce reçu. Son authenticité peut être vérifiée en scannant le code QR.",

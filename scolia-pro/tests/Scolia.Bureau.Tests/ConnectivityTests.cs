@@ -85,7 +85,7 @@ public class ConnectivityTests
             await Assert.ThrowsAsync<OfflineException>(() =>
                 api.GetAsync<System.Text.Json.JsonElement>("api/rapports/tableau-de-bord"));
         }
-        finally { if (Directory.Exists(directory)) Directory.Delete(directory, true); }
+        finally { RemoveTemporaryFolder(directory); }
     }
 
     [Fact]
@@ -106,7 +106,7 @@ public class ConnectivityTests
             watch.Stop();
             Assert.True(watch.Elapsed < TimeSpan.FromSeconds(2));
         }
-        finally { if (Directory.Exists(directory)) Directory.Delete(directory, true); }
+        finally { RemoveTemporaryFolder(directory); }
     }
 
     [Fact]
@@ -129,7 +129,7 @@ public class ConnectivityTests
             Assert.Equal("api/depenses", entry.Path);
             Assert.NotEmpty(entry.Key);
         }
-        finally { if (Directory.Exists(directory)) Directory.Delete(directory, true); }
+        finally { RemoveTemporaryFolder(directory); }
     }
 
     [Fact]
@@ -163,7 +163,7 @@ public class ConnectivityTests
             Assert.False(api.IsOnline);
             Assert.Contains("hors ligne", login.Notice ?? string.Empty, StringComparison.OrdinalIgnoreCase);
         }
-        finally { if (Directory.Exists(directory)) Directory.Delete(directory, true); }
+        finally { RemoveTemporaryFolder(directory); }
     }
 
     [Fact]
@@ -184,7 +184,22 @@ public class ConnectivityTests
             Assert.Equal(logo, localLogo);
             Assert.True(watch.Elapsed < TimeSpan.FromSeconds(2));
         }
-        finally { if (Directory.Exists(directory)) Directory.Delete(directory, true); }
+        finally { RemoveTemporaryFolder(directory); }
+    }
+
+    /// <summary>
+    /// L'écriture du journal hors ligne peut encore se terminer après la fermeture
+    /// du client. Une courte tentative répétée évite un faux échec du nettoyage,
+    /// sans masquer une erreur persistante.
+    /// </summary>
+    private static void RemoveTemporaryFolder(string directory)
+    {
+        for (var attempt = 0; attempt < 15; attempt++)
+        {
+            if (!Directory.Exists(directory)) return;
+            try { Directory.Delete(directory, recursive: true); return; }
+            catch (IOException) when (attempt < 14) { Thread.Sleep(30); }
+        }
     }
 
     [Fact]

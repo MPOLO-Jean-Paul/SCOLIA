@@ -1174,6 +1174,10 @@ public sealed class SettingsPage : PageViewModel
         // chaque classe, sans le déduire du code ou de la section.
         var plan = await shell.Api.GetAsync<SchoolCycleConfigurationDto>("api/etablissement/cycles");
         var schoolUsesCycles = InstitutionProfiles.UsesSchoolCycles(plan.InstitutionType);
+        var schoolIsPublic = plan.Governance == "Public";
+        var allowsZeroMonthly = schoolUsesCycles || schoolIsPublic
+            || plan.InstitutionType == InstitutionProfiles.SuperieurLmd;
+        if (schoolIsPublic) shown.Clear();
         var activeCycles = plan.Cycles.Where(c => c.IsActive).ToList();
         if (schoolUsesCycles && activeCycles.Count == 0)
         {
@@ -1184,15 +1188,18 @@ public sealed class SettingsPage : PageViewModel
             new ChoiceItem(c.Id.ToString(), c.Name)).ToList();
 
         var form = new FormViewModel(existing is null ? "Nouvelle promotion" : "Modifier la promotion",
-            schoolUsesCycles
-                ? "Associez la classe au bon cycle. Sa mensualité peut être nulle si ce cycle n'en applique pas ; les autres frais restent indépendants."
-                : "La mensualité est obligatoire. Pour chaque catégorie de frais, laissez le montant vide si elle ne concerne pas cette promotion.", async f =>
+            schoolIsPublic
+                ? "Public : gestion de la classe sans frais exigibles. Une décision réglementaire sera nécessaire pour activer la perception."
+                : allowsZeroMonthly
+                    ? "Associez la classe au bon cycle ; vous pouvez laisser la mensualité à zéro si elle ne s'applique pas."
+                    : "La mensualité est obligatoire. Pour chaque catégorie, laissez le montant vide si elle ne concerne pas cette classe.", async f =>
         {
             var monthly = f.Amount("mensualite");
-            if (schoolUsesCycles ? monthly < 0 : monthly <= 0)
+            if (schoolIsPublic ? monthly != 0 : allowsZeroMonthly ? monthly < 0 : monthly <= 0)
             {
-                f.Find("mensualite").Error = schoolUsesCycles
-                    ? "La mensualité ne peut pas être négative." : "La mensualité est obligatoire.";
+                f.Find("mensualite").Error = schoolIsPublic
+                    ? "Aucune mensualité scolaire publique sans autorisation : indiquez zéro."
+                    : allowsZeroMonthly ? "La mensualité ne peut pas être négative." : "La mensualité est obligatoire.";
                 return false;
             }
             var fees = new List<object>();
@@ -1232,10 +1239,11 @@ public sealed class SettingsPage : PageViewModel
         form.Add("niveau", "Niveau", FieldKind.Amount, existing?.Level.ToString() ?? "1", required: true);
         form.Add("capacite", "Capacité", FieldKind.Amount, existing?.Capacity?.ToString());
         form.Add("suivante", "Promotion suivante", value: existing?.NextPromotionCode, hint: "Code de la promotion de l'année suivante");
-        form.Add("mensualite", schoolUsesCycles ? "Mensualité (0 si non appliquée)" : "Mensualité (obligatoire)",
+        form.Add("mensualite", schoolIsPublic ? "Mensualité (public : zéro)"
+            : allowsZeroMonthly ? "Mensualité (0 si non appliquée)" : "Mensualité (obligatoire)",
             FieldKind.Amount,
             existing is { MonthlyFee: > 0 } ? existing.MonthlyFee.ToString("0")
-                : schoolUsesCycles ? "0" : null, required: true);
+                : allowsZeroMonthly ? "0" : null, required: true);
         form.AddFlag("actif", "Promotion active", existing?.IsActive ?? true);
         form.AddHeader("Autres frais", shown.Count == 0
             ? "Aucune catégorie de frais n'est créée. Créez les frais d'inscription ou d'examen dans Configuration, Catégories de frais si nécessaires."
