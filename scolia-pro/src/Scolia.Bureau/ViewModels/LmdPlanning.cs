@@ -66,7 +66,7 @@ public sealed class LmdPlanningPage : PageViewModel
         PromotionChoices = promotions.Where(p => p.IsActive)
             .Select(p => new ChoiceItem(p.Id.ToString(), p.Code + " · " + p.Name)).ToList();
         selectedPromotion = PromotionChoices.FirstOrDefault(p => p.Value == selectedId) ??
-            PromotionChoices.FirstOrDefault();
+            (PromotionChoices.Count > 0 ? PromotionChoices[0] : null);
         Raise(nameof(SelectedPromotion));
         await LoadProgramAsync();
         subtitle = $"{Structures.Count} structure(s) · {Semesters.Count} semestre(s) · {Program.Count} ligne(s) de programme";
