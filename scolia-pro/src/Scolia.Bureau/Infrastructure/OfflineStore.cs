@@ -499,6 +499,33 @@ public sealed class OfflineStore
         });
     }
 
+    /// <summary>
+    /// Oublie un compte sur cet appareil, et seulement lui : plus de suggestion ni de
+    /// connexion avec son ancienne preuve hors ligne. Les écritures en attente
+    /// interdisent ce retrait pour éviter de perdre leur auteur et leur reprise.
+    /// Le compte reste intact sur le serveur de l'établissement.
+    /// </summary>
+    public bool ForgetKnownAccount(string userName)
+    {
+        if (string.IsNullOrWhiteSpace(userName)) return false;
+        var account = userName.Trim();
+        if (OutboxFor(account).Count != 0) return false;
+        ForgetCredential(account);
+        database.Update([LastAccountKey, KnownAccountsKey], values =>
+        {
+            List<string> accounts;
+            try { accounts = JsonSerializer.Deserialize<List<string>>(values[KnownAccountsKey] ?? "[]", Json) ?? []; }
+            catch (JsonException) { accounts = []; }
+            var remaining = accounts.Where(x => !string.Equals(x, account, StringComparison.OrdinalIgnoreCase))
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .Distinct(StringComparer.OrdinalIgnoreCase).Take(10).ToList();
+            values[KnownAccountsKey] = JsonSerializer.Serialize(remaining, Json);
+            if (string.Equals(values[LastAccountKey], account, StringComparison.OrdinalIgnoreCase))
+                values[LastAccountKey] = remaining.FirstOrDefault() ?? string.Empty;
+        });
+        return true;
+    }
+
     /// <summary>Une récupération invalide uniquement l'empreinte du compte concerné, sans effacer les autres.</summary>
     public void ForgetCredential(string? userName = null)
     {
