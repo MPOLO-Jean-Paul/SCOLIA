@@ -49,7 +49,7 @@ public sealed class NativeEntryAndTeacherVisualTests
             (string?)x.Attribute("Property") == "Background" &&
             (string?)x.Attribute("Value") == "#2354C8");
         var background = Assert.Single(view.Descendants(), x =>
-            (string?)x.Attribute("Name") == "IosBackdrop");
+            x.Attributes().Any(a => a.Name.LocalName == "Name" && a.Value == "IosBackdrop"));
         Assert.Contains(background.Descendants(), x => x.Name.LocalName == "LinearGradientBrush");
         foreach (var command in new[] { "ChangeAccount", "ForgetSelectedAccount",
             "ToggleRecoveryHelp", "ChangeServer", "SignInWithBiometrics" })
@@ -57,7 +57,7 @@ public sealed class NativeEntryAndTeacherVisualTests
                 (string?)x.Attribute("Command") == "{Binding " + command + "}" &&
                 (string?)x.Attribute("AutomationProperties.Name") is { Length: > 0 });
         Assert.Contains(view.Descendants(), x => x.Name.LocalName == "TextBox" &&
-            (string?)x.Attribute("Name") == "IosUserNameBox");
+            x.Attributes().Any(a => a.Name.LocalName == "Name" && a.Value == "IosUserNameBox"));
     }
 
     [Fact]
@@ -69,7 +69,7 @@ public sealed class NativeEntryAndTeacherVisualTests
             (string?)x.Attribute("Property") == "Background" &&
             (string?)x.Attribute("Value") == "#2354C8");
         Assert.Contains(view.Descendants(), x => x.Name.LocalName == "ScrollViewer" &&
-            (string?)x.Attribute("Name") == "IosLockScroll" &&
+            x.Attributes().Any(a => a.Name.LocalName == "Name" && a.Value == "IosLockScroll") &&
             x.Descendants().Any(y => y.Name.LocalName == "LinearGradientBrush"));
         foreach (var command in new[] { "ForgotCode", "SwitchAccount" })
             Assert.Contains(view.Descendants(), x => x.Name.LocalName == "Button" &&
