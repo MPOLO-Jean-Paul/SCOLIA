@@ -329,6 +329,18 @@
       <StackPanel Spacing="5">
         <TextBlock Text="INFORMATIONS" Classes="groupcaps" />
         <Border Classes="phonegroup" Padding="0" ClipToBounds="True">
+          <Button Classes="settingsentry" Command="{Binding EncodeByCode}"
+                  HorizontalContentAlignment="Stretch" AutomationProperties.Name="Paramètres enseignants : Encodage">
+            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+              <Border Classes="appicon medium" Background="{DynamicResource TonePurple}">
+                <mi:MaterialIcon Kind="Pen" />
+              </Border>
+              <TextBlock Grid.Column="1" Text="Encodage" FontWeight="Medium" VerticalAlignment="Center" />
+              <mi:MaterialIcon Grid.Column="2" Kind="ChevronRight" Width="18" Height="18"
+                               Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" />
+            </Grid>
+          </Button>
+          <Border Height="1" Margin="54,0,0,0" Background="{DynamicResource LineBrush}" />
           <Expander Classes="teacherinfo" IsExpanded="False"
                     HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
             <Expander.Header>
