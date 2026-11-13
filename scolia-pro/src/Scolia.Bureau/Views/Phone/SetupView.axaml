@@ -11,7 +11,12 @@
       <Setter Property="CornerRadius" Value="0" />
       <Setter Property="Padding" Value="0" />
     </Style>
-    <Style Selector="TextBox.w11"><Setter Property="MinHeight" Value="52" /><Setter Property="CornerRadius" Value="12" /></Style>
+    <Style Selector="TextBox.w11">
+      <Setter Property="MinHeight" Value="52" />
+      <Setter Property="CornerRadius" Value="12" />
+      <Setter Property="CaretBrush" Value="{DynamicResource AccentBrush}" />
+      <Setter Property="SelectionBrush" Value="{DynamicResource AccentSoftBrush}" />
+    </Style>
     <Style Selector="ComboBox"><Setter Property="MinHeight" Value="46" /><Setter Property="CornerRadius" Value="12" /></Style>
     <Style Selector="CheckBox TextBlock"><Setter Property="TextWrapping" Value="Wrap" /></Style>
     <Style Selector="Button.iossetupprimary">

@@ -48,6 +48,9 @@
     <Style Selector="TextBox.iosauthfield">
       <Setter Property="Background" Value="{DynamicResource FieldBrush}" />
       <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+      <!-- Même lisibilité et couleur de saisie sur Android et Windows. -->
+      <Setter Property="CaretBrush" Value="{DynamicResource AccentBrush}" />
+      <Setter Property="SelectionBrush" Value="{DynamicResource AccentSoftBrush}" />
       <Setter Property="CornerRadius" Value="12" />
       <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
       <Setter Property="BorderThickness" Value="1" />

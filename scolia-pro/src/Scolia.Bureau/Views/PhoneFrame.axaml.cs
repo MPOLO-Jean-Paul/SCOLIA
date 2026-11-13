@@ -185,7 +185,14 @@ public partial class PhoneFrame : UserControl
 
     private async void OnLogoutClick(object? sender, RoutedEventArgs e)
     {
-        if (Shell is { } shell) await shell.LogoutAsync();
+        if (Shell is not { } shell) return;
+        try { await shell.LogoutAsync(); }
+        catch (Exception ex)
+        {
+            // Ne jamais laisser remonter une exception hors de l'événement Android.
+            System.Diagnostics.Trace.WriteLine($"SCOLIA : déconnexion mobile ({ex.GetType().Name}) : {ex.Message}");
+            shell.Notify("La déconnexion a rencontré une erreur. Réessayez.");
+        }
     }
 
     private void OnScrimPressed(object? sender, PointerPressedEventArgs e) => Shell?.CloseSheet();
