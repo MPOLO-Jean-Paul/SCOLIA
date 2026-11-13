@@ -329,6 +329,7 @@
       <StackPanel Spacing="5">
         <TextBlock Text="INFORMATIONS" Classes="groupcaps" />
         <Border Classes="phonegroup" Padding="0" ClipToBounds="True">
+          <StackPanel Spacing="0">
           <Button Classes="settingsentry" Command="{Binding EncodeByCode}"
                   HorizontalContentAlignment="Stretch" AutomationProperties.Name="Paramètres enseignants : Encodage">
             <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
@@ -355,6 +356,7 @@
             <TextBlock Text="{Binding Rules}" TextWrapping="Wrap"
                        Margin="14,4,14,14" />
           </Expander>
+          </StackPanel>
         </Border>
       </StackPanel>
     </StackPanel>
