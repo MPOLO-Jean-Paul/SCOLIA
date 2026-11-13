@@ -31,6 +31,11 @@ public sealed class LoginViewModel : Observable
         RecoverWithBiometrics = new AsyncCommand(RecoverWithBiometricsAsync);
         RecoverWithCode = new AsyncCommand(RecoverWithCodeAsync);
         ChooseRememberedAccount = new RelayCommand<string>(ChooseRememberedAccountAsync);
+        ForgetRememberedAccount = new RelayCommand<string>(account => _ = ForgetRememberedAccountAsync(account));
+        ForgetSavedServer = new AsyncCommand(async () =>
+        {
+            if (!Busy && CanForgetSavedServer && ForgetServerRequested is { } request) await request();
+        });
     }
 
     public event Action<SessionDto>? LoggedIn;
@@ -40,6 +45,13 @@ public sealed class LoginViewModel : Observable
     /// établissement. La page de connexion n'est jamais une impasse.
     /// </summary>
     public event Action? ChangeServerRequested;
+    /// <summary>Confirmations affichées par l'application, hors du stockage d'identifiants.</summary>
+    public Func<string, Task<bool>>? ConfirmAccountRemoval { get; set; }
+    public Func<Task>? ForgetServerRequested { get; set; }
+    public AsyncCommand ForgetSavedServer { get; }
+    /// <summary>Un serveur local portant une base scolaire ne peut jamais être effacé depuis la connexion.</summary>
+    public bool CanForgetSavedServer => !api.Server.IsLoopback && !ConnectionStore.HasLocalData()
+        && ConnectionStore.Load() is { Mode: ConnectionSettings.Remote or ConnectionSettings.Internet };
     public RelayCommand ChangeServer => changeServer ??= new RelayCommand(() => { if (!Busy) ChangeServerRequested?.Invoke(); });
     private RelayCommand? changeServer;
     /// <summary>Ordinateur auquel ce poste est relié, rappelé en bas de la page de connexion.</summary>
@@ -52,6 +64,7 @@ public sealed class LoginViewModel : Observable
         RecallLastAccount();
         Raise(nameof(ServerLine));
         Raise(nameof(HasServerLine));
+        Raise(nameof(CanForgetSavedServer));
     }
 
     /// <summary>Comptes déjà ouverts sur cet appareil, et non liste des utilisateurs du serveur.</summary>
@@ -65,6 +78,62 @@ public sealed class LoginViewModel : Observable
     }
     public bool ShowRememberedChoices => ShowAccountEntry && KnownAccounts.Count > 0;
     public RelayCommand<string> ChooseRememberedAccount { get; }
+    public RelayCommand<string> ForgetRememberedAccount { get; }
+
+    /// <summary>
+    /// Retrait de la connexion sur CE poste seulement : ni suppression du compte central ni effacement
+    /// des données scolaires. Bloqué pour les opérations en attente et les profils biométriques actifs.
+    /// </summary>
+    private async Task ForgetRememberedAccountAsync(string? account)
+    {
+        if (Busy || string.IsNullOrWhiteSpace(account) ||
+            (!KnownAccounts.Contains(account, StringComparer.OrdinalIgnoreCase)
+             && !string.Equals(UserName, account, StringComparison.OrdinalIgnoreCase))) return;
+        if (CanResume && string.Equals(resumeUser, account, StringComparison.OrdinalIgnoreCase))
+        {
+            Error = "Terminez d'abord la session verrouillée avant de retirer ce compte.";
+            return;
+        }
+        if (BiometricAccess.ReadAccount(api.Server) is { } biometric &&
+            BiometricAccess.AccountMatches(biometric, account))
+        {
+            Error = "Désactivez d'abord l'accès biométrique de ce compte après vérification d'identité.";
+            return;
+        }
+
+        Busy = true;
+        try
+        {
+            var store = new OfflineStore(ConnectionStore.CacheAddress(api.Server));
+            if (store.OutboxFor(account).Count > 0)
+            {
+                Error = "Ce compte a des opérations non synchronisées. Reconnectez-vous et synchronisez-les avant son retrait.";
+                return;
+            }
+            if (ConfirmAccountRemoval is null || !await ConfirmAccountRemoval(account)) return;
+            store.ForgetAccount(account);
+            KnownAccounts = store.KnownAccounts;
+            if (string.Equals(UserName, account, StringComparison.OrdinalIgnoreCase))
+            {
+                editingAccount = true;
+                UserName = string.Empty;
+                Password = string.Empty;
+                ClearRecoverySecrets();
+            }
+            Error = null;
+            Notice = $"Compte « {account} » retiré de cet appareil. Son accès sur le serveur reste inchangé.";
+            RaiseAccountState();
+            RefreshBiometrics();
+        }
+        catch (Exception ex) when (ex is System.IO.IOException or UnauthorizedAccessException
+            or InvalidOperationException or System.Text.Json.JsonException
+            or System.Security.Cryptography.CryptographicException)
+        {
+            Error = "Le compte n'a pas pu être retiré. Vérifiez le stockage local et réessayez.";
+        }
+        finally { Busy = false; }
+    }
+
     private void ChooseRememberedAccountAsync(string? account)
     {
         if (Busy || string.IsNullOrWhiteSpace(account) ||
@@ -108,7 +177,9 @@ public sealed class LoginViewModel : Observable
         try
         {
             var suggested = await api.GetAsync<LocalAccount>("api/installation/compte-local");
-            if (!string.IsNullOrWhiteSpace(suggested?.UserName)) RememberAccount(suggested.UserName);
+            if (!string.IsNullOrWhiteSpace(suggested?.UserName) &&
+                !new OfflineStore(ConnectionStore.CacheAddress(api.Server)).IsAccountForgotten(suggested.UserName))
+                RememberAccount(suggested.UserName);
         }
         catch (Exception ex) when (ex is ApiException or OfflineException or HttpRequestException or TaskCanceledException) { }
     }
