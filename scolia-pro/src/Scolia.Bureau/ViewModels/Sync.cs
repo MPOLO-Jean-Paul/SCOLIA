@@ -352,7 +352,10 @@ public sealed class SyncCenter : Observable, IDisposable
             var user = store.User;
             var revision = await api.GetAsync<JsonElement>("api/revision", ct);
             var current = OfflinePreparation.RevisionLabel(revision);
-            if (string.Equals(store.ReadSyncCheckpointFor(user), current, StringComparison.Ordinal)) return;
+            // Une installation plus ancienne peut posséder un curseur de dossiers,
+            // mais pas encore les feuilles enseignants. Ne jamais les confondre.
+            var checkpoint = current + (shell.TeacherOnly ? "|enseignant-v1" : "|dossiers-v1");
+            if (string.Equals(store.ReadSyncCheckpointFor(user), checkpoint, StringComparison.Ordinal)) return;
             if (api.Offline != store || store.User != user || !shell.IsLoggedIn) return;
             preparing = true;
             Raise(nameof(Preparing));
@@ -368,7 +371,7 @@ public sealed class SyncCenter : Observable, IDisposable
             if (result.Complete && ReferenceEquals(api.Offline, store) && store.User == user &&
                 shell.IsLoggedIn && api.IsOnline)
             {
-                store.SaveSyncCheckpointFor(user, current);
+                store.SaveSyncCheckpointFor(user, checkpoint);
                 PreparationText = shell.TeacherOnly
                     ? $"Cours à jour : {result.Indexed} cours, {result.Details} feuilles anonymes."
                     : $"Copie locale à jour : {result.Indexed} dossiers autorisés.";
