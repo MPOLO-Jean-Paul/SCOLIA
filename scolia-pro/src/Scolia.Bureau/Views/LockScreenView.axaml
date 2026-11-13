@@ -275,12 +275,12 @@
             <Image Classes="ioslockmark" Source="{DynamicResource ScoliaMark}" />
           </Border>
           <TextBlock Text="Session protégée" Classes="ioslocktitle" FontWeight="Bold" TextWrapping="Wrap"
-                     TextAlignment="Center" Foreground="{DynamicResource TextBrush}" />
+                     TextAlignment="Center" Foreground="#153D84" />
           <TextBlock Text="{Binding School}" FontSize="13" Foreground="#153D84"
                      TextAlignment="Center" TextWrapping="Wrap" MaxLines="2" />
           <WrapPanel Classes="ioslockclock" HorizontalAlignment="Center">
             <TextBlock Text="{Binding Time}" FontSize="16" FontWeight="SemiBold" Margin="0,0,9,0"
-                       Foreground="{DynamicResource Text2Brush}" />
+                       Foreground="#153D84" />
             <TextBlock Text="{Binding DateText}" FontSize="13" Foreground="#153D84" VerticalAlignment="Center" />
           </WrapPanel>
         </StackPanel>
@@ -376,7 +376,7 @@
             <mi:MaterialIcon Kind="AccountSwitchOutline" Width="24" Height="24" />
           </Button>
         </StackPanel>
-        <TextBlock Text="{Binding Footer}" Classes="muted" FontSize="11"
+        <TextBlock Text="{Binding Footer}" Classes="muted" FontSize="11" IsVisible="False"
                    HorizontalAlignment="Stretch" TextWrapping="Wrap" TextAlignment="Center" />
       </StackPanel>
     </ScrollViewer>
