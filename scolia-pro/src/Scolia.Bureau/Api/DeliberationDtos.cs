@@ -8,6 +8,7 @@ public sealed record DeliberationSettingsDto(bool EncodingS1Open, bool EncodingS
 public sealed record AnonymousCodeRowDto(Guid EnrollmentId, string Matricule, string FullName, string PromotionCode, string? Code, bool IsManual, DateTime? AssignedAtUtc);
 
 public sealed record CodeAssignmentResult(int Assigned, int AlreadyCoded, int Total);
+public sealed record CodeInCourseDto(string Code, bool InPromotion, string Message);
 
 public sealed record DeliberationCourseDto(Guid Id, int Number, string Name, string Semester, decimal MaxScore, string? TeacherName,
     int Students, int GradedS1, int GradedS2, int Supports, bool LockedS1, bool LockedS2, bool SubmittedS1 = false, bool SubmittedS2 = false, int GradedJury = 0);
