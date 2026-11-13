@@ -72,7 +72,8 @@ public sealed class NativeEntryAndTeacherVisualTests
             && x.Descendants().Any(t => t.Name.LocalName == "BrushTransition"
                 && (string?)t.Attribute("Property") == "Background"));
         Assert.Contains(doc.Descendants(), x => x.Name.LocalName == "Grid"
-            && (string?)x.Attribute("Name") == "SetupRoot");
+            && x.Attributes().Any(attribute =>
+                attribute.Name.LocalName == "Name" && attribute.Value == "SetupRoot"));
     }
 
     [Theory]
