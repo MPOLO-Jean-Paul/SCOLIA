@@ -100,6 +100,7 @@ public sealed class OfflineStore
     private string CredentialFile => "session.json";
     private const string LastAccountKey = "dernier-compte";
     private const string KnownAccountsKey = "comptes-connus:v1";
+    private const string ForgottenAccountsKey = "comptes-retires:v1";
     private static string CredentialKeyFor(string account) =>
         "session:" + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(account.Trim().ToUpperInvariant())));
 
@@ -293,7 +294,11 @@ public sealed class OfflineStore
     }
 
     public IReadOnlyList<OutboxItem> Outbox() => Load(OutboxFile).Where(i => i.User == User).ToList();
-    public IReadOnlyList<OutboxItem> OutboxFor(string user) => Load(OutboxFile).Where(i => i.User == user).ToList();
+    public IReadOnlyList<OutboxItem> OutboxFor(string user) => Load(OutboxFile)
+        .Where(i => string.Equals(i.User, user, StringComparison.OrdinalIgnoreCase)).ToList();
+
+    /// <summary>Un serveur avec des opérations locales en attente ne doit pas être désassocié.</summary>
+    public int PendingOperations => Load(OutboxFile).Count;
 
     /// <summary>L'opération est en sécurité en ligne : elle reste dans la file jusqu'à son issue.</summary>
     public void MarkDepositedFor(string user, string id) => Change((pending, _) =>
@@ -459,8 +464,27 @@ public sealed class OfflineStore
     }
 
     /// <summary>Le dernier identifiant utilisé, pas un jeton ni un mot de passe.</summary>
-    public string? LastAccount => database.Read(LastAccountKey) is { Length: > 0 } user
-        ? user : DecodeCredential(database.Read(CredentialFile))?.UserName;
+    public string? LastAccount
+    {
+        get
+        {
+            var account = database.Read(LastAccountKey) is { Length: > 0 } user
+                ? user : DecodeCredential(database.Read(CredentialFile))?.UserName;
+            return account is not null && !IsAccountForgotten(account) ? account : null;
+        }
+    }
+
+    /// <summary>Empêche une ancienne suggestion automatique de restaurer un compte volontairement retiré.</summary>
+    public bool IsAccountForgotten(string? account)
+    {
+        if (string.IsNullOrWhiteSpace(account)) return false;
+        try
+        {
+            var saved = JsonSerializer.Deserialize<List<string>>(database.Read(ForgottenAccountsKey) ?? "[]", Json) ?? [];
+            return saved.Contains(account.Trim(), StringComparer.OrdinalIgnoreCase);
+        }
+        catch (JsonException) { return false; }
+    }
 
     /// <summary>Comptes déjà utilisés sur ce poste pour ce serveur, sans divulguer les comptes du serveur.</summary>
     public IReadOnlyList<string> KnownAccounts
@@ -477,7 +501,7 @@ public sealed class OfflineStore
             catch (JsonException) { accounts = []; }
             if (LastAccount is { Length: > 0 } last)
                 accounts.Insert(0, last);
-            return accounts.Where(name => !string.IsNullOrWhiteSpace(name))
+            return accounts.Where(name => !string.IsNullOrWhiteSpace(name) && !IsAccountForgotten(name))
                 .Distinct(StringComparer.OrdinalIgnoreCase).Take(10).ToArray();
         }
     }
@@ -486,16 +510,54 @@ public sealed class OfflineStore
     {
         if (string.IsNullOrWhiteSpace(userName)) return;
         var account = userName.Trim();
-        database.Update([LastAccountKey, KnownAccountsKey], values =>
+        database.Update([LastAccountKey, KnownAccountsKey, ForgottenAccountsKey], values =>
         {
             List<string> accounts;
+            List<string> forgotten;
             try { accounts = JsonSerializer.Deserialize<List<string>>(values[KnownAccountsKey] ?? "[]", Json) ?? []; }
             catch (JsonException) { accounts = []; }
+            try { forgotten = JsonSerializer.Deserialize<List<string>>(values[ForgottenAccountsKey] ?? "[]", Json) ?? []; }
+            catch (JsonException) { forgotten = []; }
             var known = new[] { account }.Concat(accounts)
                 .Where(name => !string.IsNullOrWhiteSpace(name))
                 .Distinct(StringComparer.OrdinalIgnoreCase).Take(10).ToArray();
             values[LastAccountKey] = account;
             values[KnownAccountsKey] = JsonSerializer.Serialize(known, Json);
+            values[ForgottenAccountsKey] = JsonSerializer.Serialize(forgotten
+                .Where(name => !string.Equals(name, account, StringComparison.OrdinalIgnoreCase)), Json);
+        });
+    }
+
+    /// <summary>
+    /// Retire seulement la mémorisation et la connexion hors ligne de ce compte sur cet appareil.
+    /// Les dossiers, cotes, journaux et autorisations d'autres utilisateurs sont intacts.
+    /// </summary>
+    public void ForgetAccount(string userName)
+    {
+        if (string.IsNullOrWhiteSpace(userName)) return;
+        var account = userName.Trim();
+        if (OutboxFor(account).Count > 0)
+            throw new InvalidOperationException("Synchronisez d'abord les opérations en attente de ce compte.");
+        var scopedKey = CredentialKeyFor(account);
+        database.Update([LastAccountKey, KnownAccountsKey, ForgottenAccountsKey, CredentialFile, scopedKey], values =>
+        {
+            List<string> accounts;
+            List<string> forgotten;
+            try { accounts = JsonSerializer.Deserialize<List<string>>(values[KnownAccountsKey] ?? "[]", Json) ?? []; }
+            catch (JsonException) { accounts = []; }
+            try { forgotten = JsonSerializer.Deserialize<List<string>>(values[ForgottenAccountsKey] ?? "[]", Json) ?? []; }
+            catch (JsonException) { forgotten = []; }
+            var remaining = accounts.Where(name => !string.Equals(name, account, StringComparison.OrdinalIgnoreCase))
+                .Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
+            values[KnownAccountsKey] = JsonSerializer.Serialize(remaining, Json);
+            values[ForgottenAccountsKey] = JsonSerializer.Serialize(forgotten.Append(account)
+                .Distinct(StringComparer.OrdinalIgnoreCase).ToArray(), Json);
+            if (string.Equals(values[LastAccountKey], account, StringComparison.OrdinalIgnoreCase))
+                values[LastAccountKey] = remaining.FirstOrDefault() ?? string.Empty;
+            values[scopedKey] = string.Empty;
+            var prior = DecodeCredential(values[CredentialFile]);
+            if (prior is not null && string.Equals(prior.UserName, account, StringComparison.OrdinalIgnoreCase))
+                values[CredentialFile] = string.Empty;
         });
     }
 
