@@ -35,6 +35,13 @@ public sealed record SchoolDto(
     string? CardInstitute = null, string? CardAddress = null, string InstitutionType = "ItmIm",
     string Governance = "Prive");
 
+/// <summary>Plan LMD : consultable et paramétrable dans les mêmes interfaces natives.</summary>
+public sealed record LmdStructureDto(Guid Id, string Kind, Guid? ParentId, string Code, string Name, bool IsActive);
+public sealed record LmdSemesterDto(Guid Id, string Code, string Name, int Order, DateOnly StartDate, DateOnly EndDate);
+public sealed record LmdProgramItemDto(Guid Id, Guid PromotionId, Guid? AcademicUnitId,
+    Guid? ParentItemId, string Kind, string Code, string Name, string Semester,
+    decimal Credits, decimal Coefficient, decimal Hours);
+
 /// <summary>Configuration distincte de chaque cycle d'un complexe scolaire.</summary>
 public sealed record SchoolCycleConfigurationItemDto(Guid Id, string Kind, string Name,
     string? AuthorizationNumber, bool IsActive, bool ChargeMonthlyTuition, decimal MonthlyAmount, int ClassCount);
