@@ -239,6 +239,7 @@ public sealed class MarksPage : PageViewModel
 
     /// <summary>Espace enseignant : seulement ses cours attribués, en feuille anonyme.</summary>
     public bool IsTeacher => teacher;
+    public bool ShowTeacherEntry => teacher && course is not null;
     public ObservableCollection<string> CodeSuggestions { get; } = [];
     public RelayCommand<string> ChooseAnonymousCode { get; }
     public AsyncCommand ValidateAnonymousCode { get; }
@@ -413,6 +414,7 @@ public sealed class MarksPage : PageViewModel
         {
             if (!Set(ref course, value)) return;
             Raise(nameof(NoCourse));
+            Raise(nameof(ShowTeacherEntry));
             ResetAnonymousEntry();
             Raise(nameof(MaxScoreLabel));
             Kinds = value is null ? AllKinds : AllKinds.Where(k => Accepts(value.Source.Semester, k.Value)).ToList();
