@@ -169,6 +169,9 @@ public static class Sidebar
                 Item("Réseau de l'établissement", MaterialIconKind.LanConnect, "ToneTeal", null,
                     typeof(NetworkHubPage), () => new NetworkHubPage(shell))),
             Group("Paramètres",
+                // Réglage métier accessible sans traverser les fonctions du secrétariat.
+                shell.TeacherOnly ? Item("Encodage", MaterialIconKind.Pen, "TonePurple", null,
+                    typeof(MarksPage), () => new MarksPage(shell)) : null,
                 Item("Configuration", MaterialIconKind.Cog, "TonePurple", null, typeof(SettingsPage), () => new SettingsPage(shell)),
                 Item("Utilisateurs", MaterialIconKind.AccountCog, "ToneBlue", Perm.UsersManage, typeof(UsersPage), () => new UsersPage(shell))),
             // Données : protéger, contrôler et, si besoin, effacer.
