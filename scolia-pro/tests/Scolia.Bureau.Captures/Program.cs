@@ -1731,21 +1731,29 @@ if (args.Length > 3 && args[3] == "fluidite")
         var scrollName = isIosLogin ? "IosLoginScroll" : "LoginScroll";
         var cardName = isIosLogin ? "IosLoginCard" : "LoginCard";
         var headingName = isIosLogin ? "IosSchoolHeading" : "SchoolHeading";
-        var footerName = isIosLogin ? "IosLoginFooter" : "LoginFooter";
+        var footerName = isIosLogin ? "IosLoginSubmitButton" : "LoginFooter";
         var loginScroll = (ScrollViewer)Named(scrollName);
         loginScroll.Offset = default;
         RenderLayout();
         CheckLayout($"Connexion {width}×{height} : carte dans l'écran", FitsHorizontally(Named(cardName)));
         CheckLayout($"Connexion {width}×{height} : nom d'établissement dans l'écran", FitsHorizontally(Named(headingName)));
-        CheckLayout($"Connexion {width}×{height} : le titre reste au-dessus du formulaire",
-            InWindow(Named(headingName)).Bottom <= InWindow(Named(cardName)).Top - 8);
+        // Le nouveau modèle présente désormais l'établissement dans le panneau bleu.
+        // Un titre invisible ou rendu hors panneau doit faire échouer la capture.
+        var school = InWindow(Named(headingName));
+        var cardBounds = InWindow(Named(cardName));
+        CheckLayout($"Connexion {width}×{height} : établissement intégré au panneau",
+            school.Height > 0 && school.Top >= cardBounds.Top - 1 &&
+            school.Bottom <= cardBounds.Bottom + 1);
         if (height == 300)
             CheckLayout("Clavier : le formulaire peut défiler", loginScroll.Extent.Height > loginScroll.Viewport.Height);
-        loginScroll.Offset = new Vector(0, loginScroll.Extent.Height);
+        loginScroll.Offset = new Vector(0, Math.Max(0, loginScroll.Extent.Height - loginScroll.Viewport.Height));
         RenderLayout();
+        // Vérifier l'action principale, et non l'ancien pied de page désormais
+        // volontairement invisible pour préserver une connexion minimaliste.
         var footer = InWindow(Named(footerName));
-        CheckLayout($"Connexion {width}×{height} : bas du formulaire atteignable",
-            footer.Top >= -1 && footer.Bottom <= window.Bounds.Height + 1);
+        CheckLayout($"Connexion {width}×{height} : bouton de connexion atteignable",
+            footer.Height > 0 && footer.Top >= -1 &&
+            footer.Bottom <= window.Bounds.Height + 1);
         Save(window, $"fluidite-connexion-{width}x{height}.png");
     }
 
