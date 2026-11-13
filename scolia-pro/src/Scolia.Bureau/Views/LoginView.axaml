@@ -790,10 +790,12 @@
         <Button Classes="iosauthlink" Command="{Binding ForgetSavedServer}" IsVisible="{Binding CanForgetSavedServer}"
                 IsEnabled="{Binding NotBusy}" AutomationProperties.Name="Retirer le serveur mémorisé"
                 HorizontalAlignment="Center">
-          <StackPanel Orientation="Horizontal" Spacing="8">
-            <mi:MaterialIcon Kind="LinkOff" Width="18" Height="18" />
-            <TextBlock Text="Retirer ce serveur de l'appareil" TextWrapping="Wrap" />
-          </StackPanel>
+          <DockPanel LastChildFill="True">
+            <mi:MaterialIcon DockPanel.Dock="Left" Kind="LinkOff" Width="18" Height="18"
+                             Margin="0,0,8,0" VerticalAlignment="Center" />
+            <TextBlock Text="Retirer ce serveur de l'appareil" TextWrapping="Wrap"
+                       TextAlignment="Center" VerticalAlignment="Center" />
+          </DockPanel>
         </Button>
         <TextBlock Text="{Binding ServerLine}" IsVisible="{Binding HasServerLine}"
                    Classes="muted" TextAlignment="Center" FontSize="11" TextWrapping="Wrap" />
