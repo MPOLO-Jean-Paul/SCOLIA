@@ -64,6 +64,8 @@ public sealed class SchoolCyclesPage : PageViewModel
     public SchoolCyclesPage(ShellViewModel shell) : base(shell)
     {
         Save = new AsyncCommand(SaveAsync);
+        AddPeriod = new AsyncCommand(AddPeriodAsync);
+        AddSubject = new AsyncCommand(AddSubjectAsync);
         Action("Enregistrer les cycles", MaterialIconKind.ContentSaveOutline, SaveAsync, primary: true);
         ActionRefresh();
     }
@@ -77,6 +79,35 @@ public sealed class SchoolCyclesPage : PageViewModel
     public bool IsPrivate => Governance == "Prive";
     public bool CanConfigure { get => canConfigure; private set => Set(ref canConfigure, value); }
     public AsyncCommand Save { get; }
+    public AsyncCommand AddPeriod { get; }
+    public AsyncCommand AddSubject { get; }
+
+    private ChoiceItem? selectedCycle;
+    private ChoiceItem? selectedPromotion;
+    private IReadOnlyList<ChoiceItem> cycleChoices = [];
+    private IReadOnlyList<ChoiceItem> promotionChoices = [];
+    public ObservableCollection<SchoolPeriodDto> Periods { get; } = [];
+    public ObservableCollection<AnnualSubjectDto> Subjects { get; } = [];
+    public IReadOnlyList<ChoiceItem> CycleChoices
+    {
+        get => cycleChoices;
+        private set => Set(ref cycleChoices, value);
+    }
+    public IReadOnlyList<ChoiceItem> PromotionChoices
+    {
+        get => promotionChoices;
+        private set => Set(ref promotionChoices, value);
+    }
+    public ChoiceItem? SelectedCycle
+    {
+        get => selectedCycle;
+        set { if (Set(ref selectedCycle, value)) _ = Shell.Run(LoadPeriodsAsync); }
+    }
+    public ChoiceItem? SelectedPromotion
+    {
+        get => selectedPromotion;
+        set { if (Set(ref selectedPromotion, value)) _ = Shell.Run(LoadSubjectsAsync); }
+    }
 
     public override async Task LoadAsync()
     {
@@ -104,6 +135,17 @@ public sealed class SchoolCyclesPage : PageViewModel
                 row.Included = true;
             Cycles.Add(row);
         }
+        CycleChoices = plan.Cycles.Where(c => c.IsActive)
+            .Select(c => new ChoiceItem(c.Id.ToString(), c.Name)).ToList();
+        selectedCycle = CycleChoices.Count > 0 ? CycleChoices[0] : null;
+        Raise(nameof(SelectedCycle));
+        var classes = await Shell.Api.GetAsync<List<PromotionDto>>("api/etablissement/promotions");
+        PromotionChoices = classes.Where(p => p.IsActive && p.SchoolCycleId is not null)
+            .Select(p => new ChoiceItem(p.Id.ToString(), p.Code + " · " + p.Name)).ToList();
+        selectedPromotion = PromotionChoices.Count > 0 ? PromotionChoices[0] : null;
+        Raise(nameof(SelectedPromotion));
+        await LoadPeriodsAsync();
+        await LoadSubjectsAsync();
     }
 
     private async Task SaveAsync()
@@ -144,4 +186,92 @@ public sealed class SchoolCyclesPage : PageViewModel
         Shell.Notify("Cycles scolaires et tarifs de référence enregistrés. Aucune mensualité n'a été facturée.");
         await RefreshAsync();
     }
+    private async Task LoadPeriodsAsync()
+    {
+        Periods.Clear();
+        if (SelectedCycle is null) return;
+        var items = await Shell.Api.GetAsync<List<SchoolPeriodDto>>(
+            $"api/etablissement/cycles/{SelectedCycle.Value}/periodes");
+        foreach (var item in items) Periods.Add(item);
+    }
+
+    private async Task LoadSubjectsAsync()
+    {
+        Subjects.Clear();
+        if (SelectedPromotion is null) return;
+        var items = await Shell.Api.GetAsync<List<AnnualSubjectDto>>(
+            $"api/etablissement/cycles/promotions/{SelectedPromotion.Value}/matieres");
+        foreach (var item in items) Subjects.Add(item);
+    }
+
+    private async Task AddPeriodAsync()
+    {
+        if (SelectedCycle is null)
+        {
+            Shell.Notify("Configurez d'abord les cycles scolaires de l'établissement.");
+            return;
+        }
+        var years = await Shell.Api.GetAsync<List<AcademicYearDto>>("api/etablissement/annees");
+        var year = years.FirstOrDefault(y => y.IsCurrent);
+        if (year is null) { Shell.Notify("Année scolaire courante introuvable."); return; }
+        var start = Periods.Count == 0 ? year.StartDate : Periods[^1].EndDate.AddDays(1);
+        if (start > year.EndDate)
+        {
+            Shell.Notify("La dernière période couvre déjà la fin de l'année.");
+            return;
+        }
+        var days = Math.Min(29, year.EndDate.DayNumber - start.DayNumber);
+        var end = start.AddDays(days);
+        var cycle = SelectedCycle.Value;
+        var ordinal = Periods.Count + 1;
+        var form = new FormViewModel("Nouvelle période pédagogique",
+            "Chaque cycle possède son propre calendrier. Vérifiez les dates de l'année ; aucune période n'est créée automatiquement.",
+            async f =>
+            {
+                await Shell.Api.SendAsync(HttpMethod.Post,
+                    $"api/etablissement/cycles/{cycle}/periodes", new
+                    {
+                        code = f.Text("code"), name = f.Text("nom"),
+                        termCode = f.Text("trimestre"),
+                        startDate = f.Day("debut"), endDate = f.Day("fin"),
+                    });
+                Shell.Notify("Période pédagogique enregistrée sans modifier les anciennes évaluations.");
+                return true;
+            });
+        form.Add("code", "Code", value: $"P{ordinal}", required: true);
+        form.Add("nom", "Période", value: $"Période {ordinal}", required: true);
+        form.Add("trimestre", "Trimestre ou regroupement", value: "T1", required: true);
+        form.AddDay("debut", "Début", start, true);
+        form.AddDay("fin", "Fin", end, true);
+        if (await Shell.Ask(form)) await LoadPeriodsAsync();
+    }
+
+    private async Task AddSubjectAsync()
+    {
+        if (SelectedPromotion is null)
+        {
+            Shell.Notify("Créez d'abord une classe et rattachez-la à son cycle.");
+            return;
+        }
+        var promotionId = SelectedPromotion.Value;
+        var form = new FormViewModel("Nouvelle matière ou activité annuelle",
+            "La matière appartient uniquement à cette classe et reste indépendante des cours ITM.",
+            async f =>
+            {
+                await Shell.Api.SendAsync(HttpMethod.Post,
+                    $"api/etablissement/cycles/promotions/{promotionId}/matieres", new
+                    {
+                        code = f.Text("code"), name = f.Text("nom"),
+                        coefficient = f.Amount("coefficient"), hours = f.Amount("heures"),
+                    });
+                Shell.Notify("Matière annuelle enregistrée.");
+                return true;
+            });
+        form.Add("code", "Code matière", required: true);
+        form.Add("nom", "Dénomination", required: true);
+        form.Add("coefficient", "Coefficient", FieldKind.Amount, "1", required: true);
+        form.Add("heures", "Volume horaire annuel", FieldKind.Amount, "30", required: true);
+        if (await Shell.Ask(form)) await LoadSubjectsAsync();
+    }
+
 }

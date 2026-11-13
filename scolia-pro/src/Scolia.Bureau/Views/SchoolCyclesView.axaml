@@ -91,6 +91,55 @@
               Command="{Binding Save}" IsEnabled="{Binding CanConfigure}"
               HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
               MinHeight="44" />
+      <TextBlock Text="PÉRIODES PÉDAGOGIQUES DU CYCLE" Classes="groupcaps" />
+      <Border Classes="phonegroup" Padding="12,10">
+        <StackPanel Spacing="6">
+          <TextBlock Text="Cycle" Classes="fieldlabel" />
+          <ComboBox ItemsSource="{Binding CycleChoices}" SelectedItem="{Binding SelectedCycle}"
+                    HorizontalAlignment="Stretch" />
+        </StackPanel>
+      </Border>
+      <ItemsControl ItemsSource="{Binding Periods}">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate>
+            <Border Classes="phonegroup" Padding="12,10" Margin="0,0,0,6">
+              <StackPanel Spacing="3">
+                <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
+                <TextBlock Text="{Binding Code}" Classes="muted" />
+                <TextBlock Text="{Binding TermCode}" Classes="muted" />
+                <TextBlock Text="{Binding Mode}" Classes="muted" />
+              </StackPanel>
+            </Border>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+      <Button Content="Ajouter une période" Command="{Binding AddPeriod}"
+              MinHeight="44" HorizontalAlignment="Stretch" />
+      <TextBlock Text="MATIÈRES ET ACTIVITÉS DE LA CLASSE" Classes="groupcaps" />
+      <Border Classes="phonegroup" Padding="12,10">
+        <StackPanel Spacing="6">
+          <TextBlock Text="Classe" Classes="fieldlabel" />
+          <ComboBox ItemsSource="{Binding PromotionChoices}" SelectedItem="{Binding SelectedPromotion}"
+                    HorizontalAlignment="Stretch" />
+        </StackPanel>
+      </Border>
+      <ItemsControl ItemsSource="{Binding Subjects}">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate>
+            <Border Classes="phonegroup" Padding="12,10" Margin="0,0,0,6">
+              <StackPanel Spacing="3">
+                <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
+                <TextBlock Text="{Binding Code}" Classes="muted" />
+                <TextBlock Text="{Binding Coefficient, StringFormat='Coefficient : {0}'}" Classes="muted" />
+              </StackPanel>
+            </Border>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+      <Button Content="Ajouter une matière annuelle" Command="{Binding AddSubject}"
+              MinHeight="44" HorizontalAlignment="Stretch" />
+      <TextBlock Text="L'année scolaire, les matières et les évaluations sont préparées sans création de note, de moyenne ou de bulletin officiel."
+                 Classes="muted" TextWrapping="Wrap" />
     </StackPanel>
   </ScrollViewer>
 </UserControl>

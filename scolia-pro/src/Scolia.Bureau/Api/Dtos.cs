@@ -42,6 +42,11 @@ public sealed record LmdProgramItemDto(Guid Id, Guid PromotionId, Guid? Academic
     Guid? ParentItemId, string Kind, string Code, string Name, string Semester,
     decimal Credits, decimal Coefficient, decimal Hours);
 
+public sealed record SchoolPeriodDto(Guid Id, string Code, string Name, string TermCode,
+    int Order, string Mode, DateOnly StartDate, DateOnly EndDate);
+public sealed record AnnualSubjectDto(Guid Id, Guid PromotionId, string Code, string Name,
+    decimal Coefficient, decimal Hours, bool IsActive);
+
 /// <summary>Configuration distincte de chaque cycle d'un complexe scolaire.</summary>
 public sealed record SchoolCycleConfigurationItemDto(Guid Id, string Kind, string Name,
     string? AuthorizationNumber, bool IsActive, bool ChargeMonthlyTuition, decimal MonthlyAmount, int ClassCount);
