@@ -81,7 +81,7 @@ public sealed class LoginViewModel : Observable
         var store = new OfflineStore(ConnectionStore.CacheAddress(api.Server));
         if (!store.ForgetKnownAccount(account))
         {
-            Error = "Ce compte a des modifications en attente. Synchronisez-les avant de le retirer.";
+            Error = "Ce compte contient des écritures en attente ou en conflit. Synchronisez-les ou résolvez les conflits avant de le retirer.";
             return;
         }
         // Un secret biométrique conservé permettrait sinon de réimporter la session retirée.
