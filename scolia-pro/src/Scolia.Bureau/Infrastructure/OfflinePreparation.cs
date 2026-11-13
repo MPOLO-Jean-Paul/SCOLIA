@@ -44,8 +44,8 @@ public static class OfflinePreparation
     public static async Task<OfflinePreparationResult> RunAsync(ScoliaClient client,
         bool includeFinancialAccounts = false,
         Action<OfflinePreparationProgress>? progress = null,
-        string? snapshotRevision = null, CancellationToken ct = default,
-        bool includeTeacherSheets = false)
+        bool includeTeacherSheets = false,
+        string? snapshotRevision = null, CancellationToken ct = default)
     {
         var store = client.Offline;
         var user = store?.User;
