@@ -50,7 +50,7 @@
           <StackPanel Spacing="9">
             <TextBlock Text="Code anonyme de la copie" Classes="fieldlabel" />
             <TextBox Text="{Binding CodeSearch, Mode=TwoWay}" MaxLength="16"
-                     Watermark="Saisir les premières lettres ou chiffres"
+                     PlaceholderText="Saisir les premières lettres ou chiffres"
                      AutomationProperties.Name="Rechercher un code anonyme" />
             <TextBlock Classes="muted" FontSize="12" TextWrapping="Wrap"
                        Text="Les codes de cette promotion apparaissent dès le premier caractère, sans afficher les noms." />
