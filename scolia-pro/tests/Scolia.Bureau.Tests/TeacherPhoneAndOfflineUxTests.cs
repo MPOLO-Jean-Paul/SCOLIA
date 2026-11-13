@@ -89,7 +89,7 @@ public sealed class TeacherPhoneAndOfflineUxTests
         var tile = Assert.Single(overview.Descendants(), x =>
             x.Name.LocalName == "Border" && Attr(x, "Classes", "appicon large teacheroverviewicon"));
         Assert.True(Attr(tile, "Background", "{Binding Accent}"));
-        Assert.True(Attr(tile, "Enabled", "False"));
+        Assert.True(Attr(tile, "TileGlyph.Enabled", "False"));
         var glyph = Assert.Single(tile.Elements(), x => x.Name.LocalName == "MaterialIcon");
         Assert.True(Attr(glyph, "Kind", "{Binding Icon}"));
         Assert.True(Attr(glyph, "Foreground", "White"));
