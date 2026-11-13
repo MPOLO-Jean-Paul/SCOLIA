@@ -244,6 +244,18 @@ public static class ScoliaEndpoints
         g.MapPut("/cycles", (SchoolCycleConfigurationInput input, SchoolCycleConfigurationService s,
             CancellationToken ct) => s.ConfigureAsync(input, ct))
             .RequireAuthorization(Permissions.SettingsWrite);
+        g.MapGet("/cycles/{cycleId:guid}/periodes",
+            (Guid cycleId, SchoolPlanningService s, CancellationToken ct) =>
+                s.PeriodsAsync(cycleId, ct)).RequireAuthorization(Permissions.SettingsWrite);
+        g.MapPost("/cycles/{cycleId:guid}/periodes",
+            (Guid cycleId, SchoolPeriodCreate input, SchoolPlanningService s, CancellationToken ct) =>
+                s.AddPeriodAsync(cycleId, input, ct)).RequireAuthorization(Permissions.SettingsWrite);
+        g.MapGet("/cycles/promotions/{promotionId:guid}/matieres",
+            (Guid promotionId, SchoolPlanningService s, CancellationToken ct) =>
+                s.SubjectsAsync(promotionId, ct)).RequireAuthorization(Permissions.SettingsWrite);
+        g.MapPost("/cycles/promotions/{promotionId:guid}/matieres",
+            (Guid promotionId, AnnualSubjectCreate input, SchoolPlanningService s, CancellationToken ct) =>
+                s.AddSubjectAsync(promotionId, input, ct)).RequireAuthorization(Permissions.SettingsWrite);
 
         // LMD : structures, calendrier semestriel et maquettes de cours séparés
         // des délibérations ITM. Tous les changements exigent SettingsWrite.
