@@ -148,7 +148,9 @@ public sealed class LoginViewModel : Observable
         try
         {
             var suggested = await api.GetAsync<LocalAccount>("api/installation/compte-local");
-            if (!string.IsNullOrWhiteSpace(suggested?.UserName)) RememberAccount(suggested.UserName);
+            if (!string.IsNullOrWhiteSpace(suggested?.UserName) &&
+                !new OfflineStore(ConnectionStore.CacheAddress(api.Server)).WasForgottenAccount(suggested.UserName))
+                RememberAccount(suggested.UserName);
         }
         catch (Exception ex) when (ex is ApiException or OfflineException or HttpRequestException or TaskCanceledException) { }
     }
