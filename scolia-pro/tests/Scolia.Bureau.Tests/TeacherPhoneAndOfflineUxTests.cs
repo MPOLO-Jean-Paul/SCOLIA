@@ -62,6 +62,45 @@ public sealed class TeacherPhoneAndOfflineUxTests
         Assert.True(Attr(desktop, "IsVisible", "{Binding NotPhone}"));
     }
 
+
+    [Fact]
+    public void Apercu_enseignant_conserve_des_icones_colorees_en_clair_et_en_sombre()
+    {
+        var source = File.ReadAllText(Source("ViewModels/TeacherSpace.cs"));
+        var homeStart = source.IndexOf("public sealed class TeacherHomePage", StringComparison.Ordinal);
+        Assert.True(homeStart >= 0);
+        var home = source[homeStart..];
+        foreach (var tone in new[] { "TonePurple", "ToneBlue", "ToneOrange", "ToneTeal" })
+            Assert.Contains($"IconPalette.Get(\"{tone}\")", home, StringComparison.Ordinal);
+        var stats = home[home.IndexOf("Stats.Add(new KpiVm", StringComparison.Ordinal)..];
+        Assert.DoesNotContain("ThemeBrush.Get(", stats, StringComparison.Ordinal);
+
+        var doc = View("TeacherHomeView.axaml");
+        var overview = Assert.Single(doc.Descendants(), x =>
+            x.Name.LocalName == "ItemsControl" && Attr(x, "ItemsSource", "{Binding Stats}"));
+        Assert.Contains(overview.Descendants(), x =>
+            x.Name.LocalName == "Border"
+            && Attr(x, "Classes", "appicon large teacheroverviewicon")
+            && Attr(x, "Background", "{Binding Brush}"));
+        Assert.Contains(overview.Descendants(), x =>
+            x.Name.LocalName == "MaterialIcon" && Attr(x, "Kind", "{Binding Icon}"));
+    }
+
+    [Fact]
+    public void Progression_et_regles_enseignant_restent_lisibles_et_accessibles()
+    {
+        var doc = View("TeacherHomeView.axaml");
+        Assert.Contains(doc.Descendants(), x =>
+            x.Name.LocalName == "ProgressBar" && Attr(x, "Classes", "slim teacherprogress")
+            && Attr(x, "Value", "{Binding Percent, Mode=OneWay}"));
+        var rule = Assert.Single(doc.Descendants(), x =>
+            x.Name.LocalName == "Expander" && Attr(x, "Classes", "teacherinfo"));
+        Assert.True(Attr(rule, "IsExpanded", "False"));
+        Assert.True(Attr(rule, "HorizontalAlignment", "Stretch"));
+        Assert.Contains(rule.Descendants(), x =>
+            x.Name.LocalName == "TextBlock" && Attr(x, "Text", "{Binding Rules}"));
+    }
+
     [Fact]
     public void Bas_ecran_trois_onglets_equilibres_et_menu_avec_indicateur()
     {
