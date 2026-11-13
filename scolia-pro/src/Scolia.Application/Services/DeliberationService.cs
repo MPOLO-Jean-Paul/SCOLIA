@@ -311,6 +311,25 @@ public sealed class DeliberationService(IAppDbContext db, IWriteGate gate, IAudi
         return new CodeLookupDto(AnonymousCodeRules.Normalize(code), student.EnrollmentId, student.PromotionId, student.PromotionCode);
     }
 
+    /// <summary>
+    /// Contrôle un code saisi contre la promotion du cours autorisé, sans révéler
+    /// l'identité ni l'appartenance exacte aux autres promotions de l'enseignant.
+    /// Le contrôle est refait lors de l'écriture de la note, même hors ligne.
+    /// </summary>
+    public async Task<CodeInCourseDto> CheckCodeInCourseAsync(Guid courseId, string value, CancellationToken ct = default)
+    {
+        var year = await YearContext.CurrentAsync(db, ct);
+        var course = await CourseInYearAsync(courseId, year.Id, ct);
+        await EnsureCourseAccessAsync(course, write: false, ct);
+        var normalized = AnonymousCodeRules.Normalize(value);
+        if (!AnonymousCodeRules.IsValid(normalized))
+            throw new DomainException("code", "Code anonyme invalide : vérifiez les caractères saisis.");
+        var (_, student) = await ResolveCodeAsync(year.Id, normalized, ct);
+        var matches = student.PromotionId == course.PromotionId;
+        return new CodeInCourseDto(normalized, matches,
+            matches ? "Code validé dans cette promotion." : "Apprenant hors promotion.");
+    }
+
     public async Task<TableDocument> CodesTableAsync(Guid? promotionId, CancellationToken ct = default)
     {
         var year = await YearContext.CurrentAsync(db, ct);
