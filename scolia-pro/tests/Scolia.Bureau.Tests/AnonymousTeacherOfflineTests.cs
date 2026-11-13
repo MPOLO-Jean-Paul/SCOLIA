@@ -24,7 +24,7 @@ public sealed class AnonymousTeacherOfflineTests
             store.SavePage(path, sheet);
             store.Enqueue(new OutboxItem { User = "prof", Path = "api/deliberation/cotes-par-code",
                 Method = "POST", Key = "mark-test", Label = "Encodage d'une note anonyme",
-                Body = JsonSerializer.Serialize(new { courseId, kind = "S1", code, value = 17m }, Json.Options) });
+                Body = JsonSerializer.Serialize(new { courseId, kind = "S1", code, value = 17m }) });
             Assert.True(ScoliaClient.Queueable(HttpMethod.Post, "api/deliberation/cotes-par-code"));
 
             var json = OfflineReplica.Project(path, sheet, store)!;
