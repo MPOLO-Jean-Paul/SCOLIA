@@ -208,7 +208,11 @@ public sealed class GradesPage : PageViewModel
         form.Add("coefficient", Labels.WeightLabel, FieldKind.Amount, "1", required: true, hint: Labels.WeightHint);
         form.Add("heures", "Volume horaire annuel", FieldKind.Amount, "30", required: true, hint: "Peut comporter une décimale, par exemple 30,5. Épreuve du jury : 1.");
         form.Add("cotation", Labels.MaxScoreLabel, FieldKind.Amount, null, hint: Labels.MaxScoreHint);
-        form.AddChoice("semestre", "Organisation (délibération)", Labels.Semesters, "Annuel", required: true);
+        var isLmd = shell.Session?.InstitutionType == "SuperieurLmd";
+        IReadOnlyList<ChoiceItem> periods = isLmd
+            ? Labels.Semesters.Where(p => p.Value is "S1" or "S2").ToList()
+            : Labels.Semesters;
+        form.AddChoice("semestre", "Organisation pédagogique", periods, isLmd ? "S1" : "Annuel", required: true);
         if (await shell.Ask(form) && shell.Current is GradesPage page) await page.RefreshAsync();
     }
 

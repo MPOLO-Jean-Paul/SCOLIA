@@ -110,10 +110,15 @@ public sealed class SchoolCyclesPage : PageViewModel
     {
         if (!CanConfigure)
         {
-            Shell.Notify("Les profils maternelle, primaire et secondaire doivent être validés avant activation.");
+            Shell.Notify("Cette configuration de cycles n'est pas disponible pour ce profil.");
             return;
         }
         var chosen = Cycles.Where(c => c.Included).ToArray();
+        if (!IsPrivate && chosen.Any(c => c.ChargeMonthlyTuition))
+        {
+            Shell.Notify("Établissement public : les mensualités nécessitent une validation réglementaire préalable.");
+            return;
+        }
         var drafts = new List<object>();
         foreach (var row in chosen)
         {
