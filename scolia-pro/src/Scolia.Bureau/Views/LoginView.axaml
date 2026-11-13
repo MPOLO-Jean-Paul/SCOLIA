@@ -286,13 +286,22 @@
                 <TextBlock Text="Compte reconnu" FontSize="11" Foreground="{DynamicResource LoginInk2}" />
                 <TextBlock Text="{Binding UserName}" FontSize="17" FontWeight="SemiBold" Foreground="{DynamicResource LoginInk}" />
               </StackPanel>
-              <Button Grid.Column="1" Classes="glasslink" Command="{Binding ChangeAccount}" IsEnabled="{Binding NotBusy}" MinHeight="42">
-                <TextBlock Text="Changer" Foreground="{DynamicResource LoginLink}" FontWeight="SemiBold" />
-              </Button>
+              <StackPanel Grid.Column="1" Spacing="1">
+                <Button Classes="glasslink" Command="{Binding ChangeAccount}" IsEnabled="{Binding NotBusy}" MinHeight="34">
+                  <TextBlock Text="Changer" Foreground="{DynamicResource LoginLink}" FontWeight="SemiBold" />
+                </Button>
+                <Button Classes="glasslink" Command="{Binding ForgetSelectedAccount}" IsEnabled="{Binding NotBusy}" MinHeight="34"
+                        ToolTip.Tip="Retirer seulement ce compte enregistré sur cet appareil">
+                  <TextBlock Text="Retirer" Foreground="{DynamicResource LoginLink}" FontWeight="SemiBold" />
+                </Button>
+              </StackPanel>
             </Grid>
           </Border>
           <!-- Lorsque plusieurs personnes utilisent ce téléphone, choisir le compte local,
                sans partager le mot de passe ni le profil d'un collègue. -->
+          <Button Classes="glasslink" Command="{Binding ForgetLinkedServer}" IsEnabled="{Binding NotBusy}"
+                  IsVisible="{Binding HasServerLine}" HorizontalAlignment="Center"
+                  Content="Retirer la liaison au serveur de cet appareil" />
           <StackPanel Spacing="8" IsVisible="{Binding ShowRememberedChoices}">
             <TextBlock Text="Comptes de cet appareil" Foreground="#E6FFFFFF"
                        FontSize="12" FontWeight="SemiBold" TextWrapping="Wrap" />
@@ -551,10 +560,18 @@
                       <TextBlock Text="Compte reconnu" Classes="iosauthlabel" />
                       <TextBlock Text="{Binding UserName}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
                     </StackPanel>
-                    <Button Grid.Column="2" Classes="iosauthlink" Content="Changer"
-                            Command="{Binding ChangeAccount}" IsEnabled="{Binding NotBusy}" />
+                    <StackPanel Grid.Column="2" Spacing="0">
+                      <Button Classes="iosauthlink" Content="Changer"
+                              Command="{Binding ChangeAccount}" IsEnabled="{Binding NotBusy}" />
+                      <Button Classes="iosauthlink" Content="Retirer"
+                              Command="{Binding ForgetSelectedAccount}" IsEnabled="{Binding NotBusy}"
+                              ToolTip.Tip="Retirer ce compte localement sans supprimer le compte du serveur" />
+                    </StackPanel>
                   </Grid>
                 </Border>
+                <Button Classes="iosauthlink" Content="Retirer le serveur mémorisé"
+                        IsVisible="{Binding HasServerLine}" Command="{Binding ForgetLinkedServer}"
+                        IsEnabled="{Binding NotBusy}" />
                 <StackPanel Spacing="6" IsVisible="{Binding ShowRememberedChoices}">
                   <TextBlock Text="COMPTES DE CET APPAREIL" Classes="iosauthlabel" />
                   <ItemsControl ItemsSource="{Binding KnownAccounts}">
