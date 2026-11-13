@@ -420,6 +420,7 @@ public sealed class MarksPage : PageViewModel
             Kinds = value is null ? AllKinds : AllKinds.Where(k => Accepts(value.Source.Semester, k.Value)).ToList();
             Raise(nameof(Kinds));
             if (kind is null || !Kinds.Contains(kind)) { kind = Kinds[0]; Raise(nameof(Kind)); }
+            Raise(nameof(MaxScoreLabel));
             _ = Shell.Run(LoadSheetAsync);
         }
     }
@@ -507,6 +508,8 @@ public sealed class MarksPage : PageViewModel
         Raise(nameof(Subtitle));
         course = null;
         Raise(nameof(NoCourse));
+        Raise(nameof(ShowTeacherEntry));
+        ResetAnonymousEntry();
         Course = keep is { } id ? Courses.FirstOrDefault(c => c.Id == id) : null;
         if (Course is null) { SheetTitle = "Choisissez un cours"; SheetHint = string.Empty; }
     }
@@ -534,7 +537,9 @@ public sealed class MarksPage : PageViewModel
             : !sheet.EncodingOpen ? "Encodage fermé dans les réglages de la délibération."
             : sheet.SubmittedAtUtc is { } at
                 ? $"Cotes remises le {at.ToLocalTime():dd/MM/yyyy à HH:mm} par {sheet.SubmittedBy} : seul le jury peut encore les corriger ou renvoyer la feuille."
-            : "Tapez chaque cote, puis « Enregistrer les cotes ». Une case vidée efface la cote. Une fois complète, « Remettre les cotes ».") + figures;
+            : teacher
+                ? "Recherchez puis validez le code anonyme, saisissez la note sur le maxima du cours et enregistrez. Remettez la feuille une fois complète."
+                : "Tapez chaque cote, puis « Enregistrer les cotes ». Une case vidée efface la cote. Une fois complète, « Remettre les cotes ».") + figures;
         foreach (var r in sheet.Rows)
             Rows.Add(new MarkEditRowVm(r.EnrollmentId, r.Code ?? "—", r.Matricule ?? string.Empty, r.FullName ?? "Anonyme",
                 r.Value?.ToString("0.##") ?? string.Empty, r.Retained?.ToString("0.##") ?? "—", r.Failed));
