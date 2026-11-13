@@ -40,6 +40,12 @@ public static class OfflineReplica
         var pending = store.Outbox();
         if (pending.Count == 0) return snapshot;
 
+        // Feuilles anonymes de l'enseignant : superposer uniquement les notes
+        // de ce cours/nature déjà en attente, sans créer de note officielle.
+        // Le serveur revérifie les autorisations et le maxima au retour réseau.
+        if (path.StartsWith("api/deliberation/feuille?", StringComparison.Ordinal) && snapshot is not null)
+            return ProjectAnonymousMarks(path, snapshot, pending);
+
         if (TryStudentId(path, out var studentId))
         {
             JsonObject? student = snapshot is null ? PendingRegistration(store, pending, studentId)
@@ -87,6 +93,37 @@ public static class OfflineReplica
                     if (change.ContainsKey("note")) row["note"] = change["note"]?.DeepClone();
                 }
             }
+        }
+        return sheet.ToJsonString(Json.Options);
+    }
+
+    private static string ProjectAnonymousMarks(string path, string snapshot, IReadOnlyList<OutboxItem> pending)
+    {
+        var query = path[(path.IndexOf('?') + 1)..].Split('&')
+            .Select(part => part.Split('=', 2))
+            .Where(part => part.Length == 2)
+            .ToDictionary(part => Uri.UnescapeDataString(part[0]), part => Uri.UnescapeDataString(part[1]),
+                StringComparer.OrdinalIgnoreCase);
+        if (!query.TryGetValue("coursId", out var courseId) ||
+            !query.TryGetValue("nature", out var kind) ||
+            !query.TryGetValue("anonyme", out var isAnonymous) ||
+            !string.Equals(isAnonymous, "true", StringComparison.OrdinalIgnoreCase))
+            return snapshot;
+        if (JsonNode.Parse(snapshot) is not JsonObject sheet || sheet["rows"] is not JsonArray rows)
+            return snapshot;
+
+        foreach (var item in pending.Where(p => p.Method == "POST" &&
+                     p.Path == "api/deliberation/cotes-par-code"))
+        {
+            if (JsonNode.Parse(item.Body) is not JsonObject body ||
+                !string.Equals(body["courseId"]?.ToString(), courseId, StringComparison.OrdinalIgnoreCase) ||
+                !string.Equals(body["kind"]?.ToString(), kind, StringComparison.OrdinalIgnoreCase) ||
+                body["code"]?.ToString() is not { Length: > 0 } code)
+                continue;
+            var row = rows.OfType<JsonObject>().FirstOrDefault(r =>
+                string.Equals(r["code"]?.ToString(), code, StringComparison.OrdinalIgnoreCase));
+            if (row is not null)
+                row["value"] = body["value"]?.DeepClone();
         }
         return sheet.ToJsonString(Json.Options);
     }
