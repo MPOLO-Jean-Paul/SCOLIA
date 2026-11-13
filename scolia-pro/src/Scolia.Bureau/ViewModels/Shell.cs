@@ -46,6 +46,11 @@ public sealed class ShellViewModel : Observable
         Login.LoggedIn += s => _ = OpenSessionAsync(s);
         Login.ResumeRequested += ReturnToLockedSession;
         Login.ChangeServerRequested += () => _ = ChooseServerAsync();
+        Login.ConfirmAccountRemoval = account => Confirm("Retirer le compte mémorisé ?",
+            $"Le compte « {account} » ne sera plus proposé sur cet appareil et sa connexion hors ligne sera désactivée. "
+            + "Ses données scolaires et son compte sur le serveur de l'établissement restent intacts.",
+            "Retirer de cet appareil", danger: true);
+        Login.ForgetServerRequested += ForgetSavedServerAsync;
         Sync = new SyncCenter(this, api);
         License = new SchoolLicenseViewModel(this);
         // Connexion réussie : le compte est gardé sur l'appareil pour une connexion hors ligne, et en mémoire pour
@@ -596,6 +601,59 @@ public sealed class ShellViewModel : Observable
         Connection.Show(servers, message);
         ChoosingServer = true;
         Status = "Choix du serveur de l'établissement.";
+    }
+
+    /// <summary>
+    /// Retire la liaison vers un serveur distant de ce poste uniquement ; aucun effacement de
+    /// la base scolaire du serveur principal et aucune perte des opérations en attente.
+    /// </summary>
+    private async Task ForgetSavedServerAsync()
+    {
+        var saved = ConnectionStore.Load();
+        if (IsLoggedIn || saved is null || saved.Mode == ConnectionSettings.Local
+            || ConnectionStore.HasLocalData())
+        {
+            Login.Error = "Le serveur principal qui héberge les données ne peut pas être retiré depuis la connexion.";
+            return;
+        }
+        try
+        {
+            var cache = ConnectionStore.CacheAddress(api.Server);
+            var store = new OfflineStore(cache);
+            if (store.PendingOperations > 0)
+            {
+                Login.Error = "Des opérations locales attendent encore la synchronisation. Connectez-vous au serveur et synchronisez-les avant de retirer sa liaison.";
+                return;
+            }
+            if (!await Confirm("Retirer ce serveur de l'appareil ?",
+                "La liaison mémorisée et son jumelage seront retirés de ce poste. "
+                + "Pour le relier à nouveau, le secrétariat devra fournir un nouveau code QR. "
+                + "La base de données sur la machine principale et les copies locales de sauvegarde restent conservées.",
+                "Retirer le serveur", danger: true)) return;
+            if (!ConnectionStore.TryForgetRemote())
+            {
+                Login.Error = "Le profil du serveur n'a pas pu être retiré : vérifiez les autorisations de stockage.";
+                return;
+            }
+            // Un retrait volontaire n'est pas une interruption du relais : le jeton de jumelage
+            // sur ce poste ne doit pas autoriser une reconnexion silencieuse.
+            DevicePairingStore.Forget(api.Server);
+            if (cache != api.Server) DevicePairingStore.Forget(cache);
+            var internetRemoved = saved.Mode != ConnectionSettings.Internet || RemoteConnection.TryForgetClient();
+            Sync.Forget();
+            api.Offline = null;
+            api.Retarget(ConnectionStore.LocalAddress);
+            Login.SchoolName = string.Empty;
+            Login.RefreshServer();
+            ShowChooser([], internetRemoved
+                ? "Serveur retiré de cet appareil. Choisissez un établissement ou scannez un nouveau code QR."
+                : "Liaison locale retirée ; la suppression de l'ancienne invitation Internet n'a pas abouti. Vérifiez le stockage avant un nouveau jumelage.");
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException
+            or System.Security.Cryptography.CryptographicException or InvalidOperationException)
+        {
+            Login.Error = "Retrait impossible : le stockage local doit être accessible. Aucun dossier scolaire n'a été supprimé.";
+        }
     }
 
     /// <summary>Affiche le choix du serveur et lance une recherche : depuis l'assistant ou depuis Poste et réseau.</summary>
