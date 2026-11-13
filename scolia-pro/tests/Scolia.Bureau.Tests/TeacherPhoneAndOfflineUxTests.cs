@@ -1,4 +1,5 @@
 using System.Xml.Linq;
+using Scolia.Bureau.ViewModels;
 using Xunit;
 
 namespace Scolia.Bureau.Tests;
@@ -80,12 +81,20 @@ public sealed class TeacherPhoneAndOfflineUxTests
             Attr(x, "Name", "TeacherPhoneSections"));
         var overview = Assert.Single(phone.Descendants(), x =>
             x.Name.LocalName == "ItemsControl" && Attr(x, "ItemsSource", "{Binding Stats}"));
-        Assert.Contains(overview.Descendants(), x =>
-            x.Name.LocalName == "Border"
-            && Attr(x, "Classes", "appicon large teacheroverviewicon")
-            && Attr(x, "Background", "{Binding Brush}"));
-        Assert.Contains(overview.Descendants(), x =>
-            x.Name.LocalName == "MaterialIcon" && Attr(x, "Kind", "{Binding Icon}"));
+        // Régression observée sur appareil réel en 1.2.67 : KpiVm possède Accent,
+        // mais la vue cherchait Brush. Avec le fond transparent, la glyphe blanche
+        // devenait illisible malgré le succès des anciens tests de présence.
+        Assert.NotNull(typeof(KpiVm).GetProperty(nameof(KpiVm.Accent)));
+        Assert.Null(typeof(KpiVm).GetProperty("Brush"));
+        var tile = Assert.Single(overview.Descendants(), x =>
+            x.Name.LocalName == "Border" && Attr(x, "Classes", "appicon large teacheroverviewicon"));
+        Assert.True(Attr(tile, "Background", "{Binding Accent}"));
+        Assert.True(Attr(tile, "Enabled", "False"));
+        var glyph = Assert.Single(tile.Elements(), x => x.Name.LocalName == "MaterialIcon");
+        Assert.True(Attr(glyph, "Kind", "{Binding Icon}"));
+        Assert.True(Attr(glyph, "Foreground", "White"));
+        Assert.DoesNotContain(overview.Descendants(), x =>
+            x.Name.LocalName == "Border" && Attr(x, "Background", "{Binding Brush}"));
     }
 
     [Fact]

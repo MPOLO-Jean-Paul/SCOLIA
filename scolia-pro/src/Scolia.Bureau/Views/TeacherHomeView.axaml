@@ -234,9 +234,11 @@
                 <StackPanel Spacing="0">
                   <Border Classes="teacherrowsep" />
                   <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12" Margin="12,9,14,9">
-                    <Border Classes="appicon large teacheroverviewicon" Background="{Binding Brush}"
+                    <!-- KpiVm expose Accent, pas Brush : liaison incorrecte = tuile blanche et icône blanche. -->
+                    <Border Classes="appicon large teacheroverviewicon" Background="{Binding Accent}"
+                            infra:TileGlyph.Enabled="False"
                             VerticalAlignment="Center" AutomationProperties.Name="{Binding Label}">
-                      <mi:MaterialIcon Kind="{Binding Icon}" Foreground="{DynamicResource OnToneBrush}" />
+                      <mi:MaterialIcon Kind="{Binding Icon}" Foreground="White" />
                     </Border>
                     <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
                       <TextBlock Text="{Binding Label}" FontWeight="Medium" TextWrapping="Wrap" />
