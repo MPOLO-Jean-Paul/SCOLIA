@@ -525,7 +525,9 @@ public sealed class OfflineStore
     {
         if (string.IsNullOrWhiteSpace(userName)) return false;
         var account = userName.Trim();
-        if (OutboxFor(account).Count != 0) return false;
+        if (OutboxFor(account).Count != 0 ||
+            Load(ConflictFile).Any(item => string.Equals(item.User, account, StringComparison.OrdinalIgnoreCase)))
+            return false;
         ForgetCredential(account);
         database.Update([LastAccountKey, KnownAccountsKey, ForgottenAccountsKey], values =>
         {
