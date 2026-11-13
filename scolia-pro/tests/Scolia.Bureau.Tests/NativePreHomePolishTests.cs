@@ -68,6 +68,19 @@ public sealed class NativePreHomePolishTests
             Setter(Style(path, "Button.iossetupprimary"), "Background"));
     }
 
+    [Theory]
+    [InlineData("Views/LoginView.axaml", "TextBox.iosauthfield")]
+    [InlineData("Views/LockScreenView.axaml", "TextBox.ioslockfield")]
+    [InlineData("Views/ConnectionView.axaml", "TextBox.iosconnectfield")]
+    [InlineData("Views/Phone/ConnectionCompactView.axaml", "TextBox.connectfield")]
+    [InlineData("Views/Phone/SetupView.axaml", "TextBox.w11")]
+    public void Champs_avant_accueil_meme_curseur_et_selection_colores(string path, string selector)
+    {
+        var style = Style(path, selector);
+        Assert.Equal("{DynamicResource AccentBrush}", Setter(style, "CaretBrush"));
+        Assert.Equal("{DynamicResource AccentSoftBrush}", Setter(style, "SelectionBrush"));
+    }
+
     [Fact]
     public void Enseignant_et_secretariat_partagent_les_memes_sections_et_actions()
     {

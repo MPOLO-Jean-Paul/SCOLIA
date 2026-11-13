@@ -36,6 +36,9 @@ public static class AuthLayout
     public static void Track(Control host, Action<Size>? changed = null)
     {
         ArgumentNullException.ThrowIfNull(host);
+        // Préparer la densité à l'attachement : lors d'un retour depuis l'accueil,
+        // les classes du premier rendu ne doivent pas garder la taille précédente.
+        host.AttachedToVisualTree += (_, _) => Apply(host.Classes, host.Bounds.Size);
         host.SizeChanged += (_, e) =>
         {
             Apply(host.Classes, e.NewSize);

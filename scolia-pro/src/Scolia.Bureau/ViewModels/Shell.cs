@@ -2022,12 +2022,43 @@ public sealed class ShellViewModel : Observable
         return true;
     }
 
+    private bool loggingOut;
+
+    /// <summary>
+    /// Déconnexion individuelle, même lorsque le réseau a disparu ou que le
+    /// serveur a déjà invalidé la session. L'autorisation QR de l'appareil
+    /// reste intacte : seul le compte courant est fermé.
+    /// </summary>
     public async Task LogoutAsync()
     {
-        try { await api.LogoutAsync(); }
-        catch (HttpRequestException) { }
-        DevicePairingStore.Forget(api.Server);
-        CloseLocalSession();
+        if (!IsLoggedIn || loggingOut) return;
+        loggingOut = true;
+        try
+        {
+            // Arrêter la reconnexion silencieuse AVANT d'invalider le cookie.
+            Sync.Stop();
+            Sync.Forget();
+            try
+            {
+                // Une coupure Wi-Fi ou VPN ne doit pas figer le bouton Android.
+                using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+                await api.LogoutAsync(timeout.Token);
+            }
+            catch (Exception ex) when (ex is ApiException or OfflineException or OfflineQueuedException
+                or HttpRequestException or TaskCanceledException or IOException
+                or UnauthorizedAccessException or System.Security.Cryptography.CryptographicException
+                or InvalidOperationException)
+            {
+                System.Diagnostics.Trace.WriteLine($"SCOLIA : déconnexion distante indisponible ({ex.GetType().Name}). Session locale fermée.");
+            }
+        }
+        finally
+        {
+            // Ne jamais retirer DevicePairingStore : il identifie le poste, pas
+            // l'utilisateur. Un nouvel identifiant et mot de passe restent exigés.
+            try { CloseLocalSession(); }
+            finally { loggingOut = false; }
+        }
     }
 
     /// <summary>Ferme la session sur cet appareil : pages, onglets, direct et verrou. Le serveur n'est pas prévenu.</summary>
@@ -2053,6 +2084,7 @@ public sealed class ShellViewModel : Observable
         SelectedTab = null;
         Current = null;
         BackstageOpen = false;
+        Login.Reset(); // Effacer PIN, codes de secours et états de récupération de la vue précédente.
         RaiseLogin();
         Raise(nameof(SchoolLine));
         Raise(nameof(UserLine));
