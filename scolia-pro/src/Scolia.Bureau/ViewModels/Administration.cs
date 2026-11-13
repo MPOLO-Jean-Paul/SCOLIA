@@ -1357,6 +1357,7 @@ public sealed class UsersPage : PageViewModel
         Action("Nouvel utilisateur", MaterialIconKind.AccountPlus, () => NewUserAsync(Shell), primary: true);
         Action("Modifier", MaterialIconKind.AccountEdit, EditAsync, open: true);
         Action("Réinitialiser le mot de passe", MaterialIconKind.KeyChange, ResetPasswordAsync, row: true);
+        Action("Retirer l'accès au serveur", MaterialIconKind.AccountCancel, RevokeServerAccountAsync, row: true, danger: true);
         ActionRefresh();
     }
 
@@ -1444,6 +1445,34 @@ public sealed class UsersPage : PageViewModel
         form.AddFlag("jury", "Membre du jury : encode aussi les épreuves du jury (rôle Enseignant)", u.JuryAccess);
         form.AddFlag("actif", "Compte actif", u.IsActive);
         if (await Shell.Ask(form)) await RefreshAsync();
+    }
+
+    /// <summary>
+    /// Retrait côté serveur : désactivation auditée et invalidation des sessions.
+    /// Le compte et ses historiques ne sont pas effacés ; un gestionnaire pourra
+    /// le réactiver dans Modifier après vérification de son titulaire.
+    /// </summary>
+    private async Task RevokeServerAccountAsync()
+    {
+        if (Selected?.Source is not { } user) return;
+        if (!user.IsActive)
+        {
+            Shell.Notify("Ce compte n'a déjà plus d'accès au serveur.");
+            return;
+        }
+        if (!await Shell.Confirm("Retirer l'accès serveur",
+                $"Désactiver le compte « {user.UserName} » sur l'ordinateur principal ? Ses sessions connectées seront invalidées et ses nouvelles opérations refusées. Les notes et historiques restent conservés.",
+                "Retirer l'accès", danger: true)) return;
+        await Shell.Api.SendAsync(HttpMethod.Put, $"api/utilisateurs/{user.Id}", new
+        {
+            displayName = user.DisplayName,
+            role = user.Role,
+            isActive = false,
+            staffMemberId = user.StaffMemberId,
+            juryAccess = user.JuryAccess,
+        });
+        Shell.Notify($"Accès serveur du compte « {user.UserName} » désactivé sans supprimer ses données.");
+        await RefreshAsync();
     }
 
     private async Task ResetPasswordAsync()
