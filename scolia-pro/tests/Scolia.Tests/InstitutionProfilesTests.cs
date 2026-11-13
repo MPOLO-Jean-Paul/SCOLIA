@@ -51,5 +51,7 @@ public sealed class InstitutionProfilesTests
     public void Invalid_profiles_are_not_known(string? profile)
     {
         Assert.False(InstitutionProfiles.IsKnown(profile));
+        Assert.False(InstitutionProfiles.IsEnabled(profile));
+        Assert.False(InstitutionProfiles.UsesSchoolCycles(profile));
     }
 }

@@ -24,7 +24,8 @@ public static class InstitutionProfiles
     // Les cycles privés sont utilisables sur les nouvelles installations.
     // LMD et régime public nécessitent encore des modules pédagogiques certifiés.
     public static bool IsEnabled(string? value) =>
-        Canonicalize(value) is ItmIm or Maternelle or Primaire or Secondaire or ComplexeScolaire;
+        IsKnown(value) && Canonicalize(value) is
+            ItmIm or Maternelle or Primaire or Secondaire or ComplexeScolaire;
 
     public static bool UsesSchoolCycles(string? value) =>
         Canonicalize(value) is Maternelle or Primaire or Secondaire or ComplexeScolaire;
