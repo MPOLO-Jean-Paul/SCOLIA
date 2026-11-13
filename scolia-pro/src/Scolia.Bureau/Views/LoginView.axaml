@@ -642,7 +642,7 @@
                     </Button>
                   </Grid>
                 </StackPanel>
-                <Button Classes="iosauthprimary" Command="{Binding Submit}"
+                <Button x:Name="IosLoginSubmitButton" Classes="iosauthprimary" Command="{Binding Submit}"
                         AutomationProperties.Name="Se connecter à SCOLIA"
                         IsEnabled="{Binding CanSubmitCredentials}">
                   <DockPanel LastChildFill="True">
