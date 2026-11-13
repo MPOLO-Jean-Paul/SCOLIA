@@ -6,6 +6,7 @@ using Material.Icons;
 using Scolia.Bureau.Api;
 using Scolia.Bureau.Infrastructure;
 using Scolia.Bureau.Ribbon;
+using Scolia.Domain.Deliberation;
 
 namespace Scolia.Bureau.ViewModels;
 
@@ -175,6 +176,14 @@ public sealed class MarksPage : PageViewModel
     private string subtitle = string.Empty;
     private string sheetTitle = "Choisissez un cours";
     private string sheetHint = string.Empty;
+    private string codeSearch = string.Empty;
+    private string scoreInput = string.Empty;
+    private string codeError = string.Empty;
+    private string scoreError = string.Empty;
+    private string lastEncoded = string.Empty;
+    private string verifiedCode = string.Empty;
+    private bool codeVerified;
+    private bool sheetEditable;
 
     /// <summary>Ouvre l'encodage, au besoin directement sur un cours (depuis l'espace enseignant ou le suivi).</summary>
     public MarksPage(ShellViewModel shell, Guid? promotionId = null, Guid? courseId = null) : base(shell)
@@ -186,8 +195,11 @@ public sealed class MarksPage : PageViewModel
         anonymous = teacher;
         if (Shell.Can(Perm.AcademicsWrite) || teacher)
         {
-            Action("Enregistrer les cotes", MaterialIconKind.ContentSave, SaveAsync, primary: true);
-            Action("Saisie par code anonyme", MaterialIconKind.Incognito, ByCodeAsync);
+            if (!teacher)
+            {
+                Action("Enregistrer les cotes", MaterialIconKind.ContentSave, SaveAsync, primary: true);
+                Action("Saisie par code anonyme", MaterialIconKind.Incognito, ByCodeAsync);
+            }
             Action("Remettre les cotes", MaterialIconKind.SendOutline, SubmitAsync);
             Action("Reprendre des cotes (fichier)", MaterialIconKind.Upload, ImportMarksFileAsync);
             Action("Reprendre des cotes (coller)", MaterialIconKind.FormatListChecks, ImportMarksPasteAsync);
@@ -206,6 +218,14 @@ public sealed class MarksPage : PageViewModel
             Action("Suivi de l'encodage", MaterialIconKind.ProgressClock, () => Shell.Open(() => new EncodingProgressPage(Shell)));
             Action("Délibération", MaterialIconKind.Gavel, () => Shell.Open(() => new DeliberationPage(Shell)));
         }
+        ChooseAnonymousCode = new RelayCommand<string>(code =>
+        {
+            if (string.IsNullOrWhiteSpace(code)) return;
+            CodeSearch = code;
+            ConfirmKnownCode();
+        });
+        ValidateAnonymousCode = new AsyncCommand(() => Shell.Run(ValidateAnonymousCodeAsync));
+        SaveAnonymousScore = new AsyncCommand(() => Shell.Run(SaveAnonymousScoreAsync));
         ActionRefresh();
     }
 
@@ -219,6 +239,145 @@ public sealed class MarksPage : PageViewModel
 
     /// <summary>Espace enseignant : seulement ses cours attribués, en feuille anonyme.</summary>
     public bool IsTeacher => teacher;
+    public ObservableCollection<string> CodeSuggestions { get; } = [];
+    public RelayCommand<string> ChooseAnonymousCode { get; }
+    public AsyncCommand ValidateAnonymousCode { get; }
+    public AsyncCommand SaveAnonymousScore { get; }
+
+    /// <summary>Recherche instantanée limitée aux codes de la promotion et du cours affichés.</summary>
+    public string CodeSearch
+    {
+        get => codeSearch;
+        set
+        {
+            if (!Set(ref codeSearch, value ?? string.Empty)) return;
+            InvalidateCode();
+            UpdateCodeSuggestions();
+        }
+    }
+
+    public string ScoreInput
+    {
+        get => scoreInput;
+        set { if (Set(ref scoreInput, value ?? string.Empty)) CheckScore(); }
+    }
+
+    public bool HasCodeSuggestions => CodeSuggestions.Count > 0 && !codeVerified;
+    public bool CodeVerified => codeVerified;
+    public string VerifiedCodeText => codeVerified ? $"Code {verifiedCode} validé. Saisissez la cote obtenue." : string.Empty;
+    public bool CanEnterScore => teacher && codeVerified && sheetEditable;
+    public bool CanSaveAnonymousScore => CanEnterScore && ScoreInput.Length > 0 && ScoreError.Length == 0;
+    public string MaxScoreLabel => Kind?.Value == "Appui" ? "Moyenne d'appui sur 10"
+        : $"Note obtenue sur {SelectedMaximum:0.##}";
+    private decimal SelectedMaximum => Kind?.Value == "Appui" ? 10m : Course?.Source.MaxScore ?? 0m;
+
+    public string CodeError { get => codeError; private set { if (Set(ref codeError, value)) Raise(nameof(HasCodeError)); } }
+    public bool HasCodeError => codeError.Length > 0;
+    public string ScoreError { get => scoreError; private set { if (Set(ref scoreError, value)) Raise(nameof(CanSaveAnonymousScore)); } }
+    public bool HasScoreError => scoreError.Length > 0;
+    public string LastEncoded { get => lastEncoded; private set { if (Set(ref lastEncoded, value)) Raise(nameof(HasLastEncoded)); } }
+    public bool HasLastEncoded => lastEncoded.Length > 0;
+
+    private void InvalidateCode()
+    {
+        codeVerified = false;
+        verifiedCode = string.Empty;
+        ScoreInput = string.Empty;
+        CodeError = string.Empty;
+        Raise(nameof(CodeVerified));
+        Raise(nameof(VerifiedCodeText));
+        Raise(nameof(CanEnterScore));
+        Raise(nameof(CanSaveAnonymousScore));
+    }
+
+    private void ResetAnonymousEntry()
+    {
+        CodeSearch = string.Empty;
+        InvalidateCode();
+        CodeSuggestions.Clear();
+        Raise(nameof(HasCodeSuggestions));
+        LastEncoded = string.Empty;
+    }
+
+    private void UpdateCodeSuggestions()
+    {
+        CodeSuggestions.Clear();
+        var prefix = AnonymousCodeRules.Normalize(CodeSearch);
+        if (teacher && Course is not null && prefix.Length > 0 && !codeVerified)
+            foreach (var code in Rows.Select(r => r.Code)
+                .Where(c => c != "—" && c.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+                .Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(c => c, StringComparer.OrdinalIgnoreCase).Take(8))
+                CodeSuggestions.Add(code);
+        Raise(nameof(HasCodeSuggestions));
+    }
+
+    private void ConfirmCode(string code)
+    {
+        verifiedCode = code;
+        codeVerified = true;
+        CodeError = string.Empty;
+        CodeSuggestions.Clear();
+        Raise(nameof(HasCodeSuggestions));
+        Raise(nameof(CodeVerified));
+        Raise(nameof(VerifiedCodeText));
+        Raise(nameof(CanEnterScore));
+        CheckScore();
+    }
+
+    /// <summary>Le choix d'une suggestion valide immédiatement le code connu de cette feuille.</summary>
+    private void ConfirmKnownCode()
+    {
+        var code = AnonymousCodeRules.Normalize(CodeSearch);
+        if (Rows.Any(r => string.Equals(r.Code, code, StringComparison.OrdinalIgnoreCase)))
+            ConfirmCode(code);
+    }
+
+    /// <summary>Les codes inconnus localement sont vérifiés côté serveur, sans afficher l'identité.</summary>
+    private async Task ValidateAnonymousCodeAsync()
+    {
+        if (Course is null || Kind is null) { CodeError = "Choisissez une promotion et un cours."; return; }
+        var courseId = Course.Id;
+        var code = AnonymousCodeRules.Normalize(CodeSearch);
+        if (!AnonymousCodeRules.IsValid(code)) { CodeError = "Code anonyme incomplet ou invalide."; return; }
+        if (Rows.Any(r => string.Equals(r.Code, code, StringComparison.OrdinalIgnoreCase)))
+        {
+            ConfirmCode(code);
+            return;
+        }
+        var checkedCode = await Shell.Api.GetAsync<AnonymousCodeCheckDto>("api/deliberation/codes/verification" +
+            ScoliaClient.Query(("coursId", courseId), ("code", code)));
+        if (Course?.Id != courseId || !string.Equals(AnonymousCodeRules.Normalize(CodeSearch), code, StringComparison.Ordinal))
+            return;
+        if (!checkedCode.Valid) { CodeError = checkedCode.Message; return; }
+        ConfirmCode(checkedCode.Code);
+    }
+
+    private void CheckScore()
+    {
+        var text = ScoreInput.Trim();
+        ScoreError = text.Length == 0 ? string.Empty
+            : !Format.TryAmount(text, out var value) ? "Saisissez une cote numérique."
+            : value < 0 || value > SelectedMaximum
+                ? $"La cote doit être comprise entre 0 et {SelectedMaximum:0.##}."
+                : string.Empty;
+        Raise(nameof(HasScoreError));
+        Raise(nameof(CanSaveAnonymousScore));
+    }
+
+    private async Task SaveAnonymousScoreAsync()
+    {
+        if (Course is null || Kind is null || !CanEnterScore) { CodeError = "Validez d'abord le code anonyme."; return; }
+        CheckScore();
+        if (!CanSaveAnonymousScore || !Format.TryAmount(ScoreInput, out var value)) return;
+        var courseId = Course.Id;
+        var kindValue = Kind.Value;
+        var max = SelectedMaximum;
+        var result = await Shell.Api.SendAsync<MarkByCodeResult>(HttpMethod.Post,
+            "api/deliberation/cotes-par-code", new { code = verifiedCode, courseId, kind = kindValue, value });
+        ResetAnonymousEntry();
+        LastEncoded = $"Code {result.Code} : {result.Value:0.##} / {max:0.##} enregistré · {result.Remaining} copie(s) restantes.";
+        if (Course?.Id == courseId && Kind?.Value == kindValue) await LoadSheetAsync();
+    }
 
     private string rules = string.Empty;
 
@@ -254,6 +413,8 @@ public sealed class MarksPage : PageViewModel
         {
             if (!Set(ref course, value)) return;
             Raise(nameof(NoCourse));
+            ResetAnonymousEntry();
+            Raise(nameof(MaxScoreLabel));
             Kinds = value is null ? AllKinds : AllKinds.Where(k => Accepts(value.Source.Semester, k.Value)).ToList();
             Raise(nameof(Kinds));
             if (kind is null || !Kinds.Contains(kind)) { kind = Kinds[0]; Raise(nameof(Kind)); }
@@ -261,7 +422,17 @@ public sealed class MarksPage : PageViewModel
         }
     }
 
-    public ChoiceItem? Kind { get => kind; set { if (Set(ref kind, value) && value is not null) _ = Shell.Run(LoadSheetAsync); } }
+    public ChoiceItem? Kind
+    {
+        get => kind;
+        set
+        {
+            if (!Set(ref kind, value)) return;
+            ResetAnonymousEntry();
+            Raise(nameof(MaxScoreLabel));
+            if (value is not null) _ = Shell.Run(LoadSheetAsync);
+        }
+    }
 
     /// <summary>Feuille anonyme : triée par code, sans nom ni matricule, comme pour la correction des copies.</summary>
     public bool Anonymous
@@ -341,9 +512,19 @@ public sealed class MarksPage : PageViewModel
     private async Task LoadSheetAsync()
     {
         Rows.Clear();
+        sheetEditable = false;
+        Raise(nameof(CanEnterScore));
+        Raise(nameof(CanSaveAnonymousScore));
+        UpdateCodeSuggestions();
         if (Course is null || Kind is null) return;
+        var selectedCourseId = Course.Id;
+        var selectedKind = Kind.Value;
         var sheet = await Shell.Api.GetAsync<MarkSheetDto>("api/deliberation/feuille" + ScoliaClient.Query(
             ("coursId", Course.Id), ("nature", Kind.Value), ("anonyme", Anonymous ? "true" : "false")));
+        if (Course?.Id != selectedCourseId || Kind?.Value != selectedKind) return;
+        sheetEditable = !sheet.Locked && sheet.EncodingOpen && sheet.SubmittedAtUtc is null;
+        Raise(nameof(CanEnterScore));
+        Raise(nameof(CanSaveAnonymousScore));
         var scale = sheet.Kind == "Appui" ? "10" : sheet.MaxScore.ToString("0.##");
         SheetTitle = $"{sheet.Course} · {Kind.Label} · sur {scale}";
         var figures = $" {sheet.Failed} échec(s)" + (sheet.Average is { } avg ? $", moyenne {avg:0.##}." : ".");
@@ -355,6 +536,7 @@ public sealed class MarksPage : PageViewModel
         foreach (var r in sheet.Rows)
             Rows.Add(new MarkEditRowVm(r.EnrollmentId, r.Code ?? "—", r.Matricule ?? string.Empty, r.FullName ?? "Anonyme",
                 r.Value?.ToString("0.##") ?? string.Empty, r.Retained?.ToString("0.##") ?? "—", r.Failed));
+        UpdateCodeSuggestions();
     }
 
     private async Task SaveAsync()
