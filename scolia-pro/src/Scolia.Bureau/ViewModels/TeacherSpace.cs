@@ -339,18 +339,18 @@ public sealed class TeacherHomePage : PageViewModel
         Raise(nameof(NoCourses));
         var share = expected == 0 ? 0 : 100.0 * graded / expected;
         Stats.Add(new KpiVm("Mes cours", mine.Count.ToString("N0", CultureInfo.CurrentCulture),
-            Format.Count(mine.Select(m => m.PromotionId).Distinct().Count(), "promotion", "promotions"), ThemeBrush.Get("TonePurple"), MaterialIconKind.BookOpenVariant));
+            Format.Count(mine.Select(m => m.PromotionId).Distinct().Count(), "promotion", "promotions"), IconPalette.Get("TonePurple"), MaterialIconKind.BookOpenVariant));
         Stats.Add(new KpiVm("Cotes encodées", $"{share:0} %", $"{graded.ToString("N0", CultureInfo.CurrentCulture)} sur {expected.ToString("N0", CultureInfo.CurrentCulture)}",
-            ThemeBrush.Get("ToneBlue"), MaterialIconKind.Pen));
+            IconPalette.Get("ToneBlue"), MaterialIconKind.Pen));
         Stats.Add(new KpiVm("Feuilles remises", $"{submitted}/{sheets}", sheets == submitted && sheets > 0 ? "tout est remis" : "remettez chaque feuille complète",
-            ThemeBrush.Get("ToneGreen"), MaterialIconKind.SendOutline));
+            IconPalette.Get("ToneOrange"), MaterialIconKind.SendOutline));
         Stats.Add(new KpiVm("Encodage", (settings.EncodingS1Open, settings.EncodingS2Open) switch
         {
             (true, true) => "S1 et S2",
             (true, false) => "S1 ouvert",
             (false, true) => "S2 ouvert",
             _ => "Fermé",
-        }, "décidé par le secrétariat", ThemeBrush.Get("ToneOrange"), MaterialIconKind.LockOpenVariantOutline));
+        }, "décidé par le secrétariat", IconPalette.Get("ToneTeal"), MaterialIconKind.LockOpenVariantOutline));
         subtitle = mine.Count == 0 ? "Aucun cours ne vous est attribué cette année" : $"{Format.Count(mine.Count, "cours", "cours")} · {share:0} % encodé";
         Raise(nameof(Subtitle));
     }
