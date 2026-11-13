@@ -46,6 +46,10 @@ public sealed class ShellViewModel : Observable
         Login.LoggedIn += s => _ = OpenSessionAsync(s);
         Login.ResumeRequested += ReturnToLockedSession;
         Login.ChangeServerRequested += () => _ = ChooseServerAsync();
+        Login.ConfirmAccountRemoval = account => Confirm("Retirer le compte de cet appareil",
+            $"Le compte « {account} » ne sera plus proposé à la connexion et son accès hors ligne sera effacé. Son compte sur le serveur et ses cotes resteront intacts.",
+            "Retirer ce compte", danger: true);
+        Login.ForgetLinkedServerRequested += ForgetLinkedServerAsync;
         Sync = new SyncCenter(this, api);
         License = new SchoolLicenseViewModel(this);
         // Connexion réussie : le compte est gardé sur l'appareil pour une connexion hors ligne, et en mémoire pour
@@ -605,6 +609,42 @@ public sealed class ShellViewModel : Observable
         // Venu de la connexion ou de Poste et réseau : un établissement est déjà relié, on peut y revenir.
         Connection.BackAction = LeaveChooser;
         await Connection.SearchAsync();
+    }
+
+    /// <summary>
+    /// Retrait volontaire du serveur mémorisé sur CET appareil, jamais suppression
+    /// de la machine principale ni de ses données. Les opérations hors ligne non
+    /// envoyées rendent ce retrait impossible jusqu'à leur synchronisation.
+    /// </summary>
+    private async Task ForgetLinkedServerAsync()
+    {
+        if (IsServerComputer || IsLoggedIn) return;
+        var oldServer = api.Server;
+        var store = api.Offline ?? new OfflineStore(ConnectionStore.CacheAddress(oldServer));
+        if (store.KnownAccounts.Any(name => store.OutboxFor(name).Count > 0))
+        {
+            Notify("Ce serveur comporte des opérations en attente : synchronisez-les avant de retirer la liaison.");
+            return;
+        }
+        if (!await Confirm("Retirer le serveur de cet appareil",
+                "Ce téléphone ou poste oubliera sa liaison à l'ordinateur principal. Vous devrez le relier à nouveau par QR ou adresse. Le serveur principal, les comptes et les données de l'établissement restent intacts.",
+                "Retirer la liaison", danger: true)) return;
+        var saved = ConnectionStore.Load();
+        if (saved?.Mode == ConnectionSettings.Internet && !RemoteConnection.ForgetClient())
+        {
+            Notify("Impossible de retirer la liaison Internet enregistrée.");
+            return;
+        }
+        if (!ConnectionStore.TryForget())
+        {
+            Notify("Impossible d'oublier le serveur : vérifiez le stockage de cet appareil.");
+            return;
+        }
+        DevicePairingStore.Forget(oldServer);
+        api.Retarget(ConnectionStore.LocalAddress);
+        Login.ChangeAccount.Execute(null);
+        await ChooseServerAsync();
+        Notify("Liaison de ce poste retirée. La base de l'établissement n'a pas été modifiée.");
     }
 
     /// <summary>Ferme le choix du serveur sans rien changer : retour à la connexion ou à l'application.</summary>
