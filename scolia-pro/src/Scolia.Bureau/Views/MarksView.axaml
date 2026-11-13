@@ -39,12 +39,56 @@
     </Border>
 
     <Border Grid.Row="1" Grid.Column="1" Classes="card" Padding="0">
-      <Grid RowDefinitions="Auto,Auto,*">
+      <Grid RowDefinitions="Auto,Auto,Auto,*">
         <TextBlock Text="{Binding SheetTitle}" Classes="heading" Margin="16,12,16,0" />
         <TextBlock Grid.Row="1" Text="{Binding SheetHint}" Classes="muted" TextWrapping="Wrap" Margin="16,2,16,6" />
-        <c:EmptyState Grid.Row="2" Icon="Pen" Title="2. Encodez les cotes"
+
+        <!-- Parcours enseignant natif : promotion, cours, code anonyme validé, puis note. -->
+        <Border Grid.Row="2" IsVisible="{Binding ShowTeacherEntry}" Margin="14,4,14,10"
+                Padding="14,12" CornerRadius="12" BorderBrush="{DynamicResource LineBrush}"
+                BorderThickness="1" Background="{DynamicResource Surface2Brush}">
+          <StackPanel Spacing="9">
+            <TextBlock Text="Code anonyme de la copie" Classes="fieldlabel" />
+            <TextBox Text="{Binding CodeSearch, Mode=TwoWay}" MaxLength="16"
+                     Watermark="Saisir les premières lettres ou chiffres"
+                     AutomationProperties.Name="Rechercher un code anonyme" />
+            <TextBlock Classes="muted" FontSize="12" TextWrapping="Wrap"
+                       Text="Les codes de cette promotion apparaissent dès le premier caractère, sans afficher les noms." />
+            <ItemsControl ItemsSource="{Binding CodeSuggestions}" IsVisible="{Binding HasCodeSuggestions}">
+              <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <Button Classes="secondary" MinHeight="40" Margin="0,0,7,7" Padding="12,7"
+                          Command="{Binding $parent[ItemsControl].DataContext.ChooseAnonymousCode}"
+                          CommandParameter="{Binding}" AutomationProperties.Name="Sélectionner le code anonyme">
+                    <TextBlock Text="{Binding}" FontWeight="SemiBold" />
+                  </Button>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <Button Content="Valider le code saisi" Command="{Binding ValidateAnonymousCode}"
+                    HorizontalAlignment="Left" MinHeight="40" />
+            <TextBlock Text="{Binding CodeError}" Foreground="{DynamicResource ToneRed}"
+                       IsVisible="{Binding HasCodeError}" TextWrapping="Wrap" />
+            <TextBlock Text="{Binding VerifiedCodeText}" Foreground="{DynamicResource ToneGreen}"
+                       IsVisible="{Binding CodeVerified}" TextWrapping="Wrap" />
+            <TextBlock Text="{Binding MaxScoreLabel}" Classes="fieldlabel" />
+            <TextBox Text="{Binding ScoreInput, Mode=TwoWay}" MaxLength="12"
+                     Watermark="Note obtenue" IsEnabled="{Binding CanEnterScore}"
+                     AutomationProperties.Name="Note de la copie" />
+            <TextBlock Text="{Binding ScoreError}" Foreground="{DynamicResource ToneRed}"
+                       IsVisible="{Binding HasScoreError}" TextWrapping="Wrap" />
+            <Button Classes="primary" Content="Enregistrer la note" MinHeight="44"
+                    Command="{Binding SaveAnonymousScore}" IsEnabled="{Binding CanSaveAnonymousScore}"
+                    HorizontalAlignment="Stretch" />
+            <TextBlock Text="{Binding LastEncoded}" IsVisible="{Binding HasLastEncoded}"
+                       Foreground="{DynamicResource ToneGreen}" TextWrapping="Wrap" />
+          </StackPanel>
+        </Border>
+
+        <c:EmptyState Grid.Row="3" Icon="Pen" Title="2. Encodez les cotes"
                       Hint="Choisissez un cours : ses apprenants s'affichent ici. « Saisie par code anonyme » encode copie par copie." IsVisible="{Binding NoCourse}" />
-        <DataGrid Grid.Row="2" ItemsSource="{Binding Rows}" AutoGenerateColumns="False" IsReadOnly="False" BorderThickness="0" CornerRadius="0" IsVisible="{Binding !NoCourse}">
+        <DataGrid Grid.Row="3" ItemsSource="{Binding Rows}" AutoGenerateColumns="False" IsReadOnly="False" BorderThickness="0" CornerRadius="0" IsVisible="{Binding !IsTeacher}">
           <DataGrid.Columns>
             <DataGridTextColumn Header="Code" Binding="{Binding Code}" IsReadOnly="True" Width="Auto" MinWidth="110" />
             <DataGridTextColumn Header="Matricule" Binding="{Binding Matricule}" IsReadOnly="True" Width="Auto" MinWidth="110" infra:GridPriority.Level="2" />
@@ -59,6 +103,18 @@
             </DataGridTemplateColumn>
           </DataGrid.Columns>
         </DataGrid>
+        <!-- Récapitulatif enseignant non modifiable : uniquement les codes, jamais les identités. -->
+        <Expander Grid.Row="3" Header="Relevé anonyme du cours" IsExpanded="False"
+                  IsVisible="{Binding ShowTeacherEntry}" Margin="14,0,14,10">
+          <DataGrid ItemsSource="{Binding Rows}" AutoGenerateColumns="False" IsReadOnly="True"
+                    BorderThickness="0" MaxHeight="360">
+            <DataGrid.Columns>
+              <DataGridTextColumn Header="Code" Binding="{Binding Code}" Width="*" MinWidth="100" />
+              <DataGridTextColumn Header="Cote" Binding="{Binding Value}" Width="Auto" MinWidth="80" />
+              <DataGridTextColumn Header="Retenue" Binding="{Binding Retained}" Width="Auto" MinWidth="90" />
+            </DataGrid.Columns>
+          </DataGrid>
+        </Expander>
       </Grid>
     </Border>
   </Grid>
