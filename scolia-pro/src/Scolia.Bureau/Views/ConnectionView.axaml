@@ -26,7 +26,7 @@
     </Style>
     <Style Selector="TextBox.iosconnectfield:focus">
       <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
-      <Setter Property="BorderThickness" Value="2" />
+      <Setter Property="BorderThickness" Value="1" />
     </Style>
     <!-- Petits téléphones : marges, logo et titres réduits ; les options secondaires se replient. -->
     <Style Selector="Grid.compact StackPanel.iosconnectbody"><Setter Property="Margin" Value="16,12,16,14" /><Setter Property="Spacing" Value="12" /></Style>
@@ -78,6 +78,12 @@
       <Setter Property="HorizontalContentAlignment" Value="Center" />
       <Setter Property="MinHeight" Value="52" />
       <Setter Property="FontWeight" Value="SemiBold" />
+      <!-- Réaction douce sans déplacement des contrôles ni animation des données. -->
+      <Setter Property="Transitions">
+        <Transitions>
+          <BrushTransition Property="Background" Duration="0:0:0.14" Easing="CubicEaseOut" />
+        </Transitions>
+      </Setter>
     </Style>
     <Style Selector="Button.iosconnectsecondary">
       <Setter Property="Background" Value="{DynamicResource Surface2Brush}" />
@@ -88,6 +94,12 @@
       <Setter Property="HorizontalAlignment" Value="Stretch" />
       <Setter Property="HorizontalContentAlignment" Value="Center" />
       <Setter Property="MinHeight" Value="48" />
+      <!-- Réaction douce sans déplacement des contrôles ni animation des données. -->
+      <Setter Property="Transitions">
+        <Transitions>
+          <BrushTransition Property="Background" Duration="0:0:0.14" Easing="CubicEaseOut" />
+        </Transitions>
+      </Setter>
     </Style>
     <Style Selector="TextBox.iosconnectfield">
       <Setter Property="Background" Value="{DynamicResource FieldBrush}" />
@@ -97,6 +109,12 @@
       <Setter Property="CornerRadius" Value="12" />
       <Setter Property="Padding" Value="14,10" />
       <Setter Property="MinHeight" Value="52" />
+      <!-- Réaction douce sans déplacement des contrôles ni animation des données. -->
+      <Setter Property="Transitions">
+        <Transitions>
+          <BrushTransition Property="BorderBrush" Duration="0:0:0.14" Easing="CubicEaseOut" />
+        </Transitions>
+      </Setter>
     </Style>
   </UserControl.Styles>
   <Grid Background="{DynamicResource BgBrush}">

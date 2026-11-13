@@ -140,6 +140,14 @@ public static class Sidebar
                 Item("Résultats", MaterialIconKind.Certificate, "ToneIndigo", Perm.AcademicsRead, typeof(ResultsPage), () => new ResultsPage(shell)),
                 Item("Présences", MaterialIconKind.ClipboardCheck, "ToneTeal", Perm.AcademicsRead, typeof(AttendancePage), () => new AttendancePage(shell)),
                 Item("Discipline", MaterialIconKind.AlertOctagon, "ToneRed", Perm.AcademicsRead, typeof(DisciplinePage), () => new DisciplinePage(shell))),
+            // Les référentiels de cycles, matières et semestres relèvent de la pédagogie,
+            // pas de l'apparence ou de la sécurité du logiciel. Même accès sur Windows/Android.
+            Group("Organisation pédagogique",
+                cyclesAvailable ? Item("Cycles scolaires", MaterialIconKind.SchoolOutline, "ToneTeal", Perm.SettingsWrite,
+                    typeof(SchoolCyclesPage), () => new SchoolCyclesPage(shell)) : null,
+                type == InstitutionProfiles.SuperieurLmd
+                    ? Item("Organisation LMD", MaterialIconKind.BookEducationOutline, "ToneTeal", Perm.SettingsWrite,
+                        typeof(LmdPlanningPage), () => new LmdPlanningPage(shell)) : null),
             // Gestion des délibérations (fusion d'ITMCD), dans l'ordre du travail :
             // 1. les enseignants, leurs comptes et l'attribution des cours ;
             Group("Enseignants et cours",
@@ -162,11 +170,6 @@ public static class Sidebar
                     typeof(NetworkHubPage), () => new NetworkHubPage(shell))),
             Group("Paramètres",
                 Item("Configuration", MaterialIconKind.Cog, "TonePurple", null, typeof(SettingsPage), () => new SettingsPage(shell)),
-                cyclesAvailable ? Item("Cycles scolaires", MaterialIconKind.SchoolOutline, "ToneTeal", Perm.SettingsWrite,
-                    typeof(SchoolCyclesPage), () => new SchoolCyclesPage(shell)) : null,
-                type == InstitutionProfiles.SuperieurLmd
-                    ? Item("Organisation LMD", MaterialIconKind.BookEducationOutline, "ToneTeal", Perm.SettingsWrite,
-                        typeof(LmdPlanningPage), () => new LmdPlanningPage(shell)) : null,
                 Item("Utilisateurs", MaterialIconKind.AccountCog, "ToneBlue", Perm.UsersManage, typeof(UsersPage), () => new UsersPage(shell))),
             // Données : protéger, contrôler et, si besoin, effacer.
             Group("Données",
@@ -192,7 +195,7 @@ public static class Sidebar
         }
         Add("VUE D’ENSEMBLE", "", "Pilotage");
         Add("ESPACE ENSEIGNANT", "Espace enseignant");
-        Add("GESTION SCOLAIRE", "Secrétariat", "Scolarité");
+        Add("GESTION SCOLAIRE", "Secrétariat", "Scolarité", "Organisation pédagogique");
         Add("GESTION DES DÉLIBÉRATIONS", "Enseignants et cours", "Délibération");
         Add("GESTION FINANCIÈRE", "Finances");
         Add("ORGANISATION", "Personnel");
