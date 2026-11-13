@@ -90,6 +90,12 @@ public sealed class PhoneMenuBlocksTests
         Assert.Equal(new[] { "Paramètres", "Données" }, settings.Groups.Select(group => group.Title));
         Assert.Equal(MaterialIconKind.SchoolOutline, FeatureVisuals.Icon("Organisation pédagogique"));
         Assert.Equal(MaterialIconKind.LanConnect, FeatureVisuals.Icon("Réseau et postes"));
+        // Le regroupement doit être identique sur téléphone : la rubrique ne
+        // doit pas se retrouver isolée sous « AUTRES OUTILS ».
+        var phoneBlocks = PhoneMenuBlockVm.Build(navigation, []);
+        Assert.DoesNotContain(phoneBlocks, block => block.Title == "AUTRES OUTILS");
+        var mobileSchool = Assert.Single(phoneBlocks, block => block.Title == "GESTION SCOLAIRE");
+        Assert.Equal(education.Groups, mobileSchool.NavigationGroups);
     }
 
 }
