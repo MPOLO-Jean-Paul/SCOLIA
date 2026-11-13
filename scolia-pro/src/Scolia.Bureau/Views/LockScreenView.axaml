@@ -79,7 +79,7 @@
       <Setter Property="Foreground" Value="#1948AE" />
       <Setter Property="BorderThickness" Value="0" />
       <Setter Property="CornerRadius" Value="12" />
-      <Setter Property="MinHeight" Value="52" />
+      <Setter Property="MinHeight" Value="50" />
       <Setter Property="HorizontalAlignment" Value="Stretch" />
       <Setter Property="HorizontalContentAlignment" Value="Center" />
       <Setter Property="FontWeight" Value="SemiBold" />
