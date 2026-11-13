@@ -28,8 +28,8 @@ public sealed class InstitutionProfilesTests
     [InlineData("Primaire", true)]
     [InlineData("Secondaire", true)]
     [InlineData("ComplexeScolaire", true)]
-    [InlineData("SuperieurLmd", false)]
-    public void Private_school_cycles_are_enabled_while_lmd_remains_closed(string profile, bool enabled)
+    [InlineData("SuperieurLmd", true)]
+    public void All_known_profiles_are_enabled_with_distinct_governance(string profile, bool enabled)
     {
         Assert.True(InstitutionProfiles.IsKnown(profile));
         Assert.Equal(enabled, InstitutionProfiles.IsEnabled(profile));

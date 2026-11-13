@@ -21,11 +21,9 @@ public static class InstitutionProfiles
     public static string Canonicalize(string? value) =>
         string.IsNullOrWhiteSpace(value) || value is ItmIm or ItmIem ? ItmIm : value;
 
-    // Les cycles privés sont utilisables sur les nouvelles installations.
-    // LMD et régime public nécessitent encore des modules pédagogiques certifiés.
-    public static bool IsEnabled(string? value) =>
-        IsKnown(value) && Canonicalize(value) is
-            ItmIm or Maternelle or Primaire or Secondaire or ComplexeScolaire;
+    // Les profils connus sont activables. Les tarifs publics et les documents
+    // officiels restent soumis à des validations indépendantes du profil.
+    public static bool IsEnabled(string? value) => IsKnown(value);
 
     public static bool UsesSchoolCycles(string? value) =>
         Canonicalize(value) is Maternelle or Primaire or Secondaire or ComplexeScolaire;
