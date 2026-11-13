@@ -422,9 +422,9 @@ public sealed class SchoolCycleAssessmentApiTests : IDisposable
         Assert.Empty(tperiods[1].GetProperty("entries").EnumerateArray());
         Assert.DoesNotContain("moyenne", json.GetRawText(), StringComparison.OrdinalIgnoreCase);
 
-        // Même si un profil de test est préparé, aucune écriture API n'est
-        // possible avant l'activation officielle des nouveaux moteurs.
-        var (status, _) = await admin.Post(
+        // Les profils privés sont maintenant activés : une nouvelle observation
+        // maternelle doit être enregistrée sans être transformée en cote.
+        var saved = await admin.Post(
             $"/api/etablissement/cycles/evaluations/{enrollmentId}", new
             {
                 schoolCyclePeriodId = row.GetProperty("schoolCyclePeriodId").GetGuid(),
@@ -432,7 +432,20 @@ public sealed class SchoolCycleAssessmentApiTests : IDisposable
                 curriculumItemId = (Guid?)null, observation = "En progrès.",
                 score = (decimal?)null, maxScore = (decimal?)null,
                 comment = (string?)null,
-            }).Fail();
-        Assert.Equal(HttpStatusCode.BadRequest, status);
+            }).Ok();
+        Assert.Equal("Observation", saved.GetProperty("mode").GetString());
+        Assert.Equal(System.Text.Json.JsonValueKind.Null, saved.GetProperty("score").ValueKind);
+        Assert.Equal(System.Text.Json.JsonValueKind.Null, saved.GetProperty("maxScore").ValueKind);
+        var refreshed = await admin.GetAsync(
+            $"/api/etablissement/cycles/evaluations/{enrollmentId}/apercu").Ok();
+        var observations = refreshed.GetProperty("entries").EnumerateArray().ToArray();
+        Assert.Equal(2, observations.Length);
+        Assert.Contains(observations, item => item.GetProperty("evaluationCode").GetString() == "COMM2"
+            && item.GetProperty("observation").GetString() == "En progrès.");
+        Assert.All(observations, item =>
+        {
+            Assert.Equal(System.Text.Json.JsonValueKind.Null, item.GetProperty("score").ValueKind);
+            Assert.Equal(System.Text.Json.JsonValueKind.Null, item.GetProperty("maxScore").ValueKind);
+        });
     }
 }
