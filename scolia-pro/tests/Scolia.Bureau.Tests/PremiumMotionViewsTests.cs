@@ -91,9 +91,22 @@ public sealed class PremiumMotionViewsTests
         Assert.Contains("SelectedMonthsSummary()", source, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public void Le_panneau_cobalt_reagit_au_focus_et_a_l_appui_sans_changer_de_dimensions()
+    {
+        var button = Style("Views/LoginView.axaml", "Button.iosauthprimary:pressed");
+        Assert.Contains(button.Descendants(), x => x.Name.LocalName == "Setter" &&
+            x.Attribute("Property")?.Value == "Background" &&
+            x.Attribute("Value")?.Value == "#E8F1FF");
+        var field = Style("Views/LoginView.axaml", "TextBox.iosauthfield:focus");
+        Assert.Contains(field.Descendants(), x => x.Name.LocalName == "Setter" &&
+            x.Attribute("Property")?.Value == "BorderBrush" &&
+            x.Attribute("Value")?.Value == "White");
+        Assert.DoesNotContain(field.Descendants(), x => x.Name.LocalName == "Setter" &&
+            x.Attribute("Property")?.Value == "Margin");
+    }
+
     [Theory]
-    [InlineData("Views/LoginView.axaml", "Button.iosauthprimary:pressed",
-        "TextBox.iosauthfield:focus")]
     [InlineData("Views/ConnectionView.axaml", "Button.iosconnectprimary:pressed",
         "TextBox.iosconnectfield:focus")]
     [InlineData("Views/Phone/ConnectionCompactView.axaml", "Button.connectmain:pressed",
