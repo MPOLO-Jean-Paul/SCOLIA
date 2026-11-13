@@ -245,6 +245,26 @@ public static class ScoliaEndpoints
             CancellationToken ct) => s.ConfigureAsync(input, ct))
             .RequireAuthorization(Permissions.SettingsWrite);
 
+        // LMD : structures, calendrier semestriel et maquettes de cours séparés
+        // des délibérations ITM. Tous les changements exigent SettingsWrite.
+        g.MapGet("/lmd/structures", (LmdPlanningService s, CancellationToken ct) =>
+            s.StructuresAsync(ct)).RequireAuthorization(Permissions.SettingsWrite);
+        g.MapPost("/lmd/structures", (LmdStructureInput input, LmdPlanningService s, CancellationToken ct) =>
+            s.AddStructureAsync(input, ct)).RequireAuthorization(Permissions.SettingsWrite);
+        g.MapGet("/lmd/semestres", (LmdPlanningService s, CancellationToken ct) =>
+            s.SemestersAsync(ct)).RequireAuthorization(Permissions.SettingsWrite);
+        g.MapPut("/lmd/semestres", (LmdSemesterCalendarInput input, LmdPlanningService s, CancellationToken ct) =>
+            s.SaveSemestersAsync(input, ct)).RequireAuthorization(Permissions.SettingsWrite);
+        g.MapGet("/lmd/promotions/{promotionId:guid}/programme",
+            (Guid promotionId, LmdPlanningService s, CancellationToken ct) =>
+                s.ProgramAsync(promotionId, ct)).RequireAuthorization(Permissions.SettingsWrite);
+        g.MapPost("/lmd/promotions/{promotionId:guid}/ues",
+            (Guid promotionId, LmdTeachingUnitInput input, LmdPlanningService s, CancellationToken ct) =>
+                s.AddTeachingUnitAsync(promotionId, input, ct)).RequireAuthorization(Permissions.SettingsWrite);
+        g.MapPost("/lmd/promotions/{promotionId:guid}/ecs",
+            (Guid promotionId, LmdTeachingElementInput input, LmdPlanningService s, CancellationToken ct) =>
+                s.AddTeachingElementAsync(promotionId, input, ct)).RequireAuthorization(Permissions.SettingsWrite);
+
         // Registre scolaire distinct de l'ITM : aucun seuil, moyenne ou décision
         // inventés dans un aperçu. L'écriture est interdite aux profils non activés.
         g.MapGet("/cycles/evaluations/{enrollmentId:guid}/apercu",
