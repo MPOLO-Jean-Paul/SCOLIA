@@ -170,6 +170,8 @@ public static class Sidebar
                     typeof(NetworkHubPage), () => new NetworkHubPage(shell))),
             Group("Paramètres",
                 Item("Configuration", MaterialIconKind.Cog, "TonePurple", null, typeof(SettingsPage), () => new SettingsPage(shell)),
+                shell.TeacherOnly ? Item("Encodage des cotes", MaterialIconKind.Pen, "TonePurple",
+                    null, typeof(MarksPage), () => new MarksPage(shell)) : null,
                 Item("Utilisateurs", MaterialIconKind.AccountCog, "ToneBlue", Perm.UsersManage, typeof(UsersPage), () => new UsersPage(shell))),
             // Données : protéger, contrôler et, si besoin, effacer.
             Group("Données",
