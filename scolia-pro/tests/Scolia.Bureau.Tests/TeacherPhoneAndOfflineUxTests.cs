@@ -76,7 +76,9 @@ public sealed class TeacherPhoneAndOfflineUxTests
         Assert.DoesNotContain("ThemeBrush.Get(", stats, StringComparison.Ordinal);
 
         var doc = View("TeacherHomeView.axaml");
-        var overview = Assert.Single(doc.Descendants(), x =>
+        var phone = Assert.Single(doc.Descendants(), x =>
+            Attr(x, "Name", "TeacherPhoneSections"));
+        var overview = Assert.Single(phone.Descendants(), x =>
             x.Name.LocalName == "ItemsControl" && Attr(x, "ItemsSource", "{Binding Stats}"));
         Assert.Contains(overview.Descendants(), x =>
             x.Name.LocalName == "Border"
