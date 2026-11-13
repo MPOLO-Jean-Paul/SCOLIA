@@ -21,6 +21,9 @@ public sealed record CodeChangeRequest(string? Code, string? Reason);
 /// <summary>Résolution d'un code pour l'encodage anonyme : la promotion, jamais le nom.</summary>
 public sealed record CodeLookupDto(string Code, Guid EnrollmentId, Guid PromotionId, string PromotionCode);
 
+/// <summary>Vérification sans identité, dans le cours autorisé : aucun code ne donne accès aux noms.</summary>
+public sealed record AnonymousCodeCheckDto(string Code, bool Valid, string Message, decimal MaxScore);
+
 /// <summary>Cours vu par la délibération : organisation, maxima et avancement de l'encodage.</summary>
 public sealed record DeliberationCourseDto(Guid Id, int Number, string Name, string Semester, decimal MaxScore, string? TeacherName,
     int Students, int GradedS1, int GradedS2, int Supports, bool LockedS1, bool LockedS2, bool SubmittedS1 = false, bool SubmittedS2 = false, int GradedJury = 0);
