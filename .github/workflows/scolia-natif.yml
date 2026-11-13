@@ -18,6 +18,7 @@ on:
       - 'scolia-pro/tests/Scolia.Bureau.Tests/**'
       - 'scolia-pro/tests/Scolia.Mobile.Tests/**'
       - 'scolia-pro/tests/Scolia.Tests/**'
+      - 'scolia-pro/docs/RELEASE_*.md'
       - '.github/workflows/scolia-natif.yml'
   pull_request:
     paths:
@@ -36,6 +37,7 @@ on:
       - 'scolia-pro/tests/Scolia.Bureau.Tests/**'
       - 'scolia-pro/tests/Scolia.Mobile.Tests/**'
       - 'scolia-pro/tests/Scolia.Tests/**'
+      - 'scolia-pro/docs/RELEASE_*.md'
       - '.github/workflows/scolia-natif.yml'
   workflow_dispatch:
 
