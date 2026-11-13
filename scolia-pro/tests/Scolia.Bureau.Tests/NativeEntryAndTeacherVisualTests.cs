@@ -21,7 +21,6 @@ public sealed class NativeEntryAndTeacherVisualTests
             x.Name.LocalName == "Style" && (string?)x.Attribute("Selector") == selector);
 
     [Theory]
-    [InlineData("Views/LockScreenView.axaml", "Border.ioslockcard")]
     [InlineData("Views/ConnectionView.axaml", "Border.iosconnectcard")]
     [InlineData("Views/Phone/ConnectionCompactView.axaml", "Border.connectcard")]
     public void Avant_accueil_aucune_carte_de_connexion_avec_fond_ombre_ou_bordure(
@@ -59,6 +58,23 @@ public sealed class NativeEntryAndTeacherVisualTests
                 (string?)x.Attribute("AutomationProperties.Name") is { Length: > 0 });
         Assert.Contains(view.Descendants(), x => x.Name.LocalName == "TextBox" &&
             (string?)x.Attribute("Name") == "IosUserNameBox");
+    }
+
+    [Fact]
+    public void Session_verrouillee_reprend_la_meme_palette_et_les_actions_par_icones()
+    {
+        var view = Load("Views/LockScreenView.axaml");
+        var panel = Style("Views/LockScreenView.axaml", "Border.ioslockcard");
+        Assert.Contains(panel.Elements(), x => x.Name.LocalName == "Setter" &&
+            (string?)x.Attribute("Property") == "Background" &&
+            (string?)x.Attribute("Value") == "#2354C8");
+        Assert.Contains(view.Descendants(), x => x.Name.LocalName == "ScrollViewer" &&
+            (string?)x.Attribute("Name") == "IosLockScroll" &&
+            x.Descendants().Any(y => y.Name.LocalName == "LinearGradientBrush"));
+        foreach (var command in new[] { "ForgotCode", "SwitchAccount" })
+            Assert.Contains(view.Descendants(), x => x.Name.LocalName == "Button" &&
+                (string?)x.Attribute("Command") == "{Binding " + command + "}" &&
+                (string?)x.Attribute("AutomationProperties.Name") is { Length: > 0 });
     }
 
     [Theory]
