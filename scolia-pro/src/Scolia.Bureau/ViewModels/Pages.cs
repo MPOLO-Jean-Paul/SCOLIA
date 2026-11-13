@@ -31,6 +31,8 @@ public sealed class LoginViewModel : Observable
         RecoverWithBiometrics = new AsyncCommand(RecoverWithBiometricsAsync);
         RecoverWithCode = new AsyncCommand(RecoverWithCodeAsync);
         ChooseRememberedAccount = new RelayCommand<string>(ChooseRememberedAccountAsync);
+        ForgetSelectedAccount = new AsyncCommand(ForgetSelectedAccountAsync);
+        ForgetLinkedServer = new AsyncCommand(ForgetLinkedServerAsync);
     }
 
     public event Action<SessionDto>? LoggedIn;
@@ -65,6 +67,44 @@ public sealed class LoginViewModel : Observable
     }
     public bool ShowRememberedChoices => ShowAccountEntry && KnownAccounts.Count > 0;
     public RelayCommand<string> ChooseRememberedAccount { get; }
+    public AsyncCommand ForgetSelectedAccount { get; }
+    public AsyncCommand ForgetLinkedServer { get; }
+    public Func<string, Task<bool>>? ConfirmAccountRemoval { get; set; }
+    public event Func<Task>? ForgetLinkedServerRequested;
+
+    private async Task ForgetSelectedAccountAsync()
+    {
+        var account = UserName;
+        if (Busy || string.IsNullOrWhiteSpace(account) ||
+            !KnownAccounts.Contains(account, StringComparer.OrdinalIgnoreCase)) return;
+        if (ConfirmAccountRemoval is { } confirm && !await confirm(account)) return;
+        var store = new OfflineStore(ConnectionStore.CacheAddress(api.Server));
+        if (!store.ForgetKnownAccount(account))
+        {
+            Error = "Ce compte a des modifications en attente. Synchronisez-les avant de le retirer.";
+            return;
+        }
+        // Un secret biométrique conservé permettrait sinon de réimporter la session retirée.
+        if (BiometricAccess.AccountMatches(BiometricAccess.ReadAccount(api.Server) ?? string.Empty, account))
+        {
+            Platform.DisableBiometricAccess?.Invoke();
+            BiometricAccess.Disable();
+        }
+        KnownAccounts = store.KnownAccounts;
+        editingAccount = true;
+        UserName = string.Empty;
+        Password = string.Empty;
+        Error = null;
+        Notice = "Compte retiré de cet appareil. Le compte sur le serveur n'est pas supprimé.";
+        RaiseAccountState();
+        RefreshBiometrics();
+    }
+
+    private async Task ForgetLinkedServerAsync()
+    {
+        if (Busy || api.Server.IsLoopback || ForgetLinkedServerRequested is not { } requested) return;
+        await requested();
+    }
     private void ChooseRememberedAccountAsync(string? account)
     {
         if (Busy || string.IsNullOrWhiteSpace(account) ||
