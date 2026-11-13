@@ -104,7 +104,7 @@ public sealed class LmdPlanningService(IAppDbContext db, IWriteGate gate, IAudit
         audit.Record("lmd.semestres.configures", "CalendrierLmd", year.Id.ToString(),
             "Calendrier S1 et S2 configuré séparément des mois de paiement.");
         await db.SaveChangesAsync(ct);
-        return new[] { SemesterDto(first), SemesterDto(second) };
+        return (IReadOnlyList<LmdSemesterDto>)new[] { SemesterDto(first), SemesterDto(second) };
     }, ct);
 
     public async Task<IReadOnlyList<LmdProgramItemDto>> ProgramAsync(Guid promotionId,

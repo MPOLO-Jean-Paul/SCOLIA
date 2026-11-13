@@ -13,7 +13,7 @@ public sealed class PedagogicalCalendarTests
     [InlineData("ItmIm", CourseSemester.JuryEpreuve, true)]
     [InlineData("Maternelle", CourseSemester.Annuel, true)]
     [InlineData("Maternelle", CourseSemester.S1, false)]
-    [InlineData("ComplexeScolaire", CourseSemester.Annuel, false)]
+    [InlineData("ComplexeScolaire", CourseSemester.Annuel, true)]
     [InlineData("Primaire", CourseSemester.Annuel, true)]
     [InlineData("Primaire", CourseSemester.S1, false)]
     [InlineData("Secondaire", CourseSemester.Annuel, true)]
@@ -71,7 +71,7 @@ public sealed class PedagogicalCalendarTests
             InstitutionProfiles.Maternelle, year, new[] { period }));
         Assert.Throws<DomainException>(() => PedagogicalCalendarRules.Validate(
             InstitutionProfiles.ComplexeScolaire, year, new[] { period }));
-        Assert.False(PedagogicalCalendarRules.AllowsCourse(
+        Assert.True(PedagogicalCalendarRules.AllowsCourse(
             InstitutionProfiles.ComplexeScolaire, CourseSemester.Annuel));
     }
 

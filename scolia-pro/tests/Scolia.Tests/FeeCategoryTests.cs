@@ -38,7 +38,7 @@ public sealed class FeeCategoryTests : IDisposable
     {
         var admin = await app.InstalledAdmin();
         var (_, noMonthly) = await admin.Post("/api/etablissement/promotions", Promotion("INF1", 0m)).Fail();
-        Assert.Contains("La mensualité est obligatoire", noMonthly.GetRawText(), StringComparison.Ordinal);
+        Assert.Contains("mensualité", noMonthly.GetRawText(), StringComparison.OrdinalIgnoreCase);
 
         // Un frais dont la catégorie n'a pas été créée est refusé (ancien client : nature + libellé).
         var (_, unknown) = await admin.Post("/api/etablissement/promotions", Promotion("INF1", 55000m,

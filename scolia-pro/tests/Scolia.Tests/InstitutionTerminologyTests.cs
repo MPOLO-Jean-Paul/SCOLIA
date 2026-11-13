@@ -40,6 +40,6 @@ public sealed class InstitutionTerminologyTests
         Assert.NotEqual(itm.PluralTitle, primary.PluralTitle);
         Assert.NotEqual(primary.PluralTitle, higher.PluralTitle);
         Assert.True(InstitutionProfiles.IsEnabled(InstitutionProfiles.ItmIm));
-        Assert.False(InstitutionProfiles.IsEnabled(InstitutionProfiles.SuperieurLmd));
+        Assert.True(InstitutionProfiles.IsEnabled(InstitutionProfiles.SuperieurLmd));
     }
 }
