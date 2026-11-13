@@ -357,20 +357,28 @@ public sealed class SchoolService(IAppDbContext db, IWriteGate gate, IAuditLog a
     {
         var school = await YearContext.SchoolAsync(db, ct);
         var code = Promotion.NormalizeCode(input.Code);
-        if (InstitutionProfiles.Canonicalize(school.InstitutionType) == InstitutionProfiles.ItmIm && input.SchoolCycleId is not null)
+        if (input.SchoolCycleId is not null &&
+            InstitutionProfiles.Canonicalize(school.InstitutionType) is (InstitutionProfiles.ItmIm or InstitutionProfiles.SuperieurLmd))
             throw new DomainException("schoolCycleId", "Les classes ITM/IM restent indépendantes des nouveaux cycles scolaires.");
         if (input.SchoolCycleId is { } selectedCycle && !await db.SchoolCycles.AnyAsync(c => c.Id == selectedCycle && c.SchoolId == school.Id && c.IsActive, ct))
             throw new DomainException("schoolCycleId", "Le cycle choisi est introuvable ou inactif dans cet établissement.");
         var v = new ValidationBuilder()
             .Require(code.Length == 4 && code.All(char.IsAsciiLetterOrDigit), "code", "Le code doit compter 4 lettres ou chiffres (ex. INF1) : il préfixe les matricules.")
             .Require(!string.IsNullOrWhiteSpace(input.Name) && input.Name.Trim().Length <= 120, "name", "Désignation obligatoire.")
-            .Require(InstitutionProfiles.Canonicalize(school.InstitutionType) == InstitutionProfiles.ItmIm
-                ? input.MonthlyFee > 0 : input.MonthlyFee >= 0,
-                "monthlyFee", InstitutionProfiles.Canonicalize(school.InstitutionType) == InstitutionProfiles.ItmIm
-                    ? "La mensualité est obligatoire : indiquez son montant (supérieur à zéro)."
-                    : "La mensualité peut être désactivée pour ce cycle, mais ne peut pas être négative.")
+            .Require(school.Governance == SchoolGovernanceKind.Public
+                ? input.MonthlyFee == 0
+                : InstitutionProfiles.Canonicalize(school.InstitutionType) == InstitutionProfiles.ItmIm
+                    ? input.MonthlyFee > 0 : input.MonthlyFee >= 0,
+                "monthlyFee", school.Governance == SchoolGovernanceKind.Public
+                    ? "La scolarité publique ne peut pas être facturée sans décision réglementaire validée."
+                    : InstitutionProfiles.Canonicalize(school.InstitutionType) == InstitutionProfiles.ItmIm
+                        ? "La mensualité privée ITM/IM est obligatoire."
+                        : "La mensualité ne peut pas être négative.")
             .Require(!school.WholeAmountsOnly || input.MonthlyFee == decimal.Truncate(input.MonthlyFee), "monthlyFee", "La mensualité doit être un nombre entier.")
             .Require(input.Capacity is null or > 0, "capacity", "La capacité doit être positive.");
+        if (school.Governance == SchoolGovernanceKind.Public && input.OneTimeFees is { Count: > 0 })
+            throw new DomainException("oneTimeFees",
+                "Les frais publics exigent une décision réglementaire vérifiée : aucune rubrique ne peut être créée ici.");
         foreach (var fee in input.OneTimeFees ?? [])
         {
             v.Require(fee.CategoryId is not null || !string.IsNullOrWhiteSpace(fee.Label), "oneTimeFees", "Chaque frais doit désigner une catégorie.");
@@ -426,9 +434,8 @@ public sealed class SchoolService(IAppDbContext db, IWriteGate gate, IAuditLog a
         if (school.InstitutionType is InstitutionProfiles.Maternelle or InstitutionProfiles.Primaire
             or InstitutionProfiles.Secondaire or InstitutionProfiles.ComplexeScolaire)
         {
-            if (school.Governance == SchoolGovernanceKind.Public)
-                throw new DomainException("governance",
-                    "Les tarifs d'un établissement public exigent une configuration réglementaire distincte, non encore activée.");
+            // Les cycles publics sont configurables sans facturation forcée ;
+            // les rubriques financières sont protégées par les règles ci-dessus.
             var cycleId = input.SchoolCycleId ?? promotion.SchoolCycleId;
             if (cycleId is null)
                 throw new DomainException("schoolCycleId",

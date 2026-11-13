@@ -31,6 +31,9 @@ public sealed class FeeCategoryService(IAppDbContext db, IWriteGate gate, IAudit
     public Task<FeeCategoryDto> UpsertAsync(Guid? id, FeeCategoryUpsert input, CancellationToken ct = default) => gate.RunAsync(async () =>
     {
         var school = await YearContext.SchoolAsync(db, ct);
+        if (school.Governance == SchoolGovernanceKind.Public)
+            throw new DomainException("fraisPublics",
+                "Les frais publics nécessitent une décision réglementaire vérifiée. Le catalogue des tarifs privés n'est pas disponible ici.");
         var name = (input.Name ?? string.Empty).Trim();
         new ValidationBuilder()
             .Require(name.Length is > 0 and <= FeeCategory.MaxNameLength, "name", "Nommez la catégorie (80 caractères au plus), par exemple « Frais d'inscription ».")

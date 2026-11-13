@@ -69,6 +69,8 @@ public sealed class TeachingService(IAppDbContext db, IWriteGate gate, IAuditLog
         }
 
         var targetSemester = string.IsNullOrWhiteSpace(input.Semester) ? course.Semester : DeliberationText.Semester(input.Semester);
+        var school = await YearContext.SchoolAsync(db, ct);
+        PedagogicalCalendarRules.RequireCourse(InstitutionProfiles.Canonicalize(school.InstitutionType), targetSemester);
         var closedPeriods = await db.DeliberationSessions.AsNoTracking()
             .Where(s => s.PromotionId == course.PromotionId && s.Status == SessionStatus.Cloturee)
             .Select(s => s.Period).ToListAsync(ct);
