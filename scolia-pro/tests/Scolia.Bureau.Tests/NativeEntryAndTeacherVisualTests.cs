@@ -43,6 +43,39 @@ public sealed class NativeEntryAndTeacherVisualTests
     }
 
     [Theory]
+    [InlineData("Views/LoginView.axaml", "TextBox.iosauthfield", "Button.iosauthprimary")]
+    [InlineData("Views/LockScreenView.axaml", "TextBox.ioslockfield", "Button.ioslockprimary")]
+    [InlineData("Views/ConnectionView.axaml", "TextBox.iosconnectfield", "Button.iosconnectprimary")]
+    [InlineData("Views/Phone/ConnectionCompactView.axaml", "TextBox.connectfield", "Button.connectmain")]
+    public void Les_ecrans_avant_accueil_animent_uniquement_les_pinceaux_sans_bousculer_la_saisie(
+        string view, string fieldSelector, string buttonSelector)
+    {
+        var field = Style(view, fieldSelector);
+        var focus = Style(view, fieldSelector + ":focus");
+        var button = Style(view, buttonSelector);
+        static bool HasBrushTransition(XElement style, string property) =>
+            style.Descendants().Any(x => x.Name.LocalName == "BrushTransition"
+                && (string?)x.Attribute("Property") == property);
+        Assert.True(HasBrushTransition(field, "BorderBrush"));
+        Assert.True(HasBrushTransition(button, "Background"));
+        Assert.Contains(focus.Elements(), x => x.Name.LocalName == "Setter"
+            && (string?)x.Attribute("Property") == "BorderThickness"
+            && (string?)x.Attribute("Value") == "1");
+    }
+
+    [Fact]
+    public void Configuration_mobile_preserve_ses_etapes_et_ajoute_une_reponse_visuelle_sobre()
+    {
+        var doc = Load("Views/Phone/SetupView.axaml");
+        Assert.Contains(doc.Descendants(), x => x.Name.LocalName == "Style"
+            && (string?)x.Attribute("Selector") == "Button.iossetupprimary"
+            && x.Descendants().Any(t => t.Name.LocalName == "BrushTransition"
+                && (string?)t.Attribute("Property") == "Background"));
+        Assert.Contains(doc.Descendants(), x => x.Name.LocalName == "Grid"
+            && (string?)x.Attribute("Name") == "SetupRoot");
+    }
+
+    [Theory]
     [InlineData("Views/LoginView.axaml")]
     [InlineData("Views/LockScreenView.axaml")]
     [InlineData("Views/ConnectionView.axaml")]

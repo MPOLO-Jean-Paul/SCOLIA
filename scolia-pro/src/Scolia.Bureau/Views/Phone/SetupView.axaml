@@ -53,6 +53,23 @@
     <Style Selector="Grid.tiny Image.iossetupmark"><Setter Property="Width" Value="26" /><Setter Property="Height" Value="26" /></Style>
     <Style Selector="Grid.tiny TextBlock.iossetuptitle"><Setter Property="FontSize" Value="17" /></Style>
     <Style Selector="Grid.micro StackPanel.iossetupbody"><Setter Property="Margin" Value="9,8,9,8" /><Setter Property="Spacing" Value="9" /></Style>
+    <!-- Même finesse sur l'installation : appui et focus progressifs, jamais de déplacement. -->
+    <Style Selector="Button.iossetupprimary">
+      <!-- Réaction douce sans déplacement des contrôles ni animation des données. -->
+      <Setter Property="Transitions">
+        <Transitions>
+          <BrushTransition Property="Background" Duration="0:0:0.14" Easing="CubicEaseOut" />
+        </Transitions>
+      </Setter>
+    </Style>
+    <Style Selector="Button.iossetupsecondary">
+      <!-- Réaction douce sans déplacement des contrôles ni animation des données. -->
+      <Setter Property="Transitions">
+        <Transitions>
+          <BrushTransition Property="Background" Duration="0:0:0.14" Easing="CubicEaseOut" />
+        </Transitions>
+      </Setter>
+    </Style>
     <Style Selector="StackPanel.field"><Setter Property="Spacing" Value="4" /></Style>
     <Style Selector="StackPanel.field > TextBlock">
       <Setter Property="Foreground" Value="{DynamicResource Text2Brush}" />

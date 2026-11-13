@@ -65,6 +65,16 @@
       <Setter Property="Padding" Value="14,10" />
       <Setter Property="MinHeight" Value="52" />
       <Setter Property="FontSize" Value="15" />
+      <!-- Réaction douce sans déplacement des contrôles ni animation des données. -->
+      <Setter Property="Transitions">
+        <Transitions>
+          <BrushTransition Property="BorderBrush" Duration="0:0:0.14" Easing="CubicEaseOut" />
+        </Transitions>
+      </Setter>
+    </Style>
+    <Style Selector="TextBox.ioslockfield:focus">
+      <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
     </Style>
     <Style Selector="Button.ioslockprimary">
       <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
@@ -75,6 +85,12 @@
       <Setter Property="HorizontalAlignment" Value="Stretch" />
       <Setter Property="HorizontalContentAlignment" Value="Center" />
       <Setter Property="FontWeight" Value="SemiBold" />
+      <!-- Réaction douce sans déplacement des contrôles ni animation des données. -->
+      <Setter Property="Transitions">
+        <Transitions>
+          <BrushTransition Property="Background" Duration="0:0:0.14" Easing="CubicEaseOut" />
+        </Transitions>
+      </Setter>
     </Style>
     <Style Selector="Button.ioslocksecondary">
       <Setter Property="Background" Value="{DynamicResource Surface2Brush}" />
@@ -85,6 +101,12 @@
       <Setter Property="MinHeight" Value="48" />
       <Setter Property="HorizontalAlignment" Value="Stretch" />
       <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <!-- Réaction douce sans déplacement des contrôles ni animation des données. -->
+      <Setter Property="Transitions">
+        <Transitions>
+          <BrushTransition Property="Background" Duration="0:0:0.14" Easing="CubicEaseOut" />
+        </Transitions>
+      </Setter>
     </Style>
     <Style Selector="Button.ioslocklink">
       <Setter Property="Background" Value="Transparent" />

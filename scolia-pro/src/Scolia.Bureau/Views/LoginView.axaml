@@ -54,6 +54,12 @@
       <Setter Property="FontSize" Value="15" />
       <Setter Property="Padding" Value="14,9" />
       <Setter Property="MinHeight" Value="52" />
+      <!-- Réaction douce sans déplacement des contrôles ni animation des données. -->
+      <Setter Property="Transitions">
+        <Transitions>
+          <BrushTransition Property="BorderBrush" Duration="0:0:0.14" Easing="CubicEaseOut" />
+        </Transitions>
+      </Setter>
     </Style>
     <Style Selector="Button.iosauthprimary">
       <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
@@ -64,6 +70,12 @@
       <Setter Property="FontWeight" Value="SemiBold" />
       <Setter Property="HorizontalAlignment" Value="Stretch" />
       <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <!-- Réaction douce sans déplacement des contrôles ni animation des données. -->
+      <Setter Property="Transitions">
+        <Transitions>
+          <BrushTransition Property="Background" Duration="0:0:0.14" Easing="CubicEaseOut" />
+        </Transitions>
+      </Setter>
     </Style>
     <Style Selector="Button.iosauthsecondary">
       <Setter Property="Background" Value="{DynamicResource Surface2Brush}" />
@@ -74,6 +86,12 @@
       <Setter Property="MinHeight" Value="48" />
       <Setter Property="HorizontalAlignment" Value="Stretch" />
       <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <!-- Réaction douce sans déplacement des contrôles ni animation des données. -->
+      <Setter Property="Transitions">
+        <Transitions>
+          <BrushTransition Property="Background" Duration="0:0:0.14" Easing="CubicEaseOut" />
+        </Transitions>
+      </Setter>
     </Style>
     <Style Selector="Button.iosauthlink">
       <Setter Property="Background" Value="Transparent" />
@@ -104,7 +122,8 @@
     <!-- État de saisie clair sur desktop (clavier) et Android (toucher). -->
     <Style Selector="TextBox.iosauthfield:focus">
       <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
-      <Setter Property="BorderThickness" Value="2" />
+      <!-- Conserver 1 px : aucun saut de taille lorsque le clavier prend le focus. -->
+      <Setter Property="BorderThickness" Value="1" />
     </Style>
         <!-- Valeurs de base de la page : posées par style pour que les adaptations à l'écran puissent les remplacer. -->
     <Style Selector="StackPanel.iosloginbody"><Setter Property="MaxWidth" Value="420" /><Setter Property="Margin" Value="20,22,20,20" /><Setter Property="Spacing" Value="16" /></Style>

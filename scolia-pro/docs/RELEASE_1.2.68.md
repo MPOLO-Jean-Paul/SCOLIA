@@ -20,3 +20,10 @@
 - APK signé selon le procédé de signature historique PR #18 ; installateur Windows sans prétendre à une signature Authenticode.
 - Publication après compilation, tests et vérification SHA-256 de l'APK et de l'installateur Windows.
 
+
+## Finition des écrans avant l'accueil
+
+- **Connexion, reprise de session, jumelage et configuration mobile :** transitions légères (140 ms) des fonds de boutons et des bordures de champs ; aucun zoom ni déplacement des formulaires.
+- **Focus de saisie :** bordure accentuée à épaisseur constante (1 px), évitant la variation de taille lorsque le clavier ouvre un champ, y compris sur petit Android.
+- Les mises en page actuelles, contrôles, couleurs existantes, états de sécurité et adaptations `compact`/`tiny`/`micro` sont conservés. Les transitions ne modifient aucun parcours d'authentification.
+- Tests XAML ajoutés pour assurer l'uniformité des écrans concernés et la conservation de leurs étapes.

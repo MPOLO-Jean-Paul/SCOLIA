@@ -21,6 +21,12 @@
       <Setter Property="HorizontalAlignment" Value="Stretch" />
       <Setter Property="HorizontalContentAlignment" Value="Center" />
       <Setter Property="FontWeight" Value="SemiBold" />
+      <!-- Réaction douce sans déplacement des contrôles ni animation des données. -->
+      <Setter Property="Transitions">
+        <Transitions>
+          <BrushTransition Property="Background" Duration="0:0:0.14" Easing="CubicEaseOut" />
+        </Transitions>
+      </Setter>
     </Style>
     <Style Selector="Button.connectsecondary">
       <Setter Property="Background" Value="{DynamicResource Surface2Brush}" />
@@ -30,6 +36,12 @@
       <Setter Property="MinHeight" Value="48" />
       <Setter Property="HorizontalAlignment" Value="Stretch" />
       <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <!-- Réaction douce sans déplacement des contrôles ni animation des données. -->
+      <Setter Property="Transitions">
+        <Transitions>
+          <BrushTransition Property="Background" Duration="0:0:0.14" Easing="CubicEaseOut" />
+        </Transitions>
+      </Setter>
     </Style>
     <Style Selector="Button.connectnav">
       <Setter Property="Background" Value="Transparent" />
@@ -64,6 +76,12 @@
       <Setter Property="MinHeight" Value="52" />
       <Setter Property="FontSize" Value="15" />
       <Setter Property="Padding" Value="14,10" />
+      <!-- Réaction douce sans déplacement des contrôles ni animation des données. -->
+      <Setter Property="Transitions">
+        <Transitions>
+          <BrushTransition Property="BorderBrush" Duration="0:0:0.14" Easing="CubicEaseOut" />
+        </Transitions>
+      </Setter>
     </Style>
     <Style Selector="ComboBox.connectselect">
       <Setter Property="Background" Value="{DynamicResource FieldBrush}" />
@@ -81,7 +99,7 @@
     </Style>
     <Style Selector="TextBox.connectfield:focus">
       <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
-      <Setter Property="BorderThickness" Value="2" />
+      <Setter Property="BorderThickness" Value="1" />
     </Style>
     <!-- En cas de très petite hauteur, supprimer les ornements, jamais les commandes. -->
     <Style Selector="Grid.micro Border.connectcard"><Setter Property="Padding" Value="0" /><Setter Property="CornerRadius" Value="0" /></Style>
