@@ -33,6 +33,13 @@ public static class ConnectionStore
 
     public static void Save(ConnectionSettings settings) => _ = TrySave(settings);
 
+    /// <summary>Oublie seulement la connexion enregistrée sur ce poste ; ne détruit aucune base scolaire.</summary>
+    public static bool TryForget()
+    {
+        try { if (File.Exists(FilePath)) File.Delete(FilePath); return true; }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { return false; }
+    }
+
     /// <summary>
     /// Écriture atomique du serveur mémorisé : éviter qu'une coupure pendant l'écriture
     /// tronque le fichier et fasse perdre la connexion de l'établissement au redémarrage.
