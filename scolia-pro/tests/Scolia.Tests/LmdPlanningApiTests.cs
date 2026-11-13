@@ -99,8 +99,8 @@ public sealed class LmdPlanningApiTests : IDisposable
         var program = await client.GetAsync(
             $"/api/etablissement/lmd/promotions/{promotionId}/programme").Ok();
         Assert.Equal(3, program.GetArrayLength());
-        Assert.Single(program.EnumerateArray().Where(c =>
-            c.GetProperty("kind").GetString() == "TeachingUnit"));
+        Assert.Single(program.EnumerateArray(), c =>
+            c.GetProperty("kind").GetString() == "TeachingUnit");
         Assert.Equal(2, program.EnumerateArray().Count(c =>
             c.GetProperty("kind").GetString() == "TeachingElement"));
 
