@@ -639,7 +639,9 @@ public sealed class ShellViewModel : Observable
             // sur ce poste ne doit pas autoriser une reconnexion silencieuse.
             DevicePairingStore.Forget(api.Server);
             if (cache != api.Server) DevicePairingStore.Forget(cache);
-            var internetRemoved = saved.Mode != ConnectionSettings.Internet || RemoteConnection.TryForgetClient();
+            var guestLink = RemoteConnection.Load() is { Host: false } guest ? guest.Link.VirtualServer : null;
+            if (guestLink is not null) DevicePairingStore.Forget(guestLink);
+            var internetRemoved = RemoteConnection.TryForgetClient();
             Sync.Forget();
             api.Offline = null;
             api.Retarget(ConnectionStore.LocalAddress);
