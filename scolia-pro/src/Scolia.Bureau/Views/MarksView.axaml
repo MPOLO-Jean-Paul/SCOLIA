@@ -74,7 +74,7 @@
                        IsVisible="{Binding CodeVerified}" TextWrapping="Wrap" />
             <TextBlock Text="{Binding MaxScoreLabel}" Classes="fieldlabel" />
             <TextBox Text="{Binding ScoreInput, Mode=TwoWay}" MaxLength="12"
-                     Watermark="Note obtenue" IsEnabled="{Binding CanEnterScore}"
+                     PlaceholderText="Note obtenue" IsEnabled="{Binding CanEnterScore}"
                      AutomationProperties.Name="Note de la copie" />
             <TextBlock Text="{Binding ScoreError}" Foreground="{DynamicResource ToneRed}"
                        IsVisible="{Binding HasScoreError}" TextWrapping="Wrap" />
