@@ -157,9 +157,9 @@ public sealed class SyncCenter : Observable, IDisposable
             shell.Notify("Reconnectez le téléphone au serveur pour télécharger les données nécessaires.");
             return;
         }
-        if (!shell.Can(Perm.StudentsRead))
+        if (!shell.Can(Perm.StudentsRead) && !shell.TeacherOnly)
         {
-            shell.Notify("Ce compte n'a pas l'autorisation de lire le registre des apprenants.");
+            shell.Notify("Ce compte n'a pas accès aux données pédagogiques ou au registre des apprenants.");
             return;
         }
         preparing = true;
@@ -170,12 +170,17 @@ public sealed class SyncCenter : Observable, IDisposable
             var token = running?.Token ?? CancellationToken.None;
             var result = await OfflinePreparation.RunAsync(api,
                 includeFinancialAccounts: shell.Can(Perm.PaymentsRead),
+                includeTeacherSheets: shell.TeacherOnly,
                 progress: state => Dispatcher.UIThread.Post(() =>
                     PreparationText = $"{state.Stage} · {state.Completed}/{state.Expected}"),
                 ct: token);
-            PreparationText = result.Complete
-                ? $"{result.Indexed} apprenants et {result.Accounts} comptes préparés sur cet appareil."
-                : $"Copie partielle : {result.Details} dossiers et {result.Accounts} comptes, {result.Errors} erreurs. Réessayez en ligne.";
+            PreparationText = shell.TeacherOnly
+                ? result.Complete
+                    ? $"{result.Indexed} cours et {result.Details} feuilles anonymes disponibles hors ligne."
+                    : $"Cours partiellement copiés : {result.Errors} erreurs, reprise au prochain réseau."
+                : result.Complete
+                    ? $"{result.Indexed} apprenants et {result.Accounts} comptes préparés sur cet appareil."
+                    : $"Copie partielle : {result.Details} dossiers et {result.Accounts} comptes, {result.Errors} erreurs. Réessayez en ligne.";
             shell.Notify(result.Complete
                 ? "Les données autorisées sont préparées pour une utilisation hors ligne."
                 : "Préparation partielle. Vérifiez les droits, l'espace libre et la connexion.");
@@ -295,6 +300,12 @@ public sealed class SyncCenter : Observable, IDisposable
                     await SeedIfMissingAsync<TodayDto>("api/rapports/aujourdhui");
                 }
 
+                if (shell.TeacherOnly)
+                {
+                    await SeedIfMissingAsync<List<TeacherCourseDto>>("api/deliberation/mes-cours");
+                    await SeedIfMissingAsync<DeliberationSettingsDto>("api/deliberation/reglages");
+                }
+
                 if (shell.Can(Perm.StudentsRead))
                 {
                     await SeedIfMissingAsync<List<PromotionDto>>("api/etablissement/promotions");
@@ -332,7 +343,7 @@ public sealed class SyncCenter : Observable, IDisposable
     private async Task AutoReplicateAsync(CancellationToken ct)
     {
         if (ct.IsCancellationRequested || !shell.IsLoggedIn || !api.IsOnline || api.Server.IsLoopback ||
-            !shell.Can(Perm.StudentsRead) || Syncing || preparing ||
+            (!shell.Can(Perm.StudentsRead) && !shell.TeacherOnly) || Syncing || preparing ||
             DateTime.UtcNow < nextReplicaAttemptUtc || api.Offline is not { } store ||
             string.IsNullOrWhiteSpace(store.User)) return;
         if (!await backgroundReplicaGate.WaitAsync(0, ct)) return;
@@ -341,7 +352,10 @@ public sealed class SyncCenter : Observable, IDisposable
             var user = store.User;
             var revision = await api.GetAsync<JsonElement>("api/revision", ct);
             var current = OfflinePreparation.RevisionLabel(revision);
-            if (string.Equals(store.ReadSyncCheckpointFor(user), current, StringComparison.Ordinal)) return;
+            // Une installation plus ancienne peut posséder un curseur de dossiers,
+            // mais pas encore les feuilles enseignants. Ne jamais les confondre.
+            var checkpoint = current + (shell.TeacherOnly ? "|enseignant-v1" : "|dossiers-v1");
+            if (string.Equals(store.ReadSyncCheckpointFor(user), checkpoint, StringComparison.Ordinal)) return;
             if (api.Offline != store || store.User != user || !shell.IsLoggedIn) return;
             preparing = true;
             Raise(nameof(Preparing));
@@ -350,14 +364,17 @@ public sealed class SyncCenter : Observable, IDisposable
             // Une reconnexion concurrente est traitée par SyncAsync et sera reprise au prochain tour.
             var result = await OfflinePreparation.RunAsync(api,
                 includeFinancialAccounts: shell.Can(Perm.PaymentsRead),
+                includeTeacherSheets: shell.TeacherOnly,
                 progress: stage => Dispatcher.UIThread.Post(() =>
                     PreparationText = $"{stage.Stage} · {stage.Completed}/{stage.Expected}"),
                 ct: ct, snapshotRevision: current);
             if (result.Complete && ReferenceEquals(api.Offline, store) && store.User == user &&
                 shell.IsLoggedIn && api.IsOnline)
             {
-                store.SaveSyncCheckpointFor(user, current);
-                PreparationText = $"Copie locale à jour : {result.Indexed} dossiers autorisés.";
+                store.SaveSyncCheckpointFor(user, checkpoint);
+                PreparationText = shell.TeacherOnly
+                    ? $"Cours à jour : {result.Indexed} cours, {result.Details} feuilles anonymes."
+                    : $"Copie locale à jour : {result.Indexed} dossiers autorisés.";
                 nextReplicaAttemptUtc = DateTime.UtcNow.AddSeconds(20);
             }
             else
