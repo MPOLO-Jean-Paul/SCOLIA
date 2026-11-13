@@ -49,6 +49,63 @@ public sealed class RememberedAccountsTests
     }
 
     [Fact]
+    public void Retirer_un_compte_efface_son_acces_hors_ligne_et_conserve_celui_des_autres()
+    {
+        var folder = Path.Combine(Path.GetTempPath(), "scolia-forget-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            var server = new Uri("https://example-school.test:5080/");
+            var store = new OfflineStore(server, folder);
+            var a = new SessionDto(Guid.NewGuid(), "prof", "Enseignant", "Enseignant", "Professeur",
+                [], false, "École test", null, null, "FC", "243");
+            var b = a with { UserName = "secretariat" };
+            store.SaveCredential("prof", "secret-1", a);
+            store.RememberAccount("prof");
+            store.SaveCredential("secretariat", "secret-2", b);
+            store.RememberAccount("secretariat");
+
+            Assert.True(store.ForgetKnownAccount("prof"));
+            Assert.DoesNotContain("prof", store.KnownAccounts);
+            Assert.True(store.WasForgottenAccount("prof"));
+            Assert.Null(store.OfflineLogin("prof", "secret-1"));
+            Assert.Equal("secretariat", store.OfflineLogin("secretariat", "secret-2")?.UserName);
+
+            // Même après le redémarrage, le compte retiré ne réapparaît pas.
+            var reopened = new OfflineStore(server, folder);
+            Assert.DoesNotContain("prof", reopened.KnownAccounts);
+            Assert.True(reopened.WasForgottenAccount("prof"));
+            reopened.RememberAccount("prof"); // après reconnexion authentifiée
+            Assert.False(reopened.WasForgottenAccount("prof"));
+        }
+        finally
+        {
+            Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
+            if (Directory.Exists(folder)) Directory.Delete(folder, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void Un_compte_avec_operations_non_envoyees_ne_peut_pas_etre_oublie()
+    {
+        var folder = Path.Combine(Path.GetTempPath(), "scolia-forget-outbox-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            var store = new OfflineStore(new Uri("https://school.test:5080/"), folder) { User = "prof" };
+            store.RememberAccount("prof");
+            store.Enqueue(new OutboxItem { User = "prof", Method = "POST",
+                Path = "api/deliberation/cotes-par-code", Key = "mark-1", Label = "Note" });
+            Assert.False(store.ForgetKnownAccount("prof"));
+            Assert.Contains("prof", store.KnownAccounts);
+            Assert.Single(store.Outbox());
+        }
+        finally
+        {
+            Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
+            if (Directory.Exists(folder)) Directory.Delete(folder, recursive: true);
+        }
+    }
+
+    [Fact]
     public void Reconnaitre_un_compte_n_accorde_ni_mot_de_passe_ni_acces_dans_l_interface()
     {
         var dir = new DirectoryInfo(AppContext.BaseDirectory);
