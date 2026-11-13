@@ -190,6 +190,14 @@
       <Setter Property="FontWeight" Value="SemiBold" />
       <Setter Property="Foreground" Value="#E4EDFF" />
     </Style>
+    <Style Selector="Expander.skyoptions">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Foreground" Value="#143C86" />
+      <Setter Property="BorderThickness" Value="0" />
+    </Style>
+    <Style Selector="Expander.skyoptions Button.iosauthlink">
+      <Setter Property="Foreground" Value="#16448F" />
+    </Style>
     <Style Selector="Button.iosauthicon">
       <Setter Property="Background" Value="#2B58C5" />
       <Setter Property="Foreground" Value="White" />
@@ -741,7 +749,7 @@
 
             <StackPanel Spacing="9" IsVisible="{Binding ShowBiometricEnrollment}">
               <CheckBox IsChecked="{Binding EnableBiometricsAfterLogin}" IsEnabled="{Binding CanType}" FontSize="13">
-                <TextBlock Text="{Binding EnrollmentText}" TextWrapping="Wrap" />
+                <TextBlock Text="{Binding EnrollmentText}" Foreground="#F2F6FF" TextWrapping="Wrap" />
               </CheckBox>
               <TextBlock Text="{Binding EnrollmentHint}" Foreground="#E1EBFF" FontSize="11"
                          TextWrapping="Wrap" IsVisible="{Binding EnableBiometricsAfterLogin}" />
@@ -784,7 +792,7 @@
           <TextBlock Text="Accès rétabli. Vous pouvez vous connecter." Foreground="#20663B" TextWrapping="Wrap" />
         </Border>
         <!-- Boutons secondaires disponibles sans encombrer la connexion au quotidien. -->
-        <Expander x:Name="IosLoginMore" Header="Options" IsExpanded="False"
+        <Expander x:Name="IosLoginMore" Classes="skyoptions" Header="Options" IsExpanded="False"
                   ToolTip.Tip="Autres paramètres de connexion">
           <StackPanel Spacing="5">
         <Button Classes="iosauthlink" Command="{Binding ChangeServer}" IsEnabled="{Binding NotBusy}"
