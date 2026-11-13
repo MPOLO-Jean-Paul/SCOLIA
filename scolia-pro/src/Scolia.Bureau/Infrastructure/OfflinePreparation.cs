@@ -43,6 +43,7 @@ public static class OfflinePreparation
 
     public static async Task<OfflinePreparationResult> RunAsync(ScoliaClient client,
         bool includeFinancialAccounts = false,
+        bool includeTeacherSheets = false,
         Action<OfflinePreparationProgress>? progress = null,
         string? snapshotRevision = null, CancellationToken ct = default)
     {
@@ -68,7 +69,8 @@ public static class OfflinePreparation
         var revision = snapshotRevision ?? RevisionLabel(
             await client.GetAsync<JsonElement>("api/revision", ct));
         Guard();
-        var marker = revision + (includeFinancialAccounts ? "|finances" : "|dossiers");
+        var marker = revision + (includeTeacherSheets ? "|enseignant" :
+            includeFinancialAccounts ? "|finances" : "|dossiers");
         store.BeginPreparationFor(user, marker);
 
         // Un élément est sauté SEULEMENT après confirmation durable ET si son JSON
@@ -106,6 +108,60 @@ public static class OfflinePreparation
             catch (ApiException ex) when (ex.Status is 403 or 404) { }
             completed++;
             progress?.Invoke(new OfflinePreparationProgress(completed, metadata.Length, "Configuration scolaire"));
+        }
+
+        if (includeTeacherSheets)
+        {
+            // Les enseignants n'ont pas le droit d'aspirer les fiches nominatives
+            // ni les comptes financiers. Ils reçoivent seulement leurs cours et
+            // leurs feuilles en mode anonyme, cloisonnés par compte/établissement.
+            var courses = await RetrieveAsync<List<TeacherCourseDto>>("api/deliberation/mes-cours");
+            Guard();
+            await RetrieveAsync<DeliberationSettingsDto>("api/deliberation/reglages");
+            try { await RetrieveAsync<List<AnnouncementDto>>("api/deliberation/annonces"); }
+            catch (ApiException ex) when (ex.Status is 403 or 404) { }
+            var plannedTeacher = metadata.Length + 3 + courses.Sum(c =>
+                c.Course.Semester switch
+                {
+                    "JuryEpreuve" or "JuryBloc" => 1,
+                    "Annuel" => 3,
+                    _ => 2
+                });
+            var copied = 0;
+            var errorsTeacher = 0;
+            foreach (var assigned in courses)
+            {
+                var kinds = assigned.Course.Semester switch
+                {
+                    "JuryEpreuve" or "JuryBloc" => new[] { "Jury" },
+                    "S1" => new[] { "S1", "Appui" },
+                    "S2" => new[] { "S2", "Appui" },
+                    _ => new[] { "S1", "S2", "Appui" }
+                };
+                foreach (var kind in kinds)
+                {
+                    Guard();
+                    var path = "api/deliberation/feuille" + ScoliaClient.Query(
+                        ("coursId", assigned.Course.Id), ("nature", kind), ("anonyme", "true"));
+                    try
+                    {
+                        // Cliché journalisé puis confirmé : une reprise n'interroge
+                        // que les feuilles absentes de cette révision.
+                        await RetrieveAsync<MarkSheetDto>(path);
+                        copied++;
+                    }
+                    catch (ApiException ex) when (ex.Status is 403 or 404) { errorsTeacher++; }
+                    completed++;
+                    progress?.Invoke(new OfflinePreparationProgress(completed, plannedTeacher,
+                        $"Cours et feuilles anonymes : {copied} copiée(s)"));
+                }
+            }
+            var latestTeacherRevision = RevisionLabel(await client.GetAsync<JsonElement>("api/revision", ct));
+            Guard();
+            var teacherComplete = errorsTeacher == 0 && latestTeacherRevision == revision;
+            progress?.Invoke(new OfflinePreparationProgress(plannedTeacher, plannedTeacher,
+                teacherComplete ? "Cours enseignants prêts hors ligne" : "Copie pédagogique partielle, reprise automatique"));
+            return new OfflinePreparationResult(courses.Count, copied, 0, courses.Count, errorsTeacher, teacherComplete);
         }
 
         var indexed = 0;
