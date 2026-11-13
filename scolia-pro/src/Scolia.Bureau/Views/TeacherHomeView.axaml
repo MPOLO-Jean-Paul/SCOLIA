@@ -151,6 +151,9 @@
                 <TextBlock Text="Règles de l'encodage" Classes="heading" VerticalAlignment="Center" />
               </StackPanel>
               <TextBlock Text="{Binding Rules}" TextWrapping="Wrap" LineHeight="22" />
+              <Button Classes="listrow" Content="Encodage · Ouvrir mes cours et cotes"
+                      Command="{Binding EncodeByCode}" HorizontalAlignment="Stretch"
+                      AutomationProperties.Name="Paramètres enseignants : Encodage" />
             </StackPanel>
           </Border>
         </StackPanel>
