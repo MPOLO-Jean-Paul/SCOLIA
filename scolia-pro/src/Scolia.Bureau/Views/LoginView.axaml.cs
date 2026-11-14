@@ -31,6 +31,21 @@ public partial class LoginView : UserControl
             IosDesktopActions.IsVisible = desktop;
             IosMobileActions.IsVisible = !desktop;
         });
+        // Quand le clavier réduit la hauteur du téléphone, garder « Se connecter »
+        // entièrement atteignable sans masquer ni supprimer les liens Compte/Serveur.
+        void KeepSubmitVisible()
+        {
+            if (!Platform.IsMobile || !IosLoginScroll.IsEffectivelyVisible
+                || !IosLoginSubmitButton.IsEffectivelyVisible) return;
+            AuthLayout.EnsureVisible(IosLoginScroll, IosLoginSubmitButton);
+        }
+        IosPasswordBox.GotFocus += (_, _) =>
+            Dispatcher.UIThread.Post(KeepSubmitVisible, DispatcherPriority.Background);
+        IosLoginScroll.SizeChanged += (_, _) =>
+        {
+            if (Platform.IsMobile && (IosPasswordBox.IsFocused || IosUserNameBox.IsFocused))
+                Dispatcher.UIThread.Post(KeepSubmitVisible, DispatcherPriority.Background);
+        };
         IosPasswordBox.KeyDown += (_, e) =>
         {
             if (e.Key != Key.Enter || DataContext is not LoginViewModel login || !login.CanSubmitCredentials) return;
