@@ -1,25 +1,58 @@
-name: SCOLIA Pro - publier console JP-Services (production)
-
+# Console proprietaire: execution manuelle depuis main, source epinglee.
+# Fichier a copier tel quel sur main. Revision epinglee : SCOLIA Console 1.1.1 + Worker avec
+# OWNER_DB (licences), SCHOOL_DB (D1 scolaire separee, creee si absente par prepare-production.mjs),
+# R2 scolia-pro-backups, decouverte TURN et canal Netlify desactive.
+name: SCOLIA Pro - Console JP-Services (production protegee)
 on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/scolia-owner-production.yml'
   workflow_dispatch:
     inputs:
       confirm_production:
-        description: "J'ai verifie l'application Cloudflare Access avec MFA et les secrets GitHub. Publier ?"
-        type: boolean
+        description: "J'ai verifie Cloudflare Access, MFA, les secrets et le domaine"
         required: true
+        type: boolean
         default: false
-
 permissions:
   contents: read
-
 concurrency:
   group: scolia-owner-production
   cancel-in-progress: false
-
 jobs:
+  verify:
+    name: Tests sans secrets
+    if: github.ref == 'refs/heads/main' && github.actor == 'MPOLO-Jean-Paul'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: scolia-pro/deploy/owner-console
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fa74f0589e42817fdae4e0863d5abb74a7c6086f
+          persist-credentials: false
+      - name: Verifier la revision
+        run: test "$(git rev-parse HEAD)" = 'fa74f0589e42817fdae4e0863d5abb74a7c6086f'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Installer les dependances et tester
+        run: |
+          npm install --no-audit --no-fund
+          npm test
+      - name: Eviter les fichiers sensibles dans le projet
+        run: |
+          if find . -path './node_modules' -prune -o -type f \( -name '*.pem' -o -name '*.key' -o -name '.env' -o -name '*.db' -o -name '*.sqlite' \) -print | grep -q .; then
+            echo "::error::Fichier sensible dans les sources."
+            exit 1
+          fi
   deploy:
-    name: Console proprietaire - deploiement protege
-    if: ${{ github.ref == 'refs/heads/release/direct-apk-scolia-pro-20261103' && github.actor == 'MPOLO-Jean-Paul' && inputs.confirm_production }}
+    name: Publier sur Cloudflare
+    needs: verify
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && github.actor == 'MPOLO-Jean-Paul' && inputs.confirm_production == true
     runs-on: ubuntu-latest
     environment: scolia-owner-production
     timeout-minutes: 25
@@ -32,73 +65,134 @@ jobs:
       OWNER_ADMIN_TOKEN: ${{ secrets.SCOLIA_OWNER_ADMIN_TOKEN }}
       CLOUDFLARE_TURN_DISCOVERY_TOKEN: ${{ secrets.SCOLIA_TURN_DISCOVERY_TOKEN }}
       CF_OWNER_DOMAIN: ${{ vars.SCOLIA_OWNER_DOMAIN || 'scolia-pro-owner.jeanpaulmpolo242.workers.dev' }}
-      # AUD Cloudflare Access non secret, fourni par le propriétaire. La variable d'environnement a priorité.
       OWNER_ACCESS_AUD: ${{ vars.SCOLIA_OWNER_ACCESS_AUD || 'beb99695d040319e7fc39607b996f925a4a98ece22c17be1cfdce050eb70ba19' }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: fa74f0589e42817fdae4e0863d5abb74a7c6086f
+          persist-credentials: false
+      - name: Verifier la revision
+        run: test "$(git rev-parse HEAD)" = 'fa74f0589e42817fdae4e0863d5abb74a7c6086f'
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Bloquer un deploiement sans configuration
+      - name: Refuser tout deploiement incomplet
         shell: bash
         run: |
           set -euo pipefail
-          for name in CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID OWNER_ADMIN_TOKEN CF_OWNER_DOMAIN OWNER_ACCESS_AUD; do
+          for name in CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID OWNER_ADMIN_TOKEN CLOUDFLARE_TURN_DISCOVERY_TOKEN CF_OWNER_DOMAIN OWNER_ACCESS_AUD; do
             if [[ -z "${!name:-}" ]]; then
-              echo "::error::Parametre de production absent : $name. Ajouter dans l'environnement protege scolia-owner-production."
+              echo "::error::Parametre manquant : $name."
               exit 1
             fi
           done
-          if [[ "${#OWNER_ADMIN_TOKEN}" -lt 32 ]]; then
-            echo "::error::Jeton administrateur insuffisamment long."
+          if [[ ! "$CLOUDFLARE_ACCOUNT_ID" =~ ^[[:xdigit:]]{32}$ ]]; then
+            echo "::error::Identifiant Cloudflare invalide."
             exit 1
           fi
-      - name: Dependances Wrangler et tests d'integration
+          if (( ${#OWNER_ADMIN_TOKEN} < 32 )); then
+            echo "::error::Jeton administrateur trop court."
+            exit 1
+          fi
+      - name: Installer et retester les sources
         run: |
           npm install --no-audit --no-fund
           npm test
-      - name: Preparation automatique D1 et adresse HTTPS choisie
+      - name: Diagnostiquer R2 sans exposer le jeton
+        shell: bash
+        run: |
+          set -euo pipefail
+          status="$(curl --silent --show-error --max-time 30 \
+            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+            -o /tmp/scolia-r2-check.json -w '%{http_code}' \
+            "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/r2/buckets?name_contains=scolia-pro-backups")"
+          if [[ "$status" != "200" ]]; then
+            echo "::error::Le controle Cloudflare R2 a echoue (HTTP $status)."
+            node -e '
+              const fs=require("node:fs");
+              try {
+                const data=JSON.parse(fs.readFileSync("/tmp/scolia-r2-check.json","utf8"));
+                for(const entry of (Array.isArray(data.errors)?data.errors:[])){
+                  if(Number.isInteger(entry.code)) console.log("Cloudflare error code:",entry.code);
+                }
+              } catch {}
+            '
+            if [[ "$status" == "403" ]]; then
+              echo "::error::Verifier la portee Account Resources du jeton, le compte CLOUDFLARE_ACCOUNT_ID et activation R2. Ne jamais publier le jeton."
+            fi
+            exit 1
+          fi
+          echo "Acces au stockage R2 autorise par Cloudflare."
+      - name: Preparer la base D1 et les sauvegardes R2
         run: node scripts/prepare-production.mjs
-      - name: Appliquer uniquement les migrations D1 manquantes (backup Cloudflare)
+      - name: Appliquer les migrations D1 non appliquees
         run: npx wrangler d1 migrations apply OWNER_DB --remote --config wrangler.production.json
-      - name: Appliquer les migrations D1 scolaires separees (seulement si consentement au jumelage)
+      - name: Appliquer les migrations de la D1 scolaire separee (trames chiffrees, jumelage opt-in)
         run: npx wrangler d1 migrations apply SCHOOL_DB --remote --config wrangler.production.json
-      - name: Publier le Worker (workers.dev pilote ou domaine personnalise)
+      - name: Deployer le Worker
         run: npx wrangler deploy --config wrangler.production.json
-      - name: Installer le jeton administrateur sans exposer sa valeur
+      - name: Installer le secret de la console
         shell: bash
         run: |
           set -euo pipefail
           printf '%s' "$OWNER_ADMIN_TOKEN" | npx wrangler secret put OWNER_ADMIN_TOKEN --config wrangler.production.json
-      - name: Configurer la découverte Cloudflare Realtime TURN si autorisée
+      - name: Installer le secret de decouverte TURN (Calls Read uniquement)
         shell: bash
         run: |
           set -euo pipefail
-          if [[ -n "${CLOUDFLARE_TURN_DISCOVERY_TOKEN:-}" ]]; then
-            printf '%s' "$CLOUDFLARE_TURN_DISCOVERY_TOKEN" | npx wrangler secret put CLOUDFLARE_TURN_DISCOVERY_TOKEN --config wrangler.production.json
-            echo "Catalogue TURN (lecture seule) activé pour le compte Cloudflare configuré."
-          else
-            echo "::notice::Catalogue Cloudflare TURN désactivé : ajouter SCOLIA_TURN_DISCOVERY_TOKEN (permission Calls Read) dans l'environnement de production. Les relais WSS restent utilisables."
+          if [[ -z "${CLOUDFLARE_TURN_DISCOVERY_TOKEN:-}" ]]; then
+            echo "::error::SCOLIA_TURN_DISCOVERY_TOKEN absent du secret d'environnement protege scolia-owner-production."
+            exit 1
           fi
-      - name: Verification HTTPS et segregation des routes proprietaire/scolaire
+          printf '%s' "$CLOUDFLARE_TURN_DISCOVERY_TOKEN" | npx wrangler secret put CLOUDFLARE_TURN_DISCOVERY_TOKEN --config wrangler.production.json
+          echo "Secret Cloudflare TURN installe sans divulguer sa valeur."
+      - name: Verifier HTTPS sans contourner Cloudflare Access
         shell: bash
         run: |
           set -euo pipefail
           base="https://$CF_OWNER_DOMAIN"
-          curl --fail --silent --show-error --max-time 25 "$base/health" -o /tmp/scolia-owner-health.json
-          node -e 'const fs=require("fs"); const h=JSON.parse(fs.readFileSync("/tmp/scolia-owner-health.json")); if(h.service!=="SCOLIA Pro Owner")process.exit(1)'
-          curl --fail --silent --show-error --max-time 25 "$base/api/v1/notice" -o /tmp/scolia-owner-notice.json
-          # Sans une vraie session Cloudflare Access, une API proprietaire NE DOIT pas renvoyer 200.
-          status="$(curl --silent --show-error --max-time 25 --output /dev/null --write-out '%{http_code}' "$base/api/v1/owner/summary")"
-          if [[ "$status" == "200" || "$status" == "000" ]]; then
-            echo "::error::Controle d'acces absent ou verification HTTP en echec (code $status)."
-            exit 1
-          fi
-          echo "Controle de sante et separation des interfaces reussis."
-      - name: Resume du deploiement
+          # Cloudflare Access peut bloquer les requetes anonymes AVANT le Worker,
+          # y compris /health lorsque le compte est protege par defaut.
+          for route in /health /api/v1/notice; do
+            status="$(curl --silent --show-error --max-time 25 \
+              -o /tmp/scolia-probe.json -w '%{http_code}' "$base$route")"
+            case "$status" in
+              200)
+                ROUTE="$route" node -e '
+                  const fs=require("node:fs");
+                  const value=JSON.parse(fs.readFileSync("/tmp/scolia-probe.json","utf8"));
+                  if(process.env.ROUTE==="/health" && value.service!=="SCOLIA Pro Owner") process.exit(1);
+                  if(process.env.ROUTE==="/api/v1/notice" && typeof value.purpose!=="string") process.exit(1);
+                '
+                echo "Reponse JSON attendue sur $route."
+                ;;
+              302|401|403)
+                if [[ "$route" == "/api/v1/notice" ]]; then
+                  echo "::error::L'API publique $route est inaccessible (HTTP $status). Les clients SCOLIA risquent d'etre bloques par Cloudflare Access. Verifier une exception limitee a cette route ; jamais aux routes proprietaires."
+                  exit 1
+                fi
+                echo "::warning::$route est protege par Cloudflare Access (HTTP $status). Verification anonyme du contenu impossible ; aucune protection desactivee."
+                ;;
+              *)
+                echo "::error::Echec du controle HTTPS $route (HTTP $status)."
+                exit 1
+                ;;
+            esac
+          done
+          owner_status="$(curl --silent --show-error --max-time 25 \
+            -o /dev/null -w '%{http_code}' "$base/api/v1/owner/summary")"
+          case "$owner_status" in
+            301|302|303|307|308|401|403)
+              echo "Acces anonyme a la route proprietaire refuse ou redirige (HTTP $owner_status)."
+              ;;
+            *)
+              echo "::error::Statut inattendu sur la route proprietaire (HTTP $owner_status)."
+              exit 1
+              ;;
+          esac
+          echo "::notice::Ce test ne prouve pas la validite du jeton proprietaire ; celle-ci doit etre verifiee apres connexion Cloudflare Access."
+      - name: Resume du succes
         if: success()
         run: |
-          echo "## Console SCOLIA Pro" >> "$GITHUB_STEP_SUMMARY"
-          echo "Deploiement HTTPS effectue sur l’adresse configuree." >> "$GITHUB_STEP_SUMMARY"
-          echo "Protection proprietaire : Cloudflare Access AUD + jeton, aucune base scolaire centralisee." >> "$GITHUB_STEP_SUMMARY"
-          echo "Migrations D1 sauvegardees automatiquement par Cloudflare." >> "$GITHUB_STEP_SUMMARY"
+          echo "Console SCOLIA deployee sur https://$CF_OWNER_DOMAIN" >> "$GITHUB_STEP_SUMMARY"
+          echo "Source epinglee : fa74f0589e42817fdae4e0863d5abb74a7c6086f" >> "$GITHUB_STEP_SUMMARY"

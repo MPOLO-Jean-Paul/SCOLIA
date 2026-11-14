@@ -12,3 +12,12 @@ et une seule palette `Core/OwnerPalette.cs` pour Windows et Android.
 - Mises à jour : canal propriétaire indépendant `scolia-owner-v...`, filtre la liste des Releases GitHub. Les APK Preview ne sont pas des releases signées permanentes.
 
 Ne pas publier la version Android officielle sans les quatre secrets de signature Admin et un audit d'intégration Cloudflare Access.
+
+## Publication
+
+- Préversion (certificat de test) : lancer « SCOLIA Console natif Avalonia - Android et Windows » avec
+  `publish_release` = false, ou pousser sur la branche surveillée.
+- Version officielle : depuis `main`, « JP-Services Admin - publication Android et Windows » appelle ce workflow
+  épinglé à une révision testée avec `publish_release` = true. Elle exige les quatre secrets `OWNER_ADMIN_*`
+  et publie le tag immuable `scolia-owner-vX.Y.Z` (APK signé + installateur Windows + empreintes `.sha256`).
+- État complet, secrets à créer et procédure pas à pas : `scolia-pro/docs/CONSOLE_ADMIN_ETAT_PUBLICATION.md`.
