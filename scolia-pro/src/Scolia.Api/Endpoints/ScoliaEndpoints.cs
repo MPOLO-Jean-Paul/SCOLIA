@@ -403,6 +403,21 @@ public static class ScoliaEndpoints
             (Guid promotionId, LmdInstallmentsInput input, LmdFeesService s, CancellationToken ct) =>
                 s.SetInstallmentsAsync(promotionId, input, ct)).RequireAuthorization(Permissions.SettingsWrite);
 
+        // Attribution des branches EPST et des EC LMD aux enseignants (le secrétariat).
+        g.MapGet("/programme/attributions", (Guid? enseignant, CurriculumTeachingService s, CancellationToken ct) =>
+            s.ItemsAsync(enseignant, ct)).RequireAuthorization(Permissions.AcademicsRead);
+        g.MapGet("/programme/enseignants", (CurriculumTeachingService s, CancellationToken ct) =>
+            s.TeachersAsync(ct)).RequireAuthorization(Permissions.AcademicsRead);
+        g.MapPut("/programme/{itemId:guid}/attribution",
+            (Guid itemId, CurriculumAssignInput input, CurriculumTeachingService s, CancellationToken ct) =>
+                s.AssignAsync(itemId, input, ct)).RequireAuthorization(Permissions.AcademicsWrite);
+        g.MapPut("/programme/classes/{promotionId:guid}/titulaire",
+            (Guid promotionId, CurriculumAssignInput input, CurriculumTeachingService s, CancellationToken ct) =>
+                s.AssignClassAsync(promotionId, input, ct)).RequireAuthorization(Permissions.AcademicsWrite);
+        g.MapPost("/programme/{itemId:guid}/retrait-attribution",
+            (Guid itemId, CurriculumUnassignInput input, CurriculumTeachingService s, CancellationToken ct) =>
+                s.UnassignAsync(itemId, input, ct)).RequireAuthorization(Permissions.AcademicsWrite);
+
         // Registre scolaire distinct de l'ITM : aucun seuil, moyenne ou décision
         // inventés dans un aperçu. L'écriture est interdite aux profils non activés.
         g.MapGet("/cycles/evaluations/{enrollmentId:guid}/apercu",
@@ -712,6 +727,30 @@ public static class ScoliaEndpoints
         sheets.MapGet("/reglages", (DeliberationService s, CancellationToken ct) => s.SettingsAsync(ct));
         sheets.MapGet("/annonces", (DeliberationService s, CancellationToken ct) => s.AnnouncementsAsync(ct));
         sheets.MapGet("/mes-cours", (DeliberationService s, CancellationToken ct) => s.MyCoursesAsync(ct)).RequireAuthorization(Permissions.MarksEncode);
+        // Enseignants des écoles et universités : seulement les branches et EC qui leur sont attribués.
+        var teacher = api.MapGroup("/enseignant").RequireAuthorization();
+        teacher.MapGet("/mes-elements", (CurriculumTeachingService s, CancellationToken ct) => s.MineAsync(ct))
+            .RequireAuthorization(Permissions.MarksEncode);
+        teacher.MapGet("/branches/{subjectId:guid}/periodes",
+            (Guid subjectId, CurriculumTeachingService s, CancellationToken ct) => s.EpstPeriodsAsync(subjectId, ct));
+        teacher.MapGet("/branches/{subjectId:guid}/feuille",
+            (Guid subjectId, Guid periode, string? code, CurriculumTeachingService s, CancellationToken ct) =>
+                s.EpstSheetAsync(subjectId, periode, code, ct));
+        teacher.MapPut("/branches/{subjectId:guid}/feuille",
+            (Guid subjectId, EpstMarkSheetInput input, CurriculumTeachingService s, CancellationToken ct) =>
+                s.SaveEpstSheetAsync(subjectId, input, ct));
+        teacher.MapGet("/lmd/promotions/{promotionId:guid}/ecs/{elementId:guid}/notes",
+            async (Guid promotionId, Guid elementId, int? session, CurriculumTeachingService t, LmdResultsService s, CancellationToken ct) =>
+            {
+                await t.EnsureCanEncodeAsync(elementId, ct);
+                return await s.SheetAsync(promotionId, elementId, session ?? 1, ct);
+            });
+        teacher.MapPut("/lmd/promotions/{promotionId:guid}/ecs/{elementId:guid}/notes",
+            async (Guid promotionId, Guid elementId, LmdMarkSheetInput input, CurriculumTeachingService t, LmdResultsService s, CancellationToken ct) =>
+            {
+                await t.EnsureCanEncodeAsync(elementId, ct);
+                return await s.SaveMarksAsync(promotionId, elementId, input, ct);
+            });
         sheets.MapGet("/feuille", (Guid coursId, string nature, bool? anonyme, DeliberationService s, CancellationToken ct) => s.SheetAsync(coursId, nature, anonyme ?? false, ct));
         sheets.MapPut("/feuille", async (Guid coursId, string nature, List<MarkInput> input, DeliberationService s, CancellationToken ct) =>
             Results.Ok(new { enregistrees = await s.SaveSheetAsync(coursId, nature, input, ct) }));

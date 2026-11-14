@@ -110,14 +110,16 @@ public static class Sidebar
         {
             Group(string.Empty,
                 // L'enseignant a son propre accueil : ses cours, ses annonces et les règles de l'encodage.
-                shell.TeacherOnly
+                shell.TeacherOnly && !itm
+                    ? Item("Mes branches et notes", MaterialIconKind.Pen, "TonePurple", null, typeof(TeacherCurriculumPage), () => new TeacherCurriculumPage(shell))
+                : shell.TeacherOnly
                     ? Item("Mon espace", MaterialIconKind.AccountSchool, "TonePurple", null, typeof(TeacherHomePage), () => new TeacherHomePage(shell))
                     : Item("Accueil", MaterialIconKind.Home, "ToneBlue", null,
                         shell.Can(Perm.PilotageRead) && !shell.Can(Perm.ReportsRead) ? typeof(PromoterDashboardPage) : typeof(HomePage),
                         () => shell.Can(Perm.PilotageRead) && !shell.Can(Perm.ReportsRead)
                             ? new PromoterDashboardPage(shell) : new HomePage(shell))),
             // Espace enseignant : seulement ce qui relève de son métier (encodage anonyme de ses cours).
-            shell.TeacherOnly
+            shell.TeacherOnly && itm
                 ? Group("Espace enseignant",
                     Item("Mes cours et cotes", MaterialIconKind.Pen, "TonePurple", null, typeof(MarksPage), () => new MarksPage(shell)))
                 : Group("Espace enseignant"),
@@ -170,6 +172,8 @@ public static class Sidebar
             // Gestion des délibérations (fusion d'ITMCD), dans l'ordre du travail :
             // 1. les enseignants, leurs comptes et l'attribution des cours ;
             Group("Enseignants et cours",
+                !itm ? Item(university ? "Attribution des EC" : "Attribution des branches", MaterialIconKind.AccountSchool, "ToneOrange",
+                    Perm.AcademicsRead, typeof(CurriculumAssignmentPage), () => new CurriculumAssignmentPage(shell)) : null,
                 !itm ? null : Item("Attribution des cours", MaterialIconKind.AccountSchool, "ToneOrange", Perm.AcademicsRead, typeof(TeachingPage), () => new TeachingPage(shell)),
                 Item("Comptes enseignants", MaterialIconKind.AccountKey, "ToneBlue", Perm.UsersManage, typeof(TeacherAccountsPage), () => new TeacherAccountsPage(shell))),
             // 2. la préparation (paramètres, codes anonymes), l'encodage et son suivi, puis le jury.
@@ -190,7 +194,7 @@ public static class Sidebar
                     typeof(NetworkHubPage), () => new NetworkHubPage(shell))),
             Group("Paramètres",
                 Item("Configuration", MaterialIconKind.Cog, "TonePurple", null, typeof(SettingsPage), () => new SettingsPage(shell)),
-                shell.TeacherOnly ? Item("Encodage des cotes", MaterialIconKind.Pen, "TonePurple",
+                shell.TeacherOnly && itm ? Item("Encodage des cotes", MaterialIconKind.Pen, "TonePurple",
                     null, typeof(MarksPage), () => new MarksPage(shell)) : null,
                 Item("Utilisateurs", MaterialIconKind.AccountCog, "ToneBlue", Perm.UsersManage, typeof(UsersPage), () => new UsersPage(shell))),
             // Données : protéger, contrôler et, si besoin, effacer.

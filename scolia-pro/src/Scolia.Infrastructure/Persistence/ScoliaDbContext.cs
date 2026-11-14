@@ -39,6 +39,7 @@ public sealed class ScoliaDbContext(DbContextOptions<ScoliaDbContext> options, I
     public DbSet<LmdDeliberation> LmdDeliberations => Set<LmdDeliberation>();
     public DbSet<LmdDecision> LmdDecisions => Set<LmdDecision>();
     public DbSet<LmdDebt> LmdDebts => Set<LmdDebt>();
+    public DbSet<CurriculumAssignment> CurriculumAssignments => Set<CurriculumAssignment>();
     public DbSet<Section> Sections => Set<Section>();
     public DbSet<Promotion> Promotions => Set<Promotion>();
     public DbSet<FeeItem> FeeItems => Set<FeeItem>();
@@ -251,6 +252,18 @@ public sealed class ScoliaDbContext(DbContextOptions<ScoliaDbContext> options, I
             e.HasIndex(x => new { x.OriginEnrollmentId, x.UeId }).IsUnique();
             e.HasIndex(x => x.StudentId);
             e.HasOne<Enrollment>().WithMany().HasForeignKey(x => x.OriginEnrollmentId).OnDelete(DeleteBehavior.Restrict);
+        });
+        b.Entity<CurriculumAssignment>(e =>
+        {
+            // Attribution des branches EPST et des EC LMD, distincte des cours ITM.
+            e.ToTable("AttributionsProgramme");
+            e.Property(x => x.EndReason).HasMaxLength(200);
+            e.Property(x => x.AssignedByName).HasMaxLength(120);
+            e.Ignore(x => x.IsCurrent);
+            e.HasIndex(x => x.CurriculumItemId).IsUnique().HasFilter("\"EndedOn\" IS NULL");
+            e.HasIndex(x => x.TeacherId);
+            e.HasOne<CurriculumItem>().WithMany().HasForeignKey(x => x.CurriculumItemId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne<StaffMember>().WithMany().HasForeignKey(x => x.TeacherId).OnDelete(DeleteBehavior.Restrict);
         });
         b.Entity<SchoolCycleAssessment>(e =>
         {

@@ -32,6 +32,7 @@ public interface IAppDbContext
     DbSet<LmdDeliberation> LmdDeliberations { get; }
     DbSet<LmdDecision> LmdDecisions { get; }
     DbSet<LmdDebt> LmdDebts { get; }
+    DbSet<CurriculumAssignment> CurriculumAssignments { get; }
     DbSet<Section> Sections { get; }
     DbSet<Promotion> Promotions { get; }
     DbSet<FeeItem> FeeItems { get; }

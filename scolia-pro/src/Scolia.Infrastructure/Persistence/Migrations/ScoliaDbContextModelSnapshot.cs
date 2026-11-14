@@ -1364,6 +1364,59 @@ namespace Scolia.Infrastructure.Persistence.Migrations
                     b.ToTable("AnneesScolaires", (string)null);
                 });
 
+            modelBuilder.Entity("Scolia.Domain.School.CurriculumAssignment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("AssignedByName")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("CurriculumItemId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("EndReason")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateOnly?>("EndedOn")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateOnly>("StartedOn")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("TeacherId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CurriculumItemId")
+                        .IsUnique()
+                        .HasFilter("\"EndedOn\" IS NULL");
+
+                    b.HasIndex("TeacherId");
+
+                    b.ToTable("AttributionsProgramme", (string)null);
+                });
+
             modelBuilder.Entity("Scolia.Domain.School.CurriculumItem", b =>
                 {
                     b.Property<Guid>("Id")
@@ -3451,6 +3504,21 @@ namespace Scolia.Infrastructure.Persistence.Migrations
                         .WithMany()
                         .HasForeignKey("ParentId")
                         .OnDelete(DeleteBehavior.Restrict);
+                });
+
+            modelBuilder.Entity("Scolia.Domain.School.CurriculumAssignment", b =>
+                {
+                    b.HasOne("Scolia.Domain.School.CurriculumItem", null)
+                        .WithMany()
+                        .HasForeignKey("CurriculumItemId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Scolia.Domain.Staff.StaffMember", null)
+                        .WithMany()
+                        .HasForeignKey("TeacherId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Scolia.Domain.School.CurriculumItem", b =>

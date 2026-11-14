@@ -61,3 +61,13 @@ public sealed record LmdMarkSheetDto(Guid ElementId, string Code, string Name, s
 
 public sealed record LmdDebtDto(Guid Id, Guid StudentId, string Matricule, string FullName, string OriginYear,
     string UeCode, string UeName, string Semester, decimal Credits, decimal? ClearedMark, string? ClearedBy, DateTime? ClearedAtUtc);
+
+public sealed record CurriculumTeachingItemDto(
+    Guid ItemId, Guid PromotionId, string PromotionName, string Kind, string Code, string Name, string Semester,
+    string? UeCode, Guid? TeacherId, string? TeacherName);
+public sealed record CurriculumTeacherDto(Guid Id, string FullName);
+public sealed record EpstMarkSheetLineDto(Guid EnrollmentId, string Matricule, string FullName, decimal? Score);
+public sealed record EpstMarkSheetDto(
+    Guid SubjectId, string SubjectName, string PromotionName, Guid PeriodId, string PeriodCode, bool IsExam,
+    string EvaluationCode, string Title, decimal MaxScore, bool Editable, string? LockReason,
+    IReadOnlyList<string> ExistingCodes, IReadOnlyList<EpstMarkSheetLineDto> Lines);

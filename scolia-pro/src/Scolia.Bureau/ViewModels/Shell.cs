@@ -1049,7 +1049,11 @@ public sealed class ShellViewModel : Observable
             ClearHistory();
             OpeningStep = "Ouverture de l'accueil";
             OpeningProgress = 90;
-            await Open(() => (s.Permissions.Contains(Perm.MarksEncode) || s.Permissions.Contains(Perm.JuryEncode)) && !s.Permissions.Contains(Perm.AcademicsRead)
+            // L'enseignant d'une école ou d'une université ouvre ses branches et ses EC ; celui d'un ITM, son espace habituel.
+            var teacherOnly = (s.Permissions.Contains(Perm.MarksEncode) || s.Permissions.Contains(Perm.JuryEncode)) && !s.Permissions.Contains(Perm.AcademicsRead);
+            var itmTeacher = Scolia.Domain.School.InstitutionProfiles.Canonicalize(s.InstitutionType) == Scolia.Domain.School.InstitutionProfiles.ItmIm;
+            await Open(() => teacherOnly && !itmTeacher ? new TeacherCurriculumPage(this)
+                : teacherOnly
                 ? new TeacherHomePage(this)
                 : s.Permissions.Contains(Perm.PilotageRead) && !s.Permissions.Contains(Perm.ReportsRead)
                 ? new PromoterDashboardPage(this) : new HomePage(this));
@@ -1753,7 +1757,7 @@ public sealed class ShellViewModel : Observable
     public IReadOnlyList<NavItemVm> PhoneTabs { get; private set; } = [];
 
     private static readonly Type[] PhoneTabOrder =
-        [typeof(HomePage), typeof(PromoterDashboardPage), typeof(TeacherHomePage), typeof(StudentsPage), typeof(CashierPage), typeof(ReceiptsPage),
+        [typeof(HomePage), typeof(PromoterDashboardPage), typeof(TeacherHomePage), typeof(TeacherCurriculumPage), typeof(StudentsPage), typeof(CashierPage), typeof(ReceiptsPage),
             typeof(MonthlyPage), typeof(DebtorsPage), typeof(CashPage), typeof(MarksPage)];
 
     private void RebuildPhoneTabs()

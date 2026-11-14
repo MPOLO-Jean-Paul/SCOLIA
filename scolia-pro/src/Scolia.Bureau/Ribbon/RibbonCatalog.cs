@@ -175,7 +175,12 @@ public static class RibbonCatalog
                     Small(shell, "Comptes enseignants", AccountKeyOutline, "Crée l'enseignant, son identifiant et son code provisoire.", () => shell.Open(() => new TeacherAccountsPage(shell)), Neutral, perm: Perm.UsersManage)),
             ]),
             // Espace enseignant : son accueil et ses feuilles, rien d'autre.
-            new("enseignant", "Mon espace",
+            !itm ? new("enseignant", "Mon espace",
+            [
+                Group("Espace enseignant",
+                    Large(shell, "Mes branches et notes", Pen, "Mes branches ou mes EC : saisir les notes de mes élèves ou étudiants.", () => shell.Open(() => new TeacherCurriculumPage(shell)), Purple, perm: Perm.MarksEncode)),
+            ])
+            : new("enseignant", "Mon espace",
             [
                 Group("Espace enseignant",
                     Large(shell, "Mon espace", AccountSchoolOutline, "Mes cours, leur avancement, les annonces et les règles de l'encodage.", () => shell.Open(() => new TeacherHomePage(shell)), Purple, perm: Perm.MarksEncode),

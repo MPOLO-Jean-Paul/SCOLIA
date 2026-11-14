@@ -248,3 +248,20 @@ public static class CurriculumStructureRules
         }
     }
 }
+
+/// <summary>
+/// Attribution d'une branche EPST ou d'un élément constitutif LMD à un enseignant.
+/// Une seule attribution active par élément ; les précédentes restent dans l'historique.
+/// L'enseignant attribué saisit les notes de cet élément, et seulement celles-là.
+/// </summary>
+public sealed class CurriculumAssignment : Entity
+{
+    public Guid CurriculumItemId { get; set; }
+    public Guid TeacherId { get; set; }
+    public DateOnly StartedOn { get; set; }
+    public DateOnly? EndedOn { get; set; }
+    public string? EndReason { get; set; }
+    public string AssignedByName { get; set; } = string.Empty;
+
+    public bool IsCurrent => EndedOn is null;
+}
