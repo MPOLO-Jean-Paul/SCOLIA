@@ -10,6 +10,12 @@ Sur SCOLIA Pro 1.2.74, le test de fluidité Android en résolution 320 × 300 pi
 - Conservation intégrale du fond plein écran sans carte, du logo SCOLIA, des champs à contraste fort et de la disposition PC (options à droite) / téléphone (options sous formulaire).
 - Aucune modification des identifiants, paiements, données, protocoles de jumelage ou synchronisation.
 
+## Ajustement du formulaire d'authentification (Android et Windows)
+- Sous « Se connecter », le lien « Mot de passe oublié ? » est aligné à gauche sur le même bord que le champ de mot de passe.
+- Un bouton d'empreinte digitale de 48 × 44 points est placé à droite, sur la même ligne, à la place du long texte « Se connecter avec mon empreinte ».
+- L'action biométrique existante est conservée et l'icône n'apparaît que lorsque cette connexion est disponible ; l'accessibilité garde un libellé descriptif.
+- Grille responsive sans bordure et sans panneau : aucune coupure de texte sur les petits écrans, ni changement de la récupération du compte.
+
 ## Contrôles prévus
 - Compilations Avalonia, Android et Windows.
 - Tests de navigation, auth, clavier et fluidité sur 320 × 300, 320 × 568, 360 × 640 et 412 × 892.
