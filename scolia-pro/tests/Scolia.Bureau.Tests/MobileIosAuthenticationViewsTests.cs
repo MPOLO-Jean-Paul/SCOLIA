@@ -54,7 +54,7 @@ public sealed class MobileIosAuthenticationViewsTests
         var code = File.ReadAllText(Source("Views/LoginView.axaml.cs"));
         Assert.Contains("LoginScroll.IsVisible = !ios", code);
         Assert.Contains("IosLoginScroll.IsVisible = ios", code);
-        Assert.Contains("AuthLayout.Track(IosLoginScroll)", code);
+        Assert.Contains("AuthLayout.Track(IosLoginScroll, size =>", code);
         Assert.Contains("login.CanSubmitCredentials", code);
     }
 
@@ -146,6 +146,69 @@ public sealed class MobileIosAuthenticationViewsTests
         var style = Assert.Single(nodes, e => e.Name.LocalName == "Style" && Attribute(e, "Selector", "ToggleButton.iosmoretoggle"));
         Assert.Contains(style.Elements(), e => e.Name.LocalName == "Setter" && Attribute(e, "Property", "MinHeight") &&
             Attribute(e, "Value", "42"));
+    }
+
+    [Fact]
+    public void Login_presentation_pleine_page_logo_Scolia_et_options_textuelles_PC_Android()
+    {
+        var nodes = Elements("LoginView.axaml");
+        var cardStyle = Assert.Single(nodes, e => e.Name.LocalName == "Style" &&
+            Attribute(e, "Selector", "Border.iosauthcard"));
+        Assert.Contains(cardStyle.Elements(), e => e.Name.LocalName == "Setter" &&
+            Attribute(e, "Property", "Background") && Attribute(e, "Value", "Transparent"));
+        Assert.Contains(cardStyle.Elements(), e => e.Name.LocalName == "Setter" &&
+            Attribute(e, "Property", "BorderThickness") && Attribute(e, "Value", "0"));
+        var card = Assert.Single(nodes, e => e.Name.LocalName == "Border" && Attribute(e, "Name", "IosLoginCard"));
+        Assert.DoesNotContain(card.Elements(), e => e.Name.LocalName == "Border.Background");
+        Assert.DoesNotContain(card.Descendants(), e => e.Name.LocalName == "TextBlock" &&
+            Attribute(e, "Text", "Connexion"));
+        Assert.Contains(card.Descendants(), e => e.Name.LocalName == "Image" &&
+            Attribute(e, "Source", "{DynamicResource ScoliaMark}"));
+        Assert.Contains(card.Descendants(), e => e.Name.LocalName == "Button" &&
+            Attribute(e, "Command", "{Binding ToggleRecoveryHelp}") &&
+            e.Descendants().Any(t => Attribute(t, "Text", "Mot de passe oublié ?")));
+
+        var layout = Assert.Single(nodes, e => e.Name.LocalName == "Grid" &&
+            Attribute(e, "Name", "IosLoginLayout"));
+        Assert.True(Attribute(layout, "ColumnDefinitions", "*,Auto"));
+        var desktop = Assert.Single(nodes, e => e.Name.LocalName == "StackPanel" &&
+            Attribute(e, "Name", "IosDesktopActions"));
+        Assert.True(Attribute(desktop, "IsVisible", "False"));
+        Assert.True(Attribute(desktop, "Grid.Column", "1"));
+        var mobile = Assert.Single(nodes, e => e.Name.LocalName == "StackPanel" &&
+            Attribute(e, "Name", "IosMobileActions"));
+        foreach (var panel in new[] { desktop, mobile })
+        {
+            foreach (var action in new[] { "{Binding ChangeAccount}", "{Binding ChangeServer}" })
+                Assert.Contains(panel.Descendants(), e => e.Name.LocalName == "Button" &&
+                    Attribute(e, "Command", action));
+            Assert.DoesNotContain(panel.Descendants(), e => e.Name.LocalName == "MaterialIcon");
+        }
+        Assert.Contains(mobile.Descendants(), e => e.Name.LocalName == "TextBlock" &&
+            Attribute(e, "Text", "Un problème avec votre compte ?"));
+        Assert.Contains(mobile.Descendants(), e => e.Name.LocalName == "TextBlock" &&
+            Attribute(e, "Text", "Besoin de configurer votre établissement ?"));
+        var code = File.ReadAllText(Source("Views/LoginView.axaml.cs"));
+        Assert.Contains("!Platform.IsMobile && size.Width >= 850", code);
+        Assert.Contains("IosDesktopActions.IsVisible = desktop", code);
+        Assert.Contains("IosMobileActions.IsVisible = !desktop", code);
+    }
+
+    [Fact]
+    public void Restauration_et_verrouillage_gardent_les_champs_sensibles_sans_panneau_opaque()
+    {
+        var login = Elements("LoginView.axaml");
+        foreach (var name in new[] { "IosNewPasswordBox", "IosConfirmPasswordBox", "IosRecoveryCodeBox" })
+            Assert.Contains(login, e => e.Name.LocalName == "TextBox" &&
+                Attribute(e, "Name", name) && Attribute(e, "IsSensitive", "True"));
+        var lockNodes = Elements("LockScreenView.axaml");
+        var cardStyle = Assert.Single(lockNodes, e => e.Name.LocalName == "Style" &&
+            Attribute(e, "Selector", "Border.ioslockcard"));
+        Assert.Contains(cardStyle.Elements(), e => e.Name.LocalName == "Setter" &&
+            Attribute(e, "Property", "Background") && Attribute(e, "Value", "Transparent"));
+        Assert.Contains(lockNodes, e => e.Name.LocalName == "Button" &&
+            Attribute(e, "Command", "{Binding ForgotCode}") &&
+            e.Descendants().Any(t => Attribute(t, "Text", "Mot de passe oublié ?")));
     }
 
     [Fact]

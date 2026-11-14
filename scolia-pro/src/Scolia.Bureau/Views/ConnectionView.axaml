@@ -258,7 +258,14 @@
     </Grid>
     <!-- Premier écran iOS, sur le téléphone comme sur l'ordinateur : une décision principale, des options secondaires discrètes. -->
     <ThemeVariantScope x:Name="IosConnectionThemeScope" IsVisible="False">
-    <Grid x:Name="IosConnectionScreen" IsVisible="False" Background="{DynamicResource BgBrush}">
+    <Grid x:Name="IosConnectionScreen" IsVisible="False">
+      <Grid.Background>
+        <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+          <GradientStop Offset="0" Color="#D9E7FF" />
+          <GradientStop Offset="0.52" Color="#BAD2FA" />
+          <GradientStop Offset="1" Color="#9CBDEE" />
+        </LinearGradientBrush>
+      </Grid.Background>
       <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto"
                     IsVisible="{Binding !PairingInProgress}">
         <StackPanel Classes="iosconnectbody" HorizontalAlignment="Stretch" VerticalAlignment="Center">

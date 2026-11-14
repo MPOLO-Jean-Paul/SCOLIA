@@ -5,14 +5,12 @@
   <!-- Parcours pré-connexion Android : plusieurs pages courtes, jamais une page verticale à faire défiler. -->
   <UserControl.Styles>
     <Style Selector="Border.connectcard">
-      <!-- Panneau de jumelage dans le même bleu cobalt que l'écran LoginView. -->
-      <Setter Property="Background" Value="#2354C8" />
-      <Setter Property="CornerRadius" Value="24" />
-      <Setter Property="BorderBrush" Value="#638AE3" />
-      <Setter Property="BorderThickness" Value="1" />
-      <Setter Property="Padding" Value="22" />
+      <!-- Panneau totalement invisible, contenus directement sur le fond pleine page. -->
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="CornerRadius" Value="0" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Padding" Value="18" />
       <Setter Property="MaxWidth" Value="460" />
-      <Setter Property="BoxShadow" Value="0 8 24 0 #260B327A" />
     </Style>
     <Style Selector="Button.connectmain">
       <Setter Property="Background" Value="#FFFFFF" />
@@ -48,7 +46,7 @@
     </Style>
     <Style Selector="Button.connectnav">
       <Setter Property="Background" Value="Transparent" />
-      <Setter Property="Foreground" Value="#16448F" />
+      <Setter Property="Foreground" Value="#FFFFFF" />
       <Setter Property="CornerRadius" Value="10" />
       <Setter Property="BorderThickness" Value="0" />
       <Setter Property="MinHeight" Value="45" />
@@ -136,11 +134,11 @@
       <Setter Property="BorderBrush" Value="#87A9EE" />
     </Style>
     <!-- Tailles tactiles et composition cohérentes jusque sur les petits Android. -->
-    <Style Selector="Grid.compact Border.connectcard"><Setter Property="Padding" Value="18" /><Setter Property="CornerRadius" Value="21" /></Style>
-    <Style Selector="Grid.tiny Border.connectcard"><Setter Property="Padding" Value="14" /><Setter Property="CornerRadius" Value="18" /></Style>
-    <Style Selector="Grid.short Border.connectcard"><Setter Property="Padding" Value="16" /><Setter Property="CornerRadius" Value="19" /></Style>
+    <Style Selector="Grid.compact Border.connectcard"><Setter Property="Padding" Value="14" /><Setter Property="CornerRadius" Value="0" /></Style>
+    <Style Selector="Grid.tiny Border.connectcard"><Setter Property="Padding" Value="10" /><Setter Property="CornerRadius" Value="0" /></Style>
+    <Style Selector="Grid.short Border.connectcard"><Setter Property="Padding" Value="12" /><Setter Property="CornerRadius" Value="0" /></Style>
     <Style Selector="Grid.short StackPanel.connectfields"><Setter Property="Spacing" Value="9" /></Style>
-    <Style Selector="Grid.micro Border.connectcard"><Setter Property="Padding" Value="12" /><Setter Property="CornerRadius" Value="16" /></Style>
+    <Style Selector="Grid.micro Border.connectcard"><Setter Property="Padding" Value="8" /><Setter Property="CornerRadius" Value="0" /></Style>
     <Style Selector="Grid.micro StackPanel.connectfields"><Setter Property="Spacing" Value="8" /></Style>
     <Style Selector="Grid.micro TextBlock.connecttitle"><Setter Property="FontSize" Value="19" /></Style>
     <Style Selector="Grid.micro Border.connectqrdeco"><Setter Property="IsVisible" Value="False" /></Style>
@@ -160,9 +158,9 @@
   <Grid x:Name="CompactRoot" RowDefinitions="Auto,*,Auto" ClipToBounds="True">
     <Grid.Background>
       <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-        <GradientStop Offset="0" Color="#B5CEFF" />
-        <GradientStop Offset="0.52" Color="#84A8F2" />
-        <GradientStop Offset="1" Color="#6089DA" />
+        <GradientStop Offset="0" Color="#5682EA" />
+        <GradientStop Offset="0.52" Color="#315DC6" />
+        <GradientStop Offset="1" Color="#4F78DB" />
       </LinearGradientBrush>
     </Grid.Background>
     <Grid x:Name="CompactHeader" Classes="connectheader" Grid.Row="0"
@@ -176,8 +174,8 @@
         <Image Source="{DynamicResource ScoliaMark}" Width="30" Height="30" />
       </Border>
       <StackPanel Grid.Column="2" Spacing="1" VerticalAlignment="Center">
-        <TextBlock Text="SCOLIA Pro" FontSize="20" FontWeight="SemiBold" Foreground="#153B84" />
-        <TextBlock Text="Connexion à votre établissement" FontSize="12" Foreground="#244E96"
+        <TextBlock Text="SCOLIA Pro" FontSize="20" FontWeight="SemiBold" Foreground="#FFFFFF" />
+        <TextBlock Text="Connexion à votre établissement" FontSize="12" Foreground="#E4EEFF"
                    TextWrapping="Wrap" />
       </StackPanel>
     </Grid>

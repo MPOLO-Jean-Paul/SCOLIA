@@ -23,8 +23,14 @@ public partial class LoginView : UserControl
         Backdrop.IsVisible = !ios;
         Halo.IsVisible = !ios;
         IosBackdrop.IsVisible = ios;
-        // Une seule colonne : marges, polices et champs suivent la largeur et la hauteur de l'écran.
-        AuthLayout.Track(IosLoginScroll);
+        // PC large : options de compte et serveur dans la colonne à droite.
+        // Téléphone / fenêtre étroite : liens textuels sous le formulaire, jamais d'icônes.
+        AuthLayout.Track(IosLoginScroll, size =>
+        {
+            var desktop = !Platform.IsMobile && size.Width >= 850;
+            IosDesktopActions.IsVisible = desktop;
+            IosMobileActions.IsVisible = !desktop;
+        });
         IosPasswordBox.KeyDown += (_, e) =>
         {
             if (e.Key != Key.Enter || DataContext is not LoginViewModel login || !login.CanSubmitCredentials) return;
