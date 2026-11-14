@@ -109,7 +109,8 @@ public sealed class MobileIosAuthenticationViewsTests
         Assert.Equal("#1845B1", lockCode.Attribute("Background")?.Value);
         Assert.Equal("#FFFFFF", lockCode.Attribute("Foreground")?.Value);
         Assert.Equal("#E4EEFF", lockCode.Attribute("PlaceholderForeground")?.Value);
-        Assert.Contains("onbrand", lockCode.Attribute("Classes")?.Value.Split(' '));
+        var lockClasses = lockCode.Attribute("Classes")?.Value.Split(' ') ?? [];
+        Assert.Contains("onbrand", lockClasses);
         foreach (var state in new[] { "", ":pointerover", ":focus", ":disabled" })
         {
             var selector = "TextBox.ioslockfield" + state + " /template/ Border#PART_BorderElement";
