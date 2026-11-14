@@ -560,7 +560,7 @@
     <ScrollViewer x:Name="IosLoginScroll" IsVisible="False"
                   HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
       <Grid x:Name="IosLoginLayout" ColumnDefinitions="*,Auto" MaxWidth="1060"
-            HorizontalAlignment="Stretch" VerticalAlignment="Center">
+            HorizontalAlignment="Center" VerticalAlignment="Center" Margin="20,0">
       <StackPanel Grid.Column="0" Classes="iosloginbody" HorizontalAlignment="Stretch" VerticalAlignment="Center">
         <Border x:Name="IosLoginCard" Classes="iosauthcard">
           <StackPanel Classes="iosloginfields">
