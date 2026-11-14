@@ -130,6 +130,8 @@ public sealed class Promotion : Entity
     public Guid AcademicYearId { get; set; }
     /// <summary>Cycle du complexe scolaire, absent des promotions ITM historiques.</summary>
     public Guid? SchoolCycleId { get; set; }
+    /// <summary>Université LMD : filière, parcours ou spécialité de la promotion.</summary>
+    public Guid? AcademicUnitId { get; set; }
     public Guid? SectionId { get; set; }
     public Section? Section { get; set; }
     /// <summary>Code court utilisé dans les matricules (4 caractères, ex. INF1).</summary>

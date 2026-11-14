@@ -35,6 +35,10 @@ public sealed class ScoliaDbContext(DbContextOptions<ScoliaDbContext> options, I
     public DbSet<EpstDecision> EpstDecisions => Set<EpstDecision>();
     public DbSet<EpstRepechageMark> EpstRepechageMarks => Set<EpstRepechageMark>();
     public DbSet<NationalExamResult> NationalExamResults => Set<NationalExamResult>();
+    public DbSet<LmdMark> LmdMarks => Set<LmdMark>();
+    public DbSet<LmdDeliberation> LmdDeliberations => Set<LmdDeliberation>();
+    public DbSet<LmdDecision> LmdDecisions => Set<LmdDecision>();
+    public DbSet<LmdDebt> LmdDebts => Set<LmdDebt>();
     public DbSet<Section> Sections => Set<Section>();
     public DbSet<Promotion> Promotions => Set<Promotion>();
     public DbSet<FeeItem> FeeItems => Set<FeeItem>();
@@ -204,6 +208,49 @@ public sealed class ScoliaDbContext(DbContextOptions<ScoliaDbContext> options, I
             e.Property(x => x.Reference).HasMaxLength(60);
             e.HasIndex(x => new { x.EnrollmentId, x.Exam }).IsUnique();
             e.HasOne<Enrollment>().WithMany().HasForeignKey(x => x.EnrollmentId).OnDelete(DeleteBehavior.Restrict);
+        });
+        b.Entity<LmdMark>(e =>
+        {
+            // Notes des EC par session, distinctes des cotes ITM (CourseMarks).
+            e.ToTable("NotesLmd");
+            e.HasIndex(x => new { x.EnrollmentId, x.ElementId, x.Session }).IsUnique();
+            e.HasIndex(x => new { x.PromotionId, x.AcademicYearId });
+            e.HasOne<AcademicYear>().WithMany().HasForeignKey(x => x.AcademicYearId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne<Promotion>().WithMany().HasForeignKey(x => x.PromotionId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne<Enrollment>().WithMany().HasForeignKey(x => x.EnrollmentId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne<CurriculumItem>().WithMany().HasForeignKey(x => x.ElementId).OnDelete(DeleteBehavior.Restrict);
+        });
+        b.Entity<LmdDeliberation>(e =>
+        {
+            e.ToTable("DeliberationsLmd");
+            e.Property(x => x.S1PublishedBy).HasMaxLength(120);
+            e.Property(x => x.FirstSessionClosedBy).HasMaxLength(120);
+            e.Property(x => x.ClosedBy).HasMaxLength(120);
+            e.HasIndex(x => new { x.PromotionId, x.AcademicYearId }).IsUnique();
+            e.HasOne<AcademicYear>().WithMany().HasForeignKey(x => x.AcademicYearId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne<Promotion>().WithMany().HasForeignKey(x => x.PromotionId).OnDelete(DeleteBehavior.Restrict);
+        });
+        b.Entity<LmdDecision>(e =>
+        {
+            e.ToTable("DecisionsLmd");
+            e.Property(x => x.JuryReason).HasMaxLength(300);
+            e.Property(x => x.FinalJuryReason).HasMaxLength(300);
+            e.Ignore(x => x.Effective);
+            e.HasIndex(x => new { x.DeliberationId, x.EnrollmentId }).IsUnique();
+            e.HasOne<LmdDeliberation>().WithMany().HasForeignKey(x => x.DeliberationId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne<Enrollment>().WithMany().HasForeignKey(x => x.EnrollmentId).OnDelete(DeleteBehavior.Restrict);
+        });
+        b.Entity<LmdDebt>(e =>
+        {
+            e.ToTable("DettesLmd");
+            e.Property(x => x.UeCode).HasMaxLength(24);
+            e.Property(x => x.UeName).HasMaxLength(160);
+            e.Property(x => x.Semester).HasMaxLength(4);
+            e.Property(x => x.ClearedBy).HasMaxLength(120);
+            e.Ignore(x => x.IsCleared);
+            e.HasIndex(x => new { x.OriginEnrollmentId, x.UeId }).IsUnique();
+            e.HasIndex(x => x.StudentId);
+            e.HasOne<Enrollment>().WithMany().HasForeignKey(x => x.OriginEnrollmentId).OnDelete(DeleteBehavior.Restrict);
         });
         b.Entity<SchoolCycleAssessment>(e =>
         {

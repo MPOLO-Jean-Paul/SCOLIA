@@ -182,6 +182,14 @@ public static class RegulationUsage
 {
     public static async Task EnsureReopenAllowedAsync(IAppDbContext db, AcademicRegulation r, CancellationToken ct)
     {
+        if (r.Scope == RegulationScope.SuperieurLmd)
+        {
+            if (await db.LmdDeliberations.AnyAsync(d => d.AcademicYearId == r.AcademicYearId &&
+                    d.Status != LmdSessionStatus.Ouverte, ct))
+                throw new DomainException("reglement",
+                    "Des résultats ont été publiés selon ce règlement : il ne peut plus être rouvert.");
+            return;
+        }
         if (!AcademicRegulationRules.IsEpst(r.Scope)) return;
         var kind = r.Scope == RegulationScope.Primaire ? SchoolCycleKind.Primaire : SchoolCycleKind.Secondaire;
         var classes = from p in db.Promotions

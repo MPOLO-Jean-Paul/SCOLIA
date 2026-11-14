@@ -353,6 +353,56 @@ public static class ScoliaEndpoints
             (Guid promotionId, LmdTeachingElementInput input, LmdPlanningService s, CancellationToken ct) =>
                 s.AddTeachingElementAsync(promotionId, input, ct)).RequireAuthorization(Permissions.SettingsWrite);
 
+        // Université LMD : notes des EC, résultats partiels du S1, première et deuxième session, dettes, tranches.
+        g.MapGet("/lmd/promotions/{promotionId:guid}/resultats",
+            (Guid promotionId, string? etape, LmdResultsService s, CancellationToken ct) =>
+                s.ResultsAsync(promotionId, etape, ct)).RequireAuthorization(Permissions.AcademicsRead);
+        g.MapGet("/lmd/promotions/{promotionId:guid}/ecs/{elementId:guid}/notes",
+            (Guid promotionId, Guid elementId, int? session, LmdResultsService s, CancellationToken ct) =>
+                s.SheetAsync(promotionId, elementId, session ?? 1, ct)).RequireAuthorization(Permissions.AcademicsRead);
+        g.MapPut("/lmd/promotions/{promotionId:guid}/ecs/{elementId:guid}/notes",
+            (Guid promotionId, Guid elementId, LmdMarkSheetInput input, LmdResultsService s, CancellationToken ct) =>
+                s.SaveMarksAsync(promotionId, elementId, input, ct)).RequireAuthorization(Permissions.AcademicsWrite);
+        g.MapPost("/lmd/promotions/{promotionId:guid}/publication-s1",
+            (Guid promotionId, LmdResultsService s, CancellationToken ct) =>
+                s.PublishS1Async(promotionId, ct)).RequireAuthorization(Permissions.DeliberationManage);
+        g.MapPut("/lmd/promotions/{promotionId:guid}/etudiants/{enrollmentId:guid}/jury",
+            (Guid promotionId, Guid enrollmentId, LmdJuryInput input, LmdResultsService s, CancellationToken ct) =>
+                s.SetJuryAsync(promotionId, enrollmentId, input, ct)).RequireAuthorization(Permissions.DeliberationManage);
+        g.MapPost("/lmd/promotions/{promotionId:guid}/premiere-session",
+            (Guid promotionId, LmdResultsService s, CancellationToken ct) =>
+                s.CloseFirstSessionAsync(promotionId, ct)).RequireAuthorization(Permissions.DeliberationManage);
+        g.MapPost("/lmd/promotions/{promotionId:guid}/cloture",
+            (Guid promotionId, LmdResultsService s, CancellationToken ct) =>
+                s.CloseAsync(promotionId, ct)).RequireAuthorization(Permissions.DeliberationManage);
+        g.MapGet("/lmd/promotions/{promotionId:guid}/releves.pdf",
+            async (Guid promotionId, string? etape, Guid? inscription, LmdResultsService s, HttpContext http, CancellationToken ct) =>
+            {
+                http.Response.Headers.CacheControl = "private, no-store, max-age=0";
+                http.Response.Headers.Pragma = "no-cache";
+                var print = await s.TranscriptAsync(promotionId, etape, inscription, ct);
+                return new InlineFileResult(LmdTranscriptPdf.Build(print), Pdf,
+                    inscription is null ? "releves-promotion.pdf" : "releve-etudiant.pdf");
+            })
+            .RequireAuthorization(Permissions.AcademicsRead);
+        g.MapGet("/lmd/promotions/{promotionId:guid}/proces-verbal.pdf",
+            async (Guid promotionId, string? etape, LmdResultsService s, HttpContext http, CancellationToken ct) =>
+            {
+                http.Response.Headers.CacheControl = "private, no-store, max-age=0";
+                http.Response.Headers.Pragma = "no-cache";
+                var print = await s.TranscriptAsync(promotionId, etape, null, ct);
+                return new InlineFileResult(LmdMinutesPdf.Build(print), Pdf, "proces-verbal-lmd.pdf");
+            })
+            .RequireAuthorization(Permissions.AcademicsRead);
+        g.MapGet("/lmd/dettes", (Guid? etudiant, LmdResultsService s, CancellationToken ct) =>
+            s.DebtsAsync(etudiant, ct)).RequireAuthorization(Permissions.AcademicsRead);
+        g.MapPut("/lmd/dettes/{debtId:guid}/apurement",
+            (Guid debtId, LmdDebtClearInput input, LmdResultsService s, CancellationToken ct) =>
+                s.ClearDebtAsync(debtId, input, ct)).RequireAuthorization(Permissions.DeliberationManage);
+        g.MapPut("/lmd/promotions/{promotionId:guid}/tranches",
+            (Guid promotionId, LmdInstallmentsInput input, LmdFeesService s, CancellationToken ct) =>
+                s.SetInstallmentsAsync(promotionId, input, ct)).RequireAuthorization(Permissions.SettingsWrite);
+
         // Registre scolaire distinct de l'ITM : aucun seuil, moyenne ou décision
         // inventés dans un aperçu. L'écriture est interdite aux profils non activés.
         g.MapGet("/cycles/evaluations/{enrollmentId:guid}/apercu",

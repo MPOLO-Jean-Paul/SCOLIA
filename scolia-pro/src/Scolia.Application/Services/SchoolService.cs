@@ -344,7 +344,7 @@ public sealed class SchoolService(IAppDbContext db, IWriteGate gate, IAuditLog a
         p.Fees.Where(f => f.Kind == FeeKind.Mensualite).Select(f => f.Amount).DefaultIfEmpty(0).Max(),
         p.Fees.Sum(f => f.Amount), count,
         p.Fees.OrderBy(f => f.DueDate).ThenBy(f => f.Order).Select(f => new FeeItemDto(f.Id, f.Kind.ToString(), f.Label, f.Amount, f.DueDate, f.Order, f.PeriodId, f.CategoryId)).ToList(),
-        p.SchoolCycleId);
+        p.SchoolCycleId, p.AcademicUnitId);
 
     public static IEnumerable<FeeItem> MonthlyFees(Guid promotionId, AcademicYear year, decimal monthly) =>
         year.Periods.OrderBy(p => p.Order).Select(p => new FeeItem
@@ -457,6 +457,21 @@ public sealed class SchoolService(IAppDbContext db, IWriteGate gate, IAuditLog a
                 throw new DomainException("schoolCycleId",
                     "Cette classe possède déjà des inscriptions : son cycle ne peut plus être modifié. Créez une nouvelle classe dans le cycle souhaité.");
             promotion.SchoolCycleId = cycle.Id;
+        }
+        // Université : la promotion appartient à une filière, un parcours ou une spécialité actifs.
+        if (input.AcademicUnitId is { } unitId)
+        {
+            if (InstitutionProfiles.Canonicalize(school.InstitutionType) != InstitutionProfiles.SuperieurLmd)
+                throw new DomainException("academicUnitId", "Les filières concernent uniquement les universités LMD.");
+            var unit = await db.AcademicStructureUnits.AsNoTracking().FirstOrDefaultAsync(u => u.Id == unitId, ct)
+                ?? throw new DomainException("academicUnitId", "La filière choisie est introuvable.");
+            if (!unit.IsActive || unit.Kind is not (AcademicUnitKind.Filiere or AcademicUnitKind.Pathway or AcademicUnitKind.Speciality))
+                throw new DomainException("academicUnitId", "Choisissez une filière, un parcours ou une spécialité actifs.");
+            if (id is not null && promotion.AcademicUnitId is { } previousUnit && previousUnit != unitId &&
+                await db.Enrollments.AnyAsync(e => e.PromotionId == promotion.Id, ct))
+                throw new DomainException("academicUnitId",
+                    "Cette promotion a déjà des inscrits : sa filière ne peut plus changer.");
+            promotion.AcademicUnitId = unitId;
         }
         promotion.Code = code; promotion.Name = input.Name.Trim(); promotion.SectionId = input.SectionId; promotion.Level = input.Level;
         if (input.SchoolCycleId is not null) promotion.SchoolCycleId = input.SchoolCycleId;

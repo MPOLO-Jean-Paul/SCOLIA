@@ -344,21 +344,31 @@ public sealed class StudentService(IAppDbContext db, IWriteGate gate, IAuditLog 
                               && decision.Final != null
                           select new { decision.EnrollmentId, Final = decision.Final!.Value })
             .ToDictionaryAsync(x => x.EnrollmentId, x => x.Final, ct);
+        // Université LMD : décision définitive de l'année (admis, admis avec dettes, ajourné).
+        var lmd = await (from decision in db.LmdDecisions.AsNoTracking()
+                         join session in db.LmdDeliberations.AsNoTracking() on decision.DeliberationId equals session.Id
+                         where session.AcademicYearId == source.Id && session.Status == LmdSessionStatus.Cloturee
+                             && decision.Final != null
+                         select new { decision.EnrollmentId, Final = decision.Final!.Value })
+            .ToDictionaryAsync(x => x.EnrollmentId, x => x.Final, ct);
         return map.Values.Where(x => x.Enrollment.Status == EnrollmentStatus.Actif && !already.Contains(x.Enrollment.StudentId))
             .OrderBy(x => x.Promotion.Code).ThenBy(x => x.Enrollment.Student!.LastName)
             .Select(x =>
             {
                 var decided = jury.TryGetValue(x.Enrollment.Id, out var final) ? final : (Domain.Deliberation.Outcome?)null;
                 var school = epst.TryGetValue(x.Enrollment.Id, out var schoolFinal) ? schoolFinal : (EpstOutcome?)null;
+                var university = lmd.TryGetValue(x.Enrollment.Id, out var lmdFinal) ? lmdFinal : (LmdOutcome?)null;
                 var stays = decided == Domain.Deliberation.Outcome.Ajourne ||
-                            school is { } o && !EpstDeliberationRules.Promotes(o);
+                            school is { } o && !EpstDeliberationRules.Promotes(o) ||
+                            university is { } u && !LmdResultsCalculator.Promotes(u);
                 var next = stays ? x.Promotion.Code : ExpectedPromotionCode(x.Promotion);
                 // Une classe existante mais désactivée exige une décision du secrétariat.
                 bool available = !targetPromotions.Any(p => p.Code == next && !p.IsActive);
                 return new ReEnrollmentPlanItem(x.Enrollment.StudentId, x.Enrollment.Student!.Matricule,
                     x.Enrollment.Student.FullName, x.Promotion.Code, next, x.Account.Balance, available,
                     decided is { } outcome ? Domain.Deliberation.DeliberationEngine.Label(outcome)
-                        : school is { } epstOutcome ? EpstDeliberationRules.Label(epstOutcome) : null);
+                        : school is { } epstOutcome ? EpstDeliberationRules.Label(epstOutcome)
+                        : university is { } lmdOutcome ? LmdResultsCalculator.Label(lmdOutcome) : null);
             }).ToList();
     }
 
@@ -394,6 +404,7 @@ public sealed class StudentService(IAppDbContext db, IWriteGate gate, IAuditLog 
             SectionId = sourcePromotion.SectionId,
             // Une classe du primaire ou du secondaire reste dans son cycle scolaire.
             SchoolCycleId = sourcePromotion.SchoolCycleId,
+            AcademicUnitId = sourcePromotion.AcademicUnitId,
             Level = sameLevel ? sourcePromotion.Level : char.IsAsciiDigit(code[^1])
                 ? code[^1] - '0' : sourcePromotion.Level,
             Capacity = sourcePromotion.Capacity,
