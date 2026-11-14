@@ -128,6 +128,27 @@ public sealed class MobileIosAuthenticationViewsTests
     }
 
     [Fact]
+    public void Options_de_connexion_repliees_dans_le_panneau_cobalt_sans_en_tete_Fluent_blanc()
+    {
+        var nodes = Elements("LoginView.axaml");
+        var toggle = Assert.Single(nodes, e => e.Name.LocalName == "ToggleButton" && Attribute(e, "Name", "IosLoginMore"));
+        Assert.True(Attribute(toggle, "IsChecked", "False"));
+        Assert.Contains(toggle.Ancestors(), e => e.Name.LocalName == "Border" && Attribute(e, "Name", "IosLoginCard"));
+        var panel = Assert.Single(nodes, e => e.Name.LocalName == "StackPanel" && Attribute(e, "Name", "IosLoginMoreContent"));
+        Assert.True(Attribute(panel, "IsVisible", "{Binding IsChecked, ElementName=IosLoginMore}"));
+        Assert.Contains(panel.Descendants(), e => e.Name.LocalName == "Button" &&
+            Attribute(e, "Command", "{Binding ChangeServer}"));
+        Assert.Contains(panel.Descendants(), e => e.Name.LocalName == "Button" &&
+            Attribute(e, "Command", "{Binding ForgetLinkedServer}"));
+        Assert.Contains(panel.Descendants(), e => e.Name.LocalName == "Button" &&
+            Attribute(e, "Command", "{Binding DisableBiometrics}"));
+        Assert.DoesNotContain(nodes, e => e.Name.LocalName == "Expander" && Attribute(e, "Classes", "skyoptions"));
+        var style = Assert.Single(nodes, e => e.Name.LocalName == "Style" && Attribute(e, "Selector", "ToggleButton.iosmoretoggle"));
+        Assert.Contains(style.Elements(), e => e.Name.LocalName == "Setter" && Attribute(e, "Property", "MinHeight") &&
+            Attribute(e, "Value", "42"));
+    }
+
+    [Fact]
     public void La_reprise_iOS_conserve_le_code_et_la_biometrie()
     {
         var nodes = Elements("LockScreenView.axaml");
