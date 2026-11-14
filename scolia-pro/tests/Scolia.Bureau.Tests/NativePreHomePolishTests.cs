@@ -5,7 +5,7 @@ namespace Scolia.Bureau.Tests;
 
 /// <summary>
 /// La connexion, le jumelage et le compte enseignant utilisent la même densité
-/// native SCOLIA. Aucun nouveau panneau web avant l'accueil.
+/// native SCOLIA. Le jumelage Android reprend le panneau cobalt natif.
 /// </summary>
 public sealed class NativePreHomePolishTests
 {
@@ -58,7 +58,7 @@ public sealed class NativePreHomePolishTests
     public void Jumelage_android_lisible_en_sombre_et_sans_defilement()
     {
         var path = "Views/Phone/ConnectionCompactView.axaml";
-        Assert.Equal("{DynamicResource TextBrush}", Setter(Style(path, "TextBox.connectfield"), "Foreground"));
+        Assert.Equal("#FFFFFF", Setter(Style(path, "TextBox.connectfield"), "Foreground"));
         Assert.Equal("52", Setter(Style(path, "Button.connectmain"), "MinHeight"));
         Assert.Equal("52", Setter(Style(path, "TextBox.connectfield"), "MinHeight"));
         Assert.DoesNotContain(View(path).Descendants(), x => x.Name.LocalName == "ScrollViewer");
@@ -84,8 +84,9 @@ public sealed class NativePreHomePolishTests
     public void Champs_avant_accueil_meme_curseur_et_selection_colores(string path, string selector)
     {
         var style = Style(path, selector);
-        Assert.Equal("{DynamicResource AccentBrush}", Setter(style, "CaretBrush"));
-        Assert.Equal("{DynamicResource AccentSoftBrush}", Setter(style, "SelectionBrush"));
+        var mobileCobalt = path.Contains("Phone/ConnectionCompactView", StringComparison.Ordinal);
+        Assert.Equal(mobileCobalt ? "#FFFFFF" : "{DynamicResource AccentBrush}", Setter(style, "CaretBrush"));
+        Assert.Equal(mobileCobalt ? "#6EA4FF" : "{DynamicResource AccentSoftBrush}", Setter(style, "SelectionBrush"));
     }
 
     [Theory]
