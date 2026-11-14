@@ -13,7 +13,7 @@ public sealed class MainApplication : AvaloniaAndroidApplication<JPServices.Owne
 }
 
 [Activity(Label = "SCOLIA Console", Icon = "@mipmap/icon", RoundIcon = "@mipmap/icon_round", MainLauncher = true, Exported = true,
-    Theme = "@android:style/Theme.Material.Light.NoActionBar",
+    Theme = "@style/ScoliaConsoleTheme",
     ConfigurationChanges = ConfigChanges.Orientation | ConfigChanges.ScreenSize |
         ConfigChanges.UiMode | ConfigChanges.ScreenLayout | ConfigChanges.SmallestScreenSize |
         ConfigChanges.Keyboard | ConfigChanges.KeyboardHidden,
