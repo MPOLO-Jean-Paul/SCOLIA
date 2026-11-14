@@ -28,7 +28,7 @@ public sealed class DesktopMaximizedPreHomeTests
         Assert.Equal("520", (string?)window.Attribute("MinHeight"));
 
         var code = File.ReadAllText(Source("src/Scolia.Bureau/MainWindow.axaml.cs"));
-        Assert.Contains("const bool wanted = false;", code);
+        Assert.Contains("var wanted = !OperatingSystem.IsWindows() && shell.CompactWindow;", code);
         Assert.Contains("private WindowState fullState = WindowState.Maximized;", code);
         Assert.Contains("ExtendClientAreaToDecorationsHint = false", code);
         Assert.Contains("CanResize = true", code);
