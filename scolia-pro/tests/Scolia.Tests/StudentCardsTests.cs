@@ -35,9 +35,15 @@ public sealed class StudentCardRulesTests
     [Fact]
     public void Promotion_colours_match_the_v79_band_and_others_are_neutral()
     {
-        Assert.Equal(StudentCardRules.ColorOf("TLM1"), StudentCardRules.ColorOf("TML1"));
-        Assert.Equal("#FACC15", StudentCardRules.ColorOf("ACC1"));
-        Assert.Equal("#CBD5E1", StudentCardRules.ColorOf("XYZ9"));
+        // Une même filière, une même bande : ACC1, ACC2 et ACC3 ensemble, INF à part ; la section prime sur le code.
+        Assert.Equal(StudentCardRules.FiliereKey(null, "ACC1"), StudentCardRules.FiliereKey(null, "ACC3"));
+        Assert.NotEqual(StudentCardRules.FiliereKey(null, "ACC1"), StudentCardRules.FiliereKey(null, "INF1"));
+        Assert.Equal(StudentCardRules.FiliereKey("SI", "INF1"), StudentCardRules.FiliereKey("si", "L3 MSI"));
+        var keys = new[] { "ACC1", "ACC2", "ACC3", "INF1", "INF2", "INF3", "TLM1" }.Select(c => StudentCardRules.FiliereKey(null, c)).ToList();
+        var bands = StudentCardRules.BandColors(keys);
+        Assert.Equal(3, bands.Count);
+        Assert.Equal(3, bands.Values.Distinct().Count());
+        Assert.Equal(bands, StudentCardRules.BandColors(keys.AsEnumerable().Reverse()));
     }
 
     [Fact]
@@ -47,6 +53,17 @@ public sealed class StudentCardRulesTests
         Assert.False(StudentCardRules.Eligible(EnrollmentStatus.Suspendu, includeLeft: false));
         Assert.False(StudentCardRules.Eligible(EnrollmentStatus.Sorti, includeLeft: false));
         Assert.True(StudentCardRules.Eligible(EnrollmentStatus.Sorti, includeLeft: true));
+    }
+
+    [Fact]
+    public void Matricule_repeté_dans_une_autre_promotion_reste_bloqué_après_filtrage()
+    {
+        // Le filtrage ne doit jamais masquer un dossier ayant le même matricule.
+        var yearMatricules = new[] { "INF293", "ACC102", "inf293", "INF294" };
+        var repeats = StudentCardRules.DuplicateMatricules(yearMatricules);
+        Assert.Contains("INF293", repeats);
+        Assert.DoesNotContain("ACC102", repeats);
+        Assert.Single(repeats);
     }
 
     [Fact]
@@ -122,7 +139,7 @@ public sealed class StudentCardsApiTests : IDisposable
     }
 
     [Fact]
-    public async Task Export_sans_logo_de_l_ecole_est_refuse_plutot_que_d_imprimer_un_sceau_etranger()
+    public async Task Export_sans_logo_de_l_ecole_est_refuse_plutot_que_d_imprimer_un_logo_etranger()
     {
         var admin = await app.InstalledAdmin();
         var promotion = await PromotionAsync(admin);
@@ -171,8 +188,15 @@ public sealed class StudentCardsApiTests : IDisposable
         using (var stream = document.Open())
         {
             var xml = System.Xml.Linq.XDocument.Load(stream);
-            // Trois exemplaires : un sceau et un QR par carte.
-            Assert.Equal(6, xml.Descendants().Count(e => e.Name.LocalName == "drawing"));
+            // Trois cartes : logo en haut, QR, second logo et bande de filière par exemplaire ; aucun cachet.
+            Assert.Equal(12, xml.Descendants().Count(e => e.Name.LocalName == "drawing"));
+            var printed = string.Join(" ", xml.Descendants()
+                .Where(e => e.Name.LocalName == "t").Select(e => e.Value));
+            Assert.Contains("INSTITUT DE TEST", printed, StringComparison.Ordinal);
+            Assert.Contains("MUKENDI KABEYA Grace", printed, StringComparison.Ordinal);
+            Assert.Contains("MATRICULE : ", printed, StringComparison.Ordinal);
+            Assert.Contains("PROMOTION : ", printed, StringComparison.Ordinal);
+            Assert.DoesNotContain("INSTITUT TECHNIQUE MÉDICAL CŒUR DE DIEU", printed, StringComparison.Ordinal);
         }
         Assert.NotNull(zip.GetEntry("word/_rels/document.xml.rels"));
         Assert.Contains(zip.Entries, e => e.FullName.StartsWith("word/media/", StringComparison.Ordinal));

@@ -5,14 +5,16 @@ namespace Scolia.Bureau.Infrastructure;
 
 /// <summary>
 /// Code de liaison montré en QR par le serveur de l'établissement, ordinateur ou téléphone. Il dit à l'autre appareil
-/// comment le joindre : ses adresses sur le Wi-Fi, son adresse Tailscale, et l'invitation Internet si elle est active.
+/// comment le joindre : les adresses locales et, si activée, l'invitation Internet Render.
 /// Il ne contient aucun mot de passe : l'accord du serveur et la connexion au compte restent demandés.
 /// </summary>
 public sealed record PairingCode(string School, string Machine, IReadOnlyList<Uri> Addresses, string? Invitation = null, string? AccessTicket = null)
 {
     public const string Prefix = "scolia://relier?";
     private const int MaxLength = 2048;
-    private const int MaxAddresses = 6;
+    // Limiter la densité du QR affiché : une adresse Wi-Fi et les premières
+    // voies privées suffisent, plutôt que six adresses illisibles en photo.
+    private const int MaxAddresses = 3;
 
     /// <summary>Adresses du Wi-Fi de l'établissement, essayées en premier.</summary>
     public IEnumerable<Uri> LanAddresses => Addresses.Where(a => !TailscaleEndpoint.IsTailnetAddress(a));
@@ -31,7 +33,16 @@ public sealed record PairingCode(string School, string Machine, IReadOnlyList<Ur
             "e=" + Uri.EscapeDataString(School),
             "m=" + Uri.EscapeDataString(Machine),
         };
-        if (Addresses.Count > 0) parts.Add("a=" + string.Join(',', Addresses.Take(MaxAddresses).Select(a => $"{Host(a)}:{a.Port}")));
+        // Le format v1 historique ne sait pas transporter un schema. Ne jamais
+        // transformer une URL HTTPS en HTTP au moment de dessiner le QR.
+        var clear = Addresses.Where(a => a.Scheme == Uri.UriSchemeHttp).Take(MaxAddresses).ToArray();
+        if (clear.Length > 0)
+            parts.Add("a=" + string.Join(',', clear.Select(a => $"{Host(a)}:{a.Port}")));
+        // Extension compatible v1 : une adresse HTTPS Tailnet strictement valide.
+        // Les anciens clients ignorent "h" ; les nouveaux privilegient cette voie.
+        var secure = Addresses.FirstOrDefault(a => a.Scheme == Uri.UriSchemeHttps
+            && a.Port == 443 && TailscaleEndpoint.IsSecureTailnetDns(a.Host));
+        if (secure is not null) parts.Add("h=" + Uri.EscapeDataString(secure.Host));
         if (HasInvitation) parts.Add("l=" + Uri.EscapeDataString(Invitation!));
         if (!string.IsNullOrWhiteSpace(AccessTicket)) parts.Add("p=" + Uri.EscapeDataString(AccessTicket));
         return Prefix + string.Join('&', parts);
@@ -72,6 +83,18 @@ public sealed record PairingCode(string School, string Machine, IReadOnlyList<Ur
         }
 
         var addresses = new List<Uri>();
+        if (values.TryGetValue("h", out var httpsHost))
+        {
+            if (httpsHost.Contains(':') || httpsHost.Contains('/') || httpsHost.Contains('\\')
+                || !TailscaleEndpoint.IsSecureTailnetDns(httpsHost)
+                || !Uri.TryCreate($"https://{httpsHost}/", UriKind.Absolute, out var secure)
+                || secure.Port != 443 || secure.UserInfo.Length > 0 || secure.Query.Length > 0)
+            {
+                error = "L'adresse HTTPS du code QR est invalide : aucune connexion HTTP de remplacement n'a ete lancee.";
+                return false;
+            }
+            addresses.Add(secure);
+        }
         if (values.TryGetValue("a", out var list))
             foreach (var item in list.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Take(MaxAddresses))
                 if (ToAddress(item) is { } uri && !addresses.Contains(uri)) addresses.Add(uri);
@@ -103,9 +126,13 @@ public sealed record PairingCode(string School, string Machine, IReadOnlyList<Ur
     {
         var found = new List<Uri>();
         foreach (var text in addresses)
-            if (Uri.TryCreate(text, UriKind.Absolute, out var uri) && IsAllowed(uri.Host) && !found.Contains(uri)) found.Add(uri);
-        // Le Wi-Fi d'abord : c'est la voie la plus rapide quand les deux appareils sont sur place.
-        var ordered = found.OrderBy(TailscaleEndpoint.IsTailnetAddress).Take(MaxAddresses).ToList();
+            if (Uri.TryCreate(text, UriKind.Absolute, out var uri)
+                && uri.Scheme == Uri.UriSchemeHttp
+                && !TailscaleEndpoint.IsTailnetAddress(uri)
+                && IsAllowed(uri.Host) && !found.Contains(uri)) found.Add(uri);
+        // Les nouvelles invitations ne publient plus d'adresse de réseau VPN.
+        // La lecture des anciens QR reste prise en charge pour proposer un renouvellement.
+        var ordered = found.Take(MaxAddresses).ToList();
         return new PairingCode(school, machine, ordered, invitation);
     }
 

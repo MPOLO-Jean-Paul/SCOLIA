@@ -13,9 +13,127 @@
       <Setter Property="IsHitTestVisible" Value="False" />
     </Style>
     <Style Selector="TextBox.w11.onbrand.codefield"><Setter Property="Padding" Value="42,0,86,0" /></Style>
+
+    <!-- Écran de reprise iOS, sur le téléphone comme sur l'ordinateur : surfaces claires et actions à portée du pouce. -->
+    <Style Selector="StackPanel.ioslockbody"><Setter Property="MaxWidth" Value="640" /><Setter Property="Margin" Value="18,16,18,16" /><Setter Property="Spacing" Value="12" /></Style>
+    <Style Selector="StackPanel.ioslockheader"><Setter Property="Spacing" Value="6" /></Style>
+    <Style Selector="Border.ioslocklogo"><Setter Property="Width" Value="66" /><Setter Property="Height" Value="66" /><Setter Property="CornerRadius" Value="18" /></Style>
+    <Style Selector="Image.ioslockmark"><Setter Property="Width" Value="46" /><Setter Property="Height" Value="46" /></Style>
+    <Style Selector="TextBlock.ioslocktitle"><Setter Property="FontSize" Value="23" /></Style>
+    <Style Selector="Button.ioslocklink TextBlock"><Setter Property="TextWrapping" Value="Wrap" /><Setter Property="TextAlignment" Value="Center" /></Style>
+    <Style Selector="Button.ioslocksecondary TextBlock"><Setter Property="TextWrapping" Value="Wrap" /><Setter Property="TextAlignment" Value="Center" /></Style>
+    <Style Selector="Button.ioslockprimary:pointerover /template/ ContentPresenter"><Setter Property="Background" Value="#E7EFFF" /></Style>
+    <Style Selector="Button.ioslockprimary:disabled /template/ ContentPresenter"><Setter Property="Background" Value="#DCE9FF" /><Setter Property="Foreground" Value="White" /></Style>
+    <Style Selector="ScrollViewer.compact StackPanel.ioslockbody"><Setter Property="Margin" Value="16,12,16,14" /><Setter Property="Spacing" Value="12" /></Style>
+    <Style Selector="ScrollViewer.compact Border.ioslockcard"><Setter Property="Padding" Value="12" /><Setter Property="CornerRadius" Value="0" /></Style>
+    <Style Selector="ScrollViewer.compact Border.ioslocklogo"><Setter Property="Width" Value="60" /><Setter Property="Height" Value="60" /><Setter Property="CornerRadius" Value="17" /></Style>
+    <Style Selector="ScrollViewer.compact Image.ioslockmark"><Setter Property="Width" Value="43" /><Setter Property="Height" Value="43" /></Style>
+    <Style Selector="ScrollViewer.compact TextBlock.ioslocktitle"><Setter Property="FontSize" Value="22" /></Style>
+    <Style Selector="ScrollViewer.compact TextBox.ioslockfield"><Setter Property="MinHeight" Value="52" /><Setter Property="FontSize" Value="15" /></Style>
+    <Style Selector="ScrollViewer.compact Button.ioslockprimary"><Setter Property="MinHeight" Value="52" /></Style>
+    <Style Selector="ScrollViewer.tiny StackPanel.ioslockbody"><Setter Property="Margin" Value="12,10,12,12" /><Setter Property="Spacing" Value="10" /></Style>
+    <Style Selector="ScrollViewer.tiny Border.ioslockcard"><Setter Property="Padding" Value="10" /><Setter Property="CornerRadius" Value="0" /></Style>
+    <Style Selector="ScrollViewer.tiny TextBlock.ioslocktitle"><Setter Property="FontSize" Value="20" /></Style>
+    <Style Selector="ScrollViewer.tiny TextBox.ioslockfield"><Setter Property="MinHeight" Value="48" /><Setter Property="FontSize" Value="14" /></Style>
+    <Style Selector="ScrollViewer.tiny Button.ioslockprimary"><Setter Property="MinHeight" Value="48" /></Style>
+    <Style Selector="ScrollViewer.short StackPanel.ioslockbody"><Setter Property="Spacing" Value="11" /></Style>
+    <Style Selector="ScrollViewer.short StackPanel.ioslockheader"><Setter Property="Spacing" Value="6" /></Style>
+    <Style Selector="ScrollViewer.short Border.ioslocklogo"><Setter Property="Width" Value="54" /><Setter Property="Height" Value="54" /><Setter Property="CornerRadius" Value="17" /></Style>
+    <Style Selector="ScrollViewer.short Image.ioslockmark"><Setter Property="Width" Value="38" /><Setter Property="Height" Value="38" /></Style>
+    <!-- Clavier présent ou petite hauteur : réduire seulement l'ornement. -->
+    <Style Selector="ScrollViewer.micro StackPanel.ioslockbody"><Setter Property="Margin" Value="9,8,9,10" /><Setter Property="Spacing" Value="8" /></Style>
+    <Style Selector="ScrollViewer.micro StackPanel.ioslockheader"><Setter Property="Spacing" Value="4" /></Style>
+    <Style Selector="ScrollViewer.micro Border.ioslocklogo"><Setter Property="IsVisible" Value="False" /></Style>
+    <Style Selector="ScrollViewer.micro TextBlock.ioslocktitle"><Setter Property="FontSize" Value="19" /></Style>
+    <Style Selector="ScrollViewer.micro Border.ioslockcard"><Setter Property="Padding" Value="10" /></Style>
+    <Style Selector="ScrollViewer.micro WrapPanel.ioslockclock"><Setter Property="IsVisible" Value="False" /></Style>
+    <Style Selector="ScrollViewer.wide StackPanel.ioslockbody"><Setter Property="MaxWidth" Value="620" /><Setter Property="Margin" Value="24,22,24,22" /></Style>
+    <Style Selector="ScrollViewer.wide Border.ioslockcard"><Setter Property="Padding" Value="20,18" /><Setter Property="CornerRadius" Value="0" /></Style>
+    <Style Selector="Border.ioslockcard">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="CornerRadius" Value="0" />
+      <Setter Property="Padding" Value="16" />
+    </Style>
+    <Style Selector="TextBox.ioslockfield">
+      <Setter Property="Background" Value="#1845B1" />
+      <Setter Property="Foreground" Value="White" />
+      <Setter Property="CaretBrush" Value="White" />
+      <Setter Property="SelectionBrush" Value="#72A4FF" />
+      <Setter Property="BorderBrush" Value="#87A9EE" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="9" />
+      <Setter Property="Padding" Value="42,10,52,10" />
+      <Setter Property="MinHeight" Value="50" />
+      <Setter Property="FontSize" Value="15" />
+      <Setter Property="Transitions">
+        <Transitions><BrushTransition Property="BorderBrush" Duration="0:0:0.14" Easing="CubicEaseOut" /></Transitions>
+      </Setter>
+    </Style>
+    <!-- Même correction du fond interne Fluent sur l'écran de session verrouillée. -->
+    <Style Selector="TextBox.ioslockfield /template/ Border#PART_BorderElement">
+      <Setter Property="Background" Value="#1845B1" />
+      <Setter Property="BorderBrush" Value="#87A9EE" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="9" />
+    </Style>
+    <Style Selector="TextBox.ioslockfield:pointerover /template/ Border#PART_BorderElement">
+      <Setter Property="Background" Value="#1845B1" />
+    </Style>
+    <Style Selector="TextBox.ioslockfield:focus /template/ Border#PART_BorderElement">
+      <Setter Property="Background" Value="#1845B1" />
+      <Setter Property="BorderBrush" Value="#FFFFFF" />
+    </Style>
+    <Style Selector="TextBox.ioslockfield:disabled /template/ Border#PART_BorderElement">
+      <Setter Property="Background" Value="#1845B1" />
+    </Style>
+    <Style Selector="TextBox.ioslockfield:focus">
+      <Setter Property="BorderBrush" Value="White" />
+      <Setter Property="BorderThickness" Value="1" />
+    </Style>
+    <Style Selector="Button.ioslockprimary">
+      <Setter Property="Background" Value="White" />
+      <Setter Property="Foreground" Value="#1948AE" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="CornerRadius" Value="12" />
+      <Setter Property="MinHeight" Value="50" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <!-- Réaction douce sans déplacement des contrôles ni animation des données. -->
+      <Setter Property="Transitions">
+        <Transitions>
+          <BrushTransition Property="Background" Duration="0:0:0.14" Easing="CubicEaseOut" />
+        </Transitions>
+      </Setter>
+    </Style>
+    <Style Selector="Button.ioslocksecondary">
+      <Setter Property="Background" Value="#3766D1" />
+      <Setter Property="Foreground" Value="White" />
+      <Setter Property="BorderBrush" Value="#7FA3F1" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="12" />
+      <Setter Property="MinHeight" Value="48" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <!-- Réaction douce sans déplacement des contrôles ni animation des données. -->
+      <Setter Property="Transitions">
+        <Transitions>
+          <BrushTransition Property="Background" Duration="0:0:0.14" Easing="CubicEaseOut" />
+        </Transitions>
+      </Setter>
+    </Style>
+    <Style Selector="Button.ioslocklink">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Foreground" Value="White" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="MinHeight" Value="44" />
+      <Setter Property="CornerRadius" Value="12" />
+    </Style>
   </UserControl.Styles>
 
   <Grid>
+    <Grid x:Name="ClassicLockScreen">
     <Border>
       <Border.Background>
         <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
@@ -49,7 +167,7 @@
           <TextBlock Text="{Binding School}" Foreground="White" FontSize="23" FontWeight="SemiBold"
                      HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" MaxWidth="380" />
           <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="8">
-            <mi:MaterialIcon Kind="LockOutline" Width="15" Height="15" Foreground="#D9FFFFFF" VerticalAlignment="Center" />
+            <mi:MaterialIcon Kind="LockOutline" Width="16" Height="16" Foreground="#D9FFFFFF" VerticalAlignment="Center" />
             <TextBlock Text="Session protégée" Foreground="#E6FFFFFF" FontSize="13" FontWeight="Medium" />
           </StackPanel>
           <!-- Horloge secondaire : elle ne prend plus la place du formulaire. -->
@@ -108,7 +226,7 @@
           <Button Classes="glass" Command="{Binding UnlockWithDevice}" IsVisible="{Binding CanUsePairedDevice}"
                   IsEnabled="{Binding NotBusy}" MinHeight="52">
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="9">
-              <mi:MaterialIcon Kind="ShieldCheckOutline" Width="21" Height="21" />
+              <mi:MaterialIcon Kind="ShieldCheckOutline" Width="20" Height="20" />
               <TextBlock Text="{Binding PairedDeviceText}" VerticalAlignment="Center" TextWrapping="Wrap" />
             </StackPanel>
           </Button>
@@ -116,7 +234,7 @@
           <Button Classes="glass" Command="{Binding UnlockWithBiometrics}"
                   IsVisible="{Binding CanUseBiometrics}" IsEnabled="{Binding NotBusy}" MinHeight="48">
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="8">
-              <mi:MaterialIcon Kind="Fingerprint" Width="21" Height="21" />
+              <mi:MaterialIcon Kind="Fingerprint" Width="20" Height="20" />
               <TextBlock Text="{Binding BiometricLabel}" VerticalAlignment="Center" TextWrapping="Wrap" />
             </StackPanel>
           </Button>
@@ -154,5 +272,125 @@
                    TextAlignment="Center" TextWrapping="Wrap" Margin="16,22,16,8" />
       </Grid>
     </ScrollViewer>
+
+    </Grid>
+    <!-- Reprise de session native Avalonia Windows/Android sans carte. -->
+    <ThemeVariantScope>
+    <ScrollViewer x:Name="IosLockScroll" IsVisible="False" HorizontalScrollBarVisibility="Disabled"
+                   VerticalScrollBarVisibility="Auto">
+      <ScrollViewer.Background>
+        <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+          <GradientStop Offset="0" Color="#5682EA" />
+          <GradientStop Offset="0.52" Color="#315DC6" />
+          <GradientStop Offset="1" Color="#4F78DB" />
+        </LinearGradientBrush>
+      </ScrollViewer.Background>
+      <StackPanel Classes="ioslockbody" HorizontalAlignment="Stretch" VerticalAlignment="Center">
+        <StackPanel Classes="ioslockheader" HorizontalAlignment="Stretch">
+          <Border Classes="ioslocklogo" Background="White"
+                  BorderThickness="0" HorizontalAlignment="Center">
+            <Image Classes="ioslockmark" Source="{DynamicResource ScoliaMark}" />
+          </Border>
+          <TextBlock Text="Session protégée" Classes="ioslocktitle" FontWeight="Bold" TextWrapping="Wrap"
+                     TextAlignment="Center" Foreground="White" />
+          <TextBlock Text="{Binding School}" FontSize="13" Foreground="White"
+                     TextAlignment="Center" TextWrapping="Wrap" MaxLines="2" />
+          <WrapPanel Classes="ioslockclock" HorizontalAlignment="Center">
+            <TextBlock Text="{Binding Time}" FontSize="16" FontWeight="SemiBold" Margin="0,0,9,0"
+                       Foreground="#153D84" />
+            <TextBlock Text="{Binding DateText}" FontSize="13" Foreground="White" VerticalAlignment="Center" />
+          </WrapPanel>
+        </StackPanel>
+
+        <Border Classes="ioslockcard">
+          <StackPanel Spacing="16">
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+              <Border Width="48" Height="48" CornerRadius="24" VerticalAlignment="Center">
+                <Border.Background>
+                  <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                    <GradientStop Offset="0" Color="#3A86F0" />
+                    <GradientStop Offset="1" Color="#0B4FC4" />
+                  </LinearGradientBrush>
+                </Border.Background>
+                <TextBlock Text="{Binding Initials}" Foreground="White" FontSize="19" FontWeight="SemiBold"
+                           HorizontalAlignment="Center" VerticalAlignment="Center" />
+              </Border>
+              <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
+                <TextBlock Text="{Binding DisplayName}" Foreground="White" FontSize="18" FontWeight="SemiBold"
+                           TextWrapping="Wrap" MaxLines="2" />
+                <TextBlock Text="{Binding AccountLine}" Foreground="#E3EDFF" FontSize="12"
+                           TextWrapping="Wrap" MaxLines="2" />
+                <TextBlock Text="{Binding LockedSince}" Foreground="#E3EDFF" FontSize="11" TextWrapping="Wrap" />
+              </StackPanel>
+            </Grid>
+            <Border Height="1" Background="#7192E5" />
+            <TextBlock Text="{Binding Message}" Foreground="#E3EDFF" FontSize="13"
+                       TextAlignment="Center" TextWrapping="Wrap" />
+            <StackPanel Spacing="6" IsVisible="{Binding RequireCode}">
+              <TextBlock Text="VOTRE CODE PERSONNEL" FontSize="12" FontWeight="SemiBold" TextWrapping="Wrap"
+                         Foreground="White" />
+              <Grid>
+                <TextBox x:Name="IosLockCode" Classes="ioslockfield onbrand" Background="#1845B1" Foreground="#FFFFFF" CaretBrush="#FFFFFF" PlaceholderForeground="#E4EEFF" Text="{Binding Code}"
+                         PasswordChar="•" RevealPassword="{Binding ShowCode}"
+                         Padding="42,10,52,10" MaxLength="128"
+                         TextInputOptions.ContentType="Password" TextInputOptions.IsSensitive="True"
+                         PlaceholderText="Mot de passe de la session"
+                         IsEnabled="{Binding NotBusy}" AutomationProperties.Name="Code de déverrouillage" />
+                <mi:MaterialIcon Kind="LockOutline" Width="20" Height="20" Margin="13,0,0,0"
+                                 Foreground="#EAF1FF" HorizontalAlignment="Left" VerticalAlignment="Center"
+                                 IsHitTestVisible="False" />
+                <Button HorizontalAlignment="Right" VerticalAlignment="Center"
+                        Background="Transparent" BorderThickness="0" Width="48" Height="48"
+                        Command="{Binding ToggleCode}" IsEnabled="{Binding NotBusy}"
+                        ToolTip.Tip="Afficher ou masquer le code">
+                  <mi:MaterialIcon Kind="{Binding EyeIcon}" Width="21" Height="21"
+                                   Foreground="White" />
+                </Button>
+              </Grid>
+              <Button Classes="ioslockprimary" Command="{Binding Unlock}"
+                      IsEnabled="{Binding CanUnlockCode}">
+                <DockPanel LastChildFill="True">
+                  <mi:MaterialIcon DockPanel.Dock="Left" Margin="0,0,8,0" VerticalAlignment="Center" Kind="Loading" Classes="spin" Width="20" Height="20" IsVisible="{Binding Busy}" />
+                  <mi:MaterialIcon DockPanel.Dock="Left" Margin="0,0,8,0" VerticalAlignment="Center" Kind="LockOpenCheckOutline" Width="20" Height="20" IsVisible="{Binding NotBusy}" />
+                  <TextBlock TextAlignment="Center" TextWrapping="Wrap" Text="Déverrouiller la session" FontWeight="SemiBold" VerticalAlignment="Center" />
+                </DockPanel>
+              </Button>
+            </StackPanel>
+            <Button Classes="ioslocksecondary" Command="{Binding UnlockWithDevice}"
+                    IsVisible="{Binding CanUsePairedDevice}" IsEnabled="{Binding NotBusy}">
+              <TextBlock Text="{Binding PairedDeviceText}" />
+            </Button>
+            <Button Classes="ioslocksecondary" Command="{Binding UnlockWithBiometrics}"
+                    IsVisible="{Binding CanUseBiometrics}" IsEnabled="{Binding NotBusy}">
+              <DockPanel LastChildFill="True">
+                <mi:MaterialIcon DockPanel.Dock="Left" Margin="0,0,10,0" VerticalAlignment="Center" Kind="Fingerprint" Width="22" Height="22" />
+                <TextBlock TextAlignment="Center" TextWrapping="Wrap" Text="{Binding BiometricLabel}" FontWeight="SemiBold" VerticalAlignment="Center" />
+              </DockPanel>
+            </Button>
+          </StackPanel>
+        </Border>
+
+        <Border Background="#FCEAEC" CornerRadius="14" BorderBrush="#F6CBD6"
+                BorderThickness="1" Padding="13" IsVisible="{Binding HasError}">
+          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="9">
+            <mi:MaterialIcon Kind="AlertCircleOutline" Width="20" Height="20" Foreground="#A22342" />
+            <TextBlock Grid.Column="1" Text="{Binding Error}" Foreground="#8E1D38" TextWrapping="Wrap" />
+          </Grid>
+        </Border>
+        <StackPanel HorizontalAlignment="Center" Spacing="2">
+          <Button Classes="ioslocklink" Command="{Binding ForgotCode}" IsEnabled="{Binding NotBusy}"
+                  ToolTip.Tip="Code ou mot de passe oublié ?" AutomationProperties.Name="Récupérer le compte">
+            <TextBlock Text="Mot de passe oublié ?" Foreground="White" FontSize="13" />
+          </Button>
+          <Button Classes="ioslocklink" Command="{Binding SwitchAccount}" IsEnabled="{Binding NotBusy}"
+                  ToolTip.Tip="Changer de compte" AutomationProperties.Name="Changer de compte">
+            <TextBlock Text="Utiliser un autre compte" Foreground="White" FontSize="13" />
+          </Button>
+        </StackPanel>
+        <TextBlock Text="{Binding Footer}" Classes="muted" FontSize="11" IsVisible="False"
+                   HorizontalAlignment="Stretch" TextWrapping="Wrap" TextAlignment="Center" />
+      </StackPanel>
+    </ScrollViewer>
+    </ThemeVariantScope>
   </Grid>
 </UserControl>

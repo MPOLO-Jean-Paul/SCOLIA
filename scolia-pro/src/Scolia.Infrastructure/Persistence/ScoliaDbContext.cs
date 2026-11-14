@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Scolia.Application.Abstractions;
 using Scolia.Domain.Academics;
 using Scolia.Domain.Common;
+using Scolia.Domain.Deliberation;
 using Scolia.Domain.Discipline;
 using Scolia.Domain.Finance;
 using Scolia.Domain.School;
@@ -19,11 +20,19 @@ public sealed class ScoliaDbContext(DbContextOptions<ScoliaDbContext> options, I
     private static readonly SemaphoreSlim AuditChainLock = new(1, 1);
 
     public DbSet<SchoolProfile> Schools => Set<SchoolProfile>();
+    public DbSet<SchoolCycle> SchoolCycles => Set<SchoolCycle>();
+    public DbSet<SchoolCycleFeePolicy> SchoolCycleFeePolicies => Set<SchoolCycleFeePolicy>();
+    public DbSet<SchoolCyclePeriod> SchoolCyclePeriods => Set<SchoolCyclePeriod>();
+    public DbSet<SchoolCycleAssessment> SchoolCycleAssessments => Set<SchoolCycleAssessment>();
     public DbSet<AcademicYear> AcademicYears => Set<AcademicYear>();
     public DbSet<AcademicPeriod> Periods => Set<AcademicPeriod>();
+    public DbSet<PedagogicalPeriod> PedagogicalPeriods => Set<PedagogicalPeriod>();
+    public DbSet<AcademicStructureUnit> AcademicStructureUnits => Set<AcademicStructureUnit>();
+    public DbSet<CurriculumItem> CurriculumItems => Set<CurriculumItem>();
     public DbSet<Section> Sections => Set<Section>();
     public DbSet<Promotion> Promotions => Set<Promotion>();
     public DbSet<FeeItem> FeeItems => Set<FeeItem>();
+    public DbSet<FeeCategory> FeeCategories => Set<FeeCategory>();
     public DbSet<Student> Students => Set<Student>();
     public DbSet<Enrollment> Enrollments => Set<Enrollment>();
     public DbSet<Sponsorship> Sponsorships => Set<Sponsorship>();
@@ -48,6 +57,13 @@ public sealed class ScoliaDbContext(DbContextOptions<ScoliaDbContext> options, I
     public DbSet<StaffAttendanceMark> StaffMarks => Set<StaffAttendanceMark>();
     public DbSet<StaffDayJustification> StaffJustifications => Set<StaffDayJustification>();
     public DbSet<PayrollEntry> Payroll => Set<PayrollEntry>();
+    public DbSet<AnonymousCode> AnonymousCodes => Set<AnonymousCode>();
+    public DbSet<CourseMark> CourseMarks => Set<CourseMark>();
+    public DbSet<DeliberationSettings> DeliberationSettings => Set<DeliberationSettings>();
+    public DbSet<DeliberationSession> DeliberationSessions => Set<DeliberationSession>();
+    public DbSet<JuryDecision> JuryDecisions => Set<JuryDecision>();
+    public DbSet<DeliberationResult> DeliberationResults => Set<DeliberationResult>();
+    public DbSet<MarkSubmission> MarkSubmissions => Set<MarkSubmission>();
 
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
     {
@@ -68,7 +84,43 @@ public sealed class ScoliaDbContext(DbContextOptions<ScoliaDbContext> options, I
             b.Entity(type.ClrType).Property(nameof(Entity.Id)).ValueGeneratedNever();
         }
 
-        b.Entity<SchoolProfile>(e => { e.ToTable("Etablissement"); e.Property(x => x.Name).HasMaxLength(160); });
+        b.Entity<SchoolProfile>(e =>
+        {
+            e.ToTable("Etablissement");
+            e.Property(x => x.Name).HasMaxLength(160);
+            e.Property(x => x.InstitutionType).HasMaxLength(32).HasDefaultValue(InstitutionProfiles.ItmIm);
+            e.Property(x => x.Governance).HasDefaultValue(SchoolGovernanceKind.Prive);
+        });
+
+        // Un seul établissement, mais jusqu'à trois cycles scolaires.
+        // Ces tables sont optionnelles, entièrement absentes des installations ITM historiques.
+        b.Entity<SchoolCycle>(e =>
+        {
+            e.ToTable("CyclesScolaires");
+            e.Property(x => x.Name).HasMaxLength(100);
+            e.Property(x => x.AuthorizationNumber).HasMaxLength(100);
+            e.HasIndex(x => new { x.SchoolId, x.Kind }).IsUnique();
+            e.HasOne<SchoolProfile>().WithMany().HasForeignKey(x => x.SchoolId).OnDelete(DeleteBehavior.Restrict);
+        });
+        b.Entity<SchoolCycleFeePolicy>(e =>
+        {
+            e.ToTable("TarifsCyclesScolaires");
+            e.Property(x => x.LegalBasis).HasMaxLength(500);
+            e.HasIndex(x => new { x.SchoolCycleId, x.AcademicYearId }).IsUnique();
+            e.HasOne<SchoolCycle>().WithMany().HasForeignKey(x => x.SchoolCycleId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne<AcademicYear>().WithMany().HasForeignKey(x => x.AcademicYearId).OnDelete(DeleteBehavior.Restrict);
+        });
+        b.Entity<SchoolCyclePeriod>(e =>
+        {
+            e.ToTable("PeriodesCyclesScolaires");
+            e.Property(x => x.Code).HasMaxLength(16);
+            e.Property(x => x.Name).HasMaxLength(80);
+            e.Property(x => x.TermCode).HasMaxLength(16);
+            e.HasIndex(x => new { x.SchoolCycleId, x.AcademicYearId, x.Code }).IsUnique();
+            e.HasIndex(x => new { x.SchoolCycleId, x.AcademicYearId, x.Order }).IsUnique();
+            e.HasOne<SchoolCycle>().WithMany().HasForeignKey(x => x.SchoolCycleId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne<AcademicYear>().WithMany().HasForeignKey(x => x.AcademicYearId).OnDelete(DeleteBehavior.Restrict);
+        });
         b.Entity<AcademicYear>(e =>
         {
             e.ToTable("AnneesScolaires");
@@ -77,16 +129,81 @@ public sealed class ScoliaDbContext(DbContextOptions<ScoliaDbContext> options, I
             e.Ignore(x => x.FirstCalendarYear);
         });
         b.Entity<AcademicPeriod>(e => { e.ToTable("Periodes"); e.HasIndex(x => new { x.AcademicYearId, x.Order }).IsUnique(); });
+        // Les périodes pédagogiques ne sont PAS les échéances financières.
+        b.Entity<PedagogicalPeriod>(e =>
+        {
+            e.ToTable("PeriodesPedagogiques");
+            e.Property(x => x.Code).HasMaxLength(16);
+            e.Property(x => x.Name).HasMaxLength(80);
+            e.HasIndex(x => new { x.AcademicYearId, x.Order }).IsUnique();
+            e.HasIndex(x => new { x.AcademicYearId, x.Code }).IsUnique();
+            e.HasOne<AcademicYear>().WithMany().HasForeignKey(x => x.AcademicYearId).OnDelete(DeleteBehavior.Restrict);
+        });
+        // Registre séparé des évaluations scolaires : aucune réutilisation des
+        // notes ITM/IM, aucune conversion automatique des observations en scores.
+        b.Entity<SchoolCycleAssessment>(e =>
+        {
+            e.ToTable("EvaluationsCyclesScolaires");
+            e.Property(x => x.EvaluationCode).HasMaxLength(24);
+            e.Property(x => x.Title).HasMaxLength(160);
+            e.Property(x => x.Observation).HasMaxLength(800);
+            e.Property(x => x.Comment).HasMaxLength(800);
+            // Les codes d'interrogation (ex. INTERRO1) peuvent se répéter entre matières.
+            // Deux index partiels garantissent aussi l'unicité des activités sans matière en maternelle.
+            e.HasIndex(x => new { x.EnrollmentId, x.SchoolCyclePeriodId, x.EvaluationCode })
+                .IsUnique().HasFilter("\"CurriculumItemId\" IS NULL");
+            e.HasIndex(x => new { x.EnrollmentId, x.SchoolCyclePeriodId, x.CurriculumItemId, x.EvaluationCode })
+                .IsUnique().HasFilter("\"CurriculumItemId\" IS NOT NULL");
+            e.HasIndex(x => new { x.SchoolCycleId, x.AcademicYearId, x.PromotionId });
+            e.HasOne<AcademicYear>().WithMany().HasForeignKey(x => x.AcademicYearId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne<SchoolCycle>().WithMany().HasForeignKey(x => x.SchoolCycleId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne<SchoolCyclePeriod>().WithMany().HasForeignKey(x => x.SchoolCyclePeriodId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne<Promotion>().WithMany().HasForeignKey(x => x.PromotionId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne<Enrollment>().WithMany().HasForeignKey(x => x.EnrollmentId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne<CurriculumItem>().WithMany().HasForeignKey(x => x.CurriculumItemId).OnDelete(DeleteBehavior.Restrict);
+        });
+        // Référentiels nouveaux profils : isolés des promotions et des cours ITM existants.
+        b.Entity<AcademicStructureUnit>(e =>
+        {
+            e.ToTable("StructuresAcademiques");
+            e.Property(x => x.Code).HasMaxLength(24);
+            e.Property(x => x.Name).HasMaxLength(160);
+            e.HasIndex(x => new { x.ParentId, x.Kind, x.Code });
+            e.HasOne<AcademicStructureUnit>().WithMany().HasForeignKey(x => x.ParentId).OnDelete(DeleteBehavior.Restrict);
+        });
+        b.Entity<CurriculumItem>(e =>
+        {
+            e.ToTable("ProgrammesPedagogiques");
+            e.Property(x => x.Code).HasMaxLength(24);
+            e.Property(x => x.Name).HasMaxLength(160);
+            e.HasIndex(x => new { x.AcademicYearId, x.PromotionId, x.Semester });
+            e.HasIndex(x => x.AcademicUnitId);
+            e.HasIndex(x => x.ParentItemId);
+            e.HasOne<AcademicYear>().WithMany().HasForeignKey(x => x.AcademicYearId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne<Promotion>().WithMany().HasForeignKey(x => x.PromotionId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne<AcademicStructureUnit>().WithMany().HasForeignKey(x => x.AcademicUnitId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne<CurriculumItem>().WithMany().HasForeignKey(x => x.ParentItemId).OnDelete(DeleteBehavior.Restrict);
+        });
         b.Entity<Section>(e => { e.ToTable("Sections"); e.HasIndex(x => x.Code).IsUnique(); });
         b.Entity<Promotion>(e =>
         {
             e.ToTable("Promotions");
             e.HasIndex(x => new { x.AcademicYearId, x.Code }).IsUnique();
             e.HasOne<AcademicYear>().WithMany().HasForeignKey(x => x.AcademicYearId).OnDelete(DeleteBehavior.Restrict);
+            // SQLite ne peut pas ajouter une clé étrangère sur Promotions sans reconstruire la table.
+            // Le rattachement est validé par le service et indexé ; pas de migration destructive.
+            e.HasIndex(x => x.SchoolCycleId);
             e.HasOne(x => x.Section).WithMany().HasForeignKey(x => x.SectionId).OnDelete(DeleteBehavior.SetNull);
             e.HasMany(x => x.Fees).WithOne().HasForeignKey(f => f.PromotionId).OnDelete(DeleteBehavior.Cascade);
         });
-        b.Entity<FeeItem>(e => { e.ToTable("RubriquesFrais"); e.HasIndex(x => x.PromotionId); });
+        b.Entity<FeeItem>(e =>
+        {
+            e.ToTable("RubriquesFrais");
+            e.HasIndex(x => x.PromotionId);
+            e.HasIndex(x => x.CategoryId);
+            e.HasOne<FeeCategory>().WithMany().HasForeignKey(x => x.CategoryId).OnDelete(DeleteBehavior.Restrict);
+        });
+        b.Entity<FeeCategory>(e => { e.ToTable("CategoriesFrais"); e.HasIndex(x => x.NameKey).IsUnique(); e.Property(x => x.Name).HasMaxLength(FeeCategory.MaxNameLength); });
         b.Entity<Student>(e =>
         {
             e.ToTable("Apprenants");
@@ -136,7 +253,13 @@ public sealed class ScoliaDbContext(DbContextOptions<ScoliaDbContext> options, I
         b.Entity<Expense>(e => { e.ToTable("Depenses"); e.HasIndex(x => x.Number).IsUnique(); e.HasIndex(x => x.Date); });
         b.Entity<CashClosing>(e => { e.ToTable("ArretesCaisse"); e.HasIndex(x => x.Date).IsUnique(); });
         b.Entity<Counter>(e => { e.ToTable("Compteurs"); e.HasKey(x => x.Name); e.Property(x => x.Value).IsConcurrencyToken(); });
-        b.Entity<AppUser>(e => { e.ToTable("Utilisateurs"); e.HasIndex(x => x.NormalizedUserName).IsUnique(); });
+        b.Entity<AppUser>(e =>
+        {
+            e.ToTable("Utilisateurs");
+            e.HasIndex(x => x.NormalizedUserName).IsUnique();
+            e.HasIndex(x => x.StaffMemberId);
+            e.HasOne<StaffMember>().WithMany().HasForeignKey(x => x.StaffMemberId).OnDelete(DeleteBehavior.SetNull);
+        });
         b.Entity<AuditEntry>(e =>
         {
             e.ToTable("JournalAudit");
@@ -216,6 +339,62 @@ public sealed class ScoliaDbContext(DbContextOptions<ScoliaDbContext> options, I
             e.ToTable("Paie");
             e.HasIndex(x => new { x.StaffMemberId, x.Period }).IsUnique();
             e.HasOne<StaffMember>().WithMany().HasForeignKey(x => x.StaffMemberId).OnDelete(DeleteBehavior.Restrict);
+        });
+        // Délibération (fusion d'ITMCD) : codes anonymes, cotes par semestre, sessions du jury et résultats figés.
+        b.Entity<AnonymousCode>(e =>
+        {
+            e.ToTable("CodesAnonymes");
+            e.HasIndex(x => new { x.AcademicYearId, x.Code }).IsUnique();
+            e.HasIndex(x => x.EnrollmentId).IsUnique().HasFilter("\"IsActive\" = 1");
+            e.Property(x => x.Code).HasMaxLength(AnonymousCodeRules.MaxLength);
+            e.HasOne<Enrollment>().WithMany().HasForeignKey(x => x.EnrollmentId).OnDelete(DeleteBehavior.Restrict);
+        });
+        b.Entity<CourseMark>(e =>
+        {
+            e.ToTable("CotesDeliberation");
+            e.HasIndex(x => new { x.EnrollmentId, x.CourseId, x.Kind }).IsUnique();
+            e.HasIndex(x => x.CourseId);
+            e.HasOne<Enrollment>().WithMany().HasForeignKey(x => x.EnrollmentId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne<Course>().WithMany().HasForeignKey(x => x.CourseId).OnDelete(DeleteBehavior.Restrict);
+        });
+        b.Entity<MarkSubmission>(e =>
+        {
+            e.ToTable("RemisesCotes");
+            e.HasIndex(x => new { x.CourseId, x.Kind }).IsUnique();
+            e.Property(x => x.SubmittedByName).HasMaxLength(120);
+            e.HasOne<Course>().WithMany().HasForeignKey(x => x.CourseId).OnDelete(DeleteBehavior.Restrict);
+        });
+        b.Entity<DeliberationSettings>(e =>
+        {
+            e.ToTable("ReglagesDeliberation");
+            e.HasIndex(x => x.AcademicYearId).IsUnique();
+            e.Property(x => x.Prefect).HasMaxLength(120);
+            e.Property(x => x.Principal).HasMaxLength(120);
+            e.Property(x => x.JuryPresident).HasMaxLength(120);
+            e.Property(x => x.JurySecretary).HasMaxLength(120);
+            e.Property(x => x.JuryMembers).HasMaxLength(600);
+        });
+        b.Entity<DeliberationSession>(e =>
+        {
+            e.ToTable("SessionsDeliberation");
+            e.Ignore(x => x.IsClosed);
+            e.HasIndex(x => new { x.PromotionId, x.Period }).IsUnique();
+            e.HasOne<Promotion>().WithMany().HasForeignKey(x => x.PromotionId).OnDelete(DeleteBehavior.Restrict);
+        });
+        b.Entity<JuryDecision>(e =>
+        {
+            e.ToTable("DecisionsJury");
+            e.HasIndex(x => new { x.SessionId, x.EnrollmentId }).IsUnique();
+            e.HasOne<DeliberationSession>().WithMany().HasForeignKey(x => x.SessionId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne<Enrollment>().WithMany().HasForeignKey(x => x.EnrollmentId).OnDelete(DeleteBehavior.Restrict);
+        });
+        b.Entity<DeliberationResult>(e =>
+        {
+            e.ToTable("ResultatsDeliberation");
+            e.HasIndex(x => new { x.SessionId, x.EnrollmentId }).IsUnique();
+            e.HasIndex(x => x.VerificationCode);
+            e.Property(x => x.VerificationCode).HasMaxLength(16);
+            e.HasOne<DeliberationSession>().WithMany().HasForeignKey(x => x.SessionId).OnDelete(DeleteBehavior.Cascade);
         });
     }
 

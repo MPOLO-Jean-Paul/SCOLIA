@@ -1,0 +1,40 @@
+name: SCOLIA Pro - créer D1 scolaire gratuit (sans publier le logiciel)
+
+on:
+  push:
+    branches:
+      - release/direct-apk-scolia-pro-20261103
+    paths:
+      - ".github/workflows/scolia-d1-school-bootstrap.yml"
+      - "scolia-pro/deploy/owner-console/scripts/provision-school-d1.mjs"
+      - "scolia-pro/deploy/owner-console/school-migrations/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: scolia-school-d1-bootstrap
+  cancel-in-progress: false
+
+jobs:
+  provision:
+    if: github.repository == 'MPOLO-Jean-Paul/SCOLIA' && github.ref == 'refs/heads/release/direct-apk-scolia-pro-20261103'
+    environment: scolia-owner-production
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    defaults:
+      run:
+        working-directory: scolia-pro/deploy/owner-console
+    env:
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Vérifier la migration et les paramètres autorisés
+        run: node --check scripts/provision-school-d1.mjs
+      - name: Créer ou retrouver uniquement SCHOOL_DB sur le forfait Cloudflare actuel
+        run: node scripts/provision-school-d1.mjs

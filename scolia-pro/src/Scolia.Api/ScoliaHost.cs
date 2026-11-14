@@ -1,6 +1,8 @@
 using System.Diagnostics;
 using System.IO.Compression;
 using System.Net;
+using System.Security.Cryptography.X509Certificates;
+using System.Security.Cryptography;
 using Microsoft.AspNetCore.ResponseCompression;
 using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
@@ -8,6 +10,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Extensions.Options;
 using Scolia.Api;
+using Scolia.Api.Cloud;
 using Scolia.Api.Endpoints;
 using Scolia.Api.Security;
 using Scolia.Application.Abstractions;
@@ -55,19 +58,48 @@ public static class ScoliaHost
 
         var port = builder.Configuration.GetValue("Scolia:Reseau:Port", 5080);
         var lan = builder.Configuration.GetValue("Scolia:Reseau:AccesReseauLocal", false);
+        // Migration volontaire : aucun changement de port ou de protocole sans certificat
+        // configuré et approuvé sur tous les clients. Ne pas créer un certificat éphémère.
+        var httpsEnabled = builder.Configuration.GetValue("Scolia:Reseau:Https:Actif", false);
+        var scheme = httpsEnabled ? "https" : "http";
+        var configuredUrls = builder.Configuration["urls"] ?? Environment.GetEnvironmentVariable("ASPNETCORE_URLS");
+        X509Certificate2? httpsCertificate = null;
+        if (httpsEnabled)
+        {
+            var pfx = builder.Configuration["Scolia:Reseau:Https:CertificatPfx"];
+            var pass = builder.Configuration["Scolia:Reseau:Https:MotDePassePfx"];
+            if (string.IsNullOrWhiteSpace(pfx) || !Path.IsPathRooted(pfx) || !File.Exists(pfx)
+                || string.IsNullOrWhiteSpace(pass))
+                throw new InvalidOperationException("HTTPS activé, mais certificat PFX absolu ou mot de passe manquant. Aucun retour automatique vers HTTP n'est autorisé.");
+            if (!string.IsNullOrWhiteSpace(configuredUrls) &&
+                configuredUrls.Split(';', StringSplitOptions.RemoveEmptyEntries)
+                    .Any(url => url.Trim().StartsWith("http://", StringComparison.OrdinalIgnoreCase)))
+                throw new InvalidOperationException("HTTPS activé : une URL HTTP explicite est interdite. Corrigez ASPNETCORE_URLS avant le démarrage.");
+            httpsCertificate = X509CertificateLoader.LoadPkcs12FromFile(pfx, pass);
+            if (!httpsCertificate.HasPrivateKey)
+                throw new InvalidOperationException("Le certificat HTTPS doit contenir sa clé privée.");
+            var now = DateTime.UtcNow;
+            if (httpsCertificate.NotBefore.ToUniversalTime() > now || httpsCertificate.NotAfter.ToUniversalTime() <= now)
+                throw new InvalidOperationException("Le certificat HTTPS est expiré ou n'est pas encore valide.");
+        }
         var desktop = embedded is null && OperatingSystem.IsWindows() && Environment.UserInteractive && !Microsoft.Extensions.Hosting.WindowsServices.WindowsServiceHelpers.IsWindowsService();
 
         // Deuxième lancement sur le même poste : on rouvre la fenêtre au lieu de démarrer un second serveur.
         if (desktop && DesktopLauncher.AlreadyRunning(port))
         {
             // La fenêtre existe déjà : on la fait apparaître au lieu d'en ouvrir une seconde.
-            if (!DesktopLauncher.ShowRunningInstance(port)) DesktopLauncher.OpenInBrowser($"http://localhost:{port}");
+            if (!DesktopLauncher.ShowRunningInstance(port)) DesktopLauncher.OpenInBrowser($"{scheme}://localhost:{port}");
             return null;
         }
         if (embedded is null) builder.Host.UseWindowsService(o => o.ServiceName = "SCOLIA");
         if (string.IsNullOrEmpty(builder.Configuration["urls"]) && string.IsNullOrEmpty(Environment.GetEnvironmentVariable("ASPNETCORE_URLS")))
-            builder.WebHost.UseUrls(lan ? $"http://0.0.0.0:{port}" : $"http://localhost:{port}");
-        builder.WebHost.ConfigureKestrel(k => k.Limits.MaxRequestBodySize = 60 * 1024 * 1024);
+            builder.WebHost.UseUrls(lan ? $"{scheme}://0.0.0.0:{port}" : $"{scheme}://localhost:{port}");
+        builder.WebHost.ConfigureKestrel(k =>
+        {
+            k.Limits.MaxRequestBodySize = 60 * 1024 * 1024;
+            if (httpsCertificate is not null)
+                k.ConfigureHttpsDefaults(options => options.ServerCertificate = httpsCertificate);
+        });
         // Compression des réponses texte (interface, JSON) : Brotli d'abord, gzip sinon.
         builder.Services.Configure<BrotliCompressionProviderOptions>(o => o.Level = CompressionLevel.Fastest);
         builder.Services.Configure<GzipCompressionProviderOptions>(o => o.Level = CompressionLevel.Fastest);
@@ -80,6 +112,15 @@ public static class ScoliaHost
         });
 
         builder.Services.AddScolia(builder.Configuration, defaultData);
+        // Licence commerciale : contrôle effectué sur le serveur scolaire, et
+        // répliqué à tous les clients via la même API. Secrets protégés localement.
+        builder.Services.AddDataProtection();
+        builder.Services.AddSingleton<SchoolLicenseService>();
+        builder.Services.AddHostedService(sp => sp.GetRequiredService<SchoolLicenseService>());
+        // Continuité en ligne : sauvegardes chiffrées par l'école et relève des opérations faites pendant une coupure.
+        builder.Services.AddSingleton<Scolia.Api.Cloud.CloudDispatcher>();
+        builder.Services.AddSingleton<Scolia.Api.Cloud.CloudContinuityService>();
+        builder.Services.AddHostedService(sp => sp.GetRequiredService<Scolia.Api.Cloud.CloudContinuityService>());
         builder.Services.AddSingleton(sp => new RecoveryKeyStore(sp.GetRequiredService<IOptions<ScoliaStorageOptions>>().Value.DataDirectory));
         builder.Services.AddSingleton(sp => new DevicePairingRegistry(sp.GetRequiredService<IOptions<ScoliaStorageOptions>>().Value.DataDirectory));
         if (embedded is not null)
@@ -164,14 +205,104 @@ public static class ScoliaHost
         });
         app.UseRateLimiter();
         app.UseAuthentication();
+        // Opérations relevées en ligne et rejouées par ce serveur lui-même, au nom de leur auteur.
+        app.UseCloudDispatch();
+        // Le transport Render a une clé de salle partagée. Elle ne remplace pas
+        // l'autorisation individuelle : un appareil retiré est refusé dès l'appel suivant.
+        app.Use(async (http, next) =>
+        {
+            if (http.Request.Headers["X-Scolia-Relay-Connection"] == "1" &&
+                http.Request.Path.StartsWithSegments("/api") &&
+                !http.Request.Path.StartsWithSegments("/api/installation") &&
+                http.Request.Path != "/api/sante" &&
+                http.Request.Path != "/api/jumelage/accepter" &&
+                http.Request.Path != "/api/jumelage/appareil/verifier" &&
+                http.Request.Path != "/api/jumelage/preuve-serveur" &&
+                !http.RequestServices.GetRequiredService<DevicePairingRegistry>().VerifyRemoteProof(http))
+            {
+                http.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                await http.Response.WriteAsJsonAsync(new { title = "Cet appareil n'est plus autorisé sur le serveur. Un nouveau jumelage est nécessaire." });
+                return;
+            }
+            await next();
+        });
         app.UseAuthorization();
+        // Lecture seule de licence : toutes les requêtes d'écriture de tous les
+        // appareils sont refusées côté serveur (pas simplement boutons grisés).
+        // Cette protection passe AVANT l'idempotence, les verrous et les endpoints.
+        app.Use(async (http, next) =>
+        {
+            var path = http.Request.Path.Value ?? string.Empty;
+            if (http.Request.Path.StartsWithSegments("/api") &&
+                LicenseMutationPolicy.IsWrite(http.Request.Method) &&
+                !LicenseMutationPolicy.AllowedWhenReadOnly(path, http.Request.Method) &&
+                http.RequestServices.GetRequiredService<SchoolLicenseService>().Current.ReadOnly)
+            {
+                http.Response.StatusCode = StatusCodes.Status423Locked;
+                http.Response.Headers["X-Scolia-License"] = "read-only";
+                await http.Response.WriteAsJsonAsync(new
+                {
+                    title = "Licence SCOLIA Pro en lecture seule.",
+                    code = "licence_lecture_seule",
+                    detail = "Consultation et connexion maintenues. Les modifications sont suspendues jusqu'au renouvellement ou à une dérogation.",
+                    operation = "retenter_apres_reactivation"
+                });
+                return;
+            }
+            await next();
+        });
+        // Synchronisation différentielle : les postes n'échangent le JSON d'une ressource
+        // que si son contenu a réellement changé. Le serveur contrôle toujours les droits
+        // AVANT de comparer l'empreinte ; aucune donnée ni version d'un autre compte n'est révélée.
+        app.Use(async (http, next) =>
+        {
+            var path = http.Request.Path.Value ?? string.Empty;
+            var conditional = HttpMethods.IsGet(http.Request.Method) &&
+                (path is "/api/etablissement" or "/api/etablissement/annees" or
+                    "/api/etablissement/sections" or "/api/etablissement/promotions" or
+                    "/api/etablissement/categories-frais" or "/api/paiements" or
+                    "/api/rapports/tableau-de-bord" or "/api/rapports/aujourdhui" or
+                    "/api/pilotage/synthese" or "/api/apprenants" ||
+                 (path.StartsWith("/api/apprenants/", StringComparison.Ordinal) &&
+                    Guid.TryParse(path["/api/apprenants/".Length..], out _)) ||
+                 (path.StartsWith("/api/inscriptions/", StringComparison.Ordinal) &&
+                    path.EndsWith("/compte", StringComparison.Ordinal)));
+            if (!conditional) { await next(); return; }
+            var original = http.Response.Body;
+            await using var buffer = new MemoryStream();
+            http.Response.Body = buffer;
+            try
+            {
+                await next();
+                http.Response.Body = original;
+                if (http.Response.StatusCode == StatusCodes.Status200OK &&
+                    (http.Response.ContentType?.Contains("application/json", StringComparison.OrdinalIgnoreCase) ?? false))
+                {
+                    var etag = "\"" + Convert.ToHexString(SHA256.HashData(buffer.ToArray())) + "\"";
+                    http.Response.Headers.ETag = etag;
+                    if (http.Request.Headers.TryGetValue("If-None-Match", out var known) &&
+                        known.Any(k => string.Equals(k, etag, StringComparison.Ordinal)))
+                    {
+                        http.Response.StatusCode = StatusCodes.Status304NotModified;
+                        http.Response.ContentLength = null;
+                        http.Response.ContentType = null;
+                        return;
+                    }
+                }
+                buffer.Position = 0;
+                await buffer.CopyToAsync(original, http.RequestAborted);
+            }
+            finally { http.Response.Body = original; }
+        });
         // Une écriture déjà faite rend sa réponse d'origine avant tout autre contrôle.
         app.UseIdempotency();
         app.UseLiveLocks();
 
         if (app.Environment.IsDevelopment()) app.MapOpenApi();
         app.MapScoliaEndpoints();
+        app.MapLicenseEndpoints();
         app.MapLiveEndpoints();
+        app.MapCloudEndpoints();
         // Demande d'un second lancement : seule une requête venant de ce poste est acceptée.
         if (desktop)
             app.MapGet("/api/bureau/afficher", (HttpContext http) =>
@@ -189,7 +320,7 @@ public static class ScoliaHost
             app.Lifetime.ApplicationStarted.Register(() => KeepAwake.Hold(app.Lifetime.ApplicationStopping));
         app.Lifetime.ApplicationStarted.Register(() =>
         {
-            var listening = app.Urls.FirstOrDefault() ?? $"http://localhost:{port}";
+            var listening = app.Urls.FirstOrDefault() ?? $"{scheme}://localhost:{port}";
             var url = listening.Replace("0.0.0.0", "localhost", StringComparison.Ordinal).Replace("[::]", "localhost", StringComparison.Ordinal);
             Log.Information("SCOLIA est prêt : {Url} · données : {Data} · accès réseau local : {Lan}", url, storage.DataDirectory, lan);
             if (!desktop) return;

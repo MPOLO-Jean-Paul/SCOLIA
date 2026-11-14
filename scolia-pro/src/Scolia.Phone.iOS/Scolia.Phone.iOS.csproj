@@ -6,8 +6,8 @@
     <OutputType>Exe</OutputType>
     <ApplicationTitle>SCOLIA Phone</ApplicationTitle>
     <ApplicationId>com.jpservices.scolia.ios</ApplicationId>
-    <ApplicationVersion>123</ApplicationVersion>
-    <ApplicationDisplayVersion>1.2.3</ApplicationDisplayVersion>
+    <ApplicationVersion>146</ApplicationVersion>
+    <ApplicationDisplayVersion>1.2.26</ApplicationDisplayVersion>
     <AssemblyName>SCOLIA</AssemblyName>
     <RootNamespace>Scolia.Phone.iOS</RootNamespace>
     <!-- La cible est donnée à chaque compilation : -r ios-arm64 (iPhone, iPad) ou -r iossimulator-arm64.
@@ -33,6 +33,10 @@
     <PackageReference Include="ZXing.Net" />
     <PackageReference Include="Microsoft.Data.Sqlite" />
     <PackageReference Include="System.Security.Cryptography.ProtectedData" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Les sources Avalonia partagees utilisent les contrats de cartes de Scolia.Domain. -->
+    <ProjectReference Include="../Scolia.Domain/Scolia.Domain.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="../Scolia.Bureau/**/*.cs" Exclude="../Scolia.Bureau/bin/**;../Scolia.Bureau/obj/**;../Scolia.Bureau/Program.cs" Link="Bureau/%(RecursiveDir)%(Filename)%(Extension)" />

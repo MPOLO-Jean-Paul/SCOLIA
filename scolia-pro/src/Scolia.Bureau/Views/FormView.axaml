@@ -13,12 +13,44 @@
       <Setter Property="Background" Value="{DynamicResource GroupBrush}" />
       <Setter Property="MaxWidth" Value="720" />
     </Style>
+    <!-- Sur Android : présentation des configurations, sans minimum desktop ni débordement horizontal. -->
+    <Style Selector="LayoutTransformControl.phone Border.sheet">
+      <Setter Property="MinWidth" Value="0" />
+      <Setter Property="CornerRadius" Value="20" />
+      <Setter Property="BoxShadow" Value="0 6 22 0 #16000000" />
+    </Style>
+    <Style Selector="LayoutTransformControl.phone Border.sheet Grid.formheader">
+      <Setter Property="Margin" Value="16,16,12,0" />
+    </Style>
+    <Style Selector="LayoutTransformControl.phone Border.sheet ScrollViewer.formscroll">
+      <Setter Property="Padding" Value="16,10,12,8" />
+    </Style>
+    <Style Selector="LayoutTransformControl.phone Border.sheet Panel.formfooter">
+      <Setter Property="Margin" Value="16,12,16,16" />
+    </Style>
+    <Style Selector="LayoutTransformControl.phone Border.sheet Border.formerror">
+      <Setter Property="Margin" Value="16,4,16,8" />
+    </Style>
+    <Style Selector="LayoutTransformControl.phone Border.sheet TextBox.w11, LayoutTransformControl.phone Border.sheet ComboBox.w11, LayoutTransformControl.phone Border.sheet CalendarDatePicker.w11">
+      <Setter Property="MinHeight" Value="48" />
+      <Setter Property="CornerRadius" Value="12" />
+    </Style>
+    <Style Selector="LayoutTransformControl.phone Border.sheet Button.formaction">
+      <Setter Property="MinHeight" Value="48" />
+      <Setter Property="CornerRadius" Value="12" />
+    </Style>
+    <Style Selector="LayoutTransformControl.phone Border.sheet StackPanel.formentry">
+      <Setter Property="Margin" Value="0,0,0,12" />
+    </Style>
+    <Style Selector="LayoutTransformControl.phone Border.sheet StackPanel.formgrouphead">
+      <Setter Property="Margin" Value="0,14,0,8" />
+    </Style>
   </UserControl.Styles>
   <!-- Feuille de dialogue macOS : titre gras, champs, boutons en capsule alignés à droite -->
   <Border Classes="card sheet" infra:Adaptive.FitDialog="True" Classes.embedded="{Binding Embedded}" MaxWidth="620" Padding="0" CornerRadius="14" Background="{DynamicResource SurfaceBrush}" ClipToBounds="True"
           BoxShadow="0 8 32 0 #3D000000">
     <Grid RowDefinitions="Auto,*,Auto,Auto">
-      <Grid ColumnDefinitions="Auto,*,Auto" Margin="24,22,18,0" IsVisible="{Binding !Embedded}">
+      <Grid Classes="formheader" ColumnDefinitions="Auto,*,Auto" Margin="24,22,18,0" IsVisible="{Binding !Embedded}">
         <Border Classes="appicon large" Background="{Binding HeaderBrush}" VerticalAlignment="Top" Margin="0,0,14,0">
           <mi:MaterialIcon Kind="{Binding HeaderIcon}" />
         </Border>
@@ -30,14 +62,14 @@
       </Grid>
 
       <!-- Le message et les champs defilent ensemble, le bouton Importer reste fixe sur mobile. -->
-      <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="24,12,10,8">
+      <ScrollViewer Classes="formscroll" Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="24,12,10,8">
         <StackPanel>
         <TextBlock Text="{Binding Message}" TextWrapping="Wrap" IsVisible="{Binding HasMessage}" Margin="0,0,14,12" />
       <ItemsControl ItemsSource="{Binding Fields}" Margin="0,0,14,0">
         <ItemsControl.ItemTemplate>
           <DataTemplate>
-            <StackPanel Spacing="4" Margin="0,0,0,8">
-              <StackPanel IsVisible="{Binding IsHeader}" Spacing="2" Margin="0,10,0,2">
+            <StackPanel Classes="formentry" Spacing="4" Margin="0,0,0,8">
+              <StackPanel Classes="formgrouphead" IsVisible="{Binding IsHeader}" Spacing="2" Margin="0,10,0,2">
                 <TextBlock Text="{Binding Label}" Classes="heading" />
                 <TextBlock Text="{Binding Hint}" Classes="muted" TextWrapping="Wrap" IsVisible="{Binding Hint, Converter={x:Static ObjectConverters.IsNotNull}}" />
               </StackPanel>
@@ -87,19 +119,19 @@
         </StackPanel>
       </ScrollViewer>
 
-      <Border Grid.Row="2" Background="{DynamicResource RedSoftBrush}" CornerRadius="{StaticResource RadiusSmall}" Padding="12,8" Margin="24,4,24,8" IsVisible="{Binding HasError}">
+      <Border Classes="formerror" Grid.Row="2" Background="{DynamicResource RedSoftBrush}" CornerRadius="{StaticResource RadiusSmall}" Padding="12,8" Margin="24,4,24,8" IsVisible="{Binding HasError}">
         <TextBlock Text="{Binding Error}" Classes="error" TextWrapping="Wrap" />
       </Border>
 
       <!-- Actions : Annuler puis le bouton principal, alignés à droite -->
-      <Panel Grid.Row="3" Margin="20,12,20,16">
+      <Panel Classes="formfooter" Grid.Row="3" Margin="20,12,20,16">
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="12" IsVisible="{Binding CanSubmit}">
-          <Button Content="{Binding CancelText}" Command="{Binding Cancel}" IsVisible="{Binding ShowCancel}" IsEnabled="{Binding !Busy}" MinWidth="96" />
-          <Button Content="{Binding SubmitText}" Command="{Binding Submit}" IsEnabled="{Binding !Busy}" MinWidth="96"
+          <Button Classes="formaction" Content="{Binding CancelText}" Command="{Binding Cancel}" IsVisible="{Binding ShowCancel}" IsEnabled="{Binding !Busy}" MinWidth="96" />
+          <Button Classes="formaction" Content="{Binding SubmitText}" Command="{Binding Submit}" IsEnabled="{Binding !Busy}" MinWidth="96"
                   Classes.primary="{Binding !Danger}" Classes.danger="{Binding Danger}" />
         </StackPanel>
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" IsVisible="{Binding !CanSubmit}">
-          <Button Content="{Binding CancelText}" Command="{Binding Cancel}" Classes="primary" MinWidth="96" />
+          <Button Classes="primary formaction" Content="{Binding CancelText}" Command="{Binding Cancel}" MinWidth="96" />
         </StackPanel>
       </Panel>
     </Grid>

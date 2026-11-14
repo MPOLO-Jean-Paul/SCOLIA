@@ -12,7 +12,16 @@ namespace Scolia.Application.Services;
 /// quelques requêtes puis calculées en mémoire : le coût reste linéaire avec le volume.</summary>
 public sealed class AccountService(IAppDbContext db, IClock clock)
 {
-    public sealed record EnrollmentAccount(Enrollment Enrollment, Promotion Promotion, StudentAccount Account);
+    /// <param name="Coverage">Prise en charge de l'inscription : totale, partielle ou aucune.</param>
+    /// <param name="Sponsor">Nom du ou des organismes qui prennent l'apprenant en charge.</param>
+    public sealed record EnrollmentAccount(Enrollment Enrollment, Promotion Promotion, StudentAccount Account,
+        Coverage Coverage = Coverage.Aucune, string? Sponsor = null)
+    {
+        /// <summary>Totalement pris en charge : ni payant, ni compté parmi les apprenants en ordre ou en retard.</summary>
+        public bool IsSponsored => Coverage == Coverage.Totale;
+        /// <summary>Apprenant qui paie lui-même, au moins en partie.</summary>
+        public bool IsPaying => Coverage != Coverage.Totale;
+    }
 
     public async Task<IReadOnlyDictionary<Guid, EnrollmentAccount>> ComputeAsync(Guid yearId, IReadOnlyCollection<Guid>? enrollmentIds = null,
         DateOnly? asOf = null, CancellationToken ct = default)
@@ -28,12 +37,12 @@ public sealed class AccountService(IAppDbContext db, IClock clock)
         var promotions = await db.Promotions.AsNoTracking().Include(p => p.Fees).Where(p => promotionIds.Contains(p.Id)).ToDictionaryAsync(p => p.Id, ct);
         var ids = enrollments.Select(e => e.Id).ToList();
 
-        var coverage = await (from l in db.SponsorshipLines.AsNoTracking()
-                              join s in db.Sponsorships.AsNoTracking() on l.SponsorshipId equals s.Id
-                              where s.IsActive && ids.Contains(s.EnrollmentId)
-                              select new { s.EnrollmentId, l.FeeItemId, l.Percent }).ToListAsync(ct);
-        var coverageMap = coverage.GroupBy(c => c.EnrollmentId)
-            .ToDictionary(g => g.Key, g => (IReadOnlyDictionary<Guid, decimal>)g.GroupBy(x => x.FeeItemId).ToDictionary(x => x.Key, x => x.Sum(y => y.Percent)));
+        // Les modes Complets et Montant mensuel restent valables pour tous les mois,
+        // même si les frais de la promotion changent après la création de la prise en charge.
+        var sponsorships = await db.Sponsorships.AsNoTracking().Include(s => s.Lines)
+            .Where(s => s.IsActive && ids.Contains(s.EnrollmentId)).ToListAsync(ct);
+        var byEnrollment = sponsorships.GroupBy(s => s.EnrollmentId)
+            .ToDictionary(g => g.Key, g => g.ToList());
 
         var paid = await (from a in db.ReceiptAllocations.AsNoTracking()
                           join r in db.Receipts.AsNoTracking() on a.ReceiptId equals r.Id
@@ -47,12 +56,31 @@ public sealed class AccountService(IAppDbContext db, IClock clock)
         foreach (var e in enrollments)
         {
             var promotion = promotions[e.PromotionId];
-            // Le suivi de l'apprenant ne porte que sur la scolarité : inscription et examen sont des frais de l'institution.
-            var fees = promotion.Fees.Where(f => f.Kind == FeeKind.Mensualite).Select(f => new FeeLineInput(f.Id, f.Label, f.Amount, f.DueDate, f.Order, f.PeriodId, f.Kind));
-            var account = StudentAccount.Compute(fees, coverageMap.GetValueOrDefault(e.Id, empty), paidMap.GetValueOrDefault(e.Id, empty), day, school.WholeAmountsOnly);
-            result[e.Id] = new EnrollmentAccount(e, promotion, account);
+            var paidByFee = paidMap.GetValueOrDefault(e.Id, empty);
+            var sponsors = byEnrollment.GetValueOrDefault(e.Id) ?? [];
+            // Toutes les rubriques de la promotion : les mensualités et les frais des catégories créées
+            // (inscription, examen…). Une prise en charge complète couvre aussi ces frais ; une prise en
+            // charge partielle par mois ne couvre que les mensualités.
+            var fees = promotion.Fees.Where(f => f.Kind == FeeKind.Mensualite || f.CategoryId != null).ToList();
+            var coveredAmounts = fees.ToDictionary(f => f.Id, f =>
+                SponsorshipCoverage.TotalFor(f, sponsors, paidByFee.GetValueOrDefault(f.Id), school.WholeAmountsOnly));
+            var inputs = fees.Select(f => new FeeLineInput(f.Id, f.Label, f.Amount, f.DueDate, f.Order, f.PeriodId, f.Kind));
+            var account = StudentAccount.ComputeAmounts(inputs, coveredAmounts, paidByFee, day, school.WholeAmountsOnly);
+            result[e.Id] = new EnrollmentAccount(e, promotion, account, CoverageOf(sponsors, account),
+                sponsors.Count == 0 ? null : string.Join(", ", sponsors.Select(x => x.SponsorName).Distinct()));
         }
         return result;
+    }
+
+    /// <summary>
+    /// Totale : une prise en charge complète, ou tous les frais couverts. Partielle : une partie des frais couverte,
+    /// le reste payé par la famille. Les versements faits avant la prise en charge ne changent pas ce classement.
+    /// </summary>
+    public static Coverage CoverageOf(IReadOnlyCollection<Sponsorship> active, StudentAccount account)
+    {
+        if (active.Count == 0 || account.TotalCovered <= 0 && active.All(s => s.Mode != SponsorshipMode.Complete)) return Coverage.Aucune;
+        if (active.Any(s => s.Mode == SponsorshipMode.Complete)) return Coverage.Totale;
+        return account.TotalFees > 0 && account.TotalCovered >= account.TotalFees ? Coverage.Totale : Coverage.Partielle;
     }
 
     public async Task<EnrollmentAccount> ForEnrollmentAsync(Guid enrollmentId, DateOnly? asOf = null, CancellationToken ct = default)
@@ -91,6 +119,19 @@ public sealed class AccountService(IAppDbContext db, IClock clock)
                 string.Join(", ", r.Allocations.Select(a => labels.GetValueOrDefault(a.FeeItemId, "?")))))
             .ToList();
     }
+}
+
+/// <summary>Prise en charge d'une inscription, pour séparer les apprenants pris en charge des payants.</summary>
+public enum Coverage { Aucune = 0, Partielle = 1, Totale = 2 }
+
+public static class CoverageText
+{
+    public static string? Of(Coverage coverage) => coverage switch
+    {
+        Coverage.Totale => "Pris en charge",
+        Coverage.Partielle => "Prise en charge partielle",
+        _ => null,
+    };
 }
 
 /// <summary>Messages de rappel prêts à envoyer (WhatsApp / SMS), sans service payant.</summary>

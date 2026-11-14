@@ -47,8 +47,11 @@
             <mi:MaterialIcon Kind="Close" />
           </Button>
           <Button Grid.Column="3" Classes="baricon mic" Classes.listening="{Binding Listening}" Command="{Binding Listen}"
-                  IsVisible="{Binding VoiceAvailable}" ToolTip.Tip="Chercher à la voix" Width="40" Height="40">
-            <mi:MaterialIcon Kind="Microphone" />
+                  IsVisible="{Binding VoiceAvailable}" ToolTip.Tip="{Binding VoiceTip}" Width="40" Height="40">
+            <Grid>
+                  <mi:MaterialIcon Kind="MicrophoneOutline" IsVisible="{Binding !Listening}" />
+                  <mi:MaterialIcon Kind="StopOutline" IsVisible="{Binding Listening}" />
+                </Grid>
           </Button>
         </Grid>
       </Border>

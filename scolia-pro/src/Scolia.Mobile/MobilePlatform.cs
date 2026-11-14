@@ -23,6 +23,8 @@ public static class MobilePlatform
         context = app;
         Security.AndroidSecrets.Initialize();
         Synchronization.SyncWorker.Schedule(app);
+        // Envoi différé durable, déclenché par une nouvelle opération conservée hors ligne.
+        Platform.RequestBackgroundSync = () => Synchronization.SyncWorker.SchedulePending(app);
         Platform.IsMobile = true;
         Platform.IsBiometricAvailable = Security.AndroidBiometrics.IsAvailable;
         Platform.UnlockBiometricAsync = Security.AndroidBiometrics.UnlockAsync;
@@ -36,16 +38,9 @@ public static class MobilePlatform
         Platform.OpenFile = OpenFile;
         Platform.DecodeImage = DecodeImage;
         Platform.OpenUri = OpenUri;
-        Platform.OpenTailscale = OpenTailscale;
-        Platform.IsTailscaleInstalled = IsTailscaleInstalled;
-        Platform.IsVpnActive = IsVpnActive;
-        Platform.ReadTailnetState = ReadTailnetState;
-        Platform.OpenTailscaleInstallPage = OpenTailscaleInstallPage;
-        Platform.ConnectTailscaleInBackground = ConnectTailscaleInBackgroundAsync;
-        // Tailscale se télécharge et s'installe depuis SCOLIA : APK officiel, empreinte vérifiée, confirmation Android.
-        Platform.TailscalePackageKind = "android";
-        Platform.DownloadFolder = Path.Combine(app.CacheDir?.AbsolutePath ?? Path.GetTempPath(), "tailscale");
-        Platform.InstallTailscalePackage = path => AndroidTailscaleSetup.InstallAsync(context ?? app, path);
+        // Le réseau privé externe n'est plus configuré ni démarré depuis SCOLIA.
+        // Android utilise le LAN et le relais Render WSS chiffré.
+        Platform.TailscalePackageKind = null;
         Platform.PlayWave = AndroidAudio.PlayWave;
         Platform.Haptic = Haptic;
         // Encaissement ou sauvegarde sur un autre poste : bannière du système quand SCOLIA est en arrière-plan.
@@ -55,6 +50,8 @@ public static class MobilePlatform
         Platform.CanRecognizeSpeech = AndroidSpeech.IsAvailable;
         // Code QR du serveur : photo prise par l'appareil photo du téléphone, lue ensuite par SCOLIA.
         Platform.CaptureImageAsync = AndroidCamera.CaptureAsync;
+        Platform.ScanQrAsync = AndroidQrScanner.ScanAsync;
+        Platform.PickQrImageAsync = AndroidCamera.PickImageAsync;
         Platform.ShowSystemNotification = alert => AndroidAlerts.Show(context ?? app, alert);
         // Sans ordinateur dans l'établissement, ce téléphone peut en être le serveur.
         Platform.LocalServer = Server.PhoneServer.Get(app);
@@ -62,7 +59,15 @@ public static class MobilePlatform
         // et de l'API. Une notification seule ne prouve pas que les clients peuvent
         // se connecter : les deux états sont présentés séparément.
         Platform.IsHostForegroundActive = () => Server.ServeurScolia.IsActive;
-        Platform.IsHostApiServing = () => Server.PhoneServer.Get(app).IsServing;
+        Platform.IsHostApiServing = () => Server.PhoneServer.Get(app).IsServingVerified;
+        Platform.HostNetworkDiagnostic = () => Server.PhoneServer.Get(app).LastDiagnostic;
+        Platform.CheckHostNetworkAsync = () => Server.PhoneServer.Get(app).VerifyAndRecoverInBackgroundAsync();
+        Platform.AppUpdateStatus = () => AndroidAppUpdates.LastStatus(app);
+        Platform.CheckAppUpdatesAsync = async () =>
+        {
+            if (screen?.TryGetTarget(out var activity) == true && !activity.IsFinishing)
+                await AndroidAppUpdates.CheckNowAsync(activity);
+        };
         Platform.EnsureHostAvailable = () => Server.PhoneServer.Get(app).EnsureServingOnResume();
         // Téléphone serveur : écran éteint, il doit rester joignable. Android ne doit pas le freiner pour la batterie.
         Platform.BackgroundAllowed = () => AndroidBackground.IsAllowed(context ?? app);

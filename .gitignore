@@ -32,3 +32,24 @@ scolia-pro/e2e/test-results/
 scolia-pro/e2e/playwright-report/
 scolia-pro/artifacts/
 scolia-pro/web/tsconfig.tsbuildinfo
+
+# Configuration et caches d'execution SCOLIA Pro : jamais dans les sources
+scolia-pro/SCOLIA/
+scolia-pro/**/hors-ligne/
+scolia-pro/**/*.sqlite
+scolia-pro/**/*.sqlite-shm
+scolia-pro/**/*.sqlite-wal
+scolia-pro/**/idempotence/
+scolia-pro/**/cles/
+
+# Cles privees, sauvegardes sensibles et variables d'environnement
+*.keystore
+*.jks
+*.p12
+*.pfx
+*.pem
+*.sqlite3
+**/.env
+**/.env.*
+**/id_rsa
+**/id_ed25519

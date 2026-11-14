@@ -1,0 +1,92 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:infra="using:Scolia.Bureau.Infrastructure"
+             xmlns:c="using:Scolia.Bureau.Controls"
+             x:Class="Scolia.Bureau.Views.MarksView">
+  <Grid ColumnDefinitions="3*,4*" RowDefinitions="Auto,*" infra:Adaptive.StackBelow="760">
+    <Border Grid.ColumnSpan="2" Classes="band" Margin="0,0,0,10">
+      <WrapPanel>
+        <StackPanel Classes="field">
+          <TextBlock Text="Promotion" Classes="fieldlabel" />
+          <ComboBox Width="260" ItemsSource="{Binding Promotions}" SelectedItem="{Binding Promotion}" />
+        </StackPanel>
+        <StackPanel Classes="field">
+          <TextBlock Text="Cote à encoder" Classes="fieldlabel" />
+          <ComboBox Width="230" ItemsSource="{Binding Kinds}" SelectedItem="{Binding Kind}" />
+        </StackPanel>
+        <TextBlock Text="{Binding EncodingRules}" Classes="muted" TextWrapping="Wrap" MaxWidth="560" VerticalAlignment="Center" Margin="8,0,0,8" />
+        <TextBlock Text="{Binding Notice}" IsVisible="{Binding HasNotice}" Classes="muted" TextWrapping="Wrap" MaxWidth="560" VerticalAlignment="Center" Margin="8,0,0,8" />
+        <CheckBox Content="Feuille anonyme (codes seulement)" IsChecked="{Binding Anonymous}" IsVisible="{Binding CanChooseAnonymous}" VerticalAlignment="Center" Margin="16,0,12,8" />
+      </WrapPanel>
+    </Border>
+
+    <Border Grid.Row="1" Grid.Column="0" Classes="card" Margin="0,0,10,0" Padding="0">
+      <Grid RowDefinitions="Auto,*">
+        <TextBlock Text="1. Choisissez un cours" Classes="heading" Margin="16,12,16,4" />
+        <DataGrid Grid.Row="1" ItemsSource="{Binding Courses}" SelectedItem="{Binding Course}" AutoGenerateColumns="False" IsReadOnly="True" BorderThickness="0" CornerRadius="0">
+          <DataGrid.Columns>
+            <!-- L'avancement compte le plus : sur un écran moyen, Maxima, Org. puis N° s'effacent d'abord. -->
+            <DataGridTextColumn Header="N°" Binding="{Binding Number}" Width="Auto" MinWidth="74" infra:GridPriority.Level="3" />
+            <DataGridTextColumn Header="Cours" Binding="{Binding Name}" Width="*" MinWidth="176" />
+            <DataGridTextColumn Header="Org." Binding="{Binding Semester}" Width="Auto" MinWidth="92" infra:GridPriority.Level="3" />
+            <DataGridTextColumn Header="Maxima" Binding="{Binding Max}" Width="Auto" MinWidth="110" infra:GridPriority.Level="4" />
+            <DataGridTextColumn Header="Avancement" Binding="{Binding Progress}" Width="Auto" MinWidth="160" infra:GridPriority.Level="2" />
+          </DataGrid.Columns>
+        </DataGrid>
+        <c:EmptyState Grid.Row="1" Icon="BookOpenVariant" Title="Aucun cours"
+                      Hint="Créez les cours de la promotion dans « Cours et notes », avec leur maxima et leur organisation (S1, S2 ou annuel)." IsVisible="{Binding Courses.Count, Converter={StaticResource IsEmpty}}" />
+      </Grid>
+    </Border>
+
+    <Border Grid.Row="1" Grid.Column="1" Classes="card" Padding="0">
+      <Grid RowDefinitions="Auto,Auto,Auto,*">
+        <TextBlock Text="{Binding SheetTitle}" Classes="heading" Margin="16,12,16,0" />
+        <TextBlock Grid.Row="1" Text="{Binding SheetHint}" Classes="muted" TextWrapping="Wrap" Margin="16,2,16,6" />
+        <!-- Encodage enseignant natif : promotion et cours en amont, recherche
+             instantanée dans les codes ANONYMES de la feuille autorisée. -->
+        <Border Grid.Row="2" IsVisible="{Binding ShowCodeEntry}" Background="{DynamicResource Surface2Brush}"
+                CornerRadius="10" Padding="12" Margin="10,7,10,9">
+          <StackPanel Spacing="7">
+            <TextBlock Text="Code anonyme de l'apprenant" FontWeight="SemiBold" />
+            <TextBox Text="{Binding CodeQuery, Mode=TwoWay}" MaxLength="16" MinHeight="42"
+                     PlaceholderText="Tapez les premières lettres ou chiffres du code"
+                     AutomationProperties.Name="Rechercher un code anonyme dans la promotion" />
+            <ListBox ItemsSource="{Binding CodeSuggestions}" SelectedItem="{Binding SelectedSuggestion}"
+                     Height="108" IsVisible="{Binding HasCodeSuggestions}"
+                     AutomationProperties.Name="Codes anonymes proposés" />
+            <WrapPanel>
+              <Button Content="Vérifier le code" Command="{Binding CheckCode}" MinHeight="40" Margin="0,0,8,0" />
+              <TextBlock Text="{Binding ScoreMaximumText}" Classes="muted" VerticalAlignment="Center" />
+            </WrapPanel>
+            <StackPanel Spacing="6" IsVisible="{Binding ShowScoreInput}">
+              <TextBlock Text="Note obtenue" Classes="fieldlabel" />
+              <TextBox Text="{Binding ScoreText, Mode=TwoWay}" MinHeight="42"
+                       PlaceholderText="Note selon le maximum du cours"
+                       AutomationProperties.Name="Note obtenue" />
+              <Button Classes="primary" Content="Enregistrer la note" Command="{Binding SaveCode}"
+                      HorizontalAlignment="Left" MinHeight="42" />
+            </StackPanel>
+            <TextBlock Text="{Binding CodeFeedback}" Classes="muted" TextWrapping="Wrap" />
+          </StackPanel>
+        </Border>
+        <c:EmptyState Grid.Row="3" Icon="Pen" Title="2. Encodez les cotes"
+                      Hint="Choisissez un cours : ses apprenants s'affichent ici. « Saisie par code anonyme » encode copie par copie." IsVisible="{Binding NoCourse}" />
+        <DataGrid Grid.Row="3" ItemsSource="{Binding Rows}" AutoGenerateColumns="False" IsReadOnly="False" BorderThickness="0" CornerRadius="0" IsVisible="{Binding !NoCourse}">
+          <DataGrid.Columns>
+            <DataGridTextColumn Header="Code" Binding="{Binding Code}" IsReadOnly="True" Width="Auto" MinWidth="110" />
+            <DataGridTextColumn Header="Matricule" Binding="{Binding Matricule}" IsReadOnly="True" Width="Auto" MinWidth="110" infra:GridPriority.Level="2" />
+            <DataGridTextColumn Header="Nom complet" Binding="{Binding FullName}" IsReadOnly="True" Width="*" MinWidth="140" />
+            <DataGridTextColumn Header="Cote" Binding="{Binding Value}" Width="Auto" MinWidth="90" />
+            <DataGridTemplateColumn Header="Retenue" Width="Auto" MinWidth="100">
+              <DataGridTemplateColumn.CellTemplate>
+                <DataTemplate>
+                  <TextBlock Text="{Binding Retained}" Foreground="{Binding RetainedBrush}" VerticalAlignment="Center" Margin="12,0" />
+                </DataTemplate>
+              </DataGridTemplateColumn.CellTemplate>
+            </DataGridTemplateColumn>
+          </DataGrid.Columns>
+        </DataGrid>
+      </Grid>
+    </Border>
+  </Grid>
+</UserControl>

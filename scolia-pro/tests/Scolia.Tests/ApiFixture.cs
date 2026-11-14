@@ -88,6 +88,14 @@ public static class Http
         await client.Post("/api/session", new { userName = user, password }).Ok();
         return client;
     }
+
+    /// <summary>Première connexion avec le code provisoire du secrétariat, puis choix de son propre code.</summary>
+    public static async Task<HttpClient> FirstLogin(this ScoliaApp app, string user, string provisional, string own)
+    {
+        var client = await app.Login(user, provisional);
+        await client.Post("/api/session/mot-de-passe", new { currentPassword = provisional, newPassword = own }).Ok();
+        return client;
+    }
 }
 
 /// <summary>Règlement comme l'écran Encaisser : on coche les premiers mois dus, le montant est celui des mois.</summary>

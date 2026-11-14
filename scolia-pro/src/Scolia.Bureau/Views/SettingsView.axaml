@@ -2,6 +2,7 @@
              xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:views="using:Scolia.Bureau.Views"
              x:Class="Scolia.Bureau.Views.SettingsView">
   <UserControl.Styles>
     <Style Selector="Grid.prefrow"><Setter Property="Margin" Value="0,10" /><Setter Property="MinHeight" Value="38" /></Style>
@@ -31,9 +32,9 @@
     <Style Selector="Button.settingsentry">
       <Setter Property="Background" Value="Transparent" />
       <Setter Property="BorderThickness" Value="0" />
-      <Setter Property="CornerRadius" Value="10" />
-      <Setter Property="MinHeight" Value="56" />
-      <Setter Property="Padding" Value="12,6" />
+      <Setter Property="CornerRadius" Value="14" />
+      <Setter Property="MinHeight" Value="60" />
+      <Setter Property="Padding" Value="14,8" />
       <Setter Property="HorizontalAlignment" Value="Stretch" />
       <Setter Property="HorizontalContentAlignment" Value="Stretch" />
     </Style>
@@ -41,6 +42,21 @@
       <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
     </Style>
     <Style Selector="Button.settingsentry:pressed">
+      <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
+    </Style>
+    <!-- Fiches tactiles : codes, statut et édition sont lisibles sans tableau horizontal. -->
+    <Style Selector="Button.sectionrow">
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+      <Setter Property="MinHeight" Value="76" />
+      <Setter Property="Padding" Value="14,12" />
+      <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="14" />
+      <Setter Property="Margin" Value="0,0,0,8" />
+    </Style>
+    <Style Selector="Button.sectionrow:pointerover, Button.sectionrow:pressed">
       <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
     </Style>
   </UserControl.Styles>
@@ -145,16 +161,104 @@
           </StackPanel>
         </Grid>
 
-        <!-- Sécurité : un point d'entrée vers les mêmes contrôles protégés pour tous les comptes. -->
-        <Border Classes="card" IsVisible="{Binding IsSecurity}">
-          <StackPanel Spacing="12">
-            <StackPanel Orientation="Horizontal" Spacing="10">
-              <mi:MaterialIcon Kind="ShieldLockOutline" Foreground="{DynamicResource AccentBrush}" Width="24" Height="24" />
-              <TextBlock Text="Protéger votre compte" FontWeight="SemiBold" VerticalAlignment="Center" />
+        <!-- Paramètres > Sécurité : mêmes règles d'authentification, directement
+             dans le bon écran desktop et non plus dans « Compte ». -->
+        <Border Classes="card" IsVisible="{Binding IsSecurity}" Padding="16">
+          <views:SecurityHubView DataContext="{Binding SecurityModel}" />
+        </Border>
+
+        <!-- Version du logiciel et contrôle manuel des mises à jour Windows.
+             Le centre Compte > Informations conserve son bouton historique. -->
+        <StackPanel Spacing="12" IsVisible="{Binding IsAbout}">
+          <Border Classes="card" Padding="18">
+            <StackPanel Spacing="11">
+              <StackPanel Orientation="Horizontal" Spacing="12">
+                <Image Source="{DynamicResource ScoliaMark}" Width="56" Height="56" />
+                <StackPanel VerticalAlignment="Center" Spacing="3">
+                  <TextBlock Text="{Binding AboutModel.Title}" FontSize="20" FontWeight="SemiBold" />
+                  <TextBlock Text="{Binding AboutModel.VersionLine}" Classes="muted" />
+                  <TextBlock Text="{Binding AboutModel.Tagline}" Classes="muted" />
+                </StackPanel>
+              </StackPanel>
+              <TextBlock Text="{Binding AboutModel.Description}" TextWrapping="Wrap" Classes="muted" />
+              <ItemsControl ItemsSource="{Binding AboutModel.Modules}">
+                <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate><Border Classes="chip" Margin="0,0,6,6" Padding="9,4"><TextBlock Text="{Binding}" /></Border></DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+              <Grid ColumnDefinitions="170,*" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="9">
+                <TextBlock Grid.Row="0" Classes="muted" Text="Éditeur" />
+                <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding AboutModel.Publisher}" FontWeight="SemiBold" />
+                <TextBlock Grid.Row="1" Classes="muted" Text="Développement" />
+                <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding AboutModel.Developer}" TextWrapping="Wrap" />
+                <TextBlock Grid.Row="2" Classes="muted" Text="Téléphone / WhatsApp" />
+                <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding AboutModel.Phone}" />
+                <TextBlock Grid.Row="3" Classes="muted" Text="E-mail" />
+                <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding AboutModel.Email}" />
+              </Grid>
+              <TextBlock Text="{Binding AboutModel.Copyright}" Classes="muted" TextWrapping="Wrap" />
+              <WrapPanel>
+                <Button infra:Icons.Lead="ContentCopy" Content="Copier les coordonnées" Command="{Binding AboutModel.CopyContacts}" Margin="0,0,8,4" />
+                <Button infra:Icons.Lead="EmailOutline" Content="Écrire au développeur" Command="{Binding AboutModel.WriteEmail}" Margin="0,0,8,4" />
+              </WrapPanel>
             </StackPanel>
-            <TextBlock Text="Modifiez votre mot de passe et gérez la biométrie lorsque cette option est disponible sur votre appareil." Classes="muted" TextWrapping="Wrap" />
-            <Button Classes="primary" Content="Gérer la sécurité du compte" Command="{Binding OpenAccountSecurity}"
-                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" />
+          </Border>
+          <Border Classes="card" Padding="18" IsVisible="{Binding CanCheckWindowsUpdates}">
+            <StackPanel Spacing="9">
+              <StackPanel Orientation="Horizontal" Spacing="9">
+                <mi:MaterialIcon Kind="Update" Width="22" Height="22" Foreground="{DynamicResource AccentBrush}" />
+                <TextBlock Text="Mises à jour officielles" FontWeight="SemiBold" FontSize="16" />
+              </StackPanel>
+              <TextBlock Text="Recherchez la dernière version Windows de SCOLIA Pro. Ce contrôle reste également accessible dans Compte > Informations."
+                         Classes="muted" TextWrapping="Wrap" />
+              <Button infra:Icons.Lead="Update" Classes="primary" Content="Rechercher les mises à jour"
+                      Command="{Binding CheckWindowsUpdates}" HorizontalAlignment="Left" MinHeight="40" />
+            </StackPanel>
+          </Border>
+        </StackPanel>
+
+        <!-- Licence du serveur scolaire. La console JP-Services seule décide
+             du paiement, de l'essai, du délai de grâce ou de la lecture seule. -->
+        <Border Classes="card" IsVisible="{Binding IsLicense}" Padding="18">
+          <StackPanel Spacing="12">
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+              <Border Classes="appicon medium" Background="{DynamicResource ToneBlue}">
+                <mi:MaterialIcon Kind="ShieldLockOutline" />
+              </Border>
+              <StackPanel Grid.Column="1" Spacing="4">
+                <TextBlock Text="Licence de l'établissement" FontWeight="SemiBold" FontSize="17" />
+                <TextBlock Text="{Binding License.Badge}" FontWeight="SemiBold"
+                           Foreground="{DynamicResource AccentBrush}" />
+                <TextBlock Text="{Binding License.Details}" Classes="muted" TextWrapping="Wrap" />
+              </StackPanel>
+            </Grid>
+            <Border Background="{DynamicResource AccentSoftBrush}" CornerRadius="12" Padding="12">
+              <StackPanel Spacing="6">
+                <TextBlock Text="Gestion JP-Services" FontWeight="SemiBold" />
+                <TextBlock Text="La console propriétaire suit uniquement le nom de l'établissement,
+l'appareil serveur, son IP de connexion et les jours d'activité. Aucun compte interne, paiement, dossier ou cote scolaire n'est transmis."
+                           Classes="muted" TextWrapping="Wrap" />
+                <TextBlock Text="Une licence expirée ou bloquée conserve l'accès à la connexion,
+aux dossiers en lecture et aux exports ; les modifications sont suspendues sur tous les postes."
+                           Classes="muted" TextWrapping="Wrap" />
+              </StackPanel>
+            </Border>
+            <StackPanel Spacing="10" IsVisible="{Binding License.CanEnroll}">
+              <TextBlock Text="Inscrire le serveur auprès de JP-Services" FontWeight="SemiBold" />
+              <TextBlock Text="Code d'invitation de l'établissement" Classes="caption" />
+              <TextBox Text="{Binding License.Invitation, Mode=TwoWay}"
+                       PasswordChar="●" Watermark="Invitation fournie par JP-Services"
+                       MaxLength="140" />
+              <CheckBox IsChecked="{Binding License.Consent, Mode=TwoWay}"
+                        Content="J'autorise ce serveur à déclarer les seules métadonnées commerciales annoncées." />
+              <Button Classes="primary" Command="{Binding License.Enroll}"
+                      Content="Enregistrer la licence" HorizontalAlignment="Stretch" MinHeight="45" />
+            </StackPanel>
+            <TextBlock Text="{Binding License.Message}" Classes="muted" TextWrapping="Wrap" />
+            <Button Classes="ghost" Command="{Binding License.Refresh}"
+                    Content="Actualiser le statut de la licence"
+                    HorizontalAlignment="Stretch" MinHeight="44" />
           </StackPanel>
         </Border>
 
@@ -217,23 +321,151 @@
           </StackPanel>
         </Border>
 
-        <!-- Sections -->
+        <!-- Sections : présentation native Android, création immédiate et édition d'un toucher. -->
         <Border Classes="card" IsVisible="{Binding IsSections}">
-          <StackPanel Spacing="8">
-            <DataGrid ItemsSource="{Binding SectionRows}" SelectedItem="{Binding SelectedSection}" AutoGenerateColumns="False" IsReadOnly="True" MaxHeight="420">
+          <StackPanel Spacing="12">
+            <StackPanel Spacing="12" IsVisible="{Binding Phone}">
+              <Border Background="{DynamicResource AccentSoftBrush}" CornerRadius="14" Padding="14">
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                  <Border Classes="appicon medium" Background="{DynamicResource ToneIndigo}" VerticalAlignment="Top">
+                    <mi:MaterialIcon Kind="ViewGrid" />
+                  </Border>
+                  <StackPanel Grid.Column="1" Spacing="4">
+                    <TextBlock Text="Les filières de votre établissement" FontWeight="SemiBold" TextWrapping="Wrap" />
+                    <TextBlock Text="Ajoutez une section, puis associez-lui les promotions. Touchez une section pour la modifier ou la désactiver."
+                               Classes="muted" TextWrapping="Wrap" />
+                  </StackPanel>
+                </Grid>
+              </Border>
+              <Button Classes="primary" Command="{Binding CreateSection}"
+                      MinHeight="48" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <mi:MaterialIcon Kind="Plus" Width="20" Height="20" />
+                  <TextBlock Text="Ajouter une section" FontWeight="SemiBold" VerticalAlignment="Center" />
+                </StackPanel>
+              </Button>
+              <ItemsControl ItemsSource="{Binding SectionRows}" IsVisible="{Binding HasSectionRows}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate>
+                    <Button Classes="sectionrow"
+                            Command="{Binding $parent[ItemsControl].DataContext.EditSectionOnPhone}"
+                            CommandParameter="{Binding}">
+                      <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                        <StackPanel Spacing="7">
+                          <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                          <StackPanel Orientation="Horizontal" Spacing="8">
+                            <Border Classes="chip" Padding="7,3">
+                              <TextBlock Text="{Binding Code}" FontSize="{DynamicResource FsSmall}" />
+                            </Border>
+                            <Ellipse Width="8" Height="8" Fill="{Binding StatusBrush}" VerticalAlignment="Center" />
+                            <TextBlock Text="{Binding StatusLabel}" Classes="muted"
+                                       FontSize="{DynamicResource FsSmall}" VerticalAlignment="Center" />
+                          </StackPanel>
+                        </StackPanel>
+                        <mi:MaterialIcon Grid.Column="1" Kind="Pencil" Width="20" Height="20"
+                                         Foreground="{DynamicResource AccentBrush}" VerticalAlignment="Center" />
+                      </Grid>
+                    </Button>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+              <Border Background="{DynamicResource Surface2Brush}" CornerRadius="14" Padding="20,24"
+                      IsVisible="{Binding HasNoSections}">
+                <StackPanel Spacing="8" HorizontalAlignment="Center">
+                  <mi:MaterialIcon Kind="ViewGridPlus" Width="34" Height="34"
+                                   HorizontalAlignment="Center" Foreground="{DynamicResource AccentBrush}" />
+                  <TextBlock Text="Aucune section pour le moment" FontWeight="SemiBold" TextAlignment="Center" />
+                  <TextBlock Text="Créez votre première filière avec le bouton ci-dessus."
+                             Classes="muted" TextWrapping="Wrap" TextAlignment="Center" />
+                </StackPanel>
+              </Border>
+            </StackPanel>
+            <!-- Sur ordinateur, conserver la grille et ses actions de barre d'outils. -->
+            <DataGrid ItemsSource="{Binding SectionRows}" SelectedItem="{Binding SelectedSection}"
+                      AutoGenerateColumns="False" IsReadOnly="True" MaxHeight="420" IsVisible="{Binding NotPhone}">
               <DataGrid.Columns>
                 <DataGridTextColumn Header="Code" Binding="{Binding Code}" Width="Auto" MinWidth="120" />
                 <DataGridTextColumn Header="Nom" Binding="{Binding Name}" Width="*" MinWidth="140" />
+                <DataGridTextColumn infra:GridPriority.Level="2" Header="Promotions" Binding="{Binding Promotions}" Width="Auto" MinWidth="120" />
+                <DataGridTextColumn infra:GridPriority.Level="2" Header="Apprenants" Binding="{Binding Students}" Width="Auto" MinWidth="120" />
                 <DataGridTextColumn Header="Active" Binding="{Binding Active}" Width="Auto" MinWidth="100" />
               </DataGrid.Columns>
             </DataGrid>
           </StackPanel>
         </Border>
 
-        <!-- Promotions et frais -->
-        <Border Classes="card" IsVisible="{Binding IsPromotions}">
+        <!-- Catégories de frais : inscription, examen, tenue… avec leur montant -->
+        <Border Classes="card" IsVisible="{Binding IsFees}">
           <StackPanel Spacing="8">
-            <DataGrid ItemsSource="{Binding Promotions}" SelectedItem="{Binding SelectedPromotion}" AutoGenerateColumns="False" IsReadOnly="True" MaxHeight="520">
+            <DataGrid ItemsSource="{Binding Categories}" SelectedItem="{Binding SelectedCategory}" AutoGenerateColumns="False" IsReadOnly="True" MaxHeight="420">
+              <DataGrid.Columns>
+                <DataGridTextColumn Header="Catégorie" Binding="{Binding Name}" Width="*" MinWidth="160" />
+                <DataGridTextColumn Header="Montant" Binding="{Binding Amount}" Width="Auto" MinWidth="120" />
+                <DataGridTextColumn infra:GridPriority.Level="2" Header="Échéance" Binding="{Binding DueDate}" Width="Auto" MinWidth="120" />
+                <DataGridTextColumn infra:GridPriority.Level="2" Header="Appliquée à" Binding="{Binding Promotions}" Width="Auto" MinWidth="130" />
+                <DataGridTextColumn infra:GridPriority.Level="3" Header="Active" Binding="{Binding Active}" Width="Auto" MinWidth="90" />
+              </DataGrid.Columns>
+            </DataGrid>
+            <TextBlock Classes="muted" TextWrapping="Wrap" FontSize="{DynamicResource FsSmall}"
+                       Text="La mensualité est obligatoire et se règle dans chaque promotion. Une catégorie créée ici peut être ajoutée à toutes les promotions, ou promotion par promotion avec un autre montant." />
+          </StackPanel>
+        </Border>
+
+        <!-- Promotions : les sections et les mensualités sont consultables sans tableau latéral sur Android. -->
+        <Border Classes="card" IsVisible="{Binding IsPromotions}">
+          <StackPanel Spacing="12">
+            <StackPanel IsVisible="{Binding Phone}" Spacing="10">
+              <TextBlock Text="Associez les promotions aux sections de l'établissement."
+                         Classes="muted" TextWrapping="Wrap" />
+              <Button Classes="primary" Command="{Binding CreatePromotion}"
+                      MinHeight="48" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <mi:MaterialIcon Kind="Plus" Width="20" Height="20" />
+                  <TextBlock Text="Ajouter une promotion" FontWeight="SemiBold" VerticalAlignment="Center" />
+                </StackPanel>
+              </Button>
+              <ItemsControl ItemsSource="{Binding Promotions}" IsVisible="{Binding HasPromotionRows}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate>
+                    <Button Classes="sectionrow"
+                            Command="{Binding $parent[ItemsControl].DataContext.EditPromotionOnPhone}"
+                            CommandParameter="{Binding}">
+                      <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                        <Border Classes="appicon medium" Background="{DynamicResource ToneBlue}" VerticalAlignment="Top">
+                          <mi:MaterialIcon Kind="School" />
+                        </Border>
+                        <StackPanel Grid.Column="1" Spacing="6">
+                          <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                          <StackPanel Orientation="Horizontal" Spacing="7">
+                            <Border Classes="chip" Padding="7,3"><TextBlock Text="{Binding Code}" FontSize="{DynamicResource FsSmall}" /></Border>
+                            <TextBlock Text="{Binding Section}" Classes="muted" TextWrapping="Wrap"
+                                       FontSize="{DynamicResource FsSmall}" VerticalAlignment="Center" />
+                          </StackPanel>
+                          <StackPanel Orientation="Horizontal" Spacing="6">
+                            <TextBlock Text="Mensualité" Classes="muted" FontSize="{DynamicResource FsSmall}" />
+                            <TextBlock Text="{Binding Monthly}" FontWeight="SemiBold" FontSize="{DynamicResource FsSmall}" />
+                          </StackPanel>
+                        </StackPanel>
+                        <mi:MaterialIcon Grid.Column="2" Kind="Pencil" Width="20" Height="20"
+                                         Foreground="{DynamicResource AccentBrush}" VerticalAlignment="Center" />
+                      </Grid>
+                    </Button>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+              <Border Background="{DynamicResource Surface2Brush}" CornerRadius="14" Padding="20,24"
+                      IsVisible="{Binding HasNoPromotions}">
+                <StackPanel Spacing="8" HorizontalAlignment="Center">
+                  <mi:MaterialIcon Kind="School" Width="34" Height="34"
+                                   HorizontalAlignment="Center" Foreground="{DynamicResource AccentBrush}" />
+                  <TextBlock Text="Aucune promotion enregistrée" FontWeight="SemiBold" TextAlignment="Center" />
+                  <TextBlock Text="Créez une promotion et choisissez sa section."
+                             Classes="muted" TextWrapping="Wrap" TextAlignment="Center" />
+                </StackPanel>
+              </Border>
+            </StackPanel>
+            <DataGrid ItemsSource="{Binding Promotions}" SelectedItem="{Binding SelectedPromotion}"
+                      AutoGenerateColumns="False" IsReadOnly="True" MaxHeight="520" IsVisible="{Binding NotPhone}">
               <DataGrid.Columns>
                 <DataGridTextColumn Header="Code" Binding="{Binding Code}" Width="Auto" MinWidth="84" />
                 <DataGridTextColumn Header="Désignation" Binding="{Binding Name}" Width="*" MinWidth="140" />
@@ -300,7 +532,7 @@
                   <ItemsControl.ItemTemplate>
                     <DataTemplate>
                       <Button Classes="swatch" Command="{Binding Choose}" ToolTip.Tip="{Binding Label}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Padding="0,4">
-                        <StackPanel Spacing="6">
+                        <StackPanel Spacing="6" Margin="6,0">
                           <Panel Width="34" Height="34" HorizontalAlignment="Center">
                             <Ellipse Fill="{Binding Brush}" />
                             <Ellipse Stroke="{DynamicResource TextBrush}" StrokeThickness="2" Margin="-4" IsVisible="{Binding IsSelected}" />
@@ -495,7 +727,7 @@
                   <TextBlock Text="Un enregistrement, un encaissement, une validation." Classes="muted" TextWrapping="Wrap" />
                 </StackPanel>
                 <Button Grid.Column="1" Classes="small" Command="{Binding TestSound}" CommandParameter="Success" ToolTip.Tip="Écouter ce son" Margin="0,0,12,0" VerticalAlignment="Center">
-                  <StackPanel Orientation="Horizontal" Spacing="6"><mi:MaterialIcon Kind="Play" Width="14" Height="14" /><TextBlock Text="Écouter" /></StackPanel>
+                  <StackPanel Orientation="Horizontal" Spacing="6"><mi:MaterialIcon Kind="PlayOutline" Width="14" Height="14" /><TextBlock Text="Écouter" /></StackPanel>
                 </Button>
                 <ToggleSwitch Grid.Column="2" IsChecked="{Binding Prefs.SoundSuccess}" OnContent="" OffContent="" VerticalAlignment="Center" />
               </Grid>
@@ -506,7 +738,7 @@
                   <TextBlock Text="Un champ à corriger, un refus du serveur." Classes="muted" TextWrapping="Wrap" />
                 </StackPanel>
                 <Button Grid.Column="1" Classes="small" Command="{Binding TestSound}" CommandParameter="Error" ToolTip.Tip="Écouter ce son" Margin="0,0,12,0" VerticalAlignment="Center">
-                  <StackPanel Orientation="Horizontal" Spacing="6"><mi:MaterialIcon Kind="Play" Width="14" Height="14" /><TextBlock Text="Écouter" /></StackPanel>
+                  <StackPanel Orientation="Horizontal" Spacing="6"><mi:MaterialIcon Kind="PlayOutline" Width="14" Height="14" /><TextBlock Text="Écouter" /></StackPanel>
                 </Button>
                 <ToggleSwitch Grid.Column="2" IsChecked="{Binding Prefs.SoundError}" OnContent="" OffContent="" VerticalAlignment="Center" />
               </Grid>
@@ -517,7 +749,7 @@
                   <TextBlock Text="Les messages discrets en bas de la fenêtre." Classes="muted" TextWrapping="Wrap" />
                 </StackPanel>
                 <Button Grid.Column="1" Classes="small" Command="{Binding TestSound}" CommandParameter="Notification" ToolTip.Tip="Écouter ce son" Margin="0,0,12,0" VerticalAlignment="Center">
-                  <StackPanel Orientation="Horizontal" Spacing="6"><mi:MaterialIcon Kind="Play" Width="14" Height="14" /><TextBlock Text="Écouter" /></StackPanel>
+                  <StackPanel Orientation="Horizontal" Spacing="6"><mi:MaterialIcon Kind="PlayOutline" Width="14" Height="14" /><TextBlock Text="Écouter" /></StackPanel>
                 </Button>
                 <ToggleSwitch Grid.Column="2" IsChecked="{Binding Prefs.SoundNotify}" OnContent="" OffContent="" VerticalAlignment="Center" />
               </Grid>
@@ -528,7 +760,7 @@
                   <TextBlock Text="La fin de l'écran d'ouverture, à la connexion." Classes="muted" TextWrapping="Wrap" />
                 </StackPanel>
                 <Button Grid.Column="1" Classes="small" Command="{Binding TestSound}" CommandParameter="Opening" ToolTip.Tip="Écouter ce son" Margin="0,0,12,0" VerticalAlignment="Center">
-                  <StackPanel Orientation="Horizontal" Spacing="6"><mi:MaterialIcon Kind="Play" Width="14" Height="14" /><TextBlock Text="Écouter" /></StackPanel>
+                  <StackPanel Orientation="Horizontal" Spacing="6"><mi:MaterialIcon Kind="PlayOutline" Width="14" Height="14" /><TextBlock Text="Écouter" /></StackPanel>
                 </Button>
                 <ToggleSwitch Grid.Column="2" IsChecked="{Binding Prefs.SoundOpening}" OnContent="" OffContent="" VerticalAlignment="Center" />
               </Grid>
@@ -577,7 +809,7 @@
             </Border>
           </StackPanel>
 
-        <Button Classes="link" Content="Rétablir les réglages d'origine de ce poste" Command="{Binding ResetPrefs}" IsVisible="{Binding ShowResetLink}" HorizontalAlignment="Left" />
+        <Button infra:Icons.Lead="Restore" Classes="link" Content="Rétablir les réglages d'origine de ce poste" Command="{Binding ResetPrefs}" IsVisible="{Binding ShowResetLink}" HorizontalAlignment="Left" />
         </StackPanel>
       </StackPanel>
     </ScrollViewer>

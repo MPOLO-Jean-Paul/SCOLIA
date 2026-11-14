@@ -52,12 +52,19 @@
               <Grid ColumnDefinitions="180,*"><TextBlock Text="Application" Classes="muted" /><TextBlock Grid.Column="1" Text="{Binding Version}" /></Grid>
             </StackPanel>
           </Border>
+          <Border Classes="card" IsVisible="{Binding CanCheckWindowsUpdates}">
+            <StackPanel Spacing="8">
+              <TextBlock Text="Mises à jour du logiciel" FontWeight="SemiBold" />
+              <TextBlock Text="SCOLIA vérifie périodiquement les nouvelles versions officielles sur GitHub. Vous pouvez aussi lancer la recherche maintenant." TextWrapping="Wrap" Classes="muted" />
+              <Button infra:Icons.Lead="Update" Content="Vérifier les mises à jour" Command="{Binding CheckWindowsUpdates}" HorizontalAlignment="Left" MinHeight="40" />
+            </StackPanel>
+          </Border>
         </StackPanel>
 
         <!-- Sécurité du compte : la même page que sur le téléphone, façon réglages d'Android 16. -->
         <StackPanel IsVisible="{Binding IsPassword}" Spacing="16" MaxWidth="640">
           <views:SecurityHubView />
-          <Button Classes="ghost" Content="Retour au compte" Command="{Binding CloseSecurity}" HorizontalAlignment="Left" MinHeight="44" />
+          <Button infra:Icons.Lead="AccountArrowLeftOutline" Classes="ghost" Content="Retour au compte" Command="{Binding CloseSecurity}" HorizontalAlignment="Left" MinHeight="44" />
         </StackPanel>
         <ContentControl IsVisible="{Binding IsPoste}" Content="{Binding PosteSection}" HorizontalAlignment="Stretch" />
       </StackPanel>

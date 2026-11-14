@@ -6,7 +6,7 @@ using Xunit;
 
 namespace Scolia.Tests;
 
-/// <summary>Cartes d'accès : bandeau, identité ligne par ligne avec la classe, bande de couleur sans texte, en Word comme en PDF.</summary>
+/// <summary>Cartes d'accès : format ID-1, en-tête personnalisé, session soulignée, identité et QR en Word et PDF.</summary>
 public class CardDesignTests
 {
     private static CardDocument Sample() => new(
@@ -14,17 +14,77 @@ public class CardDesignTests
         "NOVEMBRE 2026", "2026-2027",
         [new CardItem("MUKENDI", "KABEYA", "Grâce", "INF1", "#F5C518", "qr", "INF101"), new CardItem("NGOY", "KAZADI", "Paul", "TLM1", "#1D4ED8", "qr2", "TLM104")]);
 
-    [Fact]
-    public void La_carte_Word_porte_le_bandeau_et_l_identite_en_ligne()
+    private static string WordXml(CardDocument document)
     {
-        var bytes = CardWordWriter.Write(Sample());
-        using var zip = new ZipArchive(new MemoryStream(bytes));
+        using var zip = new ZipArchive(new MemoryStream(CardWordWriter.Write(document)));
+        using var reader = new StreamReader(zip.GetEntry("word/document.xml")!.Open(), Encoding.UTF8);
+        return reader.ReadToEnd();
+    }
+
+    private static string Esc(string text) => System.Security.SecurityElement.Escape(text);
+
+    [Fact]
+    public void La_carte_Word_reprend_le_modele_Session_et_les_trois_champs_d_identite()
+    {
+        var xml = WordXml(Sample());
+        foreach (var label in new[] { "Session 2026", "MATRICULE : INF101", "NOMS : MUKENDI KABEYA Grâce", "PROMOTION : INF1", "ÉCOLE DE DÉMONSTRATION" })
+            Assert.Contains(Esc(label), xml, StringComparison.Ordinal);
+        // Session soulignée ; par carte : logo en haut, QR, second logo et bande de filière. Aucun cachet imprimé.
+        Assert.Contains("<w:u w:val=\"single\"", xml, StringComparison.Ordinal);
+        Assert.Equal(4 * Sample().Cards.Count, System.Text.RegularExpressions.Regex.Count(xml, "<w:drawing>"));
+        Assert.DoesNotContain("INSTITUT TECHNIQUE MÉDICAL CŒUR DE DIEU", xml, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void L_en_tete_reprend_le_nom_le_service_et_les_contacts_configures()
+    {
+        var configured = Sample() with
+        {
+            Header = new SchoolCardHeader(
+                "République démocratique du Congo", "Ministère de l'Enseignement", "Direction des études", "Division du budget",
+                "Lubumbashi", "Université de démonstration", "Avenue de l'Exemple 12", DocumentService.DefaultLogo(),
+                "+243 812 345 678", "secretariat@ecole.example", "www.ecole.example", "Servir et soigner")
+        };
+        var xml = WordXml(configured);
+        foreach (var item in new[] { "UNIVERSITÉ DE DÉMONSTRATION", "DIRECTION DES ÉTUDES · DIVISION DU BUDGET",
+            "Tél. +243 812 345 678", "secretariat@ecole.example", "www.ecole.example",
+            "Avenue de l'Exemple 12, Lubumbashi, République démocratique du Congo" })
+            Assert.Contains(Esc(item), xml, StringComparison.Ordinal);
+        // Le ministère ne sert que si aucun service n'est configuré.
+        Assert.DoesNotContain("MINISTÈRE DE L'ENSEIGNEMENT", xml, StringComparison.Ordinal);
+        Assert.Equal("MINISTÈRE DE L'ENSEIGNEMENT", CardDesign.Department(configured.Header with { Direction = null, Division = null }));
+
+        var pdf = new DocumentService().StudentCards(configured);
+        Assert.Equal("%PDF", Encoding.ASCII.GetString(pdf, 0, 4));
+    }
+
+    [Fact]
+    public void Les_noms_suivent_la_carte_modele_et_restent_dans_la_carte()
+    {
+        var card = new CardItem("MUKENDI", "TSHIDIBI", "DANNY", "L3 MSI", "#000000", "qr", "23MT355SI");
+        Assert.Equal("MUKENDI TSHIDIBI Danny", CardDesign.DisplayName(card));
+        Assert.Equal(CardDesign.IdentityMaxPt, CardDesign.IdentityPt(card));
+        var longName = card with { LastName = "KALOMBO WA NKONGOLO", MiddleName = "MUTOMBO KABEYA", FirstName = "Jean-Pierre Emmanuel" };
+        Assert.True(CardDesign.IdentityPt(longName) < CardDesign.IdentityMaxPt);
+        Assert.True(CardDesign.IdentityPt(longName) >= CardDesign.IdentityMinPt);
+    }
+
+    [Fact]
+    public void Grille_A4_et_taille_physique_des_inserts_sont_exacts()
+    {
+        Assert.Equal(85.6f, Scolia.Domain.Students.StudentCardRules.CardWidthMm);
+        Assert.Equal(53.98f, Scolia.Domain.Students.StudentCardRules.CardHeightMm);
+        Assert.True(Scolia.Domain.Students.StudentCardRules.FitsOnPage());
+        Assert.Equal("2026", Scolia.Domain.Students.StudentCardRules.SessionYear("NOVEMBRE 2026"));
+        Assert.Equal("MUKENDI KABEYA GRÂCE",
+            Scolia.Domain.Students.StudentCardRules.FullName("Mukendi", "Kabeya", "Grâce"));
+
+        using var zip = new ZipArchive(new MemoryStream(CardWordWriter.Write(Sample())));
         using var reader = new StreamReader(zip.GetEntry("word/document.xml")!.Open(), Encoding.UTF8);
         var xml = reader.ReadToEnd();
-        foreach (var text in new[] { "CARTE D'ACCÈS", "SESSION NOVEMBRE 2026", "NOM : ", "PRÉNOM : ", "CLASSE : ", "INF1", "QR de vérification" })
-            Assert.Contains(System.Security.SecurityElement.Escape(text), xml, StringComparison.Ordinal);
-        // La bande de couleur reste sans texte.
-        Assert.DoesNotContain("MATRICULE", xml, StringComparison.Ordinal);
+        Assert.Contains("w:gridCol w:w=\"4853\"", xml, StringComparison.Ordinal);
+        Assert.Contains("w:trHeight w:val=\"3060\"", xml, StringComparison.Ordinal);
+        Assert.Contains("w:top=\"907\"", xml, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -44,15 +104,27 @@ public class CardDesignTests
     }
 
     [Fact]
-    public void Le_logo_configure_est_embarque_dans_les_cartes_word()
+    public void Le_logo_configure_et_la_bande_de_filiere_sont_dans_les_cartes_word()
     {
         var logo = DocumentService.DefaultLogo(); // Uniquement une image de test, pas un fallback de production.
-        var bytes = CardWordWriter.Write(Sample());
-        using var zip = new ZipArchive(new MemoryStream(bytes));
-        using var image = zip.GetEntry("word/media/rImg1.png")!.Open();
+        using var zip = new ZipArchive(new MemoryStream(CardWordWriter.Write(Sample())));
+        using (var image = zip.GetEntry("word/media/rImg1.png")!.Open())
+        {
+            using var memory = new MemoryStream();
+            image.CopyTo(memory);
+            Assert.Equal(logo, memory.ToArray());
+        }
+        // Une bande par couleur de filière : deux cartes de filières différentes, deux bandes.
+        Assert.Equal(CardWordWriter.SolidPng("F5C518"), Read(zip, "word/media/rImg3.png"));
+        Assert.Equal(CardWordWriter.SolidPng("1D4ED8"), Read(zip, "word/media/rImg5.png"));
+    }
+
+    private static byte[] Read(ZipArchive zip, string name)
+    {
+        using var stream = zip.GetEntry(name)!.Open();
         using var memory = new MemoryStream();
-        image.CopyTo(memory);
-        Assert.Equal(logo, memory.ToArray());
+        stream.CopyTo(memory);
+        return memory.ToArray();
     }
 
     [Fact]

@@ -3,6 +3,7 @@ using AndroidX.Work;
 using System.Text.Json;
 using Scolia.Bureau.Api;
 using Scolia.Bureau.Infrastructure;
+using Scolia.Bureau.Ribbon;
 
 namespace Scolia.Mobile.Synchronization;
 
@@ -32,6 +33,25 @@ public sealed class SyncWorker : Worker
             .SetConstraints(constraints)!.Build();
         WorkManager.GetInstance(context).EnqueueUniqueWork(
             "scolia-synchronisation-reprise", ExistingWorkPolicy.Keep!, once);
+    }
+
+    /// <summary>
+    /// Une opération ajoutée à l'outbox déclenche une tâche réseau unique.
+    /// Contrairement au périodique de 15 minutes, Android peut lancer celle-ci
+    /// dès qu'une connexion est disponible ; Doze et le système restent prioritaires.
+    /// </summary>
+    public static void SchedulePending(Context context)
+    {
+        var saved = ConnectionStore.Load();
+        if (saved?.Mode is not (ConnectionSettings.Remote or ConnectionSettings.Internet)) return;
+        var constraints = new Constraints.Builder()
+            .SetRequiredNetworkType(NetworkType.Connected)!.Build();
+        var once = new OneTimeWorkRequest.Builder(typeof(SyncWorker))
+            .SetConstraints(constraints)!
+            .SetBackoffCriteria(BackoffPolicy.Exponential, 30, Java.Util.Concurrent.TimeUnit.Seconds!)!
+            .Build();
+        WorkManager.GetInstance(context).EnqueueUniqueWork(
+            "scolia-synchronisation-pending", ExistingWorkPolicy.Keep!, once);
     }
 
     public SyncWorker(Context context, WorkerParameters parameters) : base(context, parameters) { }
@@ -76,10 +96,36 @@ public sealed class SyncWorker : Worker
         Uri? server = null;
         Scolia.Transport.RemoteLink? relay = null;
         if (connection is { Mode: ConnectionSettings.Remote, Url: { Length: > 0 } url }
-            && Uri.TryCreate(url, UriKind.Absolute, out var privateServer)
-            && TailscaleEndpoint.IsTailnetAddress(privateServer))
+            && Uri.TryCreate(url, UriKind.Absolute, out var privateServer))
         {
             server = privateServer;
+            // Les clients Wi-Fi étaient totalement ignorés par ce travail de fond.
+            // Si l'IP change, ne mémoriser qu'un serveur prouvé par l'ancienne
+            // autorisation cryptographique. Le cache garde son origine stable.
+            if (!TailscaleEndpoint.IsTailnetAddress(privateServer))
+            {
+                using var check = new ScoliaClient(privateServer);
+                if (!await check.IsRunningAsync() &&
+                    await TrustedLanReconnect.FindAsync(connection, TimeSpan.FromSeconds(2.5)) is { } moved)
+                {
+                    try
+                    {
+                        TrustedLanReconnect.PreserveGrant(privateServer, moved.Address);
+                        if (ConnectionStore.TrySave(connection with
+                        {
+                            Url = moved.Address.ToString(),
+                            CacheUrl = connection.CacheUrl ?? connection.Url,
+                            SchoolId = moved.SchoolId, School = moved.School, Machine = moved.Machine,
+                        }))
+                            server = moved.Address;
+                    }
+                    catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or
+                        System.Security.Cryptography.CryptographicException)
+                    {
+                        Android.Util.Log.Warn("SCOLIA-Sync", $"Liaison historique non transférée : {ex.GetType().Name}");
+                    }
+                }
+            }
         }
         else if (connection?.Mode == ConnectionSettings.Internet)
         {
@@ -97,19 +143,52 @@ public sealed class SyncWorker : Worker
             return Result.InvokeRetry();
         using var api = new ScoliaClient(server);
         if (relay is not null) api.UseRemote(relay);
-        var store = new OfflineStore(api.Server);
-        if (store.SavedCredential is not { SessionCookie.Length: > 0 } credential) return Result.InvokeSuccess();
-        store.User = credential.UserName;
-        api.Offline = store;
-        api.RestoreSessionCookie(credential.SessionCookie);
+        var store = new OfflineStore(ConnectionStore.CacheAddress(api.Server));
+        if (store.SavedCredential is { SessionCookie.Length: > 0 } credential)
+            api.RestoreSessionCookie(credential.SessionCookie);
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(90));
         if (!await api.IsRunningAsync(timeout.Token)) return Result.InvokeRetry();
-        // Une session expirée attend une connexion normale ; aucun droit auto-déclaré, aucun mot de passe en tâche native.
-        if (await api.CurrentSessionAsync(timeout.Token) is null) return Result.InvokeSuccess();
+        // Le jumelage donne seulement accès au serveur, jamais une session de compte.
+        // Une session utilisateur encore valide peut reprendre en arrière-plan ;
+        // sinon la synchronisation attend sa prochaine authentification personnelle.
+        if (!await api.VerifyLinkedDeviceAsync(timeout.Token)) return Result.InvokeSuccess();
+        var active = await api.CurrentSessionAsync(timeout.Token);
+        if (active is null) return Result.InvokeSuccess();
+        store.User = active.UserName;
+        api.Offline = store;
         await api.FlushAsync(timeout.Token);
-        foreach (var path in store.CachedPaths())
+        // Sans interface, reprendre les ressources déjà reçues plutôt que repartir
+        // depuis la première fiche. Le curseur est chiffré et propre au compte.
+        // Aucun droit scolaire n'est inventé : seuls les droits de la session
+        // réellement rétablie sont utilisés par ce travail différé.
+        if (active.Permissions.Contains(Perm.StudentsRead, StringComparer.OrdinalIgnoreCase))
         {
-            if (IsStopped) break;
+            try
+            {
+                var prepared = await OfflinePreparation.RunAsync(api,
+                    includeFinancialAccounts: active.Permissions.Contains(
+                        Perm.PaymentsRead, StringComparer.OrdinalIgnoreCase),
+                    ct: timeout.Token);
+                if (!prepared.Complete && prepared.Expected <= OfflinePreparation.MaximumStudents)
+                    return Result.InvokeRetry();
+            }
+            catch (ApiException ex) when (ex.Status is 401 or 403)
+            {
+                // Session ou permission révoquée : rien n'est effacé localement ;
+                // la prochaine reconnexion personnelle sera nécessaire.
+                return Result.InvokeSuccess();
+            }
+            catch (OperationCanceledException) when (timeout.IsCancellationRequested)
+            {
+                return Result.InvokeRetry();
+            }
+        }
+        // Faire tourner les copies locales les plus anciennes, en paquets bornés :
+        // actualiser indéfiniment les mêmes 32 entrées empêchait les autres
+        // dossiers préchargés d'être remis à jour.
+        foreach (var path in store.CachedPaths(limit: 24))
+        {
+            if (IsStopped || timeout.IsCancellationRequested) break;
             try { await api.GetAsync<JsonElement>(path, timeout.Token); }
             catch (ApiException ex) when (ex.Status is 400 or 403 or 404) { }
         }

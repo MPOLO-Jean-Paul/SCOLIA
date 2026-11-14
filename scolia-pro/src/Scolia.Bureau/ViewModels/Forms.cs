@@ -206,7 +206,12 @@ public sealed class FormViewModel : Observable
     }
     public bool HasSubtitle => !string.IsNullOrEmpty(Subtitle);
     /// <summary>Texte libre affiché sous le titre, par exemple le détail d'une confirmation.</summary>
-    public string Message { get; init; } = string.Empty;
+    private string message = string.Empty;
+    public string Message
+    {
+        get => message;
+        set { if (Set(ref message, value)) Raise(nameof(HasMessage)); }
+    }
     public string SubmitText { get; init; } = "Enregistrer";
     public string CancelText { get; init; } = "Annuler";
     /// <summary>Formulaire posé dans une page : pas d'en-tête ni d'ombre, et les champs défilent avec la page.</summary>
@@ -251,7 +256,8 @@ public sealed class FormViewModel : Observable
     public FormField AddChoice(string key, string label, IReadOnlyList<ChoiceItem> options, string? value = null, bool required = false)
     {
         var field = new FormField(key, label, FieldKind.Choice, required, null) { Options = options };
-        field.Choice = options.FirstOrDefault(o => o.Value == value) ?? (required && options.Count > 0 ? options[0] : null);
+        field.Choice = options.FirstOrDefault(o => o.Value == value)
+            ?? (required && string.IsNullOrWhiteSpace(value) && options.Count == 1 ? options[0] : null);
         Fields.Add(field);
         return field;
     }

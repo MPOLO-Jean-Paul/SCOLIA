@@ -6,6 +6,7 @@ using Material.Icons;
 using Scolia.Bureau.Api;
 using Scolia.Bureau.Infrastructure;
 using Scolia.Bureau.Ribbon;
+using Scolia.Domain.School;
 
 namespace Scolia.Bureau.ViewModels;
 
@@ -30,9 +31,16 @@ public sealed class StudentsPage : PageViewModel
 
     public StudentsPage(ShellViewModel shell) : base(shell)
     {
+        OpenStudentOnPhone = new RelayCommand<StudentRow>(row =>
+        {
+            if (row is null) return;
+            Selected = row;
+            _ = Shell.Run(OpenSelectedAsync);
+        });
         if (Shell.Can(Perm.StudentsWrite)) Action("Nouvelle inscription", MaterialIconKind.AccountPlus, () => StudentForms.CreateAsync(Shell), primary: true);
         Action("Ouvrir la fiche", MaterialIconKind.Account, OpenSelectedAsync, open: true);
         if (Shell.Can(Perm.ReportsRead)) Action("Suivi par mois", MaterialIconKind.CalendarCheck, () => Shell.Open(() => new MonthlyPage(Shell)));
+        Action("Préparer hors ligne", MaterialIconKind.Download, PrepareOfflineAsync);
         ActionRefresh();
         MenuAction("Aperçu rapide", MaterialIconKind.Eye, () => WithSelected(id => QuickView.StudentAsync(Shell, id)));
         if (Shell.Can(Perm.PaymentsCreate)) MenuAction("Encaisser", MaterialIconKind.HandCoin, () => WithSelected(id => Shell.Open(() => new CashierPage(Shell, id))));
@@ -49,11 +57,13 @@ public sealed class StudentsPage : PageViewModel
             debounce?.Stop();
             search = string.Empty;
             promotion = Promotions.Count > 0 ? Promotions[0] : null;
+            sectionChoice = Sections.Count > 0 ? Sections[0] : null;
             status = StatusChoices[0];
             page = 1;
             Selected = null;
             Raise(nameof(Search));
             Raise(nameof(Promotion));
+            Raise(nameof(SectionChoice));
             Raise(nameof(Status));
             await RefreshAsync();
         });
@@ -61,13 +71,72 @@ public sealed class StudentsPage : PageViewModel
         NextPage = new AsyncCommand(async () => { page++; await RefreshAsync(); });
     }
 
-    public override string Title => "Apprenants";
+    /// <summary>
+    /// Consentement explicite avant le téléchargement des fiches nominatives sur l'appareil.
+    /// La copie reste isolée dans le cache chiffré du compte, sans exposition publique.
+    /// </summary>
+    private async Task PrepareOfflineAsync()
+    {
+        if (!Shell.Api.IsOnline)
+        {
+            Shell.Notify("Connectez-vous au serveur de l'établissement avant de préparer cet appareil.");
+            return;
+        }
+        if (Shell.Api.Offline?.User is not { Length: > 0 })
+        {
+            Shell.Notify("Connectez-vous à votre compte avant de préparer les données locales.");
+            return;
+        }
+
+        var form = new FormViewModel("Préparer cet appareil hors ligne",
+            "SCOLIA téléchargera les listes et fiches auxquelles votre compte a accès. Les copies seront chiffrées sur cet appareil.",
+            async f =>
+            {
+                var finance = Shell.Can(Perm.PaymentsRead) && f.Flag("comptes");
+                f.Message = "Téléchargement des données autorisées…";
+                var result = await OfflinePreparation.RunAsync(Shell.Api, finance, p =>
+                {
+                    if (p.Completed % 10 == 0 || p.Completed == p.Expected || p.Completed <= 5)
+                        f.Message = $"{p.Stage} · {p.Completed}/{p.Expected} éléments traités.";
+                });
+
+                var summary = $"{result.Details}/{result.Expected} fiches préparées"
+                    + (finance ? $" · {result.Accounts} comptes de paiement" : string.Empty)
+                    + (result.Errors > 0 ? $" · {result.Errors} élément(s) indisponible(s)." : ".");
+                Shell.Notify(result.Complete ? "Préparation hors ligne terminée : " + summary
+                    : "Préparation partielle : " + summary + " Vérifiez la connexion et relancez la préparation.");
+                return true;
+            })
+        {
+            SubmitText = "Préparer maintenant",
+            Message = "Réalisez cette préparation avant une période sans réseau. Les écritures restent soumises à la synchronisation et à la validation du serveur."
+        };
+        if (Shell.Can(Perm.PaymentsRead))
+            form.AddFlag("comptes", "Inclure les comptes scolaires autorisés (montants et mensualités)", false);
+        await Shell.Ask(form);
+    }
+
+    public override string Title => Shell.StudentTerms.PluralTitle;
     public override string Subtitle => subtitle;
     public override MaterialIconKind Glyph => MaterialIconKind.AccountGroupOutline;
 
     public ObservableCollection<StudentRow> Items { get; } = [];
+    /// <summary>Chaque fiche Android ouvre directement le dossier, sans sélection invisible ni double-clic.</summary>
+    public RelayCommand<StudentRow> OpenStudentOnPhone { get; }
     public IReadOnlyList<ChoiceItem> Promotions { get => promotions; private set => Set(ref promotions, value); }
     public IReadOnlyList<ChoiceItem> StatusChoices { get; } = Labels.Statuses.Prepend(new ChoiceItem(string.Empty, "Tous les statuts")).ToList();
+
+    // ---------- Filtre par section (filière) : toutes les promotions de la section ----------
+    private IReadOnlyList<ChoiceItem> sections = [new ChoiceItem(string.Empty, "Toutes les sections")];
+    private ChoiceItem? sectionChoice;
+    public IReadOnlyList<ChoiceItem> Sections { get => sections; private set { if (Set(ref sections, value)) Raise(nameof(HasSections)); } }
+    /// <summary>Le filtre n'apparaît que si l'établissement a créé des sections.</summary>
+    public bool HasSections => sections.Count > 1;
+    public ChoiceItem? SectionChoice
+    {
+        get => sectionChoice;
+        set { if (Set(ref sectionChoice, value) && ready) ApplyFilter(); }
+    }
 
     public string Search
     {
@@ -88,8 +157,9 @@ public sealed class StudentsPage : PageViewModel
     }
 
     public StudentRow? Selected { get => selected; set => Set(ref selected, value); }
-    public string EmptyTitle { get; private set; } = "Aucun apprenant trouvé";
+    public string EmptyTitle { get; private set; } = string.Empty;
     public string EmptyHint { get; private set; } = string.Empty;
+    public string ResetFiltersTooltip => $"Affiche à nouveau tous les {Shell.StudentTerms.Plural}, sans filtre";
     public string PageText => $"Page {page} sur {pageCount}";
     public bool CanPrevious => page > 1;
     public bool CanNext => page < pageCount;
@@ -102,9 +172,25 @@ public sealed class StudentsPage : PageViewModel
     {
         if (!ready)
         {
-            var choices = await PromotionChoicesAsync(withAll: true);
+            IReadOnlyList<ChoiceItem> choices;
+            try { choices = await PromotionChoicesAsync(withAll: true); }
+            catch (OfflineException) when (!Shell.Api.IsOnline)
+            {
+                // Même si les promotions n'ont jamais été consultées, la liste
+                // locale des apprenants peut encore être ouverte sans attendre.
+                choices = [new ChoiceItem(string.Empty, "Toutes les promotions")];
+            }
             Promotions = choices;
             promotion = choices[0];
+            try
+            {
+                var list = await Shell.Api.GetAsync<List<SectionDto>>("api/etablissement/sections");
+                Sections = [new ChoiceItem(string.Empty, "Toutes les sections"), .. list.Where(s => s.IsActive || s.PromotionCount > 0)
+                    .Select(s => new ChoiceItem(s.Id.ToString(), $"{s.Code} · {s.Name}"))];
+            }
+            catch (Exception ex) when (ex is OfflineException or ApiException or HttpRequestException) { }
+            sectionChoice = Sections[0];
+            Raise(nameof(SectionChoice));
             status = StatusChoices[0];
             Raise(nameof(Promotion));
             Raise(nameof(Status));
@@ -112,8 +198,24 @@ public sealed class StudentsPage : PageViewModel
         }
 
         var query = ScoliaClient.Query(
-            ("q", Search.Trim()), ("promotionId", Promotion?.Value), ("statut", Status?.Value), ("page", page), ("taille", PageSize));
-        var result = await Shell.Api.GetAsync<PagedResult<StudentListItem>>("api/apprenants" + query);
+            ("q", Search.Trim()), ("promotionId", Promotion?.Value), ("sectionId", SectionChoice?.Value), ("statut", Status?.Value), ("page", page), ("taille", PageSize));
+        OfflineStudentSearch.Result? local = null;
+        if (!Shell.Api.IsOnline && Shell.Api.Offline is { } store)
+        {
+            var promotionCode = Promotion?.Value is { Length: > 0 } selectedPromotion
+                ? Promotions.FirstOrDefault(x => x.Value == selectedPromotion)?.Label.Split('·')[0].Trim()
+                : null;
+            // La reconstruction d'un index (cache froid) et les recherches
+            // sur plusieurs milliers de dossiers ne doivent jamais figer l'UI.
+            var localTerm = Search.Trim();
+            var localStatus = Status?.Value;
+            var localPage = page;
+            local = await Task.Run(() => OfflineStudentSearch.Search(
+                store, localTerm, promotionCode, localStatus, localPage, PageSize));
+        }
+        var result = local?.Page
+            ?? await Shell.Api.GetAsync<PagedResult<StudentListItem>>("api/apprenants" + query);
+        if (local is not null) page = local.Page.Page;
 
         total = result.Total;
         pageCount = Math.Max(1, (int)Math.Ceiling(total / (double)PageSize));
@@ -122,17 +224,27 @@ public sealed class StudentsPage : PageViewModel
         CollectionSync.Apply(Items, result.Items.Select(s =>
         {
             var late = s.Overdue > 0;
+            // Un apprenant pris en charge est signalé comme tel, jamais comme « à jour » parmi les payants.
+            var sponsored = s.Sponsorship == "Pris en charge";
+            var situation = sponsored ? "Pris en charge"
+                : (late ? Money(s.Overdue) : "À jour") + (s.Sponsorship is { Length: > 0 } ? " · PEC partielle" : string.Empty);
             return new StudentRow(
                 s.Id, s.Matricule, Format.FullName(s.LastName, s.MiddleName, s.FirstName), Labels.Gender(s.Gender), s.PromotionCode ?? "—",
                 Labels.Status(s.Status ?? string.Empty), ThemeBrush.Get(Labels.Tone(s.Status ?? string.Empty) switch { "green" => "ToneGreen", "red" => "ToneRed", "orange" => "ToneOrange", _ => "ToneNeutral" }),
-                s.GuardianPhone ?? "—", Money(s.Balance), late ? Money(s.Overdue) : "À jour", ThemeBrush.Get(late ? "ToneRed" : "ToneGreen"));
+                s.GuardianPhone ?? "—", Money(s.Balance), situation, ThemeBrush.Get(sponsored ? "TonePurple" : late ? "ToneRed" : "ToneGreen"));
         }));
 
-        subtitle = Format.Count(total, "apprenant", "apprenants") + (Promotion is { Value.Length: > 0 } ? $" · {Promotion.Label}" : string.Empty);
+        subtitle = Format.Count(total, Shell.StudentTerms.Singular, Shell.StudentTerms.Plural) + (Promotion is { Value.Length: > 0 } ? $" · {Promotion.Label}" : string.Empty);
+        if (!Shell.Api.IsOnline)
+            subtitle += local is { Complete: false }
+                ? $" · recherche locale ({local.Loaded}/{local.Registered} dossiers disponibles)"
+                : " · copie locale, non actualisée";
         // Liste vide : sans filtre, l'établissement n'a encore aucun apprenant ; avec un filtre, il faut l'élargir.
-        var filtered = Search.Trim().Length > 0 || Promotion is { Value.Length: > 0 } || Status is { Value.Length: > 0 };
-        EmptyTitle = filtered ? "Aucun apprenant trouvé" : "Aucun apprenant inscrit";
-        EmptyHint = filtered ? "Modifiez la recherche, ou choisissez « Toutes les promotions » et « Tous les statuts »."
+        var filtered = Search.Trim().Length > 0 || Promotion is { Value.Length: > 0 } || SectionChoice is { Value.Length: > 0 } || Status is { Value.Length: > 0 };
+        EmptyTitle = filtered ? $"Aucun {Shell.StudentTerms.Singular} trouvé" : $"Aucun {Shell.StudentTerms.Singular} inscrit";
+        EmptyHint = local is { Complete: false }
+            ? "Recherche limitée aux dossiers téléchargés sur cet appareil. Reconnectez-vous pour voir le registre complet."
+            : filtered ? "Modifiez la recherche, ou choisissez « Toutes les promotions » et « Tous les statuts »."
             : "Inscrivez le premier avec « Nouvelle inscription ».";
         Raise(nameof(EmptyTitle));
         Raise(nameof(EmptyHint));
@@ -146,7 +258,7 @@ public sealed class StudentsPage : PageViewModel
     private void ScheduleSearch()
     {
         debounce?.Stop();
-        debounce = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(300) };
+        debounce = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(Shell.Api.IsOnline ? 300 : 75) };
         debounce.Tick += async (_, _) =>
         {
             debounce?.Stop();
@@ -169,7 +281,7 @@ public sealed class StudentsPage : PageViewModel
     {
         if (Selected is null)
         {
-            Shell.Notify("Sélectionnez un apprenant dans la liste.");
+            Shell.Notify($"Sélectionnez un {Shell.StudentTerms.Singular} dans la liste.");
             return Task.CompletedTask;
         }
         return work(Selected.Id);
@@ -180,7 +292,7 @@ public sealed class StudentsPage : PageViewModel
     {
         if (Selected is null)
         {
-            Shell.Notify("Sélectionnez un apprenant dans la liste.");
+            Shell.Notify($"Sélectionnez un {Shell.StudentTerms.Singular} dans la liste.");
             return;
         }
         var id = Selected.Id;
@@ -195,13 +307,13 @@ public sealed record EnrollmentRow(string Year, string Promotion, string Enrolle
 public sealed record AccountRow(string Label, string DueDate, string Amount, string Covered, string Paid, string Remaining, string Status, IBrush StatusBrush);
 
 /// <summary>Prise en charge affichée sur la fiche.</summary>
-public sealed record SponsorshipRow(Guid Id, string Sponsor, string Reason, string Since, string Covered, string Status, bool Active);
+public sealed record SponsorshipRow(Guid Id, string Sponsor, string Reason, string Since, string Covered, string Status, bool Active, string Type = "Historique");
 
 /// <summary>Fiche d'un apprenant : identité, inscriptions, compte, reçus et prises en charge.</summary>
 public sealed class StudentDetailPage : PageViewModel
 {
     private readonly Guid studentId;
-    private string title = "Fiche apprenant";
+    private string title = string.Empty;
     private string subtitle = string.Empty;
     private StudentDto? student;
     private EnrollmentDto? enrollment;
@@ -210,17 +322,38 @@ public sealed class StudentDetailPage : PageViewModel
     public StudentDetailPage(ShellViewModel shell, Guid studentId) : base(shell)
     {
         this.studentId = studentId;
+        title = $"Fiche {Shell.StudentTerms.Singular}";
         EndSponsorship = new AsyncCommand(() => Shell.Run(EndSelectedSponsorshipAsync));
         if (Shell.Can(Perm.PaymentsCreate)) Action("Encaisser", MaterialIconKind.HandCoin, () => Shell.Open(() => new CashierPage(Shell, studentId)), primary: true);
         if (Shell.Can(Perm.StudentsWrite)) Action("Modifier", MaterialIconKind.Pencil, EditAsync);
         if (Shell.Can(Perm.StudentsWrite)) Action("Renommer", MaterialIconKind.Rename, RenameAsync);
         if (Shell.Can(Perm.PaymentsRead)) Action("Relevé de compte", MaterialIconKind.FileDocument, StatementAsync);
+        // Les anciens établissements ITM conservent leurs bulletins existants.
+        // L'action n'apparaît que pour les nouveaux profils scolaires APRÈS
+        // leur activation officielle ; elle n'écrit aucune note.
+        var profile = Shell.Session?.InstitutionType;
+        if (InstitutionProfiles.IsEnabled(profile) &&
+            profile is (InstitutionProfiles.Maternelle or InstitutionProfiles.Primaire
+                or InstitutionProfiles.Secondaire or InstitutionProfiles.ComplexeScolaire) &&
+            Shell.Can(Perm.AcademicsRead))
+            Action("Carnet / bulletin provisoire", MaterialIconKind.FileDocumentOutline,
+                OpenSchoolBulletinAsync);
         if (Shell.Can(Perm.StudentsWrite)) Action("Changer le statut", MaterialIconKind.AccountSwitch, ChangeStatusAsync);
         if (Shell.Can(Perm.StudentsWrite)) Action("Changer de promotion", MaterialIconKind.SwapHorizontal, ChangePromotionAsync);
-        if (Shell.Can(Perm.PaymentsCreate)) Action("Prise en charge", MaterialIconKind.ShieldAccount, NewSponsorshipAsync);
+        if (Shell.Can(Perm.StudentsWrite)) Action("Prise en charge", MaterialIconKind.ShieldAccount, NewSponsorshipAsync);
         if (Shell.Can(Perm.PaymentsRead)) Action("Relancer par WhatsApp", MaterialIconKind.Whatsapp, RemindAsync);
         if (StudentsPage.CanDelete(Shell)) Action("Supprimer le dossier", MaterialIconKind.Delete, DeleteAsync, danger: true);
         ActionRefresh();
+    }
+
+    private async Task OpenSchoolBulletinAsync()
+    {
+        if (enrollment is null)
+        {
+            Shell.Notify("Aucune inscription disponible pour afficher ce carnet.");
+            return;
+        }
+        await Shell.Open(() => new SchoolBulletinPage(Shell, enrollment.Id));
     }
 
     private async Task RenameAsync()
@@ -292,7 +425,7 @@ public sealed class StudentDetailPage : PageViewModel
         Totals.Clear();
         if (enrollment is null)
         {
-            Totals.Add(new KpiVm("Compte", "Sans inscription", "Inscrivez l'apprenant pour ouvrir son compte.", ThemeBrush.Get("ToneNeutral"), MaterialIconKind.AccountOffOutline));
+            Totals.Add(new KpiVm("Compte", "Sans inscription", "Inscrivez " + Shell.StudentTerms.Elided + " pour ouvrir son compte.", ThemeBrush.Get("ToneNeutral"), MaterialIconKind.AccountOffOutline));
             return;
         }
 
@@ -313,7 +446,7 @@ public sealed class StudentDetailPage : PageViewModel
         var sponsorships = await Shell.Api.GetAsync<List<SponsorshipDto>>($"api/inscriptions/{enrollment.Id}/prises-en-charge");
         foreach (var s in sponsorships)
             Sponsorships.Add(new SponsorshipRow(s.Id, s.SponsorName, s.Reason, Format.Date(s.EffectiveFrom), Money(s.CoveredTotal),
-                s.IsActive ? "Active" : "Terminée", s.IsActive));
+                s.IsActive ? "Active" : "Terminée", s.IsActive, s.Type));
     }
 
     public override async Task PrintAsync() => await StatementAsync();
@@ -329,7 +462,7 @@ public sealed class StudentDetailPage : PageViewModel
     {
         if (enrollment is null)
         {
-            Shell.Notify("Cet apprenant n'a pas d'inscription : aucun relevé à produire.");
+            Shell.Notify($"Cet {Shell.StudentTerms.Singular} n'a pas d'inscription : aucun relevé à produire.");
             return;
         }
         await Shell.Download($"api/inscriptions/{enrollment.Id}/releve.pdf", $"releve-{student?.Matricule ?? "apprenant"}.pdf");
@@ -344,7 +477,7 @@ public sealed class StudentDetailPage : PageViewModel
             var reason = f.OptionalText("motif");
             if (status != "Actif" && reason is null)
             {
-                f.Find("motif").Error = "Le motif est obligatoire pour sortir l'apprenant de la promotion.";
+                f.Find("motif").Error = $"Le motif est obligatoire pour sortir {Shell.StudentTerms.Elided} de la promotion.";
                 return Task.FromResult(false);
             }
             return SaveAsync(HttpMethod.Put, $"api/inscriptions/{enrollment.Id}/statut",
@@ -352,7 +485,7 @@ public sealed class StudentDetailPage : PageViewModel
         });
         form.AddChoice("statut", "Nouveau statut", Labels.Statuses, enrollment.Status, required: true);
         form.AddDay("date", "Date d'effet", DateOnly.FromDateTime(DateTime.Today));
-        form.Add("motif", "Motif", hint: "Obligatoire si l'apprenant quitte la promotion");
+        form.Add("motif", "Motif", hint: $"Obligatoire si {Shell.StudentTerms.Elided} quitte la promotion");
         if (await Shell.Ask(form)) await RefreshAsync();
     }
 
@@ -377,25 +510,71 @@ public sealed class StudentDetailPage : PageViewModel
             Shell.Notify("Cette promotion n'a pas de frais à prendre en charge.");
             return;
         }
-        var fees = promotion.Fees.ToList();
-        var form = new FormViewModel("Nouvelle prise en charge", "Pourcentage couvert pour chaque frais, de 0 à 100.", f =>
+        var months = promotion.Fees.Where(fee =>
+                fee.Kind.Equals("Mensualite", StringComparison.OrdinalIgnoreCase))
+            .OrderBy(fee => fee.DueDate).ThenBy(fee => fee.Order).ToList();
+        var options = new List<ChoiceItem> { new("Complete", "Complète — tous les frais et tous les mois") };
+        if (months.Count > 0)
+            options.Add(new("PartielleMensuelle", "Partielle — montant à préciser pour chaque mois"));
+
+        var form = new FormViewModel("Nouvelle prise en charge",
+            "La couverture complète couvre tous les frais sans saisie mensuelle. En partielle, indiquez les montants des mois concernés.", f =>
         {
-            var lines = fees
-                .Select(fee => new { feeItemId = fee.Id, percent = f.Amount($"fee-{fee.Id}") })
-                .Where(l => l.percent > 0)
-                .ToList();
-            if (lines.Count == 0)
+            var type = f.ChoiceValue("type");
+            if (type is not ("Complete" or "PartielleMensuelle"))
             {
-                f.Find($"fee-{fees[0].Id}").Error = "Indiquez au moins un pourcentage.";
+                f.Find("type").Error = "Choisissez le type de prise en charge.";
                 return Task.FromResult(false);
             }
+            var lines = new List<object>();
+            if (type == "PartielleMensuelle")
+            {
+                var amounts = months.Select(month =>
+                    (Month: month, Amount: f.Amount($"fee-{month.Id}"))).ToList();
+                foreach (var (month, amount) in amounts)
+                {
+                    if (amount < 0 || amount > month.Amount)
+                    {
+                        f.Find($"fee-{month.Id}").Error =
+                            $"Le montant doit être compris entre 0 et {Money(month.Amount)}.";
+                        return Task.FromResult(false);
+                    }
+                }
+                var selected = amounts.Where(x => x.Amount > 0).ToList();
+                if (selected.Count == 0)
+                {
+                    f.Find($"fee-{months[0].Id}").Error =
+                        "Indiquez le montant pris en charge pour au moins un mois.";
+                    return Task.FromResult(false);
+                }
+                lines.AddRange(selected.Select(x => (object)new { feeItemId = x.Month.Id, amount = x.Amount }));
+            }
             return SaveAsync(HttpMethod.Post, $"api/inscriptions/{enrollment.Id}/prises-en-charge",
-                new { sponsorName = f.Text("sponsor"), reason = f.Text("motif"), effectiveFrom = f.Day("date"), lines }, "Prise en charge enregistrée.");
+                new { sponsorName = f.Text("sponsor"), reason = f.Text("motif"),
+                    effectiveFrom = f.Day("date"), type, lines },
+                "Prise en charge enregistrée.");
         });
+        form.AddChoice("type", "Type de prise en charge", options, required: false);
         form.Add("sponsor", "Garant ou organisme", required: true);
         form.Add("motif", "Motif", required: true);
         form.AddDay("date", "Date d'effet", DateOnly.FromDateTime(DateTime.Today), required: true);
-        foreach (var fee in fees) form.Add($"fee-{fee.Id}", $"{fee.Label} (%)", FieldKind.Amount, "0");
+
+        // Ne demander ni montant ni pourcentage quand l'utilisateur choisit Complète.
+        // En partielle, chaque mois a son propre montant ; les mois à 0 restent à charge.
+        form.Changed = field =>
+        {
+            if (field.Key != "type") return;
+            var partial = form.ChoiceValue("type") == "PartielleMensuelle";
+            foreach (var extra in form.Fields.Where(f => f.Key.StartsWith("fee-", StringComparison.Ordinal)
+                || f.Key == "monthly-header").ToList())
+                form.Fields.Remove(extra);
+            if (!partial) return;
+            form.Add("monthly-header", "Montants par mois",
+                FieldKind.Header, hint: "Remplissez seulement les mois pris en charge. Les autres restent à 0.");
+            foreach (var month in months)
+                form.Add($"fee-{month.Id}", $"{month.Label} — montant pris en charge",
+                    FieldKind.Amount, "0", hint: $"Mensualité prévue : {Money(month.Amount)}.");
+        };
         if (await Shell.Ask(form)) await RefreshAsync();
     }
 
@@ -438,7 +617,7 @@ public static class StudentForms
                 await shell.Confirm("Aucune promotion", "Aucune promotion n'est ouverte. Demandez au secrétariat d'en créer une dans Paramètres, Promotions et frais.", "Fermer");
                 return;
             }
-            if (!await shell.Confirm("Aucune promotion", "L'apprenant doit être inscrit dans une promotion, et aucune n'existe encore. Créer une promotion maintenant ?", "Créer une promotion"))
+            if (!await shell.Confirm("Aucune promotion", $"{shell.StudentTerms.ElidedTitle} doit être inscrit dans une promotion, et aucune n'existe encore. Créer une promotion maintenant ?", "Créer une promotion"))
                 return;
             await SettingsPage.NewPromotionAsync(shell);
             promotions = (await shell.Api.GetAsync<List<PromotionDto>>("api/etablissement/promotions")).Where(p => p.IsActive).ToList();
@@ -452,8 +631,18 @@ public static class StudentForms
             var identityKey = string.Join("|", f.ChoiceValue("promotion"), f.Text("nom").ToUpperInvariant(),
                 f.Text("postNom").ToUpperInvariant(), f.Text("prenom").ToUpperInvariant(),
                 f.ChoiceValue("sexe"), f.Day("naissance"), f.Text("lieu"), f.Text("contact1"), f.Day("inscription"));
-            var doubles = await shell.Api.GetAsync<List<DuplicateCandidateDto>>("api/apprenants/doublons" + ScoliaClient.Query(
-                ("nom", f.Text("nom")), ("postNom", f.Text("postNom")), ("prenom", f.Text("prenom"))));
+            List<DuplicateCandidateDto> doubles;
+            try
+            {
+                doubles = await shell.Api.GetAsync<List<DuplicateCandidateDto>>("api/apprenants/doublons" + ScoliaClient.Query(
+                    ("nom", f.Text("nom")), ("postNom", f.Text("postNom")), ("prenom", f.Text("prenom"))));
+            }
+            catch (OfflineException) when (!shell.Api.IsOnline)
+            {
+                // Le serveur revérifiera les doublons au rejeu. En attendant,
+                // vérifier les dossiers effectivement répliqués sur cet appareil.
+                doubles = LocalDuplicates(shell.Api.Offline, f.Text("nom"), f.Text("postNom"), f.Text("prenom"));
+            }
             if (doubles.Count > 0 && confirmedIdentity != identityKey)
             {
                 confirmedIdentity = identityKey;
@@ -461,14 +650,21 @@ public static class StudentForms
                 return false;
             }
             if (doubles.Count == 0) confirmedIdentity = null;
-            await shell.Api.SendAsync(HttpMethod.Post, "api/apprenants", new
+            try
             {
-                identity = Identity(f, null),
-                promotionId = Guid.Parse(f.ChoiceValue("promotion")!),
-                enrolledOn = f.Day("inscription"),
-                confirmDuplicate = doubles.Count > 0 && confirmedIdentity == identityKey,
-            });
-            shell.Notify("Apprenant inscrit.");
+                await shell.Api.SendAsync(HttpMethod.Post, "api/apprenants", new
+                {
+                    identity = Identity(f, null),
+                    promotionId = Guid.Parse(f.ChoiceValue("promotion")!),
+                    enrolledOn = f.Day("inscription"),
+                    confirmDuplicate = doubles.Count > 0 && confirmedIdentity == identityKey,
+                });
+                shell.Notify($"{shell.StudentTerms.SingularTitle} inscrit.");
+            }
+            catch (OfflineQueuedException)
+            {
+                shell.Notify("Inscription enregistrée sur cet appareil. Matricule provisoire LOCAL ; confirmation automatique au retour du serveur.");
+            }
             return true;
         })
         { SubmitText = "Inscrire" };
@@ -478,21 +674,50 @@ public static class StudentForms
         // Pour une nouvelle inscription, ne pas affecter implicitement la première promotion :
         // l'utilisateur choisit le niveau scolaire. S'il n'en existe qu'une, il n'y a rien à choisir.
         if (promotions.Count > 1) form.Find("promotion").Choice = null;
-        AddIdentityFields(form, null);
+        AddIdentityFields(shell, form, null);
         form.AddDay("inscription", "Date d'inscription", DateOnly.FromDateTime(DateTime.Today));
 
         if (await shell.Ask(form) && shell.Current is StudentsPage page) await page.RefreshAsync();
     }
 
+    private static List<DuplicateCandidateDto> LocalDuplicates(OfflineStore? store,
+        string last, string middle, string first)
+    {
+        if (store is null) return [];
+        var result = new Dictionary<Guid, DuplicateCandidateDto>();
+        for (var pageNumber = 1; pageNumber <= 20; pageNumber++)
+        {
+            var page = OfflineStudentSearch.Search(store, last, null, null, pageNumber);
+            if (page is null) break;
+            foreach (var student in page.Page.Items)
+            {
+                if (!string.Equals(last, student.LastName, StringComparison.OrdinalIgnoreCase) ||
+                    !string.Equals(middle, student.MiddleName, StringComparison.OrdinalIgnoreCase) ||
+                    !string.Equals(first, student.FirstName, StringComparison.OrdinalIgnoreCase)) continue;
+                result[student.Id] = new DuplicateCandidateDto(student.Id, student.Matricule,
+                    Format.FullName(student.LastName, student.MiddleName, student.FirstName), student.PromotionCode);
+            }
+            if (page.Page.Items.Count < page.Page.PageSize) break;
+        }
+        return result.Values.ToList();
+    }
+
     public static async Task<bool> EditAsync(ShellViewModel shell, StudentDto s)
     {
-        var form = new FormViewModel("Modifier l'apprenant", $"Matricule {s.Matricule}", async f =>
+        var form = new FormViewModel($"Modifier {shell.StudentTerms.Elided}", $"Matricule {s.Matricule}", async f =>
         {
-            await shell.Api.SendAsync(HttpMethod.Put, $"api/apprenants/{s.Id}", Identity(f, s));
-            shell.Notify("Dossier enregistré.");
+            try
+            {
+                await shell.Api.SendAsync(HttpMethod.Put, $"api/apprenants/{s.Id}", Identity(f, s));
+                shell.Notify("Dossier enregistré.");
+            }
+            catch (OfflineQueuedException)
+            {
+                shell.Notify("Dossier modifié localement ; l'envoi au serveur se fera automatiquement.");
+            }
             return true;
         });
-        AddIdentityFields(form, s);
+        AddIdentityFields(shell, form, s);
         // Un seul poste modifie un dossier à la fois : les autres voient qui le fait.
         return await shell.Sync.WithLockAsync($"dossier:{s.Id}", $"Modification du dossier {s.Matricule}", () => shell.Ask(form));
     }
@@ -506,7 +731,7 @@ public static class StudentForms
         var s = await shell.Api.GetAsync<StudentDto>($"api/apprenants/{id}");
         var before = Format.FullName(s.LastName, s.MiddleName, s.FirstName);
         string? confirmedIdentity = null;
-        var form = new FormViewModel("Renommer l'apprenant", $"{before} · matricule {s.Matricule}", async f =>
+        var form = new FormViewModel($"Renommer {shell.StudentTerms.Elided}", $"{before} · matricule {s.Matricule}", async f =>
         {
             var (last, middle, first) = (f.Text("nom"), f.Text("postNom"), f.Text("prenom"));
             var after = Format.FullName(last, middle, first);
@@ -583,9 +808,9 @@ public static class StudentForms
     /// Champs de la fiche : identité, naissance, parent, son contact et l'adresse. Un seul numéro est saisi,
     /// celui du parent : c'est lui que visent les relances WhatsApp et SMS.
     /// </summary>
-    private static void AddIdentityFields(FormViewModel form, StudentDto? s)
+    private static void AddIdentityFields(ShellViewModel shell, FormViewModel form, StudentDto? s)
     {
-        form.AddHeader("Identité de l'apprenant", "Renseignez les noms tels qu'ils apparaissent sur le dossier scolaire.");
+        form.AddHeader($"Identité de {shell.StudentTerms.Elided}", "Renseignez les noms tels qu'ils apparaissent sur le dossier scolaire.");
         form.Add("nom", "Nom", value: s?.LastName, required: true);
         form.Add("postNom", "Post-nom", value: s?.MiddleName, required: true);
         form.Add("prenom", "Prénom", value: s?.FirstName, required: true);

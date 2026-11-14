@@ -9,7 +9,8 @@
   <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE" />
   <!-- Téléphone serveur de l'établissement : service de premier plan, Wi-Fi et processeur éveillés, notification. -->
   <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-  <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+  <!-- Connexions continues aux autres ordinateurs : type de service officiel Android connectedDevice. -->
+  <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />
   <uses-permission android:name="android.permission.WAKE_LOCK" />
   <!-- Téléphone serveur : demander à Android de ne pas le freiner écran éteint (économies de batterie). -->
   <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
@@ -18,9 +19,13 @@
   <uses-permission android:name="android.permission.RECORD_AUDIO" />
   <!-- Reprise sur les appareils volontairement configurés comme serveur de l’établissement. -->
   <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
-  <!-- Installation de Tailscale téléchargé par SCOLIA : Android demande toujours l'accord de l'utilisateur. -->
+  <!-- Mises à jour APK de SCOLIA : l'installation reste confirmée par Android. -->
   <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
-  <application android:label="SCOLIA" android:networkSecurityConfig="@xml/reseau" android:supportsRtl="false">
+  <!-- Donnees de mineurs et finances scolaires : pas de copie automatique vers un compte cloud ou un autre appareil.
+       La restauration doit passer par les sauvegardes SCOLIA verifiees et autorisees par l'etablissement. -->
+  <application android:label="SCOLIA" android:networkSecurityConfig="@xml/reseau" android:supportsRtl="false"
+               android:allowBackup="false" android:fullBackupContent="false"
+               android:dataExtractionRules="@xml/scolia_data_extraction">
     <!-- Les documents enregistrés s'ouvrent dans le lecteur PDF ou le tableur du téléphone. -->
     <provider android:name="androidx.core.content.FileProvider"
               android:authorities="com.jpservices.scolia.fichiers"
@@ -31,8 +36,6 @@
   </application>
   <!-- Ouvrir WhatsApp, les SMS, le téléphone, l'e-mail et les documents avec les applications installées. -->
   <queries>
-    <!-- Android 11+ : autoriser uniquement la détection du VPN Tailscale officiel. -->
-    <package android:name="com.tailscale.ipn" />
     <intent><action android:name="android.intent.action.VIEW" /><data android:scheme="https" /></intent>
     <intent><action android:name="android.intent.action.VIEW" /><data android:scheme="sms" /></intent>
     <intent><action android:name="android.intent.action.VIEW" /><data android:scheme="tel" /></intent>

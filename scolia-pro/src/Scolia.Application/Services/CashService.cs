@@ -25,7 +25,13 @@ public sealed class CashService(IAppDbContext db, IWriteGate gate, IAuditLog aud
         if (from is not null) q = q.Where(e => e.Date >= from);
         if (to is not null) q = q.Where(e => e.Date <= to);
         if (!string.IsNullOrWhiteSpace(category)) q = q.Where(e => e.Category == category);
-        if (!string.IsNullOrWhiteSpace(search)) q = q.Where(e => e.Description.Contains(search) || e.Beneficiary.Contains(search) || e.Number.Contains(search));
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            // LIKE ignore la casse (lettres latines) comme la recherche des reçus ; les jokers saisis sont neutralisés.
+            var pattern = "%" + search.Trim().Replace("\\", "\\\\").Replace("%", "\\%").Replace("_", "\\_") + "%";
+            q = q.Where(e => EF.Functions.Like(e.Description, pattern, "\\") || EF.Functions.Like(e.Beneficiary, pattern, "\\")
+                || EF.Functions.Like(e.Number, pattern, "\\"));
+        }
         var total = await q.CountAsync(ct);
         var sum = (await q.Where(e => e.Status == OperationStatus.Valide).Select(e => e.Amount).ToListAsync(ct)).Sum();
         pageSize = Math.Clamp(pageSize, 1, 1000);
@@ -49,15 +55,17 @@ public sealed class CashService(IAppDbContext db, IWriteGate gate, IAuditLog aud
             .Require(!string.IsNullOrWhiteSpace(input.Description) && input.Description.Length <= 500, "description", "Décrivez la dépense.")
             .Require(date <= clock.Today, "date", "La date ne peut pas être dans le futur.")
             .ThrowIfInvalid();
-        var lastClosing = await PaymentService.LastClosingAsync(db, ct);
-        if (lastClosing is not null && date <= lastClosing) throw new DomainException("date", $"La caisse est arrêtée jusqu'au {lastClosing:dd/MM/yyyy}.");
+        var lastClosing = await CashLock.LastAsync(db, ct);
+        if (CashLock.RefusesNew(lastClosing, date, clock.Today)) throw new DomainException("date", $"La caisse est arrêtée jusqu'au {lastClosing!.Date:dd/MM/yyyy}.");
         if (method == PaymentMethod.Especes)
         {
             var situation = await SituationAsync(date, ct);
             if (input.Amount > situation.ExpectedCash)
                 throw new DomainException("amount", $"Espèces disponibles insuffisantes : {Money.Display(situation.ExpectedCash, school.CurrencySymbol)} en caisse.");
         }
-        var year = await YearContext.CurrentAsync(db, ct);
+        // Une dépense se range dans l'année scolaire de sa date (rentrée, dépense antidatée) ; à défaut, l'année courante.
+        var year = await db.AcademicYears.AsNoTracking().Where(y => y.StartDate <= date && y.EndDate >= date)
+            .OrderByDescending(y => y.IsCurrent).FirstOrDefaultAsync(ct) ?? await YearContext.CurrentAsync(db, ct);
         var expense = new Expense
         {
             Number = await PaymentService.NextNumberAsync(db, "DP", year.FirstCalendarYear, ct), Date = date, AcademicYearId = year.Id,
@@ -75,8 +83,8 @@ public sealed class CashService(IAppDbContext db, IWriteGate gate, IAuditLog aud
         if (string.IsNullOrWhiteSpace(reason) || reason.Trim().Length < 5) throw new DomainException("reason", "Le motif d'annulation est obligatoire.");
         var e = await db.Expenses.FirstOrDefaultAsync(x => x.Id == id, ct) ?? throw new NotFoundException("Dépense introuvable.");
         if (e.Status == OperationStatus.Annule) throw new ConflictException("Cette dépense est déjà annulée.");
-        var lastClosing = await PaymentService.LastClosingAsync(db, ct);
-        if (lastClosing is not null && e.Date <= lastClosing) throw new DomainException("date", "Cette dépense appartient à une caisse arrêtée.");
+        var lastClosing = await CashLock.LastAsync(db, ct);
+        if (CashLock.Covers(lastClosing, e.Date, e.CreatedAtUtc)) throw new DomainException("date", "Cette dépense appartient à une caisse arrêtée.");
         e.Status = OperationStatus.Annule; e.CancelledAtUtc = clock.UtcNow; e.CancelledBy = user.Name; e.CancellationReason = reason.Trim();
         audit.Record("depense.annulee", "Depense", id.ToString(), $"Dépense {e.Number} annulée.", new { motif = reason });
         await db.SaveChangesAsync(ct);
@@ -87,15 +95,22 @@ public sealed class CashService(IAppDbContext db, IWriteGate gate, IAuditLog aud
     public async Task<CashSituationDto> SituationAsync(DateOnly? date, CancellationToken ct = default)
     {
         var day = date ?? clock.Today;
-        var last = await db.CashClosings.AsNoTracking().OrderByDescending(c => c.Date).FirstOrDefaultAsync(ct);
-        var start = last is null ? DateOnly.MinValue : last.Date.AddDays(1);
+        var last = await db.CashClosings.AsNoTracking().OrderByDescending(c => c.Date).ThenByDescending(c => c.CreatedAtUtc).FirstOrDefaultAsync(ct);
+        // Une opération enregistrée le jour même après l'arrêté appartient à la période suivante.
+        var lastDate = last?.Date ?? DateOnly.MinValue;
+        var closedAt = last?.CreatedAtUtc ?? DateTime.MinValue;
         var opening = last?.CountedCash ?? 0m;
         var receipts = await (from r in db.Receipts.AsNoTracking()
                               join s in db.Students.AsNoTracking() on r.StudentId equals s.Id
-                              where r.Status == OperationStatus.Valide && r.Date >= start && r.Date <= day
+                              where r.Status == OperationStatus.Valide && r.Date <= day
+                                    && (r.Date > lastDate || (r.Date == lastDate && r.CreatedAtUtc > closedAt))
                               select new { r.Date, r.Number, Label = s.Matricule + " " + s.LastName + " " + s.FirstName, r.Method, r.Amount }).ToListAsync(ct);
-        var expenses = await db.Expenses.AsNoTracking().Where(e => e.Status == OperationStatus.Valide && e.Date >= start && e.Date <= day)
+        var expenses = await db.Expenses.AsNoTracking().Where(e => e.Status == OperationStatus.Valide && e.Date <= day
+                && (e.Date > lastDate || (e.Date == lastDate && e.CreatedAtUtc > closedAt)))
             .Select(e => new { e.Date, e.Number, Label = e.Category + " · " + e.Beneficiary, e.Method, e.Amount }).ToListAsync(ct);
+        // La période commence le lendemain de l'arrêté, ou le jour même s'il reste des opérations postérieures à l'arrêté.
+        var start = last is null ? DateOnly.MinValue
+            : receipts.Any(r => r.Date == last.Date) || expenses.Any(e => e.Date == last.Date) || day == last.Date ? last.Date : last.Date.AddDays(1);
         var cashIn = receipts.Where(r => r.Method == PaymentMethod.Especes).Sum(r => r.Amount);
         var cashOut = expenses.Where(e => e.Method == PaymentMethod.Especes).Sum(e => e.Amount);
         var movements = receipts.Select(r => new CashMovementDto(r.Date, "Recette", r.Number, r.Label, Labels.Of(r.Method), r.Amount, 0))
@@ -111,8 +126,9 @@ public sealed class CashService(IAppDbContext db, IWriteGate gate, IAuditLog aud
         if (input.Date > clock.Today) throw new DomainException("date", "Impossible d'arrêter la caisse à une date future.");
         if (input.CountedCash < 0) throw new DomainException("countedCash", "Le montant compté ne peut pas être négatif.");
         var situation = await SituationAsync(input.Date, ct);
-        if (situation.LastClosingDate is not null && input.Date <= situation.LastClosingDate)
-            throw new DomainException("date", $"La caisse est déjà arrêtée au {situation.LastClosingDate:dd/MM/yyyy}.");
+        // Un arrêté par jour : les opérations enregistrées après l'arrêté du jour entrent dans le prochain arrêté.
+        if (situation.LastClosingDate is { } lastDay && input.Date <= lastDay)
+            throw new DomainException("date", $"La caisse est déjà arrêtée au {lastDay:dd/MM/yyyy}. Les opérations enregistrées depuis seront comptées dans le prochain arrêté.");
         var difference = input.CountedCash - situation.ExpectedCash;
         if (difference != 0 && string.IsNullOrWhiteSpace(input.Note))
             throw new DomainException("note", "Un écart existe entre l'espèce comptée et l'espèce attendue : expliquez-le.");
@@ -130,8 +146,30 @@ public sealed class CashService(IAppDbContext db, IWriteGate gate, IAuditLog aud
     }, ct);
 
     public async Task<IReadOnlyList<CashClosingDto>> ClosingsAsync(CancellationToken ct = default) =>
-        (await db.CashClosings.AsNoTracking().OrderByDescending(c => c.Date).Take(200).ToListAsync(ct)).Select(ToDto).ToList();
+        (await db.CashClosings.AsNoTracking().OrderByDescending(c => c.Date).ThenByDescending(c => c.CreatedAtUtc).Take(200).ToListAsync(ct)).Select(ToDto).ToList();
 
     private static CashClosingDto ToDto(CashClosing c) => new(c.Id, c.Date, c.PeriodStart, c.OpeningBalance, c.CashReceipts, c.CashExpenses, c.ExpectedCash,
         c.CountedCash, c.Difference, c.Note, c.ClosedByName, c.CreatedAtUtc);
+}
+
+/// <summary>
+/// Verrou de caisse posé par le dernier arrêté. Il s'applique à l'horodatage et non au seul jour :
+/// après un arrêté en cours de journée, les encaissements suivants du même jour restent possibles
+/// et appartiennent à la période suivante.
+/// </summary>
+public static class CashLock
+{
+    public sealed record Mark(DateOnly Date, DateTime ClosedAtUtc);
+
+    public static async Task<Mark?> LastAsync(IAppDbContext db, CancellationToken ct) =>
+        await db.CashClosings.AsNoTracking().OrderByDescending(c => c.Date).ThenByDescending(c => c.CreatedAtUtc)
+            .Select(c => new Mark(c.Date, c.CreatedAtUtc)).FirstOrDefaultAsync(ct);
+
+    /// <summary>Une nouvelle opération ne peut pas entrer dans une période arrêtée, sauf le jour même.</summary>
+    public static bool RefusesNew(Mark? last, DateOnly date, DateOnly today) =>
+        last is not null && (date < last.Date || (date == last.Date && date != today));
+
+    /// <summary>L'opération existante a été comptée dans un arrêté : elle ne peut plus être annulée.</summary>
+    public static bool Covers(Mark? last, DateOnly date, DateTime createdAtUtc) =>
+        last is not null && (date < last.Date || (date == last.Date && createdAtUtc <= last.ClosedAtUtc));
 }

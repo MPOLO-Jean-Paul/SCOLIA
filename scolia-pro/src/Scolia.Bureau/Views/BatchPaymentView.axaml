@@ -3,7 +3,7 @@
              xmlns:c="using:Scolia.Bureau.Controls"
              xmlns:infra="using:Scolia.Bureau.Infrastructure"
              x:Class="Scolia.Bureau.Views.BatchPaymentView">
-  <Grid RowDefinitions="Auto,*,Auto">
+  <Grid RowDefinitions="Auto,Auto,*,Auto">
     <Border Grid.Row="0" Classes="band" Margin="0,0,0,10">
       <WrapPanel>
         <StackPanel Classes="field pagesearch">
@@ -14,9 +14,12 @@
           <TextBlock Text="Promotion" Classes="fieldlabel" />
           <ComboBox Width="200" ItemsSource="{Binding Promotions}" SelectedItem="{Binding Promotion}" />
         </StackPanel>
-        <StackPanel Classes="field">
-          <TextBlock Text="Mois à régler" Classes="fieldlabel" />
-          <ComboBox Width="220" ItemsSource="{Binding Modes}" SelectedItem="{Binding Mode}" />
+        <StackPanel Classes="field" Spacing="3">
+          <TextBlock Text="Échéance à encaisser" Classes="fieldlabel" />
+          <ComboBox Width="252" ItemsSource="{Binding Modes}" SelectedItem="{Binding Mode}"
+                    ToolTip.Tip="Premier retard, deuxième retard, tous les retards ou tous les mois ouverts" />
+          <TextBlock Text="{Binding MonthModeHint}" Classes="muted" FontSize="{DynamicResource FsSmall}"
+                     MaxWidth="252" TextWrapping="Wrap" />
         </StackPanel>
         <StackPanel Classes="field">
           <TextBlock Text="Mode de paiement" Classes="fieldlabel" />
@@ -28,7 +31,19 @@
         </StackPanel>
       </WrapPanel>
     </Border>
-    <DataGrid Grid.Row="1" ItemsSource="{Binding Items}" AutoGenerateColumns="False" CanUserSortColumns="False">
+    <!-- Le lot sélectionné est distinct de la recherche : cette barre reste visible pendant tous les filtres. -->
+    <Border Grid.Row="1" Classes="card" Padding="12,8" Margin="0,0,0,10">
+      <WrapPanel Orientation="Horizontal" VerticalAlignment="Center">
+        <StackPanel Spacing="2" Margin="0,2,16,2" VerticalAlignment="Center">
+          <TextBlock Text="Lot en préparation" FontWeight="SemiBold" />
+          <TextBlock Text="{Binding SelectionSummary}" Classes="muted" TextWrapping="Wrap" />
+        </StackPanel>
+        <Button Content="{Binding SelectedViewTitle}" Command="{Binding ToggleSelectedView}"
+                ToolTip.Tip="Revoir les apprenants cochés, même s'ils sont masqués par la recherche"
+                Margin="0,2,8,2" MinHeight="36" />
+      </WrapPanel>
+    </Border>
+    <DataGrid Grid.Row="2" ItemsSource="{Binding Items}" AutoGenerateColumns="False" CanUserSortColumns="False">
       <DataGrid.Columns>
         <DataGridCheckBoxColumn Header="Payer" Binding="{Binding Selected}" Width="Auto" MinWidth="80" />
         <DataGridTextColumn infra:GridPriority.Level="2" Header="Matricule" Binding="{Binding Matricule}" IsReadOnly="True" Width="Auto" MinWidth="122" />
@@ -47,7 +62,7 @@
         <DataGridTextColumn infra:GridPriority.Level="2" Header="Résultat" Binding="{Binding Result}" IsReadOnly="True" Width="Auto" MinWidth="240" />
       </DataGrid.Columns>
     </DataGrid>
-    <TextBlock Grid.Row="2" Text="{Binding SelectionSummary}" Classes="muted" Margin="0,8,0,0" />
-    <c:EmptyState Grid.Row="1" Icon="FormatListChecks" Title="Aucun apprenant à encaisser" Hint="Personne n'a de mois à régler pour ce choix. Pour encaisser plus tôt, choisissez « Prochain mois » ou « Tous les mois ouverts » dans « Mois à régler »." IsVisible="{Binding Items.Count, Converter={StaticResource IsEmpty}}" />
+    <TextBlock Grid.Row="3" Text="Les apprenants cochés restent dans le lot quand vous recherchez d'autres noms." Classes="muted" TextWrapping="Wrap" Margin="0,8,0,0" />
+    <c:EmptyState Grid.Row="2" Icon="FormatListChecks" Title="Aucun apprenant à encaisser" Hint="{Binding NoMonthsHint}" IsVisible="{Binding Items.Count, Converter={StaticResource IsEmpty}}" />
   </Grid>
 </UserControl>

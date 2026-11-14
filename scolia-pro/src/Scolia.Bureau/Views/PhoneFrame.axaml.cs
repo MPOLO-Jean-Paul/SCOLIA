@@ -30,6 +30,9 @@ public partial class PhoneFrame : UserControl
         AttachedToVisualTree += (_, _) => AttachShell();
         DetachedFromVisualTree += (_, _) => ReleaseShell();
         SizeChanged += (_, e) => ActionSheet.MaxHeight = Math.Max(0, e.NewSize.Height - 24);
+        // Le bouton Menu occupe la même largeur qu'un onglet ordinaire, quel que
+        // soit le nombre d'outils visibles pour le rôle (enseignant/secrétariat).
+        TabGrid.SizeChanged += (_, _) => AlignBottomTabs();
     }
 
     private ShellViewModel? subscribedShell;
@@ -41,6 +44,7 @@ public partial class PhoneFrame : UserControl
         if (Shell is not { } shell) return;
         subscribedShell = shell;
         ApplyTransition();
+        AlignBottomTabs();
         shell.Prefs.PropertyChanged += OnPreferencesChanged;
         shell.PropertyChanged += OnShellChanged;
         shell.SettingsSearch.PropertyChanged += OnSettingsSearchChanged;
@@ -103,6 +107,7 @@ public partial class PhoneFrame : UserControl
     {
         // Une nouvelle page s'ouvre en haut, sans toucher la position d'une page simplement actualisée.
         if (args.PropertyName == nameof(ShellViewModel.PhonePage)) PhoneScroll.Offset = default;
+        if (args.PropertyName == nameof(ShellViewModel.PhoneTabs)) AlignBottomTabs();
     }
 
     private void OnSettingsSearchChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
@@ -152,6 +157,14 @@ public partial class PhoneFrame : UserControl
         }
     }
 
+    private void AlignBottomTabs()
+    {
+        if (Shell is not { } shell || TabGrid.Bounds.Width <= 0) return;
+        var count = shell.PhoneTabs.Count + 1; // dernier onglet = Menu
+        if (count <= 1) return;
+        MenuTab.Width = Math.Clamp(TabGrid.Bounds.Width / count, 60, 120);
+    }
+
     private ShellViewModel? Shell => DataContext as ShellViewModel;
 
     private void CloseMenu()
@@ -172,7 +185,14 @@ public partial class PhoneFrame : UserControl
 
     private async void OnLogoutClick(object? sender, RoutedEventArgs e)
     {
-        if (Shell is { } shell) await shell.LogoutAsync();
+        if (Shell is not { } shell) return;
+        try { await shell.LogoutAsync(); }
+        catch (Exception ex)
+        {
+            // Ne jamais laisser remonter une exception hors de l'événement Android.
+            System.Diagnostics.Trace.WriteLine($"SCOLIA : déconnexion mobile ({ex.GetType().Name}) : {ex.Message}");
+            shell.Notify("La déconnexion a rencontré une erreur. Réessayez.");
+        }
     }
 
     private void OnScrimPressed(object? sender, PointerPressedEventArgs e) => Shell?.CloseSheet();

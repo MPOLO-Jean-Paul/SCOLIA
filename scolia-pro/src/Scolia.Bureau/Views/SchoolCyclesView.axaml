@@ -1,0 +1,145 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:infra="using:Scolia.Bureau.Infrastructure"
+             xmlns:mi="using:Material.Icons.Avalonia"
+             x:Class="Scolia.Bureau.Views.SchoolCyclesView">
+  <!-- Charte existante : mêmes champs, cartes et groupes que les Paramètres
+       du secrétariat, sans autre bibliothèque ni nouvelle palette. -->
+  <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+    <StackPanel Spacing="12" MaxWidth="960" Margin="0,0,6,12">
+      <TextBlock Text="ÉTABLISSEMENT ET CYCLES" Classes="groupcaps" />
+      <Border Classes="phonegroup" Padding="14,12">
+        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+          <Border Classes="appicon large" Background="{DynamicResource ToneBlue}"
+                  VerticalAlignment="Center">
+            <mi:MaterialIcon Kind="SchoolOutline" />
+          </Border>
+          <StackPanel Grid.Column="1" Spacing="4" VerticalAlignment="Center">
+            <TextBlock Text="Un établissement, plusieurs cycles" FontWeight="SemiBold"
+                       FontSize="{DynamicResource FsHeading}" TextWrapping="Wrap" />
+            <TextBlock Text="Maternelle, primaire et secondaire partagent l'administration. Chaque cycle conserve ses classes, ses périodes et ses tarifs."
+                       Classes="muted" TextWrapping="Wrap" />
+            <TextBlock Text="{Binding Governance, StringFormat='Régime : {0}'}"
+                       Classes="muted" TextWrapping="Wrap" />
+          </StackPanel>
+        </Grid>
+      </Border>
+
+      <Border Classes="phonegroup" Padding="14,12" IsVisible="{Binding !CanConfigure}">
+        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+          <Border Classes="appicon medium" Background="{DynamicResource ToneOrange}">
+            <mi:MaterialIcon Kind="LockOutline" />
+          </Border>
+          <TextBlock Grid.Column="1"
+                     Text="Cette configuration est préparée, mais reste verrouillée jusqu'à la validation des programmes, des évaluations et des bulletins. Les installations ITM/IM restent inchangées."
+                     TextWrapping="Wrap" VerticalAlignment="Center" />
+        </Grid>
+      </Border>
+
+      <TextBlock Text="CYCLES PROPOSÉS" Classes="groupcaps" />
+      <ItemsControl ItemsSource="{Binding Cycles}" IsEnabled="{Binding CanConfigure}">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate>
+            <Border Classes="phonegroup" Padding="14,12" Margin="0,0,0,10">
+              <StackPanel Spacing="10">
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                  <CheckBox Content="{Binding Label}" IsChecked="{Binding Included}"
+                            FontWeight="SemiBold" VerticalAlignment="Center" />
+                  <TextBlock Grid.Column="1" Text="{Binding ClassCount, StringFormat='Classes : {0}'}"
+                             Classes="muted" VerticalAlignment="Center" />
+                </Grid>
+                <StackPanel Spacing="8" IsVisible="{Binding Included}">
+                  <StackPanel Classes="field" Margin="0">
+                    <TextBlock Text="Nom du cycle" Classes="fieldlabel" />
+                    <TextBox Classes="w11" Text="{Binding Name}" HorizontalAlignment="Stretch"
+                             Watermark="Dénomination du cycle" />
+                  </StackPanel>
+                  <StackPanel Classes="field" Margin="0">
+                    <TextBlock Text="Référence d'agrément (facultative)" Classes="fieldlabel" />
+                    <TextBox Classes="w11" Text="{Binding AuthorizationNumber}"
+                             HorizontalAlignment="Stretch" Watermark="Numéro de l'agrément" />
+                  </StackPanel>
+                  <Border Height="1" Background="{DynamicResource LineBrush}" />
+                  <CheckBox Content="Percevoir une mensualité de scolarité pour ce cycle"
+                            IsChecked="{Binding ChargeMonthlyTuition}" />
+                  <StackPanel Classes="field" Margin="0"
+                              IsEnabled="{Binding ChargeMonthlyTuition}">
+                    <TextBlock Text="Mensualité de référence (CDF)" Classes="fieldlabel" />
+                    <TextBox Classes="w11" Text="{Binding MonthlyAmount}"
+                             HorizontalAlignment="Stretch" Watermark="Exemple : 90000" />
+                    <TextBlock Text="Tarif de référence uniquement : aucune facture ni aucun reçu n'est créé automatiquement."
+                               Classes="muted" TextWrapping="Wrap" />
+                  </StackPanel>
+                </StackPanel>
+              </StackPanel>
+            </Border>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+
+      <Border Classes="phonegroup" Padding="14,12">
+        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+          <Border Classes="appicon medium" Background="{DynamicResource ToneTeal}">
+            <mi:MaterialIcon Kind="ShieldCheckOutline" />
+          </Border>
+          <TextBlock Grid.Column="1"
+                     Text="Les frais sont définis par cycle et par année. Les encaissements et les reçus restent affectés aux classes concernées, sous contrôle du secrétariat."
+                     Classes="muted" TextWrapping="Wrap" />
+        </Grid>
+      </Border>
+      <Button Classes="primary" Content="Enregistrer la configuration des cycles"
+              Command="{Binding Save}" IsEnabled="{Binding CanConfigure}"
+              HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+              MinHeight="44" />
+      <TextBlock Text="PÉRIODES PÉDAGOGIQUES DU CYCLE" Classes="groupcaps" />
+      <Border Classes="phonegroup" Padding="12,10">
+        <StackPanel Spacing="6">
+          <TextBlock Text="Cycle" Classes="fieldlabel" />
+          <ComboBox ItemsSource="{Binding CycleChoices}" SelectedItem="{Binding SelectedCycle}"
+                    HorizontalAlignment="Stretch" />
+        </StackPanel>
+      </Border>
+      <ItemsControl ItemsSource="{Binding Periods}">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate>
+            <Border Classes="phonegroup" Padding="12,10" Margin="0,0,0,6">
+              <StackPanel Spacing="3">
+                <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
+                <TextBlock Text="{Binding Code}" Classes="muted" />
+                <TextBlock Text="{Binding TermCode}" Classes="muted" />
+                <TextBlock Text="{Binding Mode}" Classes="muted" />
+              </StackPanel>
+            </Border>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+      <Button Content="Ajouter une période" Command="{Binding AddPeriod}"
+              MinHeight="44" HorizontalAlignment="Stretch" />
+      <TextBlock Text="MATIÈRES ET ACTIVITÉS DE LA CLASSE" Classes="groupcaps" />
+      <Border Classes="phonegroup" Padding="12,10">
+        <StackPanel Spacing="6">
+          <TextBlock Text="Classe" Classes="fieldlabel" />
+          <ComboBox ItemsSource="{Binding PromotionChoices}" SelectedItem="{Binding SelectedPromotion}"
+                    HorizontalAlignment="Stretch" />
+        </StackPanel>
+      </Border>
+      <ItemsControl ItemsSource="{Binding Subjects}">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate>
+            <Border Classes="phonegroup" Padding="12,10" Margin="0,0,0,6">
+              <StackPanel Spacing="3">
+                <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
+                <TextBlock Text="{Binding Code}" Classes="muted" />
+                <TextBlock Text="{Binding Coefficient, StringFormat='Coefficient : {0}'}" Classes="muted" />
+              </StackPanel>
+            </Border>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+      <Button Content="Ajouter une matière annuelle" Command="{Binding AddSubject}"
+              MinHeight="44" HorizontalAlignment="Stretch" />
+      <TextBlock Text="L'année scolaire, les matières et les évaluations sont préparées sans création de note, de moyenne ou de bulletin officiel."
+                 Classes="muted" TextWrapping="Wrap" />
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:infra="using:Scolia.Bureau.Infrastructure"
              xmlns:views="using:Scolia.Bureau.Views"
              x:Class="Scolia.Bureau.Views.PhoneFrame">
   <UserControl.Resources>
@@ -156,7 +157,7 @@
     <!-- Barre du haut -->
     <Border Grid.Row="0" Classes="phonebar">
       <StackPanel>
-      <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto" IsVisible="{Binding !HeaderSearch.IsOpen}">
+      <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto" IsVisible="{Binding !HeaderSearch.IsOpen}">
         <Button Classes="phoneicon" Command="{Binding BackCommand}" IsVisible="{Binding CanGoBack}" ToolTip.Tip="Retour">
           <mi:MaterialIcon Kind="ChevronLeft" />
         </Button>
@@ -172,7 +173,7 @@
         <!-- Présence : les autres postes connectés ; le point vert bat quand l'un d'eux enregistre quelque chose -->
         <Button Grid.Column="2" Classes="phoneicon" Command="{Binding NetworkCommand}" ToolTip.Tip="Réseau et activité">
           <Panel>
-            <mi:MaterialIcon Kind="CloudOffOutline" Foreground="{DynamicResource ToneOrange}" IsVisible="{Binding Sync.Offline}" />
+            <Ellipse Width="10" Height="10" Fill="{DynamicResource ToneOrange}" IsVisible="{Binding Sync.Offline}" HorizontalAlignment="Center" VerticalAlignment="Center" />
             <Panel IsVisible="{Binding Sync.Online}">
               <mi:MaterialIcon Kind="AccountMultipleOutline" />
               <Border Classes="livedot" Classes.pulse="{Binding Sync.Pulse}" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-2,-4,0" />
@@ -186,7 +187,13 @@
                 IsVisible="{Binding HeaderSearch.IsVisible}" ToolTip.Tip="{Binding HeaderSearch.SearchHint}">
           <mi:MaterialIcon Kind="Magnify" />
         </Button>
-        <Button Grid.Column="4" Classes="phoneicon" Click="OnActionsClick" IsVisible="{Binding PhonePage.HasHeaderActions}" ToolTip.Tip="Actions de la page">
+        <!-- Action principale de la page, toujours visible (style barre de navigation iOS) -->
+        <Button x:Name="PrimaryPageAction" Grid.Column="4" Classes="phoneicon primaryaction" Command="{Binding PhonePage.PrimaryAction.Command}"
+                IsVisible="{Binding PhonePage.HasPrimaryAction}" ToolTip.Tip="{Binding PhonePage.PrimaryAction.Label}"
+                AutomationProperties.Name="{Binding PhonePage.PrimaryAction.Label}">
+          <mi:MaterialIcon Kind="{Binding PhonePage.PrimaryAction.Icon, Converter={x:Static infra:Icons.LineConverter}}" Foreground="{DynamicResource AccentBrush}" />
+        </Button>
+        <Button Grid.Column="5" Classes="phoneicon" Click="OnActionsClick" IsVisible="{Binding PhonePage.HasHeaderActions}" ToolTip.Tip="Actions de la page">
           <mi:MaterialIcon Kind="DotsHorizontalCircleOutline" />
         </Button>
       </Grid>
@@ -202,19 +209,16 @@
           <mi:MaterialIcon Kind="Close" />
         </Button>
         <Button Grid.Column="3" Classes="baricon mic" Classes.listening="{Binding HeaderSearch.Listening}" Command="{Binding HeaderSearch.Listen}"
-                IsVisible="{Binding HeaderSearch.VoiceAvailable}" ToolTip.Tip="Filtrer à la voix">
-          <mi:MaterialIcon Kind="Microphone" />
+                IsVisible="{Binding HeaderSearch.VoiceAvailable}" ToolTip.Tip="{Binding HeaderSearch.VoiceTip}">
+          <Grid>
+                  <mi:MaterialIcon Kind="MicrophoneOutline" IsVisible="{Binding !HeaderSearch.Listening}" />
+                  <mi:MaterialIcon Kind="StopOutline" IsVisible="{Binding HeaderSearch.Listening}" />
+                </Grid>
         </Button>
       </Grid>
-      <!-- Hors ligne : le travail continue, et l'utilisateur sait ce qui attend d'être envoyé -->
-      <Button Classes="livestrip offline" Command="{Binding NetworkCommand}" IsVisible="{Binding Sync.Offline}">
-        <!-- Bandeaux d'état : le texte passe à la ligne au lieu d'être coupé sur un petit écran -->
-        <Grid ColumnDefinitions="Auto,Auto,*" ColumnSpacing="8">
-          <mi:MaterialIcon Kind="CloudOffOutline" Width="16" Height="16" VerticalAlignment="Top" Margin="0,1,0,0" />
-          <TextBlock Grid.Column="1" Text="{Binding Sync.StatusText}" FontWeight="SemiBold" VerticalAlignment="Top" />
-          <TextBlock Grid.Column="2" Text="· envoi au retour de l'ordinateur principal" TextWrapping="Wrap" />
-        </Grid>
-      </Button>
+      <!-- Aucun bandeau hors ligne ici : l'état est déjà dans le point d'en-tête
+           et dans la puce discrète de la carte d'accueil. Le dialogue Réseau
+           conserve les détails et les opérations en attente. -->
       <Button Classes="livestrip conflict" Command="{Binding NetworkCommand}" IsVisible="{Binding Sync.HasConflicts}">
         <Grid ColumnDefinitions="Auto,Auto,*" ColumnSpacing="8">
           <mi:MaterialIcon Kind="AlertCircleOutline" Width="16" Height="16" VerticalAlignment="Top" Margin="0,1,0,0" />
@@ -293,8 +297,11 @@
                 <mi:MaterialIcon Kind="Close" />
               </Button>
               <Button Grid.Column="3" Classes="baricon mic" Classes.listening="{Binding SettingsSearch.Listening}" Command="{Binding SettingsSearch.Listen}"
-                      IsVisible="{Binding SettingsSearch.VoiceAvailable}" ToolTip.Tip="Rechercher à la voix">
-                <mi:MaterialIcon Kind="Microphone" />
+                      IsVisible="{Binding SettingsSearch.VoiceAvailable}" ToolTip.Tip="{Binding SettingsSearch.VoiceTip}">
+                <Grid>
+                  <mi:MaterialIcon Kind="MicrophoneOutline" IsVisible="{Binding !SettingsSearch.Listening}" />
+                  <mi:MaterialIcon Kind="StopOutline" IsVisible="{Binding SettingsSearch.Listening}" />
+                </Grid>
               </Button>
             </Grid>
           </Border>
@@ -376,9 +383,9 @@
           <ItemsControl.ItemTemplate>
             <DataTemplate>
               <Button Classes="phonetab" Classes.selected="{Binding IsSelected}" Command="{Binding Open}">
-                <StackPanel Spacing="2" HorizontalAlignment="Center">
+                <StackPanel Spacing="3" HorizontalAlignment="Center">
                   <Border Classes="tabicon" Classes.selected="{Binding IsSelected}">
-                    <mi:MaterialIcon Kind="{Binding Icon}" Width="22" Height="22" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{Binding Brush}" />
+                    <mi:MaterialIcon Kind="{Binding Icon}" Width="21" Height="21" HorizontalAlignment="Center" VerticalAlignment="Center" />
                   </Border>
                   <TextBlock Text="{Binding TabLabel}" ToolTip.Tip="{Binding Label}" />
                 </StackPanel>
@@ -386,10 +393,15 @@
             </DataTemplate>
           </ItemsControl.ItemTemplate>
         </ItemsControl>
-        <Button Grid.Column="1" x:Name="MenuTab" Classes="phonetab" Classes.selected="{Binding PhoneMenuSelected}" Click="OnMenuClick" MinWidth="56">
-          <StackPanel Spacing="2">
-            <mi:MaterialIcon Kind="Menu" Width="24" Height="24" HorizontalAlignment="Center" />
-            <TextBlock Text="Menu" />
+        <Button Grid.Column="1" x:Name="MenuTab" Classes="phonetab"
+                Classes.selected="{Binding PhoneMenuSelected}" Click="OnMenuClick"
+                MinWidth="0" AutomationProperties.Name="Menu">
+          <StackPanel Spacing="3" HorizontalAlignment="Center">
+            <Border Classes="tabicon" Classes.selected="{Binding PhoneMenuSelected}">
+              <mi:MaterialIcon Kind="Menu" Width="21" Height="21"
+                               HorizontalAlignment="Center" VerticalAlignment="Center" />
+            </Border>
+            <TextBlock Text="Menu" TextAlignment="Center" />
           </StackPanel>
         </Button>
       </Grid>

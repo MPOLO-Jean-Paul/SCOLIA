@@ -10,15 +10,47 @@ public static class RemoteConnection
 {
     private static readonly string FilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "SCOLIA", "liaison-distante.enc");
     private static RemoteHost? host;
+    private static RemoteHost? backupHost;
     private static readonly object HostGate = new();
-    public static bool Hosting { get { lock (HostGate) return host?.Connected == true; } }
+    public static bool Hosting { get { lock (HostGate) return host?.Connected == true || backupHost?.Connected == true; } }
+    public static bool PrimaryHosting { get { lock (HostGate) return host?.Connected == true; } }
+    public static bool BackupHosting { get { lock (HostGate) return backupHost?.Connected == true; } }
+    /// <summary>Hôte lancé (connecté ou en reprise).</summary>
+    public static bool HostRunning { get { lock (HostGate) return host is not null; } }
+    /// <summary>Dernière raison d'échec de la connexion au relais, sans secret.</summary>
+    public static string? HostFailure { get { lock (HostGate) return Hosting ? null : host?.LastConnectionFailure ?? backupHost?.LastConnectionFailure; } }
+    public static int HostAttempts { get { lock (HostGate) return host?.Attempts ?? 0; } }
+    /// <summary>Connexion au relais établie ou perdue (appelé hors du fil de l'interface).</summary>
+    public static event Action? HostStateChanged;
     public static RemoteConfiguration? Load()
     {
         if (!File.Exists(FilePath)) return null;
-        return JsonSerializer.Deserialize<RemoteConfiguration>(SecretStore.Unprotect(File.ReadAllBytes(FilePath)));
+        var saved = JsonSerializer.Deserialize<RemoteConfiguration>(SecretStore.Unprotect(File.ReadAllBytes(FilePath)));
+        if (saved is { Host: false, Enabled: true } && saved.Link.ExpiresUtc <= DateTime.UtcNow &&
+            DevicePairingStore.Read(saved.Link.VirtualServer) is not null)
+        {
+            // L'ancien lien a une date limite, contrairement au poste déjà
+            // autorisé. Réutiliser exactement la même salle et les mêmes clés.
+            saved = saved with { Link = saved.Link with { ExpiresUtc = DateTime.MaxValue } };
+            Save(saved);
+        }
+        return saved;
     }
 
     public static void Save(RemoteConfiguration configuration) => SecretStore.Save(FilePath, JsonSerializer.SerializeToUtf8Bytes(configuration));
+
+    /// <summary>Retire uniquement la liaison cliente mémorisée ; ne touche jamais au relais hébergé par le serveur principal.</summary>
+    public static bool ForgetClient()
+    {
+        try
+        {
+            if (Load() is { Host: true }) return false;
+            if (File.Exists(FilePath)) File.Delete(FilePath);
+            return true;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Security.Cryptography.CryptographicException
+            or JsonException) { return false; }
+    }
 
     public static void StartHost(Uri localServer)
     {
@@ -36,9 +68,20 @@ public static class RemoteConnection
         lock (HostGate)
         {
             if (host is not null) return;
-            if (Load() is { Host: true, Enabled: true } configuration
-                && configuration.Link.ExpiresUtc > DateTime.UtcNow)
-                host = new RemoteHost(configuration.Link, localServer);
+            if (Load() is { Host: true, Enabled: true } configuration)
+            {
+                var link = configuration.Link.ExpiresUtc <= DateTime.UtcNow
+                    ? configuration.Link.Resume() : configuration.Link;
+                if (link != configuration.Link) Save(configuration with { Link = link });
+                host = new RemoteHost(link, localServer);
+                host.StateChanged += () => HostStateChanged?.Invoke();
+                if (link.EffectiveBackupRelay is { } backup)
+                {
+                    // Deux connexions sortantes indépendantes : aucun second serveur ni base distante.
+                    backupHost = new RemoteHost(link.Via(backup), localServer);
+                    backupHost.StateChanged += () => HostStateChanged?.Invoke();
+                }
+            }
         }
     }
 
@@ -47,7 +90,9 @@ public static class RemoteConnection
         lock (HostGate)
         {
             host?.Dispose();
+            backupHost?.Dispose();
             host = null;
+            backupHost = null;
         }
     }
     public static void Disable()

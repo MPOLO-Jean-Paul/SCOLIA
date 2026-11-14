@@ -24,7 +24,9 @@ public static class QrCodes
     {
         using var generator = new QRCodeGenerator();
         using var data = generator.CreateQrCode(text, QRCodeGenerator.ECCLevel.M);
-        return new PngByteQRCode(data).GetGraphic(pixelsPerModule, [0x11, 0x18, 0x27], [0xFF, 0xFF, 0xFF], drawQuietZones: true);
+        // Noir pur avec large zone blanche ; les photos de petits écrans
+        // et le zoom automatique décodent mieux que les modules bleu nuit.
+        return new PngByteQRCode(data).GetGraphic(pixelsPerModule, [0, 0, 0], [255, 255, 255], drawQuietZones: true);
     }
 
     /// <summary>

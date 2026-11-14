@@ -123,7 +123,8 @@ public class AuthRecoveryExperienceTests
         using var api = new ScoliaClient(new Uri("http://localhost:5080/"));
         var vm = new LoginViewModel(api);
         vm.ConfigureClientMode(true);
-        Assert.False(vm.ShowManualCredentials);
+        Assert.True(vm.ShowManualCredentials);
+        Assert.False(vm.ShowPairingCallToAction);
         vm.ShowRecoveryHelp("secretariat");
         Assert.True(vm.ShowManualCredentials);
         Assert.True(vm.RecoveryOpen);

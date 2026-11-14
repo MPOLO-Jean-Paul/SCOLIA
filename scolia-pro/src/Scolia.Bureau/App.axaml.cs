@@ -24,8 +24,26 @@ public partial class App : Avalonia.Application
             // Le serveur réel (ce poste ou celui de l'établissement) est choisi au démarrage du shell.
             var api = new ScoliaClient(ConnectionStore.LocalAddress);
             var server = new ServerProcess(ConnectionStore.LocalAddress.Port);
+            // Le poste principal héberge le serveur dès l'ouverture, avant les
+            // appels réseau et la page de connexion. Minimiser la fenêtre ne
+            // suspend ni le processus SCOLIA-Serveur ni son superviseur.
+            var savedConnection = OperatingSystem.IsWindows() ? ConnectionStore.Load() : null;
+            if (OperatingSystem.IsWindows() &&
+                (savedConnection?.Mode == ConnectionSettings.Local ||
+                 (savedConnection is null && ConnectionStore.HasLocalData())))
+            {
+                try
+                {
+                    if (!PosteAdmin.ServiceInstalled()) server.Start();
+                }
+                catch (Exception ex) when (ex is System.ComponentModel.Win32Exception
+                    or IOException or UnauthorizedAccessException or InvalidOperationException)
+                { System.Diagnostics.Trace.WriteLine($"Démarrage anticipé du serveur reporté : {ex.Message}"); }
+            }
             var shell = new ShellViewModel(api, Preferences.Load());
-            desktop.MainWindow = new MainWindow { DataContext = shell };
+            var mainWindow = new MainWindow { DataContext = shell };
+            DesktopAppUpdates.Attach(mainWindow);
+            desktop.MainWindow = mainWindow;
             desktop.ShutdownRequested += (_, _) =>
             {
                 shell.Prefs.Save();

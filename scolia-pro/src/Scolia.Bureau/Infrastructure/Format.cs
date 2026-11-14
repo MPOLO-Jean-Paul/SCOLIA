@@ -43,6 +43,27 @@ public static class Format
 /// <summary>Libellés affichés pour les codes échangés avec le serveur.</summary>
 public static class Labels
 {
+    /// <summary>Organisation d'un cours pour la délibération (ITMCD) : un semestre ou toute l'année.</summary>
+    public static readonly IReadOnlyList<ChoiceItem> Semesters =
+        [new("S1", "Premier semestre (S1)"), new("S2", "Second semestre (S2)"), new("Annuel", "Annuel (S1 et S2)"),
+         new("JuryEpreuve", "Épreuve du jury (TOTAL 1)"), new("JuryBloc", "Bloc du jury (SOUS-TOTAL 2)")];
+
+    /// <summary>Périodes délibérées : S1, S2, puis le jury annuel.</summary>
+    public static readonly IReadOnlyList<ChoiceItem> DeliberationPeriods =
+        [new("S1", "Premier semestre"), new("S2", "Second semestre"), new("Annuel", "Jury annuel")];
+
+    // Cours : deux nombres distincts, à ne jamais confondre (fusion ITMCD / projet Délibération).
+    public const string WeightLabel = "Pondération (coefficient)";
+    public const string WeightHint = "Poids du cours dans la moyenne sur 20 des bulletins de « Cours et notes ». La délibération ne l'utilise pas.";
+    public const string MaxScoreLabel = "Maxima du cours (points)";
+    public const string MaxScoreHint = "Total de points du cours pour la délibération : cotes de 0 à ce maxima, échec sous la moitié. Vide : pondération × 10 (convention ITM).";
+
+    /// <summary>Maxima saisi, ou à défaut la convention ITM : pondération × 10.</summary>
+    public static decimal MaxScore(ViewModels.FormViewModel f) =>
+        string.IsNullOrWhiteSpace(f.Text("cotation")) ? f.Amount("coefficient") * 10 : f.Amount("cotation");
+
+    public static string Semester(string code) => code switch { "S1" => "S1", "S2" => "S2", "JuryEpreuve" => "Épreuve jury", "JuryBloc" => "Bloc jury", _ => "Annuel" };
+
     public static string Status(string code) => code switch
     {
         "Actif" => "Actif",
@@ -93,6 +114,36 @@ public static class Labels
         ["sauvegarde.creee"] = "Sauvegarde faite", ["sauvegarde.nettoyage"] = "Anciennes sauvegardes retirées", ["sauvegarde.restauree"] = "Sauvegarde restaurée",
         ["section.creee"] = "Section créée", ["section.modifiee"] = "Section modifiée",
         ["utilisateur.cree"] = "Compte créé", ["utilisateur.modifie"] = "Compte modifié", ["utilisateur.motdepasse"] = "Mot de passe changé",
+        ["utilisateur.jury.accorde"] = "Privilège de jury", ["utilisateur.recuperation"] = "Mot de passe réinitialisé",
+        ["annee.calendrier.modifie"] = "Calendrier modifié", ["installation"] = "Installation de SCOLIA",
+        ["deliberation.autorites"] = "Autorités enregistrées", ["deliberation.cloturee"] = "Délibération clôturée",
+        ["deliberation.code.attribue"] = "Code anonyme attribué", ["deliberation.code.retire"] = "Code anonyme retiré",
+        ["deliberation.code.remplace"] = "Code anonyme remplacé", ["deliberation.codes.attribues"] = "Codes anonymes attribués",
+        ["deliberation.codes.importes"] = "Codes anonymes importés", ["deliberation.cote.anonyme"] = "Cote saisie par code",
+        ["deliberation.cotes.importees"] = "Cotes reprises", ["deliberation.cotes.remises"] = "Cotes remises",
+        ["deliberation.cotes.renvoyees"] = "Cotes renvoyées", ["deliberation.cotes.saisies"] = "Cotes enregistrées",
+        ["deliberation.decision"] = "Décision du jury", ["deliberation.decision.retiree"] = "Décision du jury retirée",
+        ["deliberation.epreuves.creees"] = "Épreuves créées", ["deliberation.ouverte"] = "Délibération ouverte",
+        ["deliberation.reglages"] = "Paramètres de délibération", ["deliberation.rouverte"] = "Délibération rouverte",
+        ["donnees.apprenants.effaces"] = "Dossiers effacés", ["donnees.effacement.refuse"] = "Effacement refusé",
+        ["donnees.paiements.effaces"] = "Paiements effacés", ["enseignant.compte.reactive"] = "Compte enseignant réactivé",
+        ["frais.categorie.creee"] = "Catégorie de frais créée", ["frais.categorie.supprimee"] = "Catégorie de frais supprimée",
+        ["frais.categories.reprise"] = "Catégories de frais reprises", ["nuage.active"] = "Sauvegarde en ligne",
+        ["nuage.code.consulte"] = "Code de secours consulté", ["nuage.recuperee"] = "Copie en ligne récupérée",
+        ["presences.jours.retrait"] = "Jour de cours retiré", ["promotion.creee.reinscription"] = "Promotion créée (réinscription)",
+        ["rapport.journalier.reglages"] = "Rapport du jour réglé", ["section.supprimee"] = "Section supprimée",
+    };
+
+    /// <summary>Objet du journal d'audit, lisible : « CodeAnonyme » devient « Code anonyme ».</summary>
+    public static string AuditEntity(string code) => code switch
+    {
+        "AnneeScolaire" => "Année scolaire", "ArreteCaisse" => "Arrêté de caisse", "CarteAcces" => "Carte d'accès",
+        "CategorieFrais" => "Catégorie de frais", "CodeAnonyme" => "Code anonyme", "Depense" => "Dépense",
+        "Etablissement" => "Établissement", "Evaluation" => "Évaluation", "Presence" => "Présence",
+        "PriseEnCharge" => "Prise en charge", "RapportJournalier" => "Rapport du jour", "Recu" => "Reçu",
+        "RegistreDiscipline" => "Discipline", "ReglagesDeliberation" => "Délibération", "RemiseCotes" => "Remise des cotes",
+        "SessionDeliberation" => "Délibération", "Nuage" => "Sauvegarde en ligne",
+        _ => code,
     };
 
     public static string Method(string code) => code switch
@@ -165,6 +216,7 @@ public static class Labels
         // Rôle de direction : consultation des statistiques, sans droit de modifier les données.
         new("Secretariat", "Secrétariat"), new("Comptabilite", "Comptabilité"),
         new("Promoteur", "Promoteur / Responsable"),
+        new("Enseignant", "Enseignant (encodage de ses cours)"),
     ];
 
     public static readonly IReadOnlyList<ChoiceItem> PayrollModes =

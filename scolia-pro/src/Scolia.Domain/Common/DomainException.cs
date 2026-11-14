@@ -17,3 +17,6 @@ public class DomainException : Exception
 public sealed class NotFoundException(string message) : DomainException("introuvable", message);
 
 public sealed class ConflictException(string message) : DomainException("conflit", message);
+
+/// <summary>Action refusée à ce compte (par exemple un enseignant sur un cours qui ne lui est pas attribué).</summary>
+public sealed class ForbiddenException(string message) : DomainException("droits", message);

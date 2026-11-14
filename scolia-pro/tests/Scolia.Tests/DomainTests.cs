@@ -155,10 +155,13 @@ public sealed class AccountingTests
     }
 
     [Fact]
-    public void Inscription_and_exam_fees_cannot_be_paid_by_month()
+    public void Other_fees_are_paid_like_months_but_not_in_batches()
     {
-        var error = Assert.Throws<DomainException>(() => PaymentAllocator.Months(Account(), [Insc]));
-        Assert.Contains("scolarité", error.Message, StringComparison.Ordinal);
+        var plan = PaymentAllocator.Months(Account(), [Insc]);
+        Assert.Single(plan);
+        Assert.Equal(Insc, plan[0].FeeItemId);
+        var error = Assert.Throws<DomainException>(() => PaymentAllocator.Months(Account(), [Insc], monthsOnly: true));
+        Assert.Contains("lot", error.Message, StringComparison.Ordinal);
     }
 
     [Fact]

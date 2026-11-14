@@ -61,7 +61,8 @@ public sealed class EraseDataPage : PageViewModel
 
     public EraseDataPage(ShellViewModel shell, bool payments) : base(shell)
     {
-        this.payments = payments;
+        // Chaque compte n'efface que ce qu'il gère : les paiements (annulation de reçus), les dossiers (secrétariat).
+        this.payments = payments ? shell.Can(Perm.PaymentsCancel) || !shell.Can(Perm.StudentsWrite) : !shell.Can(Perm.StudentsWrite);
         scope = Scopes[0];
         Erase = new AsyncCommand(() => Shell.Run(EraseAsync));
         RebuildActions();
@@ -70,7 +71,7 @@ public sealed class EraseDataPage : PageViewModel
     private void RebuildActions()
     {
         Actions.Clear();
-        if (Shell.Can(Perm.BackupManage))
+        if (Shell.Can(Perm.BackupManage) && (payments ? CanErasePayments : CanEraseStudents))
             Action(payments ? "Effacer les paiements" : "Effacer les dossiers", MaterialIconKind.DeleteForeverOutline, EraseAsync, primary: true, danger: true);
         Action("Tout cocher", MaterialIconKind.CheckboxMultipleMarked, () => { SetAll(true); return Task.CompletedTask; });
         Action("Tout décocher", MaterialIconKind.CheckboxMultipleBlank, () => { SetAll(false); return Task.CompletedTask; });
@@ -81,13 +82,16 @@ public sealed class EraseDataPage : PageViewModel
     public override string Subtitle => subtitle;
     public override MaterialIconKind Glyph => MaterialIconKind.DeleteSweepOutline;
 
+    public bool CanErasePayments => Shell.Can(Perm.PaymentsCancel);
+    public bool CanEraseStudents => Shell.Can(Perm.StudentsWrite);
+
     /// <summary>Étape 1 : effacer les paiements (les dossiers restent) ou les dossiers entiers.</summary>
     public bool ErasePayments
     {
         get => payments;
         set
         {
-            if (!value || payments) return;
+            if (!value || payments || !CanErasePayments) return;
             payments = true;
             KindChanged();
         }
@@ -98,7 +102,7 @@ public sealed class EraseDataPage : PageViewModel
         get => !payments;
         set
         {
-            if (!value || !payments) return;
+            if (!value || !payments || !CanEraseStudents) return;
             payments = false;
             KindChanged();
         }

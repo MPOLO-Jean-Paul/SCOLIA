@@ -1,0 +1,347 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:infra="using:Scolia.Bureau.Infrastructure"
+             xmlns:mi="using:Material.Icons.Avalonia"
+             x:Class="Scolia.Bureau.Views.TeacherHomeView">
+  <UserControl.Styles>
+    <Style Selector="Border.teacherrowsep">
+      <Setter Property="Height" Value="1" />
+      <Setter Property="Background" Value="{DynamicResource LineBrush}" />
+      <Setter Property="Margin" Value="66,0,0,0" />
+      <Setter Property="IsVisible" Value="False" />
+    </Style>
+    <Style Selector="ItemsControl.teacherrows ContentPresenter:nth-child(n+2) Border.teacherrowsep">
+      <Setter Property="IsVisible" Value="True" />
+    </Style>
+    <!-- Même pastille franche et lisible que les cartes d'accès et les cours. -->
+    <Style Selector="Border.teacheroverviewicon">
+      <Setter Property="Opacity" Value="1" />
+      <Setter Property="HorizontalAlignment" Value="Center" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <Style Selector="ProgressBar.teacherprogress">
+      <Setter Property="Height" Value="6" />
+      <Setter Property="MinHeight" Value="6" />
+      <Setter Property="Foreground" Value="{DynamicResource TonePurple}" />
+      <Setter Property="Background" Value="{DynamicResource Surface2Brush}" />
+      <Setter Property="CornerRadius" Value="3" />
+    </Style>
+    <Style Selector="Expander.teacherinfo">
+      <Setter Property="Background" Value="{DynamicResource GroupBrush}" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+    </Style>
+  </UserControl.Styles>
+  <Grid>
+  <ScrollViewer IsVisible="{Binding NotPhone}" HorizontalScrollBarVisibility="Disabled">
+    <StackPanel Spacing="10" Margin="0,0,4,8">
+
+      <!-- Même accueil natif que secrétariat et administration : bande d'accent,
+           icône du kit SCOLIA, identité et actions alignées, sans style parallèle. -->
+      <Border Classes="desktopwelcome" Padding="0" ClipToBounds="True">
+        <StackPanel Spacing="0">
+          <Border Height="3" Background="{DynamicResource AccentBrush}" />
+          <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="15"
+                Margin="18,17,18,17" infra:Adaptive.StackBelow="760">
+            <Border Classes="appicon large" Background="{DynamicResource TonePurple}"
+                    VerticalAlignment="Center" Margin="0,0,0,0">
+              <mi:MaterialIcon Kind="AccountSchool" />
+            </Border>
+            <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3">
+              <TextBlock Text="{Binding Greeting}" FontSize="20"
+                         FontWeight="SemiBold" TextWrapping="Wrap"
+                         Foreground="{DynamicResource TextBrush}" />
+              <TextBlock Text="{Binding Role}" Classes="muted" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
+            </StackPanel>
+            <WrapPanel Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Stretch">
+              <Button Classes="heroaction" infra:Icons.Lead="Pen"
+                      Content="Encoder mes cotes" Command="{Binding EncodeByCode}"
+                      Margin="0,0,8,6" MinHeight="46" Padding="11,8" />
+              <Button Classes="heroaction" infra:Icons.Lead="ShieldLockOutline"
+                      Content="Mon code d'accès" Command="{Binding ChooseCode}"
+                      Margin="0,0,0,6" MinHeight="46" Padding="11,8" />
+            </WrapPanel>
+          </Grid>
+        </StackPanel>
+      </Border>
+
+      <!-- Code provisoire : rien ne s'ouvre avant le choix de son propre code -->
+      <Border Background="{DynamicResource OrangeSoftBrush}" BorderBrush="{DynamicResource LineBrush}" BorderThickness="1"
+              CornerRadius="{StaticResource RadiusSmall}" Padding="16,12" IsVisible="{Binding IsBlocked}">
+        <Grid ColumnDefinitions="Auto,*,Auto" infra:Adaptive.StackBelow="560">
+          <mi:MaterialIcon Kind="KeyChange" Width="22" Height="22" Foreground="{DynamicResource ToneOrange}" VerticalAlignment="Center" Margin="0,0,12,0" />
+          <TextBlock Grid.Column="1" Text="{Binding Blocked}" TextWrapping="Wrap" VerticalAlignment="Center" />
+          <Button Grid.Column="2" Classes="primary" infra:Icons.Lead="ShieldLockOutline" Content="Choisir mon code" Command="{Binding ChooseCode}" Margin="12,0,0,0" VerticalAlignment="Center" />
+        </Grid>
+      </Border>
+
+      <!-- Où j'en suis : quatre chiffres -->
+      <ItemsControl ItemsSource="{Binding Stats}" ItemTemplate="{StaticResource KpiTile}" Margin="0,0,-12,-12" IsVisible="{Binding !IsBlocked}">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate><UniformGrid Columns="4" infra:Adaptive.MinItemWidth="170" /></ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+      </ItemsControl>
+
+      <Grid ColumnDefinitions="3*,2*" infra:Adaptive.StackBelow="820" IsVisible="{Binding !IsBlocked}">
+        <!-- Mes cours : une carte par cours, ouverte d'un clic sur sa feuille -->
+        <Border Classes="desktopgroup" Grid.Column="0" Margin="0,0,12,12">
+          <StackPanel Spacing="10">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <mi:MaterialIcon Kind="BookOpenVariant" Width="20" Height="20" Foreground="{DynamicResource TonePurple}" VerticalAlignment="Center" />
+              <TextBlock Text="Mes cours" Classes="heading" VerticalAlignment="Center" />
+            </StackPanel>
+            <TextBlock Classes="muted" TextWrapping="Wrap" IsVisible="{Binding NoCourses}"
+                       Text="Aucun cours ne vous est attribué cette année. Le secrétariat attribue les cours dans « Gestion des délibérations › Enseignants et cours »." />
+            <ItemsControl ItemsSource="{Binding Courses}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <Button Classes="listrow" Command="{Binding Open}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Margin="0,0,0,6" ToolTip.Tip="Ouvrir la feuille de ce cours">
+                    <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto">
+                      <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                      <Border Grid.Column="1" CornerRadius="10" Padding="10,2" BorderThickness="1" BorderBrush="{Binding StateBrush}" VerticalAlignment="Top" Margin="10,0,0,0">
+                        <TextBlock Text="{Binding State}" Foreground="{Binding StateBrush}" FontWeight="SemiBold" />
+                      </Border>
+                      <TextBlock Grid.Row="1" Grid.ColumnSpan="2" Classes="muted" TextWrapping="Wrap">
+                        <Run Text="{Binding Promotion, Mode=OneWay}" />
+                        <Run Text=" · " />
+                        <Run Text="{Binding Details, Mode=OneWay}" />
+                      </TextBlock>
+                      <Grid Grid.Row="2" Grid.ColumnSpan="2" ColumnDefinitions="*,Auto" Margin="0,6,0,0">
+                        <ProgressBar Classes="slim" Value="{Binding Percent, Mode=OneWay}" Maximum="100" VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="1" Text="{Binding Progress}" Classes="muted" Margin="10,0,0,0" VerticalAlignment="Center" />
+                      </Grid>
+                    </Grid>
+                  </Button>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </Border>
+
+        <StackPanel Grid.Column="1" Spacing="12">
+          <!-- Annonces de la délibération -->
+          <Border Classes="desktopgroup">
+            <StackPanel Spacing="8">
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <mi:MaterialIcon Kind="BellOutline" Width="20" Height="20" Foreground="{DynamicResource ToneOrange}" VerticalAlignment="Center" />
+                <TextBlock Text="Annonces" Classes="heading" VerticalAlignment="Center" />
+              </StackPanel>
+              <TextBlock Text="Aucune annonce récente." Classes="muted" IsVisible="{Binding !HasNotices}" />
+              <ItemsControl ItemsSource="{Binding Notices}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate>
+                    <StackPanel Spacing="1" Margin="0,0,0,8">
+                      <TextBlock>
+                        <Run Text="{Binding Title, Mode=OneWay}" FontWeight="SemiBold" />
+                        <Run Text="{Binding When, StringFormat=' · {0}', Mode=OneWay}" Foreground="{DynamicResource MutedBrush}" />
+                      </TextBlock>
+                      <TextBlock Text="{Binding Text}" Classes="muted" TextWrapping="Wrap" />
+                    </StackPanel>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </StackPanel>
+          </Border>
+
+          <!-- Règles de l'encodage décidées par le secrétariat -->
+          <Border Classes="desktopgroup">
+            <StackPanel Spacing="8">
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <mi:MaterialIcon Kind="ShieldCheckOutline" Width="20" Height="20" Foreground="{DynamicResource ToneTeal}" VerticalAlignment="Center" />
+                <TextBlock Text="Règles de l'encodage" Classes="heading" VerticalAlignment="Center" />
+              </StackPanel>
+              <TextBlock Text="{Binding Rules}" TextWrapping="Wrap" LineHeight="22" />
+            </StackPanel>
+          </Border>
+        </StackPanel>
+      </Grid>
+
+      <!-- Règles visibles même avec le code provisoire -->
+      <Border Classes="desktopgroup" IsVisible="{Binding IsBlocked}">
+        <StackPanel Spacing="8">
+          <TextBlock Text="Règles de l'encodage" Classes="heading" />
+          <TextBlock Text="{Binding Rules}" TextWrapping="Wrap" LineHeight="22" />
+        </StackPanel>
+      </Border>
+    </StackPanel>
+  </ScrollViewer>
+
+    <!-- Android : exactement le langage en lignes du secrétariat (Phone/HomeView),
+         sans carte géante de bienvenue ni boutons avec contenu TextBlock. -->
+    <StackPanel x:Name="TeacherPhoneSections" IsVisible="{Binding Phone}"
+                Spacing="12" Margin="0,0,0,12">
+      <Border Classes="phonegroup" ClipToBounds="True">
+        <StackPanel Spacing="0">
+          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12" Margin="14,14,14,12">
+            <Border Width="48" Height="48" CornerRadius="24"
+                    Background="{DynamicResource TonePurple}" VerticalAlignment="Center">
+              <mi:MaterialIcon Kind="AccountSchool" Width="25" Height="25"
+                               Foreground="White" HorizontalAlignment="Center"
+                               VerticalAlignment="Center" />
+            </Border>
+            <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
+              <TextBlock Text="{Binding Greeting}" FontSize="18" FontWeight="SemiBold"
+                         Foreground="{DynamicResource TextBrush}"
+                         TextWrapping="Wrap" MaxLines="3" />
+              <TextBlock Text="{Binding Role}" Classes="muted"
+                         FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
+            </StackPanel>
+          </Grid>
+          <Border Height="1" Margin="54,0,0,0" Background="{DynamicResource LineBrush}" />
+          <Button Classes="settingsentry" Command="{Binding EncodeByCode}"
+                  HorizontalContentAlignment="Stretch" AutomationProperties.Name="Encoder mes cotes">
+            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+              <Border Classes="appicon medium" Background="{DynamicResource TonePurple}">
+                <mi:MaterialIcon Kind="Pen" />
+              </Border>
+              <TextBlock Grid.Column="1" Text="Encoder mes cotes" FontWeight="SemiBold"
+                         VerticalAlignment="Center" TextWrapping="Wrap" />
+              <mi:MaterialIcon Grid.Column="2" Kind="ChevronRight" Width="18" Height="18"
+                               Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" />
+            </Grid>
+          </Button>
+          <Border Height="1" Margin="54,0,0,0" Background="{DynamicResource LineBrush}" />
+          <Button Classes="settingsentry" Command="{Binding ChooseCode}"
+                  HorizontalContentAlignment="Stretch" AutomationProperties.Name="Mon code d'accès">
+            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+              <Border Classes="appicon medium" Background="{DynamicResource ToneIndigo}">
+                <mi:MaterialIcon Kind="ShieldLockOutline" />
+              </Border>
+              <TextBlock Grid.Column="1" Text="Mon code d'accès"
+                         VerticalAlignment="Center" TextWrapping="Wrap" />
+              <mi:MaterialIcon Grid.Column="2" Kind="ChevronRight" Width="18" Height="18"
+                               Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" />
+            </Grid>
+          </Button>
+        </StackPanel>
+      </Border>
+
+      <Border Classes="phonegroup" Background="{DynamicResource OrangeSoftBrush}"
+              IsVisible="{Binding IsBlocked}" Padding="14">
+        <StackPanel Spacing="8">
+          <TextBlock Text="{Binding Blocked}" TextWrapping="Wrap" />
+          <Button Classes="primary" Content="Choisir mon code"
+                  Command="{Binding ChooseCode}" HorizontalAlignment="Stretch" />
+        </StackPanel>
+      </Border>
+
+      <StackPanel Spacing="5" IsVisible="{Binding !IsBlocked}">
+        <TextBlock Text="APERÇU" Classes="groupcaps" />
+        <Border Classes="phonegroup" ClipToBounds="True">
+          <ItemsControl Classes="teacherrows" ItemsSource="{Binding Stats}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate>
+                <StackPanel Spacing="0">
+                  <Border Classes="teacherrowsep" />
+                  <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12" Margin="12,9,14,9">
+                    <!-- KpiVm expose Accent, pas Brush : liaison incorrecte = tuile blanche et icône blanche. -->
+                    <Border Classes="appicon large teacheroverviewicon" Background="{Binding Accent}"
+                            infra:TileGlyph.Enabled="False"
+                            VerticalAlignment="Center" AutomationProperties.Name="{Binding Label}">
+                      <mi:MaterialIcon Kind="{Binding Icon}" Foreground="White" />
+                    </Border>
+                    <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                      <TextBlock Text="{Binding Label}" FontWeight="Medium" TextWrapping="Wrap" />
+                      <TextBlock Text="{Binding Hint}" Classes="muted"
+                                 FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" MaxLines="2" />
+                    </StackPanel>
+                    <TextBlock Grid.Column="2" Text="{Binding Value}" FontWeight="SemiBold"
+                               TextAlignment="Right" VerticalAlignment="Center"
+                               TextTrimming="CharacterEllipsis" MaxLines="1" />
+                  </Grid>
+                </StackPanel>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </Border>
+      </StackPanel>
+
+      <StackPanel Spacing="5" IsVisible="{Binding !IsBlocked}">
+        <TextBlock Text="MES COURS" Classes="groupcaps" />
+        <Border Classes="phonegroup" ClipToBounds="True">
+          <StackPanel Spacing="0">
+            <TextBlock Text="Aucun cours attribué pour cette année."
+                       Classes="muted" Margin="14,14" TextWrapping="Wrap"
+                       IsVisible="{Binding NoCourses}" />
+            <ItemsControl Classes="teacherrows" ItemsSource="{Binding Courses}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <StackPanel Spacing="0">
+                    <Border Classes="teacherrowsep" />
+                    <Button Classes="settingsentry" Command="{Binding Open}"
+                            HorizontalContentAlignment="Stretch"
+                            ToolTip.Tip="Ouvrir la feuille de ce cours">
+                      <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                        <Border Classes="appicon medium" Background="{DynamicResource TonePurple}"
+                                VerticalAlignment="Top">
+                          <mi:MaterialIcon Kind="BookOpenVariant" />
+                        </Border>
+                        <StackPanel Grid.Column="1" Spacing="5" MinWidth="0">
+                          <TextBlock Text="{Binding Title}" FontWeight="SemiBold"
+                                     TextWrapping="Wrap" MaxLines="3" />
+                          <TextBlock Text="{Binding Promotion}" Classes="muted"
+                                     FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
+                          <TextBlock Text="{Binding Details}" Classes="muted"
+                                     FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" MaxLines="3" />
+                          <Border Background="{DynamicResource Surface2Brush}"
+                                  CornerRadius="9" Padding="9,3" HorizontalAlignment="Left">
+                            <TextBlock Text="{Binding State}" Foreground="{Binding StateBrush}"
+                                       FontWeight="SemiBold" FontSize="{DynamicResource FsSmall}" />
+                          </Border>
+                          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10" Margin="0,3,0,0">
+                            <ProgressBar Classes="slim teacherprogress" Value="{Binding Percent, Mode=OneWay}" Maximum="100"
+                                         VerticalAlignment="Center" />
+                            <TextBlock Grid.Column="1" Text="{Binding Progress}"
+                                       Classes="muted" FontSize="{DynamicResource FsSmall}"
+                                       VerticalAlignment="Center" TextWrapping="NoWrap" />
+                          </Grid>
+                        </StackPanel>
+                      </Grid>
+                    </Button>
+                  </StackPanel>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </Border>
+      </StackPanel>
+
+      <StackPanel Spacing="5" IsVisible="{Binding HasNotices}">
+        <TextBlock Text="ANNONCES" Classes="groupcaps" />
+        <Border Classes="phonegroup" Padding="14">
+          <ItemsControl ItemsSource="{Binding Notices}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate>
+                <StackPanel Spacing="3" Margin="0,0,0,10">
+                  <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                  <TextBlock Text="{Binding When}" Classes="muted" FontSize="{DynamicResource FsSmall}" />
+                  <TextBlock Text="{Binding Text}" TextWrapping="Wrap" />
+                </StackPanel>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </Border>
+      </StackPanel>
+
+      <StackPanel Spacing="5">
+        <TextBlock Text="INFORMATIONS" Classes="groupcaps" />
+        <Border Classes="phonegroup" Padding="0" ClipToBounds="True">
+          <Expander Classes="teacherinfo" IsExpanded="False"
+                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+            <Expander.Header>
+              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12" Margin="12,8,12,8">
+                <Border Classes="appicon medium" Background="{DynamicResource ToneTeal}">
+                  <mi:MaterialIcon Kind="ShieldCheckOutline" />
+                </Border>
+                <TextBlock Grid.Column="1" Text="Règles de l'encodage"
+                           FontWeight="Medium" VerticalAlignment="Center" />
+              </Grid>
+            </Expander.Header>
+            <TextBlock Text="{Binding Rules}" TextWrapping="Wrap"
+                       Margin="14,4,14,14" />
+          </Expander>
+        </Border>
+      </StackPanel>
+    </StackPanel>
+  </Grid>
+</UserControl>

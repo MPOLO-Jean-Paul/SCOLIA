@@ -1,6 +1,8 @@
 using System.Globalization;
 using System.Net;
 using System.Net.Http.Json;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Scolia.Transport;
@@ -13,7 +15,7 @@ namespace Scolia.Bureau.Api;
 /// Hors ligne, les pages déjà lues sont rendues depuis l'appareil et les écritures sont mises en file,
 /// puis envoyées dans l'ordre au retour de l'ordinateur principal.
 /// </summary>
-public sealed class ScoliaClient : IDisposable
+public sealed partial class ScoliaClient : IDisposable
 {
     private CookieContainer cookies = new();
     private HttpClient http;
@@ -32,6 +34,9 @@ public sealed class ScoliaClient : IDisposable
 
     /// <summary>L'ordinateur principal répond : faux après une coupure, jusqu'à la prochaine réponse.</summary>
     public bool IsOnline => online;
+    /// <summary>Dernière décision vérifiée du serveur. Le serveur reste autorité
+    /// pour tout poste ; le cache évite seulement les écritures hors ligne interdites.</summary>
+    public bool LicenseReadOnly { get; set; }
 
     public event Action<bool>? ConnectivityChanged;
 
@@ -67,16 +72,22 @@ public sealed class ScoliaClient : IDisposable
     public Uri Server { get; private set; }
 
     /// <summary>Change de serveur (ce poste ou celui de l'établissement) : nouvelle connexion, sans session ouverte.</summary>
-    public void Retarget(Uri server)
+    public void Retarget(Uri server, bool sameVerifiedSchool = false)
     {
         if (server == Server && remoteLink is null) return;
         remoteLink = null;
-        // Un changement d'établissement ne doit jamais réutiliser le cache ou les opérations de l'ancien serveur.
-        Offline = null;
+        LicenseReadOnly = false;
+        // La copie locale n'est conservée que si une preuve cryptographique
+        // a reconnu le même serveur malgré le changement d'adresse.
+        if (!sameVerifiedSchool) Offline = null;
         var previous = http;
         cookies = new CookieContainer();
         http = Create(server);
         Server = server;
+        // L'état de la précédente connexion ne doit pas rendre le nouveau
+        // serveur artificiellement « hors ligne ». La sonde le vérifiera
+        // sans bloquer les écrans lors de la prochaine interrogation.
+        SetOnline(true);
         previous.Dispose();
     }
 
@@ -85,18 +96,34 @@ public sealed class ScoliaClient : IDisposable
         link.Validate();
         var previous = http;
         remoteLink = link;
+        LicenseReadOnly = false;
         Offline = null;
         cookies = new CookieContainer();
         Server = link.VirtualServer;
         http = Create(Server);
+        SetOnline(true);
         previous.Dispose();
+    }
+
+    // La rapidité des écrans ne doit pas dépendre du délai global des écritures (60 s).
+    // La sonde du serveur relance ensuite la connexion sans bloquer la navigation.
+    private TimeSpan ReadTimeout => IsLongDistance ? TimeSpan.FromSeconds(remoteLink?.EffectiveBackupRelay is null ? 6 : 38) : TimeSpan.FromMilliseconds(2500);
+    // Par Internet, une sonde traverse le relais puis le serveur : 15 s couvrent un réseau mobile et un relais lent.
+    private TimeSpan ProbeTimeout => IsLongDistance ? TimeSpan.FromSeconds(remoteLink?.EffectiveBackupRelay is null ? 15 : 38) : TimeSpan.FromMilliseconds(1800);
+    private bool CanUseOfflineCache => Offline is { } store && !string.IsNullOrWhiteSpace(store.User);
+
+    private static RemoteDeviceAccess? LinkedAccess(RemoteLink link)
+    {
+        var stored = Infrastructure.DevicePairingStore.Read(link.VirtualServer);
+        return stored is null ? null : new RemoteDeviceAccess(stored.GrantId,
+            Infrastructure.DeviceIdentity.Id, stored.DeviceSecret);
     }
 
     private HttpClient Create(Uri server)
     {
         // Délai de connexion court : un ordinateur principal éteint est détecté en quelques secondes, pas en vingt.
-        HttpMessageHandler handler = remoteLink is { } link ? new RemoteHttpHandler(link, cookies)
-            : new SocketsHttpHandler { CookieContainer = cookies, UseCookies = true, ConnectTimeout = TimeSpan.FromSeconds(4) };
+        HttpMessageHandler handler = remoteLink is { } link ? new RemoteHttpHandler(link, cookies, () => LinkedAccess(link))
+            : new SocketsHttpHandler { CookieContainer = cookies, UseCookies = true, ConnectTimeout = TimeSpan.FromMilliseconds(2500) };
         var client = new HttpClient(handler) { BaseAddress = server, Timeout = TimeSpan.FromSeconds(60) };
         client.DefaultRequestHeaders.Add("X-Scolia", "1");
         client.DefaultRequestHeaders.Add("X-Scolia-Poste", Infrastructure.DeviceIdentity.Id);
@@ -107,7 +134,7 @@ public sealed class ScoliaClient : IDisposable
     /// <summary>Client sans délai global, pour le flux en direct qui reste ouvert.</summary>
     public HttpClient CreateStreamClient()
     {
-        HttpMessageHandler handler = remoteLink is { } link ? new RemoteHttpHandler(link, cookies)
+        HttpMessageHandler handler = remoteLink is { } link ? new RemoteHttpHandler(link, cookies, () => LinkedAccess(link))
             : new SocketsHttpHandler { CookieContainer = cookies, UseCookies = true, ConnectTimeout = TimeSpan.FromSeconds(4) };
         var client = new HttpClient(handler) { BaseAddress = Server, Timeout = Timeout.InfiniteTimeSpan };
         client.DefaultRequestHeaders.Add("X-Scolia", "1");
@@ -119,35 +146,95 @@ public sealed class ScoliaClient : IDisposable
     public async Task<SessionDto> LoginAsync(string userName, string password, CancellationToken ct = default) =>
         await SendAsync<SessionDto>(HttpMethod.Post, "api/session", new { userName, password }, ct);
 
-    public sealed record PairedSession(SessionDto Session, Guid GrantId, string DeviceSecret, DateTime ExpiresUtc);
+    /// <summary>Autorisation du poste et identité scolaire uniquement, sans compte utilisateur.</summary>
+    public sealed record PairedDevice(Guid GrantId, string DeviceSecret, DateTime ExpiresUtc, string SchoolName,
+        JsonElement? Session = null);
 
-    /// <summary>Un QR explicitement créé par le serveur donne accès au compte lié, sans communiquer son mot de passe.</summary>
-    public async Task<SessionDto> AcceptDeviceInvitationAsync(string invitationToken, CancellationToken ct = default)
+    public async Task<PairedDevice> AcceptDeviceInvitationAsync(string invitationToken, CancellationToken ct = default)
     {
-        var linked = await SendAsync<PairedSession>(HttpMethod.Post, "api/jumelage/accepter", new
+        var linked = await SendAsync<PairedDevice>(HttpMethod.Post, "api/jumelage/accepter", new
         {
             invitationToken, deviceId = Infrastructure.DeviceIdentity.Id, deviceName = Infrastructure.DeviceIdentity.Name
         }, ct);
+        // Un ancien serveur émettait directement un cookie et un compte administrateur
+        // avec le QR. Ne jamais accepter silencieusement ce format : invalider le
+        // cookie historique et imposer la mise à jour du serveur avant le jumelage.
+        if (linked.Session is not null || string.IsNullOrWhiteSpace(linked.SchoolName)
+            || linked.GrantId == Guid.Empty || string.IsNullOrWhiteSpace(linked.DeviceSecret))
+        {
+            try { await LogoutAsync(ct); }
+            catch (Exception ex) when (ex is ApiException or HttpRequestException or TaskCanceledException or IOException) { }
+            throw new InvalidOperationException(
+                "Le serveur SCOLIA utilise un ancien jumelage donnant automatiquement des droits. Mettez à jour le serveur pour utiliser la connexion individuelle sécurisée.");
+        }
         Infrastructure.DevicePairingStore.Save(Server, new Infrastructure.DevicePairingStore.Credential(
-            linked.GrantId, linked.DeviceSecret, linked.ExpiresUtc, linked.Session.UserName));
-        return linked.Session;
+            linked.GrantId, linked.DeviceSecret, linked.ExpiresUtc, string.Empty));
+        return linked;
     }
 
-    /// <summary>Renouvelle une session reconnue sur le serveur, avec un secret propre à cet appareil.</summary>
-    public async Task<SessionDto?> RestoreDeviceSessionAsync(CancellationToken ct = default)
+    private sealed record LinkedDeviceProof(DateTime ExpiresUtc);
+
+    /// <summary>Rétablit uniquement la preuve d'appareil ; n'accorde jamais les droits d'un compte.</summary>
+    public async Task<bool> VerifyLinkedDeviceAsync(CancellationToken ct = default)
     {
         var stored = Infrastructure.DevicePairingStore.Read(Server);
-        if (stored is null) return null;
+        if (stored is null) return false;
         try
         {
-            return await SendAsync<SessionDto>(HttpMethod.Post, "api/session/appareil",
-                new { grantId = stored.GrantId, deviceId = Infrastructure.DeviceIdentity.Id, secret = stored.DeviceSecret }, ct);
+            var verified = await SendAsync<LinkedDeviceProof>(HttpMethod.Post, "api/jumelage/appareil/verifier", new
+            {
+                grantId = stored.GrantId, deviceId = Infrastructure.DeviceIdentity.Id, secret = stored.DeviceSecret
+            }, ct);
+            Infrastructure.DevicePairingStore.Save(Server, stored with { ExpiresUtc = verified.ExpiresUtc });
+            return true;
         }
-        catch (ApiException ex) when (ex.Status is 401 or 403 or 404)
+        catch (ApiException ex) when (ex.Status is 401 or 403)
         {
             Infrastructure.DevicePairingStore.Forget(Server);
-            return null;
+            return false;
         }
+        catch (ApiException ex) when (ex.Status == 404)
+        {
+            // Ne jamais retomber vers les anciennes routes qui ouvraient la session du secrétaire.
+            return false;
+        }
+    }
+
+    private sealed record DeviceProofReply(string Proof);
+    private sealed record SelfDeviceGrant(Guid GrantId, string DeviceSecret, DateTime ExpiresUtc);
+
+    /// <summary>Une session Promoteur authentifiée se souvient de cet appareil
+    /// pour retrouver ensuite le même serveur sans réintroduire un QR.</summary>
+    public async Task EnsurePromoterDeviceGrantAsync(string userName, CancellationToken ct = default)
+    {
+        if (Infrastructure.DevicePairingStore.Read(Server) is { } existing &&
+            (string.IsNullOrEmpty(existing.UserName) ||
+             string.Equals(existing.UserName, userName, StringComparison.OrdinalIgnoreCase)) &&
+            existing.ExpiresUtc > DateTime.UtcNow.AddDays(7))
+            return;
+        var grant = await SendAsync<SelfDeviceGrant>(HttpMethod.Post, "api/jumelage/mon-appareil", new { }, ct);
+        Infrastructure.DevicePairingStore.Save(Server, new Infrastructure.DevicePairingStore.Credential(
+            grant.GrantId, grant.DeviceSecret, grant.ExpiresUtc, userName));
+    }
+
+    /// <summary>Confirme le serveur scolaire par défi HMAC avant de suivre une nouvelle IP annoncée en UDP.</summary>
+    public async Task<bool> ProvesPairedServerAsync(
+        Infrastructure.DevicePairingStore.Credential credential, CancellationToken ct = default)
+    {
+        var nonce = Convert.ToHexString(RandomNumberGenerator.GetBytes(24));
+        try
+        {
+            var proof = await SendAsync<DeviceProofReply>(HttpMethod.Post, "api/jumelage/preuve-serveur",
+                new { grantId = credential.GrantId, deviceId = Infrastructure.DeviceIdentity.Id, nonce }, ct);
+            if (proof.Proof is null || proof.Proof.Length != 64 || !proof.Proof.All(char.IsAsciiHexDigit))
+                return false;
+            var key = SHA256.HashData(Encoding.UTF8.GetBytes(credential.DeviceSecret));
+            var expected = HMACSHA256.HashData(key, Encoding.ASCII.GetBytes(nonce));
+            return CryptographicOperations.FixedTimeEquals(expected, Convert.FromHexString(proof.Proof));
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
+        catch (Exception ex) when (ex is ApiException or HttpRequestException or TaskCanceledException or IOException
+            or FormatException or JsonException) { return false; }
     }
 
     public async Task LogoutAsync(CancellationToken ct = default)
@@ -164,7 +251,10 @@ public sealed class ScoliaClient : IDisposable
     {
         try
         {
-            using var response = await http.GetAsync("api/sante", ct);
+            // Une sonde ne doit jamais attendre les 60 secondes du délai d'une écriture.
+            using var probe = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            probe.CancelAfter(ProbeTimeout);
+            using var response = await http.GetAsync("api/sante", probe.Token);
             // Une sonde négative doit être annoncée à la synchronisation :
             // autrement le poste reste affiché « en ligne » après une coupure VPN.
             SetOnline(response.IsSuccessStatusCode);
@@ -188,20 +278,83 @@ public sealed class ScoliaClient : IDisposable
     /// </summary>
     public async Task<T> GetAsync<T>(string path, CancellationToken ct = default)
     {
+        ct.ThrowIfCancellationRequested();
+        var sourceStore = Offline;
+        var sourceUser = sourceStore?.User ?? string.Empty;
+        var canCache = Cacheable(path) && sourceUser.Length > 0;
+
+        // Un accusé provisoire appartient uniquement à cet appareil. Il n'a
+        // jamais été émis par l'API et ne doit pas générer un GET/404 réseau.
+        if (path.StartsWith("api/paiements/", StringComparison.Ordinal) &&
+            sourceStore is not null &&
+            Guid.TryParse(path["api/paiements/".Length..], out var localId) &&
+            Infrastructure.OfflineFinance.PendingReceipt(sourceStore, localId) is { } pendingReceipt)
+            return JsonSerializer.Deserialize<T>(JsonSerializer.Serialize(pendingReceipt, Json.Options), Json.Options)!;
+
+        // CIRCUIT HORS LIGNE : une fois la coupure connue, aucun écran n'attend de
+        // nouveau le DNS, un VPN ou un serveur absent. La boucle de synchronisation
+        // contrôle la reprise indépendamment, toutes les 5 secondes.
+        if (!IsOnline && CanUseOfflineCache)
+        {
+            // Lire la dernière copie plus les écritures en attente, sans attendre
+            // le serveur. Les nouvelles inscriptions portent un ID provisoire.
+            var saved = canCache ? Offline!.ReadPage(path)?.Json : null;
+            var local = Infrastructure.OfflineReplica.Project(path, saved, Offline!);
+            if (local is not null) return JsonSerializer.Deserialize<T>(local, Json.Options)!;
+            throw new OfflineException("Cette rubrique n'a pas encore de données sur cet appareil. Reconnectez-vous à l'ordinateur principal pour la consulter.");
+        }
+
         string text;
         try
         {
-            using var response = await SendRawAsync(HttpMethod.Get, path, null, ct);
+            using var deadline = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            deadline.CancelAfter(ReadTimeout);
+            var snapshot = canCache ? sourceStore?.ReadPage(path) : null;
+            var etag = snapshot is { } old
+                ? "\"" + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(old.Json))) + "\""
+                : null;
+            using var response = await ReadRawAsync(path, etag, deadline.Token);
             if (response.StatusCode == HttpStatusCode.NoContent) return default!;
-            text = await response.Content.ReadAsStringAsync(ct);
-            if (Cacheable(path) && Offline is { } cache) await Task.Run(() => cache.SavePage(path, text), ct);
+            if (response.StatusCode == HttpStatusCode.NotModified && snapshot is { } unchanged)
+            {
+                text = unchanged.Json;
+                // HTTP 304 : aucune donnée métier n'a traversé le relais.
+                if (canCache && sourceStore is not null)
+                    sourceStore.TouchPageFor(sourceUser, path, text);
+            }
+            else
+            {
+                text = await response.Content.ReadAsStringAsync(deadline.Token);
+                if (canCache && sourceStore is not null)
+                {
+                    var previous = snapshot?.Json;
+                    if (string.Equals(previous, text, StringComparison.Ordinal))
+                        sourceStore.TouchPageFor(sourceUser, path, text);
+                    else
+                        await Task.Run(() => sourceStore.SavePageFor(sourceUser, path, text), ct);
+                }
+            }
         }
         catch (Exception ex) when (IsDisconnected(ex, ct))
         {
             SetOnline(false);
-            if (Cacheable(path) && Offline?.ReadPage(path) is { } saved) text = saved.Json;
-            else throw new OfflineException("Ordinateur principal injoignable : cette page n'a pas encore été ouverte sur cet appareil.");
+            var cached = canCache ? sourceStore?.ReadPage(path)?.Json : null;
+            text = sourceStore is null ? null! : Infrastructure.OfflineReplica.Project(path, cached, sourceStore)!;
+            if (text is null)
+                throw new OfflineException("Ordinateur principal injoignable : cette rubrique n'a pas encore été chargée sur cet appareil.");
         }
+        catch (ApiException ex) when (ex.Status is 403 or 404)
+        {
+            // Les accès retirés et dossiers supprimés ne doivent pas être conservés
+            // dans le cache de l'ancien compte, même s'ils ont été préchargés.
+            if (canCache && sourceStore is not null)
+                sourceStore.RemovePageFor(sourceUser, path);
+            throw;
+        }
+        // Une réponse réseau plus ancienne que les écritures encore en file
+        // ne doit pas faire disparaître la saisie locale de l'utilisateur.
+        if (canCache && sourceStore is not null)
+            text = Infrastructure.OfflineReplica.Project(path, text, sourceStore) ?? text;
         return JsonSerializer.Deserialize<T>(text, Json.Options)!;
     }
 
@@ -235,22 +388,40 @@ public sealed class ScoliaClient : IDisposable
             payload["idempotencyKey"] = key;
             body = payload;
         }
+        if (LicenseReadOnly && Queueable(method, path))
+            throw new ApiException("Licence SCOLIA en lecture seule : cette modification est suspendue.", 423)
+            { Code = "licence_lecture_seule" };
+        var sourceStore = Offline;
+        var sourceUser = sourceStore?.User ?? string.Empty;
         Infrastructure.OutboxItem? durable = null;
-        if (Offline is not null && Queueable(method, path))
+        if (sourceStore is not null && sourceUser.Length > 0 && Queueable(method, path))
         {
             durable = new Infrastructure.OutboxItem
             {
                 Key = key, Method = method.Method, Path = path,
                 Body = JsonSerializer.Serialize(body ?? new { }, Json.Options),
-                Label = Describe(method, path), User = Offline.User,
+                Label = Describe(method, path), User = sourceUser,
             };
-            // Enregistrement durable AVANT l'envoi : un arrêt après validation serveur mais avant réponse est rejouable.
-            await Task.Run(() => Offline!.Enqueue(durable), ct);
+            // Enregistrement durable AVANT l'envoi. En cas de changement de
+            // compte pendant l'attente, la source et son identité sont fixées.
+            await Task.Run(() => sourceStore.Enqueue(durable), ct);
+        }
+        // Même principe que pour la lecture : lorsqu'une coupure est confirmée,
+        // aucune validation ne doit attendre inutilement une nouvelle requête réseau.
+        // L'opération a déjà été journalisée avec sa clé d'idempotence.
+        if (!IsOnline && CanUseOfflineCache)
+        {
+            if (durable is null)
+                throw new OfflineException("Cette action nécessite l'ordinateur principal. Reconnectez-vous pour la terminer.");
+            Queued?.Invoke(durable);
+            DepositSoon();
+            throw new OfflineQueuedException($"{durable.Label} : enregistré sur cet appareil. Envoi automatique au retour de l'appareil principal.");
         }
         try
         {
             var response = await SendRawAsync(method, path, body, ct, key);
-            if (durable is not null) await Task.Run(() => Offline!.Sent(durable.Id), ct);
+            if (durable is not null && sourceStore is not null)
+                await Task.Run(() => sourceStore.SentFor(sourceUser, durable.Id), ct);
             return response;
         }
         catch (Exception ex) when (IsDisconnected(ex, ct))
@@ -258,11 +429,23 @@ public sealed class ScoliaClient : IDisposable
             SetOnline(false);
             if (durable is null) throw new OfflineException("Appareil principal injoignable : cette action demande la connexion. Elle sera possible dès son retour.");
             Queued?.Invoke(durable);
+            DepositSoon();
             throw new OfflineQueuedException($"{durable.Label} : enregistré sur cet appareil. Envoi automatique au retour de l'appareil principal.");
         }
         catch (ApiException ex)
         {
-            if (durable is not null && ex.Status != 401) Offline!.Refused(durable.Id, ex.Message);
+            if (durable is not null && sourceStore is not null)
+            {
+                if (ex.Status == 423)
+                {
+                    // Action NOUVELLE refusée pour licence : ne pas créer un
+                    // faux conflit ni une écriture que l'école n'a pas le droit de faire.
+                    sourceStore.SentFor(sourceUser, durable.Id);
+                    LicenseReadOnly = true;
+                }
+                else if (ex.Status != 401)
+                    sourceStore.RefusedFor(sourceUser, durable.Id, ex.Message);
+            }
             throw;
         }
     }
@@ -279,8 +462,13 @@ public sealed class ScoliaClient : IDisposable
         try
         {
         int sent = 0, refused = 0;
-        foreach (var item in Offline.Outbox())
+        var connectionLost = false;
+        var flushingStore = Offline;
+        var flushingUser = flushingStore.User;
+        foreach (var item in flushingStore.Outbox())
         {
+            if (!string.Equals(flushingStore.User, flushingUser, StringComparison.Ordinal))
+                break; // Un autre compte a pris l'interface pendant l'envoi.
             try
             {
                 using var request = new HttpRequestMessage(new HttpMethod(item.Method), item.Path)
@@ -291,24 +479,27 @@ public sealed class ScoliaClient : IDisposable
                 using var response = await http.SendAsync(request, ct);
                 if (response.IsSuccessStatusCode)
                 {
-                    Offline.Sent(item.Id);
+                    flushingStore.SentFor(flushingUser, item.Id);
                     sent++;
                     continue;
                 }
                 if ((int)response.StatusCode >= 500) break;
                 var error = await ToException(response);
                 // Session expirée : l'opération attend la reconnexion, elle n'est pas en conflit.
-                if (error.Status == 401) break;
-                Offline.Refused(item.Id, error.Message);
+                if (error.Status is 401 or 423) break; // Licence bloquée : garder les anciennes écritures intactes.
+                flushingStore.RefusedFor(flushingUser, item.Id, error.Message);
                 refused++;
             }
             catch (Exception ex) when (IsDisconnected(ex, ct))
             {
+                connectionLost = true;
                 SetOnline(false);
                 break;
             }
         }
-        if (sent > 0) SetOnline(true);
+        // Une première opération envoyée ne signifie pas que les suivantes ont
+        // réussi : ne jamais repasser au vert après une coupure en plein lot.
+        if (sent > 0 && !connectionLost) SetOnline(true);
         return (sent, refused);
         }
         finally { flushGate.Release(); }
@@ -329,22 +520,17 @@ public sealed class ScoliaClient : IDisposable
         && !path.StartsWith("api/direct", StringComparison.Ordinal)
         && !path.StartsWith("api/revision", StringComparison.Ordinal)
         && !path.StartsWith("api/sante", StringComparison.Ordinal)
-        && !path.StartsWith("api/session", StringComparison.Ordinal);
+        && !path.StartsWith("api/session", StringComparison.Ordinal)
+        // État et code de secours de la sauvegarde en ligne : jamais gardés sur l'appareil.
+        && !path.StartsWith("api/nuage", StringComparison.Ordinal);
 
     /// <summary>
     /// Écritures du quotidien qui peuvent attendre le retour du serveur. Les aperçus, les exports, les sauvegardes,
     /// les effacements et les réglages de l'établissement demandent le serveur, tout de suite.
     /// </summary>
-    public static bool Queueable(HttpMethod method, string path)
-    {
-        if (method == HttpMethod.Get || path.Contains("apercu", StringComparison.Ordinal) || path.Contains("export", StringComparison.Ordinal)) return false;
-        string[] daily =
-        [
-            "api/apprenants", "api/inscriptions", "api/paiements", "api/depenses", "api/scolarite/presences",
-            "api/scolarite/discipline", "api/scolarite/evaluations", "api/personnel",
-        ];
-        return daily.Any(prefix => path.StartsWith(prefix, StringComparison.Ordinal));
-    }
+    public static bool Queueable(HttpMethod method, string path) =>
+        (method == HttpMethod.Post && path == "api/deliberation/cotes-par-code")
+        || Scolia.Domain.Cloud.CloudOperationRules.Queueable(method.Method, path);
 
     private static string Describe(HttpMethod method, string path) => path switch
     {
@@ -354,6 +540,7 @@ public sealed class ScoliaClient : IDisposable
         _ when path.StartsWith("api/apprenants", StringComparison.Ordinal) && method == HttpMethod.Post => "Inscription",
         _ when path.StartsWith("api/apprenants", StringComparison.Ordinal) || path.StartsWith("api/inscriptions", StringComparison.Ordinal) => "Dossier de l'apprenant",
         _ when path.StartsWith("api/depenses", StringComparison.Ordinal) => "Dépense",
+        _ when path == "api/deliberation/cotes-par-code" => "Encodage d'une note anonyme",
         _ when path.StartsWith("api/scolarite/presences", StringComparison.Ordinal) => "Appel des présences",
         _ when path.StartsWith("api/scolarite/discipline", StringComparison.Ordinal) => "Discipline",
         _ when path.StartsWith("api/scolarite/evaluations", StringComparison.Ordinal) => "Notes",
@@ -364,19 +551,38 @@ public sealed class ScoliaClient : IDisposable
     /// <summary>Télécharge un document (PDF, Excel, CSV, sauvegarde) servi par l'API.</summary>
     public async Task<byte[]> DownloadAsync(string path, CancellationToken ct = default)
     {
-        // Le logo de l'établissement est gardé sur l'appareil : il reste affiché hors ligne.
+        // Le logo de l'établissement est gardé sur l'appareil : il reste affiché
+        // dès la connexion hors ligne, sans essayer un téléchargement de 60 s.
         var keep = path == "api/etablissement/logo";
+        var logoStore = Offline;
+        var logoUser = logoStore?.User ?? string.Empty;
+        ct.ThrowIfCancellationRequested();
+        if (!IsOnline && CanUseOfflineCache)
+        {
+            if (keep && Offline!.ReadPage(path) is { } cached)
+                return Convert.FromBase64String(cached.Json);
+            throw new OfflineException(keep
+                ? "Le logo de l'établissement n'a pas encore été enregistré sur cet appareil."
+                : "L'export ou le document demandé exige la connexion au serveur.");
+        }
+
         try
         {
-            using var response = await http.GetAsync(path, ct);
+            using var deadline = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            if (keep) deadline.CancelAfter(ReadTimeout);
+            using var response = await http.GetAsync(path, deadline.Token);
             if (!response.IsSuccessStatusCode) throw await ToException(response);
-            var bytes = await response.Content.ReadAsByteArrayAsync(ct);
-            if (keep) Offline?.SavePage(path, Convert.ToBase64String(bytes));
+            var bytes = await response.Content.ReadAsByteArrayAsync(deadline.Token);
+            if (keep && logoStore is not null && logoUser.Length > 0)
+                logoStore.SavePageFor(logoUser, path, Convert.ToBase64String(bytes));
             return bytes;
         }
-        catch (Exception ex) when (keep && IsDisconnected(ex, ct) && Offline?.ReadPage(path) is { } saved)
+        catch (Exception ex) when (keep && IsDisconnected(ex, ct))
         {
-            return Convert.FromBase64String(saved.Json);
+            SetOnline(false);
+            if (Offline?.ReadPage(path) is { } saved)
+                return Convert.FromBase64String(saved.Json);
+            throw new OfflineException("Le logo de l'établissement n'a pas encore été enregistré sur cet appareil.");
         }
     }
 
@@ -390,9 +596,20 @@ public sealed class ScoliaClient : IDisposable
     }
 
     /// <summary>Envoie des fichiers en multipart (import Excel, logo).</summary>
-    public async Task<T> UploadAsync<T>(HttpMethod method, string path, IEnumerable<UploadedFile> files, CancellationToken ct = default)
+    public Task<T> UploadAsync<T>(HttpMethod method, string path, IEnumerable<UploadedFile> files, CancellationToken ct = default) =>
+        UploadFormAsync<T>(method, path, files, null, ct);
+
+    /// <summary>Import de documents protégés : la phrase secrète va dans le corps POST, jamais l'URL.</summary>
+    public Task<T> UploadWithFieldsAsync<T>(HttpMethod method, string path, IEnumerable<UploadedFile> files,
+        IReadOnlyDictionary<string, string> fields, CancellationToken ct = default) =>
+        UploadFormAsync<T>(method, path, files, fields, ct);
+
+    private async Task<T> UploadFormAsync<T>(HttpMethod method, string path, IEnumerable<UploadedFile> files,
+        IReadOnlyDictionary<string, string>? fields, CancellationToken ct)
     {
         using var content = new MultipartFormDataContent();
+        if (fields is not null)
+            foreach (var pair in fields) content.Add(new StringContent(pair.Value), pair.Key);
         foreach (var file in files)
         {
             // Le type du fichier accompagne l'envoi : le serveur et les journaux savent ce qu'ils reçoivent.
@@ -438,6 +655,22 @@ public sealed class ScoliaClient : IDisposable
             if (!string.IsNullOrWhiteSpace(text)) parts.Add($"{Uri.EscapeDataString(key)}={Uri.EscapeDataString(text)}");
         }
         return parts.Count == 0 ? string.Empty : "?" + string.Join('&', parts);
+    }
+
+    private async Task<HttpResponseMessage> ReadRawAsync(string path, string? etag, CancellationToken ct)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Get, path);
+        if (etag is not null)
+            request.Headers.TryAddWithoutValidation("If-None-Match", etag);
+        var response = await http.SendAsync(request, ct);
+        if (response.IsSuccessStatusCode || response.StatusCode == HttpStatusCode.NotModified)
+        {
+            SetOnline(true);
+            return response;
+        }
+        var error = await ToException(response);
+        response.Dispose();
+        throw error;
     }
 
     private async Task<HttpResponseMessage> SendRawAsync(HttpMethod method, string path, object? body, CancellationToken ct, string? key = null)

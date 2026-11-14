@@ -16,8 +16,8 @@ public sealed class LoginViewModel : Observable
     private bool recoveryOpen;
     private bool editingAccount;
     private bool linkedClient;
-    private bool manualLoginOpen;
     private Uri? accountServer;
+    private IReadOnlyList<string> knownAccounts = [];
     private string recoveryCode = string.Empty;
     private string newPassword = string.Empty;
     private string confirmPassword = string.Empty;
@@ -30,6 +30,9 @@ public sealed class LoginViewModel : Observable
         DisableBiometrics = new AsyncCommand(DisableBiometricsAsync);
         RecoverWithBiometrics = new AsyncCommand(RecoverWithBiometricsAsync);
         RecoverWithCode = new AsyncCommand(RecoverWithCodeAsync);
+        ChooseRememberedAccount = new RelayCommand<string>(ChooseRememberedAccountAsync);
+        ForgetSelectedAccount = new AsyncCommand(ForgetSelectedAccountAsync);
+        ForgetLinkedServer = new AsyncCommand(ForgetLinkedServerAsync);
     }
 
     public event Action<SessionDto>? LoggedIn;
@@ -43,23 +46,84 @@ public sealed class LoginViewModel : Observable
     private RelayCommand? changeServer;
     /// <summary>Ordinateur auquel ce poste est relié, rappelé en bas de la page de connexion.</summary>
     public string ServerLine => api.Server.IsLoopback
-        ? "Cet appareil est l'ordinateur principal"
-        : $"Relié à l'ordinateur principal {api.Server.Host}";
+        ? string.Empty
+        : $"Serveur : {api.Server.Host}";
+    public bool HasServerLine => !api.Server.IsLoopback;
     public void RefreshServer()
     {
         RecallLastAccount();
         Raise(nameof(ServerLine));
+        Raise(nameof(HasServerLine));
     }
 
-    /// <summary>Réutilise uniquement l'identifiant du dernier compte pour ce serveur.</summary>
+    /// <summary>Comptes déjà ouverts sur cet appareil, et non liste des utilisateurs du serveur.</summary>
+    public IReadOnlyList<string> KnownAccounts
+    {
+        get => knownAccounts;
+        private set
+        {
+            if (Set(ref knownAccounts, value)) Raise(nameof(ShowRememberedChoices));
+        }
+    }
+    public bool ShowRememberedChoices => ShowAccountEntry && KnownAccounts.Count > 0;
+    public RelayCommand<string> ChooseRememberedAccount { get; }
+    public AsyncCommand ForgetSelectedAccount { get; }
+    public AsyncCommand ForgetLinkedServer { get; }
+    public Func<string, Task<bool>>? ConfirmAccountRemoval { get; set; }
+    public event Func<Task>? ForgetLinkedServerRequested;
+
+    private async Task ForgetSelectedAccountAsync()
+    {
+        var account = UserName;
+        if (Busy || string.IsNullOrWhiteSpace(account) ||
+            !KnownAccounts.Contains(account, StringComparer.OrdinalIgnoreCase)) return;
+        if (ConfirmAccountRemoval is { } confirm && !await confirm(account)) return;
+        var store = new OfflineStore(ConnectionStore.CacheAddress(api.Server));
+        if (!store.ForgetKnownAccount(account))
+        {
+            Error = "Ce compte contient des écritures en attente ou en conflit. Synchronisez-les ou résolvez les conflits avant de le retirer.";
+            return;
+        }
+        // Un secret biométrique conservé permettrait sinon de réimporter la session retirée.
+        if (BiometricAccess.AccountMatches(BiometricAccess.ReadAccount(api.Server) ?? string.Empty, account))
+        {
+            Platform.DisableBiometricAccess?.Invoke();
+            BiometricAccess.Disable();
+        }
+        KnownAccounts = store.KnownAccounts;
+        editingAccount = true;
+        UserName = string.Empty;
+        Password = string.Empty;
+        Error = null;
+        Notice = "Compte retiré de cet appareil. Le compte sur le serveur n'est pas supprimé.";
+        RaiseAccountState();
+        RefreshBiometrics();
+    }
+
+    private async Task ForgetLinkedServerAsync()
+    {
+        if (Busy || api.Server.IsLoopback || ForgetLinkedServerRequested is not { } requested) return;
+        await requested();
+    }
+    private void ChooseRememberedAccountAsync(string? account)
+    {
+        if (Busy || string.IsNullOrWhiteSpace(account) ||
+            !KnownAccounts.Contains(account, StringComparer.OrdinalIgnoreCase)) return;
+        Password = string.Empty;
+        RememberAccount(account);
+    }
+
+    /// <summary>Un compte connu reste reconnu après redémarrage, sans nouvelle invitation QR.</summary>
     private void RecallLastAccount()
     {
-        // Changer de compte doit rester un choix explicite, même après un rafraîchissement graphique.
         if (accountServer == api.Server) return;
         accountServer = api.Server;
+        Password = string.Empty;
         try
         {
-            var last = new OfflineStore(api.Server).LastAccount;
+            var store = new OfflineStore(ConnectionStore.CacheAddress(api.Server));
+            KnownAccounts = store.KnownAccounts;
+            var last = store.LastAccount;
             if (string.IsNullOrWhiteSpace(last)) last = BiometricAccess.ReadAccount(api.Server);
             if (!string.IsNullOrWhiteSpace(last)) RememberAccount(last);
             else { editingAccount = true; UserName = string.Empty; RaiseAccountState(); }
@@ -67,7 +131,9 @@ public sealed class LoginViewModel : Observable
         catch (Exception ex) when (ex is System.IO.IOException or UnauthorizedAccessException
             or System.Security.Cryptography.CryptographicException or System.Text.Json.JsonException)
         {
+            KnownAccounts = [];
             editingAccount = true;
+            UserName = string.Empty;
             RaiseAccountState();
         }
     }
@@ -82,7 +148,9 @@ public sealed class LoginViewModel : Observable
         try
         {
             var suggested = await api.GetAsync<LocalAccount>("api/installation/compte-local");
-            if (!string.IsNullOrWhiteSpace(suggested?.UserName)) RememberAccount(suggested.UserName);
+            if (!string.IsNullOrWhiteSpace(suggested?.UserName) &&
+                !new OfflineStore(ConnectionStore.CacheAddress(api.Server)).WasForgottenAccount(suggested.UserName))
+                RememberAccount(suggested.UserName);
         }
         catch (Exception ex) when (ex is ApiException or OfflineException or HttpRequestException or TaskCanceledException) { }
     }
@@ -91,7 +159,11 @@ public sealed class LoginViewModel : Observable
     {
         if (string.IsNullOrWhiteSpace(account)) return;
         editingAccount = false;
+        Password = string.Empty;
         UserName = account.Trim();
+        try { KnownAccounts = new OfflineStore(ConnectionStore.CacheAddress(api.Server)).KnownAccounts; }
+        catch (Exception ex) when (ex is System.IO.IOException or UnauthorizedAccessException
+            or System.Security.Cryptography.CryptographicException or System.Text.Json.JsonException) { }
         RaiseAccountState();
     }
 
@@ -99,21 +171,24 @@ public sealed class LoginViewModel : Observable
     {
         Raise(nameof(HasRememberedAccount));
         Raise(nameof(ShowAccountEntry));
+        Raise(nameof(ShowRememberedChoices));
+        Raise(nameof(ShowBiometricSignIn));
+        Raise(nameof(ShowBiometricEnrollment));
         Raise(nameof(IntroText));
     }
 
-    /// <summary>Un poste invité rejoint le compte approuvé sans demander son mot de passe.</summary>
+    /// <summary>Une invitation ne remplace plus l'authentification personnelle du compte.</summary>
     public bool LinkedClient => linkedClient;
-    public bool ShowManualCredentials => !linkedClient || manualLoginOpen;
+    public bool ShowManualCredentials => true;
     public bool ShowBiometricSignIn => ShowManualCredentials && !RecoveryOpen && CanUseBiometricSignIn;
     public bool ShowBiometricEnrollment => ShowManualCredentials && !RecoveryOpen && CanOfferEnrollment;
     public bool ShowRemoveBiometric => ShowManualCredentials && !RecoveryOpen && HasBiometricAccount;
-    public bool ShowPairingCallToAction => linkedClient && !manualLoginOpen;
+    // La saisie de l'identifiant et du mot de passe est toujours visible sur un poste invité.
+    public bool ShowPairingCallToAction => false;
     public void ConfigureClientMode(bool isClient)
     {
         if (linkedClient == isClient) return;
         linkedClient = isClient;
-        manualLoginOpen = false;
         Raise(nameof(LinkedClient));
         Raise(nameof(ShowManualCredentials));
         Raise(nameof(ShowPairingCallToAction));
@@ -125,7 +200,6 @@ public sealed class LoginViewModel : Observable
 
     public RelayCommand EnableManualLogin => enableManualLogin ??= new RelayCommand(() =>
     {
-        manualLoginOpen = true;
         Raise(nameof(ShowManualCredentials));
         Raise(nameof(ShowPairingCallToAction));
         Raise(nameof(ShowBiometricSignIn));
@@ -159,11 +233,11 @@ public sealed class LoginViewModel : Observable
     public string ResumeText => $"Revenir à la session de {resumeName}";
     /// <summary>Phrase sous « Connexion » : elle rappelle qu'une session attend, verrouillée.</summary>
     public string IntroText => resumeName is null
-        ? (linkedClient && !manualLoginOpen
-            ? "Ce poste utilise une invitation du serveur : scannez le QR pour vous connecter automatiquement."
-            : HasRememberedAccount ? "Saisissez votre mot de passe pour continuer." : "Saisissez votre identifiant et votre mot de passe.")
-        : "Connectez un autre compte. La session verrouillée reste ouverte : vous pouvez y revenir à tout moment.";
-    public string ResumeHint => resumeUser is null ? string.Empty : $"{resumeUser} · session verrouillée, rien n'est perdu";
+        ? HasRememberedAccount
+            ? "Saisissez votre mot de passe."
+            : "Connectez-vous à votre compte."
+        : "Connectez un autre compte. La session verrouillée reste ouverte.";
+    public string ResumeHint => resumeUser is null ? string.Empty : $"{resumeUser} · session verrouillée";
     public RelayCommand Resume => resume ??= new RelayCommand(() =>
     {
         if (Busy || !CanResume) return;
@@ -242,7 +316,6 @@ public sealed class LoginViewModel : Observable
     public void ShowRecoveryHelp(string account)
     {
         if (!string.IsNullOrWhiteSpace(account)) RememberAccount(account);
-        manualLoginOpen = true;
         Raise(nameof(ShowManualCredentials));
         Raise(nameof(ShowPairingCallToAction));
         Raise(nameof(ShowBiometricSignIn));
@@ -343,7 +416,7 @@ public sealed class LoginViewModel : Observable
             try
             {
                 var store = api.Offline ?? new OfflineStore(api.Server);
-                store.ForgetCredential();
+                store.ForgetCredential(UserName);
                 store.RememberAccount(UserName);
             }
             catch (Exception ex) when (ex is System.IO.IOException or UnauthorizedAccessException) { }
@@ -405,7 +478,7 @@ public sealed class LoginViewModel : Observable
                 try
                 {
                     var store = api.Offline ?? new OfflineStore(api.Server);
-                    store.ForgetCredential();
+                    store.ForgetCredential(UserName);
                     store.RememberAccount(UserName);
                 }
                 catch (Exception ex) when (ex is System.IO.IOException or UnauthorizedAccessException) { }
@@ -459,13 +532,14 @@ public sealed class LoginViewModel : Observable
     // Le retrait doit rester disponible par mot de passe lorsque le capteur a été désactivé.
     public bool HasBiometricAccount => Platform.IsMobile && BiometricAccount.Length > 0
         && (Platform.HasBiometricProof?.Invoke() ?? false);
-    public bool CanUseBiometricSignIn => HasBiometricAccount && CanOfferBiometrics;
+    public bool CanUseBiometricSignIn => HasBiometricAccount && CanOfferBiometrics &&
+        (string.IsNullOrWhiteSpace(UserName) || BiometricAccess.AccountMatches(BiometricAccount, UserName));
     public bool CanOfferEnrollment => CanOfferBiometrics && !HasBiometricAccount && Platform.EnrollBiometricAsync is not null;
     public string BiometricLabel => $"Déverrouiller avec {Platform.BiometricInSentence} · {BiometricAccount}";
     public string EnrollmentText => $"Activer {Platform.BiometricInSentence} après cette connexion";
     public string EnrollmentHint => Platform.BiometricInSentence == "l’empreinte"
-        ? "Réservé à un téléphone personnel : toute empreinte forte enregistrée sur cet appareil pourra ouvrir le compte associé. Aucun modèle d’empreinte n’est enregistré par SCOLIA."
-        : $"Réservé à un appareil personnel : tout visage ou empreinte enregistré dans {Platform.BiometricDisplayName} pourra ouvrir le compte associé. SCOLIA n’enregistre aucune donnée biométrique.";
+        ? "Téléphone personnel uniquement : toute empreinte enregistrée ici pourra ouvrir ce compte."
+        : $"Appareil personnel uniquement : tout visage ou empreinte de {Platform.BiometricDisplayName} pourra ouvrir ce compte.";
 
     public void RefreshBiometrics()
     {
@@ -653,11 +727,39 @@ public sealed class LoginViewModel : Observable
         finally { Busy = false; }
     }
 
+    private bool SignInFromOfflineCache(string user, string secret, bool fromBiometrics)
+    {
+        var store = api.Offline ?? new Infrastructure.OfflineStore(api.Server);
+        if (store.OfflineLogin(user, secret) is not { } saved)
+        {
+            Error = store.HasCredential
+                ? "Ordinateur principal injoignable. Hors ligne, seul le dernier compte connecté sur cet appareil peut s'ouvrir, avec son code."
+                : "Ordinateur principal injoignable. Une première connexion en ligne est nécessaire pour travailler ensuite hors ligne.";
+            return false;
+        }
+        api.Offline = store;
+        Authenticated?.Invoke(user, secret, saved);
+        Password = string.Empty;
+        Notice = "Mode hors ligne · données enregistrées sur cet appareil. Les opérations seront synchronisées au retour du serveur.";
+        LoggedIn?.Invoke(saved);
+        return true;
+    }
+
     /// <summary>Connexion au serveur, au clavier ou après l'empreinte ; hors ligne, le dernier compte de l'appareil.</summary>
     private async Task SignInAsync(string user, string secret, bool fromBiometrics)
     {
         Error = null;
         Restored = false;
+
+        // Après une coupure déjà constatée, vérifier immédiatement le compte à
+        // partir de son empreinte locale ; ne pas attendre un nouveau délai HTTP.
+        // Un mot de passe incorrect ne donne jamais accès au cache.
+        if (!api.IsOnline && (api.Offline ?? new Infrastructure.OfflineStore(api.Server)) is { HasCredential: true })
+        {
+            SignInFromOfflineCache(user, secret, fromBiometrics);
+            return;
+        }
+
         try
         {
             var session = await api.LoginAsync(user, secret);
@@ -680,19 +782,9 @@ public sealed class LoginViewModel : Observable
         }
         catch (Exception ex) when (ex is OfflineException or HttpRequestException or TaskCanceledException)
         {
-            // Ordinateur principal injoignable : le dernier compte connecté sur cet appareil peut travailler hors ligne.
-            var store = api.Offline ?? new Infrastructure.OfflineStore(api.Server);
-            if (store.OfflineLogin(user, secret) is { } saved)
-            {
-                api.Offline = store;
-                Authenticated?.Invoke(user, secret, saved);
-                Password = string.Empty;
-                if (fromBiometrics) Notice = "Connexion hors ligne · les changements seront envoyés au retour du serveur.";
-                LoggedIn?.Invoke(saved);
-            }
-            else Error = store.HasCredential
-                ? "Ordinateur principal injoignable. Hors ligne, seul le dernier compte connecté sur cet appareil peut s'ouvrir, avec son code."
-                : "Ordinateur principal injoignable. Une première connexion en ligne est nécessaire pour travailler ensuite hors ligne.";
+            // Le réseau est tombé pendant l'authentification : réutiliser la
+            // même vérification locale, sans contourner le mot de passe enregistré.
+            SignInFromOfflineCache(user, secret, fromBiometrics);
         }
         catch (ApiException locked) when (locked.RetryAfterSeconds is > 0) { StartLock(locked.RetryAfterSeconds.Value, DateTime.UtcNow); }
         catch (ApiException ex) when (fromBiometrics && ex.Status is 400 or 401)

@@ -10,9 +10,10 @@
   <DataGrid ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}" AutoGenerateColumns="False" IsReadOnly="True">
     <DataGrid.Columns>
       <DataGridTextColumn infra:GridPriority.Level="2" Header="Matricule" Binding="{Binding Matricule}" Width="Auto" MinWidth="122" />
-      <DataGridTextColumn Header="Apprenant" Binding="{Binding Name}" Width="*" MinWidth="140" />
+      <DataGridTextColumn Header="Apprenant" Binding="{Binding Name}" Width="*" MinWidth="220" />
       <DataGridTextColumn infra:GridPriority.Level="2" Header="Promotion" Binding="{Binding Promotion}" Width="Auto" MinWidth="122" />
       <DataGridTextColumn Header="Garant ou organisme" Binding="{Binding Sponsor}" Width="Auto" MinWidth="198" />
+      <DataGridTextColumn Header="Type" Binding="{Binding Type}" Width="Auto" MinWidth="110" />
       <DataGridTextColumn infra:GridPriority.Level="3" Header="Motif" Binding="{Binding Reason}" Width="Auto" MinWidth="170" />
       <DataGridTextColumn infra:GridPriority.Level="3" Header="Effet" Binding="{Binding Since}" Width="Auto" MinWidth="120" />
       <DataGridTextColumn Header="Couvert" Binding="{Binding Covered}" Width="Auto" MinWidth="130" />

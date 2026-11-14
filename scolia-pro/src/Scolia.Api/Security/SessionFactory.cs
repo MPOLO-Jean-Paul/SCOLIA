@@ -20,7 +20,7 @@ public static class SessionFactory
             new(ScoliaClaims.Role, user.Role.ToString()),
             new(ScoliaClaims.Stamp, user.SecurityStamp),
         };
-        claims.AddRange(Permissions.For(user.Role).Select(p => new Claim(ScoliaClaims.Permission, p)));
+        claims.AddRange(Permissions.For(user).Select(p => new Claim(ScoliaClaims.Permission, p)));
         return new ClaimsPrincipal(new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme));
     }
 
@@ -41,8 +41,8 @@ public static class SessionFactory
     {
         var school = await db.Schools.AsNoTracking().OrderBy(s => s.CreatedAtUtc).FirstOrDefaultAsync(ct);
         var year = await db.AcademicYears.AsNoTracking().Where(y => y.IsCurrent).Select(y => y.Label).FirstOrDefaultAsync(ct);
-        return new SessionDto(user.Id, user.UserName, user.DisplayName, user.Role.ToString(), Permissions.Label(user.Role), Permissions.For(user.Role),
-            user.MustChangePassword, school?.Name ?? "SCOLIA", school?.ShortName, year, school?.CurrencySymbol ?? "FC", school?.PhoneCountryCode ?? "243");
+        return new SessionDto(user.Id, user.UserName, user.DisplayName, user.Role.ToString(), Permissions.Label(user), Permissions.For(user),
+            user.MustChangePassword, school?.Name ?? "SCOLIA", school?.ShortName, year, school?.CurrencySymbol ?? "FC", school?.PhoneCountryCode ?? "243", school?.InstitutionType ?? "ItmIm");
     }
 
     /// <summary>Chaque requête vérifie que le compte est actif et que son empreinte de sécurité n'a pas changé
@@ -55,14 +55,10 @@ public static class SessionFactory
         var db = context.HttpContext.RequestServices.GetRequiredService<ScoliaDbContext>();
         var current = await db.Users.AsNoTracking().Where(u => u.Id == userId).Select(u => new { u.SecurityStamp, u.IsActive }).FirstOrDefaultAsync();
         var invalid = current is null || !current.IsActive || current.SecurityStamp != stamp;
-        if (!invalid && context.Principal?.FindFirstValue("scolia:device-grant") is { } raw)
-        {
-            var expectedDevice = context.Principal.FindFirstValue("scolia:device-id");
-            var actualDevice = LiveHeaders.DeviceId(context.HttpContext);
-            var registry = context.HttpContext.RequestServices.GetRequiredService<DevicePairingRegistry>();
-            invalid = !Guid.TryParse(raw, out var grantId) || expectedDevice != actualDevice
-                || !registry.IsActive(grantId, userId, actualDevice);
-        }
+        // Révoquer les anciens cookies attribués par QR avant cette correction.
+        // Une session utilisateur n'est désormais valable qu'après authentification.
+        if (context.Principal?.HasClaim(c => c.Type == "scolia:device-grant") == true)
+            invalid = true;
         if (invalid)
         {
             context.RejectPrincipal();

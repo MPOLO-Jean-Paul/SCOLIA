@@ -1,0 +1,29 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:infra="using:Scolia.Bureau.Infrastructure"
+             xmlns:c="using:Scolia.Bureau.Controls"
+             x:Class="Scolia.Bureau.Views.AnonymousCodesView">
+  <Grid RowDefinitions="Auto,*">
+    <Border Grid.Row="0" Classes="band" Margin="0,0,0,10">
+      <WrapPanel>
+        <StackPanel Classes="field">
+          <TextBlock Text="Promotion" Classes="fieldlabel" />
+          <ComboBox Width="280" ItemsSource="{Binding Promotions}" SelectedItem="{Binding Promotion}" />
+        </StackPanel>
+        <TextBlock Text="Les apprenants déjà inscrits sont repris tels quels. Chaque code est unique dans l'année et n'est jamais réattribué. La liste des codes est confidentielle : elle reste au jury."
+                   TextWrapping="Wrap" MaxWidth="560" VerticalAlignment="Center" Classes="muted" Margin="8,0,0,8" />
+      </WrapPanel>
+    </Border>
+    <DataGrid Grid.Row="1" ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}" AutoGenerateColumns="False" IsReadOnly="True">
+      <DataGrid.Columns>
+        <DataGridTextColumn Header="Code anonyme" Binding="{Binding Code}" Width="Auto" MinWidth="150" infra:GridPriority.Level="1" />
+        <DataGridTextColumn Header="Promotion" Binding="{Binding Promotion}" Width="Auto" MinWidth="122" infra:GridPriority.Level="2" />
+        <DataGridTextColumn Header="Matricule" Binding="{Binding Matricule}" Width="Auto" MinWidth="122" infra:GridPriority.Level="2" />
+        <DataGridTextColumn Header="Nom complet" Binding="{Binding FullName}" Width="*" MinWidth="220" infra:GridPriority.Level="1" />
+        <DataGridTextColumn Header="Origine" Binding="{Binding Origin}" Width="Auto" MinWidth="170" infra:GridPriority.Level="3" />
+      </DataGrid.Columns>
+    </DataGrid>
+    <c:EmptyState Grid.Row="1" Icon="Incognito" Title="Aucun apprenant inscrit"
+                  Hint="Inscrivez d'abord les apprenants dans Secrétariat, puis « Importer et attribuer les codes »." IsVisible="{Binding Items.Count, Converter={StaticResource IsEmpty}}" />
+  </Grid>
+</UserControl>

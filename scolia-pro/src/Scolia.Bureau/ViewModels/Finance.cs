@@ -40,7 +40,7 @@ public sealed class DebtorsPage : PageViewModel
     {
         if (Selected is null)
         {
-            Shell.Notify("Sélectionnez un apprenant dans la liste.");
+            Shell.Notify($"Sélectionnez un {Shell.StudentTerms.Singular} dans la liste.");
             return Task.CompletedTask;
         }
         return work(Selected.StudentId);
@@ -89,7 +89,8 @@ public sealed class DebtorsPage : PageViewModel
         var rows = await Shell.Api.GetAsync<List<DebtorDto>>("api/rapports/debiteurs" + ScoliaClient.Query(
             ("promotionId", Promotion?.Value), ("minOverdueMonths", months), ("bucket", Bucket?.Value), ("search", Search.Trim())));
 
-        CollectionSync.Apply(Items, rows.Select(d => new DebtorRowVm(d.StudentId, d.Matricule, d.FullName, d.PromotionCode, Money(d.Balance), Money(d.Overdue),
+        CollectionSync.Apply(Items, rows.Select(d => new DebtorRowVm(d.StudentId, d.Matricule,
+                d.FullName + (d.Sponsorship is { Length: > 0 } ? " (prise en charge partielle)" : string.Empty), d.PromotionCode, Money(d.Balance), Money(d.Overdue),
                 $"{d.OverdueCount}", d.Periods, d.AgingBucket, d.GuardianName ?? "—", d.GuardianPhone ?? "—", d.WhatsAppLink, d.SmsLink)));
 
         subtitle = $"{Format.Count(rows.Count, "en retard", "en retard")} · {Money(rows.Sum(r => r.Overdue))} exigibles";
@@ -123,7 +124,7 @@ public sealed class DebtorsPage : PageViewModel
 }
 
 /// <summary>Ligne des prises en charge : bourses, sponsors et exonérations.</summary>
-public sealed record SponsorshipRowVm(Guid Id, Guid EnrollmentId, string Matricule, string Name, string Promotion, string Sponsor, string Reason, string Since, string Covered, string Status, IBrush StatusBrush);
+public sealed record SponsorshipRowVm(Guid Id, Guid EnrollmentId, string Matricule, string Name, string Promotion, string Sponsor, string Reason, string Since, string Covered, string Status, IBrush StatusBrush, string Type);
 
 /// <summary>Prises en charge de l'année : liste et fin d'une prise en charge.</summary>
 public sealed class SponsorshipsPage : PageViewModel
@@ -133,7 +134,7 @@ public sealed class SponsorshipsPage : PageViewModel
 
     public SponsorshipsPage(ShellViewModel shell) : base(shell)
     {
-        if (Shell.Can(Perm.PaymentsRead)) Action("Terminer la prise en charge", MaterialIconKind.ShieldOff, EndSelectedAsync, row: true);
+        if (Shell.Can(Perm.StudentsWrite)) Action("Terminer la prise en charge", MaterialIconKind.ShieldOff, EndSelectedAsync, row: true);
         ActionRefresh();
     }
 
@@ -148,10 +149,15 @@ public sealed class SponsorshipsPage : PageViewModel
     {
         var rows = await Shell.Api.GetAsync<List<SponsorshipListItem>>("api/prises-en-charge");
         Items.Clear();
-        foreach (var s in rows)
+        // Rangées par promotion, avec le total couvert : les pris en charge ont leur propre récapitulatif.
+        foreach (var s in rows.OrderBy(r => r.Promotion, StringComparer.Ordinal).ThenByDescending(r => r.IsActive).ThenBy(r => r.FullName, StringComparer.CurrentCulture))
             Items.Add(new SponsorshipRowVm(s.Id, s.EnrollmentId, s.Matricule, s.FullName, s.Promotion, s.SponsorName, s.Reason,
-                Format.Date(s.EffectiveFrom), Money(s.Covered), s.IsActive ? "Active" : "Terminée", ThemeBrush.Get(s.IsActive ? "ToneGreen" : "ToneNeutral")));
-        subtitle = $"{Format.Count(rows.Count, "prise en charge", "prises en charge")} · {rows.Count(r => r.IsActive)} active(s)";
+                Format.Date(s.EffectiveFrom), Money(s.Covered), s.IsActive ? "Active" : "Terminée", ThemeBrush.Get(s.IsActive ? "ToneGreen" : "ToneNeutral"), s.Type));
+        var active = rows.Where(r => r.IsActive).ToList();
+        var byPromotion = string.Join(", ", active.GroupBy(r => r.Promotion).OrderBy(g => g.Key, StringComparer.Ordinal).Select(g => $"{g.Key} {g.Count()}"));
+        // Sur le téléphone, le sous-titre reste court ; le détail par promotion se lit dans la liste, rangée par promotion.
+        subtitle = $"{Format.Count(active.Count, "prise en charge active", "prises en charge actives")} · total couvert {Money(active.Sum(r => r.Covered))}"
+            + (byPromotion.Length > 0 && !Phone ? $" · {byPromotion}" : string.Empty);
         Raise(nameof(Subtitle));
     }
 
@@ -239,14 +245,34 @@ public sealed class CashPage : PageViewModel
     /// <summary>Compte les espèces et verrouille la période.</summary>
     public static async Task ClosingAsync(ShellViewModel shell)
     {
+        // L'arrêté de caisse se fait sur un seul poste à la fois. La situation est lue une fois le verrou pris,
+        // pour qu'aucun encaissement d'un autre poste ne s'intercale entre l'affichage et l'arrêté.
+        if (await shell.Sync.WithLockAsync("caisse:arrete", "Arrêté de caisse", () => AskClosingAsync(shell)) && shell.Current is CashPage page)
+            await page.RefreshAsync();
+    }
+
+    private static async Task<bool> AskClosingAsync(ShellViewModel shell)
+    {
         var today = DateOnly.FromDateTime(DateTime.Today);
         var situation = await shell.Api.GetAsync<CashSituationDto>("api/caisse/situation" + ScoliaClient.Query(("date", today)));
         var money = shell.Session?.CurrencySymbol ?? string.Empty;
-        var form = new FormViewModel("Arrêter la caisse", $"Espèces attendues en caisse : {Format.Money(situation.ExpectedCash, money)}", async f =>
+        DateOnly? confirmedDay = null;
+        var form = new FormViewModel("Arrêter la caisse", $"Espèces attendues en caisse au {Format.Date(today)} : {Format.Money(situation.ExpectedCash, money)}", async f =>
         {
+            var day = f.Day("date");
+            // Arrêté d'une autre date : montrer d'abord l'attendu et l'écart de cette date, puis demander un second clic.
+            if (day is { } chosen && chosen != today && confirmedDay != chosen)
+            {
+                var other = await shell.Api.GetAsync<CashSituationDto>("api/caisse/situation" + ScoliaClient.Query(("date", chosen)));
+                var counted = f.Amount("compte");
+                f.Message = $"Espèces attendues au {Format.Date(chosen)} : {Format.Money(other.ExpectedCash, money)} · " +
+                    $"écart {Format.Money(counted - other.ExpectedCash, money)}. Cliquez à nouveau pour arrêter à cette date.";
+                confirmedDay = chosen;
+                return false;
+            }
             await shell.Api.SendAsync(HttpMethod.Post, "api/caisse/arretes", new
             {
-                date = f.Day("date"),
+                date = day,
                 countedCash = f.Amount("compte"),
                 note = f.OptionalText("note"),
             });
@@ -257,8 +283,7 @@ public sealed class CashPage : PageViewModel
         form.AddDay("date", "Date de l'arrêté", today, required: true);
         form.Add("compte", "Espèces comptées", FieldKind.Amount, required: true);
         form.Add("note", "Observation (obligatoire en cas d'écart)", FieldKind.Multiline);
-        // L'arrêté de caisse se fait sur un seul poste à la fois.
-        if (await shell.Sync.WithLockAsync("caisse:arrete", "Arrêté de caisse", () => shell.Ask(form)) && shell.Current is CashPage page) await page.RefreshAsync();
+        return await shell.Ask(form);
     }
 }
 
@@ -280,7 +305,7 @@ public sealed class ExpensesPage : PageViewModel
     public ExpensesPage(ShellViewModel shell) : base(shell)
     {
         if (Shell.Can(Perm.ExpensesWrite)) Action("Nouvelle dépense", MaterialIconKind.CashMinus, () => NewExpenseAsync(Shell), primary: true);
-        if (Shell.Can(Perm.ExpensesWrite)) Action("Annuler la dépense", MaterialIconKind.CloseCircle, CancelSelectedAsync, row: true);
+        if (Shell.Can(Perm.PaymentsCancel)) Action("Annuler la dépense", MaterialIconKind.CloseCircle, CancelSelectedAsync, row: true);
         ActionRefresh();
     }
 
@@ -460,18 +485,27 @@ public sealed class ReEnrollmentPage : PageViewModel
             var years = await Shell.Api.GetAsync<List<AcademicYearDto>>("api/etablissement/annees");
             Years = years.Select(y => new ChoiceItem(y.Id.ToString(), $"{y.Label}{(y.IsCurrent ? " (courante)" : string.Empty)}")).ToList();
             Raise(nameof(Years));
-            // L'année cible est la suivante : par défaut, la première qui n'est pas la courante.
-            year = Years.FirstOrDefault(y => !y.Label.EndsWith("(courante)")) ?? (Years.Count > 0 ? Years[0] : null);
+            // Proposer l'année la plus récente, indépendamment de son statut « courante ».
+            // Le serveur retrouve toujours l'année précédente à cette cible.
+            var latest = years.OrderByDescending(y => y.StartDate).FirstOrDefault();
+            year = latest is null ? null : Years.FirstOrDefault(y => y.Value == latest.Id.ToString());
             Raise(nameof(Year));
             ready = true;
         }
-        if (Year is null) return;
+        if (Year is null)
+        {
+            Items.Clear();
+            EmptyHint = "Créez ou choisissez une année scolaire cible pour préparer les réinscriptions.";
+            subtitle = "Aucune année scolaire cible";
+            Raise(nameof(Subtitle));
+            return;
+        }
 
         // Première année de l'établissement : rien à reconduire tant que l'année suivante n'existe pas.
         if (Years.Count < 2)
         {
             Items.Clear();
-            EmptyHint = "Une seule année scolaire existe. Créez l'année suivante avec « Nouvelle année », puis revenez ici pour reconduire les apprenants.";
+            EmptyHint = $"Une seule année scolaire existe. Créez l'année suivante avec « Nouvelle année », puis revenez ici pour reconduire les {Shell.StudentTerms.Plural}.";
             subtitle = "Aucune année suivante pour le moment";
             Raise(nameof(Subtitle));
             return;
@@ -480,15 +514,26 @@ public sealed class ReEnrollmentPage : PageViewModel
 
         promotions = await PromotionChoicesFor(Guid.Parse(Year.Value));
         var plan = await Shell.Api.GetAsync<List<ReEnrollmentItemDto>>("api/reinscriptions/plan" + ScoliaClient.Query(("anneeId", Year.Value)));
+        // Une proposition virtuelle apparaît lorsque la promotion cible n'existe pas.
+        // La création réelle intervient seulement lorsque l'utilisateur confirme le lot.
+        var choices = promotions.ToList();
+        foreach (var code in plan.Select(p => p.ToPromotion).Where(c => !string.IsNullOrWhiteSpace(c))
+                     .Distinct(StringComparer.OrdinalIgnoreCase))
+        {
+            if (!choices.Any(c => c.Label.StartsWith(code + " ·", StringComparison.OrdinalIgnoreCase)))
+                choices.Add(new ChoiceItem("auto:" + code, code + " · Créer automatiquement"));
+        }
+        promotions = choices;
         Items.Clear();
         foreach (var p in plan)
         {
-            // Le libellé d'une promotion commence par son code : on retrouve la promotion suivante par ce code.
-            var target = promotions.FirstOrDefault(c => p.ToPromotion is not null && c.Label.StartsWith($"{p.ToPromotion} ·", StringComparison.Ordinal))
-                ?? (promotions.Count > 0 ? promotions[0] : null);
-            Items.Add(new ReEnrollRowVm(p.StudentId, p.Matricule, p.FullName, p.FromPromotion, Money(p.PreviousBalance), p.Selected, target, promotions));
+            var target = promotions.FirstOrDefault(c => p.ToPromotion is not null
+                && c.Label.StartsWith(p.ToPromotion + " ·", StringComparison.OrdinalIgnoreCase));
+            // La décision du jury annuel clôturé guide la proposition : admis, promotion suivante ; ajourné, redoublement.
+            Items.Add(new ReEnrollRowVm(p.StudentId, p.Matricule, p.FullName, p.JuryDecision is { } jury ? $"{p.FromPromotion} · {jury}" : p.FromPromotion,
+                Money(p.PreviousBalance), p.Selected, target, promotions));
         }
-        subtitle = $"{Format.Count(plan.Count, "apprenant à reconduire", "apprenants à reconduire")} · {Items.Count(i => i.Selected)} sélectionné(s)";
+        subtitle = $"{Format.Count(plan.Count, $"{Shell.StudentTerms.Singular} à reconduire", $"{Shell.StudentTerms.Plural} à reconduire")} · {Items.Count(i => i.Selected)} sélectionné(s)";
         Raise(nameof(Subtitle));
     }
 
@@ -501,16 +546,31 @@ public sealed class ReEnrollmentPage : PageViewModel
     private async Task ApplyAsync()
     {
         if (Year is null) return;
-        var choices = Items.Where(i => i.Selected && i.Target is not null)
-            .Select(i => new { studentId = i.StudentId, promotionId = Guid.Parse(i.Target!.Value) })
-            .ToList();
-        if (choices.Count == 0)
+        var selected = Items.Where(i => i.Selected).ToList();
+        if (selected.Count == 0)
         {
-            Shell.Notify("Sélectionnez au moins un apprenant et sa promotion cible.");
+            Shell.Notify($"Sélectionnez au moins un {Shell.StudentTerms.Singular} à réinscrire.");
             return;
         }
+        if (selected.Any(i => i.Target is null))
+        {
+            Shell.Notify($"Certains {Shell.StudentTerms.Plural} n'ont pas de promotion cible. Choisissez leur classe avant de continuer.");
+            return;
+        }
+        var newPromotions = selected.Select(i => i.Target!.Value)
+            .Where(v => v.StartsWith("auto:", StringComparison.Ordinal))
+            .Select(v => v["auto:".Length..]).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+        var choices = selected.Select(i => new
+        {
+            studentId = i.StudentId,
+            promotionId = Guid.TryParse(i.Target!.Value, out var id) ? (Guid?)id : null,
+            promotionCode = i.Target!.Value.StartsWith("auto:", StringComparison.Ordinal)
+                ? i.Target.Value["auto:".Length..] : null,
+        }).ToList();
+        var automatic = newPromotions.Count == 0 ? string.Empty
+            : $" {newPromotions.Count} promotion(s) absente(s) seront créées automatiquement ({string.Join(", ", newPromotions)}). Leurs frais seront repris comme paramètres initiaux et pourront être vérifiés dans Configuration.";
         var confirmed = await Shell.Confirm("Lancer les réinscriptions",
-            $"{Format.Count(choices.Count, "apprenant sera inscrit", "apprenants seront inscrits")} dans l'année {Year.Label}. Les soldes restent reportés sur le compte.",
+            $"{Format.Count(choices.Count, $"{Shell.StudentTerms.Singular} sera inscrit", $"{Shell.StudentTerms.Plural} seront inscrits")} dans l'année {Year.Label}. Les soldes restent attachés aux dossiers.{automatic}",
             "Réinscrire");
         if (!confirmed) return;
         var created = await Shell.Api.SendAsync<int>(HttpMethod.Post, "api/reinscriptions", new { targetYearId = Guid.Parse(Year.Value), choices });

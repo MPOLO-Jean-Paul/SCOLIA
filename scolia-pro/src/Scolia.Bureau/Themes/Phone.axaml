@@ -6,19 +6,19 @@
         xmlns:mi="using:Material.Icons.Avalonia">
     <!-- Barre du haut : retour, titre de la page, recherche et actions -->
     <Style Selector="Border.phonebar">
-      <Setter Property="Background" Value="{DynamicResource BgBrush}" />
+      <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
       <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
       <Setter Property="BorderThickness" Value="0,0,0,1" />
-      <Setter Property="Padding" Value="4,4,4,4" />
+      <Setter Property="Padding" Value="4,6,4,6" />
     </Style>
     <Style Selector="Button.phoneicon">
       <Setter Property="Background" Value="Transparent" />
       <Setter Property="BorderThickness" Value="0" />
       <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
-      <Setter Property="Width" Value="44" />
-      <Setter Property="Height" Value="44" />
+      <Setter Property="Width" Value="48" />
+      <Setter Property="Height" Value="48" />
       <Setter Property="Padding" Value="0" />
-      <Setter Property="CornerRadius" Value="22" />
+      <Setter Property="CornerRadius" Value="24" />
       <Setter Property="HorizontalContentAlignment" Value="Center" />
       <Setter Property="VerticalContentAlignment" Value="Center" />
     </Style>
@@ -32,11 +32,17 @@
 
     <!-- Onglets du bas : icône et libellé, l'onglet actif en couleur -->
     <Style Selector="Border.tabicon">
-      <Setter Property="Width" Value="56" />
-      <Setter Property="Height" Value="30" />
-      <Setter Property="CornerRadius" Value="15" />
+      <Setter Property="Width" Value="52" />
+      <Setter Property="Height" Value="28" />
+      <Setter Property="CornerRadius" Value="14" />
       <Setter Property="HorizontalAlignment" Value="Center" />
       <Setter Property="Background" Value="Transparent" />
+      <!-- Indicateur de navigation Material : couleur animée, sans modifier sa géométrie. -->
+      <Setter Property="Transitions">
+        <Transitions>
+          <BrushTransition Property="Background" Duration="0:0:0.16" Easing="CubicEaseOut" />
+        </Transitions>
+      </Setter>
     </Style>
     <Style Selector="Border.tabicon.selected">
       <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
@@ -62,7 +68,7 @@
       </Style.Animations>
     </Style>
     <Style Selector="Border.phonetabs">
-      <Setter Property="Background" Value="{DynamicResource BgBrush}" />
+      <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
       <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
       <Setter Property="BorderThickness" Value="0,1,0,0" />
       <Setter Property="Padding" Value="0,4,0,4" />
@@ -73,9 +79,15 @@
       <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
       <Setter Property="HorizontalAlignment" Value="Stretch" />
       <Setter Property="HorizontalContentAlignment" Value="Center" />
-      <Setter Property="Padding" Value="2,4" />
-      <Setter Property="MinHeight" Value="50" />
+      <Setter Property="Padding" Value="0,3" />
+      <Setter Property="MinHeight" Value="58" />
       <Setter Property="CornerRadius" Value="12" />
+      <Setter Property="Transitions">
+        <Transitions>
+          <BrushTransition Property="Foreground" Duration="0:0:0.16" Easing="CubicEaseOut" />
+          <BrushTransition Property="Background" Duration="0:0:0.12" Easing="CubicEaseOut" />
+        </Transitions>
+      </Setter>
     </Style>
     <Style Selector="Button.phonetab:pointerover">
       <Setter Property="Background" Value="Transparent" />
@@ -86,10 +98,21 @@
     <Style Selector="Button.phonetab TextBlock">
       <Setter Property="FontSize" Value="11" />
       <Setter Property="HorizontalAlignment" Value="Center" />
+      <Setter Property="TextAlignment" Value="Center" />
+      <Setter Property="TextWrapping" Value="NoWrap" />
+      <Setter Property="MaxLines" Value="1" />
       <Setter Property="TextTrimming" Value="CharacterEllipsis" />
     </Style>
     <Style Selector="Button.phonetab.selected TextBlock">
       <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+    <!-- Les pictogrammes suivent le même état que leur libellé, plutôt que
+         de garder la couleur de leur rubrique une fois l'onglet inactif. -->
+    <Style Selector="Button.phonetab mi|MaterialIcon">
+      <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
+    </Style>
+    <Style Selector="Button.phonetab.selected mi|MaterialIcon">
+      <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
     </Style>
 
     <!-- Un bloc dessine une seule surface continue : aucun trait entre son titre et ses outils. -->
@@ -102,6 +125,8 @@
     <Style Selector="Border.phoneblockcard">
       <Setter Property="Background" Value="{DynamicResource GroupBrush}" />
       <Setter Property="CornerRadius" Value="18" />
+      <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
       <Setter Property="ClipToBounds" Value="True" />
     </Style>
     <Style Selector="Border.phoneaccordion">
@@ -128,7 +153,7 @@
       <Setter Property="HorizontalAlignment" Value="Stretch" />
       <Setter Property="HorizontalContentAlignment" Value="Stretch" />
       <Setter Property="Padding" Value="12,10" />
-      <Setter Property="MinHeight" Value="54" />
+      <Setter Property="MinHeight" Value="58" />
       <Setter Property="CornerRadius" Value="0" />
       <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
       <Setter Property="Margin" Value="0" />
@@ -140,14 +165,39 @@
       <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
     </Style>
 
+    <!-- Ligne de réglage (style Configuration, comme les Réglages d'iOS) : tuile d'icône, libellé, valeur, chevron.
+         Partagée par la Configuration et l'accueil du téléphone pour un seul langage visuel. -->
+    <Style Selector="Button.settingsentry">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="CornerRadius" Value="10" />
+      <Setter Property="MinHeight" Value="56" />
+      <Setter Property="Padding" Value="12,6" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+      <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+    </Style>
+    <Style Selector="Button.settingsentry:pointerover">
+      <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
+    </Style>
+    <Style Selector="Button.settingsentry:pressed">
+      <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
+    </Style>
+    <!-- Titre de groupe en capitales, comme « ÉTABLISSEMENT » dans la Configuration -->
+    <Style Selector="TextBlock.groupcaps">
+      <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
+      <Setter Property="FontSize" Value="{DynamicResource FsCaption}" />
+      <Setter Property="Margin" Value="12,10,0,4" />
+    </Style>
+
     <!-- Menu plein écran : chaque outil sur une ligne haute, rangé par métier dans un bloc arrondi -->
     <Style Selector="Button.phonerow">
       <Setter Property="Background" Value="Transparent" />
       <Setter Property="BorderThickness" Value="0" />
       <Setter Property="HorizontalAlignment" Value="Stretch" />
       <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-      <Setter Property="Padding" Value="12,0,10,0" />
-      <Setter Property="MinHeight" Value="50" />
+      <Setter Property="Padding" Value="14,4,12,4" />
+      <Setter Property="MinHeight" Value="56" />
       <Setter Property="CornerRadius" Value="0" />
       <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
     </Style>
@@ -161,6 +211,8 @@
     <Style Selector="Border.phonegroup">
       <Setter Property="Background" Value="{DynamicResource GroupBrush}" />
       <Setter Property="CornerRadius" Value="{StaticResource RadiusCard}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
       <Setter Property="ClipToBounds" Value="True" />
     </Style>
     <Style Selector="TextBlock.phonegrouptitle">

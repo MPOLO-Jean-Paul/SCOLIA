@@ -15,8 +15,9 @@
           </StackPanel>
           <Border Classes="segmented" HorizontalAlignment="Left">
             <StackPanel Orientation="Horizontal">
-              <RadioButton Classes="segment" GroupName="erase-kind" Content="Les paiements" IsChecked="{Binding ErasePayments}" />
-              <RadioButton Classes="segment" GroupName="erase-kind" Content="Les dossiers des apprenants" IsChecked="{Binding EraseStudents}" />
+              <RadioButton Classes="segment" GroupName="erase-kind" Content="Les paiements" IsChecked="{Binding ErasePayments}" IsEnabled="{Binding CanErasePayments}" />
+              <RadioButton Classes="segment" GroupName="erase-kind" Content="Les dossiers des apprenants" IsChecked="{Binding EraseStudents}" IsEnabled="{Binding CanEraseStudents}"
+                           ToolTip.Tip="Réservé aux comptes qui gèrent les dossiers des apprenants (secrétariat)." />
             </StackPanel>
           </Border>
           <TextBlock Text="{Binding KindHint}" Classes="muted" TextWrapping="Wrap" />
