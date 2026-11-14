@@ -12,6 +12,12 @@
 - Même protection sur la saisie du code de déverrouillage ; exemption des champs spécifiques des styles métiers généraux.
 - Conservation de l'interface native bleu ciel/cobalt et de l'ergonomie des petits écrans.
 
+
+## Harmonisation de la page de connexion
+- Bouton **Options** réduit, stylé dans les mêmes tons cobalt et intégré au panneau principal au lieu d'une grande boîte blanche isolée sous la carte.
+- Actions avancées repliées au départ et toujours accessibles : changer de serveur, retirer la liaison locale, désactiver la biométrie.
+- Marges, logo, titre, boutons secondaires et interlignes affinés ; tailles tactiles et adaptations aux petits écrans conservées.
+
 ## Vérification attendue
 - Tests automatisés des valeurs explicites de couleur et des sélecteurs du template.
 - Compilation des projets Avalonia, API et Android/Windows et publication uniquement si les workflows GitHub Actions réussissent.
