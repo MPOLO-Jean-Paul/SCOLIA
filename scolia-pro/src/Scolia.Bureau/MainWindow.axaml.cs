@@ -77,7 +77,7 @@ public partial class MainWindow : Window
         // doivent occuper le vrai espace de travail Windows, jamais un mini-dialogue.
         // Le Shell conserve son état compact historique pour d'autres surfaces,
         // mais MainWindow n'applique plus ce format sur ordinateur.
-        const bool wanted = false;
+        var wanted = !OperatingSystem.IsWindows() && shell.CompactWindow;
         if (wanted == compact) return;
         applyingWindowMode = true;
         try
