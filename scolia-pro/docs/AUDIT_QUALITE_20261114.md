@@ -70,6 +70,9 @@ ordinateur et en format téléphone (ITM/IM avec données de démonstration, éc
 - `VocabularyTests` (poste) et `terms.test.ts` (web) : vocabulaire de chaque profil.
 - `access.test.ts` : un enseignant ou un étudiant arrive sur son espace dans le navigateur.
 
+Résultats après corrections : serveur 542 tests réussis, poste Windows 559, mobile 48, interface web 36,
+relais Cloudflare 46, tests de bout en bout dans le navigateur 33.
+
 ## 4. Points relevés, laissés en l'état
 
 - *Données de démonstration ITM* : l'écran « Résultats » montre des moyennes (évaluations de démonstration),
