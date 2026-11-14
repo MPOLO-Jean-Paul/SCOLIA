@@ -1,5 +1,6 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.VisualTree;
 
 namespace Scolia.Bureau.Infrastructure;
 
