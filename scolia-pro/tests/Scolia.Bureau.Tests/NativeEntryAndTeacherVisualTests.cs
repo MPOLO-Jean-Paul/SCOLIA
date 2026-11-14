@@ -4,7 +4,7 @@ using Xunit;
 namespace Scolia.Bureau.Tests;
 
 /// <summary>Écrans natifs sobres : la connexion adopte un panneau cobalt de référence,
-/// tandis que les autres méthodes conservent leur disposition compacte.</summary>
+/// et le jumelage Android utilise désormais la même palette sans changer la navigation compacte.</summary>
 public sealed class NativeEntryAndTeacherVisualTests
 {
     private static XDocument Load(string relative)
@@ -22,7 +22,6 @@ public sealed class NativeEntryAndTeacherVisualTests
 
     [Theory]
     [InlineData("Views/ConnectionView.axaml", "Border.iosconnectcard")]
-    [InlineData("Views/Phone/ConnectionCompactView.axaml", "Border.connectcard")]
     public void Avant_accueil_aucune_carte_de_connexion_avec_fond_ombre_ou_bordure(
         string view, string selector)
     {
@@ -38,6 +37,25 @@ public sealed class NativeEntryAndTeacherVisualTests
             (string?)x.Attribute("Property") == "Padding" &&
             (string?)x.Attribute("Value") == "0");
         Assert.DoesNotContain(setters, x => (string?)x.Attribute("Property") == "BoxShadow");
+    }
+
+    [Fact]
+    public void Jumelage_android_adopte_le_panneau_cobalt_de_la_connexion()
+    {
+        var panel = Style("Views/Phone/ConnectionCompactView.axaml", "Border.connectcard");
+        var setters = panel.Elements().Where(x => x.Name.LocalName == "Setter").ToArray();
+        static bool Has(XElement[] entries, string property, string value) =>
+            entries.Any(x => (string?)x.Attribute("Property") == property &&
+                (string?)x.Attribute("Value") == value);
+        Assert.True(Has(setters, "Background", "#2354C8"));
+        Assert.True(Has(setters, "CornerRadius", "24"));
+        Assert.True(Has(setters, "Padding", "22"));
+        Assert.True(Has(setters, "BorderThickness", "1"));
+        Assert.True(Has(setters, "BorderBrush", "#638AE3"));
+        var root = Load("Views/Phone/ConnectionCompactView.axaml");
+        Assert.Contains(root.Descendants(), x => x.Name.LocalName == "LinearGradientBrush"
+            && x.Parent?.Name.LocalName == "Grid.Background");
+        Assert.DoesNotContain(root.Descendants(), x => x.Name.LocalName == "ScrollViewer");
     }
 
     [Fact]
