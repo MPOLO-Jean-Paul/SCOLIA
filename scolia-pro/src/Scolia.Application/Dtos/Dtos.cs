@@ -8,11 +8,12 @@ namespace Scolia.Application.Dtos;
 public sealed record SchoolDto(string Name, string ShortName, string? Motto, string? Address, string? City, string? Country, string? Phone,
     string? Email, string? Website, string CurrencyCode, string CurrencySymbol, bool WholeAmountsOnly, string? ReceiptFooter, bool HasLogo, string PhoneCountryCode,
     string? CardMinistry = null, string? CardDirection = null, string? CardDivision = null, string? CardZone = null, string? CardInstitute = null, string? CardAddress = null, string InstitutionType = "ItmIm",
-    string Governance = "Prive");
+    string Governance = "Prive", string? Province = null, string? Commune = null, string? OfficialCode = null);
 
 public sealed record SchoolUpdate(string Name, string ShortName, string? Motto, string? Address, string? City, string? Country, string? Phone,
     string? Email, string? Website, string CurrencyCode, string CurrencySymbol, bool WholeAmountsOnly, string? ReceiptFooter, string PhoneCountryCode,
-    string? CardMinistry = null, string? CardDirection = null, string? CardDivision = null, string? CardZone = null, string? CardInstitute = null, string? CardAddress = null);
+    string? CardMinistry = null, string? CardDirection = null, string? CardDivision = null, string? CardZone = null, string? CardInstitute = null, string? CardAddress = null,
+    string? Province = null, string? Commune = null, string? OfficialCode = null);
 
 public sealed record SetupRequest(string SchoolName, string ShortName, string? Motto, string? City, string? Phone, string CurrencyCode, string CurrencySymbol,
     string YearLabel, int StartMonth, int MonthCount, string AdminUserName, string AdminDisplayName, string AdminPassword, bool LoadDemoData,
@@ -70,14 +71,15 @@ public sealed record StudentListItem(Guid Id, Guid? EnrollmentId, string Matricu
 
 public sealed record StudentDto(Guid Id, string Matricule, string LastName, string MiddleName, string FirstName, string Gender, DateOnly? BirthDate,
     string? BirthPlace, string? Nationality, string? Address, string? Phone, string? Email, string? GuardianName, string? GuardianRelation,
-    string? GuardianPhone, string? GuardianPhone2, string? Notes, bool HasPhoto, IReadOnlyList<EnrollmentDto> Enrollments, long Version);
+    string? GuardianPhone, string? GuardianPhone2, string? Notes, bool HasPhoto, IReadOnlyList<EnrollmentDto> Enrollments, long Version,
+    string? PermanentNumber = null);
 
 public sealed record EnrollmentDto(Guid Id, Guid AcademicYearId, string AcademicYear, Guid PromotionId, string PromotionCode, string PromotionName,
     DateOnly EnrolledOn, string Status, DateOnly? ExitDate, string? ExitReason, bool IsReEnrollment);
 
 public sealed record StudentUpsert(string LastName, string MiddleName, string FirstName, string Gender, DateOnly? BirthDate, string? BirthPlace,
     string? Nationality, string? Address, string? Phone, string? Email, string? GuardianName, string? GuardianRelation, string? GuardianPhone,
-    string? GuardianPhone2, string? Notes, long? Version);
+    string? GuardianPhone2, string? Notes, long? Version, string? PermanentNumber = null);
 
 public sealed record StudentCreate(StudentUpsert Identity, Guid PromotionId, DateOnly? EnrolledOn, bool ConfirmDuplicate);
 

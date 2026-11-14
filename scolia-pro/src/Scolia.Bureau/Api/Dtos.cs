@@ -33,7 +33,7 @@ public sealed record SchoolDto(
     string? Website, string CurrencyCode, string CurrencySymbol, bool WholeAmountsOnly, string? ReceiptFooter, bool HasLogo, string PhoneCountryCode,
     string? CardMinistry = null, string? CardDirection = null, string? CardDivision = null, string? CardZone = null,
     string? CardInstitute = null, string? CardAddress = null, string InstitutionType = "ItmIm",
-    string Governance = "Prive");
+    string Governance = "Prive", string? Province = null, string? Commune = null, string? OfficialCode = null);
 
 /// <summary>Plan LMD : consultable et paramétrable dans les mêmes interfaces natives.</summary>
 public sealed record LmdStructureDto(Guid Id, string Kind, Guid? ParentId, string Code, string Name, bool IsActive);
@@ -173,7 +173,8 @@ public sealed record StudentListItem(
 public sealed record StudentDto(
     Guid Id, string Matricule, string LastName, string MiddleName, string FirstName, string Gender, DateOnly? BirthDate, string? BirthPlace,
     string? Nationality, string? Address, string? Phone, string? Email, string? GuardianName, string? GuardianRelation, string? GuardianPhone,
-    string? GuardianPhone2, string? Notes, bool HasPhoto, IReadOnlyList<EnrollmentDto> Enrollments, long Version);
+    string? GuardianPhone2, string? Notes, bool HasPhoto, IReadOnlyList<EnrollmentDto> Enrollments, long Version,
+    string? PermanentNumber = null);
 
 public sealed record EnrollmentDto(
     Guid Id, Guid AcademicYearId, string AcademicYear, Guid PromotionId, string PromotionCode, string PromotionName, DateOnly EnrolledOn,

@@ -715,6 +715,9 @@ public sealed class SettingsPage : PageViewModel
                 cardZone = f.OptionalText("zone"),
                 cardInstitute = f.OptionalText("institut"),
                 cardAddress = f.OptionalText("adresse-institut"),
+                province = f.Has("province") ? f.OptionalText("province") : s.Province,
+                commune = f.Has("commune") ? f.OptionalText("commune") : s.Commune,
+                officialCode = f.Has("code-ecole") ? f.OptionalText("code-ecole") : s.OfficialCode,
             });
             Shell.Notify("Établissement enregistré. Les reçus suivants utilisent ces informations.");
             return true;
@@ -744,6 +747,13 @@ public sealed class SettingsPage : PageViewModel
         form.Add("zone", "Zone de santé", value: s.CardZone);
         form.Add("institut", "Institut", value: s.CardInstitute);
         form.Add("adresse-institut", "Adresse de l'institut", value: s.CardAddress);
+        if (InstitutionProfiles.UsesSchoolCycles(s.InstitutionType))
+        {
+            form.AddHeader("Bulletins officiels", "Identification de l'école imprimée sur les bulletins du primaire et du secondaire.");
+            form.Add("province", "Province", value: s.Province, hint: "Ex. Kinshasa");
+            form.Add("commune", "Commune ou territoire", value: s.Commune, hint: "Ex. Lingwala");
+            form.Add("code-ecole", "Code de l'école", value: s.OfficialCode, hint: "Code attribué par l'EPST, imprimé case par case");
+        }
         SchoolForm = form;
         subtitle = $"{s.Name} · {s.CurrencyCode}";
         Raise(nameof(Subtitle));

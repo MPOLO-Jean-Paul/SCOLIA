@@ -26,6 +26,10 @@ public sealed class SchoolProfile : Entity
     /// <summary>Nom de l'institut et adresse tels qu'ils figurent sur les cartes ; à défaut, les mentions officielles.</summary>
     public string? CardInstitute { get; set; }
     public string? CardAddress { get; set; }
+    /// <summary>Identification de l'école sur les bulletins EPST : province, commune ou territoire, code officiel.</summary>
+    public string? Province { get; set; }
+    public string? Commune { get; set; }
+    public string? OfficialCode { get; set; }
     /// <summary>Code ISO 4217 de la monnaie (CDF par défaut).</summary>
     public string CurrencyCode { get; set; } = "CDF";
     public string CurrencySymbol { get; set; } = "FC";

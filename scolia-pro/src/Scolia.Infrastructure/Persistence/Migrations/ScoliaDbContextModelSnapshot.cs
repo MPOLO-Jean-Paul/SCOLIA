@@ -2529,6 +2529,10 @@ namespace Scolia.Infrastructure.Persistence.Migrations
                     b.Property<string>("City")
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("Commune")
+                        .HasMaxLength(80)
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("Country")
                         .HasColumnType("TEXT");
 
@@ -2575,11 +2579,19 @@ namespace Scolia.Infrastructure.Persistence.Migrations
                         .HasMaxLength(160)
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("OfficialCode")
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("Phone")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("PhoneCountryCode")
                         .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Province")
+                        .HasMaxLength(80)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("ReceiptFooter")
@@ -3273,6 +3285,10 @@ namespace Scolia.Infrastructure.Persistence.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Notes")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PermanentNumber")
+                        .HasMaxLength(20)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Phone")

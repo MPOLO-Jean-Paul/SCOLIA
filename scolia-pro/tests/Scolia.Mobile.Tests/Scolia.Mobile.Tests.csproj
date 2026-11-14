@@ -22,6 +22,7 @@
     <Compile Include="..\..\src\Scolia.Mobile\Server\SkiaPdf.cs" Link="Server\SkiaPdf.cs" />
     <Compile Include="..\..\src\Scolia.Mobile\Server\SkiaDocumentService.cs" Link="Server\SkiaDocumentService.cs" />
     <Compile Include="..\..\src\Scolia.Mobile\Server\SkiaAcademicDocuments.cs" Link="Server\SkiaAcademicDocuments.cs" />
+    <Compile Include="..\..\src\Scolia.Mobile\Server\SkiaEpstBulletin.cs" Link="Server\SkiaEpstBulletin.cs" />
     <Compile Include="..\..\src\Scolia.Mobile\StartupReadiness.cs" Link="StartupReadiness.cs" />
     <Compile Include="..\..\src\Scolia.Mobile\UpdateCompletionPolicy.cs" Link="UpdateCompletionPolicy.cs" />
   </ItemGroup>

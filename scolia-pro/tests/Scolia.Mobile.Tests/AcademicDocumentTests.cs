@@ -27,17 +27,26 @@ public sealed class AcademicDocumentTests
         File.WriteAllBytes(Path.Combine(dir, $"{name}-ordinateur.pdf"), desktop());
     }
 
-    private static EpstBulletinPrintDto Bulletins()
+    /// <summary>Classe du primaire (trois trimestres) ou du secondaire (deux semestres, repêchage).</summary>
+    private static EpstBulletinPrintDto Bulletins(bool secondary = false)
     {
         var periods = new List<EpstPeriodColumnDto>();
         var terms = new List<EpstTermColumnDto>();
-        for (var t = 1; t <= 3; t++)
+        var termCount = secondary ? 2 : 3;
+        for (var t = 1; t <= termCount; t++)
         {
             var codes = new[] { $"P{2 * t - 1}", $"P{2 * t}", $"EX{t}" };
-            terms.Add(new($"T{t}", codes));
+            terms.Add(new($"{(secondary ? "S" : "T")}{t}", codes));
             periods.AddRange(codes.Select(c => new EpstPeriodColumnDto(Guid.NewGuid(), c, $"T{t}", c.StartsWith("EX"))));
         }
-        var subjects = new[] { new EpstSubjectColumnDto(Guid.NewGuid(), "FR", "Français", 20), new EpstSubjectColumnDto(Guid.NewGuid(), "CALC", "Calcul", 10) };
+        var subjects = secondary
+            ? new[]
+            {
+                new EpstSubjectColumnDto(Guid.NewGuid(), "REL", "Religion", 10), new EpstSubjectColumnDto(Guid.NewGuid(), "ECM", "Éducation civique et morale", 10),
+                new EpstSubjectColumnDto(Guid.NewGuid(), "ANG", "Anglais", 20), new EpstSubjectColumnDto(Guid.NewGuid(), "HIS", "Histoire", 20),
+                new EpstSubjectColumnDto(Guid.NewGuid(), "FR", "Français", 40), new EpstSubjectColumnDto(Guid.NewGuid(), "MATH", "Mathématiques", 50),
+            }
+            : new[] { new EpstSubjectColumnDto(Guid.NewGuid(), "FR", "Français", 20), new EpstSubjectColumnDto(Guid.NewGuid(), "CALC", "Calcul", 10) };
         EpstPupilResultDto Pupil(string name, decimal fraction, int rank)
         {
             var lines = subjects.Select(s =>
@@ -49,13 +58,62 @@ public sealed class AcademicDocumentTests
             var periodTotals = periods.Select((_, i) => new EpstCellDto(lines.Sum(l => l.Periods[i].Points), lines.Sum(l => l.Periods[i].Max))).ToList();
             var termTotals = terms.Select((_, i) => new EpstCellDto(lines.Sum(l => l.Terms[i].Points), lines.Sum(l => l.Terms[i].Max))).ToList();
             return new EpstPupilResultDto(Guid.NewGuid(), Guid.NewGuid(), "EP0" + rank, name, lines, periodTotals, termTotals,
-                lines.Sum(l => l.Total), lines.Sum(l => l.Max), fraction * 100, 0, lines.Count(l => l.Failed), rank, [rank, rank, rank],
+                lines.Sum(l => l.Total), lines.Sum(l => l.Max), fraction * 100, 0, lines.Count(l => l.Failed), rank,
+                terms.Select(_ => (int?)rank).ToList(),
                 periods.Where(p => !p.IsExam).Select(p => new EpstConductCellDto(p.Id, p.Code, "TB", "E")).ToList(), rank == 1 ? "Passe" : "Double");
         }
         var pupils = new[] { Pupil("MUKENDI KABEYA Grâce", 0.8m, 1), Pupil("ILUNGA MWEMA Daniel", 0.4m, 2) };
-        var results = new EpstClassResultsDto(Guid.NewGuid(), "5e primaire A", "Primaire", "Primaire", "2026-2027", true, 50, 50, 2,
+        var results = new EpstClassResultsDto(Guid.NewGuid(), secondary ? "3e humanités scientifiques" : "5e primaire A",
+            secondary ? "Secondaire" : "Primaire", secondary ? "Secondaire" : "Primaire", "2026-2027", true, 50, 50, 2,
             terms, periods, subjects, pupils, "Secrétariat", DateTime.UtcNow, "Cloturee");
-        return new EpstBulletinPrintDto("EP Les Flamboyants", "Avenue de la Paix 12", "Kinshasa", null, "Kinshasa-Lukunga", null, results, pupils);
+        var details = new[]
+        {
+            new EpstBulletinPupilInfoDto(pupils[0].EnrollmentId, "F", "Kinshasa", new DateOnly(2014, 3, 12), "0123456789", "Passe", [], []),
+            secondary
+                ? new EpstBulletinPupilInfoDto(pupils[1].EnrollmentId, "M", "Matadi", new DateOnly(2009, 7, 2), null, "Repechage",
+                    ["Mathématiques"], [new EpstRepechageScoreDto(subjects[^1].Id, 62.5m)])
+                : new EpstBulletinPupilInfoDto(pupils[1].EnrollmentId, "M", "Matadi", new DateOnly(2014, 7, 2), null, "Redouble", [], []),
+        };
+        return new EpstBulletinPrintDto(secondary ? "Institut Les Flamboyants" : "EP Les Flamboyants", "Avenue de la Paix 12", "Kinshasa",
+            null, "Kinshasa-Lukunga", null, results, pupils, "Kinshasa", "Lingwala", "1012345", details, new DateOnly(2027, 7, 2));
+    }
+
+    [Fact]
+    public void Bulletin_layout_follows_the_official_model()
+    {
+        var d = Bulletins(secondary: true);
+        var passed = EpstBulletinLayout.For(d, d.Pupils[0]);
+        var repechage = EpstBulletinLayout.For(d, d.Pupils[1]);
+
+        // Branches regroupées par maxima croissants, chaque groupe précédé de sa ligne MAXIMA.
+        var labels = passed.Rows.Select(r => r.Label).ToList();
+        Assert.Equal(["MAXIMA", "Religion", "Éducation civique et morale", "MAXIMA", "Anglais", "Histoire",
+            "MAXIMA", "Français", "MAXIMA", "Mathématiques", "MAXIMA GÉNÉRAUX", "TOTAUX", "POURCENTAGE",
+            "PLACE / NBRE D'ÉLÈVES", "APPLICATION", "CONDUITE", "SIGNAT. DU RESPONSABLE"], labels);
+        Assert.Contains(passed.Head, h => h.Text == "PREMIER SEMESTRE");
+        Assert.Contains(passed.Head, h => h.Text == "SECOND SEMESTRE");
+        Assert.Contains(passed.Head, h => h.Text == "EXAMEN DE REPÊCHAGE");
+        Assert.Contains(passed.Head, h => h.Text == "1re P");
+        Assert.Contains(passed.Head, h => h.Text == "T.G.");
+        Assert.Equal(["10", "10", "20", "40", "10", "10", "20", "40", "80"],
+            passed.Rows[0].Cells.Take(9).Select(c => c.Text));
+
+        // Mentions : seule la décision retenue reste lisible, les autres sont biffées.
+        Assert.False(passed.Mentions[0].Struck);
+        Assert.All(passed.Mentions.Skip(1), m => Assert.True(m.Struck));
+        Assert.Equal("PASSE", passed.Decision);
+        Assert.Contains(repechage.Mentions, m => !m.Struck && m.Text.Contains("repêchage en : Mathématiques"));
+        Assert.Equal("62,5", repechage.Rows.First(r => r.Label == "Mathématiques").Cells[^2].Text);
+        Assert.Equal("1012345", passed.SchoolCode);
+        Assert.Contains(("N° PERM.", "0123456789"), passed.PupilFields.Select(f => (f.Label, f.Value)).Append(("N° PERM.", passed.PermanentNumber)));
+
+        // Primaire : trois trimestres, pas de colonne de repêchage.
+        var primary = Bulletins();
+        var layout = EpstBulletinLayout.For(primary, primary.Pupils[1]);
+        Assert.Contains(layout.Head, h => h.Text == "3e TRIMESTRE");
+        Assert.DoesNotContain(layout.Head, h => h.Text == "EXAMEN DE REPÊCHAGE");
+        Assert.Equal("DOUBLE", layout.Decision);
+        Assert.False(layout.Mentions.Single(m => m.Text.StartsWith("L'élève double", StringComparison.Ordinal)).Struck);
     }
 
     private static LmdTranscriptPrintDto Transcript(string stage)
@@ -81,10 +139,17 @@ public sealed class AcademicDocumentTests
     }
 
     [Fact]
-    public void Primary_bulletins_print_one_landscape_page_per_pupil()
+    public void Primary_bulletins_print_one_page_per_pupil()
     {
         var d = Bulletins();
         Check("epst-bulletins", phone.EpstBulletins(d), 2, () => desktop.EpstBulletins(d));
+    }
+
+    [Fact]
+    public void Secondary_bulletins_print_one_page_per_pupil()
+    {
+        var d = Bulletins(secondary: true);
+        Check("epst-bulletins-secondaire", phone.EpstBulletins(d), 2, () => desktop.EpstBulletins(d));
     }
 
     [Fact]

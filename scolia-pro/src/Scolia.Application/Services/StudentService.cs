@@ -70,7 +70,7 @@ public sealed class StudentService(IAppDbContext db, IWriteGate gate, IAuditLog 
                                  .ToListAsync(ct);
         return new StudentDto(s.Id, s.Matricule, s.LastName, s.MiddleName, s.FirstName, s.Gender.ToString(), s.BirthDate, s.BirthPlace, s.Nationality,
             s.Address, s.Phone, s.Email, s.GuardianName, s.GuardianRelation, s.GuardianPhone, s.GuardianPhone2, s.Notes, s.Photo is { Length: > 0 },
-            enrollments, s.Version);
+            enrollments, s.Version, s.PermanentNumber);
     }
 
     private void Apply(Student s, StudentUpsert input)
@@ -84,7 +84,8 @@ public sealed class StudentService(IAppDbContext db, IWriteGate gate, IAuditLog 
             .Require(input.BirthDate is null || (input.BirthDate <= clock.Today && input.BirthDate > clock.Today.AddYears(-100)), "birthDate", "Date de naissance invalide.")
             .Require(!string.IsNullOrWhiteSpace(input.BirthPlace), "birthPlace", "Lieu de naissance obligatoire.")
             .Require(!string.IsNullOrWhiteSpace(input.GuardianPhone), "guardianPhone", "Contact parent obligatoire : 10 chiffres, par exemple 0812345678.")
-            .Require(input.Email is null || input.Email.Length == 0 || (input.Email.Contains('@') && input.Email.Length <= 160), "email", "Adresse e-mail invalide.");
+            .Require(input.Email is null || input.Email.Length == 0 || (input.Email.Contains('@') && input.Email.Length <= 160), "email", "Adresse e-mail invalide.")
+            .Require(IsValidPermanentNumber(input.PermanentNumber), "permanentNumber", "N° permanent : 20 caractères au plus, chiffres, lettres, points, barres ou tirets.");
         Gender gender = Gender.M;
         try { gender = EnumText.Parse<Gender>(input.Gender, "gender", [(Gender.M, "Masculin"), (Gender.F, "Féminin")]); }
         catch (DomainException) { v.Add("gender", "Choisissez le sexe."); }
@@ -102,6 +103,7 @@ public sealed class StudentService(IAppDbContext db, IWriteGate gate, IAuditLog 
         s.BirthDate = input.BirthDate;
         s.BirthPlace = Clean(input.BirthPlace);
         s.Nationality = Clean(input.Nationality);
+        s.PermanentNumber = Clean(input.PermanentNumber)?.ToUpperInvariant();
         s.Address = Clean(input.Address);
         s.Phone = phone;
         s.Email = Clean(input.Email);
@@ -112,6 +114,11 @@ public sealed class StudentService(IAppDbContext db, IWriteGate gate, IAuditLog 
         s.Notes = Clean(input.Notes);
         s.RefreshKeys();
     }
+
+    /// <summary>N° permanent EPST : facultatif, recopié tel qu'il figure sur les documents officiels.</summary>
+    public static bool IsValidPermanentNumber(string? value) =>
+        string.IsNullOrWhiteSpace(value) ||
+        (value.Trim().Length <= 20 && value.Trim().All(ch => char.IsAsciiLetterOrDigit(ch) || ch is '.' or '/' or '-' or ' '));
 
     public async Task<IReadOnlyList<DuplicateCandidate>> FindDuplicatesAsync(string lastName, string middleName, string firstName, Guid? excludeId, CancellationToken ct = default)
     {

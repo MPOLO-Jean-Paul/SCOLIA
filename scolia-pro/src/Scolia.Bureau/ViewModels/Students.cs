@@ -410,6 +410,7 @@ public sealed class StudentDetailPage : PageViewModel
         Details.Add(new InfoLine("Matricule", student.Matricule));
         Details.Add(new InfoLine("Sexe", Labels.Gender(student.Gender)));
         Details.Add(new InfoLine("Date de naissance", student.BirthDate is { } b ? $"{Format.Date(b)}{(student.BirthPlace is { } p ? $" à {p}" : string.Empty)}" : "—"));
+        if (student.PermanentNumber is { Length: > 0 } permanent) Details.Add(new InfoLine("N° permanent", permanent));
         Details.Add(new InfoLine("Adresse", student.Address ?? "—"));
         Details.Add(new InfoLine("Parent ou tuteur", string.IsNullOrWhiteSpace(student.GuardianName) ? "—" : student.GuardianName));
         Details.Add(new InfoLine("Contact parent", student.GuardianPhone ?? student.GuardianPhone2 ?? "—"));
@@ -756,6 +757,7 @@ public static class StudentForms
                 gender = s.Gender, birthDate = s.BirthDate, birthPlace = s.BirthPlace, nationality = s.Nationality, address = s.Address,
                 phone = s.Phone, email = s.Email, guardianName = s.GuardianName, guardianRelation = s.GuardianRelation,
                 guardianPhone = s.GuardianPhone, guardianPhone2 = s.GuardianPhone2, notes = s.Notes, version = s.Version,
+                permanentNumber = s.PermanentNumber,
             });
             shell.Notify($"Dossier renommé : {after}.", SoundKind.Success);
             return true;
@@ -818,6 +820,9 @@ public static class StudentForms
         if (s is null) form.Find("sexe").Choice = null;
         form.AddDay("naissance", "Date de naissance", s?.BirthDate, required: true);
         form.Add("lieu", "Lieu de naissance", value: s?.BirthPlace, required: true);
+        if (InstitutionProfiles.UsesSchoolCycles(shell.Session?.InstitutionType))
+            form.Add("perm", "N° permanent (EPST)", value: s?.PermanentNumber,
+                hint: "Facultatif : imprimé sur le bulletin officiel et les listes d'examens");
         form.AddHeader("Contact et adresse", "Le contact du parent servira aux communications et aux rappels de paiement.");
         form.Add("tuteur", "Parent ou tuteur", value: s?.GuardianName);
         form.Add("adresse", "Adresse", value: s?.Address, hint: "Quartier, avenue et numéro");
@@ -844,5 +849,6 @@ public static class StudentForms
         guardianPhone2 = s?.GuardianPhone2,
         notes = s?.Notes,
         version = s?.Version,
+        permanentNumber = f.Has("perm") ? f.OptionalText("perm") : s?.PermanentNumber,
     };
 }

@@ -276,6 +276,8 @@ public sealed class FormViewModel : Observable
 
     public FormField Find(string key) => Fields.First(f => f.Key == key);
 
+    public bool Has(string key) => Fields.Any(f => f.Key == key);
+
     public string Text(string key) => Find(key).Text.Trim();
 
     public string? OptionalText(string key) => Text(key) is { Length: > 0 } t ? t : null;

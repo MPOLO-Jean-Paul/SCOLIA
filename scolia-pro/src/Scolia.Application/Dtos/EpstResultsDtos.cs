@@ -35,8 +35,21 @@ public sealed record EpstClassResultsDto(
     string? RegulationValidatedBy, DateTime? RegulationValidatedAtUtc,
     string DeliberationStatus = "Ouverte");
 
+/// <summary>Note de l'examen de repêchage d'une branche, en pourcentage.</summary>
+public sealed record EpstRepechageScoreDto(Guid SubjectId, decimal? Percent);
+
+/// <summary>
+/// Identification de l'élève et décision imprimées sur le bulletin officiel. <c>Outcome</c> est le nom
+/// de la décision retenue (<c>Passe</c>, <c>Redouble</c>…), absent tant que la délibération est ouverte.
+/// </summary>
+public sealed record EpstBulletinPupilInfoDto(
+    Guid EnrollmentId, string Sex, string? BirthPlace, DateOnly? BirthDate, string? PermanentNumber,
+    string? Outcome, IReadOnlyList<string> RepechageSubjects, IReadOnlyList<EpstRepechageScoreDto> RepechageScores);
+
 /// <summary>Bulletins officiels de l'établissement, établis selon son règlement validé.</summary>
 public sealed record EpstBulletinPrintDto(
     string SchoolName, string? SchoolAddress, string? SchoolCity,
     string? Ministry, string? Division, byte[]? SchoolLogo,
-    EpstClassResultsDto Class, IReadOnlyList<EpstPupilResultDto> Pupils);
+    EpstClassResultsDto Class, IReadOnlyList<EpstPupilResultDto> Pupils,
+    string? Province = null, string? Commune = null, string? SchoolCode = null,
+    IReadOnlyList<EpstBulletinPupilInfoDto>? Details = null, DateOnly? IssuedOn = null);

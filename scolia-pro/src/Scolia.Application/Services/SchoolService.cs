@@ -23,7 +23,7 @@ public sealed class SchoolService(IAppDbContext db, IWriteGate gate, IAuditLog a
         s.CardMinistry, s.CardDirection, s.CardDivision, s.CardZone ?? s.City,
         CardHeaderDefaults.Or(s.CardInstitute, s.Name),
         CardHeaderDefaults.Or(s.CardAddress, s.Address ?? s.City ?? string.Empty), InstitutionProfiles.Canonicalize(s.InstitutionType),
-        s.Governance.ToString());
+        s.Governance.ToString(), s.Province, s.Commune, s.OfficialCode);
 
     public Task<SchoolDto> UpdateSchoolAsync(SchoolUpdate input, CancellationToken ct = default) => gate.RunAsync(async () =>
     {
@@ -32,7 +32,9 @@ public sealed class SchoolService(IAppDbContext db, IWriteGate gate, IAuditLog a
             .Require(!string.IsNullOrWhiteSpace(input.ShortName) && input.ShortName.Length <= 40, "shortName", "Sigle obligatoire (40 caractères maximum).")
             .Require(input.CurrencyCode is { Length: 3 } && input.CurrencyCode.All(char.IsAsciiLetterUpper), "currencyCode", "Code monnaie ISO à 3 lettres (ex. CDF).")
             .Require(!string.IsNullOrWhiteSpace(input.CurrencySymbol) && input.CurrencySymbol.Length <= 6, "currencySymbol", "Symbole monétaire obligatoire.")
-            .Require(input.PhoneCountryCode is { Length: >= 1 and <= 4 } && input.PhoneCountryCode.All(char.IsDigit), "phoneCountryCode", "Indicatif téléphonique invalide.");
+            .Require(input.PhoneCountryCode is { Length: >= 1 and <= 4 } && input.PhoneCountryCode.All(char.IsDigit), "phoneCountryCode", "Indicatif téléphonique invalide.")
+            .Require((input.Province?.Trim().Length ?? 0) <= 80 && (input.Commune?.Trim().Length ?? 0) <= 80, "province", "Province et commune : 80 caractères au plus.")
+            .Require((input.OfficialCode?.Trim().Length ?? 0) <= 20, "officialCode", "Code de l'école : 20 caractères au plus.");
         v.ThrowIfInvalid();
         var s = await db.Schools.OrderBy(x => x.CreatedAtUtc).FirstAsync(ct);
         s.Name = input.Name.Trim(); s.ShortName = input.ShortName.Trim(); s.Motto = Clean(input.Motto); s.Address = Clean(input.Address);
@@ -41,6 +43,7 @@ public sealed class SchoolService(IAppDbContext db, IWriteGate gate, IAuditLog a
         s.ReceiptFooter = Clean(input.ReceiptFooter); s.PhoneCountryCode = input.PhoneCountryCode;
         s.CardMinistry = Clean(input.CardMinistry); s.CardDirection = Clean(input.CardDirection); s.CardDivision = Clean(input.CardDivision); s.CardZone = Clean(input.CardZone);
         s.CardInstitute = Clean(input.CardInstitute); s.CardAddress = Clean(input.CardAddress);
+        s.Province = Clean(input.Province); s.Commune = Clean(input.Commune); s.OfficialCode = Clean(input.OfficialCode)?.ToUpperInvariant();
         audit.Record("etablissement.modifie", "Etablissement", s.Id.ToString(), "Paramètres de l'établissement modifiés.");
         await db.SaveChangesAsync(ct);
         return ToDto(s);

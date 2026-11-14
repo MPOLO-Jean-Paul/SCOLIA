@@ -16,7 +16,8 @@ Les ITM et IM ne changent pas : leurs cours, cotes, délibérations et menus res
 | EPST | Maximum de chaque branche par période, périodes d'examen | Oui | Cycles scolaires |
 | EPST | Points par période, totaux par trimestre ou semestre, total général, pourcentage, place, échecs | Oui | Scolarité › Résultats et bulletins |
 | EPST | Application et conduite par période (E, TB, B, AB, M, MA) | Oui | Résultats et bulletins › Application et conduite |
-| EPST | Bulletin officiel PDF de la classe ou d'un élève | Oui | Résultats et bulletins |
+| EPST | Bulletin officiel PDF de la classe ou d'un élève, sur le modèle national (voir § 2 bis) | Oui | Résultats et bulletins |
+| EPST | Province, commune et code de l'école ; N° permanent de l'élève | Oui | Paramètres › Établissement ; fiche de l'élève |
 | EPST | Délibération : calcul, jury motivé, première session, repêchage, clôture | Oui | Scolarité › Délibération de fin d'année |
 | EPST | Procès-verbal et palmarès PDF | Oui | Délibération de fin d'année |
 | EPST | Passage de classe selon la décision définitive | Oui | Secrétariat › Réinscriptions |
@@ -35,7 +36,8 @@ Les ITM et IM ne changent pas : leurs cours, cotes, délibérations et menus res
 | Étudiants | Consultation des seuls résultats publiés (S1, première session, définitif), dettes, relevé PDF | Oui | Accueil de l'étudiant : Mes résultats |
 | Téléphone serveur | Bulletins, procès-verbaux et relevés produits aussi par un téléphone serveur | Oui | — |
 
-Captures réelles dans `docs/captures-epst-lmd-20261114/` (écrans Windows, écran téléphone, bulletin, relevé, procès-verbaux).
+Captures réelles dans `docs/captures-epst-lmd-20261114/` (écrans Windows, écran téléphone, bulletins primaire
+et secondaire, relevé, procès-verbaux).
 
 ## 2. Règles appliquées
 
@@ -59,6 +61,33 @@ Captures réelles dans `docs/captures-epst-lmd-20261114/` (écrans Windows, écr
 du cycle et le règlement de la classe ou de la promotion sont figés. Chaque décision du jury exige un motif
 et apparaît au procès-verbal. Toute opération est inscrite au journal d'audit.
 
+## 2 bis. Bulletin officiel EPST
+
+Le bulletin reprend la structure des bulletins nationaux de la RDC, telle qu'on la retrouve sur les modèles
+publiés en ligne (secondaire et primaire). L'ordinateur et le téléphone serveur impriment exactement la même
+mise en page, sur une page A4 portrait par élève.
+
+- **En-tête :** drapeau, « République démocratique du Congo », ministère (par défaut : Éducation nationale et
+  Nouvelle citoyenneté), division provinciale.
+- **Identification :** à gauche, province, ville, commune ou territoire, école et code de l'école en cases ;
+  à droite, élève, sexe, lieu et date de naissance, classe et N° permanent en cases. Une case vide reste à
+  remplir à la main.
+- **Tableau :** une colonne par trimestre au primaire et par semestre au secondaire. Chaque partie comprend les
+  travaux journaliers (1re P, 2e P…), l'examen et le total ; vient ensuite le total général (T.G.). Au
+  secondaire s'ajoutent la colonne noircie et « Examen de repêchage » (% et signature du professeur).
+- **Branches regroupées par maxima :** chaque groupe commence par une ligne MAXIMA, et les groupes sont rangés
+  du plus petit maximum au plus grand.
+- **Synthèse :** maxima généraux, totaux, pourcentage, place / nombre d'élèves, application, conduite et
+  signature du responsable. Les cases sans objet sont noircies, comme sur le modèle.
+- **Décision :** les mentions « passe », « double », « a échoué et est orienté vers… » et « ne pourra passer…
+  s'il n'a subi avec succès un examen de repêchage en … » sont imprimées. Après la délibération, les mentions
+  écartées sont biffées et la décision est rappelée. Les branches du repêchage sont nommées.
+- **Pied :** fait à… le…, sceau de l'école, le chef d'établissement, signature de l'élève. Le bas de page porte
+  « (1) Biffer la mention inutile » et « le bulletin est sans valeur s'il est raturé ou surchargé ».
+
+Le numéro de formulaire imprimé par l'État (code IGE/P.S/…) n'est pas reproduit : il désigne les imprimés
+officiels vendus aux écoles, et SCOLIA n'en imprime pas le numéro de série.
+
 ## 3. Mise en route
 
 **École primaire ou secondaire.**
@@ -66,9 +95,11 @@ et apparaît au procès-verbal. Toute opération est inscrite au journal d'audit
 2. Cycles scolaires : créer les périodes (cocher « examen » pour la dernière de chaque trimestre ou semestre),
    puis les branches de chaque classe avec leur maximum par période.
 3. Saisir les évaluations, puis l'application et la conduite.
-4. Résultats et bulletins : imprimer les bulletins.
-5. Délibération de fin d'année : décisions du jury, clôture, repêchage, clôture définitive, procès-verbal.
-6. Réinscriptions : les élèves admis montent, ceux qui doublent restent.
+4. Paramètres › Établissement › Bulletins officiels : province, commune ou territoire, code de l'école ;
+   sur la fiche de chaque élève, le N° permanent s'il est connu.
+5. Résultats et bulletins : imprimer les bulletins.
+6. Délibération de fin d'année : décisions du jury, clôture, repêchage, clôture définitive, procès-verbal.
+7. Réinscriptions : les élèves admis montent, ceux qui doublent restent.
 
 **Université.**
 1. À l'installation, choisir « Université / institut supérieur LMD » : la monnaie est le dollar.
@@ -101,8 +132,11 @@ Le moteur ITM n'a pas été modifié : ses tests passent sans changement.
 
 ## 6. Ce qui reste à faire
 
-1. **Modèles officiels de bulletins.** Les mises en page suivent l'usage courant. Des bulletins réels de primaire,
-   de secondaire, de technique et un relevé universitaire permettront de les ajuster.
+1. **Modèles officiels de bulletins.** Le bulletin EPST suit la structure des modèles nationaux publiés en ligne.
+   Les pages d'origine n'ont pas pu être ouvertes depuis l'environnement de travail : seuls des extraits ont été
+   lus. Une photo ou un scan d'un bulletin vierge de primaire, de secondaire et de technique de l'année en cours
+   permettra de caler l'ordre exact des branches et les intitulés de chaque section. Le relevé universitaire
+   suit les normes LMD courantes, faute de modèle national publié.
 2. **Consultation par les parents d'élèves (EPST).** Les accès en ligne concernent les étudiants d'université ;
    un accès « parent » pour le primaire et le secondaire suivrait le même modèle si vous le souhaitez.
 3. **APK Android.** Les écrans sont partagés avec Android et testés en format téléphone, mais l'APK n'a pas été

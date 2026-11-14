@@ -12,7 +12,7 @@ namespace Scolia.Application.Services;
 /// validé, un calendrier conforme à ce règlement et le maximum de chaque branche.
 /// Lecture seule : aucune cote n'est modifiée ici.
 /// </summary>
-public sealed class EpstResultsService(IAppDbContext db)
+public sealed class EpstResultsService(IAppDbContext db, IClock clock)
 {
     /// <summary>Contexte complet du calcul d'une classe, partagé avec la délibération.</summary>
     public sealed record Computation(
@@ -143,7 +143,41 @@ public sealed class EpstResultsService(IAppDbContext db)
         if (pupils.Count == 0)
             throw new DomainException("resultatsEpst", "Aucun élève à imprimer dans cette classe.");
         return new EpstBulletinPrintDto(school.Name, school.Address, school.City,
-            school.CardMinistry, school.CardDivision, school.Logo, results, pupils);
+            school.CardMinistry, school.CardDivision, school.Logo, results, pupils,
+            school.Province, school.Commune, school.OfficialCode,
+            await DetailsAsync(results, pupils, ct), clock.Today);
+    }
+
+    /// <summary>Sexe, naissance, N° permanent, décision et repêchage de chaque élève imprimé.</summary>
+    private async Task<IReadOnlyList<EpstBulletinPupilInfoDto>> DetailsAsync(EpstClassResultsDto results,
+        IReadOnlyList<EpstPupilResultDto> pupils, CancellationToken ct)
+    {
+        var studentIds = pupils.Select(p => p.StudentId).ToList();
+        var students = await db.Students.AsNoTracking().Where(s => studentIds.Contains(s.Id))
+            .ToDictionaryAsync(s => s.Id, ct);
+        var deliberation = await db.EpstDeliberations.AsNoTracking()
+            .FirstOrDefaultAsync(d => d.PromotionId == results.PromotionId, ct);
+        var decisions = deliberation is { Status: not EpstSessionStatus.Ouverte }
+            ? await db.EpstDecisions.AsNoTracking().Where(d => d.DeliberationId == deliberation.Id)
+                .ToDictionaryAsync(d => d.EnrollmentId, ct)
+            : [];
+        var marks = deliberation is null ? []
+            : await db.EpstRepechageMarks.AsNoTracking().Where(m => m.DeliberationId == deliberation.Id).ToListAsync(ct);
+        var names = results.Subjects.ToDictionary(s => s.Id, s => s.Name);
+        return pupils.Select(p =>
+        {
+            var s = students[p.StudentId];
+            decisions.TryGetValue(p.EnrollmentId, out var decision);
+            var scores = marks.Where(m => m.EnrollmentId == p.EnrollmentId)
+                .Select(m => new EpstRepechageScoreDto(m.SubjectId,
+                    m.Score is { } v && m.MaxScore > 0 ? Math.Round(v / m.MaxScore * 100, 1) : null))
+                .ToList();
+            return new EpstBulletinPupilInfoDto(p.EnrollmentId,
+                s.Gender switch { Gender.M => "M", Gender.F => "F", _ => "" }, s.BirthPlace, s.BirthDate, s.PermanentNumber,
+                decision?.Effective.ToString(),
+                decision is null ? [] : decision.RepechageSubjectIds.Where(names.ContainsKey).Select(id => names[id]).ToList(),
+                scores);
+        }).ToList();
     }
 
 }

@@ -16,6 +16,8 @@ public sealed class Student : Entity
     public DateOnly? BirthDate { get; set; }
     public string? BirthPlace { get; set; }
     public string? Nationality { get; set; }
+    /// <summary>Numéro permanent attribué par l'EPST (bulletins, examens nationaux).</summary>
+    public string? PermanentNumber { get; set; }
     public string? Address { get; set; }
     public string? Phone { get; set; }
     public string? Email { get; set; }

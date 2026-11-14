@@ -99,6 +99,9 @@ public sealed class ScoliaDbContext(DbContextOptions<ScoliaDbContext> options, I
         {
             e.ToTable("Etablissement");
             e.Property(x => x.Name).HasMaxLength(160);
+            e.Property(x => x.Province).HasMaxLength(80);
+            e.Property(x => x.Commune).HasMaxLength(80);
+            e.Property(x => x.OfficialCode).HasMaxLength(20);
             e.Property(x => x.InstitutionType).HasMaxLength(32).HasDefaultValue(InstitutionProfiles.ItmIm);
             e.Property(x => x.Governance).HasDefaultValue(SchoolGovernanceKind.Prive);
         });
@@ -331,6 +334,7 @@ public sealed class ScoliaDbContext(DbContextOptions<ScoliaDbContext> options, I
         b.Entity<Student>(e =>
         {
             e.ToTable("Apprenants");
+            e.Property(x => x.PermanentNumber).HasMaxLength(20);
             e.HasIndex(x => x.Matricule).IsUnique();
             e.HasIndex(x => x.IdentityKey);
             e.Ignore(x => x.FullName);
