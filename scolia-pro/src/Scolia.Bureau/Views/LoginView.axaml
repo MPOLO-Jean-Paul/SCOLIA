@@ -43,7 +43,7 @@
       <Setter Property="Background" Value="#2354C8" />
       <Setter Property="CornerRadius" Value="24" />
       <Setter Property="BorderThickness" Value="0" />
-      <Setter Property="Padding" Value="28" />
+      <Setter Property="Padding" Value="23" />
       <Setter Property="ClipToBounds" Value="True" />
     </Style>
     <Style Selector="TextBox.iosauthfield">
@@ -151,10 +151,10 @@
     <Style Selector="StackPanel.iosloginbody"><Setter Property="MaxWidth" Value="640" /><Setter Property="Margin" Value="18,16,18,16" /><Setter Property="Spacing" Value="0" /></Style>
     <Style Selector="ScrollViewer.wide StackPanel.iosloginfields"><Setter Property="Width" Value="370" /></Style>
     <Style Selector="StackPanel.iosloginheader"><Setter Property="Spacing" Value="6" /><Setter Property="Margin" Value="0,0,0,12" /></Style>
-    <Style Selector="StackPanel.iosloginfields"><Setter Property="Spacing" Value="12" /></Style>
-    <Style Selector="Border.ioslogotile"><Setter Property="Width" Value="70" /><Setter Property="Height" Value="70" /><Setter Property="CornerRadius" Value="35" /></Style>
+    <Style Selector="StackPanel.iosloginfields"><Setter Property="Spacing" Value="10" /></Style>
+    <Style Selector="Border.ioslogotile"><Setter Property="Width" Value="66" /><Setter Property="Height" Value="66" /><Setter Property="CornerRadius" Value="33" /></Style>
     <Style Selector="Image.ioslogomark"><Setter Property="Width" Value="46" /><Setter Property="Height" Value="46" /></Style>
-    <Style Selector="TextBlock.ioslogotitle"><Setter Property="FontSize" Value="26" /></Style>
+    <Style Selector="TextBlock.ioslogotitle"><Setter Property="FontSize" Value="25" /></Style>
     <Style Selector="TextBlock.ioswelcome"><Setter Property="FontSize" Value="19" /></Style>
     <Style Selector="TextBlock.iosrecoverytitle"><Setter Property="FontSize" Value="21" /></Style>
     <!-- Les textes des liens et boutons passent à la ligne plutôt que de sortir de l'écran. -->
@@ -175,7 +175,7 @@
 
     <!-- Petits téléphones (moins de 390 points) : marges, logo et titres réduits, champs toujours tactiles. -->
     <Style Selector="ScrollViewer.compact StackPanel.iosloginbody"><Setter Property="Margin" Value="12,10,12,12" /><Setter Property="Spacing" Value="0" /></Style>
-    <Style Selector="ScrollViewer.compact Border.iosauthcard"><Setter Property="Padding" Value="18" /><Setter Property="CornerRadius" Value="19" /></Style>
+    <Style Selector="ScrollViewer.compact Border.iosauthcard"><Setter Property="Padding" Value="16" /><Setter Property="CornerRadius" Value="19" /></Style>
     <Style Selector="ScrollViewer.compact Border.ioslogotile"><Setter Property="Width" Value="60" /><Setter Property="Height" Value="60" /><Setter Property="CornerRadius" Value="17" /></Style>
     <Style Selector="ScrollViewer.compact Image.ioslogomark"><Setter Property="Width" Value="43" /><Setter Property="Height" Value="43" /></Style>
     <Style Selector="ScrollViewer.compact TextBlock.ioslogotitle"><Setter Property="FontSize" Value="23" /></Style>
@@ -212,28 +212,37 @@
     <Style Selector="ScrollViewer.micro TextBox.iosauthfield"><Setter Property="MinHeight" Value="48" /></Style>
     <Style Selector="ScrollViewer.micro Button.iosauthprimary"><Setter Property="MinHeight" Value="48" /></Style>
     <Style Selector="ScrollViewer.wide StackPanel.iosloginbody"><Setter Property="Margin" Value="24,22,24,22" /><Setter Property="MaxWidth" Value="620" /></Style>
-    <Style Selector="ScrollViewer.wide Border.iosauthcard"><Setter Property="Padding" Value="36,28" /><Setter Property="CornerRadius" Value="26" /></Style>
+    <Style Selector="ScrollViewer.wide Border.iosauthcard"><Setter Property="Padding" Value="30,26" /><Setter Property="CornerRadius" Value="24" /></Style>
     <Style Selector="TextBlock.iosauthlabel">
       <Setter Property="FontSize" Value="12" />
       <Setter Property="FontWeight" Value="SemiBold" />
       <Setter Property="Foreground" Value="#E4EDFF" />
     </Style>
-    <Style Selector="Expander.skyoptions">
-      <Setter Property="Background" Value="Transparent" />
-      <Setter Property="Foreground" Value="#143C86" />
-      <Setter Property="BorderThickness" Value="0" />
+    <!-- Bouton d'options intégré et discret, sans gabarit Expander blanc. -->
+    <Style Selector="ToggleButton.iosmoretoggle">
+      <Setter Property="Background" Value="#204BB3" />
+      <Setter Property="Foreground" Value="#F4F7FF" />
+      <Setter Property="BorderBrush" Value="#7096E6" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="10" />
+      <Setter Property="MinHeight" Value="42" />
+      <Setter Property="Padding" Value="12,8" />
+      <Setter Property="HorizontalAlignment" Value="Center" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
     </Style>
-    <Style Selector="Expander.skyoptions Button.iosauthlink">
-      <Setter Property="Foreground" Value="#16448F" />
-    </Style>
+    <Style Selector="ToggleButton.iosmoretoggle:pointerover"><Setter Property="Background" Value="#2D60D0" /></Style>
+    <Style Selector="ToggleButton.iosmoretoggle:checked"><Setter Property="Background" Value="#3268D2" /><Setter Property="BorderBrush" Value="#B9D2FF" /></Style>
+    <Style Selector="ToggleButton.iosmoretoggle /template/ ContentPresenter#PART_ContentPresenter"><Setter Property="Background" Value="#204BB3" /><Setter Property="Foreground" Value="#F4F7FF" /></Style>
+    <Style Selector="ToggleButton.iosmoretoggle:pointerover /template/ ContentPresenter#PART_ContentPresenter"><Setter Property="Background" Value="#2D60D0" /></Style>
+    <Style Selector="ToggleButton.iosmoretoggle:checked /template/ ContentPresenter#PART_ContentPresenter"><Setter Property="Background" Value="#3268D2" /></Style>
     <Style Selector="Button.iosauthicon">
       <Setter Property="Background" Value="#2B58C5" />
       <Setter Property="Foreground" Value="White" />
       <Setter Property="BorderBrush" Value="#7697E7" />
       <Setter Property="BorderThickness" Value="1" />
       <Setter Property="CornerRadius" Value="11" />
-      <Setter Property="Width" Value="44" />
-      <Setter Property="Height" Value="44" />
+      <Setter Property="Width" Value="42" />
+      <Setter Property="Height" Value="42" />
       <Setter Property="Padding" Value="0" />
       <Setter Property="HorizontalAlignment" Value="Center" />
     </Style>
@@ -783,6 +792,46 @@
                          TextWrapping="Wrap" IsVisible="{Binding EnableBiometricsAfterLogin}" />
             </StackPanel>
             <!-- Connexion biométrique disponible dans la rangée d'icônes ; retrait dans Options. -->
+            <!-- Options discrètes à l'intérieur du panneau cobalt, repliées par défaut. -->
+            <Border BorderBrush="#6389DE" BorderThickness="0,1,0,0" Padding="0,10,0,0">
+              <StackPanel Spacing="8">
+                <ToggleButton x:Name="IosLoginMore" Classes="iosmoretoggle" IsChecked="False"
+                              ToolTip.Tip="Afficher les options de connexion"
+                              AutomationProperties.Name="Afficher ou masquer les options de connexion">
+                  <StackPanel Orientation="Horizontal" Spacing="7" VerticalAlignment="Center">
+                    <mi:MaterialIcon Kind="TuneVariant" Width="17" Height="17" />
+                    <TextBlock Text="Options" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" />
+                    <mi:MaterialIcon Kind="ChevronDown" Width="17" Height="17" />
+                  </StackPanel>
+                </ToggleButton>
+                <StackPanel x:Name="IosLoginMoreContent"
+                            IsVisible="{Binding IsChecked, ElementName=IosLoginMore}" Spacing="5">
+                  <Button Classes="iosauthlink" Command="{Binding ChangeServer}" IsEnabled="{Binding NotBusy}">
+                    <DockPanel LastChildFill="True">
+                      <mi:MaterialIcon DockPanel.Dock="Left" Kind="LanConnect" Width="18" Height="18" Margin="0,0,8,0" />
+                      <TextBlock Text="Changer de serveur principal" TextWrapping="Wrap" />
+                    </DockPanel>
+                  </Button>
+                  <Button Classes="iosauthlink" Command="{Binding ForgetLinkedServer}"
+                          IsVisible="{Binding HasServerLine}" IsEnabled="{Binding NotBusy}"
+                          ToolTip.Tip="Dissocier uniquement cet appareil du serveur sans effacer les données scolaires">
+                    <DockPanel LastChildFill="True">
+                      <mi:MaterialIcon DockPanel.Dock="Left" Kind="Close" Width="18" Height="18" Margin="0,0,8,0" />
+                      <TextBlock Text="Retirer la liaison enregistrée" TextWrapping="Wrap" />
+                    </DockPanel>
+                  </Button>
+                  <Button Classes="iosauthlink" Command="{Binding DisableBiometrics}"
+                          IsVisible="{Binding ShowRemoveBiometric}" ToolTip.Tip="Désactiver l'empreinte après vérification">
+                    <DockPanel LastChildFill="True">
+                      <mi:MaterialIcon DockPanel.Dock="Left" Kind="Fingerprint" Width="18" Height="18" Margin="0,0,8,0" />
+                      <TextBlock Text="Désactiver l'empreinte" TextWrapping="Wrap" />
+                    </DockPanel>
+                  </Button>
+                  <TextBlock Text="{Binding ServerLine}" IsVisible="{Binding HasServerLine}"
+                             Foreground="#DCE9FF" TextAlignment="Center" FontSize="11" TextWrapping="Wrap" />
+                </StackPanel>
+              </StackPanel>
+            </Border>
           </StackPanel>
         </Border>
 
@@ -819,38 +868,6 @@
         <Border Background="#EAF5EC" CornerRadius="14" Padding="13" IsVisible="{Binding Restored}">
           <TextBlock Text="Accès rétabli. Vous pouvez vous connecter." Foreground="#20663B" TextWrapping="Wrap" />
         </Border>
-        <!-- Boutons secondaires disponibles sans encombrer la connexion au quotidien. -->
-        <Expander x:Name="IosLoginMore" Classes="skyoptions" Header="Options" IsExpanded="False"
-                  ToolTip.Tip="Autres paramètres de connexion">
-          <StackPanel Spacing="5">
-        <Button Classes="iosauthlink" Command="{Binding ChangeServer}" IsEnabled="{Binding NotBusy}"
-                HorizontalAlignment="Center">
-          <DockPanel LastChildFill="True">
-            <mi:MaterialIcon DockPanel.Dock="Left" Margin="0,0,8,0" VerticalAlignment="Center" Kind="LanConnect" Width="18" Height="18" />
-            <TextBlock TextAlignment="Center" TextWrapping="Wrap" Text="Changer de serveur principal" VerticalAlignment="Center" />
-          </DockPanel>
-        </Button>
-        <Button Classes="iosauthlink" Command="{Binding ForgetLinkedServer}"
-                IsVisible="{Binding HasServerLine}" IsEnabled="{Binding NotBusy}"
-                ToolTip.Tip="Dissocier uniquement cet appareil du serveur, sans effacer les données scolaires">
-          <DockPanel LastChildFill="True">
-            <mi:MaterialIcon Kind="Close" Width="18" Height="18" DockPanel.Dock="Left"
-                             Margin="0,0,8,0" VerticalAlignment="Center" />
-            <TextBlock Text="Retirer la liaison enregistrée" TextWrapping="Wrap" />
-          </DockPanel>
-        </Button>
-        <Button Classes="iosauthlink" Command="{Binding DisableBiometrics}"
-                IsVisible="{Binding ShowRemoveBiometric}" ToolTip.Tip="Désactiver l'empreinte après vérification">
-          <DockPanel LastChildFill="True">
-            <mi:MaterialIcon Kind="Fingerprint" Width="18" Height="18" DockPanel.Dock="Left"
-                             Margin="0,0,8,0" VerticalAlignment="Center" />
-            <TextBlock Text="Désactiver l'empreinte" TextWrapping="Wrap" />
-          </DockPanel>
-        </Button>
-        <TextBlock Text="{Binding ServerLine}" IsVisible="{Binding HasServerLine}"
-                   Classes="muted" TextAlignment="Center" FontSize="11" TextWrapping="Wrap" />
-          </StackPanel>
-        </Expander>
         <!-- Le pied de page reste dans la page et atteignable même si les options sont fermées. -->
         <TextBlock x:Name="IosLoginFooter" Text="{Binding Footer}" Classes="muted" HorizontalAlignment="Stretch" TextAlignment="Center"
                    FontSize="11" TextWrapping="Wrap" Margin="0,0,0,10"  IsVisible="False" />
