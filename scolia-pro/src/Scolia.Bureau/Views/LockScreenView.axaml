@@ -70,6 +70,23 @@
         <Transitions><BrushTransition Property="BorderBrush" Duration="0:0:0.14" Easing="CubicEaseOut" /></Transitions>
       </Setter>
     </Style>
+    <!-- Même correction du fond interne Fluent sur l'écran de session verrouillée. -->
+    <Style Selector="TextBox.ioslockfield /template/ Border#PART_BorderElement">
+      <Setter Property="Background" Value="#1845B1" />
+      <Setter Property="BorderBrush" Value="#87A9EE" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="9" />
+    </Style>
+    <Style Selector="TextBox.ioslockfield:pointerover /template/ Border#PART_BorderElement">
+      <Setter Property="Background" Value="#1845B1" />
+    </Style>
+    <Style Selector="TextBox.ioslockfield:focus /template/ Border#PART_BorderElement">
+      <Setter Property="Background" Value="#1845B1" />
+      <Setter Property="BorderBrush" Value="#FFFFFF" />
+    </Style>
+    <Style Selector="TextBox.ioslockfield:disabled /template/ Border#PART_BorderElement">
+      <Setter Property="Background" Value="#1845B1" />
+    </Style>
     <Style Selector="TextBox.ioslockfield:focus">
       <Setter Property="BorderBrush" Value="White" />
       <Setter Property="BorderThickness" Value="1" />
@@ -319,7 +336,7 @@
               <TextBlock Text="VOTRE CODE PERSONNEL" FontSize="12" FontWeight="SemiBold" TextWrapping="Wrap"
                          Foreground="White" />
               <Grid>
-                <TextBox x:Name="IosLockCode" Classes="ioslockfield" Text="{Binding Code}"
+                <TextBox x:Name="IosLockCode" Classes="ioslockfield onbrand" Background="#1845B1" Foreground="#FFFFFF" CaretBrush="#FFFFFF" PlaceholderForeground="#E4EEFF" Text="{Binding Code}"
                          PasswordChar="•" RevealPassword="{Binding ShowCode}"
                          Padding="42,10,52,10" MaxLength="128"
                          TextInputOptions.ContentType="Password" TextInputOptions.IsSensitive="True"

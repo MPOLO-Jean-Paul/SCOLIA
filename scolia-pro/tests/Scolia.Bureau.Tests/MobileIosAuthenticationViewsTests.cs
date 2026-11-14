@@ -71,6 +71,14 @@ public sealed class MobileIosAuthenticationViewsTests
             Assert.Contains("iosauthfield", classes);
             Assert.Contains("onbrand", classes); // évite les styles métiers fond clair.
             Assert.NotNull(input.Attribute("PlaceholderText"));
+            // Contrôler aussi les valeurs LOCALES, prioritaires sur styles Avalonia/Android.
+            Assert.Equal("#1845B1", input.Attribute("Background")?.Value);
+            Assert.Equal("#FFFFFF", input.Attribute("Foreground")?.Value);
+            Assert.Equal("#FFFFFF", input.Attribute("CaretBrush")?.Value);
+            Assert.Equal("#E4EEFF", input.Attribute("PlaceholderForeground")?.Value);
+            Assert.True(ThemeContrast.Ratio(
+                Color.Parse(input.Attribute("Foreground")!.Value),
+                Color.Parse(input.Attribute("Background")!.Value)) >= 7);
         }
 
         var loginStyle = Assert.Single(nodes, e => e.Name.LocalName == "Style" &&
@@ -88,13 +96,56 @@ public sealed class MobileIosAuthenticationViewsTests
         Assert.Contains(nodes, e => e.Name.LocalName == "Style" &&
             Attribute(e, "Selector", "TextBox.iosauthfield /template/ TextBlock#PART_Watermark"));
 
+        // Le bug Android était sur PART_BorderElement, pas sur le TextBox de surface.
+        foreach (var state in new[] { "", ":pointerover", ":focus", ":disabled" })
+        {
+            var selector = "TextBox.iosauthfield" + state + " /template/ Border#PART_BorderElement";
+            var border = Assert.Single(nodes, e => e.Name.LocalName == "Style" && Attribute(e, "Selector", selector));
+            Assert.Equal("#1845B1", Setting(border, "Background"));
+        }
+
+        var lockNodes = Elements("LockScreenView.axaml");
+        var lockCode = Assert.Single(lockNodes, e => e.Name.LocalName == "TextBox" && Attribute(e, "Name", "IosLockCode"));
+        Assert.Equal("#1845B1", lockCode.Attribute("Background")?.Value);
+        Assert.Equal("#FFFFFF", lockCode.Attribute("Foreground")?.Value);
+        Assert.Equal("#E4EEFF", lockCode.Attribute("PlaceholderForeground")?.Value);
+        var lockClasses = lockCode.Attribute("Classes")?.Value.Split(' ') ?? [];
+        Assert.Contains("onbrand", lockClasses);
+        foreach (var state in new[] { "", ":pointerover", ":focus", ":disabled" })
+        {
+            var selector = "TextBox.ioslockfield" + state + " /template/ Border#PART_BorderElement";
+            var border = Assert.Single(lockNodes, e => e.Name.LocalName == "Style" && Attribute(e, "Selector", selector));
+            Assert.Equal("#1845B1", Setting(border, "Background"));
+        }
+
         var global = XDocument.Load(Source("Themes/Controls.axaml")).Descendants().ToArray();
         Assert.Contains(global, e => e.Name.LocalName == "Style" &&
-            (e.Attribute("Selector")?.Value.Contains(":not(.iosauthfield)", StringComparison.Ordinal) ?? false));
+            (e.Attribute("Selector")?.Value.Contains(":not(.ioslockfield)", StringComparison.Ordinal) ?? false));
         // Ne pas retomber sur les marges minuscules qui cachaient l'identifiant derrière l'icône.
         var tiny = Assert.Single(nodes, e => e.Name.LocalName == "Style" &&
             Attribute(e, "Selector", "ScrollViewer.tiny TextBox.iosauthfield"));
         Assert.Equal("42,10,52,10", Setting(tiny, "Padding"));
+    }
+
+    [Fact]
+    public void Options_de_connexion_repliees_dans_le_panneau_cobalt_sans_en_tete_Fluent_blanc()
+    {
+        var nodes = Elements("LoginView.axaml");
+        var toggle = Assert.Single(nodes, e => e.Name.LocalName == "ToggleButton" && Attribute(e, "Name", "IosLoginMore"));
+        Assert.True(Attribute(toggle, "IsChecked", "False"));
+        Assert.Contains(toggle.Ancestors(), e => e.Name.LocalName == "Border" && Attribute(e, "Name", "IosLoginCard"));
+        var panel = Assert.Single(nodes, e => e.Name.LocalName == "StackPanel" && Attribute(e, "Name", "IosLoginMoreContent"));
+        Assert.True(Attribute(panel, "IsVisible", "{Binding IsChecked, ElementName=IosLoginMore}"));
+        Assert.Contains(panel.Descendants(), e => e.Name.LocalName == "Button" &&
+            Attribute(e, "Command", "{Binding ChangeServer}"));
+        Assert.Contains(panel.Descendants(), e => e.Name.LocalName == "Button" &&
+            Attribute(e, "Command", "{Binding ForgetLinkedServer}"));
+        Assert.Contains(panel.Descendants(), e => e.Name.LocalName == "Button" &&
+            Attribute(e, "Command", "{Binding DisableBiometrics}"));
+        Assert.DoesNotContain(nodes, e => e.Name.LocalName == "Expander" && Attribute(e, "Classes", "skyoptions"));
+        var style = Assert.Single(nodes, e => e.Name.LocalName == "Style" && Attribute(e, "Selector", "ToggleButton.iosmoretoggle"));
+        Assert.Contains(style.Elements(), e => e.Name.LocalName == "Setter" && Attribute(e, "Property", "MinHeight") &&
+            Attribute(e, "Value", "42"));
     }
 
     [Fact]

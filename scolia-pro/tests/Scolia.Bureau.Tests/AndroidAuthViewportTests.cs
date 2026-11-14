@@ -34,8 +34,14 @@ public sealed class AndroidAuthViewportTests
     public void Les_options_de_connexion_ne_disparaissent_pas_en_mode_compact()
     {
         var nodes = XDocument.Load(Source("Views/LoginView.axaml")).Descendants().ToArray();
-        Assert.Contains(nodes, n => n.Name.LocalName == "Expander" &&
+        // Les actions restent accessibles via l'ouverture repliable intégrée au panneau cobalt.
+        Assert.Contains(nodes, n => n.Name.LocalName == "ToggleButton" &&
             n.Attributes().Any(a => a.Name.LocalName == "Name" && a.Value == "IosLoginMore") &&
+            n.Attributes().Any(a => a.Name.LocalName == "IsChecked" && a.Value == "False"));
+        Assert.Contains(nodes, n => n.Name.LocalName == "StackPanel" &&
+            n.Attributes().Any(a => a.Name.LocalName == "Name" && a.Value == "IosLoginMoreContent") &&
+            n.Attributes().Any(a => a.Name.LocalName == "IsVisible" &&
+                a.Value == "{Binding IsChecked, ElementName=IosLoginMore}") &&
             n.Descendants().Any(d => d.Attributes().Any(a =>
                 a.Name.LocalName == "Command" && a.Value == "{Binding ChangeServer}")));
         Assert.Contains(nodes, n => n.Name.LocalName == "Button" &&
