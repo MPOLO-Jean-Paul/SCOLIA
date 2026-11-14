@@ -149,7 +149,7 @@
     </Style>
         <!-- Valeurs de base de la page : posées par style pour que les adaptations à l'écran puissent les remplacer. -->
     <Style Selector="StackPanel.iosloginbody"><Setter Property="MaxWidth" Value="640" /><Setter Property="Margin" Value="18,16,18,16" /><Setter Property="Spacing" Value="0" /></Style>
-    <Style Selector="ScrollViewer.wide StackPanel.iosloginfields"><Setter Property="Width" Value="370" /></Style>
+    <Style Selector="ScrollViewer.wide StackPanel.iosloginfields"><Setter Property="Width" Value="370" /><Setter Property="HorizontalAlignment" Value="Center" /></Style>
     <Style Selector="StackPanel.iosloginheader"><Setter Property="Spacing" Value="6" /><Setter Property="Margin" Value="0,0,0,12" /></Style>
     <Style Selector="StackPanel.iosloginfields"><Setter Property="Spacing" Value="10" /></Style>
     <Style Selector="Border.ioslogotile"><Setter Property="Width" Value="66" /><Setter Property="Height" Value="66" /><Setter Property="CornerRadius" Value="33" /></Style>
