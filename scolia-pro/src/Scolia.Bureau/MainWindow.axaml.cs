@@ -6,7 +6,7 @@ using Scolia.Bureau.ViewModels;
 namespace Scolia.Bureau;
 
 /// <summary>
-/// Fenêtre de l'ordinateur : connexion compacte, puis taille de travail et plein écran.
+/// Fenêtre Windows : maximisée dès l'ouverture, même avant l'authentification.
 /// Les dimensions logiques restent dans la zone de travail de l'écran, même à forte mise à l'échelle.
 /// </summary>
 public partial class MainWindow : Window
@@ -53,10 +53,10 @@ public partial class MainWindow : Window
 
     private const double CompactWidth = 460;
     private const double CompactHeight = 640;
-    private bool compact;
+    private bool? compact;
     private bool applyingWindowMode;
     private Size? fullSize;
-    private WindowState fullState;
+    private WindowState fullState = WindowState.Maximized;
     private WindowState beforeFullscreen;
 
     private void ApplyFullscreen(bool full)
@@ -73,7 +73,11 @@ public partial class MainWindow : Window
     private void ApplyWindowMode()
     {
         if (Shell is not { } shell || Preferences.MobileLayout || applyingWindowMode) return;
-        var wanted = shell.CompactWindow;
+        // SCOLIA est une application de bureau : la connexion et le jumelage
+        // doivent occuper le vrai espace de travail Windows, jamais un mini-dialogue.
+        // Le Shell conserve son état compact historique pour d'autres surfaces,
+        // mais MainWindow n'applique plus ce format sur ordinateur.
+        var wanted = !OperatingSystem.IsWindows() && shell.CompactWindow;
         if (wanted == compact) return;
         applyingWindowMode = true;
         try
