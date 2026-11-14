@@ -1,0 +1,77 @@
+name: SCOLIA Pro - relais Cloudflare gratuit (publication contrôlée)
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_free_deployment:
+        description: "J'ai vérifié le domaine relay.jp-services.org, les secrets Cloudflare et les limites du forfait gratuit."
+        required: true
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: scolia-cloudflare-free-relay
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Vérifier et publier le relais WSS Cloudflare
+    if: ${{ github.ref == 'refs/heads/release/direct-apk-scolia-pro-20261103' && github.actor == 'MPOLO-Jean-Paul' && inputs.confirm_free_deployment }}
+    runs-on: ubuntu-latest
+    environment: scolia-cloudflare-free
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: scolia-pro/deploy/cloudflare
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Vérifier les paramètres et ne jamais écrire les secrets
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${CLOUDFLARE_API_TOKEN:-}" || -z "${CLOUDFLARE_ACCOUNT_ID:-}" ]]; then
+            echo "::error::Définir CLOUDFLARE_API_TOKEN et CLOUDFLARE_ACCOUNT_ID dans l'environnement scolia-cloudflare-free."
+            exit 1
+          fi
+      - name: Installer les dépendances verrouillées
+        run: npm ci --no-audit --no-fund
+      - name: Vérifier les messages chiffrés et les limites
+        run: npm test
+      - name: Vérifier le typage
+        run: npm run typecheck
+      - name: Vérifier le bundle sans publication
+        run: npx wrangler deploy --config wrangler.free.jsonc --dry-run --outdir /tmp/scolia-cloudflare-free-check
+      - name: Publier le relais gratuit et rattacher le sous-domaine Cloudflare
+        run: npx wrangler deploy --config wrangler.free.jsonc
+      - name: Vérifier la réponse publique sans jetons scolaires
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --retry 3 --retry-delay 5 --max-time 25 \
+            https://relay.jp-services.org/health -o /tmp/scolia-cloudflare-health.json
+          node -e 'const fs=require("fs"); const data=JSON.parse(fs.readFileSync("/tmp/scolia-cloudflare-health.json", "utf8"));if(data.provider!=="cloudflare"||data.protocol!==1||data.service!=="SCOLIA relais")process.exit(1)'
+          code="$(curl --silent --show-error --output /dev/null --max-time 20 --write-out '%{http_code}' https://relay.jp-services.org/v1/client/0000000000000000000000000000000000000000000000000000000000000000 || true)"
+          if [[ "$code" == "200" || "$code" == "101" ]]; then
+            echo "::error::Route de client non authentifié anormalement accessible."
+            exit 1
+          fi
+      - name: Résumé
+        if: success()
+        shell: bash
+        run: |
+          {
+            echo "## Relais Cloudflare SCOLIA"
+            echo "- Adresse WSS : `wss://relay.jp-services.org/`"
+            echo "- URL de santé : https://relay.jp-services.org/health"
+            echo "- Service Render `wss://scolia-pro-relay.onrender.com/` : conservé, non modifié."
+            echo "- Avant activation chez les écoles : valider Windows/Android, révocation et reprise hors ligne."
+          } >> "$GITHUB_STEP_SUMMARY"
