@@ -122,6 +122,7 @@ public sealed class PremiumMotionViewsTests
         Assert.Contains(field.Descendants(), x =>
             x.Name.LocalName == "Setter" &&
             x.Attribute("Property")?.Value == "BorderBrush" &&
-            x.Attribute("Value")?.Value == "{DynamicResource AccentBrush}");
+            x.Attribute("Value")?.Value == (file.Contains("ConnectionCompactView", StringComparison.Ordinal)
+                ? "#FFFFFF" : "{DynamicResource AccentBrush}"));
     }
 }
