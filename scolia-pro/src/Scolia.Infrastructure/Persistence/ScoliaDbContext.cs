@@ -383,6 +383,8 @@ public sealed class ScoliaDbContext(DbContextOptions<ScoliaDbContext> options, I
             e.HasIndex(x => x.NormalizedUserName).IsUnique();
             e.HasIndex(x => x.StaffMemberId);
             e.HasOne<StaffMember>().WithMany().HasForeignKey(x => x.StaffMemberId).OnDelete(DeleteBehavior.SetNull);
+            e.HasIndex(x => x.StudentId);
+            e.HasOne<Student>().WithMany().HasForeignKey(x => x.StudentId).OnDelete(DeleteBehavior.Restrict);
         });
         b.Entity<AuditEntry>(e =>
         {

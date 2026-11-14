@@ -129,7 +129,9 @@ public sealed class UserService(IAppDbContext db, IWriteGate gate, IAuditLog aud
     }
 
     public async Task<IReadOnlyList<UserDto>> ListAsync(CancellationToken ct = default) =>
-        (await db.Users.AsNoTracking().OrderBy(u => u.DisplayName).ToListAsync(ct)).Select(u => ToDto(u, clock.UtcNow)).ToList();
+        // Les accès étudiants se gèrent dans Secrétariat › Comptes étudiants, pas avec le personnel.
+        (await db.Users.AsNoTracking().Where(u => u.Role != Role.Etudiant).OrderBy(u => u.DisplayName).ToListAsync(ct))
+            .Select(u => ToDto(u, clock.UtcNow)).ToList();
 
     public Task<UserDto> CreateAsync(UserCreate input, CancellationToken ct = default) => gate.RunAsync(async () =>
     {
@@ -159,6 +161,8 @@ public sealed class UserService(IAppDbContext db, IWriteGate gate, IAuditLog aud
     public Task<UserDto> UpdateAsync(Guid id, UserUpdate input, CancellationToken ct = default) => gate.RunAsync(async () =>
     {
         var user = await db.Users.FirstOrDefaultAsync(u => u.Id == id, ct) ?? throw new NotFoundException("Utilisateur introuvable.");
+        if (user.Role == Role.Etudiant)
+            throw new DomainException("role", "Un accès étudiant se gère dans Secrétariat › Comptes étudiants : il ne devient jamais un compte du personnel.");
         var role = AssignableRole(input.Role);
         if (string.IsNullOrWhiteSpace(input.DisplayName)) throw new DomainException("displayName", "Nom affiché obligatoire.");
         // Le secrétariat administre SCOLIA : il en reste toujours au moins un actif.

@@ -727,6 +727,25 @@ public static class ScoliaEndpoints
         sheets.MapGet("/reglages", (DeliberationService s, CancellationToken ct) => s.SettingsAsync(ct));
         sheets.MapGet("/annonces", (DeliberationService s, CancellationToken ct) => s.AnnouncementsAsync(ct));
         sheets.MapGet("/mes-cours", (DeliberationService s, CancellationToken ct) => s.MyCoursesAsync(ct)).RequireAuthorization(Permissions.MarksEncode);
+        // Accès étudiants (universités) : le secrétariat les crée ; l'étudiant ne lit que ses résultats publiés.
+        var studentAccounts = api.MapGroup("/comptes-etudiants").RequireAuthorization(Permissions.UsersManage);
+        studentAccounts.MapGet("", (Guid? promotionId, StudentAccountService s, CancellationToken ct) => s.ListAsync(promotionId, ct));
+        studentAccounts.MapPost("/{studentId:guid}", (Guid studentId, StudentAccountService s, CancellationToken ct) => s.IssueAsync(studentId, ct));
+        studentAccounts.MapPost("/promotions/{promotionId:guid}", (Guid promotionId, StudentAccountService s, CancellationToken ct) =>
+            s.IssuePromotionAsync(promotionId, ct));
+        studentAccounts.MapPost("/acces/{userId:guid}/code-provisoire", (Guid userId, StudentAccountService s, CancellationToken ct) =>
+            s.ResetAsync(userId, ct));
+        studentAccounts.MapPut("/acces/{userId:guid}/statut", (Guid userId, StudentAccountStatusInput input, StudentAccountService s, CancellationToken ct) =>
+            s.SetActiveAsync(userId, input, ct));
+        var portal = api.MapGroup("/etudiant").RequireAuthorization(Permissions.OwnResultsRead);
+        portal.MapGet("/mes-resultats", (StudentPortalService s, CancellationToken ct) => s.MineAsync(ct));
+        portal.MapGet("/releve.pdf", async (Guid inscription, StudentPortalService s, HttpContext http, CancellationToken ct) =>
+        {
+            http.Response.Headers.CacheControl = "private, no-store, max-age=0";
+            http.Response.Headers.Pragma = "no-cache";
+            return new InlineFileResult(LmdTranscriptPdf.Build(await s.TranscriptAsync(inscription, ct)), Pdf, "mon-releve.pdf");
+        });
+
         // Enseignants des écoles et universités : seulement les branches et EC qui leur sont attribués.
         var teacher = api.MapGroup("/enseignant").RequireAuthorization();
         teacher.MapGet("/mes-elements", (CurriculumTeachingService s, CancellationToken ct) => s.MineAsync(ct))

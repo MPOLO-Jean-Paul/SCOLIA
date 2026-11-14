@@ -2701,6 +2701,9 @@ namespace Scolia.Infrastructure.Persistence.Migrations
                     b.Property<Guid?>("StaffMemberId")
                         .HasColumnType("TEXT");
 
+                    b.Property<Guid?>("StudentId")
+                        .HasColumnType("TEXT");
+
                     b.Property<DateTime?>("UpdatedAtUtc")
                         .HasColumnType("TEXT");
 
@@ -2721,6 +2724,8 @@ namespace Scolia.Infrastructure.Persistence.Migrations
                         .IsUnique();
 
                     b.HasIndex("StaffMemberId");
+
+                    b.HasIndex("StudentId");
 
                     b.ToTable("Utilisateurs", (string)null);
                 });
@@ -3821,6 +3826,11 @@ namespace Scolia.Infrastructure.Persistence.Migrations
                         .WithMany()
                         .HasForeignKey("StaffMemberId")
                         .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("Scolia.Domain.Students.Student", null)
+                        .WithMany()
+                        .HasForeignKey("StudentId")
+                        .OnDelete(DeleteBehavior.Restrict);
                 });
 
             modelBuilder.Entity("Scolia.Domain.Staff.PayrollEntry", b =>

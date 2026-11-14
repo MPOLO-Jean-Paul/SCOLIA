@@ -226,6 +226,21 @@ public static class ScoliaHost
             }
             await next();
         });
+        // Compte étudiant : ses résultats publiés et sa session, rien d'autre. Ce verrou passe avant
+        // les endpoints, de sorte qu'une route ouverte à « tout compte connecté » lui reste fermée.
+        app.Use(async (http, next) =>
+        {
+            if (http.User.Identity?.IsAuthenticated == true &&
+                http.User.HasClaim(ScoliaClaims.Permission, Permissions.OwnResultsRead) &&
+                http.Request.Path.StartsWithSegments("/api") &&
+                !StudentRoutes.Allowed(http.Request.Path))
+            {
+                http.Response.StatusCode = StatusCodes.Status403Forbidden;
+                await http.Response.WriteAsJsonAsync(new { title = "Un accès étudiant ne consulte que ses propres résultats publiés.", code = "acces-etudiant" });
+                return;
+            }
+            await next();
+        });
         app.UseAuthorization();
         // Lecture seule de licence : toutes les requêtes d'écriture de tous les
         // appareils sont refusées côté serveur (pas simplement boutons grisés).
@@ -333,4 +348,13 @@ public static class ScoliaHost
         });
         return app;
     }
+}
+
+/// <summary>Seules routes accessibles à un compte étudiant.</summary>
+public static class StudentRoutes
+{
+    private static readonly string[] Prefixes = ["/api/etudiant", "/api/session", "/api/sante", "/api/verifier", "/api/verifier-bulletin"];
+
+    public static bool Allowed(PathString path) =>
+        Prefixes.Any(p => path.StartsWithSegments(p, StringComparison.OrdinalIgnoreCase));
 }

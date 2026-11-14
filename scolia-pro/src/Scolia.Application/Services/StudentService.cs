@@ -291,6 +291,8 @@ public sealed class StudentService(IAppDbContext db, IWriteGate gate, IAuditLog 
         var sponsorships = await db.Sponsorships.Include(s => s.Lines).Where(s => enrollmentIds.Contains(s.EnrollmentId)).ToListAsync(ct);
         db.Sponsorships.RemoveRange(sponsorships);
         db.Enrollments.RemoveRange(enrollments);
+        // L'accès en ligne d'un étudiant disparaît avec son dossier.
+        db.Users.RemoveRange(await db.Users.Where(u => u.StudentId == id).ToListAsync(ct));
         db.Students.Remove(student);
         audit.Record("apprenant.supprime", "Apprenant", id.ToString(), $"Dossier {student.Matricule} {student.FullName} supprimé (aucune opération financière).");
         await db.SaveChangesAsync(ct);

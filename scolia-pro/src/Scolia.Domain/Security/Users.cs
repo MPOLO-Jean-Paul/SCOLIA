@@ -3,7 +3,9 @@ using Scolia.Domain.Common;
 namespace Scolia.Domain.Security;
 
 /// <summary>Rôles persistés : ne jamais réutiliser ni renuméroter les valeurs historiques.</summary>
-public enum Role { Administrateur = 0, Direction = 1, Secretariat = 2, Comptabilite = 3, Enseignant = 4, Promoteur = 5 }
+public enum Role { Administrateur = 0, Direction = 1, Secretariat = 2, Comptabilite = 3, Enseignant = 4, Promoteur = 5,
+    /// <summary>Étudiant d'une université : consulte ses seuls résultats publiés.</summary>
+    Etudiant = 6 }
 
 public sealed class AppUser : Entity
 {
@@ -24,6 +26,8 @@ public sealed class AppUser : Entity
     /// Ce n'est pas un compte à part ; le retirer ne touche à aucune cote déjà encodée.
     /// </summary>
     public bool JuryAccess { get; set; }
+    /// <summary>Compte étudiant : dossier dont il consulte les seuls résultats publiés.</summary>
+    public Guid? StudentId { get; set; }
     /// <summary>Change à chaque modification de sécurité : invalide les sessions ouvertes.</summary>
     public string SecurityStamp { get; set; } = Guid.NewGuid().ToString("N");
 }
@@ -55,12 +59,14 @@ public static class Permissions
     public const string MarksEncode = "cotes.encoder";
     /// <summary>Membre du jury : encode les épreuves du jury de toutes les promotions, sans en devenir titulaire.</summary>
     public const string JuryEncode = "jury.encoder";
+    /// <summary>Étudiant : ses propres résultats publiés, rien d'autre. Jamais accordé à un autre rôle.</summary>
+    public const string OwnResultsRead = "resultats.consulter";
 
     public static readonly IReadOnlyList<string> All =
     [
         StudentsRead, StudentsWrite, PaymentsRead, PaymentsCreate, PaymentsCancel, ExpensesWrite, CashClose,
         ReportsRead, PilotageRead, SettingsWrite, UsersManage, AuditRead, BackupManage, AcademicsWrite, AcademicsRead, StaffManage, DisciplineCancel, DeliberationManage,
-        MarksEncode, JuryEncode,
+        MarksEncode, JuryEncode, OwnResultsRead,
     ];
 
     /// <summary>Les seuls rôles qu'on attribue.</summary>
@@ -71,12 +77,14 @@ public static class Permissions
     public static IReadOnlyCollection<string> For(Role role) => role switch
     {
         // Le secrétariat a tout, sauf l'espace enseignant (« mes cours ») qui n'a de sens que relié à une fiche du personnel.
-        Role.Secretariat or Role.Administrateur or Role.Direction => All.Where(p => p != MarksEncode).ToList(),
+        // Le secrétariat n'encode pas et ne consulte pas « ses » résultats : ces droits sont personnels.
+        Role.Secretariat or Role.Administrateur or Role.Direction => All.Where(p => p != MarksEncode && p != OwnResultsRead).ToList(),
         Role.Comptabilite => [StudentsRead, PaymentsRead, PaymentsCreate, PaymentsCancel, ExpensesWrite, CashClose, ReportsRead, AuditRead, BackupManage],
         // Seul le tableau de bord agrégé est autorisé côté API ; personnalisation d'affichage stockée sur l'appareil.
         Role.Promoteur => [PilotageRead],
         // Portail enseignant d'ITMCD : uniquement l'encodage de ses cours ; le service vérifie l'attribution à chaque appel.
         Role.Enseignant => [MarksEncode],
+        Role.Etudiant => [OwnResultsRead],
         _ => [],
     };
 
@@ -92,6 +100,7 @@ public static class Permissions
         Role.Comptabilite => "Comptabilité",
         Role.Promoteur => "Promoteur / Responsable",
         Role.Enseignant => "Enseignant",
+        Role.Etudiant => "Étudiant",
         _ => role.ToString(),
     };
 }
