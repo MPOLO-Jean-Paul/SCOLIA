@@ -6,23 +6,23 @@
              x:Class="Scolia.Bureau.Views.ConnectionView">
   <UserControl.Styles>
     <!-- Valeurs de base posées par style : les adaptations à l'écran ci-dessous peuvent les remplacer. -->
-    <Style Selector="StackPanel.iosconnectbody"><Setter Property="MaxWidth" Value="420" /><Setter Property="Margin" Value="20,22,20,20" /><Setter Property="Spacing" Value="16" /></Style>
+    <Style Selector="StackPanel.iosconnectbody"><Setter Property="MaxWidth" Value="760" /><Setter Property="Margin" Value="32,32,32,32" /><Setter Property="Spacing" Value="18" /></Style>
     <Style Selector="StackPanel.iosconnectheader"><Setter Property="Spacing" Value="6" /></Style>
-    <Style Selector="Border.iosconnectlogo"><Setter Property="Width" Value="66" /><Setter Property="Height" Value="66" /><Setter Property="CornerRadius" Value="18" /></Style>
-    <Style Selector="Image.iosconnectmark"><Setter Property="Width" Value="46" /><Setter Property="Height" Value="46" /></Style>
-    <Style Selector="TextBlock.iosconnecttitle"><Setter Property="FontSize" Value="23" /></Style>
-    <Style Selector="TextBlock.iosconnectsubtitle"><Setter Property="FontSize" Value="17" /></Style>
+    <Style Selector="Border.iosconnectlogo"><Setter Property="Width" Value="78" /><Setter Property="Height" Value="78" /><Setter Property="CornerRadius" Value="20" /></Style>
+    <Style Selector="Image.iosconnectmark"><Setter Property="Width" Value="54" /><Setter Property="Height" Value="54" /></Style>
+    <Style Selector="TextBlock.iosconnecttitle"><Setter Property="FontSize" Value="28" /></Style>
+    <Style Selector="TextBlock.iosconnectsubtitle"><Setter Property="FontSize" Value="19" /></Style>
     <Style Selector="Expander"><Setter Property="HorizontalAlignment" Value="Stretch" /></Style>
     <Style Selector="Expander TextBlock"><Setter Property="TextWrapping" Value="Wrap" /></Style>
-    <Style Selector="Button.iosconnectprimary:pointerover /template/ ContentPresenter"><Setter Property="Background" Value="{DynamicResource AccentHoverBrush}" /></Style>
-    <Style Selector="Button.iosconnectprimary:disabled /template/ ContentPresenter"><Setter Property="Background" Value="#9DBDF0" /><Setter Property="Foreground" Value="White" /></Style>
+    <Style Selector="Button.iosconnectprimary:pointerover /template/ ContentPresenter"><Setter Property="Background" Value="#E7F0FF" /></Style>
+    <Style Selector="Button.iosconnectprimary:disabled /template/ ContentPresenter"><Setter Property="Background" Value="#D0E0FC" /><Setter Property="Foreground" Value="#425C8D" /></Style>
     <!-- Les boutons du jumelage gardent leurs tailles, même pendant l'appui. -->
     <Style Selector="Button.iosconnectprimary:pressed">
-      <Setter Property="Background" Value="{DynamicResource AccentHoverBrush}" />
+      <Setter Property="Background" Value="#E7F0FF" />
       <Setter Property="Opacity" Value="0.94" />
     </Style>
     <Style Selector="Button.iosconnectsecondary:pressed">
-      <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
+      <Setter Property="Background" Value="#356BD6" />
     </Style>
     <Style Selector="TextBox.iosconnectfield:focus">
       <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
@@ -60,7 +60,7 @@
     <Style Selector="Grid.micro TextBlock.iosconnecthint"><Setter Property="IsVisible" Value="False" /></Style>
     <Style Selector="Grid.micro Border.iosconnectcard"><Setter Property="Padding" Value="0" /></Style>
     <!-- Grand écran : parcours de jumelage natif à plat. -->
-    <Style Selector="Grid.wide StackPanel.iosconnectbody"><Setter Property="MaxWidth" Value="440" /><Setter Property="Margin" Value="26,30,26,24" /></Style>
+    <Style Selector="Grid.wide StackPanel.iosconnectbody"><Setter Property="MaxWidth" Value="820" /><Setter Property="Margin" Value="38,36,38,36" /></Style>
     <Style Selector="Grid.wide Border.iosconnectcard"><Setter Property="Padding" Value="0" /></Style>
     <Style Selector="Border.iosconnectcard">
       <!-- Parcours de jumelage natif : les sections ne sont plus des cartes. -->
@@ -70,8 +70,8 @@
       <Setter Property="Padding" Value="0" />
     </Style>
     <Style Selector="Button.iosconnectprimary">
-      <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
-      <Setter Property="Foreground" Value="{DynamicResource OnAccentBrush}" />
+      <Setter Property="Background" Value="#FFFFFF" />
+      <Setter Property="Foreground" Value="#1846A6" />
       <Setter Property="BorderThickness" Value="0" />
       <Setter Property="CornerRadius" Value="12" />
       <Setter Property="HorizontalAlignment" Value="Stretch" />
@@ -86,9 +86,9 @@
       </Setter>
     </Style>
     <Style Selector="Button.iosconnectsecondary">
-      <Setter Property="Background" Value="{DynamicResource Surface2Brush}" />
-      <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
-      <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
+      <Setter Property="Background" Value="#254FAE" />
+      <Setter Property="Foreground" Value="#FFFFFF" />
+      <Setter Property="BorderBrush" Value="#789FED" />
       <Setter Property="BorderThickness" Value="1" />
       <Setter Property="CornerRadius" Value="12" />
       <Setter Property="HorizontalAlignment" Value="Stretch" />
@@ -118,6 +118,24 @@
           <BrushTransition Property="BorderBrush" Duration="0:0:0.14" Easing="CubicEaseOut" />
         </Transitions>
       </Setter>
+    </Style>
+    <!-- Palette de jumelage Windows, indépendante du thème clair/sombre du poste. -->
+    <Style Selector="Grid.desktopconnect TextBlock">
+      <Setter Property="Foreground" Value="#FFFFFF" />
+    </Style>
+    <Style Selector="Grid.desktopconnect TextBlock.muted">
+      <Setter Property="Foreground" Value="#DDE9FF" />
+    </Style>
+    <Style Selector="Grid.desktopconnect Button.iosconnectprimary TextBlock">
+      <Setter Property="Foreground" Value="#1846A6" />
+    </Style>
+    <Style Selector="Grid.desktopconnect Expander">
+      <Setter Property="Foreground" Value="#FFFFFF" />
+      <Setter Property="Background" Value="#244CA5" />
+      <Setter Property="BorderThickness" Value="0" />
+    </Style>
+    <Style Selector="Grid.desktopconnect Button.iosconnectsecondary TextBlock">
+      <Setter Property="Foreground" Value="#FFFFFF" />
     </Style>
   </UserControl.Styles>
   <Grid Background="{DynamicResource BgBrush}">
@@ -258,12 +276,12 @@
     </Grid>
     <!-- Premier écran iOS, sur le téléphone comme sur l'ordinateur : une décision principale, des options secondaires discrètes. -->
     <ThemeVariantScope x:Name="IosConnectionThemeScope" IsVisible="False">
-    <Grid x:Name="IosConnectionScreen" IsVisible="False">
+    <Grid x:Name="IosConnectionScreen" Classes="desktopconnect" IsVisible="False">
       <Grid.Background>
         <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-          <GradientStop Offset="0" Color="#D9E7FF" />
-          <GradientStop Offset="0.52" Color="#BAD2FA" />
-          <GradientStop Offset="1" Color="#9CBDEE" />
+          <GradientStop Offset="0" Color="#5682EA" />
+          <GradientStop Offset="0.52" Color="#315DC6" />
+          <GradientStop Offset="1" Color="#4F78DB" />
         </LinearGradientBrush>
       </Grid.Background>
       <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto"
@@ -282,7 +300,7 @@
               <Image Classes="iosconnectmark" Source="{DynamicResource ScoliaMark}" />
             </Border>
             <TextBlock Classes="iosconnecttitle" Text="Bienvenue sur SCOLIA" FontWeight="Bold"
-                       TextAlignment="Center" Foreground="{DynamicResource TextBrush}"
+                       TextAlignment="Center" Foreground="#FFFFFF"
                        TextWrapping="Wrap" />
             <TextBlock Text="Retrouvez votre établissement en toute sécurité."
                        Classes="muted iosconnecthint" FontSize="14" TextAlignment="Center" TextWrapping="Wrap" />
@@ -302,7 +320,7 @@
                 </StackPanel>
               </Grid>
               <Border Background="Transparent" BorderThickness="0" CornerRadius="0" Padding="0">
-                <TextBlock Text="{Binding ScanHint}" Foreground="{DynamicResource MutedBrush}"
+                <TextBlock Text="{Binding ScanHint}" Foreground="#E1EBFF"
                            FontSize="12" TextWrapping="Wrap" />
               </Border>
               <Button Classes="iosconnectprimary" Command="{Binding ScanCode}"
@@ -337,7 +355,7 @@
           <Expander x:Name="IosNearbyServers" Header="Établissements à proximité" IsExpanded="False" IsVisible="{Binding HasServers}">
             <StackPanel Spacing="8">
             <TextBlock Text="ÉTABLISSEMENTS À PROXIMITÉ" FontWeight="SemiBold"
-                       Foreground="{DynamicResource Text2Brush}" FontSize="11" Margin="8,0,0,0" />
+                       Foreground="#E3EDFF" FontSize="11" Margin="8,0,0,0" />
             <Border Classes="iosconnectcard" Padding="0">
               <ItemsControl ItemsSource="{Binding Servers}">
                 <ItemsControl.ItemTemplate>
@@ -405,7 +423,7 @@
                   IsVisible="{Binding Searching}">
             <StackPanel Spacing="8">
               <ProgressBar IsIndeterminate="True" Height="4" MinHeight="4" />
-              <TextBlock Text="{Binding Message}" Foreground="{DynamicResource Text2Brush}"
+              <TextBlock Text="{Binding Message}" Foreground="#E1EBFF"
                          FontSize="12" TextWrapping="Wrap" />
             </StackPanel>
           </Border>
@@ -451,7 +469,7 @@
                 <StackPanel Spacing="12">
                   <ProgressBar IsIndeterminate="True" Height="5" MinHeight="5"
                                Foreground="{DynamicResource AccentBrush}" />
-                  <TextBlock Text="{Binding Message}" Foreground="{DynamicResource TextBrush}" FontWeight="SemiBold"
+                  <TextBlock Text="{Binding Message}" Foreground="#FFFFFF" FontWeight="SemiBold"
                              FontSize="13" TextAlignment="Center" TextWrapping="Wrap" />
                 </StackPanel>
               </Border>
