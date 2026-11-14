@@ -1746,14 +1746,29 @@ if (args.Length > 3 && args[3] == "fluidite")
             school.Bottom <= cardBounds.Bottom + 1);
         if (height == 300)
             CheckLayout("Clavier : le formulaire peut défiler", loginScroll.Extent.Height > loginScroll.Viewport.Height);
+        // Les options textuelles Compte et Serveur sont volontairement placées
+        // APRÈS le bouton principal. Défilement jusqu'au bas ne signifie donc plus
+        // que le bouton est encore dans la fenêtre : vérifier son accès réel.
         loginScroll.Offset = new Vector(0, Math.Max(0, loginScroll.Extent.Height - loginScroll.Viewport.Height));
         RenderLayout();
-        // Vérifier l'action principale, et non l'ancien pied de page désormais
-        // volontairement invisible pour préserver une connexion minimaliste.
+        if (isIosLogin)
+        {
+            AuthLayout.EnsureVisible(loginScroll, Named(footerName));
+            RenderLayout();
+        }
         var footer = InWindow(Named(footerName));
+        var scrollViewport = InWindow(loginScroll);
         CheckLayout($"Connexion {width}×{height} : bouton de connexion atteignable",
-            footer.Height > 0 && footer.Top >= -1 &&
-            footer.Bottom <= window.Bounds.Height + 1);
+            footer.Height > 0 &&
+            footer.Top >= Math.Max(0, scrollViewport.Top) - 1 &&
+            footer.Bottom <= Math.Min(window.Bounds.Height, scrollViewport.Bottom) + 1);
+        // Les liens du bas ne doivent pas être supprimés pour satisfaire ce test.
+        if (isIosLogin)
+        {
+            var links = Named("IosMobileActions");
+            CheckLayout($"Connexion {width}×{height} : options textuelles accessibles par défilement",
+                links.IsEffectivelyVisible && loginScroll.Extent.Height >= loginScroll.Viewport.Height);
+        }
         Save(window, $"fluidite-connexion-{width}x{height}.png");
     }
 
