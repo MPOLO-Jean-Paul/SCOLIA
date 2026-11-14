@@ -130,7 +130,7 @@
     </Style>
     <Style Selector="TextBox.connectfield.onbrand:pointerover /template/ Border#PART_BorderElement"><Setter Property="Background" Value="#1845B1" /></Style>
     <Style Selector="TextBox.connectfield.onbrand:disabled /template/ Border#PART_BorderElement"><Setter Property="Background" Value="#1845B1" /></Style>
-    <Style Selector="TextBox.connectfield.onbrand /template/ TextBlock#PART_Watermark"><Setter Property="Foreground" Value="#E4EEFF" /></Style>
+    <Style Selector="TextBox.connectfield.onbrand /template/ TextBlock#PART_Placeholder"><Setter Property="Foreground" Value="#E4EEFF" /></Style>
     <Style Selector="ComboBox.connectselect /template/ Border#Background">
       <Setter Property="Background" Value="#1845B1" />
       <Setter Property="BorderBrush" Value="#87A9EE" />

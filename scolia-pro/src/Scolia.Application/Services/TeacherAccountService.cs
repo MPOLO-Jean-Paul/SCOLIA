@@ -57,6 +57,13 @@ public sealed class TeacherAccountService(IAppDbContext db, IWriteGate gate, IAu
                              where a.EndedOn == null && c.AcademicYearId == year.Id && c.IsActive
                              group a by a.TeacherId into g
                              select new { g.Key, Count = g.Count() }).ToDictionaryAsync(x => x.Key, x => x.Count, ct);
+        // Écoles et universités : branches et EC attribués au programme de l'année, comptés comme cours.
+        var curriculum = await (from a in db.CurriculumAssignments.AsNoTracking()
+                                join i in db.CurriculumItems.AsNoTracking() on a.CurriculumItemId equals i.Id
+                                where a.EndedOn == null && i.AcademicYearId == year.Id && i.IsActive
+                                group a by a.TeacherId into g
+                                select new { g.Key, Count = g.Count() }).ToListAsync(ct);
+        foreach (var c in curriculum) courses[c.Key] = courses.GetValueOrDefault(c.Key) + c.Count;
         var members = await db.Staff.AsNoTracking().OrderBy(s => s.LastName).ThenBy(s => s.FirstName).ToListAsync(ct);
         var now = clock.UtcNow;
         return members

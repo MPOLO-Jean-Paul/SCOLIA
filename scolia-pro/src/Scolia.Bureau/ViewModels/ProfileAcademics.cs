@@ -312,13 +312,23 @@ public sealed class EpstDeliberationPage : PageViewModel
     private bool ready;
     private EpstDeliberationDto? current;
 
-    public EpstDeliberationPage(ShellViewModel shell) : base(shell)
+    public EpstDeliberationPage(ShellViewModel shell) : base(shell) => BuildActions("Ouverte");
+
+    /// <summary>Actions de l'étape en cours : l'étape suivante est le bouton principal, une étape passée disparaît.</summary>
+    private void BuildActions(string status)
     {
-        Action("Clôturer la première session", MaterialIconKind.Gavel, CloseFirstAsync, primary: true);
-        Action("Décision du jury", MaterialIconKind.AccountTieVoiceOutline, JuryAsync, row: true, open: true);
-        Action("Points de repêchage", MaterialIconKind.PencilBoxOutline, RepechageAsync, row: true);
-        Action("Clôturer le repêchage", MaterialIconKind.LockCheckOutline, CloseAsync);
-        Action("Procès-verbal et palmarès", MaterialIconKind.FilePdfBox, PalmaresAsync);
+        Actions.Clear();
+        if (status == "Ouverte")
+        {
+            Action("Clôturer la première session", MaterialIconKind.Gavel, CloseFirstAsync, primary: true);
+            Action("Décision du jury", MaterialIconKind.AccountTieVoiceOutline, JuryAsync, row: true, open: true);
+        }
+        if (status == "PremiereSessionCloturee")
+        {
+            Action("Clôturer le repêchage", MaterialIconKind.LockCheckOutline, CloseAsync, primary: true);
+            Action("Points de repêchage", MaterialIconKind.PencilBoxOutline, RepechageAsync, row: true, open: true);
+        }
+        Action("Procès-verbal et palmarès", MaterialIconKind.FilePdfBox, PalmaresAsync, primary: status == "Cloturee");
         ActionRefresh();
     }
 
@@ -356,6 +366,7 @@ public sealed class EpstDeliberationPage : PageViewModel
         };
         subtitle = $"{d.ClassName} · {d.YearLabel} · {status}";
         Raise(nameof(Subtitle));
+        BuildActions(d.Status);
     }
 
     private async Task JuryAsync()
@@ -651,12 +662,24 @@ public sealed class LmdResultsPage : PageViewModel
     public LmdResultsPage(ShellViewModel shell) : base(shell)
     {
         stage = Stages[0];
-        Action("Publier les résultats du S1", MaterialIconKind.Publish, PublishS1Async, primary: true);
-        Action("Clôturer la première session", MaterialIconKind.Gavel, CloseFirstAsync);
-        Action("Clôturer la deuxième session", MaterialIconKind.LockCheckOutline, CloseAsync);
-        Action("Décision du jury", MaterialIconKind.AccountTieVoiceOutline, JuryAsync, row: true, open: true);
+        BuildActions("Ouverte");
+    }
+
+    /// <summary>
+    /// Actions de l'étape en cours : publier le S1, puis clôturer la première session, puis la deuxième.
+    /// L'étape suivante est le bouton principal ; une étape franchie n'est plus proposée.
+    /// </summary>
+    private void BuildActions(string status)
+    {
+        Actions.Clear();
+        if (status == "Ouverte") Action("Publier les résultats du S1", MaterialIconKind.Publish, PublishS1Async, primary: true);
+        if (status is "Ouverte" or "S1Publie")
+            Action("Clôturer la première session", MaterialIconKind.Gavel, CloseFirstAsync, primary: status == "S1Publie");
+        if (status is "S1Publie" or "PremiereSessionCloturee")
+            Action("Clôturer la deuxième session", MaterialIconKind.LockCheckOutline, CloseAsync, primary: status == "PremiereSessionCloturee");
+        if (status != "Cloturee") Action("Décision du jury", MaterialIconKind.AccountTieVoiceOutline, JuryAsync, row: true, open: true);
         Action("Relevé de l'étudiant", MaterialIconKind.FileAccountOutline, TranscriptAsync, row: true);
-        Action("Relevés de la promotion", MaterialIconKind.FilePdfBox, TranscriptsAsync);
+        Action("Relevés de la promotion", MaterialIconKind.FilePdfBox, TranscriptsAsync, primary: status == "Cloturee");
         Action("Procès-verbal", MaterialIconKind.FileSign, MinutesAsync);
         ActionRefresh();
     }
@@ -706,6 +729,7 @@ public sealed class LmdResultsPage : PageViewModel
         };
         subtitle = $"{r.PromotionName} ({r.Level}){(r.Filiere is { } f ? " · " + f : "")} · {r.YearLabel} · {status}";
         Raise(nameof(Subtitle));
+        BuildActions(r.Status);
     }
 
     private async Task Step(string title, string message, string route, string done)

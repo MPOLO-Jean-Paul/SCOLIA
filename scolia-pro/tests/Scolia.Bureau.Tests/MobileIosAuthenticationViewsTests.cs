@@ -94,7 +94,7 @@ public sealed class MobileIosAuthenticationViewsTests
         Assert.Equal("White", Setting(loginStyle, "CaretBrush"));
         Assert.Equal("White", Setting(loginStyle, "SelectionForegroundBrush"));
         Assert.Contains(nodes, e => e.Name.LocalName == "Style" &&
-            Attribute(e, "Selector", "TextBox.iosauthfield /template/ TextBlock#PART_Watermark"));
+            Attribute(e, "Selector", "TextBox.iosauthfield /template/ TextBlock#PART_Placeholder")); // nom de la partie dans Avalonia 12
 
         // Le bug Android était sur PART_BorderElement, pas sur le TextBox de surface.
         foreach (var state in new[] { "", ":pointerover", ":focus", ":disabled" })

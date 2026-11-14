@@ -6,6 +6,7 @@ import {
   Wallet, ZoomIn, ZoomOut, Plus, Lock,
 } from 'lucide-react';
 import { P } from './session';
+import { adapt, isItm } from './terms';
 
 export type Tone = 'blue' | 'green' | 'orange' | 'purple' | 'red';
 export type Size = 'large' | 'small';
@@ -52,7 +53,12 @@ export interface RibbonContext {
   pathname: string;
   recents: { to: string; label: string }[];
   can: (permission: string) => boolean;
+  /** Profil de l'établissement : vocabulaire et commandes propres aux ITM/IM. */
+  institutionType?: string;
 }
+
+/** Cours, évaluations et notes du moteur ITM/IM : les écoles et universités ont leurs écrans dans l'application. */
+const ITM_ONLY = new Set(['notes', 'nouveau-cours', 'nouvelle-evaluation']);
 
 const large = (c: Omit<RibbonCommand, 'size'>): RibbonCommand => ({ size: 'large', ...c });
 const small = (c: Omit<RibbonCommand, 'size'>): RibbonCommand => ({ size: 'small', ...c });
@@ -61,7 +67,7 @@ const RECEIPT_PAGE = /^\/paiements\/recus\/[^/]+$/;
 const STUDENT_PAGE = /^\/apprenants\/[^/]+$/;
 
 /** Construit les onglets visibles pour l'utilisateur et la page courante. */
-export function buildTabs({ pathname, recents, can }: RibbonContext): RibbonTab[] {
+export function buildTabs({ pathname, recents, can, institutionType }: RibbonContext): RibbonTab[] {
   const tabs: RibbonTab[] = [
     {
       id: 'accueil', label: 'Accueil', key: 'A', groups: [
@@ -268,8 +274,16 @@ export function buildTabs({ pathname, recents, can }: RibbonContext): RibbonTab[
   return tabs
     .map((tab) => ({
       ...tab,
+      label: adapt(tab.label, institutionType),
+      contextLabel: tab.contextLabel === undefined ? undefined : adapt(tab.contextLabel, institutionType),
       groups: tab.groups
-        .map((group) => ({ ...group, commands: group.commands.filter((c) => !c.perm || can(c.perm)) }))
+        .map((group) => ({
+          ...group,
+          title: adapt(group.title, institutionType),
+          commands: group.commands
+            .filter((c) => (!c.perm || can(c.perm)) && (isItm(institutionType) || !ITM_ONLY.has(c.id)))
+            .map((c) => ({ ...c, label: adapt(c.label, institutionType), tip: adapt(c.tip, institutionType) })),
+        }))
         .filter((group) => group.commands.length > 0),
     }))
     .filter((tab) => tab.groups.length > 0);

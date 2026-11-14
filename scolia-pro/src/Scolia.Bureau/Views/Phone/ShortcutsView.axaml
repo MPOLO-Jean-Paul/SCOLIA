@@ -36,7 +36,7 @@
           <TextBlock Text="Gestes" Classes="heading" Margin="0,6,0,2" />
           <Grid Classes="gesture" ColumnDefinitions="Auto,*">
             <Border Background="{DynamicResource ToneBlue}"><mi:MaterialIcon Kind="GestureTap" /></Border>
-            <StackPanel Grid.Column="1"><TextBlock Text="Toucher une carte" FontWeight="SemiBold" /><TextBlock Text="Choisit la ligne : un apprenant, un reçu, une dépense." Classes="muted" TextWrapping="Wrap" /></StackPanel>
+            <StackPanel Grid.Column="1"><TextBlock Text="Toucher une carte" FontWeight="SemiBold" /><TextBlock Text="{infra:Terms 'Choisit la ligne : un apprenant, un reçu, une dépense.'}" Classes="muted" TextWrapping="Wrap" /></StackPanel>
           </Grid>
           <Grid Classes="gesture" ColumnDefinitions="Auto,*">
             <Border Background="{DynamicResource ToneIndigo}"><mi:MaterialIcon Kind="DotsHorizontal" /></Border>
@@ -44,7 +44,7 @@
           </Grid>
           <Grid Classes="gesture" ColumnDefinitions="Auto,*">
             <Border Background="{DynamicResource ToneGreen}"><mi:MaterialIcon Kind="GestureDoubleTap" /></Border>
-            <StackPanel Grid.Column="1"><TextBlock Text="Double appui" FontWeight="SemiBold" /><TextBlock Text="Ouvre directement la fiche de l'apprenant ou le reçu." Classes="muted" TextWrapping="Wrap" /></StackPanel>
+            <StackPanel Grid.Column="1"><TextBlock Text="Double appui" FontWeight="SemiBold" /><TextBlock Text="{infra:Terms 'Ouvre directement la fiche de l\'apprenant ou le reçu.'}" Classes="muted" TextWrapping="Wrap" /></StackPanel>
           </Grid>
           <Grid Classes="gesture" ColumnDefinitions="Auto,*">
             <Border Background="{DynamicResource ToneOrange}"><mi:MaterialIcon Kind="DotsHorizontalCircleOutline" /></Border>
@@ -58,7 +58,7 @@
           <TextBlock Text="Où trouver les outils" Classes="heading" Margin="0,12,0,2" />
           <Grid Classes="gesture" ColumnDefinitions="Auto,*">
             <Border Background="{DynamicResource ToneBlue}"><mi:MaterialIcon Kind="HomeOutline" /></Border>
-            <StackPanel Grid.Column="1"><TextBlock Text="Onglets du bas" FontWeight="SemiBold" /><TextBlock Text="Accueil, apprenants, encaissement, reçus : les outils du quotidien, à un appui." Classes="muted" TextWrapping="Wrap" /></StackPanel>
+            <StackPanel Grid.Column="1"><TextBlock Text="Onglets du bas" FontWeight="SemiBold" /><TextBlock Text="{infra:Terms 'Accueil, apprenants, encaissement, reçus : les outils du quotidien, à un appui.'}" Classes="muted" TextWrapping="Wrap" /></StackPanel>
           </Grid>
           <Grid Classes="gesture" ColumnDefinitions="Auto,*">
             <Border Background="{DynamicResource ToneNeutral}"><mi:MaterialIcon Kind="Menu" /></Border>
@@ -66,7 +66,7 @@
           </Grid>
           <Grid Classes="gesture" ColumnDefinitions="Auto,*">
             <Border Background="{DynamicResource ToneTeal}"><mi:MaterialIcon Kind="Magnify" /></Border>
-            <StackPanel Grid.Column="1"><TextBlock Text="Loupe" FontWeight="SemiBold" /><TextBlock Text="Retrouve un apprenant, un reçu ou un outil par son nom." Classes="muted" TextWrapping="Wrap" /></StackPanel>
+            <StackPanel Grid.Column="1"><TextBlock Text="Loupe" FontWeight="SemiBold" /><TextBlock Text="{infra:Terms 'Retrouve un apprenant, un reçu ou un outil par son nom.'}" Classes="muted" TextWrapping="Wrap" /></StackPanel>
           </Grid>
           <Grid Classes="gesture" ColumnDefinitions="Auto,*">
             <Border Background="{DynamicResource ToneGreen}"><mi:MaterialIcon Kind="Wifi" /></Border>

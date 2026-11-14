@@ -349,7 +349,7 @@
             <StackPanel IsVisible="{Binding SettingsSearch.NoResults}" HorizontalAlignment="Center" Spacing="10" Margin="28,40,28,0">
               <mi:MaterialIcon Kind="Magnify" Width="40" Height="40" Foreground="{DynamicResource MutedBrush}" HorizontalAlignment="Center" />
               <TextBlock Text="Aucune fonctionnalité trouvée" FontSize="17" FontWeight="SemiBold" TextAlignment="Center" />
-              <TextBlock Text="Essayez : apprenants, encaisser, reçus, empreinte, Tailscale ou promotion."
+              <TextBlock Text="{infra:Terms 'Essayez : apprenants, encaisser, reçus, empreinte, Tailscale ou promotion.'}"
                          Classes="muted" TextWrapping="Wrap" TextAlignment="Center" />
             </StackPanel>
           </StackPanel>

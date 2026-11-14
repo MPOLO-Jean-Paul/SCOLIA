@@ -16,8 +16,8 @@
           <Border Classes="segmented" HorizontalAlignment="Left">
             <StackPanel Orientation="Horizontal">
               <RadioButton Classes="segment" GroupName="erase-kind" Content="Les paiements" IsChecked="{Binding ErasePayments}" IsEnabled="{Binding CanErasePayments}" />
-              <RadioButton Classes="segment" GroupName="erase-kind" Content="Les dossiers des apprenants" IsChecked="{Binding EraseStudents}" IsEnabled="{Binding CanEraseStudents}"
-                           ToolTip.Tip="Réservé aux comptes qui gèrent les dossiers des apprenants (secrétariat)." />
+              <RadioButton Classes="segment" GroupName="erase-kind" Content="{infra:Terms 'Les dossiers des apprenants'}" IsChecked="{Binding EraseStudents}" IsEnabled="{Binding CanEraseStudents}"
+                           ToolTip.Tip="{infra:Terms 'Réservé aux comptes qui gèrent les dossiers des apprenants (secrétariat).'}" />
             </StackPanel>
           </Border>
           <TextBlock Text="{Binding KindHint}" Classes="muted" TextWrapping="Wrap" />
@@ -27,12 +27,12 @@
         <StackPanel Spacing="8">
           <StackPanel Orientation="Horizontal" Spacing="8">
             <Border Classes="badge" Background="{DynamicResource ToneRed}"><TextBlock Text="2" Foreground="{DynamicResource OnToneBrush}" /></Border>
-            <TextBlock Text="Pour quels apprenants ?" FontWeight="SemiBold" VerticalAlignment="Center" />
+            <TextBlock Text="{infra:Terms 'Pour quels apprenants ?'}" FontWeight="SemiBold" VerticalAlignment="Center" />
           </StackPanel>
           <Border Classes="segmented" HorizontalAlignment="Left">
             <StackPanel Orientation="Horizontal">
-              <RadioButton Classes="segment" GroupName="erase-scope" Content="Les apprenants cochés" IsChecked="{Binding ScopeSelection}" />
-              <RadioButton Classes="segment" GroupName="erase-scope" Content="Tous les apprenants" IsChecked="{Binding ScopeAll}" />
+              <RadioButton Classes="segment" GroupName="erase-scope" Content="{infra:Terms 'Les apprenants cochés'}" IsChecked="{Binding ScopeSelection}" />
+              <RadioButton Classes="segment" GroupName="erase-scope" Content="{infra:Terms 'Tous les apprenants'}" IsChecked="{Binding ScopeAll}" />
             </StackPanel>
           </Border>
           <TextBox Classes="search clearButton" Text="{Binding Search}" PlaceholderText="Rechercher un nom ou un matricule" IsEnabled="{Binding IsSelectionScope}" />
@@ -57,7 +57,7 @@
         <DataGridTextColumn Header="Solde" Binding="{Binding Balance}" Width="Auto" MinWidth="130" />
       </DataGrid.Columns>
     </DataGrid>
-    <c:EmptyState Grid.Row="1" Icon="AccountOffOutline" Title="Aucun apprenant" Hint="Vérifiez l'orthographe ou effacez la recherche." IsVisible="{Binding Items.Count, Converter={StaticResource IsEmpty}}" />
+    <c:EmptyState Grid.Row="1" Icon="AccountOffOutline" Title="{infra:Terms 'Aucun apprenant'}" Hint="Vérifiez l'orthographe ou effacez la recherche." IsVisible="{Binding Items.Count, Converter={StaticResource IsEmpty}}" />
 
     <!-- Étape 3 : confirmer avec le mot de passe, puis effacer -->
     <Border Grid.Row="2" Classes="card" Margin="0,10,0,0" IsVisible="{Binding CanErase}">

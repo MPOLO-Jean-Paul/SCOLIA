@@ -2074,7 +2074,8 @@ if (args.Length > 3 && args[3] == "roles")
             index++;
         }
     // Enseignant : un vrai parcours d'encodage (feuille ouverte, cotes tapées, enregistrement) sur sa feuille anonyme.
-    if (roleSession.Permissions.Contains(Scolia.Bureau.Ribbon.Perm.MarksEncode) && !roleSession.Permissions.Contains(Scolia.Bureau.Ribbon.Perm.AcademicsRead))
+    if (roleSession.Permissions.Contains(Scolia.Bureau.Ribbon.Perm.MarksEncode) && !roleSession.Permissions.Contains(Scolia.Bureau.Ribbon.Perm.AcademicsRead)
+        && Scolia.Domain.School.InstitutionProfiles.Canonicalize(roleSession.InstitutionType) == Scolia.Domain.School.InstitutionProfiles.ItmIm)
     {
         var marks = new MarksPage(shell);
         Wait(shell.Open(() => marks));

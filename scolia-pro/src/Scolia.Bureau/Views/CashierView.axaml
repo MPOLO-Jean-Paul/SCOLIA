@@ -36,14 +36,14 @@
     <StackPanel Grid.Column="0" Spacing="12" Margin="0,0,16,0">
       <Border Classes="card">
         <StackPanel Spacing="8">
-          <TextBlock Text="1. Apprenant" Classes="heading" />
+          <TextBlock Text="{infra:Terms '1. Apprenant'}" Classes="heading" />
           <!-- Une seule recherche : celle de l'en-tête. Ce bouton y ramène si elle a été fermée. -->
           <Button Classes="ghost" Command="{Binding OpenHeaderSearch}" IsVisible="{Binding !HasStudent}" HorizontalAlignment="Stretch"
-                  HorizontalContentAlignment="Left" ToolTip.Tip="Chercher l'apprenant dans la barre du haut">
+                  HorizontalContentAlignment="Left" ToolTip.Tip="{infra:Terms 'Chercher l\'apprenant dans la barre du haut'}">
             <!-- Grille, pas pile horizontale : sur un téléphone le texte passe à la ligne au lieu de sortir de l'écran. -->
             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
               <mi:MaterialIcon Kind="Magnify" Width="18" Height="18" Foreground="{DynamicResource AccentBrush}" VerticalAlignment="Top" Margin="0,1,0,0" />
-              <TextBlock Grid.Column="1" Text="Chercher l'apprenant : nom ou matricule" TextWrapping="Wrap" VerticalAlignment="Center" />
+              <TextBlock Grid.Column="1" Text="{infra:Terms 'Chercher l\'apprenant : nom ou matricule'}" TextWrapping="Wrap" VerticalAlignment="Center" />
             </Grid>
           </Button>
           <TextBlock Text="{Binding SearchStatus}" IsVisible="{Binding HasSearchStatus}" Classes="muted"
@@ -89,7 +89,7 @@
       <!-- Tant qu'aucun apprenant n'est choisi, le versement n'a rien à montrer : une seule consigne. -->
       <Border Classes="card" IsVisible="{Binding !HasStudent}">
         <c:EmptyState Icon="AccountSearchOutline" Title="2. Versement"
-                      Hint="Cherchez d'abord l'apprenant dans « 1. Apprenant » : ses mois à payer s'affichent ici." />
+                      Hint="{infra:Terms 'Cherchez d\'abord l\'apprenant dans « 1. Apprenant » : ses mois à payer s\'affichent ici.'}" />
       </Border>
       <Border Classes="card" IsVisible="{Binding ShowPayment}">
         <StackPanel Spacing="10">
@@ -176,7 +176,7 @@
             </StackPanel>
             <StackPanel Grid.Row="1" Grid.Column="2" Spacing="4">
               <TextBlock Text="Téléphone du payeur" Classes="caption" />
-              <Border Classes="autofield" ToolTip.Tip="Le téléphone du tuteur, repris du dossier de l'apprenant">
+              <Border Classes="autofield" ToolTip.Tip="{infra:Terms 'Le téléphone du tuteur, repris du dossier de l\'apprenant'}">
                 <Grid ColumnDefinitions="*,Auto">
                   <TextBlock Text="{Binding PayerPhoneText}" TextTrimming="CharacterEllipsis" />
                   <mi:MaterialIcon Grid.Column="1" Kind="PhoneOutline" />

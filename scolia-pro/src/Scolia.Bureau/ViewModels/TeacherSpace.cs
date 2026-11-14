@@ -6,6 +6,7 @@ using Material.Icons;
 using Scolia.Bureau.Api;
 using Scolia.Bureau.Infrastructure;
 using Scolia.Bureau.Ribbon;
+using Scolia.Domain.School;
 
 namespace Scolia.Bureau.ViewModels;
 
@@ -35,12 +36,23 @@ public sealed class TeacherAccountsPage : PageViewModel
             Action("Nouvel enseignant", MaterialIconKind.AccountPlus, NewTeacherAsync, primary: true);
         Action("Ouvrir le compte", MaterialIconKind.AccountKey, IssueAsync, open: true);
         Action("Nouveau code provisoire", MaterialIconKind.KeyChange, ResetAsync, row: true);
-        Action("Privilège jury", MaterialIconKind.Gavel, ToggleJuryAsync, row: true);
+        // Le privilège jury (épreuves du jury) n'existe que dans la délibération ITM/IM.
+        if (IsItm) Action("Privilège jury", MaterialIconKind.Gavel, ToggleJuryAsync, row: true);
         Action("Activer ou désactiver", MaterialIconKind.AccountCancel, ToggleActiveAsync, row: true);
         if (Shell.Can(Perm.AcademicsRead))
-            Action("Attribution des cours", MaterialIconKind.AccountSchool, () => Shell.Open(() => new TeachingPage(Shell)));
+        {
+            // Chaque profil ouvre son propre écran d'attribution : cours ITM, branches EPST, EC LMD.
+            var university = Shell.Session?.InstitutionType == InstitutionProfiles.SuperieurLmd;
+            if (IsItm) Action("Attribution des cours", MaterialIconKind.AccountSchool, () => Shell.Open(() => new TeachingPage(Shell)));
+            else Action(university ? "Attribution des EC" : "Attribution des branches", MaterialIconKind.AccountSchool,
+                () => Shell.Open(() => new CurriculumAssignmentPage(Shell)));
+        }
         ActionRefresh();
     }
+
+    /// <summary>ITM/IM : ni cycle scolaire, ni université LMD.</summary>
+    public bool IsItm => Shell.Session?.InstitutionType is not { } type ||
+        (!InstitutionProfiles.UsesSchoolCycles(type) && type != InstitutionProfiles.SuperieurLmd);
 
     public override string Title => "Comptes enseignants";
     public override string Subtitle => subtitle;
@@ -75,7 +87,7 @@ public sealed class TeacherAccountsPage : PageViewModel
             ThemeBrush.Get("ToneGreen"), MaterialIconKind.AccountKey));
         Stats.Add(new KpiVm("Codes provisoires", list.Count(t => t.AccountActive && t.MustChangePassword).ToString("N0", CultureInfo.CurrentCulture), "à remplacer à la première connexion",
             ThemeBrush.Get("ToneOrange"), MaterialIconKind.KeyChange));
-        Stats.Add(new KpiVm("Membres du jury", list.Count(t => t.AccountActive && t.JuryAccess).ToString("N0", CultureInfo.CurrentCulture), "privilège accordé par le secrétariat",
+        if (IsItm) Stats.Add(new KpiVm("Membres du jury", list.Count(t => t.AccountActive && t.JuryAccess).ToString("N0", CultureInfo.CurrentCulture), "privilège accordé par le secrétariat",
             ThemeBrush.Get("ToneRed"), MaterialIconKind.Gavel));
         subtitle = $"{Format.Count(accounts, "compte actif", "comptes actifs")} · {Format.Count(list.Count, "enseignant", "enseignants")}";
         Raise(nameof(Subtitle));
@@ -124,7 +136,7 @@ public sealed class TeacherAccountsPage : PageViewModel
             {
                 lastName = f.Text("nom"), middleName = f.Text("postnom"), firstName = f.Text("prenom"), gender = f.ChoiceValue("sexe"),
                 phone = f.Text("telephone"), email = f.Text("email"), function = f.Text("fonction"),
-                createAccount = f.Flag("compte"), userName = f.Text("identifiant"), juryAccess = f.Flag("jury"),
+                createAccount = f.Flag("compte"), userName = f.Text("identifiant"), juryAccess = f.Has("jury") && f.Flag("jury"),
             });
             return true;
         });
@@ -137,7 +149,7 @@ public sealed class TeacherAccountsPage : PageViewModel
         form.Add("fonction", "Fonction", value: "Enseignant", required: true);
         form.AddFlag("compte", "Ouvrir son compte maintenant (identifiant et code provisoire)", true);
         form.Add("identifiant", "Identifiant (facultatif)", hint: "Laissez vide : « prénom.nom » est proposé, sans accents, rendu unique si besoin.");
-        form.AddFlag("jury", "Membre du jury : encode aussi les épreuves du jury", false);
+        if (IsItm) form.AddFlag("jury", "Membre du jury : encode aussi les épreuves du jury", false);
         if (!await Shell.Ask(form) || result is not { } created) return;
         if (created.Account is { } account) Show(account, "Compte créé");
         Shell.Notify(created.Account is null ? $"{created.FullName} est enregistré ({created.Number})." : $"Compte de {created.FullName} créé : remettez-lui ses identifiants.");
@@ -162,13 +174,14 @@ public sealed class TeacherAccountsPage : PageViewModel
         {
             issued = await Shell.Api.SendAsync<TeacherCredentialsDto>(HttpMethod.Post, "api/comptes-enseignants", new
             {
-                staffMemberId = t.StaffMemberId, userName = f.Text("identifiant"), juryAccess = f.Flag("jury"),
+                staffMemberId = t.StaffMemberId, userName = f.Has("identifiant") ? f.Text("identifiant") : null,
+                juryAccess = f.Has("jury") ? f.Flag("jury") : t.JuryAccess,
             });
             return true;
         });
         if (!t.HasAccount)
             form.Add("identifiant", "Identifiant (facultatif)", hint: "Laissez vide : « prénom.nom » est proposé, sans accents, rendu unique si besoin.");
-        form.AddFlag("jury", "Membre du jury : encode aussi les épreuves du jury", t.JuryAccess);
+        if (IsItm) form.AddFlag("jury", "Membre du jury : encode aussi les épreuves du jury", t.JuryAccess);
         if (!await Shell.Ask(form) || issued is not { } given) return;
         Show(given, t.HasAccount ? "Compte réactivé" : "Compte ouvert");
         await RefreshAsync();

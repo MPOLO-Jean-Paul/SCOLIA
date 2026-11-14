@@ -1,5 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:infra="using:Scolia.Bureau.Infrastructure"
              xmlns:mi="using:Material.Icons.Avalonia"
              x:Class="Scolia.Bureau.Views.LmdPlanningView">
   <ScrollViewer HorizontalScrollBarVisibility="Disabled">
@@ -22,7 +23,7 @@
                 <StackPanel Grid.Column="1" Spacing="2">
                   <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextWrapping="Wrap" />
                   <StackPanel Orientation="Horizontal" Spacing="8">
-                    <TextBlock Text="{Binding Kind}" Classes="muted" />
+                    <TextBlock Text="{Binding Kind, Converter={x:Static infra:TextCase.LmdKind}}" Classes="muted" />
                     <TextBlock Text="{Binding Code}" Classes="muted" />
                   </StackPanel>
                 </StackPanel>
@@ -67,7 +68,7 @@
                 <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextWrapping="Wrap" />
                 <StackPanel Orientation="Horizontal" Spacing="8">
                   <TextBlock Text="{Binding Code}" Classes="muted" />
-                  <TextBlock Text="{Binding Kind}" Classes="muted" />
+                  <TextBlock Text="{Binding Kind, Converter={x:Static infra:TextCase.LmdKind}}" Classes="muted" />
                   <TextBlock Text="{Binding Semester}" Classes="muted" />
                   <TextBlock Text="{Binding Credits, StringFormat='Crédits : {0}'}" Classes="muted" />
                 </StackPanel>

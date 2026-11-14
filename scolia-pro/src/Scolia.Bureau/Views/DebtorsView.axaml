@@ -37,6 +37,6 @@
         <DataGridTextColumn infra:GridPriority.Level="3" Header="Téléphone" Binding="{Binding Phone}" Width="Auto" MinWidth="130" />
       </DataGrid.Columns>
     </DataGrid>
-    <c:EmptyState Grid.Row="1" Icon="CheckDecagramOutline" Title="Aucun retard de paiement" Hint="Tous les apprenants de ces critères sont à jour : rien à relancer." IsVisible="{Binding Items.Count, Converter={StaticResource IsEmpty}}" />
+    <c:EmptyState Grid.Row="1" Icon="CheckDecagramOutline" Title="Aucun retard de paiement" Hint="{infra:Terms 'Tous les apprenants de ces critères sont à jour : rien à relancer.'}" IsVisible="{Binding Items.Count, Converter={StaticResource IsEmpty}}" />
   </Grid>
 </UserControl>

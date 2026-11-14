@@ -22,10 +22,10 @@ public sealed class FormField : Observable
     public FormField(string key, string label, FieldKind kind, bool required, string? hint)
     {
         Key = key;
-        Label = label;
+        Label = Vocabulary.Adapt(label);
         Kind = kind;
         Required = required;
-        this.hint = hint;
+        this.hint = hint is null ? null : Vocabulary.Adapt(hint);
     }
 
     private string? hint;
@@ -110,8 +110,9 @@ public sealed class FormViewModel : Observable
 
     public FormViewModel(string title, string subtitle = "", Func<FormViewModel, Task<bool>>? onSubmit = null)
     {
-        Title = title;
-        Subtitle = subtitle;
+        // Vocabulaire du profil : « élève » dans une école, « étudiant » dans une université.
+        Title = Vocabulary.Adapt(title);
+        Subtitle = Vocabulary.Adapt(subtitle);
         this.onSubmit = onSubmit;
         Submit = new AsyncCommand(SubmitAsync);
         Cancel = new RelayCommand(() => { if (!Busy) Close(false); });
@@ -210,7 +211,7 @@ public sealed class FormViewModel : Observable
     public string Message
     {
         get => message;
-        set { if (Set(ref message, value)) Raise(nameof(HasMessage)); }
+        set { if (Set(ref message, Vocabulary.Adapt(value))) Raise(nameof(HasMessage)); }
     }
     public string SubmitText { get; init; } = "Enregistrer";
     public string CancelText { get; init; } = "Annuler";

@@ -248,7 +248,7 @@ aux dossiers en lecture et aux exports ; les modifications sont suspendues sur t
               <TextBlock Text="Inscrire le serveur auprès de JP-Services" FontWeight="SemiBold" />
               <TextBlock Text="Code d'invitation de l'établissement" Classes="caption" />
               <TextBox Text="{Binding License.Invitation, Mode=TwoWay}"
-                       PasswordChar="●" Watermark="Invitation fournie par JP-Services"
+                       PasswordChar="●" PlaceholderText="Invitation fournie par JP-Services"
                        MaxLength="140" />
               <CheckBox IsChecked="{Binding License.Consent, Mode=TwoWay}"
                         Content="J'autorise ce serveur à déclarer les seules métadonnées commerciales annoncées." />
@@ -387,7 +387,7 @@ aux dossiers en lecture et aux exports ; les modifications sont suspendues sur t
                 <DataGridTextColumn Header="Code" Binding="{Binding Code}" Width="Auto" MinWidth="120" />
                 <DataGridTextColumn Header="Nom" Binding="{Binding Name}" Width="*" MinWidth="140" />
                 <DataGridTextColumn infra:GridPriority.Level="2" Header="Promotions" Binding="{Binding Promotions}" Width="Auto" MinWidth="120" />
-                <DataGridTextColumn infra:GridPriority.Level="2" Header="Apprenants" Binding="{Binding Students}" Width="Auto" MinWidth="120" />
+                <DataGridTextColumn infra:GridPriority.Level="2" Header="{infra:Terms 'Apprenants'}" Binding="{Binding Students}" Width="Auto" MinWidth="120" />
                 <DataGridTextColumn Header="Active" Binding="{Binding Active}" Width="Auto" MinWidth="100" />
               </DataGrid.Columns>
             </DataGrid>
@@ -471,7 +471,7 @@ aux dossiers en lecture et aux exports ; les modifications sont suspendues sur t
                 <DataGridTextColumn Header="Désignation" Binding="{Binding Name}" Width="*" MinWidth="140" />
                 <DataGridTextColumn infra:GridPriority.Level="2" Header="Section" Binding="{Binding Section}" Width="Auto" MinWidth="150" />
                 <DataGridTextColumn infra:GridPriority.Level="3" Header="Niveau" Binding="{Binding Level}" Width="Auto" MinWidth="99" />
-                <DataGridTextColumn infra:GridPriority.Level="2" Header="Apprenants" Binding="{Binding Students}" Width="Auto" MinWidth="130" />
+                <DataGridTextColumn infra:GridPriority.Level="2" Header="{infra:Terms 'Apprenants'}" Binding="{Binding Students}" Width="Auto" MinWidth="130" />
                 <DataGridTextColumn Header="Mensualité" Binding="{Binding Monthly}" Width="Auto" MinWidth="130" />
                 <DataGridTextColumn infra:GridPriority.Level="3" Header="Total annuel" Binding="{Binding Annual}" Width="Auto" MinWidth="145" />
                 <DataGridTextColumn Header="Active" Binding="{Binding Active}" Width="Auto" MinWidth="99" />

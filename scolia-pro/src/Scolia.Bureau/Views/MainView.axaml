@@ -22,6 +22,20 @@
       <Setter Property="Margin" Value="12,0,12,78" />
       <Setter Property="HorizontalAlignment" Value="Stretch" />
     </Style>
+    <!-- Bannière d'un autre poste : en bas à droite sur l'ordinateur, pour ne cacher ni le titre ni les
+         commandes de la page ; en haut sur le téléphone, comme les notifications du système. -->
+    <Style Selector="Border#AlertBanner">
+      <Setter Property="VerticalAlignment" Value="Bottom" />
+      <Setter Property="HorizontalAlignment" Value="Right" />
+      <Setter Property="Width" Value="440" />
+      <Setter Property="Margin" Value="0,0,24,44" />
+    </Style>
+    <Style Selector="LayoutTransformControl.phone Border#AlertBanner">
+      <Setter Property="VerticalAlignment" Value="Top" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="Width" Value="NaN" />
+      <Setter Property="Margin" Value="10,8,10,0" />
+    </Style>
     <!-- Fenêtre de dialogue sur le téléphone : presque tout l'écran, pour des champs lisibles -->
     <Style Selector="LayoutTransformControl.phone Border.scrim > ContentControl"><Setter Property="Margin" Value="12" /></Style>
     <!-- Indicateur de traitement : l'icône tourne tant que le traitement dure -->
@@ -584,9 +598,8 @@
       <!-- Compte et réglages du poste : couvre la fenêtre -->
       <ContentControl Content="{Binding Backstage}" IsVisible="{Binding BackstageOpen}" Background="{DynamicResource BgBrush}" />
 
-      <!-- Bannière en haut : encaissement ou sauvegarde faits sur un autre poste. Elle descend, se lit, s'en va seule. -->
-      <Border x:Name="AlertBanner" Classes="alertbanner" IsVisible="{Binding HasBanner}" VerticalAlignment="Top" HorizontalAlignment="Stretch"
-              MaxWidth="560" Margin="10,8,10,0">
+      <!-- Bannière : encaissement ou sauvegarde faits sur un autre poste. Elle apparaît, se lit, s'en va seule. -->
+      <Border x:Name="AlertBanner" Classes="alertbanner" IsVisible="{Binding HasBanner}" MaxWidth="560">
         <Grid ColumnDefinitions="*,Auto">
           <Button Classes="bannerbody" Command="{Binding OpenBanner}" ToolTip.Tip="Ouvrir">
             <Grid ColumnDefinitions="Auto,*">

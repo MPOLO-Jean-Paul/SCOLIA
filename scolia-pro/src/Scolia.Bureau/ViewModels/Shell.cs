@@ -1000,6 +1000,7 @@ public sealed class ShellViewModel : Observable
         if (switchingAccount) CloseLocalSession();
         openingCompact = compact;
         session = s;
+        Vocabulary.Current = StudentTerms;
         knownRevision = -1;
         // Données gardées sur l'appareil, propres à ce compte ; puis le direct avec les autres postes.
         api.Offline ??= new OfflineStore(ConnectionStore.CacheAddress(api.Server));
@@ -1599,6 +1600,7 @@ public sealed class ShellViewModel : Observable
     /// <summary>Message discret, effacé après quelques secondes.</summary>
     public void Notify(string text, SoundKind sound = SoundKind.Notification)
     {
+        text = Vocabulary.Adapt(text);
         Sounds.Play(Prefs, sound);
         // Le même message relancé se réaffiche et repart pour quatre secondes : un second clic ne paraît pas ignoré.
         var token = ++noticeToken;

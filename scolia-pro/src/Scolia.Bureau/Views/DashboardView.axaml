@@ -163,7 +163,7 @@
               </ItemsControl.ItemTemplate>
             </ItemsControl>
             <Border Height="1" Background="{DynamicResource LineBrush}" Margin="0,6" />
-            <TextBlock Text="Répartition des apprenants" FontWeight="SemiBold" />
+            <TextBlock Text="{infra:Terms 'Répartition des apprenants'}" FontWeight="SemiBold" />
             <ProgressBar Classes="slim" Value="{Binding MaleShare, Mode=OneWay}" Maximum="100" />
             <TextBlock Text="{Binding GenderText}" Classes="muted" />
           </StackPanel>

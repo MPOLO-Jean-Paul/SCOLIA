@@ -83,10 +83,10 @@
     </Style>
     <!-- Le thème Fluent définit sa couleur de watermark séparément du texte saisi.
          Ces deux styles évitent les placeholders sombres, y compris avec le clavier Android. -->
-    <Style Selector="TextBox.iosauthfield /template/ TextBlock#PART_Watermark">
+    <Style Selector="TextBox.iosauthfield /template/ TextBlock#PART_Placeholder">
       <Setter Property="Foreground" Value="#E4EEFF" />
     </Style>
-    <Style Selector="TextBox.iosauthfield:focus /template/ TextBlock#PART_Watermark">
+    <Style Selector="TextBox.iosauthfield:focus /template/ TextBlock#PART_Placeholder">
       <Setter Property="Foreground" Value="#D6E5FF" />
     </Style>
     <Style Selector="Button.iosauthprimary">

@@ -740,7 +740,7 @@ public sealed class SettingsPage : PageViewModel
         form.Add("indicatif", "Indicatif téléphonique", value: s.PhoneCountryCode, required: true, hint: "243 pour la RDC, utilisé par les relances WhatsApp");
         form.AddFlag("entiers", "Montants en unités entières", s.WholeAmountsOnly);
         form.Add("pied", "Mention en bas des reçus", FieldKind.Multiline, s.ReceiptFooter);
-        form.AddHeader("Cartes d'accès", "En-tête officiel imprimé sur les cartes des apprenants.");
+        form.AddHeader("Cartes d'accès", $"En-tête officiel imprimé sur les cartes des {Shell.StudentTerms.Plural}.");
         form.Add("ministere", "Ministère", value: s.CardMinistry);
         form.Add("direction", "Direction", value: s.CardDirection);
         form.Add("division", "Division provinciale", value: s.CardDivision);
@@ -790,7 +790,7 @@ public sealed class SettingsPage : PageViewModel
         SectionRows.Clear();
         foreach (var s in sections)
             SectionRows.Add(new SectionRowVm(s.Id, s.Code, s.Name, s.IsActive ? "Oui" : "Non", s,
-                Format.Count(s.PromotionCount, "promotion", "promotions"), Format.Count(s.StudentCount, "apprenant", "apprenants")));
+                Format.Count(s.PromotionCount, "promotion", "promotions"), Format.Count(s.StudentCount, Shell.StudentTerms.Singular, Shell.StudentTerms.Plural)));
         SelectedSection = SectionRows.FirstOrDefault(s => s.Id == previouslySelectedId);
         Raise(nameof(HasSectionRows));
         Raise(nameof(HasNoSections));

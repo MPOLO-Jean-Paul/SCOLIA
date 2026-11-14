@@ -21,9 +21,14 @@ public sealed class ProblemHandler(IProblemDetailsService problems, ILogger<Prob
             InvalidDataException => (StatusCodes.Status400BadRequest, exception.Message, "donnees"),
             BadHttpRequestException => (StatusCodes.Status400BadRequest, "Requête invalide.", "requete"),
             OperationCanceledException => (499, "Requête interrompue.", "annule"),
+            // Console JP-Services ou Internet injoignable : panne extérieure, pas une erreur de SCOLIA.
+            HttpRequestException => (StatusCodes.Status503ServiceUnavailable,
+                "Internet ou la console JP-Services est injoignable : réessayez quand la connexion revient.", "reseau"),
             _ => (StatusCodes.Status500InternalServerError, "Une erreur inattendue s'est produite. Elle a été consignée dans le journal technique.", "interne"),
         };
-        if (status >= 500) logger.LogError(exception, "Erreur non gérée sur {Path}", http.Request.Path);
+        if (status == StatusCodes.Status503ServiceUnavailable)
+            logger.LogWarning("Service extérieur injoignable sur {Path} : {Message}", http.Request.Path, exception.Message);
+        else if (status >= 500) logger.LogError(exception, "Erreur non gérée sur {Path}", http.Request.Path);
         http.Response.StatusCode = status;
         var details = new ProblemDetails { Status = status, Title = title, Type = $"https://scolia.app/erreurs/{code}" };
         details.Extensions["code"] = code;

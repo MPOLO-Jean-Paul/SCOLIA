@@ -38,7 +38,7 @@
         <DataGridTextColumn Header="N° de reçu" Binding="{Binding Number}" Width="Auto" MinWidth="150" />
         <DataGridTextColumn infra:GridPriority.Level="2" Header="Date" Binding="{Binding Date}" Width="Auto" MinWidth="120" />
         <DataGridTextColumn infra:GridPriority.Level="2" Header="Matricule" Binding="{Binding Matricule}" Width="Auto" MinWidth="122" />
-        <DataGridTextColumn Header="Apprenant" Binding="{Binding Student}" Width="2*" MinWidth="260" />
+        <DataGridTextColumn Header="{infra:Terms 'Apprenant'}" Binding="{Binding Student}" Width="2*" MinWidth="260" />
         <DataGridTextColumn infra:GridPriority.Level="3" Header="Promotion" Binding="{Binding Promotion}" Width="Auto" MinWidth="122" />
         <DataGridTextColumn Header="Montant" Binding="{Binding Amount}" Width="Auto" MinWidth="130" />
         <DataGridTextColumn infra:GridPriority.Level="3" Header="Mode" Binding="{Binding Method}" Width="Auto" MinWidth="140" />

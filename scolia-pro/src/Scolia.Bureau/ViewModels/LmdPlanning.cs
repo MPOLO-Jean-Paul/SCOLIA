@@ -97,7 +97,7 @@ public sealed class LmdPlanningPage : PageViewModel
         };
         var parents = new[] { new ChoiceItem("", "Racine (faculté ou domaine)") }
             .Concat(Structures.Where(s => s.IsActive)
-                .Select(s => new ChoiceItem(s.Id.ToString(), s.Kind + " · " + s.Name))).ToList();
+                .Select(s => new ChoiceItem(s.Id.ToString(), TextCase.LmdKindLabel(s.Kind) + " · " + s.Name))).ToList();
         var form = new FormViewModel("Nouvelle structure LMD",
             "Hiérarchie autorisée : faculté → département → filière ou domaine → mention → parcours → spécialité.",
             async f =>

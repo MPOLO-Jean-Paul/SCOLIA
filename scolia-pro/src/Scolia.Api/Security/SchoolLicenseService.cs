@@ -156,7 +156,8 @@ public sealed class SchoolLicenseService : BackgroundService
     /// <summary>Client authentifié par le jeton de l'établissement, pour la continuité en ligne.</summary>
     public HttpClient OwnerClient(TimeSpan timeout)
     {
-        var registration = state.Registration ?? throw new InvalidOperationException("Inscription auprès de JP-Services requise.");
+        var registration = state.Registration ?? throw new Scolia.Domain.Common.DomainException("licence",
+            "Inscription auprès de JP-Services requise : activez la licence de l'établissement, puis réessayez.");
         var client = Http(registration.ServiceUrl, registration.Token);
         client.Timeout = timeout;
         return client;

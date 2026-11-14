@@ -39,7 +39,7 @@
           <TextBlock Text="{Binding SelectionSummary}" Classes="muted" TextWrapping="Wrap" />
         </StackPanel>
         <Button Content="{Binding SelectedViewTitle}" Command="{Binding ToggleSelectedView}"
-                ToolTip.Tip="Revoir les apprenants cochés, même s'ils sont masqués par la recherche"
+                ToolTip.Tip="{infra:Terms 'Revoir les apprenants cochés, même s\'ils sont masqués par la recherche'}"
                 Margin="0,2,8,2" MinHeight="36" />
       </WrapPanel>
     </Border>
@@ -62,7 +62,7 @@
         <DataGridTextColumn infra:GridPriority.Level="2" Header="Résultat" Binding="{Binding Result}" IsReadOnly="True" Width="Auto" MinWidth="240" />
       </DataGrid.Columns>
     </DataGrid>
-    <TextBlock Grid.Row="3" Text="Les apprenants cochés restent dans le lot quand vous recherchez d'autres noms." Classes="muted" TextWrapping="Wrap" Margin="0,8,0,0" />
-    <c:EmptyState Grid.Row="2" Icon="FormatListChecks" Title="Aucun apprenant à encaisser" Hint="{Binding NoMonthsHint}" IsVisible="{Binding Items.Count, Converter={StaticResource IsEmpty}}" />
+    <TextBlock Grid.Row="3" Text="{infra:Terms 'Les apprenants cochés restent dans le lot quand vous recherchez d\'autres noms.'}" Classes="muted" TextWrapping="Wrap" Margin="0,8,0,0" />
+    <c:EmptyState Grid.Row="2" Icon="FormatListChecks" Title="{infra:Terms 'Aucun apprenant à encaisser'}" Hint="{Binding NoMonthsHint}" IsVisible="{Binding Items.Count, Converter={StaticResource IsEmpty}}" />
   </Grid>
 </UserControl>

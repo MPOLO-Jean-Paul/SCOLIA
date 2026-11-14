@@ -36,6 +36,8 @@ Les ITM et IM ne changent pas : leurs cours, cotes, délibérations et menus res
 | Étudiants | Consultation des seuls résultats publiés (S1, première session, définitif), dettes, relevé PDF | Oui | Accueil de l'étudiant : Mes résultats |
 | Téléphone serveur | Bulletins, procès-verbaux et relevés produits aussi par un téléphone serveur | Oui | — |
 
+Audit de qualité de l'ensemble du projet (défauts relevés et corrigés) : `docs/AUDIT_QUALITE_20261114.md`.
+
 Captures réelles dans `docs/captures-epst-lmd-20261114/` (écrans Windows, écran téléphone, bulletins primaire
 et secondaire, relevé, procès-verbaux).
 

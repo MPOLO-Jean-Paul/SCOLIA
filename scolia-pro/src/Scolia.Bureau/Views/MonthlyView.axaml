@@ -56,7 +56,7 @@
         <DataGridTextColumn infra:GridPriority.Level="3" Header="Payé le" Binding="{Binding PaidOn}" Width="Auto" MinWidth="112" />
       </DataGrid.Columns>
     </DataGrid>
-    <c:EmptyState Grid.Row="2" Icon="CalendarCheck" Title="Aucun apprenant pour ces critères"
+    <c:EmptyState Grid.Row="2" Icon="CalendarCheck" Title="{infra:Terms 'Aucun apprenant pour ces critères'}"
                   Hint="Changez de mois, de promotion ou d'état." IsVisible="{Binding Items.Count, Converter={StaticResource IsEmpty}}" />
   </Grid>
 </UserControl>

@@ -179,7 +179,7 @@ public sealed class SyncCenter : Observable, IDisposable
                     ? $"{result.Indexed} cours et {result.Details} feuilles anonymes disponibles hors ligne."
                     : $"Cours partiellement copiés : {result.Errors} erreurs, reprise au prochain réseau."
                 : result.Complete
-                    ? $"{result.Indexed} apprenants et {result.Accounts} comptes préparés sur cet appareil."
+                    ? $"{result.Indexed} {shell.StudentTerms.Plural} et {result.Accounts} comptes préparés sur cet appareil."
                     : $"Copie partielle : {result.Details} dossiers et {result.Accounts} comptes, {result.Errors} erreurs. Réessayez en ligne.";
             shell.Notify(result.Complete
                 ? "Les données autorisées sont préparées pour une utilisation hors ligne."

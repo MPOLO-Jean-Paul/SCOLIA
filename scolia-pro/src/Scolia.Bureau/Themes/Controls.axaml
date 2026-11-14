@@ -371,10 +371,10 @@
   <Style Selector="TextBox.w11.onbrand:disabled /template/ Border#PART_BorderElement">
     <Setter Property="Background" Value="#1FFFFFFF" />
   </Style>
-  <Style Selector="TextBox.w11.onbrand /template/ TextBlock#PART_Watermark">
+  <Style Selector="TextBox.w11.onbrand /template/ TextBlock#PART_Placeholder">
     <Setter Property="Foreground" Value="#C8FFFFFF" />
   </Style>
-  <Style Selector="TextBox.w11.onbrand:focus /template/ TextBlock#PART_Watermark">
+  <Style Selector="TextBox.w11.onbrand:focus /template/ TextBlock#PART_Placeholder">
     <Setter Property="Foreground" Value="#A6FFFFFF" />
   </Style>
   <!-- Boutons ronds dans le champ (œil, flèche) et boutons de verre sur le fond bleu -->

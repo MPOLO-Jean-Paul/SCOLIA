@@ -1,5 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:infra="using:Scolia.Bureau.Infrastructure"
              xmlns:mi="using:Material.Icons.Avalonia"
              xmlns:c="using:Scolia.Bureau.Controls"
              x:Class="Scolia.Bureau.Views.AttendanceView">
@@ -32,8 +33,8 @@
       </Grid>
     </Border>
 
-    <c:EmptyState Grid.Row="2" Icon="AccountGroupOutline" Title="Aucun apprenant dans cette promotion"
-                  Hint="Choisissez une autre promotion, ou inscrivez des apprenants dans celle-ci." IsVisible="{Binding Rows.Count, Converter={StaticResource IsEmpty}}" />
+    <c:EmptyState Grid.Row="2" Icon="AccountGroupOutline" Title="{infra:Terms 'Aucun apprenant dans cette promotion'}"
+                  Hint="{infra:Terms 'Choisissez une autre promotion, ou inscrivez des apprenants dans celle-ci.'}" IsVisible="{Binding Rows.Count, Converter={StaticResource IsEmpty}}" />
     <!-- Feuille d'appel : un statut par apprenant -->
     <DataGrid Grid.Row="2" ItemsSource="{Binding Rows}" AutoGenerateColumns="False" IsReadOnly="False" IsVisible="{Binding !ShowSummary}">
       <DataGrid.Columns>

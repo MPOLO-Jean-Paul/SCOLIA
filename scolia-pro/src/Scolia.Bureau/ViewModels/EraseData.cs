@@ -116,8 +116,8 @@ public sealed class EraseDataPage : PageViewModel
     }
 
     public string KindHint => payments
-        ? "Les reçus et les paiements des apprenants choisis sont effacés. Les dossiers restent, et chaque solde revient à son montant dû."
-        : "Les dossiers des apprenants choisis sont effacés, avec leurs inscriptions, reçus, notes, présences, discipline et prises en charge.";
+        ? Vocabulary.Adapt("Les reçus et les paiements des apprenants choisis sont effacés. Les dossiers restent, et chaque solde revient à son montant dû.")
+        : Vocabulary.Adapt("Les dossiers des apprenants choisis sont effacés, avec leurs inscriptions, reçus, notes, présences, discipline et prises en charge.");
 
     public string EraseText => payments ? "Effacer les paiements" : "Effacer les dossiers";
     public bool CanErase => Shell.Can(Perm.BackupManage);
@@ -126,8 +126,8 @@ public sealed class EraseDataPage : PageViewModel
     public ObservableCollection<EraseRowVm> Items { get; } = [];
     public IReadOnlyList<ChoiceItem> Scopes { get; } =
     [
-        new(ErasureScope.Selection, "Les apprenants cochés"),
-        new(ErasureScope.All, "Tous les apprenants"),
+        new(ErasureScope.Selection, Vocabulary.Adapt("Les apprenants cochés")),
+        new(ErasureScope.All, Vocabulary.Adapt("Tous les apprenants")),
     ];
 
     public string Search
@@ -176,7 +176,7 @@ public sealed class EraseDataPage : PageViewModel
         }
         total = page.Total;
         subtitle = "Sauvegarde automatique avant chaque effacement.";
-        if (page.Items.Count < page.Total) subtitle += $" Liste limitée à {page.Items.Count} apprenant(s) sur {page.Total} : utilisez la recherche.";
+        if (page.Items.Count < page.Total) subtitle += Vocabulary.Adapt($" Liste limitée à {page.Items.Count} apprenant(s) sur {page.Total} : utilisez la recherche.");
         Raise(nameof(Subtitle));
         SelectionChanged();
     }
@@ -197,9 +197,9 @@ public sealed class EraseDataPage : PageViewModel
 
     private void SelectionChanged()
     {
-        SelectionSummary = !IsSelectionScope ? $"Tous les apprenants seront concernés{(total > 0 ? $" ({Format.Count(total, "dossier", "dossiers")})" : string.Empty)}."
+        SelectionSummary = Vocabulary.Adapt(!IsSelectionScope ? $"Tous les apprenants seront concernés{(total > 0 ? $" ({Format.Count(total, "dossier", "dossiers")})" : string.Empty)}."
             : chosen.Count == 0 ? "Aucun apprenant coché : cochez les lignes concernées, ou choisissez « Tous les apprenants »."
-            : $"{Format.Count(chosen.Count, "apprenant coché", "apprenants cochés")}.";
+            : $"{Format.Count(chosen.Count, "apprenant coché", "apprenants cochés")}.");
     }
 
     private async Task EraseAsync()
