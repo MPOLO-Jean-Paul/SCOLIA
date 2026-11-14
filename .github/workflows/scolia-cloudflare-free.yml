@@ -70,8 +70,8 @@ jobs:
         run: |
           {
             echo "## Relais Cloudflare SCOLIA"
-            echo "- Adresse WSS : `wss://relay.jp-services.org/`"
+            echo "- Adresse WSS : wss://relay.jp-services.org/"
             echo "- URL de santé : https://relay.jp-services.org/health"
-            echo "- Service Render `wss://scolia-pro-relay.onrender.com/` : conservé, non modifié."
+            echo "- Service Render : wss://scolia-pro-relay.onrender.com/ (conservé, non modifié)."
             echo "- Avant activation chez les écoles : valider Windows/Android, révocation et reprise hors ligne."
           } >> "$GITHUB_STEP_SUMMARY"
