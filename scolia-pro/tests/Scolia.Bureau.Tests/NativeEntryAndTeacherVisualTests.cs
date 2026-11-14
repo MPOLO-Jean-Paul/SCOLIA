@@ -40,18 +40,17 @@ public sealed class NativeEntryAndTeacherVisualTests
     }
 
     [Fact]
-    public void Jumelage_android_adopte_le_panneau_cobalt_de_la_connexion()
+    public void Jumelage_android_n_affiche_plus_de_carte_visible()
     {
         var panel = Style("Views/Phone/ConnectionCompactView.axaml", "Border.connectcard");
         var setters = panel.Elements().Where(x => x.Name.LocalName == "Setter").ToArray();
         static bool Has(XElement[] entries, string property, string value) =>
             entries.Any(x => (string?)x.Attribute("Property") == property &&
                 (string?)x.Attribute("Value") == value);
-        Assert.True(Has(setters, "Background", "#2354C8"));
-        Assert.True(Has(setters, "CornerRadius", "24"));
-        Assert.True(Has(setters, "Padding", "22"));
-        Assert.True(Has(setters, "BorderThickness", "1"));
-        Assert.True(Has(setters, "BorderBrush", "#638AE3"));
+        Assert.True(Has(setters, "Background", "Transparent"));
+        Assert.True(Has(setters, "CornerRadius", "0"));
+        Assert.True(Has(setters, "BorderThickness", "0"));
+        Assert.DoesNotContain(setters, x => (string?)x.Attribute("Property") == "BoxShadow");
         var root = Load("Views/Phone/ConnectionCompactView.axaml");
         Assert.Contains(root.Descendants(), x => x.Name.LocalName == "LinearGradientBrush"
             && x.Parent?.Name.LocalName == "Grid.Background");
@@ -59,13 +58,13 @@ public sealed class NativeEntryAndTeacherVisualTests
     }
 
     [Fact]
-    public void Nouvelle_connexion_emploie_un_panneau_bleu_et_des_icones_accessibles()
+    public void Nouvelle_connexion_sans_carte_et_avec_actions_textuelles_accessibles()
     {
         var view = Load("Views/LoginView.axaml");
         var panel = Style("Views/LoginView.axaml", "Border.iosauthcard");
         Assert.Contains(panel.Elements(), x => x.Name.LocalName == "Setter" &&
             (string?)x.Attribute("Property") == "Background" &&
-            (string?)x.Attribute("Value") == "#2354C8");
+            (string?)x.Attribute("Value") == "Transparent");
         var background = Assert.Single(view.Descendants(), x =>
             x.Attributes().Any(a => a.Name.LocalName == "Name" && a.Value == "IosBackdrop"));
         Assert.Contains(background.Descendants(), x => x.Name.LocalName == "LinearGradientBrush");
@@ -79,13 +78,13 @@ public sealed class NativeEntryAndTeacherVisualTests
     }
 
     [Fact]
-    public void Session_verrouillee_reprend_la_meme_palette_et_les_actions_par_icones()
+    public void Session_verrouillee_sans_carte_conserve_les_actions_textuelles()
     {
         var view = Load("Views/LockScreenView.axaml");
         var panel = Style("Views/LockScreenView.axaml", "Border.ioslockcard");
         Assert.Contains(panel.Elements(), x => x.Name.LocalName == "Setter" &&
             (string?)x.Attribute("Property") == "Background" &&
-            (string?)x.Attribute("Value") == "#2354C8");
+            (string?)x.Attribute("Value") == "Transparent");
         Assert.Contains(view.Descendants(), x => x.Name.LocalName == "ScrollViewer" &&
             x.Attributes().Any(a => a.Name.LocalName == "Name" && a.Value == "IosLockScroll") &&
             x.Descendants().Any(y => y.Name.LocalName == "LinearGradientBrush"));

@@ -76,10 +76,11 @@ public sealed class AndroidAuthViewportTests
             .Elements().Single();
         Assert.Equal("LinearGradientBrush", gradient.Name.LocalName);
         var stops = gradient.Elements().Select(e => e.Attribute("Color")?.Value).ToArray();
-        Assert.Contains("#B5CEFF", stops);
-        Assert.Contains("#6089DA", stops);
+        Assert.Contains("#5682EA", stops);
+        Assert.Contains("#4F78DB", stops);
 
-        Assert.Equal("#2354C8", Set(Style(nodes, "Border.connectcard"), "Background"));
+        Assert.Equal("Transparent", Set(Style(nodes, "Border.connectcard"), "Background"));
+        Assert.Equal("0", Set(Style(nodes, "Border.connectcard"), "BorderThickness"));
         Assert.Equal("#FFFFFF", Set(Style(nodes, "TextBlock.connecttitle"), "Foreground"));
         Assert.Equal("#E4EDFF", Set(Style(nodes, "TextBlock.connecthint"), "Foreground"));
         Assert.Equal("#FFFFFF", Set(Style(nodes, "Button.connectmain"), "Background"));

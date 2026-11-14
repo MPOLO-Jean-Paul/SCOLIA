@@ -52,22 +52,22 @@
   <Grid x:Name="SetupRoot">
     <Grid.Background>
       <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-        <GradientStop Offset="0" Color="#EFF5FF" />
-        <GradientStop Offset="0.48" Color="#F8F9FD" />
-        <GradientStop Offset="1" Color="#F5F7FB" />
+        <GradientStop Offset="0" Color="#D9E7FF" />
+        <GradientStop Offset="0.48" Color="#BAD2FA" />
+        <GradientStop Offset="1" Color="#9CBDEE" />
       </LinearGradientBrush>
     </Grid.Background>
     <ScrollViewer HorizontalScrollBarVisibility="Disabled">
-      <Border Margin="20" MaxWidth="1180" MinHeight="620" HorizontalAlignment="Center" VerticalAlignment="Center" CornerRadius="26" ClipToBounds="True"
-              Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource LineBrush}" BorderThickness="1" BoxShadow="0 14 40 0 #180F2B6B">
+      <Border Margin="14" MaxWidth="1180" MinHeight="620" HorizontalAlignment="Center" VerticalAlignment="Center"
+              Background="Transparent" BorderThickness="0" CornerRadius="0" ClipToBounds="False">
         <Grid ColumnDefinitions="Auto,*">
 
           <!-- Bandeau : marque, étapes, aide, sur un fond bleu très clair -->
-          <Border Classes="setupband" BorderBrush="#DCE7F7" BorderThickness="0,0,1,0">
+          <Border Classes="setupband" BorderThickness="0">
             <Border.Background>
               <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-                <GradientStop Offset="0" Color="#E7F0FE" />
-                <GradientStop Offset="1" Color="#F3F7FE" />
+                <GradientStop Offset="0" Color="#B8D0F5" />
+                <GradientStop Offset="1" Color="#D9E7FF" />
               </LinearGradientBrush>
             </Border.Background>
             <Grid RowDefinitions="Auto,*,Auto" Margin="26,28,24,22">
