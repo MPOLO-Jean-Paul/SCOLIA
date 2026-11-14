@@ -123,9 +123,9 @@ officiels vendus aux écoles, et SCOLIA n'en imprime pas le numéro de série.
 
 | Suite | Résultat |
 | --- | --- |
-| Serveur (Scolia.Tests) | 535 tests réussis, dont 38 nouveaux |
+| Serveur (Scolia.Tests) | 536 tests réussis, dont 39 nouveaux (bulletin officiel compris) |
 | Poste Windows (Scolia.Bureau.Tests) | 553 tests réussis |
-| Mobile (Scolia.Mobile.Tests) | 46 tests réussis, dont 4 nouveaux pour les documents du téléphone |
+| Mobile (Scolia.Mobile.Tests) | 48 tests réussis, dont 6 nouveaux pour les documents du téléphone et la mise en page du bulletin |
 | Captures sans écran | École primaire, université, enseignant titulaire et étudiant créés par l'API : écrans ouverts sans erreur ; format téléphone sans débordement |
 
 Le moteur ITM n'a pas été modifié : ses tests passent sans changement.
