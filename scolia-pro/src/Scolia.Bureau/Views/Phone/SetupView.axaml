@@ -78,8 +78,15 @@
   </UserControl.Styles>
 
   <!-- Configuration sur le téléphone : il devient le serveur de l'établissement. Une colonne, au doigt, mêmes étapes que l'ordinateur. -->
-  <Grid x:Name="SetupRoot" Background="{DynamicResource BgBrush}" RowDefinitions="Auto,*,Auto">
-    <Border Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource LineBrush}" BorderThickness="0,0,0,1">
+  <Grid x:Name="SetupRoot" RowDefinitions="Auto,*,Auto">
+    <Grid.Background>
+      <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+        <GradientStop Offset="0" Color="#D9E7FF" />
+        <GradientStop Offset="0.52" Color="#BAD2FA" />
+        <GradientStop Offset="1" Color="#9CBDEE" />
+      </LinearGradientBrush>
+    </Grid.Background>
+    <Border Background="#22FFFFFF" BorderThickness="0">
       <Grid Classes="iossetupheader" ColumnDefinitions="Auto,*" Margin="16,18,16,14">
         <Border Classes="iossetupbrand" CornerRadius="12" Background="Transparent" BorderThickness="0"
                 VerticalAlignment="Center">
@@ -217,7 +224,7 @@
     </ScrollViewer>
 
     <!-- Boutons toujours visibles, en bas, au pouce : deux colonnes égales, aucun chevauchement sur petit écran. -->
-    <Border Grid.Row="2" Classes="iossetupfooter" Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource LineBrush}" BorderThickness="0,1,0,0" Padding="16,10">
+    <Border Grid.Row="2" Classes="iossetupfooter" Background="#26FFFFFF" BorderThickness="0" Padding="16,10">
       <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
         <Button Classes="iossetupsecondary" Command="{Binding Back}" IsVisible="{Binding IsStepTwo}" IsEnabled="{Binding !Busy}">
           <DockPanel>
