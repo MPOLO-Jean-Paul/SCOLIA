@@ -671,19 +671,28 @@
                     <TextBlock TextAlignment="Center" TextWrapping="Wrap" Text="Se connecter" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center" />
                   </DockPanel>
                 </Button>
-                <StackPanel Spacing="1" HorizontalAlignment="Center">
-                  <Button Classes="iosauthlink" Command="{Binding ToggleRecoveryHelp}" IsEnabled="{Binding NotBusy}"
+                <!-- Rangée sous le bouton principal : récupération à gauche, empreinte à droite.
+                     Même largeur que les champs, aucune longue légende biométrique à déborder. -->
+                <Grid x:Name="IosRecoveryBiometricRow" ColumnDefinitions="*,Auto"
+                      HorizontalAlignment="Stretch" ColumnSpacing="8" Margin="0,0,0,0">
+                  <Button x:Name="IosForgotPasswordLink" Grid.Column="0" Classes="iosauthlink"
+                          Command="{Binding ToggleRecoveryHelp}" IsEnabled="{Binding NotBusy}"
                           ToolTip.Tip="Mot de passe oublié ?" AutomationProperties.Name="Récupérer mon mot de passe"
-                          HorizontalAlignment="Center">
-                    <TextBlock Text="Mot de passe oublié ?" FontSize="13" />
+                          HorizontalAlignment="Left" Padding="0" MinHeight="44">
+                    <TextBlock Text="Mot de passe oublié ?" FontSize="13" TextWrapping="NoWrap"
+                               VerticalAlignment="Center" />
                   </Button>
-                  <Button Classes="iosauthlink" Command="{Binding SignInWithBiometrics}"
+                  <Button x:Name="IosFingerprintSignIn" Grid.Column="1" Classes="iosauthlink"
+                          Command="{Binding SignInWithBiometrics}"
                           IsVisible="{Binding ShowBiometricSignIn}" IsEnabled="{Binding CanType}"
-                          ToolTip.Tip="Connexion par empreinte" AutomationProperties.Name="Connexion biométrique"
-                          HorizontalAlignment="Center">
-                    <TextBlock Text="Se connecter avec mon empreinte" FontSize="13" />
+                          ToolTip.Tip="Se connecter avec mon empreinte"
+                          AutomationProperties.Name="Se connecter avec mon empreinte"
+                          HorizontalAlignment="Right" HorizontalContentAlignment="Center"
+                          Padding="0" Width="48" MinHeight="44">
+                    <mi:MaterialIcon Kind="Fingerprint" Width="24" Height="24"
+                                     Foreground="#FFFFFF" VerticalAlignment="Center" />
                   </Button>
-                </StackPanel>
+                </Grid>
               </StackPanel>
 
               <!-- Récupération : aucune session n'est créée, biométrie ou code serveur obligatoires. -->
