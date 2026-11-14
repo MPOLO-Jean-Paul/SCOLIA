@@ -29,6 +29,11 @@ Les ITM et IM ne changent pas : leurs cours, cotes, délibérations et menus res
 | Université | Relevés de notes (S1, première session, définitif) et procès-verbal PDF | Oui | Délibération LMD |
 | Université | Dettes : création automatique et apurement | Oui | Scolarité › Dettes académiques |
 | Université | Passage selon la décision définitive | Oui | Secrétariat › Réinscriptions |
+| Enseignants | Attribution des branches (titulaire de classe au primaire) et des EC | Oui | Enseignants et cours › Attribution des branches ou des EC |
+| Enseignants | Saisie par l'enseignant de ses seules branches ou EC, mêmes verrous | Oui | Accueil de l'enseignant : Mes branches et notes |
+| Étudiants | Accès créés par le secrétariat (identifiant = matricule, code provisoire) | Oui | Secrétariat › Accès étudiants |
+| Étudiants | Consultation des seuls résultats publiés (S1, première session, définitif), dettes, relevé PDF | Oui | Accueil de l'étudiant : Mes résultats |
+| Téléphone serveur | Bulletins, procès-verbaux et relevés produits aussi par un téléphone serveur | Oui | — |
 
 Captures réelles dans `docs/captures-epst-lmd-20261114/` (écrans Windows, écran téléphone, bulletin, relevé, procès-verbaux).
 
@@ -74,30 +79,34 @@ et apparaît au procès-verbal. Toute opération est inscrite au journal d'audit
 6. Notes du S2, puis Clôturer la première session ; notes de deuxième session ; Clôturer la deuxième session.
 7. Dettes académiques : apurer les dettes l'année suivante.
 
-## 4. Vérifications effectuées
+## 4. Sécurité des accès étudiants
+
+- Un compte étudiant n'a qu'un droit : lire ses propres résultats publiés. Le secrétariat ne le reçoit pas.
+- Le serveur refuse à un compte étudiant toute route autre que ses résultats, sa session, la santé du serveur et
+  la vérification publique d'un document. Un test appelle toutes les routes de lecture de l'API avec un compte étudiant.
+- Le code provisoire doit être remplacé avant la première consultation. Le motif du jury et les autres étudiants
+  ne sont jamais transmis. Un accès désactivé ferme la session ouverte.
+- Les accès étudiants ne figurent pas parmi les utilisateurs du personnel et ne peuvent pas en devenir un.
+
+## 5. Vérifications effectuées
 
 | Suite | Résultat |
 | --- | --- |
-| Serveur (Scolia.Tests) | 531 tests réussis, dont 34 nouveaux |
+| Serveur (Scolia.Tests) | 535 tests réussis, dont 38 nouveaux |
 | Poste Windows (Scolia.Bureau.Tests) | 553 tests réussis |
-| Mobile (Scolia.Mobile.Tests) | 42 tests réussis |
-| Captures sans écran, compte administrateur | École primaire et université créées par l'API : tous les écrans ouverts, sans erreur ; format téléphone sans débordement |
+| Mobile (Scolia.Mobile.Tests) | 46 tests réussis, dont 4 nouveaux pour les documents du téléphone |
+| Captures sans écran | École primaire, université, enseignant titulaire et étudiant créés par l'API : écrans ouverts sans erreur ; format téléphone sans débordement |
 
 Le moteur ITM n'a pas été modifié : ses tests passent sans changement.
 
-## 5. Ce qui reste à faire
+## 6. Ce qui reste à faire
 
-1. **Consultation des résultats du S1 par l'étudiant sur Android.** SCOLIA n'a pas encore de compte étudiant :
-   les rôles existants sont secrétariat, comptabilité, promoteur et enseignant. Il faut créer un rôle
-   « étudiant » limité à ses propres résultats, avec son identifiant et son code d'accès. C'est un chantier
-   de sécurité à part entière, non commencé.
-2. **Saisie des notes par les enseignants.** Les enseignants ne sont pas encore rattachés aux branches EPST ni
-   aux EC du LMD : la saisie se fait par le secrétariat ou la direction.
-3. **PDF quand le serveur est un téléphone.** Les bulletins, relevés et procès-verbaux s'impriment quand le
-   serveur de l'école est un ordinateur. Sur un téléphone serveur, ils échouent, comme l'aperçu de bulletin
-   existant : il faudrait les redessiner avec le moteur graphique du téléphone.
-4. **Modèles officiels de bulletins.** Les mises en page suivent l'usage courant. Des bulletins réels de primaire,
+1. **Modèles officiels de bulletins.** Les mises en page suivent l'usage courant. Des bulletins réels de primaire,
    de secondaire, de technique et un relevé universitaire permettront de les ajuster.
-5. **Fusion.** Ce travail est sur la branche `claude/escolia-admin-console-config-h9ej62`, qui contient aussi la
+2. **Consultation par les parents d'élèves (EPST).** Les accès en ligne concernent les étudiants d'université ;
+   un accès « parent » pour le primaire et le secondaire suivrait le même modèle si vous le souhaitez.
+3. **APK Android.** Les écrans sont partagés avec Android et testés en format téléphone, mais l'APK n'a pas été
+   compilé ici : la compilation de la branche par GitHub Actions le confirmera.
+4. **Fusion.** Ce travail est sur la branche `claude/escolia-admin-console-config-h9ej62`, qui contient aussi la
    console administrateur et la synchronisation D1 non encore fusionnées. Pour la branche de publication,
-   les commits EPST et LMD peuvent être repris seuls.
+   les commits EPST, LMD, enseignants, étudiants et téléphone peuvent être repris seuls.
