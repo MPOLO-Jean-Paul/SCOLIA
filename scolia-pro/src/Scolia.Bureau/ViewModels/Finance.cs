@@ -40,7 +40,7 @@ public sealed class DebtorsPage : PageViewModel
     {
         if (Selected is null)
         {
-            Shell.Notify("Sélectionnez un apprenant dans la liste.");
+            Shell.Notify($"Sélectionnez un {Shell.StudentTerms.Singular} dans la liste.");
             return Task.CompletedTask;
         }
         return work(Selected.StudentId);
@@ -505,7 +505,7 @@ public sealed class ReEnrollmentPage : PageViewModel
         if (Years.Count < 2)
         {
             Items.Clear();
-            EmptyHint = "Une seule année scolaire existe. Créez l'année suivante avec « Nouvelle année », puis revenez ici pour reconduire les apprenants.";
+            EmptyHint = $"Une seule année scolaire existe. Créez l'année suivante avec « Nouvelle année », puis revenez ici pour reconduire les {Shell.StudentTerms.Plural}.";
             subtitle = "Aucune année suivante pour le moment";
             Raise(nameof(Subtitle));
             return;
@@ -533,7 +533,7 @@ public sealed class ReEnrollmentPage : PageViewModel
             Items.Add(new ReEnrollRowVm(p.StudentId, p.Matricule, p.FullName, p.JuryDecision is { } jury ? $"{p.FromPromotion} · {jury}" : p.FromPromotion,
                 Money(p.PreviousBalance), p.Selected, target, promotions));
         }
-        subtitle = $"{Format.Count(plan.Count, "apprenant à reconduire", "apprenants à reconduire")} · {Items.Count(i => i.Selected)} sélectionné(s)";
+        subtitle = $"{Format.Count(plan.Count, $"{Shell.StudentTerms.Singular} à reconduire", $"{Shell.StudentTerms.Plural} à reconduire")} · {Items.Count(i => i.Selected)} sélectionné(s)";
         Raise(nameof(Subtitle));
     }
 
@@ -549,12 +549,12 @@ public sealed class ReEnrollmentPage : PageViewModel
         var selected = Items.Where(i => i.Selected).ToList();
         if (selected.Count == 0)
         {
-            Shell.Notify("Sélectionnez au moins un apprenant à réinscrire.");
+            Shell.Notify($"Sélectionnez au moins un {Shell.StudentTerms.Singular} à réinscrire.");
             return;
         }
         if (selected.Any(i => i.Target is null))
         {
-            Shell.Notify("Certains apprenants n'ont pas de promotion cible. Choisissez leur classe avant de continuer.");
+            Shell.Notify($"Certains {Shell.StudentTerms.Plural} n'ont pas de promotion cible. Choisissez leur classe avant de continuer.");
             return;
         }
         var newPromotions = selected.Select(i => i.Target!.Value)
@@ -570,7 +570,7 @@ public sealed class ReEnrollmentPage : PageViewModel
         var automatic = newPromotions.Count == 0 ? string.Empty
             : $" {newPromotions.Count} promotion(s) absente(s) seront créées automatiquement ({string.Join(", ", newPromotions)}). Leurs frais seront repris comme paramètres initiaux et pourront être vérifiés dans Configuration.";
         var confirmed = await Shell.Confirm("Lancer les réinscriptions",
-            $"{Format.Count(choices.Count, "apprenant sera inscrit", "apprenants seront inscrits")} dans l'année {Year.Label}. Les soldes restent attachés aux dossiers.{automatic}",
+            $"{Format.Count(choices.Count, $"{Shell.StudentTerms.Singular} sera inscrit", $"{Shell.StudentTerms.Plural} seront inscrits")} dans l'année {Year.Label}. Les soldes restent attachés aux dossiers.{automatic}",
             "Réinscrire");
         if (!confirmed) return;
         var created = await Shell.Api.SendAsync<int>(HttpMethod.Post, "api/reinscriptions", new { targetYearId = Guid.Parse(Year.Value), choices });

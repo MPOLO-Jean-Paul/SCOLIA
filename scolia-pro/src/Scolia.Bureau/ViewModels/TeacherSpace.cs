@@ -24,6 +24,7 @@ public sealed class TeacherAccountsPage : PageViewModel
     private TeacherAccountRowVm? selected;
     private string search = string.Empty;
     private bool withoutAccount;
+    private bool allStaff;
     private string subtitle = string.Empty;
     private string credentials = string.Empty;
     private string credentialsTitle = string.Empty;
@@ -51,6 +52,8 @@ public sealed class TeacherAccountsPage : PageViewModel
 
     public string Search { get => search; set { if (Set(ref search, value)) Filter(); } }
     public bool WithoutAccount { get => withoutAccount; set { if (Set(ref withoutAccount, value)) Filter(); } }
+    /// <summary>Par défaut, seulement le personnel enseignant ; coché, tout le personnel (pour ouvrir un compte à un nouveau titulaire).</summary>
+    public bool AllStaff { get => allStaff; set { if (Set(ref allStaff, value)) Filter(); } }
 
     /// <summary>Identifiants à remettre en main propre ; effacés en quittant la page, jamais enregistrés sur le poste.</summary>
     public string Credentials { get => credentials; private set { if (Set(ref credentials, value)) Raise(nameof(HasCredentials)); } }
@@ -60,9 +63,10 @@ public sealed class TeacherAccountsPage : PageViewModel
 
     public override async Task LoadAsync()
     {
-        var list = await Shell.Api.GetAsync<List<TeacherAccountDto>>("api/comptes-enseignants");
+        var everyone = await Shell.Api.GetAsync<List<TeacherAccountDto>>("api/comptes-enseignants");
+        var list = everyone.Where(t => t.Teaching).ToList();
         all.Clear();
-        foreach (var t in list) all.Add(Row(t));
+        foreach (var t in everyone) all.Add(Row(t));
         Stats.Clear();
         var accounts = list.Count(t => t.HasAccount && t.AccountActive);
         Stats.Add(new KpiVm("Enseignants", list.Count.ToString("N0", CultureInfo.CurrentCulture), Format.Count(list.Count(t => t.Courses > 0), "a des cours", "ont des cours") + " cette année",
@@ -95,7 +99,7 @@ public sealed class TeacherAccountsPage : PageViewModel
         var key = search.Trim();
         var keep = Selected?.Source.StaffMemberId;
         Items.Clear();
-        foreach (var r in all.Where(r => (!withoutAccount || !r.Source.HasAccount || !r.Source.AccountActive)
+        foreach (var r in all.Where(r => (allStaff || r.Source.Teaching) && (!withoutAccount || !r.Source.HasAccount || !r.Source.AccountActive)
                      && (key.Length == 0 || r.FullName.Contains(key, StringComparison.CurrentCultureIgnoreCase)
                          || r.UserName.Contains(key, StringComparison.CurrentCultureIgnoreCase) || r.Number.Contains(key, StringComparison.CurrentCultureIgnoreCase))))
             Items.Add(r);
@@ -335,18 +339,18 @@ public sealed class TeacherHomePage : PageViewModel
         Raise(nameof(NoCourses));
         var share = expected == 0 ? 0 : 100.0 * graded / expected;
         Stats.Add(new KpiVm("Mes cours", mine.Count.ToString("N0", CultureInfo.CurrentCulture),
-            Format.Count(mine.Select(m => m.PromotionId).Distinct().Count(), "promotion", "promotions"), ThemeBrush.Get("TonePurple"), MaterialIconKind.BookOpenVariant));
+            Format.Count(mine.Select(m => m.PromotionId).Distinct().Count(), "promotion", "promotions"), IconPalette.Get("TonePurple"), MaterialIconKind.BookOpenVariant));
         Stats.Add(new KpiVm("Cotes encodées", $"{share:0} %", $"{graded.ToString("N0", CultureInfo.CurrentCulture)} sur {expected.ToString("N0", CultureInfo.CurrentCulture)}",
-            ThemeBrush.Get("ToneBlue"), MaterialIconKind.Pen));
+            IconPalette.Get("ToneBlue"), MaterialIconKind.Pen));
         Stats.Add(new KpiVm("Feuilles remises", $"{submitted}/{sheets}", sheets == submitted && sheets > 0 ? "tout est remis" : "remettez chaque feuille complète",
-            ThemeBrush.Get("ToneGreen"), MaterialIconKind.SendOutline));
+            IconPalette.Get("ToneOrange"), MaterialIconKind.SendOutline));
         Stats.Add(new KpiVm("Encodage", (settings.EncodingS1Open, settings.EncodingS2Open) switch
         {
             (true, true) => "S1 et S2",
             (true, false) => "S1 ouvert",
             (false, true) => "S2 ouvert",
             _ => "Fermé",
-        }, "décidé par le secrétariat", ThemeBrush.Get("ToneOrange"), MaterialIconKind.LockOpenVariantOutline));
+        }, "décidé par le secrétariat", IconPalette.Get("ToneTeal"), MaterialIconKind.LockOpenVariantOutline));
         subtitle = mine.Count == 0 ? "Aucun cours ne vous est attribué cette année" : $"{Format.Count(mine.Count, "cours", "cours")} · {share:0} % encodé";
         Raise(nameof(Subtitle));
     }

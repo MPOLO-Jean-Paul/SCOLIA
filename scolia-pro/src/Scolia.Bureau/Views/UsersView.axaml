@@ -6,7 +6,7 @@
     <DataGrid.Columns>
       <DataGridTextColumn Header="Identifiant" Binding="{Binding UserName}" Width="Auto" MinWidth="150" />
       <DataGridTextColumn Header="Nom complet" Binding="{Binding DisplayName}" Width="*" MinWidth="140" />
-      <DataGridTextColumn Header="Rôle" Binding="{Binding Role}" Width="Auto" MinWidth="170" />
+      <DataGridTextColumn Header="Rôle" Binding="{Binding Role}" Width="Auto" MinWidth="230" />
       <DataGridTemplateColumn Header="Compte" Width="Auto" MinWidth="120">
         <DataGridTemplateColumn.CellTemplate>
           <DataTemplate>

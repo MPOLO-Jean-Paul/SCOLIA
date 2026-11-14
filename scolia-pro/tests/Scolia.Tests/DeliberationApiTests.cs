@@ -142,6 +142,44 @@ public sealed class DeliberationApiTests : IDisposable
     }
 
     [Fact]
+    public async Task Code_de_la_promotion_est_verifie_sans_divulguer_l_identite_et_hors_promotion_est_refuse()
+    {
+        var admin = await app.InstalledAdmin();
+        var setup = await SetupAsync(admin, "MUKENDI");
+        var other = await admin.Post("/api/etablissement/promotions", new
+        {
+            code = "INF2", name = "Deuxième année", level = 2, isActive = true,
+            monthlyFee = 55000m, oneTimeFees = Array.Empty<object>(),
+        }).Ok();
+        var otherPromotion = other.GetProperty("id").GetString()!;
+        var second = await admin.Post("/api/apprenants", new
+        {
+            identity = new { lastName = "KASONGO", middleName = "ILUNGA", firstName = "David",
+                birthPlace = "Lubumbashi", birthDate = new DateOnly(2007, 3, 14),
+                gender = "M", guardianPhone = "0812345678", guardianName = "Parent" },
+            promotionId = otherPromotion, confirmDuplicate = false,
+        }).Ok();
+        var otherEnrollment = second.GetProperty("enrollments")[0].GetProperty("id").GetString()!;
+        await admin.Post($"{D}/codes/attribution", new { }).Ok();
+        var valid = (await CodesAsync(admin, setup.PromotionId)).Values.Single();
+        var foreign = (await CodesAsync(admin, otherPromotion))[otherEnrollment];
+
+        var match = await admin.GetAsync($"{D}/codes/verifier-promotion?coursId={setup.S1Course}&code={valid}").Ok();
+        Assert.True(match.GetProperty("inPromotion").GetBoolean());
+        Assert.False(match.TryGetProperty("enrollmentId", out _));
+        Assert.False(match.TryGetProperty("fullName", out _));
+
+        var mismatch = await admin.GetAsync($"{D}/codes/verifier-promotion?coursId={setup.S1Course}&code={foreign}").Ok();
+        Assert.False(mismatch.GetProperty("inPromotion").GetBoolean());
+        Assert.Equal("Apprenant hors promotion.", mismatch.GetProperty("message").GetString());
+        var (rejected, _) = await admin.Post($"{D}/cotes-par-code", new
+        {
+            code = foreign, courseId = setup.S1Course, kind = "S1", value = 10m,
+        }).Fail();
+        Assert.Equal(HttpStatusCode.BadRequest, rejected);
+    }
+
+    [Fact]
     public async Task Anonymous_entry_and_sheet_feed_the_jury_board()
     {
         var admin = await app.InstalledAdmin();

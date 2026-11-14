@@ -2,6 +2,7 @@ using Avalonia.Media;
 using Material.Icons;
 using Scolia.Bureau.Infrastructure;
 using Scolia.Bureau.Ribbon;
+using Scolia.Domain.School;
 
 namespace Scolia.Bureau.ViewModels;
 
@@ -27,6 +28,7 @@ public sealed class NavItemVm : Observable
         "Suivi mensuel" => "Suivi",
         "Recouvrement" => "Retards",
         "Encaissement par lot" => "Par lot",
+        "Mes cours et cotes" => "Cours & cotes",
         _ => Label,
     };
     public MaterialIconKind Icon { get; }
@@ -92,6 +94,13 @@ public static class Sidebar
         NavGroupVm Group(string title, params NavItemVm?[] items) =>
             new(title, items.OfType<NavItemVm>().ToList(), toggleGroup: shell.ToggleNavGroup);
 
+        // Aucune entrée n'apparaît sur les anciens ITM/IM. Le module est
+        // visible seulement lorsqu'un profil scolaire est officiellement activé.
+        var type = shell.Session?.InstitutionType;
+        var cyclesAvailable = InstitutionProfiles.IsEnabled(type) &&
+            type is InstitutionProfiles.Maternelle or InstitutionProfiles.Primaire
+                or InstitutionProfiles.Secondaire or InstitutionProfiles.ComplexeScolaire;
+
         var groups = new[]
         {
             Group(string.Empty,
@@ -113,7 +122,7 @@ public static class Sidebar
                 Item("Rapports et exports", MaterialIconKind.FileChart, "ToneIndigo", Perm.ReportsRead, typeof(ReportsPage), () => new ReportsPage(shell))),
             // Secrétariat : les dossiers des apprenants et ce qui en sort (cartes d'accès).
             Group("Secrétariat",
-                Item("Apprenants", MaterialIconKind.AccountGroup, "ToneBlue", Perm.StudentsRead, typeof(StudentsPage), () => new StudentsPage(shell)),
+                Item(shell.StudentTerms.PluralTitle, MaterialIconKind.AccountGroup, "ToneBlue", Perm.StudentsRead, typeof(StudentsPage), () => new StudentsPage(shell)),
                 Item("Réinscriptions", MaterialIconKind.School, "ToneIndigo", Perm.StudentsWrite, typeof(ReEnrollmentPage), () => new ReEnrollmentPage(shell)),
                 Item("Cartes d'accès", MaterialIconKind.CardAccountDetails, "ToneBlue", Perm.AcademicsRead, typeof(CardsPage), () => new CardsPage(shell))),
             Group("Finances",
@@ -131,6 +140,14 @@ public static class Sidebar
                 Item("Résultats", MaterialIconKind.Certificate, "ToneIndigo", Perm.AcademicsRead, typeof(ResultsPage), () => new ResultsPage(shell)),
                 Item("Présences", MaterialIconKind.ClipboardCheck, "ToneTeal", Perm.AcademicsRead, typeof(AttendancePage), () => new AttendancePage(shell)),
                 Item("Discipline", MaterialIconKind.AlertOctagon, "ToneRed", Perm.AcademicsRead, typeof(DisciplinePage), () => new DisciplinePage(shell))),
+            // Les référentiels de cycles, matières et semestres relèvent de la pédagogie,
+            // pas de l'apparence ou de la sécurité du logiciel. Même accès sur Windows/Android.
+            Group("Organisation pédagogique",
+                cyclesAvailable ? Item("Cycles scolaires", MaterialIconKind.SchoolOutline, "ToneTeal", Perm.SettingsWrite,
+                    typeof(SchoolCyclesPage), () => new SchoolCyclesPage(shell)) : null,
+                type == InstitutionProfiles.SuperieurLmd
+                    ? Item("Organisation LMD", MaterialIconKind.BookEducationOutline, "ToneTeal", Perm.SettingsWrite,
+                        typeof(LmdPlanningPage), () => new LmdPlanningPage(shell)) : null),
             // Gestion des délibérations (fusion d'ITMCD), dans l'ordre du travail :
             // 1. les enseignants, leurs comptes et l'attribution des cours ;
             Group("Enseignants et cours",
@@ -153,6 +170,8 @@ public static class Sidebar
                     typeof(NetworkHubPage), () => new NetworkHubPage(shell))),
             Group("Paramètres",
                 Item("Configuration", MaterialIconKind.Cog, "TonePurple", null, typeof(SettingsPage), () => new SettingsPage(shell)),
+                shell.TeacherOnly ? Item("Encodage des cotes", MaterialIconKind.Pen, "TonePurple",
+                    null, typeof(MarksPage), () => new MarksPage(shell)) : null,
                 Item("Utilisateurs", MaterialIconKind.AccountCog, "ToneBlue", Perm.UsersManage, typeof(UsersPage), () => new UsersPage(shell))),
             // Données : protéger, contrôler et, si besoin, effacer.
             Group("Données",
@@ -178,7 +197,7 @@ public static class Sidebar
         }
         Add("VUE D’ENSEMBLE", "", "Pilotage");
         Add("ESPACE ENSEIGNANT", "Espace enseignant");
-        Add("GESTION SCOLAIRE", "Secrétariat", "Scolarité");
+        Add("GESTION SCOLAIRE", "Secrétariat", "Scolarité", "Organisation pédagogique");
         Add("GESTION DES DÉLIBÉRATIONS", "Enseignants et cours", "Délibération");
         Add("GESTION FINANCIÈRE", "Finances");
         Add("ORGANISATION", "Personnel");

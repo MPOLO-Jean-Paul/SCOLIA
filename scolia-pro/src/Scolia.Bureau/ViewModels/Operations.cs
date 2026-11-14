@@ -26,15 +26,18 @@ public sealed class DataPage : PageViewModel
         Action("Télécharger", MaterialIconKind.Download, DownloadAsync, row: true);
         Action("Exporter chiffré", MaterialIconKind.LockOutline, ExportEncryptedAsync, row: true);
         Action("Importer chiffré", MaterialIconKind.Upload, ImportEncryptedAsync);
-        Action("Restaurer", MaterialIconKind.BackupRestore, RestoreAsync, row: true);
-        Action("Importation du classeur", MaterialIconKind.Upload, () => ImportAsync(Shell));
-        Action("Modèle d'import", MaterialIconKind.FileExcel, () => TemplateAsync(Shell));
-        Action("Vérifier la base", MaterialIconKind.DatabaseCheck, () => CheckDatabaseAsync(Shell));
-        if (Shell.Can(Perm.BackupManage))
+        if (Shell.Can(Perm.SettingsWrite)) Action("Restaurer", MaterialIconKind.BackupRestore, RestoreAsync, row: true);
+        // Importer des listes et restaurer modifient l'établissement : réservé au paramétrage (secrétariat).
+        if (Shell.Can(Perm.SettingsWrite))
         {
-            Action("Effacer des paiements", MaterialIconKind.DeleteSweep, () => Shell.Open(() => new EraseDataPage(Shell, payments: true)));
-            Action("Effacer des dossiers", MaterialIconKind.AccountRemove, () => Shell.Open(() => new EraseDataPage(Shell, payments: false)));
+            Action("Importation du classeur", MaterialIconKind.Upload, () => ImportAsync(Shell));
+            Action("Modèle d'import", MaterialIconKind.FileExcel, () => TemplateAsync(Shell));
         }
+        Action("Vérifier la base", MaterialIconKind.DatabaseCheck, () => CheckDatabaseAsync(Shell));
+        if (Shell.Can(Perm.BackupManage) && Shell.Can(Perm.PaymentsCancel))
+            Action("Effacer des paiements", MaterialIconKind.DeleteSweep, () => Shell.Open(() => new EraseDataPage(Shell, payments: true)));
+        if (Shell.Can(Perm.BackupManage) && Shell.Can(Perm.StudentsWrite))
+            Action("Effacer des dossiers", MaterialIconKind.AccountRemove, () => Shell.Open(() => new EraseDataPage(Shell, payments: false)));
         ActionRefresh();
     }
 
@@ -180,7 +183,7 @@ public sealed class DataPage : PageViewModel
             return;
         }
 
-        var detected = $"Promotions : {preview.Promotions} · apprenants : {preview.Students} · reçus : {preview.Receipts} · imputations : {preview.Allocations}";
+        var detected = $"Promotions : {preview.Promotions} · {shell.StudentTerms.Plural} : {preview.Students} · reçus : {preview.Receipts} · imputations : {preview.Allocations}";
         // Les détails nombreux restent limités à l'aperçu. Aucune liste de contacts
         // absents ne doit cacher le bouton Importer sur un petit écran.
         // Le bilan dit combien d'apprenants ont été lus et combien seront créés : aucun ne disparaît sans explication.
@@ -205,7 +208,7 @@ public sealed class DataPage : PageViewModel
                 + string.Join('\n', applied.Errors.Take(8)), "Fermer");
             return;
         }
-        shell.Notify($"Import terminé : {applied.Students} apprenant(s), {applied.Receipts} reçu(s).");
+        shell.Notify($"Import terminé : {applied.Students} {(applied.Students == 1 ? shell.StudentTerms.Singular : shell.StudentTerms.Plural)}, {applied.Receipts} reçu(s).");
         if (shell.Current is DataPage page) await page.RefreshAsync();
     }
 }
@@ -259,7 +262,7 @@ public sealed class AuditPage : PageViewModel
         var page = await Shell.Api.GetAsync<PagedResult<AuditDto>>("api/audit" + Filters(1, 100));
         Items.Clear();
         foreach (var a in page.Items)
-            Items.Add(new AuditRowVm(Format.DateTime(a.AtUtc), a.UserName, Labels.AuditAction(a.Action), a.EntityType, a.Summary, a.IpAddress ?? "—"));
+            Items.Add(new AuditRowVm(Format.DateTime(a.AtUtc), a.UserName, Labels.AuditAction(a.Action), Labels.AuditEntity(a.EntityType), a.Summary, a.IpAddress ?? "—"));
         subtitle = $"{Format.Count(page.Total, "événement", "événements")}" + (page.Total > 100 ? " · 100 affichés" : string.Empty);
         Raise(nameof(Subtitle));
     }
@@ -298,7 +301,7 @@ public sealed class SearchViewModel : Observable
         this.settingsOnly = settingsOnly;
         message = settingsOnly
             ? "Cherchez un réglage de l'application, sans consulter les données scolaires."
-            : "Recherche générale : apprenants, reçus, fonctionnalités et paramètres autorisés.";
+            : $"Recherche générale : {shell.StudentTerms.Plural}, reçus, fonctionnalités et paramètres autorisés.";
         Open = new AsyncCommand(OpenSelectedAsync);
         Close = new RelayCommand(shell.CloseDialog);
         ClearQuery = new RelayCommand(() => Query = string.Empty);
@@ -394,9 +397,9 @@ public sealed class SearchViewModel : Observable
     /// <summary>Recherche faite, rien trouvé : la carte « Aucun résultat » s'affiche, comme dans le menu.</summary>
     public bool IsEmptyResult { get => isEmptyResult; private set => Set(ref isEmptyResult, value); }
 
-    private static string GroupTitle(string type) => type switch
+    private string GroupTitle(string type) => type switch
     {
-        "Apprenant" => "APPRENANTS",
+        "Apprenant" => shell.StudentTerms.PluralTitle.ToUpperInvariant(),
         "Reçu" => "REÇUS",
         "Fonctionnalité" or "Paramètre" => "FONCTIONNALITÉS ET PARAMÈTRES",
         _ => type.ToUpperInvariant(),
@@ -415,7 +418,7 @@ public sealed class SearchViewModel : Observable
         {
             Message = settingsOnly
                 ? "Saisissez au moins deux caractères pour retrouver un réglage."
-                : "Saisissez au moins deux caractères pour trouver un apprenant, un reçu ou un réglage.";
+                : $"Saisissez au moins deux caractères pour trouver un {shell.StudentTerms.Singular}, un reçu ou un réglage.";
             return;
         }
         // Réglages : catalogue local filtré selon les permissions et jamais envoyé au serveur.
@@ -1224,7 +1227,7 @@ public sealed class ShortcutsViewModel
         var groups = new List<ShortcutGroupVm>
         {
             new("Partout", [
-                new("Ctrl+K", "Rechercher", "Un apprenant, un reçu ou une page."),
+                new("Ctrl+K", "Rechercher", $"Un {shell.StudentTerms.Singular}, un reçu ou une page."),
                 new("Échap", "Fermer", "La fenêtre ou le menu ouvert."),
                 new("Entrée", "Ouvrir la ligne choisie", "Dans tous les tableaux."),
                 new("Maj+F10", "Menu de la ligne", "Comme le clic droit."),

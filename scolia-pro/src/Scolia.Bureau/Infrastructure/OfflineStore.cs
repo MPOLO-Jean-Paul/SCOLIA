@@ -100,6 +100,7 @@ public sealed class OfflineStore
     private string CredentialFile => "session.json";
     private const string LastAccountKey = "dernier-compte";
     private const string KnownAccountsKey = "comptes-connus:v1";
+    private const string ForgottenAccountsKey = "comptes-retires:v1";
     private static string CredentialKeyFor(string account) =>
         "session:" + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(account.Trim().ToUpperInvariant())));
 
@@ -503,7 +504,7 @@ public sealed class OfflineStore
     {
         if (string.IsNullOrWhiteSpace(userName)) return;
         var account = userName.Trim();
-        database.Update([LastAccountKey, KnownAccountsKey], values =>
+        database.Update([LastAccountKey, KnownAccountsKey, ForgottenAccountsKey], values =>
         {
             List<string> accounts;
             try { accounts = JsonSerializer.Deserialize<List<string>>(values[KnownAccountsKey] ?? "[]", Json) ?? []; }
@@ -513,7 +514,54 @@ public sealed class OfflineStore
                 .Distinct(StringComparer.OrdinalIgnoreCase).Take(10).ToArray();
             values[LastAccountKey] = account;
             values[KnownAccountsKey] = JsonSerializer.Serialize(known, Json);
+            values[ForgottenAccountsKey] = JsonSerializer.Serialize(
+                DeserializeAccounts(values[ForgottenAccountsKey])
+                    .Where(x => !string.Equals(x, account, StringComparison.OrdinalIgnoreCase)).ToArray(), Json);
         });
+    }
+
+    private static List<string> DeserializeAccounts(string? json)
+    {
+        try { return JsonSerializer.Deserialize<List<string>>(json ?? "[]", Json) ?? []; }
+        catch (JsonException) { return []; }
+    }
+
+    /// <summary>Empêche une proposition automatique du compte local déjà retiré.</summary>
+    public bool WasForgottenAccount(string userName) =>
+        !string.IsNullOrWhiteSpace(userName) &&
+        DeserializeAccounts(database.Read(ForgottenAccountsKey))
+            .Contains(userName.Trim(), StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// Oublie un compte sur cet appareil, et seulement lui : plus de suggestion ni de
+    /// connexion avec son ancienne preuve hors ligne. Les écritures en attente
+    /// interdisent ce retrait pour éviter de perdre leur auteur et leur reprise.
+    /// Le compte reste intact sur le serveur de l'établissement.
+    /// </summary>
+    public bool ForgetKnownAccount(string userName)
+    {
+        if (string.IsNullOrWhiteSpace(userName)) return false;
+        var account = userName.Trim();
+        if (OutboxFor(account).Count != 0 ||
+            Load(ConflictFile).Any(item => string.Equals(item.User, account, StringComparison.OrdinalIgnoreCase)))
+            return false;
+        ForgetCredential(account);
+        database.Update([LastAccountKey, KnownAccountsKey, ForgottenAccountsKey], values =>
+        {
+            List<string> accounts;
+            try { accounts = JsonSerializer.Deserialize<List<string>>(values[KnownAccountsKey] ?? "[]", Json) ?? []; }
+            catch (JsonException) { accounts = []; }
+            var forgotten = DeserializeAccounts(values[ForgottenAccountsKey]);
+            values[ForgottenAccountsKey] = JsonSerializer.Serialize(
+                new[] { account }.Concat(forgotten).Distinct(StringComparer.OrdinalIgnoreCase).Take(20).ToArray(), Json);
+            var remaining = accounts.Where(x => !string.Equals(x, account, StringComparison.OrdinalIgnoreCase))
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .Distinct(StringComparer.OrdinalIgnoreCase).Take(10).ToList();
+            values[KnownAccountsKey] = JsonSerializer.Serialize(remaining, Json);
+            if (string.Equals(values[LastAccountKey], account, StringComparison.OrdinalIgnoreCase))
+                values[LastAccountKey] = remaining.FirstOrDefault() ?? string.Empty;
+        });
+        return true;
     }
 
     /// <summary>Une récupération invalide uniquement l'empreinte du compte concerné, sans effacer les autres.</summary>

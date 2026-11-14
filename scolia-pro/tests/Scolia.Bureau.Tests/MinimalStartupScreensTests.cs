@@ -68,7 +68,7 @@ public sealed class MinimalStartupScreensTests
     }
 
     [Fact]
-    public void Connexion_garde_des_champs_tactiles_mais_moins_hauts_et_espacés()
+    public void Connexion_conserve_des_champs_tactiles_et_des_espacements_calibres()
     {
         var source = File.ReadAllText(Source("src/Scolia.Bureau/Views/LoginView.axaml"));
         Assert.Contains("StackPanel.iosloginfields\"><Setter Property=\"Spacing\" Value=\"10\"", source);

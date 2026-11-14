@@ -47,7 +47,7 @@ public sealed class MonthlyPage : PageViewModel
         MenuAction("Aperçu rapide", MaterialIconKind.Eye, () =>
         {
             if (Selected is not null) return QuickView.StudentAsync(Shell, Selected.StudentId);
-            Shell.Notify("Sélectionnez un apprenant dans la liste.");
+            Shell.Notify($"Sélectionnez un {Shell.StudentTerms.Singular} dans la liste.");
             return Task.CompletedTask;
         });
     }
@@ -115,7 +115,7 @@ public sealed class MonthlyPage : PageViewModel
 
         // Sous-titre court, lisible sur deux lignes d'un téléphone : la promotion n'est citée que si elle est choisie.
         var scope = Promotion is { Value.Length: > 0 } p ? $" · {p.Label}" : string.Empty;
-        subtitle = $"{d.Period}{scope} · {Format.Count(d.Rows.Count, "apprenant", "apprenants")}";
+        subtitle = $"{d.Period}{scope} · {Format.Count(d.Rows.Count, Shell.StudentTerms.Singular, Shell.StudentTerms.Plural)}";
         Raise(nameof(Subtitle));
     }
 
@@ -139,7 +139,7 @@ public sealed class MonthlyPage : PageViewModel
     {
         if (Selected is null)
         {
-            Shell.Notify("Sélectionnez un apprenant dans la liste.");
+            Shell.Notify($"Sélectionnez un {Shell.StudentTerms.Singular} dans la liste.");
             return;
         }
         await Shell.Open(() => new CashierPage(Shell, Selected.StudentId));
@@ -149,7 +149,7 @@ public sealed class MonthlyPage : PageViewModel
     {
         if (Selected is null)
         {
-            Shell.Notify("Sélectionnez un apprenant dans la liste.");
+            Shell.Notify($"Sélectionnez un {Shell.StudentTerms.Singular} dans la liste.");
             return;
         }
         await Shell.Open(() => new StudentDetailPage(Shell, Selected.StudentId));
@@ -159,7 +159,7 @@ public sealed class MonthlyPage : PageViewModel
     {
         if (Selected is null)
         {
-            Shell.Notify("Sélectionnez un apprenant dans la liste.");
+            Shell.Notify($"Sélectionnez un {Shell.StudentTerms.Singular} dans la liste.");
             return Task.CompletedTask;
         }
         var url = link(Selected);

@@ -39,8 +39,21 @@ public sealed class SetupService(IAppDbContext db, IWriteGate gate, IAuditLog au
             .Require(!string.IsNullOrWhiteSpace(input.AdminDisplayName), "adminDisplayName", "Nom du compte secrétariat obligatoire.")
             .ThrowIfInvalid();
         PasswordPolicy.Validate(input.AdminPassword);
+        var institutionType = InstitutionProfiles.Canonicalize(string.IsNullOrWhiteSpace(input.InstitutionType) ? null : input.InstitutionType.Trim());
+        if (!InstitutionProfiles.IsKnown(institutionType))
+            throw new DomainException("typeEtablissement", "Type d'établissement inconnu.");
+        if (!InstitutionProfiles.IsEnabled(institutionType))
+            throw new DomainException("typeEtablissement", "Le type d'établissement demandé n'est pas activable.");
+        if (!Enum.TryParse<SchoolGovernanceKind>(input.Governance, true, out var governance)
+            || !Enum.IsDefined(governance))
+            throw new DomainException("governance", "Choisissez un régime privé ou public reconnu.");
+        // Les jeux d'essai ITM ne doivent jamais contaminer une école publique ou un cursus LMD.
+        if (input.LoadDemoData && (institutionType != InstitutionProfiles.ItmIm
+                                   || governance != SchoolGovernanceKind.Prive))
+            throw new DomainException("loadDemoData", "Les données de démonstration sont réservées à un ITM/IM privé.");
         var school = new SchoolProfile
         {
+            InstitutionType = institutionType, Governance = governance,
             Name = input.SchoolName.Trim(), ShortName = input.ShortName.Trim(), Motto = string.IsNullOrWhiteSpace(input.Motto) ? null : input.Motto.Trim(),
             City = input.City, Phone = IdentityRules.NormalizePhone(input.Phone), CurrencyCode = input.CurrencyCode.ToUpperInvariant(), CurrencySymbol = input.CurrencySymbol.Trim(),
             ReceiptFooter = "Conservez ce reçu. Son authenticité peut être vérifiée en scannant le code QR.",
@@ -54,6 +67,27 @@ public sealed class SetupService(IAppDbContext db, IWriteGate gate, IAuditLog au
         var year = SchoolService.BuildYear(input.YearLabel, input.StartMonth, count, input.LastOnTimeDay + 1);
         year.IsCurrent = true;
         db.AcademicYears.Add(year);
+        // Les écoles à cycle unique disposent de leur cycle dès la première installation.
+        // Pour les complexes, les deux ou trois cycles sont choisis dans Paramètres > Cycles scolaires :
+        // aucun cycle supposé et aucun tarif imposé ni mensualité facturée.
+        SchoolCycleKind? initialCycle = institutionType switch
+        {
+            InstitutionProfiles.Maternelle => SchoolCycleKind.Maternelle,
+            InstitutionProfiles.Primaire => SchoolCycleKind.Primaire,
+            InstitutionProfiles.Secondaire => SchoolCycleKind.Secondaire,
+            _ => null,
+        };
+        if (initialCycle is { } kind)
+        {
+            var cycle = new SchoolCycle { SchoolId = school.Id, Kind = kind, Name = kind.ToString() };
+            SchoolCycleRules.ValidateOffering(school, [cycle]);
+            db.SchoolCycles.Add(cycle);
+            db.SchoolCycleFeePolicies.Add(new SchoolCycleFeePolicy
+            {
+                SchoolCycleId = cycle.Id, AcademicYearId = year.Id,
+                ChargeMonthlyTuition = false, MonthlyAmount = 0,
+            });
+        }
         var admin = new AppUser
         {
             UserName = userName, NormalizedUserName = TextKey.Normalize(userName), DisplayName = input.AdminDisplayName.Trim(),

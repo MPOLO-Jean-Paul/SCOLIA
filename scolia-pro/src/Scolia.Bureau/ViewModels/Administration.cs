@@ -6,6 +6,7 @@ using Material.Icons;
 using Scolia.Bureau.Api;
 using Scolia.Bureau.Infrastructure;
 using Scolia.Bureau.Ribbon;
+using Scolia.Domain.School;
 
 namespace Scolia.Bureau.ViewModels;
 
@@ -1169,13 +1170,36 @@ public sealed class SettingsPage : PageViewModel
         catch (ApiException) { categories = []; }
         var applied = existing?.Fees.Where(f => f.CategoryId is not null).ToDictionary(f => f.CategoryId!.Value) ?? [];
         var shown = categories.Where(c => c.IsActive || applied.ContainsKey(c.Id)).ToList();
+        // Un complexe réunit plusieurs niveaux : il faut sélectionner le cycle de
+        // chaque classe, sans le déduire du code ou de la section.
+        var plan = await shell.Api.GetAsync<SchoolCycleConfigurationDto>("api/etablissement/cycles");
+        var schoolUsesCycles = InstitutionProfiles.UsesSchoolCycles(plan.InstitutionType);
+        var schoolIsPublic = plan.Governance == "Public";
+        var allowsZeroMonthly = schoolUsesCycles || schoolIsPublic
+            || plan.InstitutionType == InstitutionProfiles.SuperieurLmd;
+        if (schoolIsPublic) shown.Clear();
+        var activeCycles = plan.Cycles.Where(c => c.IsActive).ToList();
+        if (schoolUsesCycles && activeCycles.Count == 0)
+        {
+            shell.Notify("Configurez d'abord les cycles dans Paramètres > Cycles scolaires avant de créer une classe.");
+            return;
+        }
+        var cycleChoices = activeCycles.Select(c =>
+            new ChoiceItem(c.Id.ToString(), c.Name)).ToList();
 
         var form = new FormViewModel(existing is null ? "Nouvelle promotion" : "Modifier la promotion",
-            "La mensualité est obligatoire. Pour chaque catégorie de frais, laissez le montant vide si elle ne concerne pas cette promotion.", async f =>
+            schoolIsPublic
+                ? "Public : gestion de la classe sans frais exigibles. Une décision réglementaire sera nécessaire pour activer la perception."
+                : allowsZeroMonthly
+                    ? "Associez la classe au bon cycle ; vous pouvez laisser la mensualité à zéro si elle ne s'applique pas."
+                    : "La mensualité est obligatoire. Pour chaque catégorie, laissez le montant vide si elle ne concerne pas cette classe.", async f =>
         {
-            if (f.Amount("mensualite") <= 0)
+            var monthly = f.Amount("mensualite");
+            if (schoolIsPublic ? monthly != 0 : allowsZeroMonthly ? monthly < 0 : monthly <= 0)
             {
-                f.Find("mensualite").Error = "La mensualité est obligatoire.";
+                f.Find("mensualite").Error = schoolIsPublic
+                    ? "Aucune mensualité scolaire publique sans autorisation : indiquez zéro."
+                    : allowsZeroMonthly ? "La mensualité ne peut pas être négative." : "La mensualité est obligatoire.";
                 return false;
             }
             var fees = new List<object>();
@@ -1194,7 +1218,9 @@ public sealed class SettingsPage : PageViewModel
                 capacity,
                 isActive = f.Flag("actif"),
                 nextPromotionCode = f.OptionalText("suivante"),
-                monthlyFee = f.Amount("mensualite"),
+                schoolCycleId = schoolUsesCycles && f.ChoiceValue("cycle") is { } selected
+                    ? Guid.Parse(selected) : (Guid?)null,
+                monthlyFee = monthly,
                 oneTimeFees = fees,
                 managesCategories = true,
             };
@@ -1205,14 +1231,22 @@ public sealed class SettingsPage : PageViewModel
         });
         form.Add("code", "Code (4 caractères)", value: existing?.Code, required: true);
         form.Add("nom", "Désignation", value: existing?.Name, required: true);
+        if (schoolUsesCycles)
+            form.AddChoice("cycle", "Cycle scolaire", cycleChoices,
+                existing?.SchoolCycleId?.ToString() ?? (cycleChoices.Count == 1 ? cycleChoices[0].Value : null),
+                required: true);
         form.AddChoice("section", "Section", sectionChoices, existing?.SectionId?.ToString());
         form.Add("niveau", "Niveau", FieldKind.Amount, existing?.Level.ToString() ?? "1", required: true);
         form.Add("capacite", "Capacité", FieldKind.Amount, existing?.Capacity?.ToString());
         form.Add("suivante", "Promotion suivante", value: existing?.NextPromotionCode, hint: "Code de la promotion de l'année suivante");
-        form.Add("mensualite", "Mensualité (obligatoire)", FieldKind.Amount, existing is { MonthlyFee: > 0 } ? existing.MonthlyFee.ToString("0") : null, required: true);
+        form.Add("mensualite", schoolIsPublic ? "Mensualité (public : zéro)"
+            : allowsZeroMonthly ? "Mensualité (0 si non appliquée)" : "Mensualité (obligatoire)",
+            FieldKind.Amount,
+            existing is { MonthlyFee: > 0 } ? existing.MonthlyFee.ToString("0")
+                : allowsZeroMonthly ? "0" : null, required: true);
         form.AddFlag("actif", "Promotion active", existing?.IsActive ?? true);
         form.AddHeader("Autres frais", shown.Count == 0
-            ? "Aucune catégorie de frais n'est créée : seules les mensualités seront facturées. Créez-les dans Configuration, Catégories de frais."
+            ? "Aucune catégorie de frais n'est créée. Créez les frais d'inscription ou d'examen dans Configuration, Catégories de frais si nécessaires."
             : "Montant de chaque catégorie pour cette promotion. Vide : la catégorie ne s'applique pas.");
         foreach (var category in shown)
         {
@@ -1323,6 +1357,7 @@ public sealed class UsersPage : PageViewModel
         Action("Nouvel utilisateur", MaterialIconKind.AccountPlus, () => NewUserAsync(Shell), primary: true);
         Action("Modifier", MaterialIconKind.AccountEdit, EditAsync, open: true);
         Action("Réinitialiser le mot de passe", MaterialIconKind.KeyChange, ResetPasswordAsync, row: true);
+        Action("Retirer l'accès au serveur", MaterialIconKind.AccountCancel, RevokeServerAccountAsync, row: true, danger: true);
         ActionRefresh();
     }
 
@@ -1410,6 +1445,34 @@ public sealed class UsersPage : PageViewModel
         form.AddFlag("jury", "Membre du jury : encode aussi les épreuves du jury (rôle Enseignant)", u.JuryAccess);
         form.AddFlag("actif", "Compte actif", u.IsActive);
         if (await Shell.Ask(form)) await RefreshAsync();
+    }
+
+    /// <summary>
+    /// Retrait côté serveur : désactivation auditée et invalidation des sessions.
+    /// Le compte et ses historiques ne sont pas effacés ; un gestionnaire pourra
+    /// le réactiver dans Modifier après vérification de son titulaire.
+    /// </summary>
+    private async Task RevokeServerAccountAsync()
+    {
+        if (Selected?.Source is not { } user) return;
+        if (!user.IsActive)
+        {
+            Shell.Notify("Ce compte n'a déjà plus d'accès au serveur.");
+            return;
+        }
+        if (!await Shell.Confirm("Retirer l'accès serveur",
+                $"Désactiver le compte « {user.UserName} » sur l'ordinateur principal ? Ses sessions connectées seront invalidées et ses nouvelles opérations refusées. Les notes et historiques restent conservés.",
+                "Retirer l'accès", danger: true)) return;
+        await Shell.Api.SendAsync(HttpMethod.Put, $"api/utilisateurs/{user.Id}", new
+        {
+            displayName = user.DisplayName,
+            role = user.Role,
+            isActive = false,
+            staffMemberId = user.StaffMemberId,
+            juryAccess = user.JuryAccess,
+        });
+        Shell.Notify($"Accès serveur du compte « {user.UserName} » désactivé sans supprimer ses données.");
+        await RefreshAsync();
     }
 
     private async Task ResetPasswordAsync()

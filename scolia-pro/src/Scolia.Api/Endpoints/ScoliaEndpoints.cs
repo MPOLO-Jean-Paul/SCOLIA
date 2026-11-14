@@ -237,6 +237,71 @@ public static class ScoliaEndpoints
         })
             .RequireAuthorization(Permissions.SettingsWrite);
 
+        // Même administration / établissement : les cycles sont un sous-module
+        // de configuration protégé, sans accès à la caisse ou aux données ITM.
+        g.MapGet("/cycles", (SchoolCycleConfigurationService s, CancellationToken ct) =>
+            s.GetAsync(ct)).RequireAuthorization(Permissions.SettingsWrite);
+        g.MapPut("/cycles", (SchoolCycleConfigurationInput input, SchoolCycleConfigurationService s,
+            CancellationToken ct) => s.ConfigureAsync(input, ct))
+            .RequireAuthorization(Permissions.SettingsWrite);
+        g.MapGet("/cycles/{cycleId:guid}/periodes",
+            (Guid cycleId, SchoolPlanningService s, CancellationToken ct) =>
+                s.PeriodsAsync(cycleId, ct)).RequireAuthorization(Permissions.SettingsWrite);
+        g.MapPost("/cycles/{cycleId:guid}/periodes",
+            (Guid cycleId, SchoolPeriodCreate input, SchoolPlanningService s, CancellationToken ct) =>
+                s.AddPeriodAsync(cycleId, input, ct)).RequireAuthorization(Permissions.SettingsWrite);
+        g.MapGet("/cycles/promotions/{promotionId:guid}/matieres",
+            (Guid promotionId, SchoolPlanningService s, CancellationToken ct) =>
+                s.SubjectsAsync(promotionId, ct)).RequireAuthorization(Permissions.SettingsWrite);
+        g.MapPost("/cycles/promotions/{promotionId:guid}/matieres",
+            (Guid promotionId, AnnualSubjectCreate input, SchoolPlanningService s, CancellationToken ct) =>
+                s.AddSubjectAsync(promotionId, input, ct)).RequireAuthorization(Permissions.SettingsWrite);
+
+        // LMD : structures, calendrier semestriel et maquettes de cours séparés
+        // des délibérations ITM. Tous les changements exigent SettingsWrite.
+        g.MapGet("/lmd/structures", (LmdPlanningService s, CancellationToken ct) =>
+            s.StructuresAsync(ct)).RequireAuthorization(Permissions.SettingsWrite);
+        g.MapPost("/lmd/structures", (LmdStructureInput input, LmdPlanningService s, CancellationToken ct) =>
+            s.AddStructureAsync(input, ct)).RequireAuthorization(Permissions.SettingsWrite);
+        g.MapGet("/lmd/semestres", (LmdPlanningService s, CancellationToken ct) =>
+            s.SemestersAsync(ct)).RequireAuthorization(Permissions.SettingsWrite);
+        g.MapPut("/lmd/semestres", (LmdSemesterCalendarInput input, LmdPlanningService s, CancellationToken ct) =>
+            s.SaveSemestersAsync(input, ct)).RequireAuthorization(Permissions.SettingsWrite);
+        g.MapGet("/lmd/promotions/{promotionId:guid}/programme",
+            (Guid promotionId, LmdPlanningService s, CancellationToken ct) =>
+                s.ProgramAsync(promotionId, ct)).RequireAuthorization(Permissions.SettingsWrite);
+        g.MapPost("/lmd/promotions/{promotionId:guid}/ues",
+            (Guid promotionId, LmdTeachingUnitInput input, LmdPlanningService s, CancellationToken ct) =>
+                s.AddTeachingUnitAsync(promotionId, input, ct)).RequireAuthorization(Permissions.SettingsWrite);
+        g.MapPost("/lmd/promotions/{promotionId:guid}/ecs",
+            (Guid promotionId, LmdTeachingElementInput input, LmdPlanningService s, CancellationToken ct) =>
+                s.AddTeachingElementAsync(promotionId, input, ct)).RequireAuthorization(Permissions.SettingsWrite);
+
+        // Registre scolaire distinct de l'ITM : aucun seuil, moyenne ou décision
+        // inventés dans un aperçu. L'écriture est interdite aux profils non activés.
+        g.MapGet("/cycles/evaluations/{enrollmentId:guid}/apercu",
+            (Guid enrollmentId, SchoolCycleAssessmentService s, CancellationToken ct) =>
+                s.PreviewAsync(enrollmentId, ct)).RequireAuthorization(Permissions.AcademicsRead);
+        g.MapPost("/cycles/evaluations/{enrollmentId:guid}",
+            (Guid enrollmentId, SchoolCycleAssessmentInput input, SchoolCycleAssessmentService s, CancellationToken ct) =>
+                s.SaveAsync(enrollmentId, input, ct)).RequireAuthorization(Permissions.AcademicsWrite);
+        // Document de consultation distinct du bulletin officiel et des
+        // délibérations ITM. Les droits sont ceux de la lecture pédagogique.
+        g.MapGet("/cycles/evaluations/{enrollmentId:guid}/apercu.pdf",
+            async (Guid enrollmentId, SchoolCycleAssessmentService s,
+                HttpContext http, CancellationToken ct) =>
+            {
+                // Document nominatif d'un mineur : interdit aux caches partagés.
+                http.Response.Headers.CacheControl = "private, no-store, max-age=0";
+                http.Response.Headers.Pragma = "no-cache";
+                var preview = await s.PrintPreviewAsync(enrollmentId, ct);
+                return new InlineFileResult(
+                    SchoolCycleBulletinPdf.Build(preview),
+                    Pdf, "apercu-pedagogique-non-officiel.pdf");
+            })
+            .RequireAuthorization(Permissions.AcademicsRead);
+
+
         g.MapGet("/sections", (SchoolService s, CancellationToken ct) => s.SectionsAsync(ct));
         g.MapPost("/sections", (SectionUpsert input, SchoolService s, CancellationToken ct) => s.UpsertSectionAsync(null, input, ct)).RequireAuthorization(Permissions.SettingsWrite);
         g.MapPut("/sections/{id:guid}", (Guid id, SectionUpsert input, SchoolService s, CancellationToken ct) => s.UpsertSectionAsync(id, input, ct)).RequireAuthorization(Permissions.SettingsWrite);
@@ -524,6 +589,8 @@ public static class ScoliaEndpoints
         sheets.MapGet("/feuille", (Guid coursId, string nature, bool? anonyme, DeliberationService s, CancellationToken ct) => s.SheetAsync(coursId, nature, anonyme ?? false, ct));
         sheets.MapPut("/feuille", async (Guid coursId, string nature, List<MarkInput> input, DeliberationService s, CancellationToken ct) =>
             Results.Ok(new { enregistrees = await s.SaveSheetAsync(coursId, nature, input, ct) }));
+        sheets.MapGet("/codes/verifier-promotion", (Guid coursId, string code, DeliberationService s, CancellationToken ct) =>
+            s.CheckCodeInCourseAsync(coursId, code, ct)).RequireRateLimiting("connexion");
         sheets.MapPost("/cotes-par-code", (MarkByCodeRequest input, DeliberationService s, CancellationToken ct) => s.SaveByCodeAsync(input, ct));
         sheets.MapPost("/cotes/import", (MarkImportRequest input, DeliberationService s, CancellationToken ct) => s.ImportMarksAsync(input, ct));
         sheets.MapPost("/remise", (Guid coursId, string nature, DeliberationService s, CancellationToken ct) => s.SubmitAsync(coursId, nature, ct));
@@ -728,13 +795,13 @@ public static class ScoliaEndpoints
             if (!await s.ConfirmAsync(input.Password, "paiements", ct)) throw new DomainException("motDePasse", motDePasseRefuse);
             await backups.CreateAsync("avant-effacement-paiements", ct);
             return await s.ErasePaymentsAsync(input, ct);
-        });
+        }).RequireAuthorization(Permissions.PaymentsCancel);
         erase.MapPost("/apprenants", async (ErasureRequest input, DataErasureService s, BackupService backups, CancellationToken ct) =>
         {
             if (!await s.ConfirmAsync(input.Password, "apprenants", ct)) throw new DomainException("motDePasse", motDePasseRefuse);
             await backups.CreateAsync("avant-effacement-apprenants", ct);
             return await s.EraseStudentsAsync(input, ct);
-        });
+        }).RequireAuthorization(Permissions.StudentsWrite);
 
         api.MapGet("/import/modele", () => Results.File(LegacyImportService.Template(), Xlsx, "modele-import-scolia.xlsx"))
             .RequireAuthorization(Permissions.SettingsWrite);

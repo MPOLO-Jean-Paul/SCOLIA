@@ -287,7 +287,7 @@
 
       <!-- Bandeau bleu ciel sur toute la largeur : volet, flèches, titre de la page, recherche, actions, réseau, compte, menu -->
       <Border Grid.Row="0" Grid.ColumnSpan="2" Classes="pagebar appheader" x:Name="PageBar">
-        <Grid ColumnDefinitions="Auto,Auto,2*,3*,Auto,Auto,Auto" IsVisible="{Binding HasPage}">
+        <Grid ColumnDefinitions="Auto,Auto,3*,3*,Auto,Auto,Auto" IsVisible="{Binding HasPage}">
           <Button Classes="toolicon" Command="{Binding ToggleSidebarCommand}" Margin="0,0,8,0" VerticalAlignment="Center"
                   ToolTip.Tip="Afficher ou masquer le volet (Ctrl+B)">
             <mi:MaterialIcon Kind="DockLeft" Width="18" Height="18" />
@@ -303,13 +303,16 @@
               </Button>
             </StackPanel>
           </Border>
-          <Grid x:Name="HeaderTitle" Grid.Column="2" ColumnDefinitions="Auto,*" VerticalAlignment="Center" MinWidth="140" MaxWidth="340">
+          <Grid x:Name="HeaderTitle" Grid.Column="2" ColumnDefinitions="Auto,*" VerticalAlignment="Center" MinWidth="140" MaxWidth="380"
+                ToolTip.Tip="{Binding Current.Subtitle}">
             <Border Classes="appicon medium" Background="{Binding CurrentIconBrush}" Margin="0,0,10,0">
               <mi:MaterialIcon Kind="{Binding CurrentIcon}" />
             </Border>
             <StackPanel Grid.Column="1" VerticalAlignment="Center">
               <TextBlock Text="{Binding Current.Heading}" FontSize="17" FontWeight="Bold" TextTrimming="CharacterEllipsis" />
-              <TextBlock Text="{Binding Current.Subtitle}" Classes="muted" TextTrimming="CharacterEllipsis" />
+              <!-- Le sous-titre porte l'état de la page : il passe sur deux lignes plutôt que d'être coupé. -->
+              <TextBlock Text="{Binding Current.Subtitle}" Classes="muted" FontSize="{DynamicResource FsSmall}"
+                         TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis" />
             </StackPanel>
           </Grid>
           <!-- Recherche générale, dans la barre même, façon Android : on tape ici, les résultats se déroulent dessous.
@@ -321,7 +324,7 @@
                                Foreground="{DynamicResource MutedBrush}" IsHitTestVisible="False" />
               <TextBox x:Name="HeaderFinderBox" Grid.Column="1" Classes="searchfield" MinHeight="40"
                        Text="{Binding HeaderFinder.Query, Mode=TwoWay}" PlaceholderText="{Binding HeaderFinder.Placeholder}"
-                       GotFocus="OnHeaderFinderFocus" KeyDown="OnHeaderFinderKeyDown" ToolTip.Tip="Apprenants, reçus, pages et réglages" />
+                       GotFocus="OnHeaderFinderFocus" KeyDown="OnHeaderFinderKeyDown" ToolTip.Tip="{Binding GlobalSearchTip}" />
               <Button Grid.Column="3" Classes="baricon" Command="{Binding HeaderFinder.ClearQuery}" IsVisible="{Binding HeaderFinder.HasQuery}"
                       ToolTip.Tip="Effacer" Width="40" Height="40">
                 <mi:MaterialIcon Kind="Close" />

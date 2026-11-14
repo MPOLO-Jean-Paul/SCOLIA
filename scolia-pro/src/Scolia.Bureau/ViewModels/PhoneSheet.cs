@@ -339,10 +339,11 @@ public sealed record PhoneMenuBlockVm(string Title, IReadOnlyList<NavGroupVm> Na
         // Mêmes blocs que le volet de l'ordinateur, dans le même ordre.
         Add("VUE D’ENSEMBLE", ["", "Pilotage"], ["Pilotage", "Exports", "Export", "Rapports"]);
         Add("ESPACE ENSEIGNANT", ["Espace enseignant"], ["Mon espace"]);
-        Add("GESTION SCOLAIRE", ["Secrétariat", "Scolarité"], ["Secrétariat", "Scolarité", "Apprenants"]);
+        Add("GESTION SCOLAIRE", ["Secrétariat", "Scolarité", "Organisation pédagogique"], ["Secrétariat", "Scolarité", "Apprenants", "Organisation pédagogique"]);
         Add("GESTION DES DÉLIBÉRATIONS", ["Enseignants et cours", "Délibération"], ["Délibérations"]);
         Add("GESTION FINANCIÈRE", ["Finances"], ["Finances", "Paiements"]);
         Add("ORGANISATION", ["Personnel"], ["Personnel"]);
+        Add("CONNEXIONS", ["Réseau et postes"], []);
         Add("RÉGLAGES ET DONNÉES", ["Paramètres", "Données"], ["Paramètres", "Affichage", "Sécurité", "Données", "Sauvegardes", "Contrôle", "Effacement"]);
         Add("AIDE", [], ["Aide"]);
 
@@ -384,7 +385,7 @@ public sealed record PhoneToolBlockVm(string Title, IReadOnlyList<PhoneToolGroup
         }
         Add("VUE D’ENSEMBLE", "Pilotage", "Rapports", "Export", "Exports");
         Add("ESPACE ENSEIGNANT", "Mon espace");
-        Add("GESTION SCOLAIRE", "Secrétariat", "Scolarité", "Apprenants");
+        Add("GESTION SCOLAIRE", "Secrétariat", "Scolarité", "Apprenants", "Organisation pédagogique");
         Add("GESTION DES DÉLIBÉRATIONS", "Délibérations");
         Add("GESTION FINANCIÈRE", "Finances", "Paiements");
         Add("ORGANISATION", "Personnel");

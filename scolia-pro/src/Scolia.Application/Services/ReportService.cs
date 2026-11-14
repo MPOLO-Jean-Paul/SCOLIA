@@ -125,7 +125,8 @@ public sealed class ReportService(IAppDbContext db, IClock clock, AccountService
         var latest = await (from r in db.Receipts.AsNoTracking()
                             join s in db.Students.AsNoTracking() on r.StudentId equals s.Id
                             where r.AcademicYearId == year.Id
-                            orderby r.CreatedAtUtc descending
+                            // Les plus récents par date du reçu : une reprise de données saisie après coup ne passe pas devant.
+                            orderby r.Date descending, r.CreatedAtUtc descending, r.Number descending
                             select new ReceiptSummaryDto(r.Id, r.Number, r.Date, r.Amount, r.Method.ToString(), r.Status == OperationStatus.Valide ? "Valide" : "Annulé",
                                 r.CashierName, s.Matricule + " · " + s.LastName + " " + s.FirstName)).Take(8).ToListAsync(ct);
         latest = latest.Select(r => r with { Method = Labels.Of(Enum.Parse<PaymentMethod>(r.Method)) }).ToList();

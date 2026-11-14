@@ -5,6 +5,7 @@ using Avalonia.Threading;
 using Scolia.Bureau.Api;
 using Scolia.Bureau.Ribbon;
 using Scolia.Bureau.Infrastructure;
+using Scolia.Domain.School;
 
 namespace Scolia.Bureau.ViewModels;
 
@@ -45,6 +46,10 @@ public sealed class ShellViewModel : Observable
         Login.LoggedIn += s => _ = OpenSessionAsync(s);
         Login.ResumeRequested += ReturnToLockedSession;
         Login.ChangeServerRequested += () => _ = ChooseServerAsync();
+        Login.ConfirmAccountRemoval = account => Confirm("Retirer le compte de cet appareil",
+            $"Le compte « {account} » ne sera plus proposé à la connexion et son accès hors ligne sera effacé. Son compte sur le serveur et ses cotes resteront intacts.",
+            "Retirer ce compte", danger: true);
+        Login.ForgetLinkedServerRequested += ForgetLinkedServerAsync;
         Sync = new SyncCenter(this, api);
         License = new SchoolLicenseViewModel(this);
         // Connexion réussie : le compte est gardé sur l'appareil pour une connexion hors ligne, et en mémoire pour
@@ -117,6 +122,9 @@ public sealed class ShellViewModel : Observable
     public PhoneHeaderSearchVm HeaderSearch { get; }
     public RelayCommand ToggleSidebarCommand { get; private set; } = null!;
     public SessionDto? Session => session;
+    /// <summary>Vocabulaire partagé par Windows et Android, conservé hors ligne dans la session.</summary>
+    public InstitutionTerminology StudentTerms => InstitutionTerminology.For(session?.InstitutionType);
+    public string GlobalSearchTip => $"Dossiers des {StudentTerms.Plural}, reçus, pages et réglages";
 
     private Avalonia.Media.Imaging.Bitmap? schoolLogo;
 
@@ -574,7 +582,7 @@ public sealed class ShellViewModel : Observable
         if (!store.HasCredential) return false;
         api.Offline = store;
         if (school.Length > 0) Login.SchoolName = school;
-        Login.Notice = "L'ordinateur principal ne répond pas. Connectez-vous avec le dernier compte utilisé sur cet appareil pour travailler hors ligne : tout sera envoyé à son retour.";
+        Login.Notice = "Hors ligne · Connectez-vous localement";
         IsSetupRequired = false;
         ChoosingServer = false;
         MarkEntryChecked();
@@ -601,6 +609,42 @@ public sealed class ShellViewModel : Observable
         // Venu de la connexion ou de Poste et réseau : un établissement est déjà relié, on peut y revenir.
         Connection.BackAction = LeaveChooser;
         await Connection.SearchAsync();
+    }
+
+    /// <summary>
+    /// Retrait volontaire du serveur mémorisé sur CET appareil, jamais suppression
+    /// de la machine principale ni de ses données. Les opérations hors ligne non
+    /// envoyées rendent ce retrait impossible jusqu'à leur synchronisation.
+    /// </summary>
+    private async Task ForgetLinkedServerAsync()
+    {
+        if (IsServerComputer || IsLoggedIn) return;
+        var oldServer = api.Server;
+        var store = api.Offline ?? new OfflineStore(ConnectionStore.CacheAddress(oldServer));
+        if (store.KnownAccounts.Any(name => store.OutboxFor(name).Count > 0))
+        {
+            Notify("Ce serveur comporte des opérations en attente : synchronisez-les avant de retirer la liaison.");
+            return;
+        }
+        if (!await Confirm("Retirer le serveur de cet appareil",
+                "Ce téléphone ou poste oubliera sa liaison à l'ordinateur principal. Vous devrez le relier à nouveau par QR ou adresse. Le serveur principal, les comptes et les données de l'établissement restent intacts.",
+                "Retirer la liaison", danger: true)) return;
+        var saved = ConnectionStore.Load();
+        if (saved?.Mode == ConnectionSettings.Internet && !RemoteConnection.ForgetClient())
+        {
+            Notify("Impossible de retirer la liaison Internet enregistrée.");
+            return;
+        }
+        if (!ConnectionStore.TryForget())
+        {
+            Notify("Impossible d'oublier le serveur : vérifiez le stockage de cet appareil.");
+            return;
+        }
+        DevicePairingStore.Forget(oldServer);
+        api.Retarget(ConnectionStore.LocalAddress);
+        Login.ChangeAccount.Execute(null);
+        await ChooseServerAsync();
+        Notify("Liaison de ce poste retirée. La base de l'établissement n'a pas été modifiée.");
     }
 
     /// <summary>Ferme le choix du serveur sans rien changer : retour à la connexion ou à l'application.</summary>
@@ -772,7 +816,7 @@ public sealed class ShellViewModel : Observable
         }
         catch (Exception ex) when (ex is OfflineException or HttpRequestException or TaskCanceledException)
         {
-            Login.Notice = "Le serveur ne répond pas. Utilisez un compte déjà ouvert sur cet appareil pour accéder aux données hors ligne.";
+            Login.Notice = "Hors ligne · Connectez-vous localement";
         }
         // Même avec un appareil reconnu, seul un mot de passe ouvre la session.
         return false;
@@ -991,6 +1035,7 @@ public sealed class ShellViewModel : Observable
             await OpeningStepAsync($"Chargement de {s.SchoolName}", 45, pace);
             if (SchoolLogo is null) await RefreshLogoAsync();
             Raise(nameof(SchoolLine));
+            Raise(nameof(GlobalSearchTip));
             Raise(nameof(UserLine));
             Raise(nameof(UserInitials));
             Raise(nameof(AccountName));
@@ -1210,6 +1255,7 @@ public sealed class ShellViewModel : Observable
                 Raise(nameof(Working));
             }
             // Nos propres écritures ne doivent pas déclencher un rechargement : on mémorise la révision après l'action.
+            lastOwnActionUtc = DateTime.UtcNow;
             if (IsLoggedIn) _ = RememberRevisionAsync();
         }
     }
@@ -1221,6 +1267,9 @@ public sealed class ShellViewModel : Observable
         workingDue = true;
         Raise(nameof(Working));
     }
+
+    private DateTime lastOwnActionUtc = DateTime.MinValue;
+    private static readonly TimeSpan OwnWriteWindow = TimeSpan.FromSeconds(3);
 
     private async Task RememberRevisionAsync()
     {
@@ -1246,7 +1295,9 @@ public sealed class ShellViewModel : Observable
         {
             if (await ReadRevisionAsync() is not { } latest) return;
             if (latest <= knownRevision) return;
-            if (knownRevision < 0)
+            // Révision lue pendant ou juste après une action de ce poste : c'est notre propre écriture
+            // (les changements des autres postes arrivent aussi par le direct, filtré par appareil).
+            if (knownRevision < 0 || running > 0 || DateTime.UtcNow - lastOwnActionUtc < OwnWriteWindow)
             {
                 knownRevision = latest;
                 return;
@@ -1702,7 +1753,8 @@ public sealed class ShellViewModel : Observable
     public IReadOnlyList<NavItemVm> PhoneTabs { get; private set; } = [];
 
     private static readonly Type[] PhoneTabOrder =
-        [typeof(HomePage), typeof(PromoterDashboardPage), typeof(StudentsPage), typeof(CashierPage), typeof(ReceiptsPage), typeof(MonthlyPage), typeof(DebtorsPage), typeof(CashPage)];
+        [typeof(HomePage), typeof(PromoterDashboardPage), typeof(TeacherHomePage), typeof(StudentsPage), typeof(CashierPage), typeof(ReceiptsPage),
+            typeof(MonthlyPage), typeof(DebtorsPage), typeof(CashPage), typeof(MarksPage)];
 
     private void RebuildPhoneTabs()
     {
@@ -1788,7 +1840,7 @@ public sealed class ShellViewModel : Observable
         if (name is "Nouveau membre" or "Pointage")
             return "Personnel";
 
-        if (name is "Nouvelle inscription" or "Modifier" or "Liste des apprenants")
+        if (name is "Nouvelle inscription" or "Modifier" or "Liste des apprenants" or "Liste des élèves" or "Liste des étudiants")
             return "Secrétariat";
         if (name is "Nouveau cours" or "Nouvelle évaluation" or "Nouvel incident")
             return "Scolarité";
@@ -1803,7 +1855,7 @@ public sealed class ShellViewModel : Observable
 
         return originalTab switch
         {
-            "Apprenant" => "Secrétariat",
+            "Apprenant" or "Élève" or "Étudiant" => "Secrétariat",
             "Reçu" => "Finances",
             "Affichage" => "Paramètres",
             "Administration" => "Personnel",
@@ -2010,12 +2062,43 @@ public sealed class ShellViewModel : Observable
         return true;
     }
 
+    private bool loggingOut;
+
+    /// <summary>
+    /// Déconnexion individuelle, même lorsque le réseau a disparu ou que le
+    /// serveur a déjà invalidé la session. L'autorisation QR de l'appareil
+    /// reste intacte : seul le compte courant est fermé.
+    /// </summary>
     public async Task LogoutAsync()
     {
-        try { await api.LogoutAsync(); }
-        catch (HttpRequestException) { }
-        DevicePairingStore.Forget(api.Server);
-        CloseLocalSession();
+        if (!IsLoggedIn || loggingOut) return;
+        loggingOut = true;
+        try
+        {
+            // Arrêter la reconnexion silencieuse AVANT d'invalider le cookie.
+            Sync.Stop();
+            Sync.Forget();
+            try
+            {
+                // Une coupure Wi-Fi ou VPN ne doit pas figer le bouton Android.
+                using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+                await api.LogoutAsync(timeout.Token);
+            }
+            catch (Exception ex) when (ex is ApiException or OfflineException or OfflineQueuedException
+                or HttpRequestException or TaskCanceledException or IOException
+                or UnauthorizedAccessException or System.Security.Cryptography.CryptographicException
+                or InvalidOperationException)
+            {
+                System.Diagnostics.Trace.WriteLine($"SCOLIA : déconnexion distante indisponible ({ex.GetType().Name}). Session locale fermée.");
+            }
+        }
+        finally
+        {
+            // Ne jamais retirer DevicePairingStore : il identifie le poste, pas
+            // l'utilisateur. Un nouvel identifiant et mot de passe restent exigés.
+            try { CloseLocalSession(); }
+            finally { loggingOut = false; }
+        }
     }
 
     /// <summary>Ferme la session sur cet appareil : pages, onglets, direct et verrou. Le serveur n'est pas prévenu.</summary>
@@ -2041,6 +2124,7 @@ public sealed class ShellViewModel : Observable
         SelectedTab = null;
         Current = null;
         BackstageOpen = false;
+        Login.Reset(); // Effacer PIN, codes de secours et états de récupération de la vue précédente.
         RaiseLogin();
         Raise(nameof(SchoolLine));
         Raise(nameof(UserLine));

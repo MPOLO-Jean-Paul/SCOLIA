@@ -8,6 +8,7 @@ public sealed record DeliberationSettingsDto(bool EncodingS1Open, bool EncodingS
 public sealed record AnonymousCodeRowDto(Guid EnrollmentId, string Matricule, string FullName, string PromotionCode, string? Code, bool IsManual, DateTime? AssignedAtUtc);
 
 public sealed record CodeAssignmentResult(int Assigned, int AlreadyCoded, int Total);
+public sealed record CodeInCourseDto(string Code, bool InPromotion, string Message);
 
 public sealed record DeliberationCourseDto(Guid Id, int Number, string Name, string Semester, decimal MaxScore, string? TeacherName,
     int Students, int GradedS1, int GradedS2, int Supports, bool LockedS1, bool LockedS2, bool SubmittedS1 = false, bool SubmittedS2 = false, int GradedJury = 0);
@@ -65,7 +66,8 @@ public sealed record CodeImportResult(bool Applied, int Assigned, int Ready, int
 
 /// <summary>Enseignant et état de son compte (page « Comptes enseignants » du secrétariat).</summary>
 public sealed record TeacherAccountDto(Guid StaffMemberId, string Number, string FullName, string Function, string? Phone, bool StaffActive, int Courses,
-    Guid? UserId, string? UserName, bool HasAccount, bool AccountActive, bool MustChangePassword, DateTime? LastLoginUtc, bool IsLocked, bool JuryAccess);
+    Guid? UserId, string? UserName, bool HasAccount, bool AccountActive, bool MustChangePassword, DateTime? LastLoginUtc, bool IsLocked, bool JuryAccess,
+    bool Teaching = true);
 
 /// <summary>Identifiants à remettre à l'enseignant ; le code provisoire n'est montré qu'une fois.</summary>
 public sealed record TeacherCredentialsDto(Guid StaffMemberId, Guid UserId, string FullName, string UserName, string ProvisionalCode);

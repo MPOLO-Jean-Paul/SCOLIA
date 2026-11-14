@@ -39,6 +39,19 @@ public static class RemoteConnection
 
     public static void Save(RemoteConfiguration configuration) => SecretStore.Save(FilePath, JsonSerializer.SerializeToUtf8Bytes(configuration));
 
+    /// <summary>Retire uniquement la liaison cliente mémorisée ; ne touche jamais au relais hébergé par le serveur principal.</summary>
+    public static bool ForgetClient()
+    {
+        try
+        {
+            if (Load() is { Host: true }) return false;
+            if (File.Exists(FilePath)) File.Delete(FilePath);
+            return true;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Security.Cryptography.CryptographicException
+            or JsonException) { return false; }
+    }
+
     public static void StartHost(Uri localServer)
     {
         lock (HostGate)

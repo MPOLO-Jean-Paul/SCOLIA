@@ -15,15 +15,15 @@
     <!-- Identifiants à remettre : affichés une seule fois, jamais enregistrés sur ce poste -->
     <Border Grid.Row="1" Background="{DynamicResource GreenSoftBrush}" BorderBrush="{DynamicResource LineBrush}" BorderThickness="1"
             CornerRadius="{StaticResource RadiusSmall}" Padding="16,12" Margin="0,0,0,12" IsVisible="{Binding HasCredentials}">
-      <Grid ColumnDefinitions="Auto,*,Auto">
-        <mi:MaterialIcon Kind="AccountKey" Width="24" Height="24" Foreground="{DynamicResource ToneGreen}" VerticalAlignment="Top" Margin="0,2,12,0" />
+      <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12" infra:Adaptive.StackBelow="620">
+        <mi:MaterialIcon Kind="AccountKey" Width="24" Height="24" Foreground="{DynamicResource ToneGreen}" VerticalAlignment="Top" Margin="0,2,0,0" />
         <StackPanel Grid.Column="1" Spacing="4">
           <TextBlock Text="{Binding CredentialsTitle}" FontWeight="SemiBold" TextWrapping="Wrap" />
           <SelectableTextBlock Text="{Binding Credentials}" TextWrapping="Wrap" FontWeight="SemiBold" />
           <TextBlock Classes="muted" TextWrapping="Wrap"
                      Text="Remettez ces identifiants en main propre. Le code ne sera plus affiché : en cas d'oubli, « Nouveau code provisoire »." />
         </StackPanel>
-        <Button Grid.Column="2" infra:Icons.Lead="Close" Content="Masquer" Command="{Binding HideCredentials}" VerticalAlignment="Top" Margin="12,0,0,0" />
+        <Button Grid.Column="2" infra:Icons.Lead="Close" Content="Masquer" Command="{Binding HideCredentials}" VerticalAlignment="Top" Margin="0,0,0,0" />
       </Grid>
     </Border>
 
@@ -31,18 +31,20 @@
       <WrapPanel>
         <StackPanel Classes="field">
           <TextBlock Text="Rechercher" Classes="fieldlabel" />
-          <TextBox Width="280" Text="{Binding Search}" Watermark="Nom, identifiant ou numéro" />
+          <TextBox Classes="w11" Width="280" Text="{Binding Search}" PlaceholderText="Nom, identifiant ou numéro" />
         </StackPanel>
         <CheckBox Content="Sans compte actif seulement" IsChecked="{Binding WithoutAccount}" VerticalAlignment="Bottom" Margin="0,0,12,12" />
+        <CheckBox Content="Tout le personnel" IsChecked="{Binding AllStaff}" VerticalAlignment="Bottom" Margin="0,0,12,12"
+                  ToolTip.Tip="Affiche aussi les membres du personnel qui n'enseignent pas encore, pour leur ouvrir un compte." />
       </WrapPanel>
     </Border>
 
-    <DataGrid Grid.Row="3" ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}" AutoGenerateColumns="False" IsReadOnly="True">
+    <DataGrid Grid.Row="3" ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}" AutoGenerateColumns="False" IsReadOnly="True" HorizontalAlignment="Stretch">
       <DataGrid.Columns>
         <DataGridTextColumn Header="Enseignant" Binding="{Binding FullName}" Width="*" MinWidth="180" infra:GridPriority.Level="1" />
-        <DataGridTextColumn Header="N°" Binding="{Binding Number}" Width="Auto" MinWidth="80" infra:GridPriority.Level="3" />
-        <DataGridTextColumn Header="Fonction" Binding="{Binding Function}" Width="Auto" MinWidth="120" infra:GridPriority.Level="3" />
-        <DataGridTextColumn Header="Cours" Binding="{Binding Courses}" Width="Auto" MinWidth="80" infra:GridPriority.Level="2" />
+        <DataGridTextColumn Header="N°" Binding="{Binding Number}" Width="Auto" MinWidth="104" infra:GridPriority.Level="3" />
+        <DataGridTextColumn Header="Fonction" Binding="{Binding Function}" Width="Auto" MinWidth="118" infra:GridPriority.Level="3" />
+        <DataGridTextColumn Header="Cours" Binding="{Binding Courses}" Width="Auto" MinWidth="110" infra:GridPriority.Level="2" />
         <DataGridTextColumn Header="Identifiant" Binding="{Binding UserName}" Width="Auto" MinWidth="150" infra:GridPriority.Level="1" />
         <DataGridTemplateColumn Header="Compte" Width="Auto" MinWidth="150">
           <DataGridTemplateColumn.CellTemplate>
@@ -54,8 +56,8 @@
             </DataTemplate>
           </DataGridTemplateColumn.CellTemplate>
         </DataGridTemplateColumn>
-        <DataGridTextColumn Header="Jury" Binding="{Binding Jury}" Width="Auto" MinWidth="130" infra:GridPriority.Level="2" />
-        <DataGridTextColumn Header="Dernière connexion" Binding="{Binding LastLogin}" Width="Auto" MinWidth="160" infra:GridPriority.Level="3" />
+        <DataGridTextColumn Header="Jury" Binding="{Binding Jury}" Width="Auto" MinWidth="160" infra:GridPriority.Level="2" />
+        <DataGridTextColumn Header="Dernière connexion" Binding="{Binding LastLogin}" Width="Auto" MinWidth="170" infra:GridPriority.Level="4" />
       </DataGrid.Columns>
     </DataGrid>
     <c:EmptyState Grid.Row="3" Icon="AccountSchool" Title="Aucun enseignant"

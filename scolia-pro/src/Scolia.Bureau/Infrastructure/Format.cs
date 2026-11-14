@@ -114,6 +114,36 @@ public static class Labels
         ["sauvegarde.creee"] = "Sauvegarde faite", ["sauvegarde.nettoyage"] = "Anciennes sauvegardes retirées", ["sauvegarde.restauree"] = "Sauvegarde restaurée",
         ["section.creee"] = "Section créée", ["section.modifiee"] = "Section modifiée",
         ["utilisateur.cree"] = "Compte créé", ["utilisateur.modifie"] = "Compte modifié", ["utilisateur.motdepasse"] = "Mot de passe changé",
+        ["utilisateur.jury.accorde"] = "Privilège de jury", ["utilisateur.recuperation"] = "Mot de passe réinitialisé",
+        ["annee.calendrier.modifie"] = "Calendrier modifié", ["installation"] = "Installation de SCOLIA",
+        ["deliberation.autorites"] = "Autorités enregistrées", ["deliberation.cloturee"] = "Délibération clôturée",
+        ["deliberation.code.attribue"] = "Code anonyme attribué", ["deliberation.code.retire"] = "Code anonyme retiré",
+        ["deliberation.code.remplace"] = "Code anonyme remplacé", ["deliberation.codes.attribues"] = "Codes anonymes attribués",
+        ["deliberation.codes.importes"] = "Codes anonymes importés", ["deliberation.cote.anonyme"] = "Cote saisie par code",
+        ["deliberation.cotes.importees"] = "Cotes reprises", ["deliberation.cotes.remises"] = "Cotes remises",
+        ["deliberation.cotes.renvoyees"] = "Cotes renvoyées", ["deliberation.cotes.saisies"] = "Cotes enregistrées",
+        ["deliberation.decision"] = "Décision du jury", ["deliberation.decision.retiree"] = "Décision du jury retirée",
+        ["deliberation.epreuves.creees"] = "Épreuves créées", ["deliberation.ouverte"] = "Délibération ouverte",
+        ["deliberation.reglages"] = "Paramètres de délibération", ["deliberation.rouverte"] = "Délibération rouverte",
+        ["donnees.apprenants.effaces"] = "Dossiers effacés", ["donnees.effacement.refuse"] = "Effacement refusé",
+        ["donnees.paiements.effaces"] = "Paiements effacés", ["enseignant.compte.reactive"] = "Compte enseignant réactivé",
+        ["frais.categorie.creee"] = "Catégorie de frais créée", ["frais.categorie.supprimee"] = "Catégorie de frais supprimée",
+        ["frais.categories.reprise"] = "Catégories de frais reprises", ["nuage.active"] = "Sauvegarde en ligne",
+        ["nuage.code.consulte"] = "Code de secours consulté", ["nuage.recuperee"] = "Copie en ligne récupérée",
+        ["presences.jours.retrait"] = "Jour de cours retiré", ["promotion.creee.reinscription"] = "Promotion créée (réinscription)",
+        ["rapport.journalier.reglages"] = "Rapport du jour réglé", ["section.supprimee"] = "Section supprimée",
+    };
+
+    /// <summary>Objet du journal d'audit, lisible : « CodeAnonyme » devient « Code anonyme ».</summary>
+    public static string AuditEntity(string code) => code switch
+    {
+        "AnneeScolaire" => "Année scolaire", "ArreteCaisse" => "Arrêté de caisse", "CarteAcces" => "Carte d'accès",
+        "CategorieFrais" => "Catégorie de frais", "CodeAnonyme" => "Code anonyme", "Depense" => "Dépense",
+        "Etablissement" => "Établissement", "Evaluation" => "Évaluation", "Presence" => "Présence",
+        "PriseEnCharge" => "Prise en charge", "RapportJournalier" => "Rapport du jour", "Recu" => "Reçu",
+        "RegistreDiscipline" => "Discipline", "ReglagesDeliberation" => "Délibération", "RemiseCotes" => "Remise des cotes",
+        "SessionDeliberation" => "Délibération", "Nuage" => "Sauvegarde en ligne",
+        _ => code,
     };
 
     public static string Method(string code) => code switch

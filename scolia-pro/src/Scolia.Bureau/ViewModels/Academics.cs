@@ -208,7 +208,11 @@ public sealed class GradesPage : PageViewModel
         form.Add("coefficient", Labels.WeightLabel, FieldKind.Amount, "1", required: true, hint: Labels.WeightHint);
         form.Add("heures", "Volume horaire annuel", FieldKind.Amount, "30", required: true, hint: "Peut comporter une décimale, par exemple 30,5. Épreuve du jury : 1.");
         form.Add("cotation", Labels.MaxScoreLabel, FieldKind.Amount, null, hint: Labels.MaxScoreHint);
-        form.AddChoice("semestre", "Organisation (délibération)", Labels.Semesters, "Annuel", required: true);
+        var isLmd = shell.Session?.InstitutionType == "SuperieurLmd";
+        IReadOnlyList<ChoiceItem> periods = isLmd
+            ? Labels.Semesters.Where(p => p.Value is "S1" or "S2").ToList()
+            : Labels.Semesters;
+        form.AddChoice("semestre", "Organisation pédagogique", periods, isLmd ? "S1" : "Annuel", required: true);
         if (await shell.Ask(form) && shell.Current is GradesPage page) await page.RefreshAsync();
     }
 
@@ -222,7 +226,7 @@ public sealed class GradesPage : PageViewModel
             var list = await shell.Api.GetAsync<List<CourseDto>>("api/scolarite/cours" + ScoliaClient.Query(("promotionId", p.Id)));
             courses.AddRange(list.Select(c => new ChoiceItem(c.Id.ToString(), $"{p.Code} · {c.Number} · {c.Name}")));
         }
-        var form = new FormViewModel("Nouvelle évaluation", "Une évaluation reçoit ensuite les notes de chaque apprenant.", async f =>
+        var form = new FormViewModel("Nouvelle évaluation", $"Une évaluation reçoit ensuite les notes de chaque {shell.StudentTerms.Singular}.", async f =>
         {
             await shell.Api.SendAsync(HttpMethod.Post, "api/scolarite/evaluations", new
             {
@@ -327,7 +331,7 @@ public sealed class ResultsPage : PageViewModel
     {
         if (Selected is null || Promotion is null)
         {
-            Shell.Notify("Sélectionnez un apprenant pour produire son bulletin.");
+            Shell.Notify($"Sélectionnez un {Shell.StudentTerms.Singular} pour produire son bulletin.");
             return;
         }
         var query = ScoliaClient.Query(("promotionId", Guid.Parse(Promotion.Value)), ("inscriptionId", Selected.EnrollmentId),
@@ -371,7 +375,7 @@ public sealed class AttendancePage : PageViewModel
             Action("Confirmer le jour de cours", MaterialIconKind.CalendarCheck, () => ConfirmDayAsync(true));
             Action("Retirer la confirmation", MaterialIconKind.CalendarRemove, () => ConfirmDayAsync(false));
         }
-        Action("Apprenants à traiter", MaterialIconKind.AlertCircle, ShowAlertsAsync);
+        Action($"{Shell.StudentTerms.PluralTitle} à traiter", MaterialIconKind.AlertCircle, ShowAlertsAsync);
         ActionRefresh();
     }
 
@@ -455,7 +459,7 @@ public sealed class AttendancePage : PageViewModel
         private Task MarkAllPresentAsync()
     {
         foreach (var r in Rows) r.Status = Statuses[0];
-        Shell.Notify("Tous les apprenants sont marqués présents. Enregistrez l'appel pour le conserver.");
+        Shell.Notify($"Tous les {Shell.StudentTerms.Plural} sont marqués présents. Enregistrez l'appel pour le conserver.");
         return Task.CompletedTask;
     }
 
@@ -476,10 +480,10 @@ public sealed class AttendancePage : PageViewModel
         var date = ToDay(Day);
         var alerts = await Shell.Api.GetAsync<List<AttendanceAlertDto>>("api/scolarite/presences/alertes" + ScoliaClient.Query(
             ("promotionId", Guid.Parse(Promotion.Value)), ("du", date.AddDays(-30)), ("au", date)));
-        var form = new FormViewModel("Apprenants à traiter", "Seuils : 3 absences non justifiées, ou 3 jours de cours consécutifs absents. Période : 30 jours.", _ => Task.FromResult(true))
+        var form = new FormViewModel($"{Shell.StudentTerms.PluralTitle} à traiter", "Seuils : 3 absences non justifiées, ou 3 jours de cours consécutifs absents. Période : 30 jours.", _ => Task.FromResult(true))
         {
             Message = alerts.Count == 0
-                ? "Aucun apprenant ne dépasse les seuils."
+                ? $"Aucun {Shell.StudentTerms.Singular} ne dépasse les seuils."
                 : string.Join(Environment.NewLine, alerts.Select(a => $"{a.Matricule} · {a.FullName} : {a.UnjustifiedAbsences} absence(s) non justifiée(s), {a.LongestRun} jour(s) consécutif(s)")),
             SubmitText = "Fermer",
             ShowCancel = false,
@@ -538,7 +542,7 @@ public sealed class DisciplinePage : PageViewModel
             Action("Parent reçu ou absent", MaterialIconKind.AccountCheck, ReceptionAsync, row: true);
         }
         Action("Convocation à imprimer", MaterialIconKind.Printer, PrintConvocationAsync, row: true);
-        Action("Historique de l'apprenant", MaterialIconKind.History, ShowHistoryAsync, row: true);
+        Action($"Historique de {Shell.StudentTerms.Elided}", MaterialIconKind.History, ShowHistoryAsync, row: true);
         if (Shell.Can(Perm.DisciplineCancel)) Action("Annuler la décision", MaterialIconKind.CloseCircle, CancelAsync, row: true);
         Action("Exporter en CSV", MaterialIconKind.FileExport, ExportAsync);
         ActionRefresh();
@@ -617,7 +621,7 @@ public sealed class DisciplinePage : PageViewModel
             shell.Notify("Décision enregistrée dans le registre.");
             return true;
         });
-        form.AddChoice("apprenant", "Apprenant", choices, null, required: true);
+        form.AddChoice("apprenant", shell.StudentTerms.SingularTitle, choices, null, required: true);
         form.AddChoice("mesure", "Mesure", MeasureChoices.Skip(1).ToList(), "RenvoiTemporaire", required: true);
         form.Add("motif", "Motif", FieldKind.Multiline, required: true, hint: "Entre 5 et 2000 caractères.");
         form.AddDay("date", "Date de la décision", DateOnly.FromDateTime(DateTime.Today), required: true);
@@ -662,7 +666,7 @@ public sealed class DisciplinePage : PageViewModel
     {
         if (Selected is not { } row)
         {
-            Shell.Notify("Sélectionnez une ligne pour voir l'historique de l'apprenant.");
+            Shell.Notify($"Sélectionnez une ligne pour voir l'historique de {Shell.StudentTerms.Elided}.");
             return;
         }
         var history = await Shell.Api.GetAsync<List<DisciplineRowDto>>($"api/scolarite/discipline/inscriptions/{row.EnrollmentId}/historique");

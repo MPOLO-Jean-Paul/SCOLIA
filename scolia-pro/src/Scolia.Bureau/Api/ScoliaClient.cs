@@ -543,7 +543,8 @@ public sealed partial class ScoliaClient : IDisposable
     /// les effacements et les réglages de l'établissement demandent le serveur, tout de suite.
     /// </summary>
     public static bool Queueable(HttpMethod method, string path) =>
-        Scolia.Domain.Cloud.CloudOperationRules.Queueable(method.Method, path);
+        (method == HttpMethod.Post && path == "api/deliberation/cotes-par-code")
+        || Scolia.Domain.Cloud.CloudOperationRules.Queueable(method.Method, path);
 
     private static string Describe(HttpMethod method, string path) => path switch
     {
@@ -553,6 +554,7 @@ public sealed partial class ScoliaClient : IDisposable
         _ when path.StartsWith("api/apprenants", StringComparison.Ordinal) && method == HttpMethod.Post => "Inscription",
         _ when path.StartsWith("api/apprenants", StringComparison.Ordinal) || path.StartsWith("api/inscriptions", StringComparison.Ordinal) => "Dossier de l'apprenant",
         _ when path.StartsWith("api/depenses", StringComparison.Ordinal) => "Dépense",
+        _ when path == "api/deliberation/cotes-par-code" => "Encodage d'une note anonyme",
         _ when path.StartsWith("api/scolarite/presences", StringComparison.Ordinal) => "Appel des présences",
         _ when path.StartsWith("api/scolarite/discipline", StringComparison.Ordinal) => "Discipline",
         _ when path.StartsWith("api/scolarite/evaluations", StringComparison.Ordinal) => "Notes",

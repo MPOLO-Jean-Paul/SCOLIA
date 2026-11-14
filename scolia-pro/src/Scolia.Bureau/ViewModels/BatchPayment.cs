@@ -178,7 +178,7 @@ public sealed class BatchPaymentPage : PageViewModel
 
     public string MonthModeHint => Mode?.Value switch
     {
-        "first_late" => "Le premier mois en retard non soldé de chaque apprenant.",
+        "first_late" => $"Le premier mois en retard non soldé de chaque {Shell.StudentTerms.Singular}.",
         "next" => "Uniquement le deuxième mois en retard, après le premier.",
         "late" => "Tous les mois en retard non soldés, du plus ancien au plus récent.",
         "all" => "Tous les mois à régler, y compris ceux qui ne sont pas encore en retard.",
@@ -269,7 +269,7 @@ public sealed class BatchPaymentPage : PageViewModel
         subtitle = due.Count == 0
             ? (Mode?.Value == "next" ? "Aucun deuxième mois en retard"
                 : LateOnly ? "Aucun mois en retard à régler" : "Aucun mois à régler")
-            : $"{Format.Count(due.Count, "apprenant à régler", "apprenants à régler")} · {Money(due.Sum(r => r.Total))}";
+            : $"{Format.Count(due.Count, $"{Shell.StudentTerms.Singular} à régler", $"{Shell.StudentTerms.Plural} à régler")} · {Money(due.Sum(r => r.Total))}";
         Raise(nameof(Subtitle));
         Raise(nameof(IsEmpty));
     }
@@ -323,7 +323,7 @@ public sealed class BatchPaymentPage : PageViewModel
         foreach (var row in Items.ToList()) row.Selected = value && row.FeeItemIds.Count > 0;
         UpdateSelectionSummary();
         var count = selectedRows.Count;
-        Shell.Notify(value ? (count == 0 ? "Aucun apprenant n'a de mois à régler dans ce mode." : $"{Format.Count(count, "apprenant coché", "apprenants cochés")} dans le lot.") : "Tout le lot a été décoché.");
+        Shell.Notify(value ? (count == 0 ? $"Aucun {Shell.StudentTerms.Singular} n'a de mois à régler dans ce mode." : $"{Format.Count(count, $"{Shell.StudentTerms.Singular} coché", $"{Shell.StudentTerms.Plural} cochés")} dans le lot.") : "Tout le lot a été décoché.");
     }
 
     /// <summary>Actualise le lot indépendant des résultats visibles de recherche.</summary>
@@ -342,13 +342,13 @@ public sealed class BatchPaymentPage : PageViewModel
     private void UpdateSelectionSummary()
     {
         var chosen = Chosen();
-        SelectionSummary = chosen.Count == 0 ? "Aucun apprenant coché"
-            : $"{Format.Count(chosen.Count, "apprenant coché", "apprenants cochés")} · total {Money(chosen.Sum(i => i.Total))}";
+        SelectionSummary = chosen.Count == 0 ? $"Aucun {Shell.StudentTerms.Singular} coché"
+            : $"{Format.Count(chosen.Count, $"{Shell.StudentTerms.Singular} coché", $"{Shell.StudentTerms.Plural} cochés")} · total {Money(chosen.Sum(i => i.Total))}";
         if (Sticky is { } bar)
         {
             bar.IsVisible = chosen.Count > 0;
             bar.Value = Money(chosen.Sum(i => i.Total));
-            bar.Detail = Format.Count(chosen.Count, "apprenant coché", "apprenants cochés");
+            bar.Detail = Format.Count(chosen.Count, $"{Shell.StudentTerms.Singular} coché", $"{Shell.StudentTerms.Plural} cochés");
             bar.CanRun = chosen.Count > 0;
         }
         Raise(nameof(SelectedCount));
@@ -388,7 +388,7 @@ public sealed class BatchPaymentPage : PageViewModel
         var rows = fixedSelection?.ToList() ?? Chosen();
         if (rows.Count == 0)
         {
-            Shell.Notify("Cochez au moins un apprenant.");
+            Shell.Notify($"Cochez au moins un {Shell.StudentTerms.Singular}.");
             return null;
         }
         var preview = await Shell.Api.SendAsync<BatchPreviewDto>(HttpMethod.Post, "api/paiements/lot/apercu", BuildRequest(rows, null));

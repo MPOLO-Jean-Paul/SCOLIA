@@ -7,26 +7,27 @@ using Scolia.Domain.Students;
 namespace Scolia.Infrastructure.Documents;
 
 /// <summary>
-/// Cartes d'accès au format Word (.docx) : huit inserts ID-1 (85,60 × 53,98 mm) par A4,
-/// logo et identité de l'établissement configurés, Session en grand, QR à la place du cachet,
-/// matricule, noms et promotion. Le PDF reste conseillé pour une découpe à dimensions exactes.
+/// Cartes d'accès au format Word (.docx) : huit inserts ID-1 (85,60 × 53,98 mm) par A4, sur le dessin commun
+/// <see cref="CardDesign"/> : en-tête centré de l'établissement et son logo, « Session AAAA » souligné, identité,
+/// second logo en bas à droite, bande de couleur de la filière et QR de contrôle. Le cachet est apposé à la main.
+/// Le PDF reste conseillé pour une découpe à dimensions exactes.
 /// </summary>
 public static class CardWordWriter
 {
     // A incrémenter ensemble avec le générateur PDF à chaque évolution du modèle.
-    internal static readonly string LayoutId = "SCOLIA-CARTES-ID1-2026-11-V3";
+    internal static readonly string LayoutId = "SCOLIA-CARTES-ID1-2026-11-V6";
     private const int CardTwip = 4853;       // 85,60 mm
     private const int GapTwip = 340;         // 6 mm
     private const int RowGapTwip = 397;      // 7 mm
     private const int CardHeightTwip = 3060; // 53,98 mm
-    private const int SealTwip = 680;
-    private const int HeaderRightTwip = 1320; // panneau d'adresse a droite        // emplacement du logo
-    private const int QrTwip = 1120;         // QR dans l'ancienne zone du cachet
-    private const int InnerTwip = 114;       // 2 mm de marge interne
-    private const int InnerWidthTwip = CardTwip - 2 * InnerTwip;
-    private const int Emu = 36000;          // 1 mm en EMU
-    private const string WordFont = "<w:rFonts w:ascii=\"Roboto\" w:hAnsi=\"Roboto\" w:cs=\"Roboto\"/>";
+    private const int Emu = 36000;           // 1 mm en EMU
+    private const string SansFont = "<w:rFonts w:ascii=\"Montserrat\" w:hAnsi=\"Montserrat\" w:cs=\"Montserrat\"/>";
+    private const string SerifFont = "<w:rFonts w:ascii=\"Times New Roman\" w:hAnsi=\"Times New Roman\" w:cs=\"Times New Roman\"/>";
+    private const string SmallFont = "<w:rFonts w:ascii=\"Roboto\" w:hAnsi=\"Roboto\" w:cs=\"Roboto\"/>";
     private const string TinyParagraph = "<w:p><w:pPr><w:spacing w:before=\"0\" w:after=\"0\" w:line=\"20\" w:lineRule=\"exact\"/></w:pPr></w:p>";
+
+    private static int Twip(float mm) => (int)Math.Round(mm * 1440 / 25.4f);
+    private static string Hex(string color) => color.TrimStart('#');
 
     private sealed class Images
     {
@@ -52,10 +53,11 @@ public static class CardWordWriter
             throw new InvalidOperationException("Le logo de l'établissement est nécessaire pour créer ses cartes d'accès.");
         if (!IsSupportedImage(schoolLogo))
             throw new InvalidOperationException("Le logo des cartes doit être au format PNG ou JPEG.");
-        var sealRid = images.Add("school-logo", () => schoolLogo);
+        var logoRid = images.Add("school-logo", () => schoolLogo);
         var body = new StringBuilder();
         var rowsPerPage = StudentCardRules.CardsPerPage / 2;
         var cardRows = (d.Cards.Count + 1) / 2;
+        var drawing = 0;
         body.Append(Grid());
         for (var row = 0; row < cardRows; row++)
         {
@@ -67,10 +69,10 @@ public static class CardWordWriter
             var second = right < d.Cards.Count ? d.Cards[right] : null;
 
             // Chaque ligne de la grille porte deux cartes ID-1 complètes.
-            body.Append($"<w:tr><w:trPr><w:trHeight w:val=\"{CardHeightTwip}\" w:hRule=\"atLeast\"/></w:trPr>");
-            ContentCell(body, d, first, sealRid, images);
+            body.Append($"<w:tr><w:trPr><w:trHeight w:val=\"{CardHeightTwip}\" w:hRule=\"atLeast\"/><w:cantSplit/></w:trPr>");
+            ContentCell(body, d, first, logoRid, images, ref drawing);
             body.Append(GapCell());
-            ContentCell(body, d, second, sealRid, images);
+            ContentCell(body, d, second, logoRid, images, ref drawing);
             body.Append("</w:tr>");
         }
         body.Append("</w:tbl>");
@@ -82,6 +84,7 @@ public static class CardWordWriter
             Entry(zip, "_rels/.rels", RootRels);
             Entry(zip, "word/_rels/document.xml.rels", DocumentRels(images));
             Entry(zip, "word/document.xml", Document(body.ToString()));
+            Entry(zip, "word/fontTable.xml", FontTable);
             foreach (var (rid, bytes, ext) in images.ByKey.Values)
             {
                 using var target = zip.CreateEntry($"word/media/{rid}.{ext}").Open();
@@ -91,74 +94,63 @@ public static class CardWordWriter
         return stream.ToArray();
     }
 
-    private static void AppendCard(StringBuilder body, CardDocument d, CardItem card, string logoRid, Images images)
+    private static void AppendCard(StringBuilder body, CardDocument d, CardItem card, string logoRid, Images images, ref int drawing)
     {
         var qrRid = images.Add("qr:" + card.QrText, () => DocumentService.QrPng(card.QrText));
-        var content = new StringBuilder();
-        var names = StudentCardRules.FullName(card.LastName, card.MiddleName, card.FirstName);
-        var schoolName = d.Header.Institute.Trim().ToUpperInvariant();
-        var administration = CardHeaderLayout.AdministrativeLines(d.Header);
-        var sideInfo = CardHeaderLayout.AddressLines(d.Header);
-        var contacts = CardHeaderLayout.ContactLines(d.Header);
+        var header = d.Header;
 
-        // En-tête : logo à gauche, mentions institutionnelles au centre,
-        // panneau d'adresse à droite marqué par une séparation verticale.
-        var centralTwip = InnerWidthTwip - SealTwip - HeaderRightTwip;
-        content.Append(TableStart(new[] { SealTwip, centralTwip, HeaderRightTwip }, InnerTwip));
-        content.Append($"<w:tr><w:tc><w:tcPr><w:tcW w:w=\"{SealTwip}\" w:type=\"dxa\"/><w:vAlign w:val=\"center\"/></w:tcPr>")
-            .Append(Picture(logoRid, 10, 10, 1, "Logo établissement", "left")).Append("</w:tc>");
-        content.Append($"<w:tc><w:tcPr><w:tcW w:w=\"{centralTwip}\" w:type=\"dxa\"/><w:vAlign w:val=\"center\"/></w:tcPr>");
-        foreach (var mention in administration)
-            Mention(content, mention, mention.Length > 110 ? 6 : 7, false, "left");
-        Mention(content, schoolName, schoolName.Length > 86 ? 8 :
-            schoolName.Length > 54 ? 9 : 10, true, "left");
-        content.Append("</w:tc>");
-        content.Append($"<w:tc><w:tcPr><w:tcW w:w=\"{HeaderRightTwip}\" w:type=\"dxa\"/>" +
-            "<w:tcBorders><w:left w:val=\"single\" w:sz=\"5\" w:color=\"AEB8C5\"/></w:tcBorders>" +
-            "<w:vAlign w:val=\"center\"/></w:tcPr>");
-        foreach (var line in sideInfo)
-            Mention(content, line, line.Length > 85 ? 5 : line.Length > 55 ? 6 : 7, false, "left");
-        content.Append("</w:tc></w:tr></w:tbl>");
+        // Ancrages : QR, second logo et bande de filière sont posés à leur place exacte dans la carte.
+        var color = card.Color.TrimStart('#').ToUpperInvariant();
+        var bandRid = images.Add("band:" + color, () => SolidPng(color));
+        body.Append("<w:p><w:pPr><w:spacing w:before=\"0\" w:after=\"0\" w:line=\"20\" w:lineRule=\"exact\"/></w:pPr>")
+            .Append(Floating(qrRid, CardDesign.QrLeftMm, CardDesign.QrMarginMm, CardDesign.QrMm, CardDesign.QrMm, ++drawing, "QR de contrôle"))
+            .Append(Floating(logoRid, CardDesign.BottomLogoLeftMm, CardDesign.BottomLogoTopMm, CardDesign.BottomLogoMm, CardDesign.BottomLogoMm, ++drawing, "Logo inférieur"))
+            .Append(Floating(bandRid, 0, CardDesign.BandTopMm, StudentCardRules.CardWidthMm, CardDesign.BandMm, ++drawing, "Bande de filière"))
+            .Append("</w:p>");
+        body.Append(Spacer(CardDesign.HeaderTopMm - 0.35f));
 
-        // Titre de session agrandi, sans compromettre les trois lignes d'identité.
-        content.Append(TableStart(new[] { InnerWidthTwip - QrTwip, QrTwip }, InnerTwip));
-        content.Append($"<w:tr><w:tc><w:tcPr><w:tcW w:w=\"{InnerWidthTwip - QrTwip}\" w:type=\"dxa\"/><w:vAlign w:val=\"center\"/></w:tcPr>");
-        content.Append(Paragraph("Session " + StudentCardRules.SessionYear(d.Session), 26, true, true, "center", "616975", 9));
-        content.Append(Paragraph("ACCÈS AUX EXAMENS", 12, true, false, "center", "1B2430", 6));
-        content.Append(Paragraph(d.Session, 9, false, false, "center", "5B6878", 5));
-        content.Append("</w:tc>");
-        content.Append($"<w:tc><w:tcPr><w:tcW w:w=\"{QrTwip}\" w:type=\"dxa\"/><w:vAlign w:val=\"center\"/></w:tcPr>");
-        content.Append(Picture(qrRid, 14.0, 14.0, 2, "QR de contrôle"));
-        content.Append(Paragraph("Contrôle QR", 7, false, false, "center", "5B6878"));
-        content.Append("</w:tc></w:tr></w:tbl>");
+        // En-tête centré : logo, puis nom, service, filet et contacts.
+        var textTwip = Twip(CardDesign.HeaderTextMm);
+        var logoTwip = Twip(CardDesign.LogoMm + CardDesign.HeaderGapMm);
+        body.Append(TableStart([logoTwip, textTwip], Twip(CardDesign.HeaderLeftMm)));
+        body.Append($"<w:tr><w:trPr><w:trHeight w:val=\"{Twip(CardDesign.HeaderHeightMm)}\" w:hRule=\"exact\"/></w:trPr>");
+        body.Append($"<w:tc><w:tcPr><w:tcW w:w=\"{logoTwip}\" w:type=\"dxa\"/><w:vAlign w:val=\"center\"/></w:tcPr>")
+            .Append(Picture(logoRid, CardDesign.LogoMm, CardDesign.LogoMm, ++drawing, "Logo de l'établissement", "left")).Append("</w:tc>");
+        body.Append($"<w:tc><w:tcPr><w:tcW w:w=\"{textTwip}\" w:type=\"dxa\"/><w:vAlign w:val=\"center\"/></w:tcPr>");
+        var name = CardDesign.SchoolName(header);
+        body.Append(Paragraph(name, SerifFont, HalfPoints(CardDesign.SchoolNamePt(name)), false, false, "left", CardDesign.HeaderInk, after: 20));
+        if (CardDesign.Department(header) is { } department)
+            body.Append(Paragraph(department, SerifFont, HalfPoints(CardDesign.DepartmentPt), false, false, "left", CardDesign.HeaderInk, tracking: 6, after: 20));
+        var contacts = CardDesign.Contacts(header);
+        for (var i = 0; i < contacts.Count; i++)
+            body.Append(Paragraph(contacts[i], SmallFont, HalfPoints(CardDesign.ContactPt), false, false, "left", CardDesign.HeaderMuted, rule: i == 0));
+        body.Append("</w:tc></w:tr></w:tbl>");
 
-        // Zone nominative obligatoirement après la session, jamais dans
-        // une cellule sous une autre ligne à hauteur EXACTE qui la masquerait.
-        Field(content, "MATRICULE", card.Matricule, 15);
-        Field(content, "NOMS", names, names.Length > 90 ? 9 : names.Length > 60 ? 11
-            : names.Length > 40 ? 13 : 16);
-        Field(content, "PROMOTION", card.Classe, 15);
+        // « Session 2026 » : grand, gras, souligné, centré.
+        body.Append(Spacer(CardDesign.SessionTopMm - CardDesign.HeaderTopMm - CardDesign.HeaderHeightMm));
+        const float sessionLineMm = 7.4f;
+        body.Append(Paragraph(CardDesign.SessionTitle(d.Session), SansFont, HalfPoints(CardDesign.SessionPt), true, true, "center",
+            CardDesign.SessionInk, lineTwip: Twip(sessionLineMm)));
+        body.Append(Spacer(CardDesign.IdentityTopMm - CardDesign.SessionTopMm - sessionLineMm));
 
-        // Contacts, site internet et devise sont placés en bas, à côté du
-        // second logo de l'école ; ils ne masquent ni identité ni QR.
-        content.Append(TableStart(new[] { InnerWidthTwip - SealTwip, SealTwip }, InnerTwip));
-        content.Append($"<w:tr><w:tc><w:tcPr><w:tcW w:w=\"{InnerWidthTwip - SealTwip}\" w:type=\"dxa\"/></w:tcPr>");
-        foreach (var mention in contacts)
-            content.Append(Paragraph(mention, 8, false, false, "left", "5B6878"));
-        content.Append(Paragraph("Année scolaire " + d.AcademicYear, 8, false, false, "left", "5B6878"));
-        content.Append("</w:tc>");
-        content.Append($"<w:tc><w:tcPr><w:tcW w:w=\"{SealTwip}\" w:type=\"dxa\"/></w:tcPr>");
-        content.Append(Picture(logoRid, 9.0, 9.0, 3, "Logo inférieur établissement", "right"));
-        content.Append("</w:tc></w:tr></w:tbl>");
-
-        body.Append(content).Append(TinyParagraph);
+        // Identité : trois lignes de même corps, capitales espacées.
+        var size = HalfPoints(CardDesign.IdentityPt(card));
+        var tracking = (int)Math.Round(CardDesign.IdentityTracking * size * 10);
+        foreach (var (label, value) in CardDesign.Identity(card))
+            body.Append(Paragraph(label + " : " + value, SansFont, size, false, false, "left", CardDesign.IdentityInk,
+                tracking: tracking, lineTwip: Twip(CardDesign.IdentityStepMm), indentTwip: Twip(CardDesign.IdentityLeftMm)));
     }
 
-    private static void ContentCell(StringBuilder body, CardDocument d, CardItem? card, string sealRid, Images images)
+    private static int HalfPoints(float points) => Math.Max(6, (int)Math.Round(points * 2));
+
+    private static string Spacer(float mm) =>
+        $"<w:p><w:pPr><w:spacing w:before=\"0\" w:after=\"0\" w:line=\"{Math.Max(20, Twip(mm))}\" w:lineRule=\"exact\"/></w:pPr></w:p>";
+
+    private static void ContentCell(StringBuilder body, CardDocument d, CardItem? card, string logoRid, Images images, ref int drawing)
     {
         body.Append($"<w:tc><w:tcPr><w:tcW w:w=\"{CardTwip}\" w:type=\"dxa\"/>{Sides(card is not null, top: true, bottom: true)}</w:tcPr>");
         if (card is null) body.Append(TinyParagraph);
-        else AppendCard(body, d, card, sealRid, images);
+        else AppendCard(body, d, card, logoRid, images, ref drawing);
         body.Append("</w:tc>");
     }
 
@@ -192,36 +184,47 @@ public static class CardWordWriter
     private static string Side(string side, bool on) =>
         on ? $"<w:{side} w:val=\"single\" w:sz=\"4\" w:color=\"AEB8C5\"/>" : $"<w:{side} w:val=\"nil\"/>";
 
-    private static void Mention(StringBuilder body, string? value, int halfPoints, bool bold, string alignment = "center")
+    private static string Paragraph(string text, string font, int halfPoints, bool bold, bool underline, string align, string color,
+        int tracking = 0, int lineTwip = 0, int indentTwip = 0, int after = 0, bool rule = false)
     {
-        if (string.IsNullOrWhiteSpace(value)) return;
-        body.Append(Paragraph(value.Trim().ToUpperInvariant(), halfPoints, bold, false, alignment, "1B2430", 0, 14));
+        var props = $"<w:rPr>{font}{(bold ? "<w:b/>" : string.Empty)}{(underline ? $"<w:u w:val=\"single\" w:color=\"{Hex(color)}\"/>" : string.Empty)}" +
+            $"<w:color w:val=\"{Hex(color)}\"/>{(tracking > 0 ? $"<w:spacing w:val=\"{tracking}\"/>" : string.Empty)}<w:sz w:val=\"{halfPoints}\"/><w:szCs w:val=\"{halfPoints}\"/></w:rPr>";
+        var line = lineTwip > 0 ? $"w:line=\"{lineTwip}\" w:lineRule=\"exact\"" : $"w:line=\"{Math.Max(halfPoints * 11, 90)}\" w:lineRule=\"exact\"";
+        var border = rule ? $"<w:pBdr><w:top w:val=\"single\" w:sz=\"3\" w:space=\"1\" w:color=\"{Hex(CardDesign.HeaderMuted)}\"/></w:pBdr>" : string.Empty;
+        var indent = indentTwip > 0 ? $"<w:ind w:left=\"{indentTwip}\"/>" : string.Empty;
+        return $"<w:p><w:pPr>{border}<w:spacing w:before=\"{(rule ? 30 : 0)}\" w:after=\"{after}\" {line}/>{indent}<w:jc w:val=\"{align}\"/>{props}</w:pPr>" +
+            $"<w:r>{props}<w:t xml:space=\"preserve\">{Esc(text)}</w:t></w:r></w:p>";
     }
 
-    /// <summary>Matricule, noms complets et promotion, sans ligne prédéfinie.</summary>
-    private static void Field(StringBuilder body, string label, string value, int halfPoints)
+    /// <summary>Image flottante posée à une position exacte de la carte (en millimètres depuis son coin supérieur gauche).</summary>
+    private static string Floating(string rid, float xMm, float yMm, float widthMm, float heightMm, int id, string name)
     {
-        body.Append($"<w:p><w:pPr><w:spacing w:before=\"0\" w:after=\"36\" w:line=\"{Math.Max(halfPoints * 13, 170)}\" w:lineRule=\"atLeast\"/><w:jc w:val=\"left\"/></w:pPr>")
-            .Append(Run(label + " : ", 13, "1B2430"))
-            .Append(Run(value.Trim().ToUpperInvariant(), halfPoints, "1B2430"))
-            .Append("</w:p>");
+        var cx = (long)(widthMm * Emu);
+        var cy = (long)(heightMm * Emu);
+        return "<w:r><w:drawing>" +
+            $"<wp:anchor distT=\"0\" distB=\"0\" distL=\"0\" distR=\"0\" simplePos=\"0\" relativeHeight=\"{251658240 + id}\" behindDoc=\"0\" locked=\"1\" layoutInCell=\"1\" allowOverlap=\"1\">" +
+            "<wp:simplePos x=\"0\" y=\"0\"/>" +
+            $"<wp:positionH relativeFrom=\"column\"><wp:posOffset>{(long)(xMm * Emu)}</wp:posOffset></wp:positionH>" +
+            $"<wp:positionV relativeFrom=\"paragraph\"><wp:posOffset>{(long)(yMm * Emu)}</wp:posOffset></wp:positionV>" +
+            $"<wp:extent cx=\"{cx}\" cy=\"{cy}\"/><wp:effectExtent l=\"0\" t=\"0\" r=\"0\" b=\"0\"/><wp:wrapNone/>" +
+            $"<wp:docPr id=\"{id}\" name=\"{name}\"/><wp:cNvGraphicFramePr/>" +
+            "<a:graphic><a:graphicData uri=\"http://schemas.openxmlformats.org/drawingml/2006/picture\">" +
+            $"<pic:pic><pic:nvPicPr><pic:cNvPr id=\"{id}\" name=\"{name}.png\"/><pic:cNvPicPr/></pic:nvPicPr>" +
+            $"<pic:blipFill><a:blip r:embed=\"{rid}\"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill>" +
+            $"<pic:spPr><a:xfrm><a:off x=\"0\" y=\"0\"/><a:ext cx=\"{cx}\" cy=\"{cy}\"/></a:xfrm><a:prstGeom prst=\"rect\"><a:avLst/></a:prstGeom></pic:spPr>" +
+            "</pic:pic></a:graphicData></a:graphic></wp:anchor></w:drawing></w:r>";
     }
 
-    private static string Run(string text, int halfPoints, string color, bool bold = true) =>
-        $"<w:r><w:rPr>{WordFont}{(bold ? "<w:b/>" : string.Empty)}<w:color w:val=\"{color}\"/><w:sz w:val=\"{halfPoints}\"/></w:rPr><w:t xml:space=\"preserve\">{Esc(text)}</w:t></w:r>";
+    /// <summary>Polices : Montserrat, remplacée par Century Gothic sur un poste qui ne l'a pas.</summary>
+    private const string FontTable =
+        "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>" +
+        "<w:fonts xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\">" +
+        "<w:font w:name=\"Montserrat\"><w:altName w:val=\"Century Gothic\"/><w:family w:val=\"swiss\"/><w:pitch w:val=\"variable\"/></w:font>" +
+        "<w:font w:name=\"Times New Roman\"><w:family w:val=\"roman\"/><w:pitch w:val=\"variable\"/></w:font>" +
+        "<w:font w:name=\"Roboto\"><w:altName w:val=\"Arial\"/><w:family w:val=\"swiss\"/><w:pitch w:val=\"variable\"/></w:font>" +
+        "</w:fonts>";
 
-    private static string Paragraph(string text, int halfPoints, bool bold, bool underline, string align, string? color, int beforeTwip = 0, int afterTwip = 0, int indentTwip = 0)
-    {
-        var props = $"<w:rPr>{WordFont}{(bold ? "<w:b/>" : string.Empty)}{(underline ? "<w:u w:val=\"single\"/>" : string.Empty)}" +
-            $"{(color is null ? string.Empty : $"<w:color w:val=\"{color}\"/>")}<w:sz w:val=\"{halfPoints}\"/></w:rPr>";
-        var line = Math.Max(halfPoints * 13, 120);
-        var spacing = $"<w:spacing w:before=\"{beforeTwip}\" w:after=\"{afterTwip}\" w:line=\"{line}\" w:lineRule=\"exact\"/>";
-        var run = text.Length == 0 ? string.Empty : $"<w:r>{props}<w:t xml:space=\"preserve\">{Esc(text)}</w:t></w:r>";
-        var indent = indentTwip > 0 ? $"<w:ind w:left=\"{indentTwip}\" w:right=\"{indentTwip}\"/>" : string.Empty;
-        return $"<w:p><w:pPr>{spacing}{indent}<w:jc w:val=\"{align}\"/>{props}</w:pPr>{run}</w:p>";
-    }
-
-    /// <summary>Image en ligne de taille fixe, en millimètres, centrée dans sa cellule.</summary>
+    /// <summary>Image en ligne de taille fixe, en millimètres.</summary>
     private static string Picture(string rid, double widthMm, double heightMm, int id, string name, string alignment = "center")
     {
         var cx = (long)(widthMm * Emu);
@@ -237,6 +240,44 @@ public static class CardWordWriter
 
     private static bool IsSupportedImage(byte[] bytes) =>
         bytes.Length > 8 && ((bytes[0] == 0x89 && bytes[1] == 'P' && bytes[2] == 'N' && bytes[3] == 'G') || (bytes[0] == 0xFF && bytes[1] == 0xD8));
+
+    /// <summary>Image PNG d'un pixel de la couleur donnée (RRGGBB), étirée pour dessiner la bande de filière.</summary>
+    public static byte[] SolidPng(string rrggbb)
+    {
+        var rgb = Convert.FromHexString(rrggbb.Length == 6 ? rrggbb : "1D4ED8");
+        using var png = new MemoryStream();
+        png.Write([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]);
+        Chunk(png, "IHDR", [0, 0, 0, 1, 0, 0, 0, 1, 8, 2, 0, 0, 0]);
+        using (var raw = new MemoryStream())
+        {
+            using (var z = new ZLibStream(raw, CompressionLevel.Optimal, leaveOpen: true))
+                z.Write([0, rgb[0], rgb[1], rgb[2]]);
+            Chunk(png, "IDAT", raw.ToArray());
+        }
+        Chunk(png, "IEND", []);
+        return png.ToArray();
+    }
+
+    private static void Chunk(Stream png, string type, byte[] data)
+    {
+        var typeBytes = Encoding.ASCII.GetBytes(type);
+        png.Write([(byte)(data.Length >> 24), (byte)(data.Length >> 16), (byte)(data.Length >> 8), (byte)data.Length]);
+        png.Write(typeBytes);
+        png.Write(data);
+        var crc = Crc32([.. typeBytes, .. data]);
+        png.Write([(byte)(crc >> 24), (byte)(crc >> 16), (byte)(crc >> 8), (byte)crc]);
+    }
+
+    private static uint Crc32(byte[] bytes)
+    {
+        var crc = 0xFFFFFFFFu;
+        foreach (var b in bytes)
+        {
+            crc ^= b;
+            for (var k = 0; k < 8; k++) crc = (crc & 1) != 0 ? 0xEDB88320u ^ (crc >> 1) : crc >> 1;
+        }
+        return ~crc;
+    }
 
     private static string Document(string body) =>
         "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>" +
@@ -256,6 +297,7 @@ public static class CardWordWriter
         "<Default Extension=\"png\" ContentType=\"image/png\"/>" +
         "<Default Extension=\"jpg\" ContentType=\"image/jpeg\"/>" +
         "<Override PartName=\"/word/document.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml\"/>" +
+        "<Override PartName=\"/word/fontTable.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.wordprocessingml.fontTable+xml\"/>" +
         "</Types>";
 
     private const string RootRels =
@@ -267,7 +309,8 @@ public static class CardWordWriter
     private static string DocumentRels(Images images)
     {
         var sb = new StringBuilder("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>" +
-            "<Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\">");
+            "<Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\">" +
+            "<Relationship Id=\"rFonts\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/fontTable\" Target=\"fontTable.xml\"/>");
         foreach (var (rid, _, ext) in images.ByKey.Values)
             sb.Append($"<Relationship Id=\"{rid}\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/image\" Target=\"media/{rid}.{ext}\"/>");
         return sb.Append("</Relationships>").ToString();

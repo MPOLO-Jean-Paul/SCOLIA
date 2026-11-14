@@ -198,7 +198,7 @@ public sealed class CardsPage : PageViewModel
         var rows = Rows.Where(r => r.Selectable).ToList();
         foreach (var row in rows) row.Selected = value;
         Raise(nameof(SelectedCount));
-        Shell.Notify(value ? $"{Format.Count(selectedCardIds.Count, "apprenant coché", "apprenants cochés")} pour les cartes."
+        Shell.Notify(value ? $"{Format.Count(selectedCardIds.Count, $"{Shell.StudentTerms.Singular} coché", $"{Shell.StudentTerms.Plural} cochés")} pour les cartes."
             : "Sélection du lot annulée.");
     }
 
@@ -215,7 +215,7 @@ public sealed class CardsPage : PageViewModel
         var ids = selectedCardIds.ToList();
         if (ids.Count == 0)
         {
-            Shell.Notify("Cochez au moins un apprenant imprimable.");
+            Shell.Notify($"Cochez au moins un {Shell.StudentTerms.Singular} imprimable.");
             return;
         }
         var month = int.Parse(Month?.Value ?? DateTime.Today.Month.ToString(System.Globalization.CultureInfo.InvariantCulture), System.Globalization.CultureInfo.InvariantCulture);
@@ -239,7 +239,7 @@ public sealed class CardsPage : PageViewModel
         Files.Open(Files.Save(bytes, $"cartes-{year}-{month:00}.{format}"));
         Shell.Notify(skipped == 0
             ? "Cartes générées et enregistrées dans Téléchargements."
-            : $"Cartes générées. {skipped} apprenant(s) écarté(s) : sortis, suspendus, identité incomplète ou matricule répété.");
+            : $"Cartes générées. {skipped} {(skipped == 1 ? Shell.StudentTerms.Singular : Shell.StudentTerms.Plural)} écarté{(skipped == 1 ? "" : "s")} : sortis, suspendus, identité incomplète ou matricule répété.");
         selectedCardIds.Clear();
         Raise(nameof(SelectedCount));
         await RefreshAsync();
