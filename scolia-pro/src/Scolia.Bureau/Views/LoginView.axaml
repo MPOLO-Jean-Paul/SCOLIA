@@ -63,6 +63,24 @@
         <Transitions><BrushTransition Property="BorderBrush" Duration="0:0:0.14" Easing="CubicEaseOut" /></Transitions>
       </Setter>
     </Style>
+    <!-- Le cadre interne du template Fluent peut conserver une surface blanche même
+         quand le TextBox lui-même est cobalt. Fixer les deux niveaux, y compris au focus. -->
+    <Style Selector="TextBox.iosauthfield /template/ Border#PART_BorderElement">
+      <Setter Property="Background" Value="#1845B1" />
+      <Setter Property="BorderBrush" Value="#87A9EE" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="9" />
+    </Style>
+    <Style Selector="TextBox.iosauthfield:pointerover /template/ Border#PART_BorderElement">
+      <Setter Property="Background" Value="#1845B1" />
+    </Style>
+    <Style Selector="TextBox.iosauthfield:focus /template/ Border#PART_BorderElement">
+      <Setter Property="Background" Value="#1845B1" />
+      <Setter Property="BorderBrush" Value="#FFFFFF" />
+    </Style>
+    <Style Selector="TextBox.iosauthfield:disabled /template/ Border#PART_BorderElement">
+      <Setter Property="Background" Value="#1845B1" />
+    </Style>
     <!-- Le thème Fluent définit sa couleur de watermark séparément du texte saisi.
          Ces deux styles évitent les placeholders sombres, y compris avec le clavier Android. -->
     <Style Selector="TextBox.iosauthfield /template/ TextBlock#PART_Watermark">
@@ -627,7 +645,7 @@
                 </Expander>
                 <StackPanel Spacing="5" IsVisible="{Binding ShowAccountEntry}">
                   <Grid>
-                    <TextBox x:Name="IosUserNameBox" Classes="iosauthfield onbrand" Text="{Binding UserName}"
+                    <TextBox x:Name="IosUserNameBox" Classes="iosauthfield onbrand" Background="#1845B1" Foreground="#FFFFFF" CaretBrush="#FFFFFF" PlaceholderForeground="#E4EEFF" Text="{Binding UserName}"
                              PlaceholderText="Identifiant" MaxLength="40" IsEnabled="{Binding CanType}"
                              AutomationProperties.Name="Identifiant de connexion" />
                     <mi:MaterialIcon Kind="AccountOutline" Width="20" Height="20" Margin="13,0,0,0"
@@ -637,7 +655,7 @@
                 </StackPanel>
                 <StackPanel Spacing="5" IsVisible="{Binding ShowSignInPassword}">
                   <Grid>
-                    <TextBox x:Name="IosPasswordBox" Classes="iosauthfield onbrand" Text="{Binding Password}"
+                    <TextBox x:Name="IosPasswordBox" Classes="iosauthfield onbrand" Background="#1845B1" Foreground="#FFFFFF" CaretBrush="#FFFFFF" PlaceholderForeground="#E4EEFF" Text="{Binding Password}"
                              PasswordChar="•" RevealPassword="{Binding ShowPassword}" MaxLength="128"
                              Padding="42,9,52,9"
                              TextInputOptions.ContentType="Password" TextInputOptions.IsSensitive="True"
@@ -693,7 +711,7 @@
                 <StackPanel Spacing="6">
                   <TextBlock Text="NOUVEAU MOT DE PASSE" Classes="iosauthlabel" />
                   <Grid>
-                    <TextBox x:Name="IosNewPasswordBox" Classes="iosauthfield onbrand" Text="{Binding NewPassword}"
+                    <TextBox x:Name="IosNewPasswordBox" Classes="iosauthfield onbrand" Background="#1845B1" Foreground="#FFFFFF" CaretBrush="#FFFFFF" PlaceholderForeground="#E4EEFF" Text="{Binding NewPassword}"
                              PasswordChar="•" RevealPassword="{Binding ShowNewPassword}"
                              Padding="14,9,52,9" MaxLength="128"
                              TextInputOptions.ContentType="Password" TextInputOptions.IsSensitive="True"
@@ -710,7 +728,7 @@
                 <StackPanel Spacing="6">
                   <TextBlock Text="CONFIRMATION" Classes="iosauthlabel" />
                   <Grid>
-                    <TextBox x:Name="IosConfirmPasswordBox" Classes="iosauthfield onbrand" Text="{Binding ConfirmPassword}"
+                    <TextBox x:Name="IosConfirmPasswordBox" Classes="iosauthfield onbrand" Background="#1845B1" Foreground="#FFFFFF" CaretBrush="#FFFFFF" PlaceholderForeground="#E4EEFF" Text="{Binding ConfirmPassword}"
                              PasswordChar="•" RevealPassword="{Binding ShowConfirmPassword}"
                              Padding="14,9,52,9" MaxLength="128"
                              TextInputOptions.ContentType="Password" TextInputOptions.IsSensitive="True"
@@ -735,7 +753,7 @@
                 <StackPanel Spacing="6">
                   <TextBlock Text="CODE DE SECOURS DU SERVEUR" Classes="iosauthlabel" />
                   <Grid>
-                    <TextBox x:Name="IosRecoveryCodeBox" Classes="iosauthfield onbrand" Text="{Binding RecoveryCode}"
+                    <TextBox x:Name="IosRecoveryCodeBox" Classes="iosauthfield onbrand" Background="#1845B1" Foreground="#FFFFFF" CaretBrush="#FFFFFF" PlaceholderForeground="#E4EEFF" Text="{Binding RecoveryCode}"
                              PasswordChar="•" RevealPassword="{Binding ShowRecoveryCode}"
                              Padding="14,9,52,9" MaxLength="100"
                              TextInputOptions.ContentType="Password" TextInputOptions.IsSensitive="True"
