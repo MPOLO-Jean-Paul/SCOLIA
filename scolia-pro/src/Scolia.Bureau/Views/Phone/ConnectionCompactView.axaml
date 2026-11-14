@@ -5,17 +5,19 @@
   <!-- Parcours pré-connexion Android : plusieurs pages courtes, jamais une page verticale à faire défiler. -->
   <UserControl.Styles>
     <Style Selector="Border.connectcard">
-      <!-- Chaque étape occupe la fenêtre native, sans cadre de formulaire web. -->
-      <Setter Property="Background" Value="Transparent" />
-      <Setter Property="CornerRadius" Value="0" />
-      <Setter Property="BorderThickness" Value="0" />
-      <Setter Property="Padding" Value="0" />
+      <!-- Panneau de jumelage dans le même bleu cobalt que l'écran LoginView. -->
+      <Setter Property="Background" Value="#2354C8" />
+      <Setter Property="CornerRadius" Value="24" />
+      <Setter Property="BorderBrush" Value="#638AE3" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="Padding" Value="22" />
       <Setter Property="MaxWidth" Value="460" />
+      <Setter Property="BoxShadow" Value="0 8 24 0 #260B327A" />
     </Style>
     <Style Selector="Button.connectmain">
-      <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
-      <Setter Property="Foreground" Value="{DynamicResource OnAccentBrush}" />
-      <Setter Property="CornerRadius" Value="12" />
+      <Setter Property="Background" Value="#FFFFFF" />
+      <Setter Property="Foreground" Value="#1948AE" />
+      <Setter Property="CornerRadius" Value="10" />
       <Setter Property="BorderThickness" Value="0" />
       <Setter Property="MinHeight" Value="52" />
       <Setter Property="HorizontalAlignment" Value="Stretch" />
@@ -29,10 +31,11 @@
       </Setter>
     </Style>
     <Style Selector="Button.connectsecondary">
-      <Setter Property="Background" Value="{DynamicResource Surface2Brush}" />
-      <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
-      <Setter Property="CornerRadius" Value="12" />
-      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Background" Value="#2E60D4" />
+      <Setter Property="Foreground" Value="#FFFFFF" />
+      <Setter Property="CornerRadius" Value="10" />
+      <Setter Property="BorderBrush" Value="#7797E8" />
+      <Setter Property="BorderThickness" Value="1" />
       <Setter Property="MinHeight" Value="48" />
       <Setter Property="HorizontalAlignment" Value="Stretch" />
       <Setter Property="HorizontalContentAlignment" Value="Center" />
@@ -45,35 +48,42 @@
     </Style>
     <Style Selector="Button.connectnav">
       <Setter Property="Background" Value="Transparent" />
-      <Setter Property="Foreground" Value="{DynamicResource Text2Brush}" />
+      <Setter Property="Foreground" Value="#16448F" />
       <Setter Property="CornerRadius" Value="10" />
       <Setter Property="BorderThickness" Value="0" />
       <Setter Property="MinHeight" Value="45" />
       <Setter Property="HorizontalContentAlignment" Value="Center" />
     </Style>
+    <Style Selector="Button.connectnav.incard"><Setter Property="Foreground" Value="#E4EEFF" /></Style>
+    <Style Selector="Button.connectnav.incard:pointerover"><Setter Property="Background" Value="#2E60D4" /></Style>
     <Style Selector="Button.connectnav.selected">
-      <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
-      <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
+      <Setter Property="Background" Value="#2354C8" />
+      <Setter Property="Foreground" Value="#FFFFFF" />
       <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+    <Style Selector="Button.connectnav.selected /template/ ContentPresenter">
+      <Setter Property="Background" Value="#2354C8" />
+      <Setter Property="Foreground" Value="#FFFFFF" />
     </Style>
     <Style Selector="TextBlock.connecttitle">
       <Setter Property="FontSize" Value="22" />
       <Setter Property="FontWeight" Value="SemiBold" />
-      <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+      <Setter Property="Foreground" Value="#FFFFFF" />
       <Setter Property="TextWrapping" Value="Wrap" />
     </Style>
     <Style Selector="TextBlock.connecthint">
-      <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
+      <Setter Property="Foreground" Value="#E4EDFF" />
       <Setter Property="FontSize" Value="12" />
       <Setter Property="TextWrapping" Value="Wrap" />
     </Style>
     <Style Selector="TextBox.connectfield">
-      <Setter Property="Background" Value="{DynamicResource FieldBrush}" />
-      <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
-      <!-- Même lisibilité et couleur de saisie sur Android et Windows. -->
-      <Setter Property="CaretBrush" Value="{DynamicResource AccentBrush}" />
-      <Setter Property="SelectionBrush" Value="{DynamicResource AccentSoftBrush}" />
-      <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
+      <Setter Property="Background" Value="#1845B1" />
+      <Setter Property="Foreground" Value="#FFFFFF" />
+      <Setter Property="PlaceholderForeground" Value="#E4EEFF" />
+      <Setter Property="CaretBrush" Value="#FFFFFF" />
+      <Setter Property="SelectionBrush" Value="#6EA4FF" />
+      <Setter Property="SelectionForegroundBrush" Value="#FFFFFF" />
+      <Setter Property="BorderBrush" Value="#87A9EE" />
       <Setter Property="BorderThickness" Value="1" />
       <Setter Property="CornerRadius" Value="12" />
       <Setter Property="MinHeight" Value="52" />
@@ -87,25 +97,50 @@
       </Setter>
     </Style>
     <Style Selector="ComboBox.connectselect">
-      <Setter Property="Background" Value="{DynamicResource FieldBrush}" />
-      <Setter Property="CornerRadius" Value="13" />
+      <Setter Property="Background" Value="#1845B1" />
+      <Setter Property="Foreground" Value="#FFFFFF" />
+      <Setter Property="BorderBrush" Value="#87A9EE" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="10" />
       <Setter Property="MinHeight" Value="46" />
       <Setter Property="HorizontalAlignment" Value="Stretch" />
     </Style>
     <!-- Composants tactiles : retour immédiat, sans décaler la page. -->
     <Style Selector="Button.connectmain:pressed">
-      <Setter Property="Background" Value="{DynamicResource AccentHoverBrush}" />
+      <Setter Property="Background" Value="#E8F1FF" />
       <Setter Property="Opacity" Value="0.94" />
     </Style>
     <Style Selector="Button.connectsecondary:pressed">
-      <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
+      <Setter Property="Background" Value="#396DE0" />
     </Style>
     <Style Selector="TextBox.connectfield:focus">
-      <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+      <Setter Property="BorderBrush" Value="#FFFFFF" />
       <Setter Property="BorderThickness" Value="1" />
     </Style>
-    <!-- En cas de très petite hauteur, supprimer les ornements, jamais les commandes. -->
-    <Style Selector="Grid.micro Border.connectcard"><Setter Property="Padding" Value="0" /><Setter Property="CornerRadius" Value="0" /></Style>
+    <!-- Le template Fluent doit aussi respecter le fond : prévention des champs blanc-sur-blanc. -->
+    <Style Selector="TextBox.connectfield.onbrand /template/ Border#PART_BorderElement">
+      <Setter Property="Background" Value="#1845B1" />
+      <Setter Property="BorderBrush" Value="#87A9EE" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="12" />
+    </Style>
+    <Style Selector="TextBox.connectfield.onbrand:focus /template/ Border#PART_BorderElement">
+      <Setter Property="Background" Value="#1845B1" />
+      <Setter Property="BorderBrush" Value="#FFFFFF" />
+    </Style>
+    <Style Selector="TextBox.connectfield.onbrand:pointerover /template/ Border#PART_BorderElement"><Setter Property="Background" Value="#1845B1" /></Style>
+    <Style Selector="TextBox.connectfield.onbrand:disabled /template/ Border#PART_BorderElement"><Setter Property="Background" Value="#1845B1" /></Style>
+    <Style Selector="TextBox.connectfield.onbrand /template/ TextBlock#PART_Watermark"><Setter Property="Foreground" Value="#E4EEFF" /></Style>
+    <Style Selector="ComboBox.connectselect /template/ Border#Background">
+      <Setter Property="Background" Value="#1845B1" />
+      <Setter Property="BorderBrush" Value="#87A9EE" />
+    </Style>
+    <!-- Tailles tactiles et composition cohérentes jusque sur les petits Android. -->
+    <Style Selector="Grid.compact Border.connectcard"><Setter Property="Padding" Value="18" /><Setter Property="CornerRadius" Value="21" /></Style>
+    <Style Selector="Grid.tiny Border.connectcard"><Setter Property="Padding" Value="14" /><Setter Property="CornerRadius" Value="18" /></Style>
+    <Style Selector="Grid.short Border.connectcard"><Setter Property="Padding" Value="16" /><Setter Property="CornerRadius" Value="19" /></Style>
+    <Style Selector="Grid.short StackPanel.connectfields"><Setter Property="Spacing" Value="9" /></Style>
+    <Style Selector="Grid.micro Border.connectcard"><Setter Property="Padding" Value="12" /><Setter Property="CornerRadius" Value="16" /></Style>
     <Style Selector="Grid.micro StackPanel.connectfields"><Setter Property="Spacing" Value="8" /></Style>
     <Style Selector="Grid.micro TextBlock.connecttitle"><Setter Property="FontSize" Value="19" /></Style>
     <Style Selector="Grid.micro Border.connectqrdeco"><Setter Property="IsVisible" Value="False" /></Style>
@@ -117,26 +152,32 @@
     <Style Selector="Grid.keyboard TextBlock.connectoptional"><Setter Property="IsVisible" Value="False" /></Style>
     <Style Selector="Grid.keyboard TextBlock.connectdetailtext"><Setter Property="MaxLines" Value="5" /></Style>
     <Style Selector="Grid.keyboard Grid.connectnavbar"><Setter Property="Margin" Value="0" /></Style>
-    <Style Selector="Grid.keyboard Border.connectcard"><Setter Property="Padding" Value="0" /></Style>
+    <Style Selector="Grid.keyboard Border.connectcard"><Setter Property="Padding" Value="10" /></Style>
     <Style Selector="Grid.keyboard StackPanel.connectfields"><Setter Property="Spacing" Value="6" /></Style>
     <Style Selector="Grid.micro Button.connectnav"><Setter Property="MinHeight" Value="40" /></Style>
   </UserControl.Styles>
 
-  <Grid x:Name="CompactRoot" Background="{DynamicResource BgBrush}" RowDefinitions="Auto,*,Auto"
-        ClipToBounds="True">
+  <Grid x:Name="CompactRoot" RowDefinitions="Auto,*,Auto" ClipToBounds="True">
+    <Grid.Background>
+      <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+        <GradientStop Offset="0" Color="#B5CEFF" />
+        <GradientStop Offset="0.52" Color="#84A8F2" />
+        <GradientStop Offset="1" Color="#6089DA" />
+      </LinearGradientBrush>
+    </Grid.Background>
     <Grid x:Name="CompactHeader" Classes="connectheader" Grid.Row="0"
           ColumnDefinitions="Auto,Auto,*" ColumnSpacing="10" Margin="14,12,14,6">
       <Button Classes="connectnav" Command="{Binding Back}" IsVisible="{Binding CanGoBack}"
               Width="40" Height="40" Padding="0" ToolTip.Tip="Retour à la connexion">
         <mi:MaterialIcon Kind="ChevronLeft" Width="21" Height="21" />
       </Button>
-      <Border Grid.Column="1" Width="42" Height="42" CornerRadius="12" Background="Transparent"
+      <Border Grid.Column="1" Width="42" Height="42" CornerRadius="21" Background="#FFFFFF"
               BorderThickness="0">
         <Image Source="{DynamicResource ScoliaMark}" Width="30" Height="30" />
       </Border>
       <StackPanel Grid.Column="2" Spacing="1" VerticalAlignment="Center">
-        <TextBlock Text="SCOLIA Pro" FontSize="20" FontWeight="SemiBold" Foreground="{DynamicResource TextBrush}" />
-        <TextBlock Text="Connexion à votre établissement" FontSize="12" Foreground="{DynamicResource Text2Brush}"
+        <TextBlock Text="SCOLIA Pro" FontSize="20" FontWeight="SemiBold" Foreground="#153B84" />
+        <TextBlock Text="Connexion à votre établissement" FontSize="12" Foreground="#244E96"
                    TextWrapping="Wrap" />
       </StackPanel>
     </Grid>
@@ -146,9 +187,9 @@
       <Border x:Name="QrPage" Classes="connectcard" HorizontalAlignment="Stretch"
               VerticalAlignment="Center">
         <StackPanel Classes="connectfields" Spacing="13">
-          <Border Classes="connectqrdeco" Background="{DynamicResource AccentSoftBrush}" Width="52" Height="52"
+          <Border Classes="connectqrdeco" Background="#F1F6FF" Width="52" Height="52"
                   CornerRadius="17" HorizontalAlignment="Center">
-            <mi:MaterialIcon Kind="QrcodeScan" Width="26" Height="26" Foreground="{DynamicResource AccentBrush}"
+            <mi:MaterialIcon Kind="QrcodeScan" Width="26" Height="26" Foreground="#2455C8"
                              HorizontalAlignment="Center" VerticalAlignment="Center" />
           </Border>
           <TextBlock Text="Relier mon appareil" Classes="connecttitle"
@@ -171,7 +212,7 @@
             <Button x:Name="InlineWifiButton" Grid.Column="1" Classes="connectsecondary"
                     Content="Wi-Fi" />
           </Grid>
-          <Button x:Name="HostServerLarge" Classes="connectnav" IsVisible="False"
+          <Button x:Name="HostServerLarge" Classes="connectsecondary" IsVisible="False"
                   Command="{Binding UseThisComputer}" IsEnabled="{Binding NotSearching}"
                   Content="Configurer ce téléphone comme serveur" />
           <TextBlock Classes="connecthint connectverbose" Text="{Binding ScanHint}"
@@ -180,7 +221,7 @@
           <TextBlock Text="{Binding Message}" Classes="connecthint"
                      TextWrapping="Wrap" MaxLines="2" TextAlignment="Center"
                      IsVisible="{Binding !Searching}" />
-          <Button x:Name="QrDetails" Classes="connectnav" Content="Voir le message complet" MinHeight="36" />
+          <Button x:Name="QrDetails" Classes="connectnav incard" Content="Voir le message complet" MinHeight="36" />
         </StackPanel>
       </Border>
 
@@ -198,15 +239,15 @@
             </DockPanel>
           </Button>
           <StackPanel Classes="connectfields" Spacing="8" IsVisible="{Binding CanPasteCode}">
-            <TextBlock Text="CODE D’INVITATION" Foreground="{DynamicResource Text2Brush}" FontSize="12" FontWeight="SemiBold" />
-            <TextBox Classes="connectfield" Text="{Binding Invitation}"
+            <TextBlock Text="CODE D’INVITATION" Foreground="#E4EDFF" FontSize="12" FontWeight="SemiBold" />
+            <TextBox Classes="connectfield onbrand" Background="#1845B1" Foreground="#FFFFFF" CaretBrush="#FFFFFF" PlaceholderForeground="#E4EEFF" Text="{Binding Invitation}"
                      PlaceholderText="Coller le code du serveur" MaxLength="2048"
                      AutomationProperties.Name="Code d'invitation du serveur" />
             <Button Classes="connectmain" Command="{Binding JoinInternet}" IsEnabled="{Binding NotSearching}"
                     Content="Valider le code" />
           </StackPanel>
-          <Button x:Name="ReturnToQrFromCode" Classes="connectnav" IsVisible="False" Content="Retour au QR" />
-          <Button x:Name="CodeDetails" Classes="connectnav" Content="Voir les détails de connexion"
+          <Button x:Name="ReturnToQrFromCode" Classes="connectnav incard" IsVisible="False" Content="Retour au QR" />
+          <Button x:Name="CodeDetails" Classes="connectnav incard" Content="Voir les détails de connexion"
                   MinHeight="36" />
         </StackPanel>
       </Border>
@@ -222,8 +263,8 @@
                   Content="Choisir un serveur trouvé" IsVisible="{Binding HasServers}" />
           <Button x:Name="ManualAddressButton" Classes="connectsecondary"
                   Content="Saisir une adresse réseau" />
-          <Button x:Name="ReturnToQrFromWifi" Classes="connectnav" IsVisible="False" Content="Retour au QR" />
-          <Button x:Name="WifiDetails" Classes="connectnav" Content="Voir le résultat de la recherche"
+          <Button x:Name="ReturnToQrFromWifi" Classes="connectnav incard" IsVisible="False" Content="Retour au QR" />
+          <Button x:Name="WifiDetails" Classes="connectnav incard" Content="Voir le résultat de la recherche"
                   MinHeight="36" />
         </StackPanel>
       </Border>
@@ -252,7 +293,7 @@
         <StackPanel Classes="connectfields" Spacing="12">
           <TextBlock Classes="connecttitle" Text="Adresse du serveur" />
           <TextBlock Classes="connecthint connectoptional" Text="{Binding AddressHint}" MaxLines="3" />
-          <TextBox Classes="connectfield" Text="{Binding Address}"
+          <TextBox Classes="connectfield onbrand" Background="#1845B1" Foreground="#FFFFFF" CaretBrush="#FFFFFF" PlaceholderForeground="#E4EEFF" Text="{Binding Address}"
                    PlaceholderText="192.168.1.10:5080"
                    AutomationProperties.Name="Adresse locale du serveur" />
           <Button Classes="connectmain" Command="{Binding ConnectAddress}" IsEnabled="{Binding NotSearching}"
@@ -277,12 +318,12 @@
             VerticalAlignment="Center" HorizontalAlignment="Stretch">
       <StackPanel Classes="connectfields" Spacing="12">
         <mi:MaterialIcon Kind="ShieldCheckOutline" Width="44" Height="44"
-                         Foreground="{DynamicResource AccentBrush}" HorizontalAlignment="Center" />
+                         Foreground="#FFFFFF" HorizontalAlignment="Center" />
         <TextBlock Classes="connecttitle" Text="Vérification sécurisée"
                    TextAlignment="Center" />
         <TextBlock Classes="connecthint" Text="SCOLIA vérifie l'autorisation de cet appareil."
                    TextAlignment="Center" />
-        <ProgressBar IsIndeterminate="True" Height="5" MinHeight="5" />
+        <ProgressBar IsIndeterminate="True" Height="5" MinHeight="5" Foreground="#E4EEFF" />
         <TextBlock Classes="connecthint" Text="{Binding Message}" TextAlignment="Center" MaxLines="5" />
       </StackPanel>
     </Border>

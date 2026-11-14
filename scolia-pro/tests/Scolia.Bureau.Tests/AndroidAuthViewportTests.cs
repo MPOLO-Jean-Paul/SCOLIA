@@ -60,6 +60,63 @@ public sealed class AndroidAuthViewportTests
     }
 
     [Fact]
+    public void Jumelage_compact_reprend_les_couleurs_cobalt_de_la_connexion_et_preserve_les_actions()
+    {
+        var nodes = XDocument.Load(Source("Views/Phone/ConnectionCompactView.axaml")).Descendants().ToArray();
+        static bool Has(XElement e, string name, string value) =>
+            e.Attributes().Any(a => a.Name.LocalName == name && a.Value == value);
+        static XElement Style(XElement[] xs, string selector) => Assert.Single(xs,
+            e => e.Name.LocalName == "Style" && Has(e, "Selector", selector));
+        static string? Set(XElement style, string property) => style.Elements()
+            .FirstOrDefault(e => e.Name.LocalName == "Setter" && Has(e, "Property", property))
+            ?.Attribute("Value")?.Value;
+
+        var page = Assert.Single(nodes, e => e.Name.LocalName == "Grid" && Has(e, "Name", "CompactRoot"));
+        var gradient = Assert.Single(page.Elements(), e => e.Name.LocalName == "Grid.Background")
+            .Elements().Single();
+        Assert.Equal("LinearGradientBrush", gradient.Name.LocalName);
+        var stops = gradient.Elements().Select(e => e.Attribute("Color")?.Value).ToArray();
+        Assert.Contains("#B5CEFF", stops);
+        Assert.Contains("#6089DA", stops);
+
+        Assert.Equal("#2354C8", Set(Style(nodes, "Border.connectcard"), "Background"));
+        Assert.Equal("#FFFFFF", Set(Style(nodes, "TextBlock.connecttitle"), "Foreground"));
+        Assert.Equal("#E4EDFF", Set(Style(nodes, "TextBlock.connecthint"), "Foreground"));
+        Assert.Equal("#FFFFFF", Set(Style(nodes, "Button.connectmain"), "Background"));
+        Assert.Equal("#1948AE", Set(Style(nodes, "Button.connectmain"), "Foreground"));
+        Assert.Equal("#2E60D4", Set(Style(nodes, "Button.connectsecondary"), "Background"));
+
+        foreach (var label in new[] { "Invitation", "Address" })
+        {
+            var field = Assert.Single(nodes, e => e.Name.LocalName == "TextBox" &&
+                Has(e, "Text", "{Binding " + label + "}"));
+            var classes = field.Attribute("Classes")?.Value.Split(' ', StringSplitOptions.RemoveEmptyEntries) ?? [];
+            Assert.Contains("onbrand", classes);
+            Assert.Equal("#1845B1", field.Attribute("Background")?.Value);
+            Assert.Equal("#FFFFFF", field.Attribute("Foreground")?.Value);
+            Assert.Equal("#FFFFFF", field.Attribute("CaretBrush")?.Value);
+            Assert.Equal("#E4EEFF", field.Attribute("PlaceholderForeground")?.Value);
+        }
+        foreach (var state in new[] { "", ":focus", ":pointerover", ":disabled" })
+            Assert.Equal("#1845B1",
+                Set(Style(nodes, "TextBox.connectfield.onbrand" + state +
+                    " /template/ Border#PART_BorderElement"), "Background"));
+
+        foreach (var name in new[] { "QrPage", "CodePage", "WifiPage", "ServerPage",
+            "AddressPage", "DetailsPage" })
+            Assert.Contains(nodes, e => e.Name.LocalName == "Border" && Has(e, "Name", name) &&
+                Has(e, "Classes", "connectcard"));
+        Assert.DoesNotContain(nodes, e => e.Name.LocalName == "ScrollViewer");
+        foreach (var binding in new[] { "{Binding ScanCode}", "{Binding JoinInternet}",
+            "{Binding Search}", "{Binding ConnectAddress}", "{Binding UseThisComputer}" })
+            Assert.Contains(nodes, e => e.Name.LocalName == "Button" && Has(e, "Command", binding));
+        Assert.Contains(nodes, e => e.Name.LocalName == "Button" &&
+            Has(e, "Name", "QrDetails") && Has(e, "Classes", "connectnav incard"));
+        Assert.Contains(nodes, e => e.Name.LocalName == "Style" &&
+            Has(e, "Selector", "Grid.micro Border.connectcard"));
+    }
+
+    [Fact]
     public void L_accueil_s_adapte_aux_ecrans_etroits()
     {
         Assert.Contains("AuthLayout.Track(Sections)", File.ReadAllText(Source("Views/Phone/HomeView.axaml.cs")));
