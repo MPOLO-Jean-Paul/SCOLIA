@@ -76,7 +76,7 @@
       <Setter Property="FontSize" Value="12" />
       <Setter Property="TextWrapping" Value="Wrap" />
     </Style>
-    <Style Selector="TextBox.connectfield.onbrand">
+    <Style Selector="TextBox.connectfield">
       <Setter Property="Background" Value="#1845B1" />
       <Setter Property="Foreground" Value="#FFFFFF" />
       <Setter Property="PlaceholderForeground" Value="#E4EEFF" />
@@ -113,7 +113,7 @@
     <Style Selector="Button.connectsecondary:pressed">
       <Setter Property="Background" Value="#396DE0" />
     </Style>
-    <Style Selector="TextBox.connectfield.onbrand:focus">
+    <Style Selector="TextBox.connectfield:focus">
       <Setter Property="BorderBrush" Value="#FFFFFF" />
       <Setter Property="BorderThickness" Value="1" />
     </Style>
