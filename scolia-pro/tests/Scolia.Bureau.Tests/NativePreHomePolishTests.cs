@@ -31,14 +31,14 @@ public sealed class NativePreHomePolishTests
     [Theory]
     [InlineData("Views/ConnectionView.axaml", "StackPanel.iosconnectbody",
         "TextBox.iosconnectfield", "Button.iosconnectprimary")]
-    public void Meme_largeur_de_formulaire_et_hauteur_tactile(
+    public void Jumelage_desktop_plus_large_sans_perdre_la_taille_tactile(
         string path, string body, string field, string primary)
     {
-        Assert.Equal("420", Setter(Style(path, body), "MaxWidth"));
+        Assert.Equal("760", Setter(Style(path, body), "MaxWidth"));
         Assert.Equal("52", Setter(Style(path, field), "MinHeight"));
         Assert.Equal("52", Setter(Style(path, primary), "MinHeight"));
         Assert.Equal("{DynamicResource TextBrush}", Setter(Style(path, field), "Foreground"));
-        Assert.Equal("{DynamicResource OnAccentBrush}", Setter(Style(path, primary), "Foreground"));
+        Assert.Equal("#1846A6", Setter(Style(path, primary), "Foreground"));
     }
 
     [Theory]
