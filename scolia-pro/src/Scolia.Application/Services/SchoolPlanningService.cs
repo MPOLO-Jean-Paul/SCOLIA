@@ -39,9 +39,9 @@ public sealed class SchoolPlanningService(IAppDbContext db, IWriteGate gate, IAu
     }
 
     private static SchoolPeriodDto ToDto(SchoolCyclePeriod p) =>
-        new(p.Id, p.Code, p.Name, p.TermCode, p.Order, p.Mode.ToString(), p.StartDate, p.EndDate);
+        new(p.Id, p.Code, p.Name, p.TermCode, p.Order, p.Mode.ToString(), p.StartDate, p.EndDate, p.IsExam);
     private static AnnualSubjectDto ToDto(CurriculumItem i) =>
-        new(i.Id, i.PromotionId, i.Code, i.Name, i.Coefficient, i.Hours, i.IsActive);
+        new(i.Id, i.PromotionId, i.Code, i.Name, i.Coefficient, i.Hours, i.IsActive, i.PeriodMaxScore);
 
     public async Task<IReadOnlyList<SchoolPeriodDto>> PeriodsAsync(Guid cycleId, CancellationToken ct = default)
     {
@@ -70,12 +70,13 @@ public sealed class SchoolPlanningService(IAppDbContext db, IWriteGate gate, IAu
             Order = periods.Count + 1,
             Mode = cycle.Kind == SchoolCycleKind.Maternelle
                 ? SchoolCycleAssessmentMode.Observation : SchoolCycleAssessmentMode.Evaluation,
+            IsExam = input.IsExam,
             StartDate = input.StartDate, EndDate = input.EndDate,
         };
         SchoolCycleRules.ValidateCalendar(cycle, year, [..periods, next]);
         db.SchoolCyclePeriods.Add(next);
         audit.Record("cycle.periode.creee", "PeriodeCycle", next.Id.ToString(),
-            $"Période {next.Code} : cycle {cycle.Name}. Aucun historique modifié.");
+            $"{(next.IsExam ? "Examen" : "Période")} {next.Code} : cycle {cycle.Name}. Aucun historique modifié.");
         await db.SaveChangesAsync(ct);
         return ToDto(next);
     }, ct);
@@ -105,11 +106,35 @@ public sealed class SchoolPlanningService(IAppDbContext db, IWriteGate gate, IAu
             Code = (input.Code ?? string.Empty).Trim().ToUpperInvariant(),
             Name = (input.Name ?? string.Empty).Trim(),
             Coefficient = input.Coefficient, Hours = input.Hours, Credits = 0,
+            PeriodMaxScore = input.PeriodMaxScore,
         };
         CurriculumStructureRules.ValidateForSchoolCycle(school, cycle, year, [..current, item]);
         db.CurriculumItems.Add(item);
         audit.Record("cycle.matiere.creee", "MatiereCycle", item.Id.ToString(),
             $"Matière {item.Code} : classe {classroom.Name}, cycle {cycle.Name}.");
+        await db.SaveChangesAsync(ct);
+        return ToDto(item);
+    }, ct);
+
+    /// <summary>Maximum d'une branche par période. Modifiable tant que l'année est ouverte.</summary>
+    public Task<AnnualSubjectDto> SetSubjectMaxAsync(Guid subjectId, AnnualSubjectMaxUpdate input,
+        CancellationToken ct = default) => gate.RunAsync(async () =>
+    {
+        var item = await db.CurriculumItems.FirstOrDefaultAsync(
+            i => i.Id == subjectId && i.Kind == CurriculumItemKind.AnnualSubject, ct)
+            ?? throw new NotFoundException("Branche introuvable.");
+        var (school, cycle, year, classroom) = await ClassAsync(item.PromotionId, ct);
+        if (year.Status != AcademicYearStatus.Open || item.AcademicYearId != year.Id)
+            throw new DomainException("programme", "Le programme d'une année clôturée ne peut pas changer.");
+        var previous = item.PeriodMaxScore;
+        item.PeriodMaxScore = input.PeriodMaxScore;
+        var current = await db.CurriculumItems.AsNoTracking()
+            .Where(i => i.AcademicYearId == year.Id && i.PromotionId == classroom.Id && i.Id != item.Id)
+            .ToListAsync(ct);
+        CurriculumStructureRules.ValidateForSchoolCycle(school, cycle, year, [..current, item]);
+        audit.Record("cycle.matiere.maximum", "MatiereCycle", item.Id.ToString(),
+            $"Maximum par période de {item.Code} ({classroom.Name}) : {previous?.ToString() ?? "aucun"} → " +
+            $"{item.PeriodMaxScore?.ToString() ?? "aucun"}.");
         await db.SaveChangesAsync(ct);
         return ToDto(item);
     }, ct);

@@ -271,6 +271,31 @@ public static class ScoliaEndpoints
             AcademicRegulationService s, CancellationToken ct) => s.ReopenAsync(scope, input, ct))
             .RequireAuthorization(Permissions.DeliberationManage);
 
+        g.MapPut("/cycles/matieres/{subjectId:guid}/maximum",
+            (Guid subjectId, AnnualSubjectMaxUpdate input, SchoolPlanningService s, CancellationToken ct) =>
+                s.SetSubjectMaxAsync(subjectId, input, ct)).RequireAuthorization(Permissions.SettingsWrite);
+
+        // Résultats officiels du primaire et du secondaire (règlement validé exigé).
+        g.MapGet("/cycles/promotions/{promotionId:guid}/resultats",
+            (Guid promotionId, EpstResultsService s, CancellationToken ct) =>
+                s.ClassAsync(promotionId, ct)).RequireAuthorization(Permissions.AcademicsRead);
+
+        // Bulletins officiels de l'établissement : toute la classe, ou un seul élève.
+        g.MapGet("/cycles/promotions/{promotionId:guid}/bulletins.pdf",
+            async (Guid promotionId, Guid? inscription, EpstResultsService s, HttpContext http, CancellationToken ct) =>
+            {
+                // Documents nominatifs de mineurs : interdits aux caches partagés.
+                http.Response.Headers.CacheControl = "private, no-store, max-age=0";
+                http.Response.Headers.Pragma = "no-cache";
+                var print = await s.PrintAsync(promotionId, inscription, ct);
+                return new InlineFileResult(EpstBulletinPdf.Build(print), Pdf,
+                    inscription is null ? "bulletins-classe.pdf" : "bulletin-eleve.pdf");
+            })
+            .RequireAuthorization(Permissions.AcademicsRead);
+        g.MapPut("/cycles/promotions/{promotionId:guid}/conduite",
+            (Guid promotionId, EpstConductInput input, EpstConductService s, CancellationToken ct) =>
+                s.SaveAsync(promotionId, input, ct)).RequireAuthorization(Permissions.AcademicsWrite);
+
         // LMD : structures, calendrier semestriel et maquettes de cours séparés
         // des délibérations ITM. Tous les changements exigent SettingsWrite.
         g.MapGet("/lmd/structures", (LmdPlanningService s, CancellationToken ct) =>

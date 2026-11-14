@@ -23,6 +23,7 @@ public interface IAppDbContext
     DbSet<AcademicStructureUnit> AcademicStructureUnits { get; }
     DbSet<CurriculumItem> CurriculumItems { get; }
     DbSet<AcademicRegulation> AcademicRegulations { get; }
+    DbSet<EpstConductMark> EpstConductMarks { get; }
     DbSet<Section> Sections { get; }
     DbSet<Promotion> Promotions { get; }
     DbSet<FeeItem> FeeItems { get; }

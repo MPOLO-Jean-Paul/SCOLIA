@@ -60,6 +60,11 @@ public sealed class CurriculumItem : Entity
     /// <summary>Coefficient de la branche annuelle ou de l'EC, selon les règles locales.</summary>
     public decimal Coefficient { get; set; } = 1;
     public decimal Hours { get; set; }
+    /// <summary>
+    /// EPST : maximum de la branche pour une période de travail journalier. Le maximum
+    /// de l'examen en découle selon le règlement de l'année. Absent pour le LMD.
+    /// </summary>
+    public decimal? PeriodMaxScore { get; set; }
     public bool IsActive { get; set; } = true;
 }
 
@@ -190,11 +195,16 @@ public static class CurriculumStructureRules
                         item.Semester == CourseSemester.Annuel && item.ParentItemId is null &&
                         item.AcademicUnitId is null && item.Credits == 0,
                     "La maternelle, le primaire et le secondaire utilisent exclusivement des activités ou matières annuelles, sans crédits LMD.");
+                Require(item.PeriodMaxScore is null ||
+                        item.PeriodMaxScore > 0 && item.PeriodMaxScore <= 1000 &&
+                        institutionType != InstitutionProfiles.Maternelle,
+                    "Le maximum d'une branche par période est compris entre 1 et 1000, et n'existe pas en maternelle.");
                 continue;
             }
 
             Require(item.Kind is CurriculumItemKind.TeachingUnit or CurriculumItemKind.TeachingElement,
                 "Le LMD utilise uniquement des unités d'enseignement (UE) et leurs éléments constitutifs (EC).");
+            Require(item.PeriodMaxScore is null, "Les UE et EC n'ont pas de maximum par période.");
             Require(item.Semester is CourseSemester.S1 or CourseSemester.S2,
                 "Chaque UE et chaque EC doivent appartenir exclusivement à S1 ou S2.");
             Require(item.AcademicUnitId is { } unitId && pathIds.Contains(unitId),

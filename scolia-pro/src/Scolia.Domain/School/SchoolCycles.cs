@@ -60,6 +60,8 @@ public sealed class SchoolCyclePeriod : Entity
     public string TermCode { get; set; } = string.Empty;
     public int Order { get; set; }
     public SchoolCycleAssessmentMode Mode { get; set; }
+    /// <summary>Examen de fin de trimestre ou de semestre ; sinon période de travail journalier.</summary>
+    public bool IsExam { get; set; }
     public DateOnly StartDate { get; set; }
     public DateOnly EndDate { get; set; }
 }
@@ -174,6 +176,8 @@ public static class SchoolCycleRules
                 : SchoolCycleAssessmentMode.Evaluation;
             Require(p.Mode == required,
                 "La maternelle utilise l'observation ; le primaire et le secondaire utilisent des périodes d'évaluation.");
+            Require(!p.IsExam || cycle.Kind != SchoolCycleKind.Maternelle,
+                "La maternelle n'a pas d'examen chiffré.");
         }
         // La répartition précise et les dates restent celles du calendrier
         // ministériel de l'année configurée. Ne pas inventer des seuils de notes.

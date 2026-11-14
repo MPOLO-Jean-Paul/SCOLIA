@@ -30,6 +30,7 @@ public sealed class ScoliaDbContext(DbContextOptions<ScoliaDbContext> options, I
     public DbSet<AcademicStructureUnit> AcademicStructureUnits => Set<AcademicStructureUnit>();
     public DbSet<CurriculumItem> CurriculumItems => Set<CurriculumItem>();
     public DbSet<AcademicRegulation> AcademicRegulations => Set<AcademicRegulation>();
+    public DbSet<EpstConductMark> EpstConductMarks => Set<EpstConductMark>();
     public DbSet<Section> Sections => Set<Section>();
     public DbSet<Promotion> Promotions => Set<Promotion>();
     public DbSet<FeeItem> FeeItems => Set<FeeItem>();
@@ -150,6 +151,19 @@ public sealed class ScoliaDbContext(DbContextOptions<ScoliaDbContext> options, I
             e.Property(x => x.ValidatedByName).HasMaxLength(120);
             e.HasIndex(x => new { x.AcademicYearId, x.Scope }).IsUnique();
             e.HasOne<AcademicYear>().WithMany().HasForeignKey(x => x.AcademicYearId).OnDelete(DeleteBehavior.Restrict);
+        });
+        b.Entity<EpstConductMark>(e =>
+        {
+            // Application et conduite par période : une ligne par élève et par période.
+            e.ToTable("ConduitesCyclesScolaires");
+            e.Property(x => x.Application).HasMaxLength(4);
+            e.Property(x => x.Conduct).HasMaxLength(4);
+            e.HasIndex(x => new { x.EnrollmentId, x.SchoolCyclePeriodId }).IsUnique();
+            e.HasIndex(x => new { x.PromotionId, x.AcademicYearId });
+            e.HasOne<AcademicYear>().WithMany().HasForeignKey(x => x.AcademicYearId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne<Promotion>().WithMany().HasForeignKey(x => x.PromotionId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne<Enrollment>().WithMany().HasForeignKey(x => x.EnrollmentId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne<SchoolCyclePeriod>().WithMany().HasForeignKey(x => x.SchoolCyclePeriodId).OnDelete(DeleteBehavior.Restrict);
         });
         b.Entity<SchoolCycleAssessment>(e =>
         {
