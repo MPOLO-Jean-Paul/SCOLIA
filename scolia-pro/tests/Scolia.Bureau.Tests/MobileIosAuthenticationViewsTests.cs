@@ -54,7 +54,7 @@ public sealed class MobileIosAuthenticationViewsTests
         var code = File.ReadAllText(Source("Views/LoginView.axaml.cs"));
         Assert.Contains("LoginScroll.IsVisible = !ios", code);
         Assert.Contains("IosLoginScroll.IsVisible = ios", code);
-        Assert.Contains("AuthLayout.Track(IosLoginScroll)", code);
+        Assert.Contains("AuthLayout.Track(IosLoginScroll, size =>", code);
         Assert.Contains("login.CanSubmitCredentials", code);
     }
 
