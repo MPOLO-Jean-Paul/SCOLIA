@@ -107,6 +107,8 @@
                   </StackPanel>
                   <TextBlock Foreground="#41618D" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap"
                              Text="Le profil pédagogique est fixé lors de l’installation. Les autres paramètres restent modifiables ensuite." />
+                  <TextBlock Text="Assistance JP-Services" Foreground="#16396D" FontWeight="SemiBold" Margin="0,6,0,0" />
+                  <TextBlock Text="{Binding SupportEmail}" Foreground="#41618D" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" />
                 </StackPanel>
               </Border>
             </Grid>

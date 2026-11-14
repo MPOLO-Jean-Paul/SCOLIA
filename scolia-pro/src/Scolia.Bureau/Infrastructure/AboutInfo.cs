@@ -7,7 +7,7 @@ public static class AboutInfo
     public const string Developer = "Jean Paul MPOLO LONO";
     public const string Role = "Programmeur et concepteur de SCOLIA";
     public const string Phone = "+243 977 152 825";
-    public const string Email = "jeanpaulmpolo242@gmail.com";
+    public const string Email = "contact@jp-services.org";
     public const string Tagline = "Gestion scolaire et comptable";
 
     public const string Description =

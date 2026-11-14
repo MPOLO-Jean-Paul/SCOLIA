@@ -220,6 +220,7 @@
         </StackPanel>
 
         <TextBlock Text="{Binding Error}" IsVisible="{Binding HasError}" Foreground="{DynamicResource ToneRed}" TextWrapping="Wrap" />
+        <TextBlock Text="{Binding SupportContactLine}" Foreground="{DynamicResource Text2Brush}" FontSize="{DynamicResource FsSmall}" TextWrapping="Wrap" TextAlignment="Center" />
       </StackPanel>
     </ScrollViewer>
 
