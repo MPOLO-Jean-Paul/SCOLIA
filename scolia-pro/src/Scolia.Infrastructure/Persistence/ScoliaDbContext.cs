@@ -29,6 +29,7 @@ public sealed class ScoliaDbContext(DbContextOptions<ScoliaDbContext> options, I
     public DbSet<PedagogicalPeriod> PedagogicalPeriods => Set<PedagogicalPeriod>();
     public DbSet<AcademicStructureUnit> AcademicStructureUnits => Set<AcademicStructureUnit>();
     public DbSet<CurriculumItem> CurriculumItems => Set<CurriculumItem>();
+    public DbSet<AcademicRegulation> AcademicRegulations => Set<AcademicRegulation>();
     public DbSet<Section> Sections => Set<Section>();
     public DbSet<Promotion> Promotions => Set<Promotion>();
     public DbSet<FeeItem> FeeItems => Set<FeeItem>();
@@ -141,6 +142,15 @@ public sealed class ScoliaDbContext(DbContextOptions<ScoliaDbContext> options, I
         });
         // Registre séparé des évaluations scolaires : aucune réutilisation des
         // notes ITM/IM, aucune conversion automatique des observations en scores.
+        b.Entity<AcademicRegulation>(e =>
+        {
+            // Règlement pédagogique EPST / LMD : une seule ligne par année et par portée.
+            e.ToTable("ReglementsPedagogiques");
+            e.Property(x => x.LegalReference).HasMaxLength(300);
+            e.Property(x => x.ValidatedByName).HasMaxLength(120);
+            e.HasIndex(x => new { x.AcademicYearId, x.Scope }).IsUnique();
+            e.HasOne<AcademicYear>().WithMany().HasForeignKey(x => x.AcademicYearId).OnDelete(DeleteBehavior.Restrict);
+        });
         b.Entity<SchoolCycleAssessment>(e =>
         {
             e.ToTable("EvaluationsCyclesScolaires");

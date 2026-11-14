@@ -257,6 +257,20 @@ public static class ScoliaEndpoints
             (Guid promotionId, AnnualSubjectCreate input, SchoolPlanningService s, CancellationToken ct) =>
                 s.AddSubjectAsync(promotionId, input, ct)).RequireAuthorization(Permissions.SettingsWrite);
 
+        // Règlement pédagogique EPST / LMD par année : proposition SCOLIA, modification,
+        // validation tracée puis réouverture motivée. ITM/IM n'est pas concerné.
+        g.MapGet("/reglements", (AcademicRegulationService s, CancellationToken ct) =>
+            s.ListAsync(ct)).RequireAuthorization(Permissions.AcademicsRead);
+        g.MapPut("/reglements/{scope}", (string scope, AcademicRegulationInput input,
+            AcademicRegulationService s, CancellationToken ct) => s.SaveAsync(scope, input, ct))
+            .RequireAuthorization(Permissions.SettingsWrite);
+        g.MapPost("/reglements/{scope}/validation", (string scope, AcademicRegulationService s,
+            CancellationToken ct) => s.ValidateAsync(scope, ct))
+            .RequireAuthorization(Permissions.DeliberationManage);
+        g.MapPost("/reglements/{scope}/reouverture", (string scope, AcademicRegulationReopen input,
+            AcademicRegulationService s, CancellationToken ct) => s.ReopenAsync(scope, input, ct))
+            .RequireAuthorization(Permissions.DeliberationManage);
+
         // LMD : structures, calendrier semestriel et maquettes de cours séparés
         // des délibérations ITM. Tous les changements exigent SettingsWrite.
         g.MapGet("/lmd/structures", (LmdPlanningService s, CancellationToken ct) =>
