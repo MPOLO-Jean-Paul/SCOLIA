@@ -321,7 +321,12 @@ public sealed class PhoneServer(Context context) : ILocalServer
             DataDirectory = DataDirectory,
             Port = ConnectionStore.LocalAddress.Port,
             DeviceName = Platform.DeviceName ?? "Téléphone",
-            ConfigureServices = services => services.AddSingleton<IDocumentService, SkiaDocumentService>(),
+            ConfigureServices = services =>
+            {
+                services.AddSingleton<IDocumentService, SkiaDocumentService>();
+                // Bulletins, procès-verbaux et relevés EPST/LMD : même moteur Skia que les autres documents du téléphone.
+                services.AddSingleton<IAcademicDocumentService, SkiaAcademicDocuments>();
+            },
         };
         try
         {

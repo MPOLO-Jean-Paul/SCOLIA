@@ -37,6 +37,7 @@ public static class DependencyInjection
         services.AddSingleton<IPasswordService, PasswordService>();
         services.AddSingleton<IClock, SystemClock>();
         services.AddSingleton<IDocumentService, DocumentService>();
+        services.AddSingleton<IAcademicDocumentService, AcademicDocumentService>();
         services.AddSingleton<ISpreadsheetService, SpreadsheetService>();
         services.AddSingleton<BackupService>();
         services.AddSingleton<DataRevision>();

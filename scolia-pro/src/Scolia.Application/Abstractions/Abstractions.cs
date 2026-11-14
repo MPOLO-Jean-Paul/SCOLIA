@@ -106,6 +106,18 @@ public interface IPasswordService
 }
 
 /// <summary>Production des documents imprimables (PDF).</summary>
+/// <summary>
+/// Documents scolaires EPST et LMD (bulletins, procès-verbaux, relevés). L'ordinateur serveur les produit avec
+/// QuestPDF ; un téléphone serveur avec Skia, déjà présent sur Android.
+/// </summary>
+public interface IAcademicDocumentService
+{
+    byte[] EpstBulletins(Dtos.EpstBulletinPrintDto document);
+    byte[] EpstPalmares(Dtos.EpstPalmaresPrintDto document);
+    byte[] LmdTranscripts(Dtos.LmdTranscriptPrintDto document);
+    byte[] LmdMinutes(Dtos.LmdTranscriptPrintDto document);
+}
+
 public interface IDocumentService
 {
     byte[] Receipt(ReceiptDocument document);

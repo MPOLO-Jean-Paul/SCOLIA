@@ -282,13 +282,13 @@ public static class ScoliaEndpoints
 
         // Bulletins officiels de l'établissement : toute la classe, ou un seul élève.
         g.MapGet("/cycles/promotions/{promotionId:guid}/bulletins.pdf",
-            async (Guid promotionId, Guid? inscription, EpstResultsService s, HttpContext http, CancellationToken ct) =>
+            async (Guid promotionId, Guid? inscription, EpstResultsService s, IAcademicDocumentService docs, HttpContext http, CancellationToken ct) =>
             {
                 // Documents nominatifs de mineurs : interdits aux caches partagés.
                 http.Response.Headers.CacheControl = "private, no-store, max-age=0";
                 http.Response.Headers.Pragma = "no-cache";
                 var print = await s.PrintAsync(promotionId, inscription, ct);
-                return new InlineFileResult(EpstBulletinPdf.Build(print), Pdf,
+                return new InlineFileResult(docs.EpstBulletins(print), Pdf,
                     inscription is null ? "bulletins-classe.pdf" : "bulletin-eleve.pdf");
             })
             .RequireAuthorization(Permissions.AcademicsRead);
@@ -310,11 +310,11 @@ public static class ScoliaEndpoints
             (Guid promotionId, Guid enrollmentId, EpstRepechageInput input, EpstDeliberationService s, CancellationToken ct) =>
                 s.SaveRepechageAsync(promotionId, enrollmentId, input, ct)).RequireAuthorization(Permissions.DeliberationManage);
         g.MapGet("/cycles/promotions/{promotionId:guid}/palmares.pdf",
-            async (Guid promotionId, EpstDeliberationService s, HttpContext http, CancellationToken ct) =>
+            async (Guid promotionId, EpstDeliberationService s, IAcademicDocumentService docs, HttpContext http, CancellationToken ct) =>
             {
                 http.Response.Headers.CacheControl = "private, no-store, max-age=0";
                 http.Response.Headers.Pragma = "no-cache";
-                return new InlineFileResult(EpstPalmaresPdf.Build(await s.PalmaresAsync(promotionId, ct)), Pdf,
+                return new InlineFileResult(docs.EpstPalmares(await s.PalmaresAsync(promotionId, ct)), Pdf,
                     "proces-verbal-palmares.pdf");
             })
             .RequireAuthorization(Permissions.AcademicsRead);
@@ -376,22 +376,22 @@ public static class ScoliaEndpoints
             (Guid promotionId, LmdResultsService s, CancellationToken ct) =>
                 s.CloseAsync(promotionId, ct)).RequireAuthorization(Permissions.DeliberationManage);
         g.MapGet("/lmd/promotions/{promotionId:guid}/releves.pdf",
-            async (Guid promotionId, string? etape, Guid? inscription, LmdResultsService s, HttpContext http, CancellationToken ct) =>
+            async (Guid promotionId, string? etape, Guid? inscription, LmdResultsService s, IAcademicDocumentService docs, HttpContext http, CancellationToken ct) =>
             {
                 http.Response.Headers.CacheControl = "private, no-store, max-age=0";
                 http.Response.Headers.Pragma = "no-cache";
                 var print = await s.TranscriptAsync(promotionId, etape, inscription, ct);
-                return new InlineFileResult(LmdTranscriptPdf.Build(print), Pdf,
+                return new InlineFileResult(docs.LmdTranscripts(print), Pdf,
                     inscription is null ? "releves-promotion.pdf" : "releve-etudiant.pdf");
             })
             .RequireAuthorization(Permissions.AcademicsRead);
         g.MapGet("/lmd/promotions/{promotionId:guid}/proces-verbal.pdf",
-            async (Guid promotionId, string? etape, LmdResultsService s, HttpContext http, CancellationToken ct) =>
+            async (Guid promotionId, string? etape, LmdResultsService s, IAcademicDocumentService docs, HttpContext http, CancellationToken ct) =>
             {
                 http.Response.Headers.CacheControl = "private, no-store, max-age=0";
                 http.Response.Headers.Pragma = "no-cache";
                 var print = await s.TranscriptAsync(promotionId, etape, null, ct);
-                return new InlineFileResult(LmdMinutesPdf.Build(print), Pdf, "proces-verbal-lmd.pdf");
+                return new InlineFileResult(docs.LmdMinutes(print), Pdf, "proces-verbal-lmd.pdf");
             })
             .RequireAuthorization(Permissions.AcademicsRead);
         g.MapGet("/lmd/dettes", (Guid? etudiant, LmdResultsService s, CancellationToken ct) =>
@@ -739,11 +739,11 @@ public static class ScoliaEndpoints
             s.SetActiveAsync(userId, input, ct));
         var portal = api.MapGroup("/etudiant").RequireAuthorization(Permissions.OwnResultsRead);
         portal.MapGet("/mes-resultats", (StudentPortalService s, CancellationToken ct) => s.MineAsync(ct));
-        portal.MapGet("/releve.pdf", async (Guid inscription, StudentPortalService s, HttpContext http, CancellationToken ct) =>
+        portal.MapGet("/releve.pdf", async (Guid inscription, StudentPortalService s, IAcademicDocumentService docs, HttpContext http, CancellationToken ct) =>
         {
             http.Response.Headers.CacheControl = "private, no-store, max-age=0";
             http.Response.Headers.Pragma = "no-cache";
-            return new InlineFileResult(LmdTranscriptPdf.Build(await s.TranscriptAsync(inscription, ct)), Pdf, "mon-releve.pdf");
+            return new InlineFileResult(docs.LmdTranscripts(await s.TranscriptAsync(inscription, ct)), Pdf, "mon-releve.pdf");
         });
 
         // Enseignants des écoles et universités : seulement les branches et EC qui leur sont attribués.
