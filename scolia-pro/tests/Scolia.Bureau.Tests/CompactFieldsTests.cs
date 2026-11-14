@@ -38,7 +38,7 @@ public sealed class CompactFieldsTests
     public void Authentification_recherche_et_mots_de_passe_gardent_leur_style()
     {
         var theme = Source("src/Scolia.Bureau/Themes/Controls.axaml");
-        Assert.Contains("TextBox:not(.onbrand):not(.iosauthfield):not(.search):not(.searchfield):not(.code)", theme, StringComparison.Ordinal);
+        Assert.Contains("TextBox:not(.onbrand):not(.iosauthfield):not(.ioslockfield):not(.search):not(.searchfield):not(.code)", theme, StringComparison.Ordinal);
         Assert.Contains("TextBox.w11.onbrand", theme, StringComparison.Ordinal);
         Assert.Contains("RadioButton.segment", theme, StringComparison.Ordinal);
         var staff = Source("src/Scolia.Bureau/Views/StaffView.axaml");
