@@ -19,7 +19,7 @@ concurrency:
 jobs:
   deploy:
     name: Vérifier et publier le relais WSS Cloudflare
-    if: ${{ github.ref == 'refs/heads/release/direct-apk-scolia-pro-20261103' && github.actor == 'MPOLO-Jean-Paul' && inputs.confirm_free_deployment }}
+    if: ${{ github.ref == 'refs/heads/main' && github.actor == 'MPOLO-Jean-Paul' && inputs.confirm_free_deployment }}
     runs-on: ubuntu-latest
     environment: scolia-cloudflare-free
     timeout-minutes: 20
@@ -31,6 +31,8 @@ jobs:
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: release/direct-apk-scolia-pro-20261103
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
