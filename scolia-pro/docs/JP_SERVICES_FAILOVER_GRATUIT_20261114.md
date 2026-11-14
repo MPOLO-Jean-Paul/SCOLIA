@@ -18,7 +18,7 @@ Mise à jour du 14 novembre 2026. **Cette configuration est prête dans GitHub m
    - `CLOUDFLARE_API_TOKEN` avec les droits nécessaires à Workers, Durable Objects et au domaine personnalisé ;
    - `CLOUDFLARE_ACCOUNT_ID`.
    Ne jamais saisir ces valeurs dans un commit, une capture ou dans la conversation.
-4. Fusionner la PR après les tests. Dans GitHub Actions, sur `release/direct-apk-scolia-pro-20261103`, ouvrir **SCOLIA Pro - relais Cloudflare gratuit (publication contrôlée)** et lancer manuellement en validant le formulaire.
+4. Fusionner la PR après les tests sur `release/direct-apk-scolia-pro-20261103`. Dans GitHub Actions, ouvrir **SCOLIA Pro - relais Cloudflare gratuit (publication contrôlée)** sur la branche **`main`** (la branche par défaut), et lancer manuellement en validant le formulaire. Ce workflow disponible sur `main` récupère explicitement le code de la branche de distribution. **Ne pas déclencher avant la fusion**, car le fichier `wrangler.free.jsonc` n'existe pas encore sur la branche de distribution.
 5. Le workflow effectue tests, typage, build à blanc, puis déploie avec `wrangler.free.jsonc` ; Cloudflare rattache le domaine et le certificat TLS. L'ancienne configuration `wrangler.jsonc` pour le développement est intacte.
 6. Vérifier l'URL de santé `https://relay.jp-services.org/health`. Elle doit renvoyer `{"service":"SCOLIA relais","protocol":1,"provider":"cloudflare"}`.
 7. Faire un test WSS réel avec un serveur SCOLIA et un client Windows/Android avant la bascule ; un JSON `/health` ne suffit pas.
