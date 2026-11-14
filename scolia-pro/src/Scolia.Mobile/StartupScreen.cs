@@ -58,21 +58,24 @@ internal sealed class StartupScreen : FrameLayout
         // Il n'appartient à aucun établissement et ne remplace jamais son logo configuré.
         var markBackground = new GradientDrawable();
         markBackground.SetShape(ShapeType.Rectangle);
-        markBackground.SetCornerRadius(Dp(30));
+        markBackground.SetCornerRadius(Dp(29));
         markBackground.SetColor(Color.White);
-        markBackground.SetStroke(Dp(1), Color.Rgb(216, 228, 246));
+        markBackground.SetStroke(Dp(1), Color.Rgb(224, 232, 245));
         // Le logo est dessiné en quatre pièces qui s'assemblent en tournant au lancement.
         logo = new LogoAssemblyView(activity, dark: false) { Background = markBackground };
-        logo.SetPadding(Dp(17), Dp(17), Dp(17), Dp(17));
-        content.AddView(logo, new LinearLayout.LayoutParams(Dp(114), Dp(114))
+        logo.SetPadding(Dp(15), Dp(15), Dp(15), Dp(15));
+        // Un relief de seulement 1 dp donne de la profondeur sans transformer le logo en carte.
+        logo.Elevation = Dp(1);
+        content.AddView(logo, new LinearLayout.LayoutParams(Dp(118), Dp(118))
         {
-            BottomMargin = Dp(16),
+            BottomMargin = Dp(19),
             Gravity = GravityFlags.CenterHorizontal,
         });
 
         var title = new TextView(activity) { Text = "SCOLIA Pro", TextSize = 26, Gravity = GravityFlags.Center };
         title.SetTextColor(Color.Rgb(15, 43, 107));
         title.SetTypeface(null, TypefaceStyle.Bold);
+        title.LetterSpacing = 0.012f;
         content.AddView(title, new LinearLayout.LayoutParams(LayoutParams.MatchParent, LayoutParams.WrapContent));
         intro.Add(title);
 
@@ -92,7 +95,7 @@ internal sealed class StartupScreen : FrameLayout
 
         dots = new LinearLayout(activity) { Orientation = Orientation.Horizontal, ImportantForAccessibility = ImportantForAccessibility.No };
         dots.SetGravity(GravityFlags.Center);
-        content.AddView(dots, new LinearLayout.LayoutParams(LayoutParams.WrapContent, Dp(24)) { TopMargin = Dp(14) });
+        content.AddView(dots, new LinearLayout.LayoutParams(LayoutParams.WrapContent, Dp(24)) { TopMargin = Dp(18) });
         intro.Add(dots);
         for (var i = 0; i < 3; i++)
         {
@@ -100,11 +103,12 @@ internal sealed class StartupScreen : FrameLayout
             shape.SetShape(ShapeType.Oval);
             shape.SetColor(i == 1 ? Color.Rgb(38, 120, 227) : Color.Rgb(159, 187, 229));
             var dot = new AndroidView(activity) { Background = shape, Alpha = animationScale > 0 ? 0.25f : 1f };
-            dots.AddView(dot, new LinearLayout.LayoutParams(Dp(6), Dp(6)) { LeftMargin = Dp(4), RightMargin = Dp(4) });
+            dots.AddView(dot, new LinearLayout.LayoutParams(Dp(7), Dp(7)) { LeftMargin = Dp(5), RightMargin = Dp(5) });
             if (animationScale <= 0) continue;
             var pulse = ObjectAnimator.OfFloat(dot, "alpha", 0.25f, 1f, 0.25f)!;
-            pulse.SetDuration(800);
-            pulse.StartDelay = i * 150;
+            pulse.SetDuration(960);
+            pulse.SetInterpolator(new Android.Views.Animations.AccelerateDecelerateInterpolator());
+            pulse.StartDelay = i * 140;
             pulse.RepeatCount = ValueAnimator.Infinite;
             pulse.RepeatMode = ValueAnimatorRepeatMode.Restart;
             pulses.Add(pulse);
@@ -152,33 +156,33 @@ internal sealed class StartupScreen : FrameLayout
             return;
         }
         logo.Progress = 0f;
-        logo.ScaleX = logo.ScaleY = 1.3f;
-        logo.TranslationY = -Dp(40);
+        logo.ScaleX = logo.ScaleY = 1.12f;
+        logo.TranslationY = -Dp(16);
         foreach (var view in intro)
         {
             view.Alpha = 0f;
-            view.TranslationY = Dp(10);
+            view.TranslationY = Dp(7);
         }
         var assemble = ValueAnimator.OfFloat(0f, 1f)!;
-        assemble.SetDuration(800);
+        assemble.SetDuration(720);
         assemble.SetInterpolator(new Android.Views.Animations.LinearInterpolator());
         assemble.Update += (_, e) => logo.Progress = (float)(e.Animation.AnimatedValue ?? 1f);
         assemble.AnimationEnd += (_, _) =>
         {
             if (closed) return;
             // Le logo descend à sa place, en douceur.
-            logo.Animate()?.TranslationY(0f)?.ScaleX(1f)?.ScaleY(1f)?.SetDuration(300)
+            logo.Animate()?.TranslationY(0f)?.ScaleX(1f)?.ScaleY(1f)?.SetDuration(280)
                 ?.SetInterpolator(new Android.Views.Animations.DecelerateInterpolator(1.6f))?.Start();
             // Seuls le nom SCOLIA Pro et les trois points apparaissent successivement.
             for (var i = 0; i < intro.Count; i++)
-                intro[i].Animate()?.Alpha(1f)?.TranslationY(0f)?.SetStartDelay(200 + i * 90)?.SetDuration(260)
+                intro[i].Animate()?.Alpha(1f)?.TranslationY(0f)?.SetStartDelay(180 + i * 100)?.SetDuration(270)
                     ?.SetInterpolator(new Android.Views.Animations.DecelerateInterpolator())?.Start();
             PostDelayed(() =>
             {
                 if (closed) return;
                 StartPulses();
                 introDone.TrySetResult();
-            }, (long)((200 + intro.Count * 90 + 260) * animationScale));
+            }, (long)((180 + intro.Count * 100 + 270) * animationScale));
         };
         assemble.Start();
         if (!active) assemble.Pause();
