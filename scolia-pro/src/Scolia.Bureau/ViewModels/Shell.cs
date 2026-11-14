@@ -437,6 +437,9 @@ public sealed class ShellViewModel : Observable
     /// <summary>Compte enseignant : son espace se limite à ses cours (encodage et remise des cotes).</summary>
     public bool TeacherOnly => (Can(Perm.MarksEncode) || Can(Perm.JuryEncode)) && !Can(Perm.AcademicsRead);
 
+    /// <summary>Compte étudiant : consultation de ses résultats publiés seulement, sans synchronisation ni direct.</summary>
+    public bool StudentOnly => Can(Perm.OwnResultsRead);
+
     /// <summary>Plein écran : la fenêtre gère l'affichage réel, le shell garde l'état pour le ruban.</summary>
     public bool IsFullscreen { get; private set; }
 
@@ -1004,12 +1007,17 @@ public sealed class ShellViewModel : Observable
         api.Offline.RememberAccount(s.UserName);
         api.LicenseReadOnly = api.Offline.IsLicenseReadOnlyFor(s.UserName);
         Login.RememberAccount(s.UserName);
-        Sync.Start();
-        // Accès de dépôt en ligne du compte, pour les opérations faites pendant une coupure du serveur.
-        if (api.IsOnline) _ = api.RefreshCloudAccessAsync();
-        if (api.IsOnline && s.Permissions.Contains(Perm.BackupManage)) _ = RemindRecoveryCodeAsync();
-        nextLicenseCheckUtc = DateTime.MinValue;
-        _ = License.RefreshAsync();
+        // Un étudiant ne lit que ses résultats : ni données gardées des autres, ni direct, ni licence.
+        var student = s.Permissions.Contains(Perm.OwnResultsRead);
+        if (!student)
+        {
+            Sync.Start();
+            // Accès de dépôt en ligne du compte, pour les opérations faites pendant une coupure du serveur.
+            if (api.IsOnline) _ = api.RefreshCloudAccessAsync();
+            if (api.IsOnline && s.Permissions.Contains(Perm.BackupManage)) _ = RemindRecoveryCodeAsync();
+            nextLicenseCheckUtc = DateTime.MinValue;
+            _ = License.RefreshAsync();
+        }
         // Une première session Promoteur vérifiée mémorise son appareil :
         // reconnexion future au même serveur, sans QR et sans privilèges ajoutés.
         if (s.Permissions.Contains(Perm.PilotageRead) &&
@@ -1052,7 +1060,8 @@ public sealed class ShellViewModel : Observable
             // L'enseignant d'une école ou d'une université ouvre ses branches et ses EC ; celui d'un ITM, son espace habituel.
             var teacherOnly = (s.Permissions.Contains(Perm.MarksEncode) || s.Permissions.Contains(Perm.JuryEncode)) && !s.Permissions.Contains(Perm.AcademicsRead);
             var itmTeacher = Scolia.Domain.School.InstitutionProfiles.Canonicalize(s.InstitutionType) == Scolia.Domain.School.InstitutionProfiles.ItmIm;
-            await Open(() => teacherOnly && !itmTeacher ? new TeacherCurriculumPage(this)
+            await Open(() => s.Permissions.Contains(Perm.OwnResultsRead) ? new StudentResultsPage(this)
+                : teacherOnly && !itmTeacher ? new TeacherCurriculumPage(this)
                 : teacherOnly
                 ? new TeacherHomePage(this)
                 : s.Permissions.Contains(Perm.PilotageRead) && !s.Permissions.Contains(Perm.ReportsRead)
@@ -1757,7 +1766,7 @@ public sealed class ShellViewModel : Observable
     public IReadOnlyList<NavItemVm> PhoneTabs { get; private set; } = [];
 
     private static readonly Type[] PhoneTabOrder =
-        [typeof(HomePage), typeof(PromoterDashboardPage), typeof(TeacherHomePage), typeof(TeacherCurriculumPage), typeof(StudentsPage), typeof(CashierPage), typeof(ReceiptsPage),
+        [typeof(HomePage), typeof(PromoterDashboardPage), typeof(TeacherHomePage), typeof(TeacherCurriculumPage), typeof(StudentResultsPage), typeof(StudentsPage), typeof(CashierPage), typeof(ReceiptsPage),
             typeof(MonthlyPage), typeof(DebtorsPage), typeof(CashPage), typeof(MarksPage)];
 
     private void RebuildPhoneTabs()

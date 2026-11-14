@@ -366,4 +366,6 @@ public static class Perm
     public const string MarksEncode = "cotes.encoder";
     /// <summary>Privilège jury : encodage des épreuves du jury de toutes les promotions.</summary>
     public const string JuryEncode = "jury.encoder";
+    /// <summary>Compte étudiant : ses propres résultats publiés, rien d'autre.</summary>
+    public const string OwnResultsRead = "resultats.consulter";
 }

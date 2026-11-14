@@ -106,6 +106,16 @@ public static class Sidebar
         // La maternelle seule n'a ni points, ni délibération, ni examen national.
         var gradedSchool = cyclesAvailable && type != InstitutionProfiles.Maternelle;
 
+        // Étudiant : ses résultats et les réglages de ce poste, rien qui interroge les données de l'établissement.
+        if (shell.StudentOnly)
+            return
+            [
+                Group(string.Empty,
+                    Item("Mes résultats", MaterialIconKind.Certificate, "ToneIndigo", null, typeof(StudentResultsPage), () => new StudentResultsPage(shell))),
+                Group("Paramètres",
+                    Item("Configuration", MaterialIconKind.Cog, "TonePurple", null, typeof(SettingsPage), () => new SettingsPage(shell))),
+            ];
+
         var groups = new[]
         {
             Group(string.Empty,
@@ -130,6 +140,8 @@ public static class Sidebar
             // Secrétariat : les dossiers des apprenants et ce qui en sort (cartes d'accès).
             Group("Secrétariat",
                 Item(shell.StudentTerms.PluralTitle, MaterialIconKind.AccountGroup, "ToneBlue", Perm.StudentsRead, typeof(StudentsPage), () => new StudentsPage(shell)),
+                university ? Item("Accès étudiants", MaterialIconKind.AccountKeyOutline, "ToneIndigo", Perm.UsersManage,
+                    typeof(StudentAccountsPage), () => new StudentAccountsPage(shell)) : null,
                 Item("Réinscriptions", MaterialIconKind.School, "ToneIndigo", Perm.StudentsWrite, typeof(ReEnrollmentPage), () => new ReEnrollmentPage(shell)),
                 Item("Cartes d'accès", MaterialIconKind.CardAccountDetails, "ToneBlue", Perm.AcademicsRead, typeof(CardsPage), () => new CardsPage(shell))),
             Group("Finances",

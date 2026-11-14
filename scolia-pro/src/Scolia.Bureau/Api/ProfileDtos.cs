@@ -71,3 +71,19 @@ public sealed record EpstMarkSheetDto(
     Guid SubjectId, string SubjectName, string PromotionName, Guid PeriodId, string PeriodCode, bool IsExam,
     string EvaluationCode, string Title, decimal MaxScore, bool Editable, string? LockReason,
     IReadOnlyList<string> ExistingCodes, IReadOnlyList<EpstMarkSheetLineDto> Lines);
+
+public sealed record StudentAccountDto(
+    Guid StudentId, Guid EnrollmentId, string Matricule, string FullName, string PromotionName,
+    Guid? UserId, string? UserName, bool Active, bool MustChangePassword, DateTime? LastLoginUtc);
+public sealed record StudentCredentialsDto(Guid StudentId, Guid UserId, string FullName, string Matricule, string UserName, string ProvisionalCode);
+public sealed record LmdEcLineDto(Guid Id, string Code, string Name, decimal Weight, decimal? Mark, int? Session, string? Appreciation);
+public sealed record LmdUeDetailDto(Guid Id, string Code, string Name, string Semester, decimal Credits,
+    decimal? Average, bool Acquired, bool ByCompensation, IReadOnlyList<LmdEcLineDto> Elements);
+public sealed record StudentResultLineDto(
+    Guid EnrollmentId, LmdSemesterLineDto S1, LmdSemesterLineDto S2, decimal? Average, decimal CreditsAcquired,
+    decimal CreditsPlanned, bool Complete, int? Rank, string Computed, string? Decision, IReadOnlyList<LmdUeDetailDto> Units);
+public sealed record StudentPublishedResultDto(
+    Guid EnrollmentId, string PromotionName, string Level, string? Filiere, string YearLabel,
+    string Stage, string StageLabel, DateTime? PublishedAtUtc, decimal MarkScale, int Headcount, StudentResultLineDto Result);
+public sealed record StudentPortalDto(string FullName, string Matricule, IReadOnlyList<StudentPublishedResultDto> Results,
+    IReadOnlyList<LmdDebtDto> Debts, string? Notice);
