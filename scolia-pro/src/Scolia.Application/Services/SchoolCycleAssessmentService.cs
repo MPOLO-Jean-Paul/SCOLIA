@@ -188,6 +188,7 @@ public sealed class SchoolCycleAssessmentService(IAppDbContext db, IWriteGate ga
                 "Les évaluations ne peuvent être enregistrées que pendant une année scolaire courante ouverte.");
         if (context.Enrollment.Status != EnrollmentStatus.Actif)
             throw new DomainException("evaluationCycle", "Cette inscription n'est pas active.");
+        await EpstDeliberationService.EnsureMarksEditableAsync(db, context.Promotion.Id, context.Year.Id, ct);
         var period = await db.SchoolCyclePeriods.AsNoTracking()
             .FirstOrDefaultAsync(p => p.Id == input.SchoolCyclePeriodId &&
                 p.AcademicYearId == context.Year.Id && p.SchoolCycleId == context.Cycle.Id, ct)

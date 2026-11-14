@@ -18,7 +18,7 @@ public sealed record EpstPupilResultDto(
     IReadOnlyList<EpstCellDto> PeriodTotals, IReadOnlyList<EpstCellDto> TermTotals,
     decimal? Total, decimal Max, decimal? Percent,
     int MissingCells, int FailedSubjects, int? Rank, IReadOnlyList<int?> TermRanks,
-    IReadOnlyList<EpstConductCellDto> Conduct);
+    IReadOnlyList<EpstConductCellDto> Conduct, string? Decision = null);
 
 /// <summary>Application et conduite d'une période de travail (codes E, TB, B, AB, M, MA).</summary>
 public sealed record EpstConductCellDto(Guid PeriodId, string PeriodCode, string? Application, string? Conduct);
@@ -32,7 +32,8 @@ public sealed record EpstClassResultsDto(
     bool ShowRank, decimal PassPercent, decimal SubjectPassPercent, int Headcount,
     IReadOnlyList<EpstTermColumnDto> Terms, IReadOnlyList<EpstPeriodColumnDto> Periods,
     IReadOnlyList<EpstSubjectColumnDto> Subjects, IReadOnlyList<EpstPupilResultDto> Pupils,
-    string? RegulationValidatedBy, DateTime? RegulationValidatedAtUtc);
+    string? RegulationValidatedBy, DateTime? RegulationValidatedAtUtc,
+    string DeliberationStatus = "Ouverte");
 
 /// <summary>Bulletins officiels de l'établissement, établis selon son règlement validé.</summary>
 public sealed record EpstBulletinPrintDto(

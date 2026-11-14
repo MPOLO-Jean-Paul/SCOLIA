@@ -31,6 +31,9 @@ public sealed class ScoliaDbContext(DbContextOptions<ScoliaDbContext> options, I
     public DbSet<CurriculumItem> CurriculumItems => Set<CurriculumItem>();
     public DbSet<AcademicRegulation> AcademicRegulations => Set<AcademicRegulation>();
     public DbSet<EpstConductMark> EpstConductMarks => Set<EpstConductMark>();
+    public DbSet<EpstDeliberation> EpstDeliberations => Set<EpstDeliberation>();
+    public DbSet<EpstDecision> EpstDecisions => Set<EpstDecision>();
+    public DbSet<EpstRepechageMark> EpstRepechageMarks => Set<EpstRepechageMark>();
     public DbSet<Section> Sections => Set<Section>();
     public DbSet<Promotion> Promotions => Set<Promotion>();
     public DbSet<FeeItem> FeeItems => Set<FeeItem>();
@@ -164,6 +167,35 @@ public sealed class ScoliaDbContext(DbContextOptions<ScoliaDbContext> options, I
             e.HasOne<Promotion>().WithMany().HasForeignKey(x => x.PromotionId).OnDelete(DeleteBehavior.Restrict);
             e.HasOne<Enrollment>().WithMany().HasForeignKey(x => x.EnrollmentId).OnDelete(DeleteBehavior.Restrict);
             e.HasOne<SchoolCyclePeriod>().WithMany().HasForeignKey(x => x.SchoolCyclePeriodId).OnDelete(DeleteBehavior.Restrict);
+        });
+        b.Entity<EpstDeliberation>(e =>
+        {
+            // Délibération de fin d'année d'une classe EPST, distincte des sessions ITM.
+            e.ToTable("DeliberationsCyclesScolaires");
+            e.Property(x => x.FirstSessionClosedBy).HasMaxLength(120);
+            e.Property(x => x.ClosedBy).HasMaxLength(120);
+            e.HasIndex(x => new { x.PromotionId, x.AcademicYearId }).IsUnique();
+            e.HasOne<AcademicYear>().WithMany().HasForeignKey(x => x.AcademicYearId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne<Promotion>().WithMany().HasForeignKey(x => x.PromotionId).OnDelete(DeleteBehavior.Restrict);
+        });
+        b.Entity<EpstDecision>(e =>
+        {
+            e.ToTable("DecisionsCyclesScolaires");
+            e.Property(x => x.JuryReason).HasMaxLength(300);
+            e.Property(x => x.RepechageSubjects).HasMaxLength(400);
+            e.Ignore(x => x.RepechageSubjectIds);
+            e.Ignore(x => x.Effective);
+            e.HasIndex(x => new { x.DeliberationId, x.EnrollmentId }).IsUnique();
+            e.HasOne<EpstDeliberation>().WithMany().HasForeignKey(x => x.DeliberationId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne<Enrollment>().WithMany().HasForeignKey(x => x.EnrollmentId).OnDelete(DeleteBehavior.Restrict);
+        });
+        b.Entity<EpstRepechageMark>(e =>
+        {
+            e.ToTable("RepechagesCyclesScolaires");
+            e.HasIndex(x => new { x.DeliberationId, x.EnrollmentId, x.SubjectId }).IsUnique();
+            e.HasOne<EpstDeliberation>().WithMany().HasForeignKey(x => x.DeliberationId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne<Enrollment>().WithMany().HasForeignKey(x => x.EnrollmentId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne<CurriculumItem>().WithMany().HasForeignKey(x => x.SubjectId).OnDelete(DeleteBehavior.Restrict);
         });
         b.Entity<SchoolCycleAssessment>(e =>
         {

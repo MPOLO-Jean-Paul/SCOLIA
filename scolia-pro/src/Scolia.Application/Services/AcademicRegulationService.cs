@@ -180,6 +180,17 @@ public sealed class AcademicRegulationService(IAppDbContext db, IWriteGate gate,
 /// </summary>
 public static class RegulationUsage
 {
-    public static Task EnsureReopenAllowedAsync(IAppDbContext db, AcademicRegulation r, CancellationToken ct) =>
-        Task.CompletedTask;
+    public static async Task EnsureReopenAllowedAsync(IAppDbContext db, AcademicRegulation r, CancellationToken ct)
+    {
+        if (!AcademicRegulationRules.IsEpst(r.Scope)) return;
+        var kind = r.Scope == RegulationScope.Primaire ? SchoolCycleKind.Primaire : SchoolCycleKind.Secondaire;
+        var classes = from p in db.Promotions
+                      join c in db.SchoolCycles on p.SchoolCycleId equals c.Id
+                      where p.AcademicYearId == r.AcademicYearId && c.Kind == kind
+                      select p.Id;
+        if (await db.EpstDeliberations.AnyAsync(d => classes.Contains(d.PromotionId) &&
+                d.Status != EpstSessionStatus.Ouverte, ct))
+            throw new DomainException("reglement",
+                "Des décisions de fin d'année ont été publiées selon ce règlement : il ne peut plus être rouvert.");
+    }
 }

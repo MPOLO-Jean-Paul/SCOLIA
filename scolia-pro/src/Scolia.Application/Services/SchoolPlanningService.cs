@@ -61,6 +61,11 @@ public sealed class SchoolPlanningService(IAppDbContext db, IWriteGate gate, IAu
         var periods = await db.SchoolCyclePeriods.AsNoTracking()
             .Where(p => p.SchoolCycleId == cycle.Id && p.AcademicYearId == year.Id)
             .OrderBy(p => p.Order).ToListAsync(ct);
+        var cycleClasses = db.Promotions.Where(p => p.SchoolCycleId == cycle.Id && p.AcademicYearId == year.Id)
+            .Select(p => p.Id);
+        if (await db.EpstDeliberations.AnyAsync(d => cycleClasses.Contains(d.PromotionId) &&
+                d.Status != EpstSessionStatus.Ouverte, ct))
+            throw new DomainException("cycles", "Une délibération de ce cycle est clôturée : le calendrier est figé.");
         var next = new SchoolCyclePeriod
         {
             SchoolCycleId = cycle.Id, AcademicYearId = year.Id,
@@ -97,6 +102,7 @@ public sealed class SchoolPlanningService(IAppDbContext db, IWriteGate gate, IAu
         var (school, cycle, year, classroom) = await ClassAsync(promotionId, ct);
         if (year.Status != AcademicYearStatus.Open)
             throw new DomainException("programme", "Le programme d'une année clôturée ne peut pas changer.");
+        await EpstDeliberationService.EnsureMarksEditableAsync(db, classroom.Id, year.Id, ct);
         var current = await db.CurriculumItems.AsNoTracking()
             .Where(i => i.AcademicYearId == year.Id && i.PromotionId == classroom.Id).ToListAsync(ct);
         var item = new CurriculumItem
@@ -126,6 +132,7 @@ public sealed class SchoolPlanningService(IAppDbContext db, IWriteGate gate, IAu
         var (school, cycle, year, classroom) = await ClassAsync(item.PromotionId, ct);
         if (year.Status != AcademicYearStatus.Open || item.AcademicYearId != year.Id)
             throw new DomainException("programme", "Le programme d'une année clôturée ne peut pas changer.");
+        await EpstDeliberationService.EnsureMarksEditableAsync(db, classroom.Id, year.Id, ct);
         var previous = item.PeriodMaxScore;
         item.PeriodMaxScore = input.PeriodMaxScore;
         var current = await db.CurriculumItems.AsNoTracking()

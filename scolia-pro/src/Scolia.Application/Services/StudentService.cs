@@ -337,17 +337,28 @@ public sealed class StudentService(IAppDbContext db, IWriteGate gate, IAuditLog 
                           where session.AcademicYearId == source.Id && session.Period == Domain.Deliberation.DeliberationPeriod.Annuel
                               && session.Status == Domain.Deliberation.SessionStatus.Cloturee
                           select new { r.EnrollmentId, r.Final }).ToDictionaryAsync(x => x.EnrollmentId, x => x.Final, ct);
+        // Primaire et secondaire : seule une délibération de fin d'année clôturée décide du passage.
+        var epst = await (from decision in db.EpstDecisions.AsNoTracking()
+                          join session in db.EpstDeliberations.AsNoTracking() on decision.DeliberationId equals session.Id
+                          where session.AcademicYearId == source.Id && session.Status == EpstSessionStatus.Cloturee
+                              && decision.Final != null
+                          select new { decision.EnrollmentId, Final = decision.Final!.Value })
+            .ToDictionaryAsync(x => x.EnrollmentId, x => x.Final, ct);
         return map.Values.Where(x => x.Enrollment.Status == EnrollmentStatus.Actif && !already.Contains(x.Enrollment.StudentId))
             .OrderBy(x => x.Promotion.Code).ThenBy(x => x.Enrollment.Student!.LastName)
             .Select(x =>
             {
                 var decided = jury.TryGetValue(x.Enrollment.Id, out var final) ? final : (Domain.Deliberation.Outcome?)null;
-                var next = decided == Domain.Deliberation.Outcome.Ajourne ? x.Promotion.Code : ExpectedPromotionCode(x.Promotion);
+                var school = epst.TryGetValue(x.Enrollment.Id, out var schoolFinal) ? schoolFinal : (EpstOutcome?)null;
+                var stays = decided == Domain.Deliberation.Outcome.Ajourne ||
+                            school is { } o && !EpstDeliberationRules.Promotes(o);
+                var next = stays ? x.Promotion.Code : ExpectedPromotionCode(x.Promotion);
                 // Une classe existante mais désactivée exige une décision du secrétariat.
                 bool available = !targetPromotions.Any(p => p.Code == next && !p.IsActive);
                 return new ReEnrollmentPlanItem(x.Enrollment.StudentId, x.Enrollment.Student!.Matricule,
                     x.Enrollment.Student.FullName, x.Promotion.Code, next, x.Account.Balance, available,
-                    decided is { } outcome ? Domain.Deliberation.DeliberationEngine.Label(outcome) : null);
+                    decided is { } outcome ? Domain.Deliberation.DeliberationEngine.Label(outcome)
+                        : school is { } epstOutcome ? EpstDeliberationRules.Label(epstOutcome) : null);
             }).ToList();
     }
 
@@ -381,6 +392,8 @@ public sealed class StudentService(IAppDbContext db, IWriteGate gate, IAuditLog 
             Code = code,
             Name = SuggestedPromotionName(sourcePromotion, code),
             SectionId = sourcePromotion.SectionId,
+            // Une classe du primaire ou du secondaire reste dans son cycle scolaire.
+            SchoolCycleId = sourcePromotion.SchoolCycleId,
             Level = sameLevel ? sourcePromotion.Level : char.IsAsciiDigit(code[^1])
                 ? code[^1] - '0' : sourcePromotion.Level,
             Capacity = sourcePromotion.Capacity,

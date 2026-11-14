@@ -296,6 +296,32 @@ public static class ScoliaEndpoints
             (Guid promotionId, EpstConductInput input, EpstConductService s, CancellationToken ct) =>
                 s.SaveAsync(promotionId, input, ct)).RequireAuthorization(Permissions.AcademicsWrite);
 
+        // Délibération de fin d'année EPST : jury, première session, repêchage, clôture.
+        g.MapGet("/cycles/promotions/{promotionId:guid}/deliberation",
+            (Guid promotionId, EpstDeliberationService s, CancellationToken ct) =>
+                s.GetAsync(promotionId, ct)).RequireAuthorization(Permissions.AcademicsRead);
+        g.MapPut("/cycles/promotions/{promotionId:guid}/deliberation/eleves/{enrollmentId:guid}/jury",
+            (Guid promotionId, Guid enrollmentId, EpstJuryInput input, EpstDeliberationService s, CancellationToken ct) =>
+                s.SetJuryAsync(promotionId, enrollmentId, input, ct)).RequireAuthorization(Permissions.DeliberationManage);
+        g.MapPost("/cycles/promotions/{promotionId:guid}/deliberation/premiere-session",
+            (Guid promotionId, EpstDeliberationService s, CancellationToken ct) =>
+                s.CloseFirstSessionAsync(promotionId, ct)).RequireAuthorization(Permissions.DeliberationManage);
+        g.MapPut("/cycles/promotions/{promotionId:guid}/deliberation/eleves/{enrollmentId:guid}/repechage",
+            (Guid promotionId, Guid enrollmentId, EpstRepechageInput input, EpstDeliberationService s, CancellationToken ct) =>
+                s.SaveRepechageAsync(promotionId, enrollmentId, input, ct)).RequireAuthorization(Permissions.DeliberationManage);
+        g.MapGet("/cycles/promotions/{promotionId:guid}/palmares.pdf",
+            async (Guid promotionId, EpstDeliberationService s, HttpContext http, CancellationToken ct) =>
+            {
+                http.Response.Headers.CacheControl = "private, no-store, max-age=0";
+                http.Response.Headers.Pragma = "no-cache";
+                return new InlineFileResult(EpstPalmaresPdf.Build(await s.PalmaresAsync(promotionId, ct)), Pdf,
+                    "proces-verbal-palmares.pdf");
+            })
+            .RequireAuthorization(Permissions.AcademicsRead);
+        g.MapPost("/cycles/promotions/{promotionId:guid}/deliberation/cloture",
+            (Guid promotionId, EpstDeliberationService s, CancellationToken ct) =>
+                s.CloseAsync(promotionId, ct)).RequireAuthorization(Permissions.DeliberationManage);
+
         // LMD : structures, calendrier semestriel et maquettes de cours séparés
         // des délibérations ITM. Tous les changements exigent SettingsWrite.
         g.MapGet("/lmd/structures", (LmdPlanningService s, CancellationToken ct) =>

@@ -14,7 +14,12 @@ namespace Scolia.Application.Services;
 /// </summary>
 public sealed class EpstResultsService(IAppDbContext db)
 {
-    public async Task<EpstClassResultsDto> ClassAsync(Guid promotionId, CancellationToken ct = default)
+    /// <summary>Contexte complet du calcul d'une classe, partagé avec la délibération.</summary>
+    public sealed record Computation(
+        SchoolProfile School, AcademicYear Year, Promotion Classroom, SchoolCycle Cycle,
+        AcademicRegulation Regulation, EpstClassResult Result, IReadOnlyList<Enrollment> Enrollments);
+
+    public async Task<Computation> ComputeAsync(Guid promotionId, CancellationToken ct = default)
     {
         var school = await YearContext.SchoolAsync(db, ct);
         if (!InstitutionProfiles.UsesSchoolCycles(school.InstitutionType))
@@ -64,6 +69,19 @@ public sealed class EpstResultsService(IAppDbContext db)
                 .Select(s => new EpstScore(s.EnrollmentId, s.SubjectId, s.SchoolCyclePeriodId, s.Score, s.MaxScore!.Value))
                 .ToList());
 
+        return new Computation(school, year, classroom, cycle, regulation, result, enrollments);
+    }
+
+    public async Task<EpstClassResultsDto> ClassAsync(Guid promotionId, CancellationToken ct = default)
+    {
+        var (_, year, classroom, cycle, regulation, result, enrollments) = await ComputeAsync(promotionId, ct);
+        var scope = regulation.Scope;
+        var deliberation = await db.EpstDeliberations.AsNoTracking()
+            .FirstOrDefaultAsync(d => d.PromotionId == classroom.Id && d.AcademicYearId == year.Id, ct);
+        var decisions = deliberation is { Status: not EpstSessionStatus.Ouverte }
+            ? await db.EpstDecisions.AsNoTracking().Where(d => d.DeliberationId == deliberation.Id)
+                .ToDictionaryAsync(d => d.EnrollmentId, d => EpstDeliberationRules.Label(d.Effective), ct)
+            : [];
         var conduct = await db.EpstConductMarks.AsNoTracking()
             .Where(c => c.PromotionId == classroom.Id && c.AcademicYearId == year.Id).ToListAsync(ct);
         var workPeriods = result.Periods.Where(p => !p.IsExam).ToList();
@@ -87,7 +105,7 @@ public sealed class EpstResultsService(IAppDbContext db)
                 p.Total, p.Max, p.Percent, p.MissingCells, p.FailedSubjects,
                 regulation.ShowRank ? p.Rank : null,
                 regulation.ShowRank ? p.TermRanks : p.TermRanks.Select(_ => (int?)null).ToList(),
-                ConductOf(e.Id));
+                ConductOf(e.Id), decisions.TryGetValue(e.Id, out var decision) ? decision : null);
         })
         // Ordre du palmarès : place, puis nom ; les élèves incomplets à la fin.
         .OrderBy(p => p.Rank ?? int.MaxValue).ThenBy(p => p.FullName, StringComparer.CurrentCultureIgnoreCase)
@@ -98,7 +116,8 @@ public sealed class EpstResultsService(IAppDbContext db)
             result.Terms.Select(t => new EpstTermColumnDto(t.TermCode, t.Periods.Select(p => p.Code).ToList())).ToList(),
             result.Periods.Select(p => new EpstPeriodColumnDto(p.PeriodId, p.Code, p.TermCode, p.IsExam)).ToList(),
             result.Subjects.Select(s => new EpstSubjectColumnDto(s.SubjectId, s.Code, s.Name, s.PeriodMax)).ToList(),
-            pupils, regulation.ValidatedByName, regulation.ValidatedAtUtc);
+            pupils, regulation.ValidatedByName, regulation.ValidatedAtUtc,
+            deliberation?.Status.ToString() ?? EpstSessionStatus.Ouverte.ToString());
     }
 
     /// <summary>Bulletin d'un élève : mêmes calculs que la classe, pour que la place soit exacte.</summary>
@@ -146,6 +165,7 @@ public sealed class EpstConductService(IAppDbContext db, IWriteGate gate, IAudit
         var period = await db.SchoolCyclePeriods.AsNoTracking().FirstOrDefaultAsync(p =>
             p.Id == input.PeriodId && p.AcademicYearId == year.Id && p.SchoolCycleId == classroom.SchoolCycleId, ct)
             ?? throw new NotFoundException("Période introuvable pour cette classe.");
+        await EpstDeliberationService.EnsureMarksEditableAsync(db, classroom.Id, year.Id, ct);
         if (period.IsExam || period.Mode != SchoolCycleAssessmentMode.Evaluation)
             throw new DomainException("conduite", "L'application et la conduite se notent sur les périodes de travail.");
         var lines = input.Lines ?? [];

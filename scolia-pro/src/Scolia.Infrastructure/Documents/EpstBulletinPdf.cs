@@ -178,6 +178,8 @@ public static class EpstBulletinPdf
                         ? $"Branche(s) en échec (sous {N(c.SubjectPassPercent)} %) : {pupil.FailedSubjects}."
                         : "Aucune branche en échec.";
                 row.RelativeItem().Text(status).FontColor(pupil.MissingCells > 0 || pupil.FailedSubjects > 0 ? Fail : Muted);
+                if (pupil.Decision is { } decision)
+                    row.ConstantItem(200).Text(t => { t.Span("Décision : ").FontColor(Muted); t.Span(decision).Bold().FontSize(9); });
                 row.ConstantItem(220).AlignRight().Text("Application et conduite : E, TB, B, AB, M, MA")
                     .FontSize(7).FontColor(Muted);
             });
