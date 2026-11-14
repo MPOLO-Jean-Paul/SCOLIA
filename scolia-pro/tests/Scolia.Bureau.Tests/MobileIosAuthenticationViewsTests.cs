@@ -71,6 +71,14 @@ public sealed class MobileIosAuthenticationViewsTests
             Assert.Contains("iosauthfield", classes);
             Assert.Contains("onbrand", classes); // évite les styles métiers fond clair.
             Assert.NotNull(input.Attribute("PlaceholderText"));
+            // Contrôler aussi les valeurs LOCALES, prioritaires sur styles Avalonia/Android.
+            Assert.Equal("#1845B1", input.Attribute("Background")?.Value);
+            Assert.Equal("#FFFFFF", input.Attribute("Foreground")?.Value);
+            Assert.Equal("#FFFFFF", input.Attribute("CaretBrush")?.Value);
+            Assert.Equal("#E4EEFF", input.Attribute("PlaceholderForeground")?.Value);
+            Assert.True(ThemeContrast.Ratio(
+                Color.Parse(input.Attribute("Foreground")!.Value),
+                Color.Parse(input.Attribute("Background")!.Value)) >= 7);
         }
 
         var loginStyle = Assert.Single(nodes, e => e.Name.LocalName == "Style" &&
@@ -88,9 +96,30 @@ public sealed class MobileIosAuthenticationViewsTests
         Assert.Contains(nodes, e => e.Name.LocalName == "Style" &&
             Attribute(e, "Selector", "TextBox.iosauthfield /template/ TextBlock#PART_Watermark"));
 
+        // Le bug Android était sur PART_BorderElement, pas sur le TextBox de surface.
+        foreach (var state in new[] { "", ":pointerover", ":focus", ":disabled" })
+        {
+            var selector = "TextBox.iosauthfield" + state + " /template/ Border#PART_BorderElement";
+            var border = Assert.Single(nodes, e => e.Name.LocalName == "Style" && Attribute(e, "Selector", selector));
+            Assert.Equal("#1845B1", Setting(border, "Background"));
+        }
+
+        var lockNodes = Elements("LockScreenView.axaml");
+        var lockCode = Assert.Single(lockNodes, e => e.Name.LocalName == "TextBox" && Attribute(e, "Name", "IosLockCode"));
+        Assert.Equal("#1845B1", lockCode.Attribute("Background")?.Value);
+        Assert.Equal("#FFFFFF", lockCode.Attribute("Foreground")?.Value);
+        Assert.Equal("#E4EEFF", lockCode.Attribute("PlaceholderForeground")?.Value);
+        Assert.Contains("onbrand", lockCode.Attribute("Classes")?.Value.Split(' '));
+        foreach (var state in new[] { "", ":pointerover", ":focus", ":disabled" })
+        {
+            var selector = "TextBox.ioslockfield" + state + " /template/ Border#PART_BorderElement";
+            var border = Assert.Single(lockNodes, e => e.Name.LocalName == "Style" && Attribute(e, "Selector", selector));
+            Assert.Equal("#1845B1", Setting(border, "Background"));
+        }
+
         var global = XDocument.Load(Source("Themes/Controls.axaml")).Descendants().ToArray();
         Assert.Contains(global, e => e.Name.LocalName == "Style" &&
-            (e.Attribute("Selector")?.Value.Contains(":not(.iosauthfield)", StringComparison.Ordinal) ?? false));
+            (e.Attribute("Selector")?.Value.Contains(":not(.ioslockfield)", StringComparison.Ordinal) ?? false));
         // Ne pas retomber sur les marges minuscules qui cachaient l'identifiant derrière l'icône.
         var tiny = Assert.Single(nodes, e => e.Name.LocalName == "Style" &&
             Attribute(e, "Selector", "ScrollViewer.tiny TextBox.iosauthfield"));
