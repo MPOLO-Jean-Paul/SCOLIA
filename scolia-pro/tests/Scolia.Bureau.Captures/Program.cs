@@ -1762,12 +1762,20 @@ if (args.Length > 3 && args[3] == "fluidite")
             footer.Height > 0 &&
             footer.Top >= Math.Max(0, scrollViewport.Top) - 1 &&
             footer.Bottom <= Math.Min(window.Bounds.Height, scrollViewport.Bottom) + 1);
-        // Les liens du bas ne doivent pas être supprimés pour satisfaire ce test.
+        // Un deuxième défilement doit également permettre d'ouvrir les options
+        // compte/serveur : elles ne sont pas masquées pour rendre le bouton accessible.
         if (isIosLogin)
         {
-            var links = Named("IosMobileActions");
+            var links = Named("IosLoginMore");
+            loginScroll.Offset = new Vector(0, Math.Max(0, loginScroll.Extent.Height - loginScroll.Viewport.Height));
+            RenderLayout();
+            var linksBounds = InWindow(links);
             CheckLayout($"Connexion {width}×{height} : options textuelles accessibles par défilement",
-                links.IsEffectivelyVisible && loginScroll.Extent.Height >= loginScroll.Viewport.Height);
+                links.IsEffectivelyVisible && linksBounds.Height > 0 &&
+                linksBounds.Top >= Math.Max(0, scrollViewport.Top) - 1 &&
+                linksBounds.Bottom <= Math.Min(window.Bounds.Height, scrollViewport.Bottom) + 1);
+            AuthLayout.EnsureVisible(loginScroll, Named(footerName));
+            RenderLayout();
         }
         Save(window, $"fluidite-connexion-{width}x{height}.png");
     }
